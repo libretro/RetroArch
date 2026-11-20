@@ -509,6 +509,44 @@ static void test_uyvy(unsigned w, unsigned h)
    free(yp); free(u); free(v); free(d);
 }
 
+/* YUYV rows, padded, repacked to NV12: luma in order, each row pair's
+ * chroma the rounded mean, a lone last row's its own, nothing written
+ * past either plane. */
+static void test_yuyv_nv12(unsigned w, unsigned h)
+{
+   size_t   sp  = (size_t)w * 2 + 6;
+   size_t   ysz = (size_t)w * h, csz = (size_t)w * ((h + 1) / 2);
+   uint8_t *src = (uint8_t*)malloc(sp * h);
+   uint8_t *dst = (uint8_t*)malloc(ysz + csz + 16);
+   unsigned x, y, i;
+   int ok = 1;
+   char what[96];
+
+   for (i = 0; i < sp * h; i++) src[i] = (uint8_t)rnd();
+   memset(dst, 0x5a, ysz + csz + 16);
+   image_yuv_422_to_nv12(dst, dst + ysz, src, sp, w, h);
+
+   for (y = 0; y < h; y++)
+      for (x = 0; x < w; x++)
+         if (dst[(size_t)y * w + x] != src[(size_t)y * sp + 2 * x])
+            ok = 0;
+   for (y = 0; y < (h + 1) / 2; y++)
+   {
+      const uint8_t *a = src + (size_t)(2 * y) * sp;
+      const uint8_t *b = 2 * y + 1 < h ? a + sp : a;
+      for (x = 0; x < w / 2; x++)
+         if (dst[ysz + (size_t)y * w + 2 * x] != (uint8_t)((a[4 * x + 1] + b[4 * x + 1] + 1) >> 1)
+               || dst[ysz + (size_t)y * w + 2 * x + 1] != (uint8_t)((a[4 * x + 3] + b[4 * x + 3] + 1) >> 1))
+            ok = 0;
+   }
+   for (i = 0; i < 16; i++)
+      if (dst[ysz + csz + i] != 0x5a)
+         ok = 0;
+   sprintf(what, "YUYV to NV12 %ux%u", w, h);
+   CHECK(ok, what);
+   free(src); free(dst);
+}
+
 int main(int argc, char **argv)
 {
    static const unsigned sizes[][2] = { { 1, 1 }, { 2, 2 }, { 7, 5 }, { 64, 48 }, { 321, 241 } };
@@ -529,6 +567,11 @@ int main(int argc, char **argv)
       test_uyvy(sizes[s][0], sizes[s][1]);
    }
    test_greys();
+   {
+      static const unsigned sizes2[][2] = { { 2, 1 }, { 2, 2 }, { 8, 5 }, { 64, 48 }, { 322, 241 } };
+      for (s = 0; s < sizeof(sizes2) / sizeof(sizes2[0]); s++)
+         test_yuyv_nv12(sizes2[s][0], sizes2[s][1]);
+   }
    {
       static const unsigned widths[] = { 1, 2, 7, 8, 9, 10, 15, 16, 17, 18,
          23, 24, 25, 33, 64, 65, 321, 1920 };

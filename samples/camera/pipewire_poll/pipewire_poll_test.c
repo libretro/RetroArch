@@ -88,6 +88,15 @@ enum pw_stream_state __wrap_pw_stream_get_state(struct pw_stream *stream,
    return script_state;
 }
 
+static unsigned script_errors;
+int __wrap_pw_stream_set_error(struct pw_stream *stream, int res,
+      const char *error, ...)
+{
+   (void)stream; (void)res; (void)error;
+   script_errors++;
+   return 0;
+}
+
 uint64_t __wrap_pw_stream_get_nsec(struct pw_stream *stream)
 {
    (void)stream;
@@ -216,6 +225,217 @@ static void check_formats(void)
       scaler_ctx_gen_reset(&camera.scaler);
       free(camera.buffer_output);
    }
+}
+
+/* What a planar consumer was handed. */
+static struct retro_camera_planar_frame planar_got;
+static unsigned planar_count, planar_queued;
+static uint8_t  planar_y[W * H], planar_uv[W * H];
+
+static void planar_cb(const struct retro_camera_planar_frame *f)
+{
+   unsigned row, x;
+   planar_got    = *f;
+   planar_count++;
+   planar_queued = script_queued;
+   for (row = 0; row < f->height; row++)
+      memcpy(planar_y + row * f->width,
+            f->planes[0] + row * f->strides[0], f->width);
+   for (row = 0; row < (f->height + 1) / 2; row++)
+      for (x = 0; x < (f->width + 1) / 2; x++)
+      {
+         planar_uv[row * f->width + 2 * x]     =
+            f->planes[1][row * f->strides[1] + x * f->chroma_step];
+         planar_uv[row * f->width + 2 * x + 1] =
+            f->planes[2][row * f->strides[2] + x * f->chroma_step];
+      }
+}
+
+static void planar_negotiate(pipewire_camera_t *camera, uint32_t format,
+      enum spa_video_color_matrix matrix, enum spa_video_color_range range)
+{
+   uint8_t storage[1024];
+   struct spa_pod_builder builder = SPA_POD_BUILDER_INIT(storage, sizeof(storage));
+   struct spa_video_info_raw info;
+   memset(&info, 0, sizeof(info));
+   info.format       = format;
+   info.size         = SPA_RECTANGLE(W, H);
+   info.color_matrix = matrix;
+   info.color_range  = range;
+   script_stride     = 0;
+   script_errors     = 0;
+   stream_param_changed_cb(camera, SPA_PARAM_Format,
+         spa_format_video_raw_build(&builder, SPA_PARAM_Format, &info));
+}
+
+static void check_planar(void)
+{
+   pipewire_camera_t camera;
+   struct spa_chunk  chunk[3];
+   struct spa_data   data[3];
+   struct spa_buffer buffer;
+   struct pw_buffer  pwb;
+   uint8_t  frame[W * H * 2 + 16];
+   uint8_t  ey[W * H], euv[W * H];
+   unsigned row, x;
+
+   printf("planar consumer:\n");
+   memset(&camera, 0, sizeof(camera));
+   camera.stream      = (struct pw_stream*)&camera;
+   camera.want_planar = true;
+
+   planar_negotiate(&camera, TEST_NATIVE_ARGB,
+         SPA_VIDEO_COLOR_MATRIX_UNKNOWN, SPA_VIDEO_COLOR_RANGE_UNKNOWN);
+   CHECK(script_errors == 1, "RGB format refused for planes");
+
+   planar_negotiate(&camera, SPA_VIDEO_FORMAT_NV12,
+         SPA_VIDEO_COLOR_MATRIX_BT709, SPA_VIDEO_COLOR_RANGE_16_235);
+   CHECK(script_errors == 0 && script_stride == W,
+         "NV12 negotiated with a luma-row stride");
+   CHECK(!camera.buffer_output && !camera.planar,
+         "NV12 needs no conversion buffer");
+   CHECK(camera.planar_flags == RETRO_CAMERA_PLANAR_BT709,
+         "BT.709 limited range carried");
+
+   /* NV12 in one data block, rows padded by 2. */
+   memset(&pwb, 0, sizeof(pwb));
+   memset(&buffer, 0, sizeof(buffer));
+   memset(data, 0, sizeof(data));
+   memset(chunk, 0, sizeof(chunk));
+   memset(frame, 0xee, sizeof(frame));
+   for (row = 0; row < H; row++)
+      for (x = 0; x < W; x++)
+         frame[row * (W + 2) + x] = ey[row * W + x] = (uint8_t)(row * 16 + x);
+   for (row = 0; row < H / 2; row++)
+      for (x = 0; x < W / 2; x++)
+      {
+         frame[(W + 2) * H + row * (W + 2) + 2 * x]     =
+            euv[row * W + 2 * x]     = (uint8_t)(100 + row * 8 + x);
+         frame[(W + 2) * H + row * (W + 2) + 2 * x + 1] =
+            euv[row * W + 2 * x + 1] = (uint8_t)(200 - row * 8 - x);
+      }
+   chunk[0].stride = W + 2;
+   chunk[0].size   = (W + 2) * H + (W + 2) * (H / 2);
+   data[0].data    = frame;
+   data[0].maxsize = sizeof(frame);
+   data[0].chunk   = &chunk[0];
+   buffer.n_datas  = 1;
+   buffer.datas    = data;
+   pwb.buffer      = &buffer;
+   script_reset(&pwb);
+   planar_count = 0;
+   CHECK(pwire_camera_poll(&camera, frame_raw_cb, NULL, planar_cb)
+         && planar_count == 1 && frame_cb_count == 0,
+         "NV12 frame delivered as planes once");
+   CHECK(planar_got.planes[0] == frame && planar_got.strides[0] == W + 2
+         && planar_got.planes[1] == frame + (W + 2) * H
+         && planar_got.planes[2] == planar_got.planes[1] + 1
+         && planar_got.chroma_step == 2 && planar_got.strides[1] == W + 2,
+         "NV12 planes borrowed in place");
+   CHECK(memcmp(planar_y, ey, sizeof(ey)) == 0
+         && memcmp(planar_uv, euv, W * H / 2) == 0, "NV12 samples");
+   CHECK(planar_queued == 0 && script_queued == 1,
+         "buffer returned after the callback, once");
+   CHECK(planar_got.flags == RETRO_CAMERA_PLANAR_BT709, "flags reach the frame");
+
+   chunk[0].size = (W + 2) * H;
+   script_reset(&pwb);
+   planar_count = 0;
+   CHECK(!pwire_camera_poll(&camera, NULL, NULL, planar_cb)
+         && planar_count == 0 && script_queued == 1,
+         "chunk missing its chroma: no frame, buffer returned");
+   chunk[0].size = (W + 2) * H + (W + 2) * (H / 2);
+   chunk[0].stride = W - 2;
+   script_reset(&pwb);
+   CHECK(!pwire_camera_poll(&camera, NULL, NULL, planar_cb)
+         && planar_count == 0 && script_queued == 1,
+         "stride under a row: no frame, buffer returned");
+   script_reset(&pwb);
+   CHECK(!pwire_camera_poll(&camera, frame_raw_cb, NULL, NULL)
+         && script_dequeues == 0, "no planar callback: nothing dequeued");
+
+   /* I420 as three data blocks. */
+   planar_negotiate(&camera, SPA_VIDEO_FORMAT_I420,
+         SPA_VIDEO_COLOR_MATRIX_BT601, SPA_VIDEO_COLOR_RANGE_0_255);
+   CHECK(script_errors == 0 && camera.planar_flags
+         == RETRO_CAMERA_PLANAR_FULL_RANGE, "I420 full range negotiated");
+   {
+      uint8_t py[W * H], pu[W * H / 4], pv[W * H / 4];
+      memcpy(py, ey, sizeof(py));
+      for (row = 0; row < H / 2; row++)
+         for (x = 0; x < W / 2; x++)
+         {
+            pu[row * (W / 2) + x] = euv[row * W + 2 * x];
+            pv[row * (W / 2) + x] = euv[row * W + 2 * x + 1];
+         }
+      memset(chunk, 0, sizeof(chunk));
+      data[0].data = py; data[0].maxsize = sizeof(py);
+      data[1].data = pu; data[1].maxsize = sizeof(pu);
+      data[2].data = pv; data[2].maxsize = sizeof(pv);
+      for (x = 0; x < 3; x++)
+      {
+         data[x].chunk   = &chunk[x];
+         chunk[x].size   = data[x].maxsize;
+         chunk[x].stride = x ? W / 2 : W;
+      }
+      buffer.n_datas = 3;
+      script_reset(&pwb);
+      planar_count = 0;
+      CHECK(pwire_camera_poll(&camera, NULL, NULL, planar_cb)
+            && planar_count == 1, "I420 frame delivered");
+      CHECK(planar_got.planes[0] == py && planar_got.planes[1] == pu
+            && planar_got.planes[2] == pv && planar_got.chroma_step == 1
+            && planar_got.strides[1] == W / 2,
+            "I420 planes borrowed from their own blocks");
+      CHECK(memcmp(planar_y, ey, sizeof(ey)) == 0
+            && memcmp(planar_uv, euv, W * H / 2) == 0, "I420 samples");
+      chunk[2].size = W / 2;
+      script_reset(&pwb);
+      planar_count = 0;
+      CHECK(!pwire_camera_poll(&camera, NULL, NULL, planar_cb)
+            && planar_count == 0 && script_queued == 1,
+            "short Cr block: no frame, buffer returned");
+   }
+
+   /* YUY2 repacked. */
+   planar_negotiate(&camera, SPA_VIDEO_FORMAT_YUY2,
+         SPA_VIDEO_COLOR_MATRIX_UNKNOWN, SPA_VIDEO_COLOR_RANGE_UNKNOWN);
+   CHECK(script_errors == 0 && script_stride == W * 2 && camera.planar,
+         "YUY2 negotiated with a repack buffer");
+   for (row = 0; row < H; row++)
+      for (x = 0; x < W / 2; x++)
+      {
+         uint8_t *p = frame + row * W * 2 + 4 * x;
+         p[0] = (uint8_t)(row * 16 + 2 * x);
+         p[1] = (uint8_t)(100 + row * 8 + x);
+         p[2] = (uint8_t)(row * 16 + 2 * x + 1);
+         p[3] = (uint8_t)(200 - row * 8 - x);
+      }
+   for (row = 0; row < H / 2; row++)
+      for (x = 0; x < W / 2; x++)
+      {
+         euv[row * W + 2 * x]     = (uint8_t)(100 + row * 16 + x + 4);
+         euv[row * W + 2 * x + 1] = (uint8_t)(200 - row * 16 - x - 4);
+      }
+   memset(chunk, 0, sizeof(chunk));
+   data[0].data    = frame;
+   data[0].maxsize = sizeof(frame);
+   data[0].chunk   = &chunk[0];
+   chunk[0].size   = W * 2 * H;
+   buffer.n_datas  = 1;
+   script_reset(&pwb);
+   planar_count = 0;
+   CHECK(pwire_camera_poll(&camera, NULL, NULL, planar_cb)
+         && planar_count == 1, "YUY2 frame delivered as planes");
+   CHECK(planar_got.planes[0] == camera.planar
+         && planar_got.planes[2] == planar_got.planes[1] + 1
+         && planar_got.strides[0] == W, "NV12 in the repack buffer");
+   CHECK(memcmp(planar_y, ey, sizeof(ey)) == 0
+         && memcmp(planar_uv, euv, W * H / 2) == 0,
+         "YUY2 luma deinterleaved, row pairs' chroma averaged");
+
+   stream_param_changed_cb(&camera, SPA_PARAM_Format, NULL);
+   CHECK(camera.planar == NULL, "cleared format releases the repack buffer");
 }
 
 int main(void)
@@ -436,6 +656,8 @@ int main(void)
       scaler_ctx_gen_reset(&changing.scaler);
       free(changing.buffer_output);
    }
+
+   check_planar();
 
    if (fails)
    {

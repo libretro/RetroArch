@@ -154,6 +154,37 @@ static INLINE void image_yuv_420_pack(uint8_t *dst,
    }
 }
 
+/* Packed 4:2:2 Y0 Cb Y1 Cr (YUYV) rows @src_pitch apart into NV12:
+ * @w x @h luma at @y, rows @w apart, then (@h + 1) / 2 rows of
+ * interleaved CbCr at @uv, also @w apart. A row pair's chroma is
+ * averaged; a lone last row keeps its own. @w is even, as YUYV's
+ * macropixels are. */
+static INLINE void image_yuv_422_to_nv12(uint8_t *y, uint8_t *uv,
+      const uint8_t *src, size_t src_pitch, unsigned w, unsigned h)
+{
+   unsigned row, x;
+   unsigned pairs = w >> 1;
+   for (row = 0; row < h; row += 2)
+   {
+      const uint8_t *s0 = src + (size_t)row * src_pitch;
+      const uint8_t *s1 = row + 1 < h ? s0 + src_pitch : s0;
+      uint8_t       *y0 = y  + (size_t)row * w;
+      uint8_t       *y1 = row + 1 < h ? y0 + w : y0;
+      uint8_t       *c  = uv + (size_t)(row >> 1) * w;
+      for (x = 0; x < pairs; x++)
+      {
+         const uint8_t *a = s0 + 4 * x;
+         const uint8_t *b = s1 + 4 * x;
+         y0[2 * x]     = a[0];
+         y0[2 * x + 1] = a[2];
+         y1[2 * x]     = b[0];
+         y1[2 * x + 1] = b[2];
+         c[2 * x]      = (uint8_t)((a[1] + b[1] + 1) >> 1);
+         c[2 * x + 1]  = (uint8_t)((a[3] + b[3] + 1) >> 1);
+      }
+   }
+}
+
 RETRO_END_DECLS
 
 #endif
