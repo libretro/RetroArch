@@ -191,19 +191,33 @@ static void core_trust_set_free(core_trust_set_t *s)
    free(s);
 }
 
-/* Room for one more of each than asked, for the change a clone is for */
+/* Room for one more of each than asked, for the change a clone is for.
+ * zero false for a set filled only by copying whole slots in (nothing
+ * reads past the counts); the parser fills records field by field */
 static core_trust_set_t *core_trust_set_alloc(unsigned records,
-      unsigned hashes, unsigned newest)
+      unsigned hashes, unsigned newest, bool zero)
 {
    core_trust_set_t *s = (core_trust_set_t*)calloc(1, sizeof(*s));
    if (!s)
       return NULL;
-   s->records = (struct core_trust_record*)calloc(records + 1,
-         sizeof(*s->records));
-   s->hashes  = (uint8_t (*)[CORE_SHA256_LEN])calloc(hashes + 1,
-         CORE_SHA256_LEN);
-   s->newest  = (struct core_trust_newest*)calloc(newest + 1,
-         sizeof(*s->newest));
+   if (zero)
+   {
+      s->records = (struct core_trust_record*)calloc(records + 1,
+            sizeof(*s->records));
+      s->hashes  = (uint8_t (*)[CORE_SHA256_LEN])calloc(hashes + 1,
+            CORE_SHA256_LEN);
+      s->newest  = (struct core_trust_newest*)calloc(newest + 1,
+            sizeof(*s->newest));
+   }
+   else
+   {
+      s->records = (struct core_trust_record*)malloc((records + 1)
+            * sizeof(*s->records));
+      s->hashes  = (uint8_t (*)[CORE_SHA256_LEN])malloc((hashes + 1)
+            * CORE_SHA256_LEN);
+      s->newest  = (struct core_trust_newest*)malloc((newest + 1)
+            * sizeof(*s->newest));
+   }
    if (!s->records || !s->hashes || !s->newest)
    {
       core_trust_set_free(s);
@@ -213,11 +227,19 @@ static core_trust_set_t *core_trust_set_alloc(unsigned records,
    return s;
 }
 
-static core_trust_set_t *core_trust_set_clone(const core_trust_set_t *src)
+/* src with room for n (at least 1) more records and hashes, none past
+ * the caps: n changes on one clone */
+static core_trust_set_t *core_trust_set_clone_room(
+      const core_trust_set_t *src, unsigned n)
 {
-   core_trust_set_t *s = core_trust_set_alloc(src->num_records,
-         src->num_hashes, src->num_newest);
-   if (!s)
+   core_trust_set_t *s;
+   unsigned nr = src->num_records + n - 1;
+   unsigned nh = src->num_hashes  + n - 1;
+   if (nr > CORE_TRUST_MAX_RECORDS)
+      nr = CORE_TRUST_MAX_RECORDS;
+   if (nh > CORE_TRUST_MAX_HASHES)
+      nh = CORE_TRUST_MAX_HASHES;
+   if (!(s = core_trust_set_alloc(nr, nh, src->num_newest, false)))
       return NULL;
    memcpy(s->records, src->records, src->num_records * sizeof(*s->records));
    memcpy(s->hashes, src->hashes, src->num_hashes * CORE_SHA256_LEN);
@@ -227,6 +249,11 @@ static core_trust_set_t *core_trust_set_clone(const core_trust_set_t *src)
    s->num_newest  = src->num_newest;
    s->flags       = src->flags;
    return s;
+}
+
+static core_trust_set_t *core_trust_set_clone(const core_trust_set_t *src)
+{
+   return core_trust_set_clone_room(src, 1);
 }
 
 void core_trust_set_put(core_trust_set_t *s)
@@ -267,7 +294,7 @@ core_trust_t *core_trust_new(void)
    core_trust_t *t = (core_trust_t*)calloc(1, sizeof(*t));
    if (!t)
       return NULL;
-   if (!(t->cur = core_trust_set_alloc(0, 0, 0)))
+   if (!(t->cur = core_trust_set_alloc(0, 0, 0, true)))
    {
       free(t);
       return NULL;
@@ -505,18 +532,43 @@ bool core_trust_full_refuses(const core_trust_set_t *s,
 
 bool core_trust_always(core_trust_t *t, const struct core_check *c)
 {
-   core_trust_set_t *s;
-   bool known = core_trust_has_hash(t->cur, c->rec.sha256);
-   if (     !core_trust_always_takes(c)
-         || (!known && t->cur->num_hashes == CORE_TRUST_MAX_HASHES)
-         || !(s = core_trust_set_clone(t->cur)))
-      return false;
-   if (!known)
-      memcpy(s->hashes[s->num_hashes++], c->rec.sha256, CORE_SHA256_LEN);
-   if (core_trust_may_record(t->cur, &c->rec.id))
-      core_trust_put_record(s, &c->rec)->flags |= CORE_TRUST_RECORD_ANY_AGE;
-   core_trust_publish(t, s);
-   return true;
+   return core_trust_always_all(t, c, 1, NULL) == 1;
+}
+
+unsigned core_trust_always_all(core_trust_t *t, const struct core_check *c,
+      unsigned n, bool *took)
+{
+   unsigned i;
+   unsigned num        = 0;
+   core_trust_set_t *s = NULL;
+   for (i = 0; i < n; i++)
+   {
+      const core_trust_set_t *now = s ? s : t->cur;
+      bool known = core_trust_has_hash(now, c[i].rec.sha256);
+      bool ok    = core_trust_always_takes(&c[i])
+            && (known || now->num_hashes < CORE_TRUST_MAX_HASHES);
+      if (ok && !s && !(s = core_trust_set_clone_room(t->cur, n - i)))
+      {
+         if (took)
+            memset(took, 0, n * sizeof(*took));
+         return 0;
+      }
+      if (ok)
+      {
+         if (!known)
+            memcpy(s->hashes[s->num_hashes++], c[i].rec.sha256,
+                  CORE_SHA256_LEN);
+         if (core_trust_may_record(t->cur, &c[i].rec.id))
+            core_trust_put_record(s, &c[i].rec)->flags
+               |= CORE_TRUST_RECORD_ANY_AGE;
+         num++;
+      }
+      if (took)
+         took[i] = ok;
+   }
+   if (s)
+      core_trust_publish(t, s);
+   return num;
 }
 
 /* Kept in its slot, so the next write replaces the file's copy, but
@@ -746,7 +798,7 @@ enum core_trust_load core_trust_parse(core_trust_t *t,
          || nn > CORE_TRUST_MAX_NEWEST)
       goto damaged;
    /* Out of memory is not damage: the file stays */
-   if (!(s = core_trust_set_alloc(nr, nh, nn)))
+   if (!(s = core_trust_set_alloc(nr, nh, nn, true)))
       goto unreadable;
    s->flags = (unsigned)core_get_be(buf + 8, 4);
    p        = buf + CORE_TRUST_HEAD_LEN;
@@ -809,7 +861,7 @@ unreadable:
 
 bool core_trust_reset(core_trust_t *t)
 {
-   core_trust_set_t *s = core_trust_set_alloc(0, 0, 0);
+   core_trust_set_t *s = core_trust_set_alloc(0, 0, 0, true);
    if (!s)
       return false;
    core_trust_publish(t, s);
@@ -907,7 +959,7 @@ static core_trust_set_t *core_trust_merge(const core_trust_set_t *disk,
    unsigned changed = cur->flags ^ base->flags;
    unsigned i;
    core_trust_set_t *s = core_trust_set_alloc(CORE_TRUST_MAX_RECORDS,
-         CORE_TRUST_MAX_HASHES, CORE_TRUST_MAX_NEWEST);
+         CORE_TRUST_MAX_HASHES, CORE_TRUST_MAX_NEWEST, false);
    if (!s)
       return NULL;
    memcpy(s->records, disk->records, disk->num_records * sizeof(*s->records));

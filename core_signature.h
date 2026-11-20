@@ -152,6 +152,11 @@ struct core_hash
 };
 
 bool core_hash_init(struct core_hash *h);
+/* A hash fed by core_hash_update() rather than read from a file, for
+ * bytes passing through on their way into one: nothing to free but
+ * what core_hash_free() frees anyway */
+void core_hash_init_stream(struct core_hash *h);
+void core_hash_update(struct core_hash *h, const void *data, size_t len);
 /* 1 while there is more, 0 at the end, -1 on a read error */
 int core_hash_step(struct core_hash *h, core_file_t *f);
 /* Writes the digest and frees what init took. It is the file's only
@@ -250,6 +255,11 @@ void core_trust_set_put(core_trust_set_t *s);
  * drops its oldest build. */
 bool core_trust_apply(core_trust_t *t, const struct core_check *c);
 bool core_trust_always(core_trust_t *t, const struct core_check *c);
+/* core_trust_always() on each of the n checks at c, in order, on one
+ * copy of the set: how many it took, took[i] (or NULL) saying which.
+ * 0, changing nothing, when out of memory. */
+unsigned core_trust_always_all(core_trust_t *t, const struct core_check *c,
+      unsigned n, bool *took);
 /* Always refuses c on s only because the trusted hashes are full */
 bool core_trust_full_refuses(const core_trust_set_t *s,
       const struct core_check *c);

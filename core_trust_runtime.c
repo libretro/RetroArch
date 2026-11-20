@@ -479,16 +479,14 @@ static void core_trust_seed_cb(retro_task_t *task, void *task_data,
 {
    struct core_trust_seed *sd = (struct core_trust_seed*)task->state;
    core_trust_set_t *before;
-   unsigned i;
-   unsigned trusted           = 0;
+   unsigned trusted;
    if (!core_trust_rt.t || sd->gen != core_trust_rt.gen)
       return;
    core_trust_rt.seed_pending = false;
    /* Cut short at quit too: what it found is kept */
-   before = core_trust_get(core_trust_rt.t);
-   for (i = 0; i < sd->num_found; i++)
-      if (core_trust_always(core_trust_rt.t, &sd->found[i]))
-         trusted++;
+   before  = core_trust_get(core_trust_rt.t);
+   trusted = core_trust_always_all(core_trust_rt.t, sd->found,
+         sd->num_found, NULL);
    if (     trusted
          && !(core_trust_runtime_flags() & CORE_TRUST_NOTICE_SHOWN))
    {
@@ -605,6 +603,7 @@ static void core_trust_sweep_cb(retro_task_t *task, void *task_data,
 {
    struct core_trust_seed *sd = (struct core_trust_seed*)task->state;
    core_trust_set_t *before;
+   bool took[CORE_TRUST_SWEEP_WAIT_MAX];
    unsigned i, n;
    unsigned refused = 0;
    if (!core_trust_rt.t || sd->gen != core_trust_rt.gen)
@@ -617,9 +616,11 @@ static void core_trust_sweep_cb(retro_task_t *task, void *task_data,
       return;
    before = core_trust_get(core_trust_rt.t);
    core_trust_forget(core_trust_rt.t, sd->drop[0], sd->num_drop);
+   core_trust_always_all(core_trust_rt.t, core_trust_rt.sweep_wait, n,
+         took);
    for (i = 0; i < n; i++)
    {
-      if (core_trust_always(core_trust_rt.t, &core_trust_rt.sweep_wait[i]))
+      if (took[i])
          core_trust_session_add(core_trust_rt.sweep_wait[i].rec.sha256);
       else
          refused++;

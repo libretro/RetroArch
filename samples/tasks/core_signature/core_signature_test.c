@@ -448,6 +448,83 @@ static core_trust_t *fx_store(void)
    return t;
 }
 
+/* The batch takes exactly what one Always Trust per check would, in
+ * order, across a list that fills partway through */
+static void test_trust_always_all(void)
+{
+   enum { N = 120, PRE = CORE_TRUST_MAX_HASHES - 60 };
+   static struct core_check c[N];
+   bool took[N], seq[N];
+   core_trust_t *t = fx_store();
+   core_trust_t *u = fx_store();
+   core_trust_set_t *s0, *s1;
+   uint8_t *bt, *bu;
+   size_t lt = 0, lu = 0;
+   unsigned i, num, want = 0;
+   char name[32];
+   for (i = 0; i < PRE; i++)
+   {
+      check_of(&c[0], "pre_libretro.so", 9000 + i, 0, 0);
+      c[0].rec.sha256[0] = (uint8_t)i;
+      c[0].rec.sha256[1] = (uint8_t)(i >> 8);
+      c[0].rec.sha256[2] = 0xee;
+      CHECK(core_trust_always(t, &c[0]));
+      CHECK(core_trust_always(u, &c[0]));
+   }
+   for (i = 0; i < N; i++)
+   {
+      snprintf(name, sizeof(name), "b%u_libretro.so", i);
+      check_of(&c[i], name, 20000 + i, 0, 0);
+      c[i].rec.sha256[0] = (uint8_t)i;
+      c[i].rec.sha256[1] = 0x77;
+      /* A hash already trusted, one twice in the batch, and the three
+       * kinds Always refuses */
+      if (i == 3)
+         c[i].rec.sha256[2] = 0xee;
+      if (i == 9)
+         memcpy(c[i].rec.sha256, c[5].rec.sha256, CORE_SHA256_LEN);
+      if (i == 11)
+         c[i].result = CORE_CHECK_ERROR;
+      if (i == 12)
+         c[i].rec.name[0] = '\0';
+      if (i == 13)
+         c[i].rec.id.verity_len = CORE_ID_VERITY_MAX + 1;
+      /* Not recorded: another filesystem */
+      if (i == 14)
+         c[i].rec.id.dev = fx_dev + 1;
+   }
+   for (i = 0; i < N; i++)
+      if ((seq[i] = core_trust_always(t, &c[i])))
+         want++;
+   s0  = core_trust_get(u);
+   num = core_trust_always_all(u, c, N, took);
+   CHECK(num == want);
+   CHECK(want > 0 && want < N);
+   /* What it handed out before is as it was */
+   CHECK(core_trust_num_hashes(s0) == PRE);
+   core_trust_set_put(s0);
+   s1 = core_trust_get(u);
+   CHECK(core_trust_num_hashes(s1) == CORE_TRUST_MAX_HASHES);
+   core_trust_set_put(s1);
+   for (i = 0; i < N; i++)
+      CHECK(took[i] == seq[i]);
+   bt = core_trust_serialize(t, &lt);
+   bu = core_trust_serialize(u, &lu);
+   CHECK(bt && bu && lt == lu && !memcmp(bt, bu, lt));
+   free(bt);
+   free(bu);
+   /* Nothing to take: the same set, nothing published */
+   s0 = core_trust_get(u);
+   CHECK(core_trust_always_all(u, c, 0, NULL) == 0);
+   CHECK(core_trust_always_all(u, &c[11], 1, took) == 0 && !took[0]);
+   s1 = core_trust_get(u);
+   CHECK(s0 == s1);
+   core_trust_set_put(s0);
+   core_trust_set_put(s1);
+   core_trust_free(t);
+   core_trust_free(u);
+}
+
 /* One as RetroArch loads it, for records of the test's own files */
 static core_trust_t *real_store(void)
 {
@@ -2985,6 +3062,7 @@ int main(int argc, char *argv[])
    test_file_fd();
 #endif
    test_trust();
+   test_trust_always_all();
    test_trust_forget();
    test_trust_state();
    test_record_needs_hash();
