@@ -8923,8 +8923,8 @@ static bool d3d12_views_retire(d3d12_video_t *d3d12, d3d12_texture_t *t)
    return true;
 }
 
-static const char bloom_vs_source[] = "bloom_vs";
-static const char bloom_ps_source[] = "bloom_ps";
+static const char d3d12_bloom_vs_program[] = "bloom_vs";
+static const char d3d12_bloom_ps_program[] = "bloom_ps";
 
 static void d3d12_bloom_free(d3d12_video_t *d3d12)
 {
@@ -8965,9 +8965,9 @@ static unsigned gfx_display_d3d12_bloom_begin(void *data, unsigned dims,
    {
       D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = d3d12->effect_desc;
       D3DBlob vs = NULL, ps = NULL;
-      bool ok = d3d12_builtin_shader(d3d12, bloom_vs_source,
+      bool ok = d3d12_builtin_shader(d3d12, d3d12_bloom_vs_program,
             "VSMain", "vs_5_0", &vs)
-         && d3d12_builtin_shader(d3d12, bloom_ps_source,
+         && d3d12_builtin_shader(d3d12, d3d12_bloom_ps_program,
             "PSMain", "ps_5_0", &ps);
       if (ok)
       {

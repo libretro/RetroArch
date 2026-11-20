@@ -78,6 +78,16 @@ endif
 
 include Makefile.common
 
+# Set shader include paths before sanitizer flags snapshot CFLAGS/CXXFLAGS.
+ifeq ($(HAVE_PYROWAVE),1)
+PYROWAVE_GENERATED_DIR := $(OBJDIR)/pyrowave
+DEF_FLAGS += -I$(PYROWAVE_GENERATED_DIR)
+endif
+ifneq ($(filter 1,$(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
+D3D_SHADER_GENERATED_DIR := $(OBJDIR)/d3d-shaders
+DEF_FLAGS += -I$(D3D_SHADER_GENERATED_DIR)
+endif
+
 # Only version_git.c reads the commit hash: on every other command
 # line it would make a new commit miss ccache's direct mode.
 ifneq ($(GIT_VERSION),)
@@ -561,15 +571,11 @@ pyrowave-assets:
 .PHONY: pyrowave-assets
 
 ifeq ($(HAVE_PYROWAVE),1)
-PYROWAVE_GENERATED_DIR := $(OBJDIR)/pyrowave
 include Makefile.pyrowave
-DEF_FLAGS += -I$(PYROWAVE_GENERATED_DIR)
 $(OBJDIR)/record/record_pyrowave_source.o: $(PYROWAVE_GENERATED_HEADER)
 endif
 
 ifneq ($(filter 1,$(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
-D3D_SHADER_GENERATED_DIR := $(OBJDIR)/d3d-shaders
 include Makefile.d3d_shaders
-DEF_FLAGS += -I$(D3D_SHADER_GENERATED_DIR)
 $(OBJDIR)/gfx/common/d3d_builtin.o: $(D3D_SHADER_GENERATED_HEADER)
 endif

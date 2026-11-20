@@ -1220,8 +1220,8 @@ static void d3d11_update_texture(
  * DISPLAY DRIVER
  */
 
-static const char bloom_vs_source[] = "bloom_vs";
-static const char bloom_ps_source[] = "bloom_ps";
+static const char d3d11_bloom_vs_program[] = "bloom_vs";
+static const char d3d11_bloom_ps_program[] = "bloom_ps";
 #include "../common/menu_ribbon_shader.h"
 
 static INLINE void d3d11_release_shader(d3d11_shader_t* shader);
@@ -1253,11 +1253,11 @@ static unsigned gfx_display_d3d11_bloom_begin(void *data, unsigned dims,
    if (!d3d11->bloom.shader.vs)
    {
       D3D11_BLEND_DESC blend;
-      if (!d3d11_init_shader(d3d11->device, bloom_vs_source,
-               sizeof(bloom_vs_source), NULL, "VSMain", NULL, NULL,
+      if (!d3d11_init_shader(d3d11->device, d3d11_bloom_vs_program,
+               sizeof(d3d11_bloom_vs_program), NULL, "VSMain", NULL, NULL,
                NULL, 0, &d3d11->bloom.shader, D3D11_FEATURE_LEVEL_HINT_DONTCARE)
-            || !d3d11_init_shader(d3d11->device, bloom_ps_source,
-               sizeof(bloom_ps_source), NULL, NULL, "PSMain", NULL,
+            || !d3d11_init_shader(d3d11->device, d3d11_bloom_ps_program,
+               sizeof(d3d11_bloom_ps_program), NULL, NULL, "PSMain", NULL,
                NULL, 0, &d3d11->bloom.shader, D3D11_FEATURE_LEVEL_HINT_DONTCARE)
             || !d3d11->bloom.shader.vs || !d3d11->bloom.shader.ps)
          goto error;

@@ -801,9 +801,11 @@ VIDEO DRIVER
 #include "../gfx/drivers/d3d10.c"
 #endif
 
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
+#include "../gfx/common/d3d_builtin.c"
+#endif
 #if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12) \
  || (defined(HAVE_D3D9) && defined(HAVE_HLSL))
-#include "../gfx/common/d3d_builtin.c"
 #include "../gfx/common/d3dcompiler_common.c"
 #endif
 

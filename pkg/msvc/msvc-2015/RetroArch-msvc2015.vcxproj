@@ -384,6 +384,7 @@
   <ItemGroup>
     <ResourceCompile Include="..\..\..\media\rarch.rc" />
   </ItemGroup>
+  <Import Project="..\RetroArch.BuiltinShaders.targets" />
   <ItemGroup>
     <ClCompile Include="..\..\..\griffin\griffin.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">CompileAsC</CompileAs>

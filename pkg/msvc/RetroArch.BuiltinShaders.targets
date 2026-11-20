@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- These tools verify/embed committed artifacts; they do not compile shaders. -->
+  <PropertyGroup>
+    <RetroArchShaderRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\'))</RetroArchShaderRoot>
+    <RetroArchShaderIntermediateDir Condition="'$(IntDir)' != ''">$(IntDir)</RetroArchShaderIntermediateDir>
+    <RetroArchShaderIntermediateDir Condition="'$(IntDir)' == ''">$(Platform)\$(Configuration)\</RetroArchShaderIntermediateDir>
+    <RetroArchShaderGeneratedDir>$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(RetroArchShaderIntermediateDir)', 'builtin-shaders'))))\</RetroArchShaderGeneratedDir>
+    <RetroArchShaderPython Condition="'$(RetroArchShaderPython)' == ''">python</RetroArchShaderPython>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(RetroArchShaderGeneratedDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <RetroArchD3DShaderInputs Include="$(RetroArchShaderRoot)\tools\d3d_shader_embed.py;$(RetroArchShaderRoot)\tools\d3d_shader_sources.c;$(RetroArchShaderRoot)\tools\pyrowave_shaders.py;$(RetroArchShaderRoot)\tools\glsl_minify.py;$(RetroArchShaderRoot)\tools\spirv_optimize.py;$(RetroArchShaderRoot)\gfx\drivers\d3d_sm*_shaders\**\*;$(RetroArchShaderRoot)\gfx\common\menu_ribbon_shader.h;$(RetroArchShaderRoot)\gfx\drivers\menu_ribbon_shader.h;$(RetroArchShaderRoot)\gfx\common\xmb_plastic.h;$(RetroArchShaderRoot)\gfx\drivers\xmb_plastic.h;$(RetroArchShaderRoot)\gfx\drivers_shader\video_hdr.inc" />
+    <RetroArchPyroWaveShaderInputs Include="$(RetroArchShaderRoot)\tools\pyrowave_embed_shaders.py;$(RetroArchShaderRoot)\tools\pyrowave_shaders.py;$(RetroArchShaderRoot)\tools\glsl_minify.py;$(RetroArchShaderRoot)\tools\spirv_optimize.py;$(RetroArchShaderRoot)\libretro-common\formats\pyrowave\shaders\precompiled\*;$(RetroArchShaderRoot)\libretro-common\formats\pyrowave\shaders\*.hlsl" />
+    <FileWrites Include="$(RetroArchShaderGeneratedDir)d3d_builtin_data.h;$(RetroArchShaderGeneratedDir)rpyrowave_shaders.h" />
+  </ItemGroup>
+  <Target Name="RetroArchEmbedD3DShaders" BeforeTargets="ClCompile"
+          Inputs="@(RetroArchD3DShaderInputs)" Outputs="$(RetroArchShaderGeneratedDir)d3d_builtin_data.h">
+    <MakeDir Directories="$(RetroArchShaderGeneratedDir)" />
+    <Exec WorkingDirectory="$(RetroArchShaderRoot)"
+          Command="&quot;$(RetroArchShaderPython)&quot; &quot;$(RetroArchShaderRoot)\tools\d3d_shader_embed.py&quot; --output &quot;$(RetroArchShaderGeneratedDir)d3d_builtin_data.h&quot;" />
+  </Target>
+  <Target Name="RetroArchEmbedPyroWaveShaders" BeforeTargets="ClCompile"
+          Inputs="@(RetroArchPyroWaveShaderInputs)" Outputs="$(RetroArchShaderGeneratedDir)rpyrowave_shaders.h">
+    <MakeDir Directories="$(RetroArchShaderGeneratedDir)" />
+    <Exec WorkingDirectory="$(RetroArchShaderRoot)"
+          Command="&quot;$(RetroArchShaderPython)&quot; &quot;$(RetroArchShaderRoot)\tools\pyrowave_embed_shaders.py&quot; --output &quot;$(RetroArchShaderGeneratedDir)rpyrowave_shaders.h&quot;" />
+  </Target>
+</Project>

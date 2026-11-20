@@ -231,6 +231,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
   </ItemDefinitionGroup>
+  <Import Project="..\RetroArch.BuiltinShaders.targets" />
   <ItemGroup>
     <ClCompile Include="..\..\..\griffin\griffin.c">
       <CompileAsWinRT>false</CompileAsWinRT>

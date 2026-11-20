@@ -1160,8 +1160,8 @@ static bool d3d10_init_shader(
    return success;
 }
 
-static const char bloom_vs_source[] = "bloom_vs";
-static const char bloom_ps_source[] = "bloom_ps";
+static const char d3d10_bloom_vs_program[] = "bloom_vs";
+static const char d3d10_bloom_ps_program[] = "bloom_ps";
 #include "../common/menu_ribbon_shader.h"
 
 static void d3d10_bloom_free(d3d10_video_t *d3d10)
@@ -1191,11 +1191,11 @@ static unsigned gfx_display_d3d10_bloom_begin(void *data, unsigned dims,
    if (!d3d10->bloom.shader.vs)
    {
       D3D10_BLEND_DESC blend;
-      if (!d3d10_init_shader(d3d10->device, bloom_vs_source,
-               sizeof(bloom_vs_source), NULL, "VSMain", NULL, NULL,
+      if (!d3d10_init_shader(d3d10->device, d3d10_bloom_vs_program,
+               sizeof(d3d10_bloom_vs_program), NULL, "VSMain", NULL, NULL,
                NULL, 0, &d3d10->bloom.shader)
-            || !d3d10_init_shader(d3d10->device, bloom_ps_source,
-               sizeof(bloom_ps_source), NULL, NULL, "PSMain", NULL,
+            || !d3d10_init_shader(d3d10->device, d3d10_bloom_ps_program,
+               sizeof(d3d10_bloom_ps_program), NULL, NULL, "PSMain", NULL,
                NULL, 0, &d3d10->bloom.shader)
             || !d3d10->bloom.shader.vs || !d3d10->bloom.shader.ps)
          goto error;

@@ -1000,6 +1000,7 @@
   <ItemGroup>
     <ResourceCompile Include="..\..\..\media\rarch.rc" />
   </ItemGroup>
+  <Import Project="..\RetroArch.BuiltinShaders.targets" />
   <ItemGroup>
     <ClCompile Include="..\..\..\griffin\griffin.c">
       <CompileAs>CompileAsC</CompileAs>
