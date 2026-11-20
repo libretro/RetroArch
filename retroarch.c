@@ -136,6 +136,9 @@
 #ifdef HAVE_VULKAN
 #include "gfx/common/vulkan_common.h"
 #endif
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+#include "gfx/common/vulkan_custom_driver.h"
+#endif
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
@@ -220,9 +223,6 @@
 #include "verbosity.h"
 
 #include "gfx/video_driver.h"
-#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
-#include "gfx/common/vulkan_custom_driver.h"
-#endif
 #include "gfx/video_display_server.h"
 #ifdef HAVE_THREADS
 #include "gfx/video_thread_wrapper.h"
