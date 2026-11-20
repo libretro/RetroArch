@@ -1592,12 +1592,16 @@ static void fw_check_sub_cancel(const char *core, bool reprobe,
    bool cancelled;
 #ifdef CORE_LOAD_PATHS_WRAP
    unsigned probes;
+   unsigned entry = sysinfo_probes;
 #endif
    memset(&info, 0, sizeof(info));
    CHECK(task_push_load_content_from_playlist_from_menu(core, game,
             "fw", &info, NULL, NULL), "the playlist Run was not started");
 #ifdef CORE_LOAD_PATHS_WRAP
+   /* A Run whose core is checked on its way in (every Run on Windows)
+    * probes nothing, so nothing is written over to probe again */
    probes    = sysinfo_probes;
+   reprobe   = reprobe && probes != entry;
 #endif
    cancelled = fw_cancelled();
    fw_record(&fw_now);
