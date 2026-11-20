@@ -193,7 +193,7 @@ jobs:
     name: Desktop headset output with the in-tree loader
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential pkg-config libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libx11-dev libx11-xcb-dev libxext-dev libxrandr-dev libxinerama-dev libxxf86vm-dev libxv-dev libxkbcommon-dev libwayland-dev wayland-protocols libdrm-dev libgbm-dev libasound2-dev libpulse-dev libudev-dev libusb-1.0-0-dev libvulkan-dev libdbus-1-dev zlib1g-dev cmake ninja-build xvfb xauth openbox weston mesa-vulkan-drivers
+      APT_PKGS: build-essential pkg-config libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libx11-dev libx11-xcb-dev libxext-dev libxrandr-dev libxinerama-dev libxxf86vm-dev libxv-dev libxcursor-dev libxi-dev libxfixes-dev libxss-dev libxtst-dev libxkbcommon-dev libwayland-dev wayland-protocols libdrm-dev libgbm-dev libasound2-dev libpulse-dev libudev-dev libusb-1.0-0-dev libvulkan-dev libdbus-1-dev zlib1g-dev cmake ninja-build xvfb xauth openbox weston mesa-vulkan-drivers
     timeout-minutes: 30
 
     steps:
@@ -232,11 +232,11 @@ jobs:
           # For the SDL3 contexts' native windows below; the runner image
           # ships no libsdl3-dev. samples-gfx's recipe, with GL and
           # Vulkan.
-          SDL3_VER=3.2.20
+          SDL3_VER=3.4.20
           if [ ! -f /opt/sdl3/lib/pkgconfig/sdl3.pc ]; then
              curl -fsSL --retry 3 -o /tmp/sdl3.tar.gz \
                 "https://github.com/libsdl-org/SDL/releases/download/release-$SDL3_VER/SDL3-$SDL3_VER.tar.gz"
-             echo "467600ae090dd28616fa37369faf4e3143198ff1da37729b552137e47f751a67  /tmp/sdl3.tar.gz" \
+             echo "f3bb06f55bed9557227a700af2ea62e49497ebdf58037732a731a5fb3ef8581f  /tmp/sdl3.tar.gz" \
                 | sha256sum -c -
              tar -C /tmp -xzf /tmp/sdl3.tar.gz
              cmake -S "/tmp/SDL3-$SDL3_VER" -B /tmp/sdl3-build -G Ninja \
@@ -248,6 +248,9 @@ jobs:
              ninja -C /tmp/sdl3-build > /tmp/sdl3-build.log
              sudo ninja -C /tmp/sdl3-build install > /tmp/sdl3-install.log
           fi
+          # video_screens_test checks sizes strictly only on SDL 3.4+.
+          PKG_CONFIG_PATH=/opt/sdl3/lib/pkgconfig pkg-config --atleast-version=3.4.0 sdl3 \
+             || { echo "::error::SDL3 below 3.4: video_screens_test would loosen its size checks"; exit 1; }
           echo "PKG_CONFIG_PATH=/opt/sdl3/lib/pkgconfig" >> "$GITHUB_ENV"
           echo "LD_LIBRARY_PATH=/opt/sdl3/lib" >> "$GITHUB_ENV"
 
