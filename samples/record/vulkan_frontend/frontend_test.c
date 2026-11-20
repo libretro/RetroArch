@@ -445,7 +445,7 @@ static void hevc_admission(void)
    assert(!record_vulkan.init(&params) && !starts);
    reset(&params); device.hevc = true; profile = "vcodec = h264\nvideo_bit_depth = 10\n";
    assert(!record_vulkan.init(&params) && !starts);
-   reset(&params); device.hevc = true; profile = "vcodec = hevc\n"; hdr.output_mode = 1;
+   reset(&params); device.hevc = true; profile = "vcodec = h264\n"; hdr.output_mode = 1;
    assert(!record_vulkan.init(&params) && !starts);
 }
 static void hdr_lifecycle(void)
@@ -458,7 +458,7 @@ static void hdr_lifecycle(void)
    {
       reset(&params);
       device.hevc = true;
-      profile = "vcodec = hevc\nvideo_bit_depth = 10\n";
+      params.config = "";
       hdr.output_mode = mode;
       c = (record_vk_context_t*)record_vulkan.init(&params);
       assert(c && starts == 1 && c->output_mode == mode);

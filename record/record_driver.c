@@ -303,12 +303,28 @@ bool recording_driver_streaming_mode_supported(const char *ident, unsigned mode)
    return true;
 }
 
+static const char *recording_capture_driver(const char *ident)
+{
+#if defined(HAVE_RECORD_NVENC) && defined(HAVE_RECORD_VULKAN)
+   if (string_is_equal(ident, "nvenc"))
+   {
+      video_device_info_t device;
+      if (video_driver_get_device(&device)
+            && device.api == VIDEO_DEVICE_VULKAN
+            && (device.recording_caps & VIDEO_DEVICE_CAP_VULKAN_ENCODE)
+            && device.recording)
+         return "vulkan";
+   }
+#endif
+   return ident;
+}
+
 static void find_record_driver(void)
 {
    settings_t *settings = config_get_ptr();
    int i                = (int)driver_find_index(
          "record_driver",
-         settings->arrays.record_driver);
+         recording_capture_driver(settings->arrays.record_driver));
 
    if (i >= 0)
       recording_state.driver = (const record_driver_t*)record_drivers[i];
@@ -456,7 +472,8 @@ bool recording_init(void)
 #else
    const char *lan_target = NULL;
 #endif
-   const char *capture_driver = lan_target ? "pyrowave" : settings->arrays.record_driver;
+   const char *capture_driver = lan_target ? "pyrowave"
+      : recording_capture_driver(settings->arrays.record_driver);
    bool nvenc_native = string_is_equal(capture_driver, "nvenc");
    bool metal_native = string_is_equal(capture_driver, "metal");
    bool mc_native = string_is_equal(capture_driver, "mediacodec");

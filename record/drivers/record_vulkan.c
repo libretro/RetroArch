@@ -198,7 +198,7 @@ static bool rvk_rate(double fps, unsigned *num, unsigned *den)
    return false;
 }
 static bool rvk_config(const char *path, bool *audio, unsigned *qp, bool *hevc, unsigned *depth,
-      bool streaming, bool *legacy)
+      bool streaming, bool *legacy, bool hdr_output)
 {
    config_file_t *config;
    struct config_file_entry entry;
@@ -206,8 +206,8 @@ static bool rvk_config(const char *path, bool *audio, unsigned *qp, bool *hevc, 
    bool ok = false;
    *audio = true;
    *qp = 24;
-   *hevc = false;
-   *depth = 8;
+   *hevc = hdr_output;
+   *depth = hdr_output ? 10 : 8;
    *legacy = false;
    if (!path || !*path)
       return true;
@@ -229,6 +229,7 @@ static bool rvk_config(const char *path, bool *audio, unsigned *qp, bool *hevc, 
       if (!config_get_array(config, "vcodec", text, sizeof(text)))
          goto done;
       *hevc = string_is_equal(text, "hevc");
+      *depth = *hevc && hdr_output ? 10 : 8;
    }
    if (config_get_entry(config, "video_bit_depth")
          && (!config_get_uint(config, "video_bit_depth", depth)
@@ -348,8 +349,13 @@ static void *rvk_init(const struct record_params *params)
       RARCH_ERR("[Vulkan recording] Streaming requires a native RTMP build and an RTMP/RTMPS URL.\n");
       return NULL;
    }
+   memset(&hdr, 0, sizeof(hdr));
+   hdr.version = 1;
+   hdr.size = sizeof(hdr);
+   if (!video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr))
+      return NULL;
    if (!params->video_gpu_record || settings->bools.video_record_game_only || audio_driver_has_callback()
-         || !rvk_rate(params->fps, &num, &den) || !rvk_config(params->config, &audio, &qp, &hevc, &depth, streaming, &legacy))
+         || !rvk_rate(params->fps, &num, &den) || !rvk_config(params->config, &audio, &qp, &hevc, &depth, streaming, &legacy, hdr.output_mode != 0))
    {
       RARCH_ERR("[Vulkan recording] Requires viewport capture, synchronous audio and a native MP4/FLV profile.\n");
       return NULL;
@@ -368,15 +374,11 @@ static void *rvk_init(const struct record_params *params)
    }
    if (snapshot->device != device.device || !snapshot->queue || !snapshot->get_proc)
       return NULL;
-   memset(&hdr, 0, sizeof(hdr));
-   hdr.version = 1;
-   hdr.size = sizeof(hdr);
-   if (!video_driver_get_display_metadata(RETRO_ENVIRONMENT_GET_HDR_METADATA, &hdr)
-         || hdr.output_mode > 2
+   if (hdr.output_mode > 2
          || (hdr.output_mode && (!hevc || depth != 10))
          || (!hdr.output_mode && settings->uints.video_swapchain_bit_depth == 2))
    {
-      RARCH_ERR("[Vulkan recording] %s capture requires SDR 8-bit output.\n", hevc ? "HEVC" : "H.264");
+      RARCH_ERR("[Vulkan recording] %s profile is incompatible with the display output; HDR requires HEVC 10-bit.\n", hevc ? "HEVC" : "H.264");
       return NULL;
    }
    if (!VIDEO_SCALE_W(params->out_dims) || !VIDEO_SCALE_H(params->out_dims)
