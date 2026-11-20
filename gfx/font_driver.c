@@ -2479,22 +2479,24 @@ static void font_bidi_emit(font_bidi_emit_t *e, size_t i0, size_t i1,
    }
 }
 
-static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
-      unsigned char *s, size_t len, size_t *out_len)
+/* font_driver_reshape_msg() for a msg whose first right-to-left
+ * character is at eol */
+static INLINE char* font_driver_reshape_rtl(const char* msg, size_t msg_len,
+      const unsigned char *eol, unsigned char *s, size_t len,
+      size_t *out_len)
 {
    unsigned char        lv[FONT_BIDI_MAX_CHARS];
    font_bidi_emit_t     e;
    const unsigned char *line = (const unsigned char*)msg;
    const unsigned char *end  = line + msg_len;
-   const unsigned char *eol  = font_msg_find_rtl(msg, msg_len);
 
-   /* Nothing right-to-left: hand back the input and skip both the walk
-    * and the copy into s. This is every English HUD string, including
-    * the statistics overlay. */
-   if (eol == end || !len)
+   /* A message after U+202D LEFT-TO-RIGHT OVERRIDE is already in visual
+    * order: drawn as given, without the mark */
+   if (     msg_len >= 3 && line[0] == 0xE2 && line[1] == 0x80
+         && line[2] == 0xAD)
    {
-      *out_len = msg_len;
-      return (char*)msg;
+      *out_len = msg_len - 3;
+      return (char*)msg + 3;
    }
 
    /* Output is at most 1.5 times its input, two bytes of Arabic making
@@ -2518,7 +2520,8 @@ static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
    /* The lines before the first right-to-left one go out as typed */
    while (eol > line && eol[-1] != '\n')
       eol--;
-   font_bidi_copy(&e, line, eol);
+   if (eol > line)
+      font_bidi_copy(&e, line, eol);
    line = eol;
 
    for (;;)
@@ -2556,6 +2559,62 @@ static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
    return (char*)s;
 }
 
+static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
+      unsigned char *s, size_t len, size_t *out_len)
+{
+   const unsigned char *eol = font_msg_find_rtl(msg, msg_len);
+
+   /* Nothing right-to-left: hand back the input and skip both the walk
+    * and the copy into s. This is every English HUD string, including
+    * the statistics overlay. */
+   if (eol == (const unsigned char*)msg + msg_len || !len)
+   {
+      *out_len = msg_len;
+      return (char*)msg;
+   }
+   return font_driver_reshape_rtl(msg, msg_len, eol, s, len, out_len);
+}
+
+size_t font_driver_layout_line(const char *msg, size_t msg_len,
+      char *s, size_t len, bool *rtl)
+{
+   const unsigned char *p   = (const unsigned char*)msg;
+   const unsigned char *end = p + msg_len;
+   const unsigned char *eol = p;
+   size_t               out_len;
+
+   /* Not font_msg_find_rtl(): this runs once per label, and a second
+    * caller would keep that scan from being inlined into the drawing
+    * path */
+   while (eol < end && !IS_RTL(eol))
+      eol++;
+   *rtl = false;
+   if (     eol == end
+         || len < FONT_LAYOUT_LINE_SIZE
+         || msg_len + msg_len / 2 + 1 > len
+         || memchr(msg, '\n', msg_len)
+         || (msg_len >= 3 && p[0] == 0xE2 && p[1] == 0x80 && p[2] == 0xAD))
+      return 0;
+
+   /* The first strong character sets the line's direction */
+   while (p < end)
+   {
+      unsigned      k = font_bidi_char_len(p, end);
+      unsigned char c = font_bidi_class(p, k);
+      if (c <= FONT_BIDI_AL)
+      {
+         *rtl = (c != FONT_BIDI_L);
+         break;
+      }
+      p += k;
+   }
+
+   /* The buffer is big enough that nothing is cut */
+   font_driver_reshape_rtl(msg, msg_len, eol, (unsigned char*)s, len,
+         &out_len);
+   return out_len;
+}
+
 #endif
 
 void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
@@ -2577,7 +2636,7 @@ void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
 #ifdef HAVE_LANGEXTRA
       /* It needs to be this big because of the Statistics text
        * unfortunately */
-      unsigned char tmp_buffer[1536];
+      unsigned char tmp_buffer[FONT_LAYOUT_LINE_SIZE];
       size_t        new_msg_len     = 0;
       char         *new_msg         = font_driver_reshape_msg(msg, msg_len,
             tmp_buffer, sizeof(tmp_buffer), &new_msg_len);
