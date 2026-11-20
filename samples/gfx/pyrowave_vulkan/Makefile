@@ -4,7 +4,7 @@ COMMON := $(RA)/libretro-common
 TARGET := pyrowave_vulkan_test$(EXE)
 ASSETDIR ?= .pyrowave-shaders
 PYTHON ?= python3
-CFLAGS += -O2 -std=c89 -pedantic -Wall -Wextra -Werror -I$(COMMON)/include -I$(ASSETDIR)
+CFLAGS += -I$(ASSETDIR) -O2 -std=c89 -pedantic -Wall -Wextra -Werror -I$(COMMON)/include
 SRC := pyrowave_vulkan_test.c $(RA)/record/record_pyrowave_vulkan.c \
        $(RA)/record/record_gpu_queue.c $(COMMON)/queues/retro_spsc.c \
        $(COMMON)/formats/pyrowave/rpyrowave.c $(COMMON)/formats/pyrowave/rpyrowave_image.c \

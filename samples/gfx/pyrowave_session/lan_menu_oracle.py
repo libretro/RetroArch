@@ -13,7 +13,8 @@ import time
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--retroarch', type=Path, required=True)
 p.add_argument('--core', type=Path, required=True)
-p.add_argument('--shader-directory', type=Path, required=True)
+p.add_argument('--shader-directory', type=Path)
+p.add_argument('--embedded-shaders', action='store_true')
 p.add_argument('--backend', choices=('glcore', 'vulkan', 'd3d12'), default='glcore')
 p.add_argument('--media', type=Path)
 p.add_argument('--pixels', action='store_true')
@@ -26,6 +27,8 @@ p.add_argument('--threaded', action='store_true')
 p.add_argument('--audio-driver', default='null')
 p.add_argument('--output', type=Path, required=True)
 a = p.parse_args()
+if not a.embedded_shaders and not a.shader_directory:
+    p.error('Pass --embedded-shaders or --shader-directory')
 a.output.mkdir(parents=True, exist_ok=True)
 clients = []
 
@@ -123,7 +126,8 @@ try:
             'network_cmd_enable = "true"', 'network_cmd_bind_address = "127.0.0.1"',
             'network_cmd_port = "' + str(port) + '"', 'record_driver = "' + a.record_driver + '"',
             'pyrowave_discovery_enable = "false"', 'pyrowave_device_name = "' + name + '"',
-            'pyrowave_shader_directory = "' + a.shader_directory.resolve().as_posix() + '"',
+            'pyrowave_shader_directory = "' + ('' if a.embedded_shaders else a.shader_directory.resolve().as_posix()) + '"',
+            'assets_directory = "' + (a.output.resolve() / 'absent-assets').as_posix() + '"',
         ]) + '\n', encoding='utf-8')
         path = a.output / (name + '.log'); log = path.open('w', encoding='utf-8')
         startup = None

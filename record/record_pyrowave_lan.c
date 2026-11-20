@@ -3,6 +3,7 @@
 #include "../config.h"
 #endif
 #include "record_pyrowave_lan.h"
+#include "record_pyrowave_source.h"
 #include "../configuration.h"
 #include <string.h>
 #include <compat/strl.h>
@@ -14,8 +15,8 @@ bool record_pyrowave_lan_directory(char *directory, size_t size)
    if (!directory || !size || !settings) return false;
    if (*settings->paths.directory_pyrowave_shaders)
       return strlcpy(directory, settings->paths.directory_pyrowave_shaders, size) < size;
-   if (!*settings->paths.directory_assets) return false;
-   return fill_pathname_join(directory, settings->paths.directory_assets, "pyrowave", size) < size;
+   directory[0] = '\0';
+   return true;
 }
 
 #if defined(HAVE_THREADS) && defined(HAVE_CONFIGFILE) && (defined(__linux__) || defined(__APPLE__) \
@@ -132,12 +133,16 @@ static bool pyrowave_lan_assets(void)
    memset(&device, 0, sizeof(device));
    if (!video_driver_get_device(&device)) return false;
    extension = device.api == VIDEO_DEVICE_OPENGL ? "comp" :
-      device.api == VIDEO_DEVICE_VULKAN ? "spv" : "hlsl";
+      device.api == VIDEO_DEVICE_VULKAN ? "spv" : (*pyrowave_lan.directory ? "hlsl" : "dxbc");
    for (i = 0; i < 3; i++)
    {
       char name[24];
       snprintf(name, sizeof(name), "%s.%s", names[i], extension);
-      if (fill_pathname_join(path, pyrowave_lan.directory, name, sizeof(path)) >= sizeof(path)
+      if (!*pyrowave_lan.directory)
+      {
+         if (!record_pyrowave_source_shader_available(name)) return false;
+      }
+      else if (fill_pathname_join(path, pyrowave_lan.directory, name, sizeof(path)) >= sizeof(path)
             || !path_is_valid(path)) return false;
    }
    return true;

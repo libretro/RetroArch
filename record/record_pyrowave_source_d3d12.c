@@ -28,21 +28,42 @@ static record_pyrowave_d3d12_t *record_pyrowave_source_d12_create(
 {
    static const char *const names[3] = { "color.hlsl", "dwt.hlsl", "packet.hlsl" };
    record_pyrowave_d3d12_config_t cfg;
+   record_pyrowave_shader_t shaders[3];
    ID3DBlob *blobs[3] = { NULL, NULL, NULL };
    record_pyrowave_d3d12_t *codec = NULL;
    unsigned i;
    if (!config) return NULL;
    memset(&cfg, 0, sizeof(cfg));
-   for (i = 0; i < 3; i++)
+   memset(shaders, 0, sizeof(shaders));
+   if (config->directory && *config->directory)
    {
-      void *text = NULL;
-      size_t bytes = 0;
-      if (!record_pyrowave_source_shader(config->directory, names[i], &text, &bytes)) goto done;
-      if (!d3d_compile((const char*)text, bytes, names[i], "main", "cs_5_0", &blobs[i]))
-      { free(text); goto done; }
-      free(text);
-      cfg.shaders[i] = ID3D10Blob_GetBufferPointer(blobs[i]);
-      cfg.shader_bytes[i] = ID3D10Blob_GetBufferSize(blobs[i]);
+      for (i = 0; i < 3; i++)
+      {
+         record_pyrowave_shader_t text;
+         if (!record_pyrowave_source_shader(config->directory, names[i], &text)) goto done;
+         if (!d3d_compile((const char*)text.data, text.bytes, names[i], "main", "cs_5_0", &blobs[i]))
+         { record_pyrowave_source_shader_release(&text); goto done; }
+         record_pyrowave_source_shader_release(&text);
+         cfg.shaders[i] = ID3D10Blob_GetBufferPointer(blobs[i]);
+         cfg.shader_bytes[i] = ID3D10Blob_GetBufferSize(blobs[i]);
+      }
+   }
+   else
+   {
+      static const char *const dxil[3] = { "color.dxil", "dwt.dxil", "packet.dxil" };
+      static const char *const dxbc[3] = { "color.dxbc", "dwt.dxbc", "packet.dxbc" };
+      const char *const *compiled = dxbc;
+      D3D12_FEATURE_DATA_SHADER_MODEL model;
+      if (!config->device) goto done;
+      model.HighestShaderModel = D3D_SHADER_MODEL_6_0;
+      if (SUCCEEDED(ID3D12Device_CheckFeatureSupport((ID3D12Device*)config->device,
+                  D3D12_FEATURE_SHADER_MODEL, &model, sizeof(model)))
+            && model.HighestShaderModel >= D3D_SHADER_MODEL_6_0) compiled = dxil;
+      for (i = 0; i < 3; i++)
+      {
+         if (!record_pyrowave_source_shader(NULL, compiled[i], &shaders[i])) goto done;
+         cfg.shaders[i] = shaders[i].data; cfg.shader_bytes[i] = shaders[i].bytes;
+      }
    }
    cfg.device = (ID3D12Device*)config->device;
    cfg.serialize = D3D12SerializeRootSignature;
@@ -58,7 +79,11 @@ static record_pyrowave_d3d12_t *record_pyrowave_source_d12_create(
    codec = record_pyrowave_d3d12_new(&cfg);
 
 done:
-   for (i = 0; i < 3; i++) if (blobs[i]) ID3D10Blob_Release(blobs[i]);
+   for (i = 0; i < 3; i++)
+   {
+      if (blobs[i]) ID3D10Blob_Release(blobs[i]);
+      record_pyrowave_source_shader_release(&shaders[i]);
+   }
    return codec;
 }
 

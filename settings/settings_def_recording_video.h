@@ -52,6 +52,6 @@ S_STRING(pyrowave_device_name, PYROWAVE_DEVICE_NAME,
 S_DIR(directory_pyrowave_shaders, PYROWAVE_SHADER_DIRECTORY,
       "pyrowave_shader_directory", "", DIRECTORY_DEFAULT, SD_FLAG_ADVANCED, 0,
       directory_action_start_generic,
-      "PyroWave Shader Directory", "Optional shader folder. The default is the pyrowave folder inside the assets directory.")
+      "PyroWave Shader Directory", "Optional development override. Leave empty to use the shaders embedded in RetroArch.")
 #endif
 #endif

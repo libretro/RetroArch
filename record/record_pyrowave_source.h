@@ -29,9 +29,18 @@ typedef struct record_pyrowave_source
 } record_pyrowave_source_t;
 
 RETRO_BEGIN_DECLS
-/* Cold file load, bounded to 1 MiB. Success transfers malloc-owned bytes. */
+typedef struct record_pyrowave_shader
+{
+   const void *data;
+   size_t bytes;
+   void *owned;
+} record_pyrowave_shader_t;
+/* Empty directory borrows immutable executable data. An explicit override loads
+ * at most 1 MiB. Release after the native compiler/module has consumed it. */
 bool record_pyrowave_source_shader(const char *directory, const char *name,
-      void **data, size_t *bytes);
+      record_pyrowave_shader_t *shader);
+void record_pyrowave_source_shader_release(record_pyrowave_shader_t *shader);
+bool record_pyrowave_source_shader_available(const char *name);
 /* Owning desktop GL context, including poll/free and framebuffer capture. */
 bool record_pyrowave_source_gl_new(record_pyrowave_source_t *source,
       const record_pyrowave_source_config_t *config);

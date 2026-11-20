@@ -432,3 +432,6 @@ samples/runahead/lifetime/windows/
 /samples/audio/pyrowave_presentation/obj-msvc/
 /samples/audio/lend_write/obj-pyrowave/
 /samples/audio/lend_write/pyrowave_output_test
+
+/.pyrowave-shaders/
+/samples/gfx/pyrowave_session/.pyrowave-shaders/

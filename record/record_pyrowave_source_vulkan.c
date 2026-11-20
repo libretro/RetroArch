@@ -161,11 +161,12 @@ static record_pyrowave_vulkan_t *record_pyrowave_source_vk_codec(
    VkPhysicalDeviceMemoryProperties memory;
    VkFormatProperties format;
    VkQueueFamilyProperties *families = NULL;
-   void *shaders[3] = { NULL, NULL, NULL };
+   record_pyrowave_shader_t shaders[3];
    uint32_t count = 0;
    unsigned i;
    if (!config || !config->device || !config->physical || !config->instance
          || !config->queue || !config->instance_proc || !config->slots || config->slots > RECORD_GPU_QUEUE_SLOTS) return NULL;
+   memset(shaders, 0, sizeof(shaders));
    memset(&cfg, 0, sizeof(cfg));
    instance_proc = (PFN_vkGetInstanceProcAddr)config->instance_proc;
    device_proc = (PFN_vkGetDeviceProcAddr)instance_proc((VkInstance)config->instance, "vkGetDeviceProcAddr");
@@ -188,10 +189,9 @@ static record_pyrowave_vulkan_t *record_pyrowave_source_vk_codec(
    if (!(cfg.queue_flags & VK_QUEUE_COMPUTE_BIT)) return NULL;
    for (i = 0; i < 3; i++)
    {
-      size_t bytes;
-      if (!record_pyrowave_source_shader(config->directory, names[i], &shaders[i], &bytes)
-            || bytes % 4 || bytes < 20 || ((const uint32_t*)shaders[i])[0] != 0x07230203u) goto done;
-      cfg.shaders[i] = (const uint32_t*)shaders[i]; cfg.shader_bytes[i] = bytes;
+      if (!record_pyrowave_source_shader(config->directory, names[i], &shaders[i])
+            || shaders[i].bytes % 4 || shaders[i].bytes < 20 || ((const uint32_t*)shaders[i].data)[0] != 0x07230203u) goto done;
+      cfg.shaders[i] = (const uint32_t*)shaders[i].data; cfg.shader_bytes[i] = shaders[i].bytes;
    }
    cfg.get_proc = device_proc; cfg.device = (VkDevice)config->device; cfg.queue = (VkQueue)config->queue;
    cfg.scale_source = config->scale_source;
@@ -204,7 +204,7 @@ static record_pyrowave_vulkan_t *record_pyrowave_source_vk_codec(
    cfg.decode = decode;
    codec = record_pyrowave_vulkan_new(&cfg);
 done:
-   for (i = 0; i < 3; i++) free(shaders[i]);
+   for (i = 0; i < 3; i++) record_pyrowave_source_shader_release(&shaders[i]);
    return codec;
 }
 

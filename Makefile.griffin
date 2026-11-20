@@ -1417,3 +1417,9 @@ endif
 
 print-%:
 	@echo '$*=$($*)'
+
+ifeq ($(HAVE_PYROWAVE),1)
+include Makefile.pyrowave
+CFLAGS += -I$(PYROWAVE_GENERATED_DIR)
+griffin/griffin.o: $(PYROWAVE_GENERATED_HEADER)
+endif

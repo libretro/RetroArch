@@ -262,7 +262,7 @@ static bool record_pyrowave_open_codec(const struct record_params *params,
 {
    record_pyrowave_source_config_t cfg;
    config_file_t *file;
-   char directory[1024];
+   char directory[1024] = { 0 };
    bool audio = true, ok = false;
    if (c->frontend && (!config_get_ptr()->bools.audio_enable
             || !strcmp(config_get_ptr()->arrays.audio_driver, "null"))) audio = false;
@@ -273,7 +273,8 @@ static bool record_pyrowave_open_codec(const struct record_params *params,
    {
       file = config_file_new_from_path_to_string(params->config);
       if (!file) return false;
-      if (!config_get_array(file, "pyrowave_shader_directory", directory, sizeof(directory))) goto done;
+      if (config_get_entry(file, "pyrowave_shader_directory")
+            && !config_get_array(file, "pyrowave_shader_directory", directory, sizeof(directory))) goto done;
    }
    else if (!record_pyrowave_lan_directory(directory, sizeof(directory))) return false;
    if (file && config_get_entry(file, "pyrowave_maximum_bytes")

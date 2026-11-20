@@ -6,7 +6,7 @@ PYTHON ?= python3
 ASSETDIR ?= .pyrowave-shaders
 SHADERS ?= $(ASSETDIR)/color.comp $(ASSETDIR)/dwt.comp $(ASSETDIR)/packet.comp
 SHADER_SOURCE := $(COMMON)/formats/pyrowave/shaders
-CFLAGS += -O2 -std=c89 -pedantic -Wall -Wextra -Werror -DHAVE_OPENGL -DHAVE_OPENGL_CORE \
+CFLAGS += -I$(ASSETDIR) -O2 -std=c89 -pedantic -Wall -Wextra -Werror -DHAVE_OPENGL -DHAVE_OPENGL_CORE \
           -I$(COMMON)/include
 SRC := pyrowave_gl_test.c $(RA)/record/record_pyrowave_gl.c \
        $(RA)/record/record_gpu_queue.c $(COMMON)/queues/retro_spsc.c \
@@ -35,7 +35,7 @@ endif
 
 all: $(TARGET)
 
-$(TARGET): $(SRC) $(VFS_OBJ) pyrowave_gl_receive_test.h pyrowave_gl_player_test.h pyrowave_gl_scrgb_test.h $(RA)/record/record_pyrowave_gl.h
+$(TARGET): $(ASSETDIR)/rpyrowave_shaders.h $(SRC) $(VFS_OBJ) pyrowave_gl_receive_test.h pyrowave_gl_player_test.h pyrowave_gl_scrgb_test.h $(RA)/record/record_pyrowave_gl.h
 	$(CC) $(CFLAGS) $(SRC) $(VFS_OBJ) $(LDFLAGS) $(LDLIBS) -o $@
 
 # Existing VFS helpers use GNU extensions; codec, factory and oracle stay C89.

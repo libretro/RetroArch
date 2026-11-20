@@ -10,7 +10,8 @@ endif
 TARGET := pyrowave_d3d12_test.exe
 SHADERDIR ?= .pyrowave-dxbc
 FXC ?= fxc
-CFLAGS += -O2 -std=c89 -pedantic -Wall -Wextra -Werror -I$(COMMON)/include
+PYTHON ?= python3
+CFLAGS += -I$(SHADERDIR) -O2 -std=c89 -pedantic -Wall -Wextra -Werror -I$(COMMON)/include
 LDLIBS += -ld3d12 -ldxgi -ldxguid -lm
 SRC := pyrowave_d3d12_test.c $(RA)/record/record_pyrowave_d3d12.c \
        $(RA)/record/record_pyrowave_session.c $(RA)/record/record_pyrowave_pcm.c \
@@ -34,7 +35,7 @@ all: $(TARGET)
 $(TARGET): $(SRC) $(RA)/record/record_pyrowave_d3d12.h pyrowave_d3d12_session_test.h
 	$(CC) $(CFLAGS) $(SRC) $(LDFLAGS) $(LDLIBS) -o $@
 
-$(PLAYER): $(SRC) $(PLAYER_SRC) $(VFS_OBJ) pyrowave_d3d12_player_test.h \
+$(PLAYER): $(SHADERDIR)/rpyrowave_shaders.h $(SRC) $(PLAYER_SRC) $(VFS_OBJ) pyrowave_d3d12_player_test.h \
       $(RA)/record/record_pyrowave_player_d3d12.h
 	$(CC) $(CFLAGS) -DHAVE_D3D12 -DPYROWAVE_PLAYER_FACTORY -I$(RA)/gfx/include $(SRC) $(PLAYER_SRC) $(VFS_OBJ) $(LDFLAGS) $(LDLIBS) -ld3dcompiler -o $@
 
@@ -42,6 +43,12 @@ $(PLAYER): $(SRC) $(PLAYER_SRC) $(VFS_OBJ) pyrowave_d3d12_player_test.h \
 $(VFS_OBJ): $(PLAYERDIR)/%.o: $(COMMON)/%.c
 	mkdir -p $(dir $@)
 	$(CC) $(filter-out -pedantic -Werror,$(CFLAGS)) -std=gnu99 -D_GNU_SOURCE -c $< -o $@
+
+$(SHADERDIR)/rpyrowave_shaders.h: $(RA)/tools/pyrowave_embed_shaders.py $(wildcard $(COMMON)/formats/pyrowave/shaders/precompiled/*) \
+      $(COMMON)/formats/pyrowave/shaders/color.hlsl \
+      $(COMMON)/formats/pyrowave/shaders/dwt.hlsl \
+      $(COMMON)/formats/pyrowave/shaders/packet.hlsl
+	$(PYTHON) $(RA)/tools/pyrowave_embed_shaders.py --output $@
 
 $(SHADERDIR)/%.dxbc: $(COMMON)/formats/pyrowave/shaders/%.hlsl
 	mkdir -p $(SHADERDIR)

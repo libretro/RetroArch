@@ -552,10 +552,17 @@ endif
 print-%:
 	@echo '$*=$($*)'
 
-# Optional distribution assets for embedded PyroWave. Requires the shader tools
-# named in tools/pyrowave_shaders.py; normal frontend builds do not need them.
+# Optional shader exports for development and standalone GPU samples.
+# Enabled PyroWave frontend builds embed their own shaders automatically.
 PYROWAVE_ASSET_DIR ?= media/assets/pyrowave
 PYTHON ?= python3
 pyrowave-assets:
-	$(PYTHON) tools/pyrowave_shaders.py --output $(OBJDIR)/pyrowave/rpyrowave_shaders.h --export-glsl $(PYROWAVE_ASSET_DIR) --export-spirv $(PYROWAVE_ASSET_DIR) --export-hlsl $(PYROWAVE_ASSET_DIR)
+	$(PYTHON) tools/pyrowave_shaders.py --output $(OBJDIR)/pyrowave/exported/rpyrowave_shaders.h --export-glsl $(PYROWAVE_ASSET_DIR) --export-spirv $(PYROWAVE_ASSET_DIR) --export-hlsl $(PYROWAVE_ASSET_DIR)
 .PHONY: pyrowave-assets
+
+ifeq ($(HAVE_PYROWAVE),1)
+PYROWAVE_GENERATED_DIR := $(OBJDIR)/pyrowave
+include Makefile.pyrowave
+DEF_FLAGS += -I$(PYROWAVE_GENERATED_DIR)
+$(OBJDIR)/record/record_pyrowave_source.o: $(PYROWAVE_GENERATED_HEADER)
+endif

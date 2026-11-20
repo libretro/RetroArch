@@ -5,6 +5,9 @@ TARGET := pyrowave_session_test$(EXE)
 CONTROLLER := pyrowave_controller_test$(EXE)
 DISPATCH := pyrowave_dispatch_test$(EXE)
 LINK := pyrowave_link_test$(EXE)
+SHADER := pyrowave_shader_test$(EXE)
+SHADERDIR := .pyrowave-shaders
+PYTHON ?= python3
 DEVICE5_ABI := pyrowave_device5_abi$(EXE)
 CFLAGS += -O2 -std=c89 -pedantic -Wall -Wextra -Werror -I$(COMMON)/include
 SHARED_SRC := $(RA)/record/record_pyrowave_pcm.c \
@@ -29,7 +32,7 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: $(TARGET) $(CONTROLLER) $(DISPATCH) $(LINK)
+all: $(TARGET) $(CONTROLLER) $(DISPATCH) $(LINK) $(SHADER)
 
 $(TARGET): pyrowave_session_test.c $(SHARED_SRC)
 	$(CC) $(CFLAGS) pyrowave_session_test.c $(SHARED_SRC) $(LDFLAGS) $(LDLIBS) -o $@
@@ -43,11 +46,21 @@ $(DISPATCH): pyrowave_controller_test.c pyrowave_connection_test.h pyrowave_disp
 $(LINK): pyrowave_link_test.c $(RA)/record/record_pyrowave_video_link.c
 	$(CC) $(CFLAGS) -DHAVE_THREADS $^ $(LDFLAGS) $(THREAD_LIB) -o $@
 
-check: $(TARGET) $(CONTROLLER) $(DISPATCH) $(LINK)
+$(SHADERDIR)/rpyrowave_shaders.h: $(RA)/tools/pyrowave_embed_shaders.py $(wildcard $(COMMON)/formats/pyrowave/shaders/precompiled/*) \
+      $(COMMON)/formats/pyrowave/shaders/color.hlsl \
+      $(COMMON)/formats/pyrowave/shaders/dwt.hlsl \
+      $(COMMON)/formats/pyrowave/shaders/packet.hlsl
+	$(PYTHON) $(RA)/tools/pyrowave_embed_shaders.py --output $@
+
+$(SHADER): pyrowave_shader_test.c $(RA)/record/record_pyrowave_source.c $(SHADERDIR)/rpyrowave_shaders.h
+	$(CC) $(CFLAGS) -DHAVE_D3D12 -I$(SHADERDIR) pyrowave_shader_test.c $(RA)/record/record_pyrowave_source.c $(LDFLAGS) -o $@
+
+check: $(TARGET) $(CONTROLLER) $(DISPATCH) $(LINK) $(SHADER)
 	$(RUNNER) ./$(TARGET)
 	$(RUNNER) ./$(CONTROLLER)
 	$(RUNNER) ./$(DISPATCH)
 	$(RUNNER) ./$(LINK)
+	$(RUNNER) ./$(SHADER)
 
 frontend_core$(FRONTEND_SUFFIX): frontend_core.c
 	$(CC) $(CFLAGS) $(FRONTEND_PIC) -shared $< $(LDFLAGS) -o $@
@@ -66,6 +79,8 @@ device5-abi-check: $(DEVICE5_ABI)
 	$(RUNNER) ./$(DEVICE5_ABI)
 
 clean:
+	rm -f pyrowave_shader_test pyrowave_shader_test.exe
+	rm -rf $(SHADERDIR)
 	rm -f pyrowave_link_test pyrowave_link_test.exe
 	rm -f pyrowave_session_test pyrowave_session_test.exe
 	rm -f pyrowave_controller_test pyrowave_controller_test.exe

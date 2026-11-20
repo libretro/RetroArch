@@ -1,0 +1,1203 @@
+#version 310 es
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
+
+struct Block
+{
+    uint origin;
+    uint width;
+    uint height;
+    uint index;
+};
+
+layout(binding = 4, std140) uniform Parameters
+{
+    uint image_width;
+    uint image_height;
+    uint block_count;
+    uint operation;
+    uint maximum_bytes;
+    uint sequence;
+    uint width;
+    uint height;
+    uint usability;
+    uint fixed_quant_code;
+    uint fixed_quantizer;
+    uint reserved;
+} _62;
+
+layout(binding = 2, std430) buffer workspace
+{
+    uint _data[];
+} workspace_1;
+
+layout(binding = 1, std430) readonly buffer blocks
+{
+    Block _data[];
+} blocks_1;
+
+layout(binding = 0, std430) readonly buffer coefficients
+{
+    float _data[];
+} coefficients_1;
+
+layout(binding = 3, std430) buffer reconstructed
+{
+    float _data[];
+} reconstructed_1;
+
+shared uint depths[128];
+shared uint nonzeros[128];
+shared uint invalid_values[128];
+shared uint group_active[16];
+shared uint group_bases[16];
+shared uint group_codes[16];
+shared uint ballot;
+shared uint active_groups;
+shared uint magnitude_bytes;
+shared uint coefficient_count;
+shared uint invalid_block;
+shared uint decode_size;
+shared uint decode_packet;
+shared uint decode_header;
+shared uint decode_info;
+shared uint decode_start;
+shared uint decode_groups;
+
+void main()
+{
+    uint _1680 = gl_WorkGroupID.x + (gl_WorkGroupID.y * 65535u);
+    if (_62.operation == 0u)
+    {
+        uint _1688 = (_1680 * 128u) + gl_LocalInvocationIndex;
+        if (_1688 < ((((((_62.block_count * 16u) + 319u) & 4294967040u) + _62.maximum_bytes) + 3u) / 4u))
+        {
+            uint _3524;
+            if (_1688 == 0u)
+            {
+                _3524 = (_62.fixed_quantizer != 0u) ? _62.fixed_quant_code : 88u;
+            }
+            else
+            {
+                _3524 = 0u;
+            }
+            uint _3523;
+            if (_1688 == 5u)
+            {
+                _3523 = 191u;
+            }
+            else
+            {
+                _3523 = _3524;
+            }
+            uint _3522;
+            if (_1688 == 7u)
+            {
+                _3522 = 95u;
+            }
+            else
+            {
+                _3522 = _3523;
+            }
+            workspace_1._data[int((_1688 * 4u) >> uint(2))] = _3522;
+        }
+    }
+    else
+    {
+        if (_62.operation == 2u)
+        {
+            if ((gl_LocalInvocationIndex == 0u) && (_1680 == 0u))
+            {
+                do
+                {
+                    if (workspace_1._data[8] != 0u)
+                    {
+                        break;
+                    }
+                    uint _3512;
+                    _3512 = 1u;
+                    uint _3549;
+                    uint _3551;
+                    for (uint _3511 = 0u, _3519 = 8u; _3511 < _62.block_count; _3519 = _3551, _3512 = _3549, _3511++)
+                    {
+                        int _1840 = int((64u + (_3511 * 16u)) >> uint(2));
+                        if (workspace_1._data[_1840] > (_62.maximum_bytes - _3519))
+                        {
+                            _3551 = _3519;
+                            _3549 = 0u;
+                        }
+                        else
+                        {
+                            uint _3552;
+                            if (_3512 != 0u)
+                            {
+                                _3552 = _3519 + workspace_1._data[_1840];
+                            }
+                            else
+                            {
+                                _3552 = _3519;
+                            }
+                            _3551 = _3552;
+                            _3549 = _3512;
+                        }
+                    }
+                    uint _3513;
+                    uint _3515;
+                    uint _3517;
+                    if (_3512 != 0u)
+                    {
+                        _3517 = workspace_1._data[7];
+                        _3515 = workspace_1._data[5];
+                        _3513 = workspace_1._data[7] + 1u;
+                    }
+                    else
+                    {
+                        uint _3514;
+                        uint _3516;
+                        if (workspace_1._data[7] != 0u)
+                        {
+                            _3516 = workspace_1._data[7] - 1u;
+                            _3514 = workspace_1._data[4];
+                        }
+                        else
+                        {
+                            _3516 = workspace_1._data[5];
+                            _3514 = 1u;
+                        }
+                        _3517 = workspace_1._data[6];
+                        _3515 = _3516;
+                        _3513 = _3514;
+                    }
+                    uint _1894 = uint(int(_3513 > _3515));
+                    uint _1904 = (_1894 != 0u) ? _3517 : (_3513 + ((_3515 - _3513) / 2u));
+                    workspace_1._data[0] = (_1904 & 4294967288u) | (7u - (_1904 & 7u));
+                    workspace_1._data[4] = _3513;
+                    workspace_1._data[5] = _3515;
+                    workspace_1._data[6] = _3517;
+                    workspace_1._data[7] = _1904;
+                    workspace_1._data[8] = _1894;
+                    break;
+                } while(false);
+            }
+        }
+        else
+        {
+            if (_62.operation == 3u)
+            {
+                if ((gl_LocalInvocationIndex == 0u) && (_1680 == 0u))
+                {
+                    uint _3503;
+                    uint _3506;
+                    uint _3508;
+                    _3508 = 0u;
+                    _3506 = 8u;
+                    _3503 = 1u;
+                    uint _3543;
+                    uint _3545;
+                    uint _3547;
+                    for (uint _3502 = 0u; _3502 < _62.block_count; _3508 = _3547, _3506 = _3545, _3503 = _3543, _3502++)
+                    {
+                        int _1961 = int((64u + (_3502 * 16u)) >> uint(2));
+                        uint _1963 = workspace_1._data[_1961];
+                        workspace_1._data[int((68u + (_3502 * 16u)) >> uint(2))] = _3506;
+                        if (_1963 > (_62.maximum_bytes - _3506))
+                        {
+                            _3547 = _3508;
+                            _3545 = _3506;
+                            _3543 = 0u;
+                        }
+                        else
+                        {
+                            uint _3546;
+                            uint _3548;
+                            if (_3503 != 0u)
+                            {
+                                _3548 = _3508 + uint(int(_1963 != 0u));
+                                _3546 = _3506 + _1963;
+                            }
+                            else
+                            {
+                                _3548 = _3508;
+                                _3546 = _3506;
+                            }
+                            _3547 = _3548;
+                            _3545 = _3546;
+                            _3543 = _3503;
+                        }
+                    }
+                    uint _3505;
+                    uint _3507;
+                    if (_3503 == 0u)
+                    {
+                        for (uint _3504 = 0u; _3504 < _62.block_count; _3504++)
+                        {
+                            workspace_1._data[int((64u + (_3504 * 16u)) >> uint(2))] = 0u;
+                        }
+                        _3507 = 0u;
+                        _3505 = 8u;
+                    }
+                    else
+                    {
+                        _3507 = _3508;
+                        _3505 = _3506;
+                    }
+                    workspace_1._data[1] = _3505;
+                    workspace_1._data[2] = _3507;
+                    workspace_1._data[int((((_62.block_count * 16u) + 319u) & 4294967040u) >> uint(2))] = (((_62.width - 1u) | ((_62.height - 1u) << uint(14))) | (_62.sequence << uint(28))) | 2147483648u;
+                    workspace_1._data[int(((((_62.block_count * 16u) + 319u) & 4294967040u) + 4u) >> uint(2))] = _3507 | _62.usability;
+                }
+            }
+            else
+            {
+                if (_1680 < _62.block_count)
+                {
+                    if (_62.operation == 5u)
+                    {
+                        do
+                        {
+                            uint _5606 = blocks_1._data[_1680].origin;
+                            uint _5608 = blocks_1._data[_1680].width;
+                            uint _5610 = blocks_1._data[_1680].height;
+                            uint _5612 = blocks_1._data[_1680].index;
+                            uint _2577 = gl_LocalInvocationIndex / 8u;
+                            uvec2 _2071 = uvec2(((_2577 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u), ((_2577 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u));
+                            if ((_2071.x < _5608) && (_2071.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2071.y * _62.image_width)) + _2071.x] = 0.0;
+                            }
+                            uint _4339 = gl_LocalInvocationIndex / 8u;
+                            _2071 = uvec2(((_4339 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u), (((_4339 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u)) + 1u);
+                            if ((_2071.x < _5608) && (_2071.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2071.y * _62.image_width)) + _2071.x] = 0.0;
+                            }
+                            uint _4382 = gl_LocalInvocationIndex / 8u;
+                            _2071 = uvec2((((_4382 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 1u, ((_4382 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u));
+                            if ((_2071.x < _5608) && (_2071.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2071.y * _62.image_width)) + _2071.x] = 0.0;
+                            }
+                            uint _4425 = gl_LocalInvocationIndex / 8u;
+                            _2071 = uvec2((((_4425 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 1u, (((_4425 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u)) + 1u);
+                            if ((_2071.x < _5608) && (_2071.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2071.y * _62.image_width)) + _2071.x] = 0.0;
+                            }
+                            uint _4468 = gl_LocalInvocationIndex / 8u;
+                            _2071 = uvec2((((_4468 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 2u, ((_4468 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u));
+                            if ((_2071.x < _5608) && (_2071.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2071.y * _62.image_width)) + _2071.x] = 0.0;
+                            }
+                            uint _4511 = gl_LocalInvocationIndex / 8u;
+                            _2071 = uvec2((((_4511 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 2u, (((_4511 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u)) + 1u);
+                            if ((_2071.x < _5608) && (_2071.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2071.y * _62.image_width)) + _2071.x] = 0.0;
+                            }
+                            uint _4554 = gl_LocalInvocationIndex / 8u;
+                            _2071 = uvec2((((_4554 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 3u, ((_4554 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u));
+                            if ((_2071.x < _5608) && (_2071.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2071.y * _62.image_width)) + _2071.x] = 0.0;
+                            }
+                            uint _4597 = gl_LocalInvocationIndex / 8u;
+                            _2071 = uvec2((((_4597 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 3u, (((_4597 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u)) + 1u);
+                            if ((_2071.x < _5608) && (_2071.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2071.y * _62.image_width)) + _2071.x] = 0.0;
+                            }
+                            if (gl_LocalInvocationIndex == 0u)
+                            {
+                                int _2161 = int((64u + (_1680 * 16u)) >> uint(2));
+                                int _2167 = int((68u + (_1680 * 16u)) >> uint(2));
+                                uint _2175 = min(_62.maximum_bytes, workspace_1._data[1]);
+                                invalid_block = uint(int(_2175 < 8u));
+                                decode_size = workspace_1._data[_2161];
+                                decode_packet = (((_62.block_count * 16u) + 319u) & 4294967040u) + workspace_1._data[_2167];
+                                decode_header = 0u;
+                                decode_info = 0u;
+                                decode_start = 0u;
+                                decode_groups = 0u;
+                                if ((workspace_1._data[_2161] != 0u) && (invalid_block == 0u))
+                                {
+                                    if (((workspace_1._data[_2167] > _2175) || (workspace_1._data[_2161] > (_2175 - workspace_1._data[_2167]))) || (workspace_1._data[_2161] < 8u))
+                                    {
+                                        invalid_block = 1u;
+                                    }
+                                    else
+                                    {
+                                        decode_header = workspace_1._data[int(decode_packet >> uint(2))];
+                                        decode_info = workspace_1._data[int((decode_packet + 4u) >> uint(2))];
+                                        decode_groups = uint(bitCount(decode_header & 65535u));
+                                        decode_start = 8u + (decode_groups * 3u);
+                                        if ((((((((decode_header >> uint(16)) & 4095u) * 4u) != workspace_1._data[_2161]) || ((decode_header >> uint(31)) != 0u)) || (((decode_header >> uint(28)) & 7u) != _62.sequence)) || ((decode_info >> uint(8)) != _5612)) || (decode_start > workspace_1._data[_2161]))
+                                        {
+                                            invalid_block = 1u;
+                                        }
+                                    }
+                                }
+                            }
+                            barrier();
+                            uint _2251 = decode_packet;
+                            uint _2253 = decode_header & 65535u;
+                            uint _2255 = decode_start;
+                            uint _2257 = gl_LocalInvocationIndex / 8u;
+                            uint _2263 = uint(bitCount(_2253 & ((1u << _2257) - 1u)));
+                            uint _3458;
+                            uint _3482;
+                            if ((invalid_block == 0u) && ((_2253 & (1u << _2257)) != 0u))
+                            {
+                                uint _2277 = (_2251 + 8u) + (_2263 * 2u);
+                                uint _2283 = (_2251 + 9u) + (_2263 * 2u);
+                                uint _2293 = ((_2251 + 8u) + (decode_groups * 2u)) + _2263;
+                                uint _2643 = workspace_1._data[int((_2293 & 4294967292u) >> uint(2))] >> ((_2293 & 3u) * 8u);
+                                _3482 = _2643 & 255u;
+                                _3458 = (_2643 & 15u) + (((((workspace_1._data[int((_2277 & 4294967292u) >> uint(2))] >> ((_2277 & 3u) * 8u)) & 255u) | (((workspace_1._data[int((_2283 & 4294967292u) >> uint(2))] >> ((_2283 & 3u) * 8u)) & 255u) << uint(8))) >> ((gl_LocalInvocationIndex & 7u) * 2u)) & 3u);
+                            }
+                            else
+                            {
+                                _3482 = 0u;
+                                _3458 = 0u;
+                            }
+                            depths[gl_LocalInvocationIndex] = _3458;
+                            barrier();
+                            if (gl_LocalInvocationIndex == 0u)
+                            {
+                                magnitude_bytes = 0u;
+                                for (uint _3459 = 0u; _3459 < 128u; _3459++)
+                                {
+                                    magnitude_bytes += depths[_3459];
+                                }
+                                if (((invalid_block == 0u) && (decode_size != 0u)) && (magnitude_bytes > (decode_size - _2255)))
+                                {
+                                    invalid_block = 1u;
+                                }
+                            }
+                            barrier();
+                            uint _3498;
+                            _3498 = _2251 + _2255;
+                            uint _2352;
+                            for (uint _3460 = 0u; _3460 < gl_LocalInvocationIndex; _3498 = _2352, _3460++)
+                            {
+                                _2352 = _3498 + depths[_3460];
+                            }
+                            uint _2092[8];
+                            _2092[0u] = 0u;
+                            _2092[1u] = 0u;
+                            _2092[2u] = 0u;
+                            _2092[3u] = 0u;
+                            _2092[4u] = 0u;
+                            _2092[5u] = 0u;
+                            _2092[6u] = 0u;
+                            _2092[7u] = 0u;
+                            for (uint _3462 = 0u; _3462 < ((invalid_block == 0u) ? _3458 : 0u); _3462++)
+                            {
+                                uint _2379 = _3498 + _3462;
+                                uint _2655 = workspace_1._data[int((_2379 & 4294967292u) >> uint(2))] >> ((_2379 & 3u) * 8u);
+                                uint _2656 = _2655 & 255u;
+                                _2092[0u] = (_2092[0u] << uint(1)) | (_2655 & 1u);
+                                _2092[1u] = (_2092[1u] << uint(1)) | ((_2656 >> 1u) & 1u);
+                                _2092[2u] = (_2092[2u] << uint(1)) | ((_2656 >> 2u) & 1u);
+                                _2092[3u] = (_2092[3u] << uint(1)) | ((_2656 >> 3u) & 1u);
+                                _2092[4u] = (_2092[4u] << uint(1)) | ((_2656 >> 4u) & 1u);
+                                _2092[5u] = (_2092[5u] << uint(1)) | ((_2656 >> 5u) & 1u);
+                                _2092[6u] = (_2092[6u] << uint(1)) | ((_2656 >> 6u) & 1u);
+                                _2092[7u] = (_2092[7u] << uint(1)) | ((_2656 >> 7u) & 1u);
+                            }
+                            nonzeros[gl_LocalInvocationIndex] = ((((((uint(int(_2092[0u] != 0u)) + uint(int(_2092[1u] != 0u))) + uint(int(_2092[2u] != 0u))) + uint(int(_2092[3u] != 0u))) + uint(int(_2092[4u] != 0u))) + uint(int(_2092[5u] != 0u))) + uint(int(_2092[6u] != 0u))) + uint(int(_2092[7u] != 0u));
+                            barrier();
+                            if (gl_LocalInvocationIndex == 0u)
+                            {
+                                coefficient_count = 0u;
+                                for (uint _3473 = 0u; _3473 < 128u; _3473++)
+                                {
+                                    coefficient_count += nonzeros[_3473];
+                                }
+                                if (((invalid_block == 0u) && (decode_size != 0u)) && (((coefficient_count + 7u) / 8u) > ((decode_size - _2255) - magnitude_bytes)))
+                                {
+                                    invalid_block = 1u;
+                                }
+                            }
+                            barrier();
+                            if ((invalid_block != 0u) || (decode_size == 0u))
+                            {
+                                if ((gl_LocalInvocationIndex == 0u) && (invalid_block != 0u))
+                                {
+                                    uint _2661 = atomicOr(workspace_1._data[3], 1u);
+                                }
+                                break;
+                            }
+                            uint _3489;
+                            _3489 = 0u;
+                            uint _2485;
+                            for (uint _3474 = 0u; _3474 < gl_LocalInvocationIndex; _3489 = _2485, _3474++)
+                            {
+                                _2485 = _3489 + nonzeros[_3474];
+                            }
+                            uint _2494 = (_2251 + _2255) + magnitude_bytes;
+                            float _2503 = (float(8u + (decode_info & 7u)) * uintBitsToFloat((128u - ((decode_info & 255u) >> uint(3))) << uint(23))) * (0.25 + (float(_3482 >> uint(4)) * 0.125));
+                            float _3493;
+                            uint _3541;
+                            if (_2092[0u] != 0u)
+                            {
+                                float _2520 = (float(_2092[0u]) + 0.5) * _2503;
+                                uint _2524 = _2494 + (_3489 / 8u);
+                                float _3494;
+                                if (((((workspace_1._data[int((_2524 & 4294967292u) >> uint(2))] >> ((_2524 & 3u) * 8u)) & 255u) >> (_3489 & 7u)) & 1u) != 0u)
+                                {
+                                    _3494 = -_2520;
+                                }
+                                else
+                                {
+                                    _3494 = _2520;
+                                }
+                                _3541 = _3489 + uint(1);
+                                _3493 = _3494;
+                            }
+                            else
+                            {
+                                _3541 = _3489;
+                                _3493 = 0.0;
+                            }
+                            uint _2691 = gl_LocalInvocationIndex / 8u;
+                            uvec2 _2102 = uvec2(((_2691 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u), ((_2691 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u));
+                            if ((_2102.x < _5608) && (_2102.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2102.y * _62.image_width)) + _2102.x] = _3493;
+                            }
+                            uint _3592;
+                            float _3593;
+                            if (_2092[1u] != 0u)
+                            {
+                                float _3571 = (float(_2092[1u]) + 0.5) * _2503;
+                                uint _3573 = _2494 + (_3541 / 8u);
+                                float _3589;
+                                if (((((workspace_1._data[int((_3573 & 4294967292u) >> uint(2))] >> ((_3573 & 3u) * 8u)) & 255u) >> (_3541 & 7u)) & 1u) != 0u)
+                                {
+                                    _3589 = -_3571;
+                                }
+                                else
+                                {
+                                    _3589 = _3571;
+                                }
+                                _3592 = _3541 + uint(1);
+                                _3593 = _3589;
+                            }
+                            else
+                            {
+                                _3592 = _3541;
+                                _3593 = 0.0;
+                            }
+                            uint _3594 = gl_LocalInvocationIndex / 8u;
+                            _2102 = uvec2(((_3594 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u), (((_3594 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u)) + 1u);
+                            if ((_2102.x < _5608) && (_2102.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2102.y * _62.image_width)) + _2102.x] = _3593;
+                            }
+                            uint _3667;
+                            float _3668;
+                            if (_2092[2u] != 0u)
+                            {
+                                float _3646 = (float(_2092[2u]) + 0.5) * _2503;
+                                uint _3648 = _2494 + (_3592 / 8u);
+                                float _3664;
+                                if (((((workspace_1._data[int((_3648 & 4294967292u) >> uint(2))] >> ((_3648 & 3u) * 8u)) & 255u) >> (_3592 & 7u)) & 1u) != 0u)
+                                {
+                                    _3664 = -_3646;
+                                }
+                                else
+                                {
+                                    _3664 = _3646;
+                                }
+                                _3667 = _3592 + uint(1);
+                                _3668 = _3664;
+                            }
+                            else
+                            {
+                                _3667 = _3592;
+                                _3668 = 0.0;
+                            }
+                            uint _3669 = gl_LocalInvocationIndex / 8u;
+                            _2102 = uvec2((((_3669 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 1u, ((_3669 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u));
+                            if ((_2102.x < _5608) && (_2102.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2102.y * _62.image_width)) + _2102.x] = _3668;
+                            }
+                            uint _3742;
+                            float _3743;
+                            if (_2092[3u] != 0u)
+                            {
+                                float _3721 = (float(_2092[3u]) + 0.5) * _2503;
+                                uint _3723 = _2494 + (_3667 / 8u);
+                                float _3739;
+                                if (((((workspace_1._data[int((_3723 & 4294967292u) >> uint(2))] >> ((_3723 & 3u) * 8u)) & 255u) >> (_3667 & 7u)) & 1u) != 0u)
+                                {
+                                    _3739 = -_3721;
+                                }
+                                else
+                                {
+                                    _3739 = _3721;
+                                }
+                                _3742 = _3667 + uint(1);
+                                _3743 = _3739;
+                            }
+                            else
+                            {
+                                _3742 = _3667;
+                                _3743 = 0.0;
+                            }
+                            uint _3744 = gl_LocalInvocationIndex / 8u;
+                            _2102 = uvec2((((_3744 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 1u, (((_3744 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u)) + 1u);
+                            if ((_2102.x < _5608) && (_2102.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2102.y * _62.image_width)) + _2102.x] = _3743;
+                            }
+                            uint _3817;
+                            float _3818;
+                            if (_2092[4u] != 0u)
+                            {
+                                float _3796 = (float(_2092[4u]) + 0.5) * _2503;
+                                uint _3798 = _2494 + (_3742 / 8u);
+                                float _3814;
+                                if (((((workspace_1._data[int((_3798 & 4294967292u) >> uint(2))] >> ((_3798 & 3u) * 8u)) & 255u) >> (_3742 & 7u)) & 1u) != 0u)
+                                {
+                                    _3814 = -_3796;
+                                }
+                                else
+                                {
+                                    _3814 = _3796;
+                                }
+                                _3817 = _3742 + uint(1);
+                                _3818 = _3814;
+                            }
+                            else
+                            {
+                                _3817 = _3742;
+                                _3818 = 0.0;
+                            }
+                            uint _3819 = gl_LocalInvocationIndex / 8u;
+                            _2102 = uvec2((((_3819 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 2u, ((_3819 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u));
+                            if ((_2102.x < _5608) && (_2102.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2102.y * _62.image_width)) + _2102.x] = _3818;
+                            }
+                            uint _3892;
+                            float _3893;
+                            if (_2092[5u] != 0u)
+                            {
+                                float _3871 = (float(_2092[5u]) + 0.5) * _2503;
+                                uint _3873 = _2494 + (_3817 / 8u);
+                                float _3889;
+                                if (((((workspace_1._data[int((_3873 & 4294967292u) >> uint(2))] >> ((_3873 & 3u) * 8u)) & 255u) >> (_3817 & 7u)) & 1u) != 0u)
+                                {
+                                    _3889 = -_3871;
+                                }
+                                else
+                                {
+                                    _3889 = _3871;
+                                }
+                                _3892 = _3817 + uint(1);
+                                _3893 = _3889;
+                            }
+                            else
+                            {
+                                _3892 = _3817;
+                                _3893 = 0.0;
+                            }
+                            uint _3894 = gl_LocalInvocationIndex / 8u;
+                            _2102 = uvec2((((_3894 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 2u, (((_3894 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u)) + 1u);
+                            if ((_2102.x < _5608) && (_2102.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2102.y * _62.image_width)) + _2102.x] = _3893;
+                            }
+                            uint _3967;
+                            float _3968;
+                            if (_2092[6u] != 0u)
+                            {
+                                float _3946 = (float(_2092[6u]) + 0.5) * _2503;
+                                uint _3948 = _2494 + (_3892 / 8u);
+                                float _3964;
+                                if (((((workspace_1._data[int((_3948 & 4294967292u) >> uint(2))] >> ((_3948 & 3u) * 8u)) & 255u) >> (_3892 & 7u)) & 1u) != 0u)
+                                {
+                                    _3964 = -_3946;
+                                }
+                                else
+                                {
+                                    _3964 = _3946;
+                                }
+                                _3967 = _3892 + uint(1);
+                                _3968 = _3964;
+                            }
+                            else
+                            {
+                                _3967 = _3892;
+                                _3968 = 0.0;
+                            }
+                            uint _3969 = gl_LocalInvocationIndex / 8u;
+                            _2102 = uvec2((((_3969 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 3u, ((_3969 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u));
+                            if ((_2102.x < _5608) && (_2102.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2102.y * _62.image_width)) + _2102.x] = _3968;
+                            }
+                            float _4043;
+                            if (_2092[7u] != 0u)
+                            {
+                                float _4021 = (float(_2092[7u]) + 0.5) * _2503;
+                                uint _4023 = _2494 + (_3967 / 8u);
+                                float _4039;
+                                if (((((workspace_1._data[int((_4023 & 4294967292u) >> uint(2))] >> ((_4023 & 3u) * 8u)) & 255u) >> (_3967 & 7u)) & 1u) != 0u)
+                                {
+                                    _4039 = -_4021;
+                                }
+                                else
+                                {
+                                    _4039 = _4021;
+                                }
+                                _4043 = _4039;
+                            }
+                            else
+                            {
+                                _4043 = 0.0;
+                            }
+                            uint _4044 = gl_LocalInvocationIndex / 8u;
+                            _2102 = uvec2((((_4044 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 3u, (((_4044 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u)) + 1u);
+                            if ((_2102.x < _5608) && (_2102.y < _5610))
+                            {
+                                reconstructed_1._data[(_5606 + (_2102.y * _62.image_width)) + _2102.x] = _4043;
+                            }
+                            break;
+                        } while(false);
+                    }
+                    else
+                    {
+                        if ((_62.operation == 1u) || (_62.operation == 4u))
+                        {
+                            do
+                            {
+                                uint _5595 = blocks_1._data[_1680].origin;
+                                uint _5597 = blocks_1._data[_1680].width;
+                                uint _5599 = blocks_1._data[_1680].height;
+                                uint _5601 = blocks_1._data[_1680].index;
+                                uint _2779 = workspace_1._data[0];
+                                float _2782 = (float(8u + (_2779 & 7u)) * uintBitsToFloat((128u - (_2779 >> uint(3))) << uint(23))) * 0.25;
+                                uint _2784 = gl_LocalInvocationIndex / 8u;
+                                uint _2786 = gl_LocalInvocationIndex & 7u;
+                                uint _3271 = gl_LocalInvocationIndex / 8u;
+                                uvec2 _3294 = uvec2(((_3271 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u), ((_3271 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u));
+                                uvec2 _2727 = _3294;
+                                uvec2 _2731 = min(_3294, uvec2(_5597 - 1u, _5599 - 1u));
+                                float _3440;
+                                if ((_2727.x < _5597) && (_2727.y < _5599))
+                                {
+                                    _3440 = coefficients_1._data[(_5595 + (_2731.y * _62.image_width)) + _2731.x];
+                                }
+                                else
+                                {
+                                    _3440 = 0.0;
+                                }
+                                float _2834 = floor(abs(_3440) / _2782);
+                                uint _3446;
+                                uint _3526;
+                                if (!((_2834 >= 0.0) && (_2834 <= 262143.0)))
+                                {
+                                    _3526 = 1u;
+                                    _3446 = 0u;
+                                }
+                                else
+                                {
+                                    _3526 = 0u;
+                                    _3446 = uint(_2834);
+                                }
+                                if (!((!isnan(_3440)) && (!isinf(_3440))))
+                                {
+                                    uint _3299 = atomicOr(workspace_1._data[3], 1u);
+                                }
+                                uint _2735[8];
+                                _2735[0u] = _3446;
+                                bool _2871 = _3440 < 0.0;
+                                uint _4994 = gl_LocalInvocationIndex / 8u;
+                                uvec2 _5010 = uvec2(((_4994 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u), (((_4994 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u)) + 1u);
+                                _2727 = _5010;
+                                _2731 = min(_5010, uvec2(_5597 - 1u, _5599 - 1u));
+                                float _5035;
+                                if ((_2727.x < _5597) && (_2727.y < _5599))
+                                {
+                                    _5035 = coefficients_1._data[(_5595 + (_2731.y * _62.image_width)) + _2731.x];
+                                }
+                                else
+                                {
+                                    _5035 = 0.0;
+                                }
+                                float _5038 = floor(abs(_5035) / _2782);
+                                uint _5047;
+                                uint _5048;
+                                if (!((_5038 >= 0.0) && (_5038 <= 262143.0)))
+                                {
+                                    _5047 = 1u;
+                                    _5048 = 0u;
+                                }
+                                else
+                                {
+                                    _5047 = _3526;
+                                    _5048 = uint(_5038);
+                                }
+                                if (!((!isnan(_5035)) && (!isinf(_5035))))
+                                {
+                                    uint _5058 = atomicOr(workspace_1._data[3], 1u);
+                                }
+                                _2735[1u] = _5048;
+                                bool _5066 = _5035 < 0.0;
+                                uint _5081 = gl_LocalInvocationIndex / 8u;
+                                uvec2 _5097 = uvec2((((_5081 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 1u, ((_5081 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u));
+                                _2727 = _5097;
+                                _2731 = min(_5097, uvec2(_5597 - 1u, _5599 - 1u));
+                                float _5122;
+                                if ((_2727.x < _5597) && (_2727.y < _5599))
+                                {
+                                    _5122 = coefficients_1._data[(_5595 + (_2731.y * _62.image_width)) + _2731.x];
+                                }
+                                else
+                                {
+                                    _5122 = 0.0;
+                                }
+                                float _5125 = floor(abs(_5122) / _2782);
+                                uint _5134;
+                                uint _5135;
+                                if (!((_5125 >= 0.0) && (_5125 <= 262143.0)))
+                                {
+                                    _5134 = 1u;
+                                    _5135 = 0u;
+                                }
+                                else
+                                {
+                                    _5134 = _5047;
+                                    _5135 = uint(_5125);
+                                }
+                                if (!((!isnan(_5122)) && (!isinf(_5122))))
+                                {
+                                    uint _5145 = atomicOr(workspace_1._data[3], 1u);
+                                }
+                                _2735[2u] = _5135;
+                                bool _5153 = _5122 < 0.0;
+                                uint _5168 = gl_LocalInvocationIndex / 8u;
+                                uvec2 _5184 = uvec2((((_5168 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 1u, (((_5168 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u)) + 1u);
+                                _2727 = _5184;
+                                _2731 = min(_5184, uvec2(_5597 - 1u, _5599 - 1u));
+                                float _5209;
+                                if ((_2727.x < _5597) && (_2727.y < _5599))
+                                {
+                                    _5209 = coefficients_1._data[(_5595 + (_2731.y * _62.image_width)) + _2731.x];
+                                }
+                                else
+                                {
+                                    _5209 = 0.0;
+                                }
+                                float _5212 = floor(abs(_5209) / _2782);
+                                uint _5221;
+                                uint _5222;
+                                if (!((_5212 >= 0.0) && (_5212 <= 262143.0)))
+                                {
+                                    _5221 = 1u;
+                                    _5222 = 0u;
+                                }
+                                else
+                                {
+                                    _5221 = _5134;
+                                    _5222 = uint(_5212);
+                                }
+                                if (!((!isnan(_5209)) && (!isinf(_5209))))
+                                {
+                                    uint _5232 = atomicOr(workspace_1._data[3], 1u);
+                                }
+                                _2735[3u] = _5222;
+                                bool _5240 = _5209 < 0.0;
+                                uint _5255 = gl_LocalInvocationIndex / 8u;
+                                uvec2 _5271 = uvec2((((_5255 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 2u, ((_5255 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u));
+                                _2727 = _5271;
+                                _2731 = min(_5271, uvec2(_5597 - 1u, _5599 - 1u));
+                                float _5296;
+                                if ((_2727.x < _5597) && (_2727.y < _5599))
+                                {
+                                    _5296 = coefficients_1._data[(_5595 + (_2731.y * _62.image_width)) + _2731.x];
+                                }
+                                else
+                                {
+                                    _5296 = 0.0;
+                                }
+                                float _5299 = floor(abs(_5296) / _2782);
+                                uint _5308;
+                                uint _5309;
+                                if (!((_5299 >= 0.0) && (_5299 <= 262143.0)))
+                                {
+                                    _5308 = 1u;
+                                    _5309 = 0u;
+                                }
+                                else
+                                {
+                                    _5308 = _5221;
+                                    _5309 = uint(_5299);
+                                }
+                                if (!((!isnan(_5296)) && (!isinf(_5296))))
+                                {
+                                    uint _5319 = atomicOr(workspace_1._data[3], 1u);
+                                }
+                                _2735[4u] = _5309;
+                                bool _5327 = _5296 < 0.0;
+                                uint _5342 = gl_LocalInvocationIndex / 8u;
+                                uvec2 _5358 = uvec2((((_5342 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 2u, (((_5342 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u)) + 1u);
+                                _2727 = _5358;
+                                _2731 = min(_5358, uvec2(_5597 - 1u, _5599 - 1u));
+                                float _5383;
+                                if ((_2727.x < _5597) && (_2727.y < _5599))
+                                {
+                                    _5383 = coefficients_1._data[(_5595 + (_2731.y * _62.image_width)) + _2731.x];
+                                }
+                                else
+                                {
+                                    _5383 = 0.0;
+                                }
+                                float _5386 = floor(abs(_5383) / _2782);
+                                uint _5395;
+                                uint _5396;
+                                if (!((_5386 >= 0.0) && (_5386 <= 262143.0)))
+                                {
+                                    _5395 = 1u;
+                                    _5396 = 0u;
+                                }
+                                else
+                                {
+                                    _5395 = _5308;
+                                    _5396 = uint(_5386);
+                                }
+                                if (!((!isnan(_5383)) && (!isinf(_5383))))
+                                {
+                                    uint _5406 = atomicOr(workspace_1._data[3], 1u);
+                                }
+                                _2735[5u] = _5396;
+                                bool _5414 = _5383 < 0.0;
+                                uint _5429 = gl_LocalInvocationIndex / 8u;
+                                uvec2 _5445 = uvec2((((_5429 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 3u, ((_5429 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u));
+                                _2727 = _5445;
+                                _2731 = min(_5445, uvec2(_5597 - 1u, _5599 - 1u));
+                                float _5470;
+                                if ((_2727.x < _5597) && (_2727.y < _5599))
+                                {
+                                    _5470 = coefficients_1._data[(_5595 + (_2731.y * _62.image_width)) + _2731.x];
+                                }
+                                else
+                                {
+                                    _5470 = 0.0;
+                                }
+                                float _5473 = floor(abs(_5470) / _2782);
+                                uint _5482;
+                                uint _5483;
+                                if (!((_5473 >= 0.0) && (_5473 <= 262143.0)))
+                                {
+                                    _5482 = 1u;
+                                    _5483 = 0u;
+                                }
+                                else
+                                {
+                                    _5482 = _5395;
+                                    _5483 = uint(_5473);
+                                }
+                                if (!((!isnan(_5470)) && (!isinf(_5470))))
+                                {
+                                    uint _5493 = atomicOr(workspace_1._data[3], 1u);
+                                }
+                                _2735[6u] = _5483;
+                                bool _5501 = _5470 < 0.0;
+                                uint _5516 = gl_LocalInvocationIndex / 8u;
+                                uvec2 _5532 = uvec2((((_5516 & 3u) * 8u) + (((gl_LocalInvocationIndex & 7u) / 4u) * 4u)) + 3u, (((_5516 / 4u) * 8u) + ((gl_LocalInvocationIndex & 3u) * 2u)) + 1u);
+                                _2727 = _5532;
+                                _2731 = min(_5532, uvec2(_5597 - 1u, _5599 - 1u));
+                                float _5557;
+                                if ((_2727.x < _5597) && (_2727.y < _5599))
+                                {
+                                    _5557 = coefficients_1._data[(_5595 + (_2731.y * _62.image_width)) + _2731.x];
+                                }
+                                else
+                                {
+                                    _5557 = 0.0;
+                                }
+                                float _5560 = floor(abs(_5557) / _2782);
+                                uint _5569;
+                                uint _5570;
+                                if (!((_5560 >= 0.0) && (_5560 <= 262143.0)))
+                                {
+                                    _5569 = 1u;
+                                    _5570 = 0u;
+                                }
+                                else
+                                {
+                                    _5569 = _5482;
+                                    _5570 = uint(_5560);
+                                }
+                                if (!((!isnan(_5557)) && (!isinf(_5557))))
+                                {
+                                    uint _5580 = atomicOr(workspace_1._data[3], 1u);
+                                }
+                                _2735[7u] = _5570;
+                                uint _5583 = ((((((_3446 | _5048) | _5135) | _5222) | _5309) | _5396) | _5483) | _5570;
+                                bool _5588 = _5557 < 0.0;
+                                uint _5591 = ((((((uint(_2871) | (_5066 ? 2u : 0u)) | (_5153 ? 4u : 0u)) | (_5240 ? 8u : 0u)) | (_5327 ? 16u : 0u)) | (_5414 ? 32u : 0u)) | (_5501 ? 64u : 0u)) | (_5588 ? 128u : 0u);
+                                depths[gl_LocalInvocationIndex] = (_5583 != 0u) ? (uint(findMSB(_5583)) + 1u) : 0u;
+                                nonzeros[gl_LocalInvocationIndex] = ((((((uint(int(_3446 != 0u)) + uint(int(_5048 != 0u))) + uint(int(_5135 != 0u))) + uint(int(_5222 != 0u))) + uint(int(_5309 != 0u))) + uint(int(_5396 != 0u))) + uint(int(_5483 != 0u))) + uint(int(_5570 != 0u));
+                                invalid_values[gl_LocalInvocationIndex] = _5569;
+                                barrier();
+                                if (_2786 == 0u)
+                                {
+                                    uint _3401;
+                                    _3401 = 0u;
+                                    uint _2910;
+                                    for (uint _3400 = 0u; _3400 < 8u; _3401 = _2910, _3400++)
+                                    {
+                                        _2910 = max(_3401, depths[(_2784 * 8u) + _3400]);
+                                    }
+                                    uint _2919 = (_3401 > 3u) ? (_3401 - 3u) : 0u;
+                                    group_active[_2784] = uint(int(_3401 != 0u));
+                                    group_bases[_2784] = _2919;
+                                    uint _3403;
+                                    _3403 = 0u;
+                                    uint _2955;
+                                    for (uint _3402 = 0u; _3402 < 8u; _3403 = _2955, _3402++)
+                                    {
+                                        uint _2940 = depths[(_2784 * 8u) + _3402];
+                                        uint _2941 = max(_2919, _2940);
+                                        depths[(_2784 * 8u) + _3402] = _2941;
+                                        _2955 = _3403 | ((_2941 - _2919) << (_3402 * 2u));
+                                    }
+                                    group_codes[_2784] = _3403;
+                                }
+                                barrier();
+                                if (gl_LocalInvocationIndex == 0u)
+                                {
+                                    ballot = 0u;
+                                    active_groups = 0u;
+                                    magnitude_bytes = 0u;
+                                    coefficient_count = 0u;
+                                    invalid_block = 0u;
+                                    for (uint _3404 = 0u; _3404 < 16u; _3404++)
+                                    {
+                                        ballot |= (group_active[_3404] << _3404);
+                                        active_groups += group_active[_3404];
+                                    }
+                                    for (uint _3405 = 0u; _3405 < 128u; _3405++)
+                                    {
+                                        magnitude_bytes += depths[_3405];
+                                        coefficient_count += nonzeros[_3405];
+                                        invalid_block |= invalid_values[_3405];
+                                    }
+                                    if (_62.operation == 1u)
+                                    {
+                                        workspace_1._data[int((64u + (_1680 * 16u)) >> uint(2))] = (invalid_block != 0u) ? 4294967295u : ((ballot != 0u) ? (((((8u + (active_groups * 3u)) + magnitude_bytes) + ((coefficient_count + 7u) / 8u)) + 3u) & 4294967292u) : 0u);
+                                    }
+                                }
+                                barrier();
+                                if ((((_62.operation != 4u) || (invalid_block != 0u)) || (ballot == 0u)) || (workspace_1._data[int((64u + (_1680 * 16u)) >> uint(2))] == 0u))
+                                {
+                                    break;
+                                }
+                                uint _3067 = workspace_1._data[int((68u + (_1680 * 16u)) >> uint(2))];
+                                uint _3068 = (((_62.block_count * 16u) + 319u) & 4294967040u) + _3067;
+                                if (gl_LocalInvocationIndex == 0u)
+                                {
+                                    workspace_1._data[int(_3068 >> uint(2))] = (ballot | ((workspace_1._data[int((64u + (_1680 * 16u)) >> uint(2))] / 4u) << uint(16))) | (_62.sequence << uint(28));
+                                    workspace_1._data[int((_3068 + 4u) >> uint(2))] = _2779 | (_5601 << uint(8));
+                                }
+                                if (group_active[_2784] == 0u)
+                                {
+                                    break;
+                                }
+                                uint _3108 = ballot;
+                                uint _3113 = uint(bitCount(_3108 & ((1u << _2784) - 1u)));
+                                if (_2786 == 0u)
+                                {
+                                    uint _3121 = (_3068 + 8u) + (_3113 * 2u);
+                                    uint _3125 = group_codes[_2784] & 255u;
+                                    if (_3125 != 0u)
+                                    {
+                                        uint _3322 = atomicOr(workspace_1._data[int((_3121 & 4294967292u) >> uint(2))], _3125 << ((_3121 & 3u) * 8u));
+                                    }
+                                    uint _3131 = (_3068 + 9u) + (_3113 * 2u);
+                                    uint _3135 = group_codes[_2784] >> uint(8);
+                                    if (_3135 != 0u)
+                                    {
+                                        uint _3338 = atomicOr(workspace_1._data[int((_3131 & 4294967292u) >> uint(2))], _3135 << ((_3131 & 3u) * 8u));
+                                    }
+                                    uint _3143 = ((_3068 + 8u) + (active_groups * 2u)) + _3113;
+                                    if (group_bases[_2784] != 0u)
+                                    {
+                                        uint _3354 = atomicOr(workspace_1._data[int((_3143 & 4294967292u) >> uint(2))], group_bases[_2784] << ((_3143 & 3u) * 8u));
+                                    }
+                                }
+                                uint _3427;
+                                uint _3436;
+                                _3436 = (_3068 + 8u) + (active_groups * 3u);
+                                _3427 = 0u;
+                                uint _3164;
+                                uint _3169;
+                                for (uint _3406 = 0u; _3406 < gl_LocalInvocationIndex; _3436 = _3164, _3427 = _3169, _3406++)
+                                {
+                                    _3164 = _3436 + depths[_3406];
+                                    _3169 = _3427 + nonzeros[_3406];
+                                }
+                                for (uint _3407 = 0u; _3407 < depths[gl_LocalInvocationIndex]; _3407++)
+                                {
+                                    uint _4982 = ((((((((_2735[0u] >> ((depths[gl_LocalInvocationIndex] - _3407) - 1u)) & 1u) | (((_2735[1u] >> ((depths[gl_LocalInvocationIndex] - _3407) - 1u)) & 1u) << 1u)) | (((_2735[2u] >> ((depths[gl_LocalInvocationIndex] - _3407) - 1u)) & 1u) << 2u)) | (((_2735[3u] >> ((depths[gl_LocalInvocationIndex] - _3407) - 1u)) & 1u) << 3u)) | (((_2735[4u] >> ((depths[gl_LocalInvocationIndex] - _3407) - 1u)) & 1u) << 4u)) | (((_2735[5u] >> ((depths[gl_LocalInvocationIndex] - _3407) - 1u)) & 1u) << 5u)) | (((_2735[6u] >> ((depths[gl_LocalInvocationIndex] - _3407) - 1u)) & 1u) << 6u)) | (((_2735[7u] >> ((depths[gl_LocalInvocationIndex] - _3407) - 1u)) & 1u) << 7u);
+                                    uint _3207 = _3436 + _3407;
+                                    if (_4982 != 0u)
+                                    {
+                                        uint _3370 = atomicOr(workspace_1._data[int((_3207 & 4294967292u) >> uint(2))], _4982 << ((_3207 & 3u) * 8u));
+                                    }
+                                }
+                                uint _3216 = active_groups;
+                                uint _3219 = magnitude_bytes;
+                                uint _3220 = ((_3068 + 8u) + (_3216 * 3u)) + _3219;
+                                uint _3535;
+                                if (_2735[0u] != 0u)
+                                {
+                                    if ((_5591 & 1u) != 0u)
+                                    {
+                                        uint _3240 = _3220 + (_3427 / 8u);
+                                        uint _3243 = 1u << (_3427 & 7u);
+                                        if (_3243 != 0u)
+                                        {
+                                            uint _3386 = atomicOr(workspace_1._data[int((_3240 & 4294967292u) >> uint(2))], _3243 << ((_3240 & 3u) * 8u));
+                                        }
+                                    }
+                                    _3535 = _3427 + uint(1);
+                                }
+                                else
+                                {
+                                    _3535 = _3427;
+                                }
+                                uint _4666;
+                                if (_2735[1u] != 0u)
+                                {
+                                    if ((_5591 & 2u) != 0u)
+                                    {
+                                        uint _4650 = _3220 + (_3535 / 8u);
+                                        uint _4652 = 1u << (_3535 & 7u);
+                                        if (_4652 != 0u)
+                                        {
+                                            uint _4661 = atomicOr(workspace_1._data[int((_4650 & 4294967292u) >> uint(2))], _4652 << ((_4650 & 3u) * 8u));
+                                        }
+                                    }
+                                    _4666 = _3535 + uint(1);
+                                }
+                                else
+                                {
+                                    _4666 = _3535;
+                                }
+                                uint _4700;
+                                if (_2735[2u] != 0u)
+                                {
+                                    if ((_5591 & 4u) != 0u)
+                                    {
+                                        uint _4684 = _3220 + (_4666 / 8u);
+                                        uint _4686 = 1u << (_4666 & 7u);
+                                        if (_4686 != 0u)
+                                        {
+                                            uint _4695 = atomicOr(workspace_1._data[int((_4684 & 4294967292u) >> uint(2))], _4686 << ((_4684 & 3u) * 8u));
+                                        }
+                                    }
+                                    _4700 = _4666 + uint(1);
+                                }
+                                else
+                                {
+                                    _4700 = _4666;
+                                }
+                                uint _4734;
+                                if (_2735[3u] != 0u)
+                                {
+                                    if ((_5591 & 8u) != 0u)
+                                    {
+                                        uint _4718 = _3220 + (_4700 / 8u);
+                                        uint _4720 = 1u << (_4700 & 7u);
+                                        if (_4720 != 0u)
+                                        {
+                                            uint _4729 = atomicOr(workspace_1._data[int((_4718 & 4294967292u) >> uint(2))], _4720 << ((_4718 & 3u) * 8u));
+                                        }
+                                    }
+                                    _4734 = _4700 + uint(1);
+                                }
+                                else
+                                {
+                                    _4734 = _4700;
+                                }
+                                uint _4768;
+                                if (_2735[4u] != 0u)
+                                {
+                                    if ((_5591 & 16u) != 0u)
+                                    {
+                                        uint _4752 = _3220 + (_4734 / 8u);
+                                        uint _4754 = 1u << (_4734 & 7u);
+                                        if (_4754 != 0u)
+                                        {
+                                            uint _4763 = atomicOr(workspace_1._data[int((_4752 & 4294967292u) >> uint(2))], _4754 << ((_4752 & 3u) * 8u));
+                                        }
+                                    }
+                                    _4768 = _4734 + uint(1);
+                                }
+                                else
+                                {
+                                    _4768 = _4734;
+                                }
+                                uint _4802;
+                                if (_2735[5u] != 0u)
+                                {
+                                    if ((_5591 & 32u) != 0u)
+                                    {
+                                        uint _4786 = _3220 + (_4768 / 8u);
+                                        uint _4788 = 1u << (_4768 & 7u);
+                                        if (_4788 != 0u)
+                                        {
+                                            uint _4797 = atomicOr(workspace_1._data[int((_4786 & 4294967292u) >> uint(2))], _4788 << ((_4786 & 3u) * 8u));
+                                        }
+                                    }
+                                    _4802 = _4768 + uint(1);
+                                }
+                                else
+                                {
+                                    _4802 = _4768;
+                                }
+                                uint _4836;
+                                if (_2735[6u] != 0u)
+                                {
+                                    if ((_5591 & 64u) != 0u)
+                                    {
+                                        uint _4820 = _3220 + (_4802 / 8u);
+                                        uint _4822 = 1u << (_4802 & 7u);
+                                        if (_4822 != 0u)
+                                        {
+                                            uint _4831 = atomicOr(workspace_1._data[int((_4820 & 4294967292u) >> uint(2))], _4822 << ((_4820 & 3u) * 8u));
+                                        }
+                                    }
+                                    _4836 = _4802 + uint(1);
+                                }
+                                else
+                                {
+                                    _4836 = _4802;
+                                }
+                                if (_2735[7u] != 0u)
+                                {
+                                    if ((_5591 & 128u) != 0u)
+                                    {
+                                        uint _4854 = _3220 + (_4836 / 8u);
+                                        uint _4856 = 1u << (_4836 & 7u);
+                                        if (_4856 != 0u)
+                                        {
+                                            uint _4865 = atomicOr(workspace_1._data[int((_4854 & 4294967292u) >> uint(2))], _4856 << ((_4854 & 3u) * 8u));
+                                        }
+                                    }
+                                }
+                                break;
+                            } while(false);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -151,17 +151,16 @@ static bool record_pyrowave_source_gl_create(record_pyrowave_source_t *source,
    s->read_buffer = double_buffered ? GL_BACK : GL_FRONT;
    for (i = 0; i < 3; i++)
    {
-      void *text = NULL;
-      size_t bytes;
+      record_pyrowave_shader_t text;
       const GLchar *strings;
       GLint status = 0;
       GLuint shader;
-      if (!record_pyrowave_source_shader(config->directory, names[i], &text, &bytes)) goto done;
+      if (!record_pyrowave_source_shader(config->directory, names[i], &text)) goto done;
       shader = glCreateShader(0x91b9);
-      if (!shader) { free(text); goto done; }
-      strings = (const GLchar*)text;
+      if (!shader) { record_pyrowave_source_shader_release(&text); goto done; }
+      strings = (const GLchar*)text.data;
       glShaderSource(shader, 1, &strings, NULL); glCompileShader(shader);
-      free(text);
+      record_pyrowave_source_shader_release(&text);
       glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
       if (!status) { glDeleteShader(shader); goto done; }
       s->programs[i] = glCreateProgram();

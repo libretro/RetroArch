@@ -417,7 +417,7 @@ static bool pyrowave_receiver_open(const char *path, const char *directory)
    retro_atomic_int_init(&c->recovery, 0);
    if (directory)
    {
-      if (!*directory || strlen(directory) >= sizeof(c->directory)) goto end;
+      if (strlen(directory) >= sizeof(c->directory)) goto end;
       strcpy(c->directory, directory);
       strcpy(url, "rpws-listen://0.0.0.0:0");
    }
@@ -425,8 +425,9 @@ static bool pyrowave_receiver_open(const char *path, const char *directory)
    {
       file = config_file_new_from_path_to_string(path);
       if (!file) goto end;
-      ok = config_get_array(file, "pyrowave_url", url, sizeof(url))
-         && config_get_array(file, "pyrowave_shader_directory", c->directory, sizeof(c->directory));
+      ok = config_get_array(file, "pyrowave_url", url, sizeof(url));
+      if (ok && config_get_entry(file, "pyrowave_shader_directory"))
+         ok = config_get_array(file, "pyrowave_shader_directory", c->directory, sizeof(c->directory));
       config_file_free(file);
       if (!ok) goto end;
    }

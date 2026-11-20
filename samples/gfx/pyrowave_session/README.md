@@ -298,13 +298,16 @@ Embedded LAN streaming from the menu
 ----------------------------------
 
 Build with `--enable-pyrowave` and use glcore (OpenGL 4.3+), Vulkan, or Windows
-D3D12. Generate distribution shaders once with `make pyrowave-assets`
-(glslangValidator, spirv-val and spirv-cross must be installed). This puts
-`.comp`, `.spv`, and `.hlsl` files in `media/assets/pyrowave`; package that folder
-as `pyrowave` inside the configured assets directory. `make install` copies it
-when media assets are installed. Alternatively, set Settings > Recording >
-PyroWave Shader Directory to a generated folder. No per-stream config file is
-needed. Missing assets prevent the frontend from advertising an unusable receiver.
+D3D12. Shader data is embedded in the executable. Both clients work without
+an external shader folder, shader download or shader compiler installation.
+Normal builds verify and embed the committed precompiled files using Python;
+glslang, SPIRV-Cross, FXC and DXC are only needed to regenerate those files.
+Vulkan uses SPIR-V; D3D12 selects DXIL on Shader Model 6 devices and DXBC on
+older devices. OpenGL uses bundled GLSL compiled by the graphics driver.
+The advanced PyroWave Shader Directory setting remains a strict development
+override; leave it empty for the built-in bundle. Manual recording configs
+can omit pyrowave_shader_directory too. `make pyrowave-assets` only exports
+development/sample assets and is not needed to distribute the frontend.
 
 On each device, enable Settings > Recording > PyroWave LAN Discovery (off by
 default). Optionally set PyroWave Device Name. In the sender's Main Menu or Quick Menu >
@@ -329,7 +332,7 @@ core audio instead. This viewport capture can still include UI drawn over conten
 The persisted recording driver, streaming URL and config selection are retained.
 
 Discovery uses one primary IPv4 LAN interface and `_pyrowave._tcp.local.`.
-Only opted-in compatible receivers with shaders and a free listener are shown.
+Only opted-in compatible receivers with a supported backend and a free listener are shown.
 Allow local UDP 5353 and the advertised ephemeral TCP receiver port through
 the firewall. Networks that isolate clients or block multicast need the existing
 manual connection-file workflow. Discovery is unauthenticated; accept only an
@@ -343,7 +346,7 @@ It deliberately configures the ordinary recording driver as null to exercise
 the transient sender override (`--record-driver nvenc` also proves an unavailable
 ordinary encoder does not interfere). It verifies that disabling discovery
 withdraws the receiver from the peer menu. Run it with `--retroarch`, `--core`,
-`--shader-directory`, and a distinct `--output`; optional `--threaded`,
+`--embedded-shaders` (or an explicit `--shader-directory`), and a distinct `--output`; optional `--threaded`,
 `--backend glcore|vulkan|d3d12`, and `--audio-driver wasapi` cover presentation
 variants. Linux CI runs direct and threaded GL menus; Windows can run the same
 oracle natively with D3D12. Native Metal remains a separate macOS handover check.
@@ -356,3 +359,9 @@ dimensions, and moving movie color bars from the built-in player. Use a short
 post-mixer PCM and clean manual-stream shutdown on Linux; use WASAPI on Windows.
 The video-link test holds an I/O packet across pause, refuses premature backend
 replacement and verifies monotonic serials after the backend's counter restarts.
+
+Use `--embedded-shaders` with the LAN/menu or frontend TCP oracle to test the
+bundled path. The LAN oracle sets an absent assets directory to prevent an
+installed asset folder from hiding a missing executable bundle. Its unit shader
+check proves default lookup borrows static aligned bytecode without file I/O,
+while explicit overrides still load bounded owned data and fail when missing.

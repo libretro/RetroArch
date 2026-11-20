@@ -18,6 +18,7 @@ parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--shader-directory', type=Path,
     default=Path(__file__).resolve().parents[3] / 'libretro-common/formats/pyrowave/shaders')
 parser.add_argument('--full-output', action='store_true')
+parser.add_argument('--embedded-shaders', action='store_true')
 parser.add_argument('--audio-driver', default='null')
 parser.add_argument('--audio-device', default='')
 parser.add_argument('--threaded', action='store_true')
@@ -58,7 +59,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as control:
     control.bind(('127.0.0.1', 0)); control_port = control.getsockname()[1]
 config = work / 'pyrowave-frontend-test.cfg'
 record_config = work / 'pyrowave-frontend-record.cfg'
-record_config.write_text('pyrowave_shader_directory = "' + str(args.shader_directory.resolve()).replace('\\', '/') + '"\n'
+record_config.write_text(('' if args.embedded_shaders else 'pyrowave_shader_directory = "' + str(args.shader_directory.resolve()).replace('\\', '/') + '"\n') +
     'audio_enable = "true"\npyrowave_maximum_bytes = "262144"\n')
 config.write_text('video_driver = "' + args.backend + '"\nrecord_driver = "pyrowave"\nvideo_threaded = "' + ('true' if args.threaded else 'false') + '"\n'
     'audio_driver = "' + args.audio_driver + '"\naudio_enable = "true"\nvideo_vsync = "true"\nvideo_fullscreen = "false"\npause_nonactive = "false"\n'

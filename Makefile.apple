@@ -22,3 +22,9 @@ generate: $(MOC_SRC)
 
 print-%:
 	@echo '$*=$($*)'
+
+ifeq ($(HAVE_PYROWAVE),1)
+include Makefile.pyrowave
+INCLUDE_DIRS += -I$(PYROWAVE_GENERATED_DIR)
+generate: $(PYROWAVE_GENERATED_HEADER)
+endif
