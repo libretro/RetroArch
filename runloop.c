@@ -5613,6 +5613,15 @@ void runloop_system_info_free(void)
    sys_info->mmaps.descriptors                        = NULL;
    sys_info->mmaps.num_descriptors                    = 0;
 
+#ifdef HAVE_MENU
+   /* The menu's lists name the core (Unload Core, the Quick Menu):
+    * a staged close frees this frames after the menu was rebuilt.
+    * The name may point into a library already closed: never read. */
+   if (sys_info->info.library_name)
+      menu_state_get_ptr()->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                  |  MENU_ST_FLAG_PREVENT_POPULATE;
+#endif
+
    sys_info->info.library_name                        = NULL;
    sys_info->info.library_version                     = NULL;
    sys_info->info.valid_extensions                    = NULL;

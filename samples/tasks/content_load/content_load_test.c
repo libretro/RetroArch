@@ -1662,6 +1662,129 @@ static void lane_close_waits_for_save(void)
             "%u presented)\n", waited, presented_waiting);
 }
 
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+/* Whether the menu's current list holds an entry labelled @label */
+static bool menu_list_has_label(const char *label)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *buf           = menu_list
+      ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   size_t i;
+   if (!buf)
+      return false;
+   for (i = 0; i < buf->size; i++)
+      if (string_is_equal(buf->list[i].label, label))
+         return true;
+   return false;
+}
+
+/* ------------------------------------------------------------------ */
+/* Lane: a waiting close leaves no core on the Main Menu              */
+/* ------------------------------------------------------------------ */
+
+/* Close Content on a core no one loaded by hand (a playlist launch
+ * leaves no last core), while a save is still being written: the
+ * menu is up and populated through the frames the close waits, with
+ * the old core's system information still standing.  Once the close
+ * is through no core is loaded, and the Main Menu offers Load Core,
+ * not Unload Core. */
+static void lane_close_waits_main_menu(void)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   unsigned had = failures;
+   unsigned i, waited = 0;
+   bool held = false, stale_seen = false;
+   retro_time_t deadline;
+
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   pump(2);
+   CHECK(core_is_up() && !menu_is_up(), "not running the core");
+
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, true);
+   task_queue_set_threaded();
+   task_queue_check();
+   if (task_queue_is_threaded())
+   {
+      set_save_state_in_background(true);
+      core_hold_serialize(1);
+      held = true;
+   }
+
+   configuration_set_int(settings, settings->ints.state_slot, 0);
+   CHECK(command_event(CMD_EVENT_SAVE_STATE, NULL), "save state not started");
+
+   open_menu();
+   path_clear(RARCH_PATH_CORE_LAST);
+   menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+   pump(1);
+   CHECK(runloop_is_content_switching(), "the close did not start a staged load");
+
+   deadline = cpu_features_get_time_usec() + SAVE_WAIT_MAX_USEC;
+   for (i = 0;    cpu_features_get_time_usec() < deadline
+               && runloop_is_content_switching(); i++)
+   {
+      pump(1);
+      if (runloop_is_content_closing())
+      {
+         waited++;
+         if (menu_list_has_label(MENU_ENUM_LABEL_CORE_LIST_UNLOAD_STR))
+            stale_seen = true;
+         if (held && waited == SAVE_HELD_FRAMES)
+         {
+            core_hold_serialize(0);
+            held = false;
+         }
+      }
+   }
+   core_hold_serialize(0);
+   set_save_state_in_background(false);
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   task_queue_check();
+   CHECK(!runloop_is_content_switching(), "the close did not finish");
+   pump(3);
+
+   CHECK(!(runloop_st->system.info.library_name
+            && *runloop_st->system.info.library_name),
+         "a core is still named after the close (\"%s\")",
+         runloop_st->system.info.library_name);
+   CHECK(!menu_list_has_label(MENU_ENUM_LABEL_CORE_LIST_UNLOAD_STR),
+         "the Main Menu offers Unload Core with no core loaded "
+         "(%u frames waited, listed while waiting: %d)",
+         waited, (int)stale_seen);
+   CHECK(menu_list_has_label(MENU_ENUM_LABEL_CORE_LIST_STR),
+         "the Main Menu does not offer Load Core after the close");
+
+   /* Back on the harness core for the lanes after this one */
+   {
+      content_ctx_info_t content_info = {0};
+      struct load_frame log[LOAD_FRAMES];
+      unsigned n;
+      path_set(RARCH_PATH_CORE, core_path);
+      path_set(RARCH_PATH_CORE_LAST, core_path);
+      CHECK(task_push_start_dummy_core(&content_info),
+            "the dummy session was not started");
+      n = run_load(log, LOAD_FRAMES);
+      CHECK(n < LOAD_FRAMES, "the dummy session did not come up");
+      CHECK(task_push_start_current_core(&content_info),
+            "Start Core not started");
+      n = run_load(log, LOAD_FRAMES);
+      CHECK(n < LOAD_FRAMES && core_is_up(), "Start Core did not go through");
+      pump(1);
+   }
+
+   if (failures == had)
+      fprintf(stderr, "[pass] close-waits-main-menu lane (%u frames "
+            "waited)\n", waited);
+}
+#endif
+
 /* ------------------------------------------------------------------ */
 /* Lane: a quit waits for a save in flight, presenting                */
 /* ------------------------------------------------------------------ */
@@ -4075,6 +4198,9 @@ int main(int argc, char *argv[])
    lane_dummy_selected_core();
    lane_focus_follows_frames();
    lane_close_waits_for_save();
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+   lane_close_waits_main_menu();
+#endif
 #ifdef HAVE_NETWORKING
    lane_host_setup_deferred();
 #endif
