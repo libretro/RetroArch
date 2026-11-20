@@ -1633,8 +1633,6 @@ static bool font_init_first(
 /* ASCII:       0xxxxxxx  (c & 0x80) == 0x00
  * other start: 11xxxxxx  (c & 0xC0) == 0xC0
  * other cont:  10xxxxxx  (c & 0xC0) == 0x80
- * Neutral:
- * 0020 - 002F: 001xxxxx (c & 0xE0) == 0x20
  * misc. white space:
  * 2000 - 200D: 11100010 10000000 1000xxxx (c[2] < 0x8E) (3 bytes)
  * Hebrew:
@@ -1647,7 +1645,6 @@ static bool font_init_first(
 #define IS_ASCII(p)        ((*(p)&0x80) == 0x00)
 #define IS_MBSTART(p)      ((*(p)&0xC0) == 0xC0)
 #define IS_MBCONT(p)       ((*(p)&0xC0) == 0x80)
-#define IS_DIR_NEUTRAL(p)  ((*(p)&0xE0) == 0x20)
 #define IS_HEBREW(p)       ((*(p)&0xFE) == 0xD6)
 #define IS_ARABIC(p)       ((*(p)&0xFC) == 0xD8)
 #define IS_RTL(p)          (IS_HEBREW(p) || IS_ARABIC(p))
@@ -1892,174 +1889,668 @@ static INLINE unsigned font_get_arabic_replacement(
 }
 /* clang-format on */
 
-/* True if any byte has bit 7 set.
- *
- * Everything the reshaper reacts to needs one: IS_MBCONT is 0x80-0xBF,
- * IS_HEBREW 0xD6-0xD7, IS_ARABIC 0xD8-0xDB. IS_DIR_NEUTRAL does match
- * ASCII 0x20-0x3F, but it is only consulted after an IS_RTL hit has
- * set reverse or entered a skip loop, which plain ASCII cannot reach.
- * So a message with no high bytes leaves the reshaper byte-identical
- * to the way it went in. */
-static INLINE bool font_msg_has_high_byte(const char *msg, size_t msg_len)
+/* Start of the first right-to-left character in msg, or msg + msg_len.
+ * Words with no byte at or above 0x80 are skipped whole: every
+ * right-to-left character is written with such bytes. */
+static const unsigned char *font_msg_find_rtl(const char *msg,
+      size_t msg_len)
 {
    const unsigned char *p = (const unsigned char*)msg;
    const unsigned char *e = p + msg_len;
    const size_t      mask = (size_t)~(size_t)0 / 0xFF * 0x80;
 
    while (p < e && ((uintptr_t)p & (sizeof(size_t) - 1)))
-      if (*p++ & 0x80)
-         return true;
+   {
+      if (IS_RTL(p))
+         return p;
+      p++;
+   }
 
    while (p + sizeof(size_t) <= e)
    {
       size_t w;
       memcpy(&w, p, sizeof(w));
       if (w & mask)
-         return true;
-      p += sizeof(size_t);
+      {
+         const unsigned char *q = p + sizeof(size_t);
+         for (; p < q; p++)
+            if (IS_RTL(p))
+               return p;
+      }
+      else
+         p += sizeof(size_t);
    }
 
-   while (p < e)
-      if (*p++ & 0x80)
-         return true;
-   return false;
+   for (; p < e; p++)
+      if (IS_RTL(p))
+         return p;
+   return e;
+}
+
+/* Bidi classes, a subset of the Unicode ones: the strong classes, the
+ * numbers, the weak separators, then the neutrals */
+enum font_bidi_class
+{
+   FONT_BIDI_L = 0,
+   FONT_BIDI_R,
+   FONT_BIDI_AL,
+   FONT_BIDI_EN,
+   FONT_BIDI_AN,
+   FONT_BIDI_ES,
+   FONT_BIDI_CS,
+   FONT_BIDI_ET,
+   FONT_BIDI_NSM,
+   FONT_BIDI_WS,
+   FONT_BIDI_ON
+};
+
+/* Characters a line can hold and be laid out. font_driver_render_msg's
+ * buffer cuts its input to 1023 bytes, so every line it draws fits; a
+ * longer line is drawn as typed. */
+#define FONT_BIDI_MAX_CHARS 1024
+/* Open brackets a line can nest, as in the Unicode algorithm, and pairs
+ * it can hold; brackets past them are not paired */
+#define FONT_BIDI_MAX_PAIRS 63
+/* Set in a lam's level once the lam-alef glyph before it stands for it,
+ * and in a resolved bracket's class while pairing */
+#define FONT_BIDI_TAKEN     0x80
+/* A level or class without that flag */
+#define FONT_BIDI_LEVEL(v)  ((v) & 0x7F)
+
+/* Length of the character at p: its lead byte and every continuation
+ * byte after it, never reaching end. Stepping back over continuation
+ * bytes finds the same boundaries. */
+static unsigned font_bidi_char_len(const unsigned char *p,
+      const unsigned char *end)
+{
+   const unsigned char *q = p + 1;
+   while (q < end && IS_MBCONT(q))
+      q++;
+   return (unsigned)(q - p);
+}
+
+/* Start of the character before p, never before start */
+static const unsigned char *font_bidi_prev(const unsigned char *p,
+      const unsigned char *start)
+{
+   p--;
+   while (p > start && IS_MBCONT(p))
+      p--;
+   return p;
+}
+
+/* Class of the n-byte character at p, from the Unicode tables for
+ * ASCII, Latin-1, the Hebrew and Arabic blocks and general punctuation.
+ * Everything else is left-to-right. */
+static unsigned char font_bidi_class(const unsigned char *p, unsigned n)
+{
+   unsigned c = *p;
+   unsigned cp;
+
+   if (c < 0x80)
+   {
+      if (c >= '0' && c <= '9')
+         return FONT_BIDI_EN;
+      if ((c | 0x20) >= 'a' && (c | 0x20) <= 'z')
+         return FONT_BIDI_L;
+      switch (c)
+      {
+         case ' ':
+         case '\t':
+            return FONT_BIDI_WS;
+         case '+':
+         case '-':
+            return FONT_BIDI_ES;
+         case ',':
+         case '.':
+         case '/':
+         case ':':
+            return FONT_BIDI_CS;
+         case '#':
+         case '$':
+         case '%':
+            return FONT_BIDI_ET;
+      }
+      return FONT_BIDI_ON;
+   }
+
+   if (n == 2 && c < 0xE0)
+   {
+      cp = ((c & 0x1F) << 6) | (p[1] & 0x3F);
+      if (cp < 0x100)
+      {
+         if (cp == 0xA0)
+            return FONT_BIDI_CS;
+         if ((cp >= 0xA2 && cp <= 0xA5) || cp == 0xB0 || cp == 0xB1)
+            return FONT_BIDI_ET;
+         if (cp == 0xB2 || cp == 0xB3 || cp == 0xB9)
+            return FONT_BIDI_EN;
+         if (cp < 0xC0 && cp != 0xAA && cp != 0xB5 && cp != 0xBA)
+            return FONT_BIDI_ON;
+         if (cp == 0xD7 || cp == 0xF7)
+            return FONT_BIDI_ON;
+         return FONT_BIDI_L;
+      }
+      if (cp >= 0x300 && cp <= 0x36F)
+         return FONT_BIDI_NSM;
+      if (cp >= 0x590 && cp <= 0x5FF)
+      {
+         if (     (cp >= 0x591 && cp <= 0x5BD)
+               || cp == 0x5BF || cp == 0x5C1 || cp == 0x5C2
+               || cp == 0x5C4 || cp == 0x5C5 || cp == 0x5C7)
+            return FONT_BIDI_NSM;
+         return FONT_BIDI_R;
+      }
+      if (cp >= 0x600 && cp <= 0x6FF)
+      {
+         if (cp <= 0x605 || (cp >= 0x660 && cp <= 0x669)
+               || cp == 0x66B || cp == 0x66C || cp == 0x6DD)
+            return FONT_BIDI_AN;
+         if (cp >= 0x6F0 && cp <= 0x6F9)
+            return FONT_BIDI_EN;
+         if (cp == 0x609 || cp == 0x60A || cp == 0x66A)
+            return FONT_BIDI_ET;
+         if (cp == 0x60C)
+            return FONT_BIDI_CS;
+         if (     cp == 0x606 || cp == 0x607 || cp == 0x60E || cp == 0x60F
+               || cp == 0x6DE || cp == 0x6E9)
+            return FONT_BIDI_ON;
+         if (     (cp >= 0x610 && cp <= 0x61A)
+               || (cp >= 0x64B && cp <= 0x65F)
+               ||  cp == 0x670
+               || (cp >= 0x6D6 && cp <= 0x6DC)
+               || (cp >= 0x6DF && cp <= 0x6E4)
+               ||  cp == 0x6E7 || cp == 0x6E8
+               || (cp >= 0x6EA && cp <= 0x6ED))
+            return FONT_BIDI_NSM;
+         return FONT_BIDI_AL;
+      }
+   }
+   else if (n == 3 && c == 0xE2)
+   {
+      cp = ((c & 0x0F) << 12) | ((p[1] & 0x3F) << 6) | (p[2] & 0x3F);
+      if (cp >= 0x2000 && cp <= 0x200D)
+         return FONT_BIDI_WS;
+      if (cp == 0x200E)
+         return FONT_BIDI_L;
+      if (cp == 0x200F)
+         return FONT_BIDI_R;
+      if (cp == 0x202F || cp == 0x2044)
+         return FONT_BIDI_CS;
+      if (cp >= 0x2030 && cp <= 0x2034)
+         return FONT_BIDI_ET;
+      if (cp == 0x2028 || cp == 0x205F)
+         return FONT_BIDI_WS;
+      if (     (cp >= 0x2010 && cp <= 0x2027)
+            || (cp >= 0x2035 && cp <= 0x205E))
+         return FONT_BIDI_ON;
+      if (cp >= 0x20A0 && cp <= 0x20CF)
+         return FONT_BIDI_ET;
+   }
+   return FONT_BIDI_L;
+}
+
+/* Gives paired brackets a direction from what they hold and what comes
+ * before them. lv[] holds the classes of the n characters of the line
+ * from line to eol, of direction dir. */
+static void font_bidi_pair_brackets(const unsigned char *line,
+      const unsigned char *eol, unsigned char *lv, size_t n,
+      unsigned char dir)
+{
+   static const char    brackets[] = "()[]{}";
+   uint16_t             opened[FONT_BIDI_MAX_PAIRS];
+   uint16_t             pair[FONT_BIDI_MAX_PAIRS][2];
+   unsigned char        opened_ch[FONT_BIDI_MAX_PAIRS];
+   const unsigned char *p     = line;
+   size_t               i, j;
+   size_t               depth = 0;
+   size_t               pairs = 0;
+
+   /* A closing bracket pairs with the nearest open one of its kind and
+    * drops any opened after it */
+   for (i = 0; i < n; i++, p += font_bidi_char_len(p, eol))
+   {
+      const char *m;
+      size_t      k;
+      if (     lv[i] != FONT_BIDI_ON
+            || !(m = (const char*)memchr(brackets, *p,
+                  sizeof(brackets) - 1)))
+         continue;
+      if (!((m - brackets) & 1))
+      {
+         if (depth == FONT_BIDI_MAX_PAIRS)
+            break;
+         opened[depth]      = (uint16_t)i;
+         opened_ch[depth++] = *p;
+         continue;
+      }
+      for (j = depth; j > 0; j--)
+         if (opened_ch[j - 1] == (unsigned char)m[-1])
+            break;
+      if (!j)
+         continue;
+      if (pairs == FONT_BIDI_MAX_PAIRS)
+         break;
+      /* Kept in the order of their opening brackets */
+      for (k = pairs++; k > 0 && pair[k - 1][0] > opened[j - 1]; k--)
+      {
+         pair[k][0] = pair[k - 1][0];
+         pair[k][1] = pair[k - 1][1];
+      }
+      pair[k][0] = opened[j - 1];
+      pair[k][1] = (uint16_t)i;
+      depth      = j - 1;
+   }
+   if (!pairs)
+      return;
+
+   /* A pair takes the line's direction when it holds that direction,
+    * numbers counting as right-to-left. One that holds only the other
+    * direction takes the direction before it. Brackets given one are
+    * flagged for the marks after them. */
+   for (j = 0; j < pairs; j++)
+   {
+      unsigned char to = FONT_BIDI_ON;
+      for (i = pair[j][0] + 1; i < pair[j][1] && to != dir; i++)
+         if (FONT_BIDI_LEVEL(lv[i]) <= FONT_BIDI_AN)
+            to = (FONT_BIDI_LEVEL(lv[i]) == FONT_BIDI_L)
+               ? FONT_BIDI_L : FONT_BIDI_R;
+      if (to == FONT_BIDI_ON)
+         continue;
+      if (to != dir)
+      {
+         to = dir;
+         for (i = pair[j][0]; i > 0; i--)
+            if (FONT_BIDI_LEVEL(lv[i - 1]) <= FONT_BIDI_AN)
+            {
+               to = (FONT_BIDI_LEVEL(lv[i - 1]) == FONT_BIDI_L)
+                  ? FONT_BIDI_L : FONT_BIDI_R;
+               break;
+            }
+      }
+      lv[pair[j][0]] = to | FONT_BIDI_TAKEN;
+      lv[pair[j][1]] = to | FONT_BIDI_TAKEN;
+   }
+
+   /* Marks on a bracket take its direction */
+   for (i = pair[0][0], p = line; i > 0; i--)
+      p += font_bidi_char_len(p, eol);
+   for (i = pair[0][0]; i < n; i++)
+   {
+      unsigned k = font_bidi_char_len(p, eol);
+      if (lv[i] & FONT_BIDI_TAKEN)
+      {
+         unsigned char to = FONT_BIDI_LEVEL(lv[i]);
+         lv[i]            = to;
+         for (p += k; i + 1 < n; p += k)
+         {
+            k = font_bidi_char_len(p, eol);
+            if (font_bidi_class(p, k) != FONT_BIDI_NSM)
+               break;
+            lv[++i] = to;
+         }
+         continue;
+      }
+      p += k;
+   }
+}
+
+/* Resolves the levels of the line from line to eol with a single-line
+ * subset of the Unicode bidi algorithm: lv[] gets the level of each
+ * character in typed order and *base the line's. Returns the number of
+ * characters, 0 for a line with nothing right-to-left, or (size_t)-1
+ * for one over cap characters. */
+static size_t font_bidi_layout_line(const unsigned char *line,
+      const unsigned char *eol, unsigned char *lv, size_t cap,
+      unsigned char *base)
+{
+   const unsigned char *p;
+   size_t               i, j;
+   size_t               n       = 0;
+   unsigned char        dir     = FONT_BIDI_ON;
+   unsigned char        strong;
+   bool                 has_rtl = false;
+
+   /* The first strong character sets the line's direction */
+   for (p = line; p < eol; n++)
+   {
+      unsigned k;
+      if (n == cap)
+         return (size_t)-1;
+      k     = font_bidi_char_len(p, eol);
+      lv[n] = font_bidi_class(p, k);
+      if (     lv[n] == FONT_BIDI_R || lv[n] == FONT_BIDI_AL
+            || lv[n] == FONT_BIDI_AN)
+         has_rtl = true;
+      if (dir == FONT_BIDI_ON && lv[n] <= FONT_BIDI_AL)
+         dir = (lv[n] == FONT_BIDI_L) ? FONT_BIDI_L : FONT_BIDI_R;
+      p += k;
+   }
+   if (!has_rtl)
+      return 0;
+   if (dir == FONT_BIDI_ON)
+      dir = FONT_BIDI_L;
+
+   /* A mark takes the class of what it sits on. A European number after
+    * Arabic is an Arabic number, and Arabic is right-to-left. */
+   strong = dir;
+   for (i = 0; i < n; i++)
+   {
+      if (lv[i] == FONT_BIDI_NSM)
+         lv[i] = i ? lv[i - 1] : dir;
+      if (lv[i] <= FONT_BIDI_AL)
+         strong = lv[i];
+      if (lv[i] == FONT_BIDI_EN && strong == FONT_BIDI_AL)
+         lv[i] = FONT_BIDI_AN;
+   }
+   for (i = 0; i < n; i++)
+      if (lv[i] == FONT_BIDI_AL)
+         lv[i] = FONT_BIDI_R;
+
+   /* A separator between two numbers of a kind is part of them: either
+    * separator between European numbers, a common one between Arabic */
+   for (i = 1; i + 1 < n; i++)
+      if (     lv[i - 1] == lv[i + 1]
+            && (  (lv[i] == FONT_BIDI_ES && lv[i - 1] == FONT_BIDI_EN)
+               || (lv[i] == FONT_BIDI_CS && (lv[i - 1] == FONT_BIDI_EN
+                     || lv[i - 1] == FONT_BIDI_AN))))
+         lv[i] = lv[i - 1];
+
+   /* So are terminators next to a European number; other separators
+    * are neutral */
+   for (i = 0; i < n; i = j)
+   {
+      j = i + 1;
+      if (lv[i] == FONT_BIDI_ET)
+      {
+         unsigned char to = FONT_BIDI_ON;
+         while (j < n && lv[j] == FONT_BIDI_ET)
+            j++;
+         if (     (i > 0 && lv[i - 1] == FONT_BIDI_EN)
+               || (j < n && lv[j] == FONT_BIDI_EN))
+            to = FONT_BIDI_EN;
+         memset(lv + i, to, j - i);
+      }
+      else if (lv[i] == FONT_BIDI_ES || lv[i] == FONT_BIDI_CS)
+         lv[i] = FONT_BIDI_ON;
+   }
+
+   /* A European number after a left-to-right character is
+    * left-to-right */
+   strong = dir;
+   for (i = 0; i < n; i++)
+      if (lv[i] <= FONT_BIDI_R)
+         strong = lv[i];
+      else if (lv[i] == FONT_BIDI_EN && strong == FONT_BIDI_L)
+         lv[i] = FONT_BIDI_L;
+
+   font_bidi_pair_brackets(line, eol, lv, n, dir);
+
+   /* A neutral run takes the direction on both sides of it, numbers
+    * counting as right-to-left, or else the line's. Either end of the
+    * line counts as the line's direction, so trailing whitespace takes
+    * the line's level. */
+   for (i = 0; i < n; i = j)
+   {
+      unsigned char before = dir;
+      unsigned char after  = dir;
+      j = i + 1;
+      if (lv[i] < FONT_BIDI_WS)
+         continue;
+      while (j < n && lv[j] >= FONT_BIDI_WS)
+         j++;
+      if (i > 0)
+         before = (lv[i - 1] == FONT_BIDI_L) ? FONT_BIDI_L : FONT_BIDI_R;
+      if (j < n)
+         after  = (lv[j]     == FONT_BIDI_L) ? FONT_BIDI_L : FONT_BIDI_R;
+      memset(lv + i, (before == after) ? before : dir, j - i);
+   }
+
+   /* Right-to-left is level 1, a number 2, and left-to-right 0 in a
+    * left-to-right line or 2 in a right-to-left one */
+   for (i = 0; i < n; i++)
+   {
+      if (lv[i] == FONT_BIDI_R)
+         lv[i] = 1;
+      else if (lv[i] != FONT_BIDI_L || dir == FONT_BIDI_R)
+         lv[i] = 2;
+      else
+         lv[i] = 0;
+   }
+
+   *base = (dir == FONT_BIDI_R);
+   return n;
+}
+
+typedef struct
+{
+   const unsigned char *line;
+   const unsigned char *eol;
+   unsigned char       *lv;
+   unsigned char       *dst;
+   unsigned char       *dst_max;
+   bool                 full;
+} font_bidi_emit_t;
+
+/* Copies p to q to the output, cut at a character boundary when it
+ * does not fit */
+static void font_bidi_copy(font_bidi_emit_t *e, const unsigned char *p,
+      const unsigned char *q)
+{
+   size_t k = (size_t)(q - p);
+   if (k > (size_t)(e->dst_max - e->dst))
+   {
+      k       = (size_t)(e->dst_max - e->dst);
+      e->full = true;
+      while (k > 0 && IS_MBCONT(p + k))
+         k--;
+   }
+   memcpy(e->dst, p, k);
+   e->dst += k;
+}
+
+/* Writes character i, from p to q, of a right-to-left run whose first
+ * character is i0 at start: Arabic shaped from its neighbours in typed
+ * order, brackets mirrored */
+static void font_bidi_put_rtl(font_bidi_emit_t *e, size_t i,
+      const unsigned char *p, const unsigned char *q,
+      size_t i0, const unsigned char *start)
+{
+   static const char pairs[] = "()[]{}<>";
+   size_t            k       = (size_t)(q - p);
+   unsigned          r       = 0;
+
+   if (k == 2 && IS_ARABIC(p))
+      r = font_get_arabic_replacement((const char*)p,
+            (const char*)e->line, (const char*)e->eol);
+
+   if ((size_t)(e->dst_max - e->dst) < (r ? 3 : k))
+   {
+      e->full = true;
+      return;
+   }
+
+   if (r)
+   {
+      /* A lam-alef glyph stands for the lam too: the lam before the
+       * alef, behind any diacritics, is not drawn again */
+      if (r >= 0xFEF5 && r <= 0xFEFC)
+      {
+         const unsigned char *y = p;
+         while (i > i0)
+         {
+            const unsigned char *x = font_bidi_prev(y, start);
+            unsigned char        id;
+            i--;
+            if (y - x != 2 || !IS_ARABIC(x))
+               break;
+            if ((id = (unsigned char)GET_ID_ARABIC(x)) == 0x44)
+            {
+               e->lv[i] |= FONT_BIDI_TAKEN;
+               break;
+            }
+            /* nonspacing diacritics 0x4b -- 0x5f */
+            if (id < 0x4B || id > 0x5F)
+               break;
+            y = x;
+         }
+      }
+      /* Every replacement is a presentation form: three bytes */
+      *e->dst++ = 0xE0 | ( r >> 12);
+      *e->dst++ = 0x80 | ((r >>  6) & 0x3F);
+      *e->dst++ = 0x80 | ( r        & 0x3F);
+   }
+   else
+   {
+      const char *m;
+      memcpy(e->dst, p, k);
+      if (k == 1 && (m = (const char*)memchr(pairs, *p, sizeof(pairs) - 1)))
+         *e->dst = (unsigned char)pairs[(m - pairs) ^ 1];
+      e->dst += k;
+   }
+}
+
+/* Writes characters i0 to i1, from b0 to b1, all at level or above, in
+ * visual order. At an even level its own characters keep their order
+ * and go out in one copy per run; at an odd level they go out last to
+ * first. Runs above the level are laid out inside, in their place. */
+static void font_bidi_emit(font_bidi_emit_t *e, size_t i0, size_t i1,
+      const unsigned char *b0, const unsigned char *b1, unsigned level)
+{
+   const unsigned char *p;
+   const unsigned char *q;
+   size_t               i, j;
+
+   if (!(level & 1))
+   {
+      for (i = i0, p = b0; i < i1 && !e->full; i = j, p = q)
+      {
+         bool up = FONT_BIDI_LEVEL(e->lv[i]) > level;
+         for (j = i, q = p; j < i1
+               && (FONT_BIDI_LEVEL(e->lv[j]) > level) == up; j++)
+            q += font_bidi_char_len(q, b1);
+         if (up)
+            font_bidi_emit(e, i, j, p, q, level + 1);
+         else
+            font_bidi_copy(e, p, q);
+      }
+      return;
+   }
+
+   for (i = i1, p = b1; i > i0 && !e->full; i = j, p = q)
+   {
+      bool up = FONT_BIDI_LEVEL(e->lv[i - 1]) > level;
+      for (j = i, q = p; j > i0
+            && (FONT_BIDI_LEVEL(e->lv[j - 1]) > level) == up; j--)
+         q = font_bidi_prev(q, b0);
+      if (up)
+         font_bidi_emit(e, j, i, q, p, level + 1);
+      else
+      {
+         /* Last to first, but a base goes out before the marks on it,
+          * so the renderer draws each mark over its own base */
+         const unsigned char *c = p;
+         size_t               k = i;
+         while (k > j && !e->full)
+         {
+            const unsigned char *x = font_bidi_prev(c, q);
+            const unsigned char *y;
+            size_t               m = k - 1;
+            size_t               t;
+            while (m > j && font_bidi_class(x, font_bidi_char_len(x, p))
+                  == FONT_BIDI_NSM)
+            {
+               x = font_bidi_prev(x, q);
+               m--;
+            }
+            for (t = m, y = x; t < k && !e->full; t++)
+            {
+               const unsigned char *z = y + font_bidi_char_len(y, p);
+               if (!(e->lv[t] & FONT_BIDI_TAKEN))
+                  font_bidi_put_rtl(e, t, y, z, j, q);
+               y = z;
+            }
+            k = m;
+            c = x;
+         }
+      }
+   }
 }
 
 static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
       unsigned char *s, size_t len, size_t *out_len)
 {
-   const unsigned char *src;
-   bool                 reverse    = false;
-   /* worst case transformations are 2 bytes to 4 bytes -- aliaspider */
-   size_t               _len       = (msg_len * 2) + 1;
-   unsigned char       *dst        = s;
-   /* Highest dst that can still take the longest sequence emitted
-    * below (4 bytes) plus the terminator. The 2x estimate above only
-    * holds while the walk moves forward; the reverse pass can step
-    * back over bytes it has already emitted, so output length is not
-    * actually bounded by the input length and the buffer has to be
-    * bounded directly. */
-   unsigned char       *dst_max    = s + len - 5;
+   unsigned char        lv[FONT_BIDI_MAX_CHARS];
+   font_bidi_emit_t     e;
+   const unsigned char *line = (const unsigned char*)msg;
+   const unsigned char *end  = line + msg_len;
+   const unsigned char *eol  = font_msg_find_rtl(msg, msg_len);
 
-   /* Nothing to reshape: hand back the input and skip both the walk
+   /* Nothing right-to-left: hand back the input and skip both the walk
     * and the copy into s. This is every English HUD string, including
-    * the statistics block s is sized for. */
-   if (!font_msg_has_high_byte(msg, msg_len))
+    * the statistics overlay. */
+   if (eol == end || !len)
    {
       *out_len = msg_len;
       return (char*)msg;
    }
 
-   if (len < _len)
+   /* Output is at most 1.5 times its input, two bytes of Arabic making
+    * a three-byte presentation form, so input that could outgrow the
+    * buffer is cut to fit at a character boundary */
+   if (msg_len + msg_len / 2 > len - 1)
    {
-      /* Input too long for the buffer: truncate to fit.
-       * With a 512-byte caller buffer the limit is 255 source bytes,
-       * which exceeds any realistic on-screen message.  This path
-       * is effectively dead code for normal HUD/OSD rendering.
-       *
-       * Place the truncated, null-terminated copy in the upper half
-       * of the buffer (offset len/2).  The output grows forward
-       * from s[0] at most 2x the source consumption rate, so
-       * dst can never overtake src: after consuming k source bytes,
-       * dst <= 2k while src = len/2 + k, and 2k < len/2 + k
-       * holds for all k < len/2, which is guaranteed since
-       * msg_len < len/2. */
-      unsigned char *copy_dst;
-      msg_len = (len / 2) - 1;
-      /* Back up to a UTF-8 character boundary */
-      while (msg_len > 0 && IS_MBCONT((const unsigned char*)&msg[msg_len]))
+      msg_len = (len - 1) / 3 * 2 + ((len - 1) % 3 != 0);
+      while (msg_len > 0 && IS_MBCONT(line + msg_len))
          msg_len--;
-      copy_dst = s + (len / 2);
-      memcpy(copy_dst, msg, msg_len);
-      copy_dst[msg_len] = '\0';
-      msg = (const char*)copy_dst;
+      end = line + msg_len;
+      if (eol > end)
+         eol = end;
    }
 
-   src = (const unsigned char*)msg;
+   e.lv      = lv;
+   e.dst     = s;
+   e.dst_max = s + len - 1;
+   e.full    = false;
 
-   while ((*src || reverse) && dst < dst_max)
+   /* The lines before the first right-to-left one go out as typed */
+   while (eol > line && eol[-1] != '\n')
+      eol--;
+   font_bidi_copy(&e, line, eol);
+   line = eol;
+
+   for (;;)
    {
-      if (reverse)
-      {
-         src--;
-         while (src > (const unsigned char*)msg && IS_MBCONT(src))
-            src--;
+      const unsigned char *p;
+      size_t               n    = 0;
+      unsigned char        base = 0;
 
-         if (src >= (const unsigned char*)msg && (IS_RTL(src) || IS_DIR_NEUTRAL(src) || is_misc_ws(src)))
-         {
-            if (IS_ARABIC(src))
-            {
-               unsigned replacement = font_get_arabic_replacement(
-                     (const char*)src, msg, (const char*)msg + msg_len);
+      if (!(eol = (const unsigned char*)memchr(line, '\n',
+                  (size_t)(end - line))))
+         eol = end;
 
-               if (replacement)
-               {
-                  if (replacement < 0x80)
-                     *dst++ = replacement;
-                  else if (replacement < 0x800)
-                  {
-                     *dst++ = 0xC0 | (replacement >> 6);
-                     *dst++ = 0x80 | (replacement       & 0x3F);
-                  }
-                  else if (replacement < 0x10000)
-                  {
-                     /* merged glyphs */
-                     if ((replacement >= 0xFEF5) && (replacement <= 0xFEFC))
-                        src -= 2;
+      for (p = line; p < eol && !IS_RTL(p); p++);
+      if (p < eol && (n = font_bidi_layout_line(line, eol, lv,
+                  FONT_BIDI_MAX_CHARS, &base)) == (size_t)-1)
+         n = 0;
 
-                     *dst++ = 0xE0 | ( replacement >> 12);
-                     *dst++ = 0x80 | ((replacement >>  6) & 0x3F);
-                     *dst++ = 0x80 | ( replacement        & 0x3F);
-                  }
-                  else
-                  {
-                     *dst++ = 0xF0 |  (replacement >> 18);
-                     *dst++ = 0x80 | ((replacement >> 12) & 0x3F);
-                     *dst++ = 0x80 | ((replacement >>  6) & 0x3F);
-                     *dst++ = 0x80 | ( replacement        & 0x3F);
-                  }
-
-                  continue;
-               }
-            }
-
-            *dst++ = *src++;
-            while (IS_MBCONT(src) && dst < dst_max)
-               *dst++ = *src++;
-            src--;
-
-            while (IS_MBCONT(src))
-               src--;
-         }
-         else
-         {
-            reverse = false;
-            src++;
-            while (  IS_MBCONT(src)
-                  || IS_RTL(src)
-                  || IS_DIR_NEUTRAL(src)
-                  || is_misc_ws(src))
-               src++;
-         }
-      }
+      if (!n)
+         font_bidi_copy(&e, line, eol);
       else
       {
-         if (IS_RTL(src))
-         {
-            reverse = true;
-            while (  IS_MBCONT(src)
-                  || IS_RTL(src)
-                  || IS_DIR_NEUTRAL(src)
-                  || is_misc_ws(src))
-               src++;
-         }
-         else
-            *dst++ = *src++;
+         e.line = line;
+         e.eol  = eol;
+         font_bidi_emit(&e, 0, n, line, eol, base);
       }
+
+      if (e.full || eol == end || e.dst == e.dst_max)
+         break;
+      *e.dst++ = '\n';
+      line     = eol + 1;
    }
 
-   *dst = '\0';
-   *out_len = (size_t)(dst - s);
+   *e.dst   = '\0';
+   *out_len = (size_t)(e.dst - s);
    return (char*)s;
 }
 #endif

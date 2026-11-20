@@ -146,6 +146,7 @@ const struct win32_lang_pair win32_lang_pairs[] =
    {0x12,   RETRO_LANGUAGE_KOREAN},
    {0x11,   RETRO_LANGUAGE_JAPANESE},
    {0x10,   RETRO_LANGUAGE_ITALIAN},
+   {0xd,    RETRO_LANGUAGE_HEBREW},
    {0xc,    RETRO_LANGUAGE_FRENCH},
    {0xa,    RETRO_LANGUAGE_SPANISH},
    {0x9,    RETRO_LANGUAGE_ENGLISH},
