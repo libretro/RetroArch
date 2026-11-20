@@ -23,6 +23,7 @@ PLATFORMS     += gamecube wii
 DEFS_gamecube := -DGEKKO
 DEFS_wii      := -DGEKKO -DHW_RVL
 
+PLATFORMS += qnx
 DEFS_qnx  := -D__QNX__ -isystem $(ROOT)/tools/qnx_standin
 
 TARGETS := builtin_autoconf_test$(EXE) \

@@ -252,8 +252,8 @@ DECL_AXIS(l_y_plus,  +1) \
 DECL_AXIS(l_y_minus, -1) \
 DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
 
 #define QNX_DUALSHOCK_BINDS \
 DECL_BTN(a, 3) \
@@ -280,8 +280,8 @@ DECL_AXIS(l_y_plus,  +1) \
 DECL_AXIS(l_y_minus, -1) \
 DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
 #endif
 
 #define PSPINPUT_DEFAULT_BINDS \
