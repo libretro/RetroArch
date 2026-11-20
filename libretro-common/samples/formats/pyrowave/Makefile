@@ -1,8 +1,8 @@
 include ../../sample_objdir.mk
 
 TARGET := rpyrowave_test$(EXE)
-STREAM_TARGET := rpyrowave_stream_test$(EXE)
-TCP_TARGET := rpyrowave_stream_tcp_test$(EXE)
+TARGET_TEST := rpyrowave_stream_test$(EXE)
+TARGET_TEST2 := rpyrowave_stream_tcp_test$(EXE)
 COLOR_TARGET := rpyrowave_gl_color_test$(EXE)
 COMMON := ../../..
 SOURCES := rpyrowave_test.c $(COMMON)/formats/pyrowave/rpyrowave.c \
@@ -28,18 +28,18 @@ CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-all: $(TARGET) $(STREAM_TARGET) $(TCP_TARGET)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2)
 
 $(TARGET): $(OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-$(STREAM_TARGET): $(STREAM_OBJS)
+$(TARGET_TEST): $(STREAM_OBJS)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 rpyrowave_stream_tcp_test.o: rpyrowave_stream_test.c
 	$(CC) $(CFLAGS) -DRPYROWAVE_STREAM_SOCKET_TEST -c -o $@ $<
 
-$(TCP_TARGET): rpyrowave_stream_tcp_test.o $(filter-out rpyrowave_stream_test.o,$(STREAM_OBJS)) $(SOCKET_OBJ)
+$(TARGET_TEST2): rpyrowave_stream_tcp_test.o $(filter-out rpyrowave_stream_test.o,$(STREAM_OBJS)) $(SOCKET_OBJ)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS) $(SOCKET_LIBS)
 
 $(COLOR_TARGET): gpu_gl_color.c gpu_gl_context.h gpu_vectors.h gpu_color_math.h \
@@ -60,14 +60,14 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-check: $(TARGET) $(STREAM_TARGET) $(TCP_TARGET)
+check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2)
 	$(RUNNER) ./$(TARGET)
-	$(RUNNER) ./$(STREAM_TARGET)
-	$(RUNNER) ./$(TCP_TARGET)
+	$(RUNNER) ./$(TARGET_TEST)
+	$(RUNNER) ./$(TARGET_TEST2)
 
-stream-check: $(STREAM_TARGET) $(TCP_TARGET)
-	$(RUNNER) ./$(STREAM_TARGET)
-	$(RUNNER) ./$(TCP_TARGET)
+stream-check: $(TARGET_TEST) $(TARGET_TEST2)
+	$(RUNNER) ./$(TARGET_TEST)
+	$(RUNNER) ./$(TARGET_TEST2)
 
 reference-check: $(TARGET)
 	@test -n "$(REFERENCE_DIR)" || (echo "Set REFERENCE_DIR to external oracle captures"; exit 1)
@@ -75,7 +75,7 @@ reference-check: $(TARGET)
 
 clean:
 	rm -f rpyrowave_gl_color_test rpyrowave_gl_color_test.exe
-	rm -f $(TARGET) $(STREAM_TARGET) $(TCP_TARGET) rpyrowave_test.o rpyrowave_stream_test.o rpyrowave_stream_tcp_test.o
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) rpyrowave_test.o rpyrowave_stream_test.o rpyrowave_stream_tcp_test.o
 	rm -f rpyrowave_test.exe rpyrowave_stream_test.exe rpyrowave_stream_tcp_test.exe
 	rm -rf $(SAMPLE_OBJDIR)
 

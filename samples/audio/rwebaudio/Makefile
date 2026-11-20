@@ -40,8 +40,19 @@ check: all
 	./$(TARGET)
 	node rwebaudio_js_test.js
 
+# Compile with the real SDK: a Node mock alone cannot validate JS-library
+# decorators or the wasm import's Asyncify suspension/return convention.
+EMCC ?= emcc
+NODE ?= node
+emscripten-check:
+	@mkdir -p $(SAMPLE_OBJDIR)
+	$(EMCC) -O1 -sASYNCIFY=1 -sENVIRONMENT=node -sEXIT_RUNTIME=1 -sWASM_ASYNC_COMPILATION=0 \
+		--js-library ../../../os/emscripten/library_rwebaudio.js \
+		rwebaudio_emscripten_test.c -o $(SAMPLE_OBJDIR)/rwebaudio-wasm.js
+	$(NODE) $(SAMPLE_OBJDIR)/rwebaudio-wasm.js
+
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
-.PHONY: all check clean
+.PHONY: all check clean emscripten-check

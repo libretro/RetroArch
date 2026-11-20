@@ -114,6 +114,9 @@ jobs:
           # self-contained test and exits 0 on success / non-zero on
           # failure.  These are built AND executed.
           declare -a RUN_TARGETS=(
+            rpyrowave_test
+            rpyrowave_stream_test
+            rpyrowave_stream_tcp_test
             rwma_test
             audio_transfer_wma_test
             flv_mux_test

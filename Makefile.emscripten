@@ -326,7 +326,9 @@ all: $(TARGET)
 $(libretro_new): ;
 
 mv_libretro:
+ifneq ($(strip $(libretro)),)
 	$(Q)mv -f $(libretro) $(libretro_new) || true
+endif
 
 $(TARGET): $(RARCH_OBJ) $(libretro_new) mv_libretro
 	@$(if $(Q), $(shell echo echo "LD $@ \<obj\> $(libretro_new) $(LIBS) $(LDFLAGS)"),)

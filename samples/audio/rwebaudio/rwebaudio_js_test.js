@@ -48,6 +48,7 @@ const sandbox = {
    setTimeout,
    clearTimeout,
    HEAPF32,
+   Asyncify: { handleAsync: (fn) => fn() },
    Math,
    addToLibrary: (l) => { lib = l; },
    autoAddDeps: () => {},
@@ -55,6 +56,8 @@ const sandbox = {
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(path.join(__dirname, "../../../os/emscripten/library_rwebaudio.js"), "utf8"), sandbox);
 check(lib !== null, "the library did not register");
+check(lib.RWebAudioWaitRoom__async === true, "Emscripten async metadata must be boolean");
+check(lib.RWebAudioWaitRoom__deps.includes("$Asyncify"), "the wait lacks its Asyncify dependency");
 
 /* what emscripten makes of it: $X is X, the rest _X */
 for (const k of Object.keys(lib)) {

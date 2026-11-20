@@ -33,6 +33,7 @@ on:
       - 'samples/gfx/d3d12_menu_mapping/**'
       - 'samples/gfx/threaded_video/harness_core.c'
       - 'samples/gfx/d3d9_ex/**'
+      - '.github/workflows/scripts/wine-server.sh'
       - '.github/workflows/Windows-wine-menu.yml'
   pull_request:
     paths:
@@ -53,6 +54,7 @@ on:
       - 'samples/gfx/d3d12_menu_mapping/**'
       - 'samples/gfx/threaded_video/harness_core.c'
       - 'samples/gfx/d3d9_ex/**'
+      - '.github/workflows/scripts/wine-server.sh'
       - '.github/workflows/Windows-wine-menu.yml'
   workflow_dispatch:
 
@@ -168,6 +170,10 @@ jobs:
           set -eu
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           export LIBGL_ALWAYS_SOFTWARE=1
+          # Keep the server alive across the short GPU oracles. A server
+          # exiting between clients can kill one during startup/teardown.
+          timeout 30 wineserver -w
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           CC=x86_64-w64-mingw32-gcc RUNNER=wine \
             xvfb-run -a python3 samples/gfx/d3d12_menu_mapping/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine REQUIRE_D3D11=1 \

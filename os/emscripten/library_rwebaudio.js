@@ -144,24 +144,27 @@ var LibraryRWebAudio = {
     * Resolves 1 when it did, 0 when only the watchdog ran out: one that
     * frees nothing, suspended until the page is clicked or the tab is
     * shown, is the caller's to give up on. */
-   RWebAudioWaitRoom__deps: ["RWebAudioWriteAvailFrames", "RWebAudioResumeCtx"],
-   RWebAudioWaitRoom__async: 'auto',
+   RWebAudioWaitRoom__deps: ["$Asyncify", "RWebAudioWriteAvailFrames", "RWebAudioResumeCtx"],
+   RWebAudioWaitRoom__async: true,
+   RWebAudioWaitRoom__sig: "ii",
    RWebAudioWaitRoom: function(ms) {
-      return new Promise(function(resolve) {
-         var timer;
-         if (_RWebAudioWriteAvailFrames() > 0) {
-            resolve(1);
-            return;
-         }
-         _RWebAudioResumeCtx();
-         RWA.wake = function(r) {
-            clearTimeout(timer);
-            resolve(r);
-         };
-         timer = setTimeout(function() {
-            RWA.wake = null;
-            resolve(0);
-         }, ms);
+      return Asyncify.handleAsync(function() {
+         return new Promise(function(resolve) {
+            var timer;
+            if (_RWebAudioWriteAvailFrames() > 0) {
+               resolve(1);
+               return;
+            }
+            _RWebAudioResumeCtx();
+            RWA.wake = function(r) {
+               clearTimeout(timer);
+               resolve(r);
+            };
+            timer = setTimeout(function() {
+               RWA.wake = null;
+               resolve(0);
+            }, ms);
+         });
       });
    },
 
