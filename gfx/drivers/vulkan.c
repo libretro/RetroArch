@@ -4347,7 +4347,6 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
    const struct font_glyph* (*get_glyph)(void*, uint32_t);
-   const struct font_glyph* glyph_q;
    void *font_data;
    vulkan_raster_t *font = (vulkan_raster_t*)data;
    int width             = 0;
@@ -4359,7 +4358,6 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
 
    get_glyph = font->font_driver->get_glyph;
    font_data = font->font_data;
-   glyph_q   = get_glyph(font_data, '?');
    /* Every lookup, the fallback glyph's included (it is evicted like
     * any other slot under atlas pressure), is paired with an upload of
     * its cell, so no cell is stranded once an unrelated glyph's update
@@ -4375,8 +4373,6 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
          font->needs_update = true; \
       } \
    } while (0)
-   if (glyph_q)
-      FONT_MEASURE_DIRTY(glyph_q);
 #define FONT_MEASURE_SUM width
 #include "../font_measure.h"
    return (int)(width * scale);

@@ -1667,144 +1667,146 @@ static INLINE unsigned is_misc_ws(const unsigned char* src)
    return res;
 }
 
+/* Presentation forms of the Arabic block by low byte: isolated, final,
+ * initial, medial; 0 where a letter has none */
+const uint16_t font_driver_arabic_shapes[0x100][0x4] = {
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0600 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0610 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+   { 0 },                               /* 0x0620 */
+   { 0xFE80 },
+   { 0xFE81, 0xFE82 },
+   { 0xFE83, 0xFE84 },
+   { 0xFE85, 0xFE86 },
+   { 0xFE87, 0xFE88 },
+   { 0xFE89, 0xFE8A, 0xFE8B, 0xFE8C },
+   { 0xFE8D, 0xFE8E },
+
+   { 0xFE8F, 0xFE90, 0xFE91, 0xFE92 },
+   { 0xFE93, 0xFE94 },
+   { 0xFE95, 0xFE96, 0xFE97, 0xFE98 },
+   { 0xFE99, 0xFE9A, 0xFE9B, 0xFE9C },
+   { 0xFE9D, 0xFE9E, 0xFE9F, 0xFEA0 },
+   { 0xFEA1, 0xFEA2, 0xFEA3, 0xFEA4 },
+   { 0xFEA5, 0xFEA6, 0xFEA7, 0xFEA8 },
+   { 0xFEA9, 0xFEAA },
+
+   { 0xFEAB, 0xFEAC },                  /* 0x0630 */
+   { 0xFEAD, 0xFEAE },
+   { 0xFEAF, 0xFEB0 },
+   { 0xFEB1, 0xFEB2, 0xFEB3, 0xFEB4 },
+   { 0xFEB5, 0xFEB6, 0xFEB7, 0xFEB8 },
+   { 0xFEB9, 0xFEBA, 0xFEBB, 0xFEBC },
+   { 0xFEBD, 0xFEBE, 0xFEBF, 0xFEC0 },
+   { 0xFEC1, 0xFEC2, 0xFEC3, 0xFEC4 },
+
+   { 0xFEC5, 0xFEC6, 0xFEC7, 0xFEC8 },
+   { 0xFEC9, 0xFECA, 0xFECB, 0xFECC },
+   { 0xFECD, 0xFECE, 0xFECF, 0xFED0 },
+   { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+   { 0 },                               /* 0x0640 */
+   { 0xFED1, 0xFED2, 0xFED3, 0xFED4 },
+   { 0xFED5, 0xFED6, 0xFED7, 0xFED8 },
+   { 0xFED9, 0xFEDA, 0xFEDB, 0xFEDC },
+   { 0xFEDD, 0xFEDE, 0xFEDF, 0xFEE0 },
+   { 0xFEE1, 0xFEE2, 0xFEE3, 0xFEE4 },
+   { 0xFEE5, 0xFEE6, 0xFEE7, 0xFEE8 },
+   { 0xFEE9, 0xFEEA, 0xFEEB, 0xFEEC },
+
+   { 0xFEED, 0xFEEE },
+   { 0xFEEF, 0xFEF0, 0xFBE8, 0xFBE9 },
+   { 0xFEF1, 0xFEF2, 0xFEF3, 0xFEF4 },
+   { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0650 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0660 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0670 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+   { 0 }, { 0 },
+   { 0xFB56, 0xFB57, 0xFB58, 0xFB59 },
+   { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0680 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0690 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06A0 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+   { 0 },
+   { 0xFB8E, 0xFB8F, 0xFB90, 0xFB91 },
+   { 0 }, { 0 },
+
+   { 0 }, { 0 }, { 0 },
+   { 0xFB92, 0xFB93, 0xFB94, 0xFB95 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06B0 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06C0 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+   { 0xFBFC, 0xFBFD, 0xFBFE, 0xFBFF },
+   { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06D0 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06E0 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+
+
+   { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06F0 */
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+   { 0 }, { 0 }, { 0 }, { 0 },
+};
+
 static INLINE unsigned font_get_arabic_replacement(
       const char* src, const char* start, const char* end)
 {
-   /* 0x0620 to 0x064F */
-   static const unsigned arabic_shape_map[0x100][0x4] = {
-      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0600 */
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0610 */
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-      { 0 },                               /* 0x0620 */
-      { 0xFE80 },
-      { 0xFE81, 0xFE82 },
-      { 0xFE83, 0xFE84 },
-      { 0xFE85, 0xFE86 },
-      { 0xFE87, 0xFE88 },
-      { 0xFE89, 0xFE8A, 0xFE8B, 0xFE8C },
-      { 0xFE8D, 0xFE8E },
-
-      { 0xFE8F, 0xFE90, 0xFE91, 0xFE92 },
-      { 0xFE93, 0xFE94 },
-      { 0xFE95, 0xFE96, 0xFE97, 0xFE98 },
-      { 0xFE99, 0xFE9A, 0xFE9B, 0xFE9C },
-      { 0xFE9D, 0xFE9E, 0xFE9F, 0xFEA0 },
-      { 0xFEA1, 0xFEA2, 0xFEA3, 0xFEA4 },
-      { 0xFEA5, 0xFEA6, 0xFEA7, 0xFEA8 },
-      { 0xFEA9, 0xFEAA },
-
-      { 0xFEAB, 0xFEAC },                  /* 0x0630 */
-      { 0xFEAD, 0xFEAE },
-      { 0xFEAF, 0xFEB0 },
-      { 0xFEB1, 0xFEB2, 0xFEB3, 0xFEB4 },
-      { 0xFEB5, 0xFEB6, 0xFEB7, 0xFEB8 },
-      { 0xFEB9, 0xFEBA, 0xFEBB, 0xFEBC },
-      { 0xFEBD, 0xFEBE, 0xFEBF, 0xFEC0 },
-      { 0xFEC1, 0xFEC2, 0xFEC3, 0xFEC4 },
-
-      { 0xFEC5, 0xFEC6, 0xFEC7, 0xFEC8 },
-      { 0xFEC9, 0xFECA, 0xFECB, 0xFECC },
-      { 0xFECD, 0xFECE, 0xFECF, 0xFED0 },
-      { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-      { 0 },                               /* 0x0640 */
-      { 0xFED1, 0xFED2, 0xFED3, 0xFED4 },
-      { 0xFED5, 0xFED6, 0xFED7, 0xFED8 },
-      { 0xFED9, 0xFEDA, 0xFEDB, 0xFEDC },
-      { 0xFEDD, 0xFEDE, 0xFEDF, 0xFEE0 },
-      { 0xFEE1, 0xFEE2, 0xFEE3, 0xFEE4 },
-      { 0xFEE5, 0xFEE6, 0xFEE7, 0xFEE8 },
-      { 0xFEE9, 0xFEEA, 0xFEEB, 0xFEEC },
-
-      { 0xFEED, 0xFEEE },
-      { 0xFEEF, 0xFEF0, 0xFBE8, 0xFBE9 },
-      { 0xFEF1, 0xFEF2, 0xFEF3, 0xFEF4 },
-      { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0650 */
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-
-      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0660 */
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-
-      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0670 */
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-      { 0 }, { 0 },
-      { 0xFB56, 0xFB57, 0xFB58, 0xFB59 },
-      { 0 },
-
-
-      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0680 */
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-
-      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x0690 */
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-
-      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06A0 */
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-      { 0 },
-      { 0xFB8E, 0xFB8F, 0xFB90, 0xFB91 },
-      { 0 }, { 0 },
-
-      { 0 }, { 0 }, { 0 },
-      { 0xFB92, 0xFB93, 0xFB94, 0xFB95 },
-
-
-      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06B0 */
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-
-      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06C0 */
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-      { 0xFBFC, 0xFBFD, 0xFBFE, 0xFBFF },
-      { 0 }, { 0 }, { 0 },
-
-
-      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06D0 */
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-
-      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06E0 */
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-
-
-      { 0 }, { 0 }, { 0 }, { 0 },          /* 0x06F0 */
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-      { 0 }, { 0 }, { 0 }, { 0 },
-   };
    unsigned ret = 0;
    bool          prev_connected = false;
    bool          next_connected = false;
@@ -1835,7 +1837,7 @@ static INLINE unsigned font_get_arabic_replacement(
          unsigned char prev2_id = 0;
          const char*   prev2    = prev - 2;
 
-         if (prev2 >= start)
+         if ((prev2 >= start) && IS_ARABIC(prev2))
             prev2_id            = GET_ID_ARABIC(prev2);
 
          /* nonspacing diacritics 0x4b -- 0x5f */
@@ -1848,7 +1850,7 @@ static INLINE unsigned font_get_arabic_replacement(
                break;
          }
 
-         prev_connected = !!arabic_shape_map[prev2_id][2];
+         prev_connected = !!font_driver_arabic_shapes[prev2_id][2];
 
          switch (id)
          {
@@ -1862,7 +1864,7 @@ static INLINE unsigned font_get_arabic_replacement(
                return 0xFEFB + prev_connected;
          }
       }
-      prev_connected = !!arabic_shape_map[prev_id][2];
+      prev_connected = !!font_driver_arabic_shapes[prev_id][2];
    }
 
    if ((next + 1 < end) && IS_ARABIC(next))
@@ -1878,14 +1880,14 @@ static INLINE unsigned font_get_arabic_replacement(
          next_id = GET_ID_ARABIC(next);
       }
 
-      next_connected = !!arabic_shape_map[next_id][1];
+      next_connected = !!font_driver_arabic_shapes[next_id][1];
    }
 
    if ((ret =
-            arabic_shape_map[id][prev_connected | (next_connected <<
+            font_driver_arabic_shapes[id][prev_connected | (next_connected <<
                1)]))
       return ret;
-   return arabic_shape_map[id][prev_connected];
+   return font_driver_arabic_shapes[id][prev_connected];
 }
 /* clang-format on */
 
@@ -2553,6 +2555,7 @@ static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
    *out_len = (size_t)(e.dst - s);
    return (char*)s;
 }
+
 #endif
 
 void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
@@ -2718,7 +2721,6 @@ int font_renderer_get_message_width(
       const char *msg, size_t msg_len, float scale)
 {
    const struct font_glyph *(*get_glyph)(void*, uint32_t);
-   const struct font_glyph *glyph_q;
    void *font_data = renderer_data;
    int width       = 0;
 
@@ -2726,7 +2728,6 @@ int font_renderer_get_message_width(
       return 0;
 
    get_glyph = renderer->get_glyph;
-   glyph_q   = get_glyph(font_data, '?');
 #define FONT_MEASURE_SUM width
 #include "font_measure.h"
    return (int)(width * scale);

@@ -217,6 +217,63 @@ static const char *const unchanged[] = {
    "smile \xF0\x9F\x98\x80 <ok>\nline two [x]",
 };
 
+/* A font for measuring: every codepoint has its own advance, mirrored
+ * brackets share one, U+2603 is missing and '?' stands in for it. Each
+ * lookup is counted. */
+static unsigned long           glyph_lookups = 0;
+static struct font_glyph       glyph_ring[64];
+static struct font_glyph       glyph_q_slot;
+static unsigned                glyph_next    = 0;
+
+static const struct font_glyph *fake_get_glyph(void *data, uint32_t code)
+{
+   struct font_glyph *g;
+   (void)data;
+   glyph_lookups++;
+   if (code == 0x2603)
+      return NULL;
+   if (code == '?')
+   {
+      glyph_q_slot.advance_x = 7;
+      return &glyph_q_slot;
+   }
+   g = &glyph_ring[glyph_next++ & 63];
+   memset(g, 0, sizeof(*g));
+   if (code < 0x80 && strchr("()[]{}<>", (int)code))
+      g->advance_x = 5;
+   else
+      g->advance_x = 3 + (int)(((code * 2654435761u) >> 27) % 13);
+   return g;
+}
+
+static font_renderer_driver_t fake_renderer;
+
+static int measure(const char *msg, size_t len)
+{
+   fake_renderer.get_glyph = fake_get_glyph;
+   return font_renderer_get_message_width(&fake_renderer,
+         &fake_renderer, msg, len, 1.0f);
+}
+
+/* The width of what is drawn: msg laid out, then each glyph's advance */
+static int drawn_width(const char *msg, size_t len)
+{
+   static unsigned char buf[1536];
+   size_t               out_len;
+   const char          *p   = font_driver_reshape_msg(msg, len, buf,
+         sizeof(buf), &out_len);
+   const char          *end = p + out_len;
+   int                  w   = 0;
+   while (p < end && *p)
+   {
+      const struct font_glyph *g = fake_get_glyph(NULL, utf8_walk(&p));
+      if (!g)
+         g = fake_get_glyph(NULL, '?');
+      w += g->advance_x;
+   }
+   return w;
+}
+
 #define CANARY      16
 #define CANARY_BYTE 0xA5
 
@@ -522,7 +579,78 @@ int main(void)
       }
    }
 
-   /* 11. Every buffer size from 1 to 64 for a mixed line */
+   /* 11. Arabic is measured as it is drawn */
+   {
+      static const char *const pieces[] = {
+         AR_LAM, AR_LAM, AR_ALEF, "\xD8\xA2", "\xD8\xA3", "\xD8\xA5",
+         "\xD8\xA8", AR_SEEN, AR_MEEM, "\xD8\xA9", AR_FATHA,
+         "\xD9\x91", AR_KEHEH, AR_DAL, AR_AIN, AR_2, AR_5, FA_3,
+         "\xD9\xAA", "\xD8\x80", " ", " ", "a", "1", "(", ")", "%",
+         "\n", ALEF, BET };
+      static const char *const fixed[] = {
+         AR_SEEN AR_LAM AR_ALEF AR_MEEM,
+         AR_LAM AR_FATHA AR_ALEF " " AR_LAM AR_ALEF,
+         "CRC " AR_AIN AR_DAL AR_DAL " (" AR_2 AR_5 "%)",
+         AR_KEHEH "\n" AR_LAM AR_ALEF,
+         " h" AR_LAM AR_ALEF };
+      unsigned long k;
+      unsigned      seed = 12345;
+      int           bad  = 0;
+      for (k = 0; k < sizeof(fixed) / sizeof(fixed[0]); k++)
+         if (measure(fixed[k], strlen(fixed[k]))
+               != drawn_width(fixed[k], strlen(fixed[k])))
+            bad++;
+      CHECK(!bad, "Arabic labels measure as wide as they are drawn");
+      for (k = 0; k < 20000 && bad < 5; k++)
+      {
+         size_t m, parts;
+         in[0] = '\0';
+         seed  = seed * 1103515245u + 12345u;
+         parts = 1 + (seed >> 16) % 24;
+         for (m = 0; m < parts; m++)
+         {
+            seed = seed * 1103515245u + 12345u;
+            strcat(in, pieces[(seed >> 16)
+                  % (sizeof(pieces) / sizeof(pieces[0]))]);
+         }
+         if (measure(in, strlen(in)) != drawn_width(in, strlen(in)))
+         {
+            printf("  FAIL: measured %d, drawn %d:",
+                  measure(in, strlen(in)), drawn_width(in, strlen(in)));
+            for (m = 0; in[m]; m++)
+               printf(" %02X", (unsigned char)in[m]);
+            printf("\n");
+            bad++;
+            fails++;
+         }
+      }
+   }
+
+   /* 12. A lam after an English letter is not joined to it */
+   {
+      static unsigned char buf[64];
+      size_t               len;
+      const char          *msg = " h" AR_LAM AR_ALEF;
+      font_driver_reshape_msg(msg, strlen(msg), buf, sizeof(buf), &len);
+      CHECK(len == 5 && !memcmp(buf, " h" AR_LAM_ALEF_ISOLATED, 5),
+            "lam and alef after English take the isolated ligature");
+   }
+
+   /* 13. A font missing nothing is asked once per glyph; '?' is looked
+    * up only for a glyph the font lacks */
+   {
+      unsigned long before = glyph_lookups;
+      int           w      = measure("Hello", 5);
+      CHECK(glyph_lookups - before == 5 && w == drawn_width("Hello", 5),
+            "five glyphs measured with five lookups");
+      before = glyph_lookups;
+      w      = measure("a\xE2\x98\x83" "b\xE2\x98\x83", 8);
+      CHECK(glyph_lookups - before == 5
+            && w == measure("a?b?", 4),
+            "a missing glyph is measured as '?', looked up once");
+   }
+
+   /* 14. Every buffer size from 1 to 64 for a mixed line */
    {
       const struct bidi_case *mixed = &cases[sizeof(cases) / sizeof(cases[0]) - 1];
       size_t                  len;

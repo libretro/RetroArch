@@ -313,6 +313,12 @@ int font_renderer_get_message_width(
 
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
+#ifdef HAVE_LANGEXTRA
+/* Presentation forms of the Arabic block, indexed by the low byte of
+ * the codepoint: isolated, final, initial, medial; 0 where none */
+extern const uint16_t font_driver_arabic_shapes[0x100][0x4];
+#endif
+
 /* Would rebuilding this font at this path and size produce the font
  * that is already there? Lets a caller skip a rebuild that would
  * rasterise an identical atlas and re-upload an identical texture,
