@@ -199,8 +199,8 @@ DECL_AXIS(l_y_plus,  +1) \
 DECL_AXIS(l_y_minus, -1) \
 DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
 
 #define XPERIA_PLAY_DEFAULT_BINDS \
 DECL_BTN_EX(a, 4, "Circle") \

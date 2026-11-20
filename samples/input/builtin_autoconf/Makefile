@@ -12,6 +12,7 @@ CFLAGS += -std=c89 -Wall -Wextra -g1 -O1 \
 PLATFORMS  := webos
 DEFS_webos := -DWEBOS
 
+PLATFORMS    += android
 DEFS_android := -DANDROID
 
 DEFS_ps3  := -D__PS3__
