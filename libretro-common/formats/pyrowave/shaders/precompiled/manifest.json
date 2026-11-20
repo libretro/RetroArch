@@ -36,9 +36,9 @@
       "text": true
     },
     "color.spv": {
-      "bytes": 45932,
+      "bytes": 33312,
       "language": "SPIRV",
-      "sha256": "6112fb5c2de59392e4ffb9b05b9484efe11b253c1fcf0354b600ac9774df3a69",
+      "sha256": "919410fb94dcdc15617ab0b3d51b3d8aea80f8707d6af7d2f136e2eb8b797cf0",
       "symbol": "rpyrowave_shader_color_spirv",
       "text": false
     },
@@ -78,9 +78,9 @@
       "text": true
     },
     "dwt.spv": {
-      "bytes": 5592,
+      "bytes": 4144,
       "language": "SPIRV",
-      "sha256": "bda7faeb392ff0ffc9414b89bb1789ef469afc537c6f6d4d2206fe6edec5e6ac",
+      "sha256": "997dfffe898f6fadb1874a91a4686a903645fbeae2c04dc73190f473c76bd5eb",
       "symbol": "rpyrowave_shader_dwt_spirv",
       "text": false
     },
@@ -120,9 +120,9 @@
       "text": true
     },
     "packet.spv": {
-      "bytes": 62752,
+      "bytes": 42060,
       "language": "SPIRV",
-      "sha256": "dfc7e78459f3b3b00dac5d7657605eebd2ed58ef215ff8f7d59721e44565c1eb",
+      "sha256": "ab9914a7db30d447ece1d06710a21ba3938a92f3e3c9fd91602d42f6a53b34b8",
       "symbol": "rpyrowave_shader_packet_spirv",
       "text": false
     }
@@ -142,6 +142,8 @@
     "glslang": "Glslang Version: 11:16.6.0",
     "msl_target": "metal2.1",
     "spirv_cross_sha256": "6c083dd12f99f218e5851c4a67b41f87ebd21b8d21e1665c79ecd53545137e0b",
+    "spirv_opt": "SPIRV-Tools v2026.4 unknown hash, 2026-10-01T23:51:15+00:00",
+    "spirv_optimization": "-Os --preserve-bindings --preserve-interface --preserve-spec-constants --strip-debug",
     "spirv_target": "vulkan1.0",
     "spirv_val": "SPIRV-Tools v2026.4 unknown hash, 2026-10-01T23:51:15+00:00"
   },

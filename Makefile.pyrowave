@@ -4,7 +4,7 @@ PYROWAVE_GENERATED_DIR ?= .pyrowave-shaders
 PYROWAVE_GENERATED_HEADER := $(PYROWAVE_GENERATED_DIR)/rpyrowave_shaders.h
 PYROWAVE_PRECOMPILED := libretro-common/formats/pyrowave/shaders/precompiled
 PYROWAVE_SHADER_INPUTS := $(foreach stage,color dwt packet,$(foreach suffix,spv dxil dxbc comp es.comp metal,$(PYROWAVE_PRECOMPILED)/$(stage).$(suffix)))
-$(PYROWAVE_GENERATED_HEADER): tools/pyrowave_embed_shaders.py tools/pyrowave_shaders.py \
+$(PYROWAVE_GENERATED_HEADER): tools/pyrowave_embed_shaders.py tools/pyrowave_shaders.py tools/spirv_optimize.py \
       $(PYROWAVE_PRECOMPILED)/manifest.json $(PYROWAVE_SHADER_INPUTS) \
       libretro-common/formats/pyrowave/shaders/color.hlsl \
       libretro-common/formats/pyrowave/shaders/dwt.hlsl \

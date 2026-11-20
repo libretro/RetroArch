@@ -3,6 +3,11 @@ FRAG_SHADERS := $(wildcard *.frag effects/*.frag)
 COMP_SHADERS := $(wildcard *.comp)
 SPIRV := $(VERT_SHADERS:.vert=.vert.inc) $(FRAG_SHADERS:.frag=.frag.inc) $(COMP_SHADERS:.comp=.comp.inc)
 
+PYTHON ?= python3
+SPIRV_OPT ?= spirv-opt
+SPIRV_VAL ?= spirv-val
+OPTIMIZE = $(PYTHON) ../../../tools/spirv_optimize.py --format c --input $@ --output $@ --spirv-opt $(SPIRV_OPT) --spirv-val $(SPIRV_VAL)
+
 GLSLANG := glslc
 GLSLFLAGS := -mfmt=c
 
@@ -23,6 +28,9 @@ GLSL_INC += effects/xmb_plastic.frag.src.inc effects/xmb_font.frag.src.inc
 
 all: $(SPIRV) $(GLSL_INC)
 
+# Names are reflection inputs for the shared GL modules: do not strip them.
+$(SPIRV): ../../../tools/spirv_optimize.py
+
 effects/pipeline_ribbon.vert.inc effects/pipeline_ribbon.frag.inc: ../menu_ribbon_shader.h
 
 effects/xmb_plastic.frag.inc effects/xmb_font.frag.inc: ../xmb_plastic.h
@@ -39,12 +47,15 @@ effects/pipeline_ribbon.vert.src.inc effects/pipeline_ribbon.frag.src.inc effect
 
 %.vert.inc: %.vert
 	$(GLSLANG) $(GLSLFLAGS) -o $@ $<
+	$(OPTIMIZE)
 
 %.frag.inc: %.frag
 	$(GLSLANG) $(GLSLFLAGS) -o $@ $<
+	$(OPTIMIZE)
 
 %.comp.inc: %.comp
 	$(GLSLANG) $(GLSLFLAGS) -o $@ $<
+	$(OPTIMIZE)
 
 yuv420_to_rgba8888.comp.inc yuv_image_to_rgba8888.comp.inc: ../../drivers_shader/video_hdr.inc.glsl
 
@@ -55,6 +66,8 @@ clean:
 
 yuv420_to_rgba16f.comp.inc: yuv420_to_rgba8888.comp ../../drivers_shader/video_hdr.inc.glsl
 	$(GLSLANG) $(GLSLFLAGS) -DOUTPUT_FP16 -o $@ $<
+	$(OPTIMIZE)
 
 yuv_image_to_rgba16f.comp.inc: yuv_image_to_rgba8888.comp ../../drivers_shader/video_hdr.inc.glsl
 	$(GLSLANG) $(GLSLFLAGS) -DOUTPUT_FP16 -o $@ $<
+	$(OPTIMIZE)

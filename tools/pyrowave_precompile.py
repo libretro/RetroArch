@@ -28,10 +28,13 @@ def main():
     p.add_argument('--fxc', required=True)
     p.add_argument('--glslang', default='glslangValidator')
     p.add_argument('--spirv-cross', default='spirv-cross')
+    p.add_argument('--spirv-opt', default='spirv-opt')
     p.add_argument('--spirv-val', default='spirv-val')
     a = p.parse_args()
     manifest = {'version': 1, 'sources': {}, 'artifacts': {}, 'tools': {
         'glslang': version([a.glslang, '--version']),
+        'spirv_opt': version([a.spirv_opt, '--version']),
+        'spirv_optimization': '-Os --preserve-bindings --preserve-interface --preserve-spec-constants --strip-debug',
         'spirv_val': version([a.spirv_val, '--version']),
         'spirv_cross_sha256': digest(Path(shutil.which(a.spirv_cross) or a.spirv_cross).read_bytes()),
         'dxc': version([a.dxc, '--version']),
@@ -44,6 +47,7 @@ def main():
         subprocess.run([sys.executable, str(ROOT / 'tools/pyrowave_shaders.py'),
             '--output', str(directory / 'arrays.h'), '--glslang', a.glslang,
             '--spirv-cross', a.spirv_cross, '--spirv-val', a.spirv_val,
+            '--spirv-opt', a.spirv_opt,
             '--export-glsl', str(directory), '--export-spirv', str(directory),
             '--export-msl', str(directory)], check=True)
         for stage in ('color', 'dwt', 'packet'):

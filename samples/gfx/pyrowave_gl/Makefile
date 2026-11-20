@@ -43,7 +43,7 @@ $(VFS_OBJ): $(ASSETDIR)/vfs$(EXE)/%.o: $(COMMON)/%.c
 	mkdir -p $(dir $@)
 	$(CC) $(filter-out -pedantic -Werror,$(CFLAGS)) -std=gnu99 -D_GNU_SOURCE -c $< -o $@
 
-$(ASSETDIR)/rpyrowave_shaders.h: $(RA)/tools/pyrowave_shaders.py \
+$(ASSETDIR)/rpyrowave_shaders.h: $(RA)/tools/pyrowave_shaders.py $(RA)/tools/spirv_optimize.py \
       $(SHADER_SOURCE)/color.hlsl $(SHADER_SOURCE)/dwt.hlsl $(SHADER_SOURCE)/packet.hlsl
 	$(PYTHON) $(RA)/tools/pyrowave_shaders.py --output $@ --export-glsl $(ASSETDIR)
 

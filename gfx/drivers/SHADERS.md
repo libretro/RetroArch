@@ -67,3 +67,19 @@ stages through a D3D11 device. It can run natively on Windows without RUNNER.
 Native SM6 execution is covered by D3D12 frontend tests. The low-model token
 streams are compiled by FXC; old SM2 hardware and Wii U/macOS still require
 native platform validation.
+
+## SPIR-V optimization
+
+The Vulkan shader Makefile runs `tools/spirv_optimize.py` after compilation.
+This is an explicit maintainer regeneration step, not an ordinary frontend
+build requirement. The shared modules use an explicit size pass list that
+retains reflected names, interface variables, bindings, specialization
+constants and unused buffer members. Removing unused members can change
+GL buffer flattening/upload contracts even when Vulkan validation succeeds.
+`tools/spirv_optimize_test.py` verifies reflected resource layouts and the
+frontend's ribbon upload block in CI. Every module is validated before and
+after optimization.
+
+PyroWave's Vulkan-only exports use the size pipeline with debug names
+stripped. GLSL and Metal are still generated from the original named IR;
+their committed assets do not change when Vulkan modules are optimized.

@@ -6,6 +6,7 @@ from pathlib import Path
 import struct
 import subprocess
 import tempfile
+from spirv_optimize import optimize
 
 
 def run(command):
@@ -51,6 +52,7 @@ def main():
                         help="Validate Metal sources with xcrun and this Apple SDK")
     parser.add_argument("--glslang", default="glslangValidator")
     parser.add_argument("--spirv-cross", default="spirv-cross")
+    parser.add_argument("--spirv-opt", default="spirv-opt")
     parser.add_argument("--spirv-val", default="spirv-val")
     parser.add_argument("--check", action="store_true", help="Verify an existing header without rewriting it")
     args = parser.parse_args()
@@ -73,7 +75,9 @@ def main():
                  "1" if name == "dwt" else "2", "--shift-UBO-binding", "comp",
                  "2" if name == "dwt" else "4", "-S", "comp", "-e", "main", "-o", spirv, source])
             run([args.spirv_val, "--target-env", "vulkan1.0", spirv])
-            data = spirv.read_bytes()
+            # Only the Vulkan module is optimized/stripped. Cross-compilation
+            # below still uses the original named IR for GLSL and Metal.
+            data = optimize(spirv.read_bytes(), args.spirv_opt, args.spirv_val, True)
             if len(data) % 4 or data[:4] != b"\x03\x02\x23\x07":
                 raise ValueError("Compiler did not emit a SPIR-V module")
             words = struct.unpack("<%dI" % (len(data) // 4), data)
