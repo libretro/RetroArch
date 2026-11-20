@@ -47,6 +47,28 @@ int rpyrowave_gpu_color_parameters(const rpyrowave_sequence_t *sequence,
    return RPYROWAVE_OK;
 }
 
+int rpyrowave_gpu_color_parameters_ex(const rpyrowave_sequence_t *sequence,
+      unsigned bit_depth, unsigned inverse, unsigned flip_y,
+      unsigned texture_width, unsigned texture_height,
+      unsigned x, unsigned y, unsigned scale_source, rpyrowave_color_parameters_t *parameters)
+{
+   int result;
+   if (scale_source > 1) return RPYROWAVE_INVALID;
+   if (!scale_source || inverse)
+      return rpyrowave_gpu_color_parameters(sequence, bit_depth, inverse, flip_y,
+            texture_width, texture_height, x, y, parameters);
+   if (!sequence || !texture_width || !texture_height || texture_width > 16384
+         || texture_height > 16384 || x || y) return RPYROWAVE_INVALID;
+   result = rpyrowave_gpu_color_parameters(sequence, bit_depth, inverse, flip_y,
+         sequence->width, sequence->height, 0, 0, parameters);
+   if (result == RPYROWAVE_OK)
+   {
+      parameters->padding[0] = (float)texture_width / sequence->width;
+      parameters->padding[1] = (float)texture_height / sequence->height;
+   }
+   return result;
+}
+
 int rpyrowave_dwt_record(unsigned aligned_width, unsigned aligned_height,
       unsigned chroma_444, unsigned inverse,
       rpyrowave_dwt_record_t record, void *userdata)

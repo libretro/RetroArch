@@ -14818,7 +14818,8 @@ static bool vulkan_frame(void *data, const void *frame,
    if (video_info->recording_pyrowave && !video_info->recording_pyrowave_receive)
    {
       unsigned mode = 0;
-      bool capture = video_info->recording_gpu_capture && !video_info->frame_repeat
+      bool capture = video_info->recording_gpu_capture
+         && (!video_info->frame_repeat || video_info->recording_pyrowave_full_output)
          && backbuffer->image && vk->cmd && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
          && !(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)
          && !(vk->flags & VK_FLAG_OPEN_XR);

@@ -196,8 +196,11 @@ void encode_coefficients(uint index, uint lane)
    {
       uint2 position = coefficient_position(lane, pixel);
       float value = 0.0;
+      /* FXC can flatten this conditional into a speculative SRV load.
+       * Keep the address valid even for lanes beyond a partial edge block. */
+      uint2 safe_position = min(position, uint2(block.width - 1, block.height - 1));
       if (position.x < block.width && position.y < block.height)
-         value = coefficients[block.origin + position.y * image_width + position.x];
+         value = coefficients[block.origin + safe_position.y * image_width + safe_position.x];
       float magnitude = floor(abs(value) / scale);
       uint integer_value = 0;
       if (!(magnitude >= 0.0 && magnitude <= 262143.0))

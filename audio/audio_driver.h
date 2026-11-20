@@ -519,7 +519,7 @@ typedef struct
    uint64_t free_samples_count;
 
    struct audio_record_source *record_source;
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
    audio_driver_ptr_t record_tap;       /* struct record_audio_tap */
    /* Taken out of record_tap, not yet past the passes that saw it. */
    struct record_audio_tap *record_tap_detached;

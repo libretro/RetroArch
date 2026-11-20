@@ -70,7 +70,7 @@ jobs:
           call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.arch }}
           if errorlevel 1 exit /b 1
           if not exist msvc-lan-check mkdir msvc-lan-check
-          cl /nologo /TC /W4 /WX /O2 /DHAVE_OPENGL_CORE /DHAVE_THREADS /DHAVE_PYROWAVE /DHAVE_MDNS /DHAVE_D3D12 /DHAVE_VULKAN /DHAVE_CONFIGFILE /Dsmall=char /Dhyper=__int64 /D_CRT_SECURE_NO_WARNINGS /external:env:INCLUDE /external:Igfx/include /external:W0 /I. /Ilibretro-common/include /c record/record_pyrowave_lan.c record/record_pyrowave_receiver.c record/drivers/record_pyrowave.c /Fomsvc-lan-check\
+          cl /nologo /TC /W4 /WX /O2 /DHAVE_OPENGL_CORE /DHAVE_THREADS /DHAVE_PYROWAVE /DHAVE_MDNS /DHAVE_D3D12 /DHAVE_VULKAN /DHAVE_CONFIGFILE /Dsmall=char /Dhyper=__int64 /D_CRT_SECURE_NO_WARNINGS /external:env:INCLUDE /external:Igfx/include /external:W0 /I. /Ilibretro-common/include /c record/record_pyrowave_lan.c record/record_pyrowave_receiver.c record/drivers/record_pyrowave.c record/record_pyrowave_video_link.c record/record_audio_tap.c /Fomsvc-lan-check\
           if errorlevel 1 exit /b 1
       - name: Run native engine regressions
         shell: cmd

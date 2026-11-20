@@ -579,6 +579,14 @@ static void test_gpu_color(void)
    CHECK(parameters.texture_x == 2 && parameters.texture_y == 3 && parameters.flip_y == 1);
    CHECK(fabs(parameters.chroma_center - 128.0 / 255.0) < 0.000001);
    CHECK(parameters.luma_offset == 0.0f && parameters.luma_scale == 1.0f);
+   CHECK(!rpyrowave_gpu_color_parameters_ex(&sequence, 8, 0, 1, 65, 49, 0, 0, 1, &parameters));
+   CHECK(parameters.width == 130 && parameters.height == 98 && parameters.flip_y == 1);
+   CHECK(parameters.padding[0] == 0.5f && parameters.padding[1] == 0.5f);
+   CHECK(!rpyrowave_gpu_color_parameters_ex(&sequence, 8, 0, 0, 260, 196, 0, 0, 1, &parameters));
+   CHECK(parameters.padding[0] == 2.0f && parameters.padding[1] == 2.0f);
+   CHECK(rpyrowave_gpu_color_parameters_ex(&sequence, 8, 0, 0, 0, 196, 0, 0, 1, &parameters) == RPYROWAVE_INVALID);
+   CHECK(rpyrowave_gpu_color_parameters_ex(&sequence, 8, 0, 0, 260, 196, 1, 0, 1, &parameters) == RPYROWAVE_INVALID);
+   CHECK(rpyrowave_gpu_color_parameters_ex(&sequence, 8, 0, 0, 260, 196, 0, 0, 2, &parameters) == RPYROWAVE_INVALID);
    sequence.limited_range = 1;
    sequence.transform_bt2020 = 1;
    sequence.primaries_bt2020 = sequence.transfer_pq = 1;

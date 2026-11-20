@@ -165,7 +165,7 @@ static float audio_driver_input_rate(const audio_driver_state_t *audio_st);
 #include "../list_special.h"
 #include "../file_path_special.h"
 #include "../record/record_driver.h"
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
 #include "../record/record_audio_tap.h"
 #endif
 #include "../tasks/task_content.h"
@@ -1470,7 +1470,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->pipe_pending = NULL;
    audio_st->pipe_pending_bytes = 0;
    audio_driver_inline_free(audio_st);
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
    {
       struct record_audio_tap *tap = (struct record_audio_tap*)
          AUDIO_DRIVER_PTR_GET(&audio_st->record_tap);
@@ -3595,7 +3595,7 @@ static void audio_driver_pause_track(audio_driver_state_t *audio_st,
       audio_st->pause_mute_frames -= (unsigned)n;
    }
 
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
    {
       struct record_audio_tap *tap = (struct record_audio_tap*)
          AUDIO_DRIVER_PTR_GET(&audio_st->record_tap);
@@ -3926,7 +3926,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * fall through to the float resampler path below (which is exactly
     * where the redundant int16<->float round-trip is avoided). */
    if (audio->write_raw
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
          && !AUDIO_DRIVER_PTR_GET(&audio_st->record_tap)
 #endif
          && !audio_st->resampler_hq
@@ -6085,7 +6085,7 @@ void audio_driver_state_unlock(void)
 
 int audio_driver_record_tap_install(struct record_audio_tap *tap)
 {
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
    audio_driver_state_t *s = &audio_driver_st;
    struct record_audio_tap *cur;
    if (!tap)
@@ -6129,7 +6129,7 @@ int audio_driver_record_tap_install(struct record_audio_tap *tap)
 
 bool audio_driver_record_tap_remove(struct record_audio_tap *tap)
 {
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
    audio_driver_state_t *s = &audio_driver_st;
    bool ready;
    if (!tap)

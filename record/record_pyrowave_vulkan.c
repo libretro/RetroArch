@@ -379,10 +379,10 @@ record_pyrowave_vulkan_t *record_pyrowave_vulkan_new(const record_pyrowave_vulka
          || cfg->limits->maxComputeWorkGroupCount[0] < 65535 || cfg->limits->maxComputeWorkGroupCount[1] < 65535
          || cfg->limits->maxPerStageDescriptorStorageBuffers < 4
          || cfg->sequence.width > cfg->limits->maxImageDimension2D || cfg->sequence.height > cfg->limits->maxImageDimension2D
-         || rpyrowave_gpu_color_parameters(&cfg->sequence, cfg->bit_depth, cfg->decode ? 1 : 0,
+         || rpyrowave_gpu_color_parameters_ex(&cfg->sequence, cfg->bit_depth, cfg->decode ? 1 : 0,
             cfg->decode ? 0 : (cfg->flip_y ? 1 : 0), cfg->decode ? cfg->sequence.width : cfg->texture_width,
             cfg->decode ? cfg->sequence.height : cfg->texture_height,
-            cfg->decode ? 0 : cfg->x, cfg->decode ? 0 : cfg->y, &color)) return NULL;
+            cfg->decode ? 0 : cfg->x, cfg->decode ? 0 : cfg->y, cfg->scale_source ? 1 : 0, &color)) return NULL;
    for (i = 0; i < 3; i++)
       if (!cfg->shaders[i] || cfg->shader_bytes[i] < 20 || (cfg->shader_bytes[i] & 3)
             || cfg->shaders[i][0] != 0x07230203U) return NULL;

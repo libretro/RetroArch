@@ -1808,6 +1808,10 @@ RECORDING
 #include "../record/record_pyrowave_dispatch.c"
 #include "../record/record_pyrowave_source.c"
 #include "../record/record_pyrowave_source_d3d12.c"
+#ifndef HAVE_RECORD_MEDIACODEC
+#include "../record/record_audio_tap.c"
+#endif
+#include "../record/record_pyrowave_video_link.c"
 #include "../record/drivers/record_pyrowave.c"
 #include "../record/record_pyrowave_receiver.c"
 #ifndef HAVE_MDNS

@@ -763,6 +763,7 @@ typedef struct settings
       bool video_gpu_record;
 #ifdef HAVE_PYROWAVE
       bool pyrowave_discovery_enable;
+      bool pyrowave_full_output;
 #endif
       bool video_record_allow_frame_drop;
       bool video_record_game_only;

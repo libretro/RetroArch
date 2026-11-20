@@ -27,6 +27,7 @@ typedef struct record_pyrowave_gl_config
    unsigned x, y;
    bool flip_y;
    bool decode;
+   bool scale_source;
 } record_pyrowave_gl_config_t;
 
 typedef struct record_pyrowave_gl_image

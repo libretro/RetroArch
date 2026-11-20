@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      APT_PKGS: build-essential pkg-config xvfb xauth python3-pil libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers libgl1-mesa-dev libegl1-mesa-dev glslang-tools spirv-tools spirv-cross zlib1g-dev
+      APT_PKGS: build-essential pkg-config xvfb xauth python3-pil ffmpeg libasound2-dev libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers libgl1-mesa-dev libegl1-mesa-dev glslang-tools spirv-tools spirv-cross zlib1g-dev
     steps:
       - uses: actions/checkout@v6
       - name: Apt cache key
@@ -60,9 +60,9 @@ jobs:
           key: ${{ steps.apt.outputs.key }}
       - name: Build the source frontend and independent fixtures
         run: |
-          ./configure --enable-pyrowave --enable-vulkan --enable-x11 --enable-opengl --enable-opengl_core --enable-menu --enable-rgui --disable-qt --disable-wayland --disable-ffmpeg --disable-cheevos --disable-discord --disable-ssl --disable-sdl2 --disable-sdl --disable-alsa --disable-pulse --disable-jack --disable-oss --disable-udev --disable-dbus
+          ./configure --enable-pyrowave --enable-vulkan --enable-x11 --enable-opengl --enable-opengl_core --enable-menu --enable-rgui --disable-qt --disable-wayland --disable-ffmpeg --disable-cheevos --disable-discord --disable-ssl --disable-sdl2 --disable-sdl --enable-alsa --disable-pulse --disable-jack --disable-oss --disable-udev --disable-dbus
           make -j2 GL_DEBUG=1
-          make -C samples/gfx/pyrowave_session frontend-fixtures
+          make -C samples/gfx/pyrowave_session check frontend-fixtures
           python3 tools/pyrowave_shaders.py --output "$RUNNER_TEMP/pyrowave-shaders/rpyrowave_shaders.h" --export-spirv "$RUNNER_TEMP/pyrowave-shaders" --export-glsl "$RUNNER_TEMP/pyrowave-shaders"
       - name: PyroWave built-in menus, LAN opt-in and receive consent
         env:
@@ -70,6 +70,15 @@ jobs:
         run: |
           xvfb-run -a python3 samples/gfx/pyrowave_session/lan_menu_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-lan-menu" --backend glcore
           xvfb-run -a python3 samples/gfx/pyrowave_session/lan_menu_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-lan-menu-threaded" --backend glcore --threaded --record-driver nvenc
+      - name: Entire frontend menus, content transitions, resize and media playback
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          ffmpeg -v error -f lavfi -i testsrc2=size=320x180:rate=30 -f lavfi -i sine=frequency=440:sample_rate=48000 -t 20 -c:v libvpx-vp9 -cpu-used 8 -b:v 300k -c:a aac "$RUNNER_TEMP/pyrowave-media.mp4"
+          for backend in glcore vulkan; do
+            xvfb-run -a python3 samples/gfx/pyrowave_session/lan_menu_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-lan-menu-full-$backend" --backend "$backend" --threaded --frontend-only --pixels --transition --resize --media "$RUNNER_TEMP/pyrowave-media.mp4"
+            xvfb-run -a python3 samples/gfx/pyrowave_session/frontend_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-full-audio-$backend" --backend "$backend" --threaded --full-output --audio-driver alsa --audio-device null
+          done
       - name: Preserve PyroWave LAN menu diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

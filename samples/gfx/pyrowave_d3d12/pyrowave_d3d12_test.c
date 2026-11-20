@@ -207,6 +207,7 @@ static int test_pyrowave_d3d12_run(test_pyrowave_d3d12_t *t, unsigned iterations
    unsigned i;
    memset(&held, 0, sizeof(held));
    t->cfg.sequence.width = t->width; t->cfg.sequence.height = t->height;
+   t->cfg.sequence.chroma_444 = ((t->width | t->height) & 1) != 0;
    t->cfg.sequence.primaries_bt2020 = t->cfg.sequence.transfer_pq = t->cfg.sequence.transform_bt2020 = t->mode;
    t->cfg.texture_width = t->width + 4; t->cfg.texture_height = t->height + 6;
    t->cfg.x = 2; t->cfg.y = 3; t->cfg.texture_mode = t->mode; t->cfg.bit_depth = t->mode ? 10 : 8;
@@ -214,7 +215,7 @@ static int test_pyrowave_d3d12_run(test_pyrowave_d3d12_t *t, unsigned iterations
    t->send = record_pyrowave_d3d12_new(&t->cfg);
    t->cfg.slots = 1; t->cfg.decode = true;
    t->receive = record_pyrowave_d3d12_new(&t->cfg);
-   t->cpu = rpyrowave_decoder_new(t->width, t->height, 0, (size_t)(t->width + 127) * (t->height + 127));
+   t->cpu = rpyrowave_decoder_new(t->width, t->height, t->cfg.sequence.chroma_444, (size_t)(t->width + 127) * (t->height + 127));
    CHECK(t->send && t->receive && t->cpu && test_pyrowave_d3d12_source(t));
    CHECK(record_pyrowave_d3d12_idle(t->receive));
    CHECK(record_pyrowave_d3d12_texture(t->receive, 0));
@@ -412,6 +413,9 @@ int main(int argc, char **argv)
       t->width = 130; t->height = 98; t->mode = i;
       RPY_D3D_CHECK(test_pyrowave_d3d12_run(t, 17)); test_pyrowave_d3d12_case_free(t);
    }
+   /* Odd frontend window dimensions produce partial right/bottom packets. */
+   t->width = 348; t->height = 297; t->mode = 0;
+   RPY_D3D_CHECK(test_pyrowave_d3d12_run(t, 2)); test_pyrowave_d3d12_case_free(t);
    t->width = 1920; t->height = 1080; t->mode = 0;
    RPY_D3D_CHECK(test_pyrowave_d3d12_run(t, 2));
    success = 1;

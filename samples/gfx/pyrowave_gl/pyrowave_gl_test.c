@@ -64,6 +64,14 @@ static uint32_t rpy_capture_hash(const record_pyrowave_packet_t *packet)
    return hash;
 }
 
+static bool rpy_capture_scaled;
+static const float *rpy_capture_pixel(const float *rgb, unsigned x, unsigned y)
+{
+   unsigned sx = rpy_capture_scaled ? ((2 * x + 1) * 134) / (2 * 130) : x + 2;
+   unsigned sy = rpy_capture_scaled ? ((2 * y + 1) * 104) / (2 * 98) : y + 3;
+   return rgb + (sy * 134 + sx) * 4;
+}
+
 static int rpy_capture_decode(rpyrowave_decoder_t *decoder, const record_pyrowave_packet_t *packet,
       const record_gpu_frame_t *frame, const float *rgb)
 {
@@ -91,8 +99,7 @@ static int rpy_capture_decode(rpyrowave_decoder_t *decoder, const record_pyrowav
             for (dy = 0; dy <= shift; dy++)
                for (dx = 0; dx <= shift; dx++)
                   for (channel = 0; channel < 3; channel++)
-                     channels[channel] += rgb[((3 + (y << shift) + dy) * 134
-                           + 2 + (x << shift) + dx) * 4 + channel] / (shift ? 4.0 : 1.0);
+                     channels[channel] += rpy_capture_pixel(rgb, (x << shift) + dx, (y << shift) + dy)[channel] / (shift ? 4.0 : 1.0);
             luma = channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
             expected = luma;
             if (component == 1) expected = 128.0 / 255.0 + (channels[2] - luma) / 1.8556;
@@ -185,6 +192,12 @@ int main(int argc, char **argv)
    config.texture_height = 104;
    config.x = 2;
    config.y = 3;
+   rpy_capture_scaled = getenv("RPY_TEST_SCALE") != NULL;
+   if (rpy_capture_scaled)
+   {
+      config.x = config.y = 0;
+      config.scale_source = getenv("RPY_TEST_SCALE_BROKEN") == NULL;
+   }
    capture = record_pyrowave_gl_new(&config);
    RPY_CAPTURE_CHECK(capture);
    config.decode = true;

@@ -94,6 +94,7 @@ const record_driver_t *record_drivers[] = {
 
 void recording_gpu_frame_info(struct video_frame_info *info,bool capture)
 {
+   info->recording_pyrowave_full_output = false;
    info->recording_pyrowave_receive = false;
    info->recording_pyrowave_clock_valid = false;
 #ifdef HAVE_PYROWAVE
@@ -159,8 +160,11 @@ void recording_start_frame(void)
 void recording_gpu_stop(void)
 {
 #ifdef HAVE_PYROWAVE
-   record_pyrowave_lan_stop();
-   record_pyrowave_stop();
+   if (runloop_state_get_ptr()->quit_pending || !record_pyrowave_frontend_pause())
+   {
+      record_pyrowave_lan_stop();
+      record_pyrowave_stop();
+   }
    record_pyrowave_receiver_stop();
 #endif
    record_nvenc_stop();
@@ -186,7 +190,7 @@ bool recording_gpu_pending(void)
 bool recording_gpu_reset_pending(void)
 {
 #ifdef HAVE_PYROWAVE
-   if (record_pyrowave_pending() || record_pyrowave_receiver_pending())
+   if (record_pyrowave_reset_pending() || record_pyrowave_receiver_pending())
       return true;
 #endif
 #ifdef HAVE_RECORD_VULKAN
@@ -460,13 +464,17 @@ bool recording_init(void)
    bool pyrowave_native = string_is_equal(capture_driver, "pyrowave");
    bool gpu_native = nvenc_native || metal_native || mc_native || vk_native || pyrowave_native;
    bool menu_source = false;
+#ifdef HAVE_PYROWAVE
+   menu_source = pyrowave_native && settings->bools.pyrowave_full_output;
+#endif
 #ifdef HAVE_RECORD_MEDIACODEC
-   menu_source = mc_native && current_core_type == CORE_TYPE_DUMMY;
+   menu_source = menu_source || (mc_native && current_core_type == CORE_TYPE_DUMMY);
 #endif
 
    if (!recording_enable)
       return false;
 #ifdef HAVE_PYROWAVE
+   if (recording_st->data && record_pyrowave_frontend_active()) return true;
    if (record_pyrowave_receiver_active()) return false;
    if (record_pyrowave_receiver_pending())
    {
@@ -656,6 +664,8 @@ bool recording_init(void)
       if (!(params.fps > 0.0))
          params.fps = video_driver_get_window_refresh_rate();
       params.samplerate = audio_state_get_ptr()->out_rate;
+      /* A contentless frontend with audio disabled still has video to stream. */
+      if (pyrowave_native && !(params.samplerate >= 8000.0)) params.samplerate = 48000.0;
       params.channels = recording_st->channels = 2;
       recording_st->layout = AUDIO_LAYOUT_STEREO;
    }

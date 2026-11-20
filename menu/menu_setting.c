@@ -11288,6 +11288,14 @@ static void general_write_handler(rarch_setting_t *setting)
    switch (setting->enum_idx)
    {
 #ifdef HAVE_PYROWAVE
+      case MENU_ENUM_LABEL_PYROWAVE_DISCOVERY_ENABLE:
+         if (!settings->bools.pyrowave_discovery_enable)
+         {
+            if (record_pyrowave_lan_sending()) command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+            record_pyrowave_lan_stop();
+            if (record_pyrowave_receiver_port()) record_pyrowave_receiver_stop();
+         }
+         break;
       case MENU_ENUM_LABEL_PYROWAVE_DEVICE_NAME:
       case MENU_ENUM_LABEL_PYROWAVE_SHADER_DIRECTORY:
          if (record_pyrowave_lan_sending()) command_event(CMD_EVENT_RECORD_DEINIT, NULL);

@@ -12,6 +12,7 @@ typedef struct record_pyrowave_source_config
    record_pyrowave_source_proc_t (*gl_proc)(const char*);
    const char *directory;
    unsigned family, format, full_width, full_height, x, y, slots, texture_mode;
+   bool scale_source;
 } record_pyrowave_source_config_t;
 
 typedef struct record_pyrowave_source

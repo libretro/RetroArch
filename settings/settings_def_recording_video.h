@@ -40,6 +40,10 @@ S_BOOL(pyrowave_discovery_enable, PYROWAVE_DISCOVERY_ENABLE,
       "pyrowave_discovery_enable", false, SD_FLAG_NONE, 0, 0,
       "PyroWave LAN Discovery",
       "Find nearby RetroArch receivers and allow stream requests on this network. Incoming streams require your approval.")
+S_BOOL(pyrowave_full_output, PYROWAVE_FULL_OUTPUT,
+      "pyrowave_full_output", true, SD_FLAG_NONE, 0, 0,
+      "Stream Entire RetroArch",
+      "Include menus, notifications and the built-in player with mixed frontend audio. Disable to use the content viewport and core audio. Applies to the next PyroWave stream.")
 #ifndef SETTINGS_DEF_CONFIG_PASS
 S_STRING(pyrowave_device_name, PYROWAVE_DEVICE_NAME,
       "pyrowave_device_name", "", SD_FLAG_ALLOW_INPUT, 0,

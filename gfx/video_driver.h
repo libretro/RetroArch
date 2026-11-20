@@ -790,6 +790,7 @@ typedef struct video_frame_info
    bool recording_gpu_pending;
    bool recording_gpu_capture;
    bool recording_pyrowave;
+   bool recording_pyrowave_full_output;
    bool recording_pyrowave_receive;
    bool recording_pyrowave_clock_valid;
    /* Record Game Only: the driver reads the recording's frame back

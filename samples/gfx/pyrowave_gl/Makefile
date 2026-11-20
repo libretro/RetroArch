@@ -51,6 +51,7 @@ shaders: $(ASSETDIR)/rpyrowave_shaders.h
 
 check: $(TARGET) shaders
 	$(RUNNER) ./$(TARGET) $(SHADERS)
+	RPY_TEST_SCALE=1 $(RUNNER) ./$(TARGET) $(SHADERS)
 
 clean:
 	rm -f pyrowave_gl_test pyrowave_gl_test.exe

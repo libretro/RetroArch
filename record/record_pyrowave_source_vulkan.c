@@ -194,6 +194,7 @@ static record_pyrowave_vulkan_t *record_pyrowave_source_vk_codec(
       cfg.shaders[i] = (const uint32_t*)shaders[i]; cfg.shader_bytes[i] = bytes;
    }
    cfg.get_proc = device_proc; cfg.device = (VkDevice)config->device; cfg.queue = (VkQueue)config->queue;
+   cfg.scale_source = config->scale_source;
    cfg.memory = &memory; cfg.limits = &properties.limits;
    cfg.sequence = config->stream.sequence; cfg.queue_family = config->family;
    cfg.maximum_bytes = config->stream.maximum_frame_bytes; cfg.slots = config->slots;

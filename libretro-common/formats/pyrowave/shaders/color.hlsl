@@ -95,6 +95,10 @@ float3 read_rgb(int x, int y)
    uint row = clamp(y, 0, int(height) - 1);
    uint column = clamp(x, 0, int(width) - 1);
    if (flip_y != 0) row = height - 1 - row;
+   /* Positive padding values opt into full-texture frontend scaling; zero
+    * retains the original one-to-one cropped sampling and wire format. */
+   if (padding0 > 0.0) column = uint((float(column) + 0.5) * padding0);
+   if (padding1 > 0.0) row = uint((float(row) + 0.5) * padding1);
    return encode_rgb(rgb_source.Load(int3(texture_x + column, texture_y + row, 0)).rgb);
 }
 

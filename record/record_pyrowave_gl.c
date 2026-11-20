@@ -226,11 +226,11 @@ record_pyrowave_gl_t *record_pyrowave_gl_new(const record_pyrowave_gl_config_t *
          || !glCopyBufferSubData || !glBindBufferRange || !glBindBufferBase || !glGetInteger64v
 #endif
          || !record_pyrowave_gl_capable()
-         || rpyrowave_gpu_color_parameters(&config->sequence, config->bit_depth, config->decode ? 1 : 0,
+         || rpyrowave_gpu_color_parameters_ex(&config->sequence, config->bit_depth, config->decode ? 1 : 0,
             config->decode ? 0 : (config->flip_y ? 1 : 0),
             config->decode ? config->sequence.width : config->texture_width,
             config->decode ? config->sequence.height : config->texture_height,
-            config->decode ? 0 : config->x, config->decode ? 0 : config->y, &color))
+            config->decode ? 0 : config->x, config->decode ? 0 : config->y, config->scale_source ? 1 : 0, &color))
       return NULL;
    c = (record_pyrowave_gl_t*)calloc(1, sizeof(*c));
    if (!c) return NULL;

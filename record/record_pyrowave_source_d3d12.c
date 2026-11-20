@@ -46,6 +46,7 @@ static record_pyrowave_d3d12_t *record_pyrowave_source_d12_create(
    }
    cfg.device = (ID3D12Device*)config->device;
    cfg.serialize = D3D12SerializeRootSignature;
+   cfg.scale_source = config->scale_source;
    cfg.sequence = config->stream.sequence;
    cfg.maximum_bytes = config->stream.maximum_frame_bytes;
    cfg.slots = config->slots; cfg.bit_depth = config->stream.bit_depth;

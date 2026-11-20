@@ -25,6 +25,9 @@ void record_pyrowave_stop(void);
 /* Render owner: fail a borrowed sender context; keeps native loans for cold retirement. */
 void record_pyrowave_failed(void *context);
 bool record_pyrowave_pending(void);
+bool record_pyrowave_frontend_active(void);
+bool record_pyrowave_frontend_pause(void);
+bool record_pyrowave_reset_pending(void);
 bool record_pyrowave_defer_start(void);
 bool record_pyrowave_cancel_start(void);
 #ifdef HAVE_RECORD_PYROWAVE_GL

@@ -231,10 +231,10 @@ record_pyrowave_d3d12_t *record_pyrowave_d3d12_new(const record_pyrowave_d3d12_c
          || cfg->sequence.height > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION
          || cfg->texture_mode > (unsigned)(cfg->decode ? RPYROWAVE_COLOR_SDR709 : RPYROWAVE_COLOR_SCRGB)
          || (cfg->queue_type != D3D12_COMMAND_LIST_TYPE_DIRECT && cfg->queue_type != D3D12_COMMAND_LIST_TYPE_COMPUTE)
-         || rpyrowave_gpu_color_parameters(&cfg->sequence, cfg->bit_depth, cfg->decode ? 1 : 0,
+         || rpyrowave_gpu_color_parameters_ex(&cfg->sequence, cfg->bit_depth, cfg->decode ? 1 : 0,
             cfg->decode ? 0 : cfg->flip_y, cfg->decode ? cfg->sequence.width : cfg->texture_width,
             cfg->decode ? cfg->sequence.height : cfg->texture_height,
-            cfg->decode ? 0 : cfg->x, cfg->decode ? 0 : cfg->y, &color)) return NULL;
+            cfg->decode ? 0 : cfg->x, cfg->decode ? 0 : cfg->y, cfg->scale_source ? 1 : 0, &color)) return NULL;
    for (i = 0; i < 3; i++) if (!cfg->shaders[i] || !cfg->shader_bytes[i]) return NULL;
    if (!cfg->decode && cfg->source_format != DXGI_FORMAT_R32G32B32A32_FLOAT
          && cfg->source_format != DXGI_FORMAT_R16G16B16A16_FLOAT

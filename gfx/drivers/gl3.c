@@ -8047,7 +8047,8 @@ static bool gl3_frame(void *data, const void *frame,
    {
       unsigned format = gl->scrgb.active ? GL_RGBA16F : GL_RGBA8;
       unsigned mode = gl->scrgb.active ? (gl->scrgb.pq_out ? 1 : 2) : 0;
-      bool capture = video_info->recording_gpu_capture && !video_info->frame_repeat
+      bool capture = video_info->recording_gpu_capture
+         && (!video_info->frame_repeat || video_info->recording_pyrowave_full_output)
          && !(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK);
 #ifdef HAVE_GL3_XR
       if (gl->xr.host) capture = false;

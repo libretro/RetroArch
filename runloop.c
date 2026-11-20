@@ -142,6 +142,7 @@ bool android_get_vfs_authorized_locations(
 #include "record/record_driver.h"
 #ifdef HAVE_PYROWAVE
 #include "record/record_pyrowave_receiver.h"
+#include "record/drivers/record_pyrowave.h"
 #endif
 #include "msg_hash_lbl_str.h"
 
@@ -3774,6 +3775,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             /* Restart when recording parameters or the video driver change. */
             if (     rec_st->data
+#ifdef HAVE_PYROWAVE
+                  && !record_pyrowave_frontend_active()
+#endif
                   && (!no_video_reinit || viewport_changed
                      || max_size_changed || timing_changed))
             {

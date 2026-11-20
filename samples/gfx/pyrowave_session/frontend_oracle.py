@@ -17,6 +17,9 @@ parser.add_argument('--codec', type=Path, required=True)
 parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--shader-directory', type=Path,
     default=Path(__file__).resolve().parents[3] / 'libretro-common/formats/pyrowave/shaders')
+parser.add_argument('--full-output', action='store_true')
+parser.add_argument('--audio-driver', default='null')
+parser.add_argument('--audio-device', default='')
 parser.add_argument('--threaded', action='store_true')
 parser.add_argument('--backend', choices=('d3d12', 'vulkan', 'glcore'), default='d3d12' if os.name == 'nt' else 'vulkan')
 parser.add_argument('--require-validation', action='store_true',
@@ -51,14 +54,22 @@ codec.rpyrowave_decoder_new.restype = c.c_void_p
 codec.rpyrowave_decode_frame.argtypes = [c.c_void_p, c.c_void_p, c.c_size_t, c.c_uint, c.POINTER(Image)]
 codec.rpyrowave_decoder_free.argtypes = [c.c_void_p]
 header = struct.Struct('<4sHBBIIIIQQQQQ')
+with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as control:
+    control.bind(('127.0.0.1', 0)); control_port = control.getsockname()[1]
 config = work / 'pyrowave-frontend-test.cfg'
 record_config = work / 'pyrowave-frontend-record.cfg'
 record_config.write_text('pyrowave_shader_directory = "' + str(args.shader_directory.resolve()).replace('\\', '/') + '"\n'
     'audio_enable = "true"\npyrowave_maximum_bytes = "262144"\n')
 config.write_text('video_driver = "' + args.backend + '"\nrecord_driver = "pyrowave"\nvideo_threaded = "' + ('true' if args.threaded else 'false') + '"\n'
-    'audio_driver = "null"\naudio_enable = "true"\nvideo_vsync = "true"\nvideo_fullscreen = "false"\npause_nonactive = "false"\n'
+    'audio_driver = "' + args.audio_driver + '"\naudio_enable = "true"\nvideo_vsync = "true"\nvideo_fullscreen = "false"\npause_nonactive = "false"\n'
     'video_scale = "2"\nvideo_font_enable = "false"\nconfig_save_on_exit = "false"\n'
-    'savestate_auto_save = "false"\nvideo_shader_enable = "false"\n')
+    'savestate_auto_save = "false"\nvideo_shader_enable = "false"\n'
+    'confirm_quit = "false"\nmenu_show_start_screen = "false"\nrgui_show_start_screen = "false"\nmenu_ignore_missing_assets = "true"\nmenu_pause_libretro = "false"\n')
+with config.open('a') as extra:
+    extra.write('pyrowave_full_output = "' + ('true' if args.full_output else 'false') + '"\n')
+    if args.full_output:
+        extra.write('network_cmd_enable = "true"\nnetwork_cmd_bind_address = "127.0.0.1"\nnetwork_cmd_port = "' + str(control_port) + '"\n')
+    if args.audio_device: extra.write('audio_device = "' + args.audio_device + '"\n')
 listener = socket.socket()
 listener.bind(('127.0.0.1', 0)); listener.listen(1); listener.settimeout(45)
 port = listener.getsockname()[1]
@@ -96,12 +107,14 @@ try:
     connection.sendall(header.pack(b'RPWS', 1, 2, 0, 0, 0, 0, 0, generation, 0, 0, 0, 0))
     decoder = codec.rpyrowave_decoder_new(width, height, vui & 1, 16777216)
     assert decoder
+    mixed_nonzero = False
     frames = audio_records = 0
     audio_end = 0
     payload = bytearray()
     last_video = -1
     deadline = time.monotonic() + 45
     aborted = False
+    quit_sent = False
     while time.monotonic() < deadline:
         try:
             h = header.unpack(receive(64))
@@ -119,7 +132,12 @@ try:
             assert serial >= audio_end and pts == serial * 1000000 // rate
             assert duration == (serial + count) * 1000000 // rate - pts
             assert flags == (4 if serial > audio_end else 0)
-            assert set(struct.unpack('<%dh' % (size // 2), data)) == {-4096, 4096}
+            samples = struct.unpack('<%dh' % (size // 2), data)
+            if args.full_output:
+                # The frontend sinc resampler can overshoot square-wave edges.
+                assert max(abs(value) for value in samples) < 8192, 'Mixed output exceeded twice the fixture amplitude'
+                mixed_nonzero |= any(value != 0 for value in samples)
+            else: assert set(samples) == {-4096, 4096}
             audio_end = serial + count; audio_records += 1
         elif kind == 3:
             assert offset == len(payload)
@@ -149,9 +167,14 @@ try:
                     connection.close(); connection = None
                     break
         else: raise AssertionError(('Unexpected record', h))
+        if args.full_output and not quit_sent and frames >= 30 and audio_records >= 30:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as control:
+                control.sendto(b'QUIT\n', ('127.0.0.1', control_port))
+            quit_sent = True
     else: raise AssertionError('END watchdog expired')
     assert aborted == args.expect_abort, 'Expected source failure did not close TCP'
     assert frames >= 10 and audio_records >= (1 if args.disconnect_after else 10), (frames, audio_records)
+    if args.full_output: assert mixed_nonzero, 'Post-mixer capture produced only silence'
     assert not payload
     status = process.wait(timeout=20)
     assert status == 0 or (args.expect_abort and status == 1), status

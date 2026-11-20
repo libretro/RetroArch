@@ -207,6 +207,17 @@ void record_pyrowave_lan_poll(uint64_t now)
    runloop_state_t *loop = runloop_state_get_ptr();
    unsigned port;
    bool ready;
+   /* A content load rereads the on-disk configuration. Keep the live
+    * session's runtime opt-in; an explicit menu opt-out closes it first. */
+   if (settings && pyrowave_lan.role == 2 && record_pyrowave_frontend_active())
+      settings->bools.pyrowave_discovery_enable = true;
+   if (settings && !loop->quit_pending
+         && record_pyrowave_frontend_active() && (loop->content_closing
+            || runloop_is_content_switching() || recording_gpu_reinit_pending()))
+   {
+      net_mdns_socket_poll(pyrowave_lan.transport, now);
+      return;
+   }
    if (!settings || !settings->bools.pyrowave_discovery_enable || loop->quit_pending
          || loop->content_closing || runloop_is_content_switching() || recording_gpu_reinit_pending())
    {

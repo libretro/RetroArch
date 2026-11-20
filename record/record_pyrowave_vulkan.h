@@ -28,6 +28,7 @@ typedef struct record_pyrowave_vulkan_config
    unsigned slots, bit_depth, texture_mode;
    unsigned texture_width, texture_height, x, y;
    bool flip_y, decode;
+   bool scale_source;
 } record_pyrowave_vulkan_config_t;
 
 typedef struct record_pyrowave_vulkan_image

@@ -185,6 +185,7 @@ static bool record_pyrowave_source_gl_create(record_pyrowave_source_t *source,
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
    }
+   cfg.scale_source = config->scale_source;
    cfg.get_proc = config->gl_proc; cfg.sequence = config->stream.sequence;
    cfg.maximum_bytes = config->stream.maximum_frame_bytes; cfg.slots = config->slots;
    cfg.bit_depth = config->stream.bit_depth; cfg.texture_mode = config->texture_mode;

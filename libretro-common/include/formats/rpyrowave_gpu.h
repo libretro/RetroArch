@@ -64,6 +64,14 @@ int rpyrowave_gpu_color_parameters(const rpyrowave_sequence_t *sequence,
       unsigned texture_width, unsigned texture_height,
       unsigned x, unsigned y, rpyrowave_color_parameters_t *parameters);
 
+/* Optional nearest-neighbour full-texture encode scaling. The sequence and
+ * wire dimensions stay fixed while a frontend swaps/resizes presentation.
+ * Does not change the decoder or the standard cropped encode operation. */
+int rpyrowave_gpu_color_parameters_ex(const rpyrowave_sequence_t *sequence,
+      unsigned bit_depth, unsigned inverse, unsigned flip_y,
+      unsigned texture_width, unsigned texture_height,
+      unsigned x, unsigned y, unsigned scale_source, rpyrowave_color_parameters_t *parameters);
+
 typedef struct rpyrowave_dwt_parameters
 {
    uint32_t image_width;

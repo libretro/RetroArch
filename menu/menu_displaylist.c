@@ -12465,6 +12465,7 @@ unsigned menu_displaylist_build_list(
             {
                static const menu_displaylist_build_info_t lan_settings[] = {
                   {MENU_ENUM_LABEL_PYROWAVE_DISCOVERY_ENABLE, PARSE_ONLY_BOOL},
+                  {MENU_ENUM_LABEL_PYROWAVE_FULL_OUTPUT, PARSE_ONLY_BOOL},
                   {MENU_ENUM_LABEL_PYROWAVE_DEVICE_NAME, PARSE_ONLY_STRING},
                   {MENU_ENUM_LABEL_PYROWAVE_SHADER_DIRECTORY, PARSE_ONLY_DIR}
                };
@@ -18649,6 +18650,11 @@ static bool menu_displaylist_ctl_internal(
             break;
          case DISPLAYLIST_MAIN_MENU:
             menu_entries_clear(info->list);
+#ifdef HAVE_PYROWAVE
+            if (menu_entries_append(info->list, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_DEVICES),
+                     MENU_ENUM_LABEL_PYROWAVE_DEVICES_STR, MENU_ENUM_LABEL_PYROWAVE_DEVICES,
+                     MENU_SETTING_ACTION, 0, 0, NULL)) count++;
+#endif
             {
                rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
                const char *menu_ident        = menu_driver_ident();

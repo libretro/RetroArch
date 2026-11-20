@@ -141,6 +141,7 @@
 #include "record/record_driver.h"
 #ifdef HAVE_PYROWAVE
 #include "record/record_pyrowave_receiver.h"
+#include "record/drivers/record_pyrowave.h"
 #endif
 
 #ifdef HAVE_MICROPHONE
@@ -10671,7 +10672,10 @@ bool retroarch_main_deinit_begin(void)
       autosave_deinit();
 #endif
 
-   command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+#ifdef HAVE_PYROWAVE
+   if (!record_pyrowave_frontend_pause())
+#endif
+      command_event(CMD_EVENT_RECORD_DEINIT, NULL);
 
    command_event(CMD_EVENT_SAVE_FILES, NULL);
 
@@ -10690,7 +10694,11 @@ bool retroarch_main_deinit_begin(void)
 
 bool retroarch_main_deinit_pending(void)
 {
-   return command_event_core_deinit_pending();
+   return command_event_core_deinit_pending()
+#ifdef HAVE_PYROWAVE
+      || (record_pyrowave_frontend_active() && record_pyrowave_reset_pending())
+#endif
+      ;
 }
 
 void retroarch_main_deinit_finish(void)
@@ -11228,6 +11236,11 @@ static bool retroarch_main_quit_begin(void)
 
    if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
       return false;
+#ifdef HAVE_PYROWAVE
+   /* quit_pending is published after begin returns; end a frontend stream
+    * now rather than treating this teardown as a content transition. */
+   record_pyrowave_stop();
+#endif
    recording_gpu_stop();
    if (recording_state_get_ptr()->start_pending)
       command_event(CMD_EVENT_RECORD_DEINIT, NULL);
