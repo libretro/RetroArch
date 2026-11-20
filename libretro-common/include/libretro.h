@@ -3681,8 +3681,8 @@ struct retro_hw_shared_context_interface
  * Gets an interface for reading calendar time and the time zone.
  *
  * Unlike the monotonic timers of \c RETRO_ENVIRONMENT_GET_PERF_INTERFACE,
- * this clock follows the calendar. The frontend may shift it by a user-set
- * offset or start it at a user-set date.
+ * this clock follows the calendar. It need not match the host's: a frontend
+ * may offset it or hold it fixed.
  *
  * A core that emulates a clock reads the start time once, advances it by
  * emulated time and keeps the result in its savestates. If the game sets the
@@ -3700,7 +3700,7 @@ struct retro_hw_shared_context_interface
  * @return \c true if the frontend provided the interface.
  * @see retro_calendar_time_interface
  */
-#define RETRO_ENVIRONMENT_GET_CALENDAR_TIME_INTERFACE (109 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_ENVIRONMENT_GET_CALENDAR_TIME_INTERFACE (107 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 #define RETRO_CALENDAR_TIME_INTERFACE_VERSION 1
 
@@ -3743,17 +3743,20 @@ typedef bool (RETRO_CALLCONV *retro_calendar_get_start_time_t)(
       struct retro_calendar_time *time);
 
 /**
- * Gets the current time on the same clock as \c get_start_time, including
- * any user offset.
+ * Gets the current time on the same clock as \c get_start_time.
  *
- * Fails while the frontend holds the clock fixed: during netplay, while
- * recording or playing an input replay, or when the user has fixed the date.
+ * Fails while the frontend holds the clock fixed, such as during netplay or
+ * while recording or playing an input replay.
  * The core then advances the start time by emulated time. If this fails at
  * load, the core does not add the time that passed between sessions.
  *
  * Read it at load, at reset, when writing save data, or between frames to
  * correct drift from pausing and fast-forward. Reading it on every access to
  * an emulated clock register breaks run-ahead.
+ *
+ * Run-ahead, preemptive frames and rewind re-run frames from a savestate
+ * without holding this clock, so a re-run frame can read a later time than
+ * the original; emulation must not depend on differences within a frame.
  *
  * @param[out] time Filled on success.
  * @return \c false if the clock is held fixed or no calendar time is
@@ -3768,16 +3771,16 @@ typedef bool (RETRO_CALLCONV *retro_calendar_get_current_time_t)(
 struct retro_calendar_zone
 {
    /**
-    * IANA time zone name such as "Europe/London", NUL-terminated.
-    * Empty if the frontend does not know it.
-    */
-   char name[64];
-
-   /**
     * Seconds east of UTC in standard time, DST excluded. DST is in effect
     * at a given time when that time's \c utc_offset differs from this.
     */
    int32_t standard_offset;
+
+   /**
+    * IANA time zone name such as "Europe/London", NUL-terminated.
+    * Empty if the frontend does not know it.
+    */
+   char name[64];
 };
 
 /**
