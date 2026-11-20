@@ -13125,11 +13125,17 @@ static void input_config_retag_devices(input_driver_state_t *input_st)
          continue;
       if (!*d->tag)
          snprintf(d->shown_tag, sizeof(d->shown_tag), " (#%u)", before + 1);
-      else if (clash)
-         snprintf(d->shown_tag, sizeof(d->shown_tag), " [%s #%u]",
-               d->tag, clash_before + 1);
       else
-         snprintf(d->shown_tag, sizeof(d->shown_tag), " [%s]", d->tag);
+      {
+         size_t _len = strlcpy(d->shown_tag, " [", sizeof(d->shown_tag));
+         _len += strlcpy(d->shown_tag + _len, d->tag,
+               sizeof(d->shown_tag) - _len);
+         if (clash)
+            snprintf(d->shown_tag + _len, sizeof(d->shown_tag) - _len,
+                  " #%u]", clash_before + 1);
+         else
+            strlcpy(d->shown_tag + _len, "]", sizeof(d->shown_tag) - _len);
+      }
       tagged |= 1u << port;
    }
 #ifdef HAVE_MENU
