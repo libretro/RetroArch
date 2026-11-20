@@ -983,7 +983,8 @@ static void media_expand_8888_to_2101010(uint32_t *dst, unsigned stride,
    }
 }
 
-static void media_blit_yuv(uint32_t *dst, unsigned w, unsigned h,
+static void media_blit_yuv(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h,
       const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v, int uvs,
       unsigned matrix, int cvsh, int full)
 {
@@ -992,7 +993,7 @@ static void media_blit_yuv(uint32_t *dst, unsigned w, unsigned h,
    /* 4:2:0 in BT.601 or BT.709: the shared converter's vectorised rows */
    if (cvsh && k != media_coef_2020)
    {
-      image_yuv_420_to_rgb32(dst, w, y, (unsigned)ys, u, (unsigned)uvs,
+      image_yuv_420_to_rgb32(dst, dst_stride, y, (unsigned)ys, u, (unsigned)uvs,
             v, (unsigned)uvs, 1, w, h,
             (k == media_coef_709 ? IMAGE_YUV_FLAG_BT709 : 0)
             | (full ? IMAGE_YUV_FLAG_FULL_RANGE : 0));
@@ -1006,18 +1007,19 @@ static void media_blit_yuv(uint32_t *dst, unsigned w, unsigned h,
       const uint8_t *yr = y + j * ys;
       const uint8_t *ur = u + (j >> cvsh) * uvs;
       const uint8_t *vr = v + (j >> cvsh) * uvs;
-      uint32_t *dr      = dst + j * w;
+      uint32_t *dr      = dst + (size_t)j * dst_stride;
       for (i = 0; i < w; i++)
          dr[i] = media_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k, full);
    }
 }
 
 /* 4:2:0: two luma rows share a chroma row. */
-static void media_blit_i420(uint32_t *dst, unsigned w, unsigned h,
+static void media_blit_i420(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h,
       const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v, int uvs,
       unsigned matrix, int full)
 {
-   media_blit_yuv(dst, w, h, y, ys, u, v, uvs, matrix, 1, full);
+   media_blit_yuv(dst, dst_stride, w, h, y, ys, u, v, uvs, matrix, 1, full);
 }
 
 /* A software frame's 8-bit 4:2:0 planes, lent for the call, to the
@@ -1211,7 +1213,7 @@ static int media_present_vp9(media_player_t *p, int show)
                   p->vp9->uvs, w, h, ct ? ct->matrix_coefficients : 0,
                   full) >= 0)
             return 1;
-         media_blit_i420(p->fb, w, h, fb->y, p->vp9->ys, fb->u, fb->v,
+         media_blit_i420(p->fb, p->width, w, h, fb->y, p->vp9->ys, fb->u, fb->v,
             p->vp9->uvs, ct ? ct->matrix_coefficients : 0, full);
          if (p->pix10)
             media_expand_8888_to_2101010(p->fb, p->width, w, h);
@@ -1302,7 +1304,7 @@ static int media_decode_packet(media_player_t *p, const rwebm_packet *pkt)
          if (media_present_planes(p, y, ys, u, v, uvs, (unsigned)w,
                   (unsigned)h, ct ? ct->matrix_coefficients : 0, 0) >= 0)
             return 1;
-         media_blit_i420(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+         media_blit_i420(p->fb, p->width, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
             ct ? ct->matrix_coefficients : 0, 0);
          if (p->pix10)
             media_expand_8888_to_2101010(p->fb, p->width,
@@ -1356,7 +1358,7 @@ static int media_decode_packet(media_player_t *p, const rwebm_packet *pkt)
                && media_present_planes(p, y, ys, u, v, uvs, (unsigned)w,
                   (unsigned)h, ct ? ct->matrix_coefficients : 0, 0) >= 0)
             return 1;
-         media_blit_yuv(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+         media_blit_yuv(p->fb, p->width, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
             ct ? ct->matrix_coefficients : 0,
                (ch < h) ? 1 : 0, 0);
          if (p->pix10)
@@ -1397,7 +1399,7 @@ static int media_drain_h264(media_player_t *p)
             && media_present_planes(p, y, ys, u, v, uvs, (unsigned)w,
                (unsigned)h, ct ? ct->matrix_coefficients : 0, 0) >= 0)
          return 1;
-      media_blit_yuv(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+      media_blit_yuv(p->fb, p->width, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
          ct ? ct->matrix_coefficients : 0,
          (ch < h) ? 1 : 0, 0);
       if (p->pix10)

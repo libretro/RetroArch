@@ -330,7 +330,7 @@ static void check_range_conversion(void)
    for (m = 0; m < 3; m++)
       for (full = 0; full < 2; full++)
       {
-         media_blit_i420(pixels, 6, 2, y, 6, u, v, 3, matrix[m], full);
+         media_blit_i420(pixels, 6, 6, 2, y, 6, u, v, 3, matrix[m], full);
          for (i = 0; i < 12; i++)
          {
             double luma = full ? y[i] : ((double)y[i] - 16) * 255 / 219;
@@ -350,11 +350,46 @@ static void check_range_conversion(void)
       }
 }
 
+/* A picture narrower than the frame buffer: its rows land the buffer's
+ * stride apart, as the frame is presented, and the columns past it
+ * are left alone - for the shared converter (BT.601, 4:2:0) and the
+ * core's own rows (BT.2020, and 4:4:4 chroma). */
+static void check_blit_stride(void)
+{
+   static const unsigned matrix[2] = {6, 9};
+   static const uint8_t y[12] = {0, 16, 64, 128, 235, 255,
+      255, 235, 128, 64, 16, 0};
+   static const uint8_t u[12] = {128, 96, 176, 128, 96, 176,
+      100, 120, 140, 160, 180, 200};
+   static const uint8_t v[12] = {128, 180, 64, 128, 180, 64,
+      200, 180, 160, 140, 120, 100};
+   uint32_t packed[12], padded[2 * 9];
+   unsigned m, cvsh, i, x;
+   for (m = 0; m < 2; m++)
+      for (cvsh = 0; cvsh < 2; cvsh++)
+      {
+         unsigned uvs = cvsh ? 3 : 6;
+         for (i = 0; i < 2 * 9; i++)
+            padded[i] = 0xa5a5a5a5u;
+         media_blit_yuv(packed, 6, 6, 2, y, 6, u, v, (int)uvs,
+               matrix[m], (int)cvsh, 0);
+         media_blit_yuv(padded, 9, 6, 2, y, 6, u, v, (int)uvs,
+               matrix[m], (int)cvsh, 0);
+         for (i = 0; i < 2; i++)
+         {
+            CHECK(!memcmp(padded + i * 9, packed + i * 6, 6 * sizeof(uint32_t)));
+            for (x = 6; x < 9; x++)
+               CHECK(padded[i * 9 + x] == 0xa5a5a5a5u);
+         }
+      }
+}
+
 int main(void)
 {
    unsigned i, before, decoded, delivered;
    uint8_t state[40], after[40];
    check_range_conversion();
+   check_blit_stride();
    check_software_skip("fixtures/vp9-vorbis.webm");
    check_software_skip("fixtures/vp8-opus.webm");
    check_hidden_timeline();
