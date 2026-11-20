@@ -920,6 +920,7 @@ jobs:
              EXTRA=""
              if [ "$backend" = "PS2" ]; then EXTRA="-I$PS2STUB/ps2stub"; fi
              for f in gfx/video_thread_wrapper.c \
+                      calendar_time.c \
                       gfx/font_driver.c \
                       gfx/gfx_thumbnail.c \
                       libretro-common/formats/video_player.c \

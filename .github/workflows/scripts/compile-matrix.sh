@@ -955,6 +955,46 @@ for mk in Makefile.*.salamander Makefile.wiiu; do
    rm -f /tmp/salamander_link_check
 done
 
+# The calendar reads in rtime.c and the snapshot behind them, down each
+# arm of rtime.c's ladder: POSIX with a looked-up clock_gettime on
+# Apple, the system property on Android, the plain time(NULL) arm every
+# other console takes, and Win32 desktop and WinRT through mingw-w64.
+# Orbis is FreeBSD to its compiler, so it is checked with that target.
+CALTU="libretro-common/time/rtime.c calendar_time.c"
+check "calendar: apple"   "$HOSTOFF -D__APPLE__ -D__MACH__ -Itools/platform_stubs/apple -Werror" $CALTU
+check "calendar: android" "$HOSTOFF -DANDROID -Itools/platform_stubs/android -Werror" $CALTU
+for plat in GEKKO _3DS __SWITCH__ VITA PSP DJGPP __EMSCRIPTEN__ __QNX__ _XBOX; do
+   check "calendar: $plat, C89" "$HOSTOFF -D$plat $C89" $CALTU
+done
+if command -v clang > /dev/null 2>&1 \
+      && clang --target=x86_64-scei-ps4 -x c -c -o /dev/null /dev/null \
+         > /dev/null 2>&1; then
+   CC_SAVED=$CC
+   CC="clang --target=x86_64-scei-ps4 -isystem tools/platform_stubs/sce -isystem /usr/include"
+   [ -d /usr/include/x86_64-linux-gnu ] \
+      && CC="$CC -isystem /usr/include/x86_64-linux-gnu"
+   check "calendar: orbis" "$HOSTOFF -DORBIS -Itools/platform_stubs/orbis -Werror" $CALTU
+   CC=$CC_SAVED
+else
+   echo "skip  calendar: orbis (no clang for x86_64-scei-ps4)"
+fi
+for mingw in x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc; do
+   if ! command -v $mingw > /dev/null 2>&1; then
+      echo "skip  calendar: $mingw"
+      continue
+   fi
+   for winrt in "" "-D__WINRT__ -D_WIN32_WINNT=0x0A00"; do
+      if ! out=$($mingw -std=gnu99 -Wall -Werror $INC $winrt \
+            -fsyntax-only $CALTU 2>&1); then
+         echo "FAIL  calendar: $mingw $winrt"
+         show_out "$out"
+         fail=1
+      else
+         echo "ok    calendar: $mingw $winrt"
+      fi
+   done
+done
+
 # runloop.c under Android: runloop_idle_wait's looper branch, and every
 # other ANDROID block in the file, compiled against hermetic NDK stubs
 # (jni, looper, native_activity, sensor, configuration, window) with
