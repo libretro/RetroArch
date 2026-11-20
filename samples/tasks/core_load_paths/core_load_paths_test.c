@@ -2628,6 +2628,7 @@ static void clean_run(void)
    /* LIBRETRO_DIRECTORY puts the caches there */
    remove_in(ra_cores, "core_probe.cache");
    remove_in(ra_cores, "core_info.cache");
+   remove_in(ra_cores, "seeded_libretro.info");
    remove_in(ra_dir, CORE_TRUST_FILE_NAME);
    remove_in(ra_dir, CORE_TRUST_FILE_NAME ".testkey");
    remove_in(ra_dir, "config/" PAD_OPT_DIR "/" PAD_OPT_DIR ".opt");
@@ -2798,11 +2799,12 @@ static void probe_earlier(const char *core)
 
 /* dir/name: core info that asks for a file the empty system folder
  * lacks */
-static bool fw_info_write(const char *name)
+/* name, an info file asking for harness/fw.bin, in the info folder in */
+static bool fw_info_write(const char *in, const char *name)
 {
    char path[PATH_MAX_LENGTH];
    FILE *f;
-   snprintf(path, sizeof(path), "%s/%s", dir, name);
+   snprintf(path, sizeof(path), "%s/%s", in, name);
    if (!(f = fopen(path, "wb")))
       return false;
    fprintf(f, "display_name = \"Firmware harness\"\n");
@@ -2829,9 +2831,9 @@ static bool fw_setup(const char *argv0)
       && copy_beside(argv0, "harness_core_b.so", fwb_core)
       && copy_beside(argv0, "harness_core_sub_a.so", sub_core)
       && copy_beside(argv0, "harness_core_sub_b.so", fws_core)
-      && fw_info_write("fw_libretro.info")
-      && fw_info_write("fwb_libretro.info")
-      && fw_info_write("fws_libretro.info");
+      && fw_info_write(dir, "fw_libretro.info")
+      && fw_info_write(dir, "fwb_libretro.info")
+      && fw_info_write(dir, "fws_libretro.info");
 }
 
 int main(int argc, char *argv[])
@@ -3105,7 +3107,13 @@ int main(int argc, char *argv[])
          snprintf(game, sizeof(game), "%s/title.bin", dir);
          write_file(game);
          rarch_argv[rarch_argc++] = game;
-         if (!fw_info_write("seeded_libretro.info"))
+         /* Where the info list reads: on Windows LIBRETRO_DIRECTORY,
+          * set for the seed modes, names the info folder too */
+#ifdef _WIN32
+         if (!fw_info_write(ra_cores, "seeded_libretro.info"))
+#else
+         if (!fw_info_write(dir, "seeded_libretro.info"))
+#endif
          {
             clean_run();
             return 1;
