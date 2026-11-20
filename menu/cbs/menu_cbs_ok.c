@@ -6746,7 +6746,9 @@ int action_ok_core_signature_check(const char *path,
                CMD_EVENT_CORE_SIGNATURE_CHECK_OFF);
          return action_ok_dialog_init(menu_st);
       case CORE_TRUST_TOGGLE_READ_ONLY:
-         msg = msg_hash_to_str(MSG_CORE_TRUST_READ_ONLY);
+         msg = msg_hash_to_str(core_trust_runtime_newer()
+               ? MSG_CORE_TRUST_NEWER
+               : MSG_CORE_TRUST_READ_ONLY);
          runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
          break;
@@ -9629,6 +9631,33 @@ int action_ok_core_lock(const char *path,
    return ret;
 }
 
+#ifdef HAVE_CORE_SIGNATURES
+static int action_ok_core_trust(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   const char *msg;
+   bool kept;
+   /* A row built before the trust changed shows what is so now */
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
+   /* Does nothing else unless the core is Trusted by you */
+   if (!core_trust_runtime_forget(path))
+      return 0;
+   kept = core_trust_runtime_can_save();
+   msg  = msg_hash_to_str(kept
+         ? MSG_CORE_TRUST_FORGOTTEN
+         : MSG_CORE_TRUST_FORGOTTEN_CANT_SAVE);
+   runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, kept
+         ? MESSAGE_QUEUE_CATEGORY_INFO
+         : MESSAGE_QUEUE_CATEGORY_WARNING);
+   if (!kept)
+      core_trust_runtime_cant_save_told();
+   return 0;
+}
+#endif
+
 /* Do not declare this static - it is also used
  * in menu_cbs_left.c and menu_cbs_right.c */
 int action_ok_core_set_standalone_exempt(const char *path,
@@ -9726,6 +9755,9 @@ static int action_ok_core_delete(const char *path,
 
 #ifdef HAVE_CORE_LOAD_CHECK
    core_load_check_release_held();
+#endif
+#ifdef HAVE_CORE_SIGNATURES
+   core_trust_runtime_forget(core_path);
 #endif
 
    /* Delete core file */
@@ -11230,6 +11262,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_CORE_SIGNATURES
          case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
             BIND_ACTION_OK(cbs, action_ok_core_signature_check);
+            break;
+         case MENU_SETTING_ACTION_CORE_TRUST:
+            BIND_ACTION_OK(cbs, action_ok_core_trust);
             break;
 #endif
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:

@@ -10557,26 +10557,40 @@ static unsigned menu_core_warning_label(enum core_warning_choice choice)
    return MENU_ENUM_LABEL_VALUE_CORE_WARNING_CANCEL;
 }
 
-/* The Security Warning's text, built again only for another reason or
- * another language (whose strings are other pointers) */
+/* The Security Warning's text, built again only for another reason,
+ * store line or language (whose strings are other pointers) */
 static const char *menu_core_warning_text(void)
 {
    static char text[MENU_LABEL_MAX_LENGTH];
    static const char *built_title = NULL;
+   static const char *built_store = NULL;
    static int built_result        = -1;
    enum core_check_result result  = CORE_CHECK_ERROR;
    const char *title              = msg_hash_to_str(
          MENU_ENUM_LABEL_VALUE_CORE_WARNING);
+   const char *store              = NULL;
    size_t _len                    = 0;
    core_warning_pending(NULL, &result);
-   if ((int)result == built_result && title == built_title)
+   if (core_trust_runtime_newer() || core_trust_runtime_unreadable())
+      store = msg_hash_to_str(core_trust_runtime_newer()
+            ? MSG_CORE_WARNING_STORE_NEWER
+            : MSG_CORE_WARNING_STORE_UNREADABLE);
+   if (     (int)result == built_result
+         && title == built_title
+         && store == built_store)
       return text;
    built_result = (int)result;
    built_title  = title;
+   built_store  = store;
    strlcpy_append(text, sizeof(text), &_len, title);
    strlcpy_append(text, sizeof(text), &_len, "\n");
    strlcpy_append(text, sizeof(text), &_len,
          msg_hash_to_str(core_warning_reason(result)));
+   if (store)
+   {
+      strlcpy_append(text, sizeof(text), &_len, "\n\n");
+      strlcpy_append(text, sizeof(text), &_len, store);
+   }
    strlcpy_append(text, sizeof(text), &_len, "\n\n");
    strlcpy_append(text, sizeof(text), &_len,
          msg_hash_to_str(MSG_CORE_WARNING_FULL_ACCESS));

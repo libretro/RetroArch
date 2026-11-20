@@ -615,6 +615,164 @@ static void test_trust(void)
    core_trust_free(u);
 }
 
+/* core_trust_state_of(), which core_check_record() agrees with */
+static enum core_trust_state state_is(core_trust_t *t,
+      const struct core_check *c, uint8_t *sha256)
+{
+   core_trust_set_t *s         = core_trust_get(t);
+   enum core_trust_state state = core_trust_state_of(s, c, sha256);
+   CHECK(core_check_record(s, c) == (state != CORE_TRUST_STATE_UNCHECKED));
+   core_trust_set_put(s);
+   return state;
+}
+
+static void test_trust_forget(void)
+{
+   core_trust_t *t = fx_store();
+   core_trust_set_t *s0, *s;
+   struct core_check a, b, g, o;
+   uint8_t two[2 * CORE_SHA256_LEN];
+
+   /* b: a's bytes under another name */
+   check_of(&a, "a_libretro.so", 1, 0xa1, 0);
+   check_of(&b, "b_libretro.so", 2, 0xa1, 0);
+   check_of(&g, "g_libretro.so", 3, 0xa2, 500);
+   /* Always Trust on an OLDER warning */
+   check_of(&o, "o_libretro.so", 4, 0xa3, 400);
+   o.result       = CORE_CHECK_OLDER;
+   o.record       = false;
+   o.raise_newest = false;
+   CHECK(core_trust_always(t, &a));
+   CHECK(core_trust_always(t, &b));
+   CHECK(core_trust_apply(t, &g));
+   CHECK(core_trust_always(t, &o));
+   s0 = core_trust_get(t);
+   CHECK(core_trust_forget(t, a.rec.sha256, 1));
+   CHECK(core_trust_has_hash(s0, a.rec.sha256));
+   core_trust_set_put(s0);
+   s = core_trust_get(t);
+   CHECK(!core_trust_has_hash(s, a.rec.sha256));
+   CHECK(!core_trust_has_identity(s, &a.rec.id, "a_libretro.so"));
+   CHECK(!core_trust_has_identity(s, &b.rec.id, "b_libretro.so"));
+   CHECK(core_trust_state_of(s, &b, NULL) == CORE_TRUST_STATE_UNCHECKED);
+   CHECK(core_trust_has_identity(s, &g.rec.id, "g_libretro.so"));
+   CHECK(core_trust_newest(s, nowhere, "g_libretro.so") == 500);
+   core_trust_set_put(s);
+   /* Its record loses its build time */
+   CHECK(core_trust_forget(t, o.rec.sha256, 1));
+   s = core_trust_get(t);
+   CHECK(!core_check_record(s, &o));
+   CHECK(!core_trust_has_identity(s, &o.rec.id, "o_libretro.so"));
+   core_trust_set_put(s);
+   /* Nothing holds it: no new set */
+   memset(two, 0xee, CORE_SHA256_LEN);
+   s0 = core_trust_get(t);
+   CHECK(core_trust_forget(t, two, 1));
+   s = core_trust_get(t);
+   CHECK(s == s0);
+   core_trust_set_put(s);
+   core_trust_set_put(s0);
+   /* Two in one call */
+   check_of(&a, "x_libretro.so", 5, 0xa4, 0);
+   check_of(&b, "y_libretro.so", 6, 0xa5, 0);
+   CHECK(core_trust_always(t, &a));
+   CHECK(core_trust_always(t, &b));
+   memcpy(two, a.rec.sha256, CORE_SHA256_LEN);
+   memcpy(two + CORE_SHA256_LEN, b.rec.sha256, CORE_SHA256_LEN);
+   CHECK(core_trust_forget(t, two, 2));
+   s = core_trust_get(t);
+   CHECK(!core_trust_has_hash(s, a.rec.sha256));
+   CHECK(!core_trust_has_hash(s, b.rec.sha256));
+   CHECK(!core_check_record(s, &a));
+   CHECK(!core_check_record(s, &b));
+   core_trust_set_put(s);
+   core_trust_free(t);
+}
+
+static void test_trust_state(void)
+{
+   static const uint64_t other = 2;
+   core_trust_t *t = fx_store();
+   struct core_check h, c;
+   uint8_t sha256[CORE_SHA256_LEN];
+
+   check_of(&h, "h_libretro.so", 1, 0x71, 0);
+   CHECK(core_trust_always(t, &h));
+   memset(sha256, 0, sizeof(sha256));
+   CHECK(state_is(t, &h, sha256) == CORE_TRUST_STATE_TRUSTED);
+   CHECK(!memcmp(sha256, h.rec.sha256, CORE_SHA256_LEN));
+   check_of(&c, "g_libretro.so", 2, 0x72, 300);
+   CHECK(core_trust_apply(t, &c));
+   CHECK(state_is(t, &c, NULL) == CORE_TRUST_STATE_SIGNED);
+   /* No build time, and its hash isn't trusted */
+   check_of(&c, "p_libretro.so", 3, 0x73, 0);
+   CHECK(core_trust_apply(t, &c));
+   CHECK(state_is(t, &c, NULL) == CORE_TRUST_STATE_UNCHECKED);
+   /* Older than a build seen since */
+   check_of(&c, "q_libretro.so", 4, 0x74, 100);
+   CHECK(core_trust_apply(t, &c));
+   check_of(&c, "q_libretro.so", 4, 0x74, 300);
+   c.record = false;
+   CHECK(core_trust_apply(t, &c));
+   check_of(&c, "q_libretro.so", 4, 0x74, 100);
+   CHECK(state_is(t, &c, NULL) == CORE_TRUST_STATE_UNCHECKED);
+   check_of(&c, "n_libretro.so", 5, 0x75, 0);
+   CHECK(state_is(t, &c, NULL) == CORE_TRUST_STATE_UNCHECKED);
+   c = h;
+   c.rec.id.size++;
+   CHECK(state_is(t, &c, NULL) == CORE_TRUST_STATE_UNCHECKED);
+   c = h;
+   strlcpy(c.rec.name, "other_libretro.so", sizeof(c.rec.name));
+   CHECK(state_is(t, &c, NULL) == CORE_TRUST_STATE_UNCHECKED);
+   /* A signed build trusted as well */
+   check_of(&c, "w_libretro.so", 6, 0x76, 200);
+   CHECK(core_trust_apply(t, &c));
+   CHECK(core_trust_always(t, &c));
+   CHECK(state_is(t, &c, NULL) == CORE_TRUST_STATE_TRUSTED);
+   /* On neither device any more */
+   CHECK(core_trust_set_device(t, &other, NULL));
+   CHECK(state_is(t, &h, NULL) == CORE_TRUST_STATE_UNCHECKED);
+   core_trust_free(t);
+}
+
+/* A record with no build time answers only while its hash is trusted */
+static void test_record_needs_hash(void)
+{
+   core_trust_t *t = fx_store();
+   core_trust_set_t *s;
+   struct core_check c;
+
+   check_of(&c, "c_libretro.so", 1, 0x61, 0);
+   CHECK(core_trust_always(t, &c));
+   s = core_trust_get(t);
+   CHECK(core_check_record(s, &c));
+   core_trust_set_put(s);
+   CHECK(core_trust_forget(t, c.rec.sha256, 1));
+   /* A check that saw the hash trusted lands after the forget */
+   c.result    = CORE_CHECK_OK;
+   c.record    = true;
+   c.rec.flags = 0;
+   CHECK(core_trust_apply(t, &c));
+   s = core_trust_get(t);
+   CHECK(core_trust_has_identity(s, &c.rec.id, "c_libretro.so"));
+   CHECK(!core_check_record(s, &c));
+   CHECK(!core_check_record_folderless(s, &c));
+   core_trust_set_put(s);
+   /* A restored older backup's record keeps its build time */
+   check_of(&c, "r_libretro.so", 2, 0x62, 100);
+   c.rec.flags = CORE_TRUST_RECORD_ANY_AGE;
+   CHECK(core_trust_apply(t, &c));
+   check_of(&c, "r_libretro.so", 2, 0x62, 300);
+   c.record = false;
+   CHECK(core_trust_apply(t, &c));
+   check_of(&c, "r_libretro.so", 2, 0x62, 100);
+   s = core_trust_get(t);
+   CHECK(core_trust_newest(s, nowhere, "r_libretro.so") == 300);
+   CHECK(core_check_record(s, &c));
+   core_trust_set_put(s);
+   core_trust_free(t);
+}
+
 /* A check that only raises the newest of core n in folder key, keys
  * ordered as their numbers */
 static void newest_of(struct core_check *c, unsigned long key, unsigned n,
@@ -918,7 +1076,7 @@ static void test_trust_file_kept(core_trust_t *t, core_trust_t *u)
    CHECK((buf = core_trust_serialize(t, &len)) != NULL);
    buf[sizeof(CORE_TRUST_MAGIC) - 2] = '2';
    CHECK(filestream_write_file(path, buf, (int64_t)len));
-   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_UNREADABLE);
+   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_NEWER);
    if ((w = core_trust_write_begin(u)))
    {
       core_trust_write_end(u, w, false);
@@ -927,7 +1085,7 @@ static void test_trust_file_kept(core_trust_t *t, core_trust_t *u)
    CHECK(file_is(path, buf, len));
    CHECK(file_is(bad, big, CORE_TRUST_FILE_MAX + 1));
    buf[sizeof(CORE_TRUST_MAGIC) - 2] = '9';
-   CHECK(core_trust_parse(u, buf, len) == CORE_TRUST_LOAD_UNREADABLE);
+   CHECK(core_trust_parse(u, buf, len) == CORE_TRUST_LOAD_NEWER);
    buf[sizeof(CORE_TRUST_MAGIC) - 2] = ':';
    CHECK(core_trust_parse(u, buf, len) == CORE_TRUST_LOAD_DAMAGED);
    buf[sizeof(CORE_TRUST_MAGIC) - 2] = '0';
@@ -935,7 +1093,7 @@ static void test_trust_file_kept(core_trust_t *t, core_trust_t *u)
    free(buf);
    memcpy(big, "RACTRST2", 8);
    CHECK(filestream_write_file(path, big, CORE_TRUST_FILE_MAX + 1));
-   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_UNREADABLE);
+   CHECK(core_trust_load_file(u, path) == CORE_TRUST_LOAD_NEWER);
    CHECK(file_is(path, big, CORE_TRUST_FILE_MAX + 1));
    free(big);
 
@@ -1220,6 +1378,57 @@ static void test_trust_merge(void)
    core_trust_free(v);
 }
 
+/* Another instance's save, or its check of a core trusted before, keeps
+ * nothing the forget took back */
+static void test_forget_survives_merge(void)
+{
+   core_trust_t *a = core_trust_new();
+   core_trust_t *b = core_trust_new();
+   core_trust_t *v = core_trust_new();
+   core_trust_set_t *s;
+   struct core_check u, o, x;
+   char path[256];
+   strlcpy(path, tmp("forget_trust"), sizeof(path));
+   CHECK(core_trust_load_file(a, path) == CORE_TRUST_LOAD_MISSING);
+   CHECK(core_trust_set_device(a, &fx_dev, NULL));
+   check_of(&u, "u_libretro.so", 1, 0x31, 0);
+   u.result = CORE_CHECK_UNSIGNED;
+   check_of(&o, "o_libretro.so", 2, 0x32, 400);
+   o.result       = CORE_CHECK_OLDER;
+   o.record       = false;
+   o.raise_newest = false;
+   CHECK(core_trust_always(a, &u));
+   CHECK(core_trust_always(a, &o));
+   CHECK(save(a, path));
+   CHECK(core_trust_load_file(b, path) == CORE_TRUST_LOAD_OK);
+   CHECK(core_trust_set_device(b, &fx_dev, NULL));
+   CHECK(core_trust_forget(a, u.rec.sha256, 1));
+   CHECK(core_trust_forget(a, o.rec.sha256, 1));
+   CHECK(save(a, path));
+   u.result = CORE_CHECK_OK;
+   u.record = true;
+   CHECK(core_trust_apply(b, &u));
+   check_of(&x, "x_libretro.so", 3, 0x33, 0);
+   CHECK(core_trust_always(b, &x));
+   CHECK(save(b, path));
+   CHECK(core_trust_load_file(v, path) == CORE_TRUST_LOAD_OK);
+   CHECK(core_trust_set_device(v, &fx_dev, NULL));
+   s = core_trust_get(v);
+   CHECK(!core_trust_has_hash(s, u.rec.sha256));
+   CHECK(!core_trust_has_hash(s, o.rec.sha256));
+   /* B's record of u is back, inert */
+   CHECK(core_trust_has_identity(s, &u.rec.id, "u_libretro.so"));
+   CHECK(!core_check_record(s, &u));
+   CHECK(!core_check_record_folderless(s, &u));
+   CHECK(!core_trust_has_identity(s, &o.rec.id, "o_libretro.so"));
+   CHECK(!core_check_record(s, &o));
+   CHECK(core_trust_has_hash(s, x.rec.sha256));
+   core_trust_set_put(s);
+   core_trust_free(a);
+   core_trust_free(b);
+   core_trust_free(v);
+}
+
 /* A save that finds no room on disk for a hash keeps it for the next */
 static void test_trust_merge_full(void)
 {
@@ -1433,6 +1642,26 @@ static void test_trust_temp(void)
    core_trust_free(v);
 }
 
+static void test_trust_temp_of(void)
+{
+   char name[256];
+   CHECK(core_trust_temp_name(name, sizeof(name), "core_trust", 123, 0x1a2b));
+   CHECK(core_trust_temp_of(name, "core_trust"));
+   CHECK(core_trust_temp_of("core_trust.1.a.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.testkey.1.a.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.bad", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.1.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.x.1.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.1.g.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust..a.tmp", "core_trust"));
+   CHECK(!core_trust_temp_of("core_trust.1.a.tmp.bak", "core_trust"));
+   CHECK(!core_trust_temp_of("other.1.a.tmp", "core_trust"));
+   CHECK(core_trust_temp_of("core_trust.testkey.1.a.tmp",
+         "core_trust.testkey"));
+}
+
 static void test_record_older(void)
 {
    core_trust_t *t = real_store();
@@ -1565,15 +1794,17 @@ static void test_record_folderless(void)
    }
    s = core_trust_get(t);
    CHECK(!core_check_record_folderless(s, &c));
-   /* No build time: never too old */
-   CHECK(core_check_record_folderless(s, &unsigned_c));
+   /* No build time: never too old, but its hash isn't trusted */
+   CHECK(!core_check_record_folderless(s, &unsigned_c));
    /* No record */
    CHECK(!core_check_record_folderless(s, &other));
    core_trust_set_put(s);
    /* Kept at any age by Always Trust */
    CHECK(core_trust_always(t, &c));
+   CHECK(core_trust_always(t, &unsigned_c));
    s = core_trust_get(t);
    CHECK(core_check_record_folderless(s, &c));
+   CHECK(core_check_record_folderless(s, &unsigned_c));
    /* A signed record of a name no folder has a newest build for: as of
     * a store that kept the record and lost the newest builds */
    q = c;
@@ -1585,6 +1816,61 @@ static void test_record_folderless(void)
    s = core_trust_get(t);
    CHECK(core_check_record_folderless(s, &q));
    CHECK(!memcmp(q.folder, zero, sizeof(zero)));
+   core_trust_set_put(s);
+   core_trust_free(t);
+}
+
+/* A record back after its hash was forgotten passes no quick check */
+static void test_quick_inert_record(void)
+{
+   core_trust_t *t = real_store();
+   core_trust_set_t *s;
+   core_file_t *f;
+   struct core_check c, q;
+   char core[256];
+   CHECK(path_mkdir(tmp("eight")));
+   strlcpy(core, tmp("eight/" FX_NAME), sizeof(core));
+   CHECK(filestream_write_file(core, fx_core, FX_CORE_SIZE));
+   CHECK(check_path(t, core, 0, &c) == CORE_CHECK_UNSIGNED);
+   CHECK(core_trust_always(t, &c));
+   CHECK(core_trust_forget(t, c.rec.sha256, 1));
+   /* A check that saw the hash trusted lands after the forget */
+   c.result    = CORE_CHECK_OK;
+   c.record    = true;
+   c.rec.flags = 0;
+   CHECK(core_trust_apply(t, &c));
+   s = core_trust_get(t);
+   CHECK(core_trust_has_identity(s, &c.rec.id, FX_NAME) == records_for(core));
+   CHECK((f = core_file_open(core)) != NULL);
+   CHECK(!core_check_quick(s, f, core, &q));
+   core_file_close(f);
+   core_trust_set_put(s);
+   core_trust_free(t);
+}
+
+static void test_trust_state_file(void)
+{
+   core_trust_t *t = real_store();
+   core_trust_set_t *s;
+   struct core_check c;
+   char core[256];
+   bool kept;
+   CHECK(path_mkdir(tmp("seven")));
+   strlcpy(core, tmp("seven/" FX_NAME), sizeof(core));
+   put_core(core, fx_sig_good, sizeof(fx_sig_good));
+   kept = records_for(core);
+   CHECK(check_path(t, core, 0, &c) == CORE_CHECK_OK);
+   CHECK(core_trust_apply(t, &c));
+   s = core_trust_get(t);
+   CHECK(core_trust_state_file(s, core, NULL) == (kept
+         ? CORE_TRUST_STATE_SIGNED : CORE_TRUST_STATE_UNCHECKED));
+   core_trust_set_put(s);
+   CHECK(core_trust_always(t, &c));
+   s = core_trust_get(t);
+   CHECK(core_trust_state_file(s, core, NULL) == (kept
+         ? CORE_TRUST_STATE_TRUSTED : CORE_TRUST_STATE_UNCHECKED));
+   CHECK(core_trust_state_file(s, tmp("seven/missing_libretro.so"), NULL)
+         == CORE_TRUST_STATE_UNCHECKED);
    core_trust_set_put(s);
    core_trust_free(t);
 }
@@ -2475,12 +2761,12 @@ static void test_verity_quick(const char *core)
    s = core_trust_get(t);
    CHECK(!core_check_quick(s, f, core, &c));
    core_trust_set_put(s);
-   /* Recorded with its digest, as the check task records it */
+   /* Trusted, recorded with its digest */
    CHECK(core_file_verity_measure(f, &c.rec.id));
    sha(fx_core, VERITY_LEN, c.rec.sha256);
    c.result = CORE_CHECK_OK;
    c.record = true;
-   CHECK(core_trust_apply(t, &c));
+   CHECK(core_trust_always(t, &c));
    s = core_trust_get(t);
    CHECK(core_check_quick(s, f, core, &c2) == kept);
    core_trust_set_put(s);
@@ -2558,7 +2844,7 @@ static void test_verity(void)
       sha(fx_core, VERITY_LEN, c.rec.sha256);
       c.result = CORE_CHECK_OK;
       c.record = true;
-      CHECK(core_trust_apply(t, &c));
+      CHECK(core_trust_always(t, &c));
       s = core_trust_get(t);
       CHECK(core_check_quick(s, f, core, &d) == records_for(core));
       core_trust_set_put(s);
@@ -2621,6 +2907,8 @@ static void clean(void)
       "gone/" FX_NAME, "gone",
       "four/" FX_NAME, "four/" FX_NAME ".sig", "four",
       "five/" FX_NAME, "five/" FX_NAME ".sig", "five",
+      "seven/" FX_NAME, "seven/" FX_NAME ".sig", "seven", "forget_trust",
+      "eight/" FX_NAME, "eight",
       "pkg_libretro.so", "verity_libretro.so",
       "load_one_libretro" LIB_EXT, "load_two_libretro" LIB_EXT,
       "load_two_new" LIB_EXT, "load_bad_libretro" LIB_EXT };
@@ -2697,6 +2985,11 @@ int main(int argc, char *argv[])
    test_file_fd();
 #endif
    test_trust();
+   test_trust_forget();
+   test_trust_state();
+   test_record_needs_hash();
+   test_forget_survives_merge();
+   test_trust_state_file();
    test_trust_newest_full();
    test_trust_newest_cap();
    test_trust_threads();
@@ -2706,8 +2999,10 @@ int main(int argc, char *argv[])
    test_trust_merge_full();
    test_trust_merge_cap();
    test_trust_temp();
+   test_trust_temp_of();
    test_record_older();
    test_record_folderless();
+   test_quick_inert_record();
    test_ctime_kept();
    test_store_device();
    test_self_device();

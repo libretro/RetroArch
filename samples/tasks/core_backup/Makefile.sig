@@ -77,8 +77,8 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-# Only these two, which share the menu's ANDROID layout; the others
-# hand msg_hash values only to the stand-in, which ignores them
+# Only these two, which share the menu's ANDROID layout; no test looks
+# at a msg_hash value the others hand the stand-in
 ifeq ($(PLAY),1)
 core_backup_sig_test.o $(call sample_objs,$(REPO_ROOT)/tasks/task_core_backup.o): \
    CFLAGS += -DANDROID

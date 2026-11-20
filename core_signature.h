@@ -192,6 +192,8 @@ enum core_trust_load
    /* Never written over, so nothing it holds is lost. The store's
     * flags mean nothing then: don't seed from it. */
    CORE_TRUST_LOAD_UNREADABLE,
+   /* A newer version's: as UNREADABLE, the file kept for it */
+   CORE_TRUST_LOAD_NEWER,
    /* Read, but not a store: from core_trust_parse only */
    CORE_TRUST_LOAD_DAMAGED,
    /* Was damaged, now <path>.bad; an empty store, every flag clear */
@@ -248,6 +250,12 @@ void core_trust_set_put(core_trust_set_t *s);
  * drops its oldest build. */
 bool core_trust_apply(core_trust_t *t, const struct core_check *c);
 bool core_trust_always(core_trust_t *t, const struct core_check *c);
+/* Always refuses c on s only because the trusted hashes are full */
+bool core_trust_full_refuses(const core_trust_set_t *s,
+      const struct core_check *c);
+/* Untrusts the n hashes back to back at sha256 and retires every record
+ * carrying one of them. False, changing nothing, when out of memory. */
+bool core_trust_forget(core_trust_t *t, const uint8_t *sha256, unsigned n);
 bool core_trust_set_flag(core_trust_t *t, unsigned flag, bool on);
 /* Records are made and honoured only for files on dev, the store's own
  * filesystem, or on self_dev, RetroArch's own: whoever can write either
@@ -261,6 +269,9 @@ unsigned core_trust_flags(const core_trust_set_t *s);
 bool core_trust_has_identity(const core_trust_set_t *s,
       const struct core_identity *id, const char *name);
 bool core_trust_has_hash(const core_trust_set_t *s, const uint8_t *sha256);
+/* The trusted hashes, i below core_trust_num_hashes() */
+unsigned core_trust_num_hashes(const core_trust_set_t *s);
+const uint8_t *core_trust_hash_at(const core_trust_set_t *s, unsigned i);
 /* 0 when the name was never seen in that folder */
 uint64_t core_trust_newest(const core_trust_set_t *s, const uint8_t *folder,
       const char *name);
@@ -293,6 +304,9 @@ uint8_t *core_trust_write_bytes(core_trust_write_t *w,
  * clock, as Flatpak's PID namespaces repeat pids. */
 bool core_trust_temp_name(char *s, size_t len, const char *path,
       unsigned long pid, unsigned long stamp);
+/* Whether name, with no folder, is a temporary temp_name made for the
+ * store file named store_name */
+bool core_trust_temp_of(const char *name, const char *store_name);
 
 /* An empty, writable store, for once a damaged file is set aside */
 bool core_trust_reset(core_trust_t *t);
@@ -379,16 +393,41 @@ bool core_folder_key(const char *path, uint8_t *key);
 /* Either rule, per_folder false being Android's, for tests */
 bool core_folder_key_with(const char *path, bool per_folder, uint8_t *key);
 
-/* A record of this file, for a build no older than the newest seen in
- * c->folder unless the record may be older */
+enum core_trust_state
+{
+   CORE_TRUST_STATE_UNCHECKED = 0,
+   /* Its record's hash is trusted */
+   CORE_TRUST_STATE_TRUSTED,
+   /* Its record holds a .sig's build time */
+   CORE_TRUST_STATE_SIGNED
+};
+
+/* What c's record says, c as core_check_quick() fills it (a build older
+ * than its folder's newest needs CORE_TRUST_RECORD_ANY_AGE). sha256 (or
+ * NULL) gets the record's hash unless UNCHECKED. */
+enum core_trust_state core_trust_state_of(const core_trust_set_t *s,
+      const struct core_check *c, uint8_t *sha256);
+/* Apple builds, where dylib_load opens a .framework folder's binary,
+ * <name>.framework/<name>, so the check and the trust state must too.
+ * s must not overlap path. False for other paths. */
+bool core_load_framework_binary(const char *path, char *s, size_t len);
+#if defined(__APPLE__) && !defined(CORE_TRUST_FRAMEWORKS)
+#define CORE_TRUST_FRAMEWORKS
+#endif
+/* core_trust_state_of() for the file at path, which it doesn't read:
+ * UNCHECKED when it can't be opened. A .framework folder (with
+ * CORE_TRUST_FRAMEWORKS) is its binary, as the load check reads it. */
+enum core_trust_state core_trust_state_file(const core_trust_set_t *s,
+      const char *path, uint8_t *sha256);
+/* A record answers for this file: core_trust_state_of() isn't UNCHECKED */
 bool core_check_record(const core_trust_set_t *s, const struct core_check *c);
 /* A record matches this file in all but its fs-verity digest and has
  * one: the file's must be measured for the record to hold */
 /* core_check_record() for a record that holds whatever folder its core
- * is in: one with no build time or kept at any age, or whose build no
- * folder has a newer one of (the usual case: the newest seen). The
- * quick check takes it without the folder's key, which costs a walk of
- * the folder's path. */
+ * is in: one with no build time and a trusted hash, or kept at any
+ * age, or whose build no folder has a newer one of (the usual case:
+ * the newest seen). The quick check takes it without the folder's
+ * key, which costs a walk of the folder's path. */
 bool core_check_record_folderless(const core_trust_set_t *s,
       const struct core_check *c);
 bool core_check_wants_verity(const core_trust_set_t *s,

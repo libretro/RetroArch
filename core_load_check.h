@@ -51,6 +51,9 @@ void core_load_check_unloaded(void);
  * pass of the core loaded last and closes every file a record keeps.
  * Never from a worker. */
 void core_load_check_release_held(void);
+/* Its trust taken back: ends the passes kept for the core at path. A
+ * running core keeps its record for run-ahead's copy. */
+void core_load_check_untrust(const char *path);
 /* While the startup load runs before the frame loop: a core the quick
  * check doesn't pass is checked whole, in place */
 void core_load_check_set_startup(bool on);

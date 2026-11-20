@@ -317,6 +317,16 @@ bool core_trust_has_hash(const core_trust_set_t *s, const uint8_t *sha256)
    return false;
 }
 
+unsigned core_trust_num_hashes(const core_trust_set_t *s)
+{
+   return s->num_hashes;
+}
+
+const uint8_t *core_trust_hash_at(const core_trust_set_t *s, unsigned i)
+{
+   return s->hashes[i];
+}
+
 uint64_t core_trust_newest(const core_trust_set_t *s, const uint8_t *folder,
       const char *name)
 {
@@ -349,9 +359,7 @@ static bool core_trust_may_record(const core_trust_set_t *s,
 
 bool core_check_record(const core_trust_set_t *s, const struct core_check *c)
 {
-   const struct core_trust_record *r = core_trust_may_record(s, &c->rec.id)
-      ? core_trust_find(s, &c->rec.id, c->rec.name) : NULL;
-   return r && !core_trust_too_old(s, r, c->folder);
+   return core_trust_state_of(s, c, NULL) != CORE_TRUST_STATE_UNCHECKED;
 }
 
 bool core_check_record_folderless(const core_trust_set_t *s,
@@ -362,8 +370,11 @@ bool core_check_record_folderless(const core_trust_set_t *s,
       ? core_trust_find(s, &c->rec.id, c->rec.name) : NULL;
    if (!r)
       return false;
+   /* A hash's record counts only while the hash is trusted */
+   if (!r->build_time)
+      return core_trust_has_hash(s, r->sha256);
    /* Never too old in any folder: core_trust_too_old() can't be true */
-   if (!r->build_time || (r->flags & CORE_TRUST_RECORD_ANY_AGE))
+   if (r->flags & CORE_TRUST_RECORD_ANY_AGE)
       return true;
    /* Too old only where a folder has a newer build of its name: with
     * none newer anywhere, no folder's key can change the answer */
@@ -476,13 +487,27 @@ bool core_trust_apply(core_trust_t *t, const struct core_check *c)
    return true;
 }
 
+/* Always takes c when the trusted hashes have room */
+static bool core_trust_always_takes(const struct core_check *c)
+{
+   return !string_is_empty(c->rec.name)
+         && c->result != CORE_CHECK_ERROR
+         && c->rec.id.verity_len <= CORE_ID_VERITY_MAX;
+}
+
+bool core_trust_full_refuses(const core_trust_set_t *s,
+      const struct core_check *c)
+{
+   return core_trust_always_takes(c)
+         && s->num_hashes == CORE_TRUST_MAX_HASHES
+         && !core_trust_has_hash(s, c->rec.sha256);
+}
+
 bool core_trust_always(core_trust_t *t, const struct core_check *c)
 {
    core_trust_set_t *s;
    bool known = core_trust_has_hash(t->cur, c->rec.sha256);
-   if (     string_is_empty(c->rec.name)
-         || c->result == CORE_CHECK_ERROR
-         || c->rec.id.verity_len > CORE_ID_VERITY_MAX
+   if (     !core_trust_always_takes(c)
          || (!known && t->cur->num_hashes == CORE_TRUST_MAX_HASHES)
          || !(s = core_trust_set_clone(t->cur)))
       return false;
@@ -492,6 +517,78 @@ bool core_trust_always(core_trust_t *t, const struct core_check *c)
       core_trust_put_record(s, &c->rec)->flags |= CORE_TRUST_RECORD_ANY_AGE;
    core_trust_publish(t, s);
    return true;
+}
+
+/* Kept in its slot, so the next write replaces the file's copy, but
+ * matching no file */
+static void core_trust_retire(struct core_trust_record *rec)
+{
+   rec->build_time = 0;
+   rec->id.size    = (uint64_t)-1;
+}
+
+/* sha256 is trusted, or a record not yet retired carries it */
+static bool core_trust_holds(const core_trust_set_t *s,
+      const uint8_t *sha256)
+{
+   unsigned i;
+   if (core_trust_has_hash(s, sha256))
+      return true;
+   for (i = 0; i < s->num_records; i++)
+      if (     s->records[i].id.size != (uint64_t)-1
+            && !memcmp(s->records[i].sha256, sha256, CORE_SHA256_LEN))
+         return true;
+   return false;
+}
+
+bool core_trust_forget(core_trust_t *t, const uint8_t *sha256, unsigned n)
+{
+   core_trust_set_t *s;
+   unsigned i, j;
+   for (i = 0; i < n; i++)
+      if (core_trust_holds(t->cur, sha256 + i * CORE_SHA256_LEN))
+         break;
+   if (i == n)
+      return true;
+   if (!(s = core_trust_set_clone(t->cur)))
+      return false;
+   for (i = 0; i < n; i++)
+   {
+      const uint8_t *h = sha256 + i * CORE_SHA256_LEN;
+      for (j = 0; j < s->num_hashes; j++)
+         if (!memcmp(s->hashes[j], h, CORE_SHA256_LEN))
+         {
+            memmove(s->hashes[j], s->hashes[j + 1],
+                  (s->num_hashes - j - 1) * CORE_SHA256_LEN);
+            s->num_hashes--;
+            break;
+         }
+      for (j = 0; j < s->num_records; j++)
+         if (!memcmp(s->records[j].sha256, h, CORE_SHA256_LEN))
+            core_trust_retire(&s->records[j]);
+   }
+   core_trust_publish(t, s);
+   return true;
+}
+
+enum core_trust_state core_trust_state_of(const core_trust_set_t *s,
+      const struct core_check *c, uint8_t *sha256)
+{
+   enum core_trust_state state;
+   const struct core_trust_record *r = core_trust_may_record(s, &c->rec.id)
+      ? core_trust_find(s, &c->rec.id, c->rec.name) : NULL;
+   if (!r || core_trust_too_old(s, r, c->folder))
+      return CORE_TRUST_STATE_UNCHECKED;
+   if (core_trust_has_hash(s, r->sha256))
+      state = CORE_TRUST_STATE_TRUSTED;
+   /* A hash's record counts only while the hash is trusted */
+   else if (r->build_time)
+      state = CORE_TRUST_STATE_SIGNED;
+   else
+      return CORE_TRUST_STATE_UNCHECKED;
+   if (sha256)
+      memcpy(sha256, r->sha256, CORE_SHA256_LEN);
+   return state;
 }
 
 bool core_trust_set_device(core_trust_t *t, const uint64_t *dev,
@@ -629,7 +726,10 @@ enum core_trust_load core_trust_parse(core_trust_t *t,
          && !memcmp(buf, CORE_TRUST_MAGIC, CORE_TRUST_VER_AT)
          && buf[CORE_TRUST_VER_AT] >  CORE_TRUST_MAGIC[CORE_TRUST_VER_AT]
          && buf[CORE_TRUST_VER_AT] <= '9')
-      goto unreadable;
+   {
+      t->read_only = true;
+      return CORE_TRUST_LOAD_NEWER;
+   }
    if (     len < CORE_TRUST_HEAD_LEN + CORE_SHA256_LEN
          || len > CORE_TRUST_FILE_MAX
          || memcmp(buf, CORE_TRUST_MAGIC, sizeof(CORE_TRUST_MAGIC) - 1))

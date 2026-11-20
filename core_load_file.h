@@ -28,11 +28,6 @@ dylib_t core_load_file(core_file_t *f, const char *path);
 dylib_t core_load_file_instance(core_file_t *f, const char *path);
 #endif
 
-/* Apple builds only, where dylib_load opens a .framework folder's
- * binary, <name>.framework/<name>, so the check must too. s must not
- * overlap path. False for other paths. */
-bool core_load_framework_binary(const char *path, char *s, size_t len);
-
 RETRO_END_DECLS
 
 #endif

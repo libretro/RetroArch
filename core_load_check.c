@@ -925,6 +925,7 @@ static void core_load_park_choice(enum core_warning_choice choice,
 {
    struct core_load_park *p = &core_load_rt.park;
    unsigned serial          = *(unsigned*)userdata;
+   bool took;
    (void)core_path;
    free(userdata);
    /* A newer push runs this with CANCEL inside itself, its request
@@ -941,14 +942,20 @@ static void core_load_park_choice(enum core_warning_choice choice,
          p->state = CORE_LOAD_PARK_IDLE;
          break;
       case CORE_WARNING_ALWAYS_TRUST:
-         /* Not recorded, so this once */
-         if (!core_trust_runtime_always(c))
+         /* Not recorded, or not kept, so this once */
+         if (     !(took = core_trust_runtime_always(c))
+               || (  !core_trust_runtime_can_save()
+                  && !core_trust_runtime_waits(c)))
          {
-            const char *msg = msg_hash_to_str(MSG_CORE_LOAD_TRUST_LIST_FULL);
+            const char *msg = msg_hash_to_str(took
+                  ? MSG_CORE_LOAD_TRUST_CANT_SAVE
+                  : MSG_CORE_LOAD_TRUST_LIST_FULL);
             RARCH_WARN("[Core] Could not trust \"%s\" for good: loading it once.\n",
                   p->path);
             runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+            if (took)
+               core_trust_runtime_cant_save_told();
          }
          p->state = CORE_LOAD_PARK_IDLE;
          break;
@@ -1386,6 +1393,31 @@ void core_load_check_release_held(void)
    /* A pass or a refusal: no kept file may block the task */
    if (core_load_rt.slot.f)
       core_load_slot_clear(&core_load_rt.slot);
+}
+
+void core_load_check_untrust(const char *path)
+{
+   if (!path)
+      return;
+#ifdef ANDROID
+   if (!android_core_path_resolve(path, core_load_rt.check_path,
+            sizeof(core_load_rt.check_path)))
+      return;
+   path = core_load_rt.check_path;
+#endif
+   core_load_abs(path, core_load_rt.path, sizeof(core_load_rt.path));
+   path = core_load_rt.path;
+   if (core_load_slot_is(&core_load_rt.slot, path))
+      core_load_slot_clear(&core_load_rt.slot);
+   if (core_load_slot_is(&core_load_rt.quick, path))
+      core_load_slot_clear(&core_load_rt.quick);
+   if (!core_load_slot_is(&core_load_rt.loaded, path))
+      return;
+   core_file_close(core_load_rt.loaded.f);
+   core_load_rt.loaded.f    = NULL;
+   core_load_rt.loaded.pass = false;
+   if (!core_load_rt.running)
+      core_load_slot_clear(&core_load_rt.loaded);
 }
 
 void core_load_check_set_startup(bool on)

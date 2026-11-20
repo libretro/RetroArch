@@ -64,23 +64,3 @@ dylib_t core_load_file_instance(core_file_t *f, const char *path)
    return core_load_fd(f, path, CORE_DLEXT_FORCE_LOAD, &have_ext);
 }
 #endif
-
-bool core_load_framework_binary(const char *path, char *s, size_t len)
-{
-   static const char ext[] = ".framework";
-   const char *name;
-   size_t n, name_len;
-   if (!string_ends_with(path, ext))
-      return false;
-   n        = strlen(path);
-   /* dylib_load's choice, which cuts at an archive's '#' */
-   name     = path_basename(path);
-   name_len = strlen(name) - (sizeof(ext) - 1);
-   if (!name_len || n + name_len + 2 > len)
-      return false;
-   memcpy(s, path, n);
-   s[n] = '/';
-   memcpy(s + n + 1, name, name_len);
-   s[n + 1 + name_len] = '\0';
-   return true;
-}

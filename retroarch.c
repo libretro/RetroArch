@@ -5282,6 +5282,10 @@ bool command_event(enum event_command cmd, void *data)
              * directory) is skipped. */
             bool force                     = data ? *(bool*)data : false;
 
+#ifdef HAVE_CORE_SIGNATURES
+            /* Also where a changed cores directory lands */
+            core_trust_runtime_set_cores_dir(dir_libretro);
+#endif
             if (  !force
                 && core_info_list_is_current(
                      path_libretro_info, dir_libretro,
@@ -10146,6 +10150,7 @@ bool retroarch_main_init_core(int argc, char *argv[],
       if (!frontend_driver_get_core_extension(core_ext, sizeof(core_ext)))
          core_ext[0] = '\0';
       core_trust_runtime_init(NULL, seed_dir, core_ext);
+      core_trust_runtime_set_cores_dir(settings->paths.directory_libretro);
    }
 #endif
 

@@ -1546,6 +1546,23 @@ end:
             }
          }
 
+#if defined(HAVE_CORE_SIGNATURES) && defined(HAVE_CORE_LOAD_CHECK)
+         /* Core trust: its state is kept in entry_idx, so drawing
+          * the row never touches the disk */
+         if (     core_trust_runtime_checks_on()
+               && menu_entries_append(list,
+                     core_path,
+                     core_path,
+                     MENU_ENUM_LABEL_CORE_TRUST,
+                     MENU_SETTING_ACTION_CORE_TRUST, 0,
+                     (size_t)core_trust_runtime_state(core_path), NULL))
+         {
+            file_list_set_alt_at_offset(
+                  list, count, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_TRUST));
+            count++;
+         }
+#endif
+
          /* Backup core */
          if (menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP),
