@@ -3983,6 +3983,11 @@ static void frontend_unix_deinit(void *data)
 #endif
 
 
+#if defined(__linux__) && !defined(ANDROID) && defined(RARCH_HAVE_DBUS_RUNTIME)
+   orca_narrator_shutdown();
+#endif
+}
+
 #ifdef UNIX_SYSTEM_CA
 /* The system's CA bundle as the TLS trust store, read before any
  * network task starts: the file SSL_CERT_FILE names when it is set,
@@ -4016,11 +4021,8 @@ static void frontend_unix_load_system_ca(void)
          break;
    }
 }
-
-#if defined(__linux__) && !defined(ANDROID) && defined(RARCH_HAVE_DBUS_RUNTIME)
-   orca_narrator_shutdown();
 #endif
-}
+
 
 static void frontend_unix_init(void *data)
 {
