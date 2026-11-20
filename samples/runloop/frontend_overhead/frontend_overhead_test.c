@@ -10470,6 +10470,562 @@ static void lane_play_time(void)
       printf("[pass] play time counted, no more than the time that passed\n");
 }
 
+/* Run-ahead's second instance is a copy of the core that a task makes,
+ * so it attaches some frames after run-ahead starts. From the frame it
+ * attaches it must be the run-ahead frames ahead of the first instance,
+ * with no input change or pause to resync it; and a core that takes no
+ * state before it has run (MUST_INITIALIZE) must keep run-ahead on.
+ * The frame it attaches on shows one frame, like any other. Each
+ * instance counts its frames in its own state. */
+#define SECOND_AHEAD 2
+
+static void lane_runahead_second_instance(void)
+{
+#if !defined(HAVE_RUNAHEAD) || !defined(HAVE_DYNAMIC) || defined(_WIN32)
+   printf("[skip] run-ahead second instance: needs run-ahead, dynamic cores and dlopen\n");
+#else
+   unsigned had                = failures;
+   settings_t *settings        = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool     saved_on           = settings->bools.run_ahead_enabled;
+   bool     saved_second       = settings->bools.run_ahead_secondary_instance;
+   bool     saved_hide         = settings->bools.run_ahead_hide_warnings;
+   unsigned saved_frames       = settings->uints.run_ahead_frames;
+   void    *core;
+   long   (*first)(void);
+   void   (*must_initialize)(int);
+   int      pass;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(first = (long (*)(void))dlsym(core, "harness_core_frame_number"))
+       || !(must_initialize = (void (*)(int))dlsym(core, "harness_core_must_initialize")))
+   {
+      CHECK(false, "run-ahead second instance: the harness core's entry points");
+      return;
+   }
+   CHECK(!(runloop_get_flags() & RUNLOOP_FLAG_PAUSED) && !menu_is_up(),
+         "run-ahead second instance: the loop is not running the core");
+
+   for (pass = 0; pass < 2; pass++)
+   {
+      const char *what     = pass ? "MUST_INITIALIZE core" : "plain core";
+      long      (*second)(void) = NULL;
+      long        f        = 0;
+      long        s        = 0;
+      unsigned    i        = 0;
+      uint64_t    shown    = 0;
+      unsigned    waited;
+      char        why[256];
+
+      if (pass)
+      {
+         /* the copy takes the mode at load, the running core now */
+         setenv("HARNESS_CORE_MUST_INITIALIZE", "1", 1);
+         must_initialize(1);
+      }
+      runahead_clear_variables(runloop_st);
+      /* an input change resyncs it, and one an earlier lane made is
+       * still marked */
+      runloop_st->flags &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
+      settings->bools.run_ahead_enabled            = true;
+      settings->bools.run_ahead_secondary_instance = true;
+      settings->bools.run_ahead_hide_warnings      = true;
+      settings->uints.run_ahead_frames             = SECOND_AHEAD;
+
+      for (waited = 0; waited < 3000 && !runloop_st->secondary_lib_handle; waited++)
+      {
+         shown = video_state_get_ptr()->frame_count;
+         runloop_iterate();
+         task_queue_check();
+      }
+      snprintf(why, sizeof(why), "run-ahead second instance, %s: it did not attach in %u frames",
+            what, waited);
+      CHECK(runloop_st->secondary_lib_handle != NULL, why);
+      if (runloop_st->secondary_lib_handle)
+      {
+         shown = video_state_get_ptr()->frame_count - shown;
+         snprintf(why, sizeof(why), "run-ahead second instance, %s: the frame it attached on"
+               " showed %u frame(s), not 1", what, (unsigned)shown);
+         CHECK(shown == 1, why);
+         second = (long (*)(void))dlsym(runloop_st->secondary_lib_handle,
+               "harness_core_frame_number");
+      }
+
+      /* the frame it attached on, and the frames after it */
+      if (second)
+      {
+         for (i = 0; i < 5; i++)
+         {
+            f = first();
+            s = second();
+            if (s != f + SECOND_AHEAD)
+               break;
+            runloop_iterate();
+            task_queue_check();
+         }
+         snprintf(why, sizeof(why), "run-ahead second instance, %s: %u frame(s) after it"
+               " attached the first instance is at frame %ld and the second at %ld, not %ld",
+               what, i, f, s, f + SECOND_AHEAD);
+         CHECK(i == 5, why);
+         printf("[info] run-ahead second instance, %s: attached after %u frames,"
+               " then %ld frames ahead\n", what, waited, s - f);
+      }
+      snprintf(why, sizeof(why), "run-ahead second instance, %s: run-ahead turned itself off",
+            what);
+      CHECK(runloop_get_flags() & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE, why);
+
+      settings->bools.run_ahead_enabled            = saved_on;
+      settings->bools.run_ahead_secondary_instance = saved_second;
+      settings->bools.run_ahead_hide_warnings      = saved_hide;
+      settings->uints.run_ahead_frames             = saved_frames;
+      runahead_secondary_core_destroy(runloop_st);
+      if (pass)
+      {
+         must_initialize(0);
+         unsetenv("HARNESS_CORE_MUST_INITIALIZE");
+      }
+   }
+   run_loop_frames(5);
+   if (failures == had)
+      printf("[pass] run-ahead second instance: %d frames ahead from the frame it attached\n",
+            SECOND_AHEAD);
+#endif
+}
+
+#if defined(HAVE_RUNAHEAD) && defined(HAVE_DYNAMIC) && !defined(_WIN32)
+/* The copy can run on a worker, which a busy machine holds back for
+ * any number of passes here. */
+#define RUNAHEAD_WAIT_USEC 30000000
+
+static bool any_task(retro_task_t *task, void *data)
+{
+   (void)task;
+   (void)data;
+   return true;
+}
+
+static void runahead_wait_tasks(void)
+{
+   task_finder_data_t queued;
+   retro_time_t until = cpu_features_get_time_usec() + RUNAHEAD_WAIT_USEC;
+
+   queued.func     = any_task;
+   queued.userdata = NULL;
+   while (task_queue_find(&queued) && cpu_features_get_time_usec() < until)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+}
+
+static void runahead_wait_attach(runloop_state_t *runloop_st, bool menu_asks)
+{
+   retro_time_t until = cpu_features_get_time_usec() + RUNAHEAD_WAIT_USEC;
+
+   while (   !runloop_st->secondary_lib_handle
+          && cpu_features_get_time_usec() < until)
+   {
+      if (menu_asks)
+         command_event(CMD_EVENT_LOAD_SECOND_CORE, NULL);
+      runloop_iterate();
+      task_queue_check();
+   }
+}
+#endif
+
+/* A second instance that refuses its state turns run-ahead off. It must
+ * still close with the content, and the next content must get one of
+ * its own rather than the one that refused. */
+static void lane_runahead_err_second_instance(void)
+{
+#if !defined(HAVE_RUNAHEAD) || !defined(HAVE_DYNAMIC) || defined(_WIN32)
+   printf("[skip] run-ahead error: needs run-ahead, dynamic cores and dlopen\n");
+#else
+   unsigned had                = failures;
+   settings_t *settings        = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool     saved_on           = settings->bools.run_ahead_enabled;
+   bool     saved_second       = settings->bools.run_ahead_secondary_instance;
+   bool     saved_hide         = settings->bools.run_ahead_hide_warnings;
+   unsigned saved_frames       = settings->uints.run_ahead_frames;
+   char    *copy_path          = NULL;
+   void    *core;
+   long   (*first)(void);
+   long   (*second)(void)      = NULL;
+   long     f                  = 0;
+   long     s                  = 0;
+   unsigned i;
+   char     why[256];
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(first = (long (*)(void))dlsym(core, "harness_core_frame_number")))
+   {
+      CHECK(false, "run-ahead error: the harness core's entry points");
+      return;
+   }
+
+   /* the copy takes the mode at load, the running core keeps taking states */
+   setenv("HARNESS_CORE_REFUSE_STATES", "1", 1);
+   runahead_clear_variables(runloop_st);
+   runloop_st->flags &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
+   settings->bools.run_ahead_enabled            = true;
+   settings->bools.run_ahead_secondary_instance = true;
+   settings->bools.run_ahead_hide_warnings      = true;
+   settings->uints.run_ahead_frames             = SECOND_AHEAD;
+
+   runahead_wait_attach(runloop_st, false);
+   CHECK(runloop_st->secondary_lib_handle != NULL,
+         "run-ahead error: the second instance did not attach");
+   if (runloop_st->secondary_library_path)
+      copy_path = strdup(runloop_st->secondary_library_path);
+   for (i = 0; i < 5 && (runloop_get_flags() & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE); i++)
+      runloop_iterate();
+   CHECK(!(runloop_get_flags() & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE),
+         "run-ahead error: a second instance that refuses its state left run-ahead on");
+
+   /* the content closes: what core_unload_game() calls */
+   runloop_st->current_core.retro_unload_game();
+   CHECK(runloop_st->secondary_lib_handle == NULL,
+         "run-ahead error: the second instance outlived its content");
+   CHECK(!copy_path || !path_is_valid(copy_path),
+         "run-ahead error: the second instance's core copy outlived its content");
+   free(copy_path);
+
+   /* the next content starts as command_event_finish_content_deinit()
+    * leaves it */
+   unsetenv("HARNESS_CORE_REFUSE_STATES");
+   runahead_clear_variables(runloop_st);
+   runloop_st->flags &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
+   runahead_wait_attach(runloop_st, false);
+   if (runloop_st->secondary_lib_handle)
+      second = (long (*)(void))dlsym(runloop_st->secondary_lib_handle,
+            "harness_core_frame_number");
+   if (second)
+   {
+      run_frames(3);
+      f = first();
+      s = second();
+   }
+   snprintf(why, sizeof(why), "run-ahead error: on the next content the second instance"
+         " is at frame %ld and the first at %ld, not %d ahead", s, f, SECOND_AHEAD);
+   CHECK(second && s == f + SECOND_AHEAD, why);
+   CHECK(runloop_get_flags() & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE,
+         "run-ahead error: on the next content run-ahead turned itself off");
+
+   settings->bools.run_ahead_enabled            = saved_on;
+   settings->bools.run_ahead_secondary_instance = saved_second;
+   settings->bools.run_ahead_hide_warnings      = saved_hide;
+   settings->uints.run_ahead_frames             = saved_frames;
+   runahead_secondary_core_destroy(runloop_st);
+   run_loop_frames(5);
+   if (failures == had)
+      printf("[pass] run-ahead error: the second instance closes with its content\n");
+#endif
+}
+
+/* After run-ahead fails at its start (a core with no states), the menu
+ * can still make a second instance (CMD_EVENT_LOAD_SECOND_CORE). It
+ * must close with the content too. */
+static void lane_runahead_menu_second_instance(void)
+{
+#if !defined(HAVE_RUNAHEAD) || !defined(HAVE_DYNAMIC) || defined(_WIN32)
+   printf("[skip] run-ahead menu second instance: needs run-ahead, dynamic cores and dlopen\n");
+#else
+   unsigned had                = failures;
+   settings_t *settings        = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool     saved_on           = settings->bools.run_ahead_enabled;
+   bool     saved_second       = settings->bools.run_ahead_secondary_instance;
+   bool     saved_hide         = settings->bools.run_ahead_hide_warnings;
+   unsigned saved_frames       = settings->uints.run_ahead_frames;
+   char    *copy_path          = NULL;
+   void    *core;
+   long   (*first)(void);
+   long   (*second)(void)      = NULL;
+   void   (*no_states)(int);
+   long     f                  = 0;
+   long     s                  = 0;
+   unsigned i;
+   char     why[256];
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(first = (long (*)(void))dlsym(core, "harness_core_frame_number"))
+       || !(no_states = (void (*)(int))dlsym(core, "harness_core_no_states")))
+   {
+      CHECK(false, "run-ahead menu second instance: the harness core's entry points");
+      return;
+   }
+
+   /* the previous content closes */
+   runloop_st->current_core.retro_unload_game();
+   no_states(1);
+   runahead_clear_variables(runloop_st);
+   runloop_st->flags &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
+   settings->bools.run_ahead_enabled            = true;
+   settings->bools.run_ahead_secondary_instance = true;
+   settings->bools.run_ahead_hide_warnings      = true;
+   settings->uints.run_ahead_frames             = SECOND_AHEAD;
+   for (i = 0; i < 5 && (runloop_get_flags() & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE); i++)
+      runloop_iterate();
+   CHECK(!(runloop_get_flags() & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE),
+         "run-ahead menu second instance: a core with no states left run-ahead on");
+   CHECK(runloop_st->secondary_lib_handle == NULL,
+         "run-ahead menu second instance: run-ahead made a second instance for a core with no states");
+
+   /* the menu's copy takes the mode at load, so a stale one refuses
+    * the next content's state */
+   setenv("HARNESS_CORE_REFUSE_STATES", "1", 1);
+   runahead_wait_attach(runloop_st, true);
+   CHECK(runloop_st->secondary_lib_handle != NULL,
+         "run-ahead menu second instance: the menu's second instance did not attach");
+   if (runloop_st->secondary_library_path)
+      copy_path = strdup(runloop_st->secondary_library_path);
+
+   /* the content closes: what core_unload_game() calls */
+   runloop_st->current_core.retro_unload_game();
+   CHECK(runloop_st->secondary_lib_handle == NULL,
+         "run-ahead menu second instance: the second instance outlived its content");
+   CHECK(!copy_path || !path_is_valid(copy_path),
+         "run-ahead menu second instance: the second instance's core copy outlived its content");
+   free(copy_path);
+
+   /* the next content, with states */
+   unsetenv("HARNESS_CORE_REFUSE_STATES");
+   no_states(0);
+   runahead_clear_variables(runloop_st);
+   runloop_st->flags &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
+   runahead_wait_attach(runloop_st, false);
+   if (runloop_st->secondary_lib_handle)
+      second = (long (*)(void))dlsym(runloop_st->secondary_lib_handle,
+            "harness_core_frame_number");
+   if (second)
+   {
+      run_frames(3);
+      f = first();
+      s = second();
+   }
+   snprintf(why, sizeof(why), "run-ahead menu second instance: on the next content the second"
+         " instance is at frame %ld and the first at %ld, not %d ahead", s, f, SECOND_AHEAD);
+   CHECK(second && s == f + SECOND_AHEAD, why);
+   CHECK(runloop_get_flags() & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE,
+         "run-ahead menu second instance: on the next content run-ahead turned itself off");
+
+   settings->bools.run_ahead_enabled            = saved_on;
+   settings->bools.run_ahead_secondary_instance = saved_second;
+   settings->bools.run_ahead_hide_warnings      = saved_hide;
+   settings->uints.run_ahead_frames             = saved_frames;
+   runahead_secondary_core_destroy(runloop_st);
+   run_loop_frames(5);
+   if (failures == had)
+      printf("[pass] run-ahead menu second instance: it closes with its content\n");
+#endif
+}
+
+/* A copy the menu started that has not attached when the content
+ * closes goes with the content too. */
+static void lane_runahead_menu_pending_copy(void)
+{
+#if !defined(HAVE_RUNAHEAD) || !defined(HAVE_DYNAMIC) || defined(_WIN32)
+   printf("[skip] run-ahead menu pending copy: needs run-ahead, dynamic cores and dlopen\n");
+#else
+   unsigned had                = failures;
+   settings_t *settings        = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool     saved_on           = settings->bools.run_ahead_enabled;
+   bool     saved_second       = settings->bools.run_ahead_secondary_instance;
+   bool     saved_hide         = settings->bools.run_ahead_hide_warnings;
+   unsigned saved_frames       = settings->uints.run_ahead_frames;
+   const char *tmp             = getenv("TMPDIR");
+   task_finder_data_t queued;
+   void    *core;
+   long   (*first)(void);
+   long   (*second)(void)      = NULL;
+   void   (*no_states)(int);
+   long     f                  = 0;
+   long     s                  = 0;
+   unsigned i;
+   char     copy_path[1024];
+   char     why[256];
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(first = (long (*)(void))dlsym(core, "harness_core_frame_number"))
+       || !(no_states = (void (*)(int))dlsym(core, "harness_core_no_states")))
+   {
+      CHECK(false, "run-ahead menu pending copy: the harness core's entry points");
+      return;
+   }
+   queued.func     = any_task;
+   queued.userdata = NULL;
+   /* where the copy task writes it */
+   snprintf(copy_path, sizeof(copy_path), "%s/retroarch_temp/%s",
+         (tmp && *tmp) ? tmp : "/tmp", path_basename(core_path_g));
+
+   /* the previous content closes */
+   runloop_st->current_core.retro_unload_game();
+   no_states(1);
+   runahead_clear_variables(runloop_st);
+   runloop_st->flags &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
+   settings->bools.run_ahead_enabled            = true;
+   settings->bools.run_ahead_secondary_instance = true;
+   settings->bools.run_ahead_hide_warnings      = true;
+   settings->uints.run_ahead_frames             = SECOND_AHEAD;
+   for (i = 0; i < 5 && (runloop_get_flags() & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE); i++)
+      runloop_iterate();
+   CHECK(!(runloop_get_flags() & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE),
+         "run-ahead menu pending copy: a core with no states left run-ahead on");
+   CHECK(!path_is_valid(copy_path) && !task_queue_find(&queued),
+         "run-ahead menu pending copy: a core copy or a task was there before the menu's");
+
+   /* the menu's first pick only starts the copy */
+   command_event(CMD_EVENT_LOAD_SECOND_CORE, NULL);
+   CHECK(!runloop_st->secondary_lib_handle && task_queue_find(&queued),
+         "run-ahead menu pending copy: the menu did not start a copy");
+
+   /* the content closes before it attaches: what core_unload_game() calls */
+   runloop_st->current_core.retro_unload_game();
+   runahead_wait_tasks();
+   CHECK(!task_queue_find(&queued),
+         "run-ahead menu pending copy: the copy task did not finish");
+   CHECK(!path_is_valid(copy_path),
+         "run-ahead menu pending copy: the core copy outlived its content");
+   /* the next content's pick starts a copy of its own */
+   command_event(CMD_EVENT_LOAD_SECOND_CORE, NULL);
+   CHECK(!runloop_st->secondary_lib_handle,
+         "run-ahead menu pending copy: the copy made for the closed content attached to the next");
+
+   /* the next content, with states */
+   no_states(0);
+   runahead_clear_variables(runloop_st);
+   runloop_st->flags &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
+   runahead_wait_attach(runloop_st, false);
+   if (runloop_st->secondary_lib_handle)
+      second = (long (*)(void))dlsym(runloop_st->secondary_lib_handle,
+            "harness_core_frame_number");
+   if (second)
+   {
+      run_frames(3);
+      f = first();
+      s = second();
+   }
+   snprintf(why, sizeof(why), "run-ahead menu pending copy: on the next content the second"
+         " instance is at frame %ld and the first at %ld, not %d ahead", s, f, SECOND_AHEAD);
+   CHECK(second && s == f + SECOND_AHEAD, why);
+   CHECK(runloop_get_flags() & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE,
+         "run-ahead menu pending copy: on the next content run-ahead turned itself off");
+
+   settings->bools.run_ahead_enabled            = saved_on;
+   settings->bools.run_ahead_secondary_instance = saved_second;
+   settings->bools.run_ahead_hide_warnings      = saved_hide;
+   settings->uints.run_ahead_frames             = saved_frames;
+   runahead_secondary_core_destroy(runloop_st);
+   run_loop_frames(5);
+   if (failures == had)
+      printf("[pass] run-ahead menu pending copy: it is dropped with its content\n");
+#endif
+}
+
+/* A staged content switch closes the old core frames before the next
+ * one inits, and the menu can ask for a second instance in between. */
+static void lane_runahead_menu_no_core(void)
+{
+#if !defined(HAVE_RUNAHEAD) || !defined(HAVE_DYNAMIC) || defined(_WIN32)
+   printf("[skip] run-ahead menu no core: needs run-ahead, dynamic cores and dlopen\n");
+#else
+   unsigned had                = failures;
+   settings_t *settings        = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool     saved_on           = settings->bools.run_ahead_enabled;
+   bool     saved_second       = settings->bools.run_ahead_secondary_instance;
+   bool     saved_hide         = settings->bools.run_ahead_hide_warnings;
+   unsigned saved_frames       = settings->uints.run_ahead_frames;
+   char    *copy_path          = NULL;
+   enum rarch_core_type saved_type;
+   struct retro_core_t live;
+   unsigned i;
+
+   /* the old content closes and its core goes */
+   runloop_st->current_core.retro_unload_game();
+   runahead_clear_variables(runloop_st);
+   runloop_st->flags &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
+   settings->bools.run_ahead_enabled            = true;
+   settings->bools.run_ahead_secondary_instance = true;
+   settings->bools.run_ahead_hide_warnings      = true;
+   settings->uints.run_ahead_frames             = SECOND_AHEAD;
+   live = runloop_st->current_core;
+   memset(&runloop_st->current_core, 0, sizeof(runloop_st->current_core));
+
+   /* any copy task gets to finish between the two picks */
+   for (i = 0; i < 2; i++)
+   {
+      command_event(CMD_EVENT_LOAD_SECOND_CORE, NULL);
+      runahead_wait_tasks();
+   }
+   CHECK(!runloop_st->original_retro_unload && !runloop_st->original_retro_deinit,
+         "run-ahead menu no core: closing hooks went in with no core loaded");
+   CHECK(   !runloop_st->original_retro_unload
+         || runloop_st->original_retro_unload
+            != (function_t)runloop_st->current_core.retro_unload_game,
+         "run-ahead menu no core: the unload hook was saved as its own original");
+   CHECK(   !runloop_st->original_retro_deinit
+         || runloop_st->original_retro_deinit
+            != (function_t)runloop_st->current_core.retro_deinit,
+         "run-ahead menu no core: the deinit hook was saved as its own original");
+   CHECK(!runloop_st->secondary_lib_handle,
+         "run-ahead menu no core: a second instance attached with no core loaded");
+   if (runloop_st->secondary_lib_handle)
+      runahead_secondary_core_destroy(runloop_st);
+
+   /* what the closed content left does not speak for the next one */
+   saved_type                 = runloop_st->last_core_type;
+   runloop_st->last_core_type = CORE_TYPE_DUMMY;
+   command_event(CMD_EVENT_LOAD_SECOND_CORE, NULL);
+   runloop_st->last_core_type = saved_type;
+   CHECK(runloop_get_flags() & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE,
+         "run-ahead menu no core: the closed content turned the next one's second instance off");
+
+   /* the next core's init */
+   runloop_st->current_core = live;
+   runahead_clear_variables(runloop_st);
+   runloop_st->flags &= ~RUNLOOP_FLAG_INPUT_IS_DIRTY;
+   runahead_wait_attach(runloop_st, false);
+   CHECK(runloop_st->secondary_lib_handle != NULL,
+         "run-ahead menu no core: the next content's second instance did not attach");
+   CHECK(   runloop_st->original_retro_unload == (function_t)live.retro_unload_game
+         && runloop_st->original_retro_deinit == (function_t)live.retro_deinit,
+         "run-ahead menu no core: the saved originals are not the core's own functions");
+   if (runloop_st->secondary_library_path)
+      copy_path = strdup(runloop_st->secondary_library_path);
+
+   /* a hook that is its own original would never return */
+   if (   (function_t)runloop_st->current_core.retro_unload_game
+       != runloop_st->original_retro_unload)
+      runloop_st->current_core.retro_unload_game();
+   CHECK(runloop_st->secondary_lib_handle == NULL,
+         "run-ahead menu no core: the next content's second instance outlived it");
+   CHECK(!copy_path || !path_is_valid(copy_path),
+         "run-ahead menu no core: the next content's core copy outlived it");
+   CHECK(   runloop_st->current_core.retro_unload_game == live.retro_unload_game
+         && runloop_st->current_core.retro_deinit      == live.retro_deinit,
+         "run-ahead menu no core: the core does not close through its own functions");
+   free(copy_path);
+
+   /* a failure above stays out of the lanes after this one */
+   runahead_secondary_core_destroy(runloop_st);
+   runloop_st->original_retro_unload          = NULL;
+   runloop_st->original_retro_deinit          = NULL;
+   runloop_st->current_core.retro_unload_game = live.retro_unload_game;
+   runloop_st->current_core.retro_deinit      = live.retro_deinit;
+
+   settings->bools.run_ahead_enabled            = saved_on;
+   settings->bools.run_ahead_secondary_instance = saved_second;
+   settings->bools.run_ahead_hide_warnings      = saved_hide;
+   settings->uints.run_ahead_frames             = saved_frames;
+   run_loop_frames(5);
+   if (failures == had)
+      printf("[pass] run-ahead menu no core: the hooks wait for the next core\n");
+#endif
+}
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -10707,6 +11263,11 @@ int main(int argc, char *argv[])
       lane_bind_mouse_device_index();
       lane_aim_stick();
       lane_touchpad();
+      lane_runahead_second_instance();
+      lane_runahead_err_second_instance();
+      lane_runahead_menu_second_instance();
+      lane_runahead_menu_pending_copy();
+      lane_runahead_menu_no_core();
       lane_core_view();
       lane_key_events();
       lane_osk_chinese();
