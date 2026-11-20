@@ -223,6 +223,9 @@
 #include "verbosity.h"
 
 #include "gfx/video_driver.h"
+#ifdef HAVE_TEMPORAL_UPSCALER
+#include "gfx/video_upscaler.h"
+#endif
 #include "gfx/video_display_server.h"
 #ifdef HAVE_THREADS
 #include "gfx/video_thread_wrapper.h"
