@@ -141,6 +141,19 @@ $(SAMPLE_OBJDIR)/core_load_file_android.o: $(REPO_ROOT)/core_load_file.c
 	   -I$(REPO_ROOT)/tools/platform_stubs/android \
 	   -Werror=declaration-after-statement
 
+# The core folder check from frontend/drivers/platform_unix.c, taken
+# out at build time
+core_path_driver.h: ../../frontend/android_second_surface/extract.awk \
+      $(REPO_ROOT)/frontend/drivers/platform_unix.c
+	awk -v FUNCS=android_core_real_path_allowed \
+	   -f ../../frontend/android_second_surface/extract.awk \
+	   $(REPO_ROOT)/frontend/drivers/platform_unix.c > $@.tmp
+	mv $@.tmp $@
+
+# lstat(), which the check calls
+core_load_check_test.o: core_path_driver.h
+core_load_check_test.o: CFLAGS += -D_XOPEN_SOURCE=500
+
 $(ANDROID_TEST): $(SAMPLE_OBJDIR)/core_load_check_android.o \
       $(SAMPLE_OBJDIR)/core_load_file_android.o \
       $(filter-out $(SAMPLE_OBJDIR)/__/__/__/core_load_check.o \
@@ -159,6 +172,7 @@ endif
 clean:
 	rm -rf $(SAMPLE_OBJDIR) core_load_check_test_tmp
 	rm -f $(TARGET) $(TARGET).exe $(TARGET)_android $(OBJS) \
+	      core_path_driver.h core_path_driver.h.tmp \
 	      core_load_check_test_a.so \
 	      core_load_check_test_b.so core_load_check_test_c.so \
 	      core_load_check_test_a.dll core_load_check_test_b.dll \

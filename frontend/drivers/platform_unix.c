@@ -56,6 +56,7 @@
 #include <android/log.h>
 #include <android/native_window_jni.h>
 #include <sys/system_properties.h>
+#include <sys/stat.h>
 #include <lists/string_list.h>
 #include "../../audio/common/android_audio.h"
 #ifdef HAVE_AAUDIO
@@ -146,6 +147,10 @@ static char app_dir[DIR_MAX_LENGTH];
 static char apk_dir[DIR_MAX_LENGTH];
 /* Where cores may load from: dataDir and nativeLibraryDir, realpath'd */
 static char android_core_dirs[2][DIR_MAX_LENGTH];
+/* dataDir by device and inode: it can be mounted at a second path that
+ * realpath doesn't map to the first (/data/data beside /data/user/0 on
+ * some devices) */
+static struct stat android_data_dir_stat;
 /* And any "<package>-" code folder of ours in the install folder:
  * Play installs move the code folder mid-session. */
 static char android_install_dir[DIR_MAX_LENGTH];
@@ -1582,7 +1587,8 @@ static void android_env_derive_application_info(JNIEnv *env, jobject activity)
                   (jstring)(*env)->GetObjectField(env, appinfo, fid),
                   android_core_dirs[i], sizeof(android_core_dirs[i]))
             || !path_resolve_realpath(android_core_dirs[i],
-                  sizeof(android_core_dirs[i]), true))
+                  sizeof(android_core_dirs[i]), true)
+            || (!i && stat(android_core_dirs[i], &android_data_dir_stat)))
          *android_core_dirs[i] = '\0';
       __android_log_print(ANDROID_LOG_INFO,
          "RetroArch", "[ENV] Core folder: \"%s\".\n", android_core_dirs[i]);
@@ -1606,9 +1612,11 @@ static void android_env_derive_application_info(JNIEnv *env, jobject activity)
    (*env)->DeleteLocalRef(env, appinfo);
 }
 
-static bool android_core_real_path_allowed(const char *real_path)
+static bool android_core_real_path_allowed(char *real_path, size_t len)
 {
+   struct stat st;
    const char *s;
+   char *slash;
    size_t _len;
    size_t i;
 
@@ -1619,6 +1627,28 @@ static bool android_core_real_path_allowed(const char *real_path)
             && !strncmp(real_path, android_core_dirs[i], _len)
             && real_path[_len] == '/')
          return true;
+   }
+   /* Or under dataDir mounted elsewhere: rewritten to dataDir's own
+    * path, so the open doesn't go back through folders another app may
+    * swap. The rest is inside dataDir, which only the app writes. */
+   _len = strlen(android_core_dirs[0]);
+   for (slash = real_path + 1; _len && (slash = strchr(slash, '/')); slash++)
+   {
+      int ret;
+      *slash = '\0';
+      ret    = lstat(real_path, &st);
+      *slash = '/';
+      if (     !ret
+            && st.st_dev == android_data_dir_stat.st_dev
+            && st.st_ino == android_data_dir_stat.st_ino)
+      {
+         size_t rest = strlen(slash) + 1;
+         if (_len + rest > len)
+            return false;
+         memmove(real_path + _len, slash, rest);
+         memcpy(real_path, android_core_dirs[0], _len);
+         return true;
+      }
    }
    /* <install dir>/[~~X/]<package>-Y/... */
    _len = strlen(android_install_dir);
@@ -1644,7 +1674,7 @@ bool android_core_path_resolve(const char *path, char *s, size_t len)
    if (     !path || !*path
          || strlcpy(s, path, len) >= len
          || !path_resolve_realpath(s, len, true)
-         || !android_core_real_path_allowed(s))
+         || !android_core_real_path_allowed(s, len))
    {
       if (len)
          *s = '\0';

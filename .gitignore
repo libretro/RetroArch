@@ -399,6 +399,7 @@ samples/gfx/pace_hold_start/pace_hold_start_driver.h
 samples/gfx/coord_array/coord_array_driver.h
 samples/gfx/integer_scale_axis/integer_scale_axis_test
 samples/gfx/set_rotation_deferred/set_rotation_driver.h
+samples/tasks/core_load_check/core_path_driver.h
 
 # os/wiiu/slang host tool
 /os/wiiu/slang/slang-cafe

@@ -3863,6 +3863,87 @@ static void test_android_refused_gone(void)
    CHECK(!core_load_check_refused(core));
    stop();
 }
+
+/* frontend/drivers/platform_unix.c's check of a core's real path
+ * (Makefile), on these core folders */
+static char android_core_dirs[2][DIR_MAX_LENGTH];
+static struct stat android_data_dir_stat;
+static char android_install_dir[DIR_MAX_LENGTH];
+static char android_code_prefix[NAME_MAX_LENGTH];
+#include "core_path_driver.h"
+
+static char core_dir_path[PATH_MAX_LENGTH];
+
+/* As android_core_path_resolve(): name, under TMP_DIR, by its real path,
+ * which the check leaves in core_dir_path */
+static bool core_dir_allows(const char *name)
+{
+   strlcpy(core_dir_path, TMP_DIR "/", sizeof(core_dir_path));
+   strlcat(core_dir_path, name, sizeof(core_dir_path));
+   return   path_resolve_realpath(core_dir_path, sizeof(core_dir_path), true)
+         && android_core_real_path_allowed(core_dir_path,
+               sizeof(core_dir_path));
+}
+
+/* core_dir_path is dataDir's path followed by rest */
+static bool core_dir_path_is(const char *rest)
+{
+   size_t _len = strlen(android_core_dirs[0]);
+   return   !strncmp(core_dir_path, android_core_dirs[0], _len)
+         && string_is_equal(core_dir_path + _len, rest);
+}
+
+/* One core folder mounted at two paths that realpath keeps apart
+ * (/data/user/0 and /data/data on some devices): dataDir read as one,
+ * the core named by the other. Here one folder's path, recorded with
+ * another folder's device and inode. */
+static void test_android_core_dir_alias(void)
+{
+   static const char *cores[] = {
+      TMP_DIR "/user0/pkg/a_libretro.so",
+      TMP_DIR "/data/pkg/cores/a_libretro.so",
+      TMP_DIR "/data/a_libretro.so",
+      TMP_DIR "/other/pkg/cores/a_libretro.so"
+   };
+   size_t i;
+   CHECK(path_mkdir(TMP_DIR "/user0/pkg"));
+   CHECK(path_mkdir(TMP_DIR "/data/pkg/cores"));
+   CHECK(path_mkdir(TMP_DIR "/other/pkg/cores"));
+   for (i = 0; i < ARRAY_SIZE(cores); i++)
+      CHECK(filestream_write_file(cores[i], "x", 1));
+   strlcpy(android_core_dirs[0], TMP_DIR "/user0/pkg",
+         sizeof(android_core_dirs[0]));
+   CHECK(path_resolve_realpath(android_core_dirs[0],
+         sizeof(android_core_dirs[0]), true));
+   CHECK(!stat(TMP_DIR "/data/pkg", &android_data_dir_stat));
+   CHECK(core_dir_allows("user0/pkg/a_libretro.so"));
+   CHECK(core_dir_path_is("/a_libretro.so"));
+   /* Opened by dataDir's path */
+   CHECK(core_dir_allows("data/pkg/cores/a_libretro.so"));
+   CHECK(core_dir_path_is("/cores/a_libretro.so"));
+   /* Beside the folder, and in one of the same name elsewhere */
+   CHECK(!core_dir_allows("data/a_libretro.so"));
+   CHECK(!core_dir_allows("other/pkg/cores/a_libretro.so"));
+
+   /* A folder on the real path swapped after realpath for a symlink to
+    * the folder above dataDir's: the path opened must not go through it */
+   CHECK(symlink("data", TMP_DIR "/sw") == 0);
+   strlcpy(core_dir_path, TMP_DIR, sizeof(core_dir_path));
+   CHECK(path_resolve_realpath(core_dir_path, sizeof(core_dir_path), true));
+   strlcat(core_dir_path, "/sw/pkg/cores/a_libretro.so",
+         sizeof(core_dir_path));
+   if (android_core_real_path_allowed(core_dir_path, sizeof(core_dir_path)))
+      CHECK(core_dir_path_is("/cores/a_libretro.so"));
+
+   /* No room for dataDir's path, longer than the one named */
+   strlcpy(core_dir_path, TMP_DIR "/data/pkg/cores/a_libretro.so",
+         sizeof(core_dir_path));
+   CHECK(path_resolve_realpath(core_dir_path, sizeof(core_dir_path), true));
+   CHECK(!android_core_real_path_allowed(core_dir_path,
+         strlen(core_dir_path) + 1));
+   memset(android_core_dirs, 0, sizeof(android_core_dirs));
+   memset(&android_data_dir_stat, 0, sizeof(android_data_dir_stat));
+}
 #endif
 
 /* A first run's startup load of a core the pending seed covers */
@@ -4380,6 +4461,7 @@ int main(int argc, char *argv[])
       test_android_held_rewritten();
       test_android_refused_gone();
       test_android_instance();
+      test_android_core_dir_alias();
       printf("%u checks, %u failures\n", checks, failures);
       return failures ? 1 : 0;
    }
