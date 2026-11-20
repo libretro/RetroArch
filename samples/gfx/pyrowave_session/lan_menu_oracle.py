@@ -69,7 +69,7 @@ def screenshot(client):
             with Image.open(next(iter(paths))) as image:
                 image.load()
                 result.append(image.convert('RGB').resize((128, 96)))
-        except OSError:
+        except (OSError, SyntaxError):
             return False  # The asynchronous writer has only created the file.
         return True
     wait(completed, 'Receiver screenshot did not complete')
