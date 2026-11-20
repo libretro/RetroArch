@@ -4010,7 +4010,6 @@ static void test_window_pointer_release(void)
    frames[0].buttons     = INPUT_POINTER_LEFT;
    frames[1]             = frames[0];
    windows[1].window     = 1;
-   windows[1].generation = video_driver_window_generation();
    touches[0]            = VIDEO_POS_PACK(10, 10);
    touches[1]            = VIDEO_POS_PACK(10, 10);
 
@@ -4022,6 +4021,8 @@ static void test_window_pointer_release(void)
       settings->bools.video_windows_enable        = true;
       window_test_run();
       CHECK(video_st->windows_wanted == 2u);
+      windows[1].generation = video_driver_window_generation();
+      window_test_draw_window(1, windows[1].generation);
       input_driver_publish_window_pointers(frames, windows, 2,
             INPUT_POINTERS_WINDOWS_SECOND);
       input_driver_publish_window_touches(touches, windows, 2, 3u, 3u);
@@ -4042,6 +4043,16 @@ static void test_window_pointer_release(void)
       CHECK(WINDOW_TEST_TOUCHES(RARCH_DEVICE_POINTER_SECOND) == 0);
       CHECK(WINDOW_TEST_LEFT(0) == 1);
       CHECK(WINDOW_TEST_MOTION(0) == 3);
+      CHECK(WINDOW_TEST_TOUCHES(RETRO_DEVICE_POINTER) == 1);
+      /* Its renderer lets it go; a driver still holding the press there
+       * publishes it again, and it stays let go */
+      video_driver_publish_window_layout(1, 0, 0, NULL, NULL, 0, 0);
+      input_driver_publish_window_pointers(frames, windows, 2,
+            INPUT_POINTERS_WINDOWS_SECOND);
+      input_driver_publish_window_touches(touches, windows, 2, 3u, 3u);
+      CHECK(WINDOW_TEST_LEFT(1) == 0);
+      CHECK(WINDOW_TEST_TOUCHES(RARCH_DEVICE_POINTER_SECOND) == 0);
+      CHECK(WINDOW_TEST_LEFT(0) == 1);
       CHECK(WINDOW_TEST_TOUCHES(RETRO_DEVICE_POINTER) == 1);
    }
    settings->arrays.video_screen_display[1][0] = '\0';

@@ -1306,11 +1306,34 @@ static int video_window_point_scale(int p, unsigned drawn, unsigned client)
    return (int)floor((double)p * drawn / client);
 }
 
+/* Main thread: screen window @window's last published layout, NULL
+ * unless it is of @generation */
+static const video_window_layout_t *video_window_layout_of(
+      unsigned window, unsigned generation)
+{
+   video_window_layouts_t *box;
+   const video_window_layout_t *slot;
+   if (!window || window >= RETRO_VIDEO_VIEWS_MAX)
+      return NULL;
+   box = &video_driver_st.window_layouts[window - 1];
+   video_window_slot_take(&box->published, &box->held);
+   if (!box->held)
+      return NULL;
+   slot = &box->slot[box->held - 1];
+   if (!slot->generation || slot->generation != generation)
+      return NULL;
+   return slot;
+}
+
+bool video_driver_window_live(unsigned window, unsigned generation)
+{
+   return video_window_layout_of(window, generation) != NULL;
+}
+
 bool video_driver_translate_window_point(unsigned window,
       unsigned generation, int x, int y, bool report_oob,
       uint32_t *result)
 {
-   video_window_layouts_t *box;
    const video_window_layout_t *slot;
    unsigned drawn;
    if (!window)
@@ -1321,14 +1344,7 @@ bool video_driver_translate_window_point(unsigned window,
          && video_driver_translate_coord_viewport(&vp, x, y,
                result, &screen_pos, report_oob);
    }
-   if (window >= RETRO_VIDEO_VIEWS_MAX)
-      return false;
-   box = &video_driver_st.window_layouts[window - 1];
-   video_window_slot_take(&box->published, &box->held);
-   if (!box->held)
-      return false;
-   slot = &box->slot[box->held - 1];
-   if (!slot->generation || slot->generation != generation)
+   if (!(slot = video_window_layout_of(window, generation)))
       return false;
    /* The window as drawn: the canvas, unless that is offscreen */
    drawn = slot->layout.offscreen

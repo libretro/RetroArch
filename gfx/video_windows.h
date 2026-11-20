@@ -755,6 +755,10 @@ bool video_driver_translate_window_point(unsigned window,
       unsigned generation, int x, int y, bool report_oob,
       uint32_t *result);
 
+/* Main thread: whether @window's last published layout is of
+ * @generation; false once it is closed or made again. */
+bool video_driver_window_live(unsigned window, unsigned generation);
+
 /* App thread: the display window @window has drawn on since it was
  * made, 0 while it has not or is gone, or has not drawn since the
  * snapshots last asked for it differently; its client size in *@dims
