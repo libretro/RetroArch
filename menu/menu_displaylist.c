@@ -5508,7 +5508,7 @@ static int menu_displaylist_parse_horizontal_content_actions(
             MENU_ENUM_LABEL_RUN,
             FILE_TYPE_PLAYLIST_ENTRY, 0, idx, NULL);
 
-      if (settings->bools.quick_menu_show_save_load_state)
+      if (settings->bools.quick_menu_show_save_load_state && settings->bools.playlist_show_load_state)
       {
          bool savestates_enabled     = core_info_current_supports_savestate();
          playlist_t *playlist        = playlist_get_cached();
@@ -9887,6 +9887,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_PLAYLIST_SHOW_INLINE_CORE_NAME,      PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_PLAYLIST_SHOW_HISTORY_ICONS,         PARSE_ONLY_UINT, true},
                {MENU_ENUM_LABEL_PLAYLIST_SHOW_ENTRY_IDX,             PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_PLAYLIST_SHOW_LOAD_STATE, PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_SHOW_SUBLABELS,             PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,      PARSE_ONLY_UINT, false},
                {MENU_ENUM_LABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE, PARSE_ONLY_UINT, false},

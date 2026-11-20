@@ -1279,6 +1279,7 @@ typedef struct settings
       bool playlist_portable_paths;
       bool playlist_use_filename;
       bool playlist_allow_non_png;
+      bool playlist_show_load_state;
 
       bool confirm_quit;
       bool confirm_close;
