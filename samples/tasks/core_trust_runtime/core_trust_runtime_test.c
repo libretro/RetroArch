@@ -1714,6 +1714,53 @@ static void test_sweep_cancelled(void)
 }
 
 /* No folder to sweep: a full list refuses at once */
+/* Cores kept in the cores directory setting, not the seed folder: the
+ * sweep keeps their hashes; one that doesn't open drops nothing */
+static void test_sweep_cores_dir(void)
+{
+   char seed[256], cores[256], c[256], n[256], gone[256], store[256];
+   strlcpy(seed, tmp("sweep_cd_seed"), sizeof(seed));
+   strlcpy(cores, tmp("sweep_cd_cores"), sizeof(cores));
+   strlcpy(gone, tmp("sweep_cd_gone"), sizeof(gone));
+   strlcpy(store, tmp("sweep_cd_store"), sizeof(store));
+   CHECK(path_mkdir(seed));
+   CHECK(path_mkdir(cores));
+   fill_pathname_join_special(c, cores, "c_libretro.core", sizeof(c));
+   fill_pathname_join_special(n, cores, "n_libretro.core", sizeof(n));
+   CHECK(put_file(c, 611, 1000));
+   CHECK(put_file(n, 612, 1000));
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES - 1, c));
+   CHECK(core_trust_runtime_init(store, seed, "core"));
+   core_trust_runtime_set_cores_dir(cores);
+   CHECK(hash_count() == CORE_TRUST_MAX_HASHES);
+   CHECK(always_trust(n, true));
+   pump_tasks();
+   CHECK(trusted(c));
+   CHECK(trusted(n));
+   CHECK(hash_count() == 2);
+   core_trust_runtime_deinit();
+   /* The cores directory alone, with no seed folder */
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES - 1, c));
+   CHECK(core_trust_runtime_init(store, NULL, "core"));
+   core_trust_runtime_set_cores_dir(cores);
+   CHECK(always_trust(n, true));
+   pump_tasks();
+   CHECK(trusted(c));
+   CHECK(trusted(n));
+   CHECK(hash_count() == 2);
+   core_trust_runtime_deinit();
+   /* A cores directory that doesn't open proves nothing */
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES - 1, c));
+   CHECK(core_trust_runtime_init(store, seed, "core"));
+   core_trust_runtime_set_cores_dir(gone);
+   CHECK(always_trust(n, true));
+   pump_tasks();
+   CHECK(trusted(c));
+   CHECK(!trusted(n));
+   CHECK(hash_count() == CORE_TRUST_MAX_HASHES);
+   core_trust_runtime_deinit();
+}
+
 static void test_sweep_no_folder(void)
 {
    char b[256], store[256];
@@ -2086,6 +2133,7 @@ int main(void)
       test_sweep_joins();
       test_sweep_cancelled();
       test_sweep_no_folder();
+      test_sweep_cores_dir();
       test_sweep_wait_cap();
       test_sweep_unreadable();
       test_sweep_unopened();
@@ -2102,6 +2150,7 @@ int main(void)
       test_seed_walk();
 #ifdef HAVE_CORE_LOAD_CHECK
       test_sweep_frees();
+      test_sweep_cores_dir();
 #endif
       task_thread = false;
    }

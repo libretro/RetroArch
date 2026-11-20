@@ -51,6 +51,8 @@ static struct
 #ifdef HAVE_CORE_LOAD_CHECK
    /* Kept for the sweep */
    char seed_dir[PATH_MAX_LENGTH];
+   /* The cores directory setting's: the sweep walks it too */
+   char cores_dir[PATH_MAX_LENGTH];
    char core_ext[16];
    /* What Always Trust let in this session, oldest first: no sweep
     * drops it */
@@ -265,6 +267,8 @@ struct core_trust_seed
 {
    struct core_hash h;
    char dir[PATH_MAX_LENGTH];
+   /* The sweep's folder after dir, or empty */
+   char next_dir[PATH_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
    char ext[16];
    uint8_t folder[CORE_SHA256_LEN];
@@ -374,8 +378,19 @@ static bool core_trust_seed_step(struct core_trust_seed *sd)
       sd->rdir   = retro_opendir(sd->dir);
       return sd->rdir != NULL;
    }
-   if (!sd->rdir || !retro_readdir(sd->rdir))
+   if (!sd->rdir)
       return false;
+   if (!retro_readdir(sd->rdir))
+   {
+      if (!*sd->next_dir)
+         return false;
+      retro_closedir(sd->rdir);
+      sd->rdir   = NULL;
+      sd->opened = false;
+      strlcpy(sd->dir, sd->next_dir, sizeof(sd->dir));
+      *sd->next_dir = '\0';
+      return true;
+   }
    if (     !(name = retro_dirent_get_name(sd->rdir))
          || retro_dirent_is_dir(sd->rdir, NULL)
          || !string_is_equal_noncase(path_get_extension(name), sd->ext))
@@ -595,13 +610,15 @@ static void core_trust_sweep_cb(retro_task_t *task, void *task_data,
    core_trust_runtime_changed(before, refused < n);
 }
 
-/* Walks the seed folder for the hashes no core there has */
+/* Walks the seed folder and the cores directory for the hashes no core
+ * in either has */
 static bool core_trust_sweep_start(void)
 {
    struct core_trust_seed *sd;
    retro_task_t *task = NULL;
    unsigned i, j, n;
-   if (     string_is_empty(core_trust_rt.seed_dir)
+   if (     (  string_is_empty(core_trust_rt.seed_dir)
+            && string_is_empty(core_trust_rt.cores_dir))
          || string_is_empty(core_trust_rt.core_ext)
          || !(sd = (struct core_trust_seed*)calloc(1, sizeof(*sd))))
       return false;
@@ -616,7 +633,15 @@ static bool core_trust_sweep_start(void)
       core_trust_seed_free(sd);
       return false;
    }
-   strlcpy(sd->dir, core_trust_rt.seed_dir, sizeof(sd->dir));
+   if (string_is_empty(core_trust_rt.seed_dir))
+      strlcpy(sd->dir, core_trust_rt.cores_dir, sizeof(sd->dir));
+   else
+   {
+      strlcpy(sd->dir, core_trust_rt.seed_dir, sizeof(sd->dir));
+      if (!string_is_equal(sd->dir, core_trust_rt.cores_dir))
+         strlcpy(sd->next_dir, core_trust_rt.cores_dir,
+               sizeof(sd->next_dir));
+   }
    strlcpy(sd->ext, core_trust_rt.core_ext, sizeof(sd->ext));
    sd->gen   = core_trust_rt.gen;
    sd->sweep = true;
@@ -850,6 +875,19 @@ bool core_trust_runtime_always(const struct core_check *c)
 #endif
    core_trust_runtime_changed(before, true);
    return true;
+}
+
+void core_trust_runtime_set_cores_dir(const char *dir)
+{
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (dir)
+      strlcpy(core_trust_rt.cores_dir, dir,
+            sizeof(core_trust_rt.cores_dir));
+   else
+      *core_trust_rt.cores_dir = '\0';
+#else
+   (void)dir;
+#endif
 }
 
 bool core_trust_runtime_waits(const struct core_check *c)

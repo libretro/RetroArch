@@ -46,9 +46,14 @@ core_trust_set_t *core_trust_runtime_get(void);
 bool core_trust_runtime_apply(const struct core_check *c);
 #define CORE_TRUST_SWEEP_WAIT_MAX 8
 /* With the load check, also true when the list is full and c waits on
- * a sweep of the seed folder, which drops the hashes no core there has
- * and none trusted this session; at most CORE_TRUST_SWEEP_WAIT_MAX wait */
+ * a sweep of the seed folder and the cores directory, which drops the
+ * hashes no core in either has and none trusted this session (nothing
+ * when either folder doesn't open); at most CORE_TRUST_SWEEP_WAIT_MAX
+ * wait */
 bool core_trust_runtime_always(const struct core_check *c);
+/* The cores directory setting: the sweep keeps the hashes of cores
+ * there too. NULL or empty: the seed folder alone */
+void core_trust_runtime_set_cores_dir(const char *dir);
 /* c is waiting on that sweep, whose end tells the user */
 bool core_trust_runtime_waits(const struct core_check *c);
 /* Untrust: drops the hash of the core at core_path when its record says
