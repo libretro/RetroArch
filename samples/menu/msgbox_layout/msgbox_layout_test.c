@@ -128,6 +128,7 @@ typedef struct
    float x;
    float y;
    float w; /* pixels */
+   uint32_t color;
 } drawn_t;
 
 static drawn_t drawn[DRAWN_MAX];
@@ -187,6 +188,7 @@ static void record_text(const harness_face_t *face, const char *msg,
    drawn[drawn_count].text[msg_len] = '\0';
    drawn[drawn_count].x = params ? params->x : 0.0f;
    drawn[drawn_count].y = params ? params->y : 0.0f;
+   drawn[drawn_count].color = params ? params->color : 0;
    drawn[drawn_count].w = face ? glyph_w(face, msg, msg_len)
          * (params ? params->scale : 1.0f) : 0.0f;
    drawn_count++;
@@ -363,6 +365,7 @@ typedef struct
    int y;
    unsigned w;
    unsigned h;
+   float color[4];
 } harness_quad_t;
 
 static harness_quad_t quads[QUADS_MAX];
@@ -382,6 +385,10 @@ void __wrap_gfx_display_draw_quad(gfx_display_t *p_disp, void *data,
       quads[quad_count].y = y;
       quads[quad_count].w = VIDEO_SCALE_W(dims);
       quads[quad_count].h = VIDEO_SCALE_H(dims);
+      if (color)
+         memcpy(quads[quad_count].color, color, sizeof(quads[quad_count].color));
+      else
+         memset(quads[quad_count].color, 0, sizeof(quads[quad_count].color));
       quad_count++;
    }
    __real_gfx_display_draw_quad(p_disp, data, video_dims, x, y, dims,
@@ -1348,9 +1355,15 @@ static void firmware_lane(unsigned w, unsigned h)
          float baseline = (1.0f - line->y) * h;
          for (i = 0; i < quad_count; i++)
          {
-            /* A line 1 px high just under the line's baseline; the
-             * menus' other 1 px lines (separators) are elsewhere */
+            /* Background separators can share the path's baseline.
+             * Its underline uses the text's foreground color. */
             if (     quads[i].h != 1
+                  || !within(quads[i].color[0],
+                     FONT_COLOR_GET_RED(line->color) / 255.0f, 0.001f)
+                  || !within(quads[i].color[1],
+                     FONT_COLOR_GET_GREEN(line->color) / 255.0f, 0.001f)
+                  || !within(quads[i].color[2],
+                     FONT_COLOR_GET_BLUE(line->color) / 255.0f, 0.001f)
                   || (float)quads[i].y < baseline - 0.5f
                   || (float)quads[i].y > baseline + 2.5f)
                continue;
