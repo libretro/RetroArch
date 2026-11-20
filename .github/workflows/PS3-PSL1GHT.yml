@@ -44,6 +44,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Verify committed RSX shader artifacts
+      run: python3 tools/rsx_shaders_test.py
+
     - name: Compile Salamander
       run: |
         make -f Makefile.psl1ght.salamander -j$(getconf _NPROCESSORS_ONLN) clean
