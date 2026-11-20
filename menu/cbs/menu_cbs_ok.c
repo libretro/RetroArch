@@ -9632,9 +9632,7 @@ int action_ok_core_lock(const char *path,
 }
 
 #ifdef HAVE_CORE_SIGNATURES
-/* Do not declare this static - it is also used in
- * menu_cbs_left.c, menu_cbs_right.c and menu_cbs_start.c */
-int action_ok_core_trust(const char *path,
+static int action_ok_core_trust(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    struct menu_state *menu_st = menu_state_get_ptr();

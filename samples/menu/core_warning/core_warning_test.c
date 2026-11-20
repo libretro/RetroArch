@@ -2028,16 +2028,11 @@ static void lane_core_trust(const char *dir)
    pump(3);
    CHECK(trust_row_says("Not checked yet", MENU_ENUM_SUBLABEL_CORE_TRUST),
          "core trust: the row didn't change to Not checked yet");
+   /* Only OK takes the trust back: this page binds Left and Right to
+    * scrolling, Lock core's too, and Start does nothing here */
    CHECK(trust_core(core, &c) == CORE_TRUST_STATE_TRUSTED,
          "fixture: can't trust the core again");
-   trust_row_press(MENU_ACTION_START, &changed);
-   CHECK(!hash_trusted(c.rec.sha256),
-         "core trust: Start left its hash trusted");
-   pump(3);
-   /* This page binds Left and Right to scrolling, Lock core's too */
-   CHECK(trust_core(core, &c) == CORE_TRUST_STATE_TRUSTED,
-         "fixture: can't trust the core again");
-   for (k = 1; k <= 2; k++)
+   for (k = 1; k <= 3; k++)
    {
       msg = trust_row_press(keys[k], &changed);
       strlcpy(what, "core trust: Trusted by you acted on ", sizeof(what));
