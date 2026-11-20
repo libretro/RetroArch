@@ -14,7 +14,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Allocations made by font_driver.c, for the check that laying a line
+ * out allocates nothing */
+static unsigned long test_mallocs = 0;
+static void *test_malloc(size_t n)
+{
+   test_mallocs++;
+   return malloc(n);
+}
+#define malloc test_malloc
 #include "../../../gfx/font_driver.c"
+#undef malloc
 
 /* The stubs' junk reads, which these tests do not make */
 int read_should_fail = 0;
@@ -52,6 +62,13 @@ static int fails = 0;
 #define AR_LAM   "\xD9\x84"
 #define AR_MEEM  "\xD9\x85"
 #define AR_FATHA "\xD9\x8E"
+#define AR_RAY   "\xD8\x88" /* U+0608, a letter with no presentation forms */
+#define AR_COMMA "\xD8\x8C" /* U+060C */
+#define AR_1     "\xD9\xA1" /* U+0661 */
+#define AR_3     "\xD9\xA3" /* U+0663 */
+#define QAMATS   "\xD6\xB8" /* U+05B8 */
+#define HOLAM    "\xD6\xB9" /* U+05B9 */
+#define ACUTE    "\xCC\x81" /* U+0301 */
 #define AR_KEHEH "\xDA\xA9"
 #define AR_2     "\xD9\xA2" /* U+0662 */
 #define AR_5     "\xD9\xA5" /* U+0665 */
@@ -151,6 +168,36 @@ static const struct bidi_case cases[] = {
    { "Persian digits after English",
       "CRC" FA_3 FA_2 ": ",
       "CRC" FA_3 FA_2 ": " },
+   { "a number after Arabic is an Arabic number and leaves % out",
+      AR_RAY " 50%",
+      "%50 " AR_RAY },
+   { "a number after Hebrew takes its %",
+      ALEF " 50%",
+      "50% " ALEF },
+   { "a comma joins Arabic numbers",
+      ALEF " " AR_1 "," AR_2 " a",
+      "a " AR_1 "," AR_2 " " ALEF },
+   { "a plus does not join Arabic numbers",
+      ALEF " " AR_1 "+" AR_2,
+      AR_2 "+" AR_1 " " ALEF },
+   { "the Arabic comma joins numbers",
+      "1" AR_COMMA "2 " ALEF,
+      ALEF " 1" AR_COMMA "2" },
+   { "Arabic numbers in an English line",
+      "a " AR_1 AR_2 "-" AR_3 " b",
+      "a " AR_3 "-" AR_1 AR_2 " b" },
+   { "a Hebrew point stays after its letter",
+      "abc " SHIN QAMATS LAMED VAV HOLAM MEM_F " def",
+      "abc " MEM_F VAV HOLAM LAMED SHIN QAMATS " def" },
+   { "a mark on a bracket goes with it",
+      ALEF " [b]" ACUTE " " BET,
+      BET " [" ACUTE "b] " ALEF },
+   { "a diacritic after lam and alef stays after the glyph",
+      AR_SEEN AR_LAM AR_ALEF AR_FATHA AR_MEEM,
+      AR_MEEM_ISOLATED AR_LAM_ALEF_FINAL AR_FATHA AR_SEEN_INITIAL },
+   { "lines before the first Hebrew one are copied as typed",
+      "\xD0\x9F\xD1\x80\xD0\xB8 (1.22)\nab\n" SHALOM,
+      "\xD0\x9F\xD1\x80\xD0\xB8 (1.22)\nab\n" SHALOM_DRAWN },
    { "lam and alef at the start of a line",
       AR_KEHEH "\n" AR_LAM AR_ALEF,
       AR_KEHEH_ISOLATED "\n" AR_LAM_ALEF_ISOLATED },
@@ -368,8 +415,9 @@ int main(void)
       strcat(in, BET);
       for (k = 0; k < 699; k++)
          strcat(in, ALEF);
+      /* Hebrew stays two bytes, so 1023 of the 1535 bytes are kept */
       n  = run(in, strlen(in), 1536, out, sizeof(out), &same);
-      ok = n == 766 && !memcmp(out + n - 2, BET, 2);
+      ok = n == 1022 && !memcmp(out + n - 2, BET, 2);
       for (k = 0; ok && k + 2 < (size_t)n; k += 2)
          ok = !memcmp(out + k, ALEF, 2);
       CHECK(ok, "a long line cut to the buffer is laid out right to left");
@@ -383,7 +431,98 @@ int main(void)
             "a cut line keeps its start, drawn rightmost");
    }
 
-   /* 7. Every buffer size from 1 to 64 for a mixed line */
+   /* 7. Brackets nested deeper than 16 are still paired */
+   {
+      static char want[4096];
+      size_t      k;
+      char       *p = in;
+      char       *w = want;
+      strcpy(p, ALEF " b");
+      p += strlen(p);
+      strcpy(w, BET " b");
+      w += strlen(w);
+      for (k = 0; k < 40; k++)
+      {
+         *p++ = '(';
+         *w++ = '(';
+      }
+      *p++ = 'c';
+      *w++ = 'c';
+      for (k = 0; k < 40; k++)
+      {
+         *p++ = ')';
+         *w++ = ')';
+      }
+      strcpy(p, " " BET);
+      strcpy(w, " " ALEF);
+      n = run(in, strlen(in), 1536, out, sizeof(out), &same);
+      CHECK(n >= 0 && !strcmp(out, want),
+            "40 nested pairs keep their closing brackets with the English");
+   }
+
+   /* 8. Laying a line out allocates nothing, however long */
+   {
+      static unsigned char buf[1536];
+      size_t               k;
+      size_t               len;
+      unsigned long        before;
+      int                  ok = 1;
+
+      in[0] = '\0';
+      strcat(in, SHALOM "\n");
+      for (k = 0; k < 900; k++)
+         strcat(in, "a");
+      before = test_mallocs;
+      font_driver_reshape_msg(in, strlen(in), buf, sizeof(buf), &len);
+      CHECK(test_mallocs == before && len == strlen(in)
+            && !memcmp(buf + 9, in + 9, 900),
+            "a 900 character English line beside Hebrew allocates nothing");
+
+      in[0] = '\0';
+      for (k = 0; k < 400; k++)
+         strcat(in, k & 1 ? "b " : ALEF " ");
+      before = test_mallocs;
+      font_driver_reshape_msg(in, strlen(in), buf, sizeof(buf), &len);
+      ok = test_mallocs == before && len == strlen(in);
+      /* Drawn right to left: the last word typed comes first */
+      ok = ok && !memcmp(buf, " b " ALEF, 5);
+      CHECK(ok, "a 1000 byte mixed line is laid out without allocating");
+   }
+
+   /* 9. Arabic grows by half: the most input kept still fits */
+   {
+      size_t k;
+      in[0] = '\0';
+      for (k = 0; k < 600; k++)
+         strcat(in, AR_SEEN);
+      n = run(in, strlen(in), 1536, out, sizeof(out), &same);
+      CHECK(n == 511 * 3 && utf8_whole(out, (size_t)n),
+            "1022 bytes of Arabic shaped into a 1536 byte buffer");
+   }
+
+   /* 10. Right-to-left text is found at every alignment */
+   {
+      size_t k;
+      for (k = 0; k < 40; k++)
+      {
+         size_t start;
+         for (start = 0; start < 8; start++)
+         {
+            char *msg = in + start;
+            memset(msg, 'a', k);
+            strcpy(msg + k, ALEF);
+            n = run(msg, k + 2, 1536, out, sizeof(out), &same);
+            if (n != (long)(k + 2) || same || memcmp(out, msg, k + 2))
+            {
+               printf("  FAIL: Hebrew after %u bytes at offset %u\n",
+                     (unsigned)k, (unsigned)start);
+               fails++;
+            }
+         }
+      }
+   }
+
+   /* 11. Every buffer size from 1 to 64 for a mixed line */
    {
       const struct bidi_case *mixed = &cases[sizeof(cases) / sizeof(cases[0]) - 1];
       size_t                  len;
