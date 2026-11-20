@@ -11,7 +11,8 @@ enum video_audio_codec
    VIDEO_AUDIO_AAC,
    VIDEO_AUDIO_OPUS,
    VIDEO_AUDIO_VORBIS,
-   VIDEO_AUDIO_FLAC
+   VIDEO_AUDIO_FLAC,
+   VIDEO_AUDIO_AC3
 };
 
 enum video_audio_language

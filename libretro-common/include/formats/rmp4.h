@@ -63,7 +63,8 @@ enum rmp4_codec
    RMP4_CODEC_OPUS,
    RMP4_CODEC_AAC,
    RMP4_CODEC_H265,
-   RMP4_CODEC_AV1
+   RMP4_CODEC_AV1,
+   RMP4_CODEC_AC3
 };
 
 typedef struct

@@ -442,3 +442,5 @@ samples/runahead/lifetime/windows/
 /.rsx-shaders/
 
 samples/record/nvenc_frontend/resolve_fragment.c
+
+samples/gfx/gfx_thumbnail_preview/preview_audio_feed_test_ac3

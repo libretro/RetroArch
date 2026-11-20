@@ -49,7 +49,7 @@
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && \
       defined(HAVE_AUDIOMIXER) && \
       (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) \
-       || defined(HAVE_RFLAC))
+       || defined(HAVE_RFLAC) || defined(HAVE_RAC3))
 #define GFX_ANIM_PREVIEW_AUDIO 1
 #include <audio/audio_mixer.h>
 #include <formats/audio.h>
@@ -219,6 +219,9 @@ static void gfx_anim_preview_audio_catalog(gfx_anim_preview_t *p)
          ? VIDEO_AUDIO_LANGUAGE_TEXT : VIDEO_AUDIO_LANGUAGE_NONE;
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_RAAC)
       if (info.codec == VIDEO_AUDIO_AAC) track->supported = true;
+#endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RAC3)
+      if (info.codec == VIDEO_AUDIO_AC3) track->supported = true;
 #endif
       if (p->type == IMAGE_TYPE_WEBM)
       {
@@ -888,14 +891,16 @@ static gfx_anim_preview_audio_prepared_t *gfx_anim_preview_audio_prepare_track(
       goto failed;
    base = data_transfer_window_base(a->window->dt, &len);
    a->type = p->type == IMAGE_TYPE_WEBM
-      ? audio_transfer_webm_audio_track_type(base, initial_hi, track) : AUDIO_TYPE_AAC;
+      ? audio_transfer_webm_audio_track_type(base, initial_hi, track)
+      : audio_transfer_mp4_audio_track_type(base, len, initial_hi, track);
    a->mixer_type = p->type == IMAGE_TYPE_WEBM
       ? AUDIO_MIXER_TYPE_WEBA : AUDIO_MIXER_TYPE_M4A;
    if (a->type != AUDIO_TYPE_AAC && a->type != AUDIO_TYPE_OPUS
-         && a->type != AUDIO_TYPE_VORBIS && a->type != AUDIO_TYPE_FLAC) goto failed;
+         && a->type != AUDIO_TYPE_VORBIS && a->type != AUDIO_TYPE_FLAC
+         && a->type != AUDIO_TYPE_AC3) goto failed;
    a->sound = a->mixer_type == AUDIO_MIXER_TYPE_WEBA
       ? audio_mixer_load_weba_track((void*)base, len, initial_hi, track)
-      : audio_mixer_load_m4a_track((void*)base, len, track);
+      : audio_mixer_load_m4a_track_avail((void*)base, len, initial_hi, track);
    if (!a->sound) goto failed;
    retro_atomic_fetch_add_int(&a->window->refs, 1);
    audio_mixer_sound_set_data_owner(a->sound, a->window,

@@ -433,6 +433,7 @@ static int prepared_session(const char *path, bool s16, bool webm,
    data = (uint8_t*)malloc(size);
    if (!data || fread(data, 1, size, file) != size) goto done;
    if (webm) type = audio_transfer_webm_audio_track_type(data, size, track);
+   else type = audio_transfer_mp4_audio_track_type(data, size, size, track);
    reference = audio_transfer_new(type);
    if (!reference) goto done;
    audio_transfer_set_buffer_ptr(reference, type, data, size);
@@ -1159,6 +1160,9 @@ int main(int argc, char **argv)
       return prepared_session(argv[3], false, selected_webm, 50000, 2)
          | prepared_session(argv[3], true, selected_webm, 50000, 2);
    }
+   if (argc == 3 && !strcmp(argv[1], "--ac3"))
+      return prepared_session(argv[2], false, false, 50000, -1)
+         | prepared_session(argv[2], true, false, 50000, -1);
    if (argc == 2 && !strcmp(argv[1], "--seek-batch")) return bounded_video_seek();
    failed |= bounded_video_seek();
    if (argc == 3 && !strcmp(argv[1], "--continuous-webm"))

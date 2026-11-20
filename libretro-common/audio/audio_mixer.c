@@ -1311,11 +1311,22 @@ audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, size_t size)
    return NULL;
 }
 
-audio_mixer_sound_t* audio_mixer_load_m4a_track(void *buffer, size_t size,
-      int track)
+audio_mixer_sound_t* audio_mixer_load_m4a_track_avail(void *buffer, size_t size,
+      size_t avail, int track)
 {
 #ifdef HAVE_RAAC
    audio_mixer_sound_t* sound;
+#endif
+#if defined(HAVE_RAC3) && defined(HAVE_RMP4)
+   if (audio_transfer_mp4_audio_track_type(buffer, size, avail, track) == AUDIO_TYPE_AC3)
+   {
+      audio_mixer_sound_t *ac3 = audio_mixer_load_ac3(buffer, size);
+      if (ac3) ac3->container_track = (unsigned)track + 1;
+      return ac3;
+   }
+#endif
+   (void)avail;
+#ifdef HAVE_RAAC
    if (track < -1)
       return NULL;
    sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
@@ -1332,6 +1343,11 @@ audio_mixer_sound_t* audio_mixer_load_m4a_track(void *buffer, size_t size,
    (void)buffer; (void)size; (void)track;
 #endif
    return NULL;
+}
+
+audio_mixer_sound_t* audio_mixer_load_m4a_track(void *buffer, size_t size, int track)
+{
+   return audio_mixer_load_m4a_track_avail(buffer, size, size, track);
 }
 
 audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, size_t size)
@@ -1781,6 +1797,9 @@ static void audio_mixer_feed_publish(audio_mixer_voice_t *voice)
 #endif
 #ifdef HAVE_RAAC
       case AUDIO_MIXER_TYPE_M4A: type = AUDIO_TYPE_AAC; break;
+#endif
+#ifdef HAVE_RAC3
+      case AUDIO_MIXER_TYPE_AC3: type = AUDIO_TYPE_AC3; break;
 #endif
 #ifdef HAVE_RFLAC
       case AUDIO_MIXER_TYPE_FLAC: type = AUDIO_TYPE_FLAC; break;

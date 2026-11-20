@@ -1212,6 +1212,7 @@ bool rmp4_video_stream_audio_track(const rmp4_video_stream_t *s,
       switch (track->codec)
       {
          case RMP4_CODEC_AAC: out->codec = VIDEO_AUDIO_AAC; break;
+         case RMP4_CODEC_AC3: out->codec = VIDEO_AUDIO_AC3; break;
          case RMP4_CODEC_OPUS: out->codec = VIDEO_AUDIO_OPUS; break;
          case RMP4_CODEC_VORBIS: out->codec = VIDEO_AUDIO_VORBIS; break;
          default: break;

@@ -97,9 +97,11 @@ audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, size_t size);
 /* Immutable container choice for this sound: -1 automatic, otherwise a
- * zero-based demux index. MP4 supports AAC here. Explicit invalid/wrong-codec
+ * zero-based demux index. MP4 supports AAC and AC-3 here. Explicit invalid/wrong-codec
  * choices fail at voice open; prepared transfers must match this index.
  * The encoded source retains the ordinary load/borrow ownership contract. */
+audio_mixer_sound_t* audio_mixer_load_m4a_track_avail(void *buffer, size_t size,
+      size_t avail, int track);
 audio_mixer_sound_t* audio_mixer_load_m4a_track(void *buffer, size_t size,
       int track);
 audio_mixer_sound_t* audio_mixer_load_ac3(void *buffer, size_t size);

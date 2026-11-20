@@ -232,8 +232,12 @@ enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
  * carries no supported track. */
 enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
       size_t len);
-/* Same sniff restricted to an explicit demuxer index; -1 is automatic.
- * Missing, non-audio, unsupported and out-of-range choices return NONE. */
+/* MP4 AAC/AC-3 metadata probe, bounded by the resident prefix.
+ * Track is a demuxer index, or -1 for the first supported audio track. */
+enum audio_type_enum audio_transfer_mp4_audio_track_type(const void *buf,
+      size_t len, size_t avail, int track);
+
+/* WebM sniff restricted to a demuxer index, or -1 for automatic. */
 enum audio_type_enum audio_transfer_webm_audio_track_type(const void *buf,
       size_t len, int track);
 

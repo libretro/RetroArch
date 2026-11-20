@@ -52,6 +52,15 @@ check: $(TARGET)
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS)
+	rm -f mp4_test mp4_test.exe
 	rm -f $(TARGET)
 
 .PHONY: clean all check
+
+MP4_SOURCES := mp4_test.c $(filter-out audio_transfer_ac3_test.c,$(SOURCES_C)) $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.c
+mp4_test$(EXE): $(MP4_SOURCES)
+	$(CC) $(CFLAGS) $(flags) -DHAVE_RMP4 $(MP4_SOURCES) -o $@ $(LDFLAGS)
+check: mp4-check
+mp4-check: mp4_test$(EXE)
+	python3 mp4_test.py --test ./mp4_test$(EXE) --runner "$(RUNNER)"
+.PHONY: mp4-check

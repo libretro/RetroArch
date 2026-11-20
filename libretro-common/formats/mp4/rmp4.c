@@ -523,7 +523,19 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
              && e.size >= 10 && rmp4_be16(e.body + 8) == 1)
             child_off = 44;
       }
-      if (e.type == RMP4_FOURCC('O','p','u','s'))
+      if (e.type == RMP4_FOURCC('a','c','-','3'))
+      {
+         rmp4_box dac3;
+         if (child_off < e.size && rmp4_find_child(e.body + child_off,
+                  e.size - child_off, RMP4_FOURCC('d','a','c','3'), &dac3)
+               && dac3.size >= 3)
+         {
+            t->pub.codec = RMP4_CODEC_AC3;
+            t->pub.codec_private = dac3.body;
+            t->pub.codec_private_size = (size_t)dac3.size;
+         }
+      }
+      else if (e.type == RMP4_FOURCC('O','p','u','s'))
       {
          rmp4_box dops;
          if (child_off < e.size
@@ -1546,10 +1558,22 @@ const uint8_t *rmp4_get_track_language(const rmp4_t *m, int index,
 
 int64_t rmp4_duration_ns(const rmp4_t *m)
 {
-   if (!m || !m->movie_timescale)
-      return 0;
-   return rmp4_ticks_to_ns((int64_t)m->movie_duration,
-         m->movie_timescale);
+   int64_t duration = 0;
+   int i;
+   if (!m) return 0;
+   if (m->movie_timescale && m->movie_duration
+         && m->movie_duration <= (uint64_t)INT64_MAX)
+      return rmp4_ticks_to_ns((int64_t)m->movie_duration, m->movie_timescale);
+   if (!m->fragmented) return 0;
+   for (i = 0; i < m->num_tracks; i++)
+   {
+      const rmp4_itrack *t = &m->trk[i];
+      int64_t end;
+      if (!t->timescale || t->frag_dts > (uint64_t)INT64_MAX) continue;
+      end = rmp4_ticks_to_ns((int64_t)t->frag_dts, t->timescale);
+      if (end > duration) duration = end;
+   }
+   return duration;
 }
 
 void rmp4_rewind(rmp4_t *m)
