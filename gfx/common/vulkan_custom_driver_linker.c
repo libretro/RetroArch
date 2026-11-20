@@ -122,6 +122,7 @@ bool vulkan_custom_driver_patch_soname(uint8_t *elf, size_t len,
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <android/api-level.h>
@@ -261,6 +262,21 @@ static bool vkcd_read_all(int fd, uint8_t *buf, size_t len)
    return true;
 }
 
+/* in's len bytes into fd, which map maps: copied in the kernel, with no
+ * pass through user memory. Where sendfile() stops short (a kernel
+ * refusing this pair of files), the rest is read through the map. */
+static bool vkcd_copy_fd(int fd, int in, uint8_t *map, size_t len)
+{
+   off_t off = 0;
+   while ((size_t)off < len)
+      if (sendfile(fd, in, &off, len - (size_t)off) <= 0)
+         break;
+   if ((size_t)off == len)
+      return true;
+   return     lseek(in, off, SEEK_SET) == off
+          &&  vkcd_read_all(in, map + off, len - (size_t)off);
+}
+
 /* The system loader is loaded already; a copy whose soname differs is a
  * library of its own, and its HAL lookups reach the hook. */
 static void *vkcd_load_copy(const char *tmp_dir, int flags,
@@ -292,7 +308,7 @@ static void *vkcd_load_copy(const char *tmp_dir, int flags,
          && !ftruncate(fd, st.st_size)
          && (map = (uint8_t*)mmap(NULL, (size_t)st.st_size,
                PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) != MAP_FAILED
-         && vkcd_read_all(in, map, (size_t)st.st_size)
+         && vkcd_copy_fd(fd, in, map, (size_t)st.st_size)
          && vulkan_custom_driver_patch_soname(map, (size_t)st.st_size,
                patch))
    {
