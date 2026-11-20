@@ -71,6 +71,7 @@
 #include <compat/fopen_utf8.h>
 #include <time/rtime.h>
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -118,8 +119,11 @@ typedef struct verbosity_state
     * will write to this file. */
    FILE *fp;   /* pointer-sized: keep near top */
 
+   /* Read by every thread that logs */
+   retro_atomic_int_t verbosity;
+
    /* Booleans grouped together to avoid padding holes */
-   bool verbosity;
+   bool verbosity_setting; /* verbosity_get_ptr()'s copy */
    bool initialized;
    bool override_active;
 
@@ -129,8 +133,8 @@ typedef struct verbosity_state
 
 /* TODO/FIXME - static public global variables */
 static verbosity_state_t main_verbosity_st;
-static unsigned verbosity_log_level           =
-DEFAULT_FRONTEND_LOG_LEVEL;
+static retro_atomic_int_t verbosity_log_level =
+RETRO_ATOMIC_INT_INITIALIZER(DEFAULT_FRONTEND_LOG_LEVEL);
 
 #ifdef HAVE_LIBNX
 #ifdef NXLINK
@@ -143,17 +147,18 @@ bool nxlink_connected = false;
 
 void verbosity_set_log_level(unsigned level)
 {
-   verbosity_log_level = level;
+   retro_atomic_store_relaxed_int(&verbosity_log_level, (int)level);
 }
 
 unsigned verbosity_get_log_level(void)
 {
-   return verbosity_log_level;
+   return (unsigned)retro_atomic_load_relaxed_int(&verbosity_log_level);
 }
 
 void verbosity_enable(void)
 {
-   main_verbosity_st.verbosity = true;
+   main_verbosity_st.verbosity_setting = true;
+   retro_atomic_store_relaxed_int(&main_verbosity_st.verbosity, 1);
 #ifdef RARCH_INTERNAL
    if (!main_verbosity_st.initialized)
       frontend_driver_attach_console();
@@ -162,7 +167,8 @@ void verbosity_enable(void)
 
 void verbosity_disable(void)
 {
-   main_verbosity_st.verbosity = false;
+   main_verbosity_st.verbosity_setting = false;
+   retro_atomic_store_relaxed_int(&main_verbosity_st.verbosity, 0);
 #ifdef RARCH_INTERNAL
    if (!main_verbosity_st.initialized)
       frontend_driver_detach_console();
@@ -171,7 +177,7 @@ void verbosity_disable(void)
 
 bool verbosity_is_enabled(void)
 {
-   return main_verbosity_st.verbosity;
+   return retro_atomic_load_relaxed_int(&main_verbosity_st.verbosity) != 0;
 }
 
 bool is_logging_to_file(void)
@@ -180,16 +186,15 @@ bool is_logging_to_file(void)
 }
 
 /* The one consumer is the menu's LOG_VERBOSITY setting, which
- * binds this as its boolean target. The framework writes through
- * it, and the setting's change handler immediately re-drives
- * verbosity_enable()/verbosity_disable() from the written value, so
- * the console attach/detach side effect always follows. Removing
- * the getter would mean shadowing the flag in menu code and syncing
- * it by hand; a bound pointer with a reconciling handler is the
- * smaller contract. Nothing else may write through this. */
+ * binds this as its boolean target. The atomic flag cannot be
+ * bound, so this is a main-thread copy: the framework writes
+ * through it, and the setting's change handler immediately
+ * re-drives verbosity_enable()/verbosity_disable() from the written
+ * value, which carry it to the flag and attach or detach the
+ * console. Nothing else may write through this. */
 bool *verbosity_get_ptr(void)
 {
-   return &main_verbosity_st.verbosity;
+   return &main_verbosity_st.verbosity_setting;
 }
 
 void retro_main_log_file_init(const char *path, bool append)
@@ -335,7 +340,6 @@ static void rarch_log_line_write(FILE *fp, const char *tag_v,
 
 #ifdef HAVE_MCP
 #include <string.h>
-#include <retro_atomic.h>
 
 /* The last lines logged, for GET_LOG, filled by whatever thread logs
  * and read on the main thread without a lock: a writer claims a line
@@ -608,7 +612,7 @@ void RARCH_DBG(const char *fmt, ...)
 {
    va_list ap;
 #ifndef _DEBUG
-   if (!main_verbosity_st.verbosity || verbosity_log_level > 0)
+   if (!verbosity_is_enabled() || verbosity_get_log_level() > 0)
       return;
 #endif
    va_start(ap, fmt);
@@ -620,7 +624,7 @@ void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;
 #ifndef _DEBUG
-   if (!main_verbosity_st.verbosity || verbosity_log_level > 1)
+   if (!verbosity_is_enabled() || verbosity_get_log_level() > 1)
       return;
 #endif
    va_start(ap, fmt);
@@ -640,7 +644,7 @@ void RARCH_WARN(const char *fmt, ...)
 {
    va_list ap;
 #ifndef _DEBUG
-   if (!main_verbosity_st.verbosity || verbosity_log_level > 2)
+   if (!verbosity_is_enabled() || verbosity_get_log_level() > 2)
       return;
 #endif
    va_start(ap, fmt);
@@ -652,7 +656,7 @@ void RARCH_ERR(const char *fmt, ...)
 {
    va_list ap;
 #ifndef _DEBUG
-   if (!main_verbosity_st.verbosity)
+   if (!verbosity_is_enabled())
       return;
 #endif
    va_start(ap, fmt);
