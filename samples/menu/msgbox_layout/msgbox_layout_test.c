@@ -60,6 +60,10 @@
  *               cursor, at its left edge - for a space the wrap made a
  *               line end, after the line it ends
  *
+ *   reopen      XMB and MaterialUI: the search dialog with 40 words
+ *               typed, closed and opened again with nothing typed:
+ *               each frame of it draws its label and none of the words
+ *
  *   redraw      RGUI only: the box is drawn into RGUI's framebuffer,
  *               which goes to the video driver once when the box comes
  *               up, once for each change to it - a newer box, the lit
@@ -69,7 +73,7 @@
  * Usage: msgbox_layout_test ozone|xmb|materialui short|tall|firmware
  *        msgbox_layout_test ozone|xmb|materialui heading|heading_wrap
  *        msgbox_layout_test ozone|xmb|materialui heading_none|heading_fit
- *        msgbox_layout_test xmb|materialui caret|heading_osk
+ *        msgbox_layout_test xmb|materialui caret|heading_osk|reopen
  *        msgbox_layout_test rgui redraw
  *
  * Requires a completed non-Qt build, same as the other menu harnesses:
@@ -840,6 +844,69 @@ static void caret_lane(unsigned w, unsigned h)
    printf("[caret] %u cursor position(s) at %ux%u\n", checked, w, h);
 }
 
+/* --- the input dialog opened again --------------------------------- */
+
+/* Whether a drawn line holds any of the typed words, wherever it starts */
+static bool has_typed_token(const char *t)
+{
+   for (; *t; t++)
+      if (     t[0] == 't'
+            && t[1] >= '0' && t[1] <= '9'
+            && t[2] >= '0' && t[2] <= '9')
+         return true;
+   return false;
+}
+
+/* The search dialog with 40 words typed, closed, and opened again with
+ * nothing typed: every frame of the second draws its label and none of
+ * the words the first held - the text the driver keeps is the second's
+ * whole, not the first's with the second written over its start */
+static void reopen_lane(unsigned w, unsigned h)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   const char *label = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH);
+   char typed[256];
+   size_t typed_len = type_tokens(typed, sizeof(typed));
+   unsigned frame;
+
+   box_text[0] = '\0';
+   CHECK(menu_input_dialog_start_search(), "fixture: no input dialog");
+   input_keyboard_line_append(&input_st->keyboard_line, typed, typed_len);
+   input_st->keyboard_line.select_all = false;
+   input_st->keyboard_line.ptr        = typed_len;
+   menu_st->current_time_us           = 500000;
+   /* The first frame wraps the text, the second draws what was kept */
+   one_frame(w, h);
+   one_frame(w, h);
+   menu_input_dialog_end();
+
+   CHECK(menu_input_dialog_start_search(), "fixture: no input dialog");
+   for (frame = 1; frame <= 4; frame++)
+   {
+      unsigned i, words = 0;
+      bool labelled     = false;
+      menu_st->current_time_us = 500000;
+      one_frame(w, h);
+      for (i = 0; i < drawn_count; i++)
+      {
+         const char *t = drawn[i].text;
+         if (string_is_equal(t, label))
+            labelled = true;
+         else if (has_typed_token(t))
+            words++;
+      }
+      CHECK(labelled, "[reopen] frame %u: the label \"%s\" not drawn",
+            frame, label);
+      CHECK(!words, "[reopen] frame %u: %u line(s) of the text typed "
+            "into the dialog before drawn", frame, words);
+   }
+
+   menu_input_dialog_end();
+   printf("[reopen] the input dialog opened again draws only its own "
+         "text at %ux%u\n", w, h);
+}
+
 /* --- the confirm box's heading ------------------------------------- */
 
 /* The Security Warning's text: its heading, then the body */
@@ -1501,7 +1568,8 @@ int main(int argc, char *argv[])
    else
       ident = NULL;
    if (     (string_is_equal(which, "caret")
-            || string_is_equal(which, "heading_osk"))
+            || string_is_equal(which, "heading_osk")
+            || string_is_equal(which, "reopen"))
          && !string_is_equal(driver, "xmb")
          && !string_is_equal(driver, "materialui"))
       ident = NULL;
@@ -1514,12 +1582,13 @@ int main(int argc, char *argv[])
             && !string_is_equal(which, "heading_fit")
             && !string_is_equal(which, "heading_osk")
             && !string_is_equal(which, "caret")
+            && !string_is_equal(which, "reopen")
             && !string_is_equal(which, "redraw")))
    {
       fprintf(stderr, "usage: %s ozone|xmb|materialui short|tall|firmware\n"
             "       %s ozone|xmb|materialui heading|heading_wrap\n"
             "       %s ozone|xmb|materialui heading_none|heading_fit\n"
-            "       %s xmb|materialui caret|heading_osk\n"
+            "       %s xmb|materialui caret|heading_osk|reopen\n"
             "       %s rgui redraw\n", argv[0], argv[0], argv[0], argv[0],
             argv[0]);
       return 2;
@@ -1589,6 +1658,11 @@ int main(int argc, char *argv[])
          heading_fit_lane(1280, 720);
       else if (string_is_equal(which, "heading_osk"))
          heading_osk_lane(1280, 720);
+      else if (string_is_equal(which, "reopen"))
+      {
+         menu_dialog_confirm_clear(menu_st);
+         reopen_lane(1280, 720);
+      }
       else
       {
          menu_dialog_confirm_clear(menu_st);

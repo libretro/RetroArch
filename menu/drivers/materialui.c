@@ -3001,9 +3001,10 @@ static void materialui_render_messagebox(
 
       if (keep_wrap)
       {
-         /* The input dialog may hand back the kept text itself */
+         /* The input dialog may hand back the kept text itself, and
+          * the box measures what it is handed by its terminator */
          if (msg != mui->box_wrap.text)
-            memcpy(mui->box_wrap.text, msg, msg_len);
+            memcpy(mui->box_wrap.text, msg, msg_len + 1);
          mui->box_wrap.font            = mui->font_data.list.font;
          mui->box_wrap.font_generation = mui->font_data.list.metrics_generation;
          mui->box_wrap.columns         = columns;

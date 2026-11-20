@@ -1571,9 +1571,10 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
 
       if (keep_wrap)
       {
-         /* The input dialog may hand back the kept text itself */
+         /* The input dialog may hand back the kept text itself, and
+          * the box measures what it is handed by its terminator */
          if (message != xmb->box_wrap.text)
-            memcpy(xmb->box_wrap.text, message, msg_len);
+            memcpy(xmb->box_wrap.text, message, msg_len + 1);
          xmb->box_wrap.font            = xmb->font;
          xmb->box_wrap.font_generation = font_generation;
          xmb->box_wrap.font_size       = xmb->font_size;

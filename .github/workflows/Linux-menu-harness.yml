@@ -350,6 +350,9 @@ jobs:
           # The input dialog's caret, at the wrap's line breaks too.
           ./samples/menu/msgbox_layout/msgbox_layout_test xmb caret
           ./samples/menu/msgbox_layout/msgbox_layout_test materialui caret
+          # The input dialog opened again draws only its own text.
+          ./samples/menu/msgbox_layout/msgbox_layout_test xmb reopen
+          ./samples/menu/msgbox_layout/msgbox_layout_test materialui reopen
           # RGUI uploads its framebuffer once per change to the box,
           # not every frame the box is up.
           ./samples/menu/msgbox_layout/msgbox_layout_test rgui redraw
