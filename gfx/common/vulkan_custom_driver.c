@@ -1,5 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier:
  * GPL-3.0-or-later */
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -820,13 +821,19 @@ bool vulkan_custom_driver_session_init(vulkan_custom_driver_session_t *s,
 {
    const char *tab;
    size_t line, path_len;
-   memset(s, 0, sizeof(*s));
-   s->load      = load;
-   s->load_data = load_data;
    if (state_len > sizeof(s->state))
       state_len = sizeof(s->state);
-   if (state_len)
-      memcpy(s->state, state, state_len);
+   /* State read into s->state stays where it is; it is the last member */
+   if (state == s->state)
+      memset(s, 0, offsetof(vulkan_custom_driver_session_t, state));
+   else
+   {
+      memset(s, 0, sizeof(*s));
+      if (state_len)
+         memcpy(s->state, state, state_len);
+   }
+   s->load      = load;
+   s->load_data = load_data;
    while (state_len && s->state[state_len - 1] != '\n')
       state_len--;
    s->state_len = state_len;

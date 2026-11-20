@@ -196,9 +196,9 @@ typedef struct vulkan_custom_driver_session
 } vulkan_custom_driver_session_t;
 
 /* Starts a session from the crash state file and the crash marker the
- * last process left (either may be empty). Returns true when the marker
- * named a driver: it is now off for its core and the state must be
- * saved. */
+ * last process left (either may be empty). state may be s->state, read
+ * there in place. Returns true when the marker named a driver: it is now
+ * off for its core and the state must be saved. */
 bool vulkan_custom_driver_session_init(vulkan_custom_driver_session_t *s,
       vulkan_custom_driver_load_t load, void *load_data,
       const char *state, size_t state_len,
@@ -339,6 +339,10 @@ void vulkan_custom_driver_glue_msg(enum vulkan_custom_driver_msg msg,
       const char *detail);
 /* A whole small file, NUL-terminated; NULL with *len 0 when missing. */
 char *vulkan_custom_driver_glue_read(const char *path, int64_t *len);
+/* Up to cap bytes of a file straight into buf, not NUL-terminated: the
+ * count read, 0 when missing, -1 when there but not readable. */
+int64_t vulkan_custom_driver_glue_read_into(const char *path, char *buf,
+      size_t cap);
 /* The crash marker: written before driver code runs, deleted once it is
  * up or failed. */
 void vulkan_custom_driver_glue_mark(const char *path, const char *core);

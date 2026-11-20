@@ -128,6 +128,21 @@ void vulkan_custom_driver_glue_msg(enum vulkan_custom_driver_msg msg,
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
 }
 
+int64_t vulkan_custom_driver_glue_read_into(const char *path, char *buf,
+      size_t cap)
+{
+   int64_t got;
+   RFILE *file;
+   if (!path_is_valid(path))
+      return 0;
+   if (!(file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      return -1;
+   got = filestream_read(file, buf, (int64_t)cap);
+   filestream_close(file);
+   return got;
+}
+
 char *vulkan_custom_driver_glue_read(const char *path, int64_t *len)
 {
    void *buf = NULL;
@@ -171,9 +186,8 @@ void vulkan_custom_driver_glue_mark(const char *path, const char *core)
 /* Reads the crash state and the marker the last process left, once. */
 static bool custom_driver_init(void)
 {
-   int64_t state_len  = 0;
+   int64_t state_len;
    int64_t marker_len = 0;
-   char *state;
    char *marker;
 
    if (custom_driver_st.ready)
@@ -193,17 +207,22 @@ static bool custom_driver_init(void)
    fill_pathname_slash(custom_driver_st.base, sizeof(custom_driver_st.base));
    vulkan_custom_driver_platform_init();
 
-   state  = vulkan_custom_driver_glue_read(custom_driver_st.state, &state_len);
+   /* Read where the session keeps it, which init() takes in place */
+   state_len = vulkan_custom_driver_glue_read_into(custom_driver_st.state,
+         custom_driver_st.session.state,
+         sizeof(custom_driver_st.session.state));
+   if (state_len < 0)
+      state_len = 0;
    marker = vulkan_custom_driver_glue_read(custom_driver_st.marker,
          &marker_len);
    /* A failed save keeps the marker for the next start, until a custom
     * driver opens and writes its own. */
    if (     !vulkan_custom_driver_session_init(&custom_driver_st.session,
                vulkan_custom_driver_platform_load, NULL,
-               state, (size_t)state_len, marker, (size_t)marker_len)
+               custom_driver_st.session.state, (size_t)state_len,
+               marker, (size_t)marker_len)
          || custom_driver_save_state())
       filestream_delete(custom_driver_st.marker);
-   free(state);
    free(marker);
    return true;
 }

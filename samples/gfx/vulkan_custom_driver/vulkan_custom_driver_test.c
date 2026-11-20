@@ -1131,6 +1131,28 @@ static void test_crash_marker(void)
          NULL, 0, "Core\t\n", 6));
    CHECK(vulkan_custom_driver_session_init(&session, fake_load, &loader,
          NULL, 0, marker, strlen(marker)));
+
+   /* state read into the session in place: kept, the rest reset, a
+    * marker appended after it, and a partial last line dropped */
+   CHECK(open_drv("/d/A.zip", "Core", &msg));
+   CHECK(session.path_count && session.current);
+   len = vulkan_custom_driver_crash_add(session.state, 0,
+         sizeof(session.state), "/d/B.zip", "Other");
+   memcpy(session.state + len, "Cut\t/d/C", 9);
+   CHECK(vulkan_custom_driver_session_init(&session, fake_load, &loader,
+         session.state, len + 9, marker, strlen(marker)));
+   CHECK(!session.path_count && !session.current && !session.pending);
+   CHECK(session.load == fake_load && session.load_data == &loader);
+   CHECK(vulkan_custom_driver_crash_find(session.state, session.state_len,
+         "/d/B.zip", "Other"));
+   CHECK(vulkan_custom_driver_crash_find(session.state, session.state_len,
+         "/d/A.zip", ""));
+   CHECK(!vulkan_custom_driver_crash_find(session.state, session.state_len,
+         "/d/C", "Cut"));
+   CHECK(!vulkan_custom_driver_session_init(&session, fake_load, &loader,
+         session.state, session.state_len, NULL, 0));
+   CHECK(vulkan_custom_driver_crash_find(session.state, session.state_len,
+         "/d/B.zip", "Other"));
 }
 
 #define ELF_LEN 336

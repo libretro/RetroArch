@@ -52,27 +52,22 @@ static const char custom_driver_anchor = 0;
 static void custom_driver_trust(const char *file, const char *path,
       uint32_t key)
 {
-   int64_t len = 0;
-   char *old   = vulkan_custom_driver_glue_read(file, &len);
-   size_t n    = (size_t)len;
+   int64_t n;
    size_t added;
-   char *trust;
-   /* Rewriting a file it could not read would drop its other picks */
-   if (!old && path_is_valid(file))
+   char *trust = (char*)malloc(VULKAN_CUSTOM_DRIVER_STATE_MAX);
+   if (!trust)
       return;
-   if ((trust = (char*)malloc(VULKAN_CUSTOM_DRIVER_STATE_MAX)))
+   /* Read where the pick is added. Rewriting a file it could not read
+    * would drop its other picks. */
+   if ((n = vulkan_custom_driver_glue_read_into(file, trust,
+               VULKAN_CUSTOM_DRIVER_STATE_MAX)) >= 0)
    {
-      if (n > VULKAN_CUSTOM_DRIVER_STATE_MAX)
-         n = VULKAN_CUSTOM_DRIVER_STATE_MAX;
-      if (n)
-         memcpy(trust, old, n);
-      added = vulkan_custom_driver_trust_add(trust, n,
+      added = vulkan_custom_driver_trust_add(trust, (size_t)n,
             VULKAN_CUSTOM_DRIVER_STATE_MAX, path, key);
-      if (added != n)
+      if (added != (size_t)n)
          filestream_write_file_atomic(file, trust, (int64_t)added);
-      free(trust);
    }
-   free(old);
+   free(trust);
 }
 
 /* Deletes what an extraction leaves in dir, file by file, then dir.
@@ -96,27 +91,28 @@ static void custom_driver_remove(struct custom_driver_work *w,
    path_rmdir(dir);
 }
 
-/* True when the dir named key still matches its source zip. */
-static bool custom_driver_current_dir(struct custom_driver_work *w,
+/* The source zip's path when the dir named key still matches it, for
+ * the caller to free; else NULL. */
+static char *custom_driver_current_dir(struct custom_driver_work *w,
       const char *key)
 {
    int64_t len   = 0;
    int64_t mtime = 0;
    int64_t size;
    char *zip;
-   bool keep     = false;
    fill_pathname_join_special(w->file, w->dir, "source", sizeof(w->file));
    if (!(zip = vulkan_custom_driver_glue_read(w->file, &len)))
-      return false;
+      return NULL;
    if (     (size = path_get_size(zip)) >= 0
          && path_get_mtime(zip, &mtime))
    {
       snprintf(w->other, sizeof(w->other), "%08x",
             (unsigned)vulkan_custom_driver_key(zip, size, mtime));
-      keep = string_is_equal(w->other, key);
+      if (string_is_equal(w->other, key))
+         return zip;
    }
    free(zip);
-   return keep;
+   return NULL;
 }
 
 /* Pick tasks running; prune leaves their .prep dirs alone */
@@ -143,8 +139,15 @@ static void custom_driver_prune(struct custom_driver_work *w)
             || strspn(name, "0123456789abcdef") != 8)
          continue;
       fill_pathname_join_special(w->dir, base, name, sizeof(w->dir));
-      if (len == 8 && custom_driver_current_dir(w, name))
-         continue;
+      if (len == 8)
+      {
+         char *zip = custom_driver_current_dir(w, name);
+         if (zip)
+         {
+            free(zip);
+            continue;
+         }
+      }
       custom_driver_remove(w, w->dir);
    }
    retro_closedir(rdir);
@@ -183,7 +186,6 @@ static void custom_driver_seed(struct custom_driver_work *w)
    {
       while (retro_readdir(rdir))
       {
-         int64_t n        = 0;
          const char *name = retro_dirent_get_name(rdir);
          char *zip;
          if (     !retro_dirent_is_dir(rdir, NULL)
@@ -192,11 +194,9 @@ static void custom_driver_seed(struct custom_driver_work *w)
             continue;
          fill_pathname_join_special(w->dir, base, name,
                sizeof(w->dir));
-         /* current_dir leaves w->file at the source file */
          if (     custom_driver_extracted(w, g_android->activity->sdkVersion,
                      &meta)
-               && custom_driver_current_dir(w, name)
-               && (zip = vulkan_custom_driver_glue_read(w->file, &n)))
+               && (zip = custom_driver_current_dir(w, name)))
          {
             len = vulkan_custom_driver_trust_add(trust, len,
                   VULKAN_CUSTOM_DRIVER_STATE_MAX, zip,
