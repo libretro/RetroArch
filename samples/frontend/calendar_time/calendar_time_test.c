@@ -1,7 +1,7 @@
 /* The functions RETRO_ENVIRONMENT_GET_CALENDAR_TIME_INTERFACE hands a
  * core (calendar_time.c): negotiation, the snapshot the callbacks read,
  * the held clock, a capture under a fixed TZ, and core threads reading
- * while the main thread publishes, which only ever see whole snapshots.
+ * during a load while the main thread holds and releases the clock.
  */
 
 #include <stdio.h>
@@ -16,8 +16,8 @@
 
 #include "calendar_time.h"
 
-#define TORN_READERS   3
-#define TORN_PUBLISHES 200000L
+#define LOAD_READERS 3
+#define LOAD_TOGGLES 200000L
 
 static unsigned failures = 0;
 
@@ -34,16 +34,17 @@ static unsigned failures = 0;
 
 static struct retro_calendar_time_interface cal;
 
-typedef struct torn_reader
+typedef struct load_reader
 {
-   unsigned long copies;
-   unsigned long torn;
-   unsigned long backwards;
-   unsigned long distinct;
-} torn_reader_t;
+   int64_t start_sec;
+   unsigned long reads;
+   unsigned long wrong;
+   unsigned long current;
+   unsigned long held;
+} load_reader_t;
 
-static retro_atomic_int_t torn_started = RETRO_ATOMIC_INT_INITIALIZER(0);
-static retro_atomic_int_t torn_stop    = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t load_started = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t load_stop    = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 static void test_negotiation(void)
 {
@@ -99,7 +100,7 @@ static void test_empty(void)
 static void test_published(void)
 {
    struct retro_calendar_time start = { 1782907200, 123456789, 3600 };
-   struct retro_calendar_zone zone  = { "Europe/London", 0 };
+   struct retro_calendar_zone zone  = { 0, "Europe/London" };
    struct retro_calendar_time t;
    struct retro_calendar_zone z;
    int64_t t0  = 0;
@@ -202,117 +203,92 @@ static void test_clear(void)
       printf("PASS test_clear\n");
 }
 
-static void torn_reader_thread(void *data)
+static void load_reader_thread(void *data)
 {
-   torn_reader_t *r = (torn_reader_t*)data;
-   int64_t last_start = 0;
-   long last_zone     = 0;
+   load_reader_t *r = (load_reader_t*)data;
 
-   retro_atomic_fetch_add_int(&torn_started, 1);
-   while (!retro_atomic_load_acquire_int(&torn_stop))
+   retro_atomic_fetch_add_int(&load_started, 1);
+   while (!retro_atomic_load_acquire_int(&load_stop))
    {
       struct retro_calendar_time t;
       struct retro_calendar_zone z;
 
-      if (cal.get_start_time(&t))
+      r->reads++;
+      if (     !cal.get_start_time(&t)
+            || t.sec != r->start_sec || t.utc_offset != 3600
+            || !cal.get_zone(&z)
+            || z.standard_offset != 0 || strcmp(z.name, "Europe/London"))
+         r->wrong++;
+      if (cal.get_current_time(&t))
       {
-         int64_t k = t.sec;
-         r->copies++;
-         if (     t.nsec       != (int32_t)(k % 1000000000)
-               || t.utc_offset != (int32_t)-(k % 50400))
-            r->torn++;
-         else if (k < last_start)
-            r->backwards++;
-         else if (k != last_start)
-         {
-            r->distinct++;
-            last_start = k;
-         }
+         r->current++;
+         if (t.utc_offset != 3600)
+            r->wrong++;
       }
-
-      if (cal.get_zone(&z))
-      {
-         char *end;
-         long k;
-         r->copies++;
-         z.name[sizeof(z.name) - 1] = '\0';
-         k = strtol(z.name, &end, 10);
-         if (     end == z.name
-               || *end
-               || z.standard_offset != (int32_t)(k % 50400))
-            r->torn++;
-         else if (k < last_zone)
-            r->backwards++;
-         else
-            last_zone = k;
-      }
+      else
+         r->held++;
    }
 }
 
-static void test_readers_never_torn(void)
+/* Between retro_load_game and retro_unload_game core threads read
+ * while the main thread holds and releases the clock every frame. */
+static void test_readers_during_load(void)
 {
-   sthread_t *threads[TORN_READERS];
-   torn_reader_t readers[TORN_READERS];
-   struct retro_calendar_time start;
-   struct retro_calendar_zone zone;
-   unsigned long copies    = 0;
-   unsigned long torn      = 0;
-   unsigned long backwards = 0;
-   unsigned long fewest    = (unsigned long)-1;
-   int started             = 0;
+   struct retro_calendar_time start = { 1782907200, 5, 3600 };
+   struct retro_calendar_zone zone  = { 0, "Europe/London" };
+   sthread_t *threads[LOAD_READERS];
+   load_reader_t readers[LOAD_READERS];
+   unsigned long reads   = 0;
+   unsigned long wrong   = 0;
+   unsigned long current = 0;
+   unsigned long held    = 0;
+   int started           = 0;
    long k;
    unsigned i;
    unsigned had = failures;
 
    memset(readers, 0, sizeof(readers));
-   memset(&zone, 0, sizeof(zone));
-   calendar_time_clear();
+   calendar_time_set_held(false);
+   calendar_time_publish(&start, &zone);
 
-   for (i = 0; i < TORN_READERS; i++)
+   for (i = 0; i < LOAD_READERS; i++)
    {
-      threads[i] = sthread_create(torn_reader_thread, &readers[i]);
+      readers[i].start_sec = start.sec;
+      threads[i] = sthread_create(load_reader_thread, &readers[i]);
       CHECK(threads[i] != NULL, "reader %u not started", i);
       if (threads[i])
          started++;
    }
 
-   /* Every reader is in its loop before the first publish. */
-   while (retro_atomic_load_acquire_int(&torn_started) < started)
+   while (retro_atomic_load_acquire_int(&load_started) < started)
       ;
 
-   for (k = 1; k <= TORN_PUBLISHES; k++)
-   {
-      start.sec            = k;
-      start.nsec           = (int32_t)(k % 1000000000);
-      start.utc_offset     = (int32_t)-(k % 50400);
-      sprintf(zone.name, "%ld", k);
-      zone.standard_offset = (int32_t)(k % 50400);
-      calendar_time_publish(&start, &zone);
-   }
+   for (k = 0; k < LOAD_TOGGLES; k++)
+      calendar_time_set_held((k & 1) ? true : false);
 
-   retro_atomic_store_release_int(&torn_stop, 1);
-   for (i = 0; i < TORN_READERS; i++)
+   retro_atomic_store_release_int(&load_stop, 1);
+   for (i = 0; i < LOAD_READERS; i++)
       if (threads[i])
          sthread_join(threads[i]);
+   calendar_time_set_held(false);
+   calendar_time_clear();
 
-   for (i = 0; i < TORN_READERS; i++)
+   for (i = 0; i < LOAD_READERS; i++)
    {
-      copies    += readers[i].copies;
-      torn      += readers[i].torn;
-      backwards += readers[i].backwards;
-      if (readers[i].distinct < fewest)
-         fewest = readers[i].distinct;
+      reads   += readers[i].reads;
+      wrong   += readers[i].wrong;
+      current += readers[i].current;
+      held    += readers[i].held;
    }
-   printf("test_readers_never_torn: %u readers, %lu copies, %lu torn, "
-         "%lu backwards, fewest distinct %lu\n",
-         (unsigned)started, copies, torn, backwards, fewest);
+   printf("test_readers_during_load: %u readers, %lu reads, %lu current, "
+         "%lu held, %lu wrong\n", (unsigned)started, reads, current, held,
+         wrong);
 
-   CHECK(torn == 0, "%lu torn copies", torn);
-   CHECK(backwards == 0, "%lu copies went backwards", backwards);
-   CHECK(fewest >= 2, "a reader saw only %lu distinct snapshots", fewest);
+   CHECK(wrong == 0, "%lu wrong reads", wrong);
+   CHECK(reads > 0, "no reads");
 
    if (failures == had)
-      printf("PASS test_readers_never_torn\n");
+      printf("PASS test_readers_during_load\n");
 }
 
 int main(void)
@@ -334,7 +310,7 @@ int main(void)
    test_held();
    test_capture();
    test_clear();
-   test_readers_never_torn();
+   test_readers_during_load();
 
    rtime_deinit();
 

@@ -1,9 +1,6 @@
 # calendar_time.c: the snapshot and callbacks behind
 # RETRO_ENVIRONMENT_GET_CALENDAR_TIME_INTERFACE. Built natively and, where
 # mingw-w64 and Wine are installed, as a Windows build run under Wine.
-# Not for ThreadSanitizer: the readers copy snapshot slots that may be
-# reused meanwhile, and throw such a copy away, which a race detector
-# reports by design.
 TARGET := calendar_time_test
 ROOT   := ../../..
 LIBRETRO_COMM_DIR := $(ROOT)/libretro-common

@@ -26,7 +26,8 @@ RETRO_BEGIN_DECLS
  * These run on the main thread; the callbacks they hand out run on any
  * thread and never wait. */
 
-/* What the callbacks report from now on; a NULL start, nothing. */
+/* What the callbacks report from now on; a NULL start, nothing.
+ * Only outside retro_load_game ... retro_unload_game. */
 void calendar_time_publish(const struct retro_calendar_time *start,
       const struct retro_calendar_zone *zone);
 
