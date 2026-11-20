@@ -61,11 +61,18 @@ typedef struct fake_ngx_record
    unsigned ext_calls;   /* extension queries */
    /* Knobs the test turns */
    int unavailable;
+   int legacy_requirements;
+   unsigned legacy_calls;
    int overlap_fails;
    int create_fails;
    int optiscaler;    /* the tables carry OptiScaler's key, as its stand-in's do */
    int eval_fails;
    int nr_missing;    /* the core has no Neural Rendering, as before its driver */
+   void (*init_hook)(void *);
+   void *init_hook_data;
+   void (*create_hook)(void *);
+   void *create_hook_data;
+   int create_hook_feature;
 } fake_ngx_record_t;
 
 #endif

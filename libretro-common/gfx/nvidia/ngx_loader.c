@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <encodings/utf.h>
 #include <file/file_path.h>
@@ -494,7 +495,7 @@ bool ngx_lib_load_stand_in(const char *dir)
 #define NGX_MODULE_PIN 0x00000001u
 typedef BOOL (WINAPI *ngx_get_module_ex_t)(DWORD, LPCWSTR, HMODULE*);
 
-void ngx_lib_keep_features(const char *dir)
+void ngx_lib_keep_feature(const char *dir, int feature)
 {
    static const wchar_t *names[2] = { L"nvngx_dlss.dll", L"nvngx_dlssnr.dll" };
    static bool kept[2];
@@ -503,16 +504,24 @@ void ngx_lib_keep_features(const char *dir)
    FARPROC p;
    unsigned i;
    (void)dir;
+   if (feature != NGX_FEATURE_SUPER_SAMPLING && feature != NGX_FEATURE_DLSS_NR)
+      return;
+   i = feature == NGX_FEATURE_DLSS_NR ? 1 : 0;
    if (!kernel || !(p = GetProcAddress(kernel, "GetModuleHandleExW")))
       return;
    memcpy(&get_module, &p, sizeof(get_module));
    /* (by name: whichever copy NGX loaded, the directory's or another) */
-   for (i = 0; i < 2; i++)
    {
       HMODULE m;
       if (!kept[i] && get_module(NGX_MODULE_PIN, names[i], &m))
          kept[i] = true;
    }
+}
+
+void ngx_lib_keep_features(const char *dir)
+{
+   ngx_lib_keep_feature(dir, NGX_FEATURE_SUPER_SAMPLING);
+   ngx_lib_keep_feature(dir, NGX_FEATURE_DLSS_NR);
 }
 
 unsigned ngx_lib_present(void)
@@ -624,23 +633,30 @@ bool ngx_lib_load_stand_in(const char *dir)
    return false;
 }
 
-void ngx_lib_keep_features(const char *dir)
+void ngx_lib_keep_feature(const char *dir, int feature)
 {
 #if defined(RTLD_NOLOAD) && defined(RTLD_NODELETE)
    static bool kept[2];
    char path[DIR_MAX_LENGTH];
    /* (a reference that is never closed, on an object already in) */
-   if (     !kept[0]
+   if (     feature == NGX_FEATURE_SUPER_SAMPLING && !kept[0]
          && ngx_dlss_feature_path(dir, path, sizeof(path))
          && dlopen(path, RTLD_NOW | RTLD_LOCAL | RTLD_NOLOAD | RTLD_NODELETE))
       kept[0] = true;
-   if (     !kept[1]
+   if (     feature == NGX_FEATURE_DLSS_NR && !kept[1]
          && ngx_feature_path(dir, NGX_DLSSNR_DLL, NGX_DLSSNR_SO, path, sizeof(path))
          && dlopen(path, RTLD_NOW | RTLD_LOCAL | RTLD_NOLOAD | RTLD_NODELETE))
       kept[1] = true;
 #else
    (void)dir;
+   (void)feature;
 #endif
+}
+
+void ngx_lib_keep_features(const char *dir)
+{
+   ngx_lib_keep_feature(dir, NGX_FEATURE_SUPER_SAMPLING);
+   ngx_lib_keep_feature(dir, NGX_FEATURE_DLSS_NR);
 }
 #endif
 
@@ -874,6 +890,12 @@ void ngx_lib_keep_features(const char *dir)
    (void)dir;
 }
 
+void ngx_lib_keep_feature(const char *dir, int feature)
+{
+   (void)dir;
+   (void)feature;
+}
+
 const ngx_lib_t *ngx_lib_get(void)
 {
    return NULL;
@@ -892,4 +914,100 @@ bool ngx_params_from_optiscaler(const ngx_lib_t *lib, ngx_parameter_t *p)
    if (!lib || !p || !lib->param.get_i)
       return false;
    return !NGX_FAILED(lib->param.get_i(p, "OptiScaler", &v)) && v != 0;
+}
+
+char *ngx_lib_sr_runtime(const char *dir)
+{
+   char *result = NULL;
+#if defined(_WIN64) && !defined(__WINRT__) && !defined(_XBOX)
+   struct ngx_sr_paths
+   {
+      char source[DIR_MAX_LENGTH];
+      char root[DIR_MAX_LENGTH];
+      char stage[DIR_MAX_LENGTH];
+      char file[DIR_MAX_LENGTH];
+      wchar_t wide_source[DIR_MAX_LENGTH];
+      wchar_t wide_path[DIR_MAX_LENGTH];
+      wchar_t wide_temp[DIR_MAX_LENGTH];
+      WIN32_FILE_ATTRIBUTE_DATA attr;
+      WIN32_FILE_ATTRIBUTE_DATA cached;
+   } *paths = (struct ngx_sr_paths*)calloc(1, sizeof(*paths));
+   uint32_t hash = 2166136261u;
+   const unsigned char *at;
+   DWORD len;
+   int n;
+   if (!paths)
+      return NULL;
+   if (!ngx_dlss_feature_path(dir, paths->source, sizeof(paths->source))
+         || !ngx_utf8_to_wide(paths->wide_source, DIR_MAX_LENGTH, paths->source)
+         || !GetFileAttributesExW(paths->wide_source, GetFileExInfoStandard, &paths->attr))
+      goto done;
+   len = GetTempPathW(DIR_MAX_LENGTH, paths->wide_path);
+   if (!len || len >= DIR_MAX_LENGTH
+         || !WideCharToMultiByte(CP_UTF8, 0, paths->wide_path, -1,
+               paths->root, sizeof(paths->root), NULL, NULL))
+      goto done;
+   n = snprintf(paths->file, sizeof(paths->file), "%slibretro-ngx-sr", paths->root);
+   if (n < 0 || (unsigned)n >= sizeof(paths->file)
+         || !ngx_utf8_to_wide(paths->wide_path, DIR_MAX_LENGTH, paths->file))
+      goto done;
+   if (!CreateDirectoryW(paths->wide_path, NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
+      goto done;
+   for (at = (const unsigned char*)paths->source; *at; at++)
+      hash = (hash ^ *at) * 16777619u;
+   n = snprintf(paths->stage, sizeof(paths->stage), "%s\\%08x-%08x%08x-%08x%08x",
+         paths->file, (unsigned)hash,
+         (unsigned)paths->attr.nFileSizeHigh, (unsigned)paths->attr.nFileSizeLow,
+         (unsigned)paths->attr.ftLastWriteTime.dwHighDateTime,
+         (unsigned)paths->attr.ftLastWriteTime.dwLowDateTime);
+   if (n < 0 || (unsigned)n >= sizeof(paths->stage)
+         || !ngx_utf8_to_wide(paths->wide_path, DIR_MAX_LENGTH, paths->stage))
+      goto done;
+   if (!CreateDirectoryW(paths->wide_path, NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
+      goto done;
+   n = snprintf(paths->file, sizeof(paths->file), "%s\\nvngx_dlss.dll", paths->stage);
+   if (n < 0 || (unsigned)n >= sizeof(paths->file)
+         || !ngx_utf8_to_wide(paths->wide_path, DIR_MAX_LENGTH, paths->file))
+      goto done;
+   /* Lend the original file through a hard link. Across volumes the SDK
+    * cannot borrow that file, so a version-keyed copy is the fallback. */
+   if (GetFileAttributesW(paths->wide_path) == INVALID_FILE_ATTRIBUTES
+         && !CreateHardLinkW(paths->wide_path, paths->wide_source, NULL)
+         && GetFileAttributesW(paths->wide_path) == INVALID_FILE_ATTRIBUTES)
+   {
+      wchar_t *slash;
+      /* Publish a cross-volume copy atomically: another process must
+       * never discover a half-written feature library. */
+      slash = wcsrchr(paths->wide_path, L'\\');
+      if (!slash)
+         goto done;
+      *slash = 0;
+      len = GetTempFileNameW(paths->wide_path, L"ngx", 0, paths->wide_temp);
+      *slash = L'\\';
+      if (!len)
+         goto done;
+      if (!CopyFileW(paths->wide_source, paths->wide_temp, FALSE))
+      {
+         DeleteFileW(paths->wide_temp);
+         goto done;
+      }
+      if (!MoveFileExW(paths->wide_temp, paths->wide_path, 0))
+         DeleteFileW(paths->wide_temp);
+   }
+   if (!GetFileAttributesExW(paths->wide_path, GetFileExInfoStandard, &paths->cached)
+         || paths->cached.nFileSizeHigh != paths->attr.nFileSizeHigh
+         || paths->cached.nFileSizeLow != paths->attr.nFileSizeLow
+         || CompareFileTime(&paths->cached.ftLastWriteTime, &paths->attr.ftLastWriteTime))
+      goto done;
+   result = (char*)malloc(strlen(paths->stage) + 1);
+   if (result)
+      strcpy(result, paths->stage);
+done:
+   free(paths);
+#else
+   result = (char*)malloc(strlen(dir) + 1);
+   if (result)
+      strcpy(result, dir);
+#endif
+   return result;
 }

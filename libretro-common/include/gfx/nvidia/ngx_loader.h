@@ -520,6 +520,12 @@ bool ngx_lib_load_stand_in(const char *dir);
  * another device finds them in instead of loading them again. Call
  * after a feature is made; loads nothing itself. */
 void ngx_lib_keep_features(const char *dir);
+/* Pin only the feature just created, without pinning an unused NR model. */
+void ngx_lib_keep_feature(const char *dir, int feature);
+/* An owned SR-only search directory for native Windows NGX, whose
+ * capability enumeration otherwise loads every adjacent feature DLL.
+ * Prepared on the SDK worker. Other platforms return a copy of dir. */
+char *ngx_lib_sr_runtime(const char *dir);
 
 /* Whether there is an NGX core library to load (NGX_PRESENT_FOUND)
  * and whether it is OptiScaler (NGX_PRESENT_OPTISCALER), as a status

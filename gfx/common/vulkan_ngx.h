@@ -94,6 +94,14 @@ void vulkan_ngx_free(vulkan_ngx_t *ngx);
 /* The device is idle: discard game history, keeping NGX initialized. */
 void vulkan_ngx_reset(vulkan_ngx_t *ngx);
 
+/* Defer feature creation: upscale captures only dimensions/format/mode,
+ * never borrowed input resources. The SDK worker records prepare into a
+ * private command buffer; the renderer submits that before evaluation. */
+void vulkan_ngx_defer(vulkan_ngx_t *ngx);
+bool vulkan_ngx_prepare_pending(vulkan_ngx_t *ngx);
+void vulkan_ngx_prepare(vulkan_ngx_t *ngx, VkCommandBuffer cmd);
+void vulkan_ngx_cancel_prepare(vulkan_ngx_t *ngx);
+
 RETRO_END_DECLS
 
 #endif

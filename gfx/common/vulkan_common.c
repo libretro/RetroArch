@@ -149,6 +149,10 @@ static void vulkan_session_move(vulkan_context_t *to, vulkan_context_t *from)
    to->session_device_key   = from->session_device_key;
    to->session_upscaler     = from->session_upscaler;
    to->session_upscaler_dir = from->session_upscaler_dir;
+   to->upscaler_instance_owner = from->upscaler_instance_owner;
+   to->upscaler_device_owner = from->upscaler_device_owner;
+   from->upscaler_instance_owner = NULL;
+   from->upscaler_device_owner = NULL;
    from->session_instance_key = NULL;
    from->session_device_key   = NULL;
    from->session_upscaler     = NULL;
@@ -182,11 +186,18 @@ static PFN_vkDestroyInstance kept_dlss_destroy_instance;
 
 static void vulkan_session_discard(void)
 {
+   video_upscaler_set_cached_retire(NULL);
    vulkan_session_release(&kept_dlss_session);
-   if (kept_dlss_session.device)
+   if (kept_dlss_session.upscaler_device_owner)
+      vulkan_upscaler_device_release(kept_dlss_session.upscaler_device_owner);
+   else if (kept_dlss_session.device)
       kept_dlss_destroy_device(kept_dlss_session.device, NULL);
-   if (kept_dlss_session.instance)
+   if (kept_dlss_session.upscaler_instance_owner)
+      vulkan_upscaler_instance_release(kept_dlss_session.upscaler_instance_owner);
+   else if (kept_dlss_session.instance)
       kept_dlss_destroy_instance(kept_dlss_session.instance, NULL);
+   kept_dlss_session.upscaler_device_owner = NULL;
+   kept_dlss_session.upscaler_instance_owner = NULL;
    kept_dlss_session.device = VK_NULL_HANDLE;
    kept_dlss_session.instance = VK_NULL_HANDLE;
    kept_dlss_session.gpu = VK_NULL_HANDLE;
@@ -1443,6 +1454,8 @@ static VkResult vulkan_context_create_device_plain(gfx_ctx_vulkan_data_t *vk,
             *device = kept_dlss_session.device;
             kept_dlss_session.device = VK_NULL_HANDLE;
             vk->context.session_device_key = kept_dlss_session.session_device_key;
+            vk->context.upscaler_device_owner = kept_dlss_session.upscaler_device_owner;
+            kept_dlss_session.upscaler_device_owner = NULL;
             vk->context.session_upscaler = kept_dlss_session.session_upscaler;
             vk->context.session_upscaler_dir = kept_dlss_session.session_upscaler_dir;
             kept_dlss_session.session_device_key = NULL;
@@ -2676,6 +2689,8 @@ static VkResult vulkan_context_create_instance(gfx_ctx_vulkan_data_t *vk,
          kept_dlss_borrowed_instance = *instance;
          kept_dlss_session.instance = VK_NULL_HANDLE;
          vk->context.session_instance_key = kept_dlss_session.session_instance_key;
+         vk->context.upscaler_instance_owner = kept_dlss_session.upscaler_instance_owner;
+         kept_dlss_session.upscaler_instance_owner = NULL;
          kept_dlss_session.session_instance_key = NULL;
          vulkan_session_key_free(&key);
          return VK_SUCCESS;
@@ -6382,6 +6397,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       kept_dlss_session.gpu      = vk->context.gpu;
       kept_dlss_destroy_device   = vkDestroyDevice;
       kept_dlss_destroy_instance = vkDestroyInstance;
+      video_upscaler_set_cached_retire(vulkan_session_discard);
       vk->context.instance = VK_NULL_HANDLE;
       vk->context.device   = VK_NULL_HANDLE;
       RARCH_LOG("[Vulkan] Keeping DLSS device and NGX session.\n");
@@ -6465,7 +6481,15 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #ifdef __SWITCH2__
          sw2_kept_release(vk, false);
 #endif
-         vkDestroyDevice(vk->context.device, NULL);
+#ifdef HAVE_TEMPORAL_UPSCALER
+         if (vk->context.upscaler_device_owner)
+         {
+            vulkan_upscaler_device_release(vk->context.upscaler_device_owner);
+            vk->context.upscaler_device_owner = NULL;
+         }
+         else
+#endif
+            vkDestroyDevice(vk->context.device, NULL);
 #if defined(ANDROID) && defined(HAVE_THREADS)
          record_android_capture_device_destroyed(vk->context.device);
 #endif
@@ -6485,7 +6509,15 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #ifdef __SWITCH2__
          sw2_kept_release(vk, true);
 #endif
-         vkDestroyInstance(vk->context.instance, NULL);
+#ifdef HAVE_TEMPORAL_UPSCALER
+         if (vk->context.upscaler_instance_owner)
+         {
+            vulkan_upscaler_instance_release(vk->context.upscaler_instance_owner);
+            vk->context.upscaler_instance_owner = NULL;
+         }
+         else
+#endif
+            vkDestroyInstance(vk->context.instance, NULL);
          vk->context.instance = NULL;
 
 #ifndef __SWITCH2__

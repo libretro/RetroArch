@@ -278,6 +278,8 @@ typedef struct vulkan_context
    struct vulkan_session_key *session_device_key;
    struct vulkan_upscaler *session_upscaler;
    char *session_upscaler_dir;
+   struct vulkan_upscaler_instance *upscaler_instance_owner;
+   struct vulkan_upscaler_device *upscaler_device_owner;
 
    VkInstance instance;
    VkPhysicalDevice gpu;

@@ -7957,6 +7957,9 @@ static void vulkan_set_command_buffers(void *handle, uint32_t num_cmd,
 {
    vk_t *vk                   = (vk_t*)handle;
    unsigned required_capacity = num_cmd + 1;
+#ifdef HAVE_TEMPORAL_UPSCALER
+   required_capacity++;
+#endif
 
    if (!vk)
       return;
@@ -8164,6 +8167,34 @@ static void vulkan_init_hw_render(vk_t *vk)
       vk->ngx = vk->context->session_upscaler;
       for (; !vk->ngx && attempts; attempts--)
       {
+#if defined(HAVE_THREADS) && defined(_WIN64) \
+      && !defined(__WINRT__) && !defined(_XBOX) \
+      && !defined(HAVE_VULKAN_CUSTOM_DRIVER)
+         if (kind == VIDEO_TEMPORAL_UPSCALER_DLSS
+               && vk->context->session_instance_key
+               && vk->context->session_device_key
+#ifdef HAVE_OPENXR
+               && !vk->context->xr
+#endif
+            )
+         {
+            if (!vk->context->upscaler_instance_owner)
+               vk->context->upscaler_instance_owner = vulkan_upscaler_instance_new(
+                     vk->context->instance, vulkan_symbol_wrapper_instance_proc_addr());
+            if (vk->context->upscaler_instance_owner
+                  && !vk->context->upscaler_device_owner)
+               vk->context->upscaler_device_owner = vulkan_upscaler_device_new(
+                     vk->context->upscaler_instance_owner,
+                     vk->context->device, vkGetDeviceProcAddr);
+            vk->ngx = vulkan_upscaler_init_async(vk->context->instance,
+                  vk->context->gpu, vk->context->device,
+                  vulkan_symbol_wrapper_instance_proc_addr(), vkGetDeviceProcAddr,
+                  &vk->context->memory_properties, dir,
+                  vk->context->upscaler_device_owner,
+                  vk->context->graphics_queue_index);
+            break;
+         }
+#endif
          vk->ngx = vulkan_upscaler_init(kind, vk->context->instance, vk->context->gpu,
                vk->context->device, vulkan_symbol_wrapper_instance_proc_addr(),
                vkGetDeviceProcAddr, &vk->context->memory_properties, dir);
@@ -8186,7 +8217,10 @@ static void vulkan_init_hw_render(vk_t *vk)
          video_upscaler_set_output(vk->vp.dims);
       }
    }
-   vulkan_context_session_cache_prune(NULL);
+   /* The first native frame queues DLSS init before releasing the old
+    * warm session. Nothing in content/video initialization waits for NGX. */
+   if (!vk->ngx)
+      vulkan_context_session_cache_prune(NULL);
 #endif
 }
 
@@ -13293,6 +13327,10 @@ static bool vulkan_frame(void *data, const void *frame,
    VkPipelineStageFlags wait_stages[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
    int j, k;
    VkSubmitInfo submit_info;
+#ifdef HAVE_TEMPORAL_UPSCALER
+   VkCommandBuffer frontend_cmds[2];
+   unsigned frontend_count;
+#endif
    VkClearValue clear_color;
    VkRenderPassBeginInfo rp_info;
    VkCommandBufferBeginInfo begin_info;
@@ -15021,9 +15059,18 @@ static bool vulkan_frame(void *data, const void *frame,
    submit_info.sType                 = VK_STRUCTURE_TYPE_SUBMIT_INFO;
    submit_info.pNext                 = NULL;
 
+#ifdef HAVE_TEMPORAL_UPSCALER
+   frontend_cmds[0] = vulkan_upscaler_take_commands(vk->ngx);
+   frontend_cmds[1] = vk->cmd;
+   frontend_count = frontend_cmds[0] ? 2 : 1;
+#endif
    if (vk->hw.num_cmd)
    {
       /* vk->hw.cmd has already been allocated for this. */
+#ifdef HAVE_TEMPORAL_UPSCALER
+      if (frontend_count == 2)
+         vk->hw.cmd[vk->hw.num_cmd++] = frontend_cmds[0];
+#endif
       vk->hw.cmd[vk->hw.num_cmd]     = vk->cmd;
 
       submit_info.commandBufferCount = vk->hw.num_cmd + 1;
@@ -15033,8 +15080,13 @@ static bool vulkan_frame(void *data, const void *frame,
    }
    else
    {
+#ifdef HAVE_TEMPORAL_UPSCALER
+      submit_info.commandBufferCount = frontend_count;
+      submit_info.pCommandBuffers    = frontend_cmds + 2 - frontend_count;
+#else
       submit_info.commandBufferCount = 1;
       submit_info.pCommandBuffers    = &vk->cmd;
+#endif
    }
 
    if (waits_for_semaphores)
@@ -15239,7 +15291,19 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 #ifdef HAVE_TEMPORAL_UPSCALER
    if (vk->ngx)
-      vulkan_upscaler_frame_done(vk->ngx);
+   {
+      vulkan_check_device_lost(vk,
+            vulkan_upscaler_signal_reload(vk->ngx, vk->context->queue));
+      if (vulkan_upscaler_pending(vk->ngx))
+      {
+         video_upscaler_async_begin();
+         vulkan_upscaler_frame_done(vk->ngx);
+         vulkan_context_session_cache_prune(NULL);
+         video_upscaler_async_end();
+      }
+      else
+         vulkan_upscaler_frame_done(vk->ngx);
+   }
 #endif
 #ifdef HAVE_OPENXR
    /* The quads with their images, before the XR thread's next frame. */

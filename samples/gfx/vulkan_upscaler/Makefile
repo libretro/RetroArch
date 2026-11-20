@@ -22,6 +22,7 @@ SOURCES := vulkan_upscaler_test.c \
            $(REPO_ROOT)/gfx/common/xess_common.c \
            $(REPO_ROOT)/gfx/video_upscaler.c \
            $(LIBRETRO_COMM_DIR)/gfx/nvidia/ngx_loader.c \
+           $(LIBRETRO_COMM_DIR)/dynamic/dylib.c \
            $(LIBRETRO_COMM_DIR)/gfx/amd/ffx_loader.c \
            $(LIBRETRO_COMM_DIR)/gfx/intel/xess_loader.c \
            $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.c \

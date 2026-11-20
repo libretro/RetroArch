@@ -15,14 +15,26 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <retro_atomic.h>
+#include <dynamic/dylib.h>
+#include <gfx/nvidia/ngx_loader.h>
 
 #include <vulkan/vulkan_symbol_wrapper.h>
 
 #include "../../verbosity.h"
+#include "../../configuration.h"
 #include "vulkan_upscaler.h"
 #include "vulkan_ngx.h"
 #include "vulkan_ffx.h"
 #include "vulkan_xess.h"
+
+typedef struct vulkan_upscaler_setup
+{
+   struct vulkan_upscaler_setup *next;
+   VkCommandPool pool;
+   VkCommandBuffer cmd;
+   unsigned frames;
+} vulkan_upscaler_setup_t;
 
 struct vulkan_upscaler
 {
@@ -30,7 +42,292 @@ struct vulkan_upscaler
    vulkan_ngx_t *ngx;
    vulkan_ffx_t *ffx;
    vulkan_xess_t *xess;
+   video_upscaler_async_t *async;
+   vulkan_upscaler_device_t *owner;
+   VkInstance instance;
+   VkPhysicalDevice gpu;
+   VkDevice device;
+   PFN_vkGetInstanceProcAddr gipa;
+   PFN_vkGetDeviceProcAddr gdpa;
+   VkPhysicalDeviceMemoryProperties memory_properties;
+   char *dir;
+   char *sr_dir;
+   VkFence reload_fence;
+
+   vulkan_upscaler_setup_t *setup_ready;
+   vulkan_upscaler_setup_t *setup_submit;
+   vulkan_upscaler_setup_t *setup_retired;
+   unsigned cache_mode, cache_out, cache_render, cache_min, cache_max;
+   bool cache_valid;
+   retro_atomic_int_t frame_started;
+   bool nr_loaded, nr_reload, nr_signalled, nr_queued;
+   unsigned queue_family;
 };
+
+struct vulkan_upscaler_instance
+{
+   VkInstance instance;
+   PFN_vkDestroyInstance destroy;
+   dylib_t loader;
+   retro_atomic_int_t refs;
+};
+
+struct vulkan_upscaler_device
+{
+   VkDevice device;
+   PFN_vkDestroyDevice destroy;
+   vulkan_upscaler_instance_t *instance;
+   retro_atomic_int_t refs;
+};
+
+vulkan_upscaler_instance_t *vulkan_upscaler_instance_new(VkInstance instance,
+      PFN_vkGetInstanceProcAddr gipa)
+{
+   vulkan_upscaler_instance_t *owner = (vulkan_upscaler_instance_t*)
+      calloc(1, sizeof(*owner));
+   if (!owner)
+      return NULL;
+#ifdef _WIN32
+   owner->loader = dylib_load("vulkan-1.dll");
+#else
+   owner->loader = dylib_load("libvulkan.so.1");
+#endif
+   owner->destroy = (PFN_vkDestroyInstance)gipa(instance, "vkDestroyInstance");
+   if (!owner->loader || !owner->destroy)
+   {
+      if (owner->loader)
+         dylib_close(owner->loader);
+      free(owner);
+      return NULL;
+   }
+   owner->instance = instance;
+   retro_atomic_store_release_int(&owner->refs, 1);
+   return owner;
+}
+
+void vulkan_upscaler_instance_release(vulkan_upscaler_instance_t *owner)
+{
+   if (owner && retro_atomic_fetch_sub_int(&owner->refs, 1) == 1)
+   {
+      owner->destroy(owner->instance, NULL);
+      dylib_close(owner->loader);
+      free(owner);
+   }
+}
+
+vulkan_upscaler_device_t *vulkan_upscaler_device_new(
+      vulkan_upscaler_instance_t *instance, VkDevice device,
+      PFN_vkGetDeviceProcAddr gdpa)
+{
+   vulkan_upscaler_device_t *owner = (vulkan_upscaler_device_t*)
+      calloc(1, sizeof(*owner));
+   if (!owner)
+      return NULL;
+   owner->destroy = (PFN_vkDestroyDevice)gdpa(device, "vkDestroyDevice");
+   if (!owner->destroy)
+   {
+      free(owner);
+      return NULL;
+   }
+   owner->device   = device;
+   owner->instance = instance;
+   retro_atomic_fetch_add_int(&instance->refs, 1);
+   retro_atomic_store_release_int(&owner->refs, 1);
+   return owner;
+}
+
+void vulkan_upscaler_device_release(vulkan_upscaler_device_t *owner)
+{
+   if (owner && retro_atomic_fetch_sub_int(&owner->refs, 1) == 1)
+   {
+      owner->destroy(owner->device, NULL);
+      vulkan_upscaler_instance_release(owner->instance);
+      free(owner);
+   }
+}
+
+static void vulkan_upscaler_setup_free(vulkan_upscaler_t *up, vulkan_upscaler_setup_t *item)
+{
+   PFN_vkDestroyCommandPool destroy = (PFN_vkDestroyCommandPool)
+      up->gdpa(up->device, "vkDestroyCommandPool");
+   if (item->pool)
+      destroy(up->device, item->pool, NULL);
+   free(item);
+}
+
+static void vulkan_upscaler_setup_clear(vulkan_upscaler_t *up)
+{
+   vulkan_upscaler_setup_t *item;
+   if (up->setup_ready)
+      vulkan_upscaler_setup_free(up, up->setup_ready);
+   if (up->setup_submit)
+      vulkan_upscaler_setup_free(up, up->setup_submit);
+   up->setup_ready = up->setup_submit = NULL;
+   while ((item = up->setup_retired))
+   {
+      up->setup_retired = item->next;
+      vulkan_upscaler_setup_free(up, item);
+   }
+}
+
+static void vulkan_upscaler_async_prepare(void *data)
+{
+   vulkan_upscaler_t *up = (vulkan_upscaler_t*)data;
+   vulkan_upscaler_setup_t *item = (vulkan_upscaler_setup_t*)calloc(1, sizeof(*item));
+   VkCommandPoolCreateInfo pool_info;
+   VkCommandBufferAllocateInfo alloc;
+   VkCommandBufferBeginInfo begin;
+   PFN_vkCreateCommandPool create_pool = (PFN_vkCreateCommandPool)
+      up->gdpa(up->device, "vkCreateCommandPool");
+   PFN_vkAllocateCommandBuffers allocate = (PFN_vkAllocateCommandBuffers)
+      up->gdpa(up->device, "vkAllocateCommandBuffers");
+   PFN_vkBeginCommandBuffer begin_cmd = (PFN_vkBeginCommandBuffer)
+      up->gdpa(up->device, "vkBeginCommandBuffer");
+   PFN_vkEndCommandBuffer end_cmd = (PFN_vkEndCommandBuffer)
+      up->gdpa(up->device, "vkEndCommandBuffer");
+   if (!item)
+      goto fail;
+   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+   pool_info.pNext = NULL;
+   pool_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+   pool_info.queueFamilyIndex = up->queue_family;
+   if (create_pool(up->device, &pool_info, NULL, &item->pool) != VK_SUCCESS)
+      goto fail;
+   alloc.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   alloc.pNext = NULL;
+   alloc.commandPool = item->pool;
+   alloc.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   alloc.commandBufferCount = 1;
+   if (allocate(up->device, &alloc, &item->cmd) != VK_SUCCESS)
+      goto fail;
+   begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin.pNext = NULL;
+   begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   begin.pInheritanceInfo = NULL;
+   if (begin_cmd(item->cmd, &begin) != VK_SUCCESS)
+      goto fail;
+   vulkan_ngx_prepare(up->ngx, item->cmd);
+   if (end_cmd(item->cmd) != VK_SUCCESS)
+      goto fail;
+   up->setup_ready = item;
+   return;
+fail:
+   video_upscaler_async_fail(up->async);
+   vulkan_ngx_cancel_prepare(up->ngx);
+   if (item)
+      vulkan_upscaler_setup_free(up, item);
+}
+
+static bool vulkan_upscaler_async_init(void *data)
+{
+   vulkan_upscaler_t *up = (vulkan_upscaler_t*)data;
+   const char *path = up->dir;
+   PFN_vkCreateFence create = (PFN_vkCreateFence)up->gdpa(up->device, "vkCreateFence");
+   VkFenceCreateInfo info;
+   info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+   info.pNext = NULL;
+   info.flags = 0;
+   if (!up->reload_fence
+         && create(up->device, &info, NULL, &up->reload_fence) != VK_SUCCESS)
+      return false;
+   if (!up->nr_loaded)
+   {
+      if (!up->sr_dir)
+         up->sr_dir = ngx_lib_sr_runtime(up->dir);
+      if (!up->sr_dir)
+         return false;
+      path = up->sr_dir;
+   }
+   up->ngx = vulkan_ngx_init(up->instance, up->gpu, up->device,
+         up->gipa, up->gdpa, &up->memory_properties, path);
+   vulkan_ngx_defer(up->ngx);
+   if (up->ngx && up->nr_loaded)
+      ngx_lib_keep_feature(up->dir, NGX_FEATURE_DLSS_NR);
+   return up->ngx != NULL;
+}
+
+static void vulkan_upscaler_async_reload_nr(void *data)
+{
+   vulkan_upscaler_t *up = (vulkan_upscaler_t*)data;
+   const char *path = up->dir;
+   PFN_vkWaitForFences wait = (PFN_vkWaitForFences)up->gdpa(up->device, "vkWaitForFences");
+   if (wait(up->device, 1, &up->reload_fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS)
+   {
+      video_upscaler_async_fail(up->async);
+      return;
+   }
+   vulkan_ngx_free(up->ngx);
+   vulkan_upscaler_setup_clear(up);
+   up->ngx = vulkan_ngx_init(up->instance, up->gpu, up->device,
+         up->gipa, up->gdpa, &up->memory_properties, path);
+   vulkan_ngx_defer(up->ngx);
+   if (!up->ngx)
+      video_upscaler_async_fail(up->async);
+   else
+      ngx_lib_keep_feature(up->dir, NGX_FEATURE_DLSS_NR);
+   up->nr_loaded = true;
+}
+
+static void vulkan_upscaler_async_reset(void *data)
+{
+   vulkan_upscaler_t *up = (vulkan_upscaler_t*)data;
+   vulkan_ngx_reset(up->ngx);
+   vulkan_upscaler_setup_clear(up);
+}
+
+static void vulkan_upscaler_async_destroy(void *data)
+{
+   vulkan_upscaler_t *up = (vulkan_upscaler_t*)data;
+   vulkan_ngx_free(up->ngx);
+   vulkan_upscaler_setup_clear(up);
+   if (up->reload_fence)
+   {
+      PFN_vkDestroyFence destroy = (PFN_vkDestroyFence)up->gdpa(up->device, "vkDestroyFence");
+      destroy(up->device, up->reload_fence, NULL);
+   }
+   vulkan_upscaler_device_release(up->owner);
+   free(up->sr_dir);
+   free(up->dir);
+   free(up);
+}
+
+vulkan_upscaler_t *vulkan_upscaler_init_async(VkInstance instance,
+      VkPhysicalDevice gpu, VkDevice device,
+      PFN_vkGetInstanceProcAddr gipa, PFN_vkGetDeviceProcAddr gdpa,
+      const VkPhysicalDeviceMemoryProperties *memory_properties,
+      const char *dir, vulkan_upscaler_device_t *owner, unsigned queue_family)
+{
+   vulkan_upscaler_t *up;
+   if (!owner || !ngx_lib_get())
+      return NULL;
+   up = (vulkan_upscaler_t*)calloc(1, sizeof(*up));
+   if (!up)
+      return NULL;
+   up->kind     = VIDEO_TEMPORAL_UPSCALER_DLSS;
+   up->instance = instance;
+   up->gpu      = gpu;
+   up->device   = device;
+   up->gipa     = gipa;
+   up->gdpa     = gdpa;
+   up->memory_properties = *memory_properties;
+   up->dir      = strdup(dir ? dir : "");
+   up->owner    = owner;
+   up->queue_family = queue_family;
+   up->nr_loaded = config_get_ptr()->bools.video_dlss_nr_enable || ngx_lib_is_optiscaler();
+   if (up->nr_loaded)
+      video_upscaler_retire_cached();
+   if (up->dir)
+      up->async = video_upscaler_async_new(up, vulkan_upscaler_async_init,
+            vulkan_upscaler_async_reset, vulkan_upscaler_async_destroy);
+   if (!up->async)
+   {
+      free(up->dir);
+      free(up);
+      return NULL;
+   }
+   retro_atomic_fetch_add_int(&owner->refs, 1);
+   return up;
+}
 
 unsigned vulkan_upscaler_instance_extensions(enum video_temporal_upscaler kind,
       const char *dir, const char **list, unsigned count, unsigned cap)
@@ -94,6 +391,11 @@ vulkan_upscaler_t *vulkan_upscaler_init(enum video_temporal_upscaler kind,
    switch (kind)
    {
       case VIDEO_TEMPORAL_UPSCALER_DLSS:
+         if (video_upscaler_async_busy())
+         {
+            free(up);
+            return NULL;
+         }
          up->ngx = vulkan_ngx_init(instance, gpu, device, gipa, gdpa,
                memory_properties, dir);
          break;
@@ -114,7 +416,7 @@ vulkan_upscaler_t *vulkan_upscaler_init(enum video_temporal_upscaler kind,
    return up;
 }
 
-bool vulkan_upscaler_optimal(vulkan_upscaler_t *up, unsigned mode,
+static bool vulkan_upscaler_optimal_impl(vulkan_upscaler_t *up, unsigned mode,
       unsigned out_dims, unsigned *render_dims,
       unsigned *min_dims, unsigned *max_dims)
 {
@@ -137,7 +439,47 @@ bool vulkan_upscaler_optimal(vulkan_upscaler_t *up, unsigned mode,
    return false;
 }
 
-bool vulkan_upscaler_upscale(vulkan_upscaler_t *up, VkCommandBuffer cmd,
+bool vulkan_upscaler_optimal(vulkan_upscaler_t *up, unsigned mode,
+      unsigned out_dims, unsigned *render_dims,
+      unsigned *min_dims, unsigned *max_dims)
+{
+   bool ok;
+   if (!up)
+      return false;
+   /* A reused session also lets the next core submit its native frame
+    * before adopting the DLSS render policy. */
+   if (up->async && !retro_atomic_load_acquire_int(&up->frame_started))
+      return false;
+   /* This snapshot belongs to the core caller and stays valid while
+    * the worker prepares the feature for its requested mode and size. */
+   if (up->async && up->cache_valid && up->cache_mode == mode && up->cache_out == out_dims)
+   {
+      *render_dims = up->cache_render;
+      *min_dims    = up->cache_min;
+      *max_dims    = up->cache_max;
+      return true;
+   }
+   if (up->async && !video_upscaler_async_enter(up->async))
+      return false;
+
+   ok = vulkan_upscaler_optimal_impl(up, mode, out_dims, render_dims, min_dims, max_dims);
+   if (up->async)
+   {
+      if (ok)
+      {
+         up->cache_mode   = mode;
+         up->cache_out    = out_dims;
+         up->cache_render = *render_dims;
+         up->cache_min    = *min_dims;
+         up->cache_max    = *max_dims;
+         up->cache_valid  = true;
+      }
+      video_upscaler_async_leave();
+   }
+   return ok;
+}
+
+static bool vulkan_upscaler_upscale_impl(vulkan_upscaler_t *up, VkCommandBuffer cmd,
       const vulkan_upscaler_image_t *color,
       const struct retro_hw_upscaler_inputs *inputs,
       unsigned mode, unsigned out_dims, vulkan_upscaler_image_t *out)
@@ -177,19 +519,114 @@ bool vulkan_upscaler_upscale(vulkan_upscaler_t *up, VkCommandBuffer cmd,
    return false;
 }
 
+bool vulkan_upscaler_upscale(vulkan_upscaler_t *up, VkCommandBuffer cmd,
+      const vulkan_upscaler_image_t *color,
+      const struct retro_hw_upscaler_inputs *inputs,
+      unsigned mode, unsigned out_dims, vulkan_upscaler_image_t *out)
+{
+   bool ok;
+   if (!up || (up->async && (!retro_atomic_load_acquire_int(&up->frame_started)
+               || !video_upscaler_async_enter(up->async))))
+      return false;
+   if (up->async && (!up->nr_loaded && video_upscaler_nr_mode()))
+   {
+      if (!up->nr_reload)
+         video_upscaler_retire_cached();
+      up->nr_reload = true;
+   }
+   if (up->async && up->nr_reload && !up->nr_loaded)
+   {
+      video_upscaler_async_leave();
+      return false;
+   }
+   if (up->async && up->setup_ready)
+   {
+      up->setup_submit = up->setup_ready;
+      up->setup_ready  = NULL;
+   }
+   ok = vulkan_upscaler_upscale_impl(up, cmd, color, inputs, mode, out_dims, out);
+   if (up->async)
+   {
+      if (vulkan_ngx_prepare_pending(up->ngx))
+         video_upscaler_async_work(up->async, vulkan_upscaler_async_prepare);
+      video_upscaler_async_leave();
+   }
+   return ok;
+}
+
+VkCommandBuffer vulkan_upscaler_take_commands(vulkan_upscaler_t *up)
+{
+   vulkan_upscaler_setup_t *item;
+   if (!up || !(item = up->setup_submit))
+      return VK_NULL_HANDLE;
+   up->setup_submit  = NULL;
+   item->frames      = VULKAN_UPSCALER_RETIRE_FRAMES;
+   item->next        = up->setup_retired;
+   up->setup_retired = item;
+   return item->cmd;
+}
+
+bool vulkan_upscaler_pending(vulkan_upscaler_t *up)
+{
+   return up && up->async && video_upscaler_async_pending(up->async);
+}
+
+VkResult vulkan_upscaler_signal_reload(vulkan_upscaler_t *up, VkQueue queue)
+{
+   VkResult res;
+   if (!up || !up->nr_reload || up->nr_signalled)
+      return VK_SUCCESS;
+   res = vkQueueSubmit(queue, 0, NULL, up->reload_fence);
+   if (res == VK_SUCCESS)
+      up->nr_signalled = true;
+   else
+      video_upscaler_async_fail(up->async);
+   return res;
+}
+
 void vulkan_upscaler_frame_done(vulkan_upscaler_t *up)
 {
    if (!up)
       return;
+   if (up->async)
+   {
+      vulkan_upscaler_setup_t **link;
+      retro_atomic_store_release_int(&up->frame_started, 1);
+      if (up->nr_signalled && !up->nr_queued)
+      {
+         up->nr_queued = video_upscaler_async_work(up->async, vulkan_upscaler_async_reload_nr);
+      }
+      video_upscaler_async_start(up->async);
+      if (!video_upscaler_async_enter(up->async))
+         return;
+      for (link = &up->setup_retired; *link;)
+      {
+         vulkan_upscaler_setup_t *item = *link;
+         if (--item->frames)
+            link = &item->next;
+         else
+         {
+            *link = item->next;
+            vulkan_upscaler_setup_free(up, item);
+         }
+      }
+   }
    vulkan_ngx_frame_done(up->ngx);
    vulkan_ffx_frame_done(up->ffx);
    vulkan_xess_frame_done(up->xess);
+   if (up->async)
+      video_upscaler_async_leave();
 }
 
 void vulkan_upscaler_free(vulkan_upscaler_t *up)
 {
    if (!up)
       return;
+   if (up->async)
+   {
+      video_upscaler_async_free(up->async);
+      return;
+   }
    vulkan_ngx_free(up->ngx);
    vulkan_ffx_free(up->ffx);
    vulkan_xess_free(up->xess);
@@ -198,7 +635,12 @@ void vulkan_upscaler_free(vulkan_upscaler_t *up)
 
 void vulkan_upscaler_reset(vulkan_upscaler_t *up)
 {
-   if (up)
+   if (up && up->async)
+   {
+      retro_atomic_store_release_int(&up->frame_started, 0);
+      video_upscaler_async_reset(up->async);
+   }
+   else if (up)
       vulkan_ngx_reset(up->ngx);
 }
 

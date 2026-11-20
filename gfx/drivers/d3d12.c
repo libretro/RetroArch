@@ -1513,11 +1513,27 @@ static void d3d12_cmd_begin(d3d12_video_t *d3d12, D3D12PipelineState pso)
 /* The frame command list executed, and signalled behind: what it
  * copied or drew from is free once the fence reaches frameSignal, and
  * its slot once it reaches the slot's signal */
+static void d3d12_execute_frame_lists(d3d12_video_t *d3d12)
+{
+#ifdef HAVE_TEMPORAL_UPSCALER
+   ID3D12CommandList *lists[2];
+   ID3D12GraphicsCommandList *setup = d3d12_upscaler_take_commands(d3d12->ngx);
+   unsigned count = setup ? 2 : 1;
+   lists[0] = (ID3D12CommandList*)setup;
+   lists[1] = (ID3D12CommandList*)d3d12->queue.cmd;
+   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle,
+         count, lists + 2 - count);
+   d3d12_upscaler_signal_reload(d3d12->ngx, d3d12->queue.handle);
+#else
+   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
+         (ID3D12CommandList* const*)&d3d12->queue.cmd);
+#endif
+}
+
 static void d3d12_cmd_execute(d3d12_video_t *d3d12)
 {
    d3d12->queue.cmd->lpVtbl->Close(d3d12->queue.cmd);
-   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
-         (ID3D12CommandList* const*)&d3d12->queue.cmd);
+   d3d12_execute_frame_lists(d3d12);
    d3d12->queue.frameSignal = ++d3d12->queue.fenceValue;
    d3d12->queue.slotSignal[d3d12->queue.slot] = d3d12->queue.frameSignal;
    d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
@@ -6939,8 +6955,7 @@ static bool d3d12_pyrowave_execute(d3d12_video_t *d3d12, void *receiver)
    HRESULT result = d3d12->queue.cmd->lpVtbl->Close(d3d12->queue.cmd);
    if (SUCCEEDED(result))
    {
-      d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
-            (ID3D12CommandList* const*)&d3d12->queue.cmd);
+      d3d12_execute_frame_lists(d3d12);
       d3d12->queue.frameSignal = ++d3d12->queue.fenceValue;
       d3d12->queue.slotSignal[d3d12->queue.slot] = d3d12->queue.frameSignal;
       result = d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
@@ -7372,7 +7387,7 @@ static void *d3d12_gfx_init(const video_info_t* video)
             config_get_ptr()->uints.video_temporal_upscaler;
          char dir[DIR_MAX_LENGTH];
          video_upscaler_dir(kind, dir, sizeof(dir));
-         d3d12->ngx = d3d12_upscaler_init(kind, d3d12->device, dir);
+         d3d12->ngx = d3d12_upscaler_init_async(kind, d3d12->device, dir);
          if (d3d12->ngx)
          {
             d3d12_upscaler_backend.data = d3d12;

@@ -7199,6 +7199,9 @@ void main_exit(void *args)
 #ifdef HAVE_VULKAN
    vulkan_context_session_cache_free();
 #endif
+#ifdef HAVE_TEMPORAL_UPSCALER
+   video_upscaler_async_shutdown();
+#endif
    /* an input driver kept for drivers that then failed to start */
    input_driver_drop_kept();
 
