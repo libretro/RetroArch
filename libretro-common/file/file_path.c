@@ -32,6 +32,7 @@
 #include <sys/stat.h>
 
 #include <boolean.h>
+#include <retro_atomic.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include <time/rtime.h>
@@ -66,20 +67,44 @@
 size_t strftime_am_pm(char *s, size_t len, const char* format,
       const void *ptr)
 {
-   size_t _len              = 0;
-#if !(defined(__linux__) && !defined(ANDROID))
-   char *local              = NULL;
-#endif
+   /* The host's LC_TIME is taken once: setting it on every call cost a
+    * locale reload each time and raced every other thread's strftime */
+   static retro_atomic_int_t strftime_locale_set =
+         RETRO_ATOMIC_INT_INITIALIZER(0);
    const struct tm *timeptr = (const struct tm*)ptr;
-   setlocale(LC_TIME, "");
-   _len = strftime(s, len, format, timeptr);
-#if !(defined(__linux__) && !defined(ANDROID))
-   if ((local = local_to_utf8_string_alloc(s)))
+   size_t _len;
+#if defined(_WIN32) && !defined(_XBOX) && !defined(UNICODE)
+   size_t i;
+#endif
+
+   if (!retro_atomic_load_acquire_int(&strftime_locale_set))
    {
-      if (local[0] != '\0')
+      setlocale(LC_TIME, "");
+      retro_atomic_store_release_int(&strftime_locale_set, 1);
+   }
+
+   /* A buffer too short leaves strftime()'s output unspecified */
+   if (!(_len = strftime(s, len, format, timeptr)))
+   {
+      if (len)
+         *s = '\0';
+      return 0;
+   }
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(UNICODE)
+   /* Only Windows writes the local codepage; an ASCII result is
+    * already UTF-8 */
+   for (i = 0; i < _len; i++)
+      if ((unsigned char)s[i] >= 0x80)
+         break;
+   if (i < _len)
+   {
+      char local[256];
+      if (strlcpy(local, s, sizeof(local)) < sizeof(local)
+            && local_to_utf8_string(local, s, len) && *s)
+         _len = strlen(s);
+      else
          _len = strlcpy(s, local, len);
-      free(local);
-      local = NULL;
    }
 #endif
    return _len;
