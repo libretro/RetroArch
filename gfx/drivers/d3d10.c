@@ -1150,7 +1150,7 @@ static bool d3d10_init_shader(
    return success;
 }
 
-#include "d3d_shaders/bloom_sm4.hlsl.h"
+#include "d3d_sm4_shaders/effects/bloom_sm4.hlsl.h"
 #include "../common/menu_ribbon_shader.h"
 
 static void d3d10_bloom_free(d3d10_video_t *d3d10)
@@ -3506,7 +3506,7 @@ static void *d3d10_gfx_init(const video_info_t* video)
       };
 
       static const char shader[] =
-#include "d3d_shaders/opaque_sm5.hlsl.h"
+#include "d3d_sm5_shaders/opaque_sm5.hlsl.h"
          ;
 
       if (!d3d10_init_shader(
@@ -3529,7 +3529,7 @@ static void *d3d10_gfx_init(const video_info_t* video)
             D3D10_INPUT_PER_VERTEX_DATA, 0 },
       };
       static const char shader[] =
-#include "d3d_shaders/mesh_sm4.hlsl.h"
+#include "d3d_sm4_shaders/mesh_sm4.hlsl.h"
          ;
       if (!d3d10_init_shader(
                d3d10->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
@@ -3565,7 +3565,7 @@ static void *d3d10_gfx_init(const video_info_t* video)
       };
 
       static const char shader[] =
-#include "d3d_shaders/sprite_sm4.hlsl.h"
+#include "d3d_sm4_shaders/sprite_sm4.hlsl.h"
          ;
 
       d3d10_init_shader(d3d10->device, shader, sizeof(shader), NULL,
@@ -4108,7 +4108,7 @@ static void d3d10_views_release(d3d10_video_t *d3d10)
 static void d3d10_views_init(d3d10_video_t *d3d10)
 {
    static const char shader[] =
-#include "d3d_shaders/views_sm4.hlsl.h"
+#include "d3d_sm4_shaders/views_sm4.hlsl.h"
       ;
    D3D10_INPUT_ELEMENT_DESC desc[3];
    D3D10_BUFFER_DESC buf_desc;

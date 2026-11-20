@@ -803,6 +803,7 @@ VIDEO DRIVER
 
 #if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12) \
  || (defined(HAVE_D3D9) && defined(HAVE_HLSL))
+#include "../gfx/common/d3d_builtin.c"
 #include "../gfx/common/d3dcompiler_common.c"
 #endif
 
@@ -1820,7 +1821,7 @@ RECORDING
 #include "../libretro-common/net/net_mdns.c"
 #include "../libretro-common/net/net_mdns_socket.c"
 #include "../record/record_pyrowave_lan.c"
-#if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGLES3)
+#if (!defined(HAVE_OPENGLES) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE))) || defined(HAVE_OPENGLES3)
 #include "../record/record_pyrowave_gl.c"
 #ifdef HAVE_OPENGL_CORE
 #include "../record/record_pyrowave_source_gl.c"

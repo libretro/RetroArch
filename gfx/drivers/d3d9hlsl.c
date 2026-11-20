@@ -41,7 +41,7 @@
 #include <encodings/utf.h>
 
 #include <string.h>
-#include "d3d_shaders/xmb_plastic_sm3.h"
+#include "d3d_sm3_shaders/effects/xmb_plastic_sm3.h"
 #include <retro_inline.h>
 #include <retro_math.h>
 #include <math.h>
@@ -86,7 +86,7 @@
 #include "../../verbosity.h"
 #include "../../retroarch.h"
 
-#include "d3d_shaders/shaders_common.h"
+#include "d3d_sm3_shaders/effects/shaders_common.h"
 
 static const char *stock_hlsl_program = CG(
       void main_vertex
@@ -7015,7 +7015,7 @@ static void d3d9_hlsl_views_draw_pass(d3d9_video_t *d3d,
       (LPDIRECT3DPIXELSHADER9)(d)->views.ps[i])
 #include "../common/d3d9_views.h"
 
-#include "d3d_shaders/bloom_sm3.hlsl.h"
+#include "d3d_sm3_shaders/effects/bloom_sm3.hlsl.h"
 
 static bool d3d9_hlsl_bloom_ps_make(d3d9_video_t *d3d)
 {

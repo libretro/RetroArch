@@ -31,11 +31,11 @@ DEPS := menu_effects_test.c \
         $(REPO_ROOT)/gfx/gfx_display.h \
         $(REPO_ROOT)/gfx/drivers_shader/shader_glsl.c \
         $(REPO_ROOT)/gfx/common/menu_ribbon.h \
-        $(wildcard $(REPO_ROOT)/gfx/drivers/gl_shaders/*pipeline*.h) \
-        $(wildcard $(REPO_ROOT)/gfx/drivers/d3d_shaders/*.h) \
+        $(wildcard $(REPO_ROOT)/gfx/drivers/gl*_shaders/effects/*.h) \
+        $(wildcard $(REPO_ROOT)/gfx/drivers/d3d_sm*_shaders/effects/*.h) \
         $(REPO_ROOT)/gfx/drivers/menu_ribbon_shader.h \
         $(REPO_ROOT)/gfx/common/menu_ribbon_shader.h \
-        $(wildcard $(REPO_ROOT)/gfx/drivers/vulkan_shaders/pipeline_*.src.inc)
+        $(wildcard $(REPO_ROOT)/gfx/drivers/vulkan_shaders/effects/pipeline_*.src.inc)
 
 BASE := -Wall -std=gnu99 -g1 -O1 -DRARCH_INTERNAL -DHAVE_SHADERPIPELINE \
         -I$(REPO_ROOT) -I$(LRC)/include -I$(REPO_ROOT)/gfx/include \

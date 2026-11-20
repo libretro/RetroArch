@@ -1210,7 +1210,7 @@ static void d3d11_update_texture(
  * DISPLAY DRIVER
  */
 
-#include "d3d_shaders/bloom_sm4.hlsl.h"
+#include "d3d_sm4_shaders/effects/bloom_sm4.hlsl.h"
 #include "../common/menu_ribbon_shader.h"
 
 static INLINE void d3d11_release_shader(d3d11_shader_t* shader);
@@ -5093,7 +5093,7 @@ static void *d3d11_gfx_init(const video_info_t* video)
 
 
       static const char shader[] =
-#include "d3d_shaders/hdr_sm5.hlsl.h"
+#include "d3d_sm5_shaders/hdr_sm5.hlsl.h"
          ;
 
       if (!d3d11_init_shader(
@@ -5104,20 +5104,7 @@ static void *d3d11_gfx_init(const video_info_t* video)
                ))
          goto error;
 
-      /* For shader debgging 
-      static const wchar_t* shaderPath = L"C:\\RetroArch\\gfx\\drivers\\d3d_shaders\\hdr_sm5.hlsl";
 
-      if (!d3d11_init_shader(
-            d3d11->device, 
-            NULL,              
-            0,                 
-            shaderPath,       
-            "VSMain", "PSMain", NULL, desc,
-            countof(desc), &d3d11->shaders[VIDEO_SHADER_STOCK_HDR],
-            D3D11_FEATURE_LEVEL_HINT_DONTCARE
-            ))
-         goto error;
-      */
    }
 #endif
 
@@ -5132,7 +5119,7 @@ static void *d3d11_gfx_init(const video_info_t* video)
       };
 
       static const char shader[] =
-#include "d3d_shaders/opaque_sm5.hlsl.h"
+#include "d3d_sm5_shaders/opaque_sm5.hlsl.h"
          ;
 
       if (!d3d11_init_shader(
@@ -5157,7 +5144,7 @@ static void *d3d11_gfx_init(const video_info_t* video)
             D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
       static const char shader[] =
-#include "d3d_shaders/mesh_sm4.hlsl.h"
+#include "d3d_sm4_shaders/mesh_sm4.hlsl.h"
          ;
       if (!d3d11_init_shader(
                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
@@ -5195,7 +5182,7 @@ static void *d3d11_gfx_init(const video_info_t* video)
       };
 
       static const char shader[] =
-#include "d3d_shaders/sprite_sm4.hlsl.h"
+#include "d3d_sm4_shaders/sprite_sm4.hlsl.h"
          ;
 
       d3d11_init_shader(d3d11->device, shader, sizeof(shader), NULL,
@@ -6835,7 +6822,7 @@ static void d3d11_views_release(d3d11_video_t *d3d11)
 static void d3d11_views_init(d3d11_video_t *d3d11)
 {
    static const char shader[] =
-#include "d3d_shaders/views_sm4.hlsl.h"
+#include "d3d_sm4_shaders/views_sm4.hlsl.h"
       ;
    D3D11_INPUT_ELEMENT_DESC desc[3];
    D3D11_BUFFER_DESC buf_desc;
@@ -9287,35 +9274,8 @@ typedef struct
 /* 8-bit 4:2:0 in, RGBA out: the chroma of each 2x2 block from the one
  * sample it shares, as the CPU conversion does, either order */
 static const char d3d11_planar_cs_src[] =
-#include "../drivers_shader/video_hdr.inc"
-   "Texture2D<float>  Y  : register(t0);\n"
-   "Texture2D<float2> C0 : register(t1);\n"
-   "Texture2D<float>  C1 : register(t2);\n"
-   "RWTexture2D<float4> Out : register(u0);\n"
-   "cbuffer P : register(b0) { float4 k0; float4 k1; uint4 size; float4 hdr; };\n"
-   "[numthreads(8, 8, 1)]\n"
-   "void main(uint3 id : SV_DispatchThreadID)\n"
-   "{\n"
-   "   int3 c;\n"
-   "   float y;\n"
-   "   float2 ch;\n"
-   "   if (id.x >= size.x || id.y >= size.y)\n"
-   "      return;\n"
-   "   c  = int3(id.xy >> 1, 0);\n"
-   "   y  = Y.Load(int3(id.xy, 0));\n"
-   "   ch = k1.z > 0.5 ? C0.Load(c) : float2(C0.Load(c).x, C1.Load(c));\n"
-   "   if (k1.w > 0.5)\n"
-   "      ch = ch.yx;\n"
-   "   if (size.z != 0)\n"
-   "   {\n"
-   "      float scale = size.w != 0 ? 65535.0 / 65472.0 : 65535.0 / 65280.0;\n"
-   "      y *= scale;\n"
-   "      ch *= scale;\n"
-   "   }\n"
-   "   ch -= size.z != 0 && size.w != 0 ? 512.0 / 1023.0 : 128.0 / 255.0;\n"
-   "   Out[id.xy] = float4(video_hdr_convert(k0.x * y + k0.y + float3(k0.z * ch.y,\n"
-   "         k0.w * ch.x + k1.x * ch.y, k1.y * ch.x), hdr), 1.0);\n"
-   "}\n";
+#include "d3d_sm5_shaders/planar_d3d11.hlsl.h"
+;
 
 /* The shader and its constants, made on the first planar texture; a
  * failure turns planar textures off */

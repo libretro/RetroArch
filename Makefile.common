@@ -2117,6 +2117,7 @@ endif
 ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
    INCLUDE_DIRS += -isystemgfx/include/dxsdk
    OBJ += gfx/common/d3dcompiler_common.o \
+          gfx/common/d3d_builtin.o \
           gfx/common/dxgi_common.o
    DEF_FLAGS += -Wno-unknown-pragmas
 endif
@@ -2847,7 +2848,11 @@ ifeq ($(HAVE_NETWORKING), 1)
       endif
       PYROWAVE_OBJ += record/drivers/record_pyrowave.o record/record_pyrowave_receiver.o
       PYROWAVE_OBJ += record/record_pyrowave_source.o record/record_pyrowave_source_d3d12.o
-      ifneq ($(filter 1,$(HAVE_OPENGL) $(HAVE_OPENGL_CORE) $(HAVE_OPENGLES3)),)
+      ifeq ($(HAVE_OPENGLES), 1)
+         ifeq ($(HAVE_OPENGLES3), 1)
+            PYROWAVE_OBJ += record/record_pyrowave_gl.o
+         endif
+      else ifneq ($(filter 1,$(HAVE_OPENGL) $(HAVE_OPENGL_CORE)),)
          PYROWAVE_OBJ += record/record_pyrowave_gl.o
       endif
       ifeq ($(HAVE_OPENGL_CORE), 1)

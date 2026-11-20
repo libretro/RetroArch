@@ -89,6 +89,7 @@
 #include "../common/d3d12_hw_interface.h"
 #include "../common/d3d12_upload_heap.h"
 #include "../common/d3dcompiler_common.h"
+#include "../common/d3d_builtin.h"
 #include <queues/task_queue.h>
 #include <retro_atomic.h>
 /* slang_process.h is self-contained - it only defines types and
@@ -322,54 +323,16 @@ typedef struct d3d12_import
 /* NV12 in, RGBA out: the luma and the interleaved chroma planes as two
  * views, each pixel taking the chroma its 2x2 block shares */
 static const char d3d12_nv12_cs_src[] =
-#include "../drivers_shader/video_hdr.inc"
-   "Texture2DArray<float>  Y : register(t0);\n"
-   "Texture2DArray<float2> C : register(t1);\n"
-   "RWTexture2D<float4> Out : register(u0);\n"
-   "cbuffer K : register(b0) { uint4 a; uint4 b; float4 k0; float4 k1; float4 hdr; };\n"
-   "[numthreads(8, 8, 1)]\n"
-   "void main(uint3 id : SV_DispatchThreadID)\n"
-   "{\n"
-   "   float y;\n"
-   "   float2 c;\n"
-   "   if (id.x >= a.x || id.y >= a.y)\n"
-   "      return;\n"
-   "   y = Y.Load(int4(id.xy + b.xy, 0, 0));\n"
-   "   c = C.Load(int4((id.xy + b.xy) >> 1, 0, 0));\n"
-   "   if (a.z != 0)\n"
-   "   {\n"
-   "      float scale = a.w != 0 ? 65535.0 / 65472.0 : 65535.0 / 65280.0;\n"
-   "      y *= scale;\n"
-   "      c *= scale;\n"
-   "   }\n"
-   "   c -= a.z != 0 && a.w != 0 ? 512.0 / 1023.0 : 128.0 / 255.0;\n"
-   "   Out[id.xy] = float4(video_hdr_convert(k0.x * y + k0.y + float3(k0.z * c.y,\n"
-   "         k0.w * c.x + k1.x * c.y, k1.y * c.x), hdr), 1.0);\n"
-   "}\n";
+#include "d3d_sm5_shaders/nv12_d3d12.hlsl.h"
+;
 #endif
 
 /* 8-bit 4:2:0 in, RGBA out: luma above the chroma in one R8 texture,
  * each pixel taking the chroma its 2x2 block shares, at a step and an
  * offset per channel that serve either layout and order */
 static const char d3d12_planar_cs_src[] =
-   "Texture2D<float> P : register(t0);\n"
-   "RWTexture2D<float4> Out : register(u0);\n"
-   "cbuffer C : register(b0) { uint4 a; uint4 b; float4 k0; float4 k1; };\n"
-   "[numthreads(8, 8, 1)]\n"
-   "void main(uint3 id : SV_DispatchThreadID)\n"
-   "{\n"
-   "   uint cx, cy;\n"
-   "   float y, cb, cr;\n"
-   "   if (id.x >= a.x || id.y >= a.y)\n"
-   "      return;\n"
-   "   cx = (id.x >> 1) * a.z;\n"
-   "   cy = a.y + (id.y >> 1);\n"
-   "   y  = P.Load(int3(id.xy, 0));\n"
-   "   cb = P.Load(int3(cx + b.x, cy, 0)) - 128.0 / 255.0;\n"
-   "   cr = P.Load(int3(cx + b.y, cy, 0)) - 128.0 / 255.0;\n"
-   "   Out[id.xy] = float4(saturate(k0.x * y + k0.y + float3(k0.z * cr,\n"
-   "         k0.w * cb + k1.x * cr, k1.y * cb)), 1.0);\n"
-   "}\n";
+#include "d3d_sm5_shaders/planar_d3d12.hlsl.h"
+;
 
 
 typedef struct
@@ -2404,6 +2367,21 @@ static D3D12PipelineState d3d12_effect_pipe(d3d12_video_t *d3d12,
    return *out;
 }
 
+static bool d3d12_builtin_shader(d3d12_video_t *d3d12,
+      const char *source, size_t size, const char *entry,
+      const char *profile, D3DBlob *out)
+{
+   D3D12_FEATURE_DATA_SHADER_MODEL model;
+   char native_profile[7];
+   model.HighestShaderModel = D3D_SHADER_MODEL_6_0;
+   memcpy(native_profile, profile, sizeof(native_profile));
+   if (SUCCEEDED(d3d12->device->lpVtbl->CheckFeatureSupport(d3d12->device,
+            D3D12_FEATURE_SHADER_MODEL, &model, sizeof(model)))
+         && model.HighestShaderModel >= D3D_SHADER_MODEL_6_0)
+      native_profile[3] = '6';
+   return d3d_builtin_shader(source, size, entry, native_profile, out);
+}
+
 static void *gfx_display_d3d12_effect_install(void *data,
       const gfx_display_effect_desc_t *desc)
 {
@@ -2416,8 +2394,8 @@ static void *gfx_display_d3d12_effect_install(void *data,
    fx   = &d3d12->effects[d3d12->effect_count];
    memset(fx, 0, sizeof(*fx));
    size = strlen(desc->hlsl_sm4);
-   if (     !d3d_compile(desc->hlsl_sm4, size, NULL, "VSMain", "vs_5_0", &fx->vs)
-         || !d3d_compile(desc->hlsl_sm4, size, NULL, "PSMain", "ps_5_0", &fx->ps))
+   if (     !d3d12_builtin_shader(d3d12, desc->hlsl_sm4, size, "VSMain", "vs_5_0", &fx->vs)
+         || !d3d12_builtin_shader(d3d12, desc->hlsl_sm4, size, "PSMain", "ps_5_0", &fx->ps))
    {
       Release(fx->vs);
       Release(fx->ps);
@@ -5338,7 +5316,7 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
    /* --- HDR stock shader pipes (VIDEO_SHADER_STOCK_HDR / NOBLEND) --- */
    {
       static const char shader[] =
-#include "d3d_shaders/hdr_sm5.hlsl.h"
+#include "d3d_sm5_shaders/hdr_sm5.hlsl.h"
          ;
 
       static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
@@ -5350,9 +5328,9 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
             D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
       };
 
-      if (!d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "VSMain", "vs_5_0", &vs_code))
          goto error;
-      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSMain", "ps_5_0", &ps_code))
          goto error;
 
       desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
@@ -5385,7 +5363,7 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
     * so we must NOT use the inverse-tonemap HDR shader here. */
    {
       static const char shader[] =
-#include "d3d_shaders/opaque_sm5.hlsl.h"
+#include "d3d_sm5_shaders/opaque_sm5.hlsl.h"
          ;
 
       static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
@@ -5397,9 +5375,9 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
             D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
       };
 
-      if (!d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "VSMain", "vs_5_0", &vs_code))
          goto error;
-      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSMain", "ps_5_0", &ps_code))
          goto error;
 
       desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
@@ -5434,7 +5412,7 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
    /* --- Sprite HDR pipes (blend / noblend / font) --- */
    {
       static const char shader[] =
-#include "d3d_shaders/sprite_sm4.hlsl.h"
+#include "d3d_sm4_shaders/sprite_sm4.hlsl.h"
          ;
 
       D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
@@ -5454,11 +5432,11 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
             D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
       };
 
-      if (!d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "VSMain", "vs_5_0", &vs_code))
          goto error;
-      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSMain", "ps_5_0", &ps_code))
          goto error;
-      if (!d3d_compile(shader, sizeof(shader), NULL, "GSMain", "gs_5_0", &gs_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "GSMain", "gs_5_0", &gs_code))
          goto error;
 
       /* HDR-aware pixel entry replaces PSMain for these pipes:
@@ -5466,7 +5444,7 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
        * direct-to-swapchain UI case otherwise */
       Release(ps_code);
       ps_code = NULL;
-      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainHDR", "ps_5_0", &ps_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSMainHDR", "ps_5_0", &ps_code))
          goto error;
 
       desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
@@ -5488,7 +5466,7 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
       ps_hdr  = ps_code;
       ps_code = NULL;
 
-      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainA8HDR", "ps_5_0", &ps_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSMainA8HDR", "ps_5_0", &ps_code))
          goto error;
 
       Release(d3d12->sprites.pipe_font_hdr);
@@ -5500,7 +5478,7 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
        * them straight for the swapchain (see sprite_sm4.hlsl.h) */
       {
          D3DBlob ps_lin = NULL;
-         if (!d3d_compile(shader, sizeof(shader), NULL,
+         if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader),
                   "PSMainLinearHDR", "ps_5_0", &ps_lin))
             goto error;
          desc.BlendState.RenderTarget[0].BlendEnable = true;
@@ -5546,7 +5524,7 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
       Release(d3d12->sprites.pipe_plastic_f16);
       d3d12->sprites.pipe_plastic_hdr = NULL;
       d3d12->sprites.pipe_plastic_f16 = NULL;
-      if (d3d_compile(shader, sizeof(shader), NULL, "PSMainXMB", "ps_5_0", &ps_code))
+      if (d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSMainXMB", "ps_5_0", &ps_code))
       {
          d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
                &desc, &d3d12->sprites.pipe_plastic_hdr);
@@ -5565,7 +5543,7 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
       Release(d3d12->sprites.pipe_font_plastic_f16);
       d3d12->sprites.pipe_font_plastic_hdr = NULL;
       d3d12->sprites.pipe_font_plastic_f16 = NULL;
-      if (d3d_compile(shader, sizeof(shader), NULL, "PSMainXMBFont", "ps_5_0", &ps_code))
+      if (d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSMainXMBFont", "ps_5_0", &ps_code))
       {
          d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
                &desc, &d3d12->sprites.pipe_font_plastic_hdr);
@@ -5628,7 +5606,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
 
    {
       static const char shader[] =
-#include "d3d_shaders/opaque_sm5.hlsl.h"
+#include "d3d_sm5_shaders/opaque_sm5.hlsl.h"
          ;
 
       static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
@@ -5640,9 +5618,9 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
             D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
       };
 
-      if (!d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "VSMain", "vs_5_0", &vs_code))
          goto error;
-      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSMain", "ps_5_0", &ps_code))
          goto error;
 
       desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
@@ -5669,7 +5647,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
     * constant ring meshes are streamed through draw() instead. */
    {
       static const char shader[] =
-#include "d3d_shaders/mesh_sm4.hlsl.h"
+#include "d3d_sm4_shaders/mesh_sm4.hlsl.h"
          ;
       static const D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
          { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,
@@ -5679,8 +5657,8 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
          { "COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 16,
             D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
       };
-      if (     d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code)
-            && d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
+      if (     d3d12_builtin_shader(d3d12, shader, sizeof(shader), "VSMain", "vs_5_0", &vs_code)
+            && d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSMain", "ps_5_0", &ps_code))
       {
          desc.BlendState.RenderTarget[0]     = d3d12_blend_enable_desc;
          desc.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
@@ -5710,7 +5688,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
    }
    {
       static const char shader[] =
-#include "d3d_shaders/sprite_sm4.hlsl.h"
+#include "d3d_sm4_shaders/sprite_sm4.hlsl.h"
          ;
 
       D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
@@ -5730,11 +5708,11 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
             D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
       };
 
-      if (!d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "VSMain", "vs_5_0", &vs_code))
          goto error;
-      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMain", "ps_5_0", &ps_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSMain", "ps_5_0", &ps_code))
          goto error;
-      if (!d3d_compile(shader, sizeof(shader), NULL, "GSMain", "gs_5_0", &gs_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "GSMain", "gs_5_0", &gs_code))
          goto error;
 
       desc.BlendState.RenderTarget[0].BlendEnable = false;
@@ -5752,7 +5730,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       Release(ps_code);
       ps_code = NULL;
 
-      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainA8", "ps_5_0", &ps_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSMainA8", "ps_5_0", &ps_code))
          goto error;
 
       d3d12_init_pipeline(
@@ -5760,13 +5738,13 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
 
       Release(ps_code);
       ps_code = NULL;
-      if (d3d_compile(shader, sizeof(shader), NULL, "PSMainXMB", "ps_5_0", &ps_code))
+      if (d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSMainXMB", "ps_5_0", &ps_code))
          d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
                &desc, &d3d12->sprites.pipe_plastic);
 
       Release(ps_code);
       ps_code = NULL;
-      if (d3d_compile(shader, sizeof(shader), NULL, "PSMainXMBFont", "ps_5_0", &ps_code))
+      if (d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSMainXMBFont", "ps_5_0", &ps_code))
          d3d12_init_pipeline(d3d12->device, vs_code, ps_code, gs_code,
                &desc, &d3d12->sprites.pipe_font_plastic);
 
@@ -5788,10 +5766,10 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
 
    {
       static const char shader[] =
-#include "d3d_shaders/mipmapgen_sm5.h"
+#include "d3d_sm5_shaders/mipmapgen_sm5.h"
          ;
       D3D12_COMPUTE_PIPELINE_STATE_DESC desc = { d3d12->desc.cs_rootSignature };
-      if (!d3d_compile(shader, sizeof(shader), NULL, "CSMain", "cs_5_0", &cs_code))
+      if (!d3d12_builtin_shader(d3d12, shader, sizeof(shader), "CSMain", "cs_5_0", &cs_code))
          goto error;
 
       desc.CS.pShaderBytecode = cs_code->lpVtbl->GetBufferPointer(cs_code);
@@ -5806,8 +5784,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
    {
       D3D12_COMPUTE_PIPELINE_STATE_DESC desc = { d3d12->desc.cs_rootSignature };
       d3d12->planar_pipe = NULL;
-      if (d3d_compile(d3d12_planar_cs_src, sizeof(d3d12_planar_cs_src) - 1,
-               NULL, "main", "cs_5_0", &cs_code))
+      if (d3d12_builtin_shader(d3d12, d3d12_planar_cs_src, sizeof(d3d12_planar_cs_src) - 1, "main", "cs_5_0", &cs_code))
       {
          desc.CS.pShaderBytecode = cs_code->lpVtbl->GetBufferPointer(cs_code);
          desc.CS.BytecodeLength  = cs_code->lpVtbl->GetBufferSize(cs_code);
@@ -5824,8 +5801,7 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
    {
       D3D12_COMPUTE_PIPELINE_STATE_DESC desc = { d3d12->desc.cs_rootSignature };
       d3d12->nv12_pipe = NULL;
-      if (d3d_compile(d3d12_nv12_cs_src, sizeof(d3d12_nv12_cs_src) - 1,
-               NULL, "main", "cs_5_0", &cs_code))
+      if (d3d12_builtin_shader(d3d12, d3d12_nv12_cs_src, sizeof(d3d12_nv12_cs_src) - 1, "main", "cs_5_0", &cs_code))
       {
          desc.CS.pShaderBytecode = cs_code->lpVtbl->GetBufferPointer(cs_code);
          desc.CS.BytecodeLength  = cs_code->lpVtbl->GetBufferSize(cs_code);
@@ -8850,7 +8826,7 @@ static void d3d12_views_release(d3d12_video_t *d3d12)
 static bool d3d12_views_init(d3d12_video_t *d3d12)
 {
    static const char shader[] =
-#include "d3d_shaders/views_sm4.hlsl.h"
+#include "d3d_sm4_shaders/views_sm4.hlsl.h"
       ;
    static const D3D12_INPUT_ELEMENT_DESC input[] = {
       { "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0,
@@ -8890,14 +8866,14 @@ static bool d3d12_views_init(d3d12_video_t *d3d12)
    }
 
    if (     d3d12->views.cb_mapped
-         && d3d_compile(shader, sizeof(shader), NULL, "VSMain", "vs_5_0", &vs)
-         && d3d_compile(shader, sizeof(shader), NULL, "PSRect", "ps_5_0",
+         && d3d12_builtin_shader(d3d12, shader, sizeof(shader), "VSMain", "vs_5_0", &vs)
+         && d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSRect", "ps_5_0",
             &ps_rect)
-         && d3d_compile(shader, sizeof(shader), NULL, "PSLayer", "ps_5_0",
+         && d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSLayer", "ps_5_0",
             &ps_layer)
-         && d3d_compile(shader, sizeof(shader), NULL, "PSAnaglyph", "ps_5_0",
+         && d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSAnaglyph", "ps_5_0",
             &ps_anaglyph)
-         && d3d_compile(shader, sizeof(shader), NULL, "PSInterlaced",
+         && d3d12_builtin_shader(d3d12, shader, sizeof(shader), "PSInterlaced",
             "ps_5_0", &ps_interlaced))
    {
       memset(&desc, 0, sizeof(desc));
@@ -8949,7 +8925,7 @@ static bool d3d12_views_retire(d3d12_video_t *d3d12, d3d12_texture_t *t)
    return true;
 }
 
-#include "d3d_shaders/bloom_sm4.hlsl.h"
+#include "d3d_sm4_shaders/effects/bloom_sm4.hlsl.h"
 
 static void d3d12_bloom_free(d3d12_video_t *d3d12)
 {
@@ -8990,9 +8966,9 @@ static unsigned gfx_display_d3d12_bloom_begin(void *data, unsigned dims,
    {
       D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = d3d12->effect_desc;
       D3DBlob vs = NULL, ps = NULL;
-      bool ok = d3d_compile(bloom_vs_source, sizeof(bloom_vs_source), NULL,
+      bool ok = d3d12_builtin_shader(d3d12, bloom_vs_source, sizeof(bloom_vs_source),
             "VSMain", "vs_5_0", &vs)
-         && d3d_compile(bloom_ps_source, sizeof(bloom_ps_source), NULL,
+         && d3d12_builtin_shader(d3d12, bloom_ps_source, sizeof(bloom_ps_source),
             "PSMain", "ps_5_0", &ps);
       if (ok)
       {

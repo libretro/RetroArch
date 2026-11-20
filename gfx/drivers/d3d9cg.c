@@ -38,7 +38,7 @@
 #include <d3d9.h>
 
 #include <string.h>
-#include "d3d_shaders/xmb_plastic_sm3.h"
+#include "d3d_sm3_shaders/effects/xmb_plastic_sm3.h"
 #include <math.h>
 
 #ifdef HAVE_CONFIG_H
@@ -84,7 +84,7 @@
 #error "UWP does not support D3D9"
 #endif
 
-#include "d3d_shaders/shaders_common.h"
+#include "d3d_sm3_shaders/effects/shaders_common.h"
 
 static const char *stock_cg_d3d9_program = CG(
     void main_vertex
@@ -3424,7 +3424,7 @@ static bool d3d9_cg_views_ps_make(d3d9_video_t *d3d, unsigned i,
 #define D3D9V_PASS(p, d, c, r, cut, again) ((void)0)
 #include "../common/d3d9_views.h"
 
-#include "d3d_shaders/bloom_sm3.hlsl.h"
+#include "d3d_sm3_shaders/effects/bloom_sm3.hlsl.h"
 
 static bool d3d9_cg_bloom_ps_make(d3d9_video_t *d3d)
 {

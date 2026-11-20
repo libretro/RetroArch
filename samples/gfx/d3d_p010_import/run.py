@@ -8,11 +8,11 @@ with tempfile.TemporaryDirectory() as directory:
     tmp = Path(directory)
     shaders = []
     for api, name in [('d3d11', 'd3d11_planar_cs_src'), ('d3d12', 'd3d12_nv12_cs_src')]:
-        source = (root / 'gfx/drivers' / (api + '.c')).read_text()
-        start = source.index('static const char ' + name + '[] =')
-        shaders.append(source[start:source.index(';\n', start) + 1].replace(
-            '#include "../drivers_shader/video_hdr.inc"',
-            (root / 'gfx/drivers_shader/video_hdr.inc').read_text()))
+        header = 'planar_d3d11.hlsl.h' if api == 'd3d11' else 'nv12_d3d12.hlsl.h'
+        source = (root / 'gfx/drivers/d3d_sm5_shaders' / header).read_text()
+        source = source.replace('#include "../../drivers_shader/video_hdr.inc"',
+            (root / 'gfx/drivers_shader/video_hdr.inc').read_text())
+        shaders.append('static const char ' + name + '[] =\n' + source + ';')
     (tmp / 'shaders.inc').write_text('\n'.join(shaders))
     source = (root / 'gfx/drivers/d3d11.c').read_text()
     start = source.index('static bool d3d11_planar_convert(')
@@ -50,21 +50,28 @@ with tempfile.TemporaryDirectory() as directory:
         '-o', str(exe12)] + (['-ld3d11', '-ld3d12', '-ld3dcompiler', '-ldxgi'] if windows else []) + ['-lm'], check=True)
     subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe12)], check=True)
 
-    import json, re
-    sprite = (root / 'gfx/drivers/d3d_shaders/sprite_sm4.hlsl.h').read_text()
-    composite = (root / 'gfx/drivers/d3d_shaders/hdr_sm5.hlsl.h').read_text()
-    sprite = sprite[sprite.index('\nSRC(') + 5:sprite.rfind(')')]
-    composite = composite[composite.index('\nSRC(') + 5:composite.rfind(')')]
-    sprite = re.sub(r'/\*.*?\*/|//[^\n]*', '', sprite, flags=re.S)
-    composite = re.sub(r'/\*.*?\*/|//[^\n]*', '', composite, flags=re.S)
-    (tmp / 'raster.inc').write_text('static const char sprite_source[] = ' + json.dumps(sprite)
-        + ';\nstatic const char composite_source[] = ' + json.dumps(composite) + ';\n')
+    # Include the C string headers directly, including shared HDR fragments.
+    includes = []
+    for name, header in [('sprite', 'd3d_sm4_shaders/sprite_sm4.hlsl.h'),
+                         ('composite', 'd3d_sm5_shaders/hdr_sm5.hlsl.h')]:
+        path = (root / 'gfx/drivers' / header).as_posix()
+        includes.append('static const char ' + name + '_source[] =\n#include "'
+                        + path + '"\n;')
+    (tmp / 'raster.inc').write_text('\n'.join(includes))
     exe_raster = tmp / ('raster.exe' if windows else 'raster')
     subprocess.run(cc + flags + ['-I' + str(tmp),
         str(Path(__file__).with_name('raster_test.c')), '-o', str(exe_raster)]
         + (['-ld3d11', '-ld3dcompiler'] if windows else []) + ['-lm'], check=True)
     subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe_raster)], check=True)
 
+    import json
+    dumper = tmp / ('sources.exe' if windows else 'sources')
+    subprocess.run(cc + flags + ['-I' + str(root / 'libretro-common/include'),
+        str(root / 'tools/d3d_shader_sources.c'),
+        '-o', str(dumper)], check=True)
+    runner = shlex.split(os.environ.get('RUNNER', ''))
+    sprite = subprocess.check_output(runner + [str(dumper), 'sprite']).decode()
+    composite = subprocess.check_output(runner + [str(dumper), 'hdr']).decode()
     sprite = sprite.replace('t0.Sample(s0, input.texcoord)', 't0.SampleLevel(s0, input.texcoord, 0)')
     composite = composite.replace('t0.Sample(s0, texcoord)', 't0.SampleLevel(s0, texcoord, 0)')
     sprite += """

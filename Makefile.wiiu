@@ -102,12 +102,12 @@ endif
    OBJ += gfx/drivers/gx2_shaders/tex.o
    OBJ += gfx/drivers/gx2_shaders/sprite.o
    OBJ += gfx/drivers/gx2_shaders/frame.o
-   OBJ += gfx/drivers/gx2_shaders/ribbon.o
-   OBJ += gfx/drivers/gx2_shaders/ribbon_simple.o
-   OBJ += gfx/drivers/gx2_shaders/bokeh.o
-   OBJ += gfx/drivers/gx2_shaders/snow.o
-   OBJ += gfx/drivers/gx2_shaders/snow_simple.o
-   OBJ += gfx/drivers/gx2_shaders/snowflake.o
+   OBJ += gfx/drivers/gx2_shaders/effects/ribbon.o
+   OBJ += gfx/drivers/gx2_shaders/effects/ribbon_simple.o
+   OBJ += gfx/drivers/gx2_shaders/effects/bokeh.o
+   OBJ += gfx/drivers/gx2_shaders/effects/snow.o
+   OBJ += gfx/drivers/gx2_shaders/effects/snow_simple.o
+   OBJ += gfx/drivers/gx2_shaders/effects/snowflake.o
 
    ifeq ($(GRIFFIN_BUILD), 1)
       OBJ += griffin/griffin.o griffin/griffin_cpp.o griffin/griffin_rslc.o

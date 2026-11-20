@@ -5617,10 +5617,10 @@ static void *gfx_display_vk_effect_install(void *data,
 static VkPipeline vulkan_bloom_pipeline(vk_t *vk, bool sdr, bool add)
 {
    static const uint32_t vert[] =
-#include "vulkan_shaders/menu_bloom.vert.inc"
+#include "vulkan_shaders/effects/menu_bloom.vert.inc"
       ;
    static const uint32_t frag[] =
-#include "vulkan_shaders/menu_bloom.frag.inc"
+#include "vulkan_shaders/effects/menu_bloom.frag.inc"
       ;
    VkShaderModuleCreateInfo module;
    VkPipelineShaderStageCreateInfo stages[2];

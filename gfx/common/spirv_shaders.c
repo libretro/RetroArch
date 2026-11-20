@@ -32,12 +32,12 @@ const uint32_t spirv_alpha_blend_frag[] =
 const size_t spirv_alpha_blend_frag_size = sizeof(spirv_alpha_blend_frag);
 
 const uint32_t spirv_xmb_font_frag[] =
-#include "../drivers/vulkan_shaders/xmb_font.frag.inc"
+#include "../drivers/vulkan_shaders/effects/xmb_font.frag.inc"
 ;
 const size_t spirv_xmb_font_frag_size = sizeof(spirv_xmb_font_frag);
 
 const uint32_t spirv_xmb_plastic_frag[] =
-#include "../drivers/vulkan_shaders/xmb_plastic.frag.inc"
+#include "../drivers/vulkan_shaders/effects/xmb_plastic.frag.inc"
       ;
 const size_t spirv_xmb_plastic_frag_size = sizeof(spirv_xmb_plastic_frag);
 
@@ -73,42 +73,42 @@ const size_t spirv_stock_rect_frag_size = sizeof(spirv_stock_rect_frag);
 
 #ifdef HAVE_SHADERPIPELINE
 const uint32_t spirv_pipeline_ribbon_vert[] =
-#include "../drivers/vulkan_shaders/pipeline_ribbon.vert.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_ribbon.vert.inc"
       ;
 const size_t spirv_pipeline_ribbon_vert_size = sizeof(spirv_pipeline_ribbon_vert);
 
 const uint32_t spirv_pipeline_ribbon_frag[] =
-#include "../drivers/vulkan_shaders/pipeline_ribbon.frag.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_ribbon.frag.inc"
       ;
 const size_t spirv_pipeline_ribbon_frag_size = sizeof(spirv_pipeline_ribbon_frag);
 
 const uint32_t spirv_pipeline_ribbon_simple_vert[] =
-#include "../drivers/vulkan_shaders/pipeline_ribbon_simple.vert.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_ribbon_simple.vert.inc"
       ;
 const size_t spirv_pipeline_ribbon_simple_vert_size = sizeof(spirv_pipeline_ribbon_simple_vert);
 
 const uint32_t spirv_pipeline_ribbon_simple_frag[] =
-#include "../drivers/vulkan_shaders/pipeline_ribbon_simple.frag.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_ribbon_simple.frag.inc"
       ;
 const size_t spirv_pipeline_ribbon_simple_frag_size = sizeof(spirv_pipeline_ribbon_simple_frag);
 
 const uint32_t spirv_pipeline_snow_simple_frag[] =
-#include "../drivers/vulkan_shaders/pipeline_snow_simple.frag.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_snow_simple.frag.inc"
       ;
 const size_t spirv_pipeline_snow_simple_frag_size = sizeof(spirv_pipeline_snow_simple_frag);
 
 const uint32_t spirv_pipeline_snow_frag[] =
-#include "../drivers/vulkan_shaders/pipeline_snow.frag.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_snow.frag.inc"
       ;
 const size_t spirv_pipeline_snow_frag_size = sizeof(spirv_pipeline_snow_frag);
 
 const uint32_t spirv_pipeline_bokeh_frag[] =
-#include "../drivers/vulkan_shaders/pipeline_bokeh.frag.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_bokeh.frag.inc"
       ;
 const size_t spirv_pipeline_bokeh_frag_size = sizeof(spirv_pipeline_bokeh_frag);
 
 const uint32_t spirv_pipeline_snowflake_frag[] =
-#include "../drivers/vulkan_shaders/pipeline_snowflake.frag.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_snowflake.frag.inc"
       ;
 const size_t spirv_pipeline_snowflake_frag_size = sizeof(spirv_pipeline_snowflake_frag);
 #endif
@@ -148,19 +148,19 @@ const size_t spirv_hdr_scrgb_frag_size = sizeof(spirv_hdr_scrgb_frag);
 #if defined(HAVE_OPENGL_CORE) && defined(HAVE_SLANG) && defined(HAVE_RSLC) && !defined(HAVE_SPIRV_CROSS)
 #ifdef HAVE_SHADERPIPELINE
 static const char ribbon_vert_glsl[] = {
-#include "../drivers/vulkan_shaders/pipeline_ribbon.vert.src.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_ribbon.vert.src.inc"
 };
 static const char ribbon_frag_glsl[] = {
-#include "../drivers/vulkan_shaders/pipeline_ribbon.frag.src.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_ribbon.frag.src.inc"
 };
 #endif
 
 static const char xmb_font_glsl[] = {
-#include "../drivers/vulkan_shaders/xmb_font.frag.src.inc"
+#include "../drivers/vulkan_shaders/effects/xmb_font.frag.src.inc"
 };
 
 static const char xmb_plastic_glsl[] = {
-#include "../drivers/vulkan_shaders/xmb_plastic.frag.src.inc"
+#include "../drivers/vulkan_shaders/effects/xmb_plastic.frag.src.inc"
 };
 
 static const struct
@@ -210,22 +210,22 @@ static const struct
    { spirv_pipeline_ribbon_vert, ribbon_vert_glsl },
    { spirv_pipeline_ribbon_frag, ribbon_frag_glsl },
    { spirv_pipeline_ribbon_simple_vert,
-#include "../drivers/vulkan_shaders/pipeline_ribbon_simple.vert.src.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_ribbon_simple.vert.src.inc"
    },
    { spirv_pipeline_ribbon_simple_frag,
-#include "../drivers/vulkan_shaders/pipeline_ribbon_simple.frag.src.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_ribbon_simple.frag.src.inc"
    },
    { spirv_pipeline_snow_simple_frag,
-#include "../drivers/vulkan_shaders/pipeline_snow_simple.frag.src.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_snow_simple.frag.src.inc"
    },
    { spirv_pipeline_snow_frag,
-#include "../drivers/vulkan_shaders/pipeline_snow.frag.src.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_snow.frag.src.inc"
    },
    { spirv_pipeline_bokeh_frag,
-#include "../drivers/vulkan_shaders/pipeline_bokeh.frag.src.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_bokeh.frag.src.inc"
    },
    { spirv_pipeline_snowflake_frag,
-#include "../drivers/vulkan_shaders/pipeline_snowflake.frag.src.inc"
+#include "../drivers/vulkan_shaders/effects/pipeline_snowflake.frag.src.inc"
    },
 #endif
    { NULL, NULL }

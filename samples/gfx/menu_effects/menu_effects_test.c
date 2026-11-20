@@ -35,8 +35,8 @@
 #if defined(_WIN32)
 #include <windows.h>
 #include "../../../gfx/common/d3dcompiler_common.h"
-#include "../../../gfx/drivers/gl_shaders/shaders_common.h"
-#include "../../../gfx/drivers/d3d_shaders/bloom_sm4.hlsl.h"
+#include "../../../gfx/common/gl_shader_source.h"
+#include "../../../gfx/drivers/d3d_sm4_shaders/effects/bloom_sm4.hlsl.h"
 #else
 #include "../../../gfx/drivers_shader/shader_glsl.c"
 #include <EGL/egl.h>
@@ -125,10 +125,10 @@ static int has(const char *src, const char *word)
 
 /* The Vulkan snow sources, as their SPIR-V was compiled from */
 static const char vk_snow_frag[] =
-#include "../../../gfx/drivers/vulkan_shaders/pipeline_snow.frag.src.inc"
+#include "../../../gfx/drivers/vulkan_shaders/effects/pipeline_snow.frag.src.inc"
       ;
 static const char vk_snow_simple_frag[] =
-#include "../../../gfx/drivers/vulkan_shaders/pipeline_snow_simple.frag.src.inc"
+#include "../../../gfx/drivers/vulkan_shaders/effects/pipeline_snow_simple.frag.src.inc"
       ;
 
 static char *read_text(const char *path)

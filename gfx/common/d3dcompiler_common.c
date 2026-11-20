@@ -22,6 +22,9 @@
 #endif
 
 #include "d3dcompiler_common.h"
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
+#include "d3d_builtin.h"
+#endif
 #include "dxgi_common.h"
 #include "../../verbosity.h"
 
@@ -147,6 +150,10 @@ bool d3d_compile(const char* src, size_t len,
    UINT compileflags = 0;
 #endif
 
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
+   if (!src_name && target && strlen(target) >= 4 && target[3] >= '4')
+      return d3d_builtin_shader(src, len, entrypoint, target, out);
+#endif
    if (!len)
       len = strlen(src);
 

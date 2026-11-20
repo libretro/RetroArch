@@ -24,32 +24,32 @@
 
 #if defined(HAVE_GLSL)
 #if defined(VITA)
-#include "../../gfx/drivers/gl_shaders/modern_pipeline_xmb_ribbon_simple.cg.vert.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.frag.h"
-#include "../../gfx/drivers/gl_shaders/modern_pipeline_xmb_ribbon.cg.vert.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon.cg.frag.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/ribbon_simple.cg.vert.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/ribbon_simple.cg.frag.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/ribbon.cg.vert.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/ribbon.cg.frag.h"
 #else
-#include "../../gfx/drivers/gl_shaders/core_pipeline_xmb_ribbon.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/core_pipeline_xmb_ribbon_simple.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/legacy_pipeline_xmb_ribbon_simple.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/modern_pipeline_xmb_ribbon_simple.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snow.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snow.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snow_simple.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/legacy_pipeline_xmb_ribbon.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/modern_pipeline_xmb_ribbon.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_bokeh.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snowflake.glsl.frag.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/ribbon.glsl.frag.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/ribbon_simple.glsl.frag.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/ribbon_simple.glsl.vert.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/ribbon_simple.glsl.vert.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/ribbon_simple.glsl.frag.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/snow.glsl.frag.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/snow_gles2.glsl.vert.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/snow_simple.glsl.frag.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/ribbon.glsl.vert.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/ribbon.glsl.vert.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/ribbon.glsl.frag.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/bokeh.glsl.frag.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/snowflake.glsl.frag.h"
 /* The desktop snow sources; GLES takes one source for both */
 #if !defined(HAVE_OPENGLES)
-#include "../../gfx/drivers/gl_shaders/core_pipeline_snow.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/core_pipeline_snow_simple.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/core_pipeline_bokeh.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/core_pipeline_snowflake.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snow_core.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/legacy_pipeline_snow.glsl.vert.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/snow.glsl.frag.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/snow_simple.glsl.frag.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/bokeh.glsl.frag.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/snowflake.glsl.frag.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/snow.glsl.vert.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/snow.glsl.vert.h"
 #endif
 #endif
 #endif
@@ -61,45 +61,45 @@
 
 #if defined(HAVE_D3D9) && (defined(HAVE_HLSL) || defined(HAVE_CG))
 #define XMB_EFFECTS_SM3
-#include "../../gfx/drivers/d3d_shaders/shaders_common.h"
-#include "../../gfx/drivers/d3d_shaders/ribbon_sm3.hlsl.h"
-#include "../../gfx/drivers/d3d_shaders/ribbon_simple_sm3.hlsl.h"
-#include "../../gfx/drivers/d3d_shaders/simple_snow_sm3.hlsl.h"
-#include "../../gfx/drivers/d3d_shaders/snow_sm3.hlsl.h"
-#include "../../gfx/drivers/d3d_shaders/bokeh_sm3.hlsl.h"
-#include "../../gfx/drivers/d3d_shaders/snowflake_sm3.hlsl.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/shaders_common.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/ribbon_sm3.hlsl.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/ribbon_simple_sm3.hlsl.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/simple_snow_sm3.hlsl.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/snow_sm3.hlsl.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/bokeh_sm3.hlsl.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/snowflake_sm3.hlsl.h"
 #endif
 
 #if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
 #define XMB_EFFECTS_SM4
 #include "../../gfx/common/menu_ribbon_shader.h"
 static const char xmb_effect_ribbon_simple_sm4[] =
-#include "../../gfx/drivers/d3d_shaders/ribbon_simple_sm4.hlsl.h"
+#include "../../gfx/drivers/d3d_sm4_shaders/effects/ribbon_simple_sm4.hlsl.h"
       ;
 static const char xmb_effect_simple_snow_sm4[] =
-#include "../../gfx/drivers/d3d_shaders/simple_snow_sm4.hlsl.h"
+#include "../../gfx/drivers/d3d_sm4_shaders/effects/simple_snow_sm4.hlsl.h"
       ;
 static const char xmb_effect_snow_sm4[] =
-#include "../../gfx/drivers/d3d_shaders/snow_sm4.hlsl.h"
+#include "../../gfx/drivers/d3d_sm4_shaders/effects/snow_sm4.hlsl.h"
       ;
 static const char xmb_effect_bokeh_sm4[] =
-#include "../../gfx/drivers/d3d_shaders/bokeh_sm4.hlsl.h"
+#include "../../gfx/drivers/d3d_sm4_shaders/effects/bokeh_sm4.hlsl.h"
       ;
 static const char xmb_effect_snowflake_sm4[] =
-#include "../../gfx/drivers/d3d_shaders/snowflake_sm4.hlsl.h"
+#include "../../gfx/drivers/d3d_sm4_shaders/effects/snowflake_sm4.hlsl.h"
       ;
 
 static const char *xmb_effect_ribbon_sm4(void)
 {
    static char ribbon[4096];
    return
-#include "../../gfx/drivers/d3d_shaders/ribbon_sm4.hlsl.h"
+#include "../../gfx/drivers/d3d_sm4_shaders/effects/ribbon_sm4.hlsl.h"
       ;
 }
 #endif
 
 #ifdef WIIU
-#include "../../gfx/drivers/gx2_shaders/menu_shaders.h"
+#include "../../gfx/drivers/gx2_shaders/effects/menu_shaders.h"
 #endif
 
 #if defined(HAVE_LIBNX) && defined(__SWITCH2__)
@@ -113,12 +113,12 @@ static const char *xmb_effect_ribbon_sm4(void)
 /* Cg for GL, which gl2 draws with where it has no GLSL */
 #if defined(HAVE_CG) && defined(HAVE_OPENGL) && !defined(HAVE_OPENGLES)
 #define XMB_EFFECTS_CG_GL
-#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon.cg.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snow_simple.cg.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snow_heavy.cg.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_bokeh.cg.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snowflake.cg.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/ribbon.cg.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/ribbon_simple.cg.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/snow_simple.cg.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/snow_heavy.cg.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/bokeh.cg.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/snowflake.cg.h"
 #endif
 
 enum xmb_effect

@@ -126,7 +126,7 @@ endif
 
 ifneq ($(CXX_BUILD), 1)
    ifneq ($(C89_BUILD),)
-      # The shader sources built into gfx/drivers/gl_shaders are longer
+      # The shader sources built into gfx/drivers/gl*_shaders are longer
       # than the 509 characters C90 guarantees a compiler will take in a
       # string literal, which no declaration of ours can help: this lane
       # is here for declarations, comments and C99 syntax.
@@ -565,4 +565,11 @@ PYROWAVE_GENERATED_DIR := $(OBJDIR)/pyrowave
 include Makefile.pyrowave
 DEF_FLAGS += -I$(PYROWAVE_GENERATED_DIR)
 $(OBJDIR)/record/record_pyrowave_source.o: $(PYROWAVE_GENERATED_HEADER)
+endif
+
+ifneq ($(filter 1,$(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
+D3D_SHADER_GENERATED_DIR := $(OBJDIR)/d3d-shaders
+include Makefile.d3d_shaders
+DEF_FLAGS += -I$(D3D_SHADER_GENERATED_DIR)
+$(OBJDIR)/gfx/common/d3d_builtin.o: $(D3D_SHADER_GENERATED_HEADER)
 endif

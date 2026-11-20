@@ -435,3 +435,5 @@ samples/runahead/lifetime/windows/
 
 /.pyrowave-shaders/
 /samples/gfx/pyrowave_session/.pyrowave-shaders/
+
+/.d3d-shaders/

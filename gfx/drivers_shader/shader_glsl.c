@@ -133,23 +133,23 @@ static const char *glsl_prefixes[] = {
 };
 
 #if defined(VITA)
-#include "../drivers/gl_shaders/modern_opaque.cg.vert.h"
-#include "../drivers/gl_shaders/modern_opaque.cg.frag.h"
-#include "../drivers/gl_shaders/modern_alpha_blend.cg.vert.h"
-#include "../drivers/gl_shaders/modern_alpha_blend.cg.frag.h"
+#include "../drivers/gl_cg_shaders/opaque.cg.vert.h"
+#include "../drivers/gl_cg_shaders/opaque.cg.frag.h"
+#include "../drivers/gl_cg_shaders/alpha_blend.cg.vert.h"
+#include "../drivers/gl_cg_shaders/alpha_blend.cg.frag.h"
 
 
 #else
-#include "../drivers/gl_shaders/modern_opaque.glsl.vert.h"
-#include "../drivers/gl_shaders/modern_opaque.glsl.frag.h"
-#include "../drivers/gl_shaders/core_opaque.glsl.vert.h"
-#include "../drivers/gl_shaders/core_opaque.glsl.frag.h"
-#include "../drivers/gl_shaders/legacy_opaque.glsl.vert.h"
-#include "../drivers/gl_shaders/legacy_opaque.glsl.frag.h"
-#include "../drivers/gl_shaders/modern_alpha_blend.glsl.vert.h"
-#include "../drivers/gl_shaders/modern_alpha_blend.glsl.frag.h"
-#include "../drivers/gl_shaders/core_alpha_blend.glsl.vert.h"
-#include "../drivers/gl_shaders/core_alpha_blend.glsl.frag.h"
+#include "../drivers/gl2_glsl_shaders/opaque.glsl.vert.h"
+#include "../drivers/gl2_glsl_shaders/opaque.glsl.frag.h"
+#include "../drivers/gl3_glsl_shaders/opaque.glsl.vert.h"
+#include "../drivers/gl3_glsl_shaders/opaque.glsl.frag.h"
+#include "../drivers/gl2_glsl_shaders/opaque_fixed_function.glsl.vert.h"
+#include "../drivers/gl2_glsl_shaders/opaque_fixed_function.glsl.frag.h"
+#include "../drivers/gl2_glsl_shaders/alpha_blend.glsl.vert.h"
+#include "../drivers/gl2_glsl_shaders/alpha_blend.glsl.frag.h"
+#include "../drivers/gl3_glsl_shaders/alpha_blend.glsl.vert.h"
+#include "../drivers/gl3_glsl_shaders/alpha_blend.glsl.frag.h"
 
 #endif
 
