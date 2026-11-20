@@ -62,7 +62,8 @@ typedef struct camera_driver
 
 /* A frontend consumer of camera frames beside the core: the menu's
  * live preview. Frames reach it on the main thread, inside a poll, in
- * the mode the camera was opened for. */
+ * the mode the camera was opened for; planes are upright, a rotated
+ * camera's turned for it. */
 typedef struct camera_preview_sink
 {
    void (*planar)(void *user, const struct retro_camera_planar_frame *f);
@@ -90,6 +91,9 @@ typedef struct
    /* The preview's own camera, open only while no core holds one. */
    const camera_driver_t *preview_driver;
    void *preview_data;
+   /* NV12 a rotated frame is turned upright into for the preview */
+   uint8_t *preview_upright;
+   size_t preview_upright_size;
    char preview_device[NAME_MAX_LENGTH];
    bool active;
    bool preview_on;

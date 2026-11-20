@@ -146,6 +146,75 @@ static void RETRO_CALLCONV camera_dispatch_raw(const uint32_t *buf,
       st->preview.raw(st->preview.user, buf, width, height, pitch);
 }
 
+/* @f turned upright into the preview's NV12 buffer, as @out: the
+ * rotation is clockwise, the sample read for each one written. NULL
+ * when the buffer cannot be had. */
+static const struct retro_camera_planar_frame *camera_preview_upright(
+      camera_driver_state_t *st, const struct retro_camera_planar_frame *f,
+      struct retro_camera_planar_frame *out)
+{
+   unsigned rot = f->rotation;
+   unsigned w   = f->width, h = f->height;
+   unsigned ow  = (rot == 90 || rot == 270) ? h : w;
+   unsigned oh  = (rot == 90 || rot == 270) ? w : h;
+   unsigned cw  = (w + 1) >> 1, ch = (h + 1) >> 1;
+   unsigned ocw = (ow + 1) >> 1, och = (oh + 1) >> 1;
+   size_t   cs  = (size_t)ocw * 2;
+   size_t   need = (size_t)ow * oh + cs * och;
+   unsigned x, y;
+   uint8_t *luma, *chroma;
+
+   if (need > st->preview_upright_size)
+   {
+      uint8_t *buf = (uint8_t*)realloc(st->preview_upright, need);
+      if (!buf)
+         return NULL;
+      st->preview_upright      = buf;
+      st->preview_upright_size = need;
+   }
+   luma   = st->preview_upright;
+   chroma = luma + (size_t)ow * oh;
+   for (y = 0; y < oh; y++)
+      for (x = 0; x < ow; x++)
+      {
+         unsigned sx, sy;
+         switch (rot)
+         {
+            case 90:  sx = y;          sy = h - 1 - x; break;
+            case 180: sx = w - 1 - x;  sy = h - 1 - y; break;
+            default:  sx = w - 1 - y;  sy = x;         break;
+         }
+         luma[(size_t)y * ow + x] = f->planes[0][(size_t)sy * f->strides[0] + sx];
+      }
+   for (y = 0; y < och; y++)
+      for (x = 0; x < ocw; x++)
+      {
+         unsigned sx, sy;
+         size_t   cb, cr;
+         switch (rot)
+         {
+            case 90:  sx = y;           sy = ch - 1 - x; break;
+            case 180: sx = cw - 1 - x;  sy = ch - 1 - y; break;
+            default:  sx = cw - 1 - y;  sy = x;          break;
+         }
+         cb = (size_t)sy * f->strides[1] + sx * f->chroma_step;
+         cr = (size_t)sy * f->strides[2] + sx * f->chroma_step;
+         chroma[(size_t)y * cs + 2 * x]     = f->planes[1][cb];
+         chroma[(size_t)y * cs + 2 * x + 1] = f->planes[2][cr];
+      }
+   out->planes[0]   = luma;
+   out->planes[1]   = chroma;
+   out->planes[2]   = chroma + 1;
+   out->strides[0]  = ow;
+   out->strides[1]  = out->strides[2] = cs;
+   out->chroma_step = 2;
+   out->width       = ow;
+   out->height      = oh;
+   out->rotation    = 0;
+   out->flags       = f->flags;
+   return out;
+}
+
 static void RETRO_CALLCONV camera_dispatch_planar(
       const struct retro_camera_planar_frame *f)
 {
@@ -153,7 +222,14 @@ static void RETRO_CALLCONV camera_dispatch_planar(
    if (st->forward_core && st->cb.frame_planar)
       st->cb.frame_planar(f);
    if (st->preview_on && st->preview.planar)
-      st->preview.planar(st->preview.user, f);
+   {
+      struct retro_camera_planar_frame upright;
+      const struct retro_camera_planar_frame *p = f;
+      if (     (f->rotation == 90 || f->rotation == 180 || f->rotation == 270)
+            && !(p = camera_preview_upright(st, f, &upright)))
+         return;
+      st->preview.planar(st->preview.user, p);
+   }
 }
 
 static void camera_driver_poll_with(camera_driver_state_t *st,
@@ -211,6 +287,9 @@ void camera_driver_preview_close(void)
 {
    camera_driver_state_t *st = &camera_driver_st;
    camera_driver_preview_release();
+   free(st->preview_upright);
+   st->preview_upright      = NULL;
+   st->preview_upright_size = 0;
    st->preview.planar = NULL;
    st->preview.raw    = NULL;
    st->preview.user   = NULL;

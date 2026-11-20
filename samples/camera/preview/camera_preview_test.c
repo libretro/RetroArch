@@ -82,6 +82,7 @@ static bool     fake_fail_init, fake_fail_start;
 static uint64_t fake_last_caps;
 static char     fake_last_device[64];
 static uint8_t  fake_plane[16 * 16];
+static const struct retro_camera_planar_frame *fake_custom;
 static uint32_t fake_pixels[4 * 4];
 
 static void *fake_init(const char *device, uint64_t caps, unsigned dims)
@@ -127,6 +128,11 @@ static bool fake_poll(void *data,
       struct retro_camera_planar_frame f;
       if (!planar)
          return false;
+      if (fake_custom)
+      {
+         planar(fake_custom);
+         return true;
+      }
       memset(&f, 0, sizeof(f));
       f.planes[0] = f.planes[1] = fake_plane;
       f.planes[2] = fake_plane + 1;
@@ -149,16 +155,41 @@ camera_driver_t camera_v4l2 = {
 /* ---- the consumers ---------------------------------------------- */
 
 static unsigned core_raw, core_planar, core_gl, sink_raw, sink_planar;
+static unsigned core_rotation, sink_rotation, sink_w, sink_h, sink_flags;
+static uint8_t  sink_y[64], sink_cb[16], sink_cr[16];
 
 static void RETRO_CALLCONV core_raw_cb(const uint32_t *b, unsigned w,
       unsigned h, size_t p) { (void)b; (void)w; (void)h; (void)p; core_raw++; }
 static void RETRO_CALLCONV core_gl_cb(unsigned id, unsigned target,
       const float *affine) { (void)id; (void)target; (void)affine; core_gl++; }
 static void RETRO_CALLCONV core_planar_cb(
-      const struct retro_camera_planar_frame *f) { (void)f; core_planar++; }
+      const struct retro_camera_planar_frame *f)
+{ core_rotation = f->rotation; core_planar++; }
 static void sink_planar_cb(void *user,
       const struct retro_camera_planar_frame *f)
-{ (void)f; (*(unsigned*)user)++; sink_planar++; }
+{
+   unsigned x, y;
+   (*(unsigned*)user)++;
+   sink_planar++;
+   sink_rotation = f->rotation;
+   sink_w        = f->width;
+   sink_h        = f->height;
+   sink_flags    = f->flags;
+   if (f->width * f->height <= sizeof(sink_y))
+   {
+      for (y = 0; y < f->height; y++)
+         for (x = 0; x < f->width; x++)
+            sink_y[y * f->width + x] = f->planes[0][y * f->strides[0] + x];
+      for (y = 0; y < (f->height + 1) / 2; y++)
+         for (x = 0; x < (f->width + 1) / 2; x++)
+         {
+            sink_cb[y * ((f->width + 1) / 2) + x] =
+               f->planes[1][y * f->strides[1] + x * f->chroma_step];
+            sink_cr[y * ((f->width + 1) / 2) + x] =
+               f->planes[2][y * f->strides[2] + x * f->chroma_step];
+         }
+   }
+}
 static void sink_raw_cb(void *user, const uint32_t *b, unsigned w,
       unsigned h, size_t p)
 { (void)b; (void)w; (void)h; (void)p; (*(unsigned*)user)++; sink_raw++; }
@@ -213,6 +244,79 @@ static void core_camera_deinit(void)
    memset(&st->cb, 0, sizeof(st->cb));
    camera_driver_preview_release();
    runloop_frame_work_set(RUNLOOP_WORK_CAMERA, false);
+}
+
+/* A camera mounted sideways (Android): the preview is handed the frame
+ * upright, the core the frame as it came. Source 6 x 4 I420, luma
+ * rows ten apart, chroma 3 x 2. */
+static void lane_rotation(void)
+{
+   static const uint8_t src_y[4 * 8] = {
+      0, 1, 2, 3, 4, 5, 99, 99,
+      10, 11, 12, 13, 14, 15, 99, 99,
+      20, 21, 22, 23, 24, 25, 99, 99,
+      30, 31, 32, 33, 34, 35, 99, 99 };
+   static const uint8_t src_cb[2 * 4] = { 40, 41, 42, 99, 50, 51, 52, 99 };
+   static const uint8_t src_cr[2 * 4] = { 60, 61, 62, 99, 70, 71, 72, 99 };
+   /* clockwise 90: 4 x 6, column 0 read bottom-up */
+   static const uint8_t y90[24] = {
+      30, 20, 10, 0,   31, 21, 11, 1,   32, 22, 12, 2,
+      33, 23, 13, 3,   34, 24, 14, 4,   35, 25, 15, 5 };
+   static const uint8_t cb90[6] = { 50, 40, 51, 41, 52, 42 };
+   static const uint8_t cr90[6] = { 70, 60, 71, 61, 72, 62 };
+   static const uint8_t y180[24] = {
+      35, 34, 33, 32, 31, 30,   25, 24, 23, 22, 21, 20,
+      15, 14, 13, 12, 11, 10,    5,  4,  3,  2,  1,  0 };
+   static const uint8_t cb180[6] = { 52, 51, 50, 42, 41, 40 };
+   static const uint8_t y270[24] = {
+      5, 15, 25, 35,   4, 14, 24, 34,   3, 13, 23, 33,
+      2, 12, 22, 32,   1, 11, 21, 31,   0, 10, 20, 30 };
+   static const uint8_t cr270[6] = { 62, 72, 61, 71, 60, 70 };
+   struct retro_camera_planar_frame f;
+   camera_driver_state_t *st = camera_state_get_ptr();
+
+   printf("rotated camera:\n");
+   memset(&f, 0, sizeof(f));
+   f.planes[0] = src_y;  f.strides[0] = 8;
+   f.planes[1] = src_cb; f.strides[1] = 4;
+   f.planes[2] = src_cr; f.strides[2] = 4;
+   f.chroma_step = 1;
+   f.width  = 6;
+   f.height = 4;
+   f.flags  = RETRO_CAMERA_PLANAR_FULL_RANGE;
+   fake_custom = &f;
+
+   core_camera_init((UINT64_C(1) << RETRO_CAMERA_BUFFER_PLANAR));
+   driver_camera_start();
+   open_preview();
+
+   f.rotation = 90;
+   camera_driver_poll();
+   CHECK(core_rotation == 90, "the core gets the frame as it came");
+   CHECK(sink_rotation == 0 && sink_w == 4 && sink_h == 6
+         && sink_flags == RETRO_CAMERA_PLANAR_FULL_RANGE,
+         "90: the preview gets it upright, the colour kept");
+   CHECK(!memcmp(sink_y, y90, sizeof(y90)) && !memcmp(sink_cb, cb90, 6)
+         && !memcmp(sink_cr, cr90, 6), "90: every sample in place");
+   f.rotation = 180;
+   camera_driver_poll();
+   CHECK(sink_w == 6 && sink_h == 4 && !memcmp(sink_y, y180, sizeof(y180))
+         && !memcmp(sink_cb, cb180, 6), "180: every sample in place");
+   f.rotation = 270;
+   camera_driver_poll();
+   CHECK(sink_w == 4 && sink_h == 6 && !memcmp(sink_y, y270, sizeof(y270))
+         && !memcmp(sink_cr, cr270, 6), "270: every sample in place");
+   f.rotation = 0;
+   sink_planar = 0;
+   camera_driver_poll();
+   CHECK(sink_planar == 1 && sink_w == 6 && !memcmp(sink_y, src_y, 6),
+         "0: the frame as it came");
+   CHECK(st->preview_upright, "the upright buffer is kept while open");
+   camera_driver_preview_close();
+   CHECK(!st->preview_upright, "and freed with the preview");
+
+   fake_custom = NULL;
+   core_camera_deinit();
 }
 
 int main(void)
@@ -352,6 +456,8 @@ int main(void)
          "close frees the camera and the sink");
    CHECK(camera_driver_preview_poll() == CAMERA_PREVIEW_OFF
          && fake_inits == 2, "a closed preview opens nothing");
+
+   lane_rotation();
 
    printf(fails ? "\n%d FAILED\n" : "\nall passed\n", fails);
    return fails ? 1 : 0;
