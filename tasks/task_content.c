@@ -3227,15 +3227,18 @@ static void content_load_prev_park_end(enum core_load_park_end end)
    }
 }
 
-/* core_path's load waits on its warning: what a Cancel puts back */
-static void content_load_prev_park(const char *core_path)
+/* The refused core's load waits on its warning: what a Cancel puts
+ * back. The check says which path names that core, however written. */
+static void content_load_prev_park(void)
 {
    if (!content_load_prev.valid)
       return;
-   if (string_is_equal(content_load_prev.core_last, core_path))
+   if (     *content_load_prev.core_last
+         && core_load_check_refused(content_load_prev.core_last))
       content_load_prev.core_last[0] = '\0';
    if (     !content_load_prev_ran()
-         && string_is_equal(content_load_prev.core, core_path))
+         && *content_load_prev.core
+         && core_load_check_refused(content_load_prev.core))
       content_load_prev_forget();
    content_load_prev.parked = true;
    core_load_check_park_on_end(content_load_prev_park_end);
@@ -3256,7 +3259,7 @@ static void content_load_park(struct content_load_job *job)
       content_load_parked_free(d);
 #ifdef HAVE_MENU
    else
-      content_load_prev_park(d->core_path);
+      content_load_prev_park();
 #endif
 }
 
@@ -3324,7 +3327,7 @@ static bool content_load_park_core(const char *core_path,
    if (core_load_check_park(d, rerun, free, d))
    {
 #ifdef HAVE_MENU
-      content_load_prev_park(core_path);
+      content_load_prev_park();
 #endif
       return true;
    }
@@ -3482,7 +3485,7 @@ bool task_content_park_startup(const char *core_path,
          content_load_prev_forget();
          content_load_prev.valid = true;
       }
-      content_load_prev_park(core_path);
+      content_load_prev_park();
 #endif
       return true;
    }

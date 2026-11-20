@@ -2232,6 +2232,19 @@ static void mode_warn_cancel_restores(void)
    warn_check_no_core("Load Core then Load Content's Cancel left the core named");
    warn_reset();
 
+   /* R4b As R4, the core named another way than the check writes it */
+   {
+      char alias[sizeof(cores) + 64];
+      snprintf(alias, sizeof(alias), "%s/./bad_libretro.%s", cores, ext);
+      /* Answered or refused, it names the core */
+      warn_ln(alias);
+      CHECK(task_push_load_content_with_core(game, &info, CORE_TYPE_PLAIN,
+               NULL, NULL), "Load Content was not started");
+      warn_cancel("no warning for the other-named Load Core");
+      warn_check_no_core("an other-named Load Core's Cancel left the core named");
+      warn_reset();
+   }
+
    /* R5 Start Core */
    CHECK(warn_ln(bad_core), "Load Core did not answer from the record");
    CHECK(task_push_start_current_core(&info), "Start Core was not started");
