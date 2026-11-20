@@ -18,9 +18,11 @@ $(TARGET): net_mdns_test.c $(COMMON)/net/net_mdns.c $(COMMON)/include/net/net_md
 	$(CC) $(CFLAGS) net_mdns_test.c $(COMMON)/net/net_mdns.c $(LDFLAGS) -o $@
 check: $(TARGET)
 	$(RUNNER) ./$(TARGET)
-demo: discovery.c $(COMMON)/net/net_mdns.c
+TRANSPORT_SRC := $(COMMON)/net/net_mdns_socket.c $(COMMON)/net/net_compat.c $(COMMON)/compat/compat_strl.c
+
+demo: discovery.c $(COMMON)/net/net_mdns.c $(TRANSPORT_SRC)
 	@mkdir -p $(SAMPLE_OBJDIR)
-	$(CC) $(CFLAGS) discovery.c $(COMMON)/net/net_mdns.c $(LDFLAGS) $(if $(filter .exe,$(EXE)),-lws2_32) -o $(SAMPLE_OBJDIR)/mdns_discovery$(EXE)
+	$(CC) $(CFLAGS) discovery.c $(COMMON)/net/net_mdns.c $(TRANSPORT_SRC) $(LDFLAGS) $(if $(filter .exe,$(EXE)),-lws2_32) -o $(SAMPLE_OBJDIR)/mdns_discovery$(EXE)
 clean:
 	rm -f net_mdns_test net_mdns_test.exe
 	rm -rf $(SAMPLE_OBJDIR)

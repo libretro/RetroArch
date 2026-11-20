@@ -293,3 +293,46 @@ list's next fence value, without reusing that value. Sender validation rejects
 native fence timeouts as well as GPU validation errors. The default
 `frontend_fault.py --retain-unsubmitted` exercises the Vulkan sender's
 corresponding cold recovery path; adding `--receiver` selects the decoder.
+
+Embedded LAN streaming from the menu
+----------------------------------
+
+Build with `--enable-pyrowave` and use glcore (OpenGL 4.3+), Vulkan, or Windows
+D3D12. Generate distribution shaders once with `make pyrowave-assets`
+(glslangValidator, spirv-val and spirv-cross must be installed). This puts
+`.comp`, `.spv`, and `.hlsl` files in `media/assets/pyrowave`; package that folder
+as `pyrowave` inside the configured assets directory. `make install` copies it
+when media assets are installed. Alternatively, set Settings > Recording >
+PyroWave Shader Directory to a generated folder. No per-stream config file is
+needed. Missing assets prevent the frontend from advertising an unusable receiver.
+
+On each device, enable Settings > Recording > PyroWave LAN Discovery (off by
+default). Optionally set PyroWave Device Name. In the sender's Quick Menu >
+PyroWave Devices, select Send to followed by the receiver's name. The receiver
+shows a notification; Settings > Recording (also reached through Quick Menu >
+PyroWave Devices) offers Accept Incoming PyroWave Stream and Decline Incoming
+PyroWave Stream. The existing game keeps running until acceptance. Stop
+PyroWave Streaming restores the loaded game without unloading its core.
+Receiving also works when the frontend has no game loaded. Sending needs a
+running game and uses PyroWave regardless of the ordinary recording driver.
+The persisted recording driver, streaming URL and config selection are retained.
+
+Discovery uses one primary IPv4 LAN interface and `_pyrowave._tcp.local.`.
+Only opted-in compatible receivers with shaders and a free listener are shown.
+Allow local UDP 5353 and the advertised ephemeral TCP receiver port through
+the firewall. Networks that isolate clients or block multicast need the existing
+manual connection-file workflow. Discovery is unauthenticated; accept only an
+expected request. A request does not start audio/video playback without consent.
+
+`lan_menu_oracle.py` launches two real frontends and drives their existing MENU
+command interface, bound only to loopback. It enables discovery through the
+menu, discovers the peer without an address, declines one request, reconnects,
+accepts another, then stops it and proves the selected core was never unloaded.
+It deliberately configures the ordinary recording driver as null to exercise
+the transient sender override (`--record-driver nvenc` also proves an unavailable
+ordinary encoder does not interfere). It verifies that disabling discovery
+withdraws the receiver from the peer menu. Run it with `--retroarch`, `--core`,
+`--shader-directory`, and a distinct `--output`; optional `--threaded`,
+`--backend glcore|vulkan|d3d12`, and `--audio-driver wasapi` cover presentation
+variants. Linux CI runs direct and threaded GL menus; Windows can run the same
+oracle natively with D3D12. Native Metal remains a separate macOS handover check.

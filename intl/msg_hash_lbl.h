@@ -3932,3 +3932,24 @@ MSG_HASH(
    "nfs_client_browse"
    )
 #endif
+
+MSG_HASH(
+   MENU_ENUM_LABEL_PYROWAVE_DEVICES,
+   "pyrowave_devices"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PYROWAVE_SEND,
+   "pyrowave_send"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PYROWAVE_ACCEPT,
+   "pyrowave_accept"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PYROWAVE_DECLINE,
+   "pyrowave_decline"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PYROWAVE_STOP,
+   "pyrowave_stop"
+   )

@@ -2007,6 +2007,9 @@ static struct config_array_setting *populate_settings_array(
    if (!tmp)
       return NULL;
 
+#ifdef HAVE_PYROWAVE
+   SETTING_ARRAY("pyrowave_device_name", settings->arrays.pyrowave_device_name, false, NULL, true);
+#endif
    /* Arrays */
    SETTING_ARRAY("audio_driver",                 settings->arrays.audio_driver, false, NULL, true);
 #ifdef HAVE_COMPANION_WIMP
@@ -2194,6 +2197,9 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("core_updater_buildbot_cores_url",  settings->paths.network_buildbot_url, false, NULL, true);
    SETTING_PATH("core_updater_buildbot_assets_url", settings->paths.network_buildbot_assets_url, false, NULL, true);
    SETTING_PATH("libretro_directory",            settings->paths.directory_libretro, false, NULL, false);
+#ifdef HAVE_PYROWAVE
+   SETTING_PATH("pyrowave_shader_directory", settings->paths.directory_pyrowave_shaders, false, NULL, true);
+#endif
    SETTING_PATH("core_options_path",             settings->paths.path_core_options, false, NULL, true);
    SETTING_PATH("libretro_info_path",            settings->paths.path_libretro_info, false, NULL, true);
    SETTING_PATH("playlist_directory",            settings->paths.directory_playlist, true, NULL, true);

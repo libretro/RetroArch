@@ -60,10 +60,23 @@ jobs:
           key: ${{ steps.apt.outputs.key }}
       - name: Build the source frontend and independent fixtures
         run: |
-          ./configure --enable-pyrowave --enable-vulkan --enable-x11 --enable-opengl --enable-opengl_core --disable-menu --disable-qt --disable-wayland --disable-ffmpeg --disable-cheevos --disable-discord --disable-ssl --disable-sdl2 --disable-sdl --disable-alsa --disable-pulse --disable-jack --disable-oss --disable-udev --disable-dbus
+          ./configure --enable-pyrowave --enable-vulkan --enable-x11 --enable-opengl --enable-opengl_core --enable-menu --enable-rgui --disable-qt --disable-wayland --disable-ffmpeg --disable-cheevos --disable-discord --disable-ssl --disable-sdl2 --disable-sdl --disable-alsa --disable-pulse --disable-jack --disable-oss --disable-udev --disable-dbus
           make -j2 GL_DEBUG=1
           make -C samples/gfx/pyrowave_session frontend-fixtures
           python3 tools/pyrowave_shaders.py --output "$RUNNER_TEMP/pyrowave-shaders/rpyrowave_shaders.h" --export-spirv "$RUNNER_TEMP/pyrowave-shaders" --export-glsl "$RUNNER_TEMP/pyrowave-shaders"
+      - name: PyroWave built-in menus, LAN opt-in and receive consent
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          xvfb-run -a python3 samples/gfx/pyrowave_session/lan_menu_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-lan-menu" --backend glcore
+          xvfb-run -a python3 samples/gfx/pyrowave_session/lan_menu_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-lan-menu-threaded" --backend glcore --threaded --record-driver nvenc
+      - name: Preserve PyroWave LAN menu diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyrowave-lan-menu-diagnostics
+          path: ${{ runner.temp }}/pyrowave-lan-menu*
+          if-no-files-found: ignore
       - name: Exercise actual GPU capture, PCM, threaded retirement and peer abort
         shell: bash
         run: |

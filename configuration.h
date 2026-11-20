@@ -761,6 +761,9 @@ typedef struct settings
       bool video_disable_composition;
       bool video_post_filter_record;
       bool video_gpu_record;
+#ifdef HAVE_PYROWAVE
+      bool pyrowave_discovery_enable;
+#endif
       bool video_record_allow_frame_drop;
       bool video_record_game_only;
       bool video_record_hw_encoder;
@@ -1478,6 +1481,9 @@ typedef struct settings
       char cloud_sync_nfs_subdir[PATH_MAX_LENGTH];
 #endif
 #endif
+#ifdef HAVE_PYROWAVE
+      char pyrowave_device_name[64];
+#endif
 } arrays;
 
    struct
@@ -1522,6 +1528,9 @@ typedef struct settings
       char directory_runtime_log[DIR_MAX_LENGTH];
       char directory_core_assets[DIR_MAX_LENGTH];
       char directory_assets[DIR_MAX_LENGTH];
+#ifdef HAVE_PYROWAVE
+      char directory_pyrowave_shaders[DIR_MAX_LENGTH];
+#endif
       char directory_dynamic_wallpapers[DIR_MAX_LENGTH];
       char directory_thumbnails[DIR_MAX_LENGTH];
       char directory_menu_config[DIR_MAX_LENGTH];

@@ -4,18 +4,26 @@ on:
   push:
     branches: [master]
     paths:
-      - 'libretro-common/net/net_mdns.c'
-      - 'libretro-common/include/net/net_mdns.h'
+      - 'libretro-common/net/net_mdns*.c'
+      - 'libretro-common/include/net/net_mdns*.h'
       - 'libretro-common/include/boolean.h'
       - 'libretro-common/samples/net/mdns/**'
       - '.github/workflows/mdns.yml'
+      - 'record/*pyrowave*'
+      - 'record/drivers/record_pyrowave.c'
+      - 'configuration.h'
+      - 'msg_hash.h'
   pull_request:
     paths:
-      - 'libretro-common/net/net_mdns.c'
-      - 'libretro-common/include/net/net_mdns.h'
+      - 'libretro-common/net/net_mdns*.c'
+      - 'libretro-common/include/net/net_mdns*.h'
       - 'libretro-common/include/boolean.h'
       - 'libretro-common/samples/net/mdns/**'
       - '.github/workflows/mdns.yml'
+      - 'record/*pyrowave*'
+      - 'record/drivers/record_pyrowave.c'
+      - 'configuration.h'
+      - 'msg_hash.h'
 
 permissions:
   contents: read
@@ -52,7 +60,17 @@ jobs:
           cl /nologo /TC /O2 /W3 /WX /DHAVE_MDNS /D_CRT_SECURE_NO_WARNINGS /I..\..\..\include net_mdns_test.c ..\..\..\net\net_mdns.c /Fe:net_mdns_test.exe
           if errorlevel 1 exit /b 1
           if not exist obj mkdir obj
-          cl /nologo /TC /O2 /W3 /WX /DHAVE_MDNS /D_CRT_SECURE_NO_WARNINGS /I..\..\..\include discovery.c ..\..\..\net\net_mdns.c /Fe:obj\mdns_discovery.exe /link ws2_32.lib
+          cl /nologo /TC /O2 /W3 /WX /DHAVE_MDNS /D_CRT_SECURE_NO_WARNINGS /I..\..\..\include discovery.c ..\..\..\net\net_mdns.c ..\..\..\net\net_mdns_socket.c ..\..\..\net\net_compat.c ..\..\..\compat\compat_strl.c /Fe:obj\mdns_discovery.exe /link ws2_32.lib
+          if errorlevel 1 exit /b 1
+      - name: Compile embedded LAN host and consent controller as MSVC C
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set VSPATH=%%i
+          if not defined VSPATH exit /b 1
+          call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.arch }}
+          if errorlevel 1 exit /b 1
+          if not exist msvc-lan-check mkdir msvc-lan-check
+          cl /nologo /TC /W4 /WX /O2 /DHAVE_OPENGL_CORE /DHAVE_THREADS /DHAVE_PYROWAVE /DHAVE_MDNS /DHAVE_D3D12 /DHAVE_VULKAN /DHAVE_CONFIGFILE /Dsmall=char /Dhyper=__int64 /D_CRT_SECURE_NO_WARNINGS /external:env:INCLUDE /external:Igfx/include /external:W0 /I. /Ilibretro-common/include /c record/record_pyrowave_lan.c record/record_pyrowave_receiver.c record/drivers/record_pyrowave.c /Fomsvc-lan-check\
           if errorlevel 1 exit /b 1
       - name: Run native engine regressions
         shell: cmd

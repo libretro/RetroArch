@@ -1810,6 +1810,12 @@ RECORDING
 #include "../record/record_pyrowave_source_d3d12.c"
 #include "../record/drivers/record_pyrowave.c"
 #include "../record/record_pyrowave_receiver.c"
+#ifndef HAVE_MDNS
+#define HAVE_MDNS 1
+#endif
+#include "../libretro-common/net/net_mdns.c"
+#include "../libretro-common/net/net_mdns_socket.c"
+#include "../record/record_pyrowave_lan.c"
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGLES3)
 #include "../record/record_pyrowave_gl.c"
 #ifdef HAVE_OPENGL_CORE

@@ -95,6 +95,10 @@
 #include "../audio/audio_driver.h"
 #include "../midi_driver.h"
 #include "../record/record_driver.h"
+#ifdef HAVE_PYROWAVE
+#include "../record/record_pyrowave_lan.h"
+#include "../record/record_pyrowave_receiver.h"
+#endif
 #include "../msg_hash_lbl_str.h"
 #ifdef __MACH__
 #include <TargetConditionals.h>
@@ -5157,6 +5161,11 @@ static int menu_displaylist_parse_load_content_settings(
       }
 #endif
 
+#ifdef HAVE_PYROWAVE
+      if (menu_entries_append(list, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_DEVICES),
+               MENU_ENUM_LABEL_PYROWAVE_DEVICES_STR, MENU_ENUM_LABEL_PYROWAVE_DEVICES,
+               MENU_SETTING_ACTION, 0, 0, NULL)) count++;
+#endif
       if (string_is_not_equal(settings->arrays.record_driver, "null"))
       {
          recording_state_t *recording_st = recording_state_get_ptr();
@@ -12452,6 +12461,41 @@ unsigned menu_displaylist_build_list(
                         false) == 0)
                   count++;
             }
+#ifdef HAVE_PYROWAVE
+            {
+               static const menu_displaylist_build_info_t lan_settings[] = {
+                  {MENU_ENUM_LABEL_PYROWAVE_DISCOVERY_ENABLE, PARSE_ONLY_BOOL},
+                  {MENU_ENUM_LABEL_PYROWAVE_DEVICE_NAME, PARSE_ONLY_STRING},
+                  {MENU_ENUM_LABEL_PYROWAVE_SHADER_DIRECTORY, PARSE_ONLY_DIR}
+               };
+               size_t peer_index;
+               for (peer_index = 0; peer_index < ARRAY_SIZE(lan_settings); peer_index++)
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, lan_settings[peer_index].enum_idx,
+                           lan_settings[peer_index].parse_type, false) == 0) count++;
+               if (record_pyrowave_receiver_incoming())
+               {
+                  if (menu_entries_append(list, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_ACCEPT),
+                           MENU_ENUM_LABEL_PYROWAVE_ACCEPT_STR, MENU_ENUM_LABEL_PYROWAVE_ACCEPT,
+                           MENU_SETTING_ACTION, 0, 0, NULL)) count++;
+                  if (menu_entries_append(list, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_DECLINE),
+                           MENU_ENUM_LABEL_PYROWAVE_DECLINE_STR, MENU_ENUM_LABEL_PYROWAVE_DECLINE,
+                           MENU_SETTING_ACTION, 0, 0, NULL)) count++;
+               }
+               if (record_pyrowave_receiver_active() || record_pyrowave_lan_sending())
+                  if (menu_entries_append(list, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_STOP),
+                           MENU_ENUM_LABEL_PYROWAVE_STOP_STR, MENU_ENUM_LABEL_PYROWAVE_STOP,
+                           MENU_SETTING_ACTION, 0, 0, NULL)) count++;
+               for (peer_index = 0; peer_index < record_pyrowave_lan_count(); peer_index++)
+               {
+                  const record_pyrowave_lan_peer_t *peer = record_pyrowave_lan_peer(peer_index);
+                  char text[160];
+                  if (!peer) continue;
+                  snprintf(text, sizeof(text), "%s %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_SEND), peer->name);
+                  if (menu_entries_append(list, text, peer->key, MENU_ENUM_LABEL_PYROWAVE_SEND,
+                           MENU_SETTING_ACTION, 0, 0, NULL)) count++;
+               }
+            }
+#endif
          }
          break;
       case DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST:

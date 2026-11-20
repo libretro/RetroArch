@@ -401,6 +401,7 @@ install: $(TARGET)
 		if test $(HAVE_OZONE) = 1; then \
 			cp -r media/assets/ozone/ $(DESTDIR)$(ASSETS_DIR)/assets; \
 		fi; \
+		if test -d media/assets/pyrowave; then cp -r media/assets/pyrowave/ $(DESTDIR)$(ASSETS_DIR)/assets; fi; \
 		cp media/assets/COPYING $(DESTDIR)$(DOC_DIR)/COPYING.assets; \
 		echo "Asset copying done."; \
 	fi
@@ -550,3 +551,11 @@ endif
 
 print-%:
 	@echo '$*=$($*)'
+
+# Optional distribution assets for embedded PyroWave. Requires the shader tools
+# named in tools/pyrowave_shaders.py; normal frontend builds do not need them.
+PYROWAVE_ASSET_DIR ?= media/assets/pyrowave
+PYTHON ?= python3
+pyrowave-assets:
+	$(PYTHON) tools/pyrowave_shaders.py --output $(OBJDIR)/pyrowave/rpyrowave_shaders.h --export-glsl $(PYROWAVE_ASSET_DIR) --export-spirv $(PYROWAVE_ASSET_DIR) --export-hlsl $(PYROWAVE_ASSET_DIR)
+.PHONY: pyrowave-assets

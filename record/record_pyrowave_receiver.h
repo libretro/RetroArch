@@ -12,6 +12,11 @@ struct video_frame_info;
 /* Main-thread frontend service. start() copies a connection-file path and
  * queues cold setup; the selected core remains loaded throughout playback. */
 bool record_pyrowave_receiver_start(const char *path);
+/* Menu listener: keep the loaded core running until explicit consent. */
+bool record_pyrowave_receiver_listen(const char *directory);
+unsigned record_pyrowave_receiver_port(void);
+bool record_pyrowave_receiver_incoming(void);
+bool record_pyrowave_receiver_consent(bool accept);
 bool record_pyrowave_receiver_active(void);
 bool record_pyrowave_receiver_reset(void);
 bool record_pyrowave_receiver_frame(void);

@@ -234,6 +234,7 @@ bool recording_gpu_reset_pending(void);
  * GPU poll applies the reinit once, or drops it during content/quit teardown. */
 bool recording_gpu_defer_reinit(int flags);
 void recording_gpu_reinit_poll(void);
+bool recording_gpu_reinit_pending(void);
 bool recording_gpu_defer_start(const record_driver_t *driver);
 bool recording_gpu_cancel_start(void);
 RETRO_END_DECLS

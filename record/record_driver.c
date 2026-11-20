@@ -48,6 +48,7 @@
 #ifdef HAVE_PYROWAVE
 #include "drivers/record_pyrowave.h"
 #include "../record/record_pyrowave_receiver.h"
+#include "record_pyrowave_lan.h"
 #endif
 
 static recording_state_t recording_state = {0};
@@ -133,6 +134,9 @@ void recording_gpu_poll(void)
    record_vulkan_poll();
 #endif
    recording_gpu_reinit_poll();
+#ifdef HAVE_PYROWAVE
+   record_pyrowave_lan_poll((uint64_t)runloop_state_get_ptr()->iter_time / 1000);
+#endif
 }
 void recording_start_frame(void)
 {
@@ -155,6 +159,7 @@ void recording_start_frame(void)
 void recording_gpu_stop(void)
 {
 #ifdef HAVE_PYROWAVE
+   record_pyrowave_lan_stop();
    record_pyrowave_stop();
    record_pyrowave_receiver_stop();
 #endif
@@ -340,7 +345,11 @@ static void find_record_driver(void)
 static bool record_driver_init(
       const struct record_params *params)
 {
-   find_record_driver();
+#ifdef HAVE_PYROWAVE
+   if (record_pyrowave_lan_sending()) recording_state.driver = &record_pyrowave;
+   else
+#endif
+      find_record_driver();
    if (!recording_state.driver)
       return false;
 
@@ -438,11 +447,17 @@ bool recording_init(void)
       video_driver_pix_fmt              = video_st->pix_fmt;
    recording_state_t *recording_st      = &recording_state;
    bool recording_enable                = recording_st->enable;
-   bool nvenc_native = string_is_equal(settings->arrays.record_driver,"nvenc");
-   bool metal_native = string_is_equal(settings->arrays.record_driver,"metal");
-   bool mc_native = string_is_equal(settings->arrays.record_driver,"mediacodec");
-   bool vk_native = string_is_equal(settings->arrays.record_driver, "vulkan");
-   bool pyrowave_native = string_is_equal(settings->arrays.record_driver, "pyrowave");
+#ifdef HAVE_PYROWAVE
+   const char *lan_target = record_pyrowave_lan_target();
+#else
+   const char *lan_target = NULL;
+#endif
+   const char *capture_driver = lan_target ? "pyrowave" : settings->arrays.record_driver;
+   bool nvenc_native = string_is_equal(capture_driver, "nvenc");
+   bool metal_native = string_is_equal(capture_driver, "metal");
+   bool mc_native = string_is_equal(capture_driver, "mediacodec");
+   bool vk_native = string_is_equal(capture_driver, "vulkan");
+   bool pyrowave_native = string_is_equal(capture_driver, "pyrowave");
    bool gpu_native = nvenc_native || metal_native || mc_native || vk_native || pyrowave_native;
    bool menu_source = false;
 #ifdef HAVE_RECORD_MEDIACODEC
@@ -453,6 +468,12 @@ bool recording_init(void)
       return false;
 #ifdef HAVE_PYROWAVE
    if (record_pyrowave_receiver_active()) return false;
+   if (record_pyrowave_receiver_pending())
+   {
+      record_pyrowave_receiver_stop();
+      recording_st->start_pending = true;
+      return true;
+   }
 #endif
 
    if (content_load_state_in_progress(NULL)
@@ -530,7 +551,9 @@ bool recording_init(void)
          (float)av_info->timing.fps,
          (float)av_info->timing.sample_rate);
 
-   if (*recording_st->path)
+   if (lan_target)
+      strlcpy(output, lan_target, sizeof(output));
+   else if (*recording_st->path)
       strlcpy(output, recording_st->path, sizeof(output));
    else
    {
@@ -663,6 +686,8 @@ bool recording_init(void)
             settings->uints.video_record_quality;
       }
    }
+
+   if (lan_target) params.config = NULL;
 
    if (gpu_native)
    {

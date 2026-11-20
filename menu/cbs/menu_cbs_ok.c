@@ -67,6 +67,10 @@
 #include "../../core_info.h"
 #include "../../audio/audio_driver.h"
 #include "../../record/record_driver.h"
+#ifdef HAVE_PYROWAVE
+#include "../../record/record_pyrowave_lan.h"
+#include "../../record/record_pyrowave_receiver.h"
+#endif
 #include "../../frontend/frontend_driver.h"
 #include "../../defaults.h"
 #include "../../core_option_manager.h"
@@ -2113,6 +2117,9 @@ static const ok_dl_map_t ok_dl_map[] = {
    { MENU_ENUM_LABEL_PLAYLIST_SETTINGS, ACTION_OK_DL_PLAYLIST_SETTINGS_LIST },
    { MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST, ACTION_OK_DL_PLAYLIST_MANAGER_LIST },
    { MENU_ENUM_LABEL_RECORDING_SETTINGS, ACTION_OK_DL_RECORDING_SETTINGS_LIST },
+#ifdef HAVE_PYROWAVE
+   { MENU_ENUM_LABEL_PYROWAVE_DEVICES, ACTION_OK_DL_RECORDING_SETTINGS_LIST },
+#endif
    { MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS, ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST },
    { MENU_ENUM_LABEL_INPUT_CONTROLLERS, ACTION_OK_DL_INPUT_CONTROLLERS_LIST },
    { MENU_ENUM_LABEL_INPUT_HEADSET_CONTROLS, ACTION_OK_DL_INPUT_HEADSET_CONTROLS_LIST },
@@ -5154,6 +5161,38 @@ static int action_ok_start_recording(const char *path,
    command_event(CMD_EVENT_RECORD_INIT, NULL);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
+
+#ifdef HAVE_PYROWAVE
+static int action_ok_pyrowave_send(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   (void)path; (void)type; (void)idx; (void)entry_idx;
+   if (!record_pyrowave_lan_send(label)) return -1;
+   return generic_action_ok_command(CMD_EVENT_RESUME);
+}
+static int action_ok_pyrowave_accept(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   (void)path; (void)label; (void)type; (void)idx; (void)entry_idx;
+   if (!record_pyrowave_receiver_consent(true)) return -1;
+   return generic_action_ok_command(CMD_EVENT_RESUME);
+}
+static int action_ok_pyrowave_decline(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   (void)path; (void)label; (void)type; (void)idx; (void)entry_idx;
+   return record_pyrowave_receiver_consent(false) ? 0 : -1;
+}
+static int action_ok_pyrowave_stop(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   (void)path; (void)label; (void)type; (void)idx; (void)entry_idx;
+   if (record_pyrowave_lan_sending()) command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+   record_pyrowave_lan_stop();
+   record_pyrowave_receiver_stop();
+   return 0;
+}
+#endif
 
 static int action_ok_start_streaming(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -10156,6 +10195,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       } temp_ok_list_t;
 
       static const temp_ok_list_t ok_list[] = {
+#ifdef HAVE_PYROWAVE
+         {MENU_ENUM_LABEL_PYROWAVE_SEND, action_ok_pyrowave_send},
+         {MENU_ENUM_LABEL_PYROWAVE_ACCEPT, action_ok_pyrowave_accept},
+         {MENU_ENUM_LABEL_PYROWAVE_DECLINE, action_ok_pyrowave_decline},
+         {MENU_ENUM_LABEL_PYROWAVE_STOP, action_ok_pyrowave_stop},
+#endif
          {MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING,          action_ok_start_recording},
          {MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING,          action_ok_start_streaming},
          {MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING,           action_ok_stop_recording},

@@ -48,6 +48,9 @@
 #endif
 
 #include "../audio/audio_driver.h"
+#ifdef HAVE_PYROWAVE
+#include "../record/record_pyrowave_lan.h"
+#endif
 
 #include "menu_driver.h"
 #include "menu_bind_trigger.h"
@@ -9543,6 +9546,21 @@ static void menu_driver_pump_pending(struct menu_state *menu_st,
    menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 }
 
+#ifdef HAVE_PYROWAVE
+static void menu_driver_pyrowave_refresh(struct menu_state *menu_st,
+      settings_t *settings)
+{
+   file_list_t *stack, *entries;
+   menu_st->frame_work &= ~MENU_FRAME_WORK_PYROWAVE;
+   if (!menu_st->entries.list) return;
+   stack = MENU_LIST_GET(menu_st->entries.list, 0);
+   entries = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+   if (stack && stack->size && entries &&
+         !strcmp(stack->list[stack->size - 1].label, MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST_STR))
+      menu_driver_displaylist_push(menu_st, settings, entries, stack);
+}
+#endif
+
 int menu_driver_media_startup_token(void)
 {
    return retro_atomic_load_acquire_int(&menu_media_startup);
@@ -9838,6 +9856,10 @@ static VIDEO_NOINLINE void menu_driver_frame_work(struct menu_state *menu_st,
       if (!playlist_init_cached_pending())
          menu_st->frame_work &= ~MENU_FRAME_WORK_PLAYLIST;
    }
+#ifdef HAVE_PYROWAVE
+   if (menu_st->frame_work & MENU_FRAME_WORK_PYROWAVE)
+      menu_driver_pyrowave_refresh(menu_st, settings);
+#endif
    if (menu_st->frame_work & MENU_FRAME_WORK_PAD_FIND)
       menu_driver_mark_pressed_pads(menu_st, p_disp, current_time);
 }

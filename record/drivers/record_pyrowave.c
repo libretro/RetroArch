@@ -21,6 +21,7 @@
 #include "../../audio/audio_driver.h"
 #include "../../record/record_pyrowave_receiver.h"
 #include "../../configuration.h"
+#include "../record_pyrowave_lan.h"
 #include "../../command.h"
 #include "../../verbosity.h"
 
@@ -220,13 +221,17 @@ static bool record_pyrowave_open_codec(const struct record_params *params,
    bool audio = true, ok = false;
    memset(&cfg, 0, sizeof(cfg));
    c->config.maximum_frame_bytes = 1048576;
-   if (!params->config || !*params->config) return false;
-   file = config_file_new_from_path_to_string(params->config);
-   if (!file) return false;
-   if (!config_get_array(file, "pyrowave_shader_directory", directory, sizeof(directory))) goto done;
-   if (config_get_entry(file, "pyrowave_maximum_bytes")
+   file = NULL;
+   if (params->config && *params->config)
+   {
+      file = config_file_new_from_path_to_string(params->config);
+      if (!file) return false;
+      if (!config_get_array(file, "pyrowave_shader_directory", directory, sizeof(directory))) goto done;
+   }
+   else if (!record_pyrowave_lan_directory(directory, sizeof(directory))) return false;
+   if (file && config_get_entry(file, "pyrowave_maximum_bytes")
          && !config_get_uint(file, "pyrowave_maximum_bytes", &c->config.maximum_frame_bytes)) goto done;
-   if (config_get_entry(file, "audio_enable") && !config_get_bool(file, "audio_enable", &audio)) goto done;
+   if (file && config_get_entry(file, "audio_enable") && !config_get_bool(file, "audio_enable", &audio)) goto done;
    c->config.maximum_audio_frames = audio ? 1024 : 0;
    c->config.audio_rate = audio ? (uint32_t)params->samplerate : 0;
    c->config.audio_channels = audio ? params->channels : 0;
@@ -246,7 +251,7 @@ static bool record_pyrowave_open_codec(const struct record_params *params,
    c->setup.directory = c->directory; ok = true;
 
 done:
-   config_file_free(file);
+   if (file) config_file_free(file);
    return ok;
 }
 
@@ -263,7 +268,7 @@ static void *record_pyrowave_init(const struct record_params *params)
    bool listen;
    if (!params || record_pyrowave_active || record_pyrowave_retired
          || !params->filename || !params->video_gpu_record || audio_driver_has_callback()
-         || config_get_ptr()->bools.video_record_game_only
+         || (config_get_ptr()->bools.video_record_game_only && !record_pyrowave_lan_sending())
          || !video_driver_get_device(&device) || !record_pyrowave_supported(device.api)
          || !(params->samplerate >= 1.0 && params->samplerate <= 384000.0)
          || params->samplerate != floor(params->samplerate)) return NULL;

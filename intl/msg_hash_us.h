@@ -15177,7 +15177,15 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
 MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #include "../settings/settings_def_recording_video.h"
+#undef S_STRING
+#undef S_DIR
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -40085,4 +40093,34 @@ MSG_HASH(
 MSG_HASH(
    MSG_CORE_FIRMWARE_SUPPLY_MANUALLY,
    "This firmware must be supplied manually."
+   )
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PYROWAVE_DEVICES,
+   "PyroWave Devices"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PYROWAVE_SEND,
+   "Send to"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PYROWAVE_ACCEPT,
+   "Accept Incoming PyroWave Stream"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PYROWAVE_DECLINE,
+   "Decline Incoming PyroWave Stream"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PYROWAVE_STOP,
+   "Stop PyroWave Streaming"
+   )
+MSG_HASH(
+   MSG_PYROWAVE_INCOMING,
+   "Incoming PyroWave stream request. Open Settings > Recording to accept or decline."
+   )
+
+MSG_HASH(
+   MSG_PYROWAVE_SHADERS_MISSING,
+   "PyroWave shaders are missing. Set the PyroWave Shader Directory in Settings > Recording."
    )

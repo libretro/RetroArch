@@ -100,3 +100,11 @@ availability is a host/network property.
 
 Protocol references: [RFC 6762](https://www.rfc-editor.org/rfc/rfc6762) and
 [RFC 6763](https://www.rfc-editor.org/rfc/rfc6763).
+
+The `discovery` example now uses the reusable `net_mdns_socket` adapter, so
+`make demo` compile-checks the same nonblocking transport that RetroArch uses.
+The adapter selects one primary IPv4 interface, validates received TTL 255,
+and handles at most eight received datagrams per poll. The protocol engine
+remains socket-neutral and resolves both A and AAAA records. Applications
+that require multiple interfaces can create one adapter per explicit address;
+IPv6 multicast transport is not provided by this adapter.

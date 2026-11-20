@@ -91,7 +91,8 @@ enum menu_frame_work
    MENU_FRAME_WORK_PLAYLIST = (1 << 0),
    /* presses to look for: two connected controllers show one name,
     * or did at the last frame */
-   MENU_FRAME_WORK_PAD_FIND = (1 << 1)
+   MENU_FRAME_WORK_PAD_FIND = (1 << 1),
+   MENU_FRAME_WORK_PYROWAVE = (1 << 2)
 };
 
 #define MENU_PAD_MARKED(menu_st, slot) ((slot) < MAX_INPUT_DEVICES \

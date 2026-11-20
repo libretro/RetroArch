@@ -101,6 +101,7 @@ typedef struct pyrowave_receiver_client
    bool audio_async, audio_bound, audio_unbinding, audio_reported, audio_received;
    bool target_valid, future, video_input_end, tail;
    bool audio_clock_known;
+   bool consent_required, approved;
 } pyrowave_receiver_client_t;
 
 static pyrowave_receiver_client_t *pyrowave_receiver_client;
@@ -390,7 +391,7 @@ static bool pyrowave_receiver_control_post(pyrowave_receiver_client_t *c, unsign
    return true;
 }
 
-static bool pyrowave_receiver_open(const char *path)
+static bool pyrowave_receiver_open(const char *path, const char *directory)
 {
    pyrowave_receiver_client_t *c;
    config_file_t *file;
@@ -400,11 +401,12 @@ static bool pyrowave_receiver_open(const char *path)
    size_t length;
    bool listen, ok = false;
    uint16_t endian = 1;
-   if (!path || pyrowave_receiver_client || recording_gpu_pending()
+   if ((!path && !directory) || pyrowave_receiver_client || recording_gpu_pending()
          || recording_state_get_ptr()->enable || *(const uint8_t*)&endian != 1) return false;
    c = (pyrowave_receiver_client_t*)calloc(1, sizeof(*c));
    if (!c) return false;
-   c->audio_async = pyrowave_receiver_async_audio;
+   c->audio_async = path ? pyrowave_receiver_async_audio : false;
+   c->consent_required = directory != NULL;
    retro_atomic_int_init(&c->audio_done, 1);
    retro_atomic_int_init(&c->audio_end, 0); retro_atomic_int_init(&c->audio_failed, 0);
    retro_atomic_int_init(&c->clock_sequence, 0); retro_atomic_int_init(&c->clock_low, 0);
@@ -413,12 +415,21 @@ static bool pyrowave_receiver_open(const char *path)
    retro_atomic_int_init(&c->failed, 0); retro_atomic_int_init(&c->render_done, 0);
    retro_atomic_int_init(&c->io_done, 0); retro_atomic_int_init(&c->video_end, 0);
    retro_atomic_int_init(&c->recovery, 0);
-   file = config_file_new_from_path_to_string(path);
-   if (!file) goto end;
-   ok = config_get_array(file, "pyrowave_url", url, sizeof(url))
-      && config_get_array(file, "pyrowave_shader_directory", c->directory, sizeof(c->directory));
-   config_file_free(file);
-   if (!ok) goto end;
+   if (directory)
+   {
+      if (!*directory || strlen(directory) >= sizeof(c->directory)) goto end;
+      strcpy(c->directory, directory);
+      strcpy(url, "rpws-listen://0.0.0.0:0");
+   }
+   else
+   {
+      file = config_file_new_from_path_to_string(path);
+      if (!file) goto end;
+      ok = config_get_array(file, "pyrowave_url", url, sizeof(url))
+         && config_get_array(file, "pyrowave_shader_directory", c->directory, sizeof(c->directory));
+      config_file_free(file);
+      if (!ok) goto end;
+   }
    ok = false;
    listen = !strncmp(url, "rpws-listen://", 14);
    if (!listen && strncmp(url, "rpws://", 7)) goto end;
@@ -1052,7 +1063,7 @@ void record_pyrowave_receiver_poll(void)
       pyrowave_receiver_start_pending = false;
       pyrowave_receiver_async_audio = settings->bools.audio_enable
          && strcmp(settings->arrays.audio_driver, "null") != 0;
-      if (!pyrowave_receiver_open(pyrowave_receiver_path))
+      if (!pyrowave_receiver_open(pyrowave_receiver_path, NULL))
       {
          RARCH_ERR("[PyroWave] Receiver connection failed.\n");
          pyrowave_receiver_owned = false;
@@ -1079,6 +1090,8 @@ void record_pyrowave_receiver_poll(void)
    }
    video_thread_async_poll();
    state = record_pyrowave_dispatch_state(c->io, NULL);
+   if (c->consent_required && !c->approved && state <= RECORD_PYROWAVE_DISPATCH_CONFIGURING
+         && !retro_atomic_load_acquire_int(&c->stop)) return;
    if (!c->configured && !c->control_pending && state == RECORD_PYROWAVE_DISPATCH_CONFIGURING
          && !retro_atomic_load_acquire_int(&c->stop))
    {
@@ -1171,6 +1184,7 @@ void record_pyrowave_receiver_poll(void)
          ) { pyrowave_receiver_control_post(c, 2); return; }
    {
       bool failed = retro_atomic_load_acquire_int(&c->failed) != 0;
+      bool presented = pyrowave_receiver_owned;
       if (c->audio_received)
          RARCH_LOG("[PyroWave] Device-clock audio %s.\n",
                !failed && retro_atomic_load_acquire_int(&c->audio_end) ? "drained" : "cancelled");
@@ -1188,7 +1202,7 @@ void record_pyrowave_receiver_poll(void)
          retro_atomic_store_release_int(&pyrowave_receiver_audio_enabled, 0);
          audio_driver_request_presentation(false);
          /* Restore the existing frontend session; never unload its core. */
-         if (!runloop_state_get_ptr()->quit_pending
+         if (presented && !runloop_state_get_ptr()->quit_pending
                && !runloop_state_get_ptr()->content_closing)
          {
             int flags = DRIVER_VIDEO_AND_INPUT_MASK | DRIVER_AUDIO_MASK;
@@ -1351,5 +1365,67 @@ bool record_pyrowave_receiver_audio_run(void)
    return offered != audio->sink_offered_raw || accepted != audio->sink_accepted;
 #else
    return false;
+#endif
+}
+
+bool record_pyrowave_receiver_listen(const char *directory)
+{
+#ifdef PYROWAVE_RECEIVER_GPU
+   if (record_pyrowave_receiver_active()) return false;
+   return pyrowave_receiver_open(NULL, directory);
+#else
+   (void)directory; return false;
+#endif
+}
+
+unsigned record_pyrowave_receiver_port(void)
+{
+#ifdef PYROWAVE_RECEIVER_GPU
+   pyrowave_receiver_client_t *c = pyrowave_receiver_client;
+   struct sockaddr_storage address;
+   size_t bytes = sizeof(address);
+   if (c && c->consent_required && !retro_atomic_load_acquire_int(&c->stop)
+         && record_pyrowave_dispatch_bound_address(c->io, &address, &bytes)
+         && address.ss_family == AF_INET)
+      return ntohs(((struct sockaddr_in*)&address)->sin_port);
+#endif
+   return 0;
+}
+
+bool record_pyrowave_receiver_incoming(void)
+{
+#ifdef PYROWAVE_RECEIVER_GPU
+   pyrowave_receiver_client_t *c = pyrowave_receiver_client;
+   return c && c->consent_required && !c->approved
+      && !retro_atomic_load_acquire_int(&c->stop)
+      && record_pyrowave_dispatch_state(c->io, NULL) == RECORD_PYROWAVE_DISPATCH_CONFIGURING;
+#else
+   return false;
+#endif
+}
+
+bool record_pyrowave_receiver_consent(bool accept)
+{
+#ifdef PYROWAVE_RECEIVER_GPU
+   pyrowave_receiver_client_t *c = pyrowave_receiver_client;
+   settings_t *settings = config_get_ptr();
+   if (!record_pyrowave_receiver_incoming()) return false;
+   if (!accept)
+   {
+      record_pyrowave_dispatch_reject(c->io, RPYROWAVE_STREAM_REJECTED);
+      record_pyrowave_receiver_stop();
+      return true;
+   }
+   pyrowave_receiver_saved_av = video_state_get_ptr()->av_info;
+   pyrowave_receiver_owned = true; c->approved = true;
+   c->audio_async = settings->bools.audio_enable && strcmp(settings->arrays.audio_driver, "null") != 0;
+   retro_atomic_store_release_int(&pyrowave_receiver_audio_enabled, 1);
+   audio_driver_request_presentation(true);
+   c->av_updating = true;
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   c->av_updating = false;
+   return true;
+#else
+   (void)accept; return false;
 #endif
 }

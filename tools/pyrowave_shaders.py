@@ -44,6 +44,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--export-glsl", type=Path,
                         help="Also write desktop .comp and .es.comp files for native tests")
+    parser.add_argument("--export-hlsl", type=Path, help="Also write native Direct3D compute sources")
     parser.add_argument("--export-msl", type=Path, help="Also write Metal 2.1 compute sources")
     parser.add_argument("--export-spirv", type=Path, help="Also write validated Vulkan modules")
     parser.add_argument("--metal-sdk", choices=("macosx", "iphoneos", "appletvos", "iphonesimulator", "appletvsimulator"),
@@ -113,6 +114,9 @@ def main():
             raise SystemExit("PyroWave shader assets differ: " + str(output))
     else:
         write_changed(output, data)
+        if args.export_hlsl:
+            for name in ("color", "dwt", "packet"):
+                write_changed(args.export_hlsl / (name + ".hlsl"), (sources / (name + ".hlsl")).read_bytes().replace(b"\r\n", b"\n"))
         if args.export_glsl:
             for name, data in exports:
                 write_changed(args.export_glsl / name, data)

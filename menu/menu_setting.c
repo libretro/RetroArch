@@ -118,6 +118,10 @@ void android_app_set_window_settings(bool notch_write_over,
 #include "../location_driver.h"
 #include "../network/cloud_sync_driver.h"
 #include "../record/record_driver.h"
+#ifdef HAVE_PYROWAVE
+#include "../record/record_pyrowave_lan.h"
+#include "../record/record_pyrowave_receiver.h"
+#endif
 #include "../tasks/tasks_internal.h"
 #if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO) && defined(HAVE_CONFIGFILE)
 #include <file/keychain.h>
@@ -11283,6 +11287,14 @@ static void general_write_handler(rarch_setting_t *setting)
 
    switch (setting->enum_idx)
    {
+#ifdef HAVE_PYROWAVE
+      case MENU_ENUM_LABEL_PYROWAVE_DEVICE_NAME:
+      case MENU_ENUM_LABEL_PYROWAVE_SHADER_DIRECTORY:
+         if (record_pyrowave_lan_sending()) command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+         record_pyrowave_lan_stop();
+         record_pyrowave_receiver_stop();
+         break;
+#endif
       case MENU_ENUM_LABEL_VIDEO_GPU_INDEX:
          video_driver_gpu_index_select(video_context_driver_get_api(),
                *setting->value.target.integer);
