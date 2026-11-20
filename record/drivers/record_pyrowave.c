@@ -97,6 +97,14 @@ static uintptr_t record_pyrowave_control_run(void *data,
          }
       }
 #endif
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+      if (c->api == VIDEO_DEVICE_D3D11)
+      {
+         result = record_pyrowave_source_d3d11_new(&c->source, &c->setup) ? 1 : 0;
+         if (result && !video_d3d11_pyrowave_source_attach(data))
+         { c->source.free(c->source.user); c->source.user = NULL; result = 0; }
+      }
+#endif
 #ifdef HAVE_RECORD_PYROWAVE_VULKAN
       if (c->api == VIDEO_DEVICE_VULKAN)
          result = record_pyrowave_source_vulkan_new(&c->source, &c->setup) ? 1 : 0;
@@ -139,6 +147,9 @@ static uintptr_t record_pyrowave_control_run(void *data,
    }
    else if (c->control_kind == RECORD_PYROWAVE_CONTROL_ABANDON)
    {
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+      if (c->api == VIDEO_DEVICE_D3D11) video_d3d11_pyrowave_source_detach(data);
+#endif
 #ifdef HAVE_RECORD_PYROWAVE_D3D12
       if (c->api == VIDEO_DEVICE_D3D12 && !c->detached)
       { video_d3d12_pyrowave_detach(data, c->source.user); c->detached = true; }
@@ -157,6 +168,9 @@ static uintptr_t record_pyrowave_control_run(void *data,
    }
    else
    {
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+      if (c->api == VIDEO_DEVICE_D3D11) video_d3d11_pyrowave_source_detach(data);
+#endif
 #ifdef HAVE_RECORD_PYROWAVE_D3D12
       if (c->api == VIDEO_DEVICE_D3D12 && !c->detached)
       { video_d3d12_pyrowave_detach(data, c->source.user); c->detached = true; }
@@ -247,6 +261,9 @@ static bool record_pyrowave_supported(unsigned api)
 {
 #ifdef HAVE_RECORD_PYROWAVE_GL
    if (api == VIDEO_DEVICE_OPENGL) return true;
+#endif
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+   if (api == VIDEO_DEVICE_D3D11) return true;
 #endif
 #ifdef HAVE_RECORD_PYROWAVE_D3D12
    if (api == VIDEO_DEVICE_D3D12) return true;
@@ -619,6 +636,25 @@ void record_pyrowave_gl_frame(void *data, unsigned format, unsigned full_dims,
 }
 #endif
 
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+void record_pyrowave_d3d11_frame(void *data, void *source, unsigned format, unsigned full_dims,
+      unsigned pos, unsigned dims, unsigned output_mode, uint64_t timestamp, uint64_t duration, bool capture)
+{
+   record_pyrowave_context_t *c = (record_pyrowave_context_t*)data;
+   int result;
+   if (!record_pyrowave_render_service(c) || !capture || c->api != VIDEO_DEVICE_D3D11) return;
+   if (!record_pyrowave_source_matches(c, format, full_dims, pos, dims, output_mode)) return;
+   result = record_pyrowave_source_d3d11_push(&c->source, source,
+         timestamp, duration, &c->last_ticket);
+   if (result == RECORD_GPU_QUEUE_ERROR)
+   {
+      if (c->source.quiesce) retro_atomic_store_release_int(&c->recovery, 1);
+      retro_atomic_store_release_int(&c->failed, 1); record_pyrowave_dispatch_cancel(c->job);
+   }
+   record_pyrowave_dispatch_notify(c->job);
+}
+#endif
+
 void record_pyrowave_d3d12_frame(void *data, void *commands, void *fence,
       uint64_t value, void *source, unsigned format, unsigned full_dims,
       unsigned pos, unsigned dims, unsigned output_mode, uint64_t timestamp, uint64_t duration, bool capture)
@@ -907,6 +943,10 @@ void record_pyrowave_failed(void *data) { (void)data; }
 bool record_pyrowave_pending(void) { return false; }
 bool record_pyrowave_defer_start(void) { return false; }
 bool record_pyrowave_cancel_start(void) { return false; }
+void record_pyrowave_d3d11_frame(void *c, void *view, unsigned format, unsigned full_dims,
+      unsigned pos, unsigned dims, unsigned mode, uint64_t pts, uint64_t duration, bool capture)
+{ (void)c; (void)view; (void)format; (void)full_dims; (void)pos; (void)dims; (void)mode;
+  (void)pts; (void)duration; (void)capture; }
 void record_pyrowave_d3d12_frame(void *c, void *commands, void *fence, uint64_t value,
       void *source, unsigned format, unsigned full_dims, unsigned pos, unsigned dims,
       unsigned output_mode, uint64_t timestamp, uint64_t duration, bool capture)

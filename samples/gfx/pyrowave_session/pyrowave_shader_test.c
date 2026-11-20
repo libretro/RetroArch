@@ -29,6 +29,13 @@ int main(void)
    unsigned i;
    for (i = 0; i < 6; i++)
    {
+#if defined(HAVE_D3D11) && !defined(HAVE_D3D12)
+      if (i < 3)
+      {
+         assert(!record_pyrowave_source_shader_available(names[i]));
+         continue;
+      }
+#endif
       assert(record_pyrowave_source_shader_available(names[i]));
       assert(record_pyrowave_source_shader(NULL, names[i], &first));
       assert(record_pyrowave_source_shader("", names[i], &second));

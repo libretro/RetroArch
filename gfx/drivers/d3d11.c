@@ -57,6 +57,8 @@
 
 #include "../common/menu_bloom.h"
 #include "../font_driver.h"
+#include "../../record/drivers/record_pyrowave.h"
+#include "../../record/record_pyrowave_receiver.h"
 #include "../common/win32_common.h"
 #include "../video_shader_parse.h"
 #include "../../verbosity.h"
@@ -602,6 +604,10 @@ typedef struct
    unsigned              retained_light;
    unsigned              retained_dark;
    DXGISwapChain         swapChain;
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+   D3D11ShaderResourceView pyrowave_capture;
+   retro_atomic_int_t pyrowave_format;
+#endif
    D3D11Device           device;
    D3D_FEATURE_LEVEL     supportedFeatureLevel;
    /* Planar textures and what converts them (d3d11_planar_load): the
@@ -2283,7 +2289,7 @@ static void d3d11_font_render_msg(
         - (int)roundf((1.0f - y) * height)
       : 0;
 
-   /* Base lx depends only on x and width — constant across lines. */
+   /* Base lx depends only on x and width â€” constant across lines. */
    base_lx = (int)roundf(x * win_w);
 
    /* Capacity check without strlen: scan the message once to
@@ -3711,7 +3717,7 @@ static bool d3d11_shader_load_step(void *data,
       return false;
    }
 
-   /* All passes compiled — install */
+   /* All passes compiled â€” install */
    RARCH_LOG("[D3D11] Deferred: finalizing...\n");
 
    d3d11->context->lpVtbl->Flush(d3d11->context);
@@ -4343,6 +4349,9 @@ static void d3d11_gfx_free(void* data)
 
    Release(d3d11->scissor_enabled);
    Release(d3d11->scissor_disabled);
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+   Release(d3d11->pyrowave_capture);
+#endif
    Release(d3d11->swapChain);
    /* Direct3D 11 puts off destroying what is released until the
     * context is flushed, and the context can outlive this driver (it
@@ -4494,6 +4503,9 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    desc.BufferDesc.RefreshRate.Denominator = 1;
 #endif
    desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+   desc.BufferUsage                       |= DXGI_USAGE_SHADER_INPUT;
+#endif
 #ifdef HAVE_WINDOW
    desc.OutputWindow                       = hwnd;
 #endif
@@ -4737,12 +4749,42 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
 #endif
 
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+   {
+      DXGI_SWAP_CHAIN_DESC actual;
+      if (SUCCEEDED(d3d11->swapChain->lpVtbl->GetDesc(d3d11->swapChain, &actual)))
+         retro_atomic_store_release_int(&d3d11->pyrowave_format, actual.BufferDesc.Format);
+   }
+#endif
    dxgiFactory->lpVtbl->Release(dxgiFactory);
    adapter->lpVtbl->Release(adapter);
    dxgiDevice->lpVtbl->Release(dxgiDevice);
 
    return true;
 }
+
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+bool video_d3d11_pyrowave_source_attach(void *data)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   D3D11Texture2D buffer = NULL;
+   HRESULT hr;
+   if (!d3d11 || d3d11->supportedFeatureLevel < D3D_FEATURE_LEVEL_11_0) return false;
+   if (d3d11->pyrowave_capture) return true;
+   hr = d3d11->swapChain->lpVtbl->GetBuffer(d3d11->swapChain, 0,
+         uuidof(ID3D11Texture2D), (void**)&buffer);
+   if (FAILED(hr)) return false;
+   hr = d3d11->device->lpVtbl->CreateShaderResourceView(d3d11->device,
+         (D3D11Resource)buffer, NULL, &d3d11->pyrowave_capture);
+   Release(buffer);
+   return SUCCEEDED(hr);
+}
+void video_d3d11_pyrowave_source_detach(void *data)
+{
+   d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   if (d3d11) { Release(d3d11->pyrowave_capture); d3d11->pyrowave_capture = NULL; }
+}
+#endif
 
 static void *d3d11_gfx_init(const video_info_t* video)
 {
@@ -4757,6 +4799,9 @@ static void *d3d11_gfx_init(const video_info_t* video)
 
    if (!d3d11)
       return NULL;
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+   retro_atomic_int_init(&d3d11->pyrowave_format, 0);
+#endif
 
 #ifdef HAVE_WINDOW
    win32_window_reset();
@@ -7726,12 +7771,25 @@ static bool d3d11_gfx_frame_body(
    /* Only use a back buffer when the shader's final pass format has LOWER
     * precision than the swapchain. Higher precision (e.g. RGBA16F shader
     * writing to a 10-bit HDR10 swapchain) is just a precision downsize
-    * that the hardware handles — no hidden HDR pass needed. */
+    * that the hardware handles â€” no hidden HDR pass needed. */
    DXGI_FORMAT swapchain_format   = d3d11->chain_formats[d3d11->chain_bit_depth];
    bool use_back_buffer           = shader_hdr_mode == 0
       || (back_buffer_format != swapchain_format
          && !(back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT
             && swapchain_format == DXGI_FORMAT_R10G10B10A2_UNORM));
+#endif
+
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+   D3D11ShaderResourceView pyrowave_view = NULL;
+   if (video_info->recording_pyrowave_receive)
+   {
+      static D3D11ShaderResourceView const none[D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT] = {NULL};
+      context->lpVtbl->PSSetShaderResources(context, 0, D3D11_COMMONSHADER_INPUT_RESOURCE_SLOT_COUNT, none);
+      pyrowave_view = record_pyrowave_receiver_d3d11_frame(video_info->recording_gpu,
+            &dims, !(d3d11->flags & D3D11_ST_FLAG_FRAME_DUPE_LOCK), video_info);
+      frame = pyrowave_view ? RETRO_HW_FRAME_BUFFER_VALID : NULL;
+      width = VIDEO_SCALE_W(dims); height = VIDEO_SCALE_H(dims);
+   }
 #endif
 
    /* The released frame's simulation ends where its Direct3D work
@@ -7784,9 +7842,12 @@ static bool d3d11_gfx_frame_body(
 
       if (d3d11->flags & D3D11_ST_FLAG_WAITABLE_SWAPCHAINS)
          swapchain_flags         |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+      video_d3d11_pyrowave_source_detach(d3d11);
+#endif
 
 #ifdef HAVE_DXGI_HDR
-      /* Unbind all render targets before ResizeBuffers —
+      /* Unbind all render targets before ResizeBuffers â€”
        * the debug layer requires no outstanding references
        * to back buffer resources during the resize */
       {
@@ -7802,7 +7863,7 @@ static bool d3d11_gfx_frame_body(
          return false;
       }
 #else
-      /* Unbind all render targets before ResizeBuffers —
+      /* Unbind all render targets before ResizeBuffers â€”
        * the debug layer requires no outstanding references
        * to back buffer resources during the resize */
       {
@@ -7840,6 +7901,16 @@ static bool d3d11_gfx_frame_body(
       d3d11->flags                              |=  D3D11_ST_FLAG_RESIZE_VIEWPORT;
 
       video_driver_set_output_dims(VIDEO_SCALE_PACK(video_width, video_height));
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+      {
+         DXGI_SWAP_CHAIN_DESC resized;
+         memset(&resized, 0, sizeof(resized));
+         if (SUCCEEDED(d3d11->swapChain->lpVtbl->GetDesc(d3d11->swapChain, &resized)))
+            retro_atomic_store_release_int(&d3d11->pyrowave_format, resized.BufferDesc.Format);
+         if (video_info->recording_pyrowave && !video_info->recording_pyrowave_receive)
+            video_d3d11_pyrowave_source_attach(d3d11);
+      }
+#endif
 
 #ifdef HAVE_DXGI_HDR
 #ifdef __WINRT__
@@ -7931,6 +8002,15 @@ static bool d3d11_gfx_frame_body(
       {
           D3D11_SHADER_RESOURCE_VIEW_DESC hw_desc;
           D3D11ShaderResourceView hw_view = NULL;
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+          if (pyrowave_view)
+          {
+             hw_view = pyrowave_view;
+             hw_view->lpVtbl->AddRef(hw_view);
+             d3d11->hw_direct.eligible = true;
+          }
+          else
+#endif
           if (d3d11->hw_ring.present)
           {
              /* The ring's texture for this frame, from the core's
@@ -8568,7 +8648,7 @@ static bool d3d11_gfx_frame_body(
        * back from whatever buffer is currently bound, so without
        * restoring the binding here the widget draws fetch the
        * wrong vertex stream and silently produce nothing on
-       * screen — the widget state machine still runs, the
+       * screen â€” the widget state machine still runs, the
        * sprites still get written, but the Draw() reads from
        * overlays.vbo instead.  Mirror the OSD-msg block below:
        * screen viewport, sprite vbo, sprite blend state. */
@@ -8729,6 +8809,19 @@ static bool d3d11_gfx_frame_body(
    }
    else if (d3d11->record.enable)
       d3d11_record_free(d3d11);
+
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+   if (video_info->recording_pyrowave && !video_info->recording_pyrowave_receive
+         && !(d3d11->flags & D3D11_ST_FLAG_FRAME_DUPE_LOCK))
+   {
+      context->lpVtbl->OMSetRenderTargets(context, 0, NULL, NULL);
+      record_pyrowave_d3d11_frame(video_info->recording_gpu, d3d11->pyrowave_capture,
+            (unsigned)retro_atomic_load_acquire_int(&d3d11->pyrowave_format),
+            VIDEO_SCALE_PACK(video_width, video_height), d3d11->vp.pos, d3d11->vp.dims,
+            d3d11_hdr_output_mode(d3d11), video_info->recording_gpu_timestamp,
+            video_info->recording_pyrowave_duration, video_info->recording_gpu_capture);
+   }
+#endif
 
    if (vsync && d3d11->wait_for_vblank < 0)
    {
@@ -9912,6 +10005,12 @@ static bool d3d11_get_device(void *data, video_device_info_t *info)
       return false;
    info->api            = VIDEO_DEVICE_D3D11;
    info->device         = (void*)d3d11->device;
+#ifdef HAVE_RECORD_PYROWAVE_D3D11
+   info->queue = (void*)d3d11->context;
+   info->output_format = (unsigned)retro_atomic_load_acquire_int(&d3d11->pyrowave_format);
+   info->output_bit_depth = info->output_format == DXGI_FORMAT_R16G16B16A16_FLOAT ? 16
+      : info->output_format == DXGI_FORMAT_R10G10B10A2_UNORM ? 10 : 8;
+#endif
 #ifdef D3D11_FRAME_IMPORT
    info->import_formats = d3d11->import_formats;
 #endif

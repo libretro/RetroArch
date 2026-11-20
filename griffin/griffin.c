@@ -1811,6 +1811,7 @@ RECORDING
 #include "../record/record_pyrowave_dispatch.c"
 #include "../record/record_pyrowave_source.c"
 #include "../record/record_pyrowave_source_d3d12.c"
+#include "../record/record_pyrowave_source_d3d11.c"
 #ifndef HAVE_RECORD_MEDIACODEC
 #include "../record/record_audio_tap.c"
 #endif
@@ -1835,6 +1836,9 @@ RECORDING
 #endif
 #ifdef HAVE_D3D12
 #include "../record/record_pyrowave_d3d12.c"
+#endif
+#ifdef HAVE_D3D11
+#include "../record/record_pyrowave_d3d11.c"
 #endif
 #ifdef HAVE_METAL
 #include "../record/record_pyrowave_metal.c"

@@ -289,6 +289,8 @@ jobs:
           make -C samples/gfx/pyrowave_vulkan clean all pyrowave_player_vulkan_test.exe CC=x86_64-w64-mingw32-gcc EXE=.exe
       - name: Cross-compile D3D12 asynchronous encoder and receiver
         run: make -C samples/gfx/pyrowave_d3d12 clean all pyrowave_player_d3d12_test.exe CC=x86_64-w64-mingw32-gcc
+      - name: Cross-compile D3D11 compute adapter and native oracle
+        run: make -C samples/gfx/pyrowave_d3d11 clean all CC=x86_64-w64-mingw32-gcc
       - name: Validate scRGB gamut and transfer conversion
         run: |
           make -C libretro-common/samples/formats/pyrowave color-check SANITIZER=address,undefined COLOR_SHADER="$PWD/samples/gfx/pyrowave_gl/.pyrowave-shaders/color.comp"

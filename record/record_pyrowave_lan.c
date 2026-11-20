@@ -120,7 +120,7 @@ static bool pyrowave_lan_supported(void)
    memset(&device, 0, sizeof(device));
    if (!video_driver_get_device(&device)) return false;
    return (device.api == VIDEO_DEVICE_OPENGL && !strcmp(video_driver_get_ident(), "glcore")) || device.api == VIDEO_DEVICE_VULKAN
-      || device.api == VIDEO_DEVICE_D3D12;
+      || device.api == VIDEO_DEVICE_D3D11 || device.api == VIDEO_DEVICE_D3D12;
 }
 
 static bool pyrowave_lan_assets(void)

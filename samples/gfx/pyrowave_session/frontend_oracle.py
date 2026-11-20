@@ -1,5 +1,5 @@
 # Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later
-"""Offline actual-frontend/TCP oracle for D3D12 and Vulkan."""
+"""Offline actual-frontend/TCP oracle for GPU PyroWave recording."""
 import argparse
 import ctypes as c
 import os
@@ -22,7 +22,7 @@ parser.add_argument('--embedded-shaders', action='store_true')
 parser.add_argument('--audio-driver', default='null')
 parser.add_argument('--audio-device', default='')
 parser.add_argument('--threaded', action='store_true')
-parser.add_argument('--backend', choices=('d3d12', 'vulkan', 'glcore'), default='d3d12' if os.name == 'nt' else 'vulkan')
+parser.add_argument('--backend', choices=('d3d11', 'd3d12', 'vulkan', 'glcore'), default='d3d12' if os.name == 'nt' else 'vulkan')
 parser.add_argument('--require-validation', action='store_true',
                     help='Require active synchronization validation and reject validation errors')
 parser.add_argument('--require-d3d12-validation', action='store_true',
@@ -40,8 +40,8 @@ if args.expect_abort and args.disconnect_after:
     parser.error('--expect-abort and --disconnect-after are mutually exclusive')
 if args.disconnect_after and args.disconnect_after < 10:
     parser.error('--disconnect-after must be at least 10')
-if os.name != 'nt' and args.backend == 'd3d12':
-    parser.error('The D3D12 backend requires native Windows')
+if os.name != 'nt' and args.backend in ('d3d11', 'd3d12'):
+    parser.error('The D3D backend requires native Windows')
 work = args.output.resolve()
 work.mkdir(parents=True, exist_ok=True)
 class Sequence(c.Structure):
@@ -62,7 +62,7 @@ record_config = work / 'pyrowave-frontend-record.cfg'
 record_config.write_text(('' if args.embedded_shaders else 'pyrowave_shader_directory = "' + str(args.shader_directory.resolve()).replace('\\', '/') + '"\n') +
     'audio_enable = "true"\npyrowave_maximum_bytes = "262144"\n')
 config.write_text('video_driver = "' + args.backend + '"\nrecord_driver = "pyrowave"\nvideo_threaded = "' + ('true' if args.threaded else 'false') + '"\n'
-    'audio_driver = "' + args.audio_driver + '"\naudio_enable = "true"\nvideo_vsync = "true"\nvideo_fullscreen = "false"\npause_nonactive = "false"\n'
+    'audio_driver = "' + args.audio_driver + '"\naudio_enable = "true"\naudio_volume = "-40"\nvideo_vsync = "true"\nvideo_fullscreen = "false"\npause_nonactive = "false"\n'
     'video_scale = "2"\nvideo_font_enable = "false"\nconfig_save_on_exit = "false"\n'
     'savestate_auto_save = "false"\nvideo_shader_enable = "false"\n'
     'confirm_quit = "false"\nmenu_show_start_screen = "false"\nrgui_show_start_screen = "false"\nmenu_ignore_missing_assets = "true"\nmenu_pause_libretro = "false"\n')

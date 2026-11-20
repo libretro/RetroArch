@@ -67,6 +67,8 @@ def main():
             lines.append('#ifdef RPYROWAVE_SHADER_' + language)
             for info, data in bundle:
                 if info['language'] != language: continue
+                dxil = info['symbol'].endswith('_dxil')
+                if dxil: lines.append('#ifndef RPYROWAVE_SHADER_DXBC_ONLY')
                 if info['text']:
                     if info['language'] in ('GLSL', 'GLES'):
                         data = minify(data.decode('ascii')).encode('ascii')
@@ -74,6 +76,7 @@ def main():
                 else:
                     words = struct.unpack('<%dI' % (len(data) // 4), data)
                     lines.append(array(info['symbol'], 'uint32_t', ['0x%08xU' % word for word in words], 8))
+                if dxil: lines.append('#endif')
             lines.append('#endif')
         lines.append('#endif\n')
         write_changed(a.output, '\n'.join(lines).encode('ascii'))

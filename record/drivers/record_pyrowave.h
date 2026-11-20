@@ -9,15 +9,22 @@
    && defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX)
 #define HAVE_RECORD_PYROWAVE_D3D12
 #endif
+#if defined(HAVE_PYROWAVE) && defined(HAVE_THREADS) && defined(HAVE_D3D11) && defined(HAVE_CONFIGFILE) \
+   && defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX)
+#define HAVE_RECORD_PYROWAVE_D3D11
+#endif
 #if defined(HAVE_PYROWAVE) && defined(HAVE_THREADS) && defined(HAVE_VULKAN) && defined(HAVE_CONFIGFILE) && !defined(ANDROID)
 #define HAVE_RECORD_PYROWAVE_VULKAN
 #include <vulkan/vulkan.h>
 #endif
-#if defined(HAVE_RECORD_PYROWAVE_D3D12) || defined(HAVE_RECORD_PYROWAVE_VULKAN) || defined(HAVE_RECORD_PYROWAVE_GL)
+#if defined(HAVE_RECORD_PYROWAVE_D3D11) || defined(HAVE_RECORD_PYROWAVE_D3D12) || defined(HAVE_RECORD_PYROWAVE_VULKAN) || defined(HAVE_RECORD_PYROWAVE_GL)
 #define HAVE_RECORD_PYROWAVE_SOURCE
 #endif
 RETRO_BEGIN_DECLS
 struct video_frame_info;
+void record_pyrowave_d3d11_frame(void *context, void *view, unsigned format,
+      unsigned full_dims, unsigned pos, unsigned dims, unsigned output_mode,
+      uint64_t timestamp, uint64_t duration, bool capture);
 extern const record_driver_t record_pyrowave;
 bool record_pyrowave_frame_info(struct video_frame_info *info, bool capture);
 void record_pyrowave_poll(void);

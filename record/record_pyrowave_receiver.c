@@ -17,13 +17,16 @@ static bool pyrowave_receiver_owned;
 static bool pyrowave_receiver_start_pending;
 static retro_atomic_int_t pyrowave_receiver_audio_enabled = RETRO_ATOMIC_INT_INITIALIZER(0);
 
+#if defined(_WIN32) && defined(HAVE_D3D11) && !defined(__WINRT__) && !defined(_XBOX)
+#define PYROWAVE_RECEIVER_D3D11
+#endif
 #if defined(_WIN32) && defined(HAVE_D3D12) && !defined(__WINRT__) && !defined(_XBOX)
 #define PYROWAVE_RECEIVER_D3D12
 #endif
 #if defined(HAVE_VULKAN) && !defined(ANDROID)
 #define PYROWAVE_RECEIVER_VULKAN
 #endif
-#if defined(HAVE_THREADS) && defined(HAVE_CONFIGFILE) && ((defined(HAVE_OPENGL_CORE) && !defined(HAVE_OPENGLES)) || defined(PYROWAVE_RECEIVER_D3D12) || defined(PYROWAVE_RECEIVER_VULKAN))
+#if defined(HAVE_THREADS) && defined(HAVE_CONFIGFILE) && ((defined(HAVE_OPENGL_CORE) && !defined(HAVE_OPENGLES)) || defined(PYROWAVE_RECEIVER_D3D11) || defined(PYROWAVE_RECEIVER_D3D12) || defined(PYROWAVE_RECEIVER_VULKAN))
 #define PYROWAVE_RECEIVER_GPU
 static struct retro_system_av_info pyrowave_receiver_av;
 static struct retro_system_av_info pyrowave_receiver_saved_av;
@@ -34,6 +37,9 @@ static bool pyrowave_receiver_restart;
 #include <net/net_compat.h>
 #include "../gfx/video_thread_wrapper.h"
 #include "record_pyrowave_player_gl.h"
+#ifdef PYROWAVE_RECEIVER_D3D11
+#include "record_pyrowave_player_d3d11.h"
+#endif
 #ifdef PYROWAVE_RECEIVER_D3D12
 #include "record_pyrowave_player_d3d12.h"
 #endif
@@ -54,6 +60,10 @@ typedef struct pyrowave_receiver_client
    record_pyrowave_dispatch_t *io;
    record_pyrowave_player_gl_t *player;
    void *player_d3d12;
+#ifdef PYROWAVE_RECEIVER_D3D11
+   record_pyrowave_d3d11_t *player_d3d11;
+   record_pyrowave_d3d11_image_t d3d11_image, d3d11_future;
+#endif
 #ifdef PYROWAVE_RECEIVER_D3D12
    record_pyrowave_d3d12_image_t d3d12_image, d3d12_future;
    ID3D12Fence *display_fence;
@@ -249,6 +259,10 @@ static bool pyrowave_receiver_render_d3d12(pyrowave_receiver_client_t *c,
       ID3D12GraphicsCommandList *commands, ID3D12Fence *fence, uint64_t value);
 #endif
 
+#ifdef PYROWAVE_RECEIVER_D3D11
+static bool pyrowave_receiver_render_d3d11(pyrowave_receiver_client_t *c);
+#endif
+
 static uintptr_t pyrowave_receiver_control_run(void *data, const video_poke_interface_t *poke, void *user)
 {
    pyrowave_receiver_client_t *c = (pyrowave_receiver_client_t*)user;
@@ -286,6 +300,38 @@ static uintptr_t pyrowave_receiver_control_run(void *data, const video_poke_inte
       result = 0;
 #endif
    }
+#ifdef PYROWAVE_RECEIVER_D3D11
+   else if (c->api == VIDEO_DEVICE_D3D11)
+   {
+      if (!c->control_kind)
+      {
+         c->player_d3d11 = record_pyrowave_player_d3d11_new(&c->setup);
+         if (!c->player_d3d11) result = 0;
+         else record_pyrowave_d3d11_session_video(c->player_d3d11, &c->input);
+      }
+      else if (c->control_kind == 1)
+      {
+         pyrowave_receiver_render_d3d11(c);
+         /* Paused teardown has no Present to submit the final-use query. */
+         if (retro_atomic_load_acquire_int(&c->stop))
+         {
+            ID3D11DeviceContext *context = (ID3D11DeviceContext*)c->setup.queue;
+            context->lpVtbl->Flush(context);
+         }
+      }
+      else if (c->control_kind == 3)
+      {
+         if (record_pyrowave_d3d11_quiesce(c->player_d3d11)
+               && record_pyrowave_d3d11_abandon(c->player_d3d11))
+         {
+            c->player_d3d11 = NULL; c->held = c->future = false;
+            retro_atomic_store_release_int(&c->render_done, 1);
+         }
+      }
+      else if (!record_pyrowave_d3d11_free(c->player_d3d11)) result = 0;
+      else c->player_d3d11 = NULL;
+   }
+#endif
 #ifdef PYROWAVE_RECEIVER_D3D12
    else if (c->api == VIDEO_DEVICE_D3D12)
    {
@@ -496,6 +542,9 @@ static bool pyrowave_receiver_setup(pyrowave_receiver_client_t *c)
    c->av_updating = false;
    if (!video_driver_get_device(&device)) return false;
    if (device.api != VIDEO_DEVICE_OPENGL
+#ifdef PYROWAVE_RECEIVER_D3D11
+         && device.api != VIDEO_DEVICE_D3D11
+#endif
 #ifdef PYROWAVE_RECEIVER_D3D12
          && device.api != VIDEO_DEVICE_D3D12
 #endif
@@ -622,6 +671,98 @@ static bool pyrowave_receiver_render(pyrowave_receiver_client_t *c)
 #endif
 }
 
+#ifdef PYROWAVE_RECEIVER_D3D11
+static bool pyrowave_receiver_render_d3d11(pyrowave_receiver_client_t *c)
+{
+#ifdef PYROWAVE_RECEIVER_D3D11
+   record_pyrowave_d3d11_image_t next;
+   record_gpu_frame_t dropped;
+   int result = RECORD_GPU_QUEUE_BUSY;
+   unsigned i;
+   if (!c->player_d3d11 || retro_atomic_load_acquire_int(&c->render_done)) return false;
+   if (retro_atomic_load_acquire_int(&c->recovery)) return false;
+   if (!record_pyrowave_d3d11_poll(c->player_d3d11))
+   {
+      retro_atomic_store_release_int(&c->failed, 1);
+      retro_atomic_store_release_int(&c->recovery, 1);
+      return false;
+   }
+   if (retro_atomic_load_acquire_int(&c->stop))
+   {
+      if (c->future)
+      {
+         if (!record_pyrowave_d3d11_image_drop(c->player_d3d11, c->d3d11_future.frame.slot)) return false;
+         c->future = false;
+      }
+      if (c->held)
+      {
+         if (!record_pyrowave_d3d11_present(c->player_d3d11, c->d3d11_image.frame.slot))
+         {
+            retro_atomic_store_release_int(&c->failed, 1);
+            retro_atomic_store_release_int(&c->recovery, 1);
+            return false;
+         }
+         c->held = false;
+      }
+      if (retro_atomic_load_acquire_int(&c->io_done))
+      {
+         if (!c->input_closed)
+         {
+            if (!c->input.finish(c->input.user)) return false;
+            c->input_closed = true;
+         }
+         for (i = 0; i < c->setup.slots; i++)
+            if (record_pyrowave_d3d11_receive_drop(c->player_d3d11, &dropped) != RECORD_GPU_QUEUE_OK) break;
+         for (i = 0; i < c->setup.slots; i++)
+         {
+            if (record_pyrowave_d3d11_image(c->player_d3d11, &next) != RECORD_GPU_QUEUE_OK) break;
+            record_pyrowave_d3d11_image_drop(c->player_d3d11, next.frame.slot);
+         }
+         if (record_pyrowave_d3d11_idle(c->player_d3d11))
+            retro_atomic_store_release_int(&c->render_done, 1);
+      }
+      return false;
+   }
+   for (i = 0; i < c->setup.slots; i++)
+   {
+      if (record_pyrowave_d3d11_receive_peek(c->player_d3d11, &dropped) != RECORD_GPU_QUEUE_OK
+            || !pyrowave_receiver_late(c, &dropped)) break;
+      if (record_pyrowave_d3d11_receive_drop(c->player_d3d11, &dropped) != RECORD_GPU_QUEUE_OK)
+      { retro_atomic_store_release_int(&c->failed, 1); break; }
+   }
+   if (!c->video_input_end) result = record_pyrowave_d3d11_decode(c->player_d3d11);
+   if (result == RECORD_GPU_QUEUE_OK) c->decoding++;
+   else if (result == RECORD_GPU_QUEUE_ERROR)
+   {
+      retro_atomic_store_release_int(&c->failed, 1);
+      retro_atomic_store_release_int(&c->recovery, 1);
+   }
+   if (!c->future && record_pyrowave_d3d11_image(c->player_d3d11, &next) == RECORD_GPU_QUEUE_OK)
+   {
+      c->d3d11_future = next; c->future = true;
+      if (c->decoding) c->decoding--;
+   }
+   if (c->future && pyrowave_receiver_due(c, &c->d3d11_future.frame))
+   {
+      if (c->held && !record_pyrowave_d3d11_present(c->player_d3d11, c->d3d11_image.frame.slot))
+      {
+         retro_atomic_store_release_int(&c->failed, 1);
+         retro_atomic_store_release_int(&c->recovery, 1);
+      }
+      else
+      { c->d3d11_image = c->d3d11_future; c->held = true; c->future = false; }
+   }
+   if (result == RECORD_GPU_QUEUE_END) c->video_input_end = true;
+   if (c->video_input_end && !c->decoding && !c->future)
+      retro_atomic_store_release_int(&c->video_end, 1);
+   record_pyrowave_dispatch_notify(c->io);
+   return c->held;
+#else
+   (void)c; return false;
+#endif
+}
+#endif
+
 unsigned record_pyrowave_receiver_gl_frame(void *data, unsigned *dims, bool advance,
       const struct video_frame_info *timing)
 {
@@ -636,6 +777,25 @@ unsigned record_pyrowave_receiver_gl_frame(void *data, unsigned *dims, bool adva
    *dims = VIDEO_SCALE_PACK(c->setup.stream.sequence.width, c->setup.stream.sequence.height);
    return c->image.texture;
 }
+void *record_pyrowave_receiver_d3d11_frame(void *data, unsigned *dims, bool advance,
+      const struct video_frame_info *timing)
+{
+#ifdef PYROWAVE_RECEIVER_D3D11
+   pyrowave_receiver_client_t *c = (pyrowave_receiver_client_t*)data;
+   if (!c || c->api != VIDEO_DEVICE_D3D11 || !retro_atomic_load_acquire_int(&c->ready)
+         || retro_atomic_load_acquire_int(&c->render_done)) return NULL;
+   c->target_valid = timing && timing->recording_pyrowave_clock_valid;
+   c->target_time = timing ? timing->recording_gpu_timestamp : 0;
+   if (advance || retro_atomic_load_acquire_int(&c->stop))
+   { if (!pyrowave_receiver_render_d3d11(c)) return NULL; }
+   else if (!c->held) return NULL;
+   *dims = VIDEO_SCALE_PACK(c->setup.stream.sequence.width, c->setup.stream.sequence.height);
+   return c->d3d11_image.view;
+#else
+   (void)data; (void)dims; (void)advance; (void)timing; return NULL;
+#endif
+}
+
 #ifdef PYROWAVE_RECEIVER_D3D12
 static bool pyrowave_receiver_render_d3d12(pyrowave_receiver_client_t *c,
       ID3D12GraphicsCommandList *commands, ID3D12Fence *fence, uint64_t value)
@@ -1269,6 +1429,9 @@ bool record_pyrowave_receiver_frame_info(struct video_frame_info *info, bool adv
 unsigned record_pyrowave_receiver_gl_frame(void *data, unsigned *dims, bool advance,
       const struct video_frame_info *timing)
 { (void)data; (void)dims; (void)advance; (void)timing; return 0; }
+void *record_pyrowave_receiver_d3d11_frame(void *data, unsigned *dims, bool advance,
+      const struct video_frame_info *timing)
+{ (void)data; (void)dims; (void)advance; (void)timing; return NULL; }
 void *record_pyrowave_receiver_d3d12_frame(void *context, void *commands, void *fence,
       uint64_t value, unsigned *dims, bool advance, const struct video_frame_info *timing)
 {

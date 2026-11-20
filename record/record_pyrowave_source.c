@@ -14,8 +14,11 @@
 #if defined(HAVE_VULKAN)
 #define RPYROWAVE_SHADER_SPIRV
 #endif
-#if defined(HAVE_D3D12)
+#if defined(HAVE_D3D12) || defined(HAVE_D3D11)
 #define RPYROWAVE_SHADER_D3D
+#ifndef HAVE_D3D12
+#define RPYROWAVE_SHADER_DXBC_ONLY
+#endif
 #endif
 #if defined(HAVE_METAL)
 #define RPYROWAVE_SHADER_METAL
@@ -40,7 +43,9 @@ static const record_pyrowave_builtin_shader_t record_pyrowave_builtin_shaders[] 
    PYROWAVE_BINARY(color, ".spv", spirv), PYROWAVE_BINARY(dwt, ".spv", spirv), PYROWAVE_BINARY(packet, ".spv", spirv),
 #endif
 #ifdef RPYROWAVE_SHADER_D3D
+#ifndef RPYROWAVE_SHADER_DXBC_ONLY
    PYROWAVE_BINARY(color, ".dxil", dxil), PYROWAVE_BINARY(dwt, ".dxil", dxil), PYROWAVE_BINARY(packet, ".dxil", dxil),
+#endif
    PYROWAVE_BINARY(color, ".dxbc", dxbc), PYROWAVE_BINARY(dwt, ".dxbc", dxbc), PYROWAVE_BINARY(packet, ".dxbc", dxbc),
 #endif
 #ifdef RPYROWAVE_SHADER_METAL
@@ -53,6 +58,7 @@ static const record_pyrowave_builtin_shader_t record_pyrowave_builtin_shaders[] 
 #undef RPYROWAVE_SHADER_GLSL
 #undef RPYROWAVE_SHADER_SPIRV
 #undef RPYROWAVE_SHADER_D3D
+#undef RPYROWAVE_SHADER_DXBC_ONLY
 #undef RPYROWAVE_SHADER_METAL
 
 static const record_pyrowave_builtin_shader_t *record_pyrowave_builtin_find(const char *name)

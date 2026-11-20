@@ -12,6 +12,7 @@ on:
       - 'libretro-common/formats/pyrowave/shaders/**'
       - 'tools/pyrowave*.py'
       - 'samples/gfx/pyrowave_session/pyrowave_shader_test.c'
+      - 'samples/gfx/pyrowave_d3d11/**'
       - 'Makefile.pyrowave'
       - 'record/*pyrowave*'
       - 'record/drivers/record_pyrowave.c'
@@ -27,6 +28,7 @@ on:
       - 'libretro-common/formats/pyrowave/shaders/**'
       - 'tools/pyrowave*.py'
       - 'samples/gfx/pyrowave_session/pyrowave_shader_test.c'
+      - 'samples/gfx/pyrowave_d3d11/**'
       - 'Makefile.pyrowave'
       - 'record/*pyrowave*'
       - 'record/drivers/record_pyrowave.c'
@@ -118,3 +120,13 @@ jobs:
       - name: Run native engine regressions
         shell: cmd
         run: libretro-common\samples\net\mdns\net_mdns_test.exe
+      - name: Native D3D11 compute codec and loan retirement
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set VSPATH=%%i
+          if not defined VSPATH exit /b 1
+          call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.arch }}
+          if errorlevel 1 exit /b 1
+          cl /nologo /TC /O2 /W4 /WX /D_CRT_SECURE_NO_WARNINGS /external:env:INCLUDE /external:W0 /Ilibretro-common/include samples/gfx/pyrowave_d3d11/pyrowave_d3d11_test.c record/record_pyrowave_d3d11.c record/record_gpu_queue.c libretro-common/queues/retro_spsc.c libretro-common/formats/pyrowave/rpyrowave.c libretro-common/formats/pyrowave/rpyrowave_image.c libretro-common/formats/pyrowave/rpyrowave_gpu.c /Fomsvc-lan-check\ /Femsvc-lan-check/pyrowave_d3d11_test.exe /link d3d11.lib dxguid.lib
+          if errorlevel 1 exit /b 1
+          msvc-lan-check\pyrowave_d3d11_test.exe libretro-common/formats/pyrowave/shaders/precompiled/color.dxbc libretro-common/formats/pyrowave/shaders/precompiled/dwt.dxbc libretro-common/formats/pyrowave/shaders/precompiled/packet.dxbc

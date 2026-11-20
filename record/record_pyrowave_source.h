@@ -48,6 +48,8 @@ int record_pyrowave_source_gl_push(record_pyrowave_source_t *source,
       uint64_t timestamp, uint64_t duration, uint64_t *ticket);
 bool record_pyrowave_source_d3d12_new(record_pyrowave_source_t *source,
       const record_pyrowave_source_config_t *config);
+bool record_pyrowave_source_d3d11_new(record_pyrowave_source_t*, const record_pyrowave_source_config_t*);
+int record_pyrowave_source_d3d11_push(record_pyrowave_source_t*, void*, uint64_t, uint64_t, uint64_t*);
 int record_pyrowave_source_d3d12_push(record_pyrowave_source_t *source,
       void *commands, void *fence, uint64_t value, void *texture,
       uint64_t timestamp, uint64_t duration, uint64_t *ticket);

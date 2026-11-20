@@ -18,11 +18,12 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--retroarch', type=Path, required=True)
 parser.add_argument('--codec', type=Path, required=True)
 parser.add_argument('--shader-directory', type=Path, required=True)
+parser.add_argument('--embedded-shaders', action='store_true')
 parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--threaded', action='store_true')
 parser.add_argument('--retained-core', type=Path, help='Prove the selected fixture core resumes after EOF without a reload')
 parser.add_argument('--hdr', action='store_true', help='PQ/BT.2020 stream with explicit SDR presentation')
-parser.add_argument('--backend', choices=('glcore', 'd3d12', 'vulkan'), default='glcore')
+parser.add_argument('--backend', choices=('glcore', 'd3d11', 'd3d12', 'vulkan'), default='glcore')
 parser.add_argument('--mode', choices=('playback', 'end', 'abort', 'early', 'missing-shaders', 'reconnect', 'gpu-failure'), default='playback')
 parser.add_argument('--history-shader', action='store_true')
 parser.add_argument('--require-validation', action='store_true')
@@ -153,7 +154,8 @@ if args.mode == 'reconnect':
 
 directory = output / 'missing-shaders' if args.mode == 'missing-shaders' else args.shader_directory.resolve()
 connection_file.write_text('pyrowave_url = "rpws://127.0.0.1:' + str(server.getsockname()[1])
-    + '"\npyrowave_shader_directory = "' + str(directory).replace('\\', '/') + '"\n')
+    + '"\n' + ('' if args.embedded_shaders and args.mode != 'missing-shaders' else
+    'pyrowave_shader_directory = "' + str(directory).replace('\\', '/') + '"\n'))
 header = struct.Struct('<4sHBBIIIIQQQQQ'); generation = 7
 startup = None
 if os.name == 'nt':

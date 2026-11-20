@@ -9,6 +9,10 @@
 #endif
 RETRO_BEGIN_DECLS
 struct video_frame_info;
+bool video_d3d11_pyrowave_source_attach(void *renderer);
+void video_d3d11_pyrowave_source_detach(void *renderer);
+void *record_pyrowave_receiver_d3d11_frame(void *context, unsigned *dims, bool advance,
+      const struct video_frame_info *timing);
 /* Main-thread frontend service. start() copies a connection-file path and
  * queues cold setup; the selected core remains loaded throughout playback. */
 bool record_pyrowave_receiver_start(const char *path);

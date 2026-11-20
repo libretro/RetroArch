@@ -1,4 +1,4 @@
-# D3D12: absolute directory containing color.hlsl, dwt.hlsl, packet.hlsl.
+# D3D11/12: absolute directory containing color.hlsl, dwt.hlsl, packet.hlsl.
 # Vulkan: directory containing the generator's color.spv, dwt.spv, packet.spv.
 # Desktop glcore: generated color.comp, dwt.comp, packet.comp.
 # Shader compilation/loading happens once during cold recorder initialization.

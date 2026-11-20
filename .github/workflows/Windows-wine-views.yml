@@ -36,6 +36,11 @@ on:
       - 'samples/settings/video_screens/**'
       - 'samples/cores/video_views/**'
       - 'samples/gfx/d3d_hdr_menu/**'
+      - 'record/*pyrowave*'
+      - 'record/drivers/record_pyrowave.*'
+      - 'record/record_gpu_queue.*'
+      - 'libretro-common/formats/pyrowave/**'
+      - 'samples/gfx/pyrowave_d3d11/**'
       - 'gfx/common/dxgi_common.*'
       - 'gfx/drivers/d3d_sm*_shaders/**'
       - 'gfx/gfx_display.*'
@@ -65,6 +70,11 @@ on:
       - 'samples/settings/video_screens/**'
       - 'samples/cores/video_views/**'
       - 'samples/gfx/d3d_hdr_menu/**'
+      - 'record/*pyrowave*'
+      - 'record/drivers/record_pyrowave.*'
+      - 'record/record_gpu_queue.*'
+      - 'libretro-common/formats/pyrowave/**'
+      - 'samples/gfx/pyrowave_d3d11/**'
       - 'gfx/common/dxgi_common.*'
       - 'gfx/drivers/d3d_sm*_shaders/**'
       - 'gfx/gfx_display.*'
@@ -203,6 +213,13 @@ jobs:
                 echo "== $c"
                 timeout 300 wine ./video_screens_test.exe --native-windows $c
              done'
+
+      - name: PyroWave D3D11 compute and asynchronous ownership
+        shell: bash
+        run: |
+          set -eu
+          make -C samples/gfx/pyrowave_d3d11 all CC=x86_64-w64-mingw32-gcc
+          WINEDEBUG=-all xvfb-run -a make -C samples/gfx/pyrowave_d3d11 check RUNNER=wine
 
       - name: Views on GDI, D3D8, D3D9, D3D10, D3D11 and D3D12, end to end (Wine, Xvfb, llvmpipe, lavapipe)
         shell: bash

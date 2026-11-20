@@ -15,7 +15,7 @@ p.add_argument('--retroarch', type=Path, required=True)
 p.add_argument('--core', type=Path, required=True)
 p.add_argument('--shader-directory', type=Path)
 p.add_argument('--embedded-shaders', action='store_true')
-p.add_argument('--backend', choices=('glcore', 'vulkan', 'd3d12'), default='glcore')
+p.add_argument('--backend', choices=('glcore', 'vulkan', 'd3d11', 'd3d12'), default='glcore')
 p.add_argument('--media', type=Path)
 p.add_argument('--pixels', action='store_true')
 p.add_argument('--transition', action='store_true')
@@ -104,6 +104,28 @@ def recording_menu(client):
 
 def text(client):
     return client['path'].read_text(encoding='utf-8', errors='replace')
+
+def close_client(client):
+    if os.name != 'nt':
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.sendto(b'QUIT\n', ('127.0.0.1', client['port']))
+        return
+    # Use the owned window's close event, as the native receiver oracle does.
+    import ctypes as c
+    from ctypes import wintypes as w
+    callback_type = c.WINFUNCTYPE(w.BOOL, w.HWND, w.LPARAM)
+    get_pid = c.windll.user32.GetWindowThreadProcessId
+    get_pid.argtypes = [w.HWND, c.POINTER(w.DWORD)]
+    post = c.windll.user32.PostMessageW
+    post.argtypes = [w.HWND, w.UINT, w.WPARAM, w.LPARAM]
+    @callback_type
+    def visit(window, unused):
+        owner = w.DWORD()
+        get_pid(window, c.byref(owner))
+        if owner.value == client['process'].pid:
+            post(window, 0x10, 0, 0)
+        return True
+    c.windll.user32.EnumWindows(visit, 0)
 
 try:
     for index in range(2):
@@ -272,8 +294,7 @@ finally:
     for client in clients:
         if client['process'].poll() is None:
             try:
-                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-                    s.sendto(b'QUIT\n', ('127.0.0.1', client['port']))
+                close_client(client)
                 client['process'].wait(timeout=15)
             except subprocess.TimeoutExpired:
                 client['process'].terminate()

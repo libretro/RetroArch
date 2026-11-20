@@ -1109,7 +1109,7 @@ typedef struct video_device_info
    void *instance;
    void *physical_device;
    void *device;
-   /* Vulkan or D3D12 render queue, borrowed with the device. */
+   /* Vulkan/D3D12 render queue, or D3D11 immediate context; borrowed. */
    void *queue;
    /* Existing Vulkan queue serialization; cold render-owner jobs only. */
    void *queue_lock;
