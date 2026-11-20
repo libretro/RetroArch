@@ -47,15 +47,44 @@ static struct
 #endif
 } custom_driver_desktop_st;
 
+#ifdef _WIN32
+/* GetModuleHandleExW is XP and up: resolved at runtime, its flags local
+ * for older SDKs. */
+#define CUSTOM_DRIVER_MODULE_UNCHANGED_REFCOUNT 0x00000002u
+#define CUSTOM_DRIVER_MODULE_FROM_ADDRESS       0x00000004u
+typedef BOOL (WINAPI *custom_driver_get_module_ex_t)(DWORD, LPCWSTR,
+      HMODULE*);
+
+/* The module holding addr, with a reference unless unchanged is set.
+ * False when none does or the call is missing. */
+static bool custom_driver_module_ex(const void *addr, bool unchanged,
+      HMODULE *mod)
+{
+   static custom_driver_get_module_ex_t get_module;
+   static bool resolved;
+   if (!resolved)
+   {
+      HMODULE kernel = GetModuleHandleW(L"kernel32.dll");
+      FARPROC p      = kernel
+         ? GetProcAddress(kernel, "GetModuleHandleExW") : NULL;
+      memcpy(&get_module, &p, sizeof(get_module));
+      resolved = true;
+   }
+   *mod = NULL;
+   return     addr && get_module
+          &&  get_module(CUSTOM_DRIVER_MODULE_FROM_ADDRESS
+                | (unchanged ? CUSTOM_DRIVER_MODULE_UNCHANGED_REFCOUNT : 0),
+                (LPCWSTR)addr, mod);
+}
+#endif
+
 /* The module holding addr: its base on Linux, its HMODULE on Windows.
  * NULL when no module does. */
 static void *custom_driver_module(const void *addr)
 {
 #ifdef _WIN32
-   HMODULE mod = NULL;
-   if (!addr || !GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
-            | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-            (LPCWSTR)addr, &mod))
+   HMODULE mod;
+   if (!custom_driver_module_ex(addr, true, &mod))
       return NULL;
    return (void*)mod;
 #else
@@ -157,9 +186,8 @@ static void custom_driver_close(dylib_t handle)
       return;
 #ifdef _WIN32
    {
-      HMODULE mod = NULL;
-      if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
-               (LPCWSTR)addr, &mod))
+      HMODULE mod;
+      if (custom_driver_module_ex(addr, false, &mod))
          custom_driver_desktop_st.lingering = (dylib_t)mod;
    }
 #else
@@ -285,12 +313,16 @@ void vulkan_custom_driver_platform_init(void)
 bool vulkan_custom_driver_platform_trusted(const char *path, int64_t size,
       int64_t mtime)
 {
+   (void)path;
+   (void)size;
+   (void)mtime;
    return true;
 }
 
 /* A .json has nothing to extract ahead. */
 void vulkan_custom_driver_platform_picked(const char *path)
 {
+   (void)path;
 }
 
 dylib_t vulkan_custom_driver_open(void)
