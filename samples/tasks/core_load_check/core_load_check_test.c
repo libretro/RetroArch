@@ -2658,13 +2658,30 @@ static void test_park_other_load(void)
 
 static unsigned ends_cancelled;
 static unsigned ends_dropped;
+static unsigned ends_rerun;
+static unsigned ends_reran;
+static unsigned rerun_at_rerun; /* reruns when RERUN came */
+static unsigned rerun_at_reran; /* reruns when RERAN came */
 
 static void end_fn(enum core_load_park_end end)
 {
-   if (end == CORE_LOAD_PARK_END_CANCELLED)
-      ends_cancelled++;
-   else
-      ends_dropped++;
+   switch (end)
+   {
+      case CORE_LOAD_PARK_END_CANCELLED:
+         ends_cancelled++;
+         break;
+      case CORE_LOAD_PARK_END_DROPPED:
+         ends_dropped++;
+         break;
+      case CORE_LOAD_PARK_END_RERUN:
+         ends_rerun++;
+         rerun_at_rerun = reruns;
+         break;
+      case CORE_LOAD_PARK_END_RERAN:
+         ends_reran++;
+         rerun_at_reran = reruns;
+         break;
+   }
 }
 
 /* A park with its end callback, its warning up */
@@ -2674,6 +2691,10 @@ static void park_end_start(char *core, const char *name)
    park_reset();
    ends_cancelled = 0;
    ends_dropped   = 0;
+   ends_rerun     = 0;
+   ends_reran     = 0;
+   rerun_at_rerun = 0;
+   rerun_at_reran = 0;
    CHECK(put_core(core, name, 'a'));
    CHECK(park(core));
    core_load_check_park_on_end(end_fn);
@@ -2749,7 +2770,7 @@ static void test_park_end_other_load(void)
    stop();
 }
 
-/* The re-run owns what the park kept: no end */
+/* A re-run ends its park with RERUN before it and RERAN after it */
 static void test_park_end_rerun(void)
 {
    char core[256];
@@ -2759,6 +2780,10 @@ static void test_park_end_rerun(void)
    CHECK(reruns == 1);
    CHECK(ends_cancelled == 0);
    CHECK(ends_dropped == 0);
+   CHECK(ends_rerun == 1);
+   CHECK(ends_reran == 1);
+   CHECK(rerun_at_rerun == 0);
+   CHECK(rerun_at_reran == 1);
    stop();
 }
 

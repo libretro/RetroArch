@@ -45,6 +45,10 @@ if [ ! -f "$objdir/core_load_check.o" ]; then
    echo "no core_load_check.o: configure without --disable-core_load_check" >&2
    exit 1
 fi
+if grep -qE '^HAVE_QT[[:space:]]*=[[:space:]]*1' config.mk 2>/dev/null; then
+   echo "a Qt build: main() lives in ui_qt.o; build a tree configured with --disable-qt (a separate worktree keeps this one)" >&2
+   exit 1
+fi
 
 # SDL2's cflags may rename main already (-Dmain=SDL_main)
 sed -e 's# -Dmain=[^ ]*##g' \

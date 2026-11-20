@@ -1624,7 +1624,7 @@ static void fw_load_content_no_core(const char *other)
 {
    content_ctx_info_t info;
    command_t cmd;
-   char arg[sizeof(fw_core) + 300];
+   char arg[sizeof(fw_core) + sizeof(game) + 1];
    memset(&info, 0, sizeof(info));
    memset(&cmd, 0, sizeof(cmd));
    cmd.replier = fw_cmd_reply;
