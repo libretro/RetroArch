@@ -11,7 +11,7 @@
 #if !defined(SETTINGS_DEF_CONFIG_PASS)
 S_STRING(menu_ozone_color_theme, OZONE_MENU_COLOR_THEME,
       "ozone_menu_color_theme",
-      DEFAULT_OZONE_COLOR_THEME, SD_FLAG_NONE, 0, setting_action_ok_uint, setting_get_string_representation_ozone_menu_color_theme, setting_generic_action_start_default, NULL, setting_string_action_left_ozone_menu_color_theme, setting_string_action_right_ozone_menu_color_theme, ST_UI_TYPE_STRING_COMBOBOX,
+      DEFAULT_OZONE_COLOR_THEME, SD_FLAG_NONE, 0, setting_action_ok_uint, setting_get_string_representation_menu_theme, setting_generic_action_start_default, NULL, setting_string_action_left_menu_theme, setting_string_action_right_menu_theme, ST_UI_TYPE_STRING_COMBOBOX,
       "Color Theme",
       "Select a different color theme.")
 #endif

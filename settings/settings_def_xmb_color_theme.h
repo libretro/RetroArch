@@ -7,9 +7,12 @@
 /* Descriptor and configuration rows are #ifdef HAVE_XMB; the string
  * tables always carry this row via the strings pass. */
 #if defined(HAVE_XMB) || defined(SETTINGS_DEF_STRINGS_PASS)
-S_UINT_EX(menu_xmb_color_theme, XMB_MENU_COLOR_THEME,
+/* The configuration.c row stays literal for this setting. */
+#if !defined(SETTINGS_DEF_CONFIG_PASS)
+S_STRING(menu_xmb_color_theme, XMB_MENU_COLOR_THEME,
       "xmb_menu_color_theme",
-      DEFAULT_XMB_THEME, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, XMB_THEME_LAST-1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_xmb_menu_color_theme, NULL, NULL, setting_uint_action_left_with_refresh, setting_uint_action_right_with_refresh, ST_UI_TYPE_UINT_COMBOBOX,
+      DEFAULT_XMB_THEME, SD_FLAG_NONE, 0, setting_action_ok_uint, setting_get_string_representation_menu_theme, setting_generic_action_start_default, NULL, setting_string_action_left_menu_theme, setting_string_action_right_menu_theme, ST_UI_TYPE_STRING_COMBOBOX,
       "Color Theme",
       "Select a different background color theme.")
+#endif
 #endif

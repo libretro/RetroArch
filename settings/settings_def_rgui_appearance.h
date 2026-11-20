@@ -56,12 +56,11 @@ S_UINT_EX(menu_xmb_layout, XMB_LAYOUT,
 /* Descriptor and configuration rows are #ifdef HAVE_XMB; the string
  * tables always carry this row via the strings pass. */
 #if defined(HAVE_XMB) || defined(SETTINGS_DEF_STRINGS_PASS)
-/* The configuration row lives under defined(HAVE_MENU); other passes are
- * unaffected. */
-#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
-S_UINT_EX(menu_xmb_theme, XMB_THEME,
+/* The configuration.c row stays literal for this setting. */
+#if !defined(SETTINGS_DEF_CONFIG_PASS)
+S_STRING(menu_xmb_theme, XMB_THEME,
       "xmb_theme",
-      DEFAULT_XMB_ICON_THEME, SD_FLAG_CMD_APPLY_AUTO, SDESC_RANGE_MINMAX, CMD_EVENT_REINIT, 0, XMB_ICON_THEME_LAST - 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_xmb_icon_theme, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      DEFAULT_XMB_ICON_THEME, SD_FLAG_CMD_APPLY_AUTO, CMD_EVENT_REINIT, setting_action_ok_uint, setting_get_string_representation_menu_theme, setting_generic_action_start_default, NULL, setting_string_action_left_menu_theme, setting_string_action_right_menu_theme, ST_UI_TYPE_STRING_COMBOBOX,
       "Icon Theme",
       "Select a different icon theme for RetroArch.")
 #endif
