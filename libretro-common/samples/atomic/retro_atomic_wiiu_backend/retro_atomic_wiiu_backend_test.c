@@ -91,6 +91,7 @@ static void check_int(void)
    retro_atomic_store_relaxed_int(&v, 8);
    retro_atomic_thread_fence_acquire();
    retro_atomic_thread_fence_release();
+   retro_atomic_thread_fence_acq_rel();
    retro_atomic_thread_fence_seq_cst();
    CHECK(calls_since(-1));
    CHECK(v == 8);

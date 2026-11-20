@@ -337,6 +337,38 @@ static int check_relaxed_store_load(void)
  * accessors exist.  A reader that samples an even stamp, reads the
  * fields, and sees the same stamp afterwards must have a tuple from
  * one writer pass -- here, three fields that always sum to zero. */
+/* The acq_rel fence: a load before it may not drift below it and a
+ * store after it may not rise above it.  Given external linkage so it is
+ * not folded into its caller, and check-barriers.sh can find it: on
+ * aarch64 it is one full "dmb ish", where an acquire fence and then a
+ * release fence would be two barriers. */
+int acq_rel_fence_shape(retro_atomic_int_t *in, retro_atomic_int_t *out);
+int acq_rel_fence_shape(retro_atomic_int_t *in, retro_atomic_int_t *out)
+{
+   int seen = retro_atomic_load_relaxed_int(in);
+   retro_atomic_thread_fence_acq_rel();
+   retro_atomic_store_relaxed_int(out, seen + 1);
+   return seen;
+}
+
+static int check_acq_rel_fence(void)
+{
+   retro_atomic_int_t in, out;
+
+   retro_atomic_int_init(&in, 41);
+   retro_atomic_int_init(&out, 0);
+
+   if (acq_rel_fence_shape(&in, &out) != 41
+         || retro_atomic_load_acquire_int(&out) != 42)
+   {
+      fprintf(stderr, "FAIL acq_rel fence: a load or store across it\n");
+      return 1;
+   }
+
+   printf("[pass] acq_rel fence\n");
+   return 0;
+}
+
 static int check_seqlock_shape(void)
 {
    retro_atomic_size_t seq;
@@ -1202,6 +1234,7 @@ int main(void)
    fails += check_store_load();
    fails += check_relaxed_store_load();
    fails += check_seqlock_shape();
+   fails += check_acq_rel_fence();
    fails += check_fetch_add_returns_previous();
    fails += check_fetch_sub_returns_previous();
    fails += check_inc_dec_wrappers();

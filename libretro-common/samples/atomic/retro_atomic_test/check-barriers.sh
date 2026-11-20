@@ -59,5 +59,15 @@ want seqlock_reader "dmb"  "acquire fence"
 want seqlock_reader "ldar" "acquire loads for the stamps"
 want seqlock_reader "ldr"  "plain loads for the relaxed fields"
 
+# The acq_rel fence is one full barrier, not an acquire and a release
+n=$("$OBJDUMP" -d "$OBJ" --disassemble=acq_rel_fence_shape 2>/dev/null | grep -cE "[[:space:]]dmb[[:space:]]+ish$")
+m=$("$OBJDUMP" -d "$OBJ" --disassemble=acq_rel_fence_shape 2>/dev/null | grep -cE "[[:space:]]dmb[[:space:]]")
+if [ "$n" -ne 1 ] || [ "$m" -ne 1 ]; then
+   echo "FAIL  acq_rel_fence_shape: $m barriers, $n of them a full dmb ish - want exactly one"
+   rc=1
+else
+   echo "ok    acq_rel_fence_shape: one dmb ish"
+fi
+
 rm -f "$OBJ"
 exit $rc
