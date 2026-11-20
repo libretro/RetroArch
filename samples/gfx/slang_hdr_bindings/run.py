@@ -133,3 +133,81 @@ with tempfile.TemporaryDirectory(prefix="retroarch-slang-bindings-") as temporar
                                      "-Werror=declaration-after-statement"] + flags + defines +
                                [str(path), "-o", str(exe)], check=True)
                 subprocess.run([str(exe)], check=True)
+
+# GLCore must upload individual MVP uniforms as well as block members.
+def extract_function(source, signature):
+    begin = source.index(signature)
+    brace = source.index("{", begin)
+    depth = 1
+    end = brace + 1
+    while depth:
+        depth += (source[end] == "{") - (source[end] == "}")
+        end += 1
+    return source[begin:end]
+
+source = (root / "gfx/drivers_shader/shader_gl3.c").read_text(encoding="utf-8")
+functions = "\n".join(extract_function(source, signature) for signature in (
+    "static void gl3_build_default_matrix(float *data)",
+    "static void gl3_pass_build_mvp(struct gl3_pass *pass, uint8_t *buffer,"))
+code = r"""
+#include <assert.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+#define GL_FALSE 0
+#define SLANG_SEMANTIC_MVP 0
+typedef struct {
+   int uniform, push_constant;
+   struct { int ubo_vertex, ubo_fragment, push_vertex, push_fragment; } location;
+   size_t ubo_offset, push_constant_offset;
+} slang_semantic_meta;
+struct gl3_pass {
+   struct { slang_semantic_meta semantics[1]; } reflection;
+   uint8_t *push_constant_buffer;
+};
+static unsigned calls;
+static float uploaded[16];
+static void glUniformMatrix4fv(int location, int count, int transpose, const float *mvp)
+{
+   assert(location >= 0 && count == 1 && !transpose);
+   memcpy(uploaded, mvp, sizeof(uploaded));
+   calls++;
+}
+FUNCTIONS
+int main(void)
+{
+   struct gl3_pass pass;
+   uint8_t ubo[128], push[128];
+   float mvp[16];
+   slang_semantic_meta *meta;
+   memset(&pass, 0, sizeof(pass));
+   memset(ubo, 0, sizeof(ubo));
+   memset(push, 0, sizeof(push));
+   gl3_build_default_matrix(mvp);
+   pass.push_constant_buffer = push;
+   meta = &pass.reflection.semantics[0];
+   meta->location.ubo_vertex = meta->location.ubo_fragment = -1;
+   meta->location.push_vertex = meta->location.push_fragment = -1;
+   meta->uniform = meta->push_constant = 1;
+   meta->ubo_offset = meta->push_constant_offset = 16;
+   gl3_pass_build_mvp(&pass, ubo, mvp);
+   assert(!calls && !memcmp(ubo + 16, mvp, sizeof(mvp)));
+   assert(!memcmp(push + 16, mvp, sizeof(mvp)));
+   meta->location.ubo_vertex = 3;
+   meta->location.push_vertex = 4;
+   mvp[0] = 7;
+   gl3_pass_build_mvp(&pass, ubo, mvp);
+   assert(calls == 2 && uploaded[0] == 7);
+   gl3_pass_build_mvp(&pass, ubo, NULL);
+   assert(calls == 4 && uploaded[0] == 2 && uploaded[15] == 1);
+   return 0;
+}
+""".replace("FUNCTIONS", functions)
+with tempfile.TemporaryDirectory(prefix="glcore-mvp-") as directory:
+    unit = Path(directory) / "mvp.c"
+    exe = Path(directory) / ("mvp.exe" if os.name == "nt" else "mvp")
+    unit.write_bytes(code.encode())
+    subprocess.run(cc + ["-std=c89", "-pedantic", "-Wall", "-Wextra", "-Werror",
+                         str(unit), "-o", str(exe)], check=True)
+    subprocess.run([str(exe)], check=True)
+print("GLCore MVP: individual uniforms, uniform blocks and default matrix passed")

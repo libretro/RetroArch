@@ -2664,36 +2664,48 @@ static void gl3_pass_build_semantic_texture_array(struct gl3_pass *pass, uint8_t
    }
 }
 
+static void gl3_pass_build_mvp(struct gl3_pass *pass, uint8_t *buffer,
+      const float *mvp)
+{
+   slang_semantic_meta *meta = &pass->reflection.semantics[SLANG_SEMANTIC_MVP];
+   float fallback[16];
+   if (!mvp)
+   {
+      gl3_build_default_matrix(fallback);
+      mvp = fallback;
+   }
+   if (meta->uniform)
+   {
+      if (meta->location.ubo_vertex >= 0 || meta->location.ubo_fragment >= 0)
+      {
+         if (meta->location.ubo_vertex >= 0)
+            glUniformMatrix4fv(meta->location.ubo_vertex, 1, GL_FALSE, mvp);
+         if (meta->location.ubo_fragment >= 0)
+            glUniformMatrix4fv(meta->location.ubo_fragment, 1, GL_FALSE, mvp);
+      }
+      else if (buffer)
+         memcpy(buffer + meta->ubo_offset, mvp, sizeof(float) * 16);
+   }
+   if (meta->push_constant)
+   {
+      if (meta->location.push_vertex >= 0 || meta->location.push_fragment >= 0)
+      {
+         if (meta->location.push_vertex >= 0)
+            glUniformMatrix4fv(meta->location.push_vertex, 1, GL_FALSE, mvp);
+         if (meta->location.push_fragment >= 0)
+            glUniformMatrix4fv(meta->location.push_fragment, 1, GL_FALSE, mvp);
+      }
+      else if (pass->push_constant_buffer)
+         memcpy(pass->push_constant_buffer + meta->push_constant_offset,
+               mvp, sizeof(float) * 16);
+   }
+}
+
 static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
       const float *mvp, const gl3_texture_t *original, const gl3_texture_t *source)
 {
    unsigned i;
-
-   /* MVP */
-   if (buffer && pass->reflection.semantics[SLANG_SEMANTIC_MVP].uniform)
-   {
-      size_t offset = pass->reflection.semantics[
-         SLANG_SEMANTIC_MVP].ubo_offset;
-      if (mvp)
-         memcpy(buffer + offset,
-               mvp, sizeof(float) * 16);
-      else
-         gl3_build_default_matrix((float*)(
-                  buffer + offset));
-   }
-
-   if (pass->reflection.semantics[SLANG_SEMANTIC_MVP].push_constant)
-   {
-      size_t offset = pass->reflection.semantics[
-         SLANG_SEMANTIC_MVP].push_constant_offset;
-
-      if (mvp)
-         memcpy(pass->push_constant_buffer + offset,
-               mvp, sizeof(float) * 16);
-      else
-         gl3_build_default_matrix((float*)(
-                  pass->push_constant_buffer + offset));
-   }
+   gl3_pass_build_mvp(pass, buffer, mvp);
 
    /* Output information */
    gl3_pass_build_semantic_vec4(pass, buffer, SLANG_SEMANTIC_OUTPUT,
