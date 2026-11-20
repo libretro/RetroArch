@@ -15,7 +15,7 @@ ROOT = HERE.parents[2]
 def metal_test_source():
     source = (ROOT / 'gfx/drivers/metal.m').read_text(encoding='utf8')
     header = (ROOT / 'gfx/video_driver.h').read_text(encoding='utf8')
-    text = '#include <formats/video_hw_frame.h>\n#include <formats/image_yuv_blit.h>\n'
+    text = '#include <formats/image.h>\n#include <formats/video_hw_frame.h>\n#include <formats/image_yuv_blit.h>\n'
     text += '#include <defines/cocoa_defines.h>\n'
     text += 'enum video_texture_update' + header.split('enum video_texture_update', 1)[1].split('};', 1)[0] + '};\n'
     text += 'typedef struct video_frame_import\n' + header.split('typedef struct video_frame_import\n', 1)[1].split('} video_frame_import_t;', 1)[0] + '} video_frame_import_t;\n'
