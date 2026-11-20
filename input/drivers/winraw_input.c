@@ -38,6 +38,7 @@ extern "C" {
 #include "winraw_mouse_buttons.h"
 
 #ifndef _XBOX
+#include <windowsx.h>
 #include "../../gfx/common/win32_common.h"
 #endif
 
@@ -128,11 +129,22 @@ typedef struct
 #define WRAW_WHL_UP   (1 << 0)
 #define WRAW_WHL_DOWN (1 << 1)
 
-struct winraw_pointer_status
+/* Touches, as WM_POINTER* hands them: the window procedure fills a
+ * slot and publishes it by storing its id (plus one, so 0 is free),
+ * and the poll reads them, with no lock, as dinput.c does. Here rather
+ * than in winraw_input_t: the window procedure has no driver to hand. */
+#define WINRAW_MAX_POINTERS 16
+
+struct winraw_pointer_slot
 {
-   struct winraw_pointer_status *next;
-   int pointer_id;
-   uint32_t pointer_pos;   /* VIDEO_POS_PACK */
+   retro_atomic_int_t id_plus1;  /* 0: free */
+   retro_atomic_int_t order;     /* when it went down */
+   retro_atomic_int_t pos;       /* VIDEO_POS_PACK, client coordinates */
+#ifdef HAVE_VIDEO_WINDOWS
+   /* The screen's own window it went down in, 0 for the main window */
+   retro_atomic_int_t window;
+   retro_atomic_int_t generation;
+#endif
 };
 
 /* Key events held until the end of a poll. A frame's worth is a
@@ -201,8 +213,6 @@ typedef struct
     * no longer owns that. */
    retro_atomic_int_t map_pending;
    HWND window;
-   /* Dummy head for easier iteration */
-   struct winraw_pointer_status pointer_head;
    RECT active_rect; /* Needed for checking for a windows size change */
    RECT prev_rect;   /* Needed for checking for a windows size change */
    int rect_delay;   /* Needed to delay resize of window */
@@ -282,6 +292,16 @@ static winraw_mouse_t *g_mice        = NULL;
  * on another is not. */
 static retro_atomic_int_t winraw_focus_flag;
 #define winraw_focus (retro_atomic_load_acquire_int(&winraw_focus_flag) != 0)
+
+static struct winraw_pointer_slot winraw_pointers[WINRAW_MAX_POINTERS];
+static retro_atomic_int_t winraw_pointer_order;
+
+static void winraw_clear_pointers(void)
+{
+   unsigned i;
+   for (i = 0; i < WINRAW_MAX_POINTERS; i++)
+      retro_atomic_store_release_int(&winraw_pointers[i].id_plus1, 0);
+}
 
 /* Sync internal mouse coordinates with the OS cursor position.
  * Used after events such as window mode, size, and focus changes */
@@ -1950,6 +1970,7 @@ static void *winraw_init(const char *joypad_driver)
 
    if (!wr)
       return NULL;
+   winraw_clear_pointers();
    wr->focus    = winraw_focus;
    wr->kb_focus = wr->focus;
 
@@ -1986,10 +2007,14 @@ static void winraw_publish_pointers(winraw_input_t *wr)
 {
    input_pointer_frame_t *frame         = input_driver_pointers_lend();
    uint32_t *touch_pos                  = input_driver_touches_lend();
+   int order[WINRAW_MAX_POINTERS];
+#ifdef HAVE_VIDEO_WINDOWS
+   input_video_window_t touch_windows[WINRAW_MAX_POINTERS];
+#endif
    unsigned i;
+   unsigned frames;
    unsigned touches                     = 0;
    unsigned count                       = wr->mouse_cnt;
-   struct winraw_pointer_status *touch  = wr->pointer_head.next;
 
    if (count > MAX_USERS)
       count = MAX_USERS;
@@ -2019,24 +2044,65 @@ static void winraw_publish_pointers(winraw_input_t *wr)
       frame[i].rel     = (uint32_t)m->dlt;
       frame[i].buttons = (uint16_t)buttons;
    }
-   for (; touch && touches < 16; touch = touch->next)
-      touch_pos[touches++] = touch->pointer_pos;
+   /* The frontend reads the touches only beside a frame: with no raw
+    * mouse, one that neither moves nor presses. */
+   frames = count;
+   if (!frames)
+   {
+      frame[0].pos     = 0;
+      frame[0].rel     = 0;
+      frame[0].buttons = 0;
+      frames           = 1;
+   }
+   /* the touches that are down, earliest first: a handful, so an
+    * insertion as each is taken is enough */
+   for (i = 0; i < WINRAW_MAX_POINTERS; i++)
+   {
+      unsigned j;
+      int o;
+      if (!retro_atomic_load_acquire_int(&winraw_pointers[i].id_plus1))
+         continue;
+      o = retro_atomic_load_relaxed_int(&winraw_pointers[i].order);
+      for (j = touches; j > 0 && o - order[j - 1] < 0; j--)
+      {
+         order[j]         = order[j - 1];
+         touch_pos[j]     = touch_pos[j - 1];
+#ifdef HAVE_VIDEO_WINDOWS
+         touch_windows[j] = touch_windows[j - 1];
+#endif
+      }
+      order[j]     = o;
+      touch_pos[j] = (uint32_t)retro_atomic_load_relaxed_int(
+            &winraw_pointers[i].pos);
+#ifdef HAVE_VIDEO_WINDOWS
+      touch_windows[j].window     = (unsigned)retro_atomic_load_relaxed_int(
+            &winraw_pointers[i].window);
+      touch_windows[j].generation = (unsigned)retro_atomic_load_relaxed_int(
+            &winraw_pointers[i].generation);
+#endif
+      touches++;
+   }
 
 #ifdef HAVE_VIDEO_WINDOWS
    {
       input_video_window_t windows[MAX_USERS];
+      windows[0].window     = 0;
+      windows[0].generation = 0;
       for (i = 0; i < count; i++)
          windows[i] = wr->mice[i].window;
-      input_driver_publish_window_pointers(frame, windows, count,
+      input_driver_publish_window_pointers(frame, windows, frames,
             INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_GUN_BUTTONS_BOUND);
    }
+   /* each one listed is there, and down */
+   input_driver_publish_window_touches(touch_pos, touch_windows, touches,
+         (1u << touches) - 1, (1u << touches) - 1);
 #else
-   input_driver_publish_pointers(frame, count,
+   input_driver_publish_pointers(frame, frames,
          INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_GUN_BUTTONS_BOUND);
-#endif
    /* each one listed is there, and down */
    input_driver_publish_touches(touch_pos, touches,
          (1u << touches) - 1, (1u << touches) - 1);
+#endif
 }
 
 static void winraw_poll(void *data)
@@ -2380,11 +2446,123 @@ static int16_t winraw_input_state(
 }
 
 #if !defined(_XBOX)
+/* These are defined in later SDKs, thus ifdeffed. */
+#ifndef WM_POINTERUPDATE
+#define WM_POINTERUPDATE                0x0245
+#endif
+
+#ifndef WM_POINTERDOWN
+#define WM_POINTERDOWN                  0x0246
+#endif
+
+#ifndef WM_POINTERUP
+#define WM_POINTERUP                    0x0247
+#endif
+
+#ifndef GET_POINTERID_WPARAM
+#define GET_POINTERID_WPARAM(wParam)   (LOWORD(wParam))
+#endif
+
+/* The window procedure's: a touch's position in client coordinates,
+ * of the main window or of screen window @window, which @generation
+ * still has */
+static int winraw_pointer_pos(LPARAM lpar, unsigned window,
+      unsigned generation, int was)
+{
+   POINT point;
+   point.x = GET_X_LPARAM(lpar);
+   point.y = GET_Y_LPARAM(lpar);
+#ifdef HAVE_VIDEO_WINDOWS
+   if (window)
+   {
+      POINT client;
+      /* its window gone: it stays where it was */
+      if (!win32_video_window_point(window, generation, point, &client))
+         return was;
+      return (int)VIDEO_POS_PACK(client.x, client.y);
+   }
+#endif
+   ScreenToClient((HWND)video_driver_window_get(), &point);
+   return (int)VIDEO_POS_PACK(point.x, point.y);
+}
+
+static struct winraw_pointer_slot *winraw_pointer_find(int pointer_id)
+{
+   unsigned i;
+   for (i = 0; i < WINRAW_MAX_POINTERS; i++)
+      if (retro_atomic_load_relaxed_int(&winraw_pointers[i].id_plus1)
+            == pointer_id + 1)
+         return &winraw_pointers[i];
+   return NULL;
+}
+
+static void winraw_pointer_down(int pointer_id, LPARAM lpar)
+{
+   unsigned i;
+   if (winraw_pointer_find(pointer_id))
+      return;
+   for (i = 0; i < WINRAW_MAX_POINTERS; i++)
+      if (!retro_atomic_load_relaxed_int(&winraw_pointers[i].id_plus1))
+      {
+         unsigned window     = 0;
+         unsigned generation = 0;
+#ifdef HAVE_VIDEO_WINDOWS
+         POINT screen, client;
+         screen.x = GET_X_LPARAM(lpar);
+         screen.y = GET_Y_LPARAM(lpar);
+         window   = win32_video_window_under(screen, &generation, &client);
+         retro_atomic_store_relaxed_int(&winraw_pointers[i].window,
+               (int)window);
+         retro_atomic_store_relaxed_int(&winraw_pointers[i].generation,
+               (int)generation);
+#endif
+         retro_atomic_store_relaxed_int(&winraw_pointers[i].pos,
+               winraw_pointer_pos(lpar, window, generation, 0));
+         retro_atomic_store_relaxed_int(&winraw_pointers[i].order,
+               retro_atomic_fetch_add_int(&winraw_pointer_order, 1));
+         retro_atomic_store_release_int(&winraw_pointers[i].id_plus1,
+               pointer_id + 1);
+         return;
+      }
+   /* more touches than slots: the rest are not followed */
+}
+
 bool winraw_handle_message(UINT msg,
       WPARAM wpar, LPARAM lpar)
 {
    switch (msg)
    {
+      case WM_POINTERDOWN:
+         winraw_pointer_down(GET_POINTERID_WPARAM(wpar), lpar);
+         return true;
+      case WM_POINTERUP:
+         {
+            struct winraw_pointer_slot *slot = winraw_pointer_find(
+                  GET_POINTERID_WPARAM(wpar));
+            if (slot)
+               retro_atomic_store_release_int(&slot->id_plus1, 0);
+         }
+         return true;
+      case WM_POINTERUPDATE:
+         {
+            struct winraw_pointer_slot *slot = winraw_pointer_find(
+                  GET_POINTERID_WPARAM(wpar));
+            if (slot)
+            {
+               unsigned window     = 0;
+               unsigned generation = 0;
+#ifdef HAVE_VIDEO_WINDOWS
+               window     = (unsigned)retro_atomic_load_relaxed_int(
+                     &slot->window);
+               generation = (unsigned)retro_atomic_load_relaxed_int(
+                     &slot->generation);
+#endif
+               retro_atomic_store_relaxed_int(&slot->pos,
+                     winraw_pointer_pos(lpar, window, generation,
+                        retro_atomic_load_relaxed_int(&slot->pos)));
+            }
+         }
+         return true;
       case WM_SETFOCUS:
          retro_atomic_store_release_int(&winraw_focus_flag, 1);
          break;
@@ -2431,6 +2609,8 @@ bool winraw_handle_message(UINT msg,
 static void winraw_free(void *data)
 {
    winraw_input_t *wr = (winraw_input_t*)data;
+
+   winraw_clear_pointers();
 
    if (wr->window)
    {

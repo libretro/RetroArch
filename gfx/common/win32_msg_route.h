@@ -151,16 +151,18 @@ static INLINE unsigned win32_msg_route(enum win32_input_kind input,
          }
          return WIN32_ROUTE_KEY | WIN32_ROUTE_KEY_EVENT;
 
-      /* the mouse and the pen: DirectInput reads them from here */
+      /* the mouse: DirectInput reads it from here */
       case WIN32_MSG_MOUSEMOVE:
-      case WIN32_MSG_POINTERDOWN:
-      case WIN32_MSG_POINTERUP:
-      case WIN32_MSG_POINTERUPDATE:
       case WIN32_MSG_MOUSEWHEEL:
       case WIN32_MSG_MOUSEHWHEEL:
       case WIN32_MSG_NCLBUTTONDBLCLK:
          return (desktop && input == WIN32_INPUT_DINPUT)
             ? WIN32_ROUTE_INPUT : 0;
+      /* touches and the pen: DirectInput and raw input read them here */
+      case WIN32_MSG_POINTERDOWN:
+      case WIN32_MSG_POINTERUP:
+      case WIN32_MSG_POINTERUPDATE:
+         return (desktop && driver) ? WIN32_ROUTE_INPUT : 0;
 
       case WIN32_MSG_DEVICECHANGE:
          return (desktop && driver) ? WIN32_ROUTE_INPUT : 0;

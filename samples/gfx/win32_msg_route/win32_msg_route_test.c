@@ -136,7 +136,8 @@ static unsigned old_common(unsigned message, bool hotplug, bool xbox, bool threa
    return 0;
 }
 
-/* wnd_proc_winraw_common_internal(), as it stood. */
+/* wnd_proc_winraw_common_internal(), as it stood, with the touches
+ * (WM_POINTER*) handed to the driver. */
 static unsigned old_winraw(unsigned message, bool hotplug, bool xbox, bool threads)
 {
    switch (message)
@@ -148,9 +149,6 @@ static unsigned old_winraw(unsigned message, bool hotplug, bool xbox, bool threa
          /* keyboard_event in winraw_callback */
          return KEY;
       case WM_MOUSEMOVE:
-      case WM_POINTERDOWN:
-      case WM_POINTERUP:
-      case WM_POINTERUPDATE:
       case WM_MOUSEWHEEL:
       case WM_MOUSEHWHEEL:
       case WM_NCLBUTTONDBLCLK:
@@ -193,6 +191,11 @@ static unsigned old_winraw(unsigned message, bool hotplug, bool xbox, bool threa
       case WM_DISPLAYCHANGE:
          return DISPLAY;
       case WM_DEVICECHANGE:
+         return xbox ? 0 : INPUT;
+      /* touches, which the driver reads as DirectInput does */
+      case WM_POINTERDOWN:
+      case WM_POINTERUP:
+      case WM_POINTERUPDATE:
          return xbox ? 0 : INPUT;
    }
    return 0;

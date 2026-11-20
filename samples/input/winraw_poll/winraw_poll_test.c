@@ -31,6 +31,10 @@
  *   driver;
  * - which modifier keys are held is read from the key table, and only
  *   the lock keys' toggles from the published value;
+ * - touches handed on by the main window and a screen's own window are
+ *   published at the poll, earliest first, each in its window's client
+ *   coordinates and with the window it went down in, down until lifted,
+ *   with a frame beside them when no raw mouse is listed;
  * - free takes the window down, and twenty restarts each do the same;
  * - with everything on one thread, as without threaded video, the
  *   same holds.
@@ -147,21 +151,54 @@ input_pointer_frame_t *input_driver_pointers_lend(void)
    return lent;
 }
 
+/* the frames of the last poll: the frontend reads the touches only
+ * beside one */
+static unsigned              pub_frame_n;
+static input_pointer_frame_t pub_frame0;
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags)
-{ (void)frames; (void)count; (void)flags; }
+{
+   (void)flags;
+   pub_frame_n = count;
+   if (count)
+      pub_frame0 = frames[0];
+}
 void input_driver_publish_window_pointers(const input_pointer_frame_t *frames,
       const input_video_window_t *windows, unsigned count, unsigned flags)
-{ (void)frames; (void)windows; (void)count; (void)flags; }
+{
+   (void)windows;
+   input_driver_publish_pointers(frames, count, flags);
+}
 uint32_t *input_driver_touches_lend(void)
 {
    static uint32_t lent[32];
    return lent;
 }
 
+/* the touches of the last poll */
+static unsigned             pub_touch_n;
+static uint32_t             pub_touch_pos[32];
+static input_video_window_t pub_touch_win[32];
+static unsigned             pub_touch_down;
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
       unsigned present, unsigned down)
-{ (void)pos; (void)count; (void)present; (void)down; }
+{
+   (void)present;
+   pub_touch_n    = count;
+   pub_touch_down = down;
+   memcpy(pub_touch_pos, pos, count * sizeof(*pos));
+   memset(pub_touch_win, 0, sizeof(pub_touch_win));
+}
+void input_driver_publish_window_touches(const uint32_t *pos,
+      const input_video_window_t *windows, unsigned count,
+      unsigned present, unsigned down)
+{
+   (void)present;
+   pub_touch_n    = count;
+   pub_touch_down = down;
+   memcpy(pub_touch_pos, pos, count * sizeof(*pos));
+   memcpy(pub_touch_win, windows, count * sizeof(*windows));
+}
 unsigned input_driver_pointer_read_as(unsigned i) { (void)i; return 0; }
 /* the main window, as the video driver has it */
 static HWND stub_video_window;
@@ -172,10 +209,30 @@ bool video_driver_has_focus(void) { return true; }
 /* an open screen's own window in front */
 static bool stub_screen_focus;
 bool win32_video_window_open(HWND hwnd) { (void)hwnd; return stub_screen_focus; }
-/* no screen's own window is under the cursor */
+/* a screen's own window, window 1, by its client area on the desktop:
+ * none until the touch checks set it */
+static RECT     stub_screen_area;
+static unsigned stub_screen_gen;
 unsigned win32_video_window_under(POINT screen, unsigned *generation,
       POINT *client)
-{ (void)screen; (void)client; *generation = 0; return 0; }
+{
+   *generation = 0;
+   if (!PtInRect(&stub_screen_area, screen))
+      return 0;
+   *generation = stub_screen_gen;
+   client->x   = screen.x - stub_screen_area.left;
+   client->y   = screen.y - stub_screen_area.top;
+   return 1;
+}
+bool win32_video_window_point(unsigned window, unsigned generation,
+      POINT screen, POINT *client)
+{
+   if (window != 1 || generation != stub_screen_gen)
+      return false;
+   client->x = screen.x - stub_screen_area.left;
+   client->y = screen.y - stub_screen_area.top;
+   return true;
+}
 bool input_config_get_video_windows_enable(void) { return stub_screen_focus; }
 void win32_clip_window(bool grab) { (void)grab; }
 void win32_hotplug_arm(void) { }
@@ -231,6 +288,8 @@ static winraw_input_t *wr;
  * where the driver is started from ---------------------------------- */
 static HANDLE vt_ready, vt_quit;
 static HWND   vt_window;
+/* a screen's own window, hidden */
+static HWND   vt_screen;
 static DWORD  vt_tid;
 static void  *vt_init_result;
 static retro_atomic_int_t vt_do_init;
@@ -241,6 +300,12 @@ HWND win32_foreground_window(void) { return win32_foreground_get(&foreground); }
 static LRESULT CALLBACK plain_proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
 {
    win32_foreground_message(&foreground, m);
+   /* touches, offered to the driver as win32_wnd_proc_route() does in
+    * the main window and a screen's own window */
+   if (     (m == WM_POINTERDOWN || m == WM_POINTERUP
+         ||  m == WM_POINTERUPDATE)
+         && winraw_handle_message(m, wp, lp))
+      return 0;
    return DefWindowProcA(w, m, wp, lp);
 }
 
@@ -256,6 +321,8 @@ static DWORD WINAPI video_thread(LPVOID arg)
    wc.hInstance     = GetModuleHandleA(NULL);
    wc.lpszClassName = "winraw-poll-test";
    RegisterClassA(&wc);
+   vt_screen = CreateWindowExA(0, wc.lpszClassName, "s",
+         WS_POPUP, 300, 10, 160, 120, NULL, NULL, wc.hInstance, NULL);
    vt_window = CreateWindowExA(0, wc.lpszClassName, "t",
          WS_OVERLAPPEDWINDOW | WS_VISIBLE, 10, 10, 200, 100,
          NULL, NULL, wc.hInstance, NULL);
@@ -278,6 +345,8 @@ static DWORD WINAPI video_thread(LPVOID arg)
    }
    if (vt_window)
       DestroyWindow(vt_window);
+   if (vt_screen)
+      DestroyWindow(vt_screen);
    return 0;
 }
 
@@ -703,6 +772,135 @@ int main(void)
       stub_video_window = NULL;
       memset(wr->kb_keys, 0, SC_LAST);
       printf("   ok   focus: keys with a screen's own window in front\n");
+   }
+
+   /* ---- touches -------------------------------------------------- */
+   /* Handed on by the main window's procedure and a screen's own
+    * window's, on the video thread: each touch is published at the
+    * poll in the window it went down in, in that window's client
+    * coordinates, down, earliest first, until it is lifted. */
+   if (vt_window && vt_screen)
+   {
+      POINT main_pt   = { 30, 40 };
+      POINT screen_pt = { 12, 20 };
+      POINT moved, far_pt;
+      RECT  area;
+
+      GetClientRect(vt_screen, &area);
+      MapWindowPoints(vt_screen, NULL, (POINT*)&area, 2);
+      stub_screen_area  = area;
+      stub_screen_gen   = 7;
+      stub_video_window = vt_window;
+      ClientToScreen(vt_window, &main_pt);
+      ClientToScreen(vt_screen, &screen_pt);
+
+      SendMessageA(vt_window, WM_POINTERDOWN, MAKEWPARAM(5, 0),
+            MAKELPARAM(main_pt.x, main_pt.y));
+      winraw_poll(wr);
+      CHECK(pub_touch_n == 1 && pub_touch_pos[0] == VIDEO_POS_PACK(30, 40)
+            && pub_touch_win[0].window == 0 && pub_touch_down == 1,
+            "a touch in the main window: %u published, the first at %d,%d"
+            " in window %u", pub_touch_n, VIDEO_POS_X(pub_touch_pos[0]),
+            VIDEO_POS_Y(pub_touch_pos[0]), pub_touch_win[0].window);
+
+      SendMessageA(vt_screen, WM_POINTERDOWN, MAKEWPARAM(6, 0),
+            MAKELPARAM(screen_pt.x, screen_pt.y));
+      winraw_poll(wr);
+      CHECK(pub_touch_n == 2 && pub_touch_down == 3
+            && pub_touch_pos[0] == VIDEO_POS_PACK(30, 40)
+            && pub_touch_pos[1] == VIDEO_POS_PACK(12, 20)
+            && pub_touch_win[1].window == 1
+            && pub_touch_win[1].generation == 7,
+            "a second touch, in a screen's own window: %u published, the"
+            " second at %d,%d in window %u (generation %u)", pub_touch_n,
+            VIDEO_POS_X(pub_touch_pos[1]), VIDEO_POS_Y(pub_touch_pos[1]),
+            pub_touch_win[1].window, pub_touch_win[1].generation);
+
+      moved.x = screen_pt.x + 3;
+      moved.y = screen_pt.y + 5;
+      SendMessageA(vt_screen, WM_POINTERUPDATE, MAKEWPARAM(6, 0),
+            MAKELPARAM(moved.x, moved.y));
+      winraw_poll(wr);
+      CHECK(pub_touch_n == 2 && pub_touch_pos[1] == VIDEO_POS_PACK(15, 25)
+            && pub_touch_win[1].window == 1,
+            "the screen window's touch moved: at %d,%d in window %u",
+            VIDEO_POS_X(pub_touch_pos[1]), VIDEO_POS_Y(pub_touch_pos[1]),
+            pub_touch_win[1].window);
+
+      /* its window remade: it stays where it was */
+      stub_screen_gen = 8;
+      far_pt.x        = moved.x + 10;
+      far_pt.y        = moved.y + 10;
+      SendMessageA(vt_screen, WM_POINTERUPDATE, MAKEWPARAM(6, 0),
+            MAKELPARAM(far_pt.x, far_pt.y));
+      winraw_poll(wr);
+      CHECK(pub_touch_n == 2 && pub_touch_pos[1] == VIDEO_POS_PACK(15, 25)
+            && pub_touch_win[1].generation == 7,
+            "a touch whose window was remade moved to %d,%d",
+            VIDEO_POS_X(pub_touch_pos[1]), VIDEO_POS_Y(pub_touch_pos[1]));
+      stub_screen_gen = 7;
+
+      SendMessageA(vt_window, WM_POINTERUP, MAKEWPARAM(5, 0),
+            MAKELPARAM(main_pt.x, main_pt.y));
+      winraw_poll(wr);
+      CHECK(pub_touch_n == 1 && pub_touch_win[0].window == 1
+            && pub_touch_pos[0] == VIDEO_POS_PACK(15, 25),
+            "the main window's touch lifted: %u left, in window %u",
+            pub_touch_n, pub_touch_win[0].window);
+
+      /* a new touch takes the slot freed, ahead of the one still down,
+       * and is still published after it */
+      SendMessageA(vt_window, WM_POINTERDOWN, MAKEWPARAM(7, 0),
+            MAKELPARAM(main_pt.x, main_pt.y));
+      winraw_poll(wr);
+      CHECK(pub_touch_n == 2 && pub_touch_down == 3
+            && pub_touch_pos[0] == VIDEO_POS_PACK(15, 25)
+            && pub_touch_win[0].window == 1
+            && pub_touch_pos[1] == VIDEO_POS_PACK(30, 40)
+            && pub_touch_win[1].window == 0,
+            "earliest first: %u published, the first at %d,%d in window %u",
+            pub_touch_n, VIDEO_POS_X(pub_touch_pos[0]),
+            VIDEO_POS_Y(pub_touch_pos[0]), pub_touch_win[0].window);
+      SendMessageA(vt_window, WM_POINTERUP, MAKEWPARAM(7, 0),
+            MAKELPARAM(main_pt.x, main_pt.y));
+
+      SendMessageA(vt_screen, WM_POINTERUP, MAKEWPARAM(6, 0),
+            MAKELPARAM(moved.x, moved.y));
+      winraw_poll(wr);
+      CHECK(pub_touch_n == 0, "all lifted: %u left", pub_touch_n);
+
+      /* the mice listed, a frame each */
+      if (wr->mouse_cnt)
+         CHECK(pub_frame_n == (wr->mouse_cnt < MAX_USERS
+                  ? wr->mouse_cnt : MAX_USERS),
+               "%u frames for %u mice", pub_frame_n, wr->mouse_cnt);
+      /* no raw mouse: a touch is still read */
+      {
+         unsigned mice = wr->mouse_cnt;
+         wr->mouse_cnt = 0;
+         SendMessageA(vt_window, WM_POINTERDOWN, MAKEWPARAM(8, 0),
+               MAKELPARAM(main_pt.x, main_pt.y));
+         winraw_poll(wr);
+         CHECK(pub_frame_n == 1 && !pub_frame0.buttons && !pub_frame0.rel
+               && pub_touch_n == 1
+               && pub_touch_pos[0] == VIDEO_POS_PACK(30, 40),
+               "no raw mouse: %u frames (buttons %u), %u touches",
+               pub_frame_n, (unsigned)pub_frame0.buttons, pub_touch_n);
+         SendMessageA(vt_window, WM_POINTERUP, MAKEWPARAM(8, 0),
+               MAKELPARAM(main_pt.x, main_pt.y));
+         winraw_poll(wr);
+         wr->mouse_cnt = mice;
+      }
+
+      memset(&stub_screen_area, 0, sizeof(stub_screen_area));
+      stub_video_window = NULL;
+      printf("   ok   touches: in the main window and a screen's own, moved, lifted, earliest first, with no raw mouse\n");
+   }
+   else
+   {
+      /* the keys above went to a window: one to touch is made beside it */
+      CHECK(!vt_window, "a main window and no screen's own window to touch");
+      printf("   note no window to touch: touches are not checked\n");
    }
 
    /* ---- free ----------------------------------------------------- */
