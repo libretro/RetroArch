@@ -29,7 +29,7 @@ endif
 
 all: $(TARGET)
 
-$(ASSETDIR)/rpyrowave_shaders.h: Makefile $(RA)/tools/pyrowave_shaders.py $(RA)/tools/spirv_optimize.py \
+$(ASSETDIR)/rpyrowave_shaders.h: Makefile $(RA)/tools/pyrowave_shaders.py $(RA)/tools/spirv_optimize.py $(RA)/tools/glsl_minify.py \
       $(COMMON)/formats/pyrowave/shaders/color.hlsl $(COMMON)/formats/pyrowave/shaders/dwt.hlsl \
       $(COMMON)/formats/pyrowave/shaders/packet.hlsl
 	$(PYTHON) $(RA)/tools/pyrowave_shaders.py --output $@ --export-spirv $(ASSETDIR)

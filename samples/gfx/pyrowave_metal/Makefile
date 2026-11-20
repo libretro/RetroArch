@@ -40,7 +40,7 @@ define METAL_NATIVE_OBJECT
 endef
 $(foreach source,$(NATIVE_C_SOURCES),$(eval $(call METAL_NATIVE_OBJECT,$(source))))
 
-$(ASSETDIR)/rpyrowave_shaders.h: $(RA)/tools/pyrowave_shaders.py $(RA)/tools/spirv_optimize.py \
+$(ASSETDIR)/rpyrowave_shaders.h: $(RA)/tools/pyrowave_shaders.py $(RA)/tools/spirv_optimize.py $(RA)/tools/glsl_minify.py \
       $(COMMON)/formats/pyrowave/shaders/color.hlsl \
       $(COMMON)/formats/pyrowave/shaders/dwt.hlsl \
       $(COMMON)/formats/pyrowave/shaders/packet.hlsl

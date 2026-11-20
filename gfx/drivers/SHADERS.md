@@ -83,3 +83,22 @@ after optimization.
 PyroWave's Vulkan-only exports use the size pipeline with debug names
 stripped. GLSL and Metal are still generated from the original named IR;
 their committed assets do not change when Vulkan modules are optimized.
+
+## Embedded GLSL text
+
+The generated GL-core fallback strings and embedded PyroWave GLSL/GLES
+compute strings pass through `tools/glsl_minify.py`. Readable shader sources
+and committed compute source artifacts remain unchanged. The minifier only
+removes comments and unnecessary whitespace, verifies that the GLSL token
+stream is identical, and preserves identifiers and preprocessor directives.
+Line-sensitive source and escaped line continuations are retained verbatim.
+It does not rewrite arithmetic, rename uniforms or add runtime processing.
+The C-stringified GL2/GL3 shader headers already remove comments and collapse
+whitespace through the C preprocessor; they do not use this generation step.
+
+CI checks tricky token boundaries and directive handling, and verifies that
+all six PyroWave GLSL/GLES variants compile to byte-identical OpenGL SPIR-V
+before and after minification with the reference compiler. Actual GL driver
+rendering and codec tests cover the embedded strings. This establishes
+unchanged operations rather than making an unmeasured FPS claim for every
+vendor driver.

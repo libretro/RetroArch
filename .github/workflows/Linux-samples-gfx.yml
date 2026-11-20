@@ -64,6 +64,7 @@ jobs:
           make -j2 GL_DEBUG=1
           python3 tools/pyrowave_embed_shaders.py --check
           python3 tools/pyrowave_embed_shaders_test.py
+          python3 tools/glsl_minify_test.py
           python3 tools/spirv_optimize_test.py
           make -C samples/gfx/pyrowave_session check frontend-fixtures
           python3 tools/pyrowave_shaders.py --output "$RUNNER_TEMP/pyrowave-shaders/rpyrowave_shaders.h" --export-spirv "$RUNNER_TEMP/pyrowave-shaders" --export-glsl "$RUNNER_TEMP/pyrowave-shaders"

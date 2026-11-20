@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import struct
 from pyrowave_shaders import array, text_array, write_changed
+from glsl_minify import minify
 
 SOURCE = Path(__file__).resolve().parents[1] / 'libretro-common/formats/pyrowave/shaders'
 
@@ -66,7 +67,10 @@ def main():
             lines.append('#ifdef RPYROWAVE_SHADER_' + language)
             for info, data in bundle:
                 if info['language'] != language: continue
-                if info['text']: lines.append(text_array(info['symbol'], data))
+                if info['text']:
+                    if info['language'] in ('GLSL', 'GLES'):
+                        data = minify(data.decode('ascii')).encode('ascii')
+                    lines.append(text_array(info['symbol'], data))
                 else:
                     words = struct.unpack('<%dI' % (len(data) // 4), data)
                     lines.append(array(info['symbol'], 'uint32_t', ['0x%08xU' % word for word in words], 8))

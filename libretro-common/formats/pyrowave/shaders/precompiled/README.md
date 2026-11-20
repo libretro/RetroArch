@@ -19,7 +19,10 @@ Each color/DWT/packet stage has:
 
 `manifest.json` records source hashes, artifact sizes/hashes and compiler
 versions/profiles. `tools/pyrowave_embed_shaders.py` verifies the bundle and
-turns these exact bytes into C89 arrays for the executable. It needs Python,
+embeds them as C89 arrays for the executable. Binary artifacts remain byte
+identical; GLSL/GLES text is conservatively minified during embedding while
+retaining tokens, identifiers and directives. Readable source files remain
+unchanged. It needs Python,
 not glslang, SPIRV-Cross, spirv-opt, FXC or DXC. A source change fails verification until
 its artifacts are regenerated; corrupted or wrong-format blobs fail too.
 Only formats required by enabled video backends become executable data.
