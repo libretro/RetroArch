@@ -1002,6 +1002,21 @@ jobs:
           make clean
           echo "[pass] winraw_poll_test (wine)"
 
+      - name: Build and run dinput_touch_test (mingw + Wine)
+        shell: bash
+        working-directory: samples/input/dinput_touch
+        run: |
+          set -eu
+          # input/drivers/dinput.c's touches, as the window procedures
+          # hand WM_POINTER* to it: published in the window each went
+          # down in until lifted, dropped when their window loses them,
+          # and started again by a second down for one still held.
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          make clean && make -j$(nproc) all
+          WINEDEBUG=-all timeout 300 make check
+          make clean
+          echo "[pass] dinput_touch_test (wine)"
+
       - name: Build and run winraw_mouse_hotplug_test (mingw + Wine)
         shell: bash
         working-directory: samples/input/winraw_mouse_hotplug

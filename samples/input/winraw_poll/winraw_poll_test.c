@@ -33,8 +33,9 @@
  *   the lock keys' toggles from the published value;
  * - touches handed on by the main window and a screen's own window are
  *   published at the poll, earliest first, each in its window's client
- *   coordinates and with the window it went down in, down until lifted,
- *   with a frame beside them when no raw mouse is listed;
+ *   coordinates and with the window it went down in, down until lifted
+ *   or until its window loses it, with a frame beside them when no raw
+ *   mouse is listed; a second down for one held starts it again;
  * - free takes the window down, and twenty restarts each do the same;
  * - with everything on one thread, as without threaded video, the
  *   same holds.
@@ -303,7 +304,7 @@ static LRESULT CALLBACK plain_proc(HWND w, UINT m, WPARAM wp, LPARAM lp)
    /* touches, offered to the driver as win32_wnd_proc_route() does in
     * the main window and a screen's own window */
    if (     (m == WM_POINTERDOWN || m == WM_POINTERUP
-         ||  m == WM_POINTERUPDATE)
+         ||  m == WM_POINTERUPDATE || m == WM_POINTERCAPTURECHANGED)
          && winraw_handle_message(m, wp, lp))
       return 0;
    return DefWindowProcA(w, m, wp, lp);
@@ -869,6 +870,36 @@ int main(void)
       winraw_poll(wr);
       CHECK(pub_touch_n == 0, "all lifted: %u left", pub_touch_n);
 
+      /* its window gone from under a resting finger: no lift comes,
+       * only the capture taken away */
+      SendMessageA(vt_screen, WM_POINTERDOWN, MAKEWPARAM(9, 0),
+            MAKELPARAM(screen_pt.x, screen_pt.y));
+      winraw_poll(wr);
+      CHECK(pub_touch_n == 1 && pub_touch_win[0].window == 1,
+            "a touch in a screen's own window: %u published", pub_touch_n);
+      SendMessageA(vt_screen, WM_POINTERCAPTURECHANGED, MAKEWPARAM(9, 0), 0);
+      winraw_poll(wr);
+      CHECK(pub_touch_n == 0, "a touch whose window lost it: %u left",
+            pub_touch_n);
+      SendMessageA(vt_screen, WM_POINTERUP, MAKEWPARAM(9, 0),
+            MAKELPARAM(screen_pt.x, screen_pt.y));
+
+      /* a second down for an id still held, no lift between: a new touch */
+      SendMessageA(vt_screen, WM_POINTERDOWN, MAKEWPARAM(10, 0),
+            MAKELPARAM(screen_pt.x, screen_pt.y));
+      SendMessageA(vt_window, WM_POINTERDOWN, MAKEWPARAM(10, 0),
+            MAKELPARAM(main_pt.x, main_pt.y));
+      winraw_poll(wr);
+      CHECK(pub_touch_n == 1 && pub_touch_win[0].window == 0
+            && pub_touch_pos[0] == VIDEO_POS_PACK(30, 40),
+            "a second down for a touch held: %u published, the first at"
+            " %d,%d in window %u", pub_touch_n, VIDEO_POS_X(pub_touch_pos[0]),
+            VIDEO_POS_Y(pub_touch_pos[0]), pub_touch_win[0].window);
+      SendMessageA(vt_window, WM_POINTERUP, MAKEWPARAM(10, 0),
+            MAKELPARAM(main_pt.x, main_pt.y));
+      winraw_poll(wr);
+      CHECK(pub_touch_n == 0, "lifted again: %u left", pub_touch_n);
+
       /* the mice listed, a frame each */
       if (wr->mouse_cnt)
          CHECK(pub_frame_n == (wr->mouse_cnt < MAX_USERS
@@ -894,7 +925,7 @@ int main(void)
 
       memset(&stub_screen_area, 0, sizeof(stub_screen_area));
       stub_video_window = NULL;
-      printf("   ok   touches: in the main window and a screen's own, moved, lifted, earliest first, with no raw mouse\n");
+      printf("   ok   touches: in the main window and a screen's own, moved, lifted, earliest first, window lost, down again, with no raw mouse\n");
    }
    else
    {

@@ -1464,6 +1464,97 @@ static void native_w32_dinput(const gfx_ctx_driver_t *ctx, void *data,
 }
 #endif
 
+#ifdef HAVE_DINPUT
+#ifndef WM_POINTERDOWN
+#define WM_POINTERDOWN           0x0246
+#endif
+#ifndef WM_POINTERUP
+#define WM_POINTERUP             0x0247
+#endif
+#ifndef WM_POINTERCAPTURECHANGED
+#define WM_POINTERCAPTURECHANGED 0x024C
+#endif
+
+/* A place no touch here has, left in the lent span by a poll that
+ * lists none */
+#define NATIVE_W32_NO_TOUCH VIDEO_POS_PACK(0x7fff, 0x7fff)
+
+/* Whether DirectInput's poll lists a touch */
+static bool native_w32_touched(void *di)
+{
+   uint32_t *touches = input_driver_touches_lend();
+   touches[0]        = NATIVE_W32_NO_TOUCH;
+   input_dinput.poll(di);
+   return touches[0] != NATIVE_W32_NO_TOUCH;
+}
+
+/* Touch 1 down in a screen's own window, at its client area's 10,10 */
+static void native_w32_touch_down(HWND secondary, LPARAM *at)
+{
+   POINT point;
+   point.x = 10;
+   point.y = 10;
+   ClientToScreen(secondary, &point);
+   *at     = MAKELPARAM(point.x, point.y);
+   SendMessage(secondary, WM_POINTERDOWN, 1, *at);
+}
+
+/* Taken from the window as DestroyWindow takes it down */
+static HWND native_w32_lost_in;
+
+static LRESULT CALLBACK native_w32_lost_hook(int code, WPARAM wparam,
+      LPARAM lparam)
+{
+   const CWPSTRUCT *msg = (const CWPSTRUCT*)lparam;
+   if (     code == HC_ACTION
+         && msg->message == WM_DESTROY
+         && msg->hwnd == native_w32_lost_in)
+      SendMessage(msg->hwnd, WM_POINTERCAPTURECHANGED, 1, 0);
+   return CallNextHookEx(NULL, code, wparam, lparam);
+}
+
+/* A touch's end reaches the driver from a screen's own window its user
+ * has closed, which stays until its owner takes it down, and from one
+ * being taken down, already out of the list of windows */
+static void native_w32_touch_ends(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *request, video_window_native_t *window)
+{
+   HHOOK hook;
+   LPARAM at;
+   void *di = input_dinput.init(NULL);
+   if (!di)
+   {
+      CHECK(!"DirectInput");
+      return;
+   }
+   native_w32_touch_down(native_w32_window(window), &at);
+   CHECK(native_w32_touched(di));
+   PostMessage(native_w32_window(window), WM_CLOSE, 0, 0);
+   native_window_wait(ctx, data, request, window, NATIVE_EVENT(CLOSE), 0);
+   SendMessage(native_w32_window(window), WM_POINTERUP, 1, at);
+   CHECK(!native_w32_touched(di));
+   ctx->windows->destroy(data, window);
+   request->generation = video_driver_window_generation();
+   CHECK(ctx->windows->create(data, request, window));
+   native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
+
+   native_w32_touch_down(native_w32_window(window), &at);
+   CHECK(native_w32_touched(di));
+   native_w32_lost_in = native_w32_window(window);
+   hook = SetWindowsHookEx(WH_CALLWNDPROC, native_w32_lost_hook, NULL,
+         GetCurrentThreadId());
+   CHECK(hook != NULL);
+   ctx->windows->destroy(data, window);
+   if (hook)
+      UnhookWindowsHookEx(hook);
+   CHECK(!native_w32_touched(di));
+   request->generation = video_driver_window_generation();
+   CHECK(ctx->windows->create(data, request, window));
+   native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
+   input_dinput.free(di);
+}
+#endif
+
 static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       video_window_request_t *request, video_window_native_t *window)
 {
@@ -1898,6 +1989,9 @@ static void native_w32_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
       native_wgl_failures(ctx, data, request, window);
       CHECK(native_w32_main_intact(&main_state));
    }
+#endif
+#ifdef HAVE_DINPUT
+   native_w32_touch_ends(ctx, data, request, window);
 #endif
    native_w32_monitors_check(ctx, data, request);
 }

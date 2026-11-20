@@ -191,6 +191,10 @@ typedef char win32_dwm_timing_info_size_check[
 #define WM_POINTERUP                    0x0247
 #endif
 
+#ifndef WM_POINTERCAPTURECHANGED
+#define WM_POINTERCAPTURECHANGED        0x024C
+#endif
+
 /* Win32 UI resource identifiers (formerly ui_win32_resource.h) */
 
 const GUID GUID_DEVINTERFACE_HID = { 0x4d1e55b2, 0xf16f, 0x11Cf, { 0x88, 0xcb, 0x00, 0x11, 0x11, 0x00, 0x00, 0x30 } };
@@ -1436,6 +1440,7 @@ typedef char win32_msg_route_numbers_check[
       && WIN32_MSG_POINTERUPDATE      == WM_POINTERUPDATE
       && WIN32_MSG_POINTERDOWN        == WM_POINTERDOWN
       && WIN32_MSG_POINTERUP          == WM_POINTERUP
+      && WIN32_MSG_POINTERCAPTURECHANGED == WM_POINTERCAPTURECHANGED
 #ifdef HAVE_THREADS
       && WIN32_MSG_BROWSER_OPEN_RESULT == WM_BROWSER_OPEN_RESULT
       && WIN32_MSG_BROWSER_CANCELLED   == WM_BROWSER_CANCELLED
@@ -2518,6 +2523,13 @@ static LRESULT CALLBACK win32_video_window_proc(HWND hwnd, UINT message,
 
    win32_foreground_message(&win32_foreground, message);
 
+   /* A touch's end, handed on whatever the window's state: a lift can
+    * come once its user has closed it, and a lost touch as it goes,
+    * after destroy() has taken it out */
+   if (     message == WM_POINTERUP
+         || message == WM_POINTERCAPTURECHANGED)
+      return win32_wnd_proc_route(hwnd, message, wparam, lparam);
+
    if (!state)
       return DefWindowProc(hwnd, message, wparam, lparam);
    window = state->common.native;
@@ -2575,7 +2587,6 @@ static LRESULT CALLBACK win32_video_window_proc(HWND hwnd, UINT message,
       case WM_IME_COMPOSITION:
       case WM_IME_ENDCOMPOSITION:
       case WM_POINTERDOWN:
-      case WM_POINTERUP:
       case WM_POINTERUPDATE:
       case WM_MOUSEWHEEL:
       case WM_MOUSEHWHEEL:

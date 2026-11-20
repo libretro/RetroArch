@@ -110,6 +110,7 @@ enum win32_input_kind
 #define WIN32_MSG_POINTERUPDATE      0x0245
 #define WIN32_MSG_POINTERDOWN        0x0246
 #define WIN32_MSG_POINTERUP          0x0247
+#define WIN32_MSG_POINTERCAPTURECHANGED 0x024C
 /* WM_USER + 0 and + 1: the file browser thread's answers */
 #define WIN32_MSG_BROWSER_OPEN_RESULT 0x0400
 #define WIN32_MSG_BROWSER_CANCELLED   0x0401
@@ -162,6 +163,7 @@ static INLINE unsigned win32_msg_route(enum win32_input_kind input,
       case WIN32_MSG_POINTERDOWN:
       case WIN32_MSG_POINTERUP:
       case WIN32_MSG_POINTERUPDATE:
+      case WIN32_MSG_POINTERCAPTURECHANGED:
          return (desktop && driver) ? WIN32_ROUTE_INPUT : 0;
 
       case WIN32_MSG_DEVICECHANGE:
