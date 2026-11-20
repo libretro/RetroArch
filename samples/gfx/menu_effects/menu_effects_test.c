@@ -31,6 +31,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#define main shader_source_dump_main
+#include "../../../tools/d3d_shader_sources.c"
+#undef main
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -54,6 +57,18 @@
 #define HAVE_D3D11
 #include "../../../menu/drivers/xmb_effects.h"
 #include "../../../gfx/common/menu_ribbon.h"
+
+static const char *effect_hlsl(const gfx_display_effect_desc_t *desc)
+{
+   const char *name = desc->d3d_program;
+   if (!strcmp(name, "ribbon")) return ribbon_source();
+   if (!strcmp(name, "ribbon_simple")) return shader_ribbon_simple;
+   if (!strcmp(name, "simple_snow")) return shader_simple_snow;
+   if (!strcmp(name, "snow")) return shader_snow;
+   if (!strcmp(name, "bokeh")) return shader_bokeh;
+   if (!strcmp(name, "snowflake")) return shader_snowflake;
+   return NULL;
+}
 
 /* The frontend's log, which the sources under test write to */
 void RARCH_LOG(const char *fmt, ...)
@@ -175,7 +190,7 @@ static void check_snow_sources(void)
       check_snow_source(n, "GLSL legacy", d->glsl_fragment[0]);
       check_snow_source(n, "GLSL core", d->glsl_fragment[1]);
       check_snow_source(n, "SM3", d->hlsl_sm3);
-      check_snow_source(n, "SM4", d->hlsl_sm4);
+      check_snow_source(n, "SM4", effect_hlsl(d));
    }
    check_snow_source("simple snow", "Vulkan", vk_snow_simple_frag);
    check_snow_source("snow", "Vulkan", vk_snow_frag);
@@ -264,17 +279,17 @@ static void check_table(const char *spirv_dir)
       check(     has(d->hlsl_sm3, "main_vertex")
             && has(d->hlsl_sm3, "main_fragment"),
             "%s: SM3 source with main_vertex and main_fragment", n);
-      check(has(d->hlsl_sm4, "VSMain") && has(d->hlsl_sm4, "PSMain"),
+      check(has(effect_hlsl(d), "VSMain") && has(effect_hlsl(d), "PSMain"),
             "%s: SM4 source with VSMain and PSMain", n);
       if (!mesh)
          check(has(d->hlsl_sm3, "modelViewProj"),
                "%s: SM3 reads modelViewProj", n);
       if (ribbon)
-         check(has(d->hlsl_sm3, "Ribbon") && has(d->hlsl_sm4, "Ribbon"),
+         check(has(d->hlsl_sm3, "Ribbon") && has(effect_hlsl(d), "Ribbon"),
                "%s: SM3 and SM4 read Ribbon", n);
       if (!mesh)
          check(     has(d->hlsl_sm3, "OutputSize") && has(d->hlsl_sm3, "time")
-               && has(d->hlsl_sm4, "OutputSize") && has(d->hlsl_sm4, "time"),
+               && has(effect_hlsl(d), "OutputSize") && has(effect_hlsl(d), "time"),
                "%s: SM3 and SM4 read time and OutputSize", n);
    }
 }
@@ -463,9 +478,9 @@ static void check_hlsl(void)
       const char *n = effect_names[i];
       check_pair(n, "SM3 compiles for D3D9", d->hlsl_sm3,
             "main_vertex", "main_fragment", "vs_3_0", "ps_3_0", false);
-      check_pair(n, "SM4 compiles for D3D10 and 11", d->hlsl_sm4,
+      check_pair(n, "SM4 compiles for D3D10 and 11", effect_hlsl(d),
             "VSMain", "PSMain", "vs_4_0", "ps_4_0", true);
-      check_pair(n, "SM5 compiles for D3D12", d->hlsl_sm4,
+      check_pair(n, "SM5 compiles for D3D12", effect_hlsl(d),
             "VSMain", "PSMain", "vs_5_0", "ps_5_0", true);
    }
    /* The ribbon's glow, its passes drawn by D3D10, 11 and 12 */

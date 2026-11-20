@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#if defined(HAVE_D3D9)
+#ifdef D3D_BUILTIN_TEST
 #define D3D_BUILTIN_SM2
 #define D3D_BUILTIN_SM3
 #endif
@@ -21,12 +21,19 @@
 #endif
 typedef struct d3d_builtin_record
 {
+#ifdef D3D_BUILTIN_TEST
    uint64_t fingerprint;
    size_t source_bytes;
+#endif
    const char *program, *entry, *profile;
    const void *data;
    size_t bytes;
 } d3d_builtin_record_t;
+#ifdef D3D_BUILTIN_TEST
+#define D3D_BUILTIN_SOURCE(hash, bytes) hash, bytes,
+#else
+#define D3D_BUILTIN_SOURCE(hash, bytes)
+#endif
 #include <d3d_builtin_data.h>
 typedef struct d3d_builtin_blob
 {
@@ -68,6 +75,7 @@ static bool d3d_builtin_wrap(const d3d_builtin_record_t *record, D3DBlob *out)
    *out = &blob->iface;
    return true;
 }
+#ifdef D3D_BUILTIN_TEST
 bool d3d_builtin_shader(const char *source, size_t size,
       const char *entry, const char *profile, D3DBlob *out)
 {
@@ -87,6 +95,7 @@ bool d3d_builtin_shader(const char *source, size_t size,
    }
    return false;
 }
+#endif
 bool d3d_builtin_shader_named(const char *program, const char *entry,
       const char *profile, D3DBlob *out)
 {

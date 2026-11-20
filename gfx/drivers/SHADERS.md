@@ -18,16 +18,18 @@ each model is compiled separately for its actual native target profile.
 
 D3D10/11 built-ins use embedded DXBC. D3D12 uses DXIL on SM6 devices and DXBC
 on older devices. Blob wrappers borrow immutable executable data; releasing
-a wrapper never copies or frees shader bytes. Built-in source keys must match
-the committed catalog, and a missing key fails rather than invoking a shader
-compiler. User-supplied shader presets keep their runtime compilation path.
+a wrapper never copies or frees shader bytes. Built-in paths select short program identifiers in the committed catalog;
+HLSL source strings and source fingerprints are not embedded for lookup. A
+missing identifier fails rather than invoking a shader compiler. User-supplied shader presets keep their runtime compilation path.
 
 Ordinary builds only run Python to verify source and artifact hashes and
 embed the committed bytes. FXC and DXC are maintainer tools, not build or
 runtime dependencies for built-in D3D10/11/12 shaders. Hash checks normalize
 CRLF in sources but never modify binary bytecode. The manifests record target
 profiles, source fingerprints, artifact hashes, compiler binary hashes and
-compiler options. The embedder also verifies native program profile tokens.
+compiler options. SM4+ artifacts omit unused reflection and debug chunks;
+input/output signatures remain intact. The embedder also verifies native
+program profile tokens.
 
 To regenerate on Windows, build `tools/d3d_shader_sources.c` as C with
 `libretro-common/include` on the include path, then run:
@@ -54,8 +56,10 @@ compute kernels. These fallbacks require CPU-expanded sprite geometry or
 raster passes; they do not emulate unsupported stages. HDR transfer functions
 in lower-model fallback assets are SDR approximations, not an HDR swapchain
 implementation. Existing D3D9 effect paths remain intact; the additional
-fallback assets are available through the named bytecode catalog and are not
-a claim that every D3D9 device gains every frontend feature.
+fallback assets remain in the repository and full maintainer test catalog.
+Production builds exclude them until a frontend path uses them, along with
+backend-specific compute variants that the enabled drivers cannot use. This
+is not a claim that every D3D9 device gains every frontend feature.
 
 `make -C samples/gfx/d3d_builtin RUNNER=wine check` checks all native stages,
 source keys, COM lifetime and shared byte storage, and creates all SM4/SM5

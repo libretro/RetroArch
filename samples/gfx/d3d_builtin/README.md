@@ -9,4 +9,6 @@ preprocessing differences cannot silently fall back to runtime compilation.
 It checks every committed stage, null-terminated and explicit-length source
 keys, borrowed byte storage, COM reference counting, and native D3D11 object
 creation for SM4/SM5. SM2/SM3 token profiles and SM6 DXIL profiles are checked
-by the embedder. No FXC/DXC is needed to build or run this test.
+by the embedder. A second executable checks that the production catalog excludes unused
+SM2/SM3 and pixel fallback assets while retaining native draw/compute paths.
+No FXC/DXC is needed to build or run this test.

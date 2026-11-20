@@ -56,6 +56,7 @@
 #include "../common/dxgi_common.h"
 #include <d3d10.h>
 #include "../common/d3dcompiler_common.h"
+#include "../common/d3d_builtin.h"
 /* slang_process.h is self-contained - it only defines types and
  * constants used by pass state.  The actual slang_process() call
  * sites remain guarded with HAVE_SLANG and a compiler that prints
@@ -1108,6 +1109,15 @@ static bool d3d10_init_shader(
       if (gs_entry && !d3d_compile_from_file((LPCWSTR)src_name, gs_entry, "gs_4_0", &gs_code))
          success = false;
    }
+   else if (!src_name) /* immutable built-in program */
+   {
+      if (vs_entry && !d3d_builtin_shader_named(src, vs_entry, "vs_4_0", &vs_code))
+         success = false;
+      if (ps_entry && !d3d_builtin_shader_named(src, ps_entry, "ps_4_0", &ps_code))
+         success = false;
+      if (gs_entry && !d3d_builtin_shader_named(src, gs_entry, "gs_4_0", &gs_code))
+         success = false;
+   }
    else /* char array */
    {
       if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, "vs_4_0", &vs_code))
@@ -1150,7 +1160,8 @@ static bool d3d10_init_shader(
    return success;
 }
 
-#include "d3d_sm4_shaders/effects/bloom_sm4.hlsl.h"
+static const char bloom_vs_source[] = "bloom_vs";
+static const char bloom_ps_source[] = "bloom_ps";
 #include "../common/menu_ribbon_shader.h"
 
 static void d3d10_bloom_free(d3d10_video_t *d3d10)
@@ -1358,14 +1369,14 @@ static void *gfx_display_d3d10_effect_install(void *data,
    d3d10_video_t *d3d10 = (d3d10_video_t*)data;
    struct d3d10_effect *fx;
    bool mesh;
-   if (     !d3d10 || !desc || !desc->hlsl_sm4
+   if (     !d3d10 || !desc || !desc->d3d_program
          || d3d10->effect_count >= countof(d3d10->effects))
       return NULL;
    fx   = &d3d10->effects[d3d10->effect_count];
    mesh = (desc->flags & GFX_EFFECT_MESH) != 0;
    memset(&fx->shader, 0, sizeof(fx->shader));
-   if (!d3d10_init_shader(d3d10->device, desc->hlsl_sm4,
-            strlen(desc->hlsl_sm4), NULL, "VSMain", "PSMain", NULL,
+   if (!d3d10_init_shader(d3d10->device, desc->d3d_program,
+            strlen(desc->d3d_program), NULL, "VSMain", "PSMain", NULL,
             mesh ? mesh_desc : quad_desc,
             mesh ? countof(mesh_desc) : countof(quad_desc),
             &fx->shader))
@@ -3506,7 +3517,7 @@ static void *d3d10_gfx_init(const video_info_t* video)
       };
 
       static const char shader[] =
-#include "d3d_sm5_shaders/opaque_sm5.hlsl.h"
+"opaque"
          ;
 
       if (!d3d10_init_shader(
@@ -3529,7 +3540,7 @@ static void *d3d10_gfx_init(const video_info_t* video)
             D3D10_INPUT_PER_VERTEX_DATA, 0 },
       };
       static const char shader[] =
-#include "d3d_sm4_shaders/mesh_sm4.hlsl.h"
+"mesh"
          ;
       if (!d3d10_init_shader(
                d3d10->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
@@ -3565,7 +3576,7 @@ static void *d3d10_gfx_init(const video_info_t* video)
       };
 
       static const char shader[] =
-#include "d3d_sm4_shaders/sprite_sm4.hlsl.h"
+"sprite"
          ;
 
       d3d10_init_shader(d3d10->device, shader, sizeof(shader), NULL,
@@ -4108,7 +4119,7 @@ static void d3d10_views_release(d3d10_video_t *d3d10)
 static void d3d10_views_init(d3d10_video_t *d3d10)
 {
    static const char shader[] =
-#include "d3d_sm4_shaders/views_sm4.hlsl.h"
+"views"
       ;
    D3D10_INPUT_ELEMENT_DESC desc[3];
    D3D10_BUFFER_DESC buf_desc;

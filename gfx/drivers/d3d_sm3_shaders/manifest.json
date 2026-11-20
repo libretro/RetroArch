@@ -5,7 +5,7 @@
     "fxc": "ced7c1f95e4dffb614971826625e70da6d24aff1b4f2a3ae5952939c9547d7e6",
     "dxc": "229ae849be475d13d397921c2c6361559f07584d02b54424825ae80758cd8d67"
   },
-  "optimization": "O3; DXC HV2016",
+  "optimization": "O3; strip reflection/debug for SM4+; DXC HV2016",
   "inputs": {
     "tools/d3d_shader_sources.c": "19a957b4febdfe48b967e0224f639380e6cd565bab036dc9148be25601cc8655",
     "gfx/common/xmb_plastic.h": "638445cb607857f5e4da478425d5c0183e11f6ae705c592124c8ccfbdcad1785",

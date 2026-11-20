@@ -153,9 +153,9 @@ typedef struct gfx_display_effect_desc
    size_t spirv_vertex_size;
    size_t spirv_fragment_size;
    /* HLSL: shader model 3 with main_vertex and main_fragment, for
-    * D3D9; shader model 4 with VSMain and PSMain, for D3D10 to 12 */
+    * D3D9; a native program identifier with VSMain and PSMain, for D3D10 to 12 */
    const char *hlsl_sm3;
-   const char *hlsl_sm4;
+   const char *d3d_program;
    /* Cg for GL, with main_vertex and main_fragment: what gl2 draws
     * with where it has no GLSL */
    const char *cg_gl;

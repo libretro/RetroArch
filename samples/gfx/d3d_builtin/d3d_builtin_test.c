@@ -1,3 +1,4 @@
+#ifdef D3D_BUILTIN_TEST
 /* Exercise the production source keys, immutable blobs and COM lifetime. */
 #define main source_dump_main
 #include "../../../tools/d3d_shader_sources.c"
@@ -61,3 +62,25 @@ int main(void)
          (unsigned long)(sizeof(cases) / sizeof(cases[0])));
    return 0;
 }
+
+#else
+#include "../../../gfx/common/d3d_builtin.h"
+#include <assert.h>
+#include <stdio.h>
+int main(void)
+{
+   D3DBlob blob = NULL;
+   assert(!d3d_builtin_shader_named("opaque", "VSMain", "vs_2_0", &blob));
+   assert(!d3d_builtin_shader_named("opaque", "VSMain", "vs_3_0", &blob));
+   assert(!d3d_builtin_shader_named("planar11", "main", "cs_6_0", &blob));
+   assert(!d3d_builtin_shader_named("planar", "PSMain", "ps_4_0", &blob));
+   assert(d3d_builtin_shader_named("opaque", "VSMain", "vs_4_0", &blob));
+   blob->lpVtbl->Release(blob);
+   assert(d3d_builtin_shader_named("planar11", "main", "cs_5_0", &blob));
+   blob->lpVtbl->Release(blob);
+   assert(d3d_builtin_shader_named("planar12", "main", "cs_6_0", &blob));
+   blob->lpVtbl->Release(blob);
+   puts("PASS: production catalog omits unused fallbacks and retains native paths");
+   return 0;
+}
+#endif

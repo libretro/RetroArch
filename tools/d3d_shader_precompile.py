@@ -67,8 +67,8 @@ def main():
                     suffix = '.dxil' if model==6 else '.dxbc' if model>=4 else '.cso'
                     target = directory / ('effects' if name in EFFECTS else '') / 'precompiled' / (name+'.'+entry+suffix)
                     target.parent.mkdir(parents=True,exist_ok=True)
-                    command = ([a.dxc,'-T',profile,'-E',entry,'-HV','2016','-O3','-Fo',str(target),str(source)] if model==6 else
-                               [a.fxc,'/nologo','/T',profile,'/E',entry,'/O3','/Fo',str(target),str(source)])
+                    command = ([a.dxc,'-T',profile,'-E',entry,'-HV','2016','-O3','-Qstrip_reflect','-Qstrip_debug','-Fo',str(target),str(source)] if model==6 else
+                               [a.fxc,'/nologo','/T',profile,'/E',entry,'/O3'] + (['/Qstrip_reflect','/Qstrip_debug'] if model >= 4 else []) + ['/Fo',str(target),str(source)])
                     result = subprocess.run(command,capture_output=True,text=True)
                     if result.returncode:
                         raise SystemExit('%s %s %s\n%s%s'%(model,name,entry,result.stdout,result.stderr))
@@ -77,7 +77,7 @@ def main():
                         'file':target.relative_to(directory).as_posix(),'bytes':len(blob),
                         'sha256':hashlib.sha256(blob).hexdigest(), 'source_fingerprint':fingerprint(data),
                         'source_bytes':len(data),'source_sha256':hashlib.sha256(data).hexdigest(), 'raster_fallback':raw})
-            (directory/'manifest.json').write_text(json.dumps({'version':1,'model':model,'compilers':compilers,'optimization':'O3; DXC HV2016','inputs':inputs,'shaders':records},indent=2)+'\n',encoding='utf-8')
+            (directory/'manifest.json').write_text(json.dumps({'version':1,'model':model,'compilers':compilers,'optimization':'O3; strip reflection/debug for SM4+; DXC HV2016','inputs':inputs,'shaders':records},indent=2)+'\n',encoding='utf-8')
         print('SM%d: %d native shader stages compiled'%(model,len(records)),flush=True)
 
 if __name__=='__main__': main()

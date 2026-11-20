@@ -48,6 +48,16 @@ def records():
             result.append((model,item,data))
     return result
 
+def production_guard(model, item):
+    if item['raster_fallback']:
+        return 'defined(D3D_BUILTIN_TEST)'
+    if item['program'] == 'planar11':
+        return 'defined(D3D_BUILTIN_TEST)' if model == 6 else 'defined(D3D_BUILTIN_TEST) || defined(HAVE_D3D11)'
+    if item['program'] in ('planar12', 'nv12', 'mipmapgen'):
+        return 'defined(D3D_BUILTIN_TEST) || defined(HAVE_D3D12)'
+    return '1'
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',type=Path);p.add_argument('--check',action='store_true');p.add_argument('--test-output',type=Path);a=p.parse_args()
     shaders=records()
@@ -60,7 +70,9 @@ def main():
                 if m!=model:continue
                 name='d3d_builtin_sm%d_%s_%s'%(m,item['program'],item['entry'])
                 words=struct.unpack('<%dI'%(len(data)//4),data)
+                lines.append('#if ' + production_guard(m, item))
                 lines.append(array(name,'uint32_t',['0x%08xU'%w for w in words],8))
+                lines.append('#endif')
             lines.append('#endif')
         lines.append('static const d3d_builtin_record_t d3d_builtin_records[] = {')
         for model in range(2,7):
@@ -68,9 +80,11 @@ def main():
             for m,item,data in shaders:
                 if m!=model:continue
                 name='d3d_builtin_sm%d_%s_%s'%(m,item['program'],item['entry'])
-                lines.append('   { UINT64_C(0x%s), %du, "%s", "%s", "%s", %s, sizeof(%s) },'%(item['source_fingerprint'],item['source_bytes'],item['program'],item['entry'],item['profile'],name,name))
+                lines.append('#if ' + production_guard(m, item))
+                lines.append('   { D3D_BUILTIN_SOURCE(UINT64_C(0x%s), %du) "%s", "%s", "%s", %s, sizeof(%s) },'%(item['source_fingerprint'],item['source_bytes'],item['program'],item['entry'],item['profile'],name,name))
+                lines.append('#endif')
             lines.append('#endif')
-        lines+=['   { 0, 0, NULL, NULL, NULL, NULL, 0 }','};','']
+        lines+=['   { D3D_BUILTIN_SOURCE(0, 0) NULL, NULL, NULL, NULL, 0 }','};','']
         write_changed(a.output,'\n'.join(lines).encode('ascii'))
     if a.test_output:
         rows = []

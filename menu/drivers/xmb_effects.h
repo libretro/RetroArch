@@ -72,30 +72,6 @@
 
 #if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
 #define XMB_EFFECTS_SM4
-#include "../../gfx/common/menu_ribbon_shader.h"
-static const char xmb_effect_ribbon_simple_sm4[] =
-#include "../../gfx/drivers/d3d_sm4_shaders/effects/ribbon_simple_sm4.hlsl.h"
-      ;
-static const char xmb_effect_simple_snow_sm4[] =
-#include "../../gfx/drivers/d3d_sm4_shaders/effects/simple_snow_sm4.hlsl.h"
-      ;
-static const char xmb_effect_snow_sm4[] =
-#include "../../gfx/drivers/d3d_sm4_shaders/effects/snow_sm4.hlsl.h"
-      ;
-static const char xmb_effect_bokeh_sm4[] =
-#include "../../gfx/drivers/d3d_sm4_shaders/effects/bokeh_sm4.hlsl.h"
-      ;
-static const char xmb_effect_snowflake_sm4[] =
-#include "../../gfx/drivers/d3d_sm4_shaders/effects/snowflake_sm4.hlsl.h"
-      ;
-
-static const char *xmb_effect_ribbon_sm4(void)
-{
-   static char ribbon[4096];
-   return
-#include "../../gfx/drivers/d3d_sm4_shaders/effects/ribbon_sm4.hlsl.h"
-      ;
-}
 #endif
 
 #ifdef WIIU
@@ -244,12 +220,12 @@ static void xmb_effects_describe(void)
 #endif
 
 #ifdef XMB_EFFECTS_SM4
-   d[XMB_EFFECT_RIBBON].hlsl_sm4        = xmb_effect_ribbon_sm4();
-   d[XMB_EFFECT_RIBBON_SIMPLE].hlsl_sm4 = xmb_effect_ribbon_simple_sm4;
-   d[XMB_EFFECT_SNOW_SIMPLE].hlsl_sm4   = xmb_effect_simple_snow_sm4;
-   d[XMB_EFFECT_SNOW].hlsl_sm4          = xmb_effect_snow_sm4;
-   d[XMB_EFFECT_BOKEH].hlsl_sm4         = xmb_effect_bokeh_sm4;
-   d[XMB_EFFECT_SNOWFLAKE].hlsl_sm4     = xmb_effect_snowflake_sm4;
+   d[XMB_EFFECT_RIBBON].d3d_program = "ribbon";
+   d[XMB_EFFECT_RIBBON_SIMPLE].d3d_program = "ribbon_simple";
+   d[XMB_EFFECT_SNOW_SIMPLE].d3d_program = "simple_snow";
+   d[XMB_EFFECT_SNOW].d3d_program = "snow";
+   d[XMB_EFFECT_BOKEH].d3d_program = "bokeh";
+   d[XMB_EFFECT_SNOWFLAKE].d3d_program = "snowflake";
 #endif
 
 #ifdef XMB_EFFECTS_CG_GL

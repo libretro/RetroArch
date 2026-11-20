@@ -27,6 +27,8 @@ MINGW_CC    ?= x86_64-w64-mingw32-gcc
 WINE        ?= wine
 
 DEPS := menu_effects_test.c \
+        $(REPO_ROOT)/tools/d3d_shader_sources.c \
+        $(wildcard $(REPO_ROOT)/gfx/drivers/d3d_sm*_shaders/*.h) \
         $(REPO_ROOT)/menu/drivers/xmb_effects.h \
         $(REPO_ROOT)/gfx/gfx_display.h \
         $(REPO_ROOT)/gfx/drivers_shader/shader_glsl.c \

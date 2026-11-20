@@ -73,6 +73,7 @@
 #include <libretro.h>
 #include <libretro_d3d11.h>
 #include "../common/d3dcompiler_common.h"
+#include "../common/d3d_builtin.h"
 #include <queues/task_queue.h>
 #include <retro_atomic.h>
 #include "../common/d3d11_deferred_proxy.h"
@@ -954,6 +955,15 @@ static bool d3d11_init_shader(
       if (gs_entry && !d3d_compile_from_file((LPCWSTR)src_name, gs_entry, gs_str, &gs_code))
          success = false;
    }
+   else if (!src_name) /* immutable built-in program */
+   {
+      if (vs_entry && !d3d_builtin_shader_named(src, vs_entry, vs_str, &vs_code))
+         success = false;
+      if (ps_entry && !d3d_builtin_shader_named(src, ps_entry, ps_str, &ps_code))
+         success = false;
+      if (gs_entry && !d3d_builtin_shader_named(src, gs_entry, gs_str, &gs_code))
+         success = false;
+   }
    else /* char array */
    {
       if (vs_entry && !d3d_compile(src, size, (LPCSTR)src_name, vs_entry, vs_str, &vs_code))
@@ -1210,7 +1220,8 @@ static void d3d11_update_texture(
  * DISPLAY DRIVER
  */
 
-#include "d3d_sm4_shaders/effects/bloom_sm4.hlsl.h"
+static const char bloom_vs_source[] = "bloom_vs";
+static const char bloom_ps_source[] = "bloom_ps";
 #include "../common/menu_ribbon_shader.h"
 
 static INLINE void d3d11_release_shader(d3d11_shader_t* shader);
@@ -1408,14 +1419,14 @@ static void *gfx_display_d3d11_effect_install(void *data,
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
    struct d3d11_effect *fx;
    bool mesh;
-   if (     !d3d11 || !desc || !desc->hlsl_sm4
+   if (     !d3d11 || !desc || !desc->d3d_program
          || d3d11->effect_count >= countof(d3d11->effects))
       return NULL;
    fx   = &d3d11->effects[d3d11->effect_count];
    mesh = (desc->flags & GFX_EFFECT_MESH) != 0;
    memset(&fx->shader, 0, sizeof(fx->shader));
-   if (!d3d11_init_shader(d3d11->device, desc->hlsl_sm4,
-            strlen(desc->hlsl_sm4), NULL, "VSMain", "PSMain", NULL,
+   if (!d3d11_init_shader(d3d11->device, desc->d3d_program,
+            strlen(desc->d3d_program), NULL, "VSMain", "PSMain", NULL,
             mesh ? mesh_desc : quad_desc,
             mesh ? countof(mesh_desc) : countof(quad_desc),
             &fx->shader, D3D11_FEATURE_LEVEL_HINT_DONTCARE))
@@ -5093,7 +5104,7 @@ static void *d3d11_gfx_init(const video_info_t* video)
 
 
       static const char shader[] =
-#include "d3d_sm5_shaders/hdr_sm5.hlsl.h"
+"hdr"
          ;
 
       if (!d3d11_init_shader(
@@ -5119,7 +5130,7 @@ static void *d3d11_gfx_init(const video_info_t* video)
       };
 
       static const char shader[] =
-#include "d3d_sm5_shaders/opaque_sm5.hlsl.h"
+"opaque"
          ;
 
       if (!d3d11_init_shader(
@@ -5144,7 +5155,7 @@ static void *d3d11_gfx_init(const video_info_t* video)
             D3D11_INPUT_PER_VERTEX_DATA, 0 },
       };
       static const char shader[] =
-#include "d3d_sm4_shaders/mesh_sm4.hlsl.h"
+"mesh"
          ;
       if (!d3d11_init_shader(
                d3d11->device, shader, sizeof(shader), NULL, "VSMain", "PSMain", NULL, desc,
@@ -5182,7 +5193,7 @@ static void *d3d11_gfx_init(const video_info_t* video)
       };
 
       static const char shader[] =
-#include "d3d_sm4_shaders/sprite_sm4.hlsl.h"
+"sprite"
          ;
 
       d3d11_init_shader(d3d11->device, shader, sizeof(shader), NULL,
@@ -6822,7 +6833,7 @@ static void d3d11_views_release(d3d11_video_t *d3d11)
 static void d3d11_views_init(d3d11_video_t *d3d11)
 {
    static const char shader[] =
-#include "d3d_sm4_shaders/views_sm4.hlsl.h"
+"views"
       ;
    D3D11_INPUT_ELEMENT_DESC desc[3];
    D3D11_BUFFER_DESC buf_desc;
@@ -9274,7 +9285,7 @@ typedef struct
 /* 8-bit 4:2:0 in, RGBA out: the chroma of each 2x2 block from the one
  * sample it shares, as the CPU conversion does, either order */
 static const char d3d11_planar_cs_src[] =
-#include "d3d_sm5_shaders/planar_d3d11.hlsl.h"
+"planar11"
 ;
 
 /* The shader and its constants, made on the first planar texture; a
@@ -9288,8 +9299,7 @@ static bool d3d11_planar_init(d3d11_video_t *d3d11)
    if (retro_atomic_load_acquire_int(&d3d11->planar_failed))
       return false;
    retro_atomic_store_release_int(&d3d11->planar_failed, 1);
-   if (!d3d_compile(d3d11_planar_cs_src, sizeof(d3d11_planar_cs_src) - 1,
-            "planar", "main", "cs_5_0", &blob))
+   if (!d3d_builtin_shader_named(d3d11_planar_cs_src, "main", "cs_5_0", &blob))
       return false;
    d3d11->device->lpVtbl->CreateComputeShader(d3d11->device,
          blob->lpVtbl->GetBufferPointer(blob),
