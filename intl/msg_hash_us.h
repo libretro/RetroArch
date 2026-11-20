@@ -7726,8 +7726,16 @@ MSG_HASH(
    "System"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_USE_SYSTEM,
+   "<Use System Driver>"
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
    "Crashed last run, using System"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_NOT_USED,
+   "Not used: %s"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
@@ -7737,6 +7745,26 @@ MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    "%s is used again at the next normal start"
    )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_FROM,
+   "From %s"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD,
+   "Use another Vulkan driver: pick its .json, from share/vulkan/icd.d.\nOnly use drivers from a source you trust. Applies the next time Vulkan starts.\nStart: system driver. One run without it: --vulkan-driver=system"
+   )
+#if defined(_WIN32)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_WINDOWS,
+   "Use another Vulkan driver: pick its .json, usually beside its .dll.\nOnly use drivers from a source you trust. Applies the next time Vulkan starts.\nStart: system driver. One run without it: --vulkan-driver=system"
+   )
+#endif
+#if defined(__APPLE__)
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_MACOS,
+   "Use another Vulkan driver: pick its .json, from Homebrew's etc/vulkan/icd.d, a MoltenVK release or the Vulkan SDK.\nOnly use drivers from a source you trust. Applies the next time Vulkan starts.\nStart: system driver. One run without it: open -a RetroArch --args --vulkan-driver=system"
+   )
+#endif
 /* GENERATED REGION: HDR toggle group, stereo 3D & screens group and headset group (see settings_def_video_hdr_toggles.h, settings_def_video_stereo.h and settings_def_video_headset.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
@@ -34725,12 +34753,8 @@ MSG_HASH(
    "Custom Vulkan driver crashed before and is off for this core. Pick it again to retry."
    )
 MSG_HASH(
-   MSG_VULKAN_CUSTOM_DRIVER_INVALID,
-   "Custom Vulkan driver package is not usable. Using the system driver."
-   )
-MSG_HASH(
    MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
-   "Custom Vulkan drivers need an Adreno GPU and Android 9. Using the system driver."
+   "Custom Vulkan drivers need Android 9 or newer. Using the system driver."
    )
 MSG_HASH(
    MSG_VULKAN_CUSTOM_DRIVER_RESTART,
@@ -34743,6 +34767,66 @@ MSG_HASH(
 MSG_HASH(
    MSG_VULKAN_CUSTOM_DRIVER_UNTRUSTED,
    "Custom Vulkan driver was not picked in the menu or has changed. Pick it again to use it."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_INVALID_ICD,
+   "Custom Vulkan driver .json is not usable. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED_LOADER,
+   "Custom Vulkan drivers need Vulkan loader 1.3.235 or newer. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_XR_UNSUPPORTED,
+   "The headset runtime can't use the custom Vulkan driver. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_MISSING_FEATURES,
+   "Custom Vulkan driver lacks features RetroArch needs. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_QUARANTINED,
+   "macOS quarantined the custom Vulkan driver; the log says how to clear it. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_SDL3_UNSUPPORTED,
+   "The SDL3 context driver can't use a custom Vulkan driver on macOS. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_NOT_USED,
+   "Custom Vulkan driver not used: %s. Using the system driver."
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_PACKAGE,
+   "bad package (%s)"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_LIBRARY,
+   "library did not load (%s)"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU,
+   "it found no GPU it supports"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU_ADRENO,
+   "it found no GPU it supports (this device has an Adreno GPU)"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU_MALI,
+   "it found no GPU it supports (this device has a Mali GPU)"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_LOADER,
+   "the system Vulkan loader did not use it"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_START,
+   "it failed to start (%s)"
+   )
+MSG_HASH(
+   MSG_VULKAN_CUSTOM_DRIVER_WHY_FAILED,
+   "it failed to start"
    )
 MSG_HASH(
    MSG_RESAMPLER_QUALITY_LOWEST,

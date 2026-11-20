@@ -136,6 +136,9 @@
 #ifdef HAVE_VULKAN
 #include "gfx/common/vulkan_common.h"
 #endif
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+#include "gfx/common/vulkan_custom_driver.h"
+#endif
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
@@ -425,7 +428,8 @@ enum
    RA_OPT_ACCESSIBILITY,
    RA_OPT_LOAD_MENU_ON_ERROR,
    RA_OPT_CLOUDSYNC,
-   RA_OPT_MCP_STDIO
+   RA_OPT_MCP_STDIO,
+   RA_OPT_VULKAN_DRIVER
 };
 
 /* DRIVERS */
@@ -8218,6 +8222,11 @@ static void retroarch_print_help(const char *arg0)
          "      --mcp-stdio                "
          "Serves MCP on stdin and stdout, for a client that starts RetroArch.\n");
 #endif
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "      --vulkan-driver=system     "
+         "Starts with the system Vulkan driver, not the custom one, for this run.\n");
+#endif
 
 #ifdef HAVE_PATCH
    strlcpy_append(buf, sizeof(buf), &_len,
@@ -8837,6 +8846,9 @@ static bool retroarch_parse_input_and_config(
 #ifdef HAVE_MCP
       { "mcp-stdio",          0, NULL, RA_OPT_MCP_STDIO },
 #endif
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+      { "vulkan-driver",      1, NULL, RA_OPT_VULKAN_DRIVER },
+#endif
       { NULL, 0, NULL, 0 }
    };
 
@@ -9198,6 +9210,16 @@ static bool retroarch_parse_input_and_config(
             settings->paths.log_dir);
 
    /* Second pass: All other arguments override the config file */
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+   {
+      const char *env = getenv("RETROARCH_VULKAN_DRIVER");
+      if (string_is_equal(env, "system"))
+         vulkan_custom_driver_set_safe_mode(true);
+      else if (!string_is_empty(env))
+         RARCH_WARN("[Vulkan] Ignoring RETROARCH_VULKAN_DRIVER=%s: only \"system\" is known.\n",
+               env);
+   }
+#endif
    optind = 1;
 
    if (argc)
@@ -9549,6 +9571,15 @@ static bool retroarch_parse_input_and_config(
             case RA_OPT_LOAD_MENU_ON_ERROR:
                rarch_st.flags |= RARCH_FLAGS_CLI_LOAD_MENU_ON_ERR;
                break;
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+            case RA_OPT_VULKAN_DRIVER:
+               if (string_is_equal(optarg, "system"))
+                  vulkan_custom_driver_set_safe_mode(true);
+               else
+                  RARCH_WARN("[Vulkan] Ignoring --vulkan-driver=%s: only \"system\" is known.\n",
+                        optarg);
+               break;
+#endif
             case 'e':
                {
                   char *endptr;

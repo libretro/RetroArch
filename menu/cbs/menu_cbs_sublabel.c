@@ -1677,7 +1677,41 @@ static int action_bind_sublabel_core_backup_entry(
 }
 
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
+#ifdef ANDROID
+#define VULKAN_DRIVER_PATH_SUBLABEL MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vulkan_driver_path, MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH)
+#else
+#ifdef _WIN32
+#define VULKAN_DRIVER_PATH_SUBLABEL MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_WINDOWS
+#elif defined(__APPLE__)
+#define VULKAN_DRIVER_PATH_SUBLABEL MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_MACOS
+#else
+#define VULKAN_DRIVER_PATH_SUBLABEL MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD
+#endif
+
+/* The folder: the system's .json can have the same name. */
+static int action_bind_sublabel_video_vulkan_driver_path(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   size_t _len       = 0;
+   const char *saved = config_get_ptr()->paths.path_vulkan_driver;
+   if (!string_is_empty(saved))
+   {
+      char folder[NAME_MAX_LENGTH];
+      vulkan_custom_driver_icd_folder(saved, folder, sizeof(folder));
+      snprintf(s, len, msg_hash_to_str(
+               MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_FROM), folder);
+      _len = strlen(s);
+      strlcpy_append(s, len, &_len, "\n");
+   }
+   strlcpy_append(s, len, &_len, msg_hash_to_str(
+            VULKAN_DRIVER_PATH_SUBLABEL));
+   return 1;
+}
+#endif
 
 static int action_bind_sublabel_video_vulkan_driver_path_crashed(
       file_list_t *list,
@@ -1690,7 +1724,28 @@ static int action_bind_sublabel_video_vulkan_driver_path_crashed(
             MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED));
    strlcpy_append(s, len, &_len, "\n");
    strlcpy_append(s, len, &_len, msg_hash_to_str(
-            MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH));
+            VULKAN_DRIVER_PATH_SUBLABEL));
+   return 1;
+}
+
+static int action_bind_sublabel_video_vulkan_driver_path_not_used(
+      file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   char why[VULKAN_CUSTOM_DRIVER_WHY_MAX];
+   size_t _len = 0;
+   if (vulkan_custom_driver_why(config_get_ptr()->paths.path_vulkan_driver,
+            why, sizeof(why)))
+   {
+      snprintf(s, len, msg_hash_to_str(
+               MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_NOT_USED), why);
+      _len = strlen(s);
+      strlcpy_append(s, len, &_len, "\n");
+   }
+   strlcpy_append(s, len, &_len, msg_hash_to_str(
+            VULKAN_DRIVER_PATH_SUBLABEL));
    return 1;
 }
 
@@ -1712,7 +1767,7 @@ static int action_bind_sublabel_video_vulkan_driver_path_safe_mode(
       strlcpy_append(s, len, &_len, "\n");
    }
    strlcpy_append(s, len, &_len, msg_hash_to_str(
-            MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH));
+            VULKAN_DRIVER_PATH_SUBLABEL));
    return 1;
 }
 #endif
@@ -3415,12 +3470,20 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
 #endif
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
          /* Chosen here, on the main thread: Ozone draws sublabels
-          * from its frame callback, the video thread when threaded */
+          * from its frame callback, the video thread when threaded.
+          * _not_used reads the session as it draws: context init
+          * writes it on the drawing thread, and the file browser's
+          * pick while no menu driver draws this list live (Ozone
+          * snapshots the list it leaves). */
          case MENU_ENUM_LABEL_VIDEO_VULKAN_DRIVER_PATH:
             if (vulkan_custom_driver_crashed(
                      config_get_ptr()->paths.path_vulkan_driver))
                BIND_ACTION_SUBLABEL(cbs,
                      action_bind_sublabel_video_vulkan_driver_path_crashed);
+            else if (vulkan_custom_driver_why(
+                     config_get_ptr()->paths.path_vulkan_driver, NULL, 0))
+               BIND_ACTION_SUBLABEL(cbs,
+                     action_bind_sublabel_video_vulkan_driver_path_not_used);
             else if (vulkan_custom_driver_safe_mode())
                BIND_ACTION_SUBLABEL(cbs,
                      action_bind_sublabel_video_vulkan_driver_path_safe_mode);

@@ -145,6 +145,7 @@ static void clear_dlssnr_runtime(const char *dir)
 
 static int failures;
 static fake_ngx_record_t *record(void);
+int session_cache_test(int *checks);
 static int checks;
 static int validation_errors;
 
@@ -1580,6 +1581,7 @@ int main(void)
 #endif
    video_upscaler_note_wanted();
    CHECK(video_upscaler_wanted());
+   failures += session_cache_test(&checks);
    video_upscaler_clear_wanted();
    CHECK(!video_upscaler_wanted());
    video_upscaler_note_wanted();

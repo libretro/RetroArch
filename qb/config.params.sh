@@ -115,6 +115,7 @@ HAVE_OPENGLES_CFLAGS=      # C-flags for custom GLES library
 HAVE_ANGLE=no              # ANGLE support (OpenGL wrapper)
 HAVE_VULKAN=auto           # Vulkan support
 HAVE_VULKAN_DISPLAY=yes    # Vulkan KHR display backend support
+HAVE_VULKAN_CUSTOM_DRIVER=auto # Custom Vulkan driver, an ICD .json picked in the menu (Linux, Windows, macOS)
 HAVE_OPENXR=no             # OpenXR headset output (Vulkan, or desktop GL on Linux; the vendored Khronos loader is built in-tree)
 C89_OPENXR=no
 HAVE_VIDEO_WINDOWS=yes     # Separate windows for a core's secondary screens
