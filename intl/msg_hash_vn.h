@@ -275,6 +275,7 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[59];
 #endif
+   char s_4e447c6c[64];
    char s_d9a51d02[29];
    char s_12e77e8f[13];
    char s_98760b94[33];
@@ -4683,6 +4684,7 @@ static const struct
    char s_e5668863[45];
    char s_0638fe80[101];
    char s_902526ad[82];
+   char s_d06599bf[58];
    char s_a6c36272[72];
    char s_16b6f24c[265];
    char s_63e47549[83];
@@ -5095,6 +5097,7 @@ static const struct
    char s_594be7a3[17];
    char s_d8a50a58[109];
    char s_3112d333[92];
+   char s_3a74737d[169];
    char s_636e37aa[22];
    char s_1490e77d[67];
    char s_2f16f307[92];
@@ -6152,6 +6155,8 @@ static const struct
    "Lu\303\264n t\341\272\243i l\341\272\241i tr\303\254nh gi\341\272\243 l\341\272\255p khi ch\341"
    "\272\241y n\341\273\231i dung",
 #endif
+   "Gi\341\272\243i ph\303\241p kh\341\272\257c ph\341\273\245c s\341\273\261 c\341\273\221 ng\341"
+   "\272\257t k\341\272\277t n\341\273\221i Android",
    "Bi\341\273\203u t\306\260\341\273\243ng \341\273\251ng d\341\273\245ng",
    "T\303\240i nguy\303\252n",
    "M\341\273\237 b\341\272\243ng \304\221i\341\273\201u khi\341\273\203n ASIO",
@@ -15133,6 +15138,8 @@ static const struct
    "C\341\272\255p nh\341\272\255t tr\303\254nh gi\341\272\243 l\341\272\255p b\341\273\213 t\341"
    "\272\257t - tr\303\254nh gi\341\272\243 l\341\272\255p \304\221\303\243 b\341\273\213 kh\303\263"
    "a: ",
+   "Tr\306\260\341\273\233c ti\303\252n, h\303\243y tr\341\272\243 l\341\273\235i C\341\272\243nh b"
+   "\303\241o b\341\272\243o m\341\272\255t.",
    "RetroArch kh\303\264ng th\341\273\203 \304\221\341\273\215c tr\303\254nh gi\341\272\243 l\341"
    "\272\255p n\303\240y \304\221\341\273\203 ki\341\273\203m tra.",
    "C\303\241c tr\303\254nh gi\341\272\243 l\341\272\255p l\303\240 nh\341\273\257ng ch\306\260\306"
@@ -15864,6 +15871,10 @@ static const struct
    "Run-Ahead \304\221\303\243 b\341\273\213 t\341\272\257t v\303\254 tr\303\254nh gi\341\272\243 l"
    "\341\272\255p n\303\240y kh\303\264ng h\341\273\227 tr\341\273\243 L\306\260u tr\341\272\241ng t"
    "h\303\241i.",
+   "Run-Ahead kh\303\264ng th\341\273\203 kh\303\264i ph\341\273\245c tr\341\272\241ng th\303\241i c"
+   "\341\273\247a l\303\265i gi\341\272\243 l\341\272\255p. L\303\265i gi\341\272\243 l\341\272\255p"
+   " \304\221\303\243 \304\221\306\260\341\273\243c kh\341\273\237i \304\221\341\273\231ng l\341\272"
+   "\241i v\303\240 t\303\255nh n\304\203ng Run-Ahead \304\221\303\243 b\341\273\213 t\341\272\257t.",
    "Run-Ahead \304\221\303\243 t\341\272\257t.",
    "Run-Ahead \304\221\303\243 b\341\272\255t. S\341\273\221 khung h\303\254nh tr\341\273\205 \304"
    "\221\303\243 lo\341\272\241i b\341\273\217: %u.",
@@ -16028,7 +16039,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (322568u
+      (sizeof(msg_hash_vn_blob) == (322859u
 #ifdef ANDROID
        + 373u
 #endif
@@ -16871,6 +16882,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
@@ -21233,6 +21245,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MSG_CORE_UNLOCK_FAILED,
    (msg_hash_id_t)MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
    (msg_hash_id_t)MSG_CORE_UPDATE_DISABLED,
+   (msg_hash_id_t)MSG_CORE_WARNING_ANSWER_FIRST,
    (msg_hash_id_t)MSG_CORE_WARNING_ERROR,
    (msg_hash_id_t)MSG_CORE_WARNING_FULL_ACCESS,
    (msg_hash_id_t)MSG_CORE_WARNING_MODIFIED,
@@ -21645,6 +21658,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MSG_ROOM_PASSWORDED,
    (msg_hash_id_t)MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
    (msg_hash_id_t)MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   (msg_hash_id_t)MSG_RUNAHEAD_CORE_RESET,
    (msg_hash_id_t)MSG_RUNAHEAD_DISABLED,
    (msg_hash_id_t)MSG_RUNAHEAD_ENABLED,
    (msg_hash_id_t)MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,

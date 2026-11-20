@@ -266,6 +266,7 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[43];
 #endif
+   char s_4e447c6c[54];
    char s_d9a51d02[15];
    char s_12e77e8f[13];
    char s_98760b94[31];
@@ -1368,7 +1369,9 @@ static const struct
    char s_dcbf8b04[28];
    char s_dcbffdfe[30];
    char s_7816d5d5[39];
+   char s_2b1f17e8[19];
    char s_36c3acc7[22];
+   char s_b4c3612a[22];
    char s_f638f238[22];
    char s_f3358a59[37];
    char s_f8098721[61];
@@ -2888,6 +2891,7 @@ static const struct
    char s_2c2fc2c9[17];
    char s_368db7bb[17];
    char s_727f2bf0[22];
+   char s_e73542c8[19];
    char s_b8a131f0[21];
    char s_0701b5b6[20];
    char s_550ef26d[20];
@@ -3622,7 +3626,9 @@ static const struct
    char s_c5a76d72[61];
    char s_c5a7e06c[63];
    char s_37d36d03[72];
+   char s_eadbaf16[51];
    char s_54eaf5f5[32];
+   char s_7de5d198[55];
    char s_3b573ee6[32];
    char s_dc1d6cc7[64];
    char s_28543dcf[80];
@@ -5046,6 +5052,7 @@ static const struct
    char s_594be7a3[22];
    char s_d8a50a58[114];
    char s_3112d333[82];
+   char s_3a74737d[118];
    char s_636e37aa[27];
    char s_1490e77d[51];
    char s_2f16f307[77];
@@ -5741,6 +5748,7 @@ static const struct
 #ifndef HAVE_DYNAMIC
    "Athl\303\263d\303\241il Croi ar \303\201bhar Rith i gc\303\263na\303\255",
 #endif
+   "R\303\251iteach sealadach ar fhadhb d\303\255cheangail ar Android",
    "Deilbh\303\255n Aipe",
    "S\303\263cmhainn\303\255",
    "Oscail Pain\303\251al Rialaithe ASIO",
@@ -6854,6 +6862,8 @@ static const struct
    "Taispe\303\241in 'L\303\263d\303\241il Cro\303\255'",
    "Taispe\303\241in 'Luchtaigh Diosca'",
    "Taispe\303\241in 'Nuashonraitheoir Ar L\303\255ne'",
+   "Taispe\303\241in 'Scoir'",
+   "Taispe\303\241in 'Atosaigh'",
    "Taispe\303\241in 'Atosaigh'",
    "Taispe\303\241in 'M\303\272chadh'",
    "Taispe\303\241in Fo-lip\303\251id an Roghchl\303\241ir",
@@ -8400,6 +8410,7 @@ static const struct
    "Faoin bhFarraige",
    "Dearg Bolc\303\241nach",
    "\303\211ifeacht Phlaisteach",
+   "Lonraigh an Rib\303\255n",
    "P\303\255bl\303\255ne Sc\303\241th\303\263ra",
    "C\303\241ithn\303\255n\303\255 Rib\303\255n",
    "\303\211ifeachta\303\255 Sc\303\241th",
@@ -9954,7 +9965,9 @@ static const struct
    "Taispe\303\241in an rogha 'L\303\263d\303\241il Cro\303\255' sa Phr\303\255omh-Roghchl\303\241r.",
    "Taispe\303\241in an rogha 'Luchtaigh Diosca' sa Phr\303\255omh-Roghchl\303\241r.",
    "Taispe\303\241in an rogha 'Nuashonraitheoir Ar L\303\255ne' sa Phr\303\255omh-Roghchl\303\241r.",
+   "Taispe\303\241in an rogha 'Scoir' sa Phr\303\255omhroghchl\303\241r.",
    "Taispe\303\241in an rogha 'Atosaigh'.",
+   "Taispe\303\241in an rogha 'Atosaigh' sa Phr\303\255omh-Roghchl\303\241r.",
    "Taispe\303\241in an rogha 'M\303\272chadh'.",
    "Taispe\303\241in faisn\303\251is bhreise le haghaidh m\303\255reanna roghchl\303\241ir.",
    "N\303\241 taispe\303\241in ach folip\303\251ad don iontr\303\241il roghchl\303\241ir aibhsithe f"
@@ -12554,6 +12567,8 @@ static const struct
    "gcro\303\255l\303\241r seo don staid s\303\241bh\303\241la.",
    "T\303\241 Run-Ahead d\303\255chumasaithe mar n\303\255 thaca\303\255onn an cro\303\255 seo le st"
    "\303\241it s\303\241bh\303\241la.",
+   "N\303\255orbh fh\303\251idir le Run-Ahead staid an chro\303\255 a athch\303\263iri\303\272. Aths"
+   "hocra\303\255odh an cro\303\255 agus d\303\255chumasa\303\255odh Run-Ahead.",
    "D\303\255chumasa\303\255odh Run-Ahead.",
    "Cumasa\303\255odh Run-Ahead. Fr\303\241ma\303\255 moille bainte: %u.",
    "Cumasa\303\255odh Run-Ahead le h\303\201iseamh T\303\241naisteach. Fr\303\241ma\303\255 moille b"
@@ -12677,7 +12692,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (281739u
+      (sizeof(msg_hash_ga_blob) == (282077u
 #ifdef ANDROID
        + 390u
 #endif
@@ -13505,6 +13520,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
@@ -14607,7 +14623,9 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
@@ -16126,6 +16144,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_PLASTIC_EFFECT_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_RIBBON_BLOOM_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_RIBBON_PARTICLES_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
@@ -16848,7 +16867,9 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
@@ -18258,6 +18279,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MSG_ROOM_PASSWORDED,
    (msg_hash_id_t)MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
    (msg_hash_id_t)MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   (msg_hash_id_t)MSG_RUNAHEAD_CORE_RESET,
    (msg_hash_id_t)MSG_RUNAHEAD_DISABLED,
    (msg_hash_id_t)MSG_RUNAHEAD_ENABLED,
    (msg_hash_id_t)MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
