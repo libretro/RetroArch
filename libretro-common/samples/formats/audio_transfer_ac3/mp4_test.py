@@ -44,3 +44,15 @@ with tempfile.TemporaryDirectory(prefix='mp4-ac3-') as name:
             if any('wine' in part for part in runner):
                 path = subprocess.check_output(['winepath', '-w', path], text=True).strip()
             subprocess.run(runner + [str(a.preview_test.resolve()), '--ac3', path], check=True)
+
+            # A box after an oversized gap must remain outside the resident head.
+            startup = root / 'startup.mp4'
+            with startup.open('wb') as out:
+                out.write(movie.read_bytes())
+                out.write((8 * 1024 * 1024).to_bytes(4, 'big') + b'free')
+                out.seek(8 * 1024 * 1024 - 8, 1)
+                out.write(b'\x00\x00\x00\x08free')
+            path = str(startup.resolve())
+            if any('wine' in part for part in runner):
+                path = subprocess.check_output(['winepath', '-w', path], text=True).strip()
+            subprocess.run(runner + [str(a.preview_test.resolve()), '--startup', path], check=True)

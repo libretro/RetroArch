@@ -10138,8 +10138,9 @@ static bool audio_driver_mixer_add_stream_internal(
    #endif
             break;
          case AUDIO_MIXER_TYPE_M4A:
-   #ifdef HAVE_RAAC
-            handle = audio_mixer_load_m4a(buf, params->bufsize);
+   #if defined(HAVE_RAAC) || defined(HAVE_RAC3)
+            handle = audio_mixer_load_m4a_track_avail(buf, params->bufsize,
+                  params->avail ? params->avail : params->bufsize, -1);
    #endif
             break;
          case AUDIO_MIXER_TYPE_AC3:

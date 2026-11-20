@@ -162,6 +162,8 @@ struct rmp4
    size_t         avail;
    rmp4_itrack    trk[RMP4_MAX_TRACKS];
    int            num_tracks;
+   uint64_t       fragment_pos;
+   size_t         fragment_need_lo, fragment_need_hi;
    int            fragmented;      /* an mvex box was present        */
    int            sample_error;
    uint64_t       media_max_end;   /* highest sample end delivered   */
@@ -1241,6 +1243,45 @@ static void rmp4_parse_moof(rmp4_t *m, const uint8_t *body, uint64_t size,
 
 /* ===== public API ===== */
 
+/* Index resident fragment headers without touching intervening media. */
+static void rmp4_scan_fragments(rmp4_t *m)
+{
+   unsigned budget = 64;
+   m->fragment_need_lo = m->fragment_need_hi = 0;
+   while (m->fragment_pos < m->len && budget--)
+   {
+      uint64_t pos = m->fragment_pos, next;
+      uint64_t header_end = pos + (m->len - pos < 16 ? m->len - pos : 16);
+      rmp4_box b;
+      if (header_end > m->avail)
+      {
+         m->fragment_need_lo = (size_t)pos;
+         m->fragment_need_hi = (size_t)header_end;
+         return;
+      }
+      if (!rmp4_box_at(m->buf, m->len, pos, &b, &next) || next <= pos)
+      { m->sample_error = 1; return; }
+      if (b.type == RMP4_FOURCC('m','o','o','f'))
+      {
+         if (next > m->avail)
+         {
+            m->fragment_need_lo = (size_t)pos;
+            m->fragment_need_hi = (size_t)next;
+            return;
+         }
+         rmp4_parse_moof(m, b.body, b.size, pos);
+         if (m->sample_error) return;
+      }
+      m->fragment_pos = next;
+   }
+   if (m->fragment_pos < m->len)
+   {
+      m->fragment_need_lo = (size_t)m->fragment_pos;
+      m->fragment_need_hi = m->fragment_need_lo +
+         (m->len - m->fragment_need_lo < 16 ? m->len - m->fragment_need_lo : 16);
+   }
+}
+
 rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
       size_t avail, int *need_more, size_t *need_lo, size_t *need_hi)
 {
@@ -1347,30 +1388,11 @@ rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
     * trex defaults exist. */
    if (m->fragmented)
    {
-      /* moof boxes interleave with the media data through to the end
-       * of the file, so a fragmented movie effectively needs the whole
-       * file resident before its sample tables exist. */
-      if (avail < size)
+      do
       {
-         rmp4_close(m);
-         if (need_more)
-            *need_more = 1;
-         return NULL;
-      }
-      pos = 0;
-      while (pos < size && rmp4_box_at(data, (uint64_t)size, pos, &b, &next))
-      {
-         if (b.type == RMP4_FOURCC('m','o','o','f'))
-            rmp4_parse_moof(m, b.body, b.size, pos);
-         if (m->sample_error)
-         {
-            rmp4_close(m);
-            return NULL;
-         }
-         if (next <= pos)
-            break;
-         pos = next;
-      }
+         rmp4_scan_fragments(m);
+         if (m->sample_error) { rmp4_close(m); return NULL; }
+      } while (avail == size && m->fragment_pos < size);
    }
    return m;
 }
@@ -1609,7 +1631,7 @@ void rmp4_rewind(rmp4_t *m)
    m->media_max_end = have ? next : 0;
 }
 
-void rmp4_read_span(const rmp4_t *m, size_t *lo, size_t *hi)
+void rmp4_read_span(rmp4_t *m, size_t *lo, size_t *hi)
 {
    uint64_t offset = 0;
    uint32_t size = 0;
@@ -1627,6 +1649,16 @@ void rmp4_read_span(const rmp4_t *m, size_t *lo, size_t *hi)
          size = t->size[c];
          found = 1;
       }
+   }
+   if (!found && m->fragmented && m->fragment_pos < m->len)
+   {
+      rmp4_scan_fragments(m);
+      for (i = 0; i < m->num_tracks; i++)
+         if (m->trk[i].cursor < m->trk[i].count)
+         { rmp4_read_span(m, lo, hi); return; }
+      if (lo) *lo = m->fragment_need_lo;
+      if (hi) *hi = m->fragment_need_hi;
+      return;
    }
    if (!found || offset > (uint64_t)m->len
          || size > (uint64_t)m->len - offset)
@@ -1656,6 +1688,16 @@ int rmp4_read_packet(rmp4_t *m, rmp4_packet *pkt)
          best     = i;
          best_off = t->off[t->cursor];
       }
+   }
+   if (best < 0 && m->fragmented && m->fragment_pos < m->len)
+   {
+      size_t lo, hi;
+      rmp4_read_span(m, &lo, &hi);
+      if (m->sample_error) return -1;
+      for (i = 0; i < m->num_tracks; i++)
+         if (m->trk[i].cursor < m->trk[i].count)
+            return rmp4_read_packet(m, pkt);
+      return RMP4_READ_AGAIN;
    }
    if (best < 0)
       return 0;

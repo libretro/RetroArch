@@ -166,14 +166,14 @@ int64_t rmp4_duration_ns(const rmp4_t *mp4);
 int rmp4_read_packet(rmp4_t *mp4, rmp4_packet *pkt);
 
 /* Next packet byte range from sample tables; reads no media bytes. */
-void rmp4_read_span(const rmp4_t *mp4, size_t *lo, size_t *hi);
+void rmp4_read_span(rmp4_t *mp4, size_t *lo, size_t *hi);
 
 /* Open against a partially-read buffer: only the first 'avail' bytes
  * are valid (the rest may be uninitialised) and are never read.  Box
  * bodies are hopped arithmetically, so a trailing moov (a file muxed
  * without faststart) is found as soon as its own bytes arrive; a
- * fragmented movie needs the whole file (its sample tables live in
- * moof boxes interleaved to the end).  On failure, *need_more (when
+ * fragmented movie indexes resident headers and requests later headers
+ * through rmp4_read_span as its samples are consumed.  On failure, *need_more (when
  * non-NULL) is set when the failure was running out of available
  * bytes rather than malformed data - retry with a larger avail.
  * rmp4_open_memory is this with avail == size. */
