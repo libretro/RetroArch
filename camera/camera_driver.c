@@ -18,6 +18,7 @@
 
 #include <libretro.h>
 #include <string/stdstring.h>
+#include <compat/strl.h>
 
 #include "../configuration.h"
 #include "../driver.h"
@@ -131,6 +132,165 @@ bool driver_camera_start(void)
             NULL, MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
    return true;
+}
+
+/* The camera's frames, to the core when this poll is the core's and to
+ * an open preview. */
+static void RETRO_CALLCONV camera_dispatch_raw(const uint32_t *buf,
+      unsigned width, unsigned height, size_t pitch)
+{
+   camera_driver_state_t *st = &camera_driver_st;
+   if (st->forward_core && st->cb.frame_raw_framebuffer)
+      st->cb.frame_raw_framebuffer(buf, width, height, pitch);
+   if (st->preview_on && st->preview.raw)
+      st->preview.raw(st->preview.user, buf, width, height, pitch);
+}
+
+static void RETRO_CALLCONV camera_dispatch_planar(
+      const struct retro_camera_planar_frame *f)
+{
+   camera_driver_state_t *st = &camera_driver_st;
+   if (st->forward_core && st->cb.frame_planar)
+      st->cb.frame_planar(f);
+   if (st->preview_on && st->preview.planar)
+      st->preview.planar(st->preview.user, f);
+}
+
+static void camera_driver_poll_with(camera_driver_state_t *st,
+      const camera_driver_t *drv, void *data, bool forward)
+{
+   st->forward_core = forward;
+   drv->poll(data,
+           ((forward && st->cb.frame_raw_framebuffer) || st->preview.raw)
+         ? camera_dispatch_raw : NULL,
+         forward ? st->cb.frame_opengl_texture : NULL,
+           ((forward && st->cb.frame_planar) || st->preview.planar)
+         ? camera_dispatch_planar : NULL);
+   st->forward_core = false;
+}
+
+void camera_driver_poll(void)
+{
+   camera_driver_state_t *st = &camera_driver_st;
+   if (!st->preview_on)
+   {
+      st->driver->poll(st->data,
+            st->cb.frame_raw_framebuffer,
+            st->cb.frame_opengl_texture,
+            st->cb.frame_planar);
+      return;
+   }
+   st->core_polled = true;
+   camera_driver_poll_with(st, st->driver, st->data, true);
+}
+
+void camera_driver_preview_open(const camera_preview_sink_t *sink)
+{
+   camera_driver_state_t *st = &camera_driver_st;
+   st->preview        = *sink;
+   st->preview_on     = true;
+   st->preview_failed = false;
+   st->core_polled    = false;
+}
+
+void camera_driver_preview_release(void)
+{
+   camera_driver_state_t *st = &camera_driver_st;
+   if (st->preview_data && st->preview_driver)
+   {
+      if (st->preview_driver->stop)
+         st->preview_driver->stop(st->preview_data);
+      if (st->preview_driver->free)
+         st->preview_driver->free(st->preview_data);
+   }
+   st->preview_data   = NULL;
+   st->preview_driver = NULL;
+}
+
+void camera_driver_preview_close(void)
+{
+   camera_driver_state_t *st = &camera_driver_st;
+   camera_driver_preview_release();
+   st->preview.planar = NULL;
+   st->preview.raw    = NULL;
+   st->preview.user   = NULL;
+   st->preview_on     = false;
+   st->preview_failed = false;
+}
+
+enum camera_preview_state camera_driver_preview_poll(void)
+{
+   camera_driver_state_t *st = &camera_driver_st;
+   settings_t *settings      = config_get_ptr();
+   const char *device        = settings->arrays.camera_device;
+
+   if (!st->preview_on)
+      return CAMERA_PREVIEW_OFF;
+   if (!settings->bools.camera_allow)
+   {
+      camera_driver_preview_release();
+      return CAMERA_PREVIEW_DISALLOWED;
+   }
+
+   /* The core's camera is the core's: watched, never started or
+    * stopped for it, and polled here only while the runloop is not. */
+   if (st->active || st->data)
+   {
+      camera_driver_preview_release();
+      if (!st->data || !st->driver || !st->driver->poll
+            || !(runloop_state_get_ptr()->frame_work & RUNLOOP_WORK_CAMERA))
+         return CAMERA_PREVIEW_CORE_IDLE;
+      if (st->core_polled)
+         st->core_polled = false;
+      else
+         camera_driver_poll_with(st, st->driver, st->data, false);
+      return CAMERA_PREVIEW_SHARED;
+   }
+
+   /* A changed driver or device choice reopens. */
+   if (st->preview_data
+         && (  !string_is_equal(st->preview_device, device)
+            || !string_is_equal(st->preview_driver->ident,
+               settings->arrays.camera_driver)))
+   {
+      camera_driver_preview_release();
+      st->preview_failed = false;
+   }
+
+   if (!st->preview_data)
+   {
+      const camera_driver_t *drv;
+      if (st->preview_failed)
+         return CAMERA_PREVIEW_FAILED;
+      if (!camera_driver_find_driver("camera driver", false)
+            || !(drv = st->driver) || !drv->init || !drv->poll)
+      {
+         st->preview_failed = true;
+         return CAMERA_PREVIEW_FAILED;
+      }
+      strlcpy(st->preview_device, device, sizeof(st->preview_device));
+      st->preview_data = drv->init(*device ? device : NULL,
+              (UINT64_C(1) << RETRO_CAMERA_BUFFER_PLANAR)
+            | (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER), 0);
+      if (!st->preview_data)
+      {
+         st->preview_failed = true;
+         return CAMERA_PREVIEW_FAILED;
+      }
+      if (drv->start && !drv->start(st->preview_data))
+      {
+         /* Never started: freed without a stop */
+         if (drv->free)
+            drv->free(st->preview_data);
+         st->preview_data   = NULL;
+         st->preview_failed = true;
+         return CAMERA_PREVIEW_FAILED;
+      }
+      st->preview_driver = drv;
+   }
+
+   camera_driver_poll_with(st, st->preview_driver, st->preview_data, false);
+   return CAMERA_PREVIEW_OWN;
 }
 
 void driver_camera_stop(void)

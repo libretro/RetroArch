@@ -43,6 +43,8 @@
 #include "../../frontend/frontend_driver.h"
 
 #include "../menu_driver.h"
+#include "../../camera/camera_driver.h"
+#include <formats/image_yuv_blit.h>
 #include "../menu_media_controls.h"
 #include "../menu_media_browser.h"
 #include "../../gfx/gfx_media_cpu.h"
@@ -312,6 +314,9 @@ typedef struct
    retro_time_t draw_entry_hold_until;
    gfx_media_cpu_t *media_player;
    gfx_thumbnail_t media_gpu;
+   /* Settings > Camera > Preview: each frame point-sampled into a
+    * mini thumbnail, a source row at a time. */
+   uint32_t *camera_row;
    rgui_media_gpu_view_t media_gpu_views[3];
    retro_atomic_int_t media_gpu_states[3];
    rgui_media_gpu_view_t media_gpu_pending;
@@ -364,6 +369,7 @@ typedef struct
    thumbnail_t fs_thumbnail;
    thumbnail_t mini_thumbnail;
    thumbnail_t mini_left_thumbnail;
+   thumbnail_t camera_thumbnail;
 
    rgui_video_settings_t menu_video_settings;
    /* Copy staged by a delay_update publish (the frame path under
@@ -380,6 +386,7 @@ typedef struct
 
    /* The cap a mini thumbnail is fitted into, one word. */
    unsigned mini_thumbnail_max_dims;
+   unsigned camera_row_len;
    unsigned mini_thumbnail_delay;
    /* The video size this was last laid out for, one word,
     * VIDEO_SCALE_PACK's layout. */
@@ -6378,6 +6385,131 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
 
 }
 
+/* The size a camera frame of @w x @h fits the mini thumbnail at. */
+static unsigned rgui_camera_fit(const rgui_t *rgui, unsigned w, unsigned h)
+{
+   unsigned max_w = VIDEO_SCALE_W(rgui->camera_thumbnail.max_dims);
+   unsigned max_h = VIDEO_SCALE_H(rgui->camera_thumbnail.max_dims);
+   unsigned tw    = max_w;
+   unsigned th    = w ? (unsigned)(((uint64_t)h * max_w) / w) : 0;
+   if (th > max_h)
+   {
+      th = max_h;
+      tw = h ? (unsigned)(((uint64_t)w * max_h) / h) : 0;
+   }
+   return VIDEO_SCALE_PACK(MAX(tw, 1), MAX(th, 1));
+}
+
+static void rgui_camera_planar(void *user,
+      const struct retro_camera_planar_frame *f)
+{
+   rgui_t      *rgui = (rgui_t*)user;
+   thumbnail_t *t    = &rgui->camera_thumbnail;
+   unsigned flags    = 0;
+   unsigned dims, tw, th, x, y;
+   if (!t->data || !f->width || !f->height)
+      return;
+   if (rgui->camera_row_len < f->width)
+   {
+      uint32_t *row = (uint32_t*)realloc(rgui->camera_row,
+            f->width * sizeof(uint32_t));
+      if (!row)
+         return;
+      rgui->camera_row     = row;
+      rgui->camera_row_len = f->width;
+   }
+   if (f->flags & RETRO_CAMERA_PLANAR_FULL_RANGE)
+      flags |= IMAGE_YUV_FLAG_FULL_RANGE;
+   if (f->flags & RETRO_CAMERA_PLANAR_BT709)
+      flags |= IMAGE_YUV_FLAG_BT709;
+   dims = rgui_camera_fit(rgui, f->width, f->height);
+   tw   = VIDEO_SCALE_W(dims);
+   th   = VIDEO_SCALE_H(dims);
+   for (y = 0; y < th; y++)
+   {
+      unsigned sy = (unsigned)(((uint64_t)y * f->height) / th);
+      uint16_t *dst = t->data + (size_t)y * tw;
+      /* One source row, with the chroma row it shares */
+      image_yuv_420_to_rgb32(rgui->camera_row, f->width,
+            f->planes[0] + sy * f->strides[0], (unsigned)f->strides[0],
+            f->planes[1] + (sy >> 1) * f->strides[1], (unsigned)f->strides[1],
+            f->planes[2] + (sy >> 1) * f->strides[2], (unsigned)f->strides[2],
+            (unsigned)f->chroma_step, f->width, 1, flags);
+      for (x = 0; x < tw; x++)
+         dst[x] = argb32_to_pixel_platform_format(
+               rgui->camera_row[((uint64_t)x * f->width) / tw]);
+   }
+   t->dims      = dims;
+   t->is_valid  = true;
+   rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+}
+
+static void rgui_camera_raw(void *user, const uint32_t *buf,
+      unsigned width, unsigned height, size_t pitch)
+{
+   rgui_t      *rgui = (rgui_t*)user;
+   thumbnail_t *t    = &rgui->camera_thumbnail;
+   unsigned dims, tw, th, x, y;
+   if (!t->data || !width || !height)
+      return;
+   dims = rgui_camera_fit(rgui, width, height);
+   tw   = VIDEO_SCALE_W(dims);
+   th   = VIDEO_SCALE_H(dims);
+   for (y = 0; y < th; y++)
+   {
+      const uint32_t *src = (const uint32_t*)((const uint8_t*)buf
+            + (size_t)(((uint64_t)y * height) / th) * pitch);
+      uint16_t *dst = t->data + (size_t)y * tw;
+      for (x = 0; x < tw; x++)
+         dst[x] = argb32_to_pixel_platform_format(
+               src[((uint64_t)x * width) / tw] | 0xFF000000u);
+   }
+   t->dims      = dims;
+   t->is_valid  = true;
+   rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+}
+
+static void rgui_camera_close(rgui_t *rgui)
+{
+   if (!rgui->camera_thumbnail.data)
+      return;
+   camera_driver_preview_close();
+   free(rgui->camera_thumbnail.data);
+   rgui->camera_thumbnail.data     = NULL;
+   rgui->camera_thumbnail.is_valid = false;
+   rgui->flags                    |= RGUI_FLAG_FORCE_REDRAW;
+}
+
+/* Once a frame: the preview runs while its entry is selected. */
+static void rgui_camera_update(rgui_t *rgui)
+{
+   if (!menu_camera_preview_selected())
+   {
+      rgui_camera_close(rgui);
+      return;
+   }
+   if (!rgui->camera_thumbnail.data)
+   {
+      unsigned max_dims = rgui->mini_thumbnail_max_dims;
+      if (!VIDEO_SCALE_W(max_dims) || !VIDEO_SCALE_H(max_dims)
+            || !(rgui->camera_thumbnail.data = (uint16_t*)malloc(
+                  VIDEO_SCALE_AREA(max_dims) * sizeof(uint16_t))))
+         return;
+      rgui->camera_thumbnail.max_dims = max_dims;
+      rgui->camera_thumbnail.is_valid = false;
+   }
+   /* Opened here, and again after the menu closed it */
+   if (!camera_state_get_ptr()->preview_on)
+   {
+      camera_preview_sink_t sink;
+      sink.planar = rgui_camera_planar;
+      sink.raw    = rgui_camera_raw;
+      sink.user   = rgui;
+      camera_driver_preview_open(&sink);
+   }
+   menu_camera_preview_poll();
+}
+
 static void rgui_render(void *data, unsigned dims,
       bool is_idle)
 {
@@ -7137,8 +7269,14 @@ static void rgui_render(void *data, unsigned dims,
                   entry_color, rgui->colors.shadow_color);
       }
 
-      /* Draw mini thumbnails, if required */
-      if (show_savestate_thumbnail)
+      /* Draw mini thumbnails, if required: the camera preview at the
+       * foot, clear of the camera page's few entries */
+      if (rgui->camera_thumbnail.data && rgui->camera_thumbnail.is_valid)
+         rgui_render_mini_thumbnail(rgui, &rgui->camera_thumbnail,
+               rgui->frame_buf.data, GFX_THUMBNAIL_LEFT,
+               p_disp->framebuf_dims, fb_pitch,
+               false, thumbnail_background, false);
+      else if (show_savestate_thumbnail)
       {
          thumbnail_t *thumbnail_savestate = &rgui->mini_left_thumbnail;
          if (show_savestate_thumbnail && thumbnail_savestate)
@@ -8130,6 +8268,10 @@ static void rgui_free(void *data)
       return;
 
    rgui_media_close(rgui, false);
+   rgui_camera_close(rgui);
+   free(rgui->camera_row);
+   rgui->camera_row     = NULL;
+   rgui->camera_row_len = 0;
    rgui_fonts_free(rgui);
    rgui_buffers_free(rgui);
    rgui_upscale_buf_free(&rgui->upscale_buf);
@@ -9400,6 +9542,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    unsigned video_width                = VIDEO_SCALE_W(video_info->dims);
    unsigned video_height               = VIDEO_SCALE_H(video_info->dims);
    gfx_display_t *p_disp               = disp_get_ptr();
+
+   rgui_camera_update(rgui);
 
    if (bg_filler_thickness_enable != ((rgui->flags & RGUI_FLAG_BG_THICKNESS) > 0))
    {

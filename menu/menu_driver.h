@@ -42,6 +42,7 @@
 #include "../gfx/gfx_animation.h"
 #include "../gfx/gfx_display.h"
 #include "../gfx/gfx_thumbnail.h"
+#include "../camera/camera_driver.h"
 #include "../gfx/font_driver.h"
 #include "../performance_counters.h"
 
@@ -1041,6 +1042,27 @@ extern menu_ctx_driver_t menu_ctx_ozone;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
 extern menu_ctx_driver_t menu_ctx_xmb;
+
+/* The camera preview. A menu driver shows it in a thumbnail of its own
+ * while menu_camera_preview_selected(), calling
+ * menu_camera_preview_frame() with that thumbnail every frame it is
+ * shown, and resets the thumbnail when it stops showing it, which
+ * closes the camera. The state says what, if anything, the thumbnail
+ * is receiving. */
+bool menu_camera_preview_selected(void);
+enum camera_preview_state menu_camera_preview_frame(gfx_thumbnail_t *thumbnail);
+void menu_camera_preview_stop(void);
+/* For a driver with a sink of its own (camera_driver_preview_open):
+ * polls the preview and tells the user once of a state that shows no
+ * picture. */
+enum camera_preview_state menu_camera_preview_poll(void);
+/* The two together, for a driver drawing with gfx_display: _update
+ * each frame, true while the preview is to be drawn (and the
+ * thumbnail reset once it is not); _draw a black box of @dims at
+ * @x, @y with the picture fitted in it. */
+bool menu_camera_preview_update(gfx_thumbnail_t *thumbnail);
+void menu_camera_preview_draw(gfx_thumbnail_t *thumbnail, void *userdata,
+      unsigned video_dims, float x, float y, unsigned dims);
 
 RETRO_END_DECLS
 

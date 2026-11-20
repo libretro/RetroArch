@@ -23803,7 +23803,14 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
 MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #include "../settings/settings_def_privacy_camera.h"
+#undef S_STRING
+#undef S_STRING_NS
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT
@@ -34340,6 +34347,18 @@ MSG_HASH(
 MSG_HASH(
    MSG_GAME_REMAP_FILE_LOADED,
    "Game remap file loaded."
+   )
+MSG_HASH(
+   MSG_CAMERA_PREVIEW_DISALLOWED,
+   "Camera access is off. Turn on Allow Camera to see the preview."
+   )
+MSG_HASH(
+   MSG_CAMERA_PREVIEW_FAILED,
+   "The camera could not be opened."
+   )
+MSG_HASH(
+   MSG_CAMERA_PREVIEW_CORE_IDLE,
+   "The running core holds the camera but has not started it."
    )
 MSG_HASH(
    MSG_DIRECTORY_REMAP_FILE_LOADED,

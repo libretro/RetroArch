@@ -1972,6 +1972,8 @@ void drivers_init(
          /* Resource leaks will follow if camera is initialized twice. */
          if (!camera_st->data)
          {
+            /* The core's camera replaces a preview's own. */
+            camera_driver_preview_release();
             if (!camera_driver_find_driver("camera driver",
                      verbosity_enabled))
                retroarch_fail(1, "find_camera_driver()");
@@ -2257,6 +2259,7 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
       }
 
       camera_st->data = NULL;
+      camera_driver_preview_release();
       runloop_frame_work_set(RUNLOOP_WORK_CAMERA, false);
    }
 
@@ -6549,7 +6552,10 @@ bool command_event(enum event_command cmd, void *data)
           * start() for the camera to come up, and that start raises
           * the bit. Disallowing stops a camera that is running. */
          if (!settings->bools.camera_allow)
+         {
             driver_camera_stop();
+            camera_driver_preview_release();
+         }
          break;
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD

@@ -598,6 +598,7 @@ struct ozone_handle
       gfx_thumbnail_t right;  /* uintptr_t alignment */
       gfx_thumbnail_t left;   /* uintptr_t alignment */
       gfx_thumbnail_t savestate;
+      gfx_thumbnail_t camera;  /* Settings > Camera > Preview */
       float stream_delay;
       enum ozone_pending_thumbnail_type pending;
    } thumbnails;
@@ -2353,6 +2354,9 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_RECORDING_SETTINGS:
       case MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_RECORDING:
+      case MENU_ENUM_LABEL_CAMERA_SETTINGS:
+      case MENU_ENUM_LABEL_DEFERRED_CAMERA_SETTINGS_LIST:
+      case MENU_ENUM_LABEL_CAMERA_PREVIEW:
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_RECORD];
       case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING:
@@ -11150,6 +11154,7 @@ static void ozone_unload_thumbnail_textures(void *data)
    gfx_thumbnail_reset(&ozone->thumbnails.right);
    gfx_thumbnail_reset(&ozone->thumbnails.left);
    gfx_thumbnail_reset(&ozone->thumbnails.savestate);
+   gfx_thumbnail_reset(&ozone->thumbnails.camera);
 }
 
 static INLINE void ozone_font_free(font_data_impl_t *font_data)
@@ -13663,6 +13668,22 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             libretro_running,
             menu_framebuffer_opacity,
             &mymat);
+
+   /* The camera preview, at the foot of the entries: the camera page
+    * is a few entries tall. */
+   if (     !(ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS)
+         && menu_camera_preview_update(&ozone->thumbnails.camera))
+   {
+      unsigned w = (unsigned)(video_width * 0.4f);
+      unsigned h = w * 3 / 4;
+      int margin = ozone->dimensions.entry_padding_horizontal_full;
+      menu_camera_preview_draw(&ozone->thumbnails.camera, userdata,
+            VIDEO_SCALE_PACK(video_width, video_height),
+            (float)((int)video_width - (int)w - margin),
+            (float)((int)video_height - ozone->dimensions.footer_height
+               - (int)h - margin),
+            VIDEO_SCALE_PACK(w, h));
+   }
 
    if (dispctx && dispctx->scissor_end)
       dispctx->scissor_end(userdata, VIDEO_SCALE_PACK(video_width,

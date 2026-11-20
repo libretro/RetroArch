@@ -235,6 +235,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_user_settings_list,             DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_directory_settings_list,        DISPLAYLIST_DIRECTORY_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_privacy_settings_list,          DISPLAYLIST_PRIVACY_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_midi_settings_list,             DISPLAYLIST_MIDI_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_camera_settings_list,           DISPLAYLIST_CAMERA_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_audio_settings_list,            DISPLAYLIST_AUDIO_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_audio_output_settings_list,            DISPLAYLIST_AUDIO_OUTPUT_SETTINGS_LIST)
 #ifdef HAVE_MICROPHONE
@@ -754,6 +755,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DIRECTORY_SETTINGS_LIST, deferred_push_directory_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_PRIVACY_SETTINGS_LIST, deferred_push_privacy_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_MIDI_SETTINGS_LIST, deferred_push_midi_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_CAMERA_SETTINGS_LIST, deferred_push_camera_settings_list},
 #ifdef HAVE_NETWORKING
       {MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST, deferred_push_core_content_dirs_list},
       {MENU_ENUM_LABEL_DEFERRED_CORE_UPDATER_LIST, deferred_push_core_updater_list},

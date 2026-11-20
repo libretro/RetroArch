@@ -925,6 +925,119 @@ static void gfx_thumbnail_still_release(void *user, gfx_surface_t *s,
    gfx_thumbnail_anim_shown(thumbnail, s);
 }
 
+/* The thumbnail a live source feeds, one at a time, and what ends the
+ * source when the thumbnail resets. */
+static gfx_thumbnail_t           *gfx_thumb_live;
+static gfx_thumbnail_live_end_t   gfx_thumb_live_end;
+static void                      *gfx_thumb_live_user;
+
+static void gfx_thumbnail_live_release(void *user, gfx_surface_t *s,
+      unsigned slot)
+{
+   gfx_thumbnail_t *thumbnail = (gfx_thumbnail_t*)user;
+   (void)slot;
+   if (thumbnail == gfx_thumb_live && thumbnail->anim_surface == s)
+      gfx_thumbnail_anim_shown(thumbnail, s);
+}
+
+/* The surface for frames of @dims in @pixfmt; a different size or
+ * format replaces it, and the thumbnail waits for its first frame. */
+static gfx_surface_t *gfx_thumbnail_live_surface(gfx_thumbnail_t *thumbnail,
+      unsigned dims, uint32_t pixfmt)
+{
+   gfx_surface_t *s = (gfx_surface_t*)thumbnail->anim_surface;
+   if (s && (s->dims != dims || s->pixfmt != pixfmt))
+   {
+      gfx_surface_free(s);
+      thumbnail->anim_surface = NULL;
+      thumbnail->texture      = 0;
+      GFX_THUMB_STATUS_STORE(&thumbnail->status,
+            GFX_THUMBNAIL_STATUS_PENDING);
+      s = NULL;
+   }
+   if (!s && (s = gfx_surface_new(dims, 1, pixfmt, TEXTURE_FILTER_LINEAR,
+               gfx_thumbnail_live_release, thumbnail)))
+      thumbnail->anim_surface = s;
+   return s;
+}
+
+static bool gfx_thumbnail_live_submitted(gfx_thumbnail_t *thumbnail,
+      gfx_surface_t *s, enum gfx_surface_submit_result r)
+{
+   if (r == GFX_SURFACE_SUBMIT_DONE)
+      gfx_thumbnail_anim_shown(thumbnail, s);
+   return r == GFX_SURFACE_SUBMIT_DONE || r == GFX_SURFACE_SUBMIT_QUEUED;
+}
+
+void gfx_thumbnail_live_begin(gfx_thumbnail_t *thumbnail,
+      gfx_thumbnail_live_end_t end, void *user)
+{
+   if (!thumbnail)
+      return;
+   gfx_thumbnail_reset(thumbnail);
+   /* Another thumbnail's source ends with it. */
+   if (gfx_thumb_live)
+      gfx_thumbnail_reset(gfx_thumb_live);
+   gfx_thumb_live      = thumbnail;
+   gfx_thumb_live_end  = end;
+   gfx_thumb_live_user = user;
+   GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_PENDING);
+}
+
+bool gfx_thumbnail_live_planes(gfx_thumbnail_t *thumbnail,
+      const uint8_t *const planes[3], const size_t strides[3],
+      unsigned chroma_step, unsigned dims, unsigned yuv)
+{
+   gfx_surface_planes_t p;
+   gfx_surface_t *s;
+   unsigned i;
+   if (!thumbnail || thumbnail != gfx_thumb_live
+         || (chroma_step != 1 && chroma_step != 2)
+         || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return false;
+   for (i = 0; i < 3; i++)
+   {
+      p.planes[i]  = planes[i];
+      p.strides[i] = (unsigned)strides[i];
+   }
+   p.chroma_step = chroma_step;
+   if (!(s = gfx_thumbnail_live_surface(thumbnail, dims,
+               chroma_step == 1 ? IMAGE_PIXFMT_I420 : IMAGE_PIXFMT_NV12)))
+      return false;
+   gfx_surface_set_yuv(s, yuv);
+   /* The planes are the source's again once this returns. */
+   return gfx_thumbnail_live_submitted(thumbnail, s,
+         gfx_surface_submit_planes(s, &p, gfx_surface_wants_rgba()));
+}
+
+bool gfx_thumbnail_live_pixels(gfx_thumbnail_t *thumbnail,
+      const uint32_t *pixels, unsigned dims, size_t pitch)
+{
+   gfx_surface_t *s;
+   unsigned w = VIDEO_SCALE_W(dims);
+   unsigned h = VIDEO_SCALE_H(dims);
+   unsigned y;
+   if (!thumbnail || thumbnail != gfx_thumb_live || !pixels || !w || !h
+         || pitch < (size_t)w * 4)
+      return false;
+   if (     !(s = gfx_thumbnail_live_surface(thumbnail, dims, IMAGE_PIXFMT_8888))
+         || !gfx_surface_slot_writable(s, 0))
+      return false;
+   /* The X of XRGB is no alpha: copied in opaque. */
+   for (y = 0; y < h; y++)
+   {
+      const uint32_t *src = (const uint32_t*)((const uint8_t*)pixels
+            + (size_t)y * pitch);
+      uint32_t       *dst = (uint32_t*)((uint8_t*)s->slots[0]
+            + (size_t)y * s->pitch[0]);
+      unsigned x;
+      for (x = 0; x < w; x++)
+         dst[x] = src[x] | 0xFF000000u;
+   }
+   return gfx_thumbnail_live_submitted(thumbnail, s,
+         gfx_surface_submit(s, 0, false));
+}
+
 /* Main thread, from a later frame's poll: the video thread has taken
  * the frame in @slot. The animation may have closed meanwhile, in
  * which case the surface simply keeps its last frame. */
@@ -1989,6 +2102,18 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
 {
    if (!thumbnail)
       return;
+
+   /* A live source ends with its thumbnail. */
+   if (thumbnail == gfx_thumb_live)
+   {
+      gfx_thumbnail_live_end_t end = gfx_thumb_live_end;
+      void *user                   = gfx_thumb_live_user;
+      gfx_thumb_live               = NULL;
+      gfx_thumb_live_end           = NULL;
+      gfx_thumb_live_user          = NULL;
+      if (end)
+         end(user);
+   }
 
    /* Release any animation state (decoder + file buffer) */
    gfx_thumbnail_anim_close(thumbnail);

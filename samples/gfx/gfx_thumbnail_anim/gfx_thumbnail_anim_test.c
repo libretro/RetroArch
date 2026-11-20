@@ -74,6 +74,7 @@
 #include "gfx/gfx_thumbnail.h"
 #include "gfx/gfx_surface.h"
 #include "gfx/gfx_instrument.h"
+#include <formats/image_yuv_blit.h>
 
 static const unsigned char anim_webp[] = {
    0x52, 0x49, 0x46, 0x46, 0xb4, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
@@ -183,6 +184,124 @@ static void gt_release_frees(void *user, gfx_surface_t *s, unsigned slot)
    gt_free_next = 0;
    gt_freed_in_release++;
    gfx_surface_free(s);
+}
+
+/* Lane 17: a live source's frames. */
+static int live_ends;
+static void live_end(void *user) { (*(int*)user)++; }
+
+static int test_live(void)
+{
+   enum { W = 8, H = 6 };
+   static uint8_t y[W * H], uv[W * (H / 2)];
+   static uint32_t px[(W + 3) * H];
+   const uint8_t *planes[3];
+   size_t strides[3];
+   gfx_thumbnail_t a, b, c;
+   gfx_surface_t *s;
+   int ok = 1;
+
+   memset(y, 81, sizeof(y));
+   memset(uv, 0, sizeof(uv));
+   {
+      unsigned i;
+      for (i = 0; i < sizeof(uv); i += 2)
+      {
+         uv[i]     = 90;
+         uv[i + 1] = 240;
+      }
+   }
+   planes[0]  = y;  strides[0] = W;
+   planes[1]  = uv; strides[1] = W;
+   planes[2]  = uv + 1; strides[2] = W;
+   memset(&a, 0, sizeof(a));
+   memset(&b, 0, sizeof(b));
+   memset(&c, 0, sizeof(c));
+   live_ends    = 0;
+   gt_async_mode = 0;
+
+#define LIVE_CHECK(cond, what) do { if (!(cond)) { \
+      printf("[FAIL] live: %s\n", what); ok = 0; } } while (0)
+
+   gfx_thumbnail_live_begin(&a, live_end, &live_ends);
+   LIVE_CHECK(a.status == GFX_THUMBNAIL_STATUS_PENDING, "begin leaves it pending");
+   LIVE_CHECK(!gfx_thumbnail_live_planes(&b, planes, strides, 2,
+            VIDEO_SCALE_PACK(W, H), 0), "a thumbnail not live took a frame");
+   LIVE_CHECK(!gfx_thumbnail_live_planes(&a, planes, strides, 3,
+            VIDEO_SCALE_PACK(W, H), 0), "a chroma step of 3 was taken");
+
+   gt_uploads = 0;
+   gt_updates = 0;
+   LIVE_CHECK(gfx_thumbnail_live_planes(&a, planes, strides, 2,
+            VIDEO_SCALE_PACK(W, H), 0), "planes refused");
+   LIVE_CHECK(a.status == GFX_THUMBNAIL_STATUS_AVAILABLE && a.texture
+         && a.dims == VIDEO_SCALE_PACK(W, H), "first frame not shown");
+   LIVE_CHECK(gt_uploads + gt_updates == 1, "first frame not uploaded once");
+   s = (gfx_surface_t*)a.anim_surface;
+   LIVE_CHECK(s && s->pixfmt == IMAGE_PIXFMT_NV12, "no NV12 surface");
+   LIVE_CHECK(gfx_thumbnail_live_planes(&a, planes, strides, 2,
+            VIDEO_SCALE_PACK(W, H), 0) && a.anim_surface == s
+         && gt_uploads + gt_updates == 2,
+         "second frame did not reuse the surface");
+
+   /* A new size replaces the surface. */
+   LIVE_CHECK(gfx_thumbnail_live_planes(&a, planes, strides, 2,
+            VIDEO_SCALE_PACK(W, H - 2), IMAGE_YUV_FLAG_FULL_RANGE)
+         && a.dims == VIDEO_SCALE_PACK(W, H - 2)
+         && a.status == GFX_THUMBNAIL_STATUS_AVAILABLE,
+         "resized frame not shown");
+
+   /* 0RGB words, rows padded: copied into the slot. */
+   memset(px, 0x7f, sizeof(px));
+   LIVE_CHECK(gfx_thumbnail_live_pixels(&a, px, VIDEO_SCALE_PACK(W, H),
+            (W + 3) * 4) && a.status == GFX_THUMBNAIL_STATUS_AVAILABLE
+         && ((gfx_surface_t*)a.anim_surface)->pixfmt == IMAGE_PIXFMT_8888,
+         "padded pixels not shown");
+   LIVE_CHECK(!gfx_thumbnail_live_pixels(&a, px, VIDEO_SCALE_PACK(W, H),
+            W * 4 - 4), "a pitch under a row was taken");
+   LIVE_CHECK(gfx_thumbnail_live_pixels(&a, px, VIDEO_SCALE_PACK(W, H),
+            W * 4), "packed pixels refused");
+   s = (gfx_surface_t*)a.anim_surface;
+   LIVE_CHECK(s && ((const uint32_t*)s->slots[0])[0] == 0xFF7F7F7Fu,
+         "XRGB not uploaded opaque");
+
+   /* Another thumbnail going live ends the first. */
+   gt_async_mode = 1;
+   gfx_thumbnail_live_begin(&c, live_end, &live_ends);
+   LIVE_CHECK(live_ends == 1 && a.status == GFX_THUMBNAIL_STATUS_UNKNOWN
+         && !a.anim_surface, "the first thumbnail did not end");
+   LIVE_CHECK(!gfx_thumbnail_live_planes(&a, planes, strides, 2,
+            VIDEO_SCALE_PACK(W, H), 0), "an ended thumbnail took a frame");
+
+   /* Under the thread wrapper: shown when the video thread takes it,
+    * and one frame in flight at a time. */
+   LIVE_CHECK(gfx_thumbnail_live_planes(&c, planes, strides, 2,
+            VIDEO_SCALE_PACK(W, H), 0), "queued frame refused");
+   LIVE_CHECK(c.status == GFX_THUMBNAIL_STATUS_PENDING,
+         "queued frame shown before the video thread took it");
+   LIVE_CHECK(!gfx_thumbnail_live_planes(&c, planes, strides, 2,
+            VIDEO_SCALE_PACK(W, H), 0), "a second frame in flight was taken");
+   gt_async_flush();
+   LIVE_CHECK(c.status == GFX_THUMBNAIL_STATUS_AVAILABLE && c.texture,
+         "taken frame not shown");
+   LIVE_CHECK(gfx_thumbnail_live_planes(&c, planes, strides, 2,
+            VIDEO_SCALE_PACK(W, H), 0), "next frame refused");
+   /* Reset with a frame in flight: the end runs once, the flush
+    * reaches no thumbnail. */
+   gfx_thumbnail_reset(&c);
+   LIVE_CHECK(live_ends == 2, "reset did not end the source once");
+   gt_async_flush();
+   LIVE_CHECK(c.status == GFX_THUMBNAIL_STATUS_UNKNOWN && !c.texture,
+         "a frame landed on a reset thumbnail");
+   gfx_thumbnail_reset(&c);
+   LIVE_CHECK(live_ends == 2, "a second reset ended the source again");
+   gt_async_mode = 0;
+#undef LIVE_CHECK
+   if (ok)
+      printf("[ok]   live: frames shown in place, resized, as pixels, "
+             "queued one at a time, and the source ended once by the "
+             "reset or the next live thumbnail\n");
+   return ok;
 }
 
 int main(void)
@@ -1190,6 +1309,9 @@ int main(void)
       else
          bad = 1;
    }
+
+   if (!test_live())
+      bad = 1;
 
    remove(path);
    printf("%s\n", bad ? "FAILED" : "PASS");

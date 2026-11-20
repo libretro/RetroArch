@@ -12,7 +12,9 @@
  * driver, the entry that opens the share settings it uses is in the
  * Cloud Sync screen too, under that driver only, and does what the
  * Network one does. Minimum Audio Latency is reachable from Settings >
- * Latency, and picking from its list sets the value picked. */
+ * Latency, and picking from its list sets the value picked.
+ * Settings > Camera has its rows, and its Preview runs the camera
+ * only while it is selected and shown. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,6 +41,9 @@
 #include "../../../menu/menu_entries.h"
 #include "../../../frontend/frontend_driver.h"
 #include "../../../input/input_driver.h"
+#include "../../../camera/camera_driver.h"
+#include "../../../gfx/gfx_thumbnail.h"
+#include "../../../gfx/video_driver.h"
 
 static unsigned failures;
 #define CHECK(cond, what) do { if (cond) fprintf(stderr, "ok:   %s\n", what); \
@@ -218,6 +223,132 @@ static void media_settings(const char *cfg_path)
    settings->bools.kiosk_mode_enable = kiosk;
 }
 
+/* Settings > Camera: reachable, with its rows, and its Preview runs
+ * the camera only while it is selected and shown. */
+static void camera_settings(void)
+{
+   settings_t *settings      = config_get_ptr();
+   camera_driver_state_t *st = camera_state_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *buf;
+   gfx_thumbnail_t thumb;
+   size_t i, preview = (size_t)-1;
+   bool allow = settings->bools.camera_allow;
+
+   CHECK(string_is_equal(msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CAMERA_SETTINGS_LIST),
+            MENU_ENUM_LABEL_DEFERRED_CAMERA_SETTINGS_LIST_STR),
+         "deferred camera settings list label resolves");
+   open_list(DISPLAYLIST_SETTINGS_ALL, MENU_ENUM_LABEL_SETTINGS_STR,
+         MENU_ENUM_LABEL_SETTINGS);
+   CHECK(list_has_label(MENU_ENUM_LABEL_CAMERA_SETTINGS_STR), "Camera is under Settings");
+   CHECK(entry_cbs(MENU_ENUM_LABEL_CAMERA_SETTINGS_STR)
+         && entry_cbs(MENU_ENUM_LABEL_CAMERA_SETTINGS_STR)->action_ok,
+         "Camera has an OK action");
+
+   open_list(DISPLAYLIST_CAMERA_SETTINGS_LIST,
+         msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CAMERA_SETTINGS_LIST),
+         MENU_ENUM_LABEL_DEFERRED_CAMERA_SETTINGS_LIST);
+   CHECK(list_has_label(MENU_ENUM_LABEL_CAMERA_DRIVER_STR)
+         && list_has_label(MENU_ENUM_LABEL_CAMERA_DEVICE_STR)
+         && list_has_label(MENU_ENUM_LABEL_CAMERA_ALLOW_STR)
+         && list_has_label(MENU_ENUM_LABEL_CAMERA_PREVIEW_STR),
+         "Settings > Camera has Driver, Device, Allow and Preview");
+   buf = selection_buf();
+   for (i = 0; buf && i < buf->size; i++)
+      if (string_is_equal(buf->list[i].label, MENU_ENUM_LABEL_CAMERA_PREVIEW_STR))
+         preview = i;
+
+   menu_st->selection_ptr = 0;
+   CHECK(!menu_camera_preview_selected(), "another entry is not the preview");
+   menu_st->selection_ptr = preview;
+   CHECK(menu_camera_preview_selected(), "the Preview entry is the preview");
+
+   /* The null driver: a camera that always opens */
+   strlcpy(settings->arrays.camera_driver, "null",
+         sizeof(settings->arrays.camera_driver));
+   memset(&thumb, 0, sizeof(thumb));
+   settings->bools.camera_allow = false;
+   CHECK(menu_camera_preview_frame(&thumb) == CAMERA_PREVIEW_DISALLOWED
+         && !st->preview_data, "disallowed: the preview opens no camera");
+   settings->bools.camera_allow = true;
+   CHECK(menu_camera_preview_frame(&thumb) == CAMERA_PREVIEW_OWN
+         && st->preview_on && st->preview_data,
+         "allowed: the preview opens a camera of its own");
+   CHECK(menu_camera_preview_update(&thumb) && st->preview_data,
+         "kept while selected");
+   menu_st->selection_ptr = 0;
+   CHECK(!menu_camera_preview_update(&thumb) && !st->preview_on
+         && !st->preview_data, "moving off the entry closes the camera");
+   menu_st->selection_ptr = preview;
+   menu_camera_preview_frame(&thumb);
+   menu_camera_preview_stop();
+   CHECK(!st->preview_on && !st->preview_data
+         && thumb.status == GFX_THUMBNAIL_STATUS_UNKNOWN,
+         "a hidden menu closes the camera");
+   menu_camera_preview_frame(&thumb);
+   gfx_thumbnail_reset(&thumb);
+   CHECK(!st->preview_on, "resetting the thumbnail closes the camera");
+
+   /* The menu driver's own frame: it runs the preview while the entry
+    * is selected and closes it after. */
+   {
+      video_frame_info_t *video_info = (video_frame_info_t*)calloc(1,
+            sizeof(*video_info));
+      if (video_info)
+      {
+         /* The menu's half of the info is filled for a menu shown */
+         unsigned flags  = menu_st->flags;
+         menu_st->flags |= MENU_ST_FLAG_ALIVE;
+         video_driver_build_info(video_info);
+         menu_st->flags  = flags;
+         menu_st->selection_ptr = preview;
+         menu_driver_frame(true, video_info);
+         CHECK(st->preview_on && st->preview_data,
+               "the menu driver's frame opens the preview");
+         menu_driver_frame(true, video_info);
+         CHECK(st->preview_on, "and keeps it while selected");
+         /* The null camera delivers nothing: frames handed to the
+          * driver's sink as a camera would, planar at an odd size and
+          * raw with padded rows, then drawn. */
+         {
+            static uint8_t  planes[322 * 242 * 3 / 2];
+            static uint32_t pixels[(320 + 8) * 240];
+            struct retro_camera_planar_frame f;
+            memset(planes, 128, sizeof(planes));
+            memset(pixels, 0x40, sizeof(pixels));
+            memset(&f, 0, sizeof(f));
+            f.planes[0]   = planes;
+            f.planes[1]   = planes + 322 * 242;
+            f.planes[2]   = f.planes[1] + 1;
+            f.strides[0]  = f.strides[1] = f.strides[2] = 322;
+            f.chroma_step = 2;
+            f.width       = 321;
+            f.height      = 241;
+            f.flags       = RETRO_CAMERA_PLANAR_FULL_RANGE;
+            if (st->preview.planar)
+               st->preview.planar(st->preview.user, &f);
+            menu_driver_frame(true, video_info);
+            if (st->preview.raw)
+               st->preview.raw(st->preview.user, pixels, 320, 240,
+                     (320 + 8) * 4);
+            menu_driver_frame(true, video_info);
+            CHECK(st->preview.planar && st->preview.raw,
+                  "the driver's sink takes planes and raw frames");
+         }
+         menu_st->selection_ptr = 0;
+         menu_driver_frame(true, video_info);
+         CHECK(!st->preview_on && !st->preview_data,
+               "and closes it when the entry is left");
+         menu_st->selection_ptr = preview;
+         menu_driver_frame(true, video_info);
+         menu_camera_preview_stop();
+         CHECK(!st->preview_on, "a hidden menu closes the driver's preview");
+         free(video_info);
+      }
+   }
+   settings->bools.camera_allow = allow;
+}
+
 int main(int argc, char *argv[])
 {
    static char cfg_path[640];
@@ -269,6 +400,7 @@ int main(int argc, char *argv[])
 
    CHECK(string_is_equal(menu_driver_ident(), menu_driver), "requested menu initialized");
    media_settings(cfg_path);
+   camera_settings();
 
    /* the labels the deferred lists are pushed with must be identifiers */
 #ifdef HAVE_SMBCLIENT

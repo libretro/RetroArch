@@ -418,6 +418,7 @@ typedef struct xmb_handle
       gfx_thumbnail_t left;
       gfx_thumbnail_t icon;
       gfx_thumbnail_t savestate;
+      gfx_thumbnail_t camera;      /* Settings > Camera > Preview */
       enum xmb_pending_thumbnail_type pending;
       enum xmb_pending_thumbnail_type pending_icons;
    } thumbnails;
@@ -2343,6 +2344,7 @@ static void xmb_unload_thumbnail_textures(void *data)
    gfx_thumbnail_reset(&xmb->thumbnails.left);
    gfx_thumbnail_reset(&xmb->thumbnails.icon);
    gfx_thumbnail_reset(&xmb->thumbnails.savestate);
+   gfx_thumbnail_reset(&xmb->thumbnails.camera);
 }
 
 static void xmb_unload_icon_thumbnail_textures(void *xmb_handle_ptr)
@@ -4904,6 +4906,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING:
       case MENU_ENUM_LABEL_RECORDING_SETTINGS:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_RECORDING:
+      case MENU_ENUM_LABEL_CAMERA_SETTINGS:
+      case MENU_ENUM_LABEL_CAMERA_PREVIEW:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_RECORD]);
       case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING:
@@ -9393,6 +9397,22 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    else if (!xmb->show_fullscreen_thumbnails
          &&  xmb->want_fullscreen_thumbnails)
       xmb_show_fullscreen_thumbnails(xmb, menu_st, menu_st->selection_ptr);
+
+   /* The camera preview, where a save state thumbnail would be */
+   if (     !xmb->show_fullscreen_thumbnails
+         && menu_camera_preview_update(&xmb->thumbnails.camera))
+   {
+      float thumb_width         = right_thumbnail_margin_width;
+      float thumb_height        = thumb_width - (thumb_width / 4);
+      float scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
+      float scaled_thumb_height = thumb_height * thumbnail_scale_factor;
+      menu_camera_preview_draw(&xmb->thumbnails.camera, userdata,
+            video_info->dims,
+            right_thumbnail_margin_x + ((thumb_width - scaled_thumb_width) / 2.0f),
+            (video_height - scaled_thumb_height) / 2.0f,
+            VIDEO_SCALE_PACK(scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
+                             scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0));
+   }
 
    /* Save state thumbnail, right side in PS3 layout, left in PSP layout */
    if (     (xmb->is_quick_menu || xmb->is_state_slot)

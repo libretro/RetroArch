@@ -60,6 +60,8 @@
 #include "../file_path_special.h"
 #include "../list_special.h"
 #include "../msg_hash_lbl_str.h"
+#include "../camera/camera_driver.h"
+#include <formats/image_yuv_blit.h>
 #include "../paths.h"
 #include "../tasks/task_content.h"
 #include "../tasks/task_powerstate.h"
@@ -7528,6 +7530,139 @@ MENU_NOINLINE static int menu_input_post_iterate(
    return ret;
 }
 
+/* The camera preview: one thumbnail at a time, which the menu driver
+ * shows while Settings > Camera > Preview is selected. */
+static gfx_thumbnail_t *menu_camera_thumb;
+static enum camera_preview_state menu_camera_state;
+
+static void menu_camera_preview_planar(void *user,
+      const struct retro_camera_planar_frame *f)
+{
+   unsigned yuv = 0;
+   if (f->flags & RETRO_CAMERA_PLANAR_FULL_RANGE)
+      yuv |= IMAGE_YUV_FLAG_FULL_RANGE;
+   if (f->flags & RETRO_CAMERA_PLANAR_BT709)
+      yuv |= IMAGE_YUV_FLAG_BT709;
+   if (VIDEO_SCALE_FITS(f->width, f->height))
+      gfx_thumbnail_live_planes((gfx_thumbnail_t*)user, f->planes,
+            f->strides, (unsigned)f->chroma_step,
+            VIDEO_SCALE_PACK(f->width, f->height), yuv);
+}
+
+static void menu_camera_preview_raw(void *user, const uint32_t *buf,
+      unsigned width, unsigned height, size_t pitch)
+{
+   if (VIDEO_SCALE_FITS(width, height))
+      gfx_thumbnail_live_pixels((gfx_thumbnail_t*)user, buf,
+            VIDEO_SCALE_PACK(width, height), pitch);
+}
+
+/* The thumbnail reset: the camera goes with it. */
+static void menu_camera_preview_end(void *user)
+{
+   (void)user;
+   menu_camera_thumb = NULL;
+   menu_camera_state = CAMERA_PREVIEW_OFF;
+   camera_driver_preview_close();
+}
+
+bool menu_camera_preview_selected(void)
+{
+   struct menu_state *menu_st = &menu_driver_state;
+   file_list_t *list          = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(
+         menu_st, 0);
+   menu_file_list_cbs_t *cbs;
+   if (!list || menu_st->selection_ptr >= list->size)
+      return false;
+   cbs = (menu_file_list_cbs_t*)list->list[menu_st->selection_ptr].actiondata;
+   return cbs && cbs->enum_idx == MENU_ENUM_LABEL_CAMERA_PREVIEW;
+}
+
+enum camera_preview_state menu_camera_preview_frame(gfx_thumbnail_t *thumbnail)
+{
+   if (menu_camera_thumb != thumbnail)
+   {
+      camera_preview_sink_t sink;
+      sink.planar = menu_camera_preview_planar;
+      sink.raw    = menu_camera_preview_raw;
+      sink.user   = thumbnail;
+      gfx_thumbnail_live_begin(thumbnail, menu_camera_preview_end, NULL);
+      menu_camera_thumb = thumbnail;
+      menu_camera_state = CAMERA_PREVIEW_OFF;
+      camera_driver_preview_open(&sink);
+   }
+
+   return menu_camera_preview_poll();
+}
+
+enum camera_preview_state menu_camera_preview_poll(void)
+{
+   enum camera_preview_state state = camera_driver_preview_poll();
+   enum msg_hash_enums msg         = MSG_UNKNOWN;
+   if (state != menu_camera_state)
+   {
+      switch (state)
+      {
+         case CAMERA_PREVIEW_DISALLOWED:
+            msg = MSG_CAMERA_PREVIEW_DISALLOWED;
+            break;
+         case CAMERA_PREVIEW_FAILED:
+            msg = MSG_CAMERA_PREVIEW_FAILED;
+            break;
+         case CAMERA_PREVIEW_CORE_IDLE:
+            msg = MSG_CAMERA_PREVIEW_CORE_IDLE;
+            break;
+         default:
+            break;
+      }
+      if (msg != MSG_UNKNOWN)
+      {
+         const char *s = msg_hash_to_str(msg);
+         runloop_msg_queue_push(s, strlen(s), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
+      menu_camera_state = state;
+   }
+   return state;
+}
+
+bool menu_camera_preview_update(gfx_thumbnail_t *thumbnail)
+{
+   if (menu_camera_preview_selected())
+   {
+      menu_camera_preview_frame(thumbnail);
+      return true;
+   }
+   if (thumbnail->status != GFX_THUMBNAIL_STATUS_UNKNOWN)
+      gfx_thumbnail_reset(thumbnail);
+   return false;
+}
+
+void menu_camera_preview_draw(gfx_thumbnail_t *thumbnail, void *userdata,
+      unsigned video_dims, float x, float y, unsigned dims)
+{
+   static float black[16] = {
+      0.0f, 0.0f, 0.0f, 1.0f,
+      0.0f, 0.0f, 0.0f, 1.0f,
+      0.0f, 0.0f, 0.0f, 1.0f,
+      0.0f, 0.0f, 0.0f, 1.0f,
+   };
+   gfx_display_draw_quad(disp_get_ptr(), userdata, video_dims, x, y, dims,
+         video_dims, black, NULL);
+   if (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+      gfx_thumbnail_draw(userdata, video_dims, thumbnail, x, y, dims,
+            GFX_THUMBNAIL_ALIGN_CENTRE, 1.0f, 1.0f, NULL);
+}
+
+void menu_camera_preview_stop(void)
+{
+   if (menu_camera_thumb)
+      gfx_thumbnail_reset(menu_camera_thumb);
+   /* A driver's own sink (RGUI) */
+   camera_driver_preview_close();
+   menu_camera_state = CAMERA_PREVIEW_OFF;
+}
+
 void menu_driver_toggle(
       void *curr_video_data,
       void *video_driver_data,
@@ -7819,6 +7954,8 @@ void retroarch_menu_running_finished(bool quit)
       if (menu->driver_ctx && menu->driver_ctx->toggle)
          menu->driver_ctx->toggle(menu->userdata, false);
 
+      /* A hidden menu shows no preview, and keeps no camera open. */
+      menu_camera_preview_stop();
       menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
       menu_driver_drop_accept(false);
       /* Ramp the core's first frames back up. Not when quitting - nothing
@@ -8001,6 +8138,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             memset(&menu_st->input_state, 0, sizeof(menu_input_t));
             memset(&menu_st->input_pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
 
+            menu_camera_preview_stop();
             if (     menu_st->driver_ctx
                   && menu_st->driver_ctx->free)
                menu_st->driver_ctx->free(menu_st->userdata);

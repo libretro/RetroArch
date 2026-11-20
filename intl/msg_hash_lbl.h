@@ -1084,6 +1084,10 @@ MSG_HASH(
    "deferred_midi_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CAMERA_SETTINGS_LIST,
+   "deferred_camera_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL,
    "deferred_rdb_entry_detail"
    )

@@ -653,6 +653,7 @@ typedef struct materialui_handle
    struct
    {
       gfx_thumbnail_t savestate;   /* uintptr_t alignment */
+      gfx_thumbnail_t camera;      /* Settings > Camera > Preview */
    } thumbnails;
 
    size_t (*word_wrap)(
@@ -8951,6 +8952,27 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
             1.0f, 1.0f, NULL);
    }
 
+   /* The camera preview, at the foot of the entries clear of the
+    * navigation bar: the camera page is a few entries tall. */
+   if (menu_camera_preview_update(&mui->thumbnails.camera))
+   {
+      unsigned right  = video_width;
+      unsigned bottom = video_height;
+      unsigned w      = (video_height > video_width)
+         ? video_width * 3 / 4 : video_width * 2 / 5;
+      unsigned h      = w * 3 / 4;
+      unsigned margin = mui->margin;
+      if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_RIGHT)
+         right  -= MIN(right, mui->nav_bar.width);
+      else if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_BOTTOM)
+         bottom -= MIN(bottom, mui->nav_bar.width);
+      menu_camera_preview_draw(&mui->thumbnails.camera, userdata,
+            video_info->dims,
+            (float)((int)right - (int)w - (int)margin),
+            (float)((int)bottom - (int)h - (int)margin),
+            VIDEO_SCALE_PACK(w, h));
+   }
+
    /* Draw title + system bar */
    materialui_render_header(mui, tex_list, menu_st, menu_list,
          video_info, p_disp, userdata,
@@ -10221,6 +10243,7 @@ static void materialui_reset_thumbnails(materialui_handle_t *mui)
    }
 
    gfx_thumbnail_reset(&mui->thumbnails.savestate);
+   gfx_thumbnail_reset(&mui->thumbnails.camera);
 }
 
 static void materialui_context_destroy(void *data)
@@ -13097,6 +13120,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_DIRECTORY_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_PRIVACY_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_MIDI_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_CAMERA_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS_STR)

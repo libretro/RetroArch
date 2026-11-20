@@ -12810,6 +12810,24 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_OPTIONS_DISK:
          count = menu_displaylist_parse_disk_options(list);
          break;
+      case DISPLAYLIST_CAMERA_SETTINGS_LIST:
+         {
+            static const menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_CAMERA_DRIVER,  PARSE_ONLY_STRING_OPTIONS},
+               {MENU_ENUM_LABEL_CAMERA_DEVICE,  PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_CAMERA_ALLOW,   PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CAMERA_PREVIEW, PARSE_ACTION},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
       case DISPLAYLIST_MIDI_SETTINGS_LIST:
          {
             static const menu_displaylist_build_info_t build_list[] = {
@@ -14651,6 +14669,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CORE_SETTINGS,               PARSE_ACTION, true},
                {MENU_ENUM_LABEL_SAVING_SETTINGS,             PARSE_ACTION, true},
                {MENU_ENUM_LABEL_RECORDING_SETTINGS,          PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_CAMERA_SETTINGS,             PARSE_ACTION, true},
                {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,      PARSE_ACTION, true},
                {MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS,      PARSE_ACTION, true},
                {MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,   PARSE_ACTION, true},
@@ -18191,6 +18210,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_LAKKA_SWITCH_OPTIONS_LIST:
 #endif
          case DISPLAYLIST_MIDI_SETTINGS_LIST:
+         case DISPLAYLIST_CAMERA_SETTINGS_LIST:
          case DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST:

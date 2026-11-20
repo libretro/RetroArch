@@ -10117,7 +10117,6 @@ int runloop_iterate(void)
    audio_driver_state_t         *audio_st = audio_state_get_ptr();
    video_driver_state_t         *video_st = video_state_get_ptr();
    recording_state_t              *rec_st = recording_state_get_ptr();
-   camera_driver_state_t       *camera_st = camera_state_get_ptr();
    uico_driver_state_t           *uico_st = uico_state_get_ptr();
    settings_t *settings                   = config_get_ptr();
    runloop_state_t *runloop_st            = &runloop_state;
@@ -10504,10 +10503,7 @@ int runloop_iterate(void)
     * driver and registered caps; stop, teardown and a camera_allow
     * change drop it. */
    if (runloop_st->frame_work & RUNLOOP_WORK_CAMERA)
-      camera_st->driver->poll(camera_st->data,
-            camera_st->cb.frame_raw_framebuffer,
-            camera_st->cb.frame_opengl_texture,
-            camera_st->cb.frame_planar);
+      camera_driver_poll();
 
 #ifdef HAVE_OPENXR
    if (runloop_st->core_vr_content)
