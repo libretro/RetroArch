@@ -3038,16 +3038,17 @@ static void content_load_finish(struct content_load_job *job,
 static bool content_load(content_ctx_info_t *info,
       content_state_t *p_content, unsigned after, bool staged);
 
-/* A staged load the check refused, kept to run again as it was asked */
+/* A staged load the check refused, kept to run again as it was asked.
+ * One allocation: the strings live behind the struct. */
 struct content_load_parked
 {
    content_ctx_info_t info;
-   char *core_path;
-   char *content_path;
-   char *label;
-   char *db_name;
-   char *crc32;
-   char *subsystem_ident;
+   const char *core_path;
+   const char *content_path; /* NULL: none */
+   const char *label;
+   const char *db_name;
+   const char *crc32;
+   const char *subsystem_ident;
    char *subsystem_roms[RARCH_MAX_SUBSYSTEM_ROMS];
    unsigned after;
    unsigned subsystem_rom_id;
@@ -3062,12 +3063,6 @@ static void content_load_parked_free(void *ud)
    int i;
    if (!d)
       return;
-   free(d->core_path);
-   free(d->content_path);
-   free(d->label);
-   free(d->db_name);
-   free(d->crc32);
-   free(d->subsystem_ident);
    for (i = 0; i < RARCH_MAX_SUBSYSTEM_ROMS; i++)
       free(d->subsystem_roms[i]);
    free(d);
@@ -3087,11 +3082,11 @@ static void content_load_parked_run(void *ud)
       path_set(RARCH_PATH_CONTENT, d->content_path);
    else
       path_clear(RARCH_PATH_CONTENT);
-   strlcpy(runloop_st->name.label, d->label ? d->label : "",
+   strlcpy(runloop_st->name.label, d->label,
          sizeof(runloop_st->name.label));
-   strlcpy(p_content->companion_ui_db_name, d->db_name ? d->db_name : "",
+   strlcpy(p_content->companion_ui_db_name, d->db_name,
          sizeof(p_content->companion_ui_db_name));
-   strlcpy(p_content->companion_ui_crc32, d->crc32 ? d->crc32 : "",
+   strlcpy(p_content->companion_ui_crc32, d->crc32,
          sizeof(p_content->companion_ui_crc32));
    content_clear_subsystem();
    /* As it was: content_set_subsystem() would read the current core's
@@ -3099,7 +3094,7 @@ static void content_load_parked_run(void *ud)
    if (d->subsystem_init)
    {
       strlcpy(p_content->pending_subsystem_ident,
-            d->subsystem_ident ? d->subsystem_ident : "",
+            d->subsystem_ident,
             sizeof(p_content->pending_subsystem_ident));
       p_content->pending_subsystem_id      = d->subsystem_id;
       p_content->pending_subsystem_rom_num = d->subsystem_rom_num;
@@ -3123,6 +3118,49 @@ static void content_load_parked_run(void *ud)
    }
 }
 
+/* Copies s behind the struct at *tail; NULL or "" gives "" */
+static const char *content_load_parked_put(char **tail, const char *s)
+{
+   char *r  = *tail;
+   size_t n = (s ? strlen(s) : 0) + 1;
+   if (n > 1)
+      memcpy(r, s, n);
+   else
+      *r = '\0';
+   *tail   += n;
+   return r;
+}
+
+#define CONTENT_LOAD_PARKED_LEN(s) (((s) ? strlen(s) : 0) + 1)
+
+/* The struct and its strings in one block; content NULL or "" for none */
+static struct content_load_parked *content_load_parked_alloc(
+      const char *core, const char *content, const char *label,
+      const char *db_name, const char *crc32, const char *ident)
+{
+   struct content_load_parked *d = NULL;
+   char *tail                    = NULL;
+   bool has_content              = content && *content;
+   size_t len                    = sizeof(*d)
+      + CONTENT_LOAD_PARKED_LEN(core)
+      + (has_content ? strlen(content) + 1 : 0)
+      + CONTENT_LOAD_PARKED_LEN(label)
+      + CONTENT_LOAD_PARKED_LEN(db_name)
+      + CONTENT_LOAD_PARKED_LEN(crc32)
+      + CONTENT_LOAD_PARKED_LEN(ident);
+   if (!(d = (struct content_load_parked*)calloc(1, len)))
+      return NULL;
+   tail               = (char*)(d + 1);
+   d->core_path       = content_load_parked_put(&tail, core);
+   d->content_path    = has_content
+      ? content_load_parked_put(&tail, content) : NULL;
+   d->label           = content_load_parked_put(&tail, label);
+   d->db_name         = content_load_parked_put(&tail, db_name);
+   d->crc32           = content_load_parked_put(&tail, crc32);
+   d->subsystem_ident = content_load_parked_put(&tail, ident);
+   return d;
+}
+
 /* What the re-run needs, taken before the core stage's dummy fallback
  * changes it */
 static struct content_load_parked *content_load_parked_new(
@@ -3131,10 +3169,12 @@ static struct content_load_parked *content_load_parked_new(
    struct content_load_parked *d = NULL;
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    content_state_t *p_content    = content_state_get_ptr();
-   const char *core_path         = path_get(RARCH_PATH_CORE);
-   const char *content_path      = path_get(RARCH_PATH_CONTENT);
    int i;
-   if (!(d = (struct content_load_parked*)calloc(1, sizeof(*d))))
+   if (!(d = content_load_parked_alloc(path_get(RARCH_PATH_CORE),
+               path_get(RARCH_PATH_CONTENT), runloop_st->name.label,
+               p_content->companion_ui_db_name,
+               p_content->companion_ui_crc32,
+               p_content->pending_subsystem_ident)))
       return NULL;
    /* A menu load again: no startup argv */
    d->info.environ_get   = job->info.environ_get;
@@ -3144,21 +3184,8 @@ static struct content_load_parked *content_load_parked_new(
    if (job->firmware && job->firmware->shown)
       d->after          |= CONTENT_LOAD_AFTER_FIRMWARE_ASKED;
 #endif
-   d->core_path          = strdup(core_path ? core_path : "");
-   d->content_path       = (content_path && *content_path)
-      ? strdup(content_path) : NULL;
-   /* Else the re-run would start the core without its content */
-   if (content_path && *content_path && !d->content_path)
-   {
-      content_load_parked_free(d);
-      return NULL;
-   }
-   d->label              = strdup(runloop_st->name.label);
-   d->db_name            = strdup(p_content->companion_ui_db_name);
-   d->crc32              = strdup(p_content->companion_ui_crc32);
    d->subsystem_init     = (p_content->flags
          & CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT) ? true : false;
-   d->subsystem_ident    = strdup(p_content->pending_subsystem_ident);
    d->subsystem_id       = p_content->pending_subsystem_id;
    d->subsystem_rom_num  = p_content->pending_subsystem_rom_num;
    d->subsystem_rom_id   = p_content->pending_subsystem_rom_id;
@@ -3426,16 +3453,9 @@ bool task_content_park_startup(const char *core_path,
    core_load_rerun_t rerun       = content_load_parked_run;
    if (     !core_path || !*core_path
          || !core_load_check_refused(core_path)
-         || !(d = (struct content_load_parked*)calloc(1, sizeof(*d))))
+         || !(d = content_load_parked_alloc(core_path, content_path,
+               NULL, NULL, NULL, NULL)))
       return false;
-   d->core_path    = strdup(core_path);
-   d->content_path = (content_path && *content_path)
-      ? strdup(content_path) : NULL;
-   if (content_path && *content_path && !d->content_path)
-   {
-      content_load_parked_free(d);
-      return false;
-   }
 #ifdef HAVE_MENU
    if (menu_core_warning_can_open())
       rerun = content_load_startup_rerun;
