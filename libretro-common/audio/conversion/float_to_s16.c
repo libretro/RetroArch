@@ -253,6 +253,64 @@ static void float_to_s16_avx512(int16_t *s, const float *in, size_t len)
 #endif
 #endif
 
+/* The scalar rule every vector body matches: x * 32768, NaN -> 0,
+ * round half away from zero, saturate. */
+static void float_to_s16_scalar(int16_t *s, const float *in, size_t len)
+{
+   size_t i;
+   for (i = 0; i < len; i++)
+   {
+      float    scaled = in[i] * 0x8000;
+      uint32_t bits;
+      /* Casting a non-finite or out-of-int32-range float is undefined,
+       * and on x86 it yields the "integer indefinite" INT32_MIN. The
+       * NaN test is on the bit pattern rather than (scaled != scaled)
+       * because -ffast-math is entitled to fold the latter to false. */
+      memcpy(&bits, &scaled, sizeof(bits));
+      if ((bits & 0x7FFFFFFFu) > 0x7F800000u)
+         s[i]         = 0;
+      else
+      {
+         scaled      += (scaled >= 0.0f ? 0.5f : -0.5f);
+         if (scaled >  32767.0f)
+            s[i]      =  0x7FFF;
+         else if (scaled < -32768.0f)
+            s[i]      = -0x8000;
+         else
+            s[i]      = (int16_t)(int32_t)scaled;
+      }
+   }
+}
+
+#if defined(_MIPS_ARCH_ALLEGREX)
+/* Eight samples from c100/c110 to s16 pairs in c100, by the scalar
+ * rule: x + sgn(x) * 2^-16 (s300) is x * 32768 + 0.5 away from zero,
+ * one exponent step from the scaled form, so it rounds identically;
+ * NaN lanes take c310's zero; vf2iz truncates at scale 15, and the
+ * integer goes back through float to scale 16 so vi2s takes the
+ * saturated sample from the high half instead of flooring a fraction. */
+#define FLOAT_TO_S16_VFPU_BODY \
+   "vsgn.q   c120, c100              \n" \
+   "vsgn.q   c130, c110              \n" \
+   "vscl.q   c120, c120, s300        \n" \
+   "vscl.q   c130, c130, s300        \n" \
+   "vadd.q   c100, c100, c120        \n" \
+   "vadd.q   c110, c110, c130        \n" \
+   "vcmp.q   EN, c100, c100          \n" \
+   "vcmovt.q c100, c310, 6           \n" \
+   "vcmp.q   EN, c110, c110          \n" \
+   "vcmovt.q c110, c310, 6           \n" \
+   "vf2iz.q  c100, c100, 15          \n" \
+   "vf2iz.q  c110, c110, 15          \n" \
+   "vi2f.q   c100, c100, 0           \n" \
+   "vi2f.q   c110, c110, 0           \n" \
+   "vf2iz.q  c100, c100, 16          \n" \
+   "vf2iz.q  c110, c110, 16          \n" \
+   "vi2s.q   c100, c100              \n" \
+   "vi2s.q   c102, c110              \n" \
+   "sv.q     c100,  0(%1)            \n"
+#endif
+
 /* The SSE2 / AltiVec / Allegrex loop and the scalar tail. */
 static void convert_float_to_s16_base(int16_t *s, const float *in, size_t len)
 {
@@ -341,62 +399,52 @@ static void convert_float_to_s16_base(int16_t *s, const float *in, size_t len)
    len               = samples_in;
    i                 = 0;
 #elif defined(_MIPS_ARCH_ALLEGREX)
-#ifdef DEBUG
-   /* Make sure the buffers are 16 byte aligned, this should be
-    * the default behaviour of malloc in the PSPSDK.
-    * Assume alignment. */
-   retro_assert(((uintptr_t)in  & 0xf) == 0);
-   retro_assert(((uintptr_t)s & 0xf) == 0);
-#endif
-
-   for (i = 0; i + 8 <= len; i += 8)
+   /* lv.q and sv.q take only 16-byte aligned addresses, and callers
+    * convert into ring and lent regions at any offset. The head runs
+    * scalar up to the first aligned output; float input is 4-byte
+    * aligned, so lvl.q/lvr.q read it wherever lv.q cannot. */
+   if (!((uintptr_t)in & 3) && len >= 8)
    {
-      __asm__ (
-            ".set    push                 \n"
-            ".set    noreorder            \n"
-
-            "lv.q    c100,  0(%0)         \n"
-            "lv.q    c110,  16(%0)        \n"
-
-            "vf2in.q c100, c100, 31       \n"
-            "vf2in.q c110, c110, 31       \n"
-            "vi2s.q  c100, c100           \n"
-            "vi2s.q  c102, c110           \n"
-
-            "sv.q    c100,  0(%1)         \n"
-
-            ".set    pop                  \n"
-            :: "r"(in + i), "r"(s + i));
-   }
-#endif
-
-   /* This loop converts stray samples to the right format,
-    * but it's also a fallback in case no SIMD instructions are available. */
-   for (; i < len; i++)
-   {
-      float    scaled = in[i] * 0x8000;
-      uint32_t bits;
-      /* Casting a non-finite or out-of-int32-range float is undefined,
-       * and on x86 it yields the "integer indefinite" INT32_MIN, which
-       * then saturates to -32768 - so a NaN or a large positive sample
-       * came out as full-scale negative. The NEON and AltiVec paths
-       * already give NaN -> 0 with correct saturation; match them. The
-       * NaN test is on the bit pattern rather than (scaled != scaled)
-       * because -ffast-math is entitled to fold the latter to false. */
-      memcpy(&bits, &scaled, sizeof(bits));
-      if ((bits & 0x7FFFFFFFu) > 0x7F800000u)
-         s[i]         = 0;
-      else
+      size_t head = (((uintptr_t)0 - (uintptr_t)s) & 15) >> 1;
+      float_to_s16_scalar(s, in, head);
+      i = head;
+      if (i + 8 <= len)
       {
-         scaled      += (scaled >= 0.0f ? 0.5f : -0.5f);
-         if (scaled >  32767.0f)
-            s[i]      =  0x7FFF;
-         else if (scaled < -32768.0f)
-            s[i]      = -0x8000;
+         __asm__ (
+               ".set    push                 \n"
+               ".set    noreorder            \n"
+               "mtv     %0, s300             \n"
+               "vzero.q c310                 \n"
+               ".set    pop                  \n"
+               :: "r"((uint32_t)0x37800000u)); /* 2^-16 */
+         if (!((uintptr_t)(in + i) & 15))
+            for (; i + 8 <= len; i += 8)
+               __asm__ (
+                     ".set    push                 \n"
+                     ".set    noreorder            \n"
+                     "lv.q    c100,  0(%0)         \n"
+                     "lv.q    c110, 16(%0)         \n"
+                     FLOAT_TO_S16_VFPU_BODY
+                     ".set    pop                  \n"
+                     :: "r"(in + i), "r"(s + i) : "memory");
          else
-            s[i]      = (int16_t)(int32_t)scaled;
+            for (; i + 8 <= len; i += 8)
+               __asm__ (
+                     ".set    push                 \n"
+                     ".set    noreorder            \n"
+                     "lvl.q   c100, 12(%0)         \n"
+                     "lvr.q   c100,  0(%0)         \n"
+                     "lvl.q   c110, 28(%0)         \n"
+                     "lvr.q   c110, 16(%0)         \n"
+                     FLOAT_TO_S16_VFPU_BODY
+                     ".set    pop                  \n"
+                     :: "r"(in + i), "r"(s + i) : "memory");
       }
    }
+#endif
+
+   /* Stray samples, and every sample where no vector body exists. */
+   float_to_s16_scalar(s + i, in + i, len - i);
 }
 
 void convert_float_to_s16(int16_t *s, const float *in, size_t len)

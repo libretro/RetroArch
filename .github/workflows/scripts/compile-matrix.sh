@@ -771,6 +771,13 @@ check "features_cpu: ps3"        "$HOSTOFF -Itools/platform_stubs/ps3 -D__PS3__ 
 check "features_cpu: psl1ght"    "$HOSTOFF -Itools/platform_stubs/psl1ght -D__PS3__ -D__PSL1GHT__ -DRARCH_CONSOLE" $FCPU_TU
 check "features_cpu: emscripten" "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN" $FCPU_TU
 
+# The Allegrex (VFPU) branches of the sample converters, which only the
+# PSP toolchain compiles. The host cannot assemble the VFPU, but the C
+# around it - alignment heads, loop selection - is checked here, with
+# the x86 SIMD paths that would otherwise take precedence shed.
+CONV_TUS="libretro-common/audio/conversion/float_to_s16.c libretro-common/audio/conversion/s16_to_float.c"
+check "conversion: allegrex" "$HOSTOFF -U__SSE__ -U__SSE2__ -U__AVX2__ -U__AVX512F__ -DPSP -D_MIPS_ARCH_ALLEGREX -DDEBUG -std=c89 -pedantic -Wno-long-long -Werror" $CONV_TUS
+
 # Shared menu and video code under the console platform macros. These
 # files are compiled by every desktop job, but the blocks inside them
 # that a console selects are not, and a change to a struct those blocks
