@@ -5,7 +5,7 @@
 #include "record_pyrowave_source.h"
 #if defined(_WIN32) && defined(HAVE_D3D12) && !defined(__WINRT__) && !defined(_XBOX)
 #include "record_pyrowave_player_d3d12.h"
-#include "../cores/libretro-pyrowave/pyrowave_core.h"
+#include "../record/record_pyrowave_receiver.h"
 #include "../gfx/common/d3dcompiler_common.h"
 #include <stdlib.h>
 #include <string.h>

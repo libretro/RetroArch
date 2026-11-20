@@ -20,6 +20,7 @@ parser.add_argument('--codec', type=Path, required=True)
 parser.add_argument('--shader-directory', type=Path, required=True)
 parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--threaded', action='store_true')
+parser.add_argument('--retained-core', type=Path, help='Prove the selected fixture core resumes after EOF without a reload')
 parser.add_argument('--hdr', action='store_true', help='PQ/BT.2020 stream with explicit SDR presentation')
 parser.add_argument('--backend', choices=('glcore', 'd3d12', 'vulkan'), default='glcore')
 parser.add_argument('--mode', choices=('playback', 'end', 'abort', 'early', 'missing-shaders', 'reconnect', 'gpu-failure'), default='playback')
@@ -157,8 +158,9 @@ header = struct.Struct('<4sHBBIIIIQQQQQ'); generation = 7
 startup = None
 if os.name == 'nt':
     startup = subprocess.STARTUPINFO(); startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW; startup.wShowWindow = 0
-command = [str(args.retroarch.resolve()), '--verbose', '--config', str(config), '-L', 'pyrowave',
+command = [str(args.retroarch.resolve()), '--verbose', '--config', str(config), '--pyrowave-receive',
            str(connection_file)]
+if args.retained_core: command += ['-L', str(args.retained_core.resolve())]
 if args.history_shader: command += ['--set-shader', str(preset)]
 if args.mode == 'early': command += ['--max-frames', '2']
 if args.mode in ('playback', 'reconnect'):
@@ -183,7 +185,7 @@ def close_own_process():
         owner = c.c_ulong(); name = c.create_unicode_buffer(128)
         user32.GetWindowThreadProcessId(window, c.byref(owner))
         user32.GetClassNameW(window, name, len(name))
-        if owner.value == process.pid and name.value == 'RetroArch':
+        if owner.value == process.pid:
             if user32.PostMessageW(window, 0x10, 0, 0): sent.append(True)
         return 1
     user32.EnumWindows(visit, 0)
@@ -268,15 +270,13 @@ try:
                 send_header(3, 1, 4096, len(packet), 0, 49, 800000, 16666)
                 connection.sendall(packet[:37]); connection.close(); connection = None
     if args.mode in ('end', 'abort', 'missing-shaders', 'gpu-failure'):
-        # SHUTDOWN may return to the menu. Close only this task's application,
-        # after receiver retirement and the menu/dummy driver reinitialization.
-        # An earlier signal can be cleared by that reinitialization.
+        # EOF returns to the existing frontend session. Close only this test's
+        # application after the receiver has retired its loans.
         deadline = time.monotonic() + 20; quit_sent = False
         while process.poll() is None and time.monotonic() < deadline:
             log.flush(); text = (output / 'process.log').read_text(errors='replace')
-            if (not quit_sent and '[PyroWave] Receiver resources retired.' in text
-                    and '[Environ] SHUTDOWN.' in text
-                    and '[Display] Found display driver:' in text.split('[Environ] SHUTDOWN.', 1)[1]):
+            if (not quit_sent and '[PyroWave] Frontend session restored.' in text
+                    and (not args.retained_core or 'FRONTEND_FIXTURE_RUN' in text)):
                 closed = close_own_process()
                 # Windows may replace its window while returning to the menu.
                 quit_sent = closed and os.name != 'nt'
@@ -315,7 +315,12 @@ try:
     if args.mode not in ('early', 'missing-shaders'):
         assert '[PyroWave] Receiver ready.' in diagnostics, diagnostics[-12000:]
     if args.mode in ('end', 'abort', 'missing-shaders'):
-        assert '[Environ] SHUTDOWN.' in diagnostics, diagnostics[-12000:]
+        assert '[Environ] SHUTDOWN.' not in diagnostics, diagnostics[-12000:]
+        assert '[PyroWave] Frontend session restored.' in diagnostics, diagnostics[-12000:]
+    if args.retained_core:
+        assert diagnostics.count('FRONTEND_FIXTURE_INIT') == 1, diagnostics[-12000:]
+        assert diagnostics.count('FRONTEND_FIXTURE_DEINIT') == 1, diagnostics[-12000:]
+        assert diagnostics.index('FRONTEND_FIXTURE_RUN') > diagnostics.index('[PyroWave] Frontend session restored.'), diagnostics[-12000:]
     if args.mode == 'gpu-failure':
         fault = '[PyroWave oracle] Recorded D3D12 decode fault.' if args.backend == 'd3d12' else '[PyroWave oracle] Recorded decode finalization fault.'
         assert fault in diagnostics, diagnostics[-12000:]

@@ -1,6 +1,7 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include <libretro.h>
 #include <string.h>
+#include <stdio.h>
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -12,6 +13,7 @@ static retro_video_refresh_t fixture_video;
 static retro_audio_sample_batch_t fixture_audio;
 static uint32_t fixture_pixels[160 * 120];
 static int16_t fixture_pcm[800 * 2];
+static bool fixture_ran;
 
 void retro_set_environment(retro_environment_t cb)
 {
@@ -27,10 +29,12 @@ void retro_set_input_state(retro_input_state_t cb) { (void)cb; }
 void retro_init(void)
 {
    unsigned i;
+   fixture_ran = false;
+   fprintf(stderr, "FRONTEND_FIXTURE_INIT\n");
    for (i = 0; i < 160 * 120; i++) fixture_pixels[i] = 0x004080c0;
    for (i = 0; i < 800 * 2; i++) fixture_pcm[i] = (i & 16) ? 4096 : -4096;
 }
-void retro_deinit(void) { }
+void retro_deinit(void) { fprintf(stderr, "FRONTEND_FIXTURE_DEINIT\n"); }
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *info)
 {
@@ -58,6 +62,11 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
 void retro_unload_game(void) { }
 void retro_run(void)
 {
+   if (!fixture_ran)
+   {
+      fixture_ran = true;
+      fprintf(stderr, "FRONTEND_FIXTURE_RUN\n");
+   }
    /* Offline oracle: an occluded test window has no display pacing. */
 #ifdef _WIN32
    Sleep(5);

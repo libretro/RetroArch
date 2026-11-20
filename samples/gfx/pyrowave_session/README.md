@@ -131,8 +131,15 @@ captures. Run the oracle on that fixture with `--expect-abort`; it requires
 TCP closure and resource retirement instead of END. The source CI job runs
 this check with synchronization validation, in addition to normal capture.
 
-The builtin receiver opens a connection file with `retroarch -L pyrowave
-/path/to/stream.rpws`. A minimal connection file is:
+The embedded frontend receiver opens a connection file with
+`retroarch --pyrowave-receive /path/to/stream.rpws`. It does not load a
+PyroWave core. An already selected game core stays loaded and resumes after
+stream playback ends; receiving temporarily owns frontend audio/video.
+Use `-L /path/to/game_core` and normal content arguments alongside
+`--pyrowave-receive` to retain that game session. No PyroWave core is built
+or registered. Sending uses the recording driver while the game runs.
+
+A minimal connection file is:
 
 ```
 pyrowave_url = "rpws://127.0.0.1:12345"

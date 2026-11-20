@@ -104,7 +104,7 @@
 #ifdef HAVE_PYROWAVE
 #include "../../record/drivers/record_pyrowave.h"
 #include "../../record/record_pyrowave_vulkan.h"
-#include "../../cores/libretro-pyrowave/pyrowave_core.h"
+#include "../../record/record_pyrowave_receiver.h"
 #endif
 #if defined(ANDROID) && defined(HAVE_RECORD_MEDIACODEC)
 #include "../../record/record_android_capture_renderer.h"
@@ -13259,7 +13259,7 @@ static void vulkan_pyrowave_submitted(vk_t *vk, const video_frame_info_t *info,
    if (info->recording_pyrowave_receive)
    {
       if (result != VK_SUCCESS && !discarded) vk->pyrowave_quiescing = true;
-      libretro_pyrowave_vulkan_submitted(info->recording_gpu, fence, result, discarded);
+      record_pyrowave_receiver_vulkan_submitted(info->recording_gpu, fence, result, discarded);
    }
    else if (discarded)
       record_pyrowave_vulkan_unsubmitted(info->recording_gpu, fence);
@@ -14182,7 +14182,7 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef HAVE_RECORD_PYROWAVE_VULKAN
    if (video_info->recording_pyrowave_receive)
-      pyrowave_ready = libretro_pyrowave_vulkan_frame(video_info->recording_gpu, vk->cmd,
+      pyrowave_ready = record_pyrowave_receiver_vulkan_frame(video_info->recording_gpu, vk->cmd,
             &pyrowave_image, &pyrowave_fence, &pyrowave_dims,
             video_info->recording_gpu_capture
             && !(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK), video_info);

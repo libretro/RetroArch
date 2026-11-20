@@ -64,7 +64,7 @@
 #ifdef HAVE_PYROWAVE
 #include "../../record/drivers/record_pyrowave.h"
 #include "../../record/record_pyrowave_player_d3d12.h"
-#include "../../cores/libretro-pyrowave/pyrowave_core.h"
+#include "../../record/record_pyrowave_receiver.h"
 #endif
 #include "../../retroarch.h"
 #include "../common/menu_bloom.h"
@@ -1431,7 +1431,7 @@ static VIDEO_NOINLINE void d3d12_device_removed(d3d12_video_t *d3d12,
    if (d3d12->pyrowave_receiver)
    {
       d3d12->pyrowave_quiescing = true;
-      libretro_pyrowave_d3d12_failed(d3d12->pyrowave_receiver);
+      record_pyrowave_receiver_d3d12_failed(d3d12->pyrowave_receiver);
    }
    if (d3d12->pyrowave_sender)
    {
@@ -6950,7 +6950,7 @@ static bool d3d12_pyrowave_execute(d3d12_video_t *d3d12, void *receiver)
    if (d3d12->pyrowave_player)
    {
       d3d12->pyrowave_quiescing = true;
-      if (receiver) libretro_pyrowave_d3d12_failed(receiver);
+      if (receiver) record_pyrowave_receiver_d3d12_failed(receiver);
       else record_pyrowave_failed(d3d12->pyrowave_sender);
    }
    return false;
@@ -10093,7 +10093,7 @@ static bool d3d12_gfx_frame_body(
    if ((d3d12->flags & D3D12_ST_FLAG_DEVICE_REMOVED) && d3d12->pyrowave_player
          && video_info->recording_pyrowave_receive)
    {
-      libretro_pyrowave_d3d12_failed(video_info->recording_gpu);
+      record_pyrowave_receiver_d3d12_failed(video_info->recording_gpu);
       d3d12->pyrowave_quiescing = true;
    }
    if (d3d12->pyrowave_quiescing) return true;
@@ -10366,7 +10366,7 @@ recording_resize_deferred:;
    if (video_info->recording_pyrowave_receive)
    {
       unsigned dims = 0;
-      pyrowave_image = libretro_pyrowave_d3d12_frame(video_info->recording_gpu, cmd,
+      pyrowave_image = record_pyrowave_receiver_d3d12_frame(video_info->recording_gpu, cmd,
             d3d12->queue.fence, d3d12->queue.fenceValue + 1, &dims,
             video_info->recording_gpu_capture && !(d3d12->flags & D3D12_ST_FLAG_FRAME_DUPE_LOCK), video_info);
       /* Each new decoder image uses the existing native-input path.

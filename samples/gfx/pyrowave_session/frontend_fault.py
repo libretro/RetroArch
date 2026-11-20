@@ -33,7 +33,7 @@ fault = b'''VkResult result = vkEndCommandBuffer(vk->cmd);
       {
          result = VK_ERROR_OUT_OF_HOST_MEMORY;
       }'''
-core = build / 'cores/libretro-pyrowave/pyrowave_core.c'
+core = build / 'record/record_pyrowave_receiver.c'
 core_original = None
 if args.receiver:
     core_original = core.read_bytes()

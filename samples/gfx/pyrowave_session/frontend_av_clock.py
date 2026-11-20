@@ -14,7 +14,7 @@ parser.add_argument('--present-future', action='store_true', help='Negative fixt
 parser.add_argument('--d3d12-validation', action='store_true')
 args = parser.parse_args()
 build = args.build_directory.resolve()
-core = build / 'cores/libretro-pyrowave/pyrowave_core.c'
+core = build / 'record/record_pyrowave_receiver.c'
 original = core.read_bytes()
 patched = original.replace(b'\r\n', b'\n')
 if args.output.resolve() == args.retroarch.resolve():
@@ -27,7 +27,7 @@ def once(text, old, new):
     return text.replace(old, new)
 
 
-marker = b'static bool pyrowave_core_due('
+marker = b'static bool pyrowave_receiver_due('
 trace = b'''typedef struct pyrowave_av_event
 {
    uint64_t frame, ceiling;
@@ -35,7 +35,7 @@ trace = b'''typedef struct pyrowave_av_event
 } pyrowave_av_event_t;
 static pyrowave_av_event_t pyrowave_av_events[4096];
 static unsigned pyrowave_av_count;
-static void pyrowave_av_record(pyrowave_core_client_t *c, const record_gpu_frame_t *frame, unsigned kind)
+static void pyrowave_av_record(pyrowave_receiver_client_t *c, const record_gpu_frame_t *frame, unsigned kind)
 {
    if (pyrowave_av_count < 4096)
    {
@@ -47,7 +47,7 @@ static void pyrowave_av_record(pyrowave_core_client_t *c, const record_gpu_frame
 '''
 patched = once(patched, marker, trace + marker)
 due = b'   return c->target_valid && frame->timestamp <= c->target_time;'
-patched = once(patched, due, b'   pyrowave_av_record((pyrowave_core_client_t*)c, frame, 0);\n'
+patched = once(patched, due, b'   pyrowave_av_record((pyrowave_receiver_client_t*)c, frame, 0);\n'
     + (b'   return true;' if args.present_future else due))
 for name, image in [('gl', 'image'), ('d3d12', 'd3d12_image'), ('vulkan', 'vulkan_image')]:
     future = 'gl_future' if name == 'gl' else name + '_future'
@@ -66,7 +66,7 @@ dump = b'''      {
          pyrowave_av_count = 0;
       }
 '''
-free = b'      free(c->mono); free(c); pyrowave_core_client = NULL;'
+free = b'      free(c->mono); free(c); pyrowave_receiver_client = NULL;'
 patched = once(patched, free, dump + free)
 try:
     core.write_bytes(patched)

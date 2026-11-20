@@ -1,66 +1,72 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #ifdef HAVE_CONFIG_H
-#include "../../config.h"
+#include "../config.h"
 #endif
-#include "pyrowave_core.h"
-#include "../internal_cores.h"
-#include "../../gfx/video_driver.h"
-#include "../../audio/audio_presentation.h"
+#include "record_pyrowave_receiver.h"
+#include "../gfx/video_driver.h"
+#include "../audio/audio_presentation.h"
 #include <string.h>
 #include <stdlib.h>
+#include <retro_atomic.h>
 
-static retro_environment_t pyrowave_core_environment;
-static retro_video_refresh_t pyrowave_core_video;
-static retro_audio_sample_batch_t pyrowave_core_audio;
-static retro_input_poll_t pyrowave_core_input;
-static struct retro_system_av_info pyrowave_core_av;
+#include "../runloop.h"
+#include "../command.h"
+#include "../driver.h"
+#include "../audio/audio_driver.h"
+static bool pyrowave_receiver_owned;
+static bool pyrowave_receiver_start_pending;
+static retro_atomic_int_t pyrowave_receiver_audio_enabled = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 #if defined(_WIN32) && defined(HAVE_D3D12) && !defined(__WINRT__) && !defined(_XBOX)
-#define PYROWAVE_CORE_D3D12
+#define PYROWAVE_RECEIVER_D3D12
 #endif
 #if defined(HAVE_VULKAN) && !defined(ANDROID)
-#define PYROWAVE_CORE_VULKAN
+#define PYROWAVE_RECEIVER_VULKAN
 #endif
-#if defined(HAVE_THREADS) && defined(HAVE_CONFIGFILE) && ((defined(HAVE_OPENGL_CORE) && !defined(HAVE_OPENGLES)) || defined(PYROWAVE_CORE_D3D12) || defined(PYROWAVE_CORE_VULKAN))
-#define PYROWAVE_CORE_GPU
+#if defined(HAVE_THREADS) && defined(HAVE_CONFIGFILE) && ((defined(HAVE_OPENGL_CORE) && !defined(HAVE_OPENGLES)) || defined(PYROWAVE_RECEIVER_D3D12) || defined(PYROWAVE_RECEIVER_VULKAN))
+#define PYROWAVE_RECEIVER_GPU
+static struct retro_system_av_info pyrowave_receiver_av;
+static struct retro_system_av_info pyrowave_receiver_saved_av;
+static char *pyrowave_receiver_path;
+static bool pyrowave_receiver_restart;
 #include <retro_atomic.h>
 #include <file/config_file.h>
 #include <net/net_compat.h>
-#include "../../gfx/video_thread_wrapper.h"
-#include "../../record/record_pyrowave_player_gl.h"
-#ifdef PYROWAVE_CORE_D3D12
-#include "../../record/record_pyrowave_player_d3d12.h"
+#include "../gfx/video_thread_wrapper.h"
+#include "record_pyrowave_player_gl.h"
+#ifdef PYROWAVE_RECEIVER_D3D12
+#include "record_pyrowave_player_d3d12.h"
 #endif
-#ifdef PYROWAVE_CORE_VULKAN
-#include "../../record/record_pyrowave_player_vulkan.h"
-#define PYROWAVE_CORE_VK_FENCES (2 * RECORD_GPU_QUEUE_SLOTS)
+#ifdef PYROWAVE_RECEIVER_VULKAN
+#include "record_pyrowave_player_vulkan.h"
+#define PYROWAVE_RECEIVER_VK_FENCES (2 * RECORD_GPU_QUEUE_SLOTS)
 #endif
-#include "../../record/record_pyrowave_dispatch.h"
-#include "../../record/record_driver.h"
-#include "../../audio/audio_driver.h"
-#include "../../audio/audio_thread_wrapper.h"
-#include "../../audio/audio_pyrowave.h"
-#include "../../configuration.h"
-#include "../../verbosity.h"
+#include "record_pyrowave_dispatch.h"
+#include "record_driver.h"
+#include "../audio/audio_driver.h"
+#include "../audio/audio_thread_wrapper.h"
+#include "../audio/audio_pyrowave.h"
+#include "../configuration.h"
+#include "../verbosity.h"
 
-typedef struct pyrowave_core_client
+typedef struct pyrowave_receiver_client
 {
    record_pyrowave_dispatch_t *io;
    record_pyrowave_player_gl_t *player;
    void *player_d3d12;
-#ifdef PYROWAVE_CORE_D3D12
+#ifdef PYROWAVE_RECEIVER_D3D12
    record_pyrowave_d3d12_image_t d3d12_image, d3d12_future;
    ID3D12Fence *display_fence;
    uint64_t display_value;
    bool d3d12_detached;
 #endif
-#ifdef PYROWAVE_CORE_VULKAN
+#ifdef PYROWAVE_RECEIVER_VULKAN
    record_pyrowave_vulkan_t *player_vulkan;
    record_pyrowave_vulkan_image_t vulkan_image, vulkan_future;
-   VkFence vulkan_fences[PYROWAVE_CORE_VK_FENCES];
+   VkFence vulkan_fences[PYROWAVE_RECEIVER_VK_FENCES];
    VkFence vulkan_recovery_fence;
    bool vulkan_recovery_submitted;
-   bool vulkan_busy[PYROWAVE_CORE_VK_FENCES];
+   bool vulkan_busy[PYROWAVE_RECEIVER_VK_FENCES];
    unsigned vulkan_pending, vulkan_display, vulkan_previous;
    bool vulkan_drew;
    PFN_vkCreateFence vulkan_create;
@@ -95,29 +101,27 @@ typedef struct pyrowave_core_client
    bool audio_async, audio_bound, audio_unbinding, audio_reported, audio_received;
    bool target_valid, future, video_input_end, tail;
    bool audio_clock_known;
-} pyrowave_core_client_t;
+} pyrowave_receiver_client_t;
 
-static pyrowave_core_client_t *pyrowave_core_client;
-static char *pyrowave_core_path;
-static bool pyrowave_core_loaded, pyrowave_core_restart;
-static bool pyrowave_core_async_audio;
+static pyrowave_receiver_client_t *pyrowave_receiver_client;
+static bool pyrowave_receiver_async_audio;
 /* One outstanding main->audio request; ack is the old borrow's last access. */
-static pyrowave_core_client_t *pyrowave_core_audio_requested;
-static pyrowave_core_client_t *pyrowave_core_audio_active;
-static retro_atomic_int_t pyrowave_core_audio_sequence = RETRO_ATOMIC_INT_INITIALIZER(0);
-static retro_atomic_int_t pyrowave_core_audio_ack = RETRO_ATOMIC_INT_INITIALIZER(0);
+static pyrowave_receiver_client_t *pyrowave_receiver_audio_requested;
+static pyrowave_receiver_client_t *pyrowave_receiver_audio_active;
+static retro_atomic_int_t pyrowave_receiver_audio_sequence = RETRO_ATOMIC_INT_INITIALIZER(0);
+static retro_atomic_int_t pyrowave_receiver_audio_ack = RETRO_ATOMIC_INT_INITIALIZER(0);
 
-static bool pyrowave_core_audio_request(pyrowave_core_client_t *target, unsigned *request)
+static bool pyrowave_receiver_audio_request(pyrowave_receiver_client_t *target, unsigned *request)
 {
-   unsigned sequence = (unsigned)retro_atomic_load_relaxed_int(&pyrowave_core_audio_sequence);
-   if (sequence != (unsigned)retro_atomic_load_acquire_int(&pyrowave_core_audio_ack)) return false;
-   pyrowave_core_audio_requested = target;
+   unsigned sequence = (unsigned)retro_atomic_load_relaxed_int(&pyrowave_receiver_audio_sequence);
+   if (sequence != (unsigned)retro_atomic_load_acquire_int(&pyrowave_receiver_audio_ack)) return false;
+   pyrowave_receiver_audio_requested = target;
    *request = sequence + 1;
-   retro_atomic_store_release_int(&pyrowave_core_audio_sequence, (int)*request);
+   retro_atomic_store_release_int(&pyrowave_receiver_audio_sequence, (int)*request);
    return true;
 }
 
-static void pyrowave_core_audio_retire(pyrowave_core_client_t *c, bool failed)
+static void pyrowave_receiver_audio_retire(pyrowave_receiver_client_t *c, bool failed)
 {
    if (!c) return;
    audio_driver_pyrowave_detach(c->audio_clock);
@@ -131,26 +135,26 @@ static void pyrowave_core_audio_retire(pyrowave_core_client_t *c, bool failed)
    retro_atomic_store_release_int(&c->audio_done, 1);
 }
 
-void libretro_pyrowave_audio_control(bool exiting)
+void record_pyrowave_receiver_audio_control(bool exiting)
 {
-   unsigned sequence = (unsigned)retro_atomic_load_acquire_int(&pyrowave_core_audio_sequence);
-   unsigned ack = (unsigned)retro_atomic_load_relaxed_int(&pyrowave_core_audio_ack);
-   pyrowave_core_client_t *target = sequence == ack ? NULL : pyrowave_core_audio_requested;
+   unsigned sequence = (unsigned)retro_atomic_load_acquire_int(&pyrowave_receiver_audio_sequence);
+   unsigned ack = (unsigned)retro_atomic_load_relaxed_int(&pyrowave_receiver_audio_ack);
+   pyrowave_receiver_client_t *target = sequence == ack ? NULL : pyrowave_receiver_audio_requested;
    if (exiting)
    {
-      pyrowave_core_audio_retire(pyrowave_core_audio_active, true);
-      if (target != pyrowave_core_audio_active) pyrowave_core_audio_retire(target, true);
-      pyrowave_core_audio_active = NULL;
+      pyrowave_receiver_audio_retire(pyrowave_receiver_audio_active, true);
+      if (target != pyrowave_receiver_audio_active) pyrowave_receiver_audio_retire(target, true);
+      pyrowave_receiver_audio_active = NULL;
    }
    else if (sequence != ack)
    {
-      if (target != pyrowave_core_audio_active) pyrowave_core_audio_retire(pyrowave_core_audio_active, false);
-      pyrowave_core_audio_active = target;
+      if (target != pyrowave_receiver_audio_active) pyrowave_receiver_audio_retire(pyrowave_receiver_audio_active, false);
+      pyrowave_receiver_audio_active = target;
    }
-   if (sequence != ack) retro_atomic_store_release_int(&pyrowave_core_audio_ack, (int)sequence);
+   if (sequence != ack) retro_atomic_store_release_int(&pyrowave_receiver_audio_ack, (int)sequence);
 }
 
-static void pyrowave_core_audio_publish(pyrowave_core_client_t *c,
+static void pyrowave_receiver_audio_publish(pyrowave_receiver_client_t *c,
       const record_pyrowave_clock_position_t *position, bool ended)
 {
    uint64_t packed = 0;
@@ -173,9 +177,9 @@ static void pyrowave_core_audio_publish(pyrowave_core_client_t *c,
    retro_atomic_store_release_int(&c->clock_sequence, (int)(sequence + 2));
 }
 
-static void pyrowave_core_audio_callback(void)
+static void pyrowave_receiver_audio_callback(void)
 {
-   pyrowave_core_client_t *c = pyrowave_core_audio_active;
+   pyrowave_receiver_client_t *c = pyrowave_receiver_audio_active;
    record_pyrowave_clock_position_t position;
    unsigned i;
    bool ended;
@@ -215,43 +219,38 @@ static void pyrowave_core_audio_callback(void)
    }
    else
    {
-      pyrowave_core_audio_publish(c, &position, ended);
+      pyrowave_receiver_audio_publish(c, &position, ended);
       if (ended) retro_atomic_store_release_int(&c->audio_end, 1);
       else if (!c->audio_held) audio_driver_pyrowave_silence(c->audio_clock);
    }
 }
 
-static void pyrowave_core_audio_state(bool enabled)
-{
-   /* The wrapper calls this while parked, before resuming or after stopping. */
-   if (!enabled) libretro_pyrowave_audio_control(false);
-}
-static bool pyrowave_core_render(pyrowave_core_client_t *c);
+static bool pyrowave_receiver_render(pyrowave_receiver_client_t *c);
 /* A held clock is a proven presentation ceiling, not extrapolated audio. */
-static bool pyrowave_core_due(const pyrowave_core_client_t *c, const record_gpu_frame_t *frame)
+static bool pyrowave_receiver_due(const pyrowave_receiver_client_t *c, const record_gpu_frame_t *frame)
 {
    return c->target_valid && frame->timestamp <= c->target_time;
 }
-static bool pyrowave_core_late(const pyrowave_core_client_t *c, const record_gpu_frame_t *frame)
+static bool pyrowave_receiver_late(const pyrowave_receiver_client_t *c, const record_gpu_frame_t *frame)
 {
    return c->audio_async && c->setup.stream.audio_rate && c->target_valid
       && !retro_atomic_load_acquire_int(&c->audio_end) && frame->timestamp < c->target_time
       && frame->duration <= c->target_time - frame->timestamp;
 }
-#ifdef PYROWAVE_CORE_VULKAN
-static bool pyrowave_core_vulkan_prepare(pyrowave_core_client_t *c);
-static bool pyrowave_core_vulkan_render(pyrowave_core_client_t *c,
+#ifdef PYROWAVE_RECEIVER_VULKAN
+static bool pyrowave_receiver_vulkan_prepare(pyrowave_receiver_client_t *c);
+static bool pyrowave_receiver_vulkan_render(pyrowave_receiver_client_t *c,
       VkCommandBuffer commands, VkFence *completion, bool advance);
-static bool pyrowave_core_vulkan_free(pyrowave_core_client_t *c);
+static bool pyrowave_receiver_vulkan_free(pyrowave_receiver_client_t *c);
 #endif
-#ifdef PYROWAVE_CORE_D3D12
-static bool pyrowave_core_render_d3d12(pyrowave_core_client_t *c,
+#ifdef PYROWAVE_RECEIVER_D3D12
+static bool pyrowave_receiver_render_d3d12(pyrowave_receiver_client_t *c,
       ID3D12GraphicsCommandList *commands, ID3D12Fence *fence, uint64_t value);
 #endif
 
-static uintptr_t pyrowave_core_control_run(void *data, const video_poke_interface_t *poke, void *user)
+static uintptr_t pyrowave_receiver_control_run(void *data, const video_poke_interface_t *poke, void *user)
 {
-   pyrowave_core_client_t *c = (pyrowave_core_client_t*)user;
+   pyrowave_receiver_client_t *c = (pyrowave_receiver_client_t*)user;
    video_device_info_t device;
    uintptr_t result = 1;
    memset(&device, 0, sizeof(device));
@@ -267,7 +266,7 @@ static uintptr_t pyrowave_core_control_run(void *data, const video_poke_interfac
          if (c->player) record_pyrowave_player_gl_video(c->player, &c->input);
          else result = 0;
       }
-      else if (c->control_kind == 1) pyrowave_core_render(c);
+      else if (c->control_kind == 1) pyrowave_receiver_render(c);
       else if (c->control_kind == 3)
       {
          if (record_pyrowave_player_gl_retire(c->player))
@@ -286,7 +285,7 @@ static uintptr_t pyrowave_core_control_run(void *data, const video_poke_interfac
       result = 0;
 #endif
    }
-#ifdef PYROWAVE_CORE_D3D12
+#ifdef PYROWAVE_RECEIVER_D3D12
    else if (c->api == VIDEO_DEVICE_D3D12)
    {
       if (!c->control_kind)
@@ -300,7 +299,7 @@ static uintptr_t pyrowave_core_control_run(void *data, const video_poke_interfac
          }
          else record_pyrowave_d3d12_session_video(c->player_d3d12, &c->input);
       }
-      else if (c->control_kind == 1) pyrowave_core_render_d3d12(c, NULL, NULL, 0);
+      else if (c->control_kind == 1) pyrowave_receiver_render_d3d12(c, NULL, NULL, 0);
       else if (c->control_kind == 3)
       {
          if (!c->d3d12_detached && video_d3d12_pyrowave_quiesce(data, c->player_d3d12) > 0)
@@ -332,16 +331,16 @@ static uintptr_t pyrowave_core_control_run(void *data, const video_poke_interfac
       }
    }
 #endif
-#ifdef PYROWAVE_CORE_VULKAN
+#ifdef PYROWAVE_RECEIVER_VULKAN
    else if (c->api == VIDEO_DEVICE_VULKAN)
    {
       if (!c->control_kind)
       {
-         if (!pyrowave_core_vulkan_prepare(c)) result = 0;
+         if (!pyrowave_receiver_vulkan_prepare(c)) result = 0;
          else record_pyrowave_vulkan_session_video(c->player_vulkan, &c->input);
       }
       else if (c->control_kind == 1)
-         pyrowave_core_vulkan_render(c, VK_NULL_HANDLE, NULL, false);
+         pyrowave_receiver_vulkan_render(c, VK_NULL_HANDLE, NULL, false);
       else if (c->control_kind == 3)
       {
          int retired = video_vulkan_pyrowave_quiesce(data,
@@ -350,22 +349,22 @@ static uintptr_t pyrowave_core_control_run(void *data, const video_poke_interfac
          {
             c->player_vulkan = NULL; c->held = false;
             memset(c->vulkan_busy, 0, sizeof(c->vulkan_busy));
-            if (pyrowave_core_vulkan_free(c))
+            if (pyrowave_receiver_vulkan_free(c))
             {
                video_vulkan_pyrowave_resume(data);
                retro_atomic_store_release_int(&c->render_done, 1);
             }
          }
       }
-      else if (!pyrowave_core_vulkan_free(c)) result = 0;
+      else if (!pyrowave_receiver_vulkan_free(c)) result = 0;
    }
 #endif
    else result = 0;
    return result;
 }
-static void pyrowave_core_control_done(void *user, uintptr_t result)
+static void pyrowave_receiver_control_done(void *user, uintptr_t result)
 {
-   pyrowave_core_client_t *c = (pyrowave_core_client_t*)user;
+   pyrowave_receiver_client_t *c = (pyrowave_receiver_client_t*)user;
    c->control_pending = false;
    if (!c->control_kind && result) c->constructed = true;
    if (!result)
@@ -374,26 +373,26 @@ static void pyrowave_core_control_done(void *user, uintptr_t result)
       retro_atomic_store_release_int(&c->failed, 1);
    }
 }
-static bool pyrowave_core_control_post(pyrowave_core_client_t *c, unsigned kind)
+static bool pyrowave_receiver_control_post(pyrowave_receiver_client_t *c, unsigned kind)
 {
    video_driver_state_t *video = video_state_get_ptr();
    if (c->control_pending) return false;
    c->control_kind = kind; c->control_pending = true;
-   c->control_job.run = pyrowave_core_control_run; c->control_job.user = c;
+   c->control_job.run = pyrowave_receiver_control_run; c->control_job.user = c;
    c->control.kind = VIDEO_THREAD_ASYNC_JOB; c->control.img = &c->control_job;
-   c->control.user = c; c->control.done = pyrowave_core_control_done;
+   c->control.user = c; c->control.done = pyrowave_receiver_control_done;
    if (video->thread_wrapper_active)
    {
       if (video_thread_async_post(&c->control)) return true;
       c->control_pending = false; return false;
    }
-   pyrowave_core_control_done(c, pyrowave_core_control_run(video->data, video->poke, c));
+   pyrowave_receiver_control_done(c, pyrowave_receiver_control_run(video->data, video->poke, c));
    return true;
 }
 
-static bool pyrowave_core_open(const struct retro_game_info *game)
+static bool pyrowave_receiver_open(const char *path)
 {
-   pyrowave_core_client_t *c;
+   pyrowave_receiver_client_t *c;
    config_file_t *file;
    struct addrinfo hints, *address = NULL;
    char url[512], host[256], service[6];
@@ -401,11 +400,11 @@ static bool pyrowave_core_open(const struct retro_game_info *game)
    size_t length;
    bool listen, ok = false;
    uint16_t endian = 1;
-   if (!game || !game->path || pyrowave_core_client || recording_gpu_pending()
+   if (!path || pyrowave_receiver_client || recording_gpu_pending()
          || recording_state_get_ptr()->enable || *(const uint8_t*)&endian != 1) return false;
-   c = (pyrowave_core_client_t*)calloc(1, sizeof(*c));
+   c = (pyrowave_receiver_client_t*)calloc(1, sizeof(*c));
    if (!c) return false;
-   c->audio_async = pyrowave_core_async_audio;
+   c->audio_async = pyrowave_receiver_async_audio;
    retro_atomic_int_init(&c->audio_done, 1);
    retro_atomic_int_init(&c->audio_end, 0); retro_atomic_int_init(&c->audio_failed, 0);
    retro_atomic_int_init(&c->clock_sequence, 0); retro_atomic_int_init(&c->clock_low, 0);
@@ -414,7 +413,7 @@ static bool pyrowave_core_open(const struct retro_game_info *game)
    retro_atomic_int_init(&c->failed, 0); retro_atomic_int_init(&c->render_done, 0);
    retro_atomic_int_init(&c->io_done, 0); retro_atomic_int_init(&c->video_end, 0);
    retro_atomic_int_init(&c->recovery, 0);
-   file = config_file_new_from_path_to_string(game->path);
+   file = config_file_new_from_path_to_string(path);
    if (!file) goto end;
    ok = config_get_array(file, "pyrowave_url", url, sizeof(url))
       && config_get_array(file, "pyrowave_shader_directory", c->directory, sizeof(c->directory));
@@ -435,7 +434,7 @@ static bool pyrowave_core_open(const struct retro_game_info *game)
    c->io = record_pyrowave_dispatch_new(address->ai_addr, address->ai_addrlen,
          listen, NULL, 0, NULL, NULL);
    if (!c->io) goto end;
-   pyrowave_core_client = c; ok = true;
+   pyrowave_receiver_client = c; ok = true;
    RARCH_LOG("[PyroWave] Receiver connecting.\n");
 end:
    freeaddrinfo_retro(address);
@@ -443,17 +442,27 @@ end:
    return ok;
 }
 
-void libretro_pyrowave_stop(void)
+void record_pyrowave_receiver_stop(void)
 {
-   pyrowave_core_client_t *c = pyrowave_core_client;
-   if (!c || c->av_updating) return;
+   pyrowave_receiver_client_t *c = pyrowave_receiver_client;
+   if (c && c->av_updating) return;
+   pyrowave_receiver_restart = false;
+   pyrowave_receiver_start_pending = false;
+   if (!c)
+   {
+      free(pyrowave_receiver_path); pyrowave_receiver_path = NULL;
+      pyrowave_receiver_owned = false;
+      retro_atomic_store_release_int(&pyrowave_receiver_audio_enabled, 0);
+      audio_driver_request_presentation(false);
+      return;
+   }
    retro_atomic_store_release_int(&c->stop, 1);
    record_pyrowave_dispatch_cancel(c->io);
 }
-bool libretro_pyrowave_pending(void)
-{ return pyrowave_core_client && !pyrowave_core_client->av_updating; }
+bool record_pyrowave_receiver_pending(void)
+{ return pyrowave_receiver_client && !pyrowave_receiver_client->av_updating; }
 
-static bool pyrowave_core_setup(pyrowave_core_client_t *c)
+static bool pyrowave_receiver_setup(pyrowave_receiver_client_t *c)
 {
    video_device_info_t device;
    rpyrowave_stream_config_t *cfg = &c->setup.stream;
@@ -462,23 +471,23 @@ static bool pyrowave_core_setup(pyrowave_core_client_t *c)
    if (cfg->audio_channels > 2) return false;
    if (cfg->sequence.transfer_pq || cfg->sequence.primaries_bt2020)
       c->setup.texture_mode = RPYROWAVE_COLOR_SDR709;
-   pyrowave_core_av.geometry.base_width = cfg->sequence.width;
-   pyrowave_core_av.geometry.base_height = cfg->sequence.height;
-   pyrowave_core_av.geometry.max_width = cfg->sequence.width;
-   pyrowave_core_av.geometry.max_height = cfg->sequence.height;
-   pyrowave_core_av.geometry.aspect_ratio = (float)cfg->sequence.width / cfg->sequence.height;
-   pyrowave_core_av.timing.fps = (double)cfg->fps_numerator / cfg->fps_denominator;
-   pyrowave_core_av.timing.sample_rate = cfg->audio_rate ? cfg->audio_rate : 48000;
+   pyrowave_receiver_av.geometry.base_width = cfg->sequence.width;
+   pyrowave_receiver_av.geometry.base_height = cfg->sequence.height;
+   pyrowave_receiver_av.geometry.max_width = cfg->sequence.width;
+   pyrowave_receiver_av.geometry.max_height = cfg->sequence.height;
+   pyrowave_receiver_av.geometry.aspect_ratio = (float)cfg->sequence.width / cfg->sequence.height;
+   pyrowave_receiver_av.timing.fps = (double)cfg->fps_numerator / cfg->fps_denominator;
+   pyrowave_receiver_av.timing.sample_rate = cfg->audio_rate ? cfg->audio_rate : 48000;
    c->av_updating = true;
-   if (!pyrowave_core_environment(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &pyrowave_core_av))
+   if (!runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &pyrowave_receiver_av))
    { c->av_updating = false; return false; }
    c->av_updating = false;
    if (!video_driver_get_device(&device)) return false;
    if (device.api != VIDEO_DEVICE_OPENGL
-#ifdef PYROWAVE_CORE_D3D12
+#ifdef PYROWAVE_RECEIVER_D3D12
          && device.api != VIDEO_DEVICE_D3D12
 #endif
-#ifdef PYROWAVE_CORE_VULKAN
+#ifdef PYROWAVE_RECEIVER_VULKAN
          && device.api != VIDEO_DEVICE_VULKAN
 #endif
          ) return false;
@@ -508,10 +517,10 @@ static bool pyrowave_core_setup(pyrowave_core_client_t *c)
    }
    else retro_atomic_store_release_int(&c->audio_end, 1);
    c->configured = true;
-   return pyrowave_core_control_post(c, 0);
+   return pyrowave_receiver_control_post(c, 0);
 }
 
-static bool pyrowave_core_render(pyrowave_core_client_t *c)
+static bool pyrowave_receiver_render(pyrowave_receiver_client_t *c)
 {
 #if defined(HAVE_OPENGL_CORE) && !defined(HAVE_OPENGLES)
    record_pyrowave_gl_image_t next;
@@ -565,7 +574,7 @@ static bool pyrowave_core_render(pyrowave_core_client_t *c)
    for (i = 0; i < c->setup.slots; i++)
    {
       if (record_pyrowave_player_gl_peek(c->player, &dropped) != RECORD_GPU_QUEUE_OK
-            || !pyrowave_core_late(c, &dropped)) break;
+            || !pyrowave_receiver_late(c, &dropped)) break;
       if (record_pyrowave_player_gl_discard(c->player, &dropped) != RECORD_GPU_QUEUE_OK)
       { retro_atomic_store_release_int(&c->failed, 1); break; }
    }
@@ -581,7 +590,7 @@ static bool pyrowave_core_render(pyrowave_core_client_t *c)
       c->gl_future = next; c->future = true;
       if (c->decoding) c->decoding--;
    }
-   if (c->future && pyrowave_core_due(c, &c->gl_future.frame))
+   if (c->future && pyrowave_receiver_due(c, &c->gl_future.frame))
    {
       if (c->held && !record_pyrowave_player_gl_present(c->player, c->image.frame.slot))
       {
@@ -601,22 +610,22 @@ static bool pyrowave_core_render(pyrowave_core_client_t *c)
 #endif
 }
 
-unsigned libretro_pyrowave_gl_frame(void *data, unsigned *dims, bool advance,
+unsigned record_pyrowave_receiver_gl_frame(void *data, unsigned *dims, bool advance,
       const struct video_frame_info *timing)
 {
-   pyrowave_core_client_t *c = (pyrowave_core_client_t*)data;
+   pyrowave_receiver_client_t *c = (pyrowave_receiver_client_t*)data;
    if (!c || c->api != VIDEO_DEVICE_OPENGL || !retro_atomic_load_acquire_int(&c->ready)
          || retro_atomic_load_acquire_int(&c->render_done)) return 0;
    c->target_valid = timing && timing->recording_pyrowave_clock_valid;
    c->target_time = timing ? timing->recording_gpu_timestamp : 0;
    if (advance || retro_atomic_load_acquire_int(&c->stop))
-   { if (!pyrowave_core_render(c)) return 0; }
+   { if (!pyrowave_receiver_render(c)) return 0; }
    else if (!c->held) return 0;
    *dims = VIDEO_SCALE_PACK(c->setup.stream.sequence.width, c->setup.stream.sequence.height);
    return c->image.texture;
 }
-#ifdef PYROWAVE_CORE_D3D12
-static bool pyrowave_core_render_d3d12(pyrowave_core_client_t *c,
+#ifdef PYROWAVE_RECEIVER_D3D12
+static bool pyrowave_receiver_render_d3d12(pyrowave_receiver_client_t *c,
       ID3D12GraphicsCommandList *commands, ID3D12Fence *fence, uint64_t value)
 {
    record_pyrowave_d3d12_t *player = c->player_d3d12;
@@ -669,7 +678,7 @@ static bool pyrowave_core_render_d3d12(pyrowave_core_client_t *c,
       for (i = 0; i < c->setup.slots; i++)
       {
          if (record_pyrowave_d3d12_receive_peek(player, &dropped) != RECORD_GPU_QUEUE_OK
-               || !pyrowave_core_late(c, &dropped)) break;
+               || !pyrowave_receiver_late(c, &dropped)) break;
          if (record_pyrowave_d3d12_receive_drop(player, &dropped) != RECORD_GPU_QUEUE_OK)
          { retro_atomic_store_release_int(&c->failed, 1); break; }
       }
@@ -681,7 +690,7 @@ static bool pyrowave_core_render_d3d12(pyrowave_core_client_t *c,
          c->d3d12_future = next; c->future = true;
          if (c->decoding) c->decoding--;
       }
-      if (c->future && pyrowave_core_due(c, &c->d3d12_future.frame))
+      if (c->future && pyrowave_receiver_due(c, &c->d3d12_future.frame))
       {
          if (c->held && !record_pyrowave_d3d12_present(player, c->d3d12_image.frame.slot,
                   c->display_fence, c->display_value))
@@ -701,10 +710,10 @@ static bool pyrowave_core_render_d3d12(pyrowave_core_client_t *c,
 }
 #endif
 
-void libretro_pyrowave_d3d12_failed(void *context)
+void record_pyrowave_receiver_d3d12_failed(void *context)
 {
-#ifdef PYROWAVE_CORE_D3D12
-   pyrowave_core_client_t *c = (pyrowave_core_client_t*)context;
+#ifdef PYROWAVE_RECEIVER_D3D12
+   pyrowave_receiver_client_t *c = (pyrowave_receiver_client_t*)context;
    if (!c || c->api != VIDEO_DEVICE_D3D12 || !c->player_d3d12) return;
    retro_atomic_store_release_int(&c->recovery, 1);
    retro_atomic_store_release_int(&c->failed, 1);
@@ -713,18 +722,18 @@ void libretro_pyrowave_d3d12_failed(void *context)
 #endif
 }
 
-void *libretro_pyrowave_d3d12_frame(void *context, void *commands, void *fence,
+void *record_pyrowave_receiver_d3d12_frame(void *context, void *commands, void *fence,
       uint64_t value, unsigned *dims, bool advance, const struct video_frame_info *timing)
 {
-#ifdef PYROWAVE_CORE_D3D12
-   pyrowave_core_client_t *c = (pyrowave_core_client_t*)context;
+#ifdef PYROWAVE_RECEIVER_D3D12
+   pyrowave_receiver_client_t *c = (pyrowave_receiver_client_t*)context;
    if (!c || c->api != VIDEO_DEVICE_D3D12 || !retro_atomic_load_acquire_int(&c->ready)
          || retro_atomic_load_acquire_int(&c->render_done)) return NULL;
    c->target_valid = timing && timing->recording_pyrowave_clock_valid;
    c->target_time = timing ? timing->recording_gpu_timestamp : 0;
    if (advance || retro_atomic_load_acquire_int(&c->stop))
    {
-      if (!pyrowave_core_render_d3d12(c, commands, fence, value)) return NULL;
+      if (!pyrowave_receiver_render_d3d12(c, commands, fence, value)) return NULL;
    }
    else if (!c->held) return NULL;
    /* The renderer submits every returned image use with this durable
@@ -738,15 +747,15 @@ void *libretro_pyrowave_d3d12_frame(void *context, void *commands, void *fence,
 #endif
 }
 
-#ifdef PYROWAVE_CORE_VULKAN
-static bool pyrowave_core_vulkan_free(pyrowave_core_client_t *c)
+#ifdef PYROWAVE_RECEIVER_VULKAN
+static bool pyrowave_receiver_vulkan_free(pyrowave_receiver_client_t *c)
 {
    unsigned i;
-   for (i = 0; i < PYROWAVE_CORE_VK_FENCES; i++)
+   for (i = 0; i < PYROWAVE_RECEIVER_VK_FENCES; i++)
       if (c->vulkan_busy[i]) return false;
    if (!record_pyrowave_vulkan_free(c->player_vulkan)) return false;
    c->player_vulkan = NULL;
-   for (i = 0; i < PYROWAVE_CORE_VK_FENCES; i++)
+   for (i = 0; i < PYROWAVE_RECEIVER_VK_FENCES; i++)
       if (c->vulkan_fences[i])
       {
          c->vulkan_destroy((VkDevice)c->device, c->vulkan_fences[i], NULL);
@@ -760,7 +769,7 @@ static bool pyrowave_core_vulkan_free(pyrowave_core_client_t *c)
    return true;
 }
 
-static bool pyrowave_core_vulkan_prepare(pyrowave_core_client_t *c)
+static bool pyrowave_receiver_vulkan_prepare(pyrowave_receiver_client_t *c)
 {
    PFN_vkGetInstanceProcAddr instance = (PFN_vkGetInstanceProcAddr)c->setup.instance_proc;
    PFN_vkGetDeviceProcAddr device;
@@ -774,27 +783,27 @@ static bool pyrowave_core_vulkan_prepare(pyrowave_core_client_t *c)
    c->vulkan_status = (PFN_vkGetFenceStatus)device((VkDevice)c->device, "vkGetFenceStatus");
    c->vulkan_reset = (PFN_vkResetFences)device((VkDevice)c->device, "vkResetFences");
    if (!c->vulkan_create || !c->vulkan_destroy || !c->vulkan_status || !c->vulkan_reset) return false;
-   c->vulkan_pending = c->vulkan_display = c->vulkan_previous = PYROWAVE_CORE_VK_FENCES;
+   c->vulkan_pending = c->vulkan_display = c->vulkan_previous = PYROWAVE_RECEIVER_VK_FENCES;
    c->player_vulkan = record_pyrowave_player_vulkan_new(&c->setup);
    if (!c->player_vulkan) return false;
    memset(&info, 0, sizeof(info)); info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-   for (i = 0; i < PYROWAVE_CORE_VK_FENCES; i++)
+   for (i = 0; i < PYROWAVE_RECEIVER_VK_FENCES; i++)
       if (c->vulkan_create((VkDevice)c->device, &info, NULL, &c->vulkan_fences[i]) != VK_SUCCESS)
       {
          c->vulkan_fences[i] = VK_NULL_HANDLE;
          break;
       }
-   if (i == PYROWAVE_CORE_VK_FENCES)
+   if (i == PYROWAVE_RECEIVER_VK_FENCES)
    {
       if (c->vulkan_create((VkDevice)c->device, &info, NULL, &c->vulkan_recovery_fence) == VK_SUCCESS)
          return true;
       c->vulkan_recovery_fence = VK_NULL_HANDLE;
    }
-   pyrowave_core_vulkan_free(c);
+   pyrowave_receiver_vulkan_free(c);
    return false;
 }
 
-static void pyrowave_core_vulkan_poll(pyrowave_core_client_t *c)
+static void pyrowave_receiver_vulkan_poll(pyrowave_receiver_client_t *c)
 {
    unsigned i;
    if (!record_pyrowave_vulkan_poll(c->player_vulkan))
@@ -802,7 +811,7 @@ static void pyrowave_core_vulkan_poll(pyrowave_core_client_t *c)
       retro_atomic_store_release_int(&c->recovery, 1);
       retro_atomic_store_release_int(&c->failed, 1);
    }
-   for (i = 0; i < PYROWAVE_CORE_VK_FENCES; i++)
+   for (i = 0; i < PYROWAVE_RECEIVER_VK_FENCES; i++)
    {
       VkResult status;
       if (!c->vulkan_busy[i] || i == c->vulkan_pending || i == c->vulkan_display
@@ -821,7 +830,7 @@ static void pyrowave_core_vulkan_poll(pyrowave_core_client_t *c)
    }
 }
 
-static bool pyrowave_core_vulkan_render(pyrowave_core_client_t *c,
+static bool pyrowave_receiver_vulkan_render(pyrowave_receiver_client_t *c,
       VkCommandBuffer commands, VkFence *completion, bool advance)
 {
    record_pyrowave_vulkan_image_t next;
@@ -831,13 +840,13 @@ static bool pyrowave_core_vulkan_render(pyrowave_core_client_t *c,
    if (completion) *completion = VK_NULL_HANDLE;
    if (!c->player_vulkan || retro_atomic_load_acquire_int(&c->render_done)
          || retro_atomic_load_acquire_int(&c->recovery)) return false;
-   pyrowave_core_vulkan_poll(c);
+   pyrowave_receiver_vulkan_poll(c);
    if (retro_atomic_load_acquire_int(&c->recovery)) return false;
    if (retro_atomic_load_acquire_int(&c->stop))
    {
       /* An unacknowledged submission retains both its new display pin and
        * the previous valid pin for explicit cold failure recovery. */
-      if (c->vulkan_pending != PYROWAVE_CORE_VK_FENCES) return false;
+      if (c->vulkan_pending != PYROWAVE_RECEIVER_VK_FENCES) return false;
       if (c->future)
       {
          if (!record_pyrowave_vulkan_image_drop(c->player_vulkan, c->vulkan_future.frame.slot)) return false;
@@ -845,13 +854,13 @@ static bool pyrowave_core_vulkan_render(pyrowave_core_client_t *c,
       }
       if (c->held)
       {
-         if (c->vulkan_display == PYROWAVE_CORE_VK_FENCES)
+         if (c->vulkan_display == PYROWAVE_RECEIVER_VK_FENCES)
          {
             if (!record_pyrowave_vulkan_image_drop(c->player_vulkan, c->vulkan_image.frame.slot)) return false;
          }
          else if (!record_pyrowave_vulkan_present(c->player_vulkan, c->vulkan_image.frame.slot,
                   c->vulkan_fences[c->vulkan_display])) return false;
-         c->held = false; c->vulkan_display = PYROWAVE_CORE_VK_FENCES;
+         c->held = false; c->vulkan_display = PYROWAVE_RECEIVER_VK_FENCES;
       }
       if (retro_atomic_load_acquire_int(&c->io_done))
       {
@@ -867,21 +876,21 @@ static bool pyrowave_core_vulkan_render(pyrowave_core_client_t *c,
             if (record_pyrowave_vulkan_image(c->player_vulkan, &next) != RECORD_GPU_QUEUE_OK) break;
             record_pyrowave_vulkan_image_drop(c->player_vulkan, next.frame.slot);
          }
-         pyrowave_core_vulkan_poll(c);
-         for (i = 0; i < PYROWAVE_CORE_VK_FENCES; i++) if (c->vulkan_busy[i]) break;
-         if (i == PYROWAVE_CORE_VK_FENCES && record_pyrowave_vulkan_idle(c->player_vulkan))
+         pyrowave_receiver_vulkan_poll(c);
+         for (i = 0; i < PYROWAVE_RECEIVER_VK_FENCES; i++) if (c->vulkan_busy[i]) break;
+         if (i == PYROWAVE_RECEIVER_VK_FENCES && record_pyrowave_vulkan_idle(c->player_vulkan))
             retro_atomic_store_release_int(&c->render_done, 1);
       }
       return false;
    }
    if (!commands || !completion) return false;
-   if (c->vulkan_pending != PYROWAVE_CORE_VK_FENCES)
+   if (c->vulkan_pending != PYROWAVE_RECEIVER_VK_FENCES)
    {
       retro_atomic_store_release_int(&c->failed, 1);
       return false;
    }
-   for (i = 0; i < PYROWAVE_CORE_VK_FENCES; i++) if (!c->vulkan_busy[i]) break;
-   if (i == PYROWAVE_CORE_VK_FENCES)
+   for (i = 0; i < PYROWAVE_RECEIVER_VK_FENCES; i++) if (!c->vulkan_busy[i]) break;
+   if (i == PYROWAVE_RECEIVER_VK_FENCES)
    {
       retro_atomic_store_release_int(&c->failed, 1);
       return false;
@@ -893,7 +902,7 @@ static bool pyrowave_core_vulkan_render(pyrowave_core_client_t *c,
       for (i = 0; i < c->setup.slots; i++)
       {
          if (record_pyrowave_vulkan_receive_peek(c->player_vulkan, &dropped) != RECORD_GPU_QUEUE_OK
-               || !pyrowave_core_late(c, &dropped)) break;
+               || !pyrowave_receiver_late(c, &dropped)) break;
          if (record_pyrowave_vulkan_receive_drop(c->player_vulkan, &dropped) != RECORD_GPU_QUEUE_OK)
          { retro_atomic_store_release_int(&c->failed, 1); break; }
       }
@@ -905,11 +914,11 @@ static bool pyrowave_core_vulkan_render(pyrowave_core_client_t *c,
          c->vulkan_future = next; c->future = true;
          if (c->decoding) c->decoding--;
       }
-      if (c->future && pyrowave_core_due(c, &c->vulkan_future.frame))
+      if (c->future && pyrowave_receiver_due(c, &c->vulkan_future.frame))
       {
          bool returned = true;
          if (c->held)
-            returned = c->vulkan_display != PYROWAVE_CORE_VK_FENCES
+            returned = c->vulkan_display != PYROWAVE_RECEIVER_VK_FENCES
                && record_pyrowave_vulkan_present(c->player_vulkan, c->vulkan_image.frame.slot,
                      c->vulkan_fences[c->vulkan_display]);
          if (!returned)
@@ -922,7 +931,7 @@ static bool pyrowave_core_vulkan_render(pyrowave_core_client_t *c,
          else
          {
             c->vulkan_image = c->vulkan_future; c->held = true; c->future = false;
-            c->vulkan_display = PYROWAVE_CORE_VK_FENCES;
+            c->vulkan_display = PYROWAVE_RECEIVER_VK_FENCES;
          }
       }
       if (result == RECORD_GPU_QUEUE_END) c->video_input_end = true;
@@ -935,11 +944,11 @@ static bool pyrowave_core_vulkan_render(pyrowave_core_client_t *c,
    return c->held;
 }
 
-bool libretro_pyrowave_vulkan_frame(void *context, VkCommandBuffer commands,
+bool record_pyrowave_receiver_vulkan_frame(void *context, VkCommandBuffer commands,
       struct record_pyrowave_vulkan_image *image, VkFence *completion, unsigned *dims, bool advance,
       const struct video_frame_info *timing)
 {
-   pyrowave_core_client_t *c = (pyrowave_core_client_t*)context;
+   pyrowave_receiver_client_t *c = (pyrowave_receiver_client_t*)context;
    if (completion) *completion = VK_NULL_HANDLE;
    if (c)
    {
@@ -947,33 +956,33 @@ bool libretro_pyrowave_vulkan_frame(void *context, VkCommandBuffer commands,
       c->target_time = timing ? timing->recording_gpu_timestamp : 0;
    }
    if (!c || c->api != VIDEO_DEVICE_VULKAN || !retro_atomic_load_acquire_int(&c->ready)
-         || !image || !completion || !dims || !pyrowave_core_vulkan_render(c, commands, completion, advance)) return false;
+         || !image || !completion || !dims || !pyrowave_receiver_vulkan_render(c, commands, completion, advance)) return false;
    *image = c->vulkan_image;
    *dims = VIDEO_SCALE_PACK(c->setup.stream.sequence.width, c->setup.stream.sequence.height);
    return true;
 }
 
-void libretro_pyrowave_vulkan_submitted(void *context, VkFence completion,
+void record_pyrowave_receiver_vulkan_submitted(void *context, VkFence completion,
       VkResult result, bool discarded)
 {
-   pyrowave_core_client_t *c = (pyrowave_core_client_t*)context;
+   pyrowave_receiver_client_t *c = (pyrowave_receiver_client_t*)context;
    unsigned pending;
    if (!c || c->api != VIDEO_DEVICE_VULKAN || !c->player_vulkan) return;
    pending = c->vulkan_pending;
    if (result == VK_SUCCESS && !discarded)
    {
       if (!completion) return;
-      if (pending == PYROWAVE_CORE_VK_FENCES || c->vulkan_fences[pending] != completion)
+      if (pending == PYROWAVE_RECEIVER_VK_FENCES || c->vulkan_fences[pending] != completion)
       {
          retro_atomic_store_release_int(&c->failed, 1);
          return;
       }
       if (c->vulkan_drew) c->vulkan_display = pending;
-      c->vulkan_pending = PYROWAVE_CORE_VK_FENCES;
+      c->vulkan_pending = PYROWAVE_RECEIVER_VK_FENCES;
       return;
    }
    retro_atomic_store_release_int(&c->failed, 1);
-   if (!discarded || !completion || pending == PYROWAVE_CORE_VK_FENCES
+   if (!discarded || !completion || pending == PYROWAVE_RECEIVER_VK_FENCES
          || c->vulkan_fences[pending] != completion)
    {
       retro_atomic_store_release_int(&c->recovery, 1);
@@ -981,20 +990,20 @@ void libretro_pyrowave_vulkan_submitted(void *context, VkFence completion,
    }
    record_pyrowave_vulkan_discard(c->player_vulkan, completion);
    if (record_pyrowave_vulkan_fence_borrowed(c->player_vulkan, completion)) return;
-   if (c->vulkan_drew && c->vulkan_previous == PYROWAVE_CORE_VK_FENCES)
+   if (c->vulkan_drew && c->vulkan_previous == PYROWAVE_RECEIVER_VK_FENCES)
    {
       record_pyrowave_vulkan_image_drop(c->player_vulkan, c->vulkan_image.frame.slot);
       c->held = false;
    }
    c->vulkan_display = c->vulkan_previous;
    c->vulkan_busy[pending] = false;
-   c->vulkan_pending = PYROWAVE_CORE_VK_FENCES;
+   c->vulkan_pending = PYROWAVE_RECEIVER_VK_FENCES;
 }
 #endif
 
-bool libretro_pyrowave_frame_info(struct video_frame_info *info, bool advance)
+bool record_pyrowave_receiver_frame_info(struct video_frame_info *info, bool advance)
 {
-   pyrowave_core_client_t *c = pyrowave_core_client;
+   pyrowave_receiver_client_t *c = pyrowave_receiver_client;
    if (!c || !retro_atomic_load_acquire_int(&c->ready)
          || retro_atomic_load_acquire_int(&c->render_done)) return false;
    if (retro_atomic_load_acquire_int(&c->recovery)) return false;
@@ -1030,24 +1039,50 @@ bool libretro_pyrowave_frame_info(struct video_frame_info *info, bool advance)
    return true;
 }
 
-void libretro_pyrowave_poll(void)
+void record_pyrowave_receiver_poll(void)
 {
-   pyrowave_core_client_t *c = pyrowave_core_client;
+   pyrowave_receiver_client_t *c = pyrowave_receiver_client;
    unsigned state;
+   if (pyrowave_receiver_start_pending && !c && video_state_get_ptr()->data)
+   {
+      settings_t *settings = config_get_ptr();
+      if (!pyrowave_receiver_owned)
+         pyrowave_receiver_saved_av = video_state_get_ptr()->av_info;
+      pyrowave_receiver_owned = true;
+      pyrowave_receiver_start_pending = false;
+      pyrowave_receiver_async_audio = settings->bools.audio_enable
+         && strcmp(settings->arrays.audio_driver, "null") != 0;
+      if (!pyrowave_receiver_open(pyrowave_receiver_path))
+      {
+         RARCH_ERR("[PyroWave] Receiver connection failed.\n");
+         pyrowave_receiver_owned = false;
+         free(pyrowave_receiver_path); pyrowave_receiver_path = NULL;
+         retro_atomic_store_release_int(&pyrowave_receiver_audio_enabled, 0);
+         audio_driver_request_presentation(false);
+         command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+      }
+      c = pyrowave_receiver_client;
+      if (c)
+      {
+         c->av_updating = true;
+         command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+         c->av_updating = false;
+      }
+   }
    if (!c || c->av_updating) return;
    if (c->audio_async)
    {
       audio_driver_state_t *audio = audio_state_get_ptr();
-      if (!audio->context_audio_data) libretro_pyrowave_audio_control(true);
+      if (!audio->context_audio_data) record_pyrowave_receiver_audio_control(true);
       else if (audio->current_audio && !strcmp(audio->current_audio->ident, "audio-thread")
-            && audio_thread_parked(audio->context_audio_data)) libretro_pyrowave_audio_control(false);
+            && audio_thread_parked(audio->context_audio_data)) record_pyrowave_receiver_audio_control(false);
    }
    video_thread_async_poll();
    state = record_pyrowave_dispatch_state(c->io, NULL);
    if (!c->configured && !c->control_pending && state == RECORD_PYROWAVE_DISPATCH_CONFIGURING
          && !retro_atomic_load_acquire_int(&c->stop))
    {
-      if (!pyrowave_core_setup(c))
+      if (!pyrowave_receiver_setup(c))
       {
          RARCH_ERR("[PyroWave] Receiver setup failed.\n");
          retro_atomic_store_release_int(&c->failed, 1);
@@ -1068,7 +1103,7 @@ void libretro_pyrowave_poll(void)
          && !retro_atomic_load_acquire_int(&c->stop) && !retro_atomic_load_acquire_int(&c->failed))
    {
       retro_atomic_store_release_int(&c->audio_done, 0);
-      if (pyrowave_core_audio_request(c, &c->audio_request)) c->audio_bound = true;
+      if (pyrowave_receiver_audio_request(c, &c->audio_request)) c->audio_bound = true;
       else retro_atomic_store_release_int(&c->audio_done, 1);
    }
    if (!c->audio_reported && retro_atomic_load_acquire_int(&c->audio_failed))
@@ -1078,16 +1113,17 @@ void libretro_pyrowave_poll(void)
       retro_atomic_store_release_int(&c->failed, 1);
    if (retro_atomic_load_acquire_int(&c->failed) || state >= RECORD_PYROWAVE_DISPATCH_CANCELLED
          || (retro_atomic_load_acquire_int(&c->io_done) && retro_atomic_load_acquire_int(&c->audio_end)
-            && retro_atomic_load_acquire_int(&c->video_end))) libretro_pyrowave_stop();
+            && retro_atomic_load_acquire_int(&c->video_end)))
+      if (!retro_atomic_load_acquire_int(&c->stop)) record_pyrowave_receiver_stop();
    if (!retro_atomic_load_acquire_int(&c->stop)) return;
    if (c->audio_bound)
    {
       if (!c->audio_unbinding)
       {
-         if (!pyrowave_core_audio_request(NULL, &c->audio_request)) return;
+         if (!pyrowave_receiver_audio_request(NULL, &c->audio_request)) return;
          c->audio_unbinding = true;
       }
-      if ((unsigned)retro_atomic_load_acquire_int(&pyrowave_core_audio_ack) != c->audio_request
+      if ((unsigned)retro_atomic_load_acquire_int(&pyrowave_receiver_audio_ack) != c->audio_request
             || !retro_atomic_load_acquire_int(&c->audio_done)) return;
       c->audio_bound = false;
    }
@@ -1114,11 +1150,11 @@ void libretro_pyrowave_poll(void)
          if (retro_atomic_load_acquire_int(&c->io_done) && record_pyrowave_dispatch_free(c->io))
          {
             c->io = NULL;
-            pyrowave_core_control_post(c, 3);
+            pyrowave_receiver_control_post(c, 3);
          }
       }
       else
-         pyrowave_core_control_post(c, 1);
+         pyrowave_receiver_control_post(c, 1);
    }
    if (c->control_pending || !retro_atomic_load_acquire_int(&c->render_done)
          || (video_driver_thread_wrapper_active()
@@ -1129,37 +1165,51 @@ void libretro_pyrowave_poll(void)
    c->pcm = NULL;
    record_pyrowave_audio_clock_free(c->audio_clock); c->audio_clock = NULL;
    if (c->player || c->player_d3d12
-#ifdef PYROWAVE_CORE_VULKAN
+#ifdef PYROWAVE_RECEIVER_VULKAN
          || c->player_vulkan
 #endif
-         ) { pyrowave_core_control_post(c, 2); return; }
+         ) { pyrowave_receiver_control_post(c, 2); return; }
    {
-      bool ended = retro_atomic_load_acquire_int(&c->video_end) != 0;
       bool failed = retro_atomic_load_acquire_int(&c->failed) != 0;
       if (c->audio_received)
          RARCH_LOG("[PyroWave] Device-clock audio %s.\n",
                !failed && retro_atomic_load_acquire_int(&c->audio_end) ? "drained" : "cancelled");
-      free(c->mono); free(c); pyrowave_core_client = NULL;
+      free(c->mono); free(c); pyrowave_receiver_client = NULL;
       RARCH_LOG("[PyroWave] Receiver resources retired.\n");
-      if (pyrowave_core_loaded && pyrowave_core_restart)
+      if (pyrowave_receiver_restart)
       {
-         struct retro_game_info game;
-         memset(&game, 0, sizeof(game)); game.path = pyrowave_core_path;
-         pyrowave_core_restart = false;
-         if (!pyrowave_core_open(&game)) pyrowave_core_environment(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+         pyrowave_receiver_restart = false;
+         pyrowave_receiver_start_pending = true;
       }
-      else if (pyrowave_core_loaded && (ended || failed))
-         pyrowave_core_environment(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+      else
+      {
+         pyrowave_receiver_owned = false;
+         free(pyrowave_receiver_path); pyrowave_receiver_path = NULL;
+         retro_atomic_store_release_int(&pyrowave_receiver_audio_enabled, 0);
+         audio_driver_request_presentation(false);
+         /* Restore the existing frontend session; never unload its core. */
+         if (!runloop_state_get_ptr()->quit_pending
+               && !runloop_state_get_ptr()->content_closing)
+         {
+            int flags = DRIVER_VIDEO_AND_INPUT_MASK | DRIVER_AUDIO_MASK;
+            /* Discard the receiver's cached hardware-frame sentinel before
+             * recreating presentation for the still-loaded game core. */
+            video_driver_cached_frame_invalidate();
+            runloop_environment_cb(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &pyrowave_receiver_saved_av);
+            command_event(CMD_EVENT_REINIT, &flags);
+            RARCH_LOG("[PyroWave] Frontend session restored.\n");
+         }
+      }
    }
 }
 
-static bool pyrowave_core_audio_block(void)
+static bool pyrowave_receiver_audio_block(void)
 {
-   pyrowave_core_client_t *c = pyrowave_core_client;
+   pyrowave_receiver_client_t *c = pyrowave_receiver_client;
    size_t frames, consumed, i;
    const int16_t *samples;
    int result;
-   if (!c || !c->accepted || !c->pcm || !pyrowave_core_audio
+   if (!c || !c->accepted || !c->pcm
          || retro_atomic_load_acquire_int(&c->stop)) return false;
    if (!c->audio_held)
    {
@@ -1176,7 +1226,7 @@ static bool pyrowave_core_audio_block(void)
       for (i = 0; i < frames; i++) c->mono[2 * i] = c->mono[2 * i + 1] = samples[i];
       samples = c->mono;
    }
-   consumed = pyrowave_core_audio(samples, frames);
+   consumed = audio_driver_sample_batch(samples, frames);
    if (consumed > frames) { retro_atomic_store_release_int(&c->failed, 1); return false; }
    c->audio_offset += consumed;
    if (c->audio_offset == c->audio.frames)
@@ -1187,31 +1237,31 @@ static bool pyrowave_core_audio_block(void)
    }
    return false;
 }
-static void pyrowave_core_audio_step(void)
+static void pyrowave_receiver_audio_step(void)
 {
    unsigned i;
-   if (pyrowave_core_client && pyrowave_core_client->audio_async) return;
-   for (i = 0; i < 16; i++) if (!pyrowave_core_audio_block()) break;
+   if (pyrowave_receiver_client && pyrowave_receiver_client->audio_async) return;
+   for (i = 0; i < 16; i++) if (!pyrowave_receiver_audio_block()) break;
 }
 #else
-void libretro_pyrowave_poll(void) { }
-void libretro_pyrowave_audio_control(bool exiting) { (void)exiting; }
-void libretro_pyrowave_stop(void) { }
-void libretro_pyrowave_d3d12_failed(void *context) { (void)context; }
-bool libretro_pyrowave_pending(void) { return false; }
-bool libretro_pyrowave_frame_info(struct video_frame_info *info, bool advance)
+void record_pyrowave_receiver_poll(void) { }
+void record_pyrowave_receiver_audio_control(bool exiting) { (void)exiting; }
+void record_pyrowave_receiver_stop(void) { }
+void record_pyrowave_receiver_d3d12_failed(void *context) { (void)context; }
+bool record_pyrowave_receiver_pending(void) { return false; }
+bool record_pyrowave_receiver_frame_info(struct video_frame_info *info, bool advance)
 { (void)info; (void)advance; return false; }
-unsigned libretro_pyrowave_gl_frame(void *data, unsigned *dims, bool advance,
+unsigned record_pyrowave_receiver_gl_frame(void *data, unsigned *dims, bool advance,
       const struct video_frame_info *timing)
 { (void)data; (void)dims; (void)advance; (void)timing; return 0; }
-void *libretro_pyrowave_d3d12_frame(void *context, void *commands, void *fence,
+void *record_pyrowave_receiver_d3d12_frame(void *context, void *commands, void *fence,
       uint64_t value, unsigned *dims, bool advance, const struct video_frame_info *timing)
 {
    (void)context; (void)commands; (void)fence; (void)value;
    (void)dims; (void)advance; (void)timing; return NULL;
 }
 #ifdef HAVE_VULKAN
-bool libretro_pyrowave_vulkan_frame(void *context, VkCommandBuffer commands,
+bool record_pyrowave_receiver_vulkan_frame(void *context, VkCommandBuffer commands,
       struct record_pyrowave_vulkan_image *image, VkFence *completion, unsigned *dims, bool advance,
       const struct video_frame_info *timing)
 {
@@ -1219,7 +1269,7 @@ bool libretro_pyrowave_vulkan_frame(void *context, VkCommandBuffer commands,
    if (completion) *completion = VK_NULL_HANDLE;
    return false;
 }
-void libretro_pyrowave_vulkan_submitted(void *context, VkFence completion, VkResult result, bool discarded)
+void record_pyrowave_receiver_vulkan_submitted(void *context, VkFence completion, VkResult result, bool discarded)
 {
    (void)context; (void)completion; (void)result; (void)discarded;
 }
@@ -1227,122 +1277,79 @@ void libretro_pyrowave_vulkan_submitted(void *context, VkFence completion, VkRes
 
 #endif
 
-void libretro_pyrowave_retro_init(void)
+bool record_pyrowave_receiver_start(const char *path)
 {
-   memset(&pyrowave_core_av, 0, sizeof(pyrowave_core_av));
-   pyrowave_core_av.geometry.base_width = pyrowave_core_av.geometry.max_width = 320;
-   pyrowave_core_av.geometry.base_height = pyrowave_core_av.geometry.max_height = 240;
-   pyrowave_core_av.geometry.aspect_ratio = 4.0f / 3.0f;
-   pyrowave_core_av.timing.fps = 60; pyrowave_core_av.timing.sample_rate = 48000;
-}
-void libretro_pyrowave_retro_deinit(void)
-{
-#ifdef PYROWAVE_CORE_GPU
-   pyrowave_core_loaded = pyrowave_core_restart = false;
-   free(pyrowave_core_path); pyrowave_core_path = NULL;
+#ifdef PYROWAVE_RECEIVER_GPU
+   size_t bytes;
+   if (!path || !*path || pyrowave_receiver_path || record_pyrowave_receiver_pending()) return false;
+   bytes = strlen(path) + 1;
+   pyrowave_receiver_path = (char*)malloc(bytes);
+   if (!pyrowave_receiver_path) return false;
+   memcpy(pyrowave_receiver_path, path, bytes);
+   pyrowave_receiver_start_pending = true;
+   retro_atomic_store_release_int(&pyrowave_receiver_audio_enabled, 1);
+   audio_driver_request_presentation(true);
+   return true;
+#else
+   (void)path;
+   return false;
 #endif
-   libretro_pyrowave_stop();
-   audio_driver_request_presentation(false);
 }
-unsigned libretro_pyrowave_retro_api_version(void) { return RETRO_API_VERSION; }
-void libretro_pyrowave_retro_get_system_info(struct retro_system_info *info)
+
+bool record_pyrowave_receiver_active(void)
 {
-   memset(info, 0, sizeof(*info)); info->library_name = "PyroWave"; info->library_version = "1";
-   info->valid_extensions = "rpws"; info->need_fullpath = true;
+   return pyrowave_receiver_owned || pyrowave_receiver_start_pending;
 }
-void libretro_pyrowave_retro_get_system_av_info(struct retro_system_av_info *info) { *info = pyrowave_core_av; }
-void libretro_pyrowave_retro_set_environment(retro_environment_t cb) { pyrowave_core_environment = cb; }
-void libretro_pyrowave_retro_set_video_refresh(retro_video_refresh_t cb) { pyrowave_core_video = cb; }
-void libretro_pyrowave_retro_set_audio_sample(retro_audio_sample_t cb) { (void)cb; }
-void libretro_pyrowave_retro_set_audio_sample_batch(retro_audio_sample_batch_t cb) { pyrowave_core_audio = cb; }
-void libretro_pyrowave_retro_set_input_poll(retro_input_poll_t cb) { pyrowave_core_input = cb; }
-void libretro_pyrowave_retro_set_input_state(retro_input_state_t cb) { (void)cb; }
-void libretro_pyrowave_retro_set_controller_port_device(unsigned port, unsigned device) { (void)port; (void)device; }
-void libretro_pyrowave_retro_reset(void)
+
+bool record_pyrowave_receiver_audio_enabled(void)
 {
-#ifdef PYROWAVE_CORE_GPU
-   if (!pyrowave_core_loaded) return;
-   pyrowave_core_restart = true;
-   if (!pyrowave_core_client)
-   {
-      struct retro_game_info game;
-      memset(&game, 0, sizeof(game)); game.path = pyrowave_core_path;
-      pyrowave_core_restart = false;
-      if (!pyrowave_core_open(&game)) pyrowave_core_environment(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
-      return;
-   }
+   return retro_atomic_load_acquire_int(&pyrowave_receiver_audio_enabled) != 0;
+}
+
+bool record_pyrowave_receiver_reset(void)
+{
+#ifdef PYROWAVE_RECEIVER_GPU
+   if (!record_pyrowave_receiver_active()) return false;
+   if (pyrowave_receiver_start_pending) return true;
+   record_pyrowave_receiver_stop();
+   pyrowave_receiver_restart = true;
+   return true;
+#else
+   return false;
 #endif
-   libretro_pyrowave_stop();
 }
-void libretro_pyrowave_retro_run(void)
+
+bool record_pyrowave_receiver_frame(void)
 {
-   /* Bootstrap the frontend cache while loading; decoded frames stay native. */
+   /* The frontend owns presentation while receiving. The selected game core
+    * stays loaded and is not entered or replaced during stream playback. */
    static const uint32_t blank = 0;
    const void *frame = &blank;
    unsigned width = 1, height = 1, pitch = sizeof(blank);
-   if (pyrowave_core_input) pyrowave_core_input();
-   libretro_pyrowave_poll();
-#ifdef PYROWAVE_CORE_GPU
-   pyrowave_core_audio_step();
-   if (pyrowave_core_client && retro_atomic_load_acquire_int(&pyrowave_core_client->ready)
-         && !retro_atomic_load_acquire_int(&pyrowave_core_client->stop))
+   if (!record_pyrowave_receiver_active()) return false;
+#ifdef PYROWAVE_RECEIVER_GPU
+   pyrowave_receiver_audio_step();
+   if (pyrowave_receiver_client && retro_atomic_load_acquire_int(&pyrowave_receiver_client->ready)
+         && !retro_atomic_load_acquire_int(&pyrowave_receiver_client->stop))
    {
       frame = RETRO_HW_FRAME_BUFFER_VALID;
-      width = pyrowave_core_av.geometry.base_width; height = pyrowave_core_av.geometry.base_height;
+      width = pyrowave_receiver_av.geometry.base_width; height = pyrowave_receiver_av.geometry.base_height;
       pitch = 0;
    }
 #endif
-   if (pyrowave_core_video) pyrowave_core_video(frame, width, height, pitch);
+   video_driver_frame(frame, width, height, pitch);
+   return true;
 }
-bool libretro_pyrowave_retro_load_game(const struct retro_game_info *game)
+
+bool record_pyrowave_receiver_audio_run(void)
 {
-   enum retro_pixel_format format = RETRO_PIXEL_FORMAT_XRGB8888;
-   if (!pyrowave_core_environment || !pyrowave_core_environment(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &format)) return false;
-#ifdef PYROWAVE_CORE_GPU
-   {
-      char *path;
-      size_t bytes;
-      struct retro_audio_callback callback;
-      settings_t *settings = config_get_ptr();
-      if (!game || !game->path) return false;
-      pyrowave_core_async_audio = settings->bools.audio_enable && strcmp(settings->arrays.audio_driver, "null") != 0;
-      audio_driver_request_presentation(pyrowave_core_async_audio);
-      memset(&callback, 0, sizeof(callback));
-      if (pyrowave_core_async_audio)
-      {
-         callback.callback = pyrowave_core_audio_callback; callback.set_state = pyrowave_core_audio_state;
-      }
-      if (!pyrowave_core_environment(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK, &callback))
-      { audio_driver_request_presentation(false); return false; }
-      bytes = strlen(game->path) + 1; path = (char*)malloc(bytes);
-      if (!path) { audio_driver_request_presentation(false); return false; }
-      memcpy(path, game->path, bytes);
-      if (!pyrowave_core_open(game))
-      { free(path); audio_driver_request_presentation(false); return false; }
-      free(pyrowave_core_path); pyrowave_core_path = path;
-      pyrowave_core_loaded = true; pyrowave_core_restart = false;
-      return true;
-   }
+#ifdef PYROWAVE_RECEIVER_GPU
+   audio_driver_state_t *audio = audio_state_get_ptr();
+   uint64_t offered = audio->sink_offered_raw;
+   uint64_t accepted = audio->sink_accepted;
+   pyrowave_receiver_audio_callback();
+   return offered != audio->sink_offered_raw || accepted != audio->sink_accepted;
 #else
-   (void)game; return false;
+   return false;
 #endif
 }
-void libretro_pyrowave_retro_unload_game(void)
-{
-#ifdef PYROWAVE_CORE_GPU
-   pyrowave_core_loaded = pyrowave_core_restart = false;
-#endif
-   libretro_pyrowave_stop();
-   audio_driver_request_presentation(false);
-}
-unsigned libretro_pyrowave_retro_get_region(void) { return RETRO_REGION_NTSC; }
-bool libretro_pyrowave_retro_load_game_special(unsigned type, const struct retro_game_info *game, size_t count)
-{ (void)type; (void)game; (void)count; return false; }
-size_t libretro_pyrowave_retro_serialize_size(void) { return 0; }
-bool libretro_pyrowave_retro_serialize(void *data, size_t bytes) { (void)data; (void)bytes; return false; }
-bool libretro_pyrowave_retro_unserialize(const void *data, size_t bytes) { (void)data; (void)bytes; return false; }
-void *libretro_pyrowave_retro_get_memory_data(unsigned id) { (void)id; return NULL; }
-size_t libretro_pyrowave_retro_get_memory_size(unsigned id) { (void)id; return 0; }
-void libretro_pyrowave_retro_cheat_reset(void) { }
-void libretro_pyrowave_retro_cheat_set(unsigned id, bool enabled, const char *code)
-{ (void)id; (void)enabled; (void)code; }

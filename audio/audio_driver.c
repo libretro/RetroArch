@@ -34,7 +34,7 @@
 #include "audio_driver.h"
 #ifdef HAVE_PYROWAVE
 #include "audio_pyrowave.h"
-#include "../cores/libretro-pyrowave/pyrowave_core.h"
+#include "../record/record_pyrowave_receiver.h"
 /* Audio-owner borrows only; detach precedes binding destruction. */
 static record_pyrowave_audio_clock_t *audio_driver_pyrowave_output;
 static record_pyrowave_audio_clock_t *audio_driver_pyrowave_pending;
@@ -5867,7 +5867,7 @@ error:
 void audio_driver_pipeline_consumer_exit(void)
 {
 #ifdef HAVE_PYROWAVE
-   libretro_pyrowave_audio_control(true);
+   record_pyrowave_receiver_audio_control(true);
 #endif
    /* Release: the consumer's loop is done before the word that says so. */
    retro_atomic_store_release_int(&audio_driver_st.pipe_consumer_gone, 1);
@@ -10754,6 +10754,9 @@ bool audio_driver_mixer_toggle_mute(void)
 
 bool audio_driver_enable_callback(void)
 {
+#ifdef HAVE_PYROWAVE
+   if (record_pyrowave_receiver_audio_enabled()) return true;
+#endif
    if (!audio_driver_st.callback.callback)
       return false;
    if (audio_driver_st.callback.set_state)
@@ -10763,6 +10766,9 @@ bool audio_driver_enable_callback(void)
 
 bool audio_driver_disable_callback(void)
 {
+#ifdef HAVE_PYROWAVE
+   if (record_pyrowave_receiver_audio_enabled()) return true;
+#endif
    if (!audio_driver_st.callback.callback)
       return false;
 
@@ -10794,7 +10800,11 @@ bool audio_driver_callback(void)
           && (snap & AUDIO_SNAP_MENU_ALIVE)
           && (snap & AUDIO_SNAP_ALLOW_PAUSE));
 #ifdef HAVE_PYROWAVE
-   libretro_pyrowave_audio_control(false);
+   record_pyrowave_receiver_audio_control(false);
+   if (record_pyrowave_receiver_audio_enabled())
+   {
+      return record_pyrowave_receiver_audio_run();
+   }
 #endif
 
 #ifdef HAVE_THREADS
@@ -10859,6 +10869,9 @@ bool audio_driver_callback(void)
 
 bool audio_driver_has_callback(void)
 {
+#ifdef HAVE_PYROWAVE
+   if (record_pyrowave_receiver_audio_enabled()) return true;
+#endif
    return audio_driver_st.callback.callback != NULL;
 }
 

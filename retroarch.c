@@ -139,7 +139,9 @@
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
-#include "record/record_driver.h"
+#ifdef HAVE_PYROWAVE
+#include "record/record_pyrowave_receiver.h"
+#endif
 
 #ifdef HAVE_MICROPHONE
 #include "audio/microphone_driver.h"
@@ -391,6 +393,7 @@ enum
    RA_OPT_XDELTA,
    RA_OPT_NO_PATCH,
    RA_OPT_RECORDCONFIG,
+   RA_OPT_PYROWAVE_RECEIVE,
    RA_OPT_SUBSYSTEM,
    RA_OPT_SIZE,
    RA_OPT_FEATURES,
@@ -1940,7 +1943,7 @@ void drivers_init(
    {
       audio_driver_init_internal(
             settings,
-            audio_st->callback.callback != NULL);
+            audio_driver_has_callback());
       audio_driver_drop_kept();
       /* Whether or not init succeeded: the list is how the user gets
        * out of a failed device choice. */
@@ -4387,6 +4390,9 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RESET:
+#ifdef HAVE_PYROWAVE
+         if (record_pyrowave_receiver_reset()) break;
+#endif
          {
             const char *_msg = msg_hash_to_str(MSG_RESET);
 #ifdef HAVE_COMMAND
@@ -8177,6 +8183,7 @@ static void retroarch_print_help(const char *arg0)
          "Path to record video file. Using mkv extension is recommended.\n"
          "      --recordconfig             "
          "Path to settings used during recording.\n"
+         "      --pyrowave-receive FILE     Receive a stream inside the frontend.\n"
          "      --size=WIDTHxHEIGHT        "
          "Overrides output video size when recording.\n");
 
@@ -8365,13 +8372,6 @@ static void retroarch_parse_input_libretro_path(
          runloop_set_current_core_type(CORE_TYPE_MPV, true);
          return;
       }
-#ifdef HAVE_PYROWAVE
-      else if (!strcmp(path, "pyrowave"))
-      {
-         runloop_set_current_core_type(CORE_TYPE_PYROWAVE, true);
-         return;
-      }
-#endif
       else if (!memcmp(path, "webm", STRLEN_CONST("webm")))
       {
          runloop_set_current_core_type(CORE_TYPE_WEBM, true);
@@ -8748,6 +8748,7 @@ static bool retroarch_parse_input_and_config(
       { "save",               1, NULL, 's' },
       { "fullscreen",         0, NULL, 'f' },
       { "record",             1, NULL, 'r' },
+      { "pyrowave-receive",   1, NULL, RA_OPT_PYROWAVE_RECEIVE },
       { "recordconfig",       1, NULL, RA_OPT_RECORDCONFIG },
       { "size",               1, NULL, RA_OPT_SIZE },
       { "verbose",            0, NULL, 'v' },
@@ -9456,6 +9457,15 @@ static bool retroarch_parse_input_and_config(
                            (unsigned)h);
                   }
                }
+               break;
+
+            case RA_OPT_PYROWAVE_RECEIVE:
+#ifdef HAVE_PYROWAVE
+               if (!record_pyrowave_receiver_start(optarg))
+                  retroarch_fail(1, "Could not start embedded PyroWave receiver.");
+#else
+               retroarch_fail(1, "PyroWave support is not enabled.");
+#endif
                break;
 
             case RA_OPT_RECORDCONFIG:

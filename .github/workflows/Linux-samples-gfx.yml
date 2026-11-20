@@ -112,6 +112,7 @@ jobs:
           receiver hdr-history --mode playback --threaded --history-shader --hdr
           receiver hdr-end --mode end --threaded --hdr
           receiver end --mode end
+          receiver retained-core --mode end --threaded --retained-core "$PWD/samples/gfx/pyrowave_session/frontend_core.so"
           receiver mono --mode end --threaded --audio-channels 1
           receiver silent --mode end --threaded --audio-channels 0
           receiver abort --mode abort --threaded
@@ -140,6 +141,7 @@ jobs:
           receiver_vk hdr-history --mode playback --threaded --history-shader --hdr
           receiver_vk hdr-end --mode end --threaded --hdr
           receiver_vk end --mode end
+          receiver_vk retained-core --mode end --threaded --retained-core "$PWD/samples/gfx/pyrowave_session/frontend_core.so"
           receiver_vk mono --mode end --threaded --audio-channels 1
           receiver_vk silent --mode end --threaded --audio-channels 0
           receiver_vk abort --mode abort --threaded

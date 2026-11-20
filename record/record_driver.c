@@ -47,7 +47,7 @@
 #include "drivers/record_vulkan.h"
 #ifdef HAVE_PYROWAVE
 #include "drivers/record_pyrowave.h"
-#include "../cores/libretro-pyrowave/pyrowave_core.h"
+#include "../record/record_pyrowave_receiver.h"
 #endif
 
 static recording_state_t recording_state = {0};
@@ -96,7 +96,7 @@ void recording_gpu_frame_info(struct video_frame_info *info,bool capture)
    info->recording_pyrowave_receive = false;
    info->recording_pyrowave_clock_valid = false;
 #ifdef HAVE_PYROWAVE
-   if (libretro_pyrowave_frame_info(info, capture)) return;
+   if (record_pyrowave_receiver_frame_info(info, capture)) return;
    if (record_pyrowave_frame_info(info, capture))
       return;
 #else
@@ -118,7 +118,7 @@ void recording_gpu_poll(void)
 {
 #ifdef HAVE_PYROWAVE
    record_pyrowave_poll();
-   libretro_pyrowave_poll();
+   record_pyrowave_receiver_poll();
 #endif
    if (recording_state.start_pending)
    {
@@ -156,7 +156,7 @@ void recording_gpu_stop(void)
 {
 #ifdef HAVE_PYROWAVE
    record_pyrowave_stop();
-   libretro_pyrowave_stop();
+   record_pyrowave_receiver_stop();
 #endif
    record_nvenc_stop();
    record_metal_stop();
@@ -168,7 +168,7 @@ void recording_gpu_stop(void)
 bool recording_gpu_pending(void)
 {
 #ifdef HAVE_PYROWAVE
-   if (record_pyrowave_pending() || libretro_pyrowave_pending())
+   if (record_pyrowave_pending() || record_pyrowave_receiver_pending())
       return true;
 #endif
 #ifdef HAVE_RECORD_VULKAN
@@ -181,7 +181,7 @@ bool recording_gpu_pending(void)
 bool recording_gpu_reset_pending(void)
 {
 #ifdef HAVE_PYROWAVE
-   if (record_pyrowave_pending() || libretro_pyrowave_pending())
+   if (record_pyrowave_pending() || record_pyrowave_receiver_pending())
       return true;
 #endif
 #ifdef HAVE_RECORD_VULKAN
@@ -452,7 +452,7 @@ bool recording_init(void)
    if (!recording_enable)
       return false;
 #ifdef HAVE_PYROWAVE
-   if (libretro_pyrowave_pending()) return false;
+   if (record_pyrowave_receiver_active()) return false;
 #endif
 
    if (content_load_state_in_progress(NULL)

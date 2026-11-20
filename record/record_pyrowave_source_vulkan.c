@@ -2,7 +2,7 @@
 #include "record_pyrowave_source.h"
 #ifdef HAVE_VULKAN
 #include "record_pyrowave_player_vulkan.h"
-#include "../cores/libretro-pyrowave/pyrowave_core.h"
+#include "../record/record_pyrowave_receiver.h"
 #include <stdlib.h>
 #include <string.h>
 

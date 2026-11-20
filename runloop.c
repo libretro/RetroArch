@@ -140,7 +140,9 @@ bool android_get_vfs_authorized_locations(
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
-#include "record/record_driver.h"
+#ifdef HAVE_PYROWAVE
+#include "record/record_pyrowave_receiver.h"
+#endif
 #include "msg_hash_lbl_str.h"
 
 #ifdef HAVE_CONFIG_H
@@ -378,9 +380,6 @@ static void runloop_game_ai_think_cb(void *userdata,
 #endif
 
 #define SYMBOL_DUMMY(x) current_core->x = libretro_dummy_##x
-#ifdef HAVE_PYROWAVE
-#define SYMBOL_PYROWAVE(x) current_core->x = libretro_pyrowave_##x
-#endif
 
 #ifdef HAVE_FFMPEG
 #define SYMBOL_FFMPEG(x) current_core->x = libretro_ffmpeg_##x
@@ -5518,11 +5517,6 @@ bool runloop_init_libretro_symbols(
          break;
       case CORE_TYPE_DUMMY:
          CORE_SYMBOLS(SYMBOL_DUMMY);
-         break;
-      case CORE_TYPE_PYROWAVE:
-#ifdef HAVE_PYROWAVE
-         CORE_SYMBOLS(SYMBOL_PYROWAVE);
-#endif
          break;
       case CORE_TYPE_FFMPEG:
 #ifdef HAVE_FFMPEG
@@ -11556,6 +11550,15 @@ bool core_run(void)
       video_driver_cached_frame();
       return false;
    }
+
+#ifdef HAVE_PYROWAVE
+   if (record_pyrowave_receiver_active())
+   {
+      input_driver_poll_between_frames(input_driver_poll);
+      record_pyrowave_receiver_frame();
+      return false;
+   }
+#endif
 
 #ifdef HAVE_NETWORKING
    netplay_preframe            = netplay_driver_ctl(

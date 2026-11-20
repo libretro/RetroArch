@@ -19,7 +19,7 @@
 #include "../record_native_buffer.h"
 #include "../../gfx/video_thread_wrapper.h"
 #include "../../audio/audio_driver.h"
-#include "../../cores/libretro-pyrowave/pyrowave_core.h"
+#include "../../record/record_pyrowave_receiver.h"
 #include "../../configuration.h"
 #include "../../command.h"
 #include "../../verbosity.h"

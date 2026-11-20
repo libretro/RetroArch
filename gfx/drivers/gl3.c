@@ -79,7 +79,7 @@
 #include "../../record/record_driver.h"
 #ifdef HAVE_PYROWAVE
 #include "../../record/drivers/record_pyrowave.h"
-#include "../../cores/libretro-pyrowave/pyrowave_core.h"
+#include "../../record/record_pyrowave_receiver.h"
 #endif
 
 /* Headset output: the slang chains draw its screens. */
@@ -7367,7 +7367,7 @@ static bool gl3_frame(void *data, const void *frame,
    if (video_info->recording_pyrowave_receive)
    {
       unsigned receiver_dims = 0;
-      unsigned receiver_texture = libretro_pyrowave_gl_frame(video_info->recording_gpu, &receiver_dims,
+      unsigned receiver_texture = record_pyrowave_receiver_gl_frame(video_info->recording_gpu, &receiver_dims,
             video_info->recording_gpu_capture && !(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK), video_info);
       if (receiver_texture)
       {

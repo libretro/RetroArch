@@ -17,7 +17,7 @@ args = parser.parse_args()
 if args.output.resolve() == args.retroarch.resolve():
     parser.error('--output must differ from the configured executable')
 build = args.build_directory.resolve()
-core = build / ('record/drivers/record_pyrowave.c' if args.sender else 'cores/libretro-pyrowave/pyrowave_core.c')
+core = build / ('record/drivers/record_pyrowave.c' if args.sender else 'record/record_pyrowave_receiver.c')
 renderer = build / 'gfx/drivers/d3d12.c'
 original_core, original_renderer = core.read_bytes(), renderer.read_bytes()
 patched_core = original_core.replace(b'\r\n', b'\n')
@@ -54,7 +54,7 @@ if args.skip_retirement_ack and args.sender:
 if args.skip_retirement_ack:
     old = b'video_d3d12_pyrowave_quiesce(data, c->player_d3d12) > 0'
     patched_core = replace_once(patched_core, old, old.replace(b'> 0', b'>= 0'))
-include = b'#include "../../cores/libretro-pyrowave/pyrowave_core.h"'
+include = b'#include "../../record/record_pyrowave_receiver.h"'
 patched = replace_once(patched, include, include + b'''
 static ID3D12Fence *pyrowave_test_d3d12_gate;
 extern unsigned pyrowave_test_d3d12_abort;''')
