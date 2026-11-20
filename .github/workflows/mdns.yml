@@ -1,0 +1,59 @@
+name: mDNS and DNS-SD C89
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'libretro-common/net/net_mdns.c'
+      - 'libretro-common/include/net/net_mdns.h'
+      - 'libretro-common/include/boolean.h'
+      - 'libretro-common/samples/net/mdns/**'
+      - '.github/workflows/mdns.yml'
+  pull_request:
+    paths:
+      - 'libretro-common/net/net_mdns.c'
+      - 'libretro-common/include/net/net_mdns.h'
+      - 'libretro-common/include/boolean.h'
+      - 'libretro-common/samples/net/mdns/**'
+      - '.github/workflows/mdns.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+        opt: [0, 2]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Strict C89 engine regressions with sanitizers
+        run: make -C libretro-common/samples/net/mdns clean check demo CC=${{ matrix.cc }} OPTIMIZE=-O${{ matrix.opt }} SANITIZER=address,undefined
+
+  msvc:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        arch: [x86, x64]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build C89 engine and desktop multicast adapter
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set VSPATH=%%i
+          if not defined VSPATH exit /b 1
+          call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.arch }}
+          if errorlevel 1 exit /b 1
+          cd libretro-common\samples\net\mdns
+          cl /nologo /TC /O2 /W3 /WX /DHAVE_MDNS /D_CRT_SECURE_NO_WARNINGS /I..\..\..\include net_mdns_test.c ..\..\..\net\net_mdns.c /Fe:net_mdns_test.exe
+          if errorlevel 1 exit /b 1
+          if not exist obj mkdir obj
+          cl /nologo /TC /O2 /W3 /WX /DHAVE_MDNS /D_CRT_SECURE_NO_WARNINGS /I..\..\..\include discovery.c ..\..\..\net\net_mdns.c /Fe:obj\mdns_discovery.exe /link ws2_32.lib
+          if errorlevel 1 exit /b 1
+      - name: Run native engine regressions
+        shell: cmd
+        run: libretro-common\samples\net\mdns\net_mdns_test.exe
