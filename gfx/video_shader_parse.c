@@ -727,6 +727,12 @@ static bool video_shader_parse_pass(config_file_t *conf,
    else
       pass->filter = RARCH_FILTER_UNSPEC;
 
+   pass->use_simulated_res = false;
+   _len  = strlcpy_lit(shader_var, "use_simulated_res", sizeof(shader_var));
+   strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
+   if (config_get_bool(conf, shader_var, &tmp_bool))
+      pass->use_simulated_res = tmp_bool;
+
    /* Wrapping mode */
    _len  = strlcpy_lit(shader_var, "wrap_mode", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
@@ -1725,6 +1731,11 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       _len = strlcpy_lit(key, "mipmap_input", sizeof(key));
       strlcpy(key + _len, formatted_num, sizeof(key) - _len);
       config_set_string(conf, key, pass->mipmap ? "true" : "false");
+
+      _len = strlcpy_lit(key, "use_simulated_res", sizeof(key));
+      strlcpy(key + _len, formatted_num, sizeof(key) - _len);
+      config_set_string(conf, key,
+            pass->use_simulated_res ? "true" : "false");
 
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {
