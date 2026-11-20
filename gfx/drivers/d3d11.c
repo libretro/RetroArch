@@ -794,6 +794,10 @@ typedef struct
 
    /* The preset's chain, which the frame is drawn through */
    d3d11_chain_t chain;
+   d3d11_chain_t *media_shader_chain;
+   bool media_shader_attempted;
+   const video_frame_info_t *media_shader_info;
+   uint64_t media_shader_frame;
    struct string_list *gpu_list;
    IDXGIAdapter1 *current_adapter;
    IDXGIAdapter1 *adapters[D3D11_MAX_GPU_COUNT];
@@ -3240,6 +3244,14 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
 {
    /* The views' chains read its preset */
    d3d11_views_free_chains(d3d11, 0);
+   if (d3d11->media_shader_chain)
+   {
+      d3d11_chain_free(d3d11->media_shader_chain, true);
+      d3d11_release_texture(&d3d11->media_shader_chain->history[0]);
+      free(d3d11->media_shader_chain);
+      d3d11->media_shader_chain = NULL;
+   }
+   d3d11->media_shader_attempted = false;
    d3d11_chain_free(&d3d11->chain, false);
    d3d11->flags &= ~(D3D11_ST_FLAG_INIT_HISTORY | D3D11_ST_FLAG_RESIZE_RTS);
 }
@@ -7347,7 +7359,8 @@ static void d3d11_views_draw_pass(d3d11_video_t *d3d11,
       clamp[2] = 1.0f - 0.5f / tw;
       clamp[3] = 1.0f - 0.5f / th;
       d3d11_views_bind(d3d11);
-      d3d11_views_ubo(d3d11, &d3d11->mvp, whole, clamp);
+      d3d11_views_ubo(d3d11, c == d3d11->media_shader_chain
+            ? &d3d11->ubo_values.mvp : &d3d11->mvp, whole, clamp);
       context->lpVtbl->PSSetShader(context, d3d11->views.rect.ps, NULL, 0);
       context->lpVtbl->PSSetShaderResources(context, 0, 1, &c->final->view);
       context->lpVtbl->PSSetSamplers(context, 0, 1,
@@ -7703,6 +7716,8 @@ static bool d3d11_gfx_frame(
 #ifdef HAVE_DXGI_HDR
    d3d11->hdr.display_peak = video_info->hdr_display_peak;
 #endif
+   d3d11->media_shader_info = video_info;
+   d3d11->media_shader_frame = frame_count;
    d3d11_hw_v2_enter(d3d11);
 #ifdef D3D11_FRAME_IMPORT
    frame = d3d11_movie_prepare(d3d11, frame);
@@ -10971,6 +10986,76 @@ video_driver_t video_d3d11 = {
    true /* max_geometry_in_place */
 };
 
+#ifdef HAVE_SLANG
+static bool gfx_display_d3d11_media_shader_draw(void *data, uintptr_t image,
+      unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
+{
+   d3d11_video_t *video = (d3d11_video_t*)data;
+   d3d11_texture_t *texture = (d3d11_texture_t*)image;
+   d3d11_chain_t *chain;
+   D3D11DeviceContext ctx;
+   D3D11RenderTargetView target = NULL;
+   D3D11DepthStencilView depth = NULL;
+   D3D11_VIEWPORT viewport;
+   D3D11_RECT scissor;
+   UINT nvp = 1, nsc = 1;
+   struct retro_video_view view;
+   struct d3d11_views_draw draw;
+   video_views_rect_t rect;
+   unsigned pass_index;
+   if (!video || !texture || !video->media_shader_info
+         || !video->media_shader_info->shader_active
+         || !video->chain.shader_preset) return false;
+   if (!video->media_shader_chain && !video->media_shader_attempted)
+   {
+      video->media_shader_attempted = true;
+      video->media_shader_chain = d3d11_chain_clone(video, &video->chain);
+   }
+   if (!(chain = video->media_shader_chain)) return false;
+   if (!video->views.tried) d3d11_views_init(video);
+   if (video->views.failed) return false;
+   ctx = video->context;
+   ctx->lpVtbl->OMGetRenderTargets(ctx, 1, &target, &depth);
+   ctx->lpVtbl->RSGetViewports(ctx, &nvp, &viewport);
+   ctx->lpVtbl->RSGetScissorRects(ctx, &nsc, &scissor);
+   memset(&view, 0, sizeof(view));
+   view.width = VIDEO_SCALE_W(source_dims);
+   view.height = VIDEO_SCALE_H(source_dims);
+   d3d11_views_bind(video);
+   chain->history[0].size_data = texture->size_data;
+   d3d11_views_chain_frame(video, chain, &view, dims, texture->view,
+         source_dims, chain->shader_preset->history_size == 0, true, NULL, 0);
+   d3d11_chain_frame(video, chain, video->media_shader_info,
+         video->media_shader_frame, true);
+   chain->mvp_last_pass = video->ubo_values.mvp;
+   for (pass_index = 0; pass_index < chain->shader_preset->passes; pass_index++)
+   {
+      chain->pass[pass_index].rotation = 0;
+      chain->pass[pass_index].frame_direction = 1;
+      chain->pass[pass_index].source_hdr = 0;
+      chain->pass[pass_index].core_aspect = (float)view.width / view.height;
+      chain->pass[pass_index].core_aspect_rot = chain->pass[pass_index].core_aspect;
+   }
+   chain->final = d3d11_chain_render(video, chain, chain->frame_view, NULL);
+   draw.video_info = video->media_shader_info;
+   draw.target = target;
+   draw.src_dims = source_dims;
+   rect.pos = VIDEO_POS_PACK(VIDEO_POS_X(pos), (int)VIDEO_SCALE_H(video_dims)
+         - VIDEO_POS_Y(pos) - (int)VIDEO_SCALE_H(dims));
+   rect.dims = dims;
+   ctx->lpVtbl->OMSetBlendState(ctx, video->blend_disable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+   ctx->lpVtbl->RSSetState(ctx, video->scissor_enabled);
+   d3d11_views_draw_pass(video, &draw, chain, &rect, &rect);
+   ctx->lpVtbl->OMSetRenderTargets(ctx, 1, &target, depth);
+   d3d11_sprites_begin(video);
+   ctx->lpVtbl->RSSetViewports(ctx, nvp, &viewport);
+   ctx->lpVtbl->RSSetScissorRects(ctx, nsc, &scissor);
+   Release(target);
+   Release(depth);
+   return true;
+}
+#endif
+
 gfx_display_ctx_driver_t gfx_display_ctx_d3d11 = {
    gfx_display_d3d11_draw,
    gfx_display_d3d11_draw_pipeline,
@@ -10990,5 +11075,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d11 = {
    gfx_display_d3d11_bloom_begin,
    gfx_display_d3d11_bloom_end,
    NULL,                                     /* bloom_composite */
-   gfx_display_d3d11_effect_install
+   gfx_display_d3d11_effect_install,
+#ifdef HAVE_SLANG
+   gfx_display_d3d11_media_shader_draw
+#else
+   NULL
+#endif
 };

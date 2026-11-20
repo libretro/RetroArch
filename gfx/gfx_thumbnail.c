@@ -2609,14 +2609,14 @@ void gfx_thumbnail_get_draw_dimensions(
  *       (width x height) rectangle (alignment + aspect
  *       correct scaling is preserved). Use with caution */
 
-void gfx_thumbnail_draw(
+static void gfx_thumbnail_draw_internal(
       void *userdata,
       unsigned video_dims,
       gfx_thumbnail_t *thumbnail,
       float x, float y, unsigned dims,
       enum gfx_thumbnail_alignment alignment,
       float alpha, float scale_factor,
-      gfx_thumbnail_shadow_t *shadow)
+      gfx_thumbnail_shadow_t *shadow, bool shader)
 {
    unsigned video_width              = VIDEO_SCALE_W(video_dims);
    unsigned video_height             = VIDEO_SCALE_H(video_dims);
@@ -2828,13 +2828,34 @@ void gfx_thumbnail_draw(
       draw.dims    = VIDEO_SCALE_PACK((unsigned)draw_width, (unsigned)draw_height);
       draw.pos     = VIDEO_POS_PACK(VIDEO_PX(draw_x), VIDEO_PX(draw_y));
 
-      /* Draw thumbnail */
-      if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
-         gfx_display_draw(dispctx, &draw, userdata,
-               VIDEO_SCALE_PACK(video_width, video_height));
+      /* The surface owns this texture through the draw, as for a plain quad. */
+      if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0
+            && !(shader && dispctx->media_shader_draw && thumbnail_alpha >= 0.9999f
+               && gfx_display_draw_media_shader(dispctx, userdata, thumb_texture,
+                  VIDEO_SCALE_PACK(thumb_width, thumb_height), video_dims,
+                  draw.pos, draw.dims)))
+         gfx_display_draw(dispctx, &draw, userdata, video_dims);
 
       gfx_display_blend_end(dispctx, userdata);
    }
+}
+
+void gfx_thumbnail_draw(void *userdata, unsigned video_dims,
+      gfx_thumbnail_t *thumbnail, float x, float y, unsigned dims,
+      enum gfx_thumbnail_alignment alignment, float alpha, float scale_factor,
+      gfx_thumbnail_shadow_t *shadow)
+{
+   gfx_thumbnail_draw_internal(userdata, video_dims, thumbnail, x, y, dims,
+         alignment, alpha, scale_factor, shadow, false);
+}
+
+void gfx_thumbnail_draw_shader(void *userdata, unsigned video_dims,
+      gfx_thumbnail_t *thumbnail, float x, float y, unsigned dims,
+      enum gfx_thumbnail_alignment alignment, float alpha, float scale_factor,
+      gfx_thumbnail_shadow_t *shadow)
+{
+   gfx_thumbnail_draw_internal(userdata, video_dims, thumbnail, x, y, dims,
+         alignment, alpha, scale_factor, shadow, true);
 }
 
 /* Returns currently set thumbnail 'type' (Named_Snaps,

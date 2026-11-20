@@ -15,6 +15,9 @@ static struct menu_state test_menu;
 struct menu_state *menu_state_get_ptr(void) { return &test_menu; }
 
 static settings_t test_settings;
+static gfx_display_t test_display;
+gfx_display_t *disp_get_ptr(void) { return &test_display; }
+
 settings_t *config_get_ptr(void) { return &test_settings; }
 
 static unsigned failures;
@@ -1153,7 +1156,7 @@ static bool fake_audio_select(void *user, int index, int64_t now)
    return true;
 }
 
-static void audio_toolbar(void)
+static void audio_toolbar(bool shaders)
 {
    static gfx_media_mailbox_t mailbox;
    gfx_media_view_t view;
@@ -1165,6 +1168,7 @@ static void audio_toolbar(void)
    unsigned opened = 0;
    menu_media_controls_t *menu;
    font_data_t font;
+   audio_calls = audio_captions = 0;
    CHECK(session != NULL);
    if (!session) return;
    memset(&controls, 0, sizeof(controls));
@@ -1186,9 +1190,10 @@ static void audio_toolbar(void)
    target.step = fake_step; target.navigation_user = &player;
    target.settings = toolbar_settings; target.settings_user = &opened;
    target.subtitle_tracks = true;
+   target.shaders = shaders ? toolbar_settings : NULL;
    gfx_media_controls_audio_target(&target, session, fake_audio_select, NULL);
    CHECK(gfx_media_controls_update(&controls, &target, 640, 480, 1));
-   CHECK(controls.layout.button_count == 9);
+   CHECK(controls.layout.button_count == 9 + (shaders ? 1u : 0u));
    CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_FOCUS, 2));
    controls.focus = 6;
    CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_NEXT, 3));
@@ -1221,7 +1226,7 @@ static void audio_toolbar(void)
    free(session);
    CHECK(gfx_media_controls_consume(&mailbox, &view));
    CHECK(view.audio_tracks && view.audio_track_number == 1
-         && !strcmp(view.audio_language, "eng") && view.layout.button_count == 9);
+         && !strcmp(view.audio_language, "eng") && view.layout.button_count == 9 + (shaders ? 1u : 0u));
    menu = (menu_media_controls_t*)calloc(1, sizeof(*menu));
    CHECK(menu != NULL);
    if (menu)
@@ -1235,6 +1240,12 @@ static void audio_toolbar(void)
       drawing = false;
       CHECK(audio_captions == 3);
       free(menu);
+   }
+   if (shaders)
+   {
+      controls.focus = 9;
+      CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_ACTIVATE, 12));
+      CHECK(opened == 1 && audio_calls == 3);
    }
    gfx_media_controls_reset(&controls);
 }
@@ -1504,6 +1515,56 @@ static void context_resume(void)
    free(media);
 }
 
+static void shader_toolbar(void)
+{
+   gfx_media_controls_t controls;
+   gfx_media_target_t target;
+   gfx_media_mailbox_t mailbox;
+   gfx_media_view_t view;
+   fake_player_t player;
+   unsigned opened = 0;
+   memset(&controls, 0, sizeof(controls));
+   memset(&target, 0, sizeof(target));
+   memset(&mailbox, 0, sizeof(mailbox));
+   memset(&view, 0, sizeof(view));
+   memset(&player, 0, sizeof(player));
+   player.available = true;
+   player.state.paused = true;
+   target.user = &player;
+   target.identity = &player;
+   target.state = fake_state;
+   target.image = true;
+   /* An image has no transport callbacks. */
+   CHECK(!gfx_media_controls_update(&controls, &target, 640, 480, 1));
+   target.shaders = toolbar_settings;
+   target.settings_user = &opened;
+   CHECK(gfx_media_controls_update(&controls, &target, 640, 480, 2));
+   CHECK(controls.layout.button_count == 1);
+   CHECK(!gfx_media_controls_action(&controls, GFX_MEDIA_PLAY, 3));
+   CHECK(!gfx_media_controls_action(&controls, GFX_MEDIA_STOP, 3));
+   CHECK(!gfx_media_controls_action(&controls, GFX_MEDIA_SEEK_FORWARD, 3));
+   CHECK(opened == 0);
+   CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_FOCUS, 4));
+   CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_ACTIVATE, 4));
+   CHECK(opened == 1 && player.seeks == 0);
+   gfx_media_controls_publish(&controls, &mailbox);
+   CHECK(gfx_media_controls_consume(&mailbox, &view));
+   CHECK(view.image && view.shaders && view.layout.button_count == 1);
+   CHECK(view.layout.panel.h < 2 * view.layout.unit);
+   target.image = false;
+   target.pause = fake_pause;
+   target.seek = fake_seek;
+   CHECK(gfx_media_controls_update(&controls, &target, 640, 480, 5));
+   CHECK(controls.layout.button_count == 5);
+   controls.row_focus = true;
+   controls.focus = 4;
+   CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_ACTIVATE, 6));
+   CHECK(opened == 2 && player.state.paused);
+   target.shaders = NULL;
+   CHECK(gfx_media_controls_update(&controls, &target, 640, 480, 7));
+   CHECK(controls.layout.button_count == 4 && controls.focus == 0);
+}
+
 int main(void)
 {
    test_settings.uints.media_player_seek_seconds = 5;
@@ -1518,7 +1579,8 @@ int main(void)
 #endif
    folder_queue();
    viewer_title();
-   audio_toolbar();
+   audio_toolbar(false);
+   audio_toolbar(true);
    audio_context_resume();
    combined_subtitle_toolbar();
    subtitle_button();
@@ -1531,6 +1593,7 @@ int main(void)
    menu_transport();
    file_buttons();
    settings_button();
+   shader_toolbar();
    context_resume();
 #ifdef HAVE_THREADS
    mailbox_races();

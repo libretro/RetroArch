@@ -554,6 +554,9 @@ typedef struct metal_view_chain metal_view_chain_t;
 - (void)renderViewChain:(metal_view_chain_t *)c
                    view:(const struct retro_video_view *)v
                viewport:(unsigned)vp_dims fresh:(bool)fresh;
+- (void)renderExternalViewChain:(metal_view_chain_t *)c source:(id<MTLTexture>)source
+                   view:(const struct retro_video_view *)v
+               viewport:(unsigned)vp_dims fresh:(bool)fresh;
 /* The last pass's render target, or nil when the last pass draws into
  * each placement, bound by bindViewChainLast */
 - (id<MTLTexture>)viewChainFinal:(metal_view_chain_t *)c;
@@ -5936,6 +5939,9 @@ typedef struct metal_views_texture
 typedef struct metal_views
 {
    video_views_chains_t  chains;
+   metal_view_chain_t *media_chain;
+   bool media_shader_enabled, media_shader_attempted;
+   __unsafe_unretained id<MTLRenderPipelineState> media_rect16;
    metal_views_texture_t canvas;
    metal_views_texture_t ui;
    video_views_target_t  canvas_target;
@@ -6013,6 +6019,7 @@ static bool metal_views_allowed(const metal_views_t *vs)
 
 static void metal_views_release(metal_views_t *vs)
 {
+   RARCH_STRUCT_ASSIGN(vs->media_rect16, nil);
    RARCH_STRUCT_ASSIGN(vs->rect,       nil);
    RARCH_STRUCT_ASSIGN(vs->layer,      nil);
    RARCH_STRUCT_ASSIGN(vs->anaglyph,   nil);
@@ -6022,8 +6029,8 @@ static void metal_views_release(metal_views_t *vs)
 }
 
 /* @fn's pipeline into BGRA8, with blending premultiplied */
-static id<MTLRenderPipelineState> metal_views_pipeline(id<MTLDevice> device,
-      id<MTLLibrary> lib, NSString *fn, bool blend)
+static id<MTLRenderPipelineState> metal_views_pipeline_format(id<MTLDevice> device,
+      id<MTLLibrary> lib, NSString *fn, bool blend, MTLPixelFormat format)
 {
    NSError *err = nil;
    MTLRenderPipelineDescriptor *psd = RARCH_AUTORELEASE_R(
@@ -6034,7 +6041,7 @@ static id<MTLRenderPipelineState> metal_views_pipeline(id<MTLDevice> device,
          newFunctionWithName:@"views_vertex"]);
    psd.fragmentFunction           = RARCH_AUTORELEASE_R([lib
          newFunctionWithName:fn]);
-   ca.pixelFormat                 = MTLPixelFormatBGRA8Unorm;
+   ca.pixelFormat                 = format;
    ca.blendingEnabled             = blend ? YES : NO;
    ca.sourceRGBBlendFactor        = MTLBlendFactorOne;
    ca.destinationRGBBlendFactor   = MTLBlendFactorOneMinusSourceAlpha;
@@ -6044,6 +6051,12 @@ static id<MTLRenderPipelineState> metal_views_pipeline(id<MTLDevice> device,
       return nil;
    return RARCH_AUTORELEASE_R([device
          newRenderPipelineStateWithDescriptor:psd error:&err]);
+}
+
+static id<MTLRenderPipelineState> metal_views_pipeline(id<MTLDevice> device,
+      id<MTLLibrary> lib, NSString *fn, bool blend)
+{
+   return metal_views_pipeline_format(device, lib, fn, blend, MTLPixelFormatBGRA8Unorm);
 }
 
 /* The pipelines views draw with, made on first use: most sessions never
@@ -6114,6 +6127,8 @@ static void metal_views_init(metal_views_t *vs)
    {
       RARCH_STRUCT_ASSIGN(vs->rect, metal_views_pipeline(vs->device, lib,
                @"views_rect", false));
+      RARCH_STRUCT_ASSIGN(vs->media_rect16, metal_views_pipeline_format(vs->device, lib,
+               @"views_rect", false, MTLPixelFormatRGBA16Float));
       RARCH_STRUCT_ASSIGN(vs->anaglyph, metal_views_pipeline(vs->device, lib,
                @"views_anaglyph", false));
       RARCH_STRUCT_ASSIGN(vs->interlaced, metal_views_pipeline(vs->device,
@@ -6247,6 +6262,12 @@ static void metal_views_draw_pass(metal_views_t *vs,
 static void metal_views_free_chains(metal_views_t *vs, unsigned first)
 {
    unsigned i;
+   if (!first) vs->media_shader_attempted = false;
+   if (!first && vs->media_chain)
+   {
+      [vs->frameView freeViewChain:vs->media_chain];
+      vs->media_chain = NULL;
+   }
    for (i = first; i < RETRO_VIDEO_VIEWS_MAX; i++)
    {
       if (vs->chains.preset[i])
@@ -6965,6 +6986,7 @@ static void metal_views_render(metal_views_t *vs,
    /* Travels with the frame, for set_texture_frame() to read rather
     * than the setting the menu writes */
    self.frameMenuLinearFilter = video_info->menu_linear_filter;
+   _views.media_shader_enabled = video_info->shader_active;
 
    @autoreleasepool
    {
@@ -7377,6 +7399,7 @@ typedef struct MTLALIGN(16)
 {
    matrix_float4x4 mvp;
    matrix_float4x4 mvp_last_pass;
+   bool media;
 
    struct
    {
@@ -8417,6 +8440,15 @@ struct metal_view_chain
    if (rot == 1 || rot == 3)
       core_aspect_rot            = 1 / core_aspect_rot;
    e->pass[i].core_aspect_rot    = core_aspect_rot;
+   if (e->media)
+   {
+      e->pass[i].rotation = 0;
+      e->pass[i].frame_direction = 1;
+      e->pass[i].total_subframes = e->pass[i].current_subframe = 1;
+      e->pass[i].core_aspect = e->frame.texture[0].size_data.x
+         / e->frame.texture[0].size_data.y;
+      e->pass[i].core_aspect_rot = e->pass[i].core_aspect;
+   }
 
    for (j = 0; j < SLANG_CBUFFER_MAX; j++)
    {
@@ -8560,7 +8592,7 @@ struct metal_view_chain
    }
 
    e->mvp_last_pass = _context.uniformsNoRotate->projectionMatrix;
-   int rot = retroarch_get_rotation();
+   int rot = e->media ? 0 : retroarch_get_rotation();
 
    width  = src_w;
    height = src_h;
@@ -8818,11 +8850,28 @@ error:
                    view:(const struct retro_video_view *)v
                viewport:(unsigned)vp_dims fresh:(bool)fresh
 {
+   [self renderExternalViewChain:c source:nil view:v viewport:vp_dims fresh:fresh];
+}
+
+- (void)renderExternalViewChain:(metal_view_chain_t *)c source:(id<MTLTexture>)external
+                   view:(const struct retro_video_view *)v
+               viewport:(unsigned)vp_dims fresh:(bool)fresh
+{
    unsigned dims      = VIDEO_SCALE_PACK(v->width, v->height);
-   id<MTLTexture> src = _engine.frame.texture[0].view;
+   id<MTLTexture> src = external ? external : _engine.frame.texture[0].view;
+   c->engine.media = external != nil;
 
    c->engine.frame.valid = false;
-   if (src && (fresh || !c->history_made))
+   if (external && !_shader->history_size)
+   {
+      RARCH_STRUCT_ASSIGN(c->engine.frame.texture[0].view, external);
+      c->engine.frame.texture[0].size_data.x = v->width;
+      c->engine.frame.texture[0].size_data.y = v->height;
+      c->engine.frame.texture[0].size_data.z = 1.0f / v->width;
+      c->engine.frame.texture[0].size_data.w = 1.0f / v->height;
+      c->history_made = true;
+   }
+   else if (src && (fresh || !c->history_made))
    {
       unsigned k;
       unsigned n                     = _shader->history_size + 1;
@@ -8850,7 +8899,7 @@ error:
             c->engine.frame.texture[k] = c->engine.frame.texture[k - 1];
          c->engine.frame.texture[0] = tmp;
       }
-      if (c->engine.frame.texture[0].view && fresh && _pendingSrc)
+      if (c->engine.frame.texture[0].view && fresh && !external && _pendingSrc)
       {
          id<MTLTexture> dst = c->engine.frame.texture[0].view;
          NSUInteger at      = (NSUInteger)v->y * _pendingPitch
@@ -8924,7 +8973,7 @@ error:
    if (c->rt_frame_dims != dims || c->rt_vp_dims != vp_dims)
    {
       [self _chainTargets:&c->engine width:v->width height:v->height
-                 viewport:vp_dims hdr:NO];
+                 viewport:vp_dims hdr:(external && _context.hdrEnabled)];
       c->rt_frame_dims = dims;
       c->rt_vp_dims    = vp_dims;
    }
@@ -10986,6 +11035,45 @@ video_driver_t video_metal = {
    true /* max_geometry_in_place */
 };
 
+static bool gfx_display_metal_media_shader_draw(void *data, uintptr_t image,
+      unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   Texture *texture = (__bridge Texture *)(void *)image;
+   metal_views_t *vs = md.views;
+   struct retro_video_view view;
+   struct metal_views_draw draw;
+   video_views_rect_t rect;
+   id<MTLRenderPipelineState> saved;
+   if (!md || !texture || !vs->media_shader_enabled || !md.frameView.shader)
+      return false;
+   if (!vs->media_chain && !vs->media_shader_attempted)
+   {
+      vs->media_shader_attempted = true;
+      vs->media_chain = [md.frameView makeViewChain];
+   }
+   if (!vs->media_chain) return false;
+   if (!vs->tried) metal_views_init(vs);
+   if (vs->failed || (md.context.hdrEnabled && !vs->media_rect16)) return false;
+   memset(&view, 0, sizeof(view));
+   view.width = VIDEO_SCALE_W(source_dims);
+   view.height = VIDEO_SCALE_H(source_dims);
+   [md.frameView renderExternalViewChain:vs->media_chain source:texture.texture
+         view:&view viewport:dims fresh:true];
+   draw.video_info = NULL;
+   draw.rce = md.context.rce;
+   draw.sampler = texture.sampler;
+   draw.src_dims = source_dims;
+   rect.pos = VIDEO_POS_PACK(VIDEO_POS_X(pos), (int)VIDEO_SCALE_H(video_dims)
+         - VIDEO_POS_Y(pos) - (int)VIDEO_SCALE_H(dims));
+   rect.dims = dims;
+   saved = vs->rect;
+   if (md.context.hdrEnabled) vs->rect = vs->media_rect16;
+   metal_views_draw_pass(vs, &draw, vs->media_chain, &rect, &rect);
+   vs->rect = saved;
+   return true;
+}
+
 gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    gfx_display_metal_draw,
    gfx_display_metal_draw_pipeline,
@@ -11013,5 +11101,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    gfx_display_metal_bloom_begin,
    gfx_display_metal_bloom_end,
    gfx_display_metal_bloom_composite,
-   gfx_display_metal_effect_install
+   gfx_display_metal_effect_install,
+   gfx_display_metal_media_shader_draw
 };

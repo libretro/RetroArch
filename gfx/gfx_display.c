@@ -1379,6 +1379,27 @@ void gfx_display_blend_end(gfx_display_ctx_driver_t *dispctx,
  * the helpers above it, which is what lets this file know the order
  * things are drawn in - and, when quads start being gathered rather
  * than drawn one at a time, where the gathered ones have to go out. */
+bool gfx_display_draw_media_shader(gfx_display_ctx_driver_t *dispctx,
+      void *userdata, uintptr_t texture, unsigned source_dims,
+      unsigned video_dims, unsigned pos, unsigned dims)
+{
+   gfx_display_t *p_disp = disp_get_ptr();
+   if (!dispctx || !dispctx->media_shader_draw) return false;
+   gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_DRAW);
+   if (gfx_display_stretched(p_disp, video_dims))
+   {
+      int x = VIDEO_POS_X(pos);
+      int x1 = gfx_display_stretch_x(p_disp, video_dims,
+            x + (int)VIDEO_SCALE_W(dims));
+      x = gfx_display_stretch_x(p_disp, video_dims, x);
+      pos = VIDEO_POS_PACK(x, VIDEO_POS_Y(pos));
+      dims = VIDEO_SCALE_PACK(x1 - x, VIDEO_SCALE_H(dims));
+      video_dims = p_disp->output_dims;
+   }
+   return dispctx->media_shader_draw(userdata, texture, source_dims,
+         video_dims, pos, dims);
+}
+
 void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       gfx_display_ctx_draw_t *draw, void *userdata,
       unsigned video_dims)

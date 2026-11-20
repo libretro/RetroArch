@@ -7011,7 +7011,7 @@ static void ozone_draw_thumbnail_bar(
    {
       gfx_thumbnail_t *preview = ozone->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE
          ? &ozone->thumbnails.right : &ozone->thumbnails.left;
-      gfx_thumbnail_draw(userdata, video_dims, preview,
+      gfx_thumbnail_draw_shader(userdata, video_dims, preview,
             (float)thumbnail_x_position,
             (float)(ozone->dimensions.header_height + ozone->dimensions.sidebar_gradient_height),
             VIDEO_SCALE_PACK(thumbnail_width, sidebar_height),
@@ -8842,7 +8842,7 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
                NULL);
 
          /* Thumbnail */
-         gfx_thumbnail_draw(
+         gfx_thumbnail_draw_shader(
                userdata,
                video_dims,
                right_thumbnail,
@@ -8878,7 +8878,7 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
                NULL);
 
          /* Thumbnail */
-         gfx_thumbnail_draw(
+         gfx_thumbnail_draw_shader(
                userdata,
                video_dims,
                left_thumbnail,

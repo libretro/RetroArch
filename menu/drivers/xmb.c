@@ -8865,7 +8865,7 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
                NULL);
 
          /* Thumbnail */
-         gfx_thumbnail_draw(
+         gfx_thumbnail_draw_shader(
                userdata,
                video_dims,
                right_thumbnail,
@@ -8901,7 +8901,7 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
                NULL);
 
          /* Thumbnail */
-         gfx_thumbnail_draw(
+         gfx_thumbnail_draw_shader(
                userdata,
                video_dims,
                left_thumbnail,
@@ -10063,7 +10063,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       unsigned preview_height = video_height / 2;
       gfx_thumbnail_t *preview = xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE
          ? &xmb->thumbnails.right : &xmb->thumbnails.left;
-      gfx_thumbnail_draw(userdata, video_info->dims, preview,
+      gfx_thumbnail_draw_shader(userdata, video_info->dims, preview,
             (float)(video_width - preview_width), (float)(video_height / 4),
             VIDEO_SCALE_PACK(preview_width, preview_height),
             GFX_THUMBNAIL_ALIGN_CENTRE, 1.0f, 1.0f, NULL);

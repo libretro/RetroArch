@@ -66,7 +66,7 @@ bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t
 {
    int unit, gap, bw, i, left, count;
    if (!c) return false;
-   if (!target || !target->user || !target->state || !target->pause || !target->seek
+   if (!target || !target->user || !target->state || (!target->image && (!target->pause || !target->seek))
          || width < 96 || height < 96 || width > 65535 || height > 65535)
    {
       gfx_media_controls_reset(c);
@@ -97,7 +97,8 @@ bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t
    c->layout.unit = unit;
    c->layout.panel.x = gap;
    c->layout.panel.w = (int)width - 2 * gap;
-   c->layout.panel.h = (target->subtitle_tracks ? 4 : 3) * unit + 3 * gap;
+   c->layout.panel.h = target->image ? unit + 2 * gap
+      : (target->subtitle_tracks ? 4 : 3) * unit + 3 * gap;
    c->layout.panel.y = (int)height - c->layout.panel.h - gap;
    c->layout.timeline.x = 2 * gap;
    c->layout.timeline.y = c->layout.panel.y + unit + gap;
@@ -106,6 +107,9 @@ bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t
    count = (target->settings ? 7 : target->step ? 6 : 4)
       + (target->subtitle_tracks ? 1 : 0)
       + (c->playback.seekable && gfx_media_audio_count(target) > 1 ? 1 : 0);
+   if (target->shaders) count++;
+   if (target->image) count = target->shaders ? 1 : 0;
+   if (!count) { gfx_media_controls_reset(c); return false; }
    c->layout.button_count = (unsigned)count;
    if (c->focus >= (unsigned)count) c->focus = 0;
    bw = (c->layout.panel.w - (count + 1) * gap) / count;
@@ -114,7 +118,8 @@ bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t
    for (i = 0; i < count; i++)
    {
       c->layout.buttons[i].x = left + i * (bw + gap);
-      c->layout.buttons[i].y = c->layout.panel.y + 2 * unit + gap;
+      c->layout.buttons[i].y = c->layout.panel.y
+         + (target->image ? gap : 2 * unit + gap);
       c->layout.buttons[i].w = bw;
       c->layout.buttons[i].h = unit;
    }
@@ -134,6 +139,10 @@ static bool gfx_media_button(gfx_media_controls_t *c, unsigned button, int64_t n
       : c->playback.position_us;
    const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
    int64_t step = (int64_t)(c->seek_seconds ? c->seek_seconds : 5) * 1000000;
+   if (c->target.image && button != 0) return false;
+   if ((c->target.image && button == 0)
+         || (c->target.shaders && button + 1 == c->layout.button_count))
+      return c->target.shaders && c->target.shaders(c->target.settings_user);
    if (button == 0)
    {
       if (c->playback.paused && c->playback.duration_us > 0
@@ -142,7 +151,7 @@ static bool gfx_media_button(gfx_media_controls_t *c, unsigned button, int64_t n
       return c->target.pause(c->target.user, !c->playback.paused, now);
    }
    if (c->playback.seekable && gfx_media_audio_count(&c->target) > 1
-         && button + (c->target.subtitle_tracks ? 2 : 1) == c->layout.button_count)
+         && button + (c->target.subtitle_tracks ? 2 : 1) + (c->target.shaders ? 1 : 0) == c->layout.button_count)
    {
       unsigned i, current = gfx_media_audio_current(&c->target);
       for (i = 0; i < c->target.audio_track_count; i++)
@@ -158,7 +167,7 @@ static bool gfx_media_button(gfx_media_controls_t *c, unsigned button, int64_t n
       }
       return false;
    }
-   if (c->target.subtitle_tracks && button + 1 == c->layout.button_count)
+   if (c->target.subtitle_tracks && button + 1 + (c->target.shaders ? 1 : 0) == c->layout.button_count)
    {
       c->subtitle_requested = true;
       return true;
@@ -193,6 +202,10 @@ bool gfx_media_controls_action(gfx_media_controls_t *c,
    }
    c->visible = true;
    c->last_activity = now;
+   if (c->target.image && action != GFX_MEDIA_FOCUS
+         && action != GFX_MEDIA_UNFOCUS && action != GFX_MEDIA_ACTIVATE
+         && action != GFX_MEDIA_PREVIOUS && action != GFX_MEDIA_NEXT)
+      return false;
    switch (action)
    {
       case GFX_MEDIA_FOCUS: c->row_focus = true; return true;
@@ -353,6 +366,8 @@ void gfx_media_controls_publish(const gfx_media_controls_t *c, gfx_media_mailbox
       v->seek_seconds = c->seek_seconds ? c->seek_seconds : 5;
       v->directions = c->target.directions;
       v->subtitle_tracks = c->target.subtitle_tracks;
+      v->shaders = c->target.shaders != NULL;
+      v->image = c->target.image;
       v->audio_tracks = c->playback.seekable && gfx_media_audio_count(&c->target) > 1;
       if (c->target.select_audio && c->target.audio_tracks && c->target.audio_track_count)
       {

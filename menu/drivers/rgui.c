@@ -9516,7 +9516,7 @@ static void rgui_media_gpu_draw(rgui_t *rgui, video_frame_info_t *video_info)
    thumbnail.alpha = view->alpha;
    thumbnail.flags = view->flags;
    retro_atomic_store_release_int(&thumbnail.status, GFX_THUMBNAIL_STATUS_AVAILABLE);
-   gfx_thumbnail_draw(video_info->userdata, dims, &thumbnail,
+   gfx_thumbnail_draw_shader(video_info->userdata, dims, &thumbnail,
          VIDEO_POS_X(vp.pos) + rect->x * sx,
          VIDEO_POS_Y(vp.pos) + rect->y * sy,
          VIDEO_SCALE_PACK((unsigned)(rect->w * sx), (unsigned)(rect->h * sy)),

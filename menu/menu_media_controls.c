@@ -112,7 +112,7 @@ static bool menu_media_controls_step(void *user, int direction)
    return menu_media_queue_step(media->queue, menu_state_get_ptr(), direction);
 }
 
-static bool menu_media_controls_settings(void *user)
+static bool menu_media_controls_open_settings(void *user, bool shaders)
 {
    menu_media_controls_t *media = (menu_media_controls_t*)user;
    struct menu_state *menu_st = menu_state_get_ptr();
@@ -126,8 +126,10 @@ static bool menu_media_controls_settings(void *user)
    media->settings_selection = menu_st->selection_ptr;
    media->settings_parent = (uintptr_t)stack->list[stack->size - 1].path;
    media->settings_open = true;
-   if (generic_action_ok_displaylist_push(NULL, NULL, "", 0,
-            menu_st->selection_ptr, 0, ACTION_OK_DL_MEDIA_PLAYER_SETTINGS_LIST) != 0)
+   if (generic_action_ok_displaylist_push(NULL, NULL,
+            shaders ? msg_hash_to_str(MENU_ENUM_LABEL_SHADER_OPTIONS) : "", 0,
+            menu_st->selection_ptr, 0, shaders ? ACTION_OK_DL_PUSH_DEFAULT
+               : ACTION_OK_DL_MEDIA_PLAYER_SETTINGS_LIST) != 0)
    {
       media->settings_open = false;
       return false;
@@ -139,6 +141,27 @@ static bool menu_media_controls_settings(void *user)
    if (hide)
       hide(hide_user);
    return true;
+}
+
+static bool menu_media_controls_settings(void *user)
+{
+   return menu_media_controls_open_settings(user, false);
+}
+
+static bool menu_media_controls_shaders(void *user)
+{
+   return menu_media_controls_open_settings(user, true);
+}
+
+static bool menu_media_controls_image_state(void *user, int64_t now,
+      gfx_media_playback_state_t *out)
+{
+   gfx_thumbnail_t *thumbnail = (gfx_thumbnail_t*)user;
+   (void)now;
+   memset(out, 0, sizeof(*out));
+   out->dims = thumbnail->dims;
+   out->paused = true;
+   return retro_atomic_load_acquire_int(&thumbnail->status) == GFX_THUMBNAIL_STATUS_AVAILABLE;
 }
 
 bool menu_media_controls_settings_active(const menu_media_controls_t *media)
@@ -218,6 +241,9 @@ bool menu_media_controls_update(menu_media_controls_t *media,
          && (type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM);
       active.settings_user = media;
       active.settings = active.user ? menu_media_controls_settings : NULL;
+      active.shaders = active.user && disp_get_ptr()->dispctx
+         && disp_get_ptr()->dispctx->media_shader_draw
+         ? menu_media_controls_shaders : NULL;
       if (media->queue && active.user)
       {
          active.navigation_user = media;
@@ -314,6 +340,19 @@ void menu_media_controls_thumbnail(menu_media_controls_t *media,
    {
       gfx_thumbnail_set_repeat(primary, true);
       gfx_thumbnail_set_repeat(secondary, true);
+   }
+   if (shown && !target.user)
+   {
+      gfx_thumbnail_t *image = primary
+         && retro_atomic_load_acquire_int(&primary->status) == GFX_THUMBNAIL_STATUS_AVAILABLE
+         ? primary : secondary;
+      if (image && retro_atomic_load_acquire_int(&image->status) == GFX_THUMBNAIL_STATUS_AVAILABLE)
+      {
+         target.user = image;
+         target.identity = (const void*)image->texture;
+         target.state = menu_media_controls_image_state;
+         target.image = true;
+      }
    }
    menu_media_controls_update(media, &target, width, height, pointer, now);
 }
@@ -511,7 +550,7 @@ void menu_media_controls_draw(menu_media_controls_t *media,
    gfx_media_rect_t bar;
    char elapsed[24], duration[24], caption[128];
    char seek_back[16], seek_forward[16], audio_label[16];
-   const char *labels[9];
+   const char *labels[10];
    unsigned i;
    int64_t position;
    float scale;
@@ -521,7 +560,8 @@ void menu_media_controls_draw(menu_media_controls_t *media,
    if (!view->visible || !view->layout.unit) return;
    menu_media_quad(display, userdata, dims, &view->layout.panel, 0.025f, 0.025f, 0.025f, 0.92f);
    bar = view->layout.timeline;
-   menu_media_quad(display, userdata, dims, &bar, 0.3f, 0.3f, 0.3f, 1.0f);
+   if (!view->image)
+      menu_media_quad(display, userdata, dims, &bar, 0.3f, 0.3f, 0.3f, 1.0f);
    position = view->dragging ? view->drag_us : view->playback.position_us;
    if (view->playback.duration_us > 0)
    {
@@ -539,7 +579,8 @@ void menu_media_controls_draw(menu_media_controls_t *media,
    if (view->audio_track_number)
       snprintf(caption, sizeof(caption), "%s / %s | A%u %s", elapsed, duration,
             view->audio_track_number, view->audio_language);
-   gfx_display_draw_text(font, caption, (float)view->layout.timeline.x,
+   if (!view->image)
+      gfx_display_draw_text(font, caption, (float)view->layout.timeline.x,
          (float)(view->layout.panel.y + view->layout.unit), dims,
          0xffffffffU, TEXT_ALIGN_LEFT, scale, false, 0.0f, false);
    labels[0] = view->playback.paused ? ">" : "||";
@@ -552,16 +593,19 @@ void menu_media_controls_draw(menu_media_controls_t *media,
    if (view->audio_tracks)
    {
       snprintf(audio_label, sizeof(audio_label), "A%u", view->audio_track_number);
-      labels[view->layout.button_count - (view->subtitle_tracks ? 2 : 1)] = audio_label;
+      labels[view->layout.button_count - (view->subtitle_tracks ? 2 : 1) - (view->shaders ? 1 : 0)] = audio_label;
    }
    if (view->subtitle_tracks)
-      labels[view->layout.button_count - 1] = "CC";
+      labels[view->layout.button_count - 1 - (view->shaders ? 1 : 0)] = "CC";
+   if (view->shaders)
+      labels[view->layout.button_count - 1] = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS);
    for (i = 0; i < view->layout.button_count; i++)
    {
       const gfx_media_rect_t *button = &view->layout.buttons[i];
       bool enabled = (view->audio_tracks
-            && i + (view->subtitle_tracks ? 2 : 1) == view->layout.button_count)
-            || (view->subtitle_tracks && i + 1 == view->layout.button_count)
+            && i + (view->subtitle_tracks ? 2 : 1) + (view->shaders ? 1 : 0) == view->layout.button_count)
+            || (view->subtitle_tracks && i + 1 + (view->shaders ? 1 : 0) == view->layout.button_count)
+            || (view->shaders && i + 1 == view->layout.button_count)
             || i == 6 || (i >= 4
             ? (view->directions & (i == 4 ? 1u : 2u)) != 0
             : !i || view->playback.seekable);

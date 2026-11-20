@@ -339,3 +339,105 @@ with tempfile.TemporaryDirectory(prefix="retroarch-d3d12-menu-") as directory:
     command += shlex.split(os.environ.get("CFLAGS", ""))
     subprocess.run(command + [str(src), "-o", str(exe)], check=True)
     subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(exe)], check=True)
+
+# A Slang pass has a different root signature and quad from the menu.
+# Entering the sprite phase must restore all state read by menu draws.
+start = source.index("static void d3d12_sprites_begin(")
+function = source[start:source.index("\n}\n", start) + 3]
+fixture = r"""
+#include <assert.h>
+#include <stdint.h>
+#include <string.h>
+#define ROOT_ID_UBO 0
+#define ROOT_ID_PC 1
+#define D3D12_ST_FLAG_SPRITES_ENABLE 8
+#define D3D_PRIMITIVE_TOPOLOGY_POINTLIST 1
+typedef int D3D12PipelineState;
+struct command;
+struct methods {
+ void (*SetGraphicsRootSignature)(struct command *, int);
+ void (*SetGraphicsRootConstantBufferView)(struct command *, unsigned, unsigned);
+ void (*RSSetViewports)(struct command *, unsigned, const int *);
+ void (*RSSetScissorRects)(struct command *, unsigned, const int *);
+ void (*IASetVertexBuffers)(struct command *, unsigned, unsigned, const int *);
+ void (*SetPipelineState)(struct command *, int);
+ void (*IASetPrimitiveTopology)(struct command *, int);
+};
+struct command { const struct methods *lpVtbl; };
+typedef struct command *D3D12GraphicsCommandList;
+typedef struct {
+ struct { D3D12GraphicsCommandList cmd; unsigned slot; } queue;
+ struct { int rootSignature; } desc;
+ int ubo_view;
+ struct { int ubo_sprites_view; } hdr;
+ struct { int viewport, scissorRect; } chain;
+ struct { int vbo_view, pipe, pipe_noblend, pipe_noblend_hdr, pipe_noblend_f16; } sprites;
+ unsigned flags;
+} d3d12_video_t;
+static unsigned seen, constants;
+static unsigned d3d12_cb_slot(const int *view, unsigned slot) { return *view + slot; }
+#ifdef HAVE_DXGI_HDR
+static int d3d12_rt_pipe(d3d12_video_t *d, int plain, int hdr, int f16)
+{ (void)d; (void)plain; (void)f16; return hdr; }
+#endif
+static void signature(struct command *cmd, int value)
+{ (void)cmd; assert(value == 17); seen |= 1; }
+static void constant(struct command *cmd, unsigned slot, unsigned value)
+{ (void)cmd; assert(value == (slot == ROOT_ID_UBO ? 102u : 202u)); constants++; }
+static void viewport(struct command *cmd, unsigned count, const int *value)
+{ (void)cmd; assert(count == 1 && *value == 3); seen |= 2; }
+static void scissor(struct command *cmd, unsigned count, const int *value)
+{ (void)cmd; assert(count == 1 && *value == 4); seen |= 4; }
+static void vertices(struct command *cmd, unsigned slot, unsigned count, const int *value)
+{ (void)cmd; assert(!slot && count == 1 && *value == 5); seen |= 8; }
+static void pipeline(struct command *cmd, int value)
+{
+ (void)cmd;
+#ifdef HAVE_DXGI_HDR
+ assert(value == 11);
+#else
+ assert(value == 10);
+#endif
+ seen |= 16;
+}
+static void topology(struct command *cmd, int value)
+{ (void)cmd; assert(value == D3D_PRIMITIVE_TOPOLOGY_POINTLIST); seen |= 32; }
+FUNCTION
+int main(void)
+{
+ static const struct methods methods = {
+  signature, constant, viewport, scissor, vertices, pipeline, topology
+ };
+ struct command cmd;
+ d3d12_video_t driver;
+ memset(&driver, 0, sizeof(driver));
+ cmd.lpVtbl = &methods;
+ driver.queue.cmd = &cmd;
+ driver.queue.slot = 2;
+ driver.desc.rootSignature = 17;
+ driver.ubo_view = 100;
+ driver.hdr.ubo_sprites_view = 200;
+ driver.chain.viewport = 3;
+ driver.chain.scissorRect = 4;
+ driver.sprites.vbo_view = 5;
+ driver.sprites.pipe_noblend = 10;
+ driver.sprites.pipe_noblend_hdr = 11;
+ d3d12_sprites_begin(&driver);
+ assert(seen == 63 && (driver.flags & D3D12_ST_FLAG_SPRITES_ENABLE));
+#ifdef HAVE_DXGI_HDR
+ assert(constants == 2);
+#else
+ assert(constants == 1);
+#endif
+ return 0;
+}
+""".replace("FUNCTION", function)
+with tempfile.TemporaryDirectory(prefix="d3d12-sprite-state-") as directory:
+    unit = Path(directory) / "sprites.c"
+    exe = Path(directory) / "sprites.exe"
+    unit.write_bytes(fixture.encode())
+    for hdr in (False, True):
+        defines = ["-DHAVE_DXGI_HDR"] if hdr else []
+        subprocess.run(command + defines + [str(unit), "-o", str(exe)], check=True)
+        subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(exe)], check=True)
+print("PASS: D3D12 menu restores roots, constants, viewport, scissor and sprite vertices after shaders")

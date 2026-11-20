@@ -247,6 +247,10 @@ typedef struct gfx_display_ctx_driver
     * draw_pipeline and draw with draw->effect set to it. */
    void *(*effect_install)(void *data,
          const gfx_display_effect_desc_t *desc);
+   /* Samples the borrowed viewer texture through an independent shader
+    * chain. False leaves the ordinary texture draw as its fallback. */
+   bool (*media_shader_draw)(void *data, uintptr_t texture,
+         unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims);
 } gfx_display_ctx_driver_t;
 
 struct gfx_display_ctx_draw
@@ -618,6 +622,10 @@ void gfx_display_blend_begin(gfx_display_ctx_driver_t *dispctx,
       void *userdata);
 void gfx_display_blend_end(gfx_display_ctx_driver_t *dispctx,
       void *userdata);
+
+bool gfx_display_draw_media_shader(gfx_display_ctx_driver_t *dispctx,
+      void *userdata, uintptr_t texture, unsigned source_dims,
+      unsigned video_dims, unsigned pos, unsigned dims);
 
 void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       gfx_display_ctx_draw_t *draw, void *userdata,

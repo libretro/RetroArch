@@ -903,6 +903,9 @@ typedef struct vk
    struct vk_texture *vaapi_textures;
    vulkan_android_queue_t vaapi_submissions;
 #endif
+   vulkan_filter_chain_t *media_shader_chain[2];
+   uint64_t media_shader_frame;
+   bool media_shader_enabled;
    uintptr_t movie_texture;
    bool movie_pending;
    bool movie_cpu;      /* movie_texture holds frames from memory */
@@ -7180,11 +7183,33 @@ static void vulkan_views_build_chains(vk_t *vk)
 
 /* The view chains follow the main chain's preset; NULL or empty for
  * none. */
-static void vulkan_views_set_preset(vk_t *vk, const char *path)
+static void vulkan_views_set_preset(vk_t *vk, const char *path, bool media)
 {
    strlcpy(vk->views.preset, path ? path : "", sizeof(vk->views.preset));
    vulkan_views_free_chains(vk, 0, true);
    vulkan_views_build_chains(vk);
+   {
+      struct vulkan_filter_chain_create_info info;
+      unsigned i;
+      for (i = 0; i < 2; i++)
+      {
+         vulkan_filter_chain_free(vk->media_shader_chain[i]);
+         vk->media_shader_chain[i] = NULL;
+         if (!media || !path || !*path || (i && !vk->sdr_render_pass)) continue;
+         vulkan_views_chain_info(vk, &info);
+         if (i)
+         {
+            info.swapchain.render_pass = vk->sdr_render_pass;
+            info.swapchain.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+         }
+#ifdef VULKAN_HDR_SWAPCHAIN
+         info.hdr_enabled = vk->hdr_mode_latched > 0;
+#endif
+         vk->media_shader_chain[i] = vulkan_filter_chain_create_from_preset(
+               &info, path, vk->video.smooth ? GLSLANG_FILTER_CHAIN_LINEAR
+                  : GLSLANG_FILTER_CHAIN_NEAREST);
+      }
+   }
 }
 
 /* Views are not drawn with HDR output or an HDR10 source. */
@@ -7241,7 +7266,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
       return false;
    }
 
-   vulkan_views_set_preset(vk, shader_path);
+   vulkan_views_set_preset(vk, shader_path, true);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
@@ -7836,6 +7861,10 @@ static void vulkan_free(void *data)
 
       if (vk->filter_chain_default)
          vulkan_filter_chain_free((vulkan_filter_chain_t*)vk->filter_chain_default);
+
+      vulkan_filter_chain_free(vk->media_shader_chain[0]);
+      vulkan_filter_chain_free(vk->media_shader_chain[1]);
+      vk->media_shader_chain[0] = vk->media_shader_chain[1] = NULL;
 
       vulkan_views_free_chains(vk, 0, true);
 
@@ -8900,6 +8929,23 @@ built:
       )
       RARCH_ERR("[Vulkan] Failed to update filter chain info.\n");
 
+   {
+      struct vulkan_filter_chain_swapchain_info media_info = filter_info;
+      unsigned i;
+      media_info.render_pass = vk->render_pass;
+      for (i = 0; i < 2; i++)
+      {
+         if (i)
+         {
+            media_info.render_pass = vk->sdr_render_pass;
+            media_info.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+         }
+         if (vk->media_shader_chain[i])
+            vulkan_filter_chain_update_swapchain_info(vk->media_shader_chain[i],
+                  &media_info);
+      }
+   }
+
    /* View chains index per-image state by swapchain image, and never
     * draw with HDR on. */
    filter_info.render_pass = vk->render_pass;
@@ -9040,21 +9086,38 @@ typedef struct vulkan_deferred_state
 {
    vulkan_filter_chain_t *new_chain;
    vulkan_filter_chain_t *old_chain;
+   vulkan_filter_chain_t *media_chain[2];
+   unsigned core_passes, media_passes[2];
    enum glslang_filter_chain_filter filter;
    retro_atomic_int_t     failed;   /* a pass failed: the load ends */
 } vulkan_deferred_state_t;
+
+static vulkan_filter_chain_t *vulkan_deferred_chain(vulkan_deferred_state_t *ds,
+      unsigned *pass)
+{
+   unsigned i;
+   if (*pass < ds->core_passes) return ds->new_chain;
+   *pass -= ds->core_passes;
+   for (i = 0; i < 2; i++)
+   {
+      if (*pass < ds->media_passes[i]) return ds->media_chain[i];
+      *pass -= ds->media_passes[i];
+   }
+   return NULL;
+}
 
 struct vulkan_build_task
 {
    shader_load_deferred_t  *deferred;
    vulkan_deferred_state_t *ds;
    unsigned                 pass;
+   vulkan_filter_chain_t   *chain;
 };
 
 static void vulkan_build_task_handler(retro_task_t *task)
 {
    struct vulkan_build_task *b = (struct vulkan_build_task*)task->state;
-   if (!vulkan_filter_chain_build_pipeline(b->ds->new_chain, b->pass))
+   if (!vulkan_filter_chain_build_pipeline(b->chain, b->pass))
    {
       RARCH_ERR("[Vulkan] Deferred: failed to build pass %u.\n", b->pass);
       retro_atomic_store_release_int(&b->ds->failed, 1);
@@ -9073,6 +9136,7 @@ static void vulkan_deferred_build(shader_load_deferred_t *deferred,
 {
    struct vulkan_build_task *b;
    retro_task_t *task;
+   vulkan_filter_chain_t *chain = vulkan_deferred_chain(ds, &pass);
 
    if (     task_queue_is_threaded()
          && (b = (struct vulkan_build_task*)malloc(sizeof(*b))))
@@ -9082,6 +9146,7 @@ static void vulkan_deferred_build(shader_load_deferred_t *deferred,
          b->deferred   = deferred;
          b->ds         = ds;
          b->pass       = pass;
+         b->chain      = chain;
          retro_atomic_fetch_add_int(&deferred->builds, 1);
          task->handler = vulkan_build_task_handler;
          task->state   = b;
@@ -9094,7 +9159,7 @@ static void vulkan_deferred_build(shader_load_deferred_t *deferred,
       }
       free(b);
    }
-   if (!vulkan_filter_chain_build_pipeline(ds->new_chain, pass))
+   if (!vulkan_filter_chain_build_pipeline(chain, pass))
    {
       RARCH_ERR("[Vulkan] Deferred: failed to build pass %u.\n", pass);
       retro_atomic_store_release_int(&ds->failed, 1);
@@ -9154,6 +9219,34 @@ static bool vulkan_shader_load_begin(void *data,
       return false;
    }
 
+   ds->core_passes = deferred->total_passes;
+   {
+      unsigned i;
+      for (i = 0; i < 2; i++)
+      {
+         if (i && !vk->sdr_render_pass) continue;
+         vulkan_views_chain_info(vk, &info);
+         if (i)
+         {
+            info.swapchain.render_pass = vk->sdr_render_pass;
+            info.swapchain.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+         }
+#ifdef VULKAN_HDR_SWAPCHAIN
+         info.hdr_enabled = vk->hdr_mode_latched > 0;
+#endif
+         ds->media_chain[i] = vulkan_filter_chain_create_deferred(&info,
+               deferred->preset_path, ds->filter, &ds->media_passes[i]);
+         if (!ds->media_chain[i])
+         {
+            vulkan_filter_chain_free(ds->media_chain[0]);
+            vulkan_filter_chain_free(ds->new_chain);
+            free(ds);
+            return false;
+         }
+         deferred->total_passes += ds->media_passes[i];
+      }
+   }
+
    RARCH_LOG("[Vulkan] Deferred: prepared %u passes for \"%s\".\n",
          deferred->total_passes, deferred->preset_path);
 
@@ -9181,12 +9274,14 @@ static bool vulkan_shader_load_step(void *data,
 
    if (pass < deferred->total_passes)
    {
+      unsigned chain_pass = pass;
+      vulkan_filter_chain_t *chain = vulkan_deferred_chain(ds, &chain_pass);
       RARCH_LOG("[Vulkan] Deferred: compiling pass %u/%u...\n",
             pass + 1, deferred->total_passes);
 
       if (     retro_atomic_load_acquire_int(&ds->failed)
             || !vulkan_filter_chain_prepare_pass(
-               ds->new_chain, pass, ds->filter))
+               chain, chain_pass, ds->filter))
       {
          if (!retro_atomic_load_acquire_int(&ds->failed))
             RARCH_ERR("[Vulkan] Deferred: failed to compile pass %u.\n", pass);
@@ -9226,7 +9321,9 @@ static bool vulkan_shader_load_step(void *data,
    /* All passes compiled â€” finalize */
    RARCH_LOG("[Vulkan] Deferred: finalizing chain...\n");
 
-   if (vulkan_filter_chain_finalize(ds->new_chain))
+   if (vulkan_filter_chain_finalize(ds->new_chain)
+         && (!ds->media_chain[0] || vulkan_filter_chain_finalize(ds->media_chain[0]))
+         && (!ds->media_chain[1] || vulkan_filter_chain_finalize(ds->media_chain[1])))
    {
       if (ds->old_chain)
          vulkan_filter_chain_free(ds->old_chain);
@@ -9234,7 +9331,10 @@ static bool vulkan_shader_load_step(void *data,
       vk->filter_chain = ds->new_chain;
       deferred->state  = SHADER_LOAD_DONE;
 
-      vulkan_views_set_preset(vk, deferred->preset_path);
+      vulkan_views_set_preset(vk, deferred->preset_path, false);
+      vk->media_shader_chain[0] = ds->media_chain[0];
+      vk->media_shader_chain[1] = ds->media_chain[1];
+      ds->media_chain[0] = ds->media_chain[1] = NULL;
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
@@ -9324,6 +9424,8 @@ static bool vulkan_shader_load_step(void *data,
    }
 
 cleanup:
+   vulkan_filter_chain_free(ds->media_chain[0]);
+   vulkan_filter_chain_free(ds->media_chain[1]);
    free(ds);
    deferred->driver_data = NULL;
    return false; /* no more work */
@@ -9342,7 +9444,7 @@ static bool vulkan_set_shader(void *data,
     * stages both name are taken from it instead of compiled again. */
    old              = (vulkan_filter_chain_t*)vk->filter_chain;
    vk->filter_chain = NULL;
-   vulkan_views_set_preset(vk, NULL);
+   vulkan_views_set_preset(vk, NULL, false);
 
    if (path && *path && type != RARCH_SHADER_SLANG)
    {
@@ -14099,6 +14201,8 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 #endif
 
+   vk->media_shader_frame = frame_count;
+   vk->media_shader_enabled = video_info->shader_active;
    for (c = 0; c < num_setup; c++)
    {
       vulkan_filter_chain_t *fc = setup_chains[c];
@@ -19081,6 +19185,67 @@ video_driver_t video_vulkan = {
    true /* max_geometry_in_place */
 };
 
+static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
+      unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
+{
+   vk_t *vk = (vk_t*)data;
+   struct vk_texture *texture = (struct vk_texture*)image;
+   vulkan_filter_chain_t *chain;
+   struct vulkan_filter_chain_texture input;
+   VkRenderPassBeginInfo rp;
+   VkViewport vp, saved_vp;
+   VkRect2D saved_scissor;
+   bool sdr;
+   if (!vk || !texture || !vk->media_shader_enabled || !vk->bloom.target)
+      return false;
+   sdr = (vk->flags & VK_FLAG_SDR_PIPELINE) != 0;
+   chain = vk->media_shader_chain[sdr ? 1 : 0];
+   if (!chain || !(sdr ? vk->bloom.keep_sdr_pass : vk->keep_render_pass))
+      return false;
+   saved_vp = vk->vk_vp;
+   saved_scissor = vk->tracker.scissor;
+   vp.x = (float)VIDEO_POS_X(pos);
+   vp.y = (float)((int)VIDEO_SCALE_H(video_dims) - VIDEO_POS_Y(pos)
+         - (int)VIDEO_SCALE_H(dims));
+   vp.width = (float)VIDEO_SCALE_W(dims);
+   vp.height = (float)VIDEO_SCALE_H(dims);
+   vp.minDepth = 0.0f;
+   vp.maxDepth = 1.0f;
+   vulkan_movie_input(texture, &input);
+   vulkan_views_sync_params(vk, chain);
+   vulkan_filter_chain_notify_sync_index(chain, vk->context->current_frame_index);
+   vulkan_filter_chain_set_frame_count(chain, vk->media_shader_frame);
+   vulkan_filter_chain_set_frame_direction(chain, 1);
+   vulkan_filter_chain_set_rotation(chain, 0);
+   vulkan_filter_chain_set_core_aspect(chain,
+         (float)VIDEO_SCALE_W(source_dims) / VIDEO_SCALE_H(source_dims));
+   vulkan_filter_chain_set_input_texture(chain, &input);
+   vkCmdEndRenderPass(vk->cmd);
+   vulkan_filter_chain_build_offscreen_passes(chain, vk->cmd, &vp);
+   memset(&rp, 0, sizeof(rp));
+   rp.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+   rp.renderPass = sdr ? vk->bloom.keep_sdr_pass : vk->keep_render_pass;
+   rp.framebuffer = vk->bloom.target->framebuffer;
+   rp.renderArea.extent.width = VIDEO_SCALE_W(video_dims);
+   rp.renderArea.extent.height = VIDEO_SCALE_H(video_dims);
+   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->bloom.target->image,
+         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+   vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
+   vulkan_filter_chain_build_viewport_pass(chain, vk->cmd, &vp, vk->mvp_no_rot.data);
+   vkCmdEndRenderPass(vk->cmd);
+   vulkan_filter_chain_end_frame(chain, vk->cmd);
+   vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
+   vk->vk_vp = saved_vp;
+   vk->tracker.scissor = saved_scissor;
+   vk->tracker.pipeline = VK_NULL_HANDLE;
+   vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+   return true;
+}
+
 gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
    gfx_display_vk_draw,
 #ifdef HAVE_SHADERPIPELINE
@@ -19105,8 +19270,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
    gfx_display_vk_bloom_end,
    gfx_display_vk_bloom_composite,
 #ifdef HAVE_SHADERPIPELINE
-   gfx_display_vk_effect_install
+   gfx_display_vk_effect_install,
 #else
-   NULL                                   /* effect_install */
+   NULL,                                  /* effect_install */
 #endif
+   gfx_display_vk_media_shader_draw
 };

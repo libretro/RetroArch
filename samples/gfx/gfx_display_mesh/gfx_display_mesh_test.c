@@ -93,6 +93,18 @@ static void rec_draw(gfx_display_ctx_draw_t *d, void *data, unsigned vd)
    if (d->coords && d->coords->color && rec_vertices <= 2048)
       memcpy(rec_col, d->coords->color, rec_vertices * 4 * sizeof(float));
 }
+static bool rec_media_shader(void *data, uintptr_t texture, unsigned source,
+      unsigned video, unsigned pos, unsigned dims)
+{
+   CHECK(rec_draws == 1, "menu batches draw before a viewer shader");
+   CHECK(texture == 123 && source == VIDEO_SCALE_PACK(160, 120),
+         "the viewer lends its original texture and dimensions");
+   rec_vd = video;
+   rec_pos = pos;
+   rec_dims = dims;
+   return true;
+}
+
 static const float *rec_effect_vertex;
 static unsigned     rec_effect_vertices;
 static float        rec_effect_time;
@@ -654,6 +666,24 @@ int main(void)
             "and the caller's draw is as it was");
       CHECK(gfx_display_output_dims(p_disp, layout) == output, "the driver is handed the output size");
       CHECK(gfx_display_output_dims(p_disp, output) == output, "drawing at the output size stretches nothing");
+
+      rec_ctx.handles_vertex_strip = true;
+      rec_ctx.media_shader_draw = rec_media_shader;
+      reset();
+      gfx_display_draw_quad(p_disp, NULL, layout, 10, 20,
+            VIDEO_SCALE_PACK(30, 40), layout, white, NULL);
+      CHECK(rec_draws == 0, "the menu background is queued");
+      CHECK(gfx_display_draw_media_shader(&rec_ctx, NULL, 123,
+               VIDEO_SCALE_PACK(160, 120), layout, d.pos, d.dims),
+            "a supported viewer shader draws");
+      CHECK(rec_vd == output && rec_pos == VIDEO_POS_PACK(-8, 20)
+            && rec_dims == VIDEO_SCALE_PACK(24, 40),
+            "viewer shaders use the ordinary thumbnail coordinate conversion");
+      rec_ctx.media_shader_draw = NULL;
+      CHECK(!gfx_display_draw_media_shader(&rec_ctx, NULL, 123,
+               VIDEO_SCALE_PACK(160, 120), layout, d.pos, d.dims),
+            "an unsupported backend keeps the plain thumbnail fallback");
+      rec_ctx.handles_vertex_strip = false;
 
       gfx_display_set_output_dims(p_disp, 0);
       reset();

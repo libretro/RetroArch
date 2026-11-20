@@ -678,6 +678,15 @@ void gfx_thumbnail_draw(
       float alpha, float scale_factor,
       gfx_thumbnail_shadow_t *shadow);
 
+void gfx_thumbnail_draw_shader(
+      void *userdata,
+      unsigned video_dims,
+      gfx_thumbnail_t *thumbnail,
+      float x, float y, unsigned dims,
+      enum gfx_thumbnail_alignment alignment,
+      float alpha, float scale_factor,
+      gfx_thumbnail_shadow_t *shadow);
+
 gfx_thumbnail_state_t *gfx_thumb_get_ptr(void);
 
 RETRO_END_DECLS

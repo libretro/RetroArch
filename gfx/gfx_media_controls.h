@@ -12,7 +12,7 @@ struct gfx_anim_preview_audio_track;
 typedef struct gfx_media_rect { int x, y, w, h; } gfx_media_rect_t;
 typedef struct gfx_media_layout
 {
-   gfx_media_rect_t panel, timeline, buttons[9];
+   gfx_media_rect_t panel, timeline, buttons[10];
    int unit;
    unsigned button_count;
 } gfx_media_layout_t;
@@ -37,6 +37,8 @@ typedef struct gfx_media_target
    bool (*step)(void *user, int direction);
    void *settings_user;
    bool (*settings)(void *user);
+   bool (*shaders)(void *user);
+   bool image;
    const char *source_path; /* main thread, immutable session path */
    const struct gfx_anim_preview_audio_track *audio_tracks;
    bool (*select_audio)(void *user, int index, int64_t now);
@@ -75,7 +77,7 @@ typedef struct gfx_media_view
    unsigned audio_track_number;
    int hover;
    bool visible, row_focus, dragging, subtitle_tracks;
-   bool settings_preview, audio_tracks;
+   bool settings_preview, audio_tracks, shaders, image;
    char audio_language[64];
 } gfx_media_view_t;
 typedef struct gfx_media_mailbox

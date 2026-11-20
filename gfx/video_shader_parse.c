@@ -4148,14 +4148,13 @@ bool video_shader_apply_shader(
    char msg[NAME_MAX_LENGTH];
    video_driver_state_t *video_st = video_state_get_ptr();
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
-   const char      *core_name     = runloop_st->system.info.library_name;
    const char      *preset_file   = NULL;
 #ifdef HAVE_MENU
    struct video_shader *shader    = menu_shader_get();
 #endif
 
-   /* Disallow loading shaders when no core is loaded */
-   if (!core_name || !*core_name)
+   /* Fullscreen media can use the live video driver without a core. */
+   if (!video_st->current_video || !video_st->data)
       return false;
 
    if (preset_path && *preset_path)

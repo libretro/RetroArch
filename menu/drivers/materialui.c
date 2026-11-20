@@ -8442,7 +8442,7 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
                NULL);
 
          /* Thumbnail */
-         gfx_thumbnail_draw(
+         gfx_thumbnail_draw_shader(
                userdata,
                video_dims,
                primary_thumbnail,
@@ -8478,7 +8478,7 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
                NULL);
 
          /* Thumbnail */
-         gfx_thumbnail_draw(
+         gfx_thumbnail_draw_shader(
                userdata,
                video_dims,
                secondary_thumbnail,
@@ -8933,7 +8933,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       unsigned preview_height = video_height / 4;
       unsigned right = video_width > VIDEO_SCALE_W(mui->nav_bar_layout_dims)
          ? video_width - VIDEO_SCALE_W(mui->nav_bar_layout_dims) : video_width;
-      gfx_thumbnail_draw(userdata, video_info->dims, &mui->browser_thumbnail,
+      gfx_thumbnail_draw_shader(userdata, video_info->dims, &mui->browser_thumbnail,
             (float)(right > preview_width ? right - preview_width : 0),
             (float)(video_height - preview_height) / 2.0f,
             VIDEO_SCALE_PACK(preview_width, preview_height), GFX_THUMBNAIL_ALIGN_CENTRE,

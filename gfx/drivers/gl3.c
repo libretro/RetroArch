@@ -147,6 +147,9 @@ typedef struct gl3
    bool present_vsynced;
    gl3_filter_chain_t *filter_chain;
    gl3_filter_chain_t *filter_chain_default;
+   gl3_filter_chain_t *media_shader_chain;
+   uint64_t media_shader_frame;
+   bool media_shader_enabled;
    /* Views: one chain per view for the preset and for the stock
     * shader, the preset they came from, and each view's copy of its
     * rectangle of the frame. count is what set_view_count last asked
@@ -2497,6 +2500,10 @@ static void gl3_destroy_resources(gl3_t *gl)
       gl3_filter_chain_free(gl->filter_chain_default);
 #endif
    gl->filter_chain_default = NULL;
+#ifdef HAVE_SLANG
+   gl3_filter_chain_free(gl->media_shader_chain);
+#endif
+   gl->media_shader_chain = NULL;
 
 #ifdef HAVE_SLANG
    gl3_views_free_chains(gl, 0, true);
@@ -3297,6 +3304,8 @@ static void gl3_views_set_preset(gl3_t *gl, const char *path)
    strlcpy(gl->views.preset, path ? path : "", sizeof(gl->views.preset));
    gl3_views_free_chains(gl, 0, true);
    gl3_views_build_chains(gl);
+   gl3_filter_chain_free(gl->media_shader_chain);
+   gl->media_shader_chain = NULL;
 }
 
 static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
@@ -3328,6 +3337,9 @@ static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
    }
 
    gl3_views_set_preset(gl, shader_path);
+   gl->media_shader_chain = gl3_filter_chain_create_from_preset(shader_path,
+         gl->video_info.smooth ? GLSLANG_FILTER_CHAIN_LINEAR : GLSLANG_FILTER_CHAIN_NEAREST,
+         false, false);
 
    return true;
 }
@@ -4656,6 +4668,8 @@ typedef struct gl3_deferred_state
 {
    gl3_filter_chain_t *new_chain;   /* chain being built          */
    gl3_filter_chain_t *old_chain;   /* previous, kept as fallback */
+   gl3_filter_chain_t *media_chain;
+   unsigned core_passes, media_passes;
    enum glslang_filter_chain_filter filter;
 } gl3_deferred_state_t;
 
@@ -4688,14 +4702,12 @@ static bool gl3_shader_load_begin(void *data,
          (gl->flags & GL3_FLAG_HW_RENDER_ENABLE) != 0,
          &deferred->total_passes);
 
-   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
-         && !gl3_core_context_is_mains(gl))
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
-
    if (!ds->new_chain)
    {
       RARCH_ERR("[GLCore] Deferred: failed to create chain for \"%s\".\n",
             deferred->preset_path);
+      if ((gl->flags & GL3_FLAG_USE_SHARED_CONTEXT) && !gl3_core_context_is_mains(gl))
+         gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
       free(ds);
       return false;
    }
@@ -4706,9 +4718,30 @@ static bool gl3_shader_load_begin(void *data,
    {
       RARCH_ERR("[GLCore] Shader HDR encoding requires a matching output.\n");
       gl3_filter_chain_free(ds->new_chain);
+      if ((gl->flags & GL3_FLAG_USE_SHARED_CONTEXT) && !gl3_core_context_is_mains(gl))
+         gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
       free(ds);
       return false;
    }
+
+   ds->core_passes = deferred->total_passes;
+   ds->media_chain = gl3_filter_chain_create_deferred(deferred->preset_path,
+         ds->filter, false, &ds->media_passes);
+   if (!ds->media_chain)
+   {
+      gl3_filter_chain_free(ds->new_chain);
+      if ((gl->flags & GL3_FLAG_USE_SHARED_CONTEXT) && !gl3_core_context_is_mains(gl))
+         gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+      free(ds);
+      return false;
+   }
+   deferred->total_passes += ds->media_passes;
+
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+
+
 
    RARCH_LOG("[GLCore] Deferred: prepared %u passes for \"%s\".\n",
          deferred->total_passes, deferred->preset_path);
@@ -4738,7 +4771,9 @@ static bool gl3_shader_load_step(void *data,
       RARCH_LOG("[GLCore] Deferred: compiling pass %u/%u...\n",
             pass + 1, deferred->total_passes);
 
-      if (!gl3_filter_chain_compile_pass(ds->new_chain, pass, ds->filter))
+      if (!gl3_filter_chain_compile_pass(
+               pass < ds->core_passes ? ds->new_chain : ds->media_chain,
+               pass < ds->core_passes ? pass : pass - ds->core_passes, ds->filter))
       {
          RARCH_ERR("[GLCore] Deferred: failed to compile pass %u.\n", pass);
          gl3_filter_chain_free(ds->new_chain);
@@ -4771,7 +4806,8 @@ static bool gl3_shader_load_step(void *data,
    /* All passes compiled — finalize the chain */
    RARCH_LOG("[GLCore] Deferred: finalizing chain...\n");
 
-   if (gl3_filter_chain_finalize(ds->new_chain))
+   if (gl3_filter_chain_finalize(ds->new_chain)
+         && gl3_filter_chain_finalize(ds->media_chain))
    {
       /* Tear down old chain */
       if (ds->old_chain)
@@ -4782,6 +4818,8 @@ static bool gl3_shader_load_step(void *data,
       deferred->state  = SHADER_LOAD_DONE;
 
       gl3_views_set_preset(gl, deferred->preset_path);
+      gl->media_shader_chain = ds->media_chain;
+      ds->media_chain = NULL;
 
       RARCH_LOG("[GLCore] Deferred: shader loaded successfully.\n");
    }
@@ -4794,6 +4832,7 @@ static bool gl3_shader_load_step(void *data,
    }
 
 cleanup:
+   gl3_filter_chain_free(ds->media_chain);
    if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
          && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
@@ -7183,6 +7222,8 @@ static bool gl3_frame(void *data, const void *frame,
    gl->scrgb.content_hdr_mode = gl->video_info.source_fp16 ? 2 :
       (gl->video_info.source_hdr10 ? 1 : 0);
 #ifdef HAVE_SLANG
+   gl->media_shader_enabled = video_info->shader_active;
+   gl->media_shader_frame = frame_count;
    if (video_info->shader_active && gl->filter_chain)
    {
       int mode = video_shader_get_hdr_mode(
@@ -9406,6 +9447,68 @@ static void gfx_display_gl3_bloom_composite(void *data, unsigned dims)
 }
 #endif
 
+#ifdef HAVE_SLANG
+static bool gfx_display_gl3_media_shader_draw(void *data, uintptr_t image,
+      unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
+{
+   gl3_t *gl = (gl3_t*)data;
+   gl3_filter_chain_t *chain;
+   struct gl3_filter_chain_texture texture;
+   struct gl3_viewport vp;
+   math_matrix_4x4 mvp;
+   struct video_shader *live, *preset;
+   GLint target, viewport[4], format;
+   GLboolean blend, scissor;
+   unsigned i;
+   (void)video_dims;
+   if (!gl || !gl->media_shader_enabled || !(chain = gl->media_shader_chain)
+         || !image || !VIDEO_SCALE_W(source_dims) || !VIDEO_SCALE_H(source_dims))
+      return false;
+   live = gl3_filter_chain_get_preset(gl->filter_chain);
+   preset = gl3_filter_chain_get_preset(chain);
+   if (live && preset && live->num_parameters == preset->num_parameters)
+      for (i = 0; i < live->num_parameters; i++)
+         video_shader_param_set(&preset->parameters[i],
+               video_shader_param_get(&live->parameters[i]));
+   glGetIntegerv(GL_FRAMEBUFFER_BINDING, &target);
+   glGetIntegerv(GL_VIEWPORT, viewport);
+   blend = glIsEnabled(GL_BLEND);
+   scissor = glIsEnabled(GL_SCISSOR_TEST);
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, (GLuint)image);
+#ifndef HAVE_OPENGLES
+   glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
+#else
+   format = GL_RGBA8;
+#endif
+   texture.image = (GLuint)image;
+   texture.dims = source_dims;
+   texture.padded_dims = source_dims;
+   texture.origin = 0;
+   texture.format = (GLenum)format;
+   vp.pos = pos;
+   vp.dims = dims;
+   glDisable(GL_BLEND);
+   glDisable(GL_SCISSOR_TEST);
+   gl3_filter_chain_set_frame_count(chain, gl->media_shader_frame);
+   gl3_filter_chain_set_frame_direction(chain, 1);
+   gl3_filter_chain_set_rotation(chain, 0);
+   gl3_filter_chain_set_core_aspect(chain,
+         (float)VIDEO_SCALE_W(source_dims) / VIDEO_SCALE_H(source_dims));
+   gl3_filter_chain_set_input_texture(chain, &texture);
+   gl3_filter_chain_build_offscreen_passes(chain, &vp);
+   glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)target);
+   matrix_4x4_ortho(mvp, 0, 1, 1, 0, -1, 1);
+   gl3_filter_chain_build_viewport_pass(chain, &vp, mvp.data);
+   gl3_filter_chain_end_frame(chain);
+   glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)target);
+   glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+   if (blend) glEnable(GL_BLEND);
+   if (scissor) glEnable(GL_SCISSOR_TEST);
+   return true;
+}
+#endif
+
 gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    gfx_display_gl3_draw,
    gfx_display_gl3_draw_pipeline,
@@ -9434,7 +9537,12 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    NULL, NULL, NULL,
 #endif
 #if defined(HAVE_SHADERPIPELINE) && (defined(HAVE_SLANG) || defined(HAVE_GLSL))
-   gfx_display_gl3_effect_install
+   gfx_display_gl3_effect_install,
+#else
+   NULL,
+#endif
+#ifdef HAVE_SLANG
+   gfx_display_gl3_media_shader_draw
 #else
    NULL
 #endif
