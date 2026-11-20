@@ -66,6 +66,7 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
+#include "../../audio/audio_driver.h"
 #include "../input_driver.h"
 #include "android_pointers.h"
 
@@ -827,6 +828,10 @@ void android_input_flush_pending_state(void)
    if (!android_state_flushed)
    {
       android_state_flushed = true;
+      /* Stopped before the save, which can take a while: a device left
+       * running through it underruns and stutters on the way out */
+      if (runloop_get_flags() & RUNLOOP_FLAG_IDLE)
+         audio_driver_set_away(true);
       retroarch_save_for_suspend();
    }
 
@@ -1080,6 +1085,10 @@ static void android_input_poll_main_cmd(void)
 
          if (cmd == APP_CMD_PAUSE)
          {
+            /* Away from here: the focus loss comes only once onPause()
+             * has returned, which is after the flush, so the core and
+             * the audio device are stopped for it now */
+            runloop_set_platform_paused(true);
             android_state_flush_pending = true;
             retro_atomic_store_release_int(&android_keypress_vibrate_pending, 0);
             if (hold_ack)
@@ -1087,6 +1096,11 @@ static void android_input_poll_main_cmd(void)
          }
          else
          {
+            /* A pause the focus never followed ends here; one it did
+             * ends with the focus gain */
+            if (     cmd == APP_CMD_RESUME
+                  && !retro_atomic_load_acquire_int(&android_app->unfocused))
+               runloop_set_platform_paused(false);
             /* A callback still waiting on a held-back acknowledgement
              * has timed out by now; this state supersedes it. */
             android_state_flush_pending = false;

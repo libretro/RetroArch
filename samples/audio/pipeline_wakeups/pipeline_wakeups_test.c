@@ -1174,6 +1174,19 @@ static void menu_source_away(void)
       fputs("menu audio kept the device playing while away\n", stderr);
       fixture_failures++;
    }
+   /* Started while away, as the background save or a reinit can: the
+    * runloop sees the away state cleared and stops it again */
+   stops = retro_atomic_load_acquire_int(&dev_stops);
+   before = retro_atomic_load_acquire_size(&cnt_writes);
+   if (!audio_driver_start(false) || st->away) fixture_failures++;
+   if (!wait_progress(wrote_since, &before)) fixture_failures++;
+   audio_driver_set_away(true);
+   if (     retro_atomic_load_acquire_int(&dev_stops) != stops + 1
+         || !device_quiet())
+   {
+      fputs("a device started while away kept playing\n", stderr);
+      fixture_failures++;
+   }
    before = retro_atomic_load_acquire_size(&cnt_writes);
    audio_driver_set_away(false);
    if (!wait_progress(wrote_since, &before))

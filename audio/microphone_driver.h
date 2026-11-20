@@ -610,6 +610,10 @@ typedef struct microphone_driver_state
    enum resampler_quality resampler_quality;
 
    char resampler_ident[64];
+
+   /* Main thread: the microphone was stopped by audio_driver_set_away()
+    * and is started again when the application comes back. */
+   bool away_stopped;
 } microphone_driver_state_t;
 
 /**

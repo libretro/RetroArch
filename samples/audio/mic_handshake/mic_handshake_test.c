@@ -168,7 +168,8 @@ static bool  mdev_alive(const void *d, const void *m) { (void)d; (void)m; return
 /* Main thread only: the frontend starts and stops, the worker never does. */
 static unsigned n_mdev_start;
 static bool  mdev_start(void *d, void *m)    { (void)d; (void)m; n_mdev_start++; return true; }
-static bool  mdev_stop(void *d, void *m)     { (void)d; (void)m; return true; }
+static unsigned n_mdev_stop;
+static bool  mdev_stop(void *d, void *m)     { (void)d; (void)m; n_mdev_stop++; return true; }
 /* What open reports - zero for the rate asked - and the device format;
  * the resampler choice case is the only one to change them. */
 static unsigned mdev_rate;
@@ -549,6 +550,54 @@ static void resume_case(void)
       printf("mic resume: the menu leaves the microphone as the core set it\n");
 }
 
+/* The platform takes the application away: the runloop asks for it on
+ * every iteration while away, and an open microphone has to stop once
+ * and come back once on return. One the core had off is left alone
+ * both ways. */
+static void away_case(void)
+{
+   unsigned failed = failures;
+
+   if (!mic_up(32))
+   {
+      printf("FAIL mic away: could not bring the microphone up\n");
+      failures++;
+      return;
+   }
+
+   n_mdev_start = n_mdev_stop = 0;
+   audio_driver_set_away(true);
+   audio_driver_set_away(true);
+   if (n_mdev_stop != 1 || n_mdev_start)
+   {
+      printf("FAIL mic away: the microphone kept capturing while away"
+            " (%u device stops)\n", n_mdev_stop);
+      failures++;
+   }
+   audio_driver_set_away(false);
+   if (n_mdev_start != 1 || !microphone_driver_get_mic_state(the_mic))
+   {
+      printf("FAIL mic away: the microphone did not come back"
+            " (%u device starts)\n", n_mdev_start);
+      failures++;
+   }
+
+   microphone_driver_set_mic_state(the_mic, false);
+   n_mdev_start = n_mdev_stop = 0;
+   audio_driver_set_away(true);
+   audio_driver_set_away(false);
+   if (n_mdev_start || microphone_driver_get_mic_state(the_mic))
+   {
+      printf("FAIL mic away: a microphone the core had off came back on"
+            " (%u device starts)\n", n_mdev_start);
+      failures++;
+   }
+
+   mic_down();
+   if (failures == failed)
+      printf("mic away: stopped once while away, back as the core set it\n");
+}
+
 /* Only the resampler the flush will use is built: none when the device
  * runs at the core's rate, the integer one for an int16 device at
  * another, the float one for a float device. The int16 one still
@@ -760,6 +809,7 @@ int main(int argc, char **argv)
    free(lat_us);
    teardown_case();
    resume_case();
+   away_case();
    resampler_choice_case();
    printf("mic handshake: baseline taken\n");
    return failures ? 1 : 0;

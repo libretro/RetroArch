@@ -887,8 +887,9 @@ typedef struct
    retro_time_t menu_feed_last;
    double menu_feed_frac;
    bool menu_source_enabled;
-   /* Main thread: the device was stopped by audio_driver_set_away() and
-    * is started again when the application comes back. */
+   /* Main thread: audio_driver_set_away(true) is in effect, and the
+    * device was stopped by it and is started again on return. */
+   bool away;
    bool away_stopped;
 
    /* Rate-limit state for the DRC compute.
@@ -1564,9 +1565,10 @@ bool audio_driver_stop(void);
  * Main thread, outside the core. A device left playing while the
  * application is away holds the platform's audio wake lock and keeps it
  * from suspending, whether it is fed silence by the threaded pipeline's
- * menu source or by a driver's own data callback. A running device is
- * stopped while away and started again on return; one already stopped
- * stays stopped.
+ * menu source or by a driver's own data callback. A running device and an open
+ * microphone are stopped while away and started again on return; one
+ * already stopped stays stopped. A device started while away clears
+ * the away state, so the next call stops it again.
  **/
 void audio_driver_set_away(bool away);
 

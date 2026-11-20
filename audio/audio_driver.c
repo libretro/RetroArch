@@ -5260,6 +5260,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       audio_driver_deinit_for_reinit();
    /* A device brought up while away is stopped again before the
     * runloop next waits */
+   audio_driver_st.away         = false;
    audio_driver_st.away_stopped = false;
 
    convert_s16_to_float_init_simd();
@@ -10906,6 +10907,10 @@ bool audio_driver_start(bool is_shutdown)
       AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_STARTED);
       goto error;
    }
+   /* Started while away, by a reinit or by the background save: the
+    * runloop stops it again before it next waits */
+   audio_st->away         = false;
+   audio_st->away_stopped = false;
 
    if (!is_shutdown)
       RARCH_DBG("[Audio] Started audio driver: \"%s\".\n",
@@ -11979,19 +11984,46 @@ bool audio_driver_stop(void)
 void audio_driver_set_away(bool away)
 {
    audio_driver_state_t *audio_st = &audio_driver_st;
+#ifdef HAVE_MICROPHONE
+   microphone_driver_state_t *mic_st = &mic_driver_st;
+   retro_microphone_t    *microphone = &mic_st->microphone;
+#endif
+   audio_st->away = away;
    if (away)
    {
       if (     !audio_st->away_stopped
             && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_STARTED)
             && audio_driver_stop())
          audio_st->away_stopped = true;
+#ifdef HAVE_MICROPHONE
+      /* A capture stream left open records in the background and keeps
+       * the device awake as playback does */
+      if (     !mic_st->away_stopped
+            && mic_st->driver
+            && mic_st->driver_context
+            && (microphone->flags & (MICROPHONE_FLAG_ACTIVE
+                  | MICROPHONE_FLAG_ENABLED | MICROPHONE_FLAG_PENDING))
+               == (MICROPHONE_FLAG_ACTIVE | MICROPHONE_FLAG_ENABLED)
+            && mic_st->driver->mic_alive(mic_st->driver_context,
+               microphone->microphone_context)
+            && microphone_driver_stop())
+         mic_st->away_stopped = true;
+#endif
+      return;
    }
-   else if (audio_st->away_stopped)
+   if (audio_st->away_stopped)
    {
       audio_st->away_stopped = false;
       if (audio_st->context_audio_data)
          audio_driver_start(false);
    }
+#ifdef HAVE_MICROPHONE
+   if (mic_st->away_stopped)
+   {
+      mic_st->away_stopped = false;
+      microphone_driver_start();
+   }
+#endif
 }
 
 #ifdef HAVE_REWIND
