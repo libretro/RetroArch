@@ -12268,7 +12268,7 @@ OZONE_NOINLINE static void ozone_draw_header(
       float text_offset    = ozone->dimensions.entry_spacing * 3.0f;
       const char *timedate = menu_display_timedate(
             video_info->menu.timedate_style,
-            video_info->menu.timedate_date_separator, NULL);
+            video_info->menu.timedate_date_separator, NULL, NULL);
 
       if (!timedate_offset)
          timedate_offset = header_margin;

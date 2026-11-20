@@ -369,6 +369,8 @@ typedef struct xmb_handle
    retro_time_t current_menu_icon_retry_until;
 
    char *bg_file_path;
+   /* The font the clock's cached width was measured with */
+   const void *timedate_font;
 
    file_list_t horizontal_list;   /* ptr alignment */
    /* Maps console tabs to playlist database names */
@@ -457,6 +459,10 @@ typedef struct xmb_handle
    unsigned categories_active_idx;
    unsigned categories_active_idx_old;
    unsigned ticker_limit;
+   /* The clock's width, at timedate_gen with timedate_font at
+    * timedate_font_size; drawing thread only */
+   unsigned timedate_gen;
+   int timedate_width;
 
    float fullscreen_thumbnail_alpha;
    float x;
@@ -469,6 +475,8 @@ typedef struct xmb_handle
    float shadow_offset;
    float font_size;
    float font2_size;
+   /* The font size the clock's cached width was measured at */
+   float timedate_font_size;
    float last_scale_factor;
    /* Snapshot of menu_scale_factor clamped to a floor of 1, taken by
     * xmb_layout() at the same time as scale_mod and the margins. The
@@ -9847,6 +9855,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       const char *timedate;
       size_t _len        = 0;
+      unsigned gen       = 0;
       size_t x_pos       = 0;
       float scale_factor = xmb->scale_cap;
       float icon_size    = (!xmb->assets_missing) ? xmb->icon_size * 0.90f : 0;
@@ -9887,10 +9896,20 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       }
 
       timedate = menu_display_timedate(video_info->menu.timedate_style,
-            video_info->menu.timedate_date_separator, &_len);
+            video_info->menu.timedate_date_separator, &_len, &gen);
 
-      title_header_max_width = x_pos + font_driver_get_message_width(
-            xmb->font, timedate, _len, 1.0f);
+      /* Measured again only when the text or the font changes */
+      if (     gen                 != xmb->timedate_gen
+            || (const void*)xmb->font != xmb->timedate_font
+            || xmb->font_size      != xmb->timedate_font_size)
+      {
+         xmb->timedate_width     = font_driver_get_message_width(
+               xmb->font, timedate, _len, 1.0f);
+         xmb->timedate_gen       = gen;
+         xmb->timedate_font      = xmb->font;
+         xmb->timedate_font_size = xmb->font_size;
+      }
+      title_header_max_width = x_pos + xmb->timedate_width;
 
       xmb_draw_text(shadows_enable, xmb, video_info, timedate,
             video_width - xmb->margins_title_left - x_pos

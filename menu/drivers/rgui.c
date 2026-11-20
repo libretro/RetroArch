@@ -6970,7 +6970,7 @@ static void rgui_render(void *data, unsigned dims,
                   settings->uints.menu_timedate_style,
                   settings->bools.menu_timedate_12hour,
                   menu_state_get_ptr()->timedate_zone_order),
-               settings->uints.menu_timedate_date_separator, NULL);
+               settings->uints.menu_timedate_date_separator, NULL, NULL);
          timedate_len = utf8len(timedate);
 
          /* Add battery spacer */

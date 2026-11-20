@@ -178,7 +178,6 @@
 #define MUI_NAV_BAR_NUM_ACTION_TABS 2
 
 #define MUI_BATTERY_PERCENT_MAX_LENGTH 12
-#define MUI_TIMEDATE_MAX_LENGTH        255
 
 /* Maximum number of playlist tabs whose last-selected
  * entry index can be cached in mui->playlist_selection[].
@@ -546,8 +545,9 @@ typedef struct
 {
    int battery_percent_width;
    int timedate_width;
+   /* The clock text timedate_width was measured for; 0 for none */
+   unsigned timedate_gen;
    char battery_percent_str[MUI_BATTERY_PERCENT_MAX_LENGTH];
-   char timedate_str[MUI_TIMEDATE_MAX_LENGTH];
 } materialui_sys_bar_cache_t;
 
 /* This structure holds all runtime parameters
@@ -7508,25 +7508,17 @@ MUI_NOINLINE static void materialui_render_header(
    /* > Draw clock (if required) */
    if (menu_timedate_enable)
    {
+      size_t timedate_len;
+      unsigned timedate_gen;
       const char *timedate_str = menu_display_timedate(menu_timedate_style,
-            menu_timedate_date_separator, NULL);
+            menu_timedate_date_separator, &timedate_len, &timedate_gen);
 
-      /* Need to determine pixel width of time string
-       * > This is somewhat expensive, so utilise a cache
-       *   and only update when the string actually changes */
-      if (!string_is_equal(timedate_str, mui->sys_bar_cache.timedate_str))
+      /* Measuring is expensive: only when the text changes */
+      if (timedate_gen != mui->sys_bar_cache.timedate_gen)
       {
-         /* Cache new string */
-         size_t _len = strlcpy(mui->sys_bar_cache.timedate_str, timedate_str,
-               sizeof(mui->sys_bar_cache.timedate_str));
-
-         /* Cache width */
-         mui->sys_bar_cache.timedate_width
-            = font_driver_get_message_width(
-               mui->font_data.hint.font,
-               mui->sys_bar_cache.timedate_str,
-               _len,
-               1.0f);
+         mui->sys_bar_cache.timedate_gen   = timedate_gen;
+         mui->sys_bar_cache.timedate_width = font_driver_get_message_width(
+               mui->font_data.hint.font, timedate_str, timedate_len, 1.0f);
       }
 
       /* Draw time string */
@@ -7539,7 +7531,7 @@ MUI_NOINLINE static void materialui_render_header(
             sys_bar_clock_width += mui->sys_bar_margin;
 
          gfx_display_draw_text(mui->font_data.hint.font,
-               mui->sys_bar_cache.timedate_str,
+               timedate_str,
                (int)video_width - (
                     (int)sys_bar_clock_width
                   + (int)sys_bar_battery_width
@@ -9974,7 +9966,7 @@ static void materialui_layout(materialui_handle_t *mui,
     * size will change) */
    mui->sys_bar_cache.battery_percent_str[0] = '\0';
    mui->sys_bar_cache.battery_percent_width  = 0;
-   mui->sys_bar_cache.timedate_str[0]        = '\0';
+   mui->sys_bar_cache.timedate_gen           = 0;
    mui->sys_bar_cache.timedate_width         = 0;
 
    materialui_update_list_view(mui, menu_st, settings);

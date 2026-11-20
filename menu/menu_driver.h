@@ -799,10 +799,11 @@ void menu_driver_context_rebuild(void);
 retro_time_t menu_driver_get_current_time(void);
 
 /* The clock in @style with @separator, rebuilt once a second or when
- * either changes. Returns the string, valid until the next call, and
- * its length in @len if not NULL. Drawing thread only. */
+ * either changes. Returns the string, valid until the next call; its
+ * length goes in @len and in @gen a number, never zero, that moves only
+ * when the text does, either one when not NULL. Drawing thread only. */
 const char *menu_display_timedate(unsigned style, unsigned separator,
-      size_t *len);
+      size_t *len, unsigned *gen);
 
 size_t menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate, char *s, size_t len);
 

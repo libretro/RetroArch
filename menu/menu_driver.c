@@ -840,10 +840,15 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
 }
 
 const char *menu_display_timedate(unsigned style, unsigned separator,
-      size_t *len)
+      size_t *len, unsigned *gen)
 {
-   static char datetime_cache[64];
-   static size_t datetime_len;
+   /* Two strings: the next is written beside the shown one and taken
+    * only when it reads differently, which is when the generation
+    * moves */
+   static char datetime_cache[2][64];
+   static size_t datetime_len[2];
+   static unsigned datetime_shown;
+   static unsigned datetime_gen       = 1;
    static retro_time_t datetime_last_time_us;
    static unsigned datetime_style     = MENU_TIMEDATE_STYLE_LAST;
    static unsigned datetime_separator = MENU_TIMEDATE_DATE_SEPARATOR_LAST;
@@ -857,17 +862,29 @@ const char *menu_display_timedate(unsigned style, unsigned separator,
    {
       time_t time_;
       struct tm tm_;
+      unsigned next         = datetime_shown ^ 1;
       datetime_last_time_us = menu_st->current_time_us;
       datetime_style        = style;
       datetime_separator    = separator;
       time(&time_);
       rtime_localtime(&time_, &tm_);
-      datetime_len          = menu_timedate_format(datetime_cache,
-            sizeof(datetime_cache), style, separator, &tm_);
+      datetime_len[next]    = menu_timedate_format(datetime_cache[next],
+            sizeof(datetime_cache[next]), style, separator, &tm_);
+      if (     datetime_len[next] != datetime_len[datetime_shown]
+            || memcmp(datetime_cache[next], datetime_cache[datetime_shown],
+                  datetime_len[next]))
+      {
+         datetime_shown = next;
+         /* Zero is left for a cache that holds nothing */
+         if (!++datetime_gen)
+            datetime_gen = 1;
+      }
    }
    if (len)
-      *len = datetime_len;
-   return datetime_cache;
+      *len = datetime_len[datetime_shown];
+   if (gen)
+      *gen = datetime_gen;
+   return datetime_cache[datetime_shown];
 }
 
 /* Display current (battery) power state */
