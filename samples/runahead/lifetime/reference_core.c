@@ -258,6 +258,7 @@ size_t retro_serialize_size(void)
 
 bool retro_serialize(void *data, size_t size)
 {
+   CHECK(!is_case("background_save") || ON_CORE_THREAD());
    CHECK(!managed() || ON_CORE_THREAD());
    if (managed())
    {
@@ -292,6 +293,7 @@ bool retro_serialize(void *data, size_t size)
 
 bool retro_unserialize(const void *data, size_t size)
 {
+   CHECK(!is_case("background_save") || ON_CORE_THREAD());
    CHECK(!managed() || ON_CORE_THREAD());
    if (managed())
    {

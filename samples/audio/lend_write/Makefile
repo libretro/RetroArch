@@ -66,7 +66,7 @@ endif
 
 ifeq ($(PYROWAVE),1)
 CFLAGS += -DHAVE_PYROWAVE
-SOURCES_C += $(CORE_DIR)/record/record_pyrowave_clock.c $(CORE_DIR)/record/record_pyrowave_audio_clock.c
+SOURCES_C += $(CORE_DIR)/record/record_audio_tap.c $(CORE_DIR)/record/record_pyrowave_clock.c $(CORE_DIR)/record/record_pyrowave_audio_clock.c
 TARGET := pyrowave_output_test
 SAMPLE_OBJDIR := obj-pyrowave
 OBJS := $(addprefix $(SAMPLE_OBJDIR)/,$(subst ../,__/,$(SOURCES_C:.c=.o)))

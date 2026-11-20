@@ -50,6 +50,9 @@
 #include "../runloop.h"
 #include "../verbosity.h"
 #include "tasks_internal.h"
+#ifdef HAVE_RUNAHEAD
+#include "../runahead.h"
+#endif
 
 #ifdef __EMSCRIPTEN__
 /* Use huge chunks since each read/write is a possible suspend to
@@ -2255,7 +2258,13 @@ bool content_save_state_notify(const char *path, bool save_to_disk,
       return true;
    }
 
-   if (!save_state_in_background)
+   /* Managed serialization uses the core thread's context and lifetime.
+    * Capture ordinary slot states there too; only file I/O is deferred. */
+   if (!save_state_in_background
+#ifdef HAVE_RUNAHEAD
+         || serialization_lifetime_active()
+#endif
+      )
    {
       if (!(data = content_get_serialized_data(&_len)))
       {

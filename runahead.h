@@ -60,6 +60,7 @@ RETRO_BEGIN_DECLS
 enum retro_execution_phase runahead_get_execution_phase(void);
 bool serialization_register(const struct retro_savestate_lifetime *iface);
 bool serialization_owned_context(void);
+bool serialization_lifetime_active(void);
 void serialization_clear_history(void);
 void serialization_close(void);
 

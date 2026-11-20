@@ -71,6 +71,11 @@ enum retro_execution_phase runahead_get_execution_phase(void)
    return serialization_phase_value;
 }
 
+bool serialization_lifetime_active(void)
+{
+   return serialization_interface.release != NULL;
+}
+
 bool serialization_owned_context(void)
 {
    return serialization_managed;
