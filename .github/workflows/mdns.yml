@@ -49,6 +49,27 @@ jobs:
       - name: Strict C89 engine regressions with sanitizers
         run: make -C libretro-common/samples/net/mdns clean check demo CC=${{ matrix.cc }} OPTIMIZE=-O${{ matrix.opt }} SANITIZER=address,undefined
 
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: C89 engine and BSD multicast adapter
+        run: make -C libretro-common/samples/net/mdns clean check demo CC=clang
+
+  freebsd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: vmactions/freebsd-vm@v1
+        with:
+          release: "14.3"
+          usesh: true
+          copyback: false
+          prepare: pkg install -y gmake
+          run: gmake -C libretro-common/samples/net/mdns clean check demo CC=clang
+
   msvc:
     runs-on: windows-latest
     timeout-minutes: 5

@@ -2,14 +2,15 @@
 #if defined(HAVE_MDNS) && ((defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX) \
       && (!defined(_WIN32_WINNT) || _WIN32_WINNT >= 0x0600)) \
       || defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__))
-#ifndef _WIN32
+#if defined(__linux__)
+/* BSD multicast APIs are hidden by strict POSIX feature selection. */
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
 #endif
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE 1
 #endif
-#else
+#elif defined(_WIN32)
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0600
 #endif
