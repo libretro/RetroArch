@@ -67,8 +67,11 @@ ifeq ($(TEST_KEY),1)
 endif
 LIBS += -lm
 # The slice clock, so a lane can cancel a restore part-way through its
-# check
-LDFLAGS += -Wl,--wrap=cpu_features_get_time_usec
+# check; the VFS copy, so a lane can take the buffered restore a
+# compressed backup takes (no zlib here); the file hash, to count reads
+LDFLAGS += -Wl,--wrap=cpu_features_get_time_usec \
+           -Wl,--wrap=filestream_copy_begin \
+           -Wl,--wrap=core_hash_step
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 

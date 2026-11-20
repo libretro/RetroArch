@@ -21,11 +21,24 @@ struct core_install_check
    core_file_t *f;
    int step;
    bool hashing;
+   /* Fed by core_install_check_stream() as the staged file was written */
+   bool streamed;
 };
 
 /* False when c.result is final already: ERROR, or OK with checks off.
  * The newest builds it compares are install_path's folder's. */
 bool core_install_check_begin(struct core_install_check *ic,
+      const core_trust_set_t *s, const char *staged,
+      const char *install_path);
+/* For a copy that hands its bytes over as it writes the staged file:
+ * they are hashed as they pass, so the file isn't read again. Init
+ * before the first byte, stream each one written, in order, then
+ * begin_streamed in place of begin once the file is closed; step and
+ * end as usual (step is done at once). */
+void core_install_check_stream_init(struct core_install_check *ic);
+void core_install_check_stream(struct core_install_check *ic,
+      const void *data, size_t len);
+bool core_install_check_begin_streamed(struct core_install_check *ic,
       const core_trust_set_t *s, const char *staged,
       const char *install_path);
 /* One chunk; true once the file is read or failed */

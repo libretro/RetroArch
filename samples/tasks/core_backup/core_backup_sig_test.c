@@ -164,6 +164,33 @@ retro_time_t __wrap_cpu_features_get_time_usec(void)
    return g_clock_now += g_clock_step;
 }
 
+/* The VFS copy, wrapped (Makefile.sig): refused, a restore copies
+ * through its buffer, as it does from a compressed backup */
+static bool g_copy_refused;
+
+struct retro_vfs_copy_handle;
+struct retro_vfs_copy_handle *__real_filestream_copy_begin(
+      const char *src_path, const char *dst_path, unsigned flags);
+
+struct retro_vfs_copy_handle *__wrap_filestream_copy_begin(
+      const char *src_path, const char *dst_path, unsigned flags)
+{
+   if (g_copy_refused)
+      return NULL;
+   return __real_filestream_copy_begin(src_path, dst_path, flags);
+}
+
+/* The file hash, wrapped: each chunk read from a file to hash */
+static unsigned g_hash_reads;
+
+int __real_core_hash_step(struct core_hash *h, core_file_t *f);
+
+int __wrap_core_hash_step(struct core_hash *h, core_file_t *f)
+{
+   g_hash_reads++;
+   return __real_core_hash_step(h, f);
+}
+
 /* core_trust_default_path's folder, here the test's own */
 bool fill_pathname_application_data(char *s, size_t len)
 {
@@ -827,6 +854,58 @@ static void test_trust_backup_gone(void)
 
 /* Trusted by its hash (test_trust_drops_failed_sig): a .sig placed
  * beside a restored core must still verify on its own */
+/* Copied through the buffer: hashed as it is written, never read back,
+ * with the same outcomes as a check that reads the staged file */
+static void test_restore_streamed(void)
+{
+   char b[300];
+   printf("[restore through the buffer: hashed as written]\n");
+   g_copy_refused = true;
+   install_old();
+   make_backup(b, sizeof(b), g_backups, fx_core, FX_CORE_SIZE,
+         fx_sig_good, sizeof(fx_sig_good));
+   g_hash_reads = 0;
+   CHECK(restore(b, true));
+   CHECK(g_hash_reads == 0);
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(same(g_core_sig, fx_sig_good, sizeof(fx_sig_good)));
+   CHECK(!path_is_directory(g_restore_dir));
+   CHECK(!core_warning_pending(NULL, NULL));
+
+   printf("[install through the buffer, older .sig: warning]\n");
+   install_old();
+   make_backup(b, sizeof(b), g_downloads, fx_core, FX_CORE_SIZE,
+         fx_sig_older, sizeof(fx_sig_older));
+   g_hash_reads = 0;
+   CHECK(restore(b, false));
+   CHECK(g_hash_reads == 0);
+   CHECK(warning(CORE_CHECK_OLDER));
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   pump();
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+
+   printf("[install through the buffer, bad .sig: warning]\n");
+   install_old();
+   make_backup(b, sizeof(b), g_downloads, fx_core, FX_CORE_SIZE,
+         fx_sig_key2, sizeof(fx_sig_key2));
+   CHECK(restore(b, false));
+   CHECK(core_warning_pending(NULL, NULL));
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   pump();
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+   g_copy_refused = false;
+
+   /* The VFS copy never had the bytes: the check reads the file */
+   install_old();
+   make_backup(b, sizeof(b), g_backups, fx_core, FX_CORE_SIZE,
+         fx_sig_good, sizeof(fx_sig_good));
+   g_hash_reads = 0;
+   CHECK(restore(b, true));
+   CHECK(g_hash_reads > 0);
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+}
+
 static void test_hash_pass_restores(void)
 {
    char b[300];
@@ -1150,6 +1229,7 @@ int main(void)
    fill_pathname_join_special(store, TMP_DIR, "store2", sizeof(store));
    CHECK(core_trust_runtime_init(store, g_cores, "so"));
    pump();
+   test_restore_streamed();
    test_restore_signed();
    test_install_older_trust();
 #if defined(ANDROID)

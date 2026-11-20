@@ -213,6 +213,18 @@ bool core_hash_init(struct core_hash *h)
 #endif
 }
 
+void core_hash_init_stream(struct core_hash *h)
+{
+   memset(h, 0, sizeof(*h));
+   sha256_stream_init(&h->sha, 0);
+}
+
+void core_hash_update(struct core_hash *h, const void *data, size_t len)
+{
+   sha256_stream_update(&h->sha, (const uint8_t*)data, len);
+   h->done += len;
+}
+
 int core_hash_step(struct core_hash *h, core_file_t *f)
 {
    int64_t got;
