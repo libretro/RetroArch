@@ -542,6 +542,8 @@ jobs:
             memshm_test
             fastjmp_test
             context_test
+            # The link bus alone, one check per rule.
+            link_bus_test
             rdds_block_test
             faulthandler_test
             memshm_area_test
