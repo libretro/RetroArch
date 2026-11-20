@@ -32,6 +32,7 @@
 #include <formats/rwebm.h>
 #include <formats/rwebm_video.h>
 #include <formats/rvp9.h>
+#include <formats/image_yuv_blit.h>
 #ifdef HAVE_RAV1
 #include <formats/rav1_frame.h>
 #endif
@@ -936,6 +937,15 @@ static void media_blit_yuv(uint32_t *dst, unsigned w, unsigned h,
 {
    const int16_t *k = media_yuv_coefs(matrix, h);
    unsigned i, j;
+   /* 4:2:0 in BT.601 or BT.709: the shared converter's vectorised rows */
+   if (cvsh && k != media_coef_2020)
+   {
+      image_yuv_420_to_rgb32(dst, w, y, (unsigned)ys, u, (unsigned)uvs,
+            v, (unsigned)uvs, 1, w, h,
+            (k == media_coef_709 ? IMAGE_YUV_FLAG_BT709 : 0)
+            | (full ? IMAGE_YUV_FLAG_FULL_RANGE : 0));
+      return;
+   }
    if (full)
       k = k == media_coef_709 ? media_full_709
          : (k == media_coef_2020 ? media_full_2020 : media_full_601);

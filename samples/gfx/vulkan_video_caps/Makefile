@@ -42,6 +42,7 @@ $(SESSION): probe.c hevc_session.h hevc_params_test.c $(DECODERS) $(HEVC_DEPS) $
 	$(CC) $(CFLAGS) -DHEVC_SESSION_TEST -o $@ probe.c $(DECODERS) $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),,-ldl)
 
 AV1_CORE_SOURCES := $(RA)/libretro-common/compat/compat_strl.c \
+      $(RA)/libretro-common/formats/image/image_yuv_blit.c \
       $(RA)/libretro-common/compat/compat_strcasestr.c \
       $(RA)/libretro-common/compat/fopen_utf8.c \
       $(RA)/libretro-common/encodings/encoding_utf.c \
