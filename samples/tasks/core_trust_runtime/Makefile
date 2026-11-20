@@ -57,6 +57,8 @@ endif
 ifeq ($(LOAD_CHECK),1)
    CFLAGS += -DHAVE_CORE_LOAD_CHECK
 endif
+# Apple's .framework cores, read as their binary, on every host
+CFLAGS += -DCORE_TRUST_FRAMEWORKS
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 

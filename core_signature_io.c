@@ -899,14 +899,53 @@ bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
    return core_check_quick_id(s, f, path, NULL, c);
 }
 
+bool core_load_framework_binary(const char *path, char *s, size_t len)
+{
+   static const char ext[] = ".framework";
+   const char *name;
+   size_t n, name_len;
+   if (!string_ends_with(path, ext))
+      return false;
+   n        = strlen(path);
+   /* dylib_load's choice, which cuts at an archive's '#' */
+   name     = path_basename(path);
+   name_len = strlen(name) - (sizeof(ext) - 1);
+   if (!name_len || n + name_len + 2 > len)
+      return false;
+   memcpy(s, path, n);
+   s[n] = '/';
+   memcpy(s + n + 1, name, name_len);
+   s[n + 1 + name_len] = '\0';
+   return true;
+}
+
 enum core_trust_state core_trust_state_file(const core_trust_set_t *s,
       const char *path, uint8_t *sha256)
 {
    struct core_check c;
    enum core_trust_state state = CORE_TRUST_STATE_UNCHECKED;
-   core_file_t *f              = core_file_open(path);
-   if (!f)
+   core_file_t *f;
+#ifdef CORE_TRUST_FRAMEWORKS
+   char *bin                   = NULL;
+   if (string_ends_with(path, ".framework"))
+   {
+      size_t len = strlen(path) + strlen(path_basename(path)) + 2;
+      if (     !(bin = (char*)malloc(len))
+            || !core_load_framework_binary(path, bin, len))
+      {
+         free(bin);
+         return state;
+      }
+      path = bin;
+   }
+#endif
+   if (!(f = core_file_open(path)))
+   {
+#ifdef CORE_TRUST_FRAMEWORKS
+      free(bin);
+#endif
       return state;
+   }
    memset(&c, 0, sizeof(c));
    strlcpy(c.rec.name, path_basename_nocompression(path),
          sizeof(c.rec.name));
@@ -918,6 +957,9 @@ enum core_trust_state core_trust_state_file(const core_trust_set_t *s,
       state = core_trust_state_of(s, &c, sha256);
    }
    core_file_close(f);
+#ifdef CORE_TRUST_FRAMEWORKS
+   free(bin);
+#endif
    return state;
 }
 

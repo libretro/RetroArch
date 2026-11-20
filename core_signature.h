@@ -407,8 +407,16 @@ enum core_trust_state
  * NULL) gets the record's hash unless UNCHECKED. */
 enum core_trust_state core_trust_state_of(const core_trust_set_t *s,
       const struct core_check *c, uint8_t *sha256);
+/* Apple builds, where dylib_load opens a .framework folder's binary,
+ * <name>.framework/<name>, so the check and the trust state must too.
+ * s must not overlap path. False for other paths. */
+bool core_load_framework_binary(const char *path, char *s, size_t len);
+#if defined(__APPLE__) && !defined(CORE_TRUST_FRAMEWORKS)
+#define CORE_TRUST_FRAMEWORKS
+#endif
 /* core_trust_state_of() for the file at path, which it doesn't read:
- * UNCHECKED when it can't be opened */
+ * UNCHECKED when it can't be opened. A .framework folder (with
+ * CORE_TRUST_FRAMEWORKS) is its binary, as the load check reads it. */
 enum core_trust_state core_trust_state_file(const core_trust_set_t *s,
       const char *path, uint8_t *sha256);
 /* A record answers for this file: core_trust_state_of() isn't UNCHECKED */

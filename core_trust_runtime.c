@@ -270,6 +270,10 @@ struct core_trust_seed
    /* The sweep's folder after dir, or empty */
    char next_dir[PATH_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
+#ifdef CORE_TRUST_FRAMEWORKS
+   /* The entry's .framework folder, path its binary */
+   char framework[PATH_MAX_LENGTH];
+#endif
    char ext[16];
    uint8_t folder[CORE_SHA256_LEN];
    struct RDIR *rdir;
@@ -288,6 +292,8 @@ struct core_trust_seed
    unsigned gen;
    bool opened;
    bool sweep;
+   /* The entry's check carries its own folder key: a framework's */
+   bool own_folder;
 };
 
 static void core_trust_sweep_live(struct core_trust_seed *sd,
@@ -306,7 +312,8 @@ static bool core_trust_sweep_known(struct core_trust_seed *sd,
       struct core_check *c)
 {
    uint8_t sha256[CORE_SHA256_LEN];
-   memcpy(c->folder, sd->folder, CORE_SHA256_LEN);
+   if (!sd->own_folder)
+      memcpy(c->folder, sd->folder, CORE_SHA256_LEN);
    if (core_check_wants_verity(sd->set, c))
       core_file_verity_measure(sd->f, &c->rec.id);
    switch (core_trust_state_of(sd->set, c, sha256))
@@ -341,6 +348,7 @@ static void core_trust_sweep_drops(struct core_trust_seed *sd)
 static bool core_trust_seed_step(struct core_trust_seed *sd)
 {
    const char *name;
+   bool is_dir;
    struct core_check *c = &sd->found[sd->num_found];
    if (sd->f)
    {
@@ -392,10 +400,31 @@ static bool core_trust_seed_step(struct core_trust_seed *sd)
       return true;
    }
    if (     !(name = retro_dirent_get_name(sd->rdir))
-         || retro_dirent_is_dir(sd->rdir, NULL)
          || !string_is_equal_noncase(path_get_extension(name), sd->ext))
       return true;
+   is_dir         = retro_dirent_is_dir(sd->rdir, NULL);
+   sd->own_folder = false;
+#ifndef CORE_TRUST_FRAMEWORKS
+   if (is_dir)
+      return true;
+#endif
    fill_pathname_join_special(sd->path, sd->dir, name, sizeof(sd->path));
+#ifdef CORE_TRUST_FRAMEWORKS
+   /* A framework is its binary, as the load check reads it */
+   if (is_dir)
+   {
+#ifndef _WIN32
+      struct stat st;
+      if (lstat(sd->path, &st) != 0 || !S_ISDIR(st.st_mode))
+         return true;
+#endif
+      strlcpy(sd->framework, sd->path, sizeof(sd->framework));
+      if (!core_load_framework_binary(sd->framework, sd->path,
+               sizeof(sd->path)))
+         return true;
+      sd->own_folder = true;
+   }
+#endif
 #ifndef _WIN32
    {
       /* What a symlink names lives outside the folder */
@@ -405,7 +434,10 @@ static bool core_trust_seed_step(struct core_trust_seed *sd)
    }
 #endif
    memset(c, 0, sizeof(*c));
-   strlcpy(c->rec.name, name, sizeof(c->rec.name));
+   strlcpy(c->rec.name, path_basename_nocompression(sd->path),
+         sizeof(c->rec.name));
+   if (sd->own_folder && !core_folder_key(sd->path, c->folder))
+      return true;
    /* Not a regular file, or gone: core_file_open refuses it */
    if (!(sd->f = core_file_open(sd->path)))
       return true;

@@ -1714,6 +1714,55 @@ static void test_sweep_cancelled(void)
 }
 
 /* No folder to sweep: a full list refuses at once */
+/* <name>.framework folders, as Apple installs cores: the seed, the
+ * sweep, the Core Trust row and Untrust all read the binary inside */
+static void test_framework_cores(void)
+{
+#ifndef _WIN32
+   char dir[256], fw[256], bin[256], fw2[256], bin2[256], store[256];
+   strlcpy(dir, tmp("frameworks"), sizeof(dir));
+   strlcpy(store, tmp("frameworks_store"), sizeof(store));
+   CHECK(path_mkdir(dir));
+   fill_pathname_join_special(fw, dir, "x_libretro.framework", sizeof(fw));
+   fill_pathname_join_special(bin, fw, "x_libretro", sizeof(bin));
+   fill_pathname_join_special(fw2, dir, "y_libretro.framework",
+         sizeof(fw2));
+   fill_pathname_join_special(bin2, fw2, "y_libretro", sizeof(bin2));
+   CHECK(path_mkdir(fw));
+   CHECK(path_mkdir(fw2));
+   CHECK(put_file(bin, 621, 1000));
+   CHECK(put_file(bin2, 622, 1000));
+   /* The seed trusts both */
+   CHECK(core_trust_runtime_init(store, dir, "framework"));
+   pump_seed();
+   CHECK(trusted(bin));
+   CHECK(trusted(bin2));
+   if (core_trust_runtime_state(fw) != CORE_TRUST_STATE_TRUSTED)
+   {
+      printf("note: test_framework_cores skipped, no records on %s's "
+            "filesystem\n", dir);
+      pump(8);
+      core_trust_runtime_deinit();
+      return;
+   }
+   CHECK(core_trust_runtime_forget(fw2));
+   CHECK(!trusted(bin2));
+   CHECK(trusted(bin));
+   CHECK(core_trust_runtime_state(fw2) == CORE_TRUST_STATE_UNCHECKED);
+   pump(8);
+   core_trust_runtime_deinit();
+   /* A full list keeps the installed framework's hash */
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES - 1, bin));
+   CHECK(core_trust_runtime_init(store, dir, "framework"));
+   CHECK(always_trust(bin2, true));
+   pump_tasks();
+   CHECK(trusted(bin));
+   CHECK(trusted(bin2));
+   CHECK(hash_count() == 2);
+   core_trust_runtime_deinit();
+#endif
+}
+
 /* Cores kept in the cores directory setting, not the seed folder: the
  * sweep keeps their hashes; one that doesn't open drops nothing */
 static void test_sweep_cores_dir(void)
@@ -2134,6 +2183,7 @@ int main(void)
       test_sweep_cancelled();
       test_sweep_no_folder();
       test_sweep_cores_dir();
+      test_framework_cores();
       test_sweep_wait_cap();
       test_sweep_unreadable();
       test_sweep_unopened();
