@@ -1043,12 +1043,14 @@ static void native_sdl_touch_held(const gfx_ctx_driver_t *ctx, void *data,
 #endif
 
 /* Over the screen's window the mouse has no place on the main window's
- * screen, and a click is taken, unless the menu is up; over the main
- * window both are as ever */
+ * screen, and a click is taken, unless the menu is up, at the core's
+ * pixel its layout puts there; over the main window both are as ever */
 static void native_sdl_mouse(const gfx_ctx_driver_t *ctx, void *data,
-      const video_window_request_t *request, SDL_Window *secondary)
+      const video_window_request_t *request,
+      const video_window_native_t *window, SDL_Window *secondary)
 {
    uint32_t pos;
+   video_windows_frame_t snap;
    input_pointer_frame_t none;
    SDL_Window *primary = native_sdl_main(data);
    float density       = native_sdl_density(primary);
@@ -1070,6 +1072,9 @@ static void native_sdl_mouse(const gfx_ctx_driver_t *ctx, void *data,
    {
       struct menu_state *menu_st = menu_state_get_ptr();
       uint32_t menu_flags        = menu_st->flags;
+      /* Drawn, as a renderer has drawn it before it is clicked */
+      native_core_frame(&snap);
+      native_core_publish(&snap, window->generation, window->dims);
       NATIVE_SDL_INPUT.poll(in);
       CHECK(input_driver_device_pos(0, RARCH_DEVICE_MOUSE_SCREEN, 0)
             == VIDEO_POS_PACK(-0x8000, -0x8000));
@@ -1081,6 +1086,13 @@ static void native_sdl_mouse(const gfx_ctx_driver_t *ctx, void *data,
                == VIDEO_POS_PACK(-0x8000, -0x8000));
          CHECK(input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
                   RETRO_DEVICE_ID_MOUSE_LEFT));
+         /* 70,90 is pixel 70,90 times the window's density */
+         CHECK(input_driver_device_pos(0, RETRO_DEVICE_POINTER, 0)
+               == native_core_pos(window->dims,
+                  (int)(70 * native_sdl_density(secondary)),
+                  (int)(90 * native_sdl_density(secondary))));
+         CHECK(input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+                  RETRO_DEVICE_ID_POINTER_PRESSED) == 1);
          menu_st->flags |= MENU_ST_FLAG_ALIVE;
          NATIVE_SDL_INPUT.poll(in);
          CHECK(!input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
@@ -1091,6 +1103,7 @@ static void native_sdl_mouse(const gfx_ctx_driver_t *ctx, void *data,
       else
          fprintf(stderr, "native sdl: no click to send here, "
                "the screen's click not checked\n");
+      video_driver_publish_window_layout(1, 0, 0, NULL, NULL, 0, 0);
    }
    else
       fprintf(stderr, "native sdl: the pointer cannot be put over the "
@@ -3844,7 +3857,7 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_sdl_main_resize(ctx, data);
 
    if (mapped)
-      native_sdl_mouse(ctx, data, request, secondary);
+      native_sdl_mouse(ctx, data, request, window, secondary);
 #ifdef HAVE_SDL3
    if (mapped)
    {

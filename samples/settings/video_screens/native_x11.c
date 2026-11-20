@@ -518,6 +518,182 @@ static void native_x11_keys(const gfx_ctx_driver_t *ctx, void *data,
    input_x.free(in);
 }
 
+/* XTest's button, from libXtst where it is installed: the frontend
+ * does not link it */
+typedef int (*native_x11_button_t)(Display*, unsigned, Bool,
+      unsigned long);
+
+/* Pumps and polls until the mouse's left button reads @down */
+static bool native_x11_left_wait(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, void *in, bool down)
+{
+   retro_time_t deadline = cpu_features_get_time_usec() + 3000000;
+   for (;;)
+   {
+      native_window_drain(ctx, data, request);
+      input_x.poll(in);
+      if ((input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
+                  RETRO_DEVICE_ID_MOUSE_LEFT) != 0) == down)
+         return true;
+      if (cpu_features_get_time_usec() > deadline)
+         return false;
+      retro_sleep(2);
+   }
+}
+
+/* A left click by the server's own pointer at client pixel @x,@y of
+ * @win: while it is down the core reads @want and pressed through the
+ * X input driver's frame, and not pressed once it is let go */
+static void native_x11_click(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, void *in,
+      native_x11_button_t button, Window win, int x, int y, uint32_t want)
+{
+   int16_t px, py;
+   XWarpPointer(g_x11_dpy, None, win, 0, 0, 0, 0, x, y);
+   button(g_x11_dpy, 1, True, CurrentTime);
+   XFlush(g_x11_dpy);
+   CHECK(native_x11_left_wait(ctx, data, request, in, true));
+   px = input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+         RETRO_DEVICE_ID_POINTER_X);
+   py = input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+         RETRO_DEVICE_ID_POINTER_Y);
+   if (VIDEO_POS_PACK(px, py) != want)
+      fprintf(stderr, "native x11: click at %d,%d of 0x%lx read %d,%d,"
+            " not %d,%d\n", x, y, (unsigned long)win, px, py,
+            VIDEO_POS_X(want), VIDEO_POS_Y(want));
+   CHECK(VIDEO_POS_PACK(px, py) == want);
+   CHECK(input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+            RETRO_DEVICE_ID_POINTER_PRESSED) == 1);
+   button(g_x11_dpy, 1, False, CurrentTime);
+   XFlush(g_x11_dpy);
+   CHECK(native_x11_left_wait(ctx, data, request, in, false));
+   CHECK(input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+            RETRO_DEVICE_ID_POINTER_PRESSED) == 0);
+}
+
+/* Screen 2's window brought to @rect, its layout published as a
+ * renderer publishes it after drawing, then clicked at the screen's
+ * corners and centre and on a bar */
+static void native_x11_clicks(const gfx_ctx_driver_t *ctx, void *data,
+      const video_window_request_t *request, video_window_native_t *window,
+      void *in, native_x11_button_t button, native_rect_t rect)
+{
+   video_windows_frame_t snap;
+   int points[6][2];
+   unsigned i, n;
+   unsigned dims = VIDEO_SCALE_PACK(rect.w, rect.h);
+   native_x11_wait_rect(ctx, data, request, window, rect);
+   CHECK(window->dims == dims);
+   XRaiseWindow(g_x11_dpy, native_x11_window(window));
+   native_window_settle(ctx, data, request, 100000);
+   native_core_frame(&snap);
+   native_core_publish(&snap, window->generation, window->dims);
+   n = native_core_points(dims, points);
+   for (i = 0; i < n; i++)
+      native_x11_click(ctx, data, request, in, button,
+            native_x11_window(window), points[i][0], points[i][1],
+            native_core_pos(dims, points[i][0], points[i][1]));
+}
+
+static native_rect_t native_x11_vp_window;
+
+/* The main window's game, a square as high as the window, centred */
+static void native_x11_viewport(void *data, struct video_viewport *vp)
+{
+   unsigned w = native_x11_vp_window.w;
+   unsigned h = native_x11_vp_window.h;
+   (void)data;
+   vp->pos       = VIDEO_POS_PACK(((int)w - (int)h) / 2, 0);
+   vp->dims      = VIDEO_SCALE_PACK(h, h);
+   vp->full_dims = VIDEO_SCALE_PACK(w, h);
+}
+
+/* Clicks in the main window and in Screen 2's, through the server, the
+ * X input driver and the frontend, read as the core reads them. The
+ * main window's place is its viewport's, native_core_norm() of
+ * x - left over its width, held to its edges. The screen's window is
+ * native_core_pos()'s: at its own size, letterboxed both ways, and
+ * fullscreen. */
+static void native_x11_pointers(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *request, video_window_native_t *window,
+      native_rect_t monitor, bool managed)
+{
+   static video_driver_t driver;
+   static dylib_t xtst;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   video_window_settings_t saved  = request->settings;
+   video_driver_t *saved_video    = video_st->current_video;
+   void *saved_data               = video_st->data;
+   native_x11_button_t button     = NULL;
+   void *in                       = NULL;
+   native_rect_t was              = native_x11_rect(g_x11_dpy,
+         native_x11_window(window));
+   native_rect_t rect             = was;
+   int points[6][2];
+   unsigned i, n;
+   int left, side;
+   if (!xtst)
+      xtst = dylib_load("libXtst.so.6");
+   if (xtst)
+      button = (native_x11_button_t)dylib_proc(xtst, "XTestFakeButtonEvent");
+   if (!button)
+      fprintf(stderr, "native x11: no XTest in libXtst.so.6\n");
+   if (button)
+      in = input_x.init(NULL);
+   CHECK(in != NULL);
+   if (!in)
+      return;
+
+   native_x11_vp_window = native_x11_rect(g_x11_dpy, g_x11_win);
+   side                 = (int)native_x11_vp_window.h;
+   left                 = ((int)native_x11_vp_window.w - side) / 2;
+   memset(&driver, 0, sizeof(driver));
+   driver.viewport_info    = native_x11_viewport;
+   driver.ident            = "native_x11";
+   video_st->current_video = &driver;
+   video_st->data          = &driver;
+   XRaiseWindow(g_x11_dpy, g_x11_win);
+   native_window_settle(ctx, data, request, 100000);
+   n = native_rect_points(left, 0, side, side, points);
+   for (i = 0; i < n; i++)
+      native_x11_click(ctx, data, request, in, button, g_x11_win,
+            points[i][0], points[i][1], VIDEO_POS_PACK(
+               native_core_norm((unsigned)native_core_clamp(
+                     points[i][0] - left, 0, side), side),
+               native_core_norm((unsigned)points[i][1], side)));
+   video_st->current_video = saved_video;
+   video_st->data          = saved_data;
+
+   request->settings.dims = VIDEO_SCALE_PACK(320, 240);
+   ctx->windows->update(data, window, request);
+   rect.w = 320;
+   rect.h = 240;
+   native_x11_clicks(ctx, data, request, window, in, button, rect);
+   request->settings.dims = VIDEO_SCALE_PACK(400, 240);
+   ctx->windows->update(data, window, request);
+   rect.w = 400;
+   native_x11_clicks(ctx, data, request, window, in, button, rect);
+   request->settings.dims = VIDEO_SCALE_PACK(320, 300);
+   ctx->windows->update(data, window, request);
+   rect.w = 320;
+   rect.h = 300;
+   native_x11_clicks(ctx, data, request, window, in, button, rect);
+   request->settings.fullscreen = true;
+   request->settings.monitor    = 1;
+   ctx->windows->update(data, window, request);
+   if (managed)
+      native_x11_wait_fullscreen(ctx, data, request, window, true);
+   native_x11_clicks(ctx, data, request, window, in, button, monitor);
+
+   request->settings = saved;
+   ctx->windows->update(data, window, request);
+   native_x11_wait_rect(ctx, data, request, window, was);
+   if (managed)
+      native_x11_wait_fullscreen(ctx, data, request, window, false);
+   video_driver_publish_window_layout(1, 0, 0, NULL, NULL, 0, 0);
+   input_x.free(in);
+}
+
 /* An error in 'window' handed to 'handler' as Xlib would hand it */
 static void native_x11_fake_error(int (*handler)(Display*, XErrorEvent*),
       Display *display, Window window, int code)
@@ -2729,6 +2905,7 @@ static void native_x11_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
          managed);
    CHECK(ctx->has_focus(data));
    native_x11_keys(ctx, data, request, display, secondary);
+   native_x11_pointers(ctx, data, request, window, monitors[0], managed);
    native_x11_close(display, secondary);
    XSync(display, False);
    seen = native_window_drain(ctx, data, request);

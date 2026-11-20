@@ -193,7 +193,7 @@ jobs:
     name: Desktop headset output with the in-tree loader
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential pkg-config libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libx11-dev libx11-xcb-dev libxext-dev libxrandr-dev libxinerama-dev libxxf86vm-dev libxv-dev libxcursor-dev libxi-dev libxfixes-dev libxss-dev libxtst-dev libxkbcommon-dev libwayland-dev wayland-protocols libdrm-dev libgbm-dev libasound2-dev libpulse-dev libudev-dev libusb-1.0-0-dev libvulkan-dev libdbus-1-dev zlib1g-dev cmake ninja-build xvfb xauth openbox weston mesa-vulkan-drivers
+      APT_PKGS: build-essential pkg-config libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libx11-dev libx11-xcb-dev libxext-dev libxrandr-dev libxinerama-dev libxxf86vm-dev libxv-dev libxcursor-dev libxi-dev libxfixes-dev libxss-dev libxtst-dev libxkbcommon-dev libwayland-dev wayland-protocols libdrm-dev libgbm-dev libasound2-dev libpulse-dev libudev-dev libusb-1.0-0-dev libvulkan-dev libdbus-1-dev zlib1g-dev cmake ninja-build xvfb xauth libxtst6 openbox weston mesa-vulkan-drivers
     timeout-minutes: 30
 
     steps:

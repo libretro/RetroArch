@@ -46,6 +46,7 @@
 #endif
 
 #ifdef HAVE_X11
+#include <dynamic/dylib.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/resource.h>
@@ -6947,6 +6948,129 @@ static void test_window_idle_logo(void)
    p_disp->dispctx = saved;
 }
 #endif
+
+#if defined(HAVE_X11) || defined(HAVE_WAYLAND) || defined(NATIVE_SDL)
+/* The 3DS map of test_window_pointer_mapping() for the screens' own
+ * windows: Screen 2 is the lower screen, 320x240 at (240, 240) of an
+ * 800x480 frame */
+static void native_core_frame(video_windows_frame_t *snap)
+{
+   struct retro_video_view v[3];
+   memset(snap, 0, sizeof(*snap));
+   memset(v, 0, sizeof(v));
+   v[0].width = v[1].width = 400;
+   v[0].height = v[1].height = 240;
+   v[1].x      = 400;
+   v[0].eye    = RETRO_VIDEO_VIEW_EYE_LEFT;
+   v[1].eye    = RETRO_VIDEO_VIEW_EYE_RIGHT;
+   v[2].x      = 240;
+   v[2].y      = 240;
+   v[2].width  = 320;
+   v[2].height = 240;
+   v[2].screen = 1;
+   CHECK(video_views_validate(v, 3, &snap->core));
+   snap->core_dims = VIDEO_SCALE_PACK(800, 480);
+}
+
+/* Window 1's layout for its @dims pixels, published as a renderer
+ * publishes it after drawing the window */
+static void native_core_publish(const video_windows_frame_t *snap,
+      unsigned generation, unsigned dims)
+{
+   static video_views_layout_t layout;
+   video_driver_window_layout(snap, 1, dims, &layout);
+   CHECK(layout.num_placements == 1);
+   video_driver_publish_window_layout(1, generation, 0, &layout,
+         &snap->core, snap->core_dims, dims);
+}
+
+/* Where native_core_frame()'s lower screen is drawn in a window of
+ * @dims pixels: whole at its 4:3, centred. With s = min(W / 320,
+ * H / 240) it is 320s x 240s at ((W - 320s) / 2, (H - 240s) / 2). */
+static void native_core_rect(unsigned dims, int *x, int *y, int *w, int *h)
+{
+   double win_w = VIDEO_SCALE_W(dims);
+   double win_h = VIDEO_SCALE_H(dims);
+   double s     = win_w / 320.0;
+   if (win_h / 240.0 < s)
+      s = win_h / 240.0;
+   *x = (int)floor((win_w - 320.0 * s) / 2.0 + 0.5);
+   *y = (int)floor((win_h - 240.0 * s) / 2.0 + 0.5);
+   *w = (int)floor(320.0 * s + 0.5);
+   *h = (int)floor(240.0 * s + 0.5);
+}
+
+/* libretro's place of pixel @p of @size: -0x7fff at the first,
+ * 0x7fff at the last, p * 0xffff / (size - 1) - 0x8000 between */
+static int16_t native_core_norm(unsigned p, unsigned size)
+{
+   if (!p)
+      return -0x7fff;
+   if (p >= size - 1)
+      return 0x7fff;
+   return (int16_t)((long)p * 0xffffL / (long)(size - 1) - 0x8000L);
+}
+
+/* @v held to the @size pixels from @first */
+static int native_core_clamp(int v, int first, int size)
+{
+   if (v < first)
+      return first;
+   if (v >= first + size)
+      return first + size - 1;
+   return v;
+}
+
+/* What the core reads as RETRO_DEVICE_POINTER for pixel @x,@y of a
+ * window of @dims pixels showing the lower screen: the frame's pixel
+ * under it, 240 + (x - left) * 320 / (320s) across and 240 + (y - top)
+ * * 240 / (240s) down, placed in the 800x480 frame. A point on a bar is
+ * held to the screen's nearest edge. */
+static uint32_t native_core_pos(unsigned dims, int x, int y)
+{
+   int left, top, w, h;
+   native_core_rect(dims, &left, &top, &w, &h);
+   x = native_core_clamp(x, left, w);
+   y = native_core_clamp(y, top, h);
+   return VIDEO_POS_PACK(
+         native_core_norm(240 + (unsigned)(x - left) * 320 / (unsigned)w,
+            800),
+         native_core_norm(240 + (unsigned)(y - top) * 240 / (unsigned)h,
+            480));
+}
+
+/* The corners and centre of @w x @h at @x,@y, and a point on a bar
+ * beside it: six points at most */
+static unsigned native_rect_points(int x, int y, int w, int h,
+      int (*points)[2])
+{
+   unsigned i;
+   unsigned n = 5;
+   for (i = 0; i < 4; i++)
+   {
+      points[i][0] = (i & 1) ? x + w - 1 : x;
+      points[i][1] = (i & 2) ? y + h - 1 : y;
+   }
+   points[4][0] = x + w / 2;
+   points[4][1] = y + h / 2;
+   if (x > 0 || y > 0)
+   {
+      points[5][0] = (x > 0) ? x / 2 : x + w / 2;
+      points[5][1] = (x > 0) ? y + h / 2 : y / 2;
+      n++;
+   }
+   return n;
+}
+
+/* native_rect_points() of the lower screen in a window of @dims */
+static unsigned native_core_points(unsigned dims, int (*points)[2])
+{
+   int x, y, w, h;
+   native_core_rect(dims, &x, &y, &w, &h);
+   return native_rect_points(x, y, w, h, points);
+}
+#endif
+
 #include "native_windows.c"
 #include "native_x11.c"
 #include "native_wayland.c"
