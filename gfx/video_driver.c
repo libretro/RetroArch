@@ -8250,6 +8250,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->battery_level_enable     = settings->bools.menu_battery_level_enable;
       video_info->xmb_shadows_enable       = settings->bools.menu_xmb_shadows_enable;
       video_info->xmb_alpha_factor         = settings->uints.menu_xmb_alpha_factor;
+      video_info->xmb_ribbon_opacity       = MIN(settings->uints.menu_xmb_ribbon_opacity, 100) * 0.01f;
       video_info->menu_wallpaper_opacity   = settings->floats.menu_wallpaper_opacity;
       video_info->menu_framebuffer_opacity = settings->floats.menu_framebuffer_opacity;
       /* And what the menu drivers' frame() reads, for the same reason */
@@ -8366,6 +8367,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
       memset(&video_info->menu, 0, sizeof(video_info->menu));
       video_info->xmb_shadows_enable       = false;
       video_info->xmb_alpha_factor         = 0.0f;
+      video_info->xmb_ribbon_opacity       = 0.0f;
       video_info->menu_framebuffer_opacity = 0.0f;
       video_info->menu_wallpaper_opacity   = 0.0f;
    }

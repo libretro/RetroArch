@@ -650,6 +650,7 @@ typedef struct video_frame_info
    float font_msg_color_g;
    float font_msg_color_b;
    float xmb_alpha_factor;
+   float xmb_ribbon_opacity;
 
    struct
    {
