@@ -4596,11 +4596,12 @@ static void frontend_unix_exec(const char *path, bool should_load_content)
       {
          execve(path, newargv, envp);
          free(envp);
-         return;
       }
    }
 #endif
    execv(path, newargv);
+   RARCH_ERR("Failed to exec \"%s\".\n", path);
+   free(newargv[0]);
 }
 
 static void frontend_unix_exitspawn(char *s, size_t len, char *args)
