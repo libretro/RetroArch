@@ -36,6 +36,9 @@
 #if defined(HAVE_COCOATOUCH) || defined(HAVE_COCOA)
 
 #include "../ui/drivers/cocoa/cocoa_common.m"
+#ifdef HAVE_IOS_MENU
+#include "../ui/ios/RetroArchMenuBridge.m"
+#endif
 #ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
 /* RetroArchPlaylistManager uses Obj-C lightweight generics and
  * nullability macros (Xcode 7+, 2015).  Usable on iOS/tvOS and

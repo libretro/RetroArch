@@ -14,3 +14,5 @@
 #import "../ui/drivers/cocoa/cocoa_common.h"
 #import "../../ui/drivers/cocoa/RetroArchPlaylistManager.h"
 #import "../ui/drivers/cocoa/apple_platform.h"
+
+#include "../../ui/ios/RetroArchMenuBridge.h"

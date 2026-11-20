@@ -36,6 +36,9 @@
 
 #include "cocoa_common.h"
 #include "apple_platform.h"
+#ifdef HAVE_IOS_MENU
+#include "../../ios/RetroArchMenuBridge.h"
+#endif
 #include "../ui_cocoa.h"
 #ifdef HAVE_RETROARCH_PLAYLIST_MANAGER
 #include "RetroArchPlaylistManager.h"
@@ -197,6 +200,10 @@ static void rarch_draw_observer(CFRunLoopObserverRef observer,
 
    task_queue_check();
 
+#ifdef HAVE_IOS_MENU
+   ios_menu_update();
+#endif
+
 #ifdef HAVE_MIST
    steam_poll();
 #endif
@@ -332,6 +339,10 @@ retro_time_t cocoa_last_vblank_time(void)
       exit(0);
       return;
    }
+
+#ifdef HAVE_IOS_MENU
+   ios_menu_update();
+#endif
 
 #if !TARGET_OS_TV
    if (runloop_get_flags() & RUNLOOP_FLAG_FASTMOTION)
