@@ -28,6 +28,8 @@ bool video_player_request_software(video_player_t *p)
 }
 
 /* The format path must not enter CPU playback or upload methods. */
+void gfx_surface_set_yuv(gfx_surface_t *s, unsigned flags)
+{ (void)s; (void)flags; failures++; }
 bool gfx_surface_slot_writable(gfx_surface_t *s, unsigned slot)
 { (void)s; (void)slot; failures++; return false; }
 uint32_t *gfx_surface_slot_begin(gfx_surface_t *s, unsigned slot)
