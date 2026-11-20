@@ -207,7 +207,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      APT_PKGS: build-essential libasound2-dev libegl-dev libgl-dev libgles-dev libegl-mesa0 libgl1-mesa-dri glslang-tools spirv-tools spirv-cross gcc-mingw-w64-x86-64 libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers
+      APT_PKGS: build-essential clang libasound2-dev libegl-dev libgl-dev libgles-dev libegl-mesa0 libgl1-mesa-dri glslang-tools spirv-tools spirv-cross gcc-mingw-w64-x86-64 libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers
       EGL_PLATFORM: surfaceless
       LIBGL_ALWAYS_SOFTWARE: '1'
     steps:
@@ -272,6 +272,7 @@ jobs:
       - name: Metal C89 binding and ownership contracts with shared and managed storage
         run: |
           make -C samples/gfx/pyrowave_metal clean check native-compile SANITIZER=address,undefined
+          make -C samples/gfx/pyrowave_metal clean check native-compile CC=clang SANITIZER=address,undefined
           make -C samples/gfx/pyrowave_metal clean all CC=x86_64-w64-mingw32-gcc EXE=.exe
 
   vaapi-hevc-parameters:

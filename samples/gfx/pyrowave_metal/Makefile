@@ -5,6 +5,11 @@ PYTHON ?= python3
 ASSETDIR ?= .metal-shaders
 TARGET := pyrowave_metal_test$(EXE)
 CFLAGS += -O2 -std=c89 -pedantic -Wall -Wextra -Werror -I$(COMMON)/include
+# Match the shared boolean.h ABI: Clang exposes bool as _Bool in C89.
+# Keep C89 and the remaining pedantic diagnostics enabled.
+ifneq ($(findstring clang,$(shell $(CC) --version 2>/dev/null)),)
+CFLAGS += -Wno-c99-extensions
+endif
 SRC := pyrowave_metal_test.c $(RA)/record/record_pyrowave_metal.c \
        $(RA)/record/record_pyrowave_metal_runtime.c $(RA)/record/record_gpu_queue.c \
        $(COMMON)/queues/retro_spsc.c $(COMMON)/formats/pyrowave/rpyrowave.c \
