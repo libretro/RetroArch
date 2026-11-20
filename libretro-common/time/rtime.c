@@ -20,11 +20,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <retro_posix_source.h>
+
+#include <stdlib.h>
 #include <string.h>
 
 #include <boolean.h>
 #include <retro_atomic.h>
 #include <time/rtime.h>
+
+#if defined(__linux__) || defined(ANDROID) || defined(__APPLE__) \
+ || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#define RTIME_POSIX_CALENDAR
+/* Orbis libc has no readlink(). */
+#if !defined(ORBIS)
+#define RTIME_POSIX_ZONE_NAME
+#endif
+#include <unistd.h>
+#if defined(ANDROID)
+#include <sys/system_properties.h>
+#endif
+#if defined(__APPLE__) && !defined(IS_SALAMANDER)
+/* clock_gettime() arrived with macOS 10.12 and iOS 10: looked up at
+ * runtime, gettimeofday() before it. */
+#define RTIME_CALENDAR_APPLE
+#include <sys/time.h>
+#include <dlfcn.h>
+#ifndef RTLD_DEFAULT
+#define RTLD_DEFAULT ((void*)-2)
+#endif
+/* Darwin's CLOCK_REALTIME, which older SDKs do not define. */
+#define RTIME_APPLE_CLOCK_REALTIME 0
+typedef int (*rtime_clock_gettime_t)(int, struct timespec*);
+/* Set by rtime_init() before any thread reads it, and never cleared. */
+static rtime_clock_gettime_t rtime_apple_clock_gettime = NULL;
+#endif
+#endif
+
+#if defined(__WINRT__)
+#include <windows.h>
+#endif
 
 /* MS CRTs keep localtime()'s result per thread. Orbis libc exports
  * localtime_s() in the C11 Annex K order, not localtime_r(), and fills
@@ -418,12 +453,55 @@ static void rtime_sleep_deinit(void)
    retro_atomic_store_release_int(&rtime_sleep_state, RTIME_SLEEP_UNKNOWN);
    retro_atomic_store_release_int(&rtime_sleep_init_ran, 0);
 }
+
+#if !defined(IS_SALAMANDER)
+/* Windows 8 and later. Set by rtime_init() before any thread reads it,
+ * and never cleared. */
+typedef VOID (WINAPI *rtime_precise_time_t)(LPFILETIME);
+static rtime_precise_time_t rtime_precise_time = NULL;
+
+/* DYNAMIC_TIME_ZONE_INFORMATION, which SDKs hide below Vista. */
+typedef struct
+{
+   LONG Bias;
+   WCHAR StandardName[32];
+   SYSTEMTIME StandardDate;
+   LONG StandardBias;
+   WCHAR DaylightName[32];
+   SYSTEMTIME DaylightDate;
+   LONG DaylightBias;
+   WCHAR TimeZoneKeyName[128];
+   BOOLEAN DynamicDaylightTimeDisabled;
+} rtime_dynamic_tzi_t;
+
+typedef DWORD (WINAPI *rtime_get_dynamic_tzi_t)(rtime_dynamic_tzi_t*);
+typedef int32_t (__cdecl *rtime_ucal_zone_id_t)(const uint16_t *winid,
+      int32_t len, const char *region, uint16_t *id, int32_t cap,
+      int32_t *status);
+typedef BOOL (WINAPI *rtime_tzi_for_year_t)(USHORT, rtime_dynamic_tzi_t*,
+      LPTIME_ZONE_INFORMATION);
+#endif
 #endif
 
 /* Must be called at program or core start */
 void rtime_init(void)
 {
    rtime_deinit();
+#if defined(RTIME_CALENDAR_APPLE)
+   if (!rtime_apple_clock_gettime)
+      rtime_apple_clock_gettime = (rtime_clock_gettime_t)dlsym(
+            RTLD_DEFAULT, "clock_gettime");
+#endif
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) \
+ && !defined(IS_SALAMANDER)
+   if (!rtime_precise_time)
+   {
+      HMODULE kernel32 = GetModuleHandleA("kernel32.dll");
+      if (kernel32)
+         rtime_precise_time = (rtime_precise_time_t)GetProcAddress(
+               kernel32, "GetSystemTimePreciseAsFileTime");
+   }
+#endif
 }
 
 /* Must be called upon program termination */
@@ -453,3 +531,342 @@ struct tm *rtime_localtime(const time_t *timep, struct tm *result)
       memcpy(result, time_info, sizeof(struct tm));
    return result;
 }
+
+#if !defined(IS_SALAMANDER)
+bool rtime_calendar_now(int64_t *sec, int32_t *nsec)
+{
+#if defined(RTIME_CALENDAR_APPLE)
+   struct timeval tv;
+   if (rtime_apple_clock_gettime)
+   {
+      struct timespec ts;
+      if (rtime_apple_clock_gettime(RTIME_APPLE_CLOCK_REALTIME, &ts))
+         return false;
+      *sec  = (int64_t)ts.tv_sec;
+      *nsec = (int32_t)ts.tv_nsec;
+      return true;
+   }
+   if (gettimeofday(&tv, NULL))
+      return false;
+   *sec  = (int64_t)tv.tv_sec;
+   *nsec = (int32_t)tv.tv_usec * 1000;
+   return true;
+#elif defined(RTIME_POSIX_CALENDAR)
+   struct timespec ts;
+   if (clock_gettime(CLOCK_REALTIME, &ts))
+      return false;
+   *sec  = (int64_t)ts.tv_sec;
+   *nsec = (int32_t)ts.tv_nsec;
+   return true;
+#elif defined(_WIN32) && !defined(_XBOX)
+   FILETIME ft;
+   int64_t t;
+#if defined(__WINRT__)
+   GetSystemTimePreciseAsFileTime(&ft);
+#else
+   if (rtime_precise_time)
+      rtime_precise_time(&ft);
+   else
+      GetSystemTimeAsFileTime(&ft);
+#endif
+   /* 100 ns units since 1601 */
+   t     = (int64_t)(((uint64_t)ft.dwHighDateTime << 32) | ft.dwLowDateTime)
+         - (int64_t)116444736 * 1000000000;
+   *sec  = t / 10000000;
+   *nsec = (int32_t)(t % 10000000) * 100;
+   return true;
+#else
+   time_t t = time(NULL);
+   if (t == (time_t)-1)
+      return false;
+   *sec  = (int64_t)t;
+   *nsec = 0;
+   return true;
+#endif
+}
+
+/* Days from 1970-01-01 to y-m-d, proleptic Gregorian: Howard
+ * Hinnant's days_from_civil. */
+static int64_t rtime_days_from_civil(int64_t y, unsigned m, unsigned d)
+{
+   int64_t era;
+   unsigned yoe;
+   unsigned doy;
+   unsigned doe;
+   y  -= m <= 2;
+   era = (y >= 0 ? y : y - 399) / 400;
+   yoe = (unsigned)(y - era * 400);
+   doy = (153 * (m > 2 ? m - 3 : m + 9) + 2) / 5 + d - 1;
+   doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+   return era * 146097 + (int64_t)doe - 719468;
+}
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+/* The UTC year of sec: Howard Hinnant's civil_from_days. */
+static int64_t rtime_year_of(int64_t sec)
+{
+   int64_t z   = (sec >= 0 ? sec : sec - 86399) / 86400 + 719468;
+   int64_t era = (z >= 0 ? z : z - 146096) / 146097;
+   unsigned doe = (unsigned)(z - era * 146097);
+   unsigned yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+   unsigned doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+   unsigned mp  = (5 * doy + 2) / 153;
+   return (int64_t)yoe + era * 400 + (mp >= 10);
+}
+#endif
+
+/* Reloads the host zone, so a change since the last load is seen. */
+static void rtime_tzset(void)
+{
+#if defined(RTIME_POSIX_CALENDAR)
+   tzset();
+#elif defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   _tzset();
+#endif
+}
+
+/* The local fields at sec against sec itself; false if the conversion
+ * fails. */
+static bool rtime_local_offset(int64_t sec, int32_t *offset, int *isdst)
+{
+   struct tm tm;
+   time_t t = (time_t)sec;
+   /* A time_t too narrow for sec would convert another date */
+   if ((int64_t)t != sec)
+      return false;
+   memset(&tm, 0, sizeof(tm));
+   rtime_localtime(&t, &tm);
+   if (!tm.tm_mday)
+      return false;
+   *offset = (int32_t)(rtime_days_from_civil(tm.tm_year + 1900,
+            tm.tm_mon + 1, tm.tm_mday) * 86400
+         + tm.tm_hour * 3600 + tm.tm_min * 60 + tm.tm_sec - sec);
+   *isdst  = tm.tm_isdst;
+   return true;
+}
+
+int32_t rtime_utc_offset(int64_t sec)
+{
+   int32_t offset = 0;
+   int isdst;
+   rtime_tzset();
+   rtime_local_offset(sec, &offset, &isdst);
+   return offset;
+}
+
+int32_t rtime_standard_offset(int64_t sec)
+{
+   int32_t offset;
+   int32_t standard = 0;
+   int32_t low      = 0;
+   bool has_std     = false;
+   bool has_low     = false;
+   int isdst;
+   int k;
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   const char *tz = getenv("TZ");
+   if (!tz || !*tz)
+   {
+      TIME_ZONE_INFORMATION tzi;
+      int64_t year = rtime_year_of(sec);
+      HMODULE kernel32 = GetModuleHandleA("kernel32.dll");
+      /* Vista SP1 and later: the rules of sec's year */
+      rtime_tzi_for_year_t for_year = kernel32
+            ? (rtime_tzi_for_year_t)GetProcAddress(kernel32,
+               "GetTimeZoneInformationForYear")
+            : NULL;
+      bool got = false;
+      if (for_year && year >= 1601 && year <= 30827)
+         got = for_year((USHORT)year, NULL, &tzi) ? true : false;
+      if (!got)
+         got = GetTimeZoneInformation(&tzi) != TIME_ZONE_ID_INVALID;
+      if (got)
+      {
+         LONG bias = tzi.StandardBias;
+         /* A DST below standard time counts as the standard. */
+         if (tzi.DaylightDate.wMonth && tzi.DaylightBias > bias)
+            bias = tzi.DaylightBias;
+         return (int32_t)(-(tzi.Bias + bias) * 60);
+      }
+   }
+#endif
+   rtime_tzset();
+   /* Standard time at sec, else at the first 30-day step after it;
+    * a DST below it (Europe/Dublin in winter) takes its place. */
+   for (k = 0; k <= 12; k++)
+   {
+      if (!rtime_local_offset(sec + (int64_t)k * 2592000, &offset, &isdst))
+         continue;
+      if (!isdst)
+      {
+         if (!has_std)
+            standard = offset;
+         has_std = true;
+      }
+      else if (!has_low || offset < low)
+      {
+         low     = offset;
+         has_low = true;
+      }
+   }
+   if (!has_std)
+      standard = rtime_utc_offset(sec);
+   if (has_low && low < standard)
+      return low;
+   return standard;
+}
+
+#if defined(RTIME_POSIX_ZONE_NAME)
+/* A name without a leading posix/ or right/, of IANA's characters
+ * only, which also keeps out "..". */
+static size_t rtime_zone_name_put(char *s, size_t len, const char *name)
+{
+   size_t i;
+   if (!strncmp(name, "posix/", 6) || !strncmp(name, "right/", 6))
+      name += 6;
+   for (i = 0; name[i]; i++)
+   {
+      char c = name[i];
+      if (!(   (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+            || (c >= '0' && c <= '9')
+            || c == '_' || c == '+' || c == '-' || c == '/'))
+         return 0;
+   }
+   if (!i || i >= len)
+      return 0;
+   memcpy(s, name, i + 1);
+   return i;
+}
+
+/* The part after zoneinfo/; a path without it is followed one link. */
+static size_t rtime_zone_name_path(char *s, size_t len, const char *path)
+{
+   char link[256];
+   ssize_t n;
+   const char *part = strstr(path, "zoneinfo/");
+   if (!part)
+   {
+      n = readlink(path, link, sizeof(link));
+      if (n <= 0 || n >= (ssize_t)sizeof(link))
+         return 0;
+      link[n] = '\0';
+      if (!(part = strstr(link, "zoneinfo/")))
+         return 0;
+   }
+   return rtime_zone_name_put(s, len, part + 9);
+}
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+/* The zone's registry key name, mapped to IANA by the icu.dll that
+ * Windows 10 1903 and later ship. */
+static size_t rtime_zone_name_windows(char *s, size_t len)
+{
+   /* The last key and the name ICU gave it: icu.dll is loaded again
+    * only when the zone changes. */
+   static WCHAR last_key[128];
+   static char last_name[129];
+   static size_t last_len = 0;
+   rtime_dynamic_tzi_t tzi;
+   uint16_t id[128];
+   rtime_get_dynamic_tzi_t get_tzi;
+   rtime_ucal_zone_id_t zone_id;
+   HMODULE kernel32;
+   HMODULE icu;
+   int32_t status = 0;
+   int32_t n      = 0;
+   int32_t keylen;
+   int32_t i;
+
+   if (     !(kernel32 = GetModuleHandleA("kernel32.dll"))
+         || !(get_tzi  = (rtime_get_dynamic_tzi_t)GetProcAddress(kernel32,
+               "GetDynamicTimeZoneInformation")))
+      return 0;
+   memset(&tzi, 0, sizeof(tzi));
+   if (get_tzi(&tzi) == TIME_ZONE_ID_INVALID)
+      return 0;
+   for (keylen = 0; keylen < 128 && tzi.TimeZoneKeyName[keylen]; keylen++)
+      ;
+   if (!keylen || keylen >= 128)
+      return 0;
+
+   if (memcmp(last_key, tzi.TimeZoneKeyName, (keylen + 1) * sizeof(WCHAR)))
+   {
+      last_len     = 0;
+      last_name[0] = '\0';
+      if ((icu = LoadLibraryExW(L"icu.dll", NULL,
+                  0x00000800 /* LOAD_LIBRARY_SEARCH_SYSTEM32 */)))
+      {
+         if ((zone_id = (rtime_ucal_zone_id_t)GetProcAddress(icu,
+                     "ucal_getTimeZoneIDForWindowsID")))
+            n = zone_id((const uint16_t*)tzi.TimeZoneKeyName, keylen, NULL,
+                  id, 128, &status);
+         FreeLibrary(icu);
+      }
+      if (status <= 0 && n > 0 && n <= 128)
+      {
+         for (i = 0; i < n && id[i] <= 0x7E; i++)
+            last_name[i] = (char)id[i];
+         if (i == n)
+         {
+            last_name[n] = '\0';
+            last_len     = (size_t)n;
+         }
+         else
+            last_name[0] = '\0';
+      }
+      memcpy(last_key, tzi.TimeZoneKeyName, (keylen + 1) * sizeof(WCHAR));
+   }
+
+   if (!last_len || last_len >= len)
+      return 0;
+   memcpy(s, last_name, last_len + 1);
+   return last_len;
+}
+#endif
+
+size_t rtime_zone_name(char *s, size_t len)
+{
+#if defined(RTIME_POSIX_ZONE_NAME)
+   const char *tz;
+#if defined(ANDROID)
+   char prop[PROP_VALUE_MAX];
+#endif
+#elif defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   const char *tz;
+#endif
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+#if defined(RTIME_POSIX_ZONE_NAME)
+   /* libc follows a TZ that is set instead of the host zone: an empty
+    * one is UTC, and one that is not a name is a rule with no name. */
+   if ((tz = getenv("TZ")))
+   {
+      if (!*tz)
+         return rtime_zone_name_put(s, len, "UTC");
+      if (*tz == ':')
+         tz++;
+      if (*tz == '/')
+         return rtime_zone_name_path(s, len, tz);
+      if (!strchr(tz, '/') && strcmp(tz, "UTC"))
+         return 0;
+      return rtime_zone_name_put(s, len, tz);
+   }
+#if defined(ANDROID)
+   if (__system_property_get("persist.sys.timezone", prop) <= 0)
+      return 0;
+   return rtime_zone_name_put(s, len, prop);
+#else
+   return rtime_zone_name_path(s, len, "/etc/localtime");
+#endif
+#elif defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   /* The CRT follows a TZ that is set, not the Windows zone. */
+   if ((tz = getenv("TZ")) && *tz)
+      return 0;
+   return rtime_zone_name_windows(s, len);
+#else
+   return 0;
+#endif
+}
+#endif
