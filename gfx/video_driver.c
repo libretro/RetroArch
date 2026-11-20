@@ -8271,7 +8271,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->menu.icon_thumbnails                        = settings->uints.menu_icon_thumbnails;
       video_info->menu.xmb_thumbnail_scale_factor             = settings->uints.menu_xmb_thumbnail_scale_factor;
       video_info->menu.xmb_vertical_fade_factor               = settings->uints.menu_xmb_vertical_fade_factor;
-      video_info->menu.timedate_style                         = settings->uints.menu_timedate_style;
+      video_info->menu.timedate_style                         = MENU_TIMEDATE_RESOLVE_STYLE(
+            settings->uints.menu_timedate_mode,
+            settings->uints.menu_timedate_style,
+            settings->bools.menu_timedate_12hour,
+            menu_st->timedate_zone_order);
       video_info->menu.timedate_date_separator                = settings->uints.menu_timedate_date_separator;
       video_info->menu.ticker_type                            = settings->uints.menu_ticker_type;
       video_info->menu.font_color_red                         = settings->uints.menu_font_color_red;

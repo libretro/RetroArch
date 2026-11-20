@@ -1098,6 +1098,7 @@ endif
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
           menu/menu_driver.o \
+          menu/menu_timedate.o \
           menu/menu_media_controls.o \
           gfx/gfx_media_subtitle.o \
           tasks/task_subtitle.o \

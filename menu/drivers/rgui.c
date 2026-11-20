@@ -6964,12 +6964,13 @@ static void rgui_render(void *data, unsigned dims,
       /* Print clock (if required) */
       if (menu_timedate_enable)
       {
-         char timedate[20];
-         gfx_display_ctx_datetime_t datetime;
-         datetime.time_mode      = settings->uints.menu_timedate_style;
-         datetime.date_separator = settings->uints.menu_timedate_date_separator;
-
-         menu_display_timedate(&datetime, timedate, sizeof(timedate));
+         const char *timedate = menu_display_timedate(
+               MENU_TIMEDATE_RESOLVE_STYLE(
+                  settings->uints.menu_timedate_mode,
+                  settings->uints.menu_timedate_style,
+                  settings->bools.menu_timedate_12hour,
+                  menu_state_get_ptr()->timedate_zone_order),
+               settings->uints.menu_timedate_date_separator, NULL);
          timedate_len = utf8len(timedate);
 
          /* Add battery spacer */

@@ -7508,12 +7508,8 @@ MUI_NOINLINE static void materialui_render_header(
    /* > Draw clock (if required) */
    if (menu_timedate_enable)
    {
-      gfx_display_ctx_datetime_t datetime;
-      char timedate_str[MUI_TIMEDATE_MAX_LENGTH];
-      datetime.time_mode      = menu_timedate_style;
-      datetime.date_separator = menu_timedate_date_separator;
-
-      menu_display_timedate(&datetime, timedate_str, sizeof(timedate_str));
+      const char *timedate_str = menu_display_timedate(menu_timedate_style,
+            menu_timedate_date_separator, NULL);
 
       /* Need to determine pixel width of time string
        * > This is somewhat expensive, so utilise a cache
@@ -7522,7 +7518,7 @@ MUI_NOINLINE static void materialui_render_header(
       {
          /* Cache new string */
          size_t _len = strlcpy(mui->sys_bar_cache.timedate_str, timedate_str,
-               MUI_TIMEDATE_MAX_LENGTH * sizeof(char));
+               sizeof(mui->sys_bar_cache.timedate_str));
 
          /* Cache width */
          mui->sys_bar_cache.timedate_width

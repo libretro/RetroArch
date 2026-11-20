@@ -16,24 +16,6 @@ S_BOOL(menu_timedate_enable, TIMEDATE_ENABLE,
 /* The configuration row lives under defined(HAVE_MENU); other passes are
  * unaffected. */
 #if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
-S_UINT_EX(menu_timedate_style, TIMEDATE_STYLE,
-      "menu_timedate_style",
-      DEFAULT_MENU_TIMEDATE_STYLE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, MENU_TIMEDATE_STYLE_LAST - 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_menu_timedate_style, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
-      "Style of Date and Time",
-      "Change the style current date and/or time is shown inside the menu.")
-#endif
-/* The configuration row lives under defined(HAVE_MENU); other passes are
- * unaffected. */
-#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
-S_UINT_EX(menu_timedate_date_separator, TIMEDATE_DATE_SEPARATOR,
-      "menu_timedate_date_separator",
-      DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, MENU_TIMEDATE_DATE_SEPARATOR_LAST - 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_menu_timedate_date_separator, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
-      "Date Separator",
-      "Specify character to use as a separator between year/month/day components when current date is shown inside the menu.")
-#endif
-/* The configuration row lives under defined(HAVE_MENU); other passes are
- * unaffected. */
-#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
 S_BOOL(menu_battery_level_enable, BATTERY_LEVEL_ENABLE,
       "menu_battery_level_enable",
       true, SD_FLAG_ADVANCED, 0, 0,

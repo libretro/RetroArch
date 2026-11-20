@@ -2006,6 +2006,7 @@ MENU
 #ifdef HAVE_MENU
 #include "../menu/menu_str.c"
 #include "../menu/menu_driver.c"
+#include "../menu/menu_timedate.c"
 #include "../libretro-common/formats/subtitle/rsubtitle_vtt.c"
 #include "../libretro-common/formats/subtitle/rsubtitle_vtt_css.c"
 #include "../libretro-common/formats/subtitle/rsubtitle_vtt_css_tree.c"

@@ -12264,18 +12264,14 @@ OZONE_NOINLINE static void ozone_draw_header(
    /* Timedate */
    if (timedate_enable)
    {
-      gfx_display_ctx_datetime_t datetime;
-      char timedate[256];
-      float icon_width  = 35 * scale_factor;
-      float text_offset = ozone->dimensions.entry_spacing * 3.0f;
+      float icon_width     = 35 * scale_factor;
+      float text_offset    = ozone->dimensions.entry_spacing * 3.0f;
+      const char *timedate = menu_display_timedate(
+            video_info->menu.timedate_style,
+            video_info->menu.timedate_date_separator, NULL);
 
       if (!timedate_offset)
          timedate_offset = header_margin;
-
-      datetime.time_mode      = video_info->menu.timedate_style;
-      datetime.date_separator = video_info->menu.timedate_date_separator;
-
-      menu_display_timedate(&datetime, timedate, sizeof(timedate));
 
       gfx_display_draw_text(
             ozone->fonts.time.font,

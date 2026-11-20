@@ -170,6 +170,35 @@ enum menu_timedate_style_type
    MENU_TIMEDATE_STYLE_LAST
 };
 
+/* Date and Time Format: Automatic shows month, day and time in the
+ * order used where the time zone is, on the 12- or 24-hour clock as
+ * '12-Hour Clock' says; Manual uses 'Style of Date and Time'. */
+enum menu_timedate_mode_type
+{
+   MENU_TIMEDATE_MODE_AUTOMATIC = 0,
+   MENU_TIMEDATE_MODE_MANUAL,
+   MENU_TIMEDATE_MODE_LAST
+};
+
+/* The order dates are written in where the time zone is. Zero is
+ * unknown, so a zeroed state knows nothing. */
+enum menu_timedate_date_order
+{
+   MENU_TIMEDATE_DATE_ORDER_UNKNOWN = 0,
+   MENU_TIMEDATE_DATE_ORDER_DMY,
+   MENU_TIMEDATE_DATE_ORDER_MDY,
+   MENU_TIMEDATE_DATE_ORDER_YMD
+};
+
+/* The style the clock is drawn with. Automatic writes no year, puts
+ * the day first only where the time zone does, and the month first
+ * everywhere else, year-first places included. */
+#define MENU_TIMEDATE_RESOLVE_STYLE(mode, style, hour12, order) \
+   (((mode) == MENU_TIMEDATE_MODE_MANUAL) ? (unsigned)(style) \
+    : ((order) == MENU_TIMEDATE_DATE_ORDER_DMY) \
+       ? ((hour12) ? MENU_TIMEDATE_STYLE_DDMM_HM_AMPM : MENU_TIMEDATE_STYLE_DDMM_HM) \
+       : ((hour12) ? MENU_TIMEDATE_STYLE_MD_HM_AMPM   : MENU_TIMEDATE_STYLE_MD_HM))
+
 enum menu_remember_selection_type
 {
    MENU_REMEMBER_SELECTION_OFF = 0,

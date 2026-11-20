@@ -9845,8 +9845,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Clock */
    if (timedate_enable)
    {
-      gfx_display_ctx_datetime_t datetime;
-      char timedate[256];
+      const char *timedate;
       size_t _len        = 0;
       size_t x_pos       = 0;
       float scale_factor = xmb->scale_cap;
@@ -9887,9 +9886,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          gfx_display_blend_end(dispctx, userdata);
       }
 
-      datetime.time_mode      = video_info->menu.timedate_style;
-      datetime.date_separator = video_info->menu.timedate_date_separator;
-      _len = menu_display_timedate(&datetime, timedate, sizeof(timedate));
+      timedate = menu_display_timedate(video_info->menu.timedate_style,
+            video_info->menu.timedate_date_separator, &_len);
 
       title_header_max_width = x_pos + font_driver_get_message_width(
             xmb->font, timedate, _len, 1.0f);

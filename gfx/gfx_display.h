@@ -282,12 +282,6 @@ typedef struct gfx_display_ctx_coord_draw
    const float *ptr;
 } gfx_display_ctx_coord_draw_t;
 
-typedef struct gfx_display_ctx_datetime
-{
-   unsigned time_mode;
-   unsigned date_separator;
-} gfx_display_ctx_datetime_t;
-
 typedef struct gfx_display_ctx_powerstate
 {
    unsigned percent;
