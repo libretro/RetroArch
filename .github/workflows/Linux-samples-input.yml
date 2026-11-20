@@ -635,14 +635,15 @@ jobs:
           make clean
           rm -f mapped_port.log
 
-      - name: Build and run builtin_autoconf_test and builtin_autoconf_webos_test (ASan + UBSan, mingw + Wine)
+      - name: Build and run builtin_autoconf_test, once per platform (ASan + UBSan, mingw + Wine)
         shell: bash
         run: |
           set -eu
-          # The SDL2 and SDL3 drivers' built-in profiles, which a pad
-          # with no profile file gets, bind each right-stick axis with
-          # the sign of its left-stick twin: SDL puts both sticks' up
-          # and left at negative values. Built again for webOS.
+          # The built-in profiles a pad with no profile file gets, in a
+          # build for each platform the Makefile lists, bind each
+          # right-stick axis with the sign of its left-stick twin: each
+          # driver reads both sticks alike. Where its axes are negative
+          # up and left, as SDL's are, down is the + half too.
           . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           make -C samples/input/builtin_autoconf clean check SANITIZER=address,undefined
           make -C samples/input/builtin_autoconf clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
