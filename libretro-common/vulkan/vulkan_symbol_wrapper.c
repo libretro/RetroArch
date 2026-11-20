@@ -222,6 +222,108 @@ PFN_vkGetPhysicalDeviceSparseImageFormatProperties2 vulkan_symbol_wrapper_vkGetP
 PFN_vkTrimCommandPool vulkan_symbol_wrapper_vkTrimCommandPool;
 PFN_vkUpdateDescriptorSetWithTemplate vulkan_symbol_wrapper_vkUpdateDescriptorSetWithTemplate;
 #endif
+#ifdef VK_VERSION_1_2
+PFN_vkCmdBeginRenderPass2 vulkan_symbol_wrapper_vkCmdBeginRenderPass2;
+PFN_vkCmdDrawIndexedIndirectCount vulkan_symbol_wrapper_vkCmdDrawIndexedIndirectCount;
+PFN_vkCmdDrawIndirectCount vulkan_symbol_wrapper_vkCmdDrawIndirectCount;
+PFN_vkCmdEndRenderPass2 vulkan_symbol_wrapper_vkCmdEndRenderPass2;
+PFN_vkCmdNextSubpass2 vulkan_symbol_wrapper_vkCmdNextSubpass2;
+PFN_vkCreateRenderPass2 vulkan_symbol_wrapper_vkCreateRenderPass2;
+PFN_vkGetBufferDeviceAddress vulkan_symbol_wrapper_vkGetBufferDeviceAddress;
+PFN_vkGetBufferOpaqueCaptureAddress vulkan_symbol_wrapper_vkGetBufferOpaqueCaptureAddress;
+PFN_vkGetDeviceMemoryOpaqueCaptureAddress vulkan_symbol_wrapper_vkGetDeviceMemoryOpaqueCaptureAddress;
+PFN_vkGetSemaphoreCounterValue vulkan_symbol_wrapper_vkGetSemaphoreCounterValue;
+PFN_vkResetQueryPool vulkan_symbol_wrapper_vkResetQueryPool;
+PFN_vkSignalSemaphore vulkan_symbol_wrapper_vkSignalSemaphore;
+PFN_vkWaitSemaphores vulkan_symbol_wrapper_vkWaitSemaphores;
+#endif
+#ifdef VK_VERSION_1_3
+PFN_vkCmdBeginRendering vulkan_symbol_wrapper_vkCmdBeginRendering;
+PFN_vkCmdBindVertexBuffers2 vulkan_symbol_wrapper_vkCmdBindVertexBuffers2;
+PFN_vkCmdBlitImage2 vulkan_symbol_wrapper_vkCmdBlitImage2;
+PFN_vkCmdCopyBuffer2 vulkan_symbol_wrapper_vkCmdCopyBuffer2;
+PFN_vkCmdCopyBufferToImage2 vulkan_symbol_wrapper_vkCmdCopyBufferToImage2;
+PFN_vkCmdCopyImage2 vulkan_symbol_wrapper_vkCmdCopyImage2;
+PFN_vkCmdCopyImageToBuffer2 vulkan_symbol_wrapper_vkCmdCopyImageToBuffer2;
+PFN_vkCmdEndRendering vulkan_symbol_wrapper_vkCmdEndRendering;
+PFN_vkCmdPipelineBarrier2 vulkan_symbol_wrapper_vkCmdPipelineBarrier2;
+PFN_vkCmdResetEvent2 vulkan_symbol_wrapper_vkCmdResetEvent2;
+PFN_vkCmdResolveImage2 vulkan_symbol_wrapper_vkCmdResolveImage2;
+PFN_vkCmdSetCullMode vulkan_symbol_wrapper_vkCmdSetCullMode;
+PFN_vkCmdSetDepthBiasEnable vulkan_symbol_wrapper_vkCmdSetDepthBiasEnable;
+PFN_vkCmdSetDepthBoundsTestEnable vulkan_symbol_wrapper_vkCmdSetDepthBoundsTestEnable;
+PFN_vkCmdSetDepthCompareOp vulkan_symbol_wrapper_vkCmdSetDepthCompareOp;
+PFN_vkCmdSetDepthTestEnable vulkan_symbol_wrapper_vkCmdSetDepthTestEnable;
+PFN_vkCmdSetDepthWriteEnable vulkan_symbol_wrapper_vkCmdSetDepthWriteEnable;
+PFN_vkCmdSetEvent2 vulkan_symbol_wrapper_vkCmdSetEvent2;
+PFN_vkCmdSetFrontFace vulkan_symbol_wrapper_vkCmdSetFrontFace;
+PFN_vkCmdSetPrimitiveRestartEnable vulkan_symbol_wrapper_vkCmdSetPrimitiveRestartEnable;
+PFN_vkCmdSetPrimitiveTopology vulkan_symbol_wrapper_vkCmdSetPrimitiveTopology;
+PFN_vkCmdSetRasterizerDiscardEnable vulkan_symbol_wrapper_vkCmdSetRasterizerDiscardEnable;
+PFN_vkCmdSetScissorWithCount vulkan_symbol_wrapper_vkCmdSetScissorWithCount;
+PFN_vkCmdSetStencilOp vulkan_symbol_wrapper_vkCmdSetStencilOp;
+PFN_vkCmdSetStencilTestEnable vulkan_symbol_wrapper_vkCmdSetStencilTestEnable;
+PFN_vkCmdSetViewportWithCount vulkan_symbol_wrapper_vkCmdSetViewportWithCount;
+PFN_vkCmdWaitEvents2 vulkan_symbol_wrapper_vkCmdWaitEvents2;
+PFN_vkCmdWriteTimestamp2 vulkan_symbol_wrapper_vkCmdWriteTimestamp2;
+PFN_vkCreatePrivateDataSlot vulkan_symbol_wrapper_vkCreatePrivateDataSlot;
+PFN_vkDestroyPrivateDataSlot vulkan_symbol_wrapper_vkDestroyPrivateDataSlot;
+PFN_vkGetDeviceBufferMemoryRequirements vulkan_symbol_wrapper_vkGetDeviceBufferMemoryRequirements;
+PFN_vkGetDeviceImageMemoryRequirements vulkan_symbol_wrapper_vkGetDeviceImageMemoryRequirements;
+PFN_vkGetDeviceImageSparseMemoryRequirements vulkan_symbol_wrapper_vkGetDeviceImageSparseMemoryRequirements;
+PFN_vkGetPhysicalDeviceToolProperties vulkan_symbol_wrapper_vkGetPhysicalDeviceToolProperties;
+PFN_vkGetPrivateData vulkan_symbol_wrapper_vkGetPrivateData;
+PFN_vkQueueSubmit2 vulkan_symbol_wrapper_vkQueueSubmit2;
+PFN_vkSetPrivateData vulkan_symbol_wrapper_vkSetPrivateData;
+#endif
+#ifdef VK_KHR_maintenance5
+PFN_vkCmdBindIndexBuffer2KHR vulkan_symbol_wrapper_vkCmdBindIndexBuffer2KHR;
+PFN_vkGetDeviceImageSubresourceLayoutKHR vulkan_symbol_wrapper_vkGetDeviceImageSubresourceLayoutKHR;
+PFN_vkGetImageSubresourceLayout2KHR vulkan_symbol_wrapper_vkGetImageSubresourceLayout2KHR;
+PFN_vkGetRenderingAreaGranularityKHR vulkan_symbol_wrapper_vkGetRenderingAreaGranularityKHR;
+#endif
+#ifdef VK_EXT_extended_dynamic_state3
+PFN_vkCmdSetAlphaToCoverageEnableEXT vulkan_symbol_wrapper_vkCmdSetAlphaToCoverageEnableEXT;
+PFN_vkCmdSetAlphaToOneEnableEXT vulkan_symbol_wrapper_vkCmdSetAlphaToOneEnableEXT;
+PFN_vkCmdSetColorBlendAdvancedEXT vulkan_symbol_wrapper_vkCmdSetColorBlendAdvancedEXT;
+PFN_vkCmdSetColorBlendEnableEXT vulkan_symbol_wrapper_vkCmdSetColorBlendEnableEXT;
+PFN_vkCmdSetColorBlendEquationEXT vulkan_symbol_wrapper_vkCmdSetColorBlendEquationEXT;
+PFN_vkCmdSetColorWriteMaskEXT vulkan_symbol_wrapper_vkCmdSetColorWriteMaskEXT;
+PFN_vkCmdSetConservativeRasterizationModeEXT vulkan_symbol_wrapper_vkCmdSetConservativeRasterizationModeEXT;
+PFN_vkCmdSetCoverageModulationModeNV vulkan_symbol_wrapper_vkCmdSetCoverageModulationModeNV;
+PFN_vkCmdSetCoverageModulationTableEnableNV vulkan_symbol_wrapper_vkCmdSetCoverageModulationTableEnableNV;
+PFN_vkCmdSetCoverageModulationTableNV vulkan_symbol_wrapper_vkCmdSetCoverageModulationTableNV;
+PFN_vkCmdSetCoverageReductionModeNV vulkan_symbol_wrapper_vkCmdSetCoverageReductionModeNV;
+PFN_vkCmdSetCoverageToColorEnableNV vulkan_symbol_wrapper_vkCmdSetCoverageToColorEnableNV;
+PFN_vkCmdSetCoverageToColorLocationNV vulkan_symbol_wrapper_vkCmdSetCoverageToColorLocationNV;
+PFN_vkCmdSetDepthClampEnableEXT vulkan_symbol_wrapper_vkCmdSetDepthClampEnableEXT;
+PFN_vkCmdSetDepthClipEnableEXT vulkan_symbol_wrapper_vkCmdSetDepthClipEnableEXT;
+PFN_vkCmdSetDepthClipNegativeOneToOneEXT vulkan_symbol_wrapper_vkCmdSetDepthClipNegativeOneToOneEXT;
+PFN_vkCmdSetExtraPrimitiveOverestimationSizeEXT vulkan_symbol_wrapper_vkCmdSetExtraPrimitiveOverestimationSizeEXT;
+PFN_vkCmdSetLineRasterizationModeEXT vulkan_symbol_wrapper_vkCmdSetLineRasterizationModeEXT;
+PFN_vkCmdSetLineStippleEnableEXT vulkan_symbol_wrapper_vkCmdSetLineStippleEnableEXT;
+PFN_vkCmdSetLogicOpEnableEXT vulkan_symbol_wrapper_vkCmdSetLogicOpEnableEXT;
+PFN_vkCmdSetPolygonModeEXT vulkan_symbol_wrapper_vkCmdSetPolygonModeEXT;
+PFN_vkCmdSetProvokingVertexModeEXT vulkan_symbol_wrapper_vkCmdSetProvokingVertexModeEXT;
+PFN_vkCmdSetRasterizationSamplesEXT vulkan_symbol_wrapper_vkCmdSetRasterizationSamplesEXT;
+PFN_vkCmdSetRasterizationStreamEXT vulkan_symbol_wrapper_vkCmdSetRasterizationStreamEXT;
+PFN_vkCmdSetRepresentativeFragmentTestEnableNV vulkan_symbol_wrapper_vkCmdSetRepresentativeFragmentTestEnableNV;
+PFN_vkCmdSetSampleLocationsEnableEXT vulkan_symbol_wrapper_vkCmdSetSampleLocationsEnableEXT;
+PFN_vkCmdSetSampleMaskEXT vulkan_symbol_wrapper_vkCmdSetSampleMaskEXT;
+PFN_vkCmdSetShadingRateImageEnableNV vulkan_symbol_wrapper_vkCmdSetShadingRateImageEnableNV;
+PFN_vkCmdSetTessellationDomainOriginEXT vulkan_symbol_wrapper_vkCmdSetTessellationDomainOriginEXT;
+PFN_vkCmdSetViewportSwizzleNV vulkan_symbol_wrapper_vkCmdSetViewportSwizzleNV;
+PFN_vkCmdSetViewportWScalingEnableNV vulkan_symbol_wrapper_vkCmdSetViewportWScalingEnableNV;
+#endif
+#ifdef VK_EXT_vertex_input_dynamic_state
+PFN_vkCmdSetVertexInputEXT vulkan_symbol_wrapper_vkCmdSetVertexInputEXT;
+#endif
+#ifdef VK_EXT_attachment_feedback_loop_dynamic_state
+PFN_vkCmdSetAttachmentFeedbackLoopEnableEXT vulkan_symbol_wrapper_vkCmdSetAttachmentFeedbackLoopEnableEXT;
+#endif
+#ifdef VK_EXT_device_fault
+PFN_vkGetDeviceFaultInfoEXT vulkan_symbol_wrapper_vkGetDeviceFaultInfoEXT;
+#endif
 #ifdef VK_KHR_bind_memory2
 PFN_vkBindBufferMemory2KHR vulkan_symbol_wrapper_vkBindBufferMemory2KHR;
 PFN_vkBindImageMemory2KHR vulkan_symbol_wrapper_vkBindImageMemory2KHR;
@@ -850,6 +952,132 @@ void vulkan_symbol_wrapper_load_extended_symbols(VkInstance instance, VkDevice d
         VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetImageSparseMemoryRequirements2", vkGetImageSparseMemoryRequirements2);
         VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkTrimCommandPool", vkTrimCommandPool);
         VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkUpdateDescriptorSetWithTemplate", vkUpdateDescriptorSetWithTemplate);
+    }
+#endif
+#ifdef VK_VERSION_1_2
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBeginRenderPass2", vkCmdBeginRenderPass2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDrawIndexedIndirectCount", vkCmdDrawIndexedIndirectCount);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdDrawIndirectCount", vkCmdDrawIndirectCount);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdEndRenderPass2", vkCmdEndRenderPass2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdNextSubpass2", vkCmdNextSubpass2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCreateRenderPass2", vkCreateRenderPass2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetBufferDeviceAddress", vkGetBufferDeviceAddress);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetBufferOpaqueCaptureAddress", vkGetBufferOpaqueCaptureAddress);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetDeviceMemoryOpaqueCaptureAddress", vkGetDeviceMemoryOpaqueCaptureAddress);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetSemaphoreCounterValue", vkGetSemaphoreCounterValue);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkResetQueryPool", vkResetQueryPool);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkSignalSemaphore", vkSignalSemaphore);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkWaitSemaphores", vkWaitSemaphores);
+    }
+#endif
+#ifdef VK_VERSION_1_3
+    if (instance != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkGetPhysicalDeviceToolProperties", vkGetPhysicalDeviceToolProperties);
+    }
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBeginRendering", vkCmdBeginRendering);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBindVertexBuffers2", vkCmdBindVertexBuffers2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBlitImage2", vkCmdBlitImage2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdCopyBuffer2", vkCmdCopyBuffer2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdCopyBufferToImage2", vkCmdCopyBufferToImage2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdCopyImage2", vkCmdCopyImage2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdCopyImageToBuffer2", vkCmdCopyImageToBuffer2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdEndRendering", vkCmdEndRendering);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdPipelineBarrier2", vkCmdPipelineBarrier2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdResetEvent2", vkCmdResetEvent2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdResolveImage2", vkCmdResolveImage2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetCullMode", vkCmdSetCullMode);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetDepthBiasEnable", vkCmdSetDepthBiasEnable);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetDepthBoundsTestEnable", vkCmdSetDepthBoundsTestEnable);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetDepthCompareOp", vkCmdSetDepthCompareOp);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetDepthTestEnable", vkCmdSetDepthTestEnable);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetDepthWriteEnable", vkCmdSetDepthWriteEnable);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetEvent2", vkCmdSetEvent2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetFrontFace", vkCmdSetFrontFace);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetPrimitiveRestartEnable", vkCmdSetPrimitiveRestartEnable);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetPrimitiveTopology", vkCmdSetPrimitiveTopology);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetRasterizerDiscardEnable", vkCmdSetRasterizerDiscardEnable);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetScissorWithCount", vkCmdSetScissorWithCount);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetStencilOp", vkCmdSetStencilOp);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetStencilTestEnable", vkCmdSetStencilTestEnable);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetViewportWithCount", vkCmdSetViewportWithCount);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdWaitEvents2", vkCmdWaitEvents2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdWriteTimestamp2", vkCmdWriteTimestamp2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCreatePrivateDataSlot", vkCreatePrivateDataSlot);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkDestroyPrivateDataSlot", vkDestroyPrivateDataSlot);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetDeviceBufferMemoryRequirements", vkGetDeviceBufferMemoryRequirements);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetDeviceImageMemoryRequirements", vkGetDeviceImageMemoryRequirements);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetDeviceImageSparseMemoryRequirements", vkGetDeviceImageSparseMemoryRequirements);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetPrivateData", vkGetPrivateData);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkQueueSubmit2", vkQueueSubmit2);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkSetPrivateData", vkSetPrivateData);
+    }
+#endif
+#ifdef VK_KHR_maintenance5
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdBindIndexBuffer2KHR", vkCmdBindIndexBuffer2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetDeviceImageSubresourceLayoutKHR", vkGetDeviceImageSubresourceLayoutKHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetImageSubresourceLayout2KHR", vkGetImageSubresourceLayout2KHR);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetRenderingAreaGranularityKHR", vkGetRenderingAreaGranularityKHR);
+    }
+#endif
+#ifdef VK_EXT_extended_dynamic_state3
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetAlphaToCoverageEnableEXT", vkCmdSetAlphaToCoverageEnableEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetAlphaToOneEnableEXT", vkCmdSetAlphaToOneEnableEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetColorBlendAdvancedEXT", vkCmdSetColorBlendAdvancedEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetColorBlendEnableEXT", vkCmdSetColorBlendEnableEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetColorBlendEquationEXT", vkCmdSetColorBlendEquationEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetColorWriteMaskEXT", vkCmdSetColorWriteMaskEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetConservativeRasterizationModeEXT", vkCmdSetConservativeRasterizationModeEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetCoverageModulationModeNV", vkCmdSetCoverageModulationModeNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetCoverageModulationTableEnableNV", vkCmdSetCoverageModulationTableEnableNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetCoverageModulationTableNV", vkCmdSetCoverageModulationTableNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetCoverageReductionModeNV", vkCmdSetCoverageReductionModeNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetCoverageToColorEnableNV", vkCmdSetCoverageToColorEnableNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetCoverageToColorLocationNV", vkCmdSetCoverageToColorLocationNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetDepthClampEnableEXT", vkCmdSetDepthClampEnableEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetDepthClipEnableEXT", vkCmdSetDepthClipEnableEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetDepthClipNegativeOneToOneEXT", vkCmdSetDepthClipNegativeOneToOneEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetExtraPrimitiveOverestimationSizeEXT", vkCmdSetExtraPrimitiveOverestimationSizeEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetLineRasterizationModeEXT", vkCmdSetLineRasterizationModeEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetLineStippleEnableEXT", vkCmdSetLineStippleEnableEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetLogicOpEnableEXT", vkCmdSetLogicOpEnableEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetPolygonModeEXT", vkCmdSetPolygonModeEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetProvokingVertexModeEXT", vkCmdSetProvokingVertexModeEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetRasterizationSamplesEXT", vkCmdSetRasterizationSamplesEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetRasterizationStreamEXT", vkCmdSetRasterizationStreamEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetRepresentativeFragmentTestEnableNV", vkCmdSetRepresentativeFragmentTestEnableNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetSampleLocationsEnableEXT", vkCmdSetSampleLocationsEnableEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetSampleMaskEXT", vkCmdSetSampleMaskEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetShadingRateImageEnableNV", vkCmdSetShadingRateImageEnableNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetTessellationDomainOriginEXT", vkCmdSetTessellationDomainOriginEXT);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetViewportSwizzleNV", vkCmdSetViewportSwizzleNV);
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetViewportWScalingEnableNV", vkCmdSetViewportWScalingEnableNV);
+    }
+#endif
+#ifdef VK_EXT_vertex_input_dynamic_state
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetVertexInputEXT", vkCmdSetVertexInputEXT);
+    }
+#endif
+#ifdef VK_EXT_attachment_feedback_loop_dynamic_state
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkCmdSetAttachmentFeedbackLoopEnableEXT", vkCmdSetAttachmentFeedbackLoopEnableEXT);
+    }
+#endif
+#ifdef VK_EXT_device_fault
+    if (device != VK_NULL_HANDLE)
+    {
+        VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_SYMBOL(device, "vkGetDeviceFaultInfoEXT", vkGetDeviceFaultInfoEXT);
     }
 #endif
 #ifdef VK_KHR_bind_memory2
