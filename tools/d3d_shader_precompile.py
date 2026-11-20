@@ -53,7 +53,6 @@ def main():
                     data = source.read_bytes().replace(b'\r\n',b'\n')
                     entries = ['VSMain','PSMain']
                     if name=='sprite':entries+=['PSMainA8']
-                    if name=='views':entries=['VSMain','PSRect','PSLayer','PSAnaglyph','PSInterlaced']
                 else:
                     data = sources[name]
                     source = temp / (name+'.hlsl')
@@ -62,6 +61,7 @@ def main():
                     entries = sorted(set(re.findall(rb'\b((?:VS|PS|GS|CS)Main\w*)\s*\(',data)))
                     entries = [entry.decode() for entry in entries]
                     if name in ('planar11','planar12','nv12'):entries=['main']
+                if name=='views':entries=['VSMain','PSRect','PSLayer','PSAnaglyph','PSInterlaced']
                 for entry in entries:
                     profile = stage(entry)+'_%d_0'%model
                     suffix = '.dxil' if model==6 else '.dxbc' if model>=4 else '.cso'

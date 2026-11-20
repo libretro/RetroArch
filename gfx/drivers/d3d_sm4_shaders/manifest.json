@@ -290,6 +290,54 @@
       "raster_fallback": false
     },
     {
+      "program": "views",
+      "entry": "PSRect",
+      "profile": "ps_4_0",
+      "file": "precompiled/views.PSRect.dxbc",
+      "bytes": 420,
+      "sha256": "223ff672bf87c9de5ed10c68ef9f1267b2c9223325b1abec8d87270133aacfdc",
+      "source_fingerprint": "64a2979293227d1f",
+      "source_bytes": 1490,
+      "source_sha256": "eb718971e7e397b4994d8668d0188c126f72cf5038142934c761b7391566dc52",
+      "raster_fallback": false
+    },
+    {
+      "program": "views",
+      "entry": "PSLayer",
+      "profile": "ps_4_0",
+      "file": "precompiled/views.PSLayer.dxbc",
+      "bytes": 292,
+      "sha256": "4f73c7a206cda14be18a7de17353256b83042526b567d01ea3809962b29c8107",
+      "source_fingerprint": "64a2979293227d1f",
+      "source_bytes": 1490,
+      "source_sha256": "eb718971e7e397b4994d8668d0188c126f72cf5038142934c761b7391566dc52",
+      "raster_fallback": false
+    },
+    {
+      "program": "views",
+      "entry": "PSAnaglyph",
+      "profile": "ps_4_0",
+      "file": "precompiled/views.PSAnaglyph.dxbc",
+      "bytes": 752,
+      "sha256": "ebf14a899ab41334f7628ecbc40bd6be385dac9dcef90e4a6b3e89735dd89c3f",
+      "source_fingerprint": "64a2979293227d1f",
+      "source_bytes": 1490,
+      "source_sha256": "eb718971e7e397b4994d8668d0188c126f72cf5038142934c761b7391566dc52",
+      "raster_fallback": false
+    },
+    {
+      "program": "views",
+      "entry": "PSInterlaced",
+      "profile": "ps_4_0",
+      "file": "precompiled/views.PSInterlaced.dxbc",
+      "bytes": 616,
+      "sha256": "8d95f50106fe8cae05c84dbb7bc3fdb6cbb79fe87eb18d3ec44f3635bfd5548a",
+      "source_fingerprint": "64a2979293227d1f",
+      "source_bytes": 1490,
+      "source_sha256": "eb718971e7e397b4994d8668d0188c126f72cf5038142934c761b7391566dc52",
+      "raster_fallback": false
+    },
+    {
       "program": "hdr",
       "entry": "PSMain",
       "profile": "ps_4_0",

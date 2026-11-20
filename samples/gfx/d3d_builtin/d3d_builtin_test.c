@@ -70,6 +70,18 @@ int main(void)
 int main(void)
 {
    D3DBlob blob = NULL;
+   static const char *entries[] = {
+      "VSMain", "PSRect", "PSLayer", "PSAnaglyph", "PSInterlaced"
+   };
+   unsigned model, i;
+   for (model = 4; model <= 6; model++)
+      for (i = 0; i < sizeof(entries) / sizeof(entries[0]); i++)
+      {
+         char profile[7];
+         snprintf(profile, sizeof(profile), "%cs_%u_0", i ? 'p' : 'v', model);
+         assert(d3d_builtin_shader_named("views", entries[i], profile, &blob));
+         blob->lpVtbl->Release(blob);
+      }
    assert(!d3d_builtin_shader_named("opaque", "VSMain", "vs_2_0", &blob));
    assert(!d3d_builtin_shader_named("opaque", "VSMain", "vs_3_0", &blob));
    assert(!d3d_builtin_shader_named("planar11", "main", "cs_6_0", &blob));
