@@ -30,6 +30,7 @@
 #include <lrc_hash.h>
 #include <encodings/base64.h>
 #include <compat/strl.h>
+#include <time/rtime.h>
 
 /* ---- DER ---------------------------------------------------------- */
 
@@ -193,18 +194,6 @@ static int x509_digits(const uint8_t *p, unsigned n, unsigned *out)
    return 0;
 }
 
-/* Days since 1970-01-01 for a proleptic Gregorian date. */
-static long x509_days_from_civil(long y, unsigned m, unsigned d)
-{
-   long era, yoe, doy, doe;
-   y  -= m <= 2;
-   era = (y >= 0 ? y : y - 399) / 400;
-   yoe = y - era * 400;
-   doy = (153 * (long)(m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;
-   doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-   return era * 146097 + doe - 719468;
-}
-
 static int der_read_time(struct der *d, time_t *t)
 {
    const uint8_t *v;
@@ -250,7 +239,7 @@ static int der_read_time(struct der *d, time_t *t)
        * longer fit it, so widen first, and where time_t itself is 32
        * bits saturate rather than wrap a far-future notAfter into the
        * past (a leaf good until 2046 must not read as expired). */
-      int64_t secs = (int64_t)x509_days_from_civil((long)y, mo, da) * 86400
+      int64_t secs = rtime_days_from_civil(y, mo, da) * 86400
             + (int64_t)h * 3600 + (int64_t)mi * 60 + (int64_t)s;
       if (sizeof(time_t) < 8)
       {

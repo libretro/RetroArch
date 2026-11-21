@@ -585,33 +585,14 @@ bool rtime_calendar_now(int64_t *sec, int32_t *nsec)
 #endif
 }
 
-/* Days from 1970-01-01 to y-m-d, proleptic Gregorian: Howard
- * Hinnant's days_from_civil. */
-static int64_t rtime_days_from_civil(int64_t y, unsigned m, unsigned d)
-{
-   int64_t era;
-   unsigned yoe;
-   unsigned doy;
-   unsigned doe;
-   y  -= m <= 2;
-   era = (y >= 0 ? y : y - 399) / 400;
-   yoe = (unsigned)(y - era * 400);
-   doy = (153 * (m > 2 ? m - 3 : m + 9) + 2) / 5 + d - 1;
-   doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-   return era * 146097 + (int64_t)doe - 719468;
-}
-
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
-/* The UTC year of sec: Howard Hinnant's civil_from_days. */
+/* The UTC year of sec */
 static int64_t rtime_year_of(int64_t sec)
 {
-   int64_t z   = (sec >= 0 ? sec : sec - 86399) / 86400 + 719468;
-   int64_t era = (z >= 0 ? z : z - 146096) / 146097;
-   unsigned doe = (unsigned)(z - era * 146097);
-   unsigned yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
-   unsigned doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-   unsigned mp  = (5 * doy + 2) / 153;
-   return (int64_t)yoe + era * 400 + (mp >= 10);
+   int64_t  y;
+   unsigned m, d;
+   rtime_civil_from_days((sec >= 0 ? sec : sec - 86399) / 86400, &y, &m, &d);
+   return y;
 }
 #endif
 

@@ -327,6 +327,63 @@ static void test_windows_tz(void)
 }
 #endif
 
+/* The calendar arithmetic: known days, the leap rules, the months, and
+ * every day of 110,000 years there and back */
+static void test_gregorian(void)
+{
+   static const struct { int64_t y; unsigned m, d; int64_t days; unsigned wday; } known[] = {
+      {  1970,  1,  1,       0, 4 },  /* a Thursday */
+      {  1969, 12, 31,      -1, 3 },
+      {  2000,  2, 29,   11016, 2 },
+      {  2000,  3,  1,   11017, 3 },
+      {  2026, 11, 21,   20778, 6 },  /* a Saturday */
+      {  1600,  2, 29, -135081, 2 },
+      {     1,  1,  1, -719162, 1 },  /* a Monday */
+      {     0,  3,  1, -719468, 3 },
+      {  9999, 12, 31, 2932896, 5 }
+   };
+   char     fail[160] = "";
+   unsigned i;
+   int64_t  days;
+
+   for (i = 0; i < sizeof(known) / sizeof(known[0]) && !*fail; i++)
+   {
+      int64_t  y;
+      unsigned m, d;
+      if (rtime_days_from_civil(known[i].y, known[i].m, known[i].d) != known[i].days)
+         snprintf(fail, sizeof(fail), "%d-%u-%u is not day %d", (int)known[i].y,
+               known[i].m, known[i].d, (int)known[i].days);
+      else if (rtime_weekday(known[i].days) != known[i].wday)
+         snprintf(fail, sizeof(fail), "day %d is not weekday %u", (int)known[i].days,
+               known[i].wday);
+      rtime_civil_from_days(known[i].days, &y, &m, &d);
+      if (!*fail && (y != known[i].y || m != known[i].m || d != known[i].d))
+         snprintf(fail, sizeof(fail), "day %d is not %d-%u-%u", (int)known[i].days,
+               (int)known[i].y, known[i].m, known[i].d);
+   }
+   if (!*fail && (!rtime_is_leap_year(2000) || rtime_is_leap_year(1900)
+         || !rtime_is_leap_year(2024) || rtime_is_leap_year(2023)
+         || !rtime_is_leap_year(0) || !rtime_is_leap_year(-4)))
+      strlcpy(fail, "the leap rule", sizeof(fail));
+   if (!*fail && (rtime_days_in_month(2024, 2) != 29 || rtime_days_in_month(2023, 2) != 28
+         || rtime_days_in_month(2023, 4) != 30 || rtime_days_in_month(2023, 12) != 31
+         || rtime_days_in_month(2023, 0) != 0 || rtime_days_in_month(2023, 13) != 0))
+      strlcpy(fail, "the month lengths", sizeof(fail));
+
+   /* there and back, the weekday one more each day, each date a real one */
+   for (days = -20000000; days <= 20000000 && !*fail; days++)
+   {
+      int64_t  y;
+      unsigned m, d;
+      rtime_civil_from_days(days, &y, &m, &d);
+      if (rtime_days_from_civil(y, m, d) != days || d < 1 || d > rtime_days_in_month(y, m))
+         snprintf(fail, sizeof(fail), "day %d to %d-%u-%u and back", (int)days, (int)y, m, d);
+      else if (rtime_weekday(days) != (rtime_weekday(days - 1) + 1) % 7)
+         snprintf(fail, sizeof(fail), "the weekday of day %d", (int)days);
+   }
+   lane("Gregorian calendar", fail);
+}
+
 int main(void)
 {
    test_now("now before rtime_init");
@@ -336,6 +393,7 @@ int main(void)
 #if defined(_WIN32)
    test_windows_tz();
 #else
+   test_gregorian();
    test_offsets();
    test_zone_names();
 #endif

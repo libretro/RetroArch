@@ -32,6 +32,80 @@
 
 RETRO_BEGIN_DECLS
 
+/* The proleptic Gregorian calendar, days counted from 1970-01-01: pure
+ * arithmetic, any thread, any year. After Howard Hinnant's algorithms.
+ * Inline with a specifier of its own, as retro_atomic.h's are: some cores
+ * define INLINE themselves, FBNeo's as "__inline static". */
+#if defined(_WIN32) || defined(__INTEL_COMPILER)
+#define RTIME_INLINE __inline
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#define RTIME_INLINE inline
+#elif defined(__GNUC__)
+#define RTIME_INLINE __inline__
+#else
+#define RTIME_INLINE
+#endif
+
+/**
+ * The day y-m-d is, counted from 1970-01-01 (negative before it).
+ * @param m 1 to 12. @param d 1 to the month's length.
+ */
+static RTIME_INLINE int64_t rtime_days_from_civil(int64_t y, unsigned m, unsigned d)
+{
+   int64_t  era;
+   unsigned yoe, doy, doe;
+   y  -= m <= 2;
+   era = (y >= 0 ? y : y - 399) / 400;
+   yoe = (unsigned)(y - era * 400);
+   doy = (153 * (m > 2 ? m - 3 : m + 9) + 2) / 5 + d - 1;
+   doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+   return era * 146097 + (int64_t)doe - 719468;
+}
+
+/**
+ * The date of a day counted from 1970-01-01: the inverse of
+ * rtime_days_from_civil().
+ */
+static RTIME_INLINE void rtime_civil_from_days(int64_t days, int64_t *y,
+      unsigned *m, unsigned *d)
+{
+   int64_t  z   = days + 719468;
+   int64_t  era = (z >= 0 ? z : z - 146096) / 146097;
+   unsigned doe = (unsigned)(z - era * 146097);
+   unsigned yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+   unsigned doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+   unsigned mp  = (5 * doy + 2) / 153;
+   *d = doy - (153 * mp + 2) / 5 + 1;
+   *m = mp < 10 ? mp + 3 : mp - 9;
+   *y = (int64_t)yoe + era * 400 + (*m <= 2);
+}
+
+static RTIME_INLINE bool rtime_is_leap_year(int64_t y)
+{
+   return (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
+}
+
+/**
+ * The length of month @m (1 to 12) of year @y; 0 for another month.
+ */
+static RTIME_INLINE unsigned rtime_days_in_month(int64_t y, unsigned m)
+{
+   static const uint8_t days[12] =
+   { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+   if (m < 1 || m > 12)
+      return 0;
+   return m == 2 && rtime_is_leap_year(y) ? 29 : days[m - 1];
+}
+
+/**
+ * The day of the week of a day counted from 1970-01-01 (a Thursday),
+ * 0 Sunday to 6 Saturday.
+ */
+static RTIME_INLINE unsigned rtime_weekday(int64_t days)
+{
+   return (unsigned)(days >= -4 ? (days + 4) % 7 : (days + 5) % 7 + 6);
+}
+
 /* TODO/FIXME: Move all generic time handling functions
  * to this file */
 
