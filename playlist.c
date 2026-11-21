@@ -3736,11 +3736,11 @@ static int playlist_parse_step_old(playlist_parse_t *p,
                      *delim = '\0';
                      /* Right thumbnail mode */
                      thumbnail_mode = string_to_unsigned(thumbnail_mode_str);
-                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
+                     if (thumbnail_mode < PLAYLIST_THUMBNAIL_MODE_LAST)
                         playlist->right_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
                      /* Left thumbnail mode */
                      thumbnail_mode = string_to_unsigned(delim + 1);
-                     if (thumbnail_mode <= PLAYLIST_THUMBNAIL_MODE_LOGOS)
+                     if (thumbnail_mode < PLAYLIST_THUMBNAIL_MODE_LAST)
                         playlist->left_thumbnail_mode = (enum playlist_thumbnail_mode)thumbnail_mode;
                   }
                }

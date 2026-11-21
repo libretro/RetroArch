@@ -686,7 +686,7 @@ static void playlist_thumbnail_mode_right(playlist_t *playlist, enum playlist_th
    enum playlist_thumbnail_mode thumbnail_mode =
          playlist_get_thumbnail_mode(playlist, thumbnail_id);
 
-   if (thumbnail_mode < PLAYLIST_THUMBNAIL_MODE_LOGOS)
+   if (thumbnail_mode < PLAYLIST_THUMBNAIL_MODE_VIDEOS)
       thumbnail_mode = (enum playlist_thumbnail_mode)((unsigned)thumbnail_mode + 1);
    else if (wraparound)
       thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_DEFAULT;

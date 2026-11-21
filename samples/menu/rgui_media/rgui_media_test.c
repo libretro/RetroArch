@@ -127,6 +127,104 @@ static void media_render(struct menu_state *menu_st)
    }
 }
 
+static void media_video_snap_slots(struct menu_state *menu_st, const char *root)
+{
+   playlist_config_t config;
+   struct playlist_entry content;
+   struct texture_image stale_image;
+   settings_t *settings = config_get_ptr();
+   rgui_t *rgui = (rgui_t*)menu_st->userdata;
+   file_list_t *list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+   playlist_t *playlist;
+   unsigned mode;
+   uint32_t stale_pixel = 0xff000000;
+   int tick;
+   bool created;
+   memset(&config, 0, sizeof(config));
+   config.capacity = 4;
+   fill_pathname_join_special(config.path, root, "Test System.lpl", sizeof(config.path));
+   playlist = playlist_init(&config);
+   MEDIA_CHECK("video-snap playlist initialized", playlist != NULL);
+   if (!playlist)
+      return;
+   memset(&content, 0, sizeof(content));
+   content.path = (char*)"game.rom";
+   content.label = (char*)"Game";
+   content.core_path = (char*)"DETECT";
+   content.core_name = (char*)"DETECT";
+   content.db_name = (char*)"Test System.lpl";
+   created = playlist_push(playlist, &content);
+   MEDIA_CHECK("video-snap playlist entry created", created);
+   if (!created)
+   {
+      playlist_free(playlist);
+      return;
+   }
+   playlist_set_cached_external(playlist);
+   strlcpy(settings->paths.directory_thumbnails, root,
+         sizeof(settings->paths.directory_thumbnails));
+   settings->bools.menu_rgui_inline_thumbnails = true;
+   settings->bools.playlist_allow_non_png = false;
+   gfx_thumbnail_set_system(menu_st->thumbnail_path_data, "Test System", playlist);
+   file_list_clear(list);
+   created = file_list_append(list, "Game", "", FILE_TYPE_RPL_ENTRY, 0, 0);
+   MEDIA_CHECK("video-snap menu entry created", created);
+   if (!created)
+   {
+      playlist_free_cached();
+      playlist_free(playlist);
+      return;
+   }
+   menu_st->selection_ptr = 0;
+   rgui->flags |= RGUI_FLAG_IS_PLAYLIST;
+   rgui->flags &= ~(RGUI_FLAG_IS_EXPLORE_LIST | RGUI_FLAG_IS_QUICK_MENU
+         | RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL);
+   for (mode = 1; mode <= 4; mode++)
+   {
+      settings->uints.gfx_thumbnails = mode == 4 ? 1 : (mode & 1) ? 5 : 0;
+      settings->uints.menu_left_thumbnails = mode == 4 || (mode & 2) ? 5 : 0;
+      rgui_scan_selected_entry_thumbnail(rgui, true);
+      MEDIA_CHECK("video-snap resolves from the playlist",
+            strstr(rgui->media_requested_path, "Named_Videos") != NULL);
+      if (mode == 2)
+      {
+         memset(&stale_image, 0, sizeof(stale_image));
+         stale_image.pixels = &stale_pixel;
+         stale_image.width = stale_image.height = 1;
+         rgui->left_thumbnail_queue_size = 1;
+         MEDIA_CHECK("stale secondary image cannot replace video",
+              !rgui_load_image(rgui, &stale_image, MENU_IMAGE_LEFT_THUMBNAIL)
+              && rgui->left_thumbnail_queue_size == 0);
+      }
+      for (tick = 0; tick < 2000; tick++)
+      {
+         task_queue_check();
+         media_render(menu_st);
+         if (rgui->media_player && rgui->fs_thumbnail.is_valid
+               && (!(mode & 1) || rgui->mini_thumbnail.is_valid)
+               && (!(mode & 2) || rgui->mini_left_thumbnail.is_valid)
+               && (mode != 4 || (rgui->mini_thumbnail.is_valid
+                  && rgui->mini_left_thumbnail.is_valid)))
+            break;
+         retro_sleep(1);
+      }
+      MEDIA_CHECK(mode == 1 ? "primary video snap displays"
+            : mode == 2 ? "secondary video snap displays"
+            : mode == 3 ? "both video-snap slots display"
+            : "secondary video and primary screenshot display", tick < 2000);
+      if (mode == 4)
+         MEDIA_CHECK("secondary video preserves the primary screenshot",
+               strstr(rgui->mini_thumbnail.path, "Named_Snaps") != NULL
+               && strstr(rgui->mini_left_thumbnail.path, "Named_Videos") != NULL);
+      rgui_media_close(rgui, false);
+      rgui->fs_thumbnail.is_valid = false;
+      rgui->mini_thumbnail.is_valid = false;
+      rgui->mini_left_thumbnail.is_valid = false;
+   }
+   playlist_free_cached();
+   playlist_free(playlist);
+}
+
 #include "../texture_media/native_media_capture.h"
 #include "../texture_media/win32_modal_test.h"
 static bool media_test_subtitle_glyph(void)
@@ -277,6 +375,11 @@ int main(int argc, char **argv)
    settings->bools.menu_rgui_inline_thumbnails = false;
    settings->bools.menu_thumbnail_preview_audio = getenv("MEDIA_TEST_MODAL_MODE") != NULL
       || getenv("MEDIA_TEST_AUDIO_TRACKS") != NULL;
+   if (getenv("MEDIA_TEST_VIDEO_SNAPS"))
+   {
+      media_video_snap_slots(menu_st, getenv("MEDIA_TEST_THUMB_ROOT"));
+      goto cleanup;
+   }
    if (getenv("MEDIA_TEST_HISTORY_IMAGE"))
    {
       fill_pathname_basedir(directory, argv[2], sizeof(directory));

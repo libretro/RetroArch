@@ -16,6 +16,7 @@
  * frame drew at zero opacity.
  */
 #include <features/features_cpu.h>
+#include <file/file_path.h>
 #include <audio/audio_mixer.h>
 #include <retro_timers.h>
 #include <stdio.h>
@@ -46,6 +47,77 @@ static double rss_mib(void)
 }
 
 static int fails;
+static void check(const char *tag, const char *what, int ok);
+
+extern const char *preview_path_fixture_1;
+extern const char *preview_path_fixture_2;
+extern unsigned preview_path_static_probes;
+
+static void lane_video_snap_paths(void)
+{
+   gfx_thumbnail_path_data_t *pd = gfx_thumbnail_path_init();
+   gfx_thumbnail_dir_config_t cfg;
+   memset(&cfg, 0, sizeof(cfg));
+   check("video snap", "path data allocated", pd != NULL);
+   if (!pd)
+      return;
+   snprintf(cfg.dir_thumbnails, sizeof(cfg.dir_thumbnails), "thumbnails");
+   cfg.gfx_thumbnails = PLAYLIST_THUMBNAIL_MODE_VIDEOS - 1;
+   snprintf(pd->system, sizeof(pd->system), "System");
+   snprintf(pd->content_path, sizeof(pd->content_path), "game.rom");
+   snprintf(pd->content_img, sizeof(pd->content_img), "Game.png");
+   snprintf(pd->content_img_full, sizeof(pd->content_img_full), "Full.png");
+   snprintf(pd->content_img_short, sizeof(pd->content_img_short), "Short.png");
+
+   preview_path_fixture_1 = "Game.webm";
+   preview_path_fixture_2 = "Game.mp4";
+   preview_path_static_probes = 0;
+   check("video snap", "WebM preferred without non-PNG setting",
+         gfx_thumbnail_update_path_cfg(pd, GFX_THUMBNAIL_RIGHT, &cfg)
+         && strstr(pd->right_path, "Named_Videos")
+         && !strcmp(path_basename(pd->right_path), "Game.webm"));
+   check("video snap", "static formats not checked", !preview_path_static_probes);
+
+   preview_path_fixture_1 = "Game.mp4";
+   preview_path_fixture_2 = "Game.png";
+   cfg.playlist_allow_non_png = true;
+   check("video snap", "MP4 preferred over PNG",
+         gfx_thumbnail_update_path_cfg(pd, GFX_THUMBNAIL_RIGHT, &cfg)
+         && !strcmp(path_basename(pd->right_path), "Game.mp4"));
+   snprintf(pd->content_core_name, sizeof(pd->content_core_name), "imageviewer");
+   snprintf(pd->content_path, sizeof(pd->content_path), "Game.png");
+   check("video snap", "image viewer content uses video snap",
+         gfx_thumbnail_update_path_cfg(pd, GFX_THUMBNAIL_RIGHT, &cfg)
+         && strstr(pd->right_path, "Named_Videos")
+         && !strcmp(path_basename(pd->right_path), "Game.mp4"));
+   pd->content_core_name[0] = '\0';
+   preview_path_fixture_1 = "Full.mp4";
+   preview_path_fixture_2 = "Short.webm";
+   check("video snap", "full filename before short name",
+         gfx_thumbnail_update_path_cfg(pd, GFX_THUMBNAIL_RIGHT, &cfg)
+         && !strcmp(path_basename(pd->right_path), "Full.mp4"));
+   preview_path_fixture_1 = "Short.webm";
+   preview_path_fixture_2 = "Game.png";
+   check("video snap", "short name fallback",
+         gfx_thumbnail_update_path_cfg(pd, GFX_THUMBNAIL_RIGHT, &cfg)
+         && !strcmp(path_basename(pd->right_path), "Short.webm"));
+   check("video snap", "no static probes", !preview_path_static_probes);
+   pd->playlist_left_mode = PLAYLIST_THUMBNAIL_MODE_VIDEOS;
+   pd->playlist_icon_mode = PLAYLIST_THUMBNAIL_MODE_VIDEOS;
+   check("video snap", "playlist left override",
+         gfx_thumbnail_update_path_cfg(pd, GFX_THUMBNAIL_LEFT, &cfg)
+         && !strcmp(path_basename(pd->left_path), "Short.webm"));
+   check("video snap", "playlist icon override",
+         gfx_thumbnail_update_path_cfg(pd, GFX_THUMBNAIL_ICON, &cfg)
+         && !strcmp(path_basename(pd->icon_path), "Short.webm"));
+   preview_path_fixture_1 = "Game.png";
+   preview_path_fixture_2 = NULL;
+   check("video snap", "no PNG fallback",
+         !gfx_thumbnail_update_path_cfg(pd, GFX_THUMBNAIL_RIGHT, &cfg)
+         && !*pd->right_path);
+   preview_path_fixture_1 = NULL;
+   free(pd);
+}
 
 static size_t file_len(const char *p)
 {
@@ -1348,6 +1420,11 @@ done:
 int main(int argc, char **argv)
 {
    int i;
+   if (getenv("VIDEO_SNAP_PATHS"))
+   {
+      lane_video_snap_paths();
+      return fails ? 1 : 0;
+   }
    if (argc < 2)
    {
       printf("usage: %s <video> [more...]\n", argv[0]);

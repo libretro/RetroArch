@@ -8462,7 +8462,7 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
                   : MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LEFT_THUMBNAIL_MODE;
 
       /* Loop over all thumbnail modes */
-      for (i = 0; i <= (unsigned)PLAYLIST_THUMBNAIL_MODE_LOGOS; i++)
+      for (i = 0; i < (unsigned)PLAYLIST_THUMBNAIL_MODE_LAST; i++)
       {
          enum msg_hash_enums label_value;
          enum playlist_thumbnail_mode thumbnail_mode =
@@ -8485,6 +8485,9 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
                break;
             case PLAYLIST_THUMBNAIL_MODE_LOGOS:
                label_value = MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS;
+               break;
+            case PLAYLIST_THUMBNAIL_MODE_VIDEOS:
+               label_value = MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_VIDEOS;
                break;
             default:
                /* PLAYLIST_THUMBNAIL_MODE_DEFAULT */

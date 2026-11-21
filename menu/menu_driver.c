@@ -8234,13 +8234,17 @@ int action_cycle_thumbnail(unsigned mode)
       uint8_t cur_secondary = settings->uints.menu_left_thumbnails;
 
       cur_primary++;
+      if (cur_primary == PLAYLIST_THUMBNAIL_MODE_LOGOS - 1)
+         cur_primary++;
 
       /* Prevent dupe image */
       if (cur_primary == cur_secondary && cur_secondary)
          cur_primary++;
+      if (cur_primary == PLAYLIST_THUMBNAIL_MODE_LOGOS - 1)
+         cur_primary++;
 
       /* Wrap primary to first image type, and skip logo */
-      if (cur_primary > PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 2)
+      if (cur_primary > PLAYLIST_THUMBNAIL_MODE_VIDEOS - 1)
          cur_primary = 1;
 
       /* Final dupe check */
@@ -8255,14 +8259,18 @@ int action_cycle_thumbnail(unsigned mode)
       uint8_t cur_secondary = settings->uints.menu_left_thumbnails;
 
       cur_secondary++;
+      if (cur_secondary == PLAYLIST_THUMBNAIL_MODE_LOGOS - 1)
+         cur_secondary++;
 
       /* Prevent dupe image */
       if (cur_primary == cur_secondary)
          cur_secondary++;
+      if (cur_secondary == PLAYLIST_THUMBNAIL_MODE_LOGOS - 1)
+         cur_secondary++;
 
       /* Wrap secondary to no image, and skip logo.
        * If primary disabled, wrap to first image. */
-      if (cur_secondary > PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 2)
+      if (cur_secondary > PLAYLIST_THUMBNAIL_MODE_VIDEOS - 1)
          cur_secondary = (cur_primary) ? 0 : 1;
 
       configuration_set_uint(settings, settings->uints.menu_left_thumbnails, cur_secondary);

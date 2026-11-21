@@ -301,11 +301,13 @@ typedef struct rgui_media_gpu_view
 {
    uintptr_t texture;
    gfx_media_rect_t rect;
+   gfx_media_rect_t rect_second;
    unsigned source_dims;
    unsigned texture_dims;
    float alpha;
    uint8_t flags;
    bool visible;
+   bool second_visible;
 } rgui_media_gpu_view_t;
 
 typedef struct
@@ -325,6 +327,7 @@ typedef struct
    menu_input_pointer_t media_pointer;
    char media_path[PATH_MAX_LENGTH];
    char media_requested_path[PATH_MAX_LENGTH];
+   unsigned media_requested_slots;
 
    struct
    {
@@ -3094,6 +3097,9 @@ static void rgui_media_gpu_publish(rgui_t *rgui, const rgui_media_gpu_view_t *vi
          || (view->visible && (view->texture != rgui->media_gpu_pending.texture
             || view->texture_dims != rgui->media_gpu_pending.texture_dims
             || view->source_dims != rgui->media_gpu_pending.source_dims
+            || view->second_visible != rgui->media_gpu_pending.second_visible
+            || memcmp(&view->rect_second, &rgui->media_gpu_pending.rect_second,
+               sizeof(view->rect_second))
             || memcmp(&view->rect, &rgui->media_gpu_pending.rect, sizeof(view->rect)))))
       rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
    rgui->media_gpu_pending = *view;
@@ -3141,21 +3147,27 @@ static bool rgui_media_present(void *user, const video_player_frame_t *frame)
    struct texture_image image;
    uint32_t queue_size = 0;
    settings_t *settings = config_get_ptr();
-   unsigned i;
-   thumbnail_t *thumbnails[2];
+   unsigned i, count = 1;
+   thumbnail_t *thumbnails[3];
    thumbnails[0] = &rgui->fs_thumbnail;
-   thumbnails[1] = &rgui->mini_thumbnail;
+   if (rgui->media_requested_slots & 1)
+      thumbnails[count++] = &rgui->mini_thumbnail;
+   if (rgui->media_requested_slots & 2)
+      thumbnails[count++] = &rgui->mini_left_thumbnail;
    if (!frame->native || !frame->pixels) return false;
    image.pixels = (uint32_t*)frame->pixels;
    image.width = frame->width; image.height = frame->height; image.pix10 = false;
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < count; i++)
    {
       rgui_process_thumbnail(rgui, thumbnails[i], &queue_size,
             settings->uints.menu_rgui_thumbnail_downscaler,
             settings->bools.menu_rgui_thumbnail_dither, &image);
       strlcpy(thumbnails[i]->path, rgui->media_path, sizeof(thumbnails[i]->path));
    }
-   return rgui->fs_thumbnail.is_valid && rgui->mini_thumbnail.is_valid;
+   for (i = 0; i < count; i++)
+      if (!thumbnails[i]->is_valid)
+         return false;
+   return true;
 }
 
 static bool rgui_media_state(void *user, int64_t now, gfx_media_playback_state_t *state)
@@ -3393,11 +3405,25 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
       }
       else
       {
+         bool left = !(rgui->media_requested_slots & 1);
+         bool bottom = left != settings->bools.menu_rgui_swap_thumbnails;
          draw.rect.w = VIDEO_SCALE_W(rgui->mini_thumbnail_max_dims);
          draw.rect.h = VIDEO_SCALE_H(rgui->mini_thumbnail_max_dims);
          draw.rect.x = rgui->term_layout.start_x
             + rgui->term_layout.width * rgui->font_width_stride - draw.rect.w;
-         draw.rect.y = rgui->term_layout.start_y;
+         draw.rect.y = bottom
+            ? rgui->term_layout.start_y
+               + rgui->term_layout.height * rgui->font_height_stride - draw.rect.h
+            : rgui->term_layout.start_y;
+         if (rgui->media_requested_slots == 3)
+         {
+            draw.second_visible = true;
+            draw.rect_second = draw.rect;
+            draw.rect_second.y = bottom
+               ? rgui->term_layout.start_y
+               : rgui->term_layout.start_y
+                  + rgui->term_layout.height * rgui->font_height_stride - draw.rect.h;
+         }
       }
       draw.source_dims = dims;
       rgui_media_gpu_publish(rgui, &draw);
@@ -3443,9 +3469,16 @@ static bool rgui_load_image(
       return false;
    }
 
-   if (type == MENU_IMAGE_THUMBNAIL && *rgui->media_requested_path)
+   if (type == MENU_IMAGE_THUMBNAIL && *rgui->media_requested_path
+         && (rgui->media_requested_slots & 1))
    {
       if (rgui->thumbnail_queue_size) rgui->thumbnail_queue_size--;
+      return false;
+   }
+   if (type == MENU_IMAGE_LEFT_THUMBNAIL && *rgui->media_requested_path
+         && (rgui->media_requested_slots & 2))
+   {
+      if (rgui->left_thumbnail_queue_size) rgui->left_thumbnail_queue_size--;
       return false;
    }
 
@@ -6205,10 +6238,10 @@ static bool rgui_wheel_scroll(void *data, int notches)
    return true;
 }
 
-static void rgui_media_gpu_cutout(rgui_t *rgui, unsigned dims)
+static void rgui_media_gpu_cutout_rect(rgui_t *rgui, unsigned dims,
+      const gfx_media_rect_t *rect)
 {
    const rgui_media_gpu_view_t *view = &rgui->media_gpu_pending;
-   const gfx_media_rect_t *rect = &view->rect;
    gfx_thumbnail_t thumbnail;
    float width, height, left, top;
    int x, y, right, bottom;
@@ -6233,6 +6266,14 @@ static void rgui_media_gpu_cutout(rgui_t *rgui, unsigned dims)
    /* Some drivers composite the software menu after the GPU picture. */
    rgui_color_rect(rgui->frame_buf.data, dims, x, y,
          (unsigned)(right - x), (unsigned)(bottom - y), 0);
+}
+
+static void rgui_media_gpu_cutout(rgui_t *rgui, unsigned dims)
+{
+   const rgui_media_gpu_view_t *view = &rgui->media_gpu_pending;
+   rgui_media_gpu_cutout_rect(rgui, dims, &view->rect);
+   if (view->second_visible)
+      rgui_media_gpu_cutout_rect(rgui, dims, &view->rect_second);
 }
 
 RGUI_NOINLINE static void rgui_media_subtitle_draw(rgui_t *rgui, unsigned dims)
@@ -8720,6 +8761,7 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
                                         );
 
    rgui->media_requested_path[0] = '\0';
+   rgui->media_requested_slots   = 0;
 
    /* Reset savestate thumbnails always */
    if (selection < list_size)
@@ -8830,8 +8872,23 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    {
       enum image_type_enum type = image_texture_get_type(menu_st->thumbnail_path_data->right_path);
       if (type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
+      {
          strlcpy(rgui->media_requested_path, menu_st->thumbnail_path_data->right_path,
                sizeof(rgui->media_requested_path));
+         rgui->media_requested_slots = 1;
+      }
+      type = image_texture_get_type(menu_st->thumbnail_path_data->left_path);
+      if ((type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
+            && (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+               || !*menu_st->thumbnail_path_data->right_path))
+      {
+         if (!*rgui->media_requested_path)
+            strlcpy(rgui->media_requested_path, menu_st->thumbnail_path_data->left_path,
+                  sizeof(rgui->media_requested_path));
+         if (string_is_equal(rgui->media_requested_path,
+                  menu_st->thumbnail_path_data->left_path))
+            rgui->media_requested_slots |= 2;
+      }
    }
 
    /* Check whether thumbnails should be loaded */
@@ -8952,14 +9009,18 @@ static void rgui_action_switch_thumbnail(rgui_t *rgui)
       uint8_t cur_secondary = settings->uints.menu_left_thumbnails;
 
       cur_primary++;
+      if (cur_primary == PLAYLIST_THUMBNAIL_MODE_LOGOS - 1)
+         cur_primary++;
 
       /* Prevent dupe image */
       if (     (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
             && (cur_primary == cur_secondary && cur_secondary))
          cur_primary++;
+      if (cur_primary == PLAYLIST_THUMBNAIL_MODE_LOGOS - 1)
+         cur_primary++;
 
       /* Wrap primary to first image type, and skip logo */
-      if (cur_primary > PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 2)
+      if (cur_primary > PLAYLIST_THUMBNAIL_MODE_VIDEOS - 1)
          cur_primary = 1;
 
       /* Final dupe check */
@@ -8975,14 +9036,18 @@ static void rgui_action_switch_thumbnail(rgui_t *rgui)
       uint8_t cur_secondary = settings->uints.menu_left_thumbnails;
 
       cur_secondary++;
+      if (cur_secondary == PLAYLIST_THUMBNAIL_MODE_LOGOS - 1)
+         cur_secondary++;
 
       /* Prevent dupe image */
       if (     (!(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL))
             && (cur_primary == cur_secondary))
          cur_secondary++;
+      if (cur_secondary == PLAYLIST_THUMBNAIL_MODE_LOGOS - 1)
+         cur_secondary++;
 
       /* Wrap secondary to no image, and skip logo */
-      if (cur_secondary > PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 2)
+      if (cur_secondary > PLAYLIST_THUMBNAIL_MODE_VIDEOS - 1)
          cur_secondary = (cur_primary) ? 0 : 1;
 
       configuration_set_uint(settings, settings->uints.menu_left_thumbnails, cur_secondary);
@@ -9540,6 +9605,15 @@ static void rgui_media_gpu_draw(rgui_t *rgui, video_frame_info_t *video_info)
          VIDEO_POS_Y(vp.pos) + rect->y * sy,
          VIDEO_SCALE_PACK((unsigned)(rect->w * sx), (unsigned)(rect->h * sy)),
          GFX_THUMBNAIL_ALIGN_CENTRE, 1.0f, 1.0f, NULL);
+   if (view->second_visible)
+   {
+      rect = &view->rect_second;
+      gfx_thumbnail_draw_shader(video_info->userdata, dims, &thumbnail,
+            VIDEO_POS_X(vp.pos) + rect->x * sx,
+            VIDEO_POS_Y(vp.pos) + rect->y * sy,
+            VIDEO_SCALE_PACK((unsigned)(rect->w * sx), (unsigned)(rect->h * sy)),
+            GFX_THUMBNAIL_ALIGN_CENTRE, 1.0f, 1.0f, NULL);
+   }
    if (video_st->current_video && video_st->current_video->set_viewport)
       video_st->current_video->set_viewport(
             video_st->data, dims, false, true);

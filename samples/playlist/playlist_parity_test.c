@@ -399,6 +399,34 @@ static void lane_old_format(void)
    CHECK(playlist_get_sort_mode(pl) == PLAYLIST_SORT_MODE_ALPHABETICAL,
          "old format: sort_mode");
    playlist_free(pl);
+   {
+      char *video_format = (char*)malloc(sizeof(old_format));
+      char *mode = NULL;
+      if (video_format)
+      {
+         memcpy(video_format, old_format, sizeof(old_format));
+         mode = strstr(video_format, "2|3");
+      }
+      CHECK(mode != NULL, "old format: video fixture allocation");
+      if (mode)
+      {
+         mode[0] = '6';
+         mode[2] = '6';
+         CHECK(write_whole(path, video_format), "old format: video fixture write");
+         pl = playlist_init(&config);
+         CHECK(pl != NULL, "old format: video init");
+         if (pl)
+         {
+            CHECK(playlist_get_thumbnail_mode(pl, PLAYLIST_THUMBNAIL_RIGHT)
+                     == PLAYLIST_THUMBNAIL_MODE_VIDEOS
+                  && playlist_get_thumbnail_mode(pl, PLAYLIST_THUMBNAIL_LEFT)
+                     == PLAYLIST_THUMBNAIL_MODE_VIDEOS,
+                  "old format: video thumbnail modes");
+            playlist_free(pl);
+         }
+      }
+      free(video_format);
+   }
    if (failures == had)
       fprintf(stderr, "[pass] old-format lane\n");
 }
