@@ -47,6 +47,6 @@ for frames in (2, 4):
     assert ', Error)]' not in diagnostics and ', Undefined behavior)]' not in diagnostics, diagnostics[-12000:]
     assert 'Validation Error:' not in diagnostics and 'SYNC-HAZARD-' not in diagnostics, diagnostics[-12000:]
     if args.missing_shaders:
-        assert '[PyroWave] OpenGL compute capture setup failed.' in diagnostics, diagnostics[-12000:]
+        assert '[PyroWave] Native compute capture setup failed.' in diagnostics, diagnostics[-12000:]
     print('ACTUAL_RETROARCH_STARTUP_CANCEL_PASS', args.backend, frames,
         'threaded' if args.threaded else 'direct', 'missing shaders' if args.missing_shaders else 'no peer', flush=True)
