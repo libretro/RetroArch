@@ -463,7 +463,7 @@ static const QString qt_theme_default_stylesheet = QString(R"(
       border: 1px solid #ddd;
    }
    ThumbnailWidget#thumbnailWidget, ThumbnailLabel#thumbnailGridLabel, QLabel#thumbnailQLabel {
-      background-color:#d4d4d4;
+      background-color:white;
    }
    QLabel#dropIndicator {
       font-size: 9pt;
@@ -473,7 +473,7 @@ static const QString qt_theme_default_stylesheet = QString(R"(
       margin: 20px;
    }
    ThumbnailWidget#thumbnailWidgetSelected {
-      background-color:#d4d4d4;
+      background-color:white;
       border:3px solid %1;
    }
    QFrame#playlistWidget, QFrame#browserWidget, QFrame#updaterWidget, QListWidget#settingsWidget, QFrame#logWidget {
@@ -482,10 +482,6 @@ static const QString qt_theme_default_stylesheet = QString(R"(
    QListWidget {
       icon-size: 32px;
    }
-   /* color of the icons on the settings dialog */
-   /* QLabel#iconColor {
-      color: black;
-   } */
 )");
 
 static const QString qt_theme_dark_stylesheet = QString(R"(
@@ -500,24 +496,21 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    QFrame#playlistWidget, QFrame#browserWidget, QFrame#updaterWidget, QListWidget#settingsWidget, QStackedWidget#centralWidget, QFrame#logWidget {
       padding: 8px;
       background-color:rgb(66,66,66);
-      border-top:1px solid rgba(175,175,175,50%);
-      border-left:1px solid rgba(125,125,125,50%);
-      border-right:1px solid rgba(125,125,125,50%);
-      border-bottom:1px solid rgba(25,25,25,75%);
+      border-top:1px solid rgba(255,255,255,30%);
+      border-left:1px solid rgba(255,255,255,20%);
+      border-right:1px solid rgba(255,255,255,20%);
+      border-bottom:1px solid rgba(0,0,0,50%);
    }
    QFrame#settingsWidget {
       padding: 8px;
       background-color: rgb(66,66,66);
-      border-top:1px solid rgba(175,175,175,50%);
-      border-left:1px solid rgba(125,125,125,50%);
-      border-right:1px solid rgba(125,125,125,50%);
-      border-bottom:1px solid rgba(25,25,25,75%);
+      border-top:1px solid rgba(255,255,255,30%);
+      border-left:1px solid rgba(255,255,255,20%);
+      border-right:1px solid rgba(255,255,255,20%);
+      border-bottom:1px solid rgba(0,0,0,50%);
    }
    QListWidget {
       icon-size: 32px;
-   }
-   QListWidget#settingsCategoryList {
-      background-color: rgb(19,19,19);
    }
    QLabel#dropIndicator {
       font-size: 9pt;
@@ -537,14 +530,14 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    }
    /* Groupboxes for the settings window, can be restricted later with ViewOptionsDialog QGroupBox */
    QGroupBox {
-      background-color:rgba(80,80,80,50%);
+      background-color:rgba(255,255,255,5%);;
       margin-top:27px;
-      border:1px solid rgba(25,25,25,127);
+      border:1px solid rgba(0,0,0,30%);
       border-top-left-radius:0px;
       border-top-right-radius:4px;
    }
    QWidget#updaterHomeWidget {
-      background-color:rgb(19,19,19);
+      background-color:rgb(25,25,25);
    }
    QWidget#quickMenuPage {
       background-color:transparent;
@@ -559,7 +552,7 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       padding:4px 6px 5px 6px;
       margin-left:0px;
       background-color:qlineargradient(x1:0,y1:1,x2:0,y2:0,stop:0 rgb(65,65,65),stop: 0.4 rgb(70,70,70),stop:1 rgb(90,90,90));
-      border:1px solid rgba(25,25,25,127);
+      border:1px solid rgba(0,0,0,30%);
       border-bottom:1px solid rgb(65,65,65);
       border-top-left-radius:4px;
       border-top-right-radius:4px;
@@ -569,7 +562,7 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       border:4px solid rgb(45,45,45);
    }
    QGroupBox::indicator:unchecked {
-      background-color:rgba(25,25,25,50%);
+      background-color:rgba(0,0,0,30%);
    }
    QGroupBox::indicator {
       width:16px;
@@ -587,8 +580,8 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       min-height:28px;
       padding:4px 10px;
       background-color:qlineargradient(x1:0,y1:1,x2:0,y2:0,stop:0 rgb(53,53,53),stop:1 rgba(125,125,125,127));
-      border:1px solid rgba(25,25,25,75);
-      border-top:1px solid rgba(175,175,175,50%);
+      border:1px solid rgba(0,0,0,20%);
+      border-top:1px solid rgba(255,255,255,30%);
       border-bottom:none transparent;
    }
    QToolTip {
@@ -599,7 +592,7 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    }
    QMenuBar {
       background-color:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 rgba(25,25,25,127),stop:1 rgba(53,53,53,75));
-      border-bottom:2px solid rgba(25,25,25,75);
+      border-bottom:2px solid rgba(0,0,0,20%);
    }
    QMenuBar::item {
       spacing:2px;
@@ -612,8 +605,8 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    }
    QMenuBar::item:pressed {
       background-color:%1;
-      border-left:1px solid rgba(25,25,25,127);
-      border-right:1px solid rgba(25,25,25,127);
+      border-left:1px solid rgba(0,0,0,30%);
+      border-right:1px solid rgba(0,0,0,30%);
    }
    QMenu {
       background-color:rgb(45,45,45);
@@ -695,9 +688,9 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    QDockWidget::title {
       padding:3px 4px;
       background-color:qlineargradient(x1:0,y1:1,x2:0,y2:0,stop:0 rgba(25,25,25,175),stop:1 rgba(53,53,53,75));
-      border:1px solid rgba(25,25,25,75);
-      border-top:1px solid rgba(175,175,175,50%);
-      border-bottom:1px solid rgba(25,25,25,127);
+      border:1px solid rgba(0,0,0,20%);
+      border-top:1px solid rgba(255,255,255,30%);
+      border-bottom:1px solid rgba(0,0,0,30%);
    }
    QDockWidget::close-button, QDockWidget::float-button {
       subcontrol-position:top right;
@@ -730,8 +723,8 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    }
    QTabBar::tab {
       padding:4px 6px;
-      background-color:rgba(25,25,25,127);
-      border:1px solid rgba(25,25,25,75);
+      background-color:rgba(0,0,0,30%);
+      border:1px solid rgba(0,0,0,20%);
    }
    QTabBar::tab:selected {
       background-color:rgb(66,66,66);
@@ -829,7 +822,7 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    QTreeView::branch:open, QTreeView::branch:closed {
       background-color:solid;
    }
-   QTableView, QListWidget {
+   QTableView, QListWidget, QListWidget#settingsCategoryList {
       background-color:rgb(25,25,25);
    }
    QTreeView QHeaderView::section, QTableView QHeaderView::section {
@@ -842,63 +835,62 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    }
    QTableView {
       background-color:rgb(25,25,25);
-      alternate-background-color:rgb(40,40,40);
+      alternate-background-color:rgb(25,25,25);
    }
-   QScrollBar:vertical, QScrollBar:horizontal {
-      background-color:rgb(35,35,35);
+   QTableView::item:alternate,
+   QTableView#playlistTableView::item:alternate,
+   QTableView#fileTableView::item:alternate {
+      background-color:rgb(37,37,37);
    }
-   QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+   /* Keep selection visible on both normal and alternating rows. The
+    * object-specific selectors must override the alternate-row rules. */
+   QListWidget::item:selected, QTreeView::item:selected,
+   QTableView::item:selected,
+   QTableView#playlistTableView::item:selected,
+   QTableView#fileTableView::item:selected {
+      color:white;
+      background-color:%1;
+   }
+   ThumbnailWidget#thumbnailWidget, ThumbnailLabel#thumbnailGridLabel,
+   QLabel#thumbnailQLabel {
+      background-color:rgb(37,37,37);
+   }
+   QScrollBar {
+      background-color:rgb(37,37,37);
+      width: 12px;
+      height: 12px;
+      margin: 0px;
+      border: none;
+   }
+   QScrollBar::handle {
       background-color:rgb(65,65,65);
-      border-right:1px solid rgba(175,175,175,50%);
-      border-top:1px solid rgba(175,175,175,50%);
-      border-bottom:1px solid rgba(25,25,25,75);
-      border-radius:2px;
+      min-height:12px;
+      min-width:12px;
+      border-top:1px solid rgba(255,255,255,30%);
+      border-left:1px solid rgba(255,255,255,30%);
+      border-right:1px solid rgba(0,0,0,50%);
+      border-bottom:1px solid rgba(0,0,0,50%);
    }
-   QScrollBar::handle:horizontal:hover, QScrollBar::handle:vertical:hover {
+   QScrollBar::handle:hover {
       border:1px solid %1;
       background-color:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgba(255,255,255,75), stop: 1 rgba(127,127,127,75));
    }
-   QScrollBar:vertical {
-      border-top-right-radius:2px;
-      border-bottom-right-radius:2px;
-      width:16px;
-      margin:0px;
+   /* Remove arrow buttons completely */
+   QScrollBar::add-line, QScrollBar::sub-line {
+      height: 0px;
+      min-height: 0px;
+      max-height: 0px;
+      width: 0px;
+      min-width: 0px;
+      max-width: 0px;
+      border: none;
+      padding: 0px;
+      margin: 0px;
    }
-   QScrollBar::handle:vertical {
-      min-height:20px;
-      margin:2px 4px 2px 4px;
-   }
-   QScrollBar::add-line:vertical {
-      background:none;
-      height:0px;
-      subcontrol-position:right;
-      subcontrol-origin:margin;
-   }
-   QScrollBar::sub-line:vertical {
-      background:none;
-      height:0px;
-      subcontrol-position:left;
-      subcontrol-origin:margin;
-   }
-   QScrollBar:horizontal {
-      height:16px;
-      margin:0px;
-   }
-   QScrollBar::handle:horizontal {
-      min-width:20px;
-      margin:4px 2px 4px 2px;
-   }
-   QScrollBar::add-line:horizontal {
-      background:none;
-      width:0px;
-      subcontrol-position:bottom;
-      subcontrol-origin:margin;
-   }
-   QScrollBar::sub-line:horizontal {
-      background:none;
-      width:0px;
-      subcontrol-position:top;
-      subcontrol-origin:margin;
+   /* Make the remaining track clickable */
+   QScrollBar::add-page,
+   QScrollBar::sub-page {
+      border: none;
    }
    QSlider {
       background:transparent;
@@ -911,14 +903,14 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       background:rgb(25,25,25);
    }
    QSlider::handle:vertical {
-      background:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(175,175,175), stop: 1 rgb(75,75,75));
+      background:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(180,180,180), stop: 1 rgb(80,80,80));
       border:1px solid rgb(35,35,35);
       border-radius:2px;
       height:16px;
       margin:0 -4px;
    }
    QSlider::handle:vertical:hover {
-      background-color:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(200,200,200), stop: 1 rgba(100,100,100));
+      background-color:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(180,180,180), stop: 1 rgb(80,80,80));
       border:1px solid %1;
       border-radius:2px;
       height:16px;
@@ -929,14 +921,14 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       background:rgb(25,25,25);
    }
    QSlider::handle:horizontal {
-      background:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(175,175,175), stop: 1 rgb(75,75,75));
+      background:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(180,180,180), stop: 1 rgb(80,80,80));
       border:1px solid rgb(35,35,35);
       border-radius:2px;
       width:16px;
       margin:-4px 0;
    }
    QSlider::handle:horizontal:hover {
-      background-color:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(200,200,200), stop: 1 rgba(100,100,100));
+      background-color:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(180,180,180), stop: 1 rgb(80,80,80));
       border:1px solid %1;
       border-radius:2px;
       width:16px;
@@ -959,14 +951,14 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       background-color:solid;
    }
    GridView::item {
-      background-color:rgb(40,40,40);
+      background-color:rgb(37,37,37);
    }
    GridView::item:selected {
       border:3px solid %1;
    }
    GridView {
       background-color:rgb(25,25,25);
-      selection-color: white;
+      selection-color:white;
       qproperty-layout: "fixed";
    }
    GridItem {
