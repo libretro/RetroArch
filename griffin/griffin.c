@@ -1993,6 +1993,7 @@ MENU
 #include "../gfx/widgets/gfx_widget_screenshot.c"
 #endif
 #include "../gfx/widgets/gfx_widget_volume.c"
+#include "../gfx/widgets/gfx_widget_camera_pip.c"
 #include "../gfx/widgets/gfx_widget_generic_message.c"
 #include "../gfx/widgets/gfx_widget_libretro_message.c"
 #include "../gfx/widgets/gfx_widget_progress_message.c"

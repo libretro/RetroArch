@@ -15660,6 +15660,29 @@ static const setting_desc_t dir_desc_2[] = {
 #include "../settings/settings_def_dir_cache_log.h"
 };
 
+static size_t setting_get_string_representation_camera_pip_corner(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   enum msg_hash_enums label = MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT;
+   if (!setting)
+      return 0;
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case CAMERA_PIP_TOP_LEFT:
+         label = MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT;
+         break;
+      case CAMERA_PIP_TOP_RIGHT:
+         label = MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT;
+         break;
+      case CAMERA_PIP_BOTTOM_LEFT:
+         label = MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT;
+         break;
+      default:
+         break;
+   }
+   return strlcpy(s, msg_hash_to_str(label), len);
+}
+
 static const setting_desc_t privacy_desc_0[] = {
 /* GENERATED: rows come from settings_def_privacy_camera.h in order. */
 #include "../settings/settings_def_privacy_camera.h"

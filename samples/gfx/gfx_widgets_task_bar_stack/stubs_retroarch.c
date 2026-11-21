@@ -303,6 +303,7 @@ STUB_WIDGET(gfx_widget_generic_message);
 STUB_WIDGET(gfx_widget_libretro_message);
 STUB_WIDGET(gfx_widget_progress_message);
 STUB_WIDGET(gfx_widget_load_content_animation);
+STUB_WIDGET(gfx_widget_camera_pip);
 STUB_WIDGET(gfx_widget_achievement_popup);
 STUB_WIDGET(gfx_widget_leaderboard_display);
 STUB_WIDGET(gfx_widget_netplay_chat);

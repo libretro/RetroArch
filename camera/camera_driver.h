@@ -82,6 +82,15 @@ enum camera_preview_state
    CAMERA_PREVIEW_FAILED       /* the driver would not open or start */
 };
 
+/* camera_pip_corner: where the gameplay picture-in-picture goes */
+enum camera_pip_corner
+{
+   CAMERA_PIP_TOP_LEFT = 0,
+   CAMERA_PIP_TOP_RIGHT,
+   CAMERA_PIP_BOTTOM_LEFT,
+   CAMERA_PIP_BOTTOM_RIGHT
+};
+
 typedef struct
 {
    struct retro_camera_callback cb;    /* uint64_t alignment */

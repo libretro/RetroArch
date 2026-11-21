@@ -503,6 +503,8 @@ typedef struct settings
       unsigned steam_rich_presence_format;
 #endif
 
+      unsigned camera_pip_corner;
+      unsigned camera_pip_size;
       unsigned cheevos_appearance_anchor;
       unsigned cheevos_visibility_summary;
 
@@ -1135,6 +1137,7 @@ typedef struct settings
 
       /* Camera */
       bool camera_allow;
+      bool camera_pip;
 
       /* Bluetooth */
       bool bluetooth_allow;

@@ -4087,6 +4087,10 @@ void video_driver_free_internal(void)
    gfx_surface_free(video_driver_windows_logo);
    video_driver_windows_logo = NULL;
 #endif
+#ifdef HAVE_GFX_WIDGETS
+   /* So is the camera picture's; opened again on the next driver */
+   gfx_widget_camera_pip_stop();
+#endif
 
    /* Drop the OSD font before the driver that owns its GPU objects
     * goes away. Only for drivers that have handed the lifecycle up;

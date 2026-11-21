@@ -134,7 +134,8 @@ static const gfx_widget_t* const widgets[] = {
    &gfx_widget_generic_message,
    &gfx_widget_libretro_message,
    &gfx_widget_progress_message,
-   &gfx_widget_load_content_animation
+   &gfx_widget_load_content_animation,
+   &gfx_widget_camera_pip
 };
 
 #if defined(HAVE_MENU) && defined(HAVE_XMB)

@@ -1138,6 +1138,7 @@ ifeq ($(HAVE_GFX_WIDGETS), 1)
 
    OBJ += \
           gfx/widgets/gfx_widget_volume.o \
+          gfx/widgets/gfx_widget_camera_pip.o \
           gfx/widgets/gfx_widget_generic_message.o \
           gfx/widgets/gfx_widget_libretro_message.o \
           gfx/widgets/gfx_widget_progress_message.o \

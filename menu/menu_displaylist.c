@@ -12832,6 +12832,11 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CAMERA_DEVICE,  PARSE_ONLY_STRING},
                {MENU_ENUM_LABEL_CAMERA_ALLOW,   PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_CAMERA_PREVIEW, PARSE_ACTION},
+#ifdef HAVE_GFX_WIDGETS
+               {MENU_ENUM_LABEL_CAMERA_PIP,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CAMERA_PIP_CORNER, PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_CAMERA_PIP_SIZE,   PARSE_ONLY_UINT},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

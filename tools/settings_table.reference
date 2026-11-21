@@ -245,6 +245,7 @@ bool	settings_show_smb_client	1	1
 bool	network_on_demand_thumbnails	1	0
 bool	location_allow	1	0
 bool	camera_allow	1	0
+bool	camera_pip	1	0
 bool	menu_show_core_updater	1	1
 bool	menu_show_restart_retroarch	1	1
 bool	menu_thumbnail_background_enable	1	0
@@ -640,6 +641,8 @@ uint	ai_service_mode	1	1
 uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
 uint	audio_output_layout	1	0
 uint	microphone_block_frames	1	0
+uint	camera_pip_corner	1	3
+uint	camera_pip_size	1	25
 uint	menu_thumbnail_preview_threads	1	1
 uint	menu_file_browser_extension_display	1	MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS
 uint	media_player_seek_seconds	1	5
@@ -991,6 +994,7 @@ bool	settings_show_smb_client	1	1
 bool	network_on_demand_thumbnails	1	0
 bool	location_allow	1	0
 bool	camera_allow	1	0
+bool	camera_pip	1	0
 bool	menu_show_core_updater	1	1
 bool	menu_show_restart_retroarch	1	1
 bool	menu_thumbnail_background_enable	1	0
@@ -1374,6 +1378,8 @@ uint	rewind_buffer_size_step	1	10
 uint	ai_service_mode	1	1
 uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
 uint	audio_output_layout	1	0
+uint	camera_pip_corner	1	3
+uint	camera_pip_size	1	25
 uint	menu_thumbnail_preview_threads	1	1
 uint	menu_file_browser_extension_display	1	MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS
 uint	media_player_seek_seconds	1	5
@@ -1735,6 +1741,7 @@ bool	network_on_demand_thumbnails	1	0
 bool	discord_allow	1	0
 bool	location_allow	1	0
 bool	camera_allow	1	0
+bool	camera_pip	1	0
 bool	menu_show_core_updater	1	1
 bool	menu_show_restart_retroarch	1	1
 bool	menu_thumbnail_background_enable	1	0
@@ -2136,6 +2143,8 @@ uint	rewind_buffer_size_step	1	10
 uint	ai_service_mode	1	1
 uint	audio_format_negotiation	1	AUDIO_FORMAT_NEGOTIATION_FLOAT
 uint	audio_output_layout	1	0
+uint	camera_pip_corner	1	3
+uint	camera_pip_size	1	25
 uint	menu_thumbnail_preview_threads	1	1
 uint	menu_file_browser_extension_display	1	MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS
 uint	media_player_seek_seconds	1	5

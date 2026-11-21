@@ -8744,6 +8744,8 @@ static enum runloop_state_enum runloop_check_state(
    else if (gfx_widgets_poll_teardown())
       command_event(CMD_EVENT_OSD_NOTIFICATION_TOGGLE, NULL);
 #endif
+   /* The camera picture is fed here, the widget only draws it */
+   gfx_widget_camera_pip_update(widgets_active);
 #endif
 
 #ifdef HAVE_MENU
