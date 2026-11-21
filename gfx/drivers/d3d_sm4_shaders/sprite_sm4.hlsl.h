@@ -274,6 +274,26 @@ SRC(
          }
       };
 
+      float4 PSMainPQHDR(PSInput input) : SV_TARGET
+      {
+         float4 s = t0.Sample(s0, input.texcoord);
+         float3 p = pow(max(s.rgb, 0.0f), 1.0f / 78.84375f);
+         float3 rgb2020 = pow(max(p - 0.8359375f, 0.0f)
+               / max(18.8515625f - 18.6875f * p, 0.000001f),
+               1.0f / 0.1593017578f) * kSprMaxNitsFor2084;
+         float a = input.color.a * s.a;
+         if (sprite_hdr_mode > 1.5f)
+            return float4(input.color.rgb * mul(kSpr2020to709, rgb2020)
+                  / kSprscRGBWhiteNits, a);
+         if (sprite_hdr_mode > 0.5f)
+            return float4(SpriteLinearToST2084(max(input.color.rgb * rgb2020
+                  / kSprMaxNitsFor2084, 0.0f)), a);
+         {
+            float3 x = SpriteFrom2020(rgb2020 / max(sprite_paper_white_nits, 1.0f));
+            return float4(input.color.rgb * sign(x) * pow(abs(x), 1.0f / 2.4f), a);
+         }
+      };
+
       /* 16-bit coverage font atlas (R16_UNORM): D3D11 SRVs have no
        * component swizzle, so the wider atlas is sampled from .r
        * explicitly. Same encode / mode-0 passthrough behavior as

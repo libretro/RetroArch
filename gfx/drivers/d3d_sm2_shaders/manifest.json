@@ -2,7 +2,7 @@
   "version": 1,
   "model": 2,
   "compilers": {
-    "fxc": "ced7c1f95e4dffb614971826625e70da6d24aff1b4f2a3ae5952939c9547d7e6",
+    "fxc": "904f64cdbeddc23183d6548e07135691c7497ca1a6b061ae7fd1c69c4cafabda",
     "dxc": "229ae849be475d13d397921c2c6361559f07584d02b54424825ae80758cd8d67"
   },
   "optimization": "O3; strip reflection/debug for SM4+; DXC HV2016",
@@ -57,7 +57,7 @@
     "gfx/drivers/d3d_sm4_shaders/mipmapgen_sm4.hlsl": "94c35d8d79d6c3b2f79da3b8025384d2915b0ee52ca0ab3bdd57d5aa5c0d2c15",
     "gfx/drivers/d3d_sm4_shaders/opaque_sm4.hlsl.h": "b09dc2c0403068bdbf809e08905e9e5abb122bb264c8bf68153f052e6e2b8542",
     "gfx/drivers/d3d_sm4_shaders/planar_sm4.hlsl": "5ec1dfd968324024318d9be96ad103c1bc7ef00a5fbeb3f4f9195fa80c9086e3",
-    "gfx/drivers/d3d_sm4_shaders/sprite_sm4.hlsl.h": "6d31d571c6456cf8fba83ae0a849554ece843a6a1e97e0ee615b4a8beebd1f22",
+    "gfx/drivers/d3d_sm4_shaders/sprite_sm4.hlsl.h": "961e1af4448b815d244ab2e1cd5a8ca87459cc8e952e10794cbfd0185442ff6b",
     "gfx/drivers/d3d_sm4_shaders/views_sm4.hlsl.h": "d12d62154571f1846f6ec4e815ef5e2569ed47af6af1558a872e2e41ceddf1cb",
     "gfx/drivers/d3d_sm4_shaders/effects/bloom_sm4.hlsl.h": "9133d176d0309042cf6fd3f72c74762103ec101c838b702c8312aeb9bbd8bb63",
     "gfx/drivers/d3d_sm4_shaders/effects/bokeh_sm4.hlsl.h": "87d6741bdb7a9f18404f08417fe1e2473f8aa3f72edd916866a1df03ca03c6d7",

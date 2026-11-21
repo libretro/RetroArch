@@ -2,7 +2,7 @@
   "version": 1,
   "model": 4,
   "compilers": {
-    "fxc": "ced7c1f95e4dffb614971826625e70da6d24aff1b4f2a3ae5952939c9547d7e6",
+    "fxc": "904f64cdbeddc23183d6548e07135691c7497ca1a6b061ae7fd1c69c4cafabda",
     "dxc": "229ae849be475d13d397921c2c6361559f07584d02b54424825ae80758cd8d67"
   },
   "optimization": "O3; strip reflection/debug for SM4+; DXC HV2016",
@@ -57,7 +57,7 @@
     "gfx/drivers/d3d_sm4_shaders/mipmapgen_sm4.hlsl": "94c35d8d79d6c3b2f79da3b8025384d2915b0ee52ca0ab3bdd57d5aa5c0d2c15",
     "gfx/drivers/d3d_sm4_shaders/opaque_sm4.hlsl.h": "b09dc2c0403068bdbf809e08905e9e5abb122bb264c8bf68153f052e6e2b8542",
     "gfx/drivers/d3d_sm4_shaders/planar_sm4.hlsl": "5ec1dfd968324024318d9be96ad103c1bc7ef00a5fbeb3f4f9195fa80c9086e3",
-    "gfx/drivers/d3d_sm4_shaders/sprite_sm4.hlsl.h": "6d31d571c6456cf8fba83ae0a849554ece843a6a1e97e0ee615b4a8beebd1f22",
+    "gfx/drivers/d3d_sm4_shaders/sprite_sm4.hlsl.h": "961e1af4448b815d244ab2e1cd5a8ca87459cc8e952e10794cbfd0185442ff6b",
     "gfx/drivers/d3d_sm4_shaders/views_sm4.hlsl.h": "d12d62154571f1846f6ec4e815ef5e2569ed47af6af1558a872e2e41ceddf1cb",
     "gfx/drivers/d3d_sm4_shaders/effects/bloom_sm4.hlsl.h": "9133d176d0309042cf6fd3f72c74762103ec101c838b702c8312aeb9bbd8bb63",
     "gfx/drivers/d3d_sm4_shaders/effects/bokeh_sm4.hlsl.h": "87d6741bdb7a9f18404f08417fe1e2473f8aa3f72edd916866a1df03ca03c6d7",
@@ -152,9 +152,9 @@
       "file": "precompiled/sprite.GSMain.dxbc",
       "bytes": 1724,
       "sha256": "75393b5a7f30442057b14feede15f5f82307be7d5fe2e1a9a69d6b2278b1ce4e",
-      "source_fingerprint": "181e222d9cacad9d",
-      "source_bytes": 8943,
-      "source_sha256": "e7b34b25a6cf61db2c6054343d0194dd0a97bfd1ec88d569129db5bd0006ba69",
+      "source_fingerprint": "e4325baf3e7878c6",
+      "source_bytes": 9646,
+      "source_sha256": "e241601841e83e593a844024ec5a214c79fde80a193494995dd779817b46b132",
       "raster_fallback": false
     },
     {
@@ -164,9 +164,9 @@
       "file": "precompiled/sprite.PSMain.dxbc",
       "bytes": 368,
       "sha256": "85c142f68fc63ccb41fa4b23726703e55689b65a2017ad052568619271c5d8cb",
-      "source_fingerprint": "181e222d9cacad9d",
-      "source_bytes": 8943,
-      "source_sha256": "e7b34b25a6cf61db2c6054343d0194dd0a97bfd1ec88d569129db5bd0006ba69",
+      "source_fingerprint": "e4325baf3e7878c6",
+      "source_bytes": 9646,
+      "source_sha256": "e241601841e83e593a844024ec5a214c79fde80a193494995dd779817b46b132",
       "raster_fallback": false
     },
     {
@@ -176,9 +176,9 @@
       "file": "precompiled/sprite.PSMainA16HDR.dxbc",
       "bytes": 2376,
       "sha256": "ba8688af421c5c753ab684f639d38a16da0fa1c552eb902378da681e3b4bd27e",
-      "source_fingerprint": "181e222d9cacad9d",
-      "source_bytes": 8943,
-      "source_sha256": "e7b34b25a6cf61db2c6054343d0194dd0a97bfd1ec88d569129db5bd0006ba69",
+      "source_fingerprint": "e4325baf3e7878c6",
+      "source_bytes": 9646,
+      "source_sha256": "e241601841e83e593a844024ec5a214c79fde80a193494995dd779817b46b132",
       "raster_fallback": false
     },
     {
@@ -188,9 +188,9 @@
       "file": "precompiled/sprite.PSMainA8.dxbc",
       "bytes": 388,
       "sha256": "2531721fcf2f996263e2d49e44bab8d9e8e41198f19d4c1ec6afa8a19a7e9be9",
-      "source_fingerprint": "181e222d9cacad9d",
-      "source_bytes": 8943,
-      "source_sha256": "e7b34b25a6cf61db2c6054343d0194dd0a97bfd1ec88d569129db5bd0006ba69",
+      "source_fingerprint": "e4325baf3e7878c6",
+      "source_bytes": 9646,
+      "source_sha256": "e241601841e83e593a844024ec5a214c79fde80a193494995dd779817b46b132",
       "raster_fallback": false
     },
     {
@@ -200,9 +200,9 @@
       "file": "precompiled/sprite.PSMainA8HDR.dxbc",
       "bytes": 2376,
       "sha256": "88c1ad92d332f17102c9bbb8f879893fc117cc805488c31f176ba534e2b8f428",
-      "source_fingerprint": "181e222d9cacad9d",
-      "source_bytes": 8943,
-      "source_sha256": "e7b34b25a6cf61db2c6054343d0194dd0a97bfd1ec88d569129db5bd0006ba69",
+      "source_fingerprint": "e4325baf3e7878c6",
+      "source_bytes": 9646,
+      "source_sha256": "e241601841e83e593a844024ec5a214c79fde80a193494995dd779817b46b132",
       "raster_fallback": false
     },
     {
@@ -212,9 +212,9 @@
       "file": "precompiled/sprite.PSMainHDR.dxbc",
       "bytes": 2356,
       "sha256": "3e176a1677b97d6f5a2166f78d2413a1b0324cb81b9d3a163e7d7c69703c3256",
-      "source_fingerprint": "181e222d9cacad9d",
-      "source_bytes": 8943,
-      "source_sha256": "e7b34b25a6cf61db2c6054343d0194dd0a97bfd1ec88d569129db5bd0006ba69",
+      "source_fingerprint": "e4325baf3e7878c6",
+      "source_bytes": 9646,
+      "source_sha256": "e241601841e83e593a844024ec5a214c79fde80a193494995dd779817b46b132",
       "raster_fallback": false
     },
     {
@@ -224,9 +224,21 @@
       "file": "precompiled/sprite.PSMainLinearHDR.dxbc",
       "bytes": 2020,
       "sha256": "5fbeae8a5dca071351b46f23d0e35d5b2858694a57145b2d155290bc4ef34bd5",
-      "source_fingerprint": "181e222d9cacad9d",
-      "source_bytes": 8943,
-      "source_sha256": "e7b34b25a6cf61db2c6054343d0194dd0a97bfd1ec88d569129db5bd0006ba69",
+      "source_fingerprint": "e4325baf3e7878c6",
+      "source_bytes": 9646,
+      "source_sha256": "e241601841e83e593a844024ec5a214c79fde80a193494995dd779817b46b132",
+      "raster_fallback": false
+    },
+    {
+      "program": "sprite",
+      "entry": "PSMainPQHDR",
+      "profile": "ps_4_0",
+      "file": "precompiled/sprite.PSMainPQHDR.dxbc",
+      "bytes": 2448,
+      "sha256": "fb8c6bcacc790dc7e77a4b98849746f09f32b3f4dba9c553ed61476a759d6c18",
+      "source_fingerprint": "e4325baf3e7878c6",
+      "source_bytes": 9646,
+      "source_sha256": "e241601841e83e593a844024ec5a214c79fde80a193494995dd779817b46b132",
       "raster_fallback": false
     },
     {
@@ -236,9 +248,9 @@
       "file": "precompiled/sprite.PSMainXMB.dxbc",
       "bytes": 3856,
       "sha256": "107be7e04109d41eb57cabca45fb80ce3b0f3b12e2f6c7aa776d0edce505e990",
-      "source_fingerprint": "181e222d9cacad9d",
-      "source_bytes": 8943,
-      "source_sha256": "e7b34b25a6cf61db2c6054343d0194dd0a97bfd1ec88d569129db5bd0006ba69",
+      "source_fingerprint": "e4325baf3e7878c6",
+      "source_bytes": 9646,
+      "source_sha256": "e241601841e83e593a844024ec5a214c79fde80a193494995dd779817b46b132",
       "raster_fallback": false
     },
     {
@@ -248,9 +260,9 @@
       "file": "precompiled/sprite.PSMainXMBFont.dxbc",
       "bytes": 3660,
       "sha256": "bd5f1fe8c719b9dd839e61bf78b319340131052321e530fd539bd8faa745c549",
-      "source_fingerprint": "181e222d9cacad9d",
-      "source_bytes": 8943,
-      "source_sha256": "e7b34b25a6cf61db2c6054343d0194dd0a97bfd1ec88d569129db5bd0006ba69",
+      "source_fingerprint": "e4325baf3e7878c6",
+      "source_bytes": 9646,
+      "source_sha256": "e241601841e83e593a844024ec5a214c79fde80a193494995dd779817b46b132",
       "raster_fallback": false
     },
     {
@@ -260,9 +272,9 @@
       "file": "precompiled/sprite.PSMainXMBFontA16.dxbc",
       "bytes": 3660,
       "sha256": "3bce8d31e1167645c9aef2a1523dfeaff91dc4522a733bebd6d562f81205c16c",
-      "source_fingerprint": "181e222d9cacad9d",
-      "source_bytes": 8943,
-      "source_sha256": "e7b34b25a6cf61db2c6054343d0194dd0a97bfd1ec88d569129db5bd0006ba69",
+      "source_fingerprint": "e4325baf3e7878c6",
+      "source_bytes": 9646,
+      "source_sha256": "e241601841e83e593a844024ec5a214c79fde80a193494995dd779817b46b132",
       "raster_fallback": false
     },
     {
@@ -272,9 +284,9 @@
       "file": "precompiled/sprite.VSMain.dxbc",
       "bytes": 1056,
       "sha256": "bd45b5341a339e24ec78b6004824fa9006096a27e3184e16d3fd31893b622af6",
-      "source_fingerprint": "181e222d9cacad9d",
-      "source_bytes": 8943,
-      "source_sha256": "e7b34b25a6cf61db2c6054343d0194dd0a97bfd1ec88d569129db5bd0006ba69",
+      "source_fingerprint": "e4325baf3e7878c6",
+      "source_bytes": 9646,
+      "source_sha256": "e241601841e83e593a844024ec5a214c79fde80a193494995dd779817b46b132",
       "raster_fallback": false
     },
     {
