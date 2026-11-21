@@ -2833,12 +2833,18 @@ end:
    free(in);
    return ok ? s : NULL;
 #else
-   char head[PATH_MAX_LENGTH];
-   char joined[PATH_MAX_LENGTH];
+   /* head and joined in one block on the heap: two paths are more than
+    * a thread's stack on the small targets can spare */
+   char *head;
+   char *joined;
+   char *ret       = NULL;
    size_t cut;
    char *real_path = NULL;
-   if (!s || !*s || strlcpy(head, s, sizeof(head)) >= sizeof(head))
+   if (!s || !*s || !(head = (char*)malloc(2 * PATH_MAX_LENGTH)))
       return NULL;
+   joined = head + PATH_MAX_LENGTH;
+   if (strlcpy(head, s, PATH_MAX_LENGTH) >= PATH_MAX_LENGTH)
+      goto end;
    cut = strlen(head);
    for (;;)
    {
@@ -2858,29 +2864,32 @@ end:
    if (!real_path)
    {
       /* No part of it exists: by its text alone */
-      if (strlcpy(joined, s, sizeof(joined)) >= sizeof(joined))
-         return NULL;
+      if (strlcpy(joined, s, PATH_MAX_LENGTH) >= PATH_MAX_LENGTH)
+         goto end;
    }
    else
    {
       const char *tail = s + cut;
-      size_t _len      = strlcpy(joined, real_path, sizeof(joined));
+      size_t _len      = strlcpy(joined, real_path, PATH_MAX_LENGTH);
       free(real_path);
-      if (_len >= sizeof(joined))
-         return NULL;
+      if (_len >= PATH_MAX_LENGTH)
+         goto end;
       if (*tail)
       {
-         if (_len + 1 + strlen(tail) >= sizeof(joined))
-            return NULL;
+         if (_len + 1 + strlen(tail) >= PATH_MAX_LENGTH)
+            goto end;
          if (_len == 0 || joined[_len - 1] != '/')
             joined[_len++] = '/';
-         strlcpy(joined + _len, tail, sizeof(joined) - _len);
+         strlcpy(joined + _len, tail, PATH_MAX_LENGTH - _len);
       }
    }
-   if (!path_resolve_lexical(joined, sizeof(joined)))
-      return NULL;
+   if (!path_resolve_lexical(joined, PATH_MAX_LENGTH))
+      goto end;
    strlcpy(s, joined, len);
-   return s;
+   ret = s;
+end:
+   free(head);
+   return ret;
 #endif
 }
 

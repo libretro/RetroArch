@@ -977,18 +977,23 @@ bool path_is_absolute(const char *path)
  * not fit or a ".." would climb above the root. */
 char *path_resolve_lexical(char *s, size_t len)
 {
-   char tmp[PATH_MAX_LENGTH];
+   /* on the heap: a path is more than a thread's stack on the small
+    * targets can spare */
+   char *tmp;
+   char *ret = NULL;
    size_t t;
    char *p;
    const char *next;
    const char *buf_end;
+   if (!(tmp = (char*)malloc(PATH_MAX_LENGTH)))
+      return NULL;
    t       = 0;
    if (!path_is_absolute(s))
    {
       size_t _len;
       size_t s_len;
       if (!getcwd(tmp, PATH_MAX_LENGTH - 1))
-         return NULL;
+         goto end;
       _len  = strlen(tmp);
       t    += _len;
       if (tmp[_len - 1] != '/')
@@ -997,11 +1002,12 @@ char *path_resolve_lexical(char *s, size_t len)
       {
          tmp[t] = '\0';
          strlcpy(s, tmp, len);
-         return s;
+         ret = s;
+         goto end;
       }
       s_len = strlen(s);
       if (t + s_len >= PATH_MAX_LENGTH)
-         return NULL;
+         goto end;
       buf_end = s + s_len;
       p = s;
    }
@@ -1011,7 +1017,7 @@ char *path_resolve_lexical(char *s, size_t len)
       for (p = s; *p == '/' && t < PATH_MAX_LENGTH - 1; p++)
          tmp[t++] = '/';
       if (*p == '/')           /* still more slashes -> input too long */
-         return NULL;
+         goto end;
       buf_end = p + strlen(p);
    }
    do
@@ -1022,7 +1028,7 @@ char *path_resolve_lexical(char *s, size_t len)
       {
          p = (char *)next + 1;
          if (t == 1 || tmp[t - 2] == '/')
-            return NULL;
+            goto end;
          t -= 2;
          while (tmp[t] != '/')
             t--;
@@ -1035,14 +1041,17 @@ char *path_resolve_lexical(char *s, size_t len)
       else
       {
          if (t + (next - p) + 1 > PATH_MAX_LENGTH - 1)
-            return NULL;
+            goto end;
          while (p <= next)
             tmp[t++] = *p++;
       }
    } while (next < buf_end);
    tmp[t] = '\0';
    strlcpy(s, tmp, len);
-   return s;
+   ret = s;
+end:
+   free(tmp);
+   return ret;
 }
 #endif
 
