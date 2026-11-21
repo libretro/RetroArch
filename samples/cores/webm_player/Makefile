@@ -303,6 +303,7 @@ clean:
 
 .PHONY: all check check-wma clean
 
+ifeq ($(MP4),1)
 fixtures/fragment-seek-ac3.mp4:
 	@mkdir -p fixtures
 	ffmpeg -v error -y -f lavfi -i testsrc2=size=64x64:rate=10 -f lavfi -i sine=frequency=440:sample_rate=48000 -t 4 -c:v libx264 -preset ultrafast -profile:v baseline -g 10 -c:a ac3 -ac 2 -movflags empty_moov+delay_moov+default_base_moof -frag_duration 100000 $@
@@ -310,3 +311,4 @@ fragment-seek-check: $(MP4_SEEK_TARGET) fixtures/fragment-seek-ac3.mp4
 	$(RUNNER) ./$(MP4_SEEK_TARGET) fixtures/fragment-seek-ac3.mp4
 check: fragment-seek-check
 .PHONY: fragment-seek-check
+endif
