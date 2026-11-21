@@ -182,6 +182,7 @@ typedef struct cg_shader_data
    struct shader_program_cg prg[VIDEO_SHADER_PROGRAM_COUNT];
    size_t attribs_index;
    GLuint lut_textures[GFX_MAX_TEXTURES];
+   unsigned media_source_dims;
    unsigned active_idx;
    char alias_define[GFX_MAX_SHADERS][128];
 } cg_shader_data_t;
@@ -415,31 +416,35 @@ static void gl_cg_set_params(void *dat, void *shader_data)
    set_param_2f(cg->prg[cg->active_idx].out_size_f, out_width, out_height);
 
 #ifdef HAVE_REWIND
-   if (state_manager_frame_is_reversed())
+   if (!cg->media_source_dims && state_manager_frame_is_reversed())
    {
-      cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_f,
-            -1.0);
-      cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_v,
-            -1.0);
+      cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_f, -1.0);
+      cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_v, -1.0);
    }
    else
-#else
-   {
-      cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_f,
-            1.0);
-      cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_v,
-            1.0);
-   }
 #endif
-   cg_gl_set_param_1f(cg->prg[cg->active_idx].rotation_f, (float)video_driver_get_rotation_snapshot());
-   cg_gl_set_param_1f(cg->prg[cg->active_idx].rotation_v, (float)video_driver_get_rotation_snapshot());
+   {
+      cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_f, 1.0);
+      cg_gl_set_param_1f(cg->prg[cg->active_idx].frame_dir_v, 1.0);
+   }
+   cg_gl_set_param_1f(cg->prg[cg->active_idx].rotation_f, (float)(cg->media_source_dims
+            ? 0 : video_driver_get_rotation_snapshot()));
+   cg_gl_set_param_1f(cg->prg[cg->active_idx].rotation_v, (float)(cg->media_source_dims
+            ? 0 : video_driver_get_rotation_snapshot()));
 
-   cg_gl_set_param_1f(cg->prg[cg->active_idx].originalaspect_f, (float)video_driver_get_core_aspect());
-   cg_gl_set_param_1f(cg->prg[cg->active_idx].originalaspect_v, (float)video_driver_get_core_aspect());
+   cg_gl_set_param_1f(cg->prg[cg->active_idx].originalaspect_f, (float)(cg->media_source_dims
+            ? (float)VIDEO_SCALE_W(cg->media_source_dims) / VIDEO_SCALE_H(cg->media_source_dims)
+            : video_driver_get_core_aspect()));
+   cg_gl_set_param_1f(cg->prg[cg->active_idx].originalaspect_v, (float)(cg->media_source_dims
+            ? (float)VIDEO_SCALE_W(cg->media_source_dims) / VIDEO_SCALE_H(cg->media_source_dims)
+            : video_driver_get_core_aspect()));
 
    /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
-   rot = video_driver_get_rotation_snapshot();
-   originalaspectrotated = video_driver_get_core_aspect();
+   rot = (cg->media_source_dims
+            ? 0 : video_driver_get_rotation_snapshot());
+   originalaspectrotated = (cg->media_source_dims
+            ? (float)VIDEO_SCALE_W(cg->media_source_dims) / VIDEO_SCALE_H(cg->media_source_dims)
+            : video_driver_get_core_aspect());
    if (rot == 1 || rot == 3)
       originalaspectrotated = 1/originalaspectrotated;
    cg_gl_set_param_1f(cg->prg[cg->active_idx].originalaspectrotated_f, (float)originalaspectrotated);
@@ -1335,6 +1340,11 @@ void gl_cg_effect_free(gl_cg_effect_t *fx)
 }
 #endif
 
+static void gl_cg_set_media_source(void *data, unsigned dims)
+{
+   ((cg_shader_data_t*)data)->media_source_dims = dims;
+}
+
 const shader_backend_t gl_cg_backend = {
    gl_cg_init,
    gl_cg_deinit,
@@ -1355,5 +1365,6 @@ const shader_backend_t gl_cg_backend = {
    gl_cg_get_flags,
 
    RARCH_SHADER_CG,
-   "cg"
+   "cg",
+   gl_cg_set_media_source
 };

@@ -446,6 +446,22 @@ static void gl2_free_pbo_readback(gl2_t *gl);
 
 #endif
 
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+#define MEDIA_GEN_FB gl2_gen_fb
+#define MEDIA_DELETE_FB gl2_delete_fb
+#define MEDIA_BIND_FB gl2_bind_fb
+#define MEDIA_FB_BINDING GL_FRAMEBUFFER_BINDING
+#define MEDIA_ATTACH(tex) gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0)
+#define MEDIA_FB_COMPLETE() (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER) == RARCH_GL_FRAMEBUFFER_COMPLETE)
+#define gl_media_target_free gl2_media_target_free
+#define gl_media_shader_free gl2_media_shader_free
+#define gl_media_target_fit gl2_media_target_fit
+#define gl_media_info gl2_media_info
+#define gl_media_scale gl2_media_scale
+#define gl_media_shader_draw gl2_media_shader_draw
+#include "../common/gl_media_shader.h"
+#endif
+
 #ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
 #define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
 #endif
@@ -7561,6 +7577,9 @@ static bool gl2_frame(void *data, const void *frame,
    width  = VIDEO_SCALE_W(gl->video_dims);
    height = VIDEO_SCALE_H(gl->video_dims);
 
+   gl->media_shader_enabled = video_info->shader_active;
+   gl->media_shader_frame = frame_count;
+
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
@@ -8293,6 +8312,9 @@ static void gl2_free(void *data)
             gl->renderchain_data);
 
 
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   gl2_media_shader_free(&gl->media_shader);
+#endif
    gl->shader->deinit(gl->shader_data);
 
    gl2_scrgb_deinit(gl);
@@ -9526,6 +9548,9 @@ static bool gl2_set_shader(void *data,
       goto error;
    }
 
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   gl2_media_shader_free(&gl->media_shader);
+#endif
    gl->shader->deinit(gl->shader_data);
    gl->shader_data = NULL;
 
@@ -10975,6 +11000,18 @@ static void gfx_display_gl2_bloom_composite(void *data, unsigned dims)
 }
 #endif
 
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+static bool gfx_display_gl2_media_shader_draw(void *data, uintptr_t image,
+      unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
+{
+   gl2_t *gl = (gl2_t*)data;
+   (void)video_dims;
+   return gl && (gl->flags & GL2_FLAG_HAVE_FBO) && gl->media_shader_enabled &&
+      gl2_media_shader_draw(&gl->media_shader, gl, gl->shader, gl->shader_data,
+            image, source_dims, pos, dims, gl->media_shader_frame);
+}
+#endif
+
 gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    gfx_display_gl2_draw,
    gfx_display_gl2_draw_pipeline,
@@ -11003,7 +11040,12 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    NULL, NULL, NULL,
 #endif
 #ifdef GL2_EFFECTS
-   gfx_display_gl2_effect_install
+   gfx_display_gl2_effect_install,
+#else
+   NULL,
+#endif
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   gfx_display_gl2_media_shader_draw
 #else
    NULL
 #endif

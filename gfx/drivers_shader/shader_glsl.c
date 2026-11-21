@@ -183,6 +183,7 @@ typedef struct glsl_shader_data
    char alias_define[1024];
    GLint attribs_elems[32 * PREV_TEXTURES + 2 + 4 + GFX_MAX_SHADERS];
    unsigned attribs_index;
+   unsigned media_source_dims;
    unsigned active_idx;
    unsigned current_idx;
    GLuint lut_textures[GFX_MAX_TEXTURES];
@@ -1364,7 +1365,7 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
    if (uni->frame_direction >= 0)
    {
 #ifdef HAVE_REWIND
-      if (state_manager_frame_is_reversed())
+      if (!glsl->media_source_dims && state_manager_frame_is_reversed())
          glUniform1i(uni->frame_direction, -1);
       else
 #endif
@@ -1378,16 +1379,22 @@ static void gl_glsl_set_params(void *dat, void *shader_data)
       glUniform1f(uni->original_fps, video_driver_get_original_fps());
 
   if (uni->rotation >= 0)
-      glUniform1i(uni->rotation, video_driver_get_rotation_snapshot());
+      glUniform1i(uni->rotation, (glsl->media_source_dims
+            ? 0 : video_driver_get_rotation_snapshot()));
 
   if (uni->core_aspect >= 0)
-      glUniform1f(uni->core_aspect, video_driver_get_core_aspect());
+      glUniform1f(uni->core_aspect, (glsl->media_source_dims
+            ? (float)VIDEO_SCALE_W(glsl->media_source_dims) / VIDEO_SCALE_H(glsl->media_source_dims)
+            : video_driver_get_core_aspect()));
 
   if (uni->core_aspect_rot >= 0)
   {
      /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
-     float core_aspect_rot = video_driver_get_core_aspect();
-     uint32_t rot = video_driver_get_rotation_snapshot();
+     float core_aspect_rot = (glsl->media_source_dims
+            ? (float)VIDEO_SCALE_W(glsl->media_source_dims) / VIDEO_SCALE_H(glsl->media_source_dims)
+            : video_driver_get_core_aspect());
+     uint32_t rot = (glsl->media_source_dims
+            ? 0 : video_driver_get_rotation_snapshot());
      if (rot == 1 || rot == 3)
         core_aspect_rot = 1/core_aspect_rot;
      glUniform1f(uni->core_aspect_rot, core_aspect_rot);
@@ -2298,6 +2305,11 @@ void gl_glsl_in_place_end(void *shader_data)
       gl_glsl_in_place_swap(glsl);
 }
 
+static void gl_glsl_set_media_source(void *data, unsigned dims)
+{
+   ((glsl_shader_data_t*)data)->media_source_dims = dims;
+}
+
 const shader_backend_t gl_glsl_backend = {
    gl_glsl_init,
    gl_glsl_deinit,
@@ -2318,5 +2330,6 @@ const shader_backend_t gl_glsl_backend = {
    gl_glsl_get_flags,
 
    RARCH_SHADER_GLSL,
-   "glsl"
+   "glsl",
+   gl_glsl_set_media_source
 };

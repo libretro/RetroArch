@@ -304,9 +304,14 @@ static void run_resize_cases(void)
    CHECK(sync_created == sync_deleted, "resize teardown retires every recording fence");
 }
 
+#define VIEWER_DRAW gl3_media_shader_draw
+#define VIEWER_FREE gl3_media_shader_free
+#include "viewer_cases.h"
+
 int main(void)
 {
-   int result = run_cases(run_chain, 0);
+   int result = viewer_cases();
+   result |= run_cases(run_chain, 0);
    run_readback_cases();
    run_fence_cases();
    run_resize_cases();

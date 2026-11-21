@@ -54,6 +54,10 @@ GL_FAKE(void, glGenTextures, (GLsizei n, GLuint *t))
       t[i] = gl11_next_name++;
 }
 GL_FAKE(GLenum, glGetError, (void)) { return GL_NO_ERROR; }
+GL_FAKE(void, glGetFloatv, (GLenum p, GLfloat *v))
+{ (void)p; memset(v, 0, 4 * sizeof(*v)); }
+GL_FAKE(void, glGetTexParameteriv, (GLenum t, GLenum p, GLint *v))
+{ (void)t; (void)p; *v = GL_LINEAR; }
 GL_FAKE(void, glGetIntegerv, (GLenum p, GLint *v))
 { *v = (p == GL_MAX_TEXTURE_SIZE) ? 4096 : 0; }
 GL_FAKE(const GLubyte *, glGetString, (GLenum n)) { (void)n; return (const GLubyte*)""; }

@@ -35,7 +35,12 @@ static int run_chain(void)
    return chain.fbo_pass;
 }
 
+#define VIEWER_DRAW gl2_media_shader_draw
+#define VIEWER_FREE gl2_media_shader_free
+#include "viewer_cases.h"
+
 int main(void)
 {
+   if (viewer_cases()) return 1;
    return run_cases(run_chain, -1);
 }

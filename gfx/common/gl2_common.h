@@ -159,6 +159,9 @@ enum gl2_flags
 
 struct gl2
 {
+   struct gl_media_shader *media_shader;
+   uint64_t media_shader_frame;
+   bool media_shader_enabled;
    /* gfx_display meshes kept on the GPU, by mesh id: vertices, and
     * indices where the mesh has them. GL retires a deleted buffer once
     * nothing in flight reads it, so the one drawn longest ago simply

@@ -349,6 +349,8 @@ typedef struct shader_backend
 
    /* Human readable string. */
    const char *ident;
+   /* A borrowed preset drawing a viewer: zero restores core semantics. */
+   void (*set_media_source)(void *shader_data, unsigned dims);
 } shader_backend_t;
 
 typedef struct video_shader_ctx_params

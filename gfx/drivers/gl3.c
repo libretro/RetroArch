@@ -130,8 +130,27 @@ struct gl3_views_fbo
    GLuint tex;
 };
 
+#ifdef HAVE_GLSL
+#define MEDIA_GEN_FB glGenFramebuffers
+#define MEDIA_DELETE_FB glDeleteFramebuffers
+#define MEDIA_BIND_FB(id) glBindFramebuffer(GL_FRAMEBUFFER, id)
+#define MEDIA_FB_BINDING GL_FRAMEBUFFER_BINDING
+#define MEDIA_ATTACH(tex) glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0)
+#define MEDIA_FB_COMPLETE() (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+#define gl_media_target_free gl3_media_target_free
+#define gl_media_shader_free gl3_media_shader_free
+#define gl_media_target_fit gl3_media_target_fit
+#define gl_media_info gl3_media_info
+#define gl_media_scale gl3_media_scale
+#define gl_media_shader_draw gl3_media_shader_draw
+#include "../common/gl_media_shader.h"
+#endif
+
 typedef struct gl3
 {
+#ifdef HAVE_GLSL
+   gl_media_shader_t *media_legacy_shader;
+#endif
 #ifdef HAVE_GL_MENU_BLOOM
    gl_menu_bloom_t *menu_bloom;
 #endif
@@ -2518,6 +2537,9 @@ static void gl3_destroy_resources(gl3_t *gl)
    gl3_vv_target_drop(gl, &gl->views.ui_target, &gl->views.ui);
 #endif
 
+#ifdef HAVE_GLSL
+   gl3_media_shader_free(&gl->media_legacy_shader);
+#endif
    if (gl->chain.shader)
    {
       gl->chain.shader->deinit(gl->chain.shader_data);
@@ -4869,6 +4891,9 @@ static bool gl3_set_shader(void *data,
    gl3_views_set_preset(gl, NULL);
 #endif
 
+#ifdef HAVE_GLSL
+   gl3_media_shader_free(&gl->media_legacy_shader);
+#endif
    if (gl->chain.shader)
       gl->chain.shader->deinit(gl->chain.shader_data);
 
@@ -7221,9 +7246,11 @@ static bool gl3_frame(void *data, const void *frame,
    gl->scrgb.expand_gamut     = video_info->hdr_expand_gamut;
    gl->scrgb.content_hdr_mode = gl->video_info.source_fp16 ? 2 :
       (gl->video_info.source_hdr10 ? 1 : 0);
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) || defined(HAVE_GLSL)
    gl->media_shader_enabled = video_info->shader_active;
    gl->media_shader_frame = frame_count;
+#endif
+#ifdef HAVE_SLANG
    if (video_info->shader_active && gl->filter_chain)
    {
       int mode = video_shader_get_hdr_mode(
@@ -9448,7 +9475,7 @@ static void gfx_display_gl3_bloom_composite(void *data, unsigned dims)
 #endif
 
 #ifdef HAVE_SLANG
-static bool gfx_display_gl3_media_shader_draw(void *data, uintptr_t image,
+static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
       unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
 {
    gl3_t *gl = (gl3_t*)data;
@@ -9509,6 +9536,27 @@ static bool gfx_display_gl3_media_shader_draw(void *data, uintptr_t image,
 }
 #endif
 
+#if defined(HAVE_SLANG) || defined(HAVE_GLSL)
+static bool gfx_display_gl3_media_shader_draw(void *data, uintptr_t image,
+      unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
+{
+#ifdef HAVE_GLSL
+   gl3_t *gl = (gl3_t*)data;
+   if (gl && gl->chain.active && gl->chain.shader)
+      return gl->media_shader_enabled && gl3_media_shader_draw(
+            &gl->media_legacy_shader, gl, gl->chain.shader, gl->chain.shader_data,
+            image, source_dims, pos, dims, gl->media_shader_frame);
+#endif
+#ifdef HAVE_SLANG
+   return gfx_display_gl3_media_slang_draw(data, image, source_dims,
+         video_dims, pos, dims);
+#else
+   (void)video_dims;
+   return false;
+#endif
+}
+#endif
+
 gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    gfx_display_gl3_draw,
    gfx_display_gl3_draw_pipeline,
@@ -9541,7 +9589,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
 #else
    NULL,
 #endif
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) || defined(HAVE_GLSL)
    gfx_display_gl3_media_shader_draw
 #else
    NULL
