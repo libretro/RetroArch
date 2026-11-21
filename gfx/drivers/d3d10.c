@@ -284,6 +284,25 @@ typedef struct
       unsigned dims;
       bool failed;
    } bloom;
+   /* The menu's backdrop blur: the rect halved into tex[MENU_BLUR_COPY]
+    * from the target itself where it can be sampled whole, else from
+    * a copy of the rect; blurred between tex[0] and tex[1]. */
+   struct
+   {
+      d3d10_texture_t tex[3];
+      D3D10Texture2D copy;
+      D3D10ShaderResourceView copy_view;
+      /* One constant buffer a pass, made with the images; the halving
+       * pass's, and the composite's, written each time */
+      D3D10Buffer params[MENU_BLUR_PASSES];
+      D3D10Buffer still;
+      D3D10Buffer composite;
+      D3D10BlendState blend;
+      DXGI_FORMAT copy_format;
+      unsigned copy_dims;
+      unsigned dims;
+      bool failed;
+   } blur;
    /* gfx_display meshes: the shader and constant buffer they draw with,
     * and each mesh's own buffers by mesh id. The one drawn longest ago
     * gives way when all are taken; the runtime keeps a released buffer
@@ -1173,7 +1192,332 @@ static void d3d10_bloom_free(d3d10_video_t *d3d10)
       Release(d3d10->bloom.params[i]);
    d3d10_release_shader(&d3d10->bloom.shader);
    Release(d3d10->bloom.blend);
+   for (i = 0; i < 3; i++)
+      d3d10_release_texture(&d3d10->blur.tex[i]);
+   for (i = 0; i < MENU_BLUR_PASSES; i++)
+      Release(d3d10->blur.params[i]);
+   Release(d3d10->blur.still);
+   Release(d3d10->blur.composite);
+   Release(d3d10->blur.blend);
+   Release(d3d10->blur.copy_view);
+   Release(d3d10->blur.copy);
 }
+
+/* The glow's shader, which the blur draws with too */
+static bool d3d10_bloom_shader(d3d10_video_t *d3d10)
+{
+   if (d3d10->bloom.shader.vs)
+      return true;
+   return d3d10_init_shader(d3d10->device, d3d10_bloom_vs_program,
+            sizeof(d3d10_bloom_vs_program), NULL, "VSMain", NULL, NULL,
+            NULL, 0, &d3d10->bloom.shader)
+      && d3d10_init_shader(d3d10->device, d3d10_bloom_ps_program,
+            sizeof(d3d10_bloom_ps_program), NULL, NULL, "PSMain", NULL,
+            NULL, 0, &d3d10->bloom.shader)
+      && d3d10->bloom.shader.vs && d3d10->bloom.shader.ps;
+}
+
+/* A constant buffer of four floats: immutable with @init, else for
+ * UpdateSubresource */
+static D3D10Buffer d3d10_blur_params(d3d10_video_t *d3d10,
+      const float *init)
+{
+   D3D10_BUFFER_DESC desc;
+   D3D10_SUBRESOURCE_DATA data;
+   D3D10Buffer buf = NULL;
+   desc.ByteWidth           = 4 * sizeof(float);
+   desc.Usage               = init ? D3D10_USAGE_IMMUTABLE
+                                   : D3D10_USAGE_DEFAULT;
+   desc.BindFlags           = D3D10_BIND_CONSTANT_BUFFER;
+   desc.CPUAccessFlags      = 0;
+   desc.MiscFlags           = 0;
+   data.pSysMem             = init;
+   data.SysMemPitch         = 0;
+   data.SysMemSlicePitch    = 0;
+   if (FAILED(d3d10->device->lpVtbl->CreateBuffer(d3d10->device, &desc,
+               init ? &data : NULL, &buf)))
+      return NULL;
+   return buf;
+}
+
+/* One pass of the glow's shader into @rt over @dims */
+static void d3d10_blur_draw(D3D10Device ctx,
+      D3D10RenderTargetView rt, D3D10ShaderResourceView src,
+      D3D10Buffer params, int x, int y, unsigned dims)
+{
+   D3D10ShaderResourceView empty = NULL;
+   D3D10_VIEWPORT vp;
+   vp.TopLeftX = (float)x;
+   vp.TopLeftY = (float)y;
+   vp.Width    = (float)VIDEO_SCALE_W(dims);
+   vp.Height   = (float)VIDEO_SCALE_H(dims);
+   vp.MinDepth = 0.0f;
+   vp.MaxDepth = 1.0f;
+   ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &empty);
+   ctx->lpVtbl->OMSetRenderTargets(ctx, 1, &rt, NULL);
+   ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &src);
+   ctx->lpVtbl->PSSetConstantBuffers(ctx, 0, 1, &params);
+   ctx->lpVtbl->RSSetViewports(ctx, 1, &vp);
+   ctx->lpVtbl->Draw(ctx, 4, 0);
+}
+
+/* The images, the pass constants and the composite's blend: the blend
+ * factor's colour darkens what is drawn, the composite's gain the
+ * blurred image, which carries its alpha */
+static bool d3d10_blur_images(d3d10_video_t *d3d10, unsigned small)
+{
+   static const float still[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+   menu_bloom_pass_t plan[MENU_BLUR_PASSES];
+   UINT support = 0;
+   DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM;
+   UINT required = D3D10_FORMAT_SUPPORT_RENDER_TARGET
+      | D3D10_FORMAT_SUPPORT_SHADER_SAMPLE;
+   unsigned i;
+   if (!d3d10->blur.blend)
+   {
+      D3D10_BLEND_DESC blend;
+      d3d10->blend_disable->lpVtbl->GetDesc(d3d10->blend_disable, &blend);
+      blend.BlendEnable[0] = TRUE;
+      blend.SrcBlend       = D3D10_BLEND_ONE;
+      blend.DestBlend      = D3D10_BLEND_INV_BLEND_FACTOR;
+      blend.BlendOp        = D3D10_BLEND_OP_ADD;
+      blend.SrcBlendAlpha  = D3D10_BLEND_ZERO;
+      blend.DestBlendAlpha = D3D10_BLEND_ONE;
+      blend.BlendOpAlpha   = D3D10_BLEND_OP_ADD;
+      if (     FAILED(d3d10->device->lpVtbl->CreateBlendState(d3d10->device,
+                  &blend, &d3d10->blur.blend))
+            || !(d3d10->blur.still     = d3d10_blur_params(d3d10, still))
+            || !(d3d10->blur.composite = d3d10_blur_params(d3d10, NULL)))
+         return false;
+   }
+   if (SUCCEEDED(d3d10->device->lpVtbl->CheckFormatSupport(d3d10->device,
+               DXGI_FORMAT_R16G16B16A16_FLOAT, &support))
+         && (support & required) == required)
+      format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+   for (i = 0; i < 3; i++)
+   {
+      d3d10_texture_t *t = &d3d10->blur.tex[i];
+      unsigned d         = i == MENU_BLUR_COPY
+         ? MENU_BLUR_COPY_DIMS(small) : small;
+      d3d10_release_texture(t);
+      memset(t, 0, sizeof(*t));
+      t->desc.Width     = VIDEO_SCALE_W(d);
+      t->desc.Height    = VIDEO_SCALE_H(d);
+      t->desc.Format    = format;
+      t->desc.Usage     = D3D10_USAGE_DEFAULT;
+      t->desc.BindFlags = D3D10_BIND_RENDER_TARGET;
+      d3d10_init_texture(d3d10->device, t);
+      if (!t->view || !t->rt_view)
+         return false;
+   }
+   menu_blur_plan(plan, small);
+   for (i = 0; i < MENU_BLUR_PASSES; i++)
+   {
+      Release(d3d10->blur.params[i]);
+      if (!(d3d10->blur.params[i] = d3d10_blur_params(d3d10,
+                  plan[i].params)))
+         return false;
+   }
+   d3d10->blur.dims = small;
+   return true;
+}
+
+/* A copy of the rect, for a target that cannot be sampled or is not
+ * covered whole: its format, as a view of it reads it */
+static D3D10ShaderResourceView d3d10_blur_copy(d3d10_video_t *d3d10,
+      D3D10Texture2D src, const D3D10_TEXTURE2D_DESC *src_desc,
+      DXGI_FORMAT view_format, int x0, int y0, unsigned dims)
+{
+   D3D10Device ctx = d3d10->device;
+   D3D10_BOX box;
+   if (     dims != d3d10->blur.copy_dims
+         || src_desc->Format != d3d10->blur.copy_format)
+   {
+      D3D10_TEXTURE2D_DESC desc;
+      D3D10_SHADER_RESOURCE_VIEW_DESC view;
+      Release(d3d10->blur.copy_view);
+      Release(d3d10->blur.copy);
+      d3d10->blur.copy_dims = 0;
+      desc.Width              = VIDEO_SCALE_W(dims);
+      desc.Height             = VIDEO_SCALE_H(dims);
+      desc.MipLevels          = 1;
+      desc.ArraySize          = 1;
+      desc.Format             = src_desc->Format;
+      desc.SampleDesc.Count   = 1;
+      desc.SampleDesc.Quality = 0;
+      desc.Usage              = D3D10_USAGE_DEFAULT;
+      desc.BindFlags          = D3D10_BIND_SHADER_RESOURCE;
+      desc.CPUAccessFlags     = 0;
+      desc.MiscFlags          = 0;
+      view.Format                    = view_format;
+      view.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
+      view.Texture2D.MostDetailedMip = 0;
+      view.Texture2D.MipLevels       = 1;
+      if (     FAILED(d3d10->device->lpVtbl->CreateTexture2D(d3d10->device,
+                  &desc, NULL, &d3d10->blur.copy))
+            || FAILED(d3d10->device->lpVtbl->CreateShaderResourceView(
+                  d3d10->device, (D3D10Resource)d3d10->blur.copy, &view,
+                  &d3d10->blur.copy_view)))
+         return NULL;
+      d3d10->blur.copy_dims   = dims;
+      d3d10->blur.copy_format = src_desc->Format;
+   }
+   box.left   = (UINT)x0;
+   box.top    = (UINT)y0;
+   box.front  = 0;
+   box.right  = (UINT)x0 + VIDEO_SCALE_W(dims);
+   box.bottom = (UINT)y0 + VIDEO_SCALE_H(dims);
+   box.back   = 1;
+   ctx->lpVtbl->CopySubresourceRegion(ctx,
+         (D3D10Resource)d3d10->blur.copy, 0, 0, 0, 0,
+         (D3D10Resource)src, 0, &box);
+   d3d10->blur.copy_view->lpVtbl->AddRef(d3d10->blur.copy_view);
+   return d3d10->blur.copy_view;
+}
+
+static bool gfx_display_d3d10_blur_rect(void *data, unsigned video_dims,
+      int x, int y, unsigned dims, float alpha, float dim)
+{
+   d3d10_video_t *d3d10 = (d3d10_video_t*)data;
+   D3D10Device ctx;
+   D3D10RenderTargetView target = NULL;
+   D3D10DepthStencilView depth  = NULL;
+   D3D10ShaderResourceView src  = NULL;
+   D3D10ShaderResourceView empty = NULL;
+   D3D10Resource res            = NULL;
+   D3D10Texture2D tex           = NULL;
+   D3D10RasterizerState raster  = NULL;
+   D3D10_RECT scissor;
+   D3D10BlendState blend_state  = NULL;
+   D3D10_TEXTURE2D_DESC desc;
+   D3D10_RENDER_TARGET_VIEW_DESC rt_desc;
+   D3D10_VIEWPORT viewport;
+   menu_bloom_pass_t plan[MENU_BLUR_PASSES];
+   FLOAT blend_factor[4];
+   UINT sample_mask, count = 1;
+   float params[4], c;
+   unsigned i, small, rect;
+   int x0, y0, x1, y1;
+   bool ok = false;
+   if (!d3d10 || d3d10->blur.failed)
+      return false;
+   ctx = d3d10->device;
+   ctx->lpVtbl->OMGetRenderTargets(ctx, 1, &target, &depth);
+   if (!target)
+      goto end;
+   target->lpVtbl->GetResource(target, &res);
+   target->lpVtbl->GetDesc(target, &rt_desc);
+   if (     !res || rt_desc.ViewDimension != D3D10_RTV_DIMENSION_TEXTURE2D
+         || FAILED(res->lpVtbl->QueryInterface(res,
+               uuidof(ID3D10Texture2D), (void**)&tex)))
+      goto end;
+   tex->lpVtbl->GetDesc(tex, &desc);
+   if (desc.SampleDesc.Count > 1)
+      goto end;
+   /* Clipped to the output and the target; nothing left, nothing to
+    * blur */
+   x0 = x < 0 ? 0 : x;
+   y0 = y < 0 ? 0 : y;
+   x1 = x + (int)VIDEO_SCALE_W(dims);
+   y1 = y + (int)VIDEO_SCALE_H(dims);
+   if (x1 > (int)VIDEO_SCALE_W(video_dims)) x1 = (int)VIDEO_SCALE_W(video_dims);
+   if (y1 > (int)VIDEO_SCALE_H(video_dims)) y1 = (int)VIDEO_SCALE_H(video_dims);
+   if (x1 > (int)desc.Width)                x1 = (int)desc.Width;
+   if (y1 > (int)desc.Height)               y1 = (int)desc.Height;
+   if (x1 - x0 < 8 || y1 - y0 < 8)
+      goto end;
+   rect  = VIDEO_SCALE_PACK(x1 - x0, y1 - y0);
+   small = menu_blur_dims(rect);
+   if (     !d3d10_bloom_shader(d3d10)
+         || (small != d3d10->blur.dims && !d3d10_blur_images(d3d10, small)))
+   {
+      d3d10->blur.failed = true;
+      goto end;
+   }
+   /* The target read in place where it can be, the whole of it */
+   if (     (desc.BindFlags & D3D10_BIND_SHADER_RESOURCE)
+         && !x0 && !y0
+         && (UINT)x1 == desc.Width && (UINT)y1 == desc.Height)
+   {
+      D3D10_SHADER_RESOURCE_VIEW_DESC view;
+      view.Format                    = rt_desc.Format;
+      view.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
+      view.Texture2D.MostDetailedMip = rt_desc.Texture2D.MipSlice;
+      view.Texture2D.MipLevels       = 1;
+      if (FAILED(d3d10->device->lpVtbl->CreateShaderResourceView(
+                  d3d10->device, res, &view, &src)))
+         src = NULL;
+   }
+   if (!src && !(src = d3d10_blur_copy(d3d10, tex, &desc, rt_desc.Format,
+               x0, y0, rect)))
+      goto end;
+
+   ctx->lpVtbl->RSGetViewports(ctx, &count, &viewport);
+   ctx->lpVtbl->RSGetState(ctx, &raster);
+   ctx->lpVtbl->RSGetScissorRects(ctx, &count, &scissor);
+   ctx->lpVtbl->OMGetBlendState(ctx, &blend_state, blend_factor,
+         &sample_mask);
+   {
+      D3D10_RECT wide = {0, 0, 0x7fff, 0x7fff};
+      ctx->lpVtbl->RSSetScissorRects(ctx, 1, &wide);
+   }
+   ctx->lpVtbl->IASetInputLayout(ctx, NULL);
+   ctx->lpVtbl->IASetPrimitiveTopology(ctx,
+         D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+   ctx->lpVtbl->VSSetShader(ctx, d3d10->bloom.shader.vs);
+   ctx->lpVtbl->PSSetShader(ctx, d3d10->bloom.shader.ps);
+   ctx->lpVtbl->GSSetShader(ctx, NULL);
+   ctx->lpVtbl->PSSetSamplers(ctx, 0, 1,
+         &d3d10->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE]);
+   ctx->lpVtbl->OMSetBlendState(ctx, d3d10->blend_disable, NULL,
+         D3D10_DEFAULT_SAMPLE_MASK);
+
+   /* Halved at the copy's texel centres, a 2x2 average; then the
+    * blur's passes */
+   d3d10_blur_draw(ctx, d3d10->blur.tex[MENU_BLUR_COPY].rt_view, src,
+         d3d10->blur.still, 0, 0, MENU_BLUR_COPY_DIMS(small));
+   menu_blur_plan(plan, small);
+   for (i = 0; i < MENU_BLUR_PASSES; i++)
+      d3d10_blur_draw(ctx, d3d10->blur.tex[plan[i].dst].rt_view,
+            d3d10->blur.tex[plan[i].src].view, d3d10->blur.params[i],
+            0, 0, small);
+
+   /* Back over the rect: the gain darkens the blurred image and fades
+    * it in, the blend factor darkens what it is faded over -
+    * blurred * (1 - dim) * alpha + drawn * (1 - alpha) * (1 - dim) */
+   params[0] = params[1] = params[2] = 0.0f;
+   params[3] = (1.0f - dim) * alpha;
+   ctx->lpVtbl->UpdateSubresource(ctx, (D3D10Resource)d3d10->blur.composite,
+         0, NULL, params, 0, 0);
+   c = 1.0f - (1.0f - alpha) * (1.0f - dim);
+   {
+      FLOAT factor[4];
+      factor[0] = factor[1] = factor[2] = factor[3] = c;
+      ctx->lpVtbl->OMSetBlendState(ctx, d3d10->blur.blend, factor,
+            D3D10_DEFAULT_SAMPLE_MASK);
+   }
+   d3d10_blur_draw(ctx, target, d3d10->blur.tex[0].view,
+         d3d10->blur.composite, x0, y0, rect);
+
+   ctx->lpVtbl->PSSetShaderResources(ctx, 0, 1, &empty);
+   ctx->lpVtbl->OMSetRenderTargets(ctx, 1, &target, depth);
+   ctx->lpVtbl->RSSetViewports(ctx, 1, &viewport);
+   ctx->lpVtbl->RSSetState(ctx, raster);
+   ctx->lpVtbl->RSSetScissorRects(ctx, 1, &scissor);
+   ctx->lpVtbl->OMSetBlendState(ctx, blend_state, blend_factor, sample_mask);
+   ctx->lpVtbl->PSSetConstantBuffers(ctx, 0, 1, &d3d10->ubo);
+   ok = true;
+end:
+   Release(src);
+   Release(raster);
+   Release(blend_state);
+   Release(tex);
+   Release(res);
+   Release(target);
+   Release(depth);
+   return ok;
+}
+
 
 static unsigned gfx_display_d3d10_bloom_begin(void *data, unsigned dims,
       bool defer)
@@ -1188,16 +1532,10 @@ static unsigned gfx_display_d3d10_bloom_begin(void *data, unsigned dims,
    if (!d3d10 || !bloom_dims || d3d10->bloom.failed)
       return 0;
    ctx = d3d10->device;
-   if (!d3d10->bloom.shader.vs)
+   if (!d3d10->bloom.blend)
    {
       D3D10_BLEND_DESC blend;
-      if (!d3d10_init_shader(d3d10->device, d3d10_bloom_vs_program,
-               sizeof(d3d10_bloom_vs_program), NULL, "VSMain", NULL, NULL,
-               NULL, 0, &d3d10->bloom.shader)
-            || !d3d10_init_shader(d3d10->device, d3d10_bloom_ps_program,
-               sizeof(d3d10_bloom_ps_program), NULL, NULL, "PSMain", NULL,
-               NULL, 0, &d3d10->bloom.shader)
-            || !d3d10->bloom.shader.vs || !d3d10->bloom.shader.ps)
+      if (!d3d10_bloom_shader(d3d10))
          goto error;
       d3d10->blend_ribbon->lpVtbl->GetDesc(d3d10->blend_ribbon, &blend);
       blend.SrcBlend      = D3D10_BLEND_ONE;
@@ -6238,5 +6576,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d10 = {
    gfx_display_d3d10_bloom_begin,
    gfx_display_d3d10_bloom_end,
    NULL,                                     /* bloom_composite */
-   gfx_display_d3d10_effect_install
+   gfx_display_d3d10_effect_install,
+   NULL,                                     /* media_shader_draw */
+   gfx_display_d3d10_blur_rect
 };

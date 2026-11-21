@@ -216,6 +216,8 @@ typedef ID3D12InfoQueue*                          D3D12InfoQueue;
 /* Constant slots for plain mesh draws: 256 bytes each, the alignment a
  * constant buffer view needs */
 #define D3D12_MESH_CB_SIZE  256
+/* Constant slots a frame for the glow and the backdrop blur */
+#define D3D12_BLOOM_CB_SLOTS 16
 #define D3D12_MESH_CB_SLOTS 256
 
 /* Frames whose command lists the GPU may have in hand together. What a
@@ -915,12 +917,29 @@ typedef struct
       uint8_t *mapped;
       D3D12_GPU_VIRTUAL_ADDRESS cb_va;
       D3D12_CPU_DESCRIPTOR_HANDLE target;
+      /* What target names: an image of the driver's, or with none the
+       * swap chain's current buffer */
+      d3d12_texture_t *target_tex;
       unsigned dims;
       unsigned slot;
       unsigned next;
       bool active;
       bool failed;
    } bloom;
+   /* The menu's backdrop blur: the rect halved into tex[MENU_BLUR_COPY]
+    * from the target itself where it is an image of the driver's drawn
+    * whole, else from copy; blurred between tex[0] and tex[1]. Each
+    * rests as a render target. */
+   struct
+   {
+      d3d12_texture_t tex[3];
+      d3d12_texture_t copy;
+      /* Laid back over the rect by the blend factor, one a target
+       * format as bloom.pipes */
+      D3D12PipelineState mix[3];
+      unsigned dims;
+      bool failed;
+   } blur;
    /* The pipeline state the menu effects are made from, and the
     * effects: their bytecode, compiled once when installed, and their
     * pipes, for the target format and for the glow's RGBA16F */
@@ -6522,7 +6541,7 @@ static void d3d12_init_descriptors(d3d12_video_t* d3d12)
     * d3d12_gfx_read_viewport().  The reserved slot is at fixed offset
     * (countof(renderTargets) + GFX_MAX_SHADERS * 2). */
    d3d12->desc.rtv_heap.desc.NumDescriptors = countof(d3d12->chain.renderTargets) + GFX_MAX_SHADERS * 2 + 1
-      + 5; /* views canvas/UI, HDR UI and bloom */
+      + 9; /* views canvas/UI, HDR UI, bloom and the backdrop blur */
    d3d12->desc.rtv_heap.desc.Flags          = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
    d3d12_init_descriptor_heap(d3d12->device, &d3d12->desc.rtv_heap);
 
@@ -8985,25 +9004,30 @@ static void d3d12_bloom_free(d3d12_video_t *d3d12)
    }
    Release(d3d12->bloom.cb);
    memset(&d3d12->bloom, 0, sizeof(d3d12->bloom));
+   for (i = 0; i < 3; i++)
+   {
+      d3d12_release_texture(d3d12, &d3d12->blur.tex[i]);
+      Release(d3d12->blur.mix[i]);
+   }
+   d3d12_release_texture(d3d12, &d3d12->blur.copy);
+   memset(&d3d12->blur, 0, sizeof(d3d12->blur));
 }
 
-static unsigned gfx_display_d3d12_bloom_begin(void *data, unsigned dims,
-      bool defer)
+/* The glow's pipes for a target format: bloom.pipes[slot], by the
+ * format's slot */
+static unsigned d3d12_bloom_slot(DXGI_FORMAT format)
 {
-   static const float clear[4] = {0, 0, 0, 0};
-   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
-   unsigned i, slot, bloom_dims = menu_bloom_dims(dims);
-   DXGI_FORMAT format;
-   D3D12GraphicsCommandList cmd;
-   D3D12_VIEWPORT vp;
-   D3D12_RECT sc;
-   (void)defer;
-   if (!d3d12 || !bloom_dims || d3d12->bloom.failed
-         || !d3d12->effect_desc_valid || !d3d12->bloom.target.ptr)
-      return 0;
-   format = d3d12->chain.current_rt_format;
-   slot = format == DXGI_FORMAT_R16G16B16A16_FLOAT ? 2
+   return format == DXGI_FORMAT_R16G16B16A16_FLOAT ? 2
       : (format == DXGI_FORMAT_R10G10B10A2_UNORM ? 1 : 0);
+}
+
+/* The glow's pipes for a target of @format, made the first time they
+ * are asked for: a plain pass into a small image, the output pass
+ * added onto the target, and a pass added onto a small image. The
+ * backdrop blur's passes draw with the first. */
+static bool d3d12_bloom_pipes(d3d12_video_t *d3d12, unsigned slot,
+      DXGI_FORMAT format)
+{
    if (!d3d12->bloom.pipes[slot][0])
    {
       D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = d3d12->effect_desc;
@@ -9038,23 +9062,51 @@ static unsigned gfx_display_d3d12_bloom_begin(void *data, unsigned dims,
       }
       Release(vs);
       Release(ps);
-      if (     !d3d12->bloom.pipes[slot][0] || !d3d12->bloom.pipes[slot][1]
-            || !d3d12->bloom.add)
-         goto error;
    }
+   return d3d12->bloom.pipes[slot][0] && d3d12->bloom.pipes[slot][1]
+      && d3d12->bloom.add;
+}
+
+/* The ring of constant slots the glow and the blur take theirs from,
+ * D3D12_BLOOM_CB_SLOTS a frame, kept mapped */
+static bool d3d12_bloom_cb(d3d12_video_t *d3d12)
+{
    if (!d3d12->bloom.cb)
    {
       D3D12_RANGE range;
       void *mapped = NULL;
       range.Begin = range.End = 0;
       d3d12->bloom.cb_va = d3d12_create_buffer(d3d12->device,
-            d3d12->cpu_write_heap, D3D12_FRAMES * 12 * D3D12_MESH_CB_SIZE,
+            d3d12->cpu_write_heap,
+            D3D12_FRAMES * D3D12_BLOOM_CB_SLOTS * D3D12_MESH_CB_SIZE,
             &d3d12->bloom.cb);
-      if (!d3d12->bloom.cb || FAILED(D3D12Map(d3d12->bloom.cb, 0, &range, &mapped)))
-         goto error;
+      if (!d3d12->bloom.cb || FAILED(D3D12Map(d3d12->bloom.cb, 0, &range,
+                  &mapped)))
+         return false;
       d3d12->bloom.mapped = (uint8_t*)mapped;
    }
-   if (d3d12->bloom.next + MENU_BLOOM_PASSES > (d3d12->queue.slot + 1) * 12)
+   return true;
+}
+
+static unsigned gfx_display_d3d12_bloom_begin(void *data, unsigned dims,
+      bool defer)
+{
+   static const float clear[4] = {0, 0, 0, 0};
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   unsigned i, slot, bloom_dims = menu_bloom_dims(dims);
+   DXGI_FORMAT format;
+   D3D12GraphicsCommandList cmd;
+   D3D12_VIEWPORT vp;
+   D3D12_RECT sc;
+   (void)defer;
+   if (!d3d12 || !bloom_dims || d3d12->bloom.failed
+         || !d3d12->effect_desc_valid || !d3d12->bloom.target.ptr)
+      return 0;
+   format = d3d12->chain.current_rt_format;
+   slot   = d3d12_bloom_slot(format);
+   if (!d3d12_bloom_pipes(d3d12, slot, format) || !d3d12_bloom_cb(d3d12))
+      goto error;
+   if (d3d12->bloom.next + MENU_BLOOM_PASSES > (d3d12->queue.slot + 1) * D3D12_BLOOM_CB_SLOTS)
       return 0;
    if (bloom_dims != d3d12->bloom.dims)
    {
@@ -9162,6 +9214,245 @@ static void gfx_display_d3d12_bloom_end(void *data, unsigned dims,
    cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
    cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
    d3d12->bloom.active = false;
+}
+
+/* A blur image of @dims and @format at rest as a render target, with
+ * the RTV slot @rtv past the glow's */
+static bool d3d12_blur_image(d3d12_video_t *d3d12, d3d12_texture_t *t,
+      unsigned dims, DXGI_FORMAT format, unsigned rtv)
+{
+   if (t->handle && !d3d12_views_retire(d3d12, t))
+      return false;
+   memset(t, 0, sizeof(*t));
+   t->desc.Width  = VIDEO_SCALE_W(dims);
+   t->desc.Height = VIDEO_SCALE_H(dims);
+   t->desc.Format = format;
+   t->desc.Flags  = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+   t->srv_heap    = &d3d12->desc.srv_heap;
+   t->rt_view.ptr = d3d12->desc.rtv_heap.cpu.ptr
+      + (countof(d3d12->chain.renderTargets) + GFX_MAX_SHADERS * 2 + 6 + rtv)
+         * d3d12->desc.rtv_heap.stride;
+   d3d12_init_texture(d3d12->device, t);
+   return t->handle && t->desc.Format == format;
+}
+
+/* One pass of the glow's shader from @src, which is moved to be read
+ * and back, into @rt over @dims at @x, @y */
+static void d3d12_blur_draw(d3d12_video_t *d3d12,
+      D3D12GraphicsCommandList cmd, D3D12_CPU_DESCRIPTOR_HANDLE rt,
+      D3D12PipelineState pipe, d3d12_texture_t *src,
+      const float *params, int x, int y, unsigned dims)
+{
+   D3D12_VIEWPORT vp;
+   D3D12_RECT sc;
+   unsigned index = d3d12->bloom.next++;
+   memcpy(d3d12->bloom.mapped + index * D3D12_MESH_CB_SIZE, params,
+         4 * sizeof(float));
+   vp.TopLeftX = (float)x;
+   vp.TopLeftY = (float)y;
+   vp.Width    = (float)VIDEO_SCALE_W(dims);
+   vp.Height   = (float)VIDEO_SCALE_H(dims);
+   vp.MinDepth = 0.0f;
+   vp.MaxDepth = 1.0f;
+   sc.left     = x;
+   sc.top      = y;
+   sc.right    = x + (LONG)VIDEO_SCALE_W(dims);
+   sc.bottom   = y + (LONG)VIDEO_SCALE_H(dims);
+   D3D12_RESOURCE_TRANSITION(cmd, src->handle,
+         D3D12_RESOURCE_STATE_RENDER_TARGET,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+   cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &rt, FALSE, NULL);
+   cmd->lpVtbl->SetPipelineState(cmd, pipe);
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
+         d3d12->bloom.cb_va + index * D3D12_MESH_CB_SIZE);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
+         src->gpu_descriptor[0]);
+   cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
+         d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE]);
+   cmd->lpVtbl->RSSetViewports(cmd, 1, &vp);
+   cmd->lpVtbl->RSSetScissorRects(cmd, 1, &sc);
+   cmd->lpVtbl->DrawInstanced(cmd, 4, 1, 0, 0);
+   D3D12_RESOURCE_TRANSITION(cmd, src->handle,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+         D3D12_RESOURCE_STATE_RENDER_TARGET);
+}
+
+static bool gfx_display_d3d12_blur_rect(void *data, unsigned video_dims,
+      int x, int y, unsigned dims, float alpha, float dim)
+{
+   static const float still[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   menu_bloom_pass_t plan[MENU_BLUR_PASSES];
+   D3D12GraphicsCommandList cmd;
+   D3D12Resource target_res;
+   d3d12_texture_t *src;
+   DXGI_FORMAT format;
+   unsigned i, slot, small, rect, target_w, target_h;
+   float params[4], factor[4];
+   int x0, y0, x1, y1;
+   if (     !d3d12 || d3d12->blur.failed || d3d12->bloom.active
+         || !d3d12->effect_desc_valid || !d3d12->bloom.target.ptr)
+      return false;
+   if (d3d12->bloom.target_tex)
+   {
+      target_res = d3d12->bloom.target_tex->handle;
+      format     = d3d12->bloom.target_tex->desc.Format;
+      target_w   = (unsigned)d3d12->bloom.target_tex->desc.Width;
+      target_h   = d3d12->bloom.target_tex->desc.Height;
+   }
+   else
+   {
+      target_res = d3d12->chain.renderTargets[d3d12->chain.frame_index];
+      format     = d3d12->chain.formats[d3d12->chain.bit_depth];
+      target_w   = VIDEO_SCALE_W(video_dims);
+      target_h   = VIDEO_SCALE_H(video_dims);
+   }
+   if (!target_res)
+      return false;
+   /* Clipped to the output and the target; nothing left, nothing to
+    * blur */
+   x0 = x < 0 ? 0 : x;
+   y0 = y < 0 ? 0 : y;
+   x1 = x + (int)VIDEO_SCALE_W(dims);
+   y1 = y + (int)VIDEO_SCALE_H(dims);
+   if (x1 > (int)VIDEO_SCALE_W(video_dims)) x1 = (int)VIDEO_SCALE_W(video_dims);
+   if (y1 > (int)VIDEO_SCALE_H(video_dims)) y1 = (int)VIDEO_SCALE_H(video_dims);
+   if (x1 > (int)target_w)                  x1 = (int)target_w;
+   if (y1 > (int)target_h)                  y1 = (int)target_h;
+   if (x1 - x0 < 8 || y1 - y0 < 8)
+      return false;
+   /* Its constants this frame: the halving, the passes, the composite */
+   if (     d3d12->bloom.cb && d3d12->bloom.next + MENU_BLUR_PASSES + 2
+            > (d3d12->queue.slot + 1) * D3D12_BLOOM_CB_SLOTS)
+      return false;
+   rect  = VIDEO_SCALE_PACK(x1 - x0, y1 - y0);
+   small = menu_blur_dims(rect);
+   slot  = d3d12_bloom_slot(format);
+   if (     !d3d12_bloom_pipes(d3d12, slot, format)
+         || !d3d12_bloom_cb(d3d12))
+      goto error;
+   if (!d3d12->blur.mix[slot])
+   {
+      D3D12_GRAPHICS_PIPELINE_STATE_DESC desc = d3d12->effect_desc;
+      D3DBlob vs = NULL, ps = NULL;
+      if (     d3d12_builtin_shader(d3d12, d3d12_bloom_vs_program,
+                  "VSMain", "vs_5_0", &vs)
+            && d3d12_builtin_shader(d3d12, d3d12_bloom_ps_program,
+                  "PSMain", "ps_5_0", &ps))
+      {
+         desc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+         desc.InputLayout.pInputElementDescs = NULL;
+         desc.InputLayout.NumElements        = 0;
+         desc.RTVFormats[0]                  = format;
+         desc.BlendState.RenderTarget[0]     = d3d12_blend_disable_desc;
+         desc.BlendState.RenderTarget[0].BlendEnable    = TRUE;
+         desc.BlendState.RenderTarget[0].SrcBlend       = D3D12_BLEND_ONE;
+         desc.BlendState.RenderTarget[0].DestBlend      =
+            D3D12_BLEND_INV_BLEND_FACTOR;
+         desc.BlendState.RenderTarget[0].BlendOp        = D3D12_BLEND_OP_ADD;
+         desc.BlendState.RenderTarget[0].SrcBlendAlpha  = D3D12_BLEND_ZERO;
+         desc.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ONE;
+         desc.BlendState.RenderTarget[0].BlendOpAlpha   = D3D12_BLEND_OP_ADD;
+         d3d12_init_pipeline(d3d12->device, vs, ps, NULL, &desc,
+               &d3d12->blur.mix[slot]);
+      }
+      Release(vs);
+      Release(ps);
+      if (!d3d12->blur.mix[slot])
+         goto error;
+   }
+   if (small != d3d12->blur.dims)
+   {
+      for (i = 0; i < 3; i++)
+         if (!d3d12_blur_image(d3d12, &d3d12->blur.tex[i],
+                  i == MENU_BLUR_COPY ? MENU_BLUR_COPY_DIMS(small) : small,
+                  DXGI_FORMAT_R16G16B16A16_FLOAT, i))
+            goto error;
+      d3d12->blur.dims = small;
+   }
+   cmd = d3d12->queue.cmd;
+
+   /* The target read in place where it is an image of the driver's
+    * and drawn whole; else the rect copied out of it */
+   if (     d3d12->bloom.target_tex && !x0 && !y0
+         && (unsigned)x1 == target_w && (unsigned)y1 == target_h)
+      src = d3d12->bloom.target_tex;
+   else
+   {
+      D3D12_TEXTURE_COPY_LOCATION dst_loc, src_loc;
+      D3D12_BOX box;
+      src = &d3d12->blur.copy;
+      if (     !src->handle || src->desc.Format != format
+            || src->desc.Width != (UINT64)(x1 - x0)
+            || src->desc.Height != (UINT)(y1 - y0))
+      {
+         if (!d3d12_blur_image(d3d12, src, rect, format, 3))
+            goto error;
+      }
+      D3D12_RESOURCE_TRANSITION(cmd, target_res,
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            D3D12_RESOURCE_STATE_COPY_SOURCE);
+      D3D12_RESOURCE_TRANSITION(cmd, src->handle,
+            D3D12_RESOURCE_STATE_RENDER_TARGET,
+            D3D12_RESOURCE_STATE_COPY_DEST);
+      src_loc.pResource        = target_res;
+      src_loc.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+      src_loc.SubresourceIndex = 0;
+      dst_loc.pResource        = src->handle;
+      dst_loc.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+      dst_loc.SubresourceIndex = 0;
+      box.left   = (UINT)x0;
+      box.top    = (UINT)y0;
+      box.front  = 0;
+      box.right  = (UINT)x1;
+      box.bottom = (UINT)y1;
+      box.back   = 1;
+      cmd->lpVtbl->CopyTextureRegion(cmd, &dst_loc, 0, 0, 0, &src_loc, &box);
+      D3D12_RESOURCE_TRANSITION(cmd, src->handle,
+            D3D12_RESOURCE_STATE_COPY_DEST,
+            D3D12_RESOURCE_STATE_RENDER_TARGET);
+      D3D12_RESOURCE_TRANSITION(cmd, target_res,
+            D3D12_RESOURCE_STATE_COPY_SOURCE,
+            D3D12_RESOURCE_STATE_RENDER_TARGET);
+   }
+
+   cmd->lpVtbl->IASetPrimitiveTopology(cmd,
+         D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+   /* Halved at the source's texel centres, a 2x2 average; then the
+    * blur's passes */
+   d3d12_blur_draw(d3d12, cmd, d3d12->blur.tex[MENU_BLUR_COPY].rt_view,
+         d3d12->bloom.pipes[slot][0], src, still, 0, 0,
+         MENU_BLUR_COPY_DIMS(small));
+   menu_blur_plan(plan, small);
+   for (i = 0; i < MENU_BLUR_PASSES; i++)
+      d3d12_blur_draw(d3d12, cmd, d3d12->blur.tex[plan[i].dst].rt_view,
+            d3d12->bloom.pipes[slot][0], &d3d12->blur.tex[plan[i].src],
+            plan[i].params, 0, 0, small);
+
+   /* Back over the rect: the gain darkens the blurred image and fades
+    * it in, the blend factor darkens what it is faded over -
+    * blurred * (1 - dim) * alpha + drawn * (1 - alpha) * (1 - dim) */
+   params[0] = params[1] = params[2] = 0.0f;
+   params[3] = (1.0f - dim) * alpha;
+   factor[0] = factor[1] = factor[2] = factor[3] =
+      1.0f - (1.0f - alpha) * (1.0f - dim);
+   cmd->lpVtbl->OMSetBlendFactor(cmd, factor);
+   d3d12_blur_draw(d3d12, cmd, d3d12->bloom.target, d3d12->blur.mix[slot],
+         &d3d12->blur.tex[0], params, x0, y0, rect);
+
+   /* Back to what the sprites draw with, as after the glow */
+   cmd->lpVtbl->RSSetViewports(cmd, 1, &d3d12->chain.viewport);
+   cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
+         d3d12_cb_slot(&d3d12->ubo_view, d3d12->queue.slot));
+   cmd->lpVtbl->SetPipelineState(cmd,
+         (D3D12PipelineState)d3d12->sprites.pipe);
+   cmd->lpVtbl->IASetPrimitiveTopology(cmd, D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+   cmd->lpVtbl->IASetVertexBuffers(cmd, 0, 1, &d3d12->sprites.vbo_view);
+   return true;
+error:
+   d3d12->blur.failed = true;
+   return false;
 }
 
 
@@ -9675,7 +9966,7 @@ static bool d3d12_views_setup(d3d12_video_t *d3d12,
 
    /* The frame's slot's constants, from its first */
    d3d12->views.cb_next = d3d12->queue.slot * D3D12_VIEWS_CB_SLOTS;
-   d3d12->bloom.next = d3d12->queue.slot * 12;
+   d3d12->bloom.next = d3d12->queue.slot * D3D12_BLOOM_CB_SLOTS;
    /* A target made for another format is made again. */
    if (     d3d12->views.format
          && d3d12->views.format != d3d12_views_format(d3d12))
@@ -11156,9 +11447,13 @@ recording_resize_deferred:;
 
    d3d12->bloom.target = views_ui ? d3d12->views.ui.rt_view
       : d3d12->chain.desc_handles[d3d12->chain.frame_index];
+   d3d12->bloom.target_tex = views_ui ? &d3d12->views.ui : NULL;
 #ifdef HAVE_DXGI_HDR
    if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
-      d3d12->bloom.target = d3d12->chain.ui_buffer.rt_view;
+   {
+      d3d12->bloom.target     = d3d12->chain.ui_buffer.rt_view;
+      d3d12->bloom.target_tex = &d3d12->chain.ui_buffer;
+   }
 #endif
    d3d12_sprites_begin(d3d12);
 
@@ -14502,8 +14797,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
    NULL,                                     /* bloom_composite */
    gfx_display_d3d12_effect_install,
 #ifdef HAVE_SLANG
-   gfx_display_d3d12_media_shader_draw
+   gfx_display_d3d12_media_shader_draw,
 #else
-   NULL
+   NULL,
 #endif
+   gfx_display_d3d12_blur_rect
 };
