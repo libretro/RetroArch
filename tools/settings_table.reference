@@ -201,6 +201,7 @@ bool	menu_pause_libretro	1	1
 bool	menu_savestate_resume	1	1
 bool	menu_insert_disk_resume	1	1
 bool	menu_timedate_12hour	1	0
+bool	menu_backdrop_blur	1	1
 bool	menu_mouse_enable	1	0
 bool	menu_pointer_enable	1	1
 bool	netplay_nat_traversal	1	1
@@ -947,6 +948,7 @@ bool	menu_pause_libretro	1	1
 bool	menu_savestate_resume	1	1
 bool	menu_insert_disk_resume	1	1
 bool	menu_timedate_12hour	1	0
+bool	menu_backdrop_blur	1	1
 bool	menu_mouse_enable	1	1
 bool	menu_pointer_enable	1	0
 bool	netplay_nat_traversal	1	1
@@ -1688,6 +1690,7 @@ bool	menu_pause_libretro	1	1
 bool	menu_savestate_resume	1	1
 bool	menu_insert_disk_resume	1	1
 bool	menu_timedate_12hour	1	0
+bool	menu_backdrop_blur	1	1
 bool	menu_mouse_enable	1	1
 bool	menu_pointer_enable	1	0
 bool	netplay_nat_traversal	1	1

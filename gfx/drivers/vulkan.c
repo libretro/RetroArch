@@ -297,6 +297,7 @@ struct vk_per_frame
     * used them, destroyed when the slot next comes round. */
    struct vk_image view_retired[2];
    struct vk_image bloom_retired[2];
+   struct vk_image blur_retired[3];
    /* The top level of a core's mipmapped image, which this slot's
     * frame read its views in place through; destroyed when the slot
     * next comes round, as the image may not outlive the frame */
@@ -760,6 +761,21 @@ typedef struct vk
       bool use_scissor;
       bool failed;
    } bloom;
+
+   /* The menu's backdrop blur: the drawn rect halved into images[2],
+    * blurred down into images[1], blurred between [1] and [0] at a
+    * quarter of the rect, and laid back over it. */
+   struct
+   {
+      struct vk_image images[3];
+      /* The blurred image faded over the rect and dimmed with it, by
+       * the blend constants: [0] under render_pass, [1] under
+       * sdr_render_pass */
+      VkPipeline mix[2];
+      VkFormat format;
+      unsigned dims;
+      bool failed;
+   } blur;
 
    /* gfx_display meshes kept on the GPU, by mesh id: vertices, then
     * indices at index_offset. An entry not drawn for longer than a
@@ -5616,8 +5632,23 @@ static void *gfx_display_vk_effect_install(void *data,
 }
 #endif
 
-static VkPipeline vulkan_bloom_pipeline(vk_t *vk, bool sdr, bool add)
+enum vk_bloom_blend
 {
+   VK_BLOOM_REPLACE = 0,
+   VK_BLOOM_ADD,
+   /* src * constant alpha + dst * (1 - constant colour); the shader's
+    * own alpha is 0 */
+   VK_BLOOM_MIX
+};
+
+static VkPipeline vulkan_bloom_make(vk_t *vk, bool sdr,
+      enum vk_bloom_blend blend, VkPipeline *slot)
+{
+   static const VkDynamicState mix_dynamics[] = {
+      VK_DYNAMIC_STATE_VIEWPORT,
+      VK_DYNAMIC_STATE_SCISSOR,
+      VK_DYNAMIC_STATE_BLEND_CONSTANTS
+   };
    static const uint32_t vert[] =
 #include "vulkan_shaders/effects/menu_bloom.vert.inc"
       ;
@@ -5627,7 +5658,6 @@ static VkPipeline vulkan_bloom_pipeline(vk_t *vk, bool sdr, bool add)
    VkShaderModuleCreateInfo module;
    VkPipelineShaderStageCreateInfo stages[2];
    struct vk_effect_template t;
-   VkPipeline *slot = &vk->bloom.pipelines[sdr ? 1 : 0][add ? 1 : 0];
    if (*slot || !vk->display.effect_tpl[sdr ? 1 : 0].valid)
       return *slot;
    t = vk->display.effect_tpl[sdr ? 1 : 0];
@@ -5646,12 +5676,21 @@ static VkPipeline vulkan_bloom_pipeline(vk_t *vk, bool sdr, bool add)
    t.pipe.pDynamicState            = &t.dynamic;
    t.pipe.stageCount               = 2;
    t.pipe.pStages                  = stages;
-   t.blend_attachment.blendEnable         = add;
+   t.blend_attachment.blendEnable         = blend != VK_BLOOM_REPLACE;
    t.blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
    t.blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+   t.blend_attachment.colorBlendOp        = VK_BLEND_OP_ADD;
    t.blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
    t.blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
    t.blend_attachment.alphaBlendOp        = VK_BLEND_OP_ADD;
+   if (blend == VK_BLOOM_MIX)
+   {
+      t.blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
+      t.blend_attachment.dstColorBlendFactor =
+         VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+      t.dynamic.pDynamicStates    = mix_dynamics;
+      t.dynamic.dynamicStateCount = ARRAY_SIZE(mix_dynamics);
+   }
    module.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
    module.pNext    = NULL;
    module.flags    = 0;
@@ -5681,6 +5720,12 @@ static VkPipeline vulkan_bloom_pipeline(vk_t *vk, bool sdr, bool add)
    }
    vkDestroyShaderModule(vk->context->device, stages[0].module, NULL);
    return *slot;
+}
+
+static VkPipeline vulkan_bloom_pipeline(vk_t *vk, bool sdr, bool add)
+{
+   return vulkan_bloom_make(vk, sdr, add ? VK_BLOOM_ADD : VK_BLOOM_REPLACE,
+         &vk->bloom.pipelines[sdr ? 1 : 0][add ? 1 : 0]);
 }
 
 /* The alpha blend of a pipeline for sdr_render_pass. With HDR off only
@@ -6519,6 +6564,10 @@ static void vulkan_deinit_textures(vk_t *vk)
          if (vk->swapchain[i].bloom_retired[j].image)
             vulkan_destroy_hdr_buffer(vk->context->device,
                   &vk->swapchain[i].bloom_retired[j]);
+      for (j = 0; j < 3; j++)
+         if (vk->swapchain[i].blur_retired[j].image)
+            vulkan_destroy_hdr_buffer(vk->context->device,
+                  &vk->swapchain[i].blur_retired[j]);
       for (j = 0; j < 2; j++)
          if (vk->swapchain[i].view_retired[j].image)
             vulkan_destroy_hdr_buffer(vk->context->device,
@@ -6649,6 +6698,12 @@ if ((vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT) || vk->views.ui_sdr)
             vk->bloom.pipelines[i / 2][i % 2], NULL);
       vk->bloom.pipelines[i / 2][i % 2] = VK_NULL_HANDLE;
    }
+   for (i = 0; i < 2; i++)
+   {
+      vkDestroyPipeline(vk->context->device, vk->blur.mix[i], NULL);
+      vk->blur.mix[i] = VK_NULL_HANDLE;
+   }
+   vk->blur.failed = false;
    vk->bloom.failed = false;
    for (i = 0; i < (int)ARRAY_SIZE(vk->display.mesh_pipelines); i++)
    {
@@ -6745,6 +6800,11 @@ static void vulkan_deinit_framebuffers(vk_t *vk)
    vulkan_destroy_hdr_buffer(vk->context->device, &vk->bloom.images[0]);
    vulkan_destroy_hdr_buffer(vk->context->device, &vk->bloom.images[1]);
    vk->bloom.dims = 0;
+   vulkan_destroy_hdr_buffer(vk->context->device, &vk->blur.images[0]);
+   vulkan_destroy_hdr_buffer(vk->context->device, &vk->blur.images[1]);
+   vulkan_destroy_hdr_buffer(vk->context->device, &vk->blur.images[2]);
+   vk->blur.dims   = 0;
+   vk->blur.failed = false;
    vk->bloom.target = NULL;
    vkDestroyRenderPass(vk->context->device, vk->bloom.keep_sdr_pass, NULL);
 
@@ -11523,6 +11583,275 @@ static void gfx_display_vk_bloom_end(void *data, unsigned dims, bool defer)
    vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 }
 
+/* The blur's images: the rect a quarter of its size, at most 480 x 270,
+ * so the passes cost the same whatever the output. */
+static unsigned vulkan_blur_dims(unsigned dims)
+{
+   unsigned w = (VIDEO_SCALE_W(dims) + 3) / 4;
+   unsigned h = (VIDEO_SCALE_H(dims) + 3) / 4;
+   if (w > 480)
+   {
+      h = (unsigned)(((uint64_t)h * 480 + w - 1) / w);
+      w = 480;
+   }
+   if (h > 270)
+   {
+      w = (unsigned)(((uint64_t)w * 270 + h - 1) / h);
+      h = 270;
+   }
+   return VIDEO_SCALE_PACK(w ? w : 1, h ? h : 1);
+}
+
+/* The copy the first pass reads: twice the small image, so the copy
+ * down is a 2x2 average up to 1920 x 1080 rather than a sample of a
+ * quarter of the pixels, which loses one-pixel lines. */
+static unsigned vulkan_blur_half(unsigned small)
+{
+   return VIDEO_SCALE_PACK(VIDEO_SCALE_W(small) * 2,
+         VIDEO_SCALE_H(small) * 2);
+}
+
+/* One separable pass of the glow's shader, as a plain blur. */
+static void vulkan_blur_pass(vk_t *vk, unsigned src, unsigned dst,
+      float sx, float sy, VkRenderPass pass, bool floating)
+{
+   float params[4];
+   struct vk_texture tex;
+   struct vk_draw_triangles call;
+   unsigned dims     = vk->blur.dims;
+   /* Steps in the small image's texels, whatever the source's size */
+   unsigned src_dims = src == 2 ? vulkan_blur_half(dims) : dims;
+   params[0] = sx / VIDEO_SCALE_W(dims);
+   params[1] = sy / VIDEO_SCALE_H(dims);
+   params[2] = 0.0f;   /* no threshold */
+   params[3] = 1.0f;   /* no gain */
+   vulkan_views_begin(vk, &vk->blur.images[dst], dims, pass);
+   vk->tracker.pipeline = VK_NULL_HANDLE;
+   vk->vk_vp.x = vk->vk_vp.y = 0.0f;
+   vk->vk_vp.width  = VIDEO_SCALE_W(dims);
+   vk->vk_vp.height = VIDEO_SCALE_H(dims);
+   vk->vk_vp.minDepth = 0.0f;
+   vk->vk_vp.maxDepth = 1.0f;
+   vk->tracker.scissor.offset.x = 0;
+   vk->tracker.scissor.offset.y = 0;
+   vk->tracker.scissor.extent.width  = VIDEO_SCALE_W(dims);
+   vk->tracker.scissor.extent.height = VIDEO_SCALE_H(dims);
+   vulkan_views_texture(&vk->blur.images[src], src_dims, vk->blur.format,
+         &tex);
+   call.pipeline     = vulkan_bloom_pipeline(vk, floating, false);
+   call.texture      = &tex;
+   call.sampler      = vk->samplers.linear;
+   call.uniform      = params;
+   call.uniform_size = sizeof(params);
+   call.vbo          = NULL;
+   call.vertices     = 4;
+   if (vulkan_draw_bind(vk, &call))
+      vkCmdDraw(vk->cmd, 4, 1, 0, 0);
+   vulkan_views_end(vk, &vk->blur.images[dst]);
+}
+
+static bool gfx_display_vk_blur_rect(void *data, unsigned video_dims,
+      int x, int y, unsigned dims, float alpha, float dim)
+{
+   vk_t *vk = (vk_t*)data;
+   const struct vk_image *target;
+   unsigned small, i;
+   int x0, y0, x1, y1;
+   bool sdr, floating;
+   VkFormat format;
+   VkRenderPass pass;
+   VkImageBlit blit;
+   VkRect2D scissor;
+   VkViewport vp;
+   bool use_scissor;
+   struct vk_texture tex;
+   struct vk_draw_triangles call;
+   VkRenderPassBeginInfo rp;
+   VkPipeline mix;
+   float params[4];
+   float blend[4];
+
+   if (!vk || vk->blur.failed || vk->bloom.active
+         || !(target = vk->bloom.target) || !target->image
+         || !target->framebuffer)
+      return false;
+   sdr = (vk->flags & VK_FLAG_SDR_PIPELINE) != 0;
+   /* Clipped to the output; nothing left, nothing to blur */
+   x0 = x < 0 ? 0 : x;
+   y0 = y < 0 ? 0 : y;
+   x1 = x + (int)VIDEO_SCALE_W(dims);
+   y1 = y + (int)VIDEO_SCALE_H(dims);
+   if (x1 > (int)VIDEO_SCALE_W(video_dims)) x1 = (int)VIDEO_SCALE_W(video_dims);
+   if (y1 > (int)VIDEO_SCALE_H(video_dims)) y1 = (int)VIDEO_SCALE_H(video_dims);
+   if (x1 - x0 < 8 || y1 - y0 < 8)
+      return false;
+   small = vulkan_blur_dims(VIDEO_SCALE_PACK(x1 - x0, y1 - y0));
+
+   /* The glow's choice of format and pass, and its blur shader */
+   if (!vk->bloom.float_target)
+   {
+      VkFormatProperties props;
+      vkGetPhysicalDeviceFormatProperties(vk->context->gpu,
+            VK_FORMAT_R16G16B16A16_SFLOAT, &props);
+      vk->bloom.float_target = ((props.optimalTilingFeatures
+               & (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
+                | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+            == (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
+                | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+         ? 2 : 1;
+   }
+   floating = vk->bloom.float_target == 2;
+   format   = floating ? VK_FORMAT_R16G16B16A16_SFLOAT
+      : vk->context->swapchain_format;
+   pass     = floating ? vk->sdr_render_pass : vk->views.render_pass;
+   if (     !pass || !(sdr ? vk->bloom.keep_sdr_pass : vk->keep_render_pass)
+         || !vulkan_bloom_pipeline(vk, floating, false)
+         || !(mix = vulkan_bloom_make(vk, sdr, VK_BLOOM_MIX,
+                  &vk->blur.mix[sdr ? 1 : 0])))
+   {
+      vk->blur.failed = true;
+      return false;
+   }
+   if (vk->blur.dims != small || vk->blur.format != format)
+   {
+      for (i = 0; i < 3; i++)
+         if (vk->chain->blur_retired[i].image)
+            return false;
+      for (i = 0; i < 3; i++)
+      {
+         vk->chain->blur_retired[i] = vk->blur.images[i];
+         memset(&vk->blur.images[i], 0, sizeof(vk->blur.images[i]));
+         vulkan_init_render_target(&vk->blur.images[i],
+               i == 2 ? vulkan_blur_half(small) : small,
+               format, pass, vk->context);
+         if (!vk->blur.images[i].memory || !vk->blur.images[i].framebuffer)
+         {
+            vk->blur.failed = true;
+            return false;
+         }
+      }
+      vk->blur.dims   = small;
+      vk->blur.format = format;
+   }
+
+   scissor     = vk->tracker.scissor;
+   use_scissor = (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR) != 0;
+   vp          = vk->vk_vp;
+   vk->flags  |= VK_FLAG_TRACKER_USE_SCISSOR;
+
+   /* What is drawn so far, halved into the copy */
+   vkCmdEndRenderPass(vk->cmd);
+   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, target->image,
+         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
+   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->blur.images[2].image,
+         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0, VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT);
+   memset(&blit, 0, sizeof(blit));
+   blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   blit.srcSubresource.layerCount = 1;
+   blit.srcOffsets[0].x = x0;
+   blit.srcOffsets[0].y = y0;
+   blit.srcOffsets[1].x = x1;
+   blit.srcOffsets[1].y = y1;
+   blit.srcOffsets[1].z = 1;
+   blit.dstSubresource  = blit.srcSubresource;
+   blit.dstOffsets[1].x = (int32_t)VIDEO_SCALE_W(vulkan_blur_half(small));
+   blit.dstOffsets[1].y = (int32_t)VIDEO_SCALE_H(vulkan_blur_half(small));
+   blit.dstOffsets[1].z = 1;
+   vkCmdBlitImage(vk->cmd, target->image,
+         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+         vk->blur.images[2].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         1, &blit, VK_FILTER_LINEAR);
+   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->blur.images[2].image,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, target->image,
+         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+         VK_ACCESS_TRANSFER_READ_BIT,
+         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
+         | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+   /* Three rounds of horizontal then vertical, each twice as wide as
+    * the last so its taps land on what the one before smoothed; the
+    * first reads the copy and halves it again */
+   vulkan_blur_pass(vk, 2, 1, 0.5f, 0.0f, pass, floating);
+   vulkan_blur_pass(vk, 1, 0, 0.0f, 1.0f, pass, floating);
+   vulkan_blur_pass(vk, 0, 1, 2.0f, 0.0f, pass, floating);
+   vulkan_blur_pass(vk, 1, 0, 0.0f, 2.0f, pass, floating);
+   vulkan_blur_pass(vk, 0, 1, 4.0f, 0.0f, pass, floating);
+   vulkan_blur_pass(vk, 1, 0, 0.0f, 4.0f, pass, floating);
+
+   /* Back into the target's pass, which loads what it holds, and the
+    * blurred image over the rect */
+   rp.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+   rp.pNext                    = NULL;
+   rp.renderPass               = sdr ? vk->bloom.keep_sdr_pass
+                                     : vk->keep_render_pass;
+   rp.framebuffer              = target->framebuffer;
+   rp.renderArea.offset.x      = 0;
+   rp.renderArea.offset.y      = 0;
+   rp.renderArea.extent.width  = VIDEO_SCALE_W(video_dims);
+   rp.renderArea.extent.height = VIDEO_SCALE_H(video_dims);
+   rp.clearValueCount          = 0;
+   rp.pClearValues             = NULL;
+   vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
+   vk->tracker.pipeline = VK_NULL_HANDLE;
+
+   vk->vk_vp.x        = (float)x0;
+   vk->vk_vp.y        = (float)y0;
+   vk->vk_vp.width    = (float)(x1 - x0);
+   vk->vk_vp.height   = (float)(y1 - y0);
+   vk->vk_vp.minDepth = 0.0f;
+   vk->vk_vp.maxDepth = 1.0f;
+   vk->tracker.scissor.offset.x      = x0;
+   vk->tracker.scissor.offset.y      = y0;
+   vk->tracker.scissor.extent.width  = (uint32_t)(x1 - x0);
+   vk->tracker.scissor.extent.height = (uint32_t)(y1 - y0);
+   vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+   /* The glow's shader unblurred: its gain darkens the blurred image,
+    * and the blend constants fade it in and darken what it is faded
+    * over, so the dim costs no draw of its own -
+    * blurred * (1 - dim) * alpha + drawn * (1 - alpha) * (1 - dim) */
+   vulkan_views_texture(&vk->blur.images[0], small, format, &tex);
+   params[0] = params[1] = params[2] = 0.0f;
+   params[3] = 1.0f - dim;
+   call.pipeline     = mix;
+   call.texture      = &tex;
+   call.sampler      = vk->samplers.linear;
+   call.uniform      = params;
+   call.uniform_size = sizeof(params);
+   call.vbo          = NULL;
+   call.vertices     = 4;
+   if (vulkan_draw_bind(vk, &call))
+   {
+      blend[0] = blend[1] = blend[2] = 1.0f - (1.0f - alpha) * (1.0f - dim);
+      blend[3] = alpha;
+      vkCmdSetBlendConstants(vk->cmd, blend);
+      vkCmdDraw(vk->cmd, 4, 1, 0, 0);
+   }
+
+   /* The frame's state as the menu left it */
+   vk->vk_vp           = vp;
+   vk->tracker.scissor = scissor;
+   if (!use_scissor)
+      vk->flags &= ~VK_FLAG_TRACKER_USE_SCISSOR;
+   vk->tracker.dirty  |= VULKAN_DIRTY_DYNAMIC_BIT;
+   vk->tracker.pipeline = VK_NULL_HANDLE;
+   return true;
+}
+
 /* Deferred plans are float: one output pass, the last, into the pass
  * the menu is being drawn in */
 static void gfx_display_vk_bloom_composite(void *data, unsigned dims)
@@ -13701,6 +14030,10 @@ static bool vulkan_frame(void *data, const void *frame,
       if (chain->bloom_retired[j].image)
          vulkan_destroy_hdr_buffer(vk->context->device,
                &chain->bloom_retired[j]);
+   for (j = 0; j < 3; j++)
+      if (chain->blur_retired[j].image)
+         vulkan_destroy_hdr_buffer(vk->context->device,
+               &chain->blur_retired[j]);
    for (j = 0; j < 2; j++)
       if (chain->view_retired[j].image)
          vulkan_destroy_hdr_buffer(vk->context->device,
@@ -19274,5 +19607,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {
 #else
    NULL,                                  /* effect_install */
 #endif
-   gfx_display_vk_media_shader_draw
+   gfx_display_vk_media_shader_draw,
+   gfx_display_vk_blur_rect
 };

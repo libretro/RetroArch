@@ -251,6 +251,13 @@ typedef struct gfx_display_ctx_driver
     * chain. False leaves the ordinary texture draw as its fallback. */
    bool (*media_shader_draw)(void *data, uintptr_t texture,
          unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims);
+   /* Optional. Blurs what is already drawn under the rect at @x, @y
+    * (top-left origin) of @dims, at @alpha over the original, then
+    * darkens the rect by @dim as a black quad of that alpha would:
+    * mix(drawn, blurred, alpha) * (1 - dim). False where it cannot,
+    * drawing nothing. */
+   bool (*blur_rect)(void *data, unsigned video_dims,
+         int x, int y, unsigned dims, float alpha, float dim);
 } gfx_display_ctx_driver_t;
 
 struct gfx_display_ctx_draw
@@ -639,6 +646,16 @@ void gfx_display_draw_quad(
       unsigned ref_dims,
       float *color,
       uintptr_t *texture);
+
+/* What is drawn under the rect blurred, at @alpha, and darkened by
+ * @dim, where the driver can; true then, and the caller draws no dim
+ * quad of its own. */
+bool gfx_display_draw_blur(
+      gfx_display_t *p_disp,
+      void *data,
+      unsigned video_dims,
+      int x, int y, unsigned dims,
+      float alpha, float dim);
 
 /* @video_dims, @src_dims, @dst_dims and @dims: the output size, the
  * texture's size, the size to draw it at and the area it is placed in,

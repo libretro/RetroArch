@@ -554,6 +554,7 @@ typedef struct video_frame_menu_settings
    int      xmb_title_margin;
    int      xmb_title_margin_horizontal_offset;
    uint32_t flags; /* enum video_frame_menu_flags */
+   bool     backdrop_blur;
    /* Derived: whether path_menu_xmb_font is the FILE_PATH_UNKNOWN
     * placeholder, i.e. no custom menu font is configured. The path
     * itself stays out of the per-frame snapshot; the one frame-path

@@ -10103,10 +10103,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (render_background)
    {
-      if (dispctx)
+      float dark = MIN(xmb->alpha,
+            (input_dialog_display_kb) ? 0.95f : 0.75f);
+      /* Blurred, the dark layer is lighter and the driver lays it on
+       * with the blur, so the screen is not drawn over twice */
+      if (     dispctx
+            && !(   video_info->menu.backdrop_blur
+                 && gfx_display_draw_blur(p_disp, userdata,
+                    video_info->dims, 0, 0, video_info->dims,
+                    dark / 0.75f, dark * 0.6f)))
          xmb_draw_dark_layer(xmb, p_disp, dispctx,
-               userdata, video_info->dims,
-               (input_dialog_display_kb) ? 0.95f : 0.75f);
+               userdata, video_info->dims, dark);
       if (xmb->font && *box)
          xmb_render_messagebox_internal(userdata, video_info, p_disp,
                dispctx,

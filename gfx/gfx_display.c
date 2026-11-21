@@ -1427,6 +1427,33 @@ void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
    dispctx->draw(draw, userdata, video_dims);
 }
 
+bool gfx_display_draw_blur(
+      gfx_display_t *p_disp,
+      void *data,
+      unsigned video_dims,
+      int x, int y, unsigned dims,
+      float alpha, float dim)
+{
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   unsigned w = VIDEO_SCALE_W(dims);
+   unsigned h = VIDEO_SCALE_H(dims);
+   if (     !dispctx || !dispctx->blur_rect || alpha <= 0.0f
+         || w < 8 || h < 8)
+      return false;
+   if (gfx_display_stretched(p_disp, video_dims))
+   {
+      int x1     = gfx_display_stretch_x(p_disp, video_dims, x + (int)w);
+      x          = gfx_display_stretch_x(p_disp, video_dims, x);
+      dims       = VIDEO_SCALE_PACK((unsigned)(x1 - x), h);
+      video_dims = p_disp->output_dims;
+   }
+   /* What is under it is drawn first */
+   gfx_display_flush_batch(p_disp);
+   return dispctx->blur_rect(data, video_dims, x, y, dims,
+         alpha > 1.0f ? 1.0f : alpha,
+         dim < 0.0f ? 0.0f : dim > 1.0f ? 1.0f : dim);
+}
+
 void gfx_display_draw_quad(
       gfx_display_t *p_disp,
       void *data,

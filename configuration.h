@@ -939,6 +939,7 @@ typedef struct settings
       bool menu_show_advanced_settings;
       bool menu_linear_filter;
       bool menu_texture_mipmapping;
+      bool menu_backdrop_blur;
       bool menu_horizontal_animation;
       bool menu_scroll_quick;
       bool menu_scroll_fast;

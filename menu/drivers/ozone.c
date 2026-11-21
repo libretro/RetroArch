@@ -7564,7 +7564,8 @@ OZONE_NOINLINE static void ozone_draw_backdrop(
       void *userdata,
       void *disp_data,
       unsigned video_dims,
-      float alpha)
+      float alpha,
+      bool blur)
 {
    /* Stack-local scratch — avoids data race with threaded
     * video backends reading a previous frame's color data */
@@ -7574,6 +7575,14 @@ OZONE_NOINLINE static void ozone_draw_backdrop(
       0.00, 0.00, 0.00, 0.75,
       0.00, 0.00, 0.00, 0.75,
    };
+
+   /* Blurred, the dim is lighter and the driver lays it on with the
+    * blur, so the screen is not drawn over twice. The blur is whole by
+    * the time the dim reaches its usual 0.75. */
+   if (blur && gfx_display_draw_blur((gfx_display_t*)disp_data,
+            userdata, video_dims, 0, 0, video_dims,
+            alpha / 0.75f, alpha * 0.6f))
+      return;
 
    gfx_display_set_alpha(ozone_backdrop, alpha);
 
@@ -7692,8 +7701,7 @@ OZONE_NOINLINE static void ozone_draw_osk(
          ozone->theme->entries_border,
          NULL);
 
-   /* Backdrop */
-   /* TODO: Remove the backdrop if blur shader is available */
+   /* Backdrop, over what ozone_draw_backdrop blurred where it could */
    gfx_display_draw_quad(
          p_disp,
          userdata,
@@ -13749,7 +13757,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             video_info->disp_userdata,
             VIDEO_SCALE_PACK(video_width, video_height),
             float_min(ozone->animations.messagebox_alpha,
-            (draw_osk) ? 0.95f : 0.75f));
+            (draw_osk) ? 0.95f : 0.75f),
+            video_info->menu.backdrop_blur);
 
       if (draw_osk)
       {

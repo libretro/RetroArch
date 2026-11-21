@@ -20,7 +20,13 @@
  *              draws no effect.
  *  quads-only  a driver that takes no strips is handed nothing.
  *  stretch     with an output size set, quads and draws laid out at
- *              another width reach the driver across the output's. */
+ *              another width reach the driver across the output's.
+ *  blur        a backdrop blur reaches a driver that has one after
+ *              the quads gathered before it are drawn, with its alpha
+ *              and dim held to 0..1 and its rect stretched like a
+ *              quad's; with no hook, no alpha, a rect under 8 pixels
+ *              or a driver that cannot, nothing is blurred and the
+ *              caller is told. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -158,6 +164,26 @@ static void rec_bloom_composite(void *data, unsigned vd)
    rec_bloom_composites++;
    rec_bloom_draws_at_composite = rec_draws;
 }
+/* The backdrop blur: what it was asked, and what was drawn by then */
+static unsigned rec_blurs, rec_blur_vd, rec_blur_dims, rec_blur_draws;
+static int rec_blur_x, rec_blur_y;
+static float rec_blur_alpha, rec_blur_dim;
+static bool rec_blur_result;
+static bool rec_blur_rect(void *data, unsigned vd, int x, int y,
+      unsigned dims, float alpha, float dim)
+{
+   (void)data;
+   rec_blurs++;
+   rec_blur_vd    = vd;
+   rec_blur_x     = x;
+   rec_blur_y     = y;
+   rec_blur_dims  = dims;
+   rec_blur_alpha = alpha;
+   rec_blur_dim   = dim;
+   rec_blur_draws = rec_draws;
+   return rec_blur_result;
+}
+
 static const float def_vert[8] = { 0, 0, 1, 0, 0, 1, 1, 1 };
 static const float def_tex[8]  = { 0, 1, 1, 1, 0, 0, 1, 0 };
 static const float *rec_def_vert(void) { return def_vert; }
@@ -692,6 +718,66 @@ int main(void)
       CHECK(gfx_display_output_dims(p_disp, layout) == layout, "and the size is passed through");
       rec_ctx.handles_vertex_strip = true;
       p_disp->dispctx              = NULL;
+   }
+
+   /* blur */
+   {
+      const unsigned layout = VIDEO_SCALE_PACK(320, 240);
+      const unsigned output = VIDEO_SCALE_PACK(640, 240);
+      p_disp->dispctx  = &rec_ctx;
+      rec_blur_result  = true;
+
+      reset();
+      rec_blurs = 0;
+      CHECK(!gfx_display_draw_blur(p_disp, NULL, vd, 0, 0, vd, 1.0f, 0.5f)
+            && rec_blurs == 0, "with no hook nothing is blurred");
+
+      rec_ctx.blur_rect = rec_blur_rect;
+      gfx_display_draw_quad(p_disp, NULL, vd, 10, 20,
+            VIDEO_SCALE_PACK(30, 40), vd, white, NULL);
+      CHECK(rec_draws == 0, "a quad is gathered, not drawn");
+      CHECK(gfx_display_draw_blur(p_disp, NULL, vd, 4, 6,
+               VIDEO_SCALE_PACK(100, 50), 2.0f, -1.0f),
+            "a driver that blurs says so");
+      CHECK(rec_blurs == 1 && rec_blur_draws == 1,
+            "the quad under the rect is drawn before it is blurred");
+      CHECK(rec_blur_vd == vd && rec_blur_x == 4 && rec_blur_y == 6
+            && rec_blur_dims == VIDEO_SCALE_PACK(100, 50),
+            "the rect reaches the driver as asked");
+      CHECK(TEST_NEAR(rec_blur_alpha, 1.0f), "the alpha is held to 1");
+      CHECK(TEST_NEAR(rec_blur_dim, 0.0f), "the dim is held to 0..1");
+
+      CHECK(gfx_display_draw_blur(p_disp, NULL, vd, 0, 0, vd, 0.25f, 0.15f)
+            && TEST_NEAR(rec_blur_alpha, 0.25f)
+            && TEST_NEAR(rec_blur_dim, 0.15f), "a fading alpha and its dim are kept");
+      CHECK(gfx_display_draw_blur(p_disp, NULL, vd, 0, 0, vd, 1.0f, 3.0f)
+            && TEST_NEAR(rec_blur_dim, 1.0f), "a dim past 1 is held to 1");
+      rec_blurs = 0;
+      CHECK(!gfx_display_draw_blur(p_disp, NULL, vd, 0, 0, vd, 0.0f, 0.5f)
+            && rec_blurs == 0, "no alpha, no blur");
+      CHECK(!gfx_display_draw_blur(p_disp, NULL, vd, 0, 0,
+               VIDEO_SCALE_PACK(7, 100), 1.0f, 0.5f)
+            && !gfx_display_draw_blur(p_disp, NULL, vd, 0, 0,
+               VIDEO_SCALE_PACK(100, 7), 1.0f, 0.5f)
+            && rec_blurs == 0, "a rect under 8 pixels is not blurred");
+
+      rec_blur_result = false;
+      CHECK(!gfx_display_draw_blur(p_disp, NULL, vd, 0, 0, vd, 1.0f, 0.5f)
+            && rec_blurs == 1, "a driver that cannot blur says so");
+      rec_blur_result = true;
+
+      gfx_display_set_output_dims(p_disp, output);
+      CHECK(gfx_display_draw_blur(p_disp, NULL, layout, 10, 20,
+               VIDEO_SCALE_PACK(30, 40), 1.0f, 0.5f),
+            "a stretched rect is blurred");
+      CHECK(rec_blur_vd == output && rec_blur_x == 20 && rec_blur_y == 20
+            && rec_blur_dims == VIDEO_SCALE_PACK(60, 40),
+            "across the output, its x and width stretched and its y not");
+      gfx_display_set_output_dims(p_disp, 0);
+
+      rec_ctx.blur_rect = NULL;
+      p_disp->dispctx   = NULL;
+      gfx_display_free();
    }
 
    if (fails)

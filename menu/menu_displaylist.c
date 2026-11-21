@@ -15429,6 +15429,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_XMB_PLASTIC_EFFECT_ENABLE,                    PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_XMB_RIBBON_BLOOM_ENABLE,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_XMB_RIBBON_PARTICLES_ENABLE,                  PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_MENU_BACKDROP_BLUR,                           PARSE_ONLY_BOOL,   false},
                {MENU_ENUM_LABEL_MENU_TEXTURE_MIPMAPPING,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,             PARSE_ONLY_BOOL,   false},
@@ -15498,6 +15499,12 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT:
                   case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU:
                      build_list[i].checked = menu_horizontal_animation;
+                     break;
+                  case MENU_ENUM_LABEL_MENU_BACKDROP_BLUR:
+                     /* The menus that blur behind their dialogs */
+                     build_list[i].checked =
+                           string_is_equal(settings->arrays.menu_driver, "xmb")
+                        || string_is_equal(settings->arrays.menu_driver, "ozone");
                      break;
                   case MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET:
                      build_list[i].checked = (menu_rgui_color_theme == RGUI_THEME_CUSTOM);

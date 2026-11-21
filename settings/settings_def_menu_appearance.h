@@ -94,3 +94,12 @@ S_UINT_EX(menu_timedate_date_separator, TIMEDATE_DATE_SEPARATOR,
       "Date Separator",
       "Specify character to use as a separator between year/month/day components when current date is shown inside the menu.")
 #endif
+/* The configuration row lives under defined(HAVE_MENU); other passes are
+ * unaffected. */
+#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
+S_BOOL(menu_backdrop_blur, MENU_BACKDROP_BLUR,
+      "menu_backdrop_blur",
+      DEFAULT_MENU_BACKDROP_BLUR, SD_FLAG_NONE, 0, 0,
+      "Background Blur",
+      "Blur the menu behind message boxes and the on-screen keyboard, where the video driver can.")
+#endif

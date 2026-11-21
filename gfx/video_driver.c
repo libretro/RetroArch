@@ -8292,6 +8292,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->menu.xmb_title_margin                       = settings->ints.menu_xmb_title_margin;
       video_info->menu.xmb_title_margin_horizontal_offset     = settings->ints.menu_xmb_title_margin_horizontal_offset;
 #endif
+      video_info->menu.backdrop_blur                          = settings->bools.menu_backdrop_blur;
       video_info->menu.flags = 0;
       if (settings->bools.menu_rgui_shadows)
          video_info->menu.flags |= VIDEO_MENU_FLAG_RGUI_SHADOWS;
