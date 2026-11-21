@@ -145,6 +145,9 @@ def write_cfg(path, d, driver, menu):
         'menu_wallpaper': '',
         'menu_dynamic_wallpaper_enable': 'false',
         'menu_shader_pipeline': '0',
+        # D3D8 has no backdrop blur and draws the dialog over the plain
+        # dim; samples/menu covers the blur itself
+        'menu_backdrop_blur': 'false',
         'menu_ticker_type': '0',
         'menu_ticker_smooth': 'false',
         'menu_animation_speed': '1.000000',
