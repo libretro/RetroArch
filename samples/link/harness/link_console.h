@@ -61,7 +61,10 @@ typedef struct link_console
    enum retro_pixel_format format;
    unsigned index, bytes_per_pixel, errors;
    unsigned picture_width, picture_height;
-   bool started, loaded, ran, pictured; /* ran, pictured: in this frame */
+   bool started, loaded;
+   bool ran, drew;                  /* in this frame; drew: converted its picture */
+   bool drew_before;                /* drew in the frame before */
+   bool pictured;                   /* this frame's picture, or over a dupe the one before */
 } link_console_t;
 
 /* The consoles the callbacks serve, and the frame they are in; with keep,

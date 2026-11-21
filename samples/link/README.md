@@ -146,10 +146,12 @@ The scenarios here:
 - `save_frame`: lines before and after a save line at its frame.
 - `save_then_hold`: a hold after the save line at its frame, so a run from
   the state holds a console it has just loaded.
+- `dupe_checkpoint`: a dupe in the frame before a checkpoint, which keeps the
+  picture of the frame before that.
 - `bad/`: scenarios the harness refuses before anything runs.
 - `fail/`: scenarios that run and fail: a core that logs an error, a count
-  the bus does not reach, an `expect` line that does not hold and a release
-  the scenario does not expect.
+  the bus does not reach, an `expect` line that does not hold, a release the
+  scenario does not expect and two dupes in a row before a checkpoint.
 
 ## Output
 
@@ -197,6 +199,7 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_send_P` | none, broadcast, or an index 0-254 | broadcast |
 | `link_test_seed` | a number | 1 |
 | `link_test_send_frames` | `A-B[,A-B]...`, the frames that may send | 0-999999 |
+| `link_test_dupe_frames` | `A-B[,A-B]...`, the frames that pass no picture (dupes); set, the core needs `GET_CAN_DUPE` | empty |
 | `link_test_detach_P`, `link_test_reattach_P` | the frame in whose `retro_run` it happens, or -1 | -1 |
 | `link_test_restart_ticks` | off, on | off |
 | `link_test_mode` | conform, nonconform, never_advance, no_progress | conform |

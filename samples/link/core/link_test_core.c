@@ -73,7 +73,8 @@ struct lt_config
    bool shared[LT_MAX_PORTS];
    char protocol[LT_MAX_PORTS][LT_PROTOCOL_MAX];
    struct lt_range sending[LT_RANGES_MAX];
-   unsigned ports, steps, sending_count;
+   struct lt_range dupes[LT_RANGES_MAX];
+   unsigned ports, steps, sending_count, dupe_count;
    uint32_t seed;
    enum lt_mode mode;
    bool restart_ticks;
@@ -135,6 +136,7 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_send_1",      "Port 1 sends to; broadcast|none|0|1|2|3" },
    { "link_test_send_2",      "Port 2 sends to; broadcast|none|0|1|2|3" },
    { "link_test_send_frames", "Frames that may send, A-B[,A-B]...; 0-999999" },
+   { "link_test_dupe_frames", "Frames that pass no picture, A-B[,A-B]...; " },
    { "link_test_detach_0",    "Frame port 0 detaches in; -1" },
    { "link_test_detach_1",    "Frame port 1 detaches in; -1" },
    { "link_test_detach_2",    "Frame port 2 detaches in; -1" },
@@ -270,7 +272,7 @@ static bool lt_number(const char *s, uint64_t limit, uint64_t *out)
 }
 
 /* A-B[,A-B]... */
-static bool lt_ranges(const char *s)
+static bool lt_ranges(const char *s, struct lt_range *ranges, unsigned *count)
 {
    struct lt_range r[LT_RANGES_MAX];
    unsigned n = 0;
@@ -286,8 +288,8 @@ static bool lt_ranges(const char *s)
       if (*s++ != ',')
          return false;
    }
-   memcpy(lt_cfg.sending, r, n * sizeof(*r));
-   lt_cfg.sending_count = n;
+   memcpy(ranges, r, n * sizeof(*r));
+   *count = n;
    return true;
 }
 
@@ -403,8 +405,12 @@ static void lt_read_mode(void)
       else
          lt_fail_option("link_test_restart_ticks", s);
    }
-   if ((s = lt_option("link_test_send_frames")) && !lt_ranges(s))
+   if (     (s = lt_option("link_test_send_frames"))
+         && !lt_ranges(s, lt_cfg.sending, &lt_cfg.sending_count))
       lt_fail_option("link_test_send_frames", s);
+   if (     (s = lt_option("link_test_dupe_frames")) && *s
+         && !lt_ranges(s, lt_cfg.dupes, &lt_cfg.dupe_count))
+      lt_fail_option("link_test_dupe_frames", s);
    /* nonconform asks past a frame-end tick, which the bus knows from frame 1 */
    if ((s = lt_option("link_test_bad_frame")))
    {
@@ -469,11 +475,12 @@ static uint64_t lt_in(uint64_t tick)
    return tick < lt_epoch ? 0 : tick - lt_epoch;
 }
 
-static bool lt_sending(void)
+/* Whether this frame is in one of the ranges */
+static bool lt_frame_in(const struct lt_range *ranges, unsigned count)
 {
    unsigned i;
-   for (i = 0; i < lt_cfg.sending_count; i++)
-      if (lt_state.frame >= lt_cfg.sending[i].first && lt_state.frame <= lt_cfg.sending[i].last)
+   for (i = 0; i < count; i++)
+      if (lt_state.frame >= ranges[i].first && lt_state.frame <= ranges[i].last)
          return true;
    return false;
 }
@@ -706,7 +713,7 @@ static void lt_send(unsigned p, uint64_t stamp, uint32_t r)
    unsigned len = 8 + r % 57;
    uint64_t v   = lt_state.hash ^ r;
    unsigned i;
-   if (lt_cfg.send[p] == LT_SEND_NONE || !lt_sending())
+   if (lt_cfg.send[p] == LT_SEND_NONE || !lt_frame_in(lt_cfg.sending, lt_cfg.sending_count))
       return;
    for (i = 0; i < len; i++)
    {
@@ -776,9 +783,15 @@ static void lt_store_hash(void)
       lt_state.sysram[LT_RAM_HASH + i] = (unsigned char)(lt_state.hash >> (i * 8));
 }
 
-static void lt_draw(void)
+/* A dupe passes no picture */
+static void lt_draw(bool dupe)
 {
    unsigned x, y;
+   if (dupe)
+   {
+      lt_video(NULL, LT_WIDTH, LT_HEIGHT, LT_WIDTH * sizeof(*lt_picture));
+      return;
+   }
    for (y = 0; y < LT_HEIGHT; y++)
    {
       uint64_t row = lt_mix(lt_state.hash + (y >> 3));
@@ -886,7 +899,8 @@ void retro_run(void)
 {
    struct lt_stand at;
    unsigned m, p;
-   bool bad = lt_cfg.mode != LT_CONFORM && lt_state.frame >= lt_cfg.bad_frame;
+   bool bad  = lt_cfg.mode != LT_CONFORM && lt_state.frame >= lt_cfg.bad_frame;
+   bool dupe = lt_frame_in(lt_cfg.dupes, lt_cfg.dupe_count);
    if (!lt_state.sram_folded)
    {
       lt_fold(lt_digest(lt_state.sram, sizeof(lt_state.sram)));
@@ -931,7 +945,7 @@ void retro_run(void)
       lt_state.port[p].base = lt_tick(p, lt_cfg.steps);
    lt_state.frame++;
    lt_store_hash();
-   lt_draw();
+   lt_draw(dupe);
    lt_sound();
 }
 
@@ -1092,6 +1106,17 @@ bool retro_load_game(const struct retro_game_info *game)
    (void)game;
    if (!lt_environ(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &format))
       return false;
+   if (lt_cfg.dupe_count)
+   {
+      bool can_dupe = false;
+      if (!lt_environ(RETRO_ENVIRONMENT_GET_CAN_DUPE, &can_dupe) || !can_dupe)
+      {
+         lt_bump8(LT_RAM_ERRORS);
+         if (lt_log)
+            lt_log(RETRO_LOG_ERROR, "link test: link_test_dupe_frames: the frontend cannot dupe\n");
+         return false;
+      }
+   }
    for (p = 0; p < LT_MAX_PORTS; p++)
       lt_state.sysram[LT_RAM_INDEX + p] = 0xFF;
    if (!lt_linked)

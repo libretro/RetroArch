@@ -221,6 +221,11 @@ static bool RETRO_CALLCONV link_console_environment(unsigned cmd, void *data)
          return true;
       case RETRO_ENVIRONMENT_GET_INPUT_BITMASKS:
          return true;
+      case RETRO_ENVIRONMENT_GET_CAN_DUPE:
+         if (!data)
+            return false;
+         *(bool*)data = true;
+         return true;
       case RETRO_ENVIRONMENT_GET_CALENDAR_TIME_INTERFACE:
          return link_console_calendar((struct retro_calendar_time_interface*)data);
       case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
@@ -271,10 +276,12 @@ static void link_console_keep(link_console_t *c, const unsigned char *row,
       }
    c->picture_width  = width;
    c->picture_height = height;
+   c->drew           = true;
    c->pictured       = true;
 }
 
-/* Hashes the rows of the picture, without any padding past them */
+/* Hashes the rows of the picture, without any padding past them. NULL is a
+ * dupe: the picture stays the previous frame's. */
 static void RETRO_CALLCONV link_console_video(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
@@ -282,7 +289,14 @@ static void RETRO_CALLCONV link_console_video(const void *data, unsigned width,
    const unsigned char *row = (const unsigned char*)data;
    xxh64_state_t h;
    unsigned y;
-   if (!c || !data || data == RETRO_HW_FRAME_BUFFER_VALID)
+   if (!c)
+      return;
+   if (!data)
+   {
+      c->pictured = c->pictured || c->drew_before;
+      return;
+   }
+   if (data == RETRO_HW_FRAME_BUFFER_VALID)
       return;
    xxh64_reset(&h, 0);
    for (y = 0; y < height; y++, row += pitch)
@@ -350,8 +364,11 @@ void link_console_frame(unsigned long frame, bool keep)
    link_console_now.keep  = keep;
    for (i = 0; i < link_console_now.scn->console_count; i++)
    {
-      link_console_now.consoles[i].ran      = false;
-      link_console_now.consoles[i].pictured = false;
+      link_console_t *c = &link_console_now.consoles[i];
+      c->drew_before    = c->drew;
+      c->ran            = false;
+      c->drew           = false;
+      c->pictured       = false;
    }
 }
 

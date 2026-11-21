@@ -667,11 +667,12 @@ static void link_harness_edge(struct link_harness *h, unsigned long frame, size_
    }
 }
 
-/* Whether a checkpoint comes at the edge after this frame, so that its
- * pictures are kept while it runs */
+/* Whether a checkpoint comes at one of the two edges after this frame, so
+ * that its pictures are kept while it runs: a checkpoint shows the frame
+ * before it, or over a dupe there the frame before that */
 static bool link_harness_keep(const struct link_harness *h, size_t next, unsigned long frame)
 {
-   for (; next < h->scn.event_count && h->scn.events[next].frame == frame + 1; next++)
+   for (; next < h->scn.event_count && h->scn.events[next].frame <= frame + 2; next++)
       if (h->scn.events[next].kind == LINK_SCENARIO_CHECKPOINT)
          return true;
    return false;
