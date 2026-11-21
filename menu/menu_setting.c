@@ -20412,10 +20412,9 @@ static void settings_build_privacy(
       START_SUB_GROUP(list, list_info, "State",
             &group_info, &subgroup_info, parent_group);
 
-      if (string_is_not_equal(settings->arrays.camera_driver, "null"))
-      {
+      /* Settings > Camera offers these whatever the driver, so a
+       * driver can be picked and the camera allowed together */
             ADD_DESC(privacy_desc_0);
-      }
 
 #ifdef HAVE_DISCORD
             ADD_DESC(privacy_desc_1);
