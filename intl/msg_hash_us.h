@@ -28170,6 +28170,169 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
+/* GENERATED REGION: pix16 menu group (see settings_def_pix16.h). */
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION(T, n, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_NS(T, n, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
+MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
+MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
+#include "../settings/settings_def_pix16.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_BOOL_H
+#undef S_BOOL_NS_H
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_UINT_H
+#undef S_UINT_NS_H
+#undef S_INT
+#undef S_INT_NS
+#undef S_INT_H
+#undef S_INT_NS_H
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_FLOAT_H
+#undef S_FLOAT_NS_H
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_DIR_H
+#undef S_DIR_NS_H
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_STRING_P_H
+#undef S_STRING_P_NS_H
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_H
+#undef S_PATH_NS_H
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_PATH_DS_H
+#undef S_PATH_DS_NS_H
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_ACTION_H
+#undef S_ACTION_NS_H
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_BOOL_EX_H
+#undef S_BOOL_EX_NS_H
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_UINT_EX_H
+#undef S_UINT_EX_NS_H
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_INT_EX_H
+#undef S_INT_EX_NS_H
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_FLOAT_EX_H
+#undef S_FLOAT_EX_NS_H
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef S_ACTION_EX_H
+#undef S_ACTION_EX_NS_H
+#undef S_BOOL_LV
+#undef S_BOOL_LV_NS
+#undef S_BOOL_LV_H
+#undef S_BOOL_LV_NS_H
+#undef S_FLOAT_LV
+#undef S_FLOAT_LV_NS
+#undef S_FLOAT_LV_H
+#undef S_FLOAT_LV_NS_H
+#undef S_STRING_LV
+#undef S_STRING_LV_NS
+#undef S_STRING_LV_H
+#undef S_STRING_LV_NS_H
+#undef S_ACTION_LV
+#undef S_ACTION_LV_NS
+#undef S_ACTION_LV_H
+#undef S_ACTION_LV_NS_H
+#undef S_INT_AT
+#undef S_INT_AT_NS
+#undef S_INT_AT_H
+#undef S_INT_AT_NS_H
+#undef S_UINT_AT_EX
+#undef S_UINT_AT_EX_NS
+#undef S_UINT_AT_EX_H
+#undef S_UINT_AT_EX_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
 /* GENERATED REGION: RGUI color theme setting (see settings_def_rgui_color_theme.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
@@ -28928,6 +29091,126 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
    "Fill Screen (Stretched)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_BUTTONS_PLAYSTATION,
+   "PlayStation"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_BUTTONS_NINTENDO,
+   "Nintendo"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_BUTTONS_XBOX,
+   "Xbox"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_SWIRL,
+   "Battle Swirl"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_MOSAIC,
+   "Mosaic"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_CRT,
+   "CRT Off"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_ZOOM,
+   "Zoom Flash"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_IRIS,
+   "Iris"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_WIPE,
+   "Scan Wipe"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_DISSOLVE,
+   "Dissolve"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_SPLIT,
+   "Split"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_BLAST,
+   "Blast"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_ROLL,
+   "Roll"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_STATIC,
+   "Static"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_RANDOM,
+   "Random"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_SIXTEEN,
+   "16-bit"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_AMBER,
+   "Amber CRT"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_GAMEBOY,
+   "Game Boy"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_ICE,
+   "Ice"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_VAPORWAVE,
+   "Vaporwave"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_SUNSET,
+   "Sunset"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_MONO,
+   "Mono"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_CRIMSON,
+   "Crimson"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_COBALT,
+   "Cobalt"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_FOREST,
+   "Forest"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_PLUM,
+   "Plum"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_SAKURA,
+   "Sakura"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_OCEAN,
+   "Ocean"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_COPPER,
+   "Copper"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_MIDNIGHT,
+   "Midnight"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
@@ -38610,6 +38893,526 @@ MSG_HASH(
    "Browse the configured NFS export for content."
    )
 #endif
+MSG_HASH(
+   MSG_PIX16_HISTORY,
+   "HISTORY"
+   )
+MSG_HASH(
+   MSG_PIX16_SCREEN,
+   "WHICH SCREEN IS THIS?"
+   )
+MSG_HASH(
+   MSG_PIX16_SCREEN_43,
+   "4:3"
+   )
+MSG_HASH(
+   MSG_PIX16_SCREEN_WIDE,
+   "WIDESCREEN"
+   )
+MSG_HASH(
+   MSG_PIX16_SCREEN_43_FULL,
+   "4:3 FULLSCREEN"
+   )
+MSG_HASH(
+   MSG_PIX16_SCREEN_WIDE_FULL,
+   "WIDESCREEN FULLSCREEN"
+   )
+MSG_HASH(
+   MSG_PIX16_FAVORITES,
+   "FAVORITES"
+   )
+MSG_HASH(
+   MSG_PIX16_TAB_MAIN,
+   "MAIN"
+   )
+MSG_HASH(
+   MSG_PIX16_TAB_SETUP,
+   "SETUP"
+   )
+MSG_HASH(
+   MSG_PIX16_TAB_LISTS,
+   "LISTS"
+   )
+MSG_HASH(
+   MSG_PIX16_TAB_NET,
+   "NET"
+   )
+MSG_HASH(
+   MSG_PIX16_TAB_BACK,
+   "BACK"
+   )
+MSG_HASH(
+   MSG_PIX16_GUIDE_OK,
+   "OK"
+   )
+MSG_HASH(
+   MSG_PIX16_GUIDE_BACK,
+   "BACK"
+   )
+MSG_HASH(
+   MSG_PIX16_GUIDE_OPEN,
+   "OPEN"
+   )
+MSG_HASH(
+   MSG_PIX16_GUIDE_PAGE,
+   "PAGE"
+   )
+MSG_HASH(
+   MSG_PIX16_GUIDE_TABS,
+   "TABS"
+   )
+MSG_HASH(
+   MSG_PIX16_GUIDE_PLAY,
+   "PLAY"
+   )
+MSG_HASH(
+   MSG_PIX16_GUIDE_MORE,
+   "MORE"
+   )
+MSG_HASH(
+   MSG_PIX16_GUIDE_RESUME,
+   "RESUME"
+   )
+MSG_HASH(
+   MSG_PIX16_GUIDE_OPTIONS,
+   "OPTIONS"
+   )
+MSG_HASH(
+   MSG_PIX16_GUIDE_EXIT,
+   "EXIT"
+   )
+MSG_HASH(
+   MSG_PIX16_GUIDE_ADD_SYSTEM,
+   "ADD SYSTEM"
+   )
+MSG_HASH(
+   MSG_PIX16_GUIDE_SELECT,
+   "SELECT"
+   )
+MSG_HASH(
+   MSG_PIX16_NO_ITEMS,
+   "No items."
+   )
+MSG_HASH(
+   MSG_PIX16_NO_PLAYLISTS,
+   "No playlists yet."
+   )
+MSG_HASH(
+   MSG_PIX16_YES,
+   "YES"
+   )
+MSG_HASH(
+   MSG_PIX16_NO,
+   "NO"
+   )
+MSG_HASH(
+   MSG_PIX16_ARCADE,
+   "ARCADE"
+   )
+MSG_HASH(
+   MSG_PIX16_PC_ENGINE,
+   "PC ENGINE"
+   )
+MSG_HASH(
+   MSG_PIX16_CARTRIDGE,
+   "CARTRIDGE"
+   )
+MSG_HASH(
+   MSG_PIX16_CD_ROM,
+   "CD-ROM"
+   )
+MSG_HASH(
+   MSG_PIX16_ABOUT,
+   "ABOUT"
+   )
+MSG_HASH(
+   MSG_PIX16_ABOUT_HELP,
+   "Return to the systems screen."
+   )
+MSG_HASH(
+   MSG_PIX16_ABOUT_RETROARCH,
+   "RETROARCH"
+   )
+MSG_HASH(
+   MSG_PIX16_ABOUT_VIDEO_DRIVER,
+   "VIDEO DRIVER"
+   )
+MSG_HASH(
+   MSG_PIX16_ABOUT_RESOLUTION,
+   "RESOLUTION"
+   )
+MSG_HASH(
+   MSG_PIX16_ABOUT_CRT_SWITCHRES,
+   "CRT SWITCHRES"
+   )
+MSG_HASH(
+   MSG_PIX16_ABOUT_AUDIO_DRIVER,
+   "AUDIO DRIVER"
+   )
+MSG_HASH(
+   MSG_PIX16_ABOUT_INPUT_DRIVER,
+   "INPUT DRIVER"
+   )
+MSG_HASH(
+   MSG_PIX16_ABOUT_CONTROLLER,
+   "CONTROLLER"
+   )
+MSG_HASH(
+   MSG_PIX16_OFF,
+   "OFF"
+   )
+MSG_HASH(
+   MSG_PIX16_ON,
+   "ON"
+   )
+MSG_HASH(
+   MSG_PIX16_ON_SUPER,
+   "ON (SUPER %u)"
+   )
+MSG_HASH(
+   MSG_PIX16_NONE,
+   "NONE"
+   )
+MSG_HASH(
+   MSG_PIX16_REMOVE_FROM_FAVORITES,
+   "Remove from Favorites"
+   )
+MSG_HASH(
+   MSG_PIX16_PAUSED,
+   "PAUSED"
+   )
+MSG_HASH(
+   MSG_PIX16_RESUME_GAME,
+   "RESUME GAME"
+   )
+MSG_HASH(
+   MSG_PIX16_QUIT_GAME,
+   "QUIT GAME"
+   )
+MSG_HASH(
+   MSG_PIX16_SAVE_STATE,
+   "SAVE STATE"
+   )
+MSG_HASH(
+   MSG_PIX16_LOAD_STATE,
+   "LOAD STATE"
+   )
+MSG_HASH(
+   MSG_PIX16_STATE_SAVED,
+   "STATE SAVED"
+   )
+MSG_HASH(
+   MSG_PIX16_AUTO,
+   "AUTO"
+   )
+MSG_HASH(
+   MSG_PIX16_SLOT,
+   "SLOT %d"
+   )
+MSG_HASH(
+   MSG_PIX16_RUN,
+   "RUN"
+   )
+MSG_HASH(
+   MSG_PIX16_LOAD_SAVE,
+   "LOAD SAVE"
+   )
+MSG_HASH(
+   MSG_PIX16_EXIT_TITLE,
+   "EXIT?"
+   )
+MSG_HASH(
+   MSG_PIX16_QUIT_TITLE,
+   "QUIT GAME?"
+   )
+MSG_HASH(
+   MSG_PIX16_EXIT_CONFIRM,
+   "Are you sure you want to exit?"
+   )
+MSG_HASH(
+   MSG_PIX16_QUIT_CONFIRM,
+   "Are you sure you want to quit?"
+   )
+MSG_HASH(
+   MSG_PIX16_PUSH_ANY_BUTTON,
+   "PUSH ANY BUTTON TO START"
+   )
+MSG_HASH(
+   MSG_PIX16_BIOS_DETECTED,
+   "%s DETECTED"
+   )
+MSG_HASH(
+   MSG_PIX16_BIOS_VIDEO,
+   "VIDEO"
+   )
+MSG_HASH(
+   MSG_PIX16_BIOS_CONTROLLER,
+   "CONTROLLER"
+   )
+MSG_HASH(
+   MSG_PIX16_BIOS_MEMORY_CARD,
+   "MEMORY CARD"
+   )
+MSG_HASH(
+   MSG_PIX16_BIOS_OK,
+   "OK"
+   )
+MSG_HASH(
+   MSG_PIX16_BIOS_SCANNING,
+   "SCANNING LIBRARY..."
+   )
+MSG_HASH(
+   MSG_PIX16_BIOS_COUNT,
+   "%d SYSTEMS   %d GAMES"
+   )
+MSG_HASH(
+   MSG_PIX16_BIOS_BOOTING,
+   "BOOTING SYSTEM..."
+   )
+MSG_HASH(
+   MSG_PIX16_BIOS_LOADING,
+   "LOADING"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_TITLE,
+   "SYSTEM INFORMATION"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_BUILT,
+   "BUILT"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_MENU,
+   "MENU"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_OS,
+   "OS"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_CPU,
+   "CPU"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_THREADS,
+   "%u THREADS %s"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_MEMORY,
+   "MEMORY"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_VIDEO,
+   "VIDEO"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_DISPLAY,
+   "DISPLAY"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_AUDIO,
+   "AUDIO"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_INPUT,
+   "INPUT"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_PAD,
+   "PAD 1"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_NOT_CONNECTED,
+   "NOT CONNECTED"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_CORES,
+   "CORES"
+   )
+MSG_HASH(
+   MSG_PIX16_INFO_INSTALLED,
+   "%u INSTALLED"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_TITLE,
+   "ADD SYSTEM"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_STEP,
+   "STEP %d"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_Q_CORE,
+   "Which core plays this system?"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_Q_SYSTEM,
+   "What is the system called?"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_Q_PLACE,
+   "Where should its button go?"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_Q_SOURCE,
+   "Where are the games?"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_Q_DAT_FILE,
+   "Pick the name file (.dat or .xml)."
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_Q_GAME,
+   "Pick the game."
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_Q_FOLDER,
+   "Open the games folder, then choose USE THIS FOLDER."
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_Q_DAT,
+   "Arcade sets have short file names. Use a name file for full titles?"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_Q_BIOS,
+   "This core needs BIOS files that are missing:"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_Q_CONFIRM,
+   "Ready to add this system?"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_DOWNLOAD,
+   "DOWNLOAD MORE CORES..."
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_NO_CORES,
+   "No cores installed yet."
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_TYPE_NAME,
+   "TYPE A NAME..."
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_SYSTEM_NAME,
+   "System name"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_HOME,
+   "HOME SCREEN"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_INSIDE_ARCADE,
+   "INSIDE ARCADE"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_INSIDE,
+   "INSIDE %s"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_SCAN_FOLDER,
+   "SCAN A FOLDER OF GAMES"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_ONE_GAME,
+   "ADD ONE GAME"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_START_FOLDER,
+   "START FOLDER (RETROARCH)"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_USE_FOLDER,
+   "[ USE THIS FOLDER ]"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_FILES,
+   "(%u FILES IN HERE)"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_READING,
+   "READING..."
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_NO_DAT,
+   "NO, USE THE FILE NAMES"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_PICK_DAT,
+   "YES, PICK A .DAT FILE"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_MORE,
+   "  ...AND %u MORE"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_PUT_THEM_IN,
+   "PUT THEM IN:"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_SYSTEM_FOLDER,
+   "THE SYSTEM FOLDER"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_CHECK_AGAIN,
+   "CHECK AGAIN"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_CONTINUE,
+   "CONTINUE ANYWAY"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_KEY_CORE,
+   "CORE"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_KEY_SYSTEM,
+   "SYSTEM"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_KEY_WHERE,
+   "WHERE"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_KEY_FOLDER,
+   "FOLDER"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_KEY_GAME,
+   "GAME"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_KEY_NAMES,
+   "NAMES"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_FILE_NAMES,
+   "FILE NAMES"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_ADD,
+   "ADD THIS SYSTEM"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_THIS_COMPUTER,
+   "THIS COMPUTER"
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_NO_PLAYLIST_DIR,
+   "Set a playlist folder first (Settings > Directory)."
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_PLAYLIST_FAILED,
+   "Could not open the playlist."
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_SCANNING,
+   "Scanning for %s games..."
+   )
+MSG_HASH(
+   MSG_PIX16_WIZ_ADDED,
+   "Added %s to %s."
+   )
 /* GENERATED REGION: menu frame rate setting (see settings_def_menu_frame_rate.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \

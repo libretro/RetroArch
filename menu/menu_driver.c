@@ -380,6 +380,9 @@ const menu_ctx_driver_t *menu_ctx_drivers[] = {
 #if defined(HAVE_XMB)
    &menu_ctx_xmb,
 #endif
+#if defined(HAVE_PIX16)
+   &menu_ctx_pix16,
+#endif
    &menu_ctx_null,
    NULL
 };
