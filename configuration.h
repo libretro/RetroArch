@@ -398,6 +398,9 @@ typedef struct settings
       unsigned menu_rgui_aspect_ratio;
       unsigned menu_rgui_aspect_ratio_lock;
       unsigned menu_rgui_particle_effect;
+      unsigned menu_pix16_button_style;
+      unsigned menu_pix16_transition;
+      unsigned menu_pix16_palette;
       unsigned menu_ticker_type;
       unsigned menu_scroll_delay;
       unsigned desktop_menu_view_type;
@@ -980,6 +983,11 @@ typedef struct settings
       bool menu_rgui_full_width_layout;
       bool menu_rgui_transparency;
       bool menu_rgui_shadows;
+      bool menu_pix16_widescreen;
+      bool menu_pix16_boot_screen;
+      bool menu_pix16_start_screen;
+      bool menu_pix16_screen_asked;
+      bool menu_pix16_reduced_motion;
       bool menu_rgui_inline_thumbnails;
       bool menu_rgui_swap_thumbnails;
       bool menu_rgui_thumbnail_dither;
