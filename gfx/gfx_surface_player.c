@@ -54,7 +54,7 @@ static int gfx_surface_player_start(void *user, unsigned width,
         | (s->pixfmt == IMAGE_PIXFMT_FP16 ? VIDEO_PLAYER_FP16 : 0)
         | (s->pixfmt == IMAGE_PIXFMT_I420 ? VIDEO_PLAYER_I420 : 0)
         | (s->pixfmt == IMAGE_PIXFMT_I420 && num_slots == 1
-              && !video_driver_thread_wrapper_active()
+              && (gsp->hold_canvas || !video_driver_thread_wrapper_active())
               ? VIDEO_PLAYER_BORROW_PLANES
                  | (have_req && req.planar_strided ? VIDEO_PLAYER_BORROW_STRIDED : 0)
               : 0);
@@ -209,10 +209,9 @@ static enum video_player_present gfx_surface_player_present(void *user,
          planes.strides[i] = fr->planar->strides[i];
       }
       planes.chroma_step = fr->planar->chroma_step;
-      /* Direct video uploads before returning. If the video wrapper
-       * became active meanwhile, submit_planes copies to its owned
-       * slot before handing the upload to that thread. */
-      res = gfx_surface_submit_planes(s, &planes, gsp->rgba);
+      res = gsp->hold_canvas
+         ? gfx_surface_submit_planes_held(s, &planes, gsp->rgba)
+         : gfx_surface_submit_planes(s, &planes, gsp->rgba);
    }
    else
       res = fr->pixels

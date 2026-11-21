@@ -1010,8 +1010,8 @@ void gfx_surface_set_yuv(gfx_surface_t *s, unsigned flags)
             | IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709));
 }
 
-enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
-      const gfx_surface_planes_t *p, bool rgba)
+static enum gfx_surface_submit_result gfx_surface_submit_planes_internal(gfx_surface_t *s,
+      const gfx_surface_planes_t *p, bool rgba, bool held)
 {
    enum gfx_surface_submit_result r;
    uint8_t fmt;
@@ -1028,10 +1028,9 @@ enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
       return GFX_SURFACE_SUBMIT_BUSY;
    }
 #ifdef HAVE_THREADS
-   /* The video thread reads planes after this returns, and these are
-    * the caller's: into slot 0 with them. A conversion needs no copy,
-    * its result being the surface's. */
-   if (     video_driver_thread_wrapper_active()
+   /* Without a lease the video thread needs its own planes. CPU
+    * conversion already writes into the surface's owned buffer. */
+   if (     !held && video_driver_thread_wrapper_active()
          && video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_YUV420))
    {
       if (!gfx_surface_slot_writable(s, 0))
@@ -1043,12 +1042,26 @@ enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
       gfx_surface_planes_copy(s, p, s->slots[0]);
       return gfx_surface_submit(s, 0, rgba);
    }
+#else
+   (void)held;
 #endif
    r = gfx_surface_planar(s, p, rgba, &fmt)
       ? gfx_surface_submit_img(s, 0, fmt)
       : GFX_SURFACE_SUBMIT_FAILED;
    gfx_surface_count(r);
    return r;
+}
+
+enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
+      const gfx_surface_planes_t *p, bool rgba)
+{
+   return gfx_surface_submit_planes_internal(s, p, rgba, false);
+}
+
+enum gfx_surface_submit_result gfx_surface_submit_planes_held(gfx_surface_t *s,
+      const gfx_surface_planes_t *p, bool rgba)
+{
+   return gfx_surface_submit_planes_internal(s, p, rgba, true);
 }
 
 enum gfx_surface_submit_result gfx_surface_submit_external(gfx_surface_t *s,

@@ -71,6 +71,12 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s,
    return gfx_surface_submit_pixels(s, pixels, rgba);
 }
 
+enum gfx_surface_submit_result gfx_surface_submit_planes_held(gfx_surface_t *s,
+      const gfx_surface_planes_t *p, bool rgba)
+{
+   return gfx_surface_submit_planes(s, p, rgba);
+}
+
 enum gfx_surface_submit_result gfx_surface_submit_import(gfx_surface_t *surface,
       const video_frame_import_t *frame)
 {

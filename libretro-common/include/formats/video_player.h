@@ -74,14 +74,14 @@ enum video_player_flags
     * precedence over VIDEO_PLAYER_FP16. */
    VIDEO_PLAYER_I420   = (1 << 3),
    /* With I420, an inline sink may read decoder-owned planes directly.
-    * present must consume them before returning (or copy them itself).
+    * Consume them in present, copy them, or hold them with HOLD_CANVAS.
     * Worker decoding always keeps the packed-slot fallback. */
    VIDEO_PLAYER_BORROW_PLANES = (1 << 4),
    /* With BORROW_PLANES, also accept decoder row padding. Without it,
     * only tight planes are borrowed, preserving efficient row uploads. */
    VIDEO_PLAYER_BORROW_STRIDED = (1 << 5),
-   /* An inline sink may queue a canvas until slot_released(0). The
-    * owner must poll stop until it succeeds before freeing the stream. */
+   /* An inline sink may queue decoder-owned pixels or planes until
+    * slot_released(0). Poll stop until it succeeds before freeing the stream. */
    VIDEO_PLAYER_HOLD_CANVAS = (1 << 6)
 };
 
@@ -136,7 +136,8 @@ typedef struct video_player_frame
     * 0 otherwise. */
    unsigned yuv;
    /* Non-NULL only for an opted-in inline sink. Read these planes
-    * instead of the slot; the next decode invalidates the borrow. */
+    * instead of the slot. HOLD_CANVAS keeps a queued borrow until
+    * slot_released(0); otherwise the next decode invalidates it. */
    const struct texture_planar *planar;
 } video_player_frame_t;
 

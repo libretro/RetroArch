@@ -1141,7 +1141,7 @@ present_frame:
       return VIDEO_PLAYER_ENDED;
    }
    p->inline_held = res == VIDEO_PLAYER_PRESENT_QUEUED
-      && (fr.hw || (fr.pixels && (p->flags & VIDEO_PLAYER_HOLD_CANVAS)));
+      && (fr.hw || ((fr.pixels || fr.planar) && (p->flags & VIDEO_PLAYER_HOLD_CANVAS)));
    vp_cadence_present(p, fr.time_us);
    vp_schedule(p, fr.duration_ms, now);
    return VIDEO_PLAYER_PLAYING;

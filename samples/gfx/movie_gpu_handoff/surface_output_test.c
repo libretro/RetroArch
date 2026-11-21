@@ -29,7 +29,7 @@ bool image_transfer_anim_stream_is_hdr(const void *stream, enum image_type_enum 
 }
 static bool planar_source, slotted;
 static gfx_surface_planes_t captured_planes;
-static unsigned plane_submits;
+static unsigned plane_submits, held_plane_submits;
 #ifdef HAVE_THREADS
 static bool wrapper_active;
 bool video_driver_thread_wrapper_active(void) { return wrapper_active; }
@@ -85,6 +85,14 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s,
       const void *pixels, bool rgba)
 {
    return gfx_surface_submit_pixels(s, pixels, rgba);
+}
+
+enum gfx_surface_submit_result gfx_surface_submit_planes_held(gfx_surface_t *s,
+      const gfx_surface_planes_t *p, bool rgba)
+{
+   held_plane_submits++;
+   gfx_surface_submit_planes(s, p, rgba);
+   return s->inflight ? GFX_SURFACE_SUBMIT_BUSY : GFX_SURFACE_SUBMIT_QUEUED;
 }
 
 enum gfx_surface_submit_result gfx_surface_submit_import(gfx_surface_t *s,
@@ -407,6 +415,29 @@ static void planar_start(void)
    wrapper_active = true;
    CHECK(!(gfx_surface_player_start(&gsp, 32, 16, 1)
             & VIDEO_PLAYER_BORROW_PLANES));
+   gsp.hold_canvas = true;
+   {
+      struct texture_planar view;
+      uint8_t bytes[3] = {0};
+      unsigned flags = gfx_surface_player_start(&gsp, 32, 16, 1);
+      CHECK((flags & (VIDEO_PLAYER_HOLD_CANVAS | VIDEO_PLAYER_BORROW_PLANES
+                  | VIDEO_PLAYER_BORROW_STRIDED))
+            == (VIDEO_PLAYER_HOLD_CANVAS | VIDEO_PLAYER_BORROW_PLANES
+                  | VIDEO_PLAYER_BORROW_STRIDED));
+      CHECK(!(gfx_surface_player_start(&gsp, 32, 16, 2)
+               & (VIDEO_PLAYER_HOLD_CANVAS | VIDEO_PLAYER_BORROW_PLANES)));
+      gfx_surface_player_start(&gsp, 32, 16, 1);
+      memset(&view, 0, sizeof(view));
+      view.planes[0] = bytes; view.planes[1] = bytes + 1; view.planes[2] = bytes + 2;
+      view.strides[0] = 64; view.strides[1] = view.strides[2] = 32; view.chroma_step = 1;
+      frame.planar = &view; held_plane_submits = 0;
+      CHECK(gfx_surface_player_present(&gsp, &frame) == VIDEO_PLAYER_PRESENT_QUEUED);
+      CHECK(held_plane_submits == 1 && captured_planes.planes[0] == bytes
+            && captured_planes.strides[0] == 64);
+      surface.inflight = 1;
+      CHECK(gfx_surface_player_present(&gsp, &frame) == VIDEO_PLAYER_PRESENT_BUSY);
+      surface.inflight = 0; frame.planar = NULL;
+   }
    wrapper_active = false;
 #endif
    slotted = false;

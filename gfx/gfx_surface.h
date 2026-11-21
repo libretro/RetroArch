@@ -481,6 +481,12 @@ void gfx_surface_set_yuv(gfx_surface_t *s, unsigned flags);
 enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
       const gfx_surface_planes_t *p, bool rgba);
 
+/* As submit_planes, but the caller keeps the planes and their owner
+ * alive and unchanged until release() after QUEUED. Keep the surface
+ * alive as well. CPU conversion uses the surface's owned RGB buffer. */
+enum gfx_surface_submit_result gfx_surface_submit_planes_held(gfx_surface_t *s,
+      const gfx_surface_planes_t *p, bool rgba);
+
 /* Whether slot @slot may be written now. A slot lent the driver's upload
  * memory is the GPU's until the copy of its last frame has run; the
  * answer never waits, and a producer that gets false keeps the slot

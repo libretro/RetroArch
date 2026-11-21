@@ -1272,7 +1272,7 @@ static int seek_step(void *user, int64_t target, bool restart,
    return 1;
 }
 
-static void lane_canvas_lease(void)
+static void lane_canvas_lease(bool planes)
 {
    fake_t f;
    sink_t k;
@@ -1284,12 +1284,16 @@ static void lane_canvas_lease(void)
    {
       uint32_t first;
       fake_init(&f, 8, 10);
-      sink_init(&k, &s, false);
+      sink_init(&k, &s, planes);
+      f.direct = f.planar_can = planes;
+      if (planes) s.present = sink_present_planar;
       memset(&seek, 0, sizeof(seek));
       seek.stream = &f;
       retro_atomic_int_init(&seek.steps, 0);
       retro_atomic_int_init(&seek.gate, 1);
-      k.start_flags = VIDEO_PLAYER_HOLD_CANVAS;
+      k.start_flags = VIDEO_PLAYER_HOLD_CANVAS
+         | (planes ? VIDEO_PLAYER_I420 | VIDEO_PLAYER_BORROW_PLANES
+               | VIDEO_PLAYER_BORROW_STRIDED : 0);
       k.queue_canvas = true;
       k.queue_every = 1;
       p = video_player_new(&f, IMAGE_TYPE_PNG, 0, &s, VIDEO_PLAYER_INLINE);
@@ -2555,7 +2559,8 @@ int main(void)
 #endif
    lane_input_wait(false, false);
    lane_input_wait(false, true);
-   lane_canvas_lease();
+   lane_canvas_lease(false);
+   lane_canvas_lease(true);
    lane_seek(false, false);
    lane_seek(false, true);
    lane_seek_stop(false);

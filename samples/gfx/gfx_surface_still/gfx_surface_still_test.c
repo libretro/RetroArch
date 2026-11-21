@@ -1120,6 +1120,19 @@ int main(void)
             && !s->rgb,
             "direct planes not handed over as they lie");
       st_async = 1;
+      memset(s->slots[0], 0x55, IMAGE_PIXFMT_FRAME_SIZE(s->pixfmt, 4, 4));
+      CHECK(gfx_surface_submit_planes_held(s, &p, false)
+            == GFX_SURFACE_SUBMIT_QUEUED, "leased planes not queued");
+      CHECK(s->planar.planes[0] == frame && s->planar.planes[1] == frame + 17
+            && s->planar.planes[2] == frame + 16 && s->planar.strides[1] == 8
+            && ((uint8_t*)s->slots[0])[0] == 0x55 && !s->rgb,
+            "leased planes copied or lost padded chroma metadata");
+      CHECK(gfx_surface_submit_planes_held(s, &p, false)
+            == GFX_SURFACE_SUBMIT_BUSY, "leased planes replaced while in flight");
+      st_flush();
+      CHECK(st_planar.planes[0] == frame && st_planar.planes[1][0] == 2
+            && st_planar.strides[1] == 8 && st_planar.yuv == IMAGE_YUV_FLAG_BT709,
+            "leased planes lost their source on the video thread");
       CHECK(gfx_surface_submit_planes(s, &p, false)
             == GFX_SURFACE_SUBMIT_QUEUED, "wrapper planes not queued");
       memset(frame, 0xee, sizeof(frame)); /* the caller's again */
