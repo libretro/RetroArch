@@ -2248,16 +2248,675 @@ typedef struct _RETRO_FILE_ZERO_DATA_INFORMATION
 #endif
 #endif
 
-#if defined(_WIN32) && !defined(_XBOX)
-/* FILE_NAME_NORMALIZED came in with the Vista SDK, the same generation as
- * GetFinalPathNameByHandleW itself.  The function is resolved by name at
- * run time below precisely so that older toolchains still build this
- * file; the flag has to clear the same bar, so supply the documented
- * value when the SDK does not. */
-#ifndef FILE_NAME_NORMALIZED
-#define FILE_NAME_NORMALIZED 0x0
+#if defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX)
+/* ntdll's own, declared here: winternl.h is not in every SDK this
+ * builds with */
+typedef struct
+{
+   USHORT Length;
+   USHORT MaximumLength;
+   WCHAR *Buffer;
+} vfs_rp_string_t;
+typedef struct
+{
+   void *status;
+   void *information;
+} vfs_rp_iosb_t;
+typedef LONG (WINAPI *vfs_rp_query_object_t)(HANDLE, int, void*,
+      ULONG, ULONG*);
+typedef LONG (WINAPI *vfs_rp_query_file_t)(HANDLE, vfs_rp_iosb_t*,
+      void*, ULONG, int);
+typedef DWORD (WINAPI *vfs_rp_long_name_t)(LPCWSTR, LPWSTR, DWORD);
+typedef struct
+{
+   ULONG Length;
+   HANDLE RootDirectory;
+   vfs_rp_string_t *ObjectName;
+   ULONG Attributes;
+   void *SecurityDescriptor;
+   void *SecurityQualityOfService;
+} vfs_rp_attributes_t;
+typedef LONG (WINAPI *vfs_rp_open_link_t)(HANDLE*, ULONG,
+      vfs_rp_attributes_t*);
+typedef LONG (WINAPI *vfs_rp_query_link_t)(HANDLE, vfs_rp_string_t*,
+      ULONG*);
+typedef LONG (WINAPI *vfs_rp_close_t)(HANDLE);
+
+#define VFS_RP_OBJECT_NAME_INFORMATION     1
+#define VFS_RP_FILE_NORMALIZED_NAME_INFO  48
+
+/* Each looked up once it is found; a word-sized store, so a thread
+ * reading one either sees it or looks it up again */
+static vfs_rp_query_object_t vfs_rp_query_object;
+static vfs_rp_query_file_t   vfs_rp_query_file;
+static vfs_rp_long_name_t       vfs_rp_long_name;
+static vfs_rp_open_link_t    vfs_rp_open_link;
+static vfs_rp_query_link_t   vfs_rp_query_link;
+static vfs_rp_close_t        vfs_rp_close;
+/* The system has no normalized names at all (XP answers
+ * STATUS_INVALID_INFO_CLASS, Wine STATUS_NOT_IMPLEMENTED): not asked
+ * again.  A file system without them says so per file instead. */
+static int                    vfs_rp_no_normalized;
+
+/* The device drive @root ("C:") stands for, into @dev: "\??\C:" read
+ * as the symbolic link it is - what QueryDosDeviceW() answers, without
+ * the \?? directory it opens first.  QueryDosDeviceW() where these are
+ * missing. */
+static bool vfs_rp_drive_device(const WCHAR *root, WCHAR *dev, size_t cap)
+{
+   if (!vfs_rp_open_link)
+   {
+      HMODULE nt = GetModuleHandleA("ntdll.dll");
+      if (nt)
+      {
+         vfs_rp_query_link = (vfs_rp_query_link_t)(void (*)(void))
+            GetProcAddress(nt, "NtQuerySymbolicLinkObject");
+         vfs_rp_close      = (vfs_rp_close_t)(void (*)(void))
+            GetProcAddress(nt, "NtClose");
+         vfs_rp_open_link  = (vfs_rp_open_link_t)(void (*)(void))
+            GetProcAddress(nt, "NtOpenSymbolicLinkObject");
+      }
+   }
+   if (vfs_rp_open_link && vfs_rp_query_link && vfs_rp_close)
+   {
+      WCHAR name[7];
+      vfs_rp_string_t link, target;
+      vfs_rp_attributes_t attr;
+      HANDLE h = NULL;
+      ULONG got = 0;
+      LONG status;
+      name[0] = L'\\';
+      name[1] = L'?';
+      name[2] = L'?';
+      name[3] = L'\\';
+      name[4] = root[0];
+      name[5] = L':';
+      name[6] = L'\0';
+      link.Length              = 6 * sizeof(WCHAR);
+      link.MaximumLength       = 7 * sizeof(WCHAR);
+      link.Buffer              = name;
+      attr.Length              = sizeof(attr);
+      attr.RootDirectory       = NULL;
+      attr.ObjectName          = &link;
+      attr.Attributes          = 0x40; /* OBJ_CASE_INSENSITIVE */
+      attr.SecurityDescriptor  = NULL;
+      attr.SecurityQualityOfService = NULL;
+      /* SYMBOLIC_LINK_QUERY */
+      if (vfs_rp_open_link(&h, 1, &attr) >= 0)
+      {
+         target.Length        = 0;
+         target.MaximumLength = (USHORT)((cap - 1) * sizeof(WCHAR));
+         target.Buffer        = dev;
+         status = vfs_rp_query_link(h, &target, &got);
+         vfs_rp_close(h);
+         if (status >= 0)
+         {
+            dev[target.Length / sizeof(WCHAR)] = L'\0';
+            return true;
+         }
+         return false;
+      }
+   }
+   return QueryDosDeviceW(root, dev, (DWORD)cap) != 0;
+}
+
+/* The drive whose device @name is on, its device's length in @dev_len:
+ * @drive first, as it nearly always is; another only when a junction
+ * led off that volume */
+static WCHAR vfs_rp_drive_of(const WCHAR *name, size_t n, WCHAR drive,
+      size_t *dev_len)
+{
+   WCHAR dev[128];
+   WCHAR root[3];
+   DWORD mask = 0;
+   int i;
+   if (drive >= L'a' && drive <= L'z')
+      drive = (WCHAR)(drive - L'a' + L'A');
+   root[1] = L':';
+   root[2] = L'\0';
+   for (i = -1; i < 26; i++)
+   {
+      size_t dl;
+      if (i < 0)
+      {
+         if (drive < L'A' || drive > L'Z')
+            continue;
+         root[0] = drive;
+      }
+      else
+      {
+         /* the drives there are, asked only now: not cheap everywhere */
+         if (i == 0)
+            mask = GetLogicalDrives();
+         root[0] = (WCHAR)(L'A' + i);
+         if (!(mask & (1UL << i)) || root[0] == drive)
+            continue;
+      }
+      if (!vfs_rp_drive_device(root, dev, sizeof(dev) / sizeof(dev[0])))
+         continue;
+      dl = wcslen(dev);
+      if (dl && dl <= n && !_wcsnicmp(name, dev, dl)
+            && (name[dl] == L'\\' || name[dl] == L'\0'))
+      {
+         *dev_len = dl;
+         return root[0];
+      }
+   }
+   return 0;
+}
+
+static size_t vfs_win32_handle_path(void *handle, wchar_t drive,
+      wchar_t *s, size_t len)
+{
+   static const WCHAR mup[]    = L"\\Device\\Mup\\";
+   static const WCHAR lanman[] = L"\\Device\\LanmanRedirector\\";
+   vfs_rp_iosb_t iosb;
+   ULONG got   = 0;
+   size_t n;
+   size_t dev_len = 0;
+   WCHAR letter;
+   if (!vfs_rp_query_object || !vfs_rp_query_file)
+   {
+      HMODULE nt = GetModuleHandleA("ntdll.dll");
+      if (!nt)
+         return 0;
+      vfs_rp_query_object = (vfs_rp_query_object_t)(void (*)(void))GetProcAddress(nt,
+            "NtQueryObject");
+      vfs_rp_query_file   = (vfs_rp_query_file_t)(void (*)(void))GetProcAddress(nt,
+            "NtQueryInformationFile");
+      if (!vfs_rp_query_object || !vfs_rp_query_file)
+         return 0;
+   }
+   if (!handle || handle == INVALID_HANDLE_VALUE || len < 8)
+      return 0;
+   /* "\Device\HarddiskVolume2\dir\file", where any junction or
+    * symlink on the way led: the name lands just after its header in
+    * @s, and is moved to the front */
+   if (vfs_rp_query_object((HANDLE)handle, VFS_RP_OBJECT_NAME_INFORMATION,
+            s, (ULONG)(len * sizeof(WCHAR)), &got) < 0)
+      return 0;
+   {
+      const vfs_rp_string_t *name = (const vfs_rp_string_t*)s;
+      n = name->Length / sizeof(WCHAR);
+      if (n + 1 >= len)
+         return 0;
+      memmove(s, name->Buffer, n * sizeof(WCHAR));
+      s[n] = L'\0';
+   }
+
+   /* A share: "\\server\share\file" */
+   {
+      size_t rest = 0;
+      if (n > 12 && !_wcsnicmp(s, mup, 12))
+         rest = 12;
+      else if (n > 8 && !_wcsnicmp(s, L"\\??\\UNC\\", 8))
+         rest = 8;
+      else if (n > 25 && !_wcsnicmp(s, lanman, 25))
+      {
+         rest = 25;
+         /* XP names a mapped drive's share ";Z:0000000000012345\server" */
+         if (s[25] == L';')
+         {
+            while (rest < n && s[rest] != L'\\')
+               rest++;
+            if (++rest >= n)
+               return 0;
+         }
+      }
+      if (rest)
+      {
+         memmove(s + 2, s + rest, (n - rest + 1) * sizeof(WCHAR));
+         s[0] = L'\\';
+         s[1] = L'\\';
+         return n - rest + 2;
+      }
+   }
+
+   /* "\??\C:\dir", already a drive's (Wine names files so) */
+   if (n >= 6 && s[0] == L'\\' && s[1] == L'?' && s[2] == L'?'
+         && s[3] == L'\\' && s[5] == L':'
+         && (s[6] == L'\\' || s[6] == L'\0'))
+   {
+      letter  = s[4];
+      dev_len = 6;
+   }
+   else if (!(letter = vfs_rp_drive_of(s, n, drive, &dev_len)))
+      return 0;
+
+   /* On-disk case and long names, from the file system itself (Vista
+    * and later).  Asked into the room past the name, so that where the
+    * file system cannot tell, the name is still there to fall back on */
+   {
+      size_t at  = (n + 2 + 1) & ~(size_t)1; /* 4-byte aligned, WCHARs */
+      ULONG *nfi = (ULONG*)(s + at);
+      LONG status = 0;
+      if (     !vfs_rp_no_normalized
+            && len > at + 2 + 8
+            && (status = vfs_rp_query_file((HANDLE)handle, &iosb, nfi,
+               (ULONG)((len - at) * sizeof(WCHAR)),
+               VFS_RP_FILE_NORMALIZED_NAME_INFO)) >= 0)
+      {
+         size_t nn = *nfi / sizeof(WCHAR);
+         if (nn + 2 + 1 > len)
+            return 0;
+         memmove(s + 2, nfi + 1, nn * sizeof(WCHAR));
+         s[0]      = letter;
+         s[1]      = L':';
+         s[nn + 2] = L'\0';
+         return nn + 2;
+      }
+      else if (!vfs_rp_no_normalized && len > at + 2 + 8
+            && (status == (LONG)0xC0000002L || status == (LONG)0xC0000003L))
+         vfs_rp_no_normalized = 1;
+   }
+
+   /* Before Vista (and on Wine): the name as it was opened, its case
+    * included */
+   if (n < dev_len)
+      return 0;
+   memmove(s + 2, s + dev_len, (n - dev_len) * sizeof(WCHAR));
+   n    = n - dev_len + 2;
+   s[0] = letter;
+   s[1] = L':';
+   s[n] = L'\0';
+   if (n == 2)
+   {
+      s[2] = L'\\';
+      s[3] = L'\0';
+      n    = 3;
+   }
+   /* An 8.3 name made long; GetLongPathNameW() reads each component's
+    * directory, so only when one looks short */
+   if (!wcschr(s, L'~'))
+      return n;
+   if (!vfs_rp_long_name)
+   {
+      HMODULE k32 = GetModuleHandleA("kernel32.dll");
+      if (k32)
+         vfs_rp_long_name = (vfs_rp_long_name_t)(void (*)(void))GetProcAddress(k32,
+               "GetLongPathNameW");
+   }
+   if (vfs_rp_long_name)
+   {
+      /* the same buffer for both is allowed */
+      DWORD long_len = vfs_rp_long_name(s, s, (DWORD)len);
+      if (long_len && long_len < len)
+         n = long_len;
+   }
+   return n;
+}
+
+/* 95, 98 and ME: no links to follow, and none of the wide calls - they
+ * are stubs there, failing.  The path made absolute and each component
+ * that exists given its long name, in the case it has on disk, with the
+ * ANSI calls; FindFirstFileA() rather than GetLongPathNameA(), which 95
+ * does not have and which fails on a path that is not all there. */
+static bool vfs_win9x_resolve(char *s, size_t len)
+{
+   WIN32_FIND_DATAA fd;
+   wchar_t *w;
+   char *in, *full, *acc;
+   size_t i, n, root;
+   bool ok = false;
+   if (!(w = utf8_to_utf16_string_alloc(s)))
+      return false;
+   if (!(in = (char*)malloc(3 * MAX_PATH)))
+   {
+      free(w);
+      return false;
+   }
+   full = in + MAX_PATH;
+   acc  = full + MAX_PATH;
+   i    = WideCharToMultiByte(CP_ACP, 0, w, -1, in, MAX_PATH, NULL, NULL);
+   free(w);
+   if (!i)
+      goto end;
+   n = GetFullPathNameA(in, MAX_PATH, full, NULL);
+   if (!n || n >= MAX_PATH)
+      goto end;
+
+   /* The root stays as it is: "C:\" or "\\server\share\" */
+   if (full[0] && full[1] == ':')
+      root = (full[2] == '\\') ? 3 : 2;
+   else if (full[0] == '\\' && full[1] == '\\')
+   {
+      unsigned seps = 0;
+      for (root = 2; full[root]; root++)
+      {
+         if (IsDBCSLeadByte((BYTE)full[root]) && full[root + 1])
+            root++;
+         else if (full[root] == '\\' && ++seps == 2)
+         {
+            root++;
+            break;
+         }
+      }
+   }
+   else
+      goto end;
+   memcpy(acc, full, root);
+   acc[root] = '\0';
+
+   for (i = root; full[i]; )
+   {
+      size_t k, at = strlen(acc);
+      bool wild = false;
+      HANDLE h;
+      /* one component; a '\\' can be a DBCS trail byte */
+      for (k = i; full[k] && full[k] != '\\'; k++)
+      {
+         if (full[k] == '*' || full[k] == '?')
+            wild = true;
+         if (IsDBCSLeadByte((BYTE)full[k]) && full[k + 1])
+            k++;
+      }
+      if (at + (k - i) + 2 > MAX_PATH)
+         goto end;
+      memcpy(acc + at, full + i, k - i);
+      acc[at + (k - i)] = '\0';
+      if (    wild
+          || (h = FindFirstFileA(acc, &fd)) == INVALID_HANDLE_VALUE)
+      {
+         /* not there (yet): the rest as it was given */
+         if (at + strlen(full + i) + 1 > MAX_PATH)
+            goto end;
+         strcpy(acc + at, full + i);
+         break;
+      }
+      FindClose(h);
+      if (at + strlen(fd.cFileName) + 2 > MAX_PATH)
+         goto end;
+      strcpy(acc + at, fd.cFileName);
+      if (full[k] == '\\')
+      {
+         strcat(acc, "\\");
+         k++;
+      }
+      i = k;
+   }
+
+   {
+      int wn = MultiByteToWideChar(CP_ACP, 0, acc, -1, NULL, 0);
+      char *out;
+      if (wn <= 0 || !(w = (wchar_t*)malloc(wn * sizeof(wchar_t))))
+         goto end;
+      MultiByteToWideChar(CP_ACP, 0, acc, -1, w, wn);
+      out = utf16_to_utf8_string_alloc(w);
+      free(w);
+      if (out)
+      {
+         strlcpy(s, out, len);
+         free(out);
+         ok = true;
+      }
+   }
+end:
+   free(in);
+   return ok;
+}
 #endif
+
+
+static char *vfs_resolve_weak(char *s, size_t len)
+{
+/* No realpath() in these C libraries */
+#if defined(RARCH_CONSOLE) || defined(__WINRT__) || defined(_XBOX) \
+      || defined(PS2) || defined(PSP) || defined(VITA) \
+      || defined(__PS3__) || defined(__PSL1GHT__) || defined(ORBIS) \
+      || defined(_3DS) || defined(GEKKO) || defined(WIIU) \
+      || defined(HAVE_LIBNX)
+   (void)s;
+   (void)len;
+   return NULL;
+#elif defined(_WIN32)
+   /* full, head, real and joined in one block: four wide paths are
+    * too much for a thread's stack on the small targets */
+   wchar_t *full;
+   wchar_t *head;
+   wchar_t *real;
+   wchar_t *joined;
+   wchar_t *in;
+   char *out;
+   bool ok             = false;
+   size_t cut;
+   size_t r_len;
+   const wchar_t *tail = NULL;
+   if (!s || !*s)
+      return NULL;
+   /* the high bit: 95, 98 or ME */
+   if (GetVersion() & 0x80000000UL)
+      return vfs_win9x_resolve(s, len) ? s : NULL;
+   if (!(in = utf8_to_utf16_string_alloc(s)))
+      return NULL;
+   if (!(full = (wchar_t*)malloc(4 * PATH_MAX_LENGTH * sizeof(wchar_t))))
+   {
+      free(in);
+      return NULL;
+   }
+   head   = full + PATH_MAX_LENGTH;
+   real   = head + PATH_MAX_LENGTH;
+   joined = real + PATH_MAX_LENGTH;
+   /* Absolute and lexically resolved first: Windows resolves ".."
+    * before it reaches the file system anyway */
+   if (!_wfullpath(full, in, PATH_MAX_LENGTH))
+   {
+      free(in);
+      goto end;
+   }
+   free(in);
+   wcscpy(head, full);
+   cut = wcslen(full);
+   for (;;)
+   {
+      HANDLE h = CreateFileW(head, 0,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+            OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+      if (h != INVALID_HANDLE_VALUE)
+      {
+         r_len = vfs_win32_handle_path(h,
+               (head[1] == L':') ? head[0] : 0, real, PATH_MAX_LENGTH);
+         CloseHandle(h);
+         if (!r_len)
+            break;
+         tail = full + cut;
+         break;
+      }
+      /* Drop the last component */
+      while (cut > 0 && (full[cut - 1] == L'\\' || full[cut - 1] == L'/'))
+         cut--;
+      while (cut > 0 && full[cut - 1] != L'\\' && full[cut - 1] != L'/')
+         cut--;
+      if (cut == 0)
+         break;
+      wcsncpy(head, full, cut);
+      head[cut] = L'\0';
+   }
+   /* Nothing to resolve symlinks with (9x, a volume without a letter):
+    * the absolute, lexically resolved path is the answer */
+   if (!tail)
+      wcscpy(joined, full);
+   else
+   {
+      if (r_len + 1 + wcslen(tail) + 1 > PATH_MAX_LENGTH)
+         goto end;
+      wcscpy(joined, real);
+      if (*tail)
+      {
+         if (joined[r_len - 1] != L'\\')
+            wcscat(joined, L"\\");
+         wcscat(joined, tail);
+      }
+   }
+   if ((out = utf16_to_utf8_string_alloc(joined)))
+   {
+      strlcpy(s, out, len);
+      free(out);
+      ok = true;
+   }
+end:
+   free(full);
+   return ok ? s : NULL;
+#else
+   char head[PATH_MAX_LENGTH];
+   char joined[PATH_MAX_LENGTH];
+   size_t cut;
+   char *real_path = NULL;
+   if (!s || !*s || strlcpy(head, s, sizeof(head)) >= sizeof(head))
+      return NULL;
+   cut = strlen(head);
+   for (;;)
+   {
+      /* realpath() fails on a path that does not exist (yet): back
+       * one component at a time until a leading part does */
+      if ((real_path = realpath(head, NULL)))
+         break;
+      while (cut > 0 && s[cut - 1] == '/')
+         cut--;
+      while (cut > 0 && s[cut - 1] != '/')
+         cut--;
+      if (cut == 0)
+         break;
+      /* The leading part, without its closing slash unless it is the root */
+      head[cut > 1 ? cut - 1 : cut] = '\0';
+   }
+   if (!real_path)
+   {
+      /* No part of it exists: by its text alone */
+      if (strlcpy(joined, s, sizeof(joined)) >= sizeof(joined))
+         return NULL;
+   }
+   else
+   {
+      const char *tail = s + cut;
+      size_t _len      = strlcpy(joined, real_path, sizeof(joined));
+      free(real_path);
+      if (_len >= sizeof(joined))
+         return NULL;
+      if (*tail)
+      {
+         if (_len + 1 + strlen(tail) >= sizeof(joined))
+            return NULL;
+         if (_len == 0 || joined[_len - 1] != '/')
+            joined[_len++] = '/';
+         strlcpy(joined + _len, tail, sizeof(joined) - _len);
+      }
+   }
+   if (!path_resolve_lexical(joined, sizeof(joined)))
+      return NULL;
+   strlcpy(s, joined, len);
+   return s;
 #endif
+}
+
+
+int retro_vfs_resolve_path_impl(char *s, size_t len)
+{
+   return vfs_resolve_weak(s, len) ? 0 : -1;
+}
+
+int retro_vfs_file_get_real_path_impl(libretro_vfs_implementation_file *stream,
+      char *s, size_t len)
+{
+   if (!stream || !s || !len || stream->scheme != VFS_SCHEME_NONE)
+      return -1;
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   {
+      HANDLE handle = stream->fh;
+      const char *orig = stream->orig_path;
+      wchar_t *w;
+      char *out;
+      size_t n;
+      int ret = -1;
+      /* 95, 98 and ME: no links, and no name from a handle - the path
+       * it was opened by, made long and given its case on disk */
+      if (GetVersion() & 0x80000000UL)
+      {
+         if (!orig || strlcpy(s, orig, len) >= len)
+            return -1;
+         return vfs_win9x_resolve(s, len) ? 0 : -1;
+      }
+      if (!handle || handle == INVALID_HANDLE_VALUE)
+      {
+         if (!stream->fp)
+            return -1;
+         handle = (HANDLE)_get_osfhandle(_fileno(stream->fp));
+         if (handle == INVALID_HANDLE_VALUE)
+            return -1;
+      }
+      if (!(w = (wchar_t*)malloc(PATH_MAX_LENGTH * sizeof(wchar_t))))
+         return -1;
+      n = vfs_win32_handle_path(handle,
+            (orig && orig[0] && orig[1] == ':')
+            ? (wchar_t)(unsigned char)orig[0] : 0,
+            w, PATH_MAX_LENGTH);
+      if (n && (out = utf16_to_utf8_string_alloc(w)))
+      {
+         if (strlcpy(s, out, len) < len)
+            ret = 0;
+         free(out);
+      }
+      free(w);
+      return ret;
+   }
+#elif defined(_WIN32) || defined(RARCH_CONSOLE) || defined(PS2) \
+      || defined(PSP) || defined(VITA) || defined(__PS3__) \
+      || defined(__PSL1GHT__) || defined(ORBIS) || defined(_3DS) \
+      || defined(GEKKO) || defined(WIIU) || defined(HAVE_LIBNX)
+   return -1;
+#else
+   {
+      int fd = stream->fd;
+      if (fd < 0 && stream->fp)
+         fd = fileno(stream->fp);
+#if defined(__APPLE__) && defined(F_GETPATH)
+      /* the name the kernel has for the open file */
+      if (fd >= 0)
+      {
+         char *buf = (char*)malloc(PATH_MAX > 1024 ? PATH_MAX : 1024);
+         if (buf)
+         {
+            if (fcntl(fd, F_GETPATH, buf) != -1 && strlcpy(s, buf, len) < len)
+            {
+               free(buf);
+               return 0;
+            }
+            free(buf);
+         }
+      }
+#endif
+#if defined(__linux__)
+      /* /proc's link to the open file; a file since removed is named
+       * "... (deleted)" there, which is no path */
+      if (fd >= 0)
+      {
+         char link[32];
+         ssize_t r;
+         sprintf(link, "/proc/self/fd/%d", fd);
+         r = readlink(link, s, len - 1);
+         if (r > 0 && (size_t)r < len - 1 && s[0] == '/')
+         {
+            s[r] = '\0';
+            if (!(r > 10 && !strcmp(s + r - 10, " (deleted)")))
+               return 0;
+         }
+      }
+#endif
+      /* elsewhere, or with no /proc: the path it was opened by */
+      if (stream->orig_path)
+      {
+         char *r = realpath(stream->orig_path, NULL);
+         if (r)
+         {
+            size_t l = strlcpy(s, r, len);
+            free(r);
+            if (l < len)
+               return 0;
+         }
+      }
+      return -1;
+   }
+#endif
+}
 
 /* Allocation unit of the filesystem holding this file: the smallest span
  * retro_vfs_file_punch_hole_impl can actually free. 0 when unknown.
@@ -2286,21 +2945,18 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
  * system that cannot resolve these names. */
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    {
-      /* GetFinalPathNameByHandleW and GetVolumeInformationByHandleW are
-       * Vista and later. Importing them statically costs more than the
-       * feature is worth: the loader resolves imports before main, so a
-       * binary that names them will not start at all on 9x or XP, and
-       * mingw does not even declare them below _WIN32_WINNT 0x0600, which
-       * is what the i686 MXE build targets. Resolved by name instead, so
-       * older systems simply report "unknown" and skip sparse handling. */
-      typedef DWORD (WINAPI *final_path_t)(HANDLE, LPWSTR, DWORD, DWORD);
+      /* GetVolumeInformationByHandleW is Vista and later. Importing it
+       * statically costs more than the feature is worth: the loader
+       * resolves imports before main, so a binary that names it will not
+       * start at all on 9x or XP, and mingw does not even declare it
+       * below _WIN32_WINNT 0x0600, which is what the i686 MXE build
+       * targets. Resolved by name instead. */
       typedef BOOL  (WINAPI *vol_info_t)(HANDLE, LPWSTR, DWORD, LPDWORD,
             LPDWORD, LPDWORD, LPWSTR, DWORD);
       typedef BOOL  (WINAPI *vol_path_t)(LPCWSTR, LPWSTR, DWORD);
       typedef BOOL  (WINAPI *disk_free_t)(LPCWSTR, LPDWORD, LPDWORD,
             LPDWORD, LPDWORD);
 
-      static final_path_t p_final_path = NULL;
       static vol_info_t   p_vol_info   = NULL;
       static vol_path_t   p_vol_path   = NULL;
       static disk_free_t  p_disk_free  = NULL;
@@ -2310,7 +2966,6 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
       DWORD    bytes_per_sector    = 0;
       DWORD    tmp1                = 0;
       DWORD    tmp2                = 0;
-      DWORD    len;
       HANDLE   handle              = stream->fh;
       wchar_t *final_path;
       wchar_t  root[MAX_PATH + 1];
@@ -2324,8 +2979,6 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
          resolved = 1;
          if (k32)
          {
-            p_final_path = (final_path_t)GetProcAddress(k32,
-                  "GetFinalPathNameByHandleW");
             p_vol_info   = (vol_info_t)GetProcAddress(k32,
                   "GetVolumeInformationByHandleW");
             /* Wide GetVolumePathName is 2000 and later, and 9x does not
@@ -2338,7 +2991,7 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
          }
       }
 
-      if (!p_final_path || !p_vol_path || !p_disk_free)
+      if (!p_vol_path || !p_disk_free)
          return 0;
 
       if (!handle || handle == INVALID_HANDLE_VALUE)
@@ -2352,15 +3005,11 @@ int64_t retro_vfs_file_get_sparse_granularity_impl(
 
       /* The volume that matters is the one the file really lives on, so
        * the path has to be resolved through any junctions first. */
-      len = p_final_path(handle, NULL, 0, FILE_NAME_NORMALIZED);
-      if (len == 0)
-         return 0;
-
-      final_path = (wchar_t*)calloc(len + 1, sizeof(wchar_t));
+      final_path = (wchar_t*)malloc(PATH_MAX_LENGTH * sizeof(wchar_t));
       if (!final_path)
          return 0;
 
-      if (p_final_path(handle, final_path, len, FILE_NAME_NORMALIZED) == 0)
+      if (!vfs_win32_handle_path(handle, 0, final_path, PATH_MAX_LENGTH))
       {
          free(final_path);
          return 0;

@@ -579,3 +579,8 @@ int64_t path_get_free_space(const char *path)
    return -1;
 #endif
 }
+
+char *path_resolve_realpath_weak(char *s, size_t len)
+{
+   return (s && retro_vfs_resolve_path_impl(s, len) == 0) ? s : NULL;
+}

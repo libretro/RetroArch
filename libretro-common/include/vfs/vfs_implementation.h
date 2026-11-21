@@ -42,6 +42,45 @@ int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream, int
  * filestream_get_sparse_granularity. 0 when unknown. */
 int64_t retro_vfs_file_get_sparse_granularity_impl(libretro_vfs_implementation_file *stream);
 
+/**
+ * retro_vfs_file_get_real_path_impl:
+ * @stream : an open file
+ * @s      : output buffer, UTF-8
+ * @len    : size of @s
+ *
+ * Where @stream really is: past any symlink or junction, with long
+ * names and the case they have on disk where the system tells them
+ * (Windows Vista and later, macOS, Linux).  On Windows NT it is read
+ * from the handle through ntdll, as GetFinalPathNameByHandleW() would
+ * answer, but from NT 4.0 on and without reaching a device driver; on
+ * 95, 98 and ME, which have neither links nor a name for a handle, it
+ * is the path the file was opened by, made long.  Elsewhere the
+ * kernel's name for the file, or realpath() of the path it was opened
+ * by.
+ *
+ * Returns: 0 on success, -1 where it cannot tell (consoles, UWP, a
+ * volume without a drive letter, a buffer too small).
+ **/
+int retro_vfs_file_get_real_path_impl(libretro_vfs_implementation_file *stream,
+      char *s, size_t len);
+
+/**
+ * retro_vfs_resolve_path_impl:
+ * @s   : input and output buffer for a path, UTF-8
+ * @len : size of @s
+ *
+ * As std::filesystem::weakly_canonical: the longest leading part of @s
+ * that exists resolved as retro_vfs_file_get_real_path_impl() would
+ * resolve it, the rest (which need not exist) appended, and ".", ".."
+ * and repeated separators resolved by their text.  So a path about to
+ * be created is judged by where its existing directories really are.
+ * Where nothing can be resolved (9x has no links; a volume without a
+ * letter) the path is made absolute by its text alone.
+ *
+ * Returns: 0 on success, -1 on failure (and on consoles, UWP and Xbox).
+ **/
+int retro_vfs_resolve_path_impl(char *s, size_t len);
+
 /* Consumes stream even when reporting final I/O failure; do not retry close. */
 int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream);
 

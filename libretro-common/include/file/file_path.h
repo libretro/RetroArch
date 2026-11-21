@@ -232,11 +232,28 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks);
  * leading part that exists with its symlinks resolved, the rest (which
  * need not exist) appended and ".", ".." and repeated separators
  * resolved by their text.  A relative path is rebased on the current
- * working dir.  Built in cores as well as RetroArch.
+ * working dir.  Built in cores as well as RetroArch; it is in
+ * file_path_io.c, on retro_vfs_resolve_path_impl().
  *
  * @return @s if successful, NULL otherwise (and on consoles, UWP and Xbox).
  **/
 char *path_resolve_realpath_weak(char *s, size_t len);
+
+#if !defined(RARCH_CONSOLE) && !defined(_WIN32)
+/**
+ * path_resolve_lexical:
+ * @s                  : input and output buffer for path
+ * @len                : size of buffer
+ *
+ * Resolves ".", ".." and repeated slashes in @s by its text alone,
+ * rebasing a relative path on the current working directory; no
+ * component needs to exist.
+ *
+ * @return @s, or NULL when the result would not fit or a ".." would
+ * climb above the root.
+ **/
+char *path_resolve_lexical(char *s, size_t len);
+#endif
 
 /**
  * path_relative_to:

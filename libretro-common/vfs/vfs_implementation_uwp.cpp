@@ -766,6 +766,23 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
    return stream->orig_path;
 }
 
+/* Neither is answerable from inside the app container. */
+int retro_vfs_file_get_real_path_impl(libretro_vfs_implementation_file *stream,
+      char *s, size_t len)
+{
+   (void)stream;
+   (void)s;
+   (void)len;
+   return -1;
+}
+
+int retro_vfs_resolve_path_impl(char *s, size_t len)
+{
+   (void)s;
+   (void)len;
+   return -1;
+}
+
 int64_t retro_vfs_file_get_sparse_granularity_impl(
       libretro_vfs_implementation_file *stream)
 {

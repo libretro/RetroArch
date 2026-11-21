@@ -154,6 +154,24 @@ int main(void)
    snprintf(want, sizeof(want), "%s\\y", base);
    expect(in, want);
 
+   /* A directory given by its 8.3 name comes back by its long one */
+   snprintf(in, sizeof(in), "%s\\Long Directory Name", dir);
+   _mkdir(in);
+   {
+      char shrt[MAX_PATH];
+      DWORD n = GetShortPathNameA(in, shrt, sizeof(shrt));
+      if (n && n < sizeof(shrt) && strcmp(shrt, in))
+      {
+         snprintf(in, sizeof(in), "%s\\f", shrt);
+         snprintf(want, sizeof(want), "%s\\Long Directory Name\\f", base);
+         expect(in, want);
+      }
+      else
+         printf("[skip] no 8.3 name for '%s'\n", in);
+   }
+   snprintf(in, sizeof(in), "%s\\Long Directory Name", dir);
+   _rmdir(in);
+
    _rmdir(dir);
 #endif
 
