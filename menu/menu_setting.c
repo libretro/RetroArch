@@ -5789,6 +5789,194 @@ static size_t setting_get_string_representation_uint_rgui_aspect_ratio_lock(
 }
 #endif
 
+#ifdef HAVE_PIX16
+static size_t setting_get_string_representation_uint_pix16_button_style(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case PIX16_BUTTONS_PLAYSTATION:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_BUTTONS_PLAYSTATION),
+                  len);
+         case PIX16_BUTTONS_NINTENDO:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_BUTTONS_NINTENDO),
+                  len);
+         case PIX16_BUTTONS_XBOX:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_BUTTONS_XBOX),
+                  len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_uint_pix16_transition(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case PIX16_TRANSITION_SWIRL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_SWIRL),
+                  len);
+         case PIX16_TRANSITION_MOSAIC:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_MOSAIC),
+                  len);
+         case PIX16_TRANSITION_CRT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_CRT),
+                  len);
+         case PIX16_TRANSITION_ZOOM:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_ZOOM),
+                  len);
+         case PIX16_TRANSITION_IRIS:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_IRIS),
+                  len);
+         case PIX16_TRANSITION_WIPE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_WIPE),
+                  len);
+         case PIX16_TRANSITION_DISSOLVE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_DISSOLVE),
+                  len);
+         case PIX16_TRANSITION_SPLIT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_SPLIT),
+                  len);
+         case PIX16_TRANSITION_BLAST:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_BLAST),
+                  len);
+         case PIX16_TRANSITION_ROLL:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_ROLL),
+                  len);
+         case PIX16_TRANSITION_STATIC:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_STATIC),
+                  len);
+         case PIX16_TRANSITION_RANDOM:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_RANDOM),
+                  len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_uint_pix16_palette(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case PIX16_PALETTE_SIXTEEN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_SIXTEEN),
+                  len);
+         case PIX16_PALETTE_AMBER:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_AMBER),
+                  len);
+         case PIX16_PALETTE_GAMEBOY:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_GAMEBOY),
+                  len);
+         case PIX16_PALETTE_ICE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_ICE),
+                  len);
+         case PIX16_PALETTE_VAPORWAVE:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_VAPORWAVE),
+                  len);
+         case PIX16_PALETTE_SUNSET:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_SUNSET),
+                  len);
+         case PIX16_PALETTE_MONO:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_MONO),
+                  len);
+         case PIX16_PALETTE_CRIMSON:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_CRIMSON),
+                  len);
+         case PIX16_PALETTE_COBALT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_COBALT),
+                  len);
+         case PIX16_PALETTE_FOREST:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_FOREST),
+                  len);
+         case PIX16_PALETTE_PLUM:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_PLUM),
+                  len);
+         case PIX16_PALETTE_SAKURA:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_SAKURA),
+                  len);
+         case PIX16_PALETTE_OCEAN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_OCEAN),
+                  len);
+         case PIX16_PALETTE_COPPER:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_COPPER),
+                  len);
+         case PIX16_PALETTE_MIDNIGHT:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_MIDNIGHT),
+                  len);
+      }
+   }
+   return 0;
+}
+#endif
+
 static size_t setting_get_string_representation_uint_rgui_particle_effect(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -15035,6 +15223,13 @@ static const setting_desc_t menu_desc_7[] = {
 #include "../settings/settings_def_menu_scroll.h"
 };
 
+#ifdef HAVE_PIX16
+static const setting_desc_t menu_pix16_desc[] = {
+/* GENERATED: rows come from settings_def_pix16.h in order. */
+#include "../settings/settings_def_pix16.h"
+};
+#endif
+
 #if !defined(DINGUX)
 static const setting_desc_t menu_desc_8[] = {
 /* GENERATED: rows come from settings_def_rgui_aspect.h in order. */
@@ -18814,6 +19009,13 @@ static void settings_build_menu(
             ADD_DESC(menu_desc_11);
       }
 
+#ifdef HAVE_PIX16
+      if (string_is_equal(settings->arrays.menu_driver, "pix16"))
+      {
+            ADD_DESC(menu_pix16_desc);
+      }
+#endif
+
 #if defined(HAVE_XMB) || defined (HAVE_OZONE)
       if (     string_is_equal(settings->arrays.menu_driver, "xmb")
             || string_is_equal(settings->arrays.menu_driver, "ozone"))
@@ -21450,6 +21652,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { menu_desc_5, (uint16_t)ARRAY_SIZE(menu_desc_5) },
    { menu_desc_6, (uint16_t)ARRAY_SIZE(menu_desc_6) },
    { menu_desc_7, (uint16_t)ARRAY_SIZE(menu_desc_7) },
+#ifdef HAVE_PIX16
+   { menu_pix16_desc, (uint16_t)ARRAY_SIZE(menu_pix16_desc) },
+#endif
 #if !defined(DINGUX)
    { menu_desc_8, (uint16_t)ARRAY_SIZE(menu_desc_8) },
 #endif

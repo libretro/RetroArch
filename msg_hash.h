@@ -11637,6 +11637,132 @@ enum msg_hash_enums
 #undef S_FLOAT_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 #undef SETTINGS_DEF_ENUM_PASS
+   /* GENERATED REGION: pix16 menu group enum rows (see settings/settings_def_pix16.h). */
+#define SETTINGS_DEF_ENUM_PASS
+#define SETTINGS_DEF_STRINGS_PASS
+#define S_BOOL(f, T, n, d, sd, df, c, us, sub) MENU_LABEL(T),
+#define S_BOOL_NS(f, T, n, d, sd, df, c, us) MENU_LABEL(T),
+#define S_UINT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_UINT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_INT(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LABEL(T),
+#define S_INT_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LABEL(T),
+#define S_FLOAT(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LABEL(T),
+#define S_FLOAT_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LABEL(T),
+#define S_STRING(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_DIR(f, T, n, d, el, sd, c, sta, us, sub) MENU_LABEL(T),
+#define S_DIR_NS(f, T, n, d, el, sd, c, sta, us) MENU_LABEL(T),
+#define S_STRING_P(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_STRING_P_NS(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_PATH(f, T, n, d, sd, c, vals, rp, ui, us, sub) MENU_LABEL(T),
+#define S_PATH_NS(f, T, n, d, sd, c, vals, rp, ui, us) MENU_LABEL(T),
+#define S_PATH_DS(f, T, n, df2, sd, c, vals, rp, ui, us, sub) MENU_LABEL(T),
+#define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) MENU_LABEL(T),
+#define S_ACTION(T, n, us, sub) MENU_LABEL(T),
+#define S_ACTION_NS(T, n, us) MENU_LABEL(T),
+#define S_BOOL_EX(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_BOOL_EX_NS(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_UINT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_UINT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_INT_EX(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_INT_EX_NS(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_FLOAT_EX(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LABEL(T),
+#define S_FLOAT_EX_NS(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) MENU_LABEL(T),
+#define S_ACTION_EX(T, n, sd, ok, rp, c, us, sub) MENU_LABEL(T),
+#define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) MENU_LABEL(T),
+#define S_BOOL_H(f, T, n, d, sd, df, c, us, sub) MENU_LBL_H(T),
+#define S_UINT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_BOOL_NS_H(f, T, n, d, sd, df, c, us) MENU_LBL_H(T),
+#define S_INT_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_FLOAT_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us, sub) MENU_LBL_H(T),
+#define S_UINT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_INT_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, us) MENU_LBL_H(T),
+#define S_FLOAT_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, us) MENU_LBL_H(T),
+#define S_STRING_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_DIR_H(f, T, n, d, el, sd, c, sta, us, sub) MENU_LBL_H(T),
+#define S_DIR_NS_H(f, T, n, d, el, sd, c, sta, us) MENU_LBL_H(T),
+#define S_STRING_P_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_STRING_P_NS_H(f, T, n, d, sd, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_PATH_H(f, T, n, d, sd, c, vals, rp, ui, us, sub) MENU_LBL_H(T),
+#define S_PATH_NS_H(f, T, n, d, sd, c, vals, rp, ui, us) MENU_LBL_H(T),
+#define S_PATH_DS_H(f, T, n, df2, sd, c, vals, rp, ui, us, sub) MENU_LBL_H(T),
+#define S_PATH_DS_NS_H(f, T, n, df2, sd, c, vals, rp, ui, us) MENU_LBL_H(T),
+#define S_ACTION_H(T, n, us, sub) MENU_LBL_H(T),
+#define S_ACTION_NS_H(T, n, us) MENU_LBL_H(T),
+#define S_BOOL_EX_H(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_BOOL_EX_NS_H(f, T, n, d, sd, df, c, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_UINT_EX_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_UINT_EX_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_INT_EX_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_INT_EX_NS_H(f, T, n, d, sd, df, c, mn, mx, st, ob, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_FLOAT_EX_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us, sub) MENU_LBL_H(T),
+#define S_FLOAT_EX_NS_H(f, T, n, d, rnd, sd, df, c, mn, mx, st, ok, rp, sta, sel, lf, rt, ui, us) MENU_LBL_H(T),
+#define S_ACTION_EX_H(T, n, sd, ok, rp, c, us, sub) MENU_LBL_H(T),
+#define S_ACTION_EX_NS_H(T, n, sd, ok, rp, c, us) MENU_LBL_H(T),
+#include "settings/settings_def_pix16.h"
+#undef S_BOOL
+#undef S_BOOL_NS
+#undef S_UINT
+#undef S_UINT_NS
+#undef S_INT
+#undef S_INT_NS
+#undef S_FLOAT
+#undef S_FLOAT_NS
+#undef S_STRING
+#undef S_STRING_NS
+#undef S_STRING_H
+#undef S_STRING_NS_H
+#undef S_DIR
+#undef S_DIR_NS
+#undef S_DIR_H
+#undef S_DIR_NS_H
+#undef S_STRING_P
+#undef S_STRING_P_NS
+#undef S_STRING_P_H
+#undef S_STRING_P_NS_H
+#undef S_PATH
+#undef S_PATH_NS
+#undef S_PATH_H
+#undef S_PATH_NS_H
+#undef S_PATH_DS
+#undef S_PATH_DS_NS
+#undef S_PATH_DS_H
+#undef S_PATH_DS_NS_H
+#undef S_ACTION
+#undef S_ACTION_NS
+#undef S_ACTION_H
+#undef S_ACTION_NS_H
+#undef S_BOOL_EX
+#undef S_BOOL_EX_NS
+#undef S_BOOL_EX_H
+#undef S_BOOL_EX_NS_H
+#undef S_UINT_EX
+#undef S_UINT_EX_NS
+#undef S_UINT_EX_H
+#undef S_UINT_EX_NS_H
+#undef S_INT_EX
+#undef S_INT_EX_NS
+#undef S_INT_EX_H
+#undef S_INT_EX_NS_H
+#undef S_FLOAT_EX
+#undef S_FLOAT_EX_NS
+#undef S_FLOAT_EX_H
+#undef S_FLOAT_EX_NS_H
+#undef S_ACTION_EX
+#undef S_ACTION_EX_NS
+#undef S_ACTION_EX_H
+#undef S_ACTION_EX_NS_H
+#undef S_BOOL_H
+#undef S_UINT_H
+#undef S_BOOL_NS_H
+#undef S_INT_H
+#undef S_FLOAT_H
+#undef S_UINT_NS_H
+#undef S_INT_NS_H
+#undef S_FLOAT_NS_H
+#undef SETTINGS_DEF_STRINGS_PASS
+#undef SETTINGS_DEF_ENUM_PASS
    /* GENERATED REGION: RGUI transparency setting enum rows (see settings/settings_def_menu_rgui_transparency.h). */
 #define SETTINGS_DEF_ENUM_PASS
 #define SETTINGS_DEF_STRINGS_PASS
@@ -32209,6 +32335,37 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
    MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
 
+   MENU_ENUM_LABEL_VALUE_PIX16_BUTTONS_PLAYSTATION,
+   MENU_ENUM_LABEL_VALUE_PIX16_BUTTONS_NINTENDO,
+   MENU_ENUM_LABEL_VALUE_PIX16_BUTTONS_XBOX,
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_SWIRL,
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_MOSAIC,
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_CRT,
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_ZOOM,
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_IRIS,
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_WIPE,
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_DISSOLVE,
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_SPLIT,
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_BLAST,
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_ROLL,
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_STATIC,
+   MENU_ENUM_LABEL_VALUE_PIX16_TRANSITION_RANDOM,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_SIXTEEN,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_AMBER,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_GAMEBOY,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_ICE,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_VAPORWAVE,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_SUNSET,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_MONO,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_CRIMSON,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_COBALT,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_FOREST,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_PLUM,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_SAKURA,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_OCEAN,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_COPPER,
+   MENU_ENUM_LABEL_VALUE_PIX16_PALETTE_MIDNIGHT,
+
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
    MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT,
@@ -35106,6 +35263,138 @@ enum msg_hash_enums
    MENU_LABEL(NFS_CLIENT_READAHEAD),
    MENU_LABEL(NFS_CLIENT_BROWSE),
 #endif
+
+   /* pix16 menu driver */
+   MSG_PIX16_HISTORY,
+   MSG_PIX16_FAVORITES,
+   MSG_PIX16_TAB_MAIN,
+   MSG_PIX16_SCREEN,
+   MSG_PIX16_SCREEN_43,
+   MSG_PIX16_SCREEN_WIDE,
+   MSG_PIX16_SCREEN_43_FULL,
+   MSG_PIX16_SCREEN_WIDE_FULL,
+   MSG_PIX16_TAB_SETUP,
+   MSG_PIX16_TAB_LISTS,
+   MSG_PIX16_TAB_NET,
+   MSG_PIX16_TAB_BACK,
+   MSG_PIX16_GUIDE_OK,
+   MSG_PIX16_GUIDE_BACK,
+   MSG_PIX16_GUIDE_OPEN,
+   MSG_PIX16_GUIDE_PAGE,
+   MSG_PIX16_GUIDE_TABS,
+   MSG_PIX16_GUIDE_PLAY,
+   MSG_PIX16_GUIDE_MORE,
+   MSG_PIX16_GUIDE_RESUME,
+   MSG_PIX16_GUIDE_OPTIONS,
+   MSG_PIX16_GUIDE_EXIT,
+   MSG_PIX16_GUIDE_ADD_SYSTEM,
+   MSG_PIX16_GUIDE_SELECT,
+   MSG_PIX16_NO_ITEMS,
+   MSG_PIX16_NO_PLAYLISTS,
+   MSG_PIX16_YES,
+   MSG_PIX16_NO,
+   MSG_PIX16_ARCADE,
+   MSG_PIX16_PC_ENGINE,
+   MSG_PIX16_CARTRIDGE,
+   MSG_PIX16_CD_ROM,
+   MSG_PIX16_ABOUT,
+   MSG_PIX16_ABOUT_HELP,
+   MSG_PIX16_ABOUT_RETROARCH,
+   MSG_PIX16_ABOUT_VIDEO_DRIVER,
+   MSG_PIX16_ABOUT_RESOLUTION,
+   MSG_PIX16_ABOUT_CRT_SWITCHRES,
+   MSG_PIX16_ABOUT_AUDIO_DRIVER,
+   MSG_PIX16_ABOUT_INPUT_DRIVER,
+   MSG_PIX16_ABOUT_CONTROLLER,
+   MSG_PIX16_OFF,
+   MSG_PIX16_ON,
+   MSG_PIX16_ON_SUPER,
+   MSG_PIX16_NONE,
+   MSG_PIX16_REMOVE_FROM_FAVORITES,
+   MSG_PIX16_PAUSED,
+   MSG_PIX16_RESUME_GAME,
+   MSG_PIX16_QUIT_GAME,
+   MSG_PIX16_SAVE_STATE,
+   MSG_PIX16_LOAD_STATE,
+   MSG_PIX16_STATE_SAVED,
+   MSG_PIX16_AUTO,
+   MSG_PIX16_SLOT,
+   MSG_PIX16_RUN,
+   MSG_PIX16_LOAD_SAVE,
+   MSG_PIX16_EXIT_TITLE,
+   MSG_PIX16_QUIT_TITLE,
+   MSG_PIX16_EXIT_CONFIRM,
+   MSG_PIX16_QUIT_CONFIRM,
+   MSG_PIX16_PUSH_ANY_BUTTON,
+   MSG_PIX16_BIOS_DETECTED,
+   MSG_PIX16_BIOS_VIDEO,
+   MSG_PIX16_BIOS_CONTROLLER,
+   MSG_PIX16_BIOS_MEMORY_CARD,
+   MSG_PIX16_BIOS_OK,
+   MSG_PIX16_BIOS_SCANNING,
+   MSG_PIX16_BIOS_COUNT,
+   MSG_PIX16_BIOS_BOOTING,
+   MSG_PIX16_BIOS_LOADING,
+   MSG_PIX16_INFO_TITLE,
+   MSG_PIX16_INFO_BUILT,
+   MSG_PIX16_INFO_MENU,
+   MSG_PIX16_INFO_OS,
+   MSG_PIX16_INFO_CPU,
+   MSG_PIX16_INFO_THREADS,
+   MSG_PIX16_INFO_MEMORY,
+   MSG_PIX16_INFO_VIDEO,
+   MSG_PIX16_INFO_DISPLAY,
+   MSG_PIX16_INFO_AUDIO,
+   MSG_PIX16_INFO_INPUT,
+   MSG_PIX16_INFO_PAD,
+   MSG_PIX16_INFO_NOT_CONNECTED,
+   MSG_PIX16_INFO_CORES,
+   MSG_PIX16_INFO_INSTALLED,
+   MSG_PIX16_WIZ_TITLE,
+   MSG_PIX16_WIZ_STEP,
+   MSG_PIX16_WIZ_Q_CORE,
+   MSG_PIX16_WIZ_Q_SYSTEM,
+   MSG_PIX16_WIZ_Q_PLACE,
+   MSG_PIX16_WIZ_Q_SOURCE,
+   MSG_PIX16_WIZ_Q_DAT_FILE,
+   MSG_PIX16_WIZ_Q_GAME,
+   MSG_PIX16_WIZ_Q_FOLDER,
+   MSG_PIX16_WIZ_Q_DAT,
+   MSG_PIX16_WIZ_Q_BIOS,
+   MSG_PIX16_WIZ_Q_CONFIRM,
+   MSG_PIX16_WIZ_DOWNLOAD,
+   MSG_PIX16_WIZ_NO_CORES,
+   MSG_PIX16_WIZ_TYPE_NAME,
+   MSG_PIX16_WIZ_SYSTEM_NAME,
+   MSG_PIX16_WIZ_HOME,
+   MSG_PIX16_WIZ_INSIDE_ARCADE,
+   MSG_PIX16_WIZ_INSIDE,
+   MSG_PIX16_WIZ_SCAN_FOLDER,
+   MSG_PIX16_WIZ_ONE_GAME,
+   MSG_PIX16_WIZ_START_FOLDER,
+   MSG_PIX16_WIZ_USE_FOLDER,
+   MSG_PIX16_WIZ_FILES,
+   MSG_PIX16_WIZ_READING,
+   MSG_PIX16_WIZ_NO_DAT,
+   MSG_PIX16_WIZ_PICK_DAT,
+   MSG_PIX16_WIZ_MORE,
+   MSG_PIX16_WIZ_PUT_THEM_IN,
+   MSG_PIX16_WIZ_SYSTEM_FOLDER,
+   MSG_PIX16_WIZ_CHECK_AGAIN,
+   MSG_PIX16_WIZ_CONTINUE,
+   MSG_PIX16_WIZ_KEY_CORE,
+   MSG_PIX16_WIZ_KEY_SYSTEM,
+   MSG_PIX16_WIZ_KEY_WHERE,
+   MSG_PIX16_WIZ_KEY_FOLDER,
+   MSG_PIX16_WIZ_KEY_GAME,
+   MSG_PIX16_WIZ_KEY_NAMES,
+   MSG_PIX16_WIZ_FILE_NAMES,
+   MSG_PIX16_WIZ_ADD,
+   MSG_PIX16_WIZ_THIS_COMPUTER,
+   MSG_PIX16_WIZ_NO_PLAYLIST_DIR,
+   MSG_PIX16_WIZ_PLAYLIST_FAILED,
+   MSG_PIX16_WIZ_SCANNING,
+   MSG_PIX16_WIZ_ADDED,
 
    MSG_LAST,
 
