@@ -666,6 +666,11 @@ typedef struct
       d3d11_texture_t tex[3];
       D3D11Texture2D copy;
       D3D11ShaderResourceView copy_view;
+      /* The view the target was last read through, and what of it,
+       * kept from frame to frame; dropped before the swap chain's
+       * buffers are resized */
+      D3D11ShaderResourceView target_view;
+      D3D11Resource target_res;
       /* One constant buffer a pass, made with the images; the halving
        * pass's, and the composite's, written each time */
       D3D11Buffer params[MENU_BLUR_PASSES];
@@ -1274,6 +1279,9 @@ static void d3d11_bloom_free(d3d11_video_t *d3d11)
    Release(d3d11->blur.blend);
    Release(d3d11->blur.copy_view);
    Release(d3d11->blur.copy);
+   Release(d3d11->blur.target_view);
+   d3d11->blur.target_view = NULL;
+   d3d11->blur.target_res  = NULL;
 }
 
 /* The glow's shader, which the blur draws with too */
@@ -1512,14 +1520,22 @@ static bool gfx_display_d3d11_blur_rect(void *data, unsigned video_dims,
          && !x0 && !y0
          && (UINT)x1 == desc.Width && (UINT)y1 == desc.Height)
    {
-      D3D11_SHADER_RESOURCE_VIEW_DESC view;
-      view.Format                    = rt_desc.Format;
-      view.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
-      view.Texture2D.MostDetailedMip = rt_desc.Texture2D.MipSlice;
-      view.Texture2D.MipLevels       = 1;
-      if (FAILED(d3d11->device->lpVtbl->CreateShaderResourceView(
-                  d3d11->device, res, &view, &src)))
-         src = NULL;
+      if (res != d3d11->blur.target_res || !d3d11->blur.target_view)
+      {
+         D3D11_SHADER_RESOURCE_VIEW_DESC view;
+         view.Format                    = rt_desc.Format;
+         view.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
+         view.Texture2D.MostDetailedMip = rt_desc.Texture2D.MipSlice;
+         view.Texture2D.MipLevels       = 1;
+         Release(d3d11->blur.target_view);
+         d3d11->blur.target_view = NULL;
+         d3d11->blur.target_res  = NULL;
+         if (SUCCEEDED(d3d11->device->lpVtbl->CreateShaderResourceView(
+                     d3d11->device, res, &view, &d3d11->blur.target_view)))
+            d3d11->blur.target_res = res;
+      }
+      if ((src = d3d11->blur.target_view))
+         src->lpVtbl->AddRef(src);
    }
    if (!src && !(src = d3d11_blur_copy(d3d11, tex, &desc, rt_desc.Format,
                x0, y0, rect)))
@@ -4847,10 +4863,10 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    desc.BufferDesc.RefreshRate.Numerator   = 60;
    desc.BufferDesc.RefreshRate.Denominator = 1;
 #endif
-   desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-#ifdef HAVE_RECORD_PYROWAVE_D3D11
-   desc.BufferUsage                       |= DXGI_USAGE_SHADER_INPUT;
-#endif
+   /* Shader input too: the backdrop blur and the PyroWave capture read
+    * the buffer in place */
+   desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT
+                                           | DXGI_USAGE_SHADER_INPUT;
 #ifdef HAVE_WINDOW
    desc.OutputWindow                       = hwnd;
 #endif
@@ -4916,6 +4932,10 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
             break;
       }
    }
+
+   /* Feature level 9 cannot sample a swap chain's buffer */
+   if (d3d11->supportedFeatureLevel < D3D_FEATURE_LEVEL_10_0)
+      desc.BufferUsage &= ~DXGI_USAGE_SHADER_INPUT;
 
    d3d11->device->lpVtbl->QueryInterface(
          d3d11->device, uuidof(IDXGIDevice), (void**)&dxgiDevice);
@@ -5012,7 +5032,14 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
       if (FAILED(dxgiFactory->lpVtbl->CreateSwapChain(
                   dxgiFactory, (IUnknown*)d3d11->device,
                   &desc, (IDXGISwapChain**)&d3d11->swapChain)))
-         return false;
+      {
+         /* Last, buffers only drawn into: the blur then copies */
+         desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+         if (FAILED(dxgiFactory->lpVtbl->CreateSwapChain(
+                     dxgiFactory, (IUnknown*)d3d11->device,
+                     &desc, (IDXGISwapChain**)&d3d11->swapChain)))
+            return false;
+      }
    }
 
 #ifdef HAVE_WINDOW
@@ -8193,6 +8220,10 @@ static bool d3d11_gfx_frame_body(
 #ifdef HAVE_RECORD_PYROWAVE_D3D11
       video_d3d11_pyrowave_source_detach(d3d11);
 #endif
+      /* The blur's view of the buffer is a reference to it */
+      Release(d3d11->blur.target_view);
+      d3d11->blur.target_view = NULL;
+      d3d11->blur.target_res  = NULL;
 
 #ifdef HAVE_DXGI_HDR
       /* Unbind all render targets before ResizeBuffers â€”

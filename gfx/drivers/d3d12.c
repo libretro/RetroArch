@@ -673,6 +673,10 @@ typedef struct
       DXGI_FORMAT                 current_rt_format;
 #endif
       D3D12_CPU_DESCRIPTOR_HANDLE desc_handles[2];
+      /* Each buffer's SRV, slots of their own in the SRV heap, which
+       * the backdrop blur reads the buffer through */
+      D3D12_CPU_DESCRIPTOR_HANDLE srv_cpu[2];
+      D3D12_GPU_DESCRIPTOR_HANDLE srv_gpu[2];
       D3D12_VIEWPORT              viewport;
       D3D12_RECT                  scissorRect;
       float                       clearcolor[4];
@@ -6094,10 +6098,28 @@ static void d3d12_gfx_free(void* data)
    free(d3d12);
 }
 
+/* The swap chain's buffers, and their RTVs and SRVs in their slots;
+ * nothing may be using the old ones */
+static void d3d12_chain_buffers(d3d12_video_t *d3d12)
+{
+   unsigned i;
+   for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
+   {
+      d3d12->chain.handle->lpVtbl->GetBuffer(d3d12->chain.handle, i,
+            uuidof(ID3D12Resource), (void**)&d3d12->chain.renderTargets[i]);
+      d3d12->device->lpVtbl->CreateRenderTargetView(d3d12->device,
+            (ID3D12Resource*)d3d12->chain.renderTargets[i], NULL,
+            d3d12->chain.desc_handles[i]);
+      if (d3d12->chain.srv_cpu[i].ptr)
+         d3d12->device->lpVtbl->CreateShaderResourceView(d3d12->device,
+               (ID3D12Resource*)d3d12->chain.renderTargets[i], NULL,
+               d3d12->chain.srv_cpu[i]);
+   }
+}
+
 static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
       int width, int height, void* corewindow)
 {
-   unsigned i;
    HRESULT hr;
    HWND hwnd                               = (HWND)corewindow;
 #ifdef __WINRT__
@@ -6142,7 +6164,9 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 #endif
 
    desc.BufferCount          = countof(d3d12->chain.renderTargets);
-   desc.BufferUsage          = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+   /* Shader input too: the backdrop blur reads the buffer in place */
+   desc.BufferUsage          = DXGI_USAGE_RENDER_TARGET_OUTPUT
+                             | DXGI_USAGE_SHADER_INPUT;
 #ifdef __WINRT__
    desc.Width                = width;
    desc.Height               = height;
@@ -6256,12 +6280,7 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
 
    d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
 
-   for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
-   {
-      d3d12->chain.handle->lpVtbl->GetBuffer(d3d12->chain.handle, i, uuidof(ID3D12Resource), (void**)&d3d12->chain.renderTargets[i]);
-      d3d12->device->lpVtbl->CreateRenderTargetView(
-            d3d12->device, (ID3D12Resource*)d3d12->chain.renderTargets[i], NULL, d3d12->chain.desc_handles[i]);
-   }
+   d3d12_chain_buffers(d3d12);
 
 #ifdef HAVE_DXGI_HDR
    memset(&d3d12->chain.back_buffer,
@@ -6594,6 +6613,18 @@ static void d3d12_init_descriptors(d3d12_video_t* d3d12)
             + d3d12->desc.srv_heap.gpu.ptr
             + i * SLANG_NUM_BINDINGS * d3d12->desc.srv_heap.stride
          : 0;
+
+   /* The swap chain's buffers' SRVs, after the passes' tables, which
+    * sit at the start of the heap */
+   for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
+   {
+      d3d12->chain.srv_cpu[i] =
+         d3d12_descriptor_heap_slot_alloc(&d3d12->desc.srv_heap);
+      d3d12->chain.srv_gpu[i].ptr = d3d12->chain.srv_cpu[i].ptr
+         ? d3d12->chain.srv_cpu[i].ptr - d3d12->desc.srv_heap.cpu.ptr
+            + d3d12->desc.srv_heap.gpu.ptr
+         : 0;
+   }
 }
 
    static INLINE D3D12_GPU_DESCRIPTOR_HANDLE
@@ -9286,6 +9317,7 @@ static bool gfx_display_d3d12_blur_rect(void *data, unsigned video_dims,
    D3D12GraphicsCommandList cmd;
    D3D12Resource target_res;
    d3d12_texture_t *src;
+   d3d12_texture_t buffer;
    DXGI_FORMAT format;
    unsigned i, slot, blur_size, rect, target_w, target_h;
    float params[4], factor[4];
@@ -9372,11 +9404,25 @@ static bool gfx_display_d3d12_blur_rect(void *data, unsigned video_dims,
    }
    cmd = d3d12->queue.cmd;
 
-   /* The target read in place where it is an image of the driver's
-    * and drawn whole; else the rect copied out of it */
-   if (     d3d12->bloom.target_tex && !x0 && !y0
-         && (unsigned)x1 == target_w && (unsigned)y1 == target_h)
-      src = d3d12->bloom.target_tex;
+   /* The target read in place where it is drawn whole: an image of
+    * the driver's, or the swap chain's buffer through its SRV; else the
+    * rect copied out of it */
+   if (     !x0 && !y0
+         && (unsigned)x1 == target_w && (unsigned)y1 == target_h
+         && (d3d12->bloom.target_tex
+            || d3d12->chain.srv_cpu[d3d12->chain.frame_index].ptr))
+   {
+      if (d3d12->bloom.target_tex)
+         src = d3d12->bloom.target_tex;
+      else
+      {
+         memset(&buffer, 0, sizeof(buffer));
+         buffer.handle            = target_res;
+         buffer.gpu_descriptor[0] =
+            d3d12->chain.srv_gpu[d3d12->chain.frame_index];
+         src                      = &buffer;
+      }
+   }
    else
    {
       D3D12_TEXTURE_COPY_LOCATION dst_loc, src_loc;
@@ -10571,14 +10617,7 @@ static bool d3d12_gfx_frame_body(
                   swapchain_flags);
 #endif
 
-            for (i = 0; i < countof(d3d12->chain.renderTargets); i++)
-            {
-               d3d12->chain.handle->lpVtbl->GetBuffer(d3d12->chain.handle, i,
-                     uuidof(ID3D12Resource), (void**)&d3d12->chain.renderTargets[i]);
-               d3d12->device->lpVtbl->CreateRenderTargetView(
-                     d3d12->device, (ID3D12Resource*)d3d12->chain.renderTargets[i],
-                     NULL, d3d12->chain.desc_handles[i]);
-            }
+            d3d12_chain_buffers(d3d12);
 
             d3d12->chain.viewport.Width         = video_width;
             d3d12->chain.viewport.Height        = video_height;

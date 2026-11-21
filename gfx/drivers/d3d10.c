@@ -292,6 +292,11 @@ typedef struct
       d3d10_texture_t tex[3];
       D3D10Texture2D copy;
       D3D10ShaderResourceView copy_view;
+      /* The view the target was last read through, and what of it,
+       * kept from frame to frame; dropped before the swap chain's
+       * buffers are resized */
+      D3D10ShaderResourceView target_view;
+      D3D10Resource target_res;
       /* One constant buffer a pass, made with the images; the halving
        * pass's, and the composite's, written each time */
       D3D10Buffer params[MENU_BLUR_PASSES];
@@ -1201,6 +1206,9 @@ static void d3d10_bloom_free(d3d10_video_t *d3d10)
    Release(d3d10->blur.blend);
    Release(d3d10->blur.copy_view);
    Release(d3d10->blur.copy);
+   Release(d3d10->blur.target_view);
+   d3d10->blur.target_view = NULL;
+   d3d10->blur.target_res  = NULL;
 }
 
 /* The glow's shader, which the blur draws with too */
@@ -1439,14 +1447,22 @@ static bool gfx_display_d3d10_blur_rect(void *data, unsigned video_dims,
          && !x0 && !y0
          && (UINT)x1 == desc.Width && (UINT)y1 == desc.Height)
    {
-      D3D10_SHADER_RESOURCE_VIEW_DESC view;
-      view.Format                    = rt_desc.Format;
-      view.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
-      view.Texture2D.MostDetailedMip = rt_desc.Texture2D.MipSlice;
-      view.Texture2D.MipLevels       = 1;
-      if (FAILED(d3d10->device->lpVtbl->CreateShaderResourceView(
-                  d3d10->device, res, &view, &src)))
-         src = NULL;
+      if (res != d3d10->blur.target_res || !d3d10->blur.target_view)
+      {
+         D3D10_SHADER_RESOURCE_VIEW_DESC view;
+         view.Format                    = rt_desc.Format;
+         view.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
+         view.Texture2D.MostDetailedMip = rt_desc.Texture2D.MipSlice;
+         view.Texture2D.MipLevels       = 1;
+         Release(d3d10->blur.target_view);
+         d3d10->blur.target_view = NULL;
+         d3d10->blur.target_res  = NULL;
+         if (SUCCEEDED(d3d10->device->lpVtbl->CreateShaderResourceView(
+                     d3d10->device, res, &view, &d3d10->blur.target_view)))
+            d3d10->blur.target_res = res;
+      }
+      if ((src = d3d10->blur.target_view))
+         src->lpVtbl->AddRef(src);
    }
    if (!src && !(src = d3d10_blur_copy(d3d10, tex, &desc, rt_desc.Format,
                x0, y0, rect)))
@@ -3589,7 +3605,9 @@ static bool d3d10_init_swapchain(d3d10_video_t *d3d10,
    desc.BufferDesc.Format                  = DXGI_FORMAT_R8G8B8A8_UNORM;
    desc.BufferDesc.RefreshRate.Numerator   = 60;
    desc.BufferDesc.RefreshRate.Denominator = 1;
-   desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+   /* Shader input too: the backdrop blur reads the buffer in place */
+   desc.BufferUsage                        = DXGI_USAGE_RENDER_TARGET_OUTPUT
+                                           | DXGI_USAGE_SHADER_INPUT;
 #ifdef HAVE_WINDOW
    desc.OutputWindow                       = (HWND)corewindow;
 #endif
@@ -3602,12 +3620,17 @@ static bool d3d10_init_swapchain(d3d10_video_t *d3d10,
    flags                                  |= D3D10_CREATE_DEVICE_DEBUG;
 #endif
 
-   if (FAILED(D3D10CreateDeviceAndSwapChain(
+   if (SUCCEEDED(D3D10CreateDeviceAndSwapChain(
                (IDXGIAdapter*)d3d10->adapter, D3D10_DRIVER_TYPE_HARDWARE,
                NULL, flags, D3D10_SDK_VERSION, &desc,
                (IDXGISwapChain**)&d3d10->swapChain, &d3d10->device)))
-      return false;
-   return true;
+      return true;
+   /* Buffers only drawn into: the blur then copies */
+   desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+   return SUCCEEDED(D3D10CreateDeviceAndSwapChain(
+               (IDXGIAdapter*)d3d10->adapter, D3D10_DRIVER_TYPE_HARDWARE,
+               NULL, flags, D3D10_SDK_VERSION, &desc,
+               (IDXGISwapChain**)&d3d10->swapChain, &d3d10->device));
 }
 
 static void *d3d10_gfx_init(const video_info_t* video)
@@ -5169,6 +5192,10 @@ static bool d3d10_gfx_frame(
       D3D10Texture2D backBuffer = NULL;
 
       Release(d3d10->renderTargetView);
+      /* The blur's view of the buffer is a reference to it */
+      Release(d3d10->blur.target_view);
+      d3d10->blur.target_view = NULL;
+      d3d10->blur.target_res  = NULL;
       if (     FAILED(DXGIResizeBuffers(d3d10->swapChain,
                      0, 0, 0, (DXGI_FORMAT)0, 0))
             || FAILED(d3d10->swapChain->lpVtbl->GetBuffer(d3d10->swapChain,
