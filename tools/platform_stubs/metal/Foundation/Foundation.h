@@ -116,6 +116,7 @@ __attribute__((objc_root_class))
 + (id)stringWithUTF8String:(const char *)s;
 + (id)stringWithFormat:(NSString *)fmt, ...;
 + (id)stringWithCString:(const char *)s encoding:(NSUInteger)e;
++ (id)stringWithContentsOfFile:(NSString *)path encoding:(NSUInteger)e error:(NSError **)err;
 - (id)initWithUTF8String:(const char *)s;
 - (id)initWithBytes:(const void *)b length:(NSUInteger)l encoding:(NSUInteger)e;
 - (id)initWithFormat:(NSString *)fmt, ...;

@@ -103,6 +103,11 @@ jobs:
         fi
         exit "$rc"
 
+    - name: Metal viewer shader colour and native MSL compilation
+      run: |
+        python3 samples/gfx/threaded_video/metal_viewer_colour.py
+        python3 samples/gfx/threaded_video/metal_viewer_pixels.py --native
+
     - name: iCloud Drive cloud sync driver
       run: |
         set -o pipefail

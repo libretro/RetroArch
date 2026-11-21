@@ -423,7 +423,7 @@ static void check_unread_samplers(void)
 
 /* --- the lane ------------------------------------------------------- */
 
-static void check_viewer_process(void)
+static void check_viewer_process(enum rarch_shader_type type, unsigned version)
 {
    static struct video_shader shader;
    semantics_map_t map;
@@ -433,6 +433,7 @@ static void check_viewer_process(void)
    unsigned i, j, found = 0;
    memset(&map, 0, sizeof(map));
    memset(&sem, 0, sizeof(sem));
+   memset(&shader, 0, sizeof(shader));
    shader.passes = 1;
    strcpy(shader.pass[0].source.path, "viewer-push.slang");
    map.viewer_colour = true;
@@ -443,7 +444,7 @@ static void check_viewer_process(void)
    map.textures[SLANG_TEXTURE_SEMANTIC_SOURCE].size = sizes;
    map.textures[SLANG_TEXTURE_SEMANTIC_USER].image = &views[1];
    map.textures[SLANG_TEXTURE_SEMANTIC_USER].size = sizes;
-   CHECK(slang_process(&shader, 0, RARCH_SHADER_HLSL, 50, &map, &sem),
+   CHECK(slang_process(&shader, 0, type, version, &map, &sem),
          "viewer source did not translate");
    if (!shader.pass[0].source.string.fragment) printf("viewer: %s\n", last_error);
    CHECK(sem.cbuffers[SLANG_CBUFFER_UBO].binding == 0
@@ -551,7 +552,8 @@ int main(void)
    check_simulated_source_size();
    check_unread_samplers();
    check_viewer_colour();
-   check_viewer_process();
+   check_viewer_process(RARCH_SHADER_HLSL, 50);
+   check_viewer_process(RARCH_SHADER_METAL, 20000);
 
    printf("%s slang_hlsl_backend\n", failures ? "[FAIL]" : "[pass]");
    return failures ? 1 : 0;

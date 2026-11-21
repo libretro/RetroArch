@@ -1247,7 +1247,8 @@ check "runahead: both"             "$RADEFS -DHAVE_DYNAMIC -DHAVE_DYLIB" runahea
 # calls into gfx_display (the glow prepass), which no other set compiles.
 if command -v clang > /dev/null 2>&1; then
    for metal_features in "" "-DHAVE_RMP4 -DHAVE_THREADS" "-DHAVE_RWEBM -DHAVE_THREADS" \
-         "-DHAVE_SHADERPIPELINE"; do
+         "-DHAVE_SHADERPIPELINE" "-DHAVE_SLANG -DHAVE_RSLC" \
+         "-DHAVE_SLANG -DHAVE_RSLC -UHAVE_THREADS"; do
    for metal_ownership in "" "-fobjc-arc"; do
    if ! out=$(clang -x objective-c -fobjc-runtime=macosx-10.13 -fblocks $metal_ownership \
          -fsyntax-only -Wall -Wno-unused-function -Werror=objc-method-access \

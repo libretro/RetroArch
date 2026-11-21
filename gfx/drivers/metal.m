@@ -474,6 +474,8 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 
 @end
 
+#include "../common/hdr_viewer_colour.h"
+
 #pragma mark - Driver Classes
 
 /* A view's copy of the preset's chain (makeViewChain) */
@@ -552,6 +554,9 @@ typedef struct metal_view_chain metal_view_chain_t;
 /* The frame made ready to be drawn from, without the preset */
 - (void)prepareFrame;
 - (metal_view_chain_t *)makeViewChain;
+- (metal_view_chain_t *)makeViewChainForMedia:(BOOL)media;
+- (BOOL)hasViewerShader;
+- (unsigned)viewerOutputMode;
 - (void)freeViewChain:(metal_view_chain_t *)c;
 - (void)renderViewChain:(metal_view_chain_t *)c
                    view:(const struct retro_video_view *)v
@@ -6303,6 +6308,29 @@ static void metal_views_init(metal_views_t *vs)
       "   return float4(t.sample(s,"
       " clamp(in.texcoord, u.clamp.xy, u.clamp.zw)).rgb, 1.0);\n"
       "}\n"
+      "fragment float4 views_media(ViewsOut in [[stage_in]],\n"
+      " constant ViewsUBO &u [[buffer(0)]], constant float4 *c [[buffer(1)]],\n"
+      " texture2d<float> t [[texture(0)]], sampler s [[sampler(0)]])\n"
+      "{\n"
+      "   float4 v = t.sample(s, clamp(in.texcoord, u.clamp.xy, u.clamp.zw));\n"
+      "   if (c[3].x > 0.5)\n"
+      "   {\n"
+      "      float3 lin = v.rgb;\n"
+      "      if (c[3].x < 1.5)\n"
+      "      {\n"
+      "         float3 p = pow(max(lin, 0.0), 1.0 / 78.84375);\n"
+      "         float3 n = pow(max(p - 0.8359375, 0.0)\n"
+      "               / max(18.8515625 - 18.6875 * p, 0.000001),\n"
+      "               1.0 / 0.1593017578) * 125.0;\n"
+      "         lin = float3(dot(float3(1.660491,-0.5876411,-0.0728499),n),\n"
+      "               dot(float3(-0.1245505,1.1328999,-0.0083494),n),\n"
+      "               dot(float3(-0.0181508,-0.1005789,1.1187297),n));\n"
+      "      }\n"
+      "      float3 x = float3(dot(c[0].xyz,lin),dot(c[1].xyz,lin),dot(c[2].xyz,lin));\n"
+      "      v.rgb = sign(x) * pow(abs(x), c[1].w);\n"
+      "   }\n"
+      "   return float4(v.rgb, 1.0);\n"
+      "}\n"
       "fragment float4 views_layer(ViewsOut in [[stage_in]],"
       " texture2d<float> t [[texture(0)]], sampler s [[sampler(0)]])\n"
       "{\n"
@@ -6341,7 +6369,7 @@ static void metal_views_init(metal_views_t *vs)
       RARCH_STRUCT_ASSIGN(vs->rect, metal_views_pipeline(vs->device, lib,
                @"views_rect", false));
       RARCH_STRUCT_ASSIGN(vs->media_rect16, metal_views_pipeline_format(vs->device, lib,
-               @"views_rect", false, MTLPixelFormatRGBA16Float));
+               @"views_media", false, MTLPixelFormatRGBA16Float));
       RARCH_STRUCT_ASSIGN(vs->anaglyph, metal_views_pipeline(vs->device, lib,
                @"views_anaglyph", false));
       RARCH_STRUCT_ASSIGN(vs->interlaced, metal_views_pipeline(vs->device,
@@ -7648,8 +7676,11 @@ typedef struct MTLALIGN(16)
       float enable_hdr;
       unsigned expand_gamut;
       pass_semantics_t semantics;
+      pass_semantics_t viewer_semantics;
+      float viewer_colour_rows[12];
       MTLViewport viewport;
       __unsafe_unretained id<MTLRenderPipelineState> _state;
+      __unsafe_unretained id<MTLRenderPipelineState> _viewerState;
    } pass[GFX_MAX_SHADERS];
 
    texture_t luts[GFX_MAX_TEXTURES];
@@ -8976,6 +9007,23 @@ struct metal_view_chain
    }
 }
 
+
+- (unsigned)viewerOutputMode
+{
+   enum glslang_format format = SLANG_FORMAT_UNKNOWN;
+   if (!_shader || !_shader->passes) return 0;
+   const pass_semantics_t *last = &_engine.pass[_shader->passes - 1].semantics;
+   if (last->explicit_format) format = last->format;
+   format = glslang_hdr_output_encoding(_shader, format);
+   return format == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32 ? 1
+      : format == SLANG_FORMAT_R16G16B16A16_SFLOAT ? 2 : 0;
+}
+
+- (BOOL)hasViewerShader
+{
+   return _shader && _shader->passes && _engine.pass[0]._viewerState != nil;
+}
+
 /* A view's chain: the main chain's pipelines and lookup textures,
  * referenced, with semantics that read this chain's own values and
  * textures - where the main chain's point into it, these point at the
@@ -8983,6 +9031,11 @@ struct metal_view_chain
  * history of its own. The preset is the main chain's, so its parameters
  * are the ones edited. NULL when it can't be made. */
 - (metal_view_chain_t *)makeViewChain
+{
+   return [self makeViewChainForMedia:NO];
+}
+
+- (metal_view_chain_t *)makeViewChainForMedia:(BOOL)media
 {
    size_t i;
    int j;
@@ -9004,9 +9057,11 @@ struct metal_view_chain
    }
    for (i = 0; i < _shader->passes; i++)
    {
-      const pass_semantics_t *sp = &_engine.pass[i].semantics;
+      const pass_semantics_t *sp = media && _engine.pass[i]._viewerState
+         ? &_engine.pass[i].viewer_semantics : &_engine.pass[i].semantics;
       pass_semantics_t       *dp = &c->engine.pass[i].semantics;
-      RARCH_STRUCT_ASSIGN(c->engine.pass[i]._state, _engine.pass[i]._state);
+      RARCH_STRUCT_ASSIGN(c->engine.pass[i]._state, media && _engine.pass[i]._viewerState
+            ? _engine.pass[i]._viewerState : _engine.pass[i]._state);
       *dp          = *sp;
       dp->textures = NULL;
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
@@ -9101,6 +9156,12 @@ error:
    unsigned dims      = VIDEO_SCALE_PACK(v->width, v->height);
    id<MTLTexture> src = external ? external : _engine.frame.texture[0].view;
    c->engine.media = external != nil;
+   if (external)
+      for (unsigned i = 0; i < _shader->passes; i++)
+         hdr_viewer_colour_rows(c->engine.pass[i].viewer_colour_rows,
+               _context.hdrEnabled && external.pixelFormat == MTLPixelFormatRGBA16Float,
+               _shaderEmitsHDR10 || _shaderEmitsHDR16 ? _hdrPaperWhiteNits : [_context hdrMenuNits],
+               _hdrExpandGamut);
 
    c->engine.frame.valid = false;
    if (external && !_shader->history_size)
@@ -9258,6 +9319,16 @@ error:
       memset(&_engine.pass[i].feedback, 0, sizeof(_engine.pass[i].feedback));
 
       RARCH_STRUCT_ASSIGN(_engine.pass[i]._state, nil);
+      RARCH_STRUCT_ASSIGN(_engine.pass[i]._viewerState, nil);
+      free(_engine.pass[i].semantics.textures);
+      free(_engine.pass[i].viewer_semantics.textures);
+      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+      {
+         free(_engine.pass[i].semantics.cbuffers[j].uniforms);
+         free(_engine.pass[i].viewer_semantics.cbuffers[j].uniforms);
+      }
+      memset(&_engine.pass[i].semantics, 0, sizeof(_engine.pass[i].semantics));
+      memset(&_engine.pass[i].viewer_semantics, 0, sizeof(_engine.pass[i].viewer_semantics));
 
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
@@ -9396,185 +9467,207 @@ error:
          semantics_map.uniforms[SLANG_SEMANTIC_ENABLE_HDR] =
                &_engine.pass[i].enable_hdr;
 
-         if (!slang_process(shader, i, RARCH_SHADER_METAL, 20000, &semantics_map, &_engine.pass[i].semantics))
-            return NO;
+         unsigned variants = 1;
+#ifdef HAVE_RSLC
+         if (_hdrEnabled) variants = 2;
+#endif
+         for (unsigned variant = 0; variant < variants; variant++)
+         {
+            pass_semantics_t *sem = variant ? &_engine.pass[i].viewer_semantics
+               : &_engine.pass[i].semantics;
+            semantics_map.viewer_colour = variant != 0;
+            if (variant)
+            {
+               semantics_map.uniforms[SLANG_SEMANTIC_VIEWER_COLOUR0] = _engine.pass[i].viewer_colour_rows;
+               semantics_map.uniforms[SLANG_SEMANTIC_VIEWER_COLOUR1] = _engine.pass[i].viewer_colour_rows + 4;
+               semantics_map.uniforms[SLANG_SEMANTIC_VIEWER_COLOUR2] = _engine.pass[i].viewer_colour_rows + 8;
+            }
+            if (!slang_process(shader, i, RARCH_SHADER_METAL, 20000, &semantics_map, sem))
+               return NO;
 
 #ifdef DEBUG
-         bool save_msl    = true;
+            bool save_msl    = true;
 #else
-         bool save_msl    = false;
+            bool save_msl    = false;
 #endif
-         NSString *vs_src = [NSString stringWithUTF8String:shader->pass[i].source.string.vertex];
-         NSString *fs_src = [NSString stringWithUTF8String:shader->pass[i].source.string.fragment];
+            NSString *vs_src = [NSString stringWithUTF8String:shader->pass[i].source.string.vertex];
+            NSString *fs_src = [NSString stringWithUTF8String:shader->pass[i].source.string.fragment];
 
-         /* Vertex descriptor */
-         @try
-         {
-            NSError *err;
-            MTLVertexDescriptor *vd      = RARCH_AUTORELEASE_R([MTLVertexDescriptor new]);
-            vd.attributes[0].offset      = offsetof(VertexSlang, position);
-            vd.attributes[0].format      = MTLVertexFormatFloat4;
-            vd.attributes[0].bufferIndex = 4;
-            vd.attributes[1].offset      = offsetof(VertexSlang, texCoord);
-            vd.attributes[1].format      = MTLVertexFormatFloat2;
-            vd.attributes[1].bufferIndex = 4;
-            vd.layouts[4].stride         = sizeof(VertexSlang);
-            vd.layouts[4].stepFunction   = MTLVertexStepFunctionPerVertex;
-
-            MTLRenderPipelineDescriptor *psd = RARCH_AUTORELEASE_R([MTLRenderPipelineDescriptor new]);
-
-            psd.label = [[NSString stringWithUTF8String:shader->pass[i].source.path]
-                          stringByReplacingOccurrencesOfString:shadersPath withString:@""];
-
-            MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
-
-            /* Pipeline colour-attachment format must match the render target
-             * the pass will bind.  For intermediate passes this is whatever
-             * the shader asked for, optimised; for the last pass it's the
-             * drawable format in SDR mode, or the HDR offscreen format in
-             * HDR mode.
-             *
-             * Shader-emitted HDR: if the shader preset explicitly requested
-             * A2B10G10R10 (HDR10 PQ) or R16G16B16A16_SFLOAT (FP16 HDR16) as
-             * its last-pass format, honour that even when HDR is on — the
-             * composite fragment switches paths based on that via
-             * Context.setHDRShaderEmitsHDR10/emitsHDR16. */
-            BOOL lastPass = (i == shader->passes - 1);
-            MTLPixelFormat fmt = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
-            BOOL passEmitsHDR10 = NO;
-            BOOL passEmitsHDR16 = NO;
-            if (lastPass)
+            /* Vertex descriptor */
+            @try
             {
-               /* Only a format the shader declared itself (#pragma format)
-                * means the shader performed its own HDR encode.  A format
-                * derived from preset FBO flags (float_framebuffer /
-                * rgb10_framebuffer) carries no such intent, so it must not
-                * put the composite pass into passthrough. */
-               if (_engine.pass[i].semantics.explicit_format)
+               NSError *err;
+               MTLVertexDescriptor *vd      = RARCH_AUTORELEASE_R([MTLVertexDescriptor new]);
+               vd.attributes[0].offset      = offsetof(VertexSlang, position);
+               vd.attributes[0].format      = MTLVertexFormatFloat4;
+               vd.attributes[0].bufferIndex = 4;
+               vd.attributes[1].offset      = offsetof(VertexSlang, texCoord);
+               vd.attributes[1].format      = MTLVertexFormatFloat2;
+               vd.attributes[1].bufferIndex = 4;
+               vd.layouts[4].stride         = sizeof(VertexSlang);
+               vd.layouts[4].stepFunction   = MTLVertexStepFunctionPerVertex;
+
+               MTLRenderPipelineDescriptor *psd = RARCH_AUTORELEASE_R([MTLRenderPipelineDescriptor new]);
+
+               psd.label = [[NSString stringWithUTF8String:shader->pass[i].source.path]
+                             stringByReplacingOccurrencesOfString:shadersPath withString:@""];
+
+               MTLRenderPipelineColorAttachmentDescriptor *ca = psd.colorAttachments[0];
+
+               /* Pipeline colour-attachment format must match the render target
+                * the pass will bind.  For intermediate passes this is whatever
+                * the shader asked for, optimised; for the last pass it's the
+                * drawable format in SDR mode, or the HDR offscreen format in
+                * HDR mode.
+                *
+                * Shader-emitted HDR: if the shader preset explicitly requested
+                * A2B10G10R10 (HDR10 PQ) or R16G16B16A16_SFLOAT (FP16 HDR16) as
+                * its last-pass format, honour that even when HDR is on — the
+                * composite fragment switches paths based on that via
+                * Context.setHDRShaderEmitsHDR10/emitsHDR16. */
+               BOOL lastPass = (i == shader->passes - 1);
+               MTLPixelFormat fmt = SelectOptimalPixelFormat(glslang_format_to_metal(_engine.pass[i].semantics.format));
+               BOOL passEmitsHDR10 = NO;
+               BOOL passEmitsHDR16 = NO;
+               if (lastPass)
                {
-                  if (   _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32
-                      || _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UINT_PACK32)
-                     passEmitsHDR10 = YES;
-                  else if (_engine.pass[i].semantics.format == SLANG_FORMAT_R16G16B16A16_SFLOAT)
-                     passEmitsHDR16 = YES;
+                  /* Only a format the shader declared itself (#pragma format)
+                   * means the shader performed its own HDR encode.  A format
+                   * derived from preset FBO flags (float_framebuffer /
+                   * rgb10_framebuffer) carries no such intent, so it must not
+                   * put the composite pass into passthrough. */
+                  if (_engine.pass[i].semantics.explicit_format)
+                  {
+                     if (   _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32
+                         || _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UINT_PACK32)
+                        passEmitsHDR10 = YES;
+                     else if (_engine.pass[i].semantics.format == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+                        passEmitsHDR16 = YES;
+                  }
+
+                  if (video_shader_get_hdr_mode(shader) >= 0)
+                  {
+                     passEmitsHDR10 = video_shader_get_hdr_mode(shader) == 1;
+                     passEmitsHDR16 = video_shader_get_hdr_mode(shader) == 2;
+                  }
+
+                  /* Method-scope flags — will be pushed to Context after the loop. */
+                  _shaderEmitsHDR10 = passEmitsHDR10;
+                  _shaderEmitsHDR16 = passEmitsHDR16;
+
+                  if (_hdrEnabled)
+                  {
+                     /* Match RT format picked in _updateRenderTargets. */
+                     if (passEmitsHDR10)
+                        fmt = MTLPixelFormatRGB10A2Unorm;
+                     else
+                        fmt = MTLPixelFormatRGBA16Float;
+                  }
                }
+               ca.pixelFormat = fmt;
 
-               if (video_shader_get_hdr_mode(shader) >= 0)
-               {
-                  passEmitsHDR10 = video_shader_get_hdr_mode(shader) == 1;
-                  passEmitsHDR16 = video_shader_get_hdr_mode(shader) == 2;
-               }
+               /* TODO/FIXME (sgc): confirm we never need blending for render passes */
+               ca.blendingEnabled             = NO;
+               ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
+               ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
+               ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
+               ca.destinationRGBBlendFactor   = MTLBlendFactorOneMinusSourceAlpha;
 
-               /* Method-scope flags — will be pushed to Context after the loop. */
-               _shaderEmitsHDR10 = passEmitsHDR10;
-               _shaderEmitsHDR16 = passEmitsHDR16;
+               psd.sampleCount                = 1;
+               psd.vertexDescriptor           = vd;
 
-               if (_hdrEnabled)
-               {
-                  /* Match RT format picked in _updateRenderTargets. */
-                  if (passEmitsHDR10)
-                     fmt = MTLPixelFormatRGB10A2Unorm;
-                  else
-                     fmt = MTLPixelFormatRGBA16Float;
-               }
-            }
-            ca.pixelFormat = fmt;
-
-            /* TODO/FIXME (sgc): confirm we never need blending for render passes */
-            ca.blendingEnabled             = NO;
-            ca.sourceAlphaBlendFactor      = MTLBlendFactorSourceAlpha;
-            ca.sourceRGBBlendFactor        = MTLBlendFactorSourceAlpha;
-            ca.destinationAlphaBlendFactor = MTLBlendFactorOneMinusSourceAlpha;
-            ca.destinationRGBBlendFactor   = MTLBlendFactorOneMinusSourceAlpha;
-
-            psd.sampleCount                = 1;
-            psd.vertexDescriptor           = vd;
-
-            id<MTLLibrary>             lib = RARCH_AUTORELEASE_R([_context.device newLibraryWithSource:vs_src options:nil error:&err]);
-            if (err != nil)
-            {
-               if (lib == nil)
-               {
-                  save_msl = true;
-                  RARCH_ERR("[Metal] Unable to compile vertex shader: %s.\n", err.localizedDescription.UTF8String);
-                  return NO;
-               }
-#if DEBUG
-               RARCH_WARN("[Metal] Warnings compiling vertex shader: %s.\n", err.localizedDescription.UTF8String);
-#endif
-            }
-
-            psd.vertexFunction = RARCH_AUTORELEASE_R([lib newFunctionWithName:@"main0"]);
-
-            lib = RARCH_AUTORELEASE_R([_context.device newLibraryWithSource:fs_src options:nil error:&err]);
-            if (err != nil)
-            {
-               if (lib == nil)
-               {
-                  save_msl = true;
-                  RARCH_ERR("[Metal] Unable to compile fragment shader: %s.\n", err.localizedDescription.UTF8String);
-                  return NO;
-               }
-#if DEBUG
-               RARCH_WARN("[Metal] Warnings compiling fragment shader: %s.\n", err.localizedDescription.UTF8String);
-#endif
-            }
-            psd.fragmentFunction = RARCH_AUTORELEASE_R([lib newFunctionWithName:@"main0"]);
-
-            RARCH_STRUCT_ASSIGN(_engine.pass[i]._state,
-                          RARCH_AUTORELEASE_R([_context.device newRenderPipelineStateWithDescriptor:psd error:&err]));
-            if (err != nil)
-            {
-               save_msl = true;
-               RARCH_ERR("[Metal] Error creating pipeline state for pass %d: %s.\n", i,
-                         err.localizedDescription.UTF8String);
-               return NO;
-            }
-
-            for (unsigned j = 0; j < SLANG_CBUFFER_MAX; j++)
-            {
-               unsigned int size = _engine.pass[i].semantics.cbuffers[j].size;
-               if (size == 0)
-                  continue;
-
-                id<MTLBuffer> buf = RARCH_AUTORELEASE_R([_context.device newBufferWithLength:size options:PLATFORM_METAL_RESOURCE_STORAGE_MODE]);
-               RARCH_STRUCT_ASSIGN(_engine.pass[i].buffers[j], buf);
-            }
-         } @finally
-         {
-            if (save_msl)
-            {
-               NSError *err = nil;
-               NSString *basePath = [[NSString stringWithUTF8String:shader->pass[i].source.path] stringByDeletingPathExtension];
-
-               /* Saving Metal shader files... */
-
-               [vs_src writeToFile:[basePath stringByAppendingPathExtension:@"vs.metal"]
-                        atomically:NO
-                          encoding:NSStringEncodingConversionAllowLossy
-                             error:&err];
+               id<MTLLibrary>             lib = RARCH_AUTORELEASE_R([_context.device newLibraryWithSource:vs_src options:nil error:&err]);
                if (err != nil)
                {
-                  RARCH_ERR("[Metal] Unable to save vertex shader source: %s.\n", err.localizedDescription.UTF8String);
+                  if (lib == nil)
+                  {
+                     save_msl = true;
+                     RARCH_ERR("[Metal] Unable to compile vertex shader: %s.\n", err.localizedDescription.UTF8String);
+                     return NO;
+                  }
+#if DEBUG
+                  RARCH_WARN("[Metal] Warnings compiling vertex shader: %s.\n", err.localizedDescription.UTF8String);
+#endif
                }
 
-               err = nil;
-               [fs_src writeToFile:[basePath stringByAppendingPathExtension:@"fs.metal"]
-                        atomically:NO
-                          encoding:NSStringEncodingConversionAllowLossy
-                             error:&err];
+               psd.vertexFunction = RARCH_AUTORELEASE_R([lib newFunctionWithName:@"main0"]);
+
+               lib = RARCH_AUTORELEASE_R([_context.device newLibraryWithSource:fs_src options:nil error:&err]);
                if (err != nil)
                {
-                  RARCH_ERR("[Metal] Unable to save fragment shader source: %s.\n",
+                  if (lib == nil)
+                  {
+                     save_msl = true;
+                     RARCH_ERR("[Metal] Unable to compile fragment shader: %s.\n", err.localizedDescription.UTF8String);
+                     return NO;
+                  }
+#if DEBUG
+                  RARCH_WARN("[Metal] Warnings compiling fragment shader: %s.\n", err.localizedDescription.UTF8String);
+#endif
+               }
+               psd.fragmentFunction = RARCH_AUTORELEASE_R([lib newFunctionWithName:@"main0"]);
+
+               id<MTLRenderPipelineState> state = RARCH_AUTORELEASE_R(
+                     [_context.device newRenderPipelineStateWithDescriptor:psd error:&err]);
+               if (variant)
+                  RARCH_STRUCT_ASSIGN(_engine.pass[i]._viewerState, state);
+               else
+                  RARCH_STRUCT_ASSIGN(_engine.pass[i]._state, state);
+               if (err != nil)
+               {
+                  save_msl = true;
+                  RARCH_ERR("[Metal] Error creating pipeline state for pass %d: %s.\n", i,
                             err.localizedDescription.UTF8String);
+                  return NO;
                }
+
+            } @finally
+            {
+               if (save_msl)
+               {
+                  NSError *err = nil;
+                  NSString *basePath = [[NSString stringWithUTF8String:shader->pass[i].source.path] stringByDeletingPathExtension];
+
+                  /* Saving Metal shader files... */
+
+                  [vs_src writeToFile:[basePath stringByAppendingPathExtension:@"vs.metal"]
+                           atomically:NO
+                             encoding:NSStringEncodingConversionAllowLossy
+                                error:&err];
+                  if (err != nil)
+                  {
+                     RARCH_ERR("[Metal] Unable to save vertex shader source: %s.\n", err.localizedDescription.UTF8String);
+                  }
+
+                  err = nil;
+                  [fs_src writeToFile:[basePath stringByAppendingPathExtension:@"fs.metal"]
+                           atomically:NO
+                             encoding:NSStringEncodingConversionAllowLossy
+                                error:&err];
+                  if (err != nil)
+                  {
+                     RARCH_ERR("[Metal] Unable to save fragment shader source: %s.\n",
+                               err.localizedDescription.UTF8String);
+                  }
+               }
+
+               free(shader->pass[i].source.string.vertex);
+               free(shader->pass[i].source.string.fragment);
+
+               shader->pass[i].source.string.vertex   = NULL;
+               shader->pass[i].source.string.fragment = NULL;
             }
-
-            free(shader->pass[i].source.string.vertex);
-            free(shader->pass[i].source.string.fragment);
-
-            shader->pass[i].source.string.vertex   = NULL;
-            shader->pass[i].source.string.fragment = NULL;
+         }
+         for (unsigned j = 0; j < SLANG_CBUFFER_MAX; j++)
+         {
+            unsigned size = _engine.pass[i].semantics.cbuffers[j].size;
+            if (_engine.pass[i].viewer_semantics.cbuffers[j].size > size)
+               size = _engine.pass[i].viewer_semantics.cbuffers[j].size;
+            if (!size) continue;
+            id<MTLBuffer> buf = RARCH_AUTORELEASE_R([_context.device
+                  newBufferWithLength:size options:PLATFORM_METAL_RESOURCE_STORAGE_MODE]);
+            if (!buf) return NO;
+            RARCH_STRUCT_ASSIGN(_engine.pass[i].buffers[j], buf);
          }
       }
       
@@ -11322,13 +11415,16 @@ static bool gfx_display_metal_media_shader_draw(void *data, uintptr_t image,
    struct retro_video_view view;
    struct metal_views_draw draw;
    video_views_rect_t rect;
+   float colour[16] = {0};
    id<MTLRenderPipelineState> saved;
    if (!md || !texture || !vs->media_shader_enabled || !md.frameView.shader)
       return false;
+   if (md.context.hdrEnabled && texture.texture.pixelFormat == MTLPixelFormatRGBA16Float
+         && ![md.frameView hasViewerShader]) return false;
    if (!vs->media_chain && !vs->media_shader_attempted)
    {
       vs->media_shader_attempted = true;
-      vs->media_chain = [md.frameView makeViewChain];
+      vs->media_chain = [md.frameView makeViewChainForMedia:YES];
    }
    if (!vs->media_chain) return false;
    if (!vs->tried) metal_views_init(vs);
@@ -11346,7 +11442,14 @@ static bool gfx_display_metal_media_shader_draw(void *data, uintptr_t image,
          - VIDEO_POS_Y(pos) - (int)VIDEO_SCALE_H(dims));
    rect.dims = dims;
    saved = vs->rect;
-   if (md.context.hdrEnabled) vs->rect = vs->media_rect16;
+   if (md.context.hdrEnabled)
+   {
+      vs->rect = vs->media_rect16;
+      hdr_viewer_colour_rows(colour, true, [md.context hdrMenuNits],
+            [md.context hdrExpandGamut]);
+      colour[12] = (float)[md.frameView viewerOutputMode];
+      [draw.rce setFragmentBytes:colour length:sizeof(colour) atIndex:1];
+   }
    metal_views_draw_pass(vs, &draw, vs->media_chain, &rect, &rect);
    vs->rect = saved;
    return true;
