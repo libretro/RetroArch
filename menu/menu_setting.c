@@ -15848,10 +15848,14 @@ static void settings_build_main_menu(
 #endif
 
             ADD_DESC(mm_desc_15);
+      /* MIDI, its first row, with a MIDI driver; Camera and its
+       * Preview, the rows after it, always */
       if (string_is_not_equal(settings->arrays.midi_driver, "null"))
-      {
-            ADD_DESC(mm_desc_16);
-      }
+         settings_list_add_desc(list, list_info, settings,
+               mm_desc_16, 1, &group_info, &subgroup_info, parent_group);
+      settings_list_add_desc(list, list_info, settings,
+            mm_desc_16 + 1, (unsigned)ARRAY_SIZE(mm_desc_16) - 1,
+            &group_info, &subgroup_info, parent_group);
 
       for (user = 0; user < MAX_USERS; user++)
          setting_append_list_input_player_options(list, list_info, parent_group, user);
