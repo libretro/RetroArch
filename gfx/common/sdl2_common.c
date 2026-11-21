@@ -571,8 +571,12 @@ static void sdl2_video_window_put(sdl2_video_window_t *state,
       state->had_dims = size;
       state->got_dims = VIDEO_SCALE_PACK(w, h);
    }
-   if (     !known || pos != state->put_pos
-         || (at != pos && at != state->had_pos && at != state->got_pos))
+   /* SDL's wayland cannot move it, and makes it fullscreen next where
+    * it was last asked to be */
+   if (     sdl2_video_window_placed()
+         && (     !known || pos != state->put_pos
+               || (     at != pos && at != state->had_pos
+                     && at != state->got_pos)))
    {
       SDL_SetWindowPosition(state->win, rect->x, rect->y);
       SDL_GetWindowPosition(state->win, &x, &y);
