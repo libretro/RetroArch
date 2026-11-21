@@ -361,12 +361,10 @@ static bool input_overlay_submit_textures(input_overlay_t *ol)
          return false;
       if (animated)
       {
-         /* The first frame is already composed in the decoded image:
-          * it goes into a slot, and the stream advances from the
-          * second on the tick below. */
-         memcpy(s->slots[0], ol->images[i]->pixels,
-               VIDEO_SCALE_AREA(s->dims) * sizeof(uint32_t));
-         if (gfx_surface_submit(s, 0, ol->images[i]->supports_rgba)
+         /* The decoded image lives through this upload. Let the surface
+          * borrow it when it can consume pixels synchronously. */
+         if (gfx_surface_submit_pixels(s, ol->images[i]->pixels,
+                  ol->images[i]->supports_rgba)
                == GFX_SURFACE_SUBMIT_FAILED)
             return false;
          if (ol->anim_player)

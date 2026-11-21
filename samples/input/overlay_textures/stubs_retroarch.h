@@ -9,6 +9,7 @@
 
 struct stub_texture
 {
+   uintptr_t source; /* observed address, never dereferenced later */
    uint32_t checksum;
    unsigned width;
    unsigned height;
