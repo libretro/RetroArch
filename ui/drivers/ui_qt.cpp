@@ -28,11 +28,15 @@
 #include <QCloseEvent>
 #include <QResizeEvent>
 #include <QStyle>
+#include <QSettings>
+#include <QDir>
+#include <QFileInfo>
 #include <QString>
 #include <QTimer>
 #include <QLabel>
 #include <QFileDialog>
 #include <QFileSystemModel>
+#include <QDirIterator>
 #include <QListWidgetItem>
 #include <QTableWidgetItem>
 #include <QHash>
@@ -46,6 +50,13 @@
 #include <QProgressDialog>
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QThreadPool>
+#include <QRunnable>
+#include <QPointer>
+#include <QMetaType>
+#include <QAtomicInt>
+#include <QSharedPointer>
+#include <algorithm>
 
 #include "ui_qt.h"
 
@@ -70,9 +81,13 @@ extern "C" {
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
+#include "../../menu/menu_cbs.h"
 #endif
 
 #include "../../core_info.h"
+#ifdef ANDROID
+#include "../../os/android/play_feature_delivery.h"
+#endif
 #include "../../command.h"
 #include "../ui_companion_driver.h"
 #include "../companion/companion_core.h"
@@ -97,8 +112,16 @@ companion_core_t *ui_companion_qt_core(void)
 #include "../../msg_hash.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
+#ifdef HAVE_NETWORKING
+#include "../../tasks/task_file_transfer.h"
+#endif
+#include "../../core_updater_list.h"
 #ifdef HAVE_CORE_LOAD_CHECK
 #include "../../core_load_check.h"
+
+#ifdef HAVE_CORE_SIGNATURES
+#include "../../core_install_check.h"
+#endif
 #endif
 #ifdef HAVE_GIT_VERSION
 #include "../../version_git.h"
@@ -440,7 +463,7 @@ static const QString qt_theme_default_stylesheet = QString(R"(
       border: 1px solid #ddd;
    }
    ThumbnailWidget#thumbnailWidget, ThumbnailLabel#thumbnailGridLabel, QLabel#thumbnailQLabel {
-      background-color:#d4d4d4;
+      background-color:white;
    }
    QLabel#dropIndicator {
       font-size: 9pt;
@@ -450,19 +473,15 @@ static const QString qt_theme_default_stylesheet = QString(R"(
       margin: 20px;
    }
    ThumbnailWidget#thumbnailWidgetSelected {
-      background-color:#d4d4d4;
+      background-color:white;
       border:3px solid %1;
    }
-   QFrame#playlistWidget, QFrame#browserWidget, QFrame#logWidget {
+   QFrame#playlistWidget, QFrame#browserWidget, QFrame#updaterWidget, QListWidget#settingsWidget, QFrame#logWidget {
       padding: 8px;
    }
    QListWidget {
       icon-size: 32px;
    }
-   /* color of the icons on the settings dialog */
-   /* QLabel#iconColor {
-      color: black;
-   } */
 )");
 
 static const QString qt_theme_dark_stylesheet = QString(R"(
@@ -474,13 +493,21 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    QWidget:disabled {
       color:rgb(127,127,127);
    }
-   QFrame#playlistWidget, QFrame#browserWidget, QStackedWidget#centralWidget, QFrame#logWidget {
+   QFrame#playlistWidget, QFrame#browserWidget, QFrame#updaterWidget, QListWidget#settingsWidget, QStackedWidget#centralWidget, QFrame#logWidget {
       padding: 8px;
       background-color:rgb(66,66,66);
-      border-top:1px solid rgba(175,175,175,50%);
-      border-left:1px solid rgba(125,125,125,50%);
-      border-right:1px solid rgba(125,125,125,50%);
-      border-bottom:1px solid rgba(25,25,25,75%);
+      border-top:1px solid rgba(255,255,255,30%);
+      border-left:1px solid rgba(255,255,255,20%);
+      border-right:1px solid rgba(255,255,255,20%);
+      border-bottom:1px solid rgba(0,0,0,50%);
+   }
+   QFrame#settingsWidget {
+      padding: 8px;
+      background-color: rgb(66,66,66);
+      border-top:1px solid rgba(255,255,255,30%);
+      border-left:1px solid rgba(255,255,255,20%);
+      border-right:1px solid rgba(255,255,255,20%);
+      border-bottom:1px solid rgba(0,0,0,50%);
    }
    QListWidget {
       icon-size: 32px;
@@ -503,14 +530,20 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    }
    /* Groupboxes for the settings window, can be restricted later with ViewOptionsDialog QGroupBox */
    QGroupBox {
-      background-color:rgba(80,80,80,50%);
+      background-color:rgba(255,255,255,5%);;
       margin-top:27px;
-      border:1px solid rgba(25,25,25,127);
+      border:1px solid rgba(0,0,0,30%);
       border-top-left-radius:0px;
       border-top-right-radius:4px;
    }
+   QWidget#updaterHomeWidget {
+      background-color:rgb(25,25,25);
+   }
    QWidget#quickMenuPage {
       background-color:transparent;
+   }
+   QWidget#refreshRateControl {
+   background-color: transparent;
    }
    QGroupBox::title {
       min-height:28px;
@@ -519,7 +552,7 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       padding:4px 6px 5px 6px;
       margin-left:0px;
       background-color:qlineargradient(x1:0,y1:1,x2:0,y2:0,stop:0 rgb(65,65,65),stop: 0.4 rgb(70,70,70),stop:1 rgb(90,90,90));
-      border:1px solid rgba(25,25,25,127);
+      border:1px solid rgba(0,0,0,30%);
       border-bottom:1px solid rgb(65,65,65);
       border-top-left-radius:4px;
       border-top-right-radius:4px;
@@ -529,7 +562,7 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       border:4px solid rgb(45,45,45);
    }
    QGroupBox::indicator:unchecked {
-      background-color:rgba(25,25,25,50%);
+      background-color:rgba(0,0,0,30%);
    }
    QGroupBox::indicator {
       width:16px;
@@ -547,8 +580,8 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       min-height:28px;
       padding:4px 10px;
       background-color:qlineargradient(x1:0,y1:1,x2:0,y2:0,stop:0 rgb(53,53,53),stop:1 rgba(125,125,125,127));
-      border:1px solid rgba(25,25,25,75);
-      border-top:1px solid rgba(175,175,175,50%);
+      border:1px solid rgba(0,0,0,20%);
+      border-top:1px solid rgba(255,255,255,30%);
       border-bottom:none transparent;
    }
    QToolTip {
@@ -559,7 +592,7 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    }
    QMenuBar {
       background-color:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 rgba(25,25,25,127),stop:1 rgba(53,53,53,75));
-      border-bottom:2px solid rgba(25,25,25,75);
+      border-bottom:2px solid rgba(0,0,0,20%);
    }
    QMenuBar::item {
       spacing:2px;
@@ -572,8 +605,8 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    }
    QMenuBar::item:pressed {
       background-color:%1;
-      border-left:1px solid rgba(25,25,25,127);
-      border-right:1px solid rgba(25,25,25,127);
+      border-left:1px solid rgba(0,0,0,30%);
+      border-right:1px solid rgba(0,0,0,30%);
    }
    QMenu {
       background-color:rgb(45,45,45);
@@ -655,9 +688,9 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    QDockWidget::title {
       padding:3px 4px;
       background-color:qlineargradient(x1:0,y1:1,x2:0,y2:0,stop:0 rgba(25,25,25,175),stop:1 rgba(53,53,53,75));
-      border:1px solid rgba(25,25,25,75);
-      border-top:1px solid rgba(175,175,175,50%);
-      border-bottom:1px solid rgba(25,25,25,127);
+      border:1px solid rgba(0,0,0,20%);
+      border-top:1px solid rgba(255,255,255,30%);
+      border-bottom:1px solid rgba(0,0,0,30%);
    }
    QDockWidget::close-button, QDockWidget::float-button {
       subcontrol-position:top right;
@@ -690,8 +723,8 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    }
    QTabBar::tab {
       padding:4px 6px;
-      background-color:rgba(25,25,25,127);
-      border:1px solid rgba(25,25,25,75);
+      background-color:rgba(0,0,0,30%);
+      border:1px solid rgba(0,0,0,20%);
    }
    QTabBar::tab:selected {
       background-color:rgb(66,66,66);
@@ -789,7 +822,7 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    QTreeView::branch:open, QTreeView::branch:closed {
       background-color:solid;
    }
-   QTableView, QListWidget {
+   QTableView, QListWidget, QListWidget#settingsCategoryList {
       background-color:rgb(25,25,25);
    }
    QTreeView QHeaderView::section, QTableView QHeaderView::section {
@@ -802,63 +835,62 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
    }
    QTableView {
       background-color:rgb(25,25,25);
-      alternate-background-color:rgb(40,40,40);
+      alternate-background-color:rgb(25,25,25);
    }
-   QScrollBar:vertical, QScrollBar:horizontal {
-      background-color:rgb(35,35,35);
+   QTableView::item:alternate,
+   QTableView#playlistTableView::item:alternate,
+   QTableView#fileTableView::item:alternate {
+      background-color:rgb(37,37,37);
    }
-   QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+   /* Keep selection visible on both normal and alternating rows. The
+    * object-specific selectors must override the alternate-row rules. */
+   QListWidget::item:selected, QTreeView::item:selected,
+   QTableView::item:selected,
+   QTableView#playlistTableView::item:selected,
+   QTableView#fileTableView::item:selected {
+      color:white;
+      background-color:%1;
+   }
+   ThumbnailWidget#thumbnailWidget, ThumbnailLabel#thumbnailGridLabel,
+   QLabel#thumbnailQLabel {
+      background-color:rgb(37,37,37);
+   }
+   QScrollBar {
+      background-color:rgb(37,37,37);
+      width: 12px;
+      height: 12px;
+      margin: 0px;
+      border: none;
+   }
+   QScrollBar::handle {
       background-color:rgb(65,65,65);
-      border-right:1px solid rgba(175,175,175,50%);
-      border-top:1px solid rgba(175,175,175,50%);
-      border-bottom:1px solid rgba(25,25,25,75);
-      border-radius:2px;
+      min-height:12px;
+      min-width:12px;
+      border-top:1px solid rgba(255,255,255,30%);
+      border-left:1px solid rgba(255,255,255,30%);
+      border-right:1px solid rgba(0,0,0,50%);
+      border-bottom:1px solid rgba(0,0,0,50%);
    }
-   QScrollBar::handle:horizontal:hover, QScrollBar::handle:vertical:hover {
+   QScrollBar::handle:hover {
       border:1px solid %1;
       background-color:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgba(255,255,255,75), stop: 1 rgba(127,127,127,75));
    }
-   QScrollBar:vertical {
-      border-top-right-radius:2px;
-      border-bottom-right-radius:2px;
-      width:16px;
-      margin:0px;
+   /* Remove arrow buttons completely */
+   QScrollBar::add-line, QScrollBar::sub-line {
+      height: 0px;
+      min-height: 0px;
+      max-height: 0px;
+      width: 0px;
+      min-width: 0px;
+      max-width: 0px;
+      border: none;
+      padding: 0px;
+      margin: 0px;
    }
-   QScrollBar::handle:vertical {
-      min-height:20px;
-      margin:2px 4px 2px 4px;
-   }
-   QScrollBar::add-line:vertical {
-      background:none;
-      height:0px;
-      subcontrol-position:right;
-      subcontrol-origin:margin;
-   }
-   QScrollBar::sub-line:vertical {
-      background:none;
-      height:0px;
-      subcontrol-position:left;
-      subcontrol-origin:margin;
-   }
-   QScrollBar:horizontal {
-      height:16px;
-      margin:0px;
-   }
-   QScrollBar::handle:horizontal {
-      min-width:20px;
-      margin:4px 2px 4px 2px;
-   }
-   QScrollBar::add-line:horizontal {
-      background:none;
-      width:0px;
-      subcontrol-position:bottom;
-      subcontrol-origin:margin;
-   }
-   QScrollBar::sub-line:horizontal {
-      background:none;
-      width:0px;
-      subcontrol-position:top;
-      subcontrol-origin:margin;
+   /* Make the remaining track clickable */
+   QScrollBar::add-page,
+   QScrollBar::sub-page {
+      border: none;
    }
    QSlider {
       background:transparent;
@@ -871,14 +903,14 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       background:rgb(25,25,25);
    }
    QSlider::handle:vertical {
-      background:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(175,175,175), stop: 1 rgb(75,75,75));
+      background:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(180,180,180), stop: 1 rgb(80,80,80));
       border:1px solid rgb(35,35,35);
       border-radius:2px;
       height:16px;
       margin:0 -4px;
    }
    QSlider::handle:vertical:hover {
-      background-color:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(200,200,200), stop: 1 rgba(100,100,100));
+      background-color:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(180,180,180), stop: 1 rgb(80,80,80));
       border:1px solid %1;
       border-radius:2px;
       height:16px;
@@ -889,18 +921,21 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       background:rgb(25,25,25);
    }
    QSlider::handle:horizontal {
-      background:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(175,175,175), stop: 1 rgb(75,75,75));
+      background:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(180,180,180), stop: 1 rgb(80,80,80));
       border:1px solid rgb(35,35,35);
       border-radius:2px;
       width:16px;
       margin:-4px 0;
    }
    QSlider::handle:horizontal:hover {
-      background-color:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(200,200,200), stop: 1 rgba(100,100,100));
+      background-color:qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,stop: 0 rgb(180,180,180), stop: 1 rgb(80,80,80));
       border:1px solid %1;
       border-radius:2px;
       width:16px;
       margin:-4px 0;
+   }
+   QSlider#refreshRateSlider {
+      background-color: transparent;
    }
    QStatusBar {
       color:white;
@@ -916,14 +951,14 @@ static const QString qt_theme_dark_stylesheet = QString(R"(
       background-color:solid;
    }
    GridView::item {
-      background-color:rgb(40,40,40);
+      background-color:rgb(37,37,37);
    }
    GridView::item:selected {
       border:3px solid %1;
    }
    GridView {
       background-color:rgb(25,25,25);
-      selection-color: white;
+      selection-color:white;
       qproperty-layout: "fixed";
    }
    GridItem {
@@ -1294,7 +1329,7 @@ static unsigned int invader_png_len = 4008;
 
 static ui_window_qt_t ui_window = {0};
 
-static const QPixmap getInvader(void)
+QPixmap getInvader(void)
 {
    QPixmap pix;
    pix.loadFromData(invader_png, invader_png_len, "PNG");
@@ -1439,27 +1474,45 @@ void LogTextEdit::appendMessage(const QString& text)
 
 int BrowseTableModel::rowCount(const QModelIndex &parent) const
 {
-   return parent.isValid() ? 0 : m_rows.size();
+   if (parent.isValid())
+      return 0;
+   return m_recursiveSearch ? m_searchEntries.size() : m_rows.size();
 }
 
 long BrowseTableModel::browseIndex(const QModelIndex &index) const
 {
-   if (!index.isValid() || index.row() < 0 || index.row() >= m_rows.size())
+   if (m_recursiveSearch || !index.isValid()
+         || index.row() < 0 || index.row() >= m_rows.size())
       return -1;
    return m_rows.at(index.row());
 }
 
 QString BrowseTableModel::pathAt(const QModelIndex &index) const
 {
-   long bi = browseIndex(index);
-   const char *p = bi >= 0 ? companion_core_browse_path(ui_companion_qt_core(), (size_t)bi) : NULL;
-   return p ? QString::fromUtf8(p) : QString();
+   if (m_recursiveSearch)
+   {
+      if (!index.isValid() || index.row() < 0
+            || index.row() >= m_searchEntries.size())
+         return QString();
+      return m_searchEntries.at(index.row()).path;
+   }
+   {
+      long bi = browseIndex(index);
+      const char *p = bi >= 0 ? companion_core_browse_path(
+            ui_companion_qt_core(), (size_t)bi) : NULL;
+      return p ? QString::fromUtf8(p) : QString();
+   }
 }
 
 bool BrowseTableModel::isDirAt(const QModelIndex &index) const
 {
-   long bi = browseIndex(index);
-   return bi >= 0 && companion_core_browse_is_dir(ui_companion_qt_core(), (size_t)bi);
+   if (m_recursiveSearch)
+      return QFileInfo(pathAt(index)).isDir();
+   {
+      long bi = browseIndex(index);
+      return bi >= 0 && companion_core_browse_is_dir(
+            ui_companion_qt_core(), (size_t)bi);
+   }
 }
 
 QVariant BrowseTableModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -1472,8 +1525,23 @@ QVariant BrowseTableModel::headerData(int section, Qt::Orientation orientation, 
       case 1: return QStringLiteral("Size");
       case 2: return QStringLiteral("Type");
       case 3: return QStringLiteral("Date Modified");
+      case 4: return QStringLiteral("Path");
    }
    return QVariant();
+}
+
+static QString qt_browse_parent_path(const QString &fullPath)
+{
+   if (fullPath.isEmpty())
+      return QString();
+
+   QString path = QDir::toNativeSeparators(
+         QFileInfo(fullPath).absolutePath());
+
+   if (!path.endsWith(QDir::separator()))
+      path += QDir::separator();
+
+   return path;
 }
 
 QVariant BrowseTableModel::data(const QModelIndex &index, int role) const
@@ -1481,6 +1549,45 @@ QVariant BrowseTableModel::data(const QModelIndex &index, int role) const
    companion_core_t *core = ui_companion_qt_core();
    long bi = browseIndex(index);
    char buf[64];
+   if (m_recursiveSearch)
+   {
+      const BrowseSearchEntry &entry = m_searchEntries.at(index.row());
+      if (role == Qt::DisplayRole)
+      {
+         switch (index.column())
+         {
+            case 0: return entry.name;
+            case 1:
+               if (entry.isDir)
+                  return QString();
+               if (entry.size >= 1024LL * 1024 * 1024)
+                  return QString::number((double)entry.size / (1024.0 * 1024 * 1024), 'f', 1) + QStringLiteral(" GB");
+               if (entry.size >= 1024LL * 1024)
+                  return QString::number((double)entry.size / (1024.0 * 1024), 'f', 1) + QStringLiteral(" MB");
+               return QString::number((entry.size + 1023) / 1024) + QStringLiteral(" KB");
+            case 2: return entry.type;
+            case 3: return entry.modified.toString(QStringLiteral("yyyy-MM-dd hh:mm"));
+            case 4: return qt_browse_parent_path(entry.path);
+         }
+      }
+      else if (role == Qt::DecorationRole && index.column() == 0)
+      {
+         if (entry.isDir)
+         {
+            if (m_folderIcon.isNull())
+               const_cast<BrowseTableModel*>(this)->m_folderIcon =
+                  QApplication::style()->standardIcon(QStyle::SP_DirIcon);
+            return m_folderIcon;
+         }
+         if (m_fileIcon.isNull())
+            const_cast<BrowseTableModel*>(this)->m_fileIcon =
+               QApplication::style()->standardIcon(QStyle::SP_FileIcon);
+         return m_fileIcon;
+      }
+      else if (role == Qt::TextAlignmentRole && index.column() == 1)
+         return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+      return QVariant();
+   }
    if (bi < 0 || !core)
       return QVariant();
    if (role == Qt::DisplayRole)
@@ -1491,6 +1598,7 @@ QVariant BrowseTableModel::data(const QModelIndex &index, int role) const
          case 1: return QString::fromUtf8(companion_core_browse_size_str(core, (size_t)bi, buf, sizeof(buf)));
          case 2: return QString::fromUtf8(companion_core_browse_type_str(core, (size_t)bi, buf, sizeof(buf)));
          case 3: return QString::fromUtf8(companion_core_browse_date_str(core, (size_t)bi, buf, sizeof(buf)));
+         case 4: return qt_browse_parent_path(QString::fromUtf8(companion_core_browse_path(core, (size_t)bi)));
       }
    }
    else if (role == Qt::DecorationRole && index.column() == 0)
@@ -1520,33 +1628,140 @@ QVariant BrowseTableModel::data(const QModelIndex &index, int role) const
    return QVariant();
 }
 
+class BrowseSearchRunnable : public QRunnable
+{
+public:
+   BrowseSearchRunnable(QPointer<BrowseTableModel> model, QString root,
+         QRegularExpression filter, bool showHidden, quint64 generation,
+         QSharedPointer<QAtomicInt> cancel)
+      : m_model(model), m_root(root), m_filter(filter),
+        m_showHidden(showHidden), m_generation(generation), m_cancel(cancel) {}
+
+   void run()
+   {
+      QVector<BrowseSearchEntry> entries;
+      QDir::Filters filters = QDir::AllEntries | QDir::NoDotAndDotDot;
+      if (m_showHidden)
+         filters |= QDir::Hidden | QDir::System;
+      QDirIterator it(m_root, filters, QDirIterator::Subdirectories);
+      while (!m_cancel->loadAcquire() && it.hasNext())
+      {
+         const QString path = it.next();
+         const QFileInfo info = it.fileInfo();
+         if (!m_filter.match(info.fileName()).hasMatch())
+            continue;
+         BrowseSearchEntry entry;
+         entry.path = path;
+         entry.name = info.fileName();
+         entry.isDir = info.isDir();
+         entry.size = entry.isDir ? 0 : info.size();
+         entry.type = entry.isDir ? QStringLiteral("Folder") : info.suffix().toUpper();
+         entry.modified = info.lastModified();
+         entries.append(entry);
+      }
+      if (m_model)
+         QMetaObject::invokeMethod(m_model.data(), "setSearchResults",
+               Qt::QueuedConnection,
+               Q_ARG(QVector<BrowseSearchEntry>, entries),
+               Q_ARG(quint64, m_generation));
+   }
+private:
+   QPointer<BrowseTableModel> m_model;
+   QString m_root;
+   QRegularExpression m_filter;
+   bool m_showHidden;
+   quint64 m_generation;
+   QSharedPointer<QAtomicInt> m_cancel;
+};
+
 void BrowseTableModel::reload()
 {
    companion_core_t *core = ui_companion_qt_core();
    size_t i, n = core ? companion_core_browse_count(core) : 0;
+   const bool searching = m_filter.isValid() && !m_filter.pattern().isEmpty();
+   ++m_searchGeneration;
+   if (m_searchCancel)
+      m_searchCancel->storeRelease(1);
+   m_searchCancel.clear();
    beginResetModel();
    m_rows.clear();
-   m_rows.reserve((int)n);
-   for (i = 0; i < n; i++)
+   m_searchEntries.clear();
+   m_recursiveSearch = searching;
+   if (!searching)
    {
-      if (m_filter.isValid() && !m_filter.pattern().isEmpty())
-      {
-         const char *nm = companion_core_browse_name(core, i);
-         /* folders always show; files are filtered on their name */
-         if (!companion_core_browse_is_dir(core, i)
-               && !(nm && m_filter.match(QString::fromUtf8(nm)).hasMatch()))
-            continue;
-      }
-      m_rows.append((long)i);
+      m_rows.reserve((int)n);
+      for (i = 0; i < n; i++)
+         m_rows.append((long)i);
    }
+   endResetModel();
+   if (searching && core)
+   {
+      const char *browse_dir = companion_core_browse_dir(core);
+      if (browse_dir && *browse_dir)
+      {
+         qRegisterMetaType<QVector<BrowseSearchEntry> >("QVector<BrowseSearchEntry>");
+         m_searchCancel = QSharedPointer<QAtomicInt>(new QAtomicInt(0));
+         QThreadPool::globalInstance()->start(new BrowseSearchRunnable(
+            this, QString::fromUtf8(browse_dir), m_filter,
+            config_get_ptr()->bools.show_hidden_files,
+            m_searchGeneration, m_searchCancel));
+      }
+   }
+}
+
+void BrowseTableModel::setSearchResults(
+      const QVector<BrowseSearchEntry> &entries, quint64 generation)
+{
+   if (generation != m_searchGeneration || !m_recursiveSearch)
+      return;
+   beginResetModel();
+   m_searchEntries = entries;
+   m_applyingSearchResults = true;
+   sort(m_searchSortColumn, m_searchSortOrder);
+   m_applyingSearchResults = false;
    endResetModel();
 }
 
 void BrowseTableModel::sort(int column, Qt::SortOrder order)
 {
+   if (m_recursiveSearch)
+   {
+      m_searchSortColumn = column < 0 ? 0 : column > 4 ? 4 : column;
+      m_searchSortOrder = order;
+      if (!m_applyingSearchResults)
+         emit layoutAboutToBeChanged();
+      std::stable_sort(m_searchEntries.begin(), m_searchEntries.end(),
+            [this](const BrowseSearchEntry &a, const BrowseSearchEntry &b)
+            {
+               /* Keep matching folders ahead of files regardless of the
+                * selected sort column or direction. */
+               if (a.isDir != b.isDir)
+                  return a.isDir;
+
+               int cmp = 0;
+               switch (m_searchSortColumn)
+               {
+                  case 1: cmp = a.size < b.size ? -1 : a.size > b.size ? 1 : 0; break;
+                  case 2: cmp = QString::compare(a.type, b.type, Qt::CaseInsensitive); break;
+                  case 3: cmp = a.modified < b.modified ? -1 : a.modified > b.modified ? 1 : 0; break;
+                  case 4: cmp = QString::compare(a.path, b.path, Qt::CaseInsensitive); break;
+                  default: cmp = QString::compare(a.name, b.name, Qt::CaseInsensitive); break;
+               }
+               if (cmp == 0)
+                  cmp = QString::compare(a.path, b.path, Qt::CaseInsensitive);
+               return m_searchSortOrder == Qt::AscendingOrder ? cmp < 0 : cmp > 0;
+            });
+      if (!m_applyingSearchResults)
+         emit layoutChanged();
+      return;
+   }
    companion_core_t *core = ui_companion_qt_core();
+
+   int core_column = column == 4 ? 0 : column;
    enum companion_browse_column col =
-      (enum companion_browse_column)(column < 0 ? 0 : column > 3 ? 3 : column);
+      (enum companion_browse_column)(core_column < 0 ? 0 :
+            core_column > 3 ? 3 : core_column);
+
    bool asc = (order == Qt::AscendingOrder);
    /* QTableView calls sort() again on every model reset (with the
     * header's current indicator); the core ignores an unchanged order,
@@ -1566,6 +1781,73 @@ void BrowseTableModel::setFilter(const QRegularExpression &re)
    reload();
 }
 
+void PlaylistSearchProxyModel::setSearchRows(const QVector<int> &rows,
+      quint64 generation, bool active)
+{
+   if (generation < m_generation)
+      return;
+
+   m_generation = generation;
+   m_searchActive = active;
+   m_searchRows.clear();
+   for (int i = 0; i < rows.size(); i++)
+      m_searchRows.insert(rows.at(i));
+
+   invalidateFilter();
+   emit searchResultsChanged();
+}
+
+bool PlaylistSearchProxyModel::filterAcceptsRow(int sourceRow,
+      const QModelIndex &sourceParent) const
+{
+   (void)sourceParent;
+   return !m_searchActive || m_searchRows.contains(sourceRow);
+}
+
+class PlaylistSearchRunnable : public QRunnable
+{
+public:
+   PlaylistSearchRunnable(QPointer<PlaylistSearchProxyModel> proxy,
+         const QStringList &labels, const QRegularExpression &expression,
+         quint64 generation, const QSharedPointer<QAtomicInt> &cancel)
+      : m_proxy(proxy), m_labels(labels), m_expression(expression),
+        m_generation(generation), m_cancel(cancel)
+   {
+      setAutoDelete(true);
+   }
+
+   void run()
+   {
+      QVector<int> matches;
+      int i;
+
+      for (i = 0; i < m_labels.size(); i++)
+      {
+         if (m_cancel && m_cancel->loadAcquire())
+            return;
+         if (m_expression.match(m_labels.at(i)).hasMatch())
+            matches.append(i);
+      }
+
+      if (m_cancel && m_cancel->loadAcquire())
+         return;
+
+      if (m_proxy)
+         QMetaObject::invokeMethod(m_proxy.data(), "setSearchRows",
+               Qt::QueuedConnection,
+               Q_ARG(QVector<int>, matches),
+               Q_ARG(quint64, m_generation),
+               Q_ARG(bool, true));
+   }
+
+private:
+   QPointer<PlaylistSearchProxyModel> m_proxy;
+   QStringList m_labels;
+   QRegularExpression m_expression;
+   quint64 m_generation;
+   QSharedPointer<QAtomicInt> m_cancel;
+};
+
 MainWindow::MainWindow(QWidget *parent) :
    QMainWindow(parent)
    ,m_loadCoreWindow(new LoadCoreWindow(this))
@@ -1582,6 +1864,7 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_playlistViews(new FileDropWidget(this))
    ,m_searchWidget(new QWidget(this))
    ,m_searchLineEdit(new QLineEdit(this))
+   ,m_searchDebounceTimer(new QTimer(this))
    ,m_searchDock(new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), this))
    ,m_playlistFiles()
    ,m_launchWithComboBox(new QComboBox(this))
@@ -1590,6 +1873,16 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_runPushButton(new QToolButton(this))
    ,m_stopPushButton(new QToolButton(this))
    ,m_browserAndPlaylistTabWidget(new QTabWidget(this))
+   ,m_updaterHomeWidget(new QWidget(this))
+   ,m_updaterEmptyWidget(new QWidget(this))
+   ,m_updaterNavigationWidget(new QWidget(this))
+   ,m_updaterContentWidget(new QWidget(this))
+   ,m_updaterContentPath(QStringLiteral("cores"))
+   ,m_updaterViewType(0)
+   ,m_coreUpdaterTable(new QTableWidget(this))
+   ,m_updaterDirectoryTree(new QTreeWidget(this))
+   ,m_coreUpdaterPollTimer(new QTimer(this))
+   ,m_coreUpdaterPollAttempts(0)
    ,m_pendingRun(false)
    ,m_viewOptionsDialog(NULL)
    ,m_coreInfoDialog(new CoreInfoDialog(this, NULL))
@@ -1633,22 +1926,22 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_failedThumbnails(0)
    ,m_playlistThumbnailDownloadWasCanceled(false)
    ,m_hasBeenShown(false)
+   ,m_fileBrowserInitialized(false)
    ,m_pendingDirScrollPath()
    ,m_thumbnailTimer(new QTimer(this))
    ,m_persistTimer(new QTimer(this))
    ,m_gridItem(this)
    ,m_currentBrowser(BROWSER_TYPE_PLAYLISTS)
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    ,m_searchRegularExpression()
-#else
-   ,m_searchRegExp()
-#endif
    ,m_zoomWidget(new QWidget(this))
    ,m_itemsCountLiteral(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT))
    ,m_itemsCountLabel(new QLabel(this))
 {
    settings_t                   *settings = config_get_ptr();
    const char *path_dir_assets            = settings->paths.directory_assets;
+
+   m_searchDebounceTimer->setSingleShot(true);
+   m_searchDebounceTimer->setInterval(300);
 
    qRegisterMetaType<QPointer<ThumbnailWidget> >("ThumbnailWidget");
    qRegisterMetaType<retro_task_callback_t>("retro_task_callback_t");
@@ -1848,9 +2141,11 @@ void MainWindow::setupPlaylistFooter()
 void MainWindow::setupModels()
 {
    m_playlistModel  = new PlaylistModel(this);
-   m_proxyModel     = new QSortFilterProxyModel(this);
+   m_proxyModel     = new PlaylistSearchProxyModel(this);
    m_proxyModel->setSourceModel(m_playlistModel);
    m_proxyModel->setSortCaseSensitivity(Qt::CaseInsensitive);
+   connect(m_proxyModel, SIGNAL(searchResultsChanged()), this,
+         SLOT(onPlaylistSearchResultsReady()));
 
    m_browseModel = new BrowseTableModel(this);
 
@@ -1868,6 +2163,7 @@ void MainWindow::setupModels()
    m_tableView->setWordWrap(false);
 
    m_fileTableView->setModel(m_browseModel);
+   m_fileTableView->setContextMenuPolicy(Qt::CustomContextMenu);
    /* A header click asks the core to re-order its listing (one qsort
     * over an already gathered array); the view itself never sorts. */
    m_fileTableView->setSortingEnabled(true);
@@ -1930,6 +2226,8 @@ void MainWindow::setupFileSystemBrowser()
 #endif
 
    m_dirTree->setModel(m_dirModel);
+   connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this,
+         SLOT(onFileSystemDirLoaded(const QString&)));
    m_dirTree->setSelectionMode(QAbstractItemView::SingleSelection);
    m_dirTree->header()->setVisible(false);
 
@@ -1940,6 +2238,61 @@ void MainWindow::setupFileSystemBrowser()
       m_dirTree->hideColumn(2);  /* type */
       m_dirTree->hideColumn(3);  /* date modified */
    }
+}
+
+/* Capture only expanded branches; walking every cached directory would
+ * defeat the reason the filesystem tree avoids recursive enumeration. */
+static void qt_collect_expanded_browser_paths(QTreeView *tree,
+      QFileSystemModel *model, const QModelIndex &parent, QStringList &paths)
+{
+   int i;
+   int count = model->rowCount(parent);
+   for (i = 0; i < count; i++)
+   {
+      QModelIndex index = model->index(i, 0, parent);
+      if (tree->isExpanded(index))
+      {
+         paths.append(model->filePath(index));
+         qt_collect_expanded_browser_paths(tree, model, index, paths);
+      }
+   }
+}
+
+void MainWindow::refreshFileSystemBrowserTree()
+{
+   QString currentPath = m_dirModel->filePath(m_dirTree->currentIndex());
+   QStringList expandedPaths;
+   int scrollPosition = m_dirTree->verticalScrollBar()->value();
+   QFileSystemModel *oldModel = m_dirModel;
+   int i;
+
+   qt_collect_expanded_browser_paths(m_dirTree, oldModel,
+         QModelIndex(), expandedPaths);
+
+   /* QFileSystemModel has no public directory-refresh API. Recreating it
+    * is the reliable way to discard its stale cache while retaining the
+    * lightweight no-watcher configuration. */
+   disconnect(oldModel, SIGNAL(directoryLoaded(const QString&)), this,
+         SLOT(onFileSystemDirLoaded(const QString&)));
+   m_dirModel = new QFileSystemModel(m_dirTree);
+   setupFileSystemBrowser();
+
+   for (i = 0; i < expandedPaths.size(); i++)
+   {
+      QModelIndex index = m_dirModel->index(expandedPaths.at(i));
+      if (index.isValid())
+         m_dirTree->setExpanded(index, true);
+   }
+
+   if (!currentPath.isEmpty())
+   {
+      QModelIndex currentIndex = m_dirModel->index(currentPath);
+      if (currentIndex.isValid())
+         m_dirTree->setCurrentIndex(currentIndex);
+   }
+
+   m_dirTree->verticalScrollBar()->setValue(scrollPosition);
+   oldModel->deleteLater();
 }
 
 /* Build the search / core-info / log dock widgets and their
@@ -2001,6 +2354,8 @@ void MainWindow::setupSignalConnections()
          SLOT(onSearchEnterPressed()));
    connect(m_searchLineEdit, SIGNAL(textEdited(const QString&)), this,
          SLOT(onSearchLineEditEdited(const QString&)));
+   connect(m_searchDebounceTimer, SIGNAL(timeout()), this,
+         SLOT(onSearchEnterPressed()));
    connect(m_timer, SIGNAL(timeout()), this, SLOT(onTimeout()));
    connect(m_loadCoreWindow, SIGNAL(coreLoaded()), this,
          SLOT(onCoreLoaded()));
@@ -2019,15 +2374,14 @@ void MainWindow::setupSignalConnections()
          SLOT(onTreeViewItemsSelected(QModelIndexList)));
    connect(m_dirTree, SIGNAL(customContextMenuRequested(const QPoint&)), this,
          SLOT(onFileBrowserTreeContextMenuRequested(const QPoint&)));
+   connect(m_fileTableView, SIGNAL(customContextMenuRequested(const QPoint&)),
+         this, SLOT(onFileBrowserTableContextMenuRequested(const QPoint&)));
    connect(m_listWidget, SIGNAL(customContextMenuRequested(const QPoint&)), this,
          SLOT(onPlaylistWidgetContextMenuRequested(const QPoint&)));
    connect(m_launchWithComboBox, SIGNAL(currentIndexChanged(int)), this,
          SLOT(onLaunchWithComboBoxIndexChanged(int)));
    connect(m_zoomSlider, SIGNAL(valueChanged(int)), this,
          SLOT(onZoomValueChanged(int)));
-   connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this,
-         SLOT(onFileSystemDirLoaded(const QString&)));
-
    m_dirTree->setCurrentIndex(m_dirModel->index(path_dir_menu_content));
    m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
    m_dirTree->expand(m_dirTree->currentIndex());
@@ -2104,10 +2458,22 @@ void MainWindow::setupSignalConnections()
          SLOT(onShowErrorMessage(QString)), Qt::QueuedConnection);
    connect(this, SIGNAL(showInfoMessageDeferred(QString)), this,
          SLOT(onShowInfoMessage(QString)), Qt::QueuedConnection);
+   connect(m_coreUpdaterPollTimer, SIGNAL(timeout()), this,
+         SLOT(onCoreUpdaterListPoll()));
+   connect(m_coreUpdaterTable, SIGNAL(customContextMenuRequested(const QPoint&)),
+         this, SLOT(onCoreUpdaterTableContextMenuRequested(const QPoint&)));
+   connect(m_coreUpdaterTable, SIGNAL(doubleClicked(const QModelIndex&)),
+         this, SLOT(onUpdaterTableDoubleClicked(const QModelIndex&)));
 }
 
 MainWindow::~MainWindow()
 {
+#ifdef HAVE_MENU
+   if (m_viewOptionsDialog)
+      m_viewOptionsDialog->applyCurrentCategory();
+#endif
+   if (m_playlistSearchCancel)
+      m_playlistSearchCancel->storeRelease(1);
 }
 
 void MainWindow::startTimer()
@@ -2444,6 +2810,113 @@ bool MainWindow::showMessageBox(QString msg, MessageBoxType msgType,
    return true;
 }
 
+void MainWindow::onFileBrowserTableContextMenuRequested(const QPoint &pos)
+{
+   QModelIndex index = m_fileTableView->indexAt(pos);
+   QString targetPath;
+   QString targetName;
+   QFileInfo targetInfo;
+   QMenu menu(m_fileTableView);
+   QAction *restoreAction = NULL;
+   QAction *deleteAction;
+   QAction *selectedAction;
+   QByteArray targetPathArray;
+   bool isBackup;
+   bool isDirectory;
+   bool core_loaded = false;
+
+   if (!index.isValid())
+      return;
+
+   targetPath = m_browseModel->pathAt(index);
+   targetName = m_browseModel->data(index.sibling(index.row(), 0),
+         Qt::DisplayRole).toString();
+   /* Never offer destructive actions for the parent-directory entry or
+    * a filesystem root. */
+   if (targetPath.isEmpty() || targetName == QStringLiteral("..")
+         || targetName == QStringLiteral("."))
+      return;
+
+   targetInfo.setFile(targetPath);
+   isDirectory = m_browseModel->isDirAt(index);
+   if (isDirectory && !targetInfo.isSymLink() && QDir(targetPath).isRoot())
+      return;
+   isBackup = !isDirectory
+         && targetInfo.suffix().compare("lcbk", Qt::CaseInsensitive) == 0;
+
+   m_fileTableView->setCurrentIndex(index);
+   if (isBackup)
+      restoreAction = menu.addAction(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST));
+   deleteAction = menu.addAction(tr("Delete"));
+   selectedAction = menu.exec(m_fileTableView->viewport()->mapToGlobal(pos));
+
+   if (!selectedAction)
+      return;
+
+   targetPathArray = QDir::toNativeSeparators(targetPath).toUtf8();
+   if (selectedAction == restoreAction && restoreAction)
+   {
+      settings_t *settings = config_get_ptr();
+      if (!task_push_core_restore(targetPathArray.constData(),
+               settings->paths.directory_libretro, &core_loaded, true, NULL))
+         return;
+   }
+   else if (selectedAction == deleteAction)
+   {
+      QString itemType = isDirectory ? tr("folder") : tr("file");
+      QString title = isBackup ? tr("Delete Backup") : tr("Delete");
+      QString message = isBackup
+         ? tr("Are you sure you want to delete this backup?\n\n%1")
+            .arg(targetName)
+         : (isDirectory
+            ? tr("Are you sure you want to delete this folder and all of its contents?\n\n%1")
+               .arg(targetName)
+            : tr("Are you sure you want to delete this file?\n\n%1")
+               .arg(targetName));
+
+      if (QMessageBox::question(this, title, message,
+               QMessageBox::Yes | QMessageBox::No,
+               QMessageBox::No) != QMessageBox::Yes)
+         return;
+
+      if (!path_is_valid(targetPathArray.constData())
+            || (targetInfo.isSymLink()
+               ? filestream_delete(targetPathArray.constData()) != 0
+               : (isDirectory
+                  ? !QDir(targetPath).removeRecursively()
+                  : filestream_delete(targetPathArray.constData()) != 0)))
+      {
+         QMessageBox::critical(this, title,
+               tr("Failed to delete %1:\n%2").arg(itemType, targetPath));
+         return;
+      }
+#ifdef HAVE_CORE_SIGNATURES
+      if (isBackup)
+         core_install_drop_sig(targetPathArray.constData());
+#endif
+      QMessageBox::information(this, title,
+            isBackup ? tr("Backup deleted successfully.")
+                     : tr("%1 deleted successfully.").arg(
+                        isDirectory ? tr("Folder") : tr("File")));
+
+      /* Rebuild the filesystem tree because QFileSystemModel watching is
+       * disabled for performance. Preserve its current path and expansions. */
+      refreshFileSystemBrowserTree();
+      /* Re-enumerate the current directory; reload() alone only rebuilds
+       * the model from the existing core-side listing. */
+      {
+         companion_core_t *core = ui_companion_qt_core();
+         const char *browseDir = companion_core_browse_dir(core);
+         if (browseDir && *browseDir)
+         {
+            QByteArray browsePath(browseDir);
+            companion_core_browse_open(core, browsePath.constData());
+         }
+      }
+   }
+}
+
 void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
 {
 #ifdef HAVE_LIBRETRODB
@@ -2670,6 +3143,30 @@ const char *MainWindow::getThemeString(Theme theme)
 
 MainWindow::Theme MainWindow::theme() { return m_currentTheme; }
 
+/* Use the Windows app-theme preference rather than Qt's often-light
+ * widget palette, which does not consistently follow Windows dark mode. */
+static bool qt_system_uses_dark_theme(void)
+{
+#ifdef Q_OS_WIN
+   QSettings settings(QStringLiteral(
+         "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"),
+         QSettings::NativeFormat);
+   QVariant appTheme = settings.value(QStringLiteral("AppsUseLightTheme"));
+   if (!appTheme.isValid())
+      appTheme = settings.value(QStringLiteral("SystemUsesLightTheme"), 1);
+   return appTheme.toInt() == 0;
+#else
+   return QApplication::palette().color(QPalette::Window).lightness() < 128;
+#endif
+}
+
+bool MainWindow::isDarkTheme() const
+{
+   return m_currentTheme == THEME_DARK
+      || (m_currentTheme == THEME_SYSTEM_DEFAULT
+         && qt_system_uses_dark_theme());
+}
+
 /* Highlight colour from retroarch.cfg, or Qt's palette highlight. */
 static QString qt_highlight_color(void)
 {
@@ -2686,8 +3183,12 @@ void MainWindow::setTheme(Theme theme)
    switch(theme)
    {
       case THEME_SYSTEM_DEFAULT:
-         qApp->setStyleSheet(qt_theme_default_stylesheet.arg(
-                  qt_highlight_color()));
+         if (qt_system_uses_dark_theme())
+            qApp->setStyleSheet(qt_theme_dark_stylesheet.arg(
+                     qt_highlight_color()));
+         else
+            qApp->setStyleSheet(qt_theme_default_stylesheet.arg(
+                     qt_highlight_color()));
          break;
       case THEME_DARK:
          qApp->setStyleSheet(qt_theme_dark_stylesheet.arg(
@@ -2896,6 +3397,36 @@ QTabWidget* MainWindow::browserAndPlaylistTabWidget()
    return m_browserAndPlaylistTabWidget;
 }
 
+QWidget* MainWindow::updaterHomeWidget()
+{
+   return m_updaterHomeWidget;
+}
+
+QTableWidget* MainWindow::coreUpdaterTable()
+{
+   return m_coreUpdaterTable;
+}
+
+QWidget* MainWindow::updaterNavigationWidget()
+{
+   return m_updaterNavigationWidget;
+}
+
+QWidget* MainWindow::updaterContentWidget()
+{
+   return m_updaterContentWidget;
+}
+
+QTreeWidget* MainWindow::updaterDirectoryTree()
+{
+   return m_updaterDirectoryTree;
+}
+
+QWidget* MainWindow::updaterEmptyWidget()
+{
+   return m_updaterEmptyWidget;
+}
+
 void MainWindow::onDropWidgetEnterPressed()
 {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
@@ -3101,6 +3632,9 @@ void MainWindow::onRunClicked()
       case BROWSER_TYPE_FILES:
          entry = getFileContentEntry(m_fileTableView->currentIndex());
          break;
+      case BROWSER_TYPE_UPDATER:
+      case BROWSER_TYPE_SETTINGS:
+         return;
       case BROWSER_TYPE_PLAYLISTS:
          entry = getCurrentContentEntry();
          break;
@@ -3129,6 +3663,18 @@ void MainWindow::setCoreActions()
 
    m_launchWithComboBox->clear();
 
+   if (m_currentBrowser == BROWSER_TYPE_UPDATER
+         || m_currentBrowser == BROWSER_TYPE_SETTINGS)
+   {
+      m_startCorePushButton->hide();
+      m_runPushButton->hide();
+      m_coreInfoPushButton->hide();
+      return;
+   }
+
+   m_runPushButton->show();
+   m_coreInfoPushButton->show();
+
    /* Is contentless core? */
    if (companion_core_current_core_supports_no_content(core))
       m_startCorePushButton->show();
@@ -3146,6 +3692,10 @@ void MainWindow::setCoreActions()
       case BROWSER_TYPE_FILES:
          currentPlaylistFileName = QFileInfo(QString::fromUtf8(
                   companion_core_browse_dir(ui_companion_qt_core()))).fileName();
+         break;
+      case BROWSER_TYPE_SETTINGS:
+         break;
+      case BROWSER_TYPE_UPDATER:
          break;
    }
    playlistName = currentPlaylistFileName.toUtf8();
@@ -3186,11 +3736,23 @@ void MainWindow::setCoreActions()
 void MainWindow::onTabWidgetIndexChanged(int index)
 {
    QString str = m_browserAndPlaylistTabWidget->tabText(index);
+#ifdef HAVE_MENU
+   if (m_currentBrowser == BROWSER_TYPE_SETTINGS
+         && str != QObject::tr("Settings"))
+      m_viewOptionsDialog->applyCurrentCategory();
+#endif
    if (str == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER))
    {
       m_currentBrowser = BROWSER_TYPE_FILES;
       m_centralWidget->setCurrentWidget(m_fileTableView);
       onCurrentFileChanged(m_fileTableView->currentIndex());
+      if (!m_fileBrowserInitialized)
+      {
+         m_fileBrowserInitialized = true;
+         m_dirTree->selectionModel()->clearSelection();
+         m_dirTree->setCurrentIndex(QModelIndex());
+         QTimer::singleShot(0, this, SLOT(onBrowserStartClicked()));
+      }
    }
    else if (str == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS))
    {
@@ -3198,8 +3760,37 @@ void MainWindow::onTabWidgetIndexChanged(int index)
       m_centralWidget->setCurrentWidget(m_playlistViewsAndFooter);
       onCurrentItemChanged(m_tableView->currentIndex());
    }
+#ifdef HAVE_MENU
+   else if (str == QObject::tr("Settings"))
+   {
+      m_currentBrowser = BROWSER_TYPE_SETTINGS;
+      m_centralWidget->setCurrentWidget(m_viewOptionsDialog->categoryPagesWidget());
+      m_viewOptionsDialog->loadCategory(
+            m_viewOptionsDialog->categoryListWidget()->currentRow());
+   }
+#endif
+   else
+   {
+      /* The updater actions live in the Content Browser dock. The main
+       * area starts empty and is populated only after an action is chosen. */
+      m_currentBrowser = BROWSER_TYPE_UPDATER;
+      m_coreUpdaterPollTimer->stop();
+      m_updaterViewType = 0;
+      m_updaterHomeWidget->show();
+      m_coreUpdaterTable->clearContents();
+      m_coreUpdaterTable->setRowCount(0);
+      m_updaterNavigationWidget->hide();
+      m_updaterDirectoryTree->hide();
+      m_centralWidget->setCurrentWidget(m_updaterEmptyWidget);
+   }
 
-   applySearch();
+   if (m_searchDebounceTimer->isActive())
+   {
+      m_searchDebounceTimer->stop();
+      onSearchEnterPressed();
+   }
+   else
+      applySearch();
 
    setCoreActions();
 }
@@ -3209,85 +3800,84 @@ QToolButton* MainWindow::stopPushButton() { return m_stopPushButton; }
 QToolButton* MainWindow::startCorePushButton() { return m_startCorePushButton;}
 QComboBox* MainWindow::launchWithComboBox() { return m_launchWithComboBox; }
 
-void MainWindow::onSearchLineEditEdited(const QString &text)
+static QRegularExpression qt_search_expression(const QString &text)
 {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+   QStringList terms = text.split(QRegularExpression("\\s+"), Qt::SkipEmptyParts);
+#else
+   QStringList terms = text.split(QRegularExpression("\\s+"),
+         QString::SkipEmptyParts);
+#endif
+   QString pattern;
    int i;
-   QVector<char32_t> textHiraToKata;
-   QVector<char32_t> textKataToHira;
-   QVector<unsigned> textUnicode = text.toUcs4();
-   bool found_hiragana = false;
-   bool found_katakana = false;
 
-   for (i = 0; i < textUnicode.size(); i++)
+   for (i = 0; i < terms.size(); i++)
    {
-      unsigned code = textUnicode.at(i);
+      const QString &term = terms.at(i);
+      QVector<char32_t> hiraToKata;
+      QVector<char32_t> kataToHira;
+      QVector<unsigned> unicode = term.toUcs4();
+      QStringList alternatives;
+      bool foundHiragana = false;
+      bool foundKatakana = false;
+      int j;
 
-      if (code >= HIRAGANA_START && code <= HIRAGANA_END)
+      for (j = 0; j < unicode.size(); j++)
       {
-         found_hiragana  = true;
-         textHiraToKata += code + HIRA_KATA_OFFSET;
+         unsigned code = unicode.at(j);
+
+         if (code >= HIRAGANA_START && code <= HIRAGANA_END)
+         {
+            foundHiragana = true;
+            hiraToKata.append(code + HIRA_KATA_OFFSET);
+            kataToHira.append(code);
+         }
+         else if (code >= KATAKANA_START && code <= KATAKANA_END)
+         {
+            foundKatakana = true;
+            hiraToKata.append(code);
+            kataToHira.append(code - HIRA_KATA_OFFSET);
+         }
+         else
+         {
+            hiraToKata.append(code);
+            kataToHira.append(code);
+         }
       }
-      else if (code >= KATAKANA_START && code <= KATAKANA_END)
+
+      alternatives.append(QRegularExpression::escape(term));
+      if (foundHiragana)
       {
-         found_katakana  = true;
-         textKataToHira += code - HIRA_KATA_OFFSET;
+         QString converted = QString::fromUcs4(
+               hiraToKata.constData(), hiraToKata.size());
+         if (converted != term)
+            alternatives.append(QRegularExpression::escape(converted));
       }
-      else
+      if (foundKatakana)
       {
-         textHiraToKata += code;
-         textKataToHira += code;
+         QString converted = QString::fromUcs4(
+               kataToHira.constData(), kataToHira.size());
+         if (converted != term && !alternatives.contains(
+                  QRegularExpression::escape(converted)))
+            alternatives.append(QRegularExpression::escape(converted));
       }
+
+      pattern += "(?=.*(?:" + alternatives.join("|") + "))";
    }
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-   if (!found_hiragana && !found_katakana)
-      m_searchRegularExpression = QRegularExpression(text,
-            QRegularExpression::CaseInsensitiveOption);
-   else if (found_hiragana && !found_katakana)
-      m_searchRegularExpression = QRegularExpression(text
-            + QString("|")
-            + QString::fromUcs4(textHiraToKata.constData(),
-               textHiraToKata.size()),
-            QRegularExpression::CaseInsensitiveOption);
-   else if (!found_hiragana && found_katakana)
-      m_searchRegularExpression = QRegularExpression(text
-            + QString("|")
-            + QString::fromUcs4(textKataToHira.constData(),
-               textKataToHira.size()),
-            QRegularExpression::CaseInsensitiveOption);
-   else
-      m_searchRegularExpression = QRegularExpression(text
-            + QString("|")
-            + QString::fromUcs4(textHiraToKata.constData(),
-               textHiraToKata.size())
-            + QString("|")
-            + QString::fromUcs4(textKataToHira.constData(),
-               textKataToHira.size()),
-            QRegularExpression::CaseInsensitiveOption);
-#else
-   if (!found_hiragana && !found_katakana)
-      m_searchRegExp = QRegExp(text, Qt::CaseInsensitive);
-   else if (found_hiragana && !found_katakana)
-      m_searchRegExp = QRegExp(text
-            + QString("|")
-            + QString::fromUcs4(textHiraToKata.constData(),
-               textHiraToKata.size()), Qt::CaseInsensitive);
-   else if (!found_hiragana && found_katakana)
-      m_searchRegExp = QRegExp(text
-            + QString("|")
-            + QString::fromUcs4(textKataToHira.constData(),
-               textKataToHira.size()), Qt::CaseInsensitive);
-   else
-      m_searchRegExp = QRegExp(text
-            + QString("|")
-            + QString::fromUcs4(textHiraToKata.constData(),
-               textHiraToKata.size())
-            + QString("|")
-            + QString::fromUcs4(textKataToHira.constData(),
-               textKataToHira.size()), Qt::CaseInsensitive);
-#endif
+   if (pattern.isEmpty())
+      return QRegularExpression();
 
-   applySearch();
+   return QRegularExpression(pattern + ".*",
+         QRegularExpression::CaseInsensitiveOption);
+}
+
+void MainWindow::onSearchLineEditEdited(const QString &text)
+{
+   (void)text;
+   /* Wait until typing pauses before starting a potentially expensive
+    * playlist or recursive file-browser search. */
+   m_searchDebounceTimer->start();
 }
 
 void MainWindow::applySearch()
@@ -3295,28 +3885,64 @@ void MainWindow::applySearch()
    switch (m_currentBrowser)
    {
       case BROWSER_TYPE_PLAYLISTS:
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-         if (     m_proxyModel->filterRegularExpression()
-               != m_searchRegularExpression)
          {
-            m_proxyModel->setFilterRegularExpression(m_searchRegularExpression);
-            updateItemsCount();
+            QStringList labels;
+            QRegularExpression expression;
+            int row;
+            quint64 generation = ++m_playlistSearchGeneration;
+
+            if (m_playlistSearchCancel)
+               m_playlistSearchCancel->storeRelease(1);
+            m_playlistSearchCancel.clear();
+
+            expression = m_searchRegularExpression;
+            if (expression.pattern().isEmpty())
+            {
+               m_proxyModel->setSearchRows(QVector<int>(), generation, false);
+               break;
+            }
+
+            labels.reserve(m_playlistModel->rowCount());
+            for (row = 0; row < m_playlistModel->rowCount(); row++)
+               labels.append(m_playlistModel->index(row, 0)
+                     .data(Qt::DisplayRole).toString());
+
+            m_playlistSearchCancel = QSharedPointer<QAtomicInt>(new QAtomicInt(0));
+            QThreadPool::globalInstance()->start(new PlaylistSearchRunnable(
+                     m_proxyModel, labels, expression, generation,
+                     m_playlistSearchCancel));
          }
-#else
-         if (m_proxyModel->filterRegExp() != m_searchRegExp)
-         {
-            m_proxyModel->setFilterRegExp(m_searchRegExp);
-            updateItemsCount();
-         }
-#endif
          break;
       case BROWSER_TYPE_FILES:
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+         /* A playlist search is no longer useful while the file browser
+          * is active. Invalidate any queued result as well as stopping
+          * the worker; the playlist query is restarted on tab return. */
+         ++m_playlistSearchGeneration;
+         if (m_playlistSearchCancel)
+            m_playlistSearchCancel->storeRelease(1);
+         m_playlistSearchCancel.clear();
+         m_proxyModel->setSearchRows(QVector<int>(),
+               m_playlistSearchGeneration, false);
          m_browseModel->setFilter(m_searchRegularExpression);
-#else
-         m_browseModel->setFilter(QRegularExpression(m_searchRegExp.pattern(),
-                  QRegularExpression::CaseInsensitiveOption));
-#endif
+         break;
+      case BROWSER_TYPE_UPDATER:
+      {
+         int row;
+         for (row = 0; row < m_coreUpdaterTable->rowCount(); row++)
+         {
+            bool matches = m_searchRegularExpression.pattern().isEmpty();
+            int column;
+            for (column = 0; !matches && column < m_coreUpdaterTable->columnCount(); column++)
+            {
+               QTableWidgetItem *item = m_coreUpdaterTable->item(row, column);
+               if (item && m_searchRegularExpression.match(item->text()).hasMatch())
+                  matches = true;
+            }
+            m_coreUpdaterTable->setRowHidden(row, !matches);
+         }
+         break;
+      }
+      case BROWSER_TYPE_SETTINGS:
          break;
    }
 }
@@ -3382,7 +4008,9 @@ void MainWindow::onShowHiddenDockWidgetAction()
 QLineEdit* MainWindow::searchLineEdit() { return m_searchLineEdit; }
 void MainWindow::onSearchEnterPressed()
 {
-   onSearchLineEditEdited(m_searchLineEdit->text());
+   m_searchDebounceTimer->stop();
+   m_searchRegularExpression = qt_search_expression(m_searchLineEdit->text());
+   applySearch();
 }
 
 void MainWindow::onCurrentTableItemDataChanged(const QModelIndex &topLeft,
@@ -3682,11 +4310,809 @@ void MainWindow::onBrowserUpClicked()
          QAbstractItemView::EnsureVisible);
 }
 
+#ifdef HAVE_NETWORKING
+struct QtUpdaterListingData
+{
+   QPointer<MainWindow> window;
+   int type;
+   QString path;
+};
+
+struct QtUpdaterDownloadData
+{
+   QPointer<MainWindow> window;
+   QString fileName;
+   QString outputPath;
+   bool autoExtract;
+   bool refreshFileBrowser;
+};
+
+static QString qt_updater_wrap_tooltip(const QString &text, int lineLength)
+{
+   QString wrapped;
+   int lineStart = 0;
+   if (lineLength < 1)
+      return text;
+   while (lineStart < text.size())
+   {
+      int lineEnd = qMin(lineStart + lineLength, text.size());
+      if (lineEnd < text.size())
+      {
+         int breakAt = lineEnd;
+         while (breakAt > lineStart && !text.at(breakAt).isSpace())
+            breakAt--;
+         /* Keep long words intact, even if this makes one line longer. */
+         if (breakAt == lineStart)
+         {
+            breakAt = lineEnd;
+            while (breakAt < text.size() && !text.at(breakAt).isSpace())
+               breakAt++;
+         }
+         lineEnd = breakAt;
+      }
+      wrapped += text.mid(lineStart, lineEnd - lineStart).trimmed();
+      lineStart = lineEnd;
+      while (lineStart < text.size() && text.at(lineStart).isSpace())
+         lineStart++;
+      if (lineStart < text.size())
+         wrapped += QLatin1Char('\n');
+   }
+   return wrapped;
+}
+
+static void qt_updater_listing_callback(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   QtUpdaterListingData *listing = (QtUpdaterListingData*)user_data;
+   QStringList entries;
+   if (listing && data && !err && data->status >= 200
+         && data->status < 300 && data->data && data->len)
+   {
+      QString text = QString::fromUtf8(data->data, (int)data->len);
+      QStringList lines = text.split(QLatin1Char('\n'));
+      for (int i = 0; i < lines.size(); i++)
+      {
+         QString line = lines.at(i).trimmed();
+         /* Buildbot .index-dirs entries may have a trailing slash.
+          * Keep valid relative paths, but reject traversal and absolute paths. */
+         while (line.endsWith(QLatin1Char('/')))
+            line.chop(1);
+         if (line.isEmpty() || line == QStringLiteral(".")
+               || line == QStringLiteral("..")
+               || line.startsWith(QLatin1Char('/'))
+               || line.contains(QLatin1Char('\\')))
+            continue;
+         QStringList parts = line.split(QLatin1Char('/'));
+         bool safe = true;
+         for (int j = 0; j < parts.size(); j++)
+         {
+            if (parts.at(j).isEmpty() || parts.at(j) == QStringLiteral(".")
+                  || parts.at(j) == QStringLiteral(".."))
+            {
+               safe = false;
+               break;
+            }
+         }
+         if (safe)
+            entries.append(line);
+      }
+   }
+   if (listing && listing->window)
+      QMetaObject::invokeMethod(listing->window.data(), "onUpdaterListingFinished",
+            Qt::QueuedConnection, Q_ARG(QStringList, entries),
+            Q_ARG(int, listing->type), Q_ARG(QString, listing->path));
+   delete listing;
+}
+
+static bool qt_updater_request_listing(MainWindow *window,
+      const QString &relativePath, const QString &indexName, int type)
+{
+   settings_t *settings = config_get_ptr();
+   char url[PATH_MAX_LENGTH];
+   char encodedUrl[PATH_MAX_LENGTH];
+   QString remotePath = relativePath;
+   QtUpdaterListingData *listing = new QtUpdaterListingData;
+   if (!settings || !*settings->paths.network_buildbot_assets_url)
+   {
+      delete listing;
+      return false;
+   }
+   if (!remotePath.endsWith(QLatin1Char('/')))
+      remotePath += QLatin1Char('/');
+   remotePath += indexName;
+   QByteArray pathBytes = remotePath.toUtf8();
+   fill_pathname_join_special(url, settings->paths.network_buildbot_assets_url,
+         pathBytes.constData(), sizeof(url));
+   net_http_urlencode_full(encodedUrl, url, sizeof(encodedUrl));
+   listing->window = window;
+   listing->type = type;
+   listing->path = relativePath;
+   if (!task_push_http_transfer(encodedUrl, true, "GET",
+            qt_updater_listing_callback, listing))
+   {
+      delete listing;
+      return false;
+   }
+   return true;
+}
+
+#ifdef HAVE_COMPRESSION
+static void qt_updater_decompress_callback(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
+   QtUpdaterDownloadData *download = (QtUpdaterDownloadData*)user_data;
+   bool success = dec && !err;
+   QString refreshPath;
+
+   /* Match the internal menu's cb_decompressed(): remove the downloaded
+    * archive after extraction has finished, then release task data. */
+   if (dec)
+   {
+      if (dec->source_file && *dec->source_file
+            && filestream_exists(dec->source_file))
+         filestream_delete(dec->source_file);
+      free(dec->source_file);
+      free(dec);
+   }
+
+   if (download && download->refreshFileBrowser)
+      refreshPath = QFileInfo(download->outputPath).absolutePath();
+
+   if (download && download->window)
+      QMetaObject::invokeMethod(download->window.data(),
+            "onUpdaterDownloadFinished", Qt::QueuedConnection,
+            Q_ARG(QString, download->fileName), Q_ARG(bool, success),
+            Q_ARG(QString, refreshPath));
+   delete download;
+}
+#endif
+
+static void qt_updater_download_callback(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   http_transfer_data_t *data = (http_transfer_data_t*)task_data;
+   QtUpdaterDownloadData *download = (QtUpdaterDownloadData*)user_data;
+   bool success = data && !err && data->status >= 200 && data->status < 300;
+#ifdef HAVE_COMPRESSION
+   if (success && download && download->autoExtract)
+   {
+      QByteArray outputPath = download->outputPath.toUtf8();
+      if (path_is_compressed_file(outputPath.constData()))
+      {
+         char dirPath[PATH_MAX_LENGTH];
+         fill_pathname_basedir(dirPath, outputPath.constData(), sizeof(dirPath));
+         if (task_check_decompress(outputPath.constData())
+               || !task_push_decompress(outputPath.constData(), dirPath,
+                  NULL, NULL, NULL, qt_updater_decompress_callback,
+                  download, NULL, false))
+            success = false;
+         else
+            return; /* The decompression callback owns download now. */
+      }
+   }
+#endif
+   {
+      QString refreshPath;
+      if (success && download && download->refreshFileBrowser)
+         refreshPath = QFileInfo(download->outputPath).absolutePath();
+      if (download && download->window)
+         QMetaObject::invokeMethod(download->window.data(),
+               "onUpdaterDownloadFinished", Qt::QueuedConnection,
+               Q_ARG(QString, download->fileName), Q_ARG(bool, success),
+               Q_ARG(QString, refreshPath));
+   }
+   delete download;
+}
+
+static bool qt_updater_download_file(MainWindow *window,
+      const QString &remoteRelativePath, const QString &localBaseDirectory,
+      const QString &displayName, bool refreshFileBrowser)
+{
+   settings_t *settings = config_get_ptr();
+   char url[PATH_MAX_LENGTH];
+   char encodedUrl[PATH_MAX_LENGTH];
+   char outputPath[PATH_MAX_LENGTH];
+   char directoryPath[PATH_MAX_LENGTH];
+   QString localRelativePath = remoteRelativePath;
+   if (localRelativePath.startsWith(QStringLiteral("system/")))
+      localRelativePath.remove(0, 7);
+   else if (localRelativePath.startsWith(QStringLiteral("cores/")))
+      localRelativePath.remove(0, 6);
+   QByteArray remoteBytes = remoteRelativePath.toUtf8();
+   QByteArray localBytes = localRelativePath.toUtf8();
+   QByteArray baseBytes = localBaseDirectory.toUtf8();
+   QtUpdaterDownloadData *download = new QtUpdaterDownloadData;
+   if (!settings || !*settings->paths.network_buildbot_assets_url
+         || baseBytes.isEmpty())
+   {
+      delete download;
+      return false;
+   }
+   fill_pathname_join_special(url, settings->paths.network_buildbot_assets_url,
+         remoteBytes.constData(), sizeof(url));
+   net_http_urlencode_full(encodedUrl, url, sizeof(encodedUrl));
+   fill_pathname_join_special(outputPath, baseBytes.constData(),
+         localBytes.constData(), sizeof(outputPath));
+   strlcpy(directoryPath, outputPath, sizeof(directoryPath));
+   path_basedir_wrapper(directoryPath);
+   if (!path_mkdir(directoryPath))
+   {
+      delete download;
+      return false;
+   }
+   download->window = window;
+   download->fileName = displayName;
+   download->outputPath = QString::fromUtf8(outputPath);
+   download->refreshFileBrowser = refreshFileBrowser;
+#ifdef HAVE_COMPRESSION
+   download->autoExtract = settings->bools.network_buildbot_auto_extract_archive;
+#else
+   download->autoExtract = false;
+#endif
+   if (!task_push_http_download_file(encodedUrl, outputPath, false,
+            "Qt Updater download", qt_updater_download_callback, download))
+   {
+      delete download;
+      return false;
+   }
+   return true;
+}
+
+static void qt_updater_request_content_listing(MainWindow *window,
+      const QString &relativePath, int type)
+{
+   if (!qt_updater_request_listing(window, relativePath,
+            type == 4 ? FILE_PATH_INDEX_DIRS_URL : FILE_PATH_INDEX_URL, type))
+      window->showMessageBox(QObject::tr("Failed to request the content list."),
+            MainWindow::MSGBOX_TYPE_ERROR);
+}
+#endif
+
+void MainWindow::onUpdaterActionClicked()
+{
+#ifdef HAVE_NETWORKING
+   QPushButton *button = qobject_cast<QPushButton*>(sender());
+   settings_t *settings = config_get_ptr();
+   int action;
+
+   if (!button)
+      return;
+
+   action = button->property("updater_action").toInt();
+   if (action == MENU_ENUM_LABEL_CORE_UPDATER_LIST)
+   {
+      core_updater_list_t *coreList = core_updater_list_get_cached();
+      if (!coreList)
+      {
+         if (!core_updater_list_init_cached())
+         {
+            showMessageBox(tr("Failed to initialise the core list."), MSGBOX_TYPE_ERROR);
+            return;
+         }
+         coreList = core_updater_list_get_cached();
+      }
+      if (!coreList)
+         return;
+
+      core_updater_list_reset(coreList);
+      m_coreUpdaterTable->setRowCount(0);
+      m_coreUpdaterTable->setSortingEnabled(false);
+      m_updaterViewType = 1;
+      m_updaterNavigationWidget->hide();
+      m_updaterDirectoryTree->hide();
+      m_coreUpdaterTable->setColumnCount(3);
+      m_coreUpdaterTable->setHorizontalHeaderLabels(QStringList()
+            << tr("Core Name") << tr("License") << tr("Date"));
+      m_coreUpdaterPollAttempts = 0;
+      m_centralWidget->setCurrentWidget(m_updaterContentWidget);
+#if defined(ANDROID)
+      if (play_feature_delivery_enabled())
+      {
+         struct string_list *availableCores = play_feature_delivery_available_cores();
+         bool success = false;
+         if (availableCores)
+         {
+            core_updater_list_reset(coreList);
+            success = core_updater_list_parse_pfd_data(coreList,
+                  settings->paths.directory_libretro,
+                  settings->paths.path_libretro_info, availableCores);
+            string_list_free(availableCores);
+         }
+         if (!success)
+         {
+            showMessageBox(tr("Failed to retrieve the core list."), MSGBOX_TYPE_ERROR);
+            return;
+         }
+         onCoreUpdaterListPoll();
+      }
+      else
+#endif
+      {
+         command_event(CMD_EVENT_NETWORK_INIT, NULL);
+         if (!task_push_get_core_updater_list(coreList, false, false))
+         {
+            showMessageBox(tr("Failed to start the core list download."), MSGBOX_TYPE_ERROR);
+            return;
+         }
+         m_coreUpdaterPollTimer->start(200);
+      }
+   }
+   else if (action == MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES)
+   {
+      command_event(CMD_EVENT_NETWORK_INIT, NULL);
+      task_push_update_installed_cores(
+            settings->bools.core_updater_auto_backup,
+            settings->uints.core_updater_auto_backup_history_size,
+            settings->paths.directory_libretro,
+            settings->paths.directory_core_assets);
+      showStatusMessage(tr("Updating installed cores..."), 1, 3000, true);
+   }
+   else if (action == MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES)
+   {
+      char url[PATH_MAX_LENGTH];
+      char encodedUrl[PATH_MAX_LENGTH];
+      struct QtUpdaterListingData *listing = NULL;
+      m_updaterViewType = 2;
+      m_coreUpdaterTable->clearContents();
+      m_coreUpdaterTable->setRowCount(0);
+      m_coreUpdaterTable->setSortingEnabled(false);
+      m_coreUpdaterTable->setColumnCount(1);
+      m_coreUpdaterTable->setHorizontalHeaderLabels(QStringList() << tr("File Name"));
+      m_coreUpdaterTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+      m_updaterNavigationWidget->hide();
+      m_updaterDirectoryTree->hide();
+      m_centralWidget->setCurrentWidget(m_updaterContentWidget);
+      if (!*settings->paths.network_buildbot_assets_url)
+      {
+         showMessageBox(tr("The buildbot assets URL is not configured."), MSGBOX_TYPE_ERROR);
+         return;
+      }
+      fill_pathname_join_special(url, settings->paths.network_buildbot_assets_url,
+            "system/" FILE_PATH_INDEX_URL, sizeof(url));
+      net_http_urlencode_full(encodedUrl, url, sizeof(encodedUrl));
+      command_event(CMD_EVENT_NETWORK_INIT, NULL);
+      listing = new QtUpdaterListingData;
+      listing->window = this;
+      listing->type = 2;
+      listing->path = QStringLiteral("system");
+      if (!task_push_http_transfer(encodedUrl, true, "GET",
+               qt_updater_listing_callback, listing))
+      {
+         delete listing;
+         showMessageBox(tr("Failed to request the system files list."), MSGBOX_TYPE_ERROR);
+      }
+   }
+   else if (action == MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS)
+   {
+      m_updaterViewType = 3;
+      m_updaterContentPath = QStringLiteral("cores");
+      m_coreUpdaterTable->clearContents();
+      m_coreUpdaterTable->setRowCount(0);
+      m_coreUpdaterTable->setSortingEnabled(false);
+      m_coreUpdaterTable->setColumnCount(1);
+      m_coreUpdaterTable->setHorizontalHeaderLabels(QStringList() << tr("Name"));
+      m_coreUpdaterTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+      m_updaterHomeWidget->hide();
+      m_updaterNavigationWidget->show();
+      m_updaterDirectoryTree->show();
+      m_updaterDirectoryTree->clear();
+      m_updaterDirectoryTree->setHeaderHidden(true);
+      {
+         QTreeWidgetItem *root = new QTreeWidgetItem(m_updaterDirectoryTree);
+         root->setText(0, tr("Cores"));
+         root->setData(0, Qt::UserRole, m_updaterContentPath);
+         root->setIcon(0, m_folderIcon);
+         root->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
+         new QTreeWidgetItem(root);
+         m_updaterDirectoryTree->setCurrentItem(root);
+      }
+      m_centralWidget->setCurrentWidget(m_updaterContentWidget);
+      command_event(CMD_EVENT_NETWORK_INIT, NULL);
+      qt_updater_request_content_listing(this, m_updaterContentPath, 4);
+   }
+   else
+   {
+#if defined(HAVE_MENU)
+      enum msg_hash_enums downloadAction = MSG_UNKNOWN;
+      switch ((enum msg_hash_enums)action)
+      {
+         case MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES:
+            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES;
+            break;
+         case MENU_ENUM_LABEL_UPDATE_ASSETS:
+            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_ASSETS;
+            break;
+         case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
+            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES;
+            break;
+         case MENU_ENUM_LABEL_UPDATE_CHEATS:
+            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_CHEATS;
+            break;
+         case MENU_ENUM_LABEL_UPDATE_DATABASES:
+            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_DATABASES;
+            break;
+         case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
+            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS;
+            break;
+         case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
+            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG;
+            break;
+         case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
+            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL;
+            break;
+         case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
+            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG;
+            break;
+         default:
+            break;
+      }
+      if (downloadAction != MSG_UNKNOWN)
+         action_ok_download_bundle(downloadAction);
+      else
+         showMessageBox(tr("This updater action is not available in this build."), MSGBOX_TYPE_WARNING);
+#else
+      showMessageBox(tr("This updater action requires the menu subsystem."), MSGBOX_TYPE_WARNING);
+#endif
+   }
+#else
+   (void)sender();
+#endif
+}
+
+void MainWindow::onCoreUpdaterListPoll()
+{
+#ifdef HAVE_NETWORKING
+   core_updater_list_t *coreList = core_updater_list_get_cached();
+   size_t count = coreList ? core_updater_list_size(coreList) : 0;
+
+   if (count > 0)
+   {
+      size_t i;
+      m_coreUpdaterPollTimer->stop();
+      m_coreUpdaterTable->setSortingEnabled(false);
+      m_coreUpdaterTable->setRowCount((int)count);
+      for (i = 0; i < count; i++)
+      {
+         const core_updater_list_entry_t *entry = NULL;
+         QString license;
+         QString date;
+         int row = (int)i;
+         if (!core_updater_list_get_index(coreList, i, &entry) || !entry)
+            continue;
+         if (entry->licenses_list)
+         {
+            size_t j;
+            for (j = 0; j < entry->licenses_list->size; j++)
+            {
+               if (!license.isEmpty())
+                  license += QStringLiteral(", ");
+               license += QString::fromUtf8(entry->licenses_list->elems[j].data);
+            }
+         }
+         if (entry->date.year)
+            date = QStringLiteral("%1-%2-%3").arg(entry->date.year, 4, 10, QChar('0'))
+                  .arg(entry->date.month, 2, 10, QChar('0'))
+                  .arg(entry->date.day, 2, 10, QChar('0'));
+         QTableWidgetItem *nameItem = new QTableWidgetItem(
+               QString::fromUtf8(entry->display_name ? entry->display_name : entry->remote_filename));
+         nameItem->setData(Qt::UserRole, QString::fromUtf8(entry->remote_filename));
+         nameItem->setToolTip(qt_updater_wrap_tooltip(
+               QString::fromUtf8(entry->description ? entry->description : ""), 75));
+         m_coreUpdaterTable->setItem(row, 0, nameItem);
+         m_coreUpdaterTable->setItem(row, 1, new QTableWidgetItem(license));
+         m_coreUpdaterTable->setItem(row, 2, new QTableWidgetItem(date));
+      }
+      m_coreUpdaterTable->setSortingEnabled(true);
+      m_coreUpdaterTable->resizeColumnsToContents();
+      applySearch();
+      return;
+   }
+
+   if (++m_coreUpdaterPollAttempts > 150)
+   {
+      m_coreUpdaterPollTimer->stop();
+      showMessageBox(tr("The core list could not be retrieved."), MSGBOX_TYPE_ERROR);
+   }
+#endif
+}
+
+void MainWindow::onCoreUpdaterTableContextMenuRequested(const QPoint &pos)
+{
+#ifdef HAVE_NETWORKING
+   QModelIndex index = m_coreUpdaterTable->indexAt(pos);
+   QTableWidgetItem *item = index.isValid()
+         ? m_coreUpdaterTable->item(index.row(), 0) : NULL;
+   QMenu menu(this);
+   QAction *action = NULL;
+   QString entryType;
+   if (!item)
+      return;
+   m_coreUpdaterTable->selectRow(index.row());
+   entryType = item->data(Qt::UserRole + 1).toString();
+   if (entryType == QStringLiteral("empty"))
+      return;
+   if (entryType == QStringLiteral("content-directory"))
+      action = menu.addAction(tr("Open"));
+   else
+      action = menu.addAction(tr("Download"));
+   if (menu.exec(m_coreUpdaterTable->viewport()->mapToGlobal(pos)) != action)
+      return;
+   onUpdaterTableDoubleClicked(index);
+#else
+   (void)pos;
+#endif
+}
+
+void MainWindow::onUpdaterListingFinished(QStringList entries, int type, QString path)
+{
+   int i;
+   if (m_currentBrowser != BROWSER_TYPE_UPDATER)
+      return;
+   if ((type == 2 && m_updaterViewType != 2)
+         || ((type == 4 || type == 5) && m_updaterViewType != 3)
+         || (type == 5 && path != m_updaterContentPath))
+      return;
+   if (type == 2)
+   {
+      if (entries.isEmpty())
+      {
+         QTableWidgetItem *item = new QTableWidgetItem(tr("No entries available."));
+         item->setData(Qt::UserRole + 1, QStringLiteral("empty"));
+         m_coreUpdaterTable->insertRow(0);
+         m_coreUpdaterTable->setItem(0, 0, item);
+      }
+      for (i = 0; i < entries.size(); i++)
+      {
+         QTableWidgetItem *item = new QTableWidgetItem(entries.at(i));
+         item->setData(Qt::UserRole + 1, QStringLiteral("system-file"));
+         m_coreUpdaterTable->insertRow(m_coreUpdaterTable->rowCount());
+         m_coreUpdaterTable->setItem(m_coreUpdaterTable->rowCount() - 1, 0, item);
+      }
+   }
+   else if (type == 4)
+   {
+      QTreeWidgetItem *parentItem = NULL;
+      QList<QTreeWidgetItem*> pending;
+      pending.append(m_updaterDirectoryTree->invisibleRootItem());
+      while (!pending.isEmpty() && !parentItem)
+      {
+         QTreeWidgetItem *candidate = pending.takeFirst();
+         if (candidate->data(0, Qt::UserRole).toString() == path)
+            parentItem = candidate;
+         else
+         {
+            int child;
+            for (child = 0; child < candidate->childCount(); child++)
+               pending.append(candidate->child(child));
+         }
+      }
+      if (parentItem)
+      {
+         parentItem->setData(0, Qt::UserRole + 1, true);
+         while (parentItem->childCount() > 0)
+            delete parentItem->takeChild(0);
+         parentItem->setChildIndicatorPolicy(entries.isEmpty()
+               ? QTreeWidgetItem::DontShowIndicatorWhenChildless
+               : QTreeWidgetItem::ShowIndicator);
+         for (i = 0; i < entries.size(); i++)
+         {
+            QString childPath = path + QLatin1Char('/') + entries.at(i);
+            QTreeWidgetItem *child = new QTreeWidgetItem(parentItem);
+            child->setText(0, entries.at(i));
+            child->setData(0, Qt::UserRole, childPath);
+            child->setIcon(0, m_folderIcon);
+            child->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
+            new QTreeWidgetItem(child);
+         }
+         parentItem->setExpanded(true);
+      }
+      if (path == m_updaterContentPath)
+      {
+#ifdef HAVE_NETWORKING
+         qt_updater_request_content_listing(this, path, 5);
+#endif
+      }
+   }
+   else if (type == 5)
+   {
+      m_coreUpdaterTable->setUpdatesEnabled(false);
+      m_coreUpdaterTable->clearContents();
+      m_coreUpdaterTable->setRowCount(0);
+      if (entries.isEmpty())
+      {
+         QTableWidgetItem *item = new QTableWidgetItem(tr("No files available."));
+         item->setData(Qt::UserRole + 1, QStringLiteral("empty"));
+         m_coreUpdaterTable->insertRow(0);
+         m_coreUpdaterTable->setItem(0, 0, item);
+      }
+      for (i = 0; i < entries.size(); i++)
+      {
+         QTableWidgetItem *item = new QTableWidgetItem(entries.at(i));
+         item->setData(Qt::UserRole + 1, QStringLiteral("content-file"));
+         item->setData(Qt::UserRole, entries.at(i));
+         m_coreUpdaterTable->insertRow(m_coreUpdaterTable->rowCount());
+         m_coreUpdaterTable->setItem(m_coreUpdaterTable->rowCount() - 1, 0, item);
+      }
+      m_coreUpdaterTable->setUpdatesEnabled(true);
+      m_coreUpdaterTable->viewport()->update();
+   }
+   applySearch();
+}
+
+void MainWindow::onUpdaterDownloadFinished(QString fileName, bool success,
+      QString refreshPath)
+{
+   if (success)
+   {
+      showStatusMessage(tr("Downloaded: %1").arg(fileName), 1, 4000, true);
+      if (!refreshPath.isEmpty())
+      {
+         /* Rebuild the filesystem tree because directory watching is
+          * disabled; the new extraction folders are now visible. */
+         refreshFileSystemBrowserTree();
+         /* The table uses the companion core's own listing, not the
+          * QFileSystemModel. Re-enumerate its current directory as well. */
+         companion_core_t *core = ui_companion_qt_core();
+         const char *browseDir = companion_core_browse_dir(core);
+         if (browseDir && *browseDir)
+         {
+            QByteArray browsePath(browseDir);
+            companion_core_browse_open(core, browsePath.constData());
+         }
+      }
+   }
+   else
+      showMessageBox(tr("Download failed: %1").arg(fileName), MSGBOX_TYPE_ERROR);
+}
+
+void MainWindow::onUpdaterBackClicked()
+{
+   m_updaterViewType = 0;
+   m_updaterHomeWidget->show();
+   m_updaterNavigationWidget->hide();
+   m_updaterDirectoryTree->hide();
+   m_centralWidget->setCurrentWidget(m_updaterEmptyWidget);
+}
+
+void MainWindow::onUpdaterUpClicked()
+{
+#ifdef HAVE_NETWORKING
+   QTreeWidgetItem *item = m_updaterDirectoryTree->currentItem();
+   if (!item)
+      return;
+   QTreeWidgetItem *parent = item->parent();
+   if (!parent)
+      return;
+   m_updaterDirectoryTree->setCurrentItem(parent);
+   m_updaterContentPath = parent->data(0, Qt::UserRole).toString();
+   qt_updater_request_content_listing(this, m_updaterContentPath, 5);
+#endif
+}
+
+void MainWindow::onUpdaterTopClicked()
+{
+#ifdef HAVE_NETWORKING
+   QTreeWidgetItem *root = m_updaterDirectoryTree->topLevelItem(0);
+   if (!root)
+      return;
+   m_updaterDirectoryTree->setCurrentItem(root);
+   m_updaterContentPath = root->data(0, Qt::UserRole).toString();
+   qt_updater_request_content_listing(this, m_updaterContentPath, 5);
+#endif
+}
+
+void MainWindow::onUpdaterTableDoubleClicked(const QModelIndex &index)
+{
+#ifdef HAVE_NETWORKING
+   QTableWidgetItem *item = index.isValid()
+         ? m_coreUpdaterTable->item(index.row(), 0) : NULL;
+   QString entryType;
+
+   if (!item)
+      return;
+   entryType = item->data(Qt::UserRole + 1).toString();
+   if (entryType == QStringLiteral("empty"))
+      return;
+
+   if (m_updaterViewType == 1)
+   {
+      core_updater_list_t *coreList = core_updater_list_get_cached();
+      QByteArray filename = item->data(Qt::UserRole).toString().toUtf8();
+      settings_t *settings = config_get_ptr();
+      if (coreList && !filename.isEmpty())
+      {
+#if defined(ANDROID)
+         if (play_feature_delivery_enabled())
+            task_push_play_feature_delivery_core_install(coreList,
+                  filename.constData(), false);
+         else
+#endif
+            task_push_core_updater_download(coreList, filename.constData(), 0,
+                  false, settings->bools.core_updater_auto_backup,
+                  (size_t)settings->uints.core_updater_auto_backup_history_size,
+                  settings->paths.directory_libretro,
+                  settings->paths.directory_core_assets);
+      }
+   }
+   else if (m_updaterViewType == 2)
+   {
+      QString fileName = item->text();
+      if (!qt_updater_download_file(this,
+               QStringLiteral("system/") + fileName,
+               QString::fromUtf8(config_get_ptr()->paths.directory_system),
+               fileName, false))
+         showMessageBox(tr("Failed to start the download."), MSGBOX_TYPE_ERROR);
+   }
+   else if (m_updaterViewType == 3)
+   {
+      QString name = item->text();
+      if (entryType == QStringLiteral("content-directory"))
+      {
+         m_updaterContentPath += QLatin1Char('/') + name;
+         qt_updater_request_content_listing(this, m_updaterContentPath, 4);
+      }
+      else
+      {
+         QString remotePath = m_updaterContentPath + QLatin1Char('/') + name;
+         if (!qt_updater_download_file(this, remotePath,
+                  QString::fromUtf8(config_get_ptr()->paths.directory_core_assets),
+                  name, true))
+            showMessageBox(tr("Failed to start the download."), MSGBOX_TYPE_ERROR);
+      }
+   }
+#else
+   (void)index;
+#endif
+}
+
+void MainWindow::onUpdaterDirectoryExpanded(QTreeWidgetItem *item)
+{
+#ifdef HAVE_NETWORKING
+   QString path;
+   if (!item)
+      return;
+   path = item->data(0, Qt::UserRole).toString();
+   if (path.isEmpty() || item->data(0, Qt::UserRole + 1).toBool())
+      return;
+   item->setData(0, Qt::UserRole + 1, true);
+   qt_updater_request_content_listing(this, path, 4);
+#else
+   (void)item;
+#endif
+}
+
+void MainWindow::onUpdaterDirectoryClicked(QTreeWidgetItem *item, int column)
+{
+#ifdef HAVE_NETWORKING
+   QString path;
+   (void)column;
+   if (!item)
+      return;
+   path = item->data(0, Qt::UserRole).toString();
+   if (path.isEmpty() || path == m_updaterContentPath)
+      return;
+   m_updaterContentPath = path;
+   qt_updater_request_content_listing(this, m_updaterContentPath, 5);
+#else
+   (void)item;
+   (void)column;
+#endif
+}
+
 void MainWindow::onBrowserStartClicked()
 {
-   m_dirTree->setCurrentIndex(
-         m_dirModel->index(config_get_ptr()->paths.directory_menu_content));
-   m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
+   QModelIndex index = m_dirModel->index(
+         config_get_ptr()->paths.directory_menu_content);
+
+   if (!index.isValid())
+      return;
+
+   m_dirTree->setCurrentIndex(index);
+   m_dirTree->selectionModel()->select(index,
+         QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+   m_dirTree->scrollTo(index, QAbstractItemView::PositionAtTop);
 }
 
 ListWidget* MainWindow::playlistListWidget() { return m_listWidget; }
@@ -3886,6 +5312,7 @@ void MainWindow::onPlaylistModelLoaded()
    else
       m_proxyModel->sort(-1);
 
+   applySearch();
    updateItemsCount();
 
    m_gridView->scrollToTop();
@@ -3900,6 +5327,12 @@ void MainWindow::updateItemsCount()
 {
    m_itemsCountLabel->setText(
          m_itemsCountLiteral.arg(m_proxyModel->rowCount()));
+}
+
+void MainWindow::onPlaylistSearchResultsReady()
+{
+   if (m_currentBrowser == BROWSER_TYPE_PLAYLISTS)
+      updateItemsCount();
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -4239,54 +5672,6 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
       }
    }
    return QMainWindow::eventFilter(obj, event);
-}
-
-void MainWindow::showAbout()
-{
-   QScopedPointer<QDialog> dialog(new QDialog());
-   QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
-   QString text = QString("RetroArch ")
-      + QString(PACKAGE_VERSION)
-      + QString("<br><br>")
-      + "<a href=\"https://www.libretro.com/\">www.libretro.com</a>"
-         "<br><br>"
-      + "<a href=\"https://www.retroarch.com/\">www.retroarch.com</a>"
-#ifdef HAVE_GIT_VERSION
-         "<br><br>"
-      + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION)
-      + QString(": ")
-      + retroarch_git_version
-#endif
-      + QString("<br>")
-      + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE)
-      + QString(": ")
-      + __DATE__;
-   QLabel *label = new QLabel(text, dialog.data());
-   QPixmap pix = getInvader();
-   QLabel *pixLabel = new QLabel(dialog.data());
-   connect(buttonBox, SIGNAL(accepted()), dialog.data(), SLOT(accept()));
-   connect(buttonBox, SIGNAL(rejected()), dialog.data(), SLOT(reject()));
-
-   label->setTextFormat(Qt::RichText);
-   label->setAlignment(Qt::AlignCenter);
-   label->setTextInteractionFlags(Qt::TextBrowserInteraction);
-   label->setOpenExternalLinks(true);
-
-   pixLabel->setAlignment(Qt::AlignCenter);
-   pixLabel->setPixmap(pix);
-
-   dialog->setWindowTitle(msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT));
-   dialog->setLayout(new QVBoxLayout());
-
-   dialog->layout()->addWidget(pixLabel);
-   dialog->layout()->addWidget(label);
-
-   dialog->layout()->addItem(new QSpacerItem(20, 20, QSizePolicy::Minimum,
-            QSizePolicy::Expanding));
-   dialog->layout()->addWidget(buttonBox);
-
-   dialog->exec();
 }
 
 void MainWindow::showDocs()
@@ -4969,19 +6354,11 @@ static void qt_companion_build_menubar(MainWindow *mainwindow)
    viewMenu->addAction(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CONTROLLER_SHORTCUTS),
             mainwindow->shortcutsDialog(), SLOT(showDialog()));
-   viewMenu->addSeparator();
-   viewMenu->addAction(msg_hash_to_str(
-            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS),
-            mainwindow->viewOptionsDialog(), SLOT(showDialog()));
-
    helpMenu = menu->addMenu(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_HELP));
    helpMenu->addAction(QString(msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION)),
                mainwindow, SLOT(showDocs()));
-   helpMenu->addAction(QString(msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT))
-              + QString("..."), mainwindow, SLOT(showAbout()));
 }
 
 /* Build the playlist + file-browser tab dock. Returns the dock so the
@@ -4990,6 +6367,8 @@ static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
 {
    QFrame *playlistWidget               = new QFrame();
    QFrame *browserWidget                = new QFrame();
+   QFrame *updaterWidget                = new QFrame();
+   updaterWidget->setObjectName("updaterWidget");
    QPushButton *browserDownloadsButton  = new QPushButton(msg_hash_to_str(
          MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY));
    QPushButton *browserUpButton         = new QPushButton(msg_hash_to_str(
@@ -5034,6 +6413,116 @@ static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS));
    browserAndPlaylistTabWidget->addTab(browserWidget,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER));
+
+#ifdef HAVE_NETWORKING
+   {
+      QVBoxLayout *updaterLayout = new QVBoxLayout();
+      const msg_hash_enums updaterLabels[] = {
+         MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+         MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+         MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+         MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+         MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+         MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+         MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+         MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+         MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+         MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+         MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+         MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+         MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS
+      };
+      const msg_hash_enums updaterActions[] = {
+         MENU_ENUM_LABEL_CORE_UPDATER_LIST,
+         MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,
+         MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+         MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
+         MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,
+         MENU_ENUM_LABEL_UPDATE_ASSETS,
+         MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES,
+         MENU_ENUM_LABEL_UPDATE_CHEATS,
+         MENU_ENUM_LABEL_UPDATE_DATABASES,
+         MENU_ENUM_LABEL_UPDATE_OVERLAYS,
+         MENU_ENUM_LABEL_UPDATE_CG_SHADERS,
+         MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,
+         MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS
+      };
+      unsigned i;
+      updaterWidget->setLayout(new QVBoxLayout());
+      updaterWidget->layout()->setContentsMargins(0, 0, 0, 0);
+      updaterLayout->setContentsMargins(6, 6, 6, 6);
+      updaterLayout->setSpacing(6);
+      mainwindow->updaterHomeWidget()->setLayout(updaterLayout);
+      mainwindow->updaterHomeWidget()->setObjectName("updaterHomeWidget");
+      updaterWidget->layout()->addWidget(mainwindow->updaterHomeWidget());
+      for (i = 0; i < sizeof(updaterLabels) / sizeof(updaterLabels[0]); i++)
+      {
+         QString buttonText = msg_hash_to_str(updaterLabels[i]);
+         if (updaterActions[i] == MENU_ENUM_LABEL_CORE_UPDATER_LIST
+               || updaterActions[i] == MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES
+               || updaterActions[i] == MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS)
+            buttonText += QStringLiteral("...");
+         QPushButton *button = new QPushButton(buttonText,
+               mainwindow->updaterHomeWidget());
+         button->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+         button->setProperty("updater_action", (int)updaterActions[i]);
+         updaterLayout->addWidget(button);
+         QObject::connect(button, SIGNAL(clicked()), mainwindow,
+               SLOT(onUpdaterActionClicked()));
+      }
+      updaterLayout->addStretch(1);
+      mainwindow->updaterHomeWidget()->setSizePolicy(
+         QSizePolicy::Preferred, QSizePolicy::Expanding);
+   }
+   mainwindow->coreUpdaterTable()->setColumnCount(3);
+   mainwindow->coreUpdaterTable()->setHorizontalHeaderLabels(QStringList()
+         << QObject::tr("Core Name") << QObject::tr("License")
+         << QObject::tr("Date"));
+   mainwindow->coreUpdaterTable()->verticalHeader()->hide();
+   mainwindow->coreUpdaterTable()->setAlternatingRowColors(true);
+   mainwindow->coreUpdaterTable()->setSelectionBehavior(QAbstractItemView::SelectRows);
+   mainwindow->coreUpdaterTable()->setSelectionMode(QAbstractItemView::SingleSelection);
+   mainwindow->coreUpdaterTable()->setEditTriggers(QAbstractItemView::NoEditTriggers);
+   mainwindow->coreUpdaterTable()->setSortingEnabled(true);
+   mainwindow->coreUpdaterTable()->setContextMenuPolicy(Qt::CustomContextMenu);
+   {
+      QVBoxLayout *contentLayout = new QVBoxLayout(mainwindow->updaterContentWidget());
+      QHBoxLayout *navigationLayout = new QHBoxLayout(mainwindow->updaterNavigationWidget());
+      QPushButton *backButton = new QPushButton(QObject::tr("Back"), mainwindow->updaterNavigationWidget());
+      QPushButton *upButton = new QPushButton(QObject::tr("Up"), mainwindow->updaterNavigationWidget());
+      QPushButton *topButton = new QPushButton(QObject::tr("Top"), mainwindow->updaterNavigationWidget());
+      contentLayout->setContentsMargins(0, 0, 0, 0);
+      navigationLayout->setContentsMargins(4, 4, 4, 4);
+      navigationLayout->addWidget(backButton);
+      navigationLayout->addWidget(upButton);
+      navigationLayout->addWidget(topButton);
+      contentLayout->addWidget(mainwindow->coreUpdaterTable());
+      updaterWidget->layout()->addWidget(mainwindow->updaterNavigationWidget());
+      updaterWidget->layout()->addWidget(mainwindow->updaterDirectoryTree());
+      QObject::connect(backButton, SIGNAL(clicked()), mainwindow, SLOT(onUpdaterBackClicked()));
+      QObject::connect(upButton, SIGNAL(clicked()), mainwindow, SLOT(onUpdaterUpClicked()));
+      QObject::connect(topButton, SIGNAL(clicked()), mainwindow, SLOT(onUpdaterTopClicked()));
+      QObject::connect(mainwindow->updaterDirectoryTree(), SIGNAL(itemExpanded(QTreeWidgetItem*)),
+            mainwindow, SLOT(onUpdaterDirectoryExpanded(QTreeWidgetItem*)));
+      QObject::connect(mainwindow->updaterDirectoryTree(), SIGNAL(itemClicked(QTreeWidgetItem*,int)),
+            mainwindow, SLOT(onUpdaterDirectoryClicked(QTreeWidgetItem*,int)));
+      mainwindow->updaterNavigationWidget()->hide();
+      mainwindow->updaterDirectoryTree()->hide();
+   }
+   browserAndPlaylistTabWidget->addTab(updaterWidget, QObject::tr("Updater"));
+#endif
+#ifdef HAVE_MENU
+   QFrame *settingsFrame = new QFrame;
+   settingsFrame->setObjectName("settingsWidget");
+
+   QVBoxLayout *settingsLayout = new QVBoxLayout(settingsFrame);
+   settingsLayout->setContentsMargins(0, 0, 0, 0);
+   settingsLayout->addWidget(
+         mainwindow->viewOptionsDialog()->categoryListWidget());
+
+   browserAndPlaylistTabWidget->addTab(
+         settingsFrame, QObject::tr("Settings"));
+#endif
 
    browserAndPlaylistTabDock = new QDockWidget(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER), mainwindow);
@@ -5329,6 +6818,19 @@ static void* ui_companion_qt_init(void)
    centralWidget = mainwindow->centralWidget();
    centralWidget->addWidget(mainwindow->playlistViewsAndFooter());
    centralWidget->addWidget(mainwindow->fileTableView());
+   centralWidget->addWidget(mainwindow->updaterContentWidget());
+   centralWidget->addWidget(mainwindow->updaterEmptyWidget());
+#ifdef HAVE_MENU
+   /* The settings category list and page area are reparented out of the
+    * legacy dialog and embedded in the Content Browser / central stack. */
+   mainwindow->viewOptionsDialog()->layout()->removeWidget(
+         mainwindow->viewOptionsDialog()->categoryListWidget());
+   mainwindow->viewOptionsDialog()->layout()->removeWidget(
+         mainwindow->viewOptionsDialog()->categoryPagesWidget());
+   mainwindow->viewOptionsDialog()->categoryListWidget()
+      ->setObjectName("settingsCategoryList");
+   centralWidget->addWidget(mainwindow->viewOptionsDialog()->categoryPagesWidget());
+#endif
    mainwindow->setCentralWidget(centralWidget);
 
    qt_companion_build_menubar(mainwindow);

@@ -47,6 +47,7 @@ class QLabel;
 class QLayout;
 class QPaintEvent;
 class QResizeEvent;
+class QTimer;
 class QVBoxLayout;
 class QDoubleSpinBox;
 /* Forward decls kept unconditional so that callers holding bare
@@ -595,6 +596,41 @@ private:
    rarch_setting_t *m_setting;
 };
 
+/* Qt-owned hotkey capture. Input values are read through RetroArch's
+ * input driver APIs, so only RetroArch key and joypad identifiers can
+ * be written to the configuration. */
+class HotkeyBindWidget : public QWidget
+{
+   Q_OBJECT
+public:
+   HotkeyBindWidget(rarch_setting_t *setting, QWidget *parent = 0);
+   ~HotkeyBindWidget();
+
+private slots:
+   void onBindClicked();
+   void onClearClicked();
+   void onDefaultClicked();
+   void pollCapture();
+
+protected:
+   bool eventFilter(QObject *obj, QEvent *event);
+
+private:
+   struct CaptureState;
+   void refreshLabel();
+   void stopCapture();
+   void applyKeyboardBind(unsigned key);
+   void applyMouseBind(unsigned button);
+   void applyJoyBind(unsigned port, unsigned joykey, uint32_t joyaxis);
+
+   rarch_setting_t *m_setting;
+   QPushButton *m_bindButton;
+   QPushButton *m_clearButton;
+   QPushButton *m_defaultButton;
+   QTimer *m_captureTimer;
+   CaptureState *m_captureState;
+};
+
 class ColorButton : public QToolButton
 {
    Q_OBJECT
@@ -935,6 +971,12 @@ public:
 public slots:
    void showDialog();
    void hideDialog();
+#ifdef HAVE_MENU
+   QListWidget *categoryListWidget() const;
+   QWidget *categoryPagesWidget() const;
+   void loadCategory(int index);
+   void applyCurrentCategory();
+#endif
 private slots:
    void onRejected();
 protected:
@@ -952,6 +994,9 @@ private:
    QVector<OptionsCategory*> m_categoryList;
    QListWidget *m_optionsList;
    QStackedLayout *m_optionsStack;
+   QWidget *m_categoryPagesWidget;
+   QLabel *m_headerLabel;
+   int m_currentCategoryIndex;
 #else
    ViewOptionsWidget *m_viewOptionsWidget;
 #endif
@@ -1476,6 +1521,38 @@ class DirectoryCategory : public OptionsCategory
 public:
    DirectoryCategory(QWidget *parent);
    QVector<OptionsPage*> pages();
+};
+
+/************************************************************
+   Information
+************************************************************/
+class InformationPage;
+
+class InformationCategory : public OptionsCategory
+{
+public:
+   InformationCategory(QWidget *parent);
+   QVector<OptionsPage*> pages();
+   void load();
+
+private:
+   InformationPage *m_page;
+};
+
+class InformationPage : public OptionsPage
+{
+public:
+   InformationPage(QObject *parent = nullptr);
+   QWidget *widget();
+   void load();
+
+private:
+   QWidget *m_widget;
+   QGroupBox *m_systemGroup;
+   QGroupBox *m_aboutGroup;
+   QGroupBox *m_displayGroup;
+   QGroupBox *m_inputGroup;
+   QGroupBox *m_networkGroup;
 };
 
 static inline QWidget *create_widget(enum menu_displaylist_ctl_state name)

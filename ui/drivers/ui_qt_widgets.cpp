@@ -8,6 +8,7 @@
 #include <QDoubleSpinBox>
 #include <QDragEnterEvent>
 #include <QDropEvent>
+#include <QElapsedTimer>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHeaderView>
@@ -21,6 +22,7 @@
 #include <QListWidgetItem>
 #include <QMenu>
 #include <QMessageBox>
+#include <QMouseEvent>
 #include <QMimeData>
 #include <QPaintEvent>
 #include <QProgressDialog>
@@ -33,6 +35,8 @@
 #include <QStyle>
 #include <QStyleOption>
 #include <QTimer>
+#include <QWheelEvent>
+#include <QWhatsThis>
 
 #include "ui_qt_widgets.h"
 #include "ui_qt.h"
@@ -55,8 +59,10 @@
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 #include "../../version.h"
+#include "../../version_git.h"
 #include "../../gfx/video_display_server.h"
 #include "../../input/input_driver.h"
+#include "../../input/input_keymaps.h"
 #include "../../input/input_remapping.h"
 #include "../../network/netplay/netplay.h"
 #include "../../playlist.h"
@@ -64,6 +70,7 @@
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #include "../../menu/menu_entries.h"
+#include "../../menu/menu_input.h"
 #include "../../menu/menu_displaylist.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../../menu/menu_shader.h"
@@ -131,10 +138,23 @@ static inline void add_sublabel_and_whats_this(
       widget->setToolTip(wrapped_tooltip(tmp));
 
    msg_hash_get_help_enum((enum msg_hash_enums)setting->enum_idx,
-         tmp, sizeof(tmp));
+      tmp, sizeof(tmp));
 
    if (!string_is_equal(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
+   {
       widget->setWhatsThis(tmp);
+      QAction *whatsThisAction = new QAction(
+      QObject::tr("What's This?"), widget);
+
+      QObject::connect(whatsThisAction, &QAction::triggered,
+            widget, [widget]()
+            {
+               QWhatsThis::enterWhatsThisMode();
+            });
+
+      widget->addAction(whatsThisAction);
+      widget->setContextMenuPolicy(Qt::ActionsContextMenu);
+   }
 }
 
 /* A setting's range is stored as float; converting a float outside
@@ -295,7 +315,14 @@ bool FormLayout::addBindButton(rarch_setting_t *setting)
    if (!setting || !setting->short_description)
       return false;
 
-   addRow(QString(setting->short_description), new BindButton(setting));
+   if (setting->bind_type >= MENU_SETTINGS_BIND_BEGIN
+         + RARCH_FIRST_META_KEY
+         && setting->bind_type < MENU_SETTINGS_BIND_BEGIN
+         + RARCH_BIND_LIST_END)
+      addRow(QString(setting->short_description),
+            new HotkeyBindWidget(setting));
+   else
+      addRow(QString(setting->short_description), new BindButton(setting));
 
    return true;
 }
@@ -941,7 +968,9 @@ RefreshRateControl::RefreshRateControl(rarch_setting_t *setting, QWidget *parent
    ,m_synced(*setting->value.target.fraction)
    ,m_dirty(false)
 {
+   setObjectName("refreshRateControl");
    int i;
+   m_slider->setObjectName("refreshRateSlider");
    QPushButton *setButton = new QPushButton(QObject::tr("Set"), this);
    const char *fmt        = setting->aux.rounding_fraction;
    /* "%.Nf" - read N directly instead of compiling a regex per widget. */
@@ -1275,6 +1304,516 @@ void BindButton::onClicked(bool checked)
    (void)(checked);
 
    m_setting->actions->ok(m_setting, 0, false);
+}
+
+
+struct HotkeyBindWidget::CaptureState
+{
+   input_bits_t buttons[MAX_USERS];
+   int16_t axes[MAX_USERS][MENU_MAX_AXES];
+   bool axis_armed[MAX_USERS][MENU_MAX_AXES];
+   uint16_t hats[MAX_USERS][MENU_MAX_HATS];
+   uint32_t listen;
+   unsigned user;
+   unsigned bind_id;
+   QElapsedTimer clock;
+   unsigned timeout_seconds;
+};
+
+HotkeyBindWidget::HotkeyBindWidget(rarch_setting_t *setting, QWidget *parent) :
+   QWidget(parent)
+   ,m_setting(setting)
+   ,m_bindButton(new QPushButton(this))
+   ,m_clearButton(new QPushButton(this))
+   ,m_defaultButton(new QPushButton(this))
+   ,m_captureTimer(new QTimer(this))
+   ,m_captureState(NULL)
+{
+   QHBoxLayout *layout = new QHBoxLayout(this);
+
+   layout->setContentsMargins(0, 0, 0, 0);
+   layout->setSpacing(4);
+
+   m_bindButton->setAutoDefault(false);
+   m_bindButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+   m_clearButton->setText(tr("Clear"));
+   m_clearButton->setToolTip(tr("Clear this hotkey"));
+   m_clearButton->setAutoDefault(false);
+   m_clearButton->setStyleSheet("QPushButton { min-width: 0px; }");
+
+   m_defaultButton->setText(tr("Default"));
+   m_defaultButton->setToolTip(tr("Restore the default hotkey"));
+   m_defaultButton->setAutoDefault(false);
+   m_defaultButton->setStyleSheet("QPushButton { min-width: 0px; }");
+
+   layout->addWidget(m_bindButton, 1);
+   layout->addWidget(m_clearButton);
+   layout->addWidget(m_defaultButton);
+
+   m_captureTimer->setInterval(16);
+
+   connect(m_bindButton, SIGNAL(clicked(bool)), this, SLOT(onBindClicked()));
+   connect(m_clearButton, SIGNAL(clicked(bool)), this, SLOT(onClearClicked()));
+   connect(m_defaultButton, SIGNAL(clicked(bool)), this, SLOT(onDefaultClicked()));
+   connect(m_captureTimer, SIGNAL(timeout()), this, SLOT(pollCapture()));
+
+   add_sublabel_and_whats_this(m_bindButton, m_setting);
+   refreshLabel();
+}
+
+HotkeyBindWidget::~HotkeyBindWidget()
+{
+   stopCapture();
+   delete m_captureState;
+}
+
+void HotkeyBindWidget::refreshLabel()
+{
+   const struct retro_keybind *bind = NULL;
+   char value[NAME_MAX_LENGTH];
+   char part[128];
+   char joy[64];
+   char key[64];
+   char own[NAME_MAX_LENGTH];
+   unsigned id;
+   unsigned user;
+
+   if (!m_setting)
+      return;
+
+   id   = m_setting->bind_type - MENU_SETTINGS_BIND_BEGIN;
+   user = m_setting->index_offset;
+   bind = input_config_bind(user, id);
+   value[0] = '\0';
+
+   if (!bind)
+   {
+      m_bindButton->setText(QStringLiteral("---"));
+      return;
+   }
+
+   input_keymaps_translate_rk_to_str(RETRO_KEYBIND_KEY(bind), key, sizeof(key));
+   if (key[0] && !string_is_equal(key, "nul"))
+   {
+      strlcat(value, key, sizeof(value));
+   }
+
+   joy[0] = '\0';
+   if (bind->joykey != NO_BTN)
+      input_config_format_joykey(joy, sizeof(joy), bind->joykey);
+   else if (bind->joyaxis != AXIS_NONE)
+      input_config_format_joyaxis(joy, sizeof(joy), bind->joyaxis);
+   if (joy[0])
+   {
+      if (value[0])
+         strlcat(value, " / ", sizeof(value));
+      strlcat(value, "Pad: ", sizeof(value));
+      strlcat(value, joy, sizeof(value));
+   }
+
+   own[0] = '\0';
+   input_config_plays_as_hotkey_string(id, own, sizeof(own));
+   if (own[0])
+   {
+      if (value[0])
+         strlcat(value, " / ", sizeof(value));
+      strlcat(value, own, sizeof(value));
+   }
+
+   part[0] = '\0';
+   switch (RETRO_KEYBIND_MBUTTON(bind))
+   {
+      case RETRO_DEVICE_ID_MOUSE_LEFT:          strlcpy(part, "Mouse Left", sizeof(part)); break;
+      case RETRO_DEVICE_ID_MOUSE_RIGHT:         strlcpy(part, "Mouse Right", sizeof(part)); break;
+      case RETRO_DEVICE_ID_MOUSE_MIDDLE:        strlcpy(part, "Mouse Middle", sizeof(part)); break;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:      strlcpy(part, "Mouse 4", sizeof(part)); break;
+      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:      strlcpy(part, "Mouse 5", sizeof(part)); break;
+      case RETRO_DEVICE_ID_MOUSE_WHEELUP:      strlcpy(part, "Wheel Up", sizeof(part)); break;
+      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:    strlcpy(part, "Wheel Down", sizeof(part)); break;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP: strlcpy(part, "H-Wheel Up", sizeof(part)); break;
+      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN: strlcpy(part, "H-Wheel Down", sizeof(part)); break;
+      default: break;
+   }
+   if (part[0])
+   {
+      if (value[0])
+         strlcat(value, " / ", sizeof(value));
+      strlcat(value, part, sizeof(value));
+   }
+
+   if (!value[0])
+      strlcpy(value, "---", sizeof(value));
+   m_bindButton->setText(QString::fromUtf8(value));
+}
+
+void HotkeyBindWidget::stopCapture()
+{
+   if (m_captureTimer->isActive())
+      m_captureTimer->stop();
+
+   if (m_captureState)
+      qApp->removeEventFilter(this);
+
+   if (m_captureState)
+   {
+      input_driver_set_keyboard_mapping_blocked(false);
+      delete m_captureState;
+      m_captureState = NULL;
+   }
+
+   m_bindButton->setEnabled(true);
+   refreshLabel();
+}
+
+void HotkeyBindWidget::onBindClicked()
+{
+   settings_t *settings = config_get_ptr();
+   unsigned id;
+   unsigned user;
+   unsigned port;
+   unsigned slot;
+
+   if (m_captureTimer->isActive())
+   {
+      stopCapture();
+      return;
+   }
+
+   if (!m_setting || !settings)
+      return;
+
+   id   = m_setting->bind_type - MENU_SETTINGS_BIND_BEGIN;
+   user = m_setting->index_offset;
+   if (id < RARCH_FIRST_META_KEY || id >= RARCH_BIND_LIST_END || user >= MAX_USERS)
+      return;
+
+   m_captureState = new CaptureState();
+   memset(m_captureState->buttons, 0, sizeof(m_captureState->buttons));
+   memset(m_captureState->axes, 0, sizeof(m_captureState->axes));
+   memset(m_captureState->axis_armed, 0, sizeof(m_captureState->axis_armed));
+   memset(m_captureState->hats, 0, sizeof(m_captureState->hats));
+   m_captureState->user            = user;
+   m_captureState->bind_id         = id;
+   m_captureState->listen           = input_config_hotkey_listen_slots();
+   port                             = settings->uints.input_joypad_index[user];
+   if (port >= MAX_USERS)
+      port                          = 0;
+   m_captureState->listen          |= (1U << port);
+   m_captureState->timeout_seconds  = settings->uints.input_bind_timeout;
+   m_captureState->clock.start();
+
+   input_driver_set_keyboard_mapping_blocked(true);
+   input_driver_poll_devices();
+   for (slot = 0; slot < MAX_USERS; slot++)
+      if (m_captureState->listen & (1U << slot))
+         input_driver_capture_pad(slot, false,
+               &m_captureState->buttons[slot], MENU_MAX_BUTTONS,
+               m_captureState->axes[slot], MENU_MAX_AXES,
+               m_captureState->hats[slot], MENU_MAX_HATS);
+
+   for (slot = 0; slot < MAX_USERS; slot++)
+      if (m_captureState->listen & (1U << slot))
+      {
+         unsigned axis;
+         for (axis = 0; axis < MENU_MAX_AXES; axis++)
+            m_captureState->axis_armed[slot][axis] =
+               m_captureState->axes[slot][axis] > -16000
+               && m_captureState->axes[slot][axis] < 16000;
+      }
+
+   m_bindButton->setText(tr("Press a key, mouse or controller input... (click to cancel)"));
+   qApp->installEventFilter(this);
+   m_captureTimer->start();
+}
+
+void HotkeyBindWidget::onClearClicked()
+{
+   struct retro_keybind *bind;
+   unsigned old_key;
+   unsigned id;
+   settings_t *settings = config_get_ptr();
+
+   if (m_captureTimer->isActive())
+      stopCapture();
+   if (!m_setting || !settings)
+      return;
+   id = m_setting->bind_type - MENU_SETTINGS_BIND_BEGIN;
+   if (id < RARCH_FIRST_META_KEY || id >= RARCH_BIND_LIST_END || m_setting->index_offset >= MAX_USERS)
+      return;
+   bind = input_config_bind_edit(m_setting->index_offset, id);
+   if (!bind)
+      return;
+   old_key = RETRO_KEYBIND_KEY(bind);
+   RETRO_KEYBIND_SET_KEY(bind, RETROK_UNKNOWN);
+   RETRO_KEYBIND_SET_MBUTTON(bind, NO_BTN);
+   bind->joykey = NO_BTN;
+   bind->joyaxis = AXIS_NONE;
+   if (old_key != RETROK_UNKNOWN)
+      input_keyboard_mapping_bits(0, old_key);
+   input_config_plays_as_clear_hotkey(id);
+   input_driver_hold_held_input();
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+   refreshLabel();
+}
+
+void HotkeyBindWidget::onDefaultClicked()
+{
+   struct retro_keybind *bind;
+   const struct retro_keybind_def *def;
+   unsigned old_key;
+   unsigned new_key;
+   unsigned id;
+   settings_t *settings = config_get_ptr();
+
+   if (m_captureTimer->isActive())
+      stopCapture();
+   if (!m_setting || !settings)
+      return;
+   id = m_setting->bind_type - MENU_SETTINGS_BIND_BEGIN;
+   if (id < RARCH_FIRST_META_KEY || id >= RARCH_BIND_LIST_END || m_setting->index_offset >= MAX_USERS)
+      return;
+   bind = input_config_bind_edit(m_setting->index_offset, id);
+   def  = input_config_bind_def(m_setting->index_offset, id);
+   if (!bind || !def)
+      return;
+   old_key = RETRO_KEYBIND_KEY(bind);
+   input_config_bind_from_def(bind, def);
+   new_key = RETRO_KEYBIND_KEY(bind);
+   if (old_key != RETROK_UNKNOWN)
+      input_keyboard_mapping_bits(0, old_key);
+   if (new_key != RETROK_UNKNOWN)
+      input_keyboard_mapping_bits(1, new_key);
+   input_config_plays_as_clear_hotkey(id);
+   input_driver_hold_held_input();
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+   refreshLabel();
+}
+
+bool HotkeyBindWidget::eventFilter(QObject *obj, QEvent *event)
+{
+   if (!m_captureState)
+      return QWidget::eventFilter(obj, event);
+
+   if (event->type() == QEvent::MouseButtonPress
+         && (obj == m_bindButton || obj == m_clearButton || obj == m_defaultButton))
+      return QWidget::eventFilter(obj, event);
+
+   if (event->type() == QEvent::KeyPress)
+   {
+      QKeyEvent *key_event = static_cast<QKeyEvent*>(event);
+      unsigned native_key = 0;
+      enum retro_key key = RETROK_UNKNOWN;
+      if (!key_event->isAutoRepeat())
+      {
+#if defined(_WIN32)
+         native_key = key_event->nativeScanCode();
+         if ((native_key & 0xFF00u) == 0xE000u || (native_key & 0x100u))
+            native_key = (native_key & 0xFFu) | 0x80u;
+         else
+            native_key &= 0xFFu;
+#elif defined(__APPLE__)
+         native_key = key_event->nativeScanCode();
+#else
+         native_key = key_event->nativeVirtualKey();
+#endif
+         if (native_key)
+            key = input_keymaps_translate_keysym_to_rk(native_key);
+         if (key != RETROK_UNKNOWN)
+            applyKeyboardBind(key);
+      }
+      event->accept();
+      return true;
+   }
+
+   if (event->type() == QEvent::MouseButtonPress)
+   {
+      QMouseEvent *mouse_event = static_cast<QMouseEvent*>(event);
+      unsigned button = RETRO_KEYBIND_MBUTTON_NONE;
+      switch (mouse_event->button())
+      {
+         case Qt::LeftButton:   button = RETRO_DEVICE_ID_MOUSE_LEFT; break;
+         case Qt::RightButton:  button = RETRO_DEVICE_ID_MOUSE_RIGHT; break;
+         case Qt::MiddleButton: button = RETRO_DEVICE_ID_MOUSE_MIDDLE; break;
+         case Qt::XButton1:     button = RETRO_DEVICE_ID_MOUSE_BUTTON_4; break;
+         case Qt::XButton2:     button = RETRO_DEVICE_ID_MOUSE_BUTTON_5; break;
+         default: break;
+      }
+      if (button != RETRO_KEYBIND_MBUTTON_NONE)
+      {
+         applyMouseBind(button);
+         event->accept();
+         return true;
+      }
+   }
+   else if (event->type() == QEvent::Wheel)
+   {
+      QWheelEvent *wheel_event = static_cast<QWheelEvent*>(event);
+      QPoint delta = wheel_event->angleDelta();
+      unsigned button = RETRO_KEYBIND_MBUTTON_NONE;
+      if (delta.y() > 0) button = RETRO_DEVICE_ID_MOUSE_WHEELUP;
+      else if (delta.y() < 0) button = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
+      else if (delta.x() > 0) button = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
+      else if (delta.x() < 0) button = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
+      if (button != RETRO_KEYBIND_MBUTTON_NONE)
+      {
+         applyMouseBind(button);
+         event->accept();
+         return true;
+      }
+   }
+   return QWidget::eventFilter(obj, event);
+}
+
+void HotkeyBindWidget::applyKeyboardBind(unsigned key)
+{
+   struct retro_keybind *bind;
+   unsigned id;
+   unsigned old_key;
+   settings_t *settings = config_get_ptr();
+   if (!m_setting || !settings || !m_captureState)
+      return;
+   id = m_captureState->bind_id;
+   bind = input_config_bind_edit(m_captureState->user, id);
+   if (!bind)
+      return;
+   old_key = RETRO_KEYBIND_KEY(bind);
+   RETRO_KEYBIND_SET_KEY(bind, (enum retro_key)key);
+   if (old_key != RETROK_UNKNOWN)
+      input_keyboard_mapping_bits(0, old_key);
+   input_keyboard_mapping_bits(1, key);
+   input_driver_hold_held_input();
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+   stopCapture();
+}
+
+void HotkeyBindWidget::applyMouseBind(unsigned button)
+{
+   struct retro_keybind *bind;
+   settings_t *settings = config_get_ptr();
+   if (!m_setting || !settings || !m_captureState)
+      return;
+   bind = input_config_bind_edit(m_captureState->user, m_captureState->bind_id);
+   if (!bind)
+      return;
+   RETRO_KEYBIND_SET_MBUTTON(bind, button);
+   input_driver_hold_held_input();
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+   stopCapture();
+}
+
+void HotkeyBindWidget::applyJoyBind(unsigned port, unsigned joykey, uint32_t joyaxis)
+{
+   struct retro_keybind *bind;
+   settings_t *settings = config_get_ptr();
+   unsigned id;
+   unsigned user;
+   if (!m_setting || !settings || !m_captureState)
+      return;
+   id = m_captureState->bind_id;
+   user = m_captureState->user;
+   if (input_config_hotkey_bind_own(port, id))
+   {
+      if (!input_config_plays_as_set_hotkey(port, id, (uint16_t)joykey, joyaxis))
+      {
+         QMessageBox::warning(this, tr("Hotkey"),
+               tr("No free hotkey slot is available for this controller."));
+         stopCapture();
+         return;
+      }
+   }
+   else
+   {
+      bind = input_config_bind_edit(user, id);
+      if (!bind)
+         return;
+      bind->joykey = (uint16_t)joykey;
+      bind->joyaxis = joyaxis;
+   }
+   input_driver_hold_held_input();
+   settings->flags |= SETTINGS_FLG_MODIFIED;
+   stopCapture();
+}
+
+void HotkeyBindWidget::pollCapture()
+{
+   input_bits_t buttons;
+   int16_t axes[MENU_MAX_AXES];
+   uint16_t hats[MENU_MAX_HATS];
+   unsigned slot;
+   unsigned button;
+   settings_t *settings = config_get_ptr();
+
+   if (!m_captureState || !settings)
+   {
+      stopCapture();
+      return;
+   }
+   if (m_captureState->timeout_seconds && m_captureState->clock.hasExpired(
+            (int)m_captureState->timeout_seconds * 1000))
+   {
+      stopCapture();
+      return;
+   }
+   input_driver_poll_devices();
+   for (slot = 0; slot < MAX_USERS; slot++)
+   {
+      if (!(m_captureState->listen & (1U << slot)))
+         continue;
+      memset(&buttons, 0, sizeof(buttons));
+      memset(axes, 0, sizeof(axes));
+      memset(hats, 0, sizeof(hats));
+      input_driver_capture_pad(slot, false, &buttons, MENU_MAX_BUTTONS,
+            axes, MENU_MAX_AXES, hats, MENU_MAX_HATS);
+
+      for (button = 0; button < MENU_MAX_BUTTONS; button++)
+      {
+         unsigned word = button >> 5;
+         uint32_t mask = 1U << (button & 31);
+         if ((buttons.data[word] & mask) && !(m_captureState->buttons[slot].data[word] & mask))
+         {
+            applyJoyBind(slot, button, AXIS_NONE);
+            return;
+         }
+      }
+
+      for (button = 0; button < MENU_MAX_HATS; button++)
+      {
+         uint16_t changed = (uint16_t)(hats[button] & ~m_captureState->hats[slot][button]);
+         if (changed & HAT_UP_MASK)    { applyJoyBind(slot, HAT_MAP(button, HAT_UP_MASK), AXIS_NONE); return; }
+         if (changed & HAT_DOWN_MASK)  { applyJoyBind(slot, HAT_MAP(button, HAT_DOWN_MASK), AXIS_NONE); return; }
+         if (changed & HAT_LEFT_MASK)  { applyJoyBind(slot, HAT_MAP(button, HAT_LEFT_MASK), AXIS_NONE); return; }
+         if (changed & HAT_RIGHT_MASK) { applyJoyBind(slot, HAT_MAP(button, HAT_RIGHT_MASK), AXIS_NONE); return; }
+      }
+
+      for (button = 0; button < MENU_MAX_AXES; button++)
+      {
+         int diff;
+         if (!m_captureState->axis_armed[slot][button])
+         {
+            if (axes[button] > -16000 && axes[button] < 16000)
+            {
+               m_captureState->axes[slot][button] = axes[button];
+               m_captureState->axis_armed[slot][button] = true;
+            }
+            continue;
+         }
+         diff = (int)axes[button] - (int)m_captureState->axes[slot][button];
+         if (diff > 20000)
+         {
+            applyJoyBind(slot, NO_BTN, AXIS_POS(button));
+            return;
+         }
+         if (diff < -20000)
+         {
+            applyJoyBind(slot, NO_BTN, AXIS_NEG(button));
+            return;
+         }
+      }
+
+      m_captureState->buttons[slot] = buttons;
+      memcpy(m_captureState->hats[slot], hats, sizeof(hats));
+   }
 }
 
 ColorButton::ColorButton(rarch_setting_t *red, rarch_setting_t *green, rarch_setting_t *blue, QWidget *parent) :
@@ -2720,10 +3259,11 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow,
    QDialog(mainwindow)
    ,m_optionsList(new QListWidget(this))
    ,m_optionsStack(new QStackedLayout)
+   ,m_categoryPagesWidget(new QWidget(this))
+   ,m_headerLabel(new QLabel(m_categoryPagesWidget))
+   ,m_currentCategoryIndex(-1)
 {
-   int width;
    QGridLayout        *layout = new QGridLayout(this);
-   QLabel      *m_headerLabel = new QLabel(this);
    /* Header label with large font and a bit of spacing
     * (align with group boxes) */
    QFont      headerLabelFont = m_headerLabel->font();
@@ -2793,29 +3333,63 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow,
    addCategory(new PlaylistsCategory(this));
    addCategory(new UserCategory(this));
    addCategory(new DirectoryCategory(this));
+   addCategory(new InformationCategory(this));
 
-   width  =
-        m_optionsList->sizeHintForColumn(0)
-      + m_optionsList->frameWidth() * 2
-      + 5;
-   width += m_optionsList->verticalScrollBar()->sizeHint().width();
-
-   m_optionsList->setMaximumWidth(width);
-   m_optionsList->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Minimum);
+   /* The category list is also embedded in the Content Browser dock.
+    * Let it use the available width there instead of sizing it only to
+    * the longest category label. */
+   m_optionsList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 
    setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE));
 
-   layout->addWidget(m_optionsList, 0, 0, 2, 1);
-   layout->addLayout(headerHLayout, 0, 1);
-   layout->addLayout(m_optionsStack, 1, 1);
+   QVBoxLayout *categoryPagesLayout = new QVBoxLayout(m_categoryPagesWidget);
+   categoryPagesLayout->setContentsMargins(0, 0, 0, 0);
+   categoryPagesLayout->addLayout(headerHLayout);
+   categoryPagesLayout->addLayout(m_optionsStack);
+
+   layout->addWidget(m_optionsList, 0, 0);
+   layout->addWidget(m_categoryPagesWidget, 0, 1);
 
    connect(m_optionsList, SIGNAL(currentRowChanged(int)),
-         m_optionsStack, SLOT(setCurrentIndex(int)));
+         this, SLOT(loadCategory(int)));
    connect(m_optionsList, SIGNAL(currentTextChanged(const QString&)),
          m_headerLabel, SLOT(setText(const QString&)));
 
    connect(this, SIGNAL(rejected()), this, SLOT(onRejected()));
+   if (m_optionsList->count() > 0)
+      m_optionsList->setCurrentRow(0);
 }
+
+#ifdef HAVE_MENU
+QListWidget *ViewOptionsDialog::categoryListWidget() const
+{
+   return m_optionsList;
+}
+
+QWidget *ViewOptionsDialog::categoryPagesWidget() const
+{
+   return m_categoryPagesWidget;
+}
+
+void ViewOptionsDialog::loadCategory(int index)
+{
+   if (index < 0 || index >= m_categoryList.size())
+      return;
+   if (m_currentCategoryIndex >= 0
+         && m_currentCategoryIndex < m_categoryList.size())
+      m_categoryList.at(m_currentCategoryIndex)->apply();
+   m_currentCategoryIndex = index;
+   m_optionsStack->setCurrentIndex(index);
+   m_categoryList.at(index)->load();
+}
+
+void ViewOptionsDialog::applyCurrentCategory()
+{
+   if (m_currentCategoryIndex >= 0
+         && m_currentCategoryIndex < m_categoryList.size())
+      m_categoryList.at(m_currentCategoryIndex)->apply();
+}
+#endif
 
 QIcon getIcon(OptionsCategory *category)
 {
@@ -2894,10 +3468,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
 void ViewOptionsDialog::showDialog()
 {
 #ifdef HAVE_MENU
-   unsigned i;
-   size_t list_size = (size_t)m_categoryList.size();
-   for (i = 0; i < list_size; i++)
-      m_categoryList.at(i)->load();
+   loadCategory(m_optionsList->currentRow());
 #else
    m_viewOptionsWidget->loadViewOptions();
 #endif
@@ -3178,7 +3749,7 @@ void ViewOptionsWidget::loadViewOptions()
 
 void ViewOptionsWidget::showOrHideHighlightColor()
 {
-   if (m_mainwindow->theme() == MainWindow::THEME_DARK)
+   if (m_mainwindow->isDarkTheme())
    {
       m_highlightColorLabel->show();
       m_highlightColorPushButton->show();
@@ -5660,6 +6231,227 @@ void AchievementsPage::onAchievementEnabledChanged(int state)
 
 static file_list_t *qt_displaylist_build(
       enum menu_displaylist_ctl_state state);
+QPixmap getInvader(void);
+/* The desktop Information page presents the same live display lists as
+ * the internal menu. Rebuild them whenever the category is selected so
+ * display, input and network changes are reflected without restarting. */
+static void qt_information_clear_group(QWidget *group)
+{
+   QLayout *layout = group ? group->layout() : NULL;
+   QLayoutItem *item = NULL;
+
+   if (!layout)
+      return;
+
+   while ((item = layout->takeAt(0)) != NULL)
+   {
+      if (item->widget())
+         delete item->widget();
+      delete item;
+   }
+}
+
+static void qt_information_populate_group(QWidget *group,
+      enum menu_displaylist_ctl_state state)
+{
+   file_list_t *list;
+   QVBoxLayout *layout;
+   size_t i;
+
+   if (!group)
+      return;
+
+   qt_information_clear_group(group);
+   layout = qobject_cast<QVBoxLayout*>(group->layout());
+   if (!layout)
+      return;
+
+   list = qt_displaylist_build(state);
+   if (list)
+   {
+      for (i = 0; i < list->size; i++)
+      {
+         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+            file_list_get_actiondata_at_offset(list, i);
+         const char *entry = list->list[i].path;
+         QString text = entry ? QString::fromUtf8(entry).trimmed() : QString();
+         QLabel *label;
+
+#ifdef HAVE_MODELINE
+         if (state == DISPLAYLIST_DISPLAY_INFO
+               && cbs
+               && cbs->enum_idx == MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION)
+         {
+            QPushButton *button = new QPushButton(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INFORMATION),
+                  group);
+            QWidget *details = new QWidget(group);
+            QVBoxLayout *detailsLayout = new QVBoxLayout(details);
+            detailsLayout->setContentsMargins(12, 4, 0, 4);
+            details->setVisible(false);
+            button->setCheckable(true);
+            layout->addWidget(button);
+            layout->addWidget(details);
+            QObject::connect(button, &QPushButton::toggled,
+                  [button, details](bool checked)
+            {
+               if (checked && details->layout()->count() == 0)
+                  qt_information_populate_group(details,
+                        DISPLAYLIST_DISPLAY_EDID_INFO);
+               details->setVisible(checked);
+            });
+            continue;
+         }
+#endif
+
+         if (text.isEmpty())
+            continue;
+
+         label = new QLabel(text, group);
+         label->setTextFormat(Qt::PlainText);
+         label->setWordWrap(true);
+         label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+         label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+         layout->addWidget(label);
+      }
+      file_list_free(list);
+   }
+
+   if (layout->count() == 0)
+   {
+      QLabel *label = new QLabel(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), group);
+      label->setTextFormat(Qt::PlainText);
+      label->setWordWrap(true);
+      label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+      layout->addWidget(label);
+   }
+   layout->addStretch();
+}
+
+InformationCategory::InformationCategory(QWidget *parent)
+   : OptionsCategory(parent)
+   , m_page(NULL)
+{
+   setDisplayName(MENU_ENUM_LABEL_VALUE_INFORMATION);
+   setCategoryIcon("menu_info");
+}
+
+QVector<OptionsPage*> InformationCategory::pages()
+{
+   QVector<OptionsPage*> pages;
+   m_page = new InformationPage(this);
+   pages << m_page;
+   return pages;
+}
+
+void InformationCategory::load()
+{
+   if (m_page)
+      m_page->load();
+}
+
+InformationPage::InformationPage(QObject *parent)
+   : OptionsPage(parent)
+   , m_widget(NULL)
+   , m_systemGroup(NULL)
+   , m_aboutGroup(NULL)
+   , m_displayGroup(NULL)
+   , m_inputGroup(NULL)
+   , m_networkGroup(NULL)
+{
+   setDisplayName(MENU_ENUM_LABEL_VALUE_INFORMATION);
+}
+
+QWidget *InformationPage::widget()
+{
+   QHBoxLayout *columns;
+   QVBoxLayout *left;
+   QVBoxLayout *right;
+
+   if (m_widget)
+      return m_widget;
+
+   m_widget = new QWidget;
+   columns = new QHBoxLayout(m_widget);
+   left = new QVBoxLayout;
+   right = new QVBoxLayout;
+
+   m_systemGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION), m_widget);
+   m_aboutGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT), m_widget);
+   m_displayGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION), m_widget);
+   m_inputGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_INFORMATION), m_widget);
+   m_networkGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION), m_widget);
+
+   m_systemGroup->setLayout(new QVBoxLayout);
+   m_aboutGroup->setLayout(new QVBoxLayout);
+   m_displayGroup->setLayout(new QVBoxLayout);
+   m_inputGroup->setLayout(new QVBoxLayout);
+   m_networkGroup->setLayout(new QVBoxLayout);
+
+   left->addWidget(m_systemGroup);
+   left->addStretch();
+   right->addWidget(m_aboutGroup);
+   right->addWidget(m_displayGroup);
+   right->addWidget(m_inputGroup);
+   right->addWidget(m_networkGroup);
+   right->addStretch();
+
+   columns->addLayout(left, 1);
+   columns->addLayout(right, 1);
+   columns->setAlignment(Qt::AlignTop);
+
+   load();
+   return m_widget;
+}
+
+void InformationPage::load()
+{
+   if (!m_widget)
+      return;
+
+   qt_information_populate_group(m_systemGroup, DISPLAYLIST_SYSTEM_INFO);
+   qt_information_clear_group(m_aboutGroup);
+   {
+      QLabel *pixLabel = new QLabel(m_aboutGroup);
+      QLabel *aboutLabel = new QLabel(m_aboutGroup);
+      QString text = QString("RetroArch ")
+         + QString(PACKAGE_VERSION)
+         + QString("<br><br>")
+         + "<a href=\"https://www.libretro.com/\">www.libretro.com</a>"
+            "<br><br>"
+         + "<a href=\"https://www.retroarch.com/\">www.retroarch.com</a>"
+#ifdef HAVE_GIT_VERSION
+            "<br><br>"
+         + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION)
+         + QString(": ")
+         + retroarch_git_version
+#endif
+         + QString("<br>")
+         + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE)
+         + QString(": ")
+         + __DATE__;
+      QPixmap pix = getInvader();
+      pixLabel->setAlignment(Qt::AlignCenter);
+      pixLabel->setPixmap(pix);
+      aboutLabel->setText(text);
+      aboutLabel->setTextFormat(Qt::RichText);
+      aboutLabel->setAlignment(Qt::AlignCenter);
+      aboutLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
+      aboutLabel->setOpenExternalLinks(true);
+      m_aboutGroup->layout()->addWidget(pixLabel);
+      m_aboutGroup->layout()->addWidget(aboutLabel);
+   }
+   qt_information_populate_group(m_displayGroup, DISPLAYLIST_DISPLAY_INFO);
+   qt_information_populate_group(m_inputGroup, DISPLAYLIST_INPUT_INFO);
+   qt_information_populate_group(m_networkGroup, DISPLAYLIST_NETWORK_INFO);
+}
+
 static bool qt_list_has_entry(const file_list_t *list,
       enum msg_hash_enums entry);
 static void qt_settings_group_add_list(SettingsGroup *group,
