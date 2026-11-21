@@ -1,0 +1,31 @@
+# Two Game Boy Colors exchange their Pokemon Pinball high scores over the
+# infrared port. Both take the same path, B on the title screen, START,
+# DOWN to SEND and A, so they stay in step, frame for frame; console 0
+# presses A thirty frames before console 1, which holds it ten frames, past
+# the game's check for a printer. Each calls out until the other answers.
+console 0 core=gambatte rom=pinball
+console 1 core=gambatte rom=pinball
+option 0 gambatte_gb_hwmode GBC
+option 1 gambatte_gb_hwmode GBC
+option 0 gambatte_gb_link_mode Link Cable
+option 1 gambatte_gb_link_mode Link Cable
+option 0 gambatte_gb_bootloader disabled
+option 1 gambatte_gb_bootloader disabled
+input 0 0 infrared_in_step_c0.inp
+input 1 0 infrared_in_step_c1.inp
+0 cable 0:0 1:0
+0 cable 0:1 1:1
+# Work RAM C4C3 is the 5 of the other console's first place, 500000000, as
+# received: nothing before the exchange. D8EA is the game's error byte: 0
+# after an exchange, 2 after calling out with no answer.
+530 checkpoint menu
+530 expect 0 system 1219 0
+530 expect 1 system 1219 0
+601 save mid
+601 checkpoint in_flight
+800 checkpoint done
+800 expect 0 system 1219 80
+800 expect 1 system 1219 80
+800 expect 0 system 6378 0
+800 expect 1 system 6378 0
+860 end

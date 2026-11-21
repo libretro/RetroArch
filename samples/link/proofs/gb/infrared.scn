@@ -1,0 +1,32 @@
+# Two Game Boy Colors trade their Super Mario Bros. Deluxe rankings over the
+# infrared port, with the link cable plugged in as well. Each opens RECORDS
+# and chooses Trade; console 0 presses A first and sends, console 1 answers
+# and sends its own. Both then keep the merged ranking, and console 1 is
+# reset.
+console 0 core=gambatte rom=smbdx
+console 1 core=gambatte rom=smbdx
+option 0 gambatte_gb_hwmode GBC
+option 1 gambatte_gb_hwmode GBC
+option 0 gambatte_gb_link_mode Link Cable
+option 1 gambatte_gb_link_mode Link Cable
+option 0 gambatte_gb_bootloader disabled
+option 1 gambatte_gb_bootloader disabled
+input 0 0 infrared_c0.inp
+input 1 0 infrared_c1.inp
+0 cable 0:0 1:0
+0 cable 0:1 1:1
+# Second place, the first letter of its name: P of PEACH before the trade,
+# L of the other console's LUIGI after it, in work RAM and then in the save.
+1100 checkpoint ready
+1100 expect 0 system 30733 233
+1100 expect 1 system 30733 233
+1169 save mid
+1169 checkpoint in_flight
+1230 checkpoint traded
+1230 expect 0 system 30733 229
+1230 expect 1 system 30733 229
+1450 checkpoint kept
+1450 expect 0 save 525 229
+1450 expect 1 save 525 229
+1480 reset 1
+1600 end

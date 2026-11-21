@@ -1,0 +1,21 @@
+# Two Game Boys play Tetris against each other over the link cable. Both
+# choose 2PLAYER on the title screen and console 0, which presses START
+# first, starts the game; then each moves its own pieces. In the game the
+# cable is pulled and plugged back in, then console 1 is reset.
+console 0 core=gambatte rom=tetris
+console 1 core=gambatte rom=tetris
+option 0 gambatte_gb_link_mode Link Cable
+option 1 gambatte_gb_link_mode Link Cable
+option 0 gambatte_gb_bootloader disabled
+option 1 gambatte_gb_bootloader disabled
+input 0 0 tetris_c0.inp
+input 1 0 tetris_c1.inp
+0 cable 0:0 1:0
+400 checkpoint menu
+512 save mid
+512 checkpoint in_flight
+632 checkpoint game
+661 uncable 0:0
+721 cable 0:0 1:0
+781 reset 1
+901 end

@@ -1,0 +1,28 @@
+# Two Game Boy Colors play Tetris DX against each other over the link cable,
+# with their infrared ports in view of each other. Each enters a player
+# name, both choose 2PLAYER on the title screen and go through the menus,
+# console 0 pressing START first; then each moves its own pieces. In the
+# game the cable is pulled and plugged back in, then the infrared ports are
+# turned away from each other and back, then console 1 is reset.
+console 0 core=gambatte rom=tetrisdx
+console 1 core=gambatte rom=tetrisdx
+option 0 gambatte_gb_hwmode GBC
+option 1 gambatte_gb_hwmode GBC
+option 0 gambatte_gb_link_mode Link Cable
+option 1 gambatte_gb_link_mode Link Cable
+option 0 gambatte_gb_bootloader disabled
+option 1 gambatte_gb_bootloader disabled
+input 0 0 tetris_gbc_c0.inp
+input 1 0 tetris_gbc_c1.inp
+0 cable 0:0 1:0
+0 cable 0:1 1:1
+1090 checkpoint menu
+1492 save mid
+1492 checkpoint in_flight
+1560 checkpoint game
+1590 uncable 0:0
+1650 cable 0:0 1:0
+1680 uncable 0:1
+1740 cable 0:1 1:1
+1770 reset 1
+1890 end
