@@ -463,6 +463,7 @@ static void gl2_free_pbo_readback(gl2_t *gl);
 #define gl_media_target_fit gl2_media_target_fit
 #define gl_media_info gl2_media_info
 #define gl_media_scale gl2_media_scale
+#define gl_media_shader_changed gl2_media_shader_changed
 #define gl_media_shader_draw gl2_media_shader_draw
 #include "../common/gl_media_shader.h"
 #endif
@@ -10087,6 +10088,21 @@ static void video_texture_load_gl2(
          ti ? ti->pix10 : false);
 }
 
+/* Called only by the render owner after a managed texture changes. */
+static void gl2_media_texture_changed(gl2_t *gl, uintptr_t id, bool uploaded)
+{
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   if (gl)
+   {
+      gl2_media_shader_changed(gl->media_shader, id);
+      if (uploaded || gl->media_last_texture == id)
+         gl->media_last_texture = uploaded ? id : 0;
+   }
+#else
+   (void)gl; (void)id; (void)uploaded;
+#endif
+}
+
 /* A texture of @ti: a planar frame converted on the GPU, anything else
  * uploaded as it is */
 static void gl2_texture_load(gl2_t *gl, const struct texture_image *ti,
@@ -10102,9 +10118,11 @@ static void gl2_texture_load(gl2_t *gl, const struct texture_image *ti,
                && filter_type != TEXTURE_FILTER_MIPMAP_NEAREST,
                (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE) != 0);
 #endif
-      return;
    }
-   video_texture_load_gl2(ti, filter_type, id);
+   else
+      video_texture_load_gl2(ti, filter_type, id);
+   if (*id)
+      gl2_media_texture_changed(gl, *id, true);
 }
 
 #ifdef HAVE_THREADS
@@ -10169,6 +10187,7 @@ static uintptr_t video_texture_unload_wrap_gl2(void *data)
    if (gl)
       gl_planar_forget(&gl->planar, glid);
 #endif
+   gl2_media_texture_changed(gl, id, false);
    glDeleteTextures(1, &glid);
    return 0;
 }
@@ -10239,6 +10258,7 @@ static void gl2_unload_texture(void *data,
    if (data)
       gl_planar_forget(&((gl2_t*)data)->planar, glid);
 #endif
+   gl2_media_texture_changed((gl2_t*)data, id, false);
    glDeleteTextures(1, &glid);
 }
 
@@ -10258,7 +10278,10 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
    {
 #ifdef HAVE_GL_PLANAR
       if (gl && gl_planar_update(&gl->planar, (unsigned)id, ti))
+      {
+         gl2_media_texture_changed(gl, id, true);
          return VIDEO_TEXTURE_UPDATE_DONE;
+      }
 #endif
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
@@ -10290,6 +10313,7 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
    if (lent >= 0)
       gl_texture_lend_unbind(gl->lend, (unsigned)id, lent);
 #endif
+   gl2_media_texture_changed(gl, id, true);
    return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
@@ -11169,7 +11193,8 @@ static bool gfx_display_gl2_media_shader_draw(void *data, uintptr_t image,
          gl->scrgb.expand_gamut);
    return gl && (gl->flags & GL2_FLAG_HAVE_FBO) && gl->media_shader_enabled &&
       gl2_media_shader_draw(&gl->media_shader, gl, gl->shader, gl->shader_data,
-            image, source_dims, pos, dims, gl->media_shader_frame, hdr ? rows : NULL);
+            image, source_dims, pos, dims, gl->media_shader_frame, hdr ? rows : NULL,
+            gl->media_last_texture == image);
 }
 #endif
 

@@ -20,6 +20,9 @@ typedef struct gl_media_shader
    gl_media_target_t pass[GFX_MAX_SHADERS];
    gl_media_target_t history[GFX_MAX_TEXTURES];
    gl_media_target_t feedback;
+   uintptr_t history_source;
+   unsigned history_copies, history_count;
+   float history_colour[12];
    struct video_tex_info outputs[GFX_MAX_SHADERS];
    struct video_tex_info previous[GFX_MAX_TEXTURES];
 } gl_media_shader_t;
@@ -43,6 +46,12 @@ static void gl_media_shader_free(gl_media_shader_t **state)
    gl_media_target_free(&s->feedback);
    free(s);
    *state = NULL;
+}
+
+static void gl_media_shader_changed(gl_media_shader_t *s, uintptr_t texture)
+{
+   if (s && s->history_source == texture)
+      s->history_copies = 0;
 }
 
 static bool gl_media_target_fit(gl_media_target_t *t, unsigned dims,
@@ -114,7 +123,7 @@ static unsigned gl_media_scale(unsigned input, unsigned viewport,
 static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
       const shader_backend_t *shader, void *shader_data, uintptr_t texture,
       unsigned source_dims, unsigned pos, unsigned dims, uint64_t frame,
-      const float *colour_rows)
+      const float *colour_rows, bool managed)
 {
    static const float vertices[8] = {0, 0, 1, 0, 0, 1, 1, 1};
    static const float white[16] = {1, 1, 1, 1, 1, 1, 1, 1,
@@ -176,8 +185,19 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
    coords.color = white;
    coords.lut_tex_coord = original.coord;
    matrix_4x4_ortho(mvp, 0, 1, 0, 1, -1, 1);
+   if (!managed || s->history_source != texture || s->history_count != history)
+      s->history_copies = 0;
+   if (colour_rows && memcmp(s->history_colour, colour_rows, sizeof(s->history_colour)))
+   {
+      s->history_copies = 0;
+      memcpy(s->history_colour, colour_rows, sizeof(s->history_colour));
+   }
+   s->history_source = texture;
+   s->history_count = history;
    for (i = 0; i < history; i++)
    {
+      if (s->history[i].dims != source_dims || s->history[i].flags != hdr_flags)
+         s->history_copies = 0;
       if (!gl_media_target_fit(&s->history[i], source_dims, hdr_flags)) goto done;
       gl_media_info(&s->previous[i], s->history[i].texture, source_dims, false);
    }
@@ -295,12 +315,18 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
       gl_media_target_t oldest = s->history[history - 1];
       for (i = history - 1; i; i--) s->history[i] = s->history[i - 1];
       s->history[0] = oldest;
-      MEDIA_BIND_FB(oldest.fbo);
-      glViewport(0, 0, VIDEO_SCALE_W(source_dims), VIDEO_SCALE_H(source_dims));
-      glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
-      coords.tex_coord = original.coord;
-      shader->set_coords(shader_data, &coords);
-      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+      /* Once every history slot holds this managed image, rotating
+       * the ring preserves Prev semantics without another snapshot. */
+      if (s->history_copies < history)
+      {
+         MEDIA_BIND_FB(oldest.fbo);
+         glViewport(0, 0, VIDEO_SCALE_W(source_dims), VIDEO_SCALE_H(source_dims));
+         glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
+         coords.tex_coord = original.coord;
+         shader->set_coords(shader_data, &coords);
+         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+         s->history_copies++;
+      }
    }
    if (has_feedback)
    {
@@ -331,6 +357,7 @@ done:
    return result;
 }
 #undef gl_media_target_free
+#undef gl_media_shader_changed
 #undef gl_media_shader_free
 #undef gl_media_target_fit
 #undef gl_media_info

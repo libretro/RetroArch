@@ -304,6 +304,30 @@ static void run_resize_cases(void)
    CHECK(sync_created == sync_deleted, "resize teardown retires every recording fence");
 }
 
+static void viewer_uploaded(gl_media_shader_t *state)
+{
+   gl3_t *gl = (gl3_t*)calloc(1, sizeof(*gl));
+   struct texture_image image;
+   memset(&image, 0, sizeof(image));
+   image.width = 320;
+   image.height = 240;
+   gl->media_legacy_shader = state;
+   CHECK(gl3_update_texture_internal(gl, 999, &image) == VIDEO_TEXTURE_UPDATE_DONE,
+         "managed source updated in place");
+   CHECK(gl->media_last_texture == 999, "uploaded source is managed");
+   free(gl);
+}
+
+static void viewer_unloaded(gl_media_shader_t *state)
+{
+   gl3_t *gl = (gl3_t*)calloc(1, sizeof(*gl));
+   gl->media_legacy_shader = state;
+   gl->media_last_texture = 999;
+   gl3_unload_texture(gl, false, 999);
+   CHECK(!gl->media_last_texture, "deleted names cannot remain managed");
+   free(gl);
+}
+
 #define VIEWER_DRAW gl3_media_shader_draw
 #define VIEWER_FREE gl3_media_shader_free
 #include "viewer_cases.h"

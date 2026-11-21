@@ -13,6 +13,7 @@
 
 static GLuint   gl11_next_name = 1;
 static unsigned gl11_finishes;
+static unsigned gl11_draws;
 static unsigned gl11_tex_params;
 static void (*gl11_read_pixels)(GLsizei width, GLsizei height);
 
@@ -43,7 +44,7 @@ GL_FAKE(void, glCopyTexSubImage2D, (GLenum a, GLint b, GLint c, GLint d,
 { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; }
 GL_FAKE(void, glDeleteTextures, (GLsizei n, const GLuint *t)) { (void)n; (void)t; }
 GL_FAKE(void, glDisable, (GLenum c)) { (void)c; }
-GL_FAKE(void, glDrawArrays, (GLenum m, GLint f, GLsizei c)) { (void)m; (void)f; (void)c; }
+GL_FAKE(void, glDrawArrays, (GLenum m, GLint f, GLsizei c)) { (void)m; (void)f; (void)c; gl11_draws++; }
 GL_FAKE(void, glEnable, (GLenum c)) { (void)c; }
 GL_FAKE(void, glFinish, (void)) { gl11_finishes++; }
 GL_FAKE(void, glFlush, (void)) { }

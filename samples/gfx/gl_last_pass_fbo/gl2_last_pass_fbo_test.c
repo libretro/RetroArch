@@ -35,6 +35,30 @@ static int run_chain(void)
    return chain.fbo_pass;
 }
 
+static void viewer_uploaded(gl_media_shader_t *state)
+{
+   gl2_t *gl = (gl2_t*)calloc(1, sizeof(*gl));
+   struct texture_image image;
+   memset(&image, 0, sizeof(image));
+   image.width = 320;
+   image.height = 240;
+   gl->media_shader = state;
+   CHECK(gl2_update_texture_internal(gl, 999, &image) == VIDEO_TEXTURE_UPDATE_DONE,
+         "managed source updated in place");
+   CHECK(gl->media_last_texture == 999, "uploaded source is managed");
+   free(gl);
+}
+
+static void viewer_unloaded(gl_media_shader_t *state)
+{
+   gl2_t *gl = (gl2_t*)calloc(1, sizeof(*gl));
+   gl->media_shader = state;
+   gl->media_last_texture = 999;
+   gl2_unload_texture(gl, false, 999);
+   CHECK(!gl->media_last_texture, "deleted names cannot remain managed");
+   free(gl);
+}
+
 #define VIEWER_DRAW gl2_media_shader_draw
 #define VIEWER_FREE gl2_media_shader_free
 #include "viewer_cases.h"

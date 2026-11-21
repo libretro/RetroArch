@@ -142,6 +142,7 @@ struct gl3_views_fbo
 #define gl_media_target_fit gl3_media_target_fit
 #define gl_media_info gl3_media_info
 #define gl_media_scale gl3_media_scale
+#define gl_media_shader_changed gl3_media_shader_changed
 #define gl_media_shader_draw gl3_media_shader_draw
 #include "../common/gl_media_shader.h"
 #endif
@@ -150,6 +151,7 @@ typedef struct gl3
 {
 #ifdef HAVE_GLSL
    gl_media_shader_t *media_legacy_shader;
+   uintptr_t media_last_texture;
 #endif
 #ifdef HAVE_GL_MENU_BLOOM
    gl_menu_bloom_t *menu_bloom;
@@ -8460,6 +8462,21 @@ static struct video_shader *gl3_get_current_shader(void *data)
    return NULL;
 }
 
+/* Called only by the render owner after a managed texture changes. */
+static void gl3_media_texture_changed(gl3_t *gl, uintptr_t id, bool uploaded)
+{
+#ifdef HAVE_GLSL
+   if (gl)
+   {
+      gl3_media_shader_changed(gl->media_legacy_shader, id);
+      if (uploaded || gl->media_last_texture == id)
+         gl->media_last_texture = uploaded ? id : 0;
+   }
+#else
+   (void)gl; (void)id; (void)uploaded;
+#endif
+}
+
 /* A texture of @ti: a planar frame converted on the GPU, anything else
  * uploaded as it is */
 static void gl3_texture_load(gl3_t *gl, const struct texture_image *ti,
@@ -8474,9 +8491,11 @@ static void gl3_texture_load(gl3_t *gl, const struct texture_image *ti,
                filter_type != TEXTURE_FILTER_NEAREST
                && filter_type != TEXTURE_FILTER_MIPMAP_NEAREST, true);
 #endif
-      return;
    }
-   video_texture_load_gl3(ti, filter_type, id);
+   else
+      video_texture_load_gl3(ti, filter_type, id);
+   if (*id)
+      gl3_media_texture_changed(gl, *id, true);
 }
 
 #ifdef HAVE_THREADS
@@ -8539,6 +8558,7 @@ static uintptr_t video_texture_unload_wrap_gl3(void *data)
    if (gl)
       gl_planar_forget(&gl->planar, glid);
 #endif
+   gl3_media_texture_changed(gl, id, false);
    glDeleteTextures(1, &glid);
    return 0;
 }
@@ -8589,7 +8609,10 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
    {
 #ifdef HAVE_GL_PLANAR
       if (gl && gl_planar_update(&gl->planar, (unsigned)id, ti))
+      {
+         gl3_media_texture_changed(gl, id, true);
          return VIDEO_TEXTURE_UPDATE_DONE;
+      }
 #endif
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
@@ -8616,6 +8639,7 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
    if (lent >= 0)
       gl_texture_lend_unbind(gl->lend, (unsigned)id, lent);
 #endif
+   gl3_media_texture_changed(gl, id, true);
    return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
@@ -8766,6 +8790,7 @@ static void gl3_unload_texture(void *data, bool threaded,
    if (data)
       gl_planar_forget(&((gl3_t*)data)->planar, glid);
 #endif
+   gl3_media_texture_changed((gl3_t*)data, id, false);
    glDeleteTextures(1, &glid);
 }
 
@@ -9735,7 +9760,8 @@ static bool gfx_display_gl3_media_shader_draw(void *data, uintptr_t image,
    if (gl && gl->chain.active && gl->chain.shader)
       return gl->media_shader_enabled && gl3_media_shader_draw(
             &gl->media_legacy_shader, gl, gl->chain.shader, gl->chain.shader_data,
-            image, source_dims, pos, dims, gl->media_shader_frame, hdr ? rows : NULL);
+            image, source_dims, pos, dims, gl->media_shader_frame, hdr ? rows : NULL,
+            gl->media_last_texture == image);
 #endif
 #ifdef HAVE_SLANG
    return gfx_display_gl3_media_slang_draw(data, image, source_dims,

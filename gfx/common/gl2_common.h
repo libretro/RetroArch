@@ -160,6 +160,7 @@ enum gl2_flags
 struct gl2
 {
    struct gl_media_shader *media_shader;
+   uintptr_t media_last_texture;
    uint64_t media_shader_frame;
    bool media_shader_enabled;
    /* gfx_display meshes kept on the GPU, by mesh id: vertices, and
