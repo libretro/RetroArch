@@ -1274,7 +1274,20 @@ static void native_sdl_replace(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(window->state == NULL && window->surface == NULL);
    request->generation = video_driver_window_generation();
    CHECK(ctx->windows->create(data, request, window));
+#ifdef HAVE_SDL3
+   /* One made fullscreen is drawn first once SDL has it so: SDL's
+    * wayland asks for it after the window is shown, and a frame before
+    * the answer maps it as a window for a window manager to place */
+   if (request->settings.fullscreen && native_sdl_driver("wayland"))
+      CHECK(!window->presentable || (SDL_GetWindowFlags(
+            (SDL_Window*)window->surface) & SDL_WINDOW_FULLSCREEN));
+#endif
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
+#ifdef HAVE_SDL3
+   if (request->settings.fullscreen && native_sdl_driver("wayland"))
+      CHECK(SDL_GetWindowFlags((SDL_Window*)window->surface)
+            & SDL_WINDOW_FULLSCREEN);
+#endif
    native_sdl_map(ctx, data, window);
 }
 
@@ -3391,6 +3404,19 @@ static void native_sdl_updates(const gfx_ctx_driver_t *ctx, void *data,
             false);
       native_sdl_wait_rect(ctx, data, &r, window, want);
    }
+
+#ifdef HAVE_SDL3
+   /* Made fullscreen on the compositor's first output */
+   if (native_sdl_driver("wayland"))
+   {
+      r.settings.monitor    = 1;
+      r.settings.fullscreen = true;
+      r.settings.pos_set    = false;
+      native_sdl_replace(ctx, data, &r, window);
+      native_sdl_wait_fullscreen(ctx, data, &r, window, monitors, 0, true,
+            true);
+   }
+#endif
 
    native_sdl_replace(ctx, data, request, window);
    /* It came up where it was put, which no GEOMETRY says */

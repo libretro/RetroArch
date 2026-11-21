@@ -254,6 +254,9 @@ typedef struct sdl3_video_window
    /* When an update stops waiting for SDL: for a MAXIMIZED 'waiting',
     * then for the frame of a 'framed' one or the display of 'via' */
    retro_time_t wait_by;
+   /* Made fullscreen on SDL's wayland and not drawn until SDL has it
+    * so: when it is drawn all the same; 0 when not waiting */
+   retro_time_t fullscreen_by;
    SDL_Window *win;
    /* What SDL is still to finish of what it was asked, which an
     * update waits for: MAXIMIZED until wait_by, FULLSCREEN as long as

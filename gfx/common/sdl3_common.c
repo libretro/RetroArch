@@ -192,8 +192,12 @@ static void sdl3_video_window_check(sdl3_video_window_t *state)
    state->judge_dims   = window->dims;
    state->judge_normal = normal;
    state->judge        = true;
-   presentable = w > 0 && h > 0 && !(flags & (SDL_WINDOW_MINIMIZED
-         | SDL_WINDOW_HIDDEN | SDL_WINDOW_OCCLUDED));
+   if (     state->fullscreen_by
+         && ((flags & SDL_WINDOW_FULLSCREEN) || now >= state->fullscreen_by))
+      state->fullscreen_by = 0;
+   presentable = w > 0 && h > 0 && !state->fullscreen_by
+      && !(flags & (SDL_WINDOW_MINIMIZED | SDL_WINDOW_HIDDEN
+               | SDL_WINDOW_OCCLUDED));
    if (presentable == window->presentable)
       return;
    window->presentable = presentable;
@@ -1419,6 +1423,14 @@ bool sdl3_video_window_create(void *owner, SDL_WindowFlags flags,
    SDL_SetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_SHOWN, "0");
    SDL_ShowWindow(state->win);
    SDL_ResetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_SHOWN);
+   /* SDL's wayland asks for fullscreen only once the window is shown. A
+    * frame drawn before the answer maps it as a window, which a window
+    * manager may place, and the compositor then keeps it fullscreen at
+    * that place and size. */
+   if (     request->settings.fullscreen
+         && string_is_equal(SDL_GetCurrentVideoDriver(), "wayland"))
+      state->fullscreen_by = cpu_features_get_time_usec()
+         + VIDEO_WINDOW_SETTLE_USEC;
 
    /* as it came up; its events keep these from here on */
    if (     sdl3_video_window_placed()
@@ -1491,6 +1503,12 @@ unsigned sdl3_video_window_poll(void *owner, video_window_event_t *events,
       if (     state && state->apply && state->common.owner == owner
             && !state->common.closed)
          sdl3_video_window_settle(state);
+      /* A compositor that never makes it fullscreen sends nothing to
+       * tell, so this is the time limit on that wait */
+      if (     state && state->fullscreen_by && state->common.owner == owner
+            && !state->common.closed
+            && cpu_features_get_time_usec() >= state->fullscreen_by)
+         sdl3_video_window_check(state);
    }
    return video_windows_drain(owner, sdl3_video_window_at, events,
          capacity);
