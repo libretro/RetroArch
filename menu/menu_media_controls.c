@@ -363,6 +363,11 @@ bool menu_media_controls_action(
    enum gfx_media_action command;
    if (!media->controls.target.user || menu_input_dialog_get_display_kb())
       return false;
+   /* Still images keep the viewer's directional file navigation. */
+   if (media->controls.target.image && (action == MENU_ACTION_UP
+         || action == MENU_ACTION_DOWN || action == MENU_ACTION_LEFT
+         || action == MENU_ACTION_RIGHT))
+      return false;
    switch (action)
    {
       case MENU_ACTION_OK: command = GFX_MEDIA_ACTIVATE; break;

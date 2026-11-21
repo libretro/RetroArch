@@ -1568,6 +1568,40 @@ static void shader_toolbar(void)
    CHECK(controls.layout.button_count == 4 && controls.focus == 0);
 }
 
+static void image_navigation(void)
+{
+   menu_media_controls_t *media = (menu_media_controls_t*)calloc(1, sizeof(*media));
+   gfx_media_target_t target;
+   fake_player_t player;
+   unsigned opened = 0;
+   unsigned focused;
+   CHECK(media != NULL);
+   if (!media) return;
+   memset(&target, 0, sizeof(target));
+   memset(&player, 0, sizeof(player));
+   player.available = true;
+   target.user = &player;
+   target.identity = &player;
+   target.state = fake_state;
+   target.image = true;
+   target.shaders = toolbar_settings;
+   target.settings_user = &opened;
+   CHECK(gfx_media_controls_update(&media->controls, &target, 640, 480, 1));
+   for (focused = 0; focused < 2; focused++)
+   {
+      media->controls.row_focus = focused != 0;
+      CHECK(!menu_media_controls_action(media, MENU_ACTION_UP, 2));
+      CHECK(!menu_media_controls_action(media, MENU_ACTION_DOWN, 2));
+      CHECK(!menu_media_controls_action(media, MENU_ACTION_LEFT, 2));
+      CHECK(!menu_media_controls_action(media, MENU_ACTION_RIGHT, 2));
+      CHECK(media->controls.row_focus == (focused != 0));
+   }
+   CHECK(opened == 0 && !player.seeks && !player.pauses);
+   CHECK(menu_media_controls_action(media, MENU_ACTION_OK, 3));
+   CHECK(opened == 1);
+   free(media);
+}
+
 int main(void)
 {
    test_settings.uints.media_player_seek_seconds = 5;
@@ -1597,6 +1631,7 @@ int main(void)
    file_buttons();
    settings_button();
    shader_toolbar();
+   image_navigation();
    context_resume();
 #ifdef HAVE_THREADS
    mailbox_races();
