@@ -1396,6 +1396,22 @@ static RETRO_ATOMIC_INLINE size_t retro_atomic_fetch_sub_size_fb(retro_atomic_si
  * The volatile fallback cannot express CAS or a real fence and defines
  * none of these; gate with RETRO_ATOMIC_HAS_CAS / RETRO_ATOMIC_HAS_PTR. */
 
+/* x86's full barrier for the seq_cst fence: a locked or of 0 into the top
+ * of the stack.  A locked instruction orders every load and store around
+ * it, as mfence does for ordinary memory, at a fraction of mfence's cost
+ * on most x86 cores.  GCC already lowers a seq_cst fence to it; Clang
+ * still emits mfence, so the GCC-family backends give it to both. */
+#if (defined(__GNUC__) || defined(__clang__)) && \
+      (defined(__x86_64__) || defined(__i386__))
+#if defined(__x86_64__)
+#define RETRO_ATOMIC_X86_FULL_FENCE_() \
+   __asm__ __volatile__("lock; orl $0, (%%rsp)" ::: "memory", "cc")
+#else
+#define RETRO_ATOMIC_X86_FULL_FENCE_() \
+   __asm__ __volatile__("lock; orl $0, (%%esp)" ::: "memory", "cc")
+#endif
+#endif
+
 #if defined(RETRO_ATOMIC_BACKEND_C11)
 
 typedef _Atomic(void*) retro_atomic_ptr_t;
@@ -1434,8 +1450,12 @@ static RETRO_ATOMIC_INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p,
    atomic_thread_fence(memory_order_release)
 #define retro_atomic_thread_fence_acq_rel() \
    atomic_thread_fence(memory_order_acq_rel)
+#if defined(RETRO_ATOMIC_X86_FULL_FENCE_)
+#define retro_atomic_thread_fence_seq_cst() RETRO_ATOMIC_X86_FULL_FENCE_()
+#else
 #define retro_atomic_thread_fence_seq_cst() \
    atomic_thread_fence(memory_order_seq_cst)
+#endif
 #define RETRO_ATOMIC_HAS_CAS 1
 #define RETRO_ATOMIC_HAS_PTR 1
 
@@ -1477,8 +1497,12 @@ static RETRO_ATOMIC_INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p,
    std::atomic_thread_fence(std::memory_order_release)
 #define retro_atomic_thread_fence_acq_rel() \
    std::atomic_thread_fence(std::memory_order_acq_rel)
+#if defined(RETRO_ATOMIC_X86_FULL_FENCE_)
+#define retro_atomic_thread_fence_seq_cst() RETRO_ATOMIC_X86_FULL_FENCE_()
+#else
 #define retro_atomic_thread_fence_seq_cst() \
    std::atomic_thread_fence(std::memory_order_seq_cst)
+#endif
 #define RETRO_ATOMIC_HAS_CAS 1
 #define RETRO_ATOMIC_HAS_PTR 1
 
@@ -1520,8 +1544,12 @@ static RETRO_ATOMIC_INLINE int retro_atomic_cas_ptr_impl_(retro_atomic_ptr_t *p,
    __atomic_thread_fence(__ATOMIC_RELEASE)
 #define retro_atomic_thread_fence_acq_rel() \
    __atomic_thread_fence(__ATOMIC_ACQ_REL)
+#if defined(RETRO_ATOMIC_X86_FULL_FENCE_)
+#define retro_atomic_thread_fence_seq_cst() RETRO_ATOMIC_X86_FULL_FENCE_()
+#else
 #define retro_atomic_thread_fence_seq_cst() \
    __atomic_thread_fence(__ATOMIC_SEQ_CST)
+#endif
 #define RETRO_ATOMIC_HAS_CAS 1
 #define RETRO_ATOMIC_HAS_PTR 1
 

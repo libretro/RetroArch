@@ -46,6 +46,7 @@ $(TARGET): $(OBJS)
 check: all
 	./$(TARGET)
 	./check-barriers.sh
+	./check-x86-fence.sh
 
 # The seqlock's fences cannot be checked by running the test: x86_64
 # supplies the ordering they ask for, and qemu-aarch64 does not model
@@ -56,8 +57,14 @@ check: all
 check-barriers:
 	./check-barriers.sh
 
+# On x86 the seq_cst fence is a locked or, not an mfence: GCC lowers a
+# seq_cst fence to one by itself, Clang does not.  check-x86-fence.sh
+# builds the test with each compiler it finds and looks.
+check-x86-fence:
+	./check-x86-fence.sh
+
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
-.PHONY: all check check-barriers clean
+.PHONY: all check check-barriers check-x86-fence clean

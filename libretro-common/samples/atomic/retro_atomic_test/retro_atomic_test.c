@@ -351,6 +351,16 @@ int acq_rel_fence_shape(retro_atomic_int_t *in, retro_atomic_int_t *out)
    return seen;
 }
 
+/* The seq_cst fence, for check-x86-fence.sh: on x86 a locked or, never
+ * an mfence, whichever of GCC and Clang builds it. */
+void seq_cst_fence_shape(retro_atomic_int_t *a, retro_atomic_int_t *b);
+void seq_cst_fence_shape(retro_atomic_int_t *a, retro_atomic_int_t *b)
+{
+   retro_atomic_store_relaxed_int(a, 1);
+   retro_atomic_thread_fence_seq_cst();
+   retro_atomic_store_relaxed_int(b, retro_atomic_load_relaxed_int(a));
+}
+
 static int check_acq_rel_fence(void)
 {
    retro_atomic_int_t in, out;
