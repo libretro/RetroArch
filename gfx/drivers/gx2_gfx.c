@@ -900,7 +900,7 @@ static bool gfx_display_wiiu_blur_rect(void *data, unsigned video_dims,
    menu_bloom_pass_t plan[MENU_BLUR_PASSES];
    tex_shader_vertex_t *v;
    float params[4], u0, v0, u1, v1, c;
-   unsigned i, first, small, copy;
+   unsigned i, first, blur_size, copy;
    unsigned cw = wiiu->color_buffer.surface.width;
    unsigned ch = wiiu->color_buffer.surface.height;
    float vw    = (float)VIDEO_SCALE_W(video_dims);
@@ -924,13 +924,13 @@ static bool gfx_display_wiiu_blur_rect(void *data, unsigned video_dims,
    {
       if (!gx2_bloom_shader(wiiu))
          goto error;
-      small = menu_blur_dims(VIDEO_SCALE_PACK(
+      blur_size = menu_blur_dims(VIDEO_SCALE_PACK(
                (unsigned)((u1 - u0) * cw + 0.5f),
                (unsigned)((v1 - v0) * ch + 0.5f)));
       for (i = 0; i < 3; i++)
       {
          unsigned d         = i == MENU_BLUR_COPY
-            ? MENU_BLUR_COPY_DIMS(small) : small;
+            ? MENU_BLUR_COPY_DIMS(blur_size) : blur_size;
          GX2Texture *t      = &wiiu->blur.tex[i];
          GX2ColorBuffer *cb = &wiiu->blur.cb[i];
          t->surface.dim       = GX2_SURFACE_DIM_TEXTURE_2D;
@@ -956,7 +956,7 @@ static bool gfx_display_wiiu_blur_rect(void *data, unsigned video_dims,
          cb->viewNumSlices = 1;
          GX2InitColorBufferRegs(cb);
       }
-      wiiu->blur.dims = small;
+      wiiu->blur.dims = blur_size;
    }
    /* The colour buffer read in place, through a texture of its own */
    if (wiiu->blur.screen.surface.image != wiiu->color_buffer.surface.image)
@@ -967,14 +967,14 @@ static bool gfx_display_wiiu_blur_rect(void *data, unsigned video_dims,
       wiiu->blur.screen.compMap       = GX2_COMP_SEL(_R, _G, _B, _A);
       GX2InitTextureRegs(&wiiu->blur.screen);
    }
-   small = wiiu->blur.dims;
-   copy  = MENU_BLUR_COPY_DIMS(small);
+   blur_size = wiiu->blur.dims;
+   copy  = MENU_BLUR_COPY_DIMS(blur_size);
 
    /* The halving, the passes and the composite, in the vertex cache */
    first = wiiu->vertex_cache_tex.current;
    v     = wiiu->vertex_cache_tex.v + first;
    gx2_blur_quad(v, -1.0f, 1.0f, 1.0f, -1.0f, u0, v0, u1, v1, still);
-   menu_blur_plan(plan, small);
+   menu_blur_plan(plan, blur_size);
    for (i = 0; i < MENU_BLUR_PASSES; i++)
       gx2_blur_quad(v + (i + 1) * 4, -1.0f, 1.0f, 1.0f, -1.0f,
             0.0f, 0.0f, 1.0f, 1.0f, plan[i].params);
@@ -1010,7 +1010,7 @@ static bool gfx_display_wiiu_blur_rect(void *data, unsigned video_dims,
    for (i = 0; i < MENU_BLUR_PASSES; i++)
       gx2_blur_pass(wiiu, &wiiu->blur.tex[plan[i].src],
             &wiiu->blur.cb[plan[i].dst],
-            VIDEO_SCALE_W(small), VIDEO_SCALE_H(small), first + (i + 1) * 4);
+            VIDEO_SCALE_W(blur_size), VIDEO_SCALE_H(blur_size), first + (i + 1) * 4);
 
    c = 1.0f - (1.0f - alpha) * (1.0f - dim);
    GX2SetBlendConstantColor(c, c, c, c);
