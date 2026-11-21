@@ -190,6 +190,10 @@ static pid_t speak_stopping[NARRATOR_STOPPING_MAX];
  * between a handler and the thread it interrupted. Lock-free for int,
  * so usable in the handler. */
 static retro_atomic_int_t unix_sighandler_quit = RETRO_ATOMIC_INT_INITIALIZER(0);
+/* The signals alone: the window system's own quit requests also land in
+ * unix_sighandler_quit, and a video driver coming up clears those, but
+ * never a signal that arrived meanwhile. */
+static retro_atomic_int_t unix_sighandler_signals = RETRO_ATOMIC_INT_INITIALIZER(0);
 
 #ifndef ANDROID
 static enum frontend_fork unix_fork_mode = FRONTEND_FORK_NONE;
@@ -4688,6 +4692,7 @@ static void frontend_unix_sighandler(int sig)
    VALGRIND_PRINTF_BACKTRACE("SIGINT");
 #endif
    (void)sig;
+   retro_atomic_fetch_add_int(&unix_sighandler_signals, 1);
    quit = retro_atomic_fetch_add_int(&unix_sighandler_quit, 1) + 1;
    if (quit == 1)
    {
@@ -4728,7 +4733,13 @@ static void frontend_unix_set_signal_handler_state(int value)
 
 static void frontend_unix_destroy_signal_handler_state(void)
 {
-   retro_atomic_store_release_int(&unix_sighandler_quit, 0);
+   int signals;
+   /* again if a signal lands between the read and the store */
+   do
+   {
+      signals = retro_atomic_load_acquire_int(&unix_sighandler_signals);
+      retro_atomic_store_release_int(&unix_sighandler_quit, signals);
+   } while (retro_atomic_load_acquire_int(&unix_sighandler_signals) != signals);
 }
 
 #ifdef ANDROID

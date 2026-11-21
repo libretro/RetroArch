@@ -86,7 +86,7 @@ if args.retain_unsubmitted:
    if (result == VK_SUCCESS)
       RARCH_LOG("[PyroWave oracle] Retirement marker acknowledged.\\n");""")
 if args.report_marker_loss:
-    submit = b'      result = vkQueueSubmit(vk->context->queue, 0, NULL, marker);'
+    submit = b'      result = vulkan_queue_signal_fence(vk->context->queue, marker);'
     if renderer_patched.count(submit) != 1:
         raise RuntimeError('Expected exactly one retirement marker submission')
     renderer_patched = renderer_patched.replace(submit, submit + b"""
