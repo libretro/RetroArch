@@ -700,6 +700,9 @@ typedef struct video_frame_info
    bool video_wiiu_prefer_drc;
 #endif
    bool widgets_active;
+   /* The widgets are off and their pass draws only the camera's
+    * picture-in-picture (widgets_active is set for it) */
+   bool camera_pip_only;
    /* gfx_widgets_visible() for this frame, answered once on the thread
     * that draws the widgets: whether the frame carries any of them */
    bool widgets_visible;
@@ -2944,6 +2947,12 @@ void *video_driver_get_menu_framebuffer(unsigned dims, bool rgb32,
  * REFUSED under the thread wrapper, which takes imports as nodes
  * (VIDEO_THREAD_ASYNC_IMPORT). Main thread. */
 bool video_driver_get_device(video_device_info_t *info);
+
+#ifdef HAVE_GFX_WIDGETS
+/* Whether the video driver draws a widget pass, whether or not the
+ * widgets are on: the camera's picture-in-picture is drawn in it. */
+bool video_driver_widgets_supported(void);
+#endif
 struct video_hw_frame;
 bool video_driver_movie_refresh(void *user, const struct video_hw_frame *frame);
 /* The same for a frame in memory (video_hw_frame_t::planes): NULL asks

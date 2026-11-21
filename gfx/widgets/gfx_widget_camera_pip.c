@@ -18,7 +18,9 @@
  * the core's own camera as the core polls it, or a camera of the
  * preview's own while the core holds none. Shown while content runs
  * and the menu is closed; the menu's own preview has the camera while
- * it is open. The widget's frame only draws. */
+ * it is open. The widget's frame only draws, in the widgets' pass, or
+ * in that pass drawn for it alone while the widgets are off
+ * (video_frame_info_t::camera_pip_only). */
 
 #include <retro_miscellaneous.h>
 #include <retro_atomic.h>
@@ -27,6 +29,7 @@
 
 #include "../gfx_widgets.h"
 #include "../gfx_display.h"
+#include "../video_driver.h"
 #include "../gfx_thumbnail.h"
 #include "../video_defines.h"
 #include "../../camera/camera_driver.h"
@@ -95,9 +98,11 @@ void gfx_widget_camera_pip_update(bool widgets_active)
 {
    gfx_widget_camera_pip_state_t *state = &p_w_camera_pip_st;
    settings_t *settings                 = config_get_ptr();
-   bool wanted                          = widgets_active && settings
+   /* The widgets off, the driver still draws their pass for it */
+   bool wanted                          = settings
          && settings->bools.camera_pip && settings->bools.camera_allow
-         && (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_CORE_RUNNING);
+         && (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_CORE_RUNNING)
+         && (widgets_active || video_driver_widgets_supported());
    enum camera_preview_state cam;
 
 #ifdef HAVE_MENU
@@ -154,7 +159,9 @@ static void gfx_widget_camera_pip_frame(void *data, void *user_data)
    unsigned vh      = VIDEO_SCALE_H(video_info->dims);
    unsigned tw      = VIDEO_SCALE_W(thumb);
    unsigned th      = VIDEO_SCALE_H(thumb);
-   unsigned margin  = p_dispwidget ? p_dispwidget->simple_widget_padding : 0;
+   /* The widgets' padding, or about as much without them */
+   unsigned margin  = p_dispwidget ? p_dispwidget->simple_widget_padding
+      : vh / 54;
    unsigned w, h;
    int x, y;
 
@@ -180,10 +187,15 @@ static void gfx_widget_camera_pip_frame(void *data, void *user_data)
          GFX_THUMBNAIL_ALIGN_CENTRE, 1.0f, 1.0f, NULL);
 }
 
-static bool gfx_widget_camera_pip_visible(void)
+bool gfx_widget_camera_pip_showing(void)
 {
    return (retro_atomic_load_acquire_int(&p_w_camera_pip_st.layout)
          & CAMERA_PIP_SHOW) != 0;
+}
+
+static bool gfx_widget_camera_pip_visible(void)
+{
+   return gfx_widget_camera_pip_showing();
 }
 
 const gfx_widget_t gfx_widget_camera_pip = {

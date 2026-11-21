@@ -3242,7 +3242,9 @@ static void video_thread_loop(void *data)
                /* This thread draws the widgets, so it advances and lays
                 * them out too, then answers whether any are visible -
                 * where the runloop does both without the wrapper */
-               if (video_info->widgets_active)
+               if (video_info->camera_pip_only)
+                  video_info->widgets_visible = true;
+               else if (video_info->widgets_active)
                {
                   gfx_widgets_worker_step(video_info,
                         thr->frame.slot[slot].status_text,

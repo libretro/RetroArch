@@ -6999,6 +6999,18 @@ bool video_driver_get_device(video_device_info_t *info)
       && poke->get_device(video_st->data, info);
 }
 
+#ifdef HAVE_GFX_WIDGETS
+bool video_driver_widgets_supported(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   gfx_display_t *p_disp          = disp_get_ptr();
+   return video_st->data && video_st->current_video
+      && video_st->current_video->gfx_widgets_enabled
+      && video_st->current_video->gfx_widgets_enabled(video_st->data)
+      && p_disp && p_disp->dispctx;
+}
+#endif
+
 /* Whether a movie frame of @pixfmt can be shown in the core frame's
  * place now: the driver imports it and nothing needs the frame's
  * pixels on the CPU. */
@@ -8062,6 +8074,11 @@ void video_driver_build_info(video_frame_info_t *video_info)
    custom_vp                               = &settings->video_vp_custom;
 #ifdef HAVE_GFX_WIDGETS
    video_info->widgets_active              = p_dispwidget->active;
+   /* With the widgets off, their pass still draws the camera's picture */
+   video_info->camera_pip_only             = !video_info->widgets_active
+      && gfx_widget_camera_pip_showing();
+   if (video_info->camera_pip_only)
+      video_info->widgets_active           = true;
 #else
    video_info->widgets_active              = false;
 #endif
@@ -11284,6 +11301,8 @@ void video_driver_frame(const void *data, unsigned width,
 #endif
          )
          video_info.widgets_visible = gfx_widgets_visible(&video_info);
+      if (video_info.camera_pip_only)
+         video_info.widgets_visible = true;
 #endif
       /* The text this frame draws is drawn inside the driver's frame -
        * on the video thread when it is threaded, which marks the frame

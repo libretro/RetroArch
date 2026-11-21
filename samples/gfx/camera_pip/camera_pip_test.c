@@ -24,6 +24,10 @@ settings_t *config_get_ptr(void) { return &test_settings; }
 runloop_state_t *runloop_state_get_ptr(void) { return &test_runloop; }
 struct menu_state *menu_state_get_ptr(void) { return &test_menu; }
 
+/* --- the video driver: whether it draws a widget pass at all --- */
+static bool widget_pass = true;
+bool video_driver_widgets_supported(void) { return widget_pass; }
+
 /* --- the camera preview --- */
 static camera_preview_sink_t sink;
 static bool sink_open;
@@ -131,13 +135,18 @@ void gfx_thumbnail_draw(void *userdata, unsigned video_dims,
 
 static dispgfx_widget_t widgets_st;
 
-static void frame(unsigned vw, unsigned vh)
+static void frame_in(unsigned vw, unsigned vh, dispgfx_widget_t *widgets)
 {
    video_frame_info_t info;
    memset(&info, 0, sizeof(info));
    info.dims = VIDEO_SCALE_PACK(vw, vh);
    draws     = 0;
-   gfx_widget_camera_pip.frame(&info, &widgets_st);
+   gfx_widget_camera_pip.frame(&info, widgets);
+}
+
+static void frame(unsigned vw, unsigned vh)
+{
+   frame_in(vw, vh, &widgets_st);
 }
 
 static void camera_frame(unsigned w, unsigned h)
@@ -271,8 +280,22 @@ int main(void)
    test_runloop.flags = RUNLOOP_FLAG_CORE_RUNNING;
    gfx_widget_camera_pip_update(true);
    CHECK(sink_open);
+
+   /* The widgets off (notifications off): shown in the pass the driver
+    * draws for it alone, padded without the widgets' metrics */
    gfx_widget_camera_pip_update(false);
-   CHECK(!sink_open);
+   CHECK(sink_open && gfx_widget_camera_pip_showing());
+   camera_frame(640, 480);
+   frame_in(1280, 720, NULL);
+   CHECK(draws == 1 && draw_dims == VIDEO_SCALE_PACK(240, 180));
+   CHECK(draw_x == 720 / 54 && draw_y == 720 - 180 - 720 / 54); /* bottom left */
+   /* ... and stopped where the driver draws no such pass */
+   widget_pass = false;
+   gfx_widget_camera_pip_update(false);
+   CHECK(!sink_open && !gfx_widget_camera_pip_showing());
+   gfx_widget_camera_pip_update(true);
+   CHECK(sink_open);
+   widget_pass = true;
 
    /* The video driver going: stopped, and nothing to stop twice */
    gfx_widget_camera_pip_update(true);
