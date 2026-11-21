@@ -2509,12 +2509,40 @@ bool slang_process(
    if (!*pass->alias && output.meta.name[0])
       strlcpy(pass->alias, output.meta.name, sizeof(pass->alias) - 1);
 
+   if (semantics_map->viewer_colour)
+   {
+#ifdef HAVE_RSLC
+      struct slang_blob *vb = NULL, *fb = NULL;
+      char *vt = NULL, *ft = NULL;
+      enum slang_rect_result result;
+      if (!slang_compile_colour(pass->source.path, output.vertex, output.vertex_len,
+               output.fragment, output.fragment_len, pass_number == 0, &text,
+               &result, &vb, &fb, &vt, &ft)
+            || result == SLANG_RECT_UNSUPPORTED) goto error;
+      if (vb)
+      {
+         glslang_output_set_blob(&output, false, vb);
+         free(output.vertex_text);
+         output.vertex_text = vt;
+      }
+      if (fb)
+      {
+         glslang_output_set_blob(&output, true, fb);
+         free(output.fragment_text);
+         output.fragment_text = ft;
+      }
+#else
+      goto error;
+#endif
+   }
+
    /* Every pass samples the frame as the first does; one with the
     * filter unspecified as the smooth setting the driver gives. */
    out->frame_in_place = false;
    out->frame_unspec   = false;
    out->frame_smooth   = semantics_map->frame_smooth;
-   if (semantics_map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT])
+   if (!semantics_map->viewer_colour
+         && semantics_map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT])
    {
       enum slang_rect_result res;
       enum slang_rect_wrap   wrap   = SLANG_RECT_WRAP_BORDER;
@@ -2637,6 +2665,10 @@ bool slang_process(
       if (!slang_process_reflection(NULL, &output,
                shader_info, pass_number, semantics_map, out))
          goto error;
+      /* The source printers use fixed cbuffer slots, independently of
+       * the descriptor bindings retained in the SPIR-V tables. */
+      out->cbuffers[SLANG_CBUFFER_UBO].binding = 0;
+      out->cbuffers[SLANG_CBUFFER_PC].binding = 1;
       glslang_output_free(&output);
       return true;
    }

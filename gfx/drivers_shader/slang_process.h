@@ -157,6 +157,7 @@ typedef struct
    texture_map_t textures[SLANG_NUM_TEXTURE_SEMANTICS];
    void*         uniforms[SLANG_NUM_BASE_SEMANTICS];
    bool          frame_smooth;
+   bool          viewer_colour;
 } semantics_map_t;
 
 typedef struct

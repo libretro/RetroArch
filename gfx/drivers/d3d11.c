@@ -386,6 +386,9 @@ typedef struct d3d11_shader_t
 typedef struct d3d11_pass
 {
    d3d11_shader_t             shader;
+   d3d11_shader_t             viewer_shader;
+   pass_semantics_t           viewer_semantics;
+   float                      viewer_colour_rows[12];
    D3D11Buffer                buffers[SLANG_CBUFFER_MAX];
    d3d11_texture_t            rt;
    d3d11_texture_t            feedback;
@@ -3556,6 +3559,13 @@ static void d3d11_update_viewport(d3d11_video_t *d3d11, bool force_full)
    d3d11->flags              &= ~D3D11_ST_FLAG_RESIZE_VIEWPORT;
 }
 
+static void d3d11_semantics_free(pass_semantics_t *sem)
+{
+   unsigned i;
+   free(sem->textures);
+   for (i = 0; i < SLANG_CBUFFER_MAX; i++) free(sem->cbuffers[i].uniforms);
+   memset(sem, 0, sizeof(*sem));
+}
 /* What @c holds let go, but for history[0], which the frame is
  * uploaded into without a chain; @c's preset too unless it is @shared
  * (another chain's, which a view's chain reads). */
@@ -3578,6 +3588,8 @@ static void d3d11_chain_free(d3d11_chain_t *c, bool shared)
       }
       free(c->pass[i].semantics.textures);
       d3d11_release_shader(&c->pass[i].shader);
+      d3d11_release_shader(&c->pass[i].viewer_shader);
+      d3d11_semantics_free(&c->pass[i].viewer_semantics);
       d3d11_release_texture(&c->pass[i].rt);
       d3d11_release_texture(&c->pass[i].feedback);
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
@@ -3625,6 +3637,9 @@ static void d3d11_free_shader_preset(d3d11_video_t* d3d11)
 typedef struct d3d11_deferred_pass
 {
    d3d11_shader_t    shader;
+   d3d11_shader_t    viewer_shader;
+   pass_semantics_t  viewer_semantics;
+   char *viewer_vs_src, *viewer_ps_src;
    pass_semantics_t  semantics;
    D3D11Buffer       buffers[SLANG_CBUFFER_MAX];
    /* The pass's HLSL and the name it is compiled under, handed from the
@@ -3650,6 +3665,7 @@ typedef struct d3d11_deferred_state
    /* read at begin: the step's thread reads no driver state */
    bool                      frame_rect;
    bool                      frame_smooth;
+   bool                      viewer_colour;
 } d3d11_deferred_state_t;
 
 #if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
@@ -3746,6 +3762,9 @@ static bool d3d11_shader_load_begin(void *data,
    deferred->step_any_thread = d3d_compiler_load();
    ds->frame_rect            = (d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE) != 0;
    ds->frame_smooth          = d3d11->chain.frame_rect.smooth;
+#if defined(HAVE_RSLC) && defined(HAVE_DXGI_HDR)
+   ds->viewer_colour = (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) != 0;
+#endif
    deferred->driver_data     = ds;
    return true;
 #else
@@ -3756,6 +3775,28 @@ static bool d3d11_shader_load_begin(void *data,
 #if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
 /* The last holder frees what the passes made: the load's, or a build
  * still running when the load ended. */
+
+static bool d3d11_process_viewer(struct video_shader *preset, unsigned i,
+      unsigned model, semantics_map_t *map, float *rows, pass_semantics_t *sem)
+{
+   map->viewer_colour = true;
+   map->uniforms[SLANG_SEMANTIC_VIEWER_COLOUR0] = rows;
+   map->uniforms[SLANG_SEMANTIC_VIEWER_COLOUR1] = rows + 4;
+   map->uniforms[SLANG_SEMANTIC_VIEWER_COLOUR2] = rows + 8;
+   return slang_process(preset, i, RARCH_SHADER_HLSL, model, map, sem);
+}
+
+static bool d3d11_compile_viewer(D3D11Device device, const char *vs,
+      const char *ps, const char *path, d3d11_shader_t *out,
+      d3d11_shader_t *original, enum d3d11_feature_level_hint hint)
+{
+   d3d11_init_shader(device, vs, 0, path, "main", NULL, NULL, NULL, 0, out, hint);
+   d3d11_init_shader(device, ps, 0, path, NULL, "main", NULL, NULL, 0, out, hint);
+   out->layout = original->layout;
+   if (out->layout) out->layout->lpVtbl->AddRef(out->layout);
+   return out->vs && out->ps && out->layout;
+}
+
 static void d3d11_deferred_state_unref(d3d11_deferred_state_t *ds)
 {
    unsigned i;
@@ -3767,6 +3808,10 @@ static void d3d11_deferred_state_unref(d3d11_deferred_state_t *ds)
    {
       unsigned j;
       d3d11_release_shader(&ds->passes[i].shader);
+      d3d11_release_shader(&ds->passes[i].viewer_shader);
+      d3d11_semantics_free(&ds->passes[i].viewer_semantics);
+      free(ds->passes[i].viewer_vs_src);
+      free(ds->passes[i].viewer_ps_src);
       free(ds->passes[i].semantics.textures);
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
@@ -3831,6 +3876,13 @@ static void d3d11_deferred_build_pass(D3D11Device device,
          NULL, "main", NULL, NULL, 0,
          &p->shader, ds->feat_level_hint);
 
+   if (p->viewer_vs_src && !d3d11_compile_viewer(device, p->viewer_vs_src,
+            p->viewer_ps_src, p->path, &p->viewer_shader, &p->shader,
+            ds->feat_level_hint))
+      retro_atomic_store_release_int(&ds->failed, 1);
+   free(p->viewer_vs_src);
+   free(p->viewer_ps_src);
+   p->viewer_vs_src = p->viewer_ps_src = NULL;
    free(p->vs_src);
    free(p->ps_src);
    free(p->path);
@@ -3849,6 +3901,8 @@ static void d3d11_deferred_build_pass(D3D11Device device,
    {
       D3D11_BUFFER_DESC buf_desc;
       buf_desc.ByteWidth           = p->semantics.cbuffers[j].size;
+      if (p->viewer_semantics.cbuffers[j].size > buf_desc.ByteWidth)
+         buf_desc.ByteWidth = p->viewer_semantics.cbuffers[j].size;
       buf_desc.Usage               = D3D11_USAGE_DYNAMIC;
       buf_desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
       buf_desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
@@ -3858,7 +3912,11 @@ static void d3d11_deferred_build_pass(D3D11Device device,
       if (!buf_desc.ByteWidth)
          continue;
 
-      device->lpVtbl->CreateBuffer(device, &buf_desc, NULL, &p->buffers[j]);
+      if (FAILED(device->lpVtbl->CreateBuffer(device, &buf_desc, NULL, &p->buffers[j])))
+      {
+         retro_atomic_store_release_int(&ds->failed, 1);
+         return;
+      }
    }
 }
 
@@ -4057,6 +4115,22 @@ static bool d3d11_shader_load_step(void *data,
          ds->passes[i].path   = strdup(ds->shader_preset->pass[i].source.path);
          ds->shader_preset->pass[i].source.string.vertex   = NULL;
          ds->shader_preset->pass[i].source.string.fragment = NULL;
+         if (ds->viewer_colour)
+         {
+            if (!d3d11_process_viewer(ds->shader_preset, i, ds->shader_model,
+                     &semantics_map, d3d11->chain.pass[i].viewer_colour_rows,
+                     &ds->passes[i].viewer_semantics))
+            {
+               d3d11_deferred_state_free(ds);
+               deferred->state = SHADER_LOAD_FAILED;
+               deferred->driver_data = NULL;
+               return false;
+            }
+            ds->passes[i].viewer_vs_src = ds->shader_preset->pass[i].source.string.vertex;
+            ds->passes[i].viewer_ps_src = ds->shader_preset->pass[i].source.string.fragment;
+            ds->shader_preset->pass[i].source.string.vertex = NULL;
+            ds->shader_preset->pass[i].source.string.fragment = NULL;
+         }
          d3d11_deferred_build(d3d11, ds, i);
       }
 
@@ -4109,6 +4183,10 @@ static bool d3d11_shader_load_step(void *data,
       unsigned i;
       for (i = 0; i < deferred->total_passes; i++)
       {
+         d3d11->chain.pass[i].viewer_shader = ds->passes[i].viewer_shader;
+         memset(&ds->passes[i].viewer_shader, 0, sizeof(ds->passes[i].viewer_shader));
+         d3d11->chain.pass[i].viewer_semantics = ds->passes[i].viewer_semantics;
+         memset(&ds->passes[i].viewer_semantics, 0, sizeof(ds->passes[i].viewer_semantics));
          d3d11->chain.pass[i].shader = ds->passes[i].shader;
          memset(&ds->passes[i].shader, 0,
                sizeof(ds->passes[i].shader));
@@ -4400,10 +4478,33 @@ static bool d3d11_pass_build(d3d11_video_t *d3d11, unsigned i,
          return false;
    }
 
+#if defined(HAVE_RSLC) && defined(HAVE_DXGI_HDR)
+   if (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
+   {
+      bool built;
+      if (!d3d11_process_viewer(d3d11->chain.shader_preset, i, shader_model,
+               &semantics_map, d3d11->chain.pass[i].viewer_colour_rows,
+               &d3d11->chain.pass[i].viewer_semantics)) return false;
+      built = d3d11_compile_viewer(d3d11->device,
+            d3d11->chain.shader_preset->pass[i].source.string.vertex,
+            d3d11->chain.shader_preset->pass[i].source.string.fragment,
+            d3d11->chain.shader_preset->pass[i].source.path,
+            &d3d11->chain.pass[i].viewer_shader, &d3d11->chain.pass[i].shader,
+            feat_level_hint);
+      free(d3d11->chain.shader_preset->pass[i].source.string.vertex);
+      free(d3d11->chain.shader_preset->pass[i].source.string.fragment);
+      d3d11->chain.shader_preset->pass[i].source.string.vertex = NULL;
+      d3d11->chain.shader_preset->pass[i].source.string.fragment = NULL;
+      if (!built) return false;
+   }
+#endif
+
    for (j = 0; j < SLANG_CBUFFER_MAX; j++)
    {
       D3D11_BUFFER_DESC desc;
       desc.ByteWidth           = d3d11->chain.pass[i].semantics.cbuffers[j].size;
+      if (d3d11->chain.pass[i].viewer_semantics.cbuffers[j].size > desc.ByteWidth)
+         desc.ByteWidth = d3d11->chain.pass[i].viewer_semantics.cbuffers[j].size;
       desc.Usage               = D3D11_USAGE_DYNAMIC;
       desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
       desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
@@ -4413,9 +4514,26 @@ static bool d3d11_pass_build(d3d11_video_t *d3d11, unsigned i,
       if (!desc.ByteWidth)
          continue;
 
-      d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc, NULL, &d3d11->chain.pass[i].buffers[j]);
+      if (FAILED(d3d11->device->lpVtbl->CreateBuffer(d3d11->device,
+                  &desc, NULL, &d3d11->chain.pass[i].buffers[j]))) return false;
    }
    return true;
+}
+
+static void d3d11_pass_release_programs(d3d11_pass_t *pass)
+{
+   unsigned j;
+   d3d11_release_shader(&pass->shader);
+   d3d11_release_shader(&pass->viewer_shader);
+   memset(&pass->shader, 0, sizeof(pass->shader));
+   memset(&pass->viewer_shader, 0, sizeof(pass->viewer_shader));
+   d3d11_semantics_free(&pass->semantics);
+   d3d11_semantics_free(&pass->viewer_semantics);
+   for (j = 0; j < SLANG_CBUFFER_MAX; j++)
+   {
+      Release(pass->buffers[j]);
+      pass->buffers[j] = NULL;
+   }
 }
 
 /* The passes that read the frame for an unspecified filter, built
@@ -4434,27 +4552,17 @@ static void d3d11_frame_rect_rebuild(d3d11_video_t *d3d11)
    shader_model = d3d11_shader_model(d3d11, &hint);
    for (i = 0; i < d3d11->chain.shader_preset->passes; i++)
    {
-      int j;
       pass_semantics_t *sem = &d3d11->chain.pass[i].semantics;
       if (!sem->frame_unspec || sem->frame_smooth == d3d11->chain.frame_rect.smooth)
          continue;
-      free(sem->textures);
-      sem->textures = NULL;
-      for (j = 0; j < SLANG_CBUFFER_MAX; j++)
-      {
-         free(sem->cbuffers[j].uniforms);
-         sem->cbuffers[j].uniforms = NULL;
-         Release(d3d11->chain.pass[i].buffers[j]);
-         d3d11->chain.pass[i].buffers[j] = NULL;
-      }
-      d3d11_release_shader(&d3d11->chain.pass[i].shader);
-      memset(&d3d11->chain.pass[i].shader, 0, sizeof(d3d11->chain.pass[i].shader));
+      d3d11_pass_release_programs(&d3d11->chain.pass[i]);
       if (!d3d11_pass_build(d3d11, i, shader_model, hint))
       {
          /* Built as it was, which it was before. */
          bool smooth               = d3d11->chain.frame_rect.smooth;
          RARCH_ERR("[D3D11] Pass %u did not build for the smooth "
                "setting.\n", i);
+         d3d11_pass_release_programs(&d3d11->chain.pass[i]);
          d3d11->chain.frame_rect.smooth  = !smooth;
          d3d11_pass_build(d3d11, i, shader_model, hint);
          d3d11->chain.frame_rect.smooth  = smooth;
@@ -7481,7 +7589,7 @@ static void d3d11_add_ref(void *object)
  * preset is @src's: its parameters are the ones edited. NULL when it
  * can't be made. */
 static d3d11_chain_t *d3d11_chain_clone(d3d11_video_t *d3d11,
-      const d3d11_chain_t *src)
+      const d3d11_chain_t *src, bool viewer)
 {
    unsigned i, j;
    const char *lo   = (const char*)src;
@@ -7507,23 +7615,25 @@ static d3d11_chain_t *d3d11_chain_clone(d3d11_video_t *d3d11,
    {
       const d3d11_pass_t *sp = &src->pass[i];
       d3d11_pass_t *pass     = &c->pass[i];
-      pass->shader           = sp->shader;
+      const pass_semantics_t *sem = viewer && sp->viewer_shader.ps
+         ? &sp->viewer_semantics : &sp->semantics;
+      pass->shader           = viewer && sp->viewer_shader.ps ? sp->viewer_shader : sp->shader;
       d3d11_add_ref(pass->shader.vs);
       d3d11_add_ref(pass->shader.ps);
       d3d11_add_ref(pass->shader.gs);
       d3d11_add_ref(pass->shader.layout);
-      pass->semantics          = sp->semantics;
+      pass->semantics          = *sem;
       pass->semantics.textures = NULL;
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
          pass->semantics.cbuffers[j].uniforms = NULL;
-      if (sp->semantics.textures)
+      if (sem->textures)
       {
          int k;
-         int n = sp->semantics.texture_count + 1;
+         int n = sem->texture_count + 1;
          if (!(pass->semantics.textures = (texture_sem_t*)malloc(
                      n * sizeof(*pass->semantics.textures))))
             goto error;
-         memcpy(pass->semantics.textures, sp->semantics.textures,
+         memcpy(pass->semantics.textures, sem->textures,
                n * sizeof(*pass->semantics.textures));
          for (k = 0; k < n; k++)
             pass->semantics.textures[k].texture_data =
@@ -7531,7 +7641,7 @@ static d3d11_chain_t *d3d11_chain_clone(d3d11_video_t *d3d11,
       }
       for (j = 0; j < SLANG_CBUFFER_MAX; j++)
       {
-         const cbuffer_sem_t *sb = &sp->semantics.cbuffers[j];
+         const cbuffer_sem_t *sb = &sem->cbuffers[j];
          if (sb->uniforms)
          {
             int k;
@@ -7588,7 +7698,7 @@ static void d3d11_views_build_chains(d3d11_video_t *d3d11)
    for (i = 0; i < d3d11->views.chains.count; i++)
       if (     !d3d11->views.chains.preset[i]
             && !(d3d11->views.chains.preset[i] =
-               d3d11_chain_clone(d3d11, &d3d11->chain)))
+               d3d11_chain_clone(d3d11, &d3d11->chain, false)))
          break;
 }
 
@@ -11366,6 +11476,8 @@ video_driver_t video_d3d11 = {
 };
 
 #ifdef HAVE_SLANG
+#include "../common/hdr_viewer_colour.h"
+
 static bool gfx_display_d3d11_media_shader_draw(void *data, uintptr_t image,
       unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
 {
@@ -11385,10 +11497,15 @@ static bool gfx_display_d3d11_media_shader_draw(void *data, uintptr_t image,
    if (!video || !texture || !video->media_shader_info
          || !video->media_shader_info->shader_active
          || !video->chain.shader_preset) return false;
+#ifdef HAVE_DXGI_HDR
+   if ((video->flags & D3D11_ST_FLAG_HDR_ENABLE)
+         && texture->desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT
+         && !video->chain.pass[0].viewer_shader.ps) return false;
+#endif
    if (!video->media_shader_chain && !video->media_shader_attempted)
    {
       video->media_shader_attempted = true;
-      video->media_shader_chain = d3d11_chain_clone(video, &video->chain);
+      video->media_shader_chain = d3d11_chain_clone(video, &video->chain, true);
    }
    if (!(chain = video->media_shader_chain)) return false;
    if (!video->views.tried) d3d11_views_init(video);
@@ -11412,6 +11529,17 @@ static bool gfx_display_d3d11_media_shader_draw(void *data, uintptr_t image,
       chain->pass[pass_index].rotation = 0;
       chain->pass[pass_index].frame_direction = 1;
       chain->pass[pass_index].source_hdr = 0;
+      chain->pass[pass_index].passthrough = 0;
+#ifdef HAVE_DXGI_HDR
+      chain->pass[pass_index].hdr_mode = 0;
+      chain->pass[pass_index].enable_hdr = 0.0f;
+      chain->pass[pass_index].hdr10 = 0.0f;
+      chain->pass[pass_index].inverse_tonemap = 0.0f;
+      hdr_viewer_colour_rows(chain->pass[pass_index].viewer_colour_rows,
+            (video->flags & D3D11_ST_FLAG_HDR_ENABLE)
+               && texture->desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT,
+            video->hdr.menu_nits, video->hdr.ubo_values.expand_gamut);
+#endif
       chain->pass[pass_index].core_aspect = (float)view.width / view.height;
       chain->pass[pass_index].core_aspect_rot = chain->pass[pass_index].core_aspect;
    }

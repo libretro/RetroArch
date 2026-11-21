@@ -221,6 +221,21 @@ static const char full_push_slang[] =
       "layout(location=0) out vec4 colour;\n"
       "void main() { colour=texture(Source,vec2(0.5)); }\n";
 
+static const char viewer_push_slang[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { mat4 MVP; vec4 OutputSize;"
+      "vec4 OriginalSize; vec4 SourceSize; uint FrameCount; } params;\n"
+      "#pragma stage vertex\n"
+      "layout(location=0) in vec4 Position;\n"
+      "layout(location=1) in vec2 TexCoord;\n"
+      "layout(location=0) out vec2 uv;\n"
+      "void main() { gl_Position=params.MVP*Position; uv=TexCoord; }\n"
+      "#pragma stage fragment\n"
+      "layout(binding=0) uniform sampler2D Source;\n"
+      "layout(location=0) in vec2 uv;\n"
+      "layout(location=0) out vec4 colour;\n"
+      "void main() { colour=texture(Source,uv); }\n";
+
 bool video_shader_source_read(const char *ident, char **buf, int64_t *len)
 {
    const char *src;
@@ -231,6 +246,8 @@ bool video_shader_source_read(const char *ident, char **buf, int64_t *len)
       src = stock_slang;
    else if (!strcmp(ident, "full-push.slang"))
       src = full_push_slang;
+   else if (!strcmp(ident, "viewer-push.slang"))
+      src = viewer_push_slang;
    else if (!strcmp(ident, "sized.slang"))
       src = sized_slang;
    else if (!strcmp(ident, "unread.slang"))
@@ -406,6 +423,49 @@ static void check_unread_samplers(void)
 
 /* --- the lane ------------------------------------------------------- */
 
+static void check_viewer_process(void)
+{
+   static struct video_shader shader;
+   semantics_map_t map;
+   pass_semantics_t sem;
+   float rows[12], mvp[16], sizes[4];
+   void *views[2] = { NULL, NULL };
+   unsigned i, j, found = 0;
+   memset(&map, 0, sizeof(map));
+   memset(&sem, 0, sizeof(sem));
+   shader.passes = 1;
+   strcpy(shader.pass[0].source.path, "viewer-push.slang");
+   map.viewer_colour = true;
+   map.uniforms[SLANG_SEMANTIC_MVP] = mvp;
+   for (i = 0; i < 3; i++)
+      map.uniforms[SLANG_SEMANTIC_VIEWER_COLOUR0 + i] = rows + i * 4;
+   map.textures[SLANG_TEXTURE_SEMANTIC_SOURCE].image = &views[0];
+   map.textures[SLANG_TEXTURE_SEMANTIC_SOURCE].size = sizes;
+   map.textures[SLANG_TEXTURE_SEMANTIC_USER].image = &views[1];
+   map.textures[SLANG_TEXTURE_SEMANTIC_USER].size = sizes;
+   CHECK(slang_process(&shader, 0, RARCH_SHADER_HLSL, 50, &map, &sem),
+         "viewer source did not translate");
+   if (!shader.pass[0].source.string.fragment) printf("viewer: %s\n", last_error);
+   CHECK(sem.cbuffers[SLANG_CBUFFER_UBO].binding == 0
+         && sem.cbuffers[SLANG_CBUFFER_PC].binding == 1,
+         "reflected cbuffer slots differ from the source printer");
+   CHECK(shader.pass[0].source.string.fragment
+         && strstr(shader.pass[0].source.string.fragment, "rarch_sample_colour"),
+         "viewer source did not normalize its samples");
+   for (i = 0; i < SLANG_CBUFFER_MAX; i++)
+   {
+      for (j = 0; j < (unsigned)sem.cbuffers[i].uniform_count; j++)
+         if (sem.cbuffers[i].uniforms[j].data == rows
+               || sem.cbuffers[i].uniforms[j].data == rows + 4
+               || sem.cbuffers[i].uniforms[j].data == rows + 8) found++;
+      free(sem.cbuffers[i].uniforms);
+   }
+   CHECK(found == 3, "viewer colour rows are not bound to their owner");
+   free(sem.textures);
+   free(shader.pass[0].source.string.vertex);
+   free(shader.pass[0].source.string.fragment);
+}
+
 static void check_viewer_colour(void)
 {
    glslang_output output;
@@ -491,6 +551,7 @@ int main(void)
    check_simulated_source_size();
    check_unread_samplers();
    check_viewer_colour();
+   check_viewer_process();
 
    printf("%s slang_hlsl_backend\n", failures ? "[FAIL]" : "[pass]");
    return failures ? 1 : 0;
