@@ -50,6 +50,85 @@ static void test_movie_history_storage_mock(void)
    puts("Metal movie history mock: independent slots, rotation, resize and same-size CPU formats passed");
 }
 
+static unsigned planes_released;
+static void planes_release(void *owner, uint64_t done, uint64_t value)
+{
+   assert(owner == &planes_released && done == 5 && value == 6);
+   planes_released++;
+}
+
+/* Movie frames in memory: the planar conversion stood in for, the
+ * shipping importer's checks, front slot, restore and release real */
+static void test_movie_planes_mock(void)
+{
+   static const uint8_t planes[12] = { 0 };
+   static const enum video_texture_update results[3] = {
+      VIDEO_TEXTURE_UPDATE_REFUSED, VIDEO_TEXTURE_UPDATE_DROPPED,
+      VIDEO_TEXTURE_UPDATE_DONE };
+   unsigned r;
+   MockDevice *device = [MockDevice new];
+   for (r = 0; r < 3; r++)
+   {
+      @autoreleasepool
+      {
+         MockContext *context = [MockContext new];
+         FrameView *view = [FrameView new];
+         video_frame_import_t f;
+         context->_device = device; view->_context = context;
+         view->_pendingSrc = (const void*)1; view->_srcDirty = YES; view->_loanLast = 3;
+         view.size = CGSizeMake(3, 3);
+         memset(&f, 0, sizeof(f));
+         f.planar.planes[0] = planes; f.planar.planes[1] = planes + 8;
+         f.planar.planes[2] = planes + 10; f.planar.strides[0] = 4;
+         f.planar.strides[1] = f.planar.strides[2] = 2;
+         f.planar.chroma_step = 1;
+         f.dims = VIDEO_SCALE_PACK(4, 2); f.pixfmt = IMAGE_PIXFMT_I420;
+         f.abandon = planes_release; f.owner = &planes_released;
+         f.done = 5; f.done_value = 6;
+         planes_released = 0;
+         /* Refused before anything moves: no kernel, no size, not SDR */
+         context->disable_planar = YES;
+         assert([view importMovieFrame:&f] == VIDEO_TEXTURE_UPDATE_REFUSED);
+         context->disable_planar = NO;
+         f.dims = VIDEO_SCALE_PACK(0, 2);
+         assert([view importMovieFrame:&f] == VIDEO_TEXTURE_UPDATE_REFUSED);
+         f.dims = VIDEO_SCALE_PACK(4, 2); f.output_pixfmt = IMAGE_PIXFMT_FP16;
+         assert([view importMovieFrame:&f] == VIDEO_TEXTURE_UPDATE_REFUSED);
+         f.output_pixfmt = IMAGE_PIXFMT_8888;
+         assert(!view->planes_calls && !view->history_updates && !planes_released);
+         /* The conversion's answer */
+         view->planes_result = results[r];
+         assert([view importMovieFrame:&f] == results[r]);
+         assert(view->planes_calls == 1 && view->planes_frame == &f && view->planes_into);
+         if (results[r] == VIDEO_TEXTURE_UPDATE_DONE)
+         {
+            /* Converted into the front slot, RGBA8 at the movie's size */
+            assert(view->planes_into == view->_engine.frame.texture[0].view);
+            assert(view->planes_into.pixelFormat == MTLPixelFormatRGBA8Unorm);
+            assert(view->planes_into.width == 4 && view->planes_into.height == 2);
+            assert(view->_movieFrame && !view->_movieHDR && planes_released == 1);
+            assert(view.size.width == 4 && view.size.height == 2);
+            assert(!view->_srcDirty && !view->_pendingSrc && view->_loanLast == -1);
+            assert([view importMovieFrame:&f] == VIDEO_TEXTURE_UPDATE_DONE
+                  && planes_released == 2 && view->planes_calls == 2);
+            assert([view importMovieFrame:NULL] == VIDEO_TEXTURE_UPDATE_DONE
+                  && !view->_movieFrame && planes_released == 2);
+         }
+         else
+         {
+            /* Put back as it was, the planes still the producer's to release */
+            assert(!view->_movieFrame && !planes_released);
+            assert(!view->_engine.frame.texture[0].view);
+            assert(view.size.width == 3 && view.size.height == 3);
+            assert(view->_srcDirty && view->_pendingSrc == (const void*)1 && view->_loanLast == 3);
+         }
+         [view release]; [context release];
+      }
+   }
+   assert(!live_textures && [device retainCount] == 1); [device release];
+   puts("Metal movie planes mock: kernel, size and format refusals, drop, refusal and release passed");
+}
+
 static void test_movie_import_mock(void)
 {
    unsigned ten, full, color, action;
@@ -135,4 +214,5 @@ static void test_movie_import_mock(void)
    }
    puts("Metal movie importer mock: 128 SDR/PQ/HLG conversion, capability, refusal, clear and retirement cases passed");
    test_movie_history_storage_mock();
+   test_movie_planes_mock();
 }

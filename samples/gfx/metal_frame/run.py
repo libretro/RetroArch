@@ -60,6 +60,7 @@ def main():
         preamble = '#include <formats/image.h>\n#include <formats/video_hw_frame.h>\n#include <formats/image_yuv_blit.h>\n#include <defines/cocoa_defines.h>\n#include <string.h>\n#include <assert.h>\n'
         preamble += 'enum video_texture_update' + driver_header.split('enum video_texture_update', 1)[1].split('};', 1)[0] + '};\n'
         preamble += 'typedef struct video_frame_import\n' + carrier + '} video_frame_import_t;\n'
+        preamble += '#define VIDEO_FRAME_IMPORT_IS_CPU' + driver_header.split('#define VIDEO_FRAME_IMPORT_IS_CPU', 1)[1].split('\n', 1)[0] + '\n'
         fixture = HERE / ("mock.m" if args.mock else "native.m")
         text = fixture.read_text(encoding="utf-8").replace("/* SHIPPING_LEASE */", preamble + section)
         if args.native:

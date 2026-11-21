@@ -11,12 +11,14 @@
 @property(readonly) id<MTLCommandBuffer> blitCommandBuffer;
 @property(readonly) void *frameSDRPipeline;
 @property(readonly) BOOL movieHDRSupported;
+- (bool)planarAvailable;
 @end
 @implementation NativeContext
 - (id<MTLDevice>)device { return _device; }
 - (id<MTLCommandBuffer>)blitCommandBuffer { return _buffer; }
 - (void *)frameSDRPipeline { return _frameSDRPipeline; }
 - (BOOL)movieHDRSupported { return YES; }
+- (bool)planarAvailable { return true; }
 - (void)dealloc { if (_frameSDRPipeline) CFRelease(_frameSDRPipeline); }
 @end
 

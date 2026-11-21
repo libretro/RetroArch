@@ -567,6 +567,12 @@ typedef struct metal_view_chain metal_view_chain_t;
 
 @end
 
+@interface FrameView (MoviePlanes)
+/* A movie frame in memory converted into @texture, its RGBA8 front slot */
+- (enum video_texture_update)_convertMoviePlanes:(const video_frame_import_t *)frame
+      into:(id<MTLTexture>)texture;
+@end
+
 @interface MetalMenu : NSObject
 
 @property(nonatomic, readonly) bool hasFrame;
@@ -7707,6 +7713,8 @@ struct metal_view_chain
    NSUInteger _bpp;
 
    id<MTLTexture> _src; /* source texture */
+   /* The staging the movie's planes are copied to for their conversion */
+   Texture *_moviePlanes;
    bool _srcDirty;
    /* A frame put off by deferFrame:pitch:, and where it lies in frame
     * memory (_pendingMem, -1 for none, at _pendingOff) */
@@ -7869,6 +7877,7 @@ struct metal_view_chain
    [_context release];
    [(id)_texture release];
    [(id)_src release];
+   [_moviePlanes release];
    for (i = 0; i < METAL_FRAME_MEM_MAX; i++)
    {
       [(id)_mem[i] release];
@@ -8283,26 +8292,42 @@ struct metal_view_chain
    @autoreleasepool
    {
       metal_frame_sdr_params_t params;
-      RArchMetalFrameLease *lease;
-      id<MTLCommandBuffer> buffer;
+      RArchMetalFrameLease *lease = NULL;
+      id<MTLCommandBuffer> buffer = nil;
       BOOL previous_movie = _movieFrame, previous_hdr = _movieHDR;
-      bool hdr, previous_init = init_history, previous_resize = resize_render_targets;
+      bool hdr = false, previous_init = init_history, previous_resize = resize_render_targets;
+      bool cpu;
       id<MTLTexture> previous_source;
       CGSize previous_size = _size;
-      unsigned history_count, i;
+      unsigned history_count, i, width, height;
+      enum video_texture_update result;
       if (!frame)
       {
          [self _clearMovieFrame];
          return VIDEO_TEXTURE_UPDATE_DONE;
       }
-      buffer = _context.blitCommandBuffer;
-      lease = metal_frame_validate(frame, (__bridge void*)_context.device, (__bridge void*)buffer);
-      if (!lease || !_context.frameSDRPipeline)
-         return VIDEO_TEXTURE_UPDATE_REFUSED;
-      hdr = metal_frame_hdr_params(&lease->view, &params);
-      if ((hdr ? !_context.movieHDRSupported : !metal_frame_sdr_params(&lease->view, &params))
-            || (frame->output_pixfmt && frame->output_pixfmt != (hdr ? IMAGE_PIXFMT_FP16 : IMAGE_PIXFMT_8888)))
-         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      /* Planes in memory are converted by the planar kernel: SDR, RGBA8 */
+      if ((cpu = VIDEO_FRAME_IMPORT_IS_CPU(frame)))
+      {
+         width  = VIDEO_SCALE_W(frame->dims);
+         height = VIDEO_SCALE_H(frame->dims);
+         if (!width || !height || ![_context planarAvailable]
+               || (frame->output_pixfmt && frame->output_pixfmt != IMAGE_PIXFMT_8888))
+            return VIDEO_TEXTURE_UPDATE_REFUSED;
+      }
+      else
+      {
+         buffer = _context.blitCommandBuffer;
+         lease = metal_frame_validate(frame, (__bridge void*)_context.device, (__bridge void*)buffer);
+         if (!lease || !_context.frameSDRPipeline)
+            return VIDEO_TEXTURE_UPDATE_REFUSED;
+         hdr = metal_frame_hdr_params(&lease->view, &params);
+         if ((hdr ? !_context.movieHDRSupported : !metal_frame_sdr_params(&lease->view, &params))
+               || (frame->output_pixfmt && frame->output_pixfmt != (hdr ? IMAGE_PIXFMT_FP16 : IMAGE_PIXFMT_8888)))
+            return VIDEO_TEXTURE_UPDATE_REFUSED;
+         width  = lease->view.width;
+         height = lease->view.height;
+      }
       history_count = _shader && _shader->history_size > 0 ? (unsigned)_shader->history_size + 1u : 1u;
       if (history_count > sizeof(_moviePrevious) / sizeof(_moviePrevious[0]))
          return VIDEO_TEXTURE_UPDATE_REFUSED;
@@ -8316,15 +8341,21 @@ struct metal_view_chain
       }
       if (!_movieFrame || _movieHDR != hdr) init_history = YES;
       _movieFrame = YES; _movieHDR = hdr;
-      self.size = CGSizeMake(lease->view.width, lease->view.height);
+      self.size = CGSizeMake(width, height);
       [self syncViewport];
       [self _updateHistory];
-      if (!(hdr ? metal_frame_convert_hdr(frame, (__bridge void*)_context.device,
-               (__bridge void*)buffer, _context.frameSDRPipeline,
-               (__bridge void*)_engine.frame.texture[0].view)
-            : metal_frame_convert_sdr(frame, (__bridge void*)_context.device,
-               (__bridge void*)buffer, _context.frameSDRPipeline,
-               (__bridge void*)_engine.frame.texture[0].view)))
+      if (cpu)
+         result = [self _convertMoviePlanes:frame
+               into:_engine.frame.texture[0].view];
+      else
+         result = (hdr ? metal_frame_convert_hdr(frame, (__bridge void*)_context.device,
+                  (__bridge void*)buffer, _context.frameSDRPipeline,
+                  (__bridge void*)_engine.frame.texture[0].view)
+               : metal_frame_convert_sdr(frame, (__bridge void*)_context.device,
+                  (__bridge void*)buffer, _context.frameSDRPipeline,
+                  (__bridge void*)_engine.frame.texture[0].view))
+            ? VIDEO_TEXTURE_UPDATE_DONE : VIDEO_TEXTURE_UPDATE_REFUSED;
+      if (result != VIDEO_TEXTURE_UPDATE_DONE)
       {
          _movieFrame = previous_movie; _movieHDR = previous_hdr;
          self.size = previous_size; init_history = previous_init;
@@ -8338,7 +8369,7 @@ struct metal_view_chain
             RARCH_STRUCT_ASSIGN(_moviePrevious[i].view, nil);
          }
          [self syncViewport];
-         return VIDEO_TEXTURE_UPDATE_REFUSED;
+         return result;
       }
       RARCH_RELEASE(previous_source);
       for (i = 0; i < history_count; i++)
@@ -8346,6 +8377,9 @@ struct metal_view_chain
       _pendingSrc = NULL;
       _srcDirty = NO;
       _loanLast = -1;
+      /* The conversion copied the planes: the producer has them back */
+      if (cpu && frame->abandon)
+         frame->abandon(frame->owner, frame->done, frame->done_value);
       return VIDEO_TEXTURE_UPDATE_DONE;
    }
 }
@@ -10307,11 +10341,10 @@ static bool metal_texture_staging(Texture *t, NSUInteger len)
  * buffer, in order with the draws around it. A slot still the GPU's
  * drops the frame, as an RGBA update does. Must run on the thread that
  * owns Context.blitCommandBuffer. */
-static enum video_texture_update metal_planar_update(MetalDriver *md,
-      Texture *t, const struct texture_image *ti)
+static enum video_texture_update metal_planar_encode(Context *context,
+      Texture *t, id<MTLTexture> tex, const struct texture_image *ti)
 {
    const struct texture_planar *tp = ti->planar;
-   id<MTLTexture> tex = t.texture;
    id<MTLComputePipelineState> kernel;
    id<MTLCommandBuffer> cb;
    id<MTLComputeCommandEncoder> ce;
@@ -10328,11 +10361,11 @@ static enum video_texture_update metal_planar_update(MetalDriver *md,
    unsigned slot, k;
    uint8_t *dst;
 
-   if (     !tp || !t->_planar || !tex
+   if (     !tp || !tex
          || !tp->planes[0] || !tp->planes[1] || !tp->planes[2]
          || (tp->chroma_step != 1 && tp->chroma_step != 2)
          || tex.width != w || tex.height != h
-         || !(kernel = [md.context planarKernel]))
+         || !(kernel = [context planarKernel]))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    /* Luma, then Cb and Cr planes, tightly packed; kept a multiple of
     * four so each slot starts aligned */
@@ -10347,7 +10380,7 @@ static enum video_texture_update metal_planar_update(MetalDriver *md,
    }
    if (k == METAL_STAGING_SLOTS)
       return VIDEO_TEXTURE_UPDATE_DROPPED;
-   if (!(cb = md.context.blitCommandBuffer))
+   if (!(cb = context.blitCommandBuffer))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    t->_stagingNext = (slot + 1) % METAL_STAGING_SLOTS;
    off = (NSUInteger)slot * len;
@@ -10419,6 +10452,41 @@ static enum video_texture_update metal_planar_update(MetalDriver *md,
    }
    return VIDEO_TEXTURE_UPDATE_DONE;
 }
+
+/* A planar frame into planar texture @t */
+static enum video_texture_update metal_planar_update(MetalDriver *md,
+      Texture *t, const struct texture_image *ti)
+{
+   if (!t->_planar)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   return metal_planar_encode(md.context, t, t.texture, ti);
+}
+
+@implementation FrameView (MoviePlanes)
+/* Through the planar kernel straight into the front slot, the planes
+ * copied once into staging of the view's own; on the blit command
+ * buffer, so ordered with the draws that sample the slot */
+- (enum video_texture_update)_convertMoviePlanes:(const video_frame_import_t *)frame
+      into:(id<MTLTexture>)texture
+{
+   struct texture_image img;
+   enum video_texture_update result;
+   if (!texture || texture.pixelFormat != MTLPixelFormatRGBA8Unorm)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!_moviePlanes)
+      _moviePlanes = [Texture new];
+   /* The staging is made on the slot's device and kept across the
+    * sizes it fits; the slot is not held */
+   _moviePlanes.texture = texture;
+   memset(&img, 0, sizeof(img));
+   img.width  = VIDEO_SCALE_W(frame->dims);
+   img.height = VIDEO_SCALE_H(frame->dims);
+   img.planar = &frame->planar;
+   result = metal_planar_encode(_context, _moviePlanes, texture, &img);
+   _moviePlanes.texture = nil;
+   return result;
+}
+@end
 
 static enum video_texture_update metal_update_texture_internal(
       void *video_data, uintptr_t handle, const struct texture_image *ti)
@@ -11047,6 +11115,9 @@ static bool metal_get_device(void *data, video_device_info_t *info)
    if (metal_hevc_owns((__bridge void*)md))
       info->import_formats = IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010;
 #endif
+   /* Movie frames in memory, through the planar kernel */
+   if ([md.context planarAvailable])
+      info->import_formats |= IMAGE_PIXFMT_I420;
    return true;
 }
 

@@ -253,7 +253,7 @@ static id mock_compute_encoder(MockBuffer *buffer);
    id<MTLDevice> _device;
    MockBuffer *_buffer;
    void *_frameSDRPipeline;
-   BOOL fail_texture, disable_hdr;
+   BOOL fail_texture, disable_hdr, disable_planar;
    unsigned allocations;
 }
 @property(readonly) id<MTLDevice> device;
@@ -261,6 +261,7 @@ static id mock_compute_encoder(MockBuffer *buffer);
 @property(readonly) BOOL hdrEnabled;
 @property(readonly) void *frameSDRPipeline;
 @property(readonly) BOOL movieHDRSupported;
+- (bool)planarAvailable;
 - (id)linearShader;
 - (Texture *)newImportedTexture:(MTLPixelFormat)format width:(unsigned)width
       height:(unsigned)height filter:(enum texture_filter_type)filter;
@@ -268,6 +269,7 @@ static id mock_compute_encoder(MockBuffer *buffer);
 @implementation MockContext
 - (void *)frameSDRPipeline { return _frameSDRPipeline; }
 - (BOOL)movieHDRSupported { return !disable_hdr; }
+- (bool)planarAvailable { return !disable_planar; }
 - (BOOL)hdrEnabled { return !disable_hdr; }
 - (id)linearShader { return disable_hdr ? nil : self; }
 - (id<MTLDevice>)device { return _device; }
