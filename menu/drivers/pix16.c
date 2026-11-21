@@ -2699,8 +2699,13 @@ static void pix16_mg_kb_cb(void *userdata, const char *str)
          strlcpy(key, pix->mg_member, sizeof(key));
          path_remove_extension(key);
          pix16_canon_name(key, sizeof(key));
+         /* stored under both the playlist's own name and its canonical
+          * one, so a tile finds it whichever name it looks up with */
          pix16_ovr_set(pix16_names, &pix16_names_n, "pix16_names.txt",
-               key, name);
+               pix->mg_member, name);
+         if (!string_is_equal(key, pix->mg_member))
+            pix16_ovr_set(pix16_names, &pix16_names_n, "pix16_names.txt",
+                  key, name);
          pix->mg_open = false;
          pix16_order_refresh(pix);
          menu_state_get_ptr()->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
