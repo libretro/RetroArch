@@ -200,7 +200,6 @@ enum rtime_sleep_state
 };
 
 typedef LONG (WINAPI *NtSetTimerResolution_t)(ULONG, BOOLEAN, PULONG);
-typedef LONG (WINAPI *NtQueryTimerResolution_t)(PULONG, PULONG, PULONG);
 
 static CreateWaitableTimerExW_t rtime_create_waitable_timer_ex = NULL;
 static SetWaitableTimer_t rtime_set_waitable_timer             = NULL;
@@ -215,44 +214,28 @@ static DWORD rtime_sleep_tls              = TLS_OUT_OF_INDEXES;
 static bool rtime_timer_resolution_init(void)
 {
    HMODULE ntdll;
-   NtQueryTimerResolution_t query;
-   ULONG res_coarsest = 0;
-   ULONG res_finest   = 0;
-   ULONG res_current  = 0;
-   ULONG desired      = 10000; /* 1 ms, in 100 ns units */
+   ULONG res_current = 0;
+   /* 1 ms, in 100 ns units.  Not clamped here to what the system
+    * supports: the kernel does that itself (ExSetTimerResolution: finer
+    * than it can do gives its finest, coarser than the current setting
+    * leaves that), and 1 ms is within range on every PC anyway. */
+   ULONG desired     = 10000;
 
    /* NT only; on Win9x there is no ntdll and the default period was
     * already 1 ms anyway. */
    if (!(ntdll = GetModuleHandleA("ntdll.dll")))
       return false;
 
-   rtime_nt_set_timer_resolution = (NtSetTimerResolution_t)
-         GetProcAddress(ntdll, "NtSetTimerResolution");
-   query                         = (NtQueryTimerResolution_t)
-         GetProcAddress(ntdll, "NtQueryTimerResolution");
-
-   if (!rtime_nt_set_timer_resolution || !query)
-      goto error;
-
-   /* Note the naming: the "maximum" resolution is the finest the
-    * system supports and is therefore the numerically smallest. */
-   if (query(&res_coarsest, &res_finest, &res_current) < 0)
-      goto error;
-
-   if (desired < res_finest)
-      desired = res_finest;
-   if (res_coarsest && desired > res_coarsest)
-      desired = res_coarsest;
-
-   if (rtime_nt_set_timer_resolution(desired, TRUE, &res_current) < 0)
-      goto error;
+   if (     !(rtime_nt_set_timer_resolution = (NtSetTimerResolution_t)
+               GetProcAddress(ntdll, "NtSetTimerResolution"))
+         || rtime_nt_set_timer_resolution(desired, TRUE, &res_current) < 0)
+   {
+      rtime_nt_set_timer_resolution = NULL;
+      return false;
+   }
 
    rtime_timer_resolution = desired;
    return true;
-
-error:
-   rtime_nt_set_timer_resolution = NULL;
-   return false;
 }
 
 /* See the note above: the kernel request is per process and not
