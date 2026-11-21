@@ -8637,7 +8637,7 @@ OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
       float right_thumbnail_draw_height = 0.0f;
       float left_thumbnail_draw_width   = 0.0f;
       float left_thumbnail_draw_height  = 0.0f;
-      float background_alpha            = 0.95f;
+      float background_alpha            = (ozone->flags & OZONE_FLAG_IS_FILE_LIST) ? 1.0f : 0.95f;
       float background_color[16] = {
          0.0f, 0.0f, 0.0f, 1.0f,
          0.0f, 0.0f, 0.0f, 1.0f,
