@@ -11,7 +11,10 @@ root = Path(__file__).resolve().parents[3]
 driver = (root / "gfx/drivers/d3d11.c").read_text(encoding="utf-8")
 copy = (root / "gfx/common/dxgi_common.c").read_text(encoding="utf-8")
 def function(source, signature):
-    start = source.index(signature)
+    match = re.search(re.escape(signature) + r"[^;{]*\{", source)
+    if not match:
+        raise ValueError("Missing function definition: " + signature)
+    start = match.start()
     return source[start:source.index("\n}\n",start)+3]
 copy = function(copy,"void dxgi_copy(")
 formats = sorted(set(re.findall(r"DXGI_FORMAT[_A-Z0-9]+",copy)) | {"DXGI_FORMAT_UNKNOWN"})

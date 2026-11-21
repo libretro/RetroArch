@@ -2,6 +2,7 @@
 """Exercise shipping D3D11 per-write maps with changing addresses and pitches."""
 from pathlib import Path
 import os
+import re
 import shlex
 import subprocess
 import tempfile
@@ -10,7 +11,10 @@ root = Path(__file__).resolve().parents[3]
 driver = (root / "gfx/drivers/d3d11.c").read_text(encoding="utf-8")
 
 def function(signature):
-    start = driver.index(signature)
+    match = re.search(re.escape(signature) + r"[^;{]*\{", driver)
+    if not match:
+        raise ValueError("Missing function definition: " + signature)
+    start = match.start()
     return driver[start:driver.index("\n}\n", start) + 3]
 
 end = driver.index("} d3d11_texture_lend_t;") + len("} d3d11_texture_lend_t;")
