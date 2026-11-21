@@ -241,8 +241,8 @@ metal_fixture = common + r'''
 #define RARCH_ASSIGN(dst,src) ((dst)=(src))
 #define RARCH_LOG(...) ((void)0)
 typedef unsigned NSUInteger;
-struct Command {};
-struct Encoder {};
+typedef struct Command { int unused; } Command;
+typedef struct Encoder { int unused; } Encoder;
 typedef struct { unsigned format,width,height,usage; } Descriptor;
 #define MTLTextureUsageShaderRead 1
 #define MTLTextureUsageShaderWrite 2
@@ -293,7 +293,7 @@ static void targets(engine_t *e,unsigned w,unsigned h,unsigned dims,bool hdr)
 static void chain_feedback(engine_t *e) { (void)e;feedbacks++; }
 static void chain_render(engine_t *e,Context *ctx,bool backbuffer)
 { (void)ctx;(void)backbuffer;e->frame.valid=true;renders++; }
-struct Staging { void *contents;unsigned storageMode; };
+typedef struct Staging { void *contents;unsigned storageMode; } Staging;
 #define TARGET_OS_OSX 1
 #define MTLStorageModeManaged 1
 #define METAL_STAGING_SLOTS 3
@@ -351,8 +351,9 @@ int main(void)
    MetalDriver md={&ctx};
    preset p={1,2};
    struct texture_image image;
-   unsigned *pixels=(unsigned*)calloc(320*240,sizeof(unsigned));assert(pixels);
+   unsigned *pixels=(unsigned*)calloc(320*240,sizeof(unsigned));
    unsigned i,before;
+   assert(pixels);
    memset(&self,0,sizeof(self));memset(&c,0,sizeof(c));memset(&t,0,sizeof(t));
    self.shader=&p;self.context=&ctx;self.pendingMem=-1;
    t.texture=new_texture(320,240,1);t.texture->value=19;t._mediaHistory.managed=true;
@@ -404,12 +405,15 @@ int main(void)
 metal_fixture = metal_fixture.replace("\nPLANAR\n", planar).replace("\nUPDATE\n", update).replace("\nMETHOD\n", method)
 
 
-def build(unit, compiler, flags, directory, cpp=False):
-    path = Path(directory) / ("test.cpp" if cpp else "test.c")
+def build(unit, compiler, flags, directory, c99=False):
+    path = Path(directory) / "test.c"
     exe = Path(directory) / ("test.exe" if "mingw" in " ".join(compiler) or os.name == "nt" else "test")
     path.write_text(unit, encoding="utf-8")
-    dialect = ["-std=c++11"] if cpp else ["-std=c89", "-Werror=declaration-after-statement"]
-    if not cpp and any("clang" in word for word in compiler):
+    # The Metal half runs metal.m's own code, Objective-C on C99 (a loop
+    # declares its counter); the rest is held to C89.
+    dialect = ["-std=c99"] if c99 else ["-std=c89"]
+    dialect += ["-Werror=declaration-after-statement"]
+    if any("clang" in word for word in compiler):
         # The frontend's C89_BUILD uses the same allowance for boolean.h.
         dialect += ["-Wno-c99-extensions", "-Wno-c11-extensions"]
     subprocess.run(compiler + flags + dialect + ["-pedantic",
@@ -426,15 +430,5 @@ flags = shlex.split(os.environ.get("CFLAGS", ""))
 with tempfile.TemporaryDirectory(prefix="viewer-history-") as directory:
     if args.backend in ("d3d12", "both"):
         build(d3d_fixture, cc, flags, directory)
-    cxx = shlex.split(os.environ.get("CXX", "c++"))
-    if os.environ.get("CC"):
-        cxx = list(cc)
-        for i, word in enumerate(cxx):
-            suffix = ".exe" if word.endswith(".exe") else ""
-            driver = word[:-4] if suffix else word
-            for c, cpp in (("clang", "clang++"), ("gcc", "g++"), ("cc", "c++")):
-                if driver.endswith(c):
-                    cxx[i] = driver[:-len(c)] + cpp + suffix
-                    break
     if args.backend in ("metal", "both"):
-        build(metal_fixture, cxx, flags, directory, cpp=True)
+        build(metal_fixture, cc, flags, directory, c99=True)
