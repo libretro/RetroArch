@@ -196,6 +196,7 @@ static bool media_folder_drive(struct menu_state *menu_st,
    if (!media->controls.target.user || !media->controls.playback.paused
          || media->controls.layout.button_count
             != 7u + (media->controls.target.subtitle_tracks ? 1u : 0u)
+               + (media->controls.target.shaders ? 1u : 0u)
          || media->controls.target.directions != 1)
       return false;
    if (!gfx_media_controls_action(&media->controls, GFX_MEDIA_PREVIOUS_FILE,
