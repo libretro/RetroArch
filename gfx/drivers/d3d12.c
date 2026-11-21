@@ -35,6 +35,7 @@
 #include <boolean.h>
 #include <retro_math.h>
 #include "../common/menu_ribbon_shader.h"
+#include "../common/media_history.h"
 
 #include <string/stdstring.h>
 #include <file/file_path.h>
@@ -339,6 +340,7 @@ static const char d3d12_planar_cs_src[] =
 
 typedef struct
 {
+   gfx_media_history_t                media_history;
    D3D12Resource                      handle;
    D3D12Resource                      upload_buffer;
    D3D12_RESOURCE_DESC                desc;
@@ -498,6 +500,9 @@ typedef struct d3d12_filter_chain
    unsigned                    num_tables;
    unsigned                    rt_frame_dims;
    unsigned                    rt_vp_dims;
+   /* Borrowed only during a media draw; no texture owner is retained. */
+   gfx_media_history_t         *media_history;
+   uintptr_t                   media_source;
    bool                        history_made;
    D3D12Resource               frame_res;
    d3d12_texture_t            *final;
@@ -2084,6 +2089,7 @@ static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
       d3d12_texture_t* texture, void *userdata)
 {
    unsigned k = texture->pending;
+   texture->media_history.copies = 0;
    if (texture->planar && userdata)
    {
       d3d12_planar_record(cmd, texture, (d3d12_video_t*)userdata);
@@ -10026,6 +10032,7 @@ static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
             ? d3d12->media_shader_texture->desc.Format
             : d3d12->filter.history[0].desc.Format;
          if (     !c->history_made
+               || !c->history[0].handle
                || c->history[0].desc.Width  != v->width
                || c->history[0].desc.Height != v->height
                || c->history[0].desc.Format != format)
@@ -10044,6 +10051,7 @@ static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
                d3d12_init_texture(d3d12->device, &c->history[k]);
             }
             c->history_made = true;
+            if (c->media_history) c->media_history->copies = 0;
          }
          else if (n > 1)
          {
@@ -10055,7 +10063,8 @@ static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
          if (c != d3d12->media_shader_chain)
             d3d12_frame_remap(d3d12, &c->history[0],
                d3d12->filter.history[0].srv_mapping == D3D12_FRAME_MAPPING_2101010);
-         copy = c->history[0].handle != NULL;
+         copy = c->history[0].handle != NULL
+            && gfx_media_history_needed(c->media_history, n);
       }
 #ifdef HAVE_SLANG
       slang_rect_values(c->frame_rect.values, dims, 0, dims);
@@ -12874,7 +12883,10 @@ static uintptr_t d3d12_planar_load(d3d12_video_t *d3d12,
       p->gpu_src.ptr = p->cpu_src.ptr - heap->cpu.ptr + heap->gpu.ptr;
    }
    if (d3d12_planar_write(texture, image))
+   {
+      texture->media_history.managed = true;
       return (uintptr_t)texture;
+   }
 error:
    d3d12_release_texture(d3d12, texture);
    free(texture);
@@ -13475,6 +13487,7 @@ static uintptr_t d3d12_gfx_load_texture_internal(
                          : DXGI_FORMAT_B8G8R8A8_UNORM,
             image->pixels, texture);
 
+   texture->media_history.managed = true;
    return (uintptr_t)texture;
 }
 
@@ -14439,6 +14452,7 @@ static uintptr_t d3d12_gfx_load_texture_compressed_internal(
    texture->size_data.z = 1.0f / (float)tc->mips[0].width;
    texture->size_data.w = 1.0f / (float)tc->mips[0].height;
    texture->dirty       = false;
+   texture->media_history.managed = true;
    return (uintptr_t)texture;
 }
 
@@ -14820,6 +14834,10 @@ static bool gfx_display_d3d12_media_shader_draw(void *data, uintptr_t image,
    memset(&view, 0, sizeof(view));
    view.width = VIDEO_SCALE_W(source_dims);
    view.height = VIDEO_SCALE_H(source_dims);
+   gfx_media_history_begin(&texture->media_history, (uintptr_t)chain,
+         chain->media_source == image, chain->history_made);
+   chain->media_source = image;
+   chain->media_history = &texture->media_history;
    chain->history[0].size_data = texture->size_data;
    copy = d3d12_views_chain_frame(video, chain, &view, dims, texture->handle,
          source_dims, chain->shader_preset->history_size == 0, true);
@@ -14838,11 +14856,13 @@ static bool gfx_display_d3d12_media_shader_draw(void *data, uintptr_t image,
       D3D12_RESOURCE_TRANSITION(cmd, to.pResource,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
       cmd->lpVtbl->CopyTextureRegion(cmd, &to, 0, 0, 0, &from, NULL);
+      gfx_media_history_written(chain->media_history);
       D3D12_RESOURCE_TRANSITION(cmd, from.pResource,
             D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
       D3D12_RESOURCE_TRANSITION(cmd, to.pResource,
             D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
    }
+   chain->media_history = NULL;
    d3d12_views_bind(video);
    video->queue.cmd->lpVtbl->SetGraphicsRootSignature(video->queue.cmd,
          video->desc.sl_rootSignature);

@@ -58,6 +58,7 @@
 #include "../../record/drivers/record_metal.h"
 #include "../font_driver.h"
 #include "../video_driver.h"
+#include "../common/media_history.h"
 #include "../gfx_instrument.h"
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
@@ -1683,6 +1684,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
     * set, each through __atomic stores: the handler runs on whatever
     * thread Metal finishes on. */
    int      _stagingBusy[METAL_STAGING_SLOTS];
+   gfx_media_history_t _mediaHistory;
    unsigned _stagingNext;
    /* Slots lent to a producer (metal_texture_lend), which writes them
     * itself: an update from other memory never uses them. Touched
@@ -7730,6 +7732,9 @@ struct metal_view_chain
    texture_t src16;
    unsigned rt_frame_dims;
    unsigned rt_vp_dims;
+   /* Borrowed only while renderExternalViewChain encodes this image. */
+   gfx_media_history_t *media_history;
+   uintptr_t media_source;
    bool history_made;
 };
 
@@ -9193,6 +9198,7 @@ error:
          for (k = 0; k < n; k++)
             [self _initTexture:&c->engine.frame.texture[k] withDescriptor:td];
          c->history_made = true;
+         if (c->media_history) c->media_history->copies = 0;
       }
       else if (fresh && n > 1)
       {
@@ -9256,7 +9262,8 @@ error:
                   "frame written straight in.\n");
          }
       }
-      else if (c->engine.frame.texture[0].view)
+      else if (c->engine.frame.texture[0].view
+            && gfx_media_history_needed(c->media_history, n))
       {
          bce = [_context.blitCommandBuffer blitCommandEncoder];
          [bce copyFromTexture:src
@@ -9269,6 +9276,7 @@ error:
              destinationLevel:0
             destinationOrigin:MTLOriginMake(0, 0, 0)];
          [bce endEncoding];
+         if (bce) gfx_media_history_written(c->media_history);
       }
    }
 
@@ -10313,9 +10321,11 @@ static uintptr_t metal_load_texture_internal(void *video_data, void *data,
                      filter:filter_type]))
                || metal_planar_update(md, t, img) != VIDEO_TEXTURE_UPDATE_DONE)
             return 0;
+         t->_mediaHistory.managed = true;
          return (uintptr_t)RARCH_BRIDGE_RETAINED(t);
       }
       t = [md.context newTexture:image filter:filter_type];
+      if (t) t->_mediaHistory.managed = true;
       return (uintptr_t)RARCH_BRIDGE_RETAINED(RARCH_AUTORELEASE_R(t));
    }
 }
@@ -10550,9 +10560,12 @@ static enum video_texture_update metal_planar_encode(Context *context,
 static enum video_texture_update metal_planar_update(MetalDriver *md,
       Texture *t, const struct texture_image *ti)
 {
+   enum video_texture_update result;
    if (!t->_planar)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
-   return metal_planar_encode(md.context, t, t.texture, ti);
+   result = metal_planar_encode(md.context, t, t.texture, ti);
+   if (result == VIDEO_TEXTURE_UPDATE_DONE) t->_mediaHistory.copies = 0;
+   return result;
 }
 
 @implementation FrameView (MoviePlanes)
@@ -10670,6 +10683,7 @@ static enum video_texture_update metal_update_texture_internal(
             destinationLevel:0
            destinationOrigin:MTLOriginMake(0, 0, 0)];
          [bce endEncoding];
+         t->_mediaHistory.copies = 0;
          __atomic_store_n(&t->_stagingBusy[slot], 1, __ATOMIC_RELEASE);
          {
             /* The slot is free again when this command buffer is done
@@ -11046,6 +11060,7 @@ static uintptr_t metal_load_texture_compressed(void *video_data,
       t = [md.context newTextureCompressed:tc filter:filter_type];
       if (!t)
          return 0;
+      t->_mediaHistory.managed = true;
       return (uintptr_t)RARCH_BRIDGE_RETAINED(RARCH_AUTORELEASE_R(t));
    }
 #else
@@ -11433,8 +11448,13 @@ static bool gfx_display_metal_media_shader_draw(void *data, uintptr_t image,
    memset(&view, 0, sizeof(view));
    view.width = VIDEO_SCALE_W(source_dims);
    view.height = VIDEO_SCALE_H(source_dims);
+   gfx_media_history_begin(&texture->_mediaHistory, (uintptr_t)vs->media_chain,
+         vs->media_chain->media_source == image, vs->media_chain->history_made);
+   vs->media_chain->media_source = image;
+   vs->media_chain->media_history = &texture->_mediaHistory;
    [md.frameView renderExternalViewChain:vs->media_chain source:texture.texture
          view:&view viewport:dims fresh:true];
+   vs->media_chain->media_history = NULL;
    draw.video_info = NULL;
    draw.rce = md.context.rce;
    draw.sampler = texture.sampler;
