@@ -1,0 +1,8 @@
+# A count the run does not end with fails it: a conforming core stamps no
+# message below its promise.
+# error: the bus counted low_stamp 0 times, not 3
+console 0 core=test
+console 1 core=test
+expect-count low_stamp 3
+0 cable 0:0 1:0
+10 end

@@ -1,0 +1,14 @@
+# A broken core: in frame 20 console 1 advances over and over without
+# progress. The scheduler parks it, console 0 waits on it, nothing can run,
+# and the bus is released in frame 20.
+console 0 core=test
+console 1 core=test
+option 1 link_test_mode no_progress
+option 1 link_test_bad_frame 20
+option 1 link_test_seed 3
+expect-stuck 20
+0 cable 0:0 1:0
+10 save mid
+10 checkpoint in_flight
+15 checkpoint middle
+40 end

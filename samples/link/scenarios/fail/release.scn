@@ -1,0 +1,10 @@
+# A release the scenario does not expect fails the run: console 1 makes
+# no advance from frame 5.
+# error: the bus was released in frame 5
+console 0 core=test
+console 1 core=test
+option 1 link_test_mode never_advance
+option 1 link_test_bad_frame 5
+expect-count skipped_publish 1
+0 cable 0:0 1:0
+10 end

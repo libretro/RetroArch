@@ -1,0 +1,8 @@
+# An expect line that does not hold fails the run: console 0 attaches one
+# port, not two.
+# error: expect.scn:7: expect failed: console 0 byte 8 is 1, not 2
+console 0 core=test
+console 1 core=test
+0 cable 0:0 1:0
+5 expect 0 system 8 2
+10 end

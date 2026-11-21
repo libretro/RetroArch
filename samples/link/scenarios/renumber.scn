@@ -1,0 +1,15 @@
+# Renumbering: console 1's tick counters restart at every load and move at
+# every reset, so each load or reset re-joins its port with new ticks.
+console 0 core=test
+console 1 core=test
+option 1 link_test_rate_0 60000
+option 1 link_test_restart_ticks on
+option 1 link_test_seed 2
+0 cable 0:0 1:0
+30 reset 1
+35 expect 1 system 9 2
+50 save mid
+50 checkpoint in_flight
+60 reset 0
+70 checkpoint middle
+100 end

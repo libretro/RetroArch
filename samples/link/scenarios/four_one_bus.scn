@@ -1,0 +1,38 @@
+# Four consoles on one bus, chained by cables at frame 0. Console 0
+# sends to index 2; the others broadcast. Each console's port is index
+# 0 to 3 on a bus of four.
+console 0 core=test
+console 1 core=test
+console 2 core=test
+console 3 core=test
+option 0 link_test_rate_0 61440
+option 0 link_test_max_ports_0 4
+option 0 link_test_send_0 2
+option 0 link_test_seed 3
+option 1 link_test_rate_0 61440
+option 1 link_test_max_ports_0 4
+option 1 link_test_send_0 broadcast
+option 1 link_test_seed 7
+option 2 link_test_rate_0 61440
+option 2 link_test_max_ports_0 4
+option 2 link_test_send_0 broadcast
+option 2 link_test_seed 11
+option 3 link_test_rate_0 61440
+option 3 link_test_max_ports_0 4
+option 3 link_test_send_0 broadcast
+option 3 link_test_seed 23
+0 cable 0:0 1:0
+0 cable 1:0 2:0
+0 cable 2:0 3:0
+40 save mid
+40 checkpoint in_flight
+50 checkpoint middle
+99 expect 0 system 12 0
+99 expect 1 system 12 1
+99 expect 2 system 12 2
+99 expect 3 system 12 3
+99 expect 0 system 9 4
+99 expect 1 system 9 4
+99 expect 2 system 9 4
+99 expect 3 system 9 4
+100 end

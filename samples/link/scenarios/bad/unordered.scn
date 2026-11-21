@@ -1,0 +1,8 @@
+# Frame lines out of order: refused before anything runs.
+# error: unordered.scn:7: frame lines out of order
+console 0 core=test
+console 1 core=test
+0 cable 0:0 1:0
+20 checkpoint late
+10 save early
+30 end

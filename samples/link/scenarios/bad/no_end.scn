@@ -1,0 +1,6 @@
+# No end line: refused before anything runs.
+# error: no_end.scn: no end line
+console 0 core=test
+console 1 core=test
+0 cable 0:0 1:0
+10 save mid

@@ -1,0 +1,15 @@
+# A hold after the save line at its frame: a run from the state loads,
+# renumbering every console, then holds console 1, whose ticks restart at
+# the load. The hold needs an idle bus, so nothing is in flight at the save.
+console 0 core=test
+console 1 core=test
+option 0 link_test_send_frames 0-49,100-109
+option 1 link_test_send_frames 0-49
+option 1 link_test_restart_ticks on
+0 cable 0:0 1:0
+90 save mid
+90 hold 1
+95 expect 0 system 9 2
+120 unhold 1
+125 checkpoint middle
+140 end

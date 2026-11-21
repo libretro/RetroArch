@@ -1,0 +1,7 @@
+# A name with no --path binding and no file of that name beside the
+# scenario: refused before anything runs.
+# error: unbound.scn:5: a name with no --path binding and no file beside the scenario: link_test_missing
+console 0 core=test
+console 1 core=link_test_missing
+0 cable 0:0 1:0
+30 end

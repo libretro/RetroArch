@@ -1,0 +1,23 @@
+# Two consoles with two ports each. Console 0's ports run at 61440 and
+# 60000 ticks a second with 16 steps a frame, so the earliest promise of
+# its two ports holds the 61440 port one tick short of the end of every
+# odd step. Console 1 steps 49 times a frame, so it stamps at tick 61 of a
+# frame, which lands on console 0's port 0 at that capped tick, 63.
+console 0 core=test
+console 1 core=test
+option 0 link_test_ports 2
+option 0 link_test_rate_0 61440
+option 0 link_test_rate_1 60000
+option 0 link_test_steps 16
+option 0 link_test_seed 5
+option 1 link_test_ports 2
+option 1 link_test_rate_0 60000
+option 1 link_test_rate_1 60000
+option 1 link_test_steps 49
+option 1 link_test_seed 9
+0 cable 0:0 1:0
+0 cable 0:1 1:1
+25 save mid
+25 checkpoint in_flight
+40 checkpoint middle
+60 end

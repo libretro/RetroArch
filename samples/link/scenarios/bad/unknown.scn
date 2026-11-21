@@ -1,0 +1,7 @@
+# An unknown command: refused before anything runs.
+# error: unknown.scn:6: unknown command: unplug
+console 0 core=test
+console 1 core=test
+0 cable 0:0 1:0
+10 unplug 0:0
+30 end
