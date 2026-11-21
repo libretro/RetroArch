@@ -920,6 +920,7 @@ typedef struct vk
    vulkan_android_queue_t vaapi_submissions;
 #endif
    vulkan_filter_chain_t *media_shader_chain[2];
+   bool media_shader_tried[2]; /* built, or failed, for views.preset */
    uint64_t media_shader_frame;
    bool media_shader_enabled;
    uintptr_t movie_texture;
@@ -7243,37 +7244,50 @@ static void vulkan_views_build_chains(vk_t *vk)
 }
 
 /* The view chains follow the main chain's preset; NULL or empty for
- * none. */
-static void vulkan_views_set_preset(vk_t *vk, const char *path, bool media)
+ * none.  The media viewers' chains are built when a viewer first draws
+ * with it: most presets are never shown in one. */
+static void vulkan_views_set_preset(vk_t *vk, const char *path)
 {
+   unsigned i;
    strlcpy(vk->views.preset, path ? path : "", sizeof(vk->views.preset));
    vulkan_views_free_chains(vk, 0, true);
    vulkan_views_build_chains(vk);
+   for (i = 0; i < 2; i++)
    {
-      struct vulkan_filter_chain_create_info info;
-      unsigned i;
-      for (i = 0; i < 2; i++)
-      {
-         vulkan_filter_chain_free(vk->media_shader_chain[i]);
-         vk->media_shader_chain[i] = NULL;
-         if (!media || !path || !*path || (i && !vk->sdr_render_pass)) continue;
-         vulkan_views_chain_info(vk, &info);
-#ifdef HAVE_RSLC
-         info.viewer_colour = i != 0;
-#endif
-         if (i)
-         {
-            info.swapchain.render_pass = vk->sdr_render_pass;
-            info.swapchain.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-         }
-#ifdef VULKAN_HDR_SWAPCHAIN
-         info.hdr_enabled = vk->hdr_mode_latched > 0;
-#endif
-         vk->media_shader_chain[i] = vulkan_filter_chain_create_from_preset(
-               &info, path, vk->video.smooth ? GLSLANG_FILTER_CHAIN_LINEAR
-                  : GLSLANG_FILTER_CHAIN_NEAREST);
-      }
+      vulkan_filter_chain_free(vk->media_shader_chain[i]);
+      vk->media_shader_chain[i] = NULL;
+      vk->media_shader_tried[i] = false;
    }
+}
+
+/* The media viewer's chain for the preset: [1] draws into the SDR
+ * offscreen buffer, [0] onto the swapchain. */
+static vulkan_filter_chain_t *vulkan_media_chain(vk_t *vk, unsigned i)
+{
+   struct vulkan_filter_chain_create_info info;
+   if (vk->media_shader_tried[i])
+      return vk->media_shader_chain[i];
+   if (i && !vk->sdr_render_pass)
+      return NULL;
+   vk->media_shader_tried[i] = true;
+   if (!*vk->views.preset)
+      return NULL;
+   vulkan_views_chain_info(vk, &info);
+#ifdef HAVE_RSLC
+   info.viewer_colour = i != 0;
+#endif
+   if (i)
+   {
+      info.swapchain.render_pass = vk->sdr_render_pass;
+      info.swapchain.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+   }
+#ifdef VULKAN_HDR_SWAPCHAIN
+   info.hdr_enabled = vk->hdr_mode_latched > 0;
+#endif
+   vk->media_shader_chain[i] = vulkan_filter_chain_create_from_preset(
+         &info, vk->views.preset, vk->video.smooth
+         ? GLSLANG_FILTER_CHAIN_LINEAR : GLSLANG_FILTER_CHAIN_NEAREST);
+   return vk->media_shader_chain[i];
 }
 
 /* Views are not drawn with HDR output or an HDR10 source. */
@@ -7330,7 +7344,7 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
       return false;
    }
 
-   vulkan_views_set_preset(vk, shader_path, true);
+   vulkan_views_set_preset(vk, shader_path);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
@@ -7929,6 +7943,7 @@ static void vulkan_free(void *data)
       vulkan_filter_chain_free(vk->media_shader_chain[0]);
       vulkan_filter_chain_free(vk->media_shader_chain[1]);
       vk->media_shader_chain[0] = vk->media_shader_chain[1] = NULL;
+      vk->media_shader_tried[0] = vk->media_shader_tried[1] = false;
 
       vulkan_views_free_chains(vk, 0, true);
 
@@ -9150,25 +9165,9 @@ typedef struct vulkan_deferred_state
 {
    vulkan_filter_chain_t *new_chain;
    vulkan_filter_chain_t *old_chain;
-   vulkan_filter_chain_t *media_chain[2];
-   unsigned core_passes, media_passes[2];
    enum glslang_filter_chain_filter filter;
    retro_atomic_int_t     failed;   /* a pass failed: the load ends */
 } vulkan_deferred_state_t;
-
-static vulkan_filter_chain_t *vulkan_deferred_chain(vulkan_deferred_state_t *ds,
-      unsigned *pass)
-{
-   unsigned i;
-   if (*pass < ds->core_passes) return ds->new_chain;
-   *pass -= ds->core_passes;
-   for (i = 0; i < 2; i++)
-   {
-      if (*pass < ds->media_passes[i]) return ds->media_chain[i];
-      *pass -= ds->media_passes[i];
-   }
-   return NULL;
-}
 
 struct vulkan_build_task
 {
@@ -9200,7 +9199,7 @@ static void vulkan_deferred_build(shader_load_deferred_t *deferred,
 {
    struct vulkan_build_task *b;
    retro_task_t *task;
-   vulkan_filter_chain_t *chain = vulkan_deferred_chain(ds, &pass);
+   vulkan_filter_chain_t *chain = ds->new_chain;
 
    if (     task_queue_is_threaded()
          && (b = (struct vulkan_build_task*)malloc(sizeof(*b))))
@@ -9283,37 +9282,6 @@ static bool vulkan_shader_load_begin(void *data,
       return false;
    }
 
-   ds->core_passes = deferred->total_passes;
-   {
-      unsigned i;
-      for (i = 0; i < 2; i++)
-      {
-         if (i && !vk->sdr_render_pass) continue;
-         vulkan_views_chain_info(vk, &info);
-#ifdef HAVE_RSLC
-         info.viewer_colour = i != 0;
-#endif
-         if (i)
-         {
-            info.swapchain.render_pass = vk->sdr_render_pass;
-            info.swapchain.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-         }
-#ifdef VULKAN_HDR_SWAPCHAIN
-         info.hdr_enabled = vk->hdr_mode_latched > 0;
-#endif
-         ds->media_chain[i] = vulkan_filter_chain_create_deferred(&info,
-               deferred->preset_path, ds->filter, &ds->media_passes[i]);
-         if (!ds->media_chain[i])
-         {
-            vulkan_filter_chain_free(ds->media_chain[0]);
-            vulkan_filter_chain_free(ds->new_chain);
-            free(ds);
-            return false;
-         }
-         deferred->total_passes += ds->media_passes[i];
-      }
-   }
-
    RARCH_LOG("[Vulkan] Deferred: prepared %u passes for \"%s\".\n",
          deferred->total_passes, deferred->preset_path);
 
@@ -9341,14 +9309,12 @@ static bool vulkan_shader_load_step(void *data,
 
    if (pass < deferred->total_passes)
    {
-      unsigned chain_pass = pass;
-      vulkan_filter_chain_t *chain = vulkan_deferred_chain(ds, &chain_pass);
       RARCH_LOG("[Vulkan] Deferred: compiling pass %u/%u...\n",
             pass + 1, deferred->total_passes);
 
       if (     retro_atomic_load_acquire_int(&ds->failed)
             || !vulkan_filter_chain_prepare_pass(
-               chain, chain_pass, ds->filter))
+               ds->new_chain, pass, ds->filter))
       {
          if (!retro_atomic_load_acquire_int(&ds->failed))
             RARCH_ERR("[Vulkan] Deferred: failed to compile pass %u.\n", pass);
@@ -9388,9 +9354,7 @@ static bool vulkan_shader_load_step(void *data,
    /* All passes compiled â€” finalize */
    RARCH_LOG("[Vulkan] Deferred: finalizing chain...\n");
 
-   if (vulkan_filter_chain_finalize(ds->new_chain)
-         && (!ds->media_chain[0] || vulkan_filter_chain_finalize(ds->media_chain[0]))
-         && (!ds->media_chain[1] || vulkan_filter_chain_finalize(ds->media_chain[1])))
+   if (vulkan_filter_chain_finalize(ds->new_chain))
    {
       if (ds->old_chain)
          vulkan_filter_chain_free(ds->old_chain);
@@ -9398,10 +9362,7 @@ static bool vulkan_shader_load_step(void *data,
       vk->filter_chain = ds->new_chain;
       deferred->state  = SHADER_LOAD_DONE;
 
-      vulkan_views_set_preset(vk, deferred->preset_path, false);
-      vk->media_shader_chain[0] = ds->media_chain[0];
-      vk->media_shader_chain[1] = ds->media_chain[1];
-      ds->media_chain[0] = ds->media_chain[1] = NULL;
+      vulkan_views_set_preset(vk, deferred->preset_path);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
@@ -9491,8 +9452,6 @@ static bool vulkan_shader_load_step(void *data,
    }
 
 cleanup:
-   vulkan_filter_chain_free(ds->media_chain[0]);
-   vulkan_filter_chain_free(ds->media_chain[1]);
    free(ds);
    deferred->driver_data = NULL;
    return false; /* no more work */
@@ -9511,7 +9470,7 @@ static bool vulkan_set_shader(void *data,
     * stages both name are taken from it instead of compiled again. */
    old              = (vulkan_filter_chain_t*)vk->filter_chain;
    vk->filter_chain = NULL;
-   vulkan_views_set_preset(vk, NULL, false);
+   vulkan_views_set_preset(vk, NULL);
 
    if (path && *path && type != RARCH_SHADER_SLANG)
    {
@@ -19503,7 +19462,7 @@ static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
    if (!vk || !texture || !vk->media_shader_enabled || !vk->bloom.target)
       return false;
    sdr = (vk->flags & VK_FLAG_SDR_PIPELINE) != 0;
-   chain = vk->media_shader_chain[sdr ? 1 : 0];
+   chain = vulkan_media_chain(vk, sdr ? 1 : 0);
    if (!chain || !(sdr ? vk->bloom.keep_sdr_pass : vk->keep_render_pass))
       return false;
    saved_vp = vk->vk_vp;

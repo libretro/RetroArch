@@ -65,6 +65,7 @@ static void vulkan_filter_chain_build_viewport_pass(vulkan_filter_chain_t *c,uns
 static void vulkan_filter_chain_end_frame(vulkan_filter_chain_t *c,unsigned cmd) { (void)c;(void)cmd; }
 static void vkCmdBeginRenderPass(unsigned cmd,const VkRenderPassBeginInfo *r,unsigned mode) { (void)cmd;(void)mode;assert(r->framebuffer==4);begun++; }
 static void vkCmdEndRenderPass(unsigned cmd) { (void)cmd;ended++; }
+static vulkan_filter_chain_t *vulkan_media_chain(vk_t *v,unsigned i) { return v->media_shader_chain[i]; }
 FUNCTION
 int main(void)
 {
