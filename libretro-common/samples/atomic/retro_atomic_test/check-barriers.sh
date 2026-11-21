@@ -79,5 +79,11 @@ else
    echo "ok    store_128_shape: ldxp/stlxp, no compare"
 fi
 
+# Bytes and halfwords: one acquire load or release store of their width
+want load_acquire_8_shape   "ldarb" "an acquire byte load"
+want store_release_8_shape  "stlrb" "a release byte store"
+want load_acquire_16_shape  "ldarh" "an acquire halfword load"
+want store_release_16_shape "stlrh" "a release halfword store"
+
 rm -f "$OBJ"
 exit $rc
