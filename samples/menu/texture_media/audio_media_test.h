@@ -26,8 +26,10 @@ static bool media_test_audio_tracks(menu_media_controls_t *media,
    draw(menu_st);
    for (pass = 0; pass < 3; pass++)
    {
+      /* Before CC and Shaders, where those are offered */
       unsigned button = media->controls.layout.button_count
-         - (media->controls.target.subtitle_tracks ? 2 : 1);
+         - (media->controls.target.subtitle_tracks ? 2 : 1)
+         - (media->controls.target.shaders ? 1 : 0);
       int previous = media->controls.target.audio_track_index;
       int64_t deadline;
       if (!target.state(target.user, menu_st->current_time_us, &before))
