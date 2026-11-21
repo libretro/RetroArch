@@ -215,6 +215,8 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 - (unsigned)beginBloom:(unsigned)dims defer:(BOOL)defer;
 - (void)endBloom:(unsigned)dims defer:(BOOL)defer;
 - (void)compositeBloom:(unsigned)dims;
+- (BOOL)blurRect:(unsigned)videoDims x:(int)x y:(int)y dims:(unsigned)dims
+      alpha:(float)alpha dim:(float)dim;
 @property (nonatomic, readonly) id<MTLDevice> device;
 @property (nonatomic, readonly) id<MTLLibrary> library;
 @property (nonatomic, readonly) void *frameSDRPipeline;
@@ -1737,6 +1739,16 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    MTLPixelFormat _bloomFormat;
    unsigned _bloomDims;
    BOOL _bloomFailed;
+   /* The menu's backdrop blur: the rect halved into
+    * _blurTex[MENU_BLUR_COPY] from the target itself where it can be
+    * read and is drawn whole, else from _blurCopy; blurred between
+    * _blurTex[0] and [1], laid back over the rect by _blurMixState */
+   id<MTLTexture> _blurTex[3];
+   id<MTLTexture> _blurCopy;
+   id<MTLRenderPipelineState> _blurMixState;
+   MTLPixelFormat _blurMixFormat;
+   unsigned _blurDims;
+   BOOL _blurFailed;
    void *_frameSDRPipeline;
    id<MTLCommandQueue> _commandQueue;
    CAMetalLayer *_layer;
@@ -1967,6 +1979,11 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    [_bloomState release];
    [_bloomSmallAddState release];
    [_bloomAddState release];
+   [_blurTex[0] release];
+   [_blurTex[1] release];
+   [_blurTex[2] release];
+   [_blurCopy release];
+   [_blurMixState release];
    [(id)_clearState release];
    [(id)_clearStateF16 release];
    [(id)_linearStateF16 release];
@@ -3785,15 +3802,10 @@ static float metal_hdr_pq_to_nits(float pq)
    return YES;
 }
 
-/* Deferred, called before the frame's encoder exists: the small passes
- * get encoders of their own and the frame's is not split */
-- (unsigned)beginBloom:(unsigned)dims defer:(BOOL)defer
+/* The passes into the small RGBA16Float images, plain and added; the
+ * backdrop blur draws with the first */
+- (BOOL)bloomSmallStates
 {
-   unsigned small_dims = menu_bloom_dims(dims);
-   if (!small_dims || _bloomFailed || !_commandBuffer)
-      return 0;
-   if (defer ? _rce != nil : !self.rce)
-      return 0;
    if (!_bloomState || !_bloomSmallAddState)
    {
       MTLRenderPipelineDescriptor *psd = RARCH_AUTORELEASE_R([MTLRenderPipelineDescriptor new]);
@@ -3809,11 +3821,23 @@ static float metal_hdr_pq_to_nits(float pq)
       psd.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
       psd.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
       _bloomSmallAddState = [_device newRenderPipelineStateWithDescriptor:psd error:nil];
-      if (!_bloomState || !_bloomSmallAddState)
-      {
-         _bloomFailed = YES;
-         return 0;
-      }
+   }
+   return _bloomState && _bloomSmallAddState;
+}
+
+/* Deferred, called before the frame's encoder exists: the small passes
+ * get encoders of their own and the frame's is not split */
+- (unsigned)beginBloom:(unsigned)dims defer:(BOOL)defer
+{
+   unsigned small_dims = menu_bloom_dims(dims);
+   if (!small_dims || _bloomFailed || !_commandBuffer)
+      return 0;
+   if (defer ? _rce != nil : !self.rce)
+      return 0;
+   if (![self bloomSmallStates])
+   {
+      _bloomFailed = YES;
+      return 0;
    }
    if (!defer && ![self bloomAddStateFor:
          _renderPass.colorAttachments[0].texture.pixelFormat])
@@ -3913,6 +3937,179 @@ static float metal_hdr_pq_to_nits(float pq)
    [encoder setFragmentTexture:_bloomTex[pass->src] atIndex:0];
    [encoder setFragmentBytes:pass->params length:sizeof(pass->params) atIndex:0];
    [encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+}
+
+/* A blur image of @dims, private to the GPU */
+- (id<MTLTexture>)blurImage:(unsigned)dims format:(MTLPixelFormat)format
+      usage:(MTLTextureUsage)usage
+{
+   MTLTextureDescriptor *td = [MTLTextureDescriptor
+      texture2DDescriptorWithPixelFormat:format width:VIDEO_SCALE_W(dims)
+      height:VIDEO_SCALE_H(dims) mipmapped:NO];
+   td.usage       = usage;
+   td.storageMode = MTLStorageModePrivate;
+   return [_device newTextureWithDescriptor:td];
+}
+
+/* One pass of the glow's shader from @src into @dst, a small image */
+- (void)blurPass:(id<MTLTexture>)src into:(id<MTLTexture>)dst
+      params:(const float *)params
+{
+   MTLViewport vp = {0, 0, dst.width, dst.height, 0, 1};
+   [self beginLayer:dst];
+   [_rce setViewport:vp];
+   [_rce setRenderPipelineState:_bloomState];
+   [_rce setFragmentTexture:src atIndex:0];
+   [_rce setFragmentBytes:params length:4 * sizeof(float) atIndex:0];
+   [_rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+   [self endLayer];
+}
+
+- (BOOL)blurRect:(unsigned)videoDims x:(int)x y:(int)y dims:(unsigned)dims
+      alpha:(float)alpha dim:(float)dim
+{
+   static const float still[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+   menu_bloom_pass_t plan[MENU_BLUR_PASSES];
+   MTLRenderPassDescriptor *restore;
+   id<MTLTexture> target, src;
+   id<MTLRenderCommandEncoder> encoder;
+   float params[4], c;
+   unsigned i, small, rect;
+   int x0, y0, x1, y1;
+   if (_blurFailed || _bloomDims || !_commandBuffer || !_rce || !_renderPass)
+      return NO;
+   target = _renderPass.colorAttachments[0].texture;
+   if (!target || target.framebufferOnly || target.sampleCount > 1)
+      return NO;
+   /* Clipped to the output and the target; nothing left, nothing to
+    * blur */
+   x0 = x < 0 ? 0 : x;
+   y0 = y < 0 ? 0 : y;
+   x1 = x + (int)VIDEO_SCALE_W(dims);
+   y1 = y + (int)VIDEO_SCALE_H(dims);
+   if (x1 > (int)VIDEO_SCALE_W(videoDims)) x1 = (int)VIDEO_SCALE_W(videoDims);
+   if (y1 > (int)VIDEO_SCALE_H(videoDims)) y1 = (int)VIDEO_SCALE_H(videoDims);
+   if (x1 > (int)target.width)             x1 = (int)target.width;
+   if (y1 > (int)target.height)            y1 = (int)target.height;
+   if (x1 - x0 < 8 || y1 - y0 < 8)
+      return NO;
+   rect  = VIDEO_SCALE_PACK(x1 - x0, y1 - y0);
+   small = menu_blur_dims(rect);
+   if (![self bloomSmallStates])
+   {
+      _blurFailed = YES;
+      return NO;
+   }
+   if (!_blurMixState || _blurMixFormat != target.pixelFormat)
+   {
+      MTLRenderPipelineDescriptor *psd = RARCH_AUTORELEASE_R([MTLRenderPipelineDescriptor new]);
+      psd.vertexFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"bloom_vertex"]);
+      psd.fragmentFunction = RARCH_AUTORELEASE_R([_library newFunctionWithName:@"bloom_fragment"]);
+      psd.colorAttachments[0].pixelFormat = target.pixelFormat;
+      psd.colorAttachments[0].blendingEnabled = YES;
+      psd.colorAttachments[0].sourceRGBBlendFactor = MTLBlendFactorOne;
+      psd.colorAttachments[0].destinationRGBBlendFactor = MTLBlendFactorOneMinusBlendColor;
+      psd.colorAttachments[0].sourceAlphaBlendFactor = MTLBlendFactorZero;
+      psd.colorAttachments[0].destinationAlphaBlendFactor = MTLBlendFactorOne;
+      RARCH_RELEASE_NIL(_blurMixState);
+      _blurMixState = [_device newRenderPipelineStateWithDescriptor:psd error:nil];
+      if (!_blurMixState)
+      {
+         _blurFailed = YES;
+         return NO;
+      }
+      _blurMixFormat = target.pixelFormat;
+   }
+   if (small != _blurDims)
+   {
+      for (i = 0; i < 3; i++)
+      {
+         RARCH_RELEASE_NIL(_blurTex[i]);
+         _blurTex[i] = [self blurImage:i == MENU_BLUR_COPY
+               ? MENU_BLUR_COPY_DIMS(small) : small
+            format:MTLPixelFormatRGBA16Float
+            usage:MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead];
+         if (!_blurTex[i])
+         {
+            _blurFailed = YES;
+            return NO;
+         }
+      }
+      _blurDims = small;
+   }
+
+   restore = RARCH_RETAIN(_renderPass);
+   [self endLayer];
+   /* The target read in place where it can be and is drawn whole; else
+    * the rect copied out of it */
+   if (     (target.usage & MTLTextureUsageShaderRead)
+         && !x0 && !y0
+         && (NSUInteger)x1 == target.width && (NSUInteger)y1 == target.height)
+      src = target;
+   else
+   {
+      id<MTLBlitCommandEncoder> blit;
+      if (     !_blurCopy || _blurCopy.pixelFormat != target.pixelFormat
+            || _blurCopy.width != (NSUInteger)(x1 - x0)
+            || _blurCopy.height != (NSUInteger)(y1 - y0))
+      {
+         RARCH_RELEASE_NIL(_blurCopy);
+         _blurCopy = [self blurImage:rect format:target.pixelFormat
+            usage:MTLTextureUsageShaderRead];
+      }
+      if (!_blurCopy)
+         _blurFailed = YES;
+      else
+      {
+         blit = [_commandBuffer blitCommandEncoder];
+         [blit copyFromTexture:target sourceSlice:0 sourceLevel:0
+            sourceOrigin:MTLOriginMake(x0, y0, 0)
+            sourceSize:MTLSizeMake(x1 - x0, y1 - y0, 1)
+            toTexture:_blurCopy destinationSlice:0 destinationLevel:0
+            destinationOrigin:MTLOriginMake(0, 0, 0)];
+         [blit endEncoding];
+      }
+      src = _blurCopy;
+   }
+
+   if (src)
+   {
+      /* Halved at the source's texel centres, a 2x2 average; then the
+       * blur's passes */
+      [self blurPass:src into:_blurTex[MENU_BLUR_COPY] params:still];
+      menu_blur_plan(plan, small);
+      for (i = 0; i < MENU_BLUR_PASSES; i++)
+         [self blurPass:_blurTex[plan[i].src] into:_blurTex[plan[i].dst]
+            params:plan[i].params];
+   }
+
+   /* Back into the frame's pass, which loads what it holds */
+   restore.colorAttachments[0].loadAction = MTLLoadActionLoad;
+   RARCH_ASSIGN(_renderPass, restore);
+   RARCH_ASSIGN(_rce, [_commandBuffer renderCommandEncoderWithDescriptor:_renderPass]);
+   RARCH_RELEASE(restore);
+   encoder = _rce;
+   if (src)
+   {
+      /* Over the rect: the gain darkens the blurred image and fades it
+       * in, the blend colour darkens what it is faded over -
+       * blurred * (1 - dim) * alpha + drawn * (1 - alpha) * (1 - dim) */
+      MTLViewport vp = {x0, y0, x1 - x0, y1 - y0, 0, 1};
+      params[0] = params[1] = params[2] = 0.0f;
+      params[3] = (1.0f - dim) * alpha;
+      c         = 1.0f - (1.0f - alpha) * (1.0f - dim);
+      [encoder setViewport:vp];
+      [encoder setRenderPipelineState:_blurMixState];
+      [encoder setBlendColorRed:c green:c blue:c alpha:c];
+      [encoder setFragmentTexture:_blurTex[0] atIndex:0];
+      [encoder setFragmentBytes:params length:sizeof(params) atIndex:0];
+      [encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
+   }
+   {
+      MTLViewport full = {0, 0, VIDEO_SCALE_W(videoDims), VIDEO_SCALE_H(videoDims), 0, 1};
+      [encoder setViewport:full];
+   }
+   return src != nil;
 }
 
 - (void)beginLayer:(id<MTLTexture>)tex
@@ -5177,6 +5374,16 @@ static void gfx_display_metal_bloom_end(void *data, unsigned dims, bool defer)
 {
    MetalDriver *md = (__bridge MetalDriver *)data;
    [md.context endBloom:dims defer:defer];
+}
+
+static bool gfx_display_metal_blur_rect(void *data, unsigned video_dims,
+      int x, int y, unsigned dims, float alpha, float dim)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   if (!md)
+      return false;
+   return [md.context blurRect:video_dims x:x y:y dims:dims alpha:alpha
+      dim:dim];
 }
 
 static void gfx_display_metal_bloom_composite(void *data, unsigned dims)
@@ -11102,5 +11309,6 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    gfx_display_metal_bloom_end,
    gfx_display_metal_bloom_composite,
    gfx_display_metal_effect_install,
-   gfx_display_metal_media_shader_draw
+   gfx_display_metal_media_shader_draw,
+   gfx_display_metal_blur_rect
 };

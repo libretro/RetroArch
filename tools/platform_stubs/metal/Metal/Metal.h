@@ -51,7 +51,8 @@ typedef NS_ENUM(NSUInteger, MTLBlendFactor) {
    MTLBlendFactorOne,
    MTLBlendFactorOneMinusSourceAlpha,
    MTLBlendFactorSourceAlpha,
-   MTLBlendFactorZero
+   MTLBlendFactorZero,
+   MTLBlendFactorOneMinusBlendColor
 };
 typedef NS_ENUM(NSUInteger, MTLLoadAction) {
    MTLLoadActionClear,
@@ -156,6 +157,7 @@ static inline MTLRegion MTLRegionMake2D(NSUInteger x, NSUInteger y, NSUInteger w
 @property (readonly) NSUInteger height;
 @property (readonly) MTLPixelFormat pixelFormat;
 @property (readonly) NSUInteger mipmapLevelCount;
+@property (readonly, getter=isFramebufferOnly) BOOL framebufferOnly;
 - (void)replaceRegion:(MTLRegion)r mipmapLevel:(NSUInteger)m withBytes:(const void *)b bytesPerRow:(NSUInteger)p;
 - (void)getBytes:(void *)b bytesPerRow:(NSUInteger)p fromRegion:(MTLRegion)r mipmapLevel:(NSUInteger)m;
 - (id<MTLBuffer>)buffer;
@@ -203,6 +205,7 @@ static inline MTLRegion MTLRegionMake2D(NSUInteger x, NSUInteger y, NSUInteger w
 - (void)setFragmentTextures:(const id<MTLTexture> *)t withRange:(NSRange)r;
 - (void)setViewport:(MTLViewport)v;
 - (void)setScissorRect:(MTLScissorRect)r;
+- (void)setBlendColorRed:(float)r green:(float)g blue:(float)b alpha:(float)a;
 - (void)drawPrimitives:(MTLPrimitiveType)t vertexStart:(NSUInteger)s vertexCount:(NSUInteger)c;
 - (void)drawIndexedPrimitives:(MTLPrimitiveType)t indexCount:(NSUInteger)c indexType:(MTLIndexType)it indexBuffer:(id<MTLBuffer>)b indexBufferOffset:(NSUInteger)o;
 @end
