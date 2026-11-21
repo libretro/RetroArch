@@ -1,5 +1,6 @@
 /* link/link_bus.c alone, one check per rule: records, membership, the
- * advance (bounds, repairs, rounding, reports), messages, holds and idle. The
+ * advance (bounds, repairs, rounding, reports), messages, holds, idle,
+ * renumbering, release, breaches, save, load and inspection. The
  * values are worked out by hand; frames are 1/60 s, so 1024 ticks at 61440
  * and 1000 at 60000. */
 
@@ -477,6 +478,95 @@ static void shared_medium_joins(void)
    fx_free();
 }
 
+/* Three radios that each take two: the two lowest form the bus and the
+ * third is cabled to nothing until a place frees */
+static void max_ports_caps_shared_medium(void)
+{
+   uint64_t grant = 0;
+   uint32_t flags;
+   unsigned c, count = 99;
+
+   fx_new(3);
+   for (c = 0; c < 3; c++)
+   {
+      fx_port(c, 0, "test-radio", 61440, 2, RETRO_LINK_PORT_SHARED_MEDIUM);
+      fx_attach(c);
+   }
+   CHECK(link_bus_peers(fx_bus, 0, fx_h[0][0], &count) == 0 && count == 2);
+   CHECK(link_bus_peers(fx_bus, 1, fx_h[1][0], &count) == 1 && count == 2);
+   CHECK(link_bus_peers(fx_bus, 2, fx_h[2][0], &count) == -1 && count == 0);
+   fx_begin();
+   flags = 0;
+   CHECK(adv(0, fx_h[0][0], 0, 0, 0, NULL, &flags));
+   CHECK(flags == RETRO_LINK_WAKE_TOPOLOGY);
+   CHECK(adv(1, fx_h[1][0], 0, 0, 0, NULL, NULL));
+   flags = 0;
+   CHECK(adv(2, fx_h[2][0], 0, 0, 0, &grant, &flags));
+   CHECK(grant == RETRO_LINK_UNBOUNDED);
+   CHECK(flags == RETRO_LINK_WAKE_NONE);
+   link_bus_detach(fx_bus, 1, fx_h[1][0]);
+   CHECK(link_bus_peers(fx_bus, 2, fx_h[2][0], NULL) == -1);
+   frame();
+   CHECK(link_bus_peers(fx_bus, 0, fx_h[0][0], &count) == 0 && count == 2);
+   CHECK(link_bus_peers(fx_bus, 2, fx_h[2][0], &count) == 1 && count == 2);
+   fx_begin();
+   for (c = 0; c < 3; c += 2)
+   {
+      flags = 0;
+      CHECK(adv(c, fx_h[c][0], 1024, 1024, 1024, NULL, &flags));
+      CHECK(flags == RETRO_LINK_WAKE_TOPOLOGY);
+   }
+   fx_free();
+}
+
+/* Four ports cabled in a line, each taking four */
+static void fx_line(void)
+{
+   unsigned c;
+   fx_new(4);
+   for (c = 0; c < 4; c++)
+   {
+      fx_port(c, 0, "test-cable", 61440, 4, 0);
+      fx_attach(c);
+   }
+   for (c = 0; c < 3; c++)
+      CHECK(link_bus_cable(fx_bus, c, 0, c + 1, 0));
+   CHECK(link_bus_peers(fx_bus, 3, fx_h[3][0], NULL) == 3);
+}
+
+/* fx_line, then console k's port re-attached taking two */
+static void fx_line_reattached(unsigned k)
+{
+   fx_line();
+   link_bus_detach(fx_bus, k, fx_h[k][0]);
+   fx_port(k, 0, "test-cable", 61440, 2, 0);
+   fx_attach(k);
+}
+
+static void max_ports_caps_reattach(void)
+{
+   uint64_t grant = 0;
+   unsigned count = 99;
+
+   fx_line_reattached(0);
+   CHECK(link_bus_peers(fx_bus, 0, fx_h[0][0], &count) == 0 && count == 2);
+   CHECK(link_bus_peers(fx_bus, 1, fx_h[1][0], &count) == 1 && count == 2);
+   CHECK(link_bus_peers(fx_bus, 2, fx_h[2][0], &count) == -1 && count == 0);
+   CHECK(link_bus_peers(fx_bus, 3, fx_h[3][0], &count) == -1 && count == 0);
+   fx_begin();
+   CHECK(adv(3, fx_h[3][0], 0, 0, 0, &grant, NULL));
+   CHECK(grant == RETRO_LINK_UNBOUNDED);
+   fx_free();
+
+   /* Console 2's port does not fit; console 3's, after it, does */
+   fx_line_reattached(2);
+   CHECK(link_bus_peers(fx_bus, 0, fx_h[0][0], &count) == 0 && count == 3);
+   CHECK(link_bus_peers(fx_bus, 1, fx_h[1][0], &count) == 1 && count == 3);
+   CHECK(link_bus_peers(fx_bus, 2, fx_h[2][0], &count) == -1 && count == 0);
+   CHECK(link_bus_peers(fx_bus, 3, fx_h[3][0], &count) == 2 && count == 3);
+   fx_free();
+}
+
 static void grant_bounded_by_peer_promise(void)
 {
    uint64_t grant = 0;
@@ -891,6 +981,11 @@ static void send_results(void)
    fx_starts();
    CHECK(snd(0, 0, 1024, 1, buf, 4));
    CHECK(snd(0, 0, 1024, 5, buf, 4));
+   /* Not attached or too long comes before cabled to nothing */
+   CHECK(!snd(0, 0, 1024, 1, buf, RETRO_LINK_MAX_PAYLOAD + 1));
+   CHECK(!snd(0, 0, 1024, 1, NULL, 4));
+   link_bus_detach(fx_bus, 0, fx_h[0][0]);
+   CHECK(!snd(0, 0, 1024, 1, buf, 4));
    CHECK(link_bus_journal(fx_bus, j, 4) == 0);
    fx_free();
 }
@@ -1491,6 +1586,1047 @@ static void activity_counts_sends_and_recvs(void)
    fx_free();
 }
 
+static unsigned char fx_blob[4096];
+
+static size_t fx_save(void)
+{
+   size_t n = link_bus_save_size(fx_bus);
+   CHECK(n > 0 && n <= sizeof(fx_blob));
+   if (n > sizeof(fx_blob))
+      return 0;
+   CHECK(link_bus_save(fx_bus, fx_blob, n));
+   return n;
+}
+
+/* fx_bus's state, loaded into a new bus with the same ports attached, dumps
+ * the same */
+static bool fx_reloads(void)
+{
+   static char dump_a[4096], dump_b[4096];
+   link_bus_t *b = link_bus_new(fx_consoles);
+   size_t n      = fx_save();
+   unsigned c, p;
+   bool same;
+   for (c = 0; c < fx_consoles; c++)
+   {
+      CHECK(link_bus_set_ports(b, c, fx_list[c]));
+      for (p = 0; p < FX_PORTS && fx_list[c][p].protocol_id; p++)
+         CHECK(link_bus_attach(b, c, p, fx_list[c][p].protocol_id,
+                  fx_list[c][p].clock_rate) != NULL);
+   }
+   same =   link_bus_load(b, fx_blob, n)
+         && link_bus_dump(fx_bus, dump_a, sizeof(dump_a)) < sizeof(dump_a)
+         && link_bus_dump(b, dump_b, sizeof(dump_b)) < sizeof(dump_b)
+         && !strcmp(dump_a, dump_b);
+   link_bus_free(b);
+   return same;
+}
+
+/* Frame 2: console 0 promises 4000 and sends console 1 a message stamped
+ * 4000; at edge 3 console 1 is renumbered and stands at 100. Its joining
+ * report is still pending. */
+static void fx_renumbered(void)
+{
+   fx_two(61440, 61440);
+   fx_run_frame();
+   fx_run_frame();
+   fx_begin();
+   fx_starts();
+   CHECK(adv(0, fx_h[0][0], 2048, 4000, 2048, NULL, NULL));
+   CHECK(snd(0, 0, 4000, 1, "m", 1));
+   frame();
+   link_bus_renumbered(fx_bus, 1);
+   fx_tick[1][0] = 100;
+}
+
+static void renumber_moves_messages(void)
+{
+   struct link_bus_sent j;
+   uint64_t tick = 0;
+   size_t len    = 0;
+
+   fx_renumbered();
+   CHECK(fx_reloads());
+   fx_begin();
+   CHECK(adv(0, fx_h[0][0], 3072, 4500, 3072, NULL, NULL));
+   CHECK(snd(0, 0, 4500, 1, "w", 1)); /* before console 1's frame-start advance */
+   CHECK(adv(0, fx_h[0][0], 3072, 5000, 3072, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 100, 2000, 100, NULL, NULL));
+   CHECK(link_bus_journal(fx_bus, &j, 1) == 1 && j.landing == 1528);
+   CHECK(adv(1, fx_h[1][0], 100, 2000, 1028, NULL, NULL));
+   CHECK(link_bus_peek(fx_bus, 1, fx_h[1][0], NULL, NULL, &len) == NULL);
+   CHECK(adv(1, fx_h[1][0], 100, 2000, 1029, NULL, NULL));
+   CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], &tick, NULL, NULL, NULL) && tick == 1028);
+   CHECK(link_bus_peek(fx_bus, 1, fx_h[1][0], NULL, NULL, &len) == NULL);
+   frame();                          /* 1528 is past its frame end, 1124 */
+   fx_begin();
+   CHECK(adv(1, fx_h[1][0], 1124, 2000, 1529, NULL, NULL));
+   CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], &tick, NULL, NULL, NULL) && tick == 1528);
+   fx_free();
+}
+
+static void renumber_drops_old_promise(void)
+{
+   fx_two(61440, 61440);
+   fx_run_frame();
+   fx_run_frame();
+   fx_begin();
+   fx_starts();
+   CHECK(adv(1, fx_h[1][0], 2048, 5000, 2048, NULL, NULL));
+   frame();
+   link_bus_renumbered(fx_bus, 1); /* edge 3 */
+   fx_begin();
+   CHECK(adv(0, fx_h[0][0], 3072, 6000, 3072, NULL, NULL));
+   CHECK(!adv(0, fx_h[0][0], 3072, 6000, 3073, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 100, 200, 100, NULL, NULL));
+   CHECK(adv(0, fx_h[0][0], 3072, 6000, 3172, NULL, NULL));
+   CHECK(!adv(0, fx_h[0][0], 3072, 6000, 3173, NULL, NULL));
+   link_bus_renumbered(fx_bus, 0); /* mid-frame: nothing */
+   CHECK(adv(1, fx_h[1][0], 100, 200, 200, NULL, NULL));
+   fx_free();
+}
+
+/* Frame 2: console 1 is told of a message landing at 2100 and does not take
+ * it; at edge 3 console 1 is renumbered */
+static void fx_seen_renumbered(void)
+{
+   uint32_t flags = 0;
+
+   fx_two(61440, 61440);
+   fx_run_frame();
+   fx_run_frame();
+   fx_begin();
+   fx_starts();
+   CHECK(adv(0, fx_h[0][0], 2048, 2100, 2048, NULL, NULL));
+   CHECK(snd(0, 0, 2100, 1, "m", 1));
+   CHECK(adv(0, fx_h[0][0], 2048, 4000, 2048, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 2048, 4000, 2101, NULL, &flags));
+   CHECK(flags == (RETRO_LINK_WAKE_TOPOLOGY | RETRO_LINK_WAKE_MESSAGE));
+   frame();
+   link_bus_renumbered(fx_bus, 1);
+}
+
+static void reset_keeps_messages_and_reports(void)
+{
+   uint64_t tick = 0;
+   uint32_t flags;
+
+   fx_renumbered();
+   fx_begin();
+   CHECK(adv(0, fx_h[0][0], 3072, 5000, 3072, NULL, NULL));
+   flags = 0;
+   CHECK(adv(1, fx_h[1][0], 100, 2000, 100, NULL, &flags));
+   CHECK(flags == RETRO_LINK_WAKE_TOPOLOGY);
+   CHECK(adv(1, fx_h[1][0], 100, 2000, 1029, NULL, NULL));
+   CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], &tick, NULL, NULL, NULL) && tick == 1028);
+   fx_free();
+
+   /* Receivable before the reset and not taken: not reported again, and
+    * still receivable; an instant before the new tick 0 lands at 0 */
+   fx_seen_renumbered();
+   fx_begin();
+   flags = 0;
+   CHECK(adv(1, fx_h[1][0], 5000, 6000, 5000, NULL, &flags));
+   CHECK(flags == RETRO_LINK_WAKE_NONE);
+   CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], &tick, NULL, NULL, NULL) && tick == 4028);
+   fx_free();
+   fx_seen_renumbered();
+   fx_begin();
+   CHECK(adv(1, fx_h[1][0], 100, 200, 100, NULL, NULL));
+   CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], &tick, NULL, NULL, NULL) && tick == 0);
+   fx_free();
+}
+
+/* Console 1 sends console 0 a message in frame 0; at edge 31 the bus is
+ * quiet and console 1 is held, and at edge 33 unheld. Console 1 is
+ * renumbered and stands 1000000 ticks on: in session 'L' at edge 31,
+ * before the hold, after a load that renumbers both consoles; in 'H' at
+ * edge 32, while held. hash[] is taken at edges 31 to 34. */
+static void fx_held_hashed(char session, uint64_t hash[4])
+{
+   char tag;
+   size_t len = 1;
+   unsigned edge;
+
+   fx_two(61440, 61440);
+   fx_begin();
+   fx_starts();
+   CHECK(snd(1, 0, 512, 0, "a", 1));
+   CHECK(adv(1, fx_h[1][0], 0, 1024, 0, NULL, NULL));
+   CHECK(adv(0, fx_h[0][0], 0, 1024, 513, NULL, NULL));
+   CHECK(link_bus_recv(fx_bus, 0, fx_h[0][0], NULL, NULL, &tag, &len));
+   frame();
+   for (edge = 1; edge < 31; edge++)
+      fx_run_frame();
+   if (session == 'L')
+   {
+      CHECK(link_bus_load(fx_bus, fx_blob, fx_save()));
+      link_bus_renumbered(fx_bus, 0);
+      link_bus_renumbered(fx_bus, 1);
+      fx_tick[1][0] += 1000000;
+   }
+   CHECK(link_bus_hold(fx_bus, 1));
+   hash[0] = link_bus_hash(fx_bus);
+   fx_run_frame();
+   if (session == 'H')
+   {
+      link_bus_renumbered(fx_bus, 1);
+      fx_tick[1][0] += 1000000;
+   }
+   hash[1] = link_bus_hash(fx_bus);
+   fx_run_frame();
+   hash[2] = link_bus_hash(fx_bus);
+   CHECK(link_bus_unhold(fx_bus, 1));
+   fx_run_frame();
+   hash[3] = link_bus_hash(fx_bus);
+   fx_free();
+}
+
+static void hold_right_after_renumber(void)
+{
+   uint64_t a[4], l[4];
+   unsigned i;
+
+   fx_held_hashed('A', a);
+   fx_held_hashed('L', l);
+   for (i = 0; i < 4; i++)
+      CHECK(a[i] != 0 && a[i] == l[i]);
+}
+
+static void renumber_held_waits_for_unhold(void)
+{
+   uint64_t a[4], h[4];
+   uint64_t grant = 0;
+   unsigned i;
+
+   fx_held_hashed('A', a);
+   fx_held_hashed('H', h);
+   for (i = 0; i < 4; i++)
+      CHECK(a[i] != 0 && a[i] == h[i]);
+
+   /* The unhold drops the span the renumbering kept: no frame-end repair */
+   fx_two(61440, 61440);
+   fx_run_frame();
+   CHECK(link_bus_hold(fx_bus, 1)); /* edge 1 */
+   link_bus_renumbered(fx_bus, 1);
+   fx_tick[1][0] = 100;
+   CHECK(link_bus_unhold(fx_bus, 1));
+   fx_begin();
+   CHECK(adv(0, fx_h[0][0], 1024, 8192, 1024, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 100, 4096, 100, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 100, 4096, 2100, &grant, NULL));
+   CHECK(grant == 2100 && counts().request_past_frame_end == 0);
+   fx_free();
+}
+
+/* The learned span is a duration on the port's own clock: the first frame
+ * after a renumbering has its frame-end repair, and the first frame after
+ * an unhold has none */
+static void renumber_keeps_frame_end_repair(void)
+{
+   uint64_t grant = 0;
+
+   fx_two(61440, 61440);
+   fx_run_frame();
+   link_bus_renumbered(fx_bus, 0);   /* edge 1 */
+   fx_tick[0][0] = 100;
+   CHECK(link_bus_hold(fx_bus, 1));
+   CHECK(link_bus_unhold(fx_bus, 1));
+   fx_begin();
+   CHECK(adv(0, fx_h[0][0], 100, 4096, 100, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 1024, 8192, 1024, NULL, NULL));
+   CHECK(adv(0, fx_h[0][0], 100, 4096, 2100, &grant, NULL));
+   CHECK(grant == 1124);
+   CHECK(adv(1, fx_h[1][0], 1024, 8192, 3000, &grant, NULL));
+   CHECK(grant == 3000);
+   CHECK(counts().request_past_frame_end == 1);
+   fx_free();
+}
+
+static void console_gone_detaches(void)
+{
+   uint64_t grant = 0;
+   uint32_t flags = 0;
+   unsigned count = 99;
+
+   fx_two(61440, 61440);
+   fx_run_frame();
+   link_bus_console_gone(fx_bus, 1); /* edge 1 */
+   CHECK(link_bus_peers(fx_bus, 0, fx_h[0][0], &count) == -1 && count == 0);
+   count = 99;
+   CHECK(link_bus_peers(fx_bus, 1, fx_h[1][0], &count) == -1 && count == 0);
+   fx_begin();
+   CHECK(adv(1, fx_h[1][0], 1024, 2048, 1500, &grant, &flags));
+   CHECK(grant == RETRO_LINK_UNBOUNDED && flags == RETRO_LINK_WAKE_DETACHED);
+   CHECK(!snd(1, 0, 2048, 0, "a", 1));
+   CHECK(adv(0, fx_h[0][0], 1024, 2048, 1500, &grant, NULL));
+   CHECK(grant == RETRO_LINK_UNBOUNDED);
+   frame();
+   CHECK(link_bus_attach(fx_bus, 1, 0, "test-cable", 61440) == fx_h[1][0]);
+   CHECK(link_bus_peers(fx_bus, 0, fx_h[0][0], &count) == 0 && count == 2);
+   fx_free();
+}
+
+static void release_unbounded_every_call(void)
+{
+   char tag      = 0;
+   uint64_t grant = 0, tick = 0;
+   uint32_t flags;
+   size_t len    = 1;
+
+   fx_two(61440, 61440);
+   fx_begin();
+   CHECK(adv(0, fx_h[0][0], 0, 500, 0, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 0, 1000, 0, NULL, NULL));
+   CHECK(snd(0, 0, 500, 1, "q", 1));
+   CHECK(!adv(1, fx_h[1][0], 0, 1000, 1000, NULL, NULL));
+   CHECK(!link_bus_released(fx_bus));
+   link_bus_release(fx_bus);
+   CHECK(link_bus_released(fx_bus));
+   flags = 0;
+   CHECK(adv(1, fx_h[1][0], 0, 1000, 1000, &grant, &flags));
+   CHECK(grant == RETRO_LINK_UNBOUNDED && flags == RETRO_LINK_WAKE_DETACHED);
+   flags = 0;
+   CHECK(adv(1, fx_h[1][0], 0, 1000, 1000, &grant, &flags));
+   CHECK(grant == RETRO_LINK_UNBOUNDED && flags == RETRO_LINK_WAKE_DETACHED);
+   CHECK(adv(0, fx_h[0][0], 0, 500, 5000, &grant, NULL));
+   CHECK(grant == RETRO_LINK_UNBOUNDED);
+   CHECK(link_bus_journal(fx_bus, NULL, 0) == 1);
+   CHECK(snd(0, 0, 600, 1, "x", 1));
+   CHECK(link_bus_journal(fx_bus, NULL, 0) == 1);
+   CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], &tick, NULL, &tag, &len));
+   CHECK(tick == 500 && tag == 'q');
+   len = 1;
+   CHECK(!link_bus_recv(fx_bus, 1, fx_h[1][0], NULL, NULL, &tag, &len));
+   fx_free();
+}
+
+static void left_out_breach(void)
+{
+   struct retro_link_wait w[2];
+
+   fx_new(3);
+   fx_port(0, 0, "test-cable", 61440, 2, 0);
+   fx_port(0, 1, "test-cable", 61440, 2, 0);
+   fx_port(1, 0, "test-cable", 61440, 2, 0);
+   fx_port(2, 0, "test-cable", 61440, 2, 0);
+   fx_attach(0);
+   fx_attach(1);
+   fx_attach(2);
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(link_bus_cable(fx_bus, 0, 1, 2, 0));
+   fx_begin();
+   fx_wait(&w[0], fx_h[0][0], 0, 300, 0, false);
+   fx_wait(&w[1], fx_h[0][1], 0, 400, 0, false);
+   CHECK(advm(0, w, 2));
+   CHECK(counts().left_out == 0);
+   CHECK(adv(0, fx_h[0][0], 0, 600, 0, NULL, NULL));
+   CHECK(counts().left_out == 1);
+   CHECK(adv(1, fx_h[1][0], 0, 1000, 600, NULL, NULL));
+   CHECK(adv(2, fx_h[2][0], 0, 1000, 400, NULL, NULL));
+   CHECK(!adv(2, fx_h[2][0], 0, 1000, 401, NULL, NULL));
+   fx_free();
+}
+
+static void skipped_publish_breach(void)
+{
+   uint64_t grant = 0, tick = 0;
+
+   fx_two(61440, 61440);
+   fx_run_frame();
+   fx_run_frame();
+   fx_begin();
+   fx_starts();
+   CHECK(adv(1, fx_h[1][0], 2048, 3500, 2048, NULL, NULL));
+   CHECK(snd(1, 0, 3500, 0, "s", 1));
+   fx_all_ports(1, true); /* frame 2: console 0 makes no frame-end publish */
+   link_bus_frame_end(fx_bus, 0);
+   link_bus_frame_end(fx_bus, 1);
+   link_bus_edge(fx_bus);
+   CHECK(counts().skipped_publish == 1);
+   fx_begin();
+   CHECK(adv(1, fx_h[1][0], 3072, FX_FAR, 3072, NULL, NULL));
+   CHECK(!adv(1, fx_h[1][0], 3072, FX_FAR, 3073, NULL, NULL));
+   CHECK(adv(0, fx_h[0][0], 3072, 3500, 3072, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 3072, FX_FAR, 3500, NULL, NULL));
+   CHECK(!adv(1, fx_h[1][0], 3072, FX_FAR, 3501, NULL, NULL));
+   CHECK(adv(0, fx_h[0][0], 3072, 7000, 6000, &grant, NULL));
+   CHECK(grant == 6000 && counts().request_past_frame_end == 0);
+   CHECK(counts().skipped_publish == 1);
+   CHECK(link_bus_recv(fx_bus, 0, fx_h[0][0], &tick, NULL, NULL, NULL) && tick == 3500);
+   fx_free();
+}
+
+static void misplaced_calls(void)
+{
+   char tag      = 0;
+   uint64_t grant = 0;
+   uint32_t flags = 0;
+   size_t len    = 1;
+
+   fx_two(61440, 61440);
+   fx_begin();
+   CHECK(adv(1, fx_h[1][0], 0, 100, 0, NULL, NULL));
+   CHECK(snd(1, 0, 100, 0, "a", 1));
+   CHECK(adv(1, fx_h[1][0], 0, FX_FAR, 0, NULL, NULL));
+   CHECK(adv(0, fx_h[0][0], 0, 1024, 200, NULL, NULL));
+   frame();
+
+   /* Edge 1: outside every frame */
+   CHECK(!snd(0, 0, 2048, 1, "b", 1));
+   CHECK(!link_bus_recv(fx_bus, 0, fx_h[0][0], NULL, NULL, &tag, &len) && len == 0);
+   len = 1;
+   CHECK(link_bus_peek(fx_bus, 0, fx_h[0][0], NULL, NULL, &len) == NULL && len == 0);
+   CHECK(adv(0, fx_h[0][0], 1024, 4096, 2048, &grant, &flags));
+   CHECK(grant == RETRO_LINK_UNBOUNDED && flags == RETRO_LINK_WAKE_DETACHED);
+   CHECK(counts().misplaced_call == 4);
+
+   /* The misplaced advance published nothing */
+   fx_begin();
+   CHECK(adv(0, fx_h[0][0], 1024, 1024, 1024, NULL, NULL));
+   CHECK(snd(0, 0, 1024, 1, "c", 1));
+   CHECK(adv(1, fx_h[1][0], 1024, FX_FAR, 1024, NULL, NULL));
+   CHECK(!adv(1, fx_h[1][0], 1024, FX_FAR, 1025, NULL, NULL));
+   len = 1;
+   CHECK(link_bus_recv(fx_bus, 0, fx_h[0][0], NULL, NULL, &tag, &len) && tag == 'a');
+   CHECK(counts().misplaced_call == 4);
+   frame();
+
+   /* Frame 2: console 1 before its frame-start advance, 'c' receivable */
+   fx_begin();
+   fx_all_ports(0, false);
+   len = 1;
+   CHECK(link_bus_peek(fx_bus, 1, fx_h[1][0], NULL, NULL, &len) == NULL && len == 0);
+   len = 1;
+   CHECK(!link_bus_recv(fx_bus, 1, fx_h[1][0], NULL, NULL, &tag, &len) && len == 0);
+   CHECK(!snd(1, 0, FX_FAR, 0, "d", 1));
+   CHECK(counts().misplaced_call == 7);
+   fx_all_ports(1, false);
+   len = 1;
+   CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], NULL, NULL, &tag, &len) && tag == 'c');
+   CHECK(snd(1, 0, FX_FAR, 0, "d", 1));
+   CHECK(link_bus_journal(fx_bus, NULL, 0) == 1 && counts().misplaced_call == 7);
+   fx_free();
+
+   /* A renumbered console's send would land against its old anchor */
+   fx_renumbered();
+   fx_begin();
+   CHECK(!snd(1, 0, 100, 0, "e", 1));
+   CHECK(counts().misplaced_call == 1 && link_bus_journal(fx_bus, NULL, 0) == 0);
+   fx_free();
+}
+
+/* A second session beside the globals; fx_swap trades them */
+struct fx_session
+{
+   link_bus_t *bus;
+   unsigned consoles;
+   retro_link_port_t *h[FX_CONSOLES][FX_PORTS];
+   uint64_t tick[FX_CONSOLES][FX_PORTS];
+   uint64_t span[FX_CONSOLES][FX_PORTS];
+   uint64_t safe[FX_CONSOLES][FX_PORTS];
+};
+
+static void fx_swap(struct fx_session *s)
+{
+   struct fx_session t = *s;
+   s->bus      = fx_bus;
+   s->consoles = fx_consoles;
+   memcpy(s->h, fx_h, sizeof(fx_h));
+   memcpy(s->tick, fx_tick, sizeof(fx_tick));
+   memcpy(s->span, fx_span, sizeof(fx_span));
+   memcpy(s->safe, fx_safe, sizeof(fx_safe));
+   fx_bus      = t.bus;
+   fx_consoles = t.consoles;
+   memcpy(fx_h, t.h, sizeof(fx_h));
+   memcpy(fx_tick, t.tick, sizeof(fx_tick));
+   memcpy(fx_span, t.span, sizeof(fx_span));
+   memcpy(fx_safe, t.safe, sizeof(fx_safe));
+}
+
+/* Takes every receivable message of console c's port p: a digest of them */
+static uint64_t fx_drain(unsigned c, unsigned p)
+{
+   static unsigned char buf[RETRO_LINK_MAX_PAYLOAD];
+   uint64_t digest = 0, tick = 0;
+   unsigned from   = 0;
+   size_t len      = sizeof(buf);
+   while (link_bus_recv(fx_bus, c, fx_h[c][p], &tick, &from, buf, &len))
+   {
+      digest = digest * 31 + tick + from * 7 + len * 3 + buf[0];
+      len    = sizeof(buf);
+   }
+   return digest;
+}
+
+/* Every console's port list; the ports of consoles below attached attached */
+static void fx_roundtrip_ports(unsigned attached)
+{
+   unsigned c;
+   fx_port(0, 0, "test-cable", 61440, 2, 0);
+   fx_port(1, 0, "test-cable", 61440, 2, 0);
+   fx_port(1, 1, "test-cable", 61440, 2, 0);
+   fx_port(2, 0, "test-cable", 61440, 2, 0);
+   for (c = 0; c < 3; c++)
+      if (c < attached)
+         fx_attach(c);
+      else
+         CHECK(link_bus_set_ports(fx_bus, c, fx_list[c]));
+}
+
+/* Edge 6: 0:0 cabled to 1:0, 1:1 to 2:0, console 2 held since edge 1;
+ * messages queued both ways between consoles 0 and 1 and one for console 2;
+ * console 1 has its joining reports and a WAKE_MESSAGE pending, console 0
+ * nothing. */
+static void fx_roundtrip(void)
+{
+   struct retro_link_wait w[2];
+   uint32_t flags = 0;
+   unsigned f;
+
+   fx_new(3);
+   fx_roundtrip_ports(3);
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(link_bus_cable(fx_bus, 1, 1, 2, 0));
+   fx_run_frame();
+   CHECK(link_bus_hold(fx_bus, 2));
+   for (f = 1; f < 5; f++)
+      fx_run_frame();
+   fx_begin();
+   fx_starts();
+   CHECK(adv(0, fx_h[0][0], 5120, 5200, 5120, NULL, &flags));
+   CHECK(flags == RETRO_LINK_WAKE_TOPOLOGY);
+   CHECK(snd(0, 0, 5200, 1, "a", 1));
+   CHECK(adv(0, fx_h[0][0], 5120, 7000, 5120, NULL, NULL));
+   CHECK(snd(0, 0, 7000, 1, "bb", 2));
+   fx_wait(&w[0], fx_h[1][0], 5120, 6500, 5300, false);
+   fx_wait(&w[1], fx_h[1][1], 5120, 5500, 5300, false);
+   CHECK(advm(1, w, 2));
+   CHECK(snd(1, 0, 6500, 0, "ccc", 3));
+   CHECK(snd(1, 1, 5500, 1, "dddd", 4));
+   frame();
+}
+
+/* One frame of fx_roundtrip's session, the same on any bus: console 2 is
+ * unheld at edge 7; console 1 asks for reports. */
+static void fx_roundtrip_frame(unsigned f, uint32_t flags[2], uint64_t *digest)
+{
+   struct retro_link_wait w[2];
+   uint64_t t0 = fx_tick[0][0], t1 = fx_tick[1][0], t2 = fx_tick[2][0];
+   unsigned i;
+
+   if (f == 7)
+      CHECK(link_bus_unhold(fx_bus, 2));
+   fx_begin();
+   fx_starts();
+   for (i = 0; i < 2; i++)
+   {
+      uint64_t d = i ? 1024 : 0;
+      CHECK(adv(0, fx_h[0][0], t0, t0 + 2048, t0 + d, NULL, NULL));
+      fx_wait(&w[0], fx_h[1][0], t1, t1 + 2048, t1 + d, i != 0);
+      fx_wait(&w[1], fx_h[1][1], t1, t1 + 2048, t1 + d, i != 0);
+      CHECK(advm(1, w, 2));
+      if (fx_running(2))
+         CHECK(adv(2, fx_h[2][0], t2, t2 + 2048, t2 + d, NULL, NULL));
+   }
+   flags[0] = w[0].wake_flags;
+   flags[1] = w[1].wake_flags;
+   *digest  = fx_drain(0, 0) * 3 + fx_drain(1, 0) * 5 + fx_drain(1, 1) * 7;
+   if (fx_running(2))
+      *digest += fx_drain(2, 0) * 11;
+   CHECK(snd(0, 0, t0 + 2048, 1, "e", 1));
+   frame();
+}
+
+static void save_load_roundtrip(void)
+{
+   static char dump_a[4096], dump_b[4096];
+   struct fx_session a;
+   retro_link_port_t *hb[FX_CONSOLES][FX_PORTS];
+   uint32_t flags_a[2], flags_b[2];
+   uint64_t digest_a = 0, digest_b = 0;
+   unsigned f, count = 0;
+   size_t n;
+
+   fx_roundtrip();
+   n = fx_save();
+   memset(&a, 0, sizeof(a));
+   fx_swap(&a);
+   fx_new(3);
+   fx_roundtrip_ports(2); /* console 2's port: a record the load makes */
+   memcpy(hb, fx_h, sizeof(hb));
+   CHECK(link_bus_load(fx_bus, fx_blob, n));
+   fx_h[2][0] = link_bus_attach(fx_bus, 2, 0, "test-cable", 61440);
+   CHECK(fx_h[2][0] != NULL);
+   memcpy(fx_tick, a.tick, sizeof(fx_tick));
+   memcpy(fx_span, a.span, sizeof(fx_span));
+   memcpy(fx_safe, a.safe, sizeof(fx_safe));
+   CHECK(link_bus_hash(fx_bus) != 0 && link_bus_hash(fx_bus) == link_bus_hash(a.bus));
+   CHECK(link_bus_dump(a.bus, dump_a, sizeof(dump_a)) < sizeof(dump_a));
+   CHECK(link_bus_dump(fx_bus, dump_b, sizeof(dump_b)) < sizeof(dump_b));
+   CHECK(dump_a[0] != '\0' && !strcmp(dump_a, dump_b));
+   CHECK(link_bus_peers(fx_bus, 1, hb[1][1], &count) == 0 && count == 2);
+   CHECK(link_bus_is_held(fx_bus, 2));
+   for (f = 6; f < 9; f++)
+   {
+      fx_roundtrip_frame(f, flags_b, &digest_b);
+      fx_swap(&a);
+      fx_roundtrip_frame(f, flags_a, &digest_a);
+      fx_swap(&a);
+      CHECK(link_bus_hash(fx_bus) == link_bus_hash(a.bus));
+      CHECK(digest_a == digest_b);
+      CHECK(flags_a[0] == flags_b[0] && flags_a[1] == flags_b[1]);
+      if (f == 6)
+      {
+         CHECK(flags_b[0] == (RETRO_LINK_WAKE_TOPOLOGY | RETRO_LINK_WAKE_MESSAGE));
+         CHECK(flags_b[1] == RETRO_LINK_WAKE_TOPOLOGY);
+      }
+   }
+   CHECK(fx_h[1][1] == hb[1][1] && hb[1][1] != a.h[1][1]);
+   fx_free();
+   link_bus_free(a.bus);
+}
+
+/* The save blob's layout, for checks that corrupt one field */
+#define FX_BLOB_HEAD  84 /* magic, version, consoles, records, cables, counts */
+#define FX_BLOB_PORT  70 /* a record, up to its protocol's length */
+#define FX_BLOB_ENTRY 43 /* a message, up to its payload */
+
+static size_t fx_u32(const unsigned char *s)
+{
+   return (size_t)s[0] | ((size_t)s[1] << 8) | ((size_t)s[2] << 16) | ((size_t)s[3] << 24);
+}
+
+static size_t fx_cables_at(const unsigned char *blob)
+{
+   return FX_BLOB_HEAD + fx_u32(blob + 8) + fx_u32(blob + 12) * 8;
+}
+
+/* Where record k of blob starts; *first, where its first message starts */
+static size_t fx_record_at(const unsigned char *blob, size_t k, size_t *first)
+{
+   size_t at = fx_cables_at(blob) + fx_u32(blob + 16) * 8;
+   for (;;)
+   {
+      size_t rec = at, i, n;
+      at += FX_BLOB_PORT;
+      at += 4 + fx_u32(blob + at);
+      n   = fx_u32(blob + at);
+      at += 4;
+      if (!k--)
+      {
+         *first = at;
+         return rec;
+      }
+      for (i = 0; i < n; i++)
+         at += FX_BLOB_ENTRY + fx_u32(blob + at + FX_BLOB_ENTRY - 4);
+   }
+}
+
+static void load_refuses_bad_input(void)
+{
+   static unsigned char bad[sizeof(fx_blob)];
+   struct fx_session a;
+   uint64_t hash_a, hash_b;
+   size_t n, first;
+
+   fx_roundtrip();
+   n      = fx_save();
+   hash_a = link_bus_hash(fx_bus);
+   memset(&a, 0, sizeof(a));
+   fx_swap(&a);
+   fx_new(3);
+   fx_roundtrip_ports(3);
+   hash_b = link_bus_hash(fx_bus);
+   CHECK(hash_b != 0 && hash_b != hash_a);
+   memcpy(bad, fx_blob, n);
+   bad[3] = 'X';
+   CHECK(!link_bus_load(fx_bus, bad, n));
+   CHECK(link_bus_hash(fx_bus) == hash_b);
+   CHECK(!link_bus_load(fx_bus, fx_blob, n ? n - 1 : 0));
+   CHECK(link_bus_hash(fx_bus) == hash_b);
+   memcpy(bad, fx_blob, n);
+   fx_record_at(bad, 0, &first);
+   bad[first + 7] = 0xFF; /* the rank of console 0's one message */
+   CHECK(!link_bus_load(fx_bus, bad, n));
+   CHECK(link_bus_hash(fx_bus) == hash_b);
+   CHECK(link_bus_load(fx_bus, fx_blob, n));
+   CHECK(link_bus_hash(fx_bus) == hash_a);
+   fx_free();
+   link_bus_free(a.bus);
+}
+
+static void load_checks_cables_and_reports(void)
+{
+   static unsigned char bad[sizeof(fx_blob)];
+   struct fx_session a;
+   uint64_t hash_a, hash_b;
+   size_t n, rec, first, cables;
+
+   /* A detach and re-attach can leave a cable between two protocols or to
+    * a shared medium; a load takes such a state */
+   fx_two(61440, 61440);
+   fx_run_frame();
+   link_bus_detach(fx_bus, 0, fx_h[0][0]);
+   link_bus_detach(fx_bus, 1, fx_h[1][0]);
+   fx_port(0, 0, "test-other", 61440, 2, 0);
+   fx_port(1, 0, "test-cable", 61440, 2, RETRO_LINK_PORT_SHARED_MEDIUM);
+   fx_attach(0);
+   fx_attach(1);
+   CHECK(link_bus_peers(fx_bus, 0, fx_h[0][0], NULL) == -1);
+   CHECK(fx_reloads());
+   fx_free();
+
+   fx_roundtrip();
+   n      = fx_save();
+   hash_a = link_bus_hash(fx_bus);
+   memset(&a, 0, sizeof(a));
+   fx_swap(&a);
+   fx_new(3);
+   fx_roundtrip_ports(3);
+   hash_b = link_bus_hash(fx_bus);
+
+   /* The second cable, 1:1 to 2:0, made the first again, ends swapped */
+   memcpy(bad, fx_blob, n);
+   cables           = fx_cables_at(bad);
+   bad[cables + 8]  = 1;
+   bad[cables + 12] = 0;
+   CHECK(!link_bus_load(fx_bus, bad, n));
+   CHECK(link_bus_hash(fx_bus) == hash_b);
+
+   /* Console 1's port 0 with reports no port can have pending */
+   memcpy(bad, fx_blob, n);
+   rec = fx_record_at(bad, 1, &first);
+   bad[rec + 10] |= RETRO_LINK_WAKE_DETACHED | 8;
+   bad[rec + 13] |= 0x80;
+   CHECK(link_bus_load(fx_bus, bad, n));
+   CHECK(link_bus_hash(fx_bus) == hash_a);
+   fx_free();
+   link_bus_free(a.bus);
+
+   /* The third of three cables, 2:0 to 3:0, made the first again */
+   fx_line();
+   n      = fx_save();
+   hash_b = link_bus_hash(fx_bus);
+   cables = fx_cables_at(fx_blob);
+   fx_blob[cables + 16] = 1;
+   fx_blob[cables + 20] = 0;
+   CHECK(!link_bus_load(fx_bus, fx_blob, n));
+   CHECK(link_bus_hash(fx_bus) == hash_b);
+   fx_free();
+}
+
+/* A state whose cables join more ports than one of them takes, as a
+ * re-attach taking fewer leaves them, loads capped */
+static void load_caps_cables(void)
+{
+   size_t n;
+   unsigned c, count = 99;
+
+   fx_line_reattached(0);
+   n = fx_save();
+   fx_free();
+   fx_new(4);
+   for (c = 0; c < 4; c++)
+   {
+      fx_port(c, 0, "test-cable", 61440, c ? 4 : 2, 0);
+      fx_attach(c);
+   }
+   CHECK(link_bus_load(fx_bus, fx_blob, n));
+   CHECK(link_bus_peers(fx_bus, 0, fx_h[0][0], &count) == 0 && count == 2);
+   CHECK(link_bus_peers(fx_bus, 1, fx_h[1][0], &count) == 1 && count == 2);
+   CHECK(link_bus_peers(fx_bus, 2, fx_h[2][0], &count) == -1 && count == 0);
+   CHECK(link_bus_peers(fx_bus, 3, fx_h[3][0], &count) == -1 && count == 0);
+   fx_free();
+}
+
+/* Consoles 0 and 1 with ports 0 and 1 each, cabled port to port; with run,
+ * a frame in which ports 1 send each other a message */
+static void fx_two_pairs(bool run)
+{
+   unsigned c;
+   fx_new(2);
+   for (c = 0; c < 2; c++)
+   {
+      fx_port(c, 0, "test-cable", 61440, 2, 0);
+      fx_port(c, 1, "test-cable", 61440, 2, 0);
+      fx_attach(c);
+   }
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(link_bus_cable(fx_bus, 0, 1, 1, 1));
+   if (!run)
+      return;
+   fx_begin();
+   fx_starts();
+   CHECK(snd(0, 1, 0, 1, "x", 1));
+   CHECK(snd(1, 1, 0, 0, "y", 1));
+   frame();
+}
+
+/* Ports 1 are not in the blob: they end up as ports never attached, run or not */
+static void load_resets_unlisted_records(void)
+{
+   uint64_t hash;
+   size_t n;
+
+   fx_two(61440, 61440);
+   fx_run_frame();
+   n = fx_save();
+   fx_free();
+   fx_two_pairs(true);
+   CHECK(link_bus_load(fx_bus, fx_blob, n));
+   hash = link_bus_hash(fx_bus);
+   fx_free();
+   fx_two_pairs(false);
+   CHECK(link_bus_load(fx_bus, fx_blob, n));
+   CHECK(link_bus_hash(fx_bus) == hash);
+   fx_free();
+}
+
+/* Frames 0 to 6 of two consoles sending each other a message every frame,
+ * landing in the next, console 1 only before edge 4; the hashes at edges 5
+ * to 7. In session 'B' console 1 is renumbered at edge 4, where a misplaced
+ * call moves a count; in 'C' console 0 sends one more at frame 4, still
+ * queued at edge 7. */
+static void fx_hashed(char session, uint64_t hash[3])
+{
+   unsigned f, c;
+
+   fx_two(61440, 61440);
+   for (f = 0; f < 7; f++)
+   {
+      if (session == 'B' && f == 4)
+      {
+         link_bus_renumbered(fx_bus, 1);
+         fx_tick[1][0] += 1000000;
+         CHECK(link_bus_peek(fx_bus, 0, fx_h[0][0], NULL, NULL, NULL) == NULL);
+      }
+      fx_begin();
+      for (c = 0; c < 2; c++)
+         CHECK(adv(c, fx_h[c][0], fx_tick[c][0], fx_tick[c][0] + 1500, fx_tick[c][0], NULL, NULL));
+      for (c = 0; c < 2; c++)
+         CHECK(adv(c, fx_h[c][0], fx_tick[c][0], fx_tick[c][0] + 1500, fx_tick[c][0] + 1024, NULL, NULL));
+      for (c = 0; c < 2; c++)
+      {
+         fx_drain(c, 0);
+         if (c == 0 || f < 4)
+            CHECK(snd(c, 0, fx_tick[c][0] + 1500, 1 - c, "h", 1));
+      }
+      if (session == 'C' && f == 4)
+         CHECK(snd(0, 0, fx_tick[0][0] + 5000, 1, "late", 4));
+      frame();
+      if (f >= 4)
+         hash[f - 4] = link_bus_hash(fx_bus);
+   }
+   fx_free();
+}
+
+static void hash_ignores_numbering(void)
+{
+   uint64_t ha[3], hb[3], hc[3];
+   unsigned i;
+
+   fx_hashed('A', ha);
+   fx_hashed('B', hb);
+   fx_hashed('C', hc);
+   for (i = 0; i < 3; i++)
+      CHECK(ha[i] != 0 && ha[i] == hb[i]);
+   CHECK(hc[0] != ha[0]);
+}
+
+/* Lines of text that start with prefix */
+static unsigned fx_lines(const char *text, const char *prefix)
+{
+   unsigned n      = 0;
+   size_t plen     = strlen(prefix);
+   const char *line = text;
+   while (*line)
+   {
+      const char *end = strchr(line, '\n');
+      if (!strncmp(line, prefix, plen))
+         n++;
+      if (!end)
+         break;
+      line = end + 1;
+   }
+   return n;
+}
+
+static void dump_lists_ports_and_messages(void)
+{
+   static char text[4096];
+   char cut[10];
+   size_t n;
+
+   fx_two(61440, 61440);
+   fx_begin();
+   CHECK(adv(0, fx_h[0][0], 0, 3000, 0, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 0, 3000, 0, NULL, NULL));
+   CHECK(snd(0, 0, 3000, 1, "a", 1));
+   CHECK(snd(0, 0, 3001, 1, "b", 1));
+   CHECK(snd(1, 0, 3000, 0, "c", 1));
+   frame();
+   n = link_bus_dump(fx_bus, text, sizeof(text));
+   CHECK(n > 0 && n < sizeof(text));
+   CHECK(fx_lines(text, "port 0:0 ") == 1);
+   CHECK(fx_lines(text, "port 1:0 ") == 1);
+   CHECK(fx_lines(text, "msg ") == 3);
+   memset(cut, 'x', sizeof(cut));
+   CHECK(link_bus_dump(fx_bus, cut, sizeof(cut)) == n);
+   CHECK(cut[9] == '\0' && !strncmp(cut, text, 9));
+   fx_free();
+}
+
+static void counts_survive_load(void)
+{
+   struct fx_session a;
+   struct link_bus_counts ka, kb;
+   uint64_t blocks;
+   unsigned i;
+   size_t n;
+
+   fx_two(61440, 61440);
+   fx_begin();
+   fx_far(1);
+   CHECK(adv(0, fx_h[0][0], 0, 500, 0, NULL, NULL));
+   for (i = 0; i < 3; i++)
+      CHECK(adv(0, fx_h[0][0], 0, 400, 0, NULL, NULL));
+   CHECK(snd(0, 0, 500, 1, "a", 1));
+   CHECK(adv(0, fx_h[0][0], 0, 600, 0, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 0, FX_FAR, 501, NULL, NULL));
+   CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], NULL, NULL, NULL, NULL));
+   frame();
+   CHECK(counts().lowered_promise == 3);
+   CHECK(link_bus_set_ports(fx_bus, 0, fx_list[0])); /* a block B has not */
+   n  = fx_save();
+   ka = counts();
+   memset(&a, 0, sizeof(a));
+   fx_swap(&a);
+   fx_two(61440, 61440);
+   fx_begin();
+   fx_far(0);
+   CHECK(snd(0, 0, FX_FAR, 1, "z", 1)); /* dropped by the load */
+   frame();
+   blocks = counts().blocks;
+   CHECK(link_bus_load(fx_bus, fx_blob, n));
+   CHECK(link_bus_hash(fx_bus) == link_bus_hash(a.bus));
+   kb = counts();
+   CHECK(kb.lowered_promise == 3);
+   CHECK(kb.blocks == blocks && blocks != ka.blocks);
+   kb.blocks = ka.blocks;
+   CHECK(!memcmp(&ka, &kb, sizeof(ka)));
+   fx_free();
+   link_bus_free(a.bus);
+}
+
+/* Call k of console c in frame 1 of fx_interleaved: its frame-start advance,
+ * two sends to its peer at one stamp, one to held console 2, one to all */
+static void fx_mixed(unsigned c, unsigned k)
+{
+   char tag = (char)('a' + c * 5 + k);
+   if (k == 0)
+      CHECK(adv(c, fx_h[c][0], 1024, 1536, 1024, NULL, NULL));
+   else if (k < 3)
+      CHECK(snd(c, 0, 5000, 1 - c, &tag, 1));
+   else if (k == 3)
+      CHECK(snd(c, 0, 1600, 2, &tag, 1));
+   else
+      CHECK(snd(c, 0, 1700, RETRO_LINK_BROADCAST, &tag, 1));
+}
+
+/* Three consoles on one bus, console 2 held from edge 1; in frame 1
+ * consoles 0 and 1 make the same calls, one after the other when order is 0,
+ * interleaved from console 1 when it is 1 */
+static void fx_interleaved(unsigned order)
+{
+   unsigned c, k;
+
+   fx_new(3);
+   for (c = 0; c < 3; c++)
+   {
+      fx_port(c, 0, "test-cable", 61440, 3, 0);
+      fx_attach(c);
+   }
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(link_bus_cable(fx_bus, 1, 0, 2, 0));
+   fx_run_frame();
+   CHECK(link_bus_hold(fx_bus, 2));
+   fx_begin();
+   if (order)
+      for (k = 0; k < 5; k++)
+      {
+         fx_mixed(1, k);
+         fx_mixed(0, k);
+      }
+   else
+      for (c = 0; c < 2; c++)
+         for (k = 0; k < 5; k++)
+            fx_mixed(c, k);
+   frame();
+}
+
+/* Frame 2 of fx_interleaved: console 2 unheld, console 0 sends one more that
+ * ties with its two to console 1, each console takes what has landed; a
+ * digest of what they took */
+static uint64_t fx_mixed_after(void)
+{
+   uint64_t digest = 0;
+   unsigned c;
+
+   CHECK(link_bus_unhold(fx_bus, 2));
+   fx_begin();
+   for (c = 0; c < 3; c++)
+      CHECK(adv(c, fx_h[c][0], fx_tick[c][0], fx_tick[c][0] + 1024, fx_tick[c][0], NULL, NULL));
+   CHECK(snd(0, 0, 5000, 1, "n", 1));
+   for (c = 0; c < 3; c++)
+      CHECK(adv(c, fx_h[c][0], fx_tick[c][0], fx_tick[c][0] + 1024, fx_tick[c][0] + 1024, NULL, NULL));
+   for (c = 0; c < 3; c++)
+      digest = digest * 31 + fx_drain(c, 0);
+   frame();
+   return digest;
+}
+
+static void hash_and_save_ignore_interleaving(void)
+{
+   static unsigned char first[sizeof(fx_blob)];
+   uint64_t hash[3], after[3], digest[3];
+   size_t n[2];
+   unsigned i, c;
+
+   for (i = 0; i < 2; i++)
+   {
+      fx_interleaved(i);
+      hash[i] = link_bus_hash(fx_bus);
+      n[i]    = fx_save();
+      if (!i)
+         memcpy(first, fx_blob, n[0]);
+      digest[i] = fx_mixed_after();
+      after[i]  = link_bus_hash(fx_bus);
+      fx_free();
+   }
+   CHECK(hash[0] != 0 && hash[0] == hash[1]);
+   CHECK(n[0] == n[1] && !memcmp(first, fx_blob, n[0]));
+
+   /* Loaded from the blob, the bus hands out the same messages in the same
+    * order, a later send included */
+   fx_interleaved(0);
+   link_bus_free(fx_bus);
+   fx_bus = link_bus_new(3);
+   for (c = 0; c < 3; c++)
+   {
+      CHECK(link_bus_set_ports(fx_bus, c, fx_list[c]));
+      fx_h[c][0] = link_bus_attach(fx_bus, c, 0, "test-cable", 61440);
+   }
+   CHECK(link_bus_load(fx_bus, first, n[0]));
+   hash[2]   = link_bus_hash(fx_bus);
+   digest[2] = fx_mixed_after();
+   after[2]  = link_bus_hash(fx_bus);
+   fx_free();
+   CHECK(hash[2] == hash[0]);
+   CHECK(digest[0] == digest[1] && digest[1] == digest[2]);
+   CHECK(after[0] == after[1] && after[1] == after[2]);
+}
+
 static const struct
 {
    const char *name;
@@ -1504,6 +2640,8 @@ static const struct
    { "peers_index_and_count",                peers_index_and_count },
    { "cable_rules",                          cable_rules },
    { "shared_medium_joins",                  shared_medium_joins },
+   { "max_ports_caps_shared_medium",         max_ports_caps_shared_medium },
+   { "max_ports_caps_reattach",              max_ports_caps_reattach },
    { "grant_bounded_by_peer_promise",        grant_bounded_by_peer_promise },
    { "rounding_down_128",                    rounding_down_128 },
    { "promise_never_lowered",                promise_never_lowered },
@@ -1538,7 +2676,27 @@ static const struct
    { "unknown_anchor_message_resolves",      unknown_anchor_message_resolves },
    { "steady_state_allocates_nothing",       steady_state_allocates_nothing },
    { "thousands_in_flight",                  thousands_in_flight },
-   { "activity_counts_sends_and_recvs",      activity_counts_sends_and_recvs }
+   { "activity_counts_sends_and_recvs",      activity_counts_sends_and_recvs },
+   { "renumber_moves_messages",              renumber_moves_messages },
+   { "renumber_drops_old_promise",           renumber_drops_old_promise },
+   { "reset_keeps_messages_and_reports",     reset_keeps_messages_and_reports },
+   { "hold_right_after_renumber",            hold_right_after_renumber },
+   { "renumber_held_waits_for_unhold",       renumber_held_waits_for_unhold },
+   { "renumber_keeps_frame_end_repair",      renumber_keeps_frame_end_repair },
+   { "console_gone_detaches",                console_gone_detaches },
+   { "release_unbounded_every_call",         release_unbounded_every_call },
+   { "left_out_breach",                      left_out_breach },
+   { "skipped_publish_breach",               skipped_publish_breach },
+   { "misplaced_calls",                      misplaced_calls },
+   { "save_load_roundtrip",                  save_load_roundtrip },
+   { "load_refuses_bad_input",               load_refuses_bad_input },
+   { "load_checks_cables_and_reports",       load_checks_cables_and_reports },
+   { "load_caps_cables",                     load_caps_cables },
+   { "load_resets_unlisted_records",         load_resets_unlisted_records },
+   { "hash_ignores_numbering",               hash_ignores_numbering },
+   { "dump_lists_ports_and_messages",        dump_lists_ports_and_messages },
+   { "counts_survive_load",                  counts_survive_load },
+   { "hash_and_save_ignore_interleaving",    hash_and_save_ignore_interleaving }
 };
 
 int main(void)
