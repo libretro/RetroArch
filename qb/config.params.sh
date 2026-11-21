@@ -58,6 +58,7 @@ HAVE_RGUI=auto             # RGUI menu
 HAVE_MATERIALUI=auto       # MaterialUI menu
 HAVE_XMB=auto              # XMB menu
 HAVE_OZONE=auto            # Ozone menu
+HAVE_PIX16=auto            # PIX16 menu (low-res 16-bit style, CRT friendly)
 HAVE_SHADERPIPELINE=yes    # Additional shader-based pipelines
 C89_SHADERPIPELINE=yes
 HAVE_QT=auto               # Qt companion support
