@@ -306,6 +306,11 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
 audio_mixer_sound_t *audio_mixer_load_ac3(void *buffer, size_t size)
 { (void)buffer; (void)size; return NULL; }
 
+/* Its MP4 loader, which carries AC-3 too: the same dispatch */
+audio_mixer_sound_t *audio_mixer_load_m4a_track_avail(void *buffer,
+      size_t size, size_t avail, int track)
+{ (void)buffer; (void)size; (void)avail; (void)track; return NULL; }
+
 /* The platform's audio defaults: audio_driver_device_block_frames()
  * reads the device's transfer granularity from here, and no platform
  * in a harness reports one. */
