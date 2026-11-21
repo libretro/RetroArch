@@ -57,6 +57,10 @@
 
 #include "video_shader_parse.h"
 
+#ifdef HAVE_PYROWAVE
+#include "../record/record_pyrowave_receiver.h"
+#endif
+
 #if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
 #include "drivers_shader/glslang_util.h"
 #include "drivers_shader/slang_process.h"
@@ -4359,8 +4363,13 @@ const char *video_shader_get_current_shader_preset(void)
    if (video_shader_delay && !runloop_st->shader_delay_timer.timer_end)
       return NULL;
 
-   /* Disallow loading auto-shaders when no core is loaded */
-   if (!core_name || !*core_name)
+   /* Disallow loading auto-shaders when no core is loaded; a stream
+    * being received has none, and takes the --set-shader preset */
+   if (     (!core_name || !*core_name)
+#ifdef HAVE_PYROWAVE
+         && !(record_pyrowave_receiver_active() && *video_st->cli_shader_path)
+#endif
+      )
       return NULL;
 
    if (*runloop_st->runtime_shader_preset_path)

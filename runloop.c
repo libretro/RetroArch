@@ -8689,8 +8689,13 @@ static enum runloop_state_enum runloop_check_state(
          else
             retroarch_menu_running();
       }
-      /* Initial menu toggle on startup */
-      else if (core_type_is_dummy && !(menu_st->flags & MENU_ST_FLAG_ALIVE))
+      /* Initial menu toggle on startup; a stream being received has the
+       * screen instead, and the menu comes back when it ends */
+      else if (core_type_is_dummy && !(menu_st->flags & MENU_ST_FLAG_ALIVE)
+#ifdef HAVE_PYROWAVE
+            && !record_pyrowave_receiver_active()
+#endif
+            )
          retroarch_menu_running();
 
       old_pressed             = pressed;
