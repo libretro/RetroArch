@@ -2140,7 +2140,7 @@ static bool pix16_art_from_dot_art(pix16_t *pix, struct pix16_art *art,
 {
    uint32_t *icon32;
    unsigned bw = ti->width / PIX16_DOT, bh = ti->height / PIX16_DOT;
-   unsigned x, y, x0 = PIX16_DOT, y0 = PIX16_DOT, x1 = 0, y1 = 0, k, w, h;
+   unsigned x, y, x0 = PIX16_DOT, y0 = PIX16_DOT, x1 = 0, y1 = 0, w, h;
 
    if (!bw || !bh)
       return false;
@@ -2184,11 +2184,10 @@ static bool pix16_art_from_dot_art(pix16_t *pix, struct pix16_art *art,
    }
    w = x1 - x0 + 1;
    h = y1 - y0 + 1;
-   k = PIX16_ART_W / w < PIX16_ART_H / h ? PIX16_ART_W / w : PIX16_ART_H / h;
-   if (!k)
-      k = 1;
-   art->w    = w * k;
-   art->h    = h * k;
+   /* kept at the size it was drawn: the blit fits it to the tile, so a
+    * wide flat console and a tall one end up the same visual size */
+   art->w    = w;
+   art->h    = h;
    art->px   = (uint16_t*)malloc(art->w * art->h * sizeof(uint16_t));
    art->mask = (uint8_t*)malloc(art->w * art->h);
    if (!art->px || !art->mask)
@@ -2199,7 +2198,7 @@ static bool pix16_art_from_dot_art(pix16_t *pix, struct pix16_art *art,
    for (y = 0; y < art->h; y++)
       for (x = 0; x < art->w; x++)
       {
-         uint32_t c = icon32[(y0 + y / k) * PIX16_DOT + x0 + x / k];
+         uint32_t c = icon32[(y0 + y) * PIX16_DOT + x0 + x];
          art->mask[y * art->w + x] = c != 0;
          art->px[y * art->w + x]   = pix->conv(c | 0xFF000000u);
       }
@@ -2325,13 +2324,16 @@ static void pix16_art_draw(pix16_t *pix, const struct pix16_art *art,
       int bx, int by, int bw, int bh)
 {
    unsigned dw = art->w, dh = art->h;
-   int zoom_w = (bw * 100) / PIX16_ART_W;
-   int zoom_h = (bh * 100) / PIX16_ART_H;
-   int zoom   = zoom_w < zoom_h ? zoom_w : zoom_h;
+   /* Every sprite is drawn the same height so the tiles look like one
+    * set, whatever shape the console is; a very wide one is pulled back
+    * in so it never spills out of the box */
+   int zoom   = ((bh * 3 / 4) * 100) / (int)art->h;
    int x, y, ox, oy;
 
    if (zoom < 1)
       zoom = 1;
+   if (((int)art->w * zoom + 50) / 100 > bw)
+      zoom = (bw * 100) / (int)art->w;
    dw = (art->w * (unsigned)zoom + 50) / 100;
    dh = (art->h * (unsigned)zoom + 50) / 100;
    if ((int)dw > bw)
