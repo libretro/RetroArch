@@ -37,6 +37,15 @@ unsigned gl_menu_bloom_begin(gl_menu_bloom_t **bloom,
 void gl_menu_bloom_end(gl_menu_bloom_t *bloom, unsigned dims, bool defer);
 void gl_menu_bloom_composite(gl_menu_bloom_t *bloom, unsigned dims);
 void gl_menu_bloom_free(gl_menu_bloom_t **bloom);
+/* The menu's backdrop blur over the bound framebuffer, as
+ * gfx_display_ctx_driver_t's blur_rect; false where the context cannot
+ * blit (GLES 2) or the images cannot be made */
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
+#define HAVE_GL_MENU_BLUR
+bool gl_menu_blur(gl_menu_bloom_t **bloom, unsigned video_dims,
+      int x, int y, unsigned dims, float alpha, float dim,
+      bool core, bool es);
+#endif
 #endif
 
 /* Upload memory mapped for good: GL 4.4 or ARB_buffer_storage on the

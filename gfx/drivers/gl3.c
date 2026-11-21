@@ -9474,6 +9474,24 @@ static void gfx_display_gl3_bloom_composite(void *data, unsigned dims)
 }
 #endif
 
+#ifdef HAVE_GL_MENU_BLUR
+static bool gfx_display_gl3_blur_rect(void *data, unsigned video_dims,
+      int x, int y, unsigned dims, float alpha, float dim)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl)
+      return false;
+   return gl_menu_blur(&gl->menu_bloom, video_dims, x, y, dims, alpha, dim,
+         true,
+#ifdef HAVE_OPENGLES
+         true
+#else
+         false
+#endif
+         );
+}
+#endif
+
 #ifdef HAVE_SLANG
 static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
       unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
@@ -9590,7 +9608,12 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    NULL,
 #endif
 #if defined(HAVE_SLANG) || defined(HAVE_GLSL)
-   gfx_display_gl3_media_shader_draw
+   gfx_display_gl3_media_shader_draw,
+#else
+   NULL,
+#endif
+#ifdef HAVE_GL_MENU_BLUR
+   gfx_display_gl3_blur_rect
 #else
    NULL
 #endif

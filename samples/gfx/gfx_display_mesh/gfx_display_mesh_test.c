@@ -21,6 +21,10 @@
  *  quads-only  a driver that takes no strips is handed nothing.
  *  stretch     with an output size set, quads and draws laid out at
  *              another width reach the driver across the output's.
+ *  blur plans  the backdrop blur's sizes - a quarter of the rect, at
+ *              most 480 x 270, from a copy at twice that - and its six
+ *              passes, one axis each, each reading the last and twice
+ *              as wide as the round before, ending in image 0.
  *  blur        a backdrop blur reaches a driver that has one after
  *              the quads gathered before it are drawn, with its alpha
  *              and dim held to 0..1 and its rect stretched like a
@@ -366,6 +370,48 @@ static void bloom_plans(void)
          "and only the last of the five writes the output");
 }
 
+/* The backdrop blur's sizes and passes, shared by the drivers */
+static void blur_plans(void)
+{
+   menu_bloom_pass_t plan[MENU_BLUR_PASSES];
+   unsigned small = menu_blur_dims(VIDEO_SCALE_PACK(1920, 1080));
+   unsigned i, last = 1;
+   bool ok = true;
+   CHECK(small == VIDEO_SCALE_PACK(480, 270)
+         && MENU_BLUR_COPY_DIMS(small) == VIDEO_SCALE_PACK(960, 540),
+         "1080p blurs at a quarter, from a copy at half");
+   CHECK(menu_blur_dims(VIDEO_SCALE_PACK(3840, 2160))
+            == VIDEO_SCALE_PACK(480, 270)
+         && menu_blur_dims(VIDEO_SCALE_PACK(3840, 1080))
+            == VIDEO_SCALE_PACK(480, 135),
+         "larger outputs are held to 480 x 270, their aspect kept");
+   CHECK(menu_blur_dims(VIDEO_SCALE_PACK(640, 480))
+            == VIDEO_SCALE_PACK(160, 120)
+         && menu_blur_dims(VIDEO_SCALE_PACK(9, 2))
+            == VIDEO_SCALE_PACK(3, 1),
+         "smaller ones at a quarter, never to nothing");
+   menu_blur_plan(plan, small);
+   CHECK(plan[0].src == MENU_BLUR_COPY, "the first pass reads the copy");
+   for (i = 0; i < MENU_BLUR_PASSES; i++)
+   {
+      float w = plan[i].params[0] * 480.0f, h = plan[i].params[1] * 270.0f;
+      if (i && plan[i].src != last)
+         ok = false;
+      if (     plan[i].add || plan[i].dst > 1 || plan[i].dst == plan[i].src
+            || plan[i].params[2] != 0.0f || plan[i].params[3] != 1.0f
+            || (w != 0.0f) == (h != 0.0f))
+         ok = false;
+      /* Each round twice as wide as the last, the first at the copy's
+       * texel */
+      if (TEST_NEAR(w + h, 0.0f) || !TEST_NEAR(w + h,
+               i < 1 ? 0.5f : (float)(1u << (i / 2))))
+         ok = false;
+      last = plan[i].dst;
+   }
+   CHECK(ok && last == 0,
+         "one axis a pass, each reading the last, widening, into image 0");
+}
+
 int main(void)
 {
    gfx_display_t *p_disp = disp_get_ptr();
@@ -378,6 +424,7 @@ int main(void)
 
    ribbon_motion();
    bloom_plans();
+   blur_plans();
 
    for (i = 0; i < 16; i++)
       white[i] = 1.0f;

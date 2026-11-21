@@ -10998,6 +10998,24 @@ static void gfx_display_gl2_bloom_end(void *data, unsigned dims, bool defer)
    gl_menu_bloom_end(gl->menu_bloom, dims, defer);
 }
 
+#ifdef HAVE_GL_MENU_BLUR
+static bool gfx_display_gl2_blur_rect(void *data, unsigned video_dims,
+      int x, int y, unsigned dims, float alpha, float dim)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || !(gl->flags & GL2_FLAG_HAVE_FBO))
+      return false;
+   return gl_menu_blur(&gl->menu_bloom, video_dims, x, y, dims, alpha, dim,
+         gl_query_core_context_in_use(),
+#ifdef HAVE_OPENGLES
+         true
+#else
+         false
+#endif
+         );
+}
+#endif
+
 static void gfx_display_gl2_bloom_composite(void *data, unsigned dims)
 {
    gl2_t *gl = (gl2_t*)data;
@@ -11050,7 +11068,12 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    NULL,
 #endif
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
-   gfx_display_gl2_media_shader_draw
+   gfx_display_gl2_media_shader_draw,
+#else
+   NULL,
+#endif
+#ifdef HAVE_GL_MENU_BLUR
+   gfx_display_gl2_blur_rect
 #else
    NULL
 #endif
