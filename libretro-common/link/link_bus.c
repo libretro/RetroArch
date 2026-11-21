@@ -28,12 +28,60 @@
 /* The largest tick: RETRO_LINK_UNBOUNDED is never a cabled port's grant */
 #define LINK_BUS_TICK_MAX (RETRO_LINK_UNBOUNDED - 1)
 
+/* Message records, queue entries and payload cells come from free lists that
+ * 64 KiB blocks fill; no block is freed before link_bus_free. */
+#define LINK_BUS_BLOCK      65536
+#define LINK_BUS_BLOCK_HEAD 64 /* the chain of blocks; keeps cells aligned */
+#define LINK_BUS_CELLS      7  /* payload cells of 64, 128, ... 4096 bytes */
+#define LINK_BUS_POOL_MSG   LINK_BUS_CELLS
+#define LINK_BUS_POOL_ENTRY (LINK_BUS_CELLS + 1)
+#define LINK_BUS_POOLS      (LINK_BUS_CELLS + 2)
+
 enum link_bus_repair
 {
    LINK_BUS_AS_REQUEST = 0,
    LINK_BUS_AS_PROMISE,
    LINK_BUS_AS_FRAME_END,
    LINK_BUS_AS_EARLIEST
+};
+
+enum link_bus_landing
+{
+   LINK_BUS_LANDED = 0, /* landing is on the receiver's clock */
+   LINK_BUS_AHEAD,      /* the receiver's anchor is not known yet */
+   LINK_BUS_REJOIN      /* for a held console: lands at its re-join anchor */
+};
+
+struct link_bus_item
+{
+   struct link_bus_item *next;
+};
+
+struct link_bus_pool
+{
+   struct link_bus_item *free;
+   size_t size, count;
+};
+
+struct link_bus_msg   /* stored once for all its receivers */
+{
+   unsigned char *cell;
+   size_t len;
+   unsigned refs, cell_pool;
+};
+
+struct link_bus_entry /* one receiver's copy of a message */
+{
+   struct link_bus_entry *next;
+   struct link_bus_msg *msg;
+   uint64_t landing;
+   uint64_t ahead, rate; /* LINK_BUS_AHEAD: ticks of rate past the sender's anchor */
+   uint64_t seq;         /* send order */
+   uint64_t journal_gen;
+   size_t journal;       /* its journal entry while journal_gen is the bus's */
+   unsigned from_index;
+   unsigned char state;
+   bool seen;            /* receivable at its port's last grant */
 };
 
 struct retro_link_port
@@ -57,6 +105,12 @@ struct retro_link_port
    unsigned flags, max_ports;
    unsigned index, count, was_count, size;
    uint32_t pending;     /* reports not yet given */
+   struct link_bus_entry *queue, *queue_tail;     /* landed, in the order recv takes them */
+   struct link_bus_entry *waiting, *waiting_tail; /* landing not known yet, in send order */
+   uint64_t limit;       /* latest grant: what lands below it is receivable */
+   uint64_t idle;        /* the port list's idle_ticks */
+   uint64_t last_stamp;  /* highest stamp sent */
+   bool sent;
    bool attached;        /* as the core sees it */
    bool live;            /* in the membership formed at the edge */
    bool cut;             /* detached in this frame: a silent member until the edge */
@@ -75,7 +129,9 @@ struct link_bus_cable
 struct link_bus_console
 {
    struct retro_link_port_info *ports; /* the list, strings included, or NULL */
+   uint64_t activity; /* its sends and recvs */
    bool in_frame;
+   bool held;
 };
 
 struct link_bus
@@ -84,7 +140,13 @@ struct link_bus
    struct retro_link_port **recs; /* by console, then port number */
    struct link_bus_cable *cables;
    struct link_bus_counts counts;
+   struct link_bus_pool pools[LINK_BUS_POOLS];
+   struct link_bus_item *blocks;
+   struct link_bus_sent *journal;
+   uint64_t journal_gen; /* moves when the journal starts over */
+   uint64_t sends;
    uint64_t seq;
+   size_t journal_len, journal_cap;
    size_t recs_len, recs_cap;
    size_t cables_len, cables_cap;
    unsigned console_count;
@@ -95,6 +157,59 @@ static void *link_bus_alloc(link_bus_t *b, void *ptr, size_t size)
 {
    b->counts.blocks++;
    return realloc(ptr, size);
+}
+
+/* Makes n items of the pool free, a block at a time */
+static bool link_bus_reserve(link_bus_t *b, struct link_bus_pool *pool, size_t n)
+{
+   while (pool->count < n)
+   {
+      char *block = (char*)link_bus_alloc(b, NULL, LINK_BUS_BLOCK);
+      size_t at;
+      if (!block)
+         return false;
+      ((struct link_bus_item*)block)->next = b->blocks;
+      b->blocks                            = (struct link_bus_item*)block;
+      for (at = LINK_BUS_BLOCK_HEAD; at + pool->size <= LINK_BUS_BLOCK; at += pool->size)
+      {
+         struct link_bus_item *it = (struct link_bus_item*)(block + at);
+         it->next                 = pool->free;
+         pool->free               = it;
+         pool->count++;
+      }
+   }
+   return true;
+}
+
+static void *link_bus_take(struct link_bus_pool *pool)
+{
+   struct link_bus_item *it = pool->free;
+   pool->free               = it->next;
+   pool->count--;
+   return it;
+}
+
+static void link_bus_give(struct link_bus_pool *pool, void *ptr)
+{
+   struct link_bus_item *it = (struct link_bus_item*)ptr;
+   it->next                 = pool->free;
+   pool->free               = it;
+   pool->count++;
+}
+
+static bool link_bus_journal_room(link_bus_t *b, size_t n)
+{
+   size_t cap = b->journal_cap ? b->journal_cap : 16;
+   struct link_bus_sent *j;
+   if (b->journal_len + n <= b->journal_cap)
+      return true;
+   while (cap < b->journal_len + n)
+      cap *= 2;
+   if (!(j = (struct link_bus_sent*)link_bus_alloc(b, b->journal, cap * sizeof(*j))))
+      return false;
+   b->journal     = j;
+   b->journal_cap = cap;
+   return true;
 }
 
 /* a * b as 128 bits, from four 32-bit partial products */
@@ -219,6 +334,7 @@ static void link_bus_fresh(struct retro_link_port *p)
    p->grant_valid   = false;
    p->published     = false;
    p->ended         = false;
+   p->limit         = 0;
 }
 
 static void link_bus_changed(link_bus_t *b, struct retro_link_port *p)
@@ -227,9 +343,140 @@ static void link_bus_changed(link_bus_t *b, struct retro_link_port *p)
       p->head->seq = ++b->seq;
 }
 
+/* a comes out before c: by landing, then the sender's index, then send order */
+static bool link_bus_before(const struct link_bus_entry *a, const struct link_bus_entry *c)
+{
+   if (a->landing != c->landing)
+      return a->landing < c->landing;
+   if (a->from_index != c->from_index)
+      return a->from_index < c->from_index;
+   return a->seq < c->seq;
+}
+
+static void link_bus_enqueue(struct retro_link_port *p, struct link_bus_entry *e)
+{
+   struct link_bus_entry **at = &p->queue;
+   if (p->queue_tail && !link_bus_before(e, p->queue_tail))
+      at = &p->queue_tail->next;
+   else
+      while (*at && !link_bus_before(e, *at))
+         at = &(*at)->next;
+   e->next = *at;
+   *at     = e;
+   if (!e->next)
+      p->queue_tail = e;
+}
+
+static void link_bus_wait(struct retro_link_port *p, struct link_bus_entry *e)
+{
+   e->next = NULL;
+   if (p->waiting_tail)
+      p->waiting_tail->next = e;
+   else
+      p->waiting            = e;
+   p->waiting_tail = e;
+}
+
+static void link_bus_retire(link_bus_t *b, struct link_bus_entry *e)
+{
+   struct link_bus_msg *m = e->msg;
+   if (!--m->refs)
+   {
+      link_bus_give(&b->pools[m->cell_pool], m->cell);
+      link_bus_give(&b->pools[LINK_BUS_POOL_MSG], m);
+   }
+   link_bus_give(&b->pools[LINK_BUS_POOL_ENTRY], e);
+}
+
+/* Drops every message queued for p */
+static void link_bus_drop(link_bus_t *b, struct retro_link_port *p)
+{
+   struct link_bus_entry *e, *next;
+   for (e = p->queue; e; e = next)
+   {
+      next = e->next;
+      link_bus_retire(b, e);
+   }
+   for (e = p->waiting; e; e = next)
+   {
+      next = e->next;
+      link_bus_retire(b, e);
+   }
+   p->queue        = NULL;
+   p->queue_tail   = NULL;
+   p->waiting      = NULL;
+   p->waiting_tail = NULL;
+}
+
+/* p's anchor has become known: the messages waiting for it land */
+static void link_bus_land(link_bus_t *b, struct retro_link_port *p)
+{
+   struct link_bus_entry *e = p->waiting, *next;
+   p->waiting               = NULL;
+   p->waiting_tail          = NULL;
+   for (; e; e = next)
+   {
+      next       = e->next;
+      e->landing = p->anchor;
+      if (e->state == LINK_BUS_AHEAD)
+         e->landing = link_bus_add(p->anchor,
+               link_bus_scale(e->ahead, p->rate, e->rate, true));
+      e->state = LINK_BUS_LANDED;
+      if (e->journal_gen == b->journal_gen)
+         b->journal[e->journal].landing = e->landing;
+      link_bus_enqueue(p, e);
+   }
+}
+
+/* The message p hands out next, or NULL */
+static struct link_bus_entry *link_bus_next(const struct retro_link_port *p)
+{
+   if (p->cut || !p->queue || p->queue->landing >= p->limit)
+      return NULL;
+   return p->queue;
+}
+
+static void link_bus_pop(link_bus_t *b, struct retro_link_port *p)
+{
+   struct link_bus_entry *e = p->queue;
+   if (!(p->queue = e->next))
+      p->queue_tail = NULL;
+   link_bus_retire(b, e);
+}
+
+/* Marks what p's grant has made receivable; true if any of it was not before */
+static bool link_bus_reached(struct retro_link_port *p)
+{
+   struct link_bus_entry *e;
+   bool fresh = false;
+   for (e = p->queue; e && e->landing < p->limit; e = e->next)
+      if (!e->seen)
+      {
+         e->seen = true;
+         fresh   = true;
+      }
+   return fresh;
+}
+
+/* Nothing stamped within p's quiet span before its anchor */
+static bool link_bus_quiet(const struct retro_link_port *p)
+{
+   uint64_t span = p->idle;
+   if (!p->sent)
+      return true;
+   if (!span)
+   {
+      if (!p->span_valid)
+         return false;
+      span = p->span > LINK_BUS_TICK_MAX / LINK_BUS_IDLE_SPANS
+         ? LINK_BUS_TICK_MAX : p->span * LINK_BUS_IDLE_SPANS;
+   }
+   return p->anchor >= p->last_stamp && p->anchor - p->last_stamp >= span;
+}
+
 /* The highest tick on p's clock its peers allow, and the peer that sets it;
  * RETRO_LINK_UNBOUNDED when no peer bounds p. A peer whose tick at this edge
- * is not known holds p at the edge. */
+ * is not known holds p at the edge; a held or silent one holds nobody. */
 static uint64_t link_bus_bound(const struct retro_link_port *p,
       const struct retro_link_port **by)
 {
@@ -238,7 +485,7 @@ static uint64_t link_bus_bound(const struct retro_link_port *p,
    for (q = p->head; q; q = q->next)
    {
       uint64_t t;
-      if (q == p || q->cut)
+      if (q == p || q->cut || q->owner->consoles[q->console].held)
          continue;
       t = q->edge_known ? link_bus_onto(p, q, link_bus_ahead(q)) : p->anchor;
       if (t < bound)
@@ -453,6 +700,7 @@ static char *link_bus_put(char **s, const char *str)
 link_bus_t *link_bus_new(unsigned consoles)
 {
    link_bus_t *b;
+   unsigned i;
    if (!consoles)
       return NULL;
    b = (link_bus_t*)calloc(1, sizeof(*b));
@@ -465,6 +713,10 @@ link_bus_t *link_bus_new(unsigned consoles)
       return NULL;
    }
    b->console_count = consoles;
+   for (i = 0; i < LINK_BUS_CELLS; i++)
+      b->pools[i].size = (size_t)64 << i;
+   b->pools[LINK_BUS_POOL_MSG].size   = sizeof(struct link_bus_msg);
+   b->pools[LINK_BUS_POOL_ENTRY].size = sizeof(struct link_bus_entry);
    return b;
 }
 
@@ -481,6 +733,13 @@ void link_bus_free(link_bus_t *b)
    }
    for (c = 0; c < b->console_count; c++)
       free(b->consoles[c].ports);
+   while (b->blocks)
+   {
+      struct link_bus_item *next = b->blocks->next;
+      free(b->blocks);
+      b->blocks = next;
+   }
+   free(b->journal);
    free(b->recs);
    free(b->cables);
    free(b->consoles);
@@ -558,6 +817,7 @@ retro_link_port_t *link_bus_attach(link_bus_t *b, unsigned console, unsigned por
    p->rate      = clock_rate;
    p->flags     = e ? (e->flags & RETRO_LINK_PORT_SHARED_MEDIUM) : 0;
    p->max_ports = e ? e->max_ports : 0;
+   p->idle      = e ? e->idle_ticks : 0;
    p->attached  = true;
    p->pending   = 0;
    if (b->frame_open)
@@ -593,6 +853,7 @@ void link_bus_detach(link_bus_t *b, unsigned console, retro_link_port_t *h)
    {
       p->live = false;
       p->join = false;
+      link_bus_drop(b, p);
       link_bus_form(b);
    }
 }
@@ -620,26 +881,163 @@ int link_bus_peers(link_bus_t *b, unsigned console, retro_link_port_t *h, unsign
 bool link_bus_send(link_bus_t *b, unsigned console, retro_link_port_t *h, uint64_t tick,
       unsigned to, const void *buf, size_t len)
 {
-   (void)b; (void)console; (void)h; (void)tick; (void)to; (void)buf; (void)len;
-   return false;
+   struct retro_link_port *p = NULL, *q;
+   struct link_bus_msg *m;
+   unsigned cell = 0, n;
+   uint64_t ahead;
+   if (b)
+   {
+      if (link_bus_foreign(b, console, h))
+         b->counts.misplaced_call++;
+      p = link_bus_own(b, console, h);
+   }
+   if (!p || len > RETRO_LINK_MAX_PAYLOAD || (!buf && len))
+      return false;
+   if (!link_bus_joined(p))
+   {
+      /* Cabled to nothing: dropped */
+      b->consoles[console].activity++;
+      return true;
+   }
+   if (to != RETRO_LINK_BROADCAST && (to >= p->count || to == p->index))
+      return false;
+   n = to == RETRO_LINK_BROADCAST ? p->count - 1 : 1;
+   while (((size_t)64 << cell) < len)
+      cell++;
+   if (     !link_bus_reserve(b, &b->pools[cell], 1)
+         || !link_bus_reserve(b, &b->pools[LINK_BUS_POOL_MSG], 1)
+         || !link_bus_reserve(b, &b->pools[LINK_BUS_POOL_ENTRY], n)
+         || !link_bus_journal_room(b, n))
+      return false;
+
+   if (p->promise_valid && tick < p->promise)
+   {
+      tick = p->promise;
+      b->counts.low_stamp++;
+   }
+   if (!p->sent || tick > p->last_stamp)
+      p->last_stamp = tick;
+   p->sent = true;
+   ahead   = tick > p->anchor ? tick - p->anchor : 0;
+
+   /* The one copy: the core reuses its buffer */
+   m            = (struct link_bus_msg*)link_bus_take(&b->pools[LINK_BUS_POOL_MSG]);
+   m->cell      = (unsigned char*)link_bus_take(&b->pools[cell]);
+   m->cell_pool = cell;
+   m->len       = len;
+   m->refs      = n;
+   if (len)
+      memcpy(m->cell, buf, len);
+
+   /* To the ports on the bus now, a silent or held one included */
+   for (q = p->head; q; q = q->next)
+   {
+      struct link_bus_entry *e;
+      struct link_bus_sent *j;
+      if (q == p || (to != RETRO_LINK_BROADCAST && q->index != to))
+         continue;
+      e              = (struct link_bus_entry*)link_bus_take(&b->pools[LINK_BUS_POOL_ENTRY]);
+      e->msg         = m;
+      e->landing     = RETRO_LINK_UNBOUNDED;
+      e->ahead       = ahead;
+      e->rate        = p->rate;
+      e->seq         = b->sends;
+      e->journal_gen = b->journal_gen;
+      e->journal     = b->journal_len;
+      e->from_index  = p->index;
+      e->seen        = false;
+      if (b->consoles[q->console].held)
+         e->state = LINK_BUS_REJOIN;
+      else if (!q->edge_known)
+         e->state = LINK_BUS_AHEAD;
+      else
+      {
+         e->state   = LINK_BUS_LANDED;
+         e->landing = link_bus_add(q->anchor,
+               link_bus_scale(ahead, q->rate, p->rate, true));
+      }
+      j               = &b->journal[b->journal_len++];
+      j->from_console = p->console;
+      j->from_port    = p->port;
+      j->to_console   = q->console;
+      j->to_port      = q->port;
+      j->stamp        = tick;
+      j->landing      = e->landing;
+      j->len          = len;
+      memset(j->head, 0, sizeof(j->head));
+      memcpy(j->head, m->cell, len < sizeof(j->head) ? len : sizeof(j->head));
+      if (e->state == LINK_BUS_LANDED)
+         link_bus_enqueue(q, e);
+      else
+         link_bus_wait(q, e);
+   }
+   b->sends++;
+   link_bus_changed(b, p);
+   b->consoles[console].activity++;
+   return true;
 }
 
 bool link_bus_recv(link_bus_t *b, unsigned console, retro_link_port_t *h, uint64_t *tick,
       unsigned *from, void *buf, size_t *len)
 {
-   (void)b; (void)console; (void)h; (void)tick; (void)from; (void)buf;
+   struct retro_link_port *p = NULL;
+   struct link_bus_entry *e  = NULL;
+   if (b)
+   {
+      if (link_bus_foreign(b, console, h))
+         b->counts.misplaced_call++;
+      if ((p = link_bus_own(b, console, h)))
+         e = link_bus_next(p);
+   }
+   if (!e)
+   {
+      if (len)
+         *len = 0;
+      return false;
+   }
+   if (buf)
+   {
+      if (!len)
+         return false;
+      if (*len < e->msg->len)
+      {
+         *len = e->msg->len;
+         return false;
+      }
+      memcpy(buf, e->msg->cell, e->msg->len);
+   }
    if (len)
-      *len = 0;
-   return false;
+      *len = e->msg->len;
+   if (tick)
+      *tick = e->landing;
+   if (from)
+      *from = e->from_index;
+   link_bus_pop(b, p);
+   b->consoles[console].activity++;
+   return true;
 }
 
 const void *link_bus_peek(link_bus_t *b, unsigned console, retro_link_port_t *h,
       uint64_t *tick, unsigned *from, size_t *len)
 {
-   (void)b; (void)console; (void)h; (void)tick; (void)from;
+   struct retro_link_port *p;
+   const struct link_bus_entry *e = NULL;
+   if (b)
+   {
+      if (link_bus_foreign(b, console, h))
+         b->counts.misplaced_call++;
+      if ((p = link_bus_own(b, console, h)))
+         e = link_bus_next(p);
+   }
    if (len)
-      *len = 0;
-   return NULL;
+      *len = e ? e->msg->len : 0;
+   if (!e)
+      return NULL;
+   if (tick)
+      *tick = e->landing;
+   if (from)
+      *from = e->from_index;
+   return e->msg->cell;
 }
 
 void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *w, unsigned n)
@@ -671,6 +1069,7 @@ void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *w
             p->anchor     = w[i].local_tick;
             p->edge_known = true;
             moved         = true;
+            link_bus_land(b, p);
          }
       }
       if (p->promise_valid && w[i].safe_tick < p->promise)
@@ -788,6 +1187,9 @@ void link_bus_grant(link_bus_t *b, unsigned console, struct retro_link_wait *w, 
          p->grant_valid = false;
          w[i].grant     = RETRO_LINK_UNBOUNDED;
       }
+      p->limit = w[i].grant;
+      if (!p->cut && link_bus_reached(p))
+         p->pending |= RETRO_LINK_WAKE_MESSAGE;
       if (ask)
       {
          w[i].wake_flags = p->pending;
@@ -844,8 +1246,9 @@ uint64_t link_bus_changes(const link_bus_t *b, unsigned console)
 
 uint64_t link_bus_activity(const link_bus_t *b, unsigned console)
 {
-   (void)b; (void)console;
-   return 0;
+   if (!b || console >= b->console_count)
+      return 0;
+   return b->consoles[console].activity;
 }
 
 void link_bus_frame_start(link_bus_t *b, unsigned console)
@@ -853,6 +1256,12 @@ void link_bus_frame_start(link_bus_t *b, unsigned console)
    size_t i;
    if (!b || console >= b->console_count)
       return;
+   if (!b->frame_open)
+   {
+      /* The journal holds what is sent from here to the edge */
+      b->journal_len = 0;
+      b->journal_gen++;
+   }
    b->consoles[console].in_frame = true;
    b->frame_open                 = true;
    for (i = link_bus_at(b, console, 0); i < b->recs_len && b->recs[i]->console == console; i++)
@@ -907,6 +1316,7 @@ void link_bus_edge(link_bus_t *b)
          p->live = false;
          p->head = NULL;
          reform  = true;
+         link_bus_drop(b, p);
       }
       if (p->join)
       {
@@ -988,20 +1398,39 @@ bool link_bus_uncable(link_bus_t *b, unsigned console, unsigned port)
 
 bool link_bus_hold(link_bus_t *b, unsigned console)
 {
-   (void)b; (void)console;
-   return false;
+   size_t i;
+   if (!b || console >= b->console_count || b->frame_open)
+      return false;
+   /* Every bus of its ports idle: nothing undelivered, every port quiet */
+   for (i = link_bus_at(b, console, 0); i < b->recs_len && b->recs[i]->console == console; i++)
+   {
+      const struct retro_link_port *q;
+      for (q = b->recs[i]->head; q; q = q->next)
+         if (q->queue || q->waiting || !link_bus_quiet(q))
+            return false;
+   }
+   b->consoles[console].held = true;
+   return true;
 }
 
 bool link_bus_unhold(link_bus_t *b, unsigned console)
 {
-   (void)b; (void)console;
-   return false;
+   size_t i;
+   if (!b || console >= b->console_count || b->frame_open)
+      return false;
+   if (b->consoles[console].held)
+   {
+      /* A re-join: each port's next frame-start advance gives its tick */
+      b->consoles[console].held = false;
+      for (i = link_bus_at(b, console, 0); i < b->recs_len && b->recs[i]->console == console; i++)
+         link_bus_fresh(b->recs[i]);
+   }
+   return true;
 }
 
 bool link_bus_is_held(const link_bus_t *b, unsigned console)
 {
-   (void)b; (void)console;
-   return false;
+   return b && console < b->console_count && b->consoles[console].held;
 }
 
 void link_bus_renumbered(link_bus_t *b, unsigned console) { (void)b; (void)console; }
@@ -1040,6 +1469,9 @@ void link_bus_get_counts(const link_bus_t *b, struct link_bus_counts *out)
 
 size_t link_bus_journal(const link_bus_t *b, struct link_bus_sent *out, size_t cap)
 {
-   (void)b; (void)out; (void)cap;
-   return 0;
+   if (!b)
+      return 0;
+   if (out && cap && b->journal_len)
+      memcpy(out, b->journal, (cap < b->journal_len ? cap : b->journal_len) * sizeof(*out));
+   return b->journal_len;
 }
