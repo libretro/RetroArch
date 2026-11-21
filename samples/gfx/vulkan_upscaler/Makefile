@@ -118,7 +118,7 @@ $(TARGET)$(EXE): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 check: all
-	$(RUNNER) ./$(TARGET)$(EXE)
+	LSAN_OPTIONS=suppressions=$(CURDIR)/lsan.supp $(RUNNER) ./$(TARGET)$(EXE)
 
 clean:
 	rm -f $(TARGET) $(TARGET).exe $(TARGET).o session_cache.o _nvngx.dll libnvidia-ngx.so.1 nvngx_dlss.dll libnvidia-ngx-dlss.so.310.2.1 fake_dlss_res.o

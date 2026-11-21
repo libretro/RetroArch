@@ -1,0 +1,4 @@
+# What the Vulkan loader, layers and driver allocate inside
+# vkCreateInstance is theirs, and a library unloaded at exit leaves its
+# once-only allocations behind; the test owns nothing made in there
+leak:vkCreateInstance
