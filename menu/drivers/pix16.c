@@ -343,8 +343,14 @@ struct pix16_art
    char *name;
    uint16_t *px;              /* converted pixels */
    uint8_t *mask;             /* 1 = opaque */
+   uint8_t *shine;            /* 1 = light artwork a glint may cross;
+                               * NULL: the whole opaque area */
    unsigned w, h;             /* 0 = no file */
 };
+
+/* How light (0..255 luma) a logo pixel must be for the title screen's
+ * glint to cross it: the ring, frame and lettering, never the plate */
+#define PIX16_SHINE_LUMA 170
 
 /* "+" button: the Add System wizard */
 enum pix16_wiz_step
@@ -2122,6 +2128,7 @@ static void pix16_art_free_all(pix16_t *pix)
       free(pix->arts[i].name);
       free(pix->arts[i].px);
       free(pix->arts[i].mask);
+      free(pix->arts[i].shine);
    }
    free(pix->arts);
    pix->arts      = NULL;
@@ -2289,17 +2296,24 @@ static const struct pix16_art *pix16_art_get(pix16_t *pix,
       ok = pix16_art_from_dot_art(pix, art, &ti);
    else
    {
-      n         = (size_t)ti.width * ti.height;
-      art->px   = (uint16_t*)malloc(n * sizeof(uint16_t));
-      art->mask = (uint8_t*)malloc(n);
-      ok        = art->px && art->mask;
+      n          = (size_t)ti.width * ti.height;
+      art->px    = (uint16_t*)malloc(n * sizeof(uint16_t));
+      art->mask  = (uint8_t*)malloc(n);
+      art->shine = (uint8_t*)malloc(n);
+      ok         = art->px && art->mask && art->shine;
       if (ok)
       {
          for (i = 0; i < n; i++)
          {
             uint32_t c   = ti.pixels[i];
-            art->mask[i] = ((c >> 24) & 0xFF) >= 0x80;
-            art->px[i]   = pix->conv(c | 0xFF000000);
+            /* Rec. 601 luma: the light lines of a logo, not the dark
+             * plate it sits on, are what the glint runs over */
+            unsigned l   = (((c >> 16) & 0xFF) * 77
+                          + ((c >>  8) & 0xFF) * 150
+                          + ( c        & 0xFF) * 29) >> 8;
+            art->mask[i]  = ((c >> 24) & 0xFF) >= 0x80;
+            art->shine[i] = art->mask[i] && l >= PIX16_SHINE_LUMA;
+            art->px[i]    = pix->conv(c | 0xFF000000);
          }
          art->w = ti.width;
          art->h = ti.height;
@@ -2310,8 +2324,10 @@ static const struct pix16_art *pix16_art_get(pix16_t *pix,
    {
       free(art->px);
       free(art->mask);
-      art->px   = NULL;
-      art->mask = NULL;
+      free(art->shine);
+      art->px    = NULL;
+      art->mask  = NULL;
+      art->shine = NULL;
       return NULL;
    }
    return art;
@@ -4287,7 +4303,7 @@ static void pix16_order_fill(pix16_t *pix)
             strlcpy(lb, pix->order_label[b], sizeof(lb));
             pix->order_map[b]   = pix->order_map[b - 1];
             pix->order_state[b] = pix->order_state[b - 1];
-            strlcpy(pix->order_label[b], pix->order_label[b - 1],
+            memmove(pix->order_label[b], pix->order_label[b - 1],
                   sizeof(pix->order_label[b]));
             pix->order_map[b - 1]   = mi;
             pix->order_state[b - 1] = st;
@@ -7268,7 +7284,8 @@ static void pix16_logo_shine(pix16_t *pix, const struct pix16_art *art,
       for (x = 0; x < w; x++)
       {
          int d = x + y - pos, px = lx + x;
-         if (d < -6 || d > 6 || !art->mask[(size_t)y * art->w + x])
+         const uint8_t *on = art->shine ? art->shine : art->mask;
+         if (d < -6 || d > 6 || !on[(size_t)y * art->w + x])
             continue;
          if (px < pix->clip_x0 || px >= pix->clip_x1)
             continue;
