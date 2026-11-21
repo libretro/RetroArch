@@ -113,6 +113,7 @@ jobs:
       - name: Save native streaming acceptance evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: vt-stream-evidence
           path: ${{ runner.temp }}/vt-stream-evidence
@@ -130,6 +131,7 @@ jobs:
       - name: Save native Metal streaming acceptance evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: vt-metal-stream-evidence
           path: |
@@ -149,6 +151,7 @@ jobs:
       - name: Save native Metal dispatcher acceptance evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: vt-metal-dispatch-evidence
           path: |
@@ -172,6 +175,7 @@ jobs:
       - name: Save AudioToolbox AAC acceptance evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: audiotoolbox-aac-evidence
           path: ${{ runner.temp }}/audiotoolbox-aac-evidence
@@ -183,6 +187,7 @@ jobs:
       - name: Save AudioToolbox SRC acceptance evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: audiotoolbox-src-evidence
           path: ${{ runner.temp }}/audiotoolbox-src-evidence
@@ -277,6 +282,7 @@ jobs:
       - name: Preserve native pipeline evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: metal-vt-pipeline-evidence
           path: |
@@ -320,6 +326,7 @@ jobs:
           python3 samples/record/metal_frontend/run.py --retroarch ./retroarch --core "$RUNNER_TEMP/metal-record-core.dylib" --output-dir "$RUNNER_TEMP/metal-frontend-recordings"
           python3 samples/record/metal_frontend/run.py --source-rate 32040.5 --retroarch ./retroarch --core "$RUNNER_TEMP/metal-record-core.dylib" --output-dir "$RUNNER_TEMP/metal-frontend-fractional"
       - uses: actions/upload-artifact@v6
+        continue-on-error: true
         if: always()
         with:
           name: metal-frontend-recordings
@@ -373,6 +380,7 @@ jobs:
       - name: Save real frontend streaming evidence
         if: ${{ always() && matrix.threads == 'enable' }}
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: metal-frontend-stream-evidence
           path: ${{ runner.temp }}/metal-frontend-stream
