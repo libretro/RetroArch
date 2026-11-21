@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Native32 (Native32Emu)"
+authors = "Aloys"
+supported_extensions = "smf|sgm|ssl|zip"
+corename = "native32emu"
+categories = "Emulator"
+license = "BSD-3-Clause"
+permissions = ""
+display_version = "1.4.0"
+
+# Hardware Information
+manufacturer = "Sunplus"
+systemname = "Native32"
+systemid = "native32"
+
+# Libretro Features
+database = "Native32"
+supports_no_game = "false"
+firmware_count = 0
+savestate = "true"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+description = "Native32Emu is an emulator for the Native32 game format developed by Sunplus for DVD player and TV chipsets. This libretro core supports .smf, .sgm and .ssl content, as well as .zip game packages (extracted automatically, booting an FHUI.smf or NA32UI.smf menu)."

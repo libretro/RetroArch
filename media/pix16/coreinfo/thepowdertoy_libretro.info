@@ -1,0 +1,32 @@
+# Software Information
+display_name = "The Powder Toy"
+authors = "jselby|Original TPT Contributors"
+supported_extensions = "cps"
+corename = "ThePowderToy"
+categories = "Game"
+license = "GPLv3"
+permissions = ""
+display_version = "v92.5.336"
+systemname = "Physics Toy"
+
+# Hardware Information
+
+# Libretro Features
+supports_no_game = "true"
+single_purpose = "true"
+database = "The Powder Toy"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "false"
+load_subsystem = "false"
+hw_render = "true"
+required_hw_api = "OpenGL >= 3.0 | OpenGL ES >= 2.0"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A port of the Powdertoy physics sandbox/simulation engine to libretro. The simulation includes air pressure and velocity, heat, gravity and countless interactions among different virtual substances, which can be used to construct complex machines, guns, bombs, realistic terrain and more."

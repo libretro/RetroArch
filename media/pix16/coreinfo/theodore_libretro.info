@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Thomson - MO/TO (Theodore)"
+authors = "T. Lorblanches"
+supported_extensions = "fd|sap|k7|m7|m5|rom"
+corename = "theodore"
+database = "Thomson - MOTO"
+license = "GPLv3"
+permissions = ""
+display_version = "Git"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Thomson"
+systemname = "Thomson MO/TO"
+systemid = "thomson_moto"
+
+# Libretro Features
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "true"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A port of the Theodore emulator for the Thomson MO/TO system--a family of French 8-bit home computers--to libretro. This core emulates all of the main models of the MO/TO family, including the TO7, TO7/70, TO8, TO8D, TO9, TO9+, MO5 and MO6 models, as well as the Olivetti Prodest PC128, which is a rebranded MO6 that was released in the Italian market. The core includes an onscreen keyboard, which can be toggled with retropad-select and navigated using the d-pad and retropad-B to press the selected key."

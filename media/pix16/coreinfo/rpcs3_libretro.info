@@ -1,0 +1,39 @@
+# Software Information
+display_name = "Sony - PlayStation 3 (RPCS3)"
+authors = "RPCS3 Team|WizzardSK"
+supported_extensions = "bin|self|elf|iso|pkg|sfo|sfb"
+corename = "RPCS3"
+categories = "Emulator"
+license = "GPLv2"
+permissions = ""
+display_version = "v0.0.43-20243"
+
+# Hardware Information
+manufacturer = "Sony"
+systemname = "PlayStation 3"
+systemid = "playstation3"
+database = "Sony - PlayStation 3"
+
+# Libretro Features
+supports_no_game = "false"
+hw_render = "true"
+needs_fullpath = "true"
+disk_control = "false"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+load_subsystem = "false"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "PS3UPDAT.PUP (PS3 system software)"
+firmware0_path = "PS3UPDAT.PUP"
+firmware0_opt = "false"
+notes = "(!) PS3UPDAT.PUP is installed on the first run; it may also be in system/rpcs3/.|(!) A game that is not an ISO is loaded by its PS3_DISC.SFB (a disc dump folder) or PARAM.SFO (an installed game).|(!) Game data, saves and the installed firmware live in system/rpcs3/ (dev_hdd0, dev_flash).|(!) Encrypted (redump) ISOs need a .dkey or .key file with the same name, next to the image or in system/rpcs3/data/redump/.|(!) Loading a .pkg installs it and boots the installed game.|(!) The Vulkan renderer (default) works with any video driver; the OpenGL renderer needs the glcore driver and OpenGL 4.5.|(!) Namco System 357/369 arcade dumps (loaded by their EBOOT.BIN): Core > Arcade USIO Mode picks the USIO board's button layout (Fighting Games or Shooter Games), and the shooters aim with RetroArch's light guns. Not yet tried with an arcade game.|(!) display_version is the upstream RPCS3 build the core is merged up to; the core adds its own commit in RetroArch's log.|(!) Save states are not supported."
+
+description = "A port of the RPCS3 PlayStation 3 emulator to libretro. It runs the Cell processor with RPCS3's LLVM recompilers and renders with Vulkan, handing each frame to the frontend through memory, or with OpenGL into the frontend's own context. Needs the PS3 system software (PS3UPDAT.PUP) in the system directory. It also has the USIO input board of the PS3-based Namco System 357/369 arcade boards, for their fighting and shooting games. Save states are not supported."

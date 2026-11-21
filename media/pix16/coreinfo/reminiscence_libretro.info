@@ -1,0 +1,30 @@
+# Software Information
+display_name = "Flashback (REminiscence)"
+authors = "Gregory Montoir|Stuart Carnie"
+supported_extensions = "map|aba|seq|lev"
+corename = "REminiscence"
+license = "GPLv3"
+permissions = ""
+display_version = "0.3.6"
+
+# Hardware Information
+categories = "Game"
+systemname = "Flashback Game Engine"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Flashback"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A port of the REminiscence engine, a reimplementation of the engine used by Delphine Software's Flashback, to libretro. The core requires data files from the game and is compatible with the Steam/GOG, DOS, PC-CD, Amiga and Macintosh releases. The core does not support regular saves, only savestates."

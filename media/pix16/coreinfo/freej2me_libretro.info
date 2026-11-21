@@ -1,0 +1,36 @@
+# Software Information
+display_name = "Mobile - J2ME (FreeJ2ME)"
+authors = "David Richardson|Saket Dandawate"
+supported_extensions = "jar"
+corename = "FreeJ2ME"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+display_version = "GIT"
+
+# Hardware Information
+manufacturer = "Java"
+systemname = "J2ME"
+systemid = "j2me"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Mobile - J2ME"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "2.0"
+hw_render = "false"
+needs_fullpath = "true"
+
+# BIOS / Firmware
+firmware_count = 1
+firmware0_desc = "freej2me-lr.jar"
+firmware0_path = "freej2me-lr.jar"
+firmware0_opt = "false"
+
+description = "A port of FreeJ2ME to libretro. This core emulates Java ME applications and games for Java-based mobile phones."

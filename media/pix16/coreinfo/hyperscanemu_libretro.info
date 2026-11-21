@@ -1,0 +1,40 @@
+# Software Information
+display_name = "HyperScan (HyperScanEmu)"
+authors = "Aloys"
+supported_extensions = "bin|cue|zip"
+corename = "hyperscanemu"
+categories = "Emulator"
+license = "BSD-3-Clause"
+permissions = ""
+display_version = "0.1.0"
+
+# Hardware Information
+manufacturer = "Mattel"
+systemname = "HyperScan"
+systemid = "hyperscan"
+
+# Libretro Features
+database = "HyperScan"
+supports_no_game = "false"
+firmware_count = 2
+savestate = "false"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+# Required firmware (place in the frontend system directory)
+firmware0 = "spg290.bin"
+firmware0_desc = "SPG290 internal ROM (32768 bytes)"
+firmware0_opt = "false"
+firmware1 = "hyperscan.bin"
+firmware1_desc = "HyperScan BIOS (1048576 bytes)"
+firmware1_opt = "false"
+
+description = "HyperScanEmu is an evidence-driven, clean-room emulator for the Mattel HyperScan (Sunplus SPG290). This libretro core loads BIN/CUE/ZIP disc packages and requires legally dumped firmware."

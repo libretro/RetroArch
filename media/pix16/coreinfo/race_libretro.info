@@ -1,0 +1,32 @@
+# Software Information
+display_name = "SNK - Neo Geo Pocket / Color (RACE)"
+authors = "Judge_|Flavor|Akop Karapetyan|theelf|frangarcj|negativeExponent"
+supported_extensions = "ngp|ngc|ngpc|npc"
+corename = "RACE"
+
+# Hardware Information
+manufacturer = "SNK"
+categories = "Emulator"
+systemname = "Neo Geo Pocket (Color)"
+systemid = "neo_geo_pocket"
+database = "SNK - Neo Geo Pocket|SNK - Neo Geo Pocket Color"
+license = "GPLv2"
+permissions = ""
+display_version = "v2.16"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A libretro core of the RACE emulator for NeoGeo Pocket Color, which was modified by theelf to run on the Playstation Portable. As such, it is very performance focused and is a good option for devices that cannot run the Beetle-NGP core at full speed."

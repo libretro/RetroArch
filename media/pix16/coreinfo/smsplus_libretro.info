@@ -1,0 +1,31 @@
+# Software Information
+display_name = "Sega - MS/GG (SMS Plus GX)"
+authors = "Charles MacDonald|gameblabla"
+supported_extensions = "sms|bin|rom|col|gg|sg"
+corename = "SMS Plus GX"
+license = "GPLv2"
+permissions = ""
+display_version = "1.8"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Sega"
+systemname = "Sega 8-bit"
+systemid = "master_system"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Sega - Game Gear|Sega - Master System - Mark III"
+
+# Firmware / BIOS
+firmware_count = 2
+
+firmware0_desc = "bios.sms (Master System BIOS)"
+firmware0_path = "bios.sms"
+firmware0_opt = "true"
+
+firmware1_desc = "BIOS.col (Colecovision BIOS)"
+firmware1_path = "BIOS.col"
+firmware1_opt = "true"
+
+description = "A cousin to the fast, accurate Genesis Plus GX emulator, this core specifically emulates the Sega Master System console hardware without including the Sega consoles covered by Genesis Plus GX. This can be useful for keeping different settings for SMS games, but otherwise, most users are better-served by using the combined Genesis Plus GX core."

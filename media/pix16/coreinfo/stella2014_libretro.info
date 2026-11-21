@@ -1,0 +1,31 @@
+# Software Information
+display_name = "Atari - 2600 (Stella 2014)"
+authors = "Stephen Anthony|Bradford Mott|Eckhard Stolberg|Brian Watson"
+supported_extensions = "a26|bin"
+corename = "Stella 2014"
+license = "GPLv2"
+permissions = ""
+display_version = "3.9.3"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Atari"
+systemname = "Atari 2600"
+systemid = "atari_2600"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Atari - 2600"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "false"
+core_options = "false"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+
+description = "A port of Stella, the multi-platform Atari 2600 VCS emulator, to libretro. This core was forked off from the main Stella codebase circa 2014 and, as such, is a snapshot of the features, compatibility and performance from that time. As a result, it is missing many of the accuracy improvements of the up-to-date core and should only be used in cases where the host device cannot run the up-to-date core at full speed."

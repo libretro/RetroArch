@@ -1,0 +1,37 @@
+# Software Information
+display_name = "Nintendo - GameCube / Wii (Ishiiruka)"
+authors = "Team Ishiiruka"
+supported_extensions = "gcm|iso|wbfs|ciso|gcz|elf|dol|dff|tgc|wad"
+corename = "Ishiiruka"
+categories = "Emulator"
+license = "GPLv2+"
+permissions = ""
+display_version = "Git"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "GameCube / Wii"
+systemid = "gamecube"
+
+# Libretro Features
+database = "Nintendo - GameCube|Nintendo - Wii|Nintendo - Wii (Digital)"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "basic"
+libretro_saves = "true"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "true"
+required_hw_api = "OpenGL >= 3.0 | OpenGL Core >= 3.3 | OpenGL ES >= 3.0 | Vulkan >= 1.0 | Direct3D >= 10.0"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+# BIOS / Firmware
+notes = "(!) You need to have Dolphin Sys folder in system/dolphin-emu/Sys.|(!) See: https://docs.libretro.com/library/dolphin/#setup"
+
+description = "A port of the Ishiiruka fork of the Dolphin Gamecube/Wii emulator to libretro. Ishiiruka is a performance-focused fork of the Dolphin emulator that makes some sacrifices for a faster/smoother experience, and is/was notable for including asynchronous shader compilation--to reduce stuttering--before mainline Dolphin released its 'ubershaders' solution. While the normal Dolphin core is probably a better option for most users, this core may be helpful for squeezing out a bit more performance or getting smoother scrolling in some cases."

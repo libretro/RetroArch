@@ -1,0 +1,42 @@
+# Software Information
+display_name = "Sega - MS/GG/SG-1000 (Gearsystem)"
+authors = "Nacho Sanchez"
+supported_extensions = "sms|gg|sg|mv|bin|rom"
+corename = "Gearsystem"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+
+# Hardware Information
+manufacturer = "Sega"
+systemname = "Sega 8-bit (MS/GG/SG-1000)"
+systemid = "master_system"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Sega - Game Gear|Sega - Master System - Mark III|Sega - SG-1000"
+savestate = "true"
+savestate_features = "deterministic"
+libretro_saves = "true"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "true"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+# BIOS / Firmware
+firmware_count = 2
+firmware0_desc = "bios.sms (Master System BIOS)"
+firmware0_path = "bios.sms"
+firmware0_opt = "true"
+firmware1_desc = "bios.gg (Game Gear BIOS)"
+firmware1_path = "bios.gg"
+firmware1_opt = "true"
+notes = "(!) bios.sms (md5): 840481177270d5642a14ca71ee72844c|(!) bios.gg (md5): 672e104c3be3a238301aceffc3b23fd6|Enable Master System BIOS or Game Gear BIOS in Core Options.|Restart the core after changing BIOS options."
+
+description = "A port of the highly accurate Sega 8-bit console emulator Gearsystem to libretro. This core supports Sega's Mark III, Master System, Game Gear and Game 1000 (SG-1000) consoles, along with the Othello Multivision. It faithfully emulates all of the hardware, including undocumented features of the Z80 CPU. This core is an excellent choice for emulating these consoles on a modern system."

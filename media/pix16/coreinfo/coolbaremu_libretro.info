@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Coolbar (CoolbarEmu)"
+authors = "Aloys"
+supported_extensions = "cbe"
+corename = "coolbaremu"
+categories = "Emulator"
+license = "BSD-3-Clause"
+permissions = ""
+display_version = "0.2.0"
+
+# Hardware Information
+manufacturer = "Shanghai Coolbar"
+systemname = "Coolbar"
+systemid = "coolbar"
+
+# Libretro Features
+database = ""
+supports_no_game = "false"
+firmware_count = 0
+savestate = "true"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "false"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+description = "CoolbarEmu is an emulator for the Coolbar/CBE game format. This libretro core supports .cbe content files."

@@ -1,0 +1,41 @@
+# Software Information
+display_name = "ColecoVision/CreatiVision/My Vision (JollyCV)"
+authors = "Rupert Carmichael"
+supported_extensions = "col|rom|myv|bin"
+corename = "JollyCV"
+license = "BSD-3-Clause, MIT"
+permissions = ""
+categories = "Emulator"
+display_version = "2.1.0"
+
+# Hardware Information
+manufacturer = "Coleco|VTech|Nichibutsu"
+systemname = "ColecoVision/CreatiVision/My Vision"
+systemid = "jollycv"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "1.3"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+database = "Coleco - ColecoVision"
+
+# Firmware / BIOS
+firmware_count = 2
+firmware0_desc = "coleco.rom (ColecoVision BIOS)"
+firmware0_path = "coleco.rom"
+firmware0_opt = "true"
+firmware1_desc = "bioscv.rom (CreatiVision BIOS)"
+firmware1_path = "bioscv.rom"
+firmware1_opt = "true"
+
+description = "JollyCV is a multi-emulator supporting ColecoVision (including Super Game Module support), CreatiVision, and My Vision. JollyCV is fast, accurate, and highly portable."

@@ -1,0 +1,30 @@
+# Software Information
+display_name = "Picocomputer 6502"
+authors = "Rumbledethumps"
+supported_extensions = "rp6502"
+corename = "Picocomputer 6502"
+categories = "Emulator"
+license = "BSD-3-Clause"
+permissions = ""
+
+# Hardware Information
+manufacturer = "Rumbledethumps"
+systemname = "Picocomputer 6502"
+systemid = "rp6502"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "false"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+description = "Rumbledethumps' Picocomputer 6502, an open source 8-bit computer you can build."

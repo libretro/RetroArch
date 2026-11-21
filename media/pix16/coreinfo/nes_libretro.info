@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Nintendo - NES / Famicom (nes)"
+authors = "aiju"
+supported_extensions = "nes"
+corename = "nes"
+license = "ISC"
+permissions = ""
+categories = "Emulator"
+display_version = "0.0.1"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Nintendo Entertainment System"
+systemid = "nes"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+database = "Nintendo - Nintendo Entertainment System"
+
+description = "Port of aiju's NES emulator from 9front to libretro"

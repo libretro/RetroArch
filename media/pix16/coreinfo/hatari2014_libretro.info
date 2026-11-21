@@ -1,0 +1,39 @@
+# Software Information
+display_name = "Atari - ST / STE / TT / Falcon (Hatari 2014)"
+authors = "Nicolas Pomarède"
+supported_extensions = "st|msa|zip|stx|dim|ipf|vhd|gem|ide|m3u"
+corename = "Hatari2014"
+license = "GPLv2"
+permissions = ""
+display_version = "1.8"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Atari"
+systemname = "Atari ST/STE/TT/Falcon"
+systemid = "atari_st"
+
+# Libretro Features
+database = "Atari - ST"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "tos.img (TOS 1.02 US aka Mega TOS)"
+firmware0_path = "tos.img"
+firmware0_opt = "false"
+notes = "(!) tos.img (md5): c1c57ce48e8ee4135885cee9e63a68a2"
+
+description = "A port of the Hatari emulator to libretro. This core supports Atari's 16-/32-bit ST/STE/TT/Falcon hardware and, unlike many other ST emulators that just try to give a good environment for running GEM applications, Hatari tries to emulate the hardware as closely as possible, so it can support most of the old Atari games and demos. The core requires a TOS image to function and supports m3u playlists for use with multi-disk games. This core is a good option for most users on a modern device."

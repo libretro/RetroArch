@@ -1,0 +1,21 @@
+# Software Information
+display_name = "Quake III: Arena (vitaQuake 3)"
+authors = "Rinnegatamante"
+supported_extensions = "pk3"
+corename = "vitaQuake 3"
+license = "GPLv2"
+permissions = ""
+display_version = "git"
+categories = "Game"
+
+# Hardware Information
+manufacturer = "Id Software"
+systemname = "Quake 3 Game Engine"
+systemid = "quake_3"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Quake III"
+savestate = "false"
+
+description = "A port of the VitaQuake 3 source port of iD's ioquake3 engine to libretro. This core loads games in the *.pk3 format."

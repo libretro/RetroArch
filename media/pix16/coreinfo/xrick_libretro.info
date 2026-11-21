@@ -1,0 +1,23 @@
+# Software Information
+display_name = "Rick Dangerous (XRick)"
+authors = ""
+supported_extensions = "zip"
+corename = "XRick"
+categories = "Game"
+license = "GPLv3"
+permissions = ""
+display_version = "1.0.0.6"
+
+# Hardware Information
+systemname = "Rick Dangerous Game Engine"
+systemid = "xrick"
+
+# Libretro Features
+database = "Rick Dangerous"
+supports_no_game = "true"
+single_purpose = "true"
+savestate = "false"
+
+notes = "(!) XRick requires data ROM 'data.zip'.|(!) Load Content 'data.zip'"
+
+description = "A port of the XRick, an open-source clone of the Rick Dangerous engine, to libretro. Rick Dangerous was an Indiana Jones-style platforming game first published in 1989 and then ported to various computing platforms of the era, such as Atari ST and Commodore 64."

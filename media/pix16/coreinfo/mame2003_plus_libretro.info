@@ -1,0 +1,31 @@
+# Software Information
+display_name = "Arcade (MAME 2003-Plus)"
+authors = "MAMEdev, MAME 2003-Plus Team, et al (see license and changelog)"
+supported_extensions = "zip"
+corename = "MAME 2003-Plus"
+license = "MAME Noncommercial"
+permissions = ""
+display_version = "2003-Plus"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Various"
+systemname = "Arcade (various)"
+systemid = "mame"
+
+# Libretro Information
+supports_no_game = "false"
+database = "MAME 2003-Plus"
+savestate = "true"
+savestate_features = "basic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "2.0"
+hw_render = "false"
+disk_control = "false"
+notes = "(!) Unless using Full Non-Merged romsets, BIOS files must be inside the ROM directory.|See libretro core documentation for more information about content paths.|"
+
+description = "Based on a snapshot of the MAME codebase circa 2003 (v0.78), 'MAME 2003-Plus' is compatible with MAME 2003-Plus latest ROM sets. Contributors have backported support for an additional 350 games that are not included in the standard v0.078 ROM set, as well as other functionality not originally present in the underlying codebase. MAME 2003/-Plus cores have tighter integration with libretro features than the more modern snapshots and are significantly faster, though this comes at a substantial reduction in both accuracy and compatibility. These cores are ideal for very weak hardware, such as Raspberry Pi and other Single-Board Computers and consoles, where even FBNeo may be too demanding. If you do not need the additional libretro features and your device can run any newer snapshot core or FBNeo, those are probably better choices for most users."

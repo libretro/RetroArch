@@ -1,0 +1,38 @@
+# Software Information
+display_name = "Nintendo - NES / Famicom (RustyNES)"
+authors = "DoubleGate"
+supported_extensions = "nes|fds|unf|unif"
+corename = "RustyNES"
+license = "GPLv3+"
+permissions = ""
+display_version = "v3.4.0"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Nintendo Entertainment System"
+systemid = "nes"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "true"
+database = "Nintendo - Nintendo Entertainment System|Nintendo - Family Computer Disk System"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "disksys.rom (Family Computer Disk System BIOS)"
+firmware0_path = "disksys.rom"
+firmware0_opt = "true"
+notes = "(!) disksys.rom (md5): ca30b50f880eb660a320674ed365ef7a|RustyNES requires this BIOS in the system directory to boot Famicom Disk System games."
+
+description = "RustyNES is a cycle-accurate Nintendo Entertainment System emulator written in pure Rust, with an unsafe-free #![no_std] emulation core. Targeting the higan and Mesen2 accuracy tier, it runs from one master clock, splitting every CPU cycle into two halves and bringing the PPU up to date at each, rather than relying on per-game hacks. The core guarantees absolute determinism, making it an exceptional choice for advanced libretro features like run-ahead latency reduction, rollback netplay, and RetroAchievements (native RETRO_ENVIRONMENT_SET_MEMORY_MAPS support). With high compatibility spanning 208 mapper families, region-correct NTSC/PAL/Dendy timing, full Famicom Disk System support with in-game disk saves and labelled multi-side disk swap via the Disk Control interface, native Game Genie cheats, NES Zapper light-gun and Four Score support, and Vs. System arcade boards with their RGB palettes, coin and service inputs, RustyNES is ideal for users who seek reference-grade accuracy paired with modern stability."

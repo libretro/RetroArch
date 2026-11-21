@@ -1,0 +1,45 @@
+# Software Information
+display_name = "Sega - MS/GG/MD/CD/32X (PicoDrive)"
+authors = "notaz|fdave|irixxxx"
+supported_extensions = "bin|gen|smd|md|32x|cue|iso|chd|sms|gg|sg|sc|m3u|68k|sgd|pco"
+corename = "PicoDrive"
+license = "MAME"
+permissions = "dynarec_optional"
+display_version = "1.99"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Sega"
+systemname = "Sega 8/16-bit + 32X (Various)"
+systemid = "mega_drive"
+
+# Libretro Features
+database = "Sega - Master System - Mark III|Sega - Game Gear|Sega - Mega-CD - Sega CD|Sega - Mega Drive - Genesis|Sega - PICO|Sega - 32X"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 3
+firmware0_desc = "bios_CD_E.bin (MegaCD EU BIOS)"
+firmware0_path = "bios_CD_E.bin"
+firmware0_opt = "true"
+firmware1_desc = "bios_CD_U.bin (SegaCD US BIOS)"
+firmware1_path = "bios_CD_U.bin"
+firmware1_opt = "true"
+firmware2_desc = "bios_CD_J.bin (MegaCD JP BIOS)"
+firmware2_path = "bios_CD_J.bin"
+firmware2_opt = "true"
+notes = "(!) bios_CD_U.bin (md5): 2efd74e3232ff260e371b99f84024f7f|(!) bios_CD_E.bin (md5): e66fa1dc5820d254611fdcdba0662372|(!) bios_CD_J.bin (md5): 278a9397d192149e84e820ac621a8edd"
+
+description = "A fast and portable emulator for many Sega game consoles, ported to libretro. This core is notable for being the only open source emulator to support the 32X add-on. It also has very stable savestates, making it a good choice for features that require them. However, this core has lower accuracy than Genesis Plus GX and BlastEm, so users seeking the highest accuracy on reasonably-powered devices should use those cores instead."

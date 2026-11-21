@@ -1,0 +1,30 @@
+# Software Information
+display_name = "Test Core - 3D Engine"
+authors = "Team Libretro"
+supported_extensions = "png|jpg|mtl|obj"
+corename = "3DEngine"
+manufacturer = "Libretro"
+categories = "Tech demo"
+systemname = "3D Engine"
+license = "GPLv3"
+permissions = ""
+display_version = "v1"
+
+# Libretro Features
+hw_render = true
+required_hw_api = "OpenGL >= 2.0 | OpenGL ES >= 2.0"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+load_subsystem = "false"
+supports_no_game = "false"
+database = "null"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "true"
+
+description = "This is a test core that is mostly useful to developers. It is intended as a reference for core authors and a functionality check for frontend authors. This core demonstrates how to create a hardware-rendered core--in this case, using OpenGL/ES--in a libretro context. This core can load basic *.obj 3D models, which can then be rotated and viewed using the retropad controls."

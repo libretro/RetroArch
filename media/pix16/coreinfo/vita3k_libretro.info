@@ -1,0 +1,46 @@
+# Software Information
+display_name = "Sony - PlayStation Vita (Vita3K)"
+authors = "Vita3K Team"
+supported_extensions = "vpk|zip|pkg|bin|pup"
+corename = "Vita3K"
+categories = "Emulator"
+license = "GPLv2+"
+permissions = ""
+display_version = "v0.2.1 4123"
+
+# Hardware Information
+manufacturer = "Sony"
+systemname = "PlayStation Vita"
+systemid = "playstation_vita"
+
+# Libretro Features
+database = "Sony - PlayStation Vita"
+supports_no_game = "false"
+needs_fullpath = "true"
+disk_control = "false"
+savestate = "false"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "false"
+hw_render = "true"
+required_hw_api = "Vulkan >= 1.1"
+needs_kbd_mouse_focus = "false"
+
+# Firmware / BIOS
+firmware_count = 3
+firmware0_desc = "firmware.pup (PS Vita system firmware, PSP2UPDAT.PUP)"
+firmware0_path = "vita3k/firmware.pup"
+firmware0_opt = "false"
+firmware1_desc = "preinst.pup (PS Vita firmware preinst package)"
+firmware1_path = "vita3k/preinst.pup"
+firmware1_opt = "false"
+firmware2_desc = "font.pup (PS Vita firmware fonts)"
+firmware2_path = "vita3k/font.pup"
+firmware2_opt = "true"
+notes = "(!) The PS Vita firmware (PSP2UPDAT.PUP from PlayStation's website) and its preinst and font packages go in system/vita3k/ in RetroArch's system directory. All three download under the same name: save them as firmware.pup, preinst.pup and font.pup (any name with preinst or font in it works for those two). The core installs a missing one when a game is loaded.|(!) Content: a .pkg, .vpk or .zip of a game, a game folder's eboot.bin, or the folder itself. By default the game runs where it lies, without being installed, with the updates and DLC beside it or in its folder (Run Mode in the core options).|(!) The emulator's data files are built into the core, which unpacks them into system/vita3k/."
+
+description = "Vita3K is an experimental PlayStation Vita emulator. It runs commercial games and homebrew, rendering with Vulkan. This core is a libretro port of it: it installs the firmware and the games from RetroArch's system directory and draws into RetroArch's Vulkan device."

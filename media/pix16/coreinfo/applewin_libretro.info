@@ -1,0 +1,33 @@
+# Software Information - Information about the core software itself
+display_name = "Apple II (AppleWin)"
+categories = "Emulator"
+authors = "AppleWin Team"
+corename = "applewin"
+supported_extensions = "bin|do|dsk|nib|po|gz|woz|zip|2mg|2img|iie|apl|hdv|yaml|m3u"
+license = "GPLv2"
+permissions = ""
+display_version = "1.30.21.0"
+
+# Hardware Information
+manufacturer = "Apple"
+systemname = "II"
+systemid = "apple_ii"
+
+# Libretro Features
+supports_no_game = "true"
+database = "Apple - II"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+
+description = "Apple II - AppleWin emulator."

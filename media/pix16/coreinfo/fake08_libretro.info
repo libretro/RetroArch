@@ -1,0 +1,31 @@
+# Software Information
+display_name = "PICO-8 (FAKE-08)"
+authors = "jtothebell"
+supported_extensions = "p8|png"
+corename = "FAKE-08"
+categories = "Emulator"
+license = "MIT"
+permissions = ""
+display_version = "v0.0.2.19"
+
+# Hardware Information
+manufacturer = "Lexaloffle"
+systemname = "PICO-8"
+systemid = "pico8"
+
+# Libretro Features
+database = "PICO-8"
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "serialized"
+supports_no_game = "false"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "true"

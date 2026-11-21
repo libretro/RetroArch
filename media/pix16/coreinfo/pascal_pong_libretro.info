@@ -1,0 +1,16 @@
+# Software Information
+display_name = "PascalPong"
+authors = "Higor Euripedes"
+supported_extensions = "game"
+corename = "PascalPong"
+categories = "Game"
+license = "2-clause BSD"
+permissions = ""
+display_version = "v1.0"
+
+# Hardware Information
+
+# Libretro Features
+supports_no_game = "true"
+
+description = "A free and basic clone of the classic Pong game, written specifically for libretro."

@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Dingoo A320 / Gemei A330 (DingooEmu)"
+authors = "Aloys"
+supported_extensions = "app|cc|c2s|c3s"
+corename = "dingooemu"
+categories = "Emulator"
+license = "BSD-3-Clause"
+permissions = ""
+display_version = "0.3.0"
+
+# Hardware Information
+manufacturer = "Ingenic"
+systemname = "Dingoo A320"
+systemid = "dingoo-a320"
+
+# Libretro Features
+database = "Dingoo A320"
+supports_no_game = "false"
+firmware_count = 0
+savestate = "true"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "false"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+description = "DingooEmu emulates Dingoo A320 APP games and Gemei A330 CC, C2S, and C3S games."

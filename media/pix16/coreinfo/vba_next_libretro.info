@@ -1,0 +1,39 @@
+# Software Information
+display_name = "Nintendo - Game Boy Advance (VBA Next)"
+authors = "Forgotten|VBA-M Team|Squarepusher"
+supported_extensions = "gba"
+corename = "VBA Next"
+license = "GPLv2"
+permissions = ""
+display_version = "SVN"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy Advance"
+systemid = "game_boy_advance"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Nintendo - Game Boy Advance"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "gba_bios.bin (Game Boy Advance BIOS)"
+firmware0_path = "gba_bios.bin"
+firmware0_opt = "true"
+notes = "(!) gba_bios.bin (md5): a860e8c0b6d573d191e4ec7db1b1e4f6"
+
+description = "A fork of the venerable Game Boy Advance emulator, VisualBoy Advance-Merged, branched off circa 2011, but with some backported patches for improved performance and compatibility. This core runs a bit faster than the up-to-date VBA-M core, but it is based on an older snapshot of the codebase and lacks many years of development and improvements, resulting in compatibility issues with some games (mostly related to a lack of support for the tilt and solar sensors). Most users should start with the up-to-date VBA-M core and only fall back to this one if they need the additional performance boost."

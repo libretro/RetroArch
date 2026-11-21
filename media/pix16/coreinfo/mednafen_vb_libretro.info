@@ -1,0 +1,20 @@
+# Software Information
+display_name = "Nintendo - Virtual Boy (Beetle VB)"
+authors = "Mednafen Team"
+supported_extensions = "vb|vboy|bin"
+corename = "Beetle VB"
+license = "GPLv2"
+permissions = ""
+display_version = "v0.9.36.1"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Virtual Boy"
+systemid = "virtual_boy"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Nintendo - Virtual Boy"
+
+description = "A port of Mednafen's Virtual Boy emulation core to libretro. This core supports a variety of different 3D display methods for use with anaglyph glasses, head-mounted displays and 3D monitors."

@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Nintendo - Game Boy / Color (TGB Dual)"
+authors = "GIGO|Hii"
+supported_extensions = "cgb|dmg|gb|gbc|sgb"
+corename = "TGB Dual"
+license = "GPLv2"
+permissions = ""
+display_version = "v0.8.3"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy/Game Boy Color"
+systemid = "game_boy"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Nintendo - Game Boy|Nintendo - Game Boy Color"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A port of the TGB Dual Game Boy emulator to libretro. While this core is a decent, usable emulator, it is most notable for being able to emulate to Game Boys connected via Link Cable, which is useful for things like trading Pokemon, etc. This functionality can be utilized by a second player either locally or via netplay (if supported by the libretro frontend). Thanks to the core's modest hardware requirements, it should run well even on low-powered hardware, though users with more powerful hardware may be better served by the SameBoy core, which can also do the same Link Cable functionality but with improved accuracy and compatibility."

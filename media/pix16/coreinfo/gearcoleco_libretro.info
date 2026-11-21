@@ -1,0 +1,45 @@
+# Software Information
+display_name = "Coleco - ColecoVision / ADAM (Gearcoleco)"
+authors = "Nacho Sanchez"
+supported_extensions = "col|cv|bin|rom|zip|ddp|dsk|m3u"
+corename = "Gearcoleco"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+
+# Hardware Information
+manufacturer = "Coleco"
+systemname = "ColecoVision / ADAM"
+systemid = "colecovision"
+
+# Libretro Features
+database = "Coleco - ColecoVision"
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "deterministic"
+libretro_saves = "true"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "true"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "true"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "true"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 3
+firmware0_desc = "colecovision.rom (ColecoVision / ADAM OS-7 BIOS)"
+firmware0_path = "colecovision.rom"
+firmware0_opt = "false"
+firmware1_desc = "eos.rom (required for ADAM)"
+firmware1_path = "eos.rom"
+firmware1_opt = "true"
+firmware2_desc = "writer.rom (required for ADAM)"
+firmware2_path = "writer.rom"
+firmware2_opt = "true"
+notes = "(!) colecovision.rom (md5): 2c66f5911e5b42b8ebe113403548eee7 (CRC32): 3aa93ef3|(!) eos.rom (md5): 01df3140909f09aa9aac4f88890f676c (CRC32): 05a37a34|(!) writer.rom (md5): 4fe4f6800076ea3d897d4285653447bd (CRC32): 58d86a2a|ADAM requires OS-7, EOS and SmartWriter.|OS-7 aliases: coleco.rom, os7.u2.|SmartWriter aliases: wp.rom, wp_r80.rom.|Firmware may also be in the gearcoleco system subdirectory."
+
+description = "A port of the Gearcoleco ColecoVision and ADAM emulator to libretro. This core supports the Super Game Module (SGM), MegaCart ROMs, Super Action Controller, Wheel Controller, and Roller Controller. ADAM support includes disk and digital data pack media, M3U playlists, disk control, subsystem loading, and startup without content."

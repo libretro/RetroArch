@@ -1,0 +1,30 @@
+# Software Information
+display_name = "Arcade (MAME 2015)"
+authors = "MAMEdev"
+supported_extensions = "cmd|zip|7z"
+corename = "MAME 2015 (0.160)"
+license = "MAME"
+permissions = ""
+display_version = "0.160"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Various"
+systemname = "Arcade (various)"
+systemid = "mame"
+
+# Libretro Features
+supports_no_game = "false"
+database = "MAME 2015"
+savestate = "false"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+hw_render = "false"
+disk_control = "false"
+notes = "[1] MAME 2015 (0.160) supports MAME save states.|[2] MAME 2015 (0.160) supports extracted MAME cheats.|[3] The BIOS files must be inside the ROM directory.|[4] The same directory with CHD files inside must be inside the ROM directory.|[5] If desired, the ARTWORK, CHEATS, and SAMPLES directories can be|[^] inside the 'SYSTEMDIR\mame' directory.|[6] When saving, the following directories will be created in the 'SAVEDIR\mame'|[^] directory: STATES, NVRAM, INPUT, SNAPS, CFG, MEMCARD, and DIFF."
+
+description = "Based on a snapshot of the MAME codebase circa 2015, 'MAME 2015' is compatible with MAME 0.160 ROM sets. MAME is the most compatible emulator in the world, and it can run almost any game from any platform (though running console games through this core requires additional steps). If your device can run the up-to-date MAME - Current core (or any other newer snapshot) at full speed, most users will have a better experience with that core, while FBNeo is typically a better choice for speed vs accuracy, as long as it supports the game(s) in question."

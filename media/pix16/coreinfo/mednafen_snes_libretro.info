@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Nintendo - SNES / SFC (Beetle bsnes)"
+authors = "byuu|Mednafen Team"
+supported_extensions = "smc|fig|bs|st|sfc"
+corename = "Beetle bsnes"
+
+# Hardware Information
+manufacturer = "Nintendo"
+categories = "Emulator"
+systemname = "Super Nintendo Entertainment System"
+systemid = "super_nes"
+database = "Nintendo - Super Nintendo Entertainment System|Nintendo - Sufami Turbo"
+license = "GPLv2"
+permissions = ""
+display_version = "v0.9.26"
+
+# Libretro Features
+supports_no_game = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "false"
+load_subsystem = "false"
+is_experimental = true
+
+description = "An older fork of Mednafen's original SNES emulator, which is itself based on an old fork of bsnes circa v059, this core does not have any compelling uses as compared with the other SNES cores that are available. It is not as fast as Snes9x or Supafaust nor as accurate as later bsnes forks or Mesen-S, and most users would be better off trying one of those cores instead. This core only exists for completionist's sake."

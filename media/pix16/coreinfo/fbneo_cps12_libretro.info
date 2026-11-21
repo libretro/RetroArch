@@ -1,0 +1,40 @@
+# Software Information
+display_name = "Arcade (FinalBurn Neo) (CPS-1 / CPS-2)"
+authors = "Team FBNeo"
+supported_extensions = "zip|7z"
+corename = "FinalBurn Neo (cps12 subset)"
+license = "Non-commercial"
+permissions = ""
+display_version = "v1.0.0.03"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Capcom"
+systemname = "CP System I/II"
+systemid = "fb_alpha"
+
+# Libretro Features
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "true"
+supports_no_game = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+database_match_archive_member = "false"
+database = "FBNeo - Arcade Games"
+
+# BIOS / Firmware
+firmware_count = 1
+firmware0_desc = "fbneo/hiscore.dat (High Score support database)"
+firmware0_path = "fbneo/hiscore.dat"
+firmware0_opt = "true"
+notes = "(!) Homepage : https://neo-source.com/"
+
+description = "Based on the latest up-to-date source, 'FinalBurn Neo' is compatible with FinalBurn Neo latest ROM sets. This core variant only supports CPS-1 & CPS-2 games. It exists solely for use with platforms that do not have the capability to use the standard FBNeo core."

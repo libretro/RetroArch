@@ -1,0 +1,46 @@
+# Software Information
+display_name = "Arcade (FinalBurn Neo) (Neo-Geo)"
+authors = "Team FBNeo"
+supported_extensions = "zip|7z|cue|ccd"
+corename = "FinalBurn Neo (neogeo subset)"
+license = "Non-commercial"
+permissions = ""
+display_version = "v1.0.0.03"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "SNK"
+systemname = "Neo Geo"
+systemid = "fb_alpha"
+
+# Libretro Features
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "true"
+supports_no_game = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+database_match_archive_member = "false"
+database = "FBNeo - Arcade Games"
+
+# BIOS / Firmware
+firmware_count = 3
+firmware0_desc = "fbneo/neogeo.zip (Neo Geo BIOS)"
+firmware0_path = "fbneo/neogeo.zip"
+firmware0_opt = "true"
+firmware1_desc = "fbneo/neocdz.zip (Neo Geo CDZ System BIOS)"
+firmware1_path = "fbneo/neocdz.zip"
+firmware1_opt = "true"
+firmware2_desc = "fbneo/hiscore.dat (High Score support database)"
+firmware2_path = "fbneo/hiscore.dat"
+firmware2_opt = "true"
+notes = "(!) The BIOS files can also be inside the ROM directory or the root of SYSTEM directory.|(!) Homepage : https://neo-source.com/"
+
+description = "Based on the latest up-to-date source, 'FinalBurn Neo' is compatible with FinalBurn Neo latest ROM sets. This core variant only supports Neo-Geo games. It exists solely for use with platforms that do not have the capability to use the standard FBNeo core."

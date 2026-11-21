@@ -1,0 +1,81 @@
+# Software Information
+display_name = "NEC - PC-98 (Neko Project II Kai)"
+authors = "Neko Project II Team, Tomohiro Yoshidomi"
+supported_extensions = "d98|zip|98d|fdi|fdd|2hd|tfd|d88|88d|hdm|xdf|dup|cmd|hdi|thd|nhd|hdd|hdn"
+corename = "Neko Project II Kai"
+license = "MIT"
+permissions = ""
+display_version = "0.86"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "NEC"
+systemname = "PC-98"
+systemid = "pc_98"
+
+# Libretro Features
+supports_no_game = "false"
+database = "NEC - PC-98"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+
+# BIOS/Firmware
+firmware_count = 11
+
+firmware0_desc = "np2kai/font.bmp (needed to display text)"
+firmware0_path = "np2kai/font.bmp"
+firmware0_opt = "true"
+
+firmware1_desc = "np2kai/FONT.ROM (alt font file)"
+firmware1_path = "np2kai/FONT.ROM"
+firmware1_opt = "true"
+
+firmware2_desc = "np2kai/bios.rom"
+firmware2_path = "np2kai/bios.rom"
+firmware2_opt = "true"
+
+firmware3_desc = "np2kai/itf.rom"
+firmware3_path = "np2kai/itf.rom"
+firmware3_opt = "true"
+
+firmware4_desc = "np2kai/sound.rom"
+firmware4_path = "np2kai/sound.rom"
+firmware4_opt = "true"
+
+firmware5_desc = "np2kai/2608_BD.WAV (YM2608 rhythm sample)"
+firmware5_path = "np2kai/2608_BD.WAV"
+firmware5_opt = "true"
+
+firmware6_desc = "np2kai/2608_SD.WAV (YM2608 rhythm sample)"
+firmware6_path = "np2kai/2608_SD.WAV"
+firmware6_opt = "true"
+
+firmware7_desc = "np2kai/2608_TOP.WAV (YM2608 rhythm sample)"
+firmware7_path = "np2kai/2608_TOP.WAV"
+firmware7_opt = "true"
+
+firmware8_desc = "np2kai/2608_HH.WAV (YM2608 rhythm sample)"
+firmware8_path = "np2kai/2608_HH.WAV"
+firmware8_opt = "true"
+
+firmware9_desc = "np2kai/2608_TOM.WAV (YM2608 rhythm sample)"
+firmware9_path = "np2kai/2608_TOM.WAV"
+firmware9_opt = "true"
+
+firmware10_desc = "np2kai/2608_RIM.WAV (YM2608 rhythm sample)"
+firmware10_path = "np2kai/2608_RIM.WAV"
+firmware10_opt = "true"
+
+notes = "JOY2KEY buttons mapping: A=x B=z X=space Y=lctrl|L=backspace R=rshift SELECT=escape START=return|Keep 'end' key down when booting for machine options.|Many games need GDC set as 2.5Mhz there."
+
+description = "An emulator for NEC's PC-9801 (aka PC-98) personal computer platform, ported to libretro. This is the only choice for users wanting to play PC-98 games, as the meowPC98 and non-Kai NPKII cores are no longer in development and have been completely superseded by this core."

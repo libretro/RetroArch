@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Cave Story (NXEngine)"
+authors = "Caitlin Shaw"
+supported_extensions = "exe"
+corename = "NXEngine"
+categories = "Game"
+license = "GPLv3"
+permissions = ""
+display_version = "1.0.0.6"
+
+# Hardware Information
+systemname = "Cave Story Game Engine"
+systemid = "nxengine"
+
+# Libretro Features
+database = "Cave Story"
+supports_no_game = "true"
+single_purpose = "true"
+savestate = "false"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "false"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+notes = "(!) NXEngine requires data ROM 'Cave Story (en).zip'.|(!) Load Content 'Doukutsu.exe'"
+
+description = "An open-source reimplementation of the Cave Story / Doukutsu engine, ported to libretro. This core requires users to load the freeware Doukutsu.exe as content so the core can access the game assets stored therein."

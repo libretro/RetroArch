@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Nintendo - Nintendo 64 (ParaLLEl N64)"
+authors = "Hacktarux|Mupen64Plus Team|TinyTiger|Libretro"
+supported_extensions = "n64|v64|z64|bin|u1|ndd"
+corename = "ParaLLEl N64"
+license = "GPLv2"
+permissions = "dynarec_optional"
+display_version = "2.0-rc2"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Nintendo 64"
+systemid = "nintendo_64"
+
+# Libretro Features
+supports_no_game = "false"
+hw_render = "true"
+required_hw_api = "OpenGL >= 3.0 | OpenGL ES >= 2.0 | Vulkan >= 1.0"
+database = "Nintendo - Nintendo 64|Nintendo - Nintendo 64DD"
+is_experimental = "false"
+savestate = "true"
+savestate_features = "serialized"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "64DD_IPL.bin (64DD IPL ROM)"
+firmware0_path = "64DD_IPL.bin"
+firmware0_opt = "true"
+notes = "(!) 64DD_IPL.bin (md5): 8d3d9f294b6e174bc7b1d2fd1c727530"
+
+description = "An N64 emulator based originally on Mupen64Plus, but with extensive changes that have caused the codebases to diverge significantly. This core was the first N64 emulator core available for libretro and has served as an experimental testbed for many features that were later included in the Mupen64plus-Next core, including the advanced Vulkan-based ParaLLEl-RDP and ParaLLEl-RSP plugins (hence the name). However, Mupen64plus-Next is a better choice for most users/usecases, and ParaLLEl-N64 mostly exists for further experimentation and for users that cannot run Mupen64plus-Next's GLideN64 plugin at full speed, as this core includes legacy Glide64, glN64 and Rice plugins, which have lower hardware/driver requirements."

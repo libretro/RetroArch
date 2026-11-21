@@ -1,0 +1,170 @@
+## All data is optional, but helps improve user experience.
+
+# Software Information - Information about the core software itself
+# Name displayed when the user is selecting the core:
+display_name = "Enterprise - 64/128 (ep128emu)"
+
+# Categories that the core belongs to (optional):
+categories = "Emulator"
+
+# Name of the authors who wrote the core:
+authors = "Istvan Varga|Zoltan Balogh"
+
+# Name of the core:
+corename = "ep128emu-core"
+
+# List of extensions the core supports:
+supported_extensions = "img|dsk|tap|dtf|com|trn|128|bas|cas|cdt|tzx|wav|tvcwav|."
+
+# License of the cores source code:
+license = "GPLv2"
+
+# Privacy-specific permissions needed for using the core:
+permissions = ""
+
+# Version of the core:
+display_version = "v1.2.10"
+
+# Hardware Information - Information about the hardware the core supports (when applicable)
+# Name of the manufacturer who produced the emulated system:
+manufacturer = "Enterprise"
+
+# Name of the system that the core targets (optional):
+systemname = "128"
+
+# ID of the primary platform the core uses. Use other core info files as guidance if possible.
+# If blank or not used, a standard core platform will be used (optional):
+systemid = "ep128"
+
+# The number of mandatory/optional firmware files the core needs:
+firmware_count = 22
+
+firmware0_desc = "exos21.rom (Enterprise 128 Expandible OS 2.1)"
+firmware0_path = "ep128emu/roms/exos21.rom"
+firmware0_opt = "true"
+
+firmware1_desc = "basic21.rom (Enterprise 128 BASIC Interpreter v2.1)"
+firmware1_path = "ep128emu/roms/basic21.rom"
+firmware1_opt = "true"
+
+firmware2_desc = "exdos13.rom (Enterprise 128 Disk Controller v1.3)"
+firmware2_path = "ep128emu/roms/exdos13.rom"
+firmware2_opt = "true"
+
+firmware3_desc = "exos20.rom (Enterprise 64 Expandible OS 2.0)"
+firmware3_path = "ep128emu/roms/exos20.rom"
+firmware3_opt = "true"
+
+firmware4_desc = "basic20.rom (Enterprise 64 BASIC Interpreter v2.0)"
+firmware4_path = "ep128emu/roms/basic20.rom"
+firmware4_opt = "true"
+
+firmware5_desc = "epfileio.rom (Enterprise 128 Direct File I/O)"
+firmware5_path = "ep128emu/roms/epfileio.rom"
+firmware5_opt = "true"
+
+firmware6_desc = "exos24uk.rom (Enterprise 128 Expandible OS 2.4)"
+firmware6_path = "ep128emu/roms/exos24uk.rom"
+firmware6_opt = "true"
+
+firmware7_desc = "hun.rom (Enterprise 128 Hungarian language extension)"
+firmware7_path = "ep128emu/roms/hun.rom"
+firmware7_opt = "true"
+
+firmware8_desc = "epd19hft.rom (Enterprise 128 EP-DOS with Hungarian language extension)"
+firmware8_path = "ep128emu/roms/epd19hft.rom"
+firmware8_opt = "true"
+
+firmware9_desc = "zt19hfnt.rom (Enterprise 128 ZozoTools with Hungarian language extension 1.9)"
+firmware9_path = "ep128emu/roms/zt19hfnt.rom"
+firmware9_opt = "true"
+
+firmware10_desc = "brd.rom (Enterprise 128 German language extension)"
+firmware10_path = "ep128emu/roms/brd.rom"
+firmware10_opt = "true"
+
+firmware11_desc = "zt19uk.rom (Enterprise 128 ZozoTools extension)"
+firmware11_path = "ep128emu/roms/zt19uk.rom"
+firmware11_opt = "true"
+
+firmware12_desc = "tvc22_sys.rom (Videoton TVC system BIOS)"
+firmware12_path = "ep128emu/roms/tvc22_sys.rom"
+firmware12_opt = "true"
+
+firmware13_desc = "tvc22_ext.rom (Videoton TVC extension BIOS)"
+firmware13_path = "ep128emu/roms/tvc22_ext.rom"
+firmware13_opt = "true"
+
+firmware14_desc = "tvcfileio.rom (Videoton TVC Direct File I/O)"
+firmware14_path = "ep128emu/roms/tvcfileio.rom"
+firmware14_opt = "true"
+
+firmware15_desc = "tvc_dos12d.rom (Videoton TVC disk BIOS)"
+firmware15_path = "ep128emu/roms/tvc_dos12d.rom"
+firmware15_opt = "true"
+
+firmware16_desc = "cpc464.rom (Amstrad CPC 464 BIOS)"
+firmware16_path = "ep128emu/roms/cpc464.rom"
+firmware16_opt = "true"
+
+firmware17_desc = "cpc664.rom (Amstrad CPC 664 BIOS)"
+firmware17_path = "ep128emu/roms/cpc664.rom"
+firmware17_opt = "true"
+
+firmware18_desc = "cpc6128.rom (Amstrad CPC 6128 BIOS)"
+firmware18_path = "ep128emu/roms/cpc6128.rom"
+firmware18_opt = "true"
+
+firmware19_desc = "cpc_amsdos.rom (Amstrad CPC AMSDOS BIOS)"
+firmware19_path = "ep128emu/roms/cpc_amsdos.rom"
+firmware19_opt = "true"
+
+firmware20_desc = "zx128.rom (ZX Spectrum 128 BIOS)"
+firmware20_path = "ep128emu/roms/zx128.rom"
+firmware20_opt = "true"
+
+firmware21_desc = "zx48.rom (ZX Spectrum 48 BIOS)"
+firmware21_path = "ep128emu/roms/zx48.rom"
+firmware21_opt = "true"
+
+# Additional notes:
+notes = "(!) exos21.rom (md5): f36f24cbb87745fbd2714e4df881db09|(!) basic21.rom (md5): e972fe42b398c9ff1d93ff014786aec6|(!) exdos13.rom (md5): ddff70c014d1958dc75378b6c9aab6f8|(!) exos20.rom (md5): 5ad3baaad3b5156d6b60b34229a676fb|(!) basic20.rom (md5): 8e18edce4a7acb2c33cc0ab18f988482|(!) epfileio.rom (md5): a68ebcbc73a4d2178d755b7755bf18fe|(!) exos24uk.rom (md5): 55af78f877a21ca45eb2df68a74fcc60|(!) hun.rom (md5): 22167938f142c222f40992839aa21a06|(!) epd19hft.rom (md5): 12cfc9c7e48c8a16c2e09edbd926d467|(!) zt19hfnt.rom (md5): 653daaf7b9b29c2c4e577f489580f247|(!) brd.rom (md5): 6af0402906944fd134004b85097c8524|(!) zt19uk.rom (md5): 228540b6be83ae2acd7569c8ff0f91d0|(!) tvc22_sys.rom (md5): 8c54285f541930cde766069942bad0f2|(!) tvc22_ext.rom (md5): 5ce95a26ceed5bec73995d83568da9cf|(!) tvcfileio.rom (md5): a2cf86ba8e7fc58b242137fe59036832|(!) tvc_dos12d.rom (md5): 88dc7876d584f90e4106f91444ab23b7|(!) cpc464.rom (md5): a993f85b88ac4350cf4d41554e87fe4f|(!) cpc664.rom (md5): 5a384a2310f472c7857888371c00ed66|(!) cpc6128.rom (md5): b96280dc6c95a48857b4b8eb931533ae|(!) cpc_amsdos.rom (md5): 25629dfe870d097469c217b95fdc1c95|(!) zx128.rom (md5): 85fede415f4294cc777517d7eada482e|(!) zx48.rom (md5): 4c42a2f075212361c3117015b107ff68"
+
+# Libretro Features - The libretro API features the core supports. Useful for sorting cores
+# Does the core support savestates
+savestate = "true"
+# If true, how complete is the savestate support? basic, serialized (rewind), deterministic (netplay/runahead)
+savestate_features = "serialized"
+# Does the core support the libretro cheat interface?
+cheats = "true"
+# Does the core support libretro input descriptors
+input_descriptors = "true"
+# Does the core support memory descriptors commonly used for achievements
+memory_descriptors = "true"
+# Does the core use the libretro save interface or does it do its own thing (like with shared memory cards)?
+libretro_saves = "true"
+# Does the core support the core options interface?
+core_options = "true"
+# What version of core options is supported? (later versions allow for localization and descriptions)
+core_options_version = "1.0"
+# Does the core support the subsystem interface? Commonly used for chained/special loading, such as Super Game Boy
+load_subsystem = "false"
+# Whether or not the core requires an external file to work:
+supports_no_game = "true"
+# Does the core have a single purpose? Does it represent one game or application, requiring predetermined support files or no external data? Used to indicate to a frontend that the core may be presented/handled independently from 'regular' cores that run a variety of content.
+single_purpose = "false"
+# Name of the database that the core supports (optional):
+database = "Enterprise - 128|Amstrad - CPC|Sinclair - ZX Spectrum|Videoton - TV-Computer"
+# Does the core support/require support for libretro-gl or other hardware-acceleration in the frontend?
+hw_render = "false"
+# Which hardware-rendering APIs does the core support? Delimited by pipe characters.
+# required_hw_api = "Vulkan >= 1.0 | Direct3D >= 10.0 | OpenGL Core >= 3.3 | OpenGL ES >= 3.0"
+# Does the core require ongoing access to the file after loading? Mostly used for softpatching and streaming of data
+needs_fullpath = "true"
+# Does the core support the libretro disk control interface for swapping disks on the fly?
+disk_control = "true"
+# Is the core currently suitable for general use? That is, will regular users find it useful or is it for development/testing only (subject to change over time)?
+is_experimental = "false"
+
+# Descriptive text, useful for tooltips, etc.
+description = "Emulate the Z80 based home computers that the original ep128emu supports - that is, Enterprise 64/128, Videoton TVC, Amstrad CPC and ZX Spectrum. Focus is on Enterprise and TVC."

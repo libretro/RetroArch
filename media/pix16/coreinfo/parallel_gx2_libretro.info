@@ -1,0 +1,35 @@
+# Software Information
+display_name = "Nintendo - Wii U (ParaLLEl GX2)"
+authors = "Libretro|Cemu Project|WizzardSK"
+supported_extensions = "wud|wux|wua|iso|rpx|elf|tmd"
+corename = "ParaLLEl GX2"
+categories = "Emulator"
+license = "MPL-2.0"
+permissions = ""
+display_version = "2.6"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Wii U"
+systemid = "wiiu"
+database = "Nintendo - Wii U"
+
+# Libretro Features
+supports_no_game = "false"
+hw_render = "true"
+needs_fullpath = "true"
+disk_control = "false"
+savestate = "false"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 0
+notes = "(!) Save states are not supported - Cemu has no state serialization.|(!) Requires keys.txt in system/Cemu/ to load encrypted titles.|(!) MLC storage is created in saves/Cemu/mlc01/.|(!) Shared fonts go in system/Cemu/resources/sharedFonts/, graphic packs in system/Cemu/graphicPacks/.|(!) Needs a Vulkan or OpenGL 4.5 capable GPU. On Wayland use the Vulkan graphics API core option - the OpenGL path renders black there."
+
+description = "A fork of the Cemu Wii U emulator to libretro. Renders through the frontend's hardware context, either Vulkan (sharing RetroArch's instance, device and queue) or OpenGL 4.5 core profile, and can composite the GamePad (DRC) screen next to the TV screen in several layouts. Save states are not supported and never will be, as Cemu has no infrastructure for serializing emulator state."

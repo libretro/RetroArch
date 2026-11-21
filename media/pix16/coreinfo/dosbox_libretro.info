@@ -1,0 +1,34 @@
+# Software Information
+display_name = "DOS (DOSBox)"
+authors = "DOSBox Team"
+supported_extensions = "exe|com|bat|conf"
+corename = "DOSBox"
+categories = "Emulator"
+license = "GPLv2"
+permissions = ""
+display_version = "SVN"
+
+# Hardware Information
+manufacturer = "Microsoft"
+systemname = "DOS"
+systemid = "dos"
+
+# Libretro Features
+database = "DOS"
+supports_no_game = "true"
+savestate = "false"
+savestate_features = "null"
+libretro_saves = "false"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+needs_kbd_mouse_focus = "true"
+
+description = "A port of the mature and well-known DOSBox emulator to libretro. This core is based on an older snapshot of the upstream code and, as a result, many users will have a better experience with the DOSBox-SVN, DOSBox-Core or DOSBox-Pure cores. This core provides a more traditional DOSBox experience vs the DOSBox-Pure core, which is focused on providing a turnkey, game-focused libretro experience."

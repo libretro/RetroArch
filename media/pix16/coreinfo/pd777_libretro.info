@@ -1,0 +1,42 @@
+# Software Information - Information about the core software itself
+display_name = "Epoch - Cassette Vision (PD777)"
+categories = "Emulator"
+authors = "W88DodPECuThLOl"
+corename = "PD777"
+supported_extensions = "zip|bin777|ptn777"
+# bin777 is the main file, each has a pattern file.
+license = "MIT"
+# permissions = ""
+display_version = "v1.0.0"
+
+# Hardware Information
+manufacturer = "Epoch"
+systemname = "Epoch Cassette Vision"
+systemid = "epochcv"
+firmware_count = 0
+# Additional notes:
+# notes = "(!) hash|(!) game rom|(^) continue|[1] notes|[^] continue|[*] list"
+
+# Libretro Features
+savestate = "false"
+cheats = "false"
+# Does the core support libretro input descriptors
+# input_descriptors = "true"
+memory_descriptors = "false"
+# Does the core use the libretro save interface or does it do its own thing (like with shared memory cards)?
+# libretro_saves = "true"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "false"
+# Whether or not the core requires an external file to work:
+supports_no_game = "false"
+single_purpose = "false"
+# Name of the database that the core supports (optional):
+database = "Epoch - Cassette Vision"
+needs_fullpath = "true"
+disk_control = "false"
+# Is the core currently suitable for general use? That is, will regular users find it useful or is it for development/testing only (subject to change over time)?
+is_experimental = "false"
+
+# Descriptive text, useful for tooltips, etc.
+description = "Epoch Cassette Vision emulator, with libretro interface."

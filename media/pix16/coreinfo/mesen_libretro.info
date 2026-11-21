@@ -1,0 +1,39 @@
+# Software Information
+display_name = "Nintendo - NES / Famicom (Mesen)"
+authors = "M. Bibaud (aka Sour)"
+supported_extensions = "nes|fds|unf|unif"
+corename = "Mesen"
+license = "GPLv3"
+permissions = ""
+display_version = "0.9.9"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Nintendo Entertainment System"
+systemid = "nes"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+database = "Nintendo - Nintendo Entertainment System|Nintendo - Family Computer Disk System"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "disksys.rom (Family Computer Disk System BIOS)"
+firmware0_path = "disksys.rom"
+firmware0_opt = "true"
+notes = "(!) disksys.rom (md5): ca30b50f880eb660a320674ed365ef7a|Press Retropad R1 to switch disk side.|HD Packs go in %system%/HdPacks/%game_name%|Custom palette in %system%/MesenPalette.pal"
+
+description = "Mesen a relatively new but highly accurate NES emulator. With great accuracy comes great resource requirements (relative to other NES emulators, at least), so this core is not a great choice for weak mobile devices or other low-power/embedded platforms. However, it is the best choice for users who seek the most accurate reproduction of the NES hardware. Mesen also supports some fun enhancements, such as HD sprite replacement packs."

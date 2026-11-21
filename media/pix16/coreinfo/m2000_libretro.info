@@ -1,0 +1,31 @@
+# Core Information
+display_name = "Philips - P2000T (M2000)"
+authors = "Dion Olsthoorn|Marcel de Kogel"
+supported_extensions = "cas"
+corename = "M2000"
+license = "GPLv3"
+permissions = ""
+display_version = "0.9.3"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Philips"
+systemname = "P2000T"
+systemid = "p2000t"
+
+# Libretro Features
+database = "Philips - P2000T"
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+
+description = "M2000 is an emulator for the Philips P2000T home computer."

@@ -1,0 +1,28 @@
+# Software Information
+display_name = "Nintendo - Game Boy Advance (Beetle GBA)"
+authors = "Forgotten|Mednafen Team"
+supported_extensions = "gba|agb|bin"
+corename = "Beetle GBA"
+license = "GPLv2"
+permissions = ""
+display_version = "v0.9.36"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy Advance"
+systemid = "game_boy_advance"
+
+# Libretro Features
+database = "Nintendo - Game Boy Advance"
+supports_no_game = "false"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "gba_bios.bin (Game Boy Advance BIOS)"
+firmware0_path = "gba_bios.bin"
+firmware0_opt = "true"
+notes = "(!) gba_bios.bin (md5): a860e8c0b6d573d191e4ec7db1b1e4f6"
+is_experimental = true
+
+description = "An older fork of Mednafen's Game Boy Advance core, which is itself a fork of the Visual Boy Advance emulator. This core is not really one that anyone should use over the alternatives unless they have a specific reason to. It is only included for completionist's sake."

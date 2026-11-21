@@ -1,0 +1,35 @@
+# Software Information
+display_name = "Dinothawr"
+authors = "Themaister|Agnes Heyer"
+supported_extensions = "game"
+corename = "Dinothawr"
+categories = "Game"
+license = "Non-commercial"
+permissions = ""
+display_version = "v1.0"
+
+# Hardware Information
+manufacturer = "N/A"
+systemname = "Dinothawr Game Engine"
+systemid = "dinothawr"
+
+# Libretro Features
+database = "Dinothawr"
+supports_no_game = "true"
+single_purpose = "true"
+savestate = "false"
+savestate_features = "null"
+libretro_saves = "true"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+notes = "(!) Dinothawr requires data ROM 'Dinothawr.zip'.|(!) Load Content 'dinothawr.game'."
+
+description = "A clever and cute push-the-block-in-a-straight-line puzzle game in the spirit of Kickle Cubicle written from the ground up for libretro. The core includes the puzzle game engine, while the game content (artwork and puzzle layouts) are included in the separate content package."

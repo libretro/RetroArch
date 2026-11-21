@@ -1,0 +1,40 @@
+# Software Information
+display_name = "Sega - Saturn (YabaSanshiro)"
+authors = "Guillaume Duhammel|Theo Berkau|Anders Montonen|devmiyax"
+supported_extensions = "bin|ccd|chd|cue|iso|mds|zip"
+corename = "YabaSanshiro"
+license = "GPLv2"
+permissions = ""
+display_version = "v2.6.8"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Sega"
+systemname = "Saturn"
+systemid = "sega_saturn"
+
+# Libretro Features
+supports_no_game = "false"
+hw_render = "true"
+required_hw_api = "OpenGL >= 3.3 | OpenGL ES >= 3.0"
+database = "Sega - Saturn"
+savestate = "true"
+savestate_features = "basic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "saturn_bios.bin (Saturn BIOS)"
+firmware0_path = "saturn_bios.bin"
+firmware0_opt = "false"
+notes = "(!) saturn_bios.bin (md5): af5828fdff51384f99b3c4926be27762|Homepage : http://www.uoyabause.org/"
+
+description = "A port of the YabaSanshiro Saturn emulator, which is itself a fork of the venerable Yabause emulator, to libretro. This core is less accurate than Beetle-Saturn core but it runs much faster and has some nice cosmetic features, such as increased internal resolution. Users with more powerful devices who still want cosmetic improvements should usually try the Kronos core first and only fall back to this core if they are unable to maintain full speed."

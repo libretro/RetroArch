@@ -1,0 +1,29 @@
+# Software Information
+display_name = "Aquaplus - P/ECE (piece-emu)"
+authors = "Autch"
+supported_extensions = "pfi"
+corename = "piece-emu"
+categories = "Emulator"
+license = "MIT"
+permissions = ""
+display_version = "0.3"
+
+# Hardware Information
+manufacturer = "Aquaplus"
+systemname = "P/ECE"
+systemid = "piece"
+
+# Libretro Features
+database = ""
+supports_no_game = "false"
+savestate = "false"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+hw_render = "false"
+
+# BIOS / Firmware
+firmware_count = 0
+
+description = "Emulator core for the Aquaplus P/ECE handheld (EPSON S1C33209 SoC, S1C33000 32-bit RISC). Loads .pfi (P/ECE Flash Image) files containing both the kernel and applications."

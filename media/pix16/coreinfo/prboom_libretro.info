@@ -1,0 +1,33 @@
+# Software Information
+display_name = "Doom (PrBoom)"
+authors = "Florian Schulze"
+supported_extensions = "wad|iwad|pwad|pk3"
+corename = "PrBoom"
+license = "GPLv2"
+permissions = ""
+display_version = "v2.5.0"
+categories = "Game"
+
+# Hardware Information
+manufacturer = "Id Software"
+systemname = "DOOM Game Engine"
+systemid = "doom"
+
+# Libretro Features
+supports_no_game = "false"
+database = "DOOM"
+savestate = "true"
+savestate_features = "basic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+notes = "(!) PrBoom requires data ROM 'prboom.wad' inside the ROM directory.|(!) Load Content 'doom1.wad'."
+
+description = "A port of the PrBoom source port of iD's classic Doom engine, which plays Doom, Doom II, Final Doom and many other Doom IWAD mods, to libretro. This core supports running at higher-than-original framerates including 120 fps and up."

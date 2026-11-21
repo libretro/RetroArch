@@ -1,0 +1,21 @@
+# Software Information
+display_name = "Star Trek: Voyager - Elite Force (vitaVoyager)"
+authors = "Rinnegatamante"
+supported_extensions = "pk3"
+corename = "vitaVoyager"
+license = "GPLv2"
+permissions = ""
+display_version = "git"
+categories = "Game"
+
+# Hardware Information
+manufacturer = "Id Software"
+systemname = "Quake 3 Game Engine"
+systemid = "quake_3"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Quake III"
+savestate = "false"
+
+description = "A port of the Lilium Voyager engine, which runs the Star Trek: Voyager - Elite Force game and is itself based on the ioquake3 port of iD's Quake 3 engine, to libretro. This core loads games in the *.pk3 format."

@@ -1,0 +1,35 @@
+# Software Information
+display_name = "Nokia - Symbian / N-Gage (EKA2L1)"
+authors = "EKA2L1 Team|WizzardSK"
+supported_extensions = "sis|sisx|n-gage|eka2l1"
+corename = "EKA2L1"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+
+# Hardware Information
+manufacturer = "Nokia"
+systemname = "Symbian OS / N-Gage"
+systemid = "symbian"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "false"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+load_subsystem = "false"
+hw_render = "true"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "true"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "'eka2l1/firmware' folder (a device firmware dump: an RPKG, or a ROM together with its ROFS)"
+firmware0_path = "eka2l1/firmware"
+firmware0_opt = "false"
+
+notes = "A device has to be installed before anything will run: put a firmware dump in '<system>/eka2l1/firmware' and the core installs it on first start. Content is a Symbian package (.sis, .sisx, .n-gage), or an .eka2l1 shortcut file naming the UID of an application that is already installed."

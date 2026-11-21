@@ -1,0 +1,27 @@
+# Software Information
+display_name = "Infocom Z-Machine (MojoZork)"
+authors = "Ryan C. Gordon"
+supported_extensions = "dat|z1|z3"
+corename = "mojozork"
+categories = "Emulator"
+license = "zlib"
+permissions = ""
+display_version = "0.1"
+
+# Hardware Information
+manufacturer = "Infocom"
+systemname = "Z-Machine"
+systemid = "zmachine"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+hw_render = "false"
+database = "Infocom - Z-Machine"
+
+# BIOS / Firmware
+notes = "MojoZork plays Infocom Z-Machine games up to version 3, which is most, but not all, of Infocom's catalog."
+
+description = "A Z-Machine emulator for playing text-based interactive fiction."

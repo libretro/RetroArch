@@ -1,0 +1,22 @@
+# Software Information
+display_name = "Sony - PlayStation (Rustation)"
+authors = "Simias"
+supported_extensions = "cue|toc|m3u|ccd|exe"
+corename = "Rustation"
+license = "GPLv2"
+permissions = ""
+display_version = "v1"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Sony"
+systemname = "PlayStation"
+systemid = "playstation"
+
+# Libretro Features
+supports_no_game = "false"
+required_hw_api = "OpenGL Core >= 3.3"
+database = "Sony - PlayStation"
+is_experimental = "true"
+
+description = "A WIP/experimental Playstation 1 emulator written in the Rust programming language. It is most notable for being the originator of the OpenGL hardware renderer used in the popular Beetle-PSX-HW core. Since this core is largely incomplete, the aforementioned Beetle-PSX-HW, Swanstation or even PCSX-ReARMed cores are more useful for actually playing games, but this core remains useful for technical/historical purposes."

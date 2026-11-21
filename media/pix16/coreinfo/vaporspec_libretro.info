@@ -1,0 +1,28 @@
+# Software Information
+display_name = "VaporSpec"
+authors = "Will Smith|Vladimir Serbinenko"
+supported_extensions = "vaporbin"
+corename = "VaporSpec"
+manufacturer = "VaporSpec"
+license = "MIT"
+categories = "Emulator"
+
+# Hardware Information
+systemname = "VaporSpec"
+database = "VaporSpec"
+systemid = "vaporspec"
+permissions = ""
+display_version = "GIT"
+supports_no_game = "false"
+firmware_count = 0
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+core_options = "false"
+needs_fullpath = "false"
+disk_control = "false"
+
+description = "A virtual game platform with capabilities similar to 80s game consoles."

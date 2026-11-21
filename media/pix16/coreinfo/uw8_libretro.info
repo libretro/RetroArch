@@ -1,0 +1,35 @@
+# Software Information
+display_name = "MicroW8"
+authors = "Dennis Ranke"
+supported_extensions = "uw8|wasm"
+corename = "MicroW8"
+license = "The Unlicense"
+permissions = ""
+display_version = "0.2.2"
+categories = "Game engine"
+
+# Hardware Information
+systemname = "MicroW8"
+systemid = "uw8"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+database = "MicroW8"
+
+# BIOS / Firmware
+firmware_count = 0
+notes = "(!) Homepage: https://exoticorn.github.io/microw8/"
+
+description = "MicroW8 is a WebAssembly based fantasy console usable for size-coding or larger games."

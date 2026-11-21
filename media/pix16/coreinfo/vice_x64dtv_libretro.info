@@ -1,0 +1,47 @@
+# Software Information
+display_name = "Commodore - C64DTV (VICE x64dtv)"
+categories = "Emulator"
+authors = "VICE Team"
+corename = "VICE x64dtv"
+supported_extensions = "d64|d71|d80|d81|d82|g64|g41|x64|t64|tap|prg|p00|crt|bin|zip|gz|d6z|d7z|d8z|g6z|g4z|x6z|cmd|m3u|vfl|vsf|nib|nbz|d2m|d4m|/"
+license = "GPLv2"
+permissions = ""
+display_version = "3.10"
+
+# Hardware Information
+manufacturer = "Commodore"
+systemname = "C64DTV"
+systemid = "commodore_c64dtv"
+
+# Libretro Features
+database = "Commodore - 64"
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+
+# Firmware
+firmware_count = 4
+firmware0_desc = "vice/JiffyDOS_C64.bin (JiffyDOS C64 Kernal)"
+firmware0_path = "vice/JiffyDOS_C64.bin"
+firmware0_opt = "true"
+firmware1_desc = "vice/JiffyDOS_1541-II.bin (JiffyDOS 1541 drive BIOS)"
+firmware1_path = "vice/JiffyDOS_1541-II.bin"
+firmware1_opt = "true"
+firmware2_desc = "vice/JiffyDOS_1571_repl310654.bin (JiffyDOS 1571 drive BIOS)"
+firmware2_path = "vice/JiffyDOS_1571_repl310654.bin"
+firmware2_opt = "true"
+firmware3_desc = "vice/JiffyDOS_1581.bin (JiffyDOS 1581 drive BIOS)"
+firmware3_path = "vice/JiffyDOS_1581.bin"
+firmware3_opt = "true"
+notes = "(!) JiffyDOS_C64.bin (md5): be09394f0576cf81fa8bacf634daf9a2|(!) JiffyDOS_1541-II.bin (md5): 1b1e985ea5325a1f46eb7fd9681707bf|(!) JiffyDOS_1571_repl310654.bin (md5): 41c6cc528e9515ffd0ed9b180f8467c0|(!) JiffyDOS_1581.bin (md5): 20b6885c6dc2d42c38754a365b043d71"
+description = "The VICE C64 Direct-to-TV emulator, isolated and ported to libretro. The C64DTV emulator, called 'x64dtv', features emulation of C64DTV revisions 2 and 3. The emulator is under construction, but most of the DTV specific features are already supported (with varying accuracy)."

@@ -1,0 +1,49 @@
+# Software Information
+display_name = "Philips - CD-i (zcdi)"
+authors = "pastisme"
+supported_extensions = "chd|cue|bin|iso|m3u"
+corename = "zcdi"
+license = "GPLv3+"
+permissions = ""
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Philips"
+systemname = "CD-i"
+systemid = "cdi"
+
+# Libretro Features
+database = "Philips - CD-i"
+supports_no_game = "true"
+needs_fullpath = "true"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_kbd_mouse_focus = "false"
+disk_control = "true"
+
+# BIOS/Firmware
+firmware_count = 3
+
+firmware0_desc = "cdi200.rom (CD-i BIOS, NTSC)"
+firmware0_path = "cdi200.rom"
+firmware0_opt = "true"
+
+firmware1_desc = "cdi220b.rom (CD-i BIOS, PAL)"
+firmware1_path = "cdi220b.rom"
+firmware1_opt = "true"
+
+firmware2_desc = "vmpega.rom (Digital Video Cartridge ROM, needed for DVC titles)"
+firmware2_path = "vmpega.rom"
+firmware2_opt = "true"
+
+notes = "(!) The BIOS for the selected Video Standard core option is required: cdi200.rom for NTSC (default), cdi220b.rom for PAL.|(!) cdi200.rom (md5): 2969341396aa61e0143dc2351aaa6ef6|(!) cdi220b.rom (md5): ac0d468be366779c9df633be98da250a|(!) vmpega.rom (md5): 53ba3bf7443187a657baa272d01d3771|Without vmpega.rom the player has no Digital Video Cartridge."
+
+description = "zcdi emulates the Philips CD-i Mono-I board (SCC68070 CPU, MCD212 video, CDIC disc and audio controller) and the optional 22ER9141 Digital Video Cartridge. It runs the original BIOS and cartridge firmware, and reads CHD and CUE/BIN disc images, and M3U playlists for multi-disc titles."

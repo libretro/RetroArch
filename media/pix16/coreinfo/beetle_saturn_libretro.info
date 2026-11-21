@@ -1,0 +1,51 @@
+# Software Information
+display_name = "Sega - Saturn (Beetle Saturn Super)"
+authors = "Mednafen Team"
+supported_extensions = "ccd|chd|cue|toc|m3u|zip"
+corename = "Beetle Saturn Super"
+
+# Hardware Information
+manufacturer = "Sega"
+categories = "Emulator"
+systemname = "Saturn"
+systemid = "sega_saturn"
+database = "Sega - Saturn"
+license = "GPLv2"
+permissions = ""
+display_version = "v0.9.45.1-super"
+
+# Libretro Features
+supports_no_game = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+
+# Firmware / BIOS
+firmware_count = 4
+firmware0_desc = "sega_101.bin (Saturn JP BIOS)"
+firmware0_path = "sega_101.bin"
+firmware0_opt = "false"
+
+firmware1_desc = "mpr-17933.bin (Saturn US/EU BIOS)"
+firmware1_path = "mpr-17933.bin"
+firmware1_opt = "false"
+
+firmware2_desc = "mpr-18811-mx.ic1 (The King of Fighters '95 ROM Cartridge)"
+firmware2_path = "mpr-18811-mx.ic1"
+firmware2_opt = "true"
+
+firmware3_desc = "mpr-19367-mx.ic1 (Ultraman: Hikari no Kyojin Densetsu ROM Cartridge)"
+firmware3_path = "mpr-19367-mx.ic1"
+firmware3_opt = "true"
+
+notes = "(!) sega_101.bin (md5): 85ec9ca47d8f6807718151cbcca8b964|(!) mpr-17933.bin (md5): 3240872c70984b6cbfda1586cab68dbe|(!) mpr-18811-mx.ic1 (md5): 255113ba943c92a54facd25a10fd780c|(!) mpr-19367-mx.ic1 (md5): 1cd19988d1d72a3e7caa0b73234c96b4"
+
+description = "Beetle Saturn Super is a libretro port of a fork of Mednafen's Sega Saturn emulator. It emphasizes high compatibility and accurate emulation while remaining a software-rendered core. Games should be loaded via CUE sheets, with CHD also supported. Multi-disc titles should be launched using an M3U playlist to enable RetroArch's disk control feature for seamless disc swapping. The core requires Saturn BIOS files to be present in the frontend's system directory and offers options including CD image caching and configurable visible scanline ranges for NTSC and PAL systems. Due to its focus on accuracy, Beetle Saturn Super has relatively high CPU requirements."

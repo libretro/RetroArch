@@ -1,0 +1,28 @@
+# Software Information
+display_name = "Nintendo - Game Boy / Color (fixGB)"
+authors = "FIX94"
+supported_extensions = "gb|gbc|gbs"
+corename = "fixGB"
+categories = "Emulator"
+license = "MIT"
+permissions = ""
+display_version = "Alpha v0.8.2"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy/Game Boy Color"
+systemid = "game_boy"
+
+# Libretro Features
+database = "Nintendo - Game Boy|Nintendo - Game Boy Color"
+supports_no_game = "false"
+is_experimental = "true"
+
+# BIOS / Firmware
+firmware_count = 1
+firmware0_desc = "gbc_bios.bin (Game Boy Color BIOS)"
+firmware0_path = "gbc_bios.bin"
+firmware0_opt = "true"
+notes = "(!) gbc_bios.bin (md5): dbfce9db9deaa2567f6a84fde55f9680"
+
+description = "A preliminary Game Boy emulator written as a learning experience, this core still supports many of the games and features that are attractive to users, such as support for Game Boy Color palettes via BIOS and support for older colorization hacks by adding 'InvVRAM' to the filename (like this: foo.gb -> foo (InvVRAM).gb). However, users looking for a simple, turnkey GB/C emulator will probably have better luck with more mature options, such as SameBoy, Gambatte or GearBoy, depending on their use-case."

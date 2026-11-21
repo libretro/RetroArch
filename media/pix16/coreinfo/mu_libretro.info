@@ -1,0 +1,37 @@
+# Software Information
+display_name = "Palm OS (Mu)"
+authors = "guicrith / meepingsnesroms; Stephanie Gawroriski (Xer Shadow Tail)"
+supported_extensions = "prc|pqa|img|pdb|zip"
+corename = "Mu"
+license = "CC BY-NC 3.0 US (Non-commercial)"
+permissions = ""
+display_version = "v1.3.3"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Palm"
+systemname = "Palm OS"
+systemid = "palm_os"
+
+# Libretro Features
+supports_no_game = "true"
+
+# BIOS/Firmware
+firmware_count = 5
+firmware0_desc = "palmos40-en-m500.rom (Palm OS 4.0)"
+firmware0_path = "palmos40-en-m500.rom"
+firmware0_opt = "true"
+firmware1_desc = "palmos41-en-m515.rom (Palm OS 4.1)"
+firmware1_path = "palmos41-en-m515.rom"
+firmware1_opt = "false"
+firmware2_desc = "palmos52-en-t3.rom (Palm OS 5.2.1)"
+firmware2_path = "palmos52-en-t3.rom"
+firmware2_opt = "true"
+firmware3_desc = "palmos60-en-t3.rom (Palm OS 6.0)"
+firmware3_path = "palmos60-en-t3.rom"
+firmware3_opt = "true"
+firmware4_desc = "bootloader-dbvz.rom (MC68VZ328 UART Bootloader)"
+firmware4_path = "bootloader-dbvz.rom"
+firmware4_opt = "true"
+
+description = "An emulator for the Palm m515 OS ported to libretro. It is intended to avoid hacks like those used by the POSE emulator, where API calls are intercepted and replaced with those that don't use the actual hardware."

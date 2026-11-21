@@ -1,0 +1,41 @@
+# Software Information
+display_name = "Doom 3 (boom3)"
+authors = "Rinnegatamante|dhewm3"
+supported_extensions = "pk4"
+corename = "boom3"
+license = "GPLv2"
+permissions = ""
+display_version = "git"
+
+# Hardware Information
+manufacturer = "Id Software"
+categories = "Game engine"
+systemname = "Doom 3 Game Engine"
+systemid = "doom_3"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "basic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "false"
+hw_render = "true"
+required_hw_api = "OpenGL >= 2.0 | OpenGL ES >= 2.0"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+database = "Doom 3"
+
+# BIOS/Firmware
+firmware_count = 1
+firmware0_desc = "VR texture and model additions"
+firmware0_path = "boom3/pak399.pk4"
+firmware0_opt = "true"
+notes = "(!) You need pak399.pk4 file in 'system/boom3' for VR mode, otherwise hands are missing."
+
+description = "A source port of the Doom 3 engine to libretro. This release does not contain any game data, which is still covered by the original EULA and must be obeyed as usual. Unpatched retail 1.0/1.1 disc data, 1.3.1-patched data, the Steam/GOG/Humble releases, Resurrrection of Evil and the free demo are all supported."

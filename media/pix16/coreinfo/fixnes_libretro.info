@@ -1,0 +1,28 @@
+# Software Information
+display_name = "Nintendo - NES / Famicom (fixNES)"
+authors = "FIX94"
+supported_extensions = "nes|fds|qd|nsf"
+corename = "fixNES"
+categories = "Emulator"
+license = "MIT"
+permissions = ""
+display_version = "Alpha v1.3.1"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Nintendo Entertainment System"
+systemid = "nes"
+
+# Libretro Features
+database = "Nintendo - Nintendo Entertainment System|Nintendo - Family Computer Disk System"
+supports_no_game = "false"
+
+# BIOS / Firmware
+firmware_count = 1
+firmware0_desc = "disksys.rom (Family Computer Disk System BIOS)"
+firmware0_path = "disksys.rom"
+firmware0_opt = "true"
+notes = "(!) disksys.rom (md5): ca30b50f880eb660a320674ed365ef7a"
+is_experimental = "true"
+
+description = "An alpha-stage emulator written as a learning experience, fixNES is a good, simple core for learning how NES emulators are written, but it's not a good choice for general use. Individuals who are looking for a feature-complete, accurate, easily-usable emulator should look instead to Mesen, Nestopia or FCEUmm, depending on their use-case."

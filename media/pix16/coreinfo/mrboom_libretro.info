@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Mr.Boom (Bomberman)"
+authors = "Remdy"
+corename = "Mr.Boom"
+categories = "Game"
+license = "MIT"
+supported_extensions = "desktop"
+permissions = ""
+display_version = "3.1"
+
+# Hardware Information
+systemname = "Mr.Boom"
+systemid = "bomberman"
+
+# Libretro Features
+supports_no_game = "true"
+single_purpose = "true"
+database = "MrBoom"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A fun, multiplayer and feature-filled clone of the classic Bomberman series, converted from DOS using asm2c. It includes an advanced CPU AI for single-player sessions."

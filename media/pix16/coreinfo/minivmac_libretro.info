@@ -1,0 +1,30 @@
+# Software Information
+display_name = "Mac II (minivmac)"
+authors = "Paul C. Pratt|Philip Cummins|Bernd Schmidt|Weston Pawlowski|Richard F. Bannister|Sam Lantinga|Michael Hanni|Michael Fort|Jesus A. Alvarez|Manuel Alfayate|Christian Bauer|Lazyone"
+
+supported_extensions = "dsk|img|zip|hvf|cmd"
+corename = "MinivmacII"
+manufacturer = "Apple"
+categories = "Emulator"
+
+# Hardware Information
+systemname = "Mac68k"
+systemid = "mac68k"
+license = "GPLv2"
+permissions = ""
+display_version = "GIT"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "false"
+
+# BIOS/Firmware
+firmware_count = 1
+
+firmware0_desc = "MacII.ROM"
+firmware0_path = "MacII.ROM"
+firmware0_opt = "false"
+
+notes = "(!) MacII.ROM (md5): 66223be1497460f1e60885eeb35e03cc"
+
+description = "MacII variant of minivmac emulator"

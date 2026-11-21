@@ -1,0 +1,40 @@
+# Software Information
+display_name = "Nintendo - Nintendo 64 (Mupen64Plus-Next)"
+authors = "m4xw|Hacktarux|gonetz|GLideN64 Contributors|Mupen64Plus Team"
+supported_extensions = "n64|v64|z64|ndd|bin|u1"
+corename = "Mupen64Plus-Next"
+license = "GPLv2"
+permissions = "dynarec_optional"
+display_version = "1.0"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Nintendo 64"
+systemid = "nintendo_64"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Nintendo - Nintendo 64"
+hw_render = "true"
+required_hw_api = "OpenGL Core >= 3.3 | OpenGL ES >= 2.0"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "true"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "Mupen64plus/IPL.n64 (64DD BIOS)"
+firmware0_path = "Mupen64plus/IPL.n64"
+firmware0_opt = "true"
+notes = "(!) IPL.n64 (md5): 8d3d9f294b6e174bc7b1d2fd1c727530"
+
+description = "An up-to-date port of the Mupen64Plus N64 emulator, ported to libretro. It uses up-to-date GLideN64 plugin as its default graphics plug, though the high-accuracy Angrylion and ParaLLEl-RDP plugins are also available. This core is a good first choice for most users and should generally work better than the ParaLLEl-N64 core, which is mainly useful for its support for legacy graphics plugins that can run on older/low-power devices that are too weak for the modern plugins."

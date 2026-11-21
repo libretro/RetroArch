@@ -1,0 +1,89 @@
+# Software Information
+display_name = "The 3DO Company - 3DO (Opera)"
+authors = "trapexit|JohnnyDude|FreeDO team"
+supported_extensions = "iso|bin|chd|cue"
+corename = "Opera"
+categories = "Emulator"
+license = "LGPL/Non-commercial"
+permissions = ""
+display_version = "1.0.0"
+
+# Hardware Information
+manufacturer = "Panasonic|GoldStar|Sanyo"
+systemname = "3DO"
+systemid = "3do"
+
+# Libretro Features
+database = "The 3DO Company - 3DO"
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "basic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+# BIOS/Firmware
+firmware_count = 13
+
+firmware0_desc = "panafz1.bin (Panasonic FZ-1 BIOS)"
+firmware0_path = "panafz1.bin"
+firmware0_opt = "true"
+
+firmware1_desc = "panafz10.bin (Panasonic FZ-10 BIOS)"
+firmware1_path = "panafz10.bin"
+firmware1_opt = "true"
+
+firmware2_desc = "panafz10-norsa.bin (Panasonic FZ-10 BIOS [Encryption Check Disabled])"
+firmware2_path = "panafz10-norsa.bin"
+firmware2_opt = "true"
+
+firmware3_desc = "panafz10e-anvil.bin (Panasonic FZ-10E ANVIL BIOS)"
+firmware3_path = "panafz10e-anvil.bin"
+firmware3_opt = "true"
+
+firmware4_desc = "panafz10e-anvil-norsa.bin (Panasonic FZ-10E ANVIL BIOS [Encryption Check Disabled])"
+firmware4_path = "panafz10e-anvil-norsa.bin"
+firmware4_opt = "true"
+
+firmware5_desc = "goldstar.bin (Goldstar GDO-101M BIOS)"
+firmware5_path = "goldstar.bin"
+firmware5_opt = "true"
+
+firmware6_desc = "sanyotry.bin (Sanyo Try IMP-21J BIOS)"
+firmware6_path = "sanyotry.bin"
+firmware6_opt = "true"
+
+firmware7_desc = "3do_arcade_saot.bin (Shootout At Old Tucson BIOS)"
+firmware7_path = "3do_arcade_saot.bin"
+firmware7_opt = "true"
+
+firmware8_desc = "panafz1-kanji.bin (Panasonic FZ-1 Kanji Font ROM)"
+firmware8_path = "panafz1-kanji.bin"
+firmware8_opt = "true"
+
+firmware9_desc = "panafz10ja-anvil-kanji.bin (Panasonic FZ-10JA Kanji Font ROM)"
+firmware9_path = "panafz10ja-anvil-kanji.bin"
+firmware9_opt = "true"
+
+firmware10_desc = "panafz1j.bin (Panasonic FZ-1J BIOS)"
+firmware10_path = "panafz1j.bin"
+firmware10_opt = "true"
+
+firmware11_desc = "panafz1j-norsa.bin (Panasonic FZ-1J BIOS [Encryption Check Disabled])"
+firmware11_path = "panafz1j-norsa.bin"
+firmware11_opt = "true"
+
+firmware12_desc = "panafz1j-kanji.bin (Panasonic FZ-1J Kanji Font ROM)"
+firmware12_path = "panafz1j-kanji.bin"
+firmware12_opt = "true"
+
+notes = "(!) panafz1.bin (md5): f47264dd47fe30f73ab3c010015c155b|(!) panafz10.bin (md5): 51f2f43ae2f3508a14d9f56597e2d3ce|(!) panafz10-norsa.bin (md5): 1477bda80dc33731a65468c1f5bcbee9|(!) panafz10e-anvil.bin (md5): a48e6746bd7edec0f40cff078f0bb19f|(!) panafz10e-anvil-norsa.bin (md5): cf11bbb5a16d7af9875cca9de9a15e09|(!) goldstar.bin (md5): 8639fd5e549bd6238cfee79e3e749114|(!) sanyotry.bin (md5): 35fa1a1ebaaeea286dc5cd15487c13ea|(!) 3do_arcade_saot.bin (md5): 8970fc987ab89a7f64da9f8a8c4333ff|(!) panafz1-kanji.bin (md5): b8dc97f778a6245c58e064b0312e8281|(!) panafz10ja-anvil-kanji.bin (md5): 428577250f43edc902ea239c50d2240d|(!) panafz1j.bin (md5): a496cfdded3da562759be3561317b605|(!) panafz1j-norsa.bin (md5): f6c71de7470d16abe4f71b1444883dc8|(!) panafz1j-kanji.bin (md5): c23fb5d5e6bb1c240d02cf968972be37"
+
+description = "A port and continuation of the 4DO emulator, which itself is a fork of the FreeDO 3DO emulator, to libretro. This core is the best option for users seeking to play 3DO games, as it is the only one still under development."

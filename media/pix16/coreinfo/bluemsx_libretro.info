@@ -1,0 +1,44 @@
+# Software Information
+display_name = "MSX/SVI/ColecoVision/SG-1000 (blueMSX)"
+authors = "Daniel Vik"
+supported_extensions = "rom|ri|mx1|mx2|dsk|col|sg|sc|sf|cas|m3u"
+corename = "blueMSX"
+categories = "Emulator"
+license = "GPLv2"
+permissions = ""
+display_version = "SVN"
+
+# Hardware Information
+manufacturer = "Spectravideo|Philips|Al Alamiah|Sony|Sanyo|Mitsubishi|Toshiba|Hitachi|Panasonic|Canon|Casio|Pioneer|Fujitsu|Yamaha|JVC|Kyocera|GoldStar|Samsung|Daewoo|Gradiente|Sharp|Talent|NTT|ACVS/CIEL|DDX|AGE Labs"
+systemname = "MSX/SVI/ColecoVision/SG-1000"
+systemid = "msx"
+
+# Libretro Features
+database = "Microsoft - MSX|Microsoft - MSX2|Coleco - ColecoVision|Sega - SG-1000|Spectravideo - SVI-318 - SVI-328"
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+needs_kbd_mouse_focus = "true"
+
+# BIOS/Firmware
+firmware_count = 2
+firmware0_desc = "'Databases' folder"
+firmware0_path = "Databases/msxromdb.xml"
+firmware0_opt = "false"
+firmware1_desc = "'Machines' folder"
+firmware1_path = "Machines/Shared Roms/MSX.rom"
+firmware1_opt = "false"
+notes = "(!) The libretro port of blueMSX requires the BIOS files|from full standalone package inside the 'System\Machines' directory |and media database files into 'System\Databases' directory.|https://docs.libretro.com/library/bluemsx/#bios|(!) ColecoVision Gamepad Mapping is as follow:|Button 1 as Retropad A|Button 2 as Retropad B|Dial keys 1 to 8 as X, Y, R, L, R2, L2, R3, L3|Star as Select, Hash as Start|0 & 9 are on keyboard 1 & 2 for Player 1|0 & 9 are on keyboard 3 & 4 for Player 2.|(!) To play SpectraVideo cassettes type 'cload' then 'run'|or BLOAD ''CAS:'',R depending of game."
+
+description = "A port of the blueMSX emulator to libretro. This emulator is cycle accurate and covers all generations of MSX computers, as well as SVI, ColecoVision and Sega SG-1000 machines. This core requires the 'Databases' and 'Machines' folders from a standalone installation of blueMSX to be placed in the frontend's system directory to function."

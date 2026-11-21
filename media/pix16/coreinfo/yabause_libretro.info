@@ -1,0 +1,39 @@
+# Software Information
+display_name = "Sega - Saturn (Yabause)"
+authors = "Guillaume Duhammel|Theo Berkau|Anders Montonen"
+supported_extensions = "bin|ccd|chd|cue|iso|mds|zip|m3u"
+corename = "Yabause"
+license = "GPLv2"
+permissions = ""
+display_version = "v0.9.15"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Sega"
+systemname = "Saturn"
+systemid = "sega_saturn"
+
+# Libretro Features
+database = "Sega - Saturn"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "basic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+hw_render = "false"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "saturn_bios.bin (Saturn BIOS)"
+firmware0_path = "saturn_bios.bin"
+firmware0_opt = "true"
+notes = "(!) saturn_bios.bin (md5): af5828fdff51384f99b3c4926be27762"
+
+description = "A port of the Yabause Sega Saturn emulator to libretro. This core is software rendered and does not support cosmetic enhancements such as increased internal resolution, unlike the Kronos and YabaSanshiro cores. Likewise, it is not focused on accuracy, so Beetle-Saturn is a better choice for users with powerful devices. In general, most users will be better served by those other cores and should only fall back to this one if all other cores fail for whatever reason."

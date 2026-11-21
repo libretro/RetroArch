@@ -1,0 +1,44 @@
+# Software Information
+display_name = "Sharp - X68000 (PX68k)"
+authors = "hissorii"
+supported_extensions = "dim|img|d88|88d|hdm|dup|2hd|xdf|hdf|cmd|m3u"
+corename = "PX68k"
+license = "Custom Non-Commercial"
+permissions = ""
+display_version = "0.15+"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Sharp"
+systemname = "Sharp X68000"
+systemid = "sharp_x68000"
+
+# Libretro Features
+supports_no_game = "true"
+database = "Sharp - X68000"
+savestate = "true"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 3
+firmware0_desc = "iplrom.dat (X68000 BIOS)"
+firmware0_path = "keropi/iplrom.dat"
+firmware0_opt = "false"
+firmware1_desc = "cgrom.dat (X68000 BIOS 2)"
+firmware1_path = "keropi/cgrom.dat"
+firmware1_opt = "false"
+firmware2_desc = "iplrom30.dat (X68000 BIOS 3)"
+firmware2_path = "keropi/iplrom30.dat"
+firmware2_opt = "true"
+notes = "[i] Place BIOS files in system/keropi folder.|[i] F12 or Retropad L2 for Emulator Menu.|[i] Define your disks path in system/keropi/config StartDir line."
+
+description = "A port of the Portable Sharp X68000 Emulator to libretro. The core can launch games directly or can be launched with no content and then use the built-in OSD menu via retropad-L2 or F12 key."

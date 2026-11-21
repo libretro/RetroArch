@@ -1,0 +1,45 @@
+# Software Information
+display_name = "Sega - Saturn (Emir)"
+authors = "StrikerX3"
+supported_extensions = "cue|chd|mds|ccd|iso|m3u"
+corename = "Emir"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+display_version = "v0.3.3"
+
+# Hardware Information
+manufacturer = "Sega"
+systemname = "Saturn"
+systemid = "sega_saturn"
+database = "Sega - Saturn"
+
+# Libretro Features
+supports_no_game = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+is_experimental = "true"
+
+# Firmware / BIOS
+firmware_count = 3
+firmware0_desc = "sega_101.bin (Saturn JP BIOS)"
+firmware0_path = "sega_101.bin"
+firmware0_opt = "true"
+firmware1_desc = "mpr-17933.bin (Saturn US/EU BIOS)"
+firmware1_path = "mpr-17933.bin"
+firmware1_opt = "true"
+firmware2_desc = "saturn_bios.bin (Saturn BIOS)"
+firmware2_path = "saturn_bios.bin"
+firmware2_opt = "true"
+notes = "(!) Requires a Saturn BIOS in the system directory.|(!) Any one of the three supported BIOS files will work: sega_101.bin, mpr-17933.bin, or saturn_bios.bin|(!) sega_101.bin (md5): 85ec9ca47d8f6807718151cbcca8b964|(!) mpr-17933.bin (md5): 3240872c70984b6cbfda1586cab68dbe|(!) Optional: CD Block LLE requires a 64KB CD block ROM placed in the system/cdb/ directory."
+
+description = "A port of the Ymir Sega Saturn emulator to libretro. Ymir is a work-in-progress Saturn emulator focused on accuracy and compatibility. It features software rendering, SH2 emulation with optional cache emulation, and a modern codebase. A young but rapidly maturing alternative to Beetle Saturn."

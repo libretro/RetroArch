@@ -1,0 +1,38 @@
+# Software Information
+display_name = "NEC - PC Engine / CD (Beetle PCE FAST)"
+authors = "Mednafen Team"
+supported_extensions = "pce|cue|ccd|chd|toc|m3u"
+corename = "Beetle PCE Fast"
+license = "GPLv2"
+permissions = ""
+display_version = "v0.9.38.7"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "NEC"
+systemname = "PC Engine/PCE-CD"
+systemid = "pc_engine"
+
+# Libretro Features
+supports_no_game = "false"
+database = "NEC - PC Engine - TurboGrafx 16|NEC - PC Engine CD - TurboGrafx-CD"
+savestate = "true"
+savestate_features = "deterministic"
+
+# Firmware / BIOS
+firmware_count = 4
+firmware0_desc = "syscard3.pce (PCE-CD BIOS)"
+firmware0_path = "syscard3.pce"
+firmware0_opt = "true"
+firmware1_desc = "syscard2.pce (PCE-CD BIOS)"
+firmware1_path = "syscard2.pce"
+firmware1_opt = "true"
+firmware2_desc = "syscard1.pce (PCE-CD BIOS)"
+firmware2_path = "syscard1.pce"
+firmware2_opt = "true"
+firmware3_desc = "gexpress.pce (PCE-CD BIOS)"
+firmware3_path = "gexpress.pce"
+firmware3_opt = "true"
+notes = "(!) syscard3.pce (md5): 38179df8f4ac870017db21ebcbf53114|[i] For cue files track type use:|[i] OGG for ogg files|[i] WAVE for wav files|[i] BINARY for iso files"
+
+description = "This is the fastest PC Engine emulator forked from the Mednafen codebase, and it includes an optimized renderer for the PSP's hardware. This speed comes at a cost, though, and a few games don't work with this core. For this reason, if a device can run the non-Fast core at full speed, that one is propably a better choice. Additionally, this core differs from the Beetle-SuperGrafx core only insofar as it does not support SuperGrafx games, so again, unless you need to use this core for a specific reason, you may as well get the added compatibility of the other PCE-compatible cores."

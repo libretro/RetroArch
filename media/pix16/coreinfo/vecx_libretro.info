@@ -1,0 +1,33 @@
+# Software Information
+display_name = "GCE - Vectrex (vecx)"
+authors = "Valavan Manohararajah|John Hawthorn|Nikita Zimin|Demeth"
+supported_extensions = "bin|vec"
+corename = "vecx"
+license = "GPLv3"
+permissions = ""
+display_version = "SVN"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Smith Engineering|General Consumer Electronics"
+systemname = "Vectrex"
+systemid = "vectrex"
+
+# Libretro Features
+supports_no_game = "false"
+database = "GCE - Vectrex"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "true"
+required_hw_api = "OpenGL Core >= 3.3"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A port of the vecx Vectrex emulator to libretro. This core is hardware-rendered by default using OpenGL but also includes a software renderer. The software renderer defaults to a low resolution, but there is a core option to make the core render to a higher resolution multiplier, which will give a smoother, more vector-like image."

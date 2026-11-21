@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Nintendo - NES / Famicom (QuickNES)"
+authors = "blargg|kode54"
+supported_extensions = "nes"
+corename = "QuickNES"
+license = "LGPLv2.1+"
+permissions = ""
+display_version = "1.0-WIP"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Nintendo Entertainment System"
+systemid = "nes"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Nintendo - Nintendo Entertainment System"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+description = "QuickNES is the fastest NES emulator available via libretro, though this speed comes at the cost of some accuracy. This core should be used only when performance is of the utmost concern and even FCEUmm is too demanding."

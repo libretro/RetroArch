@@ -1,0 +1,33 @@
+# Software Information
+display_name = "EPOCH - Cassette Vision (EmuCV)"
+authors = "Maxime MARCONATO (aka MaaaX)"
+supported_extensions = "bin"
+corename = "EmuCV"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+display_version = "0.00"
+
+# Hardware Information
+manufacturer = "EPOCH"
+systemname = "Cassette Vision"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "true"
+
+# BIOS / Firmware
+firmware_count = 0
+
+description = "A libretro core for the EPOCH Cassette Vision, the 1981 Japanese console whose games carried their own CPU in the cartridge. The core is in early development: no save states and no core options yet."
+notes = "The Cassette Vision needs no BIOS - each cartridge contains the uPD777 (or uPD778) that runs it, so the ROM dump is the whole machine."

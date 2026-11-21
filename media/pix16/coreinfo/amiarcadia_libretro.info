@@ -1,0 +1,27 @@
+# Software Information
+display_name = "Arcadia 2001 / Interton VC 4000 (AmiArcadia)"
+authors = "James Jacobs"
+supported_extensions = "bin|tvc"
+corename = "AmiArcadia"
+categories = "Emulator"
+license = "Non-commercial"
+permissions = ""
+display_version = "4.42"
+
+# Hardware Information
+manufacturer = "Emerson|Interton|Elektor|Zaccaria"
+systemname = "Arcadia 2001"
+systemid = "arcadia"
+
+# Libretro Features
+database = "Elektor - TV Games Computer|Emerson - Arcadia 2001|Interton - VC 4000"
+supports_no_game = "false"
+savestate = "true"
+input_descriptors = "true"
+core_options = "true"
+core_options_version = "1.0"
+
+# Firmware / BIOS
+firmware_count = 0
+
+description = "A libretro port of AmiArcadia, an emulator for Signetics 2650 CPU-based systems including the Emerson Arcadia 2001, Interton VC 4000, Elektor TV Games Computer, and Zaccaria/Malzak coin-op arcade machines."

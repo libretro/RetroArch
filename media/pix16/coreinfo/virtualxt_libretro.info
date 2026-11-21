@@ -1,0 +1,31 @@
+# Software Information
+display_name = "VirtualXT"
+authors = "Andreas T Jonsson"
+supported_extensions = "img|zip"
+corename = "virtualxt"
+license = "zlib-acknowledgement"
+permissions = ""
+categories = "Emulator"
+display_version = "0.9.0"
+
+# Hardware Information
+manufacturer = "IBM"
+systemname = "PC/XT"
+systemid = "pcxt"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "false"
+savestate_features = "basic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+
+description = "VirtualXT is a Turbo PC/XT (8088/V20) emulator that runs on modern hardware and operating systems. It is designed to be simple and lightweight yet still capable enough to run a large library of old application and games."

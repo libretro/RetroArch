@@ -1,0 +1,31 @@
+# Software Information
+display_name = "Arcade (MAME 2010)"
+authors = "MAMEdev"
+supported_extensions = "zip"
+corename = "MAME 2010 (0.139)"
+license = "MAME"
+permissions = ""
+display_version = "0.139"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Various"
+systemname = "Arcade (various)"
+systemid = "mame"
+
+# Libretro Features
+supports_no_game = "false"
+database = "MAME 2010"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+hw_render = "false"
+disk_control = "false"
+notes = "(!) The BIOS files must be inside the ROM directory.|"
+
+description = "Based on a snapshot of the MAME codebase circa 2010, 'MAME 2010' is compatible with the MAME 0.139 ROM set, which was used in the popular MAME4droid port. If your device can run the up-to-date MAME - Current core (or any other newer snapshot) at full speed, most users will have a better experience with that core, while FBNeo is typically a better choice for speed vs accuracy, as long as it supports the game(s) in question. This core is mainly notable for using a very common ROM set that will never change."

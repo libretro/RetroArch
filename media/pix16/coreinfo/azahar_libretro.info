@@ -1,0 +1,34 @@
+# Software Information
+display_name = "Nintendo - 3DS (Azahar)"
+authors = "Azahar Emulator"
+supported_extensions = "3ds|3dsx|app|axf|bcci|bcxi|cci|cxi|elf|z3dsx|zcci|zcxi"
+corename = "Azahar"
+categories = "Emulator"
+license = "GPLv3+"
+permissions = ""
+display_version = "Git"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "3DS"
+systemid = "3ds"
+
+# Libretro Information
+database = "Nintendo - Nintendo 3DS"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "basic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "true"
+required_hw_api = "OpenGL Core >= 3.3"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A port of the Azahar 3DS emulator to libretro. Azahar is based on Citra, started by merging several prominent Citra forks after Citra was taken down. The core requires decrypted ROMs to function, and some games require Mii data to be dumped from your own 3DS console."

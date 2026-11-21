@@ -1,0 +1,47 @@
+# Software Information
+display_name = "RPG Maker XP/VX/VX Ace (mkxp-z)"
+categories = "Game engine"
+authors = "The mkxp-z authors"
+corename = "mkxp-z"
+supported_extensions = "ini|json|rxproj|rvproj|rvproj2|mkxpz|zip|7z"
+license = "GPLv2"
+permissions = ""
+
+# Hardware Information
+systemname = "RPG Maker XP/VX/VX Ace Game Engine"
+
+# BIOS/Firmware
+firmware_count = 3
+
+firmware0_desc = "mkxp-z/RTP/Standard/... (RPG Maker XP Run Time Package)"
+firmware0_path = "mkxp-z/RTP/Standard"
+firmware0_opt = "true"
+
+firmware1_desc = "mkxp-z/RTP/RPGVX/... (RPG Maker VX Run Time Package)"
+firmware1_path = "mkxp-z/RTP/RPGVX"
+firmware1_opt = "true"
+
+firmware2_desc = "mkxp-z/RTP/RPGVXAce/... (RPG Maker VX Ace Run Time Package)"
+firmware2_path = "mkxp-z/RTP/RPGVXAce"
+firmware2_opt = "true"
+
+# Libretro Features
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "false"
+supports_no_game = "false"
+single_purpose = "false"
+database = "RPG Maker"
+hw_render = "true"
+required_hw_api = "OpenGL Core >= 2.0 | OpenGL ES >= 2.0"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+description = "Open-source cross-platform player for (some) RPG Maker XP / VX / VX Ace games. A very heavily modified fork of mkxp. RGSS on steroids with a stupid name."

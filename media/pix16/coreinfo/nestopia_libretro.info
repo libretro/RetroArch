@@ -1,0 +1,39 @@
+# Software Information
+display_name = "Nintendo - NES / Famicom (Nestopia)"
+authors = "Martin Freij|R. Danbrook|Rupert Carmichael"
+supported_extensions = "nes|fds|unf|unif|nsf"
+corename = "Nestopia"
+license = "GPLv2"
+permissions = ""
+categories = "Emulator"
+display_version = "2.0.0"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Nintendo Entertainment System"
+systemid = "nes"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+database = "Nintendo - Nintendo Entertainment System|Nintendo - Family Computer Disk System"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "disksys.rom (Family Computer Disk System BIOS)"
+firmware0_path = "disksys.rom"
+firmware0_opt = "true"
+notes = "(!) disksys.rom (md5): ca30b50f880eb660a320674ed365ef7a|Press Retropad L1 to switch disk side."
+
+description = "The libretro port of Nestopia is based on the most up-to-date code from the Nestopia JG project. This emulator is quite fast and extremely accurate, with very high compatibility. In general, this core is a good choice for most users on desktop and mobile platforms."

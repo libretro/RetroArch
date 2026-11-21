@@ -1,0 +1,79 @@
+## All data is optional, but helps improve user experience.
+
+# Software Information - Information about the core software itself
+# Name displayed when the user is selecting the core:
+display_name = "Acorn - BBC Micro (b2)"
+
+# Categories that the core belongs to (optional):
+categories = "Emulator"
+
+# Name of the authors who wrote the core:
+authors = "Tom Seddon|Zoltan Balogh"
+
+# Name of the core:
+corename = "b2"
+
+# List of extensions the core supports:
+supported_extensions = "ssd|dsd"
+
+# License of the cores source code:
+license = "GPLv3"
+
+# Privacy-specific permissions needed for using the core:
+permissions = ""
+
+# Version of the core:
+display_version = "v0.1"
+
+# Hardware Information - Information about the hardware the core supports (when applicable)
+# Name of the manufacturer who produced the emulated system:
+manufacturer = "Acorn"
+
+# Name of the system that the core targets (optional):
+systemname = "BBC Micro"
+
+# ID of the primary platform the core uses. Use other core info files as guidance if possible.
+# If blank or not used, a standard core platform will be used (optional):
+systemid = "bbcmicro"
+
+# The number of mandatory/optional firmware files the core needs:
+# firmware_count = 0
+
+# Libretro Features - The libretro API features the core supports. Useful for sorting cores
+# Does the core support savestates
+savestate = "false"
+# If true, how complete is the savestate support? basic, serialized (rewind), deterministic (netplay/runahead)
+savestate_features = "serialized"
+# Does the core support the libretro cheat interface?
+cheats = "false"
+# Does the core support libretro input descriptors
+input_descriptors = "false"
+# Does the core support memory descriptors commonly used for achievements
+memory_descriptors = "false"
+# Does the core use the libretro save interface or does it do its own thing (like with shared memory cards)?
+libretro_saves = "false"
+# Does the core support the core options interface?
+core_options = "true"
+# What version of core options is supported? (later versions allow for localization and descriptions)
+core_options_version = "1.0"
+# Does the core support the subsystem interface? Commonly used for chained/special loading, such as Super Game Boy
+load_subsystem = "false"
+# Whether or not the core requires an external file to work:
+supports_no_game = "true"
+# Does the core have a single purpose? Does it represent one game or application, requiring predetermined support files or no external data? Used to indicate to a frontend that the core may be presented/handled independently from 'regular' cores that run a variety of content.
+single_purpose = "false"
+# Name of the database that the core supports (optional):
+# database = ""
+# Does the core support/require support for libretro-gl or other hardware-acceleration in the frontend?
+hw_render = "false"
+# Which hardware-rendering APIs does the core support? Delimited by pipe characters.
+# required_hw_api = "Vulkan >= 1.0 | Direct3D >= 10.0 | OpenGL Core >= 3.3 | OpenGL ES >= 3.0"
+# Does the core require ongoing access to the file after loading? Mostly used for softpatching and streaming of data
+needs_fullpath = "true"
+# Does the core support the libretro disk control interface for swapping disks on the fly?
+disk_control = "true"
+# Is the core currently suitable for general use? That is, will regular users find it useful or is it for development/testing only (subject to change over time)?
+is_experimental = "true"
+
+# Descriptive text, useful for tooltips, etc.
+description = "Libretro port of Tom Seddon's B2 emulator for BBC Micro."

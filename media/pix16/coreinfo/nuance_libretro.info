@@ -1,0 +1,47 @@
+# Software Information
+display_name = "VM Labs - NUON (Nuance)"
+authors = "Mike Perry|Carsten Waechter|WizzardSK"
+supported_extensions = "run|cof|nuon|cd|iso|img|chd"
+corename = "Nuance"
+categories = "Emulator"
+license = "Non-commercial"
+permissions = ""
+display_version = "0.6.7"
+
+# Hardware Information
+manufacturer = "VM Labs"
+systemname = "NUON"
+systemid = "nuon"
+
+# Libretro Features
+database = "VM Labs - NUON"
+supports_no_game = "false"
+hw_render = "true"
+required_hw_api = "OpenGL >= 2.1 | OpenGL ES >= 3.0"
+needs_fullpath = "true"
+disk_control = "false"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+core_options_version = "null"
+load_subsystem = "false"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 3
+firmware0_desc = "bios.cof (NUON main BIOS, shipped with the emulator)"
+firmware0_path = "nuance/bios.cof"
+firmware0_opt = "false"
+firmware1_desc = "minibios.cof (NUON minibios for MPEs 0-2)"
+firmware1_path = "nuance/minibios.cof"
+firmware1_opt = "false"
+firmware2_desc = "minibiosX.cof (NUON extended minibios)"
+firmware2_path = "nuance/minibiosX.cof"
+firmware2_opt = "false"
+notes = "The bios.cof / minibios.cof / minibiosX.cof files are clean-room emulator stubs that ship with the Nuance source distribution (NOT proprietary firmware dumps). They must be copied into <system>/nuance/ before loading a game."
+
+description = "Nuance is a NUON (VM Labs) emulator. NUON was a media-processing architecture embedded in a handful of DVD players (Samsung DVD-N501/N2000, Toshiba SD-2300, RCA DRC-480N) and used to ship a small number of games (Ballistic, Tempest 3000, Merlin Racing, Iron Soldier 3, Freefall 3050 A.D., Space Invaders XL, etc.) on standard DVD discs. The Linux/libretro port adds an OpenGL render path, miniaudio output, FUSE/ISO9660 disc reading, and an asmjit-based 64-bit JIT (x86_64; other architectures run the interpreter) on top of the original Windows codebase. Considered experimental. Games are loaded from raw ISO/BIN/CUE disc images, from CHD, or from individual .run/.cof program files dumped out of the disc filesystem."

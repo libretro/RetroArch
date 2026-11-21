@@ -1,0 +1,37 @@
+# Software Information
+display_name = "Texas Instruments TI-83 (Numero)"
+authors = "Neil Barkhina|Wabbitemu"
+supported_extensions = "8xp|8xk|8xg"
+corename = "Numero"
+license = "GPLv2"
+permissions = ""
+display_version = "v1.0"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Texas Instruments"
+systemname = "TI83"
+systemid = "ti_83"
+
+# Libretro Features
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+core_options = "true"
+needs_fullpath = "false"
+
+# BIOS / Firmware
+firmware_count = 3
+firmware0_desc = "ti83se.rom (TI-83 Silver Edition)"
+firmware0_path = "ti83se.rom"
+firmware0_opt = "true"
+firmware1_desc = "ti83plus.rom (TI-83 Plus)"
+firmware1_path = "ti83plus.rom"
+firmware1_opt = "true"
+firmware2_desc = "ti83.rom (TI-83)"
+firmware2_path = "ti83.rom"
+firmware2_opt = "true"
+notes = "(!) ti83se.rom (md5): c6ff8204c5c81b7be34614dbbd690c8b|(!) ti83plus.rom (md5): 8011181f810b5ec4e9d6a03f0e14257a|(!) ti83.rom (md5): d4448d09bbfde687c04f9e3310e023ab"
+
+description = "An emulator for the TI-83 family of graphing calculators. It is a port of the Wabbitemu emulator to libretro. It allows you to play your TI-83 games like never before in fullscreen using a gamepad. You can also control it with a mouse or keyboard, or you can just use the virtual mouse for navigation."

@@ -1,0 +1,20 @@
+# Software Information
+display_name = "Microsoft - Xbox (DirectXbox)"
+authors = "Libretro"
+supported_extensions = "iso"
+corename = "DirectXBox"
+license = "GPLv2+"
+permissions = ""
+display_version = "alpha"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Microsoft"
+systemname = "Xbox"
+systemid = "xbox"
+
+# Libretro Features
+database = "Microsoft - Xbox"
+is_experimental = "true"
+
+description = "A very preliminary and WIP emulator for Microsoft's original Xbox console. This emulator does not play any games and is only of interest to developers who wish to work on it."

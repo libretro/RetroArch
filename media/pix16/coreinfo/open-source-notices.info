@@ -1,0 +1,210 @@
+In addition to the GNU Public License v3, RetroArch and libretro use and incorporate code from a variety of open source projects that use different compatible licenses, including Apache License Version 2.0, MIT, BSD 2-clause, BSD 3-clause and zlib.
+
+This document provides the necessary copyright notices for those projects.
+
+////////////////////////////////////////////////////////////////////////////////
+Apache License Version 2.0
+////////////////////////////////////////////////////////////////////////////////
+
+glslang
+    Copyright (C) 2015-2016 The Khronos Group Inc
+
+Mbed TLS
+    Copyright (C) 2006-2015, ARM Limited, All Rights Reserved
+
+SPIRV-Cross
+    Copyright (C) 2015-2019 Arm Limited
+    Copyright (C) 2019 Hans-Kristian Arntzen
+    Copyright (C) 2016-2019 The Brenwill Workshop Ltd
+    Copyright (C) 2018-2019 Bradley Austin Davis
+    Copyright (C) 2014-2019 The Khronos Group Inc
+    Copyright (C) 2016-2019 Robert Konrad
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+////////////////////////////////////////////////////////////////////////////////
+BSD 2-Clause
+////////////////////////////////////////////////////////////////////////////////
+
+Apple keyboard driver
+    Copyright (C) 2011-2012 Dietrich Epp <depp@zdome.net>
+
+glslang
+    Copyright (C) 2014-2015 LunarG, Inc
+
+libogc
+    Copyright (C) 2004 - 2009 Michael Wiedenbauer (shagkur), Dave Murphy (WinterMute)
+
+libfdt - Flat Device Tree manipulation
+    Copyright (C) 2006 David Gibson, IBM Corporation
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+////////////////////////////////////////////////////////////////////////////////
+BSD 3-Clause
+////////////////////////////////////////////////////////////////////////////////
+
+GameMode
+    Copyright (C) 2017-2021, Feral Interactive
+
+glslang
+    Copyright (C) 2002-2005  3Dlabs Inc Ltd
+    Copyright (C) 2002-2010 The ANGLE Project Authors
+    Copyright (C) 2017 ARM Limited
+    Copyright (C) 2015-2018 Google, Inc
+    Copyright (C) 2012-2017 LunarG, Inc
+
+IBXM
+    Copyright (C) 2007 Martin Cameron
+
+libfat
+    Copyright (C) 2006-2008 Michael "Chishm" Chisholm
+
+libFLAC
+    Copyright (C) 2000-2009  Josh Coalson
+    Copyright (C) 2011-2016  Xiph.Org Foundation
+
+MMAL Camera Driver
+    Copyright (C) 2012, Broadcom Europe Ltd
+
+Raspberry Pi Drivers
+    Copyright (C) 2012, Broadcom Europe Ltd
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+////////////////////////////////////////////////////////////////////////////////
+GNU Public License v3
+////////////////////////////////////////////////////////////////////////////////
+
+libgo2 - Support library for the ODROID-GO Advance
+    Copyright (C) 2020 OtherCrashOverride
+
+Pigs In A Blanket
+    Copyright (C) 2020 by SonicMastr
+
+Switchres 2.0
+    Copyright (C) 2010-2021 Chris Kennedy, Antonio Giner, Alexandre Wodarczyk, Gil Delescluse
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+////////////////////////////////////////////////////////////////////////////////
+GNU Public License v3 with special bison exception
+////////////////////////////////////////////////////////////////////////////////
+
+Bison implementation for Yacc-like parsers in Cq
+    Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+As a special exception, you may create a larger work that contains part or all of the Bison parser skeleton and distribute that work under terms of your choice, so long as that work isn't itself a parser generator using the skeleton or a modified version thereof as a parser skeleton.  Alternatively, if you modify or redistribute the parser skeleton itself, you may (at your option) remove this special exception, which will cause the skeleton and the resulting Bison output files to be licensed under the GNU General Public License without this special exception.
+
+This special exception was added by the Free Software Foundation in version 2.2 of Bison.
+
+////////////////////////////////////////////////////////////////////////////////
+MIT License
+////////////////////////////////////////////////////////////////////////////////
+
+BearSSL
+    Copyright (C) 2016 Thomas Pornin
+
+Discord RPC
+    Copyright (C) 2017 Discord, Inc
+
+glslang
+    Copyright (C) 2013-2018 The Khronos Group Inc
+
+libretro-common
+    Copyright (C) 2010-2020 The RetroArch team
+
+libShake
+    Copyright (C) 2015-2019 Artur Rojek
+    Copyright (C) 2015-2019 Joe Vargas
+
+peglib
+    Copyright (C) 2015-17 Yuji Hirose
+
+Lua
+    Copyright (C) 1994-2021 Lua.org, PUC-Rio
+
+VITA2DLIB
+    Copyright (C) Sergi Granell (xerpi)
+
+rcheevos
+    Copyright (C) 2018 RetroAchievements.org
+
+Wayland protocols
+    Copyright (C) 2008-2013 Kristian Høgsberg
+    Copyright (C) 2010-2013 Intel Corporation
+    Copyright (C) 2013      Rafael Antognolli
+    Copyright (C) 2013      Jasper St. Pierre
+    Copyright (C) 2014      Jonas Ådahl
+    Copyright (C) 2014      Jason Ekstrand
+    Copyright (C) 2014-2015 Collabora, Ltd
+    Copyright (C) 2015      Red Hat Inc
+
+yxml
+    Copyright (C) 2013-2014 Yoran Heling
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+////////////////////////////////////////////////////////////////////////////////
+zlib License
+////////////////////////////////////////////////////////////////////////////////
+
+zlib
+    Copyright (C) 1995-2017 Jean-loup Gailly and Mark Adler
+
+This software is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
+
+2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
+
+3. This notice may not be removed or altered from any source distribution.
+
+////////////////////////////////////////////////////////////////////////////////
+NVIDIA glslang License
+////////////////////////////////////////////////////////////////////////////////
+
+glslang
+    Copyright (C) 2002, NVIDIA Corporation
+
+NVIDIA Corporation("NVIDIA") supplies this software to you in consideration of your agreement to the following terms, and your use, installation, modification or redistribution of this NVIDIA software constitutes acceptance of these terms.  If you do not agree with these terms, please do not use, install, modify or redistribute this NVIDIA software.
+
+In consideration of your agreement to abide by the following terms, and subject to these terms, NVIDIA grants you a personal, non-exclusive license, under NVIDIA's copyrights in this original NVIDIA software (the "NVIDIA Software"), to use, reproduce, modify and redistribute the NVIDIA Software, with or without modifications, in source and/or binary forms; provided that if you redistribute the NVIDIA Software, you must retain the copyright notice of NVIDIA, this notice and the following text and disclaimers in all such redistributions of the NVIDIA Software. Neither the name, trademarks, service marks nor logos of NVIDIA Corporation may be used to endorse or promote products derived from the NVIDIA Software without specific prior written permission from NVIDIA. Except as expressly stated in this notice, no other rights or licenses express or implied, are granted by NVIDIA herein, including but not limited to any patent rights that may be infringed by your derivative works or by other works in which the NVIDIA Software may be incorporated. No hardware is licensed hereunder.
+
+THE NVIDIA SOFTWARE IS BEING PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION, WARRANTIES OR CONDITIONS OF TITLE, NON-INFRINGEMENT, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR ITS USE AND OPERATION EITHER ALONE OR IN COMBINATION WITH OTHER PRODUCTS.
+
+IN NO EVENT SHALL NVIDIA BE LIABLE FOR ANY SPECIAL, INDIRECT, INCIDENTAL, EXEMPLARY, CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, LOST PROFITS; PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) OR ARISING IN ANY WAY OUT OF THE USE, REPRODUCTION, MODIFICATION AND/OR DISTRIBUTION OF THE NVIDIA SOFTWARE, HOWEVER CAUSED AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE), STRICT LIABILITY OR OTHERWISE, EVEN IF NVIDIA HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

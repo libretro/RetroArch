@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Commodore - PET (VICE xpet)"
+categories = "Emulator"
+authors = "VICE Team"
+corename = "VICE xpet"
+supported_extensions = "d64|d71|d80|d81|d82|g64|g41|x64|t64|tap|prg|p00|crt|bin|zip|gz|d6z|d7z|d8z|g6z|g4z|x6z|cmd|m3u|vfl|vsf|nib|nbz|d2m|d4m|/"
+license = "GPLv2"
+permissions = ""
+display_version = "3.10"
+
+# Hardware Information
+manufacturer = "Commodore"
+systemname = "PET"
+systemid = "commodore_pet"
+
+# Libretro Features
+database = "Commodore - PET"
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+
+description = "The VICE PET emulator, isolated and ported to libretro. This core emulates the 2001, 3032, 4032, 8032, 8096, 8296 and SuperPET (MicroMainFrame 9000) models, covering the whole series. Both the 40- and 80-column CRTC video chips are emulated (from the 4032 onward), but a few of the features that are not very important for average applications are not implemented yet, such as numbers of rasterlines per char and lines per screen."

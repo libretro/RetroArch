@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Commodore - CBM-II 6x0/7x0 (VICE xcbm2)"
+categories = "Emulator"
+authors = "VICE Team"
+corename = "VICE xcbm2"
+supported_extensions = "d64|d71|d80|d81|d82|g64|g41|x64|t64|tap|prg|p00|crt|bin|zip|gz|d6z|d7z|d8z|g6z|g4z|x6z|cmd|m3u|vfl|vsf|nib|nbz|d2m|d4m|/"
+license = "GPLv2"
+permissions = ""
+display_version = "3.10"
+
+# Hardware Information
+manufacturer = "Commodore"
+systemname = "CBM-II"
+systemid = "commodore_cbm2"
+
+# Libretro Features
+database = "Commodore - CBM-II"
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+
+description = "The VICE xCBM-II emulator, isolated and ported to libretro. This core emulates several types of CBM-II models that were marketed under different names in the USA and Europe, including B128 and B256, and CBM 610, CBM 620, CBM 710 and CBM 720, respectively."

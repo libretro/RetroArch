@@ -1,0 +1,85 @@
+# Name displayed when the user is selecting the core:
+display_name = "Java ME (SquirrelJME)"
+
+# Name of the authors who wrote the core:
+authors = "Stephanie Gawroriski (Xer Shadow Tail)"
+
+# List of extensions the core supports:
+supported_extensions = "jar|sqc|jam|jad|kjx|adf|sec|sto|sp|sp0|sp1|sp2|sp3|sp4|sp5|sp6|sp7|sp8|sp9"
+
+# Name of the core:
+corename = "SquirrelJME"
+
+# Name of the manufacturer who produced the emulated system:
+manufacturer = "Oracle Corporation"
+
+# Categories that the core belongs to (optional):
+categories = "Emulator"
+
+# Name of the system that the core targets (optional):
+systemname = "Java ME"
+
+# ID of the primary platform the core uses.
+# Use other core info files as guidance if possible.
+# If blank or not used, a standard core platform will be used (optional):
+systemid = "j2me"
+
+# Name of the database that the core supports (optional):
+database = "J2ME"
+
+# License of the cores source code:
+license = "MPL-2.0"
+
+# Privacy-specific permissions needed for using the core:
+permissions = ""
+
+# Version of the core:
+display_version = "0.3.0"
+
+# Whether or not the core requires an external file to work:
+supports_no_game = "true"
+
+# The number of mandatory/optional firmware files the core needs:
+firmware_count = 10
+
+# Versioned Class Libraries, SquirrelJME prefers a class library with a
+# version number which matches the core version first.
+firmware0_desc = "squirreljme-0.3.0-fast.jar (SquirrelJME Class Library, Versioned, Optimized and stripped)"
+firmware0_path = "squirreljme-0.3.0-fast.jar"
+firmware0_opt = "true"
+firmware1_desc = "squirreljme-0.3.0.jar (SquirrelJME Class Library, Versioned)"
+firmware1_path = "squirreljme-0.3.0.jar"
+firmware1_opt = "true"
+firmware2_desc = "squirreljme-0.3.0-test.jar (SquirrelJME Class Library, Versioned, Optimized and stripped with Tests)"
+firmware2_path = "squirreljme-0.3.0-test.jar"
+firmware2_opt = "true"
+firmware3_desc = "squirreljme-0.3.0-slow.jar (SquirrelJME Class Library, Versioned, Unoptimized with full debugging)"
+firmware3_path = "squirreljme-0.3.0-slow.jar"
+firmware3_opt = "true"
+firmware4_desc = "squirreljme-0.3.0-slow-test.jar (SquirrelJME Class Library, Versioned, Unoptimized with full debugging with tests)"
+firmware4_path = "squirreljme-0.3.0-slow-test.jar"
+firmware4_opt = "true"
+
+# Non-versioned Class Libraries, these have no version specified and may or
+# may not be compatible with the core version.
+firmware5_desc = "squirreljme-fast.jar (SquirrelJME Class Library, Optimized and stripped)"
+firmware5_path = "squirreljme-fast.jar"
+firmware5_opt = "true"
+firmware6_desc = "squirreljme.jar (SquirrelJME Class Library)"
+firmware6_path = "squirreljme.jar"
+firmware6_opt = "true"
+firmware7_desc = "squirreljme-test.jar (SquirrelJME Class Library, Optimized and stripped with Tests)"
+firmware7_path = "squirreljme-test.jar"
+firmware7_opt = "true"
+firmware8_desc = "squirreljme-slow.jar (SquirrelJME Class Library, Unoptimized with full debugging)"
+firmware8_path = "squirreljme-slow.jar"
+firmware8_opt = "true"
+firmware9_desc = "squirreljme-slow-test.jar (SquirrelJME Class Library, Unoptimized with full debugging with tests)"
+firmware9_path = "squirreljme-slow-test.jar"
+firmware9_opt = "true"
+
+# Additional notes:
+notes = "[1] SquirrelJME's class library, one of the listed firmwares, needs to be installed within the System directory. A matching checksum for the library is not important and is unspecified accordingly. It is recommended to use a versioned class library so that updates to the core version wise use the correct library for the core. The 'slow' variants contain extra debugging information and are unoptimized, used to debug SquirrelJME, not recommended unless you are a developer or submitting a bug report."
+
+# Description
+description = "A port of the SquirrelJME Java ME 8 Virtual Machine emulator to libretro. Intended to be small, fast and maintain high compatibility, the core also supports older J2ME software and games designed for flip-phones."

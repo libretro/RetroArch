@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Commodore - PLUS/4 (VICE xplus4)"
+categories = "Emulator"
+authors = "VICE Team"
+corename = "VICE xplus4"
+supported_extensions = "d64|d71|d80|d81|d82|g64|g41|x64|t64|tap|prg|p00|crt|bin|zip|gz|d6z|d7z|d8z|g6z|g4z|x6z|cmd|m3u|vfl|vsf|nib|nbz|d2m|d4m|/"
+license = "GPLv2"
+permissions = ""
+display_version = "3.10"
+
+# Hardware Information
+manufacturer = "Commodore"
+systemname = "PLUS/4"
+systemid = "commodore_plus4"
+
+# Libretro Features
+database = "Commodore - Plus-4"
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+
+description = "The VICE Plus/4 emulator, isolated and ported to libretro. This core provides experimental emulation for the business-focused Plus/4 model, the name for which refers to its built-in four-application ROM resident office suite (word processor, database, spreadsheet and graphing). Internally, the Plus/4 has the same basic architecture as the Commodore 16 and 116 models and can run software designed for those models, though it is incompatible with the Commodore 64's software."

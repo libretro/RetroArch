@@ -1,0 +1,31 @@
+# Software Information
+display_name = "Tomb Raider (OpenLara)"
+authors = "XProger"
+supported_extensions = "phd|psx|tr2"
+corename = "OpenLara"
+categories = "Game"
+license = "2-clause BSD"
+permissions = ""
+display_version = "v1"
+
+# Hardware Information
+systemname = "Classic Tomb Raider engine"
+systemid = "openlara"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Tomb Raider"
+hw_render = "true"
+required_hw_api = "OpenGL >= 3.0 | OpenGL ES >= 2.0"
+savestate = "false"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A port of the OpenLara free/open re-implementation of the engine used by the original Tomb Raider series (games 1 through 5 are planned to be supported eventually, though only the first game is fully playable at the time of this writing). The core is compatible with content available from the Steam/GOG release of Tomb Raider 1 (or from the PS1 release using jPSXdec to convert audio/video files), and it provides a number of graphical improvements over the regular game."

@@ -1,0 +1,21 @@
+# Software Information
+display_name = "Handheld Electronic (GW)"
+authors = "Andre Leiradella"
+supported_extensions = "mgw"
+corename = "GW"
+categories = "Emulator"
+license = "zlib"
+permissions = ""
+display_version = "Git"
+
+# Hardware Information
+manufacturer = "Various"
+systemname = "Handheld Electronic"
+systemid = "handheld_electronic"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Handheld Electronic Game"
+savestate = "false"
+
+description = "A simulator of various Game and Watch-style handheld electronic games, ported to libretro. Unlike MAME's emulation of these games, which is based on actual emulation, these simulations were created by observing the behavior of the games and then creating new logic that acts similarly. This core is much easier to get up and running than via MAME, so it's a good first choice for playing those games."

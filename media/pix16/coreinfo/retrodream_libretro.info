@@ -1,0 +1,31 @@
+# Software Information
+display_name = "Sega - Dreamcast (RetroDream)"
+authors = "Rinnegatamante/Others"
+supported_extensions = "gdi|chd|cdi"
+corename = "RetroDream"
+license = "GPLv3"
+permissions = ""
+display_version = "Git"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Sega"
+systemname = "Sega Dreamcast"
+systemid = "dreamcast"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Sega - Dreamcast"
+is_experimental = "true"
+
+# Firmware / BIOS
+firmware_count = 2
+firmware0_desc = "boot.bin (Dreamcast BIOS)"
+firmware0_path = "dc/boot.bin"
+firmware0_opt = "false"
+firmware1_desc = "flash.bin (Date/Time/Language)"
+firmware1_path = "dc/flash.bin"
+firmware1_opt = "false"
+notes = "(!) boot.bin (md5): e10c53c2f8b90bab96ead2d368858623|(!) flash.bin (md5): 0a93f7940c455905bea6e392dfde92a4"
+
+description = "A fork of the final open-source release of the Redream Dreamcast emulator before the project relicensed and became closed-source. It is missing many of the popular features of the later, closed-source releases, such as increased internal resolution and HLE BIOS and, as such, the Flycast-libretro core is typically a much better option for actually playing games via libretro. This core remains for historical value and in case future developers wish to learn from or further develop the codebase."

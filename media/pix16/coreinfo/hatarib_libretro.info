@@ -1,0 +1,49 @@
+# Software
+display_name = "Atari - ST / STE / TT / Falcon (hatariB)"
+categories = "Emulator"
+authors = "Brad Smith|Hatari: Nicolas Pomarède et al."
+corename = "hatarib"
+supported_extensions = "st|msa|dim|stx|ipf|ctr|m3u|m3u8|zip|zst|gz|acsi|ahd|vhd|scsi|shd|ide|gem"
+license = "GPLv2"
+pemissions = ""
+display_version = "v1.1"
+
+# Hardware
+manufacturer = "Atari"
+systemname = "Atari ST/STE/TT/Falcon"
+systemid = "atari_st"
+
+# Firmware
+# EmuTOS BIOS is built-in, though an original TOS is recommended.
+# system/tos.bin is used as a default if it exists,
+# but additional TOS ROMs can be placed in system/hatarib
+firmware_count = 1
+firmware0_desc = "tos.img (Default TOS)"
+firmware0_path = "tos.img"
+firmware0_opt = "true"
+
+# Notes
+notes = "Integrates the Hatari emulator: https://hatari-emu.org/"
+
+# Features
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "false"
+supports_no_game = "true"
+single_purpose = "false"
+database = "Atari - ST"
+database_match_archive_member = "false"
+hw_render = "false"
+#required_hw_api = ""
+needs_fullpath = "false"
+disk_control = "true"
+is_experimental = "false"
+
+# Description
+description = "Emulates the Atari ST family of computer hardware, including STE, TT, and Falcon. Incorporates the Hatari emulator. An original Atari TOS BIOS ROM is recommended (tos.img), but EmuTOS is included in case you cannot provide one."

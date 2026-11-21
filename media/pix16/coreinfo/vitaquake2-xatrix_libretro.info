@@ -1,0 +1,21 @@
+# Software Information
+display_name = "Quake II - The Reckoning (vitaQuake 2 [Xatrix])"
+authors = "Rinnegatamante"
+supported_extensions = "pak"
+corename = "vitaQuake 2 [Xatrix]"
+license = "GPLv2"
+permissions = ""
+display_version = "git"
+categories = "Game"
+
+# Hardware Information
+manufacturer = "Id Software"
+systemname = "Quake II Game Engine"
+systemid = "quake_2"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Quake II"
+savestate = "false"
+
+description = "A port of the VitaQuake 2 source port of iD's Quake 2 engine to libretro. There is a separate core for each of the Quake 2 mission packs, 'Rogue', 'Zaero' and 'Xatrix'. This core is for 'The Reckoning' mission pack. This core loads games in the *.pak format."

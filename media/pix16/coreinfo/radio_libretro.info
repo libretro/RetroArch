@@ -1,0 +1,30 @@
+# Software Information
+display_name = "Internet Radio (Radio)"
+authors = "fpscan|gadsby"
+supported_extensions = "m3u|txt|mp3|wav"
+corename = "Radio"
+categories = "Utility"
+license = "MIT"
+permissions = ""
+display_version = "1.1"
+
+# Hardware Information
+systemname = "Internet Radio Player"
+systemid = "internet_radio"
+
+# Libretro Features
+supports_no_game = "true"
+savestate = "false"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+
+# Description
+description = "Streams internet radio stations over the network, and plays local MP3 and WAV files. Stations are read from an .m3u or .txt playlist, with up to 100 presets selectable from the core options; the core also starts with no content at all. Draws a spectrum analyser, oscilloscope, VU meters and other visualisers while it plays. Needs a working network connection for streaming."

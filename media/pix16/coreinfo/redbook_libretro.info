@@ -1,0 +1,29 @@
+# Software Information
+display_name = "Redbook Audio Player"
+authors = "Brad Parker"
+supported_extensions = "cue|bin"
+corename = "Redbook"
+
+# Hardware Information
+categories = "music"
+systemname = "Redbook"
+systemid = "redbook"
+license = "Apache 2.0"
+permissions = ""
+display_version = "1.0"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "false"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A libretro core for playing back Redbook-formatted audio, such as commercial audio CDs."

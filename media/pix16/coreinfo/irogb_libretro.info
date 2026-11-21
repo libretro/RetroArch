@@ -1,0 +1,31 @@
+# Software Information
+display_name = "Nintendo - Game Boy / Color (IroGB)"
+authors = "Alex Sutila/Xuanli Lin"
+supported_extensions = "gb|gbc|dmg|cgb"
+corename = "IroGB"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+display_version = "v1.0.0"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy/Game Boy Color"
+systemid = "game_boy"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Nintendo - Game Boy|Nintendo - Game Boy Color"
+savestate = "true"
+savestate_features = "deterministic"
+
+# Firmware info
+firmware_count = 2
+firmware0_desc = "dmg_boot.bin (DMG-BIOS)"
+firmware0_path = "dmg_boot.bin"
+firmware0_opt = "true"
+firmware1_desc = "cgb_bios.bin (CGB-BIOS)"
+firmware1_path = "cgb_bios.bin"
+firmware1_opt = "true"
+
+description = "A libretro port of the IroGB Game Boy Color emulator. IroGB is a reasonably accurate CGB emulator core that operates on a clock-cycle-stepped model and passes over 95% of the test cases across three of the most widely used GB/GBC emulator test suites (mooneye/blargg/acid), with improved test coverage yet to come. The project was developed as a passion project, aiming to balance emulation accuracy with practical system requirements."

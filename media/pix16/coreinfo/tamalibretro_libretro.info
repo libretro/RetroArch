@@ -1,0 +1,31 @@
+# Software Information
+display_name = "Bandai - Tamagotchi P1 (TamaLIBretro)"
+authors = "Jean-Christophe Rona, Keith Bourdon"
+supported_extensions = "b|bin|rom"
+corename = "TamaLIBretro"
+license = "GPL-2.0"
+permissions = ""
+display_version = "1.0"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Bandai"
+systemname = "Tamagotchi P1"
+systemid = "tamagotchi"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "false"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+notes = "TamaLIB Copyright (C) 2021 Jean-Christophe Rona.|TamaLIBretro by Keith Bourdon.|TamaLIB and TamaLIBretro are distributed under the GPLv2 license."
+description = "A port of the TamaLIB emulator for first-generation Tamagotchi handhelds to libretro."

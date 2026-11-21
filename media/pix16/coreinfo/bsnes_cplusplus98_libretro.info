@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Nintendo - SNES / SFC (bsnes C++98 (v085))"
+categories = "Emulator"
+authors = "Near|Themaister|Ver GreenEyes"
+corename = "bsnes C++98 (v085)"
+supported_extensions = "sfc|smc|gb|gbc|st|bs"
+license = "GPLv3"
+permissions = ""
+display_version = "v085 (Performance)"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Super Nintendo Entertainment System"
+systemid = "super_nes"
+
+# Libretro Features
+savestate = "true"
+savestate_features = "serialized"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "false"
+load_subsystem = "true"
+supports_no_game = "false"
+database = "Nintendo - Super Nintendo Entertainment System|Nintendo - Sufami Turbo|Nintendo - Satellaview"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "true"
+
+description = "bsnes C++98 is based on version 085 of the bsnes emulator, but with the codebase downgraded to be compatible with the older C++98 standard. It is built from the 'performance' profile, which includes bsnes' fastest (but least-accurate) PPU. This core is really only useful for platforms that are stuck on old compilers (such as certain consoles) that are also powerful enough for bsnes. For most users, though, Snes9x-Current is a better option for speed and newer bsnes flavors are better for accuracy. So, unless you have a specific need for this core, you are probably better off with a different choice."

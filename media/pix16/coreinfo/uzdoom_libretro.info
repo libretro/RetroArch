@@ -1,0 +1,33 @@
+# Software Information
+display_name = "Doom (OG/2/FD) / Heretic / Hexen / Strife (UZDoom)"
+authors = "UZDoom Team"
+supported_extensions = "wad|iwad|pwad|pk3|ipk3|pkz|pk7|ipk7"
+corename = "UZDoom"
+license = "GPLv3+"
+permissions = ""
+display_version = "5.0.3"
+categories = "Game"
+
+# Hardware Information
+manufacturer = "id Software"
+systemname = "DOOM Game Engine"
+systemid = "doom"
+
+# Libretro Features
+supports_no_game = "false"
+database = "DOOM"
+savestate = "false"
+savestate_features = ""
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "true"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+notes = "(!) UZDoom requires a compatible DOOM IWAD such as doom.wad, doom2.wad, plutonia.wad or tnt.wad.|(!) Supports advanced mods and custom content in WAD, PK3 and PK7 formats.|(!) Hardware rendering requires a compatible graphics backend."
+
+description = "A libretro port of UZDoom, a modern, feature-rich source port of the classic DOOM engine and a continuation of ZDoom and GZDoom. UZDoom supports DOOM, DOOM II, Final DOOM and numerous custom games and modifications. Features include high-resolution graphics, dynamic lighting, 3D floors, advanced scripting, extensive modding capabilities and modern OpenGL and Vulkan rendering."

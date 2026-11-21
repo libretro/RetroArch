@@ -1,0 +1,23 @@
+# Software Information
+display_name = "Eternal Computer"
+display_version = "0.0"
+authors = "Adrian Cable"
+categories = "Emulator"
+license = "MIT"
+supported_extensions = "capsule|bootimage"
+
+# Hardware Information
+manufacturer = "Eternal Software Initiative"
+systemname = "Eternal Computer"
+systemid = "eternal"
+
+# Libretro Features
+database = "eternal"
+supports_no_game = "false"
+libretro_saves = "false"
+cheats = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A port of the Subleq+ Eternal Computer to libretro."

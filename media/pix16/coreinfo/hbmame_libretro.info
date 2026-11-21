@@ -1,0 +1,22 @@
+# Software Information
+display_name = "Arcade (HBMAME)"
+authors = "Robbbert,MAMEdev"
+supported_extensions = "zip|chd|7z|cmd"
+corename = "HBMAME (Git)"
+license = "GPLv2+"
+permissions = ""
+display_version = "Git"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Various"
+systemname = "Arcade (various)"
+systemid = "hbmame"
+
+# Libretro Features
+supports_no_game = "false"
+database_match_archive_member = "true"
+database = "HBMAME"
+notes = "[1] HBMAME supports MAME save states.|[2] HBMAME supports extracted MAME cheats.|[3] The BIOS files must be inside the ROM directory.|[4] CHD files and their directories must be inside the ROM directory.|[5] ARTWORK, CHEATS, HASH, INI and SAMPLES directories can be placed|[^] inside the 'SYSTEMDIR\mame' directory. (INI/Source for drivers)|[6] When saving, the following directories will be created in the 'SAVEDIR\mame'|[^] directory: STATES, NVRAM, INPUT, SNAPS, CFG, MEMCARD, and DIFF.|[7] Default combo to call MAME GUI: Retropad Select + X|[^] Retropad Select + Start => CANCEL"
+
+description = "'HBMAME' is compatible with HBMAME latest ROM sets. HBMAME (HomeBrew MAME) is a derivative of MAME, and contains various hacks and homebrews. For most users and use-cases (that is, anything that's not homebrew/hacks), the normal, up-to-date MAME or FBNeo cores are a better option."

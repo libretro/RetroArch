@@ -1,0 +1,42 @@
+# Software Information - Information about the core software itself
+display_name = "Arcade (DICE)"
+categories = "Emulator"
+authors = "DICE Team|Ken Mitton"
+corename = "DICE"
+# DMY are dummy launcher files for rom-less games.
+supported_extensions = "zip|dmy|k1|a1|6c|c6|d2|s1|f4|a4|1da|da1|C4|4c|4d|d7|d4"
+license = "GPLv3"
+# permissions = ""
+display_version = "v0.4.2"
+
+# Hardware Information
+manufacturer = "Various"
+systemname = "Arcade (various)"
+systemid = "dice"
+firmware_count = 0
+# Additional notes:
+# notes = "(!) hash|(!) game rom|(^) continue|[1] notes|[^] continue|[*] list"
+
+# Libretro Features
+savestate = "false"
+cheats = "false"
+# Does the core support libretro input descriptors
+# input_descriptors = "true"
+memory_descriptors = "false"
+# Does the core use the libretro save interface or does it do its own thing (like with shared memory cards)?
+# libretro_saves = "true"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "false"
+# Whether or not the core requires an external file to work:
+supports_no_game = "false"
+single_purpose = "false"
+# Name of the database that the core supports (optional):
+database = "DICE"
+needs_fullpath = "true"
+disk_control = "false"
+# Is the core currently suitable for general use? That is, will regular users find it useful or is it for development/testing only (subject to change over time)?
+is_experimental = "false"
+
+# Descriptive text, useful for tooltips, etc.
+description = "DICE is a Discrete Integrated Circuit Emulator. It emulates computer systems that lack any type of CPU, consisting only of discrete logic components."

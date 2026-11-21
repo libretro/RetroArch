@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Nintendo - Game Boy / Color (DoubleCherryGB)"
+authors = "GIGO|Hii|TimOelrichs"
+supported_extensions = "cgb|dmg|gb|gbc|sgb"
+corename = "DoubleCherryGB"
+license = "GPLv2"
+permissions = ""
+display_version = "v0.17.0"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy/Game Boy Color"
+systemid = "game_boy"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Nintendo - Game Boy|Nintendo - Game Boy Color"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A fork of the TGB Dual Game Boy core with up to 16 players multiplayer and link over network support for Pokemon Trading. While this core is a decent, usable emulator, it is most notable for being able to emulate to Game Boys connected via Link Cable, which is useful for things like trading Pokemon, etc. DoubleCherryGB added the emulation of the GAMEBOY 4 PLAYER ADATPTER (DMG-07) and up 16 Player Link Hacks like the Tetris 4Player Hack and the FACEBALL 2000 16 player RING LINK CABLE. Thanks to the core's modest hardware requirements, it should run well even on low-powered hardware, though users with more powerful hardware may be better served by the SameBoy core, which can also do the same Link Cable functionality but with improved accuracy and compatibility."
