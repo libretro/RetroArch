@@ -1,0 +1,5 @@
+#!/bin/sh
+# Installed with: git config core.hooksPath tools/hooks
+# Runs CI's fast tree-wide checks on the staged files; see
+# tools/precommit.sh.
+PRECOMMIT_STAGED=1 exec sh "$(git rev-parse --show-toplevel)/tools/precommit.sh"

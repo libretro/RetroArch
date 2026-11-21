@@ -222,6 +222,25 @@ Historical commits may be used to understand established implementation patterns
 - Do not reproduce obsolete workarounds merely because they appear in an old commit.
 - Inspect surrounding current code before applying a historical pattern.
 
+## Before every commit
+
+Run CI's tree-wide checks before committing; most broken CI runs come
+from commits that skipped them.
+
+- Once per clone: `git config core.hooksPath tools/hooks`. The
+  pre-commit hook then runs `tools/precommit.sh` on the staged files:
+  the Windows SDK macro names, overlapping copies, the Vulkan and D3D12
+  wait, submit and teardown rules, the msg_hash and sublabel tables,
+  the settings table, sample object directories and workflow paths.
+  Each is the check its workflow runs.
+- A failing hook means CI would fail. Fix the cause; do not commit with
+  `--no-verify`, and do not change a checker or its allow list to let
+  the commit through.
+- The hook ends by listing the CI jobs the staged files reach
+  (`tools/ci_local.py which`). Run each of them with
+  `tools/ci_local.py run` before pushing, as the next section says.
+- Without the hook, run `sh tools/precommit.sh <changed files>` by hand.
+
 ## Regression tests
 
 Regression tests must build on both Windows and Linux.
