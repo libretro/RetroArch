@@ -329,6 +329,10 @@ extern const uint16_t font_driver_arabic_shapes[0x100][0x4];
 #define FONT_LRO "\xE2\x80\xAD"
 size_t font_driver_layout_line(const char *msg, size_t msg_len,
       char *s, size_t len, bool *rtl);
+
+/* True when the len-byte character at s is a combining mark, drawn on
+ * the glyph before it */
+bool font_driver_is_mark(const char *s, size_t len);
 #endif
 
 /* Would rebuilding this font at this path and size produce the font

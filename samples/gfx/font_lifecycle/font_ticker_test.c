@@ -352,6 +352,274 @@ static void run_case(const struct ticker_case *c, enum gfx_animation_ticker_type
    }
 }
 
+/* Glyphs drawn from s to s + n: characters, a mark counted with the
+ * glyph before it */
+static int glyphs_in(const char *s, size_t n)
+{
+   const char *p   = s;
+   const char *end = s + n;
+   int         g   = 0;
+   while (p < end)
+   {
+      const char *q = p;
+      utf8_walk(&q);
+      if (!font_driver_is_mark(p, (size_t)(q - p)))
+         g++;
+      p = q;
+   }
+   return g;
+}
+
+/* The stepped ticker over a selected label: every frame a run of the
+ * whole line as drawn, one glyph on from the frame before in reading
+ * order at most, the first one at the label's reading start */
+static void run_stepped_case(const struct ticker_case *c,
+      enum gfx_animation_ticker_type type)
+{
+   char        full[DRAWN_MAX];
+   char        strip[DRAWN_MAX * 2 + 64];
+   char        dst[512];
+   char        msg[256];
+   size_t      full_len, strip_len, hay_len;
+   const char *hay;
+   const char *p;
+   unsigned    idx, chars = 0;
+   unsigned    broken = 0, jumps = 0, backwards = 0, leaks = 0;
+   long        prev   = -1;
+   bool        loop   = (type == TICKER_TYPE_LOOP);
+
+   draw(c->label);
+   memcpy(full, drawn, drawn_len + 1);
+   full_len = drawn_len;
+   memcpy(strip, full, full_len);
+   memcpy(strip + full_len, TICKER_SPACER_DEFAULT,
+         strlen(TICKER_SPACER_DEFAULT));
+   strip_len = full_len + strlen(TICKER_SPACER_DEFAULT);
+   memcpy(strip + strip_len, full, full_len);
+   strip_len += full_len;
+   strip[strip_len] = '\0';
+   hay       = loop ? strip : full;
+   hay_len   = loop ? strip_len : full_len;
+   for (p = c->label; *p; p++)
+      chars += ((*p & 0xC0) != 0x80);
+
+   for (idx = 0; idx < 400; idx++)
+   {
+      gfx_animation_ctx_ticker_t t;
+      long   at = -1;
+      size_t i;
+
+      memset(&t, 0, sizeof(t));
+      t.type_enum = type;
+      t.idx       = idx;
+      t.selected  = true;
+      t.len       = chars / 2;
+      t.str       = c->label;
+      t.s         = dst;
+      t.s_len     = sizeof(dst);
+      gfx_animation_ticker(&t);
+
+      draw(dst);
+      if (strstr(drawn, "\xE2\x80\xAD"))
+         leaks++;
+      if (!drawn_len)
+         continue;
+      for (i = 0; i + drawn_len <= hay_len; i++)
+         if (     (hay[i] & 0xC0) != 0x80
+               && !memcmp(hay + i, drawn, drawn_len)
+               && (at < 0 || labs((long)i - prev) < labs(at - prev)))
+            at = (long)i;
+      if (at < 0)
+      {
+         broken++;
+         continue;
+      }
+
+      if (idx == 0)
+      {
+         /* Reading starts at the right end of a right-to-left line */
+         long start = c->rtl ? (long)(full_len - drawn_len) : 0;
+         if (!loop && at != start)
+         {
+            sprintf(msg, "%s: stepped %s starts at byte %ld, not %ld",
+                  c->name, "bounce", at, start);
+            CHECK(0, msg);
+         }
+      }
+      else if (at != prev)
+      {
+         int d = glyphs_in(hay + (at < prev ? at : prev),
+               (size_t)labs(at - prev));
+         bool right = at > prev;
+         /* A loop wraps back by a whole period: not a move */
+         if (loop && d > glyphs_in(hay, hay_len) / 3)
+            ;
+         else
+         {
+            if (d > 1)
+               jumps++;
+            if (loop && (c->rtl ? right : !right))
+               backwards++;
+         }
+      }
+      prev = at;
+   }
+
+   printf("  %-44s %s: %u jumps, %u frames broken, %u backwards, "
+         "%u marks drawn\n", c->name, loop ? "loop  " : "bounce", jumps,
+         broken, backwards, leaks);
+   sprintf(msg, "%s: stepped frames are not a run of the line", c->name);
+   CHECK(!broken, msg);
+   sprintf(msg, "%s: stepped frames move more than a glyph", c->name);
+   CHECK(!jumps, msg);
+   sprintf(msg, "%s: stepped loop moves against its reading", c->name);
+   CHECK(!backwards, msg);
+   sprintf(msg, "%s: the override mark reaches the renderer", c->name);
+   CHECK(!leaks, msg);
+}
+
+/* The stepped ticker as it stepped over typed characters, through
+ * utf8len() and utf8cpy(): what every label without right-to-left text,
+ * and every unselected or fitting one, must still get byte for byte */
+static size_t ref_put(char *s, size_t len, size_t at, const char *str,
+      size_t off, size_t n)
+{
+   if (!n)
+      return 0;
+   return utf8cpy(s + at, len - at, utf8skip(str, off), n);
+}
+
+static void ref_stepped(const char *str, const char *spacer, size_t len,
+      bool selected, enum gfx_animation_ticker_type type, uint64_t idx,
+      char *s, size_t s_len)
+{
+   size_t str_len = 0;
+   if (selected)
+      str_len = utf8len(str);
+   else
+   {
+      const unsigned char *p = (const unsigned char*)str;
+      while (*p)
+         if ((*p++ & 0xc0) != 0x80 && ++str_len > len)
+            break;
+   }
+   if (str_len <= len)
+   {
+      utf8cpy(s, s_len, str, len);
+      return;
+   }
+   if (!selected)
+   {
+      size_t _len = utf8cpy(s, s_len, str, len - 3);
+      if (_len + 4 <= s_len)
+         strcpy(s + _len, "...");
+      else
+         s[s_len - 1] = '\0';
+      return;
+   }
+   if (type == TICKER_TYPE_LOOP)
+   {
+      int    sp     = (int)utf8len(spacer);
+      int    period = (int)str_len + sp;
+      int    phase  = (int)(idx % (uint64_t)period);
+      int    w1, o1 = 0, o2, w2, w3;
+      size_t at;
+      w1 = (int)str_len - phase;
+      if (w1 < 0)
+         w1 = 0;
+      else if (w1 > (int)len)
+         w1 = (int)len;
+      if (phase < (int)str_len)
+         o1 = phase;
+      o2 = phase - (int)str_len;
+      if (o2 < 0)
+         o2 = 0;
+      w2 = (int)len - w1;
+      if (w2 > sp)
+         w2 = sp;
+      w2 -= o2;
+      if (w2 < 0)
+         w2 = 0;
+      w3 = (int)len - (w1 + w2);
+      if (w3 < 0)
+         w3 = 0;
+      s[0] = '\0';
+      at   = ref_put(s, s_len, 0, str, (size_t)o1, (size_t)w1);
+      at  += ref_put(s, s_len, at, spacer, (size_t)o2, (size_t)w2);
+      ref_put(s, s_len, at, str, 0, (size_t)w3);
+   }
+   else
+   {
+      int old    = (int)(str_len - len);
+      int period = 2 * old + 4;
+      int phase  = (int)(idx % (uint64_t)period);
+      int off;
+      if (phase < 2)
+         off = 0;
+      else if (phase < 2 + old)
+         off = phase - 2;
+      else if (phase < 4 + old)
+         off = old;
+      else
+         off = old - (phase - (4 + old));
+      utf8cpy(s, s_len, utf8skip(str, (size_t)off), len);
+   }
+}
+
+static void check_stepped_ref(const char *name, const char *label,
+      bool rtl)
+{
+   static const char *const spacers[] = { NULL, " \xE2\x80\xA2 " };
+   char     got[80], want[80];
+   size_t   len, s_len, sp;
+   unsigned idx, mode;
+   int      bad = 0;
+   for (mode = 0; mode < 4 && !bad; mode++)
+   {
+      bool selected = (mode < 2);
+      enum gfx_animation_ticker_type type = (mode & 1)
+         ? TICKER_TYPE_BOUNCE : TICKER_TYPE_LOOP;
+      for (sp = 0; sp < 2 && !bad; sp++)
+      for (len = 0; len <= 30 && !bad; len++)
+      for (s_len = 1; s_len <= 64 && !bad; s_len += (s_len < 12) ? 1 : 7)
+      for (idx = 0; idx < 90 && !bad; idx += selected ? 1 : 45)
+      {
+         gfx_animation_ctx_ticker_t t;
+         const char *spacer = spacers[sp] ? spacers[sp]
+            : TICKER_SPACER_DEFAULT;
+         /* A selected label with right-to-left text steps over its
+          * drawn glyphs instead, once it does not fit */
+         if (rtl && selected && utf8len(label) > len)
+            continue;
+         memset(got, 0x5A, sizeof(got));
+         memset(want, 0x5A, sizeof(want));
+         memset(&t, 0, sizeof(t));
+         t.type_enum = type;
+         t.idx       = idx;
+         t.selected  = selected;
+         t.len       = len;
+         t.str       = label;
+         t.spacer    = spacers[sp];
+         t.s         = got;
+         t.s_len     = s_len;
+         gfx_animation_ticker(&t);
+         ref_stepped(label, spacer, len, selected, type, idx, want,
+               s_len);
+         if (     strcmp(got, want)
+               || (unsigned char)got[s_len] != 0x5A)
+         {
+            printf("  FAIL: %s, %s%s, field %u, %u bytes, frame %u: "
+                  "\"%s\", not \"%s\"\n", name,
+                  type == TICKER_TYPE_LOOP ? "loop" : "bounce",
+                  selected ? "" : ", unselected", (unsigned)len,
+                  (unsigned)s_len, idx, got, want);
+            bad = 1;
+            fails++;
+         }
+      }
+   }
+}
+
 /* A label of one-byte characters is copied as byte runs. Into a
  * shorter buffer, every frame of it is the frame a buffer big enough
  * holds, cut to fit and terminated. */
@@ -423,6 +691,26 @@ int main(void)
       run_case(&cases[i], TICKER_TYPE_BOUNCE);
       run_case(&cases[i], TICKER_TYPE_LOOP);
    }
+
+   printf("stepped ticker:\n");
+   for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+   {
+      run_stepped_case(&cases[i], TICKER_TYPE_LOOP);
+      run_stepped_case(&cases[i], TICKER_TYPE_BOUNCE);
+   }
+
+   check_stepped_ref("English", "Show Advanced Settings In The Quick Menu",
+         false);
+   check_stepped_ref("Cyrillic", "\xD0\x9F\xD0\xBE\xD0\xBA\xD0\xB0"
+         "\xD0\xB7\xD0\xB0\xD1\x82\xD1\x8C \xD1\x80\xD0\xB0\xD1\x81"
+         "\xD1\x88\xD0\xB8\xD1\x80\xD0\xB5\xD0\xBD\xD0\xBD\xD1\x8B"
+         "\xD0\xB5 (v1.22)", false);
+   check_stepped_ref("Latin-1 and emoji", "Caf\xC3\xA9 \xF0\x9F\x8E\xAE"
+         " r\xC3\xA9tro \xF0\x9F\x95\xB9 na\xC3\xAFve list", false);
+   check_stepped_ref("a stray continuation byte first",
+         "\x80\x81 opens on continuation bytes, then text", false);
+   check_stepped_ref("Hebrew", cases[1].label, true);
+   check_stepped_ref("Arabic", cases[3].label, true);
 
    check_bytes_cut("Configuration files and directories", TICKER_TYPE_LOOP,
          true, 100);

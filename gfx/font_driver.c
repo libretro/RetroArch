@@ -2615,6 +2615,12 @@ size_t font_driver_layout_line(const char *msg, size_t msg_len,
    return out_len;
 }
 
+bool font_driver_is_mark(const char *s, size_t len)
+{
+   return font_bidi_class((const unsigned char*)s, (unsigned)len)
+      == FONT_BIDI_NSM;
+}
+
 #endif
 
 void font_driver_render_msg(void *data, const char *msg, size_t msg_len,
