@@ -1522,6 +1522,18 @@ static bool gfx_display_d3d10_blur_rect(void *data, unsigned video_dims,
    ctx->lpVtbl->RSSetScissorRects(ctx, 1, &scissor);
    ctx->lpVtbl->OMSetBlendState(ctx, blend_state, blend_factor, sample_mask);
    ctx->lpVtbl->PSSetConstantBuffers(ctx, 0, 1, &d3d10->ubo);
+   /* Back to what the quads after it draw with: they bind none of it
+    * themselves, and the message box over the blur is drawn next */
+   ctx->lpVtbl->VSSetConstantBuffers(ctx, 0, 1, &d3d10->ubo);
+   d3d10_set_shader(ctx, &d3d10->sprites.shader);
+   {
+      UINT stride = sizeof(d3d10_sprite_t);
+      UINT offset = 0;
+      ctx->lpVtbl->IASetVertexBuffers(ctx, 0, 1,
+            (D3D10Buffer* const)&d3d10->sprites.vbo, &stride, &offset);
+   }
+   ctx->lpVtbl->IASetPrimitiveTopology(ctx,
+         D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
    ok = true;
 end:
    Release(src);

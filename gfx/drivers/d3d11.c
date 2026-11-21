@@ -1590,6 +1590,22 @@ static bool gfx_display_d3d11_blur_rect(void *data, unsigned video_dims,
    ctx->lpVtbl->RSSetState(ctx, raster);
    ctx->lpVtbl->OMSetBlendState(ctx, blend_state, blend_factor, sample_mask);
    ctx->lpVtbl->PSSetConstantBuffers(ctx, 0, 1, &d3d11->ubo);
+   /* Back to what the quads after it draw with: they bind none of it
+    * themselves, and the message box over the blur is drawn next */
+   ctx->lpVtbl->VSSetConstantBuffers(ctx, 0, 1, &d3d11->ubo);
+   {
+      d3d11_shader_t *shader = d3d11_sprite_shader(d3d11);
+      UINT stride            = sizeof(d3d11_sprite_t);
+      UINT offset            = 0;
+      ctx->lpVtbl->IASetInputLayout(ctx, shader->layout);
+      ctx->lpVtbl->VSSetShader(ctx, shader->vs, NULL, 0);
+      ctx->lpVtbl->PSSetShader(ctx, shader->ps, NULL, 0);
+      ctx->lpVtbl->GSSetShader(ctx, shader->gs, NULL, 0);
+      ctx->lpVtbl->IASetVertexBuffers(ctx, 0, 1, &d3d11->sprites.vbo,
+            &stride, &offset);
+   }
+   ctx->lpVtbl->IASetPrimitiveTopology(ctx,
+         D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
    ok = true;
 end:
    Release(src);
