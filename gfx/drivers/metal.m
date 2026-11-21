@@ -3974,7 +3974,7 @@ static float metal_hdr_pq_to_nits(float pq)
    id<MTLTexture> target, src;
    id<MTLRenderCommandEncoder> encoder;
    float params[4], c;
-   unsigned i, small, rect;
+   unsigned i, blur_size, rect;
    int x0, y0, x1, y1;
    if (_blurFailed || _bloomDims || !_commandBuffer || !_rce || !_renderPass)
       return NO;
@@ -3994,7 +3994,7 @@ static float metal_hdr_pq_to_nits(float pq)
    if (x1 - x0 < 8 || y1 - y0 < 8)
       return NO;
    rect  = VIDEO_SCALE_PACK(x1 - x0, y1 - y0);
-   small = menu_blur_dims(rect);
+   blur_size = menu_blur_dims(rect);
    if (![self bloomSmallStates])
    {
       _blurFailed = YES;
@@ -4020,13 +4020,13 @@ static float metal_hdr_pq_to_nits(float pq)
       }
       _blurMixFormat = target.pixelFormat;
    }
-   if (small != _blurDims)
+   if (blur_size != _blurDims)
    {
       for (i = 0; i < 3; i++)
       {
          RARCH_RELEASE_NIL(_blurTex[i]);
          _blurTex[i] = [self blurImage:i == MENU_BLUR_COPY
-               ? MENU_BLUR_COPY_DIMS(small) : small
+               ? MENU_BLUR_COPY_DIMS(blur_size) : blur_size
             format:MTLPixelFormatRGBA16Float
             usage:MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead];
          if (!_blurTex[i])
@@ -4035,7 +4035,7 @@ static float metal_hdr_pq_to_nits(float pq)
             return NO;
          }
       }
-      _blurDims = small;
+      _blurDims = blur_size;
    }
 
    restore = RARCH_RETAIN(_renderPass);
@@ -4077,7 +4077,7 @@ static float metal_hdr_pq_to_nits(float pq)
       /* Halved at the source's texel centres, a 2x2 average; then the
        * blur's passes */
       [self blurPass:src into:_blurTex[MENU_BLUR_COPY] params:still];
-      menu_blur_plan(plan, small);
+      menu_blur_plan(plan, blur_size);
       for (i = 0; i < MENU_BLUR_PASSES; i++)
          [self blurPass:_blurTex[plan[i].src] into:_blurTex[plan[i].dst]
             params:plan[i].params];

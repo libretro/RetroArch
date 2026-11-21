@@ -493,7 +493,7 @@ bool gl_menu_blur(gl_menu_bloom_t **bloom, unsigned video_dims,
    GLint target, read_target = 0, viewport[4];
    GLint scissor_box[4] = { 0, 0, 0, 0 };
    GLboolean scissor;
-   unsigned i, small, copy_dims;
+   unsigned i, blur_size, copy_dims;
    int vh = (int)VIDEO_SCALE_H(video_dims);
    int x0 = x < 0 ? 0 : x;
    int y0 = y < 0 ? 0 : y;
@@ -523,8 +523,8 @@ bool gl_menu_blur(gl_menu_bloom_t **bloom, unsigned video_dims,
          return false;
       }
    }
-   small     = menu_blur_dims(VIDEO_SCALE_PACK(x1 - x0, y1 - y0));
-   copy_dims = MENU_BLUR_COPY_DIMS(small);
+   blur_size     = menu_blur_dims(VIDEO_SCALE_PACK(x1 - x0, y1 - y0));
+   copy_dims = MENU_BLUR_COPY_DIMS(blur_size);
 
    glGetIntegerv(GL_MENU_BLOOM_FRAMEBUFFER_BINDING, &target);
 #ifndef HAVE_OPENGLES2
@@ -538,7 +538,7 @@ bool gl_menu_blur(gl_menu_bloom_t **bloom, unsigned video_dims,
    glActiveTexture(GL_TEXTURE0);
    b->core = core;
    if (     (!b->prog && !gl_menu_bloom_program(b, core, es))
-         || (small != b->blur_dims && !gl_menu_blur_targets(b, small, es)))
+         || (blur_size != b->blur_dims && !gl_menu_blur_targets(b, blur_size, es)))
    {
       b->blur_failed = true;
       glBindFramebuffer(GL_MENU_BLOOM_FRAMEBUFFER, target);
@@ -567,8 +567,8 @@ bool gl_menu_blur(gl_menu_bloom_t **bloom, unsigned video_dims,
    glEnableVertexAttribArray(0);
    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
    glDisable(GL_BLEND);
-   glViewport(0, 0, VIDEO_SCALE_W(small), VIDEO_SCALE_H(small));
-   menu_blur_plan(plan, small);
+   glViewport(0, 0, VIDEO_SCALE_W(blur_size), VIDEO_SCALE_H(blur_size));
+   menu_blur_plan(plan, blur_size);
    for (i = 0; i < MENU_BLUR_PASSES; i++)
    {
       glBindFramebuffer(GL_MENU_BLOOM_FRAMEBUFFER, b->blur_fbo[plan[i].dst]);

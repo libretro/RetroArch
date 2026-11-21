@@ -11622,7 +11622,7 @@ static bool gfx_display_vk_blur_rect(void *data, unsigned video_dims,
 {
    vk_t *vk = (vk_t*)data;
    const struct vk_image *target;
-   unsigned small, i;
+   unsigned blur_size, i;
    int x0, y0, x1, y1;
    bool sdr, floating;
    VkFormat format;
@@ -11653,7 +11653,7 @@ static bool gfx_display_vk_blur_rect(void *data, unsigned video_dims,
    if (y1 > (int)VIDEO_SCALE_H(video_dims)) y1 = (int)VIDEO_SCALE_H(video_dims);
    if (x1 - x0 < 8 || y1 - y0 < 8)
       return false;
-   small = menu_blur_dims(VIDEO_SCALE_PACK(x1 - x0, y1 - y0));
+   blur_size = menu_blur_dims(VIDEO_SCALE_PACK(x1 - x0, y1 - y0));
 
    /* The glow's choice of format and pass, and its blur shader */
    if (!vk->bloom.float_target)
@@ -11680,7 +11680,7 @@ static bool gfx_display_vk_blur_rect(void *data, unsigned video_dims,
       vk->blur.failed = true;
       return false;
    }
-   if (vk->blur.dims != small || vk->blur.format != format)
+   if (vk->blur.dims != blur_size || vk->blur.format != format)
    {
       for (i = 0; i < 3; i++)
          if (vk->chain->blur_retired[i].image)
@@ -11690,7 +11690,7 @@ static bool gfx_display_vk_blur_rect(void *data, unsigned video_dims,
          vk->chain->blur_retired[i] = vk->blur.images[i];
          memset(&vk->blur.images[i], 0, sizeof(vk->blur.images[i]));
          vulkan_init_render_target(&vk->blur.images[i],
-               i == MENU_BLUR_COPY ? MENU_BLUR_COPY_DIMS(small) : small,
+               i == MENU_BLUR_COPY ? MENU_BLUR_COPY_DIMS(blur_size) : blur_size,
                format, pass, vk->context);
          if (!vk->blur.images[i].memory || !vk->blur.images[i].framebuffer)
          {
@@ -11698,7 +11698,7 @@ static bool gfx_display_vk_blur_rect(void *data, unsigned video_dims,
             return false;
          }
       }
-      vk->blur.dims   = small;
+      vk->blur.dims   = blur_size;
       vk->blur.format = format;
    }
 
@@ -11729,8 +11729,8 @@ static bool gfx_display_vk_blur_rect(void *data, unsigned video_dims,
    blit.srcOffsets[1].y = y1;
    blit.srcOffsets[1].z = 1;
    blit.dstSubresource  = blit.srcSubresource;
-   blit.dstOffsets[1].x = (int32_t)VIDEO_SCALE_W(MENU_BLUR_COPY_DIMS(small));
-   blit.dstOffsets[1].y = (int32_t)VIDEO_SCALE_H(MENU_BLUR_COPY_DIMS(small));
+   blit.dstOffsets[1].x = (int32_t)VIDEO_SCALE_W(MENU_BLUR_COPY_DIMS(blur_size));
+   blit.dstOffsets[1].y = (int32_t)VIDEO_SCALE_H(MENU_BLUR_COPY_DIMS(blur_size));
    blit.dstOffsets[1].z = 1;
    vkCmdBlitImage(vk->cmd, target->image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -11751,7 +11751,7 @@ static bool gfx_display_vk_blur_rect(void *data, unsigned video_dims,
          VK_PIPELINE_STAGE_TRANSFER_BIT,
          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
-   menu_blur_plan(plan, small);
+   menu_blur_plan(plan, blur_size);
    for (i = 0; i < MENU_BLUR_PASSES; i++)
       vulkan_blur_pass(vk, &plan[i], pass, floating);
 
@@ -11786,7 +11786,7 @@ static bool gfx_display_vk_blur_rect(void *data, unsigned video_dims,
     * and the blend constants fade it in and darken what it is faded
     * over, so the dim costs no draw of its own -
     * blurred * (1 - dim) * alpha + drawn * (1 - alpha) * (1 - dim) */
-   vulkan_views_texture(&vk->blur.images[0], small, format, &tex);
+   vulkan_views_texture(&vk->blur.images[0], blur_size, format, &tex);
    params[0] = params[1] = params[2] = 0.0f;
    params[3] = 1.0f - dim;
    call.pipeline     = mix;

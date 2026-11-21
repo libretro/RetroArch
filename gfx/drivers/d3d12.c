@@ -9287,7 +9287,7 @@ static bool gfx_display_d3d12_blur_rect(void *data, unsigned video_dims,
    D3D12Resource target_res;
    d3d12_texture_t *src;
    DXGI_FORMAT format;
-   unsigned i, slot, small, rect, target_w, target_h;
+   unsigned i, slot, blur_size, rect, target_w, target_h;
    float params[4], factor[4];
    int x0, y0, x1, y1;
    if (     !d3d12 || d3d12->blur.failed || d3d12->bloom.active
@@ -9326,7 +9326,7 @@ static bool gfx_display_d3d12_blur_rect(void *data, unsigned video_dims,
             > (d3d12->queue.slot + 1) * D3D12_BLOOM_CB_SLOTS)
       return false;
    rect  = VIDEO_SCALE_PACK(x1 - x0, y1 - y0);
-   small = menu_blur_dims(rect);
+   blur_size = menu_blur_dims(rect);
    slot  = d3d12_bloom_slot(format);
    if (     !d3d12_bloom_pipes(d3d12, slot, format)
          || !d3d12_bloom_cb(d3d12))
@@ -9361,14 +9361,14 @@ static bool gfx_display_d3d12_blur_rect(void *data, unsigned video_dims,
       if (!d3d12->blur.mix[slot])
          goto error;
    }
-   if (small != d3d12->blur.dims)
+   if (blur_size != d3d12->blur.dims)
    {
       for (i = 0; i < 3; i++)
          if (!d3d12_blur_image(d3d12, &d3d12->blur.tex[i],
-                  i == MENU_BLUR_COPY ? MENU_BLUR_COPY_DIMS(small) : small,
+                  i == MENU_BLUR_COPY ? MENU_BLUR_COPY_DIMS(blur_size) : blur_size,
                   DXGI_FORMAT_R16G16B16A16_FLOAT, i))
             goto error;
-      d3d12->blur.dims = small;
+      d3d12->blur.dims = blur_size;
    }
    cmd = d3d12->queue.cmd;
 
@@ -9422,12 +9422,12 @@ static bool gfx_display_d3d12_blur_rect(void *data, unsigned video_dims,
     * blur's passes */
    d3d12_blur_draw(d3d12, cmd, d3d12->blur.tex[MENU_BLUR_COPY].rt_view,
          d3d12->bloom.pipes[slot][0], src, still, 0, 0,
-         MENU_BLUR_COPY_DIMS(small));
-   menu_blur_plan(plan, small);
+         MENU_BLUR_COPY_DIMS(blur_size));
+   menu_blur_plan(plan, blur_size);
    for (i = 0; i < MENU_BLUR_PASSES; i++)
       d3d12_blur_draw(d3d12, cmd, d3d12->blur.tex[plan[i].dst].rt_view,
             d3d12->bloom.pipes[slot][0], &d3d12->blur.tex[plan[i].src],
-            plan[i].params, 0, 0, small);
+            plan[i].params, 0, 0, blur_size);
 
    /* Back over the rect: the gain darkens the blurred image and fades
     * it in, the blend factor darkens what it is faded over -

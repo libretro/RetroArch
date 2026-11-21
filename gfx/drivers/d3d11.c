@@ -1338,7 +1338,7 @@ static void d3d11_blur_draw(D3D11DeviceContext ctx,
 /* The images, the pass constants and the composite's blend: the blend
  * factor's colour darkens what is drawn, the composite's gain the
  * blurred image, which carries its alpha */
-static bool d3d11_blur_images(d3d11_video_t *d3d11, unsigned small)
+static bool d3d11_blur_images(d3d11_video_t *d3d11, unsigned blur_size)
 {
    static const float still[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
    menu_bloom_pass_t plan[MENU_BLUR_PASSES];
@@ -1372,7 +1372,7 @@ static bool d3d11_blur_images(d3d11_video_t *d3d11, unsigned small)
    {
       d3d11_texture_t *t = &d3d11->blur.tex[i];
       unsigned d         = i == MENU_BLUR_COPY
-         ? MENU_BLUR_COPY_DIMS(small) : small;
+         ? MENU_BLUR_COPY_DIMS(blur_size) : blur_size;
       d3d11_release_texture(t);
       memset(t, 0, sizeof(*t));
       t->desc.Width     = VIDEO_SCALE_W(d);
@@ -1384,7 +1384,7 @@ static bool d3d11_blur_images(d3d11_video_t *d3d11, unsigned small)
             || !t->view || !t->rt_view)
          return false;
    }
-   menu_blur_plan(plan, small);
+   menu_blur_plan(plan, blur_size);
    for (i = 0; i < MENU_BLUR_PASSES; i++)
    {
       Release(d3d11->blur.params[i]);
@@ -1392,7 +1392,7 @@ static bool d3d11_blur_images(d3d11_video_t *d3d11, unsigned small)
                   plan[i].params)))
          return false;
    }
-   d3d11->blur.dims = small;
+   d3d11->blur.dims = blur_size;
    return true;
 }
 
@@ -1469,7 +1469,7 @@ static bool gfx_display_d3d11_blur_rect(void *data, unsigned video_dims,
    FLOAT blend_factor[4];
    UINT sample_mask, count = 1;
    float params[4], c;
-   unsigned i, small, rect;
+   unsigned i, blur_size, rect;
    int x0, y0, x1, y1;
    bool ok = false;
    if (!d3d11 || d3d11->blur.failed)
@@ -1500,9 +1500,9 @@ static bool gfx_display_d3d11_blur_rect(void *data, unsigned video_dims,
    if (x1 - x0 < 8 || y1 - y0 < 8)
       goto end;
    rect  = VIDEO_SCALE_PACK(x1 - x0, y1 - y0);
-   small = menu_blur_dims(rect);
+   blur_size = menu_blur_dims(rect);
    if (     !d3d11_bloom_shader(d3d11)
-         || (small != d3d11->blur.dims && !d3d11_blur_images(d3d11, small)))
+         || (blur_size != d3d11->blur.dims && !d3d11_blur_images(d3d11, blur_size)))
    {
       d3d11->blur.failed = true;
       goto end;
@@ -1544,12 +1544,12 @@ static bool gfx_display_d3d11_blur_rect(void *data, unsigned video_dims,
    /* Halved at the copy's texel centres, a 2x2 average; then the
     * blur's passes */
    d3d11_blur_draw(ctx, d3d11->blur.tex[MENU_BLUR_COPY].rt_view, src,
-         d3d11->blur.still, 0, 0, MENU_BLUR_COPY_DIMS(small));
-   menu_blur_plan(plan, small);
+         d3d11->blur.still, 0, 0, MENU_BLUR_COPY_DIMS(blur_size));
+   menu_blur_plan(plan, blur_size);
    for (i = 0; i < MENU_BLUR_PASSES; i++)
       d3d11_blur_draw(ctx, d3d11->blur.tex[plan[i].dst].rt_view,
             d3d11->blur.tex[plan[i].src].view, d3d11->blur.params[i],
-            0, 0, small);
+            0, 0, blur_size);
 
    /* Back over the rect: the gain darkens the blurred image and fades
     * it in, the blend factor darkens what it is faded over -

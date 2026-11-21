@@ -87,8 +87,8 @@ static INLINE unsigned menu_bloom_plan(menu_bloom_pass_t *pass,
 #define MENU_BLUR_PASSES 6
 /* A blur pass's src when it reads the copy */
 #define MENU_BLUR_COPY   2
-#define MENU_BLUR_COPY_DIMS(small) VIDEO_SCALE_PACK( \
-      VIDEO_SCALE_W(small) * 2, VIDEO_SCALE_H(small) * 2)
+#define MENU_BLUR_COPY_DIMS(dims) VIDEO_SCALE_PACK( \
+      VIDEO_SCALE_W(dims) * 2, VIDEO_SCALE_H(dims) * 2)
 
 static INLINE unsigned menu_blur_dims(unsigned dims)
 {
