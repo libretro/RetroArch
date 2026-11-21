@@ -53,6 +53,8 @@ typedef struct
 {
    device_t *device;
    chain_t filter;
+   chain_t *media_shader_chain;
+   d3d12_texture_t *media_shader_texture;
    struct { unsigned slot; } queue;
    struct
    {
@@ -192,6 +194,21 @@ int main(void)
       bind_texture(&driver, &pass, &chain, chain.history, &resources[0]);
       assert(writes == base + 6);
       assert(descriptor_mapping == D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING);
+      {
+         /* The media viewer's chain takes its frame's format and
+          * mapping from the media texture, not the main chain's */
+         d3d12_texture_t media;
+         memset(&media, 0, sizeof(media));
+         media.desc.Format          = 10;
+         media.srv_mapping          = MENU_COMPONENTS;
+         driver.media_shader_chain   = &chain;
+         driver.media_shader_texture = &media;
+         bind_texture(&driver, &pass, &chain, chain.history, &resources[0]);
+         assert(writes == base + 7 && descriptor_mapping == MENU_COMPONENTS);
+         assert(pass.desc_cache[0].srv_format[2] == 10);
+         driver.media_shader_chain   = NULL;
+         driver.media_shader_texture = NULL;
+      }
       clear(&pass);
       assert(resources[0].refs == 1 && resources[1].refs == 1);
    }
