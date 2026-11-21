@@ -3101,6 +3101,52 @@ static void pix16_order_apply(pix16_t *pix)
    free(tmp);
 }
 
+/* Writes the arrangement the window shows: the rows in their order, then
+ * every system the window does not show, kept where it was */
+static void pix16_order_commit(pix16_t *pix)
+{
+   file_list_t *ol = pix16_selection_buf();
+   size_t k;
+   size_t kept = pix16_order_n;
+   char (*before)[NAME_MAX_LENGTH] = NULL;
+
+   if (kept)
+   {
+      before = (char (*)[NAME_MAX_LENGTH])malloc(kept * sizeof(*before));
+      if (before)
+         memcpy(before, pix16_order, kept * sizeof(*before));
+   }
+   pix16_order_n = 0;
+   if (ol)
+      for (k = 0; k < pix->order_n && pix16_order_n < PIX16_ORDER_MAX; k++)
+      {
+         char base[NAME_MAX_LENGTH];
+         pix16_order_base(ol->list[pix->order_map[k]].path, base, sizeof(base));
+         if (base[0])
+            strlcpy(pix16_order[pix16_order_n++], base, sizeof(pix16_order[0]));
+      }
+   if (before)
+   {
+      size_t b;
+      for (b = 0; b < kept && pix16_order_n < PIX16_ORDER_MAX; b++)
+      {
+         size_t j;
+         bool have = false;
+         for (j = 0; j < pix16_order_n; j++)
+            if (string_is_equal_noncase(before[b], pix16_order[j]))
+            {
+               have = true;
+               break;
+            }
+         if (!have)
+            strlcpy(pix16_order[pix16_order_n++], before[b],
+                  sizeof(pix16_order[0]));
+      }
+      free(before);
+   }
+   pix16_order_save();
+}
+
 static void pix16_grid_sort(pix16_t *pix);
 static bool pix16_is_grid_view(void);
 
@@ -4178,6 +4224,21 @@ static size_t pix16_mg_rows(pix16_t *pix, int *act)
 
 /* Every playlist, tiles and members alike, so merged and hidden systems
  * can be seen and acted on from the arrange window */
+/* Where a row's playlist sits in the saved arrangement: -1 when the
+ * arrangement does not name it, so it sorts after the named ones */
+static int pix16_order_rank(const file_list_t *list, size_t idx)
+{
+   char base[NAME_MAX_LENGTH];
+   size_t k;
+   if (!list || idx >= list->size || !list->list[idx].path)
+      return -1;
+   pix16_order_base(list->list[idx].path, base, sizeof(base));
+   for (k = 0; k < pix16_order_n; k++)
+      if (string_is_equal_noncase(base, pix16_order[k]))
+         return (int)k;
+   return -1;
+}
+
 static void pix16_order_fill(pix16_t *pix)
 {
    file_list_t *list = pix16_selection_buf();
@@ -4204,6 +4265,36 @@ static void pix16_order_fill(pix16_t *pix)
       strlcpy(pix->order_label[pix->order_n], lbl ? lbl : "",
             sizeof(pix->order_label[0]));
       pix->order_n++;
+   }
+
+   /* The list comes in the menu's own order; show the arrangement the
+    * user set instead, so the window does not fall back to alphabetical
+    * the moment it is reopened */
+   if (!pix16_order_tried)
+      pix16_order_load();
+   if (pix16_order_n && pix->order_n > 1)
+   {
+      size_t a;
+      for (a = 1; a < pix->order_n; a++)
+      {
+         size_t b = a;
+         while (b > 0 && pix16_order_rank(list, pix->order_map[b - 1]) >
+               pix16_order_rank(list, pix->order_map[b]))
+         {
+            size_t mi = pix->order_map[b];
+            int    st = pix->order_state[b];
+            char   lb[sizeof(pix->order_label[0])];
+            strlcpy(lb, pix->order_label[b], sizeof(lb));
+            pix->order_map[b]   = pix->order_map[b - 1];
+            pix->order_state[b] = pix->order_state[b - 1];
+            strlcpy(pix->order_label[b], pix->order_label[b - 1],
+                  sizeof(pix->order_label[b]));
+            pix->order_map[b - 1]   = mi;
+            pix->order_state[b - 1] = st;
+            strlcpy(pix->order_label[b - 1], lb, sizeof(pix->order_label[b - 1]));
+            b--;
+         }
+      }
    }
 }
 
@@ -10549,6 +10640,7 @@ static int pix16_menu_entry_action(void *userdata, menu_entry_t *entry,
                if (pix->order_sel > 0)
                {
                   pix->order_sel--;
+                  pix16_order_commit(pix);
                   pix16_sfx(PIX16_SFX_UP);
                }
                break;
@@ -10556,6 +10648,7 @@ static int pix16_menu_entry_action(void *userdata, menu_entry_t *entry,
                if ((size_t)(pix->order_sel + 1) < pix->order_n)
                {
                   pix->order_sel++;
+                  pix16_order_commit(pix);
                   pix16_sfx(PIX16_SFX_DOWN);
                }
                break;
@@ -10608,52 +10701,8 @@ static int pix16_menu_entry_action(void *userdata, menu_entry_t *entry,
             case MENU_ACTION_OK:
             case MENU_ACTION_START:
                {
-                  file_list_t *ol = pix16_selection_buf();
-                  size_t k;
-                  size_t kept = pix16_order_n;
-                  char (*before)[NAME_MAX_LENGTH] = NULL;
-                  if (kept)
-                  {
-                     before = (char (*)[NAME_MAX_LENGTH])malloc(
-                           kept * sizeof(*before));
-                     if (before)
-                        memcpy(before, pix16_order, kept * sizeof(*before));
-                  }
-                  pix16_order_n = 0;
-                  if (ol)
-                     for (k = 0; k < pix->order_n && pix16_order_n < PIX16_ORDER_MAX; k++)
-                     {
-                        char base[NAME_MAX_LENGTH];
-                        pix16_order_base(ol->list[pix->order_map[k]].path, base,
-                              sizeof(base));
-                        if (base[0])
-                           strlcpy(pix16_order[pix16_order_n++], base,
-                                 sizeof(pix16_order[0]));
-                     }
-                  /* systems this window does not show - hidden ones, the
-                   * members of a merged group - keep their place after the
-                   * ones just arranged, so moving one system never moves
-                   * another back to where it used to be */
-                  if (before)
-                  {
-                     size_t b;
-                     for (b = 0; b < kept && pix16_order_n < PIX16_ORDER_MAX; b++)
-                     {
-                        size_t j;
-                        bool have = false;
-                        for (j = 0; j < pix16_order_n; j++)
-                           if (string_is_equal_noncase(before[b], pix16_order[j]))
-                           {
-                              have = true;
-                              break;
-                           }
-                        if (!have)
-                           strlcpy(pix16_order[pix16_order_n++], before[b],
-                                 sizeof(pix16_order[0]));
-                     }
-                     free(before);
-                  }
-                  pix16_order_save();
+                  pix16_order_commit(pix);
+                  menu_state_get_ptr()->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
                   pix->order_open  = false;
                   pix->order_focus = false;
                   pix16_sfx(PIX16_SFX_OK);
