@@ -3389,7 +3389,8 @@ static bool pix16_is_grid_view(void)
           && !menu_is_running_quick_menu();
 }
 
-#define PIX16_GRID_PER_PAGE (PIX16_GRID_COLS * PIX16_GRID_ROWS)
+#define PIX16_GRID_SLOTS    12   /* systems per page, whatever the layout */
+#define PIX16_GRID_PER_PAGE PIX16_GRID_SLOTS
 #define PIX16_GRID_W        pix16_grid_w
 #define PIX16_PAGE_STRIDE   (PIX16_GRID_W + 24)
 #ifndef PIX16_PAGE_MS
@@ -3727,6 +3728,18 @@ static size_t pix16_grid_col_for(size_t row, size_t count,
    return best;
 }
 
+/* A page's own layout: a page holding fewer systems grows its tiles to
+ * fill the area, so a half-full last page looks like a small library */
+static void pix16_grid_page_layout(pix16_t *pix, int avail_w, int avail_h,
+      size_t page)
+{
+   size_t on = pix->grid_count > page * (size_t)PIX16_GRID_SLOTS
+             ? pix->grid_count - page * (size_t)PIX16_GRID_SLOTS : 0;
+   if (on > (size_t)PIX16_GRID_SLOTS)
+      on = (size_t)PIX16_GRID_SLOTS;
+   pix16_grid_layout(pix, avail_w, avail_h, on ? on : (size_t)1);
+}
+
 /* The systems grid, either theme: pages of tiles laid side by side,
  * the strip slides so the selected tile's page is in view */
 static void pix16_grid_pages(pix16_t *pix, int x0, int y0,
@@ -3738,8 +3751,6 @@ static void pix16_grid_pages(pix16_t *pix, int x0, int y0,
    bool glove = false;
 
    pix16_grid_build(pix);
-   /* the layout fills the area; with no systems at all, use the widest
-    * one so the "no playlists" window spans the grid */
    pix16_grid_layout(pix, avail_w, avail_h,
          pix->grid_count ? pix->grid_count : (size_t)1);
    stride = PIX16_ROW_STRIDE;
@@ -3769,20 +3780,29 @@ static void pix16_grid_pages(pix16_t *pix, int x0, int y0,
    else /* on a top button: keep showing the same page */
       page    = (pix->grid_page < pix->grid_pages) ? pix->grid_page : 0;
    pix->grid_page  = page;
+   /* the page in view owns the sizes the navigation uses */
+   pix16_grid_page_layout(pix, avail_w, avail_h, page);
+   stride          = PIX16_ROW_STRIDE;
    scroll          = pix16_grid_scroll(pix, page);
 
    /* keep sliding tiles inside the grid area */
    pix16_clip_set(pix, x0 - 2, y0 - 2,
          x0 + PIX16_GRID_W + PIX16_SHADOW + 2,
-         y0 + PIX16_GRID_ROWS * stride + 2);
+         y0 + avail_h + 2);
 
    first = (size_t)(scroll / PIX16_PAGE_STRIDE);
    for (p = first; p <= first + 1 && p < pix->grid_pages; p++)
    {
       int px = x0 + (int)p * PIX16_PAGE_STRIDE - scroll;
       int i;
+      bool here = (p == page);
       if (px >= pix->clip_x1 || px + PIX16_GRID_W + PIX16_SHADOW <= pix->clip_x0)
          continue;
+      if (!here)
+      {
+         pix16_grid_page_layout(pix, avail_w, avail_h, p);
+         stride = PIX16_ROW_STRIDE;
+      }
       for (i = 0; i < PIX16_GRID_PER_PAGE; i++)
       {
          size_t d = p * PIX16_GRID_PER_PAGE + (size_t)i;
@@ -3806,6 +3826,11 @@ static void pix16_grid_pages(pix16_t *pix, int x0, int y0,
             glove_x = tx - 4;
             glove_y = ty + (stride - 2 - 9) / 2;
          }
+      }
+      if (!here)
+      {
+         pix16_grid_page_layout(pix, avail_w, avail_h, page);
+         stride = PIX16_ROW_STRIDE;
       }
    }
 
