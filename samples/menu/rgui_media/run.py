@@ -50,6 +50,16 @@ if a.cold_reset:build_env['MEDIA_TEST_COLD_RESET']='1'
 subprocess.run(cmd,cwd=r,env=build_env,check=True)
 with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  fixture=Path(a.fixture).resolve()
+ if os.environ.get('MEDIA_TEST_VIDEO_SNAPS'):
+  videos=Path(temp)/'thumbnails'/'Test System'/'Named_Videos'
+  videos.mkdir(parents=True)
+  shutil.copyfile(fixture, videos/('Game'+fixture.suffix))
+  snaps=videos.parent/'Named_Snaps'
+  snaps.mkdir()
+  subprocess.run(['ffmpeg','-v','error','-y','-f','lavfi','-i',
+                  'color=red:size=32x32','-frames:v','1','-threads','1',
+                  str(snaps/'Game.png')],check=True)
+  os.environ['MEDIA_TEST_THUMB_ROOT']=str(Path(temp)/'thumbnails')
  if a.continuous:
   if fixture.suffix.lower() not in ('.mp4','.webm','.mkv'):p.error('--continuous needs an MP4, WebM or Matroska fixture')
   for episode in ((1,2,10,11) if a.continuous_error else (1,2,10)):

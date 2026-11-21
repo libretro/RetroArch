@@ -3874,6 +3874,7 @@ jobs:
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           make fixtures
           test -x gfx_thumbnail_preview_test
+          VIDEO_SNAP_PATHS=1 ./gfx_thumbnail_preview_test
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
           UBSAN_OPTIONS=print_stacktrace=1 \
           AUDIO_BYTES_PER_TICK=65536 FRAMES=120 timeout 300 \

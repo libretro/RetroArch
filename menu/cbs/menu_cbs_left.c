@@ -524,7 +524,7 @@ static void playlist_thumbnail_mode_left(playlist_t *playlist, enum playlist_thu
    if (thumbnail_mode > PLAYLIST_THUMBNAIL_MODE_DEFAULT)
       thumbnail_mode = (enum playlist_thumbnail_mode)((unsigned)thumbnail_mode - 1);
    else if (wraparound)
-      thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_LOGOS;
+      thumbnail_mode = PLAYLIST_THUMBNAIL_MODE_VIDEOS;
 
    playlist_set_thumbnail_mode(playlist, thumbnail_id, thumbnail_mode);
    playlist_write_file(playlist);

@@ -1728,6 +1728,8 @@ static const char *get_playlist_thumbnail_mode_value(playlist_t *playlist, enum 
          return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS);
       case PLAYLIST_THUMBNAIL_MODE_LOGOS:
          return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS);
+      case PLAYLIST_THUMBNAIL_MODE_VIDEOS:
+         return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_VIDEOS);
       default:
          /* PLAYLIST_THUMBNAIL_MODE_DEFAULT */
          break;

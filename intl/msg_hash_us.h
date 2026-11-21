@@ -27406,6 +27406,10 @@ MSG_HASH(
    "Content Logo"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_VIDEOS,
+   "Video Snap"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_SCROLL_NORMAL,
    "Normal"
    )

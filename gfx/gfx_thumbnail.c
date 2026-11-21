@@ -2859,7 +2859,7 @@ void gfx_thumbnail_draw_shader(void *userdata, unsigned video_dims,
 }
 
 /* Returns currently set thumbnail 'type' (Named_Snaps,
- * Named_Titles, Named_Boxarts, Named_Logos) for specified thumbnail
+ * Named_Titles, Named_Boxarts, Named_Logos, Named_Videos) for specified thumbnail
  * identifier (right, left) */
 static const char *gfx_thumbnail_get_type(
       unsigned gfx_thumbnails,
@@ -2908,6 +2908,8 @@ static const char *gfx_thumbnail_get_type(
             return "Named_Boxarts";
          case 4:
             return "Named_Logos";
+         case 5:
+            return "Named_Videos";
          case 0:
          default:
             break;
@@ -3441,6 +3443,38 @@ bool gfx_thumbnail_update_path(
    return gfx_thumbnail_update_path_cfg(path_data, thumbnail_id, &cfg);
 }
 
+static bool gfx_thumbnail_find_video(char *path, size_t size,
+      const char *dir, const char *name)
+{
+   static const char *const extensions[] = {
+#ifdef HAVE_RWEBM
+      ".webm", ".mkv",
+#endif
+#ifdef HAVE_RMP4
+      ".mp4",
+#endif
+      NULL
+   };
+   char *ext;
+   unsigned i;
+   if (!name || !*name)
+      return false;
+   if (fill_pathname_join_special(path, dir, name, size) >= size)
+      return false;
+   ext = path_get_extension_mutable(path);
+   if (!ext)
+      return false;
+   for (i = 0; extensions[i]; i++)
+   {
+      if (strlcpy(ext, extensions[i], size - (size_t)(ext - path))
+            >= size - (size_t)(ext - path))
+         return false;
+      if (path_is_valid(path))
+         return true;
+   }
+   return false;
+}
+
 bool gfx_thumbnail_update_path_cfg(
       gfx_thumbnail_path_data_t *path_data,
       enum gfx_thumbnail_id thumbnail_id,
@@ -3535,8 +3569,11 @@ bool gfx_thumbnail_update_path_cfg(
 
    /* > Special case: thumbnail for imageviewer content
     *   is the image file itself */
-   if (   memcmp(system_name, "images_history", sizeof("images_history")) == 0
-       || memcmp(path_data->content_core_name, "imageviewer", sizeof("imageviewer")) == 0)
+   if (   (   memcmp(system_name, "images_history", sizeof("images_history")) == 0
+           || memcmp(path_data->content_core_name, "imageviewer", sizeof("imageviewer")) == 0)
+       && !string_is_equal(gfx_thumbnail_get_type(gfx_thumbnails,
+             menu_left_thumbnails, menu_icon_thumbnails, path_data, thumbnail_id),
+             "Named_Videos"))
    {
       /* imageviewer content is identical for left and right thumbnails */
       if (path_is_media_type(path_data->content_path) == RARCH_CONTENT_IMAGE)
@@ -3587,6 +3624,19 @@ bool gfx_thumbnail_update_path_cfg(
       fill_pathname_join_special(tmp_buf, thumbnail_path, type, sizeof(tmp_buf));
 
       thumbnail_path[0] = '\0';
+
+      if (string_is_equal(type, "Named_Videos"))
+      {
+         if (gfx_thumbnail_find_video(thumbnail_path, PATH_MAX_LENGTH,
+                  tmp_buf, path_data->content_img)
+               || gfx_thumbnail_find_video(thumbnail_path, PATH_MAX_LENGTH,
+                  tmp_buf, path_data->content_img_full)
+               || gfx_thumbnail_find_video(thumbnail_path, PATH_MAX_LENGTH,
+                  tmp_buf, path_data->content_img_short))
+            return true;
+         thumbnail_path[0] = '\0';
+         return false;
+      }
 
       /* >> Add content image - first try with label (database name) */
       if (*path_data->content_img)

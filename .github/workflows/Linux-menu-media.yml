@@ -60,6 +60,8 @@ jobs:
         run: ffmpeg -v error -y -f lavfi -i testsrc2=size=320x240:rate=30 -f lavfi -i sine=frequency=440:sample_rate=48000 -t 3 -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest samples/menu/rgui_media/fixture.mp4
       - name: Real RGUI framebuffer and playback controls
         run: python3 samples/menu/rgui_media/run.py --c89 --cadence-hz 30 samples/menu/rgui_media/fixture.mp4
+      - name: RGUI video-snap thumbnail slots
+        run: MEDIA_TEST_VIDEO_SNAPS=1 python3 samples/menu/rgui_media/run.py --c89 samples/menu/rgui_media/fixture.mp4
       - name: Real MaterialUI file-browser playback controls
         run: python3 samples/menu/rgui_media/run.py --c89 --cadence-hz 30 --driver materialui samples/menu/rgui_media/fixture.mp4
       - name: Real XMB file-browser playback controls

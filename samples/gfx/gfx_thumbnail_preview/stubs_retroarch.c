@@ -275,9 +275,25 @@ bool path_mkdir(const char *d) { (void)d; return false; }
  * semantics rather than stubs, since the thumbnail path resolution
  * depends on them. */
 #include <streams/file_stream.h>
+#include <file/file_path.h>
+const char *preview_path_fixture_1;
+const char *preview_path_fixture_2;
+unsigned preview_path_static_probes;
 bool path_is_valid(const char *path)
 {
    struct stat st;
+   if (preview_path_fixture_1 || preview_path_fixture_2)
+   {
+      if (strstr(path, "Named_Videos"))
+      {
+         const char *name = path_basename(path);
+         if (strstr(name, ".png") || strstr(name, ".jpg"))
+            preview_path_static_probes++;
+         return (preview_path_fixture_1 && !strcmp(name, preview_path_fixture_1))
+            || (preview_path_fixture_2 && !strcmp(name, preview_path_fixture_2));
+      }
+      return false;
+   }
    return path && *path && stat(path, &st) == 0;
 }
 int64_t path_get_size(const char *path)
