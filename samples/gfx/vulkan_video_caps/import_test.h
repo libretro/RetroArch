@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <rthreads/rthreads.h>
 #include <queues/mpsc_stack.h>
+#include <retro_atomic.h>
 #include "../../../gfx/common/vksym.h"
 #include "../../../gfx/common/vulkan_common.h"
 #include "../../../gfx/video_driver.h"
@@ -21,6 +22,7 @@ typedef struct vk
    vulkan_context_t *context;
    VkCommandPool staging_pool;
    struct vk_stream_state *stream_states;
+   retro_atomic_int_t texture_format_support;
    struct { VkSampler nearest; } samplers;
    struct {
       VkPipeline yuv420_to_rgba8888, yuv_image_to_rgba8888;
@@ -712,6 +714,12 @@ static int import_test_gpu_format(VkInstance instance, VkPhysicalDevice gpu,
          || vkCreateSemaphore(device, &semaphore, NULL, &t->done) != VK_SUCCESS) goto cleanup;
    if (!vulkan_get_device(&t->vk, &advertised)
          || advertised.import_formats != (IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010)) goto cleanup;
+   /* Movie frames in memory are offered once the planar upload is */
+   retro_atomic_store_release_int(&t->vk.texture_format_support,
+         VULKAN_TEXTURE_SUPPORT_YUV420);
+   if (!vulkan_get_device(&t->vk, &advertised)
+         || advertised.import_formats
+            != (IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010 | IMAGE_PIXFMT_I420)) goto cleanup;
    ok = 1;
    for (i = 0; i < 96; i++)
       if (!oracle_case(t, i % 3 == 1 ? 10 : 8,

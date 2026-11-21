@@ -17,7 +17,10 @@ vulkan = (root / "gfx/drivers/vulkan.c").read_text(encoding="utf-8")
 
 
 def source_block(source, marker, semicolon=False):
+    # The definition, not a declaration ahead of it
     start = source.index(marker)
+    while source.index(";", start) < source.index("{", start):
+        start = source.index(marker, start + 1)
     brace = source.index("{", start)
     depth = 1
     end = brace + 1
