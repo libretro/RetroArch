@@ -52,6 +52,10 @@
 
 #ifdef _WIN32
 #include <direct.h>
+#include <wchar.h>
+#if !defined(_XBOX) && !defined(__WINRT__)
+#include <windows.h>
+#endif
 #else
 #include <unistd.h> /* stat() is defined here */
 #endif
@@ -966,45 +970,18 @@ bool path_is_absolute(const char *path)
  *       e.g. on Android it is "/"
  *       Use of fill_pathname_resolve_relative() should be preferred
  **/
-char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
+#if !defined(RARCH_CONSOLE) && !defined(_WIN32)
+/* Resolves ".", ".." and repeated slashes in @s by its text alone,
+ * rebasing a relative path on the current working directory; no
+ * component needs to exist.  Returns @s, or NULL when the result would
+ * not fit or a ".." would climb above the root. */
+static char *path_resolve_lexical(char *s, size_t len)
 {
-#if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
-#ifdef _WIN32
-   char *ret         = NULL;
-   wchar_t *rel_path = utf8_to_utf16_string_alloc(s);
-   if (rel_path)
-   {
-      wchar_t abs_path[PATH_MAX_LENGTH];
-      if (_wfullpath(abs_path, rel_path, PATH_MAX_LENGTH))
-      {
-         char *tmp = utf16_to_utf8_string_alloc(abs_path);
-         if (tmp)
-         {
-            strlcpy(s, tmp, len);
-            free(tmp);
-            ret = s;
-         }
-      }
-      free(rel_path);
-   }
-   return ret;
-#else
    char tmp[PATH_MAX_LENGTH];
    size_t t;
    char *p;
    const char *next;
    const char *buf_end;
-   if (resolve_symlinks)
-   {
-      /* realpath() reads @s and answers in its own buffer: @s is left
-       * as it was when it fails */
-      char *real_path = realpath(s, NULL);
-      if (!real_path)
-         return NULL;
-      strlcpy(s, real_path, len);
-      free(real_path);
-      return s;
-   }
    t       = 0;
    if (!path_is_absolute(s))
    {
@@ -1066,9 +1043,197 @@ char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
    tmp[t] = '\0';
    strlcpy(s, tmp, len);
    return s;
+}
+#endif
+
+char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
+{
+#if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
+#ifdef _WIN32
+   char *ret         = NULL;
+   wchar_t *rel_path = utf8_to_utf16_string_alloc(s);
+   if (rel_path)
+   {
+      wchar_t abs_path[PATH_MAX_LENGTH];
+      if (_wfullpath(abs_path, rel_path, PATH_MAX_LENGTH))
+      {
+         char *tmp = utf16_to_utf8_string_alloc(abs_path);
+         if (tmp)
+         {
+            strlcpy(s, tmp, len);
+            free(tmp);
+            ret = s;
+         }
+      }
+      free(rel_path);
+   }
+   return ret;
+#else
+   if (resolve_symlinks)
+   {
+      /* realpath() reads @s and answers in its own buffer: @s is left
+       * as it was when it fails */
+      char *real_path = realpath(s, NULL);
+      if (!real_path)
+         return NULL;
+      strlcpy(s, real_path, len);
+      free(real_path);
+      return s;
+   }
+   return path_resolve_lexical(s, len);
 #endif
 #endif
    return NULL;
+}
+
+/**
+ * path_resolve_realpath_weak:
+ *
+ * Unlike path_resolve_realpath(), built in every non-console build
+ * (cores too, not only with RARCH_INTERNAL).  The longest leading part
+ * of @s that exists is resolved with its symlinks (realpath(), or on
+ * Windows the handle's final path); the rest, which need not exist yet,
+ * is appended and the whole resolved lexically.  So a path about to be
+ * created is judged by where its existing directories really are.
+ **/
+char *path_resolve_realpath_weak(char *s, size_t len)
+{
+#if defined(RARCH_CONSOLE) || defined(__WINRT__) || defined(_XBOX)
+   (void)s;
+   (void)len;
+   return NULL;
+#elif defined(_WIN32)
+   wchar_t full[PATH_MAX_LENGTH];
+   wchar_t head[PATH_MAX_LENGTH];
+   wchar_t real[PATH_MAX_LENGTH];
+   wchar_t *in;
+   char *out;
+   size_t cut;
+   size_t full_len;
+   const wchar_t *tail = NULL;
+   if (!s || !*s || !(in = utf8_to_utf16_string_alloc(s)))
+      return NULL;
+   /* Absolute and lexically resolved first: Windows resolves ".."
+    * before it reaches the file system anyway */
+   if (!_wfullpath(full, in, PATH_MAX_LENGTH))
+   {
+      free(in);
+      return NULL;
+   }
+   free(in);
+   full_len = wcslen(full);
+   wcscpy(head, full);
+   cut      = full_len;
+   real[0]  = L'\0';
+   for (;;)
+   {
+      HANDLE h = CreateFileW(head, 0,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+            OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+      if (h != INVALID_HANDLE_VALUE)
+      {
+         DWORD n = GetFinalPathNameByHandleW(h, real, PATH_MAX_LENGTH,
+               FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+         CloseHandle(h);
+         if (n == 0 || n >= PATH_MAX_LENGTH)
+            return NULL;
+         tail = full + cut;
+         break;
+      }
+      /* Drop the last component */
+      while (cut > 0 && (full[cut - 1] == L'\\' || full[cut - 1] == L'/'))
+         cut--;
+      while (cut > 0 && full[cut - 1] != L'\\' && full[cut - 1] != L'/')
+         cut--;
+      if (cut == 0)
+         return NULL;
+      wcsncpy(head, full, cut);
+      head[cut] = L'\0';
+   }
+   {
+      /* "\\?\UNC\server" is "\\server"; "\\?\C:" is "C:" */
+      wchar_t joined[PATH_MAX_LENGTH];
+      const wchar_t *r = real;
+      size_t r_len;
+      if (!wcsncmp(r, L"\\\\?\\UNC\\", 8))
+      {
+         joined[0] = L'\\';
+         joined[1] = L'\\';
+         joined[2] = L'\0';
+         r        += 8;
+      }
+      else
+      {
+         joined[0] = L'\0';
+         if (!wcsncmp(r, L"\\\\?\\", 4))
+            r += 4;
+      }
+      r_len = wcslen(joined) + wcslen(r);
+      if (r_len + 1 + wcslen(tail) + 1 > PATH_MAX_LENGTH)
+         return NULL;
+      wcscat(joined, r);
+      if (*tail)
+      {
+         if (joined[r_len - 1] != L'\\')
+            wcscat(joined, L"\\");
+         wcscat(joined, tail);
+      }
+      if (!(out = utf16_to_utf8_string_alloc(joined)))
+         return NULL;
+   }
+   strlcpy(s, out, len);
+   free(out);
+   return s;
+#else
+   char head[PATH_MAX_LENGTH];
+   char joined[PATH_MAX_LENGTH];
+   size_t cut;
+   char *real_path = NULL;
+   if (!s || !*s || strlcpy(head, s, sizeof(head)) >= sizeof(head))
+      return NULL;
+   cut = strlen(head);
+   for (;;)
+   {
+      /* realpath() fails on a path that does not exist (yet): back
+       * one component at a time until a leading part does */
+      if ((real_path = realpath(head, NULL)))
+         break;
+      while (cut > 0 && s[cut - 1] == '/')
+         cut--;
+      while (cut > 0 && s[cut - 1] != '/')
+         cut--;
+      if (cut == 0)
+         break;
+      /* The leading part, without its closing slash unless it is the root */
+      head[cut > 1 ? cut - 1 : cut] = '\0';
+   }
+   if (!real_path)
+   {
+      /* No part of it exists: by its text alone */
+      if (strlcpy(joined, s, sizeof(joined)) >= sizeof(joined))
+         return NULL;
+   }
+   else
+   {
+      const char *tail = s + cut;
+      size_t _len      = strlcpy(joined, real_path, sizeof(joined));
+      free(real_path);
+      if (_len >= sizeof(joined))
+         return NULL;
+      if (*tail)
+      {
+         if (_len + 1 + strlen(tail) >= sizeof(joined))
+            return NULL;
+         if (_len == 0 || joined[_len - 1] != '/')
+            joined[_len++] = '/';
+         strlcpy(joined + _len, tail, sizeof(joined) - _len);
+      }
+   }
+   if (!path_resolve_lexical(joined, sizeof(joined)))
+      return NULL;
+   strlcpy(s, joined, len);
+   return s;
+#endif
 }
 
 /**

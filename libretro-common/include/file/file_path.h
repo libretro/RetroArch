@@ -224,6 +224,21 @@ size_t path_parent_dir(char *s, size_t len);
 char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks);
 
 /**
+ * path_resolve_realpath_weak:
+ * @s                  : input and output buffer for path
+ * @len                : size of buffer
+ *
+ * Resolves @s as std::filesystem::weakly_canonical does: the longest
+ * leading part that exists with its symlinks resolved, the rest (which
+ * need not exist) appended and ".", ".." and repeated separators
+ * resolved by their text.  A relative path is rebased on the current
+ * working dir.  Built in cores as well as RetroArch.
+ *
+ * @return @s if successful, NULL otherwise (and on consoles, UWP and Xbox).
+ **/
+char *path_resolve_realpath_weak(char *s, size_t len);
+
+/**
  * path_relative_to:
  * @s                  : buffer to write the relative path to
  * @path               : path to be expressed relatively
