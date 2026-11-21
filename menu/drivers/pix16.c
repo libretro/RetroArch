@@ -2658,11 +2658,17 @@ static void pix16_ovr_ready(void)
    pix16_ovr_load(pix16_icons, &pix16_icons_n, "pix16_icons.txt");
 }
 
-/* The name a tile shows, if the user renamed it */
+/* The name a tile shows, if the user renamed it. The key is the
+ * canonical playlist name, the one the systems table is also read with,
+ * so a rename of an aliased playlist ("Sega - Genesis") is found again */
 static const char *pix16_name_of(const char *playlist)
 {
+   char base[NAME_MAX_LENGTH];
    pix16_ovr_ready();
-   return pix16_ovr_get(pix16_names, pix16_names_n, playlist);
+   strlcpy(base, playlist ? playlist : "", sizeof(base));
+   path_remove_extension(base);
+   pix16_canon_name(base, sizeof(base));
+   return pix16_ovr_get(pix16_names, pix16_names_n, base);
 }
 
 /* The dot-art icon a tile uses, if the user swapped it */
@@ -2689,8 +2695,12 @@ static void pix16_mg_kb_cb(void *userdata, const char *str)
       pix16_trim(name);
       if (name[0])
       {
+         char key[NAME_MAX_LENGTH];
+         strlcpy(key, pix->mg_member, sizeof(key));
+         path_remove_extension(key);
+         pix16_canon_name(key, sizeof(key));
          pix16_ovr_set(pix16_names, &pix16_names_n, "pix16_names.txt",
-               pix->mg_member, name);
+               key, name);
          pix->mg_open = false;
          pix16_order_refresh(pix);
          menu_state_get_ptr()->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
