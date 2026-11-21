@@ -10567,6 +10567,11 @@ static int pix16_menu_entry_action(void *userdata, menu_entry_t *entry,
                      tl[k] = pix->order_label[s][k];
                   pix->order_map[s]     = pix->order_map[s - 1];
                   pix->order_map[s - 1] = tmp;
+                  {
+                     int st = pix->order_state[s];
+                     pix->order_state[s]     = pix->order_state[s - 1];
+                     pix->order_state[s - 1] = st;
+                  }
                   for (k = 0; k < 40; k++)
                      pix->order_label[s][k] = pix->order_label[s - 1][k];
                   for (k = 0; k < 40; k++)
@@ -10585,6 +10590,11 @@ static int pix16_menu_entry_action(void *userdata, menu_entry_t *entry,
                      tl[k] = pix->order_label[s][k];
                   pix->order_map[s]     = pix->order_map[s + 1];
                   pix->order_map[s + 1] = tmp;
+                  {
+                     int st = pix->order_state[s];
+                     pix->order_state[s]     = pix->order_state[s + 1];
+                     pix->order_state[s + 1] = st;
+                  }
                   for (k = 0; k < 40; k++)
                      pix->order_label[s][k] = pix->order_label[s + 1][k];
                   for (k = 0; k < 40; k++)
@@ -10598,6 +10608,15 @@ static int pix16_menu_entry_action(void *userdata, menu_entry_t *entry,
                {
                   file_list_t *ol = pix16_selection_buf();
                   size_t k;
+                  size_t kept = pix16_order_n;
+                  char (*before)[NAME_MAX_LENGTH] = NULL;
+                  if (kept)
+                  {
+                     before = (char (*)[NAME_MAX_LENGTH])malloc(
+                           kept * sizeof(*before));
+                     if (before)
+                        memcpy(before, pix16_order, kept * sizeof(*before));
+                  }
                   pix16_order_n = 0;
                   if (ol)
                      for (k = 0; k < pix->order_n && pix16_order_n < PIX16_ORDER_MAX; k++)
@@ -10609,6 +10628,29 @@ static int pix16_menu_entry_action(void *userdata, menu_entry_t *entry,
                            strlcpy(pix16_order[pix16_order_n++], base,
                                  sizeof(pix16_order[0]));
                      }
+                  /* systems this window does not show - hidden ones, the
+                   * members of a merged group - keep their place after the
+                   * ones just arranged, so moving one system never moves
+                   * another back to where it used to be */
+                  if (before)
+                  {
+                     size_t b;
+                     for (b = 0; b < kept && pix16_order_n < PIX16_ORDER_MAX; b++)
+                     {
+                        size_t j;
+                        bool have = false;
+                        for (j = 0; j < pix16_order_n; j++)
+                           if (string_is_equal_noncase(before[b], pix16_order[j]))
+                           {
+                              have = true;
+                              break;
+                           }
+                        if (!have)
+                           strlcpy(pix16_order[pix16_order_n++], before[b],
+                                 sizeof(pix16_order[0]));
+                     }
+                     free(before);
+                  }
                   pix16_order_save();
                   pix->order_open  = false;
                   pix->order_focus = false;
