@@ -297,9 +297,11 @@ static bool record_pyrowave_open_codec(const struct record_params *params,
    if (file && config_get_entry(file, "pyrowave_maximum_bytes")
          && !config_get_uint(file, "pyrowave_maximum_bytes", &c->config.maximum_frame_bytes)) goto done;
    if (file && config_get_entry(file, "audio_enable") && !config_get_bool(file, "audio_enable", &audio)) goto done;
-   c->config.maximum_audio_frames = audio ? 1024 : 0;
+   /* The composed frontend carries no audio without an audio driver,
+    * whatever the record config asks: rate and frames go together */
    if (c->frontend && (!config_get_ptr()->bools.audio_enable
             || !strcmp(config_get_ptr()->arrays.audio_driver, "null"))) audio = false;
+   c->config.maximum_audio_frames = audio ? 1024 : 0;
    c->config.audio_rate = audio ? (uint32_t)params->samplerate : 0;
    c->config.audio_channels = audio ? params->channels : 0;
    c->config.audio_channel_mask = audio ? recording_state_get_ptr()->layout : 0;
