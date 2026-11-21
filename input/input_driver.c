@@ -13100,6 +13100,12 @@ static bool input_device_ident_before(const input_device_info_t *a,
 
 uint32_t input_devices_tagged = 0;
 
+/* The longest shown_tag, " [" + a full tag + " #16]", fits: the tag
+ * is copied in unchecked by input_config_retag_devices. */
+typedef char input_shown_tag_fits[
+      (2 + sizeof(((input_device_info_t*)0)->tag) - 1 + sizeof(" #16]")
+       <= sizeof(((input_device_info_t*)0)->shown_tag)) ? 1 : -1];
+
 /* Each connected controller's shown_tag, from the names shown and the
  * tags: run as a name, display name, port path or identity changes,
  * never as a row is drawn. */
@@ -13147,14 +13153,23 @@ static void input_config_retag_devices(input_driver_state_t *input_st)
          snprintf(d->shown_tag, sizeof(d->shown_tag), " (#%u)", before + 1);
       else
       {
-         size_t _len = strlcpy(d->shown_tag, " [", sizeof(d->shown_tag));
-         _len += strlcpy(d->shown_tag + _len, d->tag,
-               sizeof(d->shown_tag) - _len);
+         /* The tag goes in by hand, not through snprintf()'s %s: GCC at
+          * -O0 takes d->tag and d->shown_tag for overlapping (GCC bug
+          * 114644). input_shown_tag_fits keeps it within shown_tag. */
+         char  *s    = d->shown_tag;
+         size_t _len = strlen(d->tag);
+         s[0]        = ' ';
+         s[1]        = '[';
+         memcpy(s + 2, d->tag, _len);
+         s          += 2 + _len;
          if (clash)
-            snprintf(d->shown_tag + _len, sizeof(d->shown_tag) - _len,
+            snprintf(s, sizeof(d->shown_tag) - (size_t)(s - d->shown_tag),
                   " #%u]", clash_before + 1);
          else
-            strlcpy(d->shown_tag + _len, "]", sizeof(d->shown_tag) - _len);
+         {
+            s[0] = ']';
+            s[1] = '\0';
+         }
       }
       tagged |= 1u << port;
    }
