@@ -316,10 +316,6 @@ static int cpu_features_perf_rate_stated(void)
    return 0;
 #elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
    return 0;
-#elif defined(ANDROID) && defined(__aarch64__)
-   /* Some Android firmware exposes an invalid CNTFRQ_EL0. Measure
-    * CNTVCT against the caller's existing clock samples instead. */
-   return 0;
 #elif defined(HAVE_LIBNX)
    uint64_t hz;
    RETRO_HORIZON_TICK_FREQ(hz);
@@ -351,6 +347,14 @@ static int cpu_features_perf_rate_stated(void)
 #endif
 }
 
+#if defined(ANDROID) && defined(__aarch64__)
+/* Some firmware exposes a nonzero but incorrect CNTFRQ_EL0. Confirm
+ * it against existing clock samples before trusting it; a valid rate
+ * then costs no further calibration reads. Calibrating thread only. */
+#define CPU_PERF_VALIDATE_STATED 1
+static int cpu_perf_candidate;
+#endif
+
 /* The rate cpu_features_perf_to_usec() divides by, in ticks per
  * millisecond; 0 until known. Published by the calibrating thread,
  * read by any. */
@@ -369,18 +373,23 @@ void cpu_features_perf_calibrate(retro_time_t now)
 {
    retro_perf_tick_t ticks;
    retro_time_t      us;
+   int               measured;
 
    if (cpu_perf_mode == 1)
       return;
    if (!cpu_perf_mode)
    {
       int stated = cpu_features_perf_rate_stated();
+#ifdef CPU_PERF_VALIDATE_STATED
+      cpu_perf_candidate = stated;
+#else
       if (stated > 0)
       {
          retro_atomic_store_release_int(&cpu_perf_rate_ms, stated);
          cpu_perf_mode = 1;
          return;
       }
+#endif
       cpu_perf_mode = 2;
    }
    if (!retro_atomic_load_acquire_int(&cpu_perf_wanted))
@@ -411,8 +420,23 @@ void cpu_features_perf_calibrate(retro_time_t now)
     * clock's microsecond is a part in a million */
    if (us < (cpu_perf_settled ? 1000000 : 1000))
       return;
-   retro_atomic_store_release_int(&cpu_perf_rate_ms,
-         (int)((ticks - cpu_perf_anchor_ticks) * 1000 / (retro_perf_tick_t)us));
+   measured = (int)((ticks - cpu_perf_anchor_ticks) * 1000 / (retro_perf_tick_t)us);
+#ifdef CPU_PERF_VALIDATE_STATED
+   if (cpu_perf_candidate > 0 && measured > 0 && us >= 20000)
+   {
+      int difference = measured > cpu_perf_candidate
+         ? measured - cpu_perf_candidate : cpu_perf_candidate - measured;
+      /* A long enough span to reject quantisation and a short startup
+       * preemption. Keep the stated rate when it agrees within 0.1%. */
+      if (difference <= cpu_perf_candidate / 1000)
+      {
+         retro_atomic_store_release_int(&cpu_perf_rate_ms, cpu_perf_candidate);
+         cpu_perf_mode = 1;
+         return;
+      }
+   }
+#endif
+   retro_atomic_store_release_int(&cpu_perf_rate_ms, measured);
    if (us < 1000000)
       return;
    cpu_perf_settled      = 1;
@@ -425,7 +449,11 @@ retro_time_t cpu_features_perf_to_usec(retro_perf_tick_t ticks)
    int rate = retro_atomic_load_acquire_int(&cpu_perf_rate_ms);
    if (ticks >> 63)
       return 0;
-   if (rate <= 0 && (rate = cpu_features_perf_rate_stated()) <= 0)
+#ifndef CPU_PERF_VALIDATE_STATED
+   if (rate <= 0)
+      rate = cpu_features_perf_rate_stated();
+#endif
+   if (rate <= 0)
    {
       if (!retro_atomic_load_acquire_int(&cpu_perf_wanted))
          retro_atomic_store_release_int(&cpu_perf_wanted, 1);
@@ -439,7 +467,11 @@ retro_perf_tick_t cpu_features_perf_from_usec(retro_time_t usec)
    int rate = retro_atomic_load_acquire_int(&cpu_perf_rate_ms);
    if (usec <= 0)
       return 0;
-   if (rate <= 0 && (rate = cpu_features_perf_rate_stated()) <= 0)
+#ifndef CPU_PERF_VALIDATE_STATED
+   if (rate <= 0)
+      rate = cpu_features_perf_rate_stated();
+#endif
+   if (rate <= 0)
    {
       if (!retro_atomic_load_acquire_int(&cpu_perf_wanted))
          retro_atomic_store_release_int(&cpu_perf_wanted, 1);

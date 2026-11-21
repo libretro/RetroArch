@@ -76,7 +76,8 @@ retro_time_t cpu_features_get_time_usec(void);
  * them. One caller, on one thread, at a steady cadence (once a frame);
  * where the rate is stated it is taken once and nothing is read, and
  * where it is measured the counter is read only once a conversion has
- * been asked for.
+ * been asked for. ARM64 Android verifies a stated rate against these
+ * samples once before taking that fixed-rate fast path.
  */
 void cpu_features_perf_calibrate(retro_time_t now);
 
