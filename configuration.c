@@ -1904,9 +1904,6 @@ const char *config_get_default_menu(void)
 
    if (*g_defaults.settings_menu)
       return g_defaults.settings_menu;
-#ifdef HAVE_PIX16
-   return "pix16";
-#endif
 
    switch (default_driver)
    {
