@@ -1381,6 +1381,47 @@ static bool native_sdl_close_queued(SDL_Window *primary)
    return false;
 }
 
+#ifdef _WIN32
+#define NATIVE_SDL_GLAPI __stdcall
+#else
+#define NATIVE_SDL_GLAPI
+#endif
+typedef void (NATIVE_SDL_GLAPI *native_sdl_clear_color_t)(float, float,
+      float, float);
+typedef void (NATIVE_SDL_GLAPI *native_sdl_clear_t)(unsigned);
+typedef void (NATIVE_SDL_GLAPI *native_sdl_read_pixels_t)(int, int, int, int,
+      unsigned, unsigned, void*);
+
+/* The main window's frame is drawn before the screens' and swapped after
+ * them: a screen's bind, present and the bind back leave it as drawn */
+static void native_sdl_gl_main_kept(const gfx_ctx_driver_t *ctx,
+      void *data, video_window_native_t *window)
+{
+   unsigned char px[4];
+   native_sdl_clear_color_t clear_color = (native_sdl_clear_color_t)
+      SDL_GL_GetProcAddress("glClearColor");
+   native_sdl_clear_t clear             = (native_sdl_clear_t)
+      SDL_GL_GetProcAddress("glClear");
+   native_sdl_read_pixels_t read_pixels = (native_sdl_read_pixels_t)
+      SDL_GL_GetProcAddress("glReadPixels");
+   CHECK(clear_color && clear && read_pixels);
+   if (!clear_color || !clear || !read_pixels)
+      return;
+   clear_color(0.0f, 1.0f, 0.0f, 1.0f);
+   clear(0x4000 /* GL_COLOR_BUFFER_BIT */);
+   CHECK(ctx->windows->bind_gl(data, window));
+   clear_color(1.0f, 1.0f, 0.0f, 1.0f);
+   clear(0x4000);
+   CHECK(ctx->windows->present_gl(data, window));
+   CHECK(ctx->windows->bind_gl(data, NULL));
+   memset(px, 0, sizeof(px));
+   read_pixels(0, 0, 1, 1, 0x1908 /* GL_RGBA */,
+         0x1401 /* GL_UNSIGNED_BYTE */, px);
+   fprintf(stderr, "native sdl: the main window's back buffer after a "
+         "screen's present: %u,%u,%u\n", px[0], px[1], px[2]);
+   CHECK(px[0] == 0 && px[1] == 255 && px[2] == 0);
+}
+
 static void native_sdl_gl(const gfx_ctx_driver_t *ctx, void *data,
       video_window_native_t *window)
 {
@@ -1411,6 +1452,7 @@ static void native_sdl_gl(const gfx_ctx_driver_t *ctx, void *data,
    fprintf(stderr, "native sdl: GL through %s\n",
          eglGetCurrentContext() != EGL_NO_CONTEXT ? "EGL" : "the platform");
 #endif
+   native_sdl_gl_main_kept(ctx, data, window);
    /* Presents are timed where 20 at interval 1 take at least 0.6 of 20
     * frame periods: 30 at interval 0 must take under 0.6 of 30 */
    if (refresh > 0.0f)
@@ -1769,18 +1811,40 @@ static void native_sdl_monitors_check(const gfx_ctx_driver_t *ctx,
             " monitor not checked\n");
 }
 
-/* Where SDL's driver cannot make screen windows (cocoa, offscreen),
- * the context's table is not usable, so the frame keeps the screens in
- * the main window. False on the drivers that can. */
+/* Whether SDL was told to make its GL through EGL */
+static bool native_sdl_egl_forced(void)
+{
+#ifdef HAVE_SDL3
+   return SDL_GetHintBoolean(SDL_HINT_VIDEO_FORCE_EGL, false);
+#elif defined(SDL_HINT_VIDEO_X11_FORCE_EGL)
+   return SDL_GetHintBoolean(SDL_HINT_VIDEO_X11_FORCE_EGL, SDL_FALSE);
+#else
+   return false;
+#endif
+}
+
+/* Where SDL's driver cannot make screen windows (cocoa, offscreen), or
+ * its GL is GLX, which loses the main window's back buffer to a screen's
+ * bind, the context's table is not usable, so the frame keeps the
+ * screens in the main window. GL through EGL on X11 may be kept from
+ * them too (SDL 2's context goes by the hint), unless EGL was forced.
+ * False where it makes them. */
 static bool native_sdl_no_windows(const gfx_ctx_driver_t *ctx, void *data)
 {
-   bool usable;
-   if (     native_sdl_driver("x11") || native_sdl_driver("wayland")
-         || native_sdl_driver("windows"))
+   bool usable = video_windows_usable(ctx->windows);
+   bool gl_x11 = ctx->windows && ctx->windows->bind_gl
+      && native_sdl_driver("x11");
+   bool glx    = false;
+#ifdef NATIVE_EGL
+   glx = gl_x11 && eglGetCurrentContext() == EGL_NO_CONTEXT;
+#endif
+   if (     !glx && (usable || !gl_x11)
+         && (     native_sdl_driver("x11") || native_sdl_driver("wayland")
+               || native_sdl_driver("windows")))
       return false;
-   fprintf(stderr, "native sdl: %s, no screen windows\n",
-         SDL_GetCurrentVideoDriver());
-   usable = video_windows_usable(ctx->windows);
+   fprintf(stderr, "native sdl: %s%s, no screen windows\n",
+         SDL_GetCurrentVideoDriver(), glx ? " through GLX" : "");
+   CHECK(!native_sdl_egl_forced());
    CHECK(ctx->windows != NULL && !usable);
    ctx->destroy(data);
    /* As gl2 and vulkan advertise screen windows */

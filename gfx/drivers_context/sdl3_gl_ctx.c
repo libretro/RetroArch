@@ -74,6 +74,12 @@ static bool sdl3_gl_core_profile(gfx_ctx_sdl3_data_t *sdl)
 #ifdef HAVE_VIDEO_WINDOWS
 static void sdl3_ctx_window_destroy(void *data,
       video_window_native_t *window);
+
+/* Whether the screens' windows can be drawn, read on any thread. SDL's
+ * GLX lets an X window's back buffer go once the context is made current
+ * on another window, so the main window's frame would be gone by its
+ * swap. EGL keeps each window's surface. */
+static retro_atomic_int_t sdl3_gl_windows_drawable;
 #endif
 
 static void sdl3_ctx_destroy(void *data)
@@ -294,6 +300,11 @@ static bool sdl3_ctx_set_video_mode(void *data,
 
    if (!sdl->ctx && !(sdl->ctx = SDL_GL_CreateContext(sdl->win)))
       goto error;
+#ifdef HAVE_VIDEO_WINDOWS
+   retro_atomic_store_release_int(&sdl3_gl_windows_drawable,
+            !string_is_equal(SDL_GetCurrentVideoDriver(), "x11")
+         || SDL_EGL_GetCurrentDisplay() != NULL);
+#endif
 
    /* Check whether or not adaptive vsync is supported. Probed on the
     * cached path too: this instance is freshly alloc'd on reinit, so
@@ -502,6 +513,12 @@ static void sdl3_ctx_window_keep(void *data,
    sdl3_video_window_keep(data, window);
 }
 
+static bool sdl3_ctx_windows_usable(void)
+{
+   return sdl3_video_windows_supported()
+      && retro_atomic_load_acquire_int(&sdl3_gl_windows_drawable);
+}
+
 static bool sdl3_ctx_window_create(void *data,
       const video_window_request_t *request, video_window_native_t *window)
 {
@@ -527,7 +544,7 @@ static const gfx_ctx_window_driver_t sdl3_ctx_windows = {
    sdl3_ctx_window_destroy,
    sdl3_ctx_window_keep,
    sdl3_ctx_window_take,
-   sdl3_video_windows_supported
+   sdl3_ctx_windows_usable
 };
 #endif
 

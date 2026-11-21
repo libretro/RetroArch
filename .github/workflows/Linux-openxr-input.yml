@@ -293,6 +293,8 @@ jobs:
           # on a real main window: events, placement, fullscreen, GL
           # binding and failures, titles, a restart. Under a reparenting
           # window manager; the fixture's own deadlines bound each step.
+          # SDL's GL is GLX here, where gl_sdl3 has no screen windows;
+          # run again through EGL, it has to have them.
           export LIBGL_ALWAYS_SOFTWARE=1 SDL_VIDEODRIVER=x11 SDL_VIDEO_DRIVER=x11
           xvfb-run -a -s "-screen 0 1920x1080x24 +extension GLX" bash -c '
              set -eu
@@ -303,6 +305,10 @@ jobs:
                 timeout 300 "$RUNNER_TEMP/video-screens/video_screens_test" \
                    --native-windows $c
              done
+             echo "== gl_sdl3 through EGL"
+             SDL_VIDEO_FORCE_EGL=1 timeout 300 \
+                "$RUNNER_TEMP/video-screens/video_screens_test" \
+                --native-windows gl_sdl3
              kill %1'
 
       - name: Native windows of SDL with no window manager (Xvfb, lavapipe)
@@ -439,13 +445,19 @@ jobs:
           NATIVE_WM: 1
         run: |
           set -eu
-          # The distribution's SDL 2; the Vulkan job's build has SDL 3
+          # The distribution's SDL 2; the Vulkan job's build has SDL 3.
+          # Through GLX, then EGL, as gl_sdl3 is there.
           export LIBGL_ALWAYS_SOFTWARE=1 SDL_VIDEODRIVER=x11 SDL_VIDEO_DRIVER=x11
           xvfb-run -a -s "-screen 0 1920x1080x24 +extension GLX" bash -c '
              set -eu
              openbox > "$RUNNER_TEMP/openbox.log" 2>&1 &
              sleep 1
+             echo "== gl_sdl"
              timeout 300 "$RUNNER_TEMP/video-screens/video_screens_test" \
+                --native-windows gl_sdl
+             echo "== gl_sdl through EGL"
+             SDL_VIDEO_X11_FORCE_EGL=1 timeout 300 \
+                "$RUNNER_TEMP/video-screens/video_screens_test" \
                 --native-windows gl_sdl
              kill %1'
 

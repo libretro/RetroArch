@@ -22,6 +22,8 @@
 #include <X11/Xlib.h>
 #endif
 
+#include <string/stdstring.h>
+
 #include "../../configuration.h"
 #include "../../gfx/video_defines.h"
 #include "../../gfx/video_driver.h"
@@ -76,6 +78,24 @@ static void sdl2_ctx_destroy_resources(gfx_ctx_sdl2_data_t *sdl)
 #ifdef HAVE_VIDEO_WINDOWS
 static void sdl2_ctx_window_destroy(void *data,
       video_window_native_t *window);
+
+/* Whether the screens' windows can be drawn, read on any thread. SDL's
+ * GLX lets an X window's back buffer go once the context is made current
+ * on another window, so the main window's frame would be gone by its
+ * swap. EGL keeps each window's surface. */
+static retro_atomic_int_t sdl2_ctx_windows_drawable;
+
+static bool sdl2_ctx_keeps_buffers(void)
+{
+   if (!string_is_equal(SDL_GetCurrentVideoDriver(), "x11"))
+      return true;
+#ifdef SDL_HINT_VIDEO_X11_FORCE_EGL
+   /* With it SDL makes an EGL window or none */
+   return SDL_GetHintBoolean(SDL_HINT_VIDEO_X11_FORCE_EGL, SDL_FALSE);
+#else
+   return false;
+#endif
+}
 #endif
 
 static void sdl2_ctx_destroy(void *data)
@@ -251,6 +271,8 @@ static bool sdl2_ctx_set_video_mode(void *data,
    sdl->height                  = height;
 
 #ifdef HAVE_VIDEO_WINDOWS
+   retro_atomic_store_release_int(&sdl2_ctx_windows_drawable,
+         sdl2_ctx_keeps_buffers());
    /* Before the first frame lays the screens out */
    sdl2_video_monitors_publish(sdl->win, !had_window);
 #endif
@@ -532,6 +554,12 @@ static void sdl2_ctx_window_keep(void *data,
    sdl2_video_window_keep(data, window);
 }
 
+static bool sdl2_ctx_windows_usable(void)
+{
+   return sdl2_video_windows_supported()
+      && retro_atomic_load_acquire_int(&sdl2_ctx_windows_drawable);
+}
+
 static bool sdl2_ctx_window_create(void *data,
       const video_window_request_t *request, video_window_native_t *window)
 {
@@ -550,7 +578,7 @@ static const gfx_ctx_window_driver_t sdl2_ctx_windows = {
    sdl2_ctx_window_destroy,
    sdl2_ctx_window_keep,
    sdl2_video_window_take,
-   sdl2_video_windows_supported
+   sdl2_ctx_windows_usable
 };
 #endif
 
