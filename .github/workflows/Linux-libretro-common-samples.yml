@@ -544,6 +544,8 @@ jobs:
             context_test
             # The link bus alone, one check per rule.
             link_bus_test
+            # The link scheduler: consoles on libco cothreads over the bus.
+            link_sched_test
             rdds_block_test
             faulthandler_test
             memshm_area_test
@@ -655,6 +657,7 @@ jobs:
             # fake-stack check cannot follow it; the same holds for
             # libco. The jump is what the test is for.
             [fastjmp_test]="ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=0"
+            [link_sched_test]="ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=0"
             # The filter must be the one that sees SIGSEGV: ASan installs
             # its own, and with it the faults never reach the code under
             # test. handle_segv=0 is how a fastmem core runs.
