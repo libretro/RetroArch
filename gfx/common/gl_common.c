@@ -71,9 +71,10 @@ void gl_finish(void)
 #define GL_MENU_BLOOM_READ_FRAMEBUFFER         GL_READ_FRAMEBUFFER_EXT
 #define GL_MENU_BLOOM_READ_FRAMEBUFFER_BINDING GL_READ_FRAMEBUFFER_BINDING_EXT
 #define GL_MENU_BLOOM_DRAW_FRAMEBUFFER         GL_DRAW_FRAMEBUFFER_EXT
-/* 10.4's OpenGL framework exports no framebuffer blit: the backdrop
- * blur is 10.5 and up there */
-#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1050
+/* 10.4's OpenGL framework exports no framebuffer blit: a build that
+ * runs on 10.4, against whichever SDK, has no backdrop blur */
+#if defined(MAC_OS_X_VERSION_MIN_REQUIRED) \
+   && (MAC_OS_X_VERSION_MIN_REQUIRED >= 1050)
 #define GL_MENU_BLUR_BLIT                      glBlitFramebufferEXT
 #endif
 #else
