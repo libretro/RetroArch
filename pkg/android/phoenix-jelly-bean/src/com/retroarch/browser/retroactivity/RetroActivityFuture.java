@@ -156,6 +156,8 @@ public final class RetroActivityFuture extends RetroActivityCamera {
     isRunning = false;
   }
 
+  public static native void applyRetroAchievementsHostOverride(String host, boolean hardcoreEnabled);
+
   @Override
   public void onWindowFocusChanged(boolean hasFocus) {
     super.onWindowFocusChanged(hasFocus);
