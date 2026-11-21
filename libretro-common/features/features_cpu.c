@@ -316,6 +316,10 @@ static int cpu_features_perf_rate_stated(void)
    return 0;
 #elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
    return 0;
+#elif defined(ANDROID) && defined(__aarch64__)
+   /* Some Android firmware exposes an invalid CNTFRQ_EL0. Measure
+    * CNTVCT against the caller's existing clock samples instead. */
+   return 0;
 #elif defined(HAVE_LIBNX)
    uint64_t hz;
    RETRO_HORIZON_TICK_FREQ(hz);

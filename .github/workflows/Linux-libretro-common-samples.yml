@@ -781,6 +781,10 @@ jobs:
       # fate-suite.ffmpeg.org times out or resets connections now and
       # then; the two files never change (their sha256s are checked), so
       # one good download is kept in the Actions cache.
+      - name: Android counter frequency with invalid firmware values
+        if: matrix.group == 'core'
+        run: python3 libretro-common/samples/time/perf_to_usec_test/android_rate.py
+
       - name: Restore the XMA2 reference fixture
         if: matrix.group == 'formats'
         id: xma2_fixture
