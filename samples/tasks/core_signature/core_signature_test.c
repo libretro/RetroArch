@@ -482,7 +482,7 @@ static void test_trust_always_all(void)
       if (i == 3)
          c[i].rec.sha256[2] = 0xee;
       if (i == 9)
-         memcpy(c[i].rec.sha256, c[5].rec.sha256, CORE_SHA256_LEN);
+         memmove(c[i].rec.sha256, c[5].rec.sha256, CORE_SHA256_LEN);
       if (i == 11)
          c[i].result = CORE_CHECK_ERROR;
       if (i == 12)
