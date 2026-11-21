@@ -1543,6 +1543,9 @@ static void shader_toolbar(void)
    CHECK(!gfx_media_controls_action(&controls, GFX_MEDIA_PLAY, 3));
    CHECK(!gfx_media_controls_action(&controls, GFX_MEDIA_STOP, 3));
    CHECK(!gfx_media_controls_action(&controls, GFX_MEDIA_SEEK_FORWARD, 3));
+   /* Confirm on the picture keeps the viewer: Shaders only from its
+    * focused toolbar */
+   CHECK(!gfx_media_controls_action(&controls, GFX_MEDIA_ACTIVATE, 3));
    CHECK(opened == 0);
    CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_FOCUS, 4));
    CHECK(gfx_media_controls_action(&controls, GFX_MEDIA_ACTIVATE, 4));

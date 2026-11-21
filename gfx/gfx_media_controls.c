@@ -219,7 +219,12 @@ bool gfx_media_controls_action(gfx_media_controls_t *c,
             return true;
          }
          return gfx_media_button(c, action == GFX_MEDIA_PREVIOUS ? 1 : 2, now);
-      case GFX_MEDIA_ACTIVATE: return gfx_media_button(c, c->row_focus ? c->focus : 0, now);
+      case GFX_MEDIA_ACTIVATE:
+         /* Confirm plays or pauses a movie; an image has nothing to
+          * play, so only its focused toolbar (Shaders) acts */
+         if (c->target.image && !c->row_focus)
+            return false;
+         return gfx_media_button(c, c->row_focus ? c->focus : 0, now);
       case GFX_MEDIA_PLAY:
          return !c->playback.paused || gfx_media_button(c, 0, now);
       case GFX_MEDIA_PAUSE:
