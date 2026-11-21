@@ -30,6 +30,16 @@
 
 #include <formats/rmp4.h>
 
+/* A track's parse and its sample description's, once per track: kept
+ * out of their callers so no one frame carries the whole movie parse */
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define RMP4_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define RMP4_NOINLINE __declspec(noinline)
+#else
+#define RMP4_NOINLINE
+#endif
+
 #define RMP4_MAX_TRACKS       8
 /* Bound each track's parallel sample arrays to 64 MiB. */
 #define RMP4_MAX_SAMPLES ((uint32_t)((64u * 1024u * 1024u) / \
@@ -359,7 +369,7 @@ static void rmp4_parse_mastering(const rmp4_box *box,
    *out = m;
 }
 
-static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
+static RMP4_NOINLINE void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
 {
    uint64_t next;
    rmp4_box e;
@@ -809,7 +819,7 @@ static int rmp4_keep_codec_private(rmp4_itrack *t)
    return 1;
 }
 
-static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
+static RMP4_NOINLINE void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
 {
    rmp4_box mdia, mdhd, hdlr, minf, stbl, b;
    rmp4_itrack *t;
