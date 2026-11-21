@@ -6305,7 +6305,8 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    char elapsed[24], duration[24], caption[128];
    char seek_back[16], seek_forward[16], audio_label[16];
    size_t limit;
-   const char *labels[9];
+   const char *labels[10];
+   char label[64];
    gfx_media_controls_consume(&rgui->media.mailbox, view);
    rgui_media_subtitle_draw(rgui, dims);
    if (!view->visible || !view->layout.unit) return;
@@ -6313,10 +6314,11 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    rgui_color_rect(rgui->frame_buf.data, dims, bar.x, bar.y, bar.w, bar.h,
          rgui->colors.shadow_color);
    bar = view->layout.timeline;
-   rgui_color_rect(rgui->frame_buf.data, dims, bar.x, bar.y, bar.w, bar.h,
-         rgui->colors.bg_light_color);
+   if (!view->image)
+      rgui_color_rect(rgui->frame_buf.data, dims, bar.x, bar.y, bar.w, bar.h,
+            rgui->colors.bg_light_color);
    position = view->dragging ? view->drag_us : view->playback.position_us;
-   if (view->playback.duration_us > 0)
+   if (!view->image && view->playback.duration_us > 0)
    {
       double fraction = (double)position / (double)view->playback.duration_us;
       if (fraction < 0.0) fraction = 0.0;
@@ -6334,9 +6336,10 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    limit = rgui->font_width_stride
       ? (width - view->layout.timeline.x - 2) / rgui->font_width_stride : 0;
    if (limit < sizeof(caption)) caption[limit] = '\0';
-   rgui_blit_line(rgui, width, view->layout.timeline.x,
-         view->layout.panel.y + 1, caption, rgui->colors.normal_color,
-         rgui->colors.shadow_color);
+   if (!view->image)
+      rgui_blit_line(rgui, width, view->layout.timeline.x,
+            view->layout.panel.y + 1, caption, rgui->colors.normal_color,
+            rgui->colors.shadow_color);
    labels[0] = view->playback.paused ? ">" : "||";
    snprintf(seek_back, sizeof(seek_back), "-%u", view->seek_seconds);
    snprintf(seek_forward, sizeof(seek_forward), "+%u", view->seek_seconds);
@@ -6347,26 +6350,42 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    if (view->audio_tracks)
    {
       snprintf(audio_label, sizeof(audio_label), "A%u", view->audio_track_number);
-      labels[view->layout.button_count - (view->subtitle_tracks ? 2 : 1)] = audio_label;
+      labels[view->layout.button_count - (view->subtitle_tracks ? 2 : 1)
+         - (view->shaders ? 1 : 0)] = audio_label;
    }
    if (view->subtitle_tracks)
-      labels[view->layout.button_count - 1] = "CC";
+      labels[view->layout.button_count - 1 - (view->shaders ? 1 : 0)] = "CC";
+   /* The last button, the only one an image has */
+   if (view->shaders)
+      labels[view->layout.button_count - 1] =
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS);
    for (i = 0; i < view->layout.button_count; i++)
    {
       const gfx_media_rect_t *button = &view->layout.buttons[i];
       bool focused = (view->row_focus && view->focus == i) || view->hover == (int)i;
       bool enabled = (view->audio_tracks
-            && i + (view->subtitle_tracks ? 2 : 1) == view->layout.button_count)
-            || (view->subtitle_tracks && i + 1 == view->layout.button_count)
+            && i + (view->subtitle_tracks ? 2 : 1) + (view->shaders ? 1 : 0)
+               == view->layout.button_count)
+            || (view->subtitle_tracks
+               && i + 1 + (view->shaders ? 1 : 0) == view->layout.button_count)
+            || (view->shaders && i + 1 == view->layout.button_count)
             || i == 6 || (i >= 4
             ? (view->directions & (i == 4 ? 1u : 2u)) != 0
             : !i || view->playback.seekable);
-      int x = button->x + (button->w - (int)(strlen(labels[i]) * rgui->font_width_stride)) / 2;
-      int y = button->y + (button->h - (int)VIDEO_SCALE_H(rgui->font_dims)) / 2;
+      size_t columns = rgui->font_width_stride
+         ? (size_t)button->w / rgui->font_width_stride : 0;
+      int x, y;
+      /* Cut to the button, in characters, not bytes */
+      strlcpy(label, labels[i], sizeof(label));
+      if (utf8len(label) > columns)
+         *(char*)utf8skip(label, columns) = '\0';
+      x = button->x + (button->w
+            - (int)(utf8len(label) * rgui->font_width_stride)) / 2;
+      y = button->y + (button->h - (int)VIDEO_SCALE_H(rgui->font_dims)) / 2;
       rgui_color_rect(rgui->frame_buf.data, dims, button->x, button->y,
             button->w, button->h, focused ? rgui->colors.border_light_color
                : rgui->colors.bg_dark_color);
-      rgui_blit_line(rgui, width, x, y, labels[i], enabled
+      rgui_blit_line(rgui, width, x, y, label, enabled
             ? rgui->colors.normal_color : rgui->colors.disabled_color,
             rgui->colors.shadow_color);
    }
