@@ -8323,6 +8323,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       unsigned menu_shader_pipeline,
       unsigned xmb_color_theme,
       float menu_wallpaper_opacity,
+      float ribbon_opacity,
       bool libretro_running,
       bool bloom,
       bool particles,
@@ -8384,6 +8385,7 @@ XMB_NOINLINE static void xmb_draw_bg(
    {
       gfx_display_mesh_draw_t md;
       const gfx_display_mesh_t *mesh = gfx_display_mesh_fullscreen();
+      float effect_alpha = draw.color[3];
 
       md.vertex_count = 0;
       md.program      = GFX_MESH_PROGRAM_EFFECT;
@@ -8424,7 +8426,10 @@ XMB_NOINLINE static void xmb_draw_bg(
       md.color   = draw.color;
       md.texture = draw.texture;
       md.bloom   = bloom;
+      if (menu_shader_pipeline == XMB_SHADER_PIPELINE_RIBBON)
+         gfx_display_set_alpha(md.color, effect_alpha * ribbon_opacity);
       gfx_display_mesh_draw(p_disp, userdata, video_dims, mesh, &md);
+      gfx_display_set_alpha(md.color, effect_alpha);
    }
 #endif
 
@@ -9136,6 +9141,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             menu_shader_pipeline,
             color_theme,
             MIN(xmb->alpha, menu_wallpaper_opacity),
+            video_info->xmb_ribbon_opacity,
             libretro_running,
             (video_info->menu.flags
              & VIDEO_MENU_FLAG_XMB_RIBBON_BLOOM_ENABLE) != 0,
