@@ -5561,5 +5561,11 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_cg = {
    NULL, NULL,
 #endif
    NULL,                                     /* bloom_composite */
-   gfx_display_d3d9_cg_effect_install
+   gfx_display_d3d9_cg_effect_install,
+   NULL,                                     /* media_shader_draw */
+#ifdef D3D9_VIEWS
+   d3d9_cg_blur_rect
+#else
+   NULL
+#endif
 };

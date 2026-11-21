@@ -205,6 +205,18 @@ typedef struct d3d9_video
       unsigned passes;
       bool failed;
    } bloom;
+   /* The menu's backdrop blur, drawn with the glow's shader: the rect
+    * stretched to half into tex[MENU_BLUR_COPY], in the target's
+    * format, and blurred between tex[0] and tex[1] */
+   struct
+   {
+      d3d9_views_target_t tex[3];
+      D3DFORMAT copy_format;
+      DWORD filter;
+      unsigned dims;
+      bool checked;
+      bool failed;
+   } blur;
 #endif
 #ifdef D3D9_HW_RENDER
    /* A core rendering with this device: libretro_d3d9.h */
