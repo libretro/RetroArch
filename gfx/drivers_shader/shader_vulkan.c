@@ -16,6 +16,7 @@
 
 #include "../include/vulkan/vk_sdk_platform.h"
 #include "shader_vulkan.h"
+#include "../common/media_history.h"
 #include "glslang_util.h"
 #include <stdlib.h>
 #include <string.h>
@@ -979,6 +980,9 @@ struct vulkan_filter_chain
    VkFormat original_format;
 
    vulkan_filter_chain_texture input_texture;
+   vulkan_filter_chain_texture history_input;
+   gfx_media_history_t *media_history;
+   bool history_input_valid;
 
    /* Both in VIDEO_SCALE_PACK's layout; deferred_source_dims is the
     * accumulated source size for per-frame builds. */
@@ -1941,23 +1945,6 @@ static void slang_chain_update_history(struct vulkan_filter_chain *chain,
    VkImageLayout src_layout = chain->input_texture.layout;
    unsigned hist_size       = (unsigned)chain->num_history;
 
-   /* Transition input texture to something appropriate. */
-   if (chain->input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
-   {
-      VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-            chain->input_texture.image,VK_REMAINING_MIP_LEVELS,
-            chain->input_texture.layout,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            0,
-            VK_ACCESS_TRANSFER_READ_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_QUEUE_FAMILY_IGNORED,
-            VK_QUEUE_FAMILY_IGNORED);
-
-      src_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-   }
-
    /* Advance ring index backwards: the oldest slot becomes the newest.
     * This replaces the O(N) move_backward with O(1) index arithmetic. */
    next_history_ring_index = (chain->history_ring_index == 0)
@@ -1970,34 +1957,59 @@ static void slang_chain_update_history(struct vulkan_filter_chain *chain,
    if   (    chain->input_texture.dims   != target->size_dims
          || (chain->input_texture.format != VK_FORMAT_UNDEFINED
          &&  chain->input_texture.format != target->format))
-      copy_history    = slang_framebuffer_set_size(target, disposer,
+   {
+      copy_history = slang_framebuffer_set_size(target, disposer,
             chain->input_texture.dims, chain->input_texture.format);
+      if (chain->media_history && chain->media_history->copies >= hist_size)
+         chain->media_history->copies = 0;
+   }
 
    if (copy_history)
    {
       chain->history_ring_index = next_history_ring_index;
+      if (!gfx_media_history_needed(chain->media_history, hist_size)) return;
+      /* Transition input texture to something appropriate. */
+      if (chain->input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
+      {
+         VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
+               chain->input_texture.image,VK_REMAINING_MIP_LEVELS,
+               chain->input_texture.layout,
+               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+               0,
+               VK_ACCESS_TRANSFER_READ_BIT,
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               VK_QUEUE_FAMILY_IGNORED,
+               VK_QUEUE_FAMILY_IGNORED);
+
+         src_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+      }
+
       /* A frame read where it lies is copied from there */
       vulkan_framebuffer_copy(target->image,
             VIDEO_SCALE_W(target->size_dims), VIDEO_SCALE_H(target->size_dims),
             cmd, chain->input_texture.image, src_layout,
             chain->input_texture.padded_dims ? chain->input_texture.origin : 0);
+      gfx_media_history_written(chain->media_history);
+      /* Transition input texture back. */
+      if (chain->input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
+      {
+         VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
+               chain->input_texture.image,VK_REMAINING_MIP_LEVELS,
+               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+               chain->input_texture.layout,
+               0,
+               VK_ACCESS_SHADER_READ_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+               VK_QUEUE_FAMILY_IGNORED,
+               VK_QUEUE_FAMILY_IGNORED);
+      }
    }
    else
-      RARCH_ERR("[Vulkan] Failed to resize shader history framebuffer.\n");
-
-   /* Transition input texture back. */
-   if (chain->input_texture.layout != VK_IMAGE_LAYOUT_GENERAL)
    {
-      VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd,
-            chain->input_texture.image,VK_REMAINING_MIP_LEVELS,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            chain->input_texture.layout,
-            0,
-            VK_ACCESS_SHADER_READ_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            VK_QUEUE_FAMILY_IGNORED,
-            VK_QUEUE_FAMILY_IGNORED);
+      if (chain->media_history) chain->media_history->copies = 0;
+      RARCH_ERR("[Vulkan] Failed to resize shader history framebuffer.\n");
    }
 }
 
@@ -2012,6 +2024,7 @@ static void slang_chain_end_frame(struct vulkan_filter_chain *chain,
    {
       slang_chain_update_history(chain, &chain->deferred_calls[chain->current_sync_index], cmd);
    }
+   chain->media_history = NULL;
 }
 
 static void slang_chain_build_viewport_pass(struct vulkan_filter_chain *chain,
@@ -5693,7 +5706,34 @@ void vulkan_filter_chain_set_input_texture(
       vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_texture *texture)
 {
+   chain->media_history = NULL;
+   chain->history_input_valid = false;
    slang_chain_set_input_texture(chain, *texture);
+}
+
+void vulkan_filter_chain_set_input_texture_history(
+      vulkan_filter_chain_t *chain,
+      const struct vulkan_filter_chain_texture *texture,
+      struct gfx_media_history *history)
+{
+   bool same = chain->history_input_valid
+         && texture->image == chain->history_input.image
+         && texture->dims == chain->history_input.dims
+         && texture->padded_dims == chain->history_input.padded_dims
+         && texture->origin == chain->history_input.origin
+         && texture->format == chain->history_input.format
+         && texture->view == chain->history_input.view
+         && texture->layout == chain->history_input.layout;
+   if (!history)
+   {
+      vulkan_filter_chain_set_input_texture(chain, texture);
+      return;
+   }
+   gfx_media_history_begin(history, (uintptr_t)chain, same, !chain->require_clear);
+   slang_chain_set_input_texture(chain, *texture);
+   chain->history_input = *texture;
+   chain->history_input_valid = true;
+   chain->media_history = history;
 }
 
 void vulkan_filter_chain_set_frame_count(

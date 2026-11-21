@@ -33,6 +33,7 @@
 RETRO_BEGIN_DECLS
 
 typedef struct vulkan_filter_chain vulkan_filter_chain_t;
+struct gfx_media_history;
 
 struct vulkan_filter_chain_texture
 {
@@ -155,6 +156,13 @@ void vulkan_filter_chain_set_source_hdr(
 
 void vulkan_filter_chain_set_input_texture(vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_texture *texture);
+
+/* Producer state is borrowed through end_frame. Reset its copies after
+ * accepted uploads; NULL keeps the ordinary copy path. */
+void vulkan_filter_chain_set_input_texture_history(
+      vulkan_filter_chain_t *chain,
+      const struct vulkan_filter_chain_texture *texture,
+      struct gfx_media_history *history);
 
 /* Whether the chain reads a frame where it lies in a larger image. */
 bool vulkan_filter_chain_reads_in_place(vulkan_filter_chain_t *chain);

@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../common/media_history.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <math.h>
@@ -919,6 +920,9 @@ typedef struct vk
    struct vk_texture *vaapi_textures;
    vulkan_android_queue_t vaapi_submissions;
 #endif
+   gfx_media_history_t media_history[2];
+   uintptr_t media_history_texture[2];
+   uintptr_t media_last_texture;
    vulkan_filter_chain_t *media_shader_chain[2];
    bool media_shader_tried[2]; /* built, or failed, for views.preset */
    uint64_t media_shader_frame;
@@ -16310,6 +16314,16 @@ static uintptr_t vulkan_load_texture_planar(vk_t *vk,
       const struct texture_image *image,
       enum texture_filter_type filter_type);
 
+static void vulkan_media_texture_changed(vk_t *vk, uintptr_t id, bool uploaded)
+{
+   unsigned i;
+   if (!vk) return;
+   for (i = 0; i < 2; i++)
+      if (vk->media_history_texture[i] == id) vk->media_history[i].copies = 0;
+   if (uploaded || vk->media_last_texture == id)
+      vk->media_last_texture = uploaded ? id : 0;
+}
+
 static uintptr_t vulkan_load_texture_internal(vk_t *vk, void *data,
       enum texture_filter_type filter_type)
 {
@@ -16384,6 +16398,7 @@ static uintptr_t vulkan_load_texture_internal(vk_t *vk, void *data,
       free(texture);
       return 0;
    }
+   vulkan_media_texture_changed(vk, (uintptr_t)texture, true);
    return (uintptr_t)texture;
 }
 
@@ -16407,6 +16422,8 @@ static void vulkan_unload_texture_internal(vk_t *vk, uintptr_t handle)
    struct vk_texture *texture = (struct vk_texture*)handle;
    if (!texture || !vk || !vk->context)
       return;
+
+   vulkan_media_texture_changed(vk, handle, false);
 
    /* Parked, never destroyed here: see the deferred list. With no
     * device the texture's GPU objects went with it. */
@@ -16718,6 +16735,7 @@ static struct vk_stream_state *vulkan_planar_state_get(vk_t *vk,
 static enum video_texture_update vulkan_update_texture_planar(vk_t *vk,
       struct vk_texture *texture, const struct texture_image *image)
 {
+   enum video_texture_update result;
    const struct texture_planar *tp = image->planar;
    struct vk_stream_state *st;
    VkCommandBufferBeginInfo begin_info;
@@ -16831,7 +16849,10 @@ static enum video_texture_update vulkan_update_texture_planar(vk_t *vk,
    if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-   return vulkan_stream_submit(vk, st, slot);
+   result = vulkan_stream_submit(vk, st, slot);
+   if (result == VIDEO_TEXTURE_UPDATE_DONE)
+      vulkan_media_texture_changed(vk, (uintptr_t)texture, true);
+   return result;
 }
 
 /* A texture for planar frames: RGBA8 the compute shader writes, and
@@ -16866,6 +16887,7 @@ static uintptr_t vulkan_load_texture_planar(vk_t *vk,
       vulkan_texture_retire(vk, texture);
       return 0;
    }
+   vulkan_media_texture_changed(vk, (uintptr_t)texture, true);
    return (uintptr_t)texture;
 }
 
@@ -17586,6 +17608,7 @@ static bool vulkan_get_device(void *data, video_device_info_t *info)
 static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
       uintptr_t handle, const struct texture_image *image)
 {
+   enum video_texture_update result;
    struct vk_texture *texture = (struct vk_texture*)handle;
    struct vk_stream_state *st;
    struct vk_texture *staging;
@@ -17711,7 +17734,10 @@ static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
    if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
-   return vulkan_stream_submit(vk, st, slot);
+   result = vulkan_stream_submit(vk, st, slot);
+   if (result == VIDEO_TEXTURE_UPDATE_DONE)
+      vulkan_media_texture_changed(vk, (uintptr_t)texture, true);
+   return result;
 }
 
 #ifdef HAVE_THREADS
@@ -18052,6 +18078,7 @@ static uintptr_t vulkan_load_texture_compressed_internal(vk_t *vk,
       texture->flags |= VK_TEX_FLAG_DEFAULT_SMOOTH;
    if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
       texture->flags |= VK_TEX_FLAG_MIPMAP;
+   vulkan_media_texture_changed(vk, (uintptr_t)texture, true);
    return (uintptr_t)texture;
 }
 
@@ -19487,6 +19514,7 @@ static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
    VkViewport vp, saved_vp;
    VkRect2D saved_scissor;
    bool sdr;
+   unsigned history_index;
    if (!vk || !texture || !vk->media_shader_enabled || !vk->bloom.target)
       return false;
    sdr = (vk->flags & VK_FLAG_SDR_PIPELINE) != 0;
@@ -19537,7 +19565,13 @@ static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
       hdr_viewer_colour_rows(rows, linear_hdr, nits, gamut);
       vulkan_filter_chain_set_viewer_colour(chain, rows);
    }
-   vulkan_filter_chain_set_input_texture(chain, &input);
+   history_index = sdr ? 1 : 0;
+   vk->media_history[history_index].managed = vk->media_last_texture == image;
+   if (vk->media_history_texture[history_index] != image)
+      vk->media_history[history_index].copies = 0;
+   vk->media_history_texture[history_index] = image;
+   vulkan_filter_chain_set_input_texture_history(chain, &input,
+         &vk->media_history[history_index]);
    /* The HDR UI compositor performs output conversion after the menu. */
    vulkan_filter_chain_set_source_hdr(chain, 0);
 #ifdef VULKAN_HDR_SWAPCHAIN

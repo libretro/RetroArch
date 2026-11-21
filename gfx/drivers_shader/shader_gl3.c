@@ -16,6 +16,7 @@
 #include <retro_common_api.h>
 
 #include "shader_gl3.h"
+#include "../common/media_history.h"
 #include "glslang_util.h"
 
 #include <stdlib.h>
@@ -3109,6 +3110,9 @@ struct gl3_filter_chain
    struct gl3_framebuffer *copy_framebuffer;
    gl3_common_resources common;
    gl3_filter_chain_texture input_texture;
+   gl3_filter_chain_texture history_input;
+   gfx_media_history_t *media_history;
+   bool history_input_valid;
    /* The count the last frame's final pass was drawn with. */
    uint64_t drawn_frame_count;
    /* num_original_history framebuffers; one more than the shaders read
@@ -3342,44 +3346,56 @@ static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
          chain->original_history[chain->num_original_history - 1];
       chain->original_history[chain->num_original_history - 1] = NULL;
 
-      if (     chain->input_texture.dims != tmp->size_dims
+      if (     !tmp->complete
+            || chain->input_texture.dims != tmp->size_dims
             || (   chain->input_texture.format != 0
                 && chain->input_texture.format != tmp->format))
+      {
          gl3_framebuffer_set_size(tmp, chain->input_texture.dims,
                chain->input_texture.format);
-
-      /* A frame read where it lies is copied from there */
-      if (tmp->complete && chain->input_texture.padded_dims)
-      {
-         const gl3_filter_chain_texture *in = &chain->input_texture;
-         float pw = (float)VIDEO_SCALE_W(in->padded_dims);
-         float ph = (float)VIDEO_SCALE_H(in->padded_dims);
-         gl3_framebuffer_copy_partial(
-               tmp->framebuffer,
-               chain->common.quad_program,
-               chain->common.partial_vbo,
-               chain->common.quad_loc.flat_ubo_vertex,
-               VIDEO_SCALE_W(tmp->size_dims), VIDEO_SCALE_H(tmp->size_dims),
-               in->image,
-               (float)VIDEO_SCALE_W(in->origin) / pw,
-               (float)VIDEO_SCALE_H(in->origin) / ph,
-               (float)VIDEO_SCALE_W(in->dims)   / pw,
-               (float)VIDEO_SCALE_H(in->dims)   / ph);
+         if (chain->media_history && chain->media_history->copies >= chain->num_original_history)
+            chain->media_history->copies = 0;
       }
-      else if (tmp->complete)
-         gl3_framebuffer_copy(
-               tmp->framebuffer,
-               chain->common.quad_program,
-               chain->common.quad_vbo,
-               chain->common.quad_loc.flat_ubo_vertex,
-               VIDEO_SCALE_W(tmp->size_dims), VIDEO_SCALE_H(tmp->size_dims),
-               chain->input_texture.image);
+
+      if (gfx_media_history_needed(chain->media_history, (unsigned)chain->num_original_history))
+      {
+         /* A frame read where it lies is copied from there */
+         if (tmp->complete && chain->input_texture.padded_dims)
+         {
+            const gl3_filter_chain_texture *in = &chain->input_texture;
+            float pw = (float)VIDEO_SCALE_W(in->padded_dims);
+            float ph = (float)VIDEO_SCALE_H(in->padded_dims);
+            gl3_framebuffer_copy_partial(
+                  tmp->framebuffer,
+                  chain->common.quad_program,
+                  chain->common.partial_vbo,
+                  chain->common.quad_loc.flat_ubo_vertex,
+                  VIDEO_SCALE_W(tmp->size_dims), VIDEO_SCALE_H(tmp->size_dims),
+                  in->image,
+                  (float)VIDEO_SCALE_W(in->origin) / pw,
+                  (float)VIDEO_SCALE_H(in->origin) / ph,
+                  (float)VIDEO_SCALE_W(in->dims)   / pw,
+                  (float)VIDEO_SCALE_H(in->dims)   / ph);
+         }
+         else if (tmp->complete)
+            gl3_framebuffer_copy(
+                  tmp->framebuffer,
+                  chain->common.quad_program,
+                  chain->common.quad_vbo,
+                  chain->common.quad_loc.flat_ubo_vertex,
+                  VIDEO_SCALE_W(tmp->size_dims), VIDEO_SCALE_H(tmp->size_dims),
+                  chain->input_texture.image);
+
+         if (tmp->complete) gfx_media_history_written(chain->media_history);
+         else if (chain->media_history) chain->media_history->copies = 0;
+      }
 
       /* Should ring buffer, but we don't have *that* many chain->passes. */
       for (h = chain->num_original_history - 1; h > 0; h--)
          chain->original_history[h] = chain->original_history[h - 1];
       chain->original_history[0] = tmp;
    }
+   chain->media_history = NULL;
 }
 
 static void gl3_chain_build_viewport_pass(struct gl3_filter_chain *chain, const gl3_viewport vp, const float *mvp,
@@ -4193,7 +4209,8 @@ static void gl3_chain_set_input_texture(struct gl3_filter_chain *chain, const gl
       if (!chain->copy_framebuffer)
          return;
 
-      if (     chain->input_texture.dims
+      if (     !chain->copy_framebuffer->complete
+            || chain->input_texture.dims
                      != chain->copy_framebuffer->size_dims
             || (   chain->input_texture.format != 0
                 && chain->input_texture.format
@@ -5058,7 +5075,39 @@ void gl3_filter_chain_set_input_texture(
       gl3_filter_chain_t *chain,
       const struct gl3_filter_chain_texture *texture)
 {
+   chain->media_history = NULL;
+   chain->history_input_valid = false;
    gl3_chain_set_input_texture(chain, *texture);
+}
+
+void gl3_filter_chain_set_input_texture_history(
+      gl3_filter_chain_t *chain,
+      const struct gl3_filter_chain_texture *texture,
+      struct gfx_media_history *history)
+{
+   bool same = chain->history_input_valid
+         && texture->image == chain->history_input.image
+         && texture->dims == chain->history_input.dims
+         && texture->padded_dims == chain->history_input.padded_dims
+         && texture->origin == chain->history_input.origin
+         && texture->format == chain->history_input.format;
+   if (!history)
+   {
+      gl3_filter_chain_set_input_texture(chain, texture);
+      return;
+   }
+   gfx_media_history_begin(history, (uintptr_t)chain, same,
+         !chain->require_clear && (!chain->copy_framebuffer || chain->copy_framebuffer->complete));
+   /* The normalized crop is also unchanged once its history is full. */
+   if (!(same && history->managed && chain->num_original_history
+            && !gfx_media_history_needed(history, (unsigned)chain->num_original_history)
+            && !chain->require_clear && chain->copy_framebuffer
+            && chain->copy_framebuffer->complete))
+      gl3_chain_set_input_texture(chain, *texture);
+   if (chain->copy_framebuffer && !chain->copy_framebuffer->complete) history->copies = 0;
+   chain->history_input = *texture;
+   chain->history_input_valid = true;
+   chain->media_history = history;
 }
 
 bool gl3_filter_chain_reads_in_place(gl3_filter_chain_t *chain)

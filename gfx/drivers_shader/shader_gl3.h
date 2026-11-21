@@ -30,6 +30,7 @@
 RETRO_BEGIN_DECLS
 
 typedef struct gl3_filter_chain gl3_filter_chain_t;
+struct gfx_media_history;
 
 struct gl3_filter_chain_texture
 {
@@ -115,6 +116,13 @@ void gl3_filter_chain_set_source_hdr(
 void gl3_filter_chain_set_input_texture(
       gl3_filter_chain_t *chain,
       const struct gl3_filter_chain_texture *texture);
+
+/* Producer state is borrowed through end_frame. Reset its copies after
+ * accepted uploads; NULL keeps the ordinary copy path. */
+void gl3_filter_chain_set_input_texture_history(
+      gl3_filter_chain_t *chain,
+      const struct gl3_filter_chain_texture *texture,
+      struct gfx_media_history *history);
 
 /* Whether the chain reads a frame where it lies in a larger texture,
  * rather than copying it out. */

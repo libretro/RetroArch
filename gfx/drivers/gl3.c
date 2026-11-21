@@ -147,11 +147,19 @@ struct gl3_views_fbo
 #include "../common/gl_media_shader.h"
 #endif
 
+#include "../common/media_history.h"
+
 typedef struct gl3
 {
 #ifdef HAVE_GLSL
    gl_media_shader_t *media_legacy_shader;
+#endif
+#if defined(HAVE_GLSL) || defined(HAVE_SLANG)
    uintptr_t media_last_texture;
+#endif
+#ifdef HAVE_SLANG
+   gfx_media_history_t media_history;
+   uintptr_t media_history_texture;
 #endif
 #ifdef HAVE_GL_MENU_BLOOM
    gl_menu_bloom_t *menu_bloom;
@@ -8465,10 +8473,15 @@ static struct video_shader *gl3_get_current_shader(void *data)
 /* Called only by the render owner after a managed texture changes. */
 static void gl3_media_texture_changed(gl3_t *gl, uintptr_t id, bool uploaded)
 {
-#ifdef HAVE_GLSL
+#if defined(HAVE_GLSL) || defined(HAVE_SLANG)
    if (gl)
    {
+#ifdef HAVE_GLSL
       gl3_media_shader_changed(gl->media_legacy_shader, id);
+#endif
+#ifdef HAVE_SLANG
+      if (gl->media_history_texture == id) gl->media_history.copies = 0;
+#endif
       if (uploaded || gl->media_last_texture == id)
          gl->media_last_texture = uploaded ? id : 0;
    }
@@ -9236,7 +9249,7 @@ static bool gl3_supports_texture_format(void *data,
    return false;
 }
 
-static uintptr_t gl3_upload_texture_compressed(
+static uintptr_t gl3_upload_texture_compressed(gl3_t *gl,
       const struct texture_compressed *tc,
       enum texture_filter_type filter_type)
 {
@@ -9283,6 +9296,7 @@ static uintptr_t gl3_upload_texture_compressed(
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    glBindTexture(GL_TEXTURE_2D, 0);
 
+   gl3_media_texture_changed(gl, id, true);
    return (uintptr_t)id;
 }
 
@@ -9301,7 +9315,7 @@ static uintptr_t video_texture_load_wrap_gl3_compressed(void *data)
    gl3_t                        *gl  = cmd->gl;
    if (gl && gl->ctx_driver->make_current)
       gl->ctx_driver->make_current(false);
-   return gl3_upload_texture_compressed(cmd->tc, cmd->filter);
+   return gl3_upload_texture_compressed(gl, cmd->tc, cmd->filter);
 }
 #endif
 
@@ -9323,7 +9337,7 @@ static uintptr_t gl3_load_texture_compressed(void *video_data,
    (void)video_data;
    (void)threaded;
 #endif
-   return gl3_upload_texture_compressed(tc, filter_type);
+   return gl3_upload_texture_compressed((gl3_t*)video_data, tc, filter_type);
 }
 
 /* When the most recent swap reached the display, as the window
@@ -9733,7 +9747,9 @@ static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
             gl->scrgb.menu_nits, gl->scrgb.expand_gamut);
       gl3_filter_chain_set_viewer_colour(chain, rows);
    }
-   gl3_filter_chain_set_input_texture(chain, &texture);
+   gl->media_history.managed = gl->media_last_texture == image;
+   gl->media_history_texture = image;
+   gl3_filter_chain_set_input_texture_history(chain, &texture, &gl->media_history);
    gl3_filter_chain_build_offscreen_passes(chain, &vp);
    glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)target);
    matrix_4x4_ortho(mvp, 0, 1, 1, 0, -1, 1);

@@ -17,6 +17,7 @@ fixture = r'''
 #include <stdio.h>
 #include <stdbool.h>
 #include "gfx/common/hdr_viewer_colour.h"
+#include "gfx/common/media_history.h"
 #define VIDEO_SCALE_PACK(w,h) (((w)<<16)|(h))
 #define VIDEO_SCALE_W(d) ((d)>>16)
 #define VIDEO_SCALE_H(d) ((d)&65535)
@@ -38,6 +39,8 @@ typedef struct { unsigned image, hdr; float rows[12]; } vulkan_filter_chain_t;
 struct image { unsigned image,framebuffer; };
 struct context { unsigned current_frame_index; };
 typedef struct {
+   gfx_media_history_t media_history[2];
+   uintptr_t media_history_texture[2], media_last_texture;
    unsigned flags,keep_render_pass,cmd,media_shader_frame;
    bool media_shader_enabled;
    vulkan_filter_chain_t *media_shader_chain[2];
@@ -57,7 +60,7 @@ static void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *c,int
 static void vulkan_filter_chain_set_rotation(vulkan_filter_chain_t *c,unsigned i) { (void)c;(void)i; }
 static void vulkan_filter_chain_set_core_aspect(vulkan_filter_chain_t *c,float f) { (void)c;(void)f; }
 static void vulkan_filter_chain_set_viewer_colour(vulkan_filter_chain_t *c,const float *r) { memcpy(c->rows,r,sizeof(c->rows)); }
-static void vulkan_filter_chain_set_input_texture(vulkan_filter_chain_t *c,const struct vulkan_filter_chain_texture *i) { c->image=i->image; }
+static void vulkan_filter_chain_set_input_texture_history(vulkan_filter_chain_t *c,const struct vulkan_filter_chain_texture *i, struct gfx_media_history *h) { (void)h;c->image=i->image; }
 static void vulkan_filter_chain_set_source_hdr(vulkan_filter_chain_t *c,unsigned i) { (void)c;assert(!i); }
 static void vulkan_filter_chain_set_hdr_mode(vulkan_filter_chain_t *c,unsigned i) { c->hdr=i; }
 static void vulkan_filter_chain_build_offscreen_passes(vulkan_filter_chain_t *c,unsigned cmd,const VkViewport *vp) { (void)c;(void)cmd;assert(vp->width==320);offscreen++; }
@@ -107,5 +110,5 @@ with tempfile.TemporaryDirectory(prefix="viewer-vulkan-hdr-") as directory:
         subprocess.run(cc + shlex.split(os.environ.get("CFLAGS", "")) + [
             "-std=gnu89", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function",
             "-Wno-unused-variable", "-Werror=declaration-after-statement"] +
-            (["-DVULKAN_HDR_SWAPCHAIN"] if hdr else []) + ["-DHAVE_RSLC", "-I" + str(root)] + [str(unit), "-o", str(exe)], check=True)
+            (["-DVULKAN_HDR_SWAPCHAIN"] if hdr else []) + ["-DHAVE_RSLC", "-I" + str(root), "-I" + str(root / "libretro-common/include")] + [str(unit), "-o", str(exe)], check=True)
         subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(exe)], check=True)
