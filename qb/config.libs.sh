@@ -1103,6 +1103,8 @@ fi
 case "$ARCHITECTURE_NAME:${CROSS_COMPILE:-}" in
    'Power Macintosh:'*|*:powerpc*-apple-darwin*)
       HAVE_OPENGL_CORE='no'
+      # pix16 pushes the binary past the range of PowerPC branches
+      HAVE_PIX16='no'
       ;;
 esac
 

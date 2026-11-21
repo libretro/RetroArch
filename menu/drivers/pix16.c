@@ -438,6 +438,8 @@ typedef struct
    uint16_t bg_dark, bg_light; /* themed dither of the background */
    unsigned palette;          /* PIX16_PALETTE_* */
    unsigned transition;       /* PIX16_TRANSITION_* */
+   unsigned background;       /* PIX16_BACKGROUND_* */
+   uint16_t bg_ramp[8];       /* bg_dark .. bg_light .. near white */
    struct pix16_art *arts;    /* system art cache */
    size_t art_count;
    size_t *grid_map;          /* systems grid: display order -> list index */
@@ -769,10 +771,26 @@ static uint32_t pix16_lighten(uint32_t c, unsigned f)
    return 0xFF000000u | (r << 16) | (g << 8) | b;
 }
 
+/* a..b by f/256, per channel; alpha opaque */
+static uint32_t pix16_argb_mix(uint32_t a, uint32_t b, unsigned f)
+{
+   uint32_t r = 0xFF000000;
+   unsigned i;
+   for (i = 0; i < 24; i += 8)
+   {
+      int ca = (int)((a >> i) & 0xFF);
+      int cb = (int)((b >> i) & 0xFF);
+      r |= (uint32_t)(ca + (cb - ca) * (int)f / 256) << i;
+   }
+   return r;
+}
+
 static void pix16_prepare_colors(pix16_t *pix)
 {
    uint32_t pal[PIX16_C_LAST];
    const pix16_palette_t *t = &pix16_palettes[pix->palette % PIX16_PALETTE_LAST];
+   uint32_t bg_dk = 0xFF060A20;
+   uint32_t bg_lt = 0xFF16205C;
    unsigned i;
 
    memcpy(pal, pix16_palette_argb, sizeof(pal));
@@ -799,7 +817,14 @@ static void pix16_prepare_colors(pix16_t *pix)
       pix->sel_bot         = t->sel_bot;
       pix->bg_dark         = pix->conv(t->bg_dark);
       pix->bg_light        = pix->conv(t->bg_light);
+      bg_dk                = t->bg_dark;
+      bg_lt                = t->bg_light;
    }
+
+   for (i = 0; i < 6; i++)
+      pix->bg_ramp[i] = pix->conv(pix16_argb_mix(bg_dk, bg_lt, i * 256 / 5));
+   pix->bg_ramp[6] = pix->conv(pix16_argb_mix(bg_lt, 0xFFFFFFFF, 90));
+   pix->bg_ramp[7] = pix->conv(pix16_argb_mix(bg_lt, 0xFFFFFFFF, 190));
 
    /* pale themes can put the heading at the window's brightness: lift
     * it until the two separate */
@@ -1456,6 +1481,8 @@ static void pix16_load_settings(pix16_t *pix)
       }
       pix->transition = settings ? settings->uints.menu_pix16_transition
             : PIX16_TRANSITION_SWIRL;
+      pix->background = settings ? settings->uints.menu_pix16_background
+            : PIX16_BACKGROUND_DIAMONDS;
    }
    pix->keys     = true;
    for (i = 0; i < MAX_USERS; i++)
@@ -5522,16 +5549,282 @@ static int pix16_draw_guide_c(pix16_t *pix, int left, int right, int y, bool jrp
    return pix16_draw_guide(pix, left + (right - left - w) / 2, right, y, jrpg);
 }
 
-/* Dark, slowly drifting pattern of soft dithered diamonds behind the
- * windows (Bayer 4x4 dither, like the window gradients) */
-static void pix16_j_background(pix16_t *pix, int x0, int y0, int w, int h)
+static const signed char pix16_sin64[64] = {
+   0, 12, 25, 37, 49, 60, 71, 81, 90, 98, 106, 112, 117, 122, 125, 126,
+   127, 126, 125, 122, 117, 112, 106, 98, 90, 81, 71, 60, 49, 37, 25, 12,
+   0, -12, -25, -37, -49, -60, -71, -81, -90, -98, -106, -112, -117, -122, -125, -126,
+   -127, -126, -125, -122, -117, -112, -106, -98, -90, -81, -71, -60, -49, -37, -25, -12
+};
+
+/* v in 1/16 steps of bg_ramp, Bayer dithered between steps */
+static uint16_t pix16_bg_level(const pix16_t *pix, int v, int x, int y)
+{
+   int l;
+   if (v < 0)
+      v = 0;
+   l = v >> 4;
+   if ((v & 15) > (int)pix16_bayer4[y & 3][x & 3])
+      l++;
+   return pix->bg_ramp[l > 7 ? 7 : l];
+}
+
+static void pix16_bg_plot(pix16_t *pix, int x, int y, uint16_t c,
+      int x0, int y0, int x1, int y1)
+{
+   if (x >= x0 && x < x1 && y >= y0 && y < y1)
+      pix->fb[(size_t)y * PIX16_FB_WIDTH + x] = c;
+}
+
+/* Soft dithered diamonds (Bayer 4x4, like the window gradients);
+ * wavy shifts each scanline like an HDMA heat haze */
+static void pix16_bg_diamonds(pix16_t *pix, int x0, int y0, int w, int h,
+      int t, bool wavy)
 {
    uint16_t dark  = pix->bg_dark;
    uint16_t light = pix->bg_light;
-   int off = (int)((menu_driver_get_current_time() / 1000 / 70) & 1023);
+   int off = (t / 70) & 1023;
    int x, y;
+   for (y = y0; y < y0 + h; y++)
+   {
+      uint16_t *row = pix->fb + (size_t)y * PIX16_FB_WIDTH;
+      int v  = ((y + off / 2) & 31) - 16;
+      int av = v < 0 ? -v : v;
+      int sx = off;
+      if (wavy)
+         sx = pix16_sin64[((y >> 1) + t / 45) & 63] * 6 / 127;
+      for (x = x0; x < x0 + w; x++)
+      {
+         int u   = ((x + sx) & 31) - 16;
+         int d   = (u < 0 ? -u : u) + av;      /* 0 (centre) .. 32 */
+         int lvl = (24 - d) * 16 / 14;         /* soft edge        */
+         if (lvl > 9) lvl = 9;                 /* never full bright */
+         row[x] = (lvl > (int)pix16_bayer4[y & 3][x & 3]) ? light : dark;
+      }
+   }
+}
+
+/* Checkered plane in perspective, gliding toward the viewer */
+static void pix16_bg_mode7(pix16_t *pix, int x0, int y0, int w, int h, int t)
+{
+   int hz   = PIX16_FB_HEIGHT * 2 / 5;
+   int cx   = PIX16_FB_WIDTH / 2;
+   int sway = pix16_sin64[(t / 160) & 63];
+   int x, y;
+   for (y = y0; y < y0 + h; y++)
+   {
+      uint16_t *row = pix->fb + (size_t)y * PIX16_FB_WIDTH;
+      if (y < hz)
+      {
+         int v = 4 + y * 36 / hz;
+         for (x = x0; x < x0 + w; x++)
+            row[x] = pix16_bg_level(pix, v, x, y);
+      }
+      else
+      {
+         int dy   = y - hz + 1;
+         int z    = 2048 / dy;
+         int fog  = dy * 16 / (PIX16_FB_HEIGHT - hz);
+         int vv   = (z + t / 12) >> 4;
+         int u    = (x0 - cx) * z + sway * z / 2;
+         for (x = x0; x < x0 + w; x++, u += z)
+         {
+            int lv = (((u >> 9) ^ vv) & 1) ? 72 : 16;
+            row[x] = pix16_bg_level(pix, 40 + (lv - 40) * fog / 16, x, y);
+         }
+      }
+   }
+}
+
+static void pix16_bg_gradient(pix16_t *pix, int x0, int y0, int w, int h,
+      int top, int bot)
+{
+   int x, y;
+   for (y = y0; y < y0 + h; y++)
+   {
+      uint16_t *row = pix->fb + (size_t)y * PIX16_FB_WIDTH;
+      int v = top + (bot - top) * y / PIX16_FB_HEIGHT;
+      for (x = x0; x < x0 + w; x++)
+         row[x] = pix16_bg_level(pix, v, x, y);
+   }
+}
+
+/* Three layers of stars scrolling at different speeds */
+static void pix16_bg_stars(pix16_t *pix, int x0, int y0, int w, int h, int t)
+{
+   static const int div[3] = { 90, 45, 20 };
+   uint32_t seed = 0x1234567u;
+   int fw = PIX16_FB_WIDTH;
+   int i;
+   pix16_bg_gradient(pix, x0, y0, w, h, 0, 20);
+   for (i = 0; i < 120; i++)
+   {
+      int layer = i % 3;
+      int sx, sy, x;
+      uint16_t c;
+      seed = seed * 1103515245u + 12345u;
+      sx   = (int)((seed >> 8) % (uint32_t)fw);
+      seed = seed * 1103515245u + 12345u;
+      sy   = (int)((seed >> 8) % (uint32_t)PIX16_FB_HEIGHT);
+      x    = (sx - (t / div[layer]) % fw + fw) % fw;
+      c    = pix->bg_ramp[3 + layer * 2];
+      if (layer == 2 && ((t / 250 + i) % 9) == 0)
+         c = pix->bg_ramp[5];
+      pix16_bg_plot(pix, x, sy, c, x0, y0, x0 + w, y0 + h);
+      if (layer == 2)
+      {
+         pix16_bg_plot(pix, x - 1, sy, pix->bg_ramp[3], x0, y0, x0 + w, y0 + h);
+         pix16_bg_plot(pix, x + 1, sy, pix->bg_ramp[3], x0, y0, x0 + w, y0 + h);
+      }
+   }
+}
+
+/* Fixed ripple field whose palette cycles, like SNES water */
+static void pix16_bg_water(pix16_t *pix, int x0, int y0, int w, int h, int t)
+{
+   int phase = t / 25;
+   int x, y;
+   for (y = y0; y < y0 + h; y++)
+   {
+      uint16_t *row = pix->fb + (size_t)y * PIX16_FB_WIDTH;
+      int wy = pix16_sin64[(y >> 1) & 63] >> 5;
+      for (x = x0; x < x0 + w; x++)
+      {
+         int f = pix16_sin64[(x / 3 + wy) & 63]
+               + pix16_sin64[(y / 2 + x / 5) & 63];
+         int c = ((f + 256) / 2 + phase) & 127;
+         row[x] = pix16_bg_level(pix, c < 64 ? c : 127 - c, x, y);
+      }
+   }
+}
+
+/* Two bands of clouds drifting at different speeds */
+static void pix16_bg_clouds(pix16_t *pix, int x0, int y0, int w, int h, int t)
+{
+   static const int cy_n[3]  = { 1, 3, 9 };   /* band centre, of 12 */
+   static const int div[3]   = { 70, 40, 25 };
+   static const int base[3]  = { 28, 40, 52 };
+   int fh = PIX16_FB_HEIGHT;
+   int x, y, b;
+   for (y = y0; y < y0 + h; y++)
+   {
+      uint16_t *row = pix->fb + (size_t)y * PIX16_FB_WIDTH;
+      int sky = 6 + y * 24 / fh;
+      for (x = x0; x < x0 + w; x++)
+      {
+         int v = sky;
+         for (b = 0; b < 3; b++)
+         {
+            int dy = y - fh * cy_n[b] / 12;
+            int hh = fh / 7;
+            int band, xo, d;
+            if (dy < 0)
+               dy = -dy;
+            if (dy >= hh)
+               continue;
+            band = 127 - dy * 127 / hh;
+            xo   = x + t / div[b] + b * 97;
+            d    = pix16_sin64[(xo / 4) & 63]
+                 + pix16_sin64[(xo / 9 + 17) & 63]
+                 + pix16_sin64[(xo / 2 + y / 3) & 63] / 2;
+            d    = d + band * 2 - 190;
+            if (d > 0)
+               v = base[b] + (d > 96 ? 24 : d / 4);
+         }
+         row[x] = pix16_bg_level(pix, v, x, y);
+      }
+   }
+}
+
+static void pix16_bg_plasma(pix16_t *pix, int x0, int y0, int w, int h, int t)
+{
+   int x, y;
+   for (y = y0; y < y0 + h; y++)
+   {
+      uint16_t *row = pix->fb + (size_t)y * PIX16_FB_WIDTH;
+      int ry = pix16_sin64[(y / 4 - t / 70) & 63];
+      for (x = x0; x < x0 + w; x++)
+      {
+         int a = pix16_sin64[(x / 5 + t / 50) & 63] + ry
+               + pix16_sin64[((x + y) / 7 + t / 90) & 63]
+               + pix16_sin64[((x - y + 512) / 6 - t / 60) & 63];
+         int c = ((a + 512) / 4) & 127;
+         row[x] = pix16_bg_level(pix, c < 64 ? c : 127 - c, x, y);
+      }
+   }
+}
+
+/* Slanted rain streaks, or snow swaying as it falls */
+static void pix16_bg_weather(pix16_t *pix, int x0, int y0, int w, int h,
+      int t, bool snow)
+{
+   uint32_t seed = 0x2468ACEu;
+   int fw = PIX16_FB_WIDTH;
+   int fh = PIX16_FB_HEIGHT + 8;
+   int x1 = x0 + w, y1 = y0 + h;
+   int i, k;
+   pix16_bg_gradient(pix, x0, y0, w, h, 2, 26);
+   for (i = 0; i < 90; i++)
+   {
+      int depth = i % 3;
+      int sx, sy, x, y;
+      seed = seed * 1103515245u + 12345u;
+      sx   = (int)((seed >> 8) % (uint32_t)fw);
+      seed = seed * 1103515245u + 12345u;
+      sy   = (int)((seed >> 8) % (uint32_t)fh);
+      if (snow)
+      {
+         uint16_t c = pix->bg_ramp[4 + depth + (depth == 2)];
+         y = (sy + t * (depth + 1) / 60) % fh - 4;
+         x = (sx + pix16_sin64[(t / 40 + i * 7) & 63] * (depth + 2) / 127
+               + fw) % fw;
+         pix16_bg_plot(pix, x, y, c, x0, y0, x1, y1);
+         if (depth == 2)
+         {
+            pix16_bg_plot(pix, x + 1, y,     c, x0, y0, x1, y1);
+            pix16_bg_plot(pix, x,     y + 1, c, x0, y0, x1, y1);
+            pix16_bg_plot(pix, x + 1, y + 1, c, x0, y0, x1, y1);
+         }
+      }
+      else
+      {
+         y = (sy + t * (depth + 2) / 8) % fh - 4;
+         x = (sx - y / 3 + fw * 2) % fw;
+         for (k = 0; k < 4 + depth * 2; k++)
+            pix16_bg_plot(pix, x + k / 3, y - k,
+                  pix->bg_ramp[k ? 3 + depth : 5 + depth], x0, y0, x1, y1);
+      }
+   }
+}
+
+/* Raster bars bobbing up and down, later bars drawn over earlier */
+static void pix16_bg_copper(pix16_t *pix, int x0, int y0, int w, int h, int t)
+{
+   int fh = PIX16_FB_HEIGHT;
+   int x, y, b;
+   for (y = y0; y < y0 + h; y++)
+   {
+      uint16_t *row = pix->fb + (size_t)y * PIX16_FB_WIDTH;
+      int v = 4;
+      for (b = 0; b < 5; b++)
+      {
+         int yc = fh / 2 + pix16_sin64[(t / 90 + b * 9) & 63] * (fh * 3 / 8) / 127;
+         int d  = y - yc;
+         if (d < 0)
+            d = -d;
+         if (d < 14)
+            v = 108 - d * d * 108 / 196;
+      }
+      for (x = x0; x < x0 + w; x++)
+         row[x] = pix16_bg_level(pix, v, x, y);
+   }
+}
+
+/* Animated backdrop behind the windows, picked by the Background setting */
+static void pix16_j_background(pix16_t *pix, int x0, int y0, int w, int h)
+{
+   int t = (int)((menu_driver_get_current_time() / 1000) & 0x7FFFFFF);
    if (pix->reduced_motion)
-      off = 0;                 /* the pattern does not drift */
+      t = 0;                   /* the backdrop holds still */
    if (x0 < 0)
    {
       w += x0;
@@ -5546,19 +5839,40 @@ static void pix16_j_background(pix16_t *pix, int x0, int y0, int w, int h)
       w = PIX16_FB_WIDTH  - x0;
    if (y0 + h > PIX16_FB_HEIGHT)
       h = PIX16_FB_HEIGHT - y0;
-   for (y = y0; y < y0 + h; y++)
+   if (w <= 0 || h <= 0)
+      return;
+   switch (pix->background)
    {
-      uint16_t *row = pix->fb + (size_t)y * PIX16_FB_WIDTH;
-      int v  = ((y + off / 2) & 31) - 16;
-      int av = v < 0 ? -v : v;
-      for (x = x0; x < x0 + w; x++)
-      {
-         int u   = ((x + off) & 31) - 16;
-         int d   = (u < 0 ? -u : u) + av;      /* 0 (centre) .. 32 */
-         int lvl = (24 - d) * 16 / 14;         /* soft edge        */
-         if (lvl > 9) lvl = 9;                 /* never full bright */
-         row[x] = (lvl > (int)pix16_bayer4[y & 3][x & 3]) ? light : dark;
-      }
+      case PIX16_BACKGROUND_MODE7:
+         pix16_bg_mode7(pix, x0, y0, w, h, t);
+         break;
+      case PIX16_BACKGROUND_STARS:
+         pix16_bg_stars(pix, x0, y0, w, h, t);
+         break;
+      case PIX16_BACKGROUND_WAVY:
+         pix16_bg_diamonds(pix, x0, y0, w, h, t, true);
+         break;
+      case PIX16_BACKGROUND_WATER:
+         pix16_bg_water(pix, x0, y0, w, h, t);
+         break;
+      case PIX16_BACKGROUND_CLOUDS:
+         pix16_bg_clouds(pix, x0, y0, w, h, t);
+         break;
+      case PIX16_BACKGROUND_PLASMA:
+         pix16_bg_plasma(pix, x0, y0, w, h, t);
+         break;
+      case PIX16_BACKGROUND_RAIN:
+         pix16_bg_weather(pix, x0, y0, w, h, t, false);
+         break;
+      case PIX16_BACKGROUND_SNOW:
+         pix16_bg_weather(pix, x0, y0, w, h, t, true);
+         break;
+      case PIX16_BACKGROUND_COPPER:
+         pix16_bg_copper(pix, x0, y0, w, h, t);
+         break;
+      default:
+         pix16_bg_diamonds(pix, x0, y0, w, h, t, false);
+         break;
    }
 }
 

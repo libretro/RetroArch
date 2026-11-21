@@ -400,6 +400,7 @@ typedef struct settings
       unsigned menu_rgui_particle_effect;
       unsigned menu_pix16_button_style;
       unsigned menu_pix16_transition;
+      unsigned menu_pix16_background;
       unsigned menu_pix16_palette;
       unsigned menu_ticker_type;
       unsigned menu_scroll_delay;

@@ -5889,6 +5889,68 @@ static size_t setting_get_string_representation_uint_pix16_transition(
    return 0;
 }
 
+static size_t setting_get_string_representation_uint_pix16_background(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case PIX16_BACKGROUND_DIAMONDS:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_BACKGROUND_DIAMONDS),
+                  len);
+         case PIX16_BACKGROUND_MODE7:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_BACKGROUND_MODE7),
+                  len);
+         case PIX16_BACKGROUND_STARS:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_BACKGROUND_STARS),
+                  len);
+         case PIX16_BACKGROUND_WAVY:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_BACKGROUND_WAVY),
+                  len);
+         case PIX16_BACKGROUND_WATER:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_BACKGROUND_WATER),
+                  len);
+         case PIX16_BACKGROUND_CLOUDS:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_BACKGROUND_CLOUDS),
+                  len);
+         case PIX16_BACKGROUND_PLASMA:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_BACKGROUND_PLASMA),
+                  len);
+         case PIX16_BACKGROUND_RAIN:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_BACKGROUND_RAIN),
+                  len);
+         case PIX16_BACKGROUND_SNOW:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_BACKGROUND_SNOW),
+                  len);
+         case PIX16_BACKGROUND_COPPER:
+            return strlcpy(s,
+                  msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_PIX16_BACKGROUND_COPPER),
+                  len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_pix16_palette(
       rarch_setting_t *setting, char *s, size_t len)
 {
