@@ -9,6 +9,10 @@
 # message. Then each scenario in bad/ must exit 2 and each in fail/ exit
 # 1, printing the error its "# error:" line names, as must a truncated
 # state, a state of another scenario and an edited trace.
+#
+# proof makes the five runs of one scenario that binds real cores, PROOF
+# (an absolute path), into BUILD_DIR/proof/<scenario>/, each BIND word
+# (NAME=<absolute file>, no spaces) a --path.
 
 LRC := ../../../libretro-common
 BUILD_DIR ?= build
@@ -83,6 +87,46 @@ FAILED_AS = rc=$$?; cat "$$err"; \
 	[ $$rc -eq $(1) ] || { echo "check: $$what exited $$rc, not $(1)"; exit 1; }; \
 	grep -F -q -e "$$why" "$$err" || { echo "check: $$what did not say: $$why"; exit 1; }
 
+# The five runs of the scenario in $$scn, into $(1)/<its name>/<run>/,
+# with $(2) binding its names; the first failure stops them
+FIVE_RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
+	save=`sed -n 's/^\([0-9][0-9]*\) save mid\( .*\)*$$/\1/p' "$$scn"`; \
+	[ -n "$$save" ] || { echo "$@: $$name has no save mid line"; exit 1; }; \
+	flight=`sed -n 's/^\([0-9][0-9]*\) checkpoint in_flight\( .*\)*$$/\1/p' "$$scn"`; \
+	[ -z "$$flight" ] || [ "$$flight" = "$$save" ] \
+	   || { echo "$@: $$name's in_flight checkpoint is not at its save frame"; exit 1; }; \
+	untick=; grep -q '^option [0-9][0-9]* link_test_restart_ticks on\( .*\)*$$' "$$scn" \
+	   && untick='$(UNTICK)'; \
+	for run in first again reversed shuffled from; do \
+	   case $$run in \
+	      first)    args="--out $$out/first" ;; \
+	      again)    args="--out $$out/again --expect $$out/first/trace.txt" ;; \
+	      reversed) args="--pick reversed --out $$out/reversed --expect $$out/first/trace.txt" ;; \
+	      shuffled) args="--pick shuffled:7 --out $$out/shuffled --expect $$out/first/trace.txt" ;; \
+	      from)     args="--from $$out/first/mid.state --out $$out/from --expect $$out/first/trace.txt"; \
+	                rm -f -- "$$out/from/mid.state" ;; \
+	   esac; \
+	   rm -f -- "$$out/$$run/stuck.txt"; \
+	   echo "== $$name $$run"; \
+	   $(RUNNER) $(HARNESS) $(MIN_STACK) --scenario "$$scn" $(2) $$args \
+	      || { echo "$@: $$name $$run failed with exit $$?"; exit 1; }; \
+	   case $$run in \
+	      first) ;; \
+	      from) start=`sed -n '1s/^F \([0-9]*\) .*/\1/p' "$$out/from/trace.txt"`; \
+	         [ "$$start" = "$$save" ] || { echo "$@: $$name from started at frame $$start, not $$save"; exit 1; }; \
+	         [ ! -e "$$out/from/mid.state" ] || { echo "$@: $$name from ran its save line again"; exit 1; }; \
+	         want=`awk -v from="$$save" '$$2 + 0 >= from + 0' "$$out/first/messages.log" \
+	            | sed "$$untick" | cksum`; \
+	         got=`sed "$$untick" "$$out/from/messages.log" | cksum`; \
+	         [ "$$want" = "$$got" ] ;; \
+	      *) cmp -s "$$out/first/messages.log" "$$out/$$run/messages.log" ;; \
+	   esac || { echo "$@: $$name $$run: messages.log differs from the first run's"; exit 1; }; \
+	   [ ! -e "$$out/first/stuck.txt" ] || cmp -s "$$out/first/stuck.txt" "$$out/$$run/stuck.txt" \
+	      || { echo "$@: $$name $$run: stuck.txt differs from the first run's"; exit 1; }; \
+	   [ -z "$$flight" ] || grep -q '^msg ' "$$out/$$run/in_flight/bus.txt" \
+	      || { echo "$@: $$name $$run: no message in flight at the save"; exit 1; }; \
+	done
+
 BASE_CFLAGS  := -O2 -g1 -I$(LRC)/include
 OWN_CFLAGS   := $(BASE_CFLAGS) -std=c89 -pedantic -Wall -Wextra -Werror \
                 -Wdeclaration-after-statement -Wframe-larger-than=4096
@@ -121,43 +165,7 @@ $(CORE): $(call obj,$(CORE_SOURCES))
 
 check: all
 	@for scn in $(SCENARIOS); do \
-	   name=`basename "$$scn" .scn`; out="$(BUILD_DIR)/out/$$name"; \
-	   save=`sed -n 's/^\([0-9][0-9]*\) save mid\( .*\)*$$/\1/p' "$$scn"`; \
-	   [ -n "$$save" ] || { echo "check: $$name has no save mid line"; exit 1; }; \
-	   flight=`sed -n 's/^\([0-9][0-9]*\) checkpoint in_flight\( .*\)*$$/\1/p' "$$scn"`; \
-	   [ -z "$$flight" ] || [ "$$flight" = "$$save" ] \
-	      || { echo "check: $$name's in_flight checkpoint is not at its save frame"; exit 1; }; \
-	   untick=; grep -q '^option [0-9][0-9]* link_test_restart_ticks on\( .*\)*$$' "$$scn" \
-	      && untick='$(UNTICK)'; \
-	   for run in first again reversed shuffled from; do \
-	      case $$run in \
-	         first)    args="--out $$out/first" ;; \
-	         again)    args="--out $$out/again --expect $$out/first/trace.txt" ;; \
-	         reversed) args="--pick reversed --out $$out/reversed --expect $$out/first/trace.txt" ;; \
-	         shuffled) args="--pick shuffled:7 --out $$out/shuffled --expect $$out/first/trace.txt" ;; \
-	         from)     args="--from $$out/first/mid.state --out $$out/from --expect $$out/first/trace.txt"; \
-	                   rm -f -- "$$out/from/mid.state" ;; \
-	      esac; \
-	      rm -f -- "$$out/$$run/stuck.txt"; \
-	      echo "== $$name $$run"; \
-	      $(RUNNER) $(HARNESS) $(MIN_STACK) --scenario "$$scn" --path test=$(CORE) $$args \
-	         || { echo "check: $$name $$run failed with exit $$?"; exit 1; }; \
-	      case $$run in \
-	         first) ;; \
-	         from) start=`sed -n '1s/^F \([0-9]*\) .*/\1/p' "$$out/from/trace.txt"`; \
-	            [ "$$start" = "$$save" ] || { echo "check: $$name from started at frame $$start, not $$save"; exit 1; }; \
-	            [ ! -e "$$out/from/mid.state" ] || { echo "check: $$name from ran its save line again"; exit 1; }; \
-	            want=`awk -v from="$$save" '$$2 + 0 >= from + 0' "$$out/first/messages.log" \
-	               | sed "$$untick" | cksum`; \
-	            got=`sed "$$untick" "$$out/from/messages.log" | cksum`; \
-	            [ "$$want" = "$$got" ] ;; \
-	         *) cmp -s "$$out/first/messages.log" "$$out/$$run/messages.log" ;; \
-	      esac || { echo "check: $$name $$run: messages.log differs from the first run's"; exit 1; }; \
-	      [ ! -e "$$out/first/stuck.txt" ] || cmp -s "$$out/first/stuck.txt" "$$out/$$run/stuck.txt" \
-	         || { echo "check: $$name $$run: stuck.txt differs from the first run's"; exit 1; }; \
-	      [ -z "$$flight" ] || grep -q '^msg ' "$$out/$$run/in_flight/bus.txt" \
-	         || { echo "check: $$name $$run: no message in flight at the save"; exit 1; }; \
-	   done; \
+	   $(call FIVE_RUNS,$(BUILD_DIR)/out,--path test=$(CORE)); \
 	done
 	@mkdir -p "$(BUILD_DIR)/out/bad" "$(BUILD_DIR)/out/fail"; \
 	for scn in $(BAD_SCENARIOS) $(FAIL_SCENARIOS); do \
@@ -196,7 +204,11 @@ check: all
 	   --expect "$$edited" --out "$(BUILD_DIR)/out/fail/edited" 2>"$$err"; \
 	$(call FAILED_AS,1)
 
+proof: $(HARNESS)
+	@scn='$(PROOF)'; [ -n "$$scn" ] || { echo "proof: PROOF names no scenario"; exit 2; }; \
+	$(call FIVE_RUNS,$(BUILD_DIR)/proof,$(foreach b,$(BIND),--path '$(b)'))
+
 clean:
 	build='$(BUILD_DIR)'; rm -rf -- "$${build:?}"
 
-.PHONY: all check clean
+.PHONY: all check clean proof

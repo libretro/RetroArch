@@ -52,6 +52,17 @@ state and a state of another scenario must each exit 2, and every scenario in
 must also print its error: the one a scenario's `# error: <text>` line gives,
 with its line number where it has one.
 
+`make proof` makes the same five runs, with the same comparisons, of one
+scenario that binds real cores, such as those in `proofs/`. It builds only
+the harness, passes each `BIND` word (`NAME=FILE`, no spaces) as a `--path`
+and writes the runs to `proof/<scenario>/<run>/` under `BUILD_DIR`.
+`proofs/README.md` says how to run those.
+
+```sh
+make -C samples/link/harness proof PROOF=/abs/path/scenario.scn \
+   BIND='core=/abs/path/core_libretro.so rom=/abs/path/game.rom'
+```
+
 ## Running the harness
 
 ```
