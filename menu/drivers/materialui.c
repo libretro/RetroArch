@@ -2863,7 +2863,8 @@ static void materialui_render_messagebox(
    int slice_y                = 0;
    int slice_w                = 0;
    int slice_h                = 0;
-   bool draw_selection = draw_caret && input_driver_keyboard_line_selected();
+   unsigned kb_state   = draw_caret ? input_driver_keyboard_line_state() : 0;
+   bool draw_selection = (kb_state & INPUT_KEYBOARD_LINE_SELECTED) != 0;
    unsigned selection_first_line = 1;
    float selection_color[16] = {
       0.20f, 0.40f, 0.80f, 0.35f,
@@ -3134,8 +3135,12 @@ static void materialui_render_messagebox(
          if (d > (size_t)lengths[l])
             d = (size_t)lengths[l];
          cursor_line = (unsigned)l;
-         cursor_x    = font_driver_get_message_width(
-               mui->font_data.list.font, lines[l], d, 1.0f);
+         /* Among Hebrew or Arabic, where the caret lands as drawn */
+         cursor_x    = (kb_state & INPUT_KEYBOARD_LINE_RTL)
+            ? font_driver_get_caret_x(mui->font_data.list.font, lines[l],
+                  (size_t)lengths[l], d, 1.0f)
+            : font_driver_get_message_width(
+                  mui->font_data.list.font, lines[l], d, 1.0f);
 
          draw_caret  = !draw_selection;
       }
@@ -8981,7 +8986,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    if (menu_input_dialog_get_display_kb())
    {
       size_t _len;
-      char msg[NAME_MAX_LENGTH];
+      /* As long as the text the box wraps and keeps */
+      char msg[MENU_LABEL_MAX_LENGTH];
       const char *text;
       const char *str                = menu_input_dialog_get_buffer();
       const char *label              = menu_st->input_dialog_kb_label;

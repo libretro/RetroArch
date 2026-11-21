@@ -1377,7 +1377,8 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    int slice_y                         = 0;
    int slice_w                         = 0;
    int slice_h                         = 0;
-   bool draw_selection = draw_caret && input_driver_keyboard_line_selected();
+   unsigned kb_state   = draw_caret ? input_driver_keyboard_line_state() : 0;
+   bool draw_selection = (kb_state & INPUT_KEYBOARD_LINE_SELECTED) != 0;
    unsigned selection_first_line = 1;
    float selection_color[16] = {
       0.20f, 0.40f, 0.80f, 0.35f,
@@ -1665,8 +1666,10 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
          if (d > (n = strlen(lines[l])))
             d = n;
          cursor_line = l;
-         cursor_x    = font_driver_get_message_width(xmb->font, lines[l], d,
-               1.0f);
+         /* Among Hebrew or Arabic, where the caret lands as drawn */
+         cursor_x    = (kb_state & INPUT_KEYBOARD_LINE_RTL)
+            ? font_driver_get_caret_x(xmb->font, lines[l], n, d, 1.0f)
+            : font_driver_get_message_width(xmb->font, lines[l], d, 1.0f);
 
          draw_caret  = !draw_selection;
       }

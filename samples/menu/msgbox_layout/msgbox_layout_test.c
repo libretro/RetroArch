@@ -60,6 +60,10 @@
  *               cursor, at its left edge - for a space the wrap made a
  *               line end, after the line it ends
  *
+ *               The same with 40 Hebrew words, drawn right to left:
+ *               the caret at the right edge of the letter after the
+ *               cursor, at the left end of its line at the line's end
+ *
  *   reopen      XMB and MaterialUI: the search dialog with 40 words
  *               typed, closed and opened again with nothing typed:
  *               each frame of it draws its label and none of the words
@@ -842,6 +846,153 @@ static void caret_lane(unsigned w, unsigned h)
 
    menu_input_dialog_end();
    printf("[caret] %u cursor position(s) at %ux%u\n", checked, w, h);
+}
+
+/* --- the input dialog's caret among Hebrew ------------------------- */
+
+/* Hebrew typed: 40 words of three letters, no two alike, so every drawn
+ * line can be found in what was typed */
+static size_t type_hebrew(char *s, size_t len)
+{
+   size_t   _len = 0;
+   unsigned i;
+   s[0] = '\0';
+   for (i = 0; i < TYPED_TOKENS; i++)
+   {
+      /* U+05D0 - U+05EA: alef to tav */
+      unsigned a = i % 27, b = (i / 27 + i) % 27, c = (i * 7 + 3) % 27;
+      char     word[16];
+      snprintf(word, sizeof(word), "%s%c%c%c%c%c%c", i ? " " : "",
+            0xD7, 0x90 + a, 0xD7, 0x90 + b, 0xD7, 0x90 + c);
+      _len += strlcpy(s + _len, word, len - _len);
+   }
+   return _len;
+}
+
+/* Whether a drawn line is Hebrew typed: Hebrew letters and spaces only.
+ * The harness records lines as the driver hands them over, in typed
+ * order; the renderer draws them right to left. */
+static bool hebrew_line(const char *t)
+{
+   bool any = false;
+   for (; *t; t++)
+   {
+      if ((unsigned char)*t == 0xD7 && t[1])
+      {
+         any = true;
+         t++;
+      }
+      else if (*t != ' ')
+         return false;
+   }
+   return any;
+}
+
+static void caret_rtl_lane(unsigned w, unsigned h)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   char     typed[512];
+   size_t   typed_len = type_hebrew(typed, sizeof(typed));
+   size_t   at[48];
+   size_t   at_count  = 0;
+   size_t   k;
+   unsigned checked   = 0;
+
+   box_text[0] = '\0';
+   CHECK(menu_input_dialog_start_search(), "fixture: no input dialog");
+   input_keyboard_line_append(&input_st->keyboard_line, typed, typed_len);
+   input_st->keyboard_line.select_all = false;
+   CHECK(input_driver_keyboard_line_state() & INPUT_KEYBOARD_LINE_RTL,
+         "[caret rtl] typed Hebrew does not mark the line");
+   menu_st->current_time_us           = 500000;
+
+   input_st->keyboard_line.ptr = typed_len;
+   one_frame(w, h);
+   at[at_count++] = 0;
+   at[at_count++] = 4;
+   for (k = 0; k < drawn_count && at_count + 3 < sizeof(at) / sizeof(at[0]);
+         k++)
+   {
+      const char *s0;
+      if (     !hebrew_line(drawn[k].text)
+            || !(s0 = strstr(typed, drawn[k].text)) || s0 == typed)
+         continue;
+      at[at_count++] = (size_t)(s0 - typed);
+      at[at_count++] = (size_t)(s0 - typed) - 1;
+      at[at_count++] = (size_t)(s0 - typed) + 2;
+   }
+   at[at_count++] = typed_len;
+   CHECK(at_count > 4, "fixture: the typed Hebrew was not wrapped");
+
+   for (k = 0; k < at_count; k++)
+   {
+      size_t   p      = at[k];
+      unsigned i, carets = 0;
+      const harness_quad_t *caret = NULL;
+      bool     found  = false;
+      float    want_x = 0.0f;
+
+      input_st->keyboard_line.ptr = p;
+      for (i = 0; i < 2; i++)
+      {
+         one_frame(w, h);
+         menu_st->current_time_us = 500000;
+      }
+      for (i = 0; i < quad_count; i++)
+         if (quads[i].w == 2)
+         {
+            caret = &quads[i];
+            carets++;
+         }
+      CHECK(carets == 1, "[caret rtl] %u caret(s) drawn for the cursor at "
+            "%u", carets, (unsigned)p);
+      if (carets != 1)
+         continue;
+
+      /* The drawn line holding the cursor, read right to left: before a
+       * letter at its right edge, at the end of the line its left */
+      for (i = 0; i < drawn_count && !found; i++)
+      {
+         const char *line = drawn[i].text;
+         const char *s0;
+         size_t      start, n, chars, col, j;
+         if (!hebrew_line(line) || !(s0 = strstr(typed, line)))
+            continue;
+         start = (size_t)(s0 - typed);
+         n     = strlen(line);
+         if (p < start || p > start + n)
+            continue;
+         /* A cursor on the space a line was broken at sits at its end */
+         if (p == start + n && p < typed_len && typed[p] != ' ')
+            continue;
+         for (j = 0, chars = 0, col = 0; j < n; j++)
+            if (((unsigned char)line[j] & 0xC0) != 0x80)
+            {
+               if (j < p - start)
+                  col++;
+               chars++;
+            }
+         want_x = drawn[i].x * w
+            + drawn[i].w / (float)chars * (float)(chars - col);
+         found  = true;
+         CHECK(     caret->x - want_x < 1.5f && want_x - caret->x < 1.5f,
+               "[caret rtl] cursor at %u: caret at x %d, want %.1f "
+               "(column %u of %u)", (unsigned)p, caret->x, want_x,
+               (unsigned)col, (unsigned)chars);
+      }
+      CHECK(found, "[caret rtl] no drawn line holds byte %u", (unsigned)p);
+      checked++;
+   }
+
+   /* English typed over the Hebrew: the line is unmarked again */
+   input_st->keyboard_line.select_all = true;
+   input_keyboard_line_append(&input_st->keyboard_line, "abc", 3);
+   CHECK(!(input_driver_keyboard_line_state() & INPUT_KEYBOARD_LINE_RTL),
+         "[caret rtl] English typed over Hebrew leaves the line marked");
+
+   menu_input_dialog_end();
+   printf("[caret rtl] %u cursor position(s) at %ux%u\n", checked, w, h);
 }
 
 /* --- the input dialog opened again --------------------------------- */
@@ -1669,6 +1820,9 @@ int main(int argc, char *argv[])
          caret_lane(640, 480);
          caret_lane(720, 480);
          caret_lane(800, 600);
+         caret_rtl_lane(640, 480);
+         caret_rtl_lane(720, 480);
+         caret_rtl_lane(800, 600);
       }
    }
 

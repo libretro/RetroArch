@@ -554,6 +554,7 @@ void android_keyboard_poll(void)
          *android_kbd_size_ptr = len;
       if (android_kbd_ptr_ptr)
          *android_kbd_ptr_ptr  = len;
+      input_driver_keyboard_line_changed();
    }
 
    finished = node->finished;

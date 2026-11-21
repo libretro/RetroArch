@@ -620,6 +620,110 @@ static void check_stepped_ref(const char *name, const char *label,
    }
 }
 
+/* The caret of an input line at every typed position, against the line
+ * as drawn */
+static int caret(const char *line, size_t at)
+{
+   return font_driver_get_caret_x(&font, line, strlen(line), at, 1.0f);
+}
+
+static void check_caret(void)
+{
+   char        msg[256];
+   const char *he  = SHIN LAMED VAV MEM " " AYIN VAV LAMED MEM;
+   const char *mix = "abc " DALET HE VAV " ghi";
+   const char *num = SHIN LAMED VAV MEM " 123";
+   const char *ar  = AR_TEH AR_FEH AR_AIN AR_YEH AR_LAM " " AR_JEEM AR_DAL
+      AR_YEH AR_DAL;
+   const char *la  = AR_LAM AR_ALEF;
+   size_t      i, n;
+   int         w, prev, bad;
+
+   /* With nothing right-to-left, as typed */
+   n = strlen(mix) - 10;
+   CHECK(caret("abc def", 3) == x_at("abc def", 3),
+         "caret: an English line places it as typed");
+
+   /* A Hebrew line reads right to left: before a character is at its
+    * right edge */
+   draw(he);
+   w   = x_at(drawn, drawn_len);
+   bad = 0;
+   for (i = 0; i <= strlen(he); i = (size_t)(utf8skip(he + i, 1) - he))
+   {
+      if (caret(he, i) != w - x_at(he, i))
+         bad++;
+      if (!he[i])
+         break;
+   }
+   CHECK(!bad, "caret: a Hebrew line, before each character at its right "
+         "edge, at the end at the left one");
+
+   /* A Hebrew word in an English line: its right edge before the word,
+    * the left edge of the space after it */
+   {
+      int lead = x_at(mix, 4);
+      int word = x_at(mix + 4, 6);
+      CHECK(caret(mix, 4) == lead + word,
+            "caret: before a Hebrew word in English, at its right end");
+      CHECK(caret(mix, 6) == lead + word - x_at(mix + 4, 2),
+            "caret: inside it, at the right edge of the next letter");
+      CHECK(caret(mix, 10) == lead + word,
+            "caret: after it, at the left edge of the space after it");
+      CHECK(caret(mix, 12) == x_at(mix, 12),
+            "caret: in the English after it, as typed");
+   }
+   (void)n;
+
+   /* Digits in a Hebrew line read left to right, at its left end */
+   draw(num);
+   w = x_at(drawn, drawn_len);
+   {
+      size_t d = strlen(num) - 3;
+      CHECK(caret(num, d) == 0,
+            "caret: before the digits of a Hebrew line, at their left");
+      CHECK(caret(num, d + 1) == x_at("1", 1),
+            "caret: between digits, as they read");
+      CHECK(caret(num, strlen(num)) == x_at("123", 3),
+            "caret: after the last digit, at its right");
+      CHECK(caret(num, 0) == w,
+            "caret: at the start of the Hebrew, at the right end");
+   }
+
+   /* Arabic: the ends of the drawn line, every caret on a boundary of
+    * its glyphs, moving left as the typing goes on */
+   draw(ar);
+   w = x_at(drawn, drawn_len);
+   CHECK(caret(ar, 0) == w && caret(ar, strlen(ar)) == 0,
+         "caret: an Arabic line starts at its right end, ends at its left");
+   prev = w + 1;
+   bad  = 0;
+   for (i = 0; i <= strlen(ar); i = (size_t)(utf8skip(ar + i, 1) - ar))
+   {
+      int    x = caret(ar, i);
+      size_t b;
+      bool   edge = false;
+      for (b = 0; b <= drawn_len; b++)
+         if (     (b == drawn_len || (drawn[b] & 0xC0) != 0x80)
+               && x_at(drawn, b) == x)
+            edge = true;
+      if (!edge || x >= prev)
+         bad++;
+      prev = x;
+      if (!ar[i])
+         break;
+   }
+   sprintf(msg, "caret: Arabic carets fall on its drawn glyphs' edges and "
+         "move left (%d off)", bad);
+   CHECK(!bad, msg);
+
+   /* Lam-alef is one glyph: before either, at its right edge */
+   draw(la);
+   w = x_at(drawn, drawn_len);
+   CHECK(caret(la, 0) == w && caret(la, 2) == w && caret(la, 4) == 0,
+         "caret: lam-alef is one glyph, the caret on either side of it");
+}
+
 /* A label of one-byte characters is copied as byte runs. Into a
  * shorter buffer, every frame of it is the frame a buffer big enough
  * holds, cut to fit and terminated. */
@@ -691,6 +795,8 @@ int main(void)
       run_case(&cases[i], TICKER_TYPE_BOUNCE);
       run_case(&cases[i], TICKER_TYPE_LOOP);
    }
+
+   check_caret();
 
    printf("stepped ticker:\n");
    for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)

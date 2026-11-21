@@ -2621,6 +2621,158 @@ bool font_driver_is_mark(const char *s, size_t len)
       == FONT_BIDI_NSM;
 }
 
+/* Bytes the reshaper writes for the k-byte character at p of the line
+ * from line to eol: three for an Arabic letter it shapes, none for a lam
+ * the lam-alef glyph after it stands for, k for anything else */
+static size_t font_bidi_out_len(const unsigned char *p, unsigned k,
+      const unsigned char *line, const unsigned char *eol)
+{
+   if (k != 2 || !IS_ARABIC(p))
+      return k;
+   if ((unsigned char)GET_ID_ARABIC(p) == 0x44)
+   {
+      const unsigned char *q = p + 2;
+      while (     q + 1 < eol && IS_ARABIC(q)
+               && (unsigned char)GET_ID_ARABIC(q) > 0x4A
+               && (unsigned char)GET_ID_ARABIC(q) < 0x60)
+         q += 2;
+      if (q + 1 < eol && IS_ARABIC(q))
+      {
+         unsigned r = font_get_arabic_replacement((const char*)q,
+               (const char*)line, (const char*)eol);
+         if (r >= 0xFEF5 && r <= 0xFEFC)
+            return 0;
+      }
+   }
+   return font_get_arabic_replacement((const char*)p, (const char*)line,
+         (const char*)eol) ? 3 : 2;
+}
+
+#define FONT_BIDI_IS_MARK(p, k) \
+   (font_bidi_class((p), (k)) == FONT_BIDI_NSM)
+
+/* font_driver_get_caret_x() for a line holding right-to-left text: the
+ * line as drawn measured up to the caret. Typed characters i < j are
+ * drawn j left of i exactly when the lowest level from i to j is odd,
+ * so the drawn bytes left of the caret are counted walking out from
+ * the character it goes against, either way; a mark goes with the
+ * character it sits on, after it in what is drawn. */
+VIDEO_NOINLINE static int font_driver_caret_rtl(void *font_data,
+      const unsigned char *line, size_t len, size_t at, float scale)
+{
+   unsigned char        vis[FONT_LAYOUT_LINE_SIZE];
+   unsigned char        lv[FONT_BIDI_MAX_CHARS];
+   const unsigned char *eol  = line + len;
+   const unsigned char *c    = line;
+   const unsigned char *p;
+   const char          *v;
+   unsigned char        base;
+   unsigned char        m;
+   size_t               n, t, j, vlen;
+   size_t               off  = 0;
+   size_t               pend = 0;
+   unsigned             k;
+   bool                 right;
+   bool                 left = false;
+
+   if (     !(n = font_bidi_layout_line(line, eol, lv,
+                  FONT_BIDI_MAX_CHARS, &base))
+         || n == (size_t)-1)
+      return font_driver_get_message_width(font_data, (const char*)line,
+            at, scale);
+   v = font_driver_reshape_msg((const char*)line, len, vis, sizeof(vis),
+         &vlen);
+
+   /* The character the caret goes before in reading order, past any
+    * marks; at the end, after the last */
+   for (t = 0; t < n && (size_t)(c - line) < at; t++)
+      c += font_bidi_char_len(c, eol);
+   while (t < n && FONT_BIDI_IS_MARK(c, k = font_bidi_char_len(c, eol)))
+   {
+      c += k;
+      t++;
+   }
+   if (t < n)
+      right = (lv[t] & 1);
+   else
+   {
+      c = font_bidi_prev(eol, line);
+      for (t = n - 1; t > 0
+            && FONT_BIDI_IS_MARK(c, font_bidi_char_len(c, eol)); t--)
+         c = font_bidi_prev(c, line);
+      right = !(lv[t] & 1);
+   }
+
+   /* Its own glyph and marks, when the caret goes at their right */
+   k = font_bidi_char_len(c, eol);
+   if (right)
+      off += font_bidi_out_len(c, k, line, eol);
+   for (j = t + 1, p = c + k; j < n
+         && FONT_BIDI_IS_MARK(p, k = font_bidi_char_len(p, eol)); j++)
+   {
+      if (right)
+         off += k;
+      p += k;
+   }
+
+   /* After it in typed order: left of it under an odd lowest level */
+   m = lv[t];
+   for (; j < n; j++)
+   {
+      k = font_bidi_char_len(p, eol);
+      if (lv[j] < m)
+         m = lv[j];
+      if (!FONT_BIDI_IS_MARK(p, k))
+         left = (m & 1);
+      if (left)
+         off += font_bidi_out_len(p, k, line, eol);
+      p += k;
+   }
+
+   /* Before it: left of it under an even one, a mark with the character
+    * before it */
+   m = lv[t];
+   for (j = t, p = c; j > 0; j--)
+   {
+      p = font_bidi_prev(p, line);
+      k = font_bidi_char_len(p, eol);
+      if (lv[j - 1] < m)
+         m = lv[j - 1];
+      if (j > 1 && FONT_BIDI_IS_MARK(p, k))
+      {
+         pend += k;
+         continue;
+      }
+      if (!(m & 1))
+         off += font_bidi_out_len(p, k, line, eol) + pend;
+      pend = 0;
+   }
+
+   if (off > vlen)
+      off = vlen;
+   return font_driver_get_message_width(font_data, v, off, scale);
+}
+
+int font_driver_get_caret_x(void *font_data, const char *line,
+      size_t len, size_t at, float scale)
+{
+   if (at > len)
+      at = len;
+   if (font_msg_find_rtl(line, len) != (const unsigned char*)line + len)
+      return font_driver_caret_rtl(font_data, (const unsigned char*)line,
+            len, at, scale);
+   return font_driver_get_message_width(font_data, line, at, scale);
+}
+
+#endif
+
+#ifndef HAVE_LANGEXTRA
+int font_driver_get_caret_x(void *font_data, const char *line,
+      size_t len, size_t at, float scale)
+{
+   return font_driver_get_message_width(font_data, line,
+         at > len ? len : at, scale);
+}
 #endif
 
 void font_driver_render_msg(void *data, const char *msg, size_t msg_len,

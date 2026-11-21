@@ -348,6 +348,7 @@ struct input_keyboard_line
    bool enabled;
    bool select_all;
    bool fixed;       /* a native keyboard owns the buffer: it cannot move */
+   bool rtl;         /* holds Hebrew or Arabic */
 };
 
 /* The buffer a native (Android, iOS) keyboard puts under the line */
@@ -1419,6 +1420,16 @@ void input_driver_keyboard_line_append(const char *utf8, size_t len);
  * NULL, and where the cursor stands in them. And whether the text box
  * has the focus, and not the on-screen keyboard. */
 const char *input_driver_keyboard_line_view(size_t *cursor);
+
+/* input_driver_keyboard_line_state(): the whole line is selected, and
+ * it holds Hebrew or Arabic, which a menu places its caret in as drawn
+ * rather than as typed */
+#define INPUT_KEYBOARD_LINE_SELECTED 1u
+#define INPUT_KEYBOARD_LINE_RTL      2u
+unsigned input_driver_keyboard_line_state(void);
+
+/* A native keyboard has written the line's buffer itself */
+void input_driver_keyboard_line_changed(void);
 bool input_driver_keyboard_line_selected(void);
 bool input_driver_keyboard_textbox_focus(void);
 void input_driver_keyboard_line_end(void);

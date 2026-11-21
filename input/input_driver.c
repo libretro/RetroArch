@@ -3926,6 +3926,17 @@ static int16_t input_port_stick_axis(input_driver_state_t *input_st,
    return input_st->stick_cache[port][slot][ident];
 }
 
+/* Whether len bytes at s hold a Hebrew or Arabic lead byte */
+static bool input_keyboard_text_rtl(const char *s, size_t len)
+{
+   const unsigned char *p   = (const unsigned char*)s;
+   const unsigned char *end = p + len;
+   for (; p < end; p++)
+      if (*p - 0xD6u < 6)
+         return true;
+   return false;
+}
+
 void input_keyboard_line_append(struct input_keyboard_line *kb_line,
       const char *word, size_t len)
 {
@@ -3966,7 +3977,10 @@ void input_keyboard_line_append(struct input_keyboard_line *kb_line,
       kb_line->ptr        = 0;
       kb_line->size       = 0;
       kb_line->select_all = false;
+      kb_line->rtl        = false;
    }
+   if (!kb_line->rtl)
+      kb_line->rtl        = input_keyboard_text_rtl(word, len);
 
    /* Shift existing content after insertion point to make room */
    memmove(
@@ -3992,6 +4006,7 @@ void input_keyboard_line_clear(input_driver_state_t *input_st)
    input_st->keyboard_line.capacity     = 0;
    input_st->keyboard_line.select_all   = false;
    input_st->keyboard_line.fixed        = false;
+   input_st->keyboard_line.rtl          = false;
 }
 
 /* A line of text has been opened, or closed. This is the one place the
@@ -4024,6 +4039,7 @@ void input_keyboard_line_free(input_driver_state_t *input_st)
    kb_line->enabled            = false;
    kb_line->select_all         = false;
    kb_line->fixed              = false;
+   kb_line->rtl                = false;
    input_st->osk_textbox_focus = false;
    input_text_entry_changed(false);
 }
@@ -4042,6 +4058,7 @@ const char **input_keyboard_start_line(
    kb_line->enabled                  = true;
    kb_line->select_all               = false;
    kb_line->fixed                    = false;
+   kb_line->rtl                      = false;
    input_driver_st.osk_textbox_focus = false;
    input_text_entry_changed(true);
 
@@ -8413,6 +8430,7 @@ static bool input_keyboard_line_event(
          state->buffer[0] = '\0';
          state->ptr = state->size = 0;
          state->select_all = false;
+         state->rtl        = false;
          word = state->buffer;
       }
       else if (state->ptr && state->buffer)
@@ -8430,6 +8448,8 @@ static bool input_keyboard_line_event(
                state->buffer + ptr,
                state->size - ptr + 1);
          state->size -= ptr - state->ptr;
+         if (state->rtl)
+            state->rtl = input_keyboard_text_rtl(state->buffer, state->size);
 
          word     = state->buffer;
       }
@@ -17510,6 +17530,20 @@ const char *input_driver_keyboard_line_view(size_t *cursor)
    if (cursor)
       *cursor = (line->ptr > line->size) ? line->size : line->ptr;
    return line->buffer;
+}
+
+unsigned input_driver_keyboard_line_state(void)
+{
+   const input_keyboard_line_t *line = &input_driver_st.keyboard_line;
+   return (line->select_all ? INPUT_KEYBOARD_LINE_SELECTED : 0)
+        | (line->rtl        ? INPUT_KEYBOARD_LINE_RTL      : 0);
+}
+
+void input_driver_keyboard_line_changed(void)
+{
+   input_keyboard_line_t *line = &input_driver_st.keyboard_line;
+   line->rtl = line->buffer
+      && input_keyboard_text_rtl(line->buffer, line->size);
 }
 
 bool input_driver_keyboard_line_selected(void)

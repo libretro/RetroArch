@@ -7620,9 +7620,11 @@ OZONE_NOINLINE static void ozone_draw_osk(
    unsigned bottom_end            = video_height / 2;
    unsigned y_offset              = 0;
    bool draw_placeholder          = !str || !*str;
-   bool text_selected             = input_driver_keyboard_line_selected();
+   unsigned kb_state              = input_driver_keyboard_line_state();
+   bool text_selected             = (kb_state & INPUT_KEYBOARD_LINE_SELECTED) != 0;
    float selection_color[16];
    unsigned cursor_line           = 0;
+   size_t cursor_col              = 0;
    int cursor_x                   = -2;
    retro_time_t current_time      = menu_driver_get_current_time();
    const char *line               = NULL;
@@ -7749,7 +7751,9 @@ OZONE_NOINLINE static void ozone_draw_osk(
    {
       char cursor_src[2048];
       char cursor_message[2048];
+      const char *nl;
       size_t ptr = line_cursor;
+      size_t wrapped_len;
 
       if (ptr >= sizeof(cursor_src))
          ptr = sizeof(cursor_src) - 1;
@@ -7761,7 +7765,7 @@ OZONE_NOINLINE static void ozone_draw_osk(
        * variant), so stage the source separately */
       memcpy(cursor_src, line_text, ptr);
       cursor_src[ptr] = '\0';
-      (ozone->word_wrap)(cursor_message,
+      wrapped_len = (ozone->word_wrap)(cursor_message,
             sizeof(cursor_message),
             cursor_src,
             ptr,
@@ -7769,10 +7773,16 @@ OZONE_NOINLINE static void ozone_draw_osk(
             ozone->fonts.entries_label.wideglyph_width,
             0);
 
-      cursor_line = string_count_occurrences_single_character(cursor_message, '\n');
-      line        = strrchr(cursor_message, '\n');
-      line        = line ? line + 1 : cursor_message;
-      cursor_x    = font_driver_get_message_width(ozone->fonts.entries_label.font, line, strlen(line), 1.0f);
+      /* The caret's line and column in one walk of the wrap */
+      line = cursor_message;
+      while ((nl = (const char*)memchr(line, '\n',
+                  wrapped_len - (size_t)(line - cursor_message))))
+      {
+         cursor_line++;
+         line = nl + 1;
+      }
+      cursor_col  = wrapped_len - (size_t)(line - cursor_message);
+      cursor_x    = font_driver_get_message_width(ozone->fonts.entries_label.font, line, cursor_col, 1.0f);
    }
 
    (ozone->word_wrap)(message,
@@ -7836,9 +7846,14 @@ OZONE_NOINLINE static void ozone_draw_osk(
             1.0f,
             false);
 
-      /* Cursor/caret */
+      /* Cursor/caret: among Hebrew or Arabic, where it lands as drawn */
       if (!text_selected && (i == cursor_line)
             && (ozone->flags & OZONE_FLAG_OSK_CURSOR))
+      {
+         if (kb_state & INPUT_KEYBOARD_LINE_RTL)
+            cursor_x = font_driver_get_caret_x(
+                  ozone->fonts.entries_label.font, line_buf, _len,
+                  cursor_col, 1.0f);
          gfx_display_draw_quad(
                p_disp,
                userdata,
@@ -7857,6 +7872,7 @@ OZONE_NOINLINE static void ozone_draw_osk(
                video_dims,
                ozone->pure_white,
                NULL);
+      }
 
       if (i != list_size - 1)
          y_offset += (ozone->fonts.entries_label.line_height * 2) * scale_factor;

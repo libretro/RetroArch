@@ -313,6 +313,12 @@ int font_renderer_get_message_width(
 
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
+/* The x, from the left end of the drawn line, of a caret before byte at
+ * of the one-line text line, len bytes: where it lands among the glyphs
+ * as drawn, Hebrew and Arabic laid out right to left */
+int font_driver_get_caret_x(void *font_data, const char *line,
+      size_t len, size_t at, float scale);
+
 #ifdef HAVE_LANGEXTRA
 /* Presentation forms of the Arabic block, indexed by the low byte of
  * the codepoint: isolated, final, initial, medial; 0 where none */
