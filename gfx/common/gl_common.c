@@ -71,7 +71,11 @@ void gl_finish(void)
 #define GL_MENU_BLOOM_READ_FRAMEBUFFER         GL_READ_FRAMEBUFFER_EXT
 #define GL_MENU_BLOOM_READ_FRAMEBUFFER_BINDING GL_READ_FRAMEBUFFER_BINDING_EXT
 #define GL_MENU_BLOOM_DRAW_FRAMEBUFFER         GL_DRAW_FRAMEBUFFER_EXT
+/* 10.4's OpenGL framework exports no framebuffer blit: the backdrop
+ * blur is 10.5 and up there */
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1050
 #define GL_MENU_BLUR_BLIT                      glBlitFramebufferEXT
+#endif
 #else
 #define GL_MENU_BLOOM_FRAMEBUFFER              GL_FRAMEBUFFER
 #define GL_MENU_BLOOM_FRAMEBUFFER_BINDING      GL_FRAMEBUFFER_BINDING
@@ -613,6 +617,17 @@ restore:
    glBindBuffer(GL_ARRAY_BUFFER, 0);
    glBindTexture(GL_TEXTURE_2D, 0);
    return !b->blur_failed;
+}
+#elif defined(HAVE_GL_MENU_BLUR)
+/* No framebuffer blit to read the backdrop with (10.4's framework):
+ * dialogs are drawn over the plain dim */
+bool gl_menu_blur(gl_menu_bloom_t **bloom, unsigned video_dims,
+      int x, int y, unsigned dims, float alpha, float dim,
+      bool core, bool es)
+{
+   (void)bloom; (void)video_dims; (void)x; (void)y; (void)dims;
+   (void)alpha; (void)dim; (void)core; (void)es;
+   return false;
 }
 #endif
 #endif
