@@ -54,6 +54,9 @@
 #include "../../configuration.h"
 #include "../../content.h"
 #include "../../core_info.h"
+#ifdef HAVE_NETWORKING
+#include "../../core_updater_list.h"
+#endif
 #include "../../defaults.h"
 #include "../../file_path_special.h"
 #include "../../runtime_file.h"
@@ -376,6 +379,14 @@ typedef struct
    bool show;
 } ozone_footer_label_t;
 
+/* A justified line of the core list thumbnail bar text */
+typedef struct
+{
+   float spacing;
+   uint16_t start;
+   uint16_t words;
+} ozone_core_info_line_t;
+
 typedef struct ozone_theme
 {
    /* Background color */
@@ -506,6 +517,7 @@ enum ozone_handle_flags
    OZONE_FLAG_EMPTY_PLAYLIST                  = (1 << 17),
    /* true = display it, false = don't */
    OZONE_FLAG_OSK_CURSOR                      = (1 << 18),
+   OZONE_FLAG_IS_CORE_LIST                    = (1 << 19),
    OZONE_FLAG_WANT_THUMBNAIL_BAR              = (1 << 22),
    OZONE_FLAG_SKIP_THUMBNAIL_RESET            = (1 << 23),
    OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE = (1 << 24),
@@ -584,6 +596,7 @@ struct ozone_handle
       ozone_footer_label_t cycle_thumbnails;
       ozone_footer_label_t fullscreen_thumbnails;
       ozone_footer_label_t reset_to_default;
+      ozone_footer_label_t core_information; /* Start on a core */
       ozone_footer_label_t combo_left;   /* a combination row: Left chooses what it does */
       ozone_footer_label_t combo_right;  /* ... Right sets its buttons */
       ozone_footer_label_t pad_find;     /* two controllers of one name: a press finds one */
@@ -742,6 +755,16 @@ struct ozone_handle
    char selection_playtime[NAME_MAX_LENGTH];
    char selection_lastplayed[NAME_MAX_LENGTH];
    char selection_entry_enumeration[NAME_MAX_LENGTH];
+   /* Core list thumbnail bar text: NUL-separated words */
+   struct
+   {
+      ozone_core_info_line_t lines[512];
+      char text[8192];
+      uint64_t scroll_idx;
+      unsigned num_lines; /* 0 unless a core is selected */
+      bool help;  /* Select shows a description */
+      bool start; /* Start opens Core Information */
+   } core_info;
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
    /* The box's button labels as last measured */
@@ -4611,6 +4634,165 @@ static void linebreak_after_colon(char (*str)[NAME_MAX_LENGTH])
    }
 }
 
+static INLINE bool ozone_is_core_entry(unsigned type)
+{
+   return    type == FILE_TYPE_CORE
+          || type == FILE_TYPE_DOWNLOAD_CORE
+          || type == MENU_SETTING_ACTION_CORE_MANAGER_OPTIONS
+          || type == MENU_SETTING_ACTION_CONTENTLESS_CORE_RUN;
+}
+
+/* Append "<label>: <value>" on a new line, when there is a value */
+static void ozone_core_info_append(char *s, size_t len,
+      enum msg_hash_enums lbl, const char *val,
+      const struct string_list *list)
+{
+   size_t _len = strlen(s);
+   if (list ? !list->size : (!val || !*val))
+      return;
+   snprintf(s + _len, len - _len, "%s%s: %s",
+         _len ? "\n" : "", msg_hash_to_str(lbl), list ? "" : val);
+   if (list)
+      string_list_join_concat_special(s, len, list, ", ");
+}
+
+/* Lay out the selected core's thumbnail bar text */
+static void ozone_update_core_info(ozone_handle_t *ozone)
+{
+   const char *path;
+   char *p;
+   float space;
+   unsigned type;
+   unsigned n                         = 0;
+   float line_w                       = 0.0f;
+   char *text                         = ozone->core_info.text;
+   size_t len                         = sizeof(ozone->core_info.text);
+   ozone_core_info_line_t *line       = ozone->core_info.lines;
+   font_data_t *font                  = ozone->fonts.footer.font;
+   float width                        = (float)(ozone->dimensions.thumbnail_bar_width
+         - ozone->dimensions.sidebar_entry_icon_padding * 4);
+   const char *desc                   = NULL;
+   const struct string_list *licenses = NULL;
+   core_info_t *core_info             = NULL;
+   struct menu_state *menu_st         = menu_state_get_ptr();
+   file_list_t *list                  = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+   size_t selection                   = menu_st->selection_ptr;
+
+   ozone->core_info.num_lines         = 0;
+   ozone->core_info.scroll_idx        = anim_get_ptr()->ticker_pixel_line_idx;
+   ozone->flags                      &= ~OZONE_FLAG_WANT_THUMBNAIL_BAR;
+
+   if (     !list
+         || selection >= list->size
+         || !ozone_is_core_entry(type = list->list[selection].type))
+      return;
+
+   /* The bar is for cores only */
+   ozone->flags                      |= OZONE_FLAG_WANT_THUMBNAIL_BAR;
+   path                               = list->list[selection].path;
+
+   if (type == FILE_TYPE_DOWNLOAD_CORE)
+   {
+#ifdef HAVE_NETWORKING
+      const core_updater_list_entry_t *entry = NULL;
+      if (core_updater_list_get_filename(core_updater_list_get_cached(),
+               path, &entry))
+      {
+         desc     = entry->description;
+         licenses = entry->licenses_list;
+      }
+      path        = entry ? entry->local_core_path : NULL;
+#else
+      path        = NULL;
+#endif
+   }
+
+   if (core_info_find(path, &core_info) && type != FILE_TYPE_DOWNLOAD_CORE)
+   {
+      desc     = core_info->description;
+      licenses = core_info->licenses_list;
+   }
+   ozone->core_info.help  = desc && *desc;
+   ozone->core_info.start = (type == FILE_TYPE_DOWNLOAD_CORE) ? core_info != NULL : type == FILE_TYPE_CORE;
+
+   *text = '\0';
+   if (desc && *desc)
+      snprintf(text, len, "%s\n", desc);
+
+   ozone_core_info_append(text, len,
+         MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES, NULL, licenses);
+
+   if (core_info)
+   {
+      ozone_core_info_append(text, len,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
+            core_info->systemname, NULL);
+      ozone_core_info_append(text, len,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+            core_info->system_manufacturer, NULL);
+      ozone_core_info_append(text, len,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+            NULL, core_info->authors_list);
+      ozone_core_info_append(text, len,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+            core_info->display_version, NULL);
+      ozone_core_info_append(text, len,
+            MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+            NULL, core_info->supported_extensions_list);
+   }
+
+   if (!*text)
+      strlcpy(text, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE), len);
+
+   /* Split into words in place and fill the lines, justifying the text */
+   space          = (float)font_driver_get_message_width(font, " ", 1, 1.0f);
+   line[0].words  = 0;
+   for (p = text; ; p++)
+   {
+      char *word  = p;
+      char sep;
+
+      while (*p && *p != ' ' && *p != '\n')
+         p++;
+      sep = *p;
+      *p  = '\0';
+
+      if (p > word)
+      {
+         float w = (float)font_driver_get_message_width(font, word,
+               p - word, 1.0f);
+
+         if (line[n].words && line_w + space * line[n].words + w > width)
+         {
+            line[n].spacing = (line[n].words > 1)
+                  ? (width - line_w) / (line[n].words - 1)
+                  : space;
+            if (++n >= ARRAY_SIZE(ozone->core_info.lines))
+               break;
+            line[n].words   = 0;
+            line_w          = 0.0f;
+         }
+         if (!line[n].words)
+            line[n].start   = (uint16_t)(word - text);
+         line[n].words++;
+         line_w            += w;
+      }
+
+      if (sep == ' ')
+         continue;
+      if (!sep && !line[n].words)
+         break;
+      line[n].spacing       = space;
+      if (++n >= ARRAY_SIZE(ozone->core_info.lines) || !sep)
+         break;
+      line[n].words         = 0;
+      line_w                = 0.0f;
+   }
+
+   ozone->core_info.num_lines = n;
+}
+
 /* Dual-context: called from the main thread (sidebar navigation,
  * thumbnail refresh) and from the frame path via
  * ozone_compute_entries_position(); the values arrive as arguments
@@ -4624,6 +4806,9 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone,
    menu_list_t *menu_list            = menu_st->entries.list;
    size_t selection                  = menu_st->selection_ptr;
    playlist_t *playlist              = playlist_get_cached();
+
+   if (ozone->flags & OZONE_FLAG_IS_CORE_LIST)
+      return;
 
    /* Must check whether core corresponds to 'viewer'
     * content even when not using a playlist, otherwise
@@ -6043,10 +6228,17 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
    bool want_thumbnail_bar       = (ozone->flags & OZONE_FLAG_WANT_THUMBNAIL_BAR) ? true : false;
    bool show_thumbnail_bar       = ozone->show_thumbnail_bar;
 
+   if (ozone->flags & OZONE_FLAG_IS_CORE_LIST)
+   {
+      ozone_update_core_info(ozone);
+      want_thumbnail_bar = ozone->core_info.num_lines > 0;
+   }
+
    if (show_thumbnail_bar != want_thumbnail_bar)
    {
       if (!(   (ozone->flags & OZONE_FLAG_PENDING_HIDE_THUMBNAIL_BAR)
-            && (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU)))
+            && (   (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU)
+                || (ozone->flags  & OZONE_FLAG_IS_CORE_LIST))))
          ozone_entries_update_thumbnail_bar(ozone, savestate_thumbnail_enable,
                false, false);
    }
@@ -6130,7 +6322,9 @@ static void ozone_compute_entries_position(ozone_handle_t *ozone,
       {
          ozone->flags         &= ~OZONE_FLAG_EMPTY_PLAYLIST;
 
-         if (menu_show_sublabels && (!menu_current_sel_only || (!cursor_in_sidebar && entry_selected)))
+         if (     menu_show_sublabels
+               && (!menu_current_sel_only || (!cursor_in_sidebar && entry_selected))
+               && !ozone_is_core_entry(selection_buf->list[i].type))
          {
             MENU_ENTRY_INITIALIZE(entry);
             entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
@@ -6564,7 +6758,7 @@ border_iterate:
          y                   = (video_info_height / 2) - (60 * scale_factor);
       }
 
-      sublabel_str = e->sublabel;
+      sublabel_str = ozone_is_core_entry(e->type) ? NULL : e->sublabel;
 
       if (menu_show_sublabels && (!menu_current_sel_only || (!cursor_in_sidebar && entry_selected)))
       {
@@ -6925,6 +7119,102 @@ border_iterate:
       font_flush(video_dims, &ozone->fonts.entries_sublabel);
 }
 
+/* Draw after the footer labels, which an earlier
+ * flush of the footer font would otherwise clip */
+static void ozone_draw_core_info(ozone_handle_t *ozone,
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
+      void *userdata,
+      unsigned video_dims)
+{
+   unsigned i;
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   const char *text   = ozone->core_info.text;
+   unsigned bar_width = (unsigned)ozone->animations.thumbnail_bar_position;
+   unsigned x_position = VIDEO_SCALE_W(video_dims) - bar_width;
+   float line_height  = ozone->fonts.entries_label.line_height * 1.20f;
+   int text_width     = ozone->dimensions.thumbnail_bar_width
+         - ozone->dimensions.sidebar_entry_icon_padding * 4;
+   int text_y         = ozone->dimensions.header_height
+         + ozone->dimensions.spacer_1px
+         + ozone->dimensions.sidebar_entry_icon_padding;
+   int text_height    = (int)VIDEO_SCALE_H(video_dims)
+         - ozone->dimensions.footer_height
+         - ozone->dimensions.sidebar_entry_icon_padding
+         - text_y;
+   int excess         = (int)(ozone->core_info.num_lines * line_height) - text_height;
+   int offset         = 0;
+   bool scissor       = dispctx && dispctx->scissor_begin && dispctx->scissor_end;
+
+   if (!bar_width || line_height <= 0.0f || text_height <= 0)
+      return;
+
+   /* When the text is longer than what the sidebar allows, scroll downwards slowly,
+    * hold the end for about 10 seconds, then jump back to the top */
+   if (excess > 0)
+   {
+      size_t line_len     = (ozone->fonts.footer.glyph_width > 0)
+            ? (size_t)(text_width / ozone->fonts.footer.glyph_width) : 1;
+      uint64_t ticks      = MAX(TICKER_LINE_SMOOTH_SCROLL_TICKS(line_len), 1);
+      uint64_t scroll     = (uint64_t)(excess * ticks * 2 / line_height);
+      uint64_t phase      = (p_anim->ticker_pixel_line_idx
+            - ozone->core_info.scroll_idx)
+            % (ticks + scroll + (uint64_t)(10 * TICKER_PIXEL_SPEED));
+      uint64_t t          = (phase < ticks) ? 0 : MIN(phase - ticks, scroll);
+
+      offset          = (int)(t * line_height / (ticks * 2));
+      p_anim->flags  |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
+   }
+
+   if (scissor)
+      gfx_display_scissor_begin(p_disp, userdata, video_dims,
+            x_position, text_y, VIDEO_SCALE_PACK(bar_width, text_height));
+
+   for (i = (unsigned)(offset / line_height); i < ozone->core_info.num_lines; i++)
+   {
+      unsigned w;
+      const ozone_core_info_line_t *line = &ozone->core_info.lines[i];
+      size_t off = line->start;
+      float x    = (float)(x_position + ozone->dimensions.sidebar_entry_icon_padding * 2);
+      float y    = text_y + i * line_height - offset;
+
+      if (y >= text_y + text_height)
+         break;
+      if (!scissor && (y < text_y || y + line_height > text_y + text_height))
+         continue;
+
+      for (w = 0; w < line->words; w++)
+      {
+         size_t word_len;
+         while (off < sizeof(ozone->core_info.text) && !text[off])
+            off++;
+         if (off >= sizeof(ozone->core_info.text))
+            break;
+         word_len = strlen(text + off);
+         gfx_display_draw_text(
+               ozone->fonts.footer.font,
+               text + off,
+               x,
+               y + ozone->fonts.footer.line_ascender,
+               video_dims,
+               ozone->theme->text_rgba,
+               TEXT_ALIGN_LEFT,
+               1.0f,
+               false,
+               1.0f,
+               true);
+         x   += font_driver_get_message_width(ozone->fonts.footer.font,
+               text + off, word_len, 1.0f) + line->spacing;
+         off += word_len;
+      }
+   }
+
+   font_flush(video_dims, &ozone->fonts.footer);
+
+   if (scissor)
+      dispctx->scissor_end(userdata, video_dims);
+}
+
 static void ozone_draw_thumbnail_bar(
       ozone_handle_t *ozone,
       struct menu_state *menu_st,
@@ -7018,6 +7308,10 @@ static void ozone_draw_thumbnail_bar(
             GFX_THUMBNAIL_ALIGN_CENTRE, 1.0f, 1.0f, NULL);
       return;
    }
+
+   /* Core lists: leave the text to ozone_draw_core_info() */
+   if (ozone->flags & OZONE_FLAG_IS_CORE_LIST)
+      return;
 
    /* Thumbnails */
    show_right_thumbnail =
@@ -9162,6 +9456,7 @@ static INLINE bool ozone_fullscreen_thumbnails_available(ozone_handle_t *ozone,
 {
    bool ret =
             (!(ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR))
+         && (!(ozone->flags & OZONE_FLAG_IS_CORE_LIST))
          && (ozone->show_thumbnail_bar)
          && (   gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
             ||  gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT));
@@ -9183,8 +9478,18 @@ static bool ozone_help_available(ozone_handle_t *ozone, size_t current_selection
    last_entry.flags |= MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
    menu_entry_get(&last_entry, 0, current_selection, NULL, true);
 
+   switch (last_entry.enum_idx)
+   {
+      case MENU_ENUM_LABEL_CORE_UPDATER_ENTRY:
+      case MENU_ENUM_LABEL_CORE_MANAGER_ENTRY:
+      case MENU_ENUM_LABEL_CONTENTLESS_CORE:
+         return ozone->core_info.help;
+      default:
+         break;
+   }
+
    /* If sublabels are not visible, they can be displayed as help. */
-   if (!menu_show_sublabels && *last_entry.sublabel)
+   if ((!menu_show_sublabels || ozone_is_core_entry(last_entry.type)) && *last_entry.sublabel)
       return true;
 
    /* Otherwise check if actual help is available. */
@@ -10799,6 +11104,10 @@ static void ozone_cache_footer_labels(ozone_handle_t *ozone)
    ozone_cache_footer_label(ozone,
          &ozone->footer_labels.reset_to_default,
          MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG);
+
+   ozone_cache_footer_label(ozone,
+         &ozone->footer_labels.core_information,
+         MENU_ENUM_LABEL_VALUE_CORE_INFORMATION);
 
    ozone_cache_footer_label(ozone,
          &ozone->footer_labels.random_select,
@@ -12437,6 +12746,7 @@ static void ozone_draw_footer(
    bool menu_core_enable                  = ((video_info->menu.flags & VIDEO_MENU_FLAG_CORE_ENABLE) ? true : false);
    bool input_menu_swap_ok_cancel_buttons = video_info->input_menu_swap_ok_cancel_buttons;
    size_t selection                       = ozone->selection;
+   const ozone_footer_label_t *start_label = &ozone->footer_labels.reset_to_default;
    float *col                             = ozone->theme_dynamic.entries_icon;
    float scale_factor                     = ozone->last_scale_factor;
    float footer_margin                    = 40 * scale_factor;
@@ -12494,9 +12804,16 @@ static void ozone_draw_footer(
          && !ozone->footer_labels.clear_setting.show
          && ozone_scan_available(ozone, selection);
 
-   ozone->footer_labels.reset_to_default.show      =
-            !ozone->footer_labels.fullscreen_thumbnails.show
-         && ozone_is_current_entry_settings(selection);
+   /* A core's Start opens Core Information, where it can */
+   if ((ozone->flags & OZONE_FLAG_IS_CORE_LIST) && ozone->core_info.num_lines)
+   {
+      start_label                                  = &ozone->footer_labels.core_information;
+      ozone->footer_labels.reset_to_default.show   = ozone->core_info.start;
+   }
+   else
+      ozone->footer_labels.reset_to_default.show   =
+               !ozone->footer_labels.fullscreen_thumbnails.show
+            && ozone_is_current_entry_settings(selection);
 
    ozone->footer_labels.combo_right.show           =
             !ozone->footer_labels.fullscreen_thumbnails.show
@@ -12596,7 +12913,7 @@ static void ozone_draw_footer(
          : ozone->footer_labels.combo_right.x;
 
    ozone->footer_labels.reset_to_default.x      = (ozone->footer_labels.reset_to_default.show)
-         ? ozone->footer_labels.combo_left.x - ozone->footer_labels.reset_to_default.width - icon_spacer
+         ? ozone->footer_labels.combo_left.x - start_label->width - icon_spacer
          : ozone->footer_labels.combo_left.x;
 
    ozone->footer_labels.help.x                  = (ozone->footer_labels.help.show)
@@ -13047,7 +13364,7 @@ static void ozone_draw_footer(
    if (ozone->footer_labels.reset_to_default.show)
       gfx_display_draw_text(
             ozone->fonts.footer.font,
-            ozone->footer_labels.reset_to_default.str,
+            start_label->str,
             ozone->footer_labels.reset_to_default.x + icon_size + icon_padding_small,
             footer_text_y,
             video_dims,
@@ -13265,6 +13582,21 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 
       gfx_animation_kill_by_tag(&tag);
       ozone_update_scroll(ozone, allow_animation, node);
+
+      /* Slide the bar in or out between cores and other entries */
+      if (ozone->flags & OZONE_FLAG_IS_CORE_LIST)
+      {
+         ozone_update_core_info(ozone);
+         if (     (ozone->core_info.num_lines > 0)
+               != (ozone->show_thumbnail_bar
+                  && !(ozone->flags & OZONE_FLAG_PENDING_HIDE_THUMBNAIL_BAR)))
+         {
+            ozone_entries_update_thumbnail_bar(ozone,
+                  settings->bools.savestate_thumbnail_enable,
+                  false, allow_animation);
+            ozone->flags |= OZONE_FLAG_NEED_COMPUTE;
+         }
+      }
 
       /* Update thumbnail */
       if (!menu_media_controls_settings_active(&ozone->media)
@@ -13721,6 +14053,10 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          video_height), &ozone->fonts.entries_sublabel);
    font_flush(VIDEO_SCALE_PACK(video_width,
          video_height), &ozone->fonts.sidebar);
+
+   if (ozone->flags & OZONE_FLAG_IS_CORE_LIST)
+      ozone_draw_core_info(ozone, p_disp, p_anim, userdata,
+            VIDEO_SCALE_PACK(video_width, video_height));
 
    /* Draw fullscreen thumbnails, if required */
    ozone_draw_fullscreen_thumbnails(ozone,
@@ -14276,6 +14612,20 @@ static void ozone_populate_entries(
       ozone->flags |=  OZONE_FLAG_IS_STATE_SLOT;
    else
       ozone->flags &= ~OZONE_FLAG_IS_STATE_SLOT;
+
+   ozone->flags &= ~OZONE_FLAG_IS_CORE_LIST;
+   {
+      size_t i;
+      file_list_t *list = MENU_LIST_GET_SELECTION(menu_list, 0);
+      for (i = 0; list && i < list->size; i++)
+      {
+         if (ozone_is_core_entry(list->list[i].type))
+         {
+            ozone->flags |= OZONE_FLAG_IS_CORE_LIST;
+            break;
+         }
+      }
+   }
 
    if (ozone_is_playlist(ozone, true))
       ozone->flags |=  OZONE_FLAG_IS_PLAYLIST;
