@@ -21,7 +21,9 @@ typedef struct gl_media_shader
    gl_media_target_t history[GFX_MAX_TEXTURES];
    gl_media_target_t feedback;
    uintptr_t history_source;
-   unsigned history_copies, history_count;
+   unsigned history_copies, history_count, history_latest;
+   unsigned history_order[GFX_MAX_TEXTURES];
+   unsigned history_refs[GFX_MAX_TEXTURES];
    float history_colour[12];
    struct video_tex_info outputs[GFX_MAX_SHADERS];
    struct video_tex_info previous[GFX_MAX_TEXTURES];
@@ -193,14 +195,22 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
       memcpy(s->history_colour, colour_rows, sizeof(s->history_colour));
    }
    s->history_source = texture;
+   if (s->history_count != history)
+      for (i = 0; i < history; i++)
+      {
+         s->history_order[i] = i;
+         s->history_refs[i] = 1;
+      }
    s->history_count = history;
    for (i = 0; i < history; i++)
    {
       if (s->history[i].dims != source_dims || s->history[i].flags != hdr_flags)
          s->history_copies = 0;
       if (!gl_media_target_fit(&s->history[i], source_dims, hdr_flags)) goto done;
-      gl_media_info(&s->previous[i], s->history[i].texture, source_dims, false);
    }
+   for (i = 0; i < history; i++)
+      gl_media_info(&s->previous[i], s->history[s->history_order[i]].texture,
+            source_dims, false);
    for (i = 0; i < passes; i++)
    {
       struct gfx_fbo_scale scale;
@@ -312,20 +322,27 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
    if (!direct) glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    if (history)
    {
-      gl_media_target_t oldest = s->history[history - 1];
-      for (i = history - 1; i; i--) s->history[i] = s->history[i - 1];
-      s->history[0] = oldest;
-      /* Once every history slot holds this managed image, rotating
-       * the ring preserves Prev semantics without another snapshot. */
-      if (s->history_copies < history)
+      unsigned slot = s->history_latest;
+      s->history_refs[s->history_order[history - 1]]--;
+      if (!s->history_copies)
       {
-         MEDIA_BIND_FB(oldest.fbo);
+         /* Reuse only an owned snapshot no logical Prev still reads. */
+         for (slot = 0; slot < history - 1 && s->history_refs[slot]; slot++) {}
+      }
+      for (i = history - 1; i; i--)
+         s->history_order[i] = s->history_order[i - 1];
+      s->history_order[0] = slot;
+      s->history_refs[slot]++;
+      if (!s->history_copies)
+      {
+         MEDIA_BIND_FB(s->history[slot].fbo);
          glViewport(0, 0, VIDEO_SCALE_W(source_dims), VIDEO_SCALE_H(source_dims));
          glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
          coords.tex_coord = original.coord;
          shader->set_coords(shader_data, &coords);
          glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-         s->history_copies++;
+         s->history_latest = slot;
+         s->history_copies = 1;
       }
    }
    if (has_feedback)
