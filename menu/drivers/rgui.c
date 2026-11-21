@@ -6402,6 +6402,8 @@ static void rgui_render(void *data, unsigned dims,
    enum gfx_animation_ticker_type
          menu_ticker_type         = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
    bool rgui_inline_thumbnails    = settings->bools.menu_rgui_inline_thumbnails || (rgui->flags & RGUI_FLAG_IS_QUICK_MENU);
+   bool shader_preview            = string_is_equal(
+         menu_st->thumbnail_path_data->content_core_name, "shader-preview");
    bool menu_battery_level_enable = settings->bools.menu_battery_level_enable;
    bool use_smooth_ticker         = settings->bools.menu_ticker_smooth;
    bool thumbnail_background      = settings->bools.menu_thumbnail_background_enable;
@@ -6710,11 +6712,12 @@ static void rgui_render(void *data, unsigned dims,
       unsigned sublabel_y            = (rgui->term_layout.height * rgui->font_height_stride) + rgui->term_layout.start_y + 4;
       unsigned term_end_x            = rgui->term_layout.start_x + (rgui->term_layout.width * rgui->font_width_stride);
       bool show_entries              = (rgui->flags & RGUI_FLAG_DRAW_ENTRY_SKIP) ? false : true;
-      bool show_mini_thumbnails      = rgui->media.settings_open || (rgui_inline_thumbnails
+      bool show_mini_thumbnails      = rgui->media.settings_open || (shader_preview
+            || (rgui_inline_thumbnails
             && rgui->playlist_index >= 0
             && (   (rgui->flags & RGUI_FLAG_IS_PLAYLIST)
                ||  (rgui->flags & RGUI_FLAG_IS_EXPLORE_LIST)
-               || ((rgui->flags & RGUI_FLAG_IS_QUICK_MENU) && !menu_is_running_quick_menu())));
+               || ((rgui->flags & RGUI_FLAG_IS_QUICK_MENU) && !menu_is_running_quick_menu()))));
       bool show_thumbnail            = false;
       bool show_left_thumbnail       = false;
       bool show_savestate_thumbnail  = (*rgui->savestate_thumbnail_file_path
@@ -8632,7 +8635,9 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
       const struct item_file *item = &list->list[selection];
       enum image_type_enum type = image_texture_get_type(item->path);
       file_list_t *stack = MENU_LIST_GET(menu_list, 0);
-      if (stack && stack->size && (item->type == FILE_TYPE_IMAGEVIEWER
+      if (menu_media_set_shader_preview(menu_st))
+         has_thumbnail = true;
+      else if (stack && stack->size && (item->type == FILE_TYPE_IMAGEVIEWER
                || item->type == FILE_TYPE_IMAGE || type == IMAGE_TYPE_MP4
                || type == IMAGE_TYPE_WEBM)
             && gfx_thumbnail_set_content_image(menu_st->thumbnail_path_data,
@@ -8643,6 +8648,8 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
                sizeof(menu_st->thumbnail_path_data->right_path));
          has_thumbnail = true;
       }
+      else
+         gfx_thumbnail_set_content(menu_st->thumbnail_path_data, NULL);
    }
    /* The open viewer shows an image history entry itself, whatever
     * the playlist thumbnail settings */
@@ -8764,7 +8771,8 @@ static void rgui_refresh_thumbnail_image(void *userdata, size_t i)
 
       /* Skip thumbnail scan if neither are enabled */
       if (     !gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
-            && !gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+            && !gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
+            && !settings->bools.menu_shader_previews_enable)
          return;
 
       /* Only load thumbnails if currently viewing a

@@ -121,6 +121,9 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
 /* Sets current thumbnail content to the specified image.
  * Returns true if content is valid */
 bool gfx_thumbnail_set_content_image(gfx_thumbnail_path_data_t *path_data, const char *img_dir, const char *img_name);
+bool gfx_thumbnail_set_content_shader_preview(
+      gfx_thumbnail_path_data_t *path_data,
+      const char *img_dir, const char *img_name);
 
 /* Sets current thumbnail content to the specified playlist entry.
  * Returns true if content is valid.
@@ -153,6 +156,7 @@ typedef struct gfx_thumbnail_dir_config
    unsigned gfx_thumbnails;
    unsigned menu_left_thumbnails;
    unsigned menu_icon_thumbnails;
+   bool shader_previews_enable;
 } gfx_thumbnail_dir_config_t;
 
 void gfx_thumbnail_dir_config_capture(gfx_thumbnail_dir_config_t *cfg);

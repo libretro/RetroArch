@@ -506,6 +506,7 @@ enum ozone_handle_flags
    OZONE_FLAG_EMPTY_PLAYLIST                  = (1 << 17),
    /* true = display it, false = don't */
    OZONE_FLAG_OSK_CURSOR                      = (1 << 18),
+   OZONE_FLAG_IS_SHADER_BROWSER               = (1 << 19),
    OZONE_FLAG_WANT_THUMBNAIL_BAR              = (1 << 22),
    OZONE_FLAG_SKIP_THUMBNAIL_RESET            = (1 << 23),
    OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE = (1 << 24),
@@ -13242,7 +13243,8 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
       /* Update thumbnail */
       if (!menu_media_controls_settings_active(&ozone->media)
             && (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
-               || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)))
+               || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
+               || config_get_ptr()->bools.menu_shader_previews_enable))
       {
          bool update_thumbnails = false;
 
@@ -13262,6 +13264,20 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
             ozone->flags &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
          }
          /* Filebrowser image updates */
+         else if (ozone->flags & OZONE_FLAG_IS_SHADER_BROWSER)
+         {
+            ozone->flags &= ~OZONE_FLAG_SKIP_THUMBNAIL_RESET;
+            if (menu_media_set_shader_preview(menu_st))
+               ozone->flags |= OZONE_FLAG_WANT_THUMBNAIL_BAR
+                             | OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE;
+            else
+            {
+               gfx_thumbnail_set_content(menu_st->thumbnail_path_data, NULL);
+               ozone->flags &= ~(OZONE_FLAG_WANT_THUMBNAIL_BAR
+                               | OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE);
+            }
+            update_thumbnails = true;
+         }
          else if (ozone->flags & OZONE_FLAG_IS_FILE_LIST)
          {
             menu_entry_t entry;
@@ -13269,7 +13285,13 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
             entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
             menu_entry_get(&entry, 0, selection, NULL, true);
 
-            if (   (entry.type == FILE_TYPE_IMAGEVIEWER)
+            if (menu_media_set_shader_preview(menu_st))
+            {
+               update_thumbnails = true;
+               ozone->flags |= OZONE_FLAG_WANT_THUMBNAIL_BAR
+                             | OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE;
+            }
+            else if (   (entry.type == FILE_TYPE_IMAGEVIEWER)
                 || (entry.type == FILE_TYPE_IMAGE)
                 /* WebM and MP4 files preview like images: the thumbnail
                  * pipeline decodes their video track */
@@ -14136,7 +14158,8 @@ static void ozone_populate_entries(
             ozone_unload_thumbnail_textures(ozone);
 
             if (   gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
-                || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+                || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
+                || settings->bools.menu_shader_previews_enable)
             {
                ozone_set_thumbnail_content(ozone, "");
                ozone_update_thumbnail_image(ozone);
@@ -14213,6 +14236,17 @@ static void ozone_populate_entries(
       ozone->flags |=  OZONE_FLAG_IS_FILE_LIST;
    else
       ozone->flags &= ~OZONE_FLAG_IS_FILE_LIST;
+
+   if ((ozone->flags & OZONE_FLAG_IS_SHADER_BROWSER)
+         && (!settings->bools.menu_shader_previews_enable
+            || !menu_media_is_shader_browser(label)))
+      gfx_thumbnail_set_content(menu_st->thumbnail_path_data, NULL);
+
+   if (settings->bools.menu_shader_previews_enable
+         && menu_media_is_shader_browser(label))
+      ozone->flags |= OZONE_FLAG_IS_SHADER_BROWSER;
+   else
+      ozone->flags &= ~OZONE_FLAG_IS_SHADER_BROWSER;
 
    if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_CONTENT_SETTINGS_STR)
@@ -14348,7 +14382,8 @@ static void ozone_populate_entries(
          ozone_unload_thumbnail_textures(ozone);
 
       if (   gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
-          || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT))
+          || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
+          || settings->bools.menu_shader_previews_enable)
       {
          /* Only auto-load thumbnails if we are viewing
           * a playlist or a database manager list
@@ -14361,8 +14396,22 @@ static void ozone_populate_entries(
             ozone_set_thumbnail_content(ozone, "");
             ozone_update_thumbnail_image(ozone);
          }
-         else if (ozone->flags & OZONE_FLAG_IS_FILE_LIST)
-            ozone->flags &= ~OZONE_FLAG_WANT_THUMBNAIL_BAR;
+         else if (ozone->flags & (OZONE_FLAG_IS_FILE_LIST | OZONE_FLAG_IS_SHADER_BROWSER))
+         {
+            if (menu_media_set_shader_preview(menu_st))
+            {
+               ozone->flags |= OZONE_FLAG_WANT_THUMBNAIL_BAR
+                             | OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE;
+               ozone_update_thumbnail_image(ozone);
+            }
+            else
+            {
+               if (ozone->flags & OZONE_FLAG_IS_SHADER_BROWSER)
+                  gfx_thumbnail_set_content(menu_st->thumbnail_path_data, NULL);
+               ozone->flags &= ~(OZONE_FLAG_WANT_THUMBNAIL_BAR
+                               | OZONE_FLAG_FULLSCREEN_THUMBNAILS_AVAILABLE);
+            }
+         }
       }
    }
 
@@ -14392,6 +14441,7 @@ static void ozone_populate_entries(
             || ((ozone->flags  & OZONE_FLAG_IS_DB_MANAGER_LIST) && (ozone->depth >= 4))
             ||  (ozone->flags  & OZONE_FLAG_IS_EXPLORE_LIST)
             ||  (ozone->flags  & OZONE_FLAG_IS_FILE_LIST)
+            ||  (ozone->flags  & OZONE_FLAG_IS_SHADER_BROWSER)
             ||  (ozone->flags  & OZONE_FLAG_IS_STATE_SLOT)
             ||  (ozone->flags2 & OZONE_FLAG2_IS_QUICK_MENU)
             )

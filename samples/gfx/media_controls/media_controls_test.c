@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <file/file_path.h>
 #include <rthreads/rthreads.h>
 #include "../../../gfx/gfx_media_controls.h"
 #include "../../../gfx/gfx_anim_preview.h"
@@ -130,7 +131,20 @@ static bool fake_step(void *user, int direction)
    return true;
 }
 
-/* The thumbnail adapter is not used by this CPU/texture-neutral oracle. */
+/* Shader preview and thumbnail adapters are not used here. */
+bool path_is_absolute(const char *p)
+{ (void)p; abort(); return false; }
+size_t fill_pathname_join(char *s, const char *dir, const char *path, size_t len)
+{ (void)s; (void)dir; (void)path; (void)len; abort(); return 0; }
+size_t fill_pathname_slash(char *s, size_t len)
+{ (void)s; (void)len; abort(); return 0; }
+char *find_last_slash(const char *s)
+{ (void)s; abort(); return NULL; }
+bool gfx_thumbnail_set_content_shader_preview(gfx_thumbnail_path_data_t *p,
+      const char *dir, const char *name)
+{ (void)p; (void)dir; (void)name; abort(); return false; }
+bool gfx_thumbnail_update_path(gfx_thumbnail_path_data_t *p, enum gfx_thumbnail_id id)
+{ (void)p; (void)id; abort(); return false; }
 bool gfx_thumbnail_get_playback_state(gfx_thumbnail_t *t, retro_time_t n, gfx_thumbnail_playback_state_t *s)
 { (void)t; (void)n; (void)s; abort(); return false; }
 bool gfx_thumbnail_set_paused(gfx_thumbnail_t *t, bool p, retro_time_t n)

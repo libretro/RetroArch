@@ -15277,6 +15277,7 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_MENU_SETTINGS_LIST:
          {
+            const char *menu_driver                    = menu_driver_ident();
             bool menu_horizontal_animation             = settings->bools.menu_horizontal_animation;
             bool menu_materialui_icons_enable          = settings->bools.menu_materialui_icons_enable;
             bool menu_materialui_show_nav_bar          = settings->bools.menu_materialui_show_nav_bar;
@@ -15359,6 +15360,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_RGUI_THUMBNAIL_DITHER,                   PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_RGUI_THUMBNAIL_DELAY,                    PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,             PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_MENU_SHADER_PREVIEWS_ENABLE,                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,                 PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_THUMBNAIL_PREVIEW_THREADS,               PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_XMB_FONT,                                     PARSE_ONLY_PATH,   true},
@@ -15396,6 +15398,11 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT:
                   case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU:
                      build_list[i].checked = menu_horizontal_animation;
+                     break;
+                  case MENU_ENUM_LABEL_MENU_SHADER_PREVIEWS_ENABLE:
+                     build_list[i].checked = string_is_equal(menu_driver, "ozone")
+                        || string_is_equal(menu_driver, "xmb")
+                        || string_is_equal(menu_driver, "rgui");
                      break;
                   case MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET:
                      build_list[i].checked = (menu_rgui_color_theme == RGUI_THEME_CUSTOM);

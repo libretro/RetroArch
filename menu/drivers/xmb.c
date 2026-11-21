@@ -584,6 +584,7 @@ typedef struct xmb_handle
 
    /* Load Content file browser */
    bool is_file_list;
+   bool is_shader_browser;
    bool is_quick_menu;
    bool is_state_slot;
    bool libretro_running;
@@ -2789,7 +2790,8 @@ static void xmb_selection_pointer_changed(
 
       if (     gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
             || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
-            || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON))
+            || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON)
+            || config_get_ptr()->bools.menu_shader_previews_enable)
       {
          bool update_thumbnails = false;
 
@@ -2810,6 +2812,25 @@ static void xmb_selection_pointer_changed(
          else if (xmb->is_db_manager_list && depth == 5)
             xmb->skip_thumbnail_reset = true;
          /* Filebrowser image updates */
+         else if (xmb->is_shader_browser && !menu_media_controls_settings_active(&xmb->media))
+         {
+            if (menu_media_set_shader_preview(menu_st))
+            {
+               xmb->fullscreen_thumbnails_available = true;
+               xmb->skip_thumbnail_reset = false;
+               update_thumbnails = true;
+            }
+            else
+            {
+               xmb->fullscreen_thumbnails_available = false;
+               xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_NONE;
+               gfx_thumbnail_set_content(menu_st->thumbnail_path_data, NULL);
+               gfx_thumbnail_cancel_pending_requests();
+               gfx_thumbnail_reset(&xmb->thumbnails.right);
+               gfx_thumbnail_reset(&xmb->thumbnails.left);
+               gfx_thumbnail_reset(&xmb->thumbnails.icon);
+            }
+         }
          else if (xmb->is_file_list && !menu_media_controls_settings_active(&xmb->media))
          {
             menu_entry_t entry;
@@ -2817,7 +2838,12 @@ static void xmb_selection_pointer_changed(
             entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
             menu_entry_get(&entry, 0, selection, NULL, true);
 
-            if (     (entry.type == FILE_TYPE_IMAGEVIEWER)
+            if (menu_media_set_shader_preview(menu_st))
+            {
+               xmb->fullscreen_thumbnails_available = true;
+               update_thumbnails = true;
+            }
+            else if (     (entry.type == FILE_TYPE_IMAGEVIEWER)
                   || (entry.type == FILE_TYPE_IMAGE)
                   /* WebM and MP4 files preview like images: the thumbnail
                    * pipeline decodes their video track */
@@ -3013,7 +3039,8 @@ static void xmb_list_open_new(xmb_handle_t *xmb,
 
    if (     gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
          || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
-         || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON))
+         || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON)
+         || config_get_ptr()->bools.menu_shader_previews_enable)
    {
       if (xmb->is_playlist || xmb->is_db_manager_list || xmb->is_explore_list)
       {
@@ -4332,6 +4359,12 @@ static void xmb_populate_entries(void *data,
    xmb->is_file_list =
             string_is_equal(label, MENU_ENUM_LABEL_FAVORITES_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_MENU_WALLPAPER_STR);
+   if (xmb->is_shader_browser
+         && (!settings->bools.menu_shader_previews_enable
+            || !menu_media_is_shader_browser(label)))
+      gfx_thumbnail_set_content(menu_st->thumbnail_path_data, NULL);
+   xmb->is_shader_browser = settings->bools.menu_shader_previews_enable
+         && menu_media_is_shader_browser(label);
 
    /* Determine whether this is the quick menu */
    xmb->is_quick_menu =
@@ -4499,7 +4532,8 @@ static void xmb_populate_entries(void *data,
     * via 'load content'. We have to work around
     * this by resetting thumbnails whenever a
     * file list is populated... */
-   else if (xmb->is_file_list && !menu_media_controls_settings_active(&xmb->media))
+   else if ((xmb->is_file_list || xmb->is_shader_browser)
+         && !menu_media_controls_settings_active(&xmb->media))
    {
       xmb->fullscreen_thumbnails_available = false;
       xmb->thumbnails.pending              = XMB_PENDING_THUMBNAIL_NONE;
@@ -4509,8 +4543,12 @@ static void xmb_populate_entries(void *data,
       gfx_thumbnail_reset(&xmb->thumbnails.left);
       gfx_thumbnail_reset(&xmb->thumbnails.icon);
 
-      xmb_set_thumbnail_content(xmb, "imageviewer");
-      xmb_update_thumbnail_image(xmb);
+      if (menu_media_set_shader_preview(menu_st))
+         xmb->fullscreen_thumbnails_available = true;
+      else if (xmb->is_file_list)
+         xmb_set_thumbnail_content(xmb, "imageviewer");
+      if (xmb->is_file_list || xmb->fullscreen_thumbnails_available)
+         xmb_update_thumbnail_image(xmb);
    }
 }
 
@@ -9495,7 +9533,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       bool thumbnail_background = ((video_info->menu.flags & VIDEO_MENU_FLAG_THUMBNAIL_BACKGROUND_ENABLE) ? true : false);
       bool show_right_thumbnail =
                (gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT))
-            && xmb->show_thumbnails
+            && (xmb->show_thumbnails || xmb->is_shader_browser)
             && (  (xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
                || (  xmb->thumbnails.right.status       < GFX_THUMBNAIL_STATUS_AVAILABLE
                   && xmb->thumbnails_right_status_prev <= GFX_THUMBNAIL_STATUS_AVAILABLE
@@ -9515,7 +9553,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
           * stacked thumbnails */
          if (vertical_thumbnails)
          {
-            if (!xmb->show_thumbnails)
+            if (!xmb->show_thumbnails && !xmb->is_shader_browser)
                show_right_thumbnail = show_left_thumbnail = false;
 
             /* Right + left thumbnails, right side */

@@ -10,6 +10,12 @@ S_BOOL(menu_thumbnail_background_enable, MENU_THUMBNAIL_BACKGROUND_ENABLE,
       "Thumbnail Backgrounds",
       "Enables padding of unused space in thumbnail images with a solid background. This ensures a uniform display size for all images, improving menu appearance when viewing mixed content thumbnails with varying base dimensions.")
 
+S_BOOL(menu_shader_previews_enable, MENU_SHADER_PREVIEWS_ENABLE,
+      "menu_shader_previews_enable",
+      false, SD_FLAG_NONE, 0, 0,
+      "Shader Previews",
+      "Show PNG previews for shader files while browsing. Preview images are stored in the 'shader-previews' subdirectory of the thumbnails directory, mirroring the video shader directory.")
+
 S_BOOL(menu_thumbnail_preview_audio, MENU_THUMBNAIL_PREVIEW_AUDIO,
       "menu_thumbnail_preview_audio",
       DEFAULT_MENU_THUMBNAIL_PREVIEW_AUDIO, SD_FLAG_NONE, 0, 0,

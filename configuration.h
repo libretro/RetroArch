@@ -967,6 +967,7 @@ typedef struct settings
       bool menu_materialui_thumbnail_background_enable;
       bool menu_thumbnail_background_enable;
       bool menu_thumbnail_preview_audio;
+      bool menu_shader_previews_enable;
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;

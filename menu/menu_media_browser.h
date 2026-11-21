@@ -22,6 +22,11 @@ const char *menu_media_selected_history_image(struct menu_state *menu_st);
  * that OK opens in the viewer rather than through its Run action. */
 bool menu_media_selected_in_history(struct menu_state *menu_st);
 
+bool menu_media_is_shader_browser(const char *label);
+
+/* Sets the selected shader preview when one exists. */
+bool menu_media_set_shader_preview(struct menu_state *menu_st);
+
 /* Main-thread image/movie activation, independent of playlist thumbnail settings.
  * Retains a matching preview and removes a duplicate/obsolete second one.
  * @title (@title_len bytes) is the viewer's title: it is rewritten for the

@@ -2871,10 +2871,14 @@ static bool gfx_thumbnail_is_enabled_values(
       enum gfx_thumbnail_id thumbnail_id,
       unsigned gfx_thumbnails,
       unsigned menu_left_thumbnails,
-      unsigned menu_icon_thumbnails)
+      unsigned menu_icon_thumbnails,
+      bool shader_previews_enable)
 {
    if (path_data)
    {
+      if (string_is_equal(path_data->content_core_name, "shader-preview"))
+         return thumbnail_id == GFX_THUMBNAIL_RIGHT && shader_previews_enable;
+
       switch (thumbnail_id)
       {
          case GFX_THUMBNAIL_RIGHT:
@@ -2907,7 +2911,8 @@ bool gfx_thumbnail_is_enabled(gfx_thumbnail_path_data_t *path_data,
    return gfx_thumbnail_is_enabled_values(path_data, thumbnail_id,
          settings->uints.gfx_thumbnails,
          settings->uints.menu_left_thumbnails,
-         settings->uints.menu_icon_thumbnails);
+         settings->uints.menu_icon_thumbnails,
+         settings->bools.menu_shader_previews_enable);
 }
 
 /* Setters */
@@ -3116,6 +3121,18 @@ bool gfx_thumbnail_set_content_image(
    return *path_data->content_path;
 }
 
+bool gfx_thumbnail_set_content_shader_preview(
+      gfx_thumbnail_path_data_t *path_data,
+      const char *img_dir, const char *img_name)
+{
+   if (!gfx_thumbnail_set_content_image(path_data, img_dir, img_name))
+      return false;
+
+   strlcpy_lit(path_data->content_core_name,
+         "shader-preview", sizeof(path_data->content_core_name));
+   return true;
+}
+
 /* Sets current thumbnail content to the specified playlist entry.
  * Returns true if content is valid.
  * > Note: It is always best to use playlists when setting
@@ -3284,6 +3301,7 @@ void gfx_thumbnail_dir_config_capture(gfx_thumbnail_dir_config_t *cfg)
    cfg->gfx_thumbnails         = settings->uints.gfx_thumbnails;
    cfg->menu_left_thumbnails   = settings->uints.menu_left_thumbnails;
    cfg->menu_icon_thumbnails   = settings->uints.menu_icon_thumbnails;
+   cfg->shader_previews_enable = settings->bools.menu_shader_previews_enable;
 }
 
 bool gfx_thumbnail_update_path(
@@ -3345,6 +3363,17 @@ bool gfx_thumbnail_update_path_cfg(
          return false;
    }
 
+   if (string_is_equal(path_data->content_core_name, "shader-preview"))
+   {
+      if (thumbnail_id != GFX_THUMBNAIL_RIGHT || !cfg->shader_previews_enable)
+      {
+         thumbnail_path[0] = '\0';
+         return false;
+      }
+      strlcpy(thumbnail_path, path_data->content_path, PATH_MAX_LENGTH);
+      return true;
+   }
+
    content_dir[0]    = '\0';
 
    /* Sundry error checking */
@@ -3353,7 +3382,7 @@ bool gfx_thumbnail_update_path_cfg(
 
    if (!gfx_thumbnail_is_enabled_values(path_data, thumbnail_id,
          cfg->gfx_thumbnails, cfg->menu_left_thumbnails,
-         cfg->menu_icon_thumbnails))
+         cfg->menu_icon_thumbnails, cfg->shader_previews_enable))
       return false;
 
    /* Generate new path */

@@ -21,7 +21,129 @@
 #include "menu_media_browser.h"
 #include "../configuration.h"
 #include "../defaults.h"
+#include "../msg_hash_lbl_str.h"
 #include "../playlist.h"
+
+bool menu_media_is_shader_browser(const char *label)
+{
+   return string_is_equal(label, MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_STR)
+      || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_STR)
+      || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_STR)
+      || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_SHADER_PASS_STR);
+}
+
+static bool menu_media_shader_file_type(unsigned type)
+{
+   switch (type)
+   {
+      case FILE_TYPE_SHADER:
+      case FILE_TYPE_SHADER_PRESET:
+      case FILE_TYPE_SHADER_SLANG:
+      case FILE_TYPE_SHADER_GLSL:
+      case FILE_TYPE_SHADER_HLSL:
+      case FILE_TYPE_SHADER_CG:
+      case FILE_TYPE_SHADER_PRESET_GLSLP:
+      case FILE_TYPE_SHADER_PRESET_HLSLP:
+      case FILE_TYPE_SHADER_PRESET_CGP:
+      case FILE_TYPE_SHADER_PRESET_SLANGP:
+         return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+bool menu_media_set_shader_preview(struct menu_state *menu_st)
+{
+   settings_t *settings = config_get_ptr();
+   file_list_t *list, *stack;
+   const struct item_file *item;
+   const char *shader_dir, *directory, *relative_path;
+   char shader_path[PATH_MAX_LENGTH];
+   char shader_dir_slash[DIR_MAX_LENGTH];
+   char *last_slash, *extension;
+   size_t base_len, relative_len;
+   size_t shader_dir_len;
+   if (!settings || !settings->bools.menu_shader_previews_enable
+         || !menu_st || !menu_st->entries.list)
+      return false;
+
+   list  = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+   stack = MENU_LIST_GET(menu_st->entries.list, 0);
+   if (!list || !stack || !stack->size
+         || menu_st->selection_ptr >= list->size)
+      return false;
+
+   item = &list->list[menu_st->selection_ptr];
+   if (!menu_media_shader_file_type(item->type) || !item->path || !*item->path)
+      return false;
+
+   directory = stack->list[stack->size - 1].path;
+   shader_dir = settings->paths.directory_video_shader;
+   if (!directory || !*directory || !shader_dir || !*shader_dir
+         || !settings->paths.directory_thumbnails[0])
+      return false;
+
+   if (path_is_absolute(item->path))
+   {
+      if (strlcpy(shader_path, item->path, sizeof(shader_path))
+            >= sizeof(shader_path))
+         return false;
+   }
+   else
+   {
+      if (fill_pathname_join_special(shader_path, directory, item->path,
+               sizeof(shader_path)) >= sizeof(shader_path))
+         return false;
+   }
+
+   if (strlcpy(shader_dir_slash, shader_dir, sizeof(shader_dir_slash))
+         >= sizeof(shader_dir_slash))
+      return false;
+   if (fill_pathname_slash(shader_dir_slash, sizeof(shader_dir_slash))
+         >= sizeof(shader_dir_slash))
+      return false;
+   shader_dir_len = strlen(shader_dir_slash);
+   if (!string_starts_with_size(shader_path, shader_dir_slash, shader_dir_len))
+      return false;
+
+   relative_path = shader_path + shader_dir_len;
+   if (!*relative_path)
+      return false;
+
+   memmove(shader_path, relative_path, strlen(relative_path) + 1);
+   last_slash = find_last_slash(shader_path);
+   extension  = strrchr(last_slash ? last_slash + 1 : shader_path, '.');
+   if (extension)
+      *extension = '\0';
+   if (strlcat(shader_path, ".png", sizeof(shader_path)) >= sizeof(shader_path))
+      return false;
+
+   if (fill_pathname_join_special(shader_dir_slash,
+            settings->paths.directory_thumbnails, "shader-previews",
+            sizeof(shader_dir_slash)) >= sizeof(shader_dir_slash)
+         || fill_pathname_slash(shader_dir_slash, sizeof(shader_dir_slash))
+            >= sizeof(shader_dir_slash))
+      return false;
+   base_len     = strlen(shader_dir_slash);
+   relative_len = strlen(shader_path);
+   if (base_len + relative_len >= sizeof(shader_path))
+      return false;
+
+   memmove(shader_path + base_len, shader_path, relative_len + 1);
+   memcpy(shader_path, shader_dir_slash, base_len);
+
+   last_slash = find_last_slash(shader_path);
+   if (!last_slash || !last_slash[1])
+      return false;
+   *last_slash = '\0';
+
+   if (!gfx_thumbnail_set_content_shader_preview(
+            menu_st->thumbnail_path_data, shader_path, last_slash + 1))
+      return false;
+
+   return gfx_thumbnail_update_path(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT);
+}
 
 struct menu_media_queue
 {
