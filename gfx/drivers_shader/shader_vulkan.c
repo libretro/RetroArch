@@ -800,6 +800,8 @@ struct CommonResources
    /* Frames may come inside a larger image: passes are built to read
     * them there. */
    bool frame_rect;
+   bool viewer_colour;
+   float viewer_colour_rows[12];
    bool frame_linear;
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
    bool simulate_scanline;
@@ -842,6 +844,7 @@ struct slang_pass
     * frame_copy, they read it in a way only an image of its own
     * serves. */
    bool frame_tried;
+   bool colour_tried;
    bool frame_copy;
 
    VkPipeline pipeline;
@@ -1630,6 +1633,7 @@ static struct vulkan_filter_chain *slang_chain_new(
    chain->max_input_size_dims   = info->max_input_dims;
    chain->deferred_source_dims  = chain->max_input_size_dims;
    chain->common.frame_rect     = info->frame_rect;
+   chain->common.viewer_colour  = info->viewer_colour;
    chain->replay                = info->replay;
    if (     !slang_chain_set_swapchain_info(chain, info->swapchain)
          || !slang_chain_set_num_passes(chain, info->num_passes))
@@ -3131,6 +3135,7 @@ static void slang_pass_set_blob(struct slang_pass *pass,
       VkShaderStageFlags stage, struct slang_blob *blob)
 {
    pass->frame_tried = false;
+   pass->colour_tried = false;
    switch (stage)
    {
       case VK_SHADER_STAGE_VERTEX_BIT:
@@ -3868,6 +3873,31 @@ static void slang_pass_read_frame_in_place(struct slang_pass *pass)
       slang_pass_set_blob(pass, VK_SHADER_STAGE_FRAGMENT_BIT, slang_blob_adopt_words(nf, nfl));
 }
 
+static bool slang_pass_colour_in_place(struct slang_pass *pass)
+{
+#ifdef HAVE_RSLC
+   const struct video_shader *preset = pass->common->shader_preset;
+   struct slang_blob *vb = NULL, *fb = NULL;
+   enum slang_rect_result result;
+   if (pass->colour_tried) return true;
+   if (!preset) return false;
+   if (pass->pass_number >= preset->passes) return true;
+   if (!slang_compile_colour(preset->pass[pass->pass_number].source.path,
+            pass->vertex_shader, pass->num_vertex_shader,
+            pass->fragment_shader, pass->num_fragment_shader,
+            pass->pass_number == 0, NULL, &result, &vb, &fb, NULL, NULL))
+      return false;
+   if (result == SLANG_RECT_UNSUPPORTED) return false;
+   if (vb) slang_pass_set_blob(pass, VK_SHADER_STAGE_VERTEX_BIT, vb);
+   if (fb) slang_pass_set_blob(pass, VK_SHADER_STAGE_FRAGMENT_BIT, fb);
+   pass->colour_tried = true;
+   return true;
+#else
+   (void)pass;
+   return false;
+#endif
+}
+
 static bool slang_pass_build(struct slang_pass *pass)
 {
    return slang_pass_build_layout(pass) && slang_pass_init_pipeline(pass);
@@ -3909,6 +3939,8 @@ static bool slang_pass_build_layout(struct slang_pass *pass)
 
    if (pass->common->frame_rect)
       slang_pass_read_frame_in_place(pass);
+   if (pass->common->viewer_colour && !slang_pass_colour_in_place(pass))
+      return false;
 
    slang_framebuffer_delete(&pass->framebuffer);
 
@@ -4360,6 +4392,12 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
 
    /* Standard inputs */
    slang_pass_build_semantic_frame_rect(pass, buffer, &original->texture);
+   slang_pass_build_semantic_vec4_values(pass, buffer,
+         SLANG_SEMANTIC_VIEWER_COLOUR0, pass->common->viewer_colour_rows);
+   slang_pass_build_semantic_vec4_values(pass, buffer,
+         SLANG_SEMANTIC_VIEWER_COLOUR1, pass->common->viewer_colour_rows + 4);
+   slang_pass_build_semantic_vec4_values(pass, buffer,
+         SLANG_SEMANTIC_VIEWER_COLOUR2, pass->common->viewer_colour_rows + 8);
    slang_pass_build_semantic_texture(pass, set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original,
          batch_image_infos, batch_writes, &batch_count);
    slang_pass_build_semantic_texture(pass, set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source,
@@ -5636,6 +5674,13 @@ void vulkan_filter_chain_set_passthrough(
       vulkan_filter_chain_t *chain, unsigned passthrough)
 {
    chain->common.passthrough = passthrough ? 1 : 0;
+}
+
+void vulkan_filter_chain_set_viewer_colour(
+      vulkan_filter_chain_t *chain, const float *rows)
+{
+   memcpy(chain->common.viewer_colour_rows, rows,
+         sizeof(chain->common.viewer_colour_rows));
 }
 
 void vulkan_filter_chain_set_source_hdr(

@@ -112,6 +112,7 @@ struct vulkan_filter_chain_create_info
    /* Frames may come inside a larger image (padded_dims, origin): the
     * passes are built to read them there where the preset allows. */
    bool frame_rect;
+   bool viewer_colour;
    /* The chain may draw its last frame's final pass again in a later
     * frame (build_viewport_pass_replay): its history keeps one more
     * image for that. */
@@ -145,6 +146,9 @@ bool vulkan_filter_chain_init(vulkan_filter_chain_t *chain);
 
 void vulkan_filter_chain_set_passthrough(
       vulkan_filter_chain_t *chain, unsigned passthrough);
+
+void vulkan_filter_chain_set_viewer_colour(
+      vulkan_filter_chain_t *chain, const float *rows);
 
 void vulkan_filter_chain_set_source_hdr(
       vulkan_filter_chain_t *chain, unsigned source_hdr);

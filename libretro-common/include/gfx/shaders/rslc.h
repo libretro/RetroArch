@@ -284,6 +284,10 @@ struct rslc_remap
    enum rslc_remap_where where;
    enum rslc_remap_wrap  wrap;
    bool        linear;
+   /* Rewrite sampled colours rather than coordinates. The three vec4s
+    * hold matrix rows: rect.w enables it, clamp.w is the signed power.
+    * Sampler coordinates, filtering, levels and size queries are unchanged. */
+   bool        colour;
 };
 
 /* How the printed destinations name the interface.  A driver binds

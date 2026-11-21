@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise shipping viewer HDR input encoding, including allocation failures."""
+"""Shipping viewer callback borrows HDR input without a conversion draw."""
 import os
 from pathlib import Path
 import shlex
@@ -8,130 +8,95 @@ import tempfile
 
 root = Path(__file__).resolve().parents[3]
 source = (root / "gfx/drivers/vulkan.c").read_text(encoding="utf-8")
-start = source.index("static bool vulkan_media_shader_input(")
+start = source.index("static bool gfx_display_vk_media_shader_draw(")
 function = source[start:source.index("\n}\n", start) + 3]
-start = source.index("#define VULKAN_WRITE_QUAD_VBO(")
-quad = source[start:source.index("\n\n", start)]
 fixture = r'''
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
-#define VK_FLAG_SDR_PIPELINE 1
-#define VK_FLAG_TRACKER_USE_SCISSOR 2
-#define VK_FORMAT_R16G16B16A16_SFLOAT 97
+#include "gfx/common/hdr_viewer_colour.h"
 #define VIDEO_SCALE_PACK(w,h) (((w)<<16)|(h))
 #define VIDEO_SCALE_W(d) ((d)>>16)
 #define VIDEO_SCALE_H(d) ((d)&65535)
-#define RGBA16_WHITE UINT64_MAX
-typedef struct { float data[16]; } math_matrix_4x4;
-struct vk_vertex { float x,y,tex_x,tex_y; uint64_t color; };
-struct vk_image { unsigned image, memory, framebuffer; };
-struct vk_texture { unsigned image, format; };
-struct vulkan_filter_chain_texture { unsigned image, format; };
-struct vk_buffer_range { void *data; unsigned buffer, offset; };
-struct vk_draw_triangles {
-   const void *uniform;
-   struct vk_buffer_range *vbo;
-   struct vk_texture *texture;
-   unsigned pipeline, sampler;
-   size_t uniform_size;
-   unsigned vertices;
-};
-struct context { unsigned device; };
-struct chain { unsigned vbo; };
+#define VIDEO_POS_X(d) ((d)>>16)
+#define VIDEO_POS_Y(d) ((d)&65535)
+#define VK_FLAG_SDR_PIPELINE 1
+#define VK_FORMAT_R16G16B16A16_SFLOAT 97
+#define VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO 1
+#define VK_SUBPASS_CONTENTS_INLINE 1
+#define VK_NULL_HANDLE 0
+#define VULKAN_DIRTY_DYNAMIC_BIT 1
+#define VULKAN_IMAGE_LAYOUT_TRANSITION(...) ((void)0)
+typedef struct { float x,y,width,height,minDepth,maxDepth; } VkViewport;
+typedef struct { struct { int x,y; } offset; struct { unsigned width,height; } extent; } VkRect2D;
+typedef struct { unsigned sType,renderPass,framebuffer; VkRect2D renderArea; } VkRenderPassBeginInfo;
+struct vk_texture { unsigned image,format; };
+struct vulkan_filter_chain_texture { unsigned image; };
+typedef struct { unsigned image, hdr; float rows[12]; } vulkan_filter_chain_t;
+struct image { unsigned image,framebuffer; };
+struct context { unsigned current_frame_index; };
 typedef struct {
-   unsigned flags, media_shader_input_dims, sdr_render_pass, cmd;
-   struct vk_image media_shader_input;
-   struct { unsigned pipeline_linear_sdr; } display;
-   struct { unsigned nearest; } samplers;
-   struct { float menu_nits; struct { unsigned expand_gamut; } ubo_values; } hdr;
-   struct { float x,y,width,height,minDepth,maxDepth; } vk_vp;
-   struct { struct { struct { int x,y; } offset; struct { unsigned width,height; } extent; } scissor; } tracker;
-   math_matrix_4x4 mvp_no_rot;
+   unsigned flags,keep_render_pass,cmd,media_shader_frame;
+   bool media_shader_enabled;
+   vulkan_filter_chain_t *media_shader_chain[2];
+   struct { unsigned keep_sdr_pass; struct image *target; } bloom;
    struct context *context;
-   struct chain *chain;
+   VkViewport vk_vp;
+   struct { VkRect2D scissor; unsigned pipeline,dirty; } tracker;
+   struct { float data[16]; } mvp_no_rot;
+   struct { float menu_nits; struct { unsigned expand_gamut; } ubo_values; } hdr;
 } vk_t;
-static unsigned allocations, draws, begun, ended;
-static bool retire_ok = true, buffer_ok = true, bind_ok = true, target_ok = true;
-static struct vk_vertex vertices[4];
-static bool vulkan_views_retire(vk_t *v, struct vk_image *i)
-{ (void)v; if (!retire_ok) return false; memset(i,0,sizeof(*i)); return true; }
-static void vulkan_init_render_target(struct vk_image *i, unsigned dims,
-      unsigned format, unsigned pass, struct context *ctx)
-{ (void)ctx; assert(dims == VIDEO_SCALE_PACK(320,240) && format == 97 && pass == 5);
-  i->image = 80; i->memory = i->framebuffer = target_ok; allocations++; }
-static void vulkan_destroy_hdr_buffer(unsigned device, struct vk_image *i)
-{ (void)device; memset(i,0,sizeof(*i)); }
-static bool vulkan_buffer_chain_alloc(struct context *ctx, unsigned *vbo,
-      size_t size, struct vk_buffer_range *r)
-{ (void)ctx; (void)vbo; assert(size == sizeof(vertices)); r->data=vertices; r->buffer=1; r->offset=0; return buffer_ok; }
-static void vulkan_views_begin(vk_t *v, struct vk_image *i, unsigned dims, unsigned pass)
-{ (void)v; assert(i->image == 80 && dims == VIDEO_SCALE_PACK(320,240) && pass == 5); begun++; }
-static void vulkan_views_end(vk_t *v, struct vk_image *i)
-{ (void)v; assert(i->image == 80); ended++; }
-static bool vulkan_draw_bind(vk_t *v, struct vk_draw_triangles *c)
-{
-   const float *u = (const float*)c->uniform;
-   assert(c->pipeline == 42 && c->texture->image == 9 && c->sampler == 33);
-   assert(c->uniform_size == 80 && u[16] == 203 && u[17] == 2 && !u[18] && !u[19]);
-   assert(v->vk_vp.width == 320 && v->vk_vp.height == 240 && !v->vk_vp.x && !v->vk_vp.y);
-   assert(v->tracker.scissor.extent.width == 320 && v->tracker.scissor.extent.height == 240);
-   assert(vertices[0].x == 0 && vertices[0].tex_x == 0 && vertices[3].x == 1 && vertices[3].tex_x == 1);
-   assert(vertices[0].color == UINT64_MAX && vertices[3].color == UINT64_MAX);
-   return bind_ok;
-}
-static void vkCmdBindVertexBuffers(unsigned cmd, unsigned first, unsigned n, unsigned *buffer, unsigned *offset)
-{ (void)cmd; assert(!first && n == 1 && *buffer == 1 && !*offset); }
-static void vkCmdDraw(unsigned cmd, unsigned n, unsigned count, unsigned first, unsigned base)
-{ (void)cmd; assert(n == 4 && count == 1 && !first && !base); draws++; }
-static void vulkan_views_texture(struct vk_image *i, unsigned dims, unsigned format, struct vk_texture *t)
-{ assert(dims == VIDEO_SCALE_PACK(320,240)); t->image=i->image; t->format=format; }
-static void vulkan_movie_input(struct vk_texture *t, struct vulkan_filter_chain_texture *i)
-{ i->image=t->image; i->format=t->format; }
-QUAD
+static unsigned begun,ended,offscreen,viewport;
+static void vulkan_movie_input(struct vk_texture *t, struct vulkan_filter_chain_texture *i) { i->image=t->image; }
+static void vulkan_views_sync_params(vk_t *v,vulkan_filter_chain_t *c) { (void)v;(void)c; }
+static void vulkan_filter_chain_notify_sync_index(vulkan_filter_chain_t *c,unsigned i) { (void)c;(void)i; }
+static void vulkan_filter_chain_set_frame_count(vulkan_filter_chain_t *c,unsigned i) { (void)c;(void)i; }
+static void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *c,int i) { (void)c;(void)i; }
+static void vulkan_filter_chain_set_rotation(vulkan_filter_chain_t *c,unsigned i) { (void)c;(void)i; }
+static void vulkan_filter_chain_set_core_aspect(vulkan_filter_chain_t *c,float f) { (void)c;(void)f; }
+static void vulkan_filter_chain_set_viewer_colour(vulkan_filter_chain_t *c,const float *r) { memcpy(c->rows,r,sizeof(c->rows)); }
+static void vulkan_filter_chain_set_input_texture(vulkan_filter_chain_t *c,const struct vulkan_filter_chain_texture *i) { c->image=i->image; }
+static void vulkan_filter_chain_set_source_hdr(vulkan_filter_chain_t *c,unsigned i) { (void)c;assert(!i); }
+static void vulkan_filter_chain_set_hdr_mode(vulkan_filter_chain_t *c,unsigned i) { c->hdr=i; }
+static void vulkan_filter_chain_build_offscreen_passes(vulkan_filter_chain_t *c,unsigned cmd,const VkViewport *vp) { (void)c;(void)cmd;assert(vp->width==320);offscreen++; }
+static void vulkan_filter_chain_build_viewport_pass(vulkan_filter_chain_t *c,unsigned cmd,const VkViewport *vp,const float *m) { (void)c;(void)cmd;(void)vp;(void)m;viewport++; }
+static void vulkan_filter_chain_end_frame(vulkan_filter_chain_t *c,unsigned cmd) { (void)c;(void)cmd; }
+static void vkCmdBeginRenderPass(unsigned cmd,const VkRenderPassBeginInfo *r,unsigned mode) { (void)cmd;(void)mode;assert(r->framebuffer==4);begun++; }
+static void vkCmdEndRenderPass(unsigned cmd) { (void)cmd;ended++; }
 FUNCTION
 int main(void)
 {
-   vk_t video;
-   struct context context;
-   struct chain chain;
-   struct vk_texture texture = {9, 97};
-   struct vulkan_filter_chain_texture input = {9, 97};
-   unsigned dims = VIDEO_SCALE_PACK(320,240);
-   memset(&video,0,sizeof(video));
-   video.context=&context; video.chain=&chain;
-   video.flags=VK_FLAG_SDR_PIPELINE;
-   video.display.pipeline_linear_sdr=42; video.sdr_render_pass=5;
-   video.samplers.nearest=33; video.hdr.menu_nits=203; video.hdr.ubo_values.expand_gamut=2;
-   assert(vulkan_media_shader_input(&video,&texture,dims,&input));
+   vk_t v;
+   vulkan_filter_chain_t chains[2];
+   struct vk_texture texture = { 9,97 };
+   struct image target = { 3,4 };
+   struct context context = { 0 };
+   unsigned i;
+   memset(&v,0,sizeof(v));memset(chains,0,sizeof(chains));
+   v.media_shader_enabled=true;v.bloom.target=&target;v.context=&context;
+   v.bloom.keep_sdr_pass=5;v.keep_render_pass=6;v.vk_vp.x=17;
+   v.hdr.menu_nits=203;v.hdr.ubo_values.expand_gamut=2;
+   v.media_shader_chain[0]=&chains[0];v.media_shader_chain[1]=&chains[1];
+   for(i=0;i<3;i++)
+   {
+      v.flags=i==0 ? 1:0;texture.format=i==2 ? 37:97;
+      assert(gfx_display_vk_media_shader_draw(&v,(uintptr_t)&texture,
+         VIDEO_SCALE_PACK(320,240),VIDEO_SCALE_PACK(640,480),0,VIDEO_SCALE_PACK(320,240)));
+      assert(chains[i==0 ? 1:0].image==texture.image);
 #ifdef VULKAN_HDR_SWAPCHAIN
-   assert(input.image == 80 && input.format == 97 && allocations == 1 && draws == 1);
-   assert(begun == ended && !(video.flags & VK_FLAG_TRACKER_USE_SCISSOR));
-   video.flags |= VK_FLAG_TRACKER_USE_SCISSOR;
-   assert(vulkan_media_shader_input(&video,&texture,dims,&input));
-   assert(allocations == 1 && draws == 2 && (video.flags & VK_FLAG_TRACKER_USE_SCISSOR));
-   texture.format=37; input.image=9;
-   assert(vulkan_media_shader_input(&video,&texture,dims,&input) && input.image == 9 && draws == 2);
-   texture.format=97; video.flags=0;
-   assert(vulkan_media_shader_input(&video,&texture,dims,&input) && input.image == 9 && draws == 2);
-   video.flags=1; buffer_ok=false;
-   assert(!vulkan_media_shader_input(&video,&texture,dims,&input) && begun == ended);
-   buffer_ok=true; bind_ok=false;
-   assert(!vulkan_media_shader_input(&video,&texture,dims,&input) && begun == ended && draws == 2);
-   bind_ok=true; video.media_shader_input_dims=0; retire_ok=false;
-   assert(!vulkan_media_shader_input(&video,&texture,dims,&input));
-   retire_ok=true; target_ok=false;
-   assert(!vulkan_media_shader_input(&video,&texture,dims,&input));
-   assert(!video.media_shader_input.image && !video.media_shader_input_dims);
+      assert(chains[i==0 ? 1:0].rows[3]==(i==0 ? 1.0f:0.0f));
 #else
-   assert(input.image == 9 && !allocations && !draws);
+      assert(!chains[i==0 ? 1:0].rows[3]);
 #endif
-   puts("PASS: Vulkan viewer HDR encode, SDR bypass, constants, reuse, failure cleanup and scissor restoration");
+      assert(v.vk_vp.x==17 && begun==2*(i+1) && ended==begun);
+      assert(viewport==i+1 && offscreen==i+1);
+   }
+   puts("PASS: original texture borrowed, no conversion allocation or draw, HDR uniforms and SDR bypass");
    return 0;
 }
-'''.replace("QUAD", quad).replace("FUNCTION", function)
+'''.replace("FUNCTION",function)
 cc = shlex.split(os.environ.get("CC", "cc"))
 with tempfile.TemporaryDirectory(prefix="viewer-vulkan-hdr-") as directory:
     unit = Path(directory) / "test.c"
@@ -141,5 +106,5 @@ with tempfile.TemporaryDirectory(prefix="viewer-vulkan-hdr-") as directory:
         subprocess.run(cc + shlex.split(os.environ.get("CFLAGS", "")) + [
             "-std=gnu89", "-Wall", "-Wextra", "-Werror", "-Wno-unused-function",
             "-Wno-unused-variable", "-Werror=declaration-after-statement"] +
-            (["-DVULKAN_HDR_SWAPCHAIN"] if hdr else []) + [str(unit), "-o", str(exe)], check=True)
+            (["-DVULKAN_HDR_SWAPCHAIN"] if hdr else []) + ["-DHAVE_RSLC", "-I" + str(root)] + [str(unit), "-o", str(exe)], check=True)
         subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(exe)], check=True)

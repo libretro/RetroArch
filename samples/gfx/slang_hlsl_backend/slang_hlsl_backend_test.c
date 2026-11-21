@@ -41,6 +41,7 @@
 
 #include "gfx/video_shader_parse.h"
 #include "gfx/drivers_shader/slang_process.h"
+#include "gfx/drivers_shader/slang_blob.h"
 
 #include "gfx/video_defines.h"
 
@@ -390,6 +391,31 @@ static void check_unread_samplers(void)
 
 /* --- the lane ------------------------------------------------------- */
 
+static void check_viewer_colour(void)
+{
+   glslang_output output;
+   struct slang_blob *vb = NULL, *fb = NULL;
+   enum slang_rect_result result;
+   glslang_output_init(&output);
+   CHECK(glslang_compile_shader("stock.slang", &output), "compile viewer source");
+   CHECK(slang_compile_colour("stock.slang", output.vertex, output.vertex_len,
+            output.fragment, output.fragment_len, true, NULL,
+            &result, &vb, &fb, NULL, NULL), "compile fused viewer stages");
+   CHECK(result == SLANG_RECT_REWRITTEN && fb && fb->refl,
+         "fused viewer reflection is missing");
+   slang_blob_unref(vb);
+   slang_blob_unref(fb);
+   vb = fb = NULL;
+   CHECK(slang_compile_colour("stock.slang", output.vertex, output.vertex_len,
+            output.fragment, output.fragment_len, false, NULL,
+            &result, &vb, &fb, NULL, NULL), "compile later viewer pass");
+   CHECK(result == SLANG_RECT_UNCHANGED && !vb && !fb,
+         "later pass Source must not be converted twice");
+   slang_blob_unref(vb);
+   slang_blob_unref(fb);
+   glslang_output_free(&output);
+}
+
 int main(void)
 {
    static struct video_shader shader;
@@ -437,6 +463,7 @@ int main(void)
 
    check_simulated_source_size();
    check_unread_samplers();
+   check_viewer_colour();
 
    printf("%s slang_hlsl_backend\n", failures ? "[FAIL]" : "[pass]");
    return failures ? 1 : 0;
