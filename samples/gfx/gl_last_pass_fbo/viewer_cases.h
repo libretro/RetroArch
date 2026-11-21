@@ -1,6 +1,13 @@
 /* The shipping viewer chain against the same GL/backend script as the
  * core chain. No core framebuffer or history may become a viewer input. */
-static unsigned viewer_pass, viewer_dims, viewer_calls;
+static unsigned viewer_pass, viewer_dims, viewer_calls, viewer_colour_calls;
+
+static bool viewer_colour(void *data, const float *rows)
+{
+   (void)data;
+   viewer_colour_calls += rows ? 1 : 2;
+   return true;
+}
 static GLuint viewer_feedback, viewer_previous;
 
 static void viewer_use(void *driver, void *data, unsigned pass, bool active)
@@ -76,7 +83,7 @@ static int viewer_cases(void)
    scale_source(&scales[0], 2.0f);
    scale_viewport(&scales[1], 0.5f, 1.0f);
    CHECK(VIEWER_DRAW(&state, NULL, &backend, &backend, 999,
-         VIDEO_SCALE_PACK(320, 240), 0, VIDEO_SCALE_PACK(800, 600), 42),
+         VIDEO_SCALE_PACK(320, 240), 0, VIDEO_SCALE_PACK(800, 600), 42, NULL),
          "multipass viewer rendered");
    CHECK(viewer_calls == 2 && !viewer_dims, "core semantics restored");
    CHECK(state->pass[0].dims == VIDEO_SCALE_PACK(640, 480), "input scaling");
@@ -85,7 +92,7 @@ static int viewer_cases(void)
    feedback = viewer_feedback;
    previous = viewer_previous;
    CHECK(VIEWER_DRAW(&state, NULL, &backend, &backend, 999,
-         VIDEO_SCALE_PACK(320, 240), 0, VIDEO_SCALE_PACK(800, 600), 42),
+         VIDEO_SCALE_PACK(320, 240), 0, VIDEO_SCALE_PACK(800, 600), 42, NULL),
          "second viewer frame rendered");
    CHECK(state->pass[0].texture == first, "stable frame reuses resources");
    CHECK(feedback != viewer_feedback, "feedback advances independently");
@@ -93,10 +100,27 @@ static int viewer_cases(void)
    feedback_pass = -1;
    scale_viewport(&scales[1], 1.0f, 1.0f);
    CHECK(VIEWER_DRAW(&state, NULL, &backend, &backend, 999,
-         VIDEO_SCALE_PACK(320, 240), 0, VIDEO_SCALE_PACK(800, 600), 42),
+         VIDEO_SCALE_PACK(320, 240), 0, VIDEO_SCALE_PACK(800, 600), 42, NULL),
          "unscaled final pass rendered directly");
    CHECK(!state->pass[1].texture && !state->pass[1].fbo,
          "direct final pass needs no texture copy or framebuffer");
+   {
+      static const float rows[12] = {1, 0, 0, 1, 0, 1, 0, 0.4166667f, 0, 0, 1, 0};
+      backend.set_media_colour = viewer_colour;
+      CHECK(VIEWER_DRAW(&state, NULL, &backend, &backend, 999,
+            VIDEO_SCALE_PACK(320, 240), 0, VIDEO_SCALE_PACK(800, 600), 42, rows),
+            "HDR viewer borrows the same source");
+      CHECK(viewer_colour_calls == 3, "private colour programs restored after the draw");
+      CHECK((state->history[0].flags & GL_MEDIA_LINEAR_HDR)
+            && (state->pass[0].flags & GL_MEDIA_LINEAR_HDR),
+            "existing HDR history and pass targets keep signed dynamic range");
+      CHECK(!state->pass[1].texture && !state->pass[1].fbo,
+            "HDR normalization adds no final target or colour conversion draw");
+      backend.set_media_colour = NULL;
+      CHECK(!VIEWER_DRAW(&state, NULL, &backend, &backend, 999,
+            VIDEO_SCALE_PACK(320, 240), 0, VIDEO_SCALE_PACK(800, 600), 42, rows),
+            "unsupported colour variants leave the plain HDR viewer available");
+   }
    VIEWER_FREE(&state);
    CHECK(!state, "preset replacement releases viewer resources");
    printf("viewer multipass/history/feedback checks passed\n");

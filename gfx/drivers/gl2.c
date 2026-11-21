@@ -3887,6 +3887,7 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
     * dialect, under a Cg chain too */
    gl_glsl_set_context_type(gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE,
          hwr->version_major, hwr->version_minor);
+   gl_glsl_set_viewer_hdr(gl->scrgb.active);
 #endif
 
    init_data.gl.core_context_enabled = (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE) ? true : false;
@@ -11147,14 +11148,23 @@ static void gfx_display_gl2_bloom_composite(void *data, unsigned dims)
 #endif
 
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
+#include "../common/hdr_viewer_colour.h"
+
 static bool gfx_display_gl2_media_shader_draw(void *data, uintptr_t image,
       unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
 {
    gl2_t *gl = (gl2_t*)data;
+   float rows[12];
+   bool hdr = false;
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   hdr = gl && gl->scrgb.active && gl2_fp16_is((GLuint)image);
+#endif
    (void)video_dims;
+   if (hdr) hdr_viewer_colour_rows(rows, true, gl->scrgb.menu_nits,
+         gl->scrgb.expand_gamut);
    return gl && (gl->flags & GL2_FLAG_HAVE_FBO) && gl->media_shader_enabled &&
       gl2_media_shader_draw(&gl->media_shader, gl, gl->shader, gl->shader_data,
-            image, source_dims, pos, dims, gl->media_shader_frame);
+            image, source_dims, pos, dims, gl->media_shader_frame, hdr ? rows : NULL);
 }
 #endif
 

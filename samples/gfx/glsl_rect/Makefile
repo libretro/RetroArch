@@ -7,14 +7,14 @@ CORE_DIR          := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O1 -I$(LIBRETRO_COMM_DIR)/include
-LDLIBS  := -lEGL -lGLESv2
+LDLIBS  := -lEGL -lGLESv2 -lm
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-TARGETS := glsl_rect_test glsl_in_place_test
+TARGETS := glsl_rect_test glsl_in_place_test glsl_colour_test
 
 all: $(TARGETS)
 
@@ -25,13 +25,19 @@ glsl_in_place_test: glsl_in_place_test.c \
 		$(CORE_DIR)/gfx/drivers_shader/shader_glsl.c \
 		$(CORE_DIR)/gfx/common/xmb_plastic.h \
 		$(CORE_DIR)/gfx/drivers/xmb_plastic.h \
-		$(CORE_DIR)/gfx/drivers_shader/glsl_rect.h
+		$(CORE_DIR)/gfx/drivers_shader/glsl_rect.h \
+		$(CORE_DIR)/gfx/drivers_shader/glsl_colour.h \
+		$(CORE_DIR)/gfx/common/hdr_viewer_colour.h
 	$(CC) $(CFLAGS) -DHAVE_OPENGLES -DHAVE_OPENGLES3 -DHAVE_OPENGL \
 		-DHAVE_GLSL -DRARCH_INTERNAL -I$(CORE_DIR) -I$(CORE_DIR)/gfx/include \
 		-I$(CORE_DIR)/deps -o $@ glsl_in_place_test.c \
 		$(LIBRETRO_COMM_DIR)/compat/compat_strl.c $(LDFLAGS) $(LDLIBS)
 
+glsl_colour_test: glsl_colour_test.c $(CORE_DIR)/gfx/drivers_shader/glsl_colour.h $(CORE_DIR)/gfx/drivers_shader/glsl_rect.h
+	$(CC) $(CFLAGS) -o $@ glsl_colour_test.c $(LDFLAGS)
+
 check: all
+	./glsl_colour_test
 	EGL_PLATFORM=surfaceless ./glsl_rect_test
 	EGL_PLATFORM=surfaceless ./glsl_in_place_test
 

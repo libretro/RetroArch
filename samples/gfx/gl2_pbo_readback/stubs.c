@@ -126,3 +126,5 @@ void gl_glsl_in_place_begin(void *shader_data, bool flipped,
 { (void)shader_data; (void)flipped; (void)view_pos; (void)view_dims; (void)frame_h; (void)tex_dims; }
 void gl_glsl_in_place_end(void *shader_data) { (void)shader_data; }
 size_t video_driver_set_gpu_api_version_string(const char *str) { (void)str; return 0; }
+
+void gl_glsl_set_viewer_hdr(bool enabled) { (void)enabled; }

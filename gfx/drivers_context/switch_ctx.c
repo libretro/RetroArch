@@ -257,8 +257,9 @@ static uint32_t switch_ctx_get_flags(void *data)
    {
 #if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#elif defined(HAVE_GLSL)
-      /* No slang to draw through: glcore draws through GLSL */
+#endif
+#ifdef HAVE_GLSL
+      /* GLSL and Slang presets can share the same context. */
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
    }

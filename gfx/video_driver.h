@@ -351,6 +351,8 @@ typedef struct shader_backend
    const char *ident;
    /* A borrowed preset drawing a viewer: zero restores core semantics. */
    void (*set_media_source)(void *shader_data, unsigned dims);
+   /* Select precompiled viewer programs and upload sampling colour rows. */
+   bool (*set_media_colour)(void *shader_data, const float *rows);
 } shader_backend_t;
 
 typedef struct video_shader_ctx_params

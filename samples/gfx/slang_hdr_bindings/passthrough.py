@@ -69,7 +69,10 @@ int main(void)
    gl3_filter_chain_set_passthrough(&gl_chain, 1);
    vulkan_filter_chain_set_passthrough(&vk_chain, 0);
    CHECK(SLANG_SEMANTIC_PASSTHROUGH == 33);
-   CHECK(SLANG_NUM_BASE_SEMANTICS == 34);
+   CHECK(SLANG_SEMANTIC_VIEWER_COLOUR0 == 34);
+   CHECK(SLANG_SEMANTIC_VIEWER_COLOUR1 == 35);
+   CHECK(SLANG_SEMANTIC_VIEWER_COLOUR2 == 36);
+   CHECK(SLANG_NUM_BASE_SEMANTICS == SLANG_SEMANTIC_VIEWER_COLOUR2 + 1);
    CHECK(gl_chain.common.passthrough == 1 && vk_chain.common.passthrough == 0);
    gl3_filter_chain_set_passthrough(&gl_chain, 0);
    vulkan_filter_chain_set_passthrough(&vk_chain, 1);

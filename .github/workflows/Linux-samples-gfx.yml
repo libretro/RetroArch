@@ -1429,7 +1429,7 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE=1 ASAN_OPTIONS=detect_leaks=0 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 120 make check SANITIZER=address,undefined
-          echo "[pass] glsl_rect_test, glsl_in_place_test"
+          echo "[pass] glsl_rect_test, glsl_in_place_test, glsl_colour_test"
 
       - name: XMB menu effects on every backend's sources, GL and GLES programs drawn (Mesa EGL, ASan + UBSan)
         shell: bash
@@ -2463,6 +2463,8 @@ jobs:
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/d3d12_menu.py
           CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/hdr_view_crop.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/hdr_view_crop.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/glsl_viewer_route.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/glsl_viewer_route.py
           CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/viewer_hdr.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/viewer_hdr.py
           CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/viewer_vulkan_hdr.py

@@ -350,7 +350,8 @@ static uint32_t sdl3_ctx_get_flags(void *data)
 #if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
    if (string_is_equal(video_driver_get_ident(), "glcore"))
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#elif defined(HAVE_GLSL)
+#endif
+#ifdef HAVE_GLSL
    if (string_is_equal(video_driver_get_ident(), "glcore"))
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif

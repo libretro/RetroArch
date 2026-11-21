@@ -4,6 +4,10 @@
 #ifndef GL_MEDIA_SHADER_H
 #define GL_MEDIA_SHADER_H
 
+/* Preserve signed HDR in the history/feedback targets already required
+ * by a preset. This flag creates no additional image or draw. */
+#define GL_MEDIA_LINEAR_HDR (1u << 31)
+
 typedef struct gl_media_target
 {
    GLuint texture, fbo;
@@ -51,6 +55,11 @@ static bool gl_media_target_fit(gl_media_target_t *t, unsigned dims,
       gl_media_target_free(t);
 #ifndef HAVE_OPENGLES2
       if (flags & FBO_SCALE_FLAG_FP_FBO) format = GL_RGBA32F;
+      else if (flags & GL_MEDIA_LINEAR_HDR)
+      {
+         format = GL_RGBA16F;
+         type = GL_FLOAT;
+      }
       else if (flags & FBO_SCALE_FLAG_SRGB_FBO) format = GL_SRGB8_ALPHA8;
 #endif
       glGenTextures(1, &t->texture);
@@ -104,7 +113,8 @@ static unsigned gl_media_scale(unsigned input, unsigned viewport,
 
 static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
       const shader_backend_t *shader, void *shader_data, uintptr_t texture,
-      unsigned source_dims, unsigned pos, unsigned dims, uint64_t frame)
+      unsigned source_dims, unsigned pos, unsigned dims, uint64_t frame,
+      const float *colour_rows)
 {
    static const float vertices[8] = {0, 0, 1, 0, 0, 1, 1, 1};
    static const float white[16] = {1, 1, 1, 1, 1, 1, 1, 1,
@@ -121,6 +131,7 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
    GLboolean srgb = glIsEnabled(GL_FRAMEBUFFER_SRGB);
 #endif
    unsigned passes, history, feedback_pass = 0, i;
+   unsigned hdr_flags = colour_rows ? GL_MEDIA_LINEAR_HDR : 0;
    bool has_feedback, direct = false, result = false;
    if (!shader || !shader_data || !texture
          || !VIDEO_SCALE_W(source_dims) || !VIDEO_SCALE_H(source_dims)
@@ -138,6 +149,8 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
       if (!s) return false;
       *state = s;
    }
+   if (colour_rows && (!shader->set_media_colour
+            || !shader->set_media_colour(shader_data, colour_rows))) return false;
    glGetIntegerv(MEDIA_FB_BINDING, &target);
    glGetIntegerv(GL_VIEWPORT, viewport);
    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_size);
@@ -165,7 +178,7 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
    matrix_4x4_ortho(mvp, 0, 1, 0, 1, -1, 1);
    for (i = 0; i < history; i++)
    {
-      if (!gl_media_target_fit(&s->history[i], source_dims, 0)) goto done;
+      if (!gl_media_target_fit(&s->history[i], source_dims, hdr_flags)) goto done;
       gl_media_info(&s->previous[i], s->history[i].texture, source_dims, false);
    }
    for (i = 0; i < passes; i++)
@@ -193,10 +206,10 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
          s->pass[i].dims = out_dims;
          direct = true;
       }
-      else if (!gl_media_target_fit(&s->pass[i], out_dims, scale.flags)) goto done;
+      else if (!gl_media_target_fit(&s->pass[i], out_dims, scale.flags | hdr_flags)) goto done;
       if (has_feedback && feedback_pass == i)
       {
-         if (!gl_media_target_fit(&s->feedback, out_dims, scale.flags)) goto done;
+         if (!gl_media_target_fit(&s->feedback, out_dims, scale.flags | hdr_flags)) goto done;
          gl_media_info(&feedback, s->feedback.texture, out_dims, false);
       }
       gl_media_info(&s->outputs[i], s->pass[i].texture, out_dims, false);
@@ -297,6 +310,7 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
    }
    result = true;
 done:
+   if (shader->set_media_colour) shader->set_media_colour(shader_data, NULL);
    if (shader->set_media_source) shader->set_media_source(shader_data, 0);
    shader->use(driver, shader_data, VIDEO_SHADER_STOCK_BLEND, true);
    MEDIA_BIND_FB((GLuint)target);

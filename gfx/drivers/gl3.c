@@ -1260,9 +1260,8 @@ static void gl3_fp16_forget_all(void)
    gl3_fp16_cap   = 0;
 }
 
-#ifdef HAVE_SLANG
-/* Only the slang pipelines draw a half-float texture through the
- * linear program */
+#if defined(HAVE_SLANG) || defined(HAVE_GLSL)
+/* Texture metadata belongs to the context; no driver query is needed. */
 static bool gl3_fp16_is(GLuint id)
 {
    unsigned i;
@@ -1272,6 +1271,9 @@ static bool gl3_fp16_is(GLuint id)
    return false;
 }
 
+#endif
+
+#ifdef HAVE_SLANG
 static GLuint gl3_linear_program(gl3_t *gl);
 static GLuint gl3_plastic_program(gl3_t *gl);
 static GLuint gl3_font_plastic_program(gl3_t *gl);
@@ -3833,20 +3835,22 @@ static bool gl3_init_filter_chain_with_path(gl3_t *gl, const char *shader_path)
             true,
 #endif
             gl->version_major, gl->version_minor);
+   gl_glsl_set_viewer_hdr(gl->scrgb.active);
 #endif
 
 #ifdef HAVE_SLANG
+   /* The menu/HDR compositor belongs to the context, including when a
+    * GLSL preset draws the content. Compile it during preset loading. */
+   if (!gl3_init_pipelines(gl))
+   {
+      RARCH_ERR("[GLCore] Failed to cross-compile menu pipelines.\n");
+      return false;
+   }
    if (type == RARCH_SHADER_SLANG)
    {
       RARCH_LOG("[GLCore] Using Slang shader backend.\n");
 
       gl->chain.active = false;
-
-      if (!gl3_init_pipelines(gl))
-      {
-         RARCH_ERR("[GLCore] Failed to cross-compile menu pipelines.\n");
-         return false;
-      }
 
       if (!shader_path || !*shader_path)
       {
@@ -4786,7 +4790,10 @@ static bool gl3_shader_load_begin(void *data,
    gl3_t *gl = (gl3_t *)data;
    gl3_deferred_state_t *ds;
 
-   if (!gl)
+   /* Legacy GLSL loads synchronously; its program/target ownership must
+    * also be retired by set_shader when switching back to Slang. */
+   if (!gl || gl->chain.active
+         || video_shader_parse_type(deferred->preset_path) != RARCH_SHADER_SLANG)
       return false;
 
    ds = (gl3_deferred_state_t*)calloc(1, sizeof(*ds));
@@ -9634,8 +9641,11 @@ static bool gfx_display_gl3_blur_rect(void *data, unsigned video_dims,
 }
 #endif
 
-#ifdef HAVE_SLANG
+#if defined(HAVE_SLANG) || defined(HAVE_GLSL)
 #include "../common/hdr_viewer_colour.h"
+#endif
+
+#ifdef HAVE_SLANG
 
 static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
       unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
@@ -9713,10 +9723,14 @@ static bool gfx_display_gl3_media_shader_draw(void *data, uintptr_t image,
 {
 #ifdef HAVE_GLSL
    gl3_t *gl = (gl3_t*)data;
+   float rows[12];
+   bool hdr = gl && gl->scrgb.active && gl3_fp16_is((GLuint)image);
+   if (hdr) hdr_viewer_colour_rows(rows, true, gl->scrgb.menu_nits,
+         gl->scrgb.expand_gamut);
    if (gl && gl->chain.active && gl->chain.shader)
       return gl->media_shader_enabled && gl3_media_shader_draw(
             &gl->media_legacy_shader, gl, gl->chain.shader, gl->chain.shader_data,
-            image, source_dims, pos, dims, gl->media_shader_frame);
+            image, source_dims, pos, dims, gl->media_shader_frame, hdr ? rows : NULL);
 #endif
 #ifdef HAVE_SLANG
    return gfx_display_gl3_media_slang_draw(data, image, source_dims,
