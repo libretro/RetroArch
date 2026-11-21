@@ -1878,6 +1878,48 @@ static bool slang_remap_stage(const char *source,
    return true;
 }
 
+static bool slang_colour_binding_used(const uint32_t *words, size_t n,
+      unsigned binding)
+{
+   size_t at = 5;
+   while (at < n)
+   {
+      unsigned count = words[at] >> 16;
+      unsigned op = words[at] & 0xffffu;
+      if (!count || count > n - at) return true;
+      /* OpDecorate Binding, conservatively including other sets. */
+      if (op == 71 && count >= 4 && words[at + 2] == 33
+            && words[at + 3] == binding) return true;
+      at += count;
+   }
+   return false;
+}
+
+static bool slang_colour_place_pass(const uint32_t *vs, size_t vs_words,
+      const uint32_t *fs, size_t fs_words, struct slang_rect_place *place)
+{
+   uint32_t vend, fend;
+   unsigned set, binding;
+   if (slang_rect_place_pass(vs, vs_words, fs, fs_words, place)) return true;
+   if (slang_rect_uniform_block(vs, vs_words, &set, &binding)
+         || slang_rect_uniform_block(fs, fs_words, &set, &binding)) return false;
+   memset(place, 0, sizeof(*place));
+   vend = slang_rect_block_end(vs, vs_words, place);
+   fend = slang_rect_block_end(fs, fs_words, place);
+   if (vend == ~0u || fend == ~0u
+         || (((vend > fend ? vend : fend) + 15) & ~15u) + 48
+               <= SLANG_RECT_PUSH_LIMIT) return false;
+   for (binding = 0; binding < 64; binding++)
+      if (!slang_colour_binding_used(vs, vs_words, binding)
+            && !slang_colour_binding_used(fs, fs_words, binding))
+      {
+         place->where = SLANG_RECT_UBO;
+         place->binding = binding;
+         return true;
+      }
+   return false;
+}
+
 static bool slang_compile_remap_internal(const char *shader_path,
       const uint32_t *vs, size_t vs_words,
       const uint32_t *fs, size_t fs_words,
@@ -1908,7 +1950,8 @@ static bool slang_compile_remap_internal(const char *shader_path,
    if (fs_text)
       *fs_text = NULL;
    /* where the members go, as the SPIR-V rewrite would put them */
-   if (!slang_rect_place_pass(vs, vs_words, fs, fs_words, &place))
+   if (!(colour ? slang_colour_place_pass(vs, vs_words, fs, fs_words, &place)
+         : slang_rect_place_pass(vs, vs_words, fs, fs_words, &place)))
       return true;
 
    memset(&rm, 0, sizeof(rm));

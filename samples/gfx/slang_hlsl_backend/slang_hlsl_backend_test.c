@@ -208,6 +208,19 @@ static const char unread_slang[] =
       "   FragColor = texture(Source, vTexCoord);\n"
       "}\n";
 
+static const char full_push_slang[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { mat4 MVP; vec4 OutputSize;"
+      "vec4 OriginalSize; vec4 SourceSize; uint FrameCount; } params;\n"
+      "#pragma stage vertex\n"
+      "layout(location=0) in vec4 Position;\n"
+      "layout(binding=1) uniform sampler2D LUT;\n"
+      "void main() { gl_Position=params.MVP*Position+textureLod(LUT,vec2(0.5),0.0); }\n"
+      "#pragma stage fragment\n"
+      "layout(binding=0) uniform sampler2D Source;\n"
+      "layout(location=0) out vec4 colour;\n"
+      "void main() { colour=texture(Source,vec2(0.5)); }\n";
+
 bool video_shader_source_read(const char *ident, char **buf, int64_t *len)
 {
    const char *src;
@@ -216,6 +229,8 @@ bool video_shader_source_read(const char *ident, char **buf, int64_t *len)
       return false;
    if (!strcmp(ident, "stock.slang"))
       src = stock_slang;
+   else if (!strcmp(ident, "full-push.slang"))
+      src = full_push_slang;
    else if (!strcmp(ident, "sized.slang"))
       src = sized_slang;
    else if (!strcmp(ident, "unread.slang"))
@@ -411,6 +426,18 @@ static void check_viewer_colour(void)
             &result, &vb, &fb, NULL, NULL), "compile later viewer pass");
    CHECK(result == SLANG_RECT_UNCHANGED && !vb && !fb,
          "later pass Source must not be converted twice");
+   slang_blob_unref(vb);
+   slang_blob_unref(fb);
+   glslang_output_free(&output);
+   glslang_output_init(&output);
+   CHECK(glslang_compile_shader("full-push.slang", &output), "compile full push block");
+   vb = fb = NULL;
+   CHECK(slang_compile_colour("full-push.slang", output.vertex, output.vertex_len,
+            output.fragment, output.fragment_len, true, NULL,
+            &result, &vb, &fb, NULL, NULL), "place colour uniforms outside full push block");
+   CHECK(result == SLANG_RECT_REWRITTEN && !vb && fb && fb->refl
+         && fb->refl->ubo.binding == 2 && fb->refl->ubo.size == 48,
+         "new colour block collided with the source sampler");
    slang_blob_unref(vb);
    slang_blob_unref(fb);
    glslang_output_free(&output);
