@@ -7477,6 +7477,96 @@ static bool gl2_windows_draw(gl2_t *gl,
 #endif
 #endif
 
+#ifdef HAVE_GL_PLANAR
+static void gl2_movie_drop(gl2_t *gl)
+{
+   if (gl->movie_texture)
+   {
+      gl_planar_forget(&gl->planar, gl->movie_texture);
+      glDeleteTextures(1, &gl->movie_texture);
+      /* The core's next frame sets its texture coordinates again */
+      memset(gl->last_width,  0, sizeof(gl->last_width));
+      memset(gl->last_height, 0, sizeof(gl->last_height));
+   }
+   gl->movie_texture = 0;
+   gl->movie_dims    = 0;
+   gl->movie_pending = false;
+}
+
+/* What the frame draws: a core frame ends the movie, otherwise the
+ * movie stands in for it, at its size. True when a movie frame came
+ * since the last draw. */
+static bool gl2_movie_prepare(gl2_t *gl, const void **frame, unsigned *dims)
+{
+   bool fresh        = gl->movie_pending;
+   gl->movie_pending = false;
+   if (!gl->movie_texture)
+      return false;
+   if (*frame && *frame != RETRO_HW_FRAME_BUFFER_VALID)
+   {
+      gl2_movie_drop(gl);
+      return false;
+   }
+   *frame = NULL;
+   *dims  = gl->movie_dims;
+   return fresh;
+}
+
+/* A movie frame in memory, converted by the planar upload into one
+ * texture kept across frames; NULL drops it. The planes are released
+ * once the upload has read them. */
+static enum video_texture_update gl2_import_movie_frame(void *data,
+      const video_frame_import_t *f)
+{
+   struct texture_image img;
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!f || (gl->movie_texture && gl->movie_dims != f->dims))
+      gl2_movie_drop(gl);
+   if (!f)
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   if (     !VIDEO_FRAME_IMPORT_IS_CPU(f)
+         || !(gl->flags & GL2_FLAG_HAVE_FBO) || !GL_PLANAR_OK(&gl->planar)
+         || !VIDEO_SCALE_W(f->dims) || !VIDEO_SCALE_H(f->dims))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   memset(&img, 0, sizeof(img));
+   img.width  = VIDEO_SCALE_W(f->dims);
+   img.height = VIDEO_SCALE_H(f->dims);
+   img.planar = &f->planar;
+   if (gl->movie_texture)
+   {
+      if (!gl_planar_update(&gl->planar, gl->movie_texture, &img))
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+   else
+   {
+      if (!(gl->movie_texture = gl_planar_load(&gl->planar, &img, true,
+                  (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE) != 0)))
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      RARCH_LOG("[GL] Movie frames of %ux%u converted from their planes.\n",
+            img.width, img.height);
+   }
+   gl->movie_dims    = f->dims;
+   gl->movie_pending = true;
+   if (f->abandon)
+      f->abandon(f->owner, f->done, f->done_value);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
+/* The movie frames taken; there is no device to share */
+static bool gl2_get_device(void *data, video_device_info_t *info)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || !info)
+      return false;
+   memset(info, 0, sizeof(*info));
+   if ((gl->flags & GL2_FLAG_HAVE_FBO) && GL_PLANAR_OK(&gl->planar))
+      info->import_formats = IMAGE_PIXFMT_I420;
+   return info->import_formats != 0;
+}
+#endif
+
 static bool gl2_frame(void *data, const void *frame,
       unsigned dims,
       uint64_t frame_count,
@@ -7511,6 +7601,7 @@ static bool gl2_frame(void *data, const void *frame,
    /* The menu and the notifications are drawn in the main window */
    bool menu_here                      = true;
    bool notes_here                     = true;
+   bool movie_frame                    = false;
 #if defined(GL2_VIEWS) && defined(HAVE_VIDEO_WINDOWS)
    video_views_ui_dims_t window_ui_saved;
    unsigned window_ui_away             = 0;
@@ -7581,6 +7672,13 @@ static bool gl2_frame(void *data, const void *frame,
    chain  = (gl2_renderchain_data_t*)gl->renderchain_data;
    width  = VIDEO_SCALE_W(gl->video_dims);
    height = VIDEO_SCALE_H(gl->video_dims);
+
+#ifdef HAVE_GL_PLANAR
+   movie_frame  = gl2_movie_prepare(gl, &frame, &dims);
+   frame_width  = VIDEO_SCALE_W(dims);
+   frame_height = VIDEO_SCALE_H(dims);
+#endif
+   (void)movie_frame; /* only the headsets ask */
 
    gl->media_shader_enabled = video_info->shader_active;
    gl->media_shader_frame = frame_count;
@@ -7717,6 +7815,17 @@ static bool gl2_frame(void *data, const void *frame,
    gl->tex_info.input_size[1] = frame_height;
    gl->tex_info.tex_size[0]   = VIDEO_SCALE_W(gl->tex_dims);
    gl->tex_info.tex_size[1]   = VIDEO_SCALE_H(gl->tex_dims);
+#ifdef HAVE_GL_PLANAR
+   /* The movie's texture is its own size */
+   if (gl->movie_texture)
+   {
+      gl->tex_info.tex         = gl->movie_texture;
+      gl->tex_info.tex_size[0] = frame_width;
+      gl->tex_info.tex_size[1] = frame_height;
+      SET_TEXTURE_COORDS(gl->tex_info.coord, 1.0f, 1.0f);
+      glBindTexture(GL_TEXTURE_2D, gl->movie_texture);
+   }
+#endif
 
    feedback_info              = gl->tex_info;
 
@@ -7779,6 +7888,10 @@ static bool gl2_frame(void *data, const void *frame,
    params.vp_dims          = gl->out_vp_dims;
    params.dims             = dims;
    params.tex_dims         = gl->tex_dims;
+#ifdef HAVE_GL_PLANAR
+   if (gl->movie_texture)
+      params.tex_dims      = gl->movie_dims;
+#endif
    params.out_dims         = gl->vp.dims;
    params.frame_counter    = (unsigned int)frame_count;
    params.swap_counter    = (unsigned int)video_info->swap_count;
@@ -8080,7 +8193,7 @@ static bool gl2_frame(void *data, const void *frame,
          video_info->headset_edit_seq, video_info->headset_editing);
    if (gl_android_openxr_active())
    {
-      bool new_frame = frame && !video_info->frame_repeat;
+      bool new_frame = (frame || movie_frame) && !video_info->frame_repeat;
       /* Views kept across a reinit drew only the frame a repeat shows. */
       if (new_frame)
          gl_android_openxr_new_frame();
@@ -8097,7 +8210,8 @@ static bool gl2_frame(void *data, const void *frame,
    /* The back buffer is what the window shows until the swap. Not from
     * the BFI light dupes, which would only copy the same image. */
    if (gl->desktop_xr && !(gl->flags & GL2_FLAG_FRAME_DUPE_LOCK))
-      gl2_desktop_xr_frame(gl, video_info, frame != NULL, dims, &xr_vp);
+      gl2_desktop_xr_frame(gl, video_info, frame || movie_frame, dims,
+            &xr_vp);
 #endif
 
 #if defined(GL2_VIEWS) && defined(HAVE_VIDEO_WINDOWS)
@@ -8331,6 +8445,7 @@ static void gl2_free(void *data)
    gl2_views_release(gl);
 #endif
 #ifdef HAVE_GL_PLANAR
+   gl2_movie_drop(gl);
    gl_planar_free(&gl->planar);
 #endif
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
@@ -10747,7 +10862,11 @@ static const video_poke_interface_t gl2_poke_interface = {
    NULL, /* frame_mem_ready */
    NULL, /* frame_mem_free */
 #endif
+#ifdef HAVE_GL_PLANAR
+   gl2_get_device,
+#else
    NULL, /* get_device */
+#endif
    NULL, /* import_texture */
    NULL, /* get_last_present_sync */
 #if defined(HAVE_GL_ASYNC_READBACK) && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
@@ -10755,7 +10874,11 @@ static const video_poke_interface_t gl2_poke_interface = {
 #else
    NULL, /* record_read */
 #endif
+#ifdef HAVE_GL_PLANAR
+   gl2_import_movie_frame,
+#else
    NULL, /* import_movie_frame */
+#endif
    NULL, /* get_menu_framebuffer */
    NULL, /* menu_mem_alloc */
    0,    /* menu_mem_pitch_align */

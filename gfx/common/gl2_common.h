@@ -296,6 +296,11 @@ struct gl2
 #endif
 #ifdef HAVE_GL_PLANAR
    gl_planar_t planar;
+   /* A movie frame shown in the core frame's place: converted from
+    * the media core's planes, drawn until a core frame comes */
+   GLuint movie_texture;
+   unsigned movie_dims;
+   bool movie_pending;  /* a frame imported since the last draw */
 #endif
    bool pbo_readback_valid[4];
    /* At init: textures take half floats (TEXTURE_GPU_FORMAT_RGBA16F) */

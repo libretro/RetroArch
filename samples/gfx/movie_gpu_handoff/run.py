@@ -76,3 +76,24 @@ with tempfile.TemporaryDirectory() as directory:
              str(Path(__file__).with_name('surface_output_test.c')),
              '-o', str(exe)], check=True)
         subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)
+
+with tempfile.TemporaryDirectory() as directory:
+    tmp = Path(directory)
+    source = (root / 'gfx/video_driver.h').read_text(encoding='utf-8')
+    start = source.index('typedef struct video_frame_import\n')
+    end = source.index('#define VIDEO_FRAME_IMPORT_IS_CPU', start)
+    (tmp / 'frame.inc').write_text(source[start:source.index('\n', end) + 1])
+    for api in ('gl2', 'gl3'):
+        source = (root / 'gfx/drivers' / (api + '.c')).read_text(encoding='utf-8')
+        (tmp / 'gl_driver.inc').write_text('\n'.join(body(source, s) for s in
+            ('static void ' + api + '_movie_drop(',
+             'static bool ' + api + '_movie_prepare(',
+             'static enum video_texture_update ' + api + '_import_movie_frame(void *data,',
+             'static bool ' + api + '_get_device(')))
+        exe = tmp / (api + ('.exe' if 'mingw' in cc[0] or os.name == 'nt' else ''))
+        subprocess.run(cc + flags + ['-DHAVE_GL_PLANAR'] +
+            (['-DGL_LANE_GL2'] if api == 'gl2' else []) +
+            ['-I' + str(tmp), '-I' + str(root),
+             '-I' + str(root / 'libretro-common/include'),
+             str(Path(__file__).with_name('gl_test.c')), '-o', str(exe)], check=True)
+        subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)

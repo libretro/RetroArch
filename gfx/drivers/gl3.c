@@ -459,6 +459,11 @@ typedef struct gl3
 #endif
 #ifdef HAVE_GL_PLANAR
    gl_planar_t planar;
+   /* A movie frame shown in the core frame's place: converted from
+    * the media core's planes, drawn until a core frame comes */
+   GLuint movie_texture;
+   unsigned movie_dims;
+   bool movie_pending;  /* a frame imported since the last draw */
 #endif
 
    bool pbo_readback_valid[GL_CORE_NUM_PBOS];
@@ -4569,6 +4574,85 @@ static void gl3_get_overlay_interface(void *data,
 }
 #endif
 
+#ifdef HAVE_GL_PLANAR
+static void gl3_movie_drop(gl3_t *gl)
+{
+   if (gl->movie_texture)
+   {
+      gl_planar_forget(&gl->planar, gl->movie_texture);
+      glDeleteTextures(1, &gl->movie_texture);
+   }
+   gl->movie_texture = 0;
+   gl->movie_dims    = 0;
+   gl->movie_pending = false;
+}
+
+/* What the frame draws: a core frame ends the movie, otherwise the
+ * movie stands in for it, at its size. True when a movie frame came
+ * since the last draw. */
+static bool gl3_movie_prepare(gl3_t *gl, const void **frame, unsigned *dims)
+{
+   bool fresh        = gl->movie_pending;
+   gl->movie_pending = false;
+   if (!gl->movie_texture)
+      return false;
+   if (*frame && *frame != RETRO_HW_FRAME_BUFFER_VALID)
+   {
+      gl3_movie_drop(gl);
+      return false;
+   }
+   *frame = NULL;
+   *dims  = gl->movie_dims;
+   return fresh;
+}
+
+/* A movie frame in memory, converted by the planar upload into one
+ * texture kept across frames; NULL drops it. The planes are released
+ * once the upload has read them. */
+static enum video_texture_update gl3_import_movie_frame(void *data,
+      const video_frame_import_t *f)
+{
+   struct texture_image img;
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!f || (gl->movie_texture && gl->movie_dims != f->dims))
+      gl3_movie_drop(gl);
+   if (!f)
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   if (     !VIDEO_FRAME_IMPORT_IS_CPU(f) || !GL_PLANAR_OK(&gl->planar)
+         || !VIDEO_SCALE_W(f->dims) || !VIDEO_SCALE_H(f->dims))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   memset(&img, 0, sizeof(img));
+   img.width  = VIDEO_SCALE_W(f->dims);
+   img.height = VIDEO_SCALE_H(f->dims);
+   img.planar = &f->planar;
+   if (gl->movie_texture)
+   {
+      if (!gl_planar_update(&gl->planar, gl->movie_texture, &img))
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+   else
+   {
+      if (!(gl->movie_texture = gl_planar_load(&gl->planar, &img,
+                  true, true)))
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      /* The chain samples with a mip filter: its one level makes it
+       * complete, as the storage of a streamed texture does */
+      glBindTexture(GL_TEXTURE_2D, gl->movie_texture);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+      glBindTexture(GL_TEXTURE_2D, 0);
+      RARCH_LOG("[GLCore] Movie frames of %ux%u converted from their "
+            "planes.\n", img.width, img.height);
+   }
+   gl->movie_dims    = f->dims;
+   gl->movie_pending = true;
+   if (f->abandon)
+      f->abandon(f->owner, f->done, f->done_value);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+#endif
+
 static void gl3_free(void *data)
 {
    gl3_t *gl = (gl3_t*)data;
@@ -4585,6 +4669,7 @@ static void gl3_free(void *data)
 #endif
    gl3_destroy_resources(gl);
 #ifdef HAVE_GL_PLANAR
+   gl3_movie_drop(gl);
    gl_planar_free(&gl->planar);
 #endif
    gl3_fp16_forget_all();
@@ -7205,9 +7290,16 @@ static bool gl3_frame(void *data, const void *frame,
 #endif
    bool hard_sync                          = video_info->hard_sync;
    bool overlay_behind_menu                = video_info->overlay_behind_menu;
+   bool movie_frame                        = false;
 
    if (!gl)
       return false;
+
+#ifdef HAVE_GL_PLANAR
+   movie_frame  = gl3_movie_prepare(gl, &frame, &dims);
+   frame_width  = VIDEO_SCALE_W(dims);
+   frame_height = VIDEO_SCALE_H(dims);
+#endif
 
    /* One a frame without the ring's hand-over left behind */
    if (gl->hw_ring_done_sync)
@@ -7228,14 +7320,15 @@ static bool gl3_frame(void *data, const void *frame,
    /* Views kept across a reinit drew only the frame a repeat shows. */
    if (gl->xr.host)
    {
-      if (frame && !video_info->frame_repeat)
+      if ((frame || movie_frame) && !video_info->frame_repeat)
          gl_openxr_new_frame(gl->xr.host);
       else
          gl_openxr_place_kept(gl->xr.host);
    }
    xr_eyes = xr_draw && gl3_xr_eye_screens(video_info)
-      && gl3_xr_projection_ok(gl, frame && !video_info->frame_repeat,
-            frame != NULL);
+      && gl3_xr_projection_ok(gl,
+            (frame || movie_frame) && !video_info->frame_repeat,
+            frame || movie_frame);
 #endif
 
    /* These travel with the frame, so this thread does not read what the
@@ -7430,6 +7523,15 @@ static bool gl3_frame(void *data, const void *frame,
          : (gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565);
       texture.padded_dims   = streamed->dims;
    }
+#ifdef HAVE_GL_PLANAR
+   if (gl->movie_texture)
+   {
+      texture.image         = gl->movie_texture;
+      texture.dims          = gl->movie_dims;
+      texture.padded_dims   = gl->movie_dims;
+      texture.format        = GL_RGBA8;
+   }
+#endif
 
 #ifdef HAVE_RECORD_PYROWAVE_GL
    if (video_info->recording_pyrowave_receive)
@@ -7506,7 +7608,7 @@ static bool gl3_frame(void *data, const void *frame,
 #ifdef HAVE_GL3_XR
    /* A view only the headset shows waits for a real frame, rather than
     * one eye drawing from nothing. */
-   if (views && xr_map && !frame)
+   if (views && xr_map && !(frame || movie_frame))
       for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
          if (xr_chains[i] && !(gl->views.copied & (1u << i)))
             xr_draw = false;
@@ -7541,7 +7643,7 @@ static bool gl3_frame(void *data, const void *frame,
 
    /* No point regenerating mipmaps
     * if there are no new frames. */
-   if (frame && gl->chain.active && gl->chain.mipmap_active)
+   if ((frame || movie_frame) && gl->chain.active && gl->chain.mipmap_active)
    {
       glBindTexture(GL_TEXTURE_2D, texture.image);
       glGenerateMipmap(GL_TEXTURE_2D);
@@ -7580,6 +7682,15 @@ static bool gl3_frame(void *data, const void *frame,
       gl->chain.tex_info.input_size[1] = frame_height;
       gl->chain.tex_info.tex_size[0]   = RARCH_SCALE_BASE * gl->video_info.input_scale;
       gl->chain.tex_info.tex_size[1]   = RARCH_SCALE_BASE * gl->video_info.input_scale;
+#ifdef HAVE_GL_PLANAR
+      /* The movie's texture is its own size */
+      if (gl->movie_texture)
+      {
+         gl->chain.tex_info.tex_size[0] = frame_width;
+         gl->chain.tex_info.tex_size[1] = frame_height;
+         GL3_SET_TEXTURE_COORDS(gl->chain.tex_info.coord, 1.0f, 1.0f);
+      }
+#endif
 
       feedback_info                    = gl->chain.tex_info;
 
@@ -7606,6 +7717,10 @@ static bool gl3_frame(void *data, const void *frame,
       params.tex_dims      = VIDEO_SCALE_PACK(
             RARCH_SCALE_BASE * gl->video_info.input_scale,
             RARCH_SCALE_BASE * gl->video_info.input_scale);
+#ifdef HAVE_GL_PLANAR
+      if (gl->movie_texture)
+         params.tex_dims   = gl->movie_dims;
+#endif
       params.out_dims      = gl->vp.dims;
       params.frame_counter = (unsigned int)frame_count;
       params.swap_counter  = (unsigned int)video_info->swap_count;
@@ -8981,19 +9096,38 @@ static void gl3_pyrowave_bind(void *data, bool enter)
    if ((gl->flags & GL3_FLAG_USE_SHARED_CONTEXT) && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, !enter);
 }
+#endif
+
+#if defined(HAVE_RECORD_PYROWAVE_GL) || defined(HAVE_GL_PLANAR)
+#define GL3_GET_DEVICE
+/* The context, for the encoder that shares it, and the movie frames
+ * taken; with neither there is no device. Without the encoder the
+ * device names no API, so nothing that would draw with it takes it. */
 static bool gl3_get_device(void *data, video_device_info_t *info)
 {
-   gl3_t *gl = (gl3_t*)data;
-   unsigned format;
-   if (!gl || !info || !gl->ctx_driver->get_proc_address) return false;
-   format = (unsigned)retro_atomic_load_acquire_int(&gl->pyrowave_format);
-   if (!format) return false;
+   gl3_t *gl       = (gl3_t*)data;
+   unsigned format = 0;
+   if (!gl || !info)
+      return false;
    memset(info, 0, sizeof(*info));
-   info->api = VIDEO_DEVICE_OPENGL; info->device = gl;
-   info->get_gl_proc_address = gl->ctx_driver->get_proc_address;
-   info->bind_gl_context = gl3_pyrowave_bind;
-   info->output_format = format; info->output_bit_depth = format == GL_RGBA8 ? 8 : 16;
-   return true;
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   if (gl->ctx_driver->get_proc_address
+         && (format = (unsigned)retro_atomic_load_acquire_int(
+               &gl->pyrowave_format)))
+   {
+      info->api                 = VIDEO_DEVICE_OPENGL;
+      info->device              = gl;
+      info->get_gl_proc_address = gl->ctx_driver->get_proc_address;
+      info->bind_gl_context     = gl3_pyrowave_bind;
+      info->output_format       = format;
+      info->output_bit_depth    = format == GL_RGBA8 ? 8 : 16;
+   }
+#endif
+#ifdef HAVE_GL_PLANAR
+   if (GL_PLANAR_OK(&gl->planar))
+      info->import_formats     |= IMAGE_PIXFMT_I420;
+#endif
+   return format || info->import_formats;
 }
 #endif
 
@@ -9330,10 +9464,18 @@ static const video_poke_interface_t gl3_poke_interface = {
    NULL, /* frame_mem_ready */
    NULL, /* frame_mem_free */
 #endif
-#ifdef HAVE_RECORD_PYROWAVE_GL
-   gl3_get_device
+#ifdef GL3_GET_DEVICE
+   gl3_get_device,
 #else
-   NULL /* get_device */
+   NULL, /* get_device */
+#endif
+   NULL, /* import_texture */
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+#ifdef HAVE_GL_PLANAR
+   gl3_import_movie_frame
+#else
+   NULL  /* import_movie_frame */
 #endif
 };
 
