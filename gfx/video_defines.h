@@ -375,7 +375,10 @@ enum display_metric_types
    DISPLAY_METRIC_PIXEL_WIDTH,
    DISPLAY_METRIC_PIXEL_HEIGHT,
    /* Lines per refresh, blanking included */
-   DISPLAY_METRIC_TOTAL_LINES
+   DISPLAY_METRIC_TOTAL_LINES,
+   /* Desktop size after the compositor's scale */
+   DISPLAY_METRIC_LOGICAL_WIDTH,
+   DISPLAY_METRIC_LOGICAL_HEIGHT
 };
 
 enum display_flags

@@ -40,6 +40,21 @@ S_UINT_AT_EX(offsetof(settings_t, uints.window_auto_dims_max)
       DEFAULT_WINDOW_AUTO_HEIGHT_MAX, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 4320, 1, 0, setting_action_ok_uint_special, NULL, NULL, NULL, NULL, NULL, 0,
       "Maximum Window Height",
       "Set the maximum height of the display window when automatically resizing based on 'Windowed Scale'.")
+S_BOOL_EX(video_window_fit_display, VIDEO_WINDOW_FIT_DISPLAY,
+      "video_window_fit_display",
+      DEFAULT_WINDOW_FIT_DISPLAY, SD_FLAG_LAKKA_ADVANCED, 0, CMD_EVENT_REINIT, setting_bool_action_left_with_refresh, NULL, NULL, NULL, setting_bool_action_left_with_refresh, setting_bool_action_right_with_refresh, 0,
+      "Fit Window to Display",
+      "Size the window to the largest that fits the display, less 'Window Margin', at 'Window Aspect Ratio'. Takes priority over 'Windowed Scale' and custom window sizes.")
+S_UINT_EX(video_window_fit_aspect_ratio_idx, VIDEO_WINDOW_FIT_ASPECT_RATIO_INDEX,
+      "video_window_fit_aspect_ratio_index",
+      DEFAULT_WINDOW_FIT_ASPECT_RATIO_IDX, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, LAST_ASPECT_RATIO, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_aspect_ratio_index, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Window Aspect Ratio",
+      "Set the aspect ratio of the window when fitting it to the display. 'Full' fills the space left by 'Window Margin'.")
+S_UINT(video_window_fit_margin, VIDEO_WINDOW_FIT_MARGIN,
+      "video_window_fit_margin",
+      DEFAULT_WINDOW_FIT_MARGIN, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, 1024, 8, 0, setting_action_ok_uint_special, NULL,
+      "Window Margin",
+      "Set the least space left between the window and the edges of the display when fitting the window to the display.")
 S_UINT(video_window_opacity, VIDEO_WINDOW_OPACITY,
       "video_window_opacity",
       DEFAULT_WINDOW_OPACITY, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 1, 100, 1, 1, setting_action_ok_uint, NULL,

@@ -43,6 +43,7 @@
 #include "../common/mutter_displayconfig.h"
 #include "../common/wayland_kwin_output.h"
 #include "../common/wayland_wlr_output.h"
+#include "../common/wayland/xdg-output-unstable-v1.h"
 
 /* Roundtrips within which a compositor describes the outputs it has:
  * the globals, then the bound objects' state, then the devices KWin's
@@ -65,6 +66,12 @@ typedef struct
    int      refresh;          /* mHz */
    bool     have_mode;
    bool     have_geometry;
+   /* The output's size after the compositor's scale */
+   struct zxdg_output_manager_v1 *xdg_output_manager;
+   struct zxdg_output_v1         *xdg_output;
+   int      logical_width;
+   int      logical_height;
+   bool     have_logical;
    /* wl_output v4 name: the DRM connector ("HDMI-A-1"), which is the
     * sysfs node the EDID lives under; Wayland itself has no
     * protocol for the EDID */
@@ -135,6 +142,45 @@ static const struct wl_output_listener output_listener = {
 #endif
 };
 
+static void xdg_output_handle_logical_position(void *data,
+      struct zxdg_output_v1 *xdg_output, int32_t x, int32_t y) { }
+
+static void xdg_output_handle_logical_size(void *data,
+      struct zxdg_output_v1 *xdg_output, int32_t width, int32_t height)
+{
+   dispserv_wl_t *serv  = (dispserv_wl_t*)data;
+   serv->logical_width  = width;
+   serv->logical_height = height;
+   serv->have_logical   = width > 0 && height > 0;
+}
+
+static void xdg_output_handle_done(void *data,
+      struct zxdg_output_v1 *xdg_output) { }
+static void xdg_output_handle_name(void *data,
+      struct zxdg_output_v1 *xdg_output, const char *name) { }
+static void xdg_output_handle_description(void *data,
+      struct zxdg_output_v1 *xdg_output, const char *description) { }
+
+static const struct zxdg_output_v1_listener xdg_output_listener = {
+   xdg_output_handle_logical_position,
+   xdg_output_handle_logical_size,
+   xdg_output_handle_done,
+   xdg_output_handle_name,
+   xdg_output_handle_description,
+};
+
+/* The registry may announce the manager and the output in either order */
+static void wl_display_server_get_xdg_output(dispserv_wl_t *serv)
+{
+   if (!serv->xdg_output && serv->xdg_output_manager && serv->output)
+   {
+      serv->xdg_output = zxdg_output_manager_v1_get_xdg_output(
+            serv->xdg_output_manager, serv->output);
+      zxdg_output_v1_add_listener(serv->xdg_output,
+            &xdg_output_listener, serv);
+   }
+}
+
 /* wl_registry listener */
 static void registry_handle_global(void *data,
       struct wl_registry *registry,
@@ -160,6 +206,15 @@ static void registry_handle_global(void *data,
       serv->output = (struct wl_output*)
          wl_registry_bind(registry, name, &wl_output_interface, want);
       wl_output_add_listener(serv->output, &output_listener, serv);
+      wl_display_server_get_xdg_output(serv);
+   }
+   else if (!serv->xdg_output_manager
+         && strcmp(interface, zxdg_output_manager_v1_interface.name) == 0)
+   {
+      serv->xdg_output_manager = (struct zxdg_output_manager_v1*)
+         wl_registry_bind(registry, name,
+               &zxdg_output_manager_v1_interface, MIN(version, 3));
+      wl_display_server_get_xdg_output(serv);
    }
 }
 
@@ -228,7 +283,8 @@ void wl_display_server_report_lease(void *data)
 
 static bool wl_display_server_outputs_ready(const dispserv_wl_t *serv)
 {
-   return kwin_outputs_ready(&serv->kwin) || wlr_outputs_ready(&serv->wlr);
+   return (kwin_outputs_ready(&serv->kwin) || wlr_outputs_ready(&serv->wlr))
+      && (!serv->xdg_output || serv->have_logical);
 }
 
 /* Has KWin's or wlroots' output management describe its outputs before
@@ -241,7 +297,12 @@ static void wl_display_server_wait_outputs(dispserv_wl_t *serv)
    if (wl_display_roundtrip(serv->dpy) < 0)
       return;
    if (!serv->kwin.management && !serv->wlr.manager)
+   {
+      /* xdg-output's sizes come with the bound objects' state */
+      if (serv->xdg_output)
+         wl_display_roundtrip(serv->dpy);
       return;
+   }
 
    for (i = 1; i < WL_DISPSERV_DESCRIBE_ROUNDTRIPS; i++)
    {
@@ -370,6 +431,10 @@ static void wl_display_server_destroy(void *data)
 #endif
    kwin_outputs_destroy(&serv->kwin);
    wlr_outputs_destroy(&serv->wlr);
+   if (serv->xdg_output)
+      zxdg_output_v1_destroy(serv->xdg_output);
+   if (serv->xdg_output_manager)
+      zxdg_output_manager_v1_destroy(serv->xdg_output_manager);
    if (serv->output)
    {
 #ifdef WL_OUTPUT_RELEASE_SINCE_VERSION
@@ -542,6 +607,16 @@ static bool wl_display_server_get_metrics(void *data,
          if (!serv->have_mode)
             return false;
          *value = (float)serv->height;
+         break;
+      case DISPLAY_METRIC_LOGICAL_WIDTH:
+         if (!serv->have_logical)
+            return false;
+         *value = (float)serv->logical_width;
+         break;
+      case DISPLAY_METRIC_LOGICAL_HEIGHT:
+         if (!serv->have_logical)
+            return false;
+         *value = (float)serv->logical_height;
          break;
       case DISPLAY_METRIC_NONE:
       default:

@@ -260,6 +260,8 @@ typedef struct input_ctx_wayland_data
       uint32_t last_pos;   /* VIDEO_POS_PACK */
       uint32_t pos;        /* VIDEO_POS_PACK */
       uint32_t delta;      /* VIDEO_POS_PACK */
+      /* Fraction of a buffer pixel left over from locked motion */
+      float locked_frac[2];
       /* Scroll of the current wl_pointer frame (seat v5+) */
       int axis_120[2];
       int axis_ticks[2];
