@@ -312,7 +312,9 @@ static const struct
    char s_bbb615a1[26];
    char s_8fc168f0[16];
    char s_213c44cf[19];
+   char s_4f4b0d00[13];
    char s_502f623c[10];
+   char s_223dfc81[10];
    char s_b6cd2ff0[76];
    char s_40e7aacd[10];
    char s_fe2b08f2[22];
@@ -1861,6 +1863,7 @@ static const struct
    char s_579c3ea7[36];
    char s_cc7bf1b9[16];
    char s_b300fc03[32];
+   char s_714b59b6[7];
    char s_ccf131c5[31];
    char s_e5124bba[8];
    char s_875bc33e[12];
@@ -5024,6 +5027,8 @@ static const struct
    "Buildbot \343\202\242\343\202\273\343\203\203\343\203\210 URL",
    "\343\202\255\343\203\243\343\203\203\343\202\267\343\203\245",
    "\343\202\253\343\203\241\343\203\251\343\202\222\350\250\261\345\217\257",
+   "\343\203\207\343\203\220\343\202\244\343\202\271",
+   "\343\202\253\343\203\241\343\203\251",
    "\343\202\253\343\203\241\343\203\251",
    "\343\201\223\343\201\256\343\202\263\343\202\242\343\201\247\343\201\257\345\256\237\347\270\276"
    "\343\202\222\343\202\242\343\202\257\343\203\206\343\202\243\343\203\226\343\201\253\343\201\231"
@@ -7394,6 +7399,7 @@ static const struct
    "\346\234\210-\346\227\245 \346\231\202:\345\210\206",
    "\346\234\210-\346\227\245 \346\231\202:\345\210\206 (\345\215\210\345\211\215/\345\215\210\345"
    "\276\214)",
+   "\346\211\213\345\213\225",
    "\346\227\245\344\273\230\343\201\250\346\231\202\345\210\273\343\201\256\350\241\250\347\244\272"
    "\345\275\242\345\274\217",
    "\345\271\264-\346\234\210",
@@ -13895,7 +13901,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ja_blob_check[
-      (sizeof(msg_hash_ja_blob) == (198870u
+      (sizeof(msg_hash_ja_blob) == (198900u
 #ifdef ANDROID
        + 484u
 #endif
@@ -14530,7 +14536,9 @@ static const msg_hash_id_t msg_hash_ja_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
@@ -16078,6 +16086,7 @@ static const msg_hash_id_t msg_hash_ja_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,

@@ -74,7 +74,9 @@ static const struct
    char s_9509d1c2[21];
    char s_c7a999e6[14];
    char s_25babaa7[6];
+   char s_4f4b0d00[10];
    char s_502f623c[7];
+   char s_223dfc81[7];
    char s_5b51050b[10];
    char s_fd67817e[29];
    char s_565cbabb[8];
@@ -1058,6 +1060,8 @@ static const struct
    "Cetikkan Papan Ketik",
    "Cetikkan Menu",
    "Mulai",
+   "Perangkat",
+   "Kamera",
    "Kamera",
    "Deskripsi",
    "Mulai atau Ulangi Cari Cheat",
@@ -2024,7 +2028,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26750u
+      (sizeof(msg_hash_id_blob) == (26767u
 #ifdef HAVE_MIST
        + 10u
 #endif
@@ -2195,7 +2199,9 @@ static const msg_hash_id_t msg_hash_id_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,

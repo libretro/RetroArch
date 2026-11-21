@@ -57,7 +57,9 @@ static const struct
    char s_9509d1c2[12];
    char s_c7a999e6[11];
    char s_25babaa7[10];
+   char s_4f4b0d00[11];
    char s_502f623c[8];
+   char s_223dfc81[8];
    char s_5b51050b[12];
    char s_c689058d[8];
    char s_565cbabb[12];
@@ -390,6 +392,7 @@ static const struct
    char s_da093426[21];
    char s_d9b00fbd[34];
    char s_0a008a9d[8];
+   char s_714b59b6[17];
    char s_48da4695[21];
    char s_95cbebbd[17];
    char s_6b80a1bc[37];
@@ -765,6 +768,8 @@ static const struct
    "Vore teclat",
    "Vore men\303\272",
    "Comen\303\247ar",
+   "Dispositiu",
+   "C\303\240mera",
    "C\303\240mera",
    "Descripci\303\263",
    "Engegat",
@@ -1099,6 +1104,7 @@ static const struct
    "Versi\303\263 de RetroArch",
    "Controlador de contexte de v\303\255deo",
    "Sistema",
+   "Selecci\303\263 manual",
    "Vore barra del men\303\272",
    "Actualitza medis",
    "Actualitza perfils dels controladors",
@@ -1528,7 +1534,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (25476u
+      (sizeof(msg_hash_val_blob) == (25512u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -1668,7 +1674,9 @@ static const msg_hash_id_t msg_hash_val_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
@@ -2001,6 +2009,7 @@ static const msg_hash_id_t msg_hash_val_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,

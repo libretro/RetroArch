@@ -357,7 +357,9 @@ static const struct
    char s_314539a4[23];
    char s_8fc168f0[7];
    char s_213c44cf[27];
+   char s_4f4b0d00[16];
    char s_502f623c[16];
+   char s_223dfc81[16];
    char s_b6cd2ff0[56];
    char s_fe2b08f2[17];
    char s_75661984[29];
@@ -2287,6 +2289,8 @@ static const struct
    char s_579c3ea7[25];
    char s_cc7bf1b9[12];
    char s_b300fc03[20];
+   char s_e29ee11f[12];
+   char s_714b59b6[7];
    char s_ccf131c5[38];
    char s_e5124bba[8];
    char s_875bc33e[11];
@@ -5309,6 +5313,8 @@ static const struct
    "Identifiant du Bundle ",
    "Cache ",
    "Autoriser l'appareil photo",
+   "P\303\251riph\303\251rique ",
+   "Appareil photo ",
    "Appareil photo ",
    "Les succ\303\250s ne peuvent pas \303\252tre activ\303\251s avec ce c\305\223ur",
    "Adresse m\303\251moire",
@@ -7264,6 +7270,8 @@ static const struct
    "MM-JJ-AAAA HH:MM (AM/PM)",
    "MM-JJ HH:MM",
    "MM-JJ HH:MM (AM/PM)",
+   "Automatique",
+   "Manuel",
    "Style d'affichage de la date/l'heure ",
    "AAAA-MM",
    "AAAA-MM-JJ",
@@ -10981,7 +10989,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (256707u
+      (sizeof(msg_hash_fr_blob) == (256758u
 #ifdef ANDROID
        + 373u
 #endif
@@ -11883,7 +11891,9 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
@@ -13812,6 +13822,8 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,

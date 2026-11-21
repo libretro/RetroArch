@@ -78,7 +78,9 @@ static const struct
    char s_efe3b3e1[20];
    char s_327b2550[10];
    char s_314539a4[19];
+   char s_4f4b0d00[6];
    char s_502f623c[7];
+   char s_223dfc81[7];
    char s_b6cd2ff0[50];
    char s_c0713a6f[34];
    char s_d0d415f0[33];
@@ -753,6 +755,7 @@ static const struct
    char s_02f5fddd[21];
    char s_61b5b9d0[24];
    char s_cc7bf1b9[12];
+   char s_714b59b6[8];
    char s_ccf131c5[21];
    char s_e5124bba[12];
    char s_875bc33e[15];
@@ -1351,6 +1354,8 @@ static const struct
    "Skjermens lysstyrke",
    "Tilkoblet",
    "Pakkeidentifikator",
+   "Enhet",
+   "Kamera",
    "Kamera",
    "Prestasjoner kan ikke aktiveres med denne kjernen",
    "Legg til ny juksekode etter dette",
@@ -2026,6 +2031,7 @@ static const struct
    "MM-DD-\303\205\303\205\303\205\303\205 TT:MM",
    "MM-DD-\303\205\303\205\303\205\303\205 TT:MM:SS",
    "MM-DD TT:MM",
+   "Manuell",
    "Stil for dato og tid",
    "\303\205\303\205\303\205\303\205-MM",
    "\303\205\303\205\303\205\303\205-MM-DD",
@@ -2613,7 +2619,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (29007u
+      (sizeof(msg_hash_no_blob) == (29028u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -2821,7 +2827,9 @@ static const msg_hash_id_t msg_hash_no_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
@@ -3496,6 +3504,7 @@ static const msg_hash_id_t msg_hash_no_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,

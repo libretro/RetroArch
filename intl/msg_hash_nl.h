@@ -321,6 +321,7 @@ static const struct
    char s_bbb615a1[20];
    char s_314539a4[10];
    char s_213c44cf[16];
+   char s_4f4b0d00[15];
    char s_b6cd2ff0[58];
    char s_fe2b08f2[14];
    char s_75661984[20];
@@ -1976,6 +1977,8 @@ static const struct
    char s_579c3ea7[25];
    char s_cc7bf1b9[12];
    char s_b300fc03[20];
+   char s_e29ee11f[12];
+   char s_714b59b6[10];
    char s_ccf131c5[23];
    char s_e5124bba[8];
    char s_875bc33e[11];
@@ -4477,6 +4480,7 @@ static const struct
    "Buildbot-assets-URL",
    "Bundel id",
    "Camera Toestaan",
+   "Audio Apparaat",
    "Achievements kunnen niet worden geactiveerd met deze Core",
    "Geheugenadres",
    "Geheugenadresmasker",
@@ -6138,6 +6142,8 @@ static const struct
    "MM-DD-JJJJ UU:MM (AM/PM)",
    "MM-DD UU:MM",
    "MM-DD UU:MM (AM/PM)",
+   "Automatisch",
+   "Handmatig",
    "Stijl van datum / tijd",
    "JJJJ-MM",
    "JJJJ-MM-DD",
@@ -8620,7 +8626,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (171939u
+      (sizeof(msg_hash_nl_blob) == (171976u
 #ifdef ANDROID
        + 375u
 #endif
@@ -9370,6 +9376,7 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
@@ -11024,6 +11031,8 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,

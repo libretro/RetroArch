@@ -25,6 +25,7 @@ static const struct
    char s_0cadcd1e[13];
    char s_25babaa7[13];
    char s_502f623c[13];
+   char s_223dfc81[13];
    char s_460fbbcc[17];
    char s_0fd30a6d[9];
    char s_e68b50a2[21];
@@ -114,6 +115,7 @@ static const struct
    "\320\221\320\260\321\210\320\273\320\260\321\203",
    "\320\221\320\260\321\210\320\273\320\260\321\203",
    "\320\232\320\260\320\274\320\265\321\200\320\260",
+   "\320\232\320\260\320\274\320\265\321\200\320\260",
    "\320\247\320\270\321\201\321\202\320\260\321\200\321\202\321\203",
    "\320\230\321\201\320\265\320\274",
    "[\320\220\320\262\321\202\320\276\320\274\320\260\321\202\320\270\320\272]",
@@ -197,7 +199,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tt_blob_check[
-      (sizeof(msg_hash_tt_blob) == (890u
+      (sizeof(msg_hash_tt_blob) == (903u
 #ifdef HAVE_MICROPHONE
        + 17u
 #endif
@@ -233,6 +235,7 @@ static const msg_hash_id_t msg_hash_tt_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,

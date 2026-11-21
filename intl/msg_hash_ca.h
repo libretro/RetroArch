@@ -356,7 +356,9 @@ static const struct
    char s_314539a4[25];
    char s_8fc168f0[13];
    char s_213c44cf[20];
+   char s_4f4b0d00[11];
    char s_502f623c[8];
+   char s_223dfc81[8];
    char s_b6cd2ff0[51];
    char s_40e7aacd[6];
    char s_fe2b08f2[20];
@@ -2279,6 +2281,7 @@ static const struct
    char s_61b5b9d0[20];
    char s_313e6a7a[28];
    char s_579c3ea7[25];
+   char s_e29ee11f[11];
    char s_ccf131c5[28];
    char s_e5124bba[8];
    char s_875bc33e[11];
@@ -5326,6 +5329,8 @@ static const struct
    "Identificador del paquet",
    "Mem\303\262ria cau",
    "Permetre la c\303\240mera",
+   "Dispositiu",
+   "C\303\240mera",
    "C\303\240mera",
    "No es pot activar els assoliments amb aquest nucli",
    "Trucs",
@@ -7265,6 +7270,7 @@ static const struct
    "MM-DD-AAAA HH:MM:SS",
    "MM-DD-AAAA HH:MM:SS (AM/PM)",
    "MM-DD-AAAA HH:MM (AM/PM)",
+   "Autom\303\240tic",
    "Estil de la data i l\342\200\231hora",
    "AAAA-MM",
    "AAAA-MM-DD",
@@ -10864,7 +10870,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (242624u
+      (sizeof(msg_hash_ca_blob) == (242654u
 #ifdef ANDROID
        + 281u
 #endif
@@ -11764,7 +11770,9 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
@@ -13686,6 +13694,7 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,

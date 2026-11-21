@@ -164,7 +164,9 @@ static const struct
    char s_bbb615a1[29];
    char s_314539a4[24];
    char s_213c44cf[17];
+   char s_4f4b0d00[19];
    char s_502f623c[8];
+   char s_223dfc81[8];
    char s_40e7aacd[7];
    char s_c64294aa[21];
    char s_5b51050b[12];
@@ -1619,6 +1621,8 @@ static const struct
    "URL dos recursos do buildbot",
    "Identificador do pacote",
    "Permitir c\303\242mera",
+   "Dispositivo de som",
+   "C\303\242mara",
    "C\303\242mara",
    "Batota",
    "Aplicar altera\303\247\303\265es",
@@ -3026,7 +3030,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (55170u
+      (sizeof(msg_hash_pt_pt_blob) == (55197u
 #ifdef HAVE_LAKKA
        + 17u
 #endif
@@ -3282,7 +3286,9 @@ static const msg_hash_id_t msg_hash_pt_pt_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,

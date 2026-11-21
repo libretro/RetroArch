@@ -353,7 +353,9 @@ static const struct
    char s_314539a4[23];
    char s_8fc168f0[22];
    char s_213c44cf[16];
+   char s_4f4b0d00[11];
    char s_502f623c[7];
+   char s_223dfc81[7];
    char s_b6cd2ff0[45];
    char s_40e7aacd[7];
    char s_fe2b08f2[19];
@@ -2275,6 +2277,8 @@ static const struct
    char s_875b5c6b[5];
    char s_9dcc1f02[20];
    char s_49f54c1b[24];
+   char s_e29ee11f[12];
+   char s_714b59b6[7];
    char s_ccf131c5[23];
 #ifdef HAVE_LAKKA
    char s_597f7f13[16];
@@ -4049,7 +4053,6 @@ static const struct
    char s_ab839b13[116];
    char s_9c3126f6[103];
    char s_a9d0ac44[70];
-   char s_60cf8ce7[237];
    char s_bf6397c7[36];
    char s_6cf40c1b[80];
    char s_445f65a0[67];
@@ -4232,7 +4235,6 @@ static const struct
    char s_9506fc7d[82];
    char s_9506fc7e[82];
    char s_47ae341f[98];
-   char s_5e122df4[239];
    char s_cc84c32d[36];
    char s_fa09f4f6[53];
    char s_48696c85[71];
@@ -4908,10 +4910,8 @@ static const struct
    char s_b7248c5d[67];
    char s_a3e7b13a[105];
    char s_966a8865[86];
-   char s_69e2b087[91];
    char s_098459c5[51];
    char s_35e09a43[46];
-   char s_a27fec29[98];
    char s_7182190e[106];
    char s_a7ae1b42[24];
 #ifdef HAVE_LAKKA
@@ -5547,6 +5547,8 @@ static const struct
    "Identifik\303\241tor bal\303\255ka",
    "Vyrovn\303\241vacia pam\303\244\305\245",
    "Povoli\305\245 kameru",
+   "Zariadenie",
+   "Kamera",
    "Kamera",
    "\303\232spechy nemo\305\276no aktivova\305\245 s t\303\275mto jadrom",
    "Cheaty",
@@ -7492,6 +7494,8 @@ static const struct
    "Vzad",
    "Odde\304\276ova\304\215 d\303\241tumu",
    "Zobrazi\305\245 d\303\241tum a \304\215as",
+   "Automaticky",
+   "Ru\304\215ne",
    "\305\240t\303\275l d\303\241tumu a \304\215asu",
 #ifdef HAVE_LAKKA
    "\304\214asov\303\251 p\303\241smo",
@@ -10422,10 +10426,6 @@ static const struct
    "calers/dlss' v prie\304\215inku RetroArch.",
    "Model s\303\241m n\303\241jde poko\305\276ku a spracuje ju oddelene od zvy\305\241ku sn\303\255m"
    "ky.",
-   "Spusti\305\245 model neur\303\241lneho vykres\304\276ovania DLSS 5 nad zv\303\244\304\215\305"
-   "\241enou sn\303\255mkou. Prepracuje osvetlenie a materi\303\241ly pomocou h\304\272bky a pohybu,"
-   " ktor\303\251 jadro poskytuje, a stoj\303\255 nieko\304\276ko milisek\303\272nd na sn\303\255mku"
-   ". Prejav\303\255 sa pri \304\217al\305\241ej sn\303\255mke.",
    "Celkov\303\241 sila modelu v percent\303\241ch.",
    "Ako silno model sprac\303\272va jemn\303\251 detaily a \305\241trukt\303\272ru povrchov, v perce"
    "nt\303\241ch.",
@@ -10922,11 +10922,6 @@ static const struct
    "na osi Y.",
    "Synchronizova\305\245 video v\303\275stup grafickej karty s obnovovacou frekvenciou obrazovky. O"
    "dpor\303\272\304\215an\303\251.",
-   "Pou\305\276ije bal\303\255k ovl\303\241da\304\215a Vulkan (.zip) namiesto syst\303\251mov\303"
-   "\251ho ovl\303\241da\304\215a. Ovl\303\241da\304\215 be\305\276\303\255 vn\303\272tri RetroArchu"
-   ": pou\305\276\303\255vajte iba bal\303\255ky z d\303\264veryhodn\303\251ho zdroja. Prejav\303"
-   "\255 sa pri \304\217al\305\241om spusten\303\255 Vulkanu. \305\240tart: syst\303\251mov\303\275 "
-   "ovl\303\241da\304\215.",
    "Minule spadol, pou\305\276\303\255va sa Syst\303\251m",
    "%s sa znova pou\305\276ije pri \304\217al\305\241om norm\303\241lnom \305\241tarte",
    "Napevno synchronizova\305\245 CPU a GPU. Zni\305\276uje latenciu na \303\272kor v\303\275konu.",
@@ -11738,12 +11733,8 @@ static const struct
    "\275. Na nov\303\275 pokus ho znova vyberte.",
    "Vlastn\303\275 ovl\303\241da\304\215 Vulkan sa nepodarilo spusti\305\245. Pou\305\276\303\255va "
    "sa syst\303\251mov\303\275 ovl\303\241da\304\215.",
-   "Bal\303\255k vlastn\303\251ho ovl\303\241da\304\215a Vulkan sa ned\303\241 pou\305\276i\305\245."
-   " Pou\305\276\303\255va sa syst\303\251mov\303\275 ovl\303\241da\304\215.",
    "Na zmenu ovl\303\241da\304\215a Vulkan re\305\241tartujte RetroArch.",
    "Spusten\303\251 so syst\303\251mov\303\275m ovl\303\241da\304\215om Vulkan.",
-   "Vlastn\303\251 ovl\303\241da\304\215e Vulkan vy\305\276aduj\303\272 GPU Adreno a Android 9. Pou"
-   "\305\276\303\255va sa syst\303\251mov\303\275 ovl\303\241da\304\215.",
    "Vlastn\303\275 ovl\303\241da\304\215 Vulkan nebol vybran\303\275 v menu alebo sa zmenil. Ak ho c"
    "hcete pou\305\276i\305\245, znova ho vyberte.",
    "\304\214ak\303\241 sa na klienta...",
@@ -11759,7 +11750,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (235550u
+      (sizeof(msg_hash_sk_blob) == (234922u
 #ifdef ANDROID
        + 389u
 #endif
@@ -12674,7 +12665,9 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
@@ -14595,6 +14588,8 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEZONE,
@@ -16362,7 +16357,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_AUTO_MASK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_INTENSITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_STRUCTURE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_TONE,
@@ -16541,7 +16535,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
@@ -17216,10 +17209,8 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MSG_VRR_RUNLOOP_ENABLED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_CRASHED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_FAILED,
-   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_INVALID,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_RESTART,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_SAFE_MODE,
-   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNTRUSTED,
    (msg_hash_id_t)MSG_WAITING_FOR_CLIENT,
 #ifdef HAVE_LAKKA

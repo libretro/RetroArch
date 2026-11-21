@@ -351,7 +351,9 @@ static const struct
    char s_bbb615a1[27];
    char s_314539a4[21];
    char s_213c44cf[15];
+   char s_4f4b0d00[6];
    char s_502f623c[7];
+   char s_223dfc81[7];
    char s_b6cd2ff0[49];
    char s_40e7aacd[5];
    char s_fe2b08f2[13];
@@ -2268,6 +2270,8 @@ static const struct
    char s_875b5c6b[6];
    char s_9dcc1f02[15];
    char s_49f54c1b[19];
+   char s_e29ee11f[11];
+   char s_714b59b6[8];
    char s_ccf131c5[21];
 #ifdef HAVE_LAKKA
    char s_597f7f13[8];
@@ -4067,7 +4071,6 @@ static const struct
    char s_ab839b13[131];
    char s_9c3126f6[96];
    char s_a9d0ac44[83];
-   char s_60cf8ce7[245];
    char s_bf6397c7[43];
    char s_6cf40c1b[73];
    char s_445f65a0[71];
@@ -4269,7 +4272,6 @@ static const struct
    char s_9506fc7d[97];
    char s_9506fc7e[97];
    char s_47ae341f[105];
-   char s_5e122df4[238];
    char s_cc84c32d[67];
    char s_fa09f4f6[42];
    char s_48696c85[74];
@@ -4977,10 +4979,8 @@ static const struct
    char s_b7248c5d[62];
    char s_a3e7b13a[133];
    char s_966a8865[82];
-   char s_69e2b087[95];
    char s_098459c5[52];
    char s_35e09a43[41];
-   char s_a27fec29[96];
    char s_7182190e[114];
    char s_a7ae1b42[22];
 #ifdef HAVE_LAKKA
@@ -5573,6 +5573,8 @@ static const struct
    "URL f\303\266r Buildbot-resurser",
    "Bundle-identifierare",
    "Till\303\245t kamera",
+   "Enhet",
+   "Kamera",
    "Kamera",
    "Prestationer kan inte aktiveras med denna k\303\244rna",
    "Fusk",
@@ -7503,6 +7505,8 @@ static const struct
    "sedan",
    "Datumseparator",
    "Visa tid och datum",
+   "Automatisk",
+   "Manuell",
    "Tid och datum-format",
 #ifdef HAVE_LAKKA
    "Tidszon",
@@ -10247,10 +10251,6 @@ static const struct
    "lers/dlss\342\200\235 i RetroArch-mappen.",
    "L\303\245t modellen sj\303\244lv hitta hud och behandla den separat fr\303\245n resten av bildru"
    "tan.",
-   "K\303\266r DLSS 5:s modell f\303\266r neural rendering p\303\245 den uppskalade bildrutan. Den o"
-   "marbetar belysning och material med det djup och den r\303\266relse som k\303\244rnan exporterar"
-   " och kostar n\303\245gra millisekunder per bildruta. B\303\266rjar g\303\244lla vid n\303\244sta"
-   " bildruta.",
    "Modellens \303\266vergripande styrka, i procent.",
    "Hur starkt modellen arbetar med fina detaljer och ytstruktur, i procent.",
    "Anger hur starkt modellen bearbetar lokalt ljus och skugga, i procent.",
@@ -10756,10 +10756,6 @@ static const struct
    "\245dets Y-axelposition.",
    "Synkronisera videoutmatningen fr\303\245n grafikkortet till bildsk\303\244rmens uppdateringsfrek"
    "vens. Rekommenderas.",
-   "Anv\303\244nd ett Vulkan-drivrutinspaket (.zip) i st\303\244llet f\303\266r systemets drivrutin."
-   " Drivrutinen k\303\266rs inuti RetroArch: anv\303\244nd endast paket fr\303\245n en k\303\244lla"
-   " du litar p\303\245. Tr\303\244der i kraft n\303\244sta g\303\245ng Vulkan startar. Start: syste"
-   "mets drivrutin.",
    "Kraschade vid f\303\266reg\303\245ende k\303\266rning, anv\303\244nder systemets drivrutin",
    "%s anv\303\244nds igen vid n\303\244sta vanliga start",
    "H\303\245rdsynkronisera CPU och GPU. Minskar latens p\303\245 bekostnad av prestanda.",
@@ -11594,12 +11590,8 @@ static const struct
    "Den anpassade Vulkan-drivrutinen kraschade tidigare och \303\244r avst\303\244ngd f\303\266r den"
    "na k\303\244rna. V\303\244lj den igen f\303\266r att f\303\266rs\303\266ka p\303\245 nytt.",
    "Den anpassade Vulkan-drivrutinen kunde inte starta. Systemets drivrutin anv\303\244nds.",
-   "Paketet med den anpassade Vulkan-drivrutinen kan inte anv\303\244ndas. Systemets drivrutin anv"
-   "\303\244nds.",
    "Starta om RetroArch f\303\266r att byta Vulkan-drivrutin.",
    "Startade med systemets Vulkan-drivrutin.",
-   "Anpassade Vulkan-drivrutiner kr\303\244ver en Adreno-GPU och Android 9. Systemets drivrutin anv"
-   "\303\244nds.",
    "Den anpassade Vulkan-drivrutinen har inte valts i menyn eller har \303\244ndrats. V\303\244lj de"
    "n igen f\303\266r att anv\303\244nda den.",
    "V\303\244ntar p\303\245 klient...",
@@ -11615,7 +11607,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (242363u
+      (sizeof(msg_hash_sv_blob) == (241721u
 #ifdef ANDROID
        + 361u
 #endif
@@ -12537,7 +12529,9 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
@@ -14453,6 +14447,8 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEZONE,
@@ -16244,7 +16240,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_AUTO_MASK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_INTENSITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_STRUCTURE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_TONE,
@@ -16439,7 +16434,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
@@ -17146,10 +17140,8 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MSG_VRR_RUNLOOP_ENABLED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_CRASHED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_FAILED,
-   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_INVALID,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_RESTART,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_SAFE_MODE,
-   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNTRUSTED,
    (msg_hash_id_t)MSG_WAITING_FOR_CLIENT,
 #ifdef HAVE_LAKKA

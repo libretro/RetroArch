@@ -381,7 +381,9 @@ static const struct
    char s_327b2550[40];
    char s_8fc168f0[10];
    char s_213c44cf[34];
+   char s_4f4b0d00[22];
    char s_502f623c[16];
+   char s_223dfc81[16];
    char s_b6cd2ff0[121];
    char s_40e7aacd[22];
    char s_fe2b08f2[55];
@@ -2170,6 +2172,8 @@ static const struct
    char s_875b5c6b[49];
    char s_9dcc1f02[40];
    char s_49f54c1b[52];
+   char s_e29ee11f[28];
+   char s_714b59b6[25];
    char s_ccf131c5[67];
 #ifdef HAVE_LAKKA
    char s_597f7f13[22];
@@ -7217,6 +7221,8 @@ static const struct
    "\340\271\201\340\270\204\340\270\212",
    "\340\270\255\340\270\231\340\270\270\340\270\215\340\270\262\340\270\225\340\270\201\340\270\245"
    "\340\271\211\340\270\255\340\270\207",
+   "\340\270\255\340\270\270\340\270\233\340\270\201\340\270\243\340\270\223\340\271\214",
+   "\340\270\201\340\270\245\340\271\211\340\270\255\340\270\207",
    "\340\270\201\340\270\245\340\271\211\340\270\255\340\270\207",
    "\340\271\204\340\270\241\340\271\210\340\270\252\340\270\262\340\270\241\340\270\262\340\270\243"
    "\340\270\226\340\271\200\340\270\233\340\270\264\340\270\224\340\271\203\340\270\212\340\271\211"
@@ -11606,6 +11612,9 @@ static const struct
    "\340\271\201\340\270\252\340\270\224\340\270\207\340\270\247\340\270\261\340\270\231\340\270\227"
    "\340\270\265\340\271\210\340\271\201\340\270\245\340\270\260\340\271\200\340\270\247\340\270\245"
    "\340\270\262",
+   "\340\270\255\340\270\261\340\270\225\340\271\202\340\270\231\340\270\241\340\270\261\340\270\225"
+   "\340\270\264",
+   "\340\270\201\340\270\263\340\270\253\340\270\231\340\270\224\340\271\200\340\270\255\340\270\207",
    "\340\270\243\340\270\271\340\270\233\340\271\201\340\270\232\340\270\232\340\270\202\340\270\255"
    "\340\270\207\340\270\247\340\270\261\340\270\231\340\270\227\340\270\265\340\271\210\340\271\201"
    "\340\270\245\340\270\260\340\271\200\340\270\247\340\270\245\340\270\262",
@@ -26421,7 +26430,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_th_blob_check[
-      (sizeof(msg_hash_th_blob) == (452487u
+      (sizeof(msg_hash_th_blob) == (452578u
 #ifdef ANDROID
        + 757u
 #endif
@@ -27296,7 +27305,9 @@ static const msg_hash_id_t msg_hash_th_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
@@ -29083,6 +29094,8 @@ static const msg_hash_id_t msg_hash_th_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEZONE,

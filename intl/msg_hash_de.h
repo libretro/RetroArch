@@ -347,7 +347,9 @@ static const struct
    char s_314539a4[10];
    char s_8fc168f0[19];
    char s_213c44cf[23];
+   char s_4f4b0d00[12];
    char s_502f623c[14];
+   char s_223dfc81[14];
    char s_b6cd2ff0[62];
    char s_fe2b08f2[16];
    char s_75661984[22];
@@ -2269,6 +2271,8 @@ static const struct
    char s_579c3ea7[25];
    char s_cc7bf1b9[12];
    char s_b300fc03[20];
+   char s_e29ee11f[12];
+   char s_714b59b6[8];
    char s_ccf131c5[19];
    char s_e5124bba[8];
    char s_875bc33e[11];
@@ -4033,7 +4037,6 @@ static const struct
    char s_ab839b13[132];
    char s_9c3126f6[118];
    char s_a9d0ac44[95];
-   char s_60cf8ce7[281];
    char s_bf6397c7[42];
    char s_6cf40c1b[86];
    char s_445f65a0[83];
@@ -4217,7 +4220,6 @@ static const struct
    char s_9506fc7d[87];
    char s_9506fc7e[79];
    char s_47ae341f[104];
-   char s_5e122df4[266];
    char s_cc84c32d[47];
    char s_fa09f4f6[55];
    char s_48696c85[76];
@@ -4906,10 +4908,8 @@ static const struct
    char s_b7248c5d[61];
    char s_a3e7b13a[143];
    char s_966a8865[104];
-   char s_69e2b087[96];
    char s_098459c5[58];
    char s_35e09a43[40];
-   char s_a27fec29[109];
    char s_7182190e[118];
    char s_a7ae1b42[22];
 #ifdef HAVE_LAKKA
@@ -5483,6 +5483,8 @@ static const struct
    "Bundle-ID",
    "Tempor\303\244re Dateien",
    "Erlaube Kamera-Zugriff",
+   "Audioger\303\244t",
+   "Kameratreiber",
    "Kameratreiber",
    "Errungenschaften lassen sich mit diesem Core nicht aktivieren",
    "Speicheradresse",
@@ -7417,6 +7419,8 @@ static const struct
    "MM-TT-JJJJ HH:MM (AM/PM)",
    "MM-TT HH:MM",
    "MM-TT HH:MM (AM/PM)",
+   "Automatisch",
+   "Manuell",
    "Datum/Uhrzeit Stil",
    "JJJJ-MM",
    "JJJJ-MM-TT",
@@ -10026,10 +10030,6 @@ static const struct
    "s\342\200\234 im RetroArch-Verzeichnis.",
    "Das Modell erkennt Hautbereiche selbstst\303\244ndig und verarbeitet sie getrennt vom \303\274br"
    "igen Bild.",
-   "Das Neural-Rendering-Modell von DLSS 5 auf das hochskalierte Bild anwenden. Es \303\274berarbeit"
-   "et die Beleuchtung und Materialien anhand der Tiefen- und Bewegungsdaten, die der Core bereitste"
-   "llt, und ben\303\266tigt daf\303\274r einige Millisekunden pro Frame. Wird ab dem n\303\244chste"
-   "n Frame wirksam.",
    "Die Gesamtst\303\244rke des Modells in Prozent.",
    "Wie stark das Modell feine Details und Oberfl\303\244chenstrukturen bearbeitet, in Prozent.",
    "Wie stark das Modell lokale Licht- und Schattenbereiche \303\274berarbeitet, in Prozent.",
@@ -10471,10 +10471,6 @@ static const struct
    "Angepasster Viewport-Offset zur Definition der Y-Achsenposition des Viewports.",
    "Die Video-Ausgabe der Grafikkarte mit der Bildwiederholrate des Bildschirms synchronisieren. Emp"
    "fohlen.",
-   "Ein Vulkan-Treiberpaket (.zip) anstelle des Systemtreibers verwenden. Der Treiber wird innerhalb"
-   " von RetroArch ausgef\303\274hrt. Daher nur Pakete aus vertrauensw\303\274rdigen Quellen verwend"
-   "en. Die \303\204nderung wird beim n\303\244chsten Start von Vulkan wirksam. Start: Systemtreiber"
-   ".",
    "Absturz beim letzten Start, daher \342\200\236System\342\200\234",
    "%s wird beim n\303\244chsten normalen Start wieder verwendet",
    "CPU und GPU fest synchronisieren. Reduziert Latenz auf Kosten der Leistung.",
@@ -11263,11 +11259,8 @@ static const struct
    "ktiviert. Zur erneuten Verwendung wieder ausw\303\244hlen.",
    "Der benutzerdefinierter Vulkan-Treiber konnte nicht gestartet werden. Der Systemtreiber wird ver"
    "wendet.",
-   "Benutzerdefiniertes Vulkan-Treiberpaket ist nicht verwendbar. Der Systemtreiber wird verwendet.",
    "RetroArch neu starten, um den Vulkan-Treiber zu wechseln.",
    "Mit dem Vulkan-Systemtreiber gestartet.",
-   "Benutzerdefinierte Vulkan-Treiber erfordern eine Adreno-GPU und Android 9. Der Systemtreiber wir"
-   "d verwendet.",
    "Benutzerdefinierter Vulkan-Treiber wurde im Men\303\274 nicht ausgew\303\244hlt oder ge\303\244n"
    "dert. Zur Verwendung erneut ausw\303\244hlen.",
    "Auf Client warten ...",
@@ -11283,7 +11276,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (257510u
+      (sizeof(msg_hash_de_blob) == (256804u
 #ifdef ANDROID
        + 358u
 #endif
@@ -12196,7 +12189,9 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
@@ -14117,6 +14112,8 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,
@@ -15870,7 +15867,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_AUTO_MASK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_INTENSITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_STRUCTURE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_TONE,
@@ -16043,7 +16039,6 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
@@ -16731,10 +16726,8 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MSG_VRR_RUNLOOP_ENABLED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_CRASHED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_FAILED,
-   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_INVALID,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_RESTART,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_SAFE_MODE,
-   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNTRUSTED,
    (msg_hash_id_t)MSG_WAITING_FOR_CLIENT,
 #ifdef HAVE_LAKKA

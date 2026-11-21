@@ -46,7 +46,9 @@ static const struct
    char s_7fc52043[16];
    char s_9509d1c2[19];
    char s_c7a999e6[14];
+   char s_4f4b0d00[8];
    char s_502f623c[7];
+   char s_223dfc81[7];
    char s_5b51050b[5];
    char s_565cbabb[12];
    char s_6322a8fa[16];
@@ -505,6 +507,8 @@ static const struct
    "Skroluj na gore",
    "Prika\305\276i tastaturu",
    "Prika\305\276i meni",
+   "Ure\304\221aj",
+   "Kamera",
    "Kamera",
    "Opis",
    "Dostignu\304\207a",
@@ -966,7 +970,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sr_blob_check[
-      (sizeof(msg_hash_sr_blob) == (12141u
+      (sizeof(msg_hash_sr_blob) == (12156u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -1067,7 +1071,9 @@ static const msg_hash_id_t msg_hash_sr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,

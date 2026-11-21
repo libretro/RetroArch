@@ -362,7 +362,9 @@ static const struct
    char s_314539a4[25];
    char s_8fc168f0[7];
    char s_213c44cf[17];
+   char s_4f4b0d00[12];
    char s_502f623c[8];
+   char s_223dfc81[8];
    char s_b6cd2ff0[49];
    char s_40e7aacd[6];
    char s_fe2b08f2[22];
@@ -2359,6 +2361,7 @@ static const struct
    char s_61b5b9d0[20];
    char s_313e6a7a[28];
    char s_579c3ea7[25];
+   char s_e29ee11f[12];
    char s_ccf131c5[23];
    char s_e5124bba[8];
    char s_875bc33e[11];
@@ -4178,7 +4181,6 @@ static const struct
    char s_ab839b13[144];
    char s_9c3126f6[162];
    char s_a9d0ac44[95];
-   char s_60cf8ce7[302];
    char s_bf6397c7[45];
    char s_6cf40c1b[122];
    char s_445f65a0[91];
@@ -4378,7 +4380,6 @@ static const struct
    char s_9506fc7d[119];
    char s_9506fc7e[119];
    char s_47ae341f[125];
-   char s_5e122df4[309];
    char s_cc84c32d[58];
    char s_fa09f4f6[53];
    char s_48696c85[88];
@@ -5057,10 +5058,8 @@ static const struct
    char s_b7248c5d[53];
    char s_a3e7b13a[159];
    char s_966a8865[107];
-   char s_69e2b087[100];
    char s_098459c5[58];
    char s_35e09a43[53];
-   char s_a27fec29[131];
    char s_7182190e[141];
    char s_a7ae1b42[24];
 #ifdef HAVE_LAKKA
@@ -5665,6 +5664,8 @@ static const struct
    "Identificador de paquete",
    "Cach\303\251",
    "Permitir c\303\241mara",
+   "Dispositivo",
+   "C\303\241mara",
    "C\303\241mara",
    "No se pueden activar los logros con este n\303\272cleo",
    "Truco",
@@ -7677,6 +7678,7 @@ static const struct
    "MM-DD-AAAA HH:MM:SS",
    "MM-DD-AAAA HH:MM:SS (AM/PM)",
    "MM-DD-AAAA HH:MM (AM/PM)",
+   "Autom\303\241tica",
    "Estilo de fecha y hora",
    "AAAA-MM",
    "AAAA-MM-DD",
@@ -10444,10 +10446,6 @@ static const struct
    "El directorio del que se cargar\303\241n los paquetes de tiempo de ejecuci\303\263n de DLSS. El "
    "valor predeterminado es \"upscalers/dlss\", dentro del directorio de RetroArch.",
    "Deja que el modelo localice superficies de piel y las trate como tales el resto del fotograma.",
-   "Ejecuta el modelo de renderizado neuronal de DLSS\302\2405 en el fotograma reescalado. Regenerar"
-   "\303\241 su iluminaci\303\263n y materiales con las profundidades y movimientos exportados por e"
-   "l n\303\272cleo, a costa de un retraso de unos pocos milisegundos por fotograma. Los cambios se "
-   "aplicar\303\241n en el siguiente fotograma.",
    "La fuerza del modelo en un valor porcentual.",
    "La fuerza que tendr\303\241 el modelo en los detalles peque\303\261os y en las estructuras de la"
    "s superficies en un valor porcentual.",
@@ -10962,10 +10960,6 @@ static const struct
    "en el eje Y del \303\241rea de visualizaci\303\263n.",
    "Sincroniza la se\303\261al de v\303\255deo de la tarjeta gr\303\241fica con la frecuencia de act"
    "ualizaci\303\263n de pantalla. Se recomienda su uso.",
-   "Utiliza un paquete de controlador de Vulkan (en formato .zip) en vez del controlador del sistema"
-   ". El controlador se ejecutar\303\241 dentro de RetroArch: utiliza solo paquetes que hayan venido"
-   " de sitios de confianza. Los cambios se aplicar\303\241n la pr\303\263xima vez que se ejecute Vu"
-   "lkan. Inicio: controlador del sistema.",
    "La \303\272ltima ejecuci\303\263n se ha bloqueado, utilizando sistema",
    "Se volver\303\241 a usar %s en el pr\303\263ximo arranque normal",
    "Fuerza la sincron\303\255a entre CPU y GPU. Reduce la latencia a costa de perder rendimiento.",
@@ -11752,12 +11746,8 @@ static const struct
    "ivado en este n\303\272cleo. Si quieres volver a usarlo, selecci\303\263nalo de nuevo.",
    "El controlador personalizado de Vulkan no se ha iniciado correctamente. Usando el controlador de"
    "l sistema.",
-   "El paquete del controlador personalizado de Vulkan no es usable. Usando el controlador del siste"
-   "ma.",
    "Reinicia RetroArch para cambiar el controlador de Vulkan.",
    "Ejecutando con el controlador del sistema de Vulkan.",
-   "Los controladores personalizados de Vulkan necesitan una GPU Adreno y la versi\303\263n 9 de And"
-   "roid. Usando el controlador del sistema.",
    "No se ha elegido el controlador personalizado de Vulkan en el men\303\272 o el controlador ha ca"
    "mbiado. Si quieres usarlo, selecci\303\263nalo de nuevo.",
    "Esperando al cliente...",
@@ -11773,7 +11763,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (280063u
+      (sizeof(msg_hash_es_blob) == (279253u
 #ifdef ANDROID
        + 329u
 #endif
@@ -12701,7 +12691,9 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
@@ -14697,6 +14689,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,
@@ -16504,7 +16497,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_AUTO_MASK,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_INTENSITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_STRUCTURE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_TONE,
@@ -16694,7 +16686,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
@@ -17372,10 +17363,8 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MSG_VRR_RUNLOOP_ENABLED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_CRASHED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_FAILED,
-   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_INVALID,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_RESTART,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_SAFE_MODE,
-   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNTRUSTED,
    (msg_hash_id_t)MSG_WAITING_FOR_CLIENT,
 #ifdef HAVE_LAKKA

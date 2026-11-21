@@ -377,7 +377,9 @@ static const struct
    char s_314539a4[46];
    char s_8fc168f0[7];
    char s_213c44cf[32];
+   char s_4f4b0d00[17];
    char s_502f623c[13];
+   char s_223dfc81[13];
    char s_b6cd2ff0[90];
    char s_40e7aacd[14];
    char s_fe2b08f2[28];
@@ -2240,6 +2242,8 @@ static const struct
    char s_579c3ea7[37];
    char s_cc7bf1b9[20];
    char s_b300fc03[13];
+   char s_e29ee11f[23];
+   char s_714b59b6[13];
    char s_ccf131c5[32];
    char s_e5124bba[14];
    char s_875bc33e[19];
@@ -6635,6 +6639,8 @@ static const struct
    "\320\232\320\265\321\210",
    "\320\224\320\276\320\267\320\262\320\276\320\273\320\270\321\202\320\270 \320\272\320\260\320"
    "\274\320\265\321\200\321\203",
+   "\320\237\321\200\320\270\321\201\321\202\321\200\321\226\320\271",
+   "\320\232\320\260\320\274\320\265\321\200\320\260",
    "\320\232\320\260\320\274\320\265\321\200\320\260",
    "\320\224\320\276\321\201\321\217\320\263\320\275\320\265\320\275\320\275\321\217 \320\275\320"
    "\265 \320\274\320\276\320\266\321\203\321\202\321\214 \320\261\321\203\321\202\320\270 \320\260"
@@ -10307,6 +10313,8 @@ static const struct
    "\245 (AM/PM)",
    "\320\234\320\234-\320\224\320\224 \320\223\320\223:\320\245\320\245",
    "\320\223\320\250 (AM/PM)",
+   "\320\220\320\262\321\202\320\276\320\274\320\260\321\202\320\270\321\207\320\275\320\276",
+   "\320\240\321\203\321\207\320\275\320\270\320\271",
    "\320\241\321\202\320\270\320\273\321\214 \320\264\320\260\321\202\320\270 \321\226 \321\207\320"
    "\260\321\201\321\203",
    "\320\240\320\240\320\240\320\240-\320\234\320\234",
@@ -21305,7 +21313,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_uk_blob_check[
-      (sizeof(msg_hash_uk_blob) == (348290u
+      (sizeof(msg_hash_uk_blob) == (348356u
 #ifdef ANDROID
        + 610u
 #endif
@@ -22111,7 +22119,9 @@ static const msg_hash_id_t msg_hash_uk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
@@ -23973,6 +23983,8 @@ static const msg_hash_id_t msg_hash_uk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,

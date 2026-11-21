@@ -338,7 +338,9 @@ static const struct
    char s_314539a4[18];
    char s_8fc168f0[15];
    char s_213c44cf[23];
+   char s_4f4b0d00[8];
    char s_502f623c[7];
+   char s_223dfc81[7];
    char s_b6cd2ff0[47];
    char s_40e7aacd[10];
    char s_fe2b08f2[13];
@@ -2028,6 +2030,8 @@ static const struct
    char s_579c3ea7[31];
    char s_cc7bf1b9[14];
    char s_b300fc03[22];
+   char s_e29ee11f[12];
+   char s_714b59b6[6];
    char s_ccf131c5[25];
    char s_e5124bba[12];
    char s_875bc33e[15];
@@ -4760,6 +4764,8 @@ static const struct
    "Csomagazonos\303\255t\303\263",
    "\303\201tmeneti t\303\241r",
    "Kamera enged\303\251lyez\303\251se",
+   "Eszk\303\266z",
+   "Kamera",
    "Kamera",
    "A tr\303\263fe\303\241k nem aktiv\303\241lhat\303\263ak ezzel a maggal",
    "Csal\303\241sok",
@@ -6497,6 +6503,8 @@ static const struct
    "HH-NN-\303\211\303\211\303\211\303\211 \303\223\303\223:PP (de/du)",
    "HH-NN \303\223\303\223:PP",
    "HH-NN \303\223\303\223:PP (de/du)",
+   "Automatikus",
+   "K\303\251zi",
    "D\303\241tum \303\251s id\305\221 st\303\255lusa",
    "\303\211\303\211\303\211\303\211-HH",
    "\303\211\303\211\303\211\303\211-HH-NN",
@@ -9775,7 +9783,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (186458u
+      (sizeof(msg_hash_hu_blob) == (186491u
 #ifdef ANDROID
        + 316u
 #endif
@@ -10539,7 +10547,9 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
@@ -12228,6 +12238,8 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,

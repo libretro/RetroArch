@@ -140,7 +140,9 @@ static const struct
    char s_314539a4[34];
    char s_8fc168f0[22];
    char s_213c44cf[32];
+   char s_4f4b0d00[24];
    char s_502f623c[28];
+   char s_223dfc81[28];
    char s_40e7aacd[11];
    char s_870cb022[99];
    char s_8fa5e6c4[58];
@@ -892,6 +894,7 @@ static const struct
    char s_579c3ea7[41];
    char s_cc7bf1b9[20];
    char s_b300fc03[32];
+   char s_714b59b6[23];
    char s_ccf131c5[43];
    char s_e5124bba[14];
    char s_875bc33e[19];
@@ -1859,6 +1862,9 @@ static const struct
    "\316\232\317\201\317\205\317\206\316\256 \316\234\316\275\316\256\316\274\316\267",
    "\316\225\317\200\316\257\317\204\317\201\316\265\317\210\316\267 \316\232\316\254\316\274\316"
    "\265\317\201\316\261\317\202",
+   "\316\243\317\205\317\203\316\272\316\265\317\205\316\256 \316\211\317\207\316\277\317\205",
+   "\316\237\316\264\316\267\316\263\317\214\317\202 \316\232\316\254\316\274\316\265\317\201\316"
+   "\261\317\202",
    "\316\237\316\264\316\267\316\263\317\214\317\202 \316\232\316\254\316\274\316\265\317\201\316"
    "\261\317\202",
    "\316\221\317\200\316\254\317\204\316\267",
@@ -3180,6 +3186,7 @@ static const struct
    "\316\234\316\234-\316\227\316\227 \316\251\316\251:\316\233\316\233",
    "\316\234\316\234-\316\227\316\227 \316\251\316\251:\316\233\316\233 (\316\240\316\234/\316\234"
    "\316\234)",
+   "\316\247\316\265\316\271\317\201\316\277\316\272\316\257\316\275\316\267\317\204\316\277",
    "\316\243\317\204\317\205\316\273 \316\267\316\274\316\265\317\201\316\277\316\274\316\267\316"
    "\275\316\257\316\261\317\202 / \317\216\317\201\316\261\317\202",
    "\316\247\316\247\316\247\316\247-\316\234\316\234",
@@ -4759,7 +4766,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_el_blob_check[
-      (sizeof(msg_hash_el_blob) == (68486u
+      (sizeof(msg_hash_el_blob) == (68561u
 #ifdef HAVE_LAKKA
        + 35u
 #endif
@@ -4986,7 +4993,9 @@ static const msg_hash_id_t msg_hash_el_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
@@ -5738,6 +5747,7 @@ static const msg_hash_id_t msg_hash_el_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,

@@ -30,6 +30,7 @@ static const struct
    char s_9509d1c2[22];
    char s_c7a999e6[14];
    char s_502f623c[7];
+   char s_223dfc81[7];
    char s_565cbabb[14];
    char s_ce5f3353[22];
    char s_6155456e[18];
@@ -246,6 +247,7 @@ static const struct
    "Sl\303\245 Tastatur Til/Fra",
    "\303\205bn/luk menu",
    "Kamera",
+   "Kamera",
    "Pr\303\246stationer",
    "Indl\303\246s konfiguration",
    "Konfigurationsfil",
@@ -454,7 +456,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_da_blob_check[
-      (sizeof(msg_hash_da_blob) == (5034u
+      (sizeof(msg_hash_da_blob) == (5041u
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
@@ -481,6 +483,7 @@ static const msg_hash_id_t msg_hash_da_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,

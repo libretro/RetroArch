@@ -62,7 +62,9 @@ static const struct
    char s_314539a4[27];
    char s_8fc168f0[7];
    char s_213c44cf[20];
+   char s_4f4b0d00[8];
    char s_502f623c[8];
+   char s_223dfc81[8];
    char s_c64294aa[20];
    char s_5b50a147[8];
    char s_73a2b0bf[19];
@@ -1139,6 +1141,8 @@ static const struct
    "Indentificador del paquete",
    "Cach\303\251",
    "Permitir la c\303\241mara",
+   "Pres\303\251u",
+   "C\303\241mara",
    "C\303\241mara",
    "Aplicar los cambeos",
    "C\303\263digu",
@@ -2211,7 +2215,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (25818u
+      (sizeof(msg_hash_ast_blob) == (25834u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2347,7 +2351,9 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,

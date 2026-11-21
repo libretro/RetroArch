@@ -100,7 +100,9 @@ static const struct
    char s_1131883a[18];
 #endif
    char s_25babaa7[9];
+   char s_4f4b0d00[13];
    char s_502f623c[13];
+   char s_223dfc81[13];
    char s_5b51050b[13];
    char s_fd67817e[54];
    char s_565cbabb[19];
@@ -508,6 +510,7 @@ static const struct
    char s_0a008a9d[11];
    char s_9c6ed9ca[22];
    char s_4674fab3[32];
+   char s_714b59b6[9];
    char s_9a981aa0[20];
    char s_0ca3b319[13];
    char s_8c15b43a[37];
@@ -989,6 +992,8 @@ static const struct
    "\331\205\331\202\333\214\330\247\330\263 \331\202\331\204\331\205",
 #endif
    "\330\242\330\272\330\247\330\262",
+   "\330\257\330\263\330\252\332\257\330\247\331\207",
+   "\330\257\331\210\330\261\330\250\333\214\331\206",
    "\330\257\331\210\330\261\330\250\333\214\331\206",
    "\330\257\330\261\330\250\330\247\330\261\331\207",
    "\330\242\330\272\330\247\330\262 \333\214\330\247 \330\264\330\261\331\210\330\271 \331\205\330"
@@ -1559,6 +1564,7 @@ static const struct
    "\330\253\330\250\330\252 \331\206\331\205\330\247\332\257\330\261\331\201\330\252",
    "\330\252\330\265\330\247\331\210\333\214\330\261 \330\250\331\206\330\257\330\247\331\206\332"
    "\257\330\264\330\252\333\214",
+   "\330\257\330\263\330\252\333\214",
    "\330\262\331\205\330\247\331\206\342\200\214\330\263\331\206\330\254\333\214",
    "\332\251\331\204\330\247\330\263\333\214\332\251",
    "\332\251\331\204\330\247\330\263\333\214\332\251 (\330\252\330\272\333\214\333\214\330\261 \331"
@@ -2370,7 +2376,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fa_blob_check[
-      (sizeof(msg_hash_fa_blob) == (27963u
+      (sizeof(msg_hash_fa_blob) == (27998u
 #ifdef HAVE_LAKKA
        + 13u
 #endif
@@ -2547,7 +2553,9 @@ static const msg_hash_id_t msg_hash_fa_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
@@ -2955,6 +2963,7 @@ static const msg_hash_id_t msg_hash_fa_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,

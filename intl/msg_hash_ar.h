@@ -195,7 +195,9 @@ static const struct
    char s_bbb615a1[39];
    char s_8fc168f0[39];
    char s_213c44cf[30];
+   char s_4f4b0d00[13];
    char s_502f623c[37];
+   char s_223dfc81[37];
    char s_40e7aacd[14];
    char s_fe2b08f2[26];
    char s_75661984[35];
@@ -1353,6 +1355,8 @@ static const struct
    char s_e5124a25[14];
    char s_5bf728c9[21];
    char s_579c3ea7[22];
+   char s_e29ee11f[13];
+   char s_714b59b6[9];
    char s_ccf131c5[35];
    char s_e5124bba[7];
    char s_875bc33e[10];
@@ -2835,6 +2839,9 @@ static const struct
    "\206 \330\247\331\204\331\205\330\244\331\202\330\252",
    "\330\247\331\204\330\263\331\205\330\247\330\255 \331\204\331\204\331\203\330\247\331\205\331"
    "\212\330\261\330\247",
+   "\330\247\331\204\330\254\331\207\330\247\330\262",
+   "\331\206\330\270\330\247\331\205 \330\252\330\264\330\272\331\212\331\204 \330\247\331\204\331"
+   "\203\330\247\331\205\331\212\330\261\330\247",
    "\331\206\330\270\330\247\331\205 \330\252\330\264\330\272\331\212\331\204 \330\247\331\204\331"
    "\203\330\247\331\205\331\212\330\261\330\247",
    "\330\264\331\201\330\261\330\251 \330\272\330\264",
@@ -4665,6 +4672,8 @@ static const struct
    "\330\264\331\207\330\261/\331\212\331\210\331\205",
    "\330\264\331\207\330\261/\331\212\331\210\331\205/\330\263\331\206\330\251",
    "MM-YYYY HH:MM (AM/PM)",
+   "\330\252\331\204\331\202\330\247\330\246\331\212",
+   "\331\212\330\257\331\210\331\212",
    "\331\206\331\205\330\267 \330\247\331\204\330\252\330\247\330\261\331\212\330\256 \331\210\330"
    "\247\331\204\331\210\331\202\330\252",
    "YYY-MM",
@@ -7892,7 +7901,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ar_blob_check[
-      (sizeof(msg_hash_ar_blob) == (106159u
+      (sizeof(msg_hash_ar_blob) == (106231u
 #ifdef HAVE_LAKKA
        + 287u
 #endif
@@ -8287,7 +8296,9 @@ static const msg_hash_id_t msg_hash_ar_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
@@ -9444,6 +9455,8 @@ static const msg_hash_id_t msg_hash_ar_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,

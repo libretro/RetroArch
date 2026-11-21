@@ -39,6 +39,7 @@ static const struct
    char s_c7a999e6[43];
    char s_25babaa7[13];
    char s_502f623c[13];
+   char s_223dfc81[13];
    char s_5b50a147[7];
    char s_5b51050b[17];
    char s_7d00b7ed[13];
@@ -391,6 +392,7 @@ static const struct
    "\320\237\321\200\320\265\320\262\320\272\320\273\321\216\321\207\320\262\320\260\320\275\320\265"
    " \320\275\320\260 \320\274\320\265\320\275\321\216\321\202\320\276",
    "\320\235\320\260\321\207\320\260\320\273\320\276",
+   "\320\232\320\260\320\274\320\265\321\200\320\260",
    "\320\232\320\260\320\274\320\265\321\200\320\260",
    "\320\232\320\276\320\264",
    "\320\236\320\277\320\270\321\201\320\260\320\275\320\270\320\265",
@@ -865,7 +867,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_bg_blob_check[
-      (sizeof(msg_hash_bg_blob) == (10728u
+      (sizeof(msg_hash_bg_blob) == (10741u
 #ifdef HAVE_MIST
        + 34u
        + 38u
@@ -922,6 +924,7 @@ static const msg_hash_id_t msg_hash_bg_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
