@@ -56,6 +56,9 @@
 #endif
 
 #include "../../../gfx/common/x11_common.h"
+#ifdef HAVE_XINERAMA
+#include "../../../gfx/common/xinerama_common.h"
+#endif
 #include "../../../gfx/common/x11_monitors.h"
 #include "../../../gfx/common/dbus_common.h"
 #ifdef HAVE_XRANDR

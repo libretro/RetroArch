@@ -311,6 +311,22 @@ jobs:
                 --native-windows gl_sdl3
              kill %1'
 
+      - name: Native windows on X11, two monitors, no window manager (Xvfb, llvmpipe, lavapipe)
+        shell: bash
+        run: |
+          set -eu
+          # NATIVE_X11_MONITORS=2 splits the screen into two monitors;
+          # with no window manager the fixture places the main window on
+          # them itself and checks the monitor saved for it. A server
+          # each, so that every lane makes the split.
+          export LIBGL_ALWAYS_SOFTWARE=1 NATIVE_X11_MONITORS=2
+          for c in x egl_x vk_x; do
+             echo "== $c"
+             xvfb-run -a -s "-screen 0 1920x1080x24 +extension GLX" \
+                timeout 300 "$RUNNER_TEMP/video-screens/video_screens_test" \
+                --native-windows $c
+          done
+
       - name: Native windows of SDL with no window manager (Xvfb, lavapipe)
         shell: bash
         run: |

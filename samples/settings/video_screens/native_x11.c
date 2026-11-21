@@ -1916,6 +1916,24 @@ static void native_x11_made_once(const gfx_ctx_driver_t *ctx, void *data,
 }
 #endif
 
+#ifdef HAVE_XINERAMA
+/* The main window's monitor, kept for the next start, is the one it is
+ * on: the first's right side, its position counted once where no
+ * window manager reparents */
+static void native_x11_saved_monitor(int half)
+{
+   Window was  = g_x11_win;
+   unsigned at = g_x11_screen;
+   g_x11_win   = XCreateSimpleWindow(g_x11_dpy,
+         DefaultRootWindow(g_x11_dpy), half - 210, 40, 200, 150, 0, 0, 0);
+   xinerama_save_last_used_monitor(DefaultRootWindow(g_x11_dpy));
+   CHECK(g_x11_screen == 0);
+   XDestroyWindow(g_x11_dpy, g_x11_win);
+   g_x11_win    = was;
+   g_x11_screen = at;
+}
+#endif
+
 /* Two monitors: the start native_x11_torn_down() set up, a reinit, and
  * a reinit onto no monitor, each through native_x11_made_once().
  * Returns the context made again. */
@@ -1930,6 +1948,12 @@ static const gfx_ctx_driver_t *native_x11_located(
    unsigned i, n;
    int half       = DisplayWidth(g_x11_dpy, DefaultScreen(g_x11_dpy)) / 2;
    unsigned heads = native_x11_heads(g_x11_dpy);
+   const char *want = getenv("NATIVE_X11_MONITORS");
+   char *wm         = x11_get_wm_name(g_x11_dpy);
+   /* Split as asked, with no window manager: every step below runs */
+   if (want && string_is_equal(want, "2") && !wm)
+      CHECK(heads >= 2 && native_x11_relayout);
+   free(wm);
    if (heads < 2)
       return ctx;
    /* Before anything pumped: the init publish, not the foreign list */
@@ -1974,6 +1998,9 @@ static const gfx_ctx_driver_t *native_x11_located(
    request.screen = 1;
    native_x11_monitors_wait(ctx, *data, &request, monitors,
          native_x11_monitors(g_x11_dpy, monitors, 8), -1, got);
+#ifdef HAVE_XINERAMA
+   native_x11_saved_monitor(half);
+#endif
 #endif
    return ctx;
 }
