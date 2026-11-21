@@ -542,11 +542,13 @@ void gfx_thumbnail_anim_worker_deinit(void)
 static void gfx_thumbnail_anim_retired_release(void *user,
       gfx_surface_t *surface, unsigned slot)
 {
-   (void)user;
-   (void)slot;
+   gfx_thumbnail_anim_lifetime_t *life = (gfx_thumbnail_anim_lifetime_t*)user;
+   if (life && life->player)
+      video_player_slot_released(life->player->vp, slot);
    if (surface->imported && surface->dropped && surface->import.abandon)
       surface->import.abandon(surface->import.owner, surface->import.done,
             surface->import.done_value);
+   gfx_thumbnail_anim_reap();
 }
 
 static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
@@ -573,7 +575,7 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
          if (surface)
          {
             surface->release = gfx_thumbnail_anim_retired_release;
-            surface->user = NULL;
+            surface->user = life;
          }
          thumbnail->anim_surface = NULL;
          thumbnail->texture = 0;
@@ -727,7 +729,7 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
       /* frames decoded on the GPU where the stream and driver can */
       if (!(thumbnail->anim_player = gfx_surface_player_new(stream, type,
             loop_count, &thumbnail->anim_surface, &cb,
-            GFX_SURFACE_PLAYER_GPU)))
+            GFX_SURFACE_PLAYER_GPU | GFX_SURFACE_PLAYER_HOLD_CANVAS)))
       {
          gfx_thumbnail_anim_close(thumbnail);
          return false;

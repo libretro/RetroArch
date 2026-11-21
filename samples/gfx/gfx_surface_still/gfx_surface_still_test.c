@@ -655,7 +655,7 @@ static void st_pitched_lending(void)
       CHECK(gfx_surface_slot_writable(s, 0) && s->pitch[0] == 32,
             "one-slot pitch did not follow spare");
       for (i = 0; i < 16; i++) pixels[i] = i + 0x300;
-      gfx_surface_submit_pixels(s, pixels, false);
+      gfx_surface_submit_pixels_held(s, pixels, false);
       CHECK(st_lent_pixels[1][8] == 0x304 && st_lent_pixels[1][24] == 0x30c,
             "external canvas was not copied row by row");
       st_lend_busy = 0;
@@ -663,6 +663,34 @@ static void st_pitched_lending(void)
       st_lend = false;
       st_lend_pitch[0] = st_lend_pitch[1] = 0;
    }
+}
+
+static void st_canvas_lease(void)
+{
+   uint32_t pixels[16];
+   gfx_surface_t *s;
+   unsigned i, releases = st_released;
+   int async = st_async;
+   st_async = 1;
+   for (i = 0; i < 16; i++) pixels[i] = 0xff001100u + i;
+   s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 1, IMAGE_PIXFMT_8888,
+         TEXTURE_FILTER_LINEAR, st_release_import, NULL);
+   CHECK(s != NULL, "canvas lease: surface");
+   if (!s) return;
+   memset(s->slots[0], 0x55, 16 * sizeof(uint32_t));
+   CHECK(gfx_surface_submit_pixels_held(s, pixels, false) == GFX_SURFACE_SUBMIT_QUEUED,
+         "canvas lease: not queued");
+   CHECK(s->img.pixels == pixels && s->slots[0][0] == 0x55555555u,
+         "canvas lease: copied the decoder canvas");
+   CHECK(gfx_surface_submit_pixels_held(s, pixels, false) == GFX_SURFACE_SUBMIT_BUSY,
+         "canvas lease: replaced an in-flight pointer");
+   CHECK(st_released == releases, "canvas lease: released before upload");
+   st_flush();
+   CHECK(st_released == releases + 1 && st_px_first == pixels[0]
+         && st_px_last == pixels[15], "canvas lease: pixels or release");
+   gfx_surface_free(s);
+   CHECK(!st_live, "canvas lease: leaked texture");
+   st_async = async;
 }
 
 static void st_still_recovery(void)
@@ -777,6 +805,7 @@ int main(void)
    st_pitched_lending();
    st_compressed_stills();
    st_async = 1;
+   st_canvas_lease();
    st_still_recovery();
 
    /* 1. threaded: a same-size image updates the texture up in place

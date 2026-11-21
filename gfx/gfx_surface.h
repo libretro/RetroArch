@@ -461,6 +461,13 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
 enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
       const void *pixels, bool rgba);
 
+/* As submit_pixels, but packed pixels may remain borrowed until release()
+ * after QUEUED. Keep the surface and pixel owner alive and prevent writes
+ * until then. Lent upload memory, narrowing and planar frames retain
+ * the slot-copy path. */
+enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s,
+      const void *pixels, bool rgba);
+
 /* The colour space of a planar surface's frames from now on:
  * IMAGE_YUV_FLAG_BT709, _FULL_RANGE and _VU (formats/image_yuv_blit.h);
  * BT.601 limited range by default. Ignored by any other surface. */

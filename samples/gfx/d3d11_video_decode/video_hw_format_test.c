@@ -65,6 +65,12 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
       const void *pixels, bool rgba)
 { (void)s; (void)pixels; (void)rgba; failures++; return GFX_SURFACE_SUBMIT_FAILED; }
 
+enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s,
+      const void *pixels, bool rgba)
+{
+   return gfx_surface_submit_pixels(s, pixels, rgba);
+}
+
 enum gfx_surface_submit_result gfx_surface_submit_import(gfx_surface_t *surface,
       const video_frame_import_t *frame)
 {

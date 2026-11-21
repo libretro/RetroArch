@@ -79,7 +79,10 @@ enum video_player_flags
    VIDEO_PLAYER_BORROW_PLANES = (1 << 4),
    /* With BORROW_PLANES, also accept decoder row padding. Without it,
     * only tight planes are borrowed, preserving efficient row uploads. */
-   VIDEO_PLAYER_BORROW_STRIDED = (1 << 5)
+   VIDEO_PLAYER_BORROW_STRIDED = (1 << 5),
+   /* An inline sink may queue a canvas until slot_released(0). The
+    * owner must poll stop until it succeeds before freeing the stream. */
+   VIDEO_PLAYER_HOLD_CANVAS = (1 << 6)
 };
 
 /* How a frame reached its buffer. */
@@ -113,8 +116,8 @@ typedef struct video_player_frame
 {
    /* Movie timeline, including completed loops; -1 when unavailable. */
    int64_t time_us;
-   /* The frame in the stream's canvas, valid until the next poll; NULL
-    * when it is in the slot. */
+   /* The stream's canvas, valid until the next poll, or slot_released(0)
+    * after a HOLD_CANVAS sink queues it. NULL when it is in the slot. */
    const uint32_t *pixels;
    unsigned slot;
    unsigned width, height;
@@ -183,8 +186,9 @@ video_player_t *video_player_new(void *stream, enum image_type_enum type,
  * waited out. Every started slot is ended. */
 void video_player_free(video_player_t *p);
 
-/* Cancels queued work without waiting. False: running decode/setup still
- * borrows the player, stream and sink; retain them and poll stop again.
+/* Cancels queued work without waiting. False: running decode/setup or
+ * a queued HOLD_CANVAS frame still borrows the player, stream and sink;
+ * retain them and poll stop again.
  * True: free() will not wait. A stopped player cannot resume. */
 bool video_player_stop(video_player_t *p);
 

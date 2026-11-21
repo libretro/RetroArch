@@ -73,6 +73,7 @@
 #include <queues/task_queue.h>
 #include "gfx/gfx_thumbnail.h"
 #include "gfx/gfx_surface.h"
+#include "gfx/gfx_surface_player.h"
 #include "gfx/gfx_instrument.h"
 #include <formats/image_yuv_blit.h>
 
@@ -302,6 +303,57 @@ static int test_live(void)
              "queued one at a time, and the source ended once by the "
              "reset or the next live thumbnail\n");
    return ok;
+}
+
+static int test_canvas_close(const char *path)
+{
+   gfx_thumbnail_t th;
+   gfx_surface_player_t *player;
+   gfx_surface_player_cbs_t cb;
+   gfx_surface_t *surface;
+   unsigned i;
+   int bad = 0, freed;
+   reset_thumb(&th);
+   gt_async_mode = 0;
+   gfx_thumbnail_anim_open(&th, path);
+   player = (gfx_surface_player_t*)th.anim_player;
+   if (!player) return 1;
+   cb = player->cb;
+   gfx_surface_player_free(player);
+   th.anim_player = gfx_surface_player_new(th.anim, (enum image_type_enum)th.anim_type,
+         0, &th.anim_surface, &cb, VIDEO_PLAYER_INLINE | GFX_SURFACE_PLAYER_HOLD_CANVAS);
+   if (!th.anim_player) { gfx_thumbnail_reset(&th); return 1; }
+   gt_async_mode = 1;
+   for (i = 0; i < 100 && !gt_async_pending; i++)
+      gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+   surface = (gfx_surface_t*)th.anim_surface;
+   if (!gt_async_pending || !surface || surface->img.pixels == surface->slots[0])
+   {
+      printf("[FAIL] canvas close: no borrowed decoder upload\n");
+      bad = 1;
+   }
+   gfx_thumbnail_reset(&th);
+   if (surface && surface->dying)
+   {
+      printf("[FAIL] canvas close: retired the surface before releasing its canvas\n");
+      bad = 1;
+   }
+   freed = gfx_instrument_get(GFX_INSTR_SURFACE_FREE);
+   gt_async_flush();
+   gfx_thumbnail_anim_worker_deinit();
+   if (gfx_instrument_get(GFX_INSTR_SURFACE_FREE) <= freed)
+   {
+      printf("[FAIL] canvas close: canvas owner did not retire after release\n");
+      bad = 1;
+   }
+   if (gt_async_pending)
+   {
+      printf("[FAIL] canvas close: queued upload outlived retirement\n");
+      bad = 1;
+   }
+   gt_async_mode = 0;
+   if (!bad) printf("[ok]   borrowed canvas survives viewer close until upload completion\n");
+   return bad;
 }
 
 int main(void)
@@ -1313,6 +1365,7 @@ int main(void)
    if (!test_live())
       bad = 1;
 
+   if (test_canvas_close(path)) bad = 1;
    remove(path);
    printf("%s\n", bad ? "FAILED" : "PASS");
    return bad;

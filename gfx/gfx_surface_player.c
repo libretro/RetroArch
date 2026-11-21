@@ -49,7 +49,8 @@ static int gfx_surface_player_start(void *user, unsigned width,
    s->padded     = 1;
    gsp->rgba     = have_req && req.rgba;
    gsp->threaded = num_slots > 1;
-   return (gsp->rgba ? VIDEO_PLAYER_RGBA : 0)
+   return (gsp->hold_canvas && num_slots == 1 ? VIDEO_PLAYER_HOLD_CANVAS : 0)
+        | (gsp->rgba ? VIDEO_PLAYER_RGBA : 0)
         | (s->pixfmt == IMAGE_PIXFMT_FP16 ? VIDEO_PLAYER_FP16 : 0)
         | (s->pixfmt == IMAGE_PIXFMT_I420 ? VIDEO_PLAYER_I420 : 0)
         | (s->pixfmt == IMAGE_PIXFMT_I420 && num_slots == 1
@@ -215,7 +216,9 @@ static enum video_player_present gfx_surface_player_present(void *user,
    }
    else
       res = fr->pixels
-         ? gfx_surface_submit_pixels(s, fr->pixels, gsp->rgba)
+         ? (gsp->hold_canvas
+               ? gfx_surface_submit_pixels_held(s, fr->pixels, gsp->rgba)
+               : gfx_surface_submit_pixels(s, fr->pixels, gsp->rgba))
          : gfx_surface_submit(s, fr->slot, gsp->rgba);
    switch (res)
    {
@@ -286,7 +289,8 @@ gfx_surface_player_t *gfx_surface_player_new(void *stream,
       return NULL;
    /* Snapshot policy on the polling owner, before any decoder work. */
    sink.start_hw   = hardware ? gfx_surface_player_start_hw : NULL;
-   flags          &= ~GFX_SURFACE_PLAYER_GPU;
+   gsp->hold_canvas = (flags & GFX_SURFACE_PLAYER_HOLD_CANVAS) != 0;
+   flags          &= ~(GFX_SURFACE_PLAYER_GPU | GFX_SURFACE_PLAYER_HOLD_CANVAS);
    gsp->stream     = stream;
    gsp->type       = type;
    gsp->surface    = surface;

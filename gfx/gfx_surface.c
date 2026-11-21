@@ -986,6 +986,23 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
    return r;
 }
 
+enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s,
+      const void *pixels, bool rgba)
+{
+   enum gfx_surface_submit_result r;
+   uint8_t fmt;
+   if (!s || !pixels || !s->num_slots)
+      return GFX_SURFACE_SUBMIT_FAILED;
+   if (s->inflight)
+      return GFX_SURFACE_SUBMIT_BUSY;
+   if (s->lent || GFX_SURFACE_IS_PLANAR(s) || gfx_surface_must_narrow(s->pixfmt))
+      return gfx_surface_submit_pixels(s, pixels, rgba);
+   r = gfx_surface_prepare(s, pixels, s->pixfmt, rgba, false, &fmt)
+      ? gfx_surface_submit_img(s, 0, fmt) : GFX_SURFACE_SUBMIT_FAILED;
+   gfx_surface_count(r);
+   return r;
+}
+
 void gfx_surface_set_yuv(gfx_surface_t *s, unsigned flags)
 {
    if (s && GFX_SURFACE_IS_PLANAR(s))

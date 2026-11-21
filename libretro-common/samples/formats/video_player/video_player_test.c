@@ -414,6 +414,7 @@ typedef struct
    int bad_px;
    int begun[2];         /* slot_begin minus slot_end, per slot */
    int held;             /* slot of a QUEUED present, -1 none */
+   bool queue_canvas;
    int queue_every;      /* present QUEUED every n-th frame, 0 never */
    int start_flags;
    bool slots_on;
@@ -492,7 +493,7 @@ static enum video_player_present sink_present(void *user,
    if (k->nseen < MAX_SEEN)
       k->seen[k->nseen] = idx;
    k->nseen++;
-   if (k->queue_every && !fr->pixels && (k->nseen % k->queue_every) == 0)
+   if (k->queue_every && (!fr->pixels || k->queue_canvas) && (k->nseen % k->queue_every) == 0)
    {
       k->held = (int)fr->slot;
       return VIDEO_PLAYER_PRESENT_QUEUED;
@@ -1269,6 +1270,50 @@ static int seek_step(void *user, int64_t target, bool restart,
    seek->stream->pos = (int)(target / 10000);
    *position = target;
    return 1;
+}
+
+static void lane_canvas_lease(void)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t s;
+   video_player_t *p;
+   seek_test_t seek;
+   unsigned mode, i;
+   for (mode = 0; mode < 2; mode++)
+   {
+      uint32_t first;
+      fake_init(&f, 8, 10);
+      sink_init(&k, &s, false);
+      memset(&seek, 0, sizeof(seek));
+      seek.stream = &f;
+      retro_atomic_int_init(&seek.steps, 0);
+      retro_atomic_int_init(&seek.gate, 1);
+      k.start_flags = VIDEO_PLAYER_HOLD_CANVAS;
+      k.queue_canvas = true;
+      k.queue_every = 1;
+      p = video_player_new(&f, IMAGE_TYPE_PNG, 0, &s, VIDEO_PLAYER_INLINE);
+      CHECK(p && video_player_set_seek_handler(p, seek_step, &seek), "canvas lease: new");
+      if (!p) return;
+      video_player_poll(p, 1000000);
+      first = f.canvas[0];
+      CHECK(k.nseen == 1 && k.held == 0, "canvas lease: not queued");
+      if (mode) CHECK(video_player_seek(p, 20000), "canvas lease: seek request");
+      for (i = 0; i < 100; i++) video_player_poll(p, 2000000 + i * 10000);
+      CHECK(k.nseen == 1 && f.canvas[0] == first && !seek.restarts,
+            "canvas lease: decode or seek rewrote a queued canvas");
+      if (!mode) CHECK(!video_player_stop(p), "canvas lease: stop freed a queued canvas");
+      k.queue_every = 0;
+      k.held = -1;
+      video_player_slot_released(p, 0);
+      if (mode)
+      {
+         video_player_poll(p, 4000000);
+         CHECK(seek.restarts == 1 && k.nseen > 1, "canvas lease: released seek did not resume");
+      }
+      CHECK(video_player_stop(p), "canvas lease: released owner did not settle");
+      video_player_free(p);
+   }
 }
 
 static void lane_seek(bool threaded, bool hw)
@@ -2510,6 +2555,7 @@ int main(void)
 #endif
    lane_input_wait(false, false);
    lane_input_wait(false, true);
+   lane_canvas_lease();
    lane_seek(false, false);
    lane_seek(false, true);
    lane_seek_stop(false);

@@ -1140,7 +1140,8 @@ present_frame:
          return VIDEO_PLAYER_PLAYING;
       return VIDEO_PLAYER_ENDED;
    }
-   p->inline_held = fr.hw && res == VIDEO_PLAYER_PRESENT_QUEUED;
+   p->inline_held = res == VIDEO_PLAYER_PRESENT_QUEUED
+      && (fr.hw || (fr.pixels && (p->flags & VIDEO_PLAYER_HOLD_CANVAS)));
    vp_cadence_present(p, fr.time_us);
    vp_schedule(p, fr.duration_ms, now);
    return VIDEO_PLAYER_PLAYING;
@@ -1494,6 +1495,8 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
          return VIDEO_PLAYER_PLAYING;
       p->flags = (p->flags & VIDEO_PLAYER_INLINE) | (hw ? VP_HW
          : ((unsigned)r & (VIDEO_PLAYER_RGBA | VIDEO_PLAYER_FP16)));
+      if (!hw && !threaded && ((unsigned)r & VIDEO_PLAYER_HOLD_CANVAS))
+         p->flags |= VIDEO_PLAYER_HOLD_CANVAS;
       /* planes need a slot to go to, and are one format or the other */
       p->planar = !hw && ((unsigned)r & VIDEO_PLAYER_I420)
          && p->sink.slot_begin;
@@ -1531,6 +1534,8 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
       p->flags |= VP_STARTED;
    }
 
+   if (p->inline_held && (p->flags & VIDEO_PLAYER_HOLD_CANVAS))
+      return VIDEO_PLAYER_PLAYING;
    if (p->seek_pending)
    {
       int r = vp_poll_seek(p, now_us);
@@ -1665,6 +1670,8 @@ bool video_player_stop(video_player_t *p)
    if (!p)
       return true;
    p->flags |= VP_STOPPED;
+   if (p->inline_held && (p->flags & VIDEO_PLAYER_HOLD_CANVAS))
+      stopped = false;
 #ifdef VIDEO_PLAYER_WORKER
    retro_atomic_store_release_int(&p->seek_interrupt, 1);
    if (p->job[0])
