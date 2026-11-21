@@ -361,6 +361,16 @@ void seq_cst_fence_shape(retro_atomic_int_t *a, retro_atomic_int_t *b)
    retro_atomic_store_relaxed_int(b, retro_atomic_load_relaxed_int(a));
 }
 
+#ifdef RETRO_ATOMIC_HAS_128
+/* The 128-bit release store, for check-barriers.sh: on aarch64 one
+ * exclusive-pair loop, with no compare of a value read first. */
+void store_128_shape(retro_atomic_128_t *w, retro_u128_t v);
+void store_128_shape(retro_atomic_128_t *w, retro_u128_t v)
+{
+   retro_atomic_store_release_128(w, v);
+}
+#endif
+
 static int check_acq_rel_fence(void)
 {
    retro_atomic_int_t in, out;

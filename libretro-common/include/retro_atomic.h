@@ -2655,6 +2655,64 @@ static RETRO_ATOMIC_INLINE int retro_atomic_cas_seen_128(retro_atomic_128_t *p,
 
 #endif
 
+#if defined(RETRO_ATOMIC_128_GNU_A64_)
+/* aarch64's exclusive pair needs no compare to swap, load or store a
+ * whole value: one LDXP/STXP loop each, where a compare-and-swap loop
+ * would first read the two halves apart and then compare them. */
+static RETRO_ATOMIC_INLINE retro_u128_t retro_atomic_exchange_128(retro_atomic_128_t *p,
+      retro_u128_t value)
+{
+   retro_u128_t seen;
+   unsigned status;
+   __asm__ __volatile__(
+         "1:\n"
+         "\tldaxp %[sl], %[sh], %[mem]\n"
+         "\tstlxp %w[st], %[vl], %[vh], %[mem]\n"
+         "\tcbnz  %w[st], 1b\n"
+         : [st] "=&r" (status), [sl] "=&r" (seen.lo), [sh] "=&r" (seen.hi),
+           [mem] "+Q" (*p)
+         : [vl] "r" (value.lo), [vh] "r" (value.hi)
+         : "memory");
+   return seen;
+}
+
+/* A pair read by LDAXP is known to be whole once the same pair is stored
+ * back over it */
+static RETRO_ATOMIC_INLINE retro_u128_t retro_atomic_load_acquire_128(
+      retro_atomic_128_t *p)
+{
+   retro_u128_t seen;
+   unsigned status;
+   __asm__ __volatile__(
+         "1:\n"
+         "\tldaxp %[sl], %[sh], %[mem]\n"
+         "\tstxp  %w[st], %[sl], %[sh], %[mem]\n"
+         "\tcbnz  %w[st], 1b\n"
+         : [st] "=&r" (status), [sl] "=&r" (seen.lo), [sh] "=&r" (seen.hi),
+           [mem] "+Q" (*p)
+         :
+         : "memory");
+   return seen;
+}
+
+static RETRO_ATOMIC_INLINE void retro_atomic_store_release_128(retro_atomic_128_t *p,
+      retro_u128_t value)
+{
+   uint64_t old_lo, old_hi;
+   unsigned status;
+   __asm__ __volatile__(
+         "1:\n"
+         "\tldxp  %[ol], %[oh], %[mem]\n"
+         "\tstlxp %w[st], %[vl], %[vh], %[mem]\n"
+         "\tcbnz  %w[st], 1b\n"
+         : [st] "=&r" (status), [ol] "=&r" (old_lo), [oh] "=&r" (old_hi),
+           [mem] "+Q" (*p)
+         : [vl] "r" (value.lo), [vh] "r" (value.hi)
+         : "memory");
+   (void)old_lo;
+   (void)old_hi;
+}
+#else
 static RETRO_ATOMIC_INLINE retro_u128_t retro_atomic_exchange_128(retro_atomic_128_t *p,
       retro_u128_t value)
 {
@@ -2666,8 +2724,9 @@ static RETRO_ATOMIC_INLINE retro_u128_t retro_atomic_exchange_128(retro_atomic_1
    }
    return seen;
 }
+#endif
 
-#if !defined(RETRO_ATOMIC_128_GNU_X64_)
+#if !defined(RETRO_ATOMIC_128_GNU_X64_) && !defined(RETRO_ATOMIC_128_GNU_A64_)
 /* No single access for sixteen bytes: the value swapped for itself is
  * the value, whole */
 static RETRO_ATOMIC_INLINE retro_u128_t retro_atomic_load_acquire_128(

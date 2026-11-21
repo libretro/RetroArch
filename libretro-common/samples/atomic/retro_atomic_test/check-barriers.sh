@@ -69,5 +69,15 @@ else
    echo "ok    acq_rel_fence_shape: one dmb ish"
 fi
 
+# The 128-bit release store is one exclusive-pair loop: LDXP then STLXP,
+# with no compare of a value read before it
+dis=$("$OBJDUMP" -d "$OBJ" --disassemble=store_128_shape 2>/dev/null)
+if ! echo "$dis" | grep -q "stlxp" || echo "$dis" | grep -qE "[[:space:]](cmp|ccmp)[[:space:]]"; then
+   echo "FAIL  store_128_shape: want an ldxp/stlxp loop with no compare"
+   rc=1
+else
+   echo "ok    store_128_shape: ldxp/stlxp, no compare"
+fi
+
 rm -f "$OBJ"
 exit $rc
