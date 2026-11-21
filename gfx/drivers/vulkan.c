@@ -3895,6 +3895,33 @@ static bool gfx_display_vk_mesh_draw(void *data, unsigned video_dims,
    return true;
 }
 
+/* Unclipped display quads belong to the display target, not the core's
+ * letterboxed viewport. Keep an explicit menu clip when one is active,
+ * and leave the core's default clip unchanged after this draw. */
+static void vulkan_display_draw_triangles(vk_t *vk,
+      const struct vk_draw_triangles *call)
+{
+   bool clipped = (vk->flags & VK_FLAG_TRACKER_USE_SCISSOR) != 0;
+   VkRect2D saved = vk->tracker.scissor;
+   if (!clipped)
+   {
+      unsigned dims = vulkan_display_dims(vk);
+      vk->tracker.scissor.offset.x = 0;
+      vk->tracker.scissor.offset.y = 0;
+      vk->tracker.scissor.extent.width = VIDEO_SCALE_W(dims);
+      vk->tracker.scissor.extent.height = VIDEO_SCALE_H(dims);
+      vk->flags |= VK_FLAG_TRACKER_USE_SCISSOR;
+      vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+   }
+   vulkan_draw_triangles(vk, call);
+   if (!clipped)
+   {
+      vk->tracker.scissor = saved;
+      vk->flags &= ~VK_FLAG_TRACKER_USE_SCISSOR;
+      vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+   }
+}
+
 static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
@@ -4018,7 +4045,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
             call.vbo          = &range;
             call.vertices     = draw->coords->vertices;
 
-            vulkan_draw_triangles(vk, &call);
+            vulkan_display_draw_triangles(vk, &call);
          }
          break;
 #endif
@@ -4081,12 +4108,12 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
                call.pipeline     = vk->display.pipeline_linear_sdr;
                call.uniform      = &lin_ubo;
                call.uniform_size = sizeof(lin_ubo);
-               vulkan_draw_triangles(vk, &call);
+               vulkan_display_draw_triangles(vk, &call);
                break;
             }
 #endif
 
-            vulkan_draw_triangles(vk, &call);
+            vulkan_display_draw_triangles(vk, &call);
          }
          break;
    }
