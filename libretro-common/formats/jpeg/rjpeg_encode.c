@@ -279,34 +279,16 @@ typedef struct
    unsigned       w, h;     /* the plane's own size */
 } rjpeg_plane_t;
 
-/* One block from (x, y), past-the-edge samples repeating the last ones;
- * transformed, quantised and coded */
-static void code_block(rjpeg_bw_t *b, const rjpeg_plane_t *pl, unsigned x,
-      unsigned y, const rjpeg_encoder_t *e, unsigned t, int *pred)
+/* One block of samples, level-shifted, transformed, quantised and coded */
+static void code_coefs(rjpeg_bw_t *b, int *d, const rjpeg_encoder_t *e,
+      unsigned t, int *pred)
 {
-   int      d[64];
    int      q[64];
    unsigned i, j, run;
    int      diff, mag, cat;
    const uint32_t *recip = e->recip[t];
    const uint16_t *dcc = e->code[2 * t],     *acc = e->code[2 * t + 1];
    const uint8_t  *dcl = e->len[2 * t],      *acl = e->len[2 * t + 1];
-
-   if (x + 8 <= pl->w && y + 8 <= pl->h)
-      for (j = 0; j < 8; j++)
-      {
-         const uint8_t *row = pl->p + (y + j) * pl->stride + x;
-         for (i = 0; i < 8; i++)
-            d[j * 8 + i] = (int)row[i] - 128;
-      }
-   else
-      for (j = 0; j < 8; j++)
-      {
-         unsigned       yy  = y + j < pl->h ? y + j : pl->h - 1;
-         const uint8_t *row = pl->p + yy * pl->stride;
-         for (i = 0; i < 8; i++)
-            d[j * 8 + i] = (int)row[x + i < pl->w ? x + i : pl->w - 1] - 128;
-      }
 
    for (j = 0; j < 8; j++)
       fdct_1d(d + j * 8, 1);
@@ -358,31 +340,140 @@ static void code_block(rjpeg_bw_t *b, const rjpeg_plane_t *pl, unsigned x,
       put_bits(b, acc[0], acl[0]);
 }
 
+/* One block from (x, y) of a plane, past-the-edge samples repeating the
+ * last ones; coded */
+static void code_block(rjpeg_bw_t *b, const rjpeg_plane_t *pl, unsigned x,
+      unsigned y, const rjpeg_encoder_t *e, unsigned t, int *pred)
+{
+   int      d[64];
+   unsigned i, j;
+
+   if (x + 8 <= pl->w && y + 8 <= pl->h)
+      for (j = 0; j < 8; j++)
+      {
+         const uint8_t *row = pl->p + (y + j) * pl->stride + x;
+         for (i = 0; i < 8; i++)
+            d[j * 8 + i] = (int)row[i] - 128;
+      }
+   else
+      for (j = 0; j < 8; j++)
+      {
+         unsigned       yy  = y + j < pl->h ? y + j : pl->h - 1;
+         const uint8_t *row = pl->p + yy * pl->stride;
+         for (i = 0; i < 8; i++)
+            d[j * 8 + i] = (int)row[x + i < pl->w ? x + i : pl->w - 1] - 128;
+      }
+
+   code_coefs(b, d, e, t, pred);
+}
+
+/* SOI to SOS: three components (Y at @vs rows to a chroma row) or one, a
+ * restart interval when @restart is not 0 */
+static void put_headers(rjpeg_bw_t *b, const rjpeg_encoder_t *e,
+      unsigned width, unsigned height, unsigned ncomp, unsigned vs,
+      unsigned restart)
+{
+   static const uint8_t jfif[14] =
+   { 'J', 'F', 'I', 'F', 0, 1, 1, 0, 0, 1, 0, 1, 0, 0 };
+   unsigned i, ntab = ncomp == 3 ? 2 : 1;
+
+   put_byte(b, 0xFF);
+   put_byte(b, 0xD8);
+   put_marker_len(b, 0xE0, 2 + sizeof(jfif));
+   for (i = 0; i < sizeof(jfif); i++)
+      put_byte(b, jfif[i]);
+
+   put_marker_len(b, 0xDB, 2 + ntab * 65);
+   for (i = 0; i < ntab; i++)
+   {
+      unsigned k;
+      put_byte(b, i);
+      for (k = 0; k < 64; k++)
+         put_byte(b, e->qt[i][k]);
+   }
+
+   put_marker_len(b, 0xC0, 8 + ncomp * 3);
+   put_byte(b, 8);
+   put_byte(b, height >> 8);
+   put_byte(b, height & 0xFF);
+   put_byte(b, width >> 8);
+   put_byte(b, width & 0xFF);
+   put_byte(b, ncomp);
+   if (ncomp == 3)
+   {
+      put_byte(b, 1); put_byte(b, 0x20 | vs); put_byte(b, 0);
+      put_byte(b, 2); put_byte(b, 0x11);      put_byte(b, 1);
+      put_byte(b, 3); put_byte(b, 0x11);      put_byte(b, 1);
+   }
+   else
+   {
+      put_byte(b, 1); put_byte(b, 0x11);      put_byte(b, 0);
+   }
+
+   put_dht(b, 0x00, rjpeg_dc_lum_bits, rjpeg_dc_vals);
+   put_dht(b, 0x10, rjpeg_ac_lum_bits, rjpeg_ac_lum_vals);
+   if (ncomp == 3)
+   {
+      put_dht(b, 0x01, rjpeg_dc_chr_bits, rjpeg_dc_vals);
+      put_dht(b, 0x11, rjpeg_ac_chr_bits, rjpeg_ac_chr_vals);
+   }
+
+   if (restart)
+   {
+      put_marker_len(b, 0xDD, 4);
+      put_byte(b, restart >> 8);
+      put_byte(b, restart & 0xFF);
+   }
+
+   put_marker_len(b, 0xDA, 6 + 2 * ncomp);
+   put_byte(b, ncomp);
+   put_byte(b, 1); put_byte(b, 0x00);
+   if (ncomp == 3)
+   {
+      put_byte(b, 2); put_byte(b, 0x11);
+      put_byte(b, 3); put_byte(b, 0x11);
+   }
+   put_byte(b, 0);
+   put_byte(b, 63);
+   put_byte(b, 0);
+}
+
+static void init_writer(rjpeg_bw_t *b, uint8_t *dst, size_t cap)
+{
+   b->p        = dst;
+   b->pos      = 0;
+   b->cap      = cap;
+   b->acc      = 0;
+   b->nbits    = 0;
+   b->overflow = 0;
+}
+
+static size_t finish(rjpeg_bw_t *b)
+{
+   flush_bits(b);
+   put_byte(b, 0xFF);
+   put_byte(b, 0xD9);
+   return b->overflow ? 0 : b->pos;
+}
+
 size_t rjpeg_encode(const rjpeg_encoder_t *e, uint8_t *dst, size_t cap,
       unsigned width, unsigned height, enum rjpeg_encode_sampling sampling,
       const uint8_t *y, size_t y_stride,
       const uint8_t *cb, size_t cb_stride,
       const uint8_t *cr, size_t cr_stride)
 {
-   static const uint8_t jfif[14] =
-   { 'J', 'F', 'I', 'F', 0, 1, 1, 0, 0, 1, 0, 1, 0, 0 };
    rjpeg_plane_t pl[3];
    rjpeg_bw_t    b;
    unsigned      mcu_h = sampling == RJPEG_ENCODE_420 ? 16 : 8;
    unsigned      vs    = sampling == RJPEG_ENCODE_420 ? 2 : 1;
-   unsigned      i, mx, my;
+   unsigned      mx, my;
    int           pred[3] = { 0, 0, 0 };
 
    if (!e || !dst || !y || !cb || !cr || !width || !height
          || width > 65535 || height > 65535)
       return 0;
 
-   b.p = dst;
-   b.pos = 0;
-   b.cap = cap;
-   b.acc = 0;
-   b.nbits = 0;
-   b.overflow = 0;
+   init_writer(&b, dst, cap);
 
    pl[0].p = y;  pl[0].stride = y_stride;  pl[0].w = width;  pl[0].h = height;
    pl[1].p = cb; pl[1].stride = cb_stride;
@@ -390,45 +481,7 @@ size_t rjpeg_encode(const rjpeg_encoder_t *e, uint8_t *dst, size_t cap,
    pl[1].w = pl[2].w = (width + 1) / 2;
    pl[1].h = pl[2].h = vs == 2 ? (height + 1) / 2 : height;
 
-   put_byte(&b, 0xFF);
-   put_byte(&b, 0xD8);
-   put_marker_len(&b, 0xE0, 2 + sizeof(jfif));
-   for (i = 0; i < sizeof(jfif); i++)
-      put_byte(&b, jfif[i]);
-
-   put_marker_len(&b, 0xDB, 2 + 2 * 65);
-   for (i = 0; i < 2; i++)
-   {
-      unsigned k;
-      put_byte(&b, i);
-      for (k = 0; k < 64; k++)
-         put_byte(&b, e->qt[i][k]);
-   }
-
-   put_marker_len(&b, 0xC0, 8 + 3 * 3);
-   put_byte(&b, 8);
-   put_byte(&b, height >> 8);
-   put_byte(&b, height & 0xFF);
-   put_byte(&b, width >> 8);
-   put_byte(&b, width & 0xFF);
-   put_byte(&b, 3);
-   put_byte(&b, 1); put_byte(&b, 0x20 | vs); put_byte(&b, 0);
-   put_byte(&b, 2); put_byte(&b, 0x11);      put_byte(&b, 1);
-   put_byte(&b, 3); put_byte(&b, 0x11);      put_byte(&b, 1);
-
-   put_dht(&b, 0x00, rjpeg_dc_lum_bits, rjpeg_dc_vals);
-   put_dht(&b, 0x10, rjpeg_ac_lum_bits, rjpeg_ac_lum_vals);
-   put_dht(&b, 0x01, rjpeg_dc_chr_bits, rjpeg_dc_vals);
-   put_dht(&b, 0x11, rjpeg_ac_chr_bits, rjpeg_ac_chr_vals);
-
-   put_marker_len(&b, 0xDA, 6 + 2 * 3);
-   put_byte(&b, 3);
-   put_byte(&b, 1); put_byte(&b, 0x00);
-   put_byte(&b, 2); put_byte(&b, 0x11);
-   put_byte(&b, 3); put_byte(&b, 0x11);
-   put_byte(&b, 0);
-   put_byte(&b, 63);
-   put_byte(&b, 0);
+   put_headers(&b, e, width, height, 3, vs, 0);
    if (b.overflow)
       return 0;
 
@@ -448,8 +501,82 @@ size_t rjpeg_encode(const rjpeg_encoder_t *e, uint8_t *dst, size_t cap,
       if (b.overflow)
          return 0;
    }
-   flush_bits(&b);
-   put_byte(&b, 0xFF);
-   put_byte(&b, 0xD9);
-   return b.overflow ? 0 : b.pos;
+   return finish(&b);
+}
+
+/* One block from the caller's source; coded */
+static void code_source_block(rjpeg_bw_t *b, const struct rjpeg_encode_source *src,
+      unsigned c, unsigned x, unsigned y, const rjpeg_encoder_t *e, unsigned t,
+      int *pred)
+{
+   uint8_t  px[64];
+   int      d[64];
+   unsigned i;
+   src->block(src->user, c, x, y, px);
+   for (i = 0; i < 64; i++)
+      d[i] = (int)px[i] - 128;
+   code_coefs(b, d, e, t, pred);
+}
+
+size_t rjpeg_encode_blocks(const rjpeg_encoder_t *e, uint8_t *dst, size_t cap,
+      unsigned width, unsigned height, const struct rjpeg_encode_source *src)
+{
+   rjpeg_bw_t b;
+   unsigned   ncomp, mcu_w, mcu_h, vs, mx, my;
+   unsigned   restart, left, rst = 0;
+   int        pred[3] = { 0, 0, 0 };
+
+   if (!e || !dst || !src || !src->block || !width || !height
+         || width > 65535 || height > 65535 || src->restart_interval > 65535)
+      return 0;
+
+   ncomp   = src->grey ? 1 : 3;
+   vs      = ncomp == 3 && src->sampling == RJPEG_ENCODE_420 ? 2 : 1;
+   mcu_w   = ncomp == 3 ? 16 : 8;
+   mcu_h   = 8 * vs;
+   restart = src->restart_interval;
+   left    = restart;
+
+   init_writer(&b, dst, cap);
+   put_headers(&b, e, width, height, ncomp, vs, restart);
+   if (b.overflow)
+      return 0;
+
+   for (my = 0; my < height; my += mcu_h)
+   {
+      for (mx = 0; mx < width; mx += mcu_w)
+      {
+         /* Every restart_interval MCUs, but not before the first:
+          * the bits byte-aligned, RSTn, the predictions back to 0 */
+         if (restart)
+         {
+            if (!left)
+            {
+               flush_bits(&b);
+               put_byte(&b, 0xFF);
+               put_byte(&b, 0xD0 + (rst++ & 7));
+               pred[0] = pred[1] = pred[2] = 0;
+               left    = restart;
+            }
+            left--;
+         }
+
+         if (ncomp == 1)
+            code_source_block(&b, src, 0, mx, my, e, 0, &pred[0]);
+         else
+         {
+            unsigned by;
+            for (by = 0; by < vs; by++)
+            {
+               code_source_block(&b, src, 0, mx,     my + by * 8, e, 0, &pred[0]);
+               code_source_block(&b, src, 0, mx + 8, my + by * 8, e, 0, &pred[0]);
+            }
+            code_source_block(&b, src, 1, mx / 2, my / vs, e, 1, &pred[1]);
+            code_source_block(&b, src, 2, mx / 2, my / vs, e, 1, &pred[2]);
+         }
+      }
+      if (b.overflow)
+         return 0;
+   }
+   return finish(&b);
 }

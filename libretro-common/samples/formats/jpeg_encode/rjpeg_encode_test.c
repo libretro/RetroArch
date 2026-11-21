@@ -30,7 +30,10 @@
  *   - noise at quality 100, the worst case, fits rjpeg_encode_bound()
  *     (its PSNR only says it decoded: rjpeg's chroma upsampling and the
  *     repeated chroma it is measured against differ most on noise);
- *   - a buffer a byte short gives 0 and writes nothing past its end.
+ *   - a buffer a byte short gives 0 and writes nothing past its end;
+ *   - rjpeg_encode_blocks, given the same planes a block at a time,
+ *     writes the same bytes; with restart markers it decodes to the same
+ *     pixels; greyscale is one component, within the PSNR of its quality.
  *
  * With a directory argument it also writes the files there, for the CI
  * workflow to decode with FFmpeg.
@@ -245,6 +248,108 @@ static void test_case(const char *dir, unsigned w, unsigned h, bool c422,
    free(out);
 }
 
+/* The picture's planes, a block at a time, for rjpeg_encode_blocks */
+static void plane_block(void *user, unsigned c, unsigned x, unsigned y, uint8_t *px)
+{
+   const picture_t     *p  = (const picture_t*)user;
+   const unsigned char *pl = c == 0 ? p->y : c == 1 ? p->cb : p->cr;
+   unsigned             w  = c ? p->cw : p->w, h = c ? p->ch : p->h, i, j;
+   for (j = 0; j < 8; j++)
+   {
+      unsigned yy = y + j < h ? y + j : h - 1;
+      for (i = 0; i < 8; i++)
+         px[j * 8 + i] = pl[yy * w + (x + i < w ? x + i : w - 1)];
+   }
+}
+
+/* What rjpeg decodes, as RGBA (NULL if it does not) */
+static unsigned char *decode_all(const unsigned char *jpg, size_t n,
+      unsigned *w, unsigned *h)
+{
+   rjpeg_t *dec = rjpeg_alloc();
+   sink_t   s;
+   struct rjpeg_rows rows;
+   memset(&s, 0, sizeof(s));
+   rows.size = sink_size;
+   rows.row  = sink_row;
+   rows.done = sink_done;
+   rows.user = &s;
+   if (!dec || !rjpeg_decode_rows(dec, jpg, n, true, &rows, w, h))
+   {
+      free(s.rgba);
+      s.rgba = NULL;
+   }
+   rjpeg_free(dec);
+   return s.rgba;
+}
+
+static void test_blocks(unsigned w, unsigned h, bool c422, unsigned quality,
+      double min_grey_psnr)
+{
+   static rjpeg_encoder_t e;
+   picture_t      p;
+   struct rjpeg_encode_source src;
+   size_t         cap = rjpeg_encode_bound(w, h), n, nb, nr, ng;
+   unsigned char *out = (unsigned char*)malloc(cap);
+   unsigned char *blk = (unsigned char*)malloc(cap);
+   unsigned char *rst = (unsigned char*)malloc(cap + 4096);
+   unsigned char *grey = (unsigned char*)malloc(cap);
+   unsigned char *a, *b;
+   unsigned       aw = 0, ah = 0, bw = 0, bh = 0, i;
+   double         se = 0, psnr = 0;
+
+   make(&p, w, h, c422, 0);
+   rjpeg_encoder_init(&e, quality);
+   n = rjpeg_encode(&e, out, cap, w, h,
+         c422 ? RJPEG_ENCODE_422 : RJPEG_ENCODE_420,
+         p.y, w, p.cb, p.cw, p.cr, p.cw);
+
+   memset(&src, 0, sizeof(src));
+   src.block    = plane_block;
+   src.user     = &p;
+   src.sampling = c422 ? RJPEG_ENCODE_422 : RJPEG_ENCODE_420;
+   nb = rjpeg_encode_blocks(&e, blk, cap, w, h, &src);
+   CHECK(n > 0 && nb == n && !memcmp(blk, out, n));
+
+   src.restart_interval = 3;
+   nr = rjpeg_encode_blocks(&e, rst, cap + 4096, w, h, &src);
+   CHECK(nr > n);
+   a = decode_all(out, n, &aw, &ah);
+   b = nr ? decode_all(rst, nr, &bw, &bh) : NULL;
+   CHECK(a && b && aw == bw && ah == bh && !memcmp(a, b, (size_t)aw * ah * 4));
+   free(a);
+   free(b);
+
+   src.restart_interval = 0;
+   src.grey = 1;
+   ng = rjpeg_encode_blocks(&e, grey, cap, w, h, &src);
+   CHECK(ng > 0 && ng < n);
+   a = ng ? decode_all(grey, ng, &aw, &ah) : NULL;
+   CHECK(a && aw == w && ah == h);
+   if (a && aw == w && ah == h)
+   {
+      for (i = 0; i < w * h; i++)
+      {
+         double d = (double)p.y[i] - a[i * 4];
+         se += d * d;
+         CHECK(a[i * 4] == a[i * 4 + 1] && a[i * 4] == a[i * 4 + 2]);
+      }
+      se /= (double)w * h;
+      psnr = se > 0 ? 10 * log10(255.0 * 255.0 / se) : 99;
+   }
+   free(a);
+   printf("%ux%u %s q%u blocks: same bytes %s, restart %lu bytes, grey %lu bytes PSNR %.2f\n",
+         w, h, c422 ? "4:2:2" : "4:2:0", quality, nb == n ? "yes" : "no",
+         (unsigned long)nr, (unsigned long)ng, psnr);
+   CHECK(psnr >= min_grey_psnr);
+
+   release(&p);
+   free(out);
+   free(blk);
+   free(rst);
+   free(grey);
+}
+
 int main(int argc, char **argv)
 {
    const char *dir = argc > 1 ? argv[1] : NULL;
@@ -258,6 +363,11 @@ int main(int argc, char **argv)
    test_case(dir,   1,   1, false, 0,  90, 30.0, 0x1ed9e03eUL);
    test_case(dir, 128,  64, false, 1, 100, 12.0, 0xb50e30a3UL);
    test_case(dir, 130,  66, true,  1, 100, 12.0, 0x4e3b7a4dUL);
+
+   test_blocks(352, 288, false, 75, 38.0);
+   test_blocks(333, 197, true,  75, 36.0);
+   test_blocks( 17,   9, false, 90, 30.0);
+   test_blocks(  1,   1, true,  90, 30.0);
 
    if (failures)
       printf("\n%u check(s) failed\n", failures);
