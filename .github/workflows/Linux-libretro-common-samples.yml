@@ -489,6 +489,9 @@ jobs:
             # the eventcount: a lost wake leaves a thread asleep and the
             # test's alarm ends it.
             retro_waitaddr_test
+            # After retro_waitaddr_reserve(), 32 threads waiting at once
+            # allocate nothing (a fault handler's wait must not)
+            retro_waitaddr_reserve_test
             # retro_sleep_until_us must never return early against the
             # microsecond clock; the late bound is loose for a loaded
             # runner.

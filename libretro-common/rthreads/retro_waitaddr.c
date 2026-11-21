@@ -146,31 +146,67 @@ static struct wa_record *wa_chunk_get(unsigned c)
 
 /* A record of the caller's own until wa_release.  The search starts
  * where the thread's stack says, so a thread finds the record it had
- * last time with one compare-and-swap. */
+ * last time with one compare-and-swap.  It looks through the chunks
+ * already made first and makes one only when none of them has a free
+ * record: after retro_waitaddr_reserve() for as many threads as wait
+ * at once, a wait never allocates (calloc is not async-signal-safe,
+ * and a fault handler may wait). */
 static struct wa_record *wa_acquire(void)
 {
    int      here;
    unsigned start = (unsigned)((uintptr_t)&here >> 14);
-   unsigned n;
+   unsigned pass;
 
-   for (n = 0; n < WA_CHUNKS * WA_PER_CHUNK; n++)
+   for (pass = 0; pass < 2; pass++)
    {
-      unsigned at = (start + n) % (WA_CHUNKS * WA_PER_CHUNK);
-      struct wa_record *chunk = wa_chunk_get(at / WA_PER_CHUNK);
-      struct wa_record *rec;
-      int state;
+      unsigned n;
 
-      if (!chunk)
-         return NULL;
+      for (n = 0; n < WA_CHUNKS * WA_PER_CHUNK; n++)
+      {
+         unsigned at = (start + n) % (WA_CHUNKS * WA_PER_CHUNK);
+         struct wa_record *chunk;
+         struct wa_record *rec;
+         int state;
 
-      rec   = &chunk[at % WA_PER_CHUNK];
-      state = retro_atomic_load_acquire_int(&rec->state);
-      if ((state & 3) == WA_FREE
-            && retro_atomic_cas_int(&rec->state, state, state | WA_OWNED))
-         return rec;
+         if (pass)
+         {
+            if (!(chunk = wa_chunk_get(at / WA_PER_CHUNK)))
+               return NULL;
+         }
+         else if (!(chunk = (struct wa_record*)
+                  retro_atomic_load_acquire_ptr(&wa_chunks[at / WA_PER_CHUNK])))
+         {
+            /* Not made: on to the next chunk */
+            n += WA_PER_CHUNK - 1 - at % WA_PER_CHUNK;
+            continue;
+         }
+
+         rec   = &chunk[at % WA_PER_CHUNK];
+         state = retro_atomic_load_acquire_int(&rec->state);
+         if ((state & 3) == WA_FREE
+               && retro_atomic_cas_int(&rec->state, state, state | WA_OWNED))
+            return rec;
+      }
    }
 
    return NULL;
+}
+
+bool retro_waitaddr_reserve(unsigned waiters)
+{
+   unsigned c;
+   unsigned chunks = (waiters + WA_PER_CHUNK - 1) / WA_PER_CHUNK;
+
+   if (chunks > WA_CHUNKS)
+      return false;
+
+   for (c = 0; c < chunks; c++)
+   {
+      if (!wa_chunk_get(c))
+         return false;
+   }
+
+   return true;
 }
 
 bool retro_waitaddr_wait(const retro_waitaddr_t *list, unsigned count,
