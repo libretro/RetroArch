@@ -7386,7 +7386,8 @@ static uint32_t rslc_rm_helper(struct rslc_rm *r, unsigned bfn, unsigned nargs,
          if (k == nargs) break;
       }
       if (at == r->ncolours) return 0;
-      snprintf(name, sizeof(name), "rarch_colour_gather_%u", at);
+      /* C89 has no snprintf: 20 characters and ten digits fit */
+      sprintf(name, "rarch_colour_gather_%u", at);
       len = strlen(name);
    }
    else
@@ -7601,7 +7602,8 @@ static bool rslc_rm_colour_snippet(struct rslc_rm *r, struct rslc_pbuf *b)
       const char *bn = rslc_bfn_name(call->bfn);
       unsigned gather_args = call->bfn == RSLC_BFN_TEXTUREGATHEROFFSET ? 3 : 2;
       char offset[64];
-      snprintf(offset, sizeof(offset), ", ivec2(%ld, %ld)",
+      /* C89 has no snprintf: two longs and the text fit in 64 */
+      sprintf(offset, ", ivec2(%ld, %ld)",
             (long)call->offset[0], (long)call->offset[1]);
       ok = rslc_rm_text(r, b, "vec4 ")
          && rslc_rm_text(r, b, "rarch_colour_gather_") && rslc_pbuf_putu(r->c, b, i)
