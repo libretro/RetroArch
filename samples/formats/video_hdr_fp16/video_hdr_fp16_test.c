@@ -25,12 +25,21 @@
 #define H 48
 #define GREY_Y 600
 
-static unsigned fail_canvas;
+static unsigned fail_canvas, canvas_allocations;
+static void *first_canvas;
 static void *canvas_alloc(size_t size)
 {
    if (fail_canvas && size == W * H * sizeof(uint32_t))
       return NULL;
-   return malloc(size);
+   {
+      void *result = malloc(size);
+      if (size == W * H * sizeof(uint32_t) && result)
+      {
+         if (!canvas_allocations) first_canvas = result;
+         canvas_allocations++;
+      }
+      return result;
+   }
 }
 
 /* Inspect canvas ownership and inject failure in the container readers. */
@@ -240,6 +249,79 @@ static void still_lane(const fixture_t *f, int want)
             expect ? "half floats on the PQ EOTF" : "32-bit words");
 }
 
+/* The caller keeps the first picture while the detached stream advances.
+ * One allocation must serve both rendering and the returned image. */
+static void still_handoff_lane(const fixture_t *f, int want10, bool rgba)
+{
+   size_t len;
+   void *bytes = load(f->path, &len);
+   void *transfer = image_transfer_new(f->type);
+   void *stream;
+   uint32_t *pixels = NULL;
+   const uint32_t *next;
+   unsigned w = 0, h = 0, guard = 0;
+   int result;
+   CHECK(transfer != NULL, "%s: no still transfer", f->path);
+   if (!transfer) { free(bytes); return; }
+   image_transfer_set_buffer_ptr(transfer, f->type, bytes, len);
+   image_transfer_set_want_10bit(transfer, f->type, want10 != 0);
+   CHECK(image_transfer_start(transfer, f->type), "%s: still start", f->path);
+   while (image_transfer_iterate(transfer, f->type) && guard++ < 100000) ;
+   canvas_allocations = 0;
+   first_canvas = NULL;
+   guard = 0;
+   do
+      result = image_transfer_process(transfer, f->type, &pixels, len, &w, &h, rgba);
+   while (result == IMAGE_PROCESS_NEXT && guard++ < 100000);
+   CHECK(result == IMAGE_PROCESS_END && pixels && w == W && h == H,
+         "%s: handoff decode failed", f->path);
+   CHECK(canvas_allocations == 1 && pixels == first_canvas,
+         "%s: first picture copied instead of handed over (%u allocations)",
+         f->path, canvas_allocations);
+   {
+      bool ten = want10 && strstr(f->path, "vp8") == NULL;
+      CHECK(image_transfer_is_10bit(transfer, f->type) == ten,
+            "%s: handoff changed output precision", f->path);
+      if (pixels)
+         CHECK(ten ? pixels[0] >> 30 == 3 : pixels[0] >> 24 == 0xff,
+               "%s: handoff changed the packed pixel layout", f->path);
+   }
+   stream = image_transfer_detach_anim_stream(transfer, f->type);
+   CHECK(stream != NULL, "%s: stream not detachable", f->path);
+   if (stream)
+      CHECK(!(f->type == IMAGE_TYPE_MP4
+               ? ((rmp4_video_stream_t*)stream)->frame
+               : ((rwebm_video_stream_t*)stream)->frame),
+            "%s: stream still owns the returned canvas", f->path);
+   image_transfer_free(transfer, f->type);
+   if (pixels && stream)
+   {
+      pixels[0] = 0x13579bdfu;
+      next = stream_next(f, stream);
+      CHECK(next && next != pixels && pixels[0] == 0x13579bdfu,
+            "%s: continued playback reused the caller's first picture", f->path);
+      if (rgba)
+      {
+         stream_close(f, stream);
+         CHECK(pixels[0] == 0x13579bdfu, "%s: stream freed the still", f->path);
+         free(pixels);
+      }
+      else
+      {
+         free(pixels);
+         CHECK(stream_next(f, stream) != NULL,
+               "%s: caller freeing the still damaged playback", f->path);
+         stream_close(f, stream);
+      }
+   }
+   else
+   {
+      if (stream) stream_close(f, stream);
+      free(pixels);
+   }
+   free(bytes);
+}
+
 static void canvas_lane(void)
 {
    size_t len;
@@ -438,6 +520,10 @@ int main(void)
       stride_lane(&fx[i], 4);
       still_lane(&fx[i], 1);
       still_lane(&fx[i], 0);
+      still_handoff_lane(&fx[i], 0, true);
+      still_handoff_lane(&fx[i], 0, false);
+      still_handoff_lane(&fx[i], 1, true);
+      still_handoff_lane(&fx[i], 1, false);
    }
    if (failures)
    {

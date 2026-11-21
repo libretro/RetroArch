@@ -3449,7 +3449,6 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
    rmp4_video_stream_t *s;
    const uint32_t *frame;
    uint32_t *out;
-   size_t n;
    int r;
    int duration_ms = 0;
 
@@ -3550,17 +3549,13 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
    }
    else
    {
-      n = (size_t)s->width * s->height;
-      if (!(out = (uint32_t*)malloc(n * sizeof(uint32_t))))
+      /* Hand the renderer's canvas to the image owner. Playback either
+       * renders into a caller's slot or allocates a new canvas; it must
+       * never overwrite or free the still after this transfer. */
+      if (!frame || frame != s->frame)
          goto fail;
-
-      /* The canvas is already in the caller's channel order: 10-bit
-       * output is packed XRGB2101010, and the 8-bit blit emitted ARGB
-       * or ABGR words per supports_rgba (set at the scan/decode
-       * transition above), so the copy is verbatim in every case - the
-       * per-pixel R/B swizzle this replaced was a full extra pass over
-       * the frame. */
-      memcpy(out, frame, n * sizeof(uint32_t));
+      out = s->frame;
+      s->frame = NULL;
    }
 
    if (width)
