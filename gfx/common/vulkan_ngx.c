@@ -869,7 +869,7 @@ fail:
 
 static bool vulkan_ngx_create_feature(vulkan_ngx_t *ngx,
       VkCommandBuffer cmd, VkFormat format, unsigned quality,
-      unsigned flags, unsigned out_dims, unsigned max_dims)
+      unsigned flags, unsigned out_dims, unsigned max_dims, unsigned nr)
 {
    const ngx_lib_t *lib = ngx->lib;
    ngx_parameter_t *p   = ngx->params;
@@ -884,6 +884,7 @@ static bool vulkan_ngx_create_feature(vulkan_ngx_t *ngx,
       ngx->prepare_flags    = flags;
       ngx->prepare_out_dims = out_dims;
       ngx->prepare_max_dims = max_dims;
+      ngx->prepare_nr       = nr;
       return false;
    }
    vulkan_ngx_retire(ngx);
@@ -1111,9 +1112,18 @@ void vulkan_ngx_prepare(vulkan_ngx_t *ngx, VkCommandBuffer cmd)
 {
    ngx->defer_create = false;
    if (ngx->prepare_kind == 1)
-      vulkan_ngx_create_feature(ngx, cmd, ngx->prepare_format,
+   {
+      bool created = vulkan_ngx_create_feature(ngx, cmd, ngx->prepare_format,
             ngx->prepare_quality, ngx->prepare_flags,
-            ngx->prepare_out_dims, ngx->prepare_max_dims);
+            ngx->prepare_out_dims, ngx->prepare_max_dims, ngx->prepare_nr);
+      /* Both features can record setup before either evaluates a frame. */
+      if (created && (ngx->prepare_nr & VIDEO_UPSCALER_NR_ON)
+            && !ngx->nr_feature && !ngx->nr_unsupported
+            && !(ngx->nr_failed_word == ngx->prepare_nr
+               && ngx->nr_failed_dims == ngx->prepare_out_dims))
+         vulkan_ngx_nr_create(ngx, cmd, ngx->prepare_format,
+               ngx->prepare_out_dims, ngx->prepare_nr);
+   }
    else if (ngx->prepare_kind == 2)
       vulkan_ngx_nr_create(ngx, cmd, ngx->prepare_format,
             ngx->prepare_out_dims, ngx->prepare_nr);
@@ -1316,7 +1326,7 @@ bool vulkan_ngx_upscale(vulkan_ngx_t *ngx, VkCommandBuffer cmd,
        || ngx->out_format != color->format)
    {
       if (!vulkan_ngx_create_feature(ngx, cmd, color->format, quality,
-               flags, out_dims, max_dims))
+               flags, out_dims, max_dims, nr))
          return false;
    }
 

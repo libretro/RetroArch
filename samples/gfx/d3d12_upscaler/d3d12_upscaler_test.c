@@ -1503,7 +1503,7 @@ int main(void)
          CHECK(d3d12_upscaler_upscale(up, cmd, &din, &inputs, QUALITY(QUALITY),
                   VIDEO_SCALE_PACK(1920, 1080), &dout));
          end_frame();
-         CHECK(setup_submits == 3);
+         CHECK(setup_submits == 2);
          CHECK(rec->init_calls == init_calls + 2);
          CHECK(rec->shutdown_calls == shutdown_calls + 1);
          for (i = 0; i < 6; i++)
@@ -1520,7 +1520,7 @@ int main(void)
          CHECK(async_test_parked == NULL);
          video_upscaler_retire_cached();
          CHECK(async_test_retire_calls == 1);
-         CHECK(setup_submits == 3);
+         CHECK(setup_submits == 2);
          rec->create_hook_feature = 0;
          rec->create_hook = NULL;
          rec->create_hook_data = NULL;
