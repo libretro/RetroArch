@@ -975,6 +975,8 @@ struct gl3_common_resources
    /* Frames may come inside a larger texture: passes are built to read
     * them there, sampling as the first pass samples. */
    bool frame_rect;
+   bool viewer_colour;
+   float viewer_colour_rows[12];
    bool frame_linear;
    enum slang_rect_wrap frame_wrap;
 };
@@ -1304,6 +1306,7 @@ struct gl3_pass
    bool spirv_binary;
    /* Reads the frame in a way only a texture of its own serves. */
    bool frame_copy;
+   bool colour_tried;
 };
 
 static const struct gl3_framebuffer * gl3_pass_get_framebuffer(struct gl3_pass *pass);
@@ -1581,6 +1584,45 @@ static void gl3_pass_read_frame_in_place(struct gl3_pass *pass)
 #endif
 }
 
+static bool gl3_pass_colour_in_place(struct gl3_pass *pass)
+{
+#ifdef HAVE_RSLC
+   struct slang_text_target text;
+   struct slang_blob *vb = NULL, *fb = NULL;
+   char *vt = NULL, *ft = NULL;
+   enum slang_rect_result result;
+   const struct video_shader *preset = pass->common->shader_preset;
+   bool print = pass->vertex_text && pass->fragment_text;
+   if (pass->colour_tried) return true;
+   if (!preset) return false;
+   if (pass->pass_number >= preset->passes) return true;
+   gl3_text_target(&text);
+   if (!slang_compile_colour(preset->pass[pass->pass_number].source.path,
+            pass->vertex_shader, pass->num_vertex_shader,
+            pass->fragment_shader, pass->num_fragment_shader,
+            pass->pass_number == 0, print ? &text : NULL,
+            &result, &vb, &fb, &vt, &ft)) return false;
+   if (result == SLANG_RECT_UNSUPPORTED) return false;
+   if (vb)
+   {
+      gl3_pass_set_blob(pass, GL_VERTEX_SHADER, vb);
+      gl3_pass_set_shader_text(pass, GL_VERTEX_SHADER, vt);
+   }
+   if (fb)
+   {
+      gl3_pass_set_blob(pass, GL_FRAGMENT_SHADER, fb);
+      gl3_pass_set_shader_text(pass, GL_FRAGMENT_SHADER, ft);
+   }
+   free(vt);
+   free(ft);
+   pass->colour_tried = true;
+   return true;
+#else
+   (void)pass;
+   return false;
+#endif
+}
+
 static bool gl3_pass_build(struct gl3_pass *pass)
 {
    slang_semantic_name_map semantic_map = { 0 };
@@ -1589,6 +1631,8 @@ static bool gl3_pass_build(struct gl3_pass *pass)
 
    if (pass->common->frame_rect)
       gl3_pass_read_frame_in_place(pass);
+   if (pass->common->viewer_colour && !gl3_pass_colour_in_place(pass))
+      return false;
 
    gl3_framebuffer_delete(pass->framebuffer);
    pass->framebuffer          = NULL;
@@ -2574,6 +2618,7 @@ static void gl3_pass_free(struct gl3_pass *pass)
 static void gl3_pass_set_blob(struct gl3_pass *pass, GLenum stage,
       struct slang_blob *blob)
 {
+   pass->colour_tried = false;
    switch (stage)
    {
       case GL_VERTEX_SHADER:
@@ -2779,6 +2824,12 @@ static void gl3_pass_build_semantics(struct gl3_pass *pass, uint8_t *buffer,
 
    /* Standard inputs */
    gl3_pass_build_semantic_frame_rect(pass, buffer, &original->texture);
+   gl3_pass_build_semantic_vec4_values(pass, buffer,
+         SLANG_SEMANTIC_VIEWER_COLOUR0, pass->common->viewer_colour_rows);
+   gl3_pass_build_semantic_vec4_values(pass, buffer,
+         SLANG_SEMANTIC_VIEWER_COLOUR1, pass->common->viewer_colour_rows + 4);
+   gl3_pass_build_semantic_vec4_values(pass, buffer,
+         SLANG_SEMANTIC_VIEWER_COLOUR2, pass->common->viewer_colour_rows + 8);
    gl3_pass_build_semantic_texture(pass, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original);
    gl3_pass_build_semantic_texture(pass, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source);
 
@@ -4456,7 +4507,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_shrink(void)
 
 gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       const char *path, glslang_filter_chain_filter filter, bool frame_rect,
-      bool replay)
+      bool replay, bool viewer_colour)
 {
    size_t j;
    unsigned i;
@@ -4496,6 +4547,10 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       }
    chain->common.sim_source_dims = shader->sim_source_dims;
    chain->common.frame_rect = frame_rect;
+   chain->common.viewer_colour = viewer_colour;
+#ifndef HAVE_RSLC
+   chain->common.viewer_colour = false;
+#endif
    chain->replay            = replay;
    chain->last_pass = last_pass;
 
@@ -4825,7 +4880,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
       const char *path,
       glslang_filter_chain_filter filter,
       bool frame_rect,
-      unsigned *out_num_passes)
+      unsigned *out_num_passes, bool viewer_colour)
 {
    unsigned i;
    unsigned total_passes;
@@ -4855,6 +4910,10 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
       }
    chain->common.sim_source_dims = shader->sim_source_dims;
    chain->common.frame_rect = frame_rect;
+   chain->common.viewer_colour = viewer_colour;
+#ifndef HAVE_RSLC
+   chain->common.viewer_colour = false;
+#endif
    chain->last_pass = last_pass;
 
    if (      shader->luts
@@ -4980,6 +5039,13 @@ void gl3_filter_chain_set_passthrough(
       gl3_filter_chain_t *chain, unsigned passthrough)
 {
    chain->common.passthrough = passthrough ? 1 : 0;
+}
+
+void gl3_filter_chain_set_viewer_colour(
+      gl3_filter_chain_t *chain, const float *rows)
+{
+   memcpy(chain->common.viewer_colour_rows, rows,
+         sizeof(chain->common.viewer_colour_rows));
 }
 
 void gl3_filter_chain_set_source_hdr(

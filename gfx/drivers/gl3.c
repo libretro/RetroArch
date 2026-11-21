@@ -3297,7 +3297,7 @@ static void gl3_views_build_chains(gl3_t *gl)
       set->preset[i] = gl3_filter_chain_create_from_preset(
             gl->views.preset, gl->video_info.smooth
             ? GLSLANG_FILTER_CHAIN_LINEAR
-            : GLSLANG_FILTER_CHAIN_NEAREST, true, false);
+            : GLSLANG_FILTER_CHAIN_NEAREST, true, false, false);
       if (!set->preset[i])
          RARCH_ERR("[GLCore] Failed to create view %u's preset: \"%s\".\n",
                i, gl->views.preset);
@@ -3316,7 +3316,7 @@ static void gl3_views_build_chains(gl3_t *gl)
       *chain = gl3_filter_chain_create_from_preset(gl->views.preset,
             gl->video_info.smooth
             ? GLSLANG_FILTER_CHAIN_LINEAR
-            : GLSLANG_FILTER_CHAIN_NEAREST, false, true);
+            : GLSLANG_FILTER_CHAIN_NEAREST, false, true, false);
       if (!*chain)
          RARCH_ERR("[OpenXR] Failed to create the headset's preset: \"%s\".\n",
                gl->views.preset);
@@ -3345,7 +3345,7 @@ static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
          gl->video_info.smooth
          ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST,
-         (gl->flags & GL3_FLAG_HW_RENDER_ENABLE) != 0, false);
+         (gl->flags & GL3_FLAG_HW_RENDER_ENABLE) != 0, false, false);
 
    if (!gl->filter_chain)
    {
@@ -3366,7 +3366,7 @@ static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
    gl3_views_set_preset(gl, shader_path);
    gl->media_shader_chain = gl3_filter_chain_create_from_preset(shader_path,
          gl->video_info.smooth ? GLSLANG_FILTER_CHAIN_LINEAR : GLSLANG_FILTER_CHAIN_NEAREST,
-         false, false);
+         false, false, true);
 
    return true;
 }
@@ -4807,7 +4807,7 @@ static bool gl3_shader_load_begin(void *data,
          deferred->preset_path,
          ds->filter,
          (gl->flags & GL3_FLAG_HW_RENDER_ENABLE) != 0,
-         &deferred->total_passes);
+         &deferred->total_passes, false);
 
    if (!ds->new_chain)
    {
@@ -4833,7 +4833,7 @@ static bool gl3_shader_load_begin(void *data,
 
    ds->core_passes = deferred->total_passes;
    ds->media_chain = gl3_filter_chain_create_deferred(deferred->preset_path,
-         ds->filter, false, &ds->media_passes);
+         ds->filter, false, &ds->media_passes, true);
    if (!ds->media_chain)
    {
       gl3_filter_chain_free(ds->new_chain);
@@ -9635,6 +9635,8 @@ static bool gfx_display_gl3_blur_rect(void *data, unsigned video_dims,
 #endif
 
 #ifdef HAVE_SLANG
+#include "../common/hdr_viewer_colour.h"
+
 static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
       unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
 {
@@ -9651,6 +9653,9 @@ static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
    if (!gl || !gl->media_shader_enabled || !(chain = gl->media_shader_chain)
          || !image || !VIDEO_SCALE_W(source_dims) || !VIDEO_SCALE_H(source_dims))
       return false;
+#ifndef HAVE_RSLC
+   if (gl->scrgb.active && gl3_fp16_is((GLuint)image)) return false;
+#endif
    live = gl3_filter_chain_get_preset(gl->filter_chain);
    preset = gl3_filter_chain_get_preset(chain);
    if (live && preset && live->num_parameters == preset->num_parameters)
@@ -9682,6 +9687,12 @@ static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
    gl3_filter_chain_set_rotation(chain, 0);
    gl3_filter_chain_set_core_aspect(chain,
          (float)VIDEO_SCALE_W(source_dims) / VIDEO_SCALE_H(source_dims));
+   {
+      float rows[12];
+      hdr_viewer_colour_rows(rows, gl->scrgb.active && format == GL_RGBA16F,
+            gl->scrgb.menu_nits, gl->scrgb.expand_gamut);
+      gl3_filter_chain_set_viewer_colour(chain, rows);
+   }
    gl3_filter_chain_set_input_texture(chain, &texture);
    gl3_filter_chain_build_offscreen_passes(chain, &vp);
    glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)target);

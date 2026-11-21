@@ -106,6 +106,9 @@ bool gl3_filter_chain_init(gl3_filter_chain_t *chain);
 void gl3_filter_chain_set_passthrough(
       gl3_filter_chain_t *chain, unsigned passthrough);
 
+void gl3_filter_chain_set_viewer_colour(
+      gl3_filter_chain_t *chain, const float *rows);
+
 void gl3_filter_chain_set_source_hdr(
       gl3_filter_chain_t *chain, unsigned source_hdr);
 
@@ -208,11 +211,12 @@ gl3_filter_chain_t *gl3_filter_chain_create_shrink(void);
  * the passes are built to read them there where the preset allows,
  * rather than have each copied out. @replay: the chain may draw its last
  * frame's final pass again in a later frame (build_viewport_pass_replay),
- * and its history keeps one more texture for that. */
+ * and its history keeps one more texture for that. @viewer_colour:
+ * compile sample-colour conversion into the private viewer passes. */
 gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       const char *path,
       enum glslang_filter_chain_filter filter,
-      bool frame_rect, bool replay);
+      bool frame_rect, bool replay, bool viewer_colour);
 
 /**
  * Deferred (per-frame) filter chain creation API.
@@ -238,7 +242,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
       const char *path,
       enum glslang_filter_chain_filter filter,
       bool frame_rect,
-      unsigned *out_num_passes);
+      unsigned *out_num_passes, bool viewer_colour);
 
 /**
  * gl3_filter_chain_compile_pass:
