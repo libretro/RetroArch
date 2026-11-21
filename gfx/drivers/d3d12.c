@@ -14235,7 +14235,8 @@ static bool d3d12_gfx_supports_texture_format(void* data,
    if (fmt == TEXTURE_GPU_FORMAT_RGB10A2)
       return d3d12 && d3d12->device;
    /* A typed store to R8G8B8A8 every device has */
-   if (fmt == TEXTURE_GPU_FORMAT_YUV420)
+   if (fmt == TEXTURE_GPU_FORMAT_YUV420
+         || fmt == TEXTURE_GPU_FORMAT_YUV420_STRIDED)
       return d3d12 && d3d12->device && d3d12->planar_pipe;
    /* R16G16B16A16_FLOAT is sampled and filtered at every feature
     * level; load and update copy its rows as they are. */

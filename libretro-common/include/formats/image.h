@@ -148,7 +148,11 @@ enum texture_gpu_format
    TEXTURE_GPU_FORMAT_SCRGB,
    /* 8-bit YCbCr 4:2:0 on ->planar (I420 or NV12), converted to RGB
     * on the GPU: whether load_texture and update_texture take one. */
-   TEXTURE_GPU_FORMAT_YUV420
+   TEXTURE_GPU_FORMAT_YUV420,
+   /* Capability, not a storage format: YUV420 uploads consume padded
+    * rows without a separate API upload per row. A decoder may lend
+    * its padded planes instead of packing another frame with this. */
+   TEXTURE_GPU_FORMAT_YUV420_STRIDED
 };
 
 /* Numeric mip layout reported by a loader without decoding.  Offsets are
@@ -646,6 +650,17 @@ bool image_transfer_anim_stream_can_planar(const void *stream,
       enum image_type_enum type);
 bool image_transfer_anim_stream_set_planar(void *stream,
       enum image_type_enum type, bool planar);
+/* Opt in after set_planar, only for a synchronous consumer. Where the
+ * decoder can lend its current planes, next() leaves the output slot
+ * untouched and borrowed_planar() describes the frame instead. Otherwise
+ * the packed-slot fallback remains. The borrow lasts until the next
+ * decode, seek, rewind or stream free; consume it before any of those. */
+/* Without @strided, borrow only tightly packed planes: a backend that
+ * otherwise uploads each row separately keeps the packed fallback. */
+bool image_transfer_anim_stream_borrow_planar(void *stream,
+      enum image_type_enum type, bool strided);
+const struct texture_planar *image_transfer_anim_stream_borrowed_planar(
+      const void *stream, enum image_type_enum type);
 unsigned image_transfer_anim_stream_planar_yuv(const void *stream,
       enum image_type_enum type);
 

@@ -9178,6 +9178,11 @@ static bool gl3_supports_texture_format(void *data,
       case TEXTURE_GPU_FORMAT_RGBA16F:
          return true;
       /* Converted by a draw (gl_planar_load) */
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
+      /* gl_planar_plane can upload padded rows in one call. GLES2's
+       * row-at-a-time fallback is cheaper with packed decoder output. */
+      case TEXTURE_GPU_FORMAT_YUV420_STRIDED:
+#endif
       case TEXTURE_GPU_FORMAT_YUV420:
 #ifdef HAVE_GL_PLANAR
          return data && GL_PLANAR_OK(&((const gl3_t*)data)->planar);

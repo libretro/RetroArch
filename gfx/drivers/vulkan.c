@@ -17832,7 +17832,8 @@ static bool vulkan_supports_texture_format(void *data,
    if (fmt == TEXTURE_GPU_FORMAT_RGBA16F)
       return vk && vk->context;
    /* yuv420_to_rgba8888 writes R8G8B8A8, which every device stores to */
-   if (fmt == TEXTURE_GPU_FORMAT_YUV420)
+   if (fmt == TEXTURE_GPU_FORMAT_YUV420
+         || fmt == TEXTURE_GPU_FORMAT_YUV420_STRIDED)
       return vk && vk->context
          && (retro_atomic_load_acquire_int(&vk->texture_format_support)
                & VULKAN_TEXTURE_SUPPORT_YUV420);

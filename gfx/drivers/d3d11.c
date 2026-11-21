@@ -11178,7 +11178,8 @@ static bool d3d11_gfx_supports_texture_format(void* data,
    if (fmt == TEXTURE_GPU_FORMAT_RGBA16F)
       return v && v->device;
    /* A compute shader's typed store to R8G8B8A8 is feature level 11 */
-   if (fmt == TEXTURE_GPU_FORMAT_YUV420)
+   if (fmt == TEXTURE_GPU_FORMAT_YUV420
+         || fmt == TEXTURE_GPU_FORMAT_YUV420_STRIDED)
       return v && v->device
          && !retro_atomic_load_acquire_int(&v->planar_failed)
          && v->supportedFeatureLevel >= D3D_FEATURE_LEVEL_11_0;

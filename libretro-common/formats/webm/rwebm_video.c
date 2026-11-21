@@ -174,7 +174,8 @@ struct rwebm_video_stream
    int          is_fp16;    /* last decoded frame written so          */
    int          emit_argb;  /* emit ARGB words instead of the default
                                R,G,B,A memory order (8-bit paths)     */
-   int          want_planar; /* frames into 'out' as packed I420     */
+   struct texture_planar borrowed_planar; /* decoder-owned, until next step */
+   int          want_planar; /* 0: RGB, 1: I420, 2: borrow, 3: tight borrow */
    unsigned     planar_yuv; /* IMAGE_YUV_FLAG_* of the last such frame */
 };
 
@@ -1245,8 +1246,17 @@ int rwebm_video_stream_set_planar(rwebm_video_stream_t *s, int planar)
 {
    if (!s || (planar && !rwebm_video_stream_can_planar(s)))
       return 0;
-   s->want_planar = planar ? 1 : 0;
+   s->want_planar = planar;
+   s->borrowed_planar.planes[0] = NULL;
    return 1;
+}
+
+const struct texture_planar *rwebm_video_stream_borrowed_planar(
+      const rwebm_video_stream_t *s)
+{
+   return s && (s->want_planar == 2 || s->want_planar == 3)
+      && s->borrowed_planar.planes[0]
+      ? &s->borrowed_planar : NULL;
 }
 
 unsigned rwebm_video_stream_planar_yuv(const rwebm_video_stream_t *s)
@@ -1271,10 +1281,26 @@ static int rwebm_video_planar(rwebm_video_stream_t *s,
       matrix = h >= 720 ? 1 : 5;
    if (matrix == 9 || matrix == 10)
       return -1;
-   image_yuv_420_pack((uint8_t*)s->out, s->width, s->height,
-         y, (unsigned)ys, u, v, (unsigned)uvs, (unsigned)w, (unsigned)h);
    s->planar_yuv = (matrix == 1 ? IMAGE_YUV_FLAG_BT709 : 0)
       | (full ? IMAGE_YUV_FLAG_FULL_RANGE : 0);
+   s->borrowed_planar.planes[0] = NULL;
+   if ((s->want_planar == 2 || s->want_planar == 3)
+         && (unsigned)w >= s->width && (unsigned)h == s->height
+         && (s->want_planar == 2 || ((unsigned)ys == s->width
+               && (unsigned)uvs == (s->width + 1) / 2)))
+   {
+      s->borrowed_planar.planes[0] = y;
+      s->borrowed_planar.planes[1] = u;
+      s->borrowed_planar.planes[2] = v;
+      s->borrowed_planar.strides[0] = (unsigned)ys;
+      s->borrowed_planar.strides[1] = (unsigned)uvs;
+      s->borrowed_planar.strides[2] = (unsigned)uvs;
+      s->borrowed_planar.chroma_step = 1;
+      s->borrowed_planar.yuv = s->planar_yuv;
+   }
+   else
+      image_yuv_420_pack((uint8_t*)s->out, s->width, s->height,
+            y, (unsigned)ys, u, v, (unsigned)uvs, (unsigned)w, (unsigned)h);
    return 1;
 }
 

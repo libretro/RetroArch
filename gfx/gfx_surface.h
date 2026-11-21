@@ -248,6 +248,9 @@ typedef struct
     * streaming producer keeps one texture rather than loading a
     * replacement per frame. */
    bool can_update;
+   /* Padded decoder planes can be uploaded efficiently in place;
+    * otherwise a producer should keep packing into its owned slot. */
+   bool planar_strided;
    /* Packed upload row pitch in bytes for @width pixels of
     * @preferred, and the alignment the first row should start on.
     * Both are what the current upload paths use; a producer that can

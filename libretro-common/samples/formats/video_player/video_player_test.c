@@ -117,6 +117,9 @@ typedef struct
     * luma k + 1 throughout, flagged BT709 and, for odd k, FULL_RANGE. */
    bool planar_can;
    bool planar_on;
+   bool planar_borrow;
+   bool planar_strided;
+   struct texture_planar planar_view;
    int planar_sets;
    unsigned planar_yuv;
    bool want_fp16;
@@ -213,10 +216,17 @@ const uint32_t *image_transfer_anim_stream_next(void *stream,
    }
    if (f->planar_on && f->direct && f->out)
    {
-      uint8_t *planes = (uint8_t*)f->out;
+      uint8_t *planes = (uint8_t*)(f->planar_borrow ? f->canvas : f->out);
       memset(planes, f->pos + 1, N);
       memset(planes + N, 0x80, 2 * ((W + 1) / 2) * ((H + 1) / 2));
       f->planar_yuv = (1u << 2) | ((f->pos & 1) ? (1u << 1) : 0u);
+      f->planar_view.planes[0] = planes;
+      f->planar_view.planes[1] = planes + N;
+      f->planar_view.planes[2] = planes + N + N / 4;
+      f->planar_view.strides[0] = W;
+      f->planar_view.strides[1] = f->planar_view.strides[2] = W / 2;
+      f->planar_view.chroma_step = 1;
+      f->planar_view.yuv = f->planar_yuv;
       f->pos++;
       *duration_ms = f->duration_ms;
       return f->out;
@@ -342,8 +352,28 @@ bool image_transfer_anim_stream_set_planar(void *stream,
    if (planar && !f->planar_can)
       return false;
    f->planar_on = planar;
+   f->planar_borrow = false;
+   f->planar_strided = false;
    f->planar_sets++;
    return true;
+}
+
+bool image_transfer_anim_stream_borrow_planar(void *stream,
+      enum image_type_enum type, bool strided)
+{
+   fake_t *f = (fake_t*)stream;
+   (void)type;
+   f->planar_strided = strided;
+   f->planar_borrow = f->planar_on;
+   return f->planar_borrow;
+}
+
+const struct texture_planar *image_transfer_anim_stream_borrowed_planar(
+      const void *stream, enum image_type_enum type)
+{
+   const fake_t *f = (const fake_t*)stream;
+   (void)type;
+   return f->planar_borrow ? &f->planar_view : NULL;
 }
 
 unsigned image_transfer_anim_stream_planar_yuv(const void *stream,
@@ -713,7 +743,8 @@ static enum video_player_present sink_present_planar(void *user,
       const video_player_frame_t *fr)
 {
    sink_t *k             = (sink_t*)user;
-   const uint8_t *planes = (const uint8_t*)k->slots[fr->slot];
+   const uint8_t *planes = fr->planar ? fr->planar->planes[0]
+      : (const uint8_t*)k->slots[fr->slot];
    int idx               = (int)planes[0] - 1;
    unsigned want         = (1u << 2) | ((idx & 1) ? (1u << 1) : 0u);
    CHECK(!k->begun[fr->slot], "planar: slot still being written");
@@ -736,7 +767,7 @@ static enum video_player_present sink_present_planar(void *user,
  * in its slot, with that frame's own colour flags, ahead of any half
  * float request; a frame that does not come into the slot, or a stream
  * that cannot hand planes out, ends the playback with nothing shown. */
-static void lane_planar(bool threaded)
+static void lane_planar(bool threaded, unsigned borrow)
 {
    fake_t f;
    sink_t k;
@@ -751,7 +782,9 @@ static void lane_planar(bool threaded)
    f.planar_can = true;
    sink_init(&k, &s, true);
    s.present     = sink_present_planar;
-   k.start_flags = VIDEO_PLAYER_I420 | VIDEO_PLAYER_FP16;
+   k.start_flags = VIDEO_PLAYER_I420 | VIDEO_PLAYER_FP16
+      | (borrow ? VIDEO_PLAYER_BORROW_PLANES : 0)
+      | (borrow == 2 ? VIDEO_PLAYER_BORROW_STRIDED : 0);
    k.queue_every = threaded ? 2 : 0;
    planar_seen   = planar_bad = 0;
    p = video_player_new(&f, IMAGE_TYPE_MP4, 2, &s,
@@ -768,6 +801,10 @@ static void lane_planar(bool threaded)
       if (threaded)
          retro_sleep(1);
    } while (st == VIDEO_PLAYER_PLAYING && ++polls < 5000);
+   CHECK(f.planar_strided == (borrow == 2 && !threaded),
+         "planar: padded borrow policy lost");
+   CHECK(f.planar_borrow == (borrow && !threaded),
+         "planar: borrow negotiation crossed worker boundary");
    CHECK(f.planar_on && !f.want_fp16,
          "planar%s: stream not asked for planes alone",
          threaded ? " threaded" : "");
@@ -2511,14 +2548,18 @@ int main(void)
    lane_catchup();
    lane_order_and_default();
    lane_fp16();
-   lane_planar(false);
+   lane_planar(false, false);
+   lane_planar(false, true);
+   lane_planar(false, 2);
    lane_hw_inline();
 #ifdef HAVE_THREADS
    lane_delayed_slot_releases();
    lane_hw_threaded();
    lane_threaded(true);
    lane_threaded(false);
-   lane_planar(true);
+   lane_planar(true, false);
+   lane_planar(true, true);
+   lane_planar(true, 2);
    lane_churn();
 #endif
 recovery_only:

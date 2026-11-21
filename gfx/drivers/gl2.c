@@ -10623,6 +10623,11 @@ static bool gl2_supports_texture_format(void *data,
    switch (fmt)
    {
       /* Converted by a draw into a framebuffer (gl_planar_load) */
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
+      /* gl_planar_plane can upload padded rows in one call. GLES2's
+       * row-at-a-time fallback is cheaper with packed decoder output. */
+      case TEXTURE_GPU_FORMAT_YUV420_STRIDED:
+#endif
       case TEXTURE_GPU_FORMAT_YUV420:
 #ifdef HAVE_GL_PLANAR
          return gl && (gl->flags & GL2_FLAG_HAVE_FBO)

@@ -51,7 +51,12 @@ static int gfx_surface_player_start(void *user, unsigned width,
    gsp->threaded = num_slots > 1;
    return (gsp->rgba ? VIDEO_PLAYER_RGBA : 0)
         | (s->pixfmt == IMAGE_PIXFMT_FP16 ? VIDEO_PLAYER_FP16 : 0)
-        | (s->pixfmt == IMAGE_PIXFMT_I420 ? VIDEO_PLAYER_I420 : 0);
+        | (s->pixfmt == IMAGE_PIXFMT_I420 ? VIDEO_PLAYER_I420 : 0)
+        | (s->pixfmt == IMAGE_PIXFMT_I420 && num_slots == 1
+              && !video_driver_thread_wrapper_active()
+              ? VIDEO_PLAYER_BORROW_PLANES
+                 | (have_req && req.planar_strided ? VIDEO_PLAYER_BORROW_STRIDED : 0)
+              : 0);
 }
 
 /* On the worker a slot is taken until its job settles, so the memory
@@ -193,9 +198,25 @@ static enum video_player_present gfx_surface_player_present(void *user,
     * still in flight answers BUSY and keeps its own */
    if (GFX_SURFACE_IS_PLANAR(s) && !s->inflight)
       gfx_surface_set_yuv(s, fr->yuv);
-   res = fr->pixels
-      ? gfx_surface_submit_pixels(s, fr->pixels, gsp->rgba)
-      : gfx_surface_submit(s, fr->slot, gsp->rgba);
+   if (fr->planar)
+   {
+      gfx_surface_planes_t planes;
+      unsigned i;
+      for (i = 0; i < 3; i++)
+      {
+         planes.planes[i] = fr->planar->planes[i];
+         planes.strides[i] = fr->planar->strides[i];
+      }
+      planes.chroma_step = fr->planar->chroma_step;
+      /* Direct video uploads before returning. If the video wrapper
+       * became active meanwhile, submit_planes copies to its owned
+       * slot before handing the upload to that thread. */
+      res = gfx_surface_submit_planes(s, &planes, gsp->rgba);
+   }
+   else
+      res = fr->pixels
+         ? gfx_surface_submit_pixels(s, fr->pixels, gsp->rgba)
+         : gfx_surface_submit(s, fr->slot, gsp->rgba);
    switch (res)
    {
       case GFX_SURFACE_SUBMIT_DONE:

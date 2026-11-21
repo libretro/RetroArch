@@ -333,6 +333,16 @@ bool image_transfer_anim_stream_set_planar(void *stream,
 {
    (void)stream; (void)type; return !planar;
 }
+bool image_transfer_anim_stream_borrow_planar(void *stream,
+      enum image_type_enum type, bool strided)
+{
+   (void)stream; (void)type; (void)strided; return false;
+}
+const struct texture_planar *image_transfer_anim_stream_borrowed_planar(
+      const void *stream, enum image_type_enum type)
+{
+   (void)stream; (void)type; return NULL;
+}
 unsigned image_transfer_anim_stream_planar_yuv(const void *stream,
       enum image_type_enum type)
 {

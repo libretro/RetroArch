@@ -924,6 +924,7 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
       return VIDEO_PLAYER_PLAYING;
 
    /* READY and not queued: the frame is shown from its slot */
+   fr.planar      = NULL;
    fr.pixels      = NULL;
    fr.slot        = p->upload;
    fr.width       = p->width;
@@ -1021,6 +1022,7 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
          return VIDEO_PLAYER_PLAYING;
       if (!r)
          goto finished;
+      fr.planar      = NULL;
       fr.pixels      = NULL;
       fr.slot        = 0;
       fr.width       = p->width;
@@ -1062,6 +1064,7 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
       goto finished;
    }
 
+   fr.planar      = NULL;
    fr.pixels      = NULL;
    fr.slot        = 0;
    fr.width       = p->width;
@@ -1075,6 +1078,7 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
          goto ended;
       fr.how = VIDEO_PLAYER_DIRECT;
       fr.yuv = image_transfer_anim_stream_planar_yuv(p->stream, p->type);
+      fr.planar = image_transfer_anim_stream_borrowed_planar(p->stream, p->type);
    }
    else if (p->flags & VIDEO_PLAYER_FP16)
    {
@@ -1502,6 +1506,9 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
          p->flags |= VP_STOPPED;
          return VIDEO_PLAYER_ENDED;
       }
+      if (p->planar && !threaded && ((unsigned)r & VIDEO_PLAYER_BORROW_PLANES))
+         image_transfer_anim_stream_borrow_planar(p->stream, p->type,
+               ((unsigned)r & VIDEO_PLAYER_BORROW_STRIDED) != 0);
       image_transfer_anim_stream_set_want_fp16(p->stream, p->type,
             (p->flags & VIDEO_PLAYER_FP16) ? true : false);
       if (!p->preserve_origin) p->origin_us = now_us;

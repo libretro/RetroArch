@@ -1235,6 +1235,56 @@ bool image_transfer_anim_stream_set_planar(void *stream,
    return !planar;
 }
 
+bool image_transfer_anim_stream_borrow_planar(
+      void *stream, enum image_type_enum type, bool strided)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_set_planar(
+               (rwebm_video_stream_t*)stream, strided ? 2 : 3) != 0;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_set_planar(
+               (rmp4_video_stream_t*)stream, strided ? 2 : 3) != 0;
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
+const struct texture_planar *image_transfer_anim_stream_borrowed_planar(
+      const void *stream, enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_borrowed_planar(
+               (const rwebm_video_stream_t*)stream);
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_borrowed_planar(
+               (const rmp4_video_stream_t*)stream);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return NULL;
+}
+
 unsigned image_transfer_anim_stream_planar_yuv(const void *stream,
       enum image_type_enum type)
 {

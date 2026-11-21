@@ -226,7 +226,15 @@ int rmp4_video_stream_is_hdr(const rmp4_video_stream_t *stream);
  * frame that cannot be so ends the stream. planar_yuv is that
  * frame's IMAGE_YUV_FLAG_* (BT709, FULL_RANGE). */
 int rmp4_video_stream_can_planar(const rmp4_video_stream_t *stream);
+/* planar 2 borrows arbitrary strides, 3 only tightly packed planes,
+ * instead of filling the output
+ * slot where possible. The next successful frame returns that slot as
+ * usual; borrowed_planar tells whether to read the planes instead.
+ * The borrow ends at the next decode, seek, rewind or stream free. */
 int rmp4_video_stream_set_planar(rmp4_video_stream_t *stream, int planar);
+struct texture_planar;
+const struct texture_planar *rmp4_video_stream_borrowed_planar(
+      const rmp4_video_stream_t *stream);
 unsigned rmp4_video_stream_planar_yuv(const rmp4_video_stream_t *stream);
 
 /* The picture the last step showed, as its decoded 8-bit 4:2:0 planes

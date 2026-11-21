@@ -6,6 +6,14 @@
 static unsigned imported, shown, failures;
 static uint32_t received;
 
+enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
+      const gfx_surface_planes_t *planes, bool rgba)
+{
+   (void)s; (void)planes; (void)rgba;
+   failures++;
+   return GFX_SURFACE_SUBMIT_FAILED;
+}
+
 settings_t *config_get_ptr(void)
 {
    failures++;

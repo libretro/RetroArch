@@ -9,6 +9,7 @@
 #include "gfx/gfx_surface_player.h"
 static unsigned formats, shown, failures;
 static bool hdr_source, requirements_ok;
+static bool strided_upload = true;
 static gfx_surface_t surface;
 static video_frame_import_t captured;
 static enum gfx_surface_submit_result result = GFX_SURFACE_SUBMIT_DONE;
@@ -19,6 +20,7 @@ bool gfx_surface_query_requirements(unsigned width, gfx_surface_requirements_t *
 {
    (void)width;
    memset(req, 0, sizeof(*req)); req->formats = formats;
+   req->planar_strided = strided_upload;
    return requirements_ok;
 }
 bool image_transfer_anim_stream_is_hdr(const void *stream, enum image_type_enum type)
@@ -26,6 +28,21 @@ bool image_transfer_anim_stream_is_hdr(const void *stream, enum image_type_enum 
    (void)stream; (void)type; return hdr_source;
 }
 static bool planar_source, slotted;
+static gfx_surface_planes_t captured_planes;
+static unsigned plane_submits;
+#ifdef HAVE_THREADS
+static bool wrapper_active;
+bool video_driver_thread_wrapper_active(void) { return wrapper_active; }
+#endif
+enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
+      const gfx_surface_planes_t *planes, bool rgba)
+{
+   (void)rgba;
+   CHECK(s == &surface);
+   captured_planes = *planes;
+   plane_submits++;
+   return s->inflight ? GFX_SURFACE_SUBMIT_BUSY : GFX_SURFACE_SUBMIT_DONE;
+}
 static unsigned yuv_set, yuv_sets, submits, submit_slot;
 bool image_transfer_anim_stream_can_planar(const void *stream, enum image_type_enum type)
 {
@@ -38,7 +55,7 @@ static gfx_surface_t *make_surface(void *user, unsigned dims, unsigned slots, ui
    {
       /* a software decode's surface, in the format asked for */
       memset(&surface, 0, sizeof(surface));
-      CHECK(slots == 2);
+      CHECK(slots == 1 || slots == 2);
       surface.dims = dims; surface.num_slots = slots; surface.pixfmt = pixfmt;
       surface.pitch[0] = surface.pitch[1] = (size_t)VIDEO_SCALE_W(dims)
          * IMAGE_PIXFMT_BPP(pixfmt);
@@ -317,6 +334,7 @@ static void planar_start(void)
       gsp.surface    = &current;
       flags = gfx_surface_player_start(&gsp, 32, 16, 2);
       CHECK(flags >= 0 && surface.pixfmt == expected);
+      CHECK(!(flags & VIDEO_PLAYER_BORROW_PLANES));
       CHECK(((flags & VIDEO_PLAYER_I420) != 0)
             == (expected == IMAGE_PIXFMT_I420));
       CHECK(((flags & VIDEO_PLAYER_FP16) != 0)
@@ -349,6 +367,42 @@ static void planar_start(void)
    surface.inflight = 0;
    CHECK(gfx_surface_player_present(&gsp, &frame) == VIDEO_PLAYER_PRESENT_DONE);
    CHECK(yuv_sets == 2 && yuv_set == 4 && submit_slot == 0);
+   /* A row-at-a-time backend keeps its efficient packed upload. */
+   strided_upload = false;
+   CHECK(gfx_surface_player_start(&gsp, 32, 16, 1) & VIDEO_PLAYER_BORROW_PLANES);
+   CHECK(!(gfx_surface_player_start(&gsp, 32, 16, 1)
+            & VIDEO_PLAYER_BORROW_STRIDED));
+   strided_upload = true;
+   /* Only inline, direct video negotiates a decoder-plane borrow. */
+   CHECK(gfx_surface_player_start(&gsp, 32, 16, 1)
+         & VIDEO_PLAYER_BORROW_PLANES);
+   CHECK(gfx_surface_player_start(&gsp, 32, 16, 1)
+         & VIDEO_PLAYER_BORROW_STRIDED);
+   {
+      struct texture_planar view;
+      uint8_t y[32 * 16], u[16 * 8], v[16 * 8];
+      memset(&view, 0, sizeof(view));
+      view.planes[0] = y; view.planes[1] = u; view.planes[2] = v;
+      view.strides[0] = 32; view.strides[1] = view.strides[2] = 16;
+      view.chroma_step = 1;
+      frame.planar = &view;
+      plane_submits = 0;
+      CHECK(gfx_surface_player_present(&gsp, &frame) == VIDEO_PLAYER_PRESENT_DONE);
+      CHECK(plane_submits == 1 && captured_planes.planes[0] == y
+            && captured_planes.planes[1] == u && captured_planes.planes[2] == v
+            && captured_planes.strides[0] == 32 && captured_planes.strides[1] == 16
+            && captured_planes.chroma_step == 1);
+      surface.inflight = 1;
+      CHECK(gfx_surface_player_present(&gsp, &frame) == VIDEO_PLAYER_PRESENT_BUSY);
+      surface.inflight = 0;
+      frame.planar = NULL;
+   }
+#ifdef HAVE_THREADS
+   wrapper_active = true;
+   CHECK(!(gfx_surface_player_start(&gsp, 32, 16, 1)
+            & VIDEO_PLAYER_BORROW_PLANES));
+   wrapper_active = false;
+#endif
    slotted = false;
    memset(&surface, 0, sizeof(surface));
 }

@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
+import sys
 import tempfile
 
 root = Path(__file__).resolve().parents[3]
@@ -114,3 +115,5 @@ with tempfile.TemporaryDirectory(prefix="retroarch-hdr-query-") as directory:
                             str(root / "libretro-common/rthreads/rthreads.c"),
                             "-o", str(target)] + libs, check=True)
             subprocess.run([str(target)], check=True)
+
+subprocess.run([sys.executable, str(Path(__file__).with_name("planar_strides.py"))], check=True)

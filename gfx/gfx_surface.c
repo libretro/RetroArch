@@ -140,6 +140,8 @@ bool gfx_surface_query_requirements(unsigned width,
    if ((size_t)width > ((size_t)-1) / IMAGE_PIXFMT_BPP(req->preferred))
       return false;
    req->can_update = video_driver_texture_can_update();
+   req->planar_strided = (req->formats & IMAGE_PIXFMT_I420)
+      && video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_YUV420_STRIDED);
    /* Ordinary uploads use packed rows. Streaming lends negotiate
     * each slot's pitch separately. */
    req->pitch      = (size_t)width * IMAGE_PIXFMT_BPP(req->preferred);

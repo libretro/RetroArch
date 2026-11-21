@@ -10990,7 +10990,8 @@ static bool metal_supports_texture_format(void *video_data,
    if (fmt == TEXTURE_GPU_FORMAT_RGBA16F)
       return video_data != NULL;
    /* Converted by the planar kernel, which every Metal device runs */
-   if (fmt == TEXTURE_GPU_FORMAT_YUV420)
+   if (fmt == TEXTURE_GPU_FORMAT_YUV420
+         || fmt == TEXTURE_GPU_FORMAT_YUV420_STRIDED)
    {
       MetalDriver *md = (__bridge MetalDriver *)video_data;
       return md && [md.context planarAvailable];

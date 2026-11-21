@@ -77,6 +77,7 @@ int main(int argc, char **argv)
    void *planar_stream = NULL, *rgb_stream = NULL;
    unsigned w = 0, h = 0, cw, ch, expect, frames = 0, want_flags = 0;
    int num_frames = 0, loops = 0, worst = 0, have_flags, status = 1;
+   bool decoder_tight = false;
 
    if (argc < 4 || argc > 5)
    {
@@ -153,10 +154,21 @@ int main(int argc, char **argv)
    {
       unsigned flags, i;
       int duration = 0;
-      const uint32_t *p = image_transfer_anim_stream_next(planar_stream,
-            type, &duration);
-      const uint32_t *r = image_transfer_anim_stream_next(rgb_stream,
-            type, &duration);
+      const uint32_t *p, *r;
+      bool borrow = (frames & 1) == 0;
+      bool strided = (frames & 3) == 0;
+      const struct texture_planar *view;
+      struct texture_planar packed;
+      if (borrow)
+      {
+         if (!image_transfer_anim_stream_borrow_planar(planar_stream, type, strided))
+            goto done;
+         memset(planes, 0xa5, planar_size);
+      }
+      else if (!image_transfer_anim_stream_set_planar(planar_stream, type, true))
+         goto done;
+      p = image_transfer_anim_stream_next(planar_stream, type, &duration);
+      r = image_transfer_anim_stream_next(rgb_stream, type, &duration);
       if (!p || !r)
       {
          if (p || r)
@@ -180,11 +192,50 @@ int main(int argc, char **argv)
                argv[1], frames, flags, want_flags);
          goto done;
       }
+      view = image_transfer_anim_stream_borrowed_planar(planar_stream, type);
+      if (borrow && (strided || decoder_tight) && !view)
+      {
+         fprintf(stderr, "%s: frame %u not borrowed from decoder\n", argv[1], frames);
+         goto done;
+      }
+      if (view)
+      {
+         bool tight = view->strides[0] == w && view->strides[1] == cw
+            && view->strides[2] == cw;
+         if (!frames) decoder_tight = tight;
+         if (!borrow || (!strided && !tight)
+               || view->planes[0] == planes || view->yuv != flags)
+         {
+            fprintf(stderr, "%s: frame %u not borrowed from decoder\n", argv[1], frames);
+            goto done;
+         }
+         for (i = 0; i < planar_size; i++)
+            if (planes[i] != 0xa5)
+            {
+               fprintf(stderr, "%s: borrowed frame copied into slot\n", argv[1]);
+               goto done;
+            }
+      }
+      else
+      {
+         if (view)
+         {
+            fprintf(stderr, "%s: borrow survived packed mode\n", argv[1]);
+            goto done;
+         }
+         packed.planes[0] = planes;
+         packed.planes[1] = planes + (size_t)w * h;
+         packed.planes[2] = planes + (size_t)w * h + (size_t)cw * ch;
+         packed.strides[0] = w;
+         packed.strides[1] = packed.strides[2] = cw;
+         packed.chroma_step = 1;
+         view = &packed;
+      }
       image_yuv_420_to_rgb32(converted, w,
-            planes, w,
-            planes + (size_t)w * h, cw,
-            planes + (size_t)w * h + (size_t)cw * ch, cw,
-            1, w, h, flags);
+            view->planes[0], view->strides[0],
+            view->planes[1], view->strides[1],
+            view->planes[2], view->strides[2],
+            view->chroma_step, w, h, flags);
       for (i = 0; i < w * h; i++)
       {
          int d = channel_diff(converted[i], rgb[i], 16);

@@ -166,7 +166,8 @@ struct rmp4_video_stream
    int          is_fp16;    /* last decoded frame written so          */
    int          emit_argb;  /* emit ARGB words instead of the default
                                R,G,B,A memory order (8-bit paths)     */
-   int          want_planar; /* frames into 'out' as packed I420     */
+   struct texture_planar borrowed_planar; /* decoder-owned, until next step */
+   int          want_planar; /* 0: RGB, 1: I420, 2: borrow, 3: tight borrow */
    unsigned     planar_yuv; /* IMAGE_YUV_FLAG_* of the last such frame */
    int          want_hw;    /* H.264/HEVC/VP9/AV1 on the hardware backend */
    /* The hardware frame of the picture the last step produced
@@ -2202,8 +2203,17 @@ int rmp4_video_stream_set_planar(rmp4_video_stream_t *s, int planar)
 {
    if (!s || (planar && !rmp4_video_stream_can_planar(s)))
       return 0;
-   s->want_planar = planar ? 1 : 0;
+   s->want_planar = planar;
+   s->borrowed_planar.planes[0] = NULL;
    return 1;
+}
+
+const struct texture_planar *rmp4_video_stream_borrowed_planar(
+      const rmp4_video_stream_t *s)
+{
+   return s && (s->want_planar == 2 || s->want_planar == 3)
+      && s->borrowed_planar.planes[0]
+      ? &s->borrowed_planar : NULL;
 }
 
 unsigned rmp4_video_stream_planar_yuv(const rmp4_video_stream_t *s)
@@ -2536,8 +2546,24 @@ static const uint32_t *rmp4_video_render_planar(rmp4_video_stream_t *s)
    unsigned strides[3], w, h, yuv;
    if (!rmp4_video_shown_planes(s, planes, strides, &w, &h, &yuv))
       return NULL;
-   image_yuv_420_pack((uint8_t*)s->out, s->width, s->height,
-         planes[0], strides[0], planes[1], planes[2], strides[1], w, h);
+   s->borrowed_planar.planes[0] = NULL;
+   if ((s->want_planar == 2 || s->want_planar == 3)
+         && w == s->width && h == s->height
+         && (s->want_planar == 2 || (strides[0] == w
+               && strides[1] == (w + 1) / 2)))
+   {
+      unsigned i;
+      for (i = 0; i < 3; i++)
+      {
+         s->borrowed_planar.planes[i] = planes[i];
+         s->borrowed_planar.strides[i] = strides[i];
+      }
+      s->borrowed_planar.chroma_step = 1;
+      s->borrowed_planar.yuv = yuv;
+   }
+   else
+      image_yuv_420_pack((uint8_t*)s->out, s->width, s->height,
+            planes[0], strides[0], planes[1], planes[2], strides[1], w, h);
    s->planar_yuv = yuv;
    return s->out;
 }
