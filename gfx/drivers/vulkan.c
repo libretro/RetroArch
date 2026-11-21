@@ -920,6 +920,8 @@ typedef struct vk
    vulkan_android_queue_t vaapi_submissions;
 #endif
    vulkan_filter_chain_t *media_shader_chain[2];
+   struct vk_image media_shader_input;
+   unsigned media_shader_input_dims;
    uint64_t media_shader_frame;
    bool media_shader_enabled;
    uintptr_t movie_texture;
@@ -6797,6 +6799,8 @@ static void vulkan_deinit_framebuffers(vk_t *vk)
    vkDestroyRenderPass(vk->context->device, vk->render_pass, NULL);
    vkDestroyRenderPass(vk->context->device, vk->keep_render_pass, NULL);
    vkDestroyRenderPass(vk->context->device, vk->sdr_render_pass, NULL);
+   vulkan_destroy_hdr_buffer(vk->context->device, &vk->media_shader_input);
+   vk->media_shader_input_dims = 0;
    vulkan_destroy_hdr_buffer(vk->context->device, &vk->bloom.images[0]);
    vulkan_destroy_hdr_buffer(vk->context->device, &vk->bloom.images[1]);
    vk->bloom.dims = 0;
@@ -19480,6 +19484,81 @@ video_driver_t video_vulkan = {
    true /* max_geometry_in_place */
 };
 
+/* Presets consume the same display-encoded image that the plain viewer
+ * shows. Linear scRGB must cross the HDR UI encode exactly once. */
+static bool vulkan_media_shader_input(vk_t *vk, struct vk_texture *texture,
+      unsigned dims, struct vulkan_filter_chain_texture *input)
+{
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if ((vk->flags & VK_FLAG_SDR_PIPELINE)
+         && texture->format == VK_FORMAT_R16G16B16A16_SFLOAT)
+   {
+      struct { math_matrix_4x4 mvp; float params[4]; } ubo;
+      struct vk_buffer_range range;
+      struct vk_draw_triangles call;
+      struct vk_texture encoded;
+      struct vk_vertex *vertices;
+      bool drawn;
+      uint32_t scissor = vk->flags & VK_FLAG_TRACKER_USE_SCISSOR;
+      if (!vk->display.pipeline_linear_sdr) return false;
+      if (!vk->media_shader_input.image || vk->media_shader_input_dims != dims)
+      {
+         if (!vulkan_views_retire(vk, &vk->media_shader_input)) return false;
+         vk->media_shader_input_dims = 0;
+         vulkan_init_render_target(&vk->media_shader_input, dims,
+               VK_FORMAT_R16G16B16A16_SFLOAT, vk->sdr_render_pass, vk->context);
+         if (!vk->media_shader_input.memory || !vk->media_shader_input.framebuffer)
+         {
+            vulkan_destroy_hdr_buffer(vk->context->device, &vk->media_shader_input);
+            return false;
+         }
+         vk->media_shader_input_dims = dims;
+      }
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+            4 * sizeof(struct vk_vertex), &range)) return false;
+      vertices = (struct vk_vertex*)range.data;
+      VULKAN_WRITE_QUAD_VBO(vertices,
+            0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, RGBA16_WHITE);
+      ubo.mvp = vk->mvp_no_rot;
+      ubo.params[0] = vk->hdr.menu_nits;
+      ubo.params[1] = (float)vk->hdr.ubo_values.expand_gamut;
+      ubo.params[2] = ubo.params[3] = 0.0f;
+      call.pipeline = vk->display.pipeline_linear_sdr;
+      call.texture = texture;
+      call.sampler = vk->samplers.nearest;
+      call.uniform = &ubo;
+      call.uniform_size = sizeof(ubo);
+      call.vbo = &range;
+      call.vertices = 4;
+      vulkan_views_begin(vk, &vk->media_shader_input, dims, vk->sdr_render_pass);
+      vk->vk_vp.x = vk->vk_vp.y = 0.0f;
+      vk->vk_vp.width = (float)VIDEO_SCALE_W(dims);
+      vk->vk_vp.height = (float)VIDEO_SCALE_H(dims);
+      vk->vk_vp.minDepth = 0.0f;
+      vk->vk_vp.maxDepth = 1.0f;
+      vk->tracker.scissor.offset.x = vk->tracker.scissor.offset.y = 0;
+      vk->tracker.scissor.extent.width = VIDEO_SCALE_W(dims);
+      vk->tracker.scissor.extent.height = VIDEO_SCALE_H(dims);
+      vk->flags |= VK_FLAG_TRACKER_USE_SCISSOR;
+      drawn = vulkan_draw_bind(vk, &call);
+      if (drawn)
+      {
+         vkCmdBindVertexBuffers(vk->cmd, 0, 1, &range.buffer, &range.offset);
+         vkCmdDraw(vk->cmd, 4, 1, 0, 0);
+      }
+      vulkan_views_end(vk, &vk->media_shader_input);
+      vk->flags = (vk->flags & ~VK_FLAG_TRACKER_USE_SCISSOR) | scissor;
+      if (!drawn) return false;
+      vulkan_views_texture(&vk->media_shader_input, dims,
+            VK_FORMAT_R16G16B16A16_SFLOAT, &encoded);
+      vulkan_movie_input(&encoded, input);
+   }
+#else
+   (void)vk; (void)texture; (void)dims; (void)input;
+#endif
+   return true;
+}
+
 static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
       unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
 {
@@ -19514,15 +19593,29 @@ static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
    vulkan_filter_chain_set_rotation(chain, 0);
    vulkan_filter_chain_set_core_aspect(chain,
          (float)VIDEO_SCALE_W(source_dims) / VIDEO_SCALE_H(source_dims));
-   vulkan_filter_chain_set_input_texture(chain, &input);
-   vkCmdEndRenderPass(vk->cmd);
-   vulkan_filter_chain_build_offscreen_passes(chain, vk->cmd, &vp);
    memset(&rp, 0, sizeof(rp));
    rp.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
    rp.renderPass = sdr ? vk->bloom.keep_sdr_pass : vk->keep_render_pass;
    rp.framebuffer = vk->bloom.target->framebuffer;
    rp.renderArea.extent.width = VIDEO_SCALE_W(video_dims);
    rp.renderArea.extent.height = VIDEO_SCALE_H(video_dims);
+   vkCmdEndRenderPass(vk->cmd);
+   if (!vulkan_media_shader_input(vk, texture, source_dims, &input))
+   {
+      vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
+      vk->vk_vp = saved_vp;
+      vk->tracker.scissor = saved_scissor;
+      vk->tracker.pipeline = VK_NULL_HANDLE;
+      vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
+      return false;
+   }
+   vulkan_filter_chain_set_input_texture(chain, &input);
+   /* The HDR UI compositor performs output conversion after the menu. */
+   vulkan_filter_chain_set_source_hdr(chain, 0);
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if (sdr) vulkan_filter_chain_set_hdr_mode(chain, 0);
+#endif
+   vulkan_filter_chain_build_offscreen_passes(chain, vk->cmd, &vp);
    VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->bloom.target->image,
          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
