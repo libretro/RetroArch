@@ -9104,8 +9104,81 @@ const char* video_driver_get_gpu_api_version_string(void)
    return video_st->gpu_api_version_string;
 }
 
+/* The largest window at the chosen aspect ratio inside the display,
+ * less the margin; 'Full' takes all of that space */
+static void video_driver_window_fit_size(settings_t *settings,
+      unsigned *out_width, unsigned *out_height)
+{
+   unsigned idx    = settings->uints.video_window_fit_aspect_ratio_idx;
+   unsigned margin = settings->uints.video_window_fit_margin;
+   unsigned dims   = 0;
+   unsigned area_w, area_h;
+   float logical_w = 0.0f;
+   float logical_h = 0.0f;
+   float aspect    = 0.0f;
+
+   if (     video_display_server_get_metrics(
+               DISPLAY_METRIC_LOGICAL_WIDTH,  &logical_w)
+         && video_display_server_get_metrics(
+               DISPLAY_METRIC_LOGICAL_HEIGHT, &logical_h)
+         && logical_w >= 1.0f
+         && logical_h >= 1.0f)
+      dims = VIDEO_SCALE_PACK((unsigned)logical_w, (unsigned)logical_h);
+   else if (  !video_display_server_get_video_output_size(&dims, NULL, 0)
+            || !VIDEO_SCALE_W(dims)
+            || !VIDEO_SCALE_H(dims))
+      dims = VIDEO_SCALE_PACK(
+            settings->uints.video_fullscreen_x,
+            settings->uints.video_fullscreen_y);
+   if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      dims = VIDEO_SCALE_PACK(
+            DEFAULT_WINDOW_AUTO_WIDTH_MAX,
+            DEFAULT_WINDOW_AUTO_HEIGHT_MAX);
+
+   area_w = VIDEO_SCALE_W(dims);
+   area_h = VIDEO_SCALE_H(dims);
+   if (area_w > margin)
+      area_w -= margin;
+   if (area_h > margin)
+      area_h -= margin;
+
+   switch (idx)
+   {
+      case ASPECT_RATIO_FULL:
+         break;
+      case ASPECT_RATIO_CUSTOM:
+         {
+            unsigned vp = settings->video_vp_custom.dims;
+            aspect      = (VIDEO_SCALE_W(vp) && VIDEO_SCALE_H(vp))
+               ? (float)VIDEO_SCALE_W(vp) / VIDEO_SCALE_H(vp)
+               : aspectratio_lut[ASPECT_RATIO_CORE].value;
+         }
+         break;
+      default:
+         if (idx < ASPECT_RATIO_END)
+            aspect = aspectratio_lut[idx].value;
+         break;
+   }
+
+   if (aspect <= 0.0f)
+   {
+      *out_width  = area_w;
+      *out_height = area_h;
+   }
+   else if ((float)area_w / (float)area_h > aspect)
+   {
+      *out_height = area_h;
+      *out_width  = MAX((unsigned)(area_h * aspect + 0.5f), 1);
+   }
+   else
+   {
+      *out_width  = area_w;
+      *out_height = MAX((unsigned)(area_w / aspect + 0.5f), 1);
+   }
+}
+
 /* The size the video driver asks its window for: the configured
- * fullscreen size, or for a window the saved or custom size, else the
+ * fullscreen size, or for a window the fitted, saved or custom size, else the
  * core's geometry times the window scale, kept within the largest
  * window allowed. Used when the driver starts and when a fullscreen
  * toggle changes the window it already has. */
@@ -9141,8 +9214,10 @@ static void video_driver_window_size(settings_t *settings,
 #else
          bool window_custom_size_enable = settings->bools.video_window_custom_size_enable;
 #endif
+         if (settings->bools.video_window_fit_display)
+            video_driver_window_fit_size(settings, &width, &height);
          /* TODO/FIXME: remove when the new window resizing core is hooked */
-         if (  window_custom_size_enable
+         else if (  window_custom_size_enable
             && VIDEO_SCALE_W(settings->uints.window_position_dims)
             && VIDEO_SCALE_H(settings->uints.window_position_dims))
          {
@@ -9181,6 +9256,22 @@ static void video_driver_window_size(settings_t *settings,
                            DEFAULT_WINDOW_AUTO_WIDTH_MAX,
                            DEFAULT_WINDOW_AUTO_HEIGHT_MAX);
                }
+            }
+
+            /* Where the compositor scales, windows are sized in its
+             * units, not the display's pixels */
+            {
+               float logical_w = 0.0f;
+               float logical_h = 0.0f;
+               if (     video_display_server_get_metrics(
+                           DISPLAY_METRIC_LOGICAL_WIDTH,  &logical_w)
+                     && video_display_server_get_metrics(
+                           DISPLAY_METRIC_LOGICAL_HEIGHT, &logical_h)
+                     && logical_w >= 1.0f
+                     && logical_h >= 1.0f)
+                  max_win_dims = VIDEO_SCALE_PACK(
+                        MIN(VIDEO_SCALE_W(max_win_dims), (unsigned)logical_w),
+                        MIN(VIDEO_SCALE_H(max_win_dims), (unsigned)logical_h));
             }
 
             /* rotated games send unrotated width/height and
