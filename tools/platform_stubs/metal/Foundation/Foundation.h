@@ -65,7 +65,8 @@ void __sincosf(float a, float *s, float *c);
 #define NSMakeSize CGSizeMake
 #define NSMakePoint CGPointMake
 typedef const void *CFTypeRef;
-typedef const struct __CFString *CFStringRef;
+/* Bridged as the SDK's, so a constant casts to NSString under ARC */
+typedef const struct __attribute__((objc_bridge(NSString))) __CFString *CFStringRef;
 void CFRelease(CFTypeRef);
 CFTypeRef CFRetain(CFTypeRef);
 
@@ -86,7 +87,16 @@ Class NSClassFromString(NSString *name);
 @protocol NSCopying
 - (id)copyWithZone:(void *)zone;
 @end
+typedef struct
+{
+   unsigned long state;
+   __unsafe_unretained id *itemsPtr;
+   unsigned long *mutationsPtr;
+   unsigned long extra[5];
+} NSFastEnumerationState;
 @protocol NSFastEnumeration
+- (NSUInteger)countByEnumeratingWithState:(NSFastEnumerationState *)state
+      objects:(__unsafe_unretained id [])buffer count:(NSUInteger)len;
 @end
 __attribute__((objc_root_class))
 @interface NSObject <NSObject>
@@ -113,6 +123,7 @@ __attribute__((objc_root_class))
 - (const char *)cStringUsingEncoding:(NSUInteger)e;
 - (NSUInteger)length;
 - (BOOL)isEqualToString:(NSString *)s;
+- (BOOL)containsString:(NSString *)s;
 - (NSString *)stringByAppendingString:(NSString *)s;
 - (NSString *)stringByAppendingPathComponent:(NSString *)s;
 - (NSString *)lastPathComponent;
@@ -136,8 +147,8 @@ __attribute__((objc_root_class))
 - (NSUInteger)count;
 - (id)objectAtIndex:(NSUInteger)i;
 - (id)objectAtIndexedSubscript:(NSUInteger)i;
-- (id)firstObject;
-- (id)lastObject;
+- (ObjectType)firstObject;
+- (ObjectType)lastObject;
 @end
 @interface NSMutableArray<ObjectType> : NSArray<ObjectType>
 + (id)arrayWithCapacity:(NSUInteger)n;
@@ -151,6 +162,8 @@ __attribute__((objc_root_class))
 @interface NSDictionary : NSObject <NSCopying, NSFastEnumeration>
 + (id)dictionary;
 + (id)dictionaryWithObjectsAndKeys:(id)first, ...;
++ (id)dictionaryWithObjects:(const id [])objects forKeys:(const id [])keys
+      count:(NSUInteger)count;
 - (id)objectForKey:(id)k;
 - (id)objectForKeyedSubscript:(id)k;
 - (NSUInteger)count;

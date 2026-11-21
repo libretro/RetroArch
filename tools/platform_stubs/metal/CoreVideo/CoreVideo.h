@@ -10,6 +10,19 @@ enum { kCVReturnSuccess = 0,
    kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
    kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange,
    kCVPixelFormatType_420YpCbCr10BiPlanarFullRange };
+typedef uint32_t OSType;
+typedef uint64_t CVOptionFlags;
+typedef int32_t CVReturn;
+enum { kCVPixelFormatType_32BGRA = 0x42475241 };
+enum { kCVPixelBufferLock_ReadOnly = 1 };
+extern CVReturn CVPixelBufferLockBaseAddress(CVPixelBufferRef, CVOptionFlags);
+extern CVReturn CVPixelBufferUnlockBaseAddress(CVPixelBufferRef, CVOptionFlags);
+extern size_t CVPixelBufferGetWidth(CVPixelBufferRef);
+extern size_t CVPixelBufferGetHeight(CVPixelBufferRef);
+extern void *CVPixelBufferGetBaseAddress(CVPixelBufferRef);
+extern size_t CVPixelBufferGetBytesPerRow(CVPixelBufferRef);
+extern void *CVPixelBufferGetBaseAddressOfPlane(CVPixelBufferRef, size_t);
+extern size_t CVPixelBufferGetBytesPerRowOfPlane(CVPixelBufferRef, size_t);
 extern int CVPixelBufferIsPlanar(CVPixelBufferRef);
 extern size_t CVPixelBufferGetPlaneCount(CVPixelBufferRef);
 extern unsigned CVPixelBufferGetPixelFormatType(CVPixelBufferRef);
@@ -23,6 +36,7 @@ extern int CVMetalTextureIsFlipped(CVMetalTextureRef);
 extern id<MTLTexture> CVMetalTextureGetTexture(CVMetalTextureRef);
 extern int CFEqual(CFTypeRef, CFTypeRef);
 extern CFTypeRef CVBufferGetAttachment(CVPixelBufferRef, CFStringRef, void *);
+extern const CFStringRef kCVPixelBufferPixelFormatTypeKey;
 extern const CFStringRef kCVImageBufferColorPrimariesKey;
 extern const CFStringRef kCVImageBufferTransferFunctionKey;
 extern const CFStringRef kCVImageBufferYCbCrMatrixKey;

@@ -19,6 +19,8 @@ void dispatch_async(dispatch_queue_t queue, dispatch_block_t block);
 dispatch_queue_t dispatch_queue_create(const char *, dispatch_queue_attr_t);
 void dispatch_async_f(dispatch_queue_t, void *, dispatch_function_t);
 void dispatch_once_f(dispatch_once_t *, void *, dispatch_function_t);
+void dispatch_once(dispatch_once_t *, dispatch_block_t);
+dispatch_queue_t dispatch_get_main_queue(void);
 dispatch_time_t dispatch_time(dispatch_time_t when, int64_t delta);
 void dispatch_after(dispatch_time_t when, dispatch_queue_t queue, dispatch_block_t block);
 #endif
