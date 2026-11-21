@@ -450,7 +450,12 @@ static void gl2_free_pbo_readback(gl2_t *gl);
 #define MEDIA_GEN_FB gl2_gen_fb
 #define MEDIA_DELETE_FB gl2_delete_fb
 #define MEDIA_BIND_FB gl2_bind_fb
+#ifdef GL2_MAC_EXT_FBO
+/* A macOS SDK before 10.12 names it with the EXT suffix only */
+#define MEDIA_FB_BINDING GL_FRAMEBUFFER_BINDING_EXT
+#else
 #define MEDIA_FB_BINDING GL_FRAMEBUFFER_BINDING
+#endif
 #define MEDIA_ATTACH(tex) gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0)
 #define MEDIA_FB_COMPLETE() (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER) == RARCH_GL_FRAMEBUFFER_COMPLETE)
 #define gl_media_target_free gl2_media_target_free
