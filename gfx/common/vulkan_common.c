@@ -2095,22 +2095,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    if (cached_device_vk && iface && iface->create_device
          && !video_st->hw_render.cache_context)
    {
-      VkBool32 supported_before = VK_FALSE;
-      VkBool32 supported_after  = VK_FALSE;
-      VkResult before_result;
-      VkResult after_result;
-
-      before_result = vkGetPhysicalDeviceSurfaceSupportKHR(cached_gpu_vk,
-            0, vk->vk_surface, &supported_before);
       vk->context.device = cached_device_vk;
       sw2_kept_release(vk, false);
-
-      after_result = vkGetPhysicalDeviceSurfaceSupportKHR(cached_gpu_vk,
-            0, vk->vk_surface, &supported_after);
-
-      RARCH_LOG("[Vulkan] Switch 2 surface across cached swapchain release: before %d/%u, after %d/%u.\n",
-            (int)before_result, (unsigned)supported_before,
-            (int)after_result, (unsigned)supported_after);
 
       if (cached_destroy_device_vk)
          cached_destroy_device_vk();
@@ -2241,9 +2227,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       else
       {
          RARCH_WARN("[Vulkan] Failed to create device with negotiation interface. Falling back to default path.\n");
-#ifdef __SWITCH2__
-         return false;
-#endif
 #ifdef HAVE_OPENXR
          /* The runtime's lists were for the core's device. */
          if (vk->context.xr && !vulkan_openxr_uses_enable2(vk->context.xr))
