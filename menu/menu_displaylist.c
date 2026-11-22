@@ -18976,12 +18976,6 @@ static bool menu_displaylist_ctl_internal(
                            PARSE_ACTION, false) == 0)
                      count++;
 
-#ifdef HAVE_PYROWAVE
-               if (menu_entries_append(info->list, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_DEVICES),
-                        MENU_ENUM_LABEL_PYROWAVE_DEVICES_STR, MENU_ENUM_LABEL_PYROWAVE_DEVICES,
-                        MENU_SETTING_ACTION, 0, 0, NULL)) count++;
-#endif
-
 #ifdef HAVE_CONFIGFILE
                if (      settings->bools.menu_show_configurations
                      && !settings->bools.kiosk_mode_enable)
