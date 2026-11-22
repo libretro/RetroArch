@@ -124,6 +124,7 @@ struct explore_state
    explore_entry_t *entries;
    playlist_t **playlists;
    uint8_t *thumb_pushed; /* per playlist: its matches are held */
+   size_t thumb_last;     /* the playlist an entry was last found in */
    unsigned thumb_gen;    /* the store's generation they were held in */
    gfx_surface_t **icons;
    const char *label_explore_item_str;
@@ -2113,6 +2114,7 @@ ssize_t menu_explore_get_entry_playlist_index(unsigned type,
          *playlist = pl;
       if (playlist_entry)
          *playlist_entry = entry->playlist_entry;
+      explore_state->thumb_last = (size_t)pl_idx;
 
       /* correct numbers of list pos and list size */
       if (list && list_pos && list_size)
@@ -2134,11 +2136,18 @@ void menu_explore_push_thumbnail_match(playlist_t *playlist)
    playlist_config_t *cfg;
    size_t count = explore_state ? RBUF_LEN(explore_state->playlists) : 0;
 
-   for (i = 0; i < count; i++)
-      if (explore_state->playlists[i] == playlist)
-         break;
-   if (i == count)
-      return;
+   /* Mostly the one its entry was just found in */
+   if (     count && explore_state->thumb_last < count
+         && explore_state->playlists[explore_state->thumb_last] == playlist)
+      i = explore_state->thumb_last;
+   else
+   {
+      for (i = 0; i < count; i++)
+         if (explore_state->playlists[i] == playlist)
+            break;
+      if (i == count)
+         return;
+   }
    settings = config_get_ptr();
    /* An override skips the menu's handler: apply the rule first */
    gfx_thumbnail_results_set_other_regions(
