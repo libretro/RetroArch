@@ -1686,6 +1686,11 @@ static void buffer_chain_discard(buffer_chain_t *chain);
     * thread Metal finishes on. */
    int      _stagingBusy[METAL_STAGING_SLOTS];
    gfx_media_history_t _mediaHistory;
+   /* The producer and viewer share these immutable texture versions.
+    * Only the render owner touches the pool; staging lends stay separate. */
+   __unsafe_unretained id<MTLTexture> *_mediaTextures;
+   unsigned _mediaTextureCount;
+   bool _mediaBorrowable;
    unsigned _stagingNext;
    /* Slots lent to a producer (metal_texture_lend), which writes them
     * itself: an update from other memory never uses them. Touched
@@ -4345,15 +4350,19 @@ static float metal_hdr_pq_to_nits(float pq)
 
 @implementation Texture
 
-#if !__has_feature(objc_arc)
 - (void)dealloc
 {
+   unsigned i;
+   for (i = 0; i < _mediaTextureCount; i++)
+      RARCH_STRUCT_ASSIGN(_mediaTextures[i], nil);
+   free(_mediaTextures);
+#if !__has_feature(objc_arc)
    [(id)_texture release];
    [(id)_sampler release];
    [(id)_staging release];
    [super dealloc];
-}
 #endif
+}
 
 @end
 
@@ -7747,6 +7756,8 @@ struct metal_view_chain
    unsigned rt_vp_dims;
    /* Borrowed only while renderExternalViewChain encodes this image. */
    gfx_media_history_t *media_history;
+   __unsafe_unretained Texture *media_owner;
+   bool history_borrowed;
    uintptr_t media_source;
    gfx_media_history_ring_t history_ring;
    bool history_made;
@@ -9182,11 +9193,27 @@ error:
    gfx_media_history_ring_t *history = external && _shader->history_size
          && c->history_ring.count == _shader->history_size + 1
       ? &c->history_ring : NULL;
+   bool borrow;
    if (history && c->engine.history_ring != history)
       c->history_made = false;
    if (!history) c->history_ring.valid = false;
    c->engine.history_ring = history;
    c->engine.media = external != nil;
+   borrow = history && c->media_owner && c->media_owner->_mediaBorrowable;
+   if (borrow && !c->media_owner->_mediaTextureCount)
+   {
+      if (!c->media_owner->_mediaTextures)
+         c->media_owner->_mediaTextures = (__typeof__(c->media_owner->_mediaTextures))calloc(GFX_MAX_FRAME_HISTORY + 2,
+               sizeof(*c->media_owner->_mediaTextures));
+      if (!c->media_owner->_mediaTextures) borrow = false;
+      else
+      {
+         RARCH_STRUCT_ASSIGN(c->media_owner->_mediaTextures[0], src);
+         c->media_owner->_mediaTextureCount = 1;
+      }
+   }
+   if (c->history_borrowed != borrow) c->history_made = false;
+   c->history_borrowed = borrow;
    if (external)
       for (unsigned i = 0; i < _shader->passes; i++)
          hdr_viewer_colour_rows(c->engine.pass[i].viewer_colour_rows,
@@ -9303,6 +9330,18 @@ error:
             RARCH_LOG("[Metal] Views' presets have each view of a software "
                   "frame written straight in.\n");
          }
+      }
+      else if (borrow && destination->view && !repeated)
+      {
+         /* The pool refuses writes to every texture still held here.
+          * Logical aliases share this slot until the ring evicts them. */
+         RARCH_STRUCT_ASSIGN(destination->view, src);
+         destination->size_data.x = v->width;
+         destination->size_data.y = v->height;
+         destination->size_data.z = 1.0f / v->width;
+         destination->size_data.w = 1.0f / v->height;
+         gfx_media_history_written(c->media_history);
+         gfx_media_history_ring_advance(history, slot);
       }
       else if (destination->view && !repeated
             && gfx_media_history_needed(c->media_history, history ? 1 : n))
@@ -10370,10 +10409,15 @@ static uintptr_t metal_load_texture_internal(void *video_data, void *data,
                || metal_planar_update(md, t, img) != VIDEO_TEXTURE_UPDATE_DONE)
             return 0;
          t->_mediaHistory.managed = true;
+         t->_mediaBorrowable = true;
          return (uintptr_t)RARCH_BRIDGE_RETAINED(t);
       }
       t = [md.context newTexture:image filter:filter_type];
-      if (t) t->_mediaHistory.managed = true;
+      if (t)
+      {
+         t->_mediaHistory.managed = true;
+         t->_mediaBorrowable = true;
+      }
       return (uintptr_t)RARCH_BRIDGE_RETAINED(RARCH_AUTORELEASE_R(t));
    }
 }
@@ -10484,6 +10528,43 @@ static bool metal_texture_staging(Texture *t, NSUInteger len)
       return false;
    t.staging = RARCH_AUTORELEASE_R(buf);
    return true;
+}
+
+/* Same-format upload target for the bounded viewer pool. No wait and no
+ * copy of the old pixels: the pending upload supplies the entire image. */
+static id<MTLTexture> metal_media_new_texture(id<MTLTexture> source)
+{
+   MTLTextureDescriptor *td = [MTLTextureDescriptor
+      texture2DDescriptorWithPixelFormat:source.pixelFormat
+      width:source.width height:source.height mipmapped:NO];
+   td.usage = source.usage;
+   td.storageMode = source.storageMode;
+   return RARCH_AUTORELEASE_R([source.device newTextureWithDescriptor:td]);
+}
+
+static id<MTLTexture> metal_media_writable(MetalDriver *md, Texture *t)
+{
+   metal_view_chain_t *c;
+   unsigned i, j;
+   id<MTLTexture> tex;
+   if (!t->_mediaTextureCount || !md.views
+         || !(c = md.views->media_chain) || !c->history_borrowed)
+      return t.texture;
+   for (i = 0; i < t->_mediaTextureCount; i++)
+   {
+      tex = t->_mediaTextures[i];
+      for (j = 0; j < c->history_ring.count; j++)
+         if (c->engine.frame.texture[j].view == tex) break;
+      if (j == c->history_ring.count) return tex;
+   }
+   /* At most history-size + 1 versions are retained by the chain. One
+    * additional version lets uploads proceed without stealing a reader. */
+   if (t->_mediaTextureCount == GFX_MAX_FRAME_HISTORY + 2
+         || !(tex = metal_media_new_texture(t.texture)))
+      return nil;
+   RARCH_STRUCT_ASSIGN(t->_mediaTextures[t->_mediaTextureCount], tex);
+   t->_mediaTextureCount++;
+   return tex;
 }
 
 /* A planar frame into planar texture @t: its planes copied once into a
@@ -10609,10 +10690,17 @@ static enum video_texture_update metal_planar_update(MetalDriver *md,
       Texture *t, const struct texture_image *ti)
 {
    enum video_texture_update result;
+   id<MTLTexture> tex;
    if (!t->_planar)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
-   result = metal_planar_encode(md.context, t, t.texture, ti);
-   if (result == VIDEO_TEXTURE_UPDATE_DONE) t->_mediaHistory.copies = 0;
+   tex = metal_media_writable(md, t);
+   if (!tex) return VIDEO_TEXTURE_UPDATE_REFUSED;
+   result = metal_planar_encode(md.context, t, tex, ti);
+   if (result == VIDEO_TEXTURE_UPDATE_DONE)
+   {
+      t.texture = tex;
+      t->_mediaHistory.copies = 0;
+   }
    return result;
 }
 
@@ -10714,13 +10802,16 @@ static enum video_texture_update metal_update_texture_internal(
          off = (NSUInteger)slot * len;
          if (!(cb = md.context.blitCommandBuffer))
             return VIDEO_TEXTURE_UPDATE_REFUSED;
+         if (!(tex = metal_media_writable(md, t)))
+            return VIDEO_TEXTURE_UPDATE_REFUSED;
          if (!(t->_stagingLent & (1u << slot)))
             memcpy((uint8_t *)t.staging.contents + off, ti->pixels, len);
 #if TARGET_OS_OSX
          if (t.staging.storageMode == MTLStorageModeManaged)
             [t.staging didModifyRange:NSMakeRange(off, len)];
 #endif
-         bce = [cb blitCommandEncoder];
+         if (!(bce = [cb blitCommandEncoder]))
+            return VIDEO_TEXTURE_UPDATE_REFUSED;
          [bce copyFromBuffer:t.staging
                 sourceOffset:off
            sourceBytesPerRow:bpp * ti->width
@@ -10731,6 +10822,7 @@ static enum video_texture_update metal_update_texture_internal(
             destinationLevel:0
            destinationOrigin:MTLOriginMake(0, 0, 0)];
          [bce endEncoding];
+         t.texture = tex;
          t->_mediaHistory.copies = 0;
          __atomic_store_n(&t->_stagingBusy[slot], 1, __ATOMIC_RELEASE);
          {
@@ -11500,9 +11592,11 @@ static bool gfx_display_metal_media_shader_draw(void *data, uintptr_t image,
          vs->media_chain->media_source == image, vs->media_chain->history_made);
    vs->media_chain->media_source = image;
    vs->media_chain->media_history = &texture->_mediaHistory;
+   vs->media_chain->media_owner = texture;
    [md.frameView renderExternalViewChain:vs->media_chain source:texture.texture
          view:&view viewport:dims fresh:true];
    vs->media_chain->media_history = NULL;
+   vs->media_chain->media_owner = nil;
    draw.video_info = NULL;
    draw.rce = md.context.rce;
    draw.sampler = texture.sampler;

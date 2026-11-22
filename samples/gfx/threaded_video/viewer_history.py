@@ -274,6 +274,7 @@ for field in ("engine", "shader", "context", "shaderEmitsHDR10", "shaderEmitsHDR
               "hdrPaperWhiteNits", "hdrExpandGamut", "pendingSrc", "pendingPitch", "pendingMem",
               "pendingOff", "format", "bpp", "memReader", "mem", "writtenSeen"):
     method = re.sub(r'\b_' + field + r'\b', "self->" + field, method)
+method = method.replace("id<MTLTexture>", "gpu *")
 method = method.replace("self->context.", "self->context->").replace("td.usage", "td->usage")
 for name in ("front", "src", "external", "dst"):
     method = re.sub(r'\b' + name + r'\.(width|height|pixelFormat)\b', name + r'->\1', method)
@@ -284,7 +285,9 @@ assert "[self " not in method and "[bce " not in method
 
 planar = function(metal[metal.index("static enum video_texture_update metal_planar_encode("):],
     "static enum video_texture_update metal_planar_update(")
-planar = planar.replace("md.context", "md->context").replace("t.texture", "t->texture")
+planar = planar.replace("md.context", "md->context").replace("t.texture", "t->texture").replace("id<MTLTexture>", "gpu *")
+writable = function(metal, "static id<MTLTexture> metal_media_writable(")
+writable = writable.replace("id<MTLTexture>", "gpu *").replace("md.views", "md->views").replace("t.texture", "t->texture")
 update = function(metal, "static enum video_texture_update metal_update_texture_internal(")
 update = update.replace("(__bridge MetalDriver *)", "(MetalDriver *)").replace(
     "(__bridge Texture *)", "(Texture *)").replace("@autoreleasepool", "")
@@ -305,6 +308,8 @@ update = re.sub(r'\btex\.(width|height|pixelFormat|mipmapLevelCount)\b', r'tex->
 assert "[cb " not in update and "[bce " not in update and "addCompletedHandler" not in update
 
 metal_fixture = common + r'''
+#define GFX_MAX_FRAME_HISTORY 3
+typedef struct Texture Texture;
 #include "gfx/common/hdr_viewer_colour.h"
 #define nil NULL
 #define YES true
@@ -334,6 +339,8 @@ typedef struct {
    engine_t engine;
    texture_t src16;
    gfx_media_history_t *media_history;
+   Texture *media_owner;
+   bool history_borrowed;
    uintptr_t media_source;
    gfx_media_history_ring_t history_ring;
    bool history_made;
@@ -377,20 +384,27 @@ typedef struct Staging { void *contents;unsigned storageMode; } Staging;
 #define TARGET_OS_OSX 1
 #define MTLStorageModeManaged 1
 #define METAL_STAGING_SLOTS 3
-typedef struct {
+struct Texture {
    gpu *texture;
+   gpu **_mediaTextures;
+   unsigned _mediaTextureCount;
+   bool _mediaBorrowable;
    gfx_media_history_t _mediaHistory;
    bool _planar;
    Staging *staging;
    unsigned _stagingNext,_stagingLent;
    int _stagingBusy[METAL_STAGING_SLOTS];
-} Texture;
-typedef struct { Context *context; } MetalDriver;
+};
+typedef struct { metal_view_chain_t *media_chain; } Views;
+typedef struct { Context *context; Views *views; } MetalDriver;
 enum video_texture_update { VIDEO_TEXTURE_UPDATE_DONE,VIDEO_TEXTURE_UPDATE_DROPPED,VIDEO_TEXTURE_UPDATE_REFUSED };
 static enum video_texture_update encode_result=VIDEO_TEXTURE_UPDATE_DONE;
 static enum video_texture_update metal_planar_encode(Context *ctx,Texture *t,gpu *dst,const void *image)
 { (void)ctx;(void)t;(void)dst;(void)image;return encode_result; }
 struct texture_image { unsigned width,height;const void *pixels,*planar; };
+static gpu *metal_media_new_texture(gpu *src)
+{ return fail_texture && --fail_texture==0 ? NULL : new_texture(src->width,src->height,src->pixelFormat); }
+WRITABLE
 static bool metal_texture_staging(Texture *t,NSUInteger len)
 {
    if(!t->staging) {
@@ -417,11 +431,98 @@ static bool draw(FrameView *self,metal_view_chain_t *c,Texture *t)
    memset(&view,0,sizeof(view));view.width=t->texture->width;view.height=t->texture->height;
    gfx_media_history_begin(&t->_mediaHistory,(uintptr_t)c,
          c->media_source==(uintptr_t)t,c->history_made);
-   c->media_source=(uintptr_t)t;c->media_history=&t->_mediaHistory;
+   c->media_source=(uintptr_t)t;c->media_history=&t->_mediaHistory;c->media_owner=t;
    metal_frame(self,c,t->texture,&view,VIDEO_SCALE_PACK(800,600),true);
-   c->media_history=NULL;
+   c->media_history=NULL;c->media_owner=NULL;
    return copies!=before;
 }
+static void test_borrowed_pool(void)
+{
+   FrameView self;
+   metal_view_chain_t c;
+   Texture t,other;
+   Command cb;
+   Context ctx={true,203,&cb};
+   Views views={&c};
+   MetalDriver md={&ctx,&views};
+   preset p={1,2};
+   struct texture_image image;
+   unsigned pixels[8]={100,0,0,0,0,0,0,0},storage[6],expected[3]={0,0,0};
+   unsigned frame,repeat,j,names=0,before=copies;
+   gpu *old;
+   memset(&self,0,sizeof(self));memset(&c,0,sizeof(c));
+   memset(&t,0,sizeof(t));memset(&other,0,sizeof(other));
+   memset(&image,0,sizeof(image));
+   self.shader=&p;self.context=&ctx;self.pendingMem=-1;
+   gfx_media_history_ring_init(&c.history_ring,storage,3);
+   t.texture=new_texture(2,2,MTLPixelFormatRGBA16Float);
+   t.texture->value=100;t._mediaHistory.managed=true;t._mediaBorrowable=true;
+   image.width=2;image.height=2;image.pixels=pixels;
+   assert(!draw(&self,&c,&t) && copies==before);
+   expected[0]=100;
+   old=t.texture;fail_texture=1;
+   assert(metal_update_texture_internal(&md,(uintptr_t)&t,&image)==VIDEO_TEXTURE_UPDATE_REFUSED);
+   assert(t.texture==old && t._mediaTextureCount==1);
+   for(frame=1;frame<=64;frame++)
+   {
+      gpu *readers[3];unsigned values[3];
+      for(j=0;j<3;j++) { readers[j]=metal_history_texture(&c.engine,j)->view;values[j]=readers[j]->value; }
+      pixels[0]=100+frame;
+      assert(metal_update_texture_internal(&md,(uintptr_t)&t,&image)==VIDEO_TEXTURE_UPDATE_DONE);
+      for(j=0;j<3;j++)assert(readers[j]->value==values[j]);
+      for(j=0;j<METAL_STAGING_SLOTS;j++)t._stagingBusy[j]=0;
+      assert(t.texture->pixelFormat==MTLPixelFormatRGBA16Float);
+      for(repeat=0;repeat<frame%4+1;repeat++)
+      {
+         assert(!draw(&self,&c,&t) && copies==before);
+         for(j=2;j;j--)expected[j]=expected[j-1];
+         expected[0]=pixels[0];
+         for(j=0;j<3;j++)assert(metal_history_texture(&c.engine,j)->view->value==expected[j]);
+      }
+      if(frame==8)names=allocated;
+      if(frame>8)assert(names==allocated);
+      assert(t._mediaTextureCount<=4);
+   }
+   /* A lent upload still reads the producer-written staging slot directly. */
+   old=t.texture;t._stagingLent=1;
+   *(unsigned*)t.staging->contents=888;image.pixels=t.staging->contents;
+   assert(metal_update_texture_internal(&md,(uintptr_t)&t,&image)==VIDEO_TEXTURE_UPDATE_DONE);
+   assert(old->value==expected[0] && t.texture->value==888);
+   assert(!draw(&self,&c,&t));
+   t._stagingLent=0;image.pixels=pixels;
+   old=t.texture;
+   for(j=0;j<METAL_STAGING_SLOTS;j++)t._stagingBusy[j]=1;
+   assert(metal_update_texture_internal(&md,(uintptr_t)&t,&image)==VIDEO_TEXTURE_UPDATE_DROPPED);
+   assert(t.texture==old && !draw(&self,&c,&t));
+   for(j=0;j<METAL_STAGING_SLOTS;j++)t._stagingBusy[j]=0;
+   encoder_available=false;
+   assert(metal_update_texture_internal(&md,(uintptr_t)&t,&image)==VIDEO_TEXTURE_UPDATE_REFUSED);
+   assert(t.texture==old);encoder_available=true;
+   t._planar=true;encode_result=VIDEO_TEXTURE_UPDATE_DROPPED;
+   assert(metal_planar_update(&md,&t,&image)==VIDEO_TEXTURE_UPDATE_DROPPED && t.texture==old);
+   encode_result=VIDEO_TEXTURE_UPDATE_DONE;
+   assert(metal_planar_update(&md,&t,&image)==VIDEO_TEXTURE_UPDATE_DONE && t.texture!=old);
+   t.texture->value=777;assert(!draw(&self,&c,&t));
+   other.texture=new_texture(2,2,1);other.texture->value=900;
+   other._mediaHistory.managed=true;other._mediaBorrowable=true;
+   assert(!draw(&self,&c,&other));
+   old=t.texture;
+   assert(metal_update_texture_internal(&md,(uintptr_t)&other,&image)==VIDEO_TEXTURE_UPDATE_DONE);
+   assert(t.texture==old && old->value==777);
+   assert(!draw(&self,&c,&other));assert(!draw(&self,&c,&t));
+   assert(copies==before);
+   p.history_size=0;assert(!draw(&self,&c,&t));
+   assert(metal_media_writable(&md,&t)==t.texture);
+   /* Removing/replacing the chain cannot make the producer pool dangle. */
+   views.media_chain=NULL;
+   assert(metal_update_texture_internal(&md,(uintptr_t)&t,&image)==VIDEO_TEXTURE_UPDATE_DONE);
+   views.media_chain=&c;
+   free(t._mediaTextures);free(other._mediaTextures);
+   free(t.staging->contents);free(t.staging);
+   free(other.staging->contents);free(other.staging);
+   puts("PASS Metal borrowed history: zero snapshots, bounded reuse, immutable readers, dropped/failed uploads, HDR, planar and owner changes");
+}
+
 int main(void)
 {
    FrameView self;
@@ -429,7 +530,7 @@ int main(void)
    Texture t,other;
    Command cb;
    Context ctx={false,80,&cb};
-   MetalDriver md={&ctx};
+   MetalDriver md={&ctx,NULL};
    preset p={1,2};
    struct texture_image image;
    unsigned *pixels=(unsigned*)calloc(320*240,sizeof(unsigned));
@@ -513,11 +614,13 @@ int main(void)
    assert(allocated==before+3 && c.engine.history_ring==&c.history_ring);
    assert(metal_history_texture(&c.engine,0)->view!=t.texture);
    free(t.staging->contents);free(t.staging);free(pixels);
+   test_borrowed_pool();
    puts("PASS Metal viewer history: pixels, copy counts, dropped uploads, address reuse, HDR, failed encoders and no-history borrow");
    return 0;
 }
 '''
 metal_fixture = metal_fixture.replace("\nMETAL_HELPERS\n", function(metal, "static const void *metal_history_data(") + function(metal, "static texture_t *metal_history_texture("))
+metal_fixture = metal_fixture.replace("\nWRITABLE\n", writable)
 metal_fixture = metal_fixture.replace("\nPLANAR\n", planar).replace("\nUPDATE\n", update).replace("\nMETHOD\n", method)
 
 
