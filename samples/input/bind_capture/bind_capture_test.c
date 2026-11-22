@@ -413,6 +413,37 @@ static void test_keys(bool at_once)
          == RETROK_LAST - 1);
 }
 
+/* A key held in a companion window, which the driver never reports,
+ * is captured, read one by one or all at once, and so is one tapped
+ * between two reads; let go and read, it is not. */
+static void test_companion_key(bool at_once)
+{
+   reset();
+   if (at_once)
+      driver.keys_down = driver_keys_down;
+   CHECK(bind_start(0, RETRO_DEVICE_ID_JOYPAD_Y));
+   input_driver_companion_key(RETROK_BACKSPACE - 1, true);
+   input_driver_companion_key(RETROK_LAST, true);
+   CHECK(!bind_step());
+   input_driver_companion_key(RETROK_w, false);
+   CHECK(!bind_step());
+   input_driver_companion_key(RETROK_q, true);
+   CHECK(bind_step());
+   CHECK(RETRO_KEYBIND_KEY(&binds[0][RETRO_DEVICE_ID_JOYPAD_Y]) == RETROK_q);
+   input_driver_companion_key(RETROK_q, false);
+   /* the release seen, nothing is held for the next one */
+   CHECK(bind_start(0, RETRO_DEVICE_ID_JOYPAD_X));
+   input_driver_companion_key(RETROK_e, true);
+   input_driver_companion_key(RETROK_e, false);
+   CHECK(bind_step());
+   CHECK(RETRO_KEYBIND_KEY(&binds[0][RETRO_DEVICE_ID_JOYPAD_X]) == RETROK_e);
+   CHECK(bind_start(0, RETRO_DEVICE_ID_JOYPAD_L));
+   CHECK(!bind_step());
+   input_driver_companion_key(RETROK_r, true);
+   input_driver_companion_keys_clear();
+   CHECK(!bind_step());
+}
+
 /* the highest button there is, among the bits */
 static void test_last_button(void)
 {
@@ -467,6 +498,8 @@ int main(void)
    test_hotkey_sharer();
    test_keys(false);
    test_keys(true);
+   test_companion_key(false);
+   test_companion_key(true);
    test_last_button();
    test_get_buttons();
    if (failures)

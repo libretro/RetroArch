@@ -1065,6 +1065,13 @@ typedef struct
     * map (or a change in who shares a player, to announce) at the
     * next frame boundary, and whether any of it is live. */
    uint32_t first_press_released[MAX_USERS];
+   /* Keys held down in a companion window (the desktop menu), which
+    * the input driver does not see: a bind being captured reads them
+    * with the driver's own. Those let go since the last read go once
+    * read, so that a tap pressed and let go between two reads is
+    * still seen. On the main thread. */
+   uint32_t companion_keys[(RETROK_LAST + 31) / 32];
+   uint32_t companion_keys_up[(RETROK_LAST + 31) / 32];
    uint32_t first_press_pending;
    /* users whose core port a press gave them, not the user */
    uint32_t first_press_assigned;
@@ -1472,6 +1479,12 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
 /* Every key down, a bit per key in @down, which the caller has cleared
  * and holds RETROK_LAST bits. */
 void input_driver_bind_capture_keys(unsigned joy_idx, uint32_t *down);
+/* A key pressed or let go in a companion window, which a bind capture
+ * reads with the input driver's own; one let go is read once more.
+ * On the main thread. */
+void input_driver_companion_key(unsigned key, bool down);
+/* Every companion window key let go. */
+void input_driver_companion_keys_clear(void);
 
 /* Port 0's mouse and first touch, read from the driver once per poll,
  * so every reader in a frame sees one state and a wheel notch once. */

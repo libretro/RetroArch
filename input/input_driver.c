@@ -18359,6 +18359,28 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
          port, device, idx, id);
 }
 
+void input_driver_companion_key(unsigned key, bool down)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (key < RETROK_BACKSPACE || key >= RETROK_LAST)
+      return;
+   if (down)
+   {
+      input_st->companion_keys[key >> 5]    |=  (1u << (key & 31));
+      input_st->companion_keys_up[key >> 5] &= ~(1u << (key & 31));
+   }
+   else if (input_st->companion_keys[key >> 5] & (1u << (key & 31)))
+      input_st->companion_keys_up[key >> 5] |=  (1u << (key & 31));
+}
+
+void input_driver_companion_keys_clear(void)
+{
+   memset(input_driver_st.companion_keys, 0,
+         sizeof(input_driver_st.companion_keys));
+   memset(input_driver_st.companion_keys_up, 0,
+         sizeof(input_driver_st.companion_keys_up));
+}
+
 void input_driver_bind_capture_keys(unsigned joy_idx, uint32_t *down)
 {
    static uint16_t keys[RETROK_LAST];
@@ -18383,13 +18405,21 @@ void input_driver_bind_capture_keys(unsigned joy_idx, uint32_t *down)
                RETRO_DEVICE_KEYBOARD, 0, RETROK_BACKSPACE))
          down[RETROK_BACKSPACE >> 5] |= (1u << (RETROK_BACKSPACE & 31));
 #endif
-      return;
    }
+   else
+      for (b = RETROK_BACKSPACE; b < RETROK_LAST; b++)
+         if (input_driver_bind_capture_state(joy_idx, 0,
+                  RETRO_DEVICE_KEYBOARD, 0, b))
+            down[b >> 5] |= (1u << (b & 31));
 
-   for (b = RETROK_BACKSPACE; b < RETROK_LAST; b++)
-      if (input_driver_bind_capture_state(joy_idx, 0,
-               RETRO_DEVICE_KEYBOARD, 0, b))
-         down[b >> 5] |= (1u << (b & 31));
+   /* and those held in a companion window, which the driver cannot
+    * see; those let go meanwhile are seen this once */
+   for (b = 0; b < ARRAY_SIZE(input_st->companion_keys); b++)
+   {
+      down[b]                       |=  input_st->companion_keys[b];
+      input_st->companion_keys[b]   &= ~input_st->companion_keys_up[b];
+      input_st->companion_keys_up[b] = 0;
+   }
 }
 
 /* A controller as the controller has it - its own buttons, axes and
