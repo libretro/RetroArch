@@ -315,7 +315,9 @@ static void gfx_surface_unlend(gfx_surface_t *s, bool preserve)
    {
       size_t row = (size_t)VIDEO_SCALE_W(s->dims) * IMAGE_PIXFMT_BPP(s->pixfmt);
       if (preserve && s->slots[i] != s->own_slots[i]
-            && !(s->writing & (1u << i)))
+            && !(s->writing & (1u << i))
+            && !(i == s->inflight_slot && s->img.pixels == s->own_slots[i]
+               && s->img_pitch == row))
       {
          unsigned y;
          unsigned dslot = s->num_slots == 1 ? s->lent_cur : i;

@@ -11,15 +11,31 @@
 #include <rthreads/rthreads.h>
 #include <retro_timers.h>
 #include <features/features_cpu.h>
+#include <retro_atomic.h>
 
 #include "gfx/video_driver.h"
 #include "gfx/video_thread_wrapper.h"
 #include "gfx/gfx_surface.h"
 #include <formats/image_yuv_blit.h>
 
+#undef memcpy
+
 static int failures;
 #define CHECK(c, ...) do { if (!(c)) { failures++; \
    printf("[FAIL] " __VA_ARGS__); printf("\n"); } } while (0)
+
+static retro_atomic_ptr_t st_copy_target;
+static retro_atomic_int_t st_copy_size, st_copy_bytes;
+
+void *gfx_surface_still_copy(void *dest, const void *src, size_t size)
+{
+   uintptr_t target = (uintptr_t)retro_atomic_load_acquire_ptr(&st_copy_target);
+   size_t length = (size_t)retro_atomic_load_acquire_int(&st_copy_size);
+   if (target && (uintptr_t)dest >= target
+         && (uintptr_t)dest - target < length)
+      retro_atomic_fetch_add_int(&st_copy_bytes, (int)size);
+   return memcpy(dest, src, size);
+}
 
 /* --- stub driver ------------------------------------------------- */
 static uintptr_t st_next = 1;
@@ -619,8 +635,14 @@ static void st_pitched_lending(void)
       old = s->handle;
       unloaded = st_unloads;
       s->filter = TEXTURE_FILTER_NEAREST;
+      retro_atomic_store_release_int(&st_copy_bytes, 0);
+      retro_atomic_store_release_int(&st_copy_size, format ? 128 : 64);
+      retro_atomic_store_release_ptr(&st_copy_target, s->own_slots[0]);
       gfx_surface_submit(s, 0, false);
       st_flush();
+      retro_atomic_store_release_ptr(&st_copy_target, NULL);
+      CHECK(retro_atomic_load_acquire_int(&st_copy_bytes) == (format ? 128 : 64),
+            "packed replacement copied the submitted slot more than once");
       CHECK(!st_load_lent && st_px_first == 0x100 && st_px_last == 0x100 + (format ? 32 : 16) - 1,
             "replacement load did not repack padded rows");
       if (active)
@@ -659,10 +681,50 @@ static void st_pitched_lending(void)
       CHECK(st_lent_pixels[1][8] == 0x304 && st_lent_pixels[1][24] == 0x30c,
             "external canvas was not copied row by row");
       st_lend_busy = 0;
+      s->filter = TEXTURE_FILTER_NEAREST;
+      retro_atomic_store_release_int(&st_copy_bytes, 0);
+      retro_atomic_store_release_int(&st_copy_size, 64);
+      retro_atomic_store_release_ptr(&st_copy_target, s->own_slots[0]);
+      gfx_surface_submit(s, 0, false);
+      retro_atomic_store_release_ptr(&st_copy_target, NULL);
+      CHECK(retro_atomic_load_acquire_int(&st_copy_bytes) == 64,
+            "one-slot replacement recopied its packed frame");
+      CHECK(s->own_slots[0][0] == 0x300 && s->own_slots[0][15] == 0x30f,
+            "one-slot replacement lost pixels");
       gfx_surface_free(s);
       st_lend = false;
       st_lend_pitch[0] = st_lend_pitch[1] = 0;
    }
+   for (threaded = 0; threaded < 2; threaded++)
+   {
+      gfx_surface_t *s;
+      st_async = (int)threaded;
+      st_lend = true;
+      s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 1, IMAGE_PIXFMT_8888,
+            TEXTURE_FILTER_LINEAR, NULL, NULL);
+      if (!s) continue;
+      gfx_surface_submit(s, 0, false);
+      st_flush();
+      gfx_surface_submit(s, 0, false);
+      st_flush();
+      CHECK(s->lent, "tight replacement was not lent");
+      st_pitched_write(s, 0, 0x400);
+      s->filter = TEXTURE_FILTER_NEAREST;
+      retro_atomic_store_release_int(&st_copy_bytes, 0);
+      retro_atomic_store_release_int(&st_copy_size, 64);
+      retro_atomic_store_release_ptr(&st_copy_target, s->own_slots[0]);
+      gfx_surface_submit(s, 0, false);
+      st_flush();
+      retro_atomic_store_release_ptr(&st_copy_target, NULL);
+      CHECK(retro_atomic_load_acquire_int(&st_copy_bytes) == 64,
+            "tight replacement did not preserve its frame once");
+      CHECK(s->own_slots[0][0] == 0x400 && s->own_slots[0][15] == 0x40f,
+            "tight replacement lost pixels");
+      gfx_surface_free(s);
+      st_flush();
+      st_lend = false;
+   }
+   st_async = 0;
 }
 
 static void st_canvas_lease(void)
