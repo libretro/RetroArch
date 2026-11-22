@@ -1299,6 +1299,24 @@ jobs:
           make clean
           echo "[pass] udev_touch_test (ASan)"
 
+      - name: Build and run udev_poll_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/udev_poll
+        run: |
+          set -eu
+          # The udev input and joypad drivers' hotplug monitors share
+          # their event sets with the devices: an idle poll is one
+          # wait and reads no pad, and a hotplug or unplug leaves no
+          # read of the device that went. Monitors and devices are
+          # pipes.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./udev_poll_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./udev_joypad_poll_test
+          make clean
+          echo "[pass] udev_poll_test (ASan)"
+
       - name: Build and run device_pins_test
         shell: bash
         working-directory: samples/input/device_pins

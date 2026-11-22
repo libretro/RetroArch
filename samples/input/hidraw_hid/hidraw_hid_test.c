@@ -7,7 +7,7 @@
  *   start       -> a DualShock 3 is started through hidraw: its LED
  *                  report written, 0xF4 set, 0xF2 and 0xF5 read
  *   poll        -> the newest of the reports waiting is the pad's state;
- *                  with none waiting, one read and the state stays
+ *                  with none waiting, no read and the state stays
  *   pressures   -> L2, R2 and the face, shoulder and D-pad buttons'
  *                  pressures are axes 4 to 15
  *   rumble      -> the motors go in the output report with the lights,
@@ -43,6 +43,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <sys/ioctl.h>
+#include <sys/epoll.h>
 #include <linux/hidraw.h>
 
 #include <boolean.h>
@@ -316,12 +317,48 @@ int __wrap_ioctl(int fd, unsigned long req, ...)
    return -1;
 }
 
+/* the event set: fd 400, a node in it ready with a report waiting or
+ * gone */
+static void *watched[NODES];
+
+int __wrap_epoll_create(int size)
+{
+   (void)size;
+   return 400;
+}
+int __wrap_epoll_ctl(int ep, int op, int fd, struct epoll_event *event)
+{
+   if (ep != 400 || fd < 100 || fd >= 100 + NODES)
+   {
+      errno = EBADF;
+      return -1;
+   }
+   watched[fd - 100] = op == EPOLL_CTL_DEL ? NULL : event->data.ptr;
+   return 0;
+}
+int __wrap_epoll_wait(int ep, struct epoll_event *events, int max, int t)
+{
+   int i, n = 0;
+   (void)ep;
+   (void)t;
+   for (i = 0; i < NODES && n < max; i++)
+      if (watched[i] && (nodes[i].queued || nodes[i].gone))
+      {
+         events[n].events   = EPOLLIN;
+         events[n++].data.ptr = watched[i];
+      }
+   return n;
+}
+
 int __wrap_close(int fd)
 {
    if (fd >= 300)
       return 0;
    if (fd >= 100 && fd < 100 + NODES)
+   {
       nodes[fd - 100].closes++;
+      watched[fd - 100] = NULL;
+   }
    return 0;
 }
 
@@ -538,7 +575,7 @@ int main(void)
    /* nothing waiting */
    ds3->reads = 0;
    hidraw_hid.poll(hid);
-   CHECK(ds3->reads == 1, "more than one read with nothing waiting");
+   CHECK(!ds3->reads, "a pad with nothing waiting is read");
    CHECK(hidraw_hid.button(hid, 0, RETRO_DEVICE_ID_JOYPAD_A),
          "the state was lost with nothing waiting");
 
