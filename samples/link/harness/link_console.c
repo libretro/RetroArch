@@ -16,6 +16,7 @@
 
 #include <retro_miscellaneous.h>
 #include <file/file_path.h>
+#include <memory/memdesc.h>
 #include <streams/file_stream.h>
 
 #include "link_console.h"
@@ -158,6 +159,25 @@ static bool link_console_variable(link_console_t *c, struct retro_variable *var)
    return false;
 }
 
+/* A copy, as a core may pass its descriptors on its stack, completed as
+ * RetroArch completes its own; a later call replaces it, and one with none
+ * clears it */
+static bool link_console_memory_maps(link_console_t *c, const struct retro_memory_map *map)
+{
+   free(c->descriptors);
+   c->descriptors      = NULL;
+   c->descriptor_count = 0;
+   if (!map || !map->descriptors || !map->num_descriptors)
+      return true;
+   if (!(c->descriptors = (struct retro_memory_descriptor*)calloc(map->num_descriptors,
+         sizeof(*c->descriptors))))
+      return false;
+   memcpy(c->descriptors, map->descriptors, map->num_descriptors * sizeof(*c->descriptors));
+   memdesc_preprocess(c->descriptors, map->num_descriptors);
+   c->descriptor_count = map->num_descriptors;
+   return true;
+}
+
 static bool link_console_pixel_format(link_console_t *c, const enum retro_pixel_format *format)
 {
    if (!format)
@@ -228,6 +248,8 @@ static bool RETRO_CALLCONV link_console_environment(unsigned cmd, void *data)
          return true;
       case RETRO_ENVIRONMENT_GET_CALENDAR_TIME_INTERFACE:
          return link_console_calendar((struct retro_calendar_time_interface*)data);
+      case RETRO_ENVIRONMENT_SET_MEMORY_MAPS:
+         return link_console_memory_maps(c, (const struct retro_memory_map*)data);
       case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
          return true;
       default:
@@ -596,6 +618,17 @@ bool link_console_byte(link_console_t *c, unsigned memory, unsigned long offset,
    return true;
 }
 
+bool link_console_address(const link_console_t *c, size_t address, unsigned *value)
+{
+   size_t o;
+   const struct retro_memory_descriptor *d = memdesc_find(c->descriptors,
+         c->descriptor_count, address, &o);
+   if (!d || !d->ptr)
+      return false;
+   *value = ((const unsigned char*)d->ptr)[d->offset + o];
+   return true;
+}
+
 bool link_console_declared(const link_console_t *c, const char *key)
 {
    size_t i;
@@ -623,6 +656,7 @@ void link_console_close(link_console_t *c)
    if (c->lib)
       dylib_close(c->lib);
    link_console_forget(c);
+   free(c->descriptors);
    free(c->rom_data);
    free(c->state);
    free(c->picture);

@@ -654,9 +654,34 @@ static void link_harness_checkpoint(struct link_harness *h, const struct link_sc
    free(dir);
 }
 
+static void link_harness_expect_address(struct link_harness *h,
+      const struct link_scenario_event *e)
+{
+   char address[21];
+   unsigned got;
+   if (!link_console_address(&h->consoles[e->console], e->address, &got))
+   {
+      fprintf(stderr, "link_harness: %s:%u: address %s is not mapped\n", h->scn.path, e->line,
+            link_harness_dec(address, e->address));
+      h->failed = true;
+   }
+   else if (got != e->value)
+   {
+      fprintf(stderr, "link_harness: %s:%u: expect failed: console %u address %s is %u, not %u\n",
+            h->scn.path, e->line, e->console, link_harness_dec(address, e->address), got,
+            e->value);
+      h->failed = true;
+   }
+}
+
 static void link_harness_expect(struct link_harness *h, const struct link_scenario_event *e)
 {
    unsigned got;
+   if (e->by_address)
+   {
+      link_harness_expect_address(h, e);
+      return;
+   }
    if (!link_console_byte(&h->consoles[e->console], e->memory, e->offset, &got))
    {
       fprintf(stderr, "link_harness: %s:%u: console %u's core has no byte %lu there\n",

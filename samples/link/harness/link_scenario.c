@@ -550,7 +550,8 @@ static bool link_scenario_frame_line(struct link_scenario_parse *p, unsigned lon
       unsigned long value;
       e->kind = LINK_SCENARIO_EXPECT;
       if (argc != 4)
-         return link_scenario_fail(p, "<frame> expect <c> save|rtc|system|video <offset> <byte>", NULL);
+         return link_scenario_fail(p,
+               "<frame> expect <c> save|rtc|system|video <offset>|addr <address> <byte>", NULL);
       if (!link_scenario_console_number(p, arg[0], &e->console))
          return false;
       if (!strcmp(arg[1], "save"))
@@ -561,9 +562,18 @@ static bool link_scenario_frame_line(struct link_scenario_parse *p, unsigned lon
          e->memory = RETRO_MEMORY_SYSTEM_RAM;
       else if (!strcmp(arg[1], "video"))
          e->memory = RETRO_MEMORY_VIDEO_RAM;
+      else if (!strcmp(arg[1], "addr"))
+         e->by_address = true;
       else
-         return link_scenario_fail(p, "not save, rtc, system or video", arg[1]);
-      if (!link_scenario_unsigned(arg[2], 0xFFFFFFFFUL, &e->offset))
+         return link_scenario_fail(p, "not save, rtc, system, video or addr", arg[1]);
+      if (e->by_address)
+      {
+         uint64_t address;
+         if (!link_scenario_number(arg[2], (size_t)-1, &address))
+            return link_scenario_fail(p, "not an address", arg[2]);
+         e->address = (size_t)address;
+      }
+      else if (!link_scenario_unsigned(arg[2], 0xFFFFFFFFUL, &e->offset))
          return link_scenario_fail(p, "not an offset", arg[2]);
       if (!link_scenario_unsigned(arg[3], 0xFF, &value))
          return link_scenario_fail(p, "not a byte", arg[3]);

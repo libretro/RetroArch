@@ -29,12 +29,14 @@ struct link_scenario_event       /* one frame line */
    char *name;                     /* save, checkpoint */
    unsigned long frame;
    unsigned long offset;           /* expect */
+   size_t address;                 /* expect addr */
    unsigned line;
    enum link_scenario_kind kind;
    unsigned console, port;         /* cable: the first end */
    unsigned console_b, port_b;     /* cable: the second end */
    unsigned memory;                /* expect: RETRO_MEMORY_* */
    unsigned value;                 /* expect: the byte */
+   bool by_address;                /* expect addr: through the core's memory map */
 };
 
 struct link_scenario_change      /* an input script line */

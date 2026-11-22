@@ -1,0 +1,8 @@
+# An address the core's memory map gives no memory, a descriptor with a
+# NULL pointer, fails the run.
+# error: address 805306368 is not mapped
+console 0 core=test
+console 1 core=test
+0 cable 0:0 1:0
+5 expect 0 addr 805306368 0   # 0x30000000
+10 end

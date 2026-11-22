@@ -57,6 +57,8 @@ typedef struct link_console
    size_t picture_size;
    struct link_console_variable *variables;
    size_t variable_count;
+   struct retro_memory_descriptor *descriptors;  /* a copy of SET_MEMORY_MAPS's */
+   unsigned descriptor_count;
    uint64_t video;                  /* the latest picture */
    enum retro_pixel_format format;
    unsigned index, bytes_per_pixel, errors;
@@ -89,6 +91,9 @@ void link_console_reset(link_console_t *c);
 /* A byte of a RETRO_MEMORY_* region; false when the core has no such byte */
 bool link_console_byte(link_console_t *c, unsigned memory, unsigned long offset,
       unsigned *value);
+/* The byte at a guest address through the core's memory map; false when no
+ * descriptor claims the address or the one that does has no memory */
+bool link_console_address(const link_console_t *c, size_t address, unsigned *value);
 bool link_console_declared(const link_console_t *c, const char *key);
 void link_console_close(link_console_t *c);
 

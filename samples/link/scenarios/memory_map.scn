@@ -1,0 +1,22 @@
+# Bytes read at guest addresses through the test core's memory map: in a
+# plain descriptor, through select, offset and cleared high bits, through a
+# disconnected address bit with a select and without one, and the same byte
+# by region.
+console 0 core=test
+console 1 core=test
+0 cable 0:0 1:0
+10 save mid
+20 checkpoint middle
+30 expect 0 addr 268435464 1   # 0x10000008: the ports attached
+30 expect 0 addr 268435465 2   # 0x10000009: the peer count
+30 expect 1 addr 268435468 1   # 0x1000000C: console 1's index
+30 expect 1 addr 536870924 1   # 0x2000000C: select, offset 8, one bit cleared: RAM byte 12
+30 expect 0 addr 788529160 1   # 0x2F000008: bits cleared down to 0: RAM byte 8
+30 expect 0 addr 1073741827 2   # 0x40000003: bit 1 disconnected, place 1: RAM byte 9
+30 expect 0 addr 1073741833 255 # 0x40000009: bit 3 down to 2, place 5: RAM byte 13
+30 expect 1 addr 1073741828 0   # 0x40000004: bit 2 down to 1, place 2: RAM byte 10
+30 expect 0 addr 1073741839 0   # 0x4000000F: bits 3 and 2 down, place 7: RAM byte 15
+30 expect 1 addr 1610612744 1   # 0x60000008: no select, bit 1 disconnected: past start + len, place 4: RAM byte 12
+30 expect 0 addr 1610612748 255 # 0x6000000C: place 6: RAM byte 14
+30 expect 1 system 12 1        # the same byte by region
+40 end

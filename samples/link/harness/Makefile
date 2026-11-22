@@ -71,6 +71,7 @@ LRC_SOURCES     := \
 	$(LRC)/encodings/encoding_crc32.c \
 	$(LRC)/encodings/encoding_deflate.c \
 	$(LRC)/features/features_cpu.c \
+	$(LRC)/memory/memdesc.c \
 	$(LRC)/streams/interface_stream.c \
 	$(LRC)/streams/memory_stream.c \
 	$(LRC)/streams/trans_stream.c \

@@ -1,0 +1,7 @@
+# An address no descriptor of the core's memory map claims fails the run.
+# error: address 1342177280 is not mapped
+console 0 core=test
+console 1 core=test
+0 cable 0:0 1:0
+5 expect 0 addr 1342177280 0   # 0x50000000
+10 end

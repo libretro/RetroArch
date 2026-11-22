@@ -1,0 +1,7 @@
+# An address that is not a decimal number: refused before anything runs.
+# error: not an address
+console 0 core=test
+console 1 core=test
+0 cable 0:0 1:0
+5 expect 0 addr 0x10000008 1
+10 end

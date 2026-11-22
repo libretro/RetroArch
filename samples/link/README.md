@@ -154,6 +154,7 @@ expect-stuck <frame>                the run ends in a release in this frame
 <frame> save <name>                 writes <name>.state
 <frame> checkpoint <name>           writes <name>/
 <frame> expect <c> save|rtc|system|video <offset> <byte>
+<frame> expect <c> addr <address> <byte>
 <frame> end
 ```
 
@@ -174,6 +175,23 @@ A counter not named in an `expect-count` line must end at 0. The counters are
 `left_out` and `misplaced_call`. A membership line the bus refuses, or an
 option its core did not declare, fails the run. An input script has a
 `<frame> <hex joypad mask>` line for each change, held until the next.
+
+An `expect <c> addr` line reads the byte at an address of the console's
+own address space, given in decimal, through the memory map its core gave
+with `SET_MEMORY_MAPS`. The harness keeps a copy of the map, which a later
+call replaces, and completes it as RetroArch does, through libretro-common's
+`memory/memdesc.h`: a descriptor without a `select` gets one from its
+`len` and `disconnect`, one without a `len` gets one, and address bits
+too high to reach its memory become `disconnect` bits. It stops at the
+first descriptor it cannot complete and leaves those after it as they
+were. Then the first descriptor that claims the address decides. One with
+a `select` claims the addresses whose `select` bits equal its `start`'s
+and whose place is below `len`, the place being the address less `start`
+with each `disconnect` bit taken out and the bits above it moved down. One
+left without a `select` claims those from `start` up to `start + len`,
+at the address less `start`. The byte is at that place after
+`ptr + offset`. An address that no descriptor claims, or that one with a
+NULL `ptr` claims, fails the run.
 
 The scenarios here:
 
@@ -200,10 +218,13 @@ The scenarios here:
   picture of the frame before that.
 - `last_checkpoint`: a checkpoint at the last frame, whose pictures the
   `rewound` run must not show at the checkpoint after its load.
+- `memory_map`: bytes read at addresses through the test core's memory
+  map, and one of them by region as well.
 - `bad/`: scenarios the harness refuses before anything runs.
 - `fail/`: scenarios that run and fail: a core that logs an error, a count
   the bus does not reach, an `expect` line that does not hold, a release the
-  scenario does not expect and two dupes in a row before a checkpoint.
+  scenario does not expect, two dupes in a row before a checkpoint, and
+  addresses the memory map does not map.
 - `stale/`: scenarios whose `from` run passes and whose `rewound` run
   fails: a core that keeps a latch over a load, one whose save right after a
   load writes a copy the load left stale, and one whose save there makes a
@@ -294,3 +315,16 @@ attached; 0x09-0x0B each port's peer count; 0x0C-0x0E each port's index, 255
 when it is cabled to nothing; 0x0F the errors it logged; 0x10-0x13 the
 messages received and 0x14-0x17 those sent, little-endian; 0x18 and 0x19 the
 topology and detached reports it was given.
+
+Its memory map, for `expect ... addr` lines, gives five views of that RAM:
+0x10000000-0x1000003F maps all of it; every address from 0x20000000 to
+0x2FFFFFFF maps its bytes 8-15, through a `select` of 0xF0000000, an
+`offset` of 8 and a `len` of 8, which clears the address's high bits;
+0x30000000-0x3000000F has no memory; every address from 0x40000000 to
+0x4FFFFFFF maps bytes 8-15 again in the same way, but with a `disconnect`
+of 2, so address bit 1 is ignored and the bits above it move down; and
+from 0x60000000, bytes 8-15 once more through a descriptor with no
+`select`, a `len` of 8 and a `disconnect` of 2, which RetroArch reads as
+claiming the addresses up to 0x6000000D whose bit 1 is clear. The core
+builds the map on its stack and clears it after the call, so a frontend
+must keep a copy.

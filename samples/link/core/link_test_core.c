@@ -1128,6 +1128,48 @@ void retro_cheat_set(unsigned index, bool enabled, const char *code)
    (void)code;
 }
 
+/* Five views of system RAM: plain, through select with an offset and a
+ * length that clears high bits, one with no memory, one through select
+ * with a disconnected address bit, and one with that bit and no select.
+ * The array is on the stack and cleared after the call, so a frontend
+ * must copy it. */
+static void lt_memory_maps(void)
+{
+   struct retro_memory_descriptor desc[5];
+   struct retro_memory_map map;
+   volatile unsigned char *clear = (volatile unsigned char*)desc;
+   size_t i;
+   memset(desc, 0, sizeof(desc));
+   desc[0].flags  = RETRO_MEMDESC_SYSTEM_RAM;
+   desc[0].ptr    = lt_state.sysram;
+   desc[0].start  = 0x10000000UL;
+   desc[0].len    = LT_SYSRAM_SIZE;
+   desc[1].ptr    = lt_state.sysram;
+   desc[1].offset = 8;
+   desc[1].start  = 0x20000000UL;
+   desc[1].select = 0xF0000000UL;
+   desc[1].len    = 8;
+   desc[2].start  = 0x30000000UL;
+   desc[2].len    = 16;
+   desc[3].ptr        = lt_state.sysram;
+   desc[3].offset     = 8;
+   desc[3].start      = 0x40000000UL;
+   desc[3].select     = 0xF0000000UL;
+   desc[3].disconnect = 2;
+   desc[3].len        = 8;
+   desc[4].ptr        = lt_state.sysram;
+   desc[4].offset     = 8;
+   desc[4].start      = 0x60000000UL;
+   desc[4].disconnect = 2;
+   desc[4].len        = 8;
+   map.descriptors     = desc;
+   map.num_descriptors = 5;
+   lt_environ(RETRO_ENVIRONMENT_SET_MEMORY_MAPS, &map);
+   /* Through volatile: a memset of an array about to die is optimised away */
+   for (i = 0; i < sizeof(desc); i++)
+      clear[i] = 0;
+}
+
 bool retro_load_game(const struct retro_game_info *game)
 {
    enum retro_pixel_format format = RETRO_PIXEL_FORMAT_XRGB8888;
@@ -1148,6 +1190,7 @@ bool retro_load_game(const struct retro_game_info *game)
    }
    for (p = 0; p < LT_MAX_PORTS; p++)
       lt_state.sysram[LT_RAM_INDEX + p] = 0xFF;
+   lt_memory_maps();
    if (!lt_linked)
       return true;
    for (p = 0; p < lt_cfg.ports; p++)
