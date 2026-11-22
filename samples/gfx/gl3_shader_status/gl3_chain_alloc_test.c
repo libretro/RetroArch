@@ -690,7 +690,7 @@ static void test_history_in_place(void)
    gl3_filter_chain_build_viewport_pass(chain, &vp, mvp);
    gl3_filter_chain_end_frame(chain);
    test_framebuffer_copied = NULL;
-   newest = chain->original_history[0];
+   newest = chain->original_history[gfx_media_history_ring_get(&chain->history_ring, 0)];
    CHECK(test_partial_copy.calls == 1 && !whole_copies,
          "history: %u copies from the rectangle, %u of the whole texture",
          test_partial_copy.calls, whole_copies);

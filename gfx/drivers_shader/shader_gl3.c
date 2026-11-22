@@ -17,6 +17,7 @@
 
 #include "shader_gl3.h"
 #include "../common/media_history.h"
+#include "../common/media_history_ring.h"
 #include "glslang_util.h"
 
 #include <stdlib.h>
@@ -3112,6 +3113,7 @@ struct gl3_filter_chain
    gl3_filter_chain_texture input_texture;
    gl3_filter_chain_texture history_input;
    gfx_media_history_t *media_history;
+   gfx_media_history_ring_t history_ring;
    bool history_input_valid;
    /* The count the last frame's final pass was drawn with. */
    uint64_t drawn_frame_count;
@@ -3252,14 +3254,15 @@ static void gl3_chain_update_history_info(struct gl3_filter_chain *chain)
 
    for (i = 0; i < chain->common.num_original_history; i++)
    {
+      unsigned slot = gfx_media_history_ring_get(&chain->history_ring, i);
       gl3_texture_t *source = (gl3_texture_t*)
          &chain->common.original_history[i];
 
       if (!source)
          continue;
 
-      source->texture.image  = chain->original_history[i]->image;
-      source->texture.dims   = chain->original_history[i]->size_dims;
+      source->texture.image  = chain->original_history[slot]->image;
+      source->texture.dims   = chain->original_history[slot]->size_dims;
       source->filter         = gl3_pass_get_source_filter(chain->passes[0]);
       source->mip_filter     = gl3_pass_get_mip_filter(chain->passes[0]);
       source->address        = gl3_pass_get_address_mode(chain->passes[0]);
@@ -3338,13 +3341,14 @@ static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
     * TODO: We can improve pipelining by figuring out which
     * pass is the last that reads from
     * the history and dispatch the copy earlier. */
-   if (chain->num_original_history)
+   if (chain->num_original_history
+         && (!chain->copy_framebuffer || chain->copy_framebuffer->complete
+             || chain->input_texture.image != chain->copy_framebuffer->image))
    {
-      /* Update history */
-      size_t h;
-      struct gl3_framebuffer *tmp =
-         chain->original_history[chain->num_original_history - 1];
-      chain->original_history[chain->num_original_history - 1] = NULL;
+      bool repeated = chain->history_ring.valid
+            && !gfx_media_history_needed(chain->media_history, 1);
+      unsigned slot = gfx_media_history_ring_target(&chain->history_ring, repeated);
+      struct gl3_framebuffer *tmp = chain->original_history[slot];
 
       if (     !tmp->complete
             || chain->input_texture.dims != tmp->size_dims
@@ -3353,11 +3357,11 @@ static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
       {
          gl3_framebuffer_set_size(tmp, chain->input_texture.dims,
                chain->input_texture.format);
-         if (chain->media_history && chain->media_history->copies >= chain->num_original_history)
-            chain->media_history->copies = 0;
+         repeated = false;
+         if (chain->media_history) chain->media_history->copies = 0;
       }
 
-      if (gfx_media_history_needed(chain->media_history, (unsigned)chain->num_original_history))
+      if (!repeated)
       {
          /* A frame read where it lies is copied from there */
          if (tmp->complete && chain->input_texture.padded_dims)
@@ -3390,10 +3394,8 @@ static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
          else if (chain->media_history) chain->media_history->copies = 0;
       }
 
-      /* Should ring buffer, but we don't have *that* many chain->passes. */
-      for (h = chain->num_original_history - 1; h > 0; h--)
-         chain->original_history[h] = chain->original_history[h - 1];
-      chain->original_history[0] = tmp;
+      if (tmp->complete)
+         gfx_media_history_ring_advance(&chain->history_ring, slot);
    }
    chain->media_history = NULL;
 }
@@ -3486,6 +3488,7 @@ static bool gl3_chain_init_history(struct gl3_filter_chain *chain)
       free(chain->original_history);
       chain->original_history     = NULL;
       chain->num_original_history = 0;
+      gfx_media_history_ring_init(&chain->history_ring, NULL, 0);
    }
    gl3_texture_array_resize(&chain->common.original_history,
          &chain->common.num_original_history, 0);
@@ -3513,10 +3516,13 @@ static bool gl3_chain_init_history(struct gl3_filter_chain *chain)
    if (chain->replay)
       required_images++;
    chain->original_history = (struct gl3_framebuffer**)
-      calloc(required_images, sizeof(*chain->original_history));
+      calloc(required_images, sizeof(*chain->original_history) + 2 * sizeof(unsigned));
    if (!chain->original_history)
       return false;
    chain->num_original_history = required_images;
+   gfx_media_history_ring_init(&chain->history_ring,
+         (unsigned*)(chain->original_history + required_images),
+         (unsigned)required_images);
 
    for (i = 0; i < required_images; i++)
    {
@@ -4166,6 +4172,8 @@ static bool gl3_chain_finalize(struct gl3_filter_chain *chain)
 static void gl3_chain_clear_history_and_feedback(struct gl3_filter_chain *chain)
 {
    unsigned i;
+   chain->history_ring.valid = false;
+   if (chain->media_history) chain->media_history->copies = 0;
    for (i = 0; i < chain->num_original_history; i++)
    {
       if (chain->original_history[i]->complete)
@@ -5098,9 +5106,9 @@ void gl3_filter_chain_set_input_texture_history(
    }
    gfx_media_history_begin(history, (uintptr_t)chain, same,
          !chain->require_clear && (!chain->copy_framebuffer || chain->copy_framebuffer->complete));
-   /* The normalized crop is also unchanged once its history is full. */
+   /* A repeated source also reuses its normalized crop. */
    if (!(same && history->managed && chain->num_original_history
-            && !gfx_media_history_needed(history, (unsigned)chain->num_original_history)
+            && chain->history_ring.valid && !gfx_media_history_needed(history, 1)
             && !chain->require_clear && chain->copy_framebuffer
             && chain->copy_framebuffer->complete))
       gl3_chain_set_input_texture(chain, *texture);

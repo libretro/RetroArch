@@ -57,7 +57,10 @@ $(TARGET): $(OBJS)
 $(CHAIN_TARGET): $(CHAIN_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-gl3_chain_alloc_test.o: $(REPO_ROOT)/gfx/drivers_shader/shader_gl3.c
+gl3_chain_alloc_test.o: $(REPO_ROOT)/gfx/drivers_shader/shader_gl3.c \
+      $(REPO_ROOT)/gfx/common/media_history_ring.h
+
+$(call sample_objs,$(REPO_ROOT)/gfx/drivers_shader/shader_gl3.o): $(REPO_ROOT)/gfx/common/media_history_ring.h
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<

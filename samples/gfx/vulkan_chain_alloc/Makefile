@@ -34,7 +34,8 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-vulkan_chain_alloc_test.o: $(REPO_ROOT)/gfx/drivers_shader/shader_vulkan.c
+vulkan_chain_alloc_test.o: $(REPO_ROOT)/gfx/drivers_shader/shader_vulkan.c \
+      $(REPO_ROOT)/gfx/common/media_history_ring.h
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<

@@ -478,18 +478,22 @@ static void test_history_spare(struct vulkan_filter_chain *chain)
          (unsigned)chain->common.num_original_history);
    if (chain->num_history == 3)
    {
-      chain->history_ring_index = 0;
       slang_chain_update_history_info(chain);
-      before = chain->history_ring_index;
-      /* What the frame's end writes: the slot before the newest. */
-      CHECK((before + chain->num_history - 1) % chain->num_history
-            != (before + 0) % chain->num_history
-            && (before + chain->num_history - 1) % chain->num_history
-            != (before + 1) % chain->num_history,
+      before = gfx_media_history_ring_target(&chain->history_ring, false);
+      CHECK(before != gfx_media_history_ring_get(&chain->history_ring, 0)
+            && before != gfx_media_history_ring_get(&chain->history_ring, 1),
             "the frame's end writes a slot the frame read");
       CHECK(chain->common.original_history[1].texture.image
             == chain->original_history[1]->image,
             "history 2 is not the ring's second slot");
+      gfx_media_history_ring_advance(&chain->history_ring, before);
+      gfx_media_history_ring_advance(&chain->history_ring, before);
+      gfx_media_history_ring_advance(&chain->history_ring, before);
+      slang_chain_update_history_info(chain);
+      before = gfx_media_history_ring_target(&chain->history_ring, false);
+      CHECK(before != gfx_media_history_ring_get(&chain->history_ring, 0)
+            && before != gfx_media_history_ring_get(&chain->history_ring, 1),
+            "an aliased history keeps replay's inputs immutable");
    }
    memset(&last->reflection, 0, sizeof(last->reflection));
 }
