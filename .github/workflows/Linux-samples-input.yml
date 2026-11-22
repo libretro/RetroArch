@@ -561,6 +561,18 @@ jobs:
           make -C samples/input/hotkey_menu clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/input/hotkey_menu clean
 
+      - name: Build and run hold_late_test (ASan + UBSan, mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          # The hold armed as a text entry ends: the key that ended it,
+          # reaching the poll a frame late beside a control already
+          # down, is held back until it is let go.
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make -C samples/input/hold_late clean check SANITIZER=address,undefined
+          make -C samples/input/hold_late clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/input/hold_late clean
+
       - name: Build and run pointer_second_test (ASan + UBSan, mingw + Wine)
         shell: bash
         run: |

@@ -1350,6 +1350,8 @@ bool input_driver_overlay_active_page(void);
  * once. For the menu as it opens and closes, a bind or a text entry
  * ends, or the mouse clicks: the press that did it does nothing more. */
 void input_driver_hold_held_input(void);
+/* The same for a text entry ending: the key that ended it may reach
+ * the poll a frame late, and is held back then too. */
 void input_driver_hold_held_input_late(void);
 
 /* The window has changed - fullscreen toggled, the video driver
