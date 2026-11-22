@@ -77,12 +77,16 @@ struct framebuffer { unsigned size_dims,format,image,framebuffer,view;bool compl
 #define gl3_framebuffer framebuffer
 #define slang_framebuffer framebuffer
 struct deferred_disposes { int unused; };
+VULKAN_LEASE_TYPE
 struct chain {
    texture input_texture,history_input;
    bool history_input_valid,require_clear,frame_in_place;
 #ifdef TEST_GL
    bool borrow_input;
    struct gl3_history_lease *history_leases;
+#endif
+#ifndef TEST_GL
+   struct vulkan_history_lease input_lease,*history_leases;
 #endif
    gfx_media_history_t *media_history;
    gfx_media_history_ring_t history_ring;
@@ -312,6 +316,77 @@ static void test_borrowed_history(void)
 }
 #endif
 
+#ifndef TEST_GL
+struct owner { unsigned refs,retains,releases; };
+static void retain_owner(void *p)
+{struct owner *o=(struct owner*)p;o->refs++;o->retains++;}
+static void release_owner(void *p)
+{struct owner *o=(struct owner*)p;assert(o->refs);o->refs--;o->releases++;}
+static void test_vulkan_borrowed_history(void)
+{
+   struct chain c;
+   struct pass_stub pass;
+   struct framebuffer frames[3],*slots[3];
+   struct vulkan_history_lease leases[3];
+   struct owner owners[2];
+   gfx_media_history_t h;
+   texture t,other,history;
+   unsigned storage[6],i,j,before,names,old_barriers;
+   memset(&c,0,sizeof(c));memset(&pass,0,sizeof(pass));
+   memset(&h,0,sizeof(h));memset(&t,0,sizeof(t));
+   memset(owners,0,sizeof(owners));memset(leases,0,sizeof(leases));
+   memset(frames,0,sizeof(frames));
+   for(i=0;i<3;i++)slots[i]=&frames[i];
+   c.original_history=slots;c.num_history=3;c.common.num_original_history=3;
+   c.passes[0]=&pass;c.history_leases=leases;
+   gfx_media_history_ring_init(&c.history_ring,storage,3);
+   h.managed=true;t.dims=t.padded_dims=VIDEO_SCALE_PACK(4,3);t.format=2;
+   t.layout=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+   t.image=image_new(t.dims);images[t.image].layout=t.layout;images[t.image].pixels[0]=77;t.view=10;
+   history=t;history.view=11;
+   vulkan_filter_chain_set_history_lease(&c,&history,&owners[0],retain_owner,release_owner);
+   assert(owners[0].refs==1);
+   before=copies;names=allocated;old_barriers=barriers;
+   for(i=0;i<12;i++)draw(&c,&t,&h);
+   assert(copies==before && allocated==names && barriers==old_barriers);
+   INFO(&c);
+   for(i=0;i<3;i++)
+   {
+      assert(c.common.original_history[i].texture.image==t.image);
+      assert(c.common.original_history[i].texture.view==11);
+   }
+   assert(owners[0].refs==2); /* repeated logical entries share one physical lease */
+   other=t;other.image=image_new(t.dims);images[other.image].layout=t.layout;images[other.image].pixels[0]=88;
+   for(i=0;i<16;i++)
+   {
+      texture *next=i%2?&t:&other;
+      unsigned index=i%2?0:1;
+      history=*next;history.view=next->view+1;
+      vulkan_filter_chain_set_history_lease(&c,&history,&owners[index],retain_owner,release_owner);
+      h.copies=0;draw(&c,next,&h);INFO(&c);
+      assert(copies==before);
+      assert(c.common.original_history[0].texture.image==next->image);
+      for(j=0;j<2;j++)
+      {
+         unsigned refs=c.input_lease.owner==&owners[j];
+         unsigned k;
+         for(k=0;k<3;k++)refs+=leases[k].owner==&owners[j];
+         assert(owners[j].refs==refs);
+      }
+   }
+   /* Switching to a mutable source cannot reuse an immutable alias as
+    * though its owned framebuffer already held that source. */
+   vulkan_filter_chain_set_history_lease(&c,NULL,NULL,NULL,NULL);
+   draw(&c,&t,&h);assert(copies==before+1);
+   INFO(&c);assert(!c.common.original_history[0].texture.padded_dims);
+   slang_chain_release_history_leases(&c,true);
+   slang_chain_release_history_leases(&c,true);
+   assert(!owners[0].refs && !owners[1].refs);
+   for(i=0;i<2;i++)assert(owners[i].retains==owners[i].releases);
+   puts("PASS Vulkan immutable history: original image/level-zero view, no copies or barriers, aliases, ownership and mutable fallback");
+}
+#endif
+
 int main(void)
 {
 #ifdef TEST_GL
@@ -517,6 +592,8 @@ int main(void)
 #endif
 #ifdef TEST_GL
    test_borrowed_history();
+#else
+   test_vulkan_borrowed_history();
 #endif
    (void)before;(void)errors;
    puts("PASS Slang history: pixels, moving/repeated cadence, logical bindings, crop/format/source changes, no repeat copies/barriers, fallback and failures");
@@ -529,7 +606,11 @@ flags = shlex.split(os.environ.get("CFLAGS", ""))
 for api, filename, prefix in (("gl3", "shader_gl3.c", "gl3"), ("vulkan", "shader_vulkan.c", "slang")):
     source = (root / "gfx/drivers_shader" / filename).read_text(encoding="utf-8")
     producer = (root / "gfx/drivers" / ("gl3.c" if api == "gl3" else "vulkan.c")).read_text(encoding="utf-8")
-    unit = fixture.replace("\nPRODUCER\n", "\n" + function(producer,
+    lease_type = ""
+    if api == "vulkan":
+        start = source.index("struct vulkan_history_lease\n{")
+        lease_type = source[start:source.index("\n};", start) + 3]
+    unit = fixture.replace("VULKAN_LEASE_TYPE", lease_type).replace("\nPRODUCER\n", "\n" + function(producer,
         "static void " + api + "_media_texture_changed(") + "\n")
     leases = "\n"
     if api == "gl3":
@@ -539,6 +620,11 @@ for api, filename, prefix in (("gl3", "shader_gl3.c", "gl3"), ("vulkan", "shader
             "bool gl3_filter_chain_preserve_history(",
             "bool gl3_filter_chain_retire_history(",
             "void gl3_filter_chain_set_history_borrow("))
+    else:
+        leases += "\n".join(function(source, signature) for signature in (
+            "static void slang_history_lease_release(",
+            "static void slang_chain_release_history_leases(",
+            "void vulkan_filter_chain_set_history_lease("))
     unit = unit.replace("\nLEASES\n", leases + "\n")
     unit = unit.replace("\nINPUT\n", "\n" + function(source, "static void " + prefix + "_chain_set_input_texture(") + "\n")
     unit = unit.replace("\nNORMAL_SETTER\n", "\n" + function(source, "void " + api + "_filter_chain_set_input_texture(") + "\n")

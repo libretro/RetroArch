@@ -154,6 +154,12 @@ void vulkan_filter_chain_set_viewer_colour(
 void vulkan_filter_chain_set_source_hdr(
       vulkan_filter_chain_t *chain, unsigned source_hdr);
 
+/* Immutable, level-zero history storage; its owner survives until the
+ * input and every history alias release it. NULL disables borrowing. */
+void vulkan_filter_chain_set_history_lease(vulkan_filter_chain_t *chain,
+      const struct vulkan_filter_chain_texture *texture, void *owner,
+      void (*retain)(void *), void (*release)(void *));
+
 void vulkan_filter_chain_set_input_texture(vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_texture *texture);
 

@@ -257,6 +257,7 @@ struct vk_texture
    void *mapped;
    VkImage image;                /* ptr alignment */
    VkImageView view;             /* ptr alignment */
+   VkImageView history_view;     /* Immutable level-zero view */
    VkBuffer buffer;              /* ptr alignment */
    VkDeviceMemory memory;        /* ptr alignment */
 #if defined(ANDROID) \
@@ -277,11 +278,13 @@ struct vk_texture
     * parking one allocates nothing and cannot fail. */
    mpsc_stack_node_t park;
    unsigned park_frames;
+   unsigned history_refs;
 
    VkImageLayout layout;         /* enum alignment */
    VkFormat format;              /* enum alignment */
    enum vk_texture_type type;
    uint8_t flags;
+   bool immutable;
 #ifdef HAVE_VAAPI
    vaapi_hevc_vulkan_cache_t *vaapi_cache;
    struct vk_texture *vaapi_next;
@@ -1604,6 +1607,9 @@ static void vulkan_destroy_texture(
 {
    if (tex->mapped && tex->memory)
       vkUnmapMemory(device, tex->memory);
+   if (tex->history_view && tex->history_view != tex->view)
+      vkDestroyImageView(device, tex->history_view, NULL);
+   tex->history_view = VK_NULL_HANDLE;
    if (tex->view)
       vkDestroyImageView(device, tex->view, NULL);
    if (tex->image)
@@ -1619,6 +1625,7 @@ static void vulkan_destroy_texture(
 #endif
    tex->type                          = VULKAN_TEXTURE_STREAMED;
    tex->flags                         = 0;
+   tex->immutable                     = false;
    tex->memory_type                   = 0;
    tex->dims                          = 0;
    tex->offset                        = 0;
@@ -1693,6 +1700,12 @@ static void vulkan_deferred_textures_tick(vk_t *vk)
    {
       mpsc_stack_node_t *node    = *cur;
       struct vk_texture *texture = VK_PARKED_TEXTURE(node);
+      if (texture->history_refs)
+      {
+         texture->park_frames = vk->context->num_swapchain_images + 1;
+         cur = &node->next;
+         continue;
+      }
       if (texture->park_frames > 1)
       {
          texture->park_frames--;
@@ -1714,8 +1727,7 @@ static void vulkan_deferred_textures_tick(vk_t *vk)
    }
 }
 
-/* Destroy every deferred texture immediately. Callers must guarantee
- * the graphics queue is idle and no other thread is recording. */
+/* Destroy unleased deferred textures at a queue-idle recording point. */
 static void vulkan_deferred_textures_flush(vk_t *vk)
 {
    mpsc_stack_node_t *node;
@@ -1727,7 +1739,15 @@ static void vulkan_deferred_textures_flush(vk_t *vk)
    while (node)
    {
       mpsc_stack_node_t *next = node->next;
-      vulkan_texture_retire(vk, VK_PARKED_TEXTURE(node));
+      struct vk_texture *texture = VK_PARKED_TEXTURE(node);
+      if (texture->history_refs)
+      {
+         texture->park_frames = vk->context->num_swapchain_images + 1;
+         node->next = vk->deferred_textures;
+         vk->deferred_textures = node;
+      }
+      else
+         vulkan_texture_retire(vk, texture);
       node = next;
    }
 }
@@ -7977,6 +7997,8 @@ static void vulkan_free(void *data)
       vk->media_shader_tried[0] = vk->media_shader_tried[1] = false;
 
       vulkan_views_free_chains(vk, 0, true);
+      /* The chains have released the last history owners. */
+      vulkan_deferred_textures_flush(vk);
 
       /* Whatever the context, not only with HDR: the retained image is
        * the presenter's, not the HDR path's. */
@@ -8924,9 +8946,8 @@ static void vulkan_check_swapchain(vk_t *vk)
 
    memset(vk->readback.record, 0, sizeof(vk->readback.record));
    vulkan_wait_own_submissions(vk);
-   /* Nothing of this driver's is in flight and this thread owns
-    * recording: safe point to destroy everything on the deferred
-    * list. */
+   /* Queue-idle permits retiring deferred storage; history leases survive
+    * swapchain recreation and continue to own their images. */
    vulkan_deferred_textures_flush(vk);
    vulkan_deferred_cmds_flush(vk);
 
@@ -17622,6 +17643,8 @@ static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
    unsigned slot, y, k;
    bool lent_src = false;
 
+   if (texture && texture->immutable)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
    if (vk && vk->context && texture && image && image->planar)
       return vulkan_update_texture_planar(vk, texture, image);
    if (     !vk || !vk->context || !texture || !image || !image->pixels
@@ -18067,11 +18090,19 @@ static uintptr_t vulkan_load_texture_compressed_internal(vk_t *vk,
    view.subresourceRange.levelCount     = tc->num_mips;
    view.subresourceRange.layerCount     = 1;
    vkCreateImageView(device, &view, NULL, &texture->view);
+   if (tc->num_mips == 1)
+      texture->history_view = texture->view;
+   else
+   {
+      view.subresourceRange.levelCount = 1;
+      vkCreateImageView(device, &view, NULL, &texture->history_view);
+   }
 
    texture->dims   = VIDEO_SCALE_PACK(tc->mips[0].width,
          tc->mips[0].height);
    texture->format = vkfmt;
    texture->type   = VULKAN_TEXTURE_STATIC;
+   texture->immutable = true;
    texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
    if (     filter_type == TEXTURE_FILTER_MIPMAP_LINEAR
          || filter_type == TEXTURE_FILTER_LINEAR)
@@ -19516,6 +19547,16 @@ video_driver_t video_vulkan = {
 
 #include "../common/hdr_viewer_colour.h"
 
+static void vulkan_media_history_retain(void *owner)
+{
+   ((struct vk_texture*)owner)->history_refs++;
+}
+
+static void vulkan_media_history_release(void *owner)
+{
+   ((struct vk_texture*)owner)->history_refs--;
+}
+
 static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
       unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
 {
@@ -19528,7 +19569,8 @@ static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
    VkRect2D saved_scissor;
    bool sdr;
    unsigned history_index;
-   if (!vk || !texture || !vk->media_shader_enabled || !vk->bloom.target)
+   if (!vk || !texture || !vk->media_shader_enabled || !vk->bloom.target
+         || (texture->immutable && !texture->history_view))
       return false;
    sdr = (vk->flags & VK_FLAG_SDR_PIPELINE) != 0;
    chain = vulkan_media_chain(vk, sdr ? 1 : 0);
@@ -19583,6 +19625,15 @@ static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
    if (vk->media_history_texture[history_index] != image)
       vk->media_history[history_index].copies = 0;
    vk->media_history_texture[history_index] = image;
+   if (texture->history_view)
+   {
+      struct vulkan_filter_chain_texture history = input;
+      history.view = texture->history_view;
+      vulkan_filter_chain_set_history_lease(chain, &history, texture,
+            vulkan_media_history_retain, vulkan_media_history_release);
+   }
+   else
+      vulkan_filter_chain_set_history_lease(chain, NULL, NULL, NULL, NULL);
    vulkan_filter_chain_set_input_texture_history(chain, &input,
          &vk->media_history[history_index]);
    /* The HDR UI compositor performs output conversion after the menu. */
