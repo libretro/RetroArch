@@ -4129,7 +4129,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
-#ifdef HAVE_LIBNX
+#if defined(HAVE_LIBNX) && !defined(__SWITCH2__)
          RARCH_LOG("[Environ] SET_HW_SHARED_CONTEXT: Ignored for now.\n");
          /* TODO/FIXME - Force this off for now for Switch
           * until shared HW context can work there */

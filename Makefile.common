@@ -1276,7 +1276,7 @@ ifeq ($(TARGET), retroarch_wiiu)
       endif
 endif
 
-ifneq ($(filter retroarch_switch retroarch_switch2,$(TARGET)),)
+ifeq ($(HAVE_SWITCH), 1)
    OBJ += gfx/drivers/switch_nx_gfx.o \
           audio/drivers/switch_libnx_audren_audio.o
    ifeq ($(HAVE_OPENGL), 1)
