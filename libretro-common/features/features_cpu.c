@@ -2061,7 +2061,10 @@ end:
  * against that clock on any backend; late as every sleep may be, and
  * a caller that needs the instant itself sleeps short and spins the
  * rest, as the frame limiter does with its measured margin. */
-#if (defined(__linux__) || defined(ANDROID)) && !defined(__MACH__)
+/* uClibc before 1.0 (OpenDingux GCW0) keeps clock_nanosleep() in librt,
+ * which a core need not link, and takes the relative loop below. */
+#if (defined(__linux__) || defined(ANDROID)) && !defined(__MACH__) \
+   && !(defined(__UCLIBC__) && __UCLIBC_MAJOR__ < 1)
 /* The exact tool: the clock above is clock_gettime(CLOCK_MONOTONIC)
  * here, and clock_nanosleep() takes an absolute deadline on the same
  * clock. EINTR re-arms against the unchanged deadline by definition
