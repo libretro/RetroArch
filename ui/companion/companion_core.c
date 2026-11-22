@@ -44,6 +44,7 @@
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <vfs/vfs_implementation.h>
 #ifdef HAVE_NETWORKING
 #include <net/net_http.h>
 #endif
@@ -137,6 +138,12 @@ struct companion_core
 
    /* File-system browser listing. */
    struct string_list *browse;
+   /* The search every listing is made with: folded terms, each ended by
+    * a NUL, the last by two (NULL: the folder as it is). */
+   char *browse_pattern;
+   /* Deletes finished on the worker, path and outcome (attr.b), told
+    * from iterate() in order. */
+   struct string_list *delete_done;
    char browse_dir[PATH_MAX_LENGTH];
    /* Per entry of @browse: size and mtime, gathered with the listing. */
    uint64_t *browse_size;
@@ -151,16 +158,23 @@ struct companion_core
       struct string_list *list;
       uint64_t *size;
       int64_t  *mtime;
+      /* A search of @dir (as browse_pattern), or NULL. */
+      char *pattern;
+      /* Removed before @dir is listed, or NULL. */
+      char *remove;
       int gen;
       /* Stored by the worker, release, after everything above. */
       retro_atomic_int_t done;
       bool ok;
+      bool removed;
    } *browse_job;
    /* Written by the UI thread only; the worker reads it between
     * entries to see whether its job has been superseded. */
    retro_atomic_int_t browse_gen;
    enum companion_browse_column browse_sort_col;
    bool browse_sort_desc;
+   /* The landed listing is a search: its rows are from many folders. */
+   bool browse_is_search;
 #ifdef HAVE_THREADS
    sthread_t *browse_thread;
 #endif
@@ -376,6 +390,7 @@ const char *companion_core_selected_playlist_path(companion_core_t *core);
 bool companion_core_select_playlist_path(companion_core_t *core, const char *path);
 static void companion_core_browse_worker_stop(companion_core_t *core);
 static void companion_core_browse_poll(companion_core_t *core);
+static void companion_core_delete_tell(companion_core_t *core);
 static long companion_core_browse_real(companion_core_t *core, size_t i);
 
 companion_core_t *companion_core_new(const companion_callbacks_t *cb,
@@ -419,6 +434,9 @@ void companion_core_free(companion_core_t *core)
       string_list_free(core->browse);
    free(core->browse_size);
    free(core->browse_mtime);
+   free(core->browse_pattern);
+   if (core->delete_done)
+      string_list_free(core->delete_done);
    free(core);
 }
 
@@ -1289,6 +1307,8 @@ void companion_core_iterate(companion_core_t *core, unsigned budget_us)
    if (!core)
       return;
    companion_core_browse_poll(core);
+   if (core->delete_done && core->delete_done->size)
+      companion_core_delete_tell(core);
    if (!core->pending_parse)
    {
       /* The store started over */
@@ -2880,11 +2900,239 @@ static void companion_core_stat(const char *path, bool is_dir,
  * per-entry size / mtime). Runs on the worker; between entries it
  * checks whether it has been superseded and stops early if so. Sets
  * job->done last. @core is only read for the generation. */
+/* Folds @s in place for a search: ASCII, Latin-1, Latin Extended-A,
+ * Greek and Cyrillic capitals to small letters, and katakana to
+ * hiragana. Every fold keeps a character's UTF-8 length. */
+static void companion_core_search_fold(char *s)
+{
+   unsigned char *p = (unsigned char*)s;
+   while (*p)
+   {
+      if (*p < 0x80)
+      {
+         if (*p >= 'A' && *p <= 'Z')
+            *p += 'a' - 'A';
+         p++;
+      }
+      else if ((p[0] & 0xE0) == 0xC0 && (p[1] & 0xC0) == 0x80)
+      {
+         unsigned c = ((unsigned)(p[0] & 0x1F) << 6) | (p[1] & 0x3F);
+         if (     (c >= 0xC0  && c <= 0xDE  && c != 0xD7)
+               || (c >= 0x391 && c <= 0x3AB && c != 0x3A2)
+               || (c >= 0x410 && c <= 0x42F))
+            c += 0x20;
+         else if (c >= 0x400 && c <= 0x40F)
+            c += 0x50;
+         else if (   (c >= 0x100 && c <= 0x137 && !(c & 1) && c != 0x130)
+                  || (c >= 0x14A && c <= 0x177 && !(c & 1))
+                  || (c >= 0x139 && c <= 0x148 &&  (c & 1))
+                  || (c >= 0x179 && c <= 0x17E &&  (c & 1)))
+            c++;
+         p[0] = (unsigned char)(0xC0 | (c >> 6));
+         p[1] = (unsigned char)(0x80 | (c & 0x3F));
+         p   += 2;
+      }
+      else if ( (p[0] & 0xF0) == 0xE0 && (p[1] & 0xC0) == 0x80
+            &&  (p[2] & 0xC0) == 0x80)
+      {
+         unsigned c = ((unsigned)(p[0] & 0x0F) << 12)
+            | ((unsigned)(p[1] & 0x3F) << 6) | (p[2] & 0x3F);
+         if (c >= 0x30A1 && c <= 0x30F6)
+         {
+            c   -= 0x60;
+            p[0] = (unsigned char)(0xE0 | (c >> 12));
+            p[1] = (unsigned char)(0x80 | ((c >> 6) & 0x3F));
+            p[2] = (unsigned char)(0x80 | (c & 0x3F));
+         }
+         p += 3;
+      }
+      else
+         p++;
+   }
+}
+
+/* A search's terms from what was typed: folded, split on white space,
+ * each ended by a NUL and the last by two; NULL for no terms. */
+static char *companion_core_search_pattern(const char *text)
+{
+   size_t len = text ? strlen(text) : 0;
+   char *out, *w;
+   const char *r;
+   if (!len || !(out = (char*)malloc(len + 2)))
+      return NULL;
+   w = out;
+   for (r = text; *r; )
+   {
+      while (*r && ISSPACE((unsigned char)*r))
+         r++;
+      if (!*r)
+         break;
+      while (*r && !ISSPACE((unsigned char)*r))
+         *w++ = *r++;
+      *w++ = '\0';
+   }
+   if (w == out)
+   {
+      free(out);
+      return NULL;
+   }
+   *w = '\0';
+   for (w = out; *w; w += strlen(w) + 1)
+      companion_core_search_fold(w);
+   return out;
+}
+
+/* Every term of @pattern is in @name, folded the same way. */
+static bool companion_core_search_match(const char *pattern,
+      const char *name)
+{
+   char folded[NAME_MAX_LENGTH];
+   const char *t;
+   strlcpy(folded, name, sizeof(folded));
+   companion_core_search_fold(folded);
+   for (t = pattern; *t; t += strlen(t) + 1)
+      if (!strstr(folded, t))
+         return false;
+   return true;
+}
+
+/* Takes the last pending folder off @pending, handing its string over. */
+static char *companion_core_walk_pop(struct string_list *pending)
+{
+   char *dir = pending->elems[pending->size - 1].data;
+   pending->elems[pending->size - 1].data = NULL;
+   pending->size--;
+   return dir;
+}
+
+/* The matches of @job's search under @job->dir, never through a link;
+ * NULL when superseded between entries or out of memory. */
+static struct string_list *companion_core_browse_search_walk(
+      companion_core_t *core, struct companion_browse_job *job)
+{
+   union string_list_elem_attr attr;
+   struct string_list *list    = string_list_new();
+   struct string_list *pending = string_list_new();
+   char *full                  = (char*)malloc(PATH_MAX_LENGTH);
+   bool ok                     = list && pending && full;
+   attr.i = 0;
+   if (ok)
+      ok = string_list_append(pending, job->dir, attr);
+   while (ok && pending->size)
+   {
+      char *dir = companion_core_walk_pop(pending);
+      libretro_vfs_implementation_dir *rdir =
+         retro_vfs_opendir_impl(dir, false);
+      while (ok && rdir && retro_vfs_readdir_impl(rdir))
+      {
+         const char *name = retro_vfs_dirent_get_name_impl(rdir);
+         bool is_dir;
+         if (retro_atomic_load_acquire_int(&core->browse_gen) != job->gen)
+         {
+            ok = false;
+            break;
+         }
+         if (!name || string_is_equal(name, ".") || string_is_equal(name, ".."))
+            continue;
+         fill_pathname_join_special(full, dir, name, PATH_MAX_LENGTH);
+         is_dir = retro_vfs_dirent_is_dir_impl(rdir);
+         if (companion_core_search_match(job->pattern, name))
+         {
+            attr.i = is_dir ? RARCH_DIRECTORY
+               : path_is_compressed_file(full) ? RARCH_COMPRESSED_ARCHIVE
+               : RARCH_PLAIN_FILE;
+            ok = string_list_append(list, full, attr);
+         }
+         if (ok && is_dir && !retro_vfs_dirent_is_link_impl(rdir))
+         {
+            attr.i = 0;
+            ok     = string_list_append(pending, full, attr);
+         }
+      }
+      if (rdir)
+         retro_vfs_closedir_impl(rdir);
+      free(dir);
+   }
+   free(full);
+   if (pending)
+      string_list_free(pending);
+   if (!ok)
+   {
+      if (list)
+         string_list_free(list);
+      return NULL;
+   }
+   dir_list_sort(list, true);
+   return list;
+}
+
+/* Removes @path: a link or file itself, a folder with everything in it.
+ * A link is never followed, so nothing outside the folder is touched.
+ * Not superseded: a delete that was asked for is carried through. */
+static bool companion_core_remove_tree(const char *path)
+{
+   union string_list_elem_attr attr;
+   struct string_list *pending, *dirs;
+   char *full;
+   bool ok = true;
+   size_t i;
+
+   if (retro_vfs_path_is_link_impl(path) || !path_is_directory(path))
+      return filestream_delete(path) == 0;
+
+   pending = string_list_new();
+   dirs    = string_list_new();
+   full    = (char*)malloc(PATH_MAX_LENGTH);
+   attr.i  = 0;
+   if (!pending || !dirs || !full || !string_list_append(pending, path, attr))
+      ok = false;
+   /* folders in the order found, a parent ahead of what is in it */
+   while (ok && pending->size)
+   {
+      char *dir = companion_core_walk_pop(pending);
+      libretro_vfs_implementation_dir *rdir;
+      ok   = string_list_append(dirs, dir, attr);
+      rdir = ok ? retro_vfs_opendir_impl(dir, true) : NULL;
+      while (rdir && retro_vfs_readdir_impl(rdir))
+      {
+         const char *name = retro_vfs_dirent_get_name_impl(rdir);
+         if (!name || string_is_equal(name, ".") || string_is_equal(name, ".."))
+            continue;
+         fill_pathname_join_special(full, dir, name, PATH_MAX_LENGTH);
+         if (     !retro_vfs_dirent_is_link_impl(rdir)
+               &&  retro_vfs_dirent_is_dir_impl(rdir))
+         {
+            if (!string_list_append(pending, full, attr))
+               ok = false;
+         }
+         else if (filestream_delete(full) != 0)
+            ok = false;
+      }
+      if (rdir)
+         retro_vfs_closedir_impl(rdir);
+      free(dir);
+   }
+   /* the deepest first */
+   if (dirs)
+      for (i = dirs->size; i-- > 0; )
+         if (filestream_delete(dirs->elems[i].data) != 0)
+            ok = false;
+   free(full);
+   if (pending)
+      string_list_free(pending);
+   if (dirs)
+      string_list_free(dirs);
+   return ok;
+}
+
 static void companion_core_browse_enumerate(companion_core_t *core,
       struct companion_browse_job *job)
 {
    struct string_list *list;
    size_t i, n;
+
+   if (job->remove)
+      job->removed = companion_core_remove_tree(job->remove);
 
 #ifdef _WIN32
    if (!job->dir[0])
@@ -2911,6 +3159,12 @@ static void companion_core_browse_enumerate(companion_core_t *core,
    }
    else
 #endif
+   if (job->pattern)
+   {
+      if (!(list = companion_core_browse_search_walk(core, job)))
+         goto fail;
+   }
+   else
    {
       list = dir_list_new(job->dir, NULL, true, false, true, false);
       if (!list)
@@ -2973,7 +3227,41 @@ static void companion_core_browse_job_free(struct companion_browse_job *job)
       string_list_free(job->list);
    free(job->size);
    free(job->mtime);
+   free(job->pattern);
+   free(job->remove);
    free(job);
+}
+
+/* A finished job's delete, kept to be told from iterate(), then the job
+ * itself dropped. */
+static void companion_core_browse_job_finish(companion_core_t *core,
+      struct companion_browse_job *job)
+{
+   if (!job)
+      return;
+   if (job->remove)
+   {
+      union string_list_elem_attr attr;
+      attr.b = job->removed;
+      if (!core->delete_done)
+         core->delete_done = string_list_new();
+      if (core->delete_done)
+         string_list_append(core->delete_done, job->remove, attr);
+   }
+   companion_core_browse_job_free(job);
+}
+
+static void companion_core_delete_tell(companion_core_t *core)
+{
+   /* taken first: a callback may ask for another delete */
+   struct string_list *done = core->delete_done;
+   size_t i;
+   core->delete_done = NULL;
+   for (i = 0; i < done->size; i++)
+      if (core->cb.on_delete_finished)
+         core->cb.on_delete_finished(core->ud, done->elems[i].data,
+               done->elems[i].attr.b);
+   string_list_free(done);
 }
 
 /* Join the worker (if any) and drop its job. */
@@ -3142,6 +3430,7 @@ static void companion_core_browse_install(companion_core_t *core,
    job->list  = NULL;
    job->size  = NULL;
    job->mtime = NULL;
+   core->browse_is_search = job->pattern != NULL;
    strlcpy(core->browse_dir, job->dir, sizeof(core->browse_dir));
 }
 
@@ -3167,20 +3456,20 @@ static void companion_core_browse_poll(companion_core_t *core)
       if (core->cb.on_browse_changed)
          core->cb.on_browse_changed(core->ud);
    }
-   companion_core_browse_job_free(job);
+   companion_core_browse_job_finish(core, job);
 #else
    (void)core; (void)job; (void)done; (void)current;
 #endif
 }
 
-bool companion_core_browse_open(companion_core_t *core, const char *path)
+/* Lists @path (searched, when browse_pattern is set), removing @remove
+ * first; takes @remove. */
+static bool companion_core_browse_start(companion_core_t *core,
+      const char *path, char *remove)
 {
    settings_t *settings     = config_get_ptr();
    struct companion_browse_job *job;
    const char *dir          = path;
-
-   if (!core)
-      return false;
 
    if (string_is_empty(dir))
       dir = !string_is_empty(settings->paths.directory_menu_content)
@@ -3188,7 +3477,19 @@ bool companion_core_browse_open(companion_core_t *core, const char *path)
 
    job = (struct companion_browse_job*)calloc(1, sizeof(*job));
    if (!job)
+   {
+      free(remove);
       return false;
+   }
+   job->remove = remove;
+   if (core->browse_pattern)
+   {
+      size_t len = 0;
+      while (core->browse_pattern[len])
+         len += strlen(core->browse_pattern + len) + 1;
+      if ((job->pattern = (char*)malloc(len + 1)))
+         memcpy(job->pattern, core->browse_pattern, len + 1);
+   }
    /* @path may point into the current listing (descending into one of
     * its own entries), which is replaced later: it goes into the job
     * before anything is. */
@@ -3210,7 +3511,7 @@ bool companion_core_browse_open(companion_core_t *core, const char *path)
       {
          sthread_join(core->browse_thread);  /* returns promptly: stale */
          core->browse_thread = NULL;
-         companion_core_browse_job_free(core->browse_job);
+         companion_core_browse_job_finish(core, core->browse_job);
          core->browse_job = NULL;
       }
       core->browse_job    = job;
@@ -3226,13 +3527,62 @@ bool companion_core_browse_open(companion_core_t *core, const char *path)
    if (job->ok)
    {
       companion_core_browse_install(core, job);
-      companion_core_browse_job_free(job);
+      companion_core_browse_job_finish(core, job);
       if (core->cb.on_browse_changed)
          core->cb.on_browse_changed(core->ud);
       return true;
    }
-   companion_core_browse_job_free(job);
+   companion_core_browse_job_finish(core, job);
    return false;
+}
+
+bool companion_core_browse_open(companion_core_t *core, const char *path)
+{
+   if (!core)
+      return false;
+   return companion_core_browse_start(core, path, NULL);
+}
+
+/* The folder being listed: the one asked for last, landed or not. A
+ * job's folder is set before its worker starts and never changed. */
+static const char *companion_core_browse_target(companion_core_t *core)
+{
+   return core->browse_job ? core->browse_job->dir : core->browse_dir;
+}
+
+bool companion_core_browse_search(companion_core_t *core, const char *text)
+{
+   if (!core)
+      return false;
+   free(core->browse_pattern);
+   core->browse_pattern = companion_core_search_pattern(text);
+   return companion_core_browse_start(core,
+         companion_core_browse_target(core), NULL);
+}
+
+bool companion_core_browse_is_search(companion_core_t *core)
+{
+   return core && core->browse && core->browse_is_search;
+}
+
+bool companion_core_browse_delete(companion_core_t *core, const char *path)
+{
+   size_t len;
+   char *remove;
+   if (!core || string_is_empty(path))
+      return false;
+   /* never a file system's root */
+   len = strlen(path);
+#ifdef _WIN32
+   if (len <= 3 && path[1] == ':')
+      return false;
+#endif
+   if (len == 1 && (path[0] == '/' || path[0] == '\\'))
+      return false;
+   if (!(remove = strdup(path)))
+      return false;
+   return companion_core_browse_start(core,
+         companion_core_browse_target(core), remove);
 }
 
 const char *companion_core_browse_dir(companion_core_t *core)
@@ -3342,7 +3692,7 @@ static bool companion_core_browse_has_parent(companion_core_t *core)
 {
    const char *d = core->browse_dir;
    size_t len    = strlen(d);
-   if (len == 0)
+   if (len == 0 || core->browse_is_search)
       return false;
 #ifdef _WIN32
    /* "C:\" is a drive root; its parent is the drive list (""), which

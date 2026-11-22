@@ -47,6 +47,9 @@
 #include <utime.h>
 #endif
 
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 #include <boolean.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
@@ -2189,6 +2192,191 @@ static void test_bulk_add_matches_pushes(void)
    companion_core_free(c);
 }
 
+/* --- search and delete --------------------------------------------------- */
+
+static int  delete_told;
+static bool delete_told_ok;
+static char delete_told_path[512];
+
+static void on_delete_finished(void *ud, const char *path, bool ok)
+{
+   (void)ud;
+   delete_told++;
+   delete_told_ok = ok;
+   strlcpy(delete_told_path, path, sizeof(delete_told_path));
+}
+
+static companion_core_t *make_core_delete(void)
+{
+   companion_callbacks_t cb;
+   memset(&cb, 0, sizeof(cb));
+   cb.on_browse_changed  = on_browse_changed;
+   cb.on_delete_finished = on_delete_finished;
+   return companion_core_new(&cb, NULL);
+}
+
+static bool wait_delete(companion_core_t *core, int before)
+{
+   int i;
+   for (i = 0; i < 200000 && delete_told == before; i++)
+   {
+      companion_core_iterate(core, 1000);
+      if (delete_told == before)
+         sleep_briefly_ms(100000);
+   }
+   return delete_told != before;
+}
+
+/* The landed listing holds a row named @name. */
+static bool browse_has(companion_core_t *c, const char *name)
+{
+   size_t i, n = companion_core_browse_count(c);
+   for (i = 0; i < n; i++)
+      if (string_is_equal(companion_core_browse_name(c, i), name))
+         return true;
+   return false;
+}
+
+static void test_browser_search(void)
+{
+   companion_core_t *c = make_core();
+   char base[512], p[512];
+   size_t i, n;
+   fixture(base, sizeof(base), "search");
+   mkdirp(base);
+   snprintf(p, sizeof(p), "%s/Sub", base);        mkdirp(p);
+   snprintf(p, sizeof(p), "%s/Sub/Deeper", base); mkdirp(p);
+   snprintf(p, sizeof(p), "%s/Alpha.NES", base);  writef(p, "a");
+   snprintf(p, sizeof(p), "%s/Sub/beta.sfc", base); writef(p, "b");
+   snprintf(p, sizeof(p), "%s/Sub/Deeper/Alpha Two.gb", base); writef(p, "c");
+   /* katakana, and a Latin-1 capital */
+   snprintf(p, sizeof(p), "%s/\xe3\x82\xac\xe3\x83\xb3\xe3\x83\x80\xe3\x83\xa0.txt", base); writef(p, "k");
+   snprintf(p, sizeof(p), "%s/\xc3\x89" "cole.txt", base); writef(p, "e");
+#ifndef _WIN32
+   /* a loop back to the top: followed, the walk would never end */
+   snprintf(p, sizeof(p), "%s/Sub/loop", base);
+   CHECK(symlink("..", p) == 0, "loop link made");
+#endif
+   CHECK(companion_core_browse_open(c, base), "open");
+   CHECK(wait_browse(c), "listing lands");
+   CHECK(!companion_core_browse_is_search(c), "a folder's listing is no search");
+
+   CHECK(companion_core_browse_search(c, "alpha"), "search");
+   CHECK(wait_browse(c), "search lands");
+   CHECK(companion_core_browse_is_search(c), "a search's listing says so");
+   n = companion_core_browse_count(c);
+   CHECK(n == 2, "case folded, both folders deep, no parent row: %u rows", (unsigned)n);
+   CHECK(browse_has(c, "Alpha.NES") && browse_has(c, "Alpha Two.gb"), "the two matches");
+   for (i = 0; i < n; i++)
+      CHECK(!strstr(companion_core_browse_path(c, i), "/loop/"), "nothing through the link: %s",
+            companion_core_browse_path(c, i));
+   CHECK(string_is_equal(companion_core_browse_dir(c), base), "the search keeps its folder");
+
+   CHECK(companion_core_browse_search(c, "  ALPHA   two "), "two words");
+   CHECK(wait_browse(c), "lands");
+   CHECK(companion_core_browse_count(c) == 1 && browse_has(c, "Alpha Two.gb"), "every word must be there");
+
+   CHECK(companion_core_browse_search(c, "\xe3\x81\x8c\xe3\x82\x93\xe3\x81\xa0\xe3\x82\x80"), "hiragana");
+   CHECK(wait_browse(c), "lands");
+   CHECK(companion_core_browse_count(c) == 1, "hiragana finds the katakana name");
+
+   CHECK(companion_core_browse_search(c, "\xc3\xa9" "COLE"), "small e acute");
+   CHECK(wait_browse(c), "lands");
+   CHECK(companion_core_browse_count(c) == 1, "Latin-1 case folded");
+
+   CHECK(companion_core_browse_search(c, "sub"), "a folder's name");
+   CHECK(wait_browse(c), "lands");
+   CHECK(companion_core_browse_count(c) == 1 && companion_core_browse_is_dir(c, 0), "the folder, as a folder");
+
+   /* superseded: only the later search lands */
+   browse_changed = 0;
+   CHECK(companion_core_browse_search(c, "alpha"), "search one");
+   CHECK(companion_core_browse_search(c, "beta"), "search two right after");
+   CHECK(wait_browse(c), "lands");
+   sleep_briefly_ms(20000000);
+   companion_core_iterate(c, 1000);
+   CHECK(browse_changed == 1, "the superseded search never delivered (%d)", browse_changed);
+   CHECK(companion_core_browse_count(c) == 1 && browse_has(c, "beta.sfc"), "the later one");
+
+   /* asked for before the folder just opened has landed: that folder */
+   CHECK(companion_core_browse_search(c, ""), "cleared");
+   CHECK(wait_browse(c), "lands");
+   snprintf(p, sizeof(p), "%s/Sub", base);
+   CHECK(companion_core_browse_open(c, p), "open Sub");
+   CHECK(companion_core_browse_search(c, "alpha"), "search right after");
+   CHECK(wait_browse(c), "lands");
+   CHECK(string_is_equal(companion_core_browse_dir(c), p), "in the folder just opened");
+   CHECK(companion_core_browse_count(c) == 1 && browse_has(c, "Alpha Two.gb"),
+         "only what is under it");
+   CHECK(companion_core_browse_open(c, base), "back");
+
+   CHECK(companion_core_browse_search(c, ""), "cleared");
+   CHECK(wait_browse(c), "lands");
+   CHECK(!companion_core_browse_is_search(c), "the folder as it is again");
+   CHECK(browse_has(c, "..") && browse_has(c, "Sub") && browse_has(c, "Alpha.NES"), "with its parent row");
+   companion_core_free(c);
+}
+
+static void test_browser_delete(void)
+{
+   companion_core_t *c = make_core_delete();
+   char base[512], out[512], p[512], q[512];
+   int before;
+   fixture(base, sizeof(base), "del");
+   fixture(out,  sizeof(out),  "del_out");
+   mkdirp(out);
+   snprintf(p, sizeof(p), "%s/precious.txt", out); writef(p, "keep");
+   mkdirp(base);
+   snprintf(p, sizeof(p), "%s/x", base);           mkdirp(p);
+   snprintf(p, sizeof(p), "%s/x/y", base);         mkdirp(p);
+   snprintf(p, sizeof(p), "%s/x/y/z.txt", base);   writef(p, "z");
+   snprintf(p, sizeof(p), "%s/x/.hidden", base);   writef(p, "h");
+   snprintf(p, sizeof(p), "%s/keep.txt", base);    writef(p, "k");
+#ifndef _WIN32
+   /* links out of the folder, to a folder and to a file */
+   snprintf(p, sizeof(p), "%s/x/outdir", base);
+   CHECK(symlink(out, p) == 0, "folder link made");
+   snprintf(p, sizeof(p), "%s/x/outfile", base);
+   snprintf(q, sizeof(q), "%s/precious.txt", out);
+   CHECK(symlink(q, p) == 0, "file link made");
+#endif
+   CHECK(companion_core_browse_open(c, base), "open");
+   CHECK(wait_browse(c), "listing lands");
+
+   before = delete_told;
+   snprintf(p, sizeof(p), "%s/x", base);
+   CHECK(companion_core_browse_delete(c, p), "delete a folder");
+   CHECK(wait_delete(c, before), "told it finished");
+   CHECK(delete_told_ok && string_is_equal(delete_told_path, p), "told it went through, for that path");
+   CHECK(!path_is_valid(p), "the folder and everything in it are gone");
+   snprintf(q, sizeof(q), "%s/precious.txt", out);
+   CHECK(file_is(q, "keep"), "what a link pointed to outside it is not");
+   snprintf(q, sizeof(q), "%s/keep.txt", base);
+   CHECK(file_is(q, "k"), "nor is its neighbour");
+   CHECK(companion_core_browse_count(c) == 2 && browse_has(c, "keep.txt"), "the folder is listed again");
+
+#ifndef _WIN32
+   {
+      struct stat st;
+      snprintf(p, sizeof(p), "%s/link", base);
+      CHECK(symlink(out, p) == 0, "a link in the listing");
+      before = delete_told;
+      CHECK(companion_core_browse_delete(c, p), "delete the link");
+      CHECK(wait_delete(c, before) && delete_told_ok, "told it went through");
+      CHECK(lstat(p, &st) != 0, "the link is gone");
+      snprintf(q, sizeof(q), "%s/precious.txt", out);
+      CHECK(file_is(q, "keep"), "what it pointed to is not");
+   }
+#endif
+
+   before = delete_told;
+   snprintf(p, sizeof(p), "%s/never-there", base);
+   CHECK(companion_core_browse_delete(c, p), "a missing path is still asked for");
+   CHECK(wait_delete(c, before) && !delete_told_ok, "and told it failed");
+   CHECK(!companion_core_browse_delete(c, "/"), "a file system's root is refused");
+   companion_core_free(c);
+}
+
 int main(void)
 {
    setup();
@@ -2205,6 +2393,8 @@ int main(void)
    test_thumbnail_download();
 #endif
    test_browser();
+   test_browser_search();
+   test_browser_delete();
    test_browser_sort();
    test_sort_without_metadata();
    test_sort_then_folders_only();

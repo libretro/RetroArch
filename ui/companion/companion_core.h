@@ -77,6 +77,10 @@ typedef struct companion_callbacks
    /* The shown playlist's stored thumbnail matches changed: a row
     * found without a thumbnail may have one now. (Last, as above.) */
    void (*on_thumbnails_changed)(void *ud);
+   /* A companion_core_browse_delete() finished: @path was removed, or
+    * not all of it (@ok false). Fired from companion_core_iterate()
+    * after the listing it re-made has landed. (Last, as above.) */
+   void (*on_delete_finished)(void *ud, const char *path, bool ok);
 } companion_callbacks_t;
 
 /* Lifecycle */
@@ -156,6 +160,17 @@ const struct playlist_entry *companion_core_entry(companion_core_t *core,
 bool companion_core_browse_open(companion_core_t *core, const char *path);
 /* The directory currently listed ("" before the first open). */
 const char *companion_core_browse_dir(companion_core_t *core);
+/* Every listing from now on is a search of its folder and everything
+ * under it (links not followed) for names holding each word of @text,
+ * case and kana folded; empty @text lists the folder as it is. Starts
+ * with the current folder. */
+bool companion_core_browse_search(companion_core_t *core, const char *text);
+/* The landed listing is a search: its rows come from many folders. */
+bool companion_core_browse_is_search(companion_core_t *core);
+/* Removes @path off the UI thread, a folder with everything in it and
+ * a link without what it points to, then lists the folder again;
+ * on_delete_finished says how it went. Refuses a file system's root. */
+bool companion_core_browse_delete(companion_core_t *core, const char *path);
 size_t companion_core_browse_count(companion_core_t *core);
 /* Whether a browse_open() is still enumerating (show "Loading..."). The
  * previous listing stays readable until the new one lands. */
