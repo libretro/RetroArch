@@ -718,7 +718,7 @@ typedef unsigned D3D11_USAGE;
 #define DXGI_FORMAT_B5G6R5_UNORM 3
 #define D3D11_MAP_WRITE_DISCARD 0
 #define D3D11_RESOURCE_MISC_GENERATE_MIPS 1
-#define VIDEO_TEXTURE_UPDATE_DONE 1
+enum video_texture_update { VIDEO_TEXTURE_UPDATE_REFUSED, VIDEO_TEXTURE_UPDATE_DONE };
 #define SUCCEEDED(x) ((x)>=0)
 typedef struct { unsigned Width,Height,Usage,Format,MiscFlags,MipLevels; } D3D11_TEXTURE2D_DESC;
 typedef struct { unsigned left,top,front,right,bottom,back; } D3D11_BOX;
@@ -727,6 +727,9 @@ struct gpu;
 typedef struct gpu *D3D11Resource;
 typedef struct gpu *D3D11Texture2D;
 typedef struct gpu *D3D11ShaderResourceView;
+typedef struct gpu *D3D11UnorderedAccessView;
+typedef int HRESULT;
+#define FAILED(x) ((x)<0)
 struct gpu_vtbl { void (*GetResource)(struct gpu*,D3D11Resource*);void (*GetDesc)(struct gpu*,D3D11_TEXTURE2D_DESC*);void (*AddRef)(struct gpu*); };
 typedef struct gpu { struct gpu_vtbl *lpVtbl;D3D11_TEXTURE2D_DESC desc;unsigned value,refs; } gpu;
 static void get_resource(gpu *g,gpu **out) {assert(g->refs);g->refs++;*out=g;}
@@ -739,11 +742,13 @@ static gpu *new_gpu(D3D11_TEXTURE2D_DESC desc)
 { gpu *g;assert(allocated<512);g=&pool[allocated++];g->lpVtbl=&resource_vtbl;g->desc=desc;g->refs=2;return g; }
 #define Release(g) do { if(g) {assert((g)->refs);(g)->refs--;} } while(0)
 struct context;
+typedef struct context *D3D11DeviceContext;
 struct ctx_vtbl {
    void (*CopySubresourceRegion)(struct context*,gpu*,unsigned,unsigned,unsigned,unsigned,gpu*,unsigned,const D3D11_BOX*);
    int (*Map)(struct context*,gpu*,unsigned,unsigned,unsigned,D3D11_MAPPED_SUBRESOURCE*);
    void (*Unmap)(struct context*,gpu*,unsigned);
    void (*GenerateMips)(struct context*,gpu*);
+   void (*UpdateSubresource)(struct context*,gpu*,unsigned,const D3D11_BOX*,const void*,unsigned,unsigned);
 };
 struct context {struct ctx_vtbl *lpVtbl;};
 static void copy_region(struct context *ctx,gpu *dst,unsigned a,unsigned b,unsigned c,unsigned d,gpu *src,unsigned e,const D3D11_BOX *box)
@@ -752,12 +757,23 @@ static int map(struct context *c,gpu *g,unsigned a,unsigned b,unsigned d,D3D11_M
 {(void)c;(void)g;(void)a;(void)b;(void)d;(void)m;return -1;}
 static void unmap(struct context *c,gpu *g,unsigned a) {(void)c;(void)g;(void)a;}
 static void mips(struct context *c,gpu *g) {(void)c;(void)g;}
-static struct ctx_vtbl context_vtbl={copy_region,map,unmap,mips};
+static unsigned plane_updates;
+static void update_plane(struct context *c,gpu *g,unsigned sub,const D3D11_BOX *box,const void *data,unsigned pitch,unsigned depth)
+{(void)c;(void)g;(void)sub;(void)box;(void)data;(void)pitch;(void)depth;plane_updates++;}
+static struct ctx_vtbl context_vtbl={copy_region,map,unmap,mips,update_plane};
 static struct context context={&context_vtbl};
 typedef struct {gpu *handle,*view,*rt_view;D3D11ShaderResourceView *media_versions;unsigned media_version_count;bool media_borrowable;D3D11_TEXTURE2D_DESC desc;float4 size_data;gfx_media_history_t media_history;} d3d11_texture_t;
 typedef struct {unsigned history_size;} preset;
 typedef struct {preset *shader_preset;d3d11_texture_t history[4];struct {float values[12];} frame_rect;bool history_made,history_borrowed;d3d11_texture_t *media_owner;gfx_media_history_t *media_history;uintptr_t media_source;gpu *frame_view;unsigned rt_frame_dims,rt_vp_dims,frame_format;float4 output_size;} d3d11_chain_t;
-typedef struct {d3d11_chain_t *media_shader_chain;struct context *context;void *device;unsigned format;void *media_shader_info;uint64_t media_shader_frame;} d3d11_video_t;
+struct device;
+struct device_vtbl { int (*CreateUnorderedAccessView)(struct device*,gpu*,const void*,gpu**); };
+struct device { struct device_vtbl *lpVtbl; };
+static unsigned uav_failures,uav_creations;
+static int create_uav(struct device *device,gpu *resource,const void *desc,gpu **out)
+{(void)device;(void)desc;if(uav_failures){uav_failures--;return -1;}add_ref(resource);*out=resource;uav_creations++;return 0;}
+static struct device_vtbl device_vtbl={create_uav};
+static struct device device={&device_vtbl};
+typedef struct {d3d11_chain_t *media_shader_chain;struct context *context;struct device *device;unsigned format;void *media_shader_info;uint64_t media_shader_frame;} d3d11_video_t;
 struct retro_video_view {unsigned x,y,width,height;};
 static void d3d11_release_texture(d3d11_texture_t *t)
 {unsigned i;for(i=0;i<t->media_version_count;i++)Release(t->media_versions[i]);
@@ -772,7 +788,15 @@ static void dxgi_copy(unsigned w,unsigned h,unsigned fmt,unsigned pitch,const vo
 static void d3d11_chain_frame(d3d11_video_t *v,d3d11_chain_t *c,void *info,uint64_t frame,bool fresh)
 {(void)v;(void)c;(void)info;(void)frame;(void)fresh;renders++;feedbacks++;}
 static void slang_rect_values(float *values,unsigned a,unsigned b,unsigned c) { values[0]=(float)(a+b+c); }
+typedef struct {d3d11_texture_t *texture;gpu *uav,*media_uavs[GFX_MAX_FRAME_HISTORY+2],*plane[3],*plane_view[3];bool interleaved;} d3d11_planar_t;
+struct texture_planar {const uint8_t *planes[3];unsigned strides[3],chroma_step,yuv;};
+struct texture_image {unsigned width,height;const struct texture_planar *planar;};
+static unsigned converted_value;
+static bool convert_failure;
+static bool d3d11_planar_convert(d3d11_video_t *v,gpu *uav,gpu **views,unsigned w,unsigned h,unsigned yuv,bool interleaved,bool swap,bool p010,const void *color,bool fp16)
+{(void)v;(void)views;(void)w;(void)h;(void)yuv;(void)interleaved;(void)swap;(void)p010;(void)color;(void)fp16;if(convert_failure)return false;assert(uav->refs);uav->value=converted_value;return true;}
 POOL
+PLANAR
 CHAIN
 static void draw(d3d11_video_t *video,d3d11_chain_t *chain,d3d11_texture_t *texture)
 {
@@ -799,6 +823,57 @@ static unsigned forgotten;
 static void d3d11_planar_forget(d3d11_video_t *video, uintptr_t texture)
 { assert(video && texture);forgotten++; }
 UNLOAD
+static void test_planar_pool(void)
+{
+   d3d11_video_t video;
+   d3d11_chain_t chain;
+   d3d11_texture_t texture;
+   d3d11_planar_t planar;
+   struct texture_planar planes;
+   struct texture_image image;
+   preset preset={2};
+   uint8_t bytes[4]={0,0,0,0};
+   unsigned frame,j,names=0,expected[3]={0,0,0};
+   memset(&video,0,sizeof(video));memset(&chain,0,sizeof(chain));
+   memset(&texture,0,sizeof(texture));memset(&planar,0,sizeof(planar));memset(&planes,0,sizeof(planes));
+   video.context=&context;video.device=&device;video.media_shader_chain=&chain;chain.shader_preset=&preset;
+   texture.desc.Width=16;texture.desc.Height=8;texture.desc.MipLevels=1;
+   texture.handle=texture.view=new_gpu(texture.desc);texture.media_borrowable=true;
+   planar.texture=&texture;planar.uav=texture.handle;add_ref(planar.uav);
+   for(j=0;j<3;j++){planes.planes[j]=bytes;planes.strides[j]=2;}
+   planes.chroma_step=1;image.width=16;image.height=8;image.planar=&planes;
+   for(frame=1;frame<=32;frame++)
+   {
+      unsigned before=copies,views=uav_creations,updates=plane_updates;
+      gpu *readers[3];unsigned values[3];
+      if(frame>1)for(j=0;j<3;j++){readers[j]=chain.history[j].handle;values[j]=readers[j]->value;}
+      converted_value=frame;
+      if(frame==2)
+      {
+         uav_failures=1;
+         assert(d3d11_planar_update(&video,&planar,&image)==VIDEO_TEXTURE_UPDATE_REFUSED);
+         assert(plane_updates==updates && texture.handle->value==1);
+         convert_failure=true;
+         assert(d3d11_planar_update(&video,&planar,&image)==VIDEO_TEXTURE_UPDATE_REFUSED);
+         assert(texture.handle->value==1);
+         convert_failure=false;
+      }
+      assert(d3d11_planar_update(&video,&planar,&image)==VIDEO_TEXTURE_UPDATE_DONE);
+      assert(texture.handle->value==frame && texture.media_history.managed && !texture.media_history.copies);
+      if(frame>1)for(j=0;j<3;j++)assert(readers[j]->value==values[j]);
+      draw(&video,&chain,&texture);assert(copies==before);
+      for(j=2;j;j--)expected[j]=expected[j-1];
+      expected[0]=frame;
+      for(j=0;j<3;j++)assert(chain.history[j].handle->value==expected[j]);
+      if(frame==8)names=texture.media_version_count;
+      if(frame>8)assert(texture.media_version_count==names && uav_creations==views);
+   }
+   assert(names<=4);
+   for(j=0;j<GFX_MAX_FRAME_HISTORY+2;j++)Release(planar.media_uavs[j]);
+   Release(planar.uav);d3d11_release_texture(&texture);
+   for(j=0;j<3;j++)d3d11_release_texture(&chain.history[j]);
+   puts("PASS D3D11 planar history: cached conversion targets, no snapshots, immutable readers, warm reuse and refused updates");
+}
 static void test_pool(void)
 {
    d3d11_video_t video;
@@ -913,12 +988,15 @@ int main(void)
    assert(copies==before+4);
    p.history_size=0;before=copies;draw(&v,&c,&t);assert(copies==before && c.frame_view==t.view);
    test_pool();
+   test_planar_pool();
    puts("PASS D3D11 viewer history: unchanged images, mixed cadence, uploads, owner reuse, allocation recovery and no-history borrow");
    return 0;
 }
 '''
 d3d11_fixture = d3d11_fixture.replace('\nPOOL\n', function(d3d11, 'static bool d3d11_media_pool_begin(') + function(d3d11, 'static D3D11ShaderResourceView d3d11_media_writable(') + function(d3d11, 'static void d3d11_media_publish('))
 d3d11_fixture = d3d11_fixture.replace('\nUNLOAD\n', function(d3d11[d3d11.rindex('static void d3d11_gfx_unload_texture_internal('):], 'static void d3d11_gfx_unload_texture_internal('))
+
+d3d11_fixture = d3d11_fixture.replace('\nPLANAR\n', function(d3d11, 'static D3D11UnorderedAccessView d3d11_planar_writable(') + function(d3d11, 'static enum video_texture_update d3d11_planar_update('))
 
 d3d11_fixture = d3d11_fixture.replace('\nCHAIN\n', function(d3d11, 'static void d3d11_views_chain_frame('))
 a = d3d11.index('   gfx_media_history_begin(', d3d11.index('static bool gfx_display_d3d11_media_shader_draw('))

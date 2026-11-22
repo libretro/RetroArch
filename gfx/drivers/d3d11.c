@@ -341,6 +341,7 @@ typedef struct d3d11_planar
    D3D11Texture2D           plane[3];
    D3D11ShaderResourceView  plane_view[3];
    D3D11UnorderedAccessView uav;
+   D3D11UnorderedAccessView media_uavs[GFX_MAX_FRAME_HISTORY + 2];
 #ifdef D3D11_FRAME_IMPORT
    /* An imported texture's: what it opened of its producer's */
    struct d3d11_import     *import;
@@ -10070,6 +10071,8 @@ static void d3d11_planar_destroy(d3d11_planar_t *p)
       Release(p->plane_view[i]);
       Release(p->plane[i]);
    }
+   for (i = 0; i < GFX_MAX_FRAME_HISTORY + 2; i++)
+      Release(p->media_uavs[i]);
    Release(p->uav);
 #ifdef D3D11_FRAME_IMPORT
    if (p->import)
@@ -10172,6 +10175,42 @@ static bool d3d11_planar_convert(d3d11_video_t *d3d11,
    return true;
 }
 
+/* Each pooled output has a cached UAV. Choose storage with no history
+ * readers before touching planes or dispatching; publish only on success. */
+static D3D11UnorderedAccessView d3d11_planar_writable(d3d11_video_t *video,
+      d3d11_planar_t *p, D3D11ShaderResourceView *destination)
+{
+   d3d11_texture_t *t = p->texture;
+   D3D11ShaderResourceView view = t->view;
+   unsigned i;
+   *destination = view;
+   if (!t->media_versions) return p->uav;
+   if (!(view = d3d11_media_writable(video, t))) return NULL;
+   for (i = 0; i < t->media_version_count; i++)
+      if (t->media_versions[i] == view) break;
+   if (i == t->media_version_count) return NULL;
+   if (!p->media_uavs[i])
+   {
+      if (i == 0)
+      {
+         p->media_uavs[i] = p->uav;
+         p->uav->lpVtbl->AddRef(p->uav);
+      }
+      else
+      {
+         D3D11Resource resource = NULL;
+         HRESULT hr;
+         view->lpVtbl->GetResource(view, &resource);
+         hr = video->device->lpVtbl->CreateUnorderedAccessView(video->device,
+               resource, NULL, &p->media_uavs[i]);
+         Release(resource);
+         if (FAILED(hr) || !p->media_uavs[i]) return NULL;
+      }
+   }
+   *destination = view;
+   return p->media_uavs[i];
+}
+
 /* The planes of @image into @p's, from where they lie, and the dispatch
  * that converts them into its texture */
 static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
@@ -10181,6 +10220,8 @@ static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
    D3D11DeviceContext ctx          = d3d11->context;
    const uint8_t *c0;
    unsigned c0_stride;
+   D3D11ShaderResourceView destination;
+   D3D11UnorderedAccessView uav;
    bool swap;
 
    if (     !tp || !tp->planes[0] || !tp->planes[1] || !tp->planes[2]
@@ -10210,8 +10251,8 @@ static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
    else
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
-   p->texture->media_history.copies = 0;
-   p->texture->media_history.managed = true;
+   if (!(uav = d3d11_planar_writable(d3d11, p, &destination)))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
    ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[0], 0, NULL,
          tp->planes[0], tp->strides[0], 0);
    ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[1], 0, NULL,
@@ -10219,9 +10260,13 @@ static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
    if (!p->interleaved)
       ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[2], 0,
             NULL, tp->planes[2], tp->strides[2], 0);
-   return d3d11_planar_convert(d3d11, p->uav, p->plane_view, image->width,
-         image->height, tp->yuv, p->interleaved, swap, false, NULL, false)
-      ? VIDEO_TEXTURE_UPDATE_DONE : VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!d3d11_planar_convert(d3d11, uav, p->plane_view, image->width,
+            image->height, tp->yuv, p->interleaved, swap, false, NULL, false))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   d3d11_media_publish(p->texture, destination);
+   p->texture->media_history.copies = 0;
+   p->texture->media_history.managed = true;
+   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
 /* A texture for planar frames: RGBA8 a compute shader writes, its planes
@@ -10276,6 +10321,7 @@ static uintptr_t d3d11_planar_load(d3d11_video_t *d3d11,
       free(texture);
       return 0;
    }
+   texture->media_borrowable = true;
    p->next       = d3d11->planar;
    d3d11->planar = p;
    return (uintptr_t)texture;
@@ -10416,6 +10462,8 @@ static enum video_texture_update d3d11_import_texture(void *data,
       enum texture_filter_type filter)
 {
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+   D3D11ShaderResourceView destination;
+   D3D11UnorderedAccessView uav;
    D3D11ShaderResourceView views[3];
    d3d11_planar_t *p    = NULL;
    d3d11_import_t *imp;
@@ -10483,12 +10531,14 @@ static enum video_texture_update d3d11_import_texture(void *data,
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
 
+   if (!(uav = d3d11_planar_writable(d3d11, p, &destination)))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
    if (wait)
       d3d11->context4->lpVtbl->Wait(d3d11->context4, wait, f->wait_value);
    views[0] = imp->luma[t];
    views[1] = imp->chroma[t];
    views[2] = NULL;
-   ok       = d3d11_planar_convert(d3d11, p->uav, views, w, h, f->yuv,
+   ok       = d3d11_planar_convert(d3d11, uav, views, w, h, f->yuv,
          true, false, f->pixfmt == IMAGE_PIXFMT_P010, &f->color,
          p->texture->desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT);
    /* read or not, the producer may have it back */
@@ -10496,6 +10546,8 @@ static enum video_texture_update d3d11_import_texture(void *data,
       d3d11->context4->lpVtbl->Signal(d3d11->context4, done, f->done_value);
    if (!ok)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
+   d3d11_media_publish(p->texture, destination);
+   p->texture->media_borrowable = true;
    p->texture->media_history.copies = 0;
    p->texture->media_history.managed = true;
    if (!*id)

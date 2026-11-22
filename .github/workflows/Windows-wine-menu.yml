@@ -191,6 +191,8 @@ jobs:
           CC=x86_64-w64-mingw32-gcc RUNNER=wine REQUIRE_D3D11=1 \
             xvfb-run -a python3 samples/gfx/d3d_failure_paths/lend_gpu.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine REQUIRE_D3D11=1 \
+            xvfb-run -a python3 samples/gfx/d3d_p010_import/run.py --pool-only
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine REQUIRE_D3D11=1 \
             xvfb-run -a python3 samples/gfx/d3d_failure_paths/sw_lend_gpu.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine REQUIRE_D3D10=1 \
             xvfb-run -a python3 samples/gfx/d3d_failure_paths/sw_lend10_gpu.py

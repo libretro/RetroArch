@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Compile the production import shaders and check their GPU color output."""
 from pathlib import Path
-import os, shlex, subprocess, tempfile
+import argparse, os, shlex, subprocess, sys, tempfile
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--pool-only', action='store_true', help='Run the native D3D11 pooled conversion oracle only')
+args = parser.parse_args()
 root = Path(__file__).resolve().parents[3]
 subprocess.run([__import__('sys').executable, str(root / 'tools/generate_video_hdr.py'), '--check'], check=True)
 with tempfile.TemporaryDirectory() as directory:
@@ -21,6 +24,14 @@ with tempfile.TemporaryDirectory() as directory:
     (tmp / 'import.inc').write_text(source[start:source.index('\n}', start) + 2])
     start = source.index('static d3d11_planar_t *d3d11_import_new(')
     (tmp / 'new11.inc').write_text(source[start:source.index('\n}', start) + 2])
+    pool = []
+    for signature in ('static bool d3d11_media_pool_begin(',
+                      'static D3D11ShaderResourceView d3d11_media_writable(',
+                      'static void d3d11_media_publish(',
+                      'static D3D11UnorderedAccessView d3d11_planar_writable('):
+        start = source.index(signature)
+        pool.append(source[start:source.index('\n}', start) + 2])
+    (tmp / 'pool11.inc').write_text('\n'.join(pool))
     source12 = (root / 'gfx/drivers/d3d12.c').read_text()
     bodies = []
     for signature in ('static void d3d12_import_forget(', 'static int d3d12_import_tex(',
@@ -42,7 +53,10 @@ with tempfile.TemporaryDirectory() as directory:
     subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root / 'libretro-common/include'),
         str(Path(__file__).with_name('test.c')), str(root / 'libretro-common/formats/image/image_yuv_blit.c'),
         '-o', str(exe)] + (['-ld3d11', '-ld3dcompiler'] if windows else []) + ['-lm'], check=True)
-    subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)
+    subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True,
+                   env={**os.environ, **({'POOL_ONLY': '1'} if args.pool_only else {})})
+    if args.pool_only:
+        sys.exit(0)
 
     exe12 = tmp / ('test12.exe' if windows else 'test12')
     subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root), '-I' + str(root / 'libretro-common/include'),
