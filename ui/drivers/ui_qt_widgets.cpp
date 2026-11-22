@@ -137,8 +137,13 @@ static inline void add_sublabel_and_whats_this(
 
    if (!string_is_equal(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
    {
+      QAction *whatsThisAction;
       widget->setWhatsThis(tmp);
-      QAction *whatsThisAction = new QAction(
+      /* text fields keep their own edit menu; Shift+F1 still works */
+      if (     qobject_cast<QLineEdit*>(widget)
+            || qobject_cast<QAbstractSpinBox*>(widget))
+         return;
+      whatsThisAction = new QAction(
       QObject::tr("What's This?"), widget);
 
       QObject::connect(whatsThisAction, &QAction::triggered,

@@ -6379,6 +6379,13 @@ static void qt_companion_build_menubar(MainWindow *mainwindow)
    viewMenu->addAction(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CONTROLLER_SHORTCUTS),
             mainwindow->shortcutsDialog(), SLOT(showDialog()));
+#ifndef HAVE_MENU
+   /* without the menu there is no Settings tab: the options keep a dialog */
+   viewMenu->addSeparator();
+   viewMenu->addAction(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS),
+            mainwindow->viewOptionsDialog(), SLOT(showDialog()));
+#endif
    helpMenu = menu->addMenu(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_HELP));
    helpMenu->addAction(QString(msg_hash_to_str(
