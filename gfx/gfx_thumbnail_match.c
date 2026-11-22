@@ -284,18 +284,33 @@ static bool gtm_is_dropped(const char *s, size_t n)
       || (n == 3 && (!memcmp(s, "the", 3) || !memcmp(s, "and", 3)));
 }
 
+struct gtm_code
+{
+   const char *name;
+   uint32_t bits;
+   unsigned len;
+};
+
+#define GTM_CODE(name, bits) { name, bits, sizeof(name) - 1 }
+
 static const char *gtm_roman(const char *s, size_t n)
 {
-   static const char *const romans[] = {
-      "ii", "iii", "iv", "vi", "vii", "viii", "ix", "xi", "xii", "xiii",
-      "xiv", "xv", "xvi", "xvii", "xviii", "xix", "xx" };
+   static const struct gtm_code romans[] = {
+      GTM_CODE("ii", 2), GTM_CODE("iii", 3), GTM_CODE("iv", 4),
+      GTM_CODE("vi", 6), GTM_CODE("vii", 7), GTM_CODE("viii", 8),
+      GTM_CODE("ix", 9), GTM_CODE("xi", 11), GTM_CODE("xii", 12),
+      GTM_CODE("xiii", 13), GTM_CODE("xiv", 14), GTM_CODE("xv", 15),
+      GTM_CODE("xvi", 16), GTM_CODE("xvii", 17), GTM_CODE("xviii", 18),
+      GTM_CODE("xix", 19), GTM_CODE("xx", 20) };
    static const char *const numbers[] = {
-      "2", "3", "4", "6", "7", "8", "9", "11", "12", "13",
-      "14", "15", "16", "17", "18", "19", "20" };
+      "", "", "2", "3", "4", "", "6", "7", "8", "9", "",
+      "11", "12", "13", "14", "15", "16", "17", "18", "19", "20" };
    size_t i;
+   if (n < 2 || n > 5 || (s[0] != 'i' && s[0] != 'v' && s[0] != 'x'))
+      return NULL;
    for (i = 0; i < GTM_COUNT(romans); i++)
-      if (strlen(romans[i]) == n && !memcmp(romans[i], s, n))
-         return numbers[i];
+      if (romans[i].len == n && !memcmp(romans[i].name, s, n))
+         return numbers[romans[i].bits];
    return NULL;
 }
 
@@ -484,95 +499,90 @@ struct gfx_thumbnail_match_index
    bool finalized;
 };
 
-struct gtm_code
-{
-   const char *name;
-   uint32_t bits;
-};
 
 static const struct gtm_code gtm_regions[] = {
-   { "USA",           0x00000001UL }, { "Europe",        0x00000002UL },
-   { "Japan",         0x00000004UL }, { "World",         0x00000008UL },
-   { "Asia",          0x00000010UL }, { "Australia",     0x00000020UL },
-   { "Brazil",        0x00000040UL }, { "Canada",        0x00000080UL },
-   { "China",         0x00000100UL }, { "France",        0x00000200UL },
-   { "Germany",       0x00000400UL }, { "Hong Kong",     0x00000800UL },
-   { "Italy",         0x00001000UL }, { "Korea",         0x00002000UL },
-   { "Netherlands",   0x00004000UL }, { "Spain",         0x00008000UL },
-   { "Sweden",        0x00010000UL }, { "Taiwan",        0x00020000UL },
-   { "UK",            0x00040000UL }, { "Russia",        0x00080000UL },
-   { "Scandinavia",   0x00100000UL }, { "Latin America", 0x00200000UL },
-   { "Greece",        0x00400000UL }, { "Denmark",       0x00800000UL },
-   { "Finland",       0x01000000UL }, { "Norway",        0x02000000UL },
-   { "Portugal",      0x04000000UL }, { "Poland",        0x08000000UL },
-   { "Mexico",        0x10000000UL }, { "Argentina",     0x20000000UL },
-   { "India",         0x40000000UL }, { "Austria",       GTM_OTHER },
-   { "Belgium",       GTM_OTHER },    { "Croatia",       GTM_OTHER },
-   { "Czech",         GTM_OTHER },    { "Hungary",       GTM_OTHER },
-   { "Ireland",       GTM_OTHER },    { "Israel",        GTM_OTHER },
-   { "New Zealand",   GTM_OTHER },    { "Slovakia",      GTM_OTHER },
-   { "Switzerland",   GTM_OTHER },    { "Turkey",        GTM_OTHER },
-   { "Ukraine",       GTM_OTHER },    { "South Africa",  GTM_OTHER },
-   { "Chile",         GTM_OTHER },    { "Colombia",      GTM_OTHER },
-   { "Peru",          GTM_OTHER },    { "Thailand",      GTM_OTHER },
-   { "Singapore",     GTM_OTHER },    { "Malaysia",      GTM_OTHER },
-   { "Indonesia",     GTM_OTHER },    { "Philippines",   GTM_OTHER },
-   { "Vietnam",       GTM_OTHER },    { "Iceland",       GTM_OTHER },
-   { "Estonia",       GTM_OTHER },    { "Latvia",        GTM_OTHER },
-   { "Lithuania",     GTM_OTHER },    { "Romania",       GTM_OTHER },
-   { "Bulgaria",      GTM_OTHER },    { "Serbia",        GTM_OTHER },
-   { "Slovenia",      GTM_OTHER },    { "United Arab Emirates", GTM_OTHER },
-   { "Saudi Arabia",  GTM_OTHER },    { "Unknown",       GTM_OTHER }
+   GTM_CODE("USA", 0x00000001UL), GTM_CODE("Europe", 0x00000002UL),
+   GTM_CODE("Japan", 0x00000004UL), GTM_CODE("World", 0x00000008UL),
+   GTM_CODE("Asia", 0x00000010UL), GTM_CODE("Australia", 0x00000020UL),
+   GTM_CODE("Brazil", 0x00000040UL), GTM_CODE("Canada", 0x00000080UL),
+   GTM_CODE("China", 0x00000100UL), GTM_CODE("France", 0x00000200UL),
+   GTM_CODE("Germany", 0x00000400UL), GTM_CODE("Hong Kong", 0x00000800UL),
+   GTM_CODE("Italy", 0x00001000UL), GTM_CODE("Korea", 0x00002000UL),
+   GTM_CODE("Netherlands", 0x00004000UL), GTM_CODE("Spain", 0x00008000UL),
+   GTM_CODE("Sweden", 0x00010000UL), GTM_CODE("Taiwan", 0x00020000UL),
+   GTM_CODE("UK", 0x00040000UL), GTM_CODE("Russia", 0x00080000UL),
+   GTM_CODE("Scandinavia", 0x00100000UL), GTM_CODE("Latin America", 0x00200000UL),
+   GTM_CODE("Greece", 0x00400000UL), GTM_CODE("Denmark", 0x00800000UL),
+   GTM_CODE("Finland", 0x01000000UL), GTM_CODE("Norway", 0x02000000UL),
+   GTM_CODE("Portugal", 0x04000000UL), GTM_CODE("Poland", 0x08000000UL),
+   GTM_CODE("Mexico", 0x10000000UL), GTM_CODE("Argentina", 0x20000000UL),
+   GTM_CODE("India", 0x40000000UL), GTM_CODE("Austria", GTM_OTHER),
+   GTM_CODE("Belgium", GTM_OTHER),    GTM_CODE("Croatia", GTM_OTHER),
+   GTM_CODE("Czech", GTM_OTHER),    GTM_CODE("Hungary", GTM_OTHER),
+   GTM_CODE("Ireland", GTM_OTHER),    GTM_CODE("Israel", GTM_OTHER),
+   GTM_CODE("New Zealand", GTM_OTHER),    GTM_CODE("Slovakia", GTM_OTHER),
+   GTM_CODE("Switzerland", GTM_OTHER),    GTM_CODE("Turkey", GTM_OTHER),
+   GTM_CODE("Ukraine", GTM_OTHER),    GTM_CODE("South Africa", GTM_OTHER),
+   GTM_CODE("Chile", GTM_OTHER),    GTM_CODE("Colombia", GTM_OTHER),
+   GTM_CODE("Peru", GTM_OTHER),    GTM_CODE("Thailand", GTM_OTHER),
+   GTM_CODE("Singapore", GTM_OTHER),    GTM_CODE("Malaysia", GTM_OTHER),
+   GTM_CODE("Indonesia", GTM_OTHER),    GTM_CODE("Philippines", GTM_OTHER),
+   GTM_CODE("Vietnam", GTM_OTHER),    GTM_CODE("Iceland", GTM_OTHER),
+   GTM_CODE("Estonia", GTM_OTHER),    GTM_CODE("Latvia", GTM_OTHER),
+   GTM_CODE("Lithuania", GTM_OTHER),    GTM_CODE("Romania", GTM_OTHER),
+   GTM_CODE("Bulgaria", GTM_OTHER),    GTM_CODE("Serbia", GTM_OTHER),
+   GTM_CODE("Slovenia", GTM_OTHER),    GTM_CODE("United Arab Emirates", GTM_OTHER),
+   GTM_CODE("Saudi Arabia", GTM_OTHER),    GTM_CODE("Unknown", GTM_OTHER)
 };
 
 /* The GTM_OTHER codes of the Japan/Asia family */
 static const struct gtm_code gtm_other_east[] = {
-   { "Thailand",    GTM_EAST }, { "Singapore",   GTM_EAST },
-   { "Malaysia",    GTM_EAST }, { "Indonesia",   GTM_EAST },
-   { "Philippines", GTM_EAST }, { "Vietnam",     GTM_EAST }
+   GTM_CODE("Thailand", GTM_EAST), GTM_CODE("Singapore", GTM_EAST),
+   GTM_CODE("Malaysia", GTM_EAST), GTM_CODE("Indonesia", GTM_EAST),
+   GTM_CODE("Philippines", GTM_EAST), GTM_CODE("Vietnam", GTM_EAST)
 };
 
 /* The GTM_OTHER codes of European countries */
 static const struct gtm_code gtm_other_euro[] = {
-   { "Austria",     GTM_EURO }, { "Belgium",     GTM_EURO },
-   { "Croatia",     GTM_EURO }, { "Czech",       GTM_EURO },
-   { "Hungary",     GTM_EURO }, { "Ireland",     GTM_EURO },
-   { "Slovakia",    GTM_EURO }, { "Switzerland", GTM_EURO },
-   { "Ukraine",     GTM_EURO }, { "Iceland",     GTM_EURO },
-   { "Estonia",     GTM_EURO }, { "Latvia",      GTM_EURO },
-   { "Lithuania",   GTM_EURO }, { "Romania",     GTM_EURO },
-   { "Bulgaria",    GTM_EURO }, { "Serbia",      GTM_EURO },
-   { "Slovenia",    GTM_EURO }
+   GTM_CODE("Austria", GTM_EURO), GTM_CODE("Belgium", GTM_EURO),
+   GTM_CODE("Croatia", GTM_EURO), GTM_CODE("Czech", GTM_EURO),
+   GTM_CODE("Hungary", GTM_EURO), GTM_CODE("Ireland", GTM_EURO),
+   GTM_CODE("Slovakia", GTM_EURO), GTM_CODE("Switzerland", GTM_EURO),
+   GTM_CODE("Ukraine", GTM_EURO), GTM_CODE("Iceland", GTM_EURO),
+   GTM_CODE("Estonia", GTM_EURO), GTM_CODE("Latvia", GTM_EURO),
+   GTM_CODE("Lithuania", GTM_EURO), GTM_CODE("Romania", GTM_EURO),
+   GTM_CODE("Bulgaria", GTM_EURO), GTM_CODE("Serbia", GTM_EURO),
+   GTM_CODE("Slovenia", GTM_EURO)
 };
 
 /* TOSEC country codes, '-'-joined */
 static const struct gtm_code gtm_tosec[] = {
-   { "US", 0x00000001UL }, { "EU", 0x00000002UL }, { "JP", 0x00000004UL },
-   { "AS", 0x00000010UL }, { "AU", 0x00000020UL }, { "BR", 0x00000040UL },
-   { "CA", 0x00000080UL }, { "CN", 0x00000100UL }, { "FR", 0x00000200UL },
-   { "DE", 0x00000400UL }, { "HK", 0x00000800UL }, { "IT", 0x00001000UL },
-   { "KR", 0x00002000UL }, { "NL", 0x00004000UL }, { "ES", 0x00008000UL },
-   { "SE", 0x00010000UL }, { "TW", 0x00020000UL }, { "GB", 0x00040000UL },
-   { "RU", 0x00080000UL }, { "GR", 0x00400000UL }, { "DK", 0x00800000UL },
-   { "FI", 0x01000000UL }, { "NO", 0x02000000UL }, { "PT", 0x04000000UL },
-   { "PL", 0x08000000UL }
+   GTM_CODE("US", 0x00000001UL), GTM_CODE("EU", 0x00000002UL), GTM_CODE("JP", 0x00000004UL),
+   GTM_CODE("AS", 0x00000010UL), GTM_CODE("AU", 0x00000020UL), GTM_CODE("BR", 0x00000040UL),
+   GTM_CODE("CA", 0x00000080UL), GTM_CODE("CN", 0x00000100UL), GTM_CODE("FR", 0x00000200UL),
+   GTM_CODE("DE", 0x00000400UL), GTM_CODE("HK", 0x00000800UL), GTM_CODE("IT", 0x00001000UL),
+   GTM_CODE("KR", 0x00002000UL), GTM_CODE("NL", 0x00004000UL), GTM_CODE("ES", 0x00008000UL),
+   GTM_CODE("SE", 0x00010000UL), GTM_CODE("TW", 0x00020000UL), GTM_CODE("GB", 0x00040000UL),
+   GTM_CODE("RU", 0x00080000UL), GTM_CODE("GR", 0x00400000UL), GTM_CODE("DK", 0x00800000UL),
+   GTM_CODE("FI", 0x01000000UL), GTM_CODE("NO", 0x02000000UL), GTM_CODE("PT", 0x04000000UL),
+   GTM_CODE("PL", 0x08000000UL)
 };
 
 /* GoodTools region codes */
 static const struct gtm_code gtm_goodtools[] = {
-   { "U",   0x00000001UL }, { "E",  0x00000002UL }, { "J",  0x00000004UL },
-   { "W",   0x00000008UL }, { "UE", 0x00000003UL }, { "JU", 0x00000005UL },
-   { "JE",  0x00000006UL }, { "JUE", 0x00000007UL }, { "A",  0x00000020UL },
-   { "B",   0x00000040UL }, { "C",  0x00000100UL }, { "F",  0x00000200UL },
-   { "G",   0x00000400UL }, { "I",  0x00001000UL }, { "K",  0x00002000UL },
-   { "H",   0x00004000UL }, { "S",  0x00008000UL }
+   GTM_CODE("U", 0x00000001UL), GTM_CODE("E", 0x00000002UL), GTM_CODE("J", 0x00000004UL),
+   GTM_CODE("W", 0x00000008UL), GTM_CODE("UE", 0x00000003UL), GTM_CODE("JU", 0x00000005UL),
+   GTM_CODE("JE", 0x00000006UL), GTM_CODE("JUE", 0x00000007UL), GTM_CODE("A", 0x00000020UL),
+   GTM_CODE("B", 0x00000040UL), GTM_CODE("C", 0x00000100UL), GTM_CODE("F", 0x00000200UL),
+   GTM_CODE("G", 0x00000400UL), GTM_CODE("I", 0x00001000UL), GTM_CODE("K", 0x00002000UL),
+   GTM_CODE("H", 0x00004000UL), GTM_CODE("S", 0x00008000UL)
 };
 
 /* The GoodTools codes typed in lowercase: "(i)" is a numeral, "(h)" a hack */
 static const struct gtm_code gtm_goodtools_lower[] = {
-   { "U",   0x00000001UL }, { "E",  0x00000002UL }, { "J",  0x00000004UL },
-   { "W",   0x00000008UL }, { "UE", 0x00000003UL }, { "JU", 0x00000005UL },
-   { "JE",  0x00000006UL }, { "JUE", 0x00000007UL }
+   GTM_CODE("U", 0x00000001UL), GTM_CODE("E", 0x00000002UL), GTM_CODE("J", 0x00000004UL),
+   GTM_CODE("W", 0x00000008UL), GTM_CODE("UE", 0x00000003UL), GTM_CODE("JU", 0x00000005UL),
+   GTM_CODE("JE", 0x00000006UL), GTM_CODE("JUE", 0x00000007UL)
 };
 
 static const char *const gtm_exts[] = {
@@ -599,7 +609,7 @@ static uint32_t gtm_code_bits(const struct gtm_code *t, size_t count,
 {
    size_t i;
    for (i = 0; i < count; i++)
-      if (strlen(t[i].name) == n && gtm_same(t[i].name, s, n, nocase))
+      if (t[i].len == n && gtm_same(t[i].name, s, n, nocase))
          return t[i].bits;
    return 0;
 }
@@ -700,28 +710,34 @@ static unsigned gtm_number(const char *s, size_t n)
 }
 
 static bool gtm_has_prefix(const char *c, size_t n, const char *p,
-      bool nocase)
+      size_t k, bool nocase)
 {
-   size_t k = strlen(p);
    return n >= k && gtm_same(c, p, k, nocase);
 }
 
 static bool gtm_has_suffix(const char *c, size_t n, const char *p,
-      bool nocase)
+      size_t k, bool nocase)
 {
-   size_t k = strlen(p);
    return n >= k && gtm_same(c + n - k, p, k, nocase);
 }
 
-static bool gtm_contains(const char *c, size_t n, const char *p, bool nocase)
+static bool gtm_contains(const char *c, size_t n, const char *p,
+      size_t k, bool nocase)
 {
-   size_t k = strlen(p);
    size_t i;
    for (i = 0; i + k <= n; i++)
       if (gtm_same(c + i, p, k, nocase))
          return true;
    return false;
 }
+
+/* The literal's length is known where it is written */
+#define GTM_HAS_PREFIX(c, n, lit, nocase) \
+   gtm_has_prefix(c, n, lit, sizeof(lit) - 1, nocase)
+#define GTM_HAS_SUFFIX(c, n, lit, nocase) \
+   gtm_has_suffix(c, n, lit, sizeof(lit) - 1, nocase)
+#define GTM_CONTAINS(c, n, lit, nocase) \
+   gtm_contains(c, n, lit, sizeof(lit) - 1, nocase)
 
 /* A is 1 */
 static unsigned gtm_letter(char c, bool nocase)
@@ -806,10 +822,10 @@ static bool gtm_mastering(const char *c, size_t n)
 
 static bool gtm_store(const char *c, size_t n, bool nocase)
 {
-   return gtm_contains(c, n, "Virtual Console", nocase)
+   return GTM_CONTAINS(c, n, "Virtual Console", nocase)
       || (n == 13 && gtm_same(c, "Switch Online", 13, nocase))
       || (n == 2 && gtm_same(c, "NP", 2, nocase))
-      || gtm_has_suffix(c, n, " Collection", nocase);
+      || GTM_HAS_SUFFIX(c, n, " Collection", nocase);
 }
 
 /* Rev 1 and Rev A are 1; v1.1 is 1, v2.00 is 100; PRG1 and REV01 are 1. */
@@ -817,7 +833,7 @@ static bool gtm_revision(const char *c, size_t n, unsigned *v, bool nocase)
 {
    const char *d;
    size_t k;
-   if (gtm_has_prefix(c, n, "Rev ", nocase))
+   if (GTM_HAS_PREFIX(c, n, "Rev ", nocase))
    {
       if (n == 5 && (*v = gtm_letter(c[4], nocase)))
          return true;
@@ -826,8 +842,8 @@ static bool gtm_revision(const char *c, size_t n, unsigned *v, bool nocase)
       *v = gtm_number(c + 4, n - 4);
       return true;
    }
-   if (     gtm_has_prefix(c, n, "REV", nocase)
-         || gtm_has_prefix(c, n, "PRG", nocase))
+   if (     GTM_HAS_PREFIX(c, n, "REV", nocase)
+         || GTM_HAS_PREFIX(c, n, "PRG", nocase))
    {
       k = (n > 3 && c[3] == ' ') ? 4 : 3;
       if (!gtm_digits(c + k, n - k))
@@ -877,7 +893,7 @@ static bool gtm_disc(const char *c, size_t n, unsigned *v, bool *tape,
       *v = 255;
    if (k == n)
       return true;
-   return gtm_has_prefix(c + k, n - k, " of ", nocase)
+   return GTM_HAS_PREFIX(c + k, n - k, " of ", nocase)
       && gtm_digits(c + k + 4, n - k - 4);
 }
 
@@ -924,8 +940,8 @@ static bool gtm_paren_known(struct gtm_parse *p, const char *c, size_t n,
    else if (gtm_language(c, n, nocase) || (tosec && gtm_date(c, n))
          || gtm_alt(c, n, nocase)
          || gtm_sides(c, n, nocase) || gtm_mastering(c, n)
-         || gtm_has_suffix(c, n, " Enhanced", nocase)
-         || gtm_has_suffix(c, n, " Compatible", nocase))
+         || GTM_HAS_SUFFIX(c, n, " Enhanced", nocase)
+         || GTM_HAS_SUFFIX(c, n, " Compatible", nocase))
       p->ntags++;
    else if (gtm_store(c, n, nocase))
    {
@@ -957,8 +973,8 @@ static void gtm_paren(struct gtm_parse *p, const char *c, size_t n,
                && !gtm_paren_known(p, c, n, tosec, true)))
    {
       if (     !publisher
-            && (     gtm_has_suffix(c, n, " Disc", true)
-                  || gtm_has_suffix(c, n, " Disk", true)))
+            && (     GTM_HAS_SUFFIX(c, n, " Disc", true)
+                  || GTM_HAS_SUFFIX(c, n, " Disk", true)))
          p->flags |= GTM_GROUP;
       gtm_identity(p, c, c + n, true);
    }
@@ -1520,7 +1536,7 @@ static bool gtm_other_shared(const char *a, size_t an, const char *b,
    for (i = 0; i < GTM_COUNT(gtm_regions); i++)
    {
       const char *name = gtm_regions[i].name;
-      size_t k         = strlen(name);
+      size_t k         = gtm_regions[i].len;
       if (     gtm_regions[i].bits == GTM_OTHER
             && (unknown || strcmp(name, "Unknown"))
             && gtm_lists_region(a, a + an, name, k)
