@@ -10157,7 +10157,20 @@ static void gl2_texture_load(gl2_t *gl, const struct texture_image *ti,
    else
       video_texture_load_gl2(ti, filter_type, id);
    if (*id)
+   {
+#if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+      if (gl && !ti->fp16 && !ti->pix10)
+      {
+         bool rgba = ti->planar || (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+         gl_media_pool_register(&gl->media_pool, (GLuint)*id, ti->width, ti->height,
+               rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+               rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32, GL_UNSIGNED_BYTE,
+               ti->planar || (filter_type != TEXTURE_FILTER_MIPMAP_LINEAR
+                  && filter_type != TEXTURE_FILTER_MIPMAP_NEAREST), true, 0);
+      }
+#endif
       gl2_media_texture_changed(gl, *id, true);
+   }
 }
 
 #ifdef HAVE_THREADS

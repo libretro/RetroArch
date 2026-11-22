@@ -59,3 +59,14 @@ with tempfile.TemporaryDirectory(prefix="slang-history-pixels-") as directory:
                 str(here / "slang_history_pixels.c"), "-o", str(exe), "-lEGL", "-lGL", "-lm"]
     subprocess.run(command, check=True)
     subprocess.run([str(exe)], check=True)
+
+# GLES creators register storage explicitly instead of querying texture levels.
+with tempfile.TemporaryDirectory(prefix="gles-history-pixels-") as directory:
+    for version in (2, 3):
+        exe = Path(directory) / ("gles" + str(version))
+        command = shlex.split(os.environ.get("CC", "cc"))
+        command += ["-std=c99", "-O1", "-g", "-Wall", "-Wextra", "-Werror",
+                    "-DHAVE_OPENGLES", "-DHAVE_OPENGLES" + str(version),
+                    str(here / "gles_history_pixels.c"), "-o", str(exe), "-lEGL", "-lGLESv2"]
+        subprocess.run(command, check=True)
+        subprocess.run([str(exe)], check=True)

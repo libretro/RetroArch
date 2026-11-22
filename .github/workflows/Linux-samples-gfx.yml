@@ -885,7 +885,7 @@ jobs:
     timeout-minutes: 20
 
     env:
-      APT_PKGS: build-essential libgl-dev libegl-dev libegl-mesa0 libgl1-mesa-dri gcc-mingw-w64-x86-64 wine64
+      APT_PKGS: build-essential libgl-dev libegl-dev libgles-dev libegl-mesa0 libgl1-mesa-dri gcc-mingw-w64-x86-64 wine64
 
     steps:
       - name: Checkout

@@ -34,6 +34,9 @@ typedef struct gl_media_pool
    GLuint handle,current,versions[GFX_MAX_FRAME_HISTORY + 2];
    unsigned count,width,height,generation,sampler_generation[GFX_MAX_FRAME_HISTORY + 2];
    GLint format,max_level,filter[4],swizzle[4];
+#ifdef HAVE_OPENGLES
+   GLenum external,type;
+#endif
    bool eligible;
 } gl_media_pool_t;
 
@@ -52,13 +55,48 @@ static GLuint gl_media_pool_resolve(gl_media_pool_t *list, GLuint handle)
    return pool ? pool->current : handle;
 }
 
+#if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+/* GLES has no portable texture-level query. The creator supplies its storage. */
+static void gl_media_pool_register(gl_media_pool_t **list, GLuint handle,
+      unsigned width, unsigned height, GLint format, GLenum external,
+      GLenum type, bool single_level, bool mutable_mips, unsigned capabilities)
+{
+   gl_media_pool_t *pool;
+   GLint bound;
+   if (!handle || !width || !height || gl_media_pool_find(*list, handle)) return;
+   pool = (gl_media_pool_t*)calloc(1, sizeof(*pool));
+   if (!pool) return;
+   pool->handle = pool->current = pool->versions[0] = handle;
+   pool->count = pool->generation = pool->sampler_generation[0] = 1;
+   pool->width = width; pool->height = height; pool->format = format;
+   pool->external = external; pool->type = type;
+   pool->max_level = mutable_mips ? 1000 : 0;
+   pool->eligible = single_level;
+   glGetIntegerv(GL_TEXTURE_BINDING_2D, &bound);
+   glBindTexture(GL_TEXTURE_2D, handle);
+   glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &pool->filter[0]);
+   glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, &pool->filter[1]);
+   glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, &pool->filter[2]);
+   glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, &pool->filter[3]);
+   if (capabilities & GL_MEDIA_POOL_SWIZZLE)
+   {
+      glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, &pool->swizzle[0]);
+      glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, &pool->swizzle[1]);
+      glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, &pool->swizzle[2]);
+      glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, &pool->swizzle[3]);
+   }
+   glBindTexture(GL_TEXTURE_2D, (GLuint)bound);
+   pool->next = *list; *list = pool;
+}
+#endif
+
 /* Merely reserve an unused destination. A refused/dropped upload does not
  * publish it, and no existing image is copied to initialize it. */
 static GLuint gl_media_pool_prepare_ex(gl_media_pool_t **list, GLuint handle,
       unsigned width, unsigned height, gl_media_pool_reference_t referenced,
       void *context, unsigned capabilities)
 {
-#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+#if !defined(HAVE_PSGL)
    gl_media_pool_t *pool = gl_media_pool_find(*list, handle);
    GLuint current = pool ? pool->current : handle;
    GLint old_texture,old_unpack;
@@ -66,6 +104,9 @@ static GLuint gl_media_pool_prepare_ex(gl_media_pool_t **list, GLuint handle,
    if (!referenced(context,current)) return current;
    if (!pool)
    {
+#ifdef HAVE_OPENGLES
+      return current;
+#else
       GLint w,h,mip,format;
       glGetIntegerv(GL_TEXTURE_BINDING_2D,&old_texture);
       glBindTexture(GL_TEXTURE_2D,handle);
@@ -97,6 +138,7 @@ static GLuint gl_media_pool_prepare_ex(gl_media_pool_t **list, GLuint handle,
       glBindTexture(GL_TEXTURE_2D,(GLuint)old_texture);
       pool->eligible=!mip && (format==GL_RGBA || format==GL_RGBA8 || format==GL_RGBA16F);
       pool->next=*list;*list=pool;
+#endif
    }
    if (!pool->eligible || width!=pool->width || height!=pool->height)
       return current; /* Preserve the established partial/mipmap/format fallback. */
@@ -126,7 +168,14 @@ static GLuint gl_media_pool_prepare_ex(gl_media_pool_t **list, GLuint handle,
    {
       GLuint image;
       GLint w=0,h=0;
-      glGenTextures(1,&image);glBindTexture(GL_TEXTURE_2D,image);
+      glGenTextures(1,&image);
+      if (!image)
+      {
+         if (capabilities & GL_MEDIA_POOL_UNPACK)
+            glBindBuffer(GL_PIXEL_UNPACK_BUFFER,(GLuint)old_unpack);
+         return 0;
+      }
+      glBindTexture(GL_TEXTURE_2D,image);
       glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,pool->filter[0]);
       glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,pool->filter[1]);
       glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,pool->filter[2]);
@@ -138,11 +187,39 @@ static GLuint gl_media_pool_prepare_ex(gl_media_pool_t **list, GLuint handle,
          glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_SWIZZLE_B,pool->swizzle[2]);
          glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_SWIZZLE_A,pool->swizzle[3]);
       }
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
       glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAX_LEVEL,pool->max_level);
+#endif
+#ifdef HAVE_OPENGLES
+      {
+         GLuint fbo = 0;
+         GLint previous;
+#ifdef HAVE_OPENGLES3
+         GLenum target = GL_DRAW_FRAMEBUFFER;
+         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &previous);
+#else
+         GLenum target = GL_FRAMEBUFFER;
+         glGetIntegerv(GL_FRAMEBUFFER_BINDING, &previous);
+#endif
+         glTexImage2D(GL_TEXTURE_2D,0,pool->format,width,height,0,
+               pool->external,pool->type,NULL);
+         glGenFramebuffers(1, &fbo);
+         if (fbo)
+         {
+            glBindFramebuffer(target, fbo);
+            glFramebufferTexture2D(target, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, image, 0);
+            if (glCheckFramebufferStatus(target) == GL_FRAMEBUFFER_COMPLETE)
+            { w = (GLint)width; h = (GLint)height; }
+            glBindFramebuffer(target, (GLuint)previous);
+         }
+         glDeleteFramebuffers(1, &fbo);
+      }
+#else
       glTexImage2D(GL_TEXTURE_2D,0,pool->format,width,height,0,GL_RGBA,
             pool->format==GL_RGBA16F ? GL_HALF_FLOAT : GL_UNSIGNED_BYTE,NULL);
       glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_WIDTH,&w);
       glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_HEIGHT,&h);
+#endif
       if ((unsigned)w!=width || (unsigned)h!=height)
       {
          glDeleteTextures(1,&image);image=0;

@@ -8545,7 +8545,19 @@ static void gl3_texture_load(gl3_t *gl, const struct texture_image *ti,
    else
       video_texture_load_gl3(ti, filter_type, id);
    if (*id)
+   {
+#ifdef HAVE_OPENGLES
+      if (gl)
+         gl_media_pool_register(&gl->media_pool, *id, ti->width, ti->height,
+               ti->fp16 ? GL_RGBA16F : ti->pix10 ? GL_RGB10_A2 : GL_RGBA8,
+               GL_RGBA, ti->fp16 ? GL_HALF_FLOAT
+                  : ti->pix10 ? GL_UNSIGNED_INT_2_10_10_10_REV : GL_UNSIGNED_BYTE,
+               ti->planar || (filter_type != TEXTURE_FILTER_MIPMAP_LINEAR
+                  && filter_type != TEXTURE_FILTER_MIPMAP_NEAREST), ti->planar != NULL,
+               GL_MEDIA_POOL_SWIZZLE | GL_MEDIA_POOL_UNPACK);
+#endif
       gl3_media_texture_changed(gl, *id, true);
+   }
 }
 
 #ifdef HAVE_THREADS
@@ -9828,6 +9840,12 @@ static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
    }
    gl3_filter_chain_set_history_borrow(chain, gl->media_borrow_single_level
          && (format == GL_RGBA8 || format == GL_RGBA16F));
+#else
+   {
+      gl_media_pool_t *pool = gl_media_pool_find(gl->media_pool, (GLuint)image);
+      gl3_filter_chain_set_history_borrow(chain, pool && pool->eligible
+            && (pool->format == GL_RGBA8 || pool->format == GL_RGBA16F));
+   }
 #endif
    gl3_filter_chain_set_input_texture_history(chain, &texture, &gl->media_history);
    gl3_filter_chain_build_offscreen_passes(chain, &vp);
