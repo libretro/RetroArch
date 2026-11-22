@@ -8139,6 +8139,19 @@ bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
       goto clear;
    }
 
+   /* A synchronous apply has already copied the driver's struct into
+    * the menu's; only a deferred load leaves it to be filled from the
+    * preset until the driver's own struct arrives. */
+   if (     apply
+         && menu_shader
+         && menu_shader == menu_shader_get()
+         && video_state_get_ptr()->shader_deferred.state
+            != SHADER_LOAD_COMPILING)
+   {
+      ret = true;
+      goto end;
+   }
+
    /* Load stored Preset into menu on success.
     * Used when a preset is directly loaded.
     * No point in updating when the Preset was

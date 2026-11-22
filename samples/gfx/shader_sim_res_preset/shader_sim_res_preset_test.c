@@ -21,16 +21,14 @@
  */
 
 /* The per-pass use_simulated_res key through the preset parser and
- * writers, with gfx/video_shader_parse.c compiled into this unit so
- * the static combine step is reachable:
+ * writers, with gfx/video_shader_parse.c compiled into this unit:
  *
  *  - a preset without the key tells the first pass only;
  *  - the key overrides that either way;
  *  - a full preset carries the key only where it differs from that;
  *  - a simple (#reference) preset is refused when the flag differs
- *    from the referenced preset, so the change is not lost;
- *  - combining presets leaves the appended preset's first pass off,
- *    since it now reads the previous chain's output. */
+ *    from the referenced preset, so the change is not lost.
+ * Combining presets is covered by shader_preset_combine. */
 
 /* The shared stub reports no config directory, which makes every
  * preset look like it lives there and so refuses all references;
@@ -182,27 +180,6 @@ static void check_simple_preset_refused(const char *plain)
    free(s);
 }
 
-static void check_combine(const char *plain)
-{
-   struct video_shader *a        = load(plain);
-   struct video_shader *b        = load(plain);
-   struct video_shader *combined = (struct video_shader*)
-      calloc(1, sizeof(*combined));
-
-   b->pass[1].use_simulated_res = true;
-   video_shader_combine_shaders(combined, a, b);
-   CHECK(combined->passes == 6, "combined preset has six passes");
-   CHECK( combined->pass[0].use_simulated_res,
-         "the first preset's pass 0 keeps the simulated size");
-   CHECK(!combined->pass[3].use_simulated_res,
-         "the appended preset's pass 0 no longer reads the core frame");
-   CHECK( combined->pass[4].use_simulated_res,
-         "an explicit opt-in in the appended preset is kept");
-   free(combined);
-   free(b);
-   free(a);
-}
-
 int main(int argc, char **argv)
 {
    char plain[PATH_MAX_LENGTH];
@@ -235,7 +212,6 @@ int main(int argc, char **argv)
    check_defaults_and_overrides(plain, keyed);
    check_full_preset_keys(plain);
    check_simple_preset_refused(plain);
-   check_combine(plain);
 
    if (failures)
    {

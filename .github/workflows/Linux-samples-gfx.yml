@@ -1630,9 +1630,8 @@ jobs:
           set -eu
           # The per-pass use_simulated_res key through the real preset
           # parser and writers: the first pass is on by default, the
-          # key is written only where it differs from that, a toggled
-          # flag forces a full preset instead of a #reference, and a
-          # combined preset's appended first pass is turned off.
+          # key is written only where it differs from that, and a toggled
+          # flag forces a full preset instead of a #reference.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           test -x shader_sim_res_preset_test
           T=$(mktemp -d)
@@ -1640,6 +1639,24 @@ jobs:
              timeout 60 ./shader_sim_res_preset_test "$T"
           rm -rf "${T:?}"
           echo "[pass] shader_sim_res_preset_test"
+
+      - name: Build and run shader_preset_combine_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/shader_preset_combine
+        run: |
+          set -eu
+          # Prepend/append combine a preset into the one that comes
+          # first, in place: passes past the limit are dropped with the
+          # parameters they own, LUTs keep their filter, wrap and mipmap
+          # settings, and the parameter list merged from the two
+          # resolved lists matches a fresh resolve of every source.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          test -x shader_preset_combine_test
+          T=$(mktemp -d)
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+             timeout 60 ./shader_preset_combine_test "$T"
+          rm -rf "${T:?}"
+          echo "[pass] shader_preset_combine_test"
 
       - name: Build and run vulkan_mailbox_init_leak_test (ASan + LSan)
         shell: bash

@@ -1041,32 +1041,6 @@ static bool video_shader_parse_textures(config_file_t *conf,
 }
 
 /**
- * video_shader_parse_find_parameter:
- * @param params
- * Shader parameter handle.
- * @param num_params
- * Number of shader params in @params.
- * param id
- * Identifier to search for.
- *
- * Finds a shader parameter with identifier @id in @params..
- *
- * @return Handle to shader parameter if successful, otherwise NULL.
- **/
-static struct video_shader_parameter *video_shader_parse_find_parameter(
-      struct video_shader_parameter *params,
-      unsigned num_params, const char *id)
-{
-   unsigned i;
-   for (i = 0; i < num_params; i++)
-   {
-      if (string_is_equal(params[i].id, id))
-         return &params[i];
-   }
-   return NULL;
-}
-
-/**
  * video_shader_resolve_parameters:
  * @conf              : Preset file to read from.
  * @shader            : Shader passes handle.
@@ -2636,98 +2610,82 @@ static bool video_shader_override_values(config_file_t *override_conf,
    return return_val;
 }
 
-static bool video_shader_combine_shaders(
-      struct video_shader *combined_shader,
-      struct video_shader *first_shader,
-      struct video_shader *second_shader)
+/* Appends second's passes, LUTs and parameters to first, in place.
+ * Parameters come from the two resolved lists: a value the second
+ * preset sets wins, and a parameter owned by a pass past the limit
+ * is left out with its pass. */
+static void video_shader_append_shader(struct video_shader *first,
+      const struct video_shader *second)
 {
-   size_t i, j;
+   unsigned i, j;
+   unsigned base = first->passes;
+   unsigned kept = 0;
 
-   for (i = 0; i < first_shader->passes && i < GFX_MAX_SHADERS; i++)
-   {
-      combined_shader->pass[i] = first_shader->pass[i];
-      combined_shader->passes += 1;
-   }
-   for (i = 0;
-        i < second_shader->passes && first_shader->passes + i < GFX_MAX_SHADERS;
-        i++)
-   {
-      combined_shader->pass[first_shader->passes + i] = second_shader->pass[i];
-      combined_shader->passes += 1;
-   }
+   if (base < GFX_MAX_SHADERS)
+      kept = MIN(second->passes, GFX_MAX_SHADERS - base);
+
+   for (i = 0; i < kept; i++)
+      first->pass[base + i] = second->pass[i];
+   first->passes = base + kept;
+
    /* The second preset's first pass now reads the first preset's
     * output, not the core's frame. */
-   if (first_shader->passes && first_shader->passes < GFX_MAX_SHADERS)
-      combined_shader->pass[first_shader->passes].use_simulated_res = false;
-
-   combined_shader->hdr_mode = combined_shader->passes == first_shader->passes
-      ? first_shader->hdr_mode :
-      (combined_shader->passes == first_shader->passes + second_shader->passes
-         ? second_shader->hdr_mode : 0);
-
-   for (i = 0; i < first_shader->luts && i < GFX_MAX_TEXTURES; i++)
+   if (kept)
    {
-      strlcpy(combined_shader->lut[i].id,
-               first_shader->lut[i].id,
-               sizeof(combined_shader->lut[i].id));
-      strlcpy(combined_shader->lut[i].path,
-               first_shader->lut[i].path,
-               sizeof(combined_shader->lut[i].path));
-      combined_shader->luts += 1;
+      first->pass[base].use_simulated_res = false;
+      first->hdr_mode = (kept == second->passes) ? second->hdr_mode : 0;
    }
 
-   for (i = 0; i < second_shader->luts; i++)
+   for (i = 0; i < second->luts; i++)
    {
-      bool b_name_in_list = false;
-      if (combined_shader->luts >= GFX_MAX_TEXTURES)
+      bool found = false;
+      if (first->luts >= GFX_MAX_TEXTURES)
          break;
-      for (j = 0; j < combined_shader->luts; j++)
+      for (j = 0; j < first->luts; j++)
       {
-         if (strncmp(second_shader->lut[i].id, combined_shader->lut[j].id, 64) == 0)
+         if (!strncmp(second->lut[i].id, first->lut[j].id,
+                  sizeof(first->lut[j].id)))
          {
-            b_name_in_list = true;
+            found = true;
             break;
          }
       }
-      if (!b_name_in_list)
-      {
-         strlcpy(combined_shader->lut[combined_shader->luts].id,
-                  second_shader->lut[i].id,
-                  sizeof(combined_shader->lut[combined_shader->luts].id));
-         strlcpy(combined_shader->lut[combined_shader->luts].path,
-                  second_shader->lut[i].path,
-                  sizeof(combined_shader->lut[combined_shader->luts].path));
-         combined_shader->luts += 1;
-      }
+      if (!found)
+         first->lut[first->luts++] = second->lut[i];
    }
 
-   video_shader_resolve_parameters(combined_shader);
-
-   /* Step through the parameters in the shader and see if the parameter is in either of the shaders */
-   for (i = 0; i < combined_shader->num_parameters; i++)
+   for (i = 0; i < second->num_parameters; i++)
    {
-      struct video_shader_parameter *param;
+      const struct video_shader_parameter *src = &second->parameters[i];
+      struct video_shader_parameter *dst       = NULL;
 
-      /* Check the original shader */
-      param = video_shader_parse_find_parameter(
-               first_shader->parameters,
-               first_shader->num_parameters,
-               combined_shader->parameters[i].id);
-      if (param)
-         video_shader_param_set(&combined_shader->parameters[i],
-               video_shader_param_get(param));
+      if (src->pass < 0 || (unsigned)src->pass >= kept)
+         continue;
 
-      /* Check the shader to append */
-      param = video_shader_parse_find_parameter(
-               second_shader->parameters,
-               second_shader->num_parameters,
-               combined_shader->parameters[i].id);
-      if (param)
-         video_shader_param_set(&combined_shader->parameters[i],
-               video_shader_param_get(param));
+      for (j = 0; j < first->num_parameters; j++)
+      {
+         if (string_is_equal(first->parameters[j].id, src->id))
+         {
+            dst = &first->parameters[j];
+            break;
+         }
+      }
+
+      if (!dst)
+      {
+         if (first->num_parameters >= GFX_MAX_PARAMETERS)
+            continue;
+         dst          = &first->parameters[first->num_parameters++];
+         dst->pass    = src->pass + (int)base;
+         dst->minimum = src->minimum;
+         dst->initial = src->initial;
+         dst->maximum = src->maximum;
+         dst->step    = src->step;
+         strlcpy(dst->id,   src->id,   sizeof(dst->id));
+         strlcpy(dst->desc, src->desc, sizeof(dst->desc));
+      }
+      video_shader_param_set(dst, video_shader_param_get(src));
    }
-
-   return true;
 }
 
 /**
@@ -4096,27 +4054,20 @@ bool video_shader_combine_preset_and_apply(
    char combined_preset_name[NAME_MAX_LENGTH];
    const char *preset_ext                = video_shader_get_preset_extension(type);
    struct video_shader *shader_to_append;
-   struct video_shader *combined_shader;
+   struct video_shader *combined;
    size_t _len;
 
-   if (!preset_ext || !preset_path || !temp_dir)
+   if (!preset_ext || !preset_path || !temp_dir || !menu_shader)
       return false;
 
    shader_to_append = (struct video_shader*) calloc(1, sizeof(*shader_to_append));
-   combined_shader  = (struct video_shader*) calloc(1, sizeof(*combined_shader));
-
-   if (!shader_to_append || !combined_shader)
-   {
-      free(shader_to_append);
-      free(combined_shader);
+   if (!shader_to_append)
       return false;
-   }
 
    combined_preset_path = (char*)malloc(PATH_MAX_LENGTH);
    if (!combined_preset_path)
    {
       free(shader_to_append);
-      free(combined_shader);
       return false;
    }
 
@@ -4126,14 +4077,22 @@ bool video_shader_combine_preset_and_apply(
 
    video_shader_load_preset_into_shader(preset_path, shader_to_append);
 
+   /* Combined into whichever comes first. The menu's struct is filled
+    * again from the driver or from the written preset right after. */
    if (prepend)
-      video_shader_combine_shaders(combined_shader, shader_to_append, menu_shader);
+   {
+      video_shader_append_shader(shader_to_append, menu_shader);
+      combined = shader_to_append;
+   }
    else
-      video_shader_combine_shaders(combined_shader, menu_shader, shader_to_append);
+   {
+      video_shader_append_shader(menu_shader, shader_to_append);
+      combined = menu_shader;
+   }
 
    /* We save to the always changing retroarch.slangp, retroarch.glsp...
       then load it so that it is similar to Apply Preset */
-   video_shader_write_preset(combined_preset_path, combined_shader, false);
+   video_shader_write_preset(combined_preset_path, combined, false);
 
 #ifdef HAVE_MENU
    ret = menu_shader_manager_set_preset(menu_shader, type, combined_preset_path, true);
@@ -4142,7 +4101,6 @@ bool video_shader_combine_preset_and_apply(
 #endif
 
    free(shader_to_append);
-   free(combined_shader);
    free(combined_preset_path);
 
    return ret;
