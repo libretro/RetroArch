@@ -1541,6 +1541,13 @@ typedef struct video_poke_interface
     * compositor. Called after a frame, on its thread. A driver that
     * cannot tell leaves it NULL. */
    bool (*present_immediate)(void *data);
+
+   /* The core's context_destroy has run and its library closes next:
+    * the driver lets go of whatever it holds of the core's, calling
+    * any teardown callback of the core's now, while its code is still
+    * loaded. The driver may present on, as after hw_context_destroying.
+    * The main thread calls it, or waits while the video thread runs it. */
+   void (*hw_context_destroyed)(void *data);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a

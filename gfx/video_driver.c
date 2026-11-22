@@ -3928,6 +3928,8 @@ static int video_hw_context_shared = -1;
 void video_driver_free_hw_context(void)
 {
    video_driver_state_t *video_st       = &video_driver_st;
+   bool had_context                     =
+      video_st->hw_render.context_type != RETRO_HW_CONTEXT_NONE;
 
    /* The driver can outlive this: a staged content close keeps it up
     * and presenting dupes of the last frame until the next session's
@@ -3940,7 +3942,7 @@ void video_driver_free_hw_context(void)
    video_driver_invalidate_hw_render_cache();
    /* From here to its unload the core may wait on the device without
     * the queue lock: no frame of ours may be in flight meanwhile. */
-   if (video_st->hw_render.context_type != RETRO_HW_CONTEXT_NONE)
+   if (had_context)
    {
 #ifdef HAVE_THREADS
       video_thread_wait_idle();
@@ -3959,6 +3961,10 @@ void video_driver_free_hw_context(void)
       video_thread_core_context_release();
 #endif
    }
+   if (     had_context
+         && video_st->data && video_st->poke
+         && video_st->poke->hw_context_destroyed)
+      video_st->poke->hw_context_destroyed(video_st->data);
    video_driver_invalidate_hw_render_cache();
    /* the core holds no interface of ours any more */
    video_hw_render_iface_held = NULL;

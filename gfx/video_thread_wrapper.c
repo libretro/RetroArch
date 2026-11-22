@@ -1742,6 +1742,13 @@ static bool video_thread_handle_packet(
          video_thread_reply(thr, pkt);
          break;
 
+      case CMD_POKE_HW_CONTEXT_DESTROYED:
+         if (     thr->driver_data && thr->poke
+               && thr->poke->hw_context_destroyed)
+            thr->poke->hw_context_destroyed(thr->driver_data);
+         video_thread_reply(thr, pkt);
+         break;
+
       case CMD_FONT_INIT:
          if (pkt->data.font_init.method)
             pkt->data.font_init.return_value = pkt->data.font_init.method(
@@ -5853,6 +5860,20 @@ static void thread_hw_context_destroying(void *data)
    }
 }
 
+static void thread_hw_context_destroyed(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (thr)
+   {
+      thread_packet_t pkt;
+      pkt.type = CMD_POKE_HW_CONTEXT_DESTROYED;
+
+      /* Waits: the core's library closes when this returns. */
+      video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   }
+}
+
 /* Direct, as the runloop asks every iteration: the driver answers from
  * what its headset thread publishes and from what only init and free
  * change, which this thread waits out. */
@@ -6554,7 +6575,11 @@ static const video_poke_interface_t thread_poke = {
    false, /* texture_lend_per_write */
    thread_driver_pacing_set,
    thread_driver_pacing_wait,
-   thread_driver_pacing_mark
+   thread_driver_pacing_mark,
+   NULL, /* prepare_import_texture */
+   NULL, /* frame_mem_map */
+   NULL, /* present_immediate: the driver's, read on the video thread */
+   thread_hw_context_destroyed
 };
 
 /* Video thread, for video_thread_get_poke_interface(): installs the

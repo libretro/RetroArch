@@ -18217,6 +18217,18 @@ static void vulkan_hw_context_destroying(void *data)
 }
 #endif
 
+/* The core's device teardown runs while its library is loaded: the
+ * device itself stays, ours to present on and to destroy. */
+static void vulkan_hw_context_destroyed(void *data)
+{
+   vk_t *vk = (vk_t*)data;
+   if (vk && vk->context && vk->context->destroy_device)
+   {
+      vk->context->destroy_device();
+      vk->context->destroy_device = NULL;
+   }
+}
+
 /* Each swapchain image's streamed texture is made at the frame's size
  * already, and is made again in the new format at its next frame. */
 static bool vulkan_set_frame_format(void *data, bool rgb32,
@@ -18324,7 +18336,8 @@ static const video_poke_interface_t vulkan_poke_interface = {
    NULL,
 #endif
    NULL, /* frame_mem_map */
-   vulkan_present_immediate
+   vulkan_present_immediate,
+   vulkan_hw_context_destroyed
 };
 
 static void vulkan_get_poke_interface(void *data,
