@@ -6,6 +6,9 @@
 dylib_t dylib_load(const char *path)
 {
    ModuleLoadOptions options;
+
+   // only load modules that have the required symbol
+   // "retro_api_version"
    options.required_symbol = "retro_api_version";
 #ifdef HAVE_LIBOUNCE_MODULE_TRACE
    options.trace_path = "sdmc:/retroarch/module-loader.log";

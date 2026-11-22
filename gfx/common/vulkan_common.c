@@ -68,6 +68,7 @@ static VkInstance   sw2_kept_instance;
 static VkSwapchainKHR sw2_kept_swapchain;
 static VkDevice       sw2_kept_device;
 static bool           sw2_keep_swapchain_now;
+static void sw2_kept_release(gfx_ctx_vulkan_data_t *vk, bool surface);
 #endif
 #ifdef HAVE_OPENXR
 #include "vulkan_openxr.h"
@@ -2089,6 +2090,39 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    vk->context.recording_family = 0;
    vk->context.recording_queue_index = 0;
 
+#ifdef __SWITCH2__
+   /* Keep the NWindow surface, but negotiate a new core's device. */
+   if (cached_device_vk && iface && iface->create_device
+         && !video_st->hw_render.cache_context)
+   {
+      VkBool32 supported_before = VK_FALSE;
+      VkBool32 supported_after  = VK_FALSE;
+      VkResult before_result;
+      VkResult after_result;
+
+      before_result = vkGetPhysicalDeviceSurfaceSupportKHR(cached_gpu_vk,
+            0, vk->vk_surface, &supported_before);
+      vk->context.device = cached_device_vk;
+      sw2_kept_release(vk, false);
+
+      after_result = vkGetPhysicalDeviceSurfaceSupportKHR(cached_gpu_vk,
+            0, vk->vk_surface, &supported_after);
+
+      RARCH_LOG("[Vulkan] Switch 2 surface across cached swapchain release: before %d/%u, after %d/%u.\n",
+            (int)before_result, (unsigned)supported_before,
+            (int)after_result, (unsigned)supported_after);
+
+      if (cached_destroy_device_vk)
+         cached_destroy_device_vk();
+
+      cached_destroy_device_vk = NULL;
+      vkDestroyDevice(cached_device_vk, NULL);
+      cached_device_vk = VK_NULL_HANDLE;
+      cached_gpu_vk = VK_NULL_HANDLE;
+      vk->context.device = VK_NULL_HANDLE;
+   }
+#endif
+
    if (!vulkan_context_init_gpu(vk))
       return false;
 
@@ -2207,6 +2241,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       else
       {
          RARCH_WARN("[Vulkan] Failed to create device with negotiation interface. Falling back to default path.\n");
+#ifdef __SWITCH2__
+         return false;
+#endif
 #ifdef HAVE_OPENXR
          /* The runtime's lists were for the core's device. */
          if (vk->context.xr && !vulkan_openxr_uses_enable2(vk->context.xr))
@@ -2508,7 +2545,11 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             cached_destroy_device_vk   = NULL;
          }
 
-         video_driver_cache_context_ack_set();
+#ifdef __SWITCH2__
+         /* Keeping the device does not preserve a new core's render state. */
+         if (video_st->hw_render.cache_context)
+#endif
+            video_driver_cache_context_ack_set();
          RARCH_LOG("[Vulkan] Using cached Vulkan context.\n");
       }
       else

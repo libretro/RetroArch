@@ -53,7 +53,11 @@ static void switch_ctx_get_video_size(void *data,
    {
       default:
       case AppletOperationMode_Handheld:
-         *dims = VIDEO_SCALE_PACK(1280, 720);
+#ifdef __SWITCH2__
+         *dims = VIDEO_SCALE_PACK(1920, 1080);
+#else
+          *dims = VIDEO_SCALE_PACK(1280, 720);
+#endif
          break;
       case AppletOperationMode_Console:
          *dims = VIDEO_SCALE_PACK(1920, 1080);
@@ -252,6 +256,9 @@ static void switch_ctx_bind_hw_render(void *data, bool enable)
 static uint32_t switch_ctx_get_flags(void *data)
 {
    uint32_t flags = 0;
+#ifdef __SWITCH2__
+   switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
+#endif
 
    if (string_is_equal(video_driver_get_ident(), "glcore"))
    {
@@ -270,10 +277,12 @@ static uint32_t switch_ctx_get_flags(void *data)
 #endif
    }
 
-   /* nvservices gives a process one GL context: a second one, shared
-    * or not, is not usable. The threaded wrapper's ring hands this one
-    * between the threads instead. */
-   BIT32_SET(flags, GFX_CTX_FLAGS_NO_SHARED_CONTEXT);
+#ifdef __SWITCH2__
+   if (ctx_nx && egl_no_shared_context(&ctx_nx->egl))
+#else
+   /* Original Switch nvservices supports only one GL context. */
+#endif
+      BIT32_SET(flags, GFX_CTX_FLAGS_NO_SHARED_CONTEXT);
 
     return flags;
 }
