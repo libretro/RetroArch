@@ -419,7 +419,7 @@ typedef struct
    rgui_colors_t colors;   /* int16_t alignment */
 
    struct scaler_ctx image_scaler;
-   uint32_t image_scaler_row[RGUI_MAX_FB_WIDTH];
+   uint32_t image_scaler_row[RGUI_MAX_FB_WIDTH * 2];
    menu_input_pointer_t pointer;
 
    char entry_index_str[32];
@@ -2866,6 +2866,22 @@ static uint32_t *rgui_downscale_box(const uint32_t *src,
    return pixels;
 }
 
+struct rgui_thumbnail_box_rows
+{
+   const uint32_t *src;
+   uint32_t *row;
+   unsigned dims, factor;
+};
+
+static const uint32_t *rgui_thumbnail_box_row(void *user, unsigned y)
+{
+   struct rgui_thumbnail_box_rows *box = (struct rgui_thumbnail_box_rows*)user;
+   unsigned sw = VIDEO_SCALE_W(box->dims);
+   rgui_downscale_box_to(box->src + (size_t)y * box->factor * sw,
+         VIDEO_SCALE_PACK(sw, box->factor), box->factor, box->row, NULL, false);
+   return box->row;
+}
+
 struct rgui_thumbnail_native
 {
    uint16_t *pixels;
@@ -2980,6 +2996,9 @@ static bool rgui_downscale_thumbnail(
       uint32_t *box_buf         = NULL;
       unsigned f;
       struct rgui_thumbnail_native output;
+      struct rgui_thumbnail_box_rows box;
+      bool box_rows = false;
+      bool native_done;
 
       /* Decimate first while doing so does not undershoot the
        * target, so the filter below runs at its minimum kernel
@@ -3002,7 +3021,18 @@ static bool rgui_downscale_thumbnail(
             return true;
          }
 
-         if ((box_buf = rgui_downscale_box(scale_src,
+         if (image_dst->width <= RGUI_MAX_FB_WIDTH && scale_height / f > 0 &&
+             scale_width / f <= ARRAY_SIZE(rgui->image_scaler_row))
+         {
+            box.src = scale_src;
+            box.dims = VIDEO_SCALE_PACK(scale_width, scale_height);
+            box.factor = f;
+            box.row = rgui->image_scaler_row;
+            box_rows = true;
+            scale_width /= f;
+            scale_height /= f;
+         }
+         else if ((box_buf = rgui_downscale_box(scale_src,
                VIDEO_SCALE_PACK(scale_width, scale_height), f, &box_dims)))
          {
             scale_src    = box_buf;
@@ -3040,9 +3070,27 @@ static bool rgui_downscale_thumbnail(
 
       output.pixels = native_pixels;
       output.dither = dither;
-      if (!scaler_ctx_scale_rows(&rgui->image_scaler, rgui->image_scaler_row,
-               sizeof(rgui->image_scaler_row), scale_src, rgui_thumbnail_native_row, &output))
+      native_done = box_rows
+         ? scaler_ctx_scale_rows_from(&rgui->image_scaler, rgui->image_scaler_row,
+               sizeof(rgui->image_scaler_row), rgui_thumbnail_box_row, &box,
+               rgui_thumbnail_native_row, &output)
+         : scaler_ctx_scale_rows(&rgui->image_scaler, rgui->image_scaler_row,
+               RGUI_MAX_FB_WIDTH * sizeof(uint32_t), scale_src,
+               rgui_thumbnail_native_row, &output);
+      if (!native_done)
       {
+         /* Retain the full-frame fallback if a row-fed context is unsupported. */
+         if (box_rows)
+         {
+            unsigned box_dims;
+            box_buf = rgui_downscale_box(box.src, box.dims, box.factor, &box_dims);
+            if (!box_buf)
+            {
+               scaler_ctx_gen_reset(&rgui->image_scaler);
+               return false;
+            }
+            scale_src = box_buf;
+         }
          image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t));
          if (image_dst->pixels)
             scaler_ctx_scale(&rgui->image_scaler, image_dst->pixels, scale_src);

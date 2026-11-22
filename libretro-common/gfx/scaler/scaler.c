@@ -661,12 +661,29 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
  *
  * Scales an input image to an output image.
  **/
-bool scaler_ctx_scale_rows(struct scaler_ctx *ctx, uint32_t *scratch,
-      size_t scratch_bytes, const void *input,
+static void scaler_ctx_deliver_rows(struct scaler_ctx *ctx, uint32_t *scratch,
       scaler_row_callback_t callback, void *user)
 {
    struct scaler_ctx row;
    int y, stride;
+   stride = ctx->out_width * (int)sizeof(uint32_t);
+   row = *ctx;
+   row.out_height = 1;
+   row.out_stride = stride;
+   for (y = 0; y < ctx->out_height; y++)
+   {
+      row.vert.filter = ctx->vert.filter + (size_t)y * ctx->vert.filter_stride;
+      row.vert.filter_pos = ctx->vert.filter_pos + y;
+      row.scaler_vert(&row, scratch, stride);
+      callback(user, scratch, ctx->out_width, y);
+   }
+}
+
+bool scaler_ctx_scale_rows(struct scaler_ctx *ctx, uint32_t *scratch,
+      size_t scratch_bytes, const void *input,
+      scaler_row_callback_t callback, void *user)
+{
+   int y;
    if (!ctx || !input || !callback || ctx->out_width <= 0
          || ctx->out_width > INT_MAX / (int)sizeof(uint32_t) || ctx->out_height <= 0
          || ctx->in_fmt != SCALER_FMT_ARGB8888 || ctx->out_fmt != SCALER_FMT_ARGB8888)
@@ -683,18 +700,40 @@ bool scaler_ctx_scale_rows(struct scaler_ctx *ctx, uint32_t *scratch,
          || ctx->scaler_special || !ctx->scaler_horiz || !ctx->scaler_vert
          || !ctx->scaled.frame || !ctx->vert.filter || !ctx->vert.filter_pos)
       return false;
-   stride = ctx->out_width * (int)sizeof(uint32_t);
    ctx->scaler_horiz(ctx, input, ctx->in_stride);
+   scaler_ctx_deliver_rows(ctx, scratch, callback, user);
+   return true;
+}
+
+/* Source lends last only through the horizontal pass for that row. All
+ * source rows are consumed before output loans begin, so one scratch buffer
+ * can serve both ends of a producer/filter/consumer pipeline. */
+bool scaler_ctx_scale_rows_from(struct scaler_ctx *ctx, uint32_t *scratch,
+      size_t scratch_bytes, scaler_row_source_t source, void *source_user,
+      scaler_row_callback_t callback, void *user)
+{
+   struct scaler_ctx row;
+   int y;
+   if (!ctx || !source || !callback || !scratch || ((uintptr_t)scratch & 3)
+         || ctx->in_width <= 0 || ctx->in_width > INT_MAX / 4 || ctx->in_height <= 0
+         || ctx->out_width <= 0 || ctx->out_width > INT_MAX / 4 || ctx->out_height <= 0
+         || (size_t)ctx->out_width > scratch_bytes / sizeof(*scratch)
+         || ctx->in_fmt != SCALER_FMT_ARGB8888 || ctx->out_fmt != SCALER_FMT_ARGB8888
+         || ctx->unscaled || ctx->scaler_special || !ctx->scaler_horiz || !ctx->scaler_vert
+         || !ctx->scaled.frame || !ctx->vert.filter || !ctx->vert.filter_pos)
+      return false;
    row = *ctx;
-   row.out_height = 1;
-   row.out_stride = stride;
-   for (y = 0; y < ctx->out_height; y++)
+   row.in_height = row.scaled.height = 1;
+   for (y = 0; y < ctx->in_height; y++)
    {
-      row.vert.filter = ctx->vert.filter + (size_t)y * ctx->vert.filter_stride;
-      row.vert.filter_pos = ctx->vert.filter_pos + y;
-      row.scaler_vert(&row, scratch, stride);
-      callback(user, scratch, ctx->out_width, y);
+      const uint32_t *pixels = source(source_user, y);
+      if (!pixels || ((uintptr_t)pixels & 3))
+         return false;
+      row.scaled.frame = (uint64_t*)((uint8_t*)ctx->scaled.frame
+            + (ptrdiff_t)y * ctx->scaled.stride);
+      row.scaler_horiz(&row, pixels, ctx->in_width * 4);
    }
+   scaler_ctx_deliver_rows(ctx, scratch, callback, user);
    return true;
 }
 

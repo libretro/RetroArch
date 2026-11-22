@@ -179,6 +179,20 @@ bool scaler_ctx_scale_rows(struct scaler_ctx *ctx, uint32_t *scratch,
       size_t scratch_bytes, const void *input,
       scaler_row_callback_t callback, void *user);
 
+/* Filter caller-produced ARGB rows without an intermediate source image.
+ * source is called once per input row, in order; each aligned row contains
+ * in_width pixels and stays valid until the next source call. The filter
+ * consumes it before requesting the next row.
+ * All input loans finish before output callbacks start; scratch may therefore
+ * also back source rows. NULL/misaligned source rows return false without any
+ * output callbacks (the internal workspace may have been partially written).
+ * Other restrictions match scale_rows; unscaled contexts are unsupported.
+ * Keep the context unchanged throughout both callbacks. */
+typedef const uint32_t *(*scaler_row_source_t)(void *user, unsigned y);
+bool scaler_ctx_scale_rows_from(struct scaler_ctx *ctx, uint32_t *scratch,
+      size_t scratch_bytes, scaler_row_source_t source, void *source_user,
+      scaler_row_callback_t callback, void *user);
+
 RETRO_END_DECLS
 
 #endif

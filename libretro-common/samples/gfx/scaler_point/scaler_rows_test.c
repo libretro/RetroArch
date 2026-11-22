@@ -36,10 +36,29 @@ static void check_row(void *user, const uint32_t *pixels, unsigned width, unsign
             width * sizeof(*pixels)));
 }
 
+struct source_check
+{
+   const uint8_t *input;
+   int stride;
+   unsigned width, count, fail;
+   struct row_check *output;
+};
+static const uint32_t *source_row(void *user, unsigned y)
+{
+   struct source_check *source = (struct source_check*)user;
+   assert(y == source->count++ && !source->output->count);
+   if (y == source->fail)
+      return NULL;
+   memcpy(scratch + 1, source->input + (ptrdiff_t)y * source->stride,
+         source->width * sizeof(uint32_t));
+   return scratch + 1;
+}
+
 static void one_case(const unsigned *size, enum scaler_type type, unsigned flip)
 {
    struct scaler_ctx ctx, before;
    struct row_check check;
+   struct source_check source;
    uint32_t *src = input, *dst = expected;
    unsigned i, calls;
    memset(&ctx, 0, sizeof(ctx));
@@ -96,6 +115,40 @@ static void one_case(const unsigned *size, enum scaler_type type, unsigned flip)
       assert(!scaler_ctx_scale_rows(&ctx, (uint32_t*)((uint8_t*)scratch + 1), sizeof(scratch) - 1, src, check_row, &check));
       assert(!check.count);
    }
+   memset(&source, 0, sizeof(source));
+   source.input = (const uint8_t*)src;
+   source.stride = ctx.in_stride;
+   source.width = ctx.in_width;
+   source.fail = (unsigned)-1;
+   source.output = &check;
+   check.count = 0;
+   if (ctx.unscaled)
+   {
+      assert(!scaler_ctx_scale_rows_from(&ctx, scratch + 1, sizeof(scratch) - 4,
+               source_row, &source, check_row, &check));
+      assert(!source.count && !check.count);
+   }
+   else
+   {
+      calls = allocations;
+      assert(scaler_ctx_scale_rows_from(&ctx, scratch + 1, sizeof(scratch) - 4,
+               source_row, &source, check_row, &check));
+      assert(source.count == (unsigned)ctx.in_height);
+      assert(check.count == (unsigned)ctx.out_height && calls == allocations);
+      assert(scratch[0] == 0x12345678u);
+      assert(scratch[(ctx.in_width > ctx.out_width ? ctx.in_width : ctx.out_width) + 1]
+            == 0x12345678u);
+      assert(!memcmp(&ctx, &before, sizeof(ctx)));
+      source.count = check.count = 0;
+      assert(!scaler_ctx_scale_rows_from(&ctx, scratch + 1, ctx.out_width * 4 - 1,
+               source_row, &source, check_row, &check));
+      assert(!source.count && !check.count);
+      source.fail = ctx.in_height / 2;
+      assert(!scaler_ctx_scale_rows_from(&ctx, scratch + 1, sizeof(scratch) - 4,
+               source_row, &source, check_row, &check));
+      assert(source.count == source.fail + 1 && !check.count);
+      assert(!memcmp(&ctx, &before, sizeof(ctx)) && calls == allocations);
+   }
    ctx.out_fmt = SCALER_FMT_RGB565;
    check.count = 0;
    assert(!scaler_ctx_scale_rows(&ctx, scratch + 1, sizeof(scratch) - 4, src, check_row, &check));
@@ -127,6 +180,6 @@ int main(void)
    assert(!scaler_ctx_scale_rows(&point, scratch + 1, sizeof(scratch) - 4, input, check_row, &check));
    assert(!check.count);
    scaler_ctx_gen_reset(&point);
-   puts("PASS: filtered row loans match whole-frame scaling, preserve context, borrow unscaled rows, reject invalid lends and allocate nothing");
+   puts("PASS: source/output row loans match whole-frame scaling, preserve context, borrow unscaled rows, reject invalid lends and allocate nothing");
    return 0;
 }

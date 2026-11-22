@@ -20,7 +20,7 @@ static void *thumbnail_filtered_malloc(size_t size)
 #undef calloc
 #undef malloc
 
-static uint32_t source[640 * 640], reference[600 * 600];
+static uint32_t source[2048 * 1152], reference[600 * 600];
 static uint16_t destination[600 * 600 + 2];
 
 static uint32_t *reference_box(const uint32_t *src,
@@ -118,7 +118,11 @@ int main(void)
       {640, 360, 320, 240, 320, 240},
       {640, 360, 600, 400, 600, 337},
       {640, 640, 160, 160, 160, 160},
-      {640, 360, 80, 60, 80, 45}
+      {640, 360, 80, 60, 80, 45},
+      {640, 360, 150, 100, 150, 84},
+      {640, 360, 70, 50, 70, 39},
+      {360, 640, 75, 100, 56, 100},
+      {2048, 1152, 600, 400, 600, 337}
    };
    rgui_t *rgui = (rgui_t*)calloc(1, sizeof(*rgui));
    unsigned mode, dither, test, i, filter;
@@ -152,8 +156,8 @@ int main(void)
                rgui_process_thumbnail(rgui, &thumb, &queue, filter, dither != 0, &image);
                tracking = 0;
                for (f = 1; image.width / (f * 2) >= width; f *= 2) {}
-               assert(box_allocations == (f > 1 && (image.width / f != width
-                        || image.height / f != height) ? 1u : 0u));
+               assert(box_allocations == (f > 1 && width > RGUI_MAX_FB_WIDTH
+                        && (image.width / f != width || image.height / f != height) ? 1u : 0u));
                if (!valid)
                {
                   assert(!thumb.is_valid && !image_allocations);
@@ -177,6 +181,6 @@ int main(void)
          }
       }
    free(rgui);
-   puts("PASS: bilinear/sinc native row loans match full-frame pixels on every platform/dither mode; oversized rows keep the fallback");
+   puts("PASS: bilinear/sinc source/output row loans match full-frame pixels on every platform/dither mode; oversized rows keep the fallback");
    return 0;
 }
