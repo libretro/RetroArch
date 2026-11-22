@@ -10029,7 +10029,7 @@ static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
    unsigned dims = VIDEO_SCALE_PACK(v->width, v->height);
 
    c->history_shared = !in_place && c->history_ring.count
-         == c->shader_preset->history_size + 1;
+         == (unsigned)c->shader_preset->history_size + 1;
    if (in_place)
    {
       if (c->history_ring.count)
