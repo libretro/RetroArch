@@ -278,6 +278,128 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
    }
 }
 
+/* One vertical output row over borrowed, potentially wrapped cache rows.
+ * Arithmetic and tap order match the contiguous frame path above. */
+void scaler_argb8888_vert_row(const struct scaler_ctx *ctx,
+      const uint64_t *const *rows, void *output_)
+{
+   int w, y;
+   uint32_t *output = (uint32_t*)output_;
+   const int16_t *filter_vert = ctx->vert.filter;
+#if defined(__SSE2__)
+   if (ctx->vert.filter_len == 2)
+   {
+      const uint64_t *r0 = rows[0], *r1 = rows[1];
+      const __m128i c0 = _mm_set1_epi16(filter_vert[0]);
+      const __m128i c1 = _mm_set1_epi16(filter_vert[1]);
+      for (w = 0; (w + 1) < ctx->out_width; w += 2)
+      {
+         __m128i a   = _mm_loadu_si128((const __m128i*)(r0 + w));
+         __m128i b   = _mm_loadu_si128((const __m128i*)(r1 + w));
+         __m128i res = _mm_adds_epi16(_mm_mulhi_epi16(a, c0),
+                                      _mm_mulhi_epi16(b, c1));
+
+         res         = _mm_srai_epi16(res, (7 - 2 - 2));
+
+         _mm_storel_epi64((__m128i*)(output + w),
+               _mm_packus_epi16(res, res));
+      }
+
+      for (; w < ctx->out_width; w++)
+      {
+         __m128i a   = _mm_loadl_epi64((const __m128i*)(r0 + w));
+         __m128i b   = _mm_loadl_epi64((const __m128i*)(r1 + w));
+         __m128i res = _mm_adds_epi16(_mm_mulhi_epi16(a, c0),
+                                      _mm_mulhi_epi16(b, c1));
+
+         res         = _mm_srai_epi16(res, (7 - 2 - 2));
+
+         output[w]   = _mm_cvtsi128_si32(_mm_packus_epi16(res, res));
+      }
+      return;
+   }
+#endif
+   {
+#if defined(__SSE2__)
+      __m128i coeffs[SCALER_MAX_HOISTED_PAIRS];
+      int pairs = ctx->vert.filter_len >> 1;
+      int p;
+
+      if (pairs > SCALER_MAX_HOISTED_PAIRS)
+         pairs = 0;
+
+      for (p = 0; p < pairs; p++)
+         coeffs[p] = scaler_coeff_pair(filter_vert + p * 2);
+#endif
+
+      for (w = 0; w < ctx->out_width; w++)
+      {
+#if defined(__SSE2__)
+         __m128i final;
+         __m128i res = _mm_setzero_si128();
+
+         for (p = 0, y = 0; (y + 1) < ctx->vert.filter_len; y += 2, p++)
+         {
+            __m128i coeff = (p < pairs)
+                  ? coeffs[p]
+                  : scaler_coeff_pair(filter_vert + y);
+            __m128i col   = _mm_set_epi64x(rows[y+1][w], rows[y][w]);
+
+            res           = _mm_adds_epi16(_mm_mulhi_epi16(col, coeff), res);
+         }
+
+         for (; y < ctx->vert.filter_len; y++)
+         {
+            __m128i coeff = _mm_set1_epi16(filter_vert[y]);
+            __m128i col   = _mm_set_epi64x(0, rows[y][w]);
+
+            res           = _mm_adds_epi16(_mm_mulhi_epi16(col, coeff), res);
+         }
+
+         res       = _mm_adds_epi16(_mm_srli_si128(res, 8), res);
+         res       = _mm_srai_epi16(res, (7 - 2 - 2));
+
+         final     = _mm_packus_epi16(res, res);
+
+         output[w] = _mm_cvtsi128_si32(final);
+#else
+         int16_t res_a = 0;
+         int16_t res_r = 0;
+         int16_t res_g = 0;
+         int16_t res_b = 0;
+
+         for (y = 0; y < ctx->vert.filter_len; y++)
+         {
+            uint64_t col   = rows[y][w];
+
+            int16_t a      = (col >> 48) & 0xffff;
+            int16_t r      = (col >> 32) & 0xffff;
+            int16_t g      = (col >> 16) & 0xffff;
+            int16_t b      = (col >>  0) & 0xffff;
+
+            int16_t coeff  = filter_vert[y];
+
+            res_a         += (a * coeff) >> 16;
+            res_r         += (r * coeff) >> 16;
+            res_g         += (g * coeff) >> 16;
+            res_b         += (b * coeff) >> 16;
+         }
+
+         res_a           >>= (7 - 2 - 2);
+         res_r           >>= (7 - 2 - 2);
+         res_g           >>= (7 - 2 - 2);
+         res_b           >>= (7 - 2 - 2);
+
+         output[w]         =
+            ((uint32_t)clamp_8bit(res_a) << 24) |
+            ((uint32_t)clamp_8bit(res_r) << 16) |
+            ((uint32_t)clamp_8bit(res_g) << 8)  |
+            ((uint32_t)clamp_8bit(res_b) << 0);
+#endif
+      }
+   }
+}
+
 /* Specialised horizontal pass for a 2-tap filter, i.e. bilinear.
  *
  * The same generality tax as the vertical pass, in three places.  The

@@ -5,10 +5,14 @@
 #include <gfx/scaler/scaler.h>
 
 static unsigned allocations;
+static size_t largest_allocation;
+static bool fail_frame;
 static unsigned successful_checks;
 static void *rows_malloc(size_t size)
 {
    allocations++;
+   if (size > largest_allocation) largest_allocation = size;
+   if (fail_frame) { fail_frame = false; return NULL; }
    return malloc(size);
 }
 #define malloc rows_malloc
@@ -42,11 +46,12 @@ struct source_check
    int stride;
    unsigned width, count, fail;
    struct row_check *output;
+   bool interleaved;
 };
 static const uint32_t *source_row(void *user, unsigned y)
 {
    struct source_check *source = (struct source_check*)user;
-   assert(y == source->count++ && !source->output->count);
+   assert(y == source->count++ && (source->interleaved || !source->output->count));
    if (y == source->fail)
       return NULL;
    memcpy(scratch + 1, source->input + (ptrdiff_t)y * source->stride,
@@ -149,6 +154,56 @@ static void one_case(const unsigned *size, enum scaler_type type, unsigned flip)
       assert(source.count == source.fail + 1 && !check.count);
       assert(!memcmp(&ctx, &before, sizeof(ctx)) && calls == allocations);
    }
+   {
+      struct scaler_ctx stream;
+      memset(&stream, 0, sizeof(stream));
+      stream.in_width = ctx.in_width; stream.in_height = ctx.in_height;
+      stream.out_width = ctx.out_width; stream.out_height = ctx.out_height;
+      stream.in_stride = ctx.in_stride; stream.out_stride = ctx.out_stride;
+      stream.in_fmt = stream.out_fmt = SCALER_FMT_ARGB8888;
+      stream.scaler_type = ctx.scaler_type;
+      largest_allocation = 0;
+      if (ctx.unscaled)
+         assert(!scaler_ctx_gen_filter_stream(&stream));
+      else
+      {
+         assert(scaler_ctx_gen_filter_stream(&stream));
+         assert(stream.streaming && stream.scaled.height == stream.vert.filter_len);
+         assert(largest_allocation == (size_t)stream.scaled.stride * stream.vert.filter_len
+               + SCALER_ARENA_SLACK);
+         before = stream;
+         scaler_ctx_scale(&stream, scratch + 1, src); /* Inert for streaming contexts. */
+         source.count = check.count = 0;
+         source.fail = (unsigned)-1;
+         source.interleaved = true;
+         check.borrowed = false;
+         calls = allocations;
+         assert(scaler_ctx_scale_stream_rows(&stream, scratch + 1, sizeof(scratch) - 4,
+                  source_row, &source, check_row, &check));
+         assert(check.count == (unsigned)stream.out_height && calls == allocations);
+         assert(source.count <= (unsigned)stream.in_height && source.count > 0);
+         assert(!memcmp(&stream, &before, sizeof(stream)));
+         source.count = check.count = 0;
+         assert(!scaler_ctx_scale_rows(&stream, scratch + 1, sizeof(scratch) - 4,
+                  src, check_row, &check));
+         assert(!scaler_ctx_scale_rows_from(&stream, scratch + 1, sizeof(scratch) - 4,
+                  source_row, &source, check_row, &check));
+         assert(!scaler_ctx_scale_stream_rows(&stream, scratch + 1, stream.out_width * 4 - 1,
+                  source_row, &source, check_row, &check));
+         assert(!source.count && !check.count);
+         source.fail = stream.in_height / 2;
+         assert(!scaler_ctx_scale_stream_rows(&stream, scratch + 1, sizeof(scratch) - 4,
+                  source_row, &source, check_row, &check));
+         assert(source.count == source.fail + 1 && calls == allocations);
+         assert(!memcmp(&stream, &before, sizeof(stream)));
+         scaler_ctx_gen_reset(&stream);
+         fail_frame = true;
+         assert(!scaler_ctx_gen_filter_stream(&stream));
+         assert(!stream.streaming && !stream.frame_arena && !stream.filter_arena
+               && !stream.scaler_horiz && !stream.scaler_vert);
+      }
+      scaler_ctx_gen_reset(&stream);
+   }
    ctx.out_fmt = SCALER_FMT_RGB565;
    check.count = 0;
    assert(!scaler_ctx_scale_rows(&ctx, scratch + 1, sizeof(scratch) - 4, src, check_row, &check));
@@ -180,6 +235,12 @@ int main(void)
    assert(!scaler_ctx_scale_rows(&point, scratch + 1, sizeof(scratch) - 4, input, check_row, &check));
    assert(!check.count);
    scaler_ctx_gen_reset(&point);
-   puts("PASS: source/output row loans match whole-frame scaling, preserve context, borrow unscaled rows, reject invalid lends and allocate nothing");
+   point.in_width = point.in_height = 256;
+   point.out_width = point.out_height = 8;
+   point.scaler_type = SCALER_TYPE_SINC;
+   assert(!scaler_ctx_gen_filter_stream(&point));
+   assert(!point.streaming && !point.frame_arena && !point.filter_arena);
+   scaler_ctx_gen_reset(&point);
+   puts("PASS: bounded streaming and source/output row loans match whole-frame scaling, preserve context, borrow unscaled rows, reject invalid lends and allocate nothing");
    return 0;
 }

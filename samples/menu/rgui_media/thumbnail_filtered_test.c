@@ -1,8 +1,10 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <gfx/scaler/scaler.h>
 
 static unsigned image_allocations, box_allocations;
+static unsigned stream_contexts, full_contexts;
 static int tracking;
 static void *thumbnail_filtered_calloc(size_t count, size_t size)
 {
@@ -14,11 +16,25 @@ static void *thumbnail_filtered_malloc(size_t size)
    if (tracking) box_allocations++;
    return malloc(size);
 }
+static bool filtered_gen_stream(struct scaler_ctx *ctx)
+{
+   if (tracking) stream_contexts++;
+   return scaler_ctx_gen_filter_stream(ctx);
+}
+static bool filtered_gen_full(struct scaler_ctx *ctx)
+{
+   if (tracking) full_contexts++;
+   return scaler_ctx_gen_filter(ctx);
+}
+#define scaler_ctx_gen_filter_stream filtered_gen_stream
+#define scaler_ctx_gen_filter filtered_gen_full
 #define calloc thumbnail_filtered_calloc
 #define malloc thumbnail_filtered_malloc
 #include "../../../menu/drivers/rgui.c"
 #undef calloc
 #undef malloc
+#undef scaler_ctx_gen_filter_stream
+#undef scaler_ctx_gen_filter
 
 static uint32_t source[2048 * 1152], reference[600 * 600];
 static uint16_t destination[600 * 600 + 2];
@@ -152,7 +168,8 @@ int main(void)
                memset(destination, 0xa5, sizeof(destination));
                rgui->savestate_thumbnail_file_path[0] = test == 6 ? 's' : '\0';
                rgui->flags = 0;
-               image_allocations = box_allocations = 0; tracking = 1;
+               image_allocations = box_allocations = 0;
+               stream_contexts = full_contexts = 0; tracking = 1;
                rgui_process_thumbnail(rgui, &thumb, &queue, filter, dither != 0, &image);
                tracking = 0;
                for (f = 1; image.width / (f * 2) >= width; f *= 2) {}
@@ -163,6 +180,14 @@ int main(void)
                   assert(!thumb.is_valid && !image_allocations);
                   continue;
                }
+               if ((image.width != width || image.height != height) &&
+                     !(f > 1 && image.width / f == width && image.height / f == height))
+               {
+                  assert(stream_contexts == (width <= RGUI_MAX_FB_WIDTH ? 1u : 0u));
+                  assert(full_contexts == (width > RGUI_MAX_FB_WIDTH ? 1u : 0u));
+               }
+               else
+                  assert(!stream_contexts && !full_contexts);
                assert(thumb.is_valid && VIDEO_SCALE_W(thumb.dims) == width
                      && VIDEO_SCALE_H(thumb.dims) == height);
                assert(image_allocations == (width > RGUI_MAX_FB_WIDTH ? 1u : 0u));

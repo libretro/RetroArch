@@ -2877,6 +2877,8 @@ static const uint32_t *rgui_thumbnail_box_row(void *user, unsigned y)
 {
    struct rgui_thumbnail_box_rows *box = (struct rgui_thumbnail_box_rows*)user;
    unsigned sw = VIDEO_SCALE_W(box->dims);
+   if (box->factor == 1)
+      return box->src + (size_t)y * sw;
    rgui_downscale_box_to(box->src + (size_t)y * box->factor * sw,
          VIDEO_SCALE_PACK(sw, box->factor), box->factor, box->row, NULL, false);
    return box->row;
@@ -3059,7 +3061,9 @@ static bool rgui_downscale_thumbnail(
        * calls it - but do it anyway in case the
        * scaler_ctx_gen_filter() internals ever change... */
       scaler_ctx_gen_reset(&rgui->image_scaler);
-      if (!scaler_ctx_gen_filter(&rgui->image_scaler))
+      if (!(image_dst->width <= RGUI_MAX_FB_WIDTH &&
+            scaler_ctx_gen_filter_stream(&rgui->image_scaler)) &&
+          !scaler_ctx_gen_filter(&rgui->image_scaler))
       {
          /* Could be leftovers if scaler_ctx_gen_filter()
           * fails, so reset just in case... */
@@ -3070,7 +3074,20 @@ static bool rgui_downscale_thumbnail(
 
       output.pixels = native_pixels;
       output.dither = dither;
-      native_done = box_rows
+      if (rgui->image_scaler.streaming)
+      {
+         if (!box_rows)
+         {
+            box.src = scale_src;
+            box.dims = VIDEO_SCALE_PACK(scale_width, scale_height);
+            box.factor = 1;
+            box.row = rgui->image_scaler_row;
+         }
+         native_done = scaler_ctx_scale_stream_rows(&rgui->image_scaler,
+               rgui->image_scaler_row, sizeof(rgui->image_scaler_row),
+               rgui_thumbnail_box_row, &box, rgui_thumbnail_native_row, &output);
+      }
+      else native_done = box_rows
          ? scaler_ctx_scale_rows_from(&rgui->image_scaler, rgui->image_scaler_row,
                sizeof(rgui->image_scaler_row), rgui_thumbnail_box_row, &box,
                rgui_thumbnail_native_row, &output)
@@ -3080,6 +3097,11 @@ static bool rgui_downscale_thumbnail(
       if (!native_done)
       {
          /* Retain the full-frame fallback if a row-fed context is unsupported. */
+         if (rgui->image_scaler.streaming && !scaler_ctx_gen_filter(&rgui->image_scaler))
+         {
+            free(box_buf);
+            return false;
+         }
          if (box_rows)
          {
             unsigned box_dims;
