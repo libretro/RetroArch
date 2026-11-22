@@ -97,6 +97,11 @@ jobs:
              make -C samples/gfx/$t -j"$jobs" check SANITIZER=address,undefined
           done
 
+      - name: Deterministic SNES setup and measured reference differences
+        run: |
+          make -C samples/gfx/filter_golden check-fixed
+          make -B -C samples/gfx/filter_golden check-fixed SANITIZER=address,undefined
+
       - name: Recorded SNES kernels with an FMA-enabled compiler target
         env:
           ASAN_OPTIONS: detect_leaks=1

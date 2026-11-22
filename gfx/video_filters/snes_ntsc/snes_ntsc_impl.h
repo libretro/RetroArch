@@ -4,7 +4,9 @@
 
 /* Common implementation of NTSC filters */
 
+#ifdef SNES_NTSC_REFERENCE_FLOAT
 #include <math.h>
+#endif
 
 /* Copyright (C) 2006 Shay Green. This module is free software; you
 can redistribute it and/or modify it under the terms of the GNU Lesser
@@ -49,6 +51,8 @@ enum { burst_size  = snes_ntsc_entry_size / burst_count };
 enum { kernel_half = 16 };
 enum { kernel_size = kernel_half * 2 + 1 };
 
+#ifdef SNES_NTSC_REFERENCE_FLOAT
+typedef float snes_ntsc_scalar_t;
 typedef struct init_t
 {
 	float to_rgb [burst_count * 6];
@@ -374,7 +378,12 @@ static void gen_kernel( init_t* impl, float y, float i, float q, snes_ntsc_rgb_t
 	while ( --burst_remain );
 }
 
-static void correct_errors( snes_ntsc_rgb_t color, snes_ntsc_rgb_t* out );
+#else
+#undef rgb_offset
+#include "snes_ntsc_fixed_impl.h"
+#endif
+
+static void correct_errors( snes_ntsc_build_rgb_t color, snes_ntsc_build_rgb_t* out );
 
 #if DISABLE_CORRECTION
 	#define CORRECT_ERROR( a ) { out [i] += rgb_bias; }
@@ -382,7 +391,7 @@ static void correct_errors( snes_ntsc_rgb_t color, snes_ntsc_rgb_t* out );
 #else
 	#define CORRECT_ERROR( a ) { out [a] += error; }
 	#define DISTRIBUTE_ERROR( a, b, c ) {\
-		snes_ntsc_rgb_t fourth = (error + 2 * snes_ntsc_rgb_builder) >> 2;\
+		snes_ntsc_build_rgb_t fourth = (error + 2 * snes_ntsc_rgb_builder) >> 2;\
 		fourth &= (rgb_bias >> 1) - snes_ntsc_rgb_builder;\
 		fourth -= rgb_bias >> 2;\
 		out [a] += fourth;\

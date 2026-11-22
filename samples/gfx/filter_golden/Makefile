@@ -71,9 +71,20 @@ check-fma: fp_contract_probe_test
 	if [ $$status -eq 77 ]; then \
 		echo "skip: FMA compiler target needs an FMA-capable x86 host"; \
 	elif [ $$status -ne 0 ]; then exit $$status; \
-	else $(MAKE) -B CC="$(CC) -mfma" $(addprefix run_,$(FMA_TARGETS)); fi
+	else $(MAKE) -B GOLDEN_FP_FLAGS=-ffp-contract=fast CC="$(CC) -mfma" $(addprefix run_,$(FMA_TARGETS)); fi
 
 clean:
-	rm -f $(TARGETS) fp_contract_probe_test
+	rm -f $(TARGETS) fp_contract_probe_test snes_fixed_math_test snes_fixed_math_portable_test
 
 .PHONY: all check check-fma clean $(RUNS)
+
+# Native and limb arithmetic, both checked against an independent 128-bit oracle.
+snes_fixed_math_test: snes_fixed_math_test.c $(SNES_NTSC)
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+snes_fixed_math_portable_test: snes_fixed_math_test.c $(SNES_NTSC)
+	$(CC) $(CFLAGS) -DSNES_NTSC_FIXED_PORTABLE -o $@ $< $(LDFLAGS)
+check-fixed: snes_fixed_math_test snes_fixed_math_portable_test
+	$(RUNNER) ./snes_fixed_math_test
+	$(RUNNER) ./snes_fixed_math_portable_test
+	CC="$(CC)" RUNNER="$(RUNNER)" COMPARE_CFLAGS="$(CFLAGS)" python3 snes_fixed_compare.py
+.PHONY: check-fixed
