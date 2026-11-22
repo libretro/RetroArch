@@ -503,8 +503,10 @@ ifeq ($(HAVE_AUDIOMIXER), 1)
           $(LIBRETRO_COMM_DIR)/audio/audio_mix.o \
           $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o
    ifeq ($(HAVE_MENU), 1)
-      OBJ += gfx/gfx_music_visualizer.o gfx/gfx_music_player.o \
-             $(LIBRETRO_COMM_DIR)/audio/dsp_filters/fft/fft.o
+      OBJ += gfx/gfx_music_visualizer.o gfx/gfx_music_player.o
+      ifneq ($(HAVE_STATIC_AUDIO_FILTERS), 1)
+         OBJ += $(LIBRETRO_COMM_DIR)/audio/dsp_filters/fft/fft.o
+      endif
    endif
 endif
 

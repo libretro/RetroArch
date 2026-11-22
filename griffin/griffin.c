@@ -1522,7 +1522,10 @@ DYNAMIC
 CORES
 ============================================================ */
 #if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+#if !defined(HAVE_FILTERS_BUILTIN) || !defined(HAVE_DSP_FILTER)
+/* The built-in equalizer already includes the FFT implementation. */
 #include "../libretro-common/audio/dsp_filters/fft/fft.c"
+#endif
 #include "../gfx/gfx_music_visualizer.c"
 #include "../gfx/gfx_music_player.c"
 #endif
