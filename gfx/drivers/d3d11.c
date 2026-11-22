@@ -81,6 +81,7 @@
 #include "../common/d3d11_deferred_proxy.h"
 #include "../common/d3d11_hw_interface.h"
 #include "../common/d3d11_turns.h"
+#include "../video_thread_hw_fence.h"
 /* slang_process.h is self-contained - it only defines types and
  * constants used by pass state.  The actual slang_process() call
  * sites remain guarded with HAVE_SLANG and a compiler that prints
@@ -11051,7 +11052,8 @@ static bool d3d11_hw_ring_present_slot(void *data, unsigned slot)
 /* No GPU fence is needed: every use of the core's texture is ordered by
  * the immediate context, which is the only place anything executes.
  * What the ring waits for is the video thread having replayed a slot,
- * a CPU event. Fences here are Win32 auto-reset events. */
+ * which the ring's own hand-over already says: the fences are
+ * hw_fence_issued_*. */
 /* Video thread, version 3: the frame reads the core's own texture. The
  * wrapper holds a reference to it for as long as the slot does; this
  * takes the frame's own, under the lock, as present_slot does for
@@ -11076,41 +11078,6 @@ static bool d3d11_hw_ring_install(void *data, const void *image,
    d3d11->hw_direct.eligible     = true;
    d3d11_turns_frontend_leave(&d3d11->hw_v2.lock);
    return true;
-}
-
-static bool d3d11_hw_ring_fence_new(void *data, void **fence)
-{
-   HANDLE ev;
-   (void)data;
-   if (!fence)
-      return false;
-   if (!(ev = CreateEvent(NULL, FALSE, FALSE, NULL)))
-      return false;
-   *fence = (void*)ev;
-   return true;
-}
-
-static void d3d11_hw_ring_fence_free(void *data, void *fence)
-{
-   (void)data;
-   if (fence)
-      CloseHandle((HANDLE)fence);
-}
-
-static void d3d11_hw_ring_fence_signal(void *data, void *fence)
-{
-   (void)data;
-   if (fence)
-      SetEvent((HANDLE)fence);
-}
-
-static bool d3d11_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
-{
-   (void)data;
-   if (!fence)
-      return true;
-   return WaitForSingleObject((HANDLE)fence, timeout_us == HW_RING_WAIT_FOREVER
-         ? INFINITE : (timeout_us + 999) / 1000) == WAIT_OBJECT_0;
 }
 
 static void d3d11_hw_ring_free(d3d11_video_t *d3d11)
@@ -11368,10 +11335,10 @@ static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_present_last,
    d3d11_get_last_present_time,
    d3d11_hw_ring_install, /* version 3 frames: the core's own texture */
-   d3d11_hw_ring_fence_new,
-   d3d11_hw_ring_fence_free,
-   d3d11_hw_ring_fence_signal,
-   d3d11_hw_ring_fence_wait,
+   hw_fence_issued_new,
+   hw_fence_issued_free,
+   hw_fence_issued_signal,
+   hw_fence_issued_wait,
    d3d11_hw_ring_capture,
    d3d11_hw_ring_present_slot,
    d3d11_hw_ring_context_new,

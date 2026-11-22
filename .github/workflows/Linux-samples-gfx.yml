@@ -2754,8 +2754,10 @@ jobs:
         run: |
           set -o pipefail
           # A core that locks and unlocks the context in a tight loop
-          # gives way to a frontend waiting for it, parked on an event
-          # rather than spinning; a core that does not must be caught.
+          # gives way to a frontend waiting for it, parked on an
+          # eventcount rather than spinning, and a wake left over from a
+          # frontend nobody was parked for does not let it skip the
+          # next one; a core that does not give way must be caught.
           samples/gfx/d3d11_turns/run.sh
 
       - name: libretro_d3d12.h version 2, the contract run (mingw + Wine + vkd3d, headless)

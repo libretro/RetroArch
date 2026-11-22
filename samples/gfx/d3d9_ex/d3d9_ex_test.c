@@ -801,10 +801,10 @@ static void ring_run(HWND w, bool ex, bool dupe)
       return;
    d3d.hw.enable = true;
    poke.hw_ring_install = d3d9_hlsl_hw_ring_install;
-   poke.hw_ring_fence_new = d3d9_hlsl_hw_ring_fence_new;
-   poke.hw_ring_fence_free = d3d9_hlsl_hw_ring_fence_free;
-   poke.hw_ring_fence_signal = d3d9_hlsl_hw_ring_fence_signal;
-   poke.hw_ring_fence_wait = d3d9_hlsl_hw_ring_fence_wait;
+   poke.hw_ring_fence_new = hw_fence_issued_new;
+   poke.hw_ring_fence_free = hw_fence_issued_free;
+   poke.hw_ring_fence_signal = hw_fence_issued_signal;
+   poke.hw_ring_fence_wait = hw_fence_issued_wait;
    thr.poke = &poke;
    thr.driver_data = &d3d;
    if (!retro_eventcount_init(&thr.frame.ring) || !hw_ring_setup(&thr, &ring))

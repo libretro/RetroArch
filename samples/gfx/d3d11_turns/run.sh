@@ -1,6 +1,7 @@
 #!/bin/sh
 # Builds d3d11_turns_test with mingw-w64 and runs it under Wine. No
-# D3D11 device is needed: the turns are a critical section and an event.
+# D3D11 device is needed: the turns are a critical section and an
+# eventcount.
 #
 # Two runs: the turns as the driver takes them must pass, and a core
 # that does not give way must FAIL, or the test no longer tells them
@@ -14,9 +15,17 @@ CC=${CC:-x86_64-w64-mingw32-gcc}
 WINE=${WINE:-$(command -v wine64 || command -v wine)}
 export WINEDEBUG=${WINEDEBUG:--all}
 
-flags="-O1 -Wall -Wextra -Werror -std=c89 -pedantic -Wno-long-long -I $root/libretro-common/include"
-"$CC" $flags -o d3d11_turns_test.exe d3d11_turns_test.c
-"$CC" $flags -DD3D11_TURNS_TEST_UNFAIR -o d3d11_turns_unfair_test.exe d3d11_turns_test.c
+lc=$root/libretro-common
+inc="-DHAVE_THREADS -I $lc/include"
+# The eventcount and what it falls back on, built as the tree builds them
+for src in rthreads/retro_eventcount rthreads/rthreads compat/compat_strl; do
+   "$CC" -O1 -Wall -Werror=implicit-function-declaration $inc \
+      -c "$lc/$src.c" -o "$(basename $src).o"
+done
+objs="retro_eventcount.o rthreads.o compat_strl.o"
+flags="-O1 -Wall -Wextra -Werror -std=c89 -pedantic -Wno-long-long $inc"
+"$CC" $flags -o d3d11_turns_test.exe d3d11_turns_test.c $objs
+"$CC" $flags -DD3D11_TURNS_TEST_UNFAIR -o d3d11_turns_unfair_test.exe d3d11_turns_test.c $objs
 
 # A run with the core rarely beside the frontend tells nothing either
 # way (INCONCLUSIVE): run again, a few times.
@@ -60,4 +69,4 @@ if [ $caught -eq 0 ]; then
    echo "FAIL: it passed; the test no longer sees a frontend kept waiting"; exit 1
 fi
 echo "   fails, as it should"
-rm -f d3d11_turns_test.exe d3d11_turns_unfair_test.exe
+rm -f d3d11_turns_test.exe d3d11_turns_unfair_test.exe $objs

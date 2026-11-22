@@ -54,6 +54,7 @@
 #include "../common/d3d9_common.h"
 
 #include "../video_driver.h"
+#include "../video_thread_hw_fence.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -7460,42 +7461,6 @@ static bool d3d9_hlsl_hw_ring_install(void *data, const void *image,
    return true;
 }
 
-/* One device, one command stream: a frame issued is a frame done */
-static bool d3d9_hlsl_hw_ring_fence_new(void *data, void **fence)
-{
-   HANDLE ev;
-   (void)data;
-   if (!fence || !(ev = CreateEvent(NULL, FALSE, FALSE, NULL)))
-      return false;
-   *fence = (void*)ev;
-   return true;
-}
-
-static void d3d9_hlsl_hw_ring_fence_free(void *data, void *fence)
-{
-   (void)data;
-   if (fence)
-      CloseHandle((HANDLE)fence);
-}
-
-static void d3d9_hlsl_hw_ring_fence_signal(void *data, void *fence)
-{
-   (void)data;
-   if (fence)
-      SetEvent((HANDLE)fence);
-}
-
-static bool d3d9_hlsl_hw_ring_fence_wait(void *data, void *fence,
-      unsigned timeout_us)
-{
-   (void)data;
-   if (!fence)
-      return true;
-   return WaitForSingleObject((HANDLE)fence,
-         timeout_us == HW_RING_WAIT_FOREVER
-         ? INFINITE : (timeout_us + 999) / 1000) == WAIT_OBJECT_0;
-}
-
 static void d3d9_hlsl_hw_init(d3d9_video_t *d3d, const video_info_t *info)
 {
    d3d->hw.shared                    = false;
@@ -9773,10 +9738,10 @@ static const video_poke_interface_t d3d9_hlsl_poke_interface = {
    d3d9_hlsl_get_last_present_time,
 #ifdef D3D9_HW_RENDER
    d3d9_hlsl_hw_ring_install,
-   d3d9_hlsl_hw_ring_fence_new,
-   d3d9_hlsl_hw_ring_fence_free,
-   d3d9_hlsl_hw_ring_fence_signal,
-   d3d9_hlsl_hw_ring_fence_wait,
+   hw_fence_issued_new, /* one device, one command stream */
+   hw_fence_issued_free,
+   hw_fence_issued_signal,
+   hw_fence_issued_wait,
 #else
    NULL, /* hw_ring_install */
    NULL, /* hw_ring_fence_new */

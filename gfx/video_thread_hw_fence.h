@@ -74,6 +74,43 @@ typedef struct hw_fence
 typedef void (*hw_fence_signal_fn)(void *data, void *fence);
 typedef bool (*hw_fence_wait_fn)(void *data, void *fence, unsigned timeout_us);
 
+/* The fence of a driver with one device and one command stream, where a
+ * frame the video thread has issued is a frame done as far as the core
+ * is concerned (Direct3D 9, Direct3D 11). hw_fence_arm publishes the
+ * cell after the frame call has returned, so the exchange that hands it
+ * over is the whole signal and there is nothing left to wait: no object
+ * behind the cell, no system call on either side. The cell holds any
+ * value but NULL. */
+static INLINE bool hw_fence_issued_new(void *data, void **fence)
+{
+   (void)data;
+   if (!fence)
+      return false;
+   *fence = (void*)fence;
+   return true;
+}
+
+static INLINE void hw_fence_issued_free(void *data, void *fence)
+{
+   (void)data;
+   (void)fence;
+}
+
+static INLINE void hw_fence_issued_signal(void *data, void *fence)
+{
+   (void)data;
+   (void)fence;
+}
+
+static INLINE bool hw_fence_issued_wait(void *data, void *fence,
+      unsigned timeout_us)
+{
+   (void)data;
+   (void)fence;
+   (void)timeout_us;
+   return true;
+}
+
 static INLINE void hw_fence_init(hw_fence_t *f)
 {
    unsigned i;
