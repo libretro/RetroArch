@@ -646,7 +646,6 @@ struct menu_state
 
 #ifdef HAVE_MENU
    char input_dialog_kb_label_setting[256];
-   char input_dialog_kb_label[256];
 
    /* The on-screen keyboard, which is the menu's widget: what its keys
     * show, where its cursor is, and which page of keys is up. What it

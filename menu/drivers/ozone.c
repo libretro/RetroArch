@@ -13770,7 +13770,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
 
       if (draw_osk)
       {
-         const char *label           = menu_st->input_dialog_kb_label;
+         const char *label           = input_driver_text_entry_label();
          const char *str             = menu_input_dialog_get_buffer();
 
          ozone_draw_osk(ozone,

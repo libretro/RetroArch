@@ -5907,7 +5907,7 @@ RGUI_NOINLINE static void rgui_render_osk(
    int osk_ptr                    = menu_st->osk_ptr;
    char **osk_grid                = menu_st->osk_grid;
    const char *input_str          = menu_input_dialog_get_buffer();
-   const char *input_label        = menu_st->input_dialog_kb_label;
+   const char *input_label        = input_driver_text_entry_label();
    /* A system keyboard panel is up and owns text entry: draw the
     * label and the entry field, but not a second set of keys on top
     * of it. The grid is not iterated in that state either, so

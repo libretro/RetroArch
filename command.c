@@ -1468,8 +1468,8 @@ static char *command_menu_answer(bool has_from, unsigned from,
     * second a confirms - "Press again to quit" */
    if (menu_input_dialog_get_display_kb())
    {
-      char label[sizeof(menu_st->input_dialog_kb_label)];
-      strlcpy(label, menu_st->input_dialog_kb_label, sizeof(label));
+      char label[256];
+      strlcpy(label, input_driver_text_entry_label(), sizeof(label));
       command_menu_clean(label);
       _len += (size_t)snprintf(out + _len, size - _len, "KEYBOARD %s\n",
             label);

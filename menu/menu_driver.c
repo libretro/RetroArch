@@ -4842,12 +4842,6 @@ bool menu_driver_alive(void)
    return (menu_driver_state.flags & MENU_ST_FLAG_ALIVE) != 0;
 }
 
-/* The label of the text entry that is open. */
-const char *menu_input_dialog_get_kb_label(void)
-{
-   return menu_driver_state.input_dialog_kb_label;
-}
-
 const char *menu_input_dialog_get_buffer(void)
 {
    struct menu_state    *menu_st  = &menu_driver_state;
@@ -4886,7 +4880,6 @@ void menu_input_dialog_end(void)
    menu_st->input_dialog_kb_idx               = 0;
    menu_st->input_dialog_kb_text_type         = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    menu_st->flags                            &= ~MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
-   menu_st->input_dialog_kb_label[0]          = '\0';
    menu_st->input_dialog_kb_label_setting[0]  = '\0';
 
    /* Avoid triggering states on pressing return. */
@@ -5610,7 +5603,7 @@ bool menu_input_dialog_get_display_kb(void)
       swkbdConfigMakePresetDefault(&kbd);
 
       swkbdConfigSetGuideText(&kbd,
-            menu_st->input_dialog_kb_label);
+            input_driver_text_entry_label());
 
       rc = swkbdShow(&kbd, buf, sizeof(buf));
 
@@ -9754,10 +9747,6 @@ bool menu_input_dialog_start_search(void)
 #endif
    menu_st->flags                         |= MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
    menu_st->input_dialog_kb_text_type      = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
-   strlcpy(menu_st->input_dialog_kb_label,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
-         sizeof(menu_st->input_dialog_kb_label));
-
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
@@ -9826,11 +9815,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 #endif
    menu_st->flags |= MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
 
-   /* Only copy over the menu label and setting if they exist. */
-   if (line->label)
-      strlcpy(menu_st->input_dialog_kb_label,
-            line->label,
-            sizeof(menu_st->input_dialog_kb_label));
+   /* The label is kept by input_driver_text_entry_open() below. */
    if (line->label_setting)
       strlcpy(menu_st->input_dialog_kb_label_setting,
             line->label_setting,

@@ -10083,7 +10083,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (input_dialog_display_kb)
    {
       const char *str             = menu_input_dialog_get_buffer();
-      const char *label           = menu_st->input_dialog_kb_label;
+      const char *label           = input_driver_text_entry_label();
       /* Unchanged since it was last wrapped: drawn from there */
       if (     xmb->box_wrap.len
             && menu_input_dialog_text_is(xmb->box_wrap.text,

@@ -9006,7 +9006,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       char msg[MENU_LABEL_MAX_LENGTH];
       const char *text;
       const char *str                = menu_input_dialog_get_buffer();
-      const char *label              = menu_st->input_dialog_kb_label;
+      const char *label              = input_driver_text_entry_label();
 
       /* Darken screen */
       gfx_display_set_alpha(
