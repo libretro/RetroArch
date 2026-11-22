@@ -94,6 +94,7 @@ class QFileSystemModel;
 class QListWidgetItem;
 class QTableWidgetItem;
 class QTreeWidgetItem;
+struct file_list;
 class QResizeEvent;
 class QDockWidget;
 class QComboBox;
@@ -593,7 +594,7 @@ public slots:
    void onCoreUpdaterTableContextMenuRequested(const QPoint &pos);
    void onCoreUpdaterListPoll();
    void onUpdaterListingFinished(QStringList entries, int type, QString path);
-   void onUpdaterDownloadFinished(QString fileName, bool success, QString refreshPath);
+   void onUpdaterDownloadFinished(QString fileName, bool success, bool refresh);
    void onUpdaterBackClicked();
    void onUpdaterUpClicked();
    void onUpdaterTopClicked();
@@ -766,6 +767,8 @@ private:
    QTreeWidget *m_updaterDirectoryTree;
    QTimer *m_coreUpdaterPollTimer;
    int m_coreUpdaterPollAttempts;
+   /* the menu's Online Updater list the buttons were made from */
+   struct file_list *m_updaterList = NULL;
    bool m_pendingRun;
    /* Sidebar (four thumbnail widgets) and file-browser preview: the
     * path each widget is waiting on from the model's engine. */

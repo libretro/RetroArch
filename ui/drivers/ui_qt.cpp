@@ -2510,6 +2510,9 @@ MainWindow::~MainWindow()
 #endif
    if (m_playlistSearchCancel)
       m_playlistSearchCancel->storeRelease(1);
+#ifdef QT_ONLINE_UPDATER
+   file_list_free(m_updaterList);
+#endif
 }
 
 void MainWindow::startTimer()
@@ -2971,13 +2974,11 @@ void MainWindow::onFileBrowserTableContextMenuRequested(const QPoint &pos)
       /* Re-enumerate the current directory; reload() alone only rebuilds
        * the model from the existing core-side listing. */
       {
+         /* browse_open copies the folder before replacing anything */
          companion_core_t *core = ui_companion_qt_core();
          const char *browseDir = companion_core_browse_dir(core);
          if (browseDir && *browseDir)
-         {
-            QByteArray browsePath(browseDir);
-            companion_core_browse_open(core, browsePath.constData());
-         }
+            companion_core_browse_open(core, browseDir);
       }
    }
 }
@@ -4385,7 +4386,7 @@ struct QtUpdaterDownloadData
 {
    QPointer<MainWindow> window;
    QString fileName;
-   QString outputPath;
+   QByteArray outputPath; /* UTF-8, as the tasks take it */
    bool autoExtract;
    bool refreshFileBrowser;
 };
@@ -4432,33 +4433,45 @@ static void qt_updater_listing_callback(retro_task_t *task,
    if (listing && data && !err && data->status >= 200
          && data->status < 300 && data->data && data->len)
    {
-      QString text = QString::fromUtf8(data->data, (int)data->len);
-      QStringList lines = text.split(QLatin1Char('\n'));
-      for (int i = 0; i < lines.size(); i++)
+      /* Read in place from the body: only an accepted line becomes a
+       * string. Buildbot .index-dirs entries may end in a slash; keep
+       * relative paths, reject traversal and absolute paths. */
+      const char *p   = data->data;
+      const char *end = p + data->len;
+      while (p < end)
       {
-         QString line = lines.at(i).trimmed();
-         /* Buildbot .index-dirs entries may have a trailing slash.
-          * Keep valid relative paths, but reject traversal and absolute paths. */
-         while (line.endsWith(QLatin1Char('/')))
-            line.chop(1);
-         if (line.isEmpty() || line == QStringLiteral(".")
-               || line == QStringLiteral("..")
-               || line.startsWith(QLatin1Char('/'))
-               || line.contains(QLatin1Char('\\')))
+         const char *nl = (const char*)memchr(p, '\n', (size_t)(end - p));
+         const char *b  = p;
+         const char *e  = nl ? nl : end;
+         const char *c;
+         bool safe      = true;
+         p              = nl ? nl + 1 : end;
+         while (b < e && ISSPACE((unsigned char)*b))
+            b++;
+         while (e > b && ISSPACE((unsigned char)e[-1]))
+            e--;
+         while (e > b && e[-1] == '/')
+            e--;
+         if (     e == b || *b == '/'
+               || memchr(b, '\\', (size_t)(e - b)))
             continue;
-         QStringList parts = line.split(QLatin1Char('/'));
-         bool safe = true;
-         for (int j = 0; j < parts.size(); j++)
+         for (c = b; ; )
          {
-            if (parts.at(j).isEmpty() || parts.at(j) == QStringLiteral(".")
-                  || parts.at(j) == QStringLiteral(".."))
+            const char *slash = (const char*)memchr(c, '/', (size_t)(e - c));
+            size_t      n     = (size_t)((slash ? slash : e) - c);
+            if (     n == 0
+                  || (n == 1 && c[0] == '.')
+                  || (n == 2 && c[0] == '.' && c[1] == '.'))
             {
                safe = false;
                break;
             }
+            if (!slash)
+               break;
+            c = slash + 1;
          }
          if (safe)
-            entries.append(line);
+            entries.append(QString::fromUtf8(b, (int)(e - b)));
       }
    }
    if (listing && listing->window)
@@ -4507,7 +4520,6 @@ static void qt_updater_decompress_callback(retro_task_t *task,
    decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
    QtUpdaterDownloadData *download = (QtUpdaterDownloadData*)user_data;
    bool success = dec && !err;
-   QString refreshPath;
 
    /* Match the internal menu's cb_decompressed(): remove the downloaded
     * archive after extraction has finished, then release task data. */
@@ -4520,14 +4532,11 @@ static void qt_updater_decompress_callback(retro_task_t *task,
       free(dec);
    }
 
-   if (download && download->refreshFileBrowser)
-      refreshPath = QFileInfo(download->outputPath).absolutePath();
-
    if (download && download->window)
       QMetaObject::invokeMethod(download->window.data(),
             "onUpdaterDownloadFinished", Qt::QueuedConnection,
             Q_ARG(QString, download->fileName), Q_ARG(bool, success),
-            Q_ARG(QString, refreshPath));
+            Q_ARG(bool, download->refreshFileBrowser));
    delete download;
 }
 #endif
@@ -4541,13 +4550,13 @@ static void qt_updater_download_callback(retro_task_t *task,
 #ifdef HAVE_COMPRESSION
    if (success && download && download->autoExtract)
    {
-      QByteArray outputPath = download->outputPath.toUtf8();
-      if (path_is_compressed_file(outputPath.constData()))
+      const char *outputPath = download->outputPath.constData();
+      if (path_is_compressed_file(outputPath))
       {
          char dirPath[PATH_MAX_LENGTH];
-         fill_pathname_basedir(dirPath, outputPath.constData(), sizeof(dirPath));
-         if (task_check_decompress(outputPath.constData())
-               || !task_push_decompress(outputPath.constData(), dirPath,
+         fill_pathname_basedir(dirPath, outputPath, sizeof(dirPath));
+         if (task_check_decompress(outputPath)
+               || !task_push_decompress(outputPath, dirPath,
                   NULL, NULL, NULL, qt_updater_decompress_callback,
                   download, NULL, false))
             success = false;
@@ -4556,16 +4565,11 @@ static void qt_updater_download_callback(retro_task_t *task,
       }
    }
 #endif
-   {
-      QString refreshPath;
-      if (success && download && download->refreshFileBrowser)
-         refreshPath = QFileInfo(download->outputPath).absolutePath();
-      if (download && download->window)
-         QMetaObject::invokeMethod(download->window.data(),
-               "onUpdaterDownloadFinished", Qt::QueuedConnection,
-               Q_ARG(QString, download->fileName), Q_ARG(bool, success),
-               Q_ARG(QString, refreshPath));
-   }
+   if (download && download->window)
+      QMetaObject::invokeMethod(download->window.data(),
+            "onUpdaterDownloadFinished", Qt::QueuedConnection,
+            Q_ARG(QString, download->fileName), Q_ARG(bool, success),
+            Q_ARG(bool, download->refreshFileBrowser));
    delete download;
 }
 
@@ -4577,15 +4581,15 @@ static bool qt_updater_download_file(MainWindow *window,
    char url[PATH_MAX_LENGTH];
    char encodedUrl[PATH_MAX_LENGTH];
    char outputPath[PATH_MAX_LENGTH];
-   char directoryPath[PATH_MAX_LENGTH];
-   QString localRelativePath = remoteRelativePath;
-   if (localRelativePath.startsWith(QStringLiteral("system/")))
-      localRelativePath.remove(0, 7);
-   else if (localRelativePath.startsWith(QStringLiteral("cores/")))
-      localRelativePath.remove(0, 6);
+   char *slash;
    QByteArray remoteBytes = remoteRelativePath.toUtf8();
-   QByteArray localBytes = localRelativePath.toUtf8();
    QByteArray baseBytes = localBaseDirectory.toUtf8();
+   /* the local path is the remote one past its top folder */
+   const char *localPath  = remoteBytes.constData();
+   if (!strncmp(localPath, "system/", 7))
+      localPath += 7;
+   else if (!strncmp(localPath, "cores/", 6))
+      localPath += 6;
    QtUpdaterDownloadData *download = new QtUpdaterDownloadData;
    if (!settings || !*settings->paths.network_buildbot_assets_url
          || baseBytes.isEmpty())
@@ -4597,17 +4601,24 @@ static bool qt_updater_download_file(MainWindow *window,
          remoteBytes.constData(), sizeof(url));
    net_http_urlencode_full(encodedUrl, url, sizeof(encodedUrl));
    fill_pathname_join_special(outputPath, baseBytes.constData(),
-         localBytes.constData(), sizeof(outputPath));
-   strlcpy(directoryPath, outputPath, sizeof(directoryPath));
-   path_basedir_wrapper(directoryPath);
-   if (!path_mkdir(directoryPath))
+         localPath, sizeof(outputPath));
+   /* its folder, made from the path itself, cut and restored */
+   if ((slash = find_last_slash(outputPath)))
    {
-      delete download;
-      return false;
+      char kept = *slash;
+      bool made;
+      *slash    = '\0';
+      made      = path_mkdir(outputPath);
+      *slash    = kept;
+      if (!made)
+      {
+         delete download;
+         return false;
+      }
    }
    download->window = window;
    download->fileName = displayName;
-   download->outputPath = QString::fromUtf8(outputPath);
+   download->outputPath = QByteArray(outputPath);
    download->refreshFileBrowser = refreshFileBrowser;
 #ifdef HAVE_COMPRESSION
    download->autoExtract = settings->bools.network_buildbot_auto_extract_archive;
@@ -4674,27 +4685,6 @@ static enum msg_hash_enums qt_updater_entry_at(const file_list_t *list,
    return MSG_UNKNOWN;
 }
 
-/* An entry without a view here runs the menu's own OK for it. */
-static void qt_updater_run_entry(enum msg_hash_enums entry)
-{
-   size_t i;
-   file_list_t *list = qt_updater_list_build();
-   if (!list)
-      return;
-   for (i = 0; i < list->size; i++)
-   {
-      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
-         list->list[i].actiondata;
-      if (     qt_updater_entry_at(list, i) == entry
-            && cbs->action_ok)
-      {
-         cbs->action_ok(list->list[i].path, list->list[i].label,
-               list->list[i].type, i, i);
-         break;
-      }
-   }
-   file_list_free(list);
-}
 #endif
 
 /* The buttons follow the menu's Online Updater list, rebuilt each time
@@ -4704,7 +4694,6 @@ void MainWindow::rebuildUpdaterButtons()
 #ifdef QT_ONLINE_UPDATER
    QLayout *layout   = m_updaterHomeWidget->layout();
    QLayoutItem *item = NULL;
-   file_list_t *list;
    size_t i;
 
    if (!layout)
@@ -4715,8 +4704,11 @@ void MainWindow::rebuildUpdaterButtons()
       delete item;
    }
 
-   if ((list = qt_updater_list_build()))
+   /* kept: a button runs its entry from this list */
+   file_list_free(m_updaterList);
+   if ((m_updaterList = qt_updater_list_build()))
    {
+      file_list_t *list = m_updaterList;
       for (i = 0; i < list->size; i++)
       {
          enum msg_hash_enums entry = qt_updater_entry_at(list, i);
@@ -4732,11 +4724,11 @@ void MainWindow::rebuildUpdaterButtons()
          button = new QPushButton(text, m_updaterHomeWidget);
          button->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
          button->setProperty("updater_action", (int)entry);
+         button->setProperty("updater_entry", (qulonglong)i);
          layout->addWidget(button);
          connect(button, SIGNAL(clicked()), this,
                SLOT(onUpdaterActionClicked()));
       }
-      file_list_free(list);
    }
    if (layout->count() == 0)
       layout->addWidget(new QLabel(
@@ -4795,9 +4787,6 @@ void MainWindow::onUpdaterActionClicked()
    }
    else if (action == MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES)
    {
-      char url[PATH_MAX_LENGTH];
-      char encodedUrl[PATH_MAX_LENGTH];
-      struct QtUpdaterListingData *listing = NULL;
       m_updaterViewType = 2;
       m_coreUpdaterTable->clearContents();
       m_coreUpdaterTable->setRowCount(0);
@@ -4813,20 +4802,10 @@ void MainWindow::onUpdaterActionClicked()
          showMessageBox(tr("The buildbot assets URL is not configured."), MSGBOX_TYPE_ERROR);
          return;
       }
-      fill_pathname_join_special(url, settings->paths.network_buildbot_assets_url,
-            "system/" FILE_PATH_INDEX_URL, sizeof(url));
-      net_http_urlencode_full(encodedUrl, url, sizeof(encodedUrl));
       command_event(CMD_EVENT_NETWORK_INIT, NULL);
-      listing = new QtUpdaterListingData;
-      listing->window = this;
-      listing->type = 2;
-      listing->path = QStringLiteral("system");
-      if (!task_push_http_transfer(encodedUrl, true, "GET",
-               qt_updater_listing_callback, listing))
-      {
-         delete listing;
+      if (!qt_updater_request_listing(this, QStringLiteral("system"),
+               FILE_PATH_INDEX_URL, 2))
          showMessageBox(tr("Failed to request the system files list."), MSGBOX_TYPE_ERROR);
-      }
    }
    else if (action == MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS)
    {
@@ -4857,7 +4836,16 @@ void MainWindow::onUpdaterActionClicked()
       qt_updater_request_content_listing(this, m_updaterContentPath, 4);
    }
    else
-      qt_updater_run_entry((enum msg_hash_enums)action);
+   {
+      /* an entry without a view here runs the menu's own OK for it */
+      size_t i = (size_t)button->property("updater_entry").toULongLong();
+      menu_file_list_cbs_t *cbs = (m_updaterList && i < m_updaterList->size)
+         ? (menu_file_list_cbs_t*)m_updaterList->list[i].actiondata : NULL;
+      if (cbs && cbs->action_ok)
+         cbs->action_ok(m_updaterList->list[i].path,
+               m_updaterList->list[i].label, m_updaterList->list[i].type,
+               i, i);
+   }
 #else
    (void)sender();
 #endif
@@ -5041,25 +5029,23 @@ void MainWindow::onUpdaterListingFinished(QStringList entries, int type, QString
 }
 
 void MainWindow::onUpdaterDownloadFinished(QString fileName, bool success,
-      QString refreshPath)
+      bool refresh)
 {
    if (success)
    {
       showStatusMessage(tr("Downloaded: %1").arg(fileName), 1, 4000, true);
-      if (!refreshPath.isEmpty())
+      if (refresh)
       {
          /* Rebuild the filesystem tree because directory watching is
           * disabled; the new extraction folders are now visible. */
          refreshFileSystemBrowserTree();
          /* The table uses the companion core's own listing, not the
           * QFileSystemModel. Re-enumerate its current directory as well. */
+         /* browse_open copies the folder before replacing anything */
          companion_core_t *core = ui_companion_qt_core();
          const char *browseDir = companion_core_browse_dir(core);
          if (browseDir && *browseDir)
-         {
-            QByteArray browsePath(browseDir);
-            companion_core_browse_open(core, browsePath.constData());
-         }
+            companion_core_browse_open(core, browseDir);
       }
    }
    else
