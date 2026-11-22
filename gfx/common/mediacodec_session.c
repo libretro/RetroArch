@@ -44,6 +44,8 @@ typedef void (*format_string_fn)(AMediaFormat *, const char *, const char *);
 typedef void (*format_integer_fn)(AMediaFormat *, const char *, int32_t);
 typedef void (*format_buffer_fn)(
       AMediaFormat *, const char *, const void *, size_t);
+typedef bool (*format_rect_fn)(AMediaFormat *, const char *, int32_t *,
+      int32_t *, int32_t *, int32_t *);
 typedef bool (*format_get_fn)(AMediaFormat *, const char *, int32_t *);
 #if defined(__ANDROID__) && defined(__clang__) && __ANDROID_API__ >= 29
 #define CODEC_ABI(type, symbol) \
@@ -69,6 +71,7 @@ CODEC_ABI(format_string_fn, AMediaFormat_setString);
 CODEC_ABI(format_integer_fn, AMediaFormat_setInt32);
 CODEC_ABI(format_buffer_fn, AMediaFormat_setBuffer);
 CODEC_ABI(format_get_fn, AMediaFormat_getInt32);
+CODEC_ABI(format_rect_fn, AMediaFormat_getRect);
 #undef CODEC_ABI
 #endif
 struct mediacodec_session
@@ -86,6 +89,7 @@ struct mediacodec_session
    codec_format_fn get_format;
    format_free_fn delete_format;
    format_get_fn get_integer;
+   format_rect_fn get_rect;
    mediacodec_output_format_t format;
    bool started, failed, input_eos, output_eos;
 };
@@ -174,6 +178,8 @@ mediacodec_session_t *mediacodec_session_new(
    LOAD(set_buffer, format_buffer_fn, "AMediaFormat_setBuffer");
    LOAD(s->get_integer, format_get_fn, "AMediaFormat_getInt32");
 #undef LOAD
+   s->get_rect = (format_rect_fn)dylib_proc(
+         s->library, "AMediaFormat_getRect");
    s->codec = make(selected);
    if (!s->codec)
       goto failed;
@@ -267,10 +273,16 @@ static bool mediacodec_read_format(mediacodec_session_t *s)
       goto done;
    right = width - 1;
    bottom = height - 1;
-   s->get_integer(format, "crop-left", &left);
-   s->get_integer(format, "crop-top", &top);
-   s->get_integer(format, "crop-right", &right);
-   s->get_integer(format, "crop-bottom", &bottom);
+   /* NDK output formats expose the inclusive crop as a rectangle. Keep
+    * the legacy integer keys for implementations without that entry. */
+   if (!s->get_rect
+         || !s->get_rect(format, "crop", &left, &top, &right, &bottom))
+   {
+      s->get_integer(format, "crop-left", &left);
+      s->get_integer(format, "crop-top", &top);
+      s->get_integer(format, "crop-right", &right);
+      s->get_integer(format, "crop-bottom", &bottom);
+   }
    if (left < 0 || top < 0 || right < left || bottom < top || right >= width
          || bottom >= height)
       goto done;
