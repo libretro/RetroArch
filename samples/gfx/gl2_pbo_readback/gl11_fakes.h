@@ -19,6 +19,9 @@ static GLuint gl11_bound_texture;
 static GLint gl11_texture_params[1024][4];
 static void (*gl11_copy_texture)(GLuint, GLsizei, GLsizei);
 static void (*gl11_delete_texture)(GLuint);
+static void (*gl11_texture_info)(GLuint, GLint, GLenum, GLint*);
+static void (*gl11_allocate_texture)(GLuint, GLint, GLsizei, GLsizei);
+static void (*gl11_upload_texture)(GLuint, const void*);
 static void (*gl11_read_pixels)(GLsizei width, GLsizei height);
 
 #ifdef _WIN32
@@ -75,17 +78,21 @@ GL_FAKE(void, glScissor, (GLint a, GLint b, GLsizei c, GLsizei d))
 { (void)a; (void)b; (void)c; (void)d; }
 GL_FAKE(void, glTexImage2D, (GLenum a, GLint b, GLint c, GLsizei d, GLsizei e,
       GLint f, GLenum g, GLenum h, const GLvoid *i))
-{ (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
+{ (void)a; (void)b; (void)f; (void)g; (void)h; (void)i;
+  if(gl11_allocate_texture)gl11_allocate_texture(gl11_bound_texture,c,d,e); }
 GL_FAKE(void, glTexParameteri, (GLenum a, GLenum b, GLint c))
 { unsigned at = b == GL_TEXTURE_MIN_FILTER ? 0 : b == GL_TEXTURE_MAG_FILTER ? 1 : b == GL_TEXTURE_WRAP_S ? 2 : 3;
   (void)a; if(gl11_bound_texture < 1024)gl11_texture_params[gl11_bound_texture][at]=c;gl11_tex_params++; }
 GL_FAKE(void, glTexSubImage2D, (GLenum a, GLint b, GLint c, GLint d, GLsizei e,
       GLsizei f, GLenum g, GLenum h, const GLvoid *i))
-{ (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h; (void)i; }
+{ (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; (void)g; (void)h;
+  if(gl11_upload_texture)gl11_upload_texture(gl11_bound_texture,i); }
 GL_FAKE(void, glViewport, (GLint a, GLint b, GLsizei c, GLsizei d))
 { (void)a; (void)b; (void)c; (void)d; }
 GL_FAKE(void, glGetTexLevelParameteriv, (GLenum a, GLint b, GLenum c, GLint *d))
-{ (void)a; (void)b;
+{ (void)a;
+  if(gl11_texture_info){gl11_texture_info(gl11_bound_texture,b,c,d);return;}
+  (void)b;
 #if defined(GL_TEXTURE_INTERNAL_FORMAT) && defined(GL_RGBA8)
   *d = c == GL_TEXTURE_INTERNAL_FORMAT ? GL_RGBA8 : 0;
 #else

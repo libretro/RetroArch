@@ -25,7 +25,9 @@ static void counted_copy(GLenum target, GLint level, GLint xoff, GLint yoff,
 #define MEDIA_FB_COMPLETE() (glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE)
 #define glDrawArrays counted_draw
 #define glCopyTexSubImage2D counted_copy
+#define gl_media_shader_references gl_media_shader_references
 #include "../../../gfx/common/gl_media_shader.h"
+#include "../../../gfx/common/gl_media_pool.h"
 #undef glDrawArrays
 #undef glCopyTexSubImage2D
 static GLuint compile(GLenum type,const char *source)
@@ -120,6 +122,74 @@ static void run(GLint format,float phase)
    assert(copies==copy_before+1);smooth_mode=true;
    gl_media_shader_free(&state);assert(glIsTexture(next));glDeleteTextures(1,&next);
 }
+static bool pool_reference(void *context,GLuint image)
+{return gl_media_shader_references(*(gl_media_shader_t**)context,image);}
+static bool pool_retire(void *context,GLuint image)
+{return gl_media_shader_retire(*(gl_media_shader_t**)context,image);}
+static void run_pool(GLint format,float phase)
+{
+   shader_backend_t backend;gl_media_shader_t *state=NULL;gl_media_pool_t *pool=NULL;
+   float old[48],fresh[48],sampled[48];GLuint handle,target,pbo,versions[GFX_MAX_FRAME_HISTORY+2];
+   unsigned frame,i,names=0,before=copies,count;
+   GLint unpack,bound;
+   const float rows[12]={1,0,0,0,0,1,0,0,0,0,1,0};
+   const float *hdr=format==GL_RGBA16F?rows:NULL;
+   memset(&backend,0,sizeof(backend));backend.use=use;backend.num_shaders=passes;backend.get_prev_textures=history;
+   backend.filter_type=filter;backend.wrap_type=wrap;backend.shader_scale=scale;backend.mipmap_input=mipmap;
+   backend.get_feedback_pass=feedback;backend.set_mvp=mvp;backend.set_media_colour=colour;
+   backend.set_coords=coords;backend.set_params=params;
+   pixels(old,phase);handle=texture(format,old);show_previous=0;previous_index=0;smooth_mode=true;
+   /* Packed frontend frames upload BGRA words with a texture swizzle. */
+   glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_SWIZZLE_R,GL_BLUE);
+   glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_SWIZZLE_B,GL_RED);
+   for(i=0;i<3;i++)assert(gl_media_shader_draw(&state,&backend,&backend,&backend,handle,VIDEO_SCALE_PACK(4,3),0,VIDEO_SCALE_PACK(4,3),i,hdr,true));
+   assert(copies==before);
+   glGenBuffers(1,&pbo);
+   for(frame=1;frame<=24;frame++)
+   {
+      pixels(fresh,phase+(float)(frame%3)*0.0625f);
+      if(frame==12)
+      {
+         const GLint filter[4]={GL_NEAREST,GL_NEAREST,GL_REPEAT,GL_REPEAT};
+         glBindTexture(GL_TEXTURE_2D,gl_media_pool_resolve(pool,handle));
+         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,filter[0]);
+         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,filter[1]);
+         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,filter[2]);
+         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,filter[3]);
+         gl_media_pool_sync_sampler(pool,filter);
+      }
+
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER,pbo);glBufferData(GL_PIXEL_UNPACK_BUFFER,sizeof(fresh),fresh,GL_STREAM_DRAW);
+      glBindTexture(GL_TEXTURE_2D,gl_media_pool_resolve(pool,handle));
+      target=gl_media_pool_prepare(&pool,handle,4,3,pool_reference,&state);assert(target);
+      if(frame>=12)
+      {
+         GLint mag,saved;glGetIntegerv(GL_TEXTURE_BINDING_2D,&saved);glBindTexture(GL_TEXTURE_2D,target);
+         glGetTexParameteriv(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,&mag);assert(mag==GL_NEAREST);
+         glBindTexture(GL_TEXTURE_2D,(GLuint)saved);
+      }
+
+      glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING,&unpack);glGetIntegerv(GL_TEXTURE_BINDING_2D,&bound);
+      assert((GLuint)unpack==pbo && (GLuint)bound==gl_media_pool_resolve(pool,handle));
+      /* A refused/dropped upload does not publish the reserved destination. */
+      if(frame==1){assert(gl_media_pool_resolve(pool,handle)==handle);assert(gl_media_pool_prepare(&pool,handle,4,3,pool_reference,&state)==target);}
+      glBindTexture(GL_TEXTURE_2D,target);glTexSubImage2D(GL_TEXTURE_2D,0,0,0,4,3,GL_RGBA,GL_FLOAT,NULL);
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER,0);gl_media_pool_publish(pool,handle,target);
+      show_previous=1;
+      assert(gl_media_shader_draw(&state,&backend,&backend,&backend,gl_media_pool_resolve(pool,handle),VIDEO_SCALE_PACK(4,3),0,VIDEO_SCALE_PACK(4,3),frame+3,hdr,true));
+      memcpy(sampled,old,sizeof(old));
+      for(i=0;i<12;i++){sampled[i*4]=old[i*4+2];sampled[i*4+2]=old[i*4];}
+      expect(sampled);assert(copies==before);memcpy(old,fresh,sizeof(old));
+      if(frame==8)names=pool->count;
+      if(frame>8)assert(pool->count==names);
+      assert(pool->count<=3);
+   }
+   count=pool->count;for(i=0;i<count;i++)versions[i]=pool->versions[i];
+   assert(gl_media_pool_forget(&pool,handle,pool_retire,&state) && !pool);
+   gl_media_shader_free(&state);gl_media_pool_free(&pool);
+   for(i=0;i<count;i++)assert(!glIsTexture(versions[i]));
+   glDeleteBuffers(1,&pbo);assert(glGetError()==GL_NO_ERROR);
+}
 int main(void)
 {
    const char *vs="#version 120\nattribute vec2 pos,uv;varying vec2 current,previous;uniform float flip;void main(){gl_Position=vec4(pos*2.-1.,0,1);current=uv;previous=vec2(pos.x,mix(pos.y,1.-pos.y,flip));}";
@@ -137,7 +207,8 @@ int main(void)
    glAttachShader(program,vertex);glAttachShader(program,fragment);glBindAttribLocation(program,0,"pos");glBindAttribLocation(program,1,"uv");glLinkProgram(program);
    target=texture(GL_RGBA32F,NULL);glGenFramebuffers(1,&fbo);glBindFramebuffer(GL_FRAMEBUFFER,fbo);glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,target,0);assert(glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE);
    glViewport(0,0,4,3);run(GL_RGBA8,0);run(GL_RGBA16F,-0.5f);
+   run_pool(GL_RGBA8,0);run_pool(GL_RGBA16F,-0.5f);
    glDeleteFramebuffers(1,&fbo);glDeleteTextures(1,&target);glDeleteProgram(program);glDeleteShader(vertex);glDeleteShader(fragment);
    eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);eglDestroyContext(display,context);eglDestroySurface(display,surface);eglTerminate(display);
-   puts("GL history GPU pixels: RGBA8/FP16 rows, Prev cadence, raw mutation snapshot, samplers and retired sources passed");return 0;
+   puts("GL history GPU pixels: RGBA8/FP16 rows, pooled PBO uploads without snapshots, Prev cadence, samplers and retirement passed");return 0;
 }

@@ -56,6 +56,8 @@ static void gl3_framebuffer_copy_partial(GLuint f,GLuint p,GLuint v,GLint u,unsi
 #define glCopyTexSubImage2D counted_copy
 #include "slang_history.inc"
 #undef glCopyTexSubImage2D
+#include "gfx/video_shader_parse.h"
+#include "gfx/common/gl_media_pool.h"
 static GLuint make_texture(GLenum format,const float *pixels)
 {
    GLuint t;glGenTextures(1,&t);glBindTexture(GL_TEXTURE_2D,t);
@@ -117,6 +119,64 @@ static void run(GLenum format)
    for(i=0;i<3;i++){if(frames[i].image)glDeleteTextures(1,&frames[i].image);if(frames[i].framebuffer)glDeleteFramebuffers(1,&frames[i].framebuffer);}
    assert(glGetError()==GL_NO_ERROR);
 }
+static bool pool_reference(void *context,GLuint image)
+{return gl3_filter_chain_history_references((gl3_filter_chain_t*)context,image);}
+static bool pool_retire(void *context,GLuint image)
+{return gl3_filter_chain_retire_history((gl3_filter_chain_t*)context,image);}
+static void run_pool(GLenum format)
+{
+   struct gl3_filter_chain c;struct gl3_framebuffer frames[3],*slots[3];
+   struct gl3_history_lease leases[3];struct gl3_filter_chain_texture t;
+   gfx_media_history_t history;gl_media_pool_t *pool=NULL;
+   unsigned storage[6],i,j,frame,before=copies,names=0,count;
+   GLuint handle,target,versions[GFX_MAX_FRAME_HISTORY+2];float fresh[48],expected[3][48];
+   memset(&c,0,sizeof(c));memset(frames,0,sizeof(frames));memset(leases,0,sizeof(leases));
+   memset(&t,0,sizeof(t));memset(&history,0,sizeof(history));history.managed=true;
+   for(i=0;i<48;i++)fresh[i]=(i%4==3)?1.0f:(float)(i%7)/8.0f;
+   if(format==GL_RGBA16F){fresh[0]=-0.5f;fresh[1]=1.5f;}
+   for(i=0;i<3;i++){slots[i]=&frames[i];memcpy(expected[i],fresh,sizeof(fresh));}
+   c.original_history=slots;c.num_original_history=c.common.num_original_history=3;c.history_leases=leases;
+   gfx_media_history_ring_init(&c.history_ring,storage,3);gl3_filter_chain_set_history_borrow(&c,true);
+   t.image=handle=make_texture(format,fresh);t.dims=t.padded_dims=VIDEO_SCALE_PACK(4,3);t.format=format;
+   for(i=0;i<3;i++)draw(&c,&history,&t);
+   for(frame=1;frame<=24;frame++)
+   {
+      fresh[4]=(float)(frame%5)*0.125f;
+      if(frame==12)
+      {
+         const GLint filter[4]={GL_NEAREST,GL_NEAREST,GL_REPEAT,GL_REPEAT};
+         glBindTexture(GL_TEXTURE_2D,gl_media_pool_resolve(pool,handle));
+         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,filter[0]);
+         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,filter[1]);
+         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,filter[2]);
+         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,filter[3]);
+         gl_media_pool_sync_sampler(pool,filter);
+      }
+
+      target=gl_media_pool_prepare(&pool,handle,4,3,pool_reference,&c);assert(target);
+      if(frame>=12)
+      {
+         GLint mag;glBindTexture(GL_TEXTURE_2D,target);
+         glGetTexParameteriv(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,&mag);assert(mag==GL_NEAREST);
+      }
+
+      glBindTexture(GL_TEXTURE_2D,target);glTexSubImage2D(GL_TEXTURE_2D,0,0,0,4,3,GL_RGBA,GL_FLOAT,fresh);
+      gl_media_pool_publish(pool,handle,target);t.image=gl_media_pool_resolve(pool,handle);history.copies=0;
+      for(j=2;j;j--)memmove(expected[j],expected[j-1],sizeof(fresh));
+      memcpy(expected[0],fresh,sizeof(fresh));
+      draw(&c,&history,&t);assert(copies==before);
+      for(j=0;j<3;j++)expect(c.common.original_history[j].texture.image,expected[j]);
+      if(frame==8)names=pool->count;
+      if(frame>8)assert(pool->count==names);
+      assert(pool->count<=4);
+   }
+   count=pool->count;for(i=0;i<count;i++)versions[i]=pool->versions[i];
+   assert(gl_media_pool_forget(&pool,handle,pool_retire,&c));
+   gl3_chain_release_history_leases(&c,true);gl_media_pool_free(&pool);
+   for(i=0;i<count;i++)assert(!glIsTexture(versions[i]));
+   for(i=0;i<3;i++){if(frames[i].image)glDeleteTextures(1,&frames[i].image);if(frames[i].framebuffer)glDeleteFramebuffers(1,&frames[i].framebuffer);}
+   assert(glGetError()==GL_NO_ERROR);
+}
 int main(void)
 {
    EGLDisplay d;EGLConfig cfg;EGLSurface s;EGLContext c;EGLint count;
@@ -126,7 +186,7 @@ int main(void)
    d=platform?platform(EGL_PLATFORM_SURFACELESS_MESA,EGL_DEFAULT_DISPLAY,NULL):eglGetDisplay(EGL_DEFAULT_DISPLAY);
    assert(eglInitialize(d,NULL,NULL));assert(eglBindAPI(EGL_OPENGL_API));assert(eglChooseConfig(d,attrs,&cfg,1,&count)&&count);
    s=eglCreatePbufferSurface(d,cfg,size);c=eglCreateContext(d,cfg,EGL_NO_CONTEXT,NULL);assert(eglMakeCurrent(d,s,s,c));
-   run(GL_RGBA8);run(GL_RGBA16F);
+   run(GL_RGBA8);run(GL_RGBA16F);run_pool(GL_RGBA8);run_pool(GL_RGBA16F);
    eglMakeCurrent(d,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);eglDestroyContext(d,c);eglDestroySurface(d,s);eglTerminate(d);
    puts("GLCore Slang history GPU pixels: direct leases, raw preservation, HDR precision, GL state and deferred deletion passed");return 0;
 }

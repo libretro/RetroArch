@@ -35,6 +35,7 @@ with tempfile.TemporaryDirectory(prefix="slang-history-pixels-") as directory:
         "static bool gl3_framebuffer_preserve(",
         "bool gl3_filter_chain_preserve_history(",
         "bool gl3_filter_chain_retire_history(",
+        "bool gl3_filter_chain_history_references(",
         "void gl3_filter_chain_set_history_borrow(",
         "static void gl3_chain_end_frame(",
         "static void gl3_chain_update_history_info(")), encoding="utf-8")

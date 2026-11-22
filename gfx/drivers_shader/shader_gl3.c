@@ -3305,6 +3305,24 @@ bool gl3_filter_chain_preserve_history(gl3_filter_chain_t *chain, unsigned image
    return true;
 }
 
+void gl3_filter_chain_source_sampler(gl3_filter_chain_t *chain, GLint filter[4])
+{
+   struct gl3_pass *pass=chain->passes[0];
+   glslang_filter_chain_filter source=gl3_pass_get_source_filter(pass);
+   filter[0]=convert_filter_to_min_gl(source,gl3_pass_get_mip_filter(pass));
+   filter[1]=convert_filter_to_mag_gl(source);
+   filter[2]=filter[3]=address_to_gl(gl3_pass_get_address_mode(pass));
+}
+
+bool gl3_filter_chain_history_references(gl3_filter_chain_t *chain, unsigned image)
+{
+   unsigned i;
+   if (!chain || !chain->history_leases) return false;
+   for (i=0;i<chain->num_original_history;i++)
+      if (chain->history_leases[i].texture.image==image) return true;
+   return false;
+}
+
 bool gl3_filter_chain_retire_history(gl3_filter_chain_t *chain, unsigned image)
 {
    unsigned i;

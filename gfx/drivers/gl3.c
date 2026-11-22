@@ -140,6 +140,7 @@ struct gl3_views_fbo
 #define gl_media_source_release gl3_media_source_release
 #define gl_media_source_acquire gl3_media_source_acquire
 #define gl_media_shader_retire gl3_media_shader_retire
+#define gl_media_shader_references gl3_media_shader_references
 #define gl_media_shader_preserve gl3_media_shader_preserve
 #define gl_media_target_free gl3_media_target_free
 #define gl_media_shader_free gl3_media_shader_free
@@ -152,9 +153,11 @@ struct gl3_views_fbo
 #endif
 
 #include "../common/media_history.h"
+#include "../common/gl_media_pool.h"
 
 typedef struct gl3
 {
+   gl_media_pool_t *media_pool;
 #ifdef HAVE_GLSL
    gl_media_shader_t *media_legacy_shader;
 #endif
@@ -1337,7 +1340,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
    {
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, draw->texture
-            ? (GLuint)draw->texture : gl->white_texture);
+            ? gl_media_pool_resolve(gl->media_pool,(GLuint)draw->texture) : gl->white_texture);
 
       if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC)
          gl->chain.shader->use(gl, gl->chain.shader_data,
@@ -1366,7 +1369,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
 
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, draw->texture
-            ? (GLuint)draw->texture : gl->white_texture);
+            ? gl_media_pool_resolve(gl->media_pool,(GLuint)draw->texture) : gl->white_texture);
 
 #ifdef HAVE_SHADERPIPELINE
       if (fx && (fx->flags & GFX_EFFECT_BLEND_ADD))
@@ -1571,7 +1574,7 @@ static bool gfx_display_gl3_mesh_draw(void *data, unsigned video_dims,
    glUseProgram(gl->pipelines.mesh);
    glUniform4fv(gl->pipelines.mesh_loc.flat_ubo_vertex, 5, ubo);
    glActiveTexture(GL_TEXTURE1);
-   glBindTexture(GL_TEXTURE_2D, texture ? (GLuint)texture : gl->white_texture);
+   glBindTexture(GL_TEXTURE_2D, texture ? gl_media_pool_resolve(gl->media_pool,(GLuint)texture) : gl->white_texture);
 
    /* Read as stored: three floats, two 16-bit and four 8-bit
     * normalised integers */
@@ -2470,7 +2473,7 @@ static void gl3_render_overlay(gl3_t *gl,
       if (!gl->overlay_tex[i])
          continue;
       glActiveTexture(GL_TEXTURE1);
-      glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
+      glBindTexture(GL_TEXTURE_2D, gl_media_pool_resolve(gl->media_pool,gl->overlay_tex[i]));
       glDrawArrays(GL_TRIANGLE_STRIP, (GLint)(4 * i), 4);
    }
 
@@ -2563,6 +2566,7 @@ static void gl3_destroy_resources(gl3_t *gl)
 #ifdef HAVE_GLSL
    gl3_media_shader_free(&gl->media_legacy_shader);
 #endif
+   gl_media_pool_free(&gl->media_pool);
    if (gl->chain.shader)
    {
       gl->chain.shader->deinit(gl->chain.shader_data);
@@ -8497,6 +8501,32 @@ static void gl3_media_texture_changed(gl3_t *gl, uintptr_t id, bool uploaded)
 #endif
 }
 
+static bool gl3_media_referenced(void *context, GLuint image)
+{
+   gl3_t *gl=(gl3_t*)context;
+#ifdef HAVE_SLANG
+   if (gl3_filter_chain_history_references(gl->media_shader_chain,image)) return true;
+#endif
+#ifdef HAVE_GLSL
+   if (gl3_media_shader_references(gl->media_legacy_shader,image)) return true;
+#endif
+   (void)gl;(void)image;
+   return false;
+}
+
+static bool gl3_media_retire(void *context, GLuint image)
+{
+   gl3_t *gl=(gl3_t*)context;
+#ifdef HAVE_SLANG
+   if (gl3_filter_chain_retire_history(gl->media_shader_chain,image)) return true;
+#endif
+#ifdef HAVE_GLSL
+   if (gl3_media_shader_retire(gl->media_legacy_shader,image)) return true;
+#endif
+   (void)gl;(void)image;
+   return false;
+}
+
 /* A texture of @ti: a planar frame converted on the GPU, anything else
  * uploaded as it is */
 static void gl3_texture_load(gl3_t *gl, const struct texture_image *ti,
@@ -8579,6 +8609,7 @@ static uintptr_t video_texture_unload_wrap_gl3(void *data)
       gl_planar_forget(&gl->planar, glid);
 #endif
    gl3_media_texture_changed(gl, id, false);
+   if (gl && gl_media_pool_forget(&gl->media_pool,glid,gl3_media_retire,gl)) return 0;
 #if defined(HAVE_SLANG)
    if (!gl3_filter_chain_retire_history(gl ? gl->media_shader_chain : NULL, glid))
 #endif
@@ -8631,12 +8662,19 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
 {
    const void *pixels = ti->pixels;
    int lent           = -1;
+   GLuint destination = gl ? gl_media_pool_resolve(gl->media_pool,(GLuint)id) : (GLuint)id;
+   if (gl && !ti->planar)
+   {
+      destination=gl_media_pool_prepare(&gl->media_pool,(GLuint)id,ti->width,ti->height,
+            gl3_media_referenced,gl);
+      if (!destination) return VIDEO_TEXTURE_UPDATE_DROPPED;
+   }
 #if defined(HAVE_SLANG)
-   if (gl && !gl3_filter_chain_preserve_history(gl->media_shader_chain, (unsigned)id))
+   if (gl && !gl3_filter_chain_preserve_history(gl->media_shader_chain, destination))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 #endif
 #if defined(HAVE_GLSL)
-   if (gl && !gl3_media_shader_preserve(gl->media_legacy_shader, (GLuint)id))
+   if (gl && !gl3_media_shader_preserve(gl->media_legacy_shader, destination))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 #endif
    if (ti->planar)
@@ -8660,7 +8698,7 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
       pixels = NULL;
    }
 #endif
-   glBindTexture(GL_TEXTURE_2D, (GLuint)id);
+   glBindTexture(GL_TEXTURE_2D, destination);
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, ti->width, ti->height,
@@ -8673,6 +8711,7 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
    if (lent >= 0)
       gl_texture_lend_unbind(gl->lend, (unsigned)id, lent);
 #endif
+   if (gl) gl_media_pool_publish(gl->media_pool,(GLuint)id,destination);
    gl3_media_texture_changed(gl, id, true);
    return VIDEO_TEXTURE_UPDATE_DONE;
 }
@@ -8825,6 +8864,7 @@ static void gl3_unload_texture(void *data, bool threaded,
       gl_planar_forget(&((gl3_t*)data)->planar, glid);
 #endif
    gl3_media_texture_changed((gl3_t*)data, id, false);
+   if (data && gl_media_pool_forget(&((gl3_t*)data)->media_pool,glid,gl3_media_retire,data)) return;
 #if defined(HAVE_SLANG)
    if (!gl3_filter_chain_retire_history(data ? ((gl3_t*)data)->media_shader_chain : NULL, glid))
 #endif
@@ -9748,13 +9788,13 @@ static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
    blend = glIsEnabled(GL_BLEND);
    scissor = glIsEnabled(GL_SCISSOR_TEST);
    glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, (GLuint)image);
+   glBindTexture(GL_TEXTURE_2D, gl_media_pool_resolve(gl->media_pool,(GLuint)image));
 #ifndef HAVE_OPENGLES
    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
 #else
    format = GL_RGBA8;
 #endif
-   texture.image = (GLuint)image;
+   texture.image = gl_media_pool_resolve(gl->media_pool,(GLuint)image);
    texture.dims = source_dims;
    texture.padded_dims = source_dims;
    texture.origin = 0;
@@ -9793,6 +9833,15 @@ static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
    matrix_4x4_ortho(mvp, 0, 1, 1, 0, -1, 1);
    gl3_filter_chain_build_viewport_pass(chain, &vp, mvp.data);
    gl3_filter_chain_end_frame(chain);
+   {
+      gl_media_pool_t *pool=gl_media_pool_find(gl->media_pool,(GLuint)image);
+      if (pool)
+      {
+         GLint filter[4];
+         gl3_filter_chain_source_sampler(chain,filter);
+         gl_media_pool_sync_sampler(pool,filter);
+      }
+   }
    glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)target);
    glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
    if (blend) glEnable(GL_BLEND);
@@ -9814,7 +9863,8 @@ static bool gfx_display_gl3_media_shader_draw(void *data, uintptr_t image,
    if (gl && gl->chain.active && gl->chain.shader)
       return gl->media_shader_enabled && gl3_media_shader_draw(
             &gl->media_legacy_shader, gl, gl->chain.shader, gl->chain.shader_data,
-            image, source_dims, pos, dims, gl->media_shader_frame, hdr ? rows : NULL,
+            gl_media_pool_resolve(gl->media_pool,(GLuint)image), source_dims, pos, dims,
+            gl->media_shader_frame, hdr ? rows : NULL,
             gl->media_last_texture == image);
 #endif
 #ifdef HAVE_SLANG

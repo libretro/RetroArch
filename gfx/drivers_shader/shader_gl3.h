@@ -128,6 +128,8 @@ void gl3_filter_chain_set_input_texture_history(
  * mutation; retire transfers deletion when history still holds the name. */
 void gl3_filter_chain_set_history_borrow(gl3_filter_chain_t *chain, bool enabled);
 bool gl3_filter_chain_preserve_history(gl3_filter_chain_t *chain, unsigned image);
+void gl3_filter_chain_source_sampler(gl3_filter_chain_t *chain, GLint filter[4]);
+bool gl3_filter_chain_history_references(gl3_filter_chain_t *chain, unsigned image);
 bool gl3_filter_chain_retire_history(gl3_filter_chain_t *chain, unsigned image);
 
 /* Whether the chain reads a frame where it lies in a larger texture,

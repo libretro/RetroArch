@@ -82,6 +82,17 @@ static gl_media_source_t *gl_media_source_acquire(gl_media_shader_t *s, GLuint t
    return source;
 }
 
+#ifdef gl_media_shader_references
+static bool gl_media_shader_references(gl_media_shader_t *s, GLuint texture)
+{
+   gl_media_source_t *source;
+   if (!s) return false;
+   for (source=s->sources;source;source=source->next)
+      if (source->texture==texture && source->refs) return true;
+   return false;
+}
+#endif
+
 static bool gl_media_shader_retire(gl_media_shader_t *s, GLuint texture)
 {
    gl_media_source_t *source;
@@ -614,3 +625,5 @@ done:
 #undef gl_media_source_acquire
 #undef gl_media_shader_retire
 #undef gl_media_shader_preserve
+
+#undef gl_media_shader_references
