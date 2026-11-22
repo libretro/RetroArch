@@ -434,3 +434,52 @@ uclibc-profile-check:
 		-Wall -Werror=implicit-function-declaration \
 		$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 .PHONY: uclibc-profile-check
+
+# The library under a consumer's -D_XOPEN_SOURCE=500 on Darwin (mame2003
+# passes it on every platform): retro_posix_source.h must ask for
+# _DARWIN_C_SOURCE. With MACOS_SDK=<MacOSX*.sdk> the sources cores build
+# are compiled against that SDK too.
+DARWIN_PROFILE_SRCS = \
+	compat/compat_posix_string.c \
+	compat/compat_snprintf.c \
+	compat/compat_strcasestr.c \
+	compat/compat_strl.c \
+	compat/fopen_utf8.c \
+	encodings/encoding_crc32.c \
+	encodings/encoding_deflate.c \
+	encodings/encoding_utf.c \
+	features/features_cpu.c \
+	file/file_path.c \
+	file/file_path_io.c \
+	streams/file_stream.c \
+	streams/file_stream_transforms.c \
+	streams/interface_stream.c \
+	streams/memory_stream.c \
+	streams/rzip_stream.c \
+	streams/stdin_stream.c \
+	streams/trans_stream.c \
+	streams/trans_stream_deflate.c \
+	streams/trans_stream_pipe.c \
+	streams/trans_stream_zlib.c \
+	string/rstrtod.c \
+	string/stdstring.c \
+	time/rtime.c \
+	utils/md5.c \
+	vfs/vfs_implementation.c
+DARWIN_TARGET ?= x86_64-apple-macos10.15
+darwin-profile-check:
+	printf '#include <retro_posix_source.h>\n#ifndef _DARWIN_C_SOURCE\n#error no _DARWIN_C_SOURCE\n#endif\n' | \
+		$(CC) -x c -fsyntax-only -U__linux__ -D__APPLE__ -D_XOPEN_SOURCE=500 \
+		-I$(LIBRETRO_COMM_DIR)/include -
+ifneq ($(MACOS_SDK),)
+	for f in $(DARWIN_PROFILE_SRCS); do \
+		clang -target $(DARWIN_TARGET) -isysroot $(MACOS_SDK) -nostdinc \
+			-isystem $(MACOS_SDK)/usr/include \
+			-isystem $$(clang -print-resource-dir)/include \
+			-F$(MACOS_SDK)/System/Library/Frameworks \
+			-I$(LIBRETRO_COMM_DIR)/include -fsyntax-only -w \
+			-Werror=implicit-function-declaration -D_XOPEN_SOURCE=500 \
+			-DHAVE_ZLIB $(LIBRETRO_COMM_DIR)/$$f || exit 1; \
+	done
+endif
+.PHONY: darwin-profile-check

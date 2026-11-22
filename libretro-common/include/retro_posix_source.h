@@ -34,14 +34,22 @@
  *
  * The guards only raise the profile, and ask for what a build passing no
  * feature macros already gets, so nothing this library selects changes.
- * Linux only: elsewhere _POSIX_C_SOURCE would instead hide extensions
- * these sources use. */
+ * On Linux that is POSIX.1-2008 plus the BSD/SVID extensions; on Darwin,
+ * where a consumer's _XOPEN_SOURCE or _POSIX_C_SOURCE would hide
+ * strlcpy(), vsnprintf() and the u_int family <sys/sysctl.h> needs, it is
+ * _DARWIN_C_SOURCE. Elsewhere _POSIX_C_SOURCE would instead hide
+ * extensions these sources use. */
 
 /* Opt-in, because a unity build reaches its second file with system
  * headers already in scope, where these macros are inert rather than
  * wrong. __GLIBC__ arrives from <features.h>. */
 #if defined(RETRO_POSIX_SOURCE_CHECK_ORDER) && defined(__GLIBC__)
 #error "retro_posix_source.h must be included before any system header"
+#endif
+
+#if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE) \
+   && (defined(_XOPEN_SOURCE) || defined(_POSIX_C_SOURCE))
+#define _DARWIN_C_SOURCE 1
 #endif
 
 #if defined(__linux__) && !defined(_GNU_SOURCE)
