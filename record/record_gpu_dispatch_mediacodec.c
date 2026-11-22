@@ -36,8 +36,8 @@ static void record_mgd_fail(record_gpu_dispatch_mediacodec_t *j, int error)
 {
    retro_atomic_cas_int(&j->error, 0, error);
    retro_atomic_store_release_int(&j->cancelled, 1);
-   retro_atomic_store_release_int(&j->state, RECORD_MC_DISPATCH_DRAINING);
    record_dispatch_mediacodec_cancel(j->io);
+   retro_atomic_store_release_int(&j->state, RECORD_MC_DISPATCH_DRAINING);
 }
 static void record_mgd_system(record_gpu_dispatch_mediacodec_t *j, int error)
 {
