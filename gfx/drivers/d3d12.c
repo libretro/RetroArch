@@ -36,6 +36,7 @@
 #include <retro_math.h>
 #include "../common/menu_ribbon_shader.h"
 #include "../common/media_history.h"
+#include "../common/media_history_ring.h"
 
 #include <string/stdstring.h>
 #include <file/file_path.h>
@@ -503,6 +504,9 @@ typedef struct d3d12_filter_chain
    /* Borrowed only during a media draw; no texture owner is retained. */
    gfx_media_history_t         *media_history;
    uintptr_t                   media_source;
+   gfx_media_history_ring_t     history_ring;
+   unsigned                    history_slot;
+   bool                        history_shared;
    bool                        history_made;
    D3D12Resource               frame_res;
    d3d12_texture_t            *final;
@@ -8664,6 +8668,13 @@ static void d3d12_chain_frame(d3d12_video_t *d3d12, d3d12_filter_chain_t *c,
    }
 }
 
+static const void *d3d12_chain_history_data(const d3d12_filter_chain_t *c,
+      const void *data)
+{
+   return gfx_media_history_ring_data(c->history_shared ? &c->history_ring : NULL,
+         c->history, sizeof(*c->history), data);
+}
+
 /* Pass @i's pipe, constants, textures and samplers, bound under the
  * preset root signature; with @frame_res, the frame read there in place
  * of history[0]. */
@@ -8710,7 +8721,7 @@ static void d3d12_chain_bind_pass(d3d12_video_t *d3d12,
             }
             else if (uniform->data)
                memcpy(mapped_data + uniform->offset,
-                     uniform->data, uniform->size);
+                     d3d12_chain_history_data(c, uniform->data), uniform->size);
             uniform++;
          }
          D3D12Unmap(pass->buffers[j], 0, NULL);
@@ -8738,8 +8749,8 @@ static void d3d12_chain_bind_pass(d3d12_video_t *d3d12,
       {
          /* Reuse views with the same resource and interpretation. */
          {
-            d3d12_texture_t* tex =
-               (d3d12_texture_t*)texture_sem->texture_data;
+            const d3d12_texture_t* tex = (const d3d12_texture_t*)
+               d3d12_chain_history_data(c, texture_sem->texture_data);
             unsigned binding     = texture_sem->binding;
             D3D12Resource resource = tex->handle;
             DXGI_FORMAT   format   = tex->desc.Format;
@@ -8748,7 +8759,7 @@ static void d3d12_chain_bind_pass(d3d12_video_t *d3d12,
 
             /* The frame where it lies, in the format the main chain's
              * history[0] keeps for it */
-            if (tex == c->history && frame_res)
+            if (texture_sem->texture_data == c->history && frame_res)
             {
                resource = frame_res;
                format   = c == d3d12->media_shader_chain
@@ -8873,7 +8884,8 @@ static d3d12_texture_t *d3d12_chain_render(d3d12_video_t *d3d12,
       const video_frame_info_t *rolling)
 {
    unsigned i;
-   d3d12_texture_t *texture     = c->history;
+   d3d12_texture_t *texture     = (d3d12_texture_t*)
+      d3d12_chain_history_data(c, c->history);
    D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
 
    for (i = 0; i < c->shader_preset->passes; i++)
@@ -9796,10 +9808,13 @@ static d3d12_filter_chain_t *d3d12_chain_clone(d3d12_video_t *d3d12,
    const char *lo          = (const char*)src;
    const char *hi          = lo + sizeof(*src);
    unsigned passes         = src->shader_preset->passes;
-   d3d12_filter_chain_t *c =
-      (d3d12_filter_chain_t*)calloc(1, sizeof(*c));
+   unsigned history = viewer && src->shader_preset->history_size
+      ? src->shader_preset->history_size + 1 : 0;
+   d3d12_filter_chain_t *c = (d3d12_filter_chain_t*)calloc(1,
+         sizeof(*c) + history * 2 * sizeof(unsigned));
    if (!c)
       return NULL;
+   gfx_media_history_ring_init(&c->history_ring, (unsigned*)(c + 1), history);
 #define D3D12_REBASE(ptr) (((const char*)(ptr) >= lo && (const char*)(ptr) < hi) \
       ? (void*)((char*)c + ((const char*)(ptr) - lo)) : (void*)(ptr))
 
@@ -10013,8 +10028,15 @@ static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
    bool copy     = false;
    unsigned dims = VIDEO_SCALE_PACK(v->width, v->height);
 
+   c->history_shared = !in_place && c->history_ring.count
+         == c->shader_preset->history_size + 1;
    if (in_place)
    {
+      if (c->history_ring.count)
+      {
+         c->history_ring.valid = false;
+         c->history_made = false;
+      }
       c->frame_res = src;
 #ifdef HAVE_SLANG
       slang_rect_values(c->frame_rect.values, dims,
@@ -10050,10 +10072,13 @@ static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
                c->history[k].srv_heap    = &d3d12->desc.srv_heap;
                d3d12_init_texture(d3d12->device, &c->history[k]);
             }
+            if (c->history_shared)
+               gfx_media_history_ring_init(&c->history_ring,
+                     c->history_ring.order, n);
             c->history_made = true;
             if (c->media_history) c->media_history->copies = 0;
          }
-         else if (n > 1)
+         else if (n > 1 && !c->history_shared)
          {
             d3d12_texture_t tmp = c->history[n - 1];
             for (k = n - 1; k > 0; k--)
@@ -10063,8 +10088,38 @@ static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
          if (c != d3d12->media_shader_chain)
             d3d12_frame_remap(d3d12, &c->history[0],
                d3d12->filter.history[0].srv_mapping == D3D12_FRAME_MAPPING_2101010);
-         copy = c->history[0].handle != NULL
-            && gfx_media_history_needed(c->media_history, n);
+         if (c->history_shared)
+         {
+            bool repeated = c->history_ring.valid
+                  && !gfx_media_history_needed(c->media_history, 1);
+            unsigned mapping = d3d12->media_shader_texture->srv_mapping;
+            unsigned previous = c->history[c->history_ring.latest].srv_mapping;
+            if (repeated && (previous ? previous : D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING)
+                  != (mapping ? mapping : D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING))
+            {
+               repeated = false;
+               if (c->media_history) c->media_history->copies = 0;
+            }
+            c->history_slot = gfx_media_history_ring_target(&c->history_ring, repeated);
+            if (c->history[c->history_slot].handle)
+            {
+               if (repeated)
+                  gfx_media_history_ring_advance(&c->history_ring, c->history_slot);
+               else
+               {
+                  c->history[c->history_slot].srv_mapping = mapping;
+                  copy = true;
+               }
+            }
+            else
+            {
+               c->history_made = false;
+               if (c->media_history) c->media_history->copies = 0;
+            }
+         }
+         else
+            copy = c->history[0].handle != NULL
+               && gfx_media_history_needed(c->media_history, n);
       }
 #ifdef HAVE_SLANG
       slang_rect_values(c->frame_rect.values, dims, 0, dims);
@@ -14838,7 +14893,8 @@ static bool gfx_display_d3d12_media_shader_draw(void *data, uintptr_t image,
          chain->media_source == image, chain->history_made);
    chain->media_source = image;
    chain->media_history = &texture->media_history;
-   chain->history[0].size_data = texture->size_data;
+   if (!chain->shader_preset->history_size)
+      chain->history[0].size_data = texture->size_data;
    copy = d3d12_views_chain_frame(video, chain, &view, dims, texture->handle,
          source_dims, chain->shader_preset->history_size == 0, true);
    if (copy)
@@ -14848,7 +14904,7 @@ static bool gfx_display_d3d12_media_shader_draw(void *data, uintptr_t image,
       from.pResource = texture->handle;
       from.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
       from.SubresourceIndex = 0;
-      to.pResource = chain->history[0].handle;
+      to.pResource = chain->history[chain->history_shared ? chain->history_slot : 0].handle;
       to.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
       to.SubresourceIndex = 0;
       D3D12_RESOURCE_TRANSITION(cmd, from.pResource,
@@ -14857,6 +14913,8 @@ static bool gfx_display_d3d12_media_shader_draw(void *data, uintptr_t image,
             D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
       cmd->lpVtbl->CopyTextureRegion(cmd, &to, 0, 0, 0, &from, NULL);
       gfx_media_history_written(chain->media_history);
+      if (chain->history_shared)
+         gfx_media_history_ring_advance(&chain->history_ring, chain->history_slot);
       D3D12_RESOURCE_TRANSITION(cmd, from.pResource,
             D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
       D3D12_RESOURCE_TRANSITION(cmd, to.pResource,

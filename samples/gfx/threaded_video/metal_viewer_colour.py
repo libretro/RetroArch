@@ -30,6 +30,7 @@ fixture = r'''
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "gfx/common/media_history_ring.h"
 #define nil NULL
 #define SLANG_CBUFFER_MAX 2
 #define GFX_MAX_SHADERS 1
@@ -43,6 +44,7 @@ typedef struct { texture_sem_t *textures; int texture_count; cbuffer_sem_t cbuff
 typedef struct { object *view; float size_data; } texture_t;
 typedef struct {
    float mvp;
+   gfx_media_history_ring_t *history_ring;
    struct { texture_t texture[2]; } frame;
    struct {
       object *buffers[2],*_state,*_viewerState;
@@ -52,8 +54,8 @@ typedef struct {
    } pass[1];
    texture_t luts[1];
 } engine_t;
-typedef struct { unsigned passes,luts; } preset;
-typedef struct { engine_t engine; texture_t src16; } metal_view_chain_t;
+typedef struct { unsigned passes,luts,history_size; } preset;
+typedef struct { engine_t engine;texture_t src16;gfx_media_history_ring_t history_ring; } metal_view_chain_t;
 typedef struct { engine_t engine; preset *shader; } FrameView;
 static unsigned buffers,creates,fail_create;
 static void drop(object *o) { if(o && !--o->refs && o->owned) { buffers--;free(o); } }
@@ -71,7 +73,7 @@ CLONE
 int main(void)
 {
    FrameView self;
-   preset shader={1,1};
+   preset shader={1,1,1};
    object objects[4];
    uniform_sem_t uniforms[4];texture_sem_t textures[2];
    unsigned i,mode;
@@ -89,6 +91,8 @@ int main(void)
    {
       metal_view_chain_t *c=clone(&self,mode!=0);
       assert(c && buffers==2 && c->engine.pass[0]._state==&objects[mode]);
+      assert(c->history_ring.count==(mode?2u:0u));
+      assert(c->engine.history_ring==(mode?&c->history_ring:NULL));
       if(mode)
       {
          assert(c->engine.pass[0].semantics.textures[0].texture_data==&c->engine.luts[0].view);
@@ -114,6 +118,7 @@ with tempfile.TemporaryDirectory(prefix="metal-viewer-colour-") as directory:
     exe = Path(directory) / ("test.exe" if os.name == "nt" or "mingw" in " ".join(cc) else "test")
     unit.write_bytes(fixture.encode("utf-8"))
     subprocess.run(cc + shlex.split(os.environ.get("CFLAGS", "")) + [
+        "-I"+str(root), "-I"+str(root / "libretro-common/include"),
         "-std=gnu89", "-Wall", "-Wextra", "-Werror", "-Werror=declaration-after-statement",
         str(unit), "-o", str(exe)], check=True)
     subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(exe)], check=True)

@@ -1,9 +1,10 @@
 /* Logical history entries share immutable, uniquely owned GPU snapshots.
- * Storage is the tail of the owner's existing history-pointer allocation. */
+ * Storage belongs to the owner and is allocated with its history or clone. */
 #ifndef GFX_MEDIA_HISTORY_RING_H
 #define GFX_MEDIA_HISTORY_RING_H
 
 #include <stddef.h>
+#include <stdint.h>
 #include <boolean.h>
 #include <retro_inline.h>
 
@@ -58,6 +59,25 @@ static INLINE void gfx_media_history_ring_advance(gfx_media_history_ring_t *r,
    r->refs[target]++;
    r->latest = target;
    r->valid = true;
+}
+
+static INLINE const void *gfx_media_history_ring_data(
+      const gfx_media_history_ring_t *r, const void *base, size_t stride,
+      const void *data)
+{
+   if (r && r->count)
+   {
+      uintptr_t begin = (uintptr_t)base;
+      uintptr_t address = (uintptr_t)data;
+      if (address >= begin && address - begin < r->count * stride)
+      {
+         size_t offset = (size_t)(address - begin);
+         return (const char*)base
+            + gfx_media_history_ring_get(r, (unsigned)(offset / stride)) * stride
+            + offset % stride;
+      }
+   }
+   return data;
 }
 
 #endif

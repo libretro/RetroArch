@@ -59,6 +59,7 @@
 #include "../font_driver.h"
 #include "../video_driver.h"
 #include "../common/media_history.h"
+#include "../common/media_history_ring.h"
 #include "../gfx_instrument.h"
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
@@ -7642,6 +7643,7 @@ typedef struct MTLALIGN(16)
 {
    matrix_float4x4 mvp;
    matrix_float4x4 mvp_last_pass;
+   gfx_media_history_ring_t *history_ring;
    bool media;
 
    struct
@@ -7689,6 +7691,17 @@ typedef struct MTLALIGN(16)
 
 } engine_t;
 
+static const void *metal_history_data(engine_t *e, const void *data)
+{
+   return gfx_media_history_ring_data(e->history_ring, e->frame.texture,
+         sizeof(*e->frame.texture), data);
+}
+
+static texture_t *metal_history_texture(engine_t *e, unsigned index)
+{
+   return (texture_t*)metal_history_data(e, &e->frame.texture[index]);
+}
+
 /* Capture constants before CPU staging is reused by another draw. */
 static bool metal_bind_slang_constants(
       id<MTLRenderCommandEncoder> rce, id<MTLDevice> device,
@@ -7735,6 +7748,7 @@ struct metal_view_chain
    /* Borrowed only while renderExternalViewChain encodes this image. */
    gfx_media_history_t *media_history;
    uintptr_t media_source;
+   gfx_media_history_ring_t history_ring;
    bool history_made;
 };
 
@@ -8719,11 +8733,12 @@ struct metal_view_chain
    e->pass[i].core_aspect_rot    = core_aspect_rot;
    if (e->media)
    {
+      const texture_t *original = metal_history_texture(e, 0);
       e->pass[i].rotation = 0;
       e->pass[i].frame_direction = 1;
       e->pass[i].total_subframes = e->pass[i].current_subframe = 1;
-      e->pass[i].core_aspect = e->frame.texture[0].size_data.x
-         / e->frame.texture[0].size_data.y;
+      e->pass[i].core_aspect = original->size_data.x
+         / original->size_data.y;
       e->pass[i].core_aspect_rot = e->pass[i].core_aspect;
    }
 
@@ -8747,7 +8762,7 @@ struct metal_view_chain
                memcpy((uint8_t *)data + uniform->offset, &v, sizeof(v));
             }
             else if (uniform->data)
-               memcpy((uint8_t *)data + uniform->offset, uniform->data, uniform->size);
+               memcpy((uint8_t *)data + uniform->offset, metal_history_data(e, uniform->data), uniform->size);
             uniform++;
          }
 
@@ -8761,7 +8776,7 @@ struct metal_view_chain
    while (texture_sem->stage_mask)
    {
       int binding        = texture_sem->binding;
-      id<MTLTexture> tex = (__bridge id<MTLTexture>)*(void **)texture_sem->texture_data;
+      id<MTLTexture> tex = (__bridge id<MTLTexture>)*(void **)metal_history_data(e, texture_sem->texture_data);
       textures[binding]  = tex;
 
       samplers[binding]  = _samplers[texture_sem->filter][texture_sem->wrap][tex.mipmapLevelCount > 1 ? 1 : 0];
@@ -9047,10 +9062,14 @@ struct metal_view_chain
    const char *lo = (const char *)&_engine;
    const char *hi = lo + sizeof(_engine);
    metal_view_chain_t *c;
+   unsigned history = media && _shader && _shader->history_size
+      ? _shader->history_size + 1 : 0;
    if (!_shader || !_shader->passes)
       return NULL;
-   if (!(c = (metal_view_chain_t *)calloc(1, sizeof(*c))))
+   if (!(c = (metal_view_chain_t *)calloc(1, sizeof(*c) + history * 2 * sizeof(unsigned))))
       return NULL;
+   gfx_media_history_ring_init(&c->history_ring, (unsigned*)(c + 1), history);
+   if (history) c->engine.history_ring = &c->history_ring;
 #define METAL_REBASE(ptr) (((const char *)(ptr) >= lo && (const char *)(ptr) < hi) \
       ? (void *)((char *)&c->engine + ((const char *)(ptr) - lo)) : (void *)(ptr))
 
@@ -9160,6 +9179,13 @@ error:
 {
    unsigned dims      = VIDEO_SCALE_PACK(v->width, v->height);
    id<MTLTexture> src = external ? external : _engine.frame.texture[0].view;
+   gfx_media_history_ring_t *history = external && _shader->history_size
+         && c->history_ring.count == _shader->history_size + 1
+      ? &c->history_ring : NULL;
+   if (history && c->engine.history_ring != history)
+      c->history_made = false;
+   if (!history) c->history_ring.valid = false;
+   c->engine.history_ring = history;
    c->engine.media = external != nil;
    if (external)
       for (unsigned i = 0; i < _shader->passes; i++)
@@ -9184,6 +9210,9 @@ error:
       unsigned n                     = _shader->history_size + 1;
       id<MTLTexture> front           = c->engine.frame.texture[0].view;
       id<MTLBlitCommandEncoder> bce;
+      texture_t *destination = &c->engine.frame.texture[0];
+      unsigned slot = 0;
+      bool repeated = false;
       if (     !c->history_made
             || !front
             || front.width       != v->width
@@ -9197,19 +9226,32 @@ error:
          td.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
          for (k = 0; k < n; k++)
             [self _initTexture:&c->engine.frame.texture[k] withDescriptor:td];
+         if (history)
+            gfx_media_history_ring_init(history, history->order, n);
          c->history_made = true;
          if (c->media_history) c->media_history->copies = 0;
       }
-      else if (fresh && n > 1)
+      else if (fresh && n > 1 && !history)
       {
          texture_t tmp = c->engine.frame.texture[n - 1];
          for (k = n - 1; k > 0; k--)
             c->engine.frame.texture[k] = c->engine.frame.texture[k - 1];
          c->engine.frame.texture[0] = tmp;
       }
-      if (c->engine.frame.texture[0].view && fresh && !external && _pendingSrc)
+      if (history)
       {
-         id<MTLTexture> dst = c->engine.frame.texture[0].view;
+         repeated = history->valid && !gfx_media_history_needed(c->media_history, 1);
+         slot = gfx_media_history_ring_target(history, repeated);
+         destination = &c->engine.frame.texture[slot];
+         if (!destination->view)
+         {
+            c->history_made = false;
+            if (c->media_history) c->media_history->copies = 0;
+         }
+      }
+      if (destination->view && fresh && !external && _pendingSrc)
+      {
+         id<MTLTexture> dst = destination->view;
          NSUInteger at      = (NSUInteger)v->y * _pendingPitch
             + (NSUInteger)v->x * _bpp;
          bool convert       = (   _format != RPixelFormatBGRA8Unorm
@@ -9254,7 +9296,7 @@ error:
                    bytesPerRow:_pendingPitch];
          if (convert)
             [_context convertFormat:_format from:dst
-                                 to:c->engine.frame.texture[0].view];
+                                 to:destination->view];
          if (!_writtenSeen)
          {
             _writtenSeen = true;
@@ -9262,8 +9304,8 @@ error:
                   "frame written straight in.\n");
          }
       }
-      else if (c->engine.frame.texture[0].view
-            && gfx_media_history_needed(c->media_history, n))
+      else if (destination->view && !repeated
+            && gfx_media_history_needed(c->media_history, history ? 1 : n))
       {
          bce = [_context.blitCommandBuffer blitCommandEncoder];
          [bce copyFromTexture:src
@@ -9271,13 +9313,19 @@ error:
                   sourceLevel:0
                  sourceOrigin:MTLOriginMake(v->x, v->y, 0)
                    sourceSize:MTLSizeMake(v->width, v->height, 1)
-                    toTexture:c->engine.frame.texture[0].view
+                    toTexture:destination->view
              destinationSlice:0
              destinationLevel:0
             destinationOrigin:MTLOriginMake(0, 0, 0)];
          [bce endEncoding];
-         if (bce) gfx_media_history_written(c->media_history);
+         if (bce)
+         {
+            gfx_media_history_written(c->media_history);
+            if (history) gfx_media_history_ring_advance(history, slot);
+         }
       }
+      if (history && repeated)
+         gfx_media_history_ring_advance(history, slot);
    }
 
    if (c->rt_frame_dims != dims || c->rt_vp_dims != vp_dims)
@@ -9292,7 +9340,7 @@ error:
    c->engine.frame.output_size.z = 1.0f / VIDEO_SCALE_W(vp_dims);
    c->engine.frame.output_size.w = 1.0f / VIDEO_SCALE_H(vp_dims);
 
-   if (!c->engine.frame.texture[0].view)
+   if (!metal_history_texture(&c->engine, 0)->view)
       return;
    [self _chainFeedback:&c->engine];
    [self _chainRender:&c->engine context:_context backBuffer:NO];

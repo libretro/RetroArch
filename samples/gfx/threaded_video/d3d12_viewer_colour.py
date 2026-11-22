@@ -19,6 +19,7 @@ fixture = r'''
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "gfx/common/media_history_ring.h"
 #define SLANG_CBUFFER_MAX 2
 #define SLANG_NUM_BINDINGS 4
 #define D3D12_FRAMES 2
@@ -58,7 +59,7 @@ typedef struct {
    handle samplers,textures,textures_alt;
    texture rt,feedback;
 } d3d12_pass_t;
-struct preset { unsigned passes; int hdr_mode; };
+struct preset { unsigned passes; int hdr_mode; unsigned history_size; };
 typedef struct {
    struct preset *shader_preset;
    float frame_rect,output_size;
@@ -67,6 +68,7 @@ typedef struct {
    heap rtv_heap;
    handle tables;
    unsigned num_tables;
+   gfx_media_history_ring_t history_ring;
 } d3d12_filter_chain_t;
 typedef struct { void *device; unsigned cpu_write_heap; struct { heap srv_heap; } desc; } d3d12_video_t;
 static unsigned live_buffers,live_heaps,live_tables,creates,fail_create;
@@ -108,7 +110,7 @@ int main(void)
 {
    d3d12_video_t v;
    d3d12_filter_chain_t src;
-   struct preset preset={1,-1};
+   struct preset preset={1,-1,2};
    object core={&vt,1},viewer={&vt,1},buffer={&vt,1};
    uniform_sem_t uniforms[4];texture_sem_t textures[2];
    unsigned i,mode;
@@ -125,6 +127,8 @@ int main(void)
    {
       d3d12_filter_chain_t *c=d3d12_chain_clone(&v,&src,mode!=0);
       assert(c && live_buffers==2 && live_tables==1 && live_heaps==1);
+      assert(c->history_ring.count==(mode ? 3u : 0u));
+      assert(c->history_ring.order==(unsigned*)(c+1));
       assert(c->pass[0].pipe==(mode ? &viewer : &core));
       assert(c->pass[0].buffer_view[1].SizeInBytes==512);
       if(mode)
@@ -166,5 +170,6 @@ with tempfile.TemporaryDirectory(prefix="d3d12-viewer-colour-") as directory:
     unit.write_bytes(fixture.encode("utf-8"))
     subprocess.run(cc + shlex.split(os.environ.get("CFLAGS", "")) + [
         "-std=gnu89", "-Wall", "-Wextra", "-Werror", "-Werror=declaration-after-statement",
+        "-I" + str(root), "-I" + str(root / "libretro-common/include"),
         str(unit), "-o", str(exe)], check=True)
     subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(exe)], check=True)

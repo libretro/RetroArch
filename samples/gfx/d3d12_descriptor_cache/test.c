@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include "gfx/common/media_history_ring.h"
 
 #define SLANG_NUM_BINDINGS 16
 #define D3D12_FRAMES 2
@@ -20,7 +21,13 @@ typedef struct
    struct { DXGI_FORMAT Format; UINT MipLevels; } desc;
    UINT srv_mapping;
 } d3d12_texture_t;
-typedef struct { d3d12_texture_t history[2]; } chain_t;
+typedef struct {
+   d3d12_texture_t history[2];
+   gfx_media_history_ring_t history_ring;
+   bool history_shared;
+} chain_t;
+typedef chain_t d3d12_filter_chain_t;
+#include "history.inc"
 typedef struct
 {
    DXGI_FORMAT Format;
@@ -244,6 +251,27 @@ int main(void)
       clear(&pass);
       assert(r.refs == 1);
       driver.queue.slot     = 0;
+   }
+   {
+      chain_t chain;
+      struct resource r[2]={{1,31},{1,32}};
+      unsigned storage[4],base;
+      memset(&chain,0,sizeof(chain));memset(&pass,0,sizeof(pass));
+      pass.textures.ptr=200;
+      chain.history[0].handle=&r[0];chain.history[1].handle=&r[1];
+      chain.history[0].desc.Format=28;chain.history[1].desc.Format=10;
+      chain.history[0].desc.MipLevels=chain.history[1].desc.MipLevels=1;
+      chain.history_shared=true;
+      gfx_media_history_ring_init(&chain.history_ring,storage,2);
+      gfx_media_history_ring_advance(&chain.history_ring,1);
+      bind_texture(&driver,&pass,&chain,chain.history,NULL);
+      assert(descriptor_identity==32 && pass.desc_cache[0].srv_format[2]==10);
+      assert(*(const DXGI_FORMAT*)d3d12_chain_history_data(&chain,&chain.history[0].desc.Format)==10);
+      base=writes;
+      gfx_media_history_ring_advance(&chain.history_ring,1);
+      bind_texture(&driver,&pass,&chain,chain.history+1,NULL);
+      assert(descriptor_identity==32 && writes==base);
+      clear(&pass);assert(r[0].refs==1 && r[1].refs==1);
    }
    puts("D3D12 SRV cache: mapping, history, frame override, reuse,"
          " ownership and a cache a slot PASS");
