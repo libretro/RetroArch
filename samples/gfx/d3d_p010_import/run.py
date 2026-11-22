@@ -4,18 +4,19 @@ from pathlib import Path
 import argparse, os, shlex, subprocess, sys, tempfile
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--pool-only', action='store_true', help='Run the native D3D11 pooled conversion oracle only')
+parser.add_argument('--d3d11-only', action='store_true', help='Run D3D11 source, array and pooled pixel checks')
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[3]
 subprocess.run([__import__('sys').executable, str(root / 'tools/generate_video_hdr.py'), '--check'], check=True)
 with tempfile.TemporaryDirectory() as directory:
     tmp = Path(directory)
     shaders = []
-    for api, name in [('d3d11', 'd3d11_planar_cs_src'), ('d3d12', 'd3d12_nv12_cs_src')]:
-        header = 'planar_d3d11.hlsl.h' if api == 'd3d11' else 'nv12_d3d12.hlsl.h'
+    for api, name in [('d3d11', 'd3d11_planar_cs_src'), ('d3d12', 'd3d12_nv12_cs_src'), ('d3d11_array', 'd3d11_array_cs_src')]:
+        header = 'planar_d3d11.hlsl.h' if api != 'd3d12' else 'nv12_d3d12.hlsl.h'
         source = (root / 'gfx/drivers/d3d_sm5_shaders' / header).read_text()
         source = source.replace('#include "../../drivers_shader/video_hdr.inc"',
             (root / 'gfx/drivers_shader/video_hdr.inc').read_text())
-        shaders.append('static const char ' + name + '[] =\n' + source + ';')
+        shaders.append(('#define D3D11_PLANAR_ARRAY\n' if api == 'd3d11_array' else '') + 'static const char ' + name + '[] =\n' + source + ';\n#undef D3D11_PLANAR_ARRAY')
     (tmp / 'shaders.inc').write_text('\n'.join(shaders))
     source = (root / 'gfx/drivers/d3d11.c').read_text()
     start = source.index('static bool d3d11_planar_convert(')
@@ -55,7 +56,7 @@ with tempfile.TemporaryDirectory() as directory:
         '-o', str(exe)] + (['-ld3d11', '-ld3dcompiler'] if windows else []) + ['-lm'], check=True)
     subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True,
                    env={**os.environ, **({'POOL_ONLY': '1'} if args.pool_only else {})})
-    if args.pool_only:
+    if args.pool_only or args.d3d11_only:
         sys.exit(0)
 
     exe12 = tmp / ('test12.exe' if windows else 'test12')

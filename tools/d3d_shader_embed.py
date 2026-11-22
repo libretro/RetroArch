@@ -51,7 +51,7 @@ def records():
 def production_guard(model, item):
     if item['raster_fallback']:
         return 'defined(D3D_BUILTIN_TEST)'
-    if item['program'] == 'planar11':
+    if item['program'] in ('planar11', 'planar11_array'):
         return 'defined(D3D_BUILTIN_TEST)' if model == 6 else 'defined(D3D_BUILTIN_TEST) || defined(HAVE_D3D11)'
     if item['program'] in ('planar12', 'nv12', 'mipmapgen'):
         return 'defined(D3D_BUILTIN_TEST) || defined(HAVE_D3D12)'

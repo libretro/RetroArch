@@ -23,6 +23,11 @@ static const char shader_mipmapgen[] =
 static const char shader_planar11[] =
 #include "../gfx/drivers/d3d_sm5_shaders/planar_d3d11.hlsl.h"
 ;
+#define D3D11_PLANAR_ARRAY
+static const char shader_planar11_array[] =
+#include "../gfx/drivers/d3d_sm5_shaders/planar_d3d11.hlsl.h"
+;
+#undef D3D11_PLANAR_ARRAY
 static const char shader_planar12[] =
 #include "../gfx/drivers/d3d_sm5_shaders/planar_d3d12.hlsl.h"
 ;
@@ -58,6 +63,7 @@ int main(int argc, char **argv) {
    if (!strcmp(argv[1], "hdr")) source = shader_hdr;
    if (!strcmp(argv[1], "mipmapgen")) source = shader_mipmapgen;
    if (!strcmp(argv[1], "planar11")) source = shader_planar11;
+   if (!strcmp(argv[1], "planar11_array")) source = shader_planar11_array;
    if (!strcmp(argv[1], "planar12")) source = shader_planar12;
    if (!strcmp(argv[1], "nv12")) source = shader_nv12;
    if (!strcmp(argv[1], "ribbon_simple")) source = shader_ribbon_simple;

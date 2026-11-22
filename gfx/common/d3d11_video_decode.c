@@ -21,7 +21,7 @@
  * NV12/P010 texture array, a slice per decoder slot, decoded through one
  * output view each.
  *
- * D3D12 readers import the shared DPB directly. Logical decoder slots
+ * Compatible readers import the shared DPB directly. Logical decoder slots
  * are renamed while exported pictures remain held. Other readers use
  * shared copies of the visible window. Each export has ready/done fences;
  * its storage is reusable after the reader signals done or abandons it.
@@ -188,6 +188,7 @@ static struct
 #endif
    unsigned import_formats;
    bool shared_dpb;
+   bool shader_dpb;
    bool packed_yuv;
    bool av1_only;
    bool h264_owned;
@@ -400,6 +401,26 @@ static bool d3d11vd_make_dpb_storage(d3d11vd_dec_t *d, unsigned min_targets)
             DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE, NULL, &d->dpb_handle);
       D3D11VD_RELEASE(res);
       if (FAILED(hr)) return false;
+   }
+   if (d->direct_dpb && d3d11vd.shader_dpb)
+   {
+      D3D11_SHADER_RESOURCE_VIEW_DESC srv;
+      ID3D11ShaderResourceView *probe = NULL;
+      memset(&srv, 0, sizeof(srv));
+      srv.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DARRAY;
+      srv.Texture2DArray.MipLevels = 1;
+      srv.Texture2DArray.ArraySize = 1;
+      for (i = 0; i < 4; i++)
+      {
+         srv.Texture2DArray.FirstArraySlice = i < 2 ? 0 : d->physical_slots - 1;
+         srv.Format = d->format == DXGI_FORMAT_P010
+            ? ((i & 1) ? DXGI_FORMAT_R16G16_UNORM : DXGI_FORMAT_R16_UNORM)
+            : ((i & 1) ? DXGI_FORMAT_R8G8_UNORM : DXGI_FORMAT_R8_UNORM);
+         if (FAILED(d->dev->lpVtbl->CreateShaderResourceView(d->dev,
+                  (ID3D11Resource*)d->dpb, &srv, &probe)))
+            return false;
+         D3D11VD_RELEASE(probe);
+      }
    }
    for (i = 0; i < d->slots; i++) d->slot_map[i] = i;
    for (i = 0; i < d->physical_slots; i++)
@@ -1297,10 +1318,13 @@ static bool d3d11vd_init_adapter(void *adapter, unsigned formats, bool av1_only)
    d3d11vd.av1_only = av1_only;
    d3d11vd.h264_owned = !av1_only;
    if (!av1_only) rh264_set_hw_backend(&d3d11vd.ops);
-   d3d11vd.shared_dpb = !!(formats & D3D11_VIDEO_DECODE_SHARED_DPB);
+   d3d11vd.shared_dpb = !!(formats & (D3D11_VIDEO_DECODE_SHARED_DPB
+         | D3D11_VIDEO_DECODE_SHADER_DPB));
+   d3d11vd.shader_dpb = !!(formats & D3D11_VIDEO_DECODE_SHADER_DPB);
    d3d11vd.packed_yuv = !!(formats & D3D11_VIDEO_DECODE_PACKED_YUV);
    d3d11vd.import_formats = formats
-      & ~(D3D11_VIDEO_DECODE_SHARED_DPB | D3D11_VIDEO_DECODE_PACKED_YUV);
+      & ~(D3D11_VIDEO_DECODE_SHARED_DPB | D3D11_VIDEO_DECODE_SHADER_DPB
+            | D3D11_VIDEO_DECODE_PACKED_YUV);
    d3d11vd.hevc.user = &d3d11vd.import_formats;
    d3d11vd.hevc.open = d3d11vd_hevc_open;
    d3d11vd.hevc.close = d3d11_video_decode_hevc_close;

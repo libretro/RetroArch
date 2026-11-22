@@ -11,7 +11,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 DRIVERS = ROOT / 'gfx/drivers'
 MODERN = ['opaque', 'mesh', 'sprite', 'views', 'hdr', 'mipmapgen',
-          'planar11', 'planar12', 'nv12', 'ribbon', 'ribbon_simple',
+          'planar11', 'planar11_array', 'planar12', 'nv12', 'ribbon', 'ribbon_simple',
           'simple_snow', 'snow', 'bokeh', 'snowflake', 'bloom_vs', 'bloom_ps']
 EFFECTS = {'ribbon', 'ribbon_simple', 'simple_snow', 'snow', 'bokeh', 'snowflake', 'bloom', 'bloom_vs', 'bloom_ps'}
 LEGACY = ['opaque', 'mesh', 'sprite', 'views', 'hdr', 'mipmapgen', 'planar',
@@ -46,7 +46,7 @@ def main():
             temp = Path(temporary)
             for name in programs:
                 raw = model < 4 or name in ('planar', 'mipmapgen_pixel')
-                if model==4 and name in ('mipmapgen','planar11','planar12','nv12'): continue
+                if model==4 and name in ('mipmapgen','planar11','planar11_array','planar12','nv12'): continue
                 if raw:
                     key = 'mipmapgen' if name=='mipmapgen_pixel' else name
                     source = directory / ('effects' if name in EFFECTS else '') / ('%s_sm%d.hlsl' % (key,model))
@@ -60,7 +60,7 @@ def main():
                     source.write_bytes((b'#define sampler SamplerState\n' if model==6 else b'') + data)
                     entries = sorted(set(re.findall(rb'\b((?:VS|PS|GS|CS)Main\w*)\s*\(',data)))
                     entries = [entry.decode() for entry in entries]
-                    if name in ('planar11','planar12','nv12'):entries=['main']
+                    if name in ('planar11','planar11_array','planar12','nv12'):entries=['main']
                 if name=='views':entries=['VSMain','PSRect','PSLayer','PSAnaglyph','PSInterlaced']
                 for entry in entries:
                     profile = stage(entry)+'_%d_0'%model

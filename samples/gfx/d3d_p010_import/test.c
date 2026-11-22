@@ -54,15 +54,18 @@ typedef struct
    ID3D11DeviceContext *context;
    ID3D11ComputeShader *planar_cs;
    ID3D11Buffer *planar_cb;
+   ID3D11ComputeShader *planar_array_cs;
 } d3d11_video_t;
 #include "convert.inc"
-#define D3D11_IMPORT_TEXTURES 8
+#define D3D11_IMPORT_TEXTURES 64
 #define Release(p) do { if (p) IUnknown_Release((IUnknown*)(p)); } while (0)
 typedef struct
 {
    unsigned num_tex;
    uint64_t tex_handle[D3D11_IMPORT_TEXTURES];
    ID3D11Texture2D *tex[D3D11_IMPORT_TEXTURES];
+   bool array[D3D11_IMPORT_TEXTURES];
+   unsigned slice[D3D11_IMPORT_TEXTURES];
    ID3D11ShaderResourceView *luma[D3D11_IMPORT_TEXTURES];
    ID3D11ShaderResourceView *chroma[D3D11_IMPORT_TEXTURES];
 } d3d11_import_t;
@@ -126,16 +129,17 @@ static unsigned output_fp16;
  * resources. Clearing each destination first proves old readers cannot alias it. */
 static void pooled_conversion(d3d11_video_t *video,d3d11_planar_t *p,
       ID3D11Texture2D *readback,ID3D11ShaderResourceView **planes,
-      unsigned flags,bool p010,const video_color_metadata_t *color,bool fp16)
+      unsigned flags,bool p010,const video_color_metadata_t *color,bool fp16,
+      const unsigned *region)
 {
-   static bool checked[2];
+   static bool checked[2][2];
    d3d11_chain_t chain;
    pool_preset_t preset={1};
    unsigned i,j,row,bytes=fp16?16:8,warm=0;
    uint8_t expected[32];
    D3D11_MAPPED_SUBRESOURCE mapped;
-   if(checked[fp16?1:0])return;
-   checked[fp16?1:0]=true;
+   if(checked[region?1:0][fp16?1:0])return;
+   checked[region?1:0][fp16?1:0]=true;
    memset(&chain,0,sizeof(chain));chain.shader_preset=&preset;chain.history_borrowed=true;
    video->media_shader_chain=&chain;p->texture->media_borrowable=true;
    assert(d3d11_media_pool_begin(p->texture));
@@ -161,7 +165,7 @@ static void pooled_conversion(d3d11_video_t *video,d3d11_planar_t *p,
          for(row=0;row<2;row++)assert(!memcmp(expected+row*bytes,(const uint8_t*)mapped.pData+row*mapped.RowPitch,bytes));
          ID3D11DeviceContext_Unmap(video->context,(ID3D11Resource*)readback,0);
       }
-      assert(d3d11_planar_convert(video,target,planes,2,2,flags,true,false,p010,color,fp16));
+      assert(d3d11_planar_convert(video,target,planes,2,2,flags,true,false,p010,color,fp16,region));
       d3d11_media_publish(p->texture,destination);
       ID3D11ShaderResourceView_Release(chain.history[1].view);
       chain.history[1].view=chain.history[0].view;chain.history[0].view=destination;ID3D11ShaderResourceView_AddRef(destination);
@@ -211,8 +215,8 @@ static void pooled_planes(ID3D11Device *device,ID3D11DeviceContext *ctx,
    td=p->texture->desc;td.BindFlags=0;td.Usage=D3D11_USAGE_STAGING;td.CPUAccessFlags=D3D11_CPU_ACCESS_READ;
    assert(SUCCEEDED(ID3D11Device_CreateTexture2D(device,&td,NULL,&readback)));
    if(fp16){color.transfer=16;color.primaries=color.matrix=9;color.max_cll=1000;}
-   assert(d3d11_planar_convert(&video,p->uav,views,2,2,0,true,false,fp16,&color,fp16));
-   pooled_conversion(&video,p,readback,views,0,fp16,&color,fp16);
+   assert(d3d11_planar_convert(&video,p->uav,views,2,2,0,true,false,fp16,&color,fp16,NULL));
+   pooled_conversion(&video,p,readback,views,0,fp16,&color,fp16,NULL);
    ID3D11DeviceContext_ClearState(ctx);
    for(i=0;i<2;i++){ID3D11ShaderResourceView_Release(views[i]);ID3D11Texture2D_Release(planes[i]);}
    ID3D11Texture2D_Release(readback);ID3D11Buffer_Release(video.planar_cb);
@@ -234,13 +238,16 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
    D3D11_BUFFER_DESC bd;
    D3D11_SUBRESOURCE_DATA data;
    D3D11_MAPPED_SUBRESOURCE mapped;
-   uint16_t words[6];
-   uint8_t bytes[6];
+   uint16_t words[24];
+   uint8_t empty[48] = {0};
+   unsigned region[4] = {2, 2, 0, 0};
+   bool array = api == 13;
+   uint8_t bytes[24];
    uint32_t constants[20];
    video_color_metadata_t color_metadata;
    float hdr[4];
    float coefficients[6], expected[3], y, u, v;
-   unsigned i, row, col, offset = api == 11 ? 0 : 8;
+   unsigned i, row, col, offset = api != 12 ? 0 : 8;
    float *values = (float*)constants + offset;
    HRESULT hr;
    d3d11_video_t video;
@@ -258,35 +265,61 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
    td.Usage = D3D11_USAGE_DEFAULT;
    td.BindFlags = D3D11_BIND_SHADER_RESOURCE;
    td.MiscFlags = D3D11_RESOURCE_MISC_SHARED | D3D11_RESOURCE_MISC_SHARED_NTHANDLE;
+   if (array)
+   {
+      td.Width = td.Height = 4;
+      td.ArraySize = 3;
+      td.BindFlags |= D3D11_BIND_DECODER;
+   }
+   memset(words, 0, sizeof(words)); memset(bytes, 0, sizeof(bytes));
    for (i = 0; i < 4; i++)
    {
-      words[i] = (uint16_t)(yc << 6);
-      bytes[i] = (uint8_t)yc;
+      words[array ? 10 + (i / 2) * 4 + i % 2 : i] = (uint16_t)(yc << 6);
+      bytes[array ? 10 + (i / 2) * 4 + i % 2 : i] = (uint8_t)yc;
    }
-   words[4] = (uint16_t)(uc << 6); words[5] = (uint16_t)(vc << 6);
-   bytes[4] = (uint8_t)uc; bytes[5] = (uint8_t)vc;
+   words[array ? 22 : 4] = (uint16_t)(uc << 6); words[array ? 23 : 5] = (uint16_t)(vc << 6);
+   bytes[array ? 22 : 4] = (uint8_t)uc; bytes[array ? 23 : 5] = (uint8_t)vc;
    memset(&data, 0, sizeof(data));
    data.pSysMem = p010 ? (const void*)words : (const void*)bytes;
-   data.SysMemPitch = p010 ? 4 : 2;
-   CHECK(SUCCEEDED(ID3D11Device_CreateTexture2D(device, &td, &data, &input)));
+   data.SysMemPitch = (p010 ? 4 : 2) * (array ? 2 : 1);
+   CHECK(SUCCEEDED(ID3D11Device_CreateTexture2D(device, &td, array ? NULL : &data, &input)));
+   if (array)
+      for (i = 0; i < 3; i++)
+         ID3D11DeviceContext_UpdateSubresource(ctx, (ID3D11Resource*)input,
+               i, NULL, empty, data.SysMemPitch, 0);
    ID3D11DeviceContext_UpdateSubresource(ctx, (ID3D11Resource*)input,
-         0, NULL, data.pSysMem, data.SysMemPitch, 0);
+         array ? 1 : 0, NULL, data.pSysMem, data.SysMemPitch, 0);
    ID3D11DeviceContext_Flush(ctx);
    CHECK(SUCCEEDED(ID3D11Texture2D_QueryInterface(input, &resource1_iid,
          (void**)&shared)));
    CHECK(SUCCEEDED(IDXGIResource1_CreateSharedHandle(shared, NULL,
          DXGI_SHARED_RESOURCE_READ | DXGI_SHARED_RESOURCE_WRITE, NULL, &handle)));
    CHECK(d3d11_import_tex(&video, &imported, (uint64_t)(uintptr_t)handle,
-         2, 2, p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12) == 0);
+         2, 2, p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12, array ? 1 : 0, array ? 2 : 0, array ? 2 : 0) == 0);
    CHECK(d3d11_import_tex(&video, &imported, (uint64_t)(uintptr_t)handle,
-         2, 2, p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12) == 0
+         2, 2, p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12, array ? 1 : 0, array ? 2 : 0, array ? 2 : 0) == 0
          && imported.num_tex == 1);
    CHECK(d3d11_import_tex(&video, &imported, (uint64_t)(uintptr_t)handle,
-         4, 2, p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12) < 0);
+         4, 2, p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12, array ? 1 : 0, array ? 2 : 0, array ? 2 : 0) < 0);
    CHECK(d3d11_import_tex(&video, &imported, (uint64_t)(uintptr_t)handle,
-         2, 2, p010 ? IMAGE_PIXFMT_NV12 : IMAGE_PIXFMT_P010) < 0);
+         2, 2, p010 ? IMAGE_PIXFMT_NV12 : IMAGE_PIXFMT_P010, array ? 1 : 0, array ? 2 : 0, array ? 2 : 0) < 0);
+   if (array)
+   {
+      CHECK(d3d11_import_tex(&video, &imported, (uint64_t)(uintptr_t)handle,
+            2, 2, p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12, 0, 2, 2) == 1);
+      CHECK(imported.num_tex == 2 && imported.slice[0] == 1 && imported.slice[1] == 0);
+      CHECK(d3d11_import_tex(&video, &imported, (uint64_t)(uintptr_t)handle,
+            2, 2, p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12, 3, 2, 2) < 0);
+      CHECK(d3d11_import_tex(&video, &imported, (uint64_t)(uintptr_t)handle,
+            2, 2, p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12, 1, 1, 2) < 0);
+      CHECK(d3d11_import_tex(&video, &imported, (uint64_t)(uintptr_t)handle,
+            2, 2, p010 ? IMAGE_PIXFMT_P010 : IMAGE_PIXFMT_NV12, 1, ~0u, 2) < 0);
+      CHECK(imported.num_tex == 2);
+   }
    views[0] = imported.luma[0];
    views[1] = imported.chroma[0];
+   td.Width = td.Height = 2;
+   td.ArraySize = 1;
    td.MiscFlags = 0;
    td.Format = output_fp16 ? DXGI_FORMAT_R16G16B16A16_FLOAT : DXGI_FORMAT_R8G8B8A8_UNORM;
    td.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
@@ -308,7 +341,7 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
    }
    CHECK(video_import_color(&flags, &color_metadata, coefficients, hdr));
    memcpy(values, coefficients, sizeof(coefficients));
-   if (api == 11)
+   if (api != 12)
    {
       values[6] = 1.0f;
       constants[8] = constants[9] = 2;
@@ -323,21 +356,22 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
    }
    memset(&bd, 0, sizeof(bd));
    if (output_fp16) hdr[3] = -1.0f;
-   memcpy((float*)constants + (api == 11 ? 12 : 16), hdr, sizeof(hdr));
+   memcpy((float*)constants + (api != 12 ? 12 : 16), hdr, sizeof(hdr));
    bd.ByteWidth = api == 11 ? 64 : 80;
-   bd.Usage = api == 11 ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
-   bd.CPUAccessFlags = api == 11 ? D3D11_CPU_ACCESS_WRITE : 0;
+   bd.Usage = api != 12 ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
+   bd.CPUAccessFlags = api != 12 ? D3D11_CPU_ACCESS_WRITE : 0;
    bd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
    data.pSysMem = constants;
    data.SysMemPitch = 0;
    CHECK(SUCCEEDED(ID3D11Device_CreateBuffer(device, &bd, &data, &cb)));
-   if (api == 11)
+   if (api != 12)
    {
       video.context = ctx;
       video.planar_cs = shader;
       video.planar_cb = cb;
+      video.planar_array_cs = array ? shader : NULL;
       CHECK(d3d11_planar_convert(&video, uav, views, 2, 2, flags,
-            true, false, p010 != 0, &color_metadata, output_fp16 != 0));
+            true, false, p010 != 0, &color_metadata, output_fp16 != 0, array ? region : NULL));
    }
    else
    {
@@ -389,7 +423,7 @@ static void color(ID3D11Device *device, ID3D11DeviceContext *ctx,
          if (pixel[3] != 255) failures++;
       }
    ID3D11DeviceContext_Unmap(ctx, (ID3D11Resource*)readback, 0);
-   if(api==11)pooled_conversion(&video,allocated,readback,views,flags,p010!=0,&color_metadata,output_fp16!=0);
+   if(api!=12)pooled_conversion(&video,allocated,readback,views,flags,p010!=0,&color_metadata,output_fp16!=0,array?region:NULL);
 end:
    ID3D11DeviceContext_ClearState(ctx);
    DROP(cb); DROP(uav);
@@ -418,9 +452,10 @@ int main(void)
    unsigned api, flags, support = 0, depth;
    const char *source;
    HRESULT hr;
-   for (api = 11; api <= 12; api++)
+   for (api = 11; api <= 13; api++)
    {
-      source = api == 11 ? d3d11_planar_cs_src : d3d12_nv12_cs_src;
+      source = api == 11 ? d3d11_planar_cs_src
+         : api == 12 ? d3d12_nv12_cs_src : d3d11_array_cs_src;
       hr = D3DCompile(source, strlen(source), "production", NULL, NULL,
             "main", "cs_5_0", 0, 0, &blob, &errors);
       if (FAILED(hr))
@@ -463,7 +498,8 @@ int main(void)
                color(device, ctx, shader, api, depth, flags, 127 * scale, center, center);
                color(device, ctx, shader, api, depth, flags, 110 * scale, 90 * scale, 170 * scale);
             }
-            printf("D3D%u %s GPU color oracle completed\n", api, depth ? "P010" : "NV12");
+            printf("D3D%u%s %s GPU color oracle completed\n", api == 13 ? 11 : api,
+                  api == 13 ? " decoder array" : "", depth ? "P010" : "NV12");
          }
          DROP(shader);
       }

@@ -968,8 +968,8 @@ struct texture_planar {const uint8_t *planes[3];unsigned strides[3],chroma_step,
 struct texture_image {unsigned width,height;const struct texture_planar *planar;};
 static unsigned converted_value;
 static bool convert_failure;
-static bool d3d11_planar_convert(d3d11_video_t *v,gpu *uav,gpu **views,unsigned w,unsigned h,unsigned yuv,bool interleaved,bool swap,bool p010,const void *color,bool fp16)
-{(void)v;(void)views;(void)w;(void)h;(void)yuv;(void)interleaved;(void)swap;(void)p010;(void)color;(void)fp16;if(convert_failure)return false;assert(uav->refs);uav->value=converted_value;return true;}
+static bool d3d11_planar_convert(d3d11_video_t *v,gpu *uav,gpu **views,unsigned w,unsigned h,unsigned yuv,bool interleaved,bool swap,bool p010,const void *color,bool fp16,const unsigned *region)
+{(void)region;(void)v;(void)views;(void)w;(void)h;(void)yuv;(void)interleaved;(void)swap;(void)p010;(void)color;(void)fp16;if(convert_failure)return false;assert(uav->refs);uav->value=converted_value;return true;}
 POOL
 PLANAR
 CHAIN

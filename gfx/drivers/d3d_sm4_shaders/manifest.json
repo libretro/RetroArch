@@ -2,12 +2,12 @@
   "version": 1,
   "model": 4,
   "compilers": {
-    "fxc": "904f64cdbeddc23183d6548e07135691c7497ca1a6b061ae7fd1c69c4cafabda",
+    "fxc": "ced7c1f95e4dffb614971826625e70da6d24aff1b4f2a3ae5952939c9547d7e6",
     "dxc": "229ae849be475d13d397921c2c6361559f07584d02b54424825ae80758cd8d67"
   },
   "optimization": "O3; strip reflection/debug for SM4+; DXC HV2016",
   "inputs": {
-    "tools/d3d_shader_sources.c": "19a957b4febdfe48b967e0224f639380e6cd565bab036dc9148be25601cc8655",
+    "tools/d3d_shader_sources.c": "fadc24e8eae87ef475a714b38cddf6ecaa094780cebd23af40e58efb7a80230b",
     "gfx/common/xmb_plastic.h": "638445cb607857f5e4da478425d5c0183e11f6ae705c592124c8ccfbdcad1785",
     "gfx/drivers/xmb_plastic.h": "9d6f0c283af58766b8db3bdd01a15ff1b0e488eccce461bdc7baa29bbb5b4a48",
     "gfx/common/menu_ribbon_shader.h": "bc7ebfadc2748a725f871151ce9db2b63a8ce208d98ab1368f7da10d101e8961",
@@ -71,7 +71,7 @@
     "gfx/drivers/d3d_sm5_shaders/mipmapgen_sm5.h": "cb11e3786911198247c89cc254cfa863938dd7e991374845473527624e390d19",
     "gfx/drivers/d3d_sm5_shaders/nv12_d3d12.hlsl.h": "5a8b512dc025a6c9299fa02aa5a1999a4eb6d192b237652b716414fe11ef109a",
     "gfx/drivers/d3d_sm5_shaders/opaque_sm5.hlsl.h": "2eb60e8daad6f64dfd7c4573b586316c3c503e39b0c1b2309c3b960b7ca645b7",
-    "gfx/drivers/d3d_sm5_shaders/planar_d3d11.hlsl.h": "640587d60ac992cb820f33329309eb98e582f0d58977c6ca44ec15b44a855975",
+    "gfx/drivers/d3d_sm5_shaders/planar_d3d11.hlsl.h": "774209506075c29cd90006e902b8f4e6276dde551e19f9d427d1eac732ff4147",
     "gfx/drivers/d3d_sm5_shaders/planar_d3d12.hlsl.h": "9f650f8c092b69abc5d9313958c06f9fb5b930e9e077d986f8b5b6301b073848",
     "gfx/drivers/d3d_sm5_shaders/sprite_sm5.hlsl.h": "a0031b8f48a844f891770d88ee406cda809486dc8b213e82b135f3680a75c3de",
     "gfx/drivers/d3d_sm5_shaders/views_sm5.hlsl.h": "4e0b5a71b976be22d0f2bea91a8324224dd27836f58bd1a0a9db7e52243a7d31",

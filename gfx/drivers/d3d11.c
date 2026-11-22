@@ -629,6 +629,7 @@ typedef struct
    struct d3d11_planar  *planar;
    D3D11ComputeShader    planar_cs;
    D3D11Buffer           planar_cb;
+   D3D11ComputeShader    planar_array_cs;
    retro_atomic_int_t    planar_failed;
 #ifdef D3D11_FRAME_IMPORT
    /* Set when frames on another device can be imported */
@@ -4854,6 +4855,7 @@ static void d3d11_gfx_free(void* data)
    }
    Release(d3d11->planar_cs);
    Release(d3d11->planar_cb);
+   Release(d3d11->planar_array_cs);
 
    d3d11_release_texture(&d3d11->menu.texture);
    Release(d3d11->menu.vbo);
@@ -10009,7 +10011,7 @@ static bool d3d11_planar_init(d3d11_video_t *d3d11)
    Release(blob);
    if (!d3d11->planar_cs)
       return false;
-   desc.ByteWidth           = 64;
+   desc.ByteWidth           = 80;
    desc.Usage               = D3D11_USAGE_DYNAMIC;
    desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
    desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
@@ -10027,7 +10029,24 @@ static bool d3d11_planar_init(d3d11_video_t *d3d11)
 }
 
 #ifdef D3D11_FRAME_IMPORT
-#define D3D11_IMPORT_TEXTURES 8
+#define D3D11_IMPORT_TEXTURES 64
+
+static bool d3d11_planar_array_init(d3d11_video_t *video)
+{
+   D3DBlob blob = NULL;
+   if (video->planar_array_cs)
+      return true;
+   if (!d3d_builtin_shader_named("planar11_array", "main", "cs_5_0", &blob))
+      return false;
+   video->device->lpVtbl->CreateComputeShader(video->device,
+         blob->lpVtbl->GetBufferPointer(blob),
+         blob->lpVtbl->GetBufferSize(blob), NULL, &video->planar_array_cs);
+   Release(blob);
+   if (!video->planar_array_cs)
+      return false;
+   return true;
+}
+
 #define D3D11_IMPORT_FENCES   8
 
 /* What an imported texture opened of its producer's handles, kept
@@ -10041,6 +10060,8 @@ typedef struct d3d11_import
    unsigned                  num_fences;
    uint64_t                  tex_handle[D3D11_IMPORT_TEXTURES];
    ID3D11Texture2D          *tex[D3D11_IMPORT_TEXTURES];
+   bool                      array[D3D11_IMPORT_TEXTURES];
+   unsigned                  slice[D3D11_IMPORT_TEXTURES];
    D3D11ShaderResourceView   luma[D3D11_IMPORT_TEXTURES];
    D3D11ShaderResourceView   chroma[D3D11_IMPORT_TEXTURES];
    uint64_t                  fence_handle[D3D11_IMPORT_FENCES];
@@ -10126,15 +10147,18 @@ static bool d3d11_planar_plane(D3D11Device device, unsigned w, unsigned h,
 static bool d3d11_planar_convert(d3d11_video_t *d3d11,
       D3D11UnorderedAccessView uav, D3D11ShaderResourceView *views,
       unsigned width, unsigned height, unsigned yuv, bool interleaved,
-      bool swap, bool p010, const video_color_metadata_t *color, bool fp16)
+      bool swap, bool p010, const video_color_metadata_t *color, bool fp16,
+      const unsigned *region)
 {
    D3D11DeviceContext ctx          = d3d11->context;
    D3D11ShaderResourceView none[3];
    D3D11UnorderedAccessView no_uav = NULL;
-   D3D11Buffer no_cb               = NULL;
+   D3D11Buffer no_cb = NULL;
    D3D11_MAPPED_SUBRESOURCE mapped;
    float k[6], hdr[4];
 
+   if (region && !d3d11->planar_array_cs)
+      return false;
    if (!video_import_color(&yuv, color, k, hdr))
       return false;
    if (fp16)
@@ -10146,6 +10170,8 @@ static bool d3d11_planar_convert(d3d11_video_t *d3d11,
       float    *f = (float*)mapped.pData;
       uint32_t *u = (uint32_t*)mapped.pData + 8;
       memcpy((float*)mapped.pData + 12, hdr, sizeof(hdr));
+      if (region)
+         memcpy((uint32_t*)mapped.pData + 16, region, 4 * sizeof(*region));
       f[0] = k[0];
       f[1] = k[1];
       f[2] = k[2];
@@ -10161,7 +10187,8 @@ static bool d3d11_planar_convert(d3d11_video_t *d3d11,
    }
    ctx->lpVtbl->Unmap(ctx, (D3D11Resource)d3d11->planar_cb, 0);
 
-   ctx->lpVtbl->CSSetShader(ctx, d3d11->planar_cs, NULL, 0);
+   ctx->lpVtbl->CSSetShader(ctx, region ? d3d11->planar_array_cs
+         : d3d11->planar_cs, NULL, 0);
    ctx->lpVtbl->CSSetConstantBuffers(ctx, 0, 1, &d3d11->planar_cb);
    ctx->lpVtbl->CSSetShaderResources(ctx, 0, 3, views);
    ctx->lpVtbl->CSSetUnorderedAccessViews(ctx, 0, 1, &uav, NULL);
@@ -10261,7 +10288,7 @@ static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
       ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[2], 0,
             NULL, tp->planes[2], tp->strides[2], 0);
    if (!d3d11_planar_convert(d3d11, uav, p->plane_view, image->width,
-            image->height, tp->yuv, p->interleaved, swap, false, NULL, false))
+            image->height, tp->yuv, p->interleaved, swap, false, NULL, false, NULL))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    d3d11_media_publish(p->texture, destination);
    p->texture->media_history.copies = 0;
@@ -10340,7 +10367,8 @@ static const GUID d3d11_iid_context4 =
 /* The NV12/P010 texture behind @handle, opened once, and its planes' views;
  * -1 when it cannot be read as a @w x @h frame */
 static int d3d11_import_tex(d3d11_video_t *d3d11, d3d11_import_t *imp,
-      uint64_t handle, unsigned w, unsigned h, unsigned pixfmt)
+      uint64_t handle, unsigned w, unsigned h, unsigned pixfmt,
+      unsigned slice, unsigned crop_x, unsigned crop_y)
 {
    D3D11_SHADER_RESOURCE_VIEW_DESC vd;
    D3D11_TEXTURE2D_DESC desc;
@@ -10348,32 +10376,42 @@ static int d3d11_import_tex(d3d11_video_t *d3d11, d3d11_import_t *imp,
    unsigned i;
 
    for (i = 0; i < imp->num_tex; i++)
-      if (imp->tex_handle[i] == handle)
+      if (imp->tex_handle[i] == handle && imp->slice[i] == slice)
       {
-         imp->tex[i]->lpVtbl->GetDesc(imp->tex[i], &desc);
-         return desc.Width == w && desc.Height == h
-            && desc.Format == (pixfmt == IMAGE_PIXFMT_P010
-                  ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12) ? (int)i : -1;
+         tex = imp->tex[i];
+         break;
       }
-   if (imp->num_tex >= D3D11_IMPORT_TEXTURES)
-      return -1;
-   if (FAILED(d3d11->device5->lpVtbl->OpenSharedResource1(d3d11->device5,
-         (HANDLE)(uintptr_t)handle, &d3d11_iid_texture2d, (void**)&tex)))
+   if (!tex && (imp->num_tex >= D3D11_IMPORT_TEXTURES
+         || FAILED(d3d11->device5->lpVtbl->OpenSharedResource1(d3d11->device5,
+               (HANDLE)(uintptr_t)handle, &d3d11_iid_texture2d, (void**)&tex))))
       return -1;
    tex->lpVtbl->GetDesc(tex, &desc);
-   if (     desc.Format != (pixfmt == IMAGE_PIXFMT_P010
+   if (desc.Format != (pixfmt == IMAGE_PIXFMT_P010
                ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12)
-         || desc.Width  != w || desc.Height != h)
+         || !w || !h || desc.MipLevels != 1 || desc.SampleDesc.Count != 1
+         || slice >= desc.ArraySize || crop_x > desc.Width
+         || crop_y > desc.Height || w > desc.Width - crop_x
+         || h > desc.Height - crop_y || ((crop_x | crop_y) & 1))
    {
-      Release(tex);
+      if (i == imp->num_tex) Release(tex);
       return -1;
    }
-   i = imp->num_tex;
-   vd.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
-   vd.Texture2D.MipLevels       = 1;
+   if (i < imp->num_tex)
+      return (int)i;
+   memset(&vd, 0, sizeof(vd));
+   imp->array[i] = desc.ArraySize > 1 || desc.Width != w || desc.Height != h;
+   vd.ViewDimension = imp->array[i] ? D3D11_SRV_DIMENSION_TEXTURE2DARRAY
+      : D3D11_SRV_DIMENSION_TEXTURE2D;
+   if (imp->array[i])
+   {
+      vd.Texture2DArray.MipLevels = 1;
+      vd.Texture2DArray.ArraySize = 1;
+      vd.Texture2DArray.FirstArraySlice = slice;
+   }
+   else
+      vd.Texture2D.MipLevels = 1;
    vd.Format                    = pixfmt == IMAGE_PIXFMT_P010
       ? DXGI_FORMAT_R16_UNORM : DXGI_FORMAT_R8_UNORM;
-   vd.Texture2D.MostDetailedMip = 0;
    if (FAILED(d3d11->device->lpVtbl->CreateShaderResourceView(d3d11->device,
          (D3D11Resource)tex, &vd, &imp->luma[i])))
       imp->luma[i] = NULL;
@@ -10391,6 +10429,7 @@ static int d3d11_import_tex(d3d11_video_t *d3d11, d3d11_import_t *imp,
    }
    imp->tex[i]        = tex;
    imp->tex_handle[i] = handle;
+   imp->slice[i] = slice;
    imp->num_tex++;
    return (int)i;
 }
@@ -10469,7 +10508,7 @@ static enum video_texture_update d3d11_import_texture(void *data,
    d3d11_import_t *imp;
    ID3D11Fence *wait    = NULL;
    ID3D11Fence *done    = NULL;
-   unsigned w, h;
+   unsigned w, h, region[4];
    bool ok;
    DXGI_FORMAT output_format;
    int t;
@@ -10512,12 +10551,15 @@ static enum video_texture_update d3d11_import_texture(void *data,
       imp->owner = f->owner;
       imp->gen   = f->layout;
    }
-   if ((t = d3d11_import_tex(d3d11, imp, f->image, w, h, f->pixfmt)) < 0)
+   if ((t = d3d11_import_tex(d3d11, imp, f->image, w, h, f->pixfmt,
+            f->array_slice, f->crop_x, f->crop_y)) < 0)
    {
       d3d11_import_clear(imp);
-      t = d3d11_import_tex(d3d11, imp, f->image, w, h, f->pixfmt);
+      t = d3d11_import_tex(d3d11, imp, f->image, w, h, f->pixfmt,
+            f->array_slice, f->crop_x, f->crop_y);
    }
    if (     t < 0
+         || (imp->array[t] && !d3d11_planar_array_init(d3d11))
          || (f->wait && !(wait = d3d11_import_fence(d3d11, imp, f->wait)))
          || (f->done && !(done = d3d11_import_fence(d3d11, imp, f->done))))
    {
@@ -10538,9 +10580,12 @@ static enum video_texture_update d3d11_import_texture(void *data,
    views[0] = imp->luma[t];
    views[1] = imp->chroma[t];
    views[2] = NULL;
+   region[0] = f->crop_x; region[1] = f->crop_y;
+   region[2] = 0; region[3] = 0;
    ok       = d3d11_planar_convert(d3d11, uav, views, w, h, f->yuv,
          true, false, f->pixfmt == IMAGE_PIXFMT_P010, &f->color,
-         p->texture->desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT);
+         p->texture->desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT,
+         imp->array[t] ? region : NULL);
    /* read or not, the producer may have it back */
    if (done)
       d3d11->context4->lpVtbl->Signal(d3d11->context4, done, f->done_value);
@@ -10688,7 +10733,8 @@ static void d3d11_frame_import_init(d3d11_video_t *d3d11)
          && (support & D3D11_FORMAT_SUPPORT_SHADER_LOAD))
       d3d11->import_formats |= IMAGE_PIXFMT_P010;
    d3d11->video_decode = d3d11_video_decode_init_formats(d3d11->device,
-         d3d11->import_formats);
+         d3d11->import_formats | (d3d11_planar_array_init(d3d11)
+               ? D3D11_VIDEO_DECODE_SHADER_DPB : 0));
    RARCH_LOG("[D3D11] Video previews %s.\n", d3d11->video_decode
          ? "decode on the GPU where it can" : "decode on the CPU");
 }
@@ -11433,7 +11479,7 @@ static bool d3d11_set_frame_format(void *data, bool rgb32,
    if (     !d3d11
          || (d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE)
          || d3d11->format == DXGI_FORMAT_R10G10B10A2_UNORM
-         || d3d11->format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+         || d3d11->format == DXGI_FORMAT_R16G16B16A16_FLOAT, NULL)
       return false;
    d3d11->format = rgb32
       ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;

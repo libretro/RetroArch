@@ -43,7 +43,7 @@
  * RGBA16F textures with integer Y,Cb,Cr samples, without colour conversion.
  * @layout names the decoder's set
  * of handles, so that a reader keeping what it opened of them opens
- * them again when it changes. D3D12 readers may receive a decoder array:
+ * them again when it changes. Array-capable readers may receive a decoder array:
  * @array_slice selects its element and @crop_x/@crop_y its visible origin.
  * These fields are zero for standalone output textures.
  *
@@ -89,7 +89,7 @@ typedef struct video_hw_frame
    unsigned layout;
    unsigned yuv;             /* IMAGE_YUV_FLAG_* (image_yuv_blit.h) */
    unsigned pixfmt;          /* image_pixfmt; zero means legacy NV12 */
-   unsigned array_slice;    /* D3D12: shared decoder array element */
+   unsigned array_slice;    /* shared decoder array element */
    unsigned crop_x, crop_y; /* visible origin within that element */
    video_color_metadata_t color;
    unsigned api;             /* video_hw_api; zero for older producers */
