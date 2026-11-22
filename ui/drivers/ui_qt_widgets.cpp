@@ -8,7 +8,6 @@
 #include <QDoubleSpinBox>
 #include <QDragEnterEvent>
 #include <QDropEvent>
-#include <QElapsedTimer>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHeaderView>
@@ -22,7 +21,6 @@
 #include <QListWidgetItem>
 #include <QMenu>
 #include <QMessageBox>
-#include <QMouseEvent>
 #include <QMimeData>
 #include <QPaintEvent>
 #include <QProgressDialog>
@@ -35,7 +33,6 @@
 #include <QStyle>
 #include <QStyleOption>
 #include <QTimer>
-#include <QWheelEvent>
 #include <QWhatsThis>
 
 #include "ui_qt_widgets.h"
@@ -62,7 +59,6 @@
 #include "../../version_git.h"
 #include "../../gfx/video_display_server.h"
 #include "../../input/input_driver.h"
-#include "../../input/input_keymaps.h"
 #include "../../input/input_remapping.h"
 #include "../../network/netplay/netplay.h"
 #include "../../playlist.h"
@@ -70,7 +66,6 @@
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #include "../../menu/menu_entries.h"
-#include "../../menu/menu_input.h"
 #include "../../menu/menu_displaylist.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../../menu/menu_shader.h"
@@ -315,14 +310,7 @@ bool FormLayout::addBindButton(rarch_setting_t *setting)
    if (!setting || !setting->short_description)
       return false;
 
-   if (setting->bind_type >= MENU_SETTINGS_BIND_BEGIN
-         + RARCH_FIRST_META_KEY
-         && setting->bind_type < MENU_SETTINGS_BIND_BEGIN
-         + RARCH_BIND_LIST_END)
-      addRow(QString(setting->short_description),
-            new HotkeyBindWidget(setting));
-   else
-      addRow(QString(setting->short_description), new BindButton(setting));
+   addRow(QString(setting->short_description), new BindButton(setting));
 
    return true;
 }
@@ -1300,518 +1288,24 @@ void BindButton::onClicked(bool checked)
 {
    (void)(checked);
 
+   /* The menu runs the capture, so it is shown for it. */
+   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
    m_setting->actions->ok(m_setting, 0, false);
 }
 
-
-struct HotkeyBindWidget::CaptureState
+/* Coming back from the capture in RetroArch's window shows the bind. */
+void BindButton::changeEvent(QEvent *event)
 {
-   input_bits_t buttons[MAX_USERS];
-   int16_t axes[MAX_USERS][MENU_MAX_AXES];
-   bool axis_armed[MAX_USERS][MENU_MAX_AXES];
-   uint16_t hats[MAX_USERS][MENU_MAX_HATS];
-   uint32_t listen;
-   unsigned user;
-   unsigned bind_id;
-   QElapsedTimer clock;
-   unsigned timeout_seconds;
-};
-
-HotkeyBindWidget::HotkeyBindWidget(rarch_setting_t *setting, QWidget *parent) :
-   QWidget(parent)
-   ,m_setting(setting)
-   ,m_bindButton(new QPushButton(this))
-   ,m_clearButton(new QPushButton(this))
-   ,m_defaultButton(new QPushButton(this))
-   ,m_captureTimer(new QTimer(this))
-   ,m_captureState(NULL)
-{
-   QHBoxLayout *layout = new QHBoxLayout(this);
-
-   layout->setContentsMargins(0, 0, 0, 0);
-   layout->setSpacing(4);
-
-   m_bindButton->setAutoDefault(false);
-   m_bindButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-
-   m_clearButton->setText(tr("Clear"));
-   m_clearButton->setToolTip(tr("Clear this hotkey"));
-   m_clearButton->setAutoDefault(false);
-   m_clearButton->setStyleSheet("QPushButton { min-width: 0px; }");
-
-   m_defaultButton->setText(tr("Default"));
-   m_defaultButton->setToolTip(tr("Restore the default hotkey"));
-   m_defaultButton->setAutoDefault(false);
-   m_defaultButton->setStyleSheet("QPushButton { min-width: 0px; }");
-
-   layout->addWidget(m_bindButton, 1);
-   layout->addWidget(m_clearButton);
-   layout->addWidget(m_defaultButton);
-
-   m_captureTimer->setInterval(16);
-
-   connect(m_bindButton, SIGNAL(clicked(bool)), this, SLOT(onBindClicked()));
-   connect(m_clearButton, SIGNAL(clicked(bool)), this, SLOT(onClearClicked()));
-   connect(m_defaultButton, SIGNAL(clicked(bool)), this, SLOT(onDefaultClicked()));
-   connect(m_captureTimer, SIGNAL(timeout()), this, SLOT(pollCapture()));
-
-   add_sublabel_and_whats_this(m_bindButton, m_setting);
-   refreshLabel();
+   if (event->type() == QEvent::ActivationChange && isActiveWindow())
+   {
+      char val_s[NAME_MAX_LENGTH];
+      m_setting->actions->repr(m_setting, val_s, sizeof(val_s));
+      setText(val_s);
+   }
+   QPushButton::changeEvent(event);
 }
 
-HotkeyBindWidget::~HotkeyBindWidget()
-{
-   stopCapture();
-   delete m_captureState;
-}
-
-void HotkeyBindWidget::refreshLabel()
-{
-   const struct retro_keybind *bind = NULL;
-   char value[NAME_MAX_LENGTH];
-   char part[128];
-   char joy[64];
-   char key[64];
-   char own[NAME_MAX_LENGTH];
-   unsigned id;
-   unsigned user;
-
-   if (!m_setting)
-      return;
-
-   id   = m_setting->bind_type - MENU_SETTINGS_BIND_BEGIN;
-   user = m_setting->index_offset;
-   bind = input_config_bind(user, id);
-   value[0] = '\0';
-
-   if (!bind)
-   {
-      m_bindButton->setText(QStringLiteral("---"));
-      return;
-   }
-
-   input_keymaps_translate_rk_to_str(RETRO_KEYBIND_KEY(bind), key, sizeof(key));
-   if (key[0] && !string_is_equal(key, "nul"))
-   {
-      strlcat(value, key, sizeof(value));
-   }
-
-   joy[0] = '\0';
-   if (bind->joykey != NO_BTN)
-      input_config_format_joykey(joy, sizeof(joy), bind->joykey);
-   else if (bind->joyaxis != AXIS_NONE)
-      input_config_format_joyaxis(joy, sizeof(joy), bind->joyaxis);
-   if (joy[0])
-   {
-      if (value[0])
-         strlcat(value, " / ", sizeof(value));
-      strlcat(value, "Pad: ", sizeof(value));
-      strlcat(value, joy, sizeof(value));
-   }
-
-   own[0] = '\0';
-   input_config_plays_as_hotkey_string(id, own, sizeof(own));
-   if (own[0])
-   {
-      if (value[0])
-         strlcat(value, " / ", sizeof(value));
-      strlcat(value, own, sizeof(value));
-   }
-
-   part[0] = '\0';
-   switch (RETRO_KEYBIND_MBUTTON(bind))
-   {
-      case RETRO_DEVICE_ID_MOUSE_LEFT:          strlcpy(part, "Mouse Left", sizeof(part)); break;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:         strlcpy(part, "Mouse Right", sizeof(part)); break;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:        strlcpy(part, "Mouse Middle", sizeof(part)); break;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:      strlcpy(part, "Mouse 4", sizeof(part)); break;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:      strlcpy(part, "Mouse 5", sizeof(part)); break;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:      strlcpy(part, "Wheel Up", sizeof(part)); break;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:    strlcpy(part, "Wheel Down", sizeof(part)); break;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP: strlcpy(part, "H-Wheel Up", sizeof(part)); break;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN: strlcpy(part, "H-Wheel Down", sizeof(part)); break;
-      default: break;
-   }
-   if (part[0])
-   {
-      if (value[0])
-         strlcat(value, " / ", sizeof(value));
-      strlcat(value, part, sizeof(value));
-   }
-
-   if (!value[0])
-      strlcpy(value, "---", sizeof(value));
-   m_bindButton->setText(QString::fromUtf8(value));
-}
-
-void HotkeyBindWidget::stopCapture()
-{
-   if (m_captureTimer->isActive())
-      m_captureTimer->stop();
-
-   if (m_captureState)
-      qApp->removeEventFilter(this);
-
-   if (m_captureState)
-   {
-      input_driver_set_keyboard_mapping_blocked(false);
-      delete m_captureState;
-      m_captureState = NULL;
-   }
-
-   m_bindButton->setEnabled(true);
-   refreshLabel();
-}
-
-void HotkeyBindWidget::onBindClicked()
-{
-   settings_t *settings = config_get_ptr();
-   unsigned id;
-   unsigned user;
-   unsigned port;
-   unsigned slot;
-
-   if (m_captureTimer->isActive())
-   {
-      stopCapture();
-      return;
-   }
-
-   if (!m_setting || !settings)
-      return;
-
-   id   = m_setting->bind_type - MENU_SETTINGS_BIND_BEGIN;
-   user = m_setting->index_offset;
-   if (id < RARCH_FIRST_META_KEY || id >= RARCH_BIND_LIST_END || user >= MAX_USERS)
-      return;
-
-   m_captureState = new CaptureState();
-   memset(m_captureState->buttons, 0, sizeof(m_captureState->buttons));
-   memset(m_captureState->axes, 0, sizeof(m_captureState->axes));
-   memset(m_captureState->axis_armed, 0, sizeof(m_captureState->axis_armed));
-   memset(m_captureState->hats, 0, sizeof(m_captureState->hats));
-   m_captureState->user            = user;
-   m_captureState->bind_id         = id;
-   m_captureState->listen           = input_config_hotkey_listen_slots();
-   port                             = settings->uints.input_joypad_index[user];
-   if (port >= MAX_USERS)
-      port                          = 0;
-   m_captureState->listen          |= (1U << port);
-   m_captureState->timeout_seconds  = settings->uints.input_bind_timeout;
-   m_captureState->clock.start();
-
-   input_driver_set_keyboard_mapping_blocked(true);
-   input_driver_poll_devices();
-   for (slot = 0; slot < MAX_USERS; slot++)
-      if (m_captureState->listen & (1U << slot))
-         input_driver_capture_pad(slot, false,
-               &m_captureState->buttons[slot], MENU_MAX_BUTTONS,
-               m_captureState->axes[slot], MENU_MAX_AXES,
-               m_captureState->hats[slot], MENU_MAX_HATS);
-
-   for (slot = 0; slot < MAX_USERS; slot++)
-      if (m_captureState->listen & (1U << slot))
-      {
-         unsigned axis;
-         for (axis = 0; axis < MENU_MAX_AXES; axis++)
-            m_captureState->axis_armed[slot][axis] =
-               m_captureState->axes[slot][axis] > -16000
-               && m_captureState->axes[slot][axis] < 16000;
-      }
-
-   m_bindButton->setText(tr("Press a key, mouse or controller input... (click to cancel)"));
-   qApp->installEventFilter(this);
-   m_captureTimer->start();
-}
-
-void HotkeyBindWidget::onClearClicked()
-{
-   struct retro_keybind *bind;
-   unsigned old_key;
-   unsigned id;
-   settings_t *settings = config_get_ptr();
-
-   if (m_captureTimer->isActive())
-      stopCapture();
-   if (!m_setting || !settings)
-      return;
-   id = m_setting->bind_type - MENU_SETTINGS_BIND_BEGIN;
-   if (id < RARCH_FIRST_META_KEY || id >= RARCH_BIND_LIST_END || m_setting->index_offset >= MAX_USERS)
-      return;
-   bind = input_config_bind_edit(m_setting->index_offset, id);
-   if (!bind)
-      return;
-   old_key = RETRO_KEYBIND_KEY(bind);
-   RETRO_KEYBIND_SET_KEY(bind, RETROK_UNKNOWN);
-   RETRO_KEYBIND_SET_MBUTTON(bind, NO_BTN);
-   bind->joykey = NO_BTN;
-   bind->joyaxis = AXIS_NONE;
-   if (old_key != RETROK_UNKNOWN)
-      input_keyboard_mapping_bits(0, old_key);
-   input_config_plays_as_clear_hotkey(id);
-   input_driver_hold_held_input();
-   settings->flags |= SETTINGS_FLG_MODIFIED;
-   refreshLabel();
-}
-
-void HotkeyBindWidget::onDefaultClicked()
-{
-   struct retro_keybind *bind;
-   const struct retro_keybind_def *def;
-   unsigned old_key;
-   unsigned new_key;
-   unsigned id;
-   settings_t *settings = config_get_ptr();
-
-   if (m_captureTimer->isActive())
-      stopCapture();
-   if (!m_setting || !settings)
-      return;
-   id = m_setting->bind_type - MENU_SETTINGS_BIND_BEGIN;
-   if (id < RARCH_FIRST_META_KEY || id >= RARCH_BIND_LIST_END || m_setting->index_offset >= MAX_USERS)
-      return;
-   bind = input_config_bind_edit(m_setting->index_offset, id);
-   def  = input_config_bind_def(m_setting->index_offset, id);
-   if (!bind || !def)
-      return;
-   old_key = RETRO_KEYBIND_KEY(bind);
-   input_config_bind_from_def(bind, def);
-   new_key = RETRO_KEYBIND_KEY(bind);
-   if (old_key != RETROK_UNKNOWN)
-      input_keyboard_mapping_bits(0, old_key);
-   if (new_key != RETROK_UNKNOWN)
-      input_keyboard_mapping_bits(1, new_key);
-   input_config_plays_as_clear_hotkey(id);
-   input_driver_hold_held_input();
-   settings->flags |= SETTINGS_FLG_MODIFIED;
-   refreshLabel();
-}
-
-bool HotkeyBindWidget::eventFilter(QObject *obj, QEvent *event)
-{
-   if (!m_captureState)
-      return QWidget::eventFilter(obj, event);
-
-   if (event->type() == QEvent::MouseButtonPress
-         && (obj == m_bindButton || obj == m_clearButton || obj == m_defaultButton))
-      return QWidget::eventFilter(obj, event);
-
-   if (event->type() == QEvent::KeyPress)
-   {
-      QKeyEvent *key_event = static_cast<QKeyEvent*>(event);
-      unsigned native_key = 0;
-      enum retro_key key = RETROK_UNKNOWN;
-      if (!key_event->isAutoRepeat())
-      {
-#if defined(_WIN32)
-         native_key = key_event->nativeScanCode();
-         if ((native_key & 0xFF00u) == 0xE000u || (native_key & 0x100u))
-            native_key = (native_key & 0xFFu) | 0x80u;
-         else
-            native_key &= 0xFFu;
-#elif defined(__APPLE__)
-         native_key = key_event->nativeScanCode();
-#else
-         native_key = key_event->nativeVirtualKey();
-#endif
-         if (native_key)
-            key = input_keymaps_translate_keysym_to_rk(native_key);
-         if (key != RETROK_UNKNOWN)
-            applyKeyboardBind(key);
-      }
-      event->accept();
-      return true;
-   }
-
-   if (event->type() == QEvent::MouseButtonPress)
-   {
-      QMouseEvent *mouse_event = static_cast<QMouseEvent*>(event);
-      unsigned button = RETRO_KEYBIND_MBUTTON_NONE;
-      switch (mouse_event->button())
-      {
-         case Qt::LeftButton:   button = RETRO_DEVICE_ID_MOUSE_LEFT; break;
-         case Qt::RightButton:  button = RETRO_DEVICE_ID_MOUSE_RIGHT; break;
-         case Qt::MiddleButton: button = RETRO_DEVICE_ID_MOUSE_MIDDLE; break;
-         case Qt::XButton1:     button = RETRO_DEVICE_ID_MOUSE_BUTTON_4; break;
-         case Qt::XButton2:     button = RETRO_DEVICE_ID_MOUSE_BUTTON_5; break;
-         default: break;
-      }
-      if (button != RETRO_KEYBIND_MBUTTON_NONE)
-      {
-         applyMouseBind(button);
-         event->accept();
-         return true;
-      }
-   }
-   else if (event->type() == QEvent::Wheel)
-   {
-      QWheelEvent *wheel_event = static_cast<QWheelEvent*>(event);
-      QPoint delta = wheel_event->angleDelta();
-      unsigned button = RETRO_KEYBIND_MBUTTON_NONE;
-      if (delta.y() > 0) button = RETRO_DEVICE_ID_MOUSE_WHEELUP;
-      else if (delta.y() < 0) button = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
-      else if (delta.x() > 0) button = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
-      else if (delta.x() < 0) button = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
-      if (button != RETRO_KEYBIND_MBUTTON_NONE)
-      {
-         applyMouseBind(button);
-         event->accept();
-         return true;
-      }
-   }
-   return QWidget::eventFilter(obj, event);
-}
-
-void HotkeyBindWidget::applyKeyboardBind(unsigned key)
-{
-   struct retro_keybind *bind;
-   unsigned id;
-   unsigned old_key;
-   settings_t *settings = config_get_ptr();
-   if (!m_setting || !settings || !m_captureState)
-      return;
-   id = m_captureState->bind_id;
-   bind = input_config_bind_edit(m_captureState->user, id);
-   if (!bind)
-      return;
-   old_key = RETRO_KEYBIND_KEY(bind);
-   RETRO_KEYBIND_SET_KEY(bind, (enum retro_key)key);
-   if (old_key != RETROK_UNKNOWN)
-      input_keyboard_mapping_bits(0, old_key);
-   input_keyboard_mapping_bits(1, key);
-   input_driver_hold_held_input();
-   settings->flags |= SETTINGS_FLG_MODIFIED;
-   stopCapture();
-}
-
-void HotkeyBindWidget::applyMouseBind(unsigned button)
-{
-   struct retro_keybind *bind;
-   settings_t *settings = config_get_ptr();
-   if (!m_setting || !settings || !m_captureState)
-      return;
-   bind = input_config_bind_edit(m_captureState->user, m_captureState->bind_id);
-   if (!bind)
-      return;
-   RETRO_KEYBIND_SET_MBUTTON(bind, button);
-   input_driver_hold_held_input();
-   settings->flags |= SETTINGS_FLG_MODIFIED;
-   stopCapture();
-}
-
-void HotkeyBindWidget::applyJoyBind(unsigned port, unsigned joykey, uint32_t joyaxis)
-{
-   struct retro_keybind *bind;
-   settings_t *settings = config_get_ptr();
-   unsigned id;
-   unsigned user;
-   if (!m_setting || !settings || !m_captureState)
-      return;
-   id = m_captureState->bind_id;
-   user = m_captureState->user;
-   if (input_config_hotkey_bind_own(port, id))
-   {
-      if (!input_config_plays_as_set_hotkey(port, id, (uint16_t)joykey, joyaxis))
-      {
-         QMessageBox::warning(this, tr("Hotkey"),
-               tr("No free hotkey slot is available for this controller."));
-         stopCapture();
-         return;
-      }
-   }
-   else
-   {
-      bind = input_config_bind_edit(user, id);
-      if (!bind)
-         return;
-      bind->joykey = (uint16_t)joykey;
-      bind->joyaxis = joyaxis;
-   }
-   input_driver_hold_held_input();
-   settings->flags |= SETTINGS_FLG_MODIFIED;
-   stopCapture();
-}
-
-void HotkeyBindWidget::pollCapture()
-{
-   input_bits_t buttons;
-   int16_t axes[MENU_MAX_AXES];
-   uint16_t hats[MENU_MAX_HATS];
-   unsigned slot;
-   unsigned button;
-   settings_t *settings = config_get_ptr();
-
-   if (!m_captureState || !settings)
-   {
-      stopCapture();
-      return;
-   }
-   if (m_captureState->timeout_seconds && m_captureState->clock.hasExpired(
-            (int)m_captureState->timeout_seconds * 1000))
-   {
-      stopCapture();
-      return;
-   }
-   input_driver_poll_devices();
-   for (slot = 0; slot < MAX_USERS; slot++)
-   {
-      if (!(m_captureState->listen & (1U << slot)))
-         continue;
-      memset(&buttons, 0, sizeof(buttons));
-      memset(axes, 0, sizeof(axes));
-      memset(hats, 0, sizeof(hats));
-      input_driver_capture_pad(slot, false, &buttons, MENU_MAX_BUTTONS,
-            axes, MENU_MAX_AXES, hats, MENU_MAX_HATS);
-
-      for (button = 0; button < MENU_MAX_BUTTONS; button++)
-      {
-         unsigned word = button >> 5;
-         uint32_t mask = 1U << (button & 31);
-         if ((buttons.data[word] & mask) && !(m_captureState->buttons[slot].data[word] & mask))
-         {
-            applyJoyBind(slot, button, AXIS_NONE);
-            return;
-         }
-      }
-
-      for (button = 0; button < MENU_MAX_HATS; button++)
-      {
-         uint16_t changed = (uint16_t)(hats[button] & ~m_captureState->hats[slot][button]);
-         if (changed & HAT_UP_MASK)    { applyJoyBind(slot, HAT_MAP(button, HAT_UP_MASK), AXIS_NONE); return; }
-         if (changed & HAT_DOWN_MASK)  { applyJoyBind(slot, HAT_MAP(button, HAT_DOWN_MASK), AXIS_NONE); return; }
-         if (changed & HAT_LEFT_MASK)  { applyJoyBind(slot, HAT_MAP(button, HAT_LEFT_MASK), AXIS_NONE); return; }
-         if (changed & HAT_RIGHT_MASK) { applyJoyBind(slot, HAT_MAP(button, HAT_RIGHT_MASK), AXIS_NONE); return; }
-      }
-
-      for (button = 0; button < MENU_MAX_AXES; button++)
-      {
-         int diff;
-         if (!m_captureState->axis_armed[slot][button])
-         {
-            if (axes[button] > -16000 && axes[button] < 16000)
-            {
-               m_captureState->axes[slot][button] = axes[button];
-               m_captureState->axis_armed[slot][button] = true;
-            }
-            continue;
-         }
-         diff = (int)axes[button] - (int)m_captureState->axes[slot][button];
-         if (diff > 20000)
-         {
-            applyJoyBind(slot, NO_BTN, AXIS_POS(button));
-            return;
-         }
-         if (diff < -20000)
-         {
-            applyJoyBind(slot, NO_BTN, AXIS_NEG(button));
-            return;
-         }
-      }
-
-      m_captureState->buttons[slot] = buttons;
-      memcpy(m_captureState->hats[slot], hats, sizeof(hats));
-   }
-}
 
 ColorButton::ColorButton(rarch_setting_t *red, rarch_setting_t *green, rarch_setting_t *blue, QWidget *parent) :
    QToolButton(parent)

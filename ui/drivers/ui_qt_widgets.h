@@ -47,7 +47,6 @@ class QLabel;
 class QLayout;
 class QPaintEvent;
 class QResizeEvent;
-class QTimer;
 class QVBoxLayout;
 class QDoubleSpinBox;
 /* Forward decls kept unconditional so that callers holding bare
@@ -590,45 +589,12 @@ class BindButton : public QPushButton
 public:
    BindButton(rarch_setting_t *setting, QWidget *parent = 0);
    BindButton(msg_hash_enums enum_idx, QWidget *parent = 0);
+protected:
+   void changeEvent(QEvent *event);
 private slots:
    void onClicked(bool checked);
 private:
    rarch_setting_t *m_setting;
-};
-
-/* Qt-owned hotkey capture. Input values are read through RetroArch's
- * input driver APIs, so only RetroArch key and joypad identifiers can
- * be written to the configuration. */
-class HotkeyBindWidget : public QWidget
-{
-   Q_OBJECT
-public:
-   HotkeyBindWidget(rarch_setting_t *setting, QWidget *parent = 0);
-   ~HotkeyBindWidget();
-
-private slots:
-   void onBindClicked();
-   void onClearClicked();
-   void onDefaultClicked();
-   void pollCapture();
-
-protected:
-   bool eventFilter(QObject *obj, QEvent *event);
-
-private:
-   struct CaptureState;
-   void refreshLabel();
-   void stopCapture();
-   void applyKeyboardBind(unsigned key);
-   void applyMouseBind(unsigned button);
-   void applyJoyBind(unsigned port, unsigned joykey, uint32_t joyaxis);
-
-   rarch_setting_t *m_setting;
-   QPushButton *m_bindButton;
-   QPushButton *m_clearButton;
-   QPushButton *m_defaultButton;
-   QTimer *m_captureTimer;
-   CaptureState *m_captureState;
 };
 
 class ColorButton : public QToolButton
