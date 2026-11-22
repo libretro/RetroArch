@@ -1526,10 +1526,10 @@ QVariant BrowseTableModel::headerData(int section, Qt::Orientation orientation, 
    switch (section)
    {
       case 0: return QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME));
-      case 1: return QStringLiteral("Size");
-      case 2: return QStringLiteral("Type");
-      case 3: return QStringLiteral("Date Modified");
-      case 4: return QStringLiteral("Path");
+      case 1: return QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_SIZE));
+      case 2: return QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE));
+      case 3: return QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_DATE_MODIFIED));
+      case 4: return QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_FILE_PATH));
    }
    return QVariant();
 }
@@ -2871,7 +2871,7 @@ void MainWindow::onFileBrowserTableContextMenuRequested(const QPoint &pos)
    if (isBackup)
       restoreAction = menu.addAction(msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST));
-   deleteAction = menu.addAction(tr("Delete"));
+   deleteAction = menu.addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE));
    selectedAction = menu.exec(m_fileTableView->viewport()->mapToGlobal(pos));
 
    if (!selectedAction)
@@ -2887,16 +2887,13 @@ void MainWindow::onFileBrowserTableContextMenuRequested(const QPoint &pos)
    }
    else if (selectedAction == deleteAction)
    {
-      QString itemType = isDirectory ? tr("folder") : tr("file");
-      QString title = isBackup ? tr("Delete Backup") : tr("Delete");
-      QString message = isBackup
-         ? tr("Are you sure you want to delete this backup?\n\n%1")
-            .arg(targetName)
-         : (isDirectory
-            ? tr("Are you sure you want to delete this folder and all of its contents?\n\n%1")
-               .arg(targetName)
-            : tr("Are you sure you want to delete this file?\n\n%1")
-               .arg(targetName));
+      QString title = isBackup
+         ? QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST)) : QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE));
+      QString message = (isBackup
+            ? QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_BACKUP_CONFIRM))
+            : (isDirectory
+               ? QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_CONFIRM))
+               : QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_CONFIRM)))).arg(targetName);
 
       if (QMessageBox::question(this, title, message,
                QMessageBox::Yes | QMessageBox::No,
@@ -2911,7 +2908,8 @@ void MainWindow::onFileBrowserTableContextMenuRequested(const QPoint &pos)
                   : filestream_delete(targetPathArray.constData()) != 0)))
       {
          QMessageBox::critical(this, title,
-               tr("Failed to delete %1:\n%2").arg(itemType, targetPath));
+               (isDirectory ? QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_FAILED))
+                  : QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_FAILED))).arg(targetPath));
          return;
       }
 #ifdef HAVE_CORE_SIGNATURES
@@ -2919,9 +2917,9 @@ void MainWindow::onFileBrowserTableContextMenuRequested(const QPoint &pos)
          core_install_drop_sig(targetPathArray.constData());
 #endif
       QMessageBox::information(this, title,
-            isBackup ? tr("Backup deleted successfully.")
-                     : tr("%1 deleted successfully.").arg(
-                        isDirectory ? tr("Folder") : tr("File")));
+            isBackup ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_BACKUP_DONE)
+            : (isDirectory ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_DONE)
+                           : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_DONE)));
 
       /* the folder tree lists folders only */
       if (isDirectory)
@@ -4602,7 +4600,7 @@ static void qt_updater_request_content_listing(MainWindow *window,
 {
    if (!qt_updater_request_listing(window, relativePath,
             type == 4 ? FILE_PATH_INDEX_DIRS_URL : FILE_PATH_INDEX_URL, type))
-      window->showMessageBox(QObject::tr("Failed to request the content list."),
+      window->showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_CONTENT_LIST_FAILED),
             MainWindow::MSGBOX_TYPE_ERROR);
 }
 #endif
@@ -4719,7 +4717,7 @@ void MainWindow::onUpdaterActionClicked()
       {
          if (!core_updater_list_init_cached())
          {
-            showMessageBox(tr("Failed to initialise the core list."), MSGBOX_TYPE_ERROR);
+            showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORE_LIST_INIT_FAILED), MSGBOX_TYPE_ERROR);
             return;
          }
          coreList = core_updater_list_get_cached();
@@ -4735,13 +4733,13 @@ void MainWindow::onUpdaterActionClicked()
       m_updaterDirectoryTree->hide();
       m_coreUpdaterTable->setColumnCount(3);
       m_coreUpdaterTable->setHorizontalHeaderLabels(QStringList()
-            << tr("Core Name") << tr("License") << tr("Date"));
+            << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME) << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES) << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_DATE));
       m_centralWidget->setCurrentWidget(m_updaterContentWidget);
       {
          command_event(CMD_EVENT_NETWORK_INIT, NULL);
          if (!task_push_get_core_updater_list(coreList, false, false))
          {
-            showMessageBox(tr("Failed to start the core list download."), MSGBOX_TYPE_ERROR);
+            showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORE_LIST_START_FAILED), MSGBOX_TYPE_ERROR);
             return;
          }
       }
@@ -4753,20 +4751,20 @@ void MainWindow::onUpdaterActionClicked()
       m_coreUpdaterTable->setRowCount(0);
       m_coreUpdaterTable->setSortingEnabled(false);
       m_coreUpdaterTable->setColumnCount(1);
-      m_coreUpdaterTable->setHorizontalHeaderLabels(QStringList() << tr("File Name"));
+      m_coreUpdaterTable->setHorizontalHeaderLabels(QStringList() << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_FILE_NAME));
       m_coreUpdaterTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
       m_updaterNavigationWidget->hide();
       m_updaterDirectoryTree->hide();
       m_centralWidget->setCurrentWidget(m_updaterContentWidget);
       if (!*settings->paths.network_buildbot_assets_url)
       {
-         showMessageBox(tr("The buildbot assets URL is not configured."), MSGBOX_TYPE_ERROR);
+         showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_NO_BUILDBOT_URL), MSGBOX_TYPE_ERROR);
          return;
       }
       command_event(CMD_EVENT_NETWORK_INIT, NULL);
       if (!qt_updater_request_listing(this, QStringLiteral("system"),
                FILE_PATH_INDEX_URL, 2))
-         showMessageBox(tr("Failed to request the system files list."), MSGBOX_TYPE_ERROR);
+         showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_SYSTEM_FILES_LIST_FAILED), MSGBOX_TYPE_ERROR);
    }
    else if (action == MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS)
    {
@@ -4776,7 +4774,7 @@ void MainWindow::onUpdaterActionClicked()
       m_coreUpdaterTable->setRowCount(0);
       m_coreUpdaterTable->setSortingEnabled(false);
       m_coreUpdaterTable->setColumnCount(1);
-      m_coreUpdaterTable->setHorizontalHeaderLabels(QStringList() << tr("Name"));
+      m_coreUpdaterTable->setHorizontalHeaderLabels(QStringList() << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME));
       m_coreUpdaterTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
       m_updaterHomeWidget->hide();
       m_updaterNavigationWidget->show();
@@ -4785,7 +4783,7 @@ void MainWindow::onUpdaterActionClicked()
       m_updaterDirectoryTree->setHeaderHidden(true);
       {
          QTreeWidgetItem *root = new QTreeWidgetItem(m_updaterDirectoryTree);
-         root->setText(0, tr("Cores"));
+         root->setText(0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES));
          root->setData(0, Qt::UserRole, m_updaterContentPath);
          root->setIcon(0, m_folderIcon);
          root->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
@@ -4864,7 +4862,7 @@ void MainWindow::onCoreUpdaterListPublished()
       return;
    }
 
-   showMessageBox(tr("The core list could not be retrieved."), MSGBOX_TYPE_ERROR);
+   showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORE_LIST_FAILED), MSGBOX_TYPE_ERROR);
 #endif
 }
 
@@ -4883,7 +4881,7 @@ void MainWindow::onCoreUpdaterTableContextMenuRequested(const QPoint &pos)
    entryType = item->data(Qt::UserRole + 1).toString();
    if (entryType == QStringLiteral("empty"))
       return;
-   action = menu.addAction(tr("Download"));
+   action = menu.addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOAD));
    if (menu.exec(m_coreUpdaterTable->viewport()->mapToGlobal(pos)) != action)
       return;
    onUpdaterTableDoubleClicked(index);
@@ -4905,7 +4903,7 @@ void MainWindow::onUpdaterListingFinished(QStringList entries, int type, QString
    {
       if (entries.isEmpty())
       {
-         QTableWidgetItem *item = new QTableWidgetItem(tr("No entries available."));
+         QTableWidgetItem *item = new QTableWidgetItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_NO_ENTRIES));
          item->setData(Qt::UserRole + 1, QStringLiteral("empty"));
          m_coreUpdaterTable->insertRow(0);
          m_coreUpdaterTable->setItem(0, 0, item);
@@ -4969,7 +4967,7 @@ void MainWindow::onUpdaterListingFinished(QStringList entries, int type, QString
       m_coreUpdaterTable->setRowCount(0);
       if (entries.isEmpty())
       {
-         QTableWidgetItem *item = new QTableWidgetItem(tr("No files available."));
+         QTableWidgetItem *item = new QTableWidgetItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_NO_FILES));
          item->setData(Qt::UserRole + 1, QStringLiteral("empty"));
          m_coreUpdaterTable->insertRow(0);
          m_coreUpdaterTable->setItem(0, 0, item);
@@ -4993,7 +4991,7 @@ void MainWindow::onUpdaterDownloadFinished(QString fileName, bool success,
 {
    if (success)
    {
-      showStatusMessage(tr("Downloaded: %1").arg(fileName), 1, 4000, true);
+      showStatusMessage(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOADED)).arg(fileName), 1, 4000, true);
       if (!folder.isEmpty())
       {
          /* the download's folder and whatever its extraction made */
@@ -5008,7 +5006,7 @@ void MainWindow::onUpdaterDownloadFinished(QString fileName, bool success,
       }
    }
    else
-      showMessageBox(tr("Download failed: %1").arg(fileName), MSGBOX_TYPE_ERROR);
+      showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOAD_FAILED)).arg(fileName), MSGBOX_TYPE_ERROR);
 }
 
 void MainWindow::onUpdaterBackClicked()
@@ -5081,7 +5079,7 @@ void MainWindow::onUpdaterTableDoubleClicked(const QModelIndex &index)
                QStringLiteral("system/") + fileName,
                QString::fromUtf8(config_get_ptr()->paths.directory_system),
                fileName, false))
-         showMessageBox(tr("Failed to start the download."), MSGBOX_TYPE_ERROR);
+         showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOAD_START_FAILED), MSGBOX_TYPE_ERROR);
    }
    else if (m_updaterViewType == 3)
    {
@@ -5090,7 +5088,7 @@ void MainWindow::onUpdaterTableDoubleClicked(const QModelIndex &index)
       if (!qt_updater_download_file(this, remotePath,
                QString::fromUtf8(config_get_ptr()->paths.directory_core_assets),
                name, true))
-         showMessageBox(tr("Failed to start the download."), MSGBOX_TYPE_ERROR);
+         showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOAD_START_FAILED), MSGBOX_TYPE_ERROR);
    }
 #else
    (void)index;
@@ -6467,8 +6465,8 @@ static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
    }
    mainwindow->coreUpdaterTable()->setColumnCount(3);
    mainwindow->coreUpdaterTable()->setHorizontalHeaderLabels(QStringList()
-         << QObject::tr("Core Name") << QObject::tr("License")
-         << QObject::tr("Date"));
+         << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME) << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES)
+         << msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_UPDATER_DATE));
    mainwindow->coreUpdaterTable()->verticalHeader()->hide();
    mainwindow->coreUpdaterTable()->setAlternatingRowColors(true);
    mainwindow->coreUpdaterTable()->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -6479,9 +6477,9 @@ static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
    {
       QVBoxLayout *contentLayout = new QVBoxLayout(mainwindow->updaterContentWidget());
       QHBoxLayout *navigationLayout = new QHBoxLayout(mainwindow->updaterNavigationWidget());
-      QPushButton *backButton = new QPushButton(QObject::tr("Back"), mainwindow->updaterNavigationWidget());
-      QPushButton *upButton = new QPushButton(QObject::tr("Up"), mainwindow->updaterNavigationWidget());
-      QPushButton *topButton = new QPushButton(QObject::tr("Top"), mainwindow->updaterNavigationWidget());
+      QPushButton *backButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK), mainwindow->updaterNavigationWidget());
+      QPushButton *upButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP), mainwindow->updaterNavigationWidget());
+      QPushButton *topButton = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP), mainwindow->updaterNavigationWidget());
       contentLayout->setContentsMargins(0, 0, 0, 0);
       navigationLayout->setContentsMargins(4, 4, 4, 4);
       navigationLayout->addWidget(backButton);

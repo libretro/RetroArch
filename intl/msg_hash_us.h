@@ -32172,6 +32172,118 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_RESET_ALL,
    "Reset All"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOAD,
+   "Download"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_DATE,
+   "Date"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
+   "Cores"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_FILE_NAME,
+   "File Name"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_NO_ENTRIES,
+   "No entries available."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_NO_FILES,
+   "No files available."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOADED,
+   "Downloaded: %1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOAD_FAILED,
+   "Download failed: %1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORE_LIST_INIT_FAILED,
+   "Failed to initialise the core list."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORE_LIST_START_FAILED,
+   "Failed to start the core list download."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORE_LIST_FAILED,
+   "The core list could not be retrieved."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_CONTENT_LIST_FAILED,
+   "Failed to request the content list."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_SYSTEM_FILES_LIST_FAILED,
+   "Failed to request the system files list."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOAD_START_FAILED,
+   "Failed to start the download."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_UPDATER_NO_BUILDBOT_URL,
+   "The buildbot assets URL is not configured."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DELETE_BACKUP_CONFIRM,
+   "Are you sure you want to delete this backup?\n\n%1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_CONFIRM,
+   "Are you sure you want to delete this file?\n\n%1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_CONFIRM,
+   "Are you sure you want to delete this folder and all of its contents?\n\n%1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_FAILED,
+   "Failed to delete file:\n%1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_FAILED,
+   "Failed to delete folder:\n%1"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DELETE_BACKUP_DONE,
+   "Backup deleted successfully."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_DONE,
+   "File deleted successfully."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_DONE,
+   "Folder deleted successfully."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FILE_SIZE,
+   "Size"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
+   "Type"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FILE_DATE_MODIFIED,
+   "Date Modified"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_FILE_PATH,
+   "Path"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_WHATS_THIS,
+   "What's This?"
+   )
 
 /* Unsorted */
 

@@ -145,7 +145,7 @@ static inline void add_sublabel_and_whats_this(
             || qobject_cast<QAbstractSpinBox*>(widget))
          return;
       whatsThisAction = new QAction(
-      QObject::tr("What's This?"), widget);
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_WHATS_THIS), widget);
 
       QObject::connect(whatsThisAction, &QAction::triggered,
             widget, [widget]()
