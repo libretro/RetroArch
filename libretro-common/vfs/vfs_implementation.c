@@ -7196,6 +7196,171 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
    }
 }
 
+#if defined(_WIN32) && !defined(_XBOX)
+#ifndef FILE_ATTRIBUTE_REPARSE_POINT
+#define FILE_ATTRIBUTE_REPARSE_POINT 0x00000400
+#endif
+/* A symbolic link's and a junction's reparse tags. Other reparse
+ * points (a cloud file's placeholder, a deduplicated file) are the
+ * file or folder itself. */
+#define VFS_REPARSE_TAG_SYMLINK     0xA000000CUL
+#define VFS_REPARSE_TAG_MOUNT_POINT 0xA0000003UL
+#define VFS_FIND_DATA_IS_LINK(fd) \
+   (   ((fd)->dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) \
+    && (   (unsigned long)(fd)->dwReserved0 == VFS_REPARSE_TAG_SYMLINK \
+        || (unsigned long)(fd)->dwReserved0 == VFS_REPARSE_TAG_MOUNT_POINT))
+#endif
+
+#if !defined(_WIN32) && !defined(VITA) && !defined(__PSL1GHT__) \
+      && !defined(__PS3__) && !defined(VFS_HAVE_FSTATAT) \
+      && defined(VFS_HAVE_POSIX_METADATA)
+/* lstat on the joined path, where there is no fstatat; the path is on
+ * the heap to keep within the 2 KiB thread-stack budget. One that
+ * cannot be asked is not a folder to walk into. */
+static VFS_NOINLINE bool retro_vfs_dirent_is_link_slow(
+      libretro_vfs_implementation_dir *rdir)
+{
+   struct stat st;
+   char *path;
+   bool link                  = true;
+   const struct dirent *entry = (const struct dirent*)rdir->entry;
+   if (!rdir->orig_path || !(path = (char*)malloc(PATH_MAX_LENGTH)))
+      return true;
+   fill_pathname_join_special(path, rdir->orig_path, entry->d_name,
+         PATH_MAX_LENGTH);
+   if (lstat(path, &st) == 0)
+      link = S_ISLNK(st.st_mode) != 0;
+   free(path);
+   return link;
+}
+#endif
+
+/* Whether the current entry is a link of its own (a symbolic link, or
+ * on Windows a symbolic link or junction), which a walk that must stay
+ * in its tree does not descend into. dirent_is_dir follows links. */
+bool retro_vfs_dirent_is_link_impl(libretro_vfs_implementation_dir *rdir)
+{
+   if (!rdir)
+      return false;
+#ifdef HAVE_SMBCLIENT
+   if (rdir->smb_handle)
+      return false;
+#endif
+#ifdef HAVE_NFSCLIENT
+   if (rdir->nfs_handle)
+      return false;
+#endif
+#if defined(ANDROID) && defined(HAVE_SAF)
+   if (rdir->saf_directory != NULL)
+      return false;
+#endif
+#if defined(_WIN32) && !defined(_XBOX)
+   return VFS_FIND_DATA_IS_LINK((const WIN32_FIND_DATA*)&rdir->entry);
+#elif defined(_WIN32) || defined(VITA) || defined(__PSL1GHT__) || defined(__PS3__)
+   return false;
+#else
+   {
+      const struct dirent *entry = (const struct dirent*)rdir->entry;
+      if (!entry)
+         return false;
+#if defined(DT_DIR) && defined(DT_LNK)
+      if (entry->d_type == DT_LNK)
+         return true;
+      if (entry->d_type != DT_UNKNOWN)
+         return false;
+#endif
+#if defined(VFS_HAVE_FSTATAT)
+      {
+         struct stat st;
+         /* one that cannot be asked is not a folder to walk into */
+         if (fstatat(dirfd(rdir->directory), entry->d_name, &st,
+                  AT_SYMLINK_NOFOLLOW) < 0)
+            return true;
+         return S_ISLNK(st.st_mode) != 0;
+      }
+#elif defined(VFS_HAVE_POSIX_METADATA)
+      return retro_vfs_dirent_is_link_slow(rdir);
+#else
+      return false;
+#endif
+   }
+#endif
+}
+
+/* Whether @path names a link of its own, as dirent_is_link says of an
+ * entry. */
+bool retro_vfs_path_is_link_impl(const char *path)
+{
+   if (!path || !*path)
+      return false;
+#if defined(ANDROID) && defined(HAVE_SAF)
+   if (path_is_saf(path))
+      return false;
+#endif
+#if defined(_WIN32) && !defined(_XBOX)
+   {
+      HANDLE h  = INVALID_HANDLE_VALUE;
+      bool link = false;
+#if defined(LEGACY_WIN32_RUNTIME)
+      if (win32_needs_local_encoding())
+      {
+         WIN32_FIND_DATAA fd;
+         char *path_local = utf8_to_local_string_alloc(path);
+         if (path_local)
+         {
+            if ((h = FindFirstFileA(path_local, &fd)) != INVALID_HANDLE_VALUE)
+               link = VFS_FIND_DATA_IS_LINK(&fd);
+            free(path_local);
+         }
+      }
+      else
+      {
+         WIN32_FIND_DATAW fd;
+         wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+         if (path_wide)
+         {
+            if ((h = FindFirstFileW(path_wide, &fd)) != INVALID_HANDLE_VALUE)
+               link = VFS_FIND_DATA_IS_LINK(&fd);
+            free(path_wide);
+         }
+      }
+#elif defined(LEGACY_WIN32)
+      {
+         WIN32_FIND_DATA fd;
+         char *path_local = utf8_to_local_string_alloc(path);
+         if (path_local)
+         {
+            if ((h = FindFirstFile(path_local, &fd)) != INVALID_HANDLE_VALUE)
+               link = VFS_FIND_DATA_IS_LINK(&fd);
+            free(path_local);
+         }
+      }
+#else
+      {
+         WIN32_FIND_DATAW fd;
+         wchar_t *path_wide = utf8_to_utf16_string_alloc(path);
+         if (path_wide)
+         {
+            if ((h = FindFirstFileW(path_wide, &fd)) != INVALID_HANDLE_VALUE)
+               link = VFS_FIND_DATA_IS_LINK(&fd);
+            free(path_wide);
+         }
+      }
+#endif
+      if (h != INVALID_HANDLE_VALUE)
+         FindClose(h);
+      return link;
+   }
+#elif defined(VFS_HAVE_POSIX_METADATA)
+   {
+      struct stat st;
+      return lstat(path, &st) == 0 && S_ISLNK(st.st_mode);
+   }
+#else
+   return false;
+#endif
+}
+
 /* The join-and-stat fallback: one full-path stat per entry, which is
  * exactly what a caller without dirent_stat would do itself.  Split out
  * so the fast paths do not carry its frame, and the joined path is on

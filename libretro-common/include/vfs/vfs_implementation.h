@@ -300,6 +300,13 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *dirs
 
 bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *dirstream);
 
+/* Whether the entry is a link of its own (a symbolic link, or on
+ * Windows a symbolic link or junction); dirent_is_dir follows links. */
+bool retro_vfs_dirent_is_link_impl(libretro_vfs_implementation_dir *dirstream);
+
+/* Whether @path names a link of its own, as dirent_is_link says. */
+bool retro_vfs_path_is_link_impl(const char *path);
+
 int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *dirstream);
 
 #ifdef __WINRT__
