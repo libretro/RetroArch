@@ -77,9 +77,17 @@ static void vulkan_media_pool_get(vk_t *vk, struct vk_texture *texture)
             && texture->format != VK_FORMAT_R16G16B16A16_SFLOAT))
       return;
    for (st = vk->stream_states; st && st->texture != texture; st = st->next) {}
-   if ((st && st->import)
-         || (texture->type != VULKAN_TEXTURE_STATIC && !(st && st->pool)))
+   if (texture->type != VULKAN_TEXTURE_STATIC && !(st && st->pool))
       return;
+#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9) \
+      || defined(HAVE_RAV1) || defined(HAVE_RECORD_MEDIACODEC))
+   if (texture->android_cache)
+      return;
+#endif
+#ifdef HAVE_VAAPI
+   if (texture->vaapi_cache)
+      return;
+#endif
    pool = (struct vk_media_pool*)calloc(1, sizeof(*pool));
    version = (struct vk_media_version*)calloc(1, sizeof(*version));
    if (!pool || !version)
@@ -198,6 +206,29 @@ static struct vk_texture *vulkan_media_writable(vk_t *vk, struct vk_texture *tex
       return NULL;
    version = vulkan_media_version_new(vk, pool);
    return version ? &version->texture : NULL;
+}
+
+/* Each descriptor slot is changed only after its previous submission retires. */
+static void vulkan_media_storage_target(vk_t *vk, struct vk_stream_state *st,
+      unsigned slot, const struct vk_texture *destination)
+{
+   if (st->media_target[slot] != destination->view)
+   {
+      VkDescriptorImageInfo info;
+      VkWriteDescriptorSet write;
+      memset(&info, 0, sizeof(info));
+      memset(&write, 0, sizeof(write));
+      info.imageView = destination->view;
+      info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+      write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      write.dstSet = st->set[slot];
+      write.dstBinding = 3;
+      write.descriptorCount = 1;
+      write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+      write.pImageInfo = &info;
+      vkUpdateDescriptorSets(vk->context->device, 1, &write, 0, NULL);
+      st->media_target[slot] = destination->view;
+   }
 }
 
 static void vulkan_media_publish(struct vk_texture *texture, struct vk_texture *destination)

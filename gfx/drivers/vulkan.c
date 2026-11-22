@@ -16837,23 +16837,7 @@ static enum video_texture_update vulkan_update_texture_planar(vk_t *vk,
    destination = vulkan_media_writable(vk, texture);
    if (!destination)
       return VIDEO_TEXTURE_UPDATE_DROPPED;
-   if (st->media_target[slot] != destination->view)
-   {
-      VkDescriptorImageInfo info;
-      VkWriteDescriptorSet write;
-      memset(&info, 0, sizeof(info));
-      memset(&write, 0, sizeof(write));
-      info.imageView = destination->view;
-      info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-      write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-      write.dstSet = st->set[slot];
-      write.dstBinding = 3;
-      write.descriptorCount = 1;
-      write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-      write.pImageInfo = &info;
-      vkUpdateDescriptorSets(device, 1, &write, 0, NULL);
-      st->media_target[slot] = destination->view;
-   }
+   vulkan_media_storage_target(vk, st, slot, destination);
 
 
    y_off  = VK_PLANAR_HEADER * 4;
@@ -17121,6 +17105,7 @@ static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
       }
       image_info.sampler          = VK_NULL_HANDLE;
       image_info.imageView        = texture->view;
+      st->media_target[i] = texture->view;
       image_info.imageLayout      = VK_IMAGE_LAYOUT_GENERAL;
       write.sType             = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
       write.pNext             = NULL;
@@ -17152,6 +17137,7 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       struct vk_texture *texture, const video_frame_import_t *f)
 {
    struct vk_stream_state *st;
+   struct vk_texture *destination;
 #if defined(_WIN32) && !defined(__WINRT__)
    video_frame_import_t imported;
    bool packed = f->pixfmt == IMAGE_PIXFMT_YUV8_FP16
@@ -17237,6 +17223,9 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       if (vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
          return VIDEO_TEXTURE_UPDATE_DROPPED;
    }
+   destination = vulkan_media_writable(vk, texture);
+   if (!destination)
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
 #if defined(_WIN32) && !defined(__WINRT__)
    if (packed)
    {
@@ -17254,6 +17243,7 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    if (!sampled && !vulkan_import_buffer(vk, st, slot, bytes))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    st->next_slot = slot ^ 1;
+   vulkan_media_storage_target(vk, st, slot, destination);
 
    y_off = layout.header[2];
    c_off = layout.header[4];
@@ -17354,10 +17344,11 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    bbar.buffer              = st->staging[slot].buffer;
    bbar.offset              = 0;
    bbar.size                = VK_WHOLE_SIZE;
-   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, texture->image,
-         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
-         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, destination->image,
+         destination->layout, VK_IMAGE_LAYOUT_GENERAL,
+         destination->layout == VK_IMAGE_LAYOUT_UNDEFINED ? 0 : VK_ACCESS_SHADER_READ_BIT,
+         VK_ACCESS_SHADER_WRITE_BIT,
+         destination->layout == VK_IMAGE_LAYOUT_UNDEFINED ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
    if (!sampled)
       vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -17386,14 +17377,13 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
    vkCmdPipelineBarrier(cmd, sampled ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT,
          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &bar);
 
-   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, texture->image,
+   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, destination->image,
          VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
    if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
-   texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
    memcpy(&wait, &f->wait, sizeof(wait));
    memcpy(&done, &f->done, sizeof(done));
@@ -17432,6 +17422,8 @@ static enum video_texture_update vulkan_import_convert(vk_t *vk,
       vulkan_check_device_lost(vk, res);
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
+   vulkan_media_publish(texture, destination);
+   vulkan_media_texture_changed(vk, (uintptr_t)texture, true);
    return VIDEO_TEXTURE_UPDATE_DONE;
 }
 

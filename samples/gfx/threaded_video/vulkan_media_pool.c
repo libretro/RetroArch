@@ -101,6 +101,8 @@ static void vkCmdBlitImage(VkCommandBuffer cmd,VkImage source,VkImageLayout src_
    assert(blit->dstSubresource.mipLevel<images[ID(source)].levels);
    operation_add(cmd,2,ID(destination),0,blit->dstSubresource.mipLevel);blits++;
 }
+static void vkUpdateDescriptorSets(VkDevice d,uint32_t count,const VkWriteDescriptorSet *writes,
+      uint32_t copies,const VkCopyDescriptorSet *copy);
 #include "gfx/common/vulkan_media_pool.h"
 static struct vk_stream_state *vulkan_stream_state_get(vk_t *v,struct vk_texture *texture)
 {assert(v->stream_states->texture==texture);return v->stream_states->pool?NULL:v->stream_states;}
@@ -187,7 +189,6 @@ static void setup(vk_t *v,struct vk_texture *texture,struct vk_stream_state *st,
       st->media_target[i]=texture->view;storage_view[i]=ID(texture->view);
    }
    v->stream_states=st;v->media_submit_serial=0;
-   st->import=true;vulkan_media_pool_get(v,texture);assert(!texture->media_pool);st->import=false;
    vulkan_media_pool_get(v,texture);assert(texture->media_pool && texture->media_version);
 }
 
