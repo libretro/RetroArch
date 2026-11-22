@@ -920,7 +920,7 @@ jobs:
           set -eu
           # The real slang_process(): rslc hands a pass back as HLSL for
           # the Direct3D 10/11/12 drivers, and a preset's simulated
-          # SourceSize reaches the first pass only, from
+          # SourceSize reaches the passes that opt in (the first by default), from
           # storage that outlives the semantics the D3D drivers copy.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
@@ -1622,6 +1622,24 @@ jobs:
              timeout 60 ./shader_dir_cycle_test "$T"
           rm -rf "${T:?}"
           echo "[pass] shader_dir_cycle_test"
+
+      - name: Build and run shader_sim_res_preset_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/shader_sim_res_preset
+        run: |
+          set -eu
+          # The per-pass use_simulated_res key through the real preset
+          # parser and writers: the first pass is on by default, the
+          # key is written only where it differs from that, a toggled
+          # flag forces a full preset instead of a #reference, and a
+          # combined preset's appended first pass is turned off.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          test -x shader_sim_res_preset_test
+          T=$(mktemp -d)
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+             timeout 60 ./shader_sim_res_preset_test "$T"
+          rm -rf "${T:?}"
+          echo "[pass] shader_sim_res_preset_test"
 
       - name: Build and run vulkan_mailbox_init_leak_test (ASan + LSan)
         shell: bash

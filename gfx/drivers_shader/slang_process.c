@@ -802,7 +802,8 @@ static bool slang_process_reflection(
             unsigned sim = 0;
 
             if (     semantic == (int)SLANG_TEXTURE_SEMANTIC_SOURCE
-                  && pass_number == 0)
+                  && pass_number < shader_info->passes
+                  && shader_info->pass[pass_number].use_simulated_res)
                sim = shader_info->sim_source_dims;
 
             if (sim)

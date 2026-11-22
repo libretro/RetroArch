@@ -955,6 +955,8 @@ struct gl3_common_resources
    size_t num_pass_outputs;
    struct gl3_static_texture *luts;
    size_t num_luts;
+   /* Passes told the simulated SourceSize, one bit each. */
+   uint64_t sim_source_passes;
 
    slang_texture_semantic_name_map texture_semantic_map;
    slang_texture_semantic_name_map texture_semantic_uniform_map;
@@ -971,7 +973,7 @@ struct gl3_common_resources
    float paper_white_nits;
    float peak_nits;
    unsigned expand_gamut;
-   /* The first pass's SourceSize, from the preset; 0 when off. */
+   /* The simulated SourceSize from the preset; 0 when off. */
    unsigned sim_source_dims;
 
    /* Frames may come inside a larger texture: passes are built to read
@@ -1006,6 +1008,17 @@ static void gl3_common_resources_init(gl3_common_resources *common)
    common->quad_program = gl3_cross_compile_program(
          spirv_opaque_vert, spirv_opaque_vert_size,
          spirv_opaque_frag, spirv_opaque_frag_size, &common->quad_loc, true);
+}
+
+static void gl3_common_set_sim_source_dims(gl3_common_resources *common,
+      const struct video_shader *shader)
+{
+   unsigned i;
+   common->sim_source_passes = 0;
+   common->sim_source_dims   = shader->sim_source_dims;
+   for (i = 0; i < shader->passes && i < GFX_MAX_SHADERS; i++)
+      if (shader->pass[i].use_simulated_res)
+         common->sim_source_passes |= (uint64_t)1 << i;
 }
 
 static void gl3_common_resources_free(gl3_common_resources *common)
@@ -2497,9 +2510,11 @@ static void gl3_pass_build_semantic_texture(struct gl3_pass *pass, uint8_t *buff
       enum slang_texture_semantic semantic, const gl3_texture_t *texture)
 {
    unsigned dims = texture->texture.dims;
-   if (     semantic == SLANG_TEXTURE_SEMANTIC_SOURCE
-         && pass->pass_number == 0
-         && pass->common->sim_source_dims)
+   if (semantic == SLANG_TEXTURE_SEMANTIC_SOURCE
+         && pass->common->sim_source_dims
+         && pass->pass_number < GFX_MAX_SHADERS
+         && (pass->common->sim_source_passes
+            & ((uint64_t)1 << pass->pass_number)))
       dims = pass->common->sim_source_dims;
    gl3_pass_build_semantic_texture_vec4(pass, buffer, semantic, dims);
    gl3_pass_set_semantic_texture(pass, semantic, texture);
@@ -4759,7 +4774,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
          gl3_chain_free(chain);
          return NULL;
       }
-   chain->common.sim_source_dims = shader->sim_source_dims;
+   gl3_common_set_sim_source_dims(&chain->common, shader);
    chain->common.frame_rect = frame_rect;
    chain->common.viewer_colour = viewer_colour;
 #ifndef HAVE_RSLC
@@ -5122,7 +5137,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
          gl3_chain_free(chain);
          return NULL;
       }
-   chain->common.sim_source_dims = shader->sim_source_dims;
+   gl3_common_set_sim_source_dims(&chain->common, shader);
    chain->common.frame_rect = frame_rect;
    chain->common.viewer_colour = viewer_colour;
 #ifndef HAVE_RSLC

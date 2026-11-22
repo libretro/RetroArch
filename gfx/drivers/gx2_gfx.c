@@ -2535,7 +2535,9 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
          GX2Surface *source   = (pass > 0) ? &wiiu->pass[pass - 1].texture.surface : &wiiu->texture.surface;
          float w              = source->width;
          float h              = source->height;
-         if (pass == 0 && wiiu->shader_preset->sim_source_dims)
+         if (pass < GFX_MAX_SHADERS
+               && wiiu->shader_preset->pass[pass].use_simulated_res
+               && wiiu->shader_preset->sim_source_dims)
          {
             w                 = VIDEO_SCALE_W(wiiu->shader_preset->sim_source_dims);
             h                 = VIDEO_SCALE_H(wiiu->shader_preset->sim_source_dims);

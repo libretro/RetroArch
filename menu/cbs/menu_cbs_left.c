@@ -366,6 +366,25 @@ static int action_left_shader_filter_pass(unsigned type, const char *label,
    return 0;
 }
 
+#ifdef HAVE_SLANG
+static int action_left_shader_simulated_res_pass(unsigned type,
+      const char *label, bool wraparound)
+{
+   unsigned pass = type - MENU_SETTINGS_SHADER_PASS_SIMULATED_RES_0;
+   struct video_shader *shader = menu_shader_get();
+   struct video_shader_pass *shader_pass = shader
+      ? &shader->pass[pass] : NULL;
+
+   if (!shader_pass)
+      return -1;
+
+   shader_pass->use_simulated_res = !shader_pass->use_simulated_res;
+   shader->flags                 |= SHDR_FLAG_MODIFIED;
+
+   return 0;
+}
+#endif
+
 static int action_left_shader_filter_default(unsigned type, const char *label,
       bool wraparound)
 {
@@ -1292,6 +1311,11 @@ static int menu_cbs_init_bind_left_compare_label(menu_file_list_cbs_t *cbs,
             case MENU_ENUM_LABEL_VIDEO_SHADER_FILTER_PASS:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
                BIND_ACTION_LEFT(cbs, action_left_shader_filter_pass);
+#endif
+               break;
+            case MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_RES_PASS:
+#if defined(HAVE_SLANG)
+               BIND_ACTION_LEFT(cbs, action_left_shader_simulated_res_pass);
 #endif
                break;
             case MENU_ENUM_LABEL_VIDEO_SHADER_DEFAULT_FILTER:

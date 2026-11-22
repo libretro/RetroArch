@@ -347,6 +347,9 @@ static void check_simulated_source_size(void)
    shader.sim_source_dims = VIDEO_SCALE_PACK(320, 240);
    strcpy(shader.pass[0].source.path, "sized.slang");
    strcpy(shader.pass[1].source.path, "sized.slang");
+   /* As the preset parser defaults: the first pass only. */
+   shader.pass[0].use_simulated_res = true;
+   shader.pass[1].use_simulated_res = false;
 
    CHECK(slang_process(&shader, 0, RARCH_SHADER_HLSL, 50, &map, &sem),
          "the SourceSize pass did not translate");
@@ -375,6 +378,27 @@ static void check_simulated_source_size(void)
    CHECK(u && u->data == (void*)source_size,
          "a later pass was told the simulated size");
    free_pass(&shader, 1, &sem);
+
+   /* A later pass that opts in is told the simulated size, and a
+    * first pass that opts out keeps the real one. */
+   shader.pass[0].use_simulated_res = false;
+   shader.pass[1].use_simulated_res = true;
+   CHECK(slang_process(&shader, 1, RARCH_SHADER_HLSL, 50, &map, &sem),
+         "the opted-in second pass did not translate");
+   u = find_uniform(&sem, "SourceSize");
+   v = u ? (const float*)u->data : NULL;
+   CHECK(v && v != source_size && v[0] == 320.0f && v[1] == 240.0f,
+         "an opted-in later pass was not told the simulated size");
+   free_pass(&shader, 1, &sem);
+
+   CHECK(slang_process(&shader, 0, RARCH_SHADER_HLSL, 50, &map, &sem),
+         "the opted-out first pass did not translate");
+   u = find_uniform(&sem, "SourceSize");
+   CHECK(u && u->data == (void*)source_size,
+         "an opted-out first pass was told the simulated size");
+   free_pass(&shader, 0, &sem);
+   shader.pass[0].use_simulated_res = true;
+   shader.pass[1].use_simulated_res = false;
 
    shader.sim_source_dims = 0;
    CHECK(slang_process(&shader, 0, RARCH_SHADER_HLSL, 50, &map, &sem),
