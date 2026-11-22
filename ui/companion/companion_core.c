@@ -2172,10 +2172,10 @@ static size_t companion_core_thumbnail_probe(char *s, size_t len,
    return 0;
 }
 
-/* The menu's label into @key, @content_path's file stem into @stem.
- * Front ends pass the path or file name as the label of an entry
- * without one: the stem stands in. */
-static void companion_core_thumbnail_key(const char *label,
+/* The menu's label, @content_path's file stem into @stem. Front ends
+ * pass the path or file name as the label of an entry without one: the
+ * stem stands in. A label the menu would cut is cut into @key. */
+static const char *companion_core_thumbnail_key(const char *label,
       const char *content_path, char *key, size_t key_len,
       char *stem, size_t stem_len)
 {
@@ -2186,9 +2186,11 @@ static void companion_core_thumbnail_key(const char *label,
          && (   !*label
              || string_is_equal(label, content_path)
              || string_is_equal(label, path_basename(content_path))))
-      strlcpy(key, stem, key_len);
-   else
-      strlcpy(key, label, key_len);
+      return stem;
+   if (strlen(label) < key_len)
+      return label;
+   strlcpy(key, label, key_len);
+   return key;
 }
 
 size_t companion_core_thumbnail_save_path(companion_core_t *core,
@@ -2198,6 +2200,7 @@ size_t companion_core_thumbnail_save_path(companion_core_t *core,
    char key_label[NAME_MAX_LENGTH];
    char name[NAME_MAX_LENGTH];
    char stem[NAME_MAX_LENGTH];
+   const char *key;
    size_t _len;
 
    if (!s || !len)
@@ -2206,9 +2209,9 @@ size_t companion_core_thumbnail_save_path(companion_core_t *core,
    if (!core || !label)
       return 0;
 
-   companion_core_thumbnail_key(label, content_path,
+   key = companion_core_thumbnail_key(label, content_path,
          key_label, sizeof(key_label), stem, sizeof(stem));
-   gfx_thumbnail_scrub_name(name, sizeof(name), key_label);
+   gfx_thumbnail_scrub_name(name, sizeof(name), key);
    companion_core_thumbnail_dir(core, db_name, subdir, s, len);
    _len = fill_pathname_join_special(s, s, name, len);
    /* No room for the whole ".png": no path */
@@ -2265,6 +2268,7 @@ size_t companion_core_thumbnail_path(companion_core_t *core,
    char key_label[NAME_MAX_LENGTH];
    char name[NAME_MAX_LENGTH];
    char stem[NAME_MAX_LENGTH];
+   const char *key;
    const char *match;
    size_t _len, dir_len;
    bool allow_non_png;
@@ -2280,7 +2284,7 @@ size_t companion_core_thumbnail_path(companion_core_t *core,
          && image_texture_get_type(content_path) != IMAGE_TYPE_NONE)
       return strlcpy(s, content_path, len);
 
-   companion_core_thumbnail_key(label, content_path,
+   key = companion_core_thumbnail_key(label, content_path,
          key_label, sizeof(key_label), stem, sizeof(stem));
 
    /* Label, file name, then the match the thumbnail task stored */
@@ -2290,7 +2294,7 @@ size_t companion_core_thumbnail_path(companion_core_t *core,
       s[0] = '\0';
       return 0;
    }
-   gfx_thumbnail_scrub_name(name, sizeof(name), key_label);
+   gfx_thumbnail_scrub_name(name, sizeof(name), key);
    if ((_len = companion_core_thumbnail_probe(s, len, dir_len, name)))
       return _len;
    if (*stem)
@@ -2304,7 +2308,7 @@ size_t companion_core_thumbnail_path(companion_core_t *core,
    }
    allow_non_png = config_get_ptr()->bools.playlist_allow_non_png;
    if (     (match = gfx_thumbnail_results_lookup(
-               content_path ? content_path : "", key_label, db_name,
+               content_path ? content_path : "", key, db_name,
                gfx_thumbnail_result_type_of(subdir), allow_non_png))
          && gfx_thumbnail_name_allowed(match, allow_non_png))
    {

@@ -1735,8 +1735,9 @@ bool task_pl_thumbnail_match_note_download(const char *playlist_path,
       bool other_regions)
 {
    char stem[NAME_MAX_LENGTH];
-   char name[NAME_MAX_LENGTH];
+   char cut[NAME_MAX_LENGTH];
    const char *queries[2];
+   const char *name;
    const char *match;
    const char *found = NULL;
    bool noted        = false;
@@ -1747,7 +1748,8 @@ bool task_pl_thumbnail_match_note_download(const char *playlist_path,
          || !gfx_thumbnail_name_allowed(file_name, allow_non_png))
       return false;
    fill_pathname(stem, path_basename(content_path), "", sizeof(stem));
-   strlcpy(name, string_is_empty(label) ? stem : label, sizeof(name));
+   name = string_is_empty(label) ? stem
+      : pl_thumb_match_cut(label, cut, sizeof(cut));
    /* The folder match may have picked a closer name the menu shows */
    match = gfx_thumbnail_results_lookup(content_path, name, system, type,
          allow_non_png);
