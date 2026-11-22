@@ -122,6 +122,68 @@ static bool reference_pixels(unsigned iw, unsigned ih, unsigned ow,
    return true;
 }
 
+static void check_reuse_and_invalidation(rgui_t *rgui)
+{
+   static thumbnail_t thumb;
+   struct texture_image image;
+   void *previous_frame = NULL, *previous_filters = NULL;
+   unsigned pass, i, queue = 0;
+   scaler_ctx_gen_reset(&rgui->image_scaler);
+   rgui->savestate_thumbnail_file_path[0] = '\0';
+   for (pass = 0; pass < 6; pass++)
+   {
+      unsigned width = pass == 3 ? 280 : 300;
+      unsigned height = pass == 3 ? 157 : 168;
+      unsigned type = pass == 2 || pass == 3 ? RGUI_THUMB_SCALE_BILINEAR : RGUI_THUMB_SCALE_SINC;
+      unsigned mode = pass % ARRAY_SIZE(rgui_pixel_format_map);
+      bool reuse = pass == 1 || pass == 5;
+      memset(&image, 0, sizeof(image)); memset(&thumb, 0, sizeof(thumb));
+      image.width = pass == 4 ? 1280 : 640;
+      image.height = pass == 4 ? 720 : 360;
+      image.pixels = source;
+      for (i = 0; i < image.width * image.height; i++) source[i] = i * 2654435761u + pass * 7919;
+      assert(reference_pixels(image.width, image.height, width, height, type));
+      argb32_to_pixel_platform_format = rgui_pixel_format_map[mode].conv;
+      argb32_to_pixel_platform_format_dither = rgui_pixel_format_map[mode].conv_dither;
+      thumb.data = destination + 1;
+      thumb.max_dims = VIDEO_SCALE_PACK(width, 240);
+      image_allocations = box_allocations = stream_contexts = full_contexts = 0;
+      tracking = 1;
+      rgui_process_thumbnail(rgui, &thumb, &queue, type, (pass & 1) != 0, &image);
+      tracking = 0;
+      assert(thumb.is_valid && stream_contexts == (reuse ? 0u : 1u));
+      assert(!full_contexts && !image_allocations && !box_allocations);
+      assert(rgui->image_scaler.streaming && rgui->image_scaler.frame_arena && rgui->image_scaler.filter_arena);
+      if (reuse) assert(previous_frame == rgui->image_scaler.frame_arena && previous_filters == rgui->image_scaler.filter_arena);
+      previous_frame = rgui->image_scaler.frame_arena;
+      previous_filters = rgui->image_scaler.filter_arena;
+      for (i = 0; i < width * height; i++)
+      {
+         uint16_t expected = pass & 1
+            ? argb32_to_pixel_platform_format_dither(reference[i], i % width, i / width)
+            : argb32_to_pixel_platform_format(reference[i]);
+         assert(thumb.data[i] == expected);
+      }
+   }
+   /* Failed generation must discard the old key/arenas. */
+   image.width = 5; image.height = 3; thumb.max_dims = VIDEO_SCALE_PACK(3, 2);
+   thumb.is_valid = false;
+   rgui_process_thumbnail(rgui, &thumb, &queue, RGUI_THUMB_SCALE_SINC, false, &image);
+   assert(!thumb.is_valid && !rgui->image_scaler.streaming
+         && !rgui->image_scaler.frame_arena && !rgui->image_scaler.filter_arena);
+   image.width = 640; image.height = 360; thumb.max_dims = VIDEO_SCALE_PACK(300, 240);
+   stream_contexts = full_contexts = 0; tracking = 1;
+   rgui_process_thumbnail(rgui, &thumb, &queue, RGUI_THUMB_SCALE_SINC, false, &image);
+   tracking = 0;
+   assert(thumb.is_valid && stream_contexts == 1 && !full_contexts);
+   rgui_process_thumbnail(rgui, &thumb, &queue, RGUI_THUMB_SCALE_POINT, false, &image);
+   assert(thumb.is_valid && !rgui->image_scaler.streaming
+         && !rgui->image_scaler.frame_arena && !rgui->image_scaler.filter_arena);
+   /* Leave a retained cache for the real menu destructor to release. */
+   rgui_process_thumbnail(rgui, &thumb, &queue, RGUI_THUMB_SCALE_SINC, false, &image);
+   assert(thumb.is_valid && rgui->image_scaler.streaming);
+}
+
 int main(void)
 {
    static const unsigned cases[][6] = {
@@ -161,6 +223,9 @@ int main(void)
                struct texture_image image;
                static thumbnail_t thumb;
                unsigned x, y, f, queue = 0;
+               void *previous_frame = rgui->image_scaler.frame_arena;
+               void *previous_filters = rgui->image_scaler.filter_arena;
+               bool previous_stream = rgui->image_scaler.streaming;
                memset(&image, 0, sizeof(image)); memset(&thumb, 0, sizeof(thumb));
                image.pixels = source; image.width = cases[test][0]; image.height = cases[test][1];
                thumb.data = destination + 1;
@@ -183,8 +248,18 @@ int main(void)
                if ((image.width != width || image.height != height) &&
                      !(f > 1 && image.width / f == width && image.height / f == height))
                {
-                  assert(stream_contexts == (width <= RGUI_MAX_FB_WIDTH ? 1u : 0u));
-                  assert(full_contexts == (width > RGUI_MAX_FB_WIDTH ? 1u : 0u));
+                  if (width <= RGUI_MAX_FB_WIDTH)
+                  {
+                     assert(stream_contexts <= 1 && !full_contexts);
+                     assert(rgui->image_scaler.streaming && rgui->image_scaler.frame_arena
+                           && rgui->image_scaler.filter_arena);
+                     if (!stream_contexts)
+                        assert(previous_stream && previous_frame == rgui->image_scaler.frame_arena
+                              && previous_filters == rgui->image_scaler.filter_arena);
+                  }
+                  else
+                     assert(!stream_contexts && full_contexts == 1
+                           && !rgui->image_scaler.frame_arena && !rgui->image_scaler.filter_arena);
                }
                else
                   assert(!stream_contexts && !full_contexts);
@@ -205,7 +280,10 @@ int main(void)
             }
          }
       }
+   check_reuse_and_invalidation(rgui);
+   rgui_free(rgui);
+   assert(!rgui->image_scaler.frame_arena && !rgui->image_scaler.filter_arena);
    free(rgui);
-   puts("PASS: bilinear/sinc source/output row loans match full-frame pixels on every platform/dither mode; oversized rows keep the fallback");
+   puts("PASS: bilinear/sinc cached source/output row loans match changing full-frame pixels on every platform/dither mode; oversized rows keep the fallback");
    return 0;
 }

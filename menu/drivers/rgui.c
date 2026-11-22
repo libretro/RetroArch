@@ -2970,6 +2970,8 @@ static bool rgui_downscale_thumbnail(
        * > Fastest method, minimal performance impact */
       uint32_t x_ratio = ((image_src->width  << 16) / image_dst->width);
       uint32_t y_ratio = ((image_src->height << 16) / image_dst->height);
+      if (rgui->image_scaler.streaming)
+         scaler_ctx_gen_reset(&rgui->image_scaler);
 
       for (y_dst = 0; y_dst < image_dst->height; y_dst++)
       {
@@ -3001,6 +3003,9 @@ static bool rgui_downscale_thumbnail(
       struct rgui_thumbnail_box_rows box;
       bool box_rows = false;
       bool native_done;
+      bool reuse_scaler;
+      enum scaler_type scaler_type = thumbnail_downscaler == RGUI_THUMB_SCALE_SINC
+         ? SCALER_TYPE_SINC : SCALER_TYPE_BILINEAR;
 
       /* Decimate first while doing so does not undershoot the
        * target, so the filter below runs at its minimum kernel
@@ -3043,6 +3048,16 @@ static bool rgui_downscale_thumbnail(
          }
       }
 
+      /* Only the bounded streaming cache survives an image. Its coefficients
+       * depend on geometry/filter, not the source pixels or native packing. */
+      reuse_scaler = rgui->image_scaler.streaming && rgui->image_scaler.frame_arena
+         && rgui->image_scaler.filter_arena
+         && rgui->image_scaler.in_width == (int)scale_width
+         && rgui->image_scaler.in_height == (int)scale_height
+         && rgui->image_scaler.out_width == (int)image_dst->width
+         && rgui->image_scaler.out_height == (int)image_dst->height
+         && rgui->image_scaler.scaler_type == scaler_type;
+
       rgui->image_scaler.in_width    = scale_width;
       rgui->image_scaler.in_height   = scale_height;
       rgui->image_scaler.in_stride   = scale_width * sizeof(uint32_t);
@@ -3053,15 +3068,9 @@ static bool rgui_downscale_thumbnail(
       rgui->image_scaler.out_stride  = image_dst->width * sizeof(uint32_t);
       rgui->image_scaler.out_fmt     = SCALER_FMT_ARGB8888;
 
-      rgui->image_scaler.scaler_type = (thumbnail_downscaler == RGUI_THUMB_SCALE_SINC)
-            ? SCALER_TYPE_SINC
-            : SCALER_TYPE_BILINEAR;
+      rgui->image_scaler.scaler_type = scaler_type;
 
-      /* This reset is redundant, since scaler_ctx_gen_filter()
-       * calls it - but do it anyway in case the
-       * scaler_ctx_gen_filter() internals ever change... */
-      scaler_ctx_gen_reset(&rgui->image_scaler);
-      if (!(image_dst->width <= RGUI_MAX_FB_WIDTH &&
+      if (!reuse_scaler && !(image_dst->width <= RGUI_MAX_FB_WIDTH &&
             scaler_ctx_gen_filter_stream(&rgui->image_scaler)) &&
           !scaler_ctx_gen_filter(&rgui->image_scaler))
       {
@@ -3124,9 +3133,9 @@ static bool rgui_downscale_thumbnail(
          }
       }
       free(box_buf);
-      /* Reset again - don't want to leave anything hanging around
-       * if the user switches back to nearest neighbour scaling */
-      scaler_ctx_gen_reset(&rgui->image_scaler);
+      /* Large fallback frames are transient; retain only the bounded cache. */
+      if (!rgui->image_scaler.streaming)
+         scaler_ctx_gen_reset(&rgui->image_scaler);
    }
 
    return true;
@@ -8444,6 +8453,7 @@ static void rgui_free(void *data)
 
    rgui_media_close(rgui, false);
    rgui_camera_close(rgui);
+   scaler_ctx_gen_reset(&rgui->image_scaler);
    free(rgui->camera_row);
    rgui->camera_row     = NULL;
    rgui->camera_row_len = 0;
