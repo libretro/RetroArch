@@ -1,16 +1,20 @@
 # The link harness and the link test core. Everything built, and every
-# run's output, goes under BUILD_DIR. check runs each scenario five times:
-# first, again, in reversed pick order, in a shuffled one and from the
-# first run's mid state, each later run's trace, messages.log and
-# stuck.txt compared against the first run's. The from run must start at
-# the scenario's save mid line and not run that line again; where the
-# scenario restarts its ticks at a load, its messages.log is compared
-# without them. An in_flight checkpoint, at the save frame, must list a
-# message. Then each scenario in bad/ must exit 2 and each in fail/ exit
-# 1, printing the error its "# error:" line names, as must a truncated
-# state, a state of another scenario and an edited trace.
+# run's output, goes under BUILD_DIR. check runs each scenario six times:
+# first, again, in reversed pick order, in a shuffled one, from the first
+# run's mid state and rewound to it, each later run's trace, messages.log
+# and stuck.txt compared against the first run's. The from run must start
+# at the scenario's save mid line and not run that line again. The rewound
+# run must give the first run's trace and messages up to the scenario's
+# last frame, then from the save mid line on, and the first run's
+# checkpoint pictures. Where the scenario restarts its ticks at a load,
+# both runs' messages.log are compared without them.
+# An in_flight checkpoint, at the save frame, must list a message. Then
+# each scenario in bad/ must exit 2 and each in fail/ exit 1, printing the
+# error its "# error:" line names, as must a truncated state, a state of
+# another scenario and an edited trace; each scenario in stale/ must pass
+# its from run and fail its rewound run in the same way.
 #
-# proof makes the five runs of one scenario that binds real cores, PROOF
+# proof makes the six runs of one scenario that binds real cores, PROOF
 # (an absolute path), into BUILD_DIR/proof/<scenario>/, each BIND word
 # (NAME=<absolute file>, no spaces) a --path.
 
@@ -79,7 +83,9 @@ CORE_SOURCES    := ../core/link_test_core.c
 SCENARIOS       := $(sort $(wildcard ../scenarios/*.scn))
 BAD_SCENARIOS   := $(sort $(wildcard ../scenarios/bad/*.scn))
 FAIL_SCENARIOS  := $(sort $(wildcard ../scenarios/fail/*.scn))
+STALE_SCENARIOS := $(sort $(wildcard ../scenarios/stale/*.scn))
 UNTICK          := s/ stamp [0-9a-f]* landing [0-9a-f]*//
+ALL_RUNS        := first again reversed shuffled from rewound
 
 # After a run that must fail, named $$what: it exited $(1), and its stderr,
 # in $$err, has $$why
@@ -87,17 +93,24 @@ FAILED_AS = rc=$$?; cat "$$err"; \
 	[ $$rc -eq $(1) ] || { echo "check: $$what exited $$rc, not $(1)"; exit 1; }; \
 	grep -F -q -e "$$why" "$$err" || { echo "check: $$what did not say: $$why"; exit 1; }
 
-# The five runs of the scenario in $$scn, into $(1)/<its name>/<run>/,
+# The first run's lines, in the file named after it, that a rewound run
+# repeats: those before the frame it loads at, then those from the save on
+REWOUND = awk -v to="$$last" -v from="$$save" \
+	'NR == FNR { if ($$2 + 0 < to + 0) print; next } $$2 + 0 >= from + 0'
+
+# The runs $(3) of the scenario in $$scn, into $(1)/<its name>/<run>/,
 # with $(2) binding its names; the first failure stops them
-FIVE_RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
+RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
 	save=`sed -n 's/^\([0-9][0-9]*\) save mid\( .*\)*$$/\1/p' "$$scn"`; \
 	[ -n "$$save" ] || { echo "$@: $$name has no save mid line"; exit 1; }; \
+	last=`sed -n 's/^expect-stuck \([0-9][0-9]*\)\( .*\)*$$/\1/p' "$$scn"`; \
+	[ -n "$$last" ] || last=`sed -n 's/^\([0-9][0-9]*\) end\( .*\)*$$/\1/p' "$$scn"`; \
 	flight=`sed -n 's/^\([0-9][0-9]*\) checkpoint in_flight\( .*\)*$$/\1/p' "$$scn"`; \
 	[ -z "$$flight" ] || [ "$$flight" = "$$save" ] \
 	   || { echo "$@: $$name's in_flight checkpoint is not at its save frame"; exit 1; }; \
 	untick=; grep -q '^option [0-9][0-9]* link_test_restart_ticks on\( .*\)*$$' "$$scn" \
 	   && untick='$(UNTICK)'; \
-	for run in first again reversed shuffled from; do \
+	for run in $(3); do \
 	   case $$run in \
 	      first)    args="--out $$out/first" ;; \
 	      again)    args="--out $$out/again --expect $$out/first/trace.txt" ;; \
@@ -105,6 +118,7 @@ FIVE_RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
 	      shuffled) args="--pick shuffled:7 --out $$out/shuffled --expect $$out/first/trace.txt" ;; \
 	      from)     args="--from $$out/first/mid.state --out $$out/from --expect $$out/first/trace.txt"; \
 	                rm -f -- "$$out/from/mid.state" ;; \
+	      rewound)  args="--rewind $$out/first/mid.state --out $$out/rewound --expect $$out/first/trace.txt" ;; \
 	   esac; \
 	   rm -f -- "$$out/$$run/stuck.txt"; \
 	   echo "== $$name $$run"; \
@@ -118,6 +132,17 @@ FIVE_RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
 	         want=`awk -v from="$$save" '$$2 + 0 >= from + 0' "$$out/first/messages.log" \
 	            | sed "$$untick" | cksum`; \
 	         got=`sed "$$untick" "$$out/from/messages.log" | cksum`; \
+	         [ "$$want" = "$$got" ] ;; \
+	      rewound) $(REWOUND) "$$out/first/trace.txt" "$$out/first/trace.txt" \
+	            | cmp -s - "$$out/rewound/trace.txt" \
+	            || { echo "$@: $$name rewound: trace.txt is not the first run's to frame $$last, then from frame $$save"; exit 1; }; \
+	         want=`$(REWOUND) "$$out/first/messages.log" "$$out/first/messages.log" \
+	            | sed "$$untick" | cksum`; \
+	         got=`sed "$$untick" "$$out/rewound/messages.log" | cksum`; \
+	         ( cd "$$out/first" && for png in */c*.png; do \
+	            [ ! -e "$$png" ] || cmp -s "$$png" "../rewound/$$png" \
+	               || { echo "$@: $$name rewound: $$png differs from the first run's"; exit 1; }; \
+	         done ) || exit 1; \
 	         [ "$$want" = "$$got" ] ;; \
 	      *) cmp -s "$$out/first/messages.log" "$$out/$$run/messages.log" ;; \
 	   esac || { echo "$@: $$name $$run: messages.log differs from the first run's"; exit 1; }; \
@@ -165,7 +190,7 @@ $(CORE): $(call obj,$(CORE_SOURCES))
 
 check: all
 	@for scn in $(SCENARIOS); do \
-	   $(call FIVE_RUNS,$(BUILD_DIR)/out,--path test=$(CORE)); \
+	   $(call RUNS,$(BUILD_DIR)/out,--path test=$(CORE),$(ALL_RUNS)); \
 	done
 	@mkdir -p "$(BUILD_DIR)/out/bad" "$(BUILD_DIR)/out/fail"; \
 	for scn in $(BAD_SCENARIOS) $(FAIL_SCENARIOS); do \
@@ -203,10 +228,21 @@ check: all
 	$(RUNNER) $(HARNESS) --scenario ../scenarios/two_unequal.scn --path test=$(CORE) \
 	   --expect "$$edited" --out "$(BUILD_DIR)/out/fail/edited" 2>"$$err"; \
 	$(call FAILED_AS,1)
+	@for scn in $(STALE_SCENARIOS); do \
+	   $(call RUNS,$(BUILD_DIR)/out/stale,--path test=$(CORE),first from); \
+	   what="stale/$$name rewound"; err="$$out/rewound.err"; \
+	   why=`sed -n 's/^# error: //p' "$$scn"`; \
+	   [ -n "$$why" ] || { echo "check: stale/$$name has no # error: line"; exit 1; }; \
+	   echo "== $$what, exit 1 wanted"; \
+	   $(RUNNER) $(HARNESS) $(MIN_STACK) --scenario "$$scn" --path test=$(CORE) \
+	      --rewind "$$out/first/mid.state" --expect "$$out/first/trace.txt" \
+	      --out "$$out/rewound" 2>"$$err"; \
+	   $(call FAILED_AS,1); \
+	done
 
 proof: $(HARNESS)
 	@scn='$(PROOF)'; [ -n "$$scn" ] || { echo "proof: PROOF names no scenario"; exit 2; }; \
-	$(call FIVE_RUNS,$(BUILD_DIR)/proof,$(foreach b,$(BIND),--path '$(b)'))
+	$(call RUNS,$(BUILD_DIR)/proof,$(foreach b,$(BIND),--path '$(b)'),$(ALL_RUNS))
 
 clean:
 	build='$(BUILD_DIR)'; rm -rf -- "$${build:?}"

@@ -566,6 +566,11 @@ bool link_console_unserialize(link_console_t *c, const void *data, size_t len)
    link_sched_enter(link_console_now.sched, c->index);
    ok = c->api.unserialize(data, len);
    link_sched_leave(link_console_now.sched);
+   /* No picture of the loaded state has been seen */
+   c->video    = 0;
+   c->ran      = false;
+   c->drew     = false;
+   c->pictured = false;
    return ok;
 }
 

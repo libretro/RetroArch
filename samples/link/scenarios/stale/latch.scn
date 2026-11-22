@@ -1,0 +1,11 @@
+# A core that keeps a field over a load: from frame 40 console 0 has a
+# latch set that no save state holds. A new process starts with it clear,
+# so the from run passes; a load into the running session leaves it set.
+# error: trace differs at frame 30 console 0:
+console 0 core=test
+console 1 core=test
+option 0 link_test_mode stale_load
+option 0 link_test_bad_frame 40
+0 cable 0:0 1:0
+30 save mid
+60 end

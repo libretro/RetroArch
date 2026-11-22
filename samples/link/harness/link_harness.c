@@ -51,8 +51,9 @@ struct link_harness
 {
    struct link_scenario scn;
    struct link_binding *bindings;
-   const char *scenario, *out, *from, *expect_path;
-   unsigned char *state;     /* the --from state, read whole */
+   const char *scenario, *out, *expect_path;
+   const char *state_path;   /* --from or --rewind */
+   unsigned char *state;     /* that state, read whole */
    const unsigned char **saved; /* in it, each console's retro_serialize output */
    const unsigned char *saved_bus; /* and the bus blob */
    size_t *saved_len;
@@ -70,10 +71,11 @@ struct link_harness
    size_t binding_count, min_stack;
    size_t expect_count, expect_next;
    size_t input_count, journal_cap;
-   size_t first_event;       /* the line after the save line that wrote the state, else 0 */
-   unsigned long first_frame, frames; /* first_frame: the state's frame, else 0 */
+   size_t state_event;       /* the line after the save line that wrote the state */
+   unsigned long state_frame, frames;
    enum link_sched_pick pick;
    uint32_t seed;
+   bool rewind;              /* --rewind: the state is loaded at the last edge */
    bool differed, failed;
 };
 
@@ -85,8 +87,9 @@ static int link_harness_usage(const char *why)
 {
    fprintf(stderr, "link_harness: %s\n"
          "usage: link_harness --scenario FILE --out DIR [--path NAME=FILE]...\n"
-         "         [--pick lowest|reversed|shuffled:SEED] [--from STATE]\n"
-         "         [--expect TRACE] [--min-stack BYTES]\n", why);
+         "         [--pick lowest|reversed|shuffled:SEED]\n"
+         "         [--from STATE | --rewind STATE] [--expect TRACE]\n"
+         "         [--min-stack BYTES]\n", why);
    return LINK_HARNESS_USAGE;
 }
 
@@ -107,8 +110,13 @@ static int link_harness_options(struct link_harness *h, int argc, char **argv)
          h->scenario = value;
       else if (!strcmp(arg, "--out"))
          h->out = value;
-      else if (!strcmp(arg, "--from"))
-         h->from = value;
+      else if (!strcmp(arg, "--from") || !strcmp(arg, "--rewind"))
+      {
+         if (h->state_path)
+            return link_harness_usage("--from and --rewind take one state between them");
+         h->state_path = value;
+         h->rewind     = !strcmp(arg, "--rewind");
+      }
       else if (!strcmp(arg, "--expect"))
          h->expect_path = value;
       else if (!strcmp(arg, "--path"))
@@ -210,12 +218,12 @@ static bool link_harness_get_block(struct link_harness_reader *r, const unsigned
 
 static bool link_harness_bad_state(const struct link_harness *h, const char *why)
 {
-   fprintf(stderr, "link_harness: %s: bad state: %s\n", h->from, why);
+   fprintf(stderr, "link_harness: %s: bad state: %s\n", h->state_path, why);
    return false;
 }
 
-/* The --from state, read whole and checked against the scenario before
- * anything runs */
+/* The --from or --rewind state, read whole and checked against the
+ * scenario before anything runs */
 static bool link_harness_read_state(struct link_harness *h)
 {
    struct link_harness_reader r;
@@ -223,9 +231,9 @@ static bool link_harness_read_state(struct link_harness *h)
    int64_t len = 0;
    uint64_t v;
    unsigned i;
-   if (!filestream_read_file(h->from, &buf, &len))
+   if (!filestream_read_file(h->state_path, &buf, &len))
    {
-      fprintf(stderr, "link_harness: missing file %s\n", h->from);
+      fprintf(stderr, "link_harness: missing file %s\n", h->state_path);
       return false;
    }
    h->state = (unsigned char*)buf;
@@ -243,18 +251,18 @@ static bool link_harness_read_state(struct link_harness *h)
       return link_harness_bad_state(h, "truncated");
    if (v > h->scn.end_frame)
       return link_harness_bad_state(h, "a frame past the scenario's end");
-   h->first_frame = (unsigned long)v;
+   h->state_frame = (unsigned long)v;
    if (!link_harness_get(&r, 8, &v))
       return link_harness_bad_state(h, "truncated");
    if (v != h->scn.hash)
       return link_harness_bad_state(h, "a state of another scenario");
-   for (h->first_event = 0; h->first_event < h->scn.event_count; h->first_event++)
-      if (     h->scn.events[h->first_event].frame == h->first_frame
-            && h->scn.events[h->first_event].kind == LINK_SCENARIO_SAVE)
+   for (h->state_event = 0; h->state_event < h->scn.event_count; h->state_event++)
+      if (     h->scn.events[h->state_event].frame == h->state_frame
+            && h->scn.events[h->state_event].kind == LINK_SCENARIO_SAVE)
          break;
-   if (h->first_event == h->scn.event_count)
+   if (h->state_event == h->scn.event_count)
       return link_harness_bad_state(h, "no save line of the scenario at its frame");
-   h->first_event++;
+   h->state_event++;
    if (!link_harness_get(&r, 4, &v))
       return link_harness_bad_state(h, "truncated");
    if (v != h->scn.console_count)
@@ -295,15 +303,15 @@ static bool link_harness_hash_file(const char *path, uint64_t *out)
    return got == 0;
 }
 
-/* Every core, ROM and save file, and the --from state, hashed before the run */
+/* Every core, ROM and save file, and the state, hashed before the run */
 static bool link_harness_hash_inputs(struct link_harness *h)
 {
    size_t i;
    if (!(h->inputs = (struct link_harness_input*)calloc(h->scn.console_count * 3 + 1,
                sizeof(*h->inputs))))
       return false;
-   if (h->from)
-      h->inputs[h->input_count++].path = h->from;
+   if (h->state_path)
+      h->inputs[h->input_count++].path = h->state_path;
    for (i = 0; i < h->scn.console_count; i++)
    {
       const struct link_scenario_console *k = &h->scn.consoles[i];
@@ -403,8 +411,8 @@ static bool link_harness_session(struct link_harness *h)
    return true;
 }
 
-/* After every core is loaded: the bus, then each core's state inside its
- * own entry, then a re-join of its ports */
+/* At a frame edge, into cores that are loaded: the bus, then each core's
+ * state inside its own entry, then a re-join of its ports */
 static bool link_harness_load_state(struct link_harness *h)
 {
    unsigned i;
@@ -415,7 +423,7 @@ static bool link_harness_load_state(struct link_harness *h)
       if (!link_console_unserialize(&h->consoles[i], h->saved[i], h->saved_len[i]))
       {
          fprintf(stderr, "link_harness: %s: bad state: console %u's core refused it\n",
-               h->from, i);
+               h->state_path, i);
          return false;
       }
       link_bus_renumbered(h->bus, i);
@@ -871,22 +879,48 @@ static void link_harness_check_counts(struct link_harness *h)
       }
 }
 
-/* Runs from the first frame, or the state's: the lines up to the save line
- * that wrote the state are in it already and are skipped, and so are the
- * expected trace's lines before its frame */
+/* Goes on from the state: the lines up to the save line that wrote it are
+ * in it already and are skipped, and so are the expected trace's lines
+ * before its frame */
+static void link_harness_resume(struct link_harness *h, unsigned long *frame, size_t *next)
+{
+   unsigned long f;
+   *frame         = h->state_frame;
+   *next          = h->state_event;
+   h->expect_next = 0;
+   while (h->expect_next < h->expect_count
+         && sscanf(h->expect[h->expect_next], "F %lu", &f) == 1 && f < h->state_frame)
+      h->expect_next++;
+}
+
+/* Runs from the first frame, or from the --from state. With --rewind the
+ * session runs to the scenario's last edge, before the frame of its end or
+ * of its release, and there, in place of that edge's lines, the state is
+ * loaded into it and it goes on from the state. */
 static void link_harness_run(struct link_harness *h)
 {
    const struct link_scenario *s = &h->scn;
-   unsigned long frame, f;
-   size_t next  = h->first_event;
+   unsigned long last  = s->stuck_line ? s->stuck_frame : s->end_frame;
+   unsigned long frame = 0;
+   size_t next  = 0;
+   bool rewind  = h->rewind;
    bool stuck   = false;
    link_harness_check_options(h);
-   while (h->expect_next < h->expect_count
-         && sscanf(h->expect[h->expect_next], "F %lu", &f) == 1 && f < h->first_frame)
-      h->expect_next++;
-   for (frame = h->first_frame;; frame++)
+   if (h->state_path && !rewind)
+      link_harness_resume(h, &frame, &next);
+   for (;; frame++)
    {
       enum link_sched_frame result;
+      if (rewind && frame == last)
+      {
+         if (!link_harness_load_state(h))
+         {
+            h->failed = true;
+            return;
+         }
+         link_harness_resume(h, &frame, &next);
+         rewind = false;
+      }
       link_harness_edge(h, frame, &next);
       if (frame == s->end_frame)
          break;
@@ -962,14 +996,14 @@ static int link_harness_main(struct link_harness *h, int argc, char **argv)
       return rc;
    if (!link_scenario_load(&h->scn, h->scenario, h->bindings, h->binding_count))
       return LINK_HARNESS_USAGE;
-   if (     (h->from && !link_harness_read_state(h))
+   if (     (h->state_path && !link_harness_read_state(h))
          || (h->expect_path && !link_harness_read_expect(h))
          || !link_harness_hash_inputs(h)
          || !link_harness_outputs(h))
       return LINK_HARNESS_USAGE;
    if (!link_harness_session(h))
       h->failed = true;
-   else if (h->from && !link_harness_load_state(h))
+   else if (h->state_path && !h->rewind && !link_harness_load_state(h))
       return LINK_HARNESS_USAGE;
    else
       link_harness_run(h);

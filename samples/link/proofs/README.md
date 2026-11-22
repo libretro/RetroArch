@@ -25,12 +25,12 @@ line. So they are not part of `make check`; each one is run with
    `PROOF` is an absolute path. Each `BIND` word, `NAME=FILE` with no
    spaces in it, binds one name.
 
-`make proof` builds the harness, then runs the scenario five times, as
+`make proof` builds the harness, then runs the scenario six times, as
 `make check` runs each scenario in `../scenarios/` (see `../README.md`), and
 stops at the first run that fails. The runs go to `proof/<scenario>/<run>/`
 under `BUILD_DIR`, which is `samples/link/harness/build` unless you set it.
 
-The five runs show:
+The six runs show:
 
 - `first`: the scenario reaches its `end` line, every `expect` line holds,
   every bus count is the one the scenario expects and no core logs an error;
@@ -40,7 +40,11 @@ The five runs show:
   another order, so what they exchange does not depend on which runs first;
 - `from`: a new process loads the state saved at the scenario's `save mid`
   line and continues the same trace, so a state holds the link as well as
-  the game.
+  the game;
+- `rewound`: the session that has run to the scenario's last frame loads
+  that state, each core in place, and gives the same trace again from the
+  `save mid` line, so a load leaves nothing behind of the session it
+  replaces.
 
 The trace has, for each console and frame, a hash of its picture, its audio
 and its save state, and each run's `messages.log`, the messages sent, must

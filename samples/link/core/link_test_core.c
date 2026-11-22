@@ -54,7 +54,8 @@ enum lt_mode
    LT_CONFORM = 0,
    LT_NONCONFORM,
    LT_NEVER_ADVANCE,
-   LT_NO_PROGRESS
+   LT_NO_PROGRESS,
+   LT_STALE_LOAD
 };
 
 struct lt_range
@@ -144,7 +145,7 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_reattach_1",  "Frame port 1 attaches again in; -1" },
    { "link_test_reattach_2",  "Frame port 2 attaches again in; -1" },
    { "link_test_restart_ticks", "Ticks restart at a load and move at a reset; off|on" },
-   { "link_test_mode",        "Mode; conform|nonconform|never_advance|no_progress" },
+   { "link_test_mode",        "Mode; conform|nonconform|never_advance|no_progress|stale_load" },
    { "link_test_bad_frame",   "First frame of the mode; 0" },
    { NULL, NULL }
 };
@@ -167,6 +168,10 @@ static bool lt_linked;
  * position is saved */
 static uint64_t lt_epoch;
 static uint64_t lt_loads;
+
+/* stale_load: set from the mode's first frame on; in no save state, and
+ * no load clears it */
+static bool lt_latch;
 
 static uint32_t lt_picture[LT_WIDTH * LT_HEIGHT];
 static int16_t lt_samples[LT_AUDIO_FRAMES * 2];
@@ -384,7 +389,9 @@ static void lt_read_port(unsigned p)
 
 static void lt_read_mode(void)
 {
-   static const char *const names[] = { "conform", "nonconform", "never_advance", "no_progress" };
+   static const char *const names[] = {
+      "conform", "nonconform", "never_advance", "no_progress", "stale_load"
+   };
    const char *s = lt_option("link_test_mode");
    unsigned i;
    uint64_t v;
@@ -835,6 +842,7 @@ void retro_init(void)
    memset(lt_handle, 0, sizeof(lt_handle));
    lt_epoch = 0;
    lt_loads = 0;
+   lt_latch = false;
    lt_read_options();
    lt_state.rng = lt_cfg.seed ? lt_cfg.seed : 2463534242UL;
    memset(lt_port_list, 0, sizeof(lt_port_list));
@@ -909,6 +917,10 @@ void retro_run(void)
    lt_input_poll();
    lt_fold(lt_state.frame);
    lt_fold((uint16_t)lt_input_state(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK));
+   if (bad && lt_cfg.mode == LT_STALE_LOAD)
+      lt_latch = true;
+   if (lt_latch)
+      lt_fold(lt_state.frame);
 
    memset(&at, 0, sizeof(at));
    for (p = 0; p < lt_cfg.ports; p++)

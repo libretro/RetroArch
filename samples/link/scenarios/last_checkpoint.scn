@@ -1,0 +1,10 @@
+# A checkpoint at the last frame: the rewound run loads with the pictures
+# of the frame before it kept, and the checkpoint after the save line must
+# not show them.
+console 0 core=test
+console 1 core=test
+0 cable 0:0 1:0
+30 save mid
+30 checkpoint in_flight
+60 checkpoint last
+60 end

@@ -24,9 +24,9 @@ make -C samples/link/harness check CC=x86_64-w64-mingw32-gcc RUNNER=wine BUILD_D
 Everything built, and every run's output, goes under `BUILD_DIR` (`build` by
 default); a run's output is in `out/<scenario>/<run>/`.
 
-## The five runs
+## The six runs
 
-`check` runs each scenario in `scenarios/` five times:
+`check` runs each scenario in `scenarios/` six times:
 
 - `first`, whose trace the other runs are compared with;
 - `again`, the same run again;
@@ -34,14 +34,19 @@ default); a run's output is in `out/<scenario>/<run>/`.
   can run, not the lowest;
 - `shuffled`, in a seeded shuffled order;
 - `from`, in a new process from the state the first run saved at its
-  `save mid` line.
+  `save mid` line;
+- `rewound`, which runs to the scenario's last frame, loads that state into
+  the running session and runs on from the `save mid` line.
 
 Each later run must match the first run's trace line for line and write the
 same `messages.log` and `stuck.txt`. The `from` run must start at the frame
-of the `save mid` line without running that line again. In a scenario that
-sets `link_test_restart_ticks` on, the `from` run's `messages.log` is
-compared without the stamps and landings, since the load renumbers that
-core's ticks; the trace compares them relative to each port's anchor. A
+of the `save mid` line without running that line again. The `rewound` run
+must give the first run's trace and `messages.log` up to the frame it loads
+at, then again from the `save mid` line on, and leave each checkpoint's
+pictures as the first run's. In a scenario that sets
+`link_test_restart_ticks` on, the `messages.log` of the `from` and `rewound`
+runs is compared without the stamps and landings, since the load renumbers
+that core's ticks; the trace compares them relative to each port's anchor. A
 scenario whose save is taken inside an exchange says so with a
 `checkpoint in_flight` line right after its `save mid` line, and that
 checkpoint's `bus.txt` must list a message in every run.
@@ -52,7 +57,15 @@ state and a state of another scenario must each exit 2, and every scenario in
 must also print its error: the one a scenario's `# error: <text>` line gives,
 with its line number where it has one.
 
-`make proof` makes the same five runs, with the same comparisons, of one
+A new process starts every field of a core at its first value, so the
+`from` run passes a core whose `retro_unserialize` leaves a field alone
+that is still at that value at the save. The `rewound` run loads into cores
+that have run to the scenario's end, where such a field has moved on. Every
+scenario in `scenarios/stale/` has such a core: its `from` run must pass,
+and its `rewound` run must exit 1 and print the error its `# error:` line
+gives.
+
+`make proof` makes the same six runs, with the same comparisons, of one
 scenario that binds real cores, such as those in `proofs/`. It builds only
 the harness, passes each `BIND` word (`NAME=FILE`, no spaces) as a `--path`
 and writes the runs to `proof/<scenario>/<run>/` under `BUILD_DIR`.
@@ -67,8 +80,9 @@ make -C samples/link/harness proof PROOF=/abs/path/scenario.scn \
 
 ```
 link_harness --scenario FILE --out DIR [--path NAME=FILE]...
-             [--pick lowest|reversed|shuffled:SEED] [--from STATE]
-             [--expect TRACE] [--min-stack BYTES]
+             [--pick lowest|reversed|shuffled:SEED]
+             [--from STATE | --rewind STATE] [--expect TRACE]
+             [--min-stack BYTES]
 ```
 
 - `--path NAME=FILE` binds a name the scenario uses for a core, ROM, save or
@@ -78,8 +92,15 @@ link_harness --scenario FILE --out DIR [--path NAME=FILE]...
   run.
 - `--from STATE` starts from a state a `save` line wrote. The state is
   checked against the scenario before anything runs.
+- `--rewind STATE` runs from the first frame to the scenario's last frame
+  edge, before the frame of its `end` line or of its `expect-stuck` line.
+  There, in place of that edge's lines, it loads the state into the running
+  session, the bus's contents and each console's state into its core, and
+  goes on just after the `save` line that wrote the state, as a `--from`
+  run starts. A state the bus or a core refuses there fails the run.
 - `--expect TRACE` compares the trace with an earlier run's, from this run's
-  first frame, and stops at the first difference.
+  first frame, and stops at the first difference. After a `--rewind` load
+  it goes on from the lines of the state's frame.
 - `--min-stack` gives every console at least this much stack. Sanitizer
   builds use 8 MiB.
 
@@ -125,9 +146,11 @@ and act in file order at the edge before their frame runs, so frame 0's act
 once every core is loaded, and an `expect`, `save` or `checkpoint` at frame
 F sees the session after F frames. A run from a state starts just after the
 `save` line that wrote it: the lines before that line are in the state, and
-the lines after it at the same frame still act. A frame has at most one
-`save` line. With `expect-stuck F`, no line but `end` comes after frame F,
-where the run ends.
+the lines after it at the same frame still act. A `--rewind` load goes on
+from there too, and the lines after it act again; the bus is then as the
+state has it, with the cables and holds of the save. A frame has at most
+one `save` line. With `expect-stuck F`, no line but `end` comes after
+frame F, where the run ends.
 
 A counter not named in an `expect-count` line must end at 0. The counters are
 `lowered_promise`, `low_stamp`, `request_past_promise`,
@@ -159,10 +182,14 @@ The scenarios here:
   the state holds a console it has just loaded.
 - `dupe_checkpoint`: a dupe in the frame before a checkpoint, which keeps the
   picture of the frame before that.
+- `last_checkpoint`: a checkpoint at the last frame, whose pictures the
+  `rewound` run must not show at the checkpoint after its load.
 - `bad/`: scenarios the harness refuses before anything runs.
 - `fail/`: scenarios that run and fail: a core that logs an error, a count
   the bus does not reach, an `expect` line that does not hold, a release the
   scenario does not expect and two dupes in a row before a checkpoint.
+- `stale/`: scenarios whose `from` run passes and whose `rewound` run
+  fails: a core that keeps a latch over a load.
 
 ## Output
 
@@ -213,7 +240,7 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_dupe_frames` | `A-B[,A-B]...`, the frames that pass no picture (dupes); set, the core needs `GET_CAN_DUPE` | empty |
 | `link_test_detach_P`, `link_test_reattach_P` | the frame in whose `retro_run` it happens, or -1 | -1 |
 | `link_test_restart_ticks` | off, on | off |
-| `link_test_mode` | conform, nonconform, never_advance, no_progress | conform |
+| `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load | conform |
 | `link_test_bad_frame` | the first frame of the mode | 0 |
 
 In each `retro_run` the core advances its ports at the frame start, at each
@@ -232,6 +259,8 @@ From `link_test_bad_frame` on, the modes break the rules:
 - `never_advance`: it makes no advance at all.
 - `no_progress`: in that frame alone, it advances again and again without
   progress until the bus is released.
+- `stale_load`: it sets a latch that changes every frame it runs from then
+  on. The latch is in no save state, and no load clears it.
 
 Its system RAM, for `expect` lines: 0x00-0x07 the state hash; 0x08 the ports
 attached; 0x09-0x0B each port's peer count; 0x0C-0x0E each port's index, 255
