@@ -3177,7 +3177,6 @@ bool companion_core_browse_open(companion_core_t *core, const char *path)
 {
    settings_t *settings     = config_get_ptr();
    struct companion_browse_job *job;
-   char dir_buf[PATH_MAX_LENGTH];
    const char *dir          = path;
 
    if (!core)
@@ -3187,20 +3186,18 @@ bool companion_core_browse_open(companion_core_t *core, const char *path)
       dir = !string_is_empty(settings->paths.directory_menu_content)
          ? settings->paths.directory_menu_content : NULL;
 
-   /* @path may point into the current listing (descending into one of
-    * its own entries), which is replaced later: copy it first. */
-   dir_buf[0] = '\0';
-   if (dir)
-      strlcpy(dir_buf, dir, sizeof(dir_buf));
-#ifndef _WIN32
-   if (!dir_buf[0])
-      strlcpy(dir_buf, "/", sizeof(dir_buf));
-#endif
-
    job = (struct companion_browse_job*)calloc(1, sizeof(*job));
    if (!job)
       return false;
-   strlcpy(job->dir, dir_buf, sizeof(job->dir));
+   /* @path may point into the current listing (descending into one of
+    * its own entries), which is replaced later: it goes into the job
+    * before anything is. */
+   if (dir)
+      strlcpy(job->dir, dir, sizeof(job->dir));
+#ifndef _WIN32
+   if (!job->dir[0])
+      strlcpy(job->dir, "/", sizeof(job->dir));
+#endif
 
 #ifdef HAVE_THREADS
    {
