@@ -364,6 +364,7 @@ static const struct
    char s_213c44cf[17];
    char s_4f4b0d00[7];
    char s_502f623c[8];
+   char s_f18e3072[13];
    char s_223dfc81[8];
    char s_b6cd2ff0[57];
    char s_40e7aacd[9];
@@ -601,6 +602,10 @@ static const struct
    char s_67b3c923[23];
 #endif
    char s_543b5a62[24];
+   char s_d6e28152[20];
+   char s_35c7898b[21];
+   char s_51b1ba7c[20];
+   char s_c42e011b[24];
    char s_d1dc5a72[47];
    char s_b72aa8dd[57];
    char s_1d9a045d[27];
@@ -1768,6 +1773,7 @@ static const struct
    char s_17e4ac87[17];
    char s_9ceaa254[21];
    char s_0acff1e2[21];
+   char s_a2370507[27];
    char s_46f4826e[11];
    char s_a141feef[30];
    char s_46f4c26a[22];
@@ -2364,6 +2370,7 @@ static const struct
    char s_f6affed3[15];
    char s_7a911960[17];
    char s_a436c403[18];
+   char s_19578095[23];
    char s_875b5c6b[8];
    char s_9dcc1f02[19];
    char s_72c88236[6];
@@ -2387,6 +2394,7 @@ static const struct
    char s_579c3ea7[25];
    char s_cc7bf1b9[13];
    char s_b300fc03[20];
+   char s_72cd9f39[24];
    char s_e29ee11f[14];
    char s_714b59b6[13];
    char s_ccf131c5[21];
@@ -2826,6 +2834,7 @@ static const struct
    char s_9e5596c6[31];
    char s_b9bc0c48[27];
    char s_334daaaa[7];
+   char s_f418b4b6[33];
    char s_9119ef97[36];
 #if defined (WIIU)
 #ifdef WIIU
@@ -3037,7 +3046,10 @@ static const struct
    char s_a49df80f[74];
    char s_986d445e[74];
    char s_680226fd[50];
+   char s_6ecd34ee[167];
    char s_6fb18a2a[54];
+   char s_01555620[168];
+   char s_2ae9d7ef[71];
    char s_16a53432[78];
    char s_d774fd60[30];
    char s_3494441e[30];
@@ -3173,6 +3185,9 @@ static const struct
    char s_48e88dc4[199];
    char s_33c09b4d[101];
    char s_3d233cd0[75];
+   char s_f4ce0000[88];
+   char s_18d7f879[70];
+   char s_96d0072a[254];
    char s_9198f1a0[221];
    char s_dfe733cb[383];
    char s_165e564b[288];
@@ -3884,6 +3899,8 @@ static const struct
    char s_e8bf64a4[39];
    char s_a2ced282[111];
    char s_c21f6ed0[166];
+   char s_a81b3535[263];
+   char s_58917bdd[101];
    char s_1e8b7442[118];
    char s_bbc238b8[129];
    char s_a71a2320[82];
@@ -4174,8 +4191,10 @@ static const struct
    char s_4c592ae1[114];
    char s_52ac4fb9[121];
    char s_bae1c983[120];
+   char s_22035c03[159];
    char s_a39b8870[139];
    char s_52a12789[73];
+   char s_924fc727[280];
    char s_dcb85773[94];
 #ifdef HAVE_LAKKA
    char s_f77f7a41[87];
@@ -4234,6 +4253,7 @@ static const struct
    char s_ab839b13[152];
    char s_9c3126f6[113];
    char s_a9d0ac44[108];
+   char s_60cf8ce7[449];
    char s_bf6397c7[44];
    char s_6cf40c1b[87];
    char s_445f65a0[80];
@@ -4438,7 +4458,17 @@ static const struct
    char s_9506fc7d[93];
    char s_9506fc7e[93];
    char s_47ae341f[96];
+   char s_5e122df4[237];
    char s_cc84c32d[63];
+   char s_317fe827[6];
+   char s_56d55f63[334];
+#if defined(__APPLE__)
+   char s_e7165c55[438];
+#endif
+#if defined(_WIN32)
+   char s_1b4f6a0d[366];
+#endif
+   char s_ca351f14[16];
    char s_fa09f4f6[51];
    char s_48696c85[90];
 #if defined (WIIU)
@@ -4533,6 +4563,9 @@ static const struct
    char s_825152dd[33];
    char s_19e809ad[49];
    char s_d0c007b2[7];
+   char s_0ce0e4ba[83];
+   char s_7e60c5bc[117];
+   char s_d60ff959[39];
    char s_0256d7eb[75];
    char s_531b0e75[7];
    char s_b47316d5[31];
@@ -4619,10 +4652,13 @@ static const struct
    char s_f9ad51a9[32];
    char s_a3940c93[20];
    char s_2fb7ea2e[34];
+   char s_1257325e[148];
+   char s_0da23518[144];
    char s_4b3a4173[41];
    char s_3a594147[155];
    char s_c4d0b550[227];
    char s_edd11f84[130];
+   char s_28366667[111];
    char s_23816921[159];
    char s_cd621c40[37];
    char s_a65663f9[51];
@@ -4646,7 +4682,11 @@ static const struct
    char s_35b60281[21];
    char s_91e3840f[54];
 #endif
+   char s_e35fcbac[109];
+   char s_3c6d611f[154];
+   char s_83afaa15[125];
    char s_fc23f5d1[121];
+   char s_6eb6b947[141];
    char s_0544d35e[202];
    char s_e5668863[41];
    char s_0638fe80[66];
@@ -4656,6 +4696,8 @@ static const struct
    char s_16b6f24c[239];
    char s_63e47549[52];
    char s_a774d05e[162];
+   char s_34baee15[188];
+   char s_0a6862c7[170];
    char s_c89f366b[108];
    char s_936703a0[67];
    char s_9bf6e2a5[40];
@@ -5155,9 +5197,25 @@ static const struct
    char s_b7248c5d[60];
    char s_a3e7b13a[154];
    char s_966a8865[94];
+   char s_057af376[108];
+   char s_364db138[127];
+   char s_8df5cec1[91];
+   char s_2cd32f5c[141];
    char s_098459c5[55];
    char s_35e09a43[44];
+   char s_8ea9b2de[138];
+   char s_a27fec29[118];
+   char s_cc487e5f[139];
    char s_7182190e[132];
+   char s_50a4f0bc[16];
+   char s_454e49ac[38];
+   char s_5f9cb68e[53];
+   char s_6457895f[46];
+   char s_5149ee37[81];
+   char s_29f1ac61[77];
+   char s_669c3803[24];
+   char s_70024a05[21];
+   char s_fea43dd2[126];
    char s_a7ae1b42[30];
 #ifdef HAVE_LAKKA
    char s_ebacf443[25];
@@ -5860,6 +5918,7 @@ static const struct
    "Ceadaigh Ceamara",
    "Gl\303\251as",
    "Ceamara",
+   "R\303\251amhamharc",
    "Ceamara",
    "N\303\255 f\303\251idir \303\251achta\303\255 a ghn\303\255omhacht\303\272 leis an cro\303\255 s"
    "eo",
@@ -6100,6 +6159,10 @@ static const struct
    "D\303\255shuite\303\241il an cro\303\255",
 #endif
    "Mol Cro\303\255the i gC\303\263na\303\255",
+   "Iontaobhas L\303\241rnach",
+   "S\303\255nithe ag libretro",
+   "T\303\241 muin\303\255n agat as",
+   "Gan seice\303\241il go f\303\263ill",
    "Cro\303\255the C\303\272ltaca Agus Nuashonr\303\272 \303\241 Dh\303\251anamh",
    "Comhbhr\303\272igh C\303\272ltaca\303\255 Uathoibr\303\255ocha an Chro\303\255leac\303\241in",
    "M\303\251id Stair C\303\272ltaca Cro\303\255",
@@ -7279,6 +7342,7 @@ static const struct
    "Feist\303\255 PyroWave",
    "Ainm Gl\303\251is PyroWave",
    "Aimsi\303\272 LAN PyroWave",
+   "Sruthaigh RetroArch ar fad",
    "Seol chuig",
    "Eolaire Sc\303\241th\303\263ir\303\255 PyroWave",
    "Stop Sruth\303\272 PyroWave",
@@ -7893,6 +7957,7 @@ static const struct
    "L\303\263g\303\263 \303\201bhair",
    "Seat sc\303\241ile\303\241in",
    "Sc\303\241ile\303\241n Teidil",
+   "Clog 12 Uair an Chloig",
    "\303\223 shin",
    "Deighilteoir D\303\241ta",
    "LL-MM",
@@ -7916,6 +7981,7 @@ static const struct
    "MM-LL-BBBB UU:NN (AM/PM)",
    "MM-LL UU::NN",
    "MM-LL UU:NN (AM/PM)",
+   "Form\303\241id D\303\241ta agus Ama",
    "Uathoibr\303\255och",
    "L\303\241mhleabhar",
    "St\303\255l D\303\241ta agus Ama",
@@ -8358,6 +8424,7 @@ static const struct
    "Tiom\303\241na\303\255 Vulkan Saincheaptha",
    "C\303\263ras (Tos\303\272 s\303\241bh\303\241ilte)",
    "C\303\263ras",
+   "<\303\232s\303\241id Tiom\303\241na\303\255 an Ch\303\263rais>",
    "Slabhra\303\255 Malartaithe Infheithicl\303\255",
 #if defined (WIIU)
 #ifdef WIIU
@@ -8733,7 +8800,14 @@ static const struct
    ".",
    "D\303\251anfar \303\241bhar cartlannaithe a bhaint go sealadach chuig an eolaire seo.",
    "Lig do cro\303\255the rochtain a fh\303\241il ar an gceamara.",
+   "S\303\241raigh an gl\303\251as ceamara r\303\251amhshocraithe a \303\272s\303\241ideann tiom\303"
+   "\241na\303\255 an cheamara. Braitheann s\303\251 seo ar an tiom\303\241na\303\255; f\303\241g fo"
+   "lamh \303\251 chun an r\303\251amhshocr\303\272 a \303\272s\303\241id.",
    "Tiom\303\241na\303\255 ceamara le h\303\272s\303\241id. (Atos\303\272 ag teast\303\241il)",
+   "Taispe\303\241in \303\255omh\303\241 bheo \303\263n gceamara fad is at\303\241 an iontr\303\241i"
+   "l seo roghnaithe. Taispe\303\241ntar \303\255omh\303\241 \303\263 cheamara cro\303\255 at\303"
+   "\241 ag rith, fad is at\303\241 an cro\303\255 sin \303\241 \303\272s\303\241id.",
+   "Athraigh socruithe an cheamara agus seice\303\241il an \303\255omh\303\241 \303\263n gceamara.",
    "Masc giot\303\241n an seoladh nuair a bh\303\255onn M\303\251id Cuardaigh Cuimhne < 8 ngiot\303"
    "\241n.",
    "Cuir aicearra leis an liosta.",
@@ -8967,6 +9041,15 @@ static const struct
    "\255 a th\303\241inig athr\303\272 air \303\263 shin.",
    "Mol cro\303\255leac\303\241in at\303\241 ar f\303\241il fi\303\272 nuair a luchta\303\255tear cr"
    "o\303\255 de l\303\241imh.",
+   "D\303\251anann RetroArch seice\303\241il ar an gcro\303\255l\303\241r seo an ch\303\251ad uair e"
+   "ile a lucht\303\263idh s\303\251.",
+   "L\303\263d\303\241lann s\303\251 gan rabhadh sl\303\241nd\303\241la toisc gur sh\303\255nigh lib"
+   "retro \303\251.",
+   "L\303\263d\303\241lann s\303\251 gan Rabhadh Sl\303\241nd\303\241la: roghnaigh t\303\272 'Muin"
+   "\303\255n i gc\303\263na\303\255' n\303\263 'Suite\303\241il agus b\303\255odh muin\303\255n aga"
+   "t as' d\303\263, n\303\263 suite\303\241ladh \303\251 nuair a cuireadh t\303\272s le seice\303"
+   "\241lacha s\303\255nithe. Roghnaigh \303\251 seo chun stop a chur leis an muin\303\255n at\303"
+   "\241 agat as.",
    "Cruthaigh c\303\272ltaca go huathoibr\303\255och d'aon cro\303\255the suite\303\241ilte agus nua"
    "shonr\303\272 ar l\303\255ne \303\241 dh\303\251anamh. Cumasa\303\255onn s\303\251 seo rolladh a"
    "r ais go cro\303\255the at\303\241 ag obair go h\303\251asca m\303\241 thugann nuashonr\303\272 "
@@ -10517,6 +10600,12 @@ static const struct
    "Aimsigh glacad\303\263ir\303\255 RetroArch in aice l\303\241imhe agus ceadaigh iarratais ar shru"
    "th\303\272 ar an l\303\255onra seo. Teasta\303\255onn do chead\303\272 le haghaidh sruthanna a t"
    "hagann isteach.",
+   "\303\201ir\303\255tear leis seo roghchl\303\241ir, f\303\263gra\303\255 agus an seinnteoir ionsu"
+   "ite, mar aon le fuaim mheasctha \303\263n gcomh\303\251adan tosaigh. D\303\255chumasaigh \303"
+   "\251 seo chun an fhuinneog \303\241bhair agus an cro\303\255-ch\303\263ras fuaime a \303\272s"
+   "\303\241id. Baineann s\303\251 seo leis an gc\303\251ad sruth PyroWave eile.",
+   "S\303\241r\303\272 forbartha roghnach. F\303\241g folamh \303\251 chun na sc\303\241th\303\263ir"
+   "\303\255 at\303\241 leabaithe i RetroArch a \303\272s\303\241id.",
    "L\303\251ir\303\255onn an chuid is m\303\263 d'iontr\303\241lacha an t-amharc Uile Seinmliosta"
    "\303\255 i m\303\263d greille. L\303\251ir\303\255onn 0 gach iontr\303\241il.",
    "L\303\251ir\303\255onn formh\303\263r na n-iontr\303\241lacha a l\303\251ir\303\255onn an t-amha"
@@ -10982,9 +11071,17 @@ static const struct
    "\303\241th feidhm\303\255onn s\303\251 mar dheilbh\303\255n \303\241bhair.",
    "Cine\303\241l mionsamhail le taispe\303\241int ag barr ar dheis seinmliosta\303\255. Is f\303"
    "\251idir \303\251 a athr\303\272 le Deas Anal\303\263gach Suas/Cl\303\251.",
+   "Taispe\303\241in an t-am ar chlog 12 uair an chloig, le AM/PM in \303\241it an chloig 24 uair an"
+   " chloig, fad is at\303\241 'Form\303\241id D\303\241ta agus Ama' socraithe ar Uathoibr\303\255oc"
+   "h.",
    "Sonraigh carachtar le h\303\272s\303\241id mar dheighilteoir idir comhph\303\241irteanna bliana/"
    "m\303\255/lae nuair a thaispe\303\241ntar an d\303\241ta reatha sa roghchl\303\241r.",
    "Taispe\303\241in an d\303\241ta agus/n\303\263 an t-am reatha taobh istigh den roghchl\303\241r.",
+   "Taispe\303\241nann an socr\303\272 uathoibr\303\255och an mh\303\255, an l\303\241 agus an t-am "
+   "san ord a \303\272s\303\241idtear i do chrios ama, agus \303\272s\303\241idtear an clog 12 uair "
+   "an chloig n\303\263 an clog 24 uair an chloig, de r\303\251ir mar a roghna\303\255odh. \303\232s"
+   "\303\241ideann an socr\303\272 l\303\241imhe an 'St\303\255l D\303\241ta agus Ama' at\303\241 ro"
+   "ghnaithe.",
    "Athraigh an st\303\255l, taispe\303\241ntar an d\303\241ta agus/n\303\263 an t-am reatha taobh i"
    "stigh den roghchl\303\241r.",
 #ifdef HAVE_LAKKA
@@ -11116,6 +11213,13 @@ static const struct
    "'upscalers/dlss' laistigh d'eolaire RetroArch.",
    "Lig don mh\303\272nla an craiceann a aimsi\303\272 \303\251 f\303\251in, agus \303\251 a ch\303"
    "\263ire\303\241il ar leith \303\263n gcuid eile den fhr\303\241ma.",
+   "Rith samhail Rindre\303\241la N\303\251ar\303\272il DLSS 5 ar an bhfr\303\241ma at\303\241 m\303"
+   "\251adaithe i sc\303\241la. D\303\251anann s\303\251 an soilsi\303\272 agus na h\303\241bhair a "
+   "athoibri\303\272, ag baint \303\272s\303\241ide as an doimhneacht agus an ghluaiseacht a shol"
+   "\303\241thra\303\255onn an cro\303\255-inneall; caitheann s\303\251 c\303\272pla milleasoicind i"
+   "n aghaidh an fhr\303\241ma. Nuair a chuirtear i ngn\303\255omh \303\251 den ch\303\251ad uair, u"
+   "llmha\303\255tear an tsamhail sa ch\303\272lra; \303\272s\303\241idtear ar\303\255s \303\255 gac"
+   "h uair a chuirtear i ngn\303\255omh \303\255 ina dhiaidh sin.",
    "Neart forioml\303\241n an mh\303\272nla, i gc\303\251atad\303\241n.",
    "An d\303\251ine a oibr\303\255onn an tsamhail mionsonra\303\255 agus strucht\303\272r dromchla, "
    "i gc\303\251atad\303\241n.",
@@ -11755,7 +11859,35 @@ static const struct
    "radhairc a shaini\303\272.",
    "Sioncr\303\263naigh f\303\255se\303\241n aschuir an ch\303\241rta grafaic\303\255 le r\303\241ta"
    " athnuachana an sc\303\241ile\303\241in. Molta.",
+   "\303\232s\303\241id pac\303\241iste tiom\303\241na\303\255 Vulkan (.zip) in \303\241it thiom\303"
+   "\241na\303\255 an ch\303\263rais.\nN\303\241 h\303\272s\303\241id ach pac\303\241ist\303\255 "
+   "\303\263 fhoinse a bhfuil muin\303\255n agat as. Tiocfaidh s\303\251 i bhfeidhm an ch\303\251ad "
+   "uair eile a thos\303\263idh Vulkan.\nTos\303\272: tiom\303\241na\303\255 an ch\303\263rais.",
    "Thuairte\303\241il s\303\251 ar an rith deireanach, ag \303\272s\303\241id an Ch\303\263rais",
+   "\303\223 %s",
+   "\303\232s\303\241id tiom\303\241na\303\255 Vulkan eile: roghnaigh an comhad .json a bhaineann le"
+   "is, at\303\241 suite i share/vulkan/icd.d.\nN\303\241 h\303\272s\303\241id ach tiom\303\241naith"
+   "e \303\263 fhoinse a bhfuil muin\303\255n agat as. Tiocfaidh an t-athr\303\272 i bhfeidhm an ch"
+   "\303\251ad uair eile a thos\303\263idh Vulkan.\nTos\303\272: tiom\303\241na\303\255 an ch\303"
+   "\263rais. Chun rith uair amh\303\241in gan \303\251: --vulkan-driver=system",
+#if defined(__APPLE__)
+   "\303\232s\303\241id tiom\303\241na\303\255 Vulkan eile: roghnaigh an comhad .json a bhaineann le"
+   "is \342\200\224 \303\263 `etc/vulkan/icd.d` in Homebrew, \303\263 eisi\303\272int de chuid Molte"
+   "nVK, n\303\263 \303\263n Vulkan SDK.\nN\303\241 h\303\272s\303\241id ach tiom\303\241naithe \303"
+   "\263 fhoinse a bhfuil muin\303\255n agat as. Tiocfaidh an t-athr\303\272 i bhfeidhm an ch\303"
+   "\251ad uair eile a thos\303\263idh Vulkan.\nTos\303\272: tiom\303\241na\303\255 an ch\303\263rai"
+   "s. Chun \303\251 a rith uair amh\303\241in gan an tiom\303\241na\303\255 sin: `open -a RetroArch"
+   " --args --vulkan-driver=system`",
+#endif
+#if defined(_WIN32)
+   "\303\232s\303\241id tiom\303\241na\303\255 Vulkan eile: roghnaigh an comhad .json a bhaineann le"
+   "is, a bh\303\255onn le f\303\241il de ghn\303\241th in aice leis an gcomhad .dll.\nN\303\241 h"
+   "\303\272s\303\241id ach tiom\303\241naithe \303\263 fhoinse a bhfuil muin\303\255n agat as. Tioc"
+   "faidh an t-athr\303\272 i bhfeidhm an ch\303\251ad uair eile a thos\303\263idh Vulkan.\nTos\303"
+   "\272: tiom\303\241na\303\255 an ch\303\263rais. Chun \303\251 a rith uair amh\303\241in gan \303"
+   "\251: --vulkan-driver=system",
+#endif
+   "Gan \303\272s\303\241id: %s",
    "\303\232s\303\241idtear %s ar\303\255s ag an gc\303\251ad t\303\272s gn\303\241th eile",
    "Sioncr\303\263naigh an LAP agus an GPU go crua. Laghda\303\255onn s\303\251 moill ar chostas fei"
    "dhm\303\255ochta.",
@@ -11903,6 +12035,11 @@ static const struct
    "Scanadh Bluetooth cr\303\255ochnaithe.",
    "Comh\303\251adan ordaithe a thabhairt suas ar an bport",
    "bearta",
+   "T\303\241 an cro\303\255 at\303\241 ag rith i seilbh an cheamara, ach n\303\255l s\303\251 tar "
+   "\303\251is \303\251 a thos\303\272.",
+   "T\303\241 rochtain ar an gceamara m\303\272chta. Cuir an rogha 'Ceadaigh an Ceamara' ar si\303"
+   "\272l chun an r\303\251amhamharc a fheice\303\241il.",
+   "N\303\255orbh fh\303\251idir an ceamara a oscailt.",
    "N\303\255 f\303\251idir cos\303\241n cumra\303\255ochta nua a thuar. Bain \303\272s\303\241id as"
    " an am reatha.",
    "Cumais",
@@ -12017,6 +12154,12 @@ static const struct
    "Theip ar shuite\303\241il an chro\303\255: ",
    "Cro\303\255 suite\303\241ilte: ",
    "Theip ar an gcro\303\255 a shuite\303\241il: ",
+   "Cro\303\255 suite\303\241ilte agus curtha ar an liosta iontaofa don seisi\303\272n seo amh\303"
+   "\241in: n\303\255 f\303\251idir le RetroArch a liosta de chro\303\255the iontaofa a sh\303\241bh"
+   "\303\241il.",
+   "T\303\241 an cro\303\255 suite\303\241ilte, ach t\303\241 an liosta de chro\303\255the iontaofa "
+   "l\303\241n; mar sin, fiafr\303\263idh RetroArch ar\303\255s nuair a bheidh an cro\303\255 \303"
+   "\241 lucht\303\272.",
    "Theip ar an liosta cro\303\255 a aisghabh\303\241il!",
    "N\303\255or luchta\303\255odh an cro\303\255: n\303\255l muin\303\255n as %s. Chun muin\303\255n"
    " a chur ann, luchtaigh \303\251 tr\303\255 'Luchtaigh Cro\303\255' agus roghnaigh 'Cuir Muin\303"
@@ -12028,6 +12171,8 @@ static const struct
    "N\303\255l an cro\303\255 luchtaithe: T\303\241 RetroArch f\303\263s ag seice\303\241il na gcro"
    "\303\255the at\303\241 suite\303\241ilte. Bain triail as ar\303\255s i gceann n\303\263im\303"
    "\251id.",
+   "Cro\303\255 iontaofa don seisi\303\272n seo amh\303\241in: N\303\255 f\303\251idir le RetroArch "
+   "a liosta de chro\303\255the iontaofa a sh\303\241bh\303\241il.",
    "N\303\255or luchta\303\255odh an cro\303\255 ach don uair seo amh\303\241in: t\303\241 an liosta"
    " de chro\303\255the iontaofa l\303\241n, mar sin n\303\255 raibh RetroArch in ann \303\251 a cho"
    "inne\303\241il i gcuimhne.",
@@ -12065,8 +12210,18 @@ static const struct
    "Cro\303\255 a shuite\303\241il: ",
    "D\303\255shuite\303\241lfar an cro\303\255 nuair a scoirfear RetroArch.",
 #endif
+   "N\303\255 muin\303\255n a thuilleadh as an gcro\303\255: d\303\251anann RetroArch seice\303\241i"
+   "l air an ch\303\251ad uair eile a lucht\303\263far \303\251.",
+   "N\303\255 chuirtear muin\303\255n sa chro\303\255leac\303\241n a thuilleadh, don seisi\303\272n "
+   "seo amh\303\241in: n\303\255 f\303\251idir le RetroArch a liosta de chro\303\255leac\303\241in i"
+   "ontaofa a sh\303\241bh\303\241il.",
+   "N\303\255 f\303\251idir \303\251 seo a athr\303\272 anois: sh\303\241bh\303\241il leagan n\303"
+   "\255os nua\303\255 de RetroArch a liosta de chro\303\255-chomhph\303\241irteanna iontaofa.",
    "N\303\255 f\303\251idir \303\251 seo a athr\303\272 anois: n\303\255orbh fh\303\251idir le Retro"
    "Arch a liosta de chro\303\255-chomhph\303\241irteanna iontaofa a l\303\251amh.",
+   "N\303\255orbh fh\303\251idir le RetroArch liosta na gcro\303\255the iontaofa a sh\303\241bh\303"
+   "\241il: n\303\255 choime\303\241dfar athruithe ar na cro\303\255the iontaofa sa seisi\303\272n s"
+   "eo.",
    "D\303\251anann RetroArch seice\303\241il anois ar sh\303\255ni\303\272ch\303\241in na gcro\303"
    "\255leac\303\241n. Fanann muin\303\255n agat as do chro\303\255leac\303\241in; faightear cinn at"
    "\303\241 s\303\255nithe tr\303\255d an rogha chun cro\303\255leac\303\241in suite\303\241ilte a "
@@ -12085,6 +12240,12 @@ static const struct
    "Is leagan den chro\303\255l\303\241r \303\251 seo at\303\241 n\303\255os sine n\303\241 an ceann"
    " a d\342\200\231\303\272s\303\241id t\303\272 roimhe seo. D\342\200\231fh\303\251adfadh fadhbann"
    "a sl\303\241nd\303\241la a bheith ag leaganacha n\303\255os sine.",
+   "Sh\303\241bh\303\241il leagan n\303\255os nua\303\255 de RetroArch a liosta de chro\303\255-chom"
+   "hph\303\241irteanna iontaofa; mar sin, iarrfar ort ar\303\255s na cro\303\255-chomhph\303\241irt"
+   "eanna a raibh muin\303\255n agat astu cheana a chead\303\272.",
+   "N\303\255orbh fh\303\251idir le RetroArch a liosta de chro\303\255leac\303\241in iontaofa a l"
+   "\303\251amh; d\303\241 bhr\303\255 sin, iarrfar ort ar\303\255s na cro\303\255leac\303\241in a r"
+   "aibh muin\303\255n agat astu cheana a chead\303\272.",
    "Is f\303\251idir leat na seice\303\241lacha seo a mh\303\272chadh faoi Socruithe > Cro\303\255 >"
    " Seice\303\241il S\303\255ni\303\272ch\303\241in an Chro\303\255.",
    "T\303\241 an cro\303\255 seo s\303\255nithe le heochair nach n-aithn\303\255onn RetroArch.",
@@ -12694,10 +12855,41 @@ static const struct
    "ile a bhaint as.",
    "Theip ar th\303\272s\303\272 an tiom\303\241na\303\255 Vulkan saincheaptha. \303\201 \303\272s"
    "\303\241id anois: tiom\303\241na\303\255 an ch\303\263rais.",
+   "N\303\255 f\303\251idir an comhad .json don tiom\303\241na\303\255 Vulkan saincheaptha a \303"
+   "\272s\303\241id. \303\201 \303\272s\303\241id an tiom\303\241na\303\255 c\303\263rais.",
+   "T\303\241 gn\303\251ithe at\303\241 ag teast\303\241il \303\263 RetroArch in easnamh ar an tiom"
+   "\303\241na\303\255 saincheaptha Vulkan. \303\201 \303\272s\303\241id an tiom\303\241na\303\255 c"
+   "\303\263rais.",
+   "N\303\255or \303\272s\303\241ideadh an tiom\303\241na\303\255 Vulkan saincheaptha: %s. \303\201 "
+   "\303\272s\303\241id an tiom\303\241na\303\255 c\303\263rais.",
+   "Chuir macOS an tiom\303\241na\303\255 saincheaptha Vulkan i gcoraint\303\255n; m\303\255n\303"
+   "\255onn an logchomhad conas \303\251 a ghlanadh. Ag \303\272s\303\241id tiom\303\241na\303\255 a"
+   "n ch\303\263rais.",
    "Atosaigh RetroArch chun an tiom\303\241na\303\255 Vulkan a athr\303\272.",
    "Thosaigh leis an tiom\303\241na\303\255 Vulkan c\303\263rais.",
+   "N\303\255 f\303\251idir leis an tiom\303\241na\303\255 comhth\303\251acs SDL3 tiom\303\241na\303"
+   "\255 saincheaptha Vulkan a \303\272s\303\241id ar macOS. T\303\241 tiom\303\241na\303\255 an ch"
+   "\303\263rais \303\241 \303\272s\303\241id.",
+   "Teasta\303\255onn Android 9 n\303\263 n\303\255os nua\303\255 le haghaidh tiom\303\241naithe sai"
+   "ncheaptha Vulkan. \303\201 \303\272s\303\241id an tiom\303\241na\303\255 c\303\263rais.",
+   "Teasta\303\255onn an l\303\263d\303\241la\303\255 Vulkan 1.3.235 n\303\263 n\303\255os nua\303"
+   "\255 le haghaidh tiom\303\241naithe saincheaptha Vulkan. \303\201 \303\272s\303\241id: tiom\303"
+   "\241na\303\255 an ch\303\263rais.",
    "N\303\255or roghna\303\255odh an tiom\303\241na\303\255 saincheaptha Vulkan sa roghchl\303\241r,"
    " n\303\263 t\303\241 athr\303\272 tagtha air. Roghnaigh ar\303\255s \303\251 chun \303\251 a "
+   "\303\272s\303\241id.",
+   "theip air tos\303\272",
+   "n\303\255or luchta\303\255odh an leabharlann (%s)",
+   "n\303\255or bhain l\303\263d\303\241la\303\255 Vulkan an ch\303\263rais \303\272s\303\241id as",
+   "n\303\255or aims\303\255odh aon GPU a dtaca\303\255onn s\303\251 leis",
+   "n\303\255or aims\303\255odh aon GPU a dtaca\303\255onn s\303\251 leis (t\303\241 GPU Adreno ag a"
+   "n ngl\303\251as seo)",
+   "n\303\255or aims\303\255odh aon GPU a dtaca\303\255tear leis (t\303\241 GPU Mali ag an bhfeiste "
+   "seo)",
+   "pac\303\241iste lochtach (%s)",
+   "theip air tos\303\272 (%s)",
+   "N\303\255 f\303\251idir leis an am rite don chluas\303\241n an tiom\303\241na\303\255 saincheapt"
+   "ha Vulkan a \303\272s\303\241id. T\303\241 tiom\303\241na\303\255 an ch\303\263rais \303\241 "
    "\303\272s\303\241id.",
    "Ag fanacht leis an gcliant...",
 #ifdef HAVE_LAKKA
@@ -12712,7 +12904,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (282000u
+      (sizeof(msg_hash_ga_blob) == (287741u
 #ifdef ANDROID
        + 390u
 #endif
@@ -13262,6 +13454,12 @@ typedef char msg_hash_ga_blob_check[
        + 176u
        + 145u
 #endif
+#if defined(__APPLE__)
+       + 438u
+#endif
+#if defined(_WIN32)
+       + 366u
+#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 132u
@@ -13638,6 +13836,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_PREVIEW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -13875,6 +14074,10 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_TRUST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_TRUST_SIGNED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_TRUST_TRUSTED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_TRUST_UNCHECKED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_COMPRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -15042,6 +15245,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_DEVICES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_DEVICE_NAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_DISCOVERY_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_FULL_OUTPUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_SEND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_SHADER_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_STOP,
@@ -15637,6 +15841,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_12HOUR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM,
@@ -15660,6 +15865,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
@@ -16099,6 +16305,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_USE_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -16302,7 +16509,10 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_PREVIEW,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_BOTTOM,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CHEAT_ADD_NEW_TOP,
@@ -16438,6 +16648,9 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SIGNATURE_CHECK,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_TRUST,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_TRUST_SIGNED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_TRUST_TRUSTED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_COMPRESS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -17143,6 +17356,8 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PYROWAVE_DEVICE_NAME,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PYROWAVE_DISCOVERY_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_PYROWAVE_FULL_OUTPUT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_PYROWAVE_SHADER_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_CUSTOM_THEME,
@@ -17432,8 +17647,10 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_12HOUR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEZONE,
@@ -17492,6 +17709,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_AUTO_MASK,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_INTENSITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_STRUCTURE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_TONE,
@@ -17686,7 +17904,17 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_FROM,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD,
+#if defined(__APPLE__)
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_MACOS,
+#endif
+#if defined(_WIN32)
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_WINDOWS,
+#endif
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_NOT_USED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
@@ -17780,6 +18008,9 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MSG_BLUETOOTH_SCAN_COMPLETE,
    (msg_hash_id_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    (msg_hash_id_t)MSG_BYTES,
+   (msg_hash_id_t)MSG_CAMERA_PREVIEW_CORE_IDLE,
+   (msg_hash_id_t)MSG_CAMERA_PREVIEW_DISALLOWED,
+   (msg_hash_id_t)MSG_CAMERA_PREVIEW_FAILED,
    (msg_hash_id_t)MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    (msg_hash_id_t)MSG_CAPABILITIES,
    (msg_hash_id_t)MSG_CHANGE_THUMBNAIL_TYPE,
@@ -17866,10 +18097,13 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MSG_CORE_INSTALLATION_FAILED,
    (msg_hash_id_t)MSG_CORE_INSTALLED,
    (msg_hash_id_t)MSG_CORE_INSTALL_FAILED,
+   (msg_hash_id_t)MSG_CORE_INSTALL_TRUST_CANT_SAVE,
+   (msg_hash_id_t)MSG_CORE_INSTALL_TRUST_LIST_FULL,
    (msg_hash_id_t)MSG_CORE_LIST_FAILED,
    (msg_hash_id_t)MSG_CORE_LOAD_REFUSED_LOAD_CORE,
    (msg_hash_id_t)MSG_CORE_LOAD_REFUSED_NO_MENU,
    (msg_hash_id_t)MSG_CORE_LOAD_REFUSED_SEED_PENDING,
+   (msg_hash_id_t)MSG_CORE_LOAD_TRUST_CANT_SAVE,
    (msg_hash_id_t)MSG_CORE_LOAD_TRUST_LIST_FULL,
    (msg_hash_id_t)MSG_CORE_LOCK_FAILED,
    (msg_hash_id_t)MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
@@ -17893,7 +18127,11 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MSG_CORE_STEAM_INSTALLING,
    (msg_hash_id_t)MSG_CORE_STEAM_UNINSTALLED,
 #endif
+   (msg_hash_id_t)MSG_CORE_TRUST_FORGOTTEN,
+   (msg_hash_id_t)MSG_CORE_TRUST_FORGOTTEN_CANT_SAVE,
+   (msg_hash_id_t)MSG_CORE_TRUST_NEWER,
    (msg_hash_id_t)MSG_CORE_TRUST_READ_ONLY,
+   (msg_hash_id_t)MSG_CORE_TRUST_SAVE_FAILED,
    (msg_hash_id_t)MSG_CORE_TRUST_SEEDED,
    (msg_hash_id_t)MSG_CORE_UNLOCK_FAILED,
    (msg_hash_id_t)MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
@@ -17903,6 +18141,8 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MSG_CORE_WARNING_FULL_ACCESS,
    (msg_hash_id_t)MSG_CORE_WARNING_MODIFIED,
    (msg_hash_id_t)MSG_CORE_WARNING_OLDER,
+   (msg_hash_id_t)MSG_CORE_WARNING_STORE_NEWER,
+   (msg_hash_id_t)MSG_CORE_WARNING_STORE_UNREADABLE,
    (msg_hash_id_t)MSG_CORE_WARNING_TURN_OFF,
    (msg_hash_id_t)MSG_CORE_WARNING_UNKNOWN_KEY,
    (msg_hash_id_t)MSG_CORE_WARNING_UNSIGNED,
@@ -18402,9 +18642,25 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MSG_VRR_RUNLOOP_ENABLED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_CRASHED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_FAILED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_INVALID_ICD,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_MISSING_FEATURES,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_NOT_USED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_QUARANTINED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_RESTART,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_SAFE_MODE,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_SDL3_UNSUPPORTED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED_LOADER,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNTRUSTED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_FAILED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_LIBRARY,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_LOADER,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU_ADRENO,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU_MALI,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_PACKAGE,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_START,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_XR_UNSUPPORTED,
    (msg_hash_id_t)MSG_WAITING_FOR_CLIENT,
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MSG_WIFI_CONNECTING_TO,

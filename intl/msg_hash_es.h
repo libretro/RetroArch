@@ -596,6 +596,10 @@ static const struct
    char s_67b3c923[20];
 #endif
    char s_543b5a62[25];
+   char s_d6e28152[22];
+   char s_35c7898b[21];
+   char s_51b1ba7c[16];
+   char s_c42e011b[14];
    char s_d1dc5a72[51];
    char s_b72aa8dd[55];
    char s_1d9a045d[57];
@@ -1364,7 +1368,9 @@ static const struct
    char s_dcbf8b04[23];
    char s_dcbffdfe[21];
    char s_7816d5d5[31];
+   char s_2b1f17e8[14];
    char s_36c3acc7[18];
+   char s_b4c3612a[18];
    char s_f638f238[15];
    char s_f3358a59[31];
    char s_f8098721[62];
@@ -1552,6 +1558,9 @@ static const struct
    char s_4e0dc3eb[57];
    char s_17e361a4[25];
    char s_883e5f82[58];
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+   char s_66c8a76c[44];
+#endif
    char s_e738b2b9[35];
    char s_1dd231f0[43];
    char s_686b74ae[43];
@@ -2348,6 +2357,7 @@ static const struct
    char s_f6affed3[22];
    char s_7a911960[20];
    char s_a436c403[20];
+   char s_19578095[18];
    char s_875b5c6b[7];
    char s_9dcc1f02[19];
    char s_cb3d015a[11];
@@ -2361,6 +2371,7 @@ static const struct
    char s_61b5b9d0[20];
    char s_313e6a7a[28];
    char s_579c3ea7[25];
+   char s_72cd9f39[24];
    char s_e29ee11f[12];
    char s_ccf131c5[23];
    char s_e5124bba[8];
@@ -2794,6 +2805,7 @@ static const struct
    char s_9e5596c6[36];
    char s_b9bc0c48[26];
    char s_334daaaa[8];
+   char s_f418b4b6[31];
    char s_9119ef97[22];
 #if defined (WIIU)
 #ifdef WIIU
@@ -3136,6 +3148,9 @@ static const struct
    char s_48e88dc4[174];
    char s_33c09b4d[142];
    char s_3d233cd0[72];
+   char s_f4ce0000[67];
+   char s_18d7f879[84];
+   char s_96d0072a[221];
    char s_9198f1a0[229];
    char s_dfe733cb[333];
    char s_165e564b[305];
@@ -3595,7 +3610,9 @@ static const struct
    char s_c5a76d72[57];
    char s_c5a7e06c[55];
    char s_37d36d03[65];
+   char s_eadbaf16[48];
    char s_54eaf5f5[30];
+   char s_7de5d198[52];
    char s_3b573ee6[27];
    char s_dc1d6cc7[62];
    char s_28543dcf[74];
@@ -3733,6 +3750,9 @@ static const struct
    char s_8e5bac99[87];
    char s_28a346d2[50];
    char s_998cef30[83];
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+   char s_a1e92cda[114];
+#endif
    char s_f2c17467[62];
    char s_295af39e[116];
    char s_e50c6c1c[66];
@@ -4122,8 +4142,10 @@ static const struct
    char s_4c592ae1[123];
    char s_52ac4fb9[116];
    char s_bae1c983[184];
+   char s_22035c03[183];
    char s_a39b8870[119];
    char s_52a12789[46];
+   char s_924fc727[242];
    char s_dcb85773[69];
 #ifdef HAVE_LAKKA
    char s_f77f7a41[73];
@@ -4381,6 +4403,8 @@ static const struct
    char s_9506fc7e[119];
    char s_47ae341f[125];
    char s_cc84c32d[58];
+   char s_317fe827[6];
+   char s_ca351f14[13];
    char s_fa09f4f6[53];
    char s_48696c85[88];
 #if defined (WIIU)
@@ -4546,7 +4570,14 @@ static const struct
    char s_f9ad51a9[31];
    char s_a3940c93[20];
    char s_2fb7ea2e[31];
+   char s_1257325e[126];
+   char s_0da23518[149];
    char s_4b3a4173[41];
+   char s_3a594147[163];
+   char s_c4d0b550[196];
+   char s_edd11f84[124];
+   char s_28366667[114];
+   char s_23816921[131];
    char s_cd621c40[31];
    char s_a65663f9[49];
    char s_3290a333[52];
@@ -4560,14 +4591,34 @@ static const struct
    char s_fb59e491[55];
    char s_96e03bed[54];
    char s_824867fd[70];
+   char s_88b304a9[273];
+   char s_2bbbed40[85];
+   char s_85dd0c11[94];
+   char s_59617189[148];
 #ifdef HAVE_MIST
    char s_30512c09[50];
    char s_35b60281[21];
    char s_91e3840f[59];
 #endif
+   char s_e35fcbac[96];
+   char s_3c6d611f[123];
+   char s_83afaa15[137];
+   char s_fc23f5d1[113];
+   char s_6eb6b947[145];
+   char s_0544d35e[188];
    char s_e5668863[34];
    char s_0638fe80[68];
    char s_902526ad[68];
+   char s_d06599bf[47];
+   char s_a6c36272[47];
+   char s_16b6f24c[197];
+   char s_63e47549[61];
+   char s_a774d05e[125];
+   char s_34baee15[172];
+   char s_0a6862c7[148];
+   char s_c89f366b[92];
+   char s_936703a0[69];
+   char s_9bf6e2a5[44];
    char s_e487a402[34];
    char s_3b5b6155[39];
    char s_13f7f56e[44];
@@ -5894,12 +5945,16 @@ static const struct
    "N\303\272cleos",
    "Excluir del men\303\272 de n\303\272cleos sin contenidos",
    "Iniciar un n\303\272cleo autom\303\241ticamente",
-   "Verificar firmas del n\303\272cleo",
+   "Verificar firmas de n\303\272cleos",
 #ifdef HAVE_MIST
    "Instalar n\303\272cleo",
    "Desinstalar n\303\272cleo",
 #endif
    "Sugerir n\303\272cleos siempre",
+   "Confianza del n\303\272cleo",
+   "Firmado por libretro",
+   "Aprobada por ti",
+   "Por comprobar",
    "Guardar una copia de los n\303\272cleos al actualizarlos",
    "Comprimir copias de seguridad autom\303\241ticas de n\303\272cleos",
    "Tama\303\261o del historial de copias de seguridad del n\303\272cleo",
@@ -6673,6 +6728,8 @@ static const struct
    "Mostrar Cargar n\303\272cleo",
    "Mostrar Cargar disco",
    "Mostrar Actualizador en l\303\255nea",
+   "Mostrar Salir",
+   "Mostrar Reiniciar",
    "Mostrar Reiniciar",
    "Mostrar Apagar",
    "Mostrar subetiquetas de men\303\272s",
@@ -6861,6 +6918,9 @@ static const struct
    "Notificaciones de fallos de entrada (autoconfiguraci\303\263n)",
    "Notificaciones de trucos",
    "Notificaciones de carga de configuraciones personalizadas",
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+   "Notificaciones de clave de firma de pruebas",
+#endif
    "Notificaciones de control de disco",
    "Notificaciones del regulador de fotogramas",
    "Notificaciones adicionales de juego en red",
@@ -7665,6 +7725,7 @@ static const struct
    "Logotipo de contenido",
    "Captura de pantalla",
    "Pantalla de t\303\255tulo",
+   "Reloj de 12 horas",
    "atr\303\241s",
    "Separador de fecha",
    "DD-MM-AAAA",
@@ -7678,6 +7739,7 @@ static const struct
    "MM-DD-AAAA HH:MM:SS",
    "MM-DD-AAAA HH:MM:SS (AM/PM)",
    "MM-DD-AAAA HH:MM (AM/PM)",
+   "Formato de fecha y hora",
    "Autom\303\241tica",
    "Estilo de fecha y hora",
    "AAAA-MM",
@@ -8115,6 +8177,7 @@ static const struct
    "Controlador personalizado de Vulkan",
    "Sistema (arranque seguro)",
    "Sistema",
+   "<Usar controlador del sistema>",
    "Swap chains en espera",
 #if defined (WIIU)
 #ifdef WIIU
@@ -8638,6 +8701,12 @@ static const struct
    "Mostrar una advertencia antes de ejecutar un n\303\272cleo que no haya sido firmado por libretro"
    " o que haya sido modificado desde su \303\272ltima firma.",
    "Sugiere los n\303\272cleos disponibles, aunque haya otro cargado manualmente.",
+   "RetroArch comprobar\303\241 este n\303\272cleo la pr\303\263xima vez que lo cargues.",
+   "El n\303\272cleo se cargar\303\241 sin un aviso de seguridad porque est\303\241 firmado por libr"
+   "etro.",
+   "El n\303\272cleo se cargar\303\241 sin un aviso de seguridad: o has elegido confiar en el n\303"
+   "\272cleo o se instal\303\263 despu\303\251s de empezar a aplicar las comprobaciones de firmas. S"
+   "elecciona esta opci\303\263n para dejar de confiar en el n\303\272cleo.",
    "Crea autom\303\241ticamente una copia de seguridad de cualquier n\303\272cleo instalado al usar "
    "el actualizador en l\303\255nea. As\303\255 se puede recuperar f\303\241cilmente un n\303\272cle"
    "o funcional en caso de que una actualizaci\303\263n introduzca una regresi\303\263n.",
@@ -9487,7 +9556,9 @@ static const struct
    "Muestra en el men\303\272 principal la opci\303\263n Cargar n\303\272cleo.",
    "Muestra en el men\303\272 principal la opci\303\263n Cargar disco.",
    "Muestra en el men\303\272 principal la opci\303\263n Actualizador en l\303\255nea.",
+   "Muestra en el men\303\272 principal la opci\303\263n Salir.",
    "Muestra la opci\303\263n Reiniciar.",
+   "Muestra en el men\303\272 principal la opci\303\263n Reiniciar.",
    "Muestra la opci\303\263n Apagar.",
    "Muestra informaci\303\263n adicional sobre los elementos del men\303\272.",
    "Muestra una subetiqueta solo en el elemento de men\303\272 que est\303\251 resaltado.",
@@ -9726,6 +9797,10 @@ static const struct
    "Muestra un mensaje en pantalla cuando no se puedan configurar dispositivos de entrada.",
    "Muestra un mensaje en pantalla al aplicar trucos.",
    "Muestra un mensaje en pantalla al cargar archivos de configuraci\303\263n personalizada.",
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+   "Muestra el recordatorio de que esta compilaci\303\263n utiliza una clave de firma de pruebas com"
+   "o m\303\251todo de confianza.",
+#endif
    "Muestra un mensaje en pantalla al insertar y expulsar discos.",
    "Muestra un indicador en pantalla cuando se activen el avance r\303\241pido, la c\303\241mara len"
    "ta o la funci\303\263n de rebobinado.",
@@ -10339,9 +10414,16 @@ static const struct
    "Indica el tipo de miniatura que se mostrar\303\241 en la esquina inferior derecha de las listas "
    "de reproducci\303\263n. Puede cambiarse moviendo el anal\303\263gico derecho hacia arriba o la i"
    "zquierda.",
+   "Si el formato de fecha y hora est\303\241 configurado con el valor autom\303\241tico, muestra la"
+   " hora del reloj en formato de 12 horas con indicador de AM/PM en vez de en el formato de 24 hora"
+   "s.",
    "Especifica el car\303\241cter que se utilizar\303\241 como separador de a\303\261o/mes/d\303\255"
    "a al mostrar la fecha actual dentro del men\303\272.",
    "Muestra la fecha y hora actuales en el men\303\272.",
+   "El valor autom\303\241tico mostrar\303\241 el d\303\255a, mes y a\303\261o en el orden que se ut"
+   "iliza en tu huso horario con un reloj de 12 o 24 horas, seg\303\272n est\303\251 configurado. El"
+   " valor manual utilizar\303\241 la configuraci\303\263n seleccionada en el estilo de fecha y hora"
+   ".",
    "Cambia la forma en que se muestran la fecha y hora dentro del men\303\272.",
 #ifdef HAVE_LAKKA
    "Selecciona tu zona horaria para ajustar la fecha y hora a tu ubicaci\303\263n.",
@@ -10961,6 +11043,8 @@ static const struct
    "Sincroniza la se\303\261al de v\303\255deo de la tarjeta gr\303\241fica con la frecuencia de act"
    "ualizaci\303\263n de pantalla. Se recomienda su uso.",
    "La \303\272ltima ejecuci\303\263n se ha bloqueado, utilizando sistema",
+   "De %s",
+   "Sin usar: %s",
    "Se volver\303\241 a usar %s en el pr\303\263ximo arranque normal",
    "Fuerza la sincron\303\255a entre CPU y GPU. Reduce la latencia a costa de perder rendimiento.",
 #if defined (WIIU)
@@ -11172,7 +11256,22 @@ static const struct
    "Error al instalar el n\303\272cleo: ",
    "N\303\272cleo instalado: ",
    "Error al instalar el n\303\272cleo: ",
+   "Se ha instalado y confiado en el n\303\272cleo solo por esta sesi\303\263n: RetroArch no puede g"
+   "uardar su lista de n\303\272cleos de confianza.",
+   "Se ha instalado el n\303\272cleo pero la lista de n\303\272cleos de confianza est\303\241 llena,"
+   " as\303\255 que RetroArch te volver\303\241 a preguntar cuando cargues el n\303\272cleo.",
    "\302\241Error al obtener la lista de n\303\272cleos!",
+   "No se ha cargado el n\303\272cleo: %s no est\303\241 marcado como confiable. Para autorizarlo de"
+   "bes cargarlo con Cargar n\303\272cleo y seleccionar Confiar siempre en este n\303\272cleo.",
+   "No se ha cargado el n\303\272cleo: RetroArch no ha podido confirmar si es seguro. Para autorizar"
+   "lo debes iniciar RetroArch con un men\303\272, cargar el n\303\272cleo y seleccionar Confiar sie"
+   "mpre en este n\303\272cleo.",
+   "No se ha cargado el n\303\272cleo: RetroArch est\303\241 comprobando los n\303\272cleos instalad"
+   "os. Vuelve a intentarlo dentro de un momento.",
+   "Se ha confiado en el n\303\272cleo solo por esta sesi\303\263n: RetroArch no puede guardar su li"
+   "sta de n\303\272cleos de confianza.",
+   "Se ha cargado el n\303\272cleo solo por esta vez: la lista de n\303\272cleos de confianza est"
+   "\303\241 llena, as\303\255 que RetroArch no puede recordarlo.",
    "Error al proteger el n\303\272cleo: ",
    "Se ha creado el archivo de opciones del n\303\272cleo.",
    "Se ha eliminado el archivo de opciones del n\303\272cleo.",
@@ -11186,14 +11285,53 @@ static const struct
    "Error al restaurar la copia de seguridad del n\303\272cleo: ",
    "Se ha seleccionado un archivo de n\303\272cleo no v\303\241lido: ",
    "Error al eliminar el n\303\272cleo de la lista de n\303\272cleos sin contenidos: ",
+   "Si desactivas esta opci\303\263n, RetroArch podr\303\241 ejecutar n\303\272cleos que hayan sido "
+   "alterados, incluyendo aquellos que vengan del actualizador en l\303\255nea. Desactiva esta opci"
+   "\303\263n \303\272nicamente si vas a compilar o instalar n\303\272cleos que est\303\251s creando"
+   " y si eres consciente del riesgo.",
+   "El n\303\272cleo descargado no ha superado la verificaci\303\263n de firma y no se ha instalado.",
+   "El n\303\272cleo descargado es m\303\241s antiguo que el actual, se ha mantenido el n\303\272cle"
+   "o ya instalado.",
+   "Esta compilaci\303\263n tiene una clave de firma de pruebas: se ejecutar\303\241 todo n\303\272c"
+   "leo firmado por cualquiera. No uses esta opci\303\263n de forma recurrente.",
 #ifdef HAVE_MIST
    "El n\303\272cleo se est\303\241 descargando en estos momentos",
    "Instalando n\303\272cleo: ",
    "El n\303\272cleo se desinstalar\303\241 en cuanto salgas de RetroArch.",
 #endif
+   "Se ha dejado de confiar en el n\303\272cleo: RetroArch lo comprobar\303\241 la pr\303\263xima ve"
+   "z que lo cargues.",
+   "Se ha dejado de confiar en el n\303\272cleo solo por esta sesi\303\263n: RetroArch no puede guar"
+   "dar su lista de n\303\272cleos de confianza.",
+   "Esta opci\303\263n no se puede cambiar en este momento: una versi\303\263n m\303\241s reciente d"
+   "e RetroArch ha guardado su lista de n\303\272cleos de confianza.",
+   "Esta opci\303\263n no se puede cambiar en este momento: RetroArch no ha podido leer su lista de "
+   "n\303\272cleos de confianza.",
+   "RetroArch no ha podido guardar su lista de n\303\272cleos de confianza: no se guardar\303\241n l"
+   "os cambios en la confianza de n\303\272cleos durante esta sesi\303\263n.",
+   "RetroArch ha empezado a comprobar las firmas de los n\303\272cleos. Tus n\303\272cleos se seguir"
+   "\303\241n considerando fiables, al actualizar los n\303\272cleos instalados empezar\303\241s a r"
+   "ecibir n\303\272cleos firmados.",
    "Error al desproteger el n\303\272cleo: ",
    "Error al a\303\261adir el n\303\272cleo a la lista de n\303\272cleos sin contenidos: ",
    "Actualizaci\303\263n de n\303\272cleo desactivada, el n\303\272cleo est\303\241 protegido: ",
+   "Debes responder a la advertencia de seguridad.",
+   "RetroArch no ha podido verificar este n\303\272cleo.",
+   "Los n\303\272cleos son programas que tienen acceso total a tu dispositivo y a tus archivos. Solo"
+   " debes continuar si has compilado t\303\272 mismo este n\303\272cleo o si lo has recibido de una"
+   " persona de confianza.",
+   "Este n\303\272cleo ha cambiado desde que fue firmado por libretro.",
+   "Esta es una versi\303\263n m\303\241s antigua del n\303\272cleo que usabas. Las versiones m\303"
+   "\241s antiguas podr\303\255an tener problemas de seguridad.",
+   "Una versi\303\263n m\303\241s reciente de RetroArch ha guardado su lista de n\303\272cleos de co"
+   "nfianza, as\303\255 que se te volver\303\241 a preguntar si conf\303\255as en los n\303\272cleos"
+   " que ya has aprobado.",
+   "RetroArch no ha podido leer su lista de n\303\272cleos de confianza, as\303\255 que se te volver"
+   "\303\241 a preguntar si conf\303\255as en los n\303\272cleos que ya has aprobado.",
+   "Puedes desactivar estas verificaciones en Ajustes > N\303\272cleo > Verificar firmas de n\303"
+   "\272cleos.",
+   "Este n\303\272cleo est\303\241 firmado con una clave desconocida para RetroArch.",
+   "Este n\303\272cleo no est\303\241 firmado por libretro.",
    "No se encontr\303\263 otro controlador.",
    "No se encontr\303\263 un sistema compatible.",
    "No se encontr\303\263 una pista de datos v\303\241lida.",
@@ -11763,7 +11901,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (279253u
+      (sizeof(msg_hash_es_blob) == (283754u
 #ifdef ANDROID
        + 329u
 #endif
@@ -11916,6 +12054,9 @@ typedef char msg_hash_es_blob_check[
        + 21u
        + 24u
        + 16u
+#endif
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+       + 44u
 #endif
 #ifdef HAVE_QT
        + 671u
@@ -12189,6 +12330,9 @@ typedef char msg_hash_es_blob_check[
        + 53u
        + 70u
        + 270u
+#endif
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+       + 114u
 #endif
 #ifdef HAVE_GAME_AI
        + 32u
@@ -12925,6 +13069,10 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_TRUST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_TRUST_SIGNED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_TRUST_TRUSTED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_TRUST_UNCHECKED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_COMPRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -13693,7 +13841,9 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
@@ -13881,6 +14031,9 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CORE_SIGNING_TEST_KEY,
+#endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_FAST_FORWARD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
@@ -14676,6 +14829,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_12HOUR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMMYYYY,
@@ -14689,6 +14843,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HMS_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
@@ -15122,6 +15277,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_USE_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -15455,6 +15611,9 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SIGNATURE_CHECK,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_TRUST,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_TRUST_SIGNED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_TRUST_TRUSTED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_COMPRESS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -15911,7 +16070,9 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
@@ -16049,6 +16210,9 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+#ifdef HAVE_CORE_SIGNING_TEST_KEY
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CORE_SIGNING_TEST_KEY,
+#endif
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_FAST_FORWARD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
@@ -16438,8 +16602,10 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_12HOUR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEZONE,
@@ -16687,6 +16853,8 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_FROM,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_NOT_USED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
@@ -16851,7 +17019,14 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MSG_CORE_INSTALLATION_FAILED,
    (msg_hash_id_t)MSG_CORE_INSTALLED,
    (msg_hash_id_t)MSG_CORE_INSTALL_FAILED,
+   (msg_hash_id_t)MSG_CORE_INSTALL_TRUST_CANT_SAVE,
+   (msg_hash_id_t)MSG_CORE_INSTALL_TRUST_LIST_FULL,
    (msg_hash_id_t)MSG_CORE_LIST_FAILED,
+   (msg_hash_id_t)MSG_CORE_LOAD_REFUSED_LOAD_CORE,
+   (msg_hash_id_t)MSG_CORE_LOAD_REFUSED_NO_MENU,
+   (msg_hash_id_t)MSG_CORE_LOAD_REFUSED_SEED_PENDING,
+   (msg_hash_id_t)MSG_CORE_LOAD_TRUST_CANT_SAVE,
+   (msg_hash_id_t)MSG_CORE_LOAD_TRUST_LIST_FULL,
    (msg_hash_id_t)MSG_CORE_LOCK_FAILED,
    (msg_hash_id_t)MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
    (msg_hash_id_t)MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
@@ -16865,14 +17040,34 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MSG_CORE_RESTORATION_FAILED,
    (msg_hash_id_t)MSG_CORE_RESTORATION_INVALID_CONTENT,
    (msg_hash_id_t)MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
+   (msg_hash_id_t)MSG_CORE_SIGNATURE_CHECK_OFF_CONFIRM,
+   (msg_hash_id_t)MSG_CORE_SIGNATURE_DOWNLOAD_FAILED,
+   (msg_hash_id_t)MSG_CORE_SIGNATURE_DOWNLOAD_OLDER,
+   (msg_hash_id_t)MSG_CORE_SIGNING_TEST_KEY,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
    (msg_hash_id_t)MSG_CORE_STEAM_INSTALLING,
    (msg_hash_id_t)MSG_CORE_STEAM_UNINSTALLED,
 #endif
+   (msg_hash_id_t)MSG_CORE_TRUST_FORGOTTEN,
+   (msg_hash_id_t)MSG_CORE_TRUST_FORGOTTEN_CANT_SAVE,
+   (msg_hash_id_t)MSG_CORE_TRUST_NEWER,
+   (msg_hash_id_t)MSG_CORE_TRUST_READ_ONLY,
+   (msg_hash_id_t)MSG_CORE_TRUST_SAVE_FAILED,
+   (msg_hash_id_t)MSG_CORE_TRUST_SEEDED,
    (msg_hash_id_t)MSG_CORE_UNLOCK_FAILED,
    (msg_hash_id_t)MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
    (msg_hash_id_t)MSG_CORE_UPDATE_DISABLED,
+   (msg_hash_id_t)MSG_CORE_WARNING_ANSWER_FIRST,
+   (msg_hash_id_t)MSG_CORE_WARNING_ERROR,
+   (msg_hash_id_t)MSG_CORE_WARNING_FULL_ACCESS,
+   (msg_hash_id_t)MSG_CORE_WARNING_MODIFIED,
+   (msg_hash_id_t)MSG_CORE_WARNING_OLDER,
+   (msg_hash_id_t)MSG_CORE_WARNING_STORE_NEWER,
+   (msg_hash_id_t)MSG_CORE_WARNING_STORE_UNREADABLE,
+   (msg_hash_id_t)MSG_CORE_WARNING_TURN_OFF,
+   (msg_hash_id_t)MSG_CORE_WARNING_UNKNOWN_KEY,
+   (msg_hash_id_t)MSG_CORE_WARNING_UNSIGNED,
    (msg_hash_id_t)MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
    (msg_hash_id_t)MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
    (msg_hash_id_t)MSG_COULD_NOT_FIND_VALID_DATA_TRACK,

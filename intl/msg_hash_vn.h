@@ -2385,6 +2385,7 @@ static const struct
    char s_f6affed3[16];
    char s_7a911960[24];
    char s_a436c403[23];
+   char s_19578095[22];
    char s_875b5c6b[9];
    char s_9dcc1f02[27];
    char s_72c88236[13];
@@ -2408,6 +2409,7 @@ static const struct
    char s_579c3ea7[39];
    char s_cc7bf1b9[25];
    char s_b300fc03[34];
+   char s_72cd9f39[31];
    char s_e29ee11f[13];
    char s_714b59b6[12];
    char s_ccf131c5[36];
@@ -4222,8 +4224,10 @@ static const struct
    char s_4c592ae1[121];
    char s_52ac4fb9[136];
    char s_bae1c983[144];
+   char s_22035c03[180];
    char s_a39b8870[119];
    char s_52a12789[54];
+   char s_924fc727[260];
    char s_dcb85773[60];
 #ifdef HAVE_LAKKA
    char s_f77f7a41[84];
@@ -8670,6 +8674,7 @@ static const struct
    "Logo n\341\273\231i dung",
    "Ch\341\273\245p \341\272\243nh m\303\240n h\303\254nh",
    "M\303\240n h\303\254nh ti\303\252u \304\221\341\273\201",
+   "\304\220\341\273\223ng h\341\273\223 12 gi\341\273\235",
    "Tr\306\260\341\273\233c",
    "K\303\275 t\341\273\261 ph\303\242n t\303\241ch ng\303\240y",
    "Ng\303\240y-Th\303\241ng",
@@ -8693,6 +8698,7 @@ static const struct
    "Th\303\241ng-Ng\303\240y-N\304\203m Gi\341\273\235:Th\303\241ng (SA/CH)",
    "Th\303\241ng-Ng\303\240y Gi\341\273\235:Ph\303\272t",
    "Th\303\241ng-Ng\303\240y Gi\341\273\235:Th\303\241ng (SA/CH)",
+   "\304\220\341\273\213nh d\341\272\241ng ng\303\240y v\303\240 gi\341\273\235",
    "T\341\273\261 \304\221\341\273\231ng",
    "Th\341\273\247 c\303\264ng",
    "Ki\341\273\203u hi\341\273\203n th\341\273\213 ng\303\240y v\303\240 gi\341\273\235",
@@ -13420,11 +13426,23 @@ static const struct
    "\263c tr\303\252n b\303\252n ph\341\272\243i c\341\273\247a danh s\303\241ch ch\306\241i. C\303"
    "\263 th\341\273\203 thay \304\221\341\273\225i b\341\272\261ng Analog ph\341\272\243i L\303\252n"
    "/Xu\341\273\221ng.",
+   "Hi\341\273\203n th\341\273\213 th\341\273\235i gian theo \304\221\341\273\223ng h\341\273\223 12"
+   " gi\341\273\235 v\341\273\233i k\303\275 hi\341\273\207u SA/CH thay v\303\254 \304\221\341\273"
+   "\223ng h\341\273\223 24 gi\341\273\235 khi '\304\220\341\273\213nh d\341\272\241ng ng\303\240y v"
+   "\303\240 gi\341\273\235' \304\221\306\260\341\273\243c \304\221\341\272\267t th\303\240nh T\341"
+   "\273\261 \304\221\341\273\231ng.",
    "Ch\341\273\211 \304\221\341\273\213nh k\303\275 t\341\273\261 d\303\271ng \304\221\341\273\203 p"
    "h\303\242n t\303\241ch c\303\241c th\303\240nh ph\341\272\247n n\304\203m/th\303\241ng/ng\303"
    "\240y khi hi\341\273\203n th\341\273\213 ng\303\240y trong menu.",
    "Hi\341\273\203n th\341\273\213 ng\303\240y v\303\240 gi\341\273\235 hi\341\273\207n t\341\272"
    "\241i trong menu.",
+   "T\341\273\261 \304\221\341\273\231ng hi\341\273\203n th\341\273\213 th\303\241ng, ng\303\240y v"
+   "\303\240 gi\341\273\235 theo th\341\273\251 t\341\273\261 \304\221\306\260\341\273\243c s\341"
+   "\273\255 d\341\273\245ng trong m\303\272i gi\341\273\235 c\341\273\247a b\341\272\241n, v\341"
+   "\273\233i \304\221\341\273\223ng h\341\273\223 12 gi\341\273\235 ho\341\272\267c 24 gi\341\273"
+   "\235 t\303\271y theo l\341\273\261a ch\341\273\215n. Th\341\273\247 c\303\264ng s\341\273\255 d"
+   "\341\273\245ng ki\341\273\203u \304\221\341\273\213nh d\341\272\241ng ng\303\240y v\303\240 gi"
+   "\341\273\235 \304\221\303\243 ch\341\273\215n.",
    "Thay \304\221\341\273\225i ki\341\273\203u hi\341\273\203n th\341\273\213 ng\303\240y v\303\240 "
    "gi\341\273\235 trong menu.",
 #ifdef HAVE_LAKKA
@@ -16304,7 +16322,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (329069u
+      (sizeof(msg_hash_vn_blob) == (329562u
 #ifdef ANDROID
        + 373u
 #endif
@@ -19262,6 +19280,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_12HOUR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DDMM,
@@ -19285,6 +19304,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
@@ -21074,8 +21094,10 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_THUMBNAILS_RGUI,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_12HOUR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_TIMEZONE,

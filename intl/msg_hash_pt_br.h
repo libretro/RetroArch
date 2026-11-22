@@ -308,6 +308,7 @@ static const struct
    char s_1bf49fce[49];
    char s_11e34db0[51];
    char s_0058b881[7];
+   char s_7bc3f4b6[9];
    char s_14ec7b7e[10];
    char s_005cc6dc[14];
    char s_00614813[5];
@@ -580,6 +581,7 @@ static const struct
    char s_145f5880[15];
    char s_b1b9fd35[43];
    char s_0cc72b4d[31];
+   char s_9c10150b[9];
    char s_9af4bf52[19];
    char s_e5d096ab[16];
    char s_b3d0e60e[31];
@@ -728,6 +730,7 @@ static const struct
    char s_db16b335[25];
    char s_10358d4e[18];
    char s_0ad18744[12];
+   char s_7a3aee46[24];
    char s_0b7c8e91[23];
    char s_0bf63b67[26];
    char s_36b2a31c[9];
@@ -859,6 +862,7 @@ static const struct
    char s_56e1b336[20];
    char s_313d15c0[9];
    char s_e9f0dd82[44];
+   char s_1b46171b[20];
    char s_0bd714f7[6];
    char s_0bebb490[11];
    char s_72765a06[17];
@@ -976,6 +980,7 @@ static const struct
    char s_800197ff[26];
    char s_93d13126[7];
    char s_7785c81e[43];
+   char s_48da9f69[16];
    char s_38cf005e[52];
    char s_7e9108fa[10];
    char s_f455cf63[11];
@@ -1030,6 +1035,8 @@ static const struct
    char s_bd07998f[16];
    char s_4e2f19db[29];
    char s_9e66791a[9];
+   char s_3e981328[15];
+   char s_d5d699bd[32];
    char s_168d155d[30];
    char s_c64d260f[10];
 #ifdef HAVE_LAKKA_SWITCH
@@ -1286,6 +1293,7 @@ static const struct
    char s_df62d56f[6];
    char s_e2f55a9b[4];
    char s_9f2cc577[19];
+   char s_dc216f95[28];
    char s_026e5a83[12];
    char s_42b8ffbf[9];
    char s_64702d9a[33];
@@ -2238,6 +2246,7 @@ static const struct
 #endif
 #endif
    char s_f4341e25[44];
+   char s_b9942e59[12];
    char s_e09bad69[8];
    char s_f66c7b67[8];
    char s_cc973e8a[7];
@@ -2292,6 +2301,7 @@ static const struct
    char s_4b582a0c[37];
    char s_61213f1d[19];
    char s_95e4b29f[75];
+   char s_4d5d23af[15];
    char s_fa462638[7];
    char s_29f97e35[5];
    char s_569b0627[6];
@@ -2911,6 +2921,7 @@ static const struct
    char s_ece34ee9[264];
    char s_8b8a59ad[147];
    char s_f426bf8c[61];
+   char s_a7f838ad[11];
    char s_f88b978c[165];
    char s_47df0525[63];
    char s_03e272fc[63];
@@ -4781,6 +4792,7 @@ static const struct
    "Carrega automaticamente arquivos de remapeamento",
    "Carregar automaticamente predefini\303\247\303\265es de shader",
    "Voltar",
+   "Cancelar",
    "Confirmar",
    "Informa\303\247\303\265es",
    "Sair",
@@ -5055,6 +5067,7 @@ static const struct
    "Baixar n\303\272cleo",
    "Configura\303\247\303\265es do Atualizador de N\303\272cleos",
    "Mostrar n\303\272cleos experimentais",
+   "Cancelar",
    "Arquitetura da CPU",
    "N\303\272cleos da CPU",
    "Frequ\303\252ncia m\303\241xima do n\303\272cleo",
@@ -5204,6 +5217,7 @@ static const struct
    "Por n\303\272mero de jogadores",
    "Por distribuidora",
    "Por regi\303\243o",
+   "Por m\303\252s de lan\303\247amento",
    "Por ano de lan\303\247amento",
    "Por suporte de vibra\303\247\303\243o",
    "Por nota",
@@ -5336,6 +5350,7 @@ static const struct
    "Bot\303\243o Y (esquerda)",
    "Tecla %s",
    "Tipo de mapeamento para controle no teclado",
+   "%s (n\303\243o conectado)",
    "Todas",
    "Teclado %s",
    "Aux A da pistola",
@@ -5453,6 +5468,7 @@ static const struct
    "Mostrar Entradas da Porta",
    "Tocado",
    "Mostrar Cursor do Mouse com Sobreposi\303\247\303\243o",
+   "%s (jogador %u)",
    "Comportamento de Sondagem (Requer renicializa\303\247\303\243o)",
    "Mais cedo",
    "Mais tarde",
@@ -5507,6 +5523,8 @@ static const struct
    "JIT dispon\303\255vel",
    "Salvar os perfis de controle",
    "Controle",
+   "Teclado %d: %s",
+   "Teclado: todos os teclados (%s)",
    "Chave de transmiss\303\243o da Kick",
    "Servi\303\247os",
 #ifdef HAVE_LAKKA_SWITCH
@@ -5763,6 +5781,7 @@ static const struct
    "Parar",
    "\342\200\246",
    "Suporte para mouse",
+   "Mouse: todos os mouses (%s)",
    "Multim\303\255dia",
    "M\303\272sicas",
    "Filtrar extens\303\265es desconhecidas",
@@ -6727,6 +6746,7 @@ static const struct
 #endif
 #endif
    "Desativar composi\303\247\303\243o da \303\241rea de trabalho",
+   "Intensidade",
    "Padr\303\243o",
    "Padr\303\243o",
    "V\303\255deo",
@@ -6783,6 +6803,7 @@ static const struct
    "Posi\303\247\303\243o Y da notifica\303\247\303\243o na tela",
    "\303\215ndice de monitor",
    "Habilitar tela cheia sobre o entalhe (\342\200\234notch\342\200\235) em dispositivos Android",
+   "Notifica\303\247\303\265es",
    "Pausar",
    "Alta",
    "Baixa",
@@ -7617,6 +7638,7 @@ static const struct
    "Seleciona a porta do dispositivo de entrada para monitorar quando 'Mostrar Entradas na Sobreposi"
    "\303\247\303\243o' estiver definido como 'F\303\255sico (Controle)'.",
    "Mostra o cursor do mouse ao usar uma sobreposi\303\247\303\243o na tela.",
+   "Jogador %u",
    "Influencia como a sondagem de entrada \303\251 feita no RetroArch. Definir como \"Mais cedo\" ou"
    " \"Mais tarde\" pode reduzir a lat\303\252ncia, dependendo das suas configura\303\247\303\265es.",
    "A combina\303\247\303\243o dos bot\303\265es do controle para sair do RetroArch.",
@@ -9496,7 +9518,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193029u
+      (sizeof(msg_hash_pt_br_blob) == (193220u
 #ifdef ANDROID
        + 352u
 #endif
@@ -10259,6 +10281,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CANCEL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
@@ -10531,6 +10554,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_CANCEL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
@@ -10679,6 +10703,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_MONTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RUMBLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
@@ -10810,6 +10835,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ABSENT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
@@ -10927,6 +10953,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_TOUCHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD_ITEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
@@ -10981,6 +11008,8 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_NAME,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_KEYBOARD_SYSTEM_NAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
 #ifdef HAVE_LAKKA_SWITCH
@@ -11237,6 +11266,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MOUSE_SYSTEM_NAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
@@ -12188,6 +12218,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_INTENSITY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
@@ -12242,6 +12273,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTIFICATIONS_WINDOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_PAUSE_ON,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_HIGH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_EDIT_SMOOTHING_LOW,
@@ -12860,6 +12892,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_PLAYER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,

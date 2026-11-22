@@ -559,6 +559,8 @@ static const struct
    char s_145f5880[13];
    char s_b1b9fd35[32];
    char s_0cc72b4d[25];
+   char s_d895f586[20];
+   char s_9c10150b[8];
    char s_9af4bf52[17];
    char s_e5d096ab[15];
    char s_b3d0e60e[29];
@@ -627,6 +629,7 @@ static const struct
    char s_77b74366[15];
    char s_ab49119c[7];
    char s_dfa3c8c3[6];
+   char s_146c6f57[6];
    char s_a3825f18[14];
    char s_ef2d0a03[24];
    char s_ad17a194[13];
@@ -1661,6 +1664,18 @@ static const struct
    char s_4ceac87e[8];
    char s_f62d1074[8];
    char s_387a4176[15];
+   char s_131e934d[7];
+   char s_7745a38e[7];
+   char s_49e4b96c[9];
+   char s_2102d995[9];
+   char s_e69d6a8f[8];
+   char s_4e2cbad9[7];
+   char s_4e2cbb07[7];
+   char s_13ef7ee0[6];
+   char s_863f74bc[7];
+   char s_b28f6db3[9];
+   char s_6c9436e3[8];
+   char s_64ee333c[10];
    char s_28863bc1[15];
    char s_f751c497[22];
    char s_9329c64c[10];
@@ -4798,6 +4813,8 @@ static const struct
    "Scarica core",
    "Impostazioni aggiornamenti core",
    "Mostra core sperimentali",
+   "Avviso di Sicurezza",
+   "Annulla",
    "Architettura CPU",
    "Core della CPU",
    "Frequenza Principale Massima",
@@ -4866,6 +4883,7 @@ static const struct
    "Inserire disco",
    "Grezzo",
    "Leggi",
+   "Testo",
    "Versione EDID",
    "Visualizza Informazioni",
    "Orientamento",
@@ -5906,6 +5924,18 @@ static const struct
    "Editore",
    "Regione",
    "Mese di uscita",
+   "Aprile",
+   "Agosto",
+   "Dicembre",
+   "Febbraio",
+   "Gennaio",
+   "Luglio",
+   "Giugno",
+   "Marzo",
+   "Maggio",
+   "Novembre",
+   "Ottobre",
+   "Settembre",
    "Anno di uscita",
    "Vibrazione supportata",
    "Punteggio",
@@ -8815,7 +8845,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (181886u
+      (sizeof(msg_hash_it_blob) == (182014u
 #ifdef ANDROID
        + 376u
 #endif
@@ -9801,6 +9831,8 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_CANCEL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
@@ -9869,6 +9901,7 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TEXT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
@@ -10902,6 +10935,18 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_APRIL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_AUGUST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_DECEMBER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_FEBRUARY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JANUARY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JULY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JUNE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MARCH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MAY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_NOVEMBER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_OCTOBER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_SEPTEMBER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
