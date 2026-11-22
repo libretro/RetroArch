@@ -55,7 +55,9 @@ enum lt_mode
    LT_NONCONFORM,
    LT_NEVER_ADVANCE,
    LT_NO_PROGRESS,
-   LT_STALE_LOAD
+   LT_STALE_LOAD,
+   LT_STALE_SAVE,
+   LT_STALE_SEND
 };
 
 struct lt_range
@@ -145,7 +147,8 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_reattach_1",  "Frame port 1 attaches again in; -1" },
    { "link_test_reattach_2",  "Frame port 2 attaches again in; -1" },
    { "link_test_restart_ticks", "Ticks restart at a load and move at a reset; off|on" },
-   { "link_test_mode",        "Mode; conform|nonconform|never_advance|no_progress|stale_load" },
+   { "link_test_mode",        "Mode; conform|nonconform|never_advance|no_progress|stale_load|"
+                              "stale_save|stale_send" },
    { "link_test_bad_frame",   "First frame of the mode; 0" },
    { NULL, NULL }
 };
@@ -172,6 +175,11 @@ static uint64_t lt_loads;
 /* stale_load: set from the mode's first frame on; in no save state, and
  * no load clears it */
 static bool lt_latch;
+
+/* stale_save, stale_send: the state's hash as the last retro_run left it,
+ * kept from the mode's first frame on; no load refreshes it */
+static bool lt_kept;
+static uint64_t lt_kept_hash;
 
 static uint32_t lt_picture[LT_WIDTH * LT_HEIGHT];
 static int16_t lt_samples[LT_AUDIO_FRAMES * 2];
@@ -390,7 +398,8 @@ static void lt_read_port(unsigned p)
 static void lt_read_mode(void)
 {
    static const char *const names[] = {
-      "conform", "nonconform", "never_advance", "no_progress", "stale_load"
+      "conform", "nonconform", "never_advance", "no_progress", "stale_load", "stale_save",
+      "stale_send"
    };
    const char *s = lt_option("link_test_mode");
    unsigned i;
@@ -843,6 +852,7 @@ void retro_init(void)
    lt_epoch = 0;
    lt_loads = 0;
    lt_latch = false;
+   lt_kept  = false;
    lt_read_options();
    lt_state.rng = lt_cfg.seed ? lt_cfg.seed : 2463534242UL;
    memset(lt_port_list, 0, sizeof(lt_port_list));
@@ -959,6 +969,9 @@ void retro_run(void)
    lt_store_hash();
    lt_draw(dupe);
    lt_sound();
+   if (bad && (lt_cfg.mode == LT_STALE_SAVE || lt_cfg.mode == LT_STALE_SEND))
+      lt_kept = true;
+   lt_kept_hash = lt_state.hash;
 }
 
 /* Save state: little-endian, one fixed size; ticks as positions */
@@ -996,7 +1009,7 @@ bool retro_serialize(void *data, size_t size)
       return false;
    s = lt_put(s, LT_STATE_MAGIC, 4);
    s = lt_put(s, lt_state.frame, 8);
-   s = lt_put(s, lt_state.hash, 8);
+   s = lt_put(s, lt_kept && lt_cfg.mode == LT_STALE_SAVE ? lt_kept_hash : lt_state.hash, 8);
    s = lt_put(s, lt_state.rng, 4);
    s = lt_put(s, lt_state.sram_folded, 1);
    memcpy(s, lt_state.sysram, LT_SYSRAM_SIZE);
@@ -1024,6 +1037,10 @@ bool retro_serialize(void *data, size_t size)
          s = lt_put(s, live ? e->len : 0, 4);
       }
    }
+   /* stale_send: a transfer the kept hash says is due, started by a save */
+   if (lt_kept && lt_cfg.mode == LT_STALE_SEND && lt_kept_hash != lt_state.hash && lt_handle[0])
+      lt_link.send_msg(lt_handle[0], lt_out(lt_state.port[0].base), RETRO_LINK_BROADCAST,
+            lt_payload, 8);
    return true;
 }
 

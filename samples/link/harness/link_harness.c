@@ -75,7 +75,7 @@ struct link_harness
    unsigned long state_frame, frames;
    enum link_sched_pick pick;
    uint32_t seed;
-   bool rewind;              /* --rewind: the state is loaded at the last edge */
+   bool rewinding;           /* --rewind: the state is loaded at the last edge */
    bool differed, failed;
 };
 
@@ -115,7 +115,7 @@ static int link_harness_options(struct link_harness *h, int argc, char **argv)
          if (h->state_path)
             return link_harness_usage("--from and --rewind take one state between them");
          h->state_path = value;
-         h->rewind     = !strcmp(arg, "--rewind");
+         h->rewinding  = !strcmp(arg, "--rewind");
       }
       else if (!strcmp(arg, "--expect"))
          h->expect_path = value;
@@ -411,6 +411,63 @@ static bool link_harness_session(struct link_harness *h)
    return true;
 }
 
+static bool link_harness_write_file(const char *dir, const char *name, const void *data,
+      size_t len)
+{
+   char *path = link_scenario_join(dir, name);
+   bool ok    = path && filestream_write_file(path, data, (int64_t)len);
+   if (!ok)
+      fprintf(stderr, "link_harness: cannot write %s in %s\n", name, dir);
+   free(path);
+   return ok;
+}
+
+/* Each console's state saved again right after a load, before its next
+ * retro_run, as a frontend may save while paused: it must be the state the
+ * console loaded, and saving it must make no call the bus counts as
+ * misplaced */
+static void link_harness_resave(struct link_harness *h)
+{
+   unsigned i;
+   for (i = 0; i < h->scn.console_count; i++)
+   {
+      link_console_t *c = &h->consoles[i];
+      struct link_bus_counts before, after;
+      unsigned char *buf;
+      size_t size, at = 0;
+      bool ok;
+      link_bus_get_counts(h->bus, &before);
+      size = link_console_state_size(c);
+      ok   = (buf = (unsigned char*)malloc(size ? size : 1)) != NULL
+         && link_console_serialize(c, buf, size);
+      link_bus_get_counts(h->bus, &after);
+      if (after.misplaced_call != before.misplaced_call)
+      {
+         fprintf(stderr, "link_harness: console %u made a link call while its state was saved"
+               " right after the load\n", i);
+         h->failed = true;
+      }
+      if (!ok)
+      {
+         fprintf(stderr, "link_harness: console %u: no state saved right after the load\n", i);
+         h->failed = true;
+      }
+      else
+      {
+         while (at < size && at < h->saved_len[i] && buf[at] == h->saved[i][at])
+            at++;
+         if (at < size || size != h->saved_len[i])
+         {
+            fprintf(stderr, "link_harness: console %u: a save right after the load differs at"
+                  " byte %lu from the state it loaded\n", i, (unsigned long)at);
+            link_harness_write_file(c->dir, "resaved.state", buf, size);
+            h->failed = true;
+         }
+      }
+      free(buf);
+   }
+}
+
 /* At a frame edge, into cores that are loaded: the bus, then each core's
  * state inside its own entry, then a re-join of its ports */
 static bool link_harness_load_state(struct link_harness *h)
@@ -428,6 +485,7 @@ static bool link_harness_load_state(struct link_harness *h)
       }
       link_bus_renumbered(h->bus, i);
    }
+   link_harness_resave(h);
    return true;
 }
 
@@ -465,17 +523,6 @@ static unsigned char *link_harness_put(unsigned char *s, uint64_t v, unsigned by
    for (i = 0; i < bytes; i++, v >>= 8)
       *s++ = (unsigned char)(v & 0xFF);
    return s;
-}
-
-static bool link_harness_write_file(const char *dir, const char *name, const void *data,
-      size_t len)
-{
-   char *path = link_scenario_join(dir, name);
-   bool ok    = path && filestream_write_file(path, data, (int64_t)len);
-   if (!ok)
-      fprintf(stderr, "link_harness: cannot write %s in %s\n", name, dir);
-   free(path);
-   return ok;
 }
 
 /* out/<name>.state: magic, version, frame, scenario hash, console count,
@@ -902,16 +949,16 @@ static void link_harness_run(struct link_harness *h)
    const struct link_scenario *s = &h->scn;
    unsigned long last  = s->stuck_line ? s->stuck_frame : s->end_frame;
    unsigned long frame = 0;
-   size_t next  = 0;
-   bool rewind  = h->rewind;
-   bool stuck   = false;
+   size_t next    = 0;
+   bool rewinding = h->rewinding;
+   bool stuck     = false;
    link_harness_check_options(h);
-   if (h->state_path && !rewind)
+   if (h->state_path && !rewinding)
       link_harness_resume(h, &frame, &next);
    for (;; frame++)
    {
       enum link_sched_frame result;
-      if (rewind && frame == last)
+      if (rewinding && frame == last)
       {
          if (!link_harness_load_state(h))
          {
@@ -919,7 +966,7 @@ static void link_harness_run(struct link_harness *h)
             return;
          }
          link_harness_resume(h, &frame, &next);
-         rewind = false;
+         rewinding = false;
       }
       link_harness_edge(h, frame, &next);
       if (frame == s->end_frame)
@@ -1003,7 +1050,7 @@ static int link_harness_main(struct link_harness *h, int argc, char **argv)
       return LINK_HARNESS_USAGE;
    if (!link_harness_session(h))
       h->failed = true;
-   else if (h->state_path && !h->rewind && !link_harness_load_state(h))
+   else if (h->state_path && !h->rewinding && !link_harness_load_state(h))
       return LINK_HARNESS_USAGE;
    else
       link_harness_run(h);

@@ -43,8 +43,16 @@ The six runs show:
   the game;
 - `rewound`: the session that has run to the scenario's last frame loads
   that state, each core in place, and gives the same trace again from the
-  `save mid` line, so a load leaves nothing behind of the session it
-  replaces.
+  `save mid` line, so, for a load at that frame, nothing of the session it
+  replaces reaches the trace.
+
+Right after the load, before any core runs, the `from` and `rewound` runs
+save every core's state again. It must be the state the core loaded, and
+saving it must not call `send_msg`, `recv_msg`, `peek`, `advance` or
+`advance_multi` (`attach`, `detach` and `peers` on its own handle are not
+checked): a person can load a state and save another while paused, and a
+core whose load leaves something stale that only a save reads shows it
+there.
 
 The trace has, for each console and frame, a hash of its picture, its audio
 and its save state, and each run's `messages.log`, the messages sent, must

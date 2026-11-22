@@ -57,6 +57,15 @@ state and a state of another scenario must each exit 2, and every scenario in
 must also print its error: the one a scenario's `# error: <text>` line gives,
 with its line number where it has one.
 
+Right after its load, before any core runs again, a `from` or `rewound` run
+saves each console's state again, as a frontend may while paused. The run
+fails when those bytes are not the state the console loaded, naming the
+console and the first byte that differs, or when a core calls `send_msg`,
+`recv_msg`, `peek`, `advance` or `advance_multi` while saving, which the bus
+counts as `misplaced_call`. An `attach`, `detach` or `peers` call on the
+console's own handle is not counted then. A field that a load leaves stale
+and the next `retro_run` overwrites shows there and nowhere else.
+
 A new process starts every field of a core at its first value, so the
 `from` run passes a core whose `retro_unserialize` leaves a field alone
 that is still at that value at the save. The `rewound` run loads into cores
@@ -91,13 +100,18 @@ link_harness --scenario FILE --out DIR [--path NAME=FILE]...
 - `--pick` sets the order in which the scheduler resumes consoles that can
   run.
 - `--from STATE` starts from a state a `save` line wrote. The state is
-  checked against the scenario before anything runs.
+  checked against the scenario before anything runs. Right after the load,
+  each console's state is saved again: it must be the state the console
+  loaded, and saving it must not call `send_msg`, `recv_msg`, `peek`,
+  `advance` or `advance_multi` (`attach`, `detach` and `peers` on its own
+  handle are not checked).
 - `--rewind STATE` runs from the first frame to the scenario's last frame
   edge, before the frame of its `end` line or of its `expect-stuck` line.
   There, in place of that edge's lines, it loads the state into the running
-  session, the bus's contents and each console's state into its core, and
-  goes on just after the `save` line that wrote the state, as a `--from`
-  run starts. A state the bus or a core refuses there fails the run.
+  session, the bus's contents and each console's state into its core, saves
+  each console's state again and goes on just after the `save` line that
+  wrote the state, as a `--from` run does. A state the bus or a core
+  refuses there fails the run.
 - `--expect TRACE` compares the trace with an earlier run's, from this run's
   first frame, and stops at the first difference. After a `--rewind` load
   it goes on from the lines of the state's frame.
@@ -109,8 +123,10 @@ The exit code is:
 - 0 when the run reached its `end` line, every `expect` held, no core
   logged an error, the bus counts and the frame of any release were those
   the scenario expects, every compared trace line matched, every console
-  that ran the frame before a checkpoint kept its picture, and no core, ROM,
-  save or state file the run read has changed.
+  that ran the frame before a checkpoint kept its picture, each state saved
+  again right after a load was the state loaded, with no `send_msg`,
+  `recv_msg`, `peek`, `advance` or `advance_multi` call, and no
+  core, ROM, save or state file the run read has changed.
 - 1 when any of those failed. The first trace difference is printed as
   `trace differs at frame F console C: expected <line> got <line>`.
 - 2 for a usage or input error: an unknown option, a scenario syntax error
@@ -189,7 +205,9 @@ The scenarios here:
   the bus does not reach, an `expect` line that does not hold, a release the
   scenario does not expect and two dupes in a row before a checkpoint.
 - `stale/`: scenarios whose `from` run passes and whose `rewound` run
-  fails: a core that keeps a latch over a load.
+  fails: a core that keeps a latch over a load, one whose save right after a
+  load writes a copy the load left stale, and one whose save there makes a
+  link call.
 
 ## Output
 
@@ -219,6 +237,8 @@ The scenarios here:
 - `c<n>/`, the console's copy of its core, and `c<n>/save/`, its save
   folder with a copy of its save. Cores, ROMs and saves are read, never
   written.
+- `c<n>/resaved.state`, only when a console's state saved again right
+  after a load is not the state it loaded: the bytes it saved.
 
 ## Test core options
 
@@ -240,7 +260,7 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_dupe_frames` | `A-B[,A-B]...`, the frames that pass no picture (dupes); set, the core needs `GET_CAN_DUPE` | empty |
 | `link_test_detach_P`, `link_test_reattach_P` | the frame in whose `retro_run` it happens, or -1 | -1 |
 | `link_test_restart_ticks` | off, on | off |
-| `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load | conform |
+| `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load, stale_save, stale_send | conform |
 | `link_test_bad_frame` | the first frame of the mode | 0 |
 
 In each `retro_run` the core advances its ports at the frame start, at each
@@ -259,8 +279,15 @@ From `link_test_bad_frame` on, the modes break the rules:
 - `never_advance`: it makes no advance at all.
 - `no_progress`: in that frame alone, it advances again and again without
   progress until the bus is released.
-- `stale_load`: it sets a latch that changes every frame it runs from then
-  on. The latch is in no save state, and no load clears it.
+- `stale_load`: it sets a latch, and while the latch is set it folds the
+  frame number into its state every frame. The latch is in no save state,
+  and no load clears it.
+- `stale_save`: it keeps a copy of its state hash as each `retro_run`
+  leaves it, and `retro_serialize` writes the copy in place of the hash.
+  No load refreshes the copy.
+- `stale_send`: it keeps the same copy, and `retro_serialize` sends a
+  message when the copy is not its state hash: a link call outside
+  `retro_run`.
 
 Its system RAM, for `expect` lines: 0x00-0x07 the state hash; 0x08 the ports
 attached; 0x09-0x0B each port's peer count; 0x0C-0x0E each port's index, 255

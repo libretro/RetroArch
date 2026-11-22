@@ -1,0 +1,13 @@
+# A core whose save right after a load writes a field the load left
+# stale: from frame 40 console 0's retro_serialize writes its state hash
+# from a copy that each retro_run keeps and no load refreshes. A new process
+# has no copy, so the from run passes; a load into the running session
+# leaves the copy of frame 59, which a save before the next retro_run writes.
+# error: console 0: a save right after the load differs at byte 12 from the state it loaded
+console 0 core=test
+console 1 core=test
+option 0 link_test_mode stale_save
+option 0 link_test_bad_frame 40
+0 cable 0:0 1:0
+30 save mid
+60 end

@@ -6,8 +6,9 @@
 # at the scenario's save mid line and not run that line again. The rewound
 # run must give the first run's trace and messages up to the scenario's
 # last frame, then from the save mid line on, and the first run's
-# checkpoint pictures. Where the scenario restarts its ticks at a load,
-# both runs' messages.log are compared without them.
+# checkpoint pictures. A scenario must save before its last frame, or the
+# rewound run would load where it saved. Where the scenario restarts its
+# ticks at a load, both runs' messages.log are compared without them.
 # An in_flight checkpoint, at the save frame, must list a message. Then
 # each scenario in bad/ must exit 2 and each in fail/ exit 1, printing the
 # error its "# error:" line names, as must a truncated state, a state of
@@ -105,6 +106,7 @@ RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
 	[ -n "$$save" ] || { echo "$@: $$name has no save mid line"; exit 1; }; \
 	last=`sed -n 's/^expect-stuck \([0-9][0-9]*\)\( .*\)*$$/\1/p' "$$scn"`; \
 	[ -n "$$last" ] || last=`sed -n 's/^\([0-9][0-9]*\) end\( .*\)*$$/\1/p' "$$scn"`; \
+	[ "$$save" -lt "$$last" ] || { echo "$@: $$name saves at or after its last frame"; exit 1; }; \
 	flight=`sed -n 's/^\([0-9][0-9]*\) checkpoint in_flight\( .*\)*$$/\1/p' "$$scn"`; \
 	[ -z "$$flight" ] || [ "$$flight" = "$$save" ] \
 	   || { echo "$@: $$name's in_flight checkpoint is not at its save frame"; exit 1; }; \

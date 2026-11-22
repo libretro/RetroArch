@@ -1,0 +1,13 @@
+# A core that makes a link call from a save right after a load: from frame
+# 40 console 0's retro_serialize sends when its state hash is not the copy
+# that each retro_run keeps and no load refreshes. A new process has no
+# copy, so the from run passes; a load into the running session leaves the
+# copy of frame 59, and a save before the next retro_run sends.
+# error: console 0 made a link call while its state was saved right after the load
+console 0 core=test
+console 1 core=test
+option 0 link_test_mode stale_send
+option 0 link_test_bad_frame 40
+0 cable 0:0 1:0
+30 save mid
+60 end
