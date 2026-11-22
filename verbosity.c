@@ -115,9 +115,21 @@
 
 typedef struct verbosity_state
 {
-   /* If this is non-NULL, RARCH_LOG and friends
-    * will write to this file. */
+   /* The main thread's view of where lines go: the log file, stderr,
+    * or NULL. Logging threads read the published copy, sink. */
    FILE *fp;   /* pointer-sized: keep near top */
+
+   /* Files taken out of sink while a logging thread may still hold
+    * them; main thread only, closed by log_sink_drain(). */
+   FILE **retired;
+
+   /* sink is fp as a size_t, published with release; sink_users
+    * counts the logging threads between log_sink_hold() and
+    * log_sink_release(). */
+   retro_atomic_size_t sink;
+   size_t retired_count;
+   size_t retired_cap;
+   retro_atomic_int_t sink_users;
 
    /* Read by every thread that logs */
    retro_atomic_int_t verbosity;
@@ -197,15 +209,82 @@ bool *verbosity_get_ptr(void)
    return &main_verbosity_st.verbosity_setting;
 }
 
+/* Where a logging thread writes. A thread holds the sink from
+ * log_sink_hold() to log_sink_release(); the main thread swaps it
+ * with log_sink_publish() and closes a file it took out only once
+ * no thread can still hold it.
+ *
+ * Why the count settles it: a holder's increment either comes before
+ * the main thread's read of the count (an RMW, ordered after the
+ * swap), and is seen there, or after it, and then that increment
+ * acquires the release sequence the RMW heads, so the holder's load
+ * sees the swap and never the file taken out. A zero count after a
+ * swap therefore means no thread holds any file swapped out before
+ * it. Nothing waits: a file still held is kept on the retired list
+ * and closed by a later drain on the main thread. */
+#define log_sink_hold() \
+   (retro_atomic_fetch_add_int(&main_verbosity_st.sink_users, 1), \
+    (FILE*)retro_atomic_load_acquire_size(&main_verbosity_st.sink))
+
+#define log_sink_release() \
+   retro_atomic_fetch_sub_int(&main_verbosity_st.sink_users, 1)
+
+static void log_sink_publish(FILE *fp)
+{
+   main_verbosity_st.fp = fp;
+   retro_atomic_store_release_size(&main_verbosity_st.sink, (size_t)fp);
+}
+
+/* True when no logging thread holds a file swapped out before now */
+#define log_sink_quiet() \
+   (retro_atomic_fetch_add_int(&main_verbosity_st.sink_users, 0) == 0)
+
+static void log_sink_drain(void)
+{
+   size_t i;
+   if (!main_verbosity_st.retired_count || !log_sink_quiet())
+      return;
+   for (i = 0; i < main_verbosity_st.retired_count; i++)
+      fclose(main_verbosity_st.retired[i]);
+   main_verbosity_st.retired_count = 0;
+}
+
+/* Close a file already swapped out of the sink, now or at a later
+ * drain. If the list cannot grow the file stays open: a leaked
+ * handle over a close under a writer. */
+static void log_sink_retire(FILE *fp)
+{
+   if (log_sink_quiet())
+   {
+      log_sink_drain();
+      fclose(fp);
+      return;
+   }
+   if (main_verbosity_st.retired_count == main_verbosity_st.retired_cap)
+   {
+      size_t cap = main_verbosity_st.retired_cap
+         ? main_verbosity_st.retired_cap * 2 : 4;
+      FILE **nl  = (FILE**)realloc(main_verbosity_st.retired,
+            cap * sizeof(*nl));
+      if (!nl)
+         return;
+      main_verbosity_st.retired     = nl;
+      main_verbosity_st.retired_cap = cap;
+   }
+   main_verbosity_st.retired[main_verbosity_st.retired_count++] = fp;
+}
+
 void retro_main_log_file_init(const char *path, bool append)
 {
    FILE *tmp;
+
+   log_sink_drain();
 
    if (main_verbosity_st.initialized)
       return;
 
    /* Default to stderr; only override when a valid path is given */
-   main_verbosity_st.fp = stderr;
+   log_sink_publish(stderr);
 
    if (!path)
       return;
@@ -218,7 +297,7 @@ void retro_main_log_file_init(const char *path, bool append)
       return;
    }
 
-   main_verbosity_st.fp          = tmp;
+   log_sink_publish(tmp);
    main_verbosity_st.initialized = true;
 
    /* No setvbuf here, deliberately.
@@ -242,9 +321,12 @@ void retro_main_log_file_deinit(void)
 {
    if (main_verbosity_st.fp && main_verbosity_st.initialized)
    {
-      fclose(main_verbosity_st.fp);
-      main_verbosity_st.fp = NULL;
+      FILE *fp = main_verbosity_st.fp;
+      log_sink_publish(NULL);
+      log_sink_retire(fp);
    }
+   else
+      log_sink_drain();
 
    main_verbosity_st.initialized = false;
 }
@@ -451,26 +533,33 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #ifdef _DEBUG
    OutputDebugStringA(buffer);
 #endif
-   if (main_verbosity_st.initialized && main_verbosity_st.fp)
    {
-      fputs(buffer, main_verbosity_st.fp);
-      fflush(main_verbosity_st.fp);
+      /* stderr is the console default, not a log file */
+      FILE *fp = log_sink_hold();
+      if (fp && fp != stderr)
+      {
+         fputs(buffer, fp);
+         fflush(fp);
+      }
+      log_sink_release();
    }
 
 #elif defined(ANDROID)
    {
-      FILE *fp = main_verbosity_st.fp;
-      if (main_verbosity_st.initialized && fp)
+      FILE *fp = log_sink_hold();
+      if (fp && fp != stderr)
       {
          /* Logging to file: one formatted write, tag included -
           * the file carries the same line format as every other
           * platform (logcat gets the tag as a priority instead). */
          const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
          rarch_log_line_write(fp, tag_v, fmt, ap);
+         log_sink_release();
       }
       else
       {
          int prio = ANDROID_LOG_INFO;
+         log_sink_release();
          if (tag)
          {
             /* strcmp, not memcmp with the pattern's sizeof: a sized
@@ -486,7 +575,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 
 #else
    {
-      FILE       *fp    = main_verbosity_st.fp;
+      FILE       *fp;
       const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
       /* One format for every consumer in this region - the desktop
        * companion's log view, the Apple sinks, the file - instead of
@@ -517,8 +606,10 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
           * defaults to stderr when no file is configured; without the
           * guard, every line would print twice in the no-file case. */
          printf("%s", out);
-         if (main_verbosity_st.initialized && fp)
+         fp = log_sink_hold();
+         if (fp && fp != stderr)
             rarch_log_line_emit(fp, out);
+         log_sink_release();
 
 #else
          {
@@ -549,18 +640,22 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
             }
 #endif
 
-            if (main_verbosity_st.initialized && fp)
+            fp = log_sink_hold();
+            if (fp && fp != stderr)
                rarch_log_line_emit(fp, out);
+            log_sink_release();
          }
 #endif
       }
 
 #else
+      /* stdio's per-call lock keeps the single write whole under
+       * concurrent writers; the format above already took the heap
+       * detour for wide lines. */
+      fp = log_sink_hold();
       if (fp)
-         /* stdio's per-call lock keeps the single write whole under
-          * concurrent writers; the format above already took the
-          * heap detour for wide lines. */
          rarch_log_line_emit(fp, out);
+      log_sink_release();
 #endif
 
       free(heap);

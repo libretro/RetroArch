@@ -2,7 +2,9 @@
  * once, read while they are written, arrive whole and in order, and
  * an overrun is reported as lines skipped rather than torn lines.
  * Logging turned off, on and to another level while other threads log
- * is no race, and the gate still holds the lines back. */
+ * is no race, and the gate still holds the lines back. The log file
+ * opened and closed while other threads log is never written after it
+ * is closed, and holds only whole lines. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +17,8 @@
 #define THREADS      4
 #define LINES        20000
 #define TOGGLE_LINES 2000
+#define SINK_TURNS   300
+#define SINK_FILE    "log_ring_test.log"
 
 static unsigned failures;
 static retro_atomic_int_t done;
@@ -37,8 +41,19 @@ static void toggled_writer(void *data)
    unsigned i;
    (void)data;
    for (i = 0; i < TOGGLE_LINES; i++)
-      if (verbosity_is_enabled() && verbosity_get_log_level() <= 1)
-         RARCH_LOG("t ........................................\n");
+      RARCH_LOG("t ........................................\n");
+   retro_atomic_fetch_add_int(&done, 1);
+}
+
+/* Logs until the main thread is done opening and closing the file */
+static retro_atomic_int_t sink_stop;
+static void sink_writer(void *data)
+{
+   unsigned t = (unsigned)(size_t)data;
+   unsigned i = 0;
+   while (!retro_atomic_load_acquire_int(&sink_stop))
+      RARCH_LOG("w%u %06u ........................................\n",
+            t, i++ % LINES);
    retro_atomic_fetch_add_int(&done, 1);
 }
 
@@ -143,6 +158,53 @@ int main(void)
       RARCH_LOG("back on\n");
       verbosity_ring_read((size_t)-1, buf, 1 << 16, &first, &next);
       CHECK(next == head + 1);
+   }
+
+   /* the log file opened and closed under four logging threads */
+   {
+      FILE *fp;
+      char  line[512];
+      unsigned lines = 0, torn = 0;
+      remove(SINK_FILE);
+      retro_atomic_store_release_int(&done, 0);
+      retro_atomic_store_release_int(&sink_stop, 0);
+      for (i = 0; i < THREADS; i++)
+         th[i] = sthread_create(sink_writer, (void*)(size_t)i);
+      for (i = 0; i < SINK_TURNS; i++)
+      {
+         size_t at, now;
+         retro_main_log_file_init(SINK_FILE, true);
+         /* close it only with lines landing in it: the writers move
+          * the ring's head */
+         verbosity_ring_read((size_t)-1, NULL, 0, &first, &at);
+         do
+         {
+            sthread_yield();
+            verbosity_ring_read((size_t)-1, NULL, 0, &first, &now);
+         } while (now < at + THREADS);
+         retro_main_log_file_deinit();
+      }
+      retro_atomic_store_release_int(&sink_stop, 1);
+      for (i = 0; i < THREADS; i++)
+         sthread_join(th[i]);
+      /* nothing logs now: a file still held at its close is closed */
+      retro_main_log_file_init(NULL, false);
+      retro_main_log_file_deinit();
+      CHECK((fp = fopen(SINK_FILE, "rb")) != NULL);
+      if (fp)
+      {
+         while (fgets(line, sizeof(line), fp))
+         {
+            char *e = strchr(line, '\n');
+            lines++;
+            if (!e || !line_whole(line, e))
+               torn++;
+         }
+         fclose(fp);
+      }
+      CHECK(lines > 0);
+      CHECK(torn == 0);
+      CHECK(remove(SINK_FILE) == 0);
    }
 
    free(buf);
