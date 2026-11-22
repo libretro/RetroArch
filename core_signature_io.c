@@ -42,6 +42,7 @@
 #include <string/stdstring.h>
 #include <vfs/vfs.h>
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_implementation_file.h>
 
 #include "core_signature.h"
 #include "file_path_special.h"

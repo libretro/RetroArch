@@ -32,6 +32,7 @@
 #include <retro_atomic.h>
 #include <vfs/vfs_prefetch.h>
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_implementation_file.h>
 #include "vfs_implementation_nfs.h"
 #include "vfs_cfg_snapshot.h"
 

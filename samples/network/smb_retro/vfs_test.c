@@ -8,6 +8,7 @@
 #include <net/net_compat.h>
 #include <vfs/vfs.h>
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_implementation_file.h>
 #include "../../../libretro-common/vfs/vfs_implementation_smb.h"
 
 static const char *failure_name(enum smb_failure f)

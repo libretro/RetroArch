@@ -50,6 +50,7 @@
 #include <streams/file_stream.h>
 #include <vfs/vfs.h>
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_implementation_file.h>
 
 /* Whole-file reads are issued from several task threads at once in
  * the frontend, so the concurrency case below is worth running

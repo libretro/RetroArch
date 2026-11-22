@@ -37,6 +37,7 @@
 #include <retro_endianness.h>
 #include <retro_miscellaneous.h>
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_implementation_file.h>
 #include <lists/string_list.h>
 #include <lists/dir_list.h>
 #include <string/stdstring.h>

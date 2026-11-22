@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_implementation_file.h>
 #include <vfs/vfs_implementation_cdrom.h>
 #include <file/file_path.h>
 #include <compat/fopen_utf8.h>

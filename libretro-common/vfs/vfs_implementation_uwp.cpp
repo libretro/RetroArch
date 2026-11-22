@@ -42,6 +42,7 @@
 
 #include <vfs/vfs.h>
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_implementation_file.h>
 #include <libretro.h>
 #include <encodings/utf.h>
 #include <compat/strl.h>

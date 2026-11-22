@@ -65,6 +65,10 @@
 #endif
 
 #include <fcntl.h>
+/* uClibc (OpenDingux GCW0) declares it only under _GNU_SOURCE */
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
 #if defined(__linux__)
 #include <linux/falloc.h>
 #endif
@@ -201,6 +205,7 @@
 #endif
 
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_implementation_file.h>
 #ifdef VFS_HAVE_WRITEV
 #include <sys/uio.h>
 #endif
@@ -825,6 +830,13 @@ int64_t retro_vfs_file_seek_internal(
 /* Every NT, whatever _WIN32_WINNT the build names: the second handle
  * is found at run time (vfs_positional_handle) */
 #define VFS_POSITIONAL_WIN32 1
+#endif
+/* A glibc-derived C library declares pread() only under UNIX98 or
+ * POSIX.1-2008, which the profile in force may not ask for (uClibc on
+ * OpenDingux GCW0); positional I/O then reports -1 and the caller seeks */
+#if defined(VFS_POSITIONAL_POSIX) && defined(__GLIBC__) \
+   && !defined(__USE_UNIX98) && !defined(__USE_XOPEN2K8)
+#undef VFS_POSITIONAL_POSIX
 #endif
 
 #ifdef VFS_POSITIONAL_WIN32
@@ -1881,9 +1893,7 @@ static libretro_vfs_implementation_file *vfs_file_open(
 #ifdef O_NOCTTY
                   flags |= O_NOCTTY;
 #endif
-#ifdef O_CLOEXEC
                   flags |= O_CLOEXEC;
-#endif
                }
                /* What fopen() creates a file with, less the umask */
                stream->fd          = open(path, flags,
