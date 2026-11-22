@@ -262,6 +262,15 @@ int record_session_mediacodec_step(record_session_mediacodec_t *s)
                                                    : RECORD_MC_WORKER_END;
 }
 
+bool record_session_mediacodec_wait(record_session_mediacodec_t *s,
+      int64_t timeout_us)
+{
+   return s && !s->draining && !s->retired
+      && !retro_atomic_load_acquire_int(&s->error)
+      && !retro_atomic_load_acquire_int(&s->cancelled)
+      && record_mediacodec_worker_wait(s->worker, timeout_us);
+}
+
 enum record_session_mediacodec_error record_session_mediacodec_error(
       const record_session_mediacodec_t *s, int *file_error)
 {

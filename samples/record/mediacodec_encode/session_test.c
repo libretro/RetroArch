@@ -38,6 +38,7 @@ static struct record_mediacodec_file file;
 static struct record_mediacodec_worker worker;
 static struct record_aac_probe probe;
 static int fault, stops, completes, closes, aborts, finishes, reads_retired;
+static int worker_waits;
 static int output_error, stop_error, file_error;
 static int trim_error, edit_error;
 static const int16_t pcm[4] = {1, 2, 3, 4};
@@ -217,6 +218,13 @@ int record_mediacodec_worker_step(record_mediacodec_worker_t *w)
    return w->closing && result == RECORD_AUDIO_END ? RECORD_MC_WORKER_END
                                                    : RECORD_MC_WORKER_BUSY;
 }
+bool record_mediacodec_worker_wait(record_mediacodec_worker_t *w,
+      int64_t timeout_us)
+{
+   assert(w == &worker && w->live && timeout_us == 20000);
+   worker_waits++;
+   return true;
+}
 void record_mediacodec_worker_abort(record_mediacodec_worker_t *w)
 {
    assert(w == &worker && w->live);
@@ -305,6 +313,7 @@ int main(void)
    assert(record_session_mediacodec_audio(s, pcm, 2, 0) == RECORD_AUDIO_OK);
    assert(record_session_mediacodec_audio(s, pcm, 2, 5) == RECORD_AUDIO_OK);
    assert(record_session_mediacodec_step(s) == RECORD_MC_WORKER_PROGRESS);
+   assert(record_session_mediacodec_wait(s, 20000) && worker_waits == 1);
    assert(record_session_mediacodec_audio_finish(s, 7));
    assert(record_session_mediacodec_audio_finish(s, 7));
    assert(!record_session_mediacodec_audio_finish(s, 8));
@@ -332,10 +341,14 @@ int main(void)
       stop_error = i == 2;
       file_error = i == 3 ? 5 : 0;
       if (!output_error)
+      {
          record_session_mediacodec_cancel(s);
+         assert(!record_session_mediacodec_wait(s, 20000));
+      }
       before = stops;
       assert(record_session_mediacodec_step(s) == RECORD_MC_WORKER_PROGRESS);
       assert(stops == before + 2 && record_session_mediacodec_cancelled(s));
+      assert(!record_session_mediacodec_wait(s, 20000) && worker_waits == 1);
       assert(record_session_mediacodec_audio(s, pcm, 2, 5)
             == RECORD_AUDIO_ERROR);
       assert(record_session_mediacodec_step(s) == RECORD_MC_WORKER_BUSY);

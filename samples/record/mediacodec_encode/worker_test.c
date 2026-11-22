@@ -7,7 +7,7 @@
 
 struct record_mediacodec_encoder
 {
-   unsigned delay, outputs, pumps, releases, inputs, finish_calls;
+   unsigned delay, outputs, pumps, releases, inputs, finish_calls, waits;
    unsigned channels, frames;
    bool audio, format, eos, borrowed;
    uint8_t data;
@@ -19,6 +19,13 @@ struct record_mux_mediacodec
 };
 static unsigned fault;
 
+bool record_mediacodec_encoder_wait(
+      record_mediacodec_encoder_t *e, int64_t timeout_us)
+{
+   assert(!e->audio && timeout_us == 20000);
+   e->waits++;
+   return true;
+}
 int record_mediacodec_encoder_pump(
       record_mediacodec_encoder_t *e, record_mediacodec_packet_t *p)
 {
@@ -199,6 +206,7 @@ static void exercise(unsigned video_delay, unsigned audio_delay,
    w = record_mediacodec_worker_new(&video, channels ? &audio : NULL,
          q, &mux, channels, 48000);
    assert(w);
+   assert(record_mediacodec_worker_wait(w, 20000) && video.waits == 1);
    assert(!record_mediacodec_worker_finish(w, -1, 960));
    if (!late_close)
    {
@@ -220,6 +228,7 @@ static void exercise(unsigned video_delay, unsigned audio_delay,
    calls = mux.calls + video.pumps + audio.pumps;
    assert(record_mediacodec_worker_step(w) == result);
    assert(calls == mux.calls + video.pumps + audio.pumps);
+   assert(!record_mediacodec_worker_wait(w, 20000) && video.waits == 1);
    if (!failure)
    {
       assert(mux.finished && video.releases == 2 && video.finish_calls == 1);

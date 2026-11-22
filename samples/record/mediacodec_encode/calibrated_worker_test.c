@@ -107,6 +107,13 @@ bool record_mediacodec_encoder_finish(record_mediacodec_encoder_t *e)
    e->eos = true;
    return true;
 }
+bool record_mediacodec_encoder_wait(
+      record_mediacodec_encoder_t *e, int64_t timeout_us)
+{
+   (void)e;
+   (void)timeout_us;
+   return false;
+}
 int record_mediacodec_encoder_pump(record_mediacodec_encoder_t *e,
       record_mediacodec_packet_t *packet)
 {
