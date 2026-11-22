@@ -3082,31 +3082,30 @@ static bool scond_sleep_hires(struct scond_waiter *w, HANDLE timer,
 
 static void scond_wake_one(struct scond_waiter *w)
 {
-   /* copies taken first: the waiter may leave as soon as it sees WOKEN */
-   DWORD  tid   = w->tid;
+   /* Copies taken first: the waiter may leave as soon as it sees WOKEN */
    HANDLE event = w->event;
    int prev     = retro_atomic_fetch_or_int(&w->flags, SCOND_W_WOKEN);
    if (!(prev & SCOND_W_ASLEEP))
       return;   /* still spinning: it sees the flag, no syscall */
    /* A waiter that sleeps on its event - every waiter on the event
     * tier, and bounded ones on the others - is woken through it */
-   if (event)
+   if (!event)
    {
-      SetEvent(event);
-      return;
+      switch (scond_g.sleep)
+      {
+         case SCOND_SLEEP_ALERT:
+            scond_g.alert_tid((HANDLE)(uintptr_t)w->tid);
+            return;
+            break;
+         case SCOND_SLEEP_KEYED:
+            scond_g.release_keyed(scond_g.keyed, w, FALSE, NULL);
+            return;
+         default:
+            break;
+      }
    }
-   switch (scond_g.sleep)
-   {
-      case SCOND_SLEEP_ALERT:
-         scond_g.alert_tid((HANDLE)(uintptr_t)tid);
-         break;
-      case SCOND_SLEEP_KEYED:
-         scond_g.release_keyed(scond_g.keyed, w, FALSE, NULL);
-         break;
-      default:
-         SetEvent(event);
-         break;
-   }
+
+   SetEvent(event);
 }
 
 /* ---- the list ------------------------------------------------------ */
