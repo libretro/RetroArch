@@ -67,6 +67,14 @@ void gfx_thumbnail_results_free(gfx_thumbnail_results_t *t);
 size_t gfx_thumbnail_results_add(gfx_thumbnail_results_t *t,
       const char *content_path, const char *label,
       const char *crc32, const char *system);
+/* A key string (0 content path .. 3 system) copied into @t for the
+ * next _add_kept; a crc32 or system equal to the last record's is
+ * shared. Borrowed from @t; NULL on OOM or once a sort has begun. */
+const char *gfx_thumbnail_results_keep(gfx_thumbnail_results_t *t,
+      unsigned key, const char *s);
+/* _add with the four keys already kept in @t. */
+size_t gfx_thumbnail_results_add_kept(gfx_thumbnail_results_t *t,
+      const char * const *key);
 bool gfx_thumbnail_results_set(gfx_thumbnail_results_t *t, size_t rec,
       unsigned type, const char *name);
 /* Sorts in bounded steps; true while steps remain. Until then the table

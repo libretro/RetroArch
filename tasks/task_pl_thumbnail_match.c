@@ -135,13 +135,13 @@ typedef struct pl_thumb_match
    char dir_database[DIR_MAX_LENGTH];
    char cache_path[PATH_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
-   char item[4][PATH_MAX_LENGTH];
    char name[NAME_MAX_LENGTH];
    char stem[NAME_MAX_LENGTH];
    char scrub[NAME_MAX_LENGTH];
    RFILE *file;
    char *buf;
    const char *out;
+   const char *item[4]; /* a cache record's keys, kept in the table */
    rjson_t *json;
    rjsonwriter_t *writer;
    playlist_parse_t *parse;
@@ -466,11 +466,12 @@ static int pl_thumb_match_cache_token(pl_thumb_match_t *m)
    if (m->member >= 1 && m->member <= 4)
    {
       unsigned k = (unsigned)m->member - 1;
-      strlcpy(m->item[k], str, sizeof(m->item[k]));
+      /* Into the table as read: the record takes them as they are */
+      if (!(m->item[k] = gfx_thumbnail_results_keep(m->results, k, str)))
+         return 0;
       m->item_keys |= (uint8_t)(1 << k);
       if (m->item_keys == 0xF && m->item_rec == PL_THUMB_MATCH_NONE)
-         m->item_rec = gfx_thumbnail_results_add(m->results, m->item[0],
-               m->item[1], m->item[2], m->item[3]);
+         m->item_rec = gfx_thumbnail_results_add_kept(m->results, m->item);
    }
    else if (m->member >= 5 && m->item_rec != PL_THUMB_MATCH_NONE)
       gfx_thumbnail_results_set(m->results, m->item_rec,

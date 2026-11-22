@@ -285,6 +285,46 @@ size_t gfx_thumbnail_results_add(gfx_thumbnail_results_t *t,
    return t->count++;
 }
 
+const char *gfx_thumbnail_results_keep(gfx_thumbnail_results_t *t,
+      unsigned key, const char *s)
+{
+   const gfx_thumb_result_t *prev;
+   if (!t || t->sorted || t->scratch || key >= 4 || !s)
+      return NULL;
+   prev = t->count ? &t->recs[t->count - 1] : NULL;
+   /* A crc32 or system is mostly the last record's */
+   if (key >= 2)
+      return gfx_thumb_results_reuse(t, s, prev ? prev->key[key] : NULL);
+   return gfx_thumb_results_intern(t, s);
+}
+
+size_t gfx_thumbnail_results_add_kept(gfx_thumbnail_results_t *t,
+      const char * const *key)
+{
+   unsigned i;
+   gfx_thumb_result_t *rec;
+
+   if (     !t || t->sorted || t->scratch
+         || !key[0] || !key[1] || !key[2] || !key[3])
+      return (size_t)-1;
+   if (t->count == t->capacity)
+   {
+      size_t cap               = t->capacity ? t->capacity * 2 : 64;
+      gfx_thumb_result_t *recs = (gfx_thumb_result_t*)
+         realloc(t->recs, cap * sizeof(*recs));
+      if (!recs)
+         return (size_t)-1;
+      t->recs     = recs;
+      t->capacity = cap;
+   }
+   rec = &t->recs[t->count];
+   for (i = 0; i < 4; i++)
+      rec->key[i] = key[i];
+   for (i = 0; i < GFX_THUMBNAIL_RESULT_TYPES; i++)
+      rec->names[i] = NULL;
+   return t->count++;
+}
+
 bool gfx_thumbnail_results_set(gfx_thumbnail_results_t *t, size_t rec,
       unsigned type, const char *name)
 {

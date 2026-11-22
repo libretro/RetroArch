@@ -218,6 +218,32 @@ static void lane_table(void)
          GFX_THUMBNAIL_RESULT_BOXARTS), "no boxart for B");
    gfx_thumbnail_results_free(t);
    gfx_thumbnail_results_free(NULL);
+
+   /* Keys kept as a cache file is read, then taken by the record */
+   t      = gfx_thumbnail_results_new();
+   key[0] = gfx_thumbnail_results_keep(t, 0, "/r/c.nes");
+   key[1] = gfx_thumbnail_results_keep(t, 1, "C");
+   key[2] = gfx_thumbnail_results_keep(t, 2, "");
+   key[3] = gfx_thumbnail_results_keep(t, 3, "Sys");
+   CHECK(gfx_thumbnail_results_add_kept(t, key) == 0, "kept record");
+   gfx_thumbnail_results_get(t, 0, key, names);
+   {
+      const char *sys = key[3];
+      const char *crc = key[2];
+      CHECK(gfx_thumbnail_results_keep(t, 3, "Sys") == sys
+            && gfx_thumbnail_results_keep(t, 2, "") == crc,
+            "the last record's crc32 and system are shared");
+      CHECK(gfx_thumbnail_results_keep(t, 3, "Other") != sys
+            && gfx_thumbnail_results_keep(t, 0, "/r/c.nes") != key[0],
+            "a path and another system are copied");
+   }
+   CHECK(!gfx_thumbnail_results_keep(t, 4, "x"), "four keys");
+   CHECK(string_is_equal(key[0], "/r/c.nes") && string_is_equal(key[1], "C"),
+         "kept keys read back");
+   gfx_thumbnail_results_sort(t);
+   CHECK(!gfx_thumbnail_results_keep(t, 0, "/r/d.nes"),
+         "nothing kept once sorted");
+   gfx_thumbnail_results_free(t);
    if (failures == had)
       fprintf(stderr, "[pass] table\n");
 }
