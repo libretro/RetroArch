@@ -3407,6 +3407,11 @@ static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
       if (tmp->complete)
          gfx_media_history_ring_advance(&chain->history_ring, slot);
    }
+   else if (!chain->num_original_history && chain->copy_framebuffer
+         && chain->copy_framebuffer->complete
+         && chain->input_texture.image == chain->copy_framebuffer->image
+         && gfx_media_history_needed(chain->media_history, 1))
+      gfx_media_history_written(chain->media_history);
    chain->media_history = NULL;
 }
 
@@ -5117,10 +5122,13 @@ void gl3_filter_chain_set_input_texture_history(
    gfx_media_history_begin(history, (uintptr_t)chain, same,
          !chain->require_clear && (!chain->copy_framebuffer || chain->copy_framebuffer->complete));
    /* A repeated source also reuses its normalized crop. */
-   if (!(same && history->managed && chain->num_original_history
-            && chain->history_ring.valid && !gfx_media_history_needed(history, 1)
+   if (!(same && history->managed
+            && (!chain->num_original_history || chain->history_ring.valid)
+            && !gfx_media_history_needed(history, 1)
             && !chain->require_clear && chain->copy_framebuffer
-            && chain->copy_framebuffer->complete))
+            && chain->copy_framebuffer->complete
+            && (chain->num_original_history
+               || chain->input_texture.image == chain->copy_framebuffer->image)))
       gl3_chain_set_input_texture(chain, *texture);
    if (chain->copy_framebuffer && !chain->copy_framebuffer->complete) history->copies = 0;
    chain->history_input = *texture;

@@ -360,7 +360,51 @@ int main(void)
 #endif
    c.num_original_history=c.num_history=0;before=copies;
    for(i=0;i<3;i++)draw(&c,&t,&h);
-#ifndef TEST_GL
+#ifdef TEST_GL
+   assert(copies==before+1 && c.input_texture.image==c.copy_framebuffer->image);
+   {
+      unsigned version,repeat,j,row,col;
+      h.copies=0;
+      for(version=1;version<=24;version++)
+      {
+         for(j=0;j<64;j++)images[t.image].pixels[j]=3000+version+j;
+         h.copies=0;
+         for(repeat=0;repeat<5;repeat++)
+         {
+            before=copies;oldest=allocated;
+            draw(&c,&t,&h);
+            assert(copies==before+(repeat?0:1) && allocated==oldest);
+            assert(c.input_texture.image==c.copy_framebuffer->image);
+            for(row=0;row<VIDEO_SCALE_H(t.dims);row++)
+               for(col=0;col<VIDEO_SCALE_W(t.dims);col++)
+                  assert(images[c.input_texture.image].pixels[row*VIDEO_SCALE_W(t.dims)+col]
+                        ==images[t.image].pixels[(row+VIDEO_SCALE_H(t.origin))*8
+                              +col+VIDEO_SCALE_W(t.origin)]);
+         }
+      }
+      t.origin=VIDEO_SCALE_PACK(2,1);warm(&c,&t,&h);
+      t.padded_dims=VIDEO_SCALE_PACK(8,8);warm(&c,&t,&h);
+      t.dims=VIDEO_SCALE_PACK(4,2);warm(&c,&t,&h);
+      t.format++;warm(&c,&t,&h);
+      t.image=image_new(VIDEO_SCALE_PACK(8,8));warm(&c,&t,&h);
+      memset(&h,0,sizeof(h));h.managed=true;warm(&c,&t,&h);
+      c.history_input_valid=false;warm(&c,&t,&h);
+      c.require_clear=true;warm(&c,&t,&h);
+      t.dims=VIDEO_SCALE_PACK(2,2);fail_resize=true;before=copies;
+      draw(&c,&t,&h);assert(copies==before && !h.copies);
+      fail_resize=false;warm(&c,&t,&h);
+      before=copies;h.managed=false;
+      for(j=0;j<4;j++)draw(&c,&t,&h);
+      assert(copies==before+4);
+      h.managed=true;h.copies=0;warm(&c,&t,&h);
+      before=copies;
+      for(j=0;j<4;j++) { NORMAL(&c,&t);end_frame(&c); }
+      assert(copies==before+4);
+      c.frame_in_place=true;h.copies=0;before=copies;
+      for(j=0;j<4;j++)draw(&c,&t,&h);
+      assert(copies==before && !h.copies && c.input_texture.image==t.image);
+   }
+#else
    assert(copies==before);
 #endif
    (void)before;(void)errors;
