@@ -43,7 +43,7 @@ static const struct { const char *driver; unsigned want; } builds[] = {
 #elif defined(GEKKO)
    { "gx", 1 },
 #elif defined(__QNX__)
-   { "qnx", 2 },
+   { "qnx", 1 },
 #endif
 };
 
