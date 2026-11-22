@@ -635,6 +635,20 @@ jobs:
           make clean
           rm -f mapped_port.log
 
+      - name: Build and run builtin_autoconf_test, once per platform (ASan + UBSan, mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          # The built-in profiles a pad with no profile file gets, in a
+          # build for each platform the Makefile lists, bind each
+          # right-stick axis with the sign of its left-stick twin: each
+          # driver reads both sticks alike. Where its axes are negative
+          # up and left, as SDL's are, down is the + half too.
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make -C samples/input/builtin_autoconf clean check SANITIZER=address,undefined
+          make -C samples/input/builtin_autoconf clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/input/builtin_autoconf clean
+
       - name: Build and run key_lane_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/input/key_lane
