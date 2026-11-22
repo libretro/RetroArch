@@ -738,25 +738,25 @@ int main(int argc, char **argv)
     * it is told apart from a byte that holds a value */
    {
       uint8_t alt[16];
-      rarch_memory_descriptor_t *d = &loop->system.mmaps.descriptors[0];
-      void *was = d->core.ptr;
+      struct retro_memory_descriptor *d = &loop->system.mmaps.descriptors[0];
+      void *was = d->ptr;
       memcpy(alt,was,sizeof(alt));
       alt[2]=99;
       reply[0]=0;
       CHECK(command_run_until(&cmd,"1002 == 99") && !reply[0]);
-      d->core.ptr=alt;
+      d->ptr=alt;
       runloop_iterate();
       CHECK(!strcmp(reply,"MET 1\none\t1003\t51\ntwo\t1002\t99\nVALUE 99\n"));
       reply[0]=0;
       CHECK(command_run_until(&cmd,"1002 == 1") && !reply[0]);
-      d->core.ptr=NULL;
+      d->ptr=NULL;
       runloop_iterate();
       CHECK(!strcmp(reply,"RUN_UNTIL ERROR nothing maps the address waited on now")
             && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
       reply[0]=0;
       CHECK(command_watch(&cmd,"")
             && !strcmp(reply,"one\t1003\tnone\ntwo\t1002\tnone\n"));
-      d->core.ptr=was;
+      d->ptr=was;
       /* a later RUN_FRAMES carries no VALUE of its own */
       reply[0]=0;
       CHECK(command_run_frames(&cmd,"1"));

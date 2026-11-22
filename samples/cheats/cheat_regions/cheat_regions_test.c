@@ -60,22 +60,22 @@ static int failures = 0;
 
 /* A [0,6), B [6,16), C [16,19): sizes that are not multiples of 2 or 4 */
 static unsigned char *mem_a, *mem_b, *mem_c;
-static rarch_memory_descriptor_t descs[3];
+static struct retro_memory_descriptor descs[3];
 
 static void map_memory(void)
 {
    mem_a = (unsigned char*)calloc(6, 1);
    mem_b = (unsigned char*)calloc(10, 1);
    mem_c = (unsigned char*)calloc(3, 1);
-   descs[0].core.flags = RETRO_MEMDESC_SYSTEM_RAM;
-   descs[0].core.ptr   = mem_a;
-   descs[0].core.len   = 6;
-   descs[1].core.flags = RETRO_MEMDESC_SYSTEM_RAM;
-   descs[1].core.ptr   = mem_b;
-   descs[1].core.len   = 10;
-   descs[2].core.flags = RETRO_MEMDESC_SYSTEM_RAM;
-   descs[2].core.ptr   = mem_c;
-   descs[2].core.len   = 3;
+   descs[0].flags = RETRO_MEMDESC_SYSTEM_RAM;
+   descs[0].ptr   = mem_a;
+   descs[0].len   = 6;
+   descs[1].flags = RETRO_MEMDESC_SYSTEM_RAM;
+   descs[1].ptr   = mem_b;
+   descs[1].len   = 10;
+   descs[2].flags = RETRO_MEMDESC_SYSTEM_RAM;
+   descs[2].ptr   = mem_c;
+   descs[2].len   = 3;
    test_runloop.system.mmaps.descriptors     = descs;
    test_runloop.system.mmaps.num_descriptors = 3;
 }

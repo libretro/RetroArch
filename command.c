@@ -6029,32 +6029,32 @@ bool command_drivers_reinit(command_t *cmd, const char* arg)
    return true;
 }
 
-static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarch_memory_map_t* mmap, unsigned address, size_t* offset)
+static const struct retro_memory_descriptor* command_memory_get_descriptor(const rarch_memory_map_t* mmap, unsigned address, size_t* offset)
 {
-   const rarch_memory_descriptor_t* desc = mmap->descriptors;
-   const rarch_memory_descriptor_t* end  = desc + mmap->num_descriptors;
+   const struct retro_memory_descriptor* desc = mmap->descriptors;
+   const struct retro_memory_descriptor* end  = desc + mmap->num_descriptors;
 
    for (; desc < end; desc++)
    {
-      if (desc->core.select == 0)
+      if (desc->select == 0)
       {
          /* if select is 0, attempt to explicitly match the address */
-         if (address >= desc->core.start && address < desc->core.start + desc->core.len)
+         if (address >= desc->start && address < desc->start + desc->len)
          {
-            *offset = address - desc->core.start;
+            *offset = address - desc->start;
             return desc;
          }
       }
       else
       {
          /* otherwise, attempt to match the address by matching the select bits */
-         if (((desc->core.start ^ address) & desc->core.select) == 0)
+         if (((desc->start ^ address) & desc->select) == 0)
          {
             /* adjust the address to the start of the descriptor */
-            unsigned desc_offset = address - (unsigned)desc->core.start;
+            unsigned desc_offset = address - (unsigned)desc->start;
 
             /* address is unsigned. we only need that much of the disconnect mask */
-            unsigned mask = (unsigned)desc->core.disconnect;
+            unsigned mask = (unsigned)desc->disconnect;
 
             /* this magic logic is copied from mmap_reduce. it removes any bits from
              * address that are non-zero in the disconnect field. bits above the
@@ -6070,7 +6070,7 @@ static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarc
             *offset = desc_offset;
 
             /* sanity check - make sure the descriptor is large enough to hold the target address */
-            if (desc_offset < desc->core.len)
+            if (desc_offset < desc->len)
                return desc;
          }
       }
@@ -6142,17 +6142,17 @@ static uint8_t *command_memory_get_pointer(struct command_mem *m,
    else
    {
       size_t offset;
-      const rarch_memory_descriptor_t* desc = command_memory_get_descriptor(&sys_info->mmaps, address, &offset);
+      const struct retro_memory_descriptor* desc = command_memory_get_descriptor(&sys_info->mmaps, address, &offset);
       if (!desc)
          strlcpy_lit(s, " -1 no descriptor for address\n", len);
-      else if (!desc->core.ptr)
+      else if (!desc->ptr)
          strlcpy_lit(s, " -1 no data for descriptor\n", len);
-      else if (for_write && (desc->core.flags & RETRO_MEMDESC_CONST))
+      else if (for_write && (desc->flags & RETRO_MEMDESC_CONST))
          strlcpy_lit(s, " -1 descriptor data is readonly\n", len);
       else
       {
-         *max_bytes = (unsigned int)(desc->core.len - offset);
-         return (uint8_t*)desc->core.ptr + desc->core.offset + offset;
+         *max_bytes = (unsigned int)(desc->len - offset);
+         return (uint8_t*)desc->ptr + desc->offset + offset;
       }
    }
 
@@ -6232,7 +6232,7 @@ bool command_get_memory_map(command_t *cmd, const char *arg)
 
    for (i = 0; i < mmap->num_descriptors; i++)
    {
-      const struct retro_memory_descriptor *d = &mmap->descriptors[i].core;
+      const struct retro_memory_descriptor *d = &mmap->descriptors[i];
       const char *kind   = (d->flags & RETRO_MEMDESC_SYSTEM_RAM) ? "system"
                          : (d->flags & RETRO_MEMDESC_SAVE_RAM)   ? "save"
                          : (d->flags & RETRO_MEMDESC_VIDEO_RAM)  ? "video"
