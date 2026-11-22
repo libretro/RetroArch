@@ -43,40 +43,62 @@ d3d_fixture = common + r'''
 #define HAVE_SLANG 1
 #define GFX_MAX_FRAME_HISTORY 3
 typedef gpu *D3D12Resource;
+typedef unsigned UINT;
+typedef struct { uintptr_t ptr; } descriptor;
 typedef struct command *D3D12GraphicsCommandList;
 #define D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING 5768
 #define D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX 0
 #define D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE 1
 #define D3D12_RESOURCE_STATE_COPY_SOURCE 2
 #define D3D12_RESOURCE_STATE_COPY_DEST 3
-typedef struct { gpu *pResource;unsigned Type,SubresourceIndex; } D3D12_TEXTURE_COPY_LOCATION;
-static unsigned barriers;
+#define D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE 4
+#define D3D12_RESOURCE_STATE_UNORDERED_ACCESS 5
+#define D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT 1
+#define CS_ROOT_ID_TEXTURE_T 0
+#define CS_ROOT_ID_UAV_T 1
+#define CS_ROOT_ID_CONSTANTS 2
+typedef struct { gpu *pResource;unsigned Type,SubresourceIndex,PlacedFootprint; } D3D12_TEXTURE_COPY_LOCATION;
+static unsigned barriers,plane_uploads,dispatches;
+static descriptor compute_uav,compute_source;
 static void transition(gpu *p,unsigned from,unsigned to)
 { assert(p->layout==from);p->layout=to;barriers++; }
 #define D3D12_RESOURCE_TRANSITION(cmd,p,from,to) transition(p,from,to)
 struct command { struct command_vtable {
    void (*CopyTextureRegion)(D3D12GraphicsCommandList,const D3D12_TEXTURE_COPY_LOCATION*,
          unsigned,unsigned,unsigned,const D3D12_TEXTURE_COPY_LOCATION*,const void*);
+   void (*SetComputeRootSignature)(D3D12GraphicsCommandList,void*);
+   void (*SetPipelineState)(D3D12GraphicsCommandList,void*);
+   void (*SetComputeRootDescriptorTable)(D3D12GraphicsCommandList,unsigned,descriptor);
+   void (*SetComputeRoot32BitConstants)(D3D12GraphicsCommandList,unsigned,unsigned,const void*,unsigned);
+   void (*Dispatch)(D3D12GraphicsCommandList,unsigned,unsigned,unsigned);
 } *lpVtbl; };
 static void copy_region(D3D12GraphicsCommandList cmd,const D3D12_TEXTURE_COPY_LOCATION *to,
       unsigned x,unsigned y,unsigned z,const D3D12_TEXTURE_COPY_LOCATION *from,const void *box)
-{ (void)cmd;(void)x;(void)y;(void)z;assert(!box);to->pResource->value=from->pResource->value;copies++; }
-static struct command_vtable command_api={copy_region};
+{ (void)cmd;(void)x;(void)y;(void)z;assert(!box);to->pResource->value=from->pResource->value;if(from->Type==D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT)plane_uploads++;else copies++; }
+static void compute_object(D3D12GraphicsCommandList c,void *object){(void)c;(void)object;}
+static void compute_table(D3D12GraphicsCommandList c,unsigned slot,descriptor d)
+{(void)c;if(slot==CS_ROOT_ID_UAV_T)compute_uav=d;else{assert(slot==CS_ROOT_ID_TEXTURE_T);compute_source=d;}}
+static void compute_constants(D3D12GraphicsCommandList c,unsigned slot,unsigned count,const void *data,unsigned offset)
+{(void)c;(void)data;assert(slot==CS_ROOT_ID_CONSTANTS && count==16 && !offset);}
+static void dispatch(D3D12GraphicsCommandList c,unsigned w,unsigned h,unsigned depth)
+{gpu *destination=(gpu*)(compute_uav.ptr-1),*source=(gpu*)compute_source.ptr;(void)c;assert(w && h && depth==1 && destination->layout==D3D12_RESOURCE_STATE_UNORDERED_ACCESS);destination->value=source->value;dispatches++;}
+static struct command_vtable command_api={copy_region,compute_object,compute_object,compute_table,compute_constants,dispatch};
 static struct command command={&command_api};
 typedef unsigned DXGI_FORMAT;
 #define D3D12_FRAME_MAPPING_2101010 23
 typedef struct d3d12_media_version d3d12_media_version_t;
-typedef struct { uintptr_t ptr; } descriptor;
+
+typedef struct {descriptor cpu_uav,gpu_uav,gpu_src;gpu *planes;unsigned footprint,constants[16];} d3d12_planar_t;
 typedef struct {
    d3d12_media_version_t **media_versions,*media_version;
    unsigned media_version_count;
-   bool media_borrowable,media_storage_only;
-   descriptor cpu_descriptor[1],gpu_descriptor[1];
+   bool media_borrowable,media_storage_only,media_compute,dirty;
+   descriptor cpu_descriptor[2],gpu_descriptor[2];
    gfx_media_history_t media_history;
    gpu *handle,*upload_buffer,*upload_buffer2;
    struct { unsigned Width,Height,Format,MipLevels; } desc;
    unsigned srv_mapping,pending,upload_fence,lend_fence[2],layout;
-   void *srv_heap,*planar;
+   void *srv_heap;d3d12_planar_t *planar;
    float4 size_data;
 } d3d12_texture_t;
 struct d3d12_media_version {d3d12_texture_t texture;unsigned refs;};
@@ -99,8 +121,9 @@ typedef struct {
 } d3d12_filter_chain_t;
 typedef struct {
    void *device;
-   struct { D3D12GraphicsCommandList cmd; } queue;
-   struct { void *srv_heap; } desc;
+   struct { D3D12GraphicsCommandList cmd;unsigned fenceValue; } queue;
+   struct { void *srv_heap,*cs_rootSignature; } desc;
+   void *planar_pipe;
    d3d12_filter_chain_t *media_shader_chain,filter;
    d3d12_texture_t *media_shader_texture;
 } d3d12_video_t;
@@ -116,9 +139,11 @@ static void d3d12_release_texture(d3d12_video_t *v,d3d12_texture_t *t)
 }
 VERSION_RELEASE
 
+static bool fail_compute_view;
 static void d3d12_init_texture(void *device,d3d12_texture_t *t)
 { (void)device;t->handle=new_texture(t->desc.Width,t->desc.Height,t->desc.Format);
   t->cpu_descriptor[0].ptr=(uintptr_t)t->handle;t->gpu_descriptor[0]=t->cpu_descriptor[0];
+  if(t->media_compute && !fail_compute_view){t->cpu_descriptor[1].ptr=(uintptr_t)t->handle+1;t->gpu_descriptor[1]=t->cpu_descriptor[1];}
   if(!t->desc.MipLevels)t->desc.MipLevels=1;
   t->size_data.x=(float)t->desc.Width;t->size_data.y=(float)t->desc.Height; }
 static void d3d12_frame_remap(d3d12_video_t *v,d3d12_texture_t *t,bool packed)
@@ -126,8 +151,7 @@ static void d3d12_frame_remap(d3d12_video_t *v,d3d12_texture_t *t,bool packed)
 static void d3d12_chain_init_render_targets(d3d12_video_t *v,d3d12_filter_chain_t *c,
       unsigned w,unsigned h,struct video_viewport *vp)
 { (void)v;(void)c;(void)w;(void)h;(void)vp; }
-static void d3d12_planar_record(D3D12GraphicsCommandList cmd,d3d12_texture_t *t,d3d12_video_t *v)
-{ (void)cmd;(void)v;t->handle->value++; }
+PLANAR_RECORD
 static void d3d12_upload_texture_from(D3D12GraphicsCommandList cmd,d3d12_texture_t *t,
       void *v,gpu *buffer,unsigned *layout,void *box)
 { (void)cmd;(void)v;(void)layout;(void)box;if(buffer)t->handle->value=buffer->value;else t->handle->value++; }
@@ -151,6 +175,63 @@ static bool draw(d3d12_video_t *v,d3d12_filter_chain_t *c,d3d12_texture_t *t)
 DRAW_BODY
    c->media_history=NULL;c->media_owner=NULL;renders++;feedbacks++;
    return copy;
+}
+static void test_planar_pool(void)
+{
+   d3d12_video_t video;
+   d3d12_filter_chain_t chain;
+   d3d12_texture_t t;
+   d3d12_planar_t planar;
+   preset preset={2};
+   unsigned storage[6],frame,j,names=0,expected[3]={0,0,0};
+   memset(&video,0,sizeof(video));memset(&chain,0,sizeof(chain));memset(&t,0,sizeof(t));memset(&planar,0,sizeof(planar));
+   video.media_shader_chain=&chain;video.queue.cmd=&command;video.queue.fenceValue=17;chain.shader_preset=&preset;
+   gfx_media_history_ring_init(&chain.history_ring,storage,3);
+   t.desc.Width=8;t.desc.Height=4;t.desc.Format=1;t.desc.MipLevels=1;
+   d3d12_init_texture(NULL,&t);t.media_history.managed=true;t.media_borrowable=true;
+   t.planar=&planar;t.upload_buffer=new_texture(8,6,1);
+   planar.planes=new_texture(8,6,1);planar.planes->layout=D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+   planar.gpu_src.ptr=(uintptr_t)planar.planes;
+   planar.cpu_uav.ptr=planar.gpu_uav.ptr=(uintptr_t)t.handle+1;
+   for(frame=1;frame<=32;frame++)
+   {
+      gpu *readers[3];unsigned values[3],before=copies,writes=plane_uploads,runs=dispatches;
+      uintptr_t descriptors[3];
+      if(frame>1)for(j=0;j<3;j++)
+      {
+         const d3d12_texture_t *h=(const d3d12_texture_t*)d3d12_chain_history_data(&chain,&chain.history[j]);
+         readers[j]=h->handle;values[j]=h->handle->value;descriptors[j]=h->gpu_descriptor[1].ptr;
+      }
+      t.upload_buffer->value=frame;t.dirty=true;
+      if(frame==2)
+      {
+         gpu *previous=t.handle;
+         fail_compute_view=true;
+         d3d12_upload_texture(&command,&t,&video);
+         assert(t.dirty && t.handle==previous && t.handle->value==1
+               && plane_uploads==writes && dispatches==runs);
+         fail_compute_view=false;
+      }
+      d3d12_upload_texture(&command,&t,&video);
+      assert(!t.dirty && t.handle->value==frame && plane_uploads==writes+1 && dispatches==runs+1);
+      assert(t.upload_fence==18 && t.lend_fence[0]==18);
+      if(frame>1)for(j=0;j<3;j++)
+      {
+         const d3d12_texture_t *h=(const d3d12_texture_t*)d3d12_chain_history_data(&chain,&chain.history[j]);
+         assert(readers[j]->value==values[j] && h->gpu_descriptor[1].ptr==descriptors[j]);
+      }
+      assert(!draw(&video,&chain,&t) && copies==before);
+      assert(t.media_version && t.media_version->texture.media_compute && !planar.cpu_uav.ptr);
+      for(j=2;j;j--)expected[j]=expected[j-1];
+      expected[0]=frame;
+      for(j=0;j<3;j++)assert(((const d3d12_texture_t*)d3d12_chain_history_data(&chain,&chain.history[j]))->handle->value==expected[j]);
+      if(frame==8)names=allocated;
+      if(frame>8)assert(allocated==names);
+      assert(t.media_version_count<=4);
+   }
+   d3d12_release_texture(&video,&t);
+   for(j=0;j<3;j++)d3d12_release_texture(&video,&chain.history[j]);
+   puts("PASS D3D12 planar history: immutable SRV/UAV versions, no snapshots, fixed upload storage and warm reuse");
 }
 static void test_pool(void)
 {
@@ -207,6 +288,7 @@ int main(void)
    d3d12_video_t v;
    d3d12_filter_chain_t c;
    d3d12_texture_t t,other;
+   d3d12_planar_t planar;
    preset p={2};
    unsigned i,before,storage[6];
    memset(&v,0,sizeof(v));memset(&c,0,sizeof(c));memset(&t,0,sizeof(t));
@@ -222,7 +304,11 @@ int main(void)
    for(i=0;i<5;i++)assert(draw(&v,&c,&t)==(i==0));
    assert(copies==before+1);
    for(i=0;i<3;i++)assert(((const d3d12_texture_t*)d3d12_chain_history_data(&c,&c.history[i]))->handle->value==20);
-   t.planar=&t;d3d12_upload_texture(NULL,&t,&v);t.planar=NULL;
+   memset(&planar,0,sizeof(planar));planar.planes=new_texture(t.desc.Width,t.desc.Height,1);
+   planar.planes->layout=D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+   planar.gpu_src.ptr=(uintptr_t)planar.planes;planar.gpu_uav.ptr=(uintptr_t)t.handle+1;
+   t.upload_buffer=new_texture(t.desc.Width,t.desc.Height,1);
+   t.planar=&planar;d3d12_upload_texture(&command,&t,&v);t.planar=NULL;t.upload_buffer=NULL;
    assert(t.media_history.copies==0 && draw(&v,&c,&t));
    other=t;memset(&other.media_history,0,sizeof(other.media_history));
    other.media_history.managed=true;other.handle=new_texture(320,240,1);other.handle->value=29;
@@ -288,11 +374,13 @@ int main(void)
    assert(!draw(&v,&c,&t) && !c.history_made);
    assert(draw(&v,&c,&t) && c.history_made);
    test_pool();
+   test_planar_pool();
    puts("PASS D3D12 viewer history: pixels, copy counts, uploads, address reuse, HDR format and no-history borrow");
    return 0;
 }
 '''
 d3d_fixture = d3d_fixture.replace("\nVERSION_RELEASE\n", function(d3d, "static void d3d12_media_version_release(d3d12_video_t *video,\n      d3d12_media_version_t *version)\n{"))
+d3d_fixture = d3d_fixture.replace("\nPLANAR_RECORD\n", function(d3d[d3d.rindex('static void d3d12_planar_record('):], 'static void d3d12_planar_record('))
 d3d_fixture = d3d_fixture.replace("\nPOOL\n", "\n" + function(d3d, "static bool d3d12_media_pool_begin(") + function(d3d, "static bool d3d12_media_writable(") + "\n")
 d3d_fixture = d3d_fixture.replace("\nHELPER\n", function(d3d, "static const void *d3d12_chain_history_data("))
 a = d3d.index("   gfx_media_history_begin(&texture->media_history", d3d.index("bool gfx_display_d3d12_media_shader_draw("))

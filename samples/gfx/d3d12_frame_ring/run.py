@@ -57,6 +57,11 @@ for f in ('d3d12_cb_slot(', 'd3d12_cb_write_slot(', 'd3d12_cmd_begin(',
 with tempfile.TemporaryDirectory() as directory:
     tmp = Path(directory)
     (tmp / 'ring.inc').write_text(code)
+    init = function('d3d12_init_texture(')
+    start = init.index('   for (i = 1;')
+    end = init.index('   if (texture->desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)', start)
+    (tmp / 'uavs.inc').write_text('static void init_uavs(D3D12Device device, d3d12_texture_t *texture)\n{\n   unsigned i;\n'
+                                + init[start:end] + '}\n')
     cc = shlex.split(os.environ.get('CC', 'cc'))
     flags = shlex.split(os.environ.get('CFLAGS', '-O1 -g -std=c89 -Wall -Wextra'))
     exe = tmp / ('test.exe' if os.name == 'nt' or 'mingw' in cc[0] else 'test')
@@ -65,3 +70,8 @@ with tempfile.TemporaryDirectory() as directory:
                    check=True)
     subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)],
                    check=True)
+
+    views = tmp / ('views.exe' if os.name == 'nt' or 'mingw' in cc[0] else 'views')
+    subprocess.run(cc + flags + ['-I' + str(tmp),
+                   str(Path(__file__).with_name('uav_test.c')), '-o', str(views)], check=True)
+    subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(views)], check=True)

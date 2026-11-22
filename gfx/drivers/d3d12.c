@@ -348,10 +348,12 @@ typedef struct d3d12_texture
    unsigned                           media_version_count;
    bool                               media_borrowable;
    bool                               media_storage_only;
+   bool                               media_compute;
    D3D12Resource                      handle;
    D3D12Resource                      upload_buffer;
    D3D12_RESOURCE_DESC                desc;
-   /* the first view is srv, the rest are mip levels uavs */
+   /* The first view is SRV; the rest are mip UAVs, or one level-zero
+    * UAV when media_compute retains a conversion output. */
    D3D12_CPU_DESCRIPTOR_HANDLE        cpu_descriptor[D3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP + 1];
    D3D12_GPU_DESCRIPTOR_HANDLE        gpu_descriptor[D3D12_MAX_TEXTURE_DIMENSION_2_TO_EXP + 1];
    D3D12_GPU_DESCRIPTOR_HANDLE        sampler;
@@ -1677,11 +1679,12 @@ static void d3d12_release_texture(d3d12_video_t *d3d12,
       return;
    }
 
-   if (texture->srv_heap && texture->desc.MipLevels <= countof(texture->cpu_descriptor))
+   if (texture->srv_heap && (size_t)texture->desc.MipLevels + texture->media_compute
+         <= countof(texture->cpu_descriptor))
    {
       int i;
       d3d12_descriptor_heap_t *heap            = texture->srv_heap;
-      for (i = 0; i < texture->desc.MipLevels; i++)
+      for (i = 0; i < texture->desc.MipLevels + texture->media_compute; i++)
       {
          D3D12_CPU_DESCRIPTOR_HANDLE handle    = texture->cpu_descriptor[i];
          if (handle.ptr)
@@ -1977,14 +1980,16 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
          texture->srv_heap->gpu.ptr;
    }
 
-   for (i = 1; i < texture->desc.MipLevels; i++)
+   for (i = 1; i < texture->desc.MipLevels + texture->media_compute; i++)
    {
-      D3D12_UNORDERED_ACCESS_VIEW_DESC desc = { texture->desc.Format };
+      D3D12_UNORDERED_ACCESS_VIEW_DESC desc = { 0 };
 
+      desc.Format                    = texture->desc.Format;
       desc.ViewDimension             = D3D12_UAV_DIMENSION_TEXTURE2D;
-      desc.Texture2D.MipSlice        = i;
+      desc.Texture2D.MipSlice        = texture->media_compute ? 0 : i;
 
       texture->cpu_descriptor[i]     = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
+      if (!texture->cpu_descriptor[i].ptr) return;
       device->lpVtbl->CreateUnorderedAccessView(
             device, (ID3D12Resource*)texture->handle, NULL, &desc, texture->cpu_descriptor[i]);
       texture->gpu_descriptor[i].ptr = texture->cpu_descriptor[i].ptr - texture->srv_heap->cpu.ptr +
@@ -2151,11 +2156,13 @@ static void d3d12_planar_record(D3D12GraphicsCommandList cmd,
 static bool d3d12_media_pool_begin(d3d12_texture_t *t)
 {
    d3d12_media_version_t *v;
-   if (!t->media_borrowable || !t->handle || t->planar
+   if (!t->media_borrowable || !t->handle
          || !t->cpu_descriptor[0].ptr || !t->gpu_descriptor[0].ptr
          || t->desc.MipLevels != 1 || t->srv_mapping)
       return false;
    if (t->media_versions) return true;
+   if (t->planar && (!t->planar->cpu_uav.ptr || !t->planar->gpu_uav.ptr))
+      return false;
    t->media_versions = (d3d12_media_version_t**)calloc(
          GFX_MAX_FRAME_HISTORY + 2, sizeof(*t->media_versions));
    if (!t->media_versions) return false;
@@ -2172,6 +2179,15 @@ static bool d3d12_media_pool_begin(d3d12_texture_t *t)
    v->texture.srv_heap = t->srv_heap;
    v->texture.size_data = t->size_data;
    v->texture.media_storage_only = true;
+   if (t->planar)
+   {
+      /* Transfer the existing level-zero UAV into the immutable version.
+       * Its release follows the resource's fence, not the producer's close. */
+      v->texture.media_compute = true;
+      v->texture.cpu_descriptor[1] = t->planar->cpu_uav;
+      v->texture.gpu_descriptor[1] = t->planar->gpu_uav;
+      t->planar->cpu_uav.ptr = t->planar->gpu_uav.ptr = 0;
+   }
    t->media_versions[0] = t->media_version = v;
    t->media_version_count = 1;
    return true;
@@ -2196,8 +2212,10 @@ static bool d3d12_media_writable(d3d12_video_t *video, d3d12_texture_t *t)
       v->texture.desc = t->desc;
       v->texture.srv_heap = t->srv_heap;
       v->texture.media_storage_only = true;
+      v->texture.media_compute = t->planar != NULL;
       d3d12_init_texture(video->device, &v->texture);
       if (!v->texture.handle || !v->texture.cpu_descriptor[0].ptr
+            || (v->texture.media_compute && !v->texture.cpu_descriptor[1].ptr)
             || v->texture.desc.Format != t->desc.Format)
       {
          d3d12_media_version_release(video, v);
@@ -12957,7 +12975,8 @@ static void d3d12_planar_record(D3D12GraphicsCommandList cmd,
    cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_TEXTURE_T,
          p->gpu_src);
    cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_UAV_T,
-         p->gpu_uav);
+         texture->media_version
+            ? texture->media_version->texture.gpu_descriptor[1] : p->gpu_uav);
    cmd->lpVtbl->SetComputeRoot32BitConstants(cmd, CS_ROOT_ID_CONSTANTS,
          16, p->constants, 0);
    cmd->lpVtbl->Dispatch(cmd, (UINT)((texture->desc.Width + 7) / 8),
@@ -13084,6 +13103,7 @@ static uintptr_t d3d12_planar_load(d3d12_video_t *d3d12,
    if (d3d12_planar_write(texture, image))
    {
       texture->media_history.managed = true;
+      texture->media_borrowable = true;
       return (uintptr_t)texture;
    }
 error:

@@ -150,6 +150,7 @@ typedef struct
 {
    d3d12_media_version_t **media_versions,*media_version;
    unsigned media_version_count;
+   bool media_compute;
    D3D12Resource handle, upload_buffer, upload_buffer2;
    d3d12_descriptor_heap_t *srv_heap;
    struct { unsigned Width, Height; unsigned short MipLevels; } desc;
@@ -585,22 +586,23 @@ int main(void)
       d3d12_texture_t owner, history;
       d3d12_media_version_t *version;
       setup();frame(2,0);frame(2,0);
-      memset(&heap,0,sizeof(heap));heap.cpu.ptr=1000;heap.stride=10;heap.map[3]=true;
+      memset(&heap,0,sizeof(heap));heap.cpu.ptr=1000;heap.stride=10;heap.map[3]=heap.map[4]=true;
       memset(&owner,0,sizeof(owner));memset(&history,0,sizeof(history));
       version=(d3d12_media_version_t*)calloc(1,sizeof(*version));assert(version);
       version->refs=2;version->texture.handle=&res[0];version->texture.srv_heap=&heap;
       version->texture.desc.MipLevels=1;version->texture.cpu_descriptor[0].ptr=1030;
+      version->texture.media_compute=true;version->texture.cpu_descriptor[1].ptr=1040;
       owner=version->texture;owner.upload_buffer=&res[1];owner.media_version=version;
       owner.media_versions=(d3d12_media_version_t**)calloc(1,sizeof(*owner.media_versions));
       assert(owner.media_versions);owner.media_versions[0]=version;owner.media_version_count=1;
       history=version->texture;history.media_version=version;
       completed=signalled-1;released=0;
       d3d12_release_texture(&d3d12,&history);
-      assert(version->refs==1 && !retired_texture && !released && heap.map[3]);
+      assert(version->refs==1 && !retired_texture && !released && heap.map[3] && heap.map[4]);
       d3d12_release_texture(&d3d12,&owner);
-      assert(retired_texture && !released && heap.map[3]);
+      assert(retired_texture && !released && heap.map[3] && heap.map[4]);
       completed=signalled;d3d12_release_texture(NULL,retired_texture);
-      assert(released==2 && !heap.map[3]);
+      assert(released==2 && !heap.map[3] && !heap.map[4]);
       free(retired_texture);retired_texture=NULL;
    }
    puts("D3D12 frame ring: one frame in flight as before, two under"
