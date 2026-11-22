@@ -180,6 +180,7 @@ jobs:
             archive_7z_test
             config_file_test
             path_resolve_realpath_test
+            path_resolve_realpath_weak_test
             fill_pathname_test
             path_mkdir_test
             path_parent_dir_test
