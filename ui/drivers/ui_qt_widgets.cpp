@@ -33,6 +33,7 @@
 #include <QStyle>
 #include <QStyleOption>
 #include <QTimer>
+#include <QWhatsThis>
 
 #include "ui_qt_widgets.h"
 #include "ui_qt.h"
@@ -56,6 +57,7 @@
 #include "../../gfx/gfx_thumbnail_results.h"
 #include "../../verbosity.h"
 #include "../../version.h"
+#include "../../version_git.h"
 #include "../../gfx/video_display_server.h"
 #include "../../input/input_driver.h"
 #include "../../input/input_remapping.h"
@@ -132,10 +134,28 @@ static inline void add_sublabel_and_whats_this(
       widget->setToolTip(wrapped_tooltip(tmp));
 
    msg_hash_get_help_enum((enum msg_hash_enums)setting->enum_idx,
-         tmp, sizeof(tmp));
+      tmp, sizeof(tmp));
 
    if (!string_is_equal(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
+   {
+      QAction *whatsThisAction;
       widget->setWhatsThis(tmp);
+      /* text fields keep their own edit menu; Shift+F1 still works */
+      if (     qobject_cast<QLineEdit*>(widget)
+            || qobject_cast<QAbstractSpinBox*>(widget))
+         return;
+      whatsThisAction = new QAction(
+      QObject::tr("What's This?"), widget);
+
+      QObject::connect(whatsThisAction, &QAction::triggered,
+            widget, [widget]()
+            {
+               QWhatsThis::enterWhatsThisMode();
+            });
+
+      widget->addAction(whatsThisAction);
+      widget->setContextMenuPolicy(Qt::ActionsContextMenu);
+   }
 }
 
 /* A setting's range is stored as float; converting a float outside
@@ -942,7 +962,9 @@ RefreshRateControl::RefreshRateControl(rarch_setting_t *setting, QWidget *parent
    ,m_synced(*setting->value.target.fraction)
    ,m_dirty(false)
 {
+   setObjectName("refreshRateControl");
    int i;
+   m_slider->setObjectName("refreshRateSlider");
    QPushButton *setButton = new QPushButton(QObject::tr("Set"), this);
    const char *fmt        = setting->aux.rounding_fraction;
    /* "%.Nf" - read N directly instead of compiling a regex per widget. */
@@ -1275,8 +1297,24 @@ void BindButton::onClicked(bool checked)
 {
    (void)(checked);
 
+   /* The menu runs the capture, so it is shown for it. */
+   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
    m_setting->actions->ok(m_setting, 0, false);
 }
+
+/* Coming back from the capture in RetroArch's window shows the bind. */
+void BindButton::changeEvent(QEvent *event)
+{
+   if (event->type() == QEvent::ActivationChange && isActiveWindow())
+   {
+      char val_s[NAME_MAX_LENGTH];
+      m_setting->actions->repr(m_setting, val_s, sizeof(val_s));
+      setText(val_s);
+   }
+   QPushButton::changeEvent(event);
+}
+
 
 ColorButton::ColorButton(rarch_setting_t *red, rarch_setting_t *green, rarch_setting_t *blue, QWidget *parent) :
    QToolButton(parent)
@@ -2722,10 +2760,11 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow,
    QDialog(mainwindow)
    ,m_optionsList(new QListWidget(this))
    ,m_optionsStack(new QStackedLayout)
+   ,m_categoryPagesWidget(new QWidget(this))
+   ,m_headerLabel(new QLabel(m_categoryPagesWidget))
+   ,m_currentCategoryIndex(-1)
 {
-   int width;
    QGridLayout        *layout = new QGridLayout(this);
-   QLabel      *m_headerLabel = new QLabel(this);
    /* Header label with large font and a bit of spacing
     * (align with group boxes) */
    QFont      headerLabelFont = m_headerLabel->font();
@@ -2795,29 +2834,63 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow,
    addCategory(new PlaylistsCategory(this));
    addCategory(new UserCategory(this));
    addCategory(new DirectoryCategory(this));
+   addCategory(new InformationCategory(this));
 
-   width  =
-        m_optionsList->sizeHintForColumn(0)
-      + m_optionsList->frameWidth() * 2
-      + 5;
-   width += m_optionsList->verticalScrollBar()->sizeHint().width();
-
-   m_optionsList->setMaximumWidth(width);
-   m_optionsList->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Minimum);
+   /* The category list is also embedded in the Content Browser dock.
+    * Let it use the available width there instead of sizing it only to
+    * the longest category label. */
+   m_optionsList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 
    setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE));
 
-   layout->addWidget(m_optionsList, 0, 0, 2, 1);
-   layout->addLayout(headerHLayout, 0, 1);
-   layout->addLayout(m_optionsStack, 1, 1);
+   QVBoxLayout *categoryPagesLayout = new QVBoxLayout(m_categoryPagesWidget);
+   categoryPagesLayout->setContentsMargins(0, 0, 0, 0);
+   categoryPagesLayout->addLayout(headerHLayout);
+   categoryPagesLayout->addLayout(m_optionsStack);
+
+   layout->addWidget(m_optionsList, 0, 0);
+   layout->addWidget(m_categoryPagesWidget, 0, 1);
 
    connect(m_optionsList, SIGNAL(currentRowChanged(int)),
-         m_optionsStack, SLOT(setCurrentIndex(int)));
+         this, SLOT(loadCategory(int)));
    connect(m_optionsList, SIGNAL(currentTextChanged(const QString&)),
          m_headerLabel, SLOT(setText(const QString&)));
 
    connect(this, SIGNAL(rejected()), this, SLOT(onRejected()));
+   if (m_optionsList->count() > 0)
+      m_optionsList->setCurrentRow(0);
 }
+
+#ifdef HAVE_MENU
+QListWidget *ViewOptionsDialog::categoryListWidget() const
+{
+   return m_optionsList;
+}
+
+QWidget *ViewOptionsDialog::categoryPagesWidget() const
+{
+   return m_categoryPagesWidget;
+}
+
+void ViewOptionsDialog::loadCategory(int index)
+{
+   if (index < 0 || index >= m_categoryList.size())
+      return;
+   if (m_currentCategoryIndex >= 0
+         && m_currentCategoryIndex < m_categoryList.size())
+      m_categoryList.at(m_currentCategoryIndex)->apply();
+   m_currentCategoryIndex = index;
+   m_optionsStack->setCurrentIndex(index);
+   m_categoryList.at(index)->load();
+}
+
+void ViewOptionsDialog::applyCurrentCategory()
+{
+   if (m_currentCategoryIndex >= 0
+         && m_currentCategoryIndex < m_categoryList.size())
+      m_categoryList.at(m_currentCategoryIndex)->apply();
+}
+#endif
 
 QIcon getIcon(OptionsCategory *category)
 {
@@ -2896,10 +2969,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
 void ViewOptionsDialog::showDialog()
 {
 #ifdef HAVE_MENU
-   unsigned i;
-   size_t list_size = (size_t)m_categoryList.size();
-   for (i = 0; i < list_size; i++)
-      m_categoryList.at(i)->load();
+   loadCategory(m_optionsList->currentRow());
 #else
    m_viewOptionsWidget->loadViewOptions();
 #endif
@@ -3180,7 +3250,7 @@ void ViewOptionsWidget::loadViewOptions()
 
 void ViewOptionsWidget::showOrHideHighlightColor()
 {
-   if (m_mainwindow->theme() == MainWindow::THEME_DARK)
+   if (m_mainwindow->isDarkTheme())
    {
       m_highlightColorLabel->show();
       m_highlightColorPushButton->show();
@@ -5668,6 +5738,227 @@ void AchievementsPage::onAchievementEnabledChanged(int state)
 
 static file_list_t *qt_displaylist_build(
       enum menu_displaylist_ctl_state state);
+QPixmap getInvader(void);
+/* The desktop Information page presents the same live display lists as
+ * the internal menu. Rebuild them whenever the category is selected so
+ * display, input and network changes are reflected without restarting. */
+static void qt_information_clear_group(QWidget *group)
+{
+   QLayout *layout = group ? group->layout() : NULL;
+   QLayoutItem *item = NULL;
+
+   if (!layout)
+      return;
+
+   while ((item = layout->takeAt(0)) != NULL)
+   {
+      if (item->widget())
+         delete item->widget();
+      delete item;
+   }
+}
+
+static void qt_information_populate_group(QWidget *group,
+      enum menu_displaylist_ctl_state state)
+{
+   file_list_t *list;
+   QVBoxLayout *layout;
+   size_t i;
+
+   if (!group)
+      return;
+
+   qt_information_clear_group(group);
+   layout = qobject_cast<QVBoxLayout*>(group->layout());
+   if (!layout)
+      return;
+
+   list = qt_displaylist_build(state);
+   if (list)
+   {
+      for (i = 0; i < list->size; i++)
+      {
+         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+            file_list_get_actiondata_at_offset(list, i);
+         const char *entry = list->list[i].path;
+         QString text = entry ? QString::fromUtf8(entry).trimmed() : QString();
+         QLabel *label;
+
+#ifdef HAVE_MODELINE
+         if (state == DISPLAYLIST_DISPLAY_INFO
+               && cbs
+               && cbs->enum_idx == MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION)
+         {
+            QPushButton *button = new QPushButton(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INFORMATION),
+                  group);
+            QWidget *details = new QWidget(group);
+            QVBoxLayout *detailsLayout = new QVBoxLayout(details);
+            detailsLayout->setContentsMargins(12, 4, 0, 4);
+            details->setVisible(false);
+            button->setCheckable(true);
+            layout->addWidget(button);
+            layout->addWidget(details);
+            QObject::connect(button, &QPushButton::toggled,
+                  [button, details](bool checked)
+            {
+               if (checked && details->layout()->count() == 0)
+                  qt_information_populate_group(details,
+                        DISPLAYLIST_DISPLAY_EDID_INFO);
+               details->setVisible(checked);
+            });
+            continue;
+         }
+#endif
+
+         if (text.isEmpty())
+            continue;
+
+         label = new QLabel(text, group);
+         label->setTextFormat(Qt::PlainText);
+         label->setWordWrap(true);
+         label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+         label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+         layout->addWidget(label);
+      }
+      file_list_free(list);
+   }
+
+   if (layout->count() == 0)
+   {
+      QLabel *label = new QLabel(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), group);
+      label->setTextFormat(Qt::PlainText);
+      label->setWordWrap(true);
+      label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+      layout->addWidget(label);
+   }
+   layout->addStretch();
+}
+
+InformationCategory::InformationCategory(QWidget *parent)
+   : OptionsCategory(parent)
+   , m_page(NULL)
+{
+   setDisplayName(MENU_ENUM_LABEL_VALUE_INFORMATION);
+   setCategoryIcon("menu_info");
+}
+
+QVector<OptionsPage*> InformationCategory::pages()
+{
+   QVector<OptionsPage*> pages;
+   m_page = new InformationPage(this);
+   pages << m_page;
+   return pages;
+}
+
+void InformationCategory::load()
+{
+   if (m_page)
+      m_page->load();
+}
+
+InformationPage::InformationPage(QObject *parent)
+   : OptionsPage(parent)
+   , m_widget(NULL)
+   , m_systemGroup(NULL)
+   , m_aboutGroup(NULL)
+   , m_displayGroup(NULL)
+   , m_inputGroup(NULL)
+   , m_networkGroup(NULL)
+{
+   setDisplayName(MENU_ENUM_LABEL_VALUE_INFORMATION);
+}
+
+QWidget *InformationPage::widget()
+{
+   QHBoxLayout *columns;
+   QVBoxLayout *left;
+   QVBoxLayout *right;
+
+   if (m_widget)
+      return m_widget;
+
+   m_widget = new QWidget;
+   columns = new QHBoxLayout(m_widget);
+   left = new QVBoxLayout;
+   right = new QVBoxLayout;
+
+   m_systemGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION), m_widget);
+   m_aboutGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT), m_widget);
+   m_displayGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION), m_widget);
+   m_inputGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_INFORMATION), m_widget);
+   m_networkGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION), m_widget);
+
+   m_systemGroup->setLayout(new QVBoxLayout);
+   m_aboutGroup->setLayout(new QVBoxLayout);
+   m_displayGroup->setLayout(new QVBoxLayout);
+   m_inputGroup->setLayout(new QVBoxLayout);
+   m_networkGroup->setLayout(new QVBoxLayout);
+
+   left->addWidget(m_systemGroup);
+   left->addStretch();
+   right->addWidget(m_aboutGroup);
+   right->addWidget(m_displayGroup);
+   right->addWidget(m_inputGroup);
+   right->addWidget(m_networkGroup);
+   right->addStretch();
+
+   columns->addLayout(left, 1);
+   columns->addLayout(right, 1);
+   columns->setAlignment(Qt::AlignTop);
+
+   load();
+   return m_widget;
+}
+
+void InformationPage::load()
+{
+   if (!m_widget)
+      return;
+
+   qt_information_populate_group(m_systemGroup, DISPLAYLIST_SYSTEM_INFO);
+   qt_information_clear_group(m_aboutGroup);
+   {
+      QLabel *pixLabel = new QLabel(m_aboutGroup);
+      QLabel *aboutLabel = new QLabel(m_aboutGroup);
+      QString text = QString("RetroArch ")
+         + QString(PACKAGE_VERSION)
+         + QString("<br><br>")
+         + "<a href=\"https://www.libretro.com/\">www.libretro.com</a>"
+            "<br><br>"
+         + "<a href=\"https://www.retroarch.com/\">www.retroarch.com</a>"
+#ifdef HAVE_GIT_VERSION
+            "<br><br>"
+         + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION)
+         + QString(": ")
+         + retroarch_git_version
+#endif
+         + QString("<br>")
+         + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE)
+         + QString(": ")
+         + __DATE__;
+      QPixmap pix = getInvader();
+      pixLabel->setAlignment(Qt::AlignCenter);
+      pixLabel->setPixmap(pix);
+      aboutLabel->setText(text);
+      aboutLabel->setTextFormat(Qt::RichText);
+      aboutLabel->setAlignment(Qt::AlignCenter);
+      aboutLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
+      aboutLabel->setOpenExternalLinks(true);
+      m_aboutGroup->layout()->addWidget(pixLabel);
+      m_aboutGroup->layout()->addWidget(aboutLabel);
+   }
+   qt_information_populate_group(m_displayGroup, DISPLAYLIST_DISPLAY_INFO);
+   qt_information_populate_group(m_inputGroup, DISPLAYLIST_INPUT_INFO);
+   qt_information_populate_group(m_networkGroup, DISPLAYLIST_NETWORK_INFO);
+}
+
 static bool qt_list_has_entry(const file_list_t *list,
       enum msg_hash_enums entry);
 static void qt_settings_group_add_list(SettingsGroup *group,
