@@ -442,10 +442,13 @@ struct gtm_rec
    uint16_t ltlen;
    uint16_t rev;
    uint8_t disc;
-   uint8_t ext;
+   uint8_t ext_types; /* extension rank, low nibble; type mask, high */
    uint8_t flags;
    uint8_t ntags;
 };
+
+#define GTM_EXT(r)   ((unsigned)((r)->ext_types & 0x0F))
+#define GTM_TYPES(r) ((unsigned)((r)->ext_types >> 4))
 
 struct gtm_pool
 {
@@ -492,10 +495,13 @@ struct gfx_thumbnail_match_index
    struct gtm_pool *pool;
    struct gtm_parse *parse; /* freed when finalize begins */
    void *scratch;
+   uint32_t *names; /* record + 1 by name hash, until finalize */
    gfx_thumbnail_match_sort_t sort;
    size_t count;
    size_t cap;
+   size_t names_cap;
    size_t filled; /* by_loose entries set */
+   unsigned types; /* the types any record has */
    bool finalized;
 };
 
@@ -1141,24 +1147,6 @@ static void gtm_scrub(char *dst, const char *src, size_t len)
    dst[len] = '\0';
 }
 
-/* Parses query into p; true when it has a region other than Unknown. */
-static bool gtm_want_of(struct gtm_want *w, struct gtm_parse *p,
-      const char *query)
-{
-   size_t len = strlen(query);
-   w->src     = query;
-   w->len     = len;
-   w->region  = 0;
-   w->flags   = 0;
-   if (!len || len >= GTM_NAME_MAX)
-      return false;
-   gtm_scrub(p->stem, query, len);
-   gtm_parse_stem(p, p->stem, len);
-   w->region = p->region;
-   w->flags  = p->flags;
-   return (w->flags & (GTM_WEST | GTM_EAST)) != 0;
-}
-
 static int gtm_cmp_span(const char *a, size_t an, const char *b, size_t bn)
 {
    int r = memcmp(a, b, an < bn ? an : bn);
@@ -1174,8 +1162,8 @@ static int gtm_cmp_name(const struct gtm_rec *a, const struct gtm_rec *b)
    int r = gtm_cmp_span(a->name, a->stem_len, b->name, b->stem_len);
    if (r)
       return r;
-   if (a->ext != b->ext)
-      return (int)a->ext - (int)b->ext;
+   if (GTM_EXT(a) != GTM_EXT(b))
+      return (int)GTM_EXT(a) - (int)GTM_EXT(b);
    return strcmp(a->name, b->name);
 }
 
@@ -1209,20 +1197,81 @@ gfx_thumbnail_match_index_t *gfx_thumbnail_match_index_new(void)
    return idx;
 }
 
-bool gfx_thumbnail_match_index_add(gfx_thumbnail_match_index_t *idx,
-      const char *name)
+static uint32_t gtm_hash(const char *s, size_t len)
+{
+   uint32_t h = 2166136261UL;
+   size_t i;
+   for (i = 0; i < len; i++)
+      h = (h ^ (unsigned char)s[i]) * 16777619UL;
+   return h;
+}
+
+/* The slot of the name @s in the name table: its record + 1, or 0. */
+static uint32_t *gtm_name_slot(const gfx_thumbnail_match_index_t *idx,
+      const char *s, size_t len)
+{
+   size_t mask = idx->names_cap - 1;
+   size_t i    = gtm_hash(s, len) & mask;
+   for (;;)
+   {
+      uint32_t *slot = &idx->names[i];
+      if (     !*slot
+            || (     strlen(idx->recs[*slot - 1].name) == len
+                  && !memcmp(idx->recs[*slot - 1].name, s, len)))
+         return slot;
+      i = (i + 1) & mask;
+   }
+}
+
+/* Room for one more name at half load. */
+static bool gtm_names_grow(gfx_thumbnail_match_index_t *idx)
+{
+   size_t i;
+   size_t cap = idx->names_cap ? idx->names_cap * 2 : 512;
+   uint32_t *old = idx->names;
+   if ((idx->count + 1) * 2 <= idx->names_cap)
+      return true;
+   if (!(idx->names = (uint32_t*)calloc(cap, sizeof(*idx->names))))
+   {
+      idx->names = old;
+      return false;
+   }
+   idx->names_cap = cap;
+   for (i = 0; i < idx->count; i++)
+   {
+      const char *name = idx->recs[i].name;
+      *gtm_name_slot(idx, name, strlen(name)) = (uint32_t)(i + 1);
+   }
+   free(old);
+   return true;
+}
+
+bool gfx_thumbnail_match_index_add_types(gfx_thumbnail_match_index_t *idx,
+      const char *name, unsigned types)
 {
    struct gtm_parse *p;
    struct gtm_rec *r;
+   uint32_t *slot;
    size_t len;
    size_t stem_len = 0;
    int ext;
-   if (!idx || !name || !idx->parse)
+   types &= GFX_THUMBNAIL_MATCH_ALL_TYPES;
+   if (!idx || !name || !idx->parse || !types)
       return false;
    len = strlen(name);
    ext = gtm_ext(name, len, &stem_len);
    if (ext < 0 || !stem_len || stem_len >= GTM_NAME_MAX)
       return true;
+   if (!gtm_names_grow(idx))
+      return false;
+   /* Listed in another folder already: one record for both */
+   if (*(slot = gtm_name_slot(idx, name, len)))
+   {
+      r             = &idx->recs[*slot - 1];
+      r->ext_types |= (uint8_t)(types << 4);
+      idx->types   |= types;
+      return true;
+   }
    if (idx->count == idx->cap)
    {
       size_t cap           = idx->cap ? idx->cap * 2 : 256;
@@ -1242,17 +1291,24 @@ bool gfx_thumbnail_match_index_add(gfx_thumbnail_match_index_t *idx,
          || !(r->ident = p->ident_len
             ? gtm_pool_add(idx, p->ident, p->ident_len) : ""))
       return false;
-   r->region   = p->region;
-   r->stem_len = (uint16_t)stem_len;
-   r->tlen     = (uint16_t)p->tlen;
-   r->ltlen    = (uint16_t)p->ltlen;
-   r->rev      = (uint16_t)p->rev;
-   r->disc     = (uint8_t)p->disc;
-   r->ext      = (uint8_t)ext;
-   r->flags    = (uint8_t)p->flags;
-   r->ntags    = (uint8_t)(p->ntags > 255 ? 255 : p->ntags);
-   idx->count++;
+   r->region    = p->region;
+   r->stem_len  = (uint16_t)stem_len;
+   r->tlen      = (uint16_t)p->tlen;
+   r->ltlen     = (uint16_t)p->ltlen;
+   r->rev       = (uint16_t)p->rev;
+   r->disc      = (uint8_t)p->disc;
+   r->ext_types = (uint8_t)(ext | (types << 4));
+   r->flags     = (uint8_t)p->flags;
+   r->ntags     = (uint8_t)(p->ntags > 255 ? 255 : p->ntags);
+   *slot        = (uint32_t)(++idx->count);
+   idx->types  |= types;
    return true;
+}
+
+bool gfx_thumbnail_match_index_add(gfx_thumbnail_match_index_t *idx,
+      const char *name)
+{
+   return gfx_thumbnail_match_index_add_types(idx, name, 1);
 }
 
 void gfx_thumbnail_match_sort_begin(gfx_thumbnail_match_sort_t *s,
@@ -1335,7 +1391,10 @@ bool gfx_thumbnail_match_index_finalize_step(gfx_thumbnail_match_index_t *idx)
    if (idx->parse)
    {
       free(idx->parse);
-      idx->parse = NULL;
+      free(idx->names);
+      idx->parse     = NULL;
+      idx->names     = NULL;
+      idx->names_cap = 0;
       if (     idx->count
             && (  !(idx->scratch  = malloc(idx->count * sizeof(*idx->recs)))
                || !(idx->by_loose = (const struct gtm_rec**)malloc(
@@ -1345,6 +1404,7 @@ bool gfx_thumbnail_match_index_finalize_step(gfx_thumbnail_match_index_t *idx)
       {
          free(idx->scratch);
          idx->scratch   = NULL;
+         idx->types     = 0;
          idx->finalized = true;
          return false;
       }
@@ -1382,6 +1442,11 @@ size_t gfx_thumbnail_match_index_count(const gfx_thumbnail_match_index_t *idx)
    return idx ? idx->count : 0;
 }
 
+unsigned gfx_thumbnail_match_index_types(const gfx_thumbnail_match_index_t *idx)
+{
+   return idx ? idx->types : 0;
+}
+
 void gfx_thumbnail_match_index_free(gfx_thumbnail_match_index_t *idx)
 {
    struct gtm_pool *b;
@@ -1396,6 +1461,7 @@ void gfx_thumbnail_match_index_free(gfx_thumbnail_match_index_t *idx)
    }
    free(idx->by_loose);
    free(idx->recs);
+   free(idx->names);
    free(idx->parse);
    free(idx->scratch);
    free(idx);
@@ -1437,7 +1503,8 @@ static size_t gtm_first_loose(const gfx_thumbnail_match_index_t *idx,
 /* T0 (the scrubbed query is a stem) and T2 (same T2 key, non-empty title). */
 static const struct gtm_rec *gtm_find_exact(
       const gfx_thumbnail_match_index_t *idx, const struct gtm_parse *q,
-      size_t len, const struct gtm_rec *skip, unsigned *tier)
+      size_t len, unsigned types, const struct gtm_rec *skip,
+      unsigned *tier)
 {
    const struct gtm_rec *key_hit  = NULL;
    const struct gtm_rec *case_hit = NULL;
@@ -1447,7 +1514,7 @@ static const struct gtm_rec *gtm_find_exact(
       const struct gtm_rec *r = &idx->recs[i];
       if (gtm_cmp_span(r->key, r->tlen, q->key, q->tlen))
          break;
-      if (r == skip || strcmp(r->key, q->key))
+      if (r == skip || !(GTM_TYPES(r) & types) || strcmp(r->key, q->key))
          continue;
       if (r->stem_len == len && !memcmp(r->name, q->stem, len))
       {
@@ -1469,7 +1536,7 @@ static const struct gtm_rec *gtm_find_exact(
 /* T2b: same loose key; refused when the hits are different T2 titles. */
 static enum gfx_thumbnail_match_status gtm_find_loose(
       const gfx_thumbnail_match_index_t *idx, const struct gtm_parse *q,
-      const struct gtm_rec *skip, const struct gtm_rec **hit)
+      unsigned types, const struct gtm_rec *skip, const struct gtm_rec **hit)
 {
    size_t i;
    *hit = NULL;
@@ -1480,7 +1547,8 @@ static enum gfx_thumbnail_match_status gtm_find_loose(
       const struct gtm_rec *r = idx->by_loose[i];
       if (gtm_cmp_span(r->loose, r->ltlen, q->loose, q->ltlen))
          break;
-      if (r == skip || strcmp(r->loose, q->loose))
+      if (     r == skip || !(GTM_TYPES(r) & types)
+            || strcmp(r->loose, q->loose))
          continue;
       if (!*hit)
          *hit = r;
@@ -1669,7 +1737,7 @@ static bool gtm_region_ok(const struct gtm_rec *r, const struct gtm_want *w)
 static const struct gtm_rec *gtm_find_tagged(
       const gfx_thumbnail_match_index_t *idx, const struct gtm_parse *q,
       const struct gtm_want *want, const struct gtm_want *rank,
-      const struct gtm_rec *skip)
+      unsigned types, const struct gtm_rec *skip)
 {
    const struct gtm_rec *best = NULL;
    size_t i;
@@ -1680,7 +1748,8 @@ static const struct gtm_rec *gtm_find_tagged(
       const struct gtm_rec *r = &idx->recs[i];
       if (gtm_cmp_span(r->key, r->tlen, q->key, q->tlen))
          break;
-      if (     r != skip && gtm_same_game(r, q) && gtm_region_ok(r, want)
+      if (     r != skip && (GTM_TYPES(r) & types)
+            && gtm_same_game(r, q) && gtm_region_ok(r, want)
             && (!best || gtm_better(r, best, q, rank)))
          best = r;
    }
@@ -1692,7 +1761,7 @@ static const struct gtm_rec *gtm_find_tagged(
 static enum gfx_thumbnail_match_status gtm_find_tagged_loose(
       const gfx_thumbnail_match_index_t *idx, const struct gtm_parse *q,
       const struct gtm_want *want, const struct gtm_want *rank,
-      const struct gtm_rec *skip, const struct gtm_rec **hit)
+      unsigned types, const struct gtm_rec *skip, const struct gtm_rec **hit)
 {
    const struct gtm_rec *first = NULL;
    size_t i;
@@ -1704,7 +1773,7 @@ static enum gfx_thumbnail_match_status gtm_find_tagged_loose(
       const struct gtm_rec *r = idx->by_loose[i];
       if (gtm_cmp_span(r->loose, r->ltlen, q->loose, q->ltlen))
          break;
-      if (r == skip || !gtm_same_game(r, q))
+      if (r == skip || !(GTM_TYPES(r) & types) || !gtm_same_game(r, q))
          continue;
       if (!first)
          first = r;
@@ -1719,21 +1788,58 @@ static enum gfx_thumbnail_match_status gtm_find_tagged_loose(
    return *hit ? GFX_THUMBNAIL_MATCH_FOUND : GFX_THUMBNAIL_MATCH_NONE;
 }
 
-/* want: the region T3 and T3b keep to, NULL for any; a query without a
+/* q: @query (len bytes) parsed. types: the folders searched.
+ * want: the region T3 and T3b keep to, NULL for any; a query without a
  * region of its own ranks by it.
  * skip: a record to leave out (the measurement's held-out name). */
-static enum gfx_thumbnail_match_status gtm_find(
-      const gfx_thumbnail_match_index_t *idx, const char *query,
+static enum gfx_thumbnail_match_status gtm_find_parsed(
+      const gfx_thumbnail_match_index_t *idx, const struct gtm_parse *q,
+      const char *query, size_t len, unsigned types,
       const struct gtm_want *want, const struct gtm_rec **hit,
       unsigned *tier, const struct gtm_rec *skip)
 {
    struct gtm_want own;
    const struct gtm_want *rank;
-   struct gtm_parse *q;
    enum gfx_thumbnail_match_status st = GFX_THUMBNAIL_MATCH_NONE;
    unsigned t                         = GTM_T0;
+   own.src    = query;
+   own.len    = len;
+   own.region = q->region;
+   own.flags  = q->flags;
+   rank       = (want && !(q->flags & (GTM_WEST | GTM_EAST))) ? want : &own;
+   if (!(*hit = gtm_find_exact(idx, q, len, types, skip, &t)))
+   {
+      t  = GTM_T2B;
+      st = gtm_find_loose(idx, q, types, skip, hit);
+   }
+   if (     !*hit && st != GFX_THUMBNAIL_MATCH_REFUSED
+         && !(q->flags & GTM_NOTAGS))
+   {
+      t = GTM_T3;
+      if (!(*hit = gtm_find_tagged(idx, q, want, rank, types, skip)))
+      {
+         t  = GTM_T3B;
+         st = gtm_find_tagged_loose(idx, q, want, rank, types, skip, hit);
+      }
+   }
+   if (*hit)
+      st = GFX_THUMBNAIL_MATCH_FOUND;
+   if (tier)
+      *tier = t;
+   return st;
+}
+
+static enum gfx_thumbnail_match_status gtm_find(
+      const gfx_thumbnail_match_index_t *idx, const char *query,
+      const struct gtm_want *want, const struct gtm_rec **hit,
+      unsigned *tier, const struct gtm_rec *skip)
+{
+   struct gtm_parse *q;
+   enum gfx_thumbnail_match_status st = GFX_THUMBNAIL_MATCH_NONE;
    size_t len;
    *hit = NULL;
+   if (tier)
+      *tier = GTM_T0;
    if (!idx || !idx->finalized || !idx->count || !query)
       return st;
    len = strlen(query);
@@ -1743,30 +1849,8 @@ static enum gfx_thumbnail_match_status gtm_find(
       return st;
    gtm_scrub(q->stem, query, len);
    gtm_parse_stem(q, q->stem, len);
-   own.src    = query;
-   own.len    = len;
-   own.region = q->region;
-   own.flags  = q->flags;
-   rank       = (want && !(q->flags & (GTM_WEST | GTM_EAST))) ? want : &own;
-   if (!(*hit = gtm_find_exact(idx, q, len, skip, &t)))
-   {
-      t  = GTM_T2B;
-      st = gtm_find_loose(idx, q, skip, hit);
-   }
-   if (     !*hit && st != GFX_THUMBNAIL_MATCH_REFUSED
-         && !(q->flags & GTM_NOTAGS))
-   {
-      t = GTM_T3;
-      if (!(*hit = gtm_find_tagged(idx, q, want, rank, skip)))
-      {
-         t  = GTM_T3B;
-         st = gtm_find_tagged_loose(idx, q, want, rank, skip, hit);
-      }
-   }
-   if (*hit)
-      st = GFX_THUMBNAIL_MATCH_FOUND;
-   if (tier)
-      *tier = t;
+   st = gtm_find_parsed(idx, q, query, len, GFX_THUMBNAIL_MATCH_ALL_TYPES,
+         want, hit, tier, skip);
    free(q);
    return st;
 }
@@ -1783,38 +1867,194 @@ enum gfx_thumbnail_match_status gfx_thumbnail_match_find(
    return st;
 }
 
-enum gfx_thumbnail_match_status gfx_thumbnail_match_find_first(
-      const gfx_thumbnail_match_index_t *idx, const char * const *queries,
-      size_t num_queries, bool other_regions, const char **out)
+/* Each string is parsed on first use and kept, as is the region the
+ * strict rule keeps to, for every find until the next _set. */
+struct gfx_thumbnail_match_query
 {
+   const char * const *queries;
+   struct gtm_parse *parses;
+   size_t *lens;
+   size_t *same;      /* the first query equal to this one */
+   uint8_t *state;    /* GTM_Q_* */
+   enum gfx_thumbnail_match_status *last;
    struct gtm_want want;
-   const struct gtm_want *w           = NULL;
+   size_t count;
+   size_t cap;
+   size_t want_next;  /* queries looked at for the region */
+   bool other_regions;
+   bool has_want;
+};
+
+#define GTM_Q_UNPARSED 0
+#define GTM_Q_PARSED   1
+#define GTM_Q_INVALID  2
+
+gfx_thumbnail_match_query_t *gfx_thumbnail_match_query_new(void)
+{
+   return (gfx_thumbnail_match_query_t*)calloc(1,
+         sizeof(gfx_thumbnail_match_query_t));
+}
+
+void gfx_thumbnail_match_query_free(gfx_thumbnail_match_query_t *q)
+{
+   if (!q)
+      return;
+   free(q->parses);
+   free(q->lens);
+   free(q->same);
+   free(q->state);
+   free(q->last);
+   free(q);
+}
+
+bool gfx_thumbnail_match_query_set(gfx_thumbnail_match_query_t *q,
+      const char * const *queries, size_t num_queries, bool other_regions)
+{
+   size_t i, j;
+   if (!q)
+      return false;
+   q->count = 0;
+   if (!queries)
+      num_queries = 0;
+   if (num_queries > q->cap)
+   {
+      struct gtm_parse *parses = (struct gtm_parse*)realloc(q->parses,
+            num_queries * sizeof(*parses));
+      size_t *lens;
+      size_t *same;
+      uint8_t *state;
+      enum gfx_thumbnail_match_status *last;
+      if (parses)
+         q->parses = parses;
+      lens  = (size_t*)realloc(q->lens, num_queries * sizeof(*lens));
+      if (lens)
+         q->lens = lens;
+      same  = (size_t*)realloc(q->same, num_queries * sizeof(*same));
+      if (same)
+         q->same = same;
+      state = (uint8_t*)realloc(q->state, num_queries * sizeof(*state));
+      if (state)
+         q->state = state;
+      last  = (enum gfx_thumbnail_match_status*)realloc(q->last,
+            num_queries * sizeof(*last));
+      if (last)
+         q->last = last;
+      if (!parses || !lens || !same || !state || !last)
+         return false;
+      q->cap = num_queries;
+   }
+   q->queries       = queries;
+   q->count         = num_queries;
+   q->other_regions = other_regions;
+   q->has_want      = false;
+   q->want_next     = 0;
+   for (i = 0; i < num_queries; i++)
+   {
+      q->lens[i]  = queries[i] ? strlen(queries[i]) : 0;
+      q->state[i] = (!q->lens[i] || q->lens[i] >= GTM_NAME_MAX)
+         ? GTM_Q_INVALID : GTM_Q_UNPARSED;
+      q->same[i]  = i;
+      if (q->state[i] == GTM_Q_INVALID)
+         continue;
+      /* A label-less entry's label is its file name: parsed once */
+      for (j = 0; j < i; j++)
+         if (     q->state[j] != GTM_Q_INVALID && q->lens[j] == q->lens[i]
+               && !memcmp(queries[j], queries[i], q->lens[i]))
+         {
+            q->same[i] = j;
+            break;
+         }
+   }
+   return true;
+}
+
+/* The parse of query @i, or NULL for one too long, empty or absent. */
+static const struct gtm_parse *gtm_query_parse(gfx_thumbnail_match_query_t *q,
+      size_t i)
+{
+   size_t k = q->same[i];
+   if (q->state[k] == GTM_Q_UNPARSED)
+   {
+      gtm_scrub(q->parses[k].stem, q->queries[k], q->lens[k]);
+      gtm_parse_stem(&q->parses[k], q->parses[k].stem, q->lens[k]);
+      q->state[k] = GTM_Q_PARSED;
+   }
+   return (q->state[k] == GTM_Q_PARSED) ? &q->parses[k] : NULL;
+}
+
+/* The strict rule's region: that of the first query with one, Unknown
+ * aside. Looked for once, up to the query that has it. */
+static const struct gtm_want *gtm_query_want(gfx_thumbnail_match_query_t *q)
+{
+   if (q->other_regions)
+      return NULL;
+   while (!q->has_want && q->want_next < q->count)
+   {
+      size_t i                  = q->want_next++;
+      const struct gtm_parse *p = gtm_query_parse(q, i);
+      if (p && (p->flags & (GTM_WEST | GTM_EAST)))
+      {
+         q->want.src    = q->queries[i];
+         q->want.len    = q->lens[i];
+         q->want.region = p->region;
+         q->want.flags  = p->flags;
+         q->has_want    = true;
+      }
+   }
+   return q->has_want ? &q->want : NULL;
+}
+
+enum gfx_thumbnail_match_status gfx_thumbnail_match_query_find(
+      const gfx_thumbnail_match_index_t *idx, gfx_thumbnail_match_query_t *q,
+      unsigned types, const char **out)
+{
+   const struct gtm_want *w;
    const struct gtm_rec *hit          = NULL;
    enum gfx_thumbnail_match_status st = GFX_THUMBNAIL_MATCH_NONE;
+   bool usable;
    size_t i;
    if (out)
       *out = NULL;
-   if (!queries)
+   if (!q)
       return st;
-   if (!other_regions)
+   usable = idx && idx->finalized && idx->count;
+   w      = usable ? gtm_query_want(q) : NULL;
+   for (i = 0; i < q->count; i++)
    {
-      struct gtm_parse *p = (struct gtm_parse*)malloc(sizeof(*p));
-      if (!p)
-         return st;
-      for (i = 0; !w && i < num_queries; i++)
-         if (queries[i] && gtm_want_of(&want, p, queries[i]))
-            w = &want;
-      free(p);
-   }
-   for (i = 0; i < num_queries; i++)
-   {
-      if (!queries[i])
+      const struct gtm_parse *p;
+      if (!q->queries[i])
          continue;
-      if ((st = gtm_find(idx, queries[i], w, &hit, NULL, NULL))
-            == GFX_THUMBNAIL_MATCH_FOUND)
+      /* The same string as an earlier one answers as it did */
+      if (q->same[i] != i)
+      {
+         st = q->last[q->same[i]];
+         continue;
+      }
+      st = GFX_THUMBNAIL_MATCH_NONE;
+      if (usable && (p = gtm_query_parse(q, i)))
+         st = gtm_find_parsed(idx, p, q->queries[i], q->lens[i], types, w,
+               &hit, NULL, NULL);
+      q->last[i] = st;
+      if (st == GFX_THUMBNAIL_MATCH_FOUND)
          break;
    }
    if (out && hit)
       *out = hit->name;
+   return st;
+}
+
+enum gfx_thumbnail_match_status gfx_thumbnail_match_find_first(
+      const gfx_thumbnail_match_index_t *idx, const char * const *queries,
+      size_t num_queries, bool other_regions, const char **out)
+{
+   enum gfx_thumbnail_match_status st = GFX_THUMBNAIL_MATCH_NONE;
+   gfx_thumbnail_match_query_t *q     = gfx_thumbnail_match_query_new();
+   if (out)
+      *out = NULL;
+   if (q && gfx_thumbnail_match_query_set(q, queries, num_queries,
+            other_regions))
+      st = gfx_thumbnail_match_query_find(idx, q,
+            GFX_THUMBNAIL_MATCH_ALL_TYPES, out);
+   gfx_thumbnail_match_query_free(q);
    return st;
 }

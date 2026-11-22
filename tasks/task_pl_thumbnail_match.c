@@ -151,6 +151,7 @@ typedef struct pl_thumb_match
    pl_thumb_match_core_t *cores;
    struct RDIR *dir;
    gfx_thumbnail_match_index_t *index;
+   gfx_thumbnail_match_query_t *query;
    gfx_thumbnail_results_t *results;
    gfx_thumbnail_results_t *notes;
 #ifdef HAVE_LIBRETRODB
@@ -934,15 +935,31 @@ static void pl_thumb_match_key(pl_thumb_match_t *m)
 #endif
 }
 
-static void pl_thumb_match_next_type(pl_thumb_match_t *m)
+static void pl_thumb_match_next_system(pl_thumb_match_t *m)
 {
    pl_thumb_match_drop_folder(m);
-   if (++m->cur_type >= GFX_THUMBNAIL_RESULT_TYPES)
+   m->cur_type = 0;
+   m->cur_system++;
+   m->status   = PL_THUMB_MATCH_LIST;
+}
+
+/* The system's next art folder; once all are listed, its one index of
+ * every folder's names is finalized. */
+static void pl_thumb_match_next_folder(pl_thumb_match_t *m)
+{
+   if (m->dir)
    {
-      m->cur_type = 0;
-      m->cur_system++;
+      retro_closedir(m->dir);
+      m->dir = NULL;
    }
-   m->status = PL_THUMB_MATCH_LIST;
+   if (++m->cur_type < GFX_THUMBNAIL_RESULT_TYPES)
+      return;
+   if (!(m->index_count = gfx_thumbnail_match_index_count(m->index)))
+   {
+      pl_thumb_match_next_system(m);
+      return;
+   }
+   m->status = PL_THUMB_MATCH_FINALIZE;
 }
 
 /* One folder entry per call; a missing folder has no candidates. */
@@ -954,16 +971,20 @@ static void pl_thumb_match_list(pl_thumb_match_t *m)
       m->status = PL_THUMB_MATCH_SORT;
       return;
    }
-   if (!m->index)
+   if (!m->index && !(m->index = gfx_thumbnail_match_index_new()))
+   {
+      pl_thumb_match_fail(m);
+      return;
+   }
+   if (!m->dir)
    {
       fill_pathname_join_special(m->path, m->dir_thumbnails,
             m->systems[m->cur_system], sizeof(m->path));
       fill_pathname_join_special(m->path, m->path,
             gfx_thumbnail_result_type_dir(m->cur_type), sizeof(m->path));
       if (     !(m->dir = retro_opendir(m->path))
-            || retro_dirent_error(m->dir)
-            || !(m->index = gfx_thumbnail_match_index_new()))
-         pl_thumb_match_next_type(m);
+            || retro_dirent_error(m->dir))
+         pl_thumb_match_next_folder(m);
       return;
    }
    if (retro_readdir(m->dir))
@@ -973,18 +994,12 @@ static void pl_thumb_match_list(pl_thumb_match_t *m)
             && !retro_dirent_is_dir(m->dir, NULL)
             && gfx_thumbnail_name_allowed(name,
                (m->flags & PL_THUMB_MATCH_FLAG_ALLOW_NON_PNG) != 0)
-            && !gfx_thumbnail_match_index_add(m->index, name))
+            && !gfx_thumbnail_match_index_add_types(m->index, name,
+               1u << m->cur_type))
          pl_thumb_match_fail(m);
       return;
    }
-   retro_closedir(m->dir);
-   m->dir = NULL;
-   if (!(m->index_count = gfx_thumbnail_match_index_count(m->index)))
-   {
-      pl_thumb_match_next_type(m);
-      return;
-   }
-   m->status = PL_THUMB_MATCH_FINALIZE;
+   pl_thumb_match_next_folder(m);
 }
 
 /* Out of memory, the engine finds nothing: keep the cache rather than
@@ -1021,17 +1036,19 @@ static const char *pl_thumb_match_cut(const char *s, char *buf, size_t len)
    return buf;
 }
 
-/* One entry of the current system per call. */
+/* One entry of the current system per call, for every type: its
+ * queries are parsed once. */
 static void pl_thumb_match_resolve(pl_thumb_match_t *m)
 {
    const char *queries[3];
    const char *label;
-   const char *found = NULL;
+   unsigned type;
+   unsigned types;
    pl_thumb_match_entry_t *e;
 
    if (m->pos >= m->entry_count)
    {
-      pl_thumb_match_next_type(m);
+      pl_thumb_match_next_system(m);
       return;
    }
    e = &m->entries[m->pos++];
@@ -1048,23 +1065,39 @@ static void pl_thumb_match_resolve(pl_thumb_match_t *m)
 #endif
    queries[1] = label;
    queries[2] = m->stem;
-   if (     gfx_thumbnail_match_find_first(m->index, queries, 3,
-               (m->flags & PL_THUMB_MATCH_FLAG_OTHER_REGIONS) != 0, &found)
-            != GFX_THUMBNAIL_MATCH_FOUND
-         || !found
-         || pl_thumb_match_is_exact(m, found, label)
-         || pl_thumb_match_is_exact(m, found, m->stem))
-      return;
-   if (     e->rec == PL_THUMB_MATCH_NONE
-         && (e->rec = gfx_thumbnail_results_add(m->results,
-               pl_thumb_match_cut(e->path, m->path, sizeof(m->path)), label,
-               e->crc32, m->systems[e->system])) == PL_THUMB_MATCH_NONE)
+   if (     (!m->query && !(m->query = gfx_thumbnail_match_query_new()))
+         || !gfx_thumbnail_match_query_set(m->query, queries, 3,
+               (m->flags & PL_THUMB_MATCH_FLAG_OTHER_REGIONS) != 0))
    {
       pl_thumb_match_fail(m);
       return;
    }
-   if (!gfx_thumbnail_results_set(m->results, e->rec, m->cur_type, found))
-      pl_thumb_match_fail(m);
+   types = gfx_thumbnail_match_index_types(m->index);
+   for (type = 0; type < GFX_THUMBNAIL_RESULT_TYPES; type++)
+   {
+      const char *found = NULL;
+      if (     !(types & (1u << type))
+            || gfx_thumbnail_match_query_find(m->index, m->query,
+                  1u << type, &found) != GFX_THUMBNAIL_MATCH_FOUND
+            || !found
+            || pl_thumb_match_is_exact(m, found, label)
+            || pl_thumb_match_is_exact(m, found, m->stem))
+         continue;
+      if (     e->rec == PL_THUMB_MATCH_NONE
+            && (e->rec = gfx_thumbnail_results_add(m->results,
+                  pl_thumb_match_cut(e->path, m->path, sizeof(m->path)),
+                  label, e->crc32, m->systems[e->system]))
+               == PL_THUMB_MATCH_NONE)
+      {
+         pl_thumb_match_fail(m);
+         return;
+      }
+      if (!gfx_thumbnail_results_set(m->results, e->rec, type, found))
+      {
+         pl_thumb_match_fail(m);
+         return;
+      }
+   }
 }
 
 static void pl_thumb_match_sort(pl_thumb_match_t *m)
@@ -1335,6 +1368,7 @@ static void pl_thumb_match_free(pl_thumb_match_t *m)
    if (m->writer)
       rjsonwriter_free(m->writer);
    pl_thumb_match_drop_playlist(m);
+   gfx_thumbnail_match_query_free(m->query);
    for (i = 0; i < m->system_count; i++)
       free(m->systems[i]);
    free(m->systems);

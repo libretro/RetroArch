@@ -871,8 +871,8 @@ static void art(const char *type_dir, const char *name, bool present)
       filestream_delete(path);
 }
 
-/* The names fixture_init puts in Named_Boxarts */
-#define FX_BOXARTS 7
+/* The names fixture_init puts in its art folders, one index's worth */
+#define FX_ART 8
 
 static void fixture_init(void)
 {
@@ -1147,7 +1147,8 @@ static void lane_deleted(void)
    filestream_atomic_temp_name(tmp, sizeof(tmp), cache_path);
    task_queue_init(false, NULL);
    push("");
-   clock_step = 1500;
+   /* One item a check: the temporary file is seen between two */
+   clock_step = ONE_ITEM;
    while (!seen && queue_busy())
    {
       task_queue_check();
@@ -3190,7 +3191,7 @@ static void lane_engine_oom(void)
    notified  = 0;
    oom_hits  = 0;
    leftovers = 0;
-   oom_size  = FX_BOXARTS * sizeof(struct gtm_rec);
+   oom_size  = FX_ART * sizeof(struct gtm_rec);
    task_queue_set_slow_handler_cb(count_leftovers, 1);
    push("");
    run(ONE_ITEM);

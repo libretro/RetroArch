@@ -23,6 +23,10 @@
 RETRO_BEGIN_DECLS
 
 typedef struct gfx_thumbnail_match_index gfx_thumbnail_match_index_t;
+typedef struct gfx_thumbnail_match_query gfx_thumbnail_match_query_t;
+
+/* The folders a name was listed in, a bit each, up to four. */
+#define GFX_THUMBNAIL_MATCH_ALL_TYPES 0xFu
 
 enum gfx_thumbnail_match_status
 {
@@ -66,6 +70,10 @@ gfx_thumbnail_match_index_t *gfx_thumbnail_match_index_new(void);
 /* name: file name as on disk, with extension ("Tetris (USA).png").
  * false on OOM, a NULL argument, or once finalize has begun. */
 bool gfx_thumbnail_match_index_add(gfx_thumbnail_match_index_t *idx, const char *name);
+/* The same, listed in the folders of @types: a name added again joins
+ * its first record, which is not parsed again. */
+bool gfx_thumbnail_match_index_add_types(gfx_thumbnail_match_index_t *idx,
+      const char *name, unsigned types);
 /* Sorts in bounded steps; true while steps remain. Call after the last
  * add; finds see nothing until it returns false, nor after an OOM. */
 bool gfx_thumbnail_match_index_finalize_step(gfx_thumbnail_match_index_t *idx);
@@ -73,6 +81,9 @@ bool gfx_thumbnail_match_index_finalize_step(gfx_thumbnail_match_index_t *idx);
 void gfx_thumbnail_match_index_finalize(gfx_thumbnail_match_index_t *idx);
 /* The names added; 0 once a finalize ran out of memory. */
 size_t gfx_thumbnail_match_index_count(const gfx_thumbnail_match_index_t *idx);
+/* The types any name was added with; 0 once a finalize ran out of
+ * memory. */
+unsigned gfx_thumbnail_match_index_types(const gfx_thumbnail_match_index_t *idx);
 void gfx_thumbnail_match_index_free(gfx_thumbnail_match_index_t *idx);
 
 /* query: label, db name or file stem, no extension. On FOUND, *out points into idx
@@ -88,6 +99,18 @@ enum gfx_thumbnail_match_status gfx_thumbnail_match_find(
 enum gfx_thumbnail_match_status gfx_thumbnail_match_find_first(
       const gfx_thumbnail_match_index_t *idx, const char * const *queries,
       size_t num_queries, bool other_regions, const char **out);
+
+/* find_first's queries, each parsed once for any number of finds: a
+ * string equal to an earlier one is not parsed or searched again. The
+ * strings are borrowed until the next _set. false on OOM. */
+gfx_thumbnail_match_query_t *gfx_thumbnail_match_query_new(void);
+bool gfx_thumbnail_match_query_set(gfx_thumbnail_match_query_t *q,
+      const char * const *queries, size_t num_queries, bool other_regions);
+/* find_first over the names added with any of @types. */
+enum gfx_thumbnail_match_status gfx_thumbnail_match_query_find(
+      const gfx_thumbnail_match_index_t *idx, gfx_thumbnail_match_query_t *q,
+      unsigned types, const char **out);
+void gfx_thumbnail_match_query_free(gfx_thumbnail_match_query_t *q);
 
 /* The T2 fold of in into out (len bytes, always terminated). Returns the length. */
 size_t gfx_thumbnail_match_fold(const char *in, char *out, size_t len);

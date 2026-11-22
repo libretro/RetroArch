@@ -18,6 +18,25 @@
 
 #include "../../../gfx/gfx_thumbnail_match.c"
 
+/* The region find_first keeps a strict query to, as the engine takes
+ * it from the first query with one. */
+static bool gtm_want_of(struct gtm_want *w, struct gtm_parse *p,
+      const char *query)
+{
+   size_t len = strlen(query);
+   w->src     = query;
+   w->len     = len;
+   w->region  = 0;
+   w->flags   = 0;
+   if (!len || len >= GTM_NAME_MAX)
+      return false;
+   gtm_scrub(p->stem, query, len);
+   gtm_parse_stem(p, p->stem, len);
+   w->region = p->region;
+   w->flags  = p->flags;
+   return (w->flags & (GTM_WEST | GTM_EAST)) != 0;
+}
+
 #define PATH_LEN 1024
 
 struct names
