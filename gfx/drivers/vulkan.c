@@ -846,8 +846,6 @@ typedef struct vk
    struct
    {
       vulkan_hdr_uniform_t ubo_values;
-      struct vk_buffer     ubo;
-      struct vk_buffer     ubo_menu;
       float                menu_nits;
       float                max_output_nits;
       float                min_output_nits;
@@ -8112,8 +8110,6 @@ static void vulkan_free(void *data)
       vulkan_retained_free(vk);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-      vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo);
-      vulkan_destroy_buffer(vk->context->device, &vk->hdr.ubo_menu);
       if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
       {
          vulkan_destroy_hdr_buffer(vk->context->device, &vk->offscreen_buffer);
@@ -8905,9 +8901,6 @@ static void *vulkan_init(const video_info_t *video)
    vulkan_set_viewport(vk, temp_dims, false, true);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   vk->hdr.ubo                            = vulkan_create_buffer(vk->context, sizeof(vulkan_hdr_uniform_t), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-   vk->hdr.ubo_menu                       = vulkan_create_buffer(vk->context, sizeof(vulkan_hdr_uniform_t), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-
    vk->hdr.ubo_values.mvp                 = vk->mvp_no_rot;
    vk->hdr.menu_nits           = settings->floats.video_hdr_menu_nits;
    vk->hdr.ubo_values.paper_white_nits    = settings->floats.video_hdr_paper_white_nits;
@@ -10781,18 +10774,14 @@ static void vulkan_hdr_log_mode(vk_t *vk, unsigned mode, const char *pass)
          (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? "scRGB" : "HDR10");
 }
 
-static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pass, const struct vk_image* source_image, struct vk_image* render_target, vk_t* vk, struct vk_buffer* ubo, unsigned hdr_mode, bool is_menu_composite)
+static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pass, const struct vk_image* source_image, struct vk_image* render_target, vk_t* vk, unsigned hdr_mode, bool is_menu_composite)
 {
    VkRenderPassBeginInfo rp_info;
    VkClearValue clear_color;
+   vulkan_hdr_uniform_t ubo_values        = vk->hdr.ubo_values;
 
-   const float prev_inverse_tonemap           = vk->hdr.ubo_values.inverse_tonemap;
-   const float prev_hdr10                     = vk->hdr.ubo_values.hdr10;
-   const unsigned prev_hdr_mode               = vk->hdr.ubo_values.hdr_mode;
-   const float prev_paper_white_nits          = vk->hdr.ubo_values.paper_white_nits;
-
-   vk->hdr.ubo_values.mvp                 = vk->mvp_no_rot;
-   vk->hdr.ubo_values.hdr_mode            = hdr_mode;
+   ubo_values.mvp                         = vk->mvp_no_rot;
+   ubo_values.hdr_mode                    = hdr_mode;
 
    if (hdr_mode == 0 || hdr_mode == 2 || hdr_mode == 3)
    {
@@ -10800,19 +10789,19 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
        * the shader's own scRGB branches (2 and 3).  In every one of these the
        * legacy inverse tonemap and PQ encode must stay off, or the samples
        * are encoded a second time. */
-      vk->hdr.ubo_values.inverse_tonemap  = 0.0f;
-      vk->hdr.ubo_values.hdr10            = 0.0f;
+      ubo_values.inverse_tonemap          = 0.0f;
+      ubo_values.hdr10                    = 0.0f;
    }
    else
    {
       /* SDR source, HDR10 output: inverse tonemap + PQ encode. */
-      vk->hdr.ubo_values.inverse_tonemap  = 1.0f;
-      vk->hdr.ubo_values.hdr10            = 1.0f;
+      ubo_values.inverse_tonemap          = 1.0f;
+      ubo_values.hdr10                    = 1.0f;
    }
 
    /* Menu/overlay composite: use menu_nits for SDR menu brightness */
    if (is_menu_composite)
-      vk->hdr.ubo_values.paper_white_nits = vk->hdr.menu_nits;
+      ubo_values.paper_white_nits         = vk->hdr.menu_nits;
 
    rp_info.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
    rp_info.pNext                    = NULL;
@@ -10848,10 +10837,13 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
       VkWriteDescriptorSet write;
       VkDescriptorImageInfo image_info;
       VkDescriptorSet set;
-      /* NULL when the uniform buffer could not be mapped at init */
-      vulkan_hdr_uniform_t* mapped_ubo = (vulkan_hdr_uniform_t*)ubo->mapped;
+      struct vk_buffer_range ubo_range;
 
-      if (!mapped_ubo)
+      /* A range of its own: other HDR passes in this command buffer,
+       * and frames still in flight, keep the values they were
+       * recorded with. */
+      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+               sizeof(ubo_values), &ubo_range))
          return;
 
       set = vulkan_descriptor_manager_alloc(
@@ -10861,14 +10853,15 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
       if (set == VK_NULL_HANDLE)
          return;
 
-      *mapped_ubo  = vk->hdr.ubo_values;
+      /* memcpy: the range may be less aligned than the struct. */
+      memcpy(ubo_range.data, &ubo_values, sizeof(ubo_values));
 
       VULKAN_SET_UNIFORM_BUFFER(vk->context->device,
             set,
             0,
-            ubo->buffer,
-            0,
-            ubo->size);
+            ubo_range.buffer,
+            ubo_range.offset,
+            sizeof(ubo_values));
 
       image_info.sampler              = vk->samplers.nearest;
       image_info.imageView            = source_image->view;
@@ -10943,11 +10936,6 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
    }
 
    vkCmdEndRenderPass(vk->cmd);
-
-   vk->hdr.ubo_values.inverse_tonemap     = prev_inverse_tonemap;
-   vk->hdr.ubo_values.hdr10               = prev_hdr10;
-   vk->hdr.ubo_values.hdr_mode            = prev_hdr_mode;
-   vk->hdr.ubo_values.paper_white_nits    = prev_paper_white_nits;
 }
 
 /* A change of size, or of HDR, that is waiting: the swapchain is made
@@ -15128,7 +15116,7 @@ static bool vulkan_frame(void *data, const void *frame,
             unsigned game_hdr_mode = vulkan_hdr_source_mode(vk, NULL,
                   filter_chain);
             vulkan_hdr_log_mode(vk, game_hdr_mode, "game");
-            vulkan_run_hdr_pipeline(vk->pipelines.hdr_opaque, vk->render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo, game_hdr_mode, false);
+            vulkan_run_hdr_pipeline(vk->pipelines.hdr_opaque, vk->render_pass, &vk->offscreen_buffer, backbuffer, vk, game_hdr_mode, false);
          }
 
          VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, vk->offscreen_buffer.image,
@@ -15329,7 +15317,7 @@ static bool vulkan_frame(void *data, const void *frame,
             unsigned composite_hdr_mode =
                   (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? 2 : 1;
             vulkan_hdr_log_mode(vk, composite_hdr_mode, "composite");
-            vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->keep_render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo_menu, composite_hdr_mode, true);
+            vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->keep_render_pass, &vk->offscreen_buffer, backbuffer, vk, composite_hdr_mode, true);
          }
       }
 #endif /* VULKAN_HDR_SWAPCHAIN */
@@ -15442,7 +15430,7 @@ static bool vulkan_frame(void *data, const void *frame,
                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
             }
-            vulkan_run_hdr_pipeline(vk->pipelines.hdr_to_sdr, vk->readback_render_pass, readback_source, &vk->readback_image, vk, &vk->hdr.ubo, readback_hdr_mode, false);
+            vulkan_run_hdr_pipeline(vk->pipelines.hdr_to_sdr, vk->readback_render_pass, readback_source, &vk->readback_image, vk, readback_hdr_mode, false);
 
             /* The readback render pass declares its finalLayout as
              * TRANSFER_SRC_OPTIMAL, but with no subpass dependency it
