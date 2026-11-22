@@ -1672,59 +1672,59 @@ static size_t mmap_highest_bit(size_t n)
 }
 
 static bool mmap_preprocess_descriptors(
-      rarch_memory_descriptor_t *first, unsigned count)
+      struct retro_memory_descriptor *first, unsigned count)
 {
-   size_t                      top_addr = 1;
-   rarch_memory_descriptor_t *desc      = NULL;
-   const rarch_memory_descriptor_t *end = first + count;
-   size_t             highest_reachable = 0;
+   size_t                           top_addr = 1;
+   struct retro_memory_descriptor *desc      = NULL;
+   const struct retro_memory_descriptor *end = first + count;
+   size_t                  highest_reachable = 0;
 
    for (desc = first; desc < end; desc++)
    {
-      if (desc->core.select != 0)
-         top_addr |= desc->core.select;
+      if (desc->select != 0)
+         top_addr |= desc->select;
       else
-         top_addr |= desc->core.start + desc->core.len - 1;
+         top_addr |= desc->start + desc->len - 1;
    }
 
    top_addr = mmap_add_bits_down(top_addr);
 
    for (desc = first; desc < end; desc++)
    {
-      if (desc->core.select == 0)
+      if (desc->select == 0)
       {
-         if (desc->core.len == 0)
+         if (desc->len == 0)
             return false;
 
-         if ((desc->core.len & (desc->core.len - 1)) != 0)
+         if ((desc->len & (desc->len - 1)) != 0)
             return false;
 
-         desc->core.select = top_addr
-            & ~mmap_inflate(mmap_add_bits_down(desc->core.len - 1),
-               desc->core.disconnect);
+         desc->select = top_addr
+            & ~mmap_inflate(mmap_add_bits_down(desc->len - 1),
+               desc->disconnect);
       }
 
-      if (desc->core.len == 0)
-         desc->core.len = mmap_add_bits_down(
-               mmap_reduce(top_addr & ~desc->core.select,
-                  desc->core.disconnect)) + 1;
+      if (desc->len == 0)
+         desc->len = mmap_add_bits_down(
+               mmap_reduce(top_addr & ~desc->select,
+                  desc->disconnect)) + 1;
 
-      if (desc->core.start & ~desc->core.select)
+      if (desc->start & ~desc->select)
          return false;
 
-      highest_reachable = mmap_inflate(desc->core.len - 1,
-            desc->core.disconnect);
+      highest_reachable = mmap_inflate(desc->len - 1,
+            desc->disconnect);
 
       /* Disconnect unselected bits that are too high to ever
        * index into the core's buffer. Higher addresses will
        * repeat / mirror the buffer as long as they match select */
       while (mmap_highest_bit(top_addr
-               & ~desc->core.select
-               & ~desc->core.disconnect) >
+               & ~desc->select
+               & ~desc->disconnect) >
                 mmap_highest_bit(highest_reachable))
-         desc->core.disconnect |= mmap_highest_bit(top_addr
-               & ~desc->core.select
-               & ~desc->core.disconnect);
+         desc->disconnect |= mmap_highest_bit(top_addr
+               & ~desc->select
+               & ~desc->disconnect);
    }
 
    return true;
@@ -3897,10 +3897,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          if (sys_info)
          {
             size_t i;
-            const struct retro_memory_map *mmaps   =
+            const struct retro_memory_map *mmaps        =
                   (const struct retro_memory_map*)data;
-            rarch_memory_descriptor_t *descriptors = NULL;
-            unsigned int log_level                 = settings->uints.libretro_log_level;
+            struct retro_memory_descriptor *descriptors = NULL;
+            unsigned int log_level                      = settings->uints.libretro_log_level;
 
             RARCH_LOG("[Environ] SET_MEMORY_MAPS.\n");
 
@@ -3908,7 +3908,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             sys_info->mmaps.descriptors     = 0;
             sys_info->mmaps.num_descriptors = 0;
 
-            if (!(descriptors = (rarch_memory_descriptor_t*)calloc(mmaps->num_descriptors,
+            if (!(descriptors = (struct retro_memory_descriptor*)calloc(mmaps->num_descriptors,
                   sizeof(*descriptors))))
                return false;
 
@@ -3916,7 +3916,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             sys_info->mmaps.num_descriptors = mmaps->num_descriptors;
 
             for (i = 0; i < mmaps->num_descriptors; i++)
-               sys_info->mmaps.descriptors[i].core = mmaps->descriptors[i];
+               sys_info->mmaps.descriptors[i] = mmaps->descriptors[i];
 
             mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
 
@@ -3942,37 +3942,37 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             for (i = 0; i < sys_info->mmaps.num_descriptors; i++)
             {
                char flags[7];
-               const rarch_memory_descriptor_t *desc =
+               const struct retro_memory_descriptor *desc =
                   &sys_info->mmaps.descriptors[i];
 
                flags[0]    = 'M';
-               if (     (desc->core.flags & RETRO_MEMDESC_MINSIZE_8) == RETRO_MEMDESC_MINSIZE_8)
+               if (     (desc->flags & RETRO_MEMDESC_MINSIZE_8) == RETRO_MEMDESC_MINSIZE_8)
                   flags[1] = '8';
-               else if ((desc->core.flags & RETRO_MEMDESC_MINSIZE_4) == RETRO_MEMDESC_MINSIZE_4)
+               else if ((desc->flags & RETRO_MEMDESC_MINSIZE_4) == RETRO_MEMDESC_MINSIZE_4)
                   flags[1] = '4';
-               else if ((desc->core.flags & RETRO_MEMDESC_MINSIZE_2) == RETRO_MEMDESC_MINSIZE_2)
+               else if ((desc->flags & RETRO_MEMDESC_MINSIZE_2) == RETRO_MEMDESC_MINSIZE_2)
                   flags[1] = '2';
                else
                   flags[1] = '1';
 
                flags[2] = 'A';
-               if (     (desc->core.flags & RETRO_MEMDESC_ALIGN_8) == RETRO_MEMDESC_ALIGN_8)
+               if (     (desc->flags & RETRO_MEMDESC_ALIGN_8) == RETRO_MEMDESC_ALIGN_8)
                   flags[3] = '8';
-               else if ((desc->core.flags & RETRO_MEMDESC_ALIGN_4) == RETRO_MEMDESC_ALIGN_4)
+               else if ((desc->flags & RETRO_MEMDESC_ALIGN_4) == RETRO_MEMDESC_ALIGN_4)
                   flags[3] = '4';
-               else if ((desc->core.flags & RETRO_MEMDESC_ALIGN_2) == RETRO_MEMDESC_ALIGN_2)
+               else if ((desc->flags & RETRO_MEMDESC_ALIGN_2) == RETRO_MEMDESC_ALIGN_2)
                   flags[3] = '2';
                else
                   flags[3] = '1';
 
-               flags[4] = (desc->core.flags & RETRO_MEMDESC_BIGENDIAN) ? 'B' : 'b';
-               flags[5] = (desc->core.flags & RETRO_MEMDESC_CONST)     ? 'C' : 'c';
+               flags[4] = (desc->flags & RETRO_MEMDESC_BIGENDIAN) ? 'B' : 'b';
+               flags[5] = (desc->flags & RETRO_MEMDESC_CONST)     ? 'C' : 'c';
                flags[6] = 0;
 
                RARCH_DBG("%03u %s %p %08X %08X %08X %08X %08X %s\n",
-                     i + 1, flags, desc->core.ptr, desc->core.offset, desc->core.start,
-                     desc->core.select, desc->core.disconnect, desc->core.len,
-                     desc->core.addrspace ? desc->core.addrspace : "");
+                     i + 1, flags, desc->ptr, desc->offset, desc->start,
+                     desc->select, desc->disconnect, desc->len,
+                     desc->addrspace ? desc->addrspace : "");
             }
          }
          else

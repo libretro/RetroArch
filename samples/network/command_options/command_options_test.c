@@ -328,22 +328,22 @@ int main(void)
 
    {
       static uint8_t wram[16];
-      static rarch_memory_descriptor_t descs[2];
+      static struct retro_memory_descriptor descs[2];
 
       cmd.error = false;
       CHECK(!command_get_memory_map(&cmd, ""));
       CHECK(cmd.error && strstr(reply, "no memory map"));
 
-      descs[0].core.flags     = RETRO_MEMDESC_SYSTEM_RAM;
-      descs[0].core.ptr       = wram;
-      descs[0].core.start     = 0x7e0000;
-      descs[0].core.len       = sizeof(wram);
-      descs[0].core.addrspace = "WRAM";
-      descs[1].core.flags     = RETRO_MEMDESC_CONST | RETRO_MEMDESC_BIGENDIAN;
-      descs[1].core.start     = 0x8000;
-      descs[1].core.select    = 0xff8000;
-      descs[1].core.disconnect= 0x7f0000;
-      descs[1].core.len       = 0x400000;
+      descs[0].flags     = RETRO_MEMDESC_SYSTEM_RAM;
+      descs[0].ptr       = wram;
+      descs[0].start     = 0x7e0000;
+      descs[0].len       = sizeof(wram);
+      descs[0].addrspace = "WRAM";
+      descs[1].flags     = RETRO_MEMDESC_CONST | RETRO_MEMDESC_BIGENDIAN;
+      descs[1].start     = 0x8000;
+      descs[1].select    = 0xff8000;
+      descs[1].disconnect= 0x7f0000;
+      descs[1].len       = 0x400000;
       runloop_st->system.mmaps.descriptors     = descs;
       runloop_st->system.mmaps.num_descriptors = 2;
 

@@ -956,10 +956,10 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
    {
       for (i = 0; i < sys_info->mmaps.num_descriptors; i++)
       {
-         if ((sys_info->mmaps.descriptors[i].core.flags
+         if ((sys_info->mmaps.descriptors[i].flags
                   & RETRO_MEMDESC_SYSTEM_RAM) != 0
-               && sys_info->mmaps.descriptors[i].core.ptr
-               && sys_info->mmaps.descriptors[i].core.len > 0)
+               && sys_info->mmaps.descriptors[i].ptr
+               && sys_info->mmaps.descriptors[i].len > 0)
          {
             /* Grow both lists atomically and bail on OOM.
              * Pre-patch:
@@ -1006,12 +1006,12 @@ int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool w
             cheat_st->memory_size_list = new_sizes;
 
             cheat_st->num_memory_buffers                           = new_count;
-            cheat_st->memory_buf_list[new_count  - 1]              = (uint8_t*)sys_info->mmaps.descriptors[i].core.ptr;
-            cheat_st->memory_size_list[new_count - 1]              = (unsigned)sys_info->mmaps.descriptors[i].core.len;
-            cheat_st->total_memory_size                           += sys_info->mmaps.descriptors[i].core.len;
+            cheat_st->memory_buf_list[new_count  - 1]              = (uint8_t*)sys_info->mmaps.descriptors[i].ptr;
+            cheat_st->memory_size_list[new_count - 1]              = (unsigned)sys_info->mmaps.descriptors[i].len;
+            cheat_st->total_memory_size                           += sys_info->mmaps.descriptors[i].len;
 
             if (!cheat_st->curr_memory_buf)
-               cheat_st->curr_memory_buf = (uint8_t*)sys_info->mmaps.descriptors[i].core.ptr;
+               cheat_st->curr_memory_buf = (uint8_t*)sys_info->mmaps.descriptors[i].ptr;
          }
       }
    }
