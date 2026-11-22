@@ -329,6 +329,10 @@ jobs:
           make -B -C samples/gfx/music_visualizer CFLAGS="-O1 -g -fsanitize=thread" visualizer_thread_test visualizer_lifetime_test
           TSAN_OPTIONS=halt_on_error=1 timeout 120 samples/gfx/music_visualizer/visualizer_thread_test
           TSAN_OPTIONS=halt_on_error=1 timeout 120 samples/gfx/music_visualizer/visualizer_lifetime_test
+      - name: RGUI point thumbnails sample directly into native pixels
+        run: |
+          python3 samples/menu/rgui_media/build.py --test-source samples/menu/rgui_media/thumbnail_point_test.c --output samples/menu/rgui_media/thumbnail_point_test
+          samples/menu/rgui_media/thumbnail_point_test
       - name: Opened music uses menu audio across all four menus
         run: |
           set -eu

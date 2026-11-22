@@ -2855,7 +2855,8 @@ static bool rgui_downscale_thumbnail(
       unsigned max_dims,
       unsigned thumbnail_downscaler,
       struct texture_image *image_src,
-      struct texture_image *image_dst)
+      struct texture_image *image_dst,
+      uint16_t *native_pixels, bool dither)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    bool thumbnail_core_aspect     = *rgui->savestate_thumbnail_file_path;
@@ -2907,10 +2908,6 @@ static bool rgui_downscale_thumbnail(
          image_dst->width        = max_width;
    }
 
-   /* Allocate pixel buffer */
-   if (!(image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t))))
-      return false;
-
    /* Determine scaling method */
    if (thumbnail_downscaler == RGUI_THUMB_SCALE_POINT)
    {
@@ -2926,7 +2923,11 @@ static bool rgui_downscale_thumbnail(
          for (x_dst = 0; x_dst < image_dst->width; x_dst++)
          {
             unsigned x_src = (x_dst * x_ratio) >> 16;
-            image_dst->pixels[(y_dst * image_dst->width) + x_dst] = image_src->pixels[(y_src * image_src->width) + x_src];
+            uint32_t pixel = image_src->pixels[(y_src * image_src->width) + x_src];
+            /* Sample directly into the thumbnail's native buffer. */
+            native_pixels[(y_dst * image_dst->width) + x_dst] = dither
+               ? argb32_to_pixel_platform_format_dither(pixel, x_dst, y_dst)
+               : argb32_to_pixel_platform_format(pixel);
          }
       }
    }
@@ -2942,6 +2943,9 @@ static bool rgui_downscale_thumbnail(
       unsigned scale_height     = image_src->height;
       uint32_t *box_buf         = NULL;
       unsigned f;
+
+      if (!(image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t))))
+         return false;
 
       /* Decimate first while doing so does not undershoot the
        * target, so the filter below runs at its minimum kernel
@@ -3039,7 +3043,7 @@ static void rgui_process_thumbnail(
             thumbnail->max_dims,
             menu_rgui_thumbnail_downscaler,
             image_src,
-            &image_resampled))
+            &image_resampled, thumbnail->data, dither))
       {
          if (image_resampled.pixels)
             free(image_resampled.pixels);
@@ -3056,6 +3060,9 @@ static void rgui_process_thumbnail(
    thumbnail->dims        = VIDEO_SCALE_PACK(image->width, image->height);
    thumb_width            = VIDEO_SCALE_W(thumbnail->dims);
    thumb_height           = VIDEO_SCALE_H(thumbnail->dims);
+
+   if (!image->pixels)
+      goto thumbnail_ready;
 
    /* Copy image to thumbnail buffer, performing pixel format conversion.
     * Iterate rows in the outer loop so the row-major source and
@@ -3076,6 +3083,7 @@ static void rgui_process_thumbnail(
       }
    }
 
+thumbnail_ready:
    thumbnail->is_valid    = true;
 
    /* Tell menu that a display update is required */
