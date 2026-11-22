@@ -47,7 +47,7 @@
 #include <QVBoxLayout>
 #include <QCache>
 #include <QSortFilterProxyModel>
-#include <QSet>
+#include <QBitArray>
 #include <QDir>
 #include <QThread>
 #include <QMutex>
@@ -160,6 +160,8 @@ public:
    /* True while addPlaylistItems() is still waiting on the companion
     * core's budgeted parse of one or more playlists. */
    bool isLoadingPlaylists() const;
+   /* The entries, shared: what a search worker reads in place. */
+   const QVector<PlaylistEntry> &entries() const { return m_contents; }
    /* Companion core notification: the requested playlist finished
     * parsing. Appends its entries and starts the next pending one. */
    void onCorePlaylistChanged();
@@ -419,7 +421,7 @@ private:
 };
 
 /* Playlist filtering is performed off the UI thread. This proxy only
- * applies the completed row-index set, keeping the view's sorting and
+ * applies the completed row bitmap, keeping the view's sorting and
  * selection behaviour unchanged. */
 class PlaylistSearchProxyModel : public QSortFilterProxyModel
 {
@@ -427,7 +429,7 @@ class PlaylistSearchProxyModel : public QSortFilterProxyModel
 public:
    PlaylistSearchProxyModel(QObject *parent = 0)
       : QSortFilterProxyModel(parent), m_searchActive(false), m_generation(0) {}
-   Q_INVOKABLE void setSearchRows(const QVector<int> &rows,
+   Q_INVOKABLE void setSearchRows(const QBitArray &rows,
          quint64 generation, bool active);
 signals:
    void searchResultsChanged();
@@ -435,7 +437,7 @@ protected:
    bool filterAcceptsRow(int sourceRow,
          const QModelIndex &sourceParent) const;
 private:
-   QSet<int> m_searchRows;
+   QBitArray m_searchRows;   /* source row -> matched */
    bool m_searchActive;
    quint64 m_generation;
 };

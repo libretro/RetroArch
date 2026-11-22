@@ -1814,17 +1814,16 @@ void BrowseTableModel::setFilter(const QRegularExpression &re)
    reload();
 }
 
-void PlaylistSearchProxyModel::setSearchRows(const QVector<int> &rows,
+void PlaylistSearchProxyModel::setSearchRows(const QBitArray &rows,
       quint64 generation, bool active)
 {
    if (generation < m_generation)
       return;
 
-   m_generation = generation;
+   /* the worker's bitmap is kept as it is: shared, not rebuilt */
+   m_generation   = generation;
    m_searchActive = active;
-   m_searchRows.clear();
-   for (int i = 0; i < rows.size(); i++)
-      m_searchRows.insert(rows.at(i));
+   m_searchRows   = rows;
 
    invalidateFilter();
    emit searchResultsChanged();
@@ -1834,16 +1833,18 @@ bool PlaylistSearchProxyModel::filterAcceptsRow(int sourceRow,
       const QModelIndex &sourceParent) const
 {
    (void)sourceParent;
-   return !m_searchActive || m_searchRows.contains(sourceRow);
+   return     !m_searchActive
+          || (sourceRow < m_searchRows.size() && m_searchRows.testBit(sourceRow));
 }
 
 class PlaylistSearchRunnable : public QRunnable
 {
 public:
    PlaylistSearchRunnable(QPointer<PlaylistSearchProxyModel> proxy,
-         const QStringList &labels, const QRegularExpression &expression,
+         const QVector<PlaylistEntry> &entries,
+         const QRegularExpression &expression,
          quint64 generation, const QSharedPointer<QAtomicInt> &cancel)
-      : m_proxy(proxy), m_labels(labels), m_expression(expression),
+      : m_proxy(proxy), m_entries(entries), m_expression(expression),
         m_generation(generation), m_cancel(cancel)
    {
       setAutoDelete(true);
@@ -1851,15 +1852,15 @@ public:
 
    void run()
    {
-      QVector<int> matches;
+      QBitArray matches(m_entries.size());
       int i;
 
-      for (i = 0; i < m_labels.size(); i++)
+      for (i = 0; i < m_entries.size(); i++)
       {
          if (m_cancel && m_cancel->loadAcquire())
             return;
-         if (m_expression.match(m_labels.at(i)).hasMatch())
-            matches.append(i);
+         if (m_expression.match(m_entries.at(i).labelNoExt).hasMatch())
+            matches.setBit(i);
       }
 
       if (m_cancel && m_cancel->loadAcquire())
@@ -1868,14 +1869,16 @@ public:
       if (m_proxy)
          QMetaObject::invokeMethod(m_proxy.data(), "setSearchRows",
                Qt::QueuedConnection,
-               Q_ARG(QVector<int>, matches),
+               Q_ARG(QBitArray, matches),
                Q_ARG(quint64, m_generation),
                Q_ARG(bool, true));
    }
 
 private:
    QPointer<PlaylistSearchProxyModel> m_proxy;
-   QStringList m_labels;
+   /* the model's entries, shared: a change there detaches the model's
+    * copy, this one stays as it was searched */
+   QVector<PlaylistEntry> m_entries;
    QRegularExpression m_expression;
    quint64 m_generation;
    QSharedPointer<QAtomicInt> m_cancel;
@@ -3953,9 +3956,7 @@ void MainWindow::applySearch()
    {
       case BROWSER_TYPE_PLAYLISTS:
          {
-            QStringList labels;
             QRegularExpression expression;
-            int row;
             quint64 generation = ++m_playlistSearchGeneration;
 
             if (m_playlistSearchCancel)
@@ -3965,18 +3966,14 @@ void MainWindow::applySearch()
             expression = m_searchRegularExpression;
             if (expression.pattern().isEmpty())
             {
-               m_proxyModel->setSearchRows(QVector<int>(), generation, false);
+               m_proxyModel->setSearchRows(QBitArray(), generation, false);
                break;
             }
 
-            labels.reserve(m_playlistModel->rowCount());
-            for (row = 0; row < m_playlistModel->rowCount(); row++)
-               labels.append(m_playlistModel->index(row, 0)
-                     .data(Qt::DisplayRole).toString());
-
             m_playlistSearchCancel = QSharedPointer<QAtomicInt>(new QAtomicInt(0));
             QThreadPool::globalInstance()->start(new PlaylistSearchRunnable(
-                     m_proxyModel, labels, expression, generation,
+                     m_proxyModel, m_playlistModel->entries(),
+                     expression, generation,
                      m_playlistSearchCancel));
          }
          break;
@@ -3988,7 +3985,7 @@ void MainWindow::applySearch()
          if (m_playlistSearchCancel)
             m_playlistSearchCancel->storeRelease(1);
          m_playlistSearchCancel.clear();
-         m_proxyModel->setSearchRows(QVector<int>(),
+         m_proxyModel->setSearchRows(QBitArray(),
                m_playlistSearchGeneration, false);
          m_browseModel->setFilter(m_searchRegularExpression);
          break;
