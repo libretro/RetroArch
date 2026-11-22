@@ -5609,29 +5609,32 @@ bool menu_input_dialog_get_display_kb(void)
 
       swkbdClose(&kbd);
 
-      /* RetroArch uses key-by-key input
-         so we need to simulate it */
+      /* The text goes to the line a run at a time, each run up to a
+       * line end typed whole where it lies, and each line end as the
+       * Return key. The byte after a run is a NUL while it is typed:
+       * the last codepoint is read up to one. */
+      buf[LIBNX_SWKBD_LIMIT - 1] = '\0';
       typing = true;
       for (i = 0; i < LIBNX_SWKBD_LIMIT; i++)
       {
+         unsigned n = i;
+         char end;
+
          /* In case a previous "Enter" press closed the keyboard */
          if (!(menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY))
             break;
 
-         if (buf[i] == '\n' || buf[i] == '\0')
-            input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-         else
+         while (buf[n] != '\n' && buf[n] != '\0')
+            n++;
+         if (n > i)
          {
-            const char *word = &buf[i];
-            /* input_keyboard_line_append expects a null-terminated
-               string, so just make one (yes, the touch keyboard is
-               a list of "NULL-terminated characters") */
-            char oldchar     = buf[i+1];
-            buf[i+1]         = '\0';
-
-            input_driver_keyboard_line_type(word, strlen(word));
-            buf[i+1]     = oldchar;
+            end    = buf[n];
+            buf[n] = '\0';
+            input_driver_keyboard_line_type(&buf[i], n - i);
+            buf[n] = end;
+            i      = n;
          }
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
       }
 
       /* fail-safe */
