@@ -425,6 +425,7 @@ jobs:
             screenshot_io_bench
             word_wrap_overflow_test
             word_wrap_offset_test
+            memdesc_test
             task_queue_title_error_test
             task_queue_snapshot_test
             task_queue_init_failure_test
@@ -2169,6 +2170,20 @@ jobs:
           make clean
           make CC=x86_64-w64-mingw32-gcc EXE=.exe rtime_calendar_test.exe
           timeout 120 wine ./rtime_calendar_test.exe
+          make clean
+
+      - name: Build and run the memory map test under Wine
+        shell: bash
+        working-directory: libretro-common/samples/memory/memdesc_test
+        env:
+          WINEDEBUG: -all
+        run: |
+          set -eu
+          set -o pipefail
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make clean
+          make CC=x86_64-w64-mingw32-gcc EXE=.exe all
+          timeout 120 wine ./memdesc_test.exe
           make clean
 
       - name: Build and run native DVD packets under Wine
