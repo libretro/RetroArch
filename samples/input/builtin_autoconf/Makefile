@@ -26,6 +26,19 @@ DEFS_wii      := -DGEKKO -DHW_RVL
 PLATFORMS += qnx
 DEFS_qnx  := -D__QNX__ -isystem $(ROOT)/tools/qnx_standin
 
+# the rest are held to the identity lines task_autodetect.c reads
+PLATFORMS       += hid switch emscripten psp vita 3ds wiiu mfi openxr dingux
+DEFS_hid        := -DHAVE_HID
+DEFS_switch     := -D__SWITCH__
+DEFS_emscripten := -D__EMSCRIPTEN__
+DEFS_psp        := -DPSP
+DEFS_vita       := -DVITA
+DEFS_3ds        := -D_3DS
+DEFS_wiiu       := -DWIIU -I$(ROOT)/os/wiiu/include
+DEFS_mfi        := -DHAVE_MFI=1
+DEFS_openxr     := -DHAVE_OPENXR
+DEFS_dingux     := -DDINGUX -DHAVE_SDL_DINGUX
+
 TARGETS := builtin_autoconf_test$(EXE) \
    $(PLATFORMS:%=builtin_autoconf_%_test$(EXE))
 

@@ -6,7 +6,8 @@
  * driver reads both of a pad's sticks the same way, so each right-stick
  * bind has the sign of its left-stick twin. Where the driver hands on
  * axes that are negative up and left, as SDL's gamepad axes are, down
- * is the + half too. */
+ * is the + half too. Every build's profiles lead with the identity
+ * tasks/task_autodetect.c ranks them by before it parses one. */
 #include <stdio.h>
 #include <string.h>
 
@@ -85,6 +86,63 @@ static int up_negative(const char *conf)
          ARRAY_LEN(up_negative_drivers));
 }
 
+/* tasks/task_autodetect.c ranks a built-in from its leading lines
+ * alone: the device name, or the product and vendor ids, and nothing
+ * else that names a pad */
+static int check_identity(const char *conf)
+{
+   static const char dev_key[] = "input_device = \"";
+   static const char pid_key[] = "input_product_id = ";
+   int name_len = (int)strcspn(conf, "\n");
+   const char *nl;
+
+   if (!strncmp(conf, dev_key, sizeof(dev_key) - 1))
+   {
+      const char *q = strchr(conf + sizeof(dev_key) - 1, '"');
+      if (!q || q == conf + sizeof(dev_key) - 1 || q[1] != '\n')
+      {
+         printf("FAIL %.*s: device name is not one quoted line\n",
+               name_len, conf);
+         return 1;
+      }
+      if (     strstr(conf, "input_vendor_id")
+            || strstr(conf, "input_product_id"))
+      {
+         printf("FAIL %.*s: a device name with ids\n", name_len, conf);
+         return 1;
+      }
+   }
+   else if (!strncmp(conf, pid_key, sizeof(pid_key) - 1))
+   {
+      nl = strchr(conf, '\n');
+      if (!nl || strncmp(nl + 1, "input_vendor_id = ", 18))
+      {
+         printf("FAIL %.*s: input_vendor_id does not follow\n",
+               name_len, conf);
+         return 1;
+      }
+   }
+   else
+   {
+      printf("FAIL %.*s: neither input_device nor input_product_id leads\n",
+            name_len, conf);
+      return 1;
+   }
+
+   for (nl = conf; (nl = strstr(nl, "_alt")); nl += 4)
+      if (nl[4] >= '0' && nl[4] <= '9')
+         break;
+   if (     nl
+         || strstr(conf + name_len, "\ninput_device = ")
+         || strstr(conf, "input_phys"))
+   {
+      printf("FAIL %.*s: a second device name, an alternative or a physical location\n",
+            name_len, conf);
+      return 1;
+   }
+   return 0;
+}
+
 static int check_profile(const char *conf)
 {
    int bad = 0;
@@ -126,6 +184,7 @@ int main(void)
       for (j = 0; j < ARRAY_LEN(builds); j++)
          if (has_driver(conf, builds[j].driver))
             found[j]++;
+      failed |= check_identity(conf);
       failed |= check_profile(conf);
    }
 

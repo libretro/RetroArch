@@ -1129,6 +1129,49 @@ static bool input_autoconfigure_scan_config_files_external(
    return true;
 }
 
+/* A built-in profile's identity, read in place from its const text.
+ * DECL_AUTOCONF_DEVICE and DECL_AUTOCONF_PID put it on the leading
+ * lines and built-ins carry no alternatives or physical location
+ * (samples/input/builtin_autoconf holds both), so this ranks with
+ * input_autoconfigure_tuple_affinity like the parsed profile would.
+ * Any other leading line ranks as a candidate, left to the parse. */
+static unsigned input_autoconfigure_builtin_affinity(
+      autoconfig_handle_t *autoconfig_handle, const char *conf)
+{
+   static const char dev_key[] = "input_device = \"";
+   static const char pid_key[] = "input_product_id = ";
+   static const char vid_key[] = "\ninput_vendor_id = ";
+   const char *name = autoconfig_handle->device_info.name;
+   char *end        = NULL;
+   long pid, vid;
+
+   if (!strncmp(conf, dev_key, sizeof(dev_key) - 1))
+   {
+      size_t _len;
+      const char *s = conf + sizeof(dev_key) - 1;
+      const char *q = strchr(s, '"');
+      if (!q)
+         return 1;
+      _len = (size_t)(q - s);
+      /* An equal name is passed as the device's own string */
+      if (_len && !strncmp(name, s, _len) && name[_len] == '\0')
+         return input_autoconfigure_tuple_affinity(
+               autoconfig_handle, 0, 0, name, NULL, 0);
+      return 0;
+   }
+
+   if (strncmp(conf, pid_key, sizeof(pid_key) - 1))
+      return 1;
+   pid = strtol(conf + sizeof(pid_key) - 1, &end, 0);
+   if (strncmp(end, vid_key, sizeof(vid_key) - 1))
+      return 1;
+   vid = strtol(end + sizeof(vid_key) - 1, &end, 0);
+   if (*end != '\n')
+      return 1;
+   return input_autoconfigure_tuple_affinity(autoconfig_handle,
+         (uint16_t)vid, (uint16_t)pid, NULL, NULL, 0);
+}
+
 static bool input_autoconfigure_scan_config_files_internal(
       autoconfig_handle_t *autoconfig_handle)
 {
@@ -1146,9 +1189,14 @@ static bool input_autoconfigure_scan_config_files_internal(
       if (!input_builtin_autoconfs[i] || !*input_builtin_autoconfs[i])
          continue;
 
-      /* Load autoconfig string.  The strdup stays (the builtin is
-       * const and the parse mutates), but the copy is handed over:
-       * the conf adopts it and entries borrow from it. */
+      /* Only a candidate is copied and parsed */
+      if (     autoconfig_handle
+            && !input_autoconfigure_builtin_affinity(
+               autoconfig_handle, input_builtin_autoconfs[i]))
+         continue;
+
+      /* The builtin is const and the parse mutates, so the copy is
+       * handed over: the conf adopts it and entries borrow from it. */
       autoconfig_str = strdup(input_builtin_autoconfs[i]);
       config         = config_file_new_take_string(
             autoconfig_str, 0, NULL);
