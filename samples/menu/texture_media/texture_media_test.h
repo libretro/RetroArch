@@ -120,6 +120,94 @@ static void render_subtitles(struct menu_state *menu_st)
    }
 }
 
+#if defined(TEST_MATERIALUI)
+static void test_shader_previews(struct menu_state *menu_st, test_viewer_t *viewer)
+{
+   settings_t *settings = config_get_ptr();
+   file_list_t *list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+   file_list_t *stack = MENU_LIST_GET(menu_st->entries.list, 0);
+   gfx_thumbnail_t *primary = NULL, *secondary = NULL;
+   static char directory[PATH_MAX_LENGTH];
+   int tick;
+
+   strlcpy(settings->paths.directory_video_shader, getenv("MEDIA_TEST_SHADER_ROOT"),
+         sizeof(settings->paths.directory_video_shader));
+   strlcpy(settings->paths.directory_thumbnails, getenv("MEDIA_TEST_THUMB_ROOT"),
+         sizeof(settings->paths.directory_thumbnails));
+   fill_pathname_join_special(directory, settings->paths.directory_video_shader,
+         "nested", sizeof(directory));
+   settings->bools.menu_shader_previews_enable = true;
+   settings->uints.gfx_thumbnails = 0;
+   settings->uints.menu_left_thumbnails = 0;
+   file_list_clear(list);
+   file_list_clear(stack);
+   CHECK("shader browser stack installed", menu_entries_append(stack, directory,
+         MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_STR, MENU_ENUM_LABEL_VIDEO_SHADER_PRESET,
+         FILE_TYPE_DIRECTORY, 0, 0, NULL));
+   CHECK("shader entry installed", file_list_append(list, "test.slangp", "",
+         FILE_TYPE_SHADER_PRESET, 0, 0));
+   CHECK("missing shader installed", file_list_append(list, "missing.slangp", "",
+         FILE_TYPE_SHADER_PRESET, 0, 1));
+   CHECK("directory entry installed", file_list_append(list, "folder", "",
+         FILE_TYPE_DIRECTORY, 0, 2));
+   if (failures)
+      return;
+   materialui_list_insert(viewer, list, "test.slangp", directory, "", 0, FILE_TYPE_SHADER_PRESET);
+   materialui_list_insert(viewer, list, "missing.slangp", directory, "", 1, FILE_TYPE_SHADER_PRESET);
+   materialui_list_insert(viewer, list, "folder", directory, "", 2, FILE_TYPE_DIRECTORY);
+   menu_st->selection_ptr = 0;
+   materialui_populate_entries(viewer, directory, MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_STR, 0);
+   CHECK("shader browser uses sidebar layout", viewer->list_view_type == MUI_LIST_VIEW_SAVESTATE);
+   CHECK("shader preview resolves mirrored path", strstr(viewer->savestate_thumbnail_file_path,
+         "shader-previews") && strstr(viewer->savestate_thumbnail_file_path, "test.png"));
+   for (tick = 0; tick < 2000; tick++)
+   {
+      task_queue_check();
+      if (viewer->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+         break;
+      retro_sleep(1);
+   }
+   CHECK("shader preview texture loads", tick < 2000 && viewer->thumbnails.savestate.texture);
+   viewer->first_onscreen_entry = 0;
+   viewer->last_onscreen_entry = 2;
+   CHECK("selected shader exposes preview thumbnail",
+         materialui_get_selected_thumbnails(viewer, 0, &primary, &secondary)
+         && primary == &viewer->thumbnails.savestate);
+   viewer->flags |= MUI_FLAG_IS_PORTRAIT;
+   materialui_update_list_view(viewer, menu_st, settings);
+   CHECK("portrait shader browser uses sidebar layout",
+         viewer->list_view_type == MUI_LIST_VIEW_SAVESTATE);
+   viewer->flags &= ~MUI_FLAG_IS_PORTRAIT;
+   materialui_update_list_view(viewer, menu_st, settings);
+   menu_st->selection_ptr = 1;
+   materialui_navigation_set(viewer, false);
+   CHECK("missing shader replaces previous preview", !strstr(
+         viewer->savestate_thumbnail_file_path, "test.png"));
+   menu_st->selection_ptr = 2;
+   materialui_navigation_set(viewer, false);
+   CHECK("directory clears shader preview", !*viewer->savestate_thumbnail_file_path
+         && viewer->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN);
+   menu_st->selection_ptr = 0;
+   materialui_navigation_set(viewer, false);
+   materialui_populate_entries(viewer, directory, MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_STR, 0);
+   CHECK("append browser has shader preview", viewer->list_view_type == MUI_LIST_VIEW_SAVESTATE
+         && strstr(viewer->savestate_thumbnail_file_path, "test.png"));
+   materialui_populate_entries(viewer, directory, MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_STR, 0);
+   CHECK("prepend browser has shader preview", viewer->list_view_type == MUI_LIST_VIEW_SAVESTATE
+         && strstr(viewer->savestate_thumbnail_file_path, "test.png"));
+   materialui_populate_entries(viewer, directory, MENU_ENUM_LABEL_VIDEO_SHADER_PASS_STR, 0);
+   CHECK("shader pass browser has preview", viewer->list_view_type == MUI_LIST_VIEW_SAVESTATE
+         && strstr(viewer->savestate_thumbnail_file_path, "test.png"));
+   materialui_populate_entries(viewer, directory, MENU_ENUM_LABEL_FAVORITES_STR, 0);
+   CHECK("leaving shader browser clears preview", !*viewer->savestate_thumbnail_file_path
+         && viewer->list_view_type == MUI_LIST_VIEW_DEFAULT);
+   settings->bools.menu_shader_previews_enable = false;
+   materialui_populate_entries(viewer, directory, MENU_ENUM_LABEL_VIDEO_SHADER_PASS_STR, 0);
+   CHECK("disabled shader previews use normal layout", viewer->list_view_type == MUI_LIST_VIEW_DEFAULT
+         && !*viewer->savestate_thumbnail_file_path);
+}
+#endif
+
 #include "native_media_capture.h"
 #include "win32_modal_test.h"
 #include "subtitle_media_test.h"
@@ -312,6 +400,16 @@ int main(int argc,char **argv)
    { poke.load_texture=memory_texture;poke.unload_texture=memory_unload;video->poke=&poke; }
    config_get_ptr()->bools.menu_thumbnail_preview_audio = getenv("MEDIA_TEST_MODAL_MODE") != NULL
       || getenv("MEDIA_TEST_AUDIO_TRACKS") != NULL;
+#if defined(TEST_MATERIALUI)
+   if (getenv("MEDIA_TEST_SHADER_PREVIEW"))
+   {
+      test_shader_previews(menu_st, viewer);
+      video->poke = old_poke;
+      main_exit(NULL);
+      printf("shader previews: %u failure(s)\n", failures);
+      return failures ? 1 : 0;
+   }
+#endif
    if (getenv("MEDIA_TEST_HISTORY_IMAGE"))
    {
       fill_pathname_basedir(directory, argv[2], sizeof(directory));

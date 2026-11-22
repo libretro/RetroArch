@@ -15402,7 +15402,8 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_MENU_SHADER_PREVIEWS_ENABLE:
                      build_list[i].checked = string_is_equal(menu_driver, "ozone")
                         || string_is_equal(menu_driver, "xmb")
-                        || string_is_equal(menu_driver, "rgui");
+                        || string_is_equal(menu_driver, "rgui")
+                        || string_is_equal(menu_driver, "glui");
                      break;
                   case MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET:
                      build_list[i].checked = (menu_rgui_color_theme == RGUI_THEME_CUSTOM);

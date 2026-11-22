@@ -752,6 +752,7 @@ typedef struct materialui_handle
    float overscroll_target;
    uint32_t pointer_start_pos;   /* VIDEO_POS_PACK */
    bool transition_alpha_lock;
+   bool shader_preview_list;
    /* Set when a pending MUI_FLAG_NEED_COMPUTE was raised by something that
     * did not change the list contents - only entry geometry. The compute
     * pass then keeps the user's scroll position instead of re-deriving it
@@ -2633,6 +2634,27 @@ static void materialui_update_savestate_thumbnail_image(void *data)
             config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
 
    mui->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT | GFX_THUMB_FLAG_BG_ONLY;
+}
+
+static void materialui_update_shader_preview(materialui_handle_t *mui,
+      struct menu_state *menu_st)
+{
+   const char *path = "";
+
+   if (mui->shader_preview_list && menu_media_set_shader_preview(menu_st))
+      path = menu_st->thumbnail_path_data->right_path;
+
+   if (!string_is_equal(path, mui->savestate_thumbnail_file_path))
+   {
+      gfx_thumbnail_reset(&mui->thumbnails.savestate);
+      strlcpy(mui->savestate_thumbnail_file_path, path,
+            sizeof(mui->savestate_thumbnail_file_path));
+   }
+   if (*mui->savestate_thumbnail_file_path
+         && mui->thumbnails.savestate.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+      gfx_thumbnail_request_file(mui->savestate_thumbnail_file_path,
+            &mui->thumbnails.savestate,
+            config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
 }
 
 static void materialui_texture_file_path(unsigned i, void *ud, char *buf,
@@ -6879,11 +6901,15 @@ static void materialui_render_selected_entry_aux_savestate_list(
    {
       gfx_thumbnail_t *thumbnail = &mui->thumbnails.savestate;
 
-      if (!materialui_is_savestate_slot(mui) && !materialui_is_savestate_list(mui))
+      if (!mui->shader_preview_list
+            && !materialui_is_savestate_slot(mui) && !materialui_is_savestate_list(mui))
          return;
 
       /* Draw primary */
-      materialui_draw_thumbnail(
+      if (!mui->shader_preview_list
+            || (*mui->savestate_thumbnail_file_path
+               && mui->thumbnails.savestate.status != GFX_THUMBNAIL_STATUS_MISSING))
+         materialui_draw_thumbnail(
             mui,
             thumbnail,
             settings,
@@ -8064,7 +8090,7 @@ static bool materialui_get_selected_thumbnails(
    *primary_thumbnail   = &node->thumbnails.primary;
    *secondary_thumbnail = &node->thumbnails.secondary;
 
-   if (mui->flags & MUI_FLAG_IS_SAVESTATE_LIST)
+   if ((mui->flags & MUI_FLAG_IS_SAVESTATE_LIST) || mui->shader_preview_list)
       *primary_thumbnail = &mui->thumbnails.savestate;
 
    return true;
@@ -9119,7 +9145,7 @@ static void materialui_set_list_view_type(materialui_handle_t *mui,
       unsigned thumbnail_view_portrait,
       unsigned thumbnail_view_landscape)
 {
-   if (mui->flags & MUI_FLAG_IS_SAVESTATE_LIST)
+   if ((mui->flags & MUI_FLAG_IS_SAVESTATE_LIST) || mui->shader_preview_list)
    {
       mui->list_view_type = MUI_LIST_VIEW_SAVESTATE;
       mui->flags         &= ~MUI_FLAG_SECONDARY_THUMBNAIL_ENABLED;
@@ -10400,6 +10426,8 @@ static void materialui_navigation_set(void *data, bool scroll)
       materialui_update_savestate_thumbnail_path(mui, (unsigned)selection);
       materialui_update_savestate_thumbnail_image(mui);
    }
+   else if (mui->shader_preview_list)
+      materialui_update_shader_preview(mui, menu_st);
 
    if (show_sublabels && current_sel_only)
       materialui_compute_entries_box(mui, mui->last_dims,
@@ -10686,6 +10714,14 @@ static void materialui_populate_entries(void *data, const char *path,
    if (!mui || !settings)
       return;
 
+   if (mui->shader_preview_list)
+   {
+      gfx_thumbnail_reset(&mui->thumbnails.savestate);
+      mui->savestate_thumbnail_file_path[0] = '\0';
+   }
+   mui->shader_preview_list = settings->bools.menu_shader_previews_enable
+      && menu_media_is_shader_browser(label);
+
    /* Set menu title */
    menu_entries_get_title(mui->menu_title, sizeof(mui->menu_title));
 
@@ -10749,8 +10785,7 @@ static void materialui_populate_entries(void *data, const char *path,
                || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)
                || string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_LIST_STR)
                || string_is_equal(label, MENU_ENUM_LABEL_FAVORITES_STR)
-               || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_STR)
-               || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_SHADER_PASS_STR)
+               || menu_media_is_shader_browser(label)
                || string_is_equal(label, MENU_ENUM_LABEL_CHEAT_FILE_LOAD_STR)
                || string_is_equal(label, MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND_STR)
                || string_is_equal(label, MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS_STR)
@@ -10867,6 +10902,9 @@ static void materialui_populate_entries(void *data, const char *path,
    }
    else
       mui->flags &= ~MUI_FLAG_IS_SAVESTATE_LIST;
+
+   if (mui->shader_preview_list)
+      materialui_update_shader_preview(mui, menu_st);
 
    /* Determine whether to show entry index */
    mui->entry_index_str[0] = '\0';
@@ -11008,7 +11046,9 @@ static void materialui_context_reset(void *data, bool is_threaded)
       materialui_context_reset_playlist_icons(mui);
    menu_screensaver_context_destroy(mui->screensaver);
 
-   if (path_is_valid(mui->savestate_thumbnail_file_path))
+   if (mui->shader_preview_list)
+      materialui_update_shader_preview(mui, menu_st);
+   else if (path_is_valid(mui->savestate_thumbnail_file_path))
       materialui_update_savestate_thumbnail_image(mui);
 
    video_driver_monitor_reset();
