@@ -51,6 +51,33 @@ jobs:
       - name: Strict C89 engine regressions with sanitizers
         run: make -C libretro-common/samples/net/mdns clean check demo CC=${{ matrix.cc }} OPTIMIZE=-O${{ matrix.opt }} SANITIZER=address,undefined
 
+  mingw:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APT_PKGS: gcc-mingw-w64-x86-64 gcc-mingw-w64-i686
+    steps:
+      - uses: actions/checkout@v6
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+      - name: Desktop multicast adapter against current and pre-1703 SDK headers
+        run: |
+          set -e
+          for cc in x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc; do
+            make -C libretro-common/samples/net/mdns clean demo CC="$cc" EXE=.exe
+            make -C libretro-common/samples/net/mdns clean demo CC="$cc -isystem legacy_sdk" EXE=.exe
+          done
+
   macos:
     runs-on: macos-latest
     timeout-minutes: 5

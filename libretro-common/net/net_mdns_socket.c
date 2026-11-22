@@ -25,6 +25,10 @@
 #include <ws2tcpip.h>
 #include <windows.h>
 #include <mswsock.h>
+/* ws2ipdef.h before the Windows 10 1703 SDK lacks it. */
+#ifndef IP_RECVTTL
+#define IP_RECVTTL 21
+#endif
 typedef SOCKET mdns_socket_socket_t;
 #define MDNS_SOCKET_INVALID INVALID_SOCKET
 #define mdns_socket_close closesocket
@@ -53,6 +57,8 @@ struct net_mdns_socket
    uint8_t packet[NET_MDNS_PACKET_MAX];
 #ifdef _WIN32
    LPFN_WSARECVMSG receive;
+   /* The host rejects IP_RECVTTL; group arrivals stand in for TTL 255. */
+   bool ttl_unreported;
 #endif
 };
 
@@ -119,8 +125,18 @@ static bool mdns_socket_open(net_mdns_socket_t *demo, const char *address)
    if (setsockopt(demo->socket_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const char*)&membership, sizeof(membership))
          || setsockopt(demo->socket_fd, IPPROTO_IP, IP_MULTICAST_IF, (const char*)&local, sizeof(local))
          || setsockopt(demo->socket_fd, IPPROTO_IP, IP_MULTICAST_TTL, (const char*)&multicast_ttl, sizeof(multicast_ttl))
-         || setsockopt(demo->socket_fd, IPPROTO_IP, IP_TTL, (const char*)&ttl, sizeof(ttl))
-         || setsockopt(demo->socket_fd, IPPROTO_IP, IP_RECVTTL, (const char*)&one, sizeof(one))) return false;
+         || setsockopt(demo->socket_fd, IPPROTO_IP, IP_TTL, (const char*)&ttl, sizeof(ttl))) return false;
+#ifdef _WIN32
+   /* Windows before 10 1703 rejects IP_RECVTTL. Routers never forward
+    * 224.0.0.0/24, so a datagram addressed to the group is on-link. */
+   if (setsockopt(demo->socket_fd, IPPROTO_IP, IP_RECVTTL, (const char*)&one, sizeof(one)))
+   {
+      if (setsockopt(demo->socket_fd, IPPROTO_IP, IP_PKTINFO, (const char*)&one, sizeof(one))) return false;
+      demo->ttl_unreported = true;
+   }
+#else
+   if (setsockopt(demo->socket_fd, IPPROTO_IP, IP_RECVTTL, (const char*)&one, sizeof(one))) return false;
+#endif
    memset(&demo->group, 0, sizeof(demo->group));
    demo->group.sin_family = AF_INET; demo->group.sin_port = htons(5353);
    demo->group.sin_addr = membership.imr_multiaddr;
@@ -162,6 +178,14 @@ static bool mdns_socket_receive(net_mdns_socket_t *demo, uint64_t now)
       {
          int ttl;
          memcpy(&ttl, WSA_CMSG_DATA(control), sizeof(ttl)); hop_limit = (unsigned)ttl;
+      }
+      else if (demo->ttl_unreported && control->cmsg_level == IPPROTO_IP
+            && control->cmsg_type == IP_PKTINFO
+            && control->cmsg_len >= WSA_CMSG_LEN(sizeof(IN_PKTINFO)))
+      {
+         IN_PKTINFO info;
+         memcpy(&info, WSA_CMSG_DATA(control), sizeof(info));
+         if (info.ipi_addr.s_addr == demo->group.sin_addr.s_addr) hop_limit = 255;
       }
 #else
    struct msghdr msg;
