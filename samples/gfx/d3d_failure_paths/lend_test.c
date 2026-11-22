@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <boolean.h>
+#include "../../../gfx/common/media_history.h"
+#undef INLINE
 #define INLINE
 #define FAILED(x) ((x) < 0)
 #define DXGI_ERROR_WAS_STILL_DRAWING (-2)
@@ -38,6 +40,7 @@ typedef struct {
    size_t upload_size;
    d3d11_texture_lend_t *lend;
    unsigned lend_bpp;
+   gfx_media_history_t media_history;
    D3D11_TEXTURE2D_DESC desc;
 } d3d11_texture_t;
 typedef struct planar { struct planar *next; d3d11_texture_t *texture; } d3d11_planar_t;

@@ -10,6 +10,7 @@
 #include <math.h>
 #include <limits.h>
 #include <gfx/scaler/pixconv.h>
+#include "../../../gfx/common/media_history.h"
 #define W 257
 #define H 256
 #define COUNT (W * H)
@@ -32,6 +33,7 @@ typedef struct {
    size_t upload_size;
    d3d11_texture_lend_t *lend;
    unsigned lend_bpp;
+   gfx_media_history_t media_history;
    D3D11_TEXTURE2D_DESC desc;
 } d3d11_texture_t;
 #include "copy.inc"

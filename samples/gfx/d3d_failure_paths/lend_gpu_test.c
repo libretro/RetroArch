@@ -8,6 +8,7 @@
 #include <string.h>
 #include <boolean.h>
 #include <retro_atomic.h>
+#include "../../../gfx/common/media_history.h"
 #include <formats/video_player.h>
 #define INLINE
 #define Release(p) do { if (p) { (p)->lpVtbl->Release(p); (p)=NULL; } } while (0)
@@ -25,6 +26,7 @@ typedef struct {
    size_t upload_size;
    d3d11_texture_lend_t *lend;
    unsigned lend_bpp;
+   gfx_media_history_t media_history;
    D3D11_TEXTURE2D_DESC desc;
 } d3d11_texture_t;
 typedef struct planar { struct planar *next; d3d11_texture_t *texture; } d3d11_planar_t;

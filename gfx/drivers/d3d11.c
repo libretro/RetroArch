@@ -45,6 +45,7 @@
 #include <streams/image_texture_file.h>
 #include <formats/image_yuv_blit.h>
 #include "../common/video_import_color.h"
+#include "../common/media_history.h"
 
 #include <dxgi.h>
 
@@ -320,6 +321,7 @@ typedef struct
    size_t                 upload_size;
    d3d11_texture_lend_t   *lend;
    unsigned               lend_bpp;
+   gfx_media_history_t    media_history;
    D3D11_TEXTURE2D_DESC    desc;
    D3D11RenderTargetView   rt_view;
    D3D11ShaderResourceView view;
@@ -443,6 +445,8 @@ typedef struct d3d11_chain
    unsigned             rt_frame_dims;
    unsigned             rt_vp_dims;
    bool                 history_made;
+   gfx_media_history_t *media_history;
+   uintptr_t            media_source;
    D3D11ShaderResourceView frame_view;
    d3d11_texture_t     *final;
    /* The format a view's history was made for, which the textures may
@@ -1231,6 +1235,7 @@ static void d3d11_update_texture(
          data  = texture->upload_data;
          pitch = row_pitch;
       }
+      texture->media_history.copies = 0;
       ctx->lpVtbl->UpdateSubresource(ctx,
             (D3D11Resource)texture->handle, 0, &frame_box, data,
             pitch ? pitch : width * bytes, 0);
@@ -1247,6 +1252,7 @@ static void d3d11_update_texture(
          mapped_texture.pData);
 
    ctx->lpVtbl->Unmap(ctx, (D3D11Resource)texture->staging, 0);
+   texture->media_history.copies = 0;
    ctx->lpVtbl->CopySubresourceRegion(
          ctx, (D3D11Resource)texture->handle, 0, 0, 0, 0,
          (D3D11Resource)texture->staging, 0, &frame_box);
@@ -7727,7 +7733,8 @@ static void d3d11_views_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
    else
    {
       c->frame_view = NULL;
-      if (fresh)
+      if (fresh && gfx_media_history_needed(c->media_history,
+               c->shader_preset->history_size + 1))
       {
          unsigned k;
          unsigned n = c->shader_preset->history_size + 1;
@@ -7745,6 +7752,7 @@ static void d3d11_views_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
                   &desc);
          }
          if (     !c->history_made
+               || !c->history[0].handle || !c->history[0].view
                || c->history[0].desc.Width  != v->width
                || c->history[0].desc.Height != v->height
                || c->history[0].desc.Usage  != usage
@@ -7797,10 +7805,15 @@ static void d3d11_views_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
             box.right  = v->x + v->width;
             box.bottom = v->y + v->height;
             box.back   = 1;
-            if (c->history[0].handle)
+            if (c->history[0].handle && c->history[0].view)
+            {
                d3d11->context->lpVtbl->CopySubresourceRegion(d3d11->context,
                      (D3D11Resource)c->history[0].handle, 0, 0, 0, 0, res, 0,
                      &box);
+               gfx_media_history_written(c->media_history);
+            }
+            else
+               c->history_made = false;
             Release(res);
          }
       }
@@ -10108,6 +10121,8 @@ static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
    else
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
+   p->texture->media_history.copies = 0;
+   p->texture->media_history.managed = true;
    ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[0], 0, NULL,
          tp->planes[0], tp->strides[0], 0);
    ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[1], 0, NULL,
@@ -10392,6 +10407,8 @@ static enum video_texture_update d3d11_import_texture(void *data,
       d3d11->context4->lpVtbl->Signal(d3d11->context4, done, f->done_value);
    if (!ok)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
+   p->texture->media_history.copies = 0;
+   p->texture->media_history.managed = true;
    if (!*id)
       *id = (uintptr_t)p->texture;
    return VIDEO_TEXTURE_UPDATE_DONE;
@@ -10652,6 +10669,7 @@ static uintptr_t d3d11_gfx_load_texture_internal(
             0, src_format, image->pixels, texture);
    }
 
+   texture->media_history.managed = true;
    texture->lend_bpp = image->fp16
       ? (texture->desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT ? 8 : 0)
       : (!image->pix10 && !image->supports_rgba && !image->compressed
@@ -10878,6 +10896,7 @@ upload:
    box.right  = image->width;
    box.bottom = image->height;
    box.back   = 1;
+   texture->media_history.copies = 0;
    ctx->lpVtbl->CopySubresourceRegion(ctx, (D3D11Resource)texture->handle,
          0, 0, 0, 0, upload, 0, &box);
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
@@ -11228,6 +11247,7 @@ static uintptr_t d3d11_gfx_load_texture_compressed(void* video_data,
             (D3D11Resource)texture->handle, &view_desc, &texture->view);
    }
 
+   texture->media_history.managed = true;
    texture->size_data.x = (float)tc->mips[0].width;
    texture->size_data.y = (float)tc->mips[0].height;
    texture->size_data.z = 1.0f / (float)tc->mips[0].width;
@@ -11486,9 +11506,16 @@ static bool gfx_display_d3d11_media_shader_draw(void *data, uintptr_t image,
    view.width = VIDEO_SCALE_W(source_dims);
    view.height = VIDEO_SCALE_H(source_dims);
    d3d11_views_bind(video);
+   gfx_media_history_begin(&texture->media_history, (uintptr_t)chain,
+         chain->media_source == image, chain->history_made
+            && chain->history[0].handle && chain->history[0].view
+            && chain->rt_frame_dims == source_dims);
+   chain->media_source = image;
+   chain->media_history = &texture->media_history;
    chain->history[0].size_data = texture->size_data;
    d3d11_views_chain_frame(video, chain, &view, dims, texture->view,
          source_dims, chain->shader_preset->history_size == 0, true, NULL, 0);
+   chain->media_history = NULL;
    d3d11_chain_frame(video, chain, video->media_shader_info,
          video->media_shader_frame, true);
    chain->mvp_last_pass = video->ubo_values.mvp;
