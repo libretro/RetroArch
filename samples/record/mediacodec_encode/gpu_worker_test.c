@@ -12,6 +12,7 @@
 #define DRAW ((record_android_capture_draw_t *)3)
 static bool active, terminal, complete, reading[16], fenced[16];
 static unsigned posts, draws, imports, closes, retire_scopes, begins;
+static unsigned gl_waits;
 static int failure, restore_fail;
 static bool recovery_fails;
 static int64_t pts;
@@ -93,6 +94,13 @@ int record_android_capture_gl_poll(
       return 0;
    reading[slot] = fenced[slot] = false;
    return 1;
+}
+bool record_android_capture_gl_wait(
+      record_android_capture_gl_t *c, unsigned slot, uint64_t timeout_ns)
+{
+   assert(c == CAPTURE && active && slot < 16 && timeout_ns == 20000000);
+   gl_waits++;
+   return reading[slot] && fenced[slot];
 }
 int record_android_capture_gl_recover_step(record_android_capture_gl_t *c)
 {
@@ -183,8 +191,14 @@ int main(void)
       assert(record_mediacodec_gpu_worker_step(w) == 1);
       assert(record_gpu_queue_acquire(q, &slot) == RECORD_GPU_QUEUE_BUSY);
       assert(record_mediacodec_gpu_worker_step(w) == 0);
+      assert(!record_mediacodec_gpu_worker_idle(w));
+      assert(record_mediacodec_gpu_worker_wait(w, 20000000)
+            && gl_waits == i + 1 && !active);
       complete = true;
       assert(record_mediacodec_gpu_worker_step(w) == 1);
+      assert(record_mediacodec_gpu_worker_idle(w));
+      assert(!record_mediacodec_gpu_worker_wait(w, 20000000)
+            && gl_waits == i + 1);
    }
    assert(record_gpu_queue_finish(q));
    assert(record_mediacodec_gpu_worker_step(w) == 2);

@@ -128,9 +128,10 @@ static GLsync GL_APIENTRY fence(GLenum type, GLbitfield flags)
    assert(0);
    return NULL;
 }
+static GLuint64 wait_timeout;
 static GLenum GL_APIENTRY poll(GLsync s, GLbitfield flags, GLuint64 timeout)
 {
-   assert(s && !flags && !timeout);
+   assert(s && !flags && timeout == wait_timeout);
    assert(!expected_poll || s == expected_poll);
    return completion;
 }
@@ -192,8 +193,14 @@ int main(void)
          assert(!record_android_capture_gl_end(c, j));
          completion = GL_TIMEOUT_EXPIRED;
          assert(record_android_capture_gl_poll(c, j) == 0);
+         wait_timeout = 20000000;
+         assert(record_android_capture_gl_wait(c, j, 20000000));
+         completion = GL_WAIT_FAILED;
+         assert(!record_android_capture_gl_wait(c, j, 20000000));
+         wait_timeout = 0;
          completion = i & 1 ? GL_ALREADY_SIGNALED : GL_CONDITION_SATISFIED;
          assert(record_android_capture_gl_poll(c, j) == 1);
+         assert(!record_android_capture_gl_wait(c, j, 20000000));
       }
    assert(flushes == 16000 && imported == 8000 && waits == 8000);
    assert(record_android_capture_gl_free(c));

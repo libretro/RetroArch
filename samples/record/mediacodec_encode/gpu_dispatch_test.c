@@ -50,6 +50,7 @@ static struct record_android_capture_draw draw;
 static struct record_mediacodec_gpu_worker worker;
 static pthread_t gpu_thread;
 static retro_atomic_int_t resources, posted, hold_read, read_error;
+static retro_atomic_int_t steps, gl_waits;
 static int fault, mode, surface_live, worker_live;
 static bool temporary_failure;
 static int test_eventfd(unsigned int initial, int flags)
@@ -271,6 +272,7 @@ static int worker_step(record_mediacodec_gpu_worker_t *w, bool retire)
    int result;
    owner();
    assert(w == &worker && worker_live);
+   retro_atomic_fetch_add_int(&steps, 1);
    if (w->held)
    {
       if (retro_atomic_load_acquire_int(&read_error))
@@ -308,6 +310,26 @@ int record_mediacodec_gpu_worker_step(record_mediacodec_gpu_worker_t *w)
 int record_mediacodec_gpu_worker_retire_step(record_mediacodec_gpu_worker_t *w)
 {
    return worker_step(w, true);
+}
+static void pause_test(void);
+/* A held read completes within a millisecond */
+bool record_mediacodec_gpu_worker_wait(
+      record_mediacodec_gpu_worker_t *w, uint64_t timeout_ns)
+{
+   owner();
+   assert(w == &worker && worker_live && timeout_ns == 20000000);
+   if (!w->held)
+      return false;
+   retro_atomic_fetch_add_int(&gl_waits, 1);
+   pause_test();
+   return true;
+}
+bool record_mediacodec_gpu_worker_idle(
+      const record_mediacodec_gpu_worker_t *w)
+{
+   owner();
+   assert(w == &worker && worker_live);
+   return !w->held;
 }
 bool record_mediacodec_gpu_worker_free(record_mediacodec_gpu_worker_t *w)
 {
@@ -380,6 +402,8 @@ int main(void)
    retro_atomic_int_init(&posted, 0);
    retro_atomic_int_init(&hold_read, 0);
    retro_atomic_int_init(&read_error, 0);
+   retro_atomic_int_init(&steps, 0);
+   retro_atomic_int_init(&gl_waits, 0);
    for (mode = 0; mode < 3; mode++)
    {
       fault = mode == 0 ? 12 : 0;
@@ -456,11 +480,25 @@ int main(void)
    fd = eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
    assert(fd >= 0);
    frame.ready_value = (uint64_t)fd + 1;
+   /* Idle: nothing to query until a submission notifies */
+   before = retro_atomic_load_acquire_int(&steps);
+   for (i = 0; i < 50; i++)
+      pause_test();
+   if (retro_atomic_load_acquire_int(&steps) - before > 4)
+   {
+      printf("FAIL: %d idle GPU services in 50 ms\n",
+            retro_atomic_load_acquire_int(&steps) - before);
+      return 1;
+   }
    retro_atomic_store_release_int(&hold_read, 1);
    before = retro_atomic_load_acquire_int(&posted);
    assert(record_gpu_dispatch_mediacodec_submit(j, &frame));
    for (i = 0; i < 10000 && retro_atomic_load_acquire_int(&posted) == before;
          i++)
+      pause_test();
+   assert(i < 10000);
+   /* A pending read is waited on in GL, not polled */
+   for (i = 0; i < 10000 && !retro_atomic_load_acquire_int(&gl_waits); i++)
       pause_test();
    assert(i < 10000);
    retro_atomic_store_release_int(&read_error, 1);

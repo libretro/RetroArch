@@ -29,6 +29,15 @@ int record_mediacodec_gpu_worker_step(record_mediacodec_gpu_worker_t *worker);
  * Can be called after any error; no further draws/posts occur. */
 int record_mediacodec_gpu_worker_retire_step(
       record_mediacodec_gpu_worker_t *worker);
+/* After a step without progress: blocks until the next GPU read to poll
+ * completes or @timeout_ns passes. False, without waiting, when there is
+ * none or the worker has failed. */
+bool record_mediacodec_gpu_worker_wait(
+      record_mediacodec_gpu_worker_t *worker, uint64_t timeout_ns);
+/* Nothing for a step to query until the producer submits, closes or
+ * cancels, all of which notify. */
+bool record_mediacodec_gpu_worker_idle(
+      const record_mediacodec_gpu_worker_t *worker);
 /* ONLY after matching context/owned GL namespace destruction and independent
  * GPU-read completion proof or device loss. Clears GL bookkeeping and returns
  * pending slots without GL calls. Queued descriptors must still drain through
