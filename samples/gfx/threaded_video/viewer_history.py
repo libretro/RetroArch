@@ -41,10 +41,14 @@ struct retro_video_view { unsigned x,y,width,height; };
 d3d = (root / "gfx/drivers/d3d12.c").read_text(encoding="utf-8")
 d3d_fixture = common + r'''
 #define HAVE_SLANG 1
+#define D3D12_FRAME_IMPORT 1
 #define GFX_MAX_FRAME_HISTORY 3
 typedef gpu *D3D12Resource;
 typedef unsigned UINT;
+typedef uint64_t UINT64;
 typedef struct { uintptr_t ptr; } descriptor;
+typedef descriptor D3D12_GPU_DESCRIPTOR_HANDLE;
+typedef struct {descriptor cpu_uav,gpu_uav;unsigned output_state;} d3d12_import_t;
 typedef struct command *D3D12GraphicsCommandList;
 #define D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING 5768
 #define D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX 0
@@ -98,10 +102,10 @@ typedef struct {
    gpu *handle,*upload_buffer,*upload_buffer2;
    struct { unsigned Width,Height,Format,MipLevels; } desc;
    unsigned srv_mapping,pending,upload_fence,lend_fence[2],layout;
-   void *srv_heap;d3d12_planar_t *planar;
+   void *srv_heap;d3d12_planar_t *planar;d3d12_import_t *import;
    float4 size_data;
 } d3d12_texture_t;
-struct d3d12_media_version {d3d12_texture_t texture;unsigned refs;};
+struct d3d12_media_version {d3d12_texture_t texture;unsigned refs;uint64_t read_serial;};
 typedef struct { unsigned history_size; } preset;
 typedef struct {
    preset *shader_preset;
@@ -124,6 +128,8 @@ typedef struct {
    struct { D3D12GraphicsCommandList cmd;unsigned fenceValue; } queue;
    struct { void *srv_heap,*cs_rootSignature; } desc;
    void *planar_pipe;
+   bool movie_importing;
+   uint64_t media_submit_serial;
    d3d12_filter_chain_t *media_shader_chain,filter;
    d3d12_texture_t *media_shader_texture;
 } d3d12_video_t;
@@ -157,6 +163,8 @@ static void d3d12_upload_texture_from(D3D12GraphicsCommandList cmd,d3d12_texture
 { (void)cmd;(void)v;(void)layout;(void)box;if(buffer)t->handle->value=buffer->value;else t->handle->value++; }
 HELPER
 POOL
+IMPORT_WRITABLE
+READ_HISTORY
 UPLOAD
 FRAME
 static bool draw(d3d12_video_t *v,d3d12_filter_chain_t *c,d3d12_texture_t *t)
@@ -232,6 +240,82 @@ static void test_planar_pool(void)
    d3d12_release_texture(&video,&t);
    for(j=0;j<3;j++)d3d12_release_texture(&video,&chain.history[j]);
    puts("PASS D3D12 planar history: immutable SRV/UAV versions, no snapshots, fixed upload storage and warm reuse");
+}
+static void test_import_pool(void)
+{
+   d3d12_video_t video;
+   d3d12_filter_chain_t chain;
+   d3d12_texture_t texture;
+   d3d12_import_t import;
+   preset preset={2};
+   unsigned storage[6],frame,j,names=0,expected[3]={0,0,0};
+   descriptor uav;
+   memset(&video,0,sizeof(video));memset(&chain,0,sizeof(chain));memset(&texture,0,sizeof(texture));memset(&import,0,sizeof(import));
+   chain.shader_preset=&preset;video.media_shader_chain=&chain;video.queue.cmd=&command;
+   gfx_media_history_ring_init(&chain.history_ring,storage,3);
+   texture.desc.Width=8;texture.desc.Height=4;texture.desc.Format=2;texture.desc.MipLevels=1;
+   d3d12_init_texture(NULL,&texture);texture.import=&import;
+   texture.media_borrowable=true;texture.media_history.managed=true;
+   import.cpu_uav.ptr=import.gpu_uav.ptr=(uintptr_t)texture.handle+1;
+   import.output_state=D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+   assert(d3d12_import_writable(&video,&texture,&uav) && uav.ptr==import.gpu_uav.ptr);
+   texture.handle->value=70;
+   for(frame=0;frame<32;frame++)
+   {
+      gpu *readers[3];unsigned values[3],before=copies;
+      if(frame)for(j=0;j<3;j++)
+      {
+         const d3d12_texture_t *h=(const d3d12_texture_t*)d3d12_chain_history_data(&chain,&chain.history[j]);
+         readers[j]=h->handle;values[j]=h->handle->value;
+      }
+      if(frame)
+      {
+         gpu *previous=texture.handle;
+         video.movie_importing=true;
+         assert(!d3d12_import_writable(&video,&texture,&uav) && texture.handle==previous);
+         video.movie_importing=false;
+         import.output_state=D3D12_RESOURCE_STATE_COPY_SOURCE;
+         assert(!d3d12_import_writable(&video,&texture,&uav) && texture.handle==previous);
+         import.output_state=D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+         assert(d3d12_import_writable(&video,&texture,&uav));
+         assert(uav.ptr==texture.media_version->texture.gpu_descriptor[1].ptr);
+         ((gpu*)(uav.ptr-1))->value=70+frame;
+         texture.media_history.copies=0;
+         for(j=0;j<3;j++)assert(readers[j]->value==values[j]);
+      }
+      assert(!draw(&video,&chain,&texture) && copies==before);
+      assert(!import.cpu_uav.ptr && !import.gpu_uav.ptr);
+      for(j=2;j;j--)expected[j]=expected[j-1];
+      expected[0]=70+frame;
+      for(j=0;j<3;j++)assert(((const d3d12_texture_t*)d3d12_chain_history_data(&chain,&chain.history[j]))->handle->value==expected[j]);
+      if(frame==8)names=allocated;
+      if(frame>8)assert(allocated==names);
+      video.media_submit_serial++; /* The frame list was submitted. */
+   }
+   /* Freeze submission while recording several reads. None of their
+    * targets may be overwritten by an import list executed immediately. */
+   {
+      unsigned pending;
+      bool exhausted=false;
+      for(pending=0;pending<GFX_MAX_FRAME_HISTORY+3;pending++)
+      {
+         gpu *previous=texture.handle;
+         if(!d3d12_import_writable(&video,&texture,&uav))
+         {
+            assert(texture.handle==previous);exhausted=true;break;
+         }
+         ((gpu*)(uav.ptr-1))->value=200+pending;texture.media_history.copies=0;
+         assert(!draw(&video,&chain,&texture));
+      }
+      assert(exhausted);
+      video.media_submit_serial++;
+      assert(d3d12_import_writable(&video,&texture,&uav));
+      d3d12_media_read_texture(&video,&texture);
+      assert(texture.media_version->read_serial==video.media_submit_serial+1);
+   }
+   d3d12_release_texture(&video,&texture);
+   for(j=0;j<3;j++)d3d12_release_texture(&video,&chain.history[j]);
+   puts("PASS D3D12 imported output history: immutable targets, no snapshots, bounded reuse and movie state isolation");
 }
 static void test_pool(void)
 {
@@ -375,12 +459,15 @@ int main(void)
    assert(draw(&v,&c,&t) && c.history_made);
    test_pool();
    test_planar_pool();
+   test_import_pool();
    puts("PASS D3D12 viewer history: pixels, copy counts, uploads, address reuse, HDR format and no-history borrow");
    return 0;
 }
 '''
 d3d_fixture = d3d_fixture.replace("\nVERSION_RELEASE\n", function(d3d, "static void d3d12_media_version_release(d3d12_video_t *video,\n      d3d12_media_version_t *version)\n{"))
 d3d_fixture = d3d_fixture.replace("\nPLANAR_RECORD\n", function(d3d[d3d.rindex('static void d3d12_planar_record('):], 'static void d3d12_planar_record('))
+d3d_fixture = d3d_fixture.replace("\nREAD_HISTORY\n", "\n" + function(d3d, "static void d3d12_media_read_texture(") + function(d3d, "static void d3d12_media_read_history(") + "\n")
+d3d_fixture = d3d_fixture.replace("\nIMPORT_WRITABLE\n", "\n" + function(d3d, "static bool d3d12_import_writable(") + "\n")
 d3d_fixture = d3d_fixture.replace("\nPOOL\n", "\n" + function(d3d, "static bool d3d12_media_pool_begin(") + function(d3d, "static bool d3d12_media_writable(") + "\n")
 d3d_fixture = d3d_fixture.replace("\nHELPER\n", function(d3d, "static const void *d3d12_chain_history_data("))
 a = d3d.index("   gfx_media_history_begin(&texture->media_history", d3d.index("bool gfx_display_d3d12_media_shader_draw("))

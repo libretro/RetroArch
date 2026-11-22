@@ -145,6 +145,14 @@ typedef struct
    D3D12_CPU_DESCRIPTOR_HANDLE cpu_uav, cpu_src;
    D3D12Resource planes;
 } d3d12_planar_t;
+#define D3D12_FRAME_IMPORT 1
+#define D3D12_IMPORT_TEXTURES 2
+#define D3D12_IMPORT_FENCES 2
+typedef struct {
+   D3D12_CPU_DESCRIPTOR_HANDLE cpu_uav,cpu_planes[D3D12_IMPORT_TEXTURES];
+   D3D12Resource tex[D3D12_IMPORT_TEXTURES],fence[D3D12_IMPORT_FENCES];
+   unsigned num_fences;
+} d3d12_import_t;
 typedef struct d3d12_media_version d3d12_media_version_t;
 typedef struct
 {
@@ -157,6 +165,7 @@ typedef struct
    struct { struct { UINT RowPitch; } Footprint; } layout;
    D3D12_CPU_DESCRIPTOR_HANDLE cpu_descriptor[4];
    d3d12_planar_t *planar;
+   d3d12_import_t *import;
    uint8_t *lend_mapped[2];
    UINT64 upload_fence, lend_fence[2];
    unsigned lent, pending;
@@ -169,6 +178,7 @@ static unsigned released;
 #define Release(p) do { if (p) { released++; (p) = NULL; } } while (0)
 typedef struct
 {
+   UINT64 media_submit_serial;
    struct
    {
       D3D12CommandQueue handle;
@@ -291,14 +301,17 @@ static resource_t ubo;
  * then @extra lists of its own (black frames, repeats) */
 static void frame(unsigned depth, unsigned extra)
 {
+   UINT64 serial = d3d12.media_submit_serial;
    d3d12.queue.depth = depth;
    d3d12_slot_begin(&d3d12);
    d3d12_cmd_begin(&d3d12, NULL);
    d3d12_cmd_execute(&d3d12);
+   assert(d3d12.media_submit_serial==++serial);
    while (extra--)
    {
       d3d12_cmd_begin(&d3d12, NULL);
       d3d12_cmd_execute(&d3d12);
+      assert(d3d12.media_submit_serial==++serial);
    }
 }
 
@@ -604,6 +617,37 @@ int main(void)
       completed=signalled;d3d12_release_texture(NULL,retired_texture);
       assert(released==2 && !heap.map[3] && !heap.map[4]);
       free(retired_texture);retired_texture=NULL;
+   }
+   /* An imported owner has no upload buffer. Its source cache still
+    * retires, while history keeps the output and both views alive. */
+   {
+      static resource_t res[2];
+      static d3d12_descriptor_heap_t heap;
+      d3d12_texture_t owner,history;
+      d3d12_media_version_t *version;
+      setup();frame(2,0);frame(2,0);
+      memset(&heap,0,sizeof(heap));heap.cpu.ptr=1000;heap.stride=10;
+      heap.map[3]=heap.map[4]=heap.map[5]=heap.map[6]=true;
+      memset(&owner,0,sizeof(owner));memset(&history,0,sizeof(history));
+      version=(d3d12_media_version_t*)calloc(1,sizeof(*version));assert(version);
+      version->refs=2;version->texture.handle=&res[0];version->texture.srv_heap=&heap;
+      version->texture.desc.MipLevels=1;version->texture.media_compute=true;
+      version->texture.cpu_descriptor[0].ptr=1030;version->texture.cpu_descriptor[1].ptr=1040;
+      owner=version->texture;owner.media_compute=false;owner.cpu_descriptor[1].ptr=0;
+      owner.media_versions=(d3d12_media_version_t**)calloc(1,sizeof(*owner.media_versions));assert(owner.media_versions);
+      owner.media_versions[0]=owner.media_version=version;owner.media_version_count=1;
+      owner.import=(d3d12_import_t*)calloc(1,sizeof(*owner.import));assert(owner.import);
+      owner.import->cpu_planes[0].ptr=1050;owner.import->tex[0]=&res[1];
+      history=version->texture;history.media_version=version;
+      completed=signalled-1;released=0;
+      d3d12_release_texture(&d3d12,&owner);
+      assert(retired_texture && !released && heap.map[5] && heap.map[6]);
+      completed=signalled;d3d12_release_texture(NULL,retired_texture);
+      assert(released==1 && !heap.map[5] && !heap.map[6] && heap.map[3] && heap.map[4]);
+      assert(!retired_texture->import && version->refs==1);
+      free(retired_texture);retired_texture=NULL;
+      d3d12_release_texture(NULL,&history);
+      assert(released==2 && !heap.map[3] && !heap.map[4]);
    }
    puts("D3D12 frame ring: one frame in flight as before, two under"
          " Driver Pacing, slot constants, upload turns, font atlas"

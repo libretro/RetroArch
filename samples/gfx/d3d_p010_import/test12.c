@@ -22,6 +22,7 @@
 #include <dxgi1_4.h>
 #include <d3dcompiler.h>
 #include "gfx/video_defines.h"
+#include "gfx/common/media_history.h"
 #include "frame.inc"
 #define D3D12_IMPORT_TEXTURES 8
 #define D3D12_IMPORT_FENCES 8
@@ -37,6 +38,9 @@ typedef struct
    ID3D12Resource *handle;
    D3D12_RESOURCE_DESC desc;
    d3d12_import_t *import;
+   void *media_versions;
+   gfx_media_history_t media_history;
+   bool media_borrowable;
 } d3d12_texture_t;
 typedef struct
 {
@@ -63,6 +67,15 @@ enum video_texture_update
    VIDEO_TEXTURE_UPDATE_DONE,
    VIDEO_TEXTURE_UPDATE_DROPPED
 };
+/* This fixture provides one output: pool ownership is exercised by the
+ * shipping pool/selector tests; this oracle checks native import commands. */
+static bool d3d12_import_writable(d3d12_video_t *video,
+      d3d12_texture_t *texture, D3D12_GPU_DESCRIPTOR_HANDLE *uav)
+{
+   (void)video;
+   if(texture->media_versions)return false;
+   *uav=texture->import->gpu_uav;return true;
+}
 static int failures;
 static unsigned hdr_mode;
 static unsigned output_fp16;
@@ -333,7 +346,13 @@ static void color(d3d12_video_t *v, ID3D11Device5 *producer,
    if (array_case)
       CHECK(d3d12_import_tex(v, &imp, f.image, 2, 2, f.pixfmt, 0,
             f.crop_x, f.crop_y, 0) >= 0);
+   output.media_versions=&output;
+   CHECK(d3d12_import_texture(v, &id, &f, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_DROPPED
+         && v->import_value==submitted);
+   output.media_versions=NULL;
    CHECK(d3d12_import_texture(v, &id, &f, TEXTURE_FILTER_LINEAR) == VIDEO_TEXTURE_UPDATE_DONE);
+   CHECK(output.media_history.managed && !output.media_history.copies
+         && output.media_borrowable == !v->movie_importing);
    /* The importer returned even though the producer has not signalled. */
    CHECK(v->import_value == submitted + 1
          && ID3D12Fence_GetCompletedValue(v->import_done) < v->import_value

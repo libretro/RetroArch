@@ -399,6 +399,7 @@ struct d3d12_media_version
 {
    d3d12_texture_t texture;
    unsigned refs;
+   UINT64 read_serial;
 };
 
 
@@ -884,6 +885,7 @@ typedef struct
    d3d12_filter_chain_t *media_shader_chain;
    bool media_shader_attempted;
    d3d12_texture_t *media_shader_texture;
+   UINT64 media_submit_serial;
    const video_frame_info_t *media_shader_info;
    uint64_t media_shader_frame;
 
@@ -1553,6 +1555,7 @@ static void d3d12_execute_frame_lists(d3d12_video_t *d3d12)
    d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
          (ID3D12CommandList* const*)&d3d12->queue.cmd);
 #endif
+   d3d12->media_submit_serial++;
 }
 
 static void d3d12_cmd_execute(d3d12_video_t *d3d12)
@@ -1670,14 +1673,13 @@ static void d3d12_release_texture(d3d12_video_t *d3d12,
       memset(texture->cpu_descriptor, 0, sizeof(texture->cpu_descriptor));
    }
 
-   if (!texture->handle && !texture->upload_buffer && !texture->upload_buffer2)
-   {
-      if (texture->planar)
-         Release(texture->planar->planes);
-      free(texture->planar);
-      texture->planar = NULL;
+   if (!texture->handle && !texture->upload_buffer && !texture->upload_buffer2
+         && !texture->planar
+#ifdef D3D12_FRAME_IMPORT
+         && !texture->import
+#endif
+      )
       return;
-   }
 
    if (texture->srv_heap && (size_t)texture->desc.MipLevels + texture->media_compute
          <= countof(texture->cpu_descriptor))
@@ -2163,6 +2165,10 @@ static bool d3d12_media_pool_begin(d3d12_texture_t *t)
    if (t->media_versions) return true;
    if (t->planar && (!t->planar->cpu_uav.ptr || !t->planar->gpu_uav.ptr))
       return false;
+#ifdef D3D12_FRAME_IMPORT
+   if (t->import && (!t->import->cpu_uav.ptr || !t->import->gpu_uav.ptr))
+      return false;
+#endif
    t->media_versions = (d3d12_media_version_t**)calloc(
          GFX_MAX_FRAME_HISTORY + 2, sizeof(*t->media_versions));
    if (!t->media_versions) return false;
@@ -2188,6 +2194,15 @@ static bool d3d12_media_pool_begin(d3d12_texture_t *t)
       v->texture.gpu_descriptor[1] = t->planar->gpu_uav;
       t->planar->cpu_uav.ptr = t->planar->gpu_uav.ptr = 0;
    }
+#ifdef D3D12_FRAME_IMPORT
+   else if (t->import)
+   {
+      v->texture.media_compute = true;
+      v->texture.cpu_descriptor[1] = t->import->cpu_uav;
+      v->texture.gpu_descriptor[1] = t->import->gpu_uav;
+      t->import->cpu_uav.ptr = t->import->gpu_uav.ptr = 0;
+   }
+#endif
    t->media_versions[0] = t->media_version = v;
    t->media_version_count = 1;
    return true;
@@ -2198,7 +2213,11 @@ static bool d3d12_media_writable(d3d12_video_t *video, d3d12_texture_t *t)
    unsigned i;
    d3d12_media_version_t *v = NULL;
    for (i = 0; i < t->media_version_count; i++)
-      if (t->media_versions[i]->refs == 1)
+      if (t->media_versions[i]->refs == 1
+#ifdef D3D12_FRAME_IMPORT
+            && (!t->import || t->media_versions[i]->read_serial <= video->media_submit_serial)
+#endif
+         )
       {
          v = t->media_versions[i];
          break;
@@ -2212,7 +2231,11 @@ static bool d3d12_media_writable(d3d12_video_t *video, d3d12_texture_t *t)
       v->texture.desc = t->desc;
       v->texture.srv_heap = t->srv_heap;
       v->texture.media_storage_only = true;
-      v->texture.media_compute = t->planar != NULL;
+      v->texture.media_compute = t->planar != NULL
+#ifdef D3D12_FRAME_IMPORT
+         || t->import != NULL
+#endif
+         ;
       d3d12_init_texture(video->device, &v->texture);
       if (!v->texture.handle || !v->texture.cpu_descriptor[0].ptr
             || (v->texture.media_compute && !v->texture.cpu_descriptor[1].ptr)
@@ -2228,6 +2251,13 @@ static bool d3d12_media_writable(d3d12_video_t *video, d3d12_texture_t *t)
    t->cpu_descriptor[0] = v->texture.cpu_descriptor[0];
    t->gpu_descriptor[0] = v->texture.gpu_descriptor[0];
    return true;
+}
+
+static void d3d12_media_read_texture(d3d12_video_t *video,
+      d3d12_texture_t *texture)
+{
+   if (texture->media_version)
+      texture->media_version->read_serial = video->media_submit_serial + 1;
 }
 
 static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
@@ -2773,6 +2803,7 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
             cmd->lpVtbl->SetPipelineState(cmd,
                   (D3D12PipelineState)d3d12->sprites.pipe);
       }
+      d3d12_media_read_texture(d3d12, texture);
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T, texture->gpu_descriptor[0]);
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T, texture->sampler);
 #ifdef HAVE_DXGI_HDR
@@ -2974,6 +3005,7 @@ static bool gfx_display_d3d12_mesh_draw(void *data, unsigned video_dims,
    cmd->lpVtbl->SetPipelineState(cmd, (D3D12PipelineState)d3d12->mesh_pipe);
    cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_UBO,
          d3d12->mesh_cb_va + (D3D12_GPU_VIRTUAL_ADDRESS)cb * D3D12_MESH_CB_SIZE);
+   d3d12_media_read_texture(d3d12, tex);
    cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
          tex->gpu_descriptor[0]);
    cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
@@ -4203,6 +4235,7 @@ static void d3d12_render_overlay(d3d12_video_t *d3d12)
       if (tex->dirty)
          d3d12_upload_texture(cmd, tex, d3d12);
 
+      d3d12_media_read_texture(d3d12, tex);
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(
             cmd, ROOT_ID_TEXTURE_T, tex->gpu_descriptor[0]);
       cmd->lpVtbl->DrawInstanced(cmd, 1, 1, (UINT)i, 0);
@@ -13332,6 +13365,21 @@ static void d3d12_import_transition(D3D12GraphicsCommandList cmd,
    cmd->lpVtbl->ResourceBarrier(cmd, 2, barriers);
 }
 
+/* Viewer outputs always return to shader-resource state on this queue.
+ * A movie output instead returns to COPY_SOURCE and never joins this pool. */
+static bool d3d12_import_writable(d3d12_video_t *video,
+      d3d12_texture_t *texture, D3D12_GPU_DESCRIPTOR_HANDLE *uav)
+{
+   *uav = texture->import->gpu_uav;
+   if (!texture->media_versions) return true;
+   if (video->movie_importing
+         || texture->import->output_state != D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+         || !d3d12_media_writable(video, texture))
+      return false;
+   *uav = texture->media_version->texture.gpu_descriptor[1];
+   return true;
+}
+
 /* Converts @f into texture *@id in a list of its own, executed at once
  * behind the producer's fence and signalling the reader's: the frame
  * never reaches the CPU and nothing here waits */
@@ -13340,6 +13388,7 @@ static enum video_texture_update d3d12_import_texture(void *data,
       enum texture_filter_type filter)
 {
    d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   D3D12_GPU_DESCRIPTOR_HANDLE output_uav;
    D3D12GraphicsCommandList cmd;
    d3d12_texture_t *texture;
    d3d12_import_t  *imp;
@@ -13411,6 +13460,9 @@ static enum video_texture_update d3d12_import_texture(void *data,
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
 
+   if (!d3d12_import_writable(d3d12, texture, &output_uav))
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
+
    memset(constants, 0, sizeof(constants));
    constants[0] = w;
    constants[1] = h;
@@ -13437,7 +13489,7 @@ static enum video_texture_update d3d12_import_texture(void *data,
    cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_TEXTURE_T,
          imp->gpu_planes[t]);
    cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_UAV_T,
-         imp->gpu_uav);
+         output_uav);
    cmd->lpVtbl->SetComputeRoot32BitConstants(cmd, CS_ROOT_ID_CONSTANTS,
          20, constants, 0);
    cmd->lpVtbl->Dispatch(cmd, (w + 7) / 8, (h + 7) / 8, 1);
@@ -13465,6 +13517,9 @@ static enum video_texture_update d3d12_import_texture(void *data,
       : D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
    imp->tex_fence[t]      = d3d12->import_fence[k];
    d3d12->import_next++;
+   texture->media_history.copies = 0;
+   texture->media_history.managed = true;
+   texture->media_borrowable = !d3d12->movie_importing;
    if (!*id)
       *id = (uintptr_t)texture;
    return VIDEO_TEXTURE_UPDATE_DONE;
@@ -15008,6 +15063,19 @@ video_driver_t video_d3d12 = {
 #ifdef HAVE_SLANG
 #include "../common/hdr_viewer_colour.h"
 
+/* Record reads in the frame list's next submission. Immediate import
+ * lists must not reuse these versions until that list has been queued. */
+static void d3d12_media_read_history(d3d12_video_t *video,
+      d3d12_filter_chain_t *chain, d3d12_texture_t *texture)
+{
+   unsigned i;
+   d3d12_media_read_texture(video, texture);
+   if (chain->history_borrowed)
+      for (i = 0; i <= chain->shader_preset->history_size; i++)
+         if (chain->history[i].media_version)
+            d3d12_media_read_texture(video, &chain->history[i]);
+}
+
 static bool gfx_display_d3d12_media_shader_draw(void *data, uintptr_t image,
       unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
 {
@@ -15086,6 +15154,7 @@ static bool gfx_display_d3d12_media_shader_draw(void *data, uintptr_t image,
       D3D12_RESOURCE_TRANSITION(cmd, to.pResource,
             D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
    }
+   d3d12_media_read_history(video, chain, texture);
    chain->media_history = NULL;
    chain->media_owner = NULL;
    d3d12_views_bind(video);
