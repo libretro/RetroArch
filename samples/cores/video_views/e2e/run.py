@@ -851,7 +851,8 @@ def hdr_passes(name):
 
 def hdr_errors(d, game, composite):
     """A run with HDR10 output must have it (on Xvfb the fake layer logs
-    its HDR10 swapchain) and log no validation error. game and
+    its HDR10 swapchain), log no validation error and log each pass's
+    mode once, not per frame (no case changes it mid-run). game and
     composite say whether it takes the HDR game pass and composite;
     None checks neither way."""
     text = log_text(d)
@@ -871,6 +872,11 @@ def hdr_errors(d, game, composite):
                              (COMPOSITE_PASS, composite, 'composite')):
         if want is not None and (line in text) != want:
             errors.append('%s HDR %s' % ('no' if want else 'an', what))
+        modes = re.findall(re.escape(line) + r' mode (\d+)', text)
+        for mode in sorted(set(modes)):
+            if modes.count(mode) > 1:
+                errors.append('"%s mode %s" logged %d times'
+                              % (line, mode, modes.count(mode)))
     return errors
 
 

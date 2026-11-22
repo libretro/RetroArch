@@ -10750,10 +10750,10 @@ static unsigned vulkan_hdr_source_mode(vk_t *vk,
  * inputs are a mix of core pixel format, shader preset output and swapchain
  * colour space, and a wrong combination shows up only as a subtly graded
  * image -- which is very hard to attribute from a screenshot. */
-static void vulkan_hdr_log_mode(vk_t *vk, unsigned mode, const char *pass)
+static void vulkan_hdr_log_mode(vk_t *vk, unsigned mode, bool is_menu_composite)
 {
-   static unsigned last_mode = 0xFFFFFFFFu;
-   static const char *last_pass = NULL;
+   static unsigned last_mode[2] = { 0xFFFFFFFFu, 0xFFFFFFFFu };
+   unsigned pass                = is_menu_composite ? 1 : 0;
    static const char *desc[4] =
    {
       "passthrough (source already in output space)",
@@ -10762,14 +10762,13 @@ static void vulkan_hdr_log_mode(vk_t *vk, unsigned mode, const char *pass)
       "PQ Rec.2020 -> scRGB"
    };
 
-   if (mode == last_mode && pass == last_pass)
+   if (mode == last_mode[pass])
       return;
-   last_mode = mode;
-   last_pass = pass;
+   last_mode[pass] = mode;
 
    RARCH_LOG("[Vulkan] HDR %s pass: mode %u, %s "
          "(core PQ: %s, swapchain: %s).\n",
-         pass, mode, desc[mode & 3],
+         is_menu_composite ? "composite" : "game", mode, desc[mode & 3],
          (vk->flags & VK_FLAG_SOURCE_HDR10) ? "yes" : "no",
          (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? "scRGB" : "HDR10");
 }
@@ -15120,7 +15119,7 @@ static bool vulkan_frame(void *data, const void *frame,
              * HDR10 + SDR source   -> mode 1 (sRGB->HDR10 PQ) */
             unsigned game_hdr_mode = vulkan_hdr_source_mode(vk, NULL,
                   filter_chain);
-            vulkan_hdr_log_mode(vk, game_hdr_mode, "game");
+            vulkan_hdr_log_mode(vk, game_hdr_mode, false);
             vulkan_run_hdr_pipeline(vk->pipelines.hdr_opaque, vk->render_pass, &vk->offscreen_buffer, backbuffer, vk, game_hdr_mode, false);
          }
 
@@ -15321,7 +15320,7 @@ static bool vulkan_frame(void *data, const void *frame,
              * content is SDR by construction, so encode it as SDR. */
             unsigned composite_hdr_mode =
                   (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? 2 : 1;
-            vulkan_hdr_log_mode(vk, composite_hdr_mode, "composite");
+            vulkan_hdr_log_mode(vk, composite_hdr_mode, true);
             vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->keep_render_pass, &vk->offscreen_buffer, backbuffer, vk, composite_hdr_mode, true);
          }
       }
