@@ -19164,8 +19164,8 @@ static void vulkan_build_pq10_lut(void)
  * uint16_t (R,G,B) and writes them bottom-up like vulkan_read_viewport. Two
  * backbuffer encodings are handled:
  *
- *   - HDR10  (A2B10G10R10, PQ Rec.2020): unpack the packed 2-10-10-10 word,
- *     scale each channel 10->16 bit. Tagged PQ / BT.2100.
+ *   - HDR10  (A2B10G10R10 or A2R10G10B10, PQ Rec.2020): unpack the packed
+ *     2-10-10-10 word, scale each channel 10->16 bit. Tagged PQ / BT.2100.
  *   - scRGB  (RGBA16F, linear Rec.709, 1.0 = 80 nits): decode the halves,
  *     scale to absolute nits and PQ-encode into 16-bit. Tagged PQ / BT.709,
  *     so no gamut matrix is needed - the values are Rec.709, just PQ-coded.
@@ -19188,7 +19188,8 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
       return false;
 
    /* Need an active HDR swapchain. Two encodings are supported: HDR10
-    * (A2B10G10R10 PQ) and scRGB (RGBA16F). SDR is not handled here. */
+    * (A2B10G10R10 or A2R10G10B10 PQ) and scRGB (RGBA16F). SDR is not
+    * handled here. */
    if (!(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE))
       return false;
 
@@ -19310,6 +19311,11 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
       }
       else
       {
+         /* The copy keeps the swapchain's order: [29:20] is B in
+          * A2B10G10R10, R in A2R10G10B10. */
+         unsigned r_shift = (staging->format
+               == VK_FORMAT_A2R10G10B10_UNORM_PACK32) ? 20 : 0;
+         unsigned b_shift = 20 - r_shift;
          for (y = 0; y < (int)vp_height; y++,
                src += staging->stride, buffer -= 3 * vp_width)
          {
@@ -19317,11 +19323,10 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
             int x;
             for (x = 0; x < (int)vp_width; x++)
             {
-               /* A2B10G10R10_UNORM_PACK32: A[31:30] B[29:20] G[19:10] R[9:0]. */
                uint32_t w = row[x];
-               uint32_t r = (w      ) & 0x3FF;
-               uint32_t g = (w >> 10) & 0x3FF;
-               uint32_t b = (w >> 20) & 0x3FF;
+               uint32_t r = (w >> r_shift) & 0x3FF;
+               uint32_t g = (w >> 10     ) & 0x3FF;
+               uint32_t b = (w >> b_shift) & 0x3FF;
                uint32_t mx;
                float lvl;
                /* 10->16 bit, replicating high bits so 0x3FF -> 0xFFFF. */
