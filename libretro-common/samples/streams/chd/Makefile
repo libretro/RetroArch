@@ -6,6 +6,7 @@ TARGET_TEST2   := chd_stream_ahead_test$(EXE)
 TARGET_TEST3   := chd_map_alloc_test$(EXE)
 TARGET_TEST4   := rchd_hunk_cache_test$(EXE)
 TARGET_TEST5   := rchd_flac_test$(EXE)
+TARGET_TEST6   := rchd_write_test$(EXE)
 .DEFAULT_GOAL  := all
 
 LIBRETRO_COMM_DIR := ../../..
@@ -77,7 +78,7 @@ else
 endif
 
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
-	$(TARGET_TEST5)
+	$(TARGET_TEST5) $(TARGET_TEST6)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -115,18 +116,24 @@ $(SAMPLE_OBJDIR)/rflac.o: $(LIBRETRO_COMM_DIR)/formats/flac/rflac.c
 $(TARGET_TEST5): $(SAMPLE_OBJDIR)/rchd_flac_test.o $(FLAC_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(THREADS_LDLIBS)
 
+# rchd over images MAME 0.139 wrote, its diffs written and updated; the
+# A/V decoder is built with the FLAC codecs
+$(TARGET_TEST6): $(SAMPLE_OBJDIR)/rchd_write_test.o $(FLAC_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(THREADS_LDLIBS)
+
 check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
-		$(TARGET_TEST5)
+		$(TARGET_TEST5) $(TARGET_TEST6)
 	./$(TARGET)
 	./$(TARGET_TEST)
 	./$(TARGET_TEST2)
 	./$(TARGET_TEST3)
 	./$(TARGET_TEST4)
 	./$(TARGET_TEST5)
+	./$(TARGET_TEST6)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
-	   $(TARGET_TEST4) $(TARGET_TEST5) $(OBJS)
+	   $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) $(OBJS)
 
 .PHONY: all check clean

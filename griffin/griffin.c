@@ -2091,9 +2091,29 @@ DEPENDENCIES
 /* The built-in reader, and the codecs it calls directly. Huffman is not
  * optional: a version 5 map is Huffman-coded, so it is needed to open
  * an image at all. libchdr's own huffman is a different interface and
- * does not serve -- it exports huffman_*, this wants rhuff_*. */
+ * does not serve -- it exports huffman_*, this wants rhuff_*.
+ *
+ * Every codec rchd can call is already in this unit -- deflate and crc32
+ * always, rflac whenever HAVE_CHD is, rzstd with HAVE_RZSTD, r7z_lzma
+ * just below -- so the codecs are switched on here rather than in each
+ * console Makefile, which then needs only HAVE_CHD and HAVE_RCHD. */
+#ifndef HAVE_RCHD_DEFLATE
+#define HAVE_RCHD_DEFLATE 1
+#endif
+#ifndef HAVE_RCHD_LZMA
+#define HAVE_RCHD_LZMA 1
+#endif
+#ifndef HAVE_RCHD_FLAC
+#define HAVE_RCHD_FLAC 1
+#endif
+#if defined(HAVE_RZSTD) && !defined(HAVE_RCHD_ZSTD)
+#define HAVE_RCHD_ZSTD 1
+#endif
 #include "../libretro-common/encodings/encoding_huffman.c"
 #include "../libretro-common/formats/chd/rchd.c"
+/* rchd's LZMA codec, built here whether or not the 7z backend is. */
+#define GRIFFIN_HAVE_R7Z_LZMA 1
+#include "../libretro-common/formats/7z/r7z_lzma.c"
 #else
 #include "../libretro-common/formats/libchdr/libchdr_zlib.c"
 #include "../libretro-common/formats/libchdr/libchdr_bitstream.c"

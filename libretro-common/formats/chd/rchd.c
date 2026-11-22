@@ -38,7 +38,8 @@
  * Reading is complete for every image to hand. Fourteen commercial
  * images spanning all five container versions decode hunk-for-hunk
  * against an independent reader, including each image's final hunk.
- * Nothing here writes.
+ * Writing covers MAME's diffs: making one against a parent and storing
+ * hunks into it, as MAME 0.139 lays them out.
  *
  * CONTAINER
  *   Header               versions 1 to 5, including the geometry that
@@ -49,7 +50,10 @@
  *                        versions 1 and 2, the 16-byte entries of 3 and
  *                        4 with their end-of-list cookie, and version
  *                        5's flat array and Huffman-plus-RLE bitstream.
- *   Metadata             the chain is walked at open and kept.
+ *   Metadata             the chain is walked at open and kept; a
+ *                        version 1 or 2 hard disk's header geometry is
+ *                        given as the metadata entry later versions
+ *                        carry.
  *   Tracks               CD and GD track tables, with each track padded
  *                        to a four-frame boundary. A DVD image
  *                        describes no tracks, so one standing for the
@@ -112,7 +116,8 @@
  *   SHA-1 verification   the header's digests are parsed and exposed,
  *                        never checked against the data. A caller that
  *                        wants to know an image is intact has to do it.
- *   Writing              nothing. No encoder, no repair, no conversion.
+ *   Writing              diffs only. No encoder, no repair, no
+ *                        conversion.
  *   GD-ROM PAD field     a GD track carries a PAD the CD form does
  *                        not. It describes the disc, not the file --
  *                        placing tracks by it puts every track after
@@ -330,6 +335,11 @@ struct rchd
    int                state;
    int                header_len;
 
+   /* A version 1 or 2 hard disk's geometry, which those versions record
+    * in the header rather than as metadata: cylinders, heads, sectors
+    * and bytes per sector. */
+   uint32_t           v12_geometry[4];
+
    rchd_codec_slot_t *codecs;
    uint32_t           codec_count;
 
@@ -406,6 +416,9 @@ struct rchd
    int                reading;
 
    rchd_t            *parent;
+   /* Set while the outstanding request is the bound parent's, so the
+    * bytes supplied for it are handed on to the parent. */
+   int                await_parent;
 };
 
 /* Asks the caller for a range, and reports whether it has all arrived.
@@ -467,6 +480,13 @@ uint32_t rchd_read_pending(rchd_t *chd, rchd_request_t *out, uint32_t max)
 {
    if (!chd || !out || !max)
       return 0;
+   if (chd->await_parent && chd->parent)
+   {
+      if (!rchd_read_pending(chd->parent, out, max))
+         return 0;
+      out[0].source = RCHD_SOURCE_PARENT;
+      return 1;
+   }
    if (!chd->pending || chd->pending_have >= chd->pending_size)
       return 0;
 
@@ -489,11 +509,25 @@ static int rchd_supply_matches(const rchd_t *chd, uint64_t offset,
    return offset == chd->pending_off + chd->pending_have;
 }
 
+/* The source a parent's own outstanding request is named by, from
+ * where the parent stands. */
+static int rchd_parent_source(const rchd_t *parent)
+{
+   return parent->await_parent ? RCHD_SOURCE_PARENT : parent->pending_src;
+}
+
 int rchd_feed_at(rchd_t *chd, uint64_t offset, int source,
       const void *data, size_t len)
 {
    if (!chd || !data)
       return RCHD_ERROR_PARAM;
+   if (chd->await_parent && chd->parent)
+   {
+      if (source != RCHD_SOURCE_PARENT)
+         return RCHD_ERROR_STATE;
+      return rchd_feed_at(chd->parent, offset,
+            rchd_parent_source(chd->parent), data, len);
+   }
    if (!rchd_supply_matches(chd, offset, source))
       return RCHD_ERROR_STATE;
 
@@ -511,6 +545,13 @@ int rchd_feed_borrow(rchd_t *chd, uint64_t offset, int source,
 {
    if (!chd || !data)
       return RCHD_ERROR_PARAM;
+   if (chd->await_parent && chd->parent)
+   {
+      if (source != RCHD_SOURCE_PARENT)
+         return RCHD_ERROR_STATE;
+      return rchd_feed_borrow(chd->parent, offset,
+            rchd_parent_source(chd->parent), data, len);
+   }
    if (!rchd_supply_matches(chd, offset, source))
       return RCHD_ERROR_STATE;
 
@@ -549,6 +590,8 @@ int rchd_feed(rchd_t *chd, const void *data, size_t len)
 {
    if (!chd || !data)
       return RCHD_ERROR_PARAM;
+   if (chd->await_parent && chd->parent)
+      return rchd_feed(chd->parent, data, len);
    if (!chd->pending || chd->pending_have >= chd->pending_size)
       return RCHD_ERROR_STATE;
 
@@ -580,8 +623,15 @@ static int rchd_parse_v1v2(rchd_t *chd, const uint8_t *h, uint32_t version)
    chd->info.logical_bytes = (uint64_t)cyls * heads * secs * seclen;
    chd->info.hunk_count    = rchd_rd32(h + 28);
    chd->info.unit_bytes    = seclen;
-   chd->info.has_parent    = (rchd_rd32(h + 16) & 1) != 0;
+   chd->info.flags         = rchd_rd32(h + 16);
+   chd->info.has_parent    = (chd->info.flags & RCHD_FLAG_HAS_PARENT) != 0;
+   memcpy(chd->info.md5,        h + 44, 16);
+   memcpy(chd->info.parent_md5, h + 60, 16);
    chd->meta_offset        = 0;
+   chd->v12_geometry[0]    = cyls;
+   chd->v12_geometry[1]    = heads;
+   chd->v12_geometry[2]    = secs;
+   chd->v12_geometry[3]    = seclen;
    return RCHD_OK;
 }
 
@@ -592,6 +642,8 @@ static int rchd_parse_v3v4(rchd_t *chd, const uint8_t *h, uint32_t version)
       chd->info.logical_bytes = rchd_rd_be(h + 28, 8);
       chd->meta_offset        = rchd_rd_be(h + 36, 8);
       chd->info.hunk_bytes    = rchd_rd32(h + 76);
+      memcpy(chd->info.md5,         h + 44,  16);
+      memcpy(chd->info.parent_md5,  h + 60,  16);
       memcpy(chd->info.sha1,        h + 80,  20);
       memcpy(chd->info.parent_sha1, h + 100, 20);
    }
@@ -606,7 +658,8 @@ static int rchd_parse_v3v4(rchd_t *chd, const uint8_t *h, uint32_t version)
    }
 
    chd->info.hunk_count = rchd_rd32(h + 24);
-   chd->info.has_parent = (rchd_rd32(h + 16) & 1) != 0;
+   chd->info.flags      = rchd_rd32(h + 16);
+   chd->info.has_parent = (chd->info.flags & RCHD_FLAG_HAS_PARENT) != 0;
 
 
    /* Nothing before version 5 records a unit size. It is inferred from
@@ -641,6 +694,7 @@ static int rchd_parse_v5(rchd_t *chd, const uint8_t *h)
    {
       static const uint8_t zero[20] = { 0 };
       chd->info.has_parent = memcmp(chd->info.parent_sha1, zero, 20) != 0;
+      chd->info.flags      = chd->info.has_parent ? RCHD_FLAG_HAS_PARENT : 0;
    }
 
    chd->info.hunk_count = (uint32_t)((chd->info.logical_bytes
@@ -1060,6 +1114,61 @@ static int rchd_meta_collect(rchd_t *chd)
    return RCHD_OK;
 }
 
+/* Versions 1 and 2 keep a hard disk's geometry in the header and carry
+ * no metadata, so the entry a later version would hold is made from it:
+ * the same text MAME 0.139 answers a request for it with, terminator
+ * included, so a consumer reads every version's geometry one way. */
+static size_t rchd_put_u32(char *out, uint32_t v)
+{
+   char   digits[10];
+   size_t n = 0, i;
+
+   do
+   {
+      digits[n++] = (char)('0' + v % 10);
+      v          /= 10;
+   } while (v);
+   for (i = 0; i < n; i++)
+      out[i] = digits[n - 1 - i];
+   return n;
+}
+
+static int rchd_meta_synth_v12(rchd_t *chd)
+{
+   static const char *const keys[4] = { "CYLS:", ",HEADS:", ",SECS:", ",BPS:" };
+   char             text[96];
+   size_t           len = 0;
+   unsigned         i;
+   uint8_t         *grown;
+   rchd_metadata_t *m;
+
+   for (i = 0; i < 4; i++)
+   {
+      size_t k = strlen(keys[i]);
+      memcpy(text + len, keys[i], k);
+      len += k;
+      len += rchd_put_u32(text + len, chd->v12_geometry[i]);
+   }
+   text[len++] = '\0';
+
+   if (!(grown = (uint8_t*)realloc(chd->metadata, chd->metadata_size + len)))
+      return RCHD_ERROR_MEM;
+   chd->metadata = grown;
+   if (!(m = (rchd_metadata_t*)realloc(chd->meta,
+               (chd->meta_count + 1) * sizeof(*m))))
+      return RCHD_ERROR_MEM;
+   chd->meta = m;
+
+   memcpy(chd->metadata + chd->metadata_size, text, len);
+   m[chd->meta_count].tag    = RCHD_META_HARD_DISK;
+   m[chd->meta_count].flags  = 0;
+   m[chd->meta_count].length = (uint32_t)len;
+   m[chd->meta_count].data   = (const uint8_t*)chd->metadata_size;
+   chd->metadata_size       += len;
+   chd->meta_count++;
+   return RCHD_OK;
+}
+
 static void rchd_meta_resolve(rchd_t *chd)
 {
    uint32_t i;
@@ -1289,6 +1398,9 @@ int rchd_open_step(rchd_t *chd, rchd_request_t *req)
             chd->meta_have_len = 0;
          }
 
+         if (chd->info.version <= 2 && chd->meta_count == 0
+               && (err = rchd_meta_synth_v12(chd)) != RCHD_OK)
+            return err;
          rchd_meta_resolve(chd);
          rchd_infer_unit_bytes(chd);
          if ((err = rchd_build_tracks(chd)) != RCHD_OK)
@@ -1371,6 +1483,18 @@ int rchd_hunk_location(const rchd_t *chd, uint32_t hunk, rchd_request_t *req)
           || chd->map[hunk].type == RCHD_V5_PARENT))
       req->length = 0;
 
+   return RCHD_OK;
+}
+
+int rchd_hunk_crc32(const rchd_t *chd, uint32_t hunk, uint32_t *crc)
+{
+   if (!chd || !crc || chd->state != RCHD_OPEN_DONE
+         || hunk >= chd->info.hunk_count)
+      return RCHD_ERROR_PARAM;
+   /* Only versions 3 and 4 record one; the field holds something else
+    * in the others' maps, or nothing. */
+   *crc = (chd->info.version >= 3 && chd->info.version <= 4)
+        ? chd->map[hunk].crc : 0;
    return RCHD_OK;
 }
 
@@ -2971,6 +3095,7 @@ static int rchd_parent_read_begin(rchd_t *chd, uint64_t offset,
 
 static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
 {
+   chd->await_parent = 0;
    if (!chd->reading)
       return RCHD_ERROR_STATE;
 
@@ -3015,15 +3140,18 @@ static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
          uint8_t *into  = whole ? chd->rd_dst + chd->rd_done : chd->cache;
          e = &chd->map[src_hunk];
 
-         /* A parent reference is the parent's data at a unit position,
-          * so it is read from the bound parent rather than from here. */
+         /* A parent reference is read from the bound parent rather
+          * than from here. Version 5 names the parent's data by unit;
+          * versions 3 and 4 by hunk, whatever unit the metadata
+          * implies. */
          if ((chd->info.version >= 5 && e->type == RCHD_V5_PARENT)
                || (chd->info.version < 5 && e->type == RCHD_V34_PARENT))
          {
             if (!chd->parent)
                return RCHD_ERROR_NO_PARENT;
-            err = rchd_parent_read_begin(chd,
-                  e->offset * chd->info.unit_bytes, into);
+            err = rchd_parent_read_begin(chd, e->offset
+                  * (chd->info.version >= 5 ? chd->info.unit_bytes
+                                            : chd->info.hunk_bytes), into);
             if (err != RCHD_OK)
                return err;
             for (;;)
@@ -3031,7 +3159,8 @@ static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
                err = rchd_read_step(chd->parent, req);
                if (err == RCHD_PENDING)
                {
-                  req->source = RCHD_SOURCE_PARENT;
+                  req->source       = RCHD_SOURCE_PARENT;
+                  chd->await_parent = 1;
                   return RCHD_PENDING;
                }
                if (err != RCHD_OK)
@@ -3560,4 +3689,152 @@ void rchd_write_free(rchd_writer_t *w)
    free(w->lengths);
    free(w->crcs);
    free(w);
+}
+
+/* =====================================================================
+ * Writable images: MAME 0.139's diffs
+ *
+ * A diff is a version 4 image: a 108-byte header, then one 16-byte map
+ * entry per hunk and the end-of-list cookie, then the metadata chain,
+ * each entry a 16-byte header and its payload, linked in order.
+ * ===================================================================== */
+
+#define RCHD_V4_HEADER_BYTES 108
+/* Map entries emitted per call to the sink while a diff is written. */
+#define RCHD_DIFF_MAP_CHUNK  256
+
+static void rchd_v34_entry(uint8_t *e, uint64_t offset, uint32_t crc,
+      uint32_t length, uint8_t type)
+{
+   rchd_wr64(e, offset);
+   rchd_wr32(e + 8, crc);
+   e[12] = (uint8_t)(length >> 8);
+   e[13] = (uint8_t)length;
+   e[14] = (uint8_t)(length >> 16);
+   e[15] = type;
+}
+
+int rchd_write_diff(const rchd_t *parent, const uint8_t *sha1,
+      rchd_write_fn sink, void *ctx)
+{
+   uint8_t  hdr[RCHD_V4_HEADER_BYTES];
+   uint8_t *map;
+   uint64_t meta_start;
+   uint64_t at;
+   uint32_t n, i;
+   int      parent_crcs;
+
+   if (!parent || !sink || parent->state != RCHD_OPEN_DONE)
+      return RCHD_ERROR_PARAM;
+
+   meta_start = RCHD_V4_HEADER_BYTES
+              + ((uint64_t)parent->info.hunk_count + 1) * 16;
+
+   memset(hdr, 0, sizeof(hdr));
+   memcpy(hdr, "MComprHD", 8);
+   rchd_wr32(hdr + 8,  RCHD_V4_HEADER_BYTES);
+   rchd_wr32(hdr + 12, 4);
+   rchd_wr32(hdr + 16, RCHD_FLAG_HAS_PARENT | RCHD_FLAG_WRITEABLE);
+   rchd_wr32(hdr + 20, 0);                   /* stored uncompressed */
+   rchd_wr32(hdr + 24, parent->info.hunk_count);
+   rchd_wr64(hdr + 28, parent->info.logical_bytes);
+   rchd_wr64(hdr + 36, parent->meta_count ? meta_start : 0);
+   rchd_wr32(hdr + 44, parent->info.hunk_bytes);
+   if (sha1)
+      memcpy(hdr + 48, sha1, 20);
+   memcpy(hdr + 68, parent->info.sha1, 20);
+   /* the raw SHA-1, at 88, stays zero: a diff holds no data of its own */
+   if (!sink(ctx, 0, hdr, sizeof(hdr)))
+      return RCHD_ERROR_STATE;
+
+   /* Every hunk is the parent's same hunk, carrying its CRC where the
+    * parent's map records one. */
+   if (!(map = (uint8_t*)malloc(RCHD_DIFF_MAP_CHUNK * 16)))
+      return RCHD_ERROR_MEM;
+   parent_crcs = parent->info.version >= 3 && parent->info.version <= 4;
+   at          = RCHD_V4_HEADER_BYTES;
+   for (n = 0; n < parent->info.hunk_count; n += i)
+   {
+      for (i = 0; i < RCHD_DIFF_MAP_CHUNK
+            && n + i < parent->info.hunk_count; i++)
+         rchd_v34_entry(map + i * 16, n + i,
+               parent_crcs ? parent->map[n + i].crc : 0, 0,
+               RCHD_V34_PARENT);
+      if (!sink(ctx, at, map, (size_t)i * 16))
+      {
+         free(map);
+         return RCHD_ERROR_STATE;
+      }
+      at += (uint64_t)i * 16;
+   }
+   free(map);
+   if (!sink(ctx, at, rchd_end_of_list, 16))
+      return RCHD_ERROR_STATE;
+   at += 16;
+
+   /* The parent's metadata, in its order, each entry linking to the
+    * next and the last to nothing. */
+   for (n = 0; n < parent->meta_count; n++)
+   {
+      const rchd_metadata_t *m = &parent->meta[n];
+      uint64_t next = at + 16 + m->length;
+
+      rchd_wr32(hdr, m->tag);
+      rchd_wr32(hdr + 4, (m->length & 0x00ffffffU)
+            | ((uint32_t)m->flags << 24));
+      rchd_wr64(hdr + 8, (n + 1 < parent->meta_count) ? next : 0);
+      if (     !sink(ctx, at, hdr, 16)
+            || (m->length && !sink(ctx, at + 16, m->data, m->length)))
+         return RCHD_ERROR_STATE;
+      at = next;
+   }
+
+   return RCHD_OK;
+}
+
+int rchd_update_hunk(rchd_t *chd, uint32_t hunk, const uint8_t *data,
+      uint64_t *file_end, rchd_write_fn sink, void *ctx)
+{
+   rchd_map_entry_t *e;
+   uint8_t           entry[16];
+   uint64_t          offset;
+   uint32_t          hb;
+   uint32_t          crc;
+
+   if (!chd || !data || !file_end || !sink
+         || chd->state != RCHD_OPEN_DONE || hunk >= chd->info.hunk_count)
+      return RCHD_ERROR_PARAM;
+   if (chd->info.version < 3 || chd->info.version > 4
+         || !(chd->info.flags & RCHD_FLAG_WRITEABLE))
+      return RCHD_ERROR_UNSUPPORTED;
+   if (chd->reading || chd->sec_active)
+      return RCHD_ERROR_STATE;
+
+   e      = &chd->map[hunk];
+   hb     = chd->info.hunk_bytes;
+   crc    = encoding_crc32(0, data, hb);
+   /* A hunk already holding a whole hunk's worth of its own data is
+    * written over; anything else - a reference, a mini hunk, a
+    * compressed blob - gets new room at the end of the file. */
+   offset = e->offset;
+   if (offset == 0 || e->length < hb)
+   {
+      offset     = *file_end;
+      *file_end += hb;
+   }
+
+   if (!sink(ctx, offset, data, hb))
+      return RCHD_ERROR_STATE;
+   rchd_v34_entry(entry, offset, crc, hb, RCHD_V34_UNCOMPRESSED);
+   if (!sink(ctx, chd->map_offset + (uint64_t)hunk * 16, entry, 16))
+      return RCHD_ERROR_STATE;
+
+   e->offset   = offset;
+   e->crc      = crc;
+   e->length   = hb;
+   e->type     = RCHD_V34_UNCOMPRESSED;
+   /* A self reference to this hunk now reads its new contents, so no
+    * decoded hunk is kept. */
+   chd->cached = (uint32_t)-1;
+   return RCHD_OK;
 }
