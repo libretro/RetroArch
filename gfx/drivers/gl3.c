@@ -164,6 +164,8 @@ typedef struct gl3
 #ifdef HAVE_SLANG
    gfx_media_history_t media_history;
    uintptr_t media_history_texture;
+   uintptr_t media_borrow_texture;
+   bool media_borrow_single_level;
 #endif
 #ifdef HAVE_GL_MENU_BLOOM
    gl_menu_bloom_t *menu_bloom;
@@ -8485,6 +8487,7 @@ static void gl3_media_texture_changed(gl3_t *gl, uintptr_t id, bool uploaded)
 #endif
 #ifdef HAVE_SLANG
       if (gl->media_history_texture == id) gl->media_history.copies = 0;
+      if (!uploaded && gl->media_borrow_texture == id) gl->media_borrow_texture = 0;
 #endif
       if (uploaded || gl->media_last_texture == id)
          gl->media_last_texture = uploaded ? id : 0;
@@ -8576,6 +8579,9 @@ static uintptr_t video_texture_unload_wrap_gl3(void *data)
       gl_planar_forget(&gl->planar, glid);
 #endif
    gl3_media_texture_changed(gl, id, false);
+#if defined(HAVE_SLANG)
+   if (!gl3_filter_chain_retire_history(gl ? gl->media_shader_chain : NULL, glid))
+#endif
 #if defined(HAVE_GLSL)
    if (!gl3_media_shader_retire(gl ? gl->media_legacy_shader : NULL, glid))
 #endif
@@ -8625,6 +8631,10 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
 {
    const void *pixels = ti->pixels;
    int lent           = -1;
+#if defined(HAVE_SLANG)
+   if (gl && !gl3_filter_chain_preserve_history(gl->media_shader_chain, (unsigned)id))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#endif
 #if defined(HAVE_GLSL)
    if (gl && !gl3_media_shader_preserve(gl->media_legacy_shader, (GLuint)id))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
@@ -8815,6 +8825,9 @@ static void gl3_unload_texture(void *data, bool threaded,
       gl_planar_forget(&((gl3_t*)data)->planar, glid);
 #endif
    gl3_media_texture_changed((gl3_t*)data, id, false);
+#if defined(HAVE_SLANG)
+   if (!gl3_filter_chain_retire_history(data ? ((gl3_t*)data)->media_shader_chain : NULL, glid))
+#endif
 #if defined(HAVE_GLSL)
    if (!gl3_media_shader_retire(data ? ((gl3_t*)data)->media_legacy_shader : NULL, glid))
 #endif
@@ -9763,6 +9776,17 @@ static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
    }
    gl->media_history.managed = gl->media_last_texture == image;
    gl->media_history_texture = image;
+#ifndef HAVE_OPENGLES
+   if (gl->media_borrow_texture != image)
+   {
+      GLint mip_width = 0;
+      glGetTexLevelParameteriv(GL_TEXTURE_2D, 1, GL_TEXTURE_WIDTH, &mip_width);
+      gl->media_borrow_single_level = mip_width == 0;
+      gl->media_borrow_texture = image;
+   }
+   gl3_filter_chain_set_history_borrow(chain, gl->media_borrow_single_level
+         && (format == GL_RGBA8 || format == GL_RGBA16F));
+#endif
    gl3_filter_chain_set_input_texture_history(chain, &texture, &gl->media_history);
    gl3_filter_chain_build_offscreen_passes(chain, &vp);
    glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)target);

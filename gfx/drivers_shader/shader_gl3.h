@@ -124,6 +124,12 @@ void gl3_filter_chain_set_input_texture_history(
       const struct gl3_filter_chain_texture *texture,
       struct gfx_media_history *history);
 
+/* Opt in only for managed, single-level viewer textures. Preserve before
+ * mutation; retire transfers deletion when history still holds the name. */
+void gl3_filter_chain_set_history_borrow(gl3_filter_chain_t *chain, bool enabled);
+bool gl3_filter_chain_preserve_history(gl3_filter_chain_t *chain, unsigned image);
+bool gl3_filter_chain_retire_history(gl3_filter_chain_t *chain, unsigned image);
+
 /* Whether the chain reads a frame where it lies in a larger texture,
  * rather than copying it out. */
 bool gl3_filter_chain_reads_in_place(gl3_filter_chain_t *chain);

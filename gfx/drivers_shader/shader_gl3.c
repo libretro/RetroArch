@@ -3101,6 +3101,14 @@ static void gl3_pass_build_commands(struct gl3_pass *pass,
       }
 }
 
+/* Only managed viewer sources participate. The producer keeps a GL name
+ * until unload; history then owns its deletion until the last reader leaves. */
+struct gl3_history_lease
+{
+   gl3_filter_chain_texture texture;
+   bool retired;
+};
+
 struct gl3_filter_chain
 {
    struct glslang_last_pass last_pass;
@@ -3115,6 +3123,8 @@ struct gl3_filter_chain
    gfx_media_history_t *media_history;
    gfx_media_history_ring_t history_ring;
    bool history_input_valid;
+   bool borrow_input;
+   struct gl3_history_lease *history_leases;
    /* The count the last frame's final pass was drawn with. */
    uint64_t drawn_frame_count;
    /* num_original_history framebuffers; one more than the shaders read
@@ -3212,6 +3222,108 @@ static struct gl3_filter_chain *gl3_chain_new(unsigned num_passes)
    return chain;
 }
 
+static void gl3_chain_release_history_slot(struct gl3_filter_chain *chain,
+      unsigned slot)
+{
+   unsigned i;
+   struct gl3_history_lease *lease = &chain->history_leases[slot];
+   GLuint image = lease->texture.image;
+   bool retired = lease->retired;
+   if (!image) return;
+   memset(lease, 0, sizeof(*lease));
+   if (!retired) return;
+   for (i = 0; i < chain->num_original_history; i++)
+      if (chain->history_leases[i].texture.image == image)
+      {
+         chain->history_leases[i].retired = true;
+         return;
+      }
+   glDeleteTextures(1, &image);
+}
+
+static void gl3_chain_release_history_leases(struct gl3_filter_chain *chain,
+      bool all)
+{
+   unsigned i;
+   if (!chain->history_leases) return;
+   for (i = 0; i < chain->num_original_history; i++)
+      if (all || !chain->history_ring.refs[i])
+         gl3_chain_release_history_slot(chain, i);
+}
+
+/* Preserve raw pixels without disturbing the producer's draw state or
+ * running a shader/colour conversion. The framebuffer already belongs to
+ * this history slot and is reused on the next mutation. */
+static bool gl3_framebuffer_preserve(struct gl3_framebuffer *fb,
+      const gl3_filter_chain_texture *texture)
+{
+   GLint old_read, old_draw, old_texture;
+   GLuint old_image = fb->image;
+   bool ok = false;
+   glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &old_read);
+   glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &old_draw);
+   glGetIntegerv(GL_TEXTURE_BINDING_2D, &old_texture);
+   if (!fb->complete || fb->size_dims != texture->dims || fb->format != texture->format)
+      gl3_framebuffer_set_size(fb, texture->dims, texture->format);
+   if (old_image && old_image != fb->image && (GLuint)old_texture == old_image)
+      old_texture = 0;
+   if (fb->complete)
+   {
+      glBindFramebuffer(GL_FRAMEBUFFER, fb->framebuffer);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, texture->image, 0);
+      if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+      {
+         glBindTexture(GL_TEXTURE_2D, fb->image);
+         glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
+               VIDEO_SCALE_W(texture->dims), VIDEO_SCALE_H(texture->dims));
+         ok = true;
+      }
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, fb->image, 0);
+   }
+   glBindFramebuffer(GL_READ_FRAMEBUFFER, (GLuint)old_read);
+   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (GLuint)old_draw);
+   glBindTexture(GL_TEXTURE_2D, (GLuint)old_texture);
+   return ok;
+}
+
+/* Called before the producer mutates its image. Snapshot only the old
+ * versions that still have logical history readers, into reusable storage. */
+bool gl3_filter_chain_preserve_history(gl3_filter_chain_t *chain, unsigned image)
+{
+   unsigned i;
+   if (!chain || !chain->history_leases || !image) return true;
+   for (i = 0; i < chain->num_original_history; i++)
+   {
+      struct gl3_history_lease *lease = &chain->history_leases[i];
+      struct gl3_framebuffer *fb = chain->original_history[i];
+      if (lease->texture.image != image) continue;
+      if (!gl3_framebuffer_preserve(fb, &lease->texture)) return false;
+      gl3_chain_release_history_slot(chain, i);
+   }
+   return true;
+}
+
+bool gl3_filter_chain_retire_history(gl3_filter_chain_t *chain, unsigned image)
+{
+   unsigned i;
+   bool found = false;
+   if (!chain || !chain->history_leases || !image) return false;
+   for (i = 0; i < chain->num_original_history; i++)
+      if (chain->history_leases[i].texture.image == image)
+      {
+         chain->history_leases[i].retired = true;
+         found = true;
+      }
+   return found;
+}
+
+void gl3_filter_chain_set_history_borrow(gl3_filter_chain_t *chain, bool enabled)
+{
+   if (chain) chain->borrow_input = enabled;
+}
+
 static void gl3_chain_free(struct gl3_filter_chain *chain)
 {
    size_t h;
@@ -3219,6 +3331,8 @@ static void gl3_chain_free(struct gl3_filter_chain *chain)
    if (!chain)
       return;
 
+   gl3_chain_release_history_leases(chain, true);
+   free(chain->history_leases);
    for (h = 0; h < chain->num_original_history; h++)
       gl3_framebuffer_delete(chain->original_history[h]);
    free(chain->original_history);
@@ -3261,8 +3375,14 @@ static void gl3_chain_update_history_info(struct gl3_filter_chain *chain)
       if (!source)
          continue;
 
-      source->texture.image  = chain->original_history[slot]->image;
-      source->texture.dims   = chain->original_history[slot]->size_dims;
+      memset(&source->texture, 0, sizeof(source->texture));
+      if (chain->history_leases && chain->history_leases[slot].texture.image)
+         source->texture = chain->history_leases[slot].texture;
+      else
+      {
+         source->texture.image = chain->original_history[slot]->image;
+         source->texture.dims  = chain->original_history[slot]->size_dims;
+      }
       source->filter         = gl3_pass_get_source_filter(chain->passes[0]);
       source->mip_filter     = gl3_pass_get_mip_filter(chain->passes[0]);
       source->address        = gl3_pass_get_address_mode(chain->passes[0]);
@@ -3337,6 +3457,29 @@ static void gl3_chain_build_offscreen_passes(struct gl3_filter_chain *chain, con
 
 static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
 {
+   if (chain->num_original_history && chain->history_leases
+         && chain->borrow_input && chain->media_history
+         && chain->media_history->managed && chain->input_texture.image
+         && !chain->input_texture.origin
+         && (!chain->input_texture.padded_dims
+             || chain->input_texture.padded_dims == chain->input_texture.dims)
+         && (!chain->copy_framebuffer
+             || chain->input_texture.image != chain->copy_framebuffer->image))
+   {
+      bool repeated = chain->history_ring.valid
+            && !gfx_media_history_needed(chain->media_history, 1);
+      unsigned slot = gfx_media_history_ring_target(&chain->history_ring, repeated);
+      if (!repeated)
+      {
+         gl3_chain_release_history_slot(chain, slot);
+         chain->history_leases[slot].texture = chain->input_texture;
+         gfx_media_history_written(chain->media_history);
+      }
+      gfx_media_history_ring_advance(&chain->history_ring, slot);
+      gl3_chain_release_history_leases(chain, false);
+      chain->media_history = NULL;
+      return;
+   }
    /* If we need to keep old frames, copy it after fragment is complete.
     * TODO: We can improve pipelining by figuring out which
     * pass is the last that reads from
@@ -3363,6 +3506,8 @@ static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
 
       if (!repeated)
       {
+         if (chain->history_leases)
+            gl3_chain_release_history_slot(chain, slot);
          if (     tmp->complete && chain->copy_framebuffer
                && chain->copy_framebuffer->complete
                && chain->input_texture.image == chain->copy_framebuffer->image)
@@ -3412,6 +3557,7 @@ static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
          && chain->input_texture.image == chain->copy_framebuffer->image
          && gfx_media_history_needed(chain->media_history, 1))
       gfx_media_history_written(chain->media_history);
+   gl3_chain_release_history_leases(chain, false);
    chain->media_history = NULL;
 }
 
@@ -3498,6 +3644,9 @@ static bool gl3_chain_init_history(struct gl3_filter_chain *chain)
 
    {
       size_t h;
+      gl3_chain_release_history_leases(chain, true);
+      free(chain->history_leases);
+      chain->history_leases = NULL;
       for (h = 0; h < chain->num_original_history; h++)
          gl3_framebuffer_delete(chain->original_history[h]);
       free(chain->original_history);
@@ -3535,6 +3684,12 @@ static bool gl3_chain_init_history(struct gl3_filter_chain *chain)
    if (!chain->original_history)
       return false;
    chain->num_original_history = required_images;
+   if (chain->replay)
+   {
+      chain->history_leases = (struct gl3_history_lease*)calloc(required_images,
+            sizeof(*chain->history_leases));
+      if (!chain->history_leases) return false;
+   }
    gfx_media_history_ring_init(&chain->history_ring,
          (unsigned*)(chain->original_history + required_images),
          (unsigned)required_images);
@@ -4187,6 +4342,7 @@ static bool gl3_chain_finalize(struct gl3_filter_chain *chain)
 static void gl3_chain_clear_history_and_feedback(struct gl3_filter_chain *chain)
 {
    unsigned i;
+   gl3_chain_release_history_leases(chain, true);
    chain->history_ring.valid = false;
    if (chain->media_history) chain->media_history->copies = 0;
    for (i = 0; i < chain->num_original_history; i++)

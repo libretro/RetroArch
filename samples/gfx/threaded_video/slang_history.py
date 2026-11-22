@@ -53,6 +53,13 @@ typedef unsigned VkCommandBuffer;
 typedef struct { unsigned dims,layout,pixels[64]; } gpu;
 static gpu images[128];
 static unsigned allocated,copies,barriers,errors;
+#ifdef TEST_GL
+typedef unsigned GLuint;
+static unsigned deleted[128];
+static void glDeleteTextures(unsigned count, const unsigned *ids)
+{ unsigned i;for(i=0;i<count;i++){assert(ids[i] && !deleted[ids[i]]);deleted[ids[i]]++;} }
+struct gl3_history_lease { texture texture;bool retired; };
+#endif
 static bool fail_resize;
 static unsigned image_new(unsigned dims)
 {
@@ -73,6 +80,10 @@ struct deferred_disposes { int unused; };
 struct chain {
    texture input_texture,history_input;
    bool history_input_valid,require_clear,frame_in_place;
+#ifdef TEST_GL
+   bool borrow_input;
+   struct gl3_history_lease *history_leases;
+#endif
    gfx_media_history_t *media_history;
    gfx_media_history_ring_t history_ring;
    struct framebuffer **original_history;
@@ -110,6 +121,14 @@ static void gl3_framebuffer_copy_partial(unsigned f,unsigned p,unsigned b,unsign
 static void gl3_framebuffer_copy(unsigned f,unsigned p,unsigned b,unsigned u,
       unsigned w,unsigned h,unsigned from)
 { (void)p;(void)b;(void)u;copy_pixels(f,from,w,h,0,0); }
+static bool gl3_framebuffer_preserve(struct framebuffer *fb, const texture *t)
+{
+   if(!fb->complete || fb->size_dims!=t->dims || fb->format!=t->format)
+      resize(fb,t->dims,t->format);
+   if(!fb->complete)return false;
+   copy_pixels(fb->image,t->image,VIDEO_SCALE_W(t->dims),VIDEO_SCALE_H(t->dims),0,0);
+   return true;
+}
 #define API gl3_filter_chain_set_input_texture_history
 #define NORMAL gl3_filter_chain_set_input_texture
 #else
@@ -130,11 +149,12 @@ static void vulkan_framebuffer_copy(unsigned to,unsigned w,unsigned h,unsigned c
 #define NORMAL vulkan_filter_chain_set_input_texture
 #endif
 #ifdef TEST_GL
-typedef struct { gfx_media_history_t media_history;uintptr_t media_last_texture,media_history_texture; } gl3_t;
+typedef struct { gfx_media_history_t media_history;uintptr_t media_last_texture,media_history_texture,media_borrow_texture; } gl3_t;
 #else
 typedef struct { gfx_media_history_t media_history[2];uintptr_t media_last_texture,media_history_texture[2]; } vk_t;
 #endif
 PRODUCER
+LEASES
 INPUT
 NORMAL_SETTER
 HISTORY_SETTER
@@ -207,6 +227,91 @@ static void test_ring(void)
    }
 }
 
+#ifdef TEST_GL
+static void test_borrowed_history(void)
+{
+   struct chain c;
+   struct pass_stub pass;
+   struct framebuffer frames[3],*slots[3];
+   struct gl3_history_lease leases[3];
+   gfx_media_history_t h;
+   texture t;
+   unsigned storage[6],i,j,frame,repeat,before,names,expected[3]={0,0,0};
+   memset(&c,0,sizeof(c));memset(&pass,0,sizeof(pass));
+   memset(&h,0,sizeof(h));memset(&t,0,sizeof(t));
+   memset(frames,0,sizeof(frames));memset(leases,0,sizeof(leases));
+   for(i=0;i<3;i++)slots[i]=&frames[i];
+   c.original_history=slots;c.num_original_history=3;c.common.num_original_history=3;
+   c.passes[0]=&pass;c.frame_in_place=true;c.history_leases=leases;
+   gfx_media_history_ring_init(&c.history_ring,storage,3);
+   gl3_filter_chain_set_history_borrow(&c,true);assert(c.borrow_input);
+   h.managed=true;t.dims=t.padded_dims=VIDEO_SCALE_PACK(4,3);t.format=2;
+   t.image=image_new(t.dims);images[t.image].pixels[0]=77;
+   before=copies;names=allocated;
+   for(i=0;i<6;i++)draw(&c,&t,&h);
+   assert(copies==before && allocated==names);INFO(&c);
+   for(i=0;i<3;i++)assert(c.common.original_history[i].texture.image==t.image);
+   for(i=0;i<3;i++)expected[i]=77;
+   for(frame=1;frame<=16;frame++)
+   {
+      unsigned old=t.image;
+      if(frame==1)
+      {
+         fail_resize=true;
+         assert(!gl3_filter_chain_preserve_history(&c,t.image));
+         INFO(&c);assert(c.common.original_history[0].texture.image==t.image);
+         fail_resize=false;
+      }
+      if(frame%2)
+      {
+         assert(gl3_filter_chain_preserve_history(&c,t.image));
+         INFO(&c);
+         for(i=0;i<3;i++)assert(c.common.original_history[i].texture.image!=t.image);
+         images[t.image].pixels[0]=100+frame;
+      }
+      else
+      {
+         assert(gl3_filter_chain_retire_history(&c,old));
+         assert(!deleted[old]);
+         t.image=image_new(t.dims);images[t.image].pixels[0]=100+frame;
+      }
+      h.copies=0;
+      before=copies;
+      for(repeat=0;repeat<4;repeat++)
+      {
+         draw(&c,&t,&h);INFO(&c);
+         assert(copies==before);
+         for(j=2;j;j--)expected[j]=expected[j-1];
+         expected[0]=100+frame;
+         for(j=0;j<3;j++)assert(images[c.common.original_history[j].texture.image].pixels[0]==expected[j]);
+      }
+      if(!(frame%2))assert(deleted[old]==1);
+   }
+   assert(!gl3_filter_chain_retire_history(&c,0));
+   /* Returning to an earlier live image can put its name in two physical
+    * slots. Retirement transfers deletion until both have been evicted. */
+   {
+      texture other=t;
+      unsigned original=t.image;
+      other.image=image_new(t.dims);
+      h.copies=0;draw(&c,&other,&h);
+      h.copies=0;draw(&c,&t,&h);
+      assert(gl3_filter_chain_retire_history(&c,original));
+      h.copies=0;draw(&c,&other,&h);assert(!deleted[original]);
+      draw(&c,&other,&h);assert(!deleted[original]);
+      draw(&c,&other,&h);assert(deleted[original]==1);
+      t=other;
+   }
+   /* Teardown deletes retired sources once and leaves live producer names alone. */
+   gl3_chain_release_history_leases(&c,true);assert(!deleted[t.image]);
+   h.copies=0;draw(&c,&t,&h);
+   assert(gl3_filter_chain_retire_history(&c,t.image));
+   gl3_chain_release_history_leases(&c,true);assert(deleted[t.image]==1);
+   gl3_chain_release_history_leases(&c,true);assert(deleted[t.image]==1);
+   puts("PASS GLCore borrowed history: no snapshot draws, update preservation, immutable readers, retire/evict and teardown");
+}
+#endif
+
 int main(void)
 {
 #ifdef TEST_GL
@@ -229,7 +334,10 @@ int main(void)
    driver.media_history.copies=3;gl3_media_texture_changed(&driver,99,true);
    assert(driver.media_history.copies==3 && driver.media_last_texture==99);
    gl3_media_texture_changed(&driver,99,false);assert(!driver.media_last_texture);
-   gl3_media_texture_changed(&driver,42,false);assert(!driver.media_history.copies);
+   driver.media_borrow_texture=42;
+   gl3_media_texture_changed(&driver,42,true);assert(driver.media_borrow_texture==42);
+   gl3_media_texture_changed(&driver,42,false);
+   assert(!driver.media_history.copies && !driver.media_borrow_texture);
 #else
    for(i=0;i<2;i++) { driver.media_history_texture[i]=42;driver.media_history[i].copies=3; }
    vulkan_media_texture_changed(&driver,42,true);
@@ -407,6 +515,9 @@ int main(void)
 #else
    assert(copies==before);
 #endif
+#ifdef TEST_GL
+   test_borrowed_history();
+#endif
    (void)before;(void)errors;
    puts("PASS Slang history: pixels, moving/repeated cadence, logical bindings, crop/format/source changes, no repeat copies/barriers, fallback and failures");
    return 0;
@@ -420,6 +531,15 @@ for api, filename, prefix in (("gl3", "shader_gl3.c", "gl3"), ("vulkan", "shader
     producer = (root / "gfx/drivers" / ("gl3.c" if api == "gl3" else "vulkan.c")).read_text(encoding="utf-8")
     unit = fixture.replace("\nPRODUCER\n", "\n" + function(producer,
         "static void " + api + "_media_texture_changed(") + "\n")
+    leases = "\n"
+    if api == "gl3":
+        leases += "\n".join(function(source, signature) for signature in (
+            "static void gl3_chain_release_history_slot(",
+            "static void gl3_chain_release_history_leases(",
+            "bool gl3_filter_chain_preserve_history(",
+            "bool gl3_filter_chain_retire_history(",
+            "void gl3_filter_chain_set_history_borrow("))
+    unit = unit.replace("\nLEASES\n", leases + "\n")
     unit = unit.replace("\nINPUT\n", "\n" + function(source, "static void " + prefix + "_chain_set_input_texture(") + "\n")
     unit = unit.replace("\nNORMAL_SETTER\n", "\n" + function(source, "void " + api + "_filter_chain_set_input_texture(") + "\n")
     unit = unit.replace("\nHISTORY_SETTER\n", "\n" + function(source, "void " + api + "_filter_chain_set_input_texture_history(") + "\n")
