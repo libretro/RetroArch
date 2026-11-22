@@ -42,6 +42,10 @@
 
 #include "gfx_surface.h"
 #include "gfx_instrument.h"
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+#include "gfx_music_player.h"
+#include "gfx_music_visualizer.h"
+#endif
 #include "gfx_thumbnail.h"
 #include "../frontend/frontend_driver.h"
 
@@ -1175,6 +1179,10 @@ bool gfx_thumbnail_set_paused(gfx_thumbnail_t *thumbnail, bool paused,
       retro_time_t current_time)
 {
    gfx_surface_player_t *player;
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (thumbnail && thumbnail->music_player)
+      return gfx_music_player_pause((gfx_music_player_t*)thumbnail->music_player, paused);
+#endif
    if (!thumbnail || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
          || !(player = (gfx_surface_player_t*)thumbnail->anim_player))
       return false;
@@ -1190,6 +1198,10 @@ bool gfx_thumbnail_get_playback_state(gfx_thumbnail_t *thumbnail,
 {
    gfx_anim_preview_t *session = NULL;
    gfx_surface_player_t *player = NULL;
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (thumbnail && thumbnail->music_player)
+      return gfx_music_player_state((gfx_music_player_t*)thumbnail->music_player, state);
+#endif
    if (thumbnail && (thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE))
    {
       session = (gfx_anim_preview_t*)thumbnail->anim_sess;
@@ -1270,6 +1282,14 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
    enum image_type_enum type;
 
    gfx_thumbnail_anim_reap();
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   gfx_music_player_reap();
+   if (thumbnail && thumbnail->music_player)
+   {
+      gfx_music_player_poll((gfx_music_player_t*)thumbnail->music_player, thumbnail);
+      return;
+   }
+#endif
    if (   !thumbnail
        || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
        || (thumbnail->flags & GFX_THUMB_FLAG_MEDIA_ENDED)
@@ -2003,6 +2023,21 @@ end:
  *   set to MUI_THUMBNAIL_STATUS_PENDING
  * 'thumbnail' will be populated with texture info/metadata
  * once the image load is complete */
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+bool gfx_thumbnail_request_music_file(const char *path, gfx_thumbnail_t *thumbnail)
+{
+   gfx_music_player_t *player;
+   if (!thumbnail || !(player = gfx_music_player_new(path))) return false;
+   gfx_thumbnail_reset(thumbnail);
+   thumbnail->music_player = player;
+   thumbnail->file_hash = gfx_thumbnail_file_hash(path);
+   thumbnail->dims = VIDEO_SCALE_PACK(GFX_MUSIC_VISUALIZER_WIDTH, GFX_MUSIC_VISUALIZER_HEIGHT);
+   GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_PENDING);
+   gfx_music_player_poll(player, thumbnail);
+   return true;
+}
+#endif
+
 void gfx_thumbnail_request_file(
       const char *file_path, gfx_thumbnail_t *thumbnail,
       unsigned gfx_thumbnail_upscale_threshold)
@@ -2104,6 +2139,14 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
 {
    if (!thumbnail)
       return;
+
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (thumbnail->music_player)
+   {
+      gfx_music_player_close((gfx_music_player_t*)thumbnail->music_player);
+      thumbnail->music_player = NULL;
+   }
+#endif
 
    /* A live source ends with its thumbnail. */
    if (thumbnail == gfx_thumb_live)
@@ -3232,6 +3275,9 @@ bool gfx_thumbnail_set_content_image(
     * pipeline decodes like an animated WebP), can serve as their own
     * thumbnail */
    if (   (path_is_media_type(img_name) != RARCH_CONTENT_IMAGE)
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+       && (path_is_media_type(img_name) != RARCH_CONTENT_MUSIC)
+#endif
        && (image_texture_get_type(img_name) != IMAGE_TYPE_WEBM)
        && (image_texture_get_type(img_name) != IMAGE_TYPE_MP4))
       return false;
@@ -3259,6 +3305,14 @@ bool gfx_thumbnail_set_content_image(
     * but not actually used...) */
    strlcpy_lit(path_data->content_db_name,
          "_images_", sizeof(path_data->content_db_name));
+
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (path_is_media_type(img_name) == RARCH_CONTENT_MUSIC)
+   {
+      strlcpy_lit(path_data->content_core_name, "musicplayer", sizeof(path_data->content_core_name));
+      strlcpy_lit(path_data->content_db_name, "_music_", sizeof(path_data->content_db_name));
+   }
+#endif
 
    /* Redundant error check */
    return *path_data->content_path;

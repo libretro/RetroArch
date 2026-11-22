@@ -4614,7 +4614,9 @@ static void materialui_browser_update(materialui_handle_t *mui,
       const struct item_file *item = &list->list[menu_st->selection_ptr];
       enum image_type_enum type = image_texture_get_type(item->path);
       if (item->type == FILE_TYPE_IMAGE || item->type == FILE_TYPE_IMAGEVIEWER
-            || type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
+            || type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM
+            || ((open_history || (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS))
+               && menu_media_music_supported(item->path)))
       {
          directory = stack->list[stack->size - 1].path;
          name = item->path;
@@ -4648,8 +4650,13 @@ static void materialui_browser_update(materialui_handle_t *mui,
       strlcpy(mui->browser_directory, directory, sizeof(mui->browser_directory));
       strlcpy(mui->browser_name, name, sizeof(mui->browser_name));
       fill_pathname_join_special(mui->browser_path, directory, name, sizeof(mui->browser_path));
-      gfx_thumbnail_request_file(mui->browser_path, &mui->browser_thumbnail,
-            config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
+#ifdef HAVE_AUDIOMIXER
+      if (menu_media_music_supported(mui->browser_path))
+         gfx_thumbnail_request_music_file(mui->browser_path, &mui->browser_thumbnail);
+      else
+#endif
+         gfx_thumbnail_request_file(mui->browser_path, &mui->browser_thumbnail,
+               config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
    }
    if (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
    {
@@ -8071,6 +8078,12 @@ static void materialui_hide_fullscreen_thumbnails(
       materialui_handle_t *mui, bool animate)
 {
    uintptr_t alpha_tag = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
+
+#ifdef HAVE_AUDIOMIXER
+   if ((mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS) && mui->browser_thumbnail.music_player
+         && !menu_media_controls_settings_active(&mui->media))
+      gfx_thumbnail_reset(&mui->browser_thumbnail);
+#endif
 
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);

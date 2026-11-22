@@ -213,6 +213,8 @@ static const char *media_history_image(void *data)
    return menu_state_get_ptr()->thumbnail_path_data->content_path;
 }
 
+#include "../texture_media/music_media_test.h"
+
 int main(int argc, char **argv)
 {
    struct menu_state *menu_st;
@@ -277,6 +279,14 @@ int main(int argc, char **argv)
    settings->bools.menu_rgui_inline_thumbnails = false;
    settings->bools.menu_thumbnail_preview_audio = getenv("MEDIA_TEST_MODAL_MODE") != NULL
       || getenv("MEDIA_TEST_AUDIO_TRACKS") != NULL;
+#ifdef MEDIA_TEST_MUSIC
+   if (getenv("MEDIA_TEST_MUSIC"))
+   {
+      MEDIA_CHECK("music visualizer uses existing menu audio", media_test_music(menu_st,
+               argv[1], media_render, media_current_target));
+      goto cleanup;
+   }
+#endif
    if (getenv("MEDIA_TEST_HISTORY_IMAGE"))
    {
       fill_pathname_basedir(directory, argv[2], sizeof(directory));

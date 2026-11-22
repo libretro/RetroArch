@@ -124,6 +124,7 @@
 
 struct audio_mixer_sound
 {
+   audio_mixer_observer_t observer;
    enum audio_mixer_type type;
    unsigned tag;
 
@@ -1568,6 +1569,16 @@ void audio_mixer_sound_set_tag(audio_mixer_sound_t *sound, unsigned tag)
       sound->tag = tag;
 }
 
+void audio_mixer_sound_set_observer(audio_mixer_sound_t *sound,
+      const audio_mixer_observer_t *observer)
+{
+   if (!sound) return;
+   if (observer && observer->retain) observer->retain(observer->user);
+   if (sound->observer.release) sound->observer.release(sound->observer.user);
+   if (observer) sound->observer = *observer;
+   else memset(&sound->observer, 0, sizeof(sound->observer));
+}
+
 unsigned audio_mixer_sound_tag(const audio_mixer_sound_t *sound)
 {
    return sound ? sound->tag : 0;
@@ -2001,6 +2012,7 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
          break;
    }
 
+   if (sound->observer.release) sound->observer.release(sound->observer.user);
    free(sound);
 }
 
@@ -2836,6 +2848,10 @@ static void audio_mixer_mix_wav(float* buffer, size_t num_frames,
       voice->types.wav.position;
 
 again:
+   if (voice->sound->observer.samples && buf_free && pcm_available)
+      voice->sound->observer.samples(voice->sound->observer.user, pcm,
+            (pcm_available < buf_free ? pcm_available : buf_free) / 2, true);
+
    if (pcm_available < buf_free)
    {
       voice->mixed_frames += pcm_available / 2;
@@ -2914,6 +2930,10 @@ static void audio_mixer_mix_wav_s16(int16_t* buffer, size_t num_frames,
    const int16_t* in;
 
 again:
+   if (voice->sound->observer.samples && buf_free && pcm_available)
+      voice->sound->observer.samples(voice->sound->observer.user, pcm,
+            (pcm_available < buf_free ? pcm_available : buf_free) / 2, false);
+
    if (pcm_available < buf_free)
    {
       voice->mixed_frames += pcm_available / 2;
@@ -3091,6 +3111,10 @@ again:
          ? voice->types.stream.buffer : temp_buffer)
       + voice->types.stream.position;
 
+   if (voice->sound->observer.samples && buf_free && voice->types.stream.samples)
+      voice->sound->observer.samples(voice->sound->observer.user, pcm,
+            (voice->types.stream.samples < buf_free ? voice->types.stream.samples : buf_free) / 2, true);
+
    if (voice->types.stream.samples < buf_free)
    {
       voice->mixed_frames += voice->types.stream.samples / 2;
@@ -3226,6 +3250,10 @@ again:
    pcm = (voice->types.stream.resampler_int16.data
          ? voice->types.stream.buffer_s16 : temp_buffer)
       + voice->types.stream.position;
+
+   if (voice->sound->observer.samples && buf_free && voice->types.stream.samples)
+      voice->sound->observer.samples(voice->sound->observer.user, pcm,
+            (voice->types.stream.samples < buf_free ? voice->types.stream.samples : buf_free) / 2, false);
 
    if (voice->types.stream.samples < buf_free)
    {

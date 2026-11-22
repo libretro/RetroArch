@@ -155,6 +155,8 @@ static bool test_current_target(struct menu_state *menu_st,
    return target->user && target->state;
 }
 
+#include "music_media_test.h"
+
 static int test_folder_stage(void *data)
 {
    test_viewer_t *viewer = (test_viewer_t*)data;
@@ -312,6 +314,14 @@ int main(int argc,char **argv)
    { poke.load_texture=memory_texture;poke.unload_texture=memory_unload;video->poke=&poke; }
    config_get_ptr()->bools.menu_thumbnail_preview_audio = getenv("MEDIA_TEST_MODAL_MODE") != NULL
       || getenv("MEDIA_TEST_AUDIO_TRACKS") != NULL;
+#ifdef MEDIA_TEST_MUSIC
+   if (getenv("MEDIA_TEST_MUSIC"))
+   {
+      CHECK("music visualizer uses existing menu audio", media_test_music(menu_st,
+               argv[1], render, test_current_target));
+      goto media_test_done;
+   }
+#endif
    if (getenv("MEDIA_TEST_HISTORY_IMAGE"))
    {
       fill_pathname_basedir(directory, argv[2], sizeof(directory));

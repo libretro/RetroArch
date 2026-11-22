@@ -256,6 +256,7 @@ typedef struct
    /* The playback (gfx_surface_player_t*): its clock and loops, and
     * the decode, a frame ahead on a worker where there is one. */
    void *anim_player;
+   void *music_player; /* explicit fullscreen music only; never a preview */
    void *anim_lifetime;
    /* The GPU surface (gfx_surface_t*) the still goes to, and the
     * animation's frames are decoded into and shown from: one
@@ -320,6 +321,7 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim_dt         = NULL;
    t->anim_sess       = NULL;
    t->anim_player     = NULL;
+   t->music_player    = NULL;
    t->anim_lifetime   = NULL;
    t->anim_surface    = NULL;
    t->anim_buf_len    = 0;
@@ -464,6 +466,10 @@ void gfx_thumbnail_request(
  *   set to MUI_THUMBNAIL_STATUS_PENDING
  * 'thumbnail' will be populated with texture info/metadata
  * once the image load is complete */
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+bool gfx_thumbnail_request_music_file(const char *path, gfx_thumbnail_t *thumbnail);
+#endif
+
 void gfx_thumbnail_request_file(
       const char *file_path, gfx_thumbnail_t *thumbnail,
       unsigned gfx_thumbnail_upscale_threshold);

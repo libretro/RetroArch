@@ -6409,6 +6409,14 @@ static void xmb_hide_fullscreen_thumbnails(
 {
    uintptr_t alpha_tag                = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
 
+#ifdef HAVE_AUDIOMIXER
+   if (xmb->show_fullscreen_thumbnails && !menu_media_controls_settings_active(&xmb->media))
+   {
+      if (xmb->thumbnails.left.music_player) gfx_thumbnail_reset(&xmb->thumbnails.left);
+      if (xmb->thumbnails.right.music_player) gfx_thumbnail_reset(&xmb->thumbnails.right);
+   }
+#endif
+
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);
 

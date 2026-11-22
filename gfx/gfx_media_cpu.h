@@ -15,6 +15,10 @@ RETRO_BEGIN_DECLS
 /* Takes session ownership on success only; use a software-open session. */
 gfx_media_cpu_t *gfx_media_cpu_new(gfx_anim_preview_t *session,
       gfx_media_cpu_present_t present, void *user, unsigned flags);
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+gfx_media_cpu_t *gfx_media_cpu_new_music(const char *path,
+      gfx_media_cpu_present_t present, void *user);
+#endif
 enum video_player_state gfx_media_cpu_poll(gfx_media_cpu_t *player,
       int64_t wall_us);
 bool gfx_media_cpu_set_repeat(gfx_media_cpu_t *player, bool repeat);

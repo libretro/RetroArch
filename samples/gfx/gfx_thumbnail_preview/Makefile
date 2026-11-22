@@ -43,7 +43,7 @@ LAYOUT_OBJ := settings_layout_uut.o
 SOURCES := gfx_thumbnail_preview_test.c \
            $(REPO_ROOT)/gfx/gfx_media_player.c \
            $(REPO_ROOT)/gfx/gfx_media_cpu.c \
-           stubs_retroarch.c \
+           stubs_retroarch.c music_player_stubs.c \
            $(REPO_ROOT)/libretro-common/audio/audio_mixer.c \
            $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.c \
  $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler_int16.c \

@@ -33,6 +33,7 @@ cc[cc.index('-o')+1]=str(objects/'harness.o');cc[cc.index(driver_source)]=str(te
 if os.environ.get('MEDIA_TEST_IMPORT_REFUSAL'):cc.append('-DMEDIA_TEST_IMPORT_REFUSAL')
 if os.environ.get('MEDIA_TEST_COLD_CANCEL') or os.environ.get('MEDIA_TEST_COLD_RESET'):cc.append('-DMEDIA_TEST_COLD_CANCEL')
 if os.environ.get('MEDIA_TEST_COLD_RESET'):cc.append('-DMEDIA_TEST_COLD_RESET')
+if os.environ.get('MEDIA_TEST_MUSIC'):cc.append('-DMEDIA_TEST_MUSIC')
 harness_cc=cc
 links=[c for c in commands if '-c' not in c and '-o' in c and c[c.index('-o')+1] in {'retroarch','retroarch.exe'}]
 if len(links)!=1:raise RuntimeError('Expected one frontend link command')
@@ -42,6 +43,8 @@ c[c.index(retro_object)]=str(objects/'retroarch_nomain.o');c[c.index(rgui_object
 if os.environ.get('MEDIA_TEST_IMPORT_REFUSAL'):c.append('-Wl,--wrap=gfx_surface_submit_import')
 if os.environ.get('MEDIA_TEST_COLD_CANCEL') or os.environ.get('MEDIA_TEST_COLD_RESET'):c.append('-Wl,--wrap=image_transfer_anim_stream_set_hw')
 if os.environ.get('MEDIA_TEST_COLD_RESET'):c.extend(['-Wl,--wrap=gfx_thumbnail_anim_worker_deinit','-Wl,--wrap=video_driver_free_internal'])
+if os.environ.get('MEDIA_TEST_MUSIC'):
+ c.extend('-Wl,--wrap='+name for name in ('gfx_music_visualizer_feed','gfx_music_visualizer_render','gfx_music_visualizer_free','audio_driver_mixer_add_stream_observed'))
 # A job builds the same harness for step after step: nothing to do when
 # the commands are the ones it was built with and nothing it was made
 # from - sources, headers (from the compiler's .d files), the

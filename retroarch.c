@@ -166,6 +166,9 @@
 
 #include <audio/audio_resampler.h>
 
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+#include "gfx/gfx_music_player.h"
+#endif
 #include "audio/audio_driver.h"
 
 #include "gfx/gfx_display.h"
@@ -7227,6 +7230,9 @@ void main_exit(void *args)
    retroarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
    global_free(p_rarch);
    task_queue_deinit();
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   gfx_music_player_reap();
+#endif
 #ifdef HAVE_NETWORKING
    /* After task_queue_deinit(), so no transfer can still be holding a
     * pooled connection. */

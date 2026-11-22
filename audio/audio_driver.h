@@ -1489,6 +1489,10 @@ bool audio_driver_mixer_prepare_format(unsigned *rate, bool *s16);
 
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
 
+bool audio_driver_mixer_add_stream_observed(audio_mixer_stream_params_t *params,
+      audio_mixer_voice_t **voice, size_t *serial,
+      const audio_mixer_observer_t *observer);
+
 /* As add_stream, with a clock binding captured before the existing
  * state lock is released. The static-pool voice stays addressable;
  * compare its serial before using a later clock snapshot. Outputs

@@ -1,3 +1,6 @@
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+#include "gfx_music_player.h"
+#endif
 #include <string.h>
 #include "gfx_media_controls.h"
 #include "gfx_anim_preview.h"
@@ -344,6 +347,13 @@ void gfx_media_controls_thumbnail_target(gfx_thumbnail_t *thumbnail, gfx_media_t
    out->identity = thumbnail->anim_sess;
    out->source_path = thumbnail->anim_sess
       ? ((const gfx_anim_preview_t*)thumbnail->anim_sess)->path : NULL;
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (thumbnail->music_player)
+   {
+      out->identity = thumbnail->music_player;
+      out->source_path = gfx_music_player_path((const gfx_music_player_t*)thumbnail->music_player);
+   }
+#endif
    out->state = gfx_media_thumbnail_state;
    out->pause = gfx_media_thumbnail_pause;
    out->seek = gfx_media_thumbnail_seek;

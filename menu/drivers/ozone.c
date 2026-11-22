@@ -8503,6 +8503,14 @@ static void ozone_hide_fullscreen_thumbnails(ozone_handle_t *ozone, bool animate
    uintptr_t alpha_tag                = (uintptr_t)
          &ozone->animations.fullscreen_thumbnail_alpha;
 
+#ifdef HAVE_AUDIOMIXER
+   if (ozone->flags2 & OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS && !menu_media_controls_settings_active(&ozone->media))
+   {
+      if (ozone->thumbnails.left.music_player) gfx_thumbnail_reset(&ozone->thumbnails.left);
+      if (ozone->thumbnails.right.music_player) gfx_thumbnail_reset(&ozone->thumbnails.right);
+   }
+#endif
+
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);
 

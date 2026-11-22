@@ -22,6 +22,8 @@
 #include "../configuration.h"
 #include "../defaults.h"
 #include "../playlist.h"
+#include "../audio/audio_driver.h"
+#include "../paths.h"
 
 struct menu_media_queue
 {
@@ -29,6 +31,18 @@ struct menu_media_queue
    char *directory;
    size_t count, position;
 };
+
+bool menu_media_music_supported(const char *path)
+{
+#ifdef HAVE_AUDIOMIXER
+   return path && path_is_media_type(path) == RARCH_CONTENT_MUSIC
+      && config_get_ptr()->bools.multimedia_builtin_mediaplayer_enable
+      && audio_driver_mixer_extension_supported(path_get_extension(path));
+#else
+   (void)path;
+   return false;
+#endif
+}
 
 static char *menu_media_name_copy(const char *name)
 {
@@ -223,21 +237,27 @@ const char *menu_media_selected_history_image(struct menu_state *menu_st)
    const struct item_file *item;
    file_list_t *list;
    enum image_type_enum type;
-   if (!menu_st || !menu_st->entries.list || !playlist
-         || !g_defaults.image_history
-         || !config_get_ptr()->bools.multimedia_builtin_imageviewer_enable)
+   bool images, music;
+   if (!menu_st || !menu_st->entries.list || !playlist)
       return NULL;
    list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
    if (!list || menu_st->selection_ptr >= list->size)
       return NULL;
    item = &list->list[menu_st->selection_ptr];
-   if (item->type != FILE_TYPE_RPL_ENTRY
-         || !string_is_equal(playlist_get_conf_path(playlist),
-            playlist_get_conf_path(g_defaults.image_history)))
+   images = g_defaults.image_history
+      && config_get_ptr()->bools.multimedia_builtin_imageviewer_enable
+      && string_is_equal(playlist_get_conf_path(playlist),
+            playlist_get_conf_path(g_defaults.image_history));
+   music = g_defaults.music_history && string_is_equal(playlist_get_conf_path(playlist),
+         playlist_get_conf_path(g_defaults.music_history));
+   if (item->type != FILE_TYPE_RPL_ENTRY || (!images && !music))
       return NULL;
    playlist_get_index(playlist, item->entry_idx, &entry);
    if (!entry || !entry->path || !*entry->path)
       return NULL;
+   if (music)
+      return menu_media_music_supported(entry->path) && !strstr(entry->path, "://")
+         && !path_contains_compressed_file(entry->path) ? entry->path : NULL;
    type = image_texture_get_type(entry->path);
    if (type == IMAGE_TYPE_NONE || type == IMAGE_TYPE_DDS
          || type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM
@@ -270,6 +290,7 @@ bool menu_media_open_selected_file(struct menu_state *menu_st,
    file_list_t *list, *stack;
    const char *name, *directory;
    enum image_type_enum type;
+   bool music = false;
    gfx_thumbnail_path_data_t *paths = menu_st ? menu_st->thumbnail_path_data : NULL;
    if (!menu_st || !menu_st->entries.list || !paths || !primary || !secondary) return false;
 #if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
@@ -290,7 +311,12 @@ bool menu_media_open_selected_file(struct menu_state *menu_st,
       directory = stack->list[stack->size - 1].path;
    }
    type = image_texture_get_type(name);
-   if (type == IMAGE_TYPE_NONE || type == IMAGE_TYPE_DDS) return false;
+#ifdef HAVE_AUDIOMIXER
+   music = path_is_media_type(name) == RARCH_CONTENT_MUSIC
+      && config_get_ptr()->bools.multimedia_builtin_mediaplayer_enable
+      && audio_driver_mixer_extension_supported(path_get_extension(name));
+#endif
+   if (!music && (type == IMAGE_TYPE_NONE || type == IMAGE_TYPE_DDS)) return false;
    if (!gfx_thumbnail_set_content_image(paths, directory, name)) return false;
    if (gfx_thumbnail_has_file(primary, paths->content_path))
       gfx_thumbnail_reset(secondary);
@@ -300,8 +326,15 @@ bool menu_media_open_selected_file(struct menu_state *menu_st,
    {
       gfx_thumbnail_reset(primary);
       gfx_thumbnail_reset(secondary);
-      gfx_thumbnail_request_file(paths->content_path, primary,
-            config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
+#ifdef HAVE_AUDIOMIXER
+      if (music)
+      {
+         if (!gfx_thumbnail_request_music_file(paths->content_path, primary)) return false;
+      }
+      else
+#endif
+         gfx_thumbnail_request_file(paths->content_path, primary,
+               config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
    }
    /* The title goes with the file shown.  Left to the menu drivers, it
     * was only refreshed when the fullscreen view had been asked for

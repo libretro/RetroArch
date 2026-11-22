@@ -1521,6 +1521,11 @@ DYNAMIC
 /*============================================================
 CORES
 ============================================================ */
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+#include "../libretro-common/audio/dsp_filters/fft/fft.c"
+#include "../gfx/gfx_music_visualizer.c"
+#include "../gfx/gfx_music_player.c"
+#endif
 #ifdef HAVE_FFMPEG
 #include "../cores/libretro-ffmpeg/ffmpeg_core.c"
 #endif

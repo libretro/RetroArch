@@ -16628,11 +16628,13 @@ static bool menu_displaylist_ctl_internal(
 #if defined(HAVE_AUDIOMIXER) || defined(HAVE_FFMPEG) || defined(HAVE_MPV)
                char combined_path[PATH_MAX_LENGTH];
                const char *ext  = NULL;
+               bool run_music;
                bool multimedia_builtin_mediaplayer_enable = settings->bools.multimedia_builtin_mediaplayer_enable;
 
                fill_pathname_join_special(combined_path, menu->scratch2_buf,
                      menu->scratch_buf, sizeof(combined_path));
                ext = path_get_extension(combined_path);
+               run_music = menu_driver_media_can_open(combined_path);
 #endif
                menu_entries_clear(info->list);
 
@@ -16666,7 +16668,10 @@ static bool menu_displaylist_ctl_internal(
 #elif defined(HAVE_MPV)
                   libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-                  if (strstr(sysinfo.valid_extensions,ext))
+                  if (sysinfo.valid_extensions && strstr(sysinfo.valid_extensions, ext))
+                     run_music = true;
+#endif
+                  if (run_music)
                   {
                      if (menu_entries_append(info->list,
                               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN_MUSIC),
@@ -16675,7 +16680,6 @@ static bool menu_displaylist_ctl_internal(
                               FILE_TYPE_PLAYLIST_ENTRY, 0, 0, NULL))
                         count++;
                   }
-#endif
                }
 #endif
             }

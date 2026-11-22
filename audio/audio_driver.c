@@ -10020,7 +10020,8 @@ static bool audio_driver_mixer_get_free_stream_slot(
 
 static bool audio_driver_mixer_add_stream_internal(
       audio_mixer_stream_params_t *params, audio_mixer_voice_t **out_voice,
-      size_t *out_serial, audio_mixer_sound_t *prepared)
+      size_t *out_serial, audio_mixer_sound_t *prepared,
+      const audio_mixer_observer_t *observer)
 {
    unsigned free_slot            = 0;
    audio_mixer_voice_t *voice    = NULL;
@@ -10207,6 +10208,8 @@ static bool audio_driver_mixer_add_stream_internal(
 
    }
 
+   if (observer) audio_mixer_sound_set_observer(handle, observer);
+
    /* Claim the slot and start the voice. */
    audio_driver_mixer_hold();
    if (!(AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_MIXER_INITED))
@@ -10315,13 +10318,20 @@ bool audio_driver_mixer_prepare_format(unsigned *rate, bool *s16)
 
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
 {
-   return audio_driver_mixer_add_stream_internal(params, NULL, NULL, NULL);
+   return audio_driver_mixer_add_stream_internal(params, NULL, NULL, NULL, NULL);
 }
 
 bool audio_driver_mixer_add_stream_clocked(audio_mixer_stream_params_t *params,
       audio_mixer_voice_t **voice, size_t *serial)
 {
-   return audio_driver_mixer_add_stream_internal(params, voice, serial, NULL);
+   return audio_driver_mixer_add_stream_internal(params, voice, serial, NULL, NULL);
+}
+
+bool audio_driver_mixer_add_stream_observed(audio_mixer_stream_params_t *params,
+      audio_mixer_voice_t **voice, size_t *serial,
+      const audio_mixer_observer_t *observer)
+{
+   return audio_driver_mixer_add_stream_internal(params, voice, serial, NULL, observer);
 }
 
 bool audio_driver_mixer_add_prepared_stream(audio_mixer_stream_params_t *params,
@@ -10344,7 +10354,7 @@ bool audio_driver_mixer_add_prepared_stream(audio_mixer_stream_params_t *params,
       audio_mixer_destroy(sound);
       return false;
    }
-   return audio_driver_mixer_add_stream_internal(params, voice, serial, sound);
+   return audio_driver_mixer_add_stream_internal(params, voice, serial, sound, NULL);
 }
 
 int64_t audio_driver_mixer_stream_byte_tell(unsigned i)

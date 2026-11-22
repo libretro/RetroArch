@@ -277,7 +277,7 @@ jobs:
   audio-track-menus:
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: libasound2-dev
+      APT_PKGS: libasound2-dev ffmpeg
     timeout-minutes: 15
     strategy:
       matrix:
@@ -319,4 +319,20 @@ jobs:
             for driver in rgui ozone materialui xmb; do
               MEDIA_TEST_AUDIO_TRACKS=1 python3 samples/menu/rgui_media/run.py --driver "$driver" "$movie"
             done
+          done
+
+      - name: Renderer-independent music spectrum and borrowed history
+        run: |
+          set -eu
+          make -C samples/gfx/music_visualizer test
+          make -B -C samples/gfx/music_visualizer CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" test
+          make -B -C samples/gfx/music_visualizer CFLAGS="-O1 -g -fsanitize=thread" visualizer_thread_test visualizer_lifetime_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 samples/gfx/music_visualizer/visualizer_thread_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 samples/gfx/music_visualizer/visualizer_lifetime_test
+      - name: Opened music uses menu audio across all four menus
+        run: |
+          set -eu
+          ffmpeg -v error -y -f lavfi -i sine=frequency=750:sample_rate=48000 -t 30 -ac 2 -c:a pcm_s16le "$RUNNER_TEMP/music.wav"
+          for driver in rgui ozone materialui xmb; do
+            MEDIA_TEST_MUSIC=1 python3 samples/menu/rgui_media/run.py --driver "$driver" "$RUNNER_TEMP/music.wav"
           done

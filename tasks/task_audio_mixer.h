@@ -29,8 +29,24 @@
 #endif
 
 #include "../audio/audio_defines.h"
+#ifdef HAVE_AUDIOMIXER
+#include <audio/audio_mixer.h>
+#endif
 
 RETRO_BEGIN_DECLS
+
+#ifdef HAVE_AUDIOMIXER
+typedef struct task_audio_mixer_viewer
+{
+   audio_mixer_observer_t observer;
+   bool (*active)(void *user);
+   void (*started)(void *user, unsigned slot,
+         audio_mixer_voice_t *voice, size_t serial);
+} task_audio_mixer_viewer_t;
+
+bool task_push_audio_mixer_viewer(const char *fullpath,
+      const task_audio_mixer_viewer_t *viewer);
+#endif
 
 bool task_audio_mixer_load_handler(retro_task_t *task);
 

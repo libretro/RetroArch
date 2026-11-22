@@ -73,6 +73,21 @@ typedef struct audio_mixer_voice audio_mixer_voice_t;
 
 typedef void (*audio_mixer_stop_cb_t)(audio_mixer_sound_t* sound, unsigned reason);
 
+typedef struct audio_mixer_observer
+{
+   void *user;
+   void (*samples)(void *user, const void *pcm, size_t frames, bool floating);
+   void (*retain)(void *user);
+   void (*release)(void *user);
+} audio_mixer_observer_t;
+
+/* Before play only. PCM is borrowed read-only before gain/mixing;
+ * the samples callback must not retain it or block. Paired retain/release
+ * callbacks keep the observer
+ * alive until sound destruction; leave both NULL for static userdata. */
+void audio_mixer_sound_set_observer(audio_mixer_sound_t *sound,
+      const audio_mixer_observer_t *observer);
+
 /* Reasons passed to the stop callback. */
 #define AUDIO_MIXER_SOUND_FINISHED 0
 #define AUDIO_MIXER_SOUND_STOPPED  1

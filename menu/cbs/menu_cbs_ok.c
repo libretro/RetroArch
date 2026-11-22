@@ -4934,13 +4934,19 @@ static int action_ok_audio_run(const char *path,
    fill_pathname_join_special(combined_path, menu->scratch2_buf,
          menu->scratch_buf, sizeof(combined_path));
 
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (menu_driver_media_open(combined_path)) return 0;
+#endif
+
    /* TODO/FIXME - should become runtime optional */
 #ifdef HAVE_MPV
    return default_action_ok_load_content_with_core_from_menu(
          combined_path, CORE_TYPE_MPV);
-#else
+#elif defined(HAVE_FFMPEG)
    return default_action_ok_load_content_with_core_from_menu(
          combined_path, CORE_TYPE_FFMPEG);
+#else
+   return -1;
 #endif
 }
 

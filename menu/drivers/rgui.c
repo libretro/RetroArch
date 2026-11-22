@@ -2763,7 +2763,8 @@ static bool rgui_request_thumbnail(
       if (path_is_valid(path))
       {
          if (image_texture_get_type(path) == IMAGE_TYPE_MP4
-               || image_texture_get_type(path) == IMAGE_TYPE_WEBM)
+               || image_texture_get_type(path) == IMAGE_TYPE_WEBM
+               || menu_media_music_supported(path))
             return true;
          /* Would like to cancel any existing image load tasks
           * here, but can't see how to do it... */
@@ -3148,14 +3149,15 @@ static bool rgui_media_present(void *user, const video_player_frame_t *frame)
    if (!frame->native || !frame->pixels) return false;
    image.pixels = (uint32_t*)frame->pixels;
    image.width = frame->width; image.height = frame->height; image.pix10 = false;
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < (menu_media_music_supported(rgui->media_path) ? 1u : 2u); i++)
    {
       rgui_process_thumbnail(rgui, thumbnails[i], &queue_size,
             settings->uints.menu_rgui_thumbnail_downscaler,
             settings->bools.menu_rgui_thumbnail_dither, &image);
       strlcpy(thumbnails[i]->path, rgui->media_path, sizeof(thumbnails[i]->path));
    }
-   return rgui->fs_thumbnail.is_valid && rgui->mini_thumbnail.is_valid;
+   return rgui->fs_thumbnail.is_valid
+      && (menu_media_music_supported(rgui->media_path) || rgui->mini_thumbnail.is_valid);
 }
 
 static bool rgui_media_state(void *user, int64_t now, gfx_media_playback_state_t *state)
@@ -3258,6 +3260,9 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
       && ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
             || settings->bools.menu_rgui_inline_thumbnails
             || menu_media_controls_settings_active(&rgui->media));
+   if (menu_media_music_supported(rgui->media_requested_path)
+         && !(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+         && !menu_media_controls_settings_active(&rgui->media)) wanted = false;
    once = menu_media_controls_continuous(&rgui->media,
          (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0);
    gfx_media_cpu_reap();
@@ -3270,10 +3275,22 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
          gfx_anim_preview_t *session;
          bool gpu = rgui_media_gpu_supported();
          strlcpy(rgui->media_path, rgui->media_requested_path, sizeof(rgui->media_path));
-         if (gpu)
-            gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
-         session = rgui->media_gpu.anim_sess ? NULL
-            : gfx_anim_preview_open(rgui->media_path, -1);
+#ifdef HAVE_AUDIOMIXER
+         if (menu_media_music_supported(rgui->media_path))
+         {
+            session = NULL;
+            if (gpu)
+               gfx_thumbnail_request_music_file(rgui->media_path, &rgui->media_gpu);
+            else
+               rgui->media_player = gfx_media_cpu_new_music(rgui->media_path, rgui_media_present, rgui);
+         }
+         else
+#endif
+         {
+            if (gpu) gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
+            session = rgui->media_gpu.anim_sess ? NULL
+               : gfx_anim_preview_open(rgui->media_path, -1);
+         }
          if (session)
          {
             rgui->media_player = gfx_media_cpu_new(session, rgui_media_present, rgui, 0);
@@ -3296,7 +3313,7 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
          }
       }
    }
-   if (rgui->media_gpu.anim_sess)
+   if (rgui->media_gpu.anim_sess || rgui->media_gpu.music_player)
    {
       gfx_thumbnail_set_repeat(&rgui->media_gpu, !once);
       gfx_thumbnail_animate(&rgui->media_gpu, now);
@@ -3307,7 +3324,8 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
             && !menu_input_dialog_get_display_kb())
       {
          target.user = rgui;
-         target.identity = rgui->media_gpu.anim_sess;
+         target.identity = rgui->media_gpu.music_player
+            ? rgui->media_gpu.music_player : rgui->media_gpu.anim_sess;
          target.state = rgui_media_state; target.pause = rgui_media_pause;
          target.seek = rgui_media_seek;
       }
@@ -3372,7 +3390,7 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
    {
       rgui_media_gpu_view_t draw;
       memset(&draw, 0, sizeof(draw));
-      draw.visible = wanted && rgui->media_gpu.anim_sess
+      draw.visible = wanted && (rgui->media_gpu.anim_sess || rgui->media_gpu.music_player)
          && !(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)
          && !menu_input_dialog_get_display_kb()
          && retro_atomic_load_acquire_int(&rgui->media_gpu.status)
@@ -8796,7 +8814,9 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
       file_list_t *stack = MENU_LIST_GET(menu_list, 0);
       if (stack && stack->size && (item->type == FILE_TYPE_IMAGEVIEWER
                || item->type == FILE_TYPE_IMAGE || type == IMAGE_TYPE_MP4
-               || type == IMAGE_TYPE_WEBM)
+               || type == IMAGE_TYPE_WEBM
+               || ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+                  && menu_media_music_supported(item->path)))
             && gfx_thumbnail_set_content_image(menu_st->thumbnail_path_data,
                stack->list[stack->size - 1].path, item->path))
       {
@@ -8829,7 +8849,9 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    if (has_thumbnail)
    {
       enum image_type_enum type = image_texture_get_type(menu_st->thumbnail_path_data->right_path);
-      if (type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
+      if (type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM
+            || ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+               && menu_media_music_supported(menu_st->thumbnail_path_data->right_path)))
          strlcpy(rgui->media_requested_path, menu_st->thumbnail_path_data->right_path,
                sizeof(rgui->media_requested_path));
    }
@@ -9976,12 +9998,14 @@ static enum menu_action rgui_parse_menu_entry_action(
       file_list_t *list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
       if (list && menu_st->selection_ptr < list->size
             && (list->list[menu_st->selection_ptr].type == FILE_TYPE_IMAGE
-               || list->list[menu_st->selection_ptr].type == FILE_TYPE_IMAGEVIEWER))
+               || list->list[menu_st->selection_ptr].type == FILE_TYPE_IMAGEVIEWER
+               || menu_media_music_supported(list->list[menu_st->selection_ptr].path)))
       {
          bool fullscreen = (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0;
          /* OK views only viewer content; an image pick keeps its action */
          bool viewable   = list->list[menu_st->selection_ptr].type
-            == FILE_TYPE_IMAGEVIEWER;
+            == FILE_TYPE_IMAGEVIEWER
+            || menu_media_music_supported(list->list[menu_st->selection_ptr].path);
          if (action == MENU_ACTION_START || action == MENU_ACTION_SELECT
                || (action == MENU_ACTION_OK && !fullscreen && viewable)
                || (action == MENU_ACTION_CANCEL && fullscreen))

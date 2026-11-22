@@ -48,6 +48,9 @@
 #endif
 
 #include "../audio/audio_driver.h"
+#ifdef HAVE_AUDIOMIXER
+#include "../gfx/gfx_music_player.h"
+#endif
 #ifdef HAVE_PYROWAVE
 #include "../record/record_pyrowave_lan.h"
 #endif
@@ -9402,6 +9405,14 @@ bool menu_driver_media_can_open(const char *path)
    enum image_type_enum type;
    if (!path)
       return false;
+#ifdef HAVE_AUDIOMIXER
+   if (path_is_media_type(path) == RARCH_CONTENT_MUSIC)
+      return settings->bools.multimedia_builtin_mediaplayer_enable
+         && !strstr(path, "://") && !path_contains_compressed_file(path)
+         && audio_driver_mixer_extension_supported(path_get_extension(path))
+         && (string_is_equal(ident, "ozone") || string_is_equal(ident, "xmb")
+            || string_is_equal(ident, "rgui") || string_is_equal(ident, "glui"));
+#endif
    type = image_texture_get_type(path);
    return !(type == IMAGE_TYPE_NONE || type == IMAGE_TYPE_DDS
          || strstr(path, "://") || path_contains_compressed_file(path)
@@ -9686,6 +9697,9 @@ bool menu_driver_iterate(
       enum menu_action action,
       retro_time_t current_time)
 {
+#ifdef HAVE_AUDIOMIXER
+   gfx_music_player_reap();
+#endif
    if (menu_st->frame_work)
       menu_driver_frame_work(menu_st, p_disp, settings, current_time);
    action = menu_driver_media_launch(menu_st, action);
