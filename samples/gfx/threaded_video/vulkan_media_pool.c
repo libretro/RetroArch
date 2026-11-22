@@ -20,6 +20,14 @@
 #define ID(value) ((unsigned)(uintptr_t)(value))
 #define HANDLE(type,value) ((type)(uintptr_t)(value))
 typedef unsigned vk_win32_video_import_t;
+/* Exercise both native cache owner fields on every host. */
+#define ANDROID 1
+#define HAVE_RMP4 1
+#define HAVE_VAAPI 1
+#define VK_TEX_FLAG_RETAIN_HANDLE 4
+struct opaque_cache { unsigned pending, closed, deferred; };
+typedef struct opaque_cache vulkan_android_cache_t;
+typedef struct opaque_cache vaapi_hevc_vulkan_cache_t;
 enum vk_texture_type { VULKAN_TEXTURE_STREAMED, VULKAN_TEXTURE_STATIC, VULKAN_TEXTURE_DYNAMIC };
 #include "pool_types.inc"
 struct context { VkDevice device; VkPhysicalDeviceMemoryProperties memory_properties; unsigned num_swapchain_images; };
@@ -28,18 +36,19 @@ typedef struct {
    mpsc_stack_t deferred_textures_in;
    mpsc_stack_node_t *deferred_textures;
    struct vk_stream_state *stream_states;
+   struct vk_texture *android_textures, *vaapi_textures;
    uint64_t media_submit_serial;
    struct { VkPipeline yuv420_to_rgba8888; VkPipelineLayout layout; } pipelines;
 } vk_t;
 struct image { uint32_t pixels[4][32]; unsigned levels,format,destroyed; };
 struct view { unsigned image,levels,deleted; };
 struct operation { unsigned kind,image,source,level; };
-static struct image images[32];
-static struct view views[64];
+static struct image images[128];
+static struct view views[256];
 static struct operation operations[2][16];
 static unsigned operation_count[2],image_count,view_count,memory_count;
 static unsigned allocations,blits,uploads,dispatches,changed,storage_view[2],bound_set[2];
-static unsigned deleted_memory[32];
+static unsigned deleted_memory[128];
 static bool fail_image,fail_submit,fail_end;
 static bool ready[2]={true,true};
 static uint8_t staging[2][256];
@@ -51,7 +60,7 @@ static VkResult vkCreateImage(VkDevice device,const VkImageCreateInfo *info,
    if(fail_image)return VK_ERROR_OUT_OF_DEVICE_MEMORY;
    assert(info->mipLevels && info->mipLevels<=4);
    assert(info->usage & VK_IMAGE_USAGE_SAMPLED_BIT);
-   *image=HANDLE(VkImage,++image_count);assert(image_count<32);
+   *image=HANDLE(VkImage,++image_count);assert(image_count<128);
    images[image_count].levels=info->mipLevels;images[image_count].format=info->format;
    allocations++;return VK_SUCCESS;
 }
@@ -65,7 +74,7 @@ static VkResult vkBindImageMemory(VkDevice device,VkImage image,VkDeviceMemory m
 static VkResult vkCreateImageView(VkDevice device,const VkImageViewCreateInfo *info,
       const VkAllocationCallbacks *allocator,VkImageView *view)
 {
-   (void)device;(void)allocator;*view=HANDLE(VkImageView,++view_count);assert(view_count<64);
+   (void)device;(void)allocator;*view=HANDLE(VkImageView,++view_count);assert(view_count<256);
    views[view_count].image=ID(info->image);views[view_count].levels=info->subresourceRange.levelCount;
    return VK_SUCCESS;
 }
@@ -169,7 +178,7 @@ static void vulkan_texture_retire(vk_t *v,struct vk_texture *texture)
 #include "pool_retire.inc"
 
 static void setup(vk_t *v,struct vk_texture *texture,struct vk_stream_state *st,
-      VkFormat format,bool planar)
+      VkFormat format,bool planar,bool opaque)
 {
    VkImageCreateInfo image;VkMemoryAllocateInfo memory;unsigned i;
    memset(texture,0,sizeof(*texture));memset(st,0,sizeof(*st));memset(&image,0,sizeof(image));
@@ -189,6 +198,7 @@ static void setup(vk_t *v,struct vk_texture *texture,struct vk_stream_state *st,
       st->media_target[i]=texture->view;storage_view[i]=ID(texture->view);
    }
    v->stream_states=st;v->media_submit_serial=0;
+   if(opaque)return;
    vulkan_media_pool_get(v,texture);assert(texture->media_pool && texture->media_version);
 }
 
@@ -203,7 +213,7 @@ static void run(VkFormat format,bool planar)
    memset(&v,0,sizeof(v));memset(&context,0,sizeof(context));memset(&image,0,sizeof(image));
    memset(&planes,0,sizeof(planes));v.context=&context;v.pipelines.yuv420_to_rgba8888=HANDLE(VkPipeline,1);
    context.num_swapchain_images=3;
-   setup(&v,&texture,&st,format,planar);image.width=image.height=4;
+   setup(&v,&texture,&st,format,planar,false);image.width=image.height=4;
    planes.planes[0]=y;planes.planes[1]=cb;planes.planes[2]=cr;
    planes.strides[0]=4;planes.strides[1]=planes.strides[2]=2;planes.chroma_step=1;
    memset(cb,128,sizeof(cb));memset(cr,128,sizeof(cr));image.planar=planar?&planes:NULL;
@@ -279,6 +289,122 @@ static void run(VkFormat format,bool planar)
    for(i=0;i<3;i++){vulkan_deferred_textures_tick(&v);assert(retired==retire_before);}
    vulkan_deferred_textures_tick(&v);assert(retired==retire_before+1 && !texture.media_pool);
 }
+typedef struct { unsigned dims, output_pixfmt, payload; } video_frame_import_t;
+static int opaque_result = 1;
+static unsigned opaque_presents, opaque_done;
+static VkImage opaque_destination;
+static VkImageView opaque_view;
+static bool vulkan_android_renderer_source(struct vk_texture *texture,
+      const video_frame_import_t *input, video_hw_frame_t *frame)
+{
+   assert(texture->dims == input->dims);
+   frame->done_value = input->payload;
+   return true;
+}
+static void vulkan_vaapi_renderer_frame(const video_frame_import_t *input,
+      video_hw_frame_t *frame)
+{
+   frame->width = VIDEO_SCALE_W(input->dims);
+   frame->height = VIDEO_SCALE_H(input->dims);
+   frame->done_value = input->payload;
+}
+static int opaque_present(struct opaque_cache *cache, const video_hw_frame_t *frame,
+      VkImage image, VkImageView view, VkImageLayout layout, bool *prepare)
+{
+   (void)prepare;
+   assert(!cache->closed && !cache->pending);
+   assert(layout == VK_IMAGE_LAYOUT_UNDEFINED || layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+   opaque_presents++; opaque_destination = image; opaque_view = view;
+   if (opaque_result == 1)
+   {
+      images[ID(image)].pixels[0][0] = frame->done_value;
+      cache->pending = 1;
+   }
+   return (int)opaque_result;
+}
+#define vulkan_android_cache_present opaque_present
+static int vaapi_hevc_vulkan_cache_present(struct opaque_cache *cache,
+      const video_hw_frame_t *frame, VkImage image, VkImageView view,
+      VkFormat format, unsigned width, unsigned height, VkImageLayout layout, bool *prepare)
+{
+   (void)format; assert(width == 4 && height == 4);
+   return opaque_present(cache, frame, image, view, layout, prepare);
+}
+static void opaque_close(struct opaque_cache *cache) { cache->closed = 1; }
+static bool opaque_free(struct opaque_cache *cache) { return !cache->pending; }
+static void opaque_defer(struct opaque_cache *cache) { cache->deferred++; }
+#define vulkan_android_cache_close opaque_close
+#define vulkan_android_cache_free opaque_free
+#define vulkan_android_cache_defer opaque_defer
+#define vaapi_hevc_vulkan_cache_close opaque_close
+#define vaapi_hevc_vulkan_cache_free opaque_free
+#define vaapi_hevc_vulkan_cache_defer opaque_defer
+#include "pool_opaque.inc"
+
+static void opaque_run(bool android, bool fp16, bool pending)
+{
+   vk_t v; struct context context; struct vk_texture texture, link;
+   struct vk_stream_state st; struct opaque_cache cache;
+   struct vk_texture *history[3] = {NULL,NULL,NULL};
+   struct vk_media_version *version;
+   video_frame_import_t input;
+   unsigned i,j,count=0,shown,calls,expected[3]={0,0,0};
+   memset(&v,0,sizeof(v)); memset(&context,0,sizeof(context));
+   memset(&cache,0,sizeof(cache)); memset(&link,0,sizeof(link));
+   v.context=&context;
+   setup(&v,&texture,&st,fp16?VK_FORMAT_R16G16B16A16_SFLOAT:VK_FORMAT_R8G8B8A8_UNORM,true,true);
+   v.stream_states=NULL;
+   if(android){texture.android_cache=&cache;texture.android_next=&link;v.android_textures=&texture;}
+   else{texture.vaapi_cache=&cache;texture.vaapi_next=&link;v.vaapi_textures=&texture;}
+   vulkan_media_pool_get(&v,&texture);
+   assert(texture.media_pool && texture.media_pool->storage);
+   input.dims=texture.dims;input.output_pixfmt=fp16?IMAGE_PIXFMT_FP16:IMAGE_PIXFMT_8888;
+   for(i=0;i<30;i++)
+   {
+      unsigned before=changed;
+      input.payload=i+1;opaque_result=i==7?0:i==15?-1:1;
+      shown=ID(texture.image);
+      assert((android?vulkan_android_renderer_import(&v,&texture,&input):vulkan_vaapi_renderer_import(&v,&texture,&input))
+            ==(opaque_result>0?VIDEO_TEXTURE_UPDATE_DONE:opaque_result==0?VIDEO_TEXTURE_UPDATE_DROPPED:VIDEO_TEXTURE_UPDATE_REFUSED));
+      if(opaque_result<=0){assert(ID(texture.image)==shown && changed==before);continue;}
+      assert(texture.image==opaque_destination && texture.view==opaque_view && changed==before+1);
+      assert(android?(texture.android_cache==&cache && texture.android_next==&link)
+                    :(texture.vaapi_cache==&cache && texture.vaapi_next==&link));
+      for(version=texture.media_pool->versions;version;version=version->next)
+         assert(!version->texture.android_cache && !version->texture.vaapi_cache
+               && !version->texture.android_next && !version->texture.vaapi_next);
+      for(j=0;j<3;j++)if(history[j])assert(images[ID(history[j]->image)].pixels[0][0]==expected[j]);
+      if(history[2])history[2]->history_refs--;
+      for(j=2;j;j--){history[j]=history[j-1];expected[j]=expected[j-1];}
+      expected[0]=input.payload;
+      history[0]=&texture.media_version->texture;history[0]->history_refs++;
+      /* Decoder completion does not depend on the retained RGB images. */
+      cache.pending=0;opaque_done++;
+      v.media_submit_serial++;
+      if(i==8)count=texture.media_pool->count;
+      if(i>8)assert(texture.media_pool->count==count && count<=4);
+   }
+   calls=opaque_presents;
+   for(version=texture.media_pool->versions;version;version=version->next)version->texture.history_refs++;
+   while(texture.media_pool->count<2*(GFX_MAX_FRAME_HISTORY+1)+2)
+   {struct vk_texture *out=vulkan_media_writable(&v,&texture);assert(out);out->history_refs++;}
+   assert((android?vulkan_android_renderer_import(&v,&texture,&input):vulkan_vaapi_renderer_import(&v,&texture,&input))==VIDEO_TEXTURE_UPDATE_DROPPED);
+   assert(opaque_presents==calls);
+   for(version=texture.media_pool->versions;version;version=version->next)version->texture.history_refs=0;
+   /* Context shutdown retains the public allocation and defers uncertain GPU work. */
+   if(android)texture.android_next=NULL;else texture.vaapi_next=NULL;
+   cache.pending=pending;
+   if(android)vulkan_android_renderer_flush(&v);else vulkan_vaapi_renderer_flush(&v);
+   assert(cache.closed && !v.android_textures && !v.vaapi_textures);
+   if(pending)
+   {
+      assert(cache.deferred==1 && texture.media_pool && texture.image);
+      if(android)vulkan_android_renderer_destroy_destination(context.device,&texture);
+      else vulkan_vaapi_renderer_destroy_destination(context.device,&texture);
+   }
+   assert(!texture.media_pool && !texture.image && !texture.view);
+}
+
 int main(void)
 {
    unsigned i;
@@ -286,6 +412,10 @@ int main(void)
    run(VK_FORMAT_R16G16B16A16_SFLOAT,false);
    run(VK_FORMAT_R8G8B8A8_UNORM,true);
    assert(uploads && dispatches && blits);
+   opaque_run(true,false,false); opaque_run(false,false,false);
+   opaque_run(true,true,true); opaque_run(false,true,true);
+   assert(opaque_done);
+   puts("PASS Android/VAAPI pooled outputs: stable cache owners, RGBA8/FP16 retained pixels, refusal/backpressure and deferred device teardown");
    for(i=1;i<=image_count;i++)assert(images[i].destroyed==1);
    for(i=1;i<=view_count;i++)assert(views[i].deleted==1);
    for(i=1;i<=memory_count;i++)assert(deleted_memory[i]==1);

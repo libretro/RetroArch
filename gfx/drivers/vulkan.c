@@ -1523,6 +1523,7 @@ static struct vk_texture *vulkan_media_sample_texture(struct vk_texture *texture
 static void vulkan_media_read(void *owner);
 static bool vulkan_media_pool_held(const struct vk_texture *texture);
 static void vulkan_media_pool_free(vk_t *vk, struct vk_texture *texture);
+static void vulkan_media_pool_destroy(VkDevice device, struct vk_texture *texture);
 
 static bool vulkan_draw_bind(vk_t *vk, const struct vk_draw_triangles *call)
 {
@@ -2140,7 +2141,7 @@ static void vulkan_stream_states_flush(vk_t *vk)
       struct vk_stream_state *next = st->next;
       struct vk_texture *texture = st->texture;
       vulkan_stream_state_free(vk, st);
-      vulkan_destroy_texture(vk->context->device, texture);
+      vulkan_media_pool_destroy(vk->context->device, texture);
       st = next;
    }
 }
@@ -7946,6 +7947,10 @@ static void vulkan_destroy_hdr_buffer(VkDevice device, struct vk_image *img)
  * unsynchronised by racing the teardown at all. */
 static struct retro_hw_render_interface_vulkan vulkan_hw_iface;
 
+#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9) \
+      || defined(HAVE_RAV1) || defined(HAVE_RECORD_MEDIACODEC))
+static void vulkan_android_renderer_flush(vk_t *vk);
+#endif
 #ifdef HAVE_VAAPI
 static void vulkan_vaapi_renderer_flush(vk_t *vk);
 #endif
@@ -7988,11 +7993,7 @@ static void vulkan_free(void *data)
       vulkan_windows_free(vk);
 #endif
       vulkan_deferred_textures_flush(vk);
-#ifdef HAVE_VAAPI
-      vulkan_vaapi_renderer_flush(vk);
-#endif
       vulkan_deferred_cmds_flush(vk);
-      vulkan_stream_states_flush(vk);
       {
          /* Frame buffers the wrapper did not let go */
          unsigned i;
@@ -8011,7 +8012,6 @@ static void vulkan_free(void *data)
        * them as each pool is destroyed. */
       vulkan_deinit_command_buffers(vk);
       vulkan_deinit_descriptor_pool(vk);
-      vulkan_deinit_pipelines(vk);
       vulkan_deinit_framebuffers(vk);
 #ifdef HAVE_OPENXR
       vulkan_xr_free(vk);
@@ -8041,6 +8041,15 @@ static void vulkan_free(void *data)
       vulkan_views_free_chains(vk, 0, true);
       /* The chains have released the last history owners. */
       vulkan_deferred_textures_flush(vk);
+#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9) \
+      || defined(HAVE_RAV1) || defined(HAVE_RECORD_MEDIACODEC))
+      vulkan_android_renderer_flush(vk);
+#endif
+#ifdef HAVE_VAAPI
+      vulkan_vaapi_renderer_flush(vk);
+#endif
+      vulkan_stream_states_flush(vk);
+      vulkan_deinit_pipelines(vk);
 
       /* Whatever the context, not only with HDR: the retained image is
        * the presenter's, not the HDR path's. */

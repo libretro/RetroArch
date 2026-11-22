@@ -14,7 +14,7 @@ static void vulkan_vaapi_renderer_destroy_destination(
 {
    struct vk_texture *texture = (struct vk_texture *)destination;
    bool retained = (texture->flags & VK_TEX_FLAG_RETAIN_HANDLE) != 0;
-   vulkan_destroy_texture(device, texture);
+   vulkan_media_pool_destroy(device, texture);
    if (!retained)
       free(texture);
 }
@@ -33,7 +33,7 @@ static void vulkan_vaapi_renderer_flush(vk_t *vk)
       if (!vaapi_hevc_vulkan_cache_free(cache))
          vaapi_hevc_vulkan_cache_defer(cache);
       else
-         vulkan_destroy_texture(vk->context->device, texture);
+         vulkan_media_pool_destroy(vk->context->device, texture);
    }
 }
 
@@ -159,8 +159,8 @@ static enum video_texture_update vulkan_vaapi_renderer_import(
       vk_t *vk, struct vk_texture *texture, const video_frame_import_t *input)
 {
    video_hw_frame_t frame;
+   struct vk_texture *destination;
    int result;
-   (void)vk;
    if (texture->dims != input->dims
          || (texture->format == VK_FORMAT_R16G16B16A16_SFLOAT)
                != (input->output_pixfmt == IMAGE_PIXFMT_FP16))
@@ -168,12 +168,16 @@ static enum video_texture_update vulkan_vaapi_renderer_import(
    if (!texture->vaapi_cache)
       return VIDEO_TEXTURE_UPDATE_DROPPED;
    vulkan_vaapi_renderer_frame(input, &frame);
+   destination = vulkan_media_writable(vk, texture);
+   if (!destination)
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
    result = vaapi_hevc_vulkan_cache_present(texture->vaapi_cache, &frame,
-         texture->image, texture->view, texture->format, frame.width,
-         frame.height, texture->layout, NULL);
+         destination->image, destination->view, destination->format, frame.width,
+         frame.height, destination->layout, NULL);
    if (result == 1)
    {
-      texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      vulkan_media_publish(texture, destination);
+      vulkan_media_texture_changed(vk, (uintptr_t)texture, true);
       return VIDEO_TEXTURE_UPDATE_DONE;
    }
    return result == 0 || result == -2 ? VIDEO_TEXTURE_UPDATE_DROPPED

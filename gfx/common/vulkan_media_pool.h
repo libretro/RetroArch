@@ -31,20 +31,55 @@ static bool vulkan_media_pool_held(const struct vk_texture *texture)
    return false;
 }
 
-static void vulkan_media_pool_free(vk_t *vk, struct vk_texture *texture)
+static void vulkan_media_pool_destroy(VkDevice device, struct vk_texture *texture)
 {
    struct vk_media_pool *pool = texture->media_pool;
-   struct vk_media_version *version = pool->versions;
+   struct vk_media_version *version;
+   if (!pool)
+   {
+      vulkan_destroy_texture(device, texture);
+      return;
+   }
+   version = pool->versions;
    while (version)
    {
       struct vk_media_version *next = version->next;
-      vulkan_destroy_texture(vk->context->device, &version->texture);
+      vulkan_destroy_texture(device, &version->texture);
       free(version);
       version = next;
    }
    free(pool);
    texture->media_pool = NULL;
    texture->media_version = NULL;
+   /* The public GPU fields alias the versions just destroyed. */
+   texture->image = VK_NULL_HANDLE;
+   texture->view = texture->history_view = VK_NULL_HANDLE;
+   texture->memory = VK_NULL_HANDLE;
+   texture->buffer = VK_NULL_HANDLE;
+   texture->mapped = NULL;
+   vulkan_destroy_texture(device, texture);
+}
+
+static void vulkan_media_pool_free(vk_t *vk, struct vk_texture *texture)
+{
+   vulkan_media_pool_destroy(vk->context->device, texture);
+}
+
+/* Native import caches belong to the stable handle, never an RGB version. */
+static void vulkan_media_cache_owner(struct vk_texture *destination,
+      const struct vk_texture *owner)
+{
+#if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9) \
+      || defined(HAVE_RAV1) || defined(HAVE_RECORD_MEDIACODEC))
+   destination->android_cache = owner ? owner->android_cache : NULL;
+   destination->android_next = owner ? owner->android_next : NULL;
+#endif
+#ifdef HAVE_VAAPI
+   destination->vaapi_cache = owner ? owner->vaapi_cache : NULL;
+   destination->vaapi_next = owner ? owner->vaapi_next : NULL;
+#endif
+   (void)destination;
+   (void)owner;
 }
 
 static VkImageView vulkan_media_level_view(vk_t *vk, const struct vk_texture *texture,
@@ -70,6 +105,7 @@ static void vulkan_media_pool_get(vk_t *vk, struct vk_texture *texture)
    struct vk_media_pool *pool;
    struct vk_media_version *version;
    struct vk_stream_state *st;
+   bool storage;
    if (texture->media_pool || texture->immutable || !texture->image || !texture->view
          || texture->layout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
          || (texture->format != VK_FORMAT_R8G8B8A8_UNORM
@@ -77,17 +113,16 @@ static void vulkan_media_pool_get(vk_t *vk, struct vk_texture *texture)
             && texture->format != VK_FORMAT_R16G16B16A16_SFLOAT))
       return;
    for (st = vk->stream_states; st && st->texture != texture; st = st->next) {}
-   if (texture->type != VULKAN_TEXTURE_STATIC && !(st && st->pool))
-      return;
+   storage = st && st->pool != VK_NULL_HANDLE;
 #if defined(ANDROID) && (defined(HAVE_RMP4) || defined(HAVE_RVP9) \
       || defined(HAVE_RAV1) || defined(HAVE_RECORD_MEDIACODEC))
-   if (texture->android_cache)
-      return;
+   storage = storage || texture->android_cache != NULL;
 #endif
 #ifdef HAVE_VAAPI
-   if (texture->vaapi_cache)
-      return;
+   storage = storage || texture->vaapi_cache != NULL;
 #endif
+   if (texture->type != VULKAN_TEXTURE_STATIC && !storage)
+      return;
    pool = (struct vk_media_pool*)calloc(1, sizeof(*pool));
    version = (struct vk_media_version*)calloc(1, sizeof(*version));
    if (!pool || !version)
@@ -97,6 +132,7 @@ static void vulkan_media_pool_get(vk_t *vk, struct vk_texture *texture)
       return;
    }
    version->texture = *texture;
+   vulkan_media_cache_owner(&version->texture, NULL);
    if (!version->texture.levels)
       version->texture.levels = 1;
    version->texture.history_view = version->texture.levels == 1
@@ -112,7 +148,7 @@ static void vulkan_media_pool_get(vk_t *vk, struct vk_texture *texture)
    version->texture.media_version = version;
    pool->current = pool->versions = version;
    pool->count = 1;
-   pool->storage = st && st->pool != VK_NULL_HANDLE;
+   pool->storage = storage;
    texture->media_pool = pool;
    texture->media_version = version;
    texture->history_view = version->texture.history_view;
@@ -236,16 +272,15 @@ static void vulkan_media_publish(struct vk_texture *texture, struct vk_texture *
    if (texture->media_pool)
    {
       struct vk_media_pool *pool = texture->media_pool;
-      mpsc_stack_node_t park = texture->park;
-      unsigned frames = texture->park_frames;
-      uint8_t flags = texture->flags;
+      struct vk_texture owner = *texture;
       destination->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
       pool->current = destination->media_version;
       *texture = *destination;
       texture->media_pool = pool;
-      texture->park = park;
-      texture->park_frames = frames;
-      texture->flags = flags;
+      texture->park = owner.park;
+      texture->park_frames = owner.park_frames;
+      texture->flags = owner.flags;
+      vulkan_media_cache_owner(texture, &owner);
    }
    else
       texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

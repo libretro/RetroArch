@@ -19,6 +19,14 @@ def function(signature):
     return source[match.start():source.index("\n}\n", match.end()) + 3]
 
 
+# Output versions cannot retire while shader leases or recorded descriptors survive.
+teardown = function("static void vulkan_free(")
+released = max(teardown.index("vulkan_filter_chain_free(vk->media_shader_chain[1])"),
+               teardown.index("vulkan_views_free_chains(vk, 0, true)"))
+for call in ("vulkan_android_renderer_flush(vk)", "vulkan_vaapi_renderer_flush(vk)", "vulkan_stream_states_flush(vk)"):
+    assert teardown.index(call) > released, call + " precedes history release"
+assert teardown.index("vulkan_deinit_pipelines(vk)") > teardown.index("vulkan_stream_states_flush(vk)")
+
 with tempfile.TemporaryDirectory(prefix="vulkan-media-pool-") as directory:
     tmp = Path(directory)
     sdk = root / "gfx/include/vk_video"
@@ -47,6 +55,16 @@ with tempfile.TemporaryDirectory(prefix="vulkan-media-pool-") as directory:
         "static void vulkan_deferred_textures_tick(",
         "static void vulkan_deferred_textures_flush(")), encoding="utf-8")
     (tmp / "pool_destroy.inc").write_text(function("static void vulkan_destroy_texture("), encoding="utf-8")
+    opaque = []
+    for platform in ("android", "vaapi"):
+        adapter = (root / ("gfx/drivers/vulkan_" + platform + "_video.h")).read_text()
+        for suffix in ("destroy_destination", "flush", "import"):
+            name = "vulkan_" + platform + "_renderer_" + suffix
+            start = adapter.index(name + "(")
+            start = adapter.rfind("static ", 0, start)
+            opaque.append(adapter[start:adapter.index("\n}", start) + 2])
+    (tmp / "pool_opaque.inc").write_text("\n".join(opaque), encoding="utf-8")
+
     common = (root / "gfx/common/vulkan_common.c").read_text(encoding="utf-8")
     start = common.index("uint32_t vulkan_find_memory_type_fallback(")
     (tmp / "pool_memory.inc").write_text(common[start:common.index("\n}\n", start) + 3], encoding="utf-8")

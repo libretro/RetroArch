@@ -5,8 +5,27 @@ static void vulkan_android_renderer_destroy_destination(
       VkDevice device, void *destination)
 {
    struct vk_texture *texture = (struct vk_texture *)destination;
-   vulkan_destroy_texture(device, texture);
-   free(texture);
+   bool retained = (texture->flags & VK_TEX_FLAG_RETAIN_HANDLE) != 0;
+   vulkan_media_pool_destroy(device, texture);
+   if (!retained)
+      free(texture);
+}
+static void vulkan_android_renderer_flush(vk_t *vk)
+{
+   while (vk->android_textures)
+   {
+      struct vk_texture *texture = vk->android_textures;
+      vulkan_android_cache_t *cache = texture->android_cache;
+      vk->android_textures = texture->android_next;
+      texture->android_next = NULL;
+      texture->android_cache = NULL;
+      texture->flags |= VK_TEX_FLAG_RETAIN_HANDLE;
+      vulkan_android_cache_close(cache);
+      if (!vulkan_android_cache_free(cache))
+         vulkan_android_cache_defer(cache);
+      else
+         vulkan_media_pool_destroy(vk->context->device, texture);
+   }
 }
 static vulkan_android_cache_t *vulkan_android_renderer_cache(
       vk_t *vk, struct vk_texture *texture, bool fp16)
@@ -144,16 +163,20 @@ static enum video_texture_update vulkan_android_renderer_import(
       vk_t *vk, struct vk_texture *texture, const video_frame_import_t *input)
 {
    video_hw_frame_t frame;
+   struct vk_texture *destination;
    int result;
-   (void)vk;
    if (!texture->android_cache
          || !vulkan_android_renderer_source(texture, input, &frame))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
+   destination = vulkan_media_writable(vk, texture);
+   if (!destination)
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
    result = vulkan_android_cache_present(texture->android_cache, &frame,
-         texture->image, texture->view, texture->layout, NULL);
+         destination->image, destination->view, destination->layout, NULL);
    if (result == 1)
    {
-      texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      vulkan_media_publish(texture, destination);
+      vulkan_media_texture_changed(vk, (uintptr_t)texture, true);
       return VIDEO_TEXTURE_UPDATE_DONE;
    }
    return result == 0 || result == -2 ? VIDEO_TEXTURE_UPDATE_DROPPED
