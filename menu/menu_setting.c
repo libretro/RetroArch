@@ -1247,6 +1247,29 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    return 0;
 }
 
+/* No key, mouse button or controller input bound, a hotkey's
+ * controllers' own included. */
+int menu_setting_bind_clear(rarch_setting_t *setting)
+{
+   unsigned id;
+   struct retro_keybind *keybind;
+
+   if (!setting || setting->type != ST_BIND)
+      return -1;
+   id = setting->bind_type - MENU_SETTINGS_BIND_BEGIN;
+   if (!(keybind = input_config_bind_edit(setting->index_offset, id)))
+      return -1;
+   input_keyboard_mapping_bits(0, RETRO_KEYBIND_KEY(keybind));
+   RETRO_KEYBIND_SET_KEY(keybind, RETROK_UNKNOWN);
+   RETRO_KEYBIND_SET_MBUTTON(keybind, NO_BTN);
+   keybind->joykey  = NO_BTN;
+   keybind->joyaxis = AXIS_NONE;
+   if (id >= RARCH_FIRST_META_KEY)
+      input_config_plays_as_clear_hotkey(id);
+   config_get_ptr()->flags |= SETTINGS_FLG_MODIFIED;
+   return 0;
+}
+
 static size_t setting_get_string_representation_hex_and_uint(
       rarch_setting_t *setting, char *s, size_t len)
 {

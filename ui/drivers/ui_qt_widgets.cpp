@@ -316,7 +316,24 @@ bool FormLayout::addBindButton(rarch_setting_t *setting)
    if (!setting || !setting->short_description)
       return false;
 
-   addRow(QString(setting->short_description), new BindButton(setting));
+   {
+      QWidget       *row = new QWidget();
+      QHBoxLayout   *box = new QHBoxLayout(row);
+      BindButton   *bind = new BindButton(setting);
+      QPushButton *reset = new QPushButton(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT));
+      QPushButton *clear = new QPushButton(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLEAR_SETTING));
+      box->setContentsMargins(0, 0, 0, 0);
+      box->addWidget(bind, 1);
+      box->addWidget(reset);
+      box->addWidget(clear);
+      reset->setAutoDefault(false);
+      clear->setAutoDefault(false);
+      connect(reset, SIGNAL(clicked()), bind, SLOT(setDefault()));
+      connect(clear, SIGNAL(clicked()), bind, SLOT(clear()));
+      addRow(QString(setting->short_description), row);
+   }
 
    return true;
 }
@@ -1274,15 +1291,200 @@ void FloatSliderAndSpinBox::onSpinBoxValueChanged(double value)
    m_slider->update();
 }
 
+/* Qt's keys and RetroArch's, the keypad's apart; shifted symbols go
+ * to the key they are on (a US layout's). */
+struct bind_qt_key
+{
+   int qt;
+   unsigned rk;
+};
+
+static const struct bind_qt_key bind_qt_keys[] = {
+   { Qt::Key_Backspace,    RETROK_BACKSPACE },
+   { Qt::Key_Tab,          RETROK_TAB },
+   { Qt::Key_Backtab,      RETROK_TAB },
+   { Qt::Key_Clear,        RETROK_CLEAR },
+   { Qt::Key_Return,       RETROK_RETURN },
+   { Qt::Key_Enter,        RETROK_RETURN },
+   { Qt::Key_Pause,        RETROK_PAUSE },
+   { Qt::Key_Escape,       RETROK_ESCAPE },
+   { Qt::Key_Space,        RETROK_SPACE },
+   { Qt::Key_Exclam,       RETROK_1 },
+   { Qt::Key_QuoteDbl,     RETROK_QUOTE },
+   { Qt::Key_NumberSign,   RETROK_3 },
+   { Qt::Key_Dollar,       RETROK_4 },
+   { Qt::Key_Percent,      RETROK_5 },
+   { Qt::Key_Ampersand,    RETROK_7 },
+   { Qt::Key_Apostrophe,   RETROK_QUOTE },
+   { Qt::Key_ParenLeft,    RETROK_9 },
+   { Qt::Key_ParenRight,   RETROK_0 },
+   { Qt::Key_Asterisk,     RETROK_8 },
+   { Qt::Key_Plus,         RETROK_EQUALS },
+   { Qt::Key_Comma,        RETROK_COMMA },
+   { Qt::Key_Minus,        RETROK_MINUS },
+   { Qt::Key_Period,       RETROK_PERIOD },
+   { Qt::Key_Slash,        RETROK_SLASH },
+   { Qt::Key_Colon,        RETROK_SEMICOLON },
+   { Qt::Key_Semicolon,    RETROK_SEMICOLON },
+   { Qt::Key_Less,         RETROK_COMMA },
+   { Qt::Key_Equal,        RETROK_EQUALS },
+   { Qt::Key_Greater,      RETROK_PERIOD },
+   { Qt::Key_Question,     RETROK_SLASH },
+   { Qt::Key_At,           RETROK_2 },
+   { Qt::Key_BracketLeft,  RETROK_LEFTBRACKET },
+   { Qt::Key_Backslash,    RETROK_BACKSLASH },
+   { Qt::Key_BracketRight, RETROK_RIGHTBRACKET },
+   { Qt::Key_AsciiCircum,  RETROK_6 },
+   { Qt::Key_Underscore,   RETROK_MINUS },
+   { Qt::Key_QuoteLeft,    RETROK_BACKQUOTE },
+   { Qt::Key_BraceLeft,    RETROK_LEFTBRACKET },
+   { Qt::Key_Bar,          RETROK_BACKSLASH },
+   { Qt::Key_BraceRight,   RETROK_RIGHTBRACKET },
+   { Qt::Key_AsciiTilde,   RETROK_BACKQUOTE },
+   { Qt::Key_Delete,       RETROK_DELETE },
+   { Qt::Key_Up,           RETROK_UP },
+   { Qt::Key_Down,         RETROK_DOWN },
+   { Qt::Key_Right,        RETROK_RIGHT },
+   { Qt::Key_Left,         RETROK_LEFT },
+   { Qt::Key_Insert,       RETROK_INSERT },
+   { Qt::Key_Home,         RETROK_HOME },
+   { Qt::Key_End,          RETROK_END },
+   { Qt::Key_PageUp,       RETROK_PAGEUP },
+   { Qt::Key_PageDown,     RETROK_PAGEDOWN },
+   { Qt::Key_NumLock,      RETROK_NUMLOCK },
+   { Qt::Key_CapsLock,     RETROK_CAPSLOCK },
+   { Qt::Key_ScrollLock,   RETROK_SCROLLOCK },
+   { Qt::Key_Shift,        RETROK_LSHIFT },
+   { Qt::Key_Control,      RETROK_LCTRL },
+   { Qt::Key_Alt,          RETROK_LALT },
+   { Qt::Key_AltGr,        RETROK_RALT },
+   { Qt::Key_Meta,         RETROK_LSUPER },
+   { Qt::Key_Super_L,      RETROK_LSUPER },
+   { Qt::Key_Super_R,      RETROK_RSUPER },
+   { Qt::Key_Mode_switch,  RETROK_MODE },
+   { Qt::Key_Multi_key,    RETROK_COMPOSE },
+   { Qt::Key_Help,         RETROK_HELP },
+   { Qt::Key_Print,        RETROK_PRINT },
+   { Qt::Key_SysReq,       RETROK_SYSREQ },
+   { Qt::Key_Menu,         RETROK_MENU },
+   { Qt::Key_PowerOff,     RETROK_POWER },
+   { Qt::Key_Undo,         RETROK_UNDO }
+};
+
+/* the keypad's, numbers or what they do with Num Lock off */
+static const struct bind_qt_key bind_qt_keypad[] = {
+   { Qt::Key_0,        RETROK_KP0 },
+   { Qt::Key_Insert,   RETROK_KP0 },
+   { Qt::Key_1,        RETROK_KP1 },
+   { Qt::Key_End,      RETROK_KP1 },
+   { Qt::Key_2,        RETROK_KP2 },
+   { Qt::Key_Down,     RETROK_KP2 },
+   { Qt::Key_3,        RETROK_KP3 },
+   { Qt::Key_PageDown, RETROK_KP3 },
+   { Qt::Key_4,        RETROK_KP4 },
+   { Qt::Key_Left,     RETROK_KP4 },
+   { Qt::Key_5,        RETROK_KP5 },
+   { Qt::Key_Clear,    RETROK_KP5 },
+   { Qt::Key_6,        RETROK_KP6 },
+   { Qt::Key_Right,    RETROK_KP6 },
+   { Qt::Key_7,        RETROK_KP7 },
+   { Qt::Key_Home,     RETROK_KP7 },
+   { Qt::Key_8,        RETROK_KP8 },
+   { Qt::Key_Up,       RETROK_KP8 },
+   { Qt::Key_9,        RETROK_KP9 },
+   { Qt::Key_PageUp,   RETROK_KP9 },
+   { Qt::Key_Period,   RETROK_KP_PERIOD },
+   { Qt::Key_Comma,    RETROK_KP_PERIOD },
+   { Qt::Key_Delete,   RETROK_KP_PERIOD },
+   { Qt::Key_Slash,    RETROK_KP_DIVIDE },
+   { Qt::Key_Asterisk, RETROK_KP_MULTIPLY },
+   { Qt::Key_Minus,    RETROK_KP_MINUS },
+   { Qt::Key_Plus,     RETROK_KP_PLUS },
+   { Qt::Key_Enter,    RETROK_KP_ENTER },
+   { Qt::Key_Return,   RETROK_KP_ENTER },
+   { Qt::Key_Equal,    RETROK_KP_EQUALS }
+};
+
+/* A modifier's side, which only the platform's own code tells:
+ * macOS' virtual key, a Windows scan code (0x100 extended), an X11 or
+ * Wayland key code (evdev's plus 8). */
+static unsigned bind_qt_modifier_side(const QKeyEvent *ev)
+{
+#if defined(__APPLE__)
+   switch (ev->nativeVirtualKey())
+   {
+      case 56: return RETROK_LSHIFT;
+      case 60: return RETROK_RSHIFT;
+      case 59: return RETROK_LCTRL;
+      case 62: return RETROK_RCTRL;
+      case 58: return RETROK_LALT;
+      case 61: return RETROK_RALT;
+      case 55: return RETROK_LMETA;
+      case 54: return RETROK_RMETA;
+      case 57: return RETROK_CAPSLOCK;
+   }
+#elif defined(_WIN32)
+   switch (ev->nativeScanCode())
+   {
+      case 0x02A: return RETROK_LSHIFT;
+      case 0x036: return RETROK_RSHIFT;
+      case 0x01D: return RETROK_LCTRL;
+      case 0x11D: return RETROK_RCTRL;
+      case 0x038: return RETROK_LALT;
+      case 0x138: return RETROK_RALT;
+      case 0x15B: return RETROK_LSUPER;
+      case 0x15C: return RETROK_RSUPER;
+   }
+#else
+   switch (ev->nativeScanCode())
+   {
+      case 50:  return RETROK_LSHIFT;
+      case 62:  return RETROK_RSHIFT;
+      case 37:  return RETROK_LCTRL;
+      case 105: return RETROK_RCTRL;
+      case 64:  return RETROK_LALT;
+      case 108: return RETROK_RALT;
+      case 133: return RETROK_LSUPER;
+      case 134: return RETROK_RSUPER;
+   }
+#endif
+   return RETROK_UNKNOWN;
+}
+
+static unsigned bind_qt_key_to_retrok(const QKeyEvent *ev)
+{
+   size_t i;
+   int key = ev->key();
+   unsigned rk;
+
+   if ((rk = bind_qt_modifier_side(ev)) != RETROK_UNKNOWN)
+      return rk;
+   if (ev->modifiers() & Qt::KeypadModifier)
+      for (i = 0; i < ARRAY_SIZE(bind_qt_keypad); i++)
+         if (bind_qt_keypad[i].qt == key)
+            return bind_qt_keypad[i].rk;
+   if (key >= Qt::Key_A && key <= Qt::Key_Z)
+      return RETROK_a + (key - Qt::Key_A);
+   if (key >= Qt::Key_0 && key <= Qt::Key_9)
+      return RETROK_0 + (key - Qt::Key_0);
+   if (key >= Qt::Key_F1 && key <= Qt::Key_F15)
+      return RETROK_F1 + (key - Qt::Key_F1);
+   for (i = 0; i < ARRAY_SIZE(bind_qt_keys); i++)
+      if (bind_qt_keys[i].qt == key)
+         return bind_qt_keys[i].rk;
+   return RETROK_UNKNOWN;
+}
+
+BindButton *BindButton::s_capture     = NULL;
+unsigned    BindButton::s_captureWait = 0;
+bool        BindButton::s_captureSeen = false;
+bool        BindButton::s_captureMenu = false;
+
 BindButton::BindButton(rarch_setting_t *setting, QWidget *parent) :
    QPushButton(parent)
    ,m_setting(setting)
 {
-   char val_s[NAME_MAX_LENGTH];
-
-   setting->actions->repr(setting, val_s, sizeof(val_s));
-
-   setText(val_s);
+   refresh();
    setAutoDefault(false);
 
    connect(this, SIGNAL(clicked(bool)), this, SLOT(onClicked(bool)));
@@ -1293,26 +1495,112 @@ BindButton::BindButton(msg_hash_enums enum_idx, QWidget *parent) :
 {
 }
 
+/* gone mid-capture (the window torn down): nothing more is handed on */
+BindButton::~BindButton()
+{
+   if (s_capture == this)
+   {
+      s_capture = NULL;
+      input_driver_companion_keys_clear();
+   }
+}
+
+void BindButton::refresh(void)
+{
+   char val_s[NAME_MAX_LENGTH];
+   m_setting->actions->repr(m_setting, val_s, sizeof(val_s));
+   setText(val_s);
+}
+
 void BindButton::onClicked(bool checked)
 {
    (void)(checked);
 
-   /* The menu runs the capture, so it is shown for it. */
-   if (!(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+   if (s_capture)
+      return;
+   /* The menu runs the capture, so it is shown for it, and hidden
+    * again after. */
+   s_captureMenu = !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE);
+   if (s_captureMenu)
       command_event(CMD_EVENT_MENU_TOGGLE, NULL);
-   m_setting->actions->ok(m_setting, 0, false);
+   if (m_setting->actions->ok(m_setting, 0, false) != 0)
+      return;
+   s_capture     = this;
+   s_captureWait = 0;
+   s_captureSeen = false;
+   input_driver_companion_keys_clear();
+   setText(msg_hash_to_str(MSG_INPUT_BIND_PRESS));
+   grabKeyboard();
 }
 
-/* Coming back from the capture in RetroArch's window shows the bind. */
-void BindButton::changeEvent(QEvent *event)
+void BindButton::captureEnd(void)
 {
-   if (event->type() == QEvent::ActivationChange && isActiveWindow())
+   s_capture = NULL;
+   releaseKeyboard();
+   input_driver_companion_keys_clear();
+   if (     s_captureMenu
+         && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   refresh();
+}
+
+/* The menu's capture is under way on every frame it sets the flag:
+ * from the frame after the click, up to its end. One never started
+ * (the menu not running) is let go a few frames on. */
+void BindButton::captureIterate(void)
+{
+   if (!s_capture)
+      return;
+   if (menu_state_get_ptr()->flags & MENU_ST_FLAG_IS_BINDING)
+      s_captureSeen = true;
+   else if (s_captureSeen || ++s_captureWait > 4)
+      s_capture->captureEnd();
+}
+
+/* While capturing, every key here goes to the capture rather than to
+ * the window: no shortcut, focus move or click by keyboard. */
+bool BindButton::event(QEvent *event)
+{
+   if (s_capture == this)
    {
-      char val_s[NAME_MAX_LENGTH];
-      m_setting->actions->repr(m_setting, val_s, sizeof(val_s));
-      setText(val_s);
+      switch (event->type())
+      {
+         case QEvent::ShortcutOverride:
+            event->accept();
+            return true;
+         case QEvent::KeyPress:
+         case QEvent::KeyRelease:
+            {
+               QKeyEvent *ev = static_cast<QKeyEvent*>(event);
+               if (!ev->isAutoRepeat())
+                  input_driver_companion_key(bind_qt_key_to_retrok(ev),
+                        event->type() == QEvent::KeyPress);
+            }
+            return true;
+         default:
+            break;
+      }
    }
-   QPushButton::changeEvent(event);
+   /* a bind set in RetroArch's own menu meanwhile */
+   else if (event->type() == QEvent::ActivationChange && isActiveWindow())
+      refresh();
+   return QPushButton::event(event);
+}
+
+void BindButton::setDefault(void)
+{
+   if (s_capture)
+      return;
+   m_setting->actions->start(m_setting);
+   refresh();
+}
+
+void BindButton::clear(void)
+{
+   if (s_capture)
+      return;
+   menu_setting_bind_clear(m_setting);
+   refresh();
 }
 
 

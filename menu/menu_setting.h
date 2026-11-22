@@ -97,6 +97,10 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx);
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound);
 
+/* Unbinds a bind setting's key, mouse button and controller input, a
+ * hotkey's controllers' own included. */
+int menu_setting_bind_clear(rarch_setting_t *setting);
+
 enum setting_type menu_setting_get_browser_selection_type(
       rarch_setting_t *setting);
 

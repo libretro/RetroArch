@@ -32284,6 +32284,10 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_WHATS_THIS,
    "What's This?"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
+   "Default"
+   )
 
 /* Unsorted */
 

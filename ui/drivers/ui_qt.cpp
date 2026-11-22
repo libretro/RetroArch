@@ -6729,6 +6729,7 @@ static void ui_companion_qt_iterate(void *data)
    ui_companion_qt_t *handle = (ui_companion_qt_t*)data;
    if (handle)
       companion_core_iterate(handle->core, 2000);
+   BindButton::captureIterate();
 }
 
 static void ui_companion_qt_event_command(void *data, enum event_command cmd)

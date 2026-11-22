@@ -584,18 +584,34 @@ private:
    FloatSpinBox *m_spinBox;
 };
 
+/* A bind: clicked, the menu captures it, and the keys pressed here
+ * meanwhile are handed to that capture. */
 class BindButton : public QPushButton
 {
    Q_OBJECT
 public:
    BindButton(rarch_setting_t *setting, QWidget *parent = 0);
    BindButton(msg_hash_enums enum_idx, QWidget *parent = 0);
+   ~BindButton();
+   /* Once a frame: ends the capture under way once the menu has. */
+   static void captureIterate(void);
+public slots:
+   void setDefault(void);
+   void clear(void);
 protected:
-   void changeEvent(QEvent *event);
+   bool event(QEvent *event);
 private slots:
    void onClicked(bool checked);
 private:
+   void refresh(void);
+   void captureEnd(void);
    rarch_setting_t *m_setting;
+   /* the button capturing, frames waited for the menu to start it,
+    * whether it has, and whether the click opened the menu for it */
+   static BindButton *s_capture;
+   static unsigned s_captureWait;
+   static bool s_captureSeen;
+   static bool s_captureMenu;
 };
 
 class ColorButton : public QToolButton
