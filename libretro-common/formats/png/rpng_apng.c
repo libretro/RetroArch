@@ -693,27 +693,57 @@ static uint32_t *apng_decode_frame(rpng_apng_stream_t *s,
    return data;
 }
 
-/* Apply the previous frame's disposal before compositing the next. */
-static void apng_apply_prev_dispose(rpng_apng_stream_t *s)
+/* Restore/clear a horizontal part of one previous-frame row. The saved
+ * rectangle is tightly packed even when its canvas destination is not. */
+static void apng_dispose_span(rpng_apng_stream_t *s, int row, int x, int width)
 {
-   int y;
-   if (!s->have_prev)
+   uint32_t *dst;
+   if (width <= 0)
       return;
+   dst = s->canvas + (size_t)(s->prev_y + row) * s->canvas_w
+      + s->prev_x + x;
    if (s->prev_dispose == APNG_DISPOSE_BACKGROUND)
+      memset(dst, 0, (size_t)width * sizeof(uint32_t));
+   else if (s->prev_save)
+      memcpy(dst, s->prev_save + (size_t)row * s->prev_w + x,
+            (size_t)width * sizeof(uint32_t));
+}
+
+/* Apply disposal only where the next frame still needs the pixels.
+ * NULL asks for the complete disposal (also used by the test reference). */
+static void apng_apply_prev_dispose(rpng_apng_stream_t *s,
+      const struct apng_frame *next)
+{
+   int y, left = 0, right = 0;
+   if (!s->have_prev || (s->prev_dispose != APNG_DISPOSE_BACKGROUND
+         && s->prev_dispose != APNG_DISPOSE_PREVIOUS))
+      return;
+   /* PREVIOUS needs the disposed pixels for its saved baseline; OVER
+    * reads the destination. Only SOURCE can discard overwritten bytes. */
+   if (next && next->blend == APNG_BLEND_SOURCE
+         && next->dispose != APNG_DISPOSE_PREVIOUS)
    {
-      for (y = 0; y < s->prev_h; y++)
-         memset(s->canvas + (size_t)(s->prev_y + y) * s->canvas_w
-               + s->prev_x, 0, (size_t)s->prev_w * sizeof(uint32_t));
+      left = (int)next->x_off - s->prev_x;
+      right = left + (int)next->width;
+      if (left < 0) left = 0;
+      if (right > s->prev_w) right = s->prev_w;
+      if (left == 0 && right == s->prev_w
+            && next->y_off <= (unsigned)s->prev_y
+            && next->y_off + next->height >= (unsigned)(s->prev_y + s->prev_h))
+         return;
    }
-   else if (s->prev_dispose == APNG_DISPOSE_PREVIOUS && s->prev_save)
+   for (y = 0; y < s->prev_h; y++)
    {
-      for (y = 0; y < s->prev_h; y++)
-         memcpy(s->canvas + (size_t)(s->prev_y + y) * s->canvas_w
-               + s->prev_x,
-               s->prev_save + (size_t)y * s->prev_w,
-               (size_t)s->prev_w * sizeof(uint32_t));
+      if (right > left && next
+            && (unsigned)(s->prev_y + y) >= next->y_off
+            && (unsigned)(s->prev_y + y) < next->y_off + next->height)
+      {
+         apng_dispose_span(s, y, 0, left);
+         apng_dispose_span(s, y, right, s->prev_w - right);
+      }
+      else
+         apng_dispose_span(s, y, 0, s->prev_w);
    }
-   /* DISPOSE_NONE: leave as-is. */
 }
 
 /* Composite a decoded frame sub-image onto the canvas at its offset. */
@@ -787,16 +817,7 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
    if (f->data_end > s->avail)
       return NULL;
 
-   /* A SOURCE rectangle overwrites all four channels, including alpha.
-    * Disposal wholly inside it would immediately be overwritten too.
-    * PREVIOUS still needs the disposed pixels as the saved baseline. */
-   if (!(s->have_prev && f->blend == APNG_BLEND_SOURCE
-         && f->dispose != APNG_DISPOSE_PREVIOUS
-         && f->x_off <= (unsigned)s->prev_x
-         && f->y_off <= (unsigned)s->prev_y
-         && f->x_off + f->width >= (unsigned)(s->prev_x + s->prev_w)
-         && f->y_off + f->height >= (unsigned)(s->prev_y + s->prev_h)))
-      apng_apply_prev_dispose(s);
+   apng_apply_prev_dispose(s, f);
 
    /* For DISPOSE_PREVIOUS, save this frame's target region before it is
     * overwritten so it can be restored after. */

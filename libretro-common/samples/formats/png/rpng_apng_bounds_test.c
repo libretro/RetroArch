@@ -493,17 +493,21 @@ static void test_bad_canvas_decode(void)
  * not decoder stores or reference work. */
 static void test_disposal_overlap(void)
 {
-   static const unsigned target[6][4] = {
+   static const unsigned target[11][4] = {
       {2,2,2,1}, {4,4,1,0}, {2,2,3,1},
-      {2,2,2,1}, {2,2,2,1}, {1,1,6,4}
+      {2,2,2,1}, {2,2,2,1}, {1,1,6,4},
+      {1,1,2,1}, {4,1,1,1}, {1,4,2,0}, {2,2,2,2}, {2,1,2,2}
    };
    const char *name = "covered disposal writes";
    unsigned mode, scenario, i;
    int before = failures;
    for (mode = 1; mode <= 2; mode++)
-      for (scenario = 0; scenario < 6; scenario++)
+      for (scenario = 0; scenario < 11; scenario++)
       {
          rpng_apng_stream_t *stream, *reference;
+         unsigned px = scenario == 10 ? 1 : 2;
+         unsigned pw = scenario == 10 ? 4 : 2;
+         unsigned ph = scenario == 10 ? 3 : 2;
          begin();
          put_ihdr(7, 5);
          put_actl(4);
@@ -516,7 +520,7 @@ static void test_disposal_overlap(void)
             pixel[1] = (uint8_t)(200 - i*30);
             pixel[2] = 90;
             pixel[3] = i == 2 ? 0 : 128;
-            if (i == 1) { w=2; h=2; x=2; y=1; disposal=mode; }
+            if (i == 1) { w=pw; h=ph; x=px; y=1; disposal=mode; }
             if (i == 2)
             {
                w=target[scenario][0]; h=target[scenario][1];
@@ -538,7 +542,7 @@ static void test_disposal_overlap(void)
             {
                const uint32_t *actual, *expected;
                int dur;
-               apng_apply_prev_dispose(reference);
+               apng_apply_prev_dispose(reference, NULL);
                reference->have_prev = 0;
                expected = rpng_apng_stream_next(reference, &dur);
                watched_begin = (uintptr_t)stream->canvas;
@@ -552,7 +556,17 @@ static void test_disposal_overlap(void)
                         name, "disposal changed pixels");
                if (i == 2)
                {
-                  size_t bytes = scenario < 2 ? 0 : 2*2*sizeof(uint32_t);
+                  unsigned x, y, pixels = 0;
+                  size_t bytes;
+                  for (y = 1; y < 1+ph; y++)
+                     for (x = px; x < px+pw; x++)
+                        if (scenario == 3 || scenario == 4
+                              || x < target[scenario][2]
+                              || x >= target[scenario][2] + target[scenario][0]
+                              || y < target[scenario][3]
+                              || y >= target[scenario][3] + target[scenario][1])
+                           pixels++;
+                  bytes = pixels * sizeof(uint32_t);
                   check(canvas_copy_bytes == (mode == 2 ? bytes : 0),
                         name, "unexpected restore copy");
                   check(canvas_clear_bytes == (mode == 1 ? bytes : 0),
