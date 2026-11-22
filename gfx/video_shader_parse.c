@@ -727,7 +727,9 @@ static bool video_shader_parse_pass(config_file_t *conf,
    else
       pass->filter = RARCH_FILTER_UNSPEC;
 
-   pass->use_simulated_res = false;
+   /* Only the first pass reads the core's frame, so it is the one
+    * told the simulated size unless the preset says otherwise. */
+   pass->use_simulated_res = (i == 0);
    _len  = strlcpy_lit(shader_var, "use_simulated_res", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    if (config_get_bool(conf, shader_var, &tmp_bool))
@@ -1726,10 +1728,13 @@ static bool video_shader_write_root_preset(const struct video_shader *shader,
       strlcpy(key + _len, formatted_num, sizeof(key) - _len);
       config_set_string(conf, key, pass->mipmap ? "true" : "false");
 
-      _len = strlcpy_lit(key, "use_simulated_res", sizeof(key));
-      strlcpy(key + _len, formatted_num, sizeof(key) - _len);
-      config_set_string(conf, key,
-            pass->use_simulated_res ? "true" : "false");
+      if (pass->use_simulated_res != (i == 0))
+      {
+         _len = strlcpy_lit(key, "use_simulated_res", sizeof(key));
+         strlcpy(key + _len, formatted_num, sizeof(key) - _len);
+         config_set_string(conf, key,
+               pass->use_simulated_res ? "true" : "false");
+      }
 
       if (pass->filter != RARCH_FILTER_UNSPEC)
       {
@@ -2232,6 +2237,15 @@ static bool video_shader_write_referenced_preset(
             continue_saving_ref = false;
          }
 
+         if (continue_saving_ref
+               && pass->use_simulated_res != root_pass->use_simulated_res)
+         {
+#ifdef DEBUG
+            RARCH_WARN("[Shaders] Pass %u use_simulated_res", i);
+#endif
+            continue_saving_ref = false;
+         }
+
          if (continue_saving_ref && !string_is_equal(pass->alias, root_pass->alias))
          {
 #ifdef DEBUG
@@ -2631,6 +2645,10 @@ static bool video_shader_combine_shaders(
       combined_shader->pass[first_shader->passes + i] = second_shader->pass[i];
       combined_shader->passes += 1;
    }
+   /* The second preset's first pass now reads the first preset's
+    * output, not the core's frame. */
+   if (first_shader->passes && first_shader->passes < GFX_MAX_SHADERS)
+      combined_shader->pass[first_shader->passes].use_simulated_res = false;
 
    combined_shader->hdr_mode = combined_shader->passes == first_shader->passes
       ? first_shader->hdr_mode :

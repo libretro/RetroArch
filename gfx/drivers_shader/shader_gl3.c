@@ -953,6 +953,8 @@ struct gl3_common_resources
    size_t num_pass_outputs;
    struct gl3_static_texture *luts;
    size_t num_luts;
+   /* Passes told the simulated SourceSize, one bit each. */
+   uint64_t sim_source_passes;
 
    slang_texture_semantic_name_map texture_semantic_map;
    slang_texture_semantic_name_map texture_semantic_uniform_map;
@@ -969,8 +971,8 @@ struct gl3_common_resources
    float paper_white_nits;
    float peak_nits;
    unsigned expand_gamut;
-   /* Per-pass SourceSize values from the preset; 0 when off. */
-   unsigned sim_source_dims[GFX_MAX_SHADERS];
+   /* The simulated SourceSize from the preset; 0 when off. */
+   unsigned sim_source_dims;
 
    /* Frames may come inside a larger texture: passes are built to read
     * them there, sampling as the first pass samples. */
@@ -1008,10 +1010,11 @@ static void gl3_common_set_sim_source_dims(gl3_common_resources *common,
       const struct video_shader *shader)
 {
    unsigned i;
-   for (i = 0; i < GFX_MAX_SHADERS; i++)
-      common->sim_source_dims[i] =
-         (i < shader->passes && shader->pass[i].use_simulated_res)
-         ? shader->sim_source_dims : 0;
+   common->sim_source_passes = 0;
+   common->sim_source_dims   = shader->sim_source_dims;
+   for (i = 0; i < shader->passes && i < GFX_MAX_SHADERS; i++)
+      if (shader->pass[i].use_simulated_res)
+         common->sim_source_passes |= (uint64_t)1 << i;
 }
 
 static void gl3_common_resources_free(gl3_common_resources *common)
@@ -2462,9 +2465,11 @@ static void gl3_pass_build_semantic_texture(struct gl3_pass *pass, uint8_t *buff
 {
    unsigned dims = texture->texture.dims;
    if (semantic == SLANG_TEXTURE_SEMANTIC_SOURCE
+         && pass->common->sim_source_dims
          && pass->pass_number < GFX_MAX_SHADERS
-         && pass->common->sim_source_dims[pass->pass_number])
-      dims = pass->common->sim_source_dims[pass->pass_number];
+         && (pass->common->sim_source_passes
+            & ((uint64_t)1 << pass->pass_number)))
+      dims = pass->common->sim_source_dims;
    gl3_pass_build_semantic_texture_vec4(pass, buffer, semantic, dims);
    gl3_pass_set_semantic_texture(pass, semantic, texture);
 }

@@ -741,8 +741,8 @@ static bool texture_array_resize(Texture **arr, size_t *count,
 
 struct CommonResources
 {
-   /* Per-pass SourceSize values from the preset; 0 when off. */
-   unsigned sim_source_dims[GFX_MAX_SHADERS];
+   /* The simulated SourceSize from the preset; 0 when off. */
+   unsigned sim_source_dims;
 
    struct slang_buffer vbo;
    struct slang_buffer ubo;
@@ -784,6 +784,8 @@ struct CommonResources
     * copies of identical data and the O(passes) broadcast loops. */
    uint64_t frame_count;
    uint64_t swap_count;
+   /* Passes told the simulated SourceSize, one bit each. */
+   uint64_t sim_source_passes;
    int32_t frame_direction;       /* init: 1 */
    uint32_t frame_time_delta;
    float original_fps;
@@ -822,10 +824,11 @@ static void slang_common_set_sim_source_dims(struct CommonResources *common,
       const struct video_shader *shader)
 {
    unsigned i;
-   for (i = 0; i < GFX_MAX_SHADERS; i++)
-      common->sim_source_dims[i] =
-         (i < shader->passes && shader->pass[i].use_simulated_res)
-         ? shader->sim_source_dims : 0;
+   common->sim_source_passes = 0;
+   common->sim_source_dims   = shader->sim_source_dims;
+   for (i = 0; i < shader->passes && i < GFX_MAX_SHADERS; i++)
+      if (shader->pass[i].use_simulated_res)
+         common->sim_source_passes |= (uint64_t)1 << i;
 }
 
 static void common_resources_init(CommonResources *common,
@@ -4217,9 +4220,11 @@ static void slang_pass_build_semantic_texture(struct slang_pass *pass,
 {
    unsigned dims = texture->texture.dims;
    if (semantic == SLANG_TEXTURE_SEMANTIC_SOURCE
+         && pass->common->sim_source_dims
          && pass->pass_number < GFX_MAX_SHADERS
-         && pass->common->sim_source_dims[pass->pass_number])
-      dims = pass->common->sim_source_dims[pass->pass_number];
+         && (pass->common->sim_source_passes
+            & ((uint64_t)1 << pass->pass_number)))
+      dims = pass->common->sim_source_dims;
    slang_pass_build_semantic_texture_vec4(pass, buffer, semantic, dims);
    slang_pass_set_semantic_texture(pass, set, semantic, texture,
          image_infos, writes, write_count);

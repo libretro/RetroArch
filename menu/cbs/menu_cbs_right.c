@@ -396,6 +396,7 @@ static int action_right_shader_filter_pass(unsigned type, const char *label,
    return 0;
 }
 
+#ifdef HAVE_SLANG
 static int action_right_shader_simulated_res_pass(unsigned type,
       const char *label, bool wraparound)
 {
@@ -412,6 +413,7 @@ static int action_right_shader_simulated_res_pass(unsigned type,
 
    return 0;
 }
+#endif
 
 static int action_right_shader_filter_default(unsigned type, const char *label,
       bool wraparound)

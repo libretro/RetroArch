@@ -373,6 +373,7 @@ static int action_start_shader_filter_pass(
    return menu_shader_manager_clear_pass_filter(menu_shader_get(), pass);
 }
 
+#ifdef HAVE_SLANG
 static int action_start_shader_simulated_res_pass(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
@@ -388,6 +389,7 @@ static int action_start_shader_simulated_res_pass(
 
    return 0;
 }
+#endif
 #endif
 
 static int action_start_netplay_mitm_server(

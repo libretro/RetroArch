@@ -361,6 +361,7 @@ static size_t menu_action_setting_disp_set_label_shader_scale_pass(
    return snprintf(s, len, "%ux", scale_value);
 }
 
+#ifdef HAVE_SLANG
 static size_t menu_action_setting_disp_set_label_shader_simulated_res_pass(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -381,6 +382,7 @@ static size_t menu_action_setting_disp_set_label_shader_simulated_res_pass(
    return strlcpy(s, msg_hash_to_str(shader_pass->use_simulated_res
             ? MENU_ENUM_LABEL_VALUE_ON : MENU_ENUM_LABEL_VALUE_OFF), len);
 }
+#endif
 #endif
 
 
