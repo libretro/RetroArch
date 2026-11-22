@@ -40,7 +40,6 @@
 #include <QIcon>
 #include <QImage>
 #include <QPointer>
-#include <QDateTime>
 #include <QProgressBar>
 #include <QElapsedTimer>
 #include <QTableWidget>
@@ -375,18 +374,7 @@ public:
  * listing (enumerated, stat'ed and formatted off the UI thread, shared
  * by every companion): this class only paints it. Columns are Qt's
  * Name / Size / Type / Date Modified / Path; a row is the listing's
- * index. A search lists its own matches, walked off the UI thread. */
-struct BrowseSearchEntry
-{
-   QString path;
-   QString dir;
-   QString name;
-   QString type;
-   qint64 size;
-   QDateTime modified;
-   bool isDir;
-};
-Q_DECLARE_METATYPE(QVector<BrowseSearchEntry>)
+ * index, a search's matches included (the companion core walks it). */
 
 class BrowseTableModel : public QAbstractTableModel
 {
@@ -399,9 +387,6 @@ public:
    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
    /* The core listing changed: reset. */
    void reload();
-   void setFilter(const QRegularExpression &re);
-   Q_INVOKABLE void setSearchResults(const QVector<BrowseSearchEntry> &entries,
-         quint64 generation, int sortColumn, int sortOrder);
    /* Header click: the core sorts, every companion the same way. */
    void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
    /* Browse index (into the core listing) behind a table row, or -1. */
@@ -411,13 +396,6 @@ public:
 private:
    size_t m_count = 0;     /* rows: the core's listing, by its index */
    QString m_dir;          /* the listing's folder, for the Path column */
-   QRegularExpression m_filter;
-   QVector<BrowseSearchEntry> m_searchEntries;
-   bool m_recursiveSearch = false;
-   quint64 m_searchGeneration = 0;
-   int m_searchSortColumn = 0;
-   Qt::SortOrder m_searchSortOrder = Qt::AscendingOrder;
-   QSharedPointer<QAtomicInt> m_searchCancel;
    QIcon m_folderIcon, m_fileIcon, m_driveIcon;
 };
 
@@ -591,6 +569,7 @@ public slots:
    void onBrowserUpClicked();
    void onBrowserStartClicked();
    void onUpdaterActionClicked();
+   void onBrowseDeleteFinished(QString path, bool ok);
    void onCoreUpdaterTableContextMenuRequested(const QPoint &pos);
    void onCoreUpdaterListPublished();
    void onUpdaterListingFinished(QStringList entries, int type, QString path);
@@ -765,6 +744,10 @@ private:
    int m_updaterViewType;
    QTableWidget *m_coreUpdaterTable;
    QTreeWidget *m_updaterDirectoryTree;
+   /* deletes asked of the companion core: path -> 1 folder | 2 backup */
+   QHash<QString, int> m_pendingDeletes;
+   /* the words the file browser was last searched for */
+   QString m_browseSearchText;
    /* the menu's Online Updater list the buttons were made from */
    struct file_list *m_updaterList = NULL;
    bool m_pendingRun;

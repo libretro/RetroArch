@@ -36,7 +36,6 @@
 #include <QLabel>
 #include <QFileDialog>
 #include <QFileSystemModel>
-#include <QDirIterator>
 #include <QListWidgetItem>
 #include <QTableWidgetItem>
 #include <QHash>
@@ -1478,45 +1477,29 @@ int BrowseTableModel::rowCount(const QModelIndex &parent) const
 {
    if (parent.isValid())
       return 0;
-   return m_recursiveSearch ? m_searchEntries.size() : (int)m_count;
+   return (int)m_count;
 }
 
 long BrowseTableModel::browseIndex(const QModelIndex &index) const
 {
-   if (m_recursiveSearch || !index.isValid()
-         || index.row() < 0 || (size_t)index.row() >= m_count)
+   if (!index.isValid() || index.row() < 0 || (size_t)index.row() >= m_count)
       return -1;
    return index.row();
 }
 
 QString BrowseTableModel::pathAt(const QModelIndex &index) const
 {
-   if (m_recursiveSearch)
-   {
-      if (!index.isValid() || index.row() < 0
-            || index.row() >= m_searchEntries.size())
-         return QString();
-      return m_searchEntries.at(index.row()).path;
-   }
-   {
-      long bi = browseIndex(index);
-      const char *p = bi >= 0 ? companion_core_browse_path(
-            ui_companion_qt_core(), (size_t)bi) : NULL;
-      return p ? QString::fromUtf8(p) : QString();
-   }
+   long bi = browseIndex(index);
+   const char *p = bi >= 0 ? companion_core_browse_path(
+         ui_companion_qt_core(), (size_t)bi) : NULL;
+   return p ? QString::fromUtf8(p) : QString();
 }
 
 bool BrowseTableModel::isDirAt(const QModelIndex &index) const
 {
-   if (m_recursiveSearch)
-      return     index.isValid() && index.row() >= 0
-              && index.row() < m_searchEntries.size()
-              && m_searchEntries.at(index.row()).isDir;
-   {
-      long bi = browseIndex(index);
-      return bi >= 0 && companion_core_browse_is_dir(
-            ui_companion_qt_core(), (size_t)bi);
-   }
+   long bi = browseIndex(index);
+   return bi >= 0 && companion_core_browse_is_dir(
+         ui_companion_qt_core(), (size_t)bi);
 }
 
 QVariant BrowseTableModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -1553,45 +1536,6 @@ QVariant BrowseTableModel::data(const QModelIndex &index, int role) const
    companion_core_t *core = ui_companion_qt_core();
    long bi = browseIndex(index);
    char buf[64];
-   if (m_recursiveSearch)
-   {
-      const BrowseSearchEntry &entry = m_searchEntries.at(index.row());
-      if (role == Qt::DisplayRole)
-      {
-         switch (index.column())
-         {
-            case 0: return entry.name;
-            case 1:
-               if (entry.isDir)
-                  return QString();
-               if (entry.size >= 1024LL * 1024 * 1024)
-                  return QString::number((double)entry.size / (1024.0 * 1024 * 1024), 'f', 1) + QStringLiteral(" GB");
-               if (entry.size >= 1024LL * 1024)
-                  return QString::number((double)entry.size / (1024.0 * 1024), 'f', 1) + QStringLiteral(" MB");
-               return QString::number((entry.size + 1023) / 1024) + QStringLiteral(" KB");
-            case 2: return entry.type;
-            case 3: return entry.modified.toString(QStringLiteral("yyyy-MM-dd hh:mm"));
-            case 4: return entry.dir;
-         }
-      }
-      else if (role == Qt::DecorationRole && index.column() == 0)
-      {
-         if (entry.isDir)
-         {
-            if (m_folderIcon.isNull())
-               const_cast<BrowseTableModel*>(this)->m_folderIcon =
-                  QApplication::style()->standardIcon(QStyle::SP_DirIcon);
-            return m_folderIcon;
-         }
-         if (m_fileIcon.isNull())
-            const_cast<BrowseTableModel*>(this)->m_fileIcon =
-               QApplication::style()->standardIcon(QStyle::SP_FileIcon);
-         return m_fileIcon;
-      }
-      else if (role == Qt::TextAlignmentRole && index.column() == 1)
-         return QVariant(Qt::AlignRight | Qt::AlignVCenter);
-      return QVariant();
-   }
    if (bi < 0 || !core)
       return QVariant();
    if (role == Qt::DisplayRole)
@@ -1603,8 +1547,8 @@ QVariant BrowseTableModel::data(const QModelIndex &index, int role) const
          case 2: return QString::fromUtf8(companion_core_browse_type_str(core, (size_t)bi, buf, sizeof(buf)));
          case 3: return QString::fromUtf8(companion_core_browse_date_str(core, (size_t)bi, buf, sizeof(buf)));
          case 4:
-            /* every row of a listing is in its folder; only the drive
-             * list has none */
+            /* every row of a listing is in its folder; a search's rows
+             * and the drive list are not */
             if (!m_dir.isEmpty())
                return m_dir;
             return qt_browse_parent_path(QString::fromUtf8(
@@ -1638,99 +1582,15 @@ QVariant BrowseTableModel::data(const QModelIndex &index, int role) const
    return QVariant();
 }
 
-/* Matching folders ahead of files, whatever the column or direction. */
-static void qt_browse_search_sort(QVector<BrowseSearchEntry> &entries,
-      int column, Qt::SortOrder order)
-{
-   std::stable_sort(entries.begin(), entries.end(),
-         [column, order](const BrowseSearchEntry &a, const BrowseSearchEntry &b)
-         {
-            int cmp = 0;
-            if (a.isDir != b.isDir)
-               return a.isDir;
-            switch (column)
-            {
-               case 1: cmp = a.size < b.size ? -1 : a.size > b.size ? 1 : 0; break;
-               case 2: cmp = QString::compare(a.type, b.type, Qt::CaseInsensitive); break;
-               case 3: cmp = a.modified < b.modified ? -1 : a.modified > b.modified ? 1 : 0; break;
-               case 4: cmp = QString::compare(a.path, b.path, Qt::CaseInsensitive); break;
-               default: cmp = QString::compare(a.name, b.name, Qt::CaseInsensitive); break;
-            }
-            if (cmp == 0)
-               cmp = QString::compare(a.path, b.path, Qt::CaseInsensitive);
-            return order == Qt::AscendingOrder ? cmp < 0 : cmp > 0;
-         });
-}
-
-class BrowseSearchRunnable : public QRunnable
-{
-public:
-   BrowseSearchRunnable(QPointer<BrowseTableModel> model, QString root,
-         QRegularExpression filter, bool showHidden, quint64 generation,
-         QSharedPointer<QAtomicInt> cancel, int sortColumn,
-         Qt::SortOrder sortOrder)
-      : m_model(model), m_root(root), m_filter(filter),
-        m_showHidden(showHidden), m_generation(generation), m_cancel(cancel),
-        m_sortColumn(sortColumn), m_sortOrder(sortOrder) {}
-
-   void run()
-   {
-      QVector<BrowseSearchEntry> entries;
-      QDir::Filters filters = QDir::AllEntries | QDir::NoDotAndDotDot;
-      if (m_showHidden)
-         filters |= QDir::Hidden | QDir::System;
-      QDirIterator it(m_root, filters, QDirIterator::Subdirectories);
-      while (!m_cancel->loadAcquire() && it.hasNext())
-      {
-         BrowseSearchEntry entry;
-         const QString path = it.next();
-         const QFileInfo info = it.fileInfo();
-         entry.name = info.fileName();
-         if (!m_filter.match(entry.name).hasMatch())
-            continue;
-         entry.path = path;
-         entry.dir = qt_browse_parent_path(path);
-         entry.isDir = info.isDir();
-         entry.size = entry.isDir ? 0 : info.size();
-         entry.type = entry.isDir ? QStringLiteral("Folder") : info.suffix().toUpper();
-         entry.modified = info.lastModified();
-         entries.append(entry);
-      }
-      /* sorted here, so the model takes the list as it is */
-      qt_browse_search_sort(entries, m_sortColumn, m_sortOrder);
-      if (m_model)
-         QMetaObject::invokeMethod(m_model.data(), "setSearchResults",
-               Qt::QueuedConnection,
-               Q_ARG(QVector<BrowseSearchEntry>, entries),
-               Q_ARG(quint64, m_generation), Q_ARG(int, m_sortColumn),
-               Q_ARG(int, (int)m_sortOrder));
-   }
-private:
-   QPointer<BrowseTableModel> m_model;
-   QString m_root;
-   QRegularExpression m_filter;
-   bool m_showHidden;
-   quint64 m_generation;
-   QSharedPointer<QAtomicInt> m_cancel;
-   int m_sortColumn;
-   Qt::SortOrder m_sortOrder;
-};
-
 void BrowseTableModel::reload()
 {
    companion_core_t *core = ui_companion_qt_core();
    size_t n = core ? companion_core_browse_count(core) : 0;
-   const bool searching = m_filter.isValid() && !m_filter.pattern().isEmpty();
-   ++m_searchGeneration;
-   if (m_searchCancel)
-      m_searchCancel->storeRelease(1);
-   m_searchCancel.clear();
    beginResetModel();
-   m_searchEntries.clear();
-   m_recursiveSearch = searching;
-   m_count           = searching ? 0 : n;
+   m_count = n;
    m_dir.clear();
-   if (!searching && core && *companion_core_browse_dir(core))
+   if (     core && *companion_core_browse_dir(core)
+         && !companion_core_browse_is_search(core))
    {
       m_dir = QDir::toNativeSeparators(
             QString::fromUtf8(companion_core_browse_dir(core)));
@@ -1738,56 +1598,10 @@ void BrowseTableModel::reload()
          m_dir += QDir::separator();
    }
    endResetModel();
-   if (searching && core)
-   {
-      const char *browse_dir = companion_core_browse_dir(core);
-      if (browse_dir && *browse_dir)
-      {
-         qRegisterMetaType<QVector<BrowseSearchEntry> >("QVector<BrowseSearchEntry>");
-         m_searchCancel = QSharedPointer<QAtomicInt>(new QAtomicInt(0));
-         QThreadPool::globalInstance()->start(new BrowseSearchRunnable(
-            this, QString::fromUtf8(browse_dir), m_filter,
-            config_get_ptr()->bools.show_hidden_files,
-            m_searchGeneration, m_searchCancel,
-            m_searchSortColumn, m_searchSortOrder));
-      }
-   }
-}
-
-void BrowseTableModel::setSearchResults(
-      const QVector<BrowseSearchEntry> &entries, quint64 generation,
-      int sortColumn, int sortOrder)
-{
-   int column         = m_searchSortColumn;
-   Qt::SortOrder order = m_searchSortOrder;
-   if (generation != m_searchGeneration || !m_recursiveSearch)
-      return;
-   /* the worker sorted the list: it is shared, not copied, unless the
-    * header was changed while it ran */
-   beginResetModel();
-   m_searchEntries    = entries;
-   m_searchSortColumn = sortColumn;
-   m_searchSortOrder  = (Qt::SortOrder)sortOrder;
-   endResetModel();
-   sort(column, order);
 }
 
 void BrowseTableModel::sort(int column, Qt::SortOrder order)
 {
-   if (m_recursiveSearch)
-   {
-      column = column < 0 ? 0 : column > 4 ? 4 : column;
-      /* the view asks again after every reset: already in this order */
-      if (column == m_searchSortColumn && order == m_searchSortOrder)
-         return;
-      m_searchSortColumn = column;
-      m_searchSortOrder  = order;
-      emit layoutAboutToBeChanged();
-      qt_browse_search_sort(m_searchEntries, m_searchSortColumn,
-            m_searchSortOrder);
-      emit layoutChanged();
-      return;
-   }
    companion_core_t *core = ui_companion_qt_core();
 
    int core_column = column == 4 ? 0 : column;
@@ -1804,14 +1618,6 @@ void BrowseTableModel::sort(int column, Qt::SortOrder order)
       return;
    companion_core_browse_sort(core, col, asc);
    /* on_browse_changed -> onBrowseChanged -> reload() */
-}
-
-void BrowseTableModel::setFilter(const QRegularExpression &re)
-{
-   if (re == m_filter)
-      return;
-   m_filter = re;
-   reload();
 }
 
 void PlaylistSearchProxyModel::setSearchRows(const QBitArray &rows,
@@ -2900,40 +2706,44 @@ void MainWindow::onFileBrowserTableContextMenuRequested(const QPoint &pos)
                QMessageBox::No) != QMessageBox::Yes)
          return;
 
-      if (!path_is_valid(targetPathArray.constData())
-            || (targetInfo.isSymLink()
-               ? filestream_delete(targetPathArray.constData()) != 0
-               : (isDirectory
-                  ? !QDir(targetPath).removeRecursively()
-                  : filestream_delete(targetPathArray.constData()) != 0)))
-      {
-         QMessageBox::critical(this, title,
-               (isDirectory ? QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_FAILED))
-                  : QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_FAILED))).arg(targetPath));
-         return;
-      }
-#ifdef HAVE_CORE_SIGNATURES
-      if (isBackup)
-         core_install_drop_sig(targetPathArray.constData());
-#endif
-      QMessageBox::information(this, title,
-            isBackup ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_BACKUP_DONE)
-            : (isDirectory ? msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_DONE)
-                           : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_DONE)));
-
-      /* the folder tree lists folders only */
-      if (isDirectory)
-         relistFileSystemFolder(QFileInfo(targetPath).absolutePath());
-      /* Re-enumerate the current directory; reload() alone only rebuilds
-       * the model from the existing core-side listing. */
-      {
-         /* browse_open copies the folder before replacing anything */
-         companion_core_t *core = ui_companion_qt_core();
-         const char *browseDir = companion_core_browse_dir(core);
-         if (browseDir && *browseDir)
-            companion_core_browse_open(core, browseDir);
-      }
+      /* removed off the UI thread; onBrowseDeleteFinished tells */
+      if (companion_core_browse_delete(ui_companion_qt_core(),
+               targetPathArray.constData()))
+         m_pendingDeletes.insert(QString::fromUtf8(targetPathArray),
+               (isDirectory ? 1 : 0) | (isBackup ? 2 : 0));
    }
+}
+
+void MainWindow::onBrowseDeleteFinished(QString path, bool ok)
+{
+   int kind         = m_pendingDeletes.take(path);
+   bool isDirectory = (kind & 1) != 0;
+   bool isBackup    = (kind & 2) != 0;
+   QString title    = QString(msg_hash_to_str(isBackup
+            ? MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST
+            : MENU_ENUM_LABEL_VALUE_QT_DELETE));
+
+   if (!ok)
+   {
+      QMessageBox::critical(this, title,
+            QString(msg_hash_to_str(isDirectory
+                  ? MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_FAILED
+                  : MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_FAILED)).arg(path));
+      if (isDirectory)
+         relistFileSystemFolder(QFileInfo(path).absolutePath());
+      return;
+   }
+#ifdef HAVE_CORE_SIGNATURES
+   if (isBackup)
+      core_install_drop_sig(path.toUtf8().constData());
+#endif
+   /* the folder tree lists folders only */
+   if (isDirectory)
+      relistFileSystemFolder(QFileInfo(path).absolutePath());
+   QMessageBox::information(this, title, msg_hash_to_str(isBackup
+            ? MENU_ENUM_LABEL_VALUE_QT_DELETE_BACKUP_DONE
+            : isDirectory ? MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_DONE
+                          : MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_DONE));
 }
 
 void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
@@ -3940,7 +3750,14 @@ void MainWindow::applySearch()
          m_playlistSearchCancel.clear();
          m_proxyModel->setSearchRows(QBitArray(),
                m_playlistSearchGeneration, false);
-         m_browseModel->setFilter(m_searchRegularExpression);
+         /* the companion core walks the folder; asked again only when
+          * the words change */
+         if (m_searchLineEdit->text() != m_browseSearchText)
+         {
+            m_browseSearchText = m_searchLineEdit->text();
+            companion_core_browse_search(ui_companion_qt_core(),
+                  m_browseSearchText.toUtf8().constData());
+         }
          break;
       case BROWSER_TYPE_UPDATER:
       {
@@ -6109,6 +5926,16 @@ static void ui_companion_qt_core_on_browse_changed(void *ud)
       ui_window.qtWindow->onBrowseChanged();
 }
 
+static void ui_companion_qt_core_on_delete_finished(void *ud,
+      const char *path, bool ok)
+{
+   (void)ud;
+   if (ui_window.qtWindow)
+      QMetaObject::invokeMethod(ui_window.qtWindow, "onBrowseDeleteFinished",
+            Qt::QueuedConnection, Q_ARG(QString, QString::fromUtf8(path)),
+            Q_ARG(bool, ok));
+}
+
 static const companion_callbacks_t ui_companion_qt_core_callbacks = {
    NULL, /* on_playlists_changed */
    ui_companion_qt_core_on_playlist_changed,
@@ -6117,7 +5944,9 @@ static const companion_callbacks_t ui_companion_qt_core_callbacks = {
    NULL, /* on_notify_refresh */
    ui_companion_qt_core_on_scan_finished,
    ui_companion_qt_core_on_thumbnail_downloaded,
-   ui_companion_qt_core_on_browse_changed
+   ui_companion_qt_core_on_browse_changed,
+   NULL, /* on_thumbnails_changed */
+   ui_companion_qt_core_on_delete_finished
 };
 
 ThumbnailWidget::ThumbnailWidget(QWidget *parent) { }
