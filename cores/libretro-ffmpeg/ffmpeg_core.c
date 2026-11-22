@@ -2950,6 +2950,9 @@ void CORE_PREFIX(retro_run)(void)
                src                          = ctx->target->data[0];
                stride                       = ctx->target->linesize[0];
                width                        = MEDIA_STR.width * sizeof(uint32_t);
+#ifdef HAVE_OPENGLES
+               if (stride != width)
+#endif
                for (y = 0; y < MEDIA_STR.height; y++, src += stride, data += width/4)
                   memcpy(data, src, width);
 
@@ -2960,7 +2963,9 @@ void CORE_PREFIX(retro_run)(void)
                glBindTexture(GL_TEXTURE_2D, FRAMES_STR[1].tex);
 #if defined(HAVE_OPENGLES)
                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                     MEDIA_STR.width, MEDIA_STR.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, VIDEO_FRAME_TEMP_BUFFER_STR);
+                     MEDIA_STR.width, MEDIA_STR.height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                     stride == width ? (const void*)ctx->target->data[0]
+                     : (const void*)VIDEO_FRAME_TEMP_BUFFER_STR);
 #else
                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                      MEDIA_STR.width, MEDIA_STR.height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
