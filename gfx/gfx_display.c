@@ -2040,7 +2040,9 @@ bool gfx_display_init_first_driver(gfx_display_t *p_disp,
             && (!string_is_equal(video_driver, ident)))
          continue;
       RARCH_LOG("[Display] Found display driver: \"%s\".\n", ident);
-      p_disp->dispctx = dispctx;
+      /* Widget restarts leave the render owner's driver unchanged. */
+      if (p_disp->dispctx != dispctx)
+         p_disp->dispctx = dispctx;
       return true;
    }
    return false;
