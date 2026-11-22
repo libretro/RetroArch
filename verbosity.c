@@ -449,23 +449,32 @@ void verbosity_ring_arm(void)
    retro_atomic_store_release_int(&log_ring.armed, 1);
 }
 
+/* The line goes from the caller's buffer straight into the slot, a
+ * word at a time, up to the word holding its terminator; the words
+ * after it keep an older line's bytes, which no reader looks at. */
 static void verbosity_ring_put(const char *line)
 {
-   size_t i;
-   size_t seq;
-   size_t words[LOG_RING_WORDS];
+   size_t i, n, last, seq, w;
+   const char *nul;
    struct log_ring_slot *slot;
 
    if (!retro_atomic_load_relaxed_int(&log_ring.armed))
       return;
-   memset(words, 0, sizeof(words));
-   strlcpy((char*)words, line, sizeof(words));
+   nul  = (const char*)memchr(line, '\0', LOG_RING_WORDS * sizeof(size_t) - 1);
+   n    = nul ? (size_t)(nul - line) : LOG_RING_WORDS * sizeof(size_t) - 1;
+   last = n / sizeof(size_t);
    seq  = retro_atomic_fetch_add_size(&log_ring.head, 1);
    slot = &log_ring.slots[seq % LOG_RING_SLOTS];
    retro_atomic_store_relaxed_size(&slot->stamp, 0);
    retro_atomic_thread_fence_release();
-   for (i = 0; i < LOG_RING_WORDS; i++)
-      retro_atomic_store_relaxed_size(&slot->text[i], words[i]);
+   for (i = 0; i < last; i++)
+   {
+      memcpy(&w, line + i * sizeof(size_t), sizeof(w));
+      retro_atomic_store_relaxed_size(&slot->text[i], w);
+   }
+   w = 0;
+   memcpy(&w, line + last * sizeof(size_t), n - last * sizeof(size_t));
+   retro_atomic_store_relaxed_size(&slot->text[last], w);
    retro_atomic_store_release_size(&slot->stamp, seq + 1);
 }
 
@@ -481,25 +490,43 @@ size_t verbosity_ring_read(size_t since, char *s, size_t len,
    if (seq > head)
       seq = head;
    *first = seq;
+   /* Each slot's text is copied straight to s past what is already
+    * there and counted only once the stamp still holds after the
+    * copy; a slot rewritten meanwhile leaves its bytes behind for the
+    * next line to overwrite. */
    for (; seq < head; seq++)
    {
-      size_t i, n;
-      size_t words[LOG_RING_WORDS];
+      size_t i, n = 0;
+      bool room   = true;
       struct log_ring_slot *slot = &log_ring.slots[seq % LOG_RING_SLOTS];
       size_t stamp = retro_atomic_load_acquire_size(&slot->stamp);
       /* still being written, or already a later line: skipped */
       if (stamp != seq + 1)
          continue;
       for (i = 0; i < LOG_RING_WORDS; i++)
-         words[i] = retro_atomic_load_relaxed_size(&slot->text[i]);
+      {
+         size_t k;
+         size_t w      = retro_atomic_load_relaxed_size(&slot->text[i]);
+         const char *b = (const char*)&w;
+         /* the slot's last byte is its terminator */
+         size_t lim    = (i == LOG_RING_WORDS - 1)
+            ? sizeof(w) - 1 : sizeof(w);
+         for (k = 0; k < lim && b[k]; k++);
+         if (_len + n + k + 2 > len)
+         {
+            room = false;
+            break;
+         }
+         memcpy(s + _len + n, b, k);
+         n += k;
+         if (k < sizeof(w))
+            break;
+      }
       retro_atomic_thread_fence_acquire();
       if (retro_atomic_load_relaxed_size(&slot->stamp) != stamp)
          continue;
-      ((char*)words)[sizeof(words) - 1] = '\0';
-      n = strlen((const char*)words);
-      if (_len + n + 2 > len)
+      if (!room)
          break;
-      memcpy(s + _len, words, n);
       _len += n;
       if (!n || s[_len - 1] != '\n')
          s[_len++] = '\n';
@@ -666,36 +693,27 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 void RARCH_LOG_BUFFER(uint8_t *data, size_t len)
 {
    size_t i;
-   size_t offset     = 0;
-   uint8_t buf[16];
 
    if (!data && len)
       return;
 
    RARCH_LOG("== %d-byte buffer ==================\n", (int)len);
 
-   /* Zero-init once; tail padding written below */
-   for (i = 0; i < 16; i++)
-      buf[i] = 0;
-
-   for (i = 0; i < len; i++)
+   /* Whole rows print from the caller's bytes */
+   for (i = 0; i + 16 <= len; i += 16)
    {
-      buf[offset++] = data[i];
-      if (offset == 16)
-      {
-         offset = 0;
-         RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
-            buf[0], buf[1], buf[2],  buf[3],  buf[4],  buf[5],  buf[6],  buf[7],
-            buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
-      }
+      const uint8_t *r = data + i;
+      RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
+         r[0], r[1], r[2],  r[3],  r[4],  r[5],  r[6],  r[7],
+         r[8], r[9], r[10], r[11], r[12], r[13], r[14], r[15]);
    }
 
-   /* Flush partial last row (offset > 0 means leftover bytes) */
-   if (offset > 0)
+   /* A partial last row is padded with 0xff */
+   if (i < len)
    {
-      /* Pad remainder with 0xff to match original sentinel */
-      for (i = offset; i < 16; i++)
-         buf[i] = 0xff;
+      uint8_t buf[16];
+      memset(buf, 0xff, sizeof(buf));
+      memcpy(buf, data + i, len - i);
       RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
          buf[0], buf[1], buf[2],  buf[3],  buf[4],  buf[5],  buf[6],  buf[7],
          buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);

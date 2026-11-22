@@ -2,9 +2,11 @@
  * once, read while they are written, arrive whole and in order, and
  * an overrun is reported as lines skipped rather than torn lines.
  * Logging turned off, on and to another level while other threads log
- * is no race, and the gate still holds the lines back. The log file
- * opened and closed while other threads log is never written after it
- * is closed, and holds only whole lines. */
+ * is no race, and the gate still holds the lines back. A line of any
+ * length comes back as written, cut at the slot's 255 bytes, from a
+ * slot an older, longer line left bytes in. The log file opened and
+ * closed while other threads log is never written after it is closed,
+ * and holds only whole lines. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -158,6 +160,48 @@ int main(void)
       RARCH_LOG("back on\n");
       verbosity_ring_read((size_t)-1, buf, 1 << 16, &first, &next);
       CHECK(next == head + 1);
+   }
+
+   /* lengths around the word size and the slot's 255 bytes, each in a
+    * slot a 255-byte line of other bytes was in before */
+   {
+      static const unsigned lens[] = { 0, 1, 7, 8, 9, 15, 16, 17, 100,
+         228, 229, 230, 231, 232, 233, 240, 250, 300, 1200 };
+      static char body[1300], dirt[300], prefix[256];
+      size_t head, n, p, k, j;
+      memset(body, 'x', sizeof(body));
+      memset(dirt, 'z', sizeof(dirt));
+      for (i = 0; i < 256; i++)
+         RARCH_LOG("%.*s\n", (int)sizeof(dirt), dirt);
+      verbosity_ring_read((size_t)-1, buf, 1 << 16, &first, &head);
+      /* the tag RARCH_LOG puts ahead of a line */
+      RARCH_LOG("\n");
+      n = verbosity_ring_read(head, buf, 1 << 16, &first, &next);
+      CHECK(n >= 1 && n < sizeof(prefix) && next == head + 1);
+      p = n ? n - 1 : 0;
+      memcpy(prefix, buf, p);
+      head = next;
+      for (k = 0; k < sizeof(lens) / sizeof(lens[0]); k++)
+      {
+         size_t full = p + lens[k] + 1;
+         unsigned bad = 0;
+         RARCH_LOG("%.*s\n", (int)lens[k], body);
+         n = verbosity_ring_read(head, buf, 1 << 16, &first, &next);
+         CHECK(next == head + 1);
+         head = next;
+         CHECK(n == (full > 255 ? 256 : full));
+         CHECK(n && buf[n - 1] == '\n');
+         CHECK(n > p && !memcmp(buf, prefix, p));
+         for (j = p; j + 1 < n; j++)
+            bad += buf[j] != 'x';
+         if (bad)
+            fprintf(stderr, "length %u: %u bytes not the line's\n",
+                  lens[k], bad);
+         CHECK(!bad);
+      }
+      /* the sizing call GET_LOG's MCP arm makes: nothing written */
+      CHECK(verbosity_ring_read(head - 1, NULL, 0, &first, &next) == 0);
+      CHECK(next == head - 1);
    }
 
    /* the log file opened and closed under four logging threads */
