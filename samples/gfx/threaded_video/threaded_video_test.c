@@ -13749,13 +13749,26 @@ static void lane_hw_cached_context(void)
 }
 
 #ifdef HAVE_VULKAN
-/* The head of struct vk_texture, as gfx/drivers/vulkan.c lays it out */
+/* The heads of struct vk_texture and struct vk_media_pool, as
+ * gfx/drivers/vulkan.c lays them out. A pool's versions begin with
+ * their texture. */
+typedef struct planar_vk_texture_head planar_vk_texture_head_t;
+
 typedef struct
 {
+   void *versions;
+   planar_vk_texture_head_t *current;
+} planar_vk_media_pool_head_t;
+
+struct planar_vk_texture_head
+{
    VkDeviceSize memory_size;
+   planar_vk_texture_head_t *media_owner;
+   planar_vk_media_pool_head_t *media_pool;
+   void *media_version;
    void *mapped;
    VkImage image;
-} planar_vk_texture_head_t;
+};
 
 /* What Vulkan texture @id holds, as R,G,B,A bytes; direct video only,
  * the queue taken under its lock and waited idle - a test's readback */
@@ -13780,6 +13793,11 @@ static bool planar_vk_readback(uintptr_t id, unsigned w, unsigned h,
    void *ptr             = NULL;
    bool ok               = false;
    uint32_t i;
+   /* The pixels live where the driver samples them from */
+   if (tex && tex->media_owner)
+      tex = tex->media_owner;
+   if (tex && tex->media_pool)
+      tex = tex->media_pool->current;
    if (!ctx || !tex || !tex->image)
       return false;
    memset(&binfo, 0, sizeof(binfo));
