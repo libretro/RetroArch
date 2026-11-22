@@ -461,6 +461,7 @@ static void gl2_free_pbo_readback(gl2_t *gl);
 #define gl_media_source_release gl2_media_source_release
 #define gl_media_source_acquire gl2_media_source_acquire
 #define gl_media_shader_retire gl2_media_shader_retire
+#define gl_media_shader_references gl2_media_shader_references
 #define gl_media_shader_preserve gl2_media_shader_preserve
 #define gl_media_target_free gl2_media_target_free
 #define gl_media_shader_free gl2_media_shader_free
@@ -471,6 +472,7 @@ static void gl2_free_pbo_readback(gl2_t *gl);
 #define gl_media_shader_draw gl2_media_shader_draw
 #include "../common/gl_media_shader.h"
 #endif
+#include "../common/gl_media_pool.h"
 
 #ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
 #define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
@@ -870,7 +872,7 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
    glViewport(VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos),
          VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
    glBindTexture(GL_TEXTURE_2D, draw->texture
-         ? (GLuint)draw->texture : gl->white_texture);
+         ? gl_media_pool_resolve(gl->media_pool,(GLuint)draw->texture) : gl->white_texture);
 
 #ifdef GL2_EFFECTS
    if (draw->effect)
@@ -1220,7 +1222,7 @@ static bool gfx_display_gl2_mesh_draw(void *data, unsigned video_dims,
 
    /* The whole display, as draw() sets it for a strip at the origin */
    glViewport(0, 0, VIDEO_SCALE_W(video_dims), VIDEO_SCALE_H(video_dims));
-   glBindTexture(GL_TEXTURE_2D, texture ? (GLuint)texture : gl->white_texture);
+   glBindTexture(GL_TEXTURE_2D, texture ? gl_media_pool_resolve(gl->media_pool,(GLuint)texture) : gl->white_texture);
    /* Meshes are drawn blended, as every driver draws them */
    blend = glIsEnabled(GL_BLEND);
    glEnable(GL_BLEND);
@@ -3733,7 +3735,7 @@ static void gl2_render_overlay(gl2_t *gl)
 
    for (i = 0; i < gl->overlays; i++)
    {
-      glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
+      glBindTexture(GL_TEXTURE_2D, gl_media_pool_resolve(gl->media_pool,gl->overlay_tex[i]));
       glDrawArrays(GL_TRIANGLE_STRIP, 4 * i, 4);
    }
 
@@ -8440,6 +8442,7 @@ static void gl2_free(void *data)
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
    gl2_media_shader_free(&gl->media_shader);
 #endif
+   gl_media_pool_free(&gl->media_pool);
    gl->shader->deinit(gl->shader_data);
 
    gl2_scrgb_deinit(gl);
@@ -9182,6 +9185,16 @@ static void *gl2_init(const video_info_t *video)
       if (end && *end == '.')
          gl->version_minor = (int)strtol(end + 1, NULL, 10);
    }
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   if (gl->version_major>2 || (gl->version_major==2 && gl->version_minor>=1)
+         || gl_query_extension("ARB_pixel_buffer_object")
+         || gl_query_extension("EXT_pixel_buffer_object"))
+      gl->media_pool_capabilities |= GL_MEDIA_POOL_UNPACK;
+   if (gl->version_major>3 || (gl->version_major==3 && gl->version_minor>=3)
+         || gl_query_extension("ARB_texture_swizzle")
+         || gl_query_extension("EXT_texture_swizzle"))
+      gl->media_pool_capabilities |= GL_MEDIA_POOL_SWIZZLE;
+#endif
 
    {
       size_t _len = 0;
@@ -10107,6 +10120,24 @@ static void gl2_media_texture_changed(gl2_t *gl, uintptr_t id, bool uploaded)
 #endif
 }
 
+static bool gl2_media_referenced(void *context, GLuint image)
+{
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   return gl2_media_shader_references(((gl2_t*)context)->media_shader,image);
+#else
+   (void)context;(void)image;return false;
+#endif
+}
+
+static bool gl2_media_retire(void *context, GLuint image)
+{
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   return gl2_media_shader_retire(((gl2_t*)context)->media_shader,image);
+#else
+   (void)context;(void)image;return false;
+#endif
+}
+
 /* A texture of @ti: a planar frame converted on the GPU, anything else
  * uploaded as it is */
 static void gl2_texture_load(gl2_t *gl, const struct texture_image *ti,
@@ -10192,6 +10223,7 @@ static uintptr_t video_texture_unload_wrap_gl2(void *data)
       gl_planar_forget(&gl->planar, glid);
 #endif
    gl2_media_texture_changed(gl, id, false);
+   if (gl && gl_media_pool_forget(&gl->media_pool,glid,gl2_media_retire,gl)) return 0;
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
    if (!gl2_media_shader_retire(gl ? gl->media_shader : NULL, glid))
 #endif
@@ -10266,6 +10298,7 @@ static void gl2_unload_texture(void *data,
       gl_planar_forget(&((gl2_t*)data)->planar, glid);
 #endif
    gl2_media_texture_changed((gl2_t*)data, id, false);
+   if (data && gl_media_pool_forget(&((gl2_t*)data)->media_pool,glid,gl2_media_retire,data)) return;
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
    if (!gl2_media_shader_retire(data ? ((gl2_t*)data)->media_shader : NULL, glid))
 #endif
@@ -10281,11 +10314,19 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
 {
    bool use_rgba      = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    const void *pixels = ti->pixels;
+   GLuint destination = gl ? gl_media_pool_resolve(gl->media_pool,(GLuint)id) : (GLuint)id;
+
 #ifdef HAVE_GL_TEXTURE_LEND
    int lent           = -1;
 #endif
+   if (gl && !ti->planar)
+   {
+      destination=gl_media_pool_prepare_ex(&gl->media_pool,(GLuint)id,ti->width,ti->height,
+            gl2_media_referenced,gl,gl->media_pool_capabilities | GL_MEDIA_POOL_MUTABLE_MIPS);
+      if (!destination) return VIDEO_TEXTURE_UPDATE_DROPPED;
+   }
 #if defined(HAVE_GLSL) || defined(HAVE_CG)
-   if (gl && !gl2_media_shader_preserve(gl->media_shader, (GLuint)id))
+   if (gl && !gl2_media_shader_preserve(gl->media_shader, destination))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 #endif
    if (ti->planar)
@@ -10309,7 +10350,7 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
       pixels = NULL;
    }
 #endif
-   glBindTexture(GL_TEXTURE_2D, (GLuint)id);
+   glBindTexture(GL_TEXTURE_2D, destination);
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    if (ti->fp16)
@@ -10327,6 +10368,7 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
    if (lent >= 0)
       gl_texture_lend_unbind(gl->lend, (unsigned)id, lent);
 #endif
+   if (gl) gl_media_pool_publish(gl->media_pool,(GLuint)id,destination);
    gl2_media_texture_changed(gl, id, true);
    return VIDEO_TEXTURE_UPDATE_DONE;
 }
@@ -11206,7 +11248,8 @@ static bool gfx_display_gl2_media_shader_draw(void *data, uintptr_t image,
          gl->scrgb.expand_gamut);
    return gl && (gl->flags & GL2_FLAG_HAVE_FBO) && gl->media_shader_enabled &&
       gl2_media_shader_draw(&gl->media_shader, gl, gl->shader, gl->shader_data,
-            image, source_dims, pos, dims, gl->media_shader_frame, hdr ? rows : NULL,
+            gl_media_pool_resolve(gl->media_pool,(GLuint)image), source_dims, pos, dims,
+            gl->media_shader_frame, hdr ? rows : NULL,
             gl->media_last_texture == image);
 }
 #endif

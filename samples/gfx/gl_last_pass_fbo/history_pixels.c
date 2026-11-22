@@ -12,6 +12,7 @@
 #include "../../../gfx/video_driver.h"
 static unsigned draws, copies, program, show_previous, previous_index;
 static bool smooth_mode = true;
+static bool mipmap_mode;
 static void counted_draw(GLenum mode, GLint first, GLsizei count)
 { draws++; glDrawArrays(mode,first,count); }
 static void counted_copy(GLenum target, GLint level, GLint xoff, GLint yoff,
@@ -27,7 +28,23 @@ static void counted_copy(GLenum target, GLint level, GLint xoff, GLint yoff,
 #define glCopyTexSubImage2D counted_copy
 #define gl_media_shader_references gl_media_shader_references
 #include "../../../gfx/common/gl_media_shader.h"
+#ifdef GL_POOL_LEGACY
+static void legacy_pool_integer(GLenum name,GLint *value)
+{assert(name!=GL_PIXEL_UNPACK_BUFFER_BINDING);glGetIntegerv(name,value);}
+static void legacy_pool_parameter(GLenum target,GLenum name,GLint *value)
+{assert(name!=GL_TEXTURE_SWIZZLE_R && name!=GL_TEXTURE_SWIZZLE_G && name!=GL_TEXTURE_SWIZZLE_B && name!=GL_TEXTURE_SWIZZLE_A);glGetTexParameteriv(target,name,value);}
+static void legacy_pool_buffer(GLenum target,GLuint buffer)
+{(void)target;(void)buffer;assert(!"legacy pool used a pixel buffer API");}
+#define glGetIntegerv legacy_pool_integer
+#define glGetTexParameteriv legacy_pool_parameter
+#define glBindBuffer legacy_pool_buffer
+#endif
 #include "../../../gfx/common/gl_media_pool.h"
+#ifdef GL_POOL_LEGACY
+#undef glGetIntegerv
+#undef glGetTexParameteriv
+#undef glBindBuffer
+#endif
 #undef glDrawArrays
 #undef glCopyTexSubImage2D
 static GLuint compile(GLenum type,const char *source)
@@ -45,7 +62,7 @@ static unsigned history(void *data) {(void)data;return 2;}
 static bool filter(void *data,unsigned pass,bool *smooth) {(void)data;(void)pass;*smooth=smooth_mode;return true;}
 static enum gfx_wrap_type wrap(void *data,unsigned pass) {(void)data;(void)pass;return RARCH_WRAP_EDGE;}
 static void scale(void *data,unsigned pass,struct gfx_fbo_scale *out) {(void)data;(void)pass;memset(out,0,sizeof(*out));}
-static bool mipmap(void *data,unsigned pass) {(void)data;(void)pass;return false;}
+static bool mipmap(void *data,unsigned pass) {(void)data;(void)pass;return mipmap_mode;}
 static bool feedback(void *data,unsigned *pass) {(void)data;(void)pass;return false;}
 static bool mvp(void *data,const void *matrix) {(void)data;(void)matrix;return true;}
 static bool colour(void *data,const float *rows) {(void)data;(void)rows;return true;}
@@ -126,6 +143,14 @@ static bool pool_reference(void *context,GLuint image)
 {return gl_media_shader_references(*(gl_media_shader_t**)context,image);}
 static bool pool_retire(void *context,GLuint image)
 {return gl_media_shader_retire(*(gl_media_shader_t**)context,image);}
+static GLuint prepare_pool(gl_media_pool_t **pool,GLuint handle,gl_media_shader_t **state)
+{
+#ifdef GL_POOL_LEGACY
+   return gl_media_pool_prepare_ex(pool,handle,4,3,pool_reference,state,GL_MEDIA_POOL_MUTABLE_MIPS);
+#else
+   return gl_media_pool_prepare(pool,handle,4,3,pool_reference,state);
+#endif
+}
 static void run_pool(GLint format,float phase)
 {
    shader_backend_t backend;gl_media_shader_t *state=NULL;gl_media_pool_t *pool=NULL;
@@ -139,12 +164,18 @@ static void run_pool(GLint format,float phase)
    backend.get_feedback_pass=feedback;backend.set_mvp=mvp;backend.set_media_colour=colour;
    backend.set_coords=coords;backend.set_params=params;
    pixels(old,phase);handle=texture(format,old);show_previous=0;previous_index=0;smooth_mode=true;
-   /* Packed frontend frames upload BGRA words with a texture swizzle. */
+#ifndef GL_POOL_LEGACY
+   /* GLCore packs BGRA words via a swizzle; old GL uploads BGRA natively. */
    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_SWIZZLE_R,GL_BLUE);
    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_SWIZZLE_B,GL_RED);
+#endif
    for(i=0;i<3;i++)assert(gl_media_shader_draw(&state,&backend,&backend,&backend,handle,VIDEO_SCALE_PACK(4,3),0,VIDEO_SCALE_PACK(4,3),i,hdr,true));
    assert(copies==before);
+#ifndef GL_POOL_LEGACY
    glGenBuffers(1,&pbo);
+#else
+   pbo=0;
+#endif
    for(frame=1;frame<=24;frame++)
    {
       pixels(fresh,phase+(float)(frame%3)*0.0625f);
@@ -159,9 +190,11 @@ static void run_pool(GLint format,float phase)
          gl_media_pool_sync_sampler(pool,filter);
       }
 
+#ifndef GL_POOL_LEGACY
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER,pbo);glBufferData(GL_PIXEL_UNPACK_BUFFER,sizeof(fresh),fresh,GL_STREAM_DRAW);
+#endif
       glBindTexture(GL_TEXTURE_2D,gl_media_pool_resolve(pool,handle));
-      target=gl_media_pool_prepare(&pool,handle,4,3,pool_reference,&state);assert(target);
+      target=prepare_pool(&pool,handle,&state);assert(target);
       if(frame>=12)
       {
          GLint mag,saved;glGetIntegerv(GL_TEXTURE_BINDING_2D,&saved);glBindTexture(GL_TEXTURE_2D,target);
@@ -169,21 +202,43 @@ static void run_pool(GLint format,float phase)
          glBindTexture(GL_TEXTURE_2D,(GLuint)saved);
       }
 
-      glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING,&unpack);glGetIntegerv(GL_TEXTURE_BINDING_2D,&bound);
+#ifndef GL_POOL_LEGACY
+      glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING,&unpack);
+#else
+      unpack=0;
+#endif
+      glGetIntegerv(GL_TEXTURE_BINDING_2D,&bound);
       assert((GLuint)unpack==pbo && (GLuint)bound==gl_media_pool_resolve(pool,handle));
       /* A refused/dropped upload does not publish the reserved destination. */
-      if(frame==1){assert(gl_media_pool_resolve(pool,handle)==handle);assert(gl_media_pool_prepare(&pool,handle,4,3,pool_reference,&state)==target);}
-      glBindTexture(GL_TEXTURE_2D,target);glTexSubImage2D(GL_TEXTURE_2D,0,0,0,4,3,GL_RGBA,GL_FLOAT,NULL);
-      glBindBuffer(GL_PIXEL_UNPACK_BUFFER,0);gl_media_pool_publish(pool,handle,target);
+      if(frame==1){assert(gl_media_pool_resolve(pool,handle)==handle);assert(prepare_pool(&pool,handle,&state)==target);}
+      glBindTexture(GL_TEXTURE_2D,target);
+#ifdef GL_POOL_LEGACY
+      glTexSubImage2D(GL_TEXTURE_2D,0,0,0,4,3,GL_RGBA,GL_FLOAT,fresh);
+#else
+      glTexSubImage2D(GL_TEXTURE_2D,0,0,0,4,3,GL_RGBA,GL_FLOAT,NULL);
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
+#endif
+      gl_media_pool_publish(pool,handle,target);
       show_previous=1;
       assert(gl_media_shader_draw(&state,&backend,&backend,&backend,gl_media_pool_resolve(pool,handle),VIDEO_SCALE_PACK(4,3),0,VIDEO_SCALE_PACK(4,3),frame+3,hdr,true));
       memcpy(sampled,old,sizeof(old));
+#ifndef GL_POOL_LEGACY
       for(i=0;i<12;i++){sampled[i*4]=old[i*4+2];sampled[i*4+2]=old[i*4];}
+#endif
       expect(sampled);assert(copies==before);memcpy(old,fresh,sizeof(old));
       if(frame==8)names=pool->count;
       if(frame>8)assert(pool->count==names);
       assert(pool->count<=3);
    }
+#ifdef GL_POOL_LEGACY
+   /* A later mipmapped preset must still generate levels, just as it
+    * could on the original legacy mutable texture. */
+   mipmap_mode=true;
+   assert(gl_media_shader_draw(&state,&backend,&backend,&backend,gl_media_pool_resolve(pool,handle),VIDEO_SCALE_PACK(4,3),0,VIDEO_SCALE_PACK(4,3),80,hdr,true));
+   glBindTexture(GL_TEXTURE_2D,gl_media_pool_resolve(pool,handle));
+   glGetTexLevelParameteriv(GL_TEXTURE_2D,1,GL_TEXTURE_WIDTH,&bound);assert(bound==2);
+   mipmap_mode=false;
+#endif
    count=pool->count;for(i=0;i<count;i++)versions[i]=pool->versions[i];
    assert(gl_media_pool_forget(&pool,handle,pool_retire,&state) && !pool);
    gl_media_shader_free(&state);gl_media_pool_free(&pool);
@@ -208,7 +263,15 @@ int main(void)
    target=texture(GL_RGBA32F,NULL);glGenFramebuffers(1,&fbo);glBindFramebuffer(GL_FRAMEBUFFER,fbo);glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,target,0);assert(glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE);
    glViewport(0,0,4,3);run(GL_RGBA8,0);run(GL_RGBA16F,-0.5f);
    run_pool(GL_RGBA8,0);run_pool(GL_RGBA16F,-0.5f);
+#ifdef GL_POOL_LEGACY
+   run_pool(GL_RGBA,0);
+#endif
    glDeleteFramebuffers(1,&fbo);glDeleteTextures(1,&target);glDeleteProgram(program);glDeleteShader(vertex);glDeleteShader(fragment);
    eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);eglDestroyContext(display,context);eglDestroySurface(display,surface);eglTerminate(display);
-   puts("GL history GPU pixels: RGBA8/FP16 rows, pooled PBO uploads without snapshots, Prev cadence, samplers and retirement passed");return 0;
+#ifdef GL_POOL_LEGACY
+   puts("GL 2.1 pool GPU pixels: RGBA/RGBA8/FP16 uploads, no swizzle/PBO queries, history and retirement passed");
+#else
+   puts("GL history GPU pixels: RGBA8/FP16 rows, pooled PBO uploads without snapshots, Prev cadence, samplers and retirement passed");
+#endif
+   return 0;
 }

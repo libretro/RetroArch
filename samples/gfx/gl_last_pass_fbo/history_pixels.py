@@ -17,6 +17,12 @@ with tempfile.TemporaryDirectory(prefix="gl-history-pixels-") as directory:
                 str(here / "history_pixels.c"), "-o", str(exe), "-lEGL", "-lGL", "-lm"]
     subprocess.run(command, check=True)
     subprocess.run([str(exe)], check=True)
+    legacy = Path(directory) / "legacy-pixels"
+    legacy_command = [str(legacy) if item == str(exe) else item for item in command]
+    legacy_command.insert(1, "-DGL_POOL_LEGACY")
+    subprocess.run(legacy_command, check=True)
+    subprocess.run([str(legacy)], check=True, env={**os.environ,
+                   "MESA_GL_VERSION_OVERRIDE": "2.1", "MESA_GLSL_VERSION_OVERRIDE": "120"})
 
 # Compile the shipping GLCore lifecycle separately with real texture/FBO pixels.
 source = (root / "gfx/drivers_shader/shader_gl3.c").read_text(encoding="utf-8")
