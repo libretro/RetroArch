@@ -1,6 +1,8 @@
 /* GET_LOG's ring in verbosity.c: lines logged from several threads at
  * once, read while they are written, arrive whole and in order, and
- * an overrun is reported as lines skipped rather than torn lines. */
+ * an overrun is reported as lines skipped rather than torn lines.
+ * Logging turned off, on and to another level while other threads log
+ * is no race, and the gate still holds the lines back. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,8 +12,9 @@
 
 #include "../../../verbosity.h"
 
-#define THREADS 4
-#define LINES   20000
+#define THREADS      4
+#define LINES        20000
+#define TOGGLE_LINES 2000
 
 static unsigned failures;
 static retro_atomic_int_t done;
@@ -26,6 +29,16 @@ static void writer(void *data)
    unsigned i;
    for (i = 0; i < LINES; i++)
       RARCH_LOG("w%u %06u ........................................\n", t, i);
+   retro_atomic_fetch_add_int(&done, 1);
+}
+
+static void toggled_writer(void *data)
+{
+   unsigned i;
+   (void)data;
+   for (i = 0; i < TOGGLE_LINES; i++)
+      if (verbosity_is_enabled() && verbosity_get_log_level() <= 1)
+         RARCH_LOG("t ........................................\n");
    retro_atomic_fetch_add_int(&done, 1);
 }
 
@@ -98,6 +111,38 @@ int main(void)
       CHECK(n > 0 && n < 80 && next == since + 1);
       n = verbosity_ring_read(next, buf, 1 << 16, &first, &next);
       CHECK(n > 0 && next == since + 2);
+   }
+
+   retro_atomic_store_release_int(&done, 0);
+   for (i = 0; i < THREADS; i++)
+      th[i] = sthread_create(toggled_writer, NULL);
+   do
+   {
+      verbosity_disable();
+      verbosity_set_log_level(2);
+      verbosity_set_log_level(1);
+      verbosity_enable();
+   } while (retro_atomic_load_acquire_int(&done) < THREADS);
+   for (i = 0; i < THREADS; i++)
+      sthread_join(th[i]);
+
+   /* off, or below the level, logs nothing; back on logs again */
+   {
+      size_t head;
+      verbosity_ring_read((size_t)-1, buf, 1 << 16, &first, &head);
+      verbosity_disable();
+      CHECK(*verbosity_get_ptr() == verbosity_is_enabled());
+      RARCH_LOG("while off\n");
+      verbosity_enable();
+      CHECK(*verbosity_get_ptr() == verbosity_is_enabled());
+      verbosity_set_log_level(2);
+      RARCH_LOG("below the level\n");
+      verbosity_set_log_level(1);
+      verbosity_ring_read((size_t)-1, buf, 1 << 16, &first, &next);
+      CHECK(next == head);
+      RARCH_LOG("back on\n");
+      verbosity_ring_read((size_t)-1, buf, 1 << 16, &first, &next);
+      CHECK(next == head + 1);
    }
 
    free(buf);
