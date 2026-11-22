@@ -215,6 +215,15 @@ static void lifecycle(unsigned mode)
    if (mode == 5) { retries = 20; signaled_busy = true; SetEvent(completion); }
    if (mode == 6 || mode == 7) { completion_busy = true; retro_atomic_store_release_int(&busy_gate, 1); }
    if (mode == 7) retro_atomic_store_release_int(&fail_wait, 1);
+   /* An auto-reset completion that fired while the worker was busy:
+    * one wake for it, then a plain wait, never a timed retry */
+   if (mode == 8)
+   {
+      CloseHandle(completion);
+      completion = CreateEventA(NULL, FALSE, FALSE, NULL); CHECK(completion);
+      completion_busy = true; retro_atomic_store_release_int(&busy_gate, 1);
+      SetEvent(completion);
+   }
    j = record_gpu_dispatch_d3d12_new(&c, &e, &o, path); CHECK(j);
    strcpy(path, "destroyed"); e.fps_num = 1; o.video.max_packet_size = 1;
    CHECK(record_gpu_dispatch_d3d12_audio(j, &pcm, 1) == RECORD_GPU_OUTPUT_BUSY);
@@ -239,6 +248,12 @@ static void lifecycle(unsigned mode)
       }
       if (mode == 4 || mode == 5) wait_counter(&timed_waits, 5);
       if (mode == 6) wait_counter(&completion_waits, 1);
+      if (mode == 8)
+      {
+         wait_counter(&completion_waits, 2);
+         Sleep(20);
+         CHECK(!retro_atomic_load_acquire_int(&timed_waits));
+      }
       if (mode == 7)
       {
          uint32_t os_error = 0;
@@ -258,7 +273,7 @@ static void lifecycle(unsigned mode)
          CHECK(record_gpu_dispatch_d3d12_video(j, NULL, 0, 0, 0, NULL, 0, i, 1, true, NULL) == RECORD_GPU_QUEUE_OK);
          if (mode == 2 && !i) SetEvent(reset_release);
          if (mode == 3 && !i) SetEvent(wait_release);
-         if (mode == 6 && !i) { retro_atomic_store_release_int(&busy_gate, 0); SetEvent(completion); }
+         if ((mode == 6 || mode == 8) && !i) { retro_atomic_store_release_int(&busy_gate, 0); SetEvent(completion); }
          do { result = record_gpu_dispatch_d3d12_audio(j, &pcm, 1); if (!result) Sleep(1); } while (!result && ++attempts < 10000);
          CHECK(result == RECORD_GPU_OUTPUT_PROGRESS);
       }
@@ -384,20 +399,20 @@ static void owned_lifecycle(unsigned mode)
 int main(void)
 {
    unsigned i;
-   for (i = 0; i < 8; i++)
+   for (i = 0; i < 9; i++)
    {
       scenario = i;
       lifecycle(i);
    }
-   scenario = 8;
-   startup_boundaries();
    scenario = 9;
-   producers(false);
+   startup_boundaries();
    scenario = 10;
+   producers(false);
+   scenario = 11;
    producers(true);
    for (i = 0; i < 7; i++)
    {
-      scenario = 11 + i;
+      scenario = 12 + i;
       owned_lifecycle(i);
    }
    puts("PASS: dispatcher startup, idle/completion/retry waits, closure races and retirement");

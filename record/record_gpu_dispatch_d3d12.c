@@ -295,6 +295,10 @@ static DWORD WINAPI record_gpu_dispatch_run(void *opaque)
    record_gpu_dispatch_d3d12_t *j = (record_gpu_dispatch_d3d12_t*)opaque;
    enum record_gpu_session_error error;
    int result;
+   /* The completion handle that last woke this worker with the session
+    * still busy, and how many times running */
+   HANDLE stuck = NULL;
+   unsigned stuck_wakes = 0;
 #ifdef RECORD_DISPATCH_STREAM
    if (j->streaming)
    {
@@ -319,7 +323,7 @@ static DWORD WINAPI record_gpu_dispatch_run(void *opaque)
    }
    for (;;)
    {
-      HANDLE handles[3];
+      HANDLE handles[3], completion;
       DWORD timeout, waited, count;
 #ifdef RECORD_DISPATCH_STREAM
       if (j->streaming)
@@ -329,7 +333,10 @@ static DWORD WINAPI record_gpu_dispatch_run(void *opaque)
       if (result == RECORD_GPU_OUTPUT_END || result == RECORD_GPU_OUTPUT_ERROR)
          break;
       if (result != RECORD_GPU_OUTPUT_BUSY)
+      {
+         stuck_wakes = 0;
          continue;
+      }
       if (!ResetEvent(j->wake))
       {
          record_gpu_dispatch_os_error(j);
@@ -346,6 +353,7 @@ static DWORD WINAPI record_gpu_dispatch_run(void *opaque)
          retro_atomic_fetch_and_int(&j->epoch, ~1);
          if (result == RECORD_GPU_OUTPUT_END || result == RECORD_GPU_OUTPUT_ERROR)
             break;
+         stuck_wakes = 0;
          continue;
       }
       handles[0] = j->wake;
@@ -362,16 +370,19 @@ static DWORD WINAPI record_gpu_dispatch_run(void *opaque)
       }
       else if (handles[1])
       {
-         waited = WaitForSingleObject(handles[1], 0);
-         if (waited == WAIT_OBJECT_0 || waited == WAIT_FAILED)
+         /* A handle that keeps waking the worker without the session
+          * moving is signalled for something else: retry shortly
+          * rather than spin on it. One such wake is expected, from an
+          * auto-reset completion that fired while the worker was busy. */
+         if (handles[1] == stuck && stuck_wakes >= 2)
          {
-            if (waited == WAIT_FAILED) record_gpu_dispatch_os_error(j);
             handles[1] = NULL;
             timeout = 1;
          }
          else
             timeout = INFINITE;
       }
+      completion = handles[1];
       count = handles[1] ? 2 : 1;
 #ifdef RECORD_DISPATCH_STREAM
       if (j->streaming)
@@ -396,6 +407,13 @@ static DWORD WINAPI record_gpu_dispatch_run(void *opaque)
 #endif
       waited = WaitForMultipleObjects(count, handles, FALSE, timeout);
       if (waited == WAIT_FAILED) record_gpu_dispatch_os_error(j);
+      if (waited == WAIT_OBJECT_0 + 1 && completion)
+      {
+         stuck_wakes = completion == stuck ? stuck_wakes + 1 : 1;
+         stuck       = completion;
+      }
+      else if (waited != WAIT_TIMEOUT)
+         stuck_wakes = 0;
       retro_atomic_fetch_and_int(&j->epoch, ~1);
    }
 #ifdef RECORD_DISPATCH_STREAM
