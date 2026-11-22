@@ -1,6 +1,7 @@
 TARGET := hw_context_request_test
 ROOT := ../../..
-SOURCES := hw_context_request_test.c $(ROOT)/libretro-common/compat/compat_strl.c
+SOURCES := hw_context_request_test.c $(ROOT)/libretro-common/compat/compat_strl.c \
+           $(ROOT)/libretro-common/memory/memdesc.c
 CFLAGS += -O2 -g1 -std=gnu89 -Wall -flto \
           -ffunction-sections -fdata-sections \
           -I$(ROOT) -I$(ROOT)/menu -I$(ROOT)/libretro-common/include $(EXTRA_CFLAGS)
