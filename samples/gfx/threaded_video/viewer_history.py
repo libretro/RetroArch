@@ -41,6 +41,7 @@ struct retro_video_view { unsigned x,y,width,height; };
 d3d = (root / "gfx/drivers/d3d12.c").read_text(encoding="utf-8")
 d3d_fixture = common + r'''
 #define HAVE_SLANG 1
+#define GFX_MAX_FRAME_HISTORY 3
 typedef gpu *D3D12Resource;
 typedef struct command *D3D12GraphicsCommandList;
 #define D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING 5768
@@ -64,19 +65,28 @@ static struct command_vtable command_api={copy_region};
 static struct command command={&command_api};
 typedef unsigned DXGI_FORMAT;
 #define D3D12_FRAME_MAPPING_2101010 23
+typedef struct d3d12_media_version d3d12_media_version_t;
+typedef struct { uintptr_t ptr; } descriptor;
 typedef struct {
+   d3d12_media_version_t **media_versions,*media_version;
+   unsigned media_version_count;
+   bool media_borrowable,media_storage_only;
+   descriptor cpu_descriptor[1],gpu_descriptor[1];
    gfx_media_history_t media_history;
    gpu *handle,*upload_buffer,*upload_buffer2;
-   struct { unsigned Width,Height,Format; } desc;
+   struct { unsigned Width,Height,Format,MipLevels; } desc;
    unsigned srv_mapping,pending,upload_fence,lend_fence[2],layout;
    void *srv_heap,*planar;
    float4 size_data;
 } d3d12_texture_t;
+struct d3d12_media_version {d3d12_texture_t texture;unsigned refs;};
 typedef struct { unsigned history_size; } preset;
 typedef struct {
    preset *shader_preset;
    d3d12_texture_t history[4];
    gfx_media_history_t *media_history;
+   d3d12_texture_t *media_owner;
+   bool history_borrowed;
    gfx_media_history_ring_t history_ring;
    uintptr_t media_source;
    unsigned history_slot;
@@ -96,10 +106,20 @@ typedef struct {
 } d3d12_video_t;
 static void slang_rect_values(float *values,unsigned dims,unsigned pos,unsigned src)
 { (void)values;(void)dims;(void)pos;(void)src; }
+static void d3d12_media_version_release(d3d12_video_t*,d3d12_media_version_t*);
 static void d3d12_release_texture(d3d12_video_t *v,d3d12_texture_t *t)
-{ (void)v;t->handle=NULL; }
+{
+ unsigned i;
+ if(t->media_versions){for(i=0;i<t->media_version_count;i++)d3d12_media_version_release(v,t->media_versions[i]);free(t->media_versions);}
+ else if(t->media_version)d3d12_media_version_release(v,t->media_version);
+ t->media_versions=NULL;t->media_version=NULL;t->media_version_count=0;t->handle=NULL;
+}
+VERSION_RELEASE
+
 static void d3d12_init_texture(void *device,d3d12_texture_t *t)
 { (void)device;t->handle=new_texture(t->desc.Width,t->desc.Height,t->desc.Format);
+  t->cpu_descriptor[0].ptr=(uintptr_t)t->handle;t->gpu_descriptor[0]=t->cpu_descriptor[0];
+  if(!t->desc.MipLevels)t->desc.MipLevels=1;
   t->size_data.x=(float)t->desc.Width;t->size_data.y=(float)t->desc.Height; }
 static void d3d12_frame_remap(d3d12_video_t *v,d3d12_texture_t *t,bool packed)
 { (void)v;(void)t;(void)packed; }
@@ -110,8 +130,9 @@ static void d3d12_planar_record(D3D12GraphicsCommandList cmd,d3d12_texture_t *t,
 { (void)cmd;(void)v;t->handle->value++; }
 static void d3d12_upload_texture_from(D3D12GraphicsCommandList cmd,d3d12_texture_t *t,
       void *v,gpu *buffer,unsigned *layout,void *box)
-{ (void)cmd;(void)v;(void)buffer;(void)layout;(void)box;t->handle->value++; }
+{ (void)cmd;(void)v;(void)layout;(void)box;if(buffer)t->handle->value=buffer->value;else t->handle->value++; }
 HELPER
+POOL
 UPLOAD
 FRAME
 static bool draw(d3d12_video_t *v,d3d12_filter_chain_t *c,d3d12_texture_t *t)
@@ -128,9 +149,59 @@ static bool draw(d3d12_video_t *v,d3d12_filter_chain_t *c,d3d12_texture_t *t)
    source_dims=VIDEO_SCALE_PACK(view.width,view.height);
    v->media_shader_texture=t;
 DRAW_BODY
-   c->media_history=NULL;renders++;feedbacks++;
+   c->media_history=NULL;c->media_owner=NULL;renders++;feedbacks++;
    return copy;
 }
+static void test_pool(void)
+{
+   d3d12_video_t video;
+   d3d12_filter_chain_t chain;
+   d3d12_texture_t t;
+   preset p={2};
+   unsigned storage[6],expected[3]={0,0,0},frame,repeat,j,names=0,before;
+   memset(&video,0,sizeof(video));memset(&chain,0,sizeof(chain));memset(&t,0,sizeof(t));
+   chain.shader_preset=&p;video.media_shader_chain=&chain;video.queue.cmd=&command;
+   gfx_media_history_ring_init(&chain.history_ring,storage,3);
+   t.desc.Width=8;t.desc.Height=4;t.desc.Format=2;t.desc.MipLevels=1;
+   d3d12_init_texture(NULL,&t);t.handle->value=90;
+   t.media_history.managed=true;t.media_borrowable=true;
+   t.upload_buffer=new_texture(8,4,2);
+   assert(!draw(&video,&chain,&t));expected[0]=90;
+   for(frame=1;frame<=64;frame++)
+   {
+      gpu *readers[3];unsigned values[3];descriptor descriptors[3];
+      for(j=0;j<3;j++)
+      {
+         const d3d12_texture_t *h=(const d3d12_texture_t*)d3d12_chain_history_data(&chain,&chain.history[j]);
+         readers[j]=h->handle;values[j]=readers[j]->value;descriptors[j]=h->cpu_descriptor[0];
+      }
+      t.upload_buffer->value=frame;d3d12_upload_texture(NULL,&t,&video);
+      for(j=0;j<3;j++)
+      {
+         const d3d12_texture_t *h=(const d3d12_texture_t*)d3d12_chain_history_data(&chain,&chain.history[j]);
+         assert(readers[j]->value==values[j] && h->cpu_descriptor[0].ptr==descriptors[j].ptr);
+      }
+      before=copies;
+      for(repeat=0;repeat<frame%4+1;repeat++)
+      {
+         assert(!draw(&video,&chain,&t) && copies==before);
+         for(j=2;j;j--)expected[j]=expected[j-1];
+         expected[0]=frame;
+         for(j=0;j<3;j++)assert(((const d3d12_texture_t*)d3d12_chain_history_data(&chain,&chain.history[j]))->handle->value==expected[j]);
+      }
+      if(frame==8)names=allocated;
+      if(frame>8)assert(names==allocated);
+      assert(t.media_version_count<=4);
+   }
+   d3d12_release_texture(&video,&t);
+   for(j=0;j<3;j++)
+   {
+      assert(chain.history[j].handle && chain.history[j].media_version->refs);
+      d3d12_release_texture(&video,&chain.history[j]);
+   }
+   puts("PASS D3D12 pooled history: zero snapshots, immutable descriptors/readers, bounded reuse, HDR and producer close");
+}
+
 int main(void)
 {
    d3d12_video_t v;
@@ -216,10 +287,13 @@ int main(void)
    c.history[gfx_media_history_ring_target(&c.history_ring,false)].handle=NULL;
    assert(!draw(&v,&c,&t) && !c.history_made);
    assert(draw(&v,&c,&t) && c.history_made);
+   test_pool();
    puts("PASS D3D12 viewer history: pixels, copy counts, uploads, address reuse, HDR format and no-history borrow");
    return 0;
 }
 '''
+d3d_fixture = d3d_fixture.replace("\nVERSION_RELEASE\n", function(d3d, "static void d3d12_media_version_release(d3d12_video_t *video,\n      d3d12_media_version_t *version)\n{"))
+d3d_fixture = d3d_fixture.replace("\nPOOL\n", "\n" + function(d3d, "static bool d3d12_media_pool_begin(") + function(d3d, "static bool d3d12_media_writable(") + "\n")
 d3d_fixture = d3d_fixture.replace("\nHELPER\n", function(d3d, "static const void *d3d12_chain_history_data("))
 a = d3d.index("   gfx_media_history_begin(&texture->media_history", d3d.index("bool gfx_display_d3d12_media_shader_draw("))
 b = d3d.index("   chain->media_history = NULL;", a)
@@ -629,6 +703,8 @@ d3d11_fixture = r'''
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#define GFX_MAX_FRAME_HISTORY 3
 #include <string.h>
 #include "gfx/common/media_history.h"
 #include "gfx/video_defines.h"
@@ -644,22 +720,23 @@ typedef unsigned D3D11_USAGE;
 #define D3D11_RESOURCE_MISC_GENERATE_MIPS 1
 #define VIDEO_TEXTURE_UPDATE_DONE 1
 #define SUCCEEDED(x) ((x)>=0)
-typedef struct { unsigned Width,Height,Usage,Format,MiscFlags; } D3D11_TEXTURE2D_DESC;
+typedef struct { unsigned Width,Height,Usage,Format,MiscFlags,MipLevels; } D3D11_TEXTURE2D_DESC;
 typedef struct { unsigned left,top,front,right,bottom,back; } D3D11_BOX;
 typedef struct { void *pData;unsigned RowPitch; } D3D11_MAPPED_SUBRESOURCE;
 struct gpu;
 typedef struct gpu *D3D11Resource;
 typedef struct gpu *D3D11Texture2D;
 typedef struct gpu *D3D11ShaderResourceView;
-struct gpu_vtbl { void (*GetResource)(struct gpu*,D3D11Resource*);void (*GetDesc)(struct gpu*,D3D11_TEXTURE2D_DESC*); };
+struct gpu_vtbl { void (*GetResource)(struct gpu*,D3D11Resource*);void (*GetDesc)(struct gpu*,D3D11_TEXTURE2D_DESC*);void (*AddRef)(struct gpu*); };
 typedef struct gpu { struct gpu_vtbl *lpVtbl;D3D11_TEXTURE2D_DESC desc;unsigned value,refs; } gpu;
 static void get_resource(gpu *g,gpu **out) {assert(g->refs);g->refs++;*out=g;}
 static void get_desc(gpu *g,D3D11_TEXTURE2D_DESC *d) {assert(g->refs);*d=g->desc;}
-static struct gpu_vtbl resource_vtbl={get_resource,get_desc};
+static void add_ref(gpu *g) {assert(g->refs);g->refs++;}
+static struct gpu_vtbl resource_vtbl={get_resource,get_desc,add_ref};
 static gpu pool[512];
 static unsigned allocated,copies,renders,feedbacks,failures;
 static gpu *new_gpu(D3D11_TEXTURE2D_DESC desc)
-{ gpu *g;assert(allocated<512);g=&pool[allocated++];g->lpVtbl=&resource_vtbl;g->desc=desc;g->refs=1;return g; }
+{ gpu *g;assert(allocated<512);g=&pool[allocated++];g->lpVtbl=&resource_vtbl;g->desc=desc;g->refs=2;return g; }
 #define Release(g) do { if(g) {assert((g)->refs);(g)->refs--;} } while(0)
 struct context;
 struct ctx_vtbl {
@@ -677,14 +754,17 @@ static void unmap(struct context *c,gpu *g,unsigned a) {(void)c;(void)g;(void)a;
 static void mips(struct context *c,gpu *g) {(void)c;(void)g;}
 static struct ctx_vtbl context_vtbl={copy_region,map,unmap,mips};
 static struct context context={&context_vtbl};
-typedef struct {gpu *handle,*view;D3D11_TEXTURE2D_DESC desc;float4 size_data;gfx_media_history_t media_history;} d3d11_texture_t;
+typedef struct {gpu *handle,*view,*rt_view;D3D11ShaderResourceView *media_versions;unsigned media_version_count;bool media_borrowable;D3D11_TEXTURE2D_DESC desc;float4 size_data;gfx_media_history_t media_history;} d3d11_texture_t;
 typedef struct {unsigned history_size;} preset;
-typedef struct {preset *shader_preset;d3d11_texture_t history[4];struct {float values[12];} frame_rect;bool history_made;gfx_media_history_t *media_history;uintptr_t media_source;gpu *frame_view;unsigned rt_frame_dims,rt_vp_dims,frame_format;float4 output_size;} d3d11_chain_t;
-typedef struct {struct context *context;void *device;unsigned format;void *media_shader_info;uint64_t media_shader_frame;} d3d11_video_t;
+typedef struct {preset *shader_preset;d3d11_texture_t history[4];struct {float values[12];} frame_rect;bool history_made,history_borrowed;d3d11_texture_t *media_owner;gfx_media_history_t *media_history;uintptr_t media_source;gpu *frame_view;unsigned rt_frame_dims,rt_vp_dims,frame_format;float4 output_size;} d3d11_chain_t;
+typedef struct {d3d11_chain_t *media_shader_chain;struct context *context;void *device;unsigned format;void *media_shader_info;uint64_t media_shader_frame;} d3d11_video_t;
 struct retro_video_view {unsigned x,y,width,height;};
-static void d3d11_release_texture(d3d11_texture_t *t) {Release(t->handle);t->handle=t->view=NULL;}
-static void d3d11_init_texture_ex(void *dev,d3d11_texture_t *t,bool staging)
-{(void)dev;(void)staging;if(failures){failures--;return;}t->handle=t->view=new_gpu(t->desc);}
+static void d3d11_release_texture(d3d11_texture_t *t)
+{unsigned i;for(i=0;i<t->media_version_count;i++)Release(t->media_versions[i]);
+free(t->media_versions);t->media_versions=NULL;t->media_version_count=0;
+Release(t->handle);Release(t->view);t->handle=t->view=NULL;}
+static bool d3d11_init_texture_ex(void *dev,d3d11_texture_t *t,bool staging)
+{(void)dev;(void)staging;if(failures){failures--;return false;}t->handle=t->view=new_gpu(t->desc);return true;}
 static void d3d11_chain_init_render_targets(d3d11_video_t *v,d3d11_chain_t *c,unsigned w,unsigned h,unsigned dims)
 {(void)v;(void)c;(void)w;(void)h;(void)dims;}
 static void dxgi_copy(unsigned w,unsigned h,unsigned fmt,unsigned pitch,const void *src,unsigned df,unsigned dp,void *dst)
@@ -692,6 +772,7 @@ static void dxgi_copy(unsigned w,unsigned h,unsigned fmt,unsigned pitch,const vo
 static void d3d11_chain_frame(d3d11_video_t *v,d3d11_chain_t *c,void *info,uint64_t frame,bool fresh)
 {(void)v;(void)c;(void)info;(void)frame;(void)fresh;renders++;feedbacks++;}
 static void slang_rect_values(float *values,unsigned a,unsigned b,unsigned c) { values[0]=(float)(a+b+c); }
+POOL
 CHAIN
 static void draw(d3d11_video_t *video,d3d11_chain_t *chain,d3d11_texture_t *texture)
 {
@@ -702,14 +783,59 @@ static void draw(d3d11_video_t *video,d3d11_chain_t *chain,d3d11_texture_t *text
    memset(&view,0,sizeof(view));view.width=texture->desc.Width;view.height=texture->desc.Height;
 DRAW
 }
+static d3d11_video_t *test_video;
 static int update(d3d11_texture_t *texture,gpu *upload)
 {
    struct context *ctx=&context;
    D3D11_BOX box;
+   D3D11ShaderResourceView destination=test_video ? d3d11_media_writable(test_video,texture) : texture->view;
    struct {unsigned width,height;} value;
    const void *image=&value;
+   if(!destination)return 0;
    /* image is a texture_image in the production fragment. */
 UPDATE
+}
+static void test_pool(void)
+{
+   d3d11_video_t video;
+   d3d11_chain_t chain;
+   d3d11_texture_t t;
+   preset p={2};
+   unsigned frame,j,repeat,names=0,expected[3]={0,0,0};
+   memset(&video,0,sizeof(video));memset(&chain,0,sizeof(chain));memset(&t,0,sizeof(t));
+   video.context=&context;video.media_shader_chain=&chain;chain.shader_preset=&p;
+   t.desc.Width=16;t.desc.Height=8;t.desc.Format=DXGI_FORMAT_R16G16B16A16_FLOAT;t.desc.MipLevels=1;
+   t.handle=t.view=new_gpu(t.desc);t.handle->value=90;t.media_history.managed=true;t.media_borrowable=true;
+   test_video=&video;
+   draw(&video,&chain,&t);expected[0]=90;
+   failures=1;
+   {gpu *upload=new_gpu(t.desc);assert(!update(&t,upload));Release(upload);Release(upload);}
+   assert(t.handle->value==90);
+   for(frame=1;frame<=48;frame++)
+   {
+      gpu *readers[3],*upload=new_gpu(t.desc);
+      unsigned values[3],before;
+      for(j=0;j<3;j++){readers[j]=chain.history[j].handle;values[j]=readers[j]->value;}
+      upload->value=frame;
+      assert(update(&t,upload)==VIDEO_TEXTURE_UPDATE_DONE);
+      Release(upload);Release(upload);
+      for(j=0;j<3;j++)assert(readers[j]->value==values[j]);
+      before=copies;
+      for(repeat=0;repeat<frame%4+1;repeat++)
+      {
+         draw(&video,&chain,&t);assert(copies==before);
+         for(j=2;j;j--)expected[j]=expected[j-1];
+         expected[0]=frame;
+         for(j=0;j<3;j++)assert(chain.history[j].handle->value==expected[j]);
+      }
+      if(frame==8)names=t.media_version_count;
+      if(frame>8)assert(t.media_version_count==names);
+      assert(t.media_version_count<=4);
+   }
+   d3d11_release_texture(&t);
+   for(j=0;j<3;j++){assert(chain.history[j].handle->refs);d3d11_release_texture(&chain.history[j]);}
+   test_video=NULL;
+   puts("PASS D3D11 pooled history: zero snapshots, bounded reuse, immutable readers, HDR and producer close");
 }
 int main(void)
 {
@@ -723,7 +849,7 @@ int main(void)
    t.desc.Width=32;t.desc.Height=24;t.desc.Format=1;
    t.handle=t.view=new_gpu(t.desc);t.handle->value=19;t.media_history.managed=true;
    for(i=0;i<9;i++)draw(&v,&c,&t);
-   assert(copies==3 && renders==9 && feedbacks==9 && allocated==4 && t.handle->refs==1);
+   assert(copies==3 && renders==9 && feedbacks==9 && allocated==4 && t.handle->refs==2);
    for(i=0;i<3;i++)assert(c.history[i].handle->value==19);
    for(i=0;i<3;i++)expected[i]=19;
    for(version=1;version<=24;version++)
@@ -771,10 +897,12 @@ int main(void)
      for(i=0;i<4;i++)d3d11_views_chain_frame(&v,&c,&view,VIDEO_SCALE_PACK(640,480),t.view,VIDEO_SCALE_PACK(16,24),false,true,NULL,0); }
    assert(copies==before+4);
    p.history_size=0;before=copies;draw(&v,&c,&t);assert(copies==before && c.frame_view==t.view);
+   test_pool();
    puts("PASS D3D11 viewer history: unchanged images, mixed cadence, uploads, owner reuse, allocation recovery and no-history borrow");
    return 0;
 }
 '''
+d3d11_fixture = d3d11_fixture.replace('\nPOOL\n', function(d3d11, 'static bool d3d11_media_pool_begin(') + function(d3d11, 'static D3D11ShaderResourceView d3d11_media_writable(') + function(d3d11, 'static void d3d11_media_publish('))
 d3d11_fixture = d3d11_fixture.replace('\nCHAIN\n', function(d3d11, 'static void d3d11_views_chain_frame('))
 a = d3d11.index('   gfx_media_history_begin(', d3d11.index('static bool gfx_display_d3d11_media_shader_draw('))
 b = d3d11.index('   chain->mvp_last_pass', a)

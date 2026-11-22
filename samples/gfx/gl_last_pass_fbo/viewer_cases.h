@@ -281,3 +281,97 @@ static int viewer_cases(void)
    printf("viewer multipass/history/feedback checks passed\n");
    return fails != 0;
 }
+
+/* Raw-copy fallback and immutable source leases, through both shipping GL
+ * chains. Sampler restoration is observable independently of shader draws. */
+static GLuint viewer_lease_attachment;
+static void viewer_lease_bind_buffer(GLenum target, GLuint buffer) { (void)target;(void)buffer; }
+static unsigned viewer_raw_copies, viewer_deleted_999, viewer_deleted_998;
+static void viewer_lease_attach(GLenum target, GLenum attachment,
+      GLenum textarget, GLuint texture, GLint level)
+{
+   viewer_lease_attachment = texture;
+   fake_framebuffer_texture_2d(target, attachment, textarget, texture, level);
+}
+static void viewer_lease_copy(GLuint destination, GLsizei width, GLsizei height)
+{
+   CHECK(width == 320 && height == 240, "raw history copy keeps logical extent");
+   CHECK(destination < 1024 && viewer_lease_attachment < 1024, "copy uses bounded GL names");
+   viewer_pixels[destination] = viewer_pixels[viewer_lease_attachment];
+   viewer_raw_copies++;
+}
+static void viewer_lease_delete(GLuint texture)
+{
+   if(texture == 999)viewer_deleted_999++;
+   if(texture == 998)viewer_deleted_998++;
+}
+static void viewer_lease_params(void *params, void *data) { (void)params;(void)data; }
+static GLenum viewer_lease_incomplete(GLenum target) { (void)target;return 0; }
+static int viewer_borrow_cases(void)
+{
+   gl_media_shader_t *state = NULL;
+   shader_backend_t backend;
+   unsigned i, before, names;
+   GLint filter;
+   gl_fakes_install();backend_init(&backend);
+   gl11_next_name=1; /* prior scripted chain has been destroyed */
+   __rglgen_glActiveTexture = viewer_active_texture;
+   __rglgen_glFramebufferTexture2D = viewer_lease_attach;
+   __rglgen_glBindBuffer = viewer_lease_bind_buffer;
+   gl11_copy_texture = viewer_lease_copy;gl11_delete_texture = viewer_lease_delete;
+   backend.use = viewer_use;backend.set_params = viewer_lease_params;
+   backend.set_coords = viewer_coords;backend.set_mvp = viewer_mvp;
+   backend.get_prev_textures = viewer_history;
+   viewer_history_slots = 2;num_passes = 1;feedback_pass = -1;
+   memset(scales,0,sizeof(scales));
+   viewer_pixels[999] = 42;
+   glBindTexture(GL_TEXTURE_2D,999);
+   glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+   for(i=0;i<32;i++)
+   {
+      before=gl11_draws;
+      CHECK(VIEWER_DRAW(&state,&backend,&backend,&backend,999,
+            VIDEO_SCALE_PACK(320,240),0,VIDEO_SCALE_PACK(800,600),i,NULL,true),"borrowed viewer rendered");
+      CHECK(gl11_draws==before+1,"immutable history needs no snapshot draw");
+      CHECK(state->history[state->history_order[0]].source != NULL,"history retains producer texture");
+      glBindTexture(GL_TEXTURE_2D,999);glGetTexParameteriv(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,&filter);
+      CHECK(filter==GL_NEAREST,"borrowed history restores producer sampler state");
+   }
+   CHECK(!viewer_raw_copies,"unchanged history needs no raw copies");
+   /* Mutation materializes old pixels before the upload touches them. */
+   viewer_uploaded(state);
+   CHECK(viewer_raw_copies==1,"one snapshot before mutating an aliased source");
+   for(i=0;i<2;i++)
+   {
+      gl_media_target_t *t=&state->history[state->history_order[i]];
+      CHECK(!t->source && t->flipped && viewer_pixels[t->texture]==42,"old pixels and orientation survive upload");
+   }
+   names=gl11_next_name;
+   for(i=0;i<16;i++)
+   {
+      viewer_pixels[999]=100+i;
+      CHECK(VIEWER_DRAW(&state,&backend,&backend,&backend,999,
+            VIDEO_SCALE_PACK(320,240),0,VIDEO_SCALE_PACK(800,600),40+i,NULL,true),"mutable source rendered");
+      before=viewer_raw_copies;viewer_uploaded(state);
+      CHECK(viewer_raw_copies==before+1,"mutable source snapshots once per upload");
+      CHECK(gl11_next_name==names,"mutable fallback reuses owned snapshot targets");
+   }
+   CHECK(VIEWER_DRAW(&state,&backend,&backend,&backend,999,
+         VIDEO_SCALE_PACK(320,240),0,VIDEO_SCALE_PACK(800,600),70,NULL,true),"source borrowed before failure");
+   __rglgen_glCheckFramebufferStatus=viewer_lease_incomplete;
+   CHECK(!VIEWER_PRESERVE(state,999),"failed materialization refuses mutation");
+   CHECK(state->history[state->history_order[0]].source != NULL,"failure keeps source lease");
+   __rglgen_glCheckFramebufferStatus=fake_check_framebuffer_status;
+   viewer_unloaded(state);
+   CHECK(!viewer_deleted_999,"producer close defers a borrowed GL name");
+   viewer_pixels[998]=900;
+   for(i=0;i<3;i++)
+      CHECK(VIEWER_DRAW(&state,&backend,&backend,&backend,998,
+            VIDEO_SCALE_PACK(320,240),0,VIDEO_SCALE_PACK(800,600),80+i,NULL,true),"navigation retains prior image");
+   CHECK(viewer_deleted_999==1,"history eviction deletes retired source exactly once");
+   VIEWER_FREE(&state);
+   CHECK(!viewer_deleted_998,"shader teardown leaves a live producer alone");
+   gl11_copy_texture=NULL;gl11_delete_texture=NULL;
+   puts("GL viewer source leases: immutable images, raw fallback, orientation, sampler state, failure and teardown passed");
+   return fails != 0;
+}

@@ -885,7 +885,7 @@ jobs:
     timeout-minutes: 20
 
     env:
-      APT_PKGS: build-essential libgl-dev gcc-mingw-w64-x86-64 wine64
+      APT_PKGS: build-essential libgl-dev libegl-dev libegl-mesa0 libgl1-mesa-dri gcc-mingw-w64-x86-64 wine64
 
     steps:
       - name: Checkout
@@ -989,6 +989,9 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
              timeout 60 make check
           make clean
+
+      - name: Viewer history GPU pixels (surfaceless OpenGL, RGBA8 and FP16)
+        run: python3 samples/gfx/gl_last_pass_fbo/history_pixels.py
 
       - name: Build and run gl2/gl3 last_pass_fbo tests (mingw-w64, Wine)
         shell: bash

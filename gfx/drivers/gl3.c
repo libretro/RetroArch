@@ -137,6 +137,10 @@ struct gl3_views_fbo
 #define MEDIA_FB_BINDING GL_FRAMEBUFFER_BINDING
 #define MEDIA_ATTACH(tex) glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0)
 #define MEDIA_FB_COMPLETE() (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+#define gl_media_source_release gl3_media_source_release
+#define gl_media_source_acquire gl3_media_source_acquire
+#define gl_media_shader_retire gl3_media_shader_retire
+#define gl_media_shader_preserve gl3_media_shader_preserve
 #define gl_media_target_free gl3_media_target_free
 #define gl_media_shader_free gl3_media_shader_free
 #define gl_media_target_fit gl3_media_target_fit
@@ -8572,7 +8576,10 @@ static uintptr_t video_texture_unload_wrap_gl3(void *data)
       gl_planar_forget(&gl->planar, glid);
 #endif
    gl3_media_texture_changed(gl, id, false);
-   glDeleteTextures(1, &glid);
+#if defined(HAVE_GLSL)
+   if (!gl3_media_shader_retire(gl ? gl->media_legacy_shader : NULL, glid))
+#endif
+      glDeleteTextures(1, &glid);
    return 0;
 }
 #endif
@@ -8618,6 +8625,10 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
 {
    const void *pixels = ti->pixels;
    int lent           = -1;
+#if defined(HAVE_GLSL)
+   if (gl && !gl3_media_shader_preserve(gl->media_legacy_shader, (GLuint)id))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#endif
    if (ti->planar)
    {
 #ifdef HAVE_GL_PLANAR
@@ -8683,8 +8694,8 @@ static enum video_texture_update gl3_update_texture(void *video_data,
       cmd.gl      = (gl3_t*)video_data;
       cmd.payload = (void*)ti;
       cmd.handle  = id;
-      video_thread_texture_handle(&cmd, video_texture_update_wrap_gl3);
-      return VIDEO_TEXTURE_UPDATE_DONE;
+      return (enum video_texture_update)video_thread_texture_handle(
+            &cmd, video_texture_update_wrap_gl3);
    }
 #endif
 
@@ -8804,7 +8815,10 @@ static void gl3_unload_texture(void *data, bool threaded,
       gl_planar_forget(&((gl3_t*)data)->planar, glid);
 #endif
    gl3_media_texture_changed((gl3_t*)data, id, false);
-   glDeleteTextures(1, &glid);
+#if defined(HAVE_GLSL)
+   if (!gl3_media_shader_retire(data ? ((gl3_t*)data)->media_legacy_shader : NULL, glid))
+#endif
+      glDeleteTextures(1, &glid);
 }
 
 static void gl3_set_video_mode(void *data, unsigned dims,

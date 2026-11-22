@@ -60,11 +60,12 @@ static void viewer_unloaded(gl_media_shader_t *state)
 }
 
 #define VIEWER_DRAW gl2_media_shader_draw
+#define VIEWER_PRESERVE gl2_media_shader_preserve
 #define VIEWER_FREE gl2_media_shader_free
 #include "viewer_cases.h"
 
 int main(void)
 {
-   if (viewer_cases()) return 1;
+   if (viewer_cases() || viewer_borrow_cases()) return 1;
    return run_cases(run_chain, -1);
 }

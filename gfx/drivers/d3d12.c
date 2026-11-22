@@ -339,9 +339,15 @@ static const char d3d12_planar_cs_src[] =
 ;
 
 
-typedef struct
+typedef struct d3d12_media_version d3d12_media_version_t;
+typedef struct d3d12_texture
 {
    gfx_media_history_t                media_history;
+   d3d12_media_version_t            **media_versions;
+   d3d12_media_version_t             *media_version;
+   unsigned                           media_version_count;
+   bool                               media_borrowable;
+   bool                               media_storage_only;
    D3D12Resource                      handle;
    D3D12Resource                      upload_buffer;
    D3D12_RESOURCE_DESC                desc;
@@ -384,6 +390,15 @@ typedef struct
    struct d3d12_import               *import;
 #endif
 } d3d12_texture_t;
+
+/* A descriptor is immutable for the same lifetime as its GPU resource.
+ * Pool ownership and history leases are separate references. */
+struct d3d12_media_version
+{
+   d3d12_texture_t texture;
+   unsigned refs;
+};
+
 
 /* A texture is released and freed; anything else is a COM object
  * released once */
@@ -503,6 +518,8 @@ typedef struct d3d12_filter_chain
    unsigned                    rt_vp_dims;
    /* Borrowed only during a media draw; no texture owner is retained. */
    gfx_media_history_t         *media_history;
+   d3d12_texture_t             *media_owner;
+   bool                        history_borrowed;
    uintptr_t                   media_source;
    gfx_media_history_ring_t     history_ring;
    unsigned                    history_slot;
@@ -1591,9 +1608,20 @@ static bool d3d12_queue_busy(d3d12_video_t *d3d12)
  * place; with one frame in flight none is, at a frame's top. NULL
  * where nothing is in flight (a drained queue, a retired texture whose
  * fence has passed). */
+static void d3d12_media_version_release(d3d12_video_t *video,
+      d3d12_media_version_t *version);
+
 static void d3d12_release_texture(d3d12_video_t *d3d12,
       d3d12_texture_t* texture)
 {
+   /* Dropping a history lease does not rewrite its descriptor. The pool
+    * retains storage for reuse; its final release performs fence retirement. */
+   if (!texture->media_versions && texture->media_version)
+   {
+      d3d12_media_version_release(d3d12, texture->media_version);
+      memset(texture, 0, sizeof(*texture));
+      return;
+   }
    if (     (texture->handle || texture->planar)
          && d3d12_queue_busy(d3d12))
    {
@@ -1602,6 +1630,9 @@ static void d3d12_release_texture(d3d12_video_t *d3d12,
       {
          *copy                   = *texture;
          d3d12_retire(d3d12, copy, NULL, d3d12->queue.fenceValue + 1);
+         texture->media_versions = NULL;
+         texture->media_version = NULL;
+         texture->media_version_count = 0;
          texture->handle         = NULL;
          texture->upload_buffer  = NULL;
          texture->upload_buffer2 = NULL;
@@ -1619,7 +1650,25 @@ static void d3d12_release_texture(d3d12_video_t *d3d12,
       d3d12_queue_settle(d3d12);
    }
 
-   if (!texture->handle)
+   if (texture->media_versions || texture->media_version)
+   {
+      unsigned i;
+      if (texture->media_versions)
+      {
+         for (i = 0; i < texture->media_version_count; i++)
+            d3d12_media_version_release(d3d12, texture->media_versions[i]);
+         free(texture->media_versions);
+      }
+      else
+         d3d12_media_version_release(d3d12, texture->media_version);
+      texture->media_versions = NULL;
+      texture->media_version = NULL;
+      texture->media_version_count = 0;
+      texture->handle = NULL;
+      memset(texture->cpu_descriptor, 0, sizeof(texture->cpu_descriptor));
+   }
+
+   if (!texture->handle && !texture->upload_buffer && !texture->upload_buffer2)
    {
       if (texture->planar)
          Release(texture->planar->planes);
@@ -1693,6 +1742,16 @@ static void d3d12_release_texture(d3d12_video_t *d3d12,
    texture->lend_mapped[1] = NULL;
    texture->lent           = 0;
    texture->pending        = 0;
+}
+
+static void d3d12_media_version_release(d3d12_video_t *video,
+      d3d12_media_version_t *version)
+{
+   if (version && !--version->refs)
+   {
+      d3d12_release_texture(video, &version->texture);
+      free(version);
+   }
 }
 
 static void d3d12_views_chain_destroy(d3d12_video_t *d3d12,
@@ -1934,7 +1993,7 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
 
    if (texture->desc.Flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET)
       device->lpVtbl->CreateRenderTargetView(device, (ID3D12Resource*)texture->handle, NULL, texture->rt_view);
-   else
+   else if (!texture->media_storage_only)
    {
       D3D12_HEAP_PROPERTIES heap_props;
       D3D12_RESOURCE_DESC   buffer_desc;
@@ -2089,10 +2148,77 @@ static void d3d12_upload_texture_from(D3D12GraphicsCommandList cmd,
 static void d3d12_planar_record(D3D12GraphicsCommandList cmd,
       d3d12_texture_t *texture, d3d12_video_t *d3d12);
 
+static bool d3d12_media_pool_begin(d3d12_texture_t *t)
+{
+   d3d12_media_version_t *v;
+   if (!t->media_borrowable || !t->handle || t->planar
+         || !t->cpu_descriptor[0].ptr || !t->gpu_descriptor[0].ptr
+         || t->desc.MipLevels != 1 || t->srv_mapping)
+      return false;
+   if (t->media_versions) return true;
+   t->media_versions = (d3d12_media_version_t**)calloc(
+         GFX_MAX_FRAME_HISTORY + 2, sizeof(*t->media_versions));
+   if (!t->media_versions) return false;
+   if (!(v = (d3d12_media_version_t*)calloc(1, sizeof(*v))))
+   {
+      free(t->media_versions);t->media_versions = NULL;
+      return false;
+   }
+   v->refs = 1;
+   v->texture.desc = t->desc;
+   v->texture.handle = t->handle;
+   v->texture.cpu_descriptor[0] = t->cpu_descriptor[0];
+   v->texture.gpu_descriptor[0] = t->gpu_descriptor[0];
+   v->texture.srv_heap = t->srv_heap;
+   v->texture.size_data = t->size_data;
+   v->texture.media_storage_only = true;
+   t->media_versions[0] = t->media_version = v;
+   t->media_version_count = 1;
+   return true;
+}
+
+static bool d3d12_media_writable(d3d12_video_t *video, d3d12_texture_t *t)
+{
+   unsigned i;
+   d3d12_media_version_t *v = NULL;
+   for (i = 0; i < t->media_version_count; i++)
+      if (t->media_versions[i]->refs == 1)
+      {
+         v = t->media_versions[i];
+         break;
+      }
+   if (!v)
+   {
+      if (t->media_version_count == GFX_MAX_FRAME_HISTORY + 2
+            || !(v = (d3d12_media_version_t*)calloc(1, sizeof(*v))))
+         return false;
+      v->refs = 1;
+      v->texture.desc = t->desc;
+      v->texture.srv_heap = t->srv_heap;
+      v->texture.media_storage_only = true;
+      d3d12_init_texture(video->device, &v->texture);
+      if (!v->texture.handle || !v->texture.cpu_descriptor[0].ptr
+            || v->texture.desc.Format != t->desc.Format)
+      {
+         d3d12_media_version_release(video, v);
+         return false;
+      }
+      t->media_versions[t->media_version_count++] = v;
+   }
+   t->media_version = v;
+   t->handle = v->texture.handle;
+   t->cpu_descriptor[0] = v->texture.cpu_descriptor[0];
+   t->gpu_descriptor[0] = v->texture.gpu_descriptor[0];
+   return true;
+}
+
 static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
       d3d12_texture_t* texture, void *userdata)
 {
    unsigned k = texture->pending;
+   if (texture->media_versions && (!userdata
+         || !d3d12_media_writable((d3d12_video_t*)userdata, texture)))
+      return;
    texture->media_history.copies = 0;
    if (texture->planar && userdata)
    {
@@ -10027,6 +10153,10 @@ static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
 {
    bool copy     = false;
    unsigned dims = VIDEO_SCALE_PACK(v->width, v->height);
+   bool borrow = !in_place && c->media_owner
+      && d3d12_media_pool_begin(c->media_owner);
+   if (c->history_borrowed != borrow) c->history_made = false;
+   c->history_borrowed = borrow;
 
    c->history_shared = !in_place && c->history_ring.count
          == (unsigned)c->shader_preset->history_size + 1;
@@ -10107,8 +10237,22 @@ static bool d3d12_views_chain_frame(d3d12_video_t *d3d12,
                   gfx_media_history_ring_advance(&c->history_ring, c->history_slot);
                else
                {
-                  c->history[c->history_slot].srv_mapping = mapping;
-                  copy = true;
+                  if (borrow)
+                  {
+                     d3d12_texture_t *h = &c->history[c->history_slot];
+                     d3d12_media_version_t *version = c->media_owner->media_version;
+                     d3d12_release_texture(d3d12, h);
+                     *h = version->texture;
+                     h->media_version = version;
+                     version->refs++;
+                     gfx_media_history_written(c->media_history);
+                     gfx_media_history_ring_advance(&c->history_ring, c->history_slot);
+                  }
+                  else
+                  {
+                     c->history[c->history_slot].srv_mapping = mapping;
+                     copy = true;
+                  }
                }
             }
             else
@@ -13543,6 +13687,7 @@ static uintptr_t d3d12_gfx_load_texture_internal(
             image->pixels, texture);
 
    texture->media_history.managed = true;
+   texture->media_borrowable = true;
    return (uintptr_t)texture;
 }
 
@@ -14893,6 +15038,7 @@ static bool gfx_display_d3d12_media_shader_draw(void *data, uintptr_t image,
          chain->media_source == image, chain->history_made);
    chain->media_source = image;
    chain->media_history = &texture->media_history;
+   chain->media_owner = texture;
    if (!chain->shader_preset->history_size)
       chain->history[0].size_data = texture->size_data;
    copy = d3d12_views_chain_frame(video, chain, &view, dims, texture->handle,
@@ -14921,6 +15067,7 @@ static bool gfx_display_d3d12_media_shader_draw(void *data, uintptr_t image,
             D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
    }
    chain->media_history = NULL;
+   chain->media_owner = NULL;
    d3d12_views_bind(video);
    video->queue.cmd->lpVtbl->SetGraphicsRootSignature(video->queue.cmd,
          video->desc.sl_rootSignature);

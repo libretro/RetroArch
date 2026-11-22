@@ -8,9 +8,22 @@
  * by a preset. This flag creates no additional image or draw. */
 #define GL_MEDIA_LINEAR_HDR (1u << 31)
 
+typedef struct gl_media_source
+{
+   struct gl_media_source *next;
+   struct gl_media_source **list;
+   struct gl_media_shader *owner;
+   GLuint texture;
+   unsigned refs;
+   bool retired, configured;
+   GLint filter[4];
+} gl_media_source_t;
+
 typedef struct gl_media_target
 {
    GLuint texture, fbo;
+   gl_media_source_t *source;
+   bool flipped;
    unsigned dims;
    unsigned flags;
 } gl_media_target_t;
@@ -20,6 +33,8 @@ typedef struct gl_media_shader
    gl_media_target_t pass[GFX_MAX_SHADERS];
    gl_media_target_t history[GFX_MAX_TEXTURES];
    gl_media_target_t feedback;
+   gl_media_source_t *sources;
+   GLint *restore_binding;
    uintptr_t history_source;
    unsigned history_copies, history_count, history_latest;
    unsigned history_order[GFX_MAX_TEXTURES];
@@ -31,8 +46,71 @@ typedef struct gl_media_shader
 
 #endif
 
+/* A source name stays allocated until its producer and the last logical
+ * history snapshot have both let it go. No GL object is copied to retain it. */
+static void gl_media_source_release(gl_media_source_t *source)
+{
+   if (source && !--source->refs && source->retired)
+   {
+      gl_media_source_t **at = source->list;
+      while (*at && *at != source) at = &(*at)->next;
+      if (*at) *at = source->next;
+      /* Rebinding a deleted name would silently recreate an empty texture. */
+      if (source->owner->restore_binding
+            && (GLuint)*source->owner->restore_binding == source->texture)
+         *source->owner->restore_binding = 0;
+      glDeleteTextures(1, &source->texture);
+      free(source);
+   }
+}
+
+static gl_media_source_t *gl_media_source_acquire(gl_media_shader_t *s, GLuint texture)
+{
+   gl_media_source_t *source = s->sources;
+   while (source && source->texture != texture) source = source->next;
+   if (!source)
+   {
+      source = (gl_media_source_t*)calloc(1, sizeof(*source));
+      if (!source) return NULL;
+      source->texture = texture;
+      source->list = &s->sources;
+      source->owner = s;
+      source->next = s->sources;
+      s->sources = source;
+   }
+   source->refs++;
+   return source;
+}
+
+static bool gl_media_shader_retire(gl_media_shader_t *s, GLuint texture)
+{
+   gl_media_source_t *source;
+   unsigned i;
+   if (!s) return false;
+   source = s->sources;
+   while (source && source->texture != texture) source = source->next;
+   if (!source) return false;
+   source->retired = true;
+   /* Retired sources can never be updated: release unused materialization
+    * storage instead of keeping both an original and its possible copy. */
+   for (i = 0; i < GFX_MAX_TEXTURES; i++)
+      if (s->history[i].source == source)
+      {
+         if (s->history[i].texture) glDeleteTextures(1, &s->history[i].texture);
+         if (s->history[i].fbo) MEDIA_DELETE_FB(1, &s->history[i].fbo);
+         s->history[i].texture = s->history[i].fbo = 0;
+      }
+   if (!source->refs)
+   {
+      source->refs = 1;
+      gl_media_source_release(source);
+   }
+   return true;
+}
+
 static void gl_media_target_free(gl_media_target_t *t)
 {
+   gl_media_source_release(t->source);
    if (t->texture) glDeleteTextures(1, &t->texture);
    if (t->fbo) MEDIA_DELETE_FB(1, &t->fbo);
    memset(t, 0, sizeof(*t));
@@ -46,6 +124,13 @@ static void gl_media_shader_free(gl_media_shader_t **state)
    for (i = 0; i < GFX_MAX_SHADERS; i++) gl_media_target_free(&s->pass[i]);
    for (i = 0; i < GFX_MAX_TEXTURES; i++) gl_media_target_free(&s->history[i]);
    gl_media_target_free(&s->feedback);
+   while (s->sources)
+   {
+      gl_media_source_t *source = s->sources;
+      s->sources = source->next;
+      if (source->retired) glDeleteTextures(1, &source->texture);
+      free(source);
+   }
    free(s);
    *state = NULL;
 }
@@ -59,7 +144,7 @@ static void gl_media_shader_changed(gl_media_shader_t *s, uintptr_t texture)
 static bool gl_media_target_fit(gl_media_target_t *t, unsigned dims,
       unsigned flags)
 {
-   if (t->dims != dims || t->flags != flags)
+   if (!t->texture || t->dims != dims || t->flags != flags)
    {
       GLenum type = (flags & FBO_SCALE_FLAG_FP_FBO) ? GL_FLOAT : GL_UNSIGNED_BYTE;
       GLint format = GL_RGBA;
@@ -95,6 +180,70 @@ static bool gl_media_target_fit(gl_media_target_t *t, unsigned dims,
       t->flags = flags;
    }
    return true;
+}
+
+/* A mutable producer keeps the old pixels until this raw GPU snapshot is
+ * recorded. Steady streams reuse each slot's owned target; immutable sources
+ * and navigation between retired images never need this copy. */
+static bool gl_media_shader_preserve(gl_media_shader_t *s, GLuint texture)
+{
+   unsigned i;
+   GLint old_fbo, old_texture;
+   GLfloat old_clear[4];
+#if defined(GL_PIXEL_UNPACK_BUFFER) && !defined(HAVE_OPENGLES2)
+   GLint old_unpack;
+#endif
+   bool result = true;
+   if (!s || !s->sources) return true;
+   for (i = 0; i < GFX_MAX_TEXTURES; i++)
+      if (s->history[i].source && s->history[i].source->texture == texture) break;
+   if (i == GFX_MAX_TEXTURES) return true;
+   glGetIntegerv(MEDIA_FB_BINDING, &old_fbo);
+   glGetIntegerv(GL_TEXTURE_BINDING_2D, &old_texture);
+   glGetFloatv(GL_COLOR_CLEAR_VALUE, old_clear);
+#if defined(GL_PIXEL_UNPACK_BUFFER) && !defined(HAVE_OPENGLES2)
+   glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &old_unpack);
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+#endif
+   for (i = 0; i < GFX_MAX_TEXTURES; i++)
+   {
+      gl_media_target_t *t = &s->history[i];
+      if (!t->source || t->source->texture != texture) continue;
+      if (!t->texture)
+      {
+         gl_media_target_t made;
+         memset(&made, 0, sizeof(made));
+         if (!gl_media_target_fit(&made, t->dims, t->flags))
+         {
+            result = false;
+            break;
+         }
+         t->texture = made.texture;
+         t->fbo = made.fbo;
+      }
+      MEDIA_BIND_FB(t->fbo);
+      MEDIA_ATTACH(texture);
+      if (!MEDIA_FB_COMPLETE())
+      {
+         MEDIA_ATTACH(t->texture);
+         result = false;
+         break;
+      }
+      glBindTexture(GL_TEXTURE_2D, t->texture);
+      glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0,
+            VIDEO_SCALE_W(t->dims), VIDEO_SCALE_H(t->dims));
+      MEDIA_ATTACH(t->texture);
+      t->flipped = true;
+      gl_media_source_release(t->source);
+      t->source = NULL;
+   }
+#if defined(GL_PIXEL_UNPACK_BUFFER) && !defined(HAVE_OPENGLES2)
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, (GLuint)old_unpack);
+#endif
+   MEDIA_BIND_FB((GLuint)old_fbo);
+   glBindTexture(GL_TEXTURE_2D, (GLuint)old_texture);
+   glClearColor(old_clear[0], old_clear[1], old_clear[2], old_clear[3]);
+   return result;
 }
 
 static void gl_media_info(struct video_tex_info *info, GLuint texture,
@@ -143,7 +292,7 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
 #endif
    unsigned passes, history, feedback_pass = 0, i;
    unsigned hdr_flags = colour_rows ? GL_MEDIA_LINEAR_HDR : 0;
-   bool has_feedback, direct = false, result = false;
+   bool has_feedback, direct = false, result = false, borrow = false;
    if (!shader || !shader_data || !texture
          || !VIDEO_SCALE_W(source_dims) || !VIDEO_SCALE_H(source_dims)
          || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
@@ -172,6 +321,7 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
    glDisable(GL_SCISSOR_TEST);
    glActiveTexture(GL_TEXTURE0);
    glGetIntegerv(GL_TEXTURE_BINDING_2D, &old_texture);
+   s->restore_binding = &old_texture;
    glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
    glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &old_filter[0]);
    glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, &old_filter[1]);
@@ -196,21 +346,65 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
    }
    s->history_source = texture;
    if (s->history_count != history)
-      for (i = 0; i < history; i++)
+   {
+      for (i = 0; i < GFX_MAX_TEXTURES; i++)
       {
+         gl_media_target_free(&s->history[i]);
          s->history_order[i] = i;
-         s->history_refs[i] = 1;
+         s->history_refs[i] = i < history ? 1 : 0;
       }
+      s->history_latest = 0;
+   }
    s->history_count = history;
+   if (managed && history && !shader->mipmap_input(shader_data, 1)
+         && shader->wrap_type(shader_data, 1) == RARCH_WRAP_EDGE)
+   {
+      bool smooth = true;
+      shader->filter_type(shader_data, 1, &smooth);
+      borrow = smooth && driver != NULL;
+#ifndef HAVE_OPENGLES
+      if (borrow)
+      {
+         GLint format;
+         glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
+         /* Match the old snapshot precision and transfer behavior. Other
+          * storage formats keep the established materialized fallback. */
+         borrow = format == GL_RGBA || format == GL_RGBA8 || format == GL_RGB8
+            || ((hdr_flags & GL_MEDIA_LINEAR_HDR) && format == GL_RGBA16F);
+      }
+#endif
+   }
+   if (!borrow && !gl_media_shader_preserve(s, (GLuint)texture)) goto done;
    for (i = 0; i < history; i++)
    {
       if (s->history[i].dims != source_dims || s->history[i].flags != hdr_flags)
          s->history_copies = 0;
-      if (!gl_media_target_fit(&s->history[i], source_dims, hdr_flags)) goto done;
+      if (s->history[i].dims != source_dims || s->history[i].flags != hdr_flags)
+         gl_media_target_free(&s->history[i]);
+      if (!s->history[i].source && (!borrow || s->history_refs[i])
+            && !gl_media_target_fit(&s->history[i], source_dims, hdr_flags)) goto done;
    }
    for (i = 0; i < history; i++)
-      gl_media_info(&s->previous[i], s->history[s->history_order[i]].texture,
-            source_dims, false);
+   {
+      gl_media_target_t *previous = &s->history[s->history_order[i]];
+      if (previous->source && !previous->source->configured)
+      {
+         gl_media_source_t *source = previous->source;
+         glBindTexture(GL_TEXTURE_2D, source->texture);
+         glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &source->filter[0]);
+         glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, &source->filter[1]);
+         glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, &source->filter[2]);
+         glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, &source->filter[3]);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+         source->configured = true;
+      }
+      gl_media_info(&s->previous[i], previous->source
+            ? previous->source->texture : previous->texture,
+            source_dims, previous->source || previous->flipped);
+   }
    for (i = 0; i < passes; i++)
    {
       struct gfx_fbo_scale scale;
@@ -333,14 +527,30 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
          s->history_order[i] = s->history_order[i - 1];
       s->history_order[0] = slot;
       s->history_refs[slot]++;
+      for (i = 0; i < history; i++)
+         if (!s->history_refs[i] && s->history[i].source)
+         {
+            gl_media_source_release(s->history[i].source);
+            s->history[i].source = NULL;
+         }
       if (!s->history_copies)
       {
-         MEDIA_BIND_FB(s->history[slot].fbo);
-         glViewport(0, 0, VIDEO_SCALE_W(source_dims), VIDEO_SCALE_H(source_dims));
-         glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
-         coords.tex_coord = original.coord;
-         shader->set_coords(shader_data, &coords);
-         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+         gl_media_target_t *t = &s->history[slot];
+         gl_media_source_t *source = borrow
+            ? gl_media_source_acquire(s, (GLuint)texture) : NULL;
+         gl_media_source_release(t->source);
+         t->source = source;
+         if (!source)
+         {
+            if (!gl_media_target_fit(t, source_dims, hdr_flags)) goto done;
+            MEDIA_BIND_FB(s->history[slot].fbo);
+            glViewport(0, 0, VIDEO_SCALE_W(source_dims), VIDEO_SCALE_H(source_dims));
+            glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
+            coords.tex_coord = original.coord;
+            shader->set_coords(shader_data, &coords);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            t->flipped = false;
+         }
          s->history_latest = slot;
          s->history_copies = 1;
       }
@@ -365,7 +575,21 @@ done:
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, old_filter[1]);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, old_filter[2]);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, old_filter[3]);
+   {
+      gl_media_source_t *source;
+      for (source = s->sources; source; source = source->next)
+         if (source->configured)
+         {
+            glBindTexture(GL_TEXTURE_2D, source->texture);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, source->filter[0]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, source->filter[1]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, source->filter[2]);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, source->filter[3]);
+            source->configured = false;
+         }
+   }
    glBindTexture(GL_TEXTURE_2D, (GLuint)old_texture);
+   s->restore_binding = NULL;
    if (blend) glEnable(GL_BLEND);
    if (scissor) glEnable(GL_SCISSOR_TEST);
 #if defined(GL_FRAMEBUFFER_SRGB) && !defined(HAVE_OPENGLES)
@@ -386,3 +610,7 @@ done:
 #undef MEDIA_FB_BINDING
 #undef MEDIA_ATTACH
 #undef MEDIA_FB_COMPLETE
+#undef gl_media_source_release
+#undef gl_media_source_acquire
+#undef gl_media_shader_retire
+#undef gl_media_shader_preserve

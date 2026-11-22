@@ -458,6 +458,10 @@ static void gl2_free_pbo_readback(gl2_t *gl);
 #endif
 #define MEDIA_ATTACH(tex) gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0)
 #define MEDIA_FB_COMPLETE() (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER) == RARCH_GL_FRAMEBUFFER_COMPLETE)
+#define gl_media_source_release gl2_media_source_release
+#define gl_media_source_acquire gl2_media_source_acquire
+#define gl_media_shader_retire gl2_media_shader_retire
+#define gl_media_shader_preserve gl2_media_shader_preserve
 #define gl_media_target_free gl2_media_target_free
 #define gl_media_shader_free gl2_media_shader_free
 #define gl_media_target_fit gl2_media_target_fit
@@ -10188,7 +10192,10 @@ static uintptr_t video_texture_unload_wrap_gl2(void *data)
       gl_planar_forget(&gl->planar, glid);
 #endif
    gl2_media_texture_changed(gl, id, false);
-   glDeleteTextures(1, &glid);
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   if (!gl2_media_shader_retire(gl ? gl->media_shader : NULL, glid))
+#endif
+      glDeleteTextures(1, &glid);
    return 0;
 }
 #endif
@@ -10259,7 +10266,10 @@ static void gl2_unload_texture(void *data,
       gl_planar_forget(&((gl2_t*)data)->planar, glid);
 #endif
    gl2_media_texture_changed((gl2_t*)data, id, false);
-   glDeleteTextures(1, &glid);
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   if (!gl2_media_shader_retire(data ? ((gl2_t*)data)->media_shader : NULL, glid))
+#endif
+      glDeleteTextures(1, &glid);
 }
 
 /* Same-size, same-order contents into a texture gl2_load_texture made:
@@ -10273,6 +10283,10 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
    const void *pixels = ti->pixels;
 #ifdef HAVE_GL_TEXTURE_LEND
    int lent           = -1;
+#endif
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   if (gl && !gl2_media_shader_preserve(gl->media_shader, (GLuint)id))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 #endif
    if (ti->planar)
    {
@@ -10326,9 +10340,8 @@ static uintptr_t video_texture_update_wrap_gl2(void *data)
    if (gl && gl->ctx_driver->make_current)
       gl->ctx_driver->make_current(false);
 
-   gl2_update_texture_internal(gl, (uintptr_t)cmd->handle,
+   return (uintptr_t)gl2_update_texture_internal(gl, (uintptr_t)cmd->handle,
          (const struct texture_image*)cmd->payload);
-   return 1;
 }
 #endif
 
@@ -10356,8 +10369,8 @@ static enum video_texture_update gl2_update_texture(void *video_data,
       cmd.gl      = (gl2_t*)video_data;
       cmd.payload = (void*)ti;
       cmd.handle  = id;
-      video_thread_texture_handle(&cmd, video_texture_update_wrap_gl2);
-      return VIDEO_TEXTURE_UPDATE_DONE;
+      return (enum video_texture_update)video_thread_texture_handle(
+            &cmd, video_texture_update_wrap_gl2);
    }
 #endif
 

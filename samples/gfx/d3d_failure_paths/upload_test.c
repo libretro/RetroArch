@@ -24,6 +24,7 @@ typedef uint32_t UINT32;
 typedef int HRESULT;
 typedef void *D3D11Resource;
 typedef void *D3D11Device;
+typedef void *D3D11ShaderResourceView;
 typedef struct { void *pData; unsigned RowPitch; } D3D11_MAPPED_SUBRESOURCE;
 typedef struct { unsigned left,top,front,right,bottom,back; } D3D11_BOX;
 typedef struct context *D3D11DeviceContext;
@@ -40,6 +41,9 @@ typedef struct {
    d3d11_texture_lend_t *lend;
    unsigned lend_bpp;
    gfx_media_history_t media_history;
+   D3D11ShaderResourceView *media_versions;
+   unsigned media_version_count;
+   bool media_borrowable;
    struct { unsigned Width,Height,MiscFlags; DXGI_FORMAT Format; } desc;
 } d3d11_texture_t;
 enum texture_filter_type { TEXTURE_FILTER_MIPMAP_LINEAR, TEXTURE_FILTER_LINEAR,
@@ -161,6 +165,7 @@ static enum video_texture_update d3d11_planar_update(d3d11_video_t *v,
 #include "copy.inc"
 #define realloc checked_realloc
 #define free checked_free
+#include "media_passthrough.h"
 #include "driver.inc"
 #undef free
 #undef realloc

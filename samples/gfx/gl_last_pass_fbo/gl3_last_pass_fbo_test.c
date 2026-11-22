@@ -329,12 +329,13 @@ static void viewer_unloaded(gl_media_shader_t *state)
 }
 
 #define VIEWER_DRAW gl3_media_shader_draw
+#define VIEWER_PRESERVE gl3_media_shader_preserve
 #define VIEWER_FREE gl3_media_shader_free
 #include "viewer_cases.h"
 
 int main(void)
 {
-   int result = viewer_cases();
+   int result = viewer_cases() || viewer_borrow_cases();
    result |= run_cases(run_chain, 0);
    run_readback_cases();
    run_fence_cases();

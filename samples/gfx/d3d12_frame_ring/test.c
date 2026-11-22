@@ -145,8 +145,11 @@ typedef struct
    D3D12_CPU_DESCRIPTOR_HANDLE cpu_uav, cpu_src;
    D3D12Resource planes;
 } d3d12_planar_t;
+typedef struct d3d12_media_version d3d12_media_version_t;
 typedef struct
 {
+   d3d12_media_version_t **media_versions,*media_version;
+   unsigned media_version_count;
    D3D12Resource handle, upload_buffer, upload_buffer2;
    d3d12_descriptor_heap_t *srv_heap;
    struct { unsigned Width, Height; unsigned short MipLevels; } desc;
@@ -158,6 +161,7 @@ typedef struct
    unsigned lent, pending;
    bool dirty;
 } d3d12_texture_t;
+struct d3d12_media_version {d3d12_texture_t texture;unsigned refs;};
 #define countof(a) (sizeof(a) / sizeof((a)[0]))
 /* What Release() let go of */
 static unsigned released;
@@ -572,6 +576,32 @@ int main(void)
       released                = 0;
       d3d12_release_texture(&d3d12, &t);
       assert(!retired_texture && released == 1 && !heap.map[3] && !t.handle);
+   }
+   /* Dropping a logical history lease never retires/copies its wrapper.
+    * The last native descriptor reference still retires behind the GPU. */
+   {
+      static resource_t res[2];
+      static d3d12_descriptor_heap_t heap;
+      d3d12_texture_t owner, history;
+      d3d12_media_version_t *version;
+      setup();frame(2,0);frame(2,0);
+      memset(&heap,0,sizeof(heap));heap.cpu.ptr=1000;heap.stride=10;heap.map[3]=true;
+      memset(&owner,0,sizeof(owner));memset(&history,0,sizeof(history));
+      version=(d3d12_media_version_t*)calloc(1,sizeof(*version));assert(version);
+      version->refs=2;version->texture.handle=&res[0];version->texture.srv_heap=&heap;
+      version->texture.desc.MipLevels=1;version->texture.cpu_descriptor[0].ptr=1030;
+      owner=version->texture;owner.upload_buffer=&res[1];owner.media_version=version;
+      owner.media_versions=(d3d12_media_version_t**)calloc(1,sizeof(*owner.media_versions));
+      assert(owner.media_versions);owner.media_versions[0]=version;owner.media_version_count=1;
+      history=version->texture;history.media_version=version;
+      completed=signalled-1;released=0;
+      d3d12_release_texture(&d3d12,&history);
+      assert(version->refs==1 && !retired_texture && !released && heap.map[3]);
+      d3d12_release_texture(&d3d12,&owner);
+      assert(retired_texture && !released && heap.map[3]);
+      completed=signalled;d3d12_release_texture(NULL,retired_texture);
+      assert(released==2 && !heap.map[3]);
+      free(retired_texture);retired_texture=NULL;
    }
    puts("D3D12 frame ring: one frame in flight as before, two under"
          " Driver Pacing, slot constants, upload turns, font atlas"

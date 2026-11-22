@@ -322,6 +322,9 @@ typedef struct
    d3d11_texture_lend_t   *lend;
    unsigned               lend_bpp;
    gfx_media_history_t    media_history;
+   D3D11ShaderResourceView *media_versions;
+   unsigned               media_version_count;
+   bool                   media_borrowable;
    D3D11_TEXTURE2D_DESC    desc;
    D3D11RenderTargetView   rt_view;
    D3D11ShaderResourceView view;
@@ -446,6 +449,8 @@ typedef struct d3d11_chain
    unsigned             rt_vp_dims;
    bool                 history_made;
    gfx_media_history_t *media_history;
+   d3d11_texture_t      *media_owner;
+   bool                 history_borrowed;
    uintptr_t            media_source;
    D3D11ShaderResourceView frame_view;
    d3d11_texture_t     *final;
@@ -925,6 +930,12 @@ static D3D11DeviceContext    cached_context_d3d11;
 
 static INLINE void d3d11_release_texture(d3d11_texture_t* texture)
 {
+   unsigned version;
+   for (version = 0; version < texture->media_version_count; version++)
+      Release(texture->media_versions[version]);
+   free(texture->media_versions);
+   texture->media_versions = NULL;
+   texture->media_version_count = 0;
    if (texture->lend)
    {
       unsigned i;
@@ -1179,6 +1190,66 @@ static unsigned d3d11_format_bytes(DXGI_FORMAT format)
          break;
    }
    return 0;
+}
+
+/* SRVs retain their resources independently of the producer's handle.
+ * History owns its SRV references; the producer reuses only versions the
+ * active viewer chain no longer names. Staging textures never rotate. */
+static bool d3d11_media_pool_begin(d3d11_texture_t *t)
+{
+   if (!t->media_borrowable || !t->view || t->desc.MipLevels != 1)
+      return false;
+   if (t->media_versions) return true;
+   t->media_versions = (D3D11ShaderResourceView*)calloc(
+         GFX_MAX_FRAME_HISTORY + 2, sizeof(*t->media_versions));
+   if (!t->media_versions) return false;
+   t->media_versions[0] = t->view;
+   t->view->lpVtbl->AddRef(t->view);
+   t->media_version_count = 1;
+   return true;
+}
+
+static D3D11ShaderResourceView d3d11_media_writable(d3d11_video_t *video,
+      d3d11_texture_t *t)
+{
+   d3d11_chain_t *c = video->media_shader_chain;
+   unsigned i, j, n;
+   d3d11_texture_t made;
+   if (!t->media_versions || !c || !c->history_borrowed) return t->view;
+   n = c->shader_preset->history_size + 1;
+   for (i = 0; i < t->media_version_count; i++)
+   {
+      for (j = 0; j < n; j++)
+         if (c->history[j].view == t->media_versions[i]) break;
+      if (j == n) return t->media_versions[i];
+   }
+   if (t->media_version_count == GFX_MAX_FRAME_HISTORY + 2) return NULL;
+   memset(&made, 0, sizeof(made));
+   made.desc = t->desc;
+   if (!d3d11_init_texture_ex(video->device, &made, false)
+         || !made.view || made.desc.Format != t->desc.Format)
+   {
+      d3d11_release_texture(&made);
+      return NULL;
+   }
+   /* Transfer the SRV to the pool; it keeps the resource alive. */
+   t->media_versions[t->media_version_count++] = made.view;
+   Release(made.handle);
+   Release(made.rt_view);
+   return made.view;
+}
+
+static void d3d11_media_publish(d3d11_texture_t *t,
+      D3D11ShaderResourceView view)
+{
+   D3D11Resource resource;
+   if (view == t->view) return;
+   view->lpVtbl->GetResource(view, &resource);
+   view->lpVtbl->AddRef(view);
+   Release(t->handle);
+   Release(t->view);
+   t->handle = (D3D11Texture2D)resource;
+   t->view = view;
 }
 
 static void d3d11_update_texture(
@@ -7721,6 +7792,10 @@ static void d3d11_views_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
       bool fresh, const void *sw, unsigned pitch)
 {
    unsigned dims = VIDEO_SCALE_PACK(v->width, v->height);
+   bool borrow = !in_place && c->media_owner
+      && d3d11_media_pool_begin(c->media_owner);
+   if (c->history_borrowed != borrow) c->history_made = false;
+   c->history_borrowed = borrow;
 
    if (in_place)
    {
@@ -7733,8 +7808,8 @@ static void d3d11_views_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
    else
    {
       c->frame_view = NULL;
-      if (fresh && gfx_media_history_needed(c->media_history,
-               c->shader_preset->history_size + 1))
+      if (fresh && (borrow || gfx_media_history_needed(c->media_history,
+               c->shader_preset->history_size + 1)))
       {
          unsigned k;
          unsigned n = c->shader_preset->history_size + 1;
@@ -7778,7 +7853,21 @@ static void d3d11_views_chain_frame(d3d11_video_t *d3d11, d3d11_chain_t *c,
                c->history[k] = c->history[k - 1];
             c->history[0] = tmp;
          }
-         if (sw)
+         if (borrow)
+         {
+            d3d11_texture_t *h = &c->history[0];
+            d3d11_release_texture(h);
+            memset(h, 0, sizeof(*h));
+            h->desc = c->media_owner->desc;
+            h->size_data = c->media_owner->size_data;
+            h->handle = c->media_owner->handle;
+            h->view = c->media_owner->view;
+            h->handle->lpVtbl->AddRef(h->handle);
+            h->view->lpVtbl->AddRef(h->view);
+            gfx_media_history_written(c->media_history);
+            Release(res);
+         }
+         else if (sw)
          {
             D3D11_MAPPED_SUBRESOURCE mapped;
             unsigned bpp = d3d11->format == DXGI_FORMAT_R16G16B16A16_FLOAT
@@ -10670,6 +10759,7 @@ static uintptr_t d3d11_gfx_load_texture_internal(
    }
 
    texture->media_history.managed = true;
+   texture->media_borrowable = true;
    texture->lend_bpp = image->fp16
       ? (texture->desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT ? 8 : 0)
       : (!image->pix10 && !image->supports_rgba && !image->compressed
@@ -10833,6 +10923,7 @@ static enum video_texture_update d3d11_gfx_update_texture_internal(
    D3D11DeviceContext ctx   = d3d11->context;
    d3d11_texture_t *texture = (d3d11_texture_t*)handle;
    D3D11Resource upload;
+   D3D11ShaderResourceView destination;
    HRESULT hr;
 
    if (d3d11 && image->planar)
@@ -10846,6 +10937,10 @@ static enum video_texture_update d3d11_gfx_update_texture_internal(
    if (     !d3d11 || !texture
          || texture->desc.Width  != image->width
          || texture->desc.Height != image->height)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   destination = texture->view;
+   if (texture->media_versions
+         && !(destination = d3d11_media_writable(d3d11, texture)))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    if (texture->lend)
    {
@@ -10890,6 +10985,7 @@ static enum video_texture_update d3d11_gfx_update_texture_internal(
    upload = (D3D11Resource)texture->staging;
 
 upload:
+   d3d11_media_publish(texture, destination);
    box.left   = 0;
    box.top    = 0;
    box.front  = 0;
@@ -11512,10 +11608,12 @@ static bool gfx_display_d3d11_media_shader_draw(void *data, uintptr_t image,
             && chain->rt_frame_dims == source_dims);
    chain->media_source = image;
    chain->media_history = &texture->media_history;
+   chain->media_owner = texture;
    chain->history[0].size_data = texture->size_data;
    d3d11_views_chain_frame(video, chain, &view, dims, texture->view,
          source_dims, chain->shader_preset->history_size == 0, true, NULL, 0);
    chain->media_history = NULL;
+   chain->media_owner = NULL;
    d3d11_chain_frame(video, chain, video->media_shader_info,
          video->media_shader_frame, true);
    chain->mvp_last_pass = video->ubo_values.mvp;
