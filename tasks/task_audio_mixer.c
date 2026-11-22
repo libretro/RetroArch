@@ -1435,6 +1435,7 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
                flen < AMIX_WINDOW_KEEP ? flen : AMIX_WINDOW_KEEP)
                != RWAV_ITERATE_DONE)
             goto bail;
+         w->avail = flen < AMIX_WINDOW_KEEP ? flen : AMIX_WINDOW_KEEP;
       }
 #endif
 #ifdef HAVE_RFLAC

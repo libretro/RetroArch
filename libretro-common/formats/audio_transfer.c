@@ -539,6 +539,8 @@ struct audio_transfer_wav
 {
    const uint8_t *data; /* encoded bytes from set_buffer_ptr (caller-owned) */
    size_t      size;
+   size_t      avail; /* resident prefix, 0 for a fully resident buffer */
+   size_t      head;  /* permanent resident head to restore on seek */
    rwav_t      wav;     /* format + payload location; samples stays NULL    */
    int         opened;  /* rwav_parse succeeded                             */
    size_t      cursor;  /* next frame to hand out                           */
@@ -553,6 +555,31 @@ struct audio_transfer_wav
    int16_t    *scratch;
    size_t      scratch_cap;  /* samples, not frames                     */
 };
+
+/* Limit reads to complete resident frames/blocks without changing the
+ * declared file duration. A stalled window is retried after feeder growth. */
+static size_t audio_transfer_wav_cap(const struct audio_transfer_wav *w, size_t frames)
+{
+   size_t limit = w->wav.numsamples;
+   if (w->avail && w->avail < w->size)
+   {
+      size_t bytes = w->avail > w->wav.dataoffset ? w->avail - w->wav.dataoffset : 0;
+      size_t resident = 0;
+      if (w->framesz)
+         resident = bytes / w->framesz;
+      else if (w->wav.blockalign && w->wav.samplesperblock)
+      {
+         size_t blocks = bytes / w->wav.blockalign;
+         resident = blocks > limit / w->wav.samplesperblock
+            ? limit : blocks * w->wav.samplesperblock;
+      }
+      if (resident < limit) limit = resident;
+   }
+   if (w->cursor >= limit) return 0;
+   limit -= w->cursor;
+   return frames < limit ? frames : limit;
+}
+
 #endif
 
 #if defined(HAVE_RAAC) || defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RFLAC)
@@ -2793,9 +2820,20 @@ void audio_transfer_set_avail(void *data, enum audio_type_enum type,
  * readable and handed the decoder packets on pages the window never
  * committed. */
 #if defined(HAVE_RWEBM) || defined(HAVE_RVORBIS) || defined(HAVE_ROPUS) \
- || defined(HAVE_RAAC) || defined(HAVE_RFLAC) || defined(HAVE_RAC3) || defined(HAVE_RWMA) || defined(HAVE_RMP3)
+ || defined(HAVE_RAAC) || defined(HAVE_RFLAC) || defined(HAVE_RAC3) || defined(HAVE_RWMA) || defined(HAVE_RMP3) || defined(HAVE_RWAV)
    switch (type)
    {
+#ifdef HAVE_RWAV
+      case AUDIO_TYPE_WAV:
+         if (data)
+         {
+            struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
+            w->avail = avail;
+            if (!avail || !w->head || avail < w->head) w->head = avail;
+         }
+         return;
+#endif
+
 #ifdef HAVE_RMP3
       case AUDIO_TYPE_MP3:
       {
@@ -7348,6 +7386,15 @@ static int audio_transfer_wall_stalled(void *data,
 {
    switch (type)
    {
+#ifdef HAVE_RWAV
+      case AUDIO_TYPE_WAV:
+      {
+         struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
+         return w && w->opened && w->cursor < w->wav.numsamples
+            && !audio_transfer_wav_cap(w, 1);
+      }
+#endif
+
 #ifdef HAVE_RMP3
       case AUDIO_TYPE_MP3:
          return ((struct audio_transfer_mp3*)data)->wall;
@@ -7545,8 +7592,9 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
             return AUDIO_PROCESS_ERROR;
          ch    = (size_t)w->wav.numchannels;
          avail = w->wav.numsamples - w->cursor;
-         want  = (frames < avail) ? frames : avail;
+         want  = audio_transfer_wav_cap(w, (frames < avail) ? frames : avail);
          n     = want * ch;
+         if (!want) break;
          /* The companded and block-coded payloads are not readable a
           * sample at a time from the buffer - a-law is a curve and
           * ADPCM continues predictor state a block establishes - so
@@ -7708,8 +7756,9 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
             return AUDIO_PROCESS_ERROR;
          ch    = (size_t)w->wav.numchannels;
          avail = w->wav.numsamples - w->cursor;
-         want  = (frames < avail) ? frames : avail;
+         want  = audio_transfer_wav_cap(w, (frames < avail) ? frames : avail);
          n     = want * ch;
+         if (!want) break;
          /* See the s16 path: these decode through rwav.  Their native
           * result is s16, so scaling it here loses nothing. */
          if (w->wav.format != RWAV_FORMAT_PCM
@@ -8411,6 +8460,9 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          if (!w || !w->opened || frame > (uint64_t)w->wav.numsamples)
             return false;
          w->cursor = (size_t)frame;
+         /* A previous lap's frontier can span pages the feeder evicted.
+          * Restart from the permanent head until the new cursor is fed. */
+         if (w->head) w->avail = w->head;
          return true;
       }
 #endif

@@ -53,7 +53,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET) audio_mixer_pause_test audio_mixer_observer_test
+all: $(TARGET) audio_mixer_pause_test audio_mixer_observer_test audio_mixer_wav_window_test
 
 audio_mixer_observer_test: audio_mixer_observer_test.o $(filter-out %/audio/audio_mixer.o,$(COMMON_OBJS))
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -78,5 +78,9 @@ clean:
 	rm -f $(TARGET) $(OBJS)
 	rm -f audio_mixer_pause_test audio_mixer_pause_test.o
 	rm -f audio_mixer_observer_test audio_mixer_observer_test.o
+	rm -f audio_mixer_wav_window_test audio_mixer_wav_window_test.o
 
 .PHONY: clean
+
+audio_mixer_wav_window_test: audio_mixer_wav_window_test.o $(COMMON_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)

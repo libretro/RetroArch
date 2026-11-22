@@ -1677,9 +1677,15 @@ static void audio_mixer_voice_avail_owned(audio_mixer_voice_t *voice,
 {
 #if defined(AUDIO_MIXER_HAS_STREAM) \
  && ((defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))) \
- || defined(HAVE_RAAC) || defined(HAVE_RFLAC) || (defined(HAVE_RAC3) || defined(HAVE_RWMA)))
+ || defined(HAVE_RAAC) || defined(HAVE_RFLAC) || defined(HAVE_RWAV) || (defined(HAVE_RAC3) || defined(HAVE_RWMA)))
    switch (retro_atomic_load_relaxed_int(&voice->type))
    {
+#ifdef HAVE_RWAV
+      case AUDIO_MIXER_TYPE_WAV_STREAM:
+         audio_transfer_set_avail(voice->types.stream.stream, AUDIO_TYPE_WAV, avail);
+         break;
+#endif
+
 #ifdef HAVE_RAC3
       case AUDIO_MIXER_TYPE_AC3:
          audio_transfer_set_avail(voice->types.stream.stream,
@@ -2192,7 +2198,7 @@ static bool audio_mixer_play_stream(
 
 #if (defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) \
       || defined(HAVE_RAAC) || defined(HAVE_RFLAC))) \
-    || (defined(HAVE_RAAC) && defined(HAVE_RMP4)) || defined(HAVE_RWMA)
+    || (defined(HAVE_RAAC) && defined(HAVE_RMP4)) || defined(HAVE_RWMA) || defined(HAVE_RWAV)
       /* Windowed container: bound the header parse to the resident head,
        * so opening does not walk to the end of a file whose middle is
        * reserved rather than populated.  MP4/AAC takes this too now that
@@ -2372,7 +2378,7 @@ static bool audio_mixer_play_stream_s16(
             (void*)sound->types.stream.data, sound->types.stream.size);
 #if (defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) \
       || defined(HAVE_RAAC) || defined(HAVE_RFLAC))) \
-    || (defined(HAVE_RAAC) && defined(HAVE_RMP4)) || defined(HAVE_RWMA)
+    || (defined(HAVE_RAAC) && defined(HAVE_RMP4)) || defined(HAVE_RWMA) || defined(HAVE_RWAV)
       /* Windowed container: bound the header parse to the head (see the
        * f32 path). */
       if (sound->avail)

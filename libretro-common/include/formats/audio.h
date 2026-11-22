@@ -200,14 +200,15 @@ bool  audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
 void audio_transfer_set_output_rate(void *data, enum audio_type_enum type,
       unsigned rate);
 
-/* Tell a decoder how many bytes from the start of the buffer set by
- * set_buffer_ptr are actually resident.  A windowed feeder calls this
- * before audio_transfer_start, so a container header parse is bounded
- * by the permanently-resident head instead of running to the end of
- * the file, and again as the window slides.  Monotonic; 0 means the
- * whole buffer is there, which is the default and what every
- * non-windowed caller wants.  Only the WebM container arms use it;
- * a no-op elsewhere. */
+/* Resident upper byte boundary of a windowed borrowed buffer. Call before
+ * start and raise it as the feeder commits more data. Bounds are monotonic
+ * within a forward pass; 0 means fully resident (the default). Arms without
+ * window support ignore it.
+ * WAV requires its complete chunk headers resident at start; the supplied
+ * buffer size still describes the whole file and determines duration. Reads
+ * stop at complete resident frames/ADPCM blocks. Keep the initial nonzero
+ * bound resident as a permanent head: seek restores that bound until the
+ * feeder publishes a wall for the new position. */
 void audio_transfer_set_avail(void *data, enum audio_type_enum type,
       size_t avail);
 

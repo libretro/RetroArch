@@ -47,7 +47,10 @@ bool __wrap_audio_driver_mixer_add_stream_observed(audio_mixer_stream_params_t *
       audio_mixer_voice_t **voice, size_t *serial, const audio_mixer_observer_t *observer)
 {
    retro_atomic_fetch_add_int(&music_observers, 1);
-   if (!params->buf_owner || params->type != AUDIO_MIXER_TYPE_WAV_STREAM)
+   /* A borrowed WAV must publish its resident wall before the voice starts;
+    * the audio thread may consume it before the first feeder tick. */
+   if (!params->buf_owner || params->type != AUDIO_MIXER_TYPE_WAV_STREAM
+         || !params->avail || params->avail > params->bufsize)
       retro_atomic_store_release_int(&music_bad_owner, 1);
    return __real_audio_driver_mixer_add_stream_observed(params, voice, serial, observer);
 }
