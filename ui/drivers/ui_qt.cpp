@@ -2274,59 +2274,18 @@ void MainWindow::setupFileSystemBrowser()
    }
 }
 
-/* Capture only expanded branches; walking every cached directory would
- * defeat the reason the filesystem tree avoids recursive enumeration. */
-static void qt_collect_expanded_browser_paths(QTreeView *tree,
-      QFileSystemModel *model, const QModelIndex &parent, QStringList &paths)
+/* Watching is off, so a folder changed on disk is read again by hand:
+ * the model re-reads a folder once it has stopped being its root, and
+ * index() adds any folders made along its path. Expansion and the
+ * current item are kept. */
+void MainWindow::relistFileSystemFolder(const QString &path)
 {
-   int i;
-   int count = model->rowCount(parent);
-   for (i = 0; i < count; i++)
-   {
-      QModelIndex index = model->index(i, 0, parent);
-      if (tree->isExpanded(index))
-      {
-         paths.append(model->filePath(index));
-         qt_collect_expanded_browser_paths(tree, model, index, paths);
-      }
-   }
-}
-
-void MainWindow::refreshFileSystemBrowserTree()
-{
-   QString currentPath = m_dirModel->filePath(m_dirTree->currentIndex());
-   QStringList expandedPaths;
-   int scrollPosition = m_dirTree->verticalScrollBar()->value();
-   QFileSystemModel *oldModel = m_dirModel;
-   int i;
-
-   qt_collect_expanded_browser_paths(m_dirTree, oldModel,
-         QModelIndex(), expandedPaths);
-
-   /* QFileSystemModel has no public directory-refresh API. Recreating it
-    * is the reliable way to discard its stale cache while retaining the
-    * lightweight no-watcher configuration. */
-   disconnect(oldModel, SIGNAL(directoryLoaded(const QString&)), this,
-         SLOT(onFileSystemDirLoaded(const QString&)));
-   m_dirModel = new QFileSystemModel(m_dirTree);
-   setupFileSystemBrowser();
-
-   for (i = 0; i < expandedPaths.size(); i++)
-   {
-      QModelIndex index = m_dirModel->index(expandedPaths.at(i));
-      if (index.isValid())
-         m_dirTree->setExpanded(index, true);
-   }
-
-   if (!currentPath.isEmpty())
-   {
-      QModelIndex currentIndex = m_dirModel->index(currentPath);
-      if (currentIndex.isValid())
-         m_dirTree->setCurrentIndex(currentIndex);
-   }
-
-   m_dirTree->verticalScrollBar()->setValue(scrollPosition);
-   oldModel->deleteLater();
+   const QString root = m_dirModel->rootPath();
+   if (path.isEmpty())
+      return;
+   m_dirModel->setRootPath(path == root ? QDir::homePath() : path);
+   m_dirModel->setRootPath(root);
+   m_dirModel->fetchMore(m_dirModel->index(path));
 }
 
 /* Build the search / core-info / log dock widgets and their
@@ -2964,9 +2923,9 @@ void MainWindow::onFileBrowserTableContextMenuRequested(const QPoint &pos)
                      : tr("%1 deleted successfully.").arg(
                         isDirectory ? tr("Folder") : tr("File")));
 
-      /* Rebuild the filesystem tree because QFileSystemModel watching is
-       * disabled for performance. Preserve its current path and expansions. */
-      refreshFileSystemBrowserTree();
+      /* the folder tree lists folders only */
+      if (isDirectory)
+         relistFileSystemFolder(QFileInfo(targetPath).absolutePath());
       /* Re-enumerate the current directory; reload() alone only rebuilds
        * the model from the existing core-side listing. */
       {
@@ -4508,6 +4467,15 @@ static bool qt_updater_request_listing(MainWindow *window,
    return true;
 }
 
+/* The folder a finished download landed in, when the browser shows it. */
+static QString qt_updater_download_folder(const QtUpdaterDownloadData *download)
+{
+   const char *path  = download->outputPath.constData();
+   const char *slash = download->refreshFileBrowser
+      ? find_last_slash(path) : NULL;
+   return slash ? QString::fromUtf8(path, (int)(slash - path)) : QString();
+}
+
 #ifdef HAVE_COMPRESSION
 static void qt_updater_decompress_callback(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
@@ -4531,7 +4499,7 @@ static void qt_updater_decompress_callback(retro_task_t *task,
       QMetaObject::invokeMethod(download->window.data(),
             "onUpdaterDownloadFinished", Qt::QueuedConnection,
             Q_ARG(QString, download->fileName), Q_ARG(bool, success),
-            Q_ARG(bool, download->refreshFileBrowser));
+            Q_ARG(QString, qt_updater_download_folder(download)));
    delete download;
 }
 #endif
@@ -4564,7 +4532,7 @@ static void qt_updater_download_callback(retro_task_t *task,
       QMetaObject::invokeMethod(download->window.data(),
             "onUpdaterDownloadFinished", Qt::QueuedConnection,
             Q_ARG(QString, download->fileName), Q_ARG(bool, success),
-            Q_ARG(bool, download->refreshFileBrowser));
+            Q_ARG(QString, qt_updater_download_folder(download)));
    delete download;
 }
 
@@ -5021,16 +4989,15 @@ void MainWindow::onUpdaterListingFinished(QStringList entries, int type, QString
 }
 
 void MainWindow::onUpdaterDownloadFinished(QString fileName, bool success,
-      bool refresh)
+      QString folder)
 {
    if (success)
    {
       showStatusMessage(tr("Downloaded: %1").arg(fileName), 1, 4000, true);
-      if (refresh)
+      if (!folder.isEmpty())
       {
-         /* Rebuild the filesystem tree because directory watching is
-          * disabled; the new extraction folders are now visible. */
-         refreshFileSystemBrowserTree();
+         /* the download's folder and whatever its extraction made */
+         relistFileSystemFolder(folder);
          /* The table uses the companion core's own listing, not the
           * QFileSystemModel. Re-enumerate its current directory as well. */
          /* browse_open copies the folder before replacing anything */

@@ -594,7 +594,7 @@ public slots:
    void onCoreUpdaterTableContextMenuRequested(const QPoint &pos);
    void onCoreUpdaterListPublished();
    void onUpdaterListingFinished(QStringList entries, int type, QString path);
-   void onUpdaterDownloadFinished(QString fileName, bool success, bool refresh);
+   void onUpdaterDownloadFinished(QString fileName, bool success, QString folder);
    void onUpdaterBackClicked();
    void onUpdaterUpClicked();
    void onUpdaterTopClicked();
@@ -725,7 +725,7 @@ private:
    void setupPlaylistFooter();
    void setupModels();
    void setupFileSystemBrowser();
-   void refreshFileSystemBrowserTree();
+   void relistFileSystemFolder(const QString &path);
    void setupDockWidgets();
    void setupSignalConnections();
 
