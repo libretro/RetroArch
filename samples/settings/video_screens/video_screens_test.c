@@ -7583,6 +7583,10 @@ static void test_window_native_lifecycle(const char *ident, bool core)
          CHECK(!"set_video_mode");
          return;
       }
+#if defined(NATIVE_SDL) && !defined(HAVE_SDL3)
+      if (!restart && native_sdl_ident(ident))
+         native_sdl_profile(api, core ? 3 : 0);
+#endif
 #if defined(HAVE_X11) && defined(RARCH_HAVE_X11_MONITORS)
       /* First a context whose monitor worker cannot start */
       if (     !restart && native_x11_ident(ident)

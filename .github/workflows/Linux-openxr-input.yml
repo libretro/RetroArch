@@ -417,14 +417,19 @@ jobs:
         shell: bash
         run: |
           set -eu
-          # The distribution's SDL 2; the Vulkan job's build has SDL 3
+          # The distribution's SDL 2; the Vulkan job's build has SDL 3.
+          # "gl" asks for no GL version, as the gl driver does without a
+          # hardware core.
           export LIBGL_ALWAYS_SOFTWARE=1 SDL_VIDEODRIVER=x11 SDL_VIDEO_DRIVER=x11
           xvfb-run -a -s "-screen 0 1920x1080x24 +extension GLX" bash -c '
              set -eu
              openbox > "$RUNNER_TEMP/openbox.log" 2>&1 &
              sleep 1
-             timeout 300 "$RUNNER_TEMP/video-screens/video_screens_test" \
-                --native-windows gl_sdl
+             for c in gl_sdl "gl_sdl gl"; do
+                echo "== $c"
+                timeout 300 "$RUNNER_TEMP/video-screens/video_screens_test" \
+                   --native-windows $c
+             done
              kill %1'
 
       - name: Build and run stereo_headset_test
