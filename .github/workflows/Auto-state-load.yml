@@ -6,6 +6,8 @@ on:
       - 'runloop.h'
       - 'runahead.c'
       - 'command.c'
+      - 'libretro-common/memory/memdesc.c'
+      - 'libretro-common/include/memory/memdesc.h'
       - 'samples/runloop/auto_state_load/**'
       - '.github/workflows/Auto-state-load.yml'
   pull_request:
@@ -14,6 +16,8 @@ on:
       - 'runloop.h'
       - 'runahead.c'
       - 'command.c'
+      - 'libretro-common/memory/memdesc.c'
+      - 'libretro-common/include/memory/memdesc.h'
       - 'samples/runloop/auto_state_load/**'
       - '.github/workflows/Auto-state-load.yml'
 jobs:

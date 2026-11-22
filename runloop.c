@@ -20,6 +20,7 @@
  */
 
 #include <memory/mem_stats.h>
+#include <memory/memdesc.h>
 #include "input/input_driver.h"
 #ifdef HAVE_OPENXR
 #include "input/common/input_openxr.h"
@@ -1623,111 +1624,6 @@ static void libretro_log_cb(
    }
 
    va_end(vp);
-}
-
-static size_t mmap_add_bits_down(size_t n)
-{
-   n |= n >>  1;
-   n |= n >>  2;
-   n |= n >>  4;
-   n |= n >>  8;
-   n |= n >> 16;
-   /* Only compiled on 64-bit targets; avoids a runtime branch per call */
-#if SIZE_MAX > 0xFFFFFFFFUL
-   n |= n >> 32;
-#endif
-   return n;
-}
-
-static size_t mmap_inflate(size_t addr, size_t mask)
-{
-   while (mask)
-   {
-      size_t tmp = (mask - 1) & ~mask;
-
-      /* to put in an 1 bit instead, OR in tmp+1 */
-      addr       = ((addr & ~tmp) << 1) | (addr & tmp);
-      mask       = mask & (mask - 1);
-   }
-
-   return addr;
-}
-
-static size_t mmap_reduce(size_t addr, size_t mask)
-{
-   while (mask)
-   {
-      size_t tmp = (mask - 1) & ~mask;
-      addr       = (addr & tmp) | ((addr >> 1) & ~tmp);
-      mask       = (mask & (mask - 1)) >> 1;
-   }
-
-   return addr;
-}
-
-static size_t mmap_highest_bit(size_t n)
-{
-   n = mmap_add_bits_down(n);
-   return n ^ (n >> 1);
-}
-
-static bool mmap_preprocess_descriptors(
-      struct retro_memory_descriptor *first, unsigned count)
-{
-   size_t                           top_addr = 1;
-   struct retro_memory_descriptor *desc      = NULL;
-   const struct retro_memory_descriptor *end = first + count;
-   size_t                  highest_reachable = 0;
-
-   for (desc = first; desc < end; desc++)
-   {
-      if (desc->select != 0)
-         top_addr |= desc->select;
-      else
-         top_addr |= desc->start + desc->len - 1;
-   }
-
-   top_addr = mmap_add_bits_down(top_addr);
-
-   for (desc = first; desc < end; desc++)
-   {
-      if (desc->select == 0)
-      {
-         if (desc->len == 0)
-            return false;
-
-         if ((desc->len & (desc->len - 1)) != 0)
-            return false;
-
-         desc->select = top_addr
-            & ~mmap_inflate(mmap_add_bits_down(desc->len - 1),
-               desc->disconnect);
-      }
-
-      if (desc->len == 0)
-         desc->len = mmap_add_bits_down(
-               mmap_reduce(top_addr & ~desc->select,
-                  desc->disconnect)) + 1;
-
-      if (desc->start & ~desc->select)
-         return false;
-
-      highest_reachable = mmap_inflate(desc->len - 1,
-            desc->disconnect);
-
-      /* Disconnect unselected bits that are too high to ever
-       * index into the core's buffer. Higher addresses will
-       * repeat / mirror the buffer as long as they match select */
-      while (mmap_highest_bit(top_addr
-               & ~desc->select
-               & ~desc->disconnect) >
-                mmap_highest_bit(highest_reachable))
-         desc->disconnect |= mmap_highest_bit(top_addr
-               & ~desc->select
-               & ~desc->disconnect);
-   }
-
-   return true;
 }
 
 static void runloop_deinit_core_options(
@@ -3918,7 +3814,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             for (i = 0; i < mmaps->num_descriptors; i++)
                sys_info->mmaps.descriptors[i] = mmaps->descriptors[i];
 
-            mmap_preprocess_descriptors(descriptors, mmaps->num_descriptors);
+            memdesc_preprocess(descriptors, mmaps->num_descriptors);
 
 #ifdef HAVE_CHEEVOS
             rcheevos_refresh_memory();

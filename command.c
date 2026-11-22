@@ -32,6 +32,7 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
+#include <memory/memdesc.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -6031,52 +6032,7 @@ bool command_drivers_reinit(command_t *cmd, const char* arg)
 
 static const struct retro_memory_descriptor* command_memory_get_descriptor(const rarch_memory_map_t* mmap, unsigned address, size_t* offset)
 {
-   const struct retro_memory_descriptor* desc = mmap->descriptors;
-   const struct retro_memory_descriptor* end  = desc + mmap->num_descriptors;
-
-   for (; desc < end; desc++)
-   {
-      if (desc->select == 0)
-      {
-         /* if select is 0, attempt to explicitly match the address */
-         if (address >= desc->start && address < desc->start + desc->len)
-         {
-            *offset = address - desc->start;
-            return desc;
-         }
-      }
-      else
-      {
-         /* otherwise, attempt to match the address by matching the select bits */
-         if (((desc->start ^ address) & desc->select) == 0)
-         {
-            /* adjust the address to the start of the descriptor */
-            unsigned desc_offset = address - (unsigned)desc->start;
-
-            /* address is unsigned. we only need that much of the disconnect mask */
-            unsigned mask = (unsigned)desc->disconnect;
-
-            /* this magic logic is copied from mmap_reduce. it removes any bits from
-             * address that are non-zero in the disconnect field. bits above the
-             * removed bits are shifted down to fill the gap. */
-            while (mask)
-            {
-               const unsigned tmp = (mask - 1) & ~mask;
-               desc_offset = (desc_offset & tmp) | ((desc_offset >> 1) & ~tmp);
-               mask        = (mask & (mask - 1)) >> 1;
-            }
-
-            /* we've calculated the actual offset of the data within the descriptor */
-            *offset = desc_offset;
-
-            /* sanity check - make sure the descriptor is large enough to hold the target address */
-            if (desc_offset < desc->len)
-               return desc;
-         }
-      }
-   }
-
-   return NULL;
+   return memdesc_find(mmap->descriptors, mmap->num_descriptors, address, offset);
 }
 
 /* A core with no memory map still hands over its RAM as blocks, once a
