@@ -311,6 +311,18 @@ static bool trigger_spurious_error(void)
 #endif
 
 #ifdef VULKAN_DEBUG
+static bool vulkan_debug_msg_has_id(const char *msg, const char *id)
+{
+   size_t      len = strlen(id);
+   const char *s   = strstr(msg, id);
+   for (; s; s = strstr(s + 1, id))
+      if (     s - msg >= 2
+            && s[-2] == '[' && s[-1] == ' '
+            && s[len] == ' ' && s[len + 1] == ']')
+         return true;
+   return false;
+}
+
 static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
       VkDebugUtilsMessageSeverityFlagBitsEXT msg_severity,
       VkDebugUtilsMessageTypeFlagsEXT msg_type,
@@ -352,14 +364,15 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vulkan_debug_cb(
          break;
    }
 
-   /* Validation layers before 1.4 began each message with its ID,
-    * "Validation Error: [ VUID-... ] ..."; later ones hand the ID over
-    * only as pMessageIdName. It is put back in front, in the old shape,
-    * so a log names what fired either way. */
+   /* Validation layers before 1.4 began each message with
+    * "Validation Error: [ VUID-... ]"; later ones name the ID only in
+    * pMessageIdName and the spec link. Put it back in front, in the old
+    * shape, so a log names what fired either way. */
    if (     pCallbackData->pMessageIdName
          && *pCallbackData->pMessageIdName
          && pCallbackData->pMessage
-         && !strstr(pCallbackData->pMessage, pCallbackData->pMessageIdName))
+         && !vulkan_debug_msg_has_id(pCallbackData->pMessage,
+               pCallbackData->pMessageIdName))
    {
       prefix = (msg_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
             && msg_type == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
