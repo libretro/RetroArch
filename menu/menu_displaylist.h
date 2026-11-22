@@ -414,6 +414,11 @@ bool menu_displaylist_bluetooth_scan(void);
 
 #if defined(HAVE_LIBRETRODB)
 unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings);
+
+unsigned menu_displaylist_parse_online_updater(file_list_t *list,
+      settings_t *settings);
+
+bool menu_displaylist_online_updater_shown(settings_t *settings);
 #endif
 unsigned menu_displaylist_contentless_cores(file_list_t *list,
       enum menu_contentless_cores_display_type core_display_type);

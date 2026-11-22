@@ -15852,6 +15852,222 @@ static bool menu_displaylist_keyboard_index(const rarch_setting_t *setting)
        && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX_LAST;
 }
 
+/* The Online Updater's entries, as the menu shows them: every build
+ * and setting gate in one place, for the menu and the companions. */
+unsigned menu_displaylist_parse_online_updater(file_list_t *list,
+      settings_t *settings)
+{
+   unsigned count = 0;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   gfx_ctx_flags_t flags;
+   flags.flags     = 0;
+   video_context_driver_get_flags(&flags);
+#endif
+#ifdef HAVE_LAKKA
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA),
+            MENU_ENUM_LABEL_UPDATE_LAKKA_STR,
+            MENU_ENUM_LABEL_UPDATE_LAKKA,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR,
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
+            MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST_STR,
+            MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+#elif defined(HAVE_NETWORKING)
+#ifdef HAVE_UPDATE_CORES
+   if (settings->bools.menu_show_core_updater)
+   {
+      if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
+               MENU_ENUM_LABEL_CORE_UPDATER_LIST_STR,
+               MENU_ENUM_LABEL_CORE_UPDATER_LIST,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+
+      /* Only show 'update installed cores' if
+       * one or more cores are installed */
+      if (core_info_count() > 0)
+      {
+#if defined(ANDROID)
+         /* When using Play Store builds, cores are
+          * updated automatically - the 'update
+          * installed cores' option is therefore
+          * irrelevant/useless, so we instead present
+          * an option for switching any existing buildbot
+          * or sideloaded cores to the latest Play Store
+          * version */
+         if (play_feature_delivery_enabled())
+         {
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD),
+                     MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD_STR,
+                     MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+         }
+         else
+#endif
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES),
+                     MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES_STR,
+                     MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+      }
+   }
+#endif /* HAVE_UPDATE_CORES */
+
+#if defined(HAVE_COMPRESSION) && !defined(HAVE_MIST)
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES),
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES_STR,
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+#endif
+
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR,
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+#ifdef HAVE_ONLINE_UPDATER
+   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+         MENU_ENUM_LABEL_UPDATER_SETTINGS,
+         PARSE_ACTION, false) == 0)
+      count++;
+#endif
+
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
+            MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST_STR,
+            MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+#ifdef HAVE_NETWORKING
+   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+            MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+            PARSE_ONLY_BOOL, false) != -1)
+      count++;
+#endif
+
+#ifdef HAVE_COMPRESSION
+#ifdef HAVE_UPDATE_CORE_INFO
+   if (settings->bools.menu_show_core_updater)
+   {
+      if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES),
+               MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES_STR,
+               MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+   }
+#endif
+
+#ifdef HAVE_UPDATE_ASSETS
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS),
+            MENU_ENUM_LABEL_UPDATE_ASSETS_STR,
+            MENU_ENUM_LABEL_UPDATE_ASSETS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+#endif
+#if !defined(_3DS)
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES),
+            MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES_STR,
+            MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS),
+            MENU_ENUM_LABEL_UPDATE_CHEATS_STR,
+            MENU_ENUM_LABEL_UPDATE_CHEATS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+#endif
+#ifdef HAVE_LIBRETRODB
+#if !defined(VITA)
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES),
+            MENU_ENUM_LABEL_UPDATE_DATABASES_STR,
+            MENU_ENUM_LABEL_UPDATE_DATABASES,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+#endif
+#endif /* HAVE_LIBRETRODB */
+#if !defined(_3DS)
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS),
+            MENU_ENUM_LABEL_UPDATE_OVERLAYS_STR,
+            MENU_ENUM_LABEL_UPDATE_OVERLAYS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
+   {
+      if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS),
+               MENU_ENUM_LABEL_UPDATE_CG_SHADERS_STR,
+               MENU_ENUM_LABEL_UPDATE_CG_SHADERS,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+   }
+
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+   {
+      if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS),
+               MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS_STR,
+               MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+   }
+
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+   {
+      if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS),
+               MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS_STR,
+               MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+   }
+#endif
+#endif /* !defined(_3DS) */
+#endif /* HAVE_COMPRESSION */
+#endif
+   return count;
+}
+
+/* Whether the main menu offers the Online Updater at all. */
+bool menu_displaylist_online_updater_shown(settings_t *settings)
+{
+#if defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
+   return  settings->bools.menu_show_online_updater
+      && !settings->bools.kiosk_mode_enable;
+#else
+   return false;
+#endif
+}
+
 static bool menu_displaylist_ctl_internal(
       enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info,
@@ -18358,204 +18574,8 @@ static bool menu_displaylist_ctl_internal(
             break;
          case DISPLAYLIST_OPTIONS:
             menu_entries_clear(info->list);
-            {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-               gfx_ctx_flags_t flags;
-               flags.flags     = 0;
-               video_context_driver_get_flags(&flags);
-#endif
-#ifdef HAVE_LAKKA
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA),
-                        MENU_ENUM_LABEL_UPDATE_LAKKA_STR,
-                        MENU_ENUM_LABEL_UPDATE_LAKKA,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
-                        MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR,
-                        MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
-                        MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST_STR,
-                        MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-#elif defined(HAVE_NETWORKING)
-#ifdef HAVE_UPDATE_CORES
-               if (settings->bools.menu_show_core_updater)
-               {
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
-                           MENU_ENUM_LABEL_CORE_UPDATER_LIST_STR,
-                           MENU_ENUM_LABEL_CORE_UPDATER_LIST,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-
-                  /* Only show 'update installed cores' if
-                   * one or more cores are installed */
-                  if (core_info_count() > 0)
-                  {
-#if defined(ANDROID)
-                     /* When using Play Store builds, cores are
-                      * updated automatically - the 'update
-                      * installed cores' option is therefore
-                      * irrelevant/useless, so we instead present
-                      * an option for switching any existing buildbot
-                      * or sideloaded cores to the latest Play Store
-                      * version */
-                     if (play_feature_delivery_enabled())
-                     {
-                        if (menu_entries_append(info->list,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD),
-                                 MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD_STR,
-                                 MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD,
-                                 MENU_SETTING_ACTION, 0, 0, NULL))
-                           count++;
-                     }
-                     else
-#endif
-                        if (menu_entries_append(info->list,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES),
-                                 MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES_STR,
-                                 MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,
-                                 MENU_SETTING_ACTION, 0, 0, NULL))
-                           count++;
-                  }
-               }
-#endif /* HAVE_UPDATE_CORES */
-
-#if defined(HAVE_COMPRESSION) && !defined(HAVE_MIST)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES),
-                        MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES_STR,
-                        MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-#endif
-
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
-                        MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR,
-                        MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-#ifdef HAVE_ONLINE_UPDATER
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
-                     MENU_ENUM_LABEL_UPDATER_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-                  count++;
-#endif
-
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
-                        MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST_STR,
-                        MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-#ifdef HAVE_NETWORKING
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
-                        MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-                        PARSE_ONLY_BOOL, false) != -1)
-                  count++;
-#endif
-
-#ifdef HAVE_COMPRESSION
-#ifdef HAVE_UPDATE_CORE_INFO
-               if (settings->bools.menu_show_core_updater)
-               {
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES),
-                           MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES_STR,
-                           MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-               }
-#endif
-
-#ifdef HAVE_UPDATE_ASSETS
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS),
-                        MENU_ENUM_LABEL_UPDATE_ASSETS_STR,
-                        MENU_ENUM_LABEL_UPDATE_ASSETS,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-#endif
-#if !defined(_3DS)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES),
-                        MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES_STR,
-                        MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS),
-                        MENU_ENUM_LABEL_UPDATE_CHEATS_STR,
-                        MENU_ENUM_LABEL_UPDATE_CHEATS,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-#endif
-#ifdef HAVE_LIBRETRODB
-#if !defined(VITA)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES),
-                        MENU_ENUM_LABEL_UPDATE_DATABASES_STR,
-                        MENU_ENUM_LABEL_UPDATE_DATABASES,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-#endif
-#endif /* HAVE_LIBRETRODB */
-#if !defined(_3DS)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS),
-                        MENU_ENUM_LABEL_UPDATE_OVERLAYS_STR,
-                        MENU_ENUM_LABEL_UPDATE_OVERLAYS,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-               {
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS),
-                           MENU_ENUM_LABEL_UPDATE_CG_SHADERS_STR,
-                           MENU_ENUM_LABEL_UPDATE_CG_SHADERS,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-               }
-
-               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-               {
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS),
-                           MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS_STR,
-                           MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-               }
-
-               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-               {
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS),
-                           MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS_STR,
-                           MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-               }
-#endif
-#endif /* !defined(_3DS) */
-#endif /* HAVE_COMPRESSION */
-#endif
-            }
+            count = menu_displaylist_parse_online_updater(
+                  info->list, settings);
 
             if (count == 0)
                menu_entries_append(info->list,
@@ -18784,8 +18804,7 @@ static bool menu_displaylist_ctl_internal(
                      count++;
 
 #ifdef HAVE_ONLINE_UPDATER
-               if (      settings->bools.menu_show_online_updater
-                     && !settings->bools.kiosk_mode_enable)
+               if (menu_displaylist_online_updater_shown(settings))
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                            MENU_ENUM_LABEL_ONLINE_UPDATER,
                            PARSE_ACTION, false) == 0)
