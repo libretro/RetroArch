@@ -745,7 +745,18 @@ typedef size_t retro_atomic_size_t;
 #if _MSC_VER >= 1400 && \
       (defined(_M_IX86) || defined(_M_X64) || defined(_M_AMD64)) && \
       !defined(_M_ARM64EC) && !defined(_M_ARM64) && !defined(_M_ARM)
+#if _MSC_VER >= 1500
 #include <intrin.h>
+#else
+/* VS2005's <intrin.h> collides with <windows.h> in C++ (C2733 on
+ * _interlockedbittestandset), so declare the one intrinsic this
+ * path uses directly. */
+#ifdef __cplusplus
+extern "C"
+#endif
+void _ReadWriteBarrier(void);
+#pragma intrinsic(_ReadWriteBarrier)
+#endif
 #define RETRO_ATOMIC_MSVC_NATIVE_WORD 1
 #endif
 
@@ -2064,6 +2075,9 @@ static RETRO_ATOMIC_INLINE int retro_atomic_cas_64_impl_(retro_atomic_64_t *p, i
  * CMPXCHG8B intrinsic or nothing.  Reach for the intrinsic directly so
  * the header's target-version macro plays no part in whether this
  * compiles. */
+#ifdef __cplusplus
+extern "C"
+#endif
 __int64 _InterlockedCompareExchange64(__int64 volatile*, __int64, __int64);
 #pragma intrinsic(_InterlockedCompareExchange64)
 #define RETRO_ATOMIC_MSVC_CMPX64_(p, d, e) \
