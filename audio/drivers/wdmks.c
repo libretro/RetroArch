@@ -2820,8 +2820,8 @@ static bool wdmks_packet_submit(wdmks_t *w, wdmks_packet_t *p, size_t bytes)
    p->header.Reserved                     = 0;
 #endif
 
-   ResetEvent(p->overlapped.hEvent);
-
+   /* The I/O manager clears the event as it takes the request and sets
+    * it when the packet comes back, inline or not. */
    if (DeviceIoControl(w->stream.handle, RA_IOCTL_KS_WRITE_STREAM,
             NULL, 0, &p->header, sizeof(p->header), &written,
             &p->overlapped))
@@ -4125,14 +4125,14 @@ static bool wdmks_mic_packet_submit(wdmks_mic_t *m, wdmks_packet_t *p)
    p->header.Reserved                     = 0;
 #endif
 
-   ResetEvent(p->overlapped.hEvent);
+   /* The event is the I/O manager's: cleared as it takes the request,
+    * set when it completes, inline or not. */
    if (DeviceIoControl(m->stream.handle, RA_IOCTL_KS_READ_STREAM,
             NULL, 0, &p->header, sizeof(p->header), &written,
             &p->overlapped))
    {
       /* Completed inline: the data is there to take on the next look. */
       p->pending = true;
-      SetEvent(p->overlapped.hEvent);
       return true;
    }
    if (GetLastError() == ERROR_IO_PENDING)

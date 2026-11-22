@@ -480,7 +480,6 @@ static int32_t winusb_hid_control(winusb_device_t *dev, UCHAR type,
    ov.OffsetHigh     = 0;
 #endif
    ov.hEvent         = dev->ctrl_event;
-   ResetEvent(ov.hEvent);
    if (     !winusb_api.ControlTransfer(dev->usb, setup, data, (ULONG)len,
                NULL, &ov)
          && GetLastError() != ERROR_IO_PENDING)
@@ -513,7 +512,6 @@ static int32_t winusb_switch2_transfer(winusb_device_t *dev, UCHAR pipe,
    ov.OffsetHigh     = 0;
 #endif
    ov.hEvent         = dev->ctrl_event;
-   ResetEvent(ov.hEvent);
    ok = (pipe & 0x80)
       ? winusb_api.ReadPipe(dev->bulk_usb, pipe, data, len, NULL, &ov)
       : winusb_api.WritePipe(dev->bulk_usb, pipe, data, len, NULL, &ov);
@@ -629,7 +627,6 @@ static void winusb_hid_reader(void *data)
       ULONG got = 0;
       int w     = dev->write_idx;
 
-      ResetEvent(ov.hEvent);
       if (dev->hidclass)
       {
          DWORD n = 0;
@@ -1833,7 +1830,6 @@ static bool winusb_hidclass_in_flight(winusb_device_t *dev)
 
 static void winusb_hidclass_start_write(winusb_device_t *dev)
 {
-   ResetEvent(dev->out_ov.hEvent);
    if (     (dev->hidclass
                ? winusb_hidclass_api.Write(dev->file, dev->out[0],
                   dev->out_len, NULL, &dev->out_ov)

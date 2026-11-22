@@ -25,6 +25,9 @@
  *   the margin                   -> the pin's reported FIFO plus half a
  *                                   millisecond where it reports one,
  *                                   two milliseconds where it does not
+ *   packet submission            -> leaves the packet's event to the I/O
+ *                                   manager: no ResetEvent before it, no
+ *                                   SetEvent after an inline completion
  *
  * The same contract on both paths: the caller-driven one and the
  * refill thread's pump, called directly, and with and without a FIFO
@@ -80,9 +83,28 @@ static BOOL test_overlapped(HANDLE h, LPOVERLAPPED ov, LPDWORD moved, BOOL wait)
    return FALSE;
 }
 #define GetOverlappedResult test_overlapped
+/* Calls on a packet's event, which only the I/O manager moves */
+static HANDLE   packet_event;
+static unsigned packet_event_calls;
+static BOOL test_reset_event(HANDLE h)
+{
+   if (h == packet_event)
+      packet_event_calls++;
+   return ResetEvent(h);
+}
+static BOOL test_set_event(HANDLE h)
+{
+   if (h == packet_event)
+      packet_event_calls++;
+   return SetEvent(h);
+}
+#define ResetEvent test_reset_event
+#define SetEvent   test_set_event
 
 /* The driver whole, as wdmks_abi_check.c includes it. */
 #include "audio/drivers/wdmks.c"
+#undef ResetEvent
+#undef SetEvent
 #undef retro_eventcount_commit_wait_timeout
 #undef cpu_features_get_time_usec
 
@@ -624,6 +646,34 @@ static void run_capture_fold(void)
    fifo_free(m.fifo);
 }
 
+/* A packet goes out on both paths, completing inline, without the
+ * driver touching its event */
+static void run_packet_events(void)
+{
+   wdmks_t       w;
+   wdmks_mic_t   m;
+   unsigned char data[256];
+
+   printf("packet events\n");
+   memset(&w, 0, sizeof(w));
+   memset(&m, 0, sizeof(m));
+   packet_event       = CreateEvent(NULL, TRUE, FALSE, NULL);
+   packet_event_calls = 0;
+   w.packet_bytes                 = sizeof(data);
+   w.packets[0].data              = data;
+   w.packets[0].overlapped.hEvent = packet_event;
+   check(wdmks_packet_submit(&w, &w.packets[0], sizeof(data))
+         && !w.packets[0].pending, "render packet submitted, inline");
+   m.packet_bytes                 = sizeof(data);
+   m.packets[0].data              = data;
+   m.packets[0].overlapped.hEvent = packet_event;
+   check(wdmks_mic_packet_submit(&m, &m.packets[0])
+         && m.packets[0].pending, "capture packet submitted, inline");
+   check(!packet_event_calls, "no call on the packet's event");
+   CloseHandle(packet_event);
+   packet_event = NULL;
+}
+
 /* The WaveRT read model: what the hardware writes is read from behind
  * its position, wrapping with the loop; a lap unseen means what it held
  * is gone and the read cursor moves up to the hardware. */
@@ -1115,6 +1165,7 @@ int main(void)
    run_wide_pcm_pin();
    run_wide_register();
    run_capture_fold();
+   run_packet_events();
    run_capture_loop();
    run_held_ahead();
    run_geometry(2, 46);
