@@ -168,6 +168,17 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx);
 void scaler_ctx_scale(struct scaler_ctx *ctx,
       void *output, const void *input);
 
+/* ARGB8888 bilinear/sinc output, one borrowed row per callback in y order.
+ * Scratch holds out_width pixels, aliases no input/workspace, and is reused
+ * after each callback returns. Unscaled input rows are borrowed directly
+ * and need no scratch buffer. Keep input/context unchanged during callbacks.
+ * Unsupported contexts or inadequate scratch return false without callbacks. */
+typedef void (*scaler_row_callback_t)(void *user, const uint32_t *pixels,
+      unsigned width, unsigned y);
+bool scaler_ctx_scale_rows(struct scaler_ctx *ctx, uint32_t *scratch,
+      size_t scratch_bytes, const void *input,
+      scaler_row_callback_t callback, void *user);
+
 RETRO_END_DECLS
 
 #endif

@@ -154,10 +154,12 @@ jobs:
             cp "$(ls /usr/lib/gcc/x86_64-w64-mingw32/*-win32/$f | head -n 1)" .
           done
 
-      - name: RGUI point thumbnails use native pixels without an intermediate
+      - name: RGUI thumbnails use native pixels and borrowed filter rows
         run: |
           python3 samples/menu/rgui_media/build.py --test-source samples/menu/rgui_media/thumbnail_point_test.c --output samples/menu/rgui_media/thumbnail_point_test.exe
           WINEDEBUG=-all wine samples/menu/rgui_media/thumbnail_point_test.exe
+          python3 samples/menu/rgui_media/build.py --test-source samples/menu/rgui_media/thumbnail_filtered_test.c --output samples/menu/rgui_media/thumbnail_filtered_test.exe
+          WINEDEBUG=-all wine samples/menu/rgui_media/thumbnail_filtered_test.exe
 
       - name: Menus on every driver, compared with D3D11 (Wine, Xvfb, llvmpipe)
         shell: bash

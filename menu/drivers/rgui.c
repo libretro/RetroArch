@@ -419,6 +419,7 @@ typedef struct
    rgui_colors_t colors;   /* int16_t alignment */
 
    struct scaler_ctx image_scaler;
+   uint32_t image_scaler_row[RGUI_MAX_FB_WIDTH];
    menu_input_pointer_t pointer;
 
    char entry_index_str[32];
@@ -2804,22 +2805,15 @@ static bool rgui_request_thumbnail(
  * Box averaging is exact here - it averages precisely the pixels being
  * discarded - so this costs nothing in quality, and it is faster
  * besides, the expensive filter seeing far fewer input pixels. */
-static uint32_t *rgui_downscale_box(const uint32_t *src,
-      unsigned src_dims, unsigned f, unsigned *out_dims)
+static void rgui_downscale_box_to(const uint32_t *src,
+      unsigned src_dims, unsigned f, uint32_t *argb,
+      uint16_t *native, bool dither)
 {
    unsigned x, y, i, j;
    unsigned n  = f * f;
    unsigned sw = VIDEO_SCALE_W(src_dims);
    unsigned dw = sw / f;
    unsigned dh = VIDEO_SCALE_H(src_dims) / f;
-   uint32_t *d;
-
-   if ((dw < 1) || (dh < 1))
-      return NULL;
-
-   if (!(d = (uint32_t*)malloc((size_t)dw * dh * sizeof(uint32_t))))
-      return NULL;
-
    for (y = 0; y < dh; y++)
    {
       for (x = 0; x < dw; x++)
@@ -2840,14 +2834,56 @@ static uint32_t *rgui_downscale_box(const uint32_t *src,
             }
          }
 
-         d[(size_t)y * dw + x] =
-               ((a / n) << 24) | ((r / n) << 16)
-             | ((g / n) <<  8) |  (b / n);
+         {
+            uint32_t pixel = ((a / n) << 24) | ((r / n) << 16)
+                           | ((g / n) << 8) | (b / n);
+            size_t offset = (size_t)y * dw + x;
+            if (native)
+               native[offset] = dither
+                  ? argb32_to_pixel_platform_format_dither(pixel, x, y)
+                  : argb32_to_pixel_platform_format(pixel);
+            else
+               argb[offset] = pixel;
+         }
       }
    }
 
+}
+
+static uint32_t *rgui_downscale_box(const uint32_t *src,
+      unsigned src_dims, unsigned f, unsigned *out_dims)
+{
+   unsigned dw = VIDEO_SCALE_W(src_dims) / f;
+   unsigned dh = VIDEO_SCALE_H(src_dims) / f;
+   uint32_t *pixels;
+   if (!dw || !dh)
+      return NULL;
+   pixels = (uint32_t*)malloc((size_t)dw * dh * sizeof(*pixels));
+   if (!pixels)
+      return NULL;
+   rgui_downscale_box_to(src, src_dims, f, pixels, NULL, false);
    *out_dims = VIDEO_SCALE_PACK(dw, dh);
-   return d;
+   return pixels;
+}
+
+struct rgui_thumbnail_native
+{
+   uint16_t *pixels;
+   bool dither;
+};
+
+static void rgui_thumbnail_native_row(void *user, const uint32_t *pixels,
+      unsigned width, unsigned y)
+{
+   struct rgui_thumbnail_native *output = (struct rgui_thumbnail_native*)user;
+   uint16_t *dst = output->pixels + (size_t)y * width;
+   unsigned x;
+   if (output->dither)
+      for (x = 0; x < width; x++)
+         dst[x] = argb32_to_pixel_platform_format_dither(pixels[x], x, y);
+   else
+      for (x = 0; x < width; x++)
+         dst[x] = argb32_to_pixel_platform_format(pixels[x]);
 }
 
 static bool rgui_downscale_thumbnail(
@@ -2943,9 +2979,7 @@ static bool rgui_downscale_thumbnail(
       unsigned scale_height     = image_src->height;
       uint32_t *box_buf         = NULL;
       unsigned f;
-
-      if (!(image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t))))
-         return false;
+      struct rgui_thumbnail_native output;
 
       /* Decimate first while doing so does not undershoot the
        * target, so the filter below runs at its minimum kernel
@@ -2956,6 +2990,17 @@ static bool rgui_downscale_thumbnail(
       if (f > 1 && VIDEO_SCALE_FITS(scale_width, scale_height))
       {
          unsigned box_dims;
+
+         /* Exact integer reductions need neither a boxed ARGB image nor
+          * a scaler output image: average and quantize into native pixels. */
+         if (scale_width / f == image_dst->width &&
+             scale_height / f == image_dst->height)
+         {
+            rgui_downscale_box_to(scale_src,
+                  VIDEO_SCALE_PACK(scale_width, scale_height), f,
+                  NULL, native_pixels, dither);
+            return true;
+         }
 
          if ((box_buf = rgui_downscale_box(scale_src,
                VIDEO_SCALE_PACK(scale_width, scale_height), f, &box_dims)))
@@ -2993,7 +3038,21 @@ static bool rgui_downscale_thumbnail(
          return false;
       }
 
-      scaler_ctx_scale(&rgui->image_scaler, image_dst->pixels, scale_src);
+      output.pixels = native_pixels;
+      output.dither = dither;
+      if (!scaler_ctx_scale_rows(&rgui->image_scaler, rgui->image_scaler_row,
+               sizeof(rgui->image_scaler_row), scale_src, rgui_thumbnail_native_row, &output))
+      {
+         image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t));
+         if (image_dst->pixels)
+            scaler_ctx_scale(&rgui->image_scaler, image_dst->pixels, scale_src);
+         else
+         {
+            scaler_ctx_gen_reset(&rgui->image_scaler);
+            free(box_buf);
+            return false;
+         }
+      }
       free(box_buf);
       /* Reset again - don't want to leave anything hanging around
        * if the user switches back to nearest neighbour scaling */

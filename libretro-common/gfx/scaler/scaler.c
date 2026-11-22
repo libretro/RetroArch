@@ -661,6 +661,43 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
  *
  * Scales an input image to an output image.
  **/
+bool scaler_ctx_scale_rows(struct scaler_ctx *ctx, uint32_t *scratch,
+      size_t scratch_bytes, const void *input,
+      scaler_row_callback_t callback, void *user)
+{
+   struct scaler_ctx row;
+   int y, stride;
+   if (!ctx || !input || !callback || ctx->out_width <= 0
+         || ctx->out_width > INT_MAX / (int)sizeof(uint32_t) || ctx->out_height <= 0
+         || ctx->in_fmt != SCALER_FMT_ARGB8888 || ctx->out_fmt != SCALER_FMT_ARGB8888)
+      return false;
+   if (ctx->unscaled)
+   {
+      for (y = 0; y < ctx->out_height; y++)
+         callback(user, (const uint32_t*)((const uint8_t*)input
+                  + (ptrdiff_t)y * ctx->in_stride), ctx->out_width, y);
+      return true;
+   }
+   if (!scratch || ((uintptr_t)scratch & 3)
+         || (size_t)ctx->out_width > scratch_bytes / sizeof(*scratch)
+         || ctx->scaler_special || !ctx->scaler_horiz || !ctx->scaler_vert
+         || !ctx->scaled.frame || !ctx->vert.filter || !ctx->vert.filter_pos)
+      return false;
+   stride = ctx->out_width * (int)sizeof(uint32_t);
+   ctx->scaler_horiz(ctx, input, ctx->in_stride);
+   row = *ctx;
+   row.out_height = 1;
+   row.out_stride = stride;
+   for (y = 0; y < ctx->out_height; y++)
+   {
+      row.vert.filter = ctx->vert.filter + (size_t)y * ctx->vert.filter_stride;
+      row.vert.filter_pos = ctx->vert.filter_pos + y;
+      row.scaler_vert(&row, scratch, stride);
+      callback(user, scratch, ctx->out_width, y);
+   }
+   return true;
+}
+
 void scaler_ctx_scale(struct scaler_ctx *ctx,
       void *output, const void *input)
 {
