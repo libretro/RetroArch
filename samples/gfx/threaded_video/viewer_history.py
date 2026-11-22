@@ -795,6 +795,10 @@ static int update(d3d11_texture_t *texture,gpu *upload)
    /* image is a texture_image in the production fragment. */
 UPDATE
 }
+static unsigned forgotten;
+static void d3d11_planar_forget(d3d11_video_t *video, uintptr_t texture)
+{ assert(video && texture);forgotten++; }
+UNLOAD
 static void test_pool(void)
 {
    d3d11_video_t video;
@@ -832,8 +836,19 @@ static void test_pool(void)
       if(frame>8)assert(t.media_version_count==names);
       assert(t.media_version_count<=4);
    }
-   d3d11_release_texture(&t);
-   for(j=0;j<3;j++){assert(chain.history[j].handle->refs);d3d11_release_texture(&chain.history[j]);}
+   {
+      d3d11_texture_t *owner=(d3d11_texture_t*)malloc(sizeof(*owner));
+      gpu *versions[GFX_MAX_FRAME_HISTORY+2];
+      unsigned count=t.media_version_count, before=forgotten;
+      assert(owner);*owner=t;
+      for(j=0;j<count;j++)versions[j]=t.media_versions[j];
+      d3d11_gfx_unload_texture_internal(&video,(uintptr_t)owner);
+      assert(forgotten==before+1);
+      d3d11_gfx_unload_texture_internal(&video,0);
+      assert(forgotten==before+1);
+      for(j=0;j<3;j++){assert(chain.history[j].handle->refs);d3d11_release_texture(&chain.history[j]);}
+      for(j=0;j<count;j++)assert(!versions[j]->refs);
+   }
    test_video=NULL;
    puts("PASS D3D11 pooled history: zero snapshots, bounded reuse, immutable readers, HDR and producer close");
 }
@@ -903,6 +918,8 @@ int main(void)
 }
 '''
 d3d11_fixture = d3d11_fixture.replace('\nPOOL\n', function(d3d11, 'static bool d3d11_media_pool_begin(') + function(d3d11, 'static D3D11ShaderResourceView d3d11_media_writable(') + function(d3d11, 'static void d3d11_media_publish('))
+d3d11_fixture = d3d11_fixture.replace('\nUNLOAD\n', function(d3d11[d3d11.rindex('static void d3d11_gfx_unload_texture_internal('):], 'static void d3d11_gfx_unload_texture_internal('))
+
 d3d11_fixture = d3d11_fixture.replace('\nCHAIN\n', function(d3d11, 'static void d3d11_views_chain_frame('))
 a = d3d11.index('   gfx_media_history_begin(', d3d11.index('static bool gfx_display_d3d11_media_shader_draw('))
 b = d3d11.index('   chain->mvp_last_pass', a)

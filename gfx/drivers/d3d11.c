@@ -10782,9 +10782,7 @@ static void d3d11_gfx_unload_texture_internal(d3d11_video_t *d3d11,
    if (d3d11)
       d3d11_planar_forget(d3d11, handle);
 
-   Release(texture->view);
-   Release(texture->staging);
-   Release(texture->handle);
+   d3d11_release_texture(texture);
    free(texture);
 }
 
