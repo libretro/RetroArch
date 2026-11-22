@@ -787,8 +787,16 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
    if (f->data_end > s->avail)
       return NULL;
 
-   /* Apply the previous frame's disposal to the canvas. */
-   apng_apply_prev_dispose(s);
+   /* A SOURCE rectangle overwrites all four channels, including alpha.
+    * Disposal wholly inside it would immediately be overwritten too.
+    * PREVIOUS still needs the disposed pixels as the saved baseline. */
+   if (!(s->have_prev && f->blend == APNG_BLEND_SOURCE
+         && f->dispose != APNG_DISPOSE_PREVIOUS
+         && f->x_off <= (unsigned)s->prev_x
+         && f->y_off <= (unsigned)s->prev_y
+         && f->x_off + f->width >= (unsigned)(s->prev_x + s->prev_w)
+         && f->y_off + f->height >= (unsigned)(s->prev_y + s->prev_h)))
+      apng_apply_prev_dispose(s);
 
    /* For DISPOSE_PREVIOUS, save this frame's target region before it is
     * overwritten so it can be restored after. */

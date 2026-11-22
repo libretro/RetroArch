@@ -32,9 +32,27 @@
 #include <formats/rpng.h>
 #include <encodings/crc32.h>
 
-/* Inspect the output pool to catch a reintroduced decoded-frame buffer.
- * The decoder itself still uses the separately compiled ordinary rpng. */
+/* Inspect output ownership and count compositor writes to the canvas.
+ * rpng itself stays separately compiled and writes decoded pixels normally. */
+static uintptr_t watched_begin, watched_end;
+static size_t canvas_copy_bytes, canvas_clear_bytes;
+static void *watch_copy(void *dst, const void *src, size_t n)
+{
+   if ((uintptr_t)dst >= watched_begin && (uintptr_t)dst < watched_end)
+      canvas_copy_bytes += n;
+   return memcpy(dst, src, n);
+}
+static void *watch_clear(void *dst, int value, size_t n)
+{
+   if ((uintptr_t)dst >= watched_begin && (uintptr_t)dst < watched_end)
+      canvas_clear_bytes += n;
+   return memset(dst, value, n);
+}
+#define memcpy watch_copy
+#define memset watch_clear
 #include "../../../formats/png/rpng_apng.c"
+#undef memcpy
+#undef memset
 
 #define FILE_CAP (1 << 16)
 #define PIX      0xAAu   /* every byte of every frame pixel */
@@ -470,10 +488,88 @@ static void test_bad_canvas_decode(void)
    if (before == failures) printf("[ OK ] %s\n", name);
 }
 
+/* Compare the optimized stream with one whose disposal is explicitly
+ * applied before each decode. Count only writes to the optimized canvas,
+ * not decoder stores or reference work. */
+static void test_disposal_overlap(void)
+{
+   static const unsigned target[6][4] = {
+      {2,2,2,1}, {4,4,1,0}, {2,2,3,1},
+      {2,2,2,1}, {2,2,2,1}, {1,1,6,4}
+   };
+   const char *name = "covered disposal writes";
+   unsigned mode, scenario, i;
+   int before = failures;
+   for (mode = 1; mode <= 2; mode++)
+      for (scenario = 0; scenario < 6; scenario++)
+      {
+         rpng_apng_stream_t *stream, *reference;
+         begin();
+         put_ihdr(7, 5);
+         put_actl(4);
+         for (i = 0; i < 4; i++)
+         {
+            unsigned w = 7, h = 5, x = 0, y = 0;
+            disposal = 0;
+            blending = 0;
+            pixel[0] = (uint8_t)(20 + i*50);
+            pixel[1] = (uint8_t)(200 - i*30);
+            pixel[2] = 90;
+            pixel[3] = i == 2 ? 0 : 128;
+            if (i == 1) { w=2; h=2; x=2; y=1; disposal=mode; }
+            if (i == 2)
+            {
+               w=target[scenario][0]; h=target[scenario][1];
+               x=target[scenario][2]; y=target[scenario][3];
+               disposal = scenario == 3 ? 2 : 0;
+               blending = scenario == 4;
+            }
+            if (i == 3) { w=1; h=1; x=0; y=0; blending=1; }
+            put_fctl(w, h, x, y);
+            if (i) put_fdat(w, h);
+            else put_idat(w, h);
+         }
+         put_iend();
+         stream = rpng_apng_stream_open(file_buf, file_len);
+         reference = rpng_apng_stream_open(file_buf, file_len);
+         check(stream && reference, name, "open failed");
+         if (stream && reference)
+            for (i = 0; i < 4; i++)
+            {
+               const uint32_t *actual, *expected;
+               int dur;
+               apng_apply_prev_dispose(reference);
+               reference->have_prev = 0;
+               expected = rpng_apng_stream_next(reference, &dur);
+               watched_begin = (uintptr_t)stream->canvas;
+               watched_end = watched_begin + 7*5*sizeof(uint32_t);
+               canvas_copy_bytes = canvas_clear_bytes = 0;
+               actual = rpng_apng_stream_next(stream, &dur);
+               watched_begin = watched_end = 0;
+               check(actual && expected, name, "frame decode failed");
+               if (actual && expected)
+                  check(!memcmp(actual, expected, 7*5*sizeof(uint32_t)),
+                        name, "disposal changed pixels");
+               if (i == 2)
+               {
+                  size_t bytes = scenario < 2 ? 0 : 2*2*sizeof(uint32_t);
+                  check(canvas_copy_bytes == (mode == 2 ? bytes : 0),
+                        name, "unexpected restore copy");
+                  check(canvas_clear_bytes == (mode == 1 ? bytes : 0),
+                        name, "unexpected background clear");
+               }
+            }
+         rpng_apng_stream_close(stream);
+         rpng_apng_stream_close(reference);
+      }
+   if (before == failures) printf("[ OK ] %s\n", name);
+}
+
 int main(void)
 {
    test_valid();
    test_canvas_output();
+   test_disposal_overlap();
    test_bad_canvas_decode();
    test_x_wrap();
    test_y_wrap();
