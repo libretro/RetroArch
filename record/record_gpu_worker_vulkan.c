@@ -19,7 +19,7 @@ record_gpu_worker_vulkan_t *record_gpu_worker_vulkan_new_encoder(
 {
    record_gpu_worker_vulkan_t *w;
    if (!queue || !encoder || !ops || !ops->submit || !ops->poll ||
-         !ops->release || !ops->finish)
+         !ops->release || !ops->finish || !ops->wait)
       return NULL;
    w = (record_gpu_worker_vulkan_t*)calloc(1, sizeof(*w));
    if (w)
@@ -53,11 +53,17 @@ static int rvgw_h264_finish(void *encoder)
    return vulkan_encode_h264_finish((vulkan_encode_h264_t*)encoder);
 }
 
+static bool rvgw_h264_wait(void *encoder, uint64_t timeout_ns)
+{
+   return vulkan_encode_h264_wait((vulkan_encode_h264_t*)encoder, timeout_ns);
+}
+
 record_gpu_worker_vulkan_t *record_gpu_worker_vulkan_new(
       record_gpu_queue_t *queue, vulkan_encode_h264_t *encoder)
 {
    static const record_gpu_worker_vulkan_encoder_ops_t ops = {
-      rvgw_h264_submit, rvgw_h264_poll, rvgw_h264_release, rvgw_h264_finish
+      rvgw_h264_submit, rvgw_h264_poll, rvgw_h264_release, rvgw_h264_finish,
+      rvgw_h264_wait
    };
    return record_gpu_worker_vulkan_new_encoder(queue, encoder, &ops);
 }
@@ -151,6 +157,13 @@ bool record_gpu_worker_vulkan_retry_needed(const record_gpu_worker_vulkan_t *w)
 {
    return w && w->encoder && !w->ended
       && (w->pending || w->owned || w->input_end);
+}
+
+bool record_gpu_worker_vulkan_wait(const record_gpu_worker_vulkan_t *w,
+      uint64_t timeout_ns)
+{
+   return w && w->encoder && !w->ended && !w->failed && !w->packet_ready
+      && w->ops->wait(w->encoder, timeout_ns);
 }
 
 bool record_gpu_worker_vulkan_release(record_gpu_worker_vulkan_t *w)

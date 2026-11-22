@@ -41,6 +41,10 @@ int vulkan_encode_hevc_submit(vulkan_encode_hevc_t *encoder, unsigned slot,
 /* One oldest-frame check, or repeated borrow until release. */
 int vulkan_encode_hevc_poll(vulkan_encode_hevc_t *encoder,
       vulkan_encode_packet_t *packet);
+/* Blocks the worker until the oldest frame's GPU work completes, which
+ * poll and a refused submit both wait for, or @timeout_ns passes. False,
+ * without waiting, when no GPU work stands in the way. */
+bool vulkan_encode_hevc_wait(vulkan_encode_hevc_t *encoder, uint64_t timeout_ns);
 bool vulkan_encode_hevc_release(vulkan_encode_hevc_t *encoder);
 int vulkan_encode_hevc_finish(vulkan_encode_hevc_t *encoder);
 /* Error/cancel drain: one bounded check per active transaction, discards

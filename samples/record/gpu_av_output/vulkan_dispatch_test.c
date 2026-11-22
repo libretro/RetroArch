@@ -257,6 +257,37 @@ static void dispatch_run(bool cancel)
    if (!cancel)
       assert(submits == 64 && releases == 64);
 }
+/* A frame whose GPU work stays in flight: the worker blocks in the
+ * encoder's wait until it completes, rather than polling the encoder */
+static void dispatch_gpu_wait(void)
+{
+   record_gpu_dispatch_vulkan_t *job = dispatch_new(false, false);
+   record_gpu_frame_t frame;
+   unsigned retry;
+   int polls;
+   assert(job);
+   dispatch_ready(job);
+   retro_atomic_store_release_int(&gpu_busy, 1);
+   assert(record_gpu_dispatch_vulkan_acquire(job, &frame.slot) == RECORD_GPU_QUEUE_OK);
+   frame.timestamp = 0;
+   frame.duration = 1001;
+   frame.ready_value = 1;
+   frame.keyframe = true;
+   assert(record_gpu_dispatch_vulkan_submit(job, &frame));
+   for (retry = 0; !retro_atomic_load_acquire_int(&gpu_waits); retry++)
+   {
+      assert(retry < 10000);
+      SESSION_YIELD();
+   }
+   polls = retro_atomic_load_acquire_int(&gpu_polls);
+   for (retry = 0; retry < 50; retry++)
+      SESSION_YIELD();
+   assert(retro_atomic_load_acquire_int(&gpu_polls) - polls <= 1);
+   retro_atomic_store_release_int(&gpu_busy, 0);
+   assert(record_gpu_dispatch_vulkan_video_finish(job));
+   dispatch_collect(job, RECORD_VULKAN_SESSION_NONE, 0);
+   assert(submits == 1 && releases == 1);
+}
 static void dispatch_startup_cancel(bool capture)
 {
    record_gpu_dispatch_vulkan_t *job = dispatch_create(true, true, capture);
@@ -358,6 +389,7 @@ int main(void)
 #else
    dispatch_run(false);
    dispatch_run(true);
+   dispatch_gpu_wait();
    dispatch_startup_cancel(false);
    dispatch_startup_cancel(true);
    dispatch_failure(true);

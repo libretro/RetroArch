@@ -9,6 +9,9 @@
 #if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_LOCK_FREE) \
       && (defined(__linux__) || (defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX)))
 #include <rthreads/retro_eventcount.h>
+
+/* How long the worker waits on the encoder's fence before looking again */
+#define RECORD_VKD_GPU_WAIT_NS ((uint64_t)100000000UL)
 #ifdef _WIN32
 #if defined(HAVE_MF_AUDIO) && defined(HAVE_RTMP) && defined(HAVE_RFLV) && defined(HAVE_CRYPTO)
 #define RECORD_VKD_STREAM
@@ -431,6 +434,13 @@ static void *record_vkd_run(void *opaque)
       if (result == RECORD_VULKAN_OUTPUT_END || result == RECORD_VULKAN_OUTPUT_ERROR)
          break;
       if (result != RECORD_VULKAN_OUTPUT_BUSY)
+         continue;
+      /* Held up by the encoder's GPU work: wait on its fence, which one
+       * frame's encode ends; a producer's notify meanwhile is picked up
+       * by the service after it. The bound is a watchdog. */
+      if (     j->session
+            && record_gpu_session_vulkan_retry_needed(j->session)
+            && record_gpu_session_vulkan_wait(j->session, RECORD_VKD_GPU_WAIT_NS))
          continue;
       key = retro_eventcount_prepare_wait(&j->wake);
       result = record_vkd_service(j);

@@ -293,9 +293,12 @@ int record_gpu_output_vulkan_step(record_gpu_output_vulkan_t *p)
 #endif
    if (p->writing)
    {
+      uint64_t written = record_file_posix_bytes(p->file);
       result = record_file_posix_step(p->file);
+      /* A step writes one bounded chunk: bytes moved are progress */
       if (result == RECORD_FILE_POSIX_BUSY)
-         return RECORD_VULKAN_OUTPUT_BUSY;
+         return record_file_posix_bytes(p->file) != written
+            ? RECORD_VULKAN_OUTPUT_PROGRESS : RECORD_VULKAN_OUTPUT_BUSY;
       p->writing = false;
       if (result == RECORD_FILE_POSIX_ERROR)
          return record_gpu_output_vulkan_fail(p, RECORD_VULKAN_OUTPUT_ERROR_FILE);
@@ -396,6 +399,20 @@ bool record_gpu_output_vulkan_retry_needed(const record_gpu_output_vulkan_t *p)
       return true;
    return !p->ended && !p->video_end && !retro_atomic_load_acquire_int(&p->failed) &&
           record_gpu_worker_vulkan_retry_needed(p->worker);
+}
+
+bool record_gpu_output_vulkan_wait(const record_gpu_output_vulkan_t *p,
+      uint64_t timeout_ns)
+{
+   if (!p)
+      return false;
+#ifdef RECORD_VULKAN_OUTPUT_STREAM
+   if (p->stream)
+      return false;
+#endif
+   return !p->writing && !p->ended && !p->video_end
+      && !retro_atomic_load_acquire_int(&p->failed)
+      && record_gpu_worker_vulkan_wait(p->worker, timeout_ns);
 }
 
 bool record_gpu_output_vulkan_abort(record_gpu_output_vulkan_t *p)

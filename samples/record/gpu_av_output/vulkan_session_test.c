@@ -15,6 +15,8 @@ struct vulkan_encode_h264
    bool locked, closed;
 };
 static bool open_fail, headers_fail, gpu_ready, release_fail;
+/* GPU work held in flight from another thread, waits on it, and polls */
+static retro_atomic_int_t gpu_busy, gpu_waits, gpu_polls;
 static unsigned opens, frees, drains, submits, releases;
 static void (*session_open_observer)(void);
 static void (*session_free_observer)(void);
@@ -73,7 +75,8 @@ int vulkan_encode_h264_poll(vulkan_encode_h264_t *e, vulkan_encode_packet_t *pac
 {
    if (!e->count)
       return e->closed ? VULKAN_ENCODE_END : VULKAN_ENCODE_BUSY;
-   if (!gpu_ready)
+   retro_atomic_fetch_add_int(&gpu_polls, 1);
+   if (!gpu_ready || retro_atomic_load_acquire_int(&gpu_busy))
       return VULKAN_ENCODE_BUSY;
    *packet = e->packet[e->head];
    e->locked = true;
@@ -150,8 +153,12 @@ static void reset(void)
    session_open_observer = NULL;
    session_free_observer = NULL;
    gpu_ready = true;
+   retro_atomic_int_init(&gpu_busy, 0);
+   retro_atomic_int_init(&gpu_waits, 0);
+   retro_atomic_int_init(&gpu_polls, 0);
    file_open_fail = file_push_fail = file_step_fail = file_finish_fail = file_cancel_fail = false;
    file_delay = file_writes = submits = releases = drains = 0;
+   file_chunked = false;
 }
 static void publish(record_gpu_queue_t *q, unsigned frame)
 {
@@ -331,6 +338,18 @@ static void session_yield(void)
 #define SESSION_YIELD() session_yield()
 #define SESSION_THREAD_RESULT void *
 #endif
+/* Blocks while the GPU work is held, as a fence wait does */
+bool vulkan_encode_h264_wait(vulkan_encode_h264_t *e, uint64_t timeout_ns)
+{
+   unsigned naps = 0;
+   (void)timeout_ns;
+   if (!e->count || e->locked || !retro_atomic_load_acquire_int(&gpu_busy))
+      return false;
+   retro_atomic_fetch_add_int(&gpu_waits, 1);
+   while (retro_atomic_load_acquire_int(&gpu_busy) && naps++ < 5000)
+      SESSION_YIELD();
+   return true;
+}
 struct session_producer
 {
    record_gpu_session_vulkan_t *session;
@@ -443,6 +462,13 @@ static void concurrent(bool cancel)
       assert(video.made == 64 && audio.made == 40003 && submits == releases && submits == 64);
    assert(opens == frees && record_gpu_session_vulkan_free(video.session));
    puts("Vulkan session: independent video/PCM producers, I/O owner and closure PASS");
+}
+#else
+bool vulkan_encode_h264_wait(vulkan_encode_h264_t *e, uint64_t timeout_ns)
+{
+   (void)e;
+   (void)timeout_ns;
+   return false;
 }
 #endif
 int main(void)

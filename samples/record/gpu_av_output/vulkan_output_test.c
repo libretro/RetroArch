@@ -29,6 +29,7 @@ static void setup(record_gpu_output_vulkan_config_t *c, record_gpu_worker_vulkan
    w->frames = 4;
    w->duration = 1;
    file_delay = file_writes = 0;
+   file_chunked = false;
    file_open_fail = file_push_fail = file_step_fail = file_finish_fail =
        file_cancel_fail = false;
 }
@@ -166,6 +167,16 @@ int main(void)
    CHECK(!record_gpu_output_vulkan_retry_needed(p));
    CHECK(record_gpu_output_vulkan_step(p) == RECORD_VULKAN_OUTPUT_END &&
          record_gpu_output_vulkan_free(p));
+   /* A write that moves bytes each step is progress, not a retry */
+   setup(&c, &w);
+   file_delay = 3;
+   file_chunked = true;
+   p = record_gpu_output_vulkan_new(&w, &c, "unused");
+   CHECK(p != NULL);
+   CHECK(record_gpu_output_vulkan_step(p) == RECORD_VULKAN_OUTPUT_PROGRESS);
+   for (i = 0; i < 3; i++)
+      CHECK(record_gpu_output_vulkan_step(p) == RECORD_VULKAN_OUTPUT_PROGRESS);
+   CHECK(drain(p) == RECORD_VULKAN_OUTPUT_END && record_gpu_output_vulkan_free(p));
    setup(&c, &w);
    w.frames = 0;
    c.audio_rate = 48000;

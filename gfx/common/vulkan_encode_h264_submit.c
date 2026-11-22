@@ -62,6 +62,7 @@ int vulkan_encode_h264_submit_start(vulkan_encode_h264_submit_t *t,
        !ops->reset_query || !ops->begin_query || !ops->end_query ||
        !ops->begin_coding || !ops->control || !ops->encode || !ops->end_coding ||
        !ops->reset_fence || !ops->submit || !ops->status || !ops->feedback ||
+       !ops->wait ||
        !r->dpb || !r->mapped || !r->capacity || r->capacity > 64u * 1024u * 1024u ||
        !s->capabilities.minBitstreamBufferSizeAlignment ||
        r->capacity % s->capabilities.minBitstreamBufferSizeAlignment ||
@@ -311,5 +312,14 @@ bool vulkan_encode_h264_submit_retire(vulkan_encode_h264_submit_t *t)
    t->resources = NULL;
    t->packet = NULL;
    t->packet_size = 0;
+   return true;
+}
+
+bool vulkan_encode_h264_submit_wait(const vulkan_encode_h264_submit_t *t,
+      uint64_t timeout_ns)
+{
+   if (!t || !t->active || t->gpu_complete)
+      return false;
+   t->ops->wait(t->session->device, 1, &t->resources->fence, VK_TRUE, timeout_ns);
    return true;
 }

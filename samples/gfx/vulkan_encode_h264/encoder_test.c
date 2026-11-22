@@ -21,6 +21,7 @@ static uint8_t payload[16][64];
 static unsigned creates, pool_creates, destroys, pool_destroys, starts, polls, retires;
 static unsigned session_failure, pool_failure, start_failure, uncertain, completed[16], feedback_failure;
 static uint64_t native_ready;
+static unsigned waits, waited_slot;
 static const vulkan_encode_h264_picture_t *last_picture;
 static void unused(void) { abort(); }
 static void setup(void)
@@ -60,6 +61,7 @@ static void setup(void)
    STUB(control,PFN_vkCmdControlVideoCodingKHR); STUB(encode,PFN_vkCmdEncodeVideoKHR);
    STUB(end_coding,PFN_vkCmdEndVideoCodingKHR); STUB(reset_fence,PFN_vkResetFences);
    STUB(submit,PFN_vkQueueSubmit); STUB(status,PFN_vkGetFenceStatus); STUB(feedback,PFN_vkGetQueryPoolResults);
+   STUB(wait,PFN_vkWaitForFences);
 #undef STUB
 }
 vulkan_encode_h264_session_t *vulkan_encode_h264_session_new(
@@ -129,6 +131,12 @@ int vulkan_encode_h264_submit_poll(vulkan_encode_h264_submit_t *t,const void **d
    if (t->error!=VK_SUCCESS || feedback_failure) return VULKAN_ENCODE_H264_ERROR;
    *data=payload[slot]; *bytes=32; return VULKAN_ENCODE_H264_OK;
 }
+bool vulkan_encode_h264_submit_wait(const vulkan_encode_h264_submit_t *t,uint64_t timeout)
+{
+   assert(timeout==77);
+   if (!t->active || t->gpu_complete) return false;
+   waits++; waited_slot=t->resources->query; return true;
+}
 bool vulkan_encode_h264_submit_retire(vulkan_encode_h264_submit_t *t)
 {
    retires++;
@@ -156,7 +164,7 @@ static void admission(void)
    vulkan_encode_h264_t *e;
    vulkan_encode_packet_t packet;
    unsigned i;
-   for (i=0;i<15;i++)
+   for (i=0;i<16;i++)
    {
       setup();
       if (!i) ops.submit.reset_command=NULL;
@@ -174,6 +182,7 @@ static void admission(void)
       if (i==12) ops.submit.submit=NULL;
       if (i==13) ops.submit.status=NULL;
       if (i==14) ops.submit.feedback=NULL;
+      if (i==15) ops.submit.wait=NULL;
       assert(!vulkan_encode_h264_open(&config,&ops) && !allocations && !creates);
    }
    for (i=0;i<6;i++)
@@ -198,8 +207,14 @@ static void admission(void)
    assert(vulkan_encode_h264_submit(e,1,15,5,10,false)==VULKAN_ENCODE_ERROR);
    assert(starts==1 && vulkan_encode_h264_finish(e)==VULKAN_ENCODE_OK);
    assert(vulkan_encode_h264_poll(e,&packet)==VULKAN_ENCODE_BUSY && !vulkan_encode_h264_free(e));
+   /* The oldest frame's GPU work is what a wait blocks on */
+   waits=0;
+   assert(vulkan_encode_h264_wait(e,77) && waits==1 && waited_slot==0);
    completed[0]=1; assert(vulkan_encode_h264_poll(e,&packet)==VULKAN_ENCODE_OK);
+   /* A borrowed packet, then an empty encoder: nothing to wait on */
+   assert(!vulkan_encode_h264_wait(e,77) && waits==1);
    assert(vulkan_encode_h264_release(e) && vulkan_encode_h264_poll(e,&packet)==VULKAN_ENCODE_END);
+   assert(!vulkan_encode_h264_wait(e,77) && !vulkan_encode_h264_wait(NULL,77) && waits==1);
    assert(vulkan_encode_h264_free(e));
 }
 static void frames(void)

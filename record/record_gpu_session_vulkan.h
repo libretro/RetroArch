@@ -49,6 +49,11 @@ void record_gpu_session_vulkan_cancel(record_gpu_session_vulkan_t *session);
  * retry_needed distinguishes native completion work from awaiting a producer. */
 int record_gpu_session_vulkan_step(record_gpu_session_vulkan_t *session);
 bool record_gpu_session_vulkan_retry_needed(const record_gpu_session_vulkan_t *session);
+/* Blocks until the encoder's oldest GPU work completes or @timeout_ns
+ * passes, when that is what the retry waits for; false, without waiting,
+ * otherwise. */
+bool record_gpu_session_vulkan_wait(const record_gpu_session_vulkan_t *session,
+      uint64_t timeout_ns);
 /* Atomic snapshot for controller/producers; details optional. */
 enum record_gpu_session_vulkan_error record_gpu_session_vulkan_error(
       const record_gpu_session_vulkan_t *session, int *file_error);

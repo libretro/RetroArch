@@ -5,7 +5,7 @@
 #undef main
 #undef record_gpu_worker_vulkan_new
 #include "../../../record/record_gpu_worker_vulkan_hevc.h"
-static unsigned hevc_submits, hevc_polls, hevc_releases, hevc_finishes;
+static unsigned hevc_submits, hevc_polls, hevc_releases, hevc_finishes, hevc_waits;
 
 record_gpu_worker_vulkan_t *hevc_worker_under_test(
       record_gpu_queue_t *queue, vulkan_encode_h264_t *encoder)
@@ -33,6 +33,12 @@ bool vulkan_encode_hevc_release(vulkan_encode_hevc_t *encoder)
    return vulkan_encode_h264_release((vulkan_encode_h264_t*)encoder);
 }
 
+bool vulkan_encode_hevc_wait(vulkan_encode_hevc_t *encoder, uint64_t timeout)
+{
+   hevc_waits++;
+   return vulkan_encode_h264_wait((vulkan_encode_h264_t*)encoder, timeout);
+}
+
 int vulkan_encode_hevc_finish(vulkan_encode_hevc_t *encoder)
 {
    hevc_finishes++;
@@ -48,7 +54,7 @@ int main(void)
    assert(!record_gpu_worker_vulkan_new_encoder(queue, &encoder, &empty));
    assert(record_gpu_queue_finish(queue) && record_gpu_queue_free(queue));
    assert(hevc_worker_contracts() == 0);
-   assert(hevc_submits && hevc_polls && hevc_releases && hevc_finishes);
+   assert(hevc_submits && hevc_polls && hevc_releases && hevc_finishes && hevc_waits);
    puts("HEVC factory preserves shared worker backpressure, EOS and failure ownership PASS");
    return 0;
 }

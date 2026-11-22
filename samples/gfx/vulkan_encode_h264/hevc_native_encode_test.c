@@ -64,6 +64,7 @@ static void load_frame_ops(struct native_hevc_encoder *e)
    e->submit_ops.submit = (PFN_vkQueueSubmit)c->device_proc(c->device, "vkQueueSubmit");
    e->submit_ops.status = (PFN_vkGetFenceStatus)c->device_proc(c->device, "vkGetFenceStatus");
    e->submit_ops.feedback = (PFN_vkGetQueryPoolResults)c->device_proc(c->device, "vkGetQueryPoolResults");
+   e->submit_ops.wait = (PFN_vkWaitForFences)c->device_proc(c->device, "vkWaitForFences");
 }
 static void upload_new(struct native_hevc_encoder *c,const vulkan_encode_pool_t *pool)
 {

@@ -129,6 +129,7 @@ static bool rvk_load_ops(record_vk_context_t *c)
    RVKD(ops.submit.submit, QueueSubmit);
    RVKD(ops.submit.status, GetFenceStatus);
    RVKD(ops.submit.feedback, GetQueryPoolResults);
+   RVKD(ops.submit.wait, WaitForFences);
    return true;
 }
 static bool rvk_load_capture(record_vk_context_t *c)
@@ -323,6 +324,7 @@ static record_gpu_dispatch_vulkan_t *rvk_hevc_job(record_vk_context_t *c,
    ops.submit.submit = c->ops.submit.submit;
    ops.submit.status = c->ops.submit.status;
    ops.submit.feedback = c->ops.submit.feedback;
+   ops.submit.wait = c->ops.submit.wait;
    ops.pool = c->ops.pool;
    return c->streaming
       ? record_gpu_dispatch_vulkan_new_hevc_stream(&encoder, &ops, output, c->path, &c->capture_ops, legacy)
