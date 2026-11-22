@@ -1779,6 +1779,7 @@ ui_companion_driver_t ui_companion_win32 = {
    ui_companion_win32_event_command,
    NULL,
    NULL, /* notify_thumbnails */
+   NULL, /* notify_core_updater_list */
    NULL,
    NULL,
    NULL,

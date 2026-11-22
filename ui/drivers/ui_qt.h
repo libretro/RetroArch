@@ -592,7 +592,7 @@ public slots:
    void onBrowserStartClicked();
    void onUpdaterActionClicked();
    void onCoreUpdaterTableContextMenuRequested(const QPoint &pos);
-   void onCoreUpdaterListPoll();
+   void onCoreUpdaterListPublished();
    void onUpdaterListingFinished(QStringList entries, int type, QString path);
    void onUpdaterDownloadFinished(QString fileName, bool success, bool refresh);
    void onUpdaterBackClicked();
@@ -765,8 +765,6 @@ private:
    int m_updaterViewType;
    QTableWidget *m_coreUpdaterTable;
    QTreeWidget *m_updaterDirectoryTree;
-   QTimer *m_coreUpdaterPollTimer;
-   int m_coreUpdaterPollAttempts;
    /* the menu's Online Updater list the buttons were made from */
    struct file_list *m_updaterList = NULL;
    bool m_pendingRun;

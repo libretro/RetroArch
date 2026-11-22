@@ -320,8 +320,45 @@ static void run_lane(bool refresh_menu, bool park)
    core_updater_list_free(list);
 }
 
+extern unsigned stub_core_updater_list_notified;
+
+/* The cached list, as a companion fetches it: every publish of it is
+ * told, an empty one from a fetch that failed included; a private
+ * list's is not. */
+static void run_cached_lane(const char *url, size_t expect_size)
+{
+   unsigned before = stub_core_updater_list_notified;
+   core_updater_list_t *list;
+   void *task;
+   int i;
+
+   printf("[cached lane %s]\n", url);
+   CHECK(core_updater_list_init_cached(), "cached list made");
+   list = core_updater_list_get_cached();
+   get_list_test_set_buildbot_url(url);
+   task = task_push_get_core_updater_list(list, true, false);
+   CHECK(task != NULL, "task pushed");
+   for (i = 0; i < 1000 && stub_core_updater_list_notified == before; i++)
+   {
+      task_queue_check();
+      retro_sleep(10);
+   }
+   CHECK(stub_core_updater_list_notified == before + 1,
+         "companion told once when the cached list landed");
+   CHECK(core_updater_list_size(list) == expect_size,
+         "the list it was told about");
+   for (i = 0; i < 5; i++)
+   {
+      task_queue_check();
+      retro_sleep(10);
+   }
+   menu_state_get_ptr()->flags = 0;
+}
+
 int main(void)
 {
+   char url[128];
+   unsigned notified;
    setvbuf(stdout, NULL, _IOLBF, 0);
    printf("core updater get-list menu refresh flags test\n\n");
 
@@ -336,9 +373,18 @@ int main(void)
 
    task_queue_init(true, NULL); /* threaded, as in the app */
 
+   notified = stub_core_updater_list_notified;
    run_lane(true, false);
    run_lane(false, false);
    run_lane(true, true);
+   CHECK(stub_core_updater_list_notified == notified,
+         "a private list's publish tells no companion");
+
+   snprintf(url, sizeof(url), "http://127.0.0.1:%d", srv_port);
+   run_cached_lane(url, 2);
+   /* nothing listens there: the fetch fails and an empty list lands */
+   run_cached_lane("http://127.0.0.1:1", 0);
+   core_updater_list_free_cached();
 
    task_queue_deinit();
 

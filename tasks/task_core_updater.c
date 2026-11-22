@@ -40,6 +40,7 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "../core_updater_list.h"
+#include "../ui/ui_companion_driver.h"
 #ifdef HAVE_CORE_SIGNATURES
 #include "../core_install_check.h"
 #include "../core_trust_runtime.h"
@@ -903,6 +904,10 @@ static void cb_task_core_updater_get_list(
          core_updater_list_reset(list_handle->parse_list);
       core_updater_list_swap(list_handle->core_list,
             list_handle->parse_list);
+      /* a companion showing the cached list is told it landed, an
+       * empty one being a fetch that failed */
+      if (list_handle->core_list == core_updater_list_get_cached())
+         ui_companion_driver_notify_core_updater_list();
    }
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)

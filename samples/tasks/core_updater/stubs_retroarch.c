@@ -43,6 +43,14 @@ void get_list_test_set_buildbot_url(const char *url)
 
 static struct menu_state stub_menu_state;
 
+/* How often a companion was told the cached core list landed. */
+unsigned stub_core_updater_list_notified = 0;
+
+void ui_companion_driver_notify_core_updater_list(void)
+{
+   stub_core_updater_list_notified++;
+}
+
 struct menu_state *menu_state_get_ptr(void)
 {
    return &stub_menu_state;

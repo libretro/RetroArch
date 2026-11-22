@@ -4708,6 +4708,7 @@ ui_companion_driver_t ui_companion_wimp_cocoa = {
    ui_companion_cocoa_wimp_event_command,
    ui_companion_cocoa_wimp_notify_refresh,
    ui_companion_cocoa_wimp_notify_thumbnails,
+   NULL, /* notify_core_updater_list */
    ui_companion_cocoa_wimp_msg_queue_push,
    NULL, /* render_messagebox */
    ui_companion_cocoa_wimp_get_main_window,

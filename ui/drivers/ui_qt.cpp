@@ -1917,8 +1917,6 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_updaterViewType(0)
    ,m_coreUpdaterTable(new QTableWidget(this))
    ,m_updaterDirectoryTree(new QTreeWidget(this))
-   ,m_coreUpdaterPollTimer(new QTimer(this))
-   ,m_coreUpdaterPollAttempts(0)
    ,m_pendingRun(false)
    ,m_viewOptionsDialog(NULL)
    ,m_coreInfoDialog(new CoreInfoDialog(this, NULL))
@@ -2494,8 +2492,6 @@ void MainWindow::setupSignalConnections()
          SLOT(onShowErrorMessage(QString)), Qt::QueuedConnection);
    connect(this, SIGNAL(showInfoMessageDeferred(QString)), this,
          SLOT(onShowInfoMessage(QString)), Qt::QueuedConnection);
-   connect(m_coreUpdaterPollTimer, SIGNAL(timeout()), this,
-         SLOT(onCoreUpdaterListPoll()));
    connect(m_coreUpdaterTable, SIGNAL(customContextMenuRequested(const QPoint&)),
          this, SLOT(onCoreUpdaterTableContextMenuRequested(const QPoint&)));
    connect(m_coreUpdaterTable, SIGNAL(doubleClicked(const QModelIndex&)),
@@ -3844,7 +3840,6 @@ void MainWindow::onTabWidgetIndexChanged(int index)
       /* The updater actions live in the Content Browser dock. The main
        * area starts empty and is populated only after an action is chosen. */
       m_currentBrowser = BROWSER_TYPE_UPDATER;
-      m_coreUpdaterPollTimer->stop();
       rebuildUpdaterButtons();
       m_updaterViewType = 0;
       m_updaterHomeWidget->show();
@@ -4773,7 +4768,6 @@ void MainWindow::onUpdaterActionClicked()
       m_coreUpdaterTable->setColumnCount(3);
       m_coreUpdaterTable->setHorizontalHeaderLabels(QStringList()
             << tr("Core Name") << tr("License") << tr("Date"));
-      m_coreUpdaterPollAttempts = 0;
       m_centralWidget->setCurrentWidget(m_updaterContentWidget);
       {
          command_event(CMD_EVENT_NETWORK_INIT, NULL);
@@ -4782,7 +4776,6 @@ void MainWindow::onUpdaterActionClicked()
             showMessageBox(tr("Failed to start the core list download."), MSGBOX_TYPE_ERROR);
             return;
          }
-         m_coreUpdaterPollTimer->start(200);
       }
    }
    else if (action == MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES)
@@ -4851,16 +4844,19 @@ void MainWindow::onUpdaterActionClicked()
 #endif
 }
 
-void MainWindow::onCoreUpdaterListPoll()
+/* The cached core list was published: shown if the core list is the
+ * view, an empty one being a fetch that failed. */
+void MainWindow::onCoreUpdaterListPublished()
 {
 #ifdef QT_ONLINE_UPDATER
    core_updater_list_t *coreList = core_updater_list_get_cached();
    size_t count = coreList ? core_updater_list_size(coreList) : 0;
 
+   if (m_currentBrowser != BROWSER_TYPE_UPDATER || m_updaterViewType != 1)
+      return;
    if (count > 0)
    {
       size_t i;
-      m_coreUpdaterPollTimer->stop();
       m_coreUpdaterTable->setSortingEnabled(false);
       m_coreUpdaterTable->setRowCount((int)count);
       for (i = 0; i < count; i++)
@@ -4900,11 +4896,7 @@ void MainWindow::onCoreUpdaterListPoll()
       return;
    }
 
-   if (++m_coreUpdaterPollAttempts > 150)
-   {
-      m_coreUpdaterPollTimer->stop();
-      showMessageBox(tr("The core list could not be retrieved."), MSGBOX_TYPE_ERROR);
-   }
+   showMessageBox(tr("The core list could not be retrieved."), MSGBOX_TYPE_ERROR);
 #endif
 }
 
@@ -6988,6 +6980,15 @@ static void ui_companion_qt_notify_refresh(void *data)
    win_handle->qtWindow->deferReloadPlaylists();
 }
 
+static void ui_companion_qt_notify_core_updater_list(void *data)
+{
+   ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
+   ui_window_qt_t *win_handle = handle
+      ? (ui_window_qt_t*)handle->window : NULL;
+   if (win_handle && win_handle->qtWindow)
+      win_handle->qtWindow->onCoreUpdaterListPublished();
+}
+
 static void ui_companion_qt_notify_thumbnails(void *data,
       const char *playlist_path)
 {
@@ -7031,6 +7032,7 @@ ui_companion_driver_t ui_companion_qt = {
    ui_companion_qt_event_command,
    ui_companion_qt_notify_refresh,
    ui_companion_qt_notify_thumbnails,
+   ui_companion_qt_notify_core_updater_list,
    ui_companion_qt_msg_queue_push,
    NULL,
    NULL,

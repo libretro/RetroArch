@@ -1791,6 +1791,7 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    ui_companion_cocoatouch_event_command,
    NULL, /* notify_refresh */
    NULL, /* notify_thumbnails */
+   NULL, /* notify_core_updater_list */
    NULL, /* msg_queue_push */
    NULL, /* render_messagebox */
    NULL, /* get_main_window */
