@@ -641,7 +641,8 @@ static uint8_t *apng_build_frame_png(rpng_apng_stream_t *s,
    return o;
 }
 
-/* Decode one frame to an RGBA sub-image via the ordinary rpng path. */
+/* SOURCE frames decode into their canvas rectangle; OVER needs a separate
+ * sub-image because its destination pixels are inputs to compositing. */
 static uint32_t *apng_decode_frame(rpng_apng_stream_t *s,
       const struct apng_frame *f, unsigned *fw, unsigned *fh)
 {
@@ -650,6 +651,7 @@ static uint32_t *apng_decode_frame(rpng_apng_stream_t *s,
    rpng_t  *r;
    uint32_t *data   = NULL;
    int ret;
+   bool direct = f->blend == APNG_BLEND_SOURCE;
 
    if (!png)
       return NULL;
@@ -666,6 +668,13 @@ static uint32_t *apng_decode_frame(rpng_apng_stream_t *s,
       rpng_free(r);
       return NULL;
    }
+   if (direct && !rpng_set_output(r,
+            s->canvas + (size_t)f->y_off * s->canvas_w + f->x_off,
+            (size_t)s->canvas_w))
+   {
+      rpng_free(r);
+      return NULL;
+   }
    /* Channel order: the animation contract's default (emit_argb == 0)
     * is memory R,G,B,A, which rpng produces with supports_rgba = true
     * (ABGR32 word on LE).  emit_argb == 1 wants ARGB words (BGRA
@@ -676,8 +685,9 @@ static uint32_t *apng_decode_frame(rpng_apng_stream_t *s,
    rpng_free(r);
    if (ret != IMAGE_PROCESS_END)
    {
-      rpng_pool_give(&s->pool, RPNG_POOL_OUT, data,
-            (size_t)f->width * f->height * sizeof(uint32_t));
+      if (!direct)
+         rpng_pool_give(&s->pool, RPNG_POOL_OUT, data,
+               (size_t)f->width * f->height * sizeof(uint32_t));
       return NULL;
    }
    return data;
@@ -802,14 +812,18 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
    frame = apng_decode_frame(s, f, &fw, &fh);
    if (!frame || fw != f->width || fh != f->height)
    {
-      rpng_pool_give(&s->pool, RPNG_POOL_OUT, frame,
-            (size_t)fw * fh * sizeof(uint32_t));
+      if (f->blend != APNG_BLEND_SOURCE)
+         rpng_pool_give(&s->pool, RPNG_POOL_OUT, frame,
+               (size_t)fw * fh * sizeof(uint32_t));
       return NULL;
    }
 
-   apng_composite(s, f, frame);
-   rpng_pool_give(&s->pool, RPNG_POOL_OUT, frame,
-         (size_t)fw * fh * sizeof(uint32_t));
+   if (f->blend != APNG_BLEND_SOURCE)
+   {
+      apng_composite(s, f, frame);
+      rpng_pool_give(&s->pool, RPNG_POOL_OUT, frame,
+            (size_t)fw * fh * sizeof(uint32_t));
+   }
 
    /* Record disposal state for the next call. */
    s->prev_x       = (int)f->x_off;
