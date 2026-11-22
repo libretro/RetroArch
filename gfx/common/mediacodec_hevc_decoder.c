@@ -258,6 +258,19 @@ void mediacodec_hevc_decoder_close(rh265_hw_ops_t *ops)
    android_image_queue_close(d->images);
    d->importer.enqueue(d->importer.context, d);
 }
+/* MediaCodec can retain compressed input past the SPS display reorder bound.
+ * Reserve a fixed submission window without enlarging reference lists. */
+#define MEDIACODEC_HEVC_INPUT_DELAY 4
+static int mediacodec_hevc_decoder_available(void *opaque,
+      unsigned *capacity, uint32_t *writable)
+{
+   mediacodec_hevc_decoder_t *d = (mediacodec_hevc_decoder_t *)opaque;
+   if (!d || d->closed || d->failed || !capacity || !writable)
+      return -1;
+   *capacity = d->slots;
+   *writable = (~(uint32_t)0) >> (32 - d->slots);
+   return 0;
+}
 bool mediacodec_hevc_decoder_open(JNIEnv *env, const rh265_video *source,
       const rh265_video_params_t *params, unsigned slots, unsigned max_input,
       const mediacodec_hevc_import_t *importer, rh265_hw_ops_t *ops)
@@ -271,7 +284,8 @@ bool mediacodec_hevc_decoder_open(JNIEnv *env, const rh265_video *source,
    if (!ops)
       return false;
    memset(ops, 0, sizeof(*ops));
-   if (!env || !source || !params || !slots || slots > 32 || !max_input
+   if (!env || !source || !params || !slots || slots > 32 - MEDIACODEC_HEVC_INPUT_DELAY
+         || !max_input
          || max_input > 64u * 1024u * 1024u || params->width <= 0
          || params->height <= 0 || params->chroma_format_idc != 1
          || (params->bit_depth != 8 && params->bit_depth != 10)
@@ -296,6 +310,7 @@ bool mediacodec_hevc_decoder_open(JNIEnv *env, const rh265_video *source,
       return false;
    }
    d->params = *params;
+   slots += MEDIACODEC_HEVC_INPUT_DELAY;
    d->slots = slots;
    d->capacity = max_input;
    d->packet = (uint8_t *)malloc(max_input);
@@ -323,6 +338,8 @@ bool mediacodec_hevc_decoder_open(JNIEnv *env, const rh265_video *source,
    ops->decode = mediacodec_hevc_decoder_decode;
    ops->output = mediacodec_hevc_decoder_output;
    ops->drain = mediacodec_hevc_decoder_drain;
+   ops->available = mediacodec_hevc_decoder_available;
+   ops->input_delay = MEDIACODEC_HEVC_INPUT_DELAY;
    return true;
 fail:
    if (d->images)

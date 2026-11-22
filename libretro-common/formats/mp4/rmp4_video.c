@@ -2005,7 +2005,7 @@ static int rmp4_video_stream_advance(rmp4_video_stream_t *s,
 
    if (!s)
       return -1;
-   bounded = s->h265_ahead && s->h265 && rh265_video_is_hw(s->h265);
+   bounded = s->h265 && rh265_video_is_hw(s->h265);
    s->completed = 0;
    s->waiting = 0;
 #ifdef HAVE_RAV1

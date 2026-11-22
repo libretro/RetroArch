@@ -5625,6 +5625,7 @@ static int rh265_hw_decode(rh265_video *v, const uint8_t *data, size_t size,
 {
    rh265_hw_t *hw = v->hw;
    int ret;
+   ahead = ahead || hw->session.ops.input_delay != 0;
    video_hw_frame_abandon(&hw->shown);
    memset(&hw->shown, 0, sizeof(hw->shown));
    if (hw->pending)

@@ -34,7 +34,7 @@ typedef struct rh265_hw_state
    uint64_t serial, epoch, output_epoch[32];
    int32_t poc[32], prev_poc_tid0;
    uint32_t references, outputs;
-   unsigned slots, width, height, bit_depth, poc_log2;
+   unsigned slots, width, height, bit_depth, poc_log2, input_delay;
    int started, rasl_skip;
 } rh265_hw_state_t;
 
@@ -99,7 +99,8 @@ static INLINE int rh265_hw_prepare_available(const rh265_hw_state_t *s,
          || h->pic_output_flag < 0 || h->pic_output_flag > 1)
       return -1;
    if (params->pcm_enabled || params->tiles_enabled || params->dependent_slice_segments_enabled
-         || s->slots < (unsigned)params->max_dec_pic_buffering
+         || s->input_delay > s->slots
+         || s->slots - s->input_delay < (unsigned)params->max_dec_pic_buffering
          || (!s->started && type < 16) || (type >= 16 && !au->intra)
          || (s->started && (s->width != (unsigned)params->width
                || s->height != (unsigned)params->height || s->bit_depth != (unsigned)params->bit_depth
@@ -207,7 +208,7 @@ static INLINE int rh265_hw_prepare_available(const rh265_hw_state_t *s,
       else if (out->slot == s->slots && (available & (UINT32_C(1) << slot)))
          out->slot = slot;
    }
-   if (held >= (unsigned)params->max_dec_pic_buffering)
+   if (held >= (unsigned)params->max_dec_pic_buffering + s->input_delay)
    { memset(out, 0, sizeof(*out)); return 1; }
    if (out->slot == s->slots)
    { memset(out, 0, sizeof(*out)); return 3; }
@@ -292,6 +293,9 @@ typedef struct rh265_hw_ops
    /* Optional nonblocking query: 0 supplies capacity/writable mask, negative
     * failure. Capacity may exceed the requested slots but stays fixed. */
    int (*available)(void *decoder, unsigned *capacity, uint32_t *writable);
+   /* Bounded compressed-input latency beyond the decoded-picture buffer.
+    * Only asynchronous backends opt in; capacity includes these slots. */
+   unsigned input_delay;
 } rh265_hw_ops_t;
 
 typedef struct rh265_hw_backend
@@ -326,6 +330,9 @@ static INLINE bool rh265_hw_session_init(rh265_hw_session_t *s,
    memset(s, 0, sizeof(*s));
    if (!ops || !ops->decode || !ops->output || !rh265_hw_state_init(&s->state, slots))
       return false;
+   if (ops->input_delay >= slots)
+      return false;
+   s->state.input_delay = ops->input_delay;
    s->ops = *ops;
    return true;
 }

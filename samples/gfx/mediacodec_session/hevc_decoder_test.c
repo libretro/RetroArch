@@ -191,6 +191,13 @@ int main(void)
    reader_freed = 0;
    assert(mediacodec_hevc_decoder_open((JNIEnv *)&native,
          (rh265_video *)&native, &params, 4, 1024, &importer, &ops));
+   {
+      unsigned capacity = 0;
+      uint32_t writable = 0;
+      assert(ops.input_delay == 4 && ops.available);
+      assert(!ops.available(ops.decoder, &capacity, &writable));
+      assert(capacity == 8 && writable == 255);
+   }
    busy = 1;
    assert(ops.decode(ops.decoder, &params, &au, &slice, &picture) == 1
          && !submitted);

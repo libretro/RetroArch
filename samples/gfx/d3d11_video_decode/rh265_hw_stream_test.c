@@ -12,7 +12,7 @@
 static unsigned failures, opened, closed, accepted, calls, abandoned, exported;
 static int decode_busy, output_busy, refuse, require_sets;
 static int enable_drain, drain_busy, drain_error;
-static unsigned drains;
+static unsigned drains, input_delay;
 static uint32_t decoder_slots_held;
 static int complete_later;
 static int enable_available, available_error, capacity_override = -1;
@@ -101,10 +101,11 @@ static bool open_backend(void *user, const rh265_video *source, const rh265_vide
    d->width = params->width - params->crop_left - params->crop_right;
    d->height = params->height - params->crop_top - params->crop_bottom;
    d->bit_depth = params->bit_depth;
-   d->slots = slots + 1;
+   d->slots = slots + 1 + input_delay;
    ops->decoder = d; ops->decode = decode; ops->output = output;
    ops->drain = enable_drain ? drain_backend : NULL;
    ops->available = enable_available ? available : NULL;
+   ops->input_delay = input_delay;
    opened++;
    return true;
 }
@@ -426,8 +427,31 @@ static void check_ahead(void)
    enable_available = available_error = 0; available_mask = 0;
 }
 
+static void check_async_input(void)
+{
+   rh265_video *v;
+   int64_t timestamp = -99;
+   unsigned before = accepted;
+   rh265_set_hw_backend(&backend);
+   enable_available = 1; available_mask = ~(uint32_t)0;
+   input_delay = 4;
+   v = start(); if (!v) return;
+   CHECK(v->hw->session.state.input_delay == 4);
+   CHECK(v->hw->session.state.slots
+         == (unsigned)v->hw->params.max_dec_pic_buffering + 6);
+   output_busy = 1;
+   /* A delayed Surface must permit the next compressed packet, even through
+    * the ordinary API. Waiting on this packet would starve the codec. */
+   CHECK(!rh265_video_decode_timed(v, hevc_sample8,
+            sizeof(hevc_sample8), 123, &timestamp));
+   CHECK(accepted == before + 1 && timestamp == -99 && !v->hw->pending);
+   rh265_video_close(v);
+   input_delay = 0; enable_available = 0; available_mask = 0;
+}
+
 int main(void)
 {
+   check_async_input();
    check_decoder();
    check_ahead();
    check_discard();
