@@ -371,10 +371,12 @@ public:
 /* The file browser's table, backed by the companion core's browse
  * listing (enumerated, stat'ed and formatted off the UI thread, shared
  * by every companion): this class only paints it. Columns are Qt's
- * Name / Size / Type / Date Modified. A search filter keeps a row map. */
+ * Name / Size / Type / Date Modified / Path; a row is the listing's
+ * index. A search lists its own matches, walked off the UI thread. */
 struct BrowseSearchEntry
 {
    QString path;
+   QString dir;
    QString name;
    QString type;
    qint64 size;
@@ -392,10 +394,11 @@ public:
    int columnCount(const QModelIndex &parent = QModelIndex()) const { (void)parent; return 5; }
    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
-   /* The core listing changed: rebuild the row map and reset. */
+   /* The core listing changed: reset. */
    void reload();
    void setFilter(const QRegularExpression &re);
-   Q_INVOKABLE void setSearchResults(const QVector<BrowseSearchEntry> &entries, quint64 generation);
+   Q_INVOKABLE void setSearchResults(const QVector<BrowseSearchEntry> &entries,
+         quint64 generation, int sortColumn, int sortOrder);
    /* Header click: the core sorts, every companion the same way. */
    void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
    /* Browse index (into the core listing) behind a table row, or -1. */
@@ -403,14 +406,14 @@ public:
    QString pathAt(const QModelIndex &index) const;
    bool isDirAt(const QModelIndex &index) const;
 private:
-   QVector<long> m_rows;   /* table row -> browse index */
+   size_t m_count = 0;     /* rows: the core's listing, by its index */
+   QString m_dir;          /* the listing's folder, for the Path column */
    QRegularExpression m_filter;
    QVector<BrowseSearchEntry> m_searchEntries;
    bool m_recursiveSearch = false;
    quint64 m_searchGeneration = 0;
    int m_searchSortColumn = 0;
    Qt::SortOrder m_searchSortOrder = Qt::AscendingOrder;
-   bool m_applyingSearchResults = false;
    QSharedPointer<QAtomicInt> m_searchCancel;
    QIcon m_folderIcon, m_fileIcon, m_driveIcon;
 };
