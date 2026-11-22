@@ -230,7 +230,8 @@ endif
 
 ifeq ($(HAVE_VULKAN),1)
 # slang shaders (Vulkan, GLES 3) are compiled by rslc
-DEFINES += -DHAVE_VULKAN \
+DEFINES += -DHAVE_VULKAN_GRIFFIN_SEPARATE \
+	   -DHAVE_VULKAN \
 	   -DHAVE_SLANG \
 	   -DHAVE_RSLC \
 	   -D__STDC_LIMIT_MACROS
@@ -329,7 +330,8 @@ INCFLAGS         += $(LOCAL_PATH)/$(RARCH_DIR)/gfx/include
 LOCAL_C_INCLUDES += $(INCFLAGS)
 
 LOCAL_CFLAGS    += -Wno-sign-compare -Wno-unused-variable -Wno-parentheses
-LOCAL_SRC_FILES += $(RARCH_DIR)/griffin/griffin_rslc.c
+LOCAL_SRC_FILES += $(RARCH_DIR)/griffin/griffin_rslc.c \
+                   $(RARCH_DIR)/gfx/drivers/vulkan.c
 endif
 
 LOCAL_LDLIBS += -lOpenSLES

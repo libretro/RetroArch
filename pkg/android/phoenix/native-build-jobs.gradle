@@ -1,0 +1,42 @@
+// A release Griffin compiler can occupy several GiB on its own. Leave room
+// for Gradle and the linker, including when the runner exposes the host CPUs.
+def jobsForMemory = { int cpus, long bytes ->
+    long gib = 1024L * 1024L * 1024L
+    long reserve = gib + (gib >> 1)
+    int memoryJobs = bytes > reserve ? (int)Math.min(Integer.MAX_VALUE, (bytes - reserve).intdiv(4L * gib)) : 1
+    Math.max(1, Math.min(Math.max(1, cpus), memoryJobs))
+}
+
+def memoryBytes = 0L
+try {
+    memoryBytes = java.lang.management.ManagementFactory.operatingSystemMXBean.totalMemorySize
+} catch (Exception ignored) {
+    // An unknown memory budget runs the large native units one at a time.
+}
+// Cover older JVMs which report the host memory rather than the container cap.
+['/sys/fs/cgroup/memory.max', '/sys/fs/cgroup/memory/memory.limit_in_bytes'].each { path ->
+    try {
+        String value = new File(path).text.trim()
+        if (value != 'max') {
+            long limit = Long.parseLong(value)
+            if (limit > 0 && limit < (1L << 60) && (memoryBytes == 0 || limit < memoryBytes)) memoryBytes = limit
+        }
+    } catch (Exception ignored) {
+        // Missing/unlimited cgroups leave the JVM's memory budget in place.
+    }
+}
+ext.retroarchNativeJobs = jobsForMemory(Runtime.runtime.availableProcessors(), memoryBytes)
+
+tasks.register('checkNativeBuildParallelism') {
+    doLast {
+        long gib = 1024L * 1024L * 1024L
+        assert jobsForMemory(32, 4 * gib) == 1
+        assert jobsForMemory(32, 8 * gib) == 1
+        assert jobsForMemory(32, 16 * gib) == 3
+        assert jobsForMemory(32, 64 * gib) == 15
+        assert jobsForMemory(2, 64 * gib) == 2
+        assert jobsForMemory(32, 0) == 1
+        assert jobsForMemory(0, gib) == 1
+        println "Native compiler budget: ${retroarchNativeJobs} job(s), ${memoryBytes} memory bytes"
+    }
+}

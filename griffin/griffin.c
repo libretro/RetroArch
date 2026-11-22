@@ -856,7 +856,7 @@ VIDEO DRIVER
 #include "../gfx/common/spirv_shaders.c"
 #endif
 
-#ifdef HAVE_VULKAN
+#if defined(HAVE_VULKAN) && !defined(HAVE_VULKAN_GRIFFIN_SEPARATE)
 #include "../gfx/drivers/vulkan.c"
 #endif
 
