@@ -306,7 +306,50 @@ int main(void)
    before=copies;draw(&c,&t,&h);assert(copies==before); /* crop also reused */
    h.copies=0;before=copies;
    for(i=0;i<6;i++)draw(&c,&t,&h);
-   assert(copies==before+2); /* one crop and one owned snapshot */
+   assert(copies==before+1); /* the crop itself becomes the owned snapshot */
+   {
+      unsigned version,repeat,j,k,expected[3],names;
+      struct framebuffer *owned[4];
+      for(j=0;j<4;j++) { h.copies=0;draw(&c,&t,&h); }
+      INFO(&c);
+      for(j=0;j<3;j++) {
+         owned[j]=c.original_history[j];
+         expected[j]=images[c.common.original_history[j].texture.image].pixels[0];
+      }
+      owned[3]=c.copy_framebuffer;
+      for(version=1;version<=24;version++)
+      {
+         for(j=0;j<64;j++)images[t.image].pixels[j]=2000+version;
+         h.copies=0;
+         for(repeat=0;repeat<version%5+1;repeat++)
+         {
+            before=copies;names=allocated;
+            draw(&c,&t,&h);INFO(&c);
+            assert(copies==before+(repeat?0:1));
+            assert(allocated==names);
+            for(j=2;j;j--)expected[j]=expected[j-1];
+            expected[0]=2000+version;
+            for(j=0;j<3;j++) {
+               assert(images[c.common.original_history[j].texture.image].pixels[0]==expected[j]);
+               assert(c.original_history[j]!=c.copy_framebuffer);
+               for(k=0;k<j;k++)assert(c.original_history[j]!=c.original_history[k]);
+            }
+            for(j=0;j<4;j++) {
+               unsigned count=c.copy_framebuffer==owned[j];
+               for(k=0;k<3;k++)count+=c.original_history[k]==owned[j];
+               assert(count==1); /* each physical framebuffer has one owner */
+            }
+         }
+      }
+      before=copies;h.managed=false;
+      for(j=0;j<4;j++)draw(&c,&t,&h);
+      assert(copies==before+4);
+      h.managed=true;h.copies=0;warm(&c,&t,&h);
+   }
+   before=copies;
+   for(i=0;i<4;i++) { NORMAL(&c,&t);end_frame(&c); }
+   assert(copies==before+4); /* ordinary core views transfer the crop too */
+   warm(&c,&t,&h);check_pixels(&c,&t);
    c.copy_framebuffer->complete=false;fail_resize=true;
    draw(&c,&t,&h);assert(h.copies==0);
    fail_resize=false;

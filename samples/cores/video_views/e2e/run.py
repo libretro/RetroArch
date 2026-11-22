@@ -386,6 +386,7 @@ RECT_PRESETS = [('rect_nearest.slangp', True, 0),
                 ('rect_nearest_mirror.slangp', True, 0),
                 ('rect_linear.slangp', True, 0),
                 ('rect_linear_border.slangp', True, 1),
+                ('rect_hist_linear_repeat.slangp', False, 0),
                 ('rect_full.slangp', True, 0),
                 ('rect_two.slangp', True, 0)]
 RECT_HW = {'glcore': ('gl', 'gl_topleft')}

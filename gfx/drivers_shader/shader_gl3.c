@@ -3363,8 +3363,18 @@ static void gl3_chain_end_frame(struct gl3_filter_chain *chain)
 
       if (!repeated)
       {
+         if (     tmp->complete && chain->copy_framebuffer
+               && chain->copy_framebuffer->complete
+               && chain->input_texture.image == chain->copy_framebuffer->image)
+         {
+            /* The owned crop is already the snapshot. The retired target
+             * becomes scratch only after its last logical reader. */
+            chain->original_history[slot] = chain->copy_framebuffer;
+            chain->copy_framebuffer = tmp;
+            tmp = chain->original_history[slot];
+         }
          /* A frame read where it lies is copied from there */
-         if (tmp->complete && chain->input_texture.padded_dims)
+         else if (tmp->complete && chain->input_texture.padded_dims)
          {
             const gl3_filter_chain_texture *in = &chain->input_texture;
             float pw = (float)VIDEO_SCALE_W(in->padded_dims);
