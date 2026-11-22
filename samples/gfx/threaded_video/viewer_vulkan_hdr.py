@@ -52,10 +52,13 @@ typedef unsigned VkDevice;
 #define VK_FORMAT_UNDEFINED 0
 #define VK_IMAGE_LAYOUT_UNDEFINED 0
 struct vk_texture {
-   unsigned image,view,format,history_view,history_refs,park_frames;
+   unsigned image,view,format,history_view,history_refs,park_frames,levels;
    unsigned memory,buffer,type,flags,memory_type,dims,layout;
    size_t offset,stride,size,memory_size;
    void *mapped;
+   struct vk_media_version *media_version;
+   struct vk_media_pool *media_pool;
+   struct vk_texture *media_owner;
    bool immutable;
    mpsc_stack_node_t park;
 };
@@ -66,6 +69,7 @@ struct context { unsigned current_frame_index,num_swapchain_images,device; };
 typedef struct {
    mpsc_stack_t deferred_textures_in;
    mpsc_stack_node_t *deferred_textures;
+   uint64_t media_submit_serial;
    gfx_media_history_t media_history[2];
    uintptr_t media_history_texture[2], media_last_texture;
    unsigned flags,keep_render_pass,cmd,media_shader_frame;
@@ -96,6 +100,15 @@ static void vulkan_filter_chain_end_frame(vulkan_filter_chain_t *c,unsigned cmd)
 static void vkCmdBeginRenderPass(unsigned cmd,const VkRenderPassBeginInfo *r,unsigned mode) { (void)cmd;(void)mode;assert(r->framebuffer==4);begun++; }
 static void vkCmdEndRenderPass(unsigned cmd) { (void)cmd;ended++; }
 static vulkan_filter_chain_t *vulkan_media_chain(vk_t *v,unsigned i) { return v->media_shader_chain[i]; }
+struct vk_media_version { struct vk_texture texture; };
+static bool vulkan_media_pool_held(const struct vk_texture *t){return t->history_refs!=0;}
+static unsigned pool_requests;
+static bool needs_history;
+static void vulkan_media_pool_get(vk_t *v,struct vk_texture *t){(void)v;(void)t;pool_requests++;}
+static void vulkan_media_read(void *owner){(void)owner;}
+static bool vulkan_filter_chain_uses_history(const vulkan_filter_chain_t *c){(void)c;return needs_history;}
+static void vulkan_filter_chain_visit_history(const vulkan_filter_chain_t *c,void (*read)(void *))
+{if(c->owner)read(c->owner);}
 #define VK_PARKED_TEXTURE(node) ((struct vk_texture*)((char*)(node) - offsetof(struct vk_texture,park)))
 static unsigned retired,views_deleted[512],images_deleted;
 static void vkUnmapMemory(VkDevice device,unsigned memory){(void)device;(void)memory;}
@@ -148,6 +161,11 @@ int main(void)
       assert(v.vk_vp.x==17 && begun==2*(i+1) && ended==begun);
       assert(viewport==i+1 && offscreen==i+1);
    }
+   assert(!pool_requests);
+   needs_history=true;
+   assert(gfx_display_vk_media_shader_draw(&v,(uintptr_t)&texture,
+      VIDEO_SCALE_PACK(320,240),VIDEO_SCALE_PACK(640,480),0,VIDEO_SCALE_PACK(320,240)));
+   assert(pool_requests==1);needs_history=false;
    texture.history_view=123;texture.immutable=true;
    v.flags=0;
    assert(gfx_display_vk_media_shader_draw(&v,(uintptr_t)&texture,

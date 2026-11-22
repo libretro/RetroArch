@@ -2389,7 +2389,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono libfreetype-dev
+      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono libfreetype-dev libvulkan-dev
 
     steps:
       - name: Checkout
@@ -2478,6 +2478,9 @@ jobs:
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/d3d12_viewer_colour.py
           CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/slang_history.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/slang_history.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/vulkan_media_pool.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/vulkan_media_pool.py
+          python3 samples/gfx/threaded_video/vulkan_media_pool.py --gpu
           CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/viewer_history.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/viewer_history.py
           CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/metal_viewer_colour.py

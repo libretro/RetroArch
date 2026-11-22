@@ -154,6 +154,12 @@ void vulkan_filter_chain_set_viewer_colour(
 void vulkan_filter_chain_set_source_hdr(
       vulkan_filter_chain_t *chain, unsigned source_hdr);
 
+bool vulkan_filter_chain_uses_history(const vulkan_filter_chain_t *chain);
+
+/* Mark the immutable inputs consumed by the commands about to be recorded. */
+void vulkan_filter_chain_visit_history(const vulkan_filter_chain_t *chain,
+      void (*read)(void *));
+
 /* Immutable, level-zero history storage; its owner survives until the
  * input and every history alias release it. NULL disables borrowing. */
 void vulkan_filter_chain_set_history_lease(vulkan_filter_chain_t *chain,

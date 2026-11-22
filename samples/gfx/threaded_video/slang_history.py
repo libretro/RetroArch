@@ -317,7 +317,8 @@ static void test_borrowed_history(void)
 #endif
 
 #ifndef TEST_GL
-struct owner { unsigned refs,retains,releases; };
+struct owner { unsigned refs,retains,releases,reads; };
+static void read_owner(void *p){((struct owner*)p)->reads++;}
 static void retain_owner(void *p)
 {struct owner *o=(struct owner*)p;o->refs++;o->retains++;}
 static void release_owner(void *p)
@@ -340,6 +341,7 @@ static void test_vulkan_borrowed_history(void)
    c.original_history=slots;c.num_history=3;c.common.num_original_history=3;
    c.passes[0]=&pass;c.history_leases=leases;
    gfx_media_history_ring_init(&c.history_ring,storage,3);
+   assert(vulkan_filter_chain_uses_history(&c));
    h.managed=true;t.dims=t.padded_dims=VIDEO_SCALE_PACK(4,3);t.format=2;
    t.layout=VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
    t.image=image_new(t.dims);images[t.image].layout=t.layout;images[t.image].pixels[0]=77;t.view=10;
@@ -355,6 +357,8 @@ static void test_vulkan_borrowed_history(void)
       assert(c.common.original_history[i].texture.image==t.image);
       assert(c.common.original_history[i].texture.view==11);
    }
+   vulkan_filter_chain_visit_history(&c,read_owner);
+   assert(owners[0].reads==owners[0].refs);
    assert(owners[0].refs==2); /* repeated logical entries share one physical lease */
    other=t;other.image=image_new(t.dims);images[other.image].layout=t.layout;images[other.image].pixels[0]=88;
    for(i=0;i<16;i++)
@@ -382,6 +386,7 @@ static void test_vulkan_borrowed_history(void)
    slang_chain_release_history_leases(&c,true);
    slang_chain_release_history_leases(&c,true);
    assert(!owners[0].refs && !owners[1].refs);
+   c.num_history=0;assert(!vulkan_filter_chain_uses_history(&c));
    for(i=0;i<2;i++)assert(owners[i].retains==owners[i].releases);
    puts("PASS Vulkan immutable history: original image/level-zero view, no copies or barriers, aliases, ownership and mutable fallback");
 }
@@ -624,7 +629,9 @@ for api, filename, prefix in (("gl3", "shader_gl3.c", "gl3"), ("vulkan", "shader
         leases += "\n".join(function(source, signature) for signature in (
             "static void slang_history_lease_release(",
             "static void slang_chain_release_history_leases(",
-            "void vulkan_filter_chain_set_history_lease("))
+            "void vulkan_filter_chain_set_history_lease(",
+            "void vulkan_filter_chain_visit_history(",
+            "bool vulkan_filter_chain_uses_history("))
     unit = unit.replace("\nLEASES\n", leases + "\n")
     unit = unit.replace("\nINPUT\n", "\n" + function(source, "static void " + prefix + "_chain_set_input_texture(") + "\n")
     unit = unit.replace("\nNORMAL_SETTER\n", "\n" + function(source, "void " + api + "_filter_chain_set_input_texture(") + "\n")

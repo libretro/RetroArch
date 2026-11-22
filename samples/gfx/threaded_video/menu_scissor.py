@@ -42,7 +42,9 @@ fixture = r'''
 typedef unsigned VkDescriptorSet;
 typedef struct { struct { int x,y; } offset; struct { unsigned width,height; } extent; } VkRect2D;
 typedef struct { float x,y,width,height,minDepth,maxDepth; } VkViewport;
-struct vk_texture { unsigned image; };
+struct vk_texture { unsigned image; struct { struct vk_texture *texture; } *media_version; };
+static struct vk_texture *vulkan_media_sample_texture(struct vk_texture *t){return t;}
+static void vulkan_media_read(void *owner){(void)owner;}
 struct vk_buffer_range { void *data; unsigned buffer,offset; };
 struct vk_draw_triangles {
    struct vk_texture *texture;

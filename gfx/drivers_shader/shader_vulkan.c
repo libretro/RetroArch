@@ -5771,6 +5771,23 @@ void vulkan_filter_chain_set_source_hdr(
    chain->common.source_hdr = source_hdr ? 1 : 0;
 }
 
+bool vulkan_filter_chain_uses_history(const vulkan_filter_chain_t *chain)
+{
+   return chain->num_history != 0;
+}
+
+void vulkan_filter_chain_visit_history(const vulkan_filter_chain_t *chain,
+      void (*read)(void *))
+{
+   unsigned i;
+   if (chain->input_lease.owner)
+      read(chain->input_lease.owner);
+   if (chain->history_leases)
+      for (i = 0; i < chain->num_history; i++)
+         if (chain->history_leases[i].owner)
+            read(chain->history_leases[i].owner);
+}
+
 void vulkan_filter_chain_set_history_lease(vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_texture *texture, void *owner,
       void (*retain)(void *), void (*release)(void *))
