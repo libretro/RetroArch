@@ -52,7 +52,7 @@
 
 #ifdef HAVE_NETWORKING
 #include <net/net_http_parse.h>
-#include "../../network/netplay/netplay.h"
+#include "../network/netplay/netplay.h"
 #include "../core_updater_list.h"
 #endif
 
