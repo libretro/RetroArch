@@ -771,7 +771,7 @@ build-retroarch-libounce-aarch64:
     expire_in: 10 min
   dependencies: []
   script:
-    - "make clean"
+    - "make -f Makefile.libounce clean"
     - "make -f Makefile.libounce -j$NUMPROC"
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video"
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/pkg"
