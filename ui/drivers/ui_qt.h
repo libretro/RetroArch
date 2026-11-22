@@ -535,6 +535,7 @@ public:
    void setTheme(Theme theme = THEME_SYSTEM_DEFAULT);
    Theme theme();
    bool isDarkTheme() const;
+   void rebuildUpdaterButtons();
    Theme getThemeFromString(QString themeString);
    const char *getThemeString(Theme theme);
    QString getSelectedCorePath();

@@ -81,13 +81,10 @@ extern "C" {
 
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
-#include "../../menu/menu_cbs.h"
+#include "../../menu/menu_displaylist.h"
 #endif
 
 #include "../../core_info.h"
-#ifdef ANDROID
-#include "../../os/android/play_feature_delivery.h"
-#endif
 #include "../../command.h"
 #include "../ui_companion_driver.h"
 #include "../companion/companion_core.h"
@@ -112,10 +109,15 @@ companion_core_t *ui_companion_qt_core(void)
 #include "../../msg_hash.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
-#ifdef HAVE_NETWORKING
-#include "../../tasks/task_file_transfer.h"
+/* The Online Updater tab: where the menu has one */
+#if defined(HAVE_MENU) && defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
+#define QT_ONLINE_UPDATER
 #endif
+
+#ifdef QT_ONLINE_UPDATER
+#include "../../tasks/task_file_transfer.h"
 #include "../../core_updater_list.h"
+#endif
 #ifdef HAVE_CORE_LOAD_CHECK
 #include "../../core_load_check.h"
 
@@ -3738,7 +3740,7 @@ void MainWindow::onTabWidgetIndexChanged(int index)
    QString str = m_browserAndPlaylistTabWidget->tabText(index);
 #ifdef HAVE_MENU
    if (m_currentBrowser == BROWSER_TYPE_SETTINGS
-         && str != QObject::tr("Settings"))
+         && str != msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS))
       m_viewOptionsDialog->applyCurrentCategory();
 #endif
    if (str == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER))
@@ -3761,7 +3763,7 @@ void MainWindow::onTabWidgetIndexChanged(int index)
       onCurrentItemChanged(m_tableView->currentIndex());
    }
 #ifdef HAVE_MENU
-   else if (str == QObject::tr("Settings"))
+   else if (str == msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS))
    {
       m_currentBrowser = BROWSER_TYPE_SETTINGS;
       m_centralWidget->setCurrentWidget(m_viewOptionsDialog->categoryPagesWidget());
@@ -3775,6 +3777,7 @@ void MainWindow::onTabWidgetIndexChanged(int index)
        * area starts empty and is populated only after an action is chosen. */
       m_currentBrowser = BROWSER_TYPE_UPDATER;
       m_coreUpdaterPollTimer->stop();
+      rebuildUpdaterButtons();
       m_updaterViewType = 0;
       m_updaterHomeWidget->show();
       m_coreUpdaterTable->clearContents();
@@ -4310,7 +4313,7 @@ void MainWindow::onBrowserUpClicked()
          QAbstractItemView::EnsureVisible);
 }
 
-#ifdef HAVE_NETWORKING
+#ifdef QT_ONLINE_UPDATER
 struct QtUpdaterListingData
 {
    QPointer<MainWindow> window;
@@ -4570,9 +4573,122 @@ static void qt_updater_request_content_listing(MainWindow *window,
 }
 #endif
 
+#ifdef QT_ONLINE_UPDATER
+/* The Online Updater entries this window has a view or an action for;
+ * which of them appear, and in what order, is the menu's list. */
+static const enum msg_hash_enums qt_updater_entries[] = {
+   MENU_ENUM_LABEL_CORE_UPDATER_LIST,
+   MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,
+   MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
+   MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,
+   MENU_ENUM_LABEL_UPDATE_ASSETS,
+   MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES,
+   MENU_ENUM_LABEL_UPDATE_CHEATS,
+   MENU_ENUM_LABEL_UPDATE_DATABASES,
+   MENU_ENUM_LABEL_UPDATE_OVERLAYS,
+   MENU_ENUM_LABEL_UPDATE_CG_SHADERS,
+   MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,
+   MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS
+};
+
+static file_list_t *qt_updater_list_build(void)
+{
+   settings_t *settings = config_get_ptr();
+   file_list_t *list    = (file_list_t*)calloc(1, sizeof(*list));
+   if (list && menu_displaylist_online_updater_shown(settings))
+      menu_displaylist_parse_online_updater(list, settings);
+   return list;
+}
+
+static enum msg_hash_enums qt_updater_entry_at(const file_list_t *list,
+      size_t i)
+{
+   size_t j;
+   const menu_file_list_cbs_t *cbs = (const menu_file_list_cbs_t*)
+      list->list[i].actiondata;
+   if (cbs)
+      for (j = 0; j < ARRAY_SIZE(qt_updater_entries); j++)
+         if (cbs->enum_idx == qt_updater_entries[j])
+            return cbs->enum_idx;
+   return MSG_UNKNOWN;
+}
+
+/* An entry without a view here runs the menu's own OK for it. */
+static void qt_updater_run_entry(enum msg_hash_enums entry)
+{
+   size_t i;
+   file_list_t *list = qt_updater_list_build();
+   if (!list)
+      return;
+   for (i = 0; i < list->size; i++)
+   {
+      menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+         list->list[i].actiondata;
+      if (     qt_updater_entry_at(list, i) == entry
+            && cbs->action_ok)
+      {
+         cbs->action_ok(list->list[i].path, list->list[i].label,
+               list->list[i].type, i, i);
+         break;
+      }
+   }
+   file_list_free(list);
+}
+#endif
+
+/* The buttons follow the menu's Online Updater list, rebuilt each time
+ * the tab is shown so setting changes are picked up. */
+void MainWindow::rebuildUpdaterButtons()
+{
+#ifdef QT_ONLINE_UPDATER
+   QLayout *layout   = m_updaterHomeWidget->layout();
+   QLayoutItem *item = NULL;
+   file_list_t *list;
+   size_t i;
+
+   if (!layout)
+      return;
+   while ((item = layout->takeAt(0)) != NULL)
+   {
+      delete item->widget();
+      delete item;
+   }
+
+   if ((list = qt_updater_list_build()))
+   {
+      for (i = 0; i < list->size; i++)
+      {
+         enum msg_hash_enums entry = qt_updater_entry_at(list, i);
+         QPushButton *button;
+         QString text;
+         if (entry == MSG_UNKNOWN)
+            continue;
+         text = QString::fromUtf8(list->list[i].path);
+         if (     entry == MENU_ENUM_LABEL_CORE_UPDATER_LIST
+               || entry == MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES
+               || entry == MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS)
+            text += QStringLiteral("...");
+         button = new QPushButton(text, m_updaterHomeWidget);
+         button->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+         button->setProperty("updater_action", (int)entry);
+         layout->addWidget(button);
+         connect(button, SIGNAL(clicked()), this,
+               SLOT(onUpdaterActionClicked()));
+      }
+      file_list_free(list);
+   }
+   if (layout->count() == 0)
+      layout->addWidget(new QLabel(
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS),
+               m_updaterHomeWidget));
+   static_cast<QVBoxLayout*>(layout)->addStretch(1);
+#endif
+}
+
 void MainWindow::onUpdaterActionClicked()
 {
-#ifdef HAVE_NETWORKING
+#ifdef QT_ONLINE_UPDATER
    QPushButton *button = qobject_cast<QPushButton*>(sender());
    settings_t *settings = config_get_ptr();
    int action;
@@ -4607,28 +4723,6 @@ void MainWindow::onUpdaterActionClicked()
             << tr("Core Name") << tr("License") << tr("Date"));
       m_coreUpdaterPollAttempts = 0;
       m_centralWidget->setCurrentWidget(m_updaterContentWidget);
-#if defined(ANDROID)
-      if (play_feature_delivery_enabled())
-      {
-         struct string_list *availableCores = play_feature_delivery_available_cores();
-         bool success = false;
-         if (availableCores)
-         {
-            core_updater_list_reset(coreList);
-            success = core_updater_list_parse_pfd_data(coreList,
-                  settings->paths.directory_libretro,
-                  settings->paths.path_libretro_info, availableCores);
-            string_list_free(availableCores);
-         }
-         if (!success)
-         {
-            showMessageBox(tr("Failed to retrieve the core list."), MSGBOX_TYPE_ERROR);
-            return;
-         }
-         onCoreUpdaterListPoll();
-      }
-      else
-#endif
       {
          command_event(CMD_EVENT_NETWORK_INIT, NULL);
          if (!task_push_get_core_updater_list(coreList, false, false))
@@ -4638,16 +4732,6 @@ void MainWindow::onUpdaterActionClicked()
          }
          m_coreUpdaterPollTimer->start(200);
       }
-   }
-   else if (action == MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES)
-   {
-      command_event(CMD_EVENT_NETWORK_INIT, NULL);
-      task_push_update_installed_cores(
-            settings->bools.core_updater_auto_backup,
-            settings->uints.core_updater_auto_backup_history_size,
-            settings->paths.directory_libretro,
-            settings->paths.directory_core_assets);
-      showStatusMessage(tr("Updating installed cores..."), 1, 3000, true);
    }
    else if (action == MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES)
    {
@@ -4713,49 +4797,7 @@ void MainWindow::onUpdaterActionClicked()
       qt_updater_request_content_listing(this, m_updaterContentPath, 4);
    }
    else
-   {
-#if defined(HAVE_MENU)
-      enum msg_hash_enums downloadAction = MSG_UNKNOWN;
-      switch ((enum msg_hash_enums)action)
-      {
-         case MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES:
-            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES;
-            break;
-         case MENU_ENUM_LABEL_UPDATE_ASSETS:
-            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_ASSETS;
-            break;
-         case MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES:
-            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES;
-            break;
-         case MENU_ENUM_LABEL_UPDATE_CHEATS:
-            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_CHEATS;
-            break;
-         case MENU_ENUM_LABEL_UPDATE_DATABASES:
-            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_DATABASES;
-            break;
-         case MENU_ENUM_LABEL_UPDATE_OVERLAYS:
-            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS;
-            break;
-         case MENU_ENUM_LABEL_UPDATE_CG_SHADERS:
-            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG;
-            break;
-         case MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS:
-            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL;
-            break;
-         case MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS:
-            downloadAction = MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG;
-            break;
-         default:
-            break;
-      }
-      if (downloadAction != MSG_UNKNOWN)
-         action_ok_download_bundle(downloadAction);
-      else
-         showMessageBox(tr("This updater action is not available in this build."), MSGBOX_TYPE_WARNING);
-#else
-      showMessageBox(tr("This updater action requires the menu subsystem."), MSGBOX_TYPE_WARNING);
-#endif
-   }
+      qt_updater_run_entry((enum msg_hash_enums)action);
 #else
    (void)sender();
 #endif
@@ -4763,7 +4805,7 @@ void MainWindow::onUpdaterActionClicked()
 
 void MainWindow::onCoreUpdaterListPoll()
 {
-#ifdef HAVE_NETWORKING
+#ifdef QT_ONLINE_UPDATER
    core_updater_list_t *coreList = core_updater_list_get_cached();
    size_t count = coreList ? core_updater_list_size(coreList) : 0;
 
@@ -4820,7 +4862,7 @@ void MainWindow::onCoreUpdaterListPoll()
 
 void MainWindow::onCoreUpdaterTableContextMenuRequested(const QPoint &pos)
 {
-#ifdef HAVE_NETWORKING
+#ifdef QT_ONLINE_UPDATER
    QModelIndex index = m_coreUpdaterTable->indexAt(pos);
    QTableWidgetItem *item = index.isValid()
          ? m_coreUpdaterTable->item(index.row(), 0) : NULL;
@@ -4833,10 +4875,7 @@ void MainWindow::onCoreUpdaterTableContextMenuRequested(const QPoint &pos)
    entryType = item->data(Qt::UserRole + 1).toString();
    if (entryType == QStringLiteral("empty"))
       return;
-   if (entryType == QStringLiteral("content-directory"))
-      action = menu.addAction(tr("Open"));
-   else
-      action = menu.addAction(tr("Download"));
+   action = menu.addAction(tr("Download"));
    if (menu.exec(m_coreUpdaterTable->viewport()->mapToGlobal(pos)) != action)
       return;
    onUpdaterTableDoubleClicked(index);
@@ -4910,7 +4949,7 @@ void MainWindow::onUpdaterListingFinished(QStringList entries, int type, QString
       }
       if (path == m_updaterContentPath)
       {
-#ifdef HAVE_NETWORKING
+#ifdef QT_ONLINE_UPDATER
          qt_updater_request_content_listing(this, path, 5);
 #endif
       }
@@ -4978,7 +5017,7 @@ void MainWindow::onUpdaterBackClicked()
 
 void MainWindow::onUpdaterUpClicked()
 {
-#ifdef HAVE_NETWORKING
+#ifdef QT_ONLINE_UPDATER
    QTreeWidgetItem *item = m_updaterDirectoryTree->currentItem();
    if (!item)
       return;
@@ -4993,7 +5032,7 @@ void MainWindow::onUpdaterUpClicked()
 
 void MainWindow::onUpdaterTopClicked()
 {
-#ifdef HAVE_NETWORKING
+#ifdef QT_ONLINE_UPDATER
    QTreeWidgetItem *root = m_updaterDirectoryTree->topLevelItem(0);
    if (!root)
       return;
@@ -5005,7 +5044,7 @@ void MainWindow::onUpdaterTopClicked()
 
 void MainWindow::onUpdaterTableDoubleClicked(const QModelIndex &index)
 {
-#ifdef HAVE_NETWORKING
+#ifdef QT_ONLINE_UPDATER
    QTableWidgetItem *item = index.isValid()
          ? m_coreUpdaterTable->item(index.row(), 0) : NULL;
    QString entryType;
@@ -5023,12 +5062,6 @@ void MainWindow::onUpdaterTableDoubleClicked(const QModelIndex &index)
       settings_t *settings = config_get_ptr();
       if (coreList && !filename.isEmpty())
       {
-#if defined(ANDROID)
-         if (play_feature_delivery_enabled())
-            task_push_play_feature_delivery_core_install(coreList,
-                  filename.constData(), false);
-         else
-#endif
             task_push_core_updater_download(coreList, filename.constData(), 0,
                   false, settings->bools.core_updater_auto_backup,
                   (size_t)settings->uints.core_updater_auto_backup_history_size,
@@ -5048,19 +5081,11 @@ void MainWindow::onUpdaterTableDoubleClicked(const QModelIndex &index)
    else if (m_updaterViewType == 3)
    {
       QString name = item->text();
-      if (entryType == QStringLiteral("content-directory"))
-      {
-         m_updaterContentPath += QLatin1Char('/') + name;
-         qt_updater_request_content_listing(this, m_updaterContentPath, 4);
-      }
-      else
-      {
-         QString remotePath = m_updaterContentPath + QLatin1Char('/') + name;
-         if (!qt_updater_download_file(this, remotePath,
-                  QString::fromUtf8(config_get_ptr()->paths.directory_core_assets),
-                  name, true))
-            showMessageBox(tr("Failed to start the download."), MSGBOX_TYPE_ERROR);
-      }
+      QString remotePath = m_updaterContentPath + QLatin1Char('/') + name;
+      if (!qt_updater_download_file(this, remotePath,
+               QString::fromUtf8(config_get_ptr()->paths.directory_core_assets),
+               name, true))
+         showMessageBox(tr("Failed to start the download."), MSGBOX_TYPE_ERROR);
    }
 #else
    (void)index;
@@ -5069,7 +5094,7 @@ void MainWindow::onUpdaterTableDoubleClicked(const QModelIndex &index)
 
 void MainWindow::onUpdaterDirectoryExpanded(QTreeWidgetItem *item)
 {
-#ifdef HAVE_NETWORKING
+#ifdef QT_ONLINE_UPDATER
    QString path;
    if (!item)
       return;
@@ -5085,7 +5110,7 @@ void MainWindow::onUpdaterDirectoryExpanded(QTreeWidgetItem *item)
 
 void MainWindow::onUpdaterDirectoryClicked(QTreeWidgetItem *item, int column)
 {
-#ifdef HAVE_NETWORKING
+#ifdef QT_ONLINE_UPDATER
    QString path;
    (void)column;
    if (!item)
@@ -6414,40 +6439,9 @@ static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
    browserAndPlaylistTabWidget->addTab(browserWidget,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER));
 
-#ifdef HAVE_NETWORKING
+#ifdef QT_ONLINE_UPDATER
    {
       QVBoxLayout *updaterLayout = new QVBoxLayout();
-      const msg_hash_enums updaterLabels[] = {
-         MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-         MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-         MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
-         MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-         MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-         MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-         MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-         MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-         MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-         MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-         MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-         MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-         MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS
-      };
-      const msg_hash_enums updaterActions[] = {
-         MENU_ENUM_LABEL_CORE_UPDATER_LIST,
-         MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,
-         MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-         MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
-         MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,
-         MENU_ENUM_LABEL_UPDATE_ASSETS,
-         MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES,
-         MENU_ENUM_LABEL_UPDATE_CHEATS,
-         MENU_ENUM_LABEL_UPDATE_DATABASES,
-         MENU_ENUM_LABEL_UPDATE_OVERLAYS,
-         MENU_ENUM_LABEL_UPDATE_CG_SHADERS,
-         MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,
-         MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS
-      };
-      unsigned i;
       updaterWidget->setLayout(new QVBoxLayout());
       updaterWidget->layout()->setContentsMargins(0, 0, 0, 0);
       updaterLayout->setContentsMargins(6, 6, 6, 6);
@@ -6455,22 +6449,7 @@ static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
       mainwindow->updaterHomeWidget()->setLayout(updaterLayout);
       mainwindow->updaterHomeWidget()->setObjectName("updaterHomeWidget");
       updaterWidget->layout()->addWidget(mainwindow->updaterHomeWidget());
-      for (i = 0; i < sizeof(updaterLabels) / sizeof(updaterLabels[0]); i++)
-      {
-         QString buttonText = msg_hash_to_str(updaterLabels[i]);
-         if (updaterActions[i] == MENU_ENUM_LABEL_CORE_UPDATER_LIST
-               || updaterActions[i] == MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES
-               || updaterActions[i] == MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS)
-            buttonText += QStringLiteral("...");
-         QPushButton *button = new QPushButton(buttonText,
-               mainwindow->updaterHomeWidget());
-         button->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
-         button->setProperty("updater_action", (int)updaterActions[i]);
-         updaterLayout->addWidget(button);
-         QObject::connect(button, SIGNAL(clicked()), mainwindow,
-               SLOT(onUpdaterActionClicked()));
-      }
-      updaterLayout->addStretch(1);
+      mainwindow->rebuildUpdaterButtons();
       mainwindow->updaterHomeWidget()->setSizePolicy(
          QSizePolicy::Preferred, QSizePolicy::Expanding);
    }
@@ -6509,7 +6488,8 @@ static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
       mainwindow->updaterNavigationWidget()->hide();
       mainwindow->updaterDirectoryTree()->hide();
    }
-   browserAndPlaylistTabWidget->addTab(updaterWidget, QObject::tr("Updater"));
+   browserAndPlaylistTabWidget->addTab(updaterWidget,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER));
 #endif
 #ifdef HAVE_MENU
    QFrame *settingsFrame = new QFrame;
@@ -6521,7 +6501,7 @@ static QDockWidget *qt_companion_build_browser_dock(MainWindow *mainwindow)
          mainwindow->viewOptionsDialog()->categoryListWidget());
 
    browserAndPlaylistTabWidget->addTab(
-         settingsFrame, QObject::tr("Settings"));
+         settingsFrame, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS));
 #endif
 
    browserAndPlaylistTabDock = new QDockWidget(msg_hash_to_str(
