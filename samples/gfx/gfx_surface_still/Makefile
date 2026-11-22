@@ -18,7 +18,7 @@ TARGET := gfx_surface_still_test
 
 all: $(TARGET)
 
-$(TARGET): $(SRC) copy_count.h
+$(TARGET): $(SRC) copy_count.h $(RA)/libretro-common/include/formats/image_narrow.h
 	$(CC) $(CFLAGS) -o $@ $(SRC) -lm -lpthread $(LDFLAGS)
 
 check: all

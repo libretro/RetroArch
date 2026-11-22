@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <formats/image_narrow.h>
 
 #include <queues/task_queue.h>
 #include <rthreads/rthreads.h>
@@ -73,8 +74,14 @@ static void st_saw(void *data)
    }
    if (ti && ti->pixels && ti->width && ti->height)
    {
+      size_t pitch = (size_t)ti->width * (ti->fp16 ? 8 : 4);
+      unsigned k;
+      for (k = 0; k < 2; k++)
+         if (ti->pixels == st_lent_pixels[k] && st_lend_pitch[k])
+            pitch = st_lend_pitch[k];
       st_px_first = ti->pixels[0];
-      st_px_last  = ti->pixels[(size_t)ti->width * ti->height * (ti->fp16 ? 2 : 1) - 1];
+      st_px_last  = ti->pixels[(ti->height - 1) * pitch / sizeof(uint32_t)
+            + ti->width * (ti->fp16 ? 2 : 1) - 1];
    }
 }
 
@@ -331,7 +338,13 @@ bool image_texture_load_buffer_request(struct texture_image *img,
    return false;
 }
 
-void image_texture_narrow_10bit(struct texture_image *img) { (void)img; }
+void image_texture_narrow_10bit(struct texture_image *img)
+{
+   if (!img || !img->pix10 || !img->pixels) return;
+   image_texture_narrow_10bit_row(img->pixels, img->pixels,
+         (size_t)img->width * img->height, img->supports_rgba);
+   img->pix10 = false;
+}
 
 void image_texture_free(struct texture_image *img)
 {
@@ -727,6 +740,94 @@ static void st_pitched_lending(void)
    st_async = 0;
 }
 
+/* Immutable 10-bit input converts once into the upload slot, including
+ * padded lent storage. The literal colours pin the existing >>2 baseline. */
+static void st_narrow_upload(void)
+{
+   static const uint32_t source[] = {0, 0x3fffffffu, 0x3ff00000u,
+      0x000ffc00u, 0x000003ffu, 0x20080002u, 0x1ff7fdffu,
+      0x0040200cu, 0xc0000000u, 0x00100803u};
+   static const uint32_t argb[] = {0xff000000u, 0xffffffffu, 0xffff0000u,
+      0xff00ff00u, 0xff0000ffu, 0xff808000u, 0xff7f7f7fu,
+      0xff010203u, 0xff000000u, 0xff000000u};
+   unsigned threaded, rgba, frame, i;
+   int async = st_async;
+   for (threaded = 0; threaded < 2; threaded++)
+      for (rgba = 0; rgba < 2; rgba++)
+      {
+         gfx_surface_t *s;
+         uint32_t pixels[16], saved[16], inplace[16];
+         st_async = threaded;
+         st_lend = true;
+         st_lend_pitch[0] = 24;
+         st_lend_pitch[1] = 32;
+         memset(st_lent_pixels, 0x55, sizeof(st_lent_pixels));
+         s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 1,
+               IMAGE_PIXFMT_2101010, TEXTURE_FILTER_LINEAR, NULL, NULL);
+         CHECK(s != NULL, "narrow upload: surface");
+         if (!s) continue;
+         s->padded = 1;
+         for (frame = 0; frame < 5; frame++)
+         {
+            const uint8_t *upload;
+            size_t pitch;
+            unsigned pad;
+            for (i = 0; i < 16; i++) pixels[i] = source[(i + frame) % 10];
+            memcpy(saved, pixels, sizeof(pixels));
+            memcpy(inplace, pixels, sizeof(pixels));
+            image_texture_narrow_10bit_row(inplace, inplace, 16, rgba != 0);
+            if (frame == 3 && s->lent)
+            {
+               st_lend_busy = 1;
+               CHECK(gfx_surface_slot_writable(s, 0), "narrow upload: spare unavailable");
+            }
+            retro_atomic_store_release_int(&st_copy_bytes, 0);
+            retro_atomic_store_release_int(&st_copy_size, s->pitch[0] * 4);
+            retro_atomic_store_release_ptr(&st_copy_target, s->slots[0]);
+            CHECK(gfx_surface_submit_pixels(s, pixels, rgba != 0)
+                  == (threaded ? GFX_SURFACE_SUBMIT_QUEUED : GFX_SURFACE_SUBMIT_DONE),
+                  "narrow upload: submit");
+            upload = (const uint8_t*)s->img.pixels;
+            pitch = s->img_pitch;
+            CHECK(!s->img.pix10 && s->img.supports_rgba == (rgba != 0),
+                  "narrow upload: descriptor not converted");
+            st_flush();
+            CHECK(!memcmp(pixels, saved, sizeof(pixels)), "narrow upload: source rewritten");
+            CHECK(!retro_atomic_load_acquire_int(&st_copy_bytes),
+                  "narrow upload: raw frame copied before conversion");
+            retro_atomic_store_release_ptr(&st_copy_target, NULL);
+            for (i = 0; i < 16; i++)
+            {
+               uint32_t expected = argb[(i + frame) % 10];
+               const uint8_t *actual = upload + (i / 4) * pitch + (i % 4) * 4;
+               if (rgba)
+               {
+                  uint8_t *bytes = (uint8_t*)&expected;
+                  bytes[0] = (uint8_t)(argb[(i + frame) % 10] >> 16);
+                  bytes[1] = (uint8_t)(argb[(i + frame) % 10] >> 8);
+                  bytes[2] = (uint8_t)argb[(i + frame) % 10];
+                  bytes[3] = 255;
+               }
+               CHECK(!memcmp(actual, &expected, 4) && inplace[i] == expected,
+                     "narrow upload: colour/order mismatch at %u", i);
+            }
+            for (i = 0; i < 4; i++)
+               for (pad = 16; pad < pitch; pad++)
+                  CHECK(upload[i * pitch + pad] == 0x55,
+                        "narrow upload: rewrote row padding");
+            CHECK(s->lent == 3 || (threaded && !frame),
+                  "narrow upload: streaming loans not retained");
+         }
+         st_lend_busy = 0;
+         gfx_surface_free(s);
+         st_flush();
+         CHECK(!st_live, "narrow upload: leaked texture");
+         st_lend = false;
+         st_lend_pitch[0] = st_lend_pitch[1] = 0;
+      }
+   st_async = async;
+}
+
 static void st_canvas_lease(void)
 {
    uint32_t pixels[16];
@@ -867,6 +968,7 @@ int main(void)
    st_pitched_lending();
    st_compressed_stills();
    st_async = 1;
+   st_narrow_upload();
    st_canvas_lease();
    st_still_recovery();
 

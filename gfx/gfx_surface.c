@@ -15,6 +15,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <formats/image_narrow.h>
 
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
@@ -930,6 +931,7 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
 {
    enum gfx_surface_submit_result r;
    uint8_t fmt;
+   bool narrow;
 
    if (!s || !pixels || !s->num_slots)
    {
@@ -949,13 +951,14 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
       return gfx_surface_submit_planes(s, &p, rgba);
    }
 
+   narrow = gfx_surface_must_narrow(s->pixfmt);
+
    /* The caller's buffer does not outlive this call for the video
     * thread's purposes, and is not the surface's to narrow; a slot is
-    * both. One copy, the size of a frame, against a wait of up to a
-    * present. */
+    * both. Narrow on the way into it when required; otherwise copy. */
    /* With a slot lent, the driver's copy path may have no slot of its
     * own left, so the frame goes through slot 0 like the rest. */
-   if (     gfx_surface_must_narrow(s->pixfmt)
+   if (     narrow
          || s->lent
 #ifdef HAVE_THREADS
          || video_driver_thread_wrapper_active()
@@ -967,10 +970,33 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
          GFX_INSTR_INC(GFX_INSTR_SUBMIT_BUSY);
          return GFX_SURFACE_SUBMIT_BUSY;
       }
-      GFX_INSTR_INC(GFX_INSTR_SUBMIT_COPY);
       {
          unsigned y;
          size_t row = (size_t)VIDEO_SCALE_W(s->dims) * IMAGE_PIXFMT_BPP(s->pixfmt);
+         if (narrow)
+         {
+            /* Read the caller's cached pixels once and convert straight
+             * into the slot, including a driver's padded upload loan. */
+            if (s->pitch[0] == row)
+               image_texture_narrow_10bit_row(s->slots[0],
+                     (const uint32_t*)pixels,
+                     (size_t)VIDEO_SCALE_W(s->dims) * VIDEO_SCALE_H(s->dims), rgba);
+            else
+               for (y = 0; y < VIDEO_SCALE_H(s->dims); y++)
+                  image_texture_narrow_10bit_row(
+                     (uint32_t*)((uint8_t*)s->slots[0] + (size_t)y * s->pitch[0]),
+                     (const uint32_t*)pixels + (size_t)y * VIDEO_SCALE_W(s->dims),
+                     VIDEO_SCALE_W(s->dims), rgba);
+            s->inflight_slot = 0;
+            r = gfx_surface_prepare(s, s->slots[0], IMAGE_PIXFMT_8888,
+                  rgba, true, &fmt)
+               ? gfx_surface_submit_img(s, 0, fmt) : GFX_SURFACE_SUBMIT_FAILED;
+            if (r == GFX_SURFACE_SUBMIT_DONE)
+               gfx_surface_lend(s, 0);
+            gfx_surface_count(r);
+            return r;
+         }
+         GFX_INSTR_INC(GFX_INSTR_SUBMIT_COPY);
          if (s->pitch[0] == row)
             memcpy(s->slots[0], pixels, row * VIDEO_SCALE_H(s->dims));
          else
