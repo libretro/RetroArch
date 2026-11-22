@@ -47,6 +47,10 @@ static void legacy_pool_buffer(GLenum target,GLuint buffer)
 #endif
 #undef glDrawArrays
 #undef glCopyTexSubImage2D
+#include <formats/image.h>
+#include <formats/image_yuv_blit.h>
+#define HAVE_GL_PLANAR 1
+#include "planar.inc"
 static GLuint compile(GLenum type,const char *source)
 {
    GLint ok;GLuint shader=glCreateShader(type);glShaderSource(shader,1,&source,NULL);glCompileShader(shader);
@@ -245,6 +249,63 @@ static void run_pool(GLint format,float phase)
    for(i=0;i<count;i++)assert(!glIsTexture(versions[i]));
    glDeleteBuffers(1,&pbo);assert(glGetError()==GL_NO_ERROR);
 }
+/* Exercise the shipping converter and history together: every new output
+ * must leave the preceding RGB output intact, without a preservation draw. */
+static void run_planar(bool core, bool interleaved)
+{
+   gl_planar_t planar;
+   struct texture_planar planes;
+   struct texture_image image;
+   gl_media_shader_t *state=NULL;
+   gl_media_pool_t *pool=NULL;
+   shader_backend_t backend;
+   uint8_t y[12], chroma[8];
+   float expected[48];
+   GLuint handle,target;
+   unsigned frame,i,before=copies,names=0,draw_before;
+   GLint binding;
+   memset(&planar,0,sizeof(planar));memset(&planes,0,sizeof(planes));
+   memset(&image,0,sizeof(image));memset(&backend,0,sizeof(backend));
+   backend.use=use;backend.num_shaders=passes;backend.get_prev_textures=history;
+   backend.filter_type=filter;backend.wrap_type=wrap;backend.shader_scale=scale;
+   backend.mipmap_input=mipmap;backend.get_feedback_pass=feedback;
+   backend.set_mvp=mvp;backend.set_media_colour=colour;
+   backend.set_coords=coords;backend.set_params=params;
+   memset(chroma,128,sizeof(chroma));
+   for(i=0;i<12;i++)y[i]=(uint8_t)(32+i);
+   planes.planes[0]=y;planes.planes[1]=chroma;
+   planes.planes[2]=chroma+(interleaved?1:4);
+   planes.strides[0]=4;planes.strides[1]=planes.strides[2]=interleaved?4:2;
+   planes.chroma_step=interleaved?2:1;planes.yuv=IMAGE_YUV_FLAG_FULL_RANGE;
+   image.width=4;image.height=3;image.planar=&planes;
+   handle=gl_planar_load(&planar,&image,true,core);assert(handle);
+   show_previous=0;previous_index=0;smooth_mode=true;
+   assert(gl_media_shader_draw(&state,&backend,&backend,&backend,handle,VIDEO_SCALE_PACK(4,3),0,VIDEO_SCALE_PACK(4,3),0,NULL,true));
+   for(frame=1;frame<=24;frame++)
+   {
+      unsigned prior=32+(frame-1)*4;
+      target=prepare_pool(&pool,handle,&state);assert(target && target!=gl_media_pool_resolve(pool,handle));
+      for(i=0;i<12;i++)y[i]=(uint8_t)(32+frame*4+i);
+      glGetIntegerv(GL_FRAMEBUFFER_BINDING,&binding);
+      assert(gl_planar_update_target(&planar,handle,target,&image));
+      { GLint restored;glGetIntegerv(GL_FRAMEBUFFER_BINDING,&restored);assert(restored==binding); }
+      gl_media_pool_publish(pool,handle,target);
+      show_previous=1;draw_before=draws;
+      assert(gl_media_shader_draw(&state,&backend,&backend,&backend,target,VIDEO_SCALE_PACK(4,3),0,VIDEO_SCALE_PACK(4,3),frame,NULL,true));
+      for(i=0;i<12;i++){expected[i*4]=expected[i*4+1]=expected[i*4+2]=(float)(prior+i)/255;expected[i*4+3]=1;}
+      expect(expected);assert(copies==before);assert(draws==draw_before+1);
+      if(frame==8)names=pool->count;
+      if(frame>8)assert(pool->count==names);
+   }
+   /* Rejected frames neither publish a reservation nor disturb old pixels. */
+   target=prepare_pool(&pool,handle,&state);assert(target);
+   image.width=3;assert(!gl_planar_update_target(&planar,handle,target,&image));
+   assert(gl_media_pool_resolve(pool,handle)!=target);image.width=4;
+   gl_planar_forget(&planar,handle);
+   assert(gl_media_pool_forget(&pool,handle,pool_retire,&state));
+   gl_media_shader_free(&state);gl_planar_free(&planar);
+   assert(glGetError()==GL_NO_ERROR);
+}
 int main(void)
 {
    const char *vs="#version 120\nattribute vec2 pos,uv;varying vec2 current,previous;uniform float flip;void main(){gl_Position=vec4(pos*2.-1.,0,1);current=uv;previous=vec2(pos.x,mix(pos.y,1.-pos.y,flip));}";
@@ -265,6 +326,11 @@ int main(void)
    run_pool(GL_RGBA8,0);run_pool(GL_RGBA16F,-0.5f);
 #ifdef GL_POOL_LEGACY
    run_pool(GL_RGBA,0);
+#endif
+   run_planar(false,false);run_planar(false,true);
+   puts("Planar GL GPU pixels: separate/interleaved planes, immutable pooled history, rejected updates and no snapshots passed");
+#ifndef GL_POOL_LEGACY
+   run_planar(true,false);run_planar(true,true);
 #endif
    glDeleteFramebuffers(1,&fbo);glDeleteTextures(1,&target);glDeleteProgram(program);glDeleteShader(vertex);glDeleteShader(fragment);
    eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);eglDestroyContext(display,context);eglDestroySurface(display,surface);eglTerminate(display);

@@ -10319,7 +10319,7 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
 #ifdef HAVE_GL_TEXTURE_LEND
    int lent           = -1;
 #endif
-   if (gl && !ti->planar)
+   if (gl)
    {
       destination=gl_media_pool_prepare_ex(&gl->media_pool,(GLuint)id,ti->width,ti->height,
             gl2_media_referenced,gl,gl->media_pool_capabilities | GL_MEDIA_POOL_MUTABLE_MIPS);
@@ -10332,8 +10332,9 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
    if (ti->planar)
    {
 #ifdef HAVE_GL_PLANAR
-      if (gl && gl_planar_update(&gl->planar, (unsigned)id, ti))
+      if (gl && gl_planar_update_target(&gl->planar, (unsigned)id, destination, ti))
       {
+         gl_media_pool_publish(gl->media_pool, (GLuint)id, destination);
          gl2_media_texture_changed(gl, id, true);
          return VIDEO_TEXTURE_UPDATE_DONE;
       }

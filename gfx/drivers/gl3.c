@@ -8663,10 +8663,11 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
    const void *pixels = ti->pixels;
    int lent           = -1;
    GLuint destination = gl ? gl_media_pool_resolve(gl->media_pool,(GLuint)id) : (GLuint)id;
-   if (gl && !ti->planar)
+   if (gl)
    {
-      destination=gl_media_pool_prepare(&gl->media_pool,(GLuint)id,ti->width,ti->height,
-            gl3_media_referenced,gl);
+      destination=gl_media_pool_prepare_ex(&gl->media_pool,(GLuint)id,ti->width,ti->height,
+            gl3_media_referenced,gl,GL_MEDIA_POOL_SWIZZLE | GL_MEDIA_POOL_UNPACK
+            | (ti->planar ? GL_MEDIA_POOL_MUTABLE_MIPS : 0));
       if (!destination) return VIDEO_TEXTURE_UPDATE_DROPPED;
    }
 #if defined(HAVE_SLANG)
@@ -8680,8 +8681,9 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
    if (ti->planar)
    {
 #ifdef HAVE_GL_PLANAR
-      if (gl && gl_planar_update(&gl->planar, (unsigned)id, ti))
+      if (gl && gl_planar_update_target(&gl->planar, (unsigned)id, destination, ti))
       {
+         gl_media_pool_publish(gl->media_pool, (GLuint)id, destination);
          gl3_media_texture_changed(gl, id, true);
          return VIDEO_TEXTURE_UPDATE_DONE;
       }

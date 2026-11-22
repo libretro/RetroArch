@@ -9,12 +9,18 @@ import tempfile
 here = Path(__file__).resolve().parent
 root = here.parents[2]
 with tempfile.TemporaryDirectory(prefix="gl-history-pixels-") as directory:
+    common = (root / "gfx/common/gl_common.c").read_text(encoding="utf-8")
+    planar = common[common.index("#ifdef HAVE_GL_PLANAR", common.index("#ifdef HAVE_GL_PLANAR") + 1):]
+    header = (root / "gfx/common/gl_common.h").read_text(encoding="utf-8")
+    start = header.index("typedef struct gl_planar_tex")
+    end = header.index("/* Whether planar frames", start)
+    (Path(directory) / "planar.inc").write_text(header[start:end] + planar, encoding="utf-8")
     exe = Path(directory) / "pixels"
     command = shlex.split(os.environ.get("CC", "cc"))
     command += ["-std=c99", "-O1", "-g", "-Wall", "-Wextra", "-Werror"]
     command += shlex.split(os.environ.get("CFLAGS", ""))
-    command += ["-I" + str(root), "-I" + str(root / "libretro-common/include"),
-                str(here / "history_pixels.c"), "-o", str(exe), "-lEGL", "-lGL", "-lm"]
+    command += ["-I" + str(directory), "-I" + str(root), "-I" + str(root / "libretro-common/include"),
+                str(here / "history_pixels.c"), str(root / "libretro-common/formats/image/image_yuv_blit.c"), "-o", str(exe), "-lEGL", "-lGL", "-lm"]
     subprocess.run(command, check=True)
     subprocess.run([str(exe)], check=True)
     legacy = Path(directory) / "legacy-pixels"

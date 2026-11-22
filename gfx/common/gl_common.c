@@ -1169,7 +1169,8 @@ void gl_frame_mem_destroy(gl_frame_mem_t **fm)
 struct gl_planar_tex
 {
    gl_planar_tex_t *next;
-   GLuint tex;   /* RGBA, the handle */
+   GLuint tex;   /* RGBA, the public handle */
+   GLuint target; /* Current conversion attachment, possibly pooled */
    GLuint plane[3];
    GLuint fbo;
    unsigned w;
@@ -1358,9 +1359,9 @@ static void gl_planar_plane(GLenum fmt, unsigned bpp, unsigned w,
 }
 
 /* The planes of @ti into @t's textures and the draw that converts them
- * into @t->tex, the driver's state put back as it was */
+ * into @target, the driver's state put back as it was */
 static bool gl_planar_draw(gl_planar_t *p, gl_planar_tex_t *t,
-      const struct texture_image *ti)
+      const struct texture_image *ti, GLuint target)
 {
    const struct texture_planar *tp = ti->planar;
    bool core   = (p->flags & GL_PLANAR_CORE) != 0;
@@ -1462,6 +1463,12 @@ static bool gl_planar_draw(gl_planar_t *p, gl_planar_tex_t *t,
    coef[6] = interleaved ? 1.0f : 0.0f;
    coef[7] = swap ? 1.0f : 0.0f;
    glBindFramebuffer(GL_FRAMEBUFFER, t->fbo);
+   if (t->target != target)
+   {
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, target, 0);
+      t->target = target;
+   }
    glViewport(0, 0, (GLsizei)t->w, (GLsizei)t->h);
    glDisable(GL_BLEND);
    glDisable(GL_SCISSOR_TEST);
@@ -1590,6 +1597,7 @@ unsigned gl_planar_load(gl_planar_t *p, const struct texture_image *ti,
    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
    t->tex      = gl_planar_texture(rgba_int, GL_RGBA, t->w, t->h,
          linear ? GL_LINEAR : GL_NEAREST);
+   t->target   = t->tex;
    t->plane[0] = gl_planar_texture(one_int, one, t->w, t->h, GL_NEAREST);
    t->plane[1] = gl_planar_texture(t->interleaved ? two_int : one_int,
          t->interleaved ? two : one, cw, ch, GL_NEAREST);
@@ -1604,7 +1612,7 @@ unsigned gl_planar_load(gl_planar_t *p, const struct texture_image *ti,
    glBindTexture(GL_TEXTURE_2D, (GLuint)prev_tex);
    glActiveTexture((GLenum)active);
 
-   if (!ok || !t->tex || !gl_planar_draw(p, t, ti))
+   if (!ok || !t->tex || !gl_planar_draw(p, t, ti, t->tex))
    {
       if (t->tex)
          glDeleteTextures(1, &t->tex);
@@ -1616,11 +1624,19 @@ unsigned gl_planar_load(gl_planar_t *p, const struct texture_image *ti,
    return t->tex;
 }
 
-bool gl_planar_update(gl_planar_t *p, unsigned tex,
+bool gl_planar_update_target(gl_planar_t *p, unsigned tex, unsigned target,
       const struct texture_image *ti)
 {
    gl_planar_tex_t *t = gl_planar_find(p, tex);
-   return t && ti && gl_planar_draw(p, t, ti);
+   if (!t || !ti || !target)
+      return false;
+   return gl_planar_draw(p, t, ti, (GLuint)target);
+}
+
+bool gl_planar_update(gl_planar_t *p, unsigned tex,
+      const struct texture_image *ti)
+{
+   return gl_planar_update_target(p, tex, tex, ti);
 }
 
 void gl_planar_forget(gl_planar_t *p, unsigned tex)

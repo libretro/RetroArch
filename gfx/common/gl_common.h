@@ -201,6 +201,11 @@ unsigned gl_planar_load(gl_planar_t *p, const struct texture_image *ti,
 bool gl_planar_update(gl_planar_t *p, unsigned tex,
       const struct texture_image *ti);
 
+/* Convert into compatible caller-owned RGB storage without changing @tex's
+ * public identity or duplicating the uploaded planes. */
+bool gl_planar_update_target(gl_planar_t *p, unsigned tex, unsigned target,
+      const struct texture_image *ti);
+
 /* Before @tex is deleted: its planes and framebuffer go. Any texture. */
 void gl_planar_forget(gl_planar_t *p, unsigned tex);
 
