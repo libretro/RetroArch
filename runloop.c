@@ -2852,18 +2852,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          /* Ensure that menu stack is flushed appropriately
           * after the core has stopped running */
          if (menu_st)
-         {
-            const char *content_path = path_get(RARCH_PATH_CONTENT);
-
             menu_st->flags |= MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH;
-
-            if (content_path && *content_path)
-               strlcpy(menu_st->pending_env_shutdown_content_path,
-                     content_path,
-                     sizeof(menu_st->pending_env_shutdown_content_path));
-            else
-               menu_st->pending_env_shutdown_content_path[0] = '\0';
-         }
 #endif
          break;
       }
@@ -8981,7 +8970,8 @@ static enum runloop_state_enum runloop_check_state(
 
          /* Loop backwards through the menu stack to
           * find a known reference point */
-         while (menu_stack && (menu_stack->size >= stack_offset))
+         for (; menu_stack && (menu_stack->size >= stack_offset);
+                stack_offset++)
          {
             const char *parent_label = menu_stack->list[
                menu_stack->size - stack_offset].label;
@@ -9013,8 +9003,6 @@ static enum runloop_state_enum runloop_check_state(
                reset_navigation = false;
                break;
             }
-
-            stack_offset++;
          }
 
          if (!(menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
@@ -9047,7 +9035,6 @@ static enum runloop_state_enum runloop_check_state(
 
          menu_st->flags &= ~(MENU_ST_FLAG_PENDING_CLOSE_CONTENT
                            | MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH);
-         menu_st->pending_env_shutdown_content_path[0] = '\0';
 
          /* Reload core on launch failure if manually loaded */
          if (     !path_is_empty(RARCH_PATH_CORE_LAST)

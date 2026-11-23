@@ -63,6 +63,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <boolean.h>
 #include <dynamic/dylib.h>
@@ -3924,6 +3925,65 @@ static void lane_close_content(void)
       fprintf(stderr, "[pass] close-content lane\n");
 }
 
+/* Close Content walks the menu stack back to a known parent; an
+ * entry without a label is stepped over, not walked forever.  The
+ * alarm turns a walk that never ends into a failure. */
+static void close_walk_hung(int sig)
+{
+   (void)sig;
+   fprintf(stderr, "FAIL %s: Close Content never left the menu stack "
+         "walk on an entry without a label\n", __FILE__);
+   _exit(1);
+}
+
+static void lane_close_unlabelled_stack(void)
+{
+   struct load_frame log[LOAD_FRAMES];
+   unsigned n;
+   unsigned had                = failures;
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   file_list_t *stack;
+
+   open_menu();
+   stack = MENU_LIST_GET(menu_st->entries.list, 0);
+   CHECK(stack && stack->size, "no menu stack to close from");
+   if (!stack || !stack->size)
+      return;
+   free(stack->list[stack->size - 1].label);
+   stack->list[stack->size - 1].label = strdup("");
+   path_set(RARCH_PATH_CORE_LAST, core_path);
+
+   menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+   signal(SIGALRM, close_walk_hung);
+   alarm(10);
+   pump(1);
+   alarm(0);
+   signal(SIGALRM, SIG_DFL);
+   CHECK(!(menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT),
+         "the close was not taken");
+
+   n = run_load(log, LOAD_FRAMES);
+   CHECK(n < LOAD_FRAMES && !runloop_is_content_switching(),
+         "the close did not finish within %u frames", LOAD_FRAMES);
+   pump(2);
+
+   /* Start Core, to leave a core running as the lane before did. */
+   {
+      content_ctx_info_t content_info = {0};
+      CHECK(task_push_start_current_core(&content_info),
+            "Start Core was not started");
+      n = run_load(log, LOAD_FRAMES);
+      CHECK(n < LOAD_FRAMES && core_is_up()
+            && runloop_st->current_core_type != CORE_TYPE_DUMMY,
+            "Start Core did not go through");
+      runloop_iterate();
+   }
+
+   if (failures == had)
+      fprintf(stderr, "[pass] close-unlabelled-stack lane\n");
+}
+
 /* ------------------------------------------------------------------ */
 /* Lane: dummy session describes the selected core                    */
 /* ------------------------------------------------------------------ */
@@ -4204,6 +4264,7 @@ int main(int argc, char *argv[])
    lane_hw_request();
    lane_queue_survives();
    lane_close_content();
+   lane_close_unlabelled_stack();
    lane_dummy_selected_core();
    lane_focus_follows_frames();
    lane_close_waits_for_save();

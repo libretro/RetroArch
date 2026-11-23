@@ -634,12 +634,6 @@ struct menu_state
     * the entry with a label matching 'pending_selection' will
     * be selected automatically */
    char pending_selection[PATH_MAX_LENGTH];
-   /* Filled with current content path when a core calls
-    * RETRO_ENVIRONMENT_SHUTDOWN. Value is required in
-    * generic_menu_entry_action(), and must be cached
-    * since RETRO_ENVIRONMENT_SHUTDOWN will cause
-    * RARCH_PATH_CONTENT to be cleared */
-   char pending_env_shutdown_content_path[PATH_MAX_LENGTH];
    /* Path of a configuration file whose load has been deferred
     * (see MENU_ST_FLAG_PENDING_CONFIG_REPLACE). The actual
     * config_replace() is performed from runloop_check_state(),
