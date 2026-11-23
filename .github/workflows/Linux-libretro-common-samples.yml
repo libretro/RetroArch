@@ -789,6 +789,22 @@ jobs:
             exit 1
           fi
 
+      # The runner's C locale always has AM and PM. de_DE, en_ZA and
+      # fr_FR have no designators, ja_JP non-ASCII ones; a locale that
+      # failed to generate would test C again, so that fails too.
+      - name: strftime_am_pm in locales with and without designators
+        if: matrix.group == 'core'
+        shell: bash
+        working-directory: libretro-common/samples/file/file_path
+        run: |
+          set -eu
+          for l in de_DE en_ZA fr_FR ja_JP en_US; do
+            sudo localedef -i "$l" -f UTF-8 "$l.UTF-8"
+            test "$(LC_ALL="$l.UTF-8" locale charmap 2>/dev/null)" = UTF-8
+            printf '[run] LC_TIME=%s.UTF-8\n' "$l"
+            env -u LC_ALL -u LANG LC_TIME="$l.UTF-8" ./strftime_am_pm_test
+          done
+
       # fate-suite.ffmpeg.org times out or resets connections now and
       # then; the two files never change (their sha256s are checked), so
       # one good download is kept in the Actions cache.
