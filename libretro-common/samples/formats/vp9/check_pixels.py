@@ -51,3 +51,30 @@ with tempfile.TemporaryDirectory(prefix="rvp9-pixels-") as directory:
             subprocess.run([str(binary), str(joined), str(actual), str(count)], check=True)
             assert actual.read_bytes() == expected, (joined.name, count)
             print("PASS: retained VP9 geometry change", depth, "workers", count)
+    geometries = []
+    for size in ("66x50", "192x112"):
+        stream = path / ("vp8-" + size + ".ivf")
+        reference = stream.with_suffix(".ref")
+        subprocess.run([
+            "ffmpeg", "-v", "error", "-f", "lavfi", "-i",
+            "testsrc2=size=" + size + ":rate=24", "-frames:v", "32",
+            "-c:v", "libvpx", "-g", "8", "-lag-in-frames", "0",
+            "-deadline", "realtime", "-y", str(stream)
+        ], check=True)
+        subprocess.run([
+            "ffmpeg", "-v", "error", "-i", str(stream), "-pix_fmt", "yuv420p",
+            "-f", "rawvideo", "-y", str(reference)
+        ], check=True)
+        expected = reference.read_bytes()
+        actual = stream.with_suffix(".raw")
+        subprocess.run([str(binary), str(stream), str(actual), "1"], check=True)
+        assert actual.read_bytes() == expected, stream.name
+        geometries.append((stream.read_bytes(), expected))
+        print("PASS: retained byte-exact VP8", size)
+    joined = path / "vp8-geometry.ivf"
+    joined.write_bytes(geometries[0][0][:32] + b"".join(
+        data[32:] for data, _ in geometries))
+    actual = joined.with_suffix(".raw")
+    subprocess.run([str(binary), str(joined), str(actual), "1"], check=True)
+    assert actual.read_bytes() == b"".join(pixels for _, pixels in geometries)
+    print("PASS: retained VP8 geometry change")

@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include <retro_inline.h>
+#include <retro_atomic.h>
 #include <formats/rvp8.h>
 
 /* Private scalar abs; the WebP file has its own rvp8_abs, and keeping a
@@ -1842,9 +1843,40 @@ static void vp8_pred8(uint8_t *d, int s, int m, const uint8_t *a, const uint8_t 
  * a suspended decode must not share mutable state with a concurrent
  * one). */
 
+/* Plane leases own the arena independently of decoder reference slots.
+ * A cache line before its existing layout holds the atomic owner count. */
+#define RVP8_PICTURE_HEADER 64
+
+static retro_atomic_int_t *rvp8_picture_refs(const void *owner)
+{
+   return (retro_atomic_int_t*)((uint8_t*)owner - RVP8_PICTURE_HEADER);
+}
+
+void rvp8_video_release_planes(void *owner)
+{
+   if (owner && retro_atomic_fetch_sub_int(rvp8_picture_refs(owner), 1) == 1)
+      free(rvp8_picture_refs(owner));
+}
+
+static uint8_t *rvp8_picture_alloc(size_t len)
+{
+   uint8_t *block;
+   if (len > (size_t)-1 - RVP8_PICTURE_HEADER
+         || !(block = (uint8_t*)malloc(len + RVP8_PICTURE_HEADER)))
+      return NULL;
+   retro_atomic_store_relaxed_int((retro_atomic_int_t*)block, 1);
+   return block + RVP8_PICTURE_HEADER;
+}
+
+static int rvp8_picture_unheld(const void *owner)
+{
+   return !owner || retro_atomic_load_acquire_int(
+         rvp8_picture_refs(owner)) == 1;
+}
+
 void rvp8_abort(rvp8_dec *s)
 {
-   free(s->arena);
+   rvp8_video_release_planes(s->arena);
    memset(s, 0, sizeof(*s));
 }
 
@@ -2277,9 +2309,9 @@ tp_ok:
    arena_len = rvp8_arena_carve(s, NULL, &zero_len);
    if (arena_len > s->arena_len)
    {
-      free(s->arena);
+      rvp8_video_release_planes(s->arena);
       s->arena_len = 0;
-      if (!(s->arena = (uint8_t*)malloc(arena_len)))
+      if (!(s->arena = rvp8_picture_alloc(arena_len)))
       {
          rvp8_abort(s);
          return -1;
@@ -3818,7 +3850,7 @@ void rvp8_video_close(rvp8_video *v)
    unsigned i;
    if (!v) return;
    for (i = 0; i < 4; i++)
-      free(v->arena[i]);
+      rvp8_video_release_planes(v->arena[i]);
    if (v->s.mb_info != v->mbi)
       free(v->s.mb_info);
    free(v->mbi);
@@ -3840,11 +3872,24 @@ int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
    kf = !((uint32_t)data[0] & 1);
    if (!kf && !v->have_refs)
       return -1;
-   for (work = 0; work < 4; work++)
-      if (!v->have_refs || (work != v->refs[0]
-               && work != v->refs[1] && work != v->refs[2]))
-         break;
+   work = 4;
+   for (i = 0; i < 4; i++)
+      if (!v->have_refs || (i != v->refs[0]
+               && i != v->refs[1] && i != v->refs[2]))
+      {
+         if (work == 4) work = i;
+         if (rvp8_picture_unheld(v->arena[i])) { work = i; break; }
+      }
    if (work == 4) return -1;
+   if (!rvp8_picture_unheld(v->arena[work]))
+   {
+      /* Codec references no longer need this slot, but an upload still owns
+       * its pixels. Decode into new storage without copying or waiting. */
+      rvp8_video_release_planes(v->arena[work]);
+      v->arena[work] = NULL;
+      v->arena_len[work] = 0;
+      v->ry[work] = v->ru[work] = v->rv[work] = NULL;
+   }
 
    if (kf)
    {
@@ -3941,7 +3986,7 @@ int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
          for (i = 0; i < 4; i++)
             if (i != work)
             {
-               free(v->arena[i]);
+               rvp8_video_release_planes(v->arena[i]);
                v->arena[i] = NULL;
                v->arena_len[i] = 0;
                v->ry[i] = v->ru[i] = v->rv[i] = NULL;
@@ -3967,6 +4012,14 @@ int rvp8_video_decode(rvp8_video *v, const uint8_t *data, size_t len)
    if (v->s.refresh_altref) v->refs[2] = work;
    if (v->s.refresh_last) v->refs[0] = work;
    return 0;
+}
+
+void *rvp8_video_retain_planes(const rvp8_video *v)
+{
+   if (!v || !v->have_refs || !v->s.arena || !v->s.yb)
+      return NULL;
+   retro_atomic_fetch_add_int(rvp8_picture_refs(v->s.arena), 1);
+   return v->s.arena;
 }
 
 /* Access the just-decoded YUV planes. */

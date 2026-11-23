@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
+import struct
 import tempfile
 
 from h26x_fixture import executable
@@ -62,6 +63,11 @@ CASES = [
         '-color_primaries', 'bt709', '-color_trc', 'bt709',
         '-color_range', 'pc'] + MP4, 1, BT709 | FULL_RANGE),
     ('vp8.webm', 'webm', SOURCE + ['-c:v', 'libvpx'], 1, 0),
+    ('vp8_reuse.webm', 'webm', SOURCE + ['-frames:v', '64', '-c:v',
+        'libvpx', '-lag-in-frames', '16', '-auto-alt-ref', '1',
+        '-deadline', 'realtime', '-pix_fmt', 'yuv420p'], 1, 0),
+    ('vp8_reuse.mp4', 'mp4', SOURCE + ['-frames:v', '64', '-c:v',
+        'libvpx', '-deadline', 'realtime', '-pix_fmt', 'yuv420p'], 1, 0),
     ('vp9.mp4', 'mp4', SOURCE + ['-c:v', 'libvpx-vp9', '-pix_fmt',
         'yuv420p'] + MP4, 1, 0),
     # not 8-bit 4:2:0 SDR: refused before any decode
@@ -78,6 +84,42 @@ CASES = [
 ]
 
 
+def vp8_mp4(blob):
+    """Minimal vp08 fixture: FFmpeg does not mux VP8 into MP4."""
+    def words(*values):
+        return struct.pack('>' + 'I' * len(values), *values)
+
+    def box(kind, data):
+        return words(len(data) + 8) + kind.encode('ascii') + data
+
+    width, height = struct.unpack_from('<HH', blob, 12)
+    rate, scale = struct.unpack_from('<II', blob, 16)
+    frames = []
+    offset = 32
+    while offset < len(blob):
+        size = struct.unpack_from('<I', blob, offset)[0]
+        offset += 12
+        frames.append(blob[offset:offset + size])
+        offset += size
+    count = len(frames)
+    ftyp = box('ftyp', b'isom' + words(0))
+    entry = box('vp08', bytes(24) + struct.pack('>HH', width, height) + bytes(50))
+    sync = [i + 1 for i, frame in enumerate(frames) if not frame[0] & 1]
+    tables = box('stsd', words(0, 1) + entry)
+    tables += box('stts', words(0, 1, count, scale))
+    tables += box('stsc', words(0, 1, 1, count, 1))
+    tables += box('stsz', words(0, 0, count, *map(len, frames)))
+    tables += box('stco', words(0, 1, len(ftyp) + 8))
+    tables += box('stss', words(0, len(sync), *sync))
+    mdhd = box('mdhd', bytes(12) + words(rate, count * scale, 0))
+    hdlr = box('hdlr', bytes(8) + b'vide' + bytes(13))
+    mdia = box('mdia', mdhd + hdlr + box('minf', box('stbl', tables)))
+    trak = box('trak', box('tkhd', bytes(12) + words(1) + bytes(68)) + mdia)
+    moov = box('moov', box('mvhd', bytes(12) + words(rate, count * scale)
+                           + bytes(80)) + trak)
+    return ftyp + box('mdat', b''.join(frames)) + moov
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('test')
@@ -89,14 +131,18 @@ def main():
     with tempfile.TemporaryDirectory(prefix='video-planar-') as directory:
         for name, container, ffargs, planar, flags in CASES:
             path = Path(directory) / name
+            vp8_in_mp4 = name.startswith('vp8') and container == 'mp4'
+            encoded = path.with_suffix('.ivf') if vp8_in_mp4 else path
             subprocess.run([args.ffmpeg, '-v', 'error', '-y'] + ffargs
-                           + [str(path)], check=True)
+                           + [str(encoded)], check=True)
+            if vp8_in_mp4:
+                path.write_bytes(vp8_mp4(encoded.read_bytes()))
             command = runner + [test, str(path), container, str(planar)]
             if flags is not None:
                 command.append(str(flags))
             env = os.environ.copy()
             env.pop('RETAIN_PLANAR', None)
-            if name.startswith(('h264', 'h265', 'vp9')) and planar:
+            if name.startswith(('h264', 'h265', 'vp9', 'vp8')) and planar:
                 env['RETAIN_PLANAR'] = '1'
             subprocess.run(command, check=True, env=env)
 

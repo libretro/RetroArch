@@ -133,6 +133,12 @@ const uint8_t *rvp8_video_plane(const rvp8_video *v, int plane,
       int *stride, int *width, int *height);
 void           rvp8_video_close(rvp8_video *v);
 
+/* Acquire on the decode owner thread after a picture is emitted. Its planes
+ * stay immutable through later decoding, geometry changes and decoder close.
+ * Release each successful lease exactly once, on any thread. */
+void          *rvp8_video_retain_planes(const rvp8_video *v);
+void           rvp8_video_release_planes(void *owner);
+
 RETRO_END_DECLS
 
 #endif

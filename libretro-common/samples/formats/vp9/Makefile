@@ -134,8 +134,10 @@ video_planar_test: $(PLANAR_SOURCES) ../../../include/formats/image_yuv_blit.h
 planar-check: video_planar_test check_planar.py
 	python3 check_planar.py ./video_planar_test
 
-rvp9_pixel_test: rvp9_pixel_test.c ../../../formats/vp9/rvp9.c ../../../formats/vp9/rvp9_recon.inc ../../../include/formats/rvp9.h $(PIXEL_SOURCES)
-	$(CC) $(CFLAGS) $(PIXEL_FLAGS) rvp9_pixel_test.c ../../../formats/vp9/rvp9.c $(PIXEL_SOURCES) -o $@ $(LDFLAGS)
+rvp9_pixel_test: rvp9_pixel_test.c ../../../formats/vp9/rvp9.c ../../../formats/vp9/rvp9_recon.inc ../../../include/formats/rvp9.h \
+ ../../../formats/vp8/rvp8.c ../../../include/formats/rvp8.h ../../../formats/image/image_blit_bands.c $(PIXEL_SOURCES)
+	$(CC) $(CFLAGS) $(PIXEL_FLAGS) rvp9_pixel_test.c ../../../formats/vp9/rvp9.c \
+	 ../../../formats/vp8/rvp8.c ../../../formats/image/image_blit_bands.c $(PIXEL_SOURCES) -o $@ $(LDFLAGS)
 
 clean:
 	rm -f rmp4_h26x_stream_test rmp4_h26x_stream_test.exe rmp4_h26x_hw_test rmp4_h26x_hw_test.exe
