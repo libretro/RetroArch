@@ -168,9 +168,11 @@ try:
         choose(client, 'PyroWave LAN Discovery')
         command(client, 'MENU close')
     sender, receiver = clients
-    recording_menu(sender)
-    wait(lambda: ('Send to ' + receiver['name']) in rows(command(sender, 'MENU show from 0')),
-         'Receiver not discovered')
+    def offered(client, peer):
+        # The sender's rows are in Settings > Recording, wherever its menu is
+        recording_menu(client)
+        return ('Send to ' + peer['name']) in rows(command(client, 'MENU show from 0'))
+    wait(lambda: offered(sender, receiver), 'Receiver not discovered')
     for accept in (False, True):
         recording_menu(sender)
         choose(sender, 'Send to ' + receiver['name'])
@@ -184,7 +186,7 @@ try:
             choose(receiver, 'Decline Incoming PyroWave Stream')
             wait(lambda: 'Stream resources retired.' in text(sender), 'Declined sender did not retire')
             time.sleep(2)  # Allow the replacement listener's mDNS probe/announcement.
-            wait(lambda: ('Send to ' + receiver['name']) in rows(command(sender, 'MENU open')),
+            wait(lambda: offered(sender, receiver),
                  'Declined receiver did not become available again')
         else:
             choose(receiver, 'Accept Incoming PyroWave Stream')

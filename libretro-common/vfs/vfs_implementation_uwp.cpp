@@ -1410,6 +1410,48 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir* rdir)
     return entry->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
 }
 
+/* A symbolic link or junction, by its reparse tag; another reparse
+ * point (a cloud placeholder) is the file itself. */
+#define UWP_REPARSE_TAG_SYMLINK     0xA000000CUL
+#define UWP_REPARSE_TAG_MOUNT_POINT 0xA0000003UL
+#define UWP_FIND_DATA_IS_LINK(fd) \
+   (   ((fd)->dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) \
+    && (   (unsigned long)(fd)->dwReserved0 == UWP_REPARSE_TAG_SYMLINK \
+        || (unsigned long)(fd)->dwReserved0 == UWP_REPARSE_TAG_MOUNT_POINT))
+
+bool retro_vfs_dirent_is_link_impl(libretro_vfs_implementation_dir *rdir)
+{
+   if (!rdir)
+      return false;
+#ifdef HAVE_SMBCLIENT
+   if (rdir->smb_handle)
+      return false;
+#endif
+   return UWP_FIND_DATA_IS_LINK(&rdir->entry);
+}
+
+bool retro_vfs_path_is_link_impl(const char *path)
+{
+   WIN32_FIND_DATAW fd;
+   HANDLE h;
+   wchar_t *path_wide;
+   bool link = false;
+   if (!path || !*path)
+      return false;
+   if (!(path_wide = utf8_to_utf16_string_alloc(path)))
+      return false;
+   windowsize_path(path_wide);
+   h = FindFirstFileExFromAppW(path_wide, FindExInfoBasic, &fd,
+         FindExSearchNameMatch, NULL, 0);
+   if (h != INVALID_HANDLE_VALUE)
+   {
+      link = UWP_FIND_DATA_IS_LINK(&fd);
+      FindClose(h);
+   }
+   free(path_wide);
+   return link;
+}
+
 int retro_vfs_dirent_stat_impl(libretro_vfs_implementation_dir* rdir,
         int64_t *size, int64_t *mtime)
 {
