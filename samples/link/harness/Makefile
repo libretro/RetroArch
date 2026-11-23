@@ -10,14 +10,17 @@
 # rewound run would load where it saved. Where the scenario restarts its
 # ticks at a load, both runs' messages.log are compared without them.
 # An in_flight checkpoint, at the save frame, must list a message. In
-# spans_waiting console 0 must finish one frame a step, with console 1
-# parked at its checkpoint parked; in two_spans console 1 must finish 598
-# frames to console 0's 600; in spans_save_in_advance consoles 1 and 2 must
-# be parked at its checkpoints in_flight and last. Then
-# each scenario in bad/ must exit 2 and each in fail/ exit 1, printing the
-# error its "# error:" line names, as must a truncated state, a state of
-# another scenario and an edited trace; each scenario in stale/ must pass
-# its from run and fail its rewound run in the same way.
+# spans_waiting and spans_membership, whose late-join step runs again,
+# console 0 must finish one frame a step; console 1 of spans_waiting must be
+# parked at the checkpoint named parked, and the checkpoints of
+# spans_membership must find consoles 1 and 2 inside a frame or at an edge
+# as its header says. In two_spans console 1 must finish 598 frames to
+# console 0's 600, and in spans_save_in_advance consoles 1 and 2 must be
+# parked at its checkpoints in_flight and last. Then each scenario in bad/
+# must exit 2 and each in fail/ exit 1, printing the error its "# error:"
+# line names, as must a truncated state, a state of another scenario and an
+# edited trace; each scenario in stale/ must pass its from run and fail its
+# rewound run in the same way.
 #
 # proof makes the six runs of one scenario that binds real cores, PROOF
 # (an absolute path), into BUILD_DIR/proof/<scenario>/, each BIND word
@@ -199,13 +202,21 @@ check: all
 	@for scn in $(SCENARIOS); do \
 	   $(call RUNS,$(BUILD_DIR)/out,--path test=$(CORE),$(ALL_RUNS)); \
 	done
-	@trace="$(BUILD_DIR)/out/spans_waiting/first/trace.txt"; \
-	n=`grep -c '^F [0-9]* C 0 N ' "$$trace"`; \
-	off=`awk '$$3 == "C" && $$4 == 0 && $$6 != $$2' "$$trace" | head -n 1`; \
-	[ "$$n" = 340 ] && [ -z "$$off" ] \
-	   || { echo "check: spans_waiting: console 0 finished $$n frames, not one a step: $$off"; exit 1; }; \
-	grep -q '^c1 frame [0-9]* in_frame 1$$' "$(BUILD_DIR)/out/spans_waiting/first/parked/consoles.txt" \
+	@for pair in spans_waiting:340 spans_membership:300; do \
+	   name=$${pair%%:*}; want=$${pair#*:}; trace="$(BUILD_DIR)/out/$$name/first/trace.txt"; \
+	   n=`grep -c '^F [0-9]* C 0 N ' "$$trace"`; \
+	   off=`awk '$$3 == "C" && $$4 == 0 && $$6 != $$2' "$$trace" | head -n 1`; \
+	   [ "$$n" = "$$want" ] && [ -z "$$off" ] \
+	      || { echo "check: $$name: console 0 finished $$n frames, not one a step: $$off"; exit 1; }; \
+	done
+	@grep -q '^c1 frame [0-9]* in_frame 1$$' "$(BUILD_DIR)/out/spans_waiting/first/parked/consoles.txt" \
 	   || { echo "check: spans_waiting: console 1 is not parked at checkpoint parked"; exit 1; }
+	@out="$(BUILD_DIR)/out/spans_membership/first"; \
+	for pin in in_flight:c2:1 left:c2:1 back:c2:1 plugged:c1:1 pull:c1:0 pull:c2:1; do \
+	   at=$${pin%%:*}; c=$${pin#*:}; in=$${c#*:}; c=$${c%%:*}; \
+	   grep -q "^$$c frame [0-9]* in_frame $$in$$" "$$out/$$at/consoles.txt" \
+	      || { echo "check: spans_membership: $$c is not in_frame $$in at checkpoint $$at"; exit 1; }; \
+	done
 	@for at in in_flight last; do \
 	   for c in 1 2; do \
 	      grep -q "^c$$c frame [0-9]* in_frame 1$$" \

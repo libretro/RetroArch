@@ -51,9 +51,31 @@ scenario whose save is taken inside an exchange says so with a
 `checkpoint in_flight` line right after its `save mid` line, and that
 checkpoint's `bus.txt` must list a message in every run.
 
+A save can come while consoles are inside a frame, parked in an advance, if
+the core of each of them sets `RETRO_LINK_SAVE_IN_ADVANCE`. The state then
+holds each console's own frame count, whether it is inside an advance and the
+audio its frame made before the save. The `from` run starts such a console
+inside that advance: its core makes the advance again when it next runs, and
+the frame's audio hash goes on from the kept audio. The `rewound` run first
+abandons the frames of the consoles inside one at its last step: the bus
+releases them, each core ends its frame, and an abandoned frame leaves no
+trace line, audio or picture. Every run abandons them the same way before it
+unloads the cores.
+
+Some scenarios are checked further. In `spans_waiting` and
+`spans_membership` console 0 must finish one frame every step; in
+`spans_waiting` console 1 must be inside a frame at checkpoint `parked`,
+in `spans_save_in_advance` consoles 1 and 2 at checkpoints `in_flight`
+and `last`, and in `spans_membership` console 2 at checkpoints
+`in_flight`, `left`, `back` and `pull`, and console 1 at `plugged`
+but not at `pull`; in `two_spans` console 1 must finish 598 frames
+to console 0's 600, the last of them its frame 597 in step 599.
+
 Then the runs that must fail: every scenario in `scenarios/bad/`, a truncated
 state and a state of another scenario must each exit 2, and every scenario in
-`scenarios/fail/` and a run against an edited trace must each exit 1. Each
+`scenarios/fail/` and a run against an edited trace (the first run of
+`two_unequal` with the picture hash of console 1's line in step 60 changed)
+must each exit 1. Each
 must also print its error: the one a scenario's `# error: <text>` line gives,
 with its line number where it has one.
 
@@ -107,11 +129,11 @@ link_harness --scenario FILE --out DIR [--path NAME=FILE]...
   handle are not checked).
 - `--rewind STATE` runs from the first frame to the scenario's last frame
   edge, before the frame of its `end` line or of its `expect-stuck` line.
-  There, in place of that edge's lines, it loads the state into the running
-  session, the bus's contents and each console's state into its core, saves
-  each console's state again and goes on just after the `save` line that
-  wrote the state, as a `--from` run does. A state the bus or a core
-  refuses there fails the run.
+  There, in place of that edge's lines, it abandons the frame of each console
+  inside one, loads the state into the running session, the bus's contents
+  and each console's state into its core, saves each console's state again
+  and goes on just after the `save` line that wrote the state, as a `--from`
+  run does. A state the bus or a core refuses there fails the run.
 - `--expect TRACE` compares the trace with an earlier run's, from this run's
   first frame, and stops at the first difference. After a `--rewind` load
   it goes on from the lines of the state's frame.
@@ -158,23 +180,39 @@ expect-stuck <frame>                the run ends in a release in this frame
 <frame> end
 ```
 
-Consoles are numbered from 0 without gaps. Frame lines come in frame order
-and act in file order at the edge before their frame runs, so frame 0's act
-once every core is loaded, and an `expect`, `save` or `checkpoint` at frame
-F sees the session after F frames. A run from a state starts just after the
-`save` line that wrote it: the lines before that line are in the state, and
-the lines after it at the same frame still act. A `--rewind` load goes on
-from there too, and the lines after it act again; the bus is then as the
-state has it, with the cables and holds of the save. A frame has at most
-one `save` line. With `expect-stuck F`, no line but `end` comes after
-frame F, where the run ends.
+Consoles are numbered from 0 without gaps. A scenario's frames are steps,
+counted in console 0's frames. Frame lines come in frame order and act in
+file order at the edge before their step runs, so frame 0's act once every
+core is loaded, and an `expect`, `save` or `checkpoint` at frame F sees
+the session after F steps. Step F runs console 0 from its edge F to its edge
+F + 1, and every other console to its own first edge at or after that
+instant, or until it is parked inside the frame that crosses it, waiting on
+a peer. A console whose frame span is not known yet, at step 0 or after a
+join, is run one frame; when that leaves console 0 short of its edge, the
+step runs again to the edges the spans now known give. With equal spans
+every console finishes one frame a step. A run from a state starts just
+after the `save` line that wrote it: the lines before that line are in the
+state, and the lines after it at the same frame still act. A `--rewind` load
+goes on from there too, and the lines after it act again; the bus is then as
+the state has it, with the cables and holds of the save. A frame has at most
+one `save` line. With `expect-stuck F`, no line but `end` comes after frame
+F, where the run ends.
+
+At an edge where a console is inside a frame, a `save` line fails the run
+unless that console's core set `RETRO_LINK_SAVE_IN_ADVANCE`, and a `reset`
+line fails it, as does an `expect` line that reads `save`, `rtc`,
+`system` or `video`: the harness calls no entry point of a core inside a
+frame but `retro_serialize_size` and `retro_serialize`. An `expect ... addr`
+line reads the copy of the memory map and is allowed. A checkpoint's
+`consoles.txt` says which consoles are inside a frame there.
 
 A counter not named in an `expect-count` line must end at 0. The counters are
 `lowered_promise`, `low_stamp`, `request_past_promise`,
 `request_past_frame_end`, `request_past_earliest`, `skipped_publish`,
 `left_out` and `misplaced_call`. A membership line the bus refuses, or an
 option its core did not declare, fails the run. An input script has a
-`<frame> <hex joypad mask>` line for each change, held until the next.
+`<frame> <hex joypad mask>` line for each change, held until the next, its
+frames counted in the console's own frames.
 
 An `expect <c> addr` line reads the byte at an address of the console's
 own address space, given in decimal, through the memory map its core gave
@@ -220,38 +258,68 @@ The scenarios here:
   `rewound` run must not show at the checkpoint after its load.
 - `memory_map`: bytes read at addresses through the test core's memory
   map, and one of them by region as well.
+- `corners`: the interface's corners at 60000/1001 frames a second: empty
+  and largest payloads, every undefined flag bit set, radios that join no
+  bus, and a cable pulled after the save, plugged back and pulled again.
+- `lan_eight`: eight consoles on one Ethernet medium with no cable line,
+  sending full Ethernet frames, half to every console and half to one.
+- `two_spans`: two consoles of different frame rates on one cable.
+- `spans_waiting`: a console nearly three times as fast as console 0,
+  whose span step 0 does not know, so that step runs again; it ends most
+  steps inside a frame.
+- `spans_lookahead_zero`: a port that promises no step ahead beside a peer
+  of another span.
+- `spans_save_in_advance`: a save and checkpoints with two consoles inside
+  a frame, as at the last step.
+- `spans_membership`: membership changes between consoles of three spans: a
+  cable plugged with a console inside a frame and a save before the join it
+  makes, a cable pulled, a hold, a port that leaves a shared medium and
+  joins it again, and a late join that makes a step run again.
+- `unhold_dupe`: a dupe right after a hold ends.
 - `bad/`: scenarios the harness refuses before anything runs.
-- `fail/`: scenarios that run and fail: a core that logs an error, a count
-  the bus does not reach, an `expect` line that does not hold, a release the
-  scenario does not expect, two dupes in a row before a checkpoint, and
-  addresses the memory map does not map.
+- `fail/`: scenarios that run and fail: a core that logs an error, a count the
+  bus does not reach, an `expect` line that does not hold, a release the
+  scenario does not expect, two dupes in a row before a checkpoint,
+  addresses the memory map does not map, a frame rate that makes a port's
+  frame no whole number of ticks, and a `save`, a `reset` and an `expect`
+  line with a console inside a frame.
 - `stale/`: scenarios whose `from` run passes and whose `rewound` run
   fails: a core that keeps a latch over a load, one whose save right after a
-  load writes a copy the load left stale, and one whose save there makes a
-  link call.
+  load writes a copy the load left stale, one whose save there makes a link
+  call, and one that keeps over a load a latch that a release sets.
 
 ## Output
 
-- `trace.txt`, one line per console and frame, then one for the bus:
+- `trace.txt`, for each step a line for each frame a console finished in it,
+  by console and then frame, N being the console's own frame; `HELD` for a
+  held console, which finishes none; no line for a console that spent the
+  step inside a frame; then a line for the bus:
 
   ```
-  F <frame> C <n> V <hex> A <hex> S <hex>
-  F <frame> C <n> HELD
-  F <frame> BUS <hex>
+  F <step> C <n> N <frame> V <hex> A <hex> S <hex>
+  F <step> C <n> HELD
+  F <step> BUS <hex>
   ```
 
   V, A and S are the xxh64 of the picture rows, the audio and the
   `retro_serialize` output; BUS hashes the bus contents with every tick
   taken from its port's anchor, so a core that renumbers its ticks on a load
   still hashes the same.
-- `messages.log`, a line for each message sent, by frame, receiving port,
+- `messages.log`, a line for each message sent, by step, receiving port,
   sending port and send order:
-  `F <frame> <c>:<p> -> <c>:<p> stamp <hex> landing <hex> len <n> head <hex>`.
-- `<name>.state` for each `save` line: the frame, a hash of the scenario
-  file, each core's state and the bus contents.
+  `F <step> <c>:<p> -> <c>:<p> stamp <hex> landing <hex> len <n> head <hex>`.
+  A message with no landing by the step's end, such as one dropped when
+  sent, shows `ffffffffffffffff`.
+- `<name>.state` for each `save` line, version 2: the frame, a hash of the
+  scenario file, for each console its core's state, its own frames
+  finished, whether it is inside an advance and the audio of that frame
+  before the save, then the bus contents.
 - `<name>/` for each `checkpoint`: `c<n>.png`, each console's picture of the
-  frame before, for each console that ran it; `bus.txt`, the bus contents;
-  `counts.txt`, the bus counts.
+  last frame it finished, or over a dupe of the frame before, for each
+  console not held that has finished one since it started, loaded or was
+  held; `bus.txt`, the bus contents; `counts.txt`, the bus counts;
+  `consoles.txt`, a line `c<n> frame <frames finished> in_frame <0|1>` for
+  each console, from which a scenario's steps are chosen.
 - `stuck.txt` after a release: each console that was parked, with the port
   and peer that bound it, or `no progress` for one parked for advancing
   without progress.
@@ -269,7 +337,8 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | Option | Values | Default |
 |---|---|---|
 | `link_test_ports` | 1-3 | 1 |
-| `link_test_rate_P` | ticks a second, a multiple of 60 | 61440 |
+| `link_test_fps` | frames a second, `N` or `N/D` | 60 |
+| `link_test_rate_P` | ticks a second; with `link_test_fps` N/D, rate * D / N whole | 61440 |
 | `link_test_steps` | steps a frame, 1-64 | 16 |
 | `link_test_lookahead_P` | steps the promise runs ahead, 0-64 | 1 |
 | `link_test_protocol_P` | protocol id | test-cable |
@@ -278,10 +347,13 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_send_P` | none, broadcast, or an index 0-254 | broadcast |
 | `link_test_seed` | a number | 1 |
 | `link_test_send_frames` | `A-B[,A-B]...`, the frames that may send | 0-999999 |
+| `link_test_payload_len` | `seeded`, or a payload length 0-4096 for every message | seeded |
 | `link_test_dupe_frames` | `A-B[,A-B]...`, the frames that pass no picture (dupes); set, the core needs `GET_CAN_DUPE` | empty |
 | `link_test_detach_P`, `link_test_reattach_P` | the frame in whose `retro_run` it happens, or -1 | -1 |
 | `link_test_restart_ticks` | off, on | off |
-| `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load, stale_save, stale_send | conform |
+| `link_test_extra_flags` | off, on: every undefined bit set in its port and core flags | off |
+| `link_test_save_in_advance` | off, on | off |
+| `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load, stale_save, stale_send, stale_release | conform |
 | `link_test_bad_frame` | the first frame of the mode | 0 |
 
 In each `retro_run` the core advances its ports at the frame start, at each
@@ -290,6 +362,21 @@ each one once it has passed the message's landing tick, and on seeded
 events sends a payload made from its state, stamped at its promise. With
 `link_test_restart_ticks` on, its ticks start from a new number after every
 load and move at every reset, while its saved state stays the same.
+
+A `seeded` payload is 8 to 64 bytes long, by the seed; a
+`link_test_payload_len` of 0 sends a NULL buffer. In `conform` mode the core
+also checks, after each advance and without changing its state, the calls a
+core may make with NULL arguments: `peek` with every out argument NULL
+agrees with a full peek, `recv_msg` with `len` NULL takes nothing, messages
+are taken with `tick` and `from` NULL after a peek, and `peers` with `count`
+NULL agrees with a full call. A failed check is a logged error.
+
+With `link_test_save_in_advance` on, the core sets
+`RETRO_LINK_SAVE_IN_ADVANCE`: its state holds the advance it is inside,
+and its first `retro_run` after a load makes that advance again and goes
+on from there. It then also sends 16 audio frames at each of its steps, so a
+save inside a frame has audio of that frame to keep. With
+`link_test_restart_ticks`, `nonconform` or `no_progress` it logs an error.
 
 From `link_test_bad_frame` on, the modes break the rules:
 
@@ -309,6 +396,9 @@ From `link_test_bad_frame` on, the modes break the rules:
 - `stale_send`: it keeps the same copy, and `retro_serialize` sends a
   message when the copy is not its state hash: a link call outside
   `retro_run`.
+- `stale_release`: an advance that reports `RETRO_LINK_WAKE_DETACHED` sets
+  a latch, and while the latch is set it folds the frame number into its
+  state every frame. The latch is in no save state, and no load clears it.
 
 Its system RAM, for `expect` lines: 0x00-0x07 the state hash; 0x08 the ports
 attached; 0x09-0x0B each port's peer count; 0x0C-0x0E each port's index, 255

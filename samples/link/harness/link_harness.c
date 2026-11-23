@@ -787,6 +787,15 @@ static void link_harness_expect(struct link_harness *h, const struct link_scenar
       link_harness_expect_address(h, e);
       return;
    }
+   /* These read through the core's entry points, which a core inside a
+    * frame is not called with; an addr line reads the kept map */
+   if (link_sched_in_frame(h->sched, e->console))
+   {
+      fprintf(stderr, "link_harness: %s:%u: console %u is inside a frame\n",
+            h->scn.path, e->line, e->console);
+      h->failed = true;
+      return;
+   }
    if (!link_console_byte(&h->consoles[e->console], e->memory, e->offset, &got))
    {
       fprintf(stderr, "link_harness: %s:%u: console %u's core has no byte %lu there\n",
