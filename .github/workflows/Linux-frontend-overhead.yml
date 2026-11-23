@@ -199,7 +199,7 @@ jobs:
       - name: Configure
         # Non-Qt, as the harness requires (with Qt, main() lives in
         # ui_qt.o). Everything else at its default.
-        run: ./configure --disable-qt
+        run: ./configure --disable-qt --enable-rwma
 
       - name: Build (release)
         run: make -j$(getconf _NPROCESSORS_ONLN)
@@ -211,13 +211,10 @@ jobs:
           SAN=none make -C samples/runloop/frontend_overhead check
           make -C samples/runloop/frontend_overhead clean
 
-      - name: FLAC playback releases its feeder before the quit task drain
+      - name: Music formats release playback before the quit task drain
         shell: bash
         run: |
           set -eu
           samples/tasks/exit_drain/build.sh
-          ffmpeg -y -v error -f lavfi -i sine=frequency=440:sample_rate=48000 \
-            -t 5 -c:a flac "$RUNNER_TEMP/exit-flac.flac"
-          FLAC_FIXTURE="$RUNNER_TEMP/exit-flac.flac" \
-            timeout 20 samples/tasks/exit_drain/exit_drain_test
+          samples/tasks/exit_drain/check_music.sh
           MODE=old timeout 20 samples/tasks/exit_drain/exit_drain_test

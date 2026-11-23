@@ -16,7 +16,7 @@
  *    through the same gather;
  *  - a scheduled-for-later task must skip its future work when
  *    cancellation advances it for cleanup; it must not hold the drain;
- *  - FLAC_FIXTURE opens a real windowed music stream and requires its
+ *  - MUSIC_FIXTURE opens a real music stream and requires its
  *    voice and feeder to retire promptly at quit.
  *
  * The old-order lane (MODE=old) skips the drain and goes straight
@@ -213,32 +213,32 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER) && defined(HAVE_RFLAC)
-   /* A real viewer FLAC forces the windowed feeder, even for a small
-    * fixture. Its task cannot finish while the mixer owns the sound. */
-   if (!old_order && getenv("FLAC_FIXTURE"))
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   /* Windowable viewer formats force the feeder even for small fixtures.
+    * Resident formats must also release their mixer voice at quit. */
+   if (!old_order && getenv("MUSIC_FIXTURE"))
    {
-      gfx_music_player_t *music = gfx_music_player_new(getenv("FLAC_FIXTURE"));
+      gfx_music_player_t *music = gfx_music_player_new(getenv("MUSIC_FIXTURE"));
       retro_time_t deadline = cpu_features_get_time_usec() + 2000000;
       bool ready = false;
-      CHECK(music != NULL, "FLAC viewer did not open");
+      CHECK(music != NULL, "Music viewer did not open");
       while (music && cpu_features_get_time_usec() < deadline)
       {
          task_queue_check();
          if (gfx_music_player_pause(music, false)) { ready = true; break; }
          retro_sleep(1);
       }
-      CHECK(ready, "FLAC viewer never acquired its mixer voice");
+      CHECK(ready, "Music viewer never acquired its mixer voice");
       t0 = cpu_features_get_time_usec();
       retroarch_drain_tasks_for_exit();
       drain_us = cpu_features_get_time_usec() - t0;
-      CHECK(drain_us < 500000, "FLAC held quit for %ld us", (long)drain_us);
-      CHECK(!gfx_music_player_pause(music, false), "FLAC voice survived shutdown");
+      CHECK(drain_us < 500000, "Music held quit for %ld us", (long)drain_us);
+      CHECK(!gfx_music_player_pause(music, false), "Music voice survived shutdown");
       gfx_music_player_close(music);
-      printf("exit_drain: FLAC stopped and feeder retired in %ld us\n", (long)drain_us);
+      printf("exit_drain: Music stopped and tasks retired in %ld us\n", (long)drain_us);
    }
 #else
-   CHECK(!getenv("FLAC_FIXTURE"), "FLAC regression requires menu, mixer and RFLAC");
+   CHECK(!getenv("MUSIC_FIXTURE"), "Music regression requires menu and mixer");
 #endif
 
    /* The in-flight population at "quit": one cancellation-aware,
