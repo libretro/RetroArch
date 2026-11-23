@@ -49,15 +49,15 @@ struct link_sched_console
    cothread_t thread;
    link_sched_run_t run;
    void *user;
-   struct retro_link_wait *waits; /* a parked advance's entries, on its own stack */
-   struct link_sched_mark *marks; /* its previous advance, for the no-progress count */
-   uint64_t activity;             /* link_bus_activity after that advance */
-   uint64_t changes;              /* link_bus_changes when it was last tested */
-   unsigned count;                /* entries in waits */
+   struct retro_link_wait *const *waits; /* the core's list of a parked advance's entries */
+   struct link_sched_mark *marks;        /* its previous advance, for the no-progress count */
+   uint64_t activity;                    /* link_bus_activity after that advance */
+   uint64_t changes;                     /* link_bus_changes when it was last tested */
+   unsigned count;                       /* entries in waits */
    unsigned marks_count, marks_cap;
-   unsigned spins;                /* advances in a row without progress */
-   bool marked;                   /* marks holds an advance of this frame */
-   bool ready;                    /* parked, and grantable when last tested */
+   unsigned spins;                       /* advances in a row without progress */
+   bool marked;                          /* marks holds an advance of this frame */
+   bool ready;                           /* parked, and grantable when last tested */
    enum link_sched_state state;
 };
 
@@ -100,7 +100,7 @@ static void link_sched_switch_out(link_sched_t *s, unsigned c, enum link_sched_s
 /* Copies an advance's local ticks and grants, the marks growing only when
  * a console lists more ports than before */
 static bool link_sched_mark_all(struct link_sched_console *k,
-      const struct retro_link_wait *w, unsigned n)
+      struct retro_link_wait *const *w, unsigned n)
 {
    unsigned i;
    if (n > k->marks_cap)
@@ -114,8 +114,8 @@ static bool link_sched_mark_all(struct link_sched_console *k,
    }
    for (i = 0; i < n; i++)
    {
-      k->marks[i].local = w[i].local_tick;
-      k->marks[i].grant = w[i].grant;
+      k->marks[i].local = w[i]->local_tick;
+      k->marks[i].grant = w[i]->grant;
    }
    k->marks_count = n;
    return true;
@@ -126,14 +126,14 @@ static bool link_sched_mark_all(struct link_sched_console *k,
  * limit the console parks until its buses change. Its result is already
  * written, so the park moves nothing. */
 static void link_sched_progress(link_sched_t *s, unsigned c,
-      struct retro_link_wait *w, unsigned n)
+      struct retro_link_wait *const *w, unsigned n)
 {
    struct link_sched_console *k = &s->consoles[c];
    uint64_t activity            = link_bus_activity(s->bus, c);
    bool same                    = k->marked && k->marks_count == n && k->activity == activity;
    unsigned i;
    for (i = 0; same && i < n; i++)
-      same = k->marks[i].local == w[i].local_tick && k->marks[i].grant == w[i].grant;
+      same = k->marks[i].local == w[i]->local_tick && k->marks[i].grant == w[i]->grant;
    if (!same)
    {
       k->spins    = 0;
@@ -156,7 +156,7 @@ static void link_sched_progress(link_sched_t *s, unsigned c,
 /* publish; if grantable, grant; else park on the console's cothread until
  * it is, or until a release, then grant */
 static void link_sched_advance(link_sched_t *s, unsigned c,
-      struct retro_link_wait *w, unsigned n)
+      struct retro_link_wait *const *w, unsigned n)
 {
    bool own = s->running == (int)c; /* on its cothread, so it may park */
    link_bus_publish(s->bus, c, w, n);
@@ -239,7 +239,7 @@ static const void *RETRO_CALLCONV link_sched_peek(retro_link_port_t *handle,
    return NULL;
 }
 
-static void RETRO_CALLCONV link_sched_advance_multi(struct retro_link_wait *waits,
+static void RETRO_CALLCONV link_sched_advance_multi(struct retro_link_wait *const *waits,
       unsigned count)
 {
    link_sched_t *s;
@@ -251,8 +251,8 @@ static void RETRO_CALLCONV link_sched_advance_multi(struct retro_link_wait *wait
    }
    for (i = 0; i < count; i++)
    {
-      waits[i].grant      = RETRO_LINK_UNBOUNDED;
-      waits[i].wake_flags = waits[i].wake_flags != RETRO_LINK_WAKE_NONE
+      waits[i]->grant      = RETRO_LINK_UNBOUNDED;
+      waits[i]->wake_flags = waits[i]->wake_flags != RETRO_LINK_WAKE_NONE
          ? RETRO_LINK_WAKE_DETACHED : RETRO_LINK_WAKE_NONE;
    }
 }
@@ -262,13 +262,14 @@ static uint64_t RETRO_CALLCONV link_sched_advance_one(retro_link_port_t *handle,
       uint32_t *wake_flags)
 {
    struct retro_link_wait w;
+   struct retro_link_wait *list = &w;
    w.handle       = handle;
    w.local_tick   = local_tick;
    w.safe_tick    = safe_tick;
    w.request_tick = request_tick;
    w.grant        = 0;
    w.wake_flags   = wake_flags ? LINK_SCHED_ASK : RETRO_LINK_WAKE_NONE;
-   link_sched_advance_multi(&w, 1);
+   link_sched_advance_multi(&list, 1);
    if (wake_flags)
       *wake_flags = w.wake_flags;
    return w.grant;
@@ -368,7 +369,7 @@ static void link_sched_record(link_sched_t *s, unsigned c, struct link_sched_stu
    if (link_bus_blocked_by(s->bus, c, k->waits, k->count, &by))
    {
       out->port          = by.port;
-      out->local_tick    = k->waits[by.entry].local_tick;
+      out->local_tick    = k->waits[by.entry]->local_tick;
       out->request_tick  = by.request;
       out->bound         = by.bound;
       out->bound_console = by.peer_console;
@@ -378,9 +379,9 @@ static void link_sched_record(link_sched_t *s, unsigned c, struct link_sched_stu
    }
    /* Parked for no progress: nothing but itself holds it */
    out->port          = UINT_MAX;
-   out->local_tick    = k->count ? k->waits[0].local_tick : 0;
-   out->request_tick  = k->count ? k->waits[0].request_tick : 0;
-   out->bound         = k->count ? k->waits[0].grant : 0;
+   out->local_tick    = k->count ? k->waits[0]->local_tick : 0;
+   out->request_tick  = k->count ? k->waits[0]->request_tick : 0;
+   out->bound         = k->count ? k->waits[0]->grant : 0;
    out->bound_console = c;
    out->bound_port    = UINT_MAX;
    out->edge_unknown  = false;

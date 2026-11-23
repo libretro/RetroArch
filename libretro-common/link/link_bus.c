@@ -752,7 +752,7 @@ static void link_bus_form(link_bus_t *b)
 
 /* An attached port of console's that none of the entries names */
 static bool link_bus_left_out(const link_bus_t *b, unsigned console,
-      const struct retro_link_wait *w, unsigned n)
+      struct retro_link_wait *const *w, unsigned n)
 {
    size_t i;
    for (i = link_bus_at(b, console, 0); i < b->recs_len && b->recs[i]->console == console; i++)
@@ -760,7 +760,7 @@ static bool link_bus_left_out(const link_bus_t *b, unsigned console,
       unsigned k = 0;
       if (!b->recs[i]->attached)
          continue;
-      while (k < n && w[k].handle != b->recs[i])
+      while (k < n && w[k]->handle != b->recs[i])
          k++;
       if (k == n)
          return true;
@@ -888,7 +888,7 @@ void link_bus_free(link_bus_t *b)
 }
 
 bool link_bus_set_ports(link_bus_t *b, unsigned console,
-      const struct retro_link_port_info *ports)
+      const struct retro_link_port_info *const *ports)
 {
    struct retro_link_port_info *copy = NULL;
    if (!b || console >= b->console_count)
@@ -897,9 +897,9 @@ bool link_bus_set_ports(link_bus_t *b, unsigned console,
    {
       size_t n, i, bytes = 0;
       char *s;
-      for (n = 0; ports[n].protocol_id; n++)
-         bytes += strlen(ports[n].protocol_id) + 1
-               + (ports[n].desc ? strlen(ports[n].desc) + 1 : 0);
+      for (n = 0; ports[n] && ports[n]->protocol_id; n++)
+         bytes += strlen(ports[n]->protocol_id) + 1
+               + (ports[n]->desc ? strlen(ports[n]->desc) + 1 : 0);
       copy = (struct retro_link_port_info*)link_bus_alloc(b, NULL,
             (n + 1) * sizeof(*copy) + bytes);
       if (!copy)
@@ -907,9 +907,9 @@ bool link_bus_set_ports(link_bus_t *b, unsigned console,
       s = (char*)(copy + n + 1);
       for (i = 0; i < n; i++)
       {
-         copy[i]             = ports[i];
-         copy[i].protocol_id = link_bus_put(&s, ports[i].protocol_id);
-         copy[i].desc        = ports[i].desc ? link_bus_put(&s, ports[i].desc) : NULL;
+         copy[i]             = *ports[i];
+         copy[i].protocol_id = link_bus_put(&s, ports[i]->protocol_id);
+         copy[i].desc        = ports[i]->desc ? link_bus_put(&s, ports[i]->desc) : NULL;
       }
       memset(&copy[n], 0, sizeof(copy[n]));
    }
@@ -1168,7 +1168,7 @@ const void *link_bus_peek(link_bus_t *b, unsigned console, retro_link_port_t *h,
    return e->msg->cell;
 }
 
-void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *w, unsigned n)
+void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *const *w, unsigned n)
 {
    unsigned i;
    bool foreign                         = false;
@@ -1186,9 +1186,9 @@ void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *w
 
    for (i = 0; i < n; i++)
    {
-      struct retro_link_port *p = link_bus_own(b, console, w[i].handle);
+      struct retro_link_port *p = link_bus_own(b, console, w[i]->handle);
       bool moved                = false;
-      if (link_bus_foreign(b, console, w[i].handle))
+      if (link_bus_foreign(b, console, w[i]->handle))
          foreign = true;
       if (!p || !p->live || p->cut)
          continue;
@@ -1196,29 +1196,29 @@ void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *w
       {
          /* The frame-start advance gives the tick at the edge if none is known */
          p->published   = true;
-         p->start_local = w[i].local_tick;
+         p->start_local = w[i]->local_tick;
          if (!p->edge_known)
          {
             if (p->renumber)
-               link_bus_rebase(p, w[i].local_tick);
-            p->anchor     = w[i].local_tick;
+               link_bus_rebase(p, w[i]->local_tick);
+            p->anchor     = w[i]->local_tick;
             p->edge_known = true;
             moved         = true;
             link_bus_land(b, p);
          }
       }
-      if (p->promise_valid && w[i].safe_tick < p->promise)
+      if (p->promise_valid && w[i]->safe_tick < p->promise)
          lowered = true;
-      else if (!p->promise_valid || w[i].safe_tick > p->promise)
+      else if (!p->promise_valid || w[i]->safe_tick > p->promise)
       {
-         p->promise       = w[i].safe_tick;
+         p->promise       = w[i]->safe_tick;
          p->promise_valid = true;
          moved            = true;
       }
-      if (p->local != w[i].local_tick || p->request != w[i].request_tick)
+      if (p->local != w[i]->local_tick || p->request != w[i]->request_tick)
       {
-         p->local   = w[i].local_tick;
-         p->request = w[i].request_tick;
+         p->local   = w[i]->local_tick;
+         p->request = w[i]->request_tick;
          moved      = true;
       }
       if (moved)
@@ -1228,7 +1228,7 @@ void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *w
    /* The earliest promise among the entries not granted RETRO_LINK_UNBOUNDED */
    for (i = 0; i < n; i++)
    {
-      const struct retro_link_port *p = link_bus_own(b, console, w[i].handle);
+      const struct retro_link_port *p = link_bus_own(b, console, w[i]->handle);
       if (!p || !link_bus_joined(p))
          continue;
       if (!early || link_bus_sooner(link_bus_ahead(p), p->rate, early_ahead, early->rate))
@@ -1241,7 +1241,7 @@ void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *w
    /* A request past a bound is granted as the lowest bound it passed */
    for (i = 0; i < n; i++)
    {
-      struct retro_link_port *p = link_bus_own(b, console, w[i].handle);
+      struct retro_link_port *p = link_bus_own(b, console, w[i]->handle);
       enum link_bus_repair was   = LINK_BUS_AS_REQUEST;
       uint64_t end, earliest;
       if (!p || !p->live || p->cut)
@@ -1286,26 +1286,26 @@ void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *w
 }
 
 bool link_bus_grantable(const link_bus_t *b, unsigned console,
-      const struct retro_link_wait *w, unsigned n)
+      struct retro_link_wait *const *w, unsigned n)
 {
    return !link_bus_blocked_by(b, console, w, n, NULL);
 }
 
-void link_bus_grant(link_bus_t *b, unsigned console, struct retro_link_wait *w, unsigned n)
+void link_bus_grant(link_bus_t *b, unsigned console, struct retro_link_wait *const *w, unsigned n)
 {
    unsigned i;
    if (!b)
       return;
    for (i = 0; i < n; i++)
    {
-      struct retro_link_port *p = link_bus_framed(b, console, w[i].handle);
-      bool ask                  = w[i].wake_flags != RETRO_LINK_WAKE_NONE;
-      w[i].wake_flags           = RETRO_LINK_WAKE_NONE;
+      struct retro_link_port *p = link_bus_framed(b, console, w[i]->handle);
+      bool ask                  = w[i]->wake_flags != RETRO_LINK_WAKE_NONE;
+      w[i]->wake_flags          = RETRO_LINK_WAKE_NONE;
       if (!p || b->released)
       {
-         w[i].grant = RETRO_LINK_UNBOUNDED;
+         w[i]->grant = RETRO_LINK_UNBOUNDED;
          if (ask)
-            w[i].wake_flags = RETRO_LINK_WAKE_DETACHED;
+            w[i]->wake_flags = RETRO_LINK_WAKE_DETACHED;
          if (p)
          {
             p->grant_valid = false;
@@ -1322,33 +1322,33 @@ void link_bus_grant(link_bus_t *b, unsigned console, struct retro_link_wait *w, 
             g = LINK_BUS_TICK_MAX;
          p->grant       = g;
          p->grant_valid = true;
-         w[i].grant     = g;
+         w[i]->grant    = g;
       }
       else
       {
          p->grant_valid = false;
-         w[i].grant     = RETRO_LINK_UNBOUNDED;
+         w[i]->grant    = RETRO_LINK_UNBOUNDED;
       }
-      p->limit = w[i].grant;
+      p->limit = w[i]->grant;
       if (!p->cut && link_bus_reached(p))
          p->pending |= RETRO_LINK_WAKE_MESSAGE;
       if (ask)
       {
-         w[i].wake_flags = p->pending;
-         p->pending      = RETRO_LINK_WAKE_NONE;
+         w[i]->wake_flags = p->pending;
+         p->pending       = RETRO_LINK_WAKE_NONE;
       }
    }
 }
 
 bool link_bus_blocked_by(const link_bus_t *b, unsigned console,
-      const struct retro_link_wait *w, unsigned n, struct link_bus_blocker *out)
+      struct retro_link_wait *const *w, unsigned n, struct link_bus_blocker *out)
 {
    unsigned i;
    if (!b || b->released)
       return false;
    for (i = 0; i < n; i++)
    {
-      const struct retro_link_port *p  = link_bus_framed(b, console, w[i].handle);
+      const struct retro_link_port *p  = link_bus_framed(b, console, w[i]->handle);
       const struct retro_link_port *by = NULL;
       uint64_t bound;
       if (!p || !link_bus_joined(p) || p->target <= link_bus_floor(p))

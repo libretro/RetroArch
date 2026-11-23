@@ -38,6 +38,7 @@ static link_bus_t *fx_bus;
 static link_sched_t *fx_sched;
 static struct fx_console fx_c[FX_MAX];
 static struct retro_link_port_info fx_list[FX_MAX][2];
+static const struct retro_link_port_info *fx_ptrs[FX_MAX][2];
 
 static bool fx_linked(const struct retro_link_interface *link)
 {
@@ -50,6 +51,7 @@ static void fx_new(unsigned n, link_sched_run_t run)
    unsigned c;
    memset(fx_c, 0, sizeof(fx_c));
    memset(fx_list, 0, sizeof(fx_list));
+   memset(fx_ptrs, 0, sizeof(fx_ptrs));
    fx_bus   = link_bus_new(n);
    fx_sched = link_sched_new(fx_bus);
    CHECK(fx_bus != NULL && fx_sched != NULL);
@@ -73,10 +75,11 @@ static void fx_join(unsigned c, uint64_t rate, unsigned max_ports)
    e->clock_rate  = rate;
    e->max_ports   = max_ports;
    k->span        = rate / 60;
+   fx_ptrs[c][0]  = e;
    link_sched_enter(fx_sched, c);
    memset(&k->link, 0, sizeof(k->link));
    k->link.interface_version = RETRO_LINK_INTERFACE_VERSION;
-   k->link.ports             = fx_list[c];
+   k->link.ports             = fx_ptrs[c];
    CHECK(link_sched_environment(fx_sched, &k->link));
    if (fx_linked(&k->link))
       k->h = k->link.attach(0, "test-cable", rate);
@@ -174,7 +177,8 @@ static void env_call_versions(void)
    fx_list[0][0].port        = 0;
    fx_list[0][0].protocol_id = "test-cable";
    fx_list[0][0].clock_rate  = FX_RATE;
-   link.ports                = fx_list[0];
+   fx_ptrs[0][0]             = &fx_list[0][0];
+   link.ports                = fx_ptrs[0];
    CHECK(link_sched_environment(fx_sched, &link));
    if (fx_linked(&link))
    {
@@ -227,6 +231,7 @@ static void fx_outside(void)
 {
    struct fx_console *k = &fx_c[0];
    struct retro_link_wait w;
+   struct retro_link_wait *list = &w;
    unsigned char buf[16];
    uint64_t hash  = link_bus_hash(fx_bus);
    uint64_t tick  = 7;
@@ -254,11 +259,11 @@ static void fx_outside(void)
    w.request_tick = k->tick + 64;
    w.grant        = 0;
    w.wake_flags   = FX_ASK;
-   k->link.advance_multi(&w, 1);
+   k->link.advance_multi(&list, 1);
    CHECK(w.grant == RETRO_LINK_UNBOUNDED && w.wake_flags == RETRO_LINK_WAKE_DETACHED);
    w.grant      = 0;
    w.wake_flags = RETRO_LINK_WAKE_NONE;
-   k->link.advance_multi(&w, 1);
+   k->link.advance_multi(&list, 1);
    CHECK(w.grant == RETRO_LINK_UNBOUNDED && w.wake_flags == RETRO_LINK_WAKE_NONE);
    k->link.detach(k->h);
    CHECK(link_bus_peers(fx_bus, 0, k->h, &count) == 0 && count == 2);
@@ -291,6 +296,7 @@ static void single_run(void *user)
    if (k->index == 0)
    {
       struct retro_link_wait w;
+      struct retro_link_wait *list = &w;
       single_grant[0] = fx_adv(k, t, t + 100, t + 500, NULL);
       w.handle        = k->h;
       w.local_tick    = t;
@@ -298,7 +304,7 @@ static void single_run(void *user)
       w.request_tick  = t + 500;
       w.grant         = 0;
       w.wake_flags    = RETRO_LINK_WAKE_NONE;
-      k->link.advance_multi(&w, 1);
+      k->link.advance_multi(&list, 1);
       single_grant[1] = w.grant;
       single_flags[0] = w.wake_flags;
       single_grant[2] = fx_adv(k, t, t + 100, t + 500, &single_flags[1]);

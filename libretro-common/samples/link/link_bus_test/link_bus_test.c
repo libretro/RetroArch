@@ -22,6 +22,7 @@ static int failures;
 static link_bus_t *fx_bus;
 static unsigned fx_consoles;
 static struct retro_link_port_info fx_list[FX_CONSOLES][FX_PORTS + 1];
+static const struct retro_link_port_info *fx_ptrs[FX_CONSOLES][FX_PORTS + 1];
 static retro_link_port_t *fx_h[FX_CONSOLES][FX_PORTS];
 static uint64_t fx_tick[FX_CONSOLES][FX_PORTS]; /* at the edge the session stands at */
 static uint64_t fx_span[FX_CONSOLES][FX_PORTS];
@@ -30,6 +31,7 @@ static uint64_t fx_safe[FX_CONSOLES][FX_PORTS]; /* the highest promise published
 static void fx_new(unsigned consoles)
 {
    memset(fx_list, 0, sizeof(fx_list));
+   memset(fx_ptrs, 0, sizeof(fx_ptrs));
    memset(fx_h, 0, sizeof(fx_h));
    memset(fx_tick, 0, sizeof(fx_tick));
    memset(fx_span, 0, sizeof(fx_span));
@@ -57,12 +59,13 @@ static void fx_port(unsigned c, unsigned p, const char *protocol, uint64_t rate,
    e->max_ports   = max_ports;
    e->flags       = flags;
    e->idle_ticks  = 0;
+   fx_ptrs[c][p]  = e;
 }
 
 static void fx_attach(unsigned c)
 {
    unsigned p;
-   CHECK(link_bus_set_ports(fx_bus, c, fx_list[c]));
+   CHECK(link_bus_set_ports(fx_bus, c, fx_ptrs[c]));
    for (p = 0; p < FX_PORTS && fx_list[c][p].protocol_id; p++)
    {
       fx_h[c][p] = link_bus_attach(fx_bus, c, p, fx_list[c][p].protocol_id,
@@ -97,13 +100,20 @@ static void fx_note_safe(unsigned c, retro_link_port_t *h, uint64_t safe)
  * grantable; returns whether it was. */
 static bool advm(unsigned c, struct retro_link_wait *w, unsigned n)
 {
+   struct retro_link_wait *list[FX_PORTS];
    unsigned i;
-   for (i = 0; i < n; i++)
-      fx_note_safe(c, w[i].handle, w[i].safe_tick);
-   link_bus_publish(fx_bus, c, w, n);
-   if (!link_bus_grantable(fx_bus, c, w, n))
+   CHECK(n <= FX_PORTS);
+   if (n > FX_PORTS)
       return false;
-   link_bus_grant(fx_bus, c, w, n);
+   for (i = 0; i < n; i++)
+   {
+      list[i] = &w[i];
+      fx_note_safe(c, w[i].handle, w[i].safe_tick);
+   }
+   link_bus_publish(fx_bus, c, list, n);
+   if (!link_bus_grantable(fx_bus, c, list, n))
+      return false;
+   link_bus_grant(fx_bus, c, list, n);
    return true;
 }
 
@@ -258,7 +268,7 @@ static void attach_matches_port_list(void)
    fx_new(2);
    fx_port(0, 0, "test-cable", 61440, 2, 0);
    fx_port(1, 0, "test-cable", 61440, 2, 0);
-   CHECK(link_bus_set_ports(fx_bus, 0, fx_list[0]));
+   CHECK(link_bus_set_ports(fx_bus, 0, fx_ptrs[0]));
    CHECK(link_bus_attach(fx_bus, 0, 1, "test-cable", 61440) == NULL);
    CHECK(link_bus_attach(fx_bus, 0, 0, "test-cable", 60000) == NULL);
    h = link_bus_attach(fx_bus, 0, 0, "test-cable", 61440);
@@ -268,7 +278,7 @@ static void attach_matches_port_list(void)
    CHECK(link_bus_peers(fx_bus, 0, h, &count) == 0 && count == 2);
 
    fx_list[0][0].clock_rate = 60000;
-   CHECK(link_bus_set_ports(fx_bus, 0, fx_list[0]));
+   CHECK(link_bus_set_ports(fx_bus, 0, fx_ptrs[0]));
    count = 0;
    CHECK(link_bus_peers(fx_bus, 0, h, &count) == 0 && count == 2);
    CHECK(link_bus_attach(fx_bus, 0, 0, "test-cable", 61440) == h);
@@ -283,11 +293,16 @@ static void unknown_flag_bits_ignored(void)
 {
    link_bus_t *b = link_bus_new(5);
    struct retro_link_port_info radio[2], cable[2];
+   const struct retro_link_port_info *radio_list[2], *cable_list[2];
    retro_link_port_t *h[5];
    unsigned c, count;
 
    memset(radio, 0, sizeof(radio));
    memset(cable, 0, sizeof(cable));
+   radio_list[0]        = &radio[0];
+   radio_list[1]        = NULL;
+   cable_list[0]        = &cable[0];
+   cable_list[1]        = NULL;
    radio[0].protocol_id = "test-radio";
    radio[0].desc        = "Radio";
    radio[0].clock_rate  = 61440;
@@ -299,9 +314,9 @@ static void unknown_flag_bits_ignored(void)
    cable[0].flags       = 1u << 5;
    for (c = 0; c < 5; c++)
    {
-      const struct retro_link_port_info *l = c < 3 ? radio : cable;
+      const struct retro_link_port_info *const *l = c < 3 ? radio_list : cable_list;
       CHECK(link_bus_set_ports(b, c, l));
-      h[c] = link_bus_attach(b, c, 0, l[0].protocol_id, 61440);
+      h[c] = link_bus_attach(b, c, 0, l[0]->protocol_id, 61440);
       CHECK(h[c] != NULL);
    }
    for (c = 0; c < 3; c++)
@@ -378,6 +393,7 @@ static void peers_index_and_count(void)
 static void cable_rules(void)
 {
    struct retro_link_port_info l[2];
+   const struct retro_link_port_info *list[2];
    link_bus_t *b;
    unsigned c, count = 0;
    retro_link_port_t *h[256];
@@ -426,10 +442,12 @@ static void cable_rules(void)
    l[0].protocol_id = "test-cable";
    l[0].desc        = "Link";
    l[0].clock_rate  = 61440;
+   list[0]          = &l[0];
+   list[1]          = NULL;
    b = link_bus_new(256);
    for (c = 0; c < 256; c++)
    {
-      CHECK(link_bus_set_ports(b, c, l));
+      CHECK(link_bus_set_ports(b, c, list));
       h[c] = link_bus_attach(b, c, 0, "test-cable", 61440);
       CHECK(h[c] != NULL);
    }
@@ -874,23 +892,24 @@ static void extreme_ticks(void)
 static void publish_idempotent(void)
 {
    struct retro_link_wait w;
+   struct retro_link_wait *list = &w;
    struct link_bus_blocker why;
 
    fx_two(61440, 60000);
    fx_begin();
    CHECK(adv(1, fx_h[1][0], 0, 1000, 0, NULL, NULL));
    fx_wait(&w, fx_h[0][0], 0, 2048, 1025, false);
-   link_bus_publish(fx_bus, 0, &w, 1);
-   link_bus_publish(fx_bus, 0, &w, 1);
-   CHECK(!link_bus_grantable(fx_bus, 0, &w, 1));
+   link_bus_publish(fx_bus, 0, &list, 1);
+   link_bus_publish(fx_bus, 0, &list, 1);
+   CHECK(!link_bus_grantable(fx_bus, 0, &list, 1));
    memset(&why, 0, sizeof(why));
-   CHECK(link_bus_blocked_by(fx_bus, 0, &w, 1, &why));
+   CHECK(link_bus_blocked_by(fx_bus, 0, &list, 1, &why));
    CHECK(why.bound == 1024);
    fx_wait(&w, fx_h[0][0], 0, 2048, 1024, false);
-   link_bus_publish(fx_bus, 0, &w, 1);
-   link_bus_publish(fx_bus, 0, &w, 1);
-   CHECK(link_bus_grantable(fx_bus, 0, &w, 1));
-   link_bus_grant(fx_bus, 0, &w, 1);
+   link_bus_publish(fx_bus, 0, &list, 1);
+   link_bus_publish(fx_bus, 0, &list, 1);
+   CHECK(link_bus_grantable(fx_bus, 0, &list, 1));
+   link_bus_grant(fx_bus, 0, &list, 1);
    CHECK(w.grant == 1024);
    fx_free();
 }
@@ -898,6 +917,7 @@ static void publish_idempotent(void)
 static void blocked_by_names_peer(void)
 {
    struct retro_link_wait w;
+   struct retro_link_wait *list = &w;
    struct link_bus_blocker why;
 
    fx_two(61440, 60000);
@@ -906,14 +926,14 @@ static void blocked_by_names_peer(void)
    fx_wait(&w, fx_h[0][0], 0, 2048, 1025, false);
    CHECK(!advm(0, &w, 1));
    memset(&why, 0xff, sizeof(why));
-   CHECK(link_bus_blocked_by(fx_bus, 0, &w, 1, &why));
+   CHECK(link_bus_blocked_by(fx_bus, 0, &list, 1, &why));
    CHECK(why.entry == 0 && why.port == 0);
    CHECK(why.request == 1025 && why.bound == 1024);
    CHECK(why.peer_console == 1 && why.peer_port == 0);
    CHECK(!why.edge_unknown);
    fx_wait(&w, fx_h[0][0], 0, 2048, 1024, false);
    CHECK(advm(0, &w, 1));
-   CHECK(!link_bus_blocked_by(fx_bus, 0, &w, 1, &why));
+   CHECK(!link_bus_blocked_by(fx_bus, 0, &list, 1, &why));
    fx_free();
 
    fx_two(61440, 60000);
@@ -921,7 +941,7 @@ static void blocked_by_names_peer(void)
    fx_wait(&w, fx_h[0][0], 0, 2048, 1025, false);
    CHECK(!advm(0, &w, 1));
    memset(&why, 0, sizeof(why));
-   CHECK(link_bus_blocked_by(fx_bus, 0, &w, 1, &why));
+   CHECK(link_bus_blocked_by(fx_bus, 0, &list, 1, &why));
    CHECK(why.bound == 0);
    CHECK(why.peer_console == 1 && why.peer_port == 0);
    CHECK(why.edge_unknown);
@@ -1609,7 +1629,7 @@ static bool fx_reloads(void)
    bool same;
    for (c = 0; c < fx_consoles; c++)
    {
-      CHECK(link_bus_set_ports(b, c, fx_list[c]));
+      CHECK(link_bus_set_ports(b, c, fx_ptrs[c]));
       for (p = 0; p < FX_PORTS && fx_list[c][p].protocol_id; p++)
          CHECK(link_bus_attach(b, c, p, fx_list[c][p].protocol_id,
                   fx_list[c][p].clock_rate) != NULL);
@@ -2071,7 +2091,7 @@ static void fx_roundtrip_ports(unsigned attached)
       if (c < attached)
          fx_attach(c);
       else
-         CHECK(link_bus_set_ports(fx_bus, c, fx_list[c]));
+         CHECK(link_bus_set_ports(fx_bus, c, fx_ptrs[c]));
 }
 
 /* Edge 6: 0:0 cabled to 1:0, 1:1 to 2:0, console 2 held since edge 1;
@@ -2497,7 +2517,7 @@ static void counts_survive_load(void)
    CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], NULL, NULL, NULL, NULL));
    frame();
    CHECK(counts().lowered_promise == 3);
-   CHECK(link_bus_set_ports(fx_bus, 0, fx_list[0])); /* a block B has not */
+   CHECK(link_bus_set_ports(fx_bus, 0, fx_ptrs[0])); /* a block B has not */
    n  = fx_save();
    ka = counts();
    memset(&a, 0, sizeof(a));
@@ -2614,7 +2634,7 @@ static void hash_and_save_ignore_interleaving(void)
    fx_bus = link_bus_new(3);
    for (c = 0; c < 3; c++)
    {
-      CHECK(link_bus_set_ports(fx_bus, c, fx_list[c]));
+      CHECK(link_bus_set_ports(fx_bus, c, fx_ptrs[c]));
       fx_h[c][0] = link_bus_attach(fx_bus, c, 0, "test-cable", 61440);
    }
    CHECK(link_bus_load(fx_bus, first, n[0]));

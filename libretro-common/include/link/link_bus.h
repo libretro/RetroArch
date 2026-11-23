@@ -78,7 +78,7 @@ link_bus_t *link_bus_new(unsigned consoles);
 void link_bus_free(link_bus_t *b);
 
 /* The interface calls, made by the console named */
-bool link_bus_set_ports(link_bus_t *b, unsigned console, const struct retro_link_port_info *ports);
+bool link_bus_set_ports(link_bus_t *b, unsigned console, const struct retro_link_port_info *const *ports);
 retro_link_port_t *link_bus_attach(link_bus_t *b, unsigned console, unsigned port,
       const char *protocol_id, uint64_t clock_rate);
 void link_bus_detach(link_bus_t *b, unsigned console, retro_link_port_t *h);
@@ -90,13 +90,14 @@ bool link_bus_recv(link_bus_t *b, unsigned console, retro_link_port_t *h, uint64
 const void *link_bus_peek(link_bus_t *b, unsigned console, retro_link_port_t *h,
       uint64_t *tick, unsigned *from, size_t *len);
 
-/* Advance in three steps; a single-port advance is a one-entry array.
- * publish records the entries' ticks and promises and applies the repairs;
- * grantable tests them; grant writes each entry's grant and wake flags. */
-void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *w, unsigned n);
-bool link_bus_grantable(const link_bus_t *b, unsigned console, const struct retro_link_wait *w, unsigned n);
-void link_bus_grant(link_bus_t *b, unsigned console, struct retro_link_wait *w, unsigned n);
-bool link_bus_blocked_by(const link_bus_t *b, unsigned console, const struct retro_link_wait *w,
+/* Advance in three steps, on the core's own list of entries; a single-port
+ * advance is a one-entry list. publish records the entries' ticks and
+ * promises and applies the repairs; grantable tests them; grant writes each
+ * entry's grant and wake flags. */
+void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *const *w, unsigned n);
+bool link_bus_grantable(const link_bus_t *b, unsigned console, struct retro_link_wait *const *w, unsigned n);
+void link_bus_grant(link_bus_t *b, unsigned console, struct retro_link_wait *const *w, unsigned n);
+bool link_bus_blocked_by(const link_bus_t *b, unsigned console, struct retro_link_wait *const *w,
       unsigned n, struct link_bus_blocker *out);
 uint64_t link_bus_changes(const link_bus_t *b, unsigned console);  /* moves on a changed publish or a send on the console's buses */
 uint64_t link_bus_activity(const link_bus_t *b, unsigned console); /* the console's own sends and recvs */

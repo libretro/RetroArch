@@ -163,7 +163,8 @@ static retro_log_printf_t lt_log;
 static struct lt_config lt_cfg;
 static struct lt_machine lt_state;
 static struct retro_link_interface lt_link;
-static struct retro_link_port_info lt_port_list[LT_MAX_PORTS + 1];
+static struct retro_link_port_info lt_port_info[LT_MAX_PORTS];
+static const struct retro_link_port_info *lt_port_list[LT_MAX_PORTS + 1];
 static retro_link_port_t *lt_handle[LT_MAX_PORTS];
 static bool lt_linked;
 
@@ -639,6 +640,7 @@ static void lt_apply(unsigned p, uint64_t tick)
 static bool lt_advance(enum lt_advance_kind kind, unsigned m, struct lt_stand *at)
 {
    struct retro_link_wait w[LT_MAX_PORTS];
+   struct retro_link_wait *list[LT_MAX_PORTS];
    uint64_t local[LT_MAX_PORTS], safe[LT_MAX_PORTS], request[LT_MAX_PORTS];
    uint64_t lawful[LT_MAX_PORTS]; /* the request as the bus repairs it */
    unsigned port[LT_MAX_PORTS];
@@ -695,6 +697,7 @@ static bool lt_advance(enum lt_advance_kind kind, unsigned m, struct lt_stand *a
    }
    for (i = 0; i < n; i++)
    {
+      list[i]           = &w[i];
       w[i].handle       = lt_handle[port[i]];
       w[i].local_tick   = lt_out(local[i]);
       w[i].safe_tick    = lt_out(safe[i]);
@@ -706,7 +709,7 @@ static bool lt_advance(enum lt_advance_kind kind, unsigned m, struct lt_stand *a
       w[0].grant = lt_link.advance(w[0].handle, w[0].local_tick, w[0].safe_tick,
             w[0].request_tick, &w[0].wake_flags);
    else
-      lt_link.advance_multi(w, n);
+      lt_link.advance_multi(list, n);
    for (i = 0; i < n; i++)
    {
       unsigned p     = port[i];
@@ -855,15 +858,17 @@ void retro_init(void)
    lt_kept  = false;
    lt_read_options();
    lt_state.rng = lt_cfg.seed ? lt_cfg.seed : 2463534242UL;
+   memset(lt_port_info, 0, sizeof(lt_port_info));
    memset(lt_port_list, 0, sizeof(lt_port_list));
    for (p = 0; p < lt_cfg.ports; p++)
    {
-      lt_port_list[p].port        = p;
-      lt_port_list[p].protocol_id = lt_cfg.protocol[p];
-      lt_port_list[p].desc        = "Test port";
-      lt_port_list[p].clock_rate  = lt_cfg.rate[p];
-      lt_port_list[p].max_ports   = lt_cfg.max_ports[p];
-      lt_port_list[p].flags       = lt_cfg.shared[p] ? RETRO_LINK_PORT_SHARED_MEDIUM : 0;
+      lt_port_info[p].port        = p;
+      lt_port_info[p].protocol_id = lt_cfg.protocol[p];
+      lt_port_info[p].desc        = "Test port";
+      lt_port_info[p].clock_rate  = lt_cfg.rate[p];
+      lt_port_info[p].max_ports   = lt_cfg.max_ports[p];
+      lt_port_info[p].flags       = lt_cfg.shared[p] ? RETRO_LINK_PORT_SHARED_MEDIUM : 0;
+      lt_port_list[p]             = &lt_port_info[p];
    }
    memset(&lt_link, 0, sizeof(lt_link));
    lt_link.interface_version = RETRO_LINK_INTERFACE_VERSION;
