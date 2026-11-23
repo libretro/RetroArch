@@ -1255,8 +1255,17 @@ bool rwebm_video_stream_retain_planar(const rwebm_video_stream_t *s,
       void **owner, void (**release)(void*))
 {
    void *held;
-   if (!s || !owner || !release || s->codec != RWEBM_CODEC_H264
-         || !s->borrowed_planar.planes[0]) return false;
+   if (!s || !owner || !release || !s->borrowed_planar.planes[0])
+      return false;
+   if (s->codec == RWEBM_CODEC_H265)
+   {
+      held = rh265_video_retain_planes(s->h265);
+      if (!held) return false;
+      *owner = held;
+      *release = rh265_video_release_planes;
+      return true;
+   }
+   if (s->codec != RWEBM_CODEC_H264) return false;
    held = rh264_video_retain_planes(s->h264);
    if (!held) return false;
    *owner = held;

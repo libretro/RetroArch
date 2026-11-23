@@ -316,6 +316,13 @@ unsigned rh265_video_reorder_depth(const rh265_video *v);
 const uint8_t *rh265_video_plane(const rh265_video *v, int plane,
       int *stride, int *width, int *height);
 
+/* Acquire on the decode owner thread after a software picture is emitted.
+ * Planes stay immutable through later decoding, reset and decoder close.
+ * Release each successful lease exactly once, on any thread. Hardware output
+ * cannot be retained through this CPU-plane API. */
+void *rh265_video_retain_planes(const rh265_video *v);
+void rh265_video_release_planes(void *owner);
+
 void rh265_video_close(rh265_video *v);
 
 /* Decode pictures concurrently: with @pool (an rthreads tpool_t of at

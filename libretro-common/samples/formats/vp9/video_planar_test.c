@@ -84,6 +84,31 @@ static uint32_t planes_hash(const struct texture_planar *p, unsigned w, unsigned
    return hash;
 }
 
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
+
+struct retained_picture
+{
+   struct retained_picture *next;
+   struct texture_planar view;
+   void *owner;
+   void (*release)(void*);
+   uint32_t hash;
+};
+
+static void release_pictures(void *userdata)
+{
+   struct retained_picture *held = (struct retained_picture*)userdata;
+   while (held)
+   {
+      struct retained_picture *next = held->next;
+      held->release(held->owner);
+      free(held);
+      held = next;
+   }
+}
+
 int main(int argc, char **argv)
 {
    enum image_type_enum type;
@@ -95,10 +120,7 @@ int main(int argc, char **argv)
    int num_frames = 0, loops = 0, worst = 0, have_flags, status = 1;
    bool decoder_tight = false;
    bool require_retained = getenv("RETAIN_PLANAR") != NULL;
-   void *held = NULL;
-   void (*release_held)(void*) = NULL;
-   struct texture_planar held_view;
-   uint32_t held_hash = 0;
+   struct retained_picture *held = NULL;
 
    if (argc < 4 || argc > 5)
    {
@@ -223,16 +245,23 @@ int main(int argc, char **argv)
       {
          bool tight = view->strides[0] == w && view->strides[1] == cw
             && view->strides[2] == cw;
-         if (require_retained && !held)
+         if (require_retained)
          {
+            struct retained_picture *lease =
+                  (struct retained_picture*)malloc(sizeof(*lease));
+            if (!lease)
+               goto done;
             if (!image_transfer_anim_stream_retain_planar(planar_stream, type,
-                     &held, &release_held))
+                     &lease->owner, &lease->release))
             {
+               free(lease);
                fprintf(stderr, "%s: decoder planes could not be retained\n", argv[1]);
                goto done;
             }
-            held_view = *view;
-            held_hash = planes_hash(&held_view, w, h);
+            lease->view = *view;
+            lease->hash = planes_hash(view, w, h);
+            lease->next = held;
+            held = lease;
          }
          if (!frames) decoder_tight = tight;
          if (!borrow || (!strided && !tight)
@@ -301,17 +330,32 @@ done:
       image_transfer_anim_stream_free(planar_stream, type);
    if (rgb_stream)
       image_transfer_anim_stream_free(rgb_stream, type);
+   if (!held && !status && require_retained)
+      status = 1;
+   {
+      struct retained_picture *lease;
+      for (lease = held; lease; lease = lease->next)
+         if (planes_hash(&lease->view, w, h) != lease->hash)
+         {
+            fprintf(stderr, "%s: retained picture changed after decode and stream free\n", argv[1]);
+            status = 1;
+         }
+   }
+#ifdef HAVE_THREADS
    if (held)
    {
-      if (planes_hash(&held_view, w, h) != held_hash)
+      sthread_t *thread = sthread_create(release_pictures, held);
+      if (thread)
+         sthread_join(thread);
+      else
       {
-         fprintf(stderr, "%s: retained picture changed after decode and stream free\n", argv[1]);
+         release_pictures(held);
          status = 1;
       }
-      release_held(held);
    }
-   else if (!status && require_retained)
-      status = 1;
+#else
+   release_pictures(held);
+#endif
    free(planes);
    free(rgb);
    free(converted);

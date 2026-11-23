@@ -4240,12 +4240,28 @@ static void rh265_dec_free_meta(rh265_dec *d)
    d->ctb_lf_across = NULL;
 }
 
+/* A picture arena may outlive its decoder while a consumer uploads its
+ * planes. The decode owner alone acquires references; any thread releases.
+ * Keep the plane offsets unchanged by reserving one cache line for the count. */
+#define RH265_PICTURE_HEADER 64
+
+static retro_atomic_int_t *rh265_picture_refs(const void *arena)
+{
+   return (retro_atomic_int_t*)((uint8_t*)arena - RH265_PICTURE_HEADER);
+}
+
+void rh265_video_release_planes(void *owner)
+{
+   if (owner && retro_atomic_fetch_sub_int(rh265_picture_refs(owner), 1) == 1)
+      free(rh265_picture_refs(owner));
+}
+
 static void rh265_free_frame(rh265_video *v)
 {
    int i, p;
    for (p = 0; p < RH265_MAX_DPB; p++)
    {
-      free(v->dpb[p].arena);
+      rh265_video_release_planes(v->dpb[p].arena);
       v->dpb[p].arena = NULL;
       for (i = 0; i < 3; i++)
          v->dpb[p].pl[i] = NULL;
@@ -4342,19 +4358,34 @@ static int rh265_pic_alloc(rh265_video *v, int slot)
 {
    rh265_dec *d = v->cur;
    rh265_pic *p = &v->dpb[slot];
-   size_t off[3], cur = 0;
+   size_t off[3], cur = 0, len;
+   uint8_t *block;
    int i;
    if (p->arena)
-      return 0;
+   {
+      if (retro_atomic_load_acquire_int(rh265_picture_refs(p->arena)) == 1)
+         return 0;
+      /* The slot is reusable, but an upload still owns its old pixels.
+       * Drop the decoder's reference and replace the storage without waiting. */
+      rh265_video_release_planes(p->arena);
+      p->arena = NULL;
+      p->mvf = NULL;
+      for (i = 0; i < 3; i++)
+         p->pl[i] = NULL;
+   }
    for (i = 0; i < 3; i++)
    {
       off[i] = cur;
       cur    = RH265_ARENA_NEXT(cur,
             (size_t)d->strd[i] * d->ph[i] * d->pel_bytes);
    }
-   if (!(p->arena = (uint8_t*)malloc(RH265_ARENA_NEXT(cur,
-               (size_t)d->w4 * d->h4 * sizeof(rh265_mvfield)))))
+   len = RH265_ARENA_NEXT(cur,
+         (size_t)d->w4 * d->h4 * sizeof(rh265_mvfield));
+   if (len > (size_t)-1 - RH265_PICTURE_HEADER
+         || !(block = (uint8_t*)malloc(len + RH265_PICTURE_HEADER)))
       return -1;
+   p->arena = block + RH265_PICTURE_HEADER;
+   retro_atomic_store_relaxed_int(rh265_picture_refs(p->arena), 1);
    for (i = 0; i < 3; i++)
    {
       size_t n = (size_t)d->strd[i] * d->ph[i];
@@ -5396,8 +5427,16 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                   if (!v->dpb[p].in_use && p != v->out_pic
                         && !retro_atomic_load_acquire_int(&v->dpb[p].readers))
                   {
-                     slot = p;
-                     break;
+                     if (slot < 0)
+                        slot = p;
+                     /* Prefer an unheld arena, avoiding replacement allocation
+                      * while the bounded upload leases are outstanding. */
+                     if (!v->dpb[p].arena || retro_atomic_load_acquire_int(
+                              rh265_picture_refs(v->dpb[p].arena)) == 1)
+                     {
+                        slot = p;
+                        break;
+                     }
                   }
                if (slot < 0 || rh265_pic_alloc(v, slot) < 0)
                   ret = -1;
@@ -6561,6 +6600,18 @@ int rh265_video_output_timing(const rh265_video *v, int64_t after,
       out->skip_nonref = retro_atomic_load_acquire_int(&v->skip_nonref);
    }
    return 0;
+}
+
+void *rh265_video_retain_planes(const rh265_video *v)
+{
+   void *arena;
+   if (!v || v->hw || v->out_pic < 0)
+      return NULL;
+   arena = v->dpb[v->out_pic].arena;
+   if (!arena)
+      return NULL;
+   retro_atomic_fetch_add_int(rh265_picture_refs(arena), 1);
+   return arena;
 }
 
 const uint8_t *rh265_video_plane(const rh265_video *v, int plane,
