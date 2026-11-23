@@ -45,3 +45,5 @@ int  slang_texture_semantic_name_map_set_unique(void) { return 0; }
 void vulkan_debug_mark_image(void) { }
 void vulkan_debug_mark_memory(void) { }
 int  vulkan_is_hdr10_format(int f) { (void)f; return 0; }
+
+int slang_compile_planar(void) { return 0; }

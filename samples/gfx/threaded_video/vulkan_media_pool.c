@@ -11,6 +11,7 @@
 #include <queues/mpsc_stack.h>
 #include "gfx/video_defines.h"
 
+#define VK_PLANAR_ATLAS_SLOTS 4
 #define VK_STREAM_SLOTS 2
 #define VK_WIN32_VIDEO_IMPORTS 2
 #define GFX_MAX_FRAME_HISTORY 2
@@ -30,7 +31,9 @@ typedef struct opaque_cache vulkan_android_cache_t;
 typedef struct opaque_cache vaapi_hevc_vulkan_cache_t;
 enum vk_texture_type { VULKAN_TEXTURE_STREAMED, VULKAN_TEXTURE_STATIC, VULKAN_TEXTURE_DYNAMIC };
 #include "pool_types.inc"
-struct context { VkDevice device; VkPhysicalDeviceMemoryProperties memory_properties; unsigned num_swapchain_images; };
+struct context { VkDevice device; VkPhysicalDeviceMemoryProperties memory_properties;
+   unsigned num_swapchain_images,current_frame_index;VkPhysicalDevice gpu;
+   VkPhysicalDeviceProperties gpu_properties;VkFence swapchain_fences[4];bool swapchain_fences_signalled[4]; };
 typedef struct {
    struct context *context;
    mpsc_stack_t deferred_textures_in;
@@ -38,6 +41,7 @@ typedef struct {
    struct vk_stream_state *stream_states;
    struct vk_texture *android_textures, *vaapi_textures;
    uint64_t media_submit_serial;
+   bool media_shader_enabled;void *media_planar_chain[2];
    struct { VkPipeline yuv420_to_rgba8888; VkPipelineLayout layout; } pipelines;
 } vk_t;
 struct image { uint32_t pixels[4][32]; unsigned levels,format,destroyed; };
@@ -51,6 +55,9 @@ static unsigned allocations,blits,uploads,dispatches,changed,storage_view[2],bou
 static unsigned deleted_memory[128];
 static bool fail_image,fail_submit,fail_end;
 static bool ready[2]={true,true};
+static bool atlas_fences[4],atlas_supported=true;
+static unsigned atlas_map_fail,atlas_map_calls;
+static uint8_t atlas_maps[128][512];
 static uint8_t staging[2][256];
 static unsigned bpp(VkFormat format){return format==VK_FORMAT_R16G16B16A16_SFLOAT?8:4;}
 static VkResult vkCreateImage(VkDevice device,const VkImageCreateInfo *info,
@@ -112,12 +119,15 @@ static void vkCmdBlitImage(VkCommandBuffer cmd,VkImage source,VkImageLayout src_
 }
 static void vkUpdateDescriptorSets(VkDevice d,uint32_t count,const VkWriteDescriptorSet *writes,
       uint32_t copies,const VkCopyDescriptorSet *copy);
+static void vulkan_planar_materialize(struct vk_texture *texture);
+static void vulkan_planar_atlas_free(VkDevice d,struct vk_texture *texture);
+static enum video_texture_update vulkan_planar_atlas_update(vk_t *v,struct vk_texture *t,const struct texture_image *i);
 #include "gfx/common/vulkan_media_pool.h"
 static struct vk_stream_state *vulkan_stream_state_get(vk_t *v,struct vk_texture *texture)
 {assert(v->stream_states->texture==texture);return v->stream_states->pool?NULL:v->stream_states;}
 static struct vk_stream_state *vulkan_planar_state_get(vk_t *v,struct vk_texture *texture)
 {assert(v->stream_states->texture==texture);return v->stream_states->pool?v->stream_states:NULL;}
-static VkResult vkGetFenceStatus(VkDevice d,VkFence f){(void)d;return ready[ID(f)-1]?VK_SUCCESS:VK_NOT_READY;}
+static VkResult vkGetFenceStatus(VkDevice d,VkFence f){(void)d;return (ID(f)>=100?atlas_fences[ID(f)-100]:ready[ID(f)-1])?VK_SUCCESS:VK_NOT_READY;}
 static VkResult vkFlushMappedMemoryRanges(VkDevice d,uint32_t n,const VkMappedMemoryRange *r)
 {(void)d;(void)n;(void)r;return VK_SUCCESS;}
 static VkResult vkResetCommandBuffer(VkCommandBuffer cmd,VkCommandBufferResetFlags flags)
@@ -168,6 +178,24 @@ static void *upload_copy(void *destination,const void *source,size_t bytes)
 #define memcpy upload_copy
 #include "pool_upload.inc"
 #undef memcpy
+static void vkGetPhysicalDeviceFormatProperties(VkPhysicalDevice p,VkFormat f,VkFormatProperties *out)
+{(void)p;(void)f;memset(out,0,sizeof(*out));out->linearTilingFeatures=atlas_supported?VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT:0;}
+static VkResult vkMapMemory(VkDevice d,VkDeviceMemory memory,VkDeviceSize offset,VkDeviceSize size,VkMemoryMapFlags flags,void **out)
+{(void)d;(void)offset;(void)size;(void)flags;assert(ID(memory)<128);if(atlas_map_fail && ++atlas_map_calls==atlas_map_fail)return VK_ERROR_MEMORY_MAP_FAILED;*out=atlas_maps[ID(memory)];return VK_SUCCESS;}
+static struct vk_texture vulkan_create_texture(vk_t *v,struct vk_texture *old,unsigned w,unsigned h,
+      VkFormat format,const void *initial,const VkComponentMapping *swizzle,enum vk_texture_type type)
+{
+   struct vk_texture t;VkImageCreateInfo image;VkMemoryAllocateInfo alloc;VkImageViewCreateInfo view;
+   (void)old;(void)initial;(void)swizzle;assert(type==VULKAN_TEXTURE_STREAMED && format==VK_FORMAT_R8_UNORM);
+   memset(&t,0,sizeof(t));memset(&image,0,sizeof(image));memset(&alloc,0,sizeof(alloc));memset(&view,0,sizeof(view));
+   image.mipLevels=1;image.usage=VK_IMAGE_USAGE_SAMPLED_BIT;image.format=format;
+   assert(vkCreateImage(v->context->device,&image,NULL,&t.image)==VK_SUCCESS);
+   assert(vkAllocateMemory(v->context->device,&alloc,NULL,&t.memory)==VK_SUCCESS);
+   view.image=t.image;view.subresourceRange.levelCount=1;assert(vkCreateImageView(v->context->device,&view,NULL,&t.view)==VK_SUCCESS);
+   t.dims=VIDEO_SCALE_PACK(w,h);t.stride=8;t.size=t.stride*h;t.format=format;t.type=type;t.layout=VK_IMAGE_LAYOUT_PREINITIALIZED;
+   assert(t.size<=512);return t;
+}
+#include "pool_atlas.inc"
 static unsigned retired;
 static void vulkan_texture_retire(vk_t *v,struct vk_texture *texture)
 {
@@ -405,6 +433,90 @@ static void opaque_run(bool android, bool fp16, bool pending)
    assert(!texture.media_pool && !texture.image && !texture.view);
 }
 
+static void atlas_run(void)
+{
+   vk_t v;struct context context;struct vk_texture texture;struct vk_stream_state st;
+   struct texture_image image;struct texture_planar planes;struct vk_planar_atlas *atlas;
+   struct vk_planar_atlas_slot *slot;uint8_t y[24],uv[12];uint8_t *bytes;
+   unsigned i,before,old,current;
+   memset(&v,0,sizeof(v));memset(&context,0,sizeof(context));memset(&image,0,sizeof(image));memset(&planes,0,sizeof(planes));
+   v.context=&context;v.pipelines.yuv420_to_rgba8888=HANDLE(VkPipeline,1);
+   context.num_swapchain_images=4;context.gpu_properties.limits.maxImageDimension2D=4096;
+   for(i=0;i<4;i++){context.swapchain_fences[i]=HANDLE(VkFence,100+i);atlas_fences[i]=false;}
+   setup(&v,&texture,&st,VK_FORMAT_R8G8B8A8_UNORM,true,false);
+   memset(y,52,sizeof(y));for(i=0;i<sizeof(uv);i++)uv[i]=(i&1)?133:97;
+   planes.planes[0]=y;planes.planes[1]=uv;planes.planes[2]=uv+1;
+   planes.strides[0]=planes.strides[1]=planes.strides[2]=6;planes.chroma_step=2;
+   planes.yuv=IMAGE_YUV_FLAG_FULL_RANGE|IMAGE_YUV_FLAG_BT709;image.width=image.height=4;image.planar=&planes;
+   v.media_shader_enabled=true;v.media_planar_chain[0]=(void*)1;
+   assert(vulkan_update_texture_planar(&v,&texture,&image)==VIDEO_TEXTURE_UPDATE_DONE);
+   assert(texture.planar_source && !texture.planar_atlas);
+   texture.planar_draw_serial=v.media_submit_serial+1;before=dispatches;
+   assert(vulkan_update_texture_planar(&v,&texture,&image)==VIDEO_TEXTURE_UPDATE_DONE);
+   atlas=texture.planar_atlas;assert(atlas && atlas->ready && atlas->pending && dispatches==before);
+   slot=&atlas->slots[atlas->current];bytes=(uint8_t*)slot->texture.mapped+slot->texture.offset;
+   assert(bytes[0]==52 && bytes[3*8+3]==52 && bytes[4*8]==97 && bytes[6*8]==133 && bytes[8*8]==3);
+   memset(y,11,sizeof(y));memset(uv,0,sizeof(uv));assert(bytes[0]==52 && bytes[4*8]==97);
+   slot->readers=1;slot->serial=v.media_submit_serial+1;
+   assert(!vulkan_planar_atlas_idle(&v,slot));
+   v.media_submit_serial++;context.swapchain_fences_signalled[0]=true;
+   assert(!vulkan_planar_atlas_idle(&v,slot));atlas_fences[0]=true;
+   assert(vulkan_planar_atlas_idle(&v,slot));
+   slot->readers=1;slot->serial=v.media_submit_serial+1;context.swapchain_fences_signalled[0]=false;
+   assert(!vulkan_planar_atlas_idle(&v,slot));v.media_submit_serial++;
+   assert(vulkan_planar_atlas_idle(&v,slot));
+   for(i=0;i<4;i++)
+   {
+      atlas->slots[i].readers=((uint64_t)1)<<i;atlas->slots[i].serial=v.media_submit_serial;
+      context.swapchain_fences_signalled[i]=true;atlas_fences[i]=false;
+      memset(atlas->slots[i].texture.mapped,80+i,72);
+   }
+   current=atlas->current;texture.planar_draw_serial=v.media_submit_serial+1;
+   assert(vulkan_update_texture_planar(&v,&texture,&image)==VIDEO_TEXTURE_UPDATE_DROPPED);
+   assert(atlas->current==current && dispatches==before);
+   atlas_fences[2]=true;
+   assert(vulkan_update_texture_planar(&v,&texture,&image)==VIDEO_TEXTURE_UPDATE_DONE);
+   assert(atlas->current==2 && dispatches==before);
+   for(i=0;i<4;i++)if(i!=2)assert(*(uint8_t*)atlas->slots[i].texture.mapped==80+i);
+   /* RGB demand reads retained driver memory, even after decoder memory changes. */
+   memset(y,213,sizeof(y));old=dispatches;vulkan_planar_materialize(&texture);
+   assert(!atlas->pending && dispatches==old+1 && texture.planar_atlas==atlas);
+   assert(!texture.media_pool->current->texture.planar_atlas);
+   for(i=0;i<VK_STREAM_SLOTS;i++)if(*(uint32_t*)staging[i]==4 && staging[i][80]==11)break;
+   assert(i<VK_STREAM_SLOTS);
+   /* RGB/native output publication must retire stale planar selection. */
+   atlas->pending=true;texture.planar_source=true;
+   vulkan_media_publish(&texture,&texture.media_pool->current->texture);
+   assert(!texture.planar_source && !atlas->pending && texture.planar_atlas==atlas);
+   v.media_shader_enabled=false;assert(vulkan_planar_atlas_update(&v,&texture,&image)==VIDEO_TEXTURE_UPDATE_REFUSED);
+   vulkan_media_pool_free(&v,&texture);assert(!texture.planar_atlas);
+   /* Unsupported mapped sampling latches a refusal and keeps RGB ownership. */
+   setup(&v,&texture,&st,VK_FORMAT_R8G8B8A8_UNORM,true,false);
+   v.media_shader_enabled=true;texture.planar_source=true;texture.planar_draw_serial=1;
+   atlas_supported=false;
+   assert(vulkan_planar_atlas_update(&v,&texture,&image)==VIDEO_TEXTURE_UPDATE_REFUSED);
+   assert(texture.planar_atlas && !texture.planar_atlas->ready);
+   old=allocations;
+   assert(vulkan_planar_atlas_update(&v,&texture,&image)==VIDEO_TEXTURE_UPDATE_REFUSED && allocations==old);
+   atlas_supported=true;vulkan_media_pool_free(&v,&texture);
+   /* Each partial allocation is destroyed once and never retried per frame. */
+   for(i=1;i<=4;i++)
+   {
+      setup(&v,&texture,&st,VK_FORMAT_R8G8B8A8_UNORM,true,false);
+      v.media_shader_enabled=true;v.media_planar_chain[0]=(void*)1;
+      texture.planar_source=true;texture.planar_draw_serial=1;
+      atlas_map_fail=i;atlas_map_calls=0;
+      assert(vulkan_planar_atlas_update(&v,&texture,&image)==VIDEO_TEXTURE_UPDATE_REFUSED);
+      assert(texture.planar_atlas && !texture.planar_atlas->ready);
+      old=allocations;
+      assert(vulkan_planar_atlas_update(&v,&texture,&image)==VIDEO_TEXTURE_UPDATE_REFUSED);
+      assert(allocations==old);
+      vulkan_media_pool_free(&v,&texture);
+   }
+   atlas_map_fail=0;
+   puts("PASS Vulkan planar atlas: mapped planes, interleaved input, unsubmitted readers, fences, bounded reuse, RGB demand and refusal");
+}
+
 int main(void)
 {
    unsigned i;
@@ -412,6 +524,7 @@ int main(void)
    run(VK_FORMAT_R16G16B16A16_SFLOAT,false);
    run(VK_FORMAT_R8G8B8A8_UNORM,true);
    assert(uploads && dispatches && blits);
+   atlas_run();
    opaque_run(true,false,false); opaque_run(false,false,false);
    opaque_run(true,true,true); opaque_run(false,true,true);
    assert(opaque_done);

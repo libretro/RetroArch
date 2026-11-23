@@ -253,10 +253,12 @@ struct vk_image
 struct vk_texture
 {
    VkDeviceSize memory_size;     /* uint64_t alignment */
+   uint64_t planar_draw_serial;
 
    struct vk_texture *media_owner;
    struct vk_media_pool *media_pool;
    struct vk_media_version *media_version;
+   struct vk_planar_atlas *planar_atlas;
    void *mapped;
    VkImage image;                /* ptr alignment */
    VkImageView view;             /* ptr alignment */
@@ -289,6 +291,7 @@ struct vk_texture
    enum vk_texture_type type;
    uint8_t flags;
    bool immutable;
+   bool planar_source;
 #ifdef HAVE_VAAPI
    vaapi_hevc_vulkan_cache_t *vaapi_cache;
    struct vk_texture *vaapi_next;
@@ -948,6 +951,8 @@ typedef struct vk
    uintptr_t media_history_texture[2];
    uintptr_t media_last_texture;
    vulkan_filter_chain_t *media_shader_chain[2];
+   vulkan_filter_chain_t *media_planar_chain[2];
+   bool media_planar_tried[2];
    bool media_shader_tried[2]; /* built, or failed, for views.preset */
    uint64_t media_shader_frame;
    bool media_shader_enabled;
@@ -1519,6 +1524,8 @@ static VkDescriptorSet vulkan_descriptor_manager_alloc(
 /* Everything a draw sets up before its vertices: the pipeline, the
  * dynamic state it invalidates, the UBO and the descriptor set. False
  * when the UBO or the set could not be had. */
+static void vulkan_planar_materialize(struct vk_texture *texture);
+static void vulkan_planar_atlas_free(VkDevice device, struct vk_texture *texture);
 static struct vk_texture *vulkan_media_sample_texture(struct vk_texture *texture);
 static void vulkan_media_read(void *owner);
 static bool vulkan_media_pool_held(const struct vk_texture *texture);
@@ -1635,6 +1642,7 @@ static void vulkan_destroy_texture(
       VkDevice device,
       struct vk_texture *tex)
 {
+   vulkan_planar_atlas_free(device, tex);
    if (tex->mapped && tex->memory)
       vkUnmapMemory(device, tex->memory);
    if (tex->history_view && tex->history_view != tex->view)
@@ -1830,6 +1838,21 @@ struct vk_deferred_cmd
 #if defined(_WIN32) && !defined(__WINRT__)
 #include "vulkan_win32_video.h"
 #endif
+#define VK_PLANAR_ATLAS_SLOTS 4
+struct vk_planar_atlas_slot
+{
+   struct vk_texture texture;
+   uint64_t readers, serial;
+};
+struct vk_planar_atlas
+{
+   struct vk_planar_atlas_slot slots[VK_PLANAR_ATLAS_SLOTS];
+   void *driver;
+   unsigned current;
+   unsigned flags;
+   bool tried, ready, pending, resolving;
+};
+
 struct vk_stream_state
 {
    struct vk_texture staging[VK_STREAM_SLOTS];
@@ -7041,6 +7064,7 @@ static void vulkan_filter_chain_info_init(vk_t *vk,
    info->swapchain.render_pass = vk->render_pass;
    info->swapchain.num_indices = vk->context->num_swapchain_images;
    info->frame_rect            = false;
+   info->frame_planar          = false;
    info->viewer_colour         = false;
    info->replay                = false;
 }
@@ -7351,6 +7375,9 @@ static void vulkan_views_set_preset(vk_t *vk, const char *path)
       vulkan_filter_chain_free(vk->media_shader_chain[i]);
       vk->media_shader_chain[i] = NULL;
       vk->media_shader_tried[i] = false;
+      vulkan_filter_chain_free(vk->media_planar_chain[i]);
+      vk->media_planar_chain[i] = NULL;
+      vk->media_planar_tried[i] = false;
    }
 }
 
@@ -7382,6 +7409,31 @@ static vulkan_filter_chain_t *vulkan_media_chain(vk_t *vk, unsigned i)
          &info, vk->views.preset, vk->video.smooth
          ? GLSLANG_FILTER_CHAIN_LINEAR : GLSLANG_FILTER_CHAIN_NEAREST);
    return vk->media_shader_chain[i];
+}
+
+static vulkan_filter_chain_t *vulkan_media_planar_chain(vk_t *vk, unsigned i)
+{
+   struct vulkan_filter_chain_create_info info;
+   if (vk->media_planar_tried[i]) return vk->media_planar_chain[i];
+   if (i && !vk->sdr_render_pass) return NULL;
+   vk->media_planar_tried[i] = true;
+   if (!*vk->views.preset) return NULL;
+   vulkan_views_chain_info(vk, &info);
+   info.frame_rect = false;
+   info.frame_planar = true;
+   info.original_format = VK_FORMAT_R8_UNORM;
+   if (i)
+   {
+      info.swapchain.render_pass = vk->sdr_render_pass;
+      info.swapchain.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+   }
+#ifdef VULKAN_HDR_SWAPCHAIN
+   info.hdr_enabled = vk->hdr_mode_latched > 0;
+#endif
+   vk->media_planar_chain[i] = vulkan_filter_chain_create_from_preset(&info,
+         vk->views.preset, vk->video.smooth ? GLSLANG_FILTER_CHAIN_LINEAR
+         : GLSLANG_FILTER_CHAIN_NEAREST);
+   return vk->media_planar_chain[i];
 }
 
 /* Views are not drawn with HDR output or an HDR10 source. */
@@ -8037,6 +8089,10 @@ static void vulkan_free(void *data)
       vulkan_filter_chain_free(vk->media_shader_chain[1]);
       vk->media_shader_chain[0] = vk->media_shader_chain[1] = NULL;
       vk->media_shader_tried[0] = vk->media_shader_tried[1] = false;
+      vulkan_filter_chain_free(vk->media_planar_chain[0]);
+      vulkan_filter_chain_free(vk->media_planar_chain[1]);
+      vk->media_planar_chain[0] = vk->media_planar_chain[1] = NULL;
+      vk->media_planar_tried[0] = vk->media_planar_tried[1] = false;
 
       vulkan_views_free_chains(vk, 0, true);
       /* The chains have released the last history owners. */
@@ -9125,6 +9181,8 @@ built:
          if (vk->media_shader_chain[i])
             vulkan_filter_chain_update_swapchain_info(vk->media_shader_chain[i],
                   &media_info);
+         if (vk->media_planar_chain[i])
+            vulkan_filter_chain_update_swapchain_info(vk->media_planar_chain[i], &media_info);
       }
    }
 
@@ -13500,6 +13558,7 @@ static const void *vulkan_movie_prepare(vk_t *vk, const void *frame)
 static void vulkan_movie_input(const struct vk_texture *texture,
       struct vulkan_filter_chain_texture *input)
 {
+   texture = vulkan_media_sample_texture((struct vk_texture*)texture);
    input->image       = texture->image;
    input->view        = texture->view;
    input->layout      = texture->layout;
@@ -16806,6 +16865,9 @@ static struct vk_stream_state *vulkan_planar_state_get(vk_t *vk,
  * there by yuv420_to_rgba8888 straight into the texture - one copy
  * into memory the GPU reads, no CPU conversion, no intermediate
  * image. Neither slot free: the frame is dropped. */
+static enum video_texture_update vulkan_planar_atlas_update(vk_t *vk,
+      struct vk_texture *texture, const struct texture_image *image);
+
 static enum video_texture_update vulkan_update_texture_planar(vk_t *vk,
       struct vk_texture *texture, const struct texture_image *image)
 {
@@ -16833,6 +16895,13 @@ static enum video_texture_update vulkan_update_texture_planar(vk_t *vk,
          || vk->pipelines.yuv420_to_rgba8888 == VK_NULL_HANDLE
          || !(st = vulkan_planar_state_get(vk, texture)))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+   if (texture->planar_source
+         && (!texture->planar_atlas || !texture->planar_atlas->resolving))
+   {
+      result = vulkan_planar_atlas_update(vk, texture, image);
+      if (result != VIDEO_TEXTURE_UPDATE_REFUSED) return result;
+   }
 
    device = vk->context->device;
    slot   = st->next_slot;
@@ -16933,11 +17002,176 @@ static enum video_texture_update vulkan_update_texture_planar(vk_t *vk,
    if (result == VIDEO_TEXTURE_UPDATE_DONE)
    {
       vulkan_media_publish(texture, destination);
+      texture->planar_source = true;
+      if (texture->planar_atlas) texture->planar_atlas->pending = false;
       vulkan_media_texture_changed(vk, (uintptr_t)texture, true);
    }
    return result;
 }
 
+static void vulkan_planar_atlas_free(VkDevice device, struct vk_texture *texture)
+{
+   struct vk_planar_atlas *atlas = texture->planar_atlas;
+   unsigned i;
+   if (!atlas)
+      return;
+   texture->planar_atlas = NULL;
+   for (i = 0; i < VK_PLANAR_ATLAS_SLOTS; i++)
+      vulkan_destroy_texture(device, &atlas->slots[i].texture);
+   free(atlas);
+}
+
+/* Host writes require completed readers, not merely queue ordering. The
+ * current unsubmitted frame is held by serial even after acquire reset its fence. */
+static bool vulkan_planar_atlas_idle(vk_t *vk, struct vk_planar_atlas_slot *slot)
+{
+   unsigned i;
+   if (slot->readers && slot->serial > vk->media_submit_serial)
+      return false;
+   for (i = 0; i < 64; i++)
+   {
+      uint64_t bit = ((uint64_t)1) << i;
+      if (!(slot->readers & bit))
+         continue;
+      if (i >= vk->context->num_swapchain_images ||
+          (!vk->context->swapchain_fences_signalled[i] && i == vk->context->current_frame_index) ||
+          (vk->context->swapchain_fences_signalled[i] &&
+           vkGetFenceStatus(vk->context->device, vk->context->swapchain_fences[i]) == VK_SUCCESS))
+         slot->readers &= ~bit;
+   }
+   return !slot->readers;
+}
+
+static enum video_texture_update vulkan_planar_atlas_update(vk_t *vk, struct vk_texture *texture,
+                                                            const struct texture_image *image)
+{
+   struct vk_planar_atlas *atlas = texture->planar_atlas;
+   struct vk_planar_atlas_slot *slot = NULL;
+   const struct texture_planar *planes = image->planar;
+   unsigned w = image->width, h = image->height, ch = (h + 1) / 2;
+   unsigned i, row, x, index = 0;
+   uint8_t *out;
+   if (!vk->media_shader_enabled || vk->context->current_frame_index >= 64 ||
+       !texture->planar_draw_serial || texture->planar_draw_serial < vk->media_submit_serial ||
+       (!vk->media_planar_chain[0] && !vk->media_planar_chain[1]))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!atlas)
+   {
+      atlas = (struct vk_planar_atlas *)calloc(1, sizeof(*atlas));
+      if (!atlas)
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      atlas->driver = vk;
+      texture->planar_atlas = atlas;
+   }
+   if (!atlas->tried)
+   {
+      VkFormatProperties properties;
+      unsigned height = h + 2 * ch + 1;
+      atlas->tried = true;
+      vkGetPhysicalDeviceFormatProperties(vk->context->gpu, VK_FORMAT_R8_UNORM, &properties);
+      if (!(properties.linearTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) ||
+          height > vk->context->gpu_properties.limits.maxImageDimension2D || height > 65535)
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      for (i = 0; i < VK_PLANAR_ATLAS_SLOTS; i++)
+      {
+         struct vk_texture *t = &atlas->slots[i].texture;
+         *t = vulkan_create_texture(vk, NULL, w, height, VK_FORMAT_R8_UNORM, NULL, NULL,
+                                    VULKAN_TEXTURE_STREAMED);
+         if (!t->image || !t->view || !t->memory ||
+             vkMapMemory(vk->context->device, t->memory, 0, VK_WHOLE_SIZE, 0, &t->mapped) !=
+                 VK_SUCCESS)
+            break;
+      }
+      atlas->ready = i == VK_PLANAR_ATLAS_SLOTS;
+      if (!atlas->ready)
+         for (i = 0; i < VK_PLANAR_ATLAS_SLOTS; i++)
+            vulkan_destroy_texture(vk->context->device, &atlas->slots[i].texture);
+   }
+   if (!atlas->ready)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   for (i = 0; i < VK_PLANAR_ATLAS_SLOTS; i++)
+   {
+      index = (atlas->current + 1 + i) % VK_PLANAR_ATLAS_SLOTS;
+      if (vulkan_planar_atlas_idle(vk, &atlas->slots[index]))
+      {
+         slot = &atlas->slots[index];
+         break;
+      }
+   }
+   if (!slot)
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
+   out = (uint8_t *)slot->texture.mapped + slot->texture.offset;
+   for (row = 0; row < h; row++)
+      memcpy(out + row * slot->texture.stride, planes->planes[0] + (size_t)row * planes->strides[0],
+             w);
+   for (row = 0; row < ch; row++)
+   {
+      const uint8_t *u = planes->planes[1] + (size_t)row * planes->strides[1];
+      const uint8_t *v = planes->planes[2] + (size_t)row * planes->strides[2];
+      uint8_t *du = out + (h + row) * slot->texture.stride;
+      uint8_t *dv = out + (h + ch + row) * slot->texture.stride;
+      unsigned cw = (w + 1) / 2;
+      if (planes->chroma_step == 1)
+      {
+         memcpy(du, u, cw);
+         memcpy(dv, v, cw);
+      }
+      else
+         for (x = 0; x < cw; x++)
+         {
+            du[x] = u[(size_t)x * planes->chroma_step];
+            dv[x] = v[(size_t)x * planes->chroma_step];
+         }
+   }
+   out[(h + 2 * ch) * slot->texture.stride] = ((planes->yuv & IMAGE_YUV_FLAG_BT709) ? 2 : 0) |
+                                              ((planes->yuv & IMAGE_YUV_FLAG_FULL_RANGE) ? 1 : 0);
+   if (slot->texture.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+   {
+      VkMappedMemoryRange range;
+      memset(&range, 0, sizeof(range));
+      range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+      range.memory = slot->texture.memory;
+      range.size = VK_WHOLE_SIZE;
+      if (vkFlushMappedMemoryRanges(vk->context->device, 1, &range) != VK_SUCCESS)
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+   atlas->current = index;
+   atlas->flags = planes->yuv;
+   atlas->pending = true;
+   vulkan_media_texture_changed(vk, (uintptr_t)texture, true);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
+/* An incompatible RGB consumer can materialize from the retained mapped
+ * atlas. Decoder memory is never retained past its upload callback. */
+static void vulkan_planar_materialize(struct vk_texture *texture)
+{
+   struct vk_planar_atlas *atlas = texture->planar_atlas;
+   const struct vk_texture *source;
+   struct texture_planar planes;
+   struct texture_image image;
+   uint8_t *bytes;
+   unsigned h;
+   if (!atlas || !atlas->pending || atlas->resolving)
+      return;
+   source = &atlas->slots[atlas->current].texture;
+   h = VIDEO_SCALE_H(texture->dims);
+   bytes = (uint8_t *)source->mapped + source->offset;
+   memset(&planes, 0, sizeof(planes));
+   memset(&image, 0, sizeof(image));
+   planes.planes[0] = bytes;
+   planes.planes[1] = bytes + h * source->stride;
+   planes.planes[2] = bytes + (h + (h + 1) / 2) * source->stride;
+   planes.strides[0] = planes.strides[1] = planes.strides[2] = source->stride;
+   planes.chroma_step = 1;
+   planes.yuv = atlas->flags;
+   image.width = VIDEO_SCALE_W(texture->dims);
+   image.height = h;
+   image.planar = &planes;
+   atlas->resolving = true;
+   vulkan_update_texture_planar((vk_t *)atlas->driver, texture, &image);
+   atlas->resolving = false;
+}
 /* A texture for planar frames: RGBA8 the compute shader writes, and
  * the first frame converted into it. */
 static uintptr_t vulkan_load_texture_planar(vk_t *vk,
@@ -19650,7 +19884,8 @@ static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
    VkRenderPassBeginInfo rp;
    VkViewport vp, saved_vp;
    VkRect2D saved_scissor;
-   bool sdr;
+   bool sdr, planar = false;
+   struct vk_planar_atlas_slot *atlas_slot = NULL;
    unsigned history_index;
    if (texture && texture->media_owner)
       texture = texture->media_owner;
@@ -19658,7 +19893,19 @@ static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
          || (texture->immutable && !texture->history_view))
       return false;
    sdr = (vk->flags & VK_FLAG_SDR_PIPELINE) != 0;
-   chain = vulkan_media_chain(vk, sdr ? 1 : 0);
+   chain = texture->planar_source ? vulkan_media_planar_chain(vk, sdr ? 1 : 0) : NULL;
+   if (chain && texture->planar_atlas && texture->planar_atlas->pending
+         && vk->context->current_frame_index < 64)
+   {
+      atlas_slot = &texture->planar_atlas->slots[texture->planar_atlas->current];
+      planar = true;
+   }
+   else
+   {
+      if (chain) texture->planar_draw_serial = vk->media_submit_serial + 1;
+      chain = vulkan_media_chain(vk, sdr ? 1 : 0);
+   }
+   if (planar) texture->planar_draw_serial = vk->media_submit_serial + 1;
    if (!chain || !(sdr ? vk->bloom.keep_sdr_pass : vk->keep_render_pass))
       return false;
    saved_vp = vk->vk_vp;
@@ -19670,7 +19917,13 @@ static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
    vp.height = (float)VIDEO_SCALE_H(dims);
    vp.minDepth = 0.0f;
    vp.maxDepth = 1.0f;
-   vulkan_movie_input(texture, &input);
+   if (planar)
+   {
+      vulkan_movie_input(&atlas_slot->texture, &input);
+      input.dims = source_dims;
+      input.layout = VK_IMAGE_LAYOUT_GENERAL;
+   }
+   else vulkan_movie_input(texture, &input);
    vulkan_views_sync_params(vk, chain);
    vulkan_filter_chain_notify_sync_index(chain, vk->context->current_frame_index);
    vulkan_filter_chain_set_frame_count(chain, vk->media_shader_frame);
@@ -19685,6 +19938,17 @@ static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
    rp.renderArea.extent.width = VIDEO_SCALE_W(video_dims);
    rp.renderArea.extent.height = VIDEO_SCALE_H(video_dims);
    vkCmdEndRenderPass(vk->cmd);
+   if (planar)
+   {
+      VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, atlas_slot->texture.image,
+            atlas_slot->texture.layout, VK_IMAGE_LAYOUT_GENERAL,
+            VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+            VK_PIPELINE_STAGE_HOST_BIT,
+            VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+      atlas_slot->texture.layout = VK_IMAGE_LAYOUT_GENERAL;
+      atlas_slot->readers |= ((uint64_t)1) << vk->context->current_frame_index;
+      atlas_slot->serial = vk->media_submit_serial + 1;
+   }
    {
       float rows[12];
       bool linear_hdr = false;
@@ -19731,7 +19995,7 @@ static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
 #ifdef VULKAN_HDR_SWAPCHAIN
    if (sdr) vulkan_filter_chain_set_hdr_mode(chain, 0);
 #endif
-   if (texture->media_version)
+   if (!planar && texture->media_version)
       vulkan_media_read(&texture->media_version->texture);
    vulkan_filter_chain_visit_history(chain, vulkan_media_read);
    vulkan_filter_chain_build_offscreen_passes(chain, vk->cmd, &vp);

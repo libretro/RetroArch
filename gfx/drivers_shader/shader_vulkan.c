@@ -805,6 +805,7 @@ struct CommonResources
     * them there. */
    bool frame_rect;
    bool viewer_colour;
+   bool frame_planar;
    float viewer_colour_rows[12];
    bool frame_linear;
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
@@ -1015,6 +1016,7 @@ struct vulkan_filter_chain
    gfx_media_history_t *media_history;
    gfx_media_history_ring_t history_ring;
    bool history_input_valid;
+   bool commands_recorded;
 
    /* Both in VIDEO_SCALE_PACK's layout; deferred_source_dims is the
     * accumulated source size for per-frame builds. */
@@ -1561,6 +1563,12 @@ static bool slang_chain_load_luts(vulkan_filter_chain *chain)
          any = true;
    if (!any)
       return true;
+   /* This chain is created by a viewer draw. Until it can borrow the
+    * existing chain's immutable LUTs, keep those presets on RGB rather
+    * than submitting a second upload and waiting for it here. */
+   if (chain->common.frame_planar)
+      return false;
+
 
    cmd_info.sType                                = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
    cmd_info.pNext                                = NULL;
@@ -1679,6 +1687,7 @@ static struct vulkan_filter_chain *slang_chain_new(
    chain->max_input_size_dims   = info->max_input_dims;
    chain->deferred_source_dims  = chain->max_input_size_dims;
    chain->common.frame_rect     = info->frame_rect;
+   chain->common.frame_planar   = info->frame_planar;
    chain->common.viewer_colour  = info->viewer_colour;
    chain->replay                = info->replay;
    if (     !slang_chain_set_swapchain_info(chain, info->swapchain)
@@ -1868,7 +1877,10 @@ static void slang_chain_flush(struct vulkan_filter_chain *chain)
     * blocks vkQueuePresentKHR for the duration, and cannot complete
     * while a hardware core waiting on that same lock still has work
     * to submit that the queue is waiting for. */
-   chain->wait_submissions(chain->queue_lock_handle);
+   /* A refused private planar chain has never recorded GPU work and
+    * cannot have submitted a LUT upload. */
+   if (!chain->common.frame_planar || chain->commands_recorded)
+      chain->wait_submissions(chain->queue_lock_handle);
    slang_chain_execute_deferred(chain);
 }
 
@@ -1931,6 +1943,8 @@ static void slang_chain_build_offscreen_passes(struct vulkan_filter_chain *chain
    Texture source;
    struct deferred_disposes *disposer;
    Texture original;
+
+   chain->commands_recorded = true;
 
    /* First frame, make sure our history and feedback textures
     * are in a clean state. */
@@ -2104,6 +2118,8 @@ static void slang_chain_build_viewport_pass(struct vulkan_filter_chain *chain,
    Texture source;
    Texture original;
    struct deferred_disposes *disposer = &chain->deferred_calls[chain->current_sync_index];
+
+   chain->commands_recorded = true;
 
    original.texture    = chain->input_texture;
    original.filter     = chain->passes[0]->pass_info.source_filter;
@@ -3968,6 +3984,32 @@ static void slang_pass_read_frame_in_place(struct slang_pass *pass)
       slang_pass_set_blob(pass, VK_SHADER_STAGE_FRAGMENT_BIT, slang_blob_adopt_words(nf, nfl));
 }
 
+static bool slang_pass_planar_in_place(struct slang_pass *pass)
+{
+#ifdef HAVE_RSLC
+   const struct video_shader *preset = pass->common->shader_preset;
+   struct slang_blob *vb = NULL, *fb = NULL;
+   enum slang_rect_result result;
+   if (pass->colour_tried) return true;
+   if (!preset || preset->pass[0].mipmap
+         || pass->common->frame_wrap != SLANG_RECT_WRAP_EDGE) return false;
+   if (pass->pass_number >= preset->passes) return true;
+   if (!slang_compile_planar(preset->pass[pass->pass_number].source.path,
+            pass->vertex_shader, pass->num_vertex_shader,
+            pass->fragment_shader, pass->num_fragment_shader,
+            pass->pass_number == 0, pass->common->frame_linear,
+            NULL, &result, &vb, &fb, NULL, NULL)) return false;
+   if (result == SLANG_RECT_UNSUPPORTED) return false;
+   if (vb) slang_pass_set_blob(pass, VK_SHADER_STAGE_VERTEX_BIT, vb);
+   if (fb) slang_pass_set_blob(pass, VK_SHADER_STAGE_FRAGMENT_BIT, fb);
+   pass->colour_tried = true;
+   return true;
+#else
+   (void)pass;
+   return false;
+#endif
+}
+
 static bool slang_pass_colour_in_place(struct slang_pass *pass)
 {
 #ifdef HAVE_RSLC
@@ -4032,10 +4074,15 @@ static bool slang_pass_build_layout(struct slang_pass *pass)
    if (!pass->common)
       return false;
 
-   if (pass->common->frame_rect)
-      slang_pass_read_frame_in_place(pass);
-   if (pass->common->viewer_colour && !slang_pass_colour_in_place(pass))
-      return false;
+   if (pass->common->frame_planar)
+   {
+      if (!slang_pass_planar_in_place(pass)) return false;
+   }
+   else
+   {
+      if (pass->common->frame_rect) slang_pass_read_frame_in_place(pass);
+      if (pass->common->viewer_colour && !slang_pass_colour_in_place(pass)) return false;
+   }
 
    slang_framebuffer_delete(&pass->framebuffer);
 
@@ -4083,6 +4130,25 @@ static bool slang_pass_build_layout(struct slang_pass *pass)
       pass->reflection.semantic_map = NULL;
       if (!refl_ok)
          return false;
+   }
+
+   if (pass->common->frame_planar)
+   {
+      const slang_texture_semantic_array *history =
+         &pass->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY];
+      const slang_texture_semantic_array *feedback =
+         &pass->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_FEEDBACK];
+      const slang_texture_semantic_array *outputs =
+         &pass->reflection.semantic_textures[SLANG_TEXTURE_SEMANTIC_PASS_OUTPUT];
+      size_t at;
+      /* A forward/self output aliases the raw input before that pass has
+       * drawn. It cannot be treated as RGB in a private planar chain. */
+      for (at = pass->pass_number; at < outputs->size; at++)
+         if (outputs->data[at].texture) return false;
+      for (at = 1; at < history->size; at++)
+         if (history->data[at].texture) return false;
+      for (at = 0; at < feedback->size; at++)
+         if (feedback->data[at].texture) return false;
    }
 
    {

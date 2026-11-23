@@ -6951,6 +6951,19 @@ static bool rslc_rm_supported(const struct rslc_rm *r, const struct rslc_node *n
          sampler->base, 4, 1);
    bool lin_ok = rm->colour || !rm->linear
       || rm->wrap == RSLC_REMAP_WRAP_EDGE || rm->wrap == RSLC_REMAP_WRAP_BORDER;
+   if (rm->planar)
+   {
+      struct rslc_cval level;
+      if (sampler->kind != RSLC_TY_SAMPLER2D || sampler->base != RSLC_BASE_FLOAT
+            || rm->wrap != RSLC_REMAP_WRAP_EDGE) return false;
+      if (n->a == RSLC_BFN_TEXTURE) return nargs == 2 && n->type == vec4;
+      if ((n->a != RSLC_BFN_TEXELFETCH && n->a != RSLC_BFN_TEXTURESIZE)
+            || nargs != (n->a == RSLC_BFN_TEXELFETCH ? 3u : 2u)) return false;
+      memset(&level, 0, sizeof(level));
+      return rslc_const_eval(r->c, rslc_list_item(r->c, n->b, nargs - 1), &level)
+         && level.v[0] == 0;
+   }
+
    if (     sampler->base != RSLC_BASE_FLOAT
          && n->a != RSLC_BFN_TEXELFETCH && n->a != RSLC_BFN_TEXELFETCHOFFSET
          && n->a != RSLC_BFN_TEXTURESIZE)
@@ -7653,6 +7666,36 @@ static bool rslc_rm_colour_snippet(struct rslc_rm *r, struct rslc_pbuf *b)
 }
 
 /* The helpers for the pass's sampling, as GLSL. */
+static bool rslc_rm_planar_snippet(struct rslc_rm *r, struct rslc_pbuf *b)
+{
+   return rslc_rm_colour_snippet(r, b) && rslc_rm_text(r, b,
+         "ivec2 rarch_planar_size(sampler2D s) {\n"
+         "ivec2 n=textureSize(s,0);int h=(n.y-1)/2;\n"
+         "if((n.y&3)==0)h=n.y/2-1;return ivec2(n.x,h); }\n"
+         "vec4 rarch_planar_pixel(sampler2D s,ivec2 p) {\n"
+         "ivec2 n=rarch_planar_size(s);p=clamp(p,ivec2(0),n-1);\n"
+         "int ch=(n.y+1)/2;int tag=int(floor(texelFetch(s,ivec2(0,n.y+2*ch),0).r*255.0+.5));\n"
+         "bool full=(tag&1)!=0;bool hd=(tag&2)!=0;\n"
+         "float y=texelFetch(s,p,0).r;\n"
+         "float u=texelFetch(s,ivec2(p.x/2,n.y+p.y/2),0).r-128.0/255.0;\n"
+         "float v=texelFetch(s,ivec2(p.x/2,n.y+ch+p.y/2),0).r-128.0/255.0;\n"
+         "float yy=full?y:(19077.0/16384.0)*y+(-305232.0/16384.0)/255.0;\n"
+         "vec4 k=hd?(full?vec4(25802,-3069,-7670,30402):vec4(29372,-3494,-8731,34610))\n"
+         ":(full?vec4(22970,-5638,-11700,29032):vec4(26149,-6419,-13320,33050));\n"
+         "k=k/16384.0;vec3 rgb=vec3(yy)+vec3(k.x*v,k.y*u+k.z*v,k.w*u);\n"
+         "return vec4(floor(clamp(rgb,0.0,1.0)*255.0+.5)/255.0,1.0); }\n"
+         "vec4 rarch_rect_texelFetch(sampler2D s,ivec2 p,int lod) {return rarch_sample_colour(rarch_planar_pixel(s,p));}\n"
+         "ivec2 rarch_rect_textureSize(sampler2D s,int lod) {return rarch_planar_size(s);}\n"
+         "vec4 rarch_rect_texture(sampler2D s,vec2 uv) {\n"
+         "vec2 q=uv*vec2(rarch_planar_size(s));\n")
+      && rslc_rm_text(r, b, r->rm->linear
+         ? "ivec2 p=ivec2(floor(q-.5));vec2 f=fract(q-.5);\n"
+           "vec4 a=mix(rarch_planar_pixel(s,p),rarch_planar_pixel(s,p+ivec2(1,0)),f.x);\n"
+           "vec4 z=mix(rarch_planar_pixel(s,p+ivec2(0,1)),rarch_planar_pixel(s,p+ivec2(1,1)),f.x);\n"
+           "return rarch_sample_colour(mix(a,z,f.y));}\n"
+         : "return rarch_sample_colour(rarch_planar_pixel(s,ivec2(floor(q))));}\n");
+}
+
 static bool rslc_rm_snippet(struct rslc_rm *r, struct rslc_pbuf *b)
 {
    enum rslc_remap_wrap w = r->rm->wrap;
@@ -7894,6 +7937,7 @@ bool rslc_remap_run(struct rslc_ctx *c)
    bool                     any = false, ok;
 
    c->remap = RSLC_REMAP_UNSUPPORTED;
+   if (rm->planar && rm->colour) return true;
    memset(&r, 0, sizeof(r));
    r.c  = c;
    r.rm = rm;
@@ -7945,7 +7989,8 @@ bool rslc_remap_run(struct rslc_ctx *c)
       return false;
    if (!rslc_pbuf_init(c, &text, 0, 6144))
       return false;
-   ok = (rm->colour ? rslc_rm_colour_snippet(&r, &text) : rslc_rm_snippet(&r, &text))
+   ok = (rm->planar ? rslc_rm_planar_snippet(&r, &text)
+         : rm->colour ? rslc_rm_colour_snippet(&r, &text) : rslc_rm_snippet(&r, &text))
       && rslc_front_parse(c, (const char*)text.data, text.len);
    rslc_pbuf_free(c, &text);
    if (!ok)

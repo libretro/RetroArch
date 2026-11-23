@@ -288,6 +288,11 @@ struct rslc_remap
     * hold matrix rows: rect.w enables it, clamp.w is the signed power.
     * Sampler coordinates, filtering, levels and size queries are unchanged. */
    bool        colour;
+   /* Sample an R8 atlas: Y rows, Cb rows, Cr rows, then one tag row.
+    * The tag's first byte is (BT709 << 1) | full_range. Chroma rows use
+    * ceil(width/2) texels and ceil(height/2) rows. The three vec4s hold
+    * the viewer colour transform, applied after RGB8 tap filtering. */
+   bool        planar;
 };
 
 /* How the printed destinations name the interface.  A driver binds

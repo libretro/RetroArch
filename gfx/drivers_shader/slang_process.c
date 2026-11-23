@@ -1924,7 +1924,7 @@ static bool slang_colour_place_pass(const uint32_t *vs, size_t vs_words,
 static bool slang_compile_remap_internal(const char *shader_path,
       const uint32_t *vs, size_t vs_words,
       const uint32_t *fs, size_t fs_words,
-      bool source, bool linear, enum slang_rect_wrap wrap, bool colour,
+      bool source, bool linear, enum slang_rect_wrap wrap, bool colour, bool planar,
       const struct slang_text_target *text,
       enum slang_rect_result *verdict,
       struct slang_blob **vs_out, struct slang_blob **fs_out,
@@ -1968,7 +1968,8 @@ static bool slang_compile_remap_internal(const char *shader_path,
    rm.offset        = place.offset;
    rm.wrap          = (enum rslc_remap_wrap)wrap;
    rm.linear        = linear;
-   rm.colour        = colour;
+   rm.colour        = colour && !planar;
+   rm.planar        = planar;
    if (colour)
    {
       static const char *const names[] = {
@@ -2023,6 +2024,12 @@ static bool slang_compile_remap_internal(const char *shader_path,
       rm.texels_name = "RARCH_ViewerColour2";
    }
 
+   if (planar)
+   {
+      rm.samplers = slang_frame_names;
+      rm.sampler_count = source ? 3 : 2;
+   }
+
    if (!shader_line_buf_init(&lines))
       return false;
    if (     glslang_read_shader_file_cached(shader_path, &lines, true, false,
@@ -2075,7 +2082,7 @@ bool slang_compile_remapped(const char *shader_path,
       char **vs_text, char **fs_text)
 {
    return slang_compile_remap_internal(shader_path, vs, vs_words, fs, fs_words,
-         source, linear, wrap, false, text, verdict, vs_out, fs_out,
+         source, linear, wrap, false, false, text, verdict, vs_out, fs_out,
          vs_text, fs_text);
 }
 
@@ -2088,7 +2095,20 @@ bool slang_compile_colour(const char *shader_path,
       char **vs_text, char **fs_text)
 {
    return slang_compile_remap_internal(shader_path, vs, vs_words, fs, fs_words,
-         source, false, SLANG_RECT_WRAP_EDGE, true, text, verdict,
+         source, false, SLANG_RECT_WRAP_EDGE, true, false, text, verdict,
+         vs_out, fs_out, vs_text, fs_text);
+}
+
+bool slang_compile_planar(const char *shader_path,
+      const uint32_t *vs, size_t vs_words,
+      const uint32_t *fs, size_t fs_words, bool source, bool linear,
+      const struct slang_text_target *text,
+      enum slang_rect_result *verdict,
+      struct slang_blob **vs_out, struct slang_blob **fs_out,
+      char **vs_text, char **fs_text)
+{
+   return slang_compile_remap_internal(shader_path, vs, vs_words, fs, fs_words,
+         source, linear, SLANG_RECT_WRAP_EDGE, true, true, text, verdict,
          vs_out, fs_out, vs_text, fs_text);
 }
 

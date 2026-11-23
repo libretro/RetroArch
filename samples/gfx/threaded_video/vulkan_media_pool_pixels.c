@@ -8,6 +8,7 @@
 #include <boolean.h>
 #include <queues/mpsc_stack.h>
 #include "gfx/video_defines.h"
+#define VK_PLANAR_ATLAS_SLOTS 4
 #define VK_STREAM_SLOTS 2
 #define VK_WIN32_VIDEO_IMPORTS 2
 #define GFX_MAX_FRAME_HISTORY 2
@@ -19,6 +20,8 @@ struct context { VkDevice device; VkPhysicalDeviceMemoryProperties memory_proper
 typedef struct { struct context *context; struct vk_stream_state *stream_states; uint64_t media_submit_serial; } vk_t;
 static void RARCH_ERR(const char *text){fputs(text,stderr);}
 #include "pool_memory.inc"
+static void vulkan_planar_materialize(struct vk_texture *t){assert(!t->planar_atlas);}
+static void vulkan_planar_atlas_free(VkDevice d,struct vk_texture *t){(void)d;assert(!t->planar_atlas);}
 #include "pool_destroy.inc"
 #include "pool_barrier.inc"
 #include "gfx/common/vulkan_media_pool.h"

@@ -7,6 +7,7 @@ static struct vk_texture *vulkan_media_sample_texture(struct vk_texture *texture
 {
    if (texture && texture->media_owner)
       texture = texture->media_owner;
+   if (texture) vulkan_planar_materialize(texture);
    if (texture && texture->media_pool)
       texture = &texture->media_pool->current->texture;
    return texture;
@@ -78,8 +79,9 @@ static void vulkan_media_cache_owner(struct vk_texture *destination,
    destination->vaapi_cache = owner ? owner->vaapi_cache : NULL;
    destination->vaapi_next = owner ? owner->vaapi_next : NULL;
 #endif
-   (void)destination;
-   (void)owner;
+   destination->planar_atlas = owner ? owner->planar_atlas : NULL;
+   destination->planar_source = owner ? owner->planar_source : false;
+   destination->planar_draw_serial = owner ? owner->planar_draw_serial : 0;
 }
 
 static VkImageView vulkan_media_level_view(vk_t *vk, const struct vk_texture *texture,
@@ -284,6 +286,11 @@ static void vulkan_media_publish(struct vk_texture *texture, struct vk_texture *
    }
    else
       texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+   /* A successful RGB/native publication supersedes retained CPU planes.
+    * The planar uploader marks its own RGB warmup again after publishing. */
+   texture->planar_source = false;
+   if (texture->planar_atlas)
+      texture->planar_atlas->pending = false;
 }
 
 static void vulkan_media_mipmaps(VkCommandBuffer cmd, const struct vk_texture *texture)

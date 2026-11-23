@@ -457,6 +457,15 @@ bool slang_compile_colour(const char *shader_path,
       struct slang_blob **vs_out, struct slang_blob **fs_out,
       char **vs_text, char **fs_text);
 
+/* R8 Y/Cb/Cr atlas input, sampled without an RGB intermediate. */
+bool slang_compile_planar(const char *shader_path,
+      const uint32_t *vs, size_t vs_words,
+      const uint32_t *fs, size_t fs_words, bool source, bool linear,
+      const struct slang_text_target *text,
+      enum slang_rect_result *verdict,
+      struct slang_blob **vs_out, struct slang_blob **fs_out,
+      char **vs_text, char **fs_text);
+
 bool slang_compile_remapped(const char *shader_path,
       const uint32_t *vs, size_t vs_words,
       const uint32_t *fs, size_t fs_words,

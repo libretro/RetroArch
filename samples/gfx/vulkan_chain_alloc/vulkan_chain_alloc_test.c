@@ -147,7 +147,8 @@ VkResult vulkan_allocate_cpu_write_memory(VkDevice device,
    return vkAllocateMemory(device, alloc, NULL, mem);
 }
 
-static void wait_submissions(void *handle) { (void)handle; }
+static unsigned submission_waits;
+static void wait_submissions(void *handle) { (void)handle; submission_waits++; }
 
 #define PASSES  3
 #define INDICES 3
@@ -612,6 +613,20 @@ int main(void)
             "objects were left", k, allocs, live_objects);
       live_objects = 0;
    }
+
+   /* A rejected private chain must not drain unrelated submitted frames. */
+   info.frame_planar = true;
+   k = submission_waits;
+   chain = slang_chain_new(&info);
+   CHECK(chain != NULL, "cold planar chain");
+   slang_chain_free(chain);
+   CHECK(submission_waits == k, "cold planar cleanup waited for submissions");
+   chain = slang_chain_new(&info);
+   CHECK(chain != NULL, "used planar chain");
+   if (chain) chain->commands_recorded = true;
+   slang_chain_free(chain);
+   CHECK(submission_waits == k + 1, "used planar cleanup skipped submission retirement");
+   info.frame_planar = false;
 
    test_discard_clears();
    chain = slang_chain_new(&info);

@@ -2416,6 +2416,42 @@ static void test_sample_colour(void)
    }
 }
 
+static void test_sample_planar(void)
+{
+   static const char *const samplers[] = { "Source" };
+   static const char src[] =
+      "#version 450\nlayout(binding=0) uniform sampler2D Source;\n"
+      "layout(binding=1) uniform sampler2D LUT;\n"
+      "layout(location=0) in vec2 uv;layout(location=0) out vec4 colour;\n"
+      "vec4 f(sampler2D s,vec2 p){return texture(s,p);}\n"
+      "void main(){colour=(f(Source,uv)+f(LUT,uv)+texelFetch(Source,ivec2(1),0))"
+      "/vec4(textureSize(Source,0),1,1);}";
+   struct rslc_opts o;
+   struct rslc_result r;
+   struct rslc_remap rm;
+   char err[256];
+   unsigned dst,linear;
+   memset(&rm,0,sizeof(rm));
+   rm.samplers=samplers;rm.sampler_count=1;rm.planar=true;
+   rm.rect_name="ColourRow0";rm.clamp_name="ColourRow1";rm.texels_name="ColourRow2";
+   for(linear=0;linear<2;linear++)for(dst=RSLC_DST_SPIRV;dst<=RSLC_DST_MSL;dst++)
+   {
+      opts_default(&o,err,sizeof(err));
+      o.dst=(enum rslc_dst)dst;
+      o.version=dst==RSLC_DST_MSL?20000:dst==RSLC_DST_HLSL?50:dst==RSLC_DST_GLSL_ES?320:450;
+      rm.linear=linear!=0;o.remap=&rm;err[0]=0;
+      if(!rslc_compile(src,sizeof(src)-1,RSLC_STAGE_FRAGMENT,&o,&r))
+      {fprintf(stderr,"planar target %u: %s\n",dst,err);CHECK(0);continue;}
+      CHECK(r.remap==RSLC_REMAP_REWRITTEN);
+      rslc_result_free(&r,&o);CHECK(alloc_live==0);
+   }
+   rm.wrap=RSLC_REMAP_WRAP_REPEAT;
+   opts_default(&o,err,sizeof(err));o.remap=&rm;
+   CHECK(rslc_compile(src,sizeof(src)-1,RSLC_STAGE_FRAGMENT,&o,&r));
+   CHECK(r.remap==RSLC_REMAP_UNSUPPORTED);rslc_result_free(&r,&o);
+   CHECK(alloc_live==0);
+}
+
 int main(int argc, char **argv)
 {
    if (argc == 3 && !strcmp(argv[1], "--pp"))
@@ -2459,6 +2495,7 @@ int main(int argc, char **argv)
    test_ingest();
    test_sampler_active();
    test_sample_colour();
+   test_sample_planar();
    test_exhaustion();
 
    if (fails)

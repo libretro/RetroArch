@@ -114,6 +114,7 @@ struct vulkan_filter_chain_create_info
     * passes are built to read them there where the preset allows. */
    bool frame_rect;
    bool viewer_colour;
+   bool frame_planar;
    /* The chain may draw its last frame's final pass again in a later
     * frame (build_viewport_pass_replay): its history keeps one more
     * image for that. */

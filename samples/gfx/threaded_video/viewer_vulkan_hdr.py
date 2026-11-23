@@ -59,10 +59,15 @@ struct vk_texture {
    struct vk_media_version *media_version;
    struct vk_media_pool *media_pool;
    struct vk_texture *media_owner;
-   bool immutable;
+   struct vk_planar_atlas *planar_atlas;
+   uint64_t planar_draw_serial;
+   bool immutable,planar_source;
    mpsc_stack_node_t park;
 };
-struct vulkan_filter_chain_texture { unsigned image,view; };
+struct vk_planar_atlas_slot { struct vk_texture texture; uint64_t readers,serial; };
+struct vk_planar_atlas { struct vk_planar_atlas_slot slots[4]; unsigned current; bool pending; };
+struct vulkan_filter_chain_texture { unsigned image,view,dims,layout; };
+#define VK_IMAGE_LAYOUT_GENERAL 1
 typedef struct { unsigned image, hdr; float rows[12]; void *owner; unsigned lease_view; void (*release)(void *); } vulkan_filter_chain_t;
 struct image { unsigned image,framebuffer; };
 struct context { unsigned current_frame_index,num_swapchain_images,device; };
@@ -74,7 +79,7 @@ typedef struct {
    uintptr_t media_history_texture[2], media_last_texture;
    unsigned flags,keep_render_pass,cmd,media_shader_frame;
    bool media_shader_enabled;
-   vulkan_filter_chain_t *media_shader_chain[2];
+   vulkan_filter_chain_t *media_shader_chain[2],*media_planar_chain[2];
    struct { unsigned keep_sdr_pass; struct image *target; } bloom;
    struct context *context;
    VkViewport vk_vp;
@@ -83,7 +88,10 @@ typedef struct {
    struct { float menu_nits; struct { unsigned expand_gamut; } ubo_values; } hdr;
 } vk_t;
 static unsigned begun,ended,offscreen,viewport;
-static void vulkan_movie_input(struct vk_texture *t, struct vulkan_filter_chain_texture *i) { i->image=t->image; }
+static unsigned input_dims,input_layout;
+static void vulkan_planar_atlas_free(VkDevice d,struct vk_texture *t){(void)d;assert(!t->planar_atlas);}
+static vulkan_filter_chain_t *vulkan_media_planar_chain(vk_t *v,unsigned i){return v->media_planar_chain[i];}
+static void vulkan_movie_input(struct vk_texture *t, struct vulkan_filter_chain_texture *i) { memset(i,0,sizeof(*i));i->image=t->image; }
 static void vulkan_views_sync_params(vk_t *v,vulkan_filter_chain_t *c) { (void)v;(void)c; }
 static void vulkan_filter_chain_notify_sync_index(vulkan_filter_chain_t *c,unsigned i) { (void)c;(void)i; }
 static void vulkan_filter_chain_set_frame_count(vulkan_filter_chain_t *c,unsigned i) { (void)c;(void)i; }
@@ -91,7 +99,7 @@ static void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *c,int
 static void vulkan_filter_chain_set_rotation(vulkan_filter_chain_t *c,unsigned i) { (void)c;(void)i; }
 static void vulkan_filter_chain_set_core_aspect(vulkan_filter_chain_t *c,float f) { (void)c;(void)f; }
 static void vulkan_filter_chain_set_viewer_colour(vulkan_filter_chain_t *c,const float *r) { memcpy(c->rows,r,sizeof(c->rows)); }
-static void vulkan_filter_chain_set_input_texture_history(vulkan_filter_chain_t *c,const struct vulkan_filter_chain_texture *i, struct gfx_media_history *h) { (void)h;c->image=i->image; }
+static void vulkan_filter_chain_set_input_texture_history(vulkan_filter_chain_t *c,const struct vulkan_filter_chain_texture *i, struct gfx_media_history *h) { (void)h;c->image=i->image;input_dims=i->dims;input_layout=i->layout; }
 static void vulkan_filter_chain_set_source_hdr(vulkan_filter_chain_t *c,unsigned i) { (void)c;assert(!i); }
 static void vulkan_filter_chain_set_hdr_mode(vulkan_filter_chain_t *c,unsigned i) { c->hdr=i; }
 static void vulkan_filter_chain_build_offscreen_passes(vulkan_filter_chain_t *c,unsigned cmd,const VkViewport *vp) { (void)c;(void)cmd;assert(vp->width==320);offscreen++; }
@@ -193,7 +201,24 @@ int main(void)
    vulkan_deferred_textures_flush(&v);
    assert(retired==2 && !v.deferred_textures);
    assert(views_deleted[124]==1 && images_deleted==2 && !texture.history_view);
-   puts("PASS: original texture/HDR input, immutable history lease, unload deferral and level-zero allocation failure");
+   {
+      struct vk_planar_atlas atlas;
+      vulkan_filter_chain_t planar_chain;
+      memset(&atlas,0,sizeof(atlas));memset(&planar_chain,0,sizeof(planar_chain));
+      texture.planar_source=true;texture.planar_atlas=&atlas;
+      v.media_planar_chain[0]=&planar_chain;
+      atlas.pending=true;atlas.current=2;atlas.slots[2].texture.image=77;
+      v.media_submit_serial=50;context.current_frame_index=1;
+      assert(gfx_display_vk_media_shader_draw(&v,(uintptr_t)&texture,
+         VIDEO_SCALE_PACK(320,240),VIDEO_SCALE_PACK(640,480),0,VIDEO_SCALE_PACK(320,240)));
+      assert(planar_chain.image==77 && input_dims==VIDEO_SCALE_PACK(320,240));
+      assert(input_layout==VK_IMAGE_LAYOUT_GENERAL && atlas.slots[2].texture.layout==VK_IMAGE_LAYOUT_GENERAL);
+      assert(atlas.slots[2].readers==2 && atlas.slots[2].serial==51);
+      assert(texture.planar_draw_serial==51 && v.vk_vp.x==17);
+      assert(!planar_chain.owner);
+      texture.planar_atlas=NULL;
+   }
+   puts("PASS: direct planar slot/logical dimensions/reader retirement, original texture/HDR input, immutable history lease, unload deferral and level-zero allocation failure");
    return 0;
 }
 '''.replace("FUNCTION",function).replace("LIFETIME",lifetime)

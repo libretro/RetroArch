@@ -35,7 +35,7 @@ with tempfile.TemporaryDirectory(prefix="vulkan-media-pool-") as directory:
     if sdk.is_dir():
         shutil.copytree(sdk, tmp / "vk_video")
     types = []
-    for name in ("vk_texture", "vk_media_version", "vk_media_pool", "vk_stream_state"):
+    for name in ("vk_texture", "vk_media_version", "vk_media_pool", "vk_stream_state", "vk_planar_atlas_slot", "vk_planar_atlas"):
         start = source.index("struct " + name + "\n{")
         types.append(source[start:source.index("\n};", start) + 3])
     driver = (root / "gfx/video_driver.h").read_text(encoding="utf-8")
@@ -49,6 +49,10 @@ with tempfile.TemporaryDirectory(prefix="vulkan-media-pool-") as directory:
         "static enum video_texture_update vulkan_update_texture_planar(",
         "static enum video_texture_update vulkan_update_texture_internal(")
     (tmp / "pool_upload.inc").write_text("\n".join(function(s) for s in signatures), encoding="utf-8")
+    (tmp / "pool_atlas.inc").write_text("\n".join(function(s) for s in (
+        "static void vulkan_planar_atlas_free(", "static bool vulkan_planar_atlas_idle(",
+        "static enum video_texture_update vulkan_planar_atlas_update(",
+        "static void vulkan_planar_materialize(")), encoding="utf-8")
     (tmp / "pool_retire.inc").write_text("\n".join(function(signature) for signature in (
         "static void vulkan_deferred_textures_push(",
         "static void vulkan_deferred_textures_collect(",
