@@ -55,7 +55,7 @@ $(TARGET): $(OBJS)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS) webp_canvas_test webp_canvas_test.exe
+	rm -f $(TARGET) $(OBJS) webp_canvas_test webp_canvas_test.exe apng_canvas_test apng_canvas_test.exe
 
 .PHONY: all clean
 
@@ -75,3 +75,21 @@ webp-check: webp_canvas_test
 	./webp_canvas_test
 
 .PHONY: webp-check
+
+APNG_SOURCES := apng_canvas_test.c \
+ $(filter-out webp_canvas_test.c $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.c $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c,$(WEBP_SOURCES)) \
+ $(LIBRETRO_COMM_DIR)/formats/png/rpng.c \
+ $(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.c \
+ $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+ $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
+ $(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
+ $(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+ $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c
+
+apng_canvas_test: $(APNG_SOURCES) $(LIBRETRO_COMM_DIR)/include/formats/rpng.h
+	$(CC) $(CFLAGS) -DHAVE_RPNG $(APNG_SOURCES) -o $@ $(LDFLAGS) -lm
+
+apng-check: apng_canvas_test
+	./apng_canvas_test
+
+.PHONY: apng-check

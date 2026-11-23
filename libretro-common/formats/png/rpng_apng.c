@@ -116,6 +116,8 @@ struct rpng_apng_stream
    int       emitted;        /* frames emitted since open/rewind   */
 
    uint32_t *canvas;         /* persistent RGBA canvas             */
+   uint32_t *out;            /* caller-owned independent frame     */
+   size_t    out_stride;     /* caller's row stride, in pixels     */
    /* Lazy disposal: remember the previous frame's rectangle and its
     * dispose op so the region can be cleared/restored when the next
     * frame is prepared, without a second full canvas except when
@@ -154,6 +156,7 @@ struct rpng_apng_stream
    int       have_prev;
 
    int       emit_argb;      /* 0 = R,G,B,A memory order; 1 = ARGB */
+   int       independent;    /* 0 unknown, 1 independent, -1 dependent */
 };
 
 static INLINE uint32_t apng_be32(const uint8_t *p)
@@ -420,6 +423,23 @@ static bool apng_index(rpng_apng_stream_t *s)
       return false;
    if (s->index_done && s->indexed != s->num_frames)
       return false;   /* file ended with fewer frames than acTL declared */
+   if (s->index_done && !s->independent)
+   {
+      int i;
+      s->independent = 1;
+      for (i = 0; i < s->num_frames; i++)
+      {
+         const struct apng_frame *f = &s->frames[i];
+         if (f->x_off || f->y_off || f->width != (unsigned)s->canvas_w
+               || f->height != (unsigned)s->canvas_h
+               || f->blend != APNG_BLEND_SOURCE
+               || f->dispose == APNG_DISPOSE_PREVIOUS)
+         {
+            s->independent = -1;
+            break;
+         }
+      }
+   }
    return true;
 }
 
@@ -440,6 +460,8 @@ rpng_apng_stream_t *rpng_apng_stream_open(const uint8_t *buf, size_t len)
       rpng_apng_stream_close(s);
       return NULL;
    }
+   if (s->independent == 1)
+      return s; /* a private canvas is needed only if no output is lent */
    s->canvas = (uint32_t*)calloc(
          (size_t)s->canvas_w * (size_t)s->canvas_h, sizeof(uint32_t));
    if (!s->canvas)
@@ -497,6 +519,8 @@ rpng_apng_stream_t *rpng_apng_stream_open_avail(const uint8_t *buf,
          *need_more = 1;
       return NULL;
    }
+   if (s->independent == 1)
+      return s; /* a private canvas is needed only if no output is lent */
    s->canvas = (uint32_t*)calloc(
          (size_t)s->canvas_w * (size_t)s->canvas_h, sizeof(uint32_t));
    if (!s->canvas)
@@ -669,8 +693,9 @@ static uint32_t *apng_decode_frame(rpng_apng_stream_t *s,
       return NULL;
    }
    if (direct && !rpng_set_output(r,
-            s->canvas + (size_t)f->y_off * s->canvas_w + f->x_off,
-            (size_t)s->canvas_w))
+            s->out ? s->out
+               : s->canvas + (size_t)f->y_off * s->canvas_w + f->x_off,
+            s->out ? s->out_stride : (size_t)s->canvas_w))
    {
       rpng_free(r);
       return NULL;
@@ -817,7 +842,15 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
    if (f->data_end > s->avail)
       return NULL;
 
-   apng_apply_prev_dispose(s, f);
+   if (!s->out)
+   {
+      if (!s->canvas)
+         s->canvas = (uint32_t*)calloc(
+               (size_t)s->canvas_w * s->canvas_h, sizeof(uint32_t));
+      if (!s->canvas)
+         return NULL;
+      apng_apply_prev_dispose(s, f);
+   }
 
    /* For DISPOSE_PREVIOUS, save this frame's target region before it is
     * overwritten so it can be restored after. */
@@ -870,7 +903,7 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
 
    s->cursor++;
    s->emitted++;
-   return s->canvas;
+   return s->out ? s->out : s->canvas;
 }
 
 static void apng_swap_rb(uint32_t *px, size_t n)
@@ -915,12 +948,24 @@ bool rpng_apng_stream_set_argb(rpng_apng_stream_t *s, int argb)
    return true;
 }
 
+bool rpng_apng_stream_set_output_stride(rpng_apng_stream_t *s,
+      uint32_t *out, unsigned stride)
+{
+   if (!s || (out && (s->independent != 1
+            || (stride && stride < (unsigned)s->canvas_w))))
+      return false;
+   s->out = out;
+   s->out_stride = stride ? stride : (unsigned)s->canvas_w;
+   return true;
+}
+
 void rpng_apng_stream_rewind(rpng_apng_stream_t *s)
 {
    if (!s)
       return;
    s->cursor   = 0;
    s->have_prev = 0;
-   memset(s->canvas, 0,
-         (size_t)s->canvas_w * (size_t)s->canvas_h * sizeof(uint32_t));
+   if (s->canvas)
+      memset(s->canvas, 0,
+            (size_t)s->canvas_w * (size_t)s->canvas_h * sizeof(uint32_t));
 }

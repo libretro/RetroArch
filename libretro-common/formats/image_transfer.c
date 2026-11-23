@@ -1161,6 +1161,13 @@ bool image_transfer_anim_stream_set_output_stride(void *stream,
 {
    switch (type)
    {
+      case IMAGE_TYPE_PNG:
+#ifdef HAVE_RPNG
+         return rpng_apng_stream_set_output_stride(
+               (rpng_apng_stream_t*)stream, out, stride);
+#else
+         break;
+#endif
       case IMAGE_TYPE_WEBM:
 #ifdef HAVE_RWEBM
          return rwebm_video_stream_set_output_stride(
@@ -1176,9 +1183,7 @@ bool image_transfer_anim_stream_set_output_stride(void *stream,
          break;
 #endif
       default:
-         /* APNG and WEBP compose each frame on a persistent canvas
-          * that the next frame is built from: their frames come out
-          * of the canvas. */
+         /* Other animations compose on a persistent canvas. */
          break;
    }
    return false;

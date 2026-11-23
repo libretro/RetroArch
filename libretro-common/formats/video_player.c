@@ -521,8 +521,8 @@ static int vp_job_step(vp_job_t *job)
     * order already emitted answers yes. */
    native = image_transfer_anim_stream_set_argb(stream, type,
          job->rgba ? 0 : 1);
-   /* The video streams decode into the slot; APNG and WEBP hand out
-    * their canvas, copied below. */
+   /* Video and independent APNG streams decode into the slot. Other
+    * animations hand out a canvas, copied or retained below. */
    direct = image_transfer_anim_stream_set_output_stride(stream, type,
          job->frame, job->stride);
 
