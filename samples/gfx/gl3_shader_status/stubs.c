@@ -119,12 +119,14 @@ void glBindTexture(void) { }
 void glClear(void) { }
 void glClearColor(void) { }
 void glColorMask(void) { }
+void glCopyTexSubImage2D(void) { }
 void glDeleteTextures(void) { }
 void glDisable(void) { }
 void glDrawArrays(void) { }
 void glEnable(void) { }
 void glGenTextures(void) { }
 unsigned glGetError(void) { return 0; }
+void glGetIntegerv(unsigned pname, int *v) { (void)pname; *v = 0; }
 void glPixelStorei(void) { }
 void glScissor(void) { }
 void glTexParameteri(void) { }

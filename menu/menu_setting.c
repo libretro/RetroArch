@@ -15847,10 +15847,15 @@ static void settings_build_main_menu(
 
             ADD_DESC(mm_desc_10);
 
+#ifdef HAVE_PYROWAVE
+      /* PyroWave's LAN settings live here and need no recorder */
+            ADD_DESC(mm_desc_11);
+#else
       if (string_is_not_equal(settings->arrays.record_driver, "null"))
       {
             ADD_DESC(mm_desc_11);
       }
+#endif
 
             ADD_DESC(mm_desc_12);
 #ifdef HAVE_LAKKA

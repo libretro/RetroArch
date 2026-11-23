@@ -310,10 +310,10 @@ can omit pyrowave_shader_directory too. `make pyrowave-assets` only exports
 development/sample assets and is not needed to distribute the frontend.
 
 On each device, enable Settings > Recording > PyroWave LAN Discovery (off by
-default). Optionally set PyroWave Device Name. In the sender's Main Menu or Quick Menu >
-PyroWave Devices, select Send to followed by the receiver's name. The receiver
-shows a notification; Settings > Recording (also reached through Quick Menu >
-PyroWave Devices) offers Accept Incoming PyroWave Stream and Decline Incoming
+default). Optionally set PyroWave Device Name. In the sender's Settings >
+Recording or Quick Menu > PyroWave Devices, select Send to followed by the
+receiver's name. The receiver shows a notification; Settings > Recording (also
+reached through Quick Menu > PyroWave Devices) offers Accept Incoming PyroWave Stream and Decline Incoming
 PyroWave Stream. The existing game keeps running until acceptance. Stop
 PyroWave Streaming restores the loaded game without unloading its core.
 Sending and receiving both work without a game loaded. Sending uses PyroWave

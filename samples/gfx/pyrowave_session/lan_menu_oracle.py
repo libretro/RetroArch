@@ -93,11 +93,12 @@ def recording_menu(client):
             continue
         options = rows(listing)
         if 'PyroWave LAN Discovery' in options: return listing
-        if 'PyroWave Devices' in options:
-            listing = choose(client, 'PyroWave Devices')
+        # Settings > Recording holds the same list with or without content
+        if 'Recording' in options:
+            listing = choose(client, 'Recording')
             continue
-        if 'Quick Menu' in options:
-            listing = choose(client, 'Quick Menu')
+        if 'Settings' in options:
+            listing = choose(client, 'Settings')
         else:
             listing = command(client, 'MENU b')
     raise AssertionError('Cannot reach PyroWave menu: ' + listing)
