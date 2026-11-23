@@ -10880,6 +10880,11 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
 
       vkUpdateDescriptorSets(vk->context->device, 1, &write, 0, NULL);
 
+      /* Binding 1 too: a reused set can still name a texture an earlier
+       * frame's quad left there, retired since. */
+      write.dstBinding                = 1;
+      vkUpdateDescriptorSets(vk->context->device, 1, &write, 0, NULL);
+
       vkCmdBindDescriptorSets(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
             vk->pipelines.layout, 0,
             1, &set, 0, NULL);
