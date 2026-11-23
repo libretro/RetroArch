@@ -79,6 +79,9 @@ typedef struct audio_mixer_observer
    void (*samples)(void *user, const void *pcm, size_t frames, bool floating);
    void (*retain)(void *user);
    void (*release)(void *user);
+   /* Stream format during play setup, before the caller gets the voice.
+    * Source PCM frames and Hz; frames is zero for unknown duration. */
+   void (*format)(void *user, unsigned rate, uint64_t frames);
 } audio_mixer_observer_t;
 
 /* Before play only. PCM is borrowed read-only before gain/mixing;

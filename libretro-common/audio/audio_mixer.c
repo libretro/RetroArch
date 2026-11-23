@@ -2251,7 +2251,11 @@ static bool audio_mixer_play_stream(
    }
    {
       unsigned ch = 0;
-      audio_transfer_info(xfer, type, &ch, &rate, NULL);
+      uint64_t frames = 0;
+      audio_transfer_info(xfer, type, &ch, &rate,
+            sound->observer.format ? &frames : NULL);
+      if (sound->observer.format)
+         sound->observer.format(sound->observer.user, rate, frames);
       /* Wider than stereo is folded at fill time rather than refused:
        * the decoders reach eight channels (Opus) and sixteen
        * (Vorbis), and a voice mixes stereo.  Past the table's reach
@@ -2351,6 +2355,7 @@ static bool audio_mixer_play_stream_s16(
    unsigned samples     = 0;
    unsigned channels    = 0;
    unsigned rate        = 0;
+   uint64_t frames      = 0;
    void    *sbuf        = NULL;
    retro_resampler_int16_t rs;
    void *xfer = sound->prepared_transfer;
@@ -2423,7 +2428,10 @@ static bool audio_mixer_play_stream_s16(
          return false;
       }
    }
-   audio_transfer_info(xfer, type, &channels, &rate, NULL);
+   audio_transfer_info(xfer, type, &channels, &rate,
+         sound->observer.format ? &frames : NULL);
+   if (sound->observer.format)
+      sound->observer.format(sound->observer.user, rate, frames);
 
    /* Mono is expanded and anything above stereo folded at fill time,
     * as on the float path; past the downmix table's reach there is no

@@ -24,5 +24,9 @@ for spec in flac:flac:flac wav:pcm_s16le:wav mp3:libmp3lame:mp3 \
       printf XWMA | dd of="$file" bs=1 seek=8 conv=notrunc 2>/dev/null
    fi
    echo "Shutdown regression: $name"
+   expected=
+   case "$name" in flac|wav|m4a|opus) expected=5000000 ;; esac
+   if [ -n "$expected" ]; then export MUSIC_DURATION_US=$expected;
+   else unset MUSIC_DURATION_US; fi
    MUSIC_FIXTURE="$file" timeout 20 "$here/exit_drain_test"
 done

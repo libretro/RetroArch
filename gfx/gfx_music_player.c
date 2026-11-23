@@ -11,6 +11,7 @@
 struct gfx_music_player
 {
    uint64_t clock_frames;
+   int64_t duration_us; /* Published by the release store to bound. */
    gfx_music_player_t *retired_next;
    gfx_music_visualizer_t *visualizer;
    audio_mixer_voice_t *voice;
@@ -54,6 +55,18 @@ static void gfx_music_player_samples(void *user, const void *pcm,
       p->mixed_frames += frames;
       retro_atomic_store_release_size(&p->published_frames, p->mixed_frames);
    }
+}
+
+static void gfx_music_player_format(void *user, unsigned rate, uint64_t frames)
+{
+   gfx_music_player_t *p = (gfx_music_player_t*)user;
+   uint64_t maximum = (~(uint64_t)0) >> 1;
+   uint64_t seconds, duration;
+   if (!rate) return;
+   seconds = frames / rate;
+   duration = seconds > maximum / 1000000 ? maximum
+      : seconds * 1000000 + (frames % rate) * 1000000 / rate;
+   p->duration_us = (int64_t)(duration > maximum ? maximum : duration);
 }
 
 static void gfx_music_player_started(void *user, unsigned slot,
@@ -122,6 +135,7 @@ gfx_music_player_t *gfx_music_player_new(const char *path)
    memset(&viewer, 0, sizeof(viewer));
    viewer.observer.user = p;
    viewer.observer.samples = gfx_music_player_samples;
+   viewer.observer.format = gfx_music_player_format;
    viewer.observer.retain = gfx_music_player_retain;
    viewer.observer.release = gfx_music_player_release;
    viewer.active = gfx_music_player_active;
@@ -157,6 +171,8 @@ bool gfx_music_player_state(gfx_music_player_t *p, gfx_media_playback_state_t *s
    memset(state, 0, sizeof(*state));
    state->dims = VIDEO_SCALE_PACK(GFX_MUSIC_VISUALIZER_WIDTH, GFX_MUSIC_VISUALIZER_HEIGHT);
    state->paused = p->paused;
+   if (retro_atomic_load_acquire_int(&p->bound))
+      state->duration_us = p->duration_us;
    frames = retro_atomic_load_acquire_size(&p->published_frames);
    p->clock_frames += frames - p->last_published;
    p->last_published = frames;

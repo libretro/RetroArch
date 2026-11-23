@@ -229,6 +229,17 @@ int main(int argc, char *argv[])
          retro_sleep(1);
       }
       CHECK(ready, "Music viewer never acquired its mixer voice");
+      if (getenv("MUSIC_DURATION_US"))
+      {
+         gfx_media_playback_state_t state;
+         int64_t expected = (int64_t)strtol(getenv("MUSIC_DURATION_US"), NULL, 10);
+         memset(&state, 0, sizeof(state));
+         CHECK(gfx_music_player_state(music, &state), "Music state unavailable");
+         CHECK(state.duration_us >= expected - 100000
+               && state.duration_us <= expected + 100000,
+               "Music duration was %ld us, expected %ld us",
+               (long)state.duration_us, (long)expected);
+      }
       t0 = cpu_features_get_time_usec();
       retroarch_drain_tasks_for_exit();
       drain_us = cpu_features_get_time_usec() - t0;

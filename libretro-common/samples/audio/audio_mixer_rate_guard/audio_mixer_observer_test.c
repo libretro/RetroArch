@@ -5,13 +5,18 @@
 #include "../../../audio/audio_mixer.c"
 
 static audio_mixer_voice_t *observed;
-static unsigned callbacks, retains, releases;
+static unsigned callbacks, retains, releases, formats;
 static bool expect_s16, expect_stream;
 static float output_f[64];
 static int16_t output_i[64];
 
 static void observer_retain(void *user) { assert(user == &callbacks); retains++; }
 static void observer_release(void *user) { assert(user == &callbacks); releases++; }
+static void observer_format(void *user, unsigned rate, uint64_t frames)
+{
+   assert(user == &callbacks && rate == 48000 && frames == 512);
+   formats++;
+}
 static void observer_samples(void *user, const void *pcm, size_t frames, bool floating)
 {
    const void *expected;
@@ -77,7 +82,7 @@ int main(void)
          audio_mixer_observer_t observer;
          expect_s16 = s16 != 0;
          expect_stream = stream != 0;
-         callbacks = retains = releases = 0;
+         callbacks = retains = releases = formats = 0;
          audio_mixer_init(48000);
          sound = stream ? audio_mixer_load_wav_stream(first, 2092)
             : audio_mixer_load_wav(first, 2092, "sinc", RESAMPLER_QUALITY_NORMAL, expect_s16);
@@ -89,6 +94,7 @@ int main(void)
          observer.samples = observer_samples;
          observer.retain = observer_retain;
          observer.release = observer_release;
+         observer.format = observer_format;
          audio_mixer_sound_set_observer(sound, &observer);
          assert(retains == 1 && !releases);
          observed = s16 ? audio_mixer_play_s16(sound, false, AUDIO_MIXER_GAIN_UNITY / 4,
@@ -98,6 +104,7 @@ int main(void)
                "sinc", RESAMPLER_QUALITY_NORMAL, NULL)
             : audio_mixer_play(background, false, 0.5f, "sinc", RESAMPLER_QUALITY_NORMAL, NULL);
          assert(observed && other);
+         assert(formats == (stream ? 1u : 0u));
          observer_mix();
          assert(callbacks == 1);
          audio_mixer_voice_set_paused(observed, true);
