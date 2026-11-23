@@ -32,15 +32,17 @@ Wine's Z: drive has them; a D3DCompiler_47.dll next to the binary is
 taken over Wine's own (Windows-wine-views.yml). The cases that need a
 preset run only on drivers whose views take one.
 
-With RA_E2E_HDR=1 the vulkan cases have HDR10 output, HDR_CASES with
-them: in gamescope with its HDR on, or on an Xvfb of depth 30 through
-samples/gfx/vulkan_hdr_ui_pass's fake HDR10 layer. The 16-bit PQ
-screenshots are decoded back to the SDR colours the points name, and a
-case fails on any validation error or an HDR pass it should not take.
+With RA_E2E_HDR=1 the vulkan cases have HDR10 output, HDR_CASES and
+HDR_MENU_CASES with them: in gamescope with its HDR on, or on an Xvfb
+of depth 30 through samples/gfx/vulkan_hdr_ui_pass's fake HDR10 layer.
+The 16-bit PQ screenshots are decoded back to the SDR colours the
+points name, and a case fails on any validation error or an HDR pass
+it should not take.
 
 Usage: run.py <retroarch binary> <output dir> <driver> [driver ...]
 """
 
+import collections
 import ctypes
 import importlib.util
 import itertools
@@ -202,6 +204,9 @@ MENU_CASES = [
 # Pixels allowed to differ from the first mode's menu: the cursor's
 # border pulses. A menu laid out for one eye differs in over 200000.
 MENU_DIFF_MAX = 20000
+# How far the menu's brightness, the 99th percentile of max(r, g, b)
+# over the window in raw codes, may move from the first mode's.
+MENU_BRIGHTNESS_MAX = 2
 
 # RGUI is drawn in the picture's rectangle, not the whole window: a 4:3
 # picture on the 5:3 screen leaves 160-pixel black strips either side.
@@ -475,7 +480,19 @@ HDR_CASES = [
 HDR_PASSES = {'3ds-top-bottom': (True, False), '3ds-anaglyph': (True, False),
               'view-rect-ds': (True, False),
               # drawn whole, so straight to the swapchain
-              'crop-threaded-menu': (False, True)}
+              'crop-threaded-menu': (False, True),
+              'hdr-menu-brightness': (None, True)}
+# Run only with RA_E2E_HDR=1, as MENU_CASES but compared by brightness:
+# the menu in a views UI layer is encoded at menu nits, as without views.
+# Menu nits apart from paper white show a layer encoded at paper white.
+# [(name, map option, settings, stereo modes)]
+HDR_MENU_CASES = [
+    ('hdr-menu-brightness', '3ds',
+     {'menu_driver': 'rgui', 'video_hdr_menu_nits': '400'}, ('0', '2')),
+    ('hdr-menu-brightness-threaded', '3ds',
+     {'menu_driver': 'rgui', 'video_hdr_menu_nits': '400',
+      'video_threaded': 'true'}, ('0', '2')),
+]
 # PQ (SMPTE ST 2084), and Rec.2020 primaries to Rec.709 as
 # hdr_common.glsl has them.
 M1, M2 = 2610 / 16384, 2523 / 4096 * 128
@@ -1606,9 +1623,23 @@ def rows_differ(a, b, tolerance):
     return bad
 
 
-def run_menu_case(retroarch, root, driver, case):
+def max_rgb_p99(rows, bpp):
+    """The 99th percentile of max(r, g, b) over a screenshot's pixels."""
+    counts = collections.Counter()
+    for row in rows:
+        counts.update(map(max, row[0::bpp], row[1::bpp], row[2::bpp]))
+    total, seen = sum(counts.values()), 0
+    for v in sorted(counts):
+        seen += counts[v]
+        if seen * 100 >= total * 99:
+            return v
+    return 0
+
+
+def run_menu_case(retroarch, root, driver, case, brightness=False):
     """The case with the menu open in each of its stereo modes; each
-    mode's screen must match the first's."""
+    mode's screen must match the first's, or with brightness be as
+    bright, read in raw codes."""
     name, mapopt, settings, modes = case
     errors, images = [], []
     for mode in modes:
@@ -1618,11 +1649,20 @@ def run_menu_case(retroarch, root, driver, case):
         path = os.path.join(root, '%s-%s-%s' % (driver, name, mode),
                             'menu.png')
         try:
-            images.append(read_png(path) if os.path.exists(path) else None)
+            images.append(read_png(path, brightness)
+                          if os.path.exists(path) else None)
         except ValueError:
             images.append(None)
     if errors or None in images:
         return errors or ['no menu screenshot']
+    if brightness:
+        ref = max_rgb_p99(images[0][3], images[0][2])
+        for mode, (_, _, bpp, rows) in zip(modes[1:], images[1:]):
+            p99 = max_rgb_p99(rows, bpp)
+            if abs(p99 - ref) > MENU_BRIGHTNESS_MAX:
+                errors.append('stereo mode %s: menu brightness %d, mode '
+                              '%s has %d' % (mode, p99, modes[0], ref))
+        return errors
     w, h, bpp, ref = images[0]
     for mode, (_, _, mbpp, rows) in zip(modes[1:], images[1:]):
         diff = 0
@@ -2040,8 +2080,8 @@ def driver_jobs(retroarch, root, driver):
                          '?' if peak is None else '%d' % peak), errors), \
             bool(errors)
 
-    def menu_case(case):
-        errors = run_menu_case(retroarch, root, driver, case)
+    def menu_case(case, brightness=False):
+        errors = run_menu_case(retroarch, root, driver, case, brightness)
         return report('%s/%s' % (driver, case[0]), errors), bool(errors)
 
     def hdr_case(case):
@@ -2088,6 +2128,9 @@ def driver_jobs(retroarch, root, driver):
              for c in (MEMORY_CASES if driver in MEMORY_HW and not XVFB
                        else []) if wanted(c[0])]
     jobs += [lambda c=c: menu_case(c) for c in MENU_CASES if wanted(c[0])]
+    jobs += [lambda c=c: menu_case(c, True)
+             for c in (HDR_MENU_CASES if HDR and driver == 'vulkan' else [])
+             if wanted(c[0])]
     jobs += [lambda c=c: hdr_case(c)
              for c in (HDR_CASES if HDR and driver == 'vulkan' else [])
              if wanted(c[0])]

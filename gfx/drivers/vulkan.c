@@ -501,6 +501,9 @@ typedef struct vk
       bool active;
       /* The UI layer is drawn with the SDR pipeline set. */
       bool ui_sdr;
+      /* Whether the frame's pass had it set, for the layer to leave it
+       * as it found it */
+      bool ui_outer_sdr;
       /* With HDR output the views draw into FP16 under sdr_render_pass
        * for the HDR game pass to encode, unless their preset writes the
        * output's encoding (vulkan_views_chain_target()). canvas_fp16:
@@ -12201,6 +12204,7 @@ static void vulkan_views_ui_begin(vk_t *vk, video_frame_info_t *video_info,
    vk->bloom.target = &vk->views.ui;
    vkCmdEndRenderPass(vk->cmd);
    vulkan_views_begin(vk, &vk->views.ui, ui_dims, vk->views.ui_render_pass);
+   vk->views.ui_outer_sdr = (vk->flags & VK_FLAG_SDR_PIPELINE) != 0;
    if (vk->views.ui_sdr)
       vk->flags |= VK_FLAG_SDR_PIPELINE;
 
@@ -12211,21 +12215,18 @@ static void vulkan_views_ui_begin(vk_t *vk, video_frame_info_t *video_info,
          &vk->video_dims, ui_dims);
 }
 
-/* Back onto the backbuffer, and the UI layer into each area. */
-static void vulkan_views_ui_end(vk_t *vk, video_frame_info_t *video_info,
-      const struct vk_image *backbuffer, unsigned ui_dims,
-      const video_views_rect_t *areas, unsigned num_areas)
+/* Back into the frame's pass on @backbuffer, the FP16 one for the
+ * HDR offscreen buffer, with the SDR pipeline flag as that pass had
+ * it and the frame's viewport; returns the pipeline that composites
+ * a UI image there. */
+static VkPipeline vulkan_views_ui_resume(vk_t *vk,
+      video_frame_info_t *video_info, const struct vk_image *backbuffer)
 {
-   unsigned a;
    VkRenderPassBeginInfo rp;
-   struct vk_texture tex;
-   struct vk_draw_quad quad;
-
-   vulkan_views_end(vk, &vk->views.ui);
-   vk->bloom.target = backbuffer;
-   vk->flags       &= ~VK_FLAG_SDR_PIPELINE;
-   video_views_ui_leave(&vk->views.saved, &video_info->dims,
-         &vk->video_dims);
+   bool offscreen = false;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   offscreen = backbuffer == &vk->offscreen_buffer;
+#endif
 
    /* The pass drawing the views stored it; this one loads it. */
    VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, backbuffer->image,
@@ -12239,7 +12240,8 @@ static void vulkan_views_ui_end(vk_t *vk, video_frame_info_t *video_info,
 
    rp.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
    rp.pNext                    = NULL;
-   rp.renderPass               = vk->keep_render_pass;
+   rp.renderPass               = offscreen ? vk->bloom.keep_sdr_pass
+                                           : vk->keep_render_pass;
    rp.framebuffer              = backbuffer->framebuffer;
    rp.renderArea.offset.x      = 0;
    rp.renderArea.offset.y      = 0;
@@ -12250,13 +12252,37 @@ static void vulkan_views_ui_end(vk_t *vk, video_frame_info_t *video_info,
    vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
    vk->tracker.pipeline = VK_NULL_HANDLE;
 
-   /* Back to the frame's viewport: the UI's own would scissor the
-    * right eye away. */
+   if (vk->views.ui_outer_sdr)
+      vk->flags |= VK_FLAG_SDR_PIPELINE;
+   else
+      vk->flags &= ~VK_FLAG_SDR_PIPELINE;
+   /* The UI's own viewport would scissor the right eye away */
    vulkan_set_viewport(vk, video_info->dims, true, true);
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if (offscreen)
+      return vk->pipelines.alpha_premult_sdr;
+#endif
+   return vk->pipelines.alpha_premult;
+}
+
+/* Back onto the backbuffer, and the UI layer into each area. */
+static void vulkan_views_ui_end(vk_t *vk, video_frame_info_t *video_info,
+      const struct vk_image *backbuffer, unsigned ui_dims,
+      const video_views_rect_t *areas, unsigned num_areas)
+{
+   unsigned a;
+   struct vk_texture tex;
+   struct vk_draw_quad quad;
+
+   vulkan_views_end(vk, &vk->views.ui);
+   vk->bloom.target = backbuffer;
+   video_views_ui_leave(&vk->views.saved, &video_info->dims,
+         &vk->video_dims);
+
+   quad.pipeline = vulkan_views_ui_resume(vk, video_info, backbuffer);
    vulkan_views_texture(&vk->views.ui, ui_dims, vk->views.ui_format, &tex);
    quad.texture  = &tex;
    quad.mvp      = &vk->mvp_no_rot;
-   quad.pipeline = vk->pipelines.alpha_premult;
    quad.sampler  = vk->samplers.linear;
    quad.color    = RGBA16_WHITE;
    for (a = 0; a < num_areas; a++)
@@ -12360,7 +12386,8 @@ static bool vulkan_window_make(vk_t *vk, const video_windows_frame_t *f,
 /* The window UI image as one quad over the whole of @dims, in the pass
  * begun on the current target. It was drawn over transparent black, so
  * its colour is premultiplied. */
-static void vulkan_window_ui_quad(vk_t *vk, unsigned dims)
+static void vulkan_window_ui_quad(vk_t *vk, unsigned dims,
+      VkPipeline pipeline)
 {
    struct vk_texture tex;
    struct vk_draw_quad quad;
@@ -12383,7 +12410,7 @@ static void vulkan_window_ui_quad(vk_t *vk, unsigned dims)
          vk->views.ui_format, &tex);
    quad.texture  = &tex;
    quad.mvp      = &vk->mvp_no_rot;
-   quad.pipeline = vk->pipelines.alpha_premult;
+   quad.pipeline = pipeline;
    quad.sampler  = vk->samplers.linear;
    quad.color    = RGBA16_WHITE;
    vulkan_draw_quad(vk, &quad);
@@ -12531,6 +12558,7 @@ static void vulkan_window_ui_begin(vk_t *vk, video_frame_info_t *video_info,
    vkCmdEndRenderPass(vk->cmd);
    vk->bloom.target = &vk->windows.ui;
    vulkan_views_begin(vk, &vk->windows.ui, dims, vk->views.ui_render_pass);
+   vk->views.ui_outer_sdr = (vk->flags & VK_FLAG_SDR_PIPELINE) != 0;
    if (vk->views.ui_sdr)
       vk->flags |= VK_FLAG_SDR_PIPELINE;
    vk->windows.ui_pass_dims = dims;
@@ -12547,40 +12575,16 @@ static void vulkan_window_ui_end(vk_t *vk, video_frame_info_t *video_info,
       const struct vk_image *backbuffer, const video_views_ui_dims_t *saved,
       bool in_main)
 {
-   VkRenderPassBeginInfo rp;
+   VkPipeline pipeline;
 
    vulkan_views_end(vk, &vk->windows.ui);
    vk->bloom.target = backbuffer;
-   vk->flags               &= ~VK_FLAG_SDR_PIPELINE;
    vk->windows.ui_pass_dims = 0;
    video_views_ui_leave(saved, &video_info->dims, &vk->video_dims);
 
-   /* The pass drawing the views stored it; this one loads it. */
-   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, backbuffer->image,
-         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
-         | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-
-   rp.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-   rp.pNext                    = NULL;
-   rp.renderPass               = vk->keep_render_pass;
-   rp.framebuffer              = backbuffer->framebuffer;
-   rp.renderArea.offset.x      = 0;
-   rp.renderArea.offset.y      = 0;
-   rp.renderArea.extent.width  = VIDEO_SCALE_W(vk->context->swapchain_dims);
-   rp.renderArea.extent.height = VIDEO_SCALE_H(vk->context->swapchain_dims);
-   rp.clearValueCount          = 0;
-   rp.pClearValues             = NULL;
-   vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
-   vk->tracker.pipeline = VK_NULL_HANDLE;
-
-   vulkan_set_viewport(vk, video_info->dims, true, true);
+   pipeline = vulkan_views_ui_resume(vk, video_info, backbuffer);
    if (in_main)
-      vulkan_window_ui_quad(vk, vk->context->swapchain_dims);
+      vulkan_window_ui_quad(vk, vk->context->swapchain_dims, pipeline);
    /* A frame drawn whole keeps its viewport, for touch and readback. */
    if (!vk->views.active)
       vulkan_set_viewport(vk, video_info->dims, false, true);
@@ -12930,7 +12934,8 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
             vk->mvp = vk->windows.mvp;
          }
          else
-            vulkan_window_ui_quad(vk, out->dims);
+            vulkan_window_ui_quad(vk, out->dims,
+                  vk->pipelines.alpha_premult);
       }
       vkCmdEndRenderPass(vk->cmd);
       VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, out->images[out->index],
