@@ -66,10 +66,24 @@ static void test_planar_dependencies(void)
       free_glsl(glsl);free(late);
    }
 }
-static void test_planar_fusion(unsigned layout,bool smooth,bool hdr,unsigned passes)
+static char *fusion_lookup_shader(void)
 {
-   char *late=fusion_input(fusion_shader,"Pass1Texture");
-   const char *src[]={fusion_shader,fusion_shader,late};
+   static const char declaration[]="uniform sampler2D LookupA,LookupB;";
+   static const char operation[]="FragColor *= SAMPLE(LookupA,vec2(uv.x,.5))*SAMPLE(LookupB,vec2(uv.y,.5));";
+   const char *point=strstr(fusion_shader,"uniform sampler2D Texture;");
+   const char *end=strstr(point,"}\n#endif");
+   size_t prefix=(size_t)(point-fusion_shader),body=(size_t)(end-point);
+   char *out=(char*)malloc(strlen(fusion_shader)+sizeof(declaration)+sizeof(operation));
+   memcpy(out,fusion_shader,prefix);memcpy(out+prefix,declaration,strlen(declaration));
+   prefix+=strlen(declaration);memcpy(out+prefix,point,body);prefix+=body;
+   strcpy(out+prefix,operation);strcat(out+prefix,end);return out;
+}
+static void test_planar_fusion(unsigned layout,bool smooth,bool hdr,unsigned passes,unsigned lookups)
+{
+   char *lookup_source=lookups?fusion_lookup_shader():NULL;
+   const char *base=lookups?lookup_source:fusion_shader;
+   char *late=fusion_input(base,"Pass1Texture");
+   const char *src[]={base,base,late};
    glsl_shader_data_t *glsl=make_glsl(src,passes);
    gl_planar_t planar;
    struct texture_planar planes;
@@ -87,13 +101,25 @@ static void test_planar_fusion(unsigned layout,bool smooth,bool hdr,unsigned pas
 #else
    bool core_planes=true;
 #endif
-   unsigned frame,i,before,allocated;
+   unsigned frame,i,before,allocated,unit=lookups+1;
    float *hdr_expected=hdr?(float*)malloc(9*7*4*sizeof(float)):NULL;
    float *hdr_actual=hdr?(float*)malloc(9*7*4*sizeof(float)):NULL;
    bool negative=false,over_one=false;
-   printf("Planar preset: %u passes, layout %u, linear %u, HDR %u\n",passes,layout,smooth,hdr);
+   printf("Planar preset: %u passes, layout %u, linear %u, HDR %u, %u lookup tables\n",passes,layout,smooth,hdr,lookups);
    glDisable(GL_DITHER); /* match the viewer drivers before comparing RGB8 taps */
    memset(&planar,0,sizeof(planar));memset(&planes,0,sizeof(planes));memset(&image,0,sizeof(image));
+   glsl->shader->luts=lookups;
+   if(lookups)
+   {
+      uint8_t table[16*4];
+      strcpy(glsl->shader->lut[0].id,"LookupA");strcpy(glsl->shader->lut[1].id,"LookupB");
+      for(i=0;i<16;i++){table[i*4]=(uint8_t)(128+i*7);table[i*4+1]=(uint8_t)(200-i*5);table[i*4+2]=table[i*4+3]=255;}
+      glsl->lut_textures[0]=make_texture(16,1,table);
+      glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+      for(i=0;i<16;i++){table[i*4]=(uint8_t)(220-i*3);table[i*4+1]=(uint8_t)(140+i*5);}
+      glsl->lut_textures[1]=make_texture(16,1,table);
+      for(i=1;i<=passes;i++)gl_glsl_find_uniforms(glsl,i,glsl->prg[i].id,&glsl->uniforms[i]);
+   }
    glsl->shader->flags |= SHDR_FLAG_MODERN;
    glGenBuffers(1,&glsl->vbo[0].vbo_primary);glGenBuffers(1,&glsl->vbo[0].vbo_secondary);
    for(i=1;i<=passes;i++)
@@ -120,7 +146,7 @@ static void test_planar_fusion(unsigned layout,bool smooth,bool hdr,unsigned pas
    glsl->uniforms[VIDEO_SHADER_STOCK_BLEND]=glsl->uniforms[1];
    core=glsl->prg[1].id;gl_glsl_planar_prepare(glsl);
    CHECK(glsl->planar && glsl->prg[1].id==core,"planar variant compiled without changing the core program");
-   if(!glsl->planar){free(late);free(hdr_expected);free(hdr_actual);free_glsl(glsl);return;}
+   if(!glsl->planar){glDeleteTextures(lookups,glsl->lut_textures);free(lookup_source);free(late);free(hdr_expected);free(hdr_actual);free_glsl(glsl);return;}
    for(i=0;i<8;i++){u[i]=(uint8_t)(i*31);v[i]=(uint8_t)(255-i*27);}
    for(i=0;i<8;i++){pair[i*2]=layout==2?v[i]:u[i];pair[i*2+1]=layout==2?u[i]:v[i];}
    planes.planes[0]=y;planes.planes[1]=layout?pair+(layout==2):u;
@@ -148,7 +174,7 @@ static void test_planar_fusion(unsigned layout,bool smooth,bool hdr,unsigned pas
    for(frame=0;frame<4;frame++)
    {
 #if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
-      for(i=0;i<4;i++)glBindSampler(i,0);
+      for(i=0;i<unit+3;i++)glBindSampler(i,0);
 #endif
       for(i=0;i<24;i++)y[i]=(uint8_t)(frame*17+i*11);
       planes.yuv=(frame&1?IMAGE_YUV_FLAG_FULL_RANGE:0)|(frame&2?IMAGE_YUV_FLAG_BT709:0);
@@ -180,12 +206,17 @@ static void test_planar_fusion(unsigned layout,bool smooth,bool hdr,unsigned pas
       memset(y,0x11,sizeof(y));
       for(i=0;i<3;i++)
       {
-         glActiveTexture(GL_TEXTURE1+i);glBindTexture(GL_TEXTURE_2D,sentinel[i]);
+         glActiveTexture(GL_TEXTURE0+unit+i);glBindTexture(GL_TEXTURE_2D,sentinel[i]);
 #if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
-         glBindSampler(1+i,samplers[i]);
+         glBindSampler(unit+i,samplers[i]);
 #endif
       }
+      for(i=0;i<lookups;i++)
+      {
+         glActiveTexture(GL_TEXTURE1+i);glBindTexture(GL_TEXTURE_2D,sentinel[0]);
+      }
       CHECK(gl_glsl_set_media_planar(glsl,&sample),"select the precompiled sampling variant");
+      CHECK(glsl->planar->unit==unit,"plane units follow the preset's lookup bindings");
       if(frame==3){glDeleteTextures(1,&sentinel[2]);sentinel[2]=0;}
       before=fusion_draws;allocated=fusion_allocations;
       CHECK(gl_media_shader_draw(&chain,NULL,&gl_glsl_backend,glsl,source,VIDEO_SCALE_PACK(5,3),0,VIDEO_SCALE_PACK(9,7),frame,NULL,false),"run the shipping viewer chain directly from planes");
@@ -219,18 +250,29 @@ static void test_planar_fusion(unsigned layout,bool smooth,bool hdr,unsigned pas
       CHECK(gl_glsl_set_media_planar(glsl,NULL),"restore the core shader metadata");
       for(i=0;i<3;i++)
       {
-         GLint bound;glActiveTexture(GL_TEXTURE1+i);glGetIntegerv(GL_TEXTURE_BINDING_2D,&bound);
+         GLint bound;glActiveTexture(GL_TEXTURE0+unit+i);glGetIntegerv(GL_TEXTURE_BINDING_2D,&bound);
          CHECK((GLuint)bound==sentinel[i],"restore the caller's plane-unit binding");
 #if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
          glGetIntegerv(GL_SAMPLER_BINDING,&bound);
          CHECK((GLuint)bound==samplers[i],"restore the caller's sampler object");
 #endif
       }
+      for(i=0;i<lookups;i++)
+      {
+         GLint bound;
+         glActiveTexture(GL_TEXTURE1+i);glGetIntegerv(GL_TEXTURE_BINDING_2D,&bound);
+         CHECK((GLuint)bound==glsl->lut_textures[i],"lookup tables retain the normal backend bindings");
+         glGetUniformiv(glsl->planar->pass.prg.id,glsl->planar->pass.uni.lut_texture[i],&bound);
+         CHECK(bound==(GLint)(1+i),"lookup uniforms never alias the borrowed planes");
+      }
       glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,source);
       CHECK(gl_planar_pending(&planar,source,NULL,NULL),"source RGB storage remains absent");
       CHECK(gl_glsl_program(glsl,1)->id==core && !glsl->current_mat_data_pointer[1],"leave core programs and MVP caching ready for normal drawing");
    }
    if(hdr)CHECK(negative && over_one,"HDR oracle exercised negative and over-white shader pixels");
+   glsl->shader->luts++;
+   CHECK(!gl_glsl_set_media_planar(glsl,&sample),"live lookup count changes decline stale plane bindings");
+   glsl->shader->luts--;
    glsl->shader->pass[0].wrap=RARCH_WRAP_REPEAT;
    CHECK(!gl_glsl_set_media_planar(glsl,&sample),"live wrap changes decline fusion without recompiling");
    glsl->shader->pass[0].wrap=RARCH_WRAP_EDGE;
@@ -240,17 +282,27 @@ static void test_planar_fusion(unsigned layout,bool smooth,bool hdr,unsigned pas
    glsl->shader->pass[0].mipmap=true;gl_glsl_planar_prepare(glsl);
    CHECK(!glsl->planar && !gl_glsl_set_media_planar(glsl,&sample),"mipmapped sampling retains the RGB fallback");
 #if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
-   for(i=0;i<4;i++)glBindSampler(i,0);
+   for(i=0;i<unit+3;i++)glBindSampler(i,0);
 #endif
    CHECK(gl_planar_resolve(&planar,source)==source,"RGB fallback remains available after fused draws");
+   {
+      GLint limit=0;
+      glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS,&limit);
+      glsl->shader->pass[0].mipmap=false;
+      glsl->shader->luts=limit>2?(unsigned)limit-2:0;
+      gl_glsl_planar_prepare(glsl);
+      CHECK(!glsl->planar,"insufficient texture units retain RGB fallback without invalid bindings");
+      glsl->shader->luts=lookups;
+   }
    gl_media_shader_free(&chain);gl_planar_forget(&planar,source);gl_planar_forget(&planar,reference);
    glDeleteTextures(1,&source);glDeleteTextures(1,&reference);gl_planar_free(&planar);
 #if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
-   for(i=0;i<3;i++)glBindSampler(1+i,0);
+   for(i=0;i<3;i++)glBindSampler(unit+i,0);
    glDeleteSamplers(3,samplers);
 #endif
    glActiveTexture(GL_TEXTURE0);glDeleteTextures(3,sentinel);glBindFramebuffer(GL_FRAMEBUFFER,0);glDeleteFramebuffers(1,&fbo);glDeleteTextures(1,&target);
    CHECK(glGetError()==GL_NO_ERROR,"no GL state or lifetime error after fusion and fallback");
+   glDeleteTextures(lookups,glsl->lut_textures);free(lookup_source);
    free(late);free(hdr_expected);free(hdr_actual);free_glsl(glsl);
 }
 #endif
