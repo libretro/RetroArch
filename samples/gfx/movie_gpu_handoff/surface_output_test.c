@@ -30,6 +30,8 @@ bool image_transfer_anim_stream_is_hdr(const void *stream, enum image_type_enum 
 static bool planar_source, slotted;
 static gfx_surface_planes_t captured_planes;
 static unsigned plane_submits, held_plane_submits, held_plane_slot;
+static unsigned packed_submits, packed_slot;
+static const void *packed_pixels;
 #ifdef HAVE_THREADS
 static bool wrapper_active;
 bool video_driver_thread_wrapper_active(void) { return wrapper_active; }
@@ -81,10 +83,13 @@ static void saw(void *user, gfx_surface_t *s)
 {
    (void)user; CHECK(s == &surface); shown++;
 }
-enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s,
+enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s, unsigned slot,
       const void *pixels, bool rgba)
 {
-   return gfx_surface_submit_pixels(s, pixels, rgba);
+   (void)rgba;
+   CHECK(s == &surface && pixels);
+   packed_submits++; packed_slot = slot; packed_pixels = pixels;
+   return s->inflight ? GFX_SURFACE_SUBMIT_BUSY : GFX_SURFACE_SUBMIT_QUEUED;
 }
 
 enum gfx_surface_submit_result gfx_surface_submit_planes_held(gfx_surface_t *s, unsigned slot,
@@ -450,6 +455,20 @@ static void planar_start(void)
             && captured_planes.strides[0] == 64 && yuv_set == 2);
       surface.dropped = 0;
       frame.planar = NULL;
+      planar_source = false;
+      flags = gfx_surface_player_start(&gsp, 32, 16, 2);
+      CHECK(flags & VIDEO_PLAYER_BORROW_PIXELS);
+      frame.pixels = (const uint32_t*)bytes;
+      packed_submits = 0;
+      CHECK(gfx_surface_player_present(&gsp, &frame) == VIDEO_PLAYER_PRESENT_QUEUED);
+      CHECK(packed_submits == 1 && packed_slot == 1 && packed_pixels == bytes);
+      surface.img.pixels = (uint32_t*)bytes;
+      surface.dropped = 1;
+      packed_submits = 0;
+      CHECK(gfx_surface_player_release(&gsp, &surface, 1));
+      CHECK(packed_submits == 1 && packed_slot == 1 && packed_pixels == bytes);
+      surface.dropped = 0;
+      frame.pixels = NULL;
    }
    wrapper_active = false;
 #endif

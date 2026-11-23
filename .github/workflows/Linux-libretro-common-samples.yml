@@ -1483,9 +1483,12 @@ jobs:
           make clean
           CC=clang make -j$(nproc) all SANITIZER=thread
           TSAN_OPTIONS=halt_on_error=1 ./video_player_test
+          CC=clang make webp_canvas_test SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 ./webp_canvas_test
           make clean
           make -j$(nproc) all THREADS=0 SANITIZER=address,undefined
           ./video_player_test
+          make webp-check THREADS=0 SANITIZER=address,undefined
           for threads in 1 0; do
             make clean
             make -j$(nproc) all THREADS=$threads FAULT_ALLOC=1 SANITIZER=address,undefined || exit $?

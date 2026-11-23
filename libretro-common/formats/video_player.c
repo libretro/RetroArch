@@ -156,8 +156,10 @@ struct video_player
 #ifdef VIDEO_PLAYER_WORKER
    /* Each job owns its retained decoder planes through READY/HELD. */
    struct texture_planar cpu_planes[2];
+   const uint32_t *cpu_pixels[2];
    void *cpu_owner[2];
    void (*cpu_release[2])(void*);
+   bool borrow_pixels;
 #endif
    /* GPU frames, one per job (or [0] decoding in line): written by
     * the side that decodes, as the job's frame is */
@@ -463,6 +465,7 @@ static void vp_cpu_release(video_player_t *p, unsigned slot)
    if (p->cpu_owner[slot])
       p->cpu_release[slot](p->cpu_owner[slot]);
    p->cpu_owner[slot] = NULL;
+   p->cpu_pixels[slot] = NULL;
    p->cpu_release[slot] = NULL;
 }
 
@@ -587,10 +590,19 @@ static int vp_job_step(vp_job_t *job)
    }
    else if (job->rgba || native)
    {
-      /* decouples the slot from the canvas the next decode rewrites */
-      vp_copy_frame(job->frame, frame, p->width, p->height,
-            job->stride, p->width, false);
-      how = VIDEO_PLAYER_COPY;
+      if (p->borrow_pixels && image_transfer_anim_stream_retain_pixels(
+               stream, type, &p->cpu_owner[slot], &p->cpu_release[slot]))
+      {
+         p->cpu_pixels[slot] = frame;
+         how = VIDEO_PLAYER_DIRECT;
+      }
+      else
+      {
+         /* Mutable canvases still need independent slot storage. */
+         vp_copy_frame(job->frame, frame, p->width, p->height,
+               job->stride, p->width, false);
+         how = VIDEO_PLAYER_COPY;
+      }
    }
    else
    {
@@ -957,8 +969,9 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
       return VIDEO_PLAYER_PLAYING;
 
    /* READY and not queued: the frame is shown from its slot */
-   fr.planar      = p->cpu_owner[p->upload] ? &p->cpu_planes[p->upload] : NULL;
-   fr.pixels      = NULL;
+   fr.planar      = p->planar && p->cpu_owner[p->upload]
+      ? &p->cpu_planes[p->upload] : NULL;
+   fr.pixels      = p->cpu_pixels[p->upload];
    fr.slot        = p->upload;
    fr.width       = p->width;
    fr.height      = p->height;
@@ -1528,6 +1541,10 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
          return VIDEO_PLAYER_PLAYING;
       p->flags = (p->flags & VIDEO_PLAYER_INLINE) | (hw ? VP_HW
          : ((unsigned)r & (VIDEO_PLAYER_RGBA | VIDEO_PLAYER_FP16)));
+#ifdef VIDEO_PLAYER_WORKER
+      p->borrow_pixels = !hw && threaded
+         && ((unsigned)r & VIDEO_PLAYER_BORROW_PIXELS);
+#endif
       if (!hw && !threaded && ((unsigned)r & VIDEO_PLAYER_HOLD_CANVAS))
          p->flags |= VIDEO_PLAYER_HOLD_CANVAS;
       /* planes need a slot to go to, and are one format or the other */

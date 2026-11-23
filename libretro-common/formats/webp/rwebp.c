@@ -1503,6 +1503,7 @@ struct rwebp_anim_stream
     * canvas, since frames blend onto it; switched at frame boundaries
     * by rwebp_anim_stream_set_argb. */
    int       emit_argb;
+   int       independent; /* every indexed frame replaces the full canvas */
 };
 
 void rwebp_anim_stream_close(rwebp_anim_stream_t *s)
@@ -1660,6 +1661,28 @@ rwebp_anim_stream_t *rwebp_anim_stream_open_avail(const uint8_t *buf,
       goto ofail;
    }
 
+   /* Only a fully indexed animation can give away its canvas: all future
+    * frames, including after rewind, must be independent replacements. */
+   if (s->scan_done && s->avail == s->len)
+   {
+      int i;
+      s->independent = 1;
+      for (i = 0; i < s->num_anmf; i++)
+      {
+         const uint8_t *d = s->buf + s->anmf[i].off;
+         unsigned w = 1 + d[6] + ((unsigned)d[7] << 8) + ((unsigned)d[8] << 16);
+         unsigned h = 1 + d[9] + ((unsigned)d[10] << 8) + ((unsigned)d[11] << 16);
+         if (d[0] || d[1] || d[2] || d[3] || d[4] || d[5]
+               || w != (unsigned)s->canvas_w || h != (unsigned)s->canvas_h
+               || !(d[15] & 2))
+         {
+            s->independent = 0;
+            break;
+         }
+      }
+   }
+   if (s->independent)
+      return s; /* the first full replacement supplies its own canvas */
    s->canvas = (uint32_t*)calloc((size_t)s->canvas_w * s->canvas_h,
          sizeof(uint32_t));
    if (!s->canvas)
@@ -1887,6 +1910,16 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
       if (duration_ms) *duration_ms = dur;
       return s->canvas;
    }
+}
+
+void *rwebp_anim_stream_take_pixels(rwebp_anim_stream_t *s)
+{
+   void *pixels;
+   if (!s || !s->independent || !s->emitted || !s->canvas)
+      return NULL;
+   pixels = s->canvas;
+   s->canvas = NULL;
+   return pixels;
 }
 
 /* ---- Eager decode: collect every frame from a stream. ---- */

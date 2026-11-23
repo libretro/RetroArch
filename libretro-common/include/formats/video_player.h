@@ -82,6 +82,9 @@ enum video_player_flags
    /* With BORROW_PLANES, also accept decoder row padding. Without it,
     * only tight planes are borrowed, preserving efficient row uploads. */
    VIDEO_PLAYER_BORROW_STRIDED = (1 << 5),
+   /* Worker sinks may borrow immutable packed decoder frames until their
+    * slot_released callback. Other animations keep the slot-copy fallback. */
+   VIDEO_PLAYER_BORROW_PIXELS = (1 << 7),
    /* An inline sink may queue decoder-owned pixels or planes until
     * slot_released(0). Poll stop until it succeeds before freeing the stream. */
    VIDEO_PLAYER_HOLD_CANVAS = (1 << 6)
@@ -118,8 +121,9 @@ typedef struct video_player_frame
 {
    /* Movie timeline, including completed loops; -1 when unavailable. */
    int64_t time_us;
-   /* The stream's canvas, valid until the next poll, or slot_released(0)
-    * after a HOLD_CANVAS sink queues it. NULL when it is in the slot. */
+   /* A packed decoder canvas, valid until the next poll in line or until
+    * slot_released(slot) for a queued worker lease (HOLD_CANVAS: slot 0).
+    * NULL when pixels were written into the slot. */
    const uint32_t *pixels;
    unsigned slot;
    unsigned width, height;

@@ -498,9 +498,11 @@ static void st_plane_released(void *user, gfx_surface_t *surface, unsigned slot)
    *(unsigned*)user = slot;
 }
 
+static unsigned st_last_released;
 static void st_release_import(void *user, gfx_surface_t *surface, unsigned slot)
 {
-   (void)user; (void)surface; (void)slot;
+   (void)user; (void)surface;
+   st_last_released = slot;
    st_released++;
 }
 static void st_retired_imports(void)
@@ -696,7 +698,7 @@ static void st_pitched_lending(void)
       CHECK(gfx_surface_slot_writable(s, 0) && s->pitch[0] == 32,
             "one-slot pitch did not follow spare");
       for (i = 0; i < 16; i++) pixels[i] = i + 0x300;
-      gfx_surface_submit_pixels_held(s, pixels, false);
+      gfx_surface_submit_pixels_held(s, 0, pixels, false);
       CHECK(st_lent_pixels[1][8] == 0x304 && st_lent_pixels[1][24] == 0x30c,
             "external canvas was not copied row by row");
       st_lend_busy = 0;
@@ -844,27 +846,37 @@ static void st_canvas_lease(void)
 {
    uint32_t pixels[16];
    gfx_surface_t *s;
-   unsigned i, releases = st_released;
+   unsigned i, slot, releases;
    int async = st_async;
    st_async = 1;
    for (i = 0; i < 16; i++) pixels[i] = 0xff001100u + i;
-   s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 1, IMAGE_PIXFMT_8888,
-         TEXTURE_FILTER_LINEAR, st_release_import, NULL);
-   CHECK(s != NULL, "canvas lease: surface");
-   if (!s) return;
-   memset(s->slots[0], 0x55, 16 * sizeof(uint32_t));
-   CHECK(gfx_surface_submit_pixels_held(s, pixels, false) == GFX_SURFACE_SUBMIT_QUEUED,
-         "canvas lease: not queued");
-   CHECK(s->img.pixels == pixels && s->slots[0][0] == 0x55555555u,
-         "canvas lease: copied the decoder canvas");
-   CHECK(gfx_surface_submit_pixels_held(s, pixels, false) == GFX_SURFACE_SUBMIT_BUSY,
-         "canvas lease: replaced an in-flight pointer");
-   CHECK(st_released == releases, "canvas lease: released before upload");
-   st_flush();
-   CHECK(st_released == releases + 1 && st_px_first == pixels[0]
-         && st_px_last == pixels[15], "canvas lease: pixels or release");
-   gfx_surface_free(s);
-   CHECK(!st_live, "canvas lease: leaked texture");
+   for (slot = 0; slot < 2; slot++)
+   {
+      releases = st_released;
+      s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 2, IMAGE_PIXFMT_8888,
+            TEXTURE_FILTER_LINEAR, st_release_import, NULL);
+      CHECK(s != NULL, "canvas lease: surface");
+      if (!s) return;
+      memset(s->slots[slot], 0x55, 16 * sizeof(uint32_t));
+      CHECK(gfx_surface_submit_pixels_held(s, slot, pixels, false) == GFX_SURFACE_SUBMIT_QUEUED,
+            "canvas lease: not queued");
+      CHECK(s->img.pixels == pixels && s->slots[slot][0] == 0x55555555u,
+            "canvas lease: copied the decoder canvas");
+      CHECK(gfx_surface_submit_pixels_held(s, slot, pixels, false) == GFX_SURFACE_SUBMIT_BUSY,
+            "canvas lease: replaced an in-flight pointer");
+      CHECK(st_released == releases, "canvas lease: released before upload");
+      st_flush();
+      CHECK(st_released == releases + 1 && st_last_released == slot && st_px_first == pixels[0]
+            && st_px_last == pixels[15], "canvas lease: pixels or release");
+      CHECK(gfx_surface_submit_pixels_held(s, slot, pixels, false) == GFX_SURFACE_SUBMIT_QUEUED,
+            "canvas lease: update not queued");
+      CHECK(s->node.lend == 0, "canvas lease: asked for an unnecessary staging lend");
+      st_flush();
+      CHECK(st_last_released == slot && st_released == releases + 2,
+            "canvas lease: update released wrong slot");
+      gfx_surface_free(s);
+      CHECK(!st_live, "canvas lease: leaked texture");
+   }
    st_async = async;
 }
 

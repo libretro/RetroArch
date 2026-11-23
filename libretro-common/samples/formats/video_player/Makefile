@@ -55,6 +55,23 @@ $(TARGET): $(OBJS)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(OBJS) webp_canvas_test webp_canvas_test.exe
 
 .PHONY: all clean
+
+WEBP_SOURCES := webp_canvas_test.c \
+ $(LIBRETRO_COMM_DIR)/formats/video_player.c \
+ $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
+ $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.c \
+ $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c \
+ $(LIBRETRO_COMM_DIR)/formats/image/image_blit_bands.c \
+ $(filter-out video_player_test.c $(LIBRETRO_COMM_DIR)/formats/video_player.c,$(SOURCES))
+
+webp_canvas_test: $(WEBP_SOURCES) $(LIBRETRO_COMM_DIR)/include/formats/rwebp.h \
+ $(LIBRETRO_COMM_DIR)/include/formats/video_player.h $(LIBRETRO_COMM_DIR)/include/formats/image.h
+	$(CC) $(CFLAGS) -DHAVE_RWEBP $(WEBP_SOURCES) -o $@ $(LDFLAGS) -lm
+
+webp-check: webp_canvas_test
+	./webp_canvas_test
+
+.PHONY: webp-check

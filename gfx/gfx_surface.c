@@ -742,7 +742,8 @@ static enum gfx_surface_submit_result gfx_surface_submit_img(
       s->node.lend_padded = s->padded;
       s->node.lent_idx[0] = s->node.lent_idx[1] = -1;
       s->node.lent_mem[0] = s->node.lent_mem[1] = NULL;
-      if (!need_load && s->num_slots && !GFX_SURFACE_IS_PLANAR(s))
+      if (!need_load && s->num_slots && !GFX_SURFACE_IS_PLANAR(s)
+            && s->img.pixels == s->slots[slot])
       {
          if (s->num_slots >= 2)
             s->node.lend = (slot < 2 && !(s->lent & (1u << slot)))
@@ -944,14 +945,14 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
    return r;
 }
 
-enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
-      const void *pixels, bool rgba)
+static enum gfx_surface_submit_result gfx_surface_submit_pixels_slot(gfx_surface_t *s,
+      const void *pixels, bool rgba, unsigned slot)
 {
    enum gfx_surface_submit_result r;
    uint8_t fmt;
    bool narrow;
 
-   if (!s || !pixels || !s->num_slots)
+   if (!s || !pixels || !s->num_slots || slot >= s->num_slots)
    {
       GFX_INSTR_INC(GFX_INSTR_SUBMIT_FAILED);
       return GFX_SURFACE_SUBMIT_FAILED;
@@ -975,7 +976,7 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
     * thread's purposes, and is not the surface's to narrow; a slot is
     * both. Narrow on the way into it when required; otherwise copy. */
    /* With a slot lent, the driver's copy path may have no slot of its
-    * own left, so the frame goes through slot 0 like the rest. */
+    * own left, so the frame goes through its originating slot. */
    if (     narrow
          || s->lent
 #ifdef HAVE_THREADS
@@ -983,7 +984,7 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
 #endif
       )
    {
-      if (!gfx_surface_slot_writable(s, 0))
+      if (!gfx_surface_slot_writable(s, slot))
       {
          GFX_INSTR_INC(GFX_INSTR_SUBMIT_BUSY);
          return GFX_SURFACE_SUBMIT_BUSY;
@@ -995,34 +996,34 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
          {
             /* Read the caller's cached pixels once and convert straight
              * into the slot, including a driver's padded upload loan. */
-            if (s->pitch[0] == row)
-               image_texture_narrow_10bit_row(s->slots[0],
+            if (s->pitch[slot] == row)
+               image_texture_narrow_10bit_row(s->slots[slot],
                      (const uint32_t*)pixels,
                      (size_t)VIDEO_SCALE_W(s->dims) * VIDEO_SCALE_H(s->dims), rgba);
             else
                for (y = 0; y < VIDEO_SCALE_H(s->dims); y++)
                   image_texture_narrow_10bit_row(
-                     (uint32_t*)((uint8_t*)s->slots[0] + (size_t)y * s->pitch[0]),
+                     (uint32_t*)((uint8_t*)s->slots[slot] + (size_t)y * s->pitch[slot]),
                      (const uint32_t*)pixels + (size_t)y * VIDEO_SCALE_W(s->dims),
                      VIDEO_SCALE_W(s->dims), rgba);
-            s->inflight_slot = 0;
-            r = gfx_surface_prepare(s, s->slots[0], IMAGE_PIXFMT_8888,
+            s->inflight_slot = slot;
+            r = gfx_surface_prepare(s, s->slots[slot], IMAGE_PIXFMT_8888,
                   rgba, true, &fmt)
-               ? gfx_surface_submit_img(s, 0, fmt) : GFX_SURFACE_SUBMIT_FAILED;
+               ? gfx_surface_submit_img(s, slot, fmt) : GFX_SURFACE_SUBMIT_FAILED;
             if (r == GFX_SURFACE_SUBMIT_DONE)
-               gfx_surface_lend(s, 0);
+               gfx_surface_lend(s, slot);
             gfx_surface_count(r);
             return r;
          }
          GFX_INSTR_INC(GFX_INSTR_SUBMIT_COPY);
-         if (s->pitch[0] == row)
-            memcpy(s->slots[0], pixels, row * VIDEO_SCALE_H(s->dims));
+         if (s->pitch[slot] == row)
+            memcpy(s->slots[slot], pixels, row * VIDEO_SCALE_H(s->dims));
          else
             for (y = 0; y < VIDEO_SCALE_H(s->dims); y++)
-               memcpy((uint8_t*)s->slots[0] + (size_t)y * s->pitch[0],
+               memcpy((uint8_t*)s->slots[slot] + (size_t)y * s->pitch[slot],
                      (const uint8_t*)pixels + (size_t)y * row, row);
       }
-      return gfx_surface_submit(s, 0, rgba);
+      return gfx_surface_submit(s, slot, rgba);
    }
 
    r = gfx_surface_prepare(s, pixels, s->pixfmt, rgba, false, &fmt)
@@ -1032,19 +1033,31 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
    return r;
 }
 
-enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s,
+enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
+      const void *pixels, bool rgba)
+{
+   return gfx_surface_submit_pixels_slot(s, pixels, rgba, 0);
+}
+
+enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s, unsigned slot,
       const void *pixels, bool rgba)
 {
    enum gfx_surface_submit_result r;
    uint8_t fmt;
-   if (!s || !pixels || !s->num_slots)
+   if (!s || !pixels || !s->num_slots || slot >= s->num_slots)
       return GFX_SURFACE_SUBMIT_FAILED;
    if (s->inflight)
       return GFX_SURFACE_SUBMIT_BUSY;
-   if (s->lent || GFX_SURFACE_IS_PLANAR(s) || gfx_surface_must_narrow(s->pixfmt))
-      return gfx_surface_submit_pixels(s, pixels, rgba);
+   if (GFX_SURFACE_IS_PLANAR(s))
+   {
+      gfx_surface_planes_t p;
+      gfx_surface_planes_of(s, pixels, &p);
+      return gfx_surface_submit_planes_held(s, slot, &p, rgba);
+   }
+   if (s->lent || gfx_surface_must_narrow(s->pixfmt))
+      return gfx_surface_submit_pixels_slot(s, pixels, rgba, slot);
    r = gfx_surface_prepare(s, pixels, s->pixfmt, rgba, false, &fmt)
-      ? gfx_surface_submit_img(s, 0, fmt) : GFX_SURFACE_SUBMIT_FAILED;
+      ? gfx_surface_submit_img(s, slot, fmt) : GFX_SURFACE_SUBMIT_FAILED;
    gfx_surface_count(r);
    return r;
 }

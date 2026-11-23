@@ -50,6 +50,7 @@ static int gfx_surface_player_start(void *user, unsigned width,
    gsp->rgba     = have_req && req.rgba;
    gsp->threaded = num_slots > 1;
    return (gsp->hold_canvas && num_slots == 1 ? VIDEO_PLAYER_HOLD_CANVAS : 0)
+        | (gsp->hold_canvas && num_slots > 1 && !s->lent ? VIDEO_PLAYER_BORROW_PIXELS : 0)
         | (gsp->rgba ? VIDEO_PLAYER_RGBA : 0)
         | (s->pixfmt == IMAGE_PIXFMT_FP16 ? VIDEO_PLAYER_FP16 : 0)
         | (s->pixfmt == IMAGE_PIXFMT_I420 ? VIDEO_PLAYER_I420 : 0)
@@ -217,7 +218,7 @@ static enum video_player_present gfx_surface_player_present(void *user,
    else
       res = fr->pixels
          ? (gsp->hold_canvas
-               ? gfx_surface_submit_pixels_held(s, fr->pixels, gsp->rgba)
+               ? gfx_surface_submit_pixels_held(s, fr->slot, fr->pixels, gsp->rgba)
                : gfx_surface_submit_pixels(s, fr->pixels, gsp->rgba))
          : gfx_surface_submit(s, fr->slot, gsp->rgba);
    switch (res)
@@ -385,6 +386,9 @@ bool gfx_surface_player_release(gfx_surface_player_t *gsp,
          gfx_surface_set_yuv(s, s->planar.yuv);
          r = gfx_surface_submit_planes_held(s, slot, &planes, rgba);
       }
+      else if (gsp && gsp->hold_canvas && s->img.pixels
+            && s->img.pixels != s->slots[slot])
+         r = gfx_surface_submit_pixels_held(s, slot, s->img.pixels, rgba);
       else
          r = gfx_surface_submit(s, slot, rgba);
       if (r == GFX_SURFACE_SUBMIT_QUEUED) return true;

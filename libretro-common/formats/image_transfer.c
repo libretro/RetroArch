@@ -1260,6 +1260,24 @@ bool image_transfer_anim_stream_borrow_planar(
    return false;
 }
 
+bool image_transfer_anim_stream_retain_pixels(void *stream,
+      enum image_type_enum type, void **owner, void (**release)(void*))
+{
+   (void)stream; (void)type;
+   if (!owner || !release) return false;
+#ifdef HAVE_RWEBP
+   if (type == IMAGE_TYPE_WEBP)
+   {
+      void *pixels = rwebp_anim_stream_take_pixels((rwebp_anim_stream_t*)stream);
+      if (!pixels) return false;
+      *owner = pixels;
+      *release = free;
+      return true;
+   }
+#endif
+   return false;
+}
+
 bool image_transfer_anim_stream_retain_planar(const void *stream,
       enum image_type_enum type, void **owner, void (**release)(void*))
 {

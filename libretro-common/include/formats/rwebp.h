@@ -148,6 +148,12 @@ void rwebp_anim_stream_next_span(const rwebp_anim_stream_t *stream,
 
 void rwebp_anim_stream_rewind(rwebp_anim_stream_t *stream);
 
+/* Transfer the last emitted canvas when every frame in the fully indexed
+ * animation is a full no-blend replacement. NULL declines the transfer.
+ * Acquire on the decode owner; free() the returned pixels on any thread,
+ * even after further decoding, rewind, colour-order changes or stream close. */
+void *rwebp_anim_stream_take_pixels(rwebp_anim_stream_t *stream);
+
 /* Select the channel order of subsequently emitted frames: non-zero
  * for ARGB words, zero for the default memory-order R,G,B,A.  The
  * order is a property of the compositing canvas, so a switch after

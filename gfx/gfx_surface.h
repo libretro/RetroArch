@@ -463,9 +463,10 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
 
 /* As submit_pixels, but packed pixels may remain borrowed until release()
  * after QUEUED. Keep the surface and pixel owner alive and prevent writes
- * until then. Lent upload memory, narrowing and planar frames retain
- * the slot-copy path. */
-enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s,
+ * until then. Completion releases the originating @slot. Lent upload
+ * memory and narrowing retain the slot-copy path. Planar frames use the
+ * corresponding held-plane submission. */
+enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s, unsigned slot,
       const void *pixels, bool rgba);
 
 /* The colour space of a planar surface's frames from now on:

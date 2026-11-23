@@ -660,6 +660,12 @@ bool image_transfer_anim_stream_set_planar(void *stream,
  * otherwise uploads each row separately keeps the packed fallback. */
 bool image_transfer_anim_stream_borrow_planar(void *stream,
       enum image_type_enum type, bool strided);
+/* Retain the last packed frame when it can outlive decoder progress.
+ * Acquire on the decode owner. On success release(*owner) exactly once on
+ * any thread, including after stream free. False keeps the copy fallback. */
+bool image_transfer_anim_stream_retain_pixels(void *stream,
+      enum image_type_enum type, void **owner, void (**release)(void*));
+
 /* Extend the current planar borrow beyond the next decode. The decoder
  * owner acquires it; release(*owner) may run on any thread after the reader
  * finishes, including after stream free. False keeps the copy fallback. */

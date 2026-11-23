@@ -338,6 +338,11 @@ bool image_transfer_anim_stream_borrow_planar(void *stream,
 {
    (void)stream; (void)type; (void)strided; return false;
 }
+bool image_transfer_anim_stream_retain_pixels(void *stream,
+      enum image_type_enum type, void **owner, void (**release)(void*))
+{
+   (void)stream; (void)type; (void)owner; (void)release; return false;
+}
 bool image_transfer_anim_stream_retain_planar(const void *stream,
       enum image_type_enum type, void **owner, void (**release)(void*))
 {
