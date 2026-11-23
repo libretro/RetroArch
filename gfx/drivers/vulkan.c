@@ -441,9 +441,11 @@ struct vk_window
    unsigned dims;      /* native.dims the output was made at */
    uint8_t flags;      /* VK_WINDOW_FLAG_* */
 };
+#endif
 
-/* views.render_pass in a second output's own format, and alpha_premult
- * made against it */
+#if defined(HAVE_VIDEO_WINDOWS) || defined(HAVE_OPENXR)
+/* views.render_pass in a second output's or the headset's own format,
+ * and alpha_premult made against it */
 struct vk_target_pass
 {
    VkRenderPass pass;
@@ -505,8 +507,9 @@ typedef struct vk
        * Written only on the video thread, where HDR output and the
        * source format are settled. */
       retro_atomic_int_t allowed;
-#ifdef HAVE_VIDEO_WINDOWS
-      /* For second outputs in other formats than the window's */
+#if defined(HAVE_VIDEO_WINDOWS) || defined(HAVE_OPENXR)
+      /* For second outputs and the headset in other formats than the
+       * window's */
       struct vk_target_pass targets[VK_VIEWS_TARGETS];
 #endif
       /* Whether the last frame with a map was drawn whole, for
@@ -592,9 +595,15 @@ typedef struct vk
       } slots[OPENXR_MAX_SLOTS];
       video_xr_quad_set_t set;
       math_matrix_4x4 mvp;
+      /* What the pick was made for: the window's format and HDR output */
       VkFormat window_format;
+      bool window_hdr;
       VkFormat format;
       bool mutable_format;
+      /* The format the chains and image views draw in, and the render
+       * pass for it; VK_NULL_HANDLE until a pick */
+      VkFormat view_format;
+      VkRenderPass render_pass;
       bool hdr_warned;
       bool recenter_seen;
       /* A shrinking chain could not be made: the stock one draws. */
@@ -7000,8 +7009,11 @@ static void vulkan_window_hdr_free(vk_t *vk, struct vk_window *win)
       vulkan_destroy_hdr_buffer(vk->context->device, &win->hdr);
    memset(&win->hdr_target, 0, sizeof(win->hdr_target));
 }
+#endif
 
-/* The second outputs' render passes and their pipelines */
+#if defined(HAVE_VIDEO_WINDOWS) || defined(HAVE_OPENXR)
+/* The second outputs' and the headset's render passes and their
+ * pipelines */
 static void vulkan_views_targets_free(vk_t *vk)
 {
    unsigned i;
@@ -7023,10 +7035,13 @@ static void vulkan_deinit_framebuffers(vk_t *vk)
 #endif
 #ifdef HAVE_OPENXR
    unsigned s;
-   /* Made with views.render_pass, which goes below. The swapchains stay,
-    * so the headset keeps its images through a new window swapchain. */
+   /* Made with xr.render_pass, which goes below: the next frame picks
+    * again. The swapchains stay, so the headset keeps its images through
+    * a new window swapchain. */
    for (s = 0; s < OPENXR_MAX_SLOTS; s++)
       vulkan_xr_slot_free_views(vk, s);
+   vk->xr.window_format = VK_FORMAT_UNDEFINED;
+   vk->xr.render_pass   = VK_NULL_HANDLE;
 #endif
    vulkan_deinit_backbuffers(vk);
 
@@ -7057,6 +7072,8 @@ static void vulkan_deinit_framebuffers(vk_t *vk)
    memset(&vk->windows.ui_target, 0, sizeof(vk->windows.ui_target));
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       vulkan_window_hdr_free(vk, &vk->windows.win[w]);
+#endif
+#if defined(HAVE_VIDEO_WINDOWS) || defined(HAVE_OPENXR)
    /* With views.render_pass: outputs made against them are made again */
    vulkan_views_targets_free(vk);
 #endif
@@ -7415,6 +7432,18 @@ static bool vulkan_views_hdr_direct(vk_t *vk)
       || vulkan_chain_emits_hdr16(vk, vk->filter_chain);
 }
 
+/* Whether the views' preset writes HDR, in either encoding, under HDR
+ * output; screen windows and the headset then draw its screens with
+ * the stock chains. */
+static bool vulkan_views_preset_hdr(vk_t *vk)
+{
+   if (     !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+         || !*vk->views.preset)
+      return false;
+   return vulkan_chain_emits_hdr10(vk, vk->filter_chain)
+      || vulkan_chain_emits_hdr16(vk, vk->filter_chain);
+}
+
 /* A view chain's target: with HDR output an FP16 image under
  * sdr_render_pass, which the HDR game pass encodes, but the swapchain
  * for a preset's chain that writes the output's encoding itself. */
@@ -7439,7 +7468,7 @@ static void vulkan_views_fp16_update(vk_t *vk)
 {
    bool direct    = vulkan_views_hdr_direct(vk);
    vk->views.fp16 = (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) && !direct;
-   if (!direct)
+   if (!vulkan_views_preset_hdr(vk))
       vk->views.preset_hdr_logged = false;
 }
 
@@ -7473,6 +7502,61 @@ static vulkan_filter_chain_t *vulkan_views_create_stock(vk_t *vk)
       vulkan_views_hdr_semantics(vk, fc);
    return fc;
 }
+
+#ifdef HAVE_OPENXR
+/* The headset's chains draw SDR into its images, in the format of its
+ * pick; before one in the window's, under views.render_pass, which the
+ * pick keeps without HDR output. */
+static void vulkan_xr_chain_info(vk_t *vk,
+      struct vulkan_filter_chain_create_info *info)
+{
+   vulkan_views_chain_info(vk, info);
+   info->swapchain.render_pass = vk->views.render_pass;
+   if (vk->xr.render_pass)
+   {
+      info->swapchain.render_pass = vk->xr.render_pass;
+      info->swapchain.format      = vk->xr.view_format;
+   }
+}
+
+static vulkan_filter_chain_t *vulkan_xr_create_stock(vk_t *vk)
+{
+   struct vulkan_filter_chain_create_info info;
+   vulkan_xr_chain_info(vk, &info);
+   return vulkan_filter_chain_create_default(&info, vk->video.smooth
+         ? GLSLANG_FILTER_CHAIN_LINEAR
+         : GLSLANG_FILTER_CHAIN_NEAREST);
+}
+
+/* The headset's chains, after its pick or the swapchain changed. */
+static void vulkan_xr_retarget(vk_t *vk)
+{
+   unsigned v;
+   struct vulkan_filter_chain_create_info info;
+   vulkan_xr_chain_info(vk, &info);
+   for (v = 0; v < RETRO_VIDEO_VIEWS_MAX; v++)
+   {
+      if (vk->xr.chains[v])
+         vulkan_filter_chain_update_swapchain_info(vk->xr.chains[v],
+               &info.swapchain);
+      if (vk->xr.stock[v])
+         vulkan_filter_chain_update_swapchain_info(vk->xr.stock[v],
+               &info.swapchain);
+      if (vk->xr.shrink[v])
+         vulkan_filter_chain_update_swapchain_info(vk->xr.shrink[v],
+               &info.swapchain);
+   }
+   if (vk->xr.frame_chain)
+      vulkan_filter_chain_update_swapchain_info(vk->xr.frame_chain,
+            &info.swapchain);
+   if (vk->xr.frame_stock)
+      vulkan_filter_chain_update_swapchain_info(vk->xr.frame_stock,
+            &info.swapchain);
+   if (vk->xr.frame_shrink)
+      vulkan_filter_chain_update_swapchain_info(vk->xr.frame_shrink,
+            &info.swapchain);
+}
+#endif
 
 /* Parameter edits land in the main chain's preset. */
 static void vulkan_views_sync_params(vk_t *vk, vulkan_filter_chain_t *fc)
@@ -7558,9 +7642,9 @@ static void vulkan_views_build_chains(vk_t *vk)
 #ifdef HAVE_OPENXR
    /* With a headset, its own: one per view and one for the whole frame,
     * drawn from copies. */
-   info.frame_rect = false;
    if (!vk->context->xr)
       return;
+   vulkan_xr_chain_info(vk, &info);
    for (i = 0; i <= vk->views.chains.count; i++)
    {
       vulkan_filter_chain_t **chain = (i < vk->views.chains.count)
@@ -7661,15 +7745,14 @@ static bool vulkan_views_allowed(const vk_t *vk)
 }
 
 /* The context's flags are rewritten every frame, so get_flags reads
- * this copy instead. The headset shows nothing with HDR output. */
+ * this copy instead. */
 static void vulkan_views_publish(vk_t *vk)
 {
    retro_atomic_store_release_int(&vk->views.allowed,
          vulkan_views_allowed(vk) ? 1 : 0);
 #ifdef HAVE_OPENXR
    if (vk->context->xr)
-      vulkan_openxr_set_hidden(vk->context->xr, !vulkan_views_allowed(vk)
-            || (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE));
+      vulkan_openxr_set_hidden(vk->context->xr, !vulkan_views_allowed(vk));
 #endif
    vulkan_views_fp16_update(vk);
 }
@@ -9402,8 +9485,7 @@ built:
       }
    }
 
-   /* View chains index per-image state by swapchain image. The
-    * headset's keep the swapchain's render pass. */
+   /* View chains index per-image state by swapchain image. */
    filter_info.render_pass = vk->render_pass;
    preset_info             = filter_info;
    stock_info              = filter_info;
@@ -9427,28 +9509,9 @@ built:
          vulkan_views_hdr_semantics(vk,
                (vulkan_filter_chain_t*)vk->views.chains.stock[v]);
       }
-#ifdef HAVE_OPENXR
-      if (vk->xr.chains[v])
-         vulkan_filter_chain_update_swapchain_info(vk->xr.chains[v],
-               &filter_info);
-      if (vk->xr.stock[v])
-         vulkan_filter_chain_update_swapchain_info(vk->xr.stock[v],
-               &filter_info);
-      if (vk->xr.shrink[v])
-         vulkan_filter_chain_update_swapchain_info(vk->xr.shrink[v],
-               &filter_info);
-#endif
    }
 #ifdef HAVE_OPENXR
-   if (vk->xr.frame_chain)
-      vulkan_filter_chain_update_swapchain_info(vk->xr.frame_chain,
-            &filter_info);
-   if (vk->xr.frame_stock)
-      vulkan_filter_chain_update_swapchain_info(vk->xr.frame_stock,
-            &filter_info);
-   if (vk->xr.frame_shrink)
-      vulkan_filter_chain_update_swapchain_info(vk->xr.frame_shrink,
-            &filter_info);
+   vulkan_xr_retarget(vk);
 #endif
 
    /* A new swapchain can turn HDR output on or off. */
@@ -12640,6 +12703,9 @@ static void vulkan_window_ui_end(vk_t *vk, video_frame_info_t *video_info,
       vulkan_set_viewport(vk, video_info->dims, false, true);
 }
 
+#endif
+
+#if defined(HAVE_VIDEO_WINDOWS) || defined(HAVE_OPENXR)
 /* @t: a render pass as views.render_pass in @format, and alpha_premult
  * made against it; false, with neither made, when either can't be */
 static bool vulkan_views_target_make(vk_t *vk, struct vk_target_pass *t,
@@ -12751,9 +12817,9 @@ static bool vulkan_views_target_make(vk_t *vk, struct vk_target_pass *t,
    return true;
 }
 
-/* The pass a second output in @format draws in: views.render_pass in
- * the window's format, else one from views.targets, made when @make.
- * VK_NULL_HANDLE when there is none. */
+/* The pass a second output or the headset in @format draws in:
+ * views.render_pass in the window's format, else one from views.targets,
+ * made when @make. VK_NULL_HANDLE when there is none. */
 static VkRenderPass vulkan_views_target_pass(vk_t *vk, VkFormat format,
       bool make)
 {
@@ -12791,7 +12857,9 @@ static VkPipeline vulkan_views_target_premult(vk_t *vk, VkFormat format)
          return vk->views.targets[i].premult;
    return VK_NULL_HANDLE;
 }
+#endif
 
+#ifdef HAVE_VIDEO_WINDOWS
 static VkRenderPass vulkan_window_pass_for(void *data, VkFormat format)
 {
    return vulkan_views_target_pass((vk_t*)data, format, true);
@@ -12866,7 +12934,7 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
    bool hdr                           =
       (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) != 0;
    /* A preset's chains that write HDR draw for the main window only */
-   bool window_stock                  = stock || (hdr && !vk->views.fp16);
+   bool window_stock                  = stock || vulkan_views_preset_hdr(vk);
 
    vk->windows.copy = 0;
    if (!ctx)
@@ -13301,43 +13369,82 @@ static void vulkan_windows_take(vk_t *vk)
 #endif
 
 #ifdef HAVE_OPENXR
-/* The runtime's format for the window's, which the chains' final passes
- * render in: its sRGB twin through a UNORM view where there is one, so
- * the runtime reads the encoded values as sRGB. Swapchains made in
- * another format go. */
+/* The runtime's format the chains' final passes render in. Without HDR
+ * output, the window's: its sRGB twin through a UNORM view where there
+ * is one, so the runtime reads the encoded values as sRGB. With it, the
+ * headset stays SDR: 8-bit, sRGB the same way first. Swapchains made in
+ * another format go, and the chains follow a new pass. */
 static bool vulkan_xr_pick_format(vk_t *vk)
 {
-   vulkan_openxr_t *xr = vk->context->xr;
-   VkFormat window     = vk->context->swapchain_format;
-   VkFormat old        = vk->xr.format;
-   bool old_mutable    = vk->xr.mutable_format;
-   VkFormat srgb       = VK_FORMAT_UNDEFINED;
+   /* The sRGB pair is viewed as the UNORM pair */
+   static const VkFormat sdr[4] = {
+      VK_FORMAT_B8G8R8A8_SRGB,  VK_FORMAT_R8G8B8A8_SRGB,
+      VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM };
+   unsigned i;
+   vulkan_openxr_t *xr     = vk->context->xr;
+   VkFormat window         = vk->context->swapchain_format;
+   bool hdr                = (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) != 0;
+   VkFormat old            = vk->xr.format;
+   bool old_mutable        = vk->xr.mutable_format;
+   /* The pass the chains have now */
+   VkRenderPass old_pass   = vk->xr.render_pass
+      ? vk->xr.render_pass : vk->views.render_pass;
+   VkFormat srgb           = VK_FORMAT_UNDEFINED;
 
-   if (vk->xr.window_format == window)
+   if (vk->xr.window_format == window && vk->xr.window_hdr == hdr)
       return vk->xr.format != VK_FORMAT_UNDEFINED;
    vk->xr.window_format  = window;
+   vk->xr.window_hdr     = hdr;
    vk->xr.format         = VK_FORMAT_UNDEFINED;
    vk->xr.mutable_format = false;
-   if (window == VK_FORMAT_B8G8R8A8_UNORM)
-      srgb = VK_FORMAT_B8G8R8A8_SRGB;
-   else if (window == VK_FORMAT_R8G8B8A8_UNORM)
-      srgb = VK_FORMAT_R8G8B8A8_SRGB;
-   if (srgb != VK_FORMAT_UNDEFINED && vulkan_openxr_supports_format(xr, srgb))
+   vk->xr.render_pass    = VK_NULL_HANDLE;
+   if (hdr)
    {
-      vk->xr.format         = srgb;
-      vk->xr.mutable_format = true;
+      for (i = 0; i < 4; i++)
+         if (vulkan_openxr_supports_format(xr, sdr[i]))
+         {
+            vk->xr.format         = sdr[i];
+            vk->xr.mutable_format = i < 2;
+            vk->xr.view_format    = sdr[i < 2 ? i + 2 : i];
+            break;
+         }
+      if (vk->xr.format == VK_FORMAT_UNDEFINED)
+         RARCH_ERR("[OpenXR] The runtime takes no 8-bit format to draw in under HDR output.\n");
    }
-   else if (vulkan_openxr_supports_format(xr, window))
-      vk->xr.format = window;
    else
-      RARCH_ERR("[OpenXR] The runtime takes no format the window's (%d) can be drawn as.\n",
-            (int)window);
+   {
+      if (window == VK_FORMAT_B8G8R8A8_UNORM)
+         srgb = VK_FORMAT_B8G8R8A8_SRGB;
+      else if (window == VK_FORMAT_R8G8B8A8_UNORM)
+         srgb = VK_FORMAT_R8G8B8A8_SRGB;
+      if (srgb != VK_FORMAT_UNDEFINED && vulkan_openxr_supports_format(xr, srgb))
+      {
+         vk->xr.format         = srgb;
+         vk->xr.mutable_format = true;
+      }
+      else if (vulkan_openxr_supports_format(xr, window))
+         vk->xr.format = window;
+      else
+         RARCH_ERR("[OpenXR] The runtime takes no format the window's (%d) can be drawn as.\n",
+               (int)window);
+      vk->xr.view_format = window;
+   }
+   if (     vk->xr.format != VK_FORMAT_UNDEFINED
+         && !(vk->xr.render_pass = vulkan_views_target_pass(vk,
+               vk->xr.view_format, true)))
+   {
+      RARCH_ERR("[OpenXR] No render pass for the headset's format (%d).\n",
+            (int)vk->xr.view_format);
+      vk->xr.format = VK_FORMAT_UNDEFINED;
+   }
    if (     old != VK_FORMAT_UNDEFINED
          && (old != vk->xr.format || old_mutable != vk->xr.mutable_format))
    {
       vulkan_wait_own_submissions(vk);
       vulkan_xr_free(vk);
    }
+   if (vk->xr.render_pass && vk->xr.render_pass != old_pass)
+      vulkan_xr_retarget(vk);
    return vk->xr.format != VK_FORMAT_UNDEFINED;
 }
 
@@ -13397,7 +13504,7 @@ static bool vulkan_xr_slot_ensure(vk_t *vk, unsigned s, unsigned dims,
          vi.subresourceRange.baseArrayLayer = 0;
          vi.image                           = vk->xr.slots[s].images[i][l];
          vi.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-         vi.format                          = vk->context->swapchain_format;
+         vi.format                          = vk->xr.view_format;
          vi.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
          vi.subresourceRange.levelCount     = 1;
          vi.subresourceRange.layerCount     = 1;
@@ -13407,7 +13514,7 @@ static bool vulkan_xr_slot_ensure(vk_t *vk, unsigned s, unsigned dims,
          fi.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
          fi.pNext           = NULL;
          fi.flags           = 0;
-         fi.renderPass      = vk->views.render_pass;
+         fi.renderPass      = vk->xr.render_pass;
          fi.attachmentCount = 1;
          fi.pAttachments    = &vk->xr.slots[s].views[i][l];
          fi.width           = VIDEO_SCALE_W(dims);
@@ -13426,13 +13533,14 @@ error:
    return false;
 }
 
-/* Whether the headset's screens are drawn by its stock chains. */
-static bool vulkan_xr_stock(const vk_t *vk,
-      const video_frame_info_t *video_info)
+/* Whether the headset's screens are drawn by its stock chains: also
+ * for a preset that writes HDR, which its SDR images can't show. */
+static bool vulkan_xr_stock(vk_t *vk, const video_frame_info_t *video_info)
 {
    return !video_info->shader_active
       || !vk->filter_chain
-      || vk->filter_chain == vk->filter_chain_default;
+      || vk->filter_chain == vk->filter_chain_default
+      || vulkan_views_preset_hdr(vk);
 }
 
 /* The stock chain's form for a source larger than its image, for a view
@@ -13446,7 +13554,7 @@ static vulkan_filter_chain_t *vulkan_xr_shrink_chain(vk_t *vk, int view)
 
    if (*chain || vk->xr.shrink_failed)
       return *chain;
-   vulkan_views_chain_info(vk, &info);
+   vulkan_xr_chain_info(vk, &info);
    if (!(*chain = vulkan_filter_chain_create_shrink(&info)))
    {
       vk->xr.shrink_failed = true;
@@ -13547,8 +13655,15 @@ static vulkan_filter_chain_t *vulkan_xr_chain(vk_t *vk,
       chain = stock ? &vk->xr.frame_stock : &vk->xr.frame_chain;
    if (!*chain && stock && !vk->views.chains.stock_failed)
    {
-      *chain                        = vulkan_views_create_stock(vk);
+      *chain                        = vulkan_xr_create_stock(vk);
       vk->views.chains.stock_failed = !*chain;
+   }
+   if (     stock && !vk->views.preset_hdr_logged
+         && vulkan_views_preset_hdr(vk))
+   {
+      RARCH_LOG("[Vulkan] Views' preset writes HDR: screen windows "
+            "and the headset show those screens without it.\n");
+      vk->views.preset_hdr_logged = true;
    }
    if (!*chain || stock)
       return *chain;
@@ -13607,7 +13722,7 @@ static void vulkan_xr_draw_screen(vk_t *vk, unsigned s,
          vulkan_filter_chain_build_offscreen_passes(chain, vk->cmd, &vp);
       rp.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
       rp.pNext                    = NULL;
-      rp.renderPass               = vk->views.render_pass;
+      rp.renderPass               = vk->xr.render_pass;
       rp.framebuffer              = vk->xr.slots[s].framebuffers[index[l]][l];
       rp.renderArea.offset.x      = 0;
       rp.renderArea.offset.y      = 0;
@@ -13637,8 +13752,8 @@ static void vulkan_xr_draw_screen(vk_t *vk, unsigned s,
 
 /* The UI layer this frame drew, into slot s's image: copied when it has
  * the slot's size and the window's format, else drawn scaled through
- * the slot's view in the window's format, so the encoded values stay as
- * they are. */
+ * the slot's view in the headset's format, so the encoded values stay
+ * as they are. */
 static void vulkan_xr_copy_ui(vk_t *vk, unsigned s, unsigned ui_dims)
 {
    VkImageCopy region;
@@ -13666,7 +13781,7 @@ static void vulkan_xr_copy_ui(vk_t *vk, unsigned s, unsigned ui_dims)
       clear.color.float32[3] = 0.0f;
       rp.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
       rp.pNext                    = NULL;
-      rp.renderPass               = vk->views.render_pass;
+      rp.renderPass               = vk->xr.render_pass;
       rp.framebuffer              = vk->xr.slots[s].framebuffers[index][0];
       rp.renderArea.offset.x      = 0;
       rp.renderArea.offset.y      = 0;
@@ -13692,7 +13807,7 @@ static void vulkan_xr_copy_ui(vk_t *vk, unsigned s, unsigned ui_dims)
             &tex);
       quad.texture  = &tex;
       quad.mvp      = &vk->mvp_no_rot;
-      quad.pipeline = vk->pipelines.alpha_premult;
+      quad.pipeline = vulkan_views_target_premult(vk, vk->xr.view_format);
       quad.sampler  = vk->samplers.linear;
       quad.color    = RGBA16_WHITE;
       vulkan_draw_quad(vk, &quad);
@@ -13789,9 +13904,7 @@ static void vulkan_xr_draw_projection(vk_t *vk,
    for (e = 0; e < 2; e++)
    {
       VkRenderPassBeginInfo rp;
-      struct vk_draw_triangles call;
-      struct vk_buffer_range range;
-      struct vk_vertex *pv;
+      struct vk_draw_quad quad;
       unsigned index = vk->xr.slots[s].index[e];
 
       /* As vulkan_xr_draw_screen: the runtime's acquire barrier ends at
@@ -13805,7 +13918,7 @@ static void vulkan_xr_draw_projection(vk_t *vk,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
       rp.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
       rp.pNext                    = NULL;
-      rp.renderPass               = vk->views.render_pass;
+      rp.renderPass               = vk->xr.render_pass;
       rp.framebuffer              = vk->xr.slots[s].framebuffers[index][e];
       rp.renderArea.offset.x      = 0;
       rp.renderArea.offset.y      = 0;
@@ -13827,23 +13940,16 @@ static void vulkan_xr_draw_projection(vk_t *vk,
       vk->vk_vp.maxDepth = 1.0f;
       vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
 
-      if (vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
-               4 * sizeof(struct vk_vertex), &range))
-      {
-         pv = (struct vk_vertex*)range.data;
-         VULKAN_WRITE_QUAD_VBO(pv, 0.0f, 0.0f, 1.0f, 1.0f,
-               0.0f, 0.0f, 1.0f, 1.0f, RGBA16_WHITE);
-         /* Opaque: a core's frame may carry any alpha. */
-         call.pipeline     = vk->display.pipelines[0];
-         call.texture      = &vf->view_images[video_info->headset_eye[e]];
-         call.sampler      = (w == rv->width && h == rv->height)
-            ? vk->samplers.nearest : vk->samplers.linear;
-         call.uniform      = &vk->mvp_no_rot;
-         call.uniform_size = sizeof(math_matrix_4x4);
-         call.vbo          = &range;
-         call.vertices     = 4;
-         vulkan_draw_triangles(vk, &call);
-      }
+      /* Over the cleared image this writes the frame as it is, alpha
+       * too, as an opaque draw would: a core's frame may carry any
+       * alpha. alpha_premult is the one pipeline made for this pass. */
+      quad.texture  = &vf->view_images[video_info->headset_eye[e]];
+      quad.mvp      = &vk->mvp_no_rot;
+      quad.pipeline = vulkan_views_target_premult(vk, vk->xr.view_format);
+      quad.sampler  = (w == rv->width && h == rv->height)
+         ? vk->samplers.nearest : vk->samplers.linear;
+      quad.color    = RGBA16_WHITE;
+      vulkan_draw_quad(vk, &quad);
       vkCmdEndRenderPass(vk->cmd);
    }
    vk->vp                = vp;
@@ -13959,7 +14065,7 @@ static void vulkan_xr_recenter(vk_t *vk, const video_frame_info_t *video_info)
 }
 
 /* Whether the headset shows this frame: a session it can see, its
- * pixel density measured, no HDR output, and a format to draw in. */
+ * pixel density measured, no HDR10 source, and a format to draw in. */
 static bool vulkan_xr_ready(vk_t *vk)
 {
    vulkan_openxr_t *xr = vk->context->xr;
@@ -13967,11 +14073,10 @@ static bool vulkan_xr_ready(vk_t *vk)
          || !vulkan_openxr_should_draw(xr)
          || vulkan_openxr_pixels_per_radian(xr) <= 0.0f)
       return false;
-   if (     !vulkan_views_allowed(vk)
-         || (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE))
+   if (!vulkan_views_allowed(vk))
    {
       if (!vk->xr.hdr_warned)
-         RARCH_WARN("[OpenXR] The headset shows nothing while HDR output is on.\n");
+         RARCH_WARN("[OpenXR] The headset shows nothing of an HDR10 source.\n");
       vk->xr.hdr_warned = true;
       /* Nothing, rather than its last frame. */
       if (vk->xr.set.num_quads || vk->xr.proj_shown)
@@ -15176,8 +15281,10 @@ static bool vulkan_frame(void *data, const void *frame,
       vulkan_filter_chain_set_original_fps(
             fc, video_driver_get_original_fps());
 #ifdef VULKAN_HDR_SWAPCHAIN
+      /* The headset's chains, after the window's, draw SDR. */
       vulkan_filter_chain_set_passthrough(fc,
             (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) && !vk->movie_texture
+            && c < num_setup_chains
             && (vulkan_chain_emits_hdr10(vk, fc) || vulkan_chain_emits_hdr16(vk, fc)));
 #else
       vulkan_filter_chain_set_passthrough(fc, 0);
@@ -15210,7 +15317,8 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef VULKAN_HDR_SWAPCHAIN
       {
          unsigned mode = 0;
-         if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+         if (     (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+               && c < num_setup_chains)
             mode = (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? 2 : 1;
          /* The internal stock shader samples native linear input directly.
           * User presets still receive the actual output mode. */
@@ -15631,8 +15739,11 @@ static bool vulkan_frame(void *data, const void *frame,
 
       message_visible = msg && *msg;
 
+      /* views_ui_menu: headset editing keeps the menu's quad up with no
+       * other UI, and the UI layer ends this pass. */
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
           ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)
+         || views_ui_menu
          || message_visible
          || statistics_show
 #ifdef HAVE_GFX_WIDGETS
@@ -15772,6 +15883,7 @@ static bool vulkan_frame(void *data, const void *frame,
       /* Copy over back buffer to swap chain render targets */
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
           ((vk->flags & VK_FLAG_MENU_ENABLE) || (vk->flags & VK_FLAG_OVERLAY_ENABLE)
+         || views_ui_menu
          || message_visible
          || statistics_show
 #ifdef HAVE_GFX_WIDGETS
