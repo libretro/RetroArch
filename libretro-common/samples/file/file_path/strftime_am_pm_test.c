@@ -42,7 +42,8 @@ int main(void)
    unsigned i;
 
    /* Hours 1 and 13 give the two designators; whatever the host's
-    * locale calls them, they differ and follow the same clock */
+    * locale calls them, they differ and follow the same clock. A
+    * 24-hour locale (en_ZA, de_DE) has none: %p is empty for both */
    fill_tm(&tm, 13);
    len = strftime_am_pm(s, sizeof(s), "%I:%M %p", &tm);
    CHECK(len == strlen(s), "length %u for \"%s\"", (unsigned)len, s);
@@ -51,7 +52,7 @@ int main(void)
    fill_tm(&tm, 1);
    strftime_am_pm(s, sizeof(s), "%I:%M %p", &tm);
    CHECK(!strncmp(s, "01:05", 5), "01:05: \"%s\"", s);
-   CHECK(strcmp(s, first) || !strchr(s, ' '), "AM and PM read the same: \"%s\"",
+   CHECK(strcmp(s, first) || !strcmp(s, "01:05 "), "AM and PM read the same: \"%s\"",
          s);
 
    /* Repeated calls give the same text */
