@@ -2570,7 +2570,7 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
        * it go with it, so the whole map is invalidated */
       for (i = 0; i < RVP9_FRAME_BUFS; i++)
       {
-         free(d->fbs[i].y); free(d->fbs[i].u); free(d->fbs[i].v);
+         rvp9_release_planes(d->fbs[i].y);
          d->fbs[i].y = d->fbs[i].u = d->fbs[i].v = NULL;
          d->fbs[i].valid = 0;
          d->fbs[i].ref_count = 0;
@@ -2590,11 +2590,9 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
       uvsz = (size_t)d->uvs * (d->mi_rows * 4 + 32);
       for (i = 0; i < RVP9_FRAME_BUFS; i++)
       {
-         d->fbs[i].y = (uint8_t*)calloc(ysz, sizeof(RVP9_PIXEL));
-         d->fbs[i].u = (uint8_t*)calloc(uvsz, sizeof(RVP9_PIXEL));
-         d->fbs[i].v = (uint8_t*)calloc(uvsz, sizeof(RVP9_PIXEL));
+         if (!rvp9_picture_alloc(&d->fbs[i], ysz * sizeof(RVP9_PIXEL),
+                  uvsz * sizeof(RVP9_PIXEL))) return -7;
          d->fb_bit_depth = RVP9_RECON_HBD ? 10 : 8;
-         if (!d->fbs[i].y || !d->fbs[i].u || !d->fbs[i].v) return -7;
       }
       d->mi = (rvp9_mi*)calloc((size_t)d->mi_cols * d->mi_rows,
          sizeof(rvp9_mi));
@@ -2624,8 +2622,22 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
    {
       int fb = -1;
       for (i = 0; i < RVP9_FRAME_BUFS; i++)
-         if (d->fbs[i].ref_count == 0 && i != d->new_fb) { fb = i; break; }
+         if (d->fbs[i].ref_count == 0 && i != d->new_fb)
+         {
+            if (fb < 0) fb = i;
+            /* Prefer reusable storage while uploads hold other pictures. */
+            if (rvp9_picture_unheld(&d->fbs[i])) { fb = i; break; }
+         }
       if (fb < 0) return -9;
+      if (!rvp9_picture_unheld(&d->fbs[fb]))
+      {
+         size_t ysz = (size_t)d->ys * (d->mi_rows * 8 + 64);
+         size_t uvsz = (size_t)d->uvs * (d->mi_rows * 4 + 32);
+         /* The codec slot is free but its old pixels remain leased. Replace
+          * them without copying or waiting for the consumer. */
+         if (!rvp9_picture_alloc(&d->fbs[fb], ysz * sizeof(RVP9_PIXEL),
+                  uvsz * sizeof(RVP9_PIXEL))) return -7;
+      }
       d->new_fb = fb;
       d->fbs[fb].w = hd->w;
       d->fbs[fb].h = hd->h;

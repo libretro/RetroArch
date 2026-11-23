@@ -11,6 +11,7 @@ workers = [int(value) for value in os.environ.get("PIXEL_WORKERS", "1,4").split(
 with tempfile.TemporaryDirectory(prefix="rvp9-pixels-") as directory:
     path = Path(directory)
     for depth in (8, 10):
+        geometries = []
         for mode in ("crop-lossless", "tiles-aq"):
             fmt = "yuv420p" if depth == 8 else "yuv420p10le"
             size = "135x73" if mode == "crop-lossless" else "1024x160"
@@ -33,8 +34,20 @@ with tempfile.TemporaryDirectory(prefix="rvp9-pixels-") as directory:
             ], check=True)
             expected = reference.read_bytes()
             assert expected, stream
+            geometries.append((stream.read_bytes(), expected))
             for count in workers:
                 actual = stream.with_suffix("." + str(count) + ".raw")
                 subprocess.run([str(binary), str(stream), str(actual), str(count)], check=True)
                 assert actual.read_bytes() == expected, (stream.name, count)
                 print("PASS: byte-exact VP9", depth, mode, "workers", count)
+        # Keyframes switch geometry in the same decoder while earlier outputs
+        # remain retained. Both old and new pictures must survive decoder free.
+        joined = path / (str(depth) + "-geometry.ivf")
+        joined.write_bytes(geometries[0][0][:32] + b"".join(
+            data[32:] for data, _ in geometries))
+        expected = b"".join(pixels for _, pixels in geometries)
+        for count in workers:
+            actual = joined.with_suffix("." + str(count) + ".raw")
+            subprocess.run([str(binary), str(joined), str(actual), str(count)], check=True)
+            assert actual.read_bytes() == expected, (joined.name, count)
+            print("PASS: retained VP9 geometry change", depth, "workers", count)

@@ -53,6 +53,14 @@ CASES = [
         BT709 | FULL_RANGE),
     ('vp9.webm', 'webm', SOURCE + ['-c:v', 'libvpx-vp9', '-pix_fmt',
         'yuv420p'], 1, 0),
+    ('vp9_reuse.webm', 'webm', SOURCE + ['-frames:v', '64', '-c:v',
+        'libvpx-vp9', '-lag-in-frames', '16', '-auto-alt-ref', '1',
+        '-cpu-used', '8', '-pix_fmt', 'yuv420p'], 1, 0),
+    ('vp9_reuse.mp4', 'mp4', SOURCE + ['-frames:v', '64', '-c:v',
+        'libvpx-vp9', '-lag-in-frames', '16', '-auto-alt-ref', '1',
+        '-cpu-used', '8', '-pix_fmt', 'yuv420p', '-colorspace', 'bt709',
+        '-color_primaries', 'bt709', '-color_trc', 'bt709',
+        '-color_range', 'pc'] + MP4, 1, BT709 | FULL_RANGE),
     ('vp8.webm', 'webm', SOURCE + ['-c:v', 'libvpx'], 1, 0),
     ('vp9.mp4', 'mp4', SOURCE + ['-c:v', 'libvpx-vp9', '-pix_fmt',
         'yuv420p'] + MP4, 1, 0),
@@ -88,7 +96,7 @@ def main():
                 command.append(str(flags))
             env = os.environ.copy()
             env.pop('RETAIN_PLANAR', None)
-            if name.startswith(('h264', 'h265')) and planar:
+            if name.startswith(('h264', 'h265', 'vp9')) and planar:
                 env['RETAIN_PLANAR'] = '1'
             subprocess.run(command, check=True, env=env)
 

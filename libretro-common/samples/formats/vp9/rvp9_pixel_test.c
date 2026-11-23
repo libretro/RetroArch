@@ -38,10 +38,39 @@ static int write_plane(FILE *out, const uint8_t *data, unsigned width,
    return 1;
 }
 
+struct retained_frame
+{
+   struct retained_frame *next;
+   rvp9_fb fb;
+   void *owner;
+   unsigned ys, uvs, bytes;
+   uint32_t hash;
+};
+
+static uint32_t retained_hash(const struct retained_frame *lease)
+{
+   uint32_t hash = 2166136261u;
+   unsigned plane, x, y;
+   for (plane = 0; plane < 3; plane++)
+   {
+      const uint8_t *p = plane == 0 ? lease->fb.y
+            : plane == 1 ? lease->fb.u : lease->fb.v;
+      unsigned width = plane ? (lease->fb.w + 1) / 2 : lease->fb.w;
+      unsigned height = plane ? (lease->fb.h + 1) / 2 : lease->fb.h;
+      unsigned stride = plane ? lease->uvs : lease->ys;
+      for (y = 0; y < height; y++)
+         for (x = 0; x < width * lease->bytes; x++)
+            hash = (hash ^ p[(size_t)y * stride * lease->bytes + x])
+                  * 16777619u;
+   }
+   return hash;
+}
+
 int main(int argc, char **argv)
 {
    FILE *input = NULL, *out = NULL;
    rvp9_dec *d = NULL;
+   struct retained_frame *held = NULL;
    uint8_t header[32], *data = NULL;
    unsigned workers, count   = 0, bytes, size;
    size_t got;
@@ -97,6 +126,25 @@ int main(int argc, char **argv)
             || !write_plane(
                   out, fb->v, (fb->w + 1) / 2, (fb->h + 1) / 2, d->uvs, bytes))
          goto done;
+      {
+         struct retained_frame *lease =
+               (struct retained_frame*)malloc(sizeof(*lease));
+         if (!lease)
+            goto done;
+         lease->owner = rvp9_retain_planes(d, fb->y);
+         if (!lease->owner)
+         {
+            free(lease);
+            goto done;
+         }
+         lease->fb = *fb;
+         lease->ys = d->ys;
+         lease->uvs = d->uvs;
+         lease->bytes = bytes;
+         lease->hash = retained_hash(lease);
+         lease->next = held;
+         held = lease;
+      }
       count++;
    }
    if (!feof(input) || !count || fflush(out))
@@ -117,6 +165,18 @@ done:
    if (pool)
       tpool_destroy(pool);
 #endif
+   while (held)
+   {
+      struct retained_frame *next = held->next;
+      if (retained_hash(held) != held->hash)
+      {
+         fprintf(stderr, "Retained VP9 planes changed after decoding/free\n");
+         ret = 1;
+      }
+      rvp9_release_planes(held->owner);
+      free(held);
+      held = next;
+   }
    if (input)
       fclose(input);
    if (out && fclose(out))

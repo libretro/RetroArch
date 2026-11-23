@@ -2214,6 +2214,16 @@ bool rmp4_video_stream_retain_planar(const rmp4_video_stream_t *s,
    void *held;
    if (!s || !owner || !release || !s->borrowed_planar.planes[0])
       return false;
+#ifdef HAVE_RVP9
+   if (s->rndr_kind == 2)
+   {
+      held = rvp9_retain_planes(s->vp9, s->borrowed_planar.planes[0]);
+      if (!held) return false;
+      *owner = held;
+      *release = rvp9_release_planes;
+      return true;
+   }
+#endif
    if (s->rndr_kind == 4)
    {
       held = rh265_video_retain_planes(s->h265);
