@@ -55,7 +55,7 @@ $(TARGET): $(OBJS)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS) webp_canvas_test webp_canvas_test.exe apng_canvas_test apng_canvas_test.exe
+	rm -f $(TARGET) $(OBJS) webp_canvas_test webp_canvas_test.exe apng_canvas_test apng_canvas_test.exe webp_direct_test webp_direct_test.exe
 
 .PHONY: all clean
 
@@ -93,3 +93,14 @@ apng-check: apng_canvas_test
 	./apng_canvas_test
 
 .PHONY: apng-check
+
+WEBP_DIRECT_SOURCES := webp_direct_test.c $(filter-out webp_canvas_test.c,$(WEBP_SOURCES))
+
+webp_direct_test: $(WEBP_DIRECT_SOURCES) $(LIBRETRO_COMM_DIR)/include/formats/rwebp.h \
+ $(LIBRETRO_COMM_DIR)/include/formats/rvp8.h
+	$(CC) $(CFLAGS) -DHAVE_RWEBP $(WEBP_DIRECT_SOURCES) -o $@ $(LDFLAGS) -lm
+
+webp-direct-check: webp_direct_test
+	./webp_direct_test
+
+.PHONY: webp-direct-check

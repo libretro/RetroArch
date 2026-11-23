@@ -110,6 +110,10 @@ int       rvp8_rows(rvp8_dec *s, int nrows);
 uint32_t *rvp8_output(rvp8_dec *s);
 void      rvp8_filter_rows(rvp8_dec *s, int my0, int my1);
 int       rvp8_upsample_rows(rvp8_dec *s, uint32_t *pix, int j0, int max_rows);
+/* As upsample_rows, writing caller-owned rows @stride pixels apart.
+ * Returns -1 without writing when stride is smaller than the image width. */
+int       rvp8_upsample_rows_stride(rvp8_dec *s, uint32_t *pix,
+      unsigned stride, int j0, int max_rows);
 void      rvp8_abort(rvp8_dec *s);
 
 /* Persistent VP8 video decoder: decodes a sequence of frames (key and

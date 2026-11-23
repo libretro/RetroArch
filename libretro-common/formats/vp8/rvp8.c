@@ -3718,7 +3718,8 @@ int rvp8_rows(rvp8_dec *s, int nrows)
 /* Post-decode stages, resumable by row range:
  * rvp8_filter_rows applies the loop filter over MB rows [my0, my1);
  * rvp8_upsample_rows converts luma row pairs into the output buffer.
- * rvp8_output allocates the destination (call once, before either). */
+ * rvp8_output allocates a packed destination; the strided store also
+ * accepts caller-owned output rows. */
 uint32_t *rvp8_output(rvp8_dec *s)
 {
    return (uint32_t*)malloc((size_t)s->w * s->h * sizeof(uint32_t));
@@ -3752,12 +3753,14 @@ void rvp8_filter_rows(rvp8_dec *s, int my0, int my1)
  * interpolate chroma rows (j/2, j/2+1). The loop itself defines the
  * resumption point: the returned value is the next pair cursor, or h
  * when the image is complete (the caller passes it back unchanged). */
-int rvp8_upsample_rows(rvp8_dec *s, uint32_t *pix, int j0, int max_rows)
+int rvp8_upsample_rows_stride(rvp8_dec *s, uint32_t *pix,
+      unsigned stride, int j0, int max_rows)
 {
    const int w = s->w, h = s->h, ys = s->ys, uvs = s->uvs;
    uint8_t *yb = s->yb, *ub = s->ub, *vb = s->vb;
    int j     = j0;
    int limit = j0 + max_rows;
+   if (stride < (unsigned)w) return -1;
    if (j0 == 0)
       vp8_fancy_pair(yb, NULL, ub, vb, ub, vb, pix, NULL, w,
             s->fancy_uv, s->swap_rb);
@@ -3766,7 +3769,7 @@ int rvp8_upsample_rows(rvp8_dec *s, uint32_t *pix, int j0, int max_rows)
       const uint8_t *tu = ub + (j >> 1) * uvs, *tv = vb + (j >> 1) * uvs;
       vp8_fancy_pair(yb + (j+1)*ys, yb + (j+2)*ys,
             tu, tv, tu + uvs, tv + uvs,
-            pix + (size_t)(j+1)*w, pix + (size_t)(j+2)*w, w,
+            pix + (size_t)(j+1)*stride, pix + (size_t)(j+2)*stride, w,
             s->fancy_uv, s->swap_rb);
    }
    if (j + 2 >= h)
@@ -3776,12 +3779,17 @@ int rvp8_upsample_rows(rvp8_dec *s, uint32_t *pix, int j0, int max_rows)
          const uint8_t *lu = ub + ((h-1) >> 1) * uvs;
          const uint8_t *lv = vb + ((h-1) >> 1) * uvs;
          vp8_fancy_pair(yb + (size_t)(h-1)*ys, NULL, lu, lv, lu, lv,
-               pix + (size_t)(h-1)*w, NULL, w, s->fancy_uv,
+               pix + (size_t)(h-1)*stride, NULL, w, s->fancy_uv,
                s->swap_rb);
       }
       return h;
    }
    return j;
+}
+
+int rvp8_upsample_rows(rvp8_dec *s, uint32_t *pix, int j0, int max_rows)
+{
+   return rvp8_upsample_rows_stride(s, pix, (unsigned)s->w, j0, max_rows);
 }
 
 /* One-shot wrapper preserving the original entry point: used by the

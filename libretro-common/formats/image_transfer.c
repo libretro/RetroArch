@@ -1168,6 +1168,13 @@ bool image_transfer_anim_stream_set_output_stride(void *stream,
 #else
          break;
 #endif
+      case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
+         return rwebp_anim_stream_set_output_stride(
+               (rwebp_anim_stream_t*)stream, out, stride);
+#else
+         break;
+#endif
       case IMAGE_TYPE_WEBM:
 #ifdef HAVE_RWEBM
          return rwebm_video_stream_set_output_stride(
