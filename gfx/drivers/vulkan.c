@@ -433,10 +433,25 @@ struct vk_window
    video_views_layout_t *layout;
    /* The views it draws this frame, each with its own chain */
    vulkan_filter_chain_t *chains[RETRO_VIDEO_VIEWS_MAX];
+   /* With HDR output its screens draw here first, in FP16 under
+    * sdr_render_pass as the view chains are built for */
+   struct vk_image hdr;
+   video_views_target_t hdr_target;
    void *surface;      /* native.surface the output was made from */
    unsigned dims;      /* native.dims the output was made at */
    uint8_t flags;      /* VK_WINDOW_FLAG_* */
 };
+
+/* views.render_pass in a second output's own format, and alpha_premult
+ * made against it */
+struct vk_target_pass
+{
+   VkRenderPass pass;
+   VkPipeline premult;
+   VkFormat format;
+};
+
+#define VK_VIEWS_TARGETS 4
 #endif
 
 /* Frame buffers lent to the threaded wrapper at once: what it takes
@@ -491,9 +506,8 @@ typedef struct vk
        * source format are settled. */
       retro_atomic_int_t allowed;
 #ifdef HAVE_VIDEO_WINDOWS
-      /* Likewise for the screens' windows, which HDR output keeps
-       * closed. */
-      retro_atomic_int_t windows_allowed;
+      /* For second outputs in other formats than the window's */
+      struct vk_target_pass targets[VK_VIEWS_TARGETS];
 #endif
       /* Whether the last frame with a map was drawn whole, for
        * get_flags on the main thread. */
@@ -511,6 +525,8 @@ typedef struct vk
       bool fp16;
       bool canvas_fp16;
       bool scanlines_logged;
+      /* The "Views' preset writes HDR" line was logged */
+      bool preset_hdr_logged;
       /* Stock views have been drawn straight from the frame, and
        * presets' views read where they lie in it. */
       bool direct_seen;
@@ -6975,8 +6991,36 @@ static void vulkan_xr_free(vk_t *vk)
 }
 #endif
 
+#ifdef HAVE_VIDEO_WINDOWS
+/* @win's FP16 image, destroyed at once: only where no frame in flight
+ * can still read it */
+static void vulkan_window_hdr_free(vk_t *vk, struct vk_window *win)
+{
+   if (win->hdr.image)
+      vulkan_destroy_hdr_buffer(vk->context->device, &win->hdr);
+   memset(&win->hdr_target, 0, sizeof(win->hdr_target));
+}
+
+/* The second outputs' render passes and their pipelines */
+static void vulkan_views_targets_free(vk_t *vk)
+{
+   unsigned i;
+   for (i = 0; i < VK_VIEWS_TARGETS; i++)
+   {
+      vkDestroyPipeline(vk->context->device, vk->views.targets[i].premult,
+            NULL);
+      vkDestroyRenderPass(vk->context->device, vk->views.targets[i].pass,
+            NULL);
+   }
+   memset(vk->views.targets, 0, sizeof(vk->views.targets));
+}
+#endif
+
 static void vulkan_deinit_framebuffers(vk_t *vk)
 {
+#ifdef HAVE_VIDEO_WINDOWS
+   unsigned w;
+#endif
 #ifdef HAVE_OPENXR
    unsigned s;
    /* Made with views.render_pass, which goes below. The swapchains stay,
@@ -7011,6 +7055,10 @@ static void vulkan_deinit_framebuffers(vk_t *vk)
    if (vk->windows.ui.image)
       vulkan_destroy_hdr_buffer(vk->context->device, &vk->windows.ui);
    memset(&vk->windows.ui_target, 0, sizeof(vk->windows.ui_target));
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      vulkan_window_hdr_free(vk, &vk->windows.win[w]);
+   /* With views.render_pass: outputs made against them are made again */
+   vulkan_views_targets_free(vk);
 #endif
    vkDestroyRenderPass(vk->context->device, vk->views.render_pass, NULL);
    vkDestroyRenderPass(vk->context->device, vk->views.ui_render_pass, NULL);
@@ -7389,8 +7437,10 @@ static void vulkan_views_chain_target(vk_t *vk,
 /* views.fp16, for the targets vulkan_views_chain_target() gives */
 static void vulkan_views_fp16_update(vk_t *vk)
 {
-   vk->views.fp16 = (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
-      && !vulkan_views_hdr_direct(vk);
+   bool direct    = vulkan_views_hdr_direct(vk);
+   vk->views.fp16 = (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) && !direct;
+   if (!direct)
+      vk->views.preset_hdr_logged = false;
 }
 
 static void vulkan_views_chain_info(vk_t *vk,
@@ -7611,17 +7661,11 @@ static bool vulkan_views_allowed(const vk_t *vk)
 }
 
 /* The context's flags are rewritten every frame, so get_flags reads
- * this copy instead. The screens' windows and the headset show nothing
- * with HDR output. */
+ * this copy instead. The headset shows nothing with HDR output. */
 static void vulkan_views_publish(vk_t *vk)
 {
    retro_atomic_store_release_int(&vk->views.allowed,
          vulkan_views_allowed(vk) ? 1 : 0);
-#ifdef HAVE_VIDEO_WINDOWS
-   retro_atomic_store_release_int(&vk->views.windows_allowed,
-         (     vulkan_views_allowed(vk)
-            && !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)) ? 1 : 0);
-#endif
 #ifdef HAVE_OPENXR
    if (vk->context->xr)
       vulkan_openxr_set_hidden(vk->context->xr, !vulkan_views_allowed(vk)
@@ -11623,28 +11667,31 @@ static bool vulkan_views_retire(vk_t *vk, struct vk_image *img)
    return true;
 }
 
-/* Makes img a target sized dims: the UI layer in its format and render
- * pass, the canvas in the window's. */
+/* Makes img a target sized dims: the UI layers in their format and
+ * render pass, the canvas in the window's, a screen window's FP16
+ * image as the view chains draw under HDR output. */
 static bool vulkan_views_make(vk_t *vk, struct vk_image *img, unsigned dims)
 {
-   bool ui                           = (img == &vk->views.ui);
    const VkPhysicalDeviceLimits *lim = &vk->context->gpu_properties.limits;
    unsigned w                        = VIDEO_SCALE_W(dims);
    unsigned h                        = VIDEO_SCALE_H(dims);
    VkFormat format                   = vk->views.ui_format;
    VkRenderPass pass                 = vk->views.ui_render_pass;
-#ifdef HAVE_VIDEO_WINDOWS
-   if (img == &vk->windows.ui)
-      ui = true;
-#endif
    /* The canvas: FP16 while the views draw into it */
-   if (!ui)
+   if (img == &vk->views.canvas)
    {
       vk->views.canvas_fp16 = vk->views.fp16;
       format = vk->views.fp16
          ? VK_FORMAT_R16G16B16A16_SFLOAT : vk->context->swapchain_format;
       pass   = vk->views.fp16 ? vk->sdr_render_pass : vk->views.render_pass;
    }
+#ifdef HAVE_VIDEO_WINDOWS
+   else if (img != &vk->views.ui && img != &vk->windows.ui)
+   {
+      format = VK_FORMAT_R16G16B16A16_SFLOAT;
+      pass   = vk->sdr_render_pass;
+   }
+#endif
    /* A canvas twice the window's width can pass the device's limits. */
    if (     w <= lim->maxImageDimension2D && h <= lim->maxImageDimension2D
          && w <= lim->maxFramebufferWidth && h <= lim->maxFramebufferHeight)
@@ -12302,8 +12349,8 @@ static void vulkan_views_ui_end(vk_t *vk, video_frame_info_t *video_info,
 
 /* Window @w let go of: its output retired, then the context's window,
  * which @keep leaves up for the next driver where the context can, and
- * input stops mapping into it. Never waits: while its output is not
- * done the id stays live, and a later frame finishes it. */
+ * input stops mapping into it. Never waits: while its output or image
+ * is not done the id stays live, and a later frame finishes it. */
 static void vulkan_window_retire(vk_t *vk, unsigned w, bool keep)
 {
    struct vk_window *win              = &vk->windows.win[w];
@@ -12317,6 +12364,9 @@ static void vulkan_window_retire(vk_t *vk, unsigned w, bool keep)
    }
    win->flags &= ~(VK_WINDOW_FLAG_PREPARED | VK_WINDOW_FLAG_DRAWN
          | VK_WINDOW_FLAG_SCREENS | VK_WINDOW_FLAG_UP);
+   vulkan_vv_target_drop(vk, &win->hdr_target, &win->hdr);
+   if (win->hdr_target.made)
+      return;
    if (     (win->flags & VK_WINDOW_FLAG_OUTPUT)
          && !vulkan_output_retire(&win->output))
       return;
@@ -12383,11 +12433,11 @@ static bool vulkan_window_make(vk_t *vk, const video_windows_frame_t *f,
    return true;
 }
 
-/* The window UI image as one quad over the whole of @dims, in the pass
- * begun on the current target. It was drawn over transparent black, so
- * its colour is premultiplied. */
-static void vulkan_window_ui_quad(vk_t *vk, unsigned dims,
-      VkPipeline pipeline)
+/* @img, of @img_dims in @format, as one quad over the whole of @dims,
+ * in the pass begun on the current target. It was drawn over
+ * transparent black, so its colour is premultiplied. */
+static void vulkan_window_quad(vk_t *vk, const struct vk_image *img,
+      unsigned img_dims, VkFormat format, unsigned dims, VkPipeline pipeline)
 {
    struct vk_texture tex;
    struct vk_draw_quad quad;
@@ -12406,8 +12456,7 @@ static void vulkan_window_ui_quad(vk_t *vk, unsigned dims,
    vk->vk_vp.minDepth = 0.0f;
    vk->vk_vp.maxDepth = 1.0f;
    vk->tracker.dirty |= VULKAN_DIRTY_DYNAMIC_BIT;
-   vulkan_views_texture(&vk->windows.ui, vk->windows.ui_target.dims,
-         vk->views.ui_format, &tex);
+   vulkan_views_texture(img, img_dims, format, &tex);
    quad.texture  = &tex;
    quad.mvp      = &vk->mvp_no_rot;
    quad.pipeline = pipeline;
@@ -12464,9 +12513,7 @@ static unsigned vulkan_window_ui_prepare(vk_t *vk,
       vulkan_vv_target_drop(vk, &vk->windows.ui_target, &vk->windows.ui);
       return 0;
    }
-   if (     !vulkan_views_allowed(vk)
-         || (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
-         || !vk->pipelines.alpha_premult)
+   if (!vulkan_views_allowed(vk) || !vk->pipelines.alpha_premult)
       return 0;
    drawn = VIDEO_WINDOW_UI_DRAWN(layers, menu, msg,
          video_info->statistics_show, video_info->widgets_visible);
@@ -12479,8 +12526,10 @@ static unsigned vulkan_window_ui_prepare(vk_t *vk,
     * this frame */
    if (!ready && (vk->windows.win[w].flags & VK_WINDOW_FLAG_UP))
       return layers;
-   /* Laid out at the window's size: drawn in its own pass, no image */
-   direct = ready && dims == vk->windows.win[w].output.dims;
+   /* Laid out at the window's size: drawn in its own pass, no image.
+    * Not with HDR output, whose UI pipelines are for FP16 targets. */
+   direct = ready && dims == vk->windows.win[w].output.dims
+      && !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE);
    if (direct)
       vulkan_vv_target_drop(vk, &vk->windows.ui_target, &vk->windows.ui);
    else if (!vulkan_vv_target_ensure(vk, &vk->windows.ui_target,
@@ -12584,18 +12633,168 @@ static void vulkan_window_ui_end(vk_t *vk, video_frame_info_t *video_info,
 
    pipeline = vulkan_views_ui_resume(vk, video_info, backbuffer);
    if (in_main)
-      vulkan_window_ui_quad(vk, vk->context->swapchain_dims, pipeline);
+      vulkan_window_quad(vk, &vk->windows.ui, vk->windows.ui_target.dims,
+            vk->views.ui_format, vk->context->swapchain_dims, pipeline);
    /* A frame drawn whole keeps its viewport, for touch and readback. */
    if (!vk->views.active)
       vulkan_set_viewport(vk, video_info->dims, false, true);
 }
 
-/* The views' render pass, for a window in the main window's format */
+/* @t: a render pass as views.render_pass in @format, and alpha_premult
+ * made against it; false, with neither made, when either can't be */
+static bool vulkan_views_target_make(vk_t *vk, struct vk_target_pass *t,
+      VkFormat format)
+{
+   VkRenderPassCreateInfo rp_info;
+   VkAttachmentDescription attachment;
+   VkAttachmentReference color_ref;
+   VkSubpassDescription subpass;
+   VkPipelineShaderStageCreateInfo stages[2];
+   struct vk_effect_template tpl;
+   VkShaderModuleCreateInfo module_info;
+   VkDevice device = vk->context->device;
+   VkResult res    = VK_ERROR_INITIALIZATION_FAILED;
+
+   if (!vk->display.effect_tpl[0].valid)
+      return false;
+   memset(&attachment, 0, sizeof(attachment));
+   attachment.format          = format;
+   attachment.samples         = VK_SAMPLE_COUNT_1_BIT;
+   attachment.loadOp          = VK_ATTACHMENT_LOAD_OP_CLEAR;
+   attachment.storeOp         = VK_ATTACHMENT_STORE_OP_STORE;
+   attachment.stencilLoadOp   = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+   attachment.stencilStoreOp  = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+   attachment.initialLayout   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   attachment.finalLayout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   color_ref.attachment       = 0;
+   color_ref.layout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+   memset(&subpass, 0, sizeof(subpass));
+   subpass.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
+   subpass.colorAttachmentCount = 1;
+   subpass.pColorAttachments    = &color_ref;
+   memset(&rp_info, 0, sizeof(rp_info));
+   rp_info.sType                = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+   rp_info.attachmentCount      = 1;
+   rp_info.pAttachments         = &attachment;
+   rp_info.subpassCount         = 1;
+   rp_info.pSubpasses           = &subpass;
+   if (vkCreateRenderPass(device, &rp_info, NULL, &t->pass) != VK_SUCCESS)
+   {
+      t->pass = VK_NULL_HANDLE;
+      return false;
+   }
+
+   /* alpha_premult's state, as the menu effects captured it */
+   tpl = vk->display.effect_tpl[0];
+   tpl.input_assembly.topology               =
+      VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+   tpl.input_assembly.primitiveRestartEnable = VK_FALSE;
+   tpl.binding.stride                        = sizeof(struct vk_vertex);
+   tpl.vertex_input.vertexAttributeDescriptionCount = 3;
+   tpl.vertex_input.pVertexBindingDescriptions      = &tpl.binding;
+   tpl.vertex_input.pVertexAttributeDescriptions    = tpl.attributes;
+   tpl.blend_attachment.blendEnable         = VK_TRUE;
+   tpl.blend_attachment.colorWriteMask      = 0xf;
+   tpl.blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+   tpl.blend_attachment.dstColorBlendFactor =
+      VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+   tpl.blend_attachment.colorBlendOp        = VK_BLEND_OP_ADD;
+   tpl.blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+   tpl.blend_attachment.dstAlphaBlendFactor =
+      VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+   tpl.blend_attachment.alphaBlendOp        = VK_BLEND_OP_MAX;
+   tpl.blend.pAttachments                   = &tpl.blend_attachment;
+   tpl.pipe.pVertexInputState               = &tpl.vertex_input;
+   tpl.pipe.pInputAssemblyState             = &tpl.input_assembly;
+   tpl.pipe.pRasterizationState             = &tpl.raster;
+   tpl.pipe.pColorBlendState                = &tpl.blend;
+   tpl.pipe.pMultisampleState               = &tpl.multisample;
+   tpl.pipe.pViewportState                  = &tpl.vp;
+   tpl.pipe.pDepthStencilState              = &tpl.depth_stencil;
+   tpl.pipe.pDynamicState                   = &tpl.dynamic;
+   tpl.pipe.stageCount                      = 2;
+   tpl.pipe.pStages                         = stages;
+   tpl.pipe.renderPass                      = t->pass;
+
+   memset(&module_info, 0, sizeof(module_info));
+   module_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+   memset(stages, 0, sizeof(stages));
+   stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+   stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+   stages[0].pName = "main";
+   stages[1]       = stages[0];
+   stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+   module_info.codeSize = spirv_alpha_blend_vert_size;
+   module_info.pCode    = spirv_alpha_blend_vert;
+   if (vkCreateShaderModule(device, &module_info, NULL,
+            &stages[0].module) == VK_SUCCESS)
+   {
+      module_info.codeSize = spirv_alpha_blend_frag_size;
+      module_info.pCode    = spirv_alpha_blend_frag;
+      if (vkCreateShaderModule(device, &module_info, NULL,
+               &stages[1].module) == VK_SUCCESS)
+      {
+         res = vkCreateGraphicsPipelines(device, vk->pipelines.cache, 1,
+               &tpl.pipe, NULL, &t->premult);
+         vkDestroyShaderModule(device, stages[1].module, NULL);
+      }
+      vkDestroyShaderModule(device, stages[0].module, NULL);
+   }
+   if (res != VK_SUCCESS)
+   {
+      vkDestroyRenderPass(device, t->pass, NULL);
+      t->pass    = VK_NULL_HANDLE;
+      t->premult = VK_NULL_HANDLE;
+      return false;
+   }
+   t->format = format;
+   return true;
+}
+
+/* The pass a second output in @format draws in: views.render_pass in
+ * the window's format, else one from views.targets, made when @make.
+ * VK_NULL_HANDLE when there is none. */
+static VkRenderPass vulkan_views_target_pass(vk_t *vk, VkFormat format,
+      bool make)
+{
+   unsigned i;
+   struct vk_target_pass *free_slot = NULL;
+
+   if (format == vk->context->swapchain_format)
+      return vk->views.render_pass;
+   for (i = 0; i < VK_VIEWS_TARGETS; i++)
+   {
+      struct vk_target_pass *t = &vk->views.targets[i];
+      if (t->pass == VK_NULL_HANDLE)
+      {
+         if (!free_slot)
+            free_slot = t;
+      }
+      else if (t->format == format)
+         return t->pass;
+   }
+   if (     !make || !free_slot
+         || !vulkan_views_target_make(vk, free_slot, format))
+      return VK_NULL_HANDLE;
+   return free_slot->pass;
+}
+
+/* alpha_premult for that pass */
+static VkPipeline vulkan_views_target_premult(vk_t *vk, VkFormat format)
+{
+   unsigned i;
+   if (format == vk->context->swapchain_format)
+      return vk->pipelines.alpha_premult;
+   for (i = 0; i < VK_VIEWS_TARGETS; i++)
+      if (     vk->views.targets[i].pass != VK_NULL_HANDLE
+            && vk->views.targets[i].format == format)
+         return vk->views.targets[i].premult;
+   return VK_NULL_HANDLE;
+}
+
 static VkRenderPass vulkan_window_pass_for(void *data, VkFormat format)
 {
-   vk_t *vk = (vk_t*)data;
-   return format == vk->context->swapchain_format
-      ? vk->views.render_pass : VK_NULL_HANDLE;
+   return vulkan_views_target_pass((vk_t*)data, format, true);
 }
 
 /* @win's output for the surface it has now: made the first time,
@@ -12615,8 +12814,8 @@ static int vulkan_window_output(vk_t *vk, struct vk_window *win)
          && (     win->surface != win->native.surface
                /* Its framebuffers are for a pass a swapchain rebuild
                 * destroyed */
-               || out->render_pass != vulkan_window_pass_for(vk,
-                  out->format)))
+               || out->render_pass != vulkan_views_target_pass(vk,
+                  out->format, false)))
    {
       win->flags |= VK_WINDOW_FLAG_DROP;
       vulkan_output_retire(out);
@@ -12625,7 +12824,8 @@ static int vulkan_window_output(vk_t *vk, struct vk_window *win)
    if (!(win->flags & VK_WINDOW_FLAG_OUTPUT))
    {
       memset(out, 0, sizeof(*out));
-      /* The chains' final passes draw in it, as for the headset */
+      /* The chains' final passes draw in it, as for the headset, or
+       * with HDR output the copy of their FP16 image */
       out->pass_for    = vulkan_window_pass_for;
       out->pass_data   = vk;
       out->sdr_10bit   = vk->context->swapchain_settings.bit_depth == 2;
@@ -12663,6 +12863,10 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
    const video_windows_frame_t *f     = video_info->windows;
    const gfx_ctx_window_driver_t *ctx = vk->ctx_driver
       ? vk->ctx_driver->windows : NULL;
+   bool hdr                           =
+      (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) != 0;
+   /* A preset's chains that write HDR draw for the main window only */
+   bool window_stock                  = stock || (hdr && !vk->views.fp16);
 
    vk->windows.copy = 0;
    if (!ctx)
@@ -12772,12 +12976,8 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
             || !VIDEO_SCALE_H(win->native.dims))
          continue;
       /* Views the main window draws whole are not drawn here either; a
-       * repeat keeps the last image unless the UI is drawn there. Nor
-       * with HDR output: the view chains are then built for the main
-       * window's passes, and a frame laid out before HDR came on can
-       * still name screens */
+       * repeat keeps the last image unless the UI is drawn there */
       screens = views && f->window_screens[w]
-         && !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
          && (new_frame || f->window_ui[w]);
       state   = vulkan_window_output(vk, win);
       if (state > 0 && !screens && !f->window_ui[w])
@@ -12814,9 +13014,24 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
          video_driver_window_layout_screens(f, f->window_screens[w],
                out->dims, win->layout);
          screens = vulkan_vv_pick_chains(vk, &vk->views.chains,
-               &video_info->views, win->layout, stock,
+               &video_info->views, win->layout, window_stock,
                !win->layout->offscreen, out->dims, win->chains, rects);
+         if (screens && window_stock && !stock
+               && !vk->views.preset_hdr_logged)
+         {
+            RARCH_LOG("[Vulkan] Views' preset writes HDR: screen windows "
+                  "and the headset show those screens without it.\n");
+            vk->views.preset_hdr_logged = true;
+         }
       }
+      /* With HDR output the screens draw in FP16, as the view chains
+       * are built for, then onto the window's own swapchain */
+      if (!hdr)
+         vulkan_vv_target_drop(vk, &win->hdr_target, &win->hdr);
+      else if (screens)
+         screens = vulkan_views_target_premult(vk, out->format)
+            && vulkan_vv_target_ensure(vk, &win->hdr_target, &win->hdr,
+                  out->dims);
       if (screens)
       {
          for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
@@ -12878,6 +13093,8 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
    math_matrix_4x4 mvp            = vk->mvp;
    const video_windows_frame_t *f = video_info->windows;
    bool drawn                     = false;
+   bool hdr                       =
+      (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) != 0;
 
    d.video_info        = video_info;
    d.direct            = vk->windows.direct;
@@ -12887,6 +13104,7 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
    {
       VkClearValue clear;
       VkRenderPassBeginInfo rp;
+      VkPipeline premult;
       bool screens;
       struct vk_window *win = &vk->windows.win[w];
       vulkan_output_t *out  = &win->output;
@@ -12906,6 +13124,19 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
          memset(win->layout, 0, sizeof(*win->layout));
          win->layout->canvas_dims = out->dims;
       }
+      /* Into its FP16 image, which its SDR swapchain takes as a copy:
+       * the view chains are shared with the main window and built for
+       * FP16 there */
+      if (screens && hdr)
+      {
+         vulkan_views_begin(vk, &win->hdr, out->dims, vk->sdr_render_pass);
+         vk->flags |= VK_FLAG_SDR_PIPELINE;
+         vulkan_vv_draw_placements(vk, &d, win->layout, win->chains,
+               !win->layout->offscreen, out->dims, d.direct != NULL);
+         vk->flags &= ~VK_FLAG_SDR_PIPELINE;
+         vulkan_views_end(vk, &win->hdr);
+      }
+      premult = vulkan_views_target_premult(vk, out->format);
 
       /* Its acquire fence has signalled: nothing reads it any more */
       VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, out->images[out->index],
@@ -12920,7 +13151,7 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
       clear.color.float32[3]      = 0.0f;
       rp.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
       rp.pNext                    = NULL;
-      rp.renderPass               = vk->views.render_pass;
+      rp.renderPass               = out->render_pass;
       rp.framebuffer              = out->framebuffers[out->index];
       rp.renderArea.offset.x      = 0;
       rp.renderArea.offset.y      = 0;
@@ -12931,7 +13162,10 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
       vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
       vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
       vk->tracker.pipeline = VK_NULL_HANDLE;
-      if (screens)
+      if (screens && hdr)
+         vulkan_window_quad(vk, &win->hdr, out->dims,
+               VK_FORMAT_R16G16B16A16_SFLOAT, out->dims, premult);
+      else if (screens)
          vulkan_vv_draw_placements(vk, &d, win->layout, win->chains,
                !win->layout->offscreen, out->dims, d.direct != NULL);
       if (vk->windows.ui_window == w)
@@ -12943,8 +13177,9 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
             vk->mvp = vk->windows.mvp;
          }
          else
-            vulkan_window_ui_quad(vk, out->dims,
-                  vk->pipelines.alpha_premult);
+            vulkan_window_quad(vk, &vk->windows.ui,
+                  vk->windows.ui_target.dims, vk->views.ui_format,
+                  out->dims, premult);
       }
       vkCmdEndRenderPass(vk->cmd);
       VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, out->images[out->index],
@@ -13035,6 +13270,7 @@ static void vulkan_windows_free(vk_t *vk)
       keep = !(vk->windows.win[w].flags & VK_WINDOW_FLAG_CLOSE);
       if (vk->windows.win[w].flags & VK_WINDOW_FLAG_OUTPUT)
          vulkan_output_finish(&vk->windows.win[w].output);
+      vulkan_window_hdr_free(vk, &vk->windows.win[w]);
       vulkan_window_retire(vk, w, keep);
    }
 }
@@ -18412,7 +18648,7 @@ static uint32_t vulkan_get_flags(void *data)
     * second display */
    if (     vk && vk->ctx_driver
          && video_windows_usable(vk->ctx_driver->windows)
-         && retro_atomic_load_acquire_int(&vk->views.windows_allowed))
+         && retro_atomic_load_acquire_int(&vk->views.allowed))
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS);
 #endif
    /* HDR output keeps the end-of-frame readback, for its tonemap */

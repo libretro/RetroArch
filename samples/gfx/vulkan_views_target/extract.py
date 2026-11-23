@@ -14,7 +14,8 @@ shared = (root / 'gfx/video_views_draw.h').read_text()
 def function(source, name):
     masked = re.sub(r'/\*.*?\*/|//[^\n]*|"(?:\\.|[^"\\])*"',
                     lambda m: ' ' * len(m[0]), source, flags=re.S)
-    match = re.search(r'static (?:bool|void) ' + re.escape(name)
+    match = re.search(r'static (?:bool|void|VkRenderPass|VkPipeline) '
+                      + re.escape(name)
                       + r'\([^;]*?\)\s*\{', masked)
     if not match:
         raise RuntimeError('function missing: ' + name)
@@ -29,7 +30,9 @@ def function(source, name):
 parts = [function(driver, name) for name in
          ('vulkan_views_retire', 'vulkan_views_make',
           'vulkan_views_hdr_direct', 'vulkan_views_chain_target',
-          'vulkan_views_hdr_semantics')]
+          'vulkan_views_hdr_semantics', 'vulkan_views_target_make',
+          'vulkan_views_target_pass', 'vulkan_views_target_premult',
+          'vulkan_views_targets_free')]
 for name in ('VV_FN', 'VV_DRV', 'VV_TARGET', 'VV_TARGET_MAKE',
              'VV_TARGET_RETIRE'):
     match = re.search(r'^#define ' + name + r'(?:\(|\s).*$', driver, re.M)

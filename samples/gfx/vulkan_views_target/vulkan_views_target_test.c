@@ -2,7 +2,8 @@
  * shared ensure policy. Only device allocation and logging are replaced.
  * The XR draw and its slots run with the runtime's swapchains and the
  * pass steps stubbed: what reaches the runtime's images, when a chain
- * ends a frame, and when a repeat replays the last frame's final pass. */
+ * ends a frame, and when a repeat replays the last frame's final pass.
+ * The second outputs' render passes run against a fake device. */
 #include <stdio.h>
 #include <string.h>
 #include <vulkan/vulkan.h>
@@ -24,6 +25,38 @@ struct vk_image
    VkDeviceMemory memory;
    VkFramebuffer framebuffer;
 };
+
+struct vk_vertex
+{
+   float x, y, tex_x, tex_y;
+   uint16_t color[4];
+};
+
+struct vk_effect_template
+{
+   VkGraphicsPipelineCreateInfo           pipe;
+   VkPipelineInputAssemblyStateCreateInfo input_assembly;
+   VkPipelineVertexInputStateCreateInfo   vertex_input;
+   VkVertexInputAttributeDescription      attributes[3];
+   VkVertexInputBindingDescription        binding;
+   VkPipelineRasterizationStateCreateInfo raster;
+   VkPipelineColorBlendAttachmentState    blend_attachment;
+   VkPipelineColorBlendStateCreateInfo    blend;
+   VkPipelineMultisampleStateCreateInfo   multisample;
+   VkPipelineViewportStateCreateInfo      vp;
+   VkPipelineDepthStencilStateCreateInfo  depth_stencil;
+   VkPipelineDynamicStateCreateInfo       dynamic;
+   bool                                   valid;
+};
+
+struct vk_target_pass
+{
+   VkRenderPass pass;
+   VkPipeline premult;
+   VkFormat format;
+};
+
+#define VK_VIEWS_TARGETS 4
 
 typedef struct
 {
@@ -88,7 +121,14 @@ typedef struct
       bool fp16;
       bool canvas_fp16;
       bool scanlines_logged;
+      struct vk_target_pass targets[VK_VIEWS_TARGETS];
    } views;
+   struct { struct vk_effect_template effect_tpl[2]; } display;
+   struct
+   {
+      VkPipeline alpha_premult;
+      VkPipelineCache cache;
+   } pipelines;
    struct vk_image cached[3];
    unsigned rotation_raw;
    struct
@@ -422,6 +462,94 @@ static void vulkan_xr_draw_projection(vk_t *vk,
    (void)video_info;
 }
 
+/* The second outputs' render passes: what the device made and
+ * destroyed */
+static unsigned passes_made, passes_destroyed, pipes_made, pipes_destroyed;
+static int modules_live;
+static bool fail_pipeline;
+static VkFormat pass_format;
+
+static const uint32_t spirv_alpha_blend_vert[] = { 0x07230203 };
+static const uint32_t spirv_alpha_blend_frag[] = { 0x07230203 };
+#define spirv_alpha_blend_vert_size sizeof(spirv_alpha_blend_vert)
+#define spirv_alpha_blend_frag_size sizeof(spirv_alpha_blend_frag)
+
+static VkResult test_create_render_pass(VkDevice device,
+      const VkRenderPassCreateInfo *info, const VkAllocationCallbacks *alloc,
+      VkRenderPass *pass)
+{
+   (void)device;
+   (void)alloc;
+   pass_format = info->pAttachments[0].format;
+   *pass       = (VkRenderPass)(uintptr_t)(0x100 + ++passes_made);
+   return VK_SUCCESS;
+}
+
+static void test_destroy_render_pass(VkDevice device, VkRenderPass pass,
+      const VkAllocationCallbacks *alloc)
+{
+   (void)device;
+   (void)alloc;
+   if (pass != VK_NULL_HANDLE)
+      passes_destroyed++;
+}
+
+static VkResult test_create_shader_module(VkDevice device,
+      const VkShaderModuleCreateInfo *info, const VkAllocationCallbacks *alloc,
+      VkShaderModule *module)
+{
+   (void)device;
+   (void)info;
+   (void)alloc;
+   *module = (VkShaderModule)(uintptr_t)(0x200 + ++modules_live);
+   return VK_SUCCESS;
+}
+
+static void test_destroy_shader_module(VkDevice device,
+      VkShaderModule module, const VkAllocationCallbacks *alloc)
+{
+   (void)device;
+   (void)module;
+   (void)alloc;
+   modules_live--;
+}
+
+/* alpha_premult's state, against the pass just made */
+static VkResult test_create_graphics_pipelines(VkDevice device,
+      VkPipelineCache cache, uint32_t count,
+      const VkGraphicsPipelineCreateInfo *info,
+      const VkAllocationCallbacks *alloc, VkPipeline *pipe)
+{
+   (void)device;
+   (void)cache;
+   (void)alloc;
+   if (     fail_pipeline || count != 1
+         || info->renderPass != (VkRenderPass)(uintptr_t)(0x100 + passes_made)
+         || info->pInputAssemblyState->topology
+            != VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST
+         || info->pColorBlendState->pAttachments->srcColorBlendFactor
+            != VK_BLEND_FACTOR_ONE)
+      return VK_ERROR_INITIALIZATION_FAILED;
+   *pipe = (VkPipeline)(uintptr_t)(0x300 + ++pipes_made);
+   return VK_SUCCESS;
+}
+
+static void test_destroy_pipeline(VkDevice device, VkPipeline pipe,
+      const VkAllocationCallbacks *alloc)
+{
+   (void)device;
+   (void)alloc;
+   if (pipe != VK_NULL_HANDLE)
+      pipes_destroyed++;
+}
+
+#define vkCreateRenderPass test_create_render_pass
+#define vkDestroyRenderPass test_destroy_render_pass
+#define vkCreateShaderModule test_create_shader_module
+#define vkDestroyShaderModule test_destroy_shader_module
+#define vkCreateGraphicsPipelines test_create_graphics_pipelines
+#define vkDestroyPipeline test_destroy_pipeline
+
 #include "driver_code.inc"
 
 #define CHECK(cond) do { if (!(cond)) { \
@@ -446,6 +574,10 @@ static void init(vk_t *vk, test_context_t *context, test_chain_t *chain)
    memset(slot_creates, 0, sizeof(slot_creates));
    slot_refuses = 0;
    logs = 0;
+   passes_made = passes_destroyed = pipes_made = pipes_destroyed = 0;
+   modules_live = 0;
+   fail_pipeline = false;
+   pass_format = VK_FORMAT_UNDEFINED;
    emits_hdr10 = emits_hdr16 = false;
    hdr_values_unset();
 }
@@ -492,6 +624,51 @@ static void test_retirement_saturation(void)
    CHECK(vulkan_vv_target_ensure(&vk, &targets[2], &vk.cached[2], changed));
    CHECK(targets[2].dims == changed && targets[2].made);
    CHECK(allocations == 6 && warnings == 0);
+}
+
+/* Second outputs' render passes: views.render_pass in the window's
+ * format, one per other format, the same one when asked again, each with
+ * alpha_premult's pipeline or neither, and each destroyed once */
+static void test_target_passes(void)
+{
+   vk_t vk;
+   test_context_t context;
+   test_chain_t chain;
+   VkRenderPass a, b;
+   init(&vk, &context, &chain);
+   context.swapchain_format       = VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+   vk.views.render_pass           = (VkRenderPass)(uintptr_t)0x77;
+   vk.pipelines.alpha_premult     = (VkPipeline)(uintptr_t)0x78;
+   vk.display.effect_tpl[0].valid = true;
+   CHECK(vulkan_views_target_pass(&vk, context.swapchain_format, true)
+         == vk.views.render_pass);
+   CHECK(vulkan_views_target_premult(&vk, context.swapchain_format)
+         == vk.pipelines.alpha_premult);
+   CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_UNORM, false)
+         == VK_NULL_HANDLE);
+   CHECK(passes_made == 0);
+   a = vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_UNORM, true);
+   CHECK(a != VK_NULL_HANDLE && pass_format == VK_FORMAT_B8G8R8A8_UNORM);
+   b = vulkan_views_target_pass(&vk, VK_FORMAT_R8G8B8A8_UNORM, true);
+   CHECK(b != VK_NULL_HANDLE && b != a
+         && pass_format == VK_FORMAT_R8G8B8A8_UNORM);
+   CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_UNORM, true) == a);
+   CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_UNORM, false) == a);
+   CHECK(passes_made == 2 && pipes_made == 2 && modules_live == 0);
+   CHECK(vulkan_views_target_premult(&vk, VK_FORMAT_B8G8R8A8_UNORM)
+         != VK_NULL_HANDLE);
+   CHECK(vulkan_views_target_premult(&vk, VK_FORMAT_B8G8R8A8_UNORM)
+         != vulkan_views_target_premult(&vk, VK_FORMAT_R8G8B8A8_UNORM));
+   vulkan_views_targets_free(&vk);
+   CHECK(passes_destroyed == 2 && pipes_destroyed == 2);
+   CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_UNORM, false)
+         == VK_NULL_HANDLE);
+   fail_pipeline = true;
+   CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_UNORM, true)
+         == VK_NULL_HANDLE);
+   CHECK(passes_made == 3 && passes_destroyed == 3 && modules_live == 0);
+   CHECK(vulkan_views_target_premult(&vk, VK_FORMAT_B8G8R8A8_UNORM)
+         == VK_NULL_HANDLE);
 }
 
 /* @screens screens drawn whole, then the menu. */
@@ -817,6 +994,7 @@ int main(void)
    test_xr_draw_slot_unmade();
    test_view_chain_target();
    test_view_chain_hdr_semantics();
-   printf("%u failed (12 Vulkan target cases)\n", failures);
+   test_target_passes();
+   printf("%u failed (13 Vulkan target cases)\n", failures);
    return failures ? 1 : 0;
 }

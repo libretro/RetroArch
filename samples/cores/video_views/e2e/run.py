@@ -446,12 +446,17 @@ HDR_UI_PASS = os.path.normpath(os.path.join(
 # What the driver logs as it takes each HDR pass.
 GAME_PASS = '[Vulkan] HDR game pass:'
 COMPOSITE_PASS = '[Vulkan] HDR composite pass:'
+# What it logs as a screen window's output is made in SDR, and for a
+# window it can't draw.
+SECOND_OUTPUT_SDR = '[Vulkan] Second output: SDR, format'
+WINDOW_NOT_DRAWN = "A screen window can't be drawn"
 # Run only with RA_E2E_HDR=1.
 # [(name, map option, settings, points, extra)]. extra may hold preset
 # (a preset's path), menu (opened, as in MENU_CASES), env (added to
 # RetroArch's), raw (points are the PQ codes' top bytes, not decoded),
 # game and composite (whether the HDR game pass and composite are taken:
-# True and menu by default) and log (lines the log holds, in order).
+# True and menu by default), log (lines the log holds, in order), absent
+# (lines it does not hold) and after (a line the screenshot waits for).
 HDR_CASES = [
     ('hdr-preset-menu-sbs', '3ds',
      {'video_stereo_mode': '2', 'video_shader_enable': 'true',
@@ -473,6 +478,32 @@ HDR_CASES = [
      [(800, 240, GREEN), (800, 720, YELLOW)],
      {'preset': os.path.join(HERE, 'hdr10_pass.slangp'), 'raw': True,
       'game': False}),
+    # Screen 2 in a window of its own, drawn in SDR through an FP16 image
+    # of the window's. A depth-30 Xvfb surface lists no 8-bit format, so
+    # the window's SDR output is 10-bit.
+    ('hdr-window-ds', 'ds',
+     {'video_windows_enable': 'true', 'video_stereo_mode': '0'},
+     [(800, 480, GREEN)],
+     {'log': [SECOND_OUTPUT_SDR], 'absent': [WINDOW_NOT_DRAWN]}),
+    # The window draws its screen with the stock chain instead.
+    ('hdr-emit-preset-window', 'ds',
+     {'video_windows_enable': 'true', 'video_stereo_mode': '0',
+      'video_shader_enable': 'true'}, [],
+     {'preset': os.path.join(HERE, 'hdr10_pass.slangp'), 'game': False,
+      'log': [SECOND_OUTPUT_SDR, "Views' preset writes HDR: screen windows"],
+      'absent': [WINDOW_NOT_DRAWN]}),
+    # The display loses HDR10 with the window up: both go SDR and the
+    # window's FP16 image is freed. No points: the main window is then
+    # 10-bit SDR, whose screenshots are not taken.
+    ('hdr-window-drop', 'ds',
+     {'video_windows_enable': 'true', 'video_stereo_mode': '0'}, [],
+     # run.log, then retroarch.log: the window's output was made
+     # before the main window fell back.
+     {'env': {'FAKE_HDR_DROP_AFTER': '120'},
+      'log': ['fake-hdr: HDR10 dropped', SECOND_OUTPUT_SDR,
+              'HDR10 not available on this surface, falling back.'],
+      'absent': [WINDOW_NOT_DRAWN],
+      'after': 'HDR10 not available on this surface, falling back.'}),
 ]
 # (game, composite) for the other cases that check the HDR passes they
 # take; the runs made from a case (crop-threaded-menu-0,
@@ -801,6 +832,17 @@ def last_status(d):
                 for m in STATUS_RE.finditer(f.read()):
                     found = tuple(int(g) for g in m.groups())
     return found
+
+
+def wait_logged(p, d, line, timeout=20):
+    """Until the logs hold line, and the frames after it are drawn; at
+    most timeout seconds."""
+    deadline = time.monotonic() + timeout
+    while p.poll() is None and time.monotonic() < deadline:
+        if line in log_text(d):
+            time.sleep(SETTLE)
+            return
+        time.sleep(0.05)
 
 
 def wait_settled(p, d, want, timeout=20):
@@ -1271,7 +1313,7 @@ def case_dir(root, driver, name, hw='off'):
 
 def run_case(retroarch, root, driver, case, hw='off', menu=False,
              opts=None, args=(), gpu=None, pointer=(), env_extra=None,
-             pointer_check=None, raw=False, passes=None):
+             pointer_check=None, raw=False, passes=None, after=None):
     """gpu, a list, gets RetroArch's GPU memory in MiB sampled while it
     settles. pointer, window points, has the menu open with the pointer
     at each in turn, in d/pointer-N.png; pointer_check(d) gives the
@@ -1280,7 +1322,8 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
     drawn the cursor in yet is not the code's failure. env_extra is
     added to RetroArch's environment. With HDR10 output raw reads the
     points as read_png() does, and passes, (game, composite), are what
-    hdr_errors() checks; hdr_passes() gives them by default."""
+    hdr_errors() checks; hdr_passes() gives them by default. The
+    screenshot waits for the log line after, when given."""
     name, mapopt, settings, points = case
     hdr = HDR and driver == 'vulkan'
     d = case_dir(root, driver, name, hw)
@@ -1360,6 +1403,8 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
             startup_stack(p, d)
         if gpu is None:
             wait_settled(p, d, expected_status(driver, settings))
+        if after:
+            wait_logged(p, d, after)
         settle = time.time() + 5
         while gpu is not None and time.time() < settle:
             time.sleep(0.5)
@@ -1690,7 +1735,8 @@ def run_hdr_case(retroarch, root, driver, case):
                       args=args, env_extra=extra.get('env'),
                       raw=extra.get('raw', False),
                       passes=(extra.get('game', True),
-                              extra.get('composite', menu)))
+                              extra.get('composite', menu)),
+                      after=extra.get('after'))
     text, at = log_text(case_dir(root, driver, name)), 0
     for line in extra.get('log', ()):
         at = text.find(line, at)
@@ -1699,6 +1745,8 @@ def run_hdr_case(retroarch, root, driver, case):
                           % line)
             break
         at += len(line)
+    errors += ['"%s" in the log' % line for line in extra.get('absent', ())
+               if line in text]
     return errors
 
 
