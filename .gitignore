@@ -248,6 +248,8 @@ gfx/common/wayland/presentation-time.h
 gfx/common/wayland/presentation-time.c
 gfx/common/wayland/relative-pointer-unstable-v1.c
 gfx/common/wayland/relative-pointer-unstable-v1.h
+gfx/common/wayland/xdg-output-unstable-v1.c
+gfx/common/wayland/xdg-output-unstable-v1.h
 gfx/common/wayland/viewporter.c
 gfx/common/wayland/viewporter.h
 gfx/common/wayland/cursor-shape-v1.h
@@ -351,6 +353,8 @@ samples/gfx/filter_golden/golden_*
 !samples/gfx/filter_golden/golden_*.h
 samples/gfx/wayland_drm_lease/drm-lease-v1-server-protocol.h
 samples/gfx/wayland_drm_lease/drm-lease-v1-protocol.c
+samples/gfx/wayland_drm_lease/xdg-output-unstable-v1-protocol.c
+samples/gfx/mutter_displayconfig/xdg-output-unstable-v1-protocol.c
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip

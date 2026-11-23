@@ -704,8 +704,19 @@ static void handle_relative_motion(void *data,
 
    if (wl->locked_pointer)
    {
-      VIDEO_POS_ADD(wl->input.mouse.pos,
-            wl_fixed_to_int(dx_unaccel), wl_fixed_to_int(dy_unaccel));
+      /* Deltas are in surface units, the position in buffer pixels */
+      float scale = wl->fractional_scale
+         ? (float)wl->fractional_scale_num / FRACTIONAL_SCALE_V1_DEN
+         : (float)wl->buffer_scale;
+      float x     = (float)wl_fixed_to_double(dx_unaccel) * scale
+         + wl->input.mouse.locked_frac[0];
+      float y     = (float)wl_fixed_to_double(dy_unaccel) * scale
+         + wl->input.mouse.locked_frac[1];
+      int ix      = (int)x;
+      int iy      = (int)y;
+      wl->input.mouse.locked_frac[0] = x - (float)ix;
+      wl->input.mouse.locked_frac[1] = y - (float)iy;
+      VIDEO_POS_ADD(wl->input.mouse.pos, ix, iy);
    }
 }
 
