@@ -37,6 +37,8 @@ struct fx_console
    unsigned steps, ahead;            /* fx_span_run: steps a frame, promise steps past a request */
    uint64_t passed;                  /* the furthest tick granted and run to */
    unsigned late;                    /* messages received below passed */
+   unsigned char sender[FX_MAX];     /* fx_span_run: by from, 1 + the console its first message came from */
+   unsigned clash;                   /* messages whose from named another console before */
 };
 
 static link_bus_t *fx_bus;
@@ -429,6 +431,13 @@ static void pick_take(struct fx_console *k)
       size_t i;
       if (tick < k->passed)
          k->late++;
+      if (k->steps && len && from < FX_MAX)
+      {
+         if (!k->sender[from])
+            k->sender[from] = (unsigned char)(buf[0] + 1);
+         else if (k->sender[from] != buf[0] + 1)
+            k->clash++;
+      }
       k->sum = pick_fold(k->sum, tick);
       k->sum = pick_fold(k->sum, from);
       for (i = 0; i < len; i++)
@@ -744,6 +753,7 @@ static void fx_span_run(void *user)
          fx_step(k, m, m + 1);
          for (i = 0; i < len; i++)
             msg[i] = (unsigned char)((k->sum >> (8 * (i % 8))) ^ k->index ^ m);
+         msg[0] = (unsigned char)k->index;
          k->sum = pick_fold(k->sum, k->link.send_msg(k->h,
                   fx_step_tick(k, m + 1 + k->ahead), RETRO_LINK_BROADCAST, msg, len));
       }
@@ -1123,7 +1133,8 @@ struct fuzz_session
    uint64_t rate[FX_MAX], span[FX_MAX];
    unsigned steps[FX_MAX], ahead[FX_MAX];
    unsigned n;
-   unsigned late_step; /* the last console joins before this step; 0 at the start */
+   unsigned late_step; /* joiner joins before this step; 0 at the start */
+   unsigned joiner;    /* by its cables to the consoles beside it, or its radio */
    bool radio;
 };
 
@@ -1131,7 +1142,8 @@ struct fuzz_result
 {
    uint64_t hash;
    uint64_t sum[FX_MAX], frames[FX_MAX];
-   unsigned late, released, waiting;
+   unsigned late, released, waiting, clash;
+   unsigned senders[FX_MAX];  /* the consoles each console heard from */
    bool in_frame[FX_MAX];
 };
 
@@ -1149,21 +1161,21 @@ static void fuzz_run(const struct fuzz_session *u, unsigned order, uint32_t seed
       struct fuzz_result *out)
 {
    uint64_t targets[FX_MAX];
-   unsigned c, f, last = u->n - 1;
+   unsigned c, f, j = u->joiner;
    memset(out, 0, sizeof(*out));
    fx_new(u->n, fx_span_run);
    for (c = 0; c < u->n; c++)
    {
       if (u->radio)
          fx_join_port(c, "test-radio", u->rate[c], 0, RETRO_LINK_PORT_SHARED_MEDIUM,
-               c != last || !u->late_step);
+               c != j || !u->late_step);
       else
          fx_join_port(c, "test-cable", u->rate[c], u->n, 0, true);
       fx_spans(c, u->span[c], u->steps[c], u->ahead[c]);
       fx_c[c].sum = (uint64_t)seed * 64 + c;
    }
    for (c = 1; !u->radio && c < u->n; c++)
-      if (c != last || !u->late_step)
+      if ((c != j && c - 1 != j) || !u->late_step)
          CHECK(link_bus_cable(fx_bus, c - 1, 0, c, 0));
    if (order == 0)
       link_sched_set_pick(fx_sched, LINK_SCHED_PICK_LOWEST, 0);
@@ -1177,9 +1189,13 @@ static void fuzz_run(const struct fuzz_session *u, unsigned order, uint32_t seed
       if (u->late_step && f == u->late_step)
       {
          if (u->radio)
-            fx_attach_now(last);
+            fx_attach_now(j);
          else
-            CHECK(link_bus_cable(fx_bus, last - 1, 0, last, 0));
+         {
+            CHECK(link_bus_cable(fx_bus, j - 1, 0, j, 0));
+            if (j + 1 < u->n)
+               CHECK(link_bus_cable(fx_bus, j, 0, j + 1, 0));
+         }
       }
       link_sched_targets_to(fx_sched, 0, targets);
       r = link_sched_run(fx_sched, targets);
@@ -1195,6 +1211,9 @@ static void fuzz_run(const struct fuzz_session *u, unsigned order, uint32_t seed
       out->frames[c]   = link_sched_frames(fx_sched, c);
       out->in_frame[c] = link_sched_in_frame(fx_sched, c);
       out->late       += fx_c[c].late;
+      out->clash      += fx_c[c].clash;
+      for (f = 0; f < FX_MAX; f++)
+         out->senders[c] += fx_c[c].sender[f] != 0;
    }
    fx_free();
 }
@@ -1209,7 +1228,9 @@ static bool fuzz_same(const struct fuzz_session *u, uint32_t seed, unsigned *wai
    for (o = 0; o < FUZZ_ORDERS; o++)
    {
       fuzz_run(u, o, seed, &r[o]);
-      if (r[o].released || r[o].late)
+      /* A console joining between others moves their indexes, so only a
+       * last joiner keeps one console under each from */
+      if (r[o].released || r[o].late || (r[o].clash && u->joiner + 1 == u->n))
          bad = true;
       if (     o && (r[o].hash != r[0].hash
             || memcmp(r[o].sum, r[0].sum, sizeof(r[0].sum))
@@ -1228,8 +1249,8 @@ static bool fuzz_same(const struct fuzz_session *u, uint32_t seed, unsigned *wai
    fprintf(stderr, "\n");
    for (o = 0; o < FUZZ_ORDERS; o++)
    {
-      fprintf(stderr, "   order %u: released %u late %u hash %08lx%08lx frames", o,
-            r[o].released, r[o].late, (unsigned long)(r[o].hash >> 32),
+      fprintf(stderr, "   order %u: released %u late %u clash %u hash %08lx%08lx frames", o,
+            r[o].released, r[o].late, r[o].clash, (unsigned long)(r[o].hash >> 32),
             (unsigned long)(r[o].hash & 0xFFFFFFFFUL));
       for (c = 0; c < u->n; c++)
          fprintf(stderr, " %lu%s", (unsigned long)r[o].frames[c], r[o].in_frame[c] ? "+" : "");
@@ -1249,6 +1270,7 @@ static void fuzz_spans_never_release(void)
       u.n         = 2 + fuzz_next() % 3;
       u.radio     = (fuzz_next() & 1) != 0;
       u.late_step = (fuzz_next() & 1) ? 1 + fuzz_next() % 15 : 0;
+      u.joiner    = u.n > 2 && (i & 1) ? 1 : u.n - 1;
       for (c = 0; c < u.n; c++)
       {
          u.rate[c]  = fuzz_rates[fuzz_next() % 5];
@@ -1263,10 +1285,6 @@ static void fuzz_spans_never_release(void)
    CHECK(waiting > 0); /* some steps end with a console parked */
 }
 
-/* A radio that joins late hears a peer that sent before it saw that peer,
- * whose message lands at one tick with another peer's under one index:
- * they come out in an order of their own, not in send order across
- * consoles */
 /* A radio attaches while console 0 is inside its first frame, whose span
  * it has not shown: the join waits for a step's end at which console 0's
  * first edge is known, rather than hold console 1 at its edge while the
@@ -1274,20 +1292,39 @@ static void fuzz_spans_never_release(void)
 static void late_join_waits_for_first_span(void)
 {
    static const struct fuzz_session u =
-      { { 1000000, 61440, 1000000 }, { 20000, 853, 17857 }, { 2, 6, 14 }, { 1, 0, 3 }, 3, 1, true };
+      { { 1000000, 61440, 1000000 }, { 20000, 853, 17857 }, { 2, 6, 14 }, { 1, 0, 3 }, 3, 1, 2, true };
    unsigned waiting = 0;
    CHECK(fuzz_same(&u, 491, &waiting));
 }
 
-static void late_radio_same_in_any_order(void)
+/* Console 1 sends to console 2's radio before console 2 sees it: its from
+ * is its index in the view console 2 has when the message lands, not one
+ * console 0 holds */
+static void late_sender_from_names_it(void)
 {
-   static const struct fuzz_session cases[2] = {
-      { { 60000, 16777216, 60000 }, { 1034, 258111, 845 }, { 7, 5, 10 }, { 3, 2, 4 }, 3, 8, true },
-      { { 60000, 61440, 4194304, 61440 }, { 937, 865, 56679, 1204 }, { 16, 7, 9, 11 }, { 0, 0, 1, 2 }, 4, 4, true }
+   static const struct fuzz_session u =
+      { { 60000, 16777216, 60000 }, { 1034, 258111, 845 }, { 7, 5, 10 }, { 3, 2, 4 }, 3, 8, 2, true };
+   struct fuzz_result r;
+   fuzz_run(&u, 0, 268, &r);
+   CHECK(r.clash == 0);
+   CHECK(r.senders[2] == 2);
+   CHECK(!r.released && !r.late);
+}
+
+/* Console 1 is cabled in between its neighbours late. A message from a
+ * peer it saw when the peer sent and one from a peer it saw only when the
+ * message landed can share an index at one landing tick: they come out by
+ * sender, not in send order across consoles */
+static void middle_join_same_in_any_order(void)
+{
+   static const struct fuzz_session cases[3] = {
+      { { 1000000, 61440, 60000, 60000 }, { 16393, 853, 1000, 1071 }, { 5, 14, 6, 1 }, { 3, 2, 2, 1 }, 4, 5, 1, false },
+      { { 16777216, 16777216, 16777216, 16777216 }, { 246723, 294337, 246723, 279620 }, { 12, 7, 3, 11 }, { 1, 2, 2, 3 }, 4, 15, 1, false },
+      { { 4194304, 4194304, 1000000, 61440 }, { 72315, 74898, 17241, 1097 }, { 7, 7, 5, 9 }, { 3, 1, 2, 1 }, 4, 12, 1, false }
    };
-   static const uint32_t seeds[2] = { 268, 1234 };
+   static const uint32_t seeds[3] = { 684, 522, 1993 };
    unsigned i, waiting = 0;
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < 3; i++)
       CHECK(fuzz_same(&cases[i], seeds[i], &waiting));
 }
 
@@ -1316,8 +1353,9 @@ static const struct
    { "run_frame_resets_journal",          run_frame_resets_journal },
    { "advance_multi_list_out_of_order",   advance_multi_list_out_of_order },
    { "fuzz_spans_never_release",          fuzz_spans_never_release },
-   { "late_radio_same_in_any_order",      late_radio_same_in_any_order },
-   { "late_join_waits_for_first_span",    late_join_waits_for_first_span }
+   { "middle_join_same_in_any_order",     middle_join_same_in_any_order },
+   { "late_join_waits_for_first_span",    late_join_waits_for_first_span },
+   { "late_sender_from_names_it",         late_sender_from_names_it }
 };
 
 int main(void)

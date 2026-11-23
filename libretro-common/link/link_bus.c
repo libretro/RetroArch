@@ -541,15 +541,27 @@ static unsigned link_bus_index(const link_bus_t *b, const struct retro_link_port
    return n;
 }
 
-/* s's index in r's view at the instant x (ticks of rate): the ports before s
- * that r saw there, r among them; the view before its last change is kept */
-static unsigned link_bus_from(const link_bus_t *b, const struct retro_link_port *r,
-      const struct retro_link_port *s, uint64_t x, uint64_t rate)
+/* Which of r's views held the instant x (ticks of rate): the one before
+ * its last change, or the one now */
+static unsigned link_bus_view_bit(const struct retro_link_port *r, uint64_t x, uint64_t rate)
 {
-   unsigned bit = r->viewed && link_bus_instant_before(x, rate, r->view_at, r->rate)
+   return r->viewed && link_bus_instant_before(x, rate, r->view_at, r->rate)
       ? LINK_BUS_LINK_WAS : LINK_BUS_LINK_VIEW;
+}
+
+/* e's sender's index in r's view at the instant it stood at when it sent
+ * or, if r did not see it there, when e lands (the view now until then):
+ * the ports before the sender that r saw, r among them */
+static unsigned link_bus_from(const link_bus_t *b, const struct retro_link_port *r,
+      const struct link_bus_entry *e)
+{
+   const struct retro_link_port *s = e->msg->from;
+   unsigned bit = link_bus_view_bit(r, e->sent_at, e->sent_rate);
    unsigned n   = 0;
    size_t i;
+   if (s != r && !(link_bus_link(r, s)->flags & bit))
+      bit = e->state != LINK_BUS_LANDED ? LINK_BUS_LINK_VIEW
+         : link_bus_view_bit(r, link_bus_move(e->landing, r->anchor, r->since), r->rate);
    for (i = 0; i < b->recs_len && b->recs[i] != s; i++)
       if (b->recs[i] == r || (link_bus_link(r, b->recs[i])->flags & bit))
          n++;
@@ -702,7 +714,8 @@ static void link_bus_land(link_bus_t *b, struct retro_link_port *p)
       e->landing = p->anchor;
       if (e->state == LINK_BUS_AHEAD)
          e->landing = link_bus_onto(p, e->instant, e->rate, true);
-      e->state = LINK_BUS_LANDED;
+      e->state      = LINK_BUS_LANDED;
+      e->from_index = link_bus_from(b, p, e);
       if (e->journal_gen == b->journal_gen)
          b->journal[e->journal].landing = e->landing;
       link_bus_enqueue(p, e);
@@ -1289,7 +1302,6 @@ static void link_bus_route(link_bus_t *b, struct retro_link_port *p,
    e->sent_at    = sent_at;
    e->sent_rate  = p->rate;
    e->landing    = RETRO_LINK_UNBOUNDED;
-   e->from_index = link_bus_from(b, q, p, sent_at, p->rate);
    if (b->consoles[q->console].held)
       e->state = LINK_BUS_REJOIN;
    else if (     (k->flags & LINK_BUS_LINK_JOIN) && !(k->flags & LINK_BUS_LINK_HOLD)
@@ -1311,6 +1323,7 @@ static void link_bus_route(link_bus_t *b, struct retro_link_port *p,
    }
    else
       e->state = LINK_BUS_AHEAD;
+   e->from_index = link_bus_from(b, q, e);
    if (e->journal_gen == b->journal_gen)
       b->journal[e->journal].landing = e->landing;
    /* It lands no earlier than q's edge */
@@ -1490,10 +1503,10 @@ static void link_bus_refrom(link_bus_t *b, struct retro_link_port *r)
    bool moved = false;
    for (e = r->waiting; e; e = e->next)
       if (e->state != LINK_BUS_PLACING)
-         e->from_index = link_bus_from(b, r, e->msg->from, e->sent_at, e->sent_rate);
+         e->from_index = link_bus_from(b, r, e);
    for (e = r->queue; e; e = e->next)
    {
-      unsigned at   = link_bus_from(b, r, e->msg->from, e->sent_at, e->sent_rate);
+      unsigned at   = link_bus_from(b, r, e);
       moved        |= at != e->from_index;
       e->from_index = at;
    }

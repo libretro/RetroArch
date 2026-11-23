@@ -4320,7 +4320,8 @@ typedef int (RETRO_CALLCONV *retro_link_peers_t)(retro_link_port_t *handle, unsi
  * or after the promise the port has published; the frontend raises a lower
  * stamp to that promise and still sends the message. The stamp must not be
  * below the \c local_tick of the port's latest advance.
- * @param to The receiving port's index on the bus, or #RETRO_LINK_BROADCAST.
+ * @param to The receiving port's index on the bus, in the membership this
+ * port sees, or #RETRO_LINK_BROADCAST.
  * @param buf The payload. May be \c NULL only when \c len is 0.
  * @param len The payload's length in bytes. 0 sends a message whose payload is
  * empty.
@@ -4366,8 +4367,9 @@ typedef bool (RETRO_CALLCONV *retro_link_send_t)(retro_link_port_t *handle, uint
  * @param[out] tick The landing tick: when the event lands, on this port's
  * clock. Not written when \c NULL.
  * @param[out] from The sender's index on the bus, in the membership this port
- * saw at the instant the sender stood at when it sent. Not written when
- * \c NULL.
+ * saw at the instant the sender stood at when it sent or, if this port did
+ * not see the sender then, in the membership it saw when the message
+ * landed. Not written when \c NULL.
  * @param[out] buf Receives the payload. \c NULL to discard the message.
  * @param[in,out] len Buffer capacity on entry, bytes written on return. After
  * \c false, 0 or the length needed, as above. \c NULL only with a \c NULL
@@ -4661,8 +4663,9 @@ typedef void (RETRO_CALLCONV *retro_link_advance_multi_t)(
  * @param[out] tick The landing tick: when the event lands, on this port's
  * clock. Not written when \c NULL.
  * @param[out] from The sender's index on the bus, in the membership this port
- * saw at the instant the sender stood at when it sent. Not written when
- * \c NULL.
+ * saw at the instant the sender stood at when it sent or, if this port did
+ * not see the sender then, in the membership it saw when the message
+ * landed. Not written when \c NULL.
  * @param[out] len The payload's length in bytes. 0 when there is no message to
  * return. Not written when \c NULL.
  * @return The payload, or \c NULL when there is no message to return. A
