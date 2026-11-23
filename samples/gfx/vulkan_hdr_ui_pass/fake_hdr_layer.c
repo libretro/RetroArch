@@ -44,6 +44,10 @@
  * presents: the HDR10 pairs go from the format lists, and each HDR10
  * swapchain still alive is out of date once.
  *
+ * With FAKE_HDR_FIRST_SURFACE_ONLY=1 only the first surface whose
+ * formats are asked for gets the HDR10 pairs: the main window's, which
+ * the frontend makes and sets up before any screen window's.
+ *
  * One instance and one device at a time, which is how the frontend
  * runs the driver; the next layer's entry points are kept in globals. */
 
@@ -74,6 +78,9 @@ static unsigned long             s_hdr10_swapchains;
 static unsigned long             s_drop_after;
 static unsigned long             s_presents;
 static int                       s_dropped;
+/* FAKE_HDR_FIRST_SURFACE_ONLY, and that surface once asked about */
+static int                       s_first_only;
+static VkSurfaceKHR              s_first_surface;
 /* The live HDR10 swapchains, and whether each was told it is out of
  * date since the drop */
 static VkSwapchainKHR            s_live[FH_SWAPCHAINS];
@@ -90,12 +97,15 @@ static int fh_is_10bit(VkFormat format)
        || format == VK_FORMAT_A2R10G10B10_UNORM_PACK32;
 }
 
-/* The real list in real[0..n), the HDR10 twins appended after it.
- * Returns the length of the whole list. */
-static uint32_t fh_extend(VkSurfaceFormatKHR *real, uint32_t n)
+/* The real list in real[0..n), the HDR10 twins appended after it when
+ * @surface gets them. Returns the length of the whole list. */
+static uint32_t fh_extend(VkSurfaceKHR surface, VkSurfaceFormatKHR *real,
+      uint32_t n)
 {
    uint32_t i, total = n;
-   if (s_dropped)
+   if (s_first_only && s_first_surface == VK_NULL_HANDLE)
+      s_first_surface = surface;
+   if (s_dropped || (s_first_only && surface != s_first_surface))
       return n;
    for (i = 0; i < n && total < FH_FORMATS; i++)
    {
@@ -140,7 +150,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL fh_GetPhysicalDeviceSurfaceFormatsKHR(
    res = next(gpu, surface, &n, list);
    if (res != VK_SUCCESS && res != VK_INCOMPLETE)
       return res;
-   total = fh_extend(list, n);
+   total = fh_extend(surface, list, n);
    res   = fh_hand_out(total, count, formats != NULL);
    if (formats)
       for (i = 0; i < *count && i < total; i++)
@@ -172,7 +182,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL fh_GetPhysicalDeviceSurfaceFormats2KHR(
       return res;
    for (i = 0; i < n; i++)
       list[i] = real[i].surfaceFormat;
-   total = fh_extend(list, n);
+   total = fh_extend(info->surface, list, n);
    res   = fh_hand_out(total, count, formats != NULL);
    /* The caller's sType and pNext stay; only the pair is written. */
    if (formats)
@@ -291,6 +301,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL fh_CreateInstance(
 {
    VkLayerInstanceCreateInfo *chain = (VkLayerInstanceCreateInfo*)info->pNext;
    const char *drop                 = getenv("FAKE_HDR_DROP_AFTER");
+   const char *first_only           = getenv("FAKE_HDR_FIRST_SURFACE_ONLY");
    PFN_vkCreateInstance create;
    VkResult res;
 
@@ -303,6 +314,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL fh_CreateInstance(
    s_next_gipa         = chain->u.pLayerInfo->pfnNextGetInstanceProcAddr;
    chain->u.pLayerInfo = chain->u.pLayerInfo->pNext;
    s_drop_after        = drop ? strtoul(drop, NULL, 10) : 0;
+   s_first_only        = first_only && !strcmp(first_only, "1");
 
    create = (PFN_vkCreateInstance)s_next_gipa(NULL, "vkCreateInstance");
    res    = create(info, cb, instance);

@@ -63,6 +63,9 @@ static VkColorSpaceKHR surface_space2;
 /* In place of those, a depth-30 X surface under the fake HDR10 layer:
  * A2R10G10B10 in HDR10, then in sRGB (1), or in HDR10 only (2) */
 static int depth30;
+/* In place of all of those, exactly these pairs, when any are set */
+static VkSurfaceFormatKHR pairs[4];
+static uint32_t num_pairs;
 static VkPresentModeKHR modes[2];
 static uint32_t num_modes;
 static uint32_t min_images      = 2;
@@ -92,6 +95,10 @@ static VkFormat pass_asked;
 static VkSwapchainKHR destroyed[16];
 static unsigned num_destroyed;
 static uint32_t image_counter;
+/* What the HDR metadata was sent for */
+static int meta_sends;
+static VkSwapchainKHR meta_swapchain;
+static float meta_peak;
 
 static int *fence_state(VkFence f)
 {
@@ -181,6 +188,13 @@ static VKAPI_ATTR VkResult VKAPI_CALL fake_surface_formats(
 {
    uint32_t listed = surface_format2 != VK_FORMAT_UNDEFINED ? 3 : 2;
    (void)g; (void)s;
+   if (num_pairs)
+   {
+      if (f && *n >= num_pairs)
+         memcpy(f, pairs, num_pairs * sizeof(*f));
+      *n = num_pairs;
+      return VK_SUCCESS;
+   }
    if (depth30)
    {
       listed = depth30 == 1 ? 2 : 1;
@@ -421,6 +435,16 @@ static VKAPI_ATTR VkResult VKAPI_CALL fake_queue_idle(VkQueue q)
 static VKAPI_ATTR VkResult VKAPI_CALL fake_device_idle(VkDevice d)
 { (void)d; idle_waits++; return VK_SUCCESS; }
 
+static VKAPI_ATTR void VKAPI_CALL fake_set_hdr_metadata(VkDevice d,
+      uint32_t n, const VkSwapchainKHR *s, const VkHdrMetadataEXT *m)
+{
+   (void)d;
+   CHECK(n == 1);
+   meta_sends++;
+   meta_swapchain = s[0];
+   meta_peak      = m->maxLuminance;
+}
+
 static VkRenderPass fake_pass;
 
 static VkRenderPass fake_pass_for(void *data, VkFormat format)
@@ -485,6 +509,10 @@ static void reset(void)
    surface_format2  = VK_FORMAT_UNDEFINED;
    surface_space2   = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
    depth30          = 0;
+   num_pairs        = 0;
+   meta_sends       = 0;
+   meta_swapchain   = VK_NULL_HANDLE;
+   meta_peak        = 0.0f;
    pass_none        = 0;
    sdr_10bit        = false;
    pass_asked       = VK_FORMAT_UNDEFINED;
@@ -505,6 +533,12 @@ static void hdr10_owner(void)
    ctx.flags                 |= VK_CTX_FLAG_HDR_ENABLE;
 }
 
+static void list_pair(VkFormat format, VkColorSpaceKHR space)
+{
+   pairs[num_pairs].format       = format;
+   pairs[num_pairs++].colorSpace = space;
+}
+
 static bool make(vulkan_output_t *out)
 {
 #ifdef _WIN32
@@ -520,8 +554,11 @@ static bool make(vulkan_output_t *out)
    enum vulkan_wsi_type type = VULKAN_WSI_XLIB;
 #endif
    memset(out, 0, sizeof(*out));
-   out->pass_for  = fake_pass_for;
-   out->sdr_10bit = sdr_10bit;
+   /* Not 0, which is sRGB: a check of it sees what was picked */
+   out->color_space      = VK_COLOR_SPACE_MAX_ENUM_KHR;
+   out->pass_for         = fake_pass_for;
+   out->set_hdr_metadata = fake_set_hdr_metadata;
+   out->sdr_10bit        = sdr_10bit;
    return vulkan_output_create(out, &ctx, type, display, surface,
          VIDEO_SCALE_PACK(1240, 1080));
 }
@@ -678,6 +715,137 @@ static void test_hdr_owner_no_8bit(void)
    CHECK(!make(&out));
    CHECK(out.flags & VK_OUTPUT_FLAG_LOST);
    CHECK(creates == 0);
+   CHECK(vulkan_output_retire(&out));
+   all_gone();
+}
+
+/* With the 10-bit SDR option and the main window's format not listed,
+ * a 10-bit format in HDR10 and in sRGB: the sRGB pair, never HDR10 */
+static void test_hdr_owner_other_10bit(void)
+{
+   vulkan_output_t out;
+   reset();
+   hdr10_owner();
+   ctx.swapchain_format = VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+   list_pair(VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+         VK_COLOR_SPACE_HDR10_ST2084_EXT);
+   list_pair(VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+         VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   list_pair(VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   sdr_10bit = true;
+   CHECK(make(&out));
+   CHECK(out.format == VK_FORMAT_A2B10G10R10_UNORM_PACK32);
+   CHECK(out.color_space == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   CHECK(made_space == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   CHECK(pass_asked == VK_FORMAT_A2B10G10R10_UNORM_PACK32);
+   CHECK(meta_sends == 0);
+   CHECK(vulkan_output_retire(&out));
+   all_gone();
+}
+
+/* A surface that lists the main window's HDR pair is made in it, and
+ * its metadata says the display's peak, or 1000 nits */
+static void test_hdr_surface_takes_owner_mode(void)
+{
+   vulkan_output_t out;
+   reset();
+   hdr10_owner();
+   list_pair(VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   list_pair(VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+         VK_COLOR_SPACE_HDR10_ST2084_EXT);
+   CHECK(make(&out));
+   CHECK(out.format == VK_FORMAT_A2B10G10R10_UNORM_PACK32);
+   CHECK(out.color_space == VK_COLOR_SPACE_HDR10_ST2084_EXT);
+   CHECK(made_format == VK_FORMAT_A2B10G10R10_UNORM_PACK32);
+   CHECK(made_space == VK_COLOR_SPACE_HDR10_ST2084_EXT);
+   CHECK(pass_asked == VK_FORMAT_A2B10G10R10_UNORM_PACK32);
+   CHECK(meta_sends == 1);
+   CHECK(meta_swapchain == out.swapchain);
+   CHECK(meta_peak == 1000.0f);
+
+   out.peak_nits = 600.0f;
+   CHECK(vulkan_output_resize(&out, VIDEO_SCALE_PACK(800, 600)));
+   CHECK(creates == 2);
+   CHECK(meta_sends == 2);
+   CHECK(meta_swapchain == out.swapchain);
+   CHECK(meta_peak == 600.0f);
+   CHECK(vulkan_output_retire(&out));
+   all_gone();
+}
+
+/* An HDR10 surface under scRGB output: SDR, with no metadata */
+static void test_scrgb_owner_hdr10_surface(void)
+{
+   vulkan_output_t out;
+   reset();
+   ctx.swapchain_format       = VK_FORMAT_R16G16B16A16_SFLOAT;
+   ctx.swapchain_colour_space = VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT;
+   ctx.flags                 |= VK_CTX_FLAG_HDR_ENABLE;
+   list_pair(VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+         VK_COLOR_SPACE_HDR10_ST2084_EXT);
+   list_pair(VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   CHECK(make(&out));
+   CHECK(out.format == VK_FORMAT_B8G8R8A8_UNORM);
+   CHECK(out.color_space == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   CHECK(made_space == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   CHECK(pass_asked == VK_FORMAT_B8G8R8A8_UNORM);
+   CHECK(meta_sends == 0);
+   CHECK(vulkan_output_retire(&out));
+   all_gone();
+}
+
+/* A surface that loses HDR is remade in SDR at the next out of date,
+ * with the render pass for its new format, not lost */
+static void test_surface_loses_hdr(void)
+{
+   vulkan_output_t out;
+   reset();
+   hdr10_owner();
+   list_pair(VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   list_pair(VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+         VK_COLOR_SPACE_HDR10_ST2084_EXT);
+   CHECK(make(&out));
+   CHECK(out.color_space == VK_COLOR_SPACE_HDR10_ST2084_EXT);
+
+   num_pairs = 0;
+   list_pair(VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   acquire_result = VK_ERROR_OUT_OF_DATE_KHR;
+   CHECK(vulkan_output_acquire(&out));
+   CHECK(!(out.flags & VK_OUTPUT_FLAG_LOST));
+   CHECK(creates == 2);
+   CHECK(out.format == VK_FORMAT_B8G8R8A8_UNORM);
+   CHECK(out.color_space == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   CHECK(made_space == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   CHECK(pass_asked == VK_FORMAT_B8G8R8A8_UNORM);
+   CHECK(meta_sends == 1);
+   CHECK(vulkan_output_present(&out));
+   CHECK(vulkan_output_retire(&out));
+   all_gone();
+}
+
+/* HDR output turned off again: the next swapchain is in the main
+ * window's own pair */
+static void test_owner_hdr_off_again(void)
+{
+   vulkan_output_t out;
+   reset();
+   hdr10_owner();
+   list_pair(VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   list_pair(VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+         VK_COLOR_SPACE_HDR10_ST2084_EXT);
+   CHECK(make(&out));
+   CHECK(out.color_space == VK_COLOR_SPACE_HDR10_ST2084_EXT);
+
+   ctx.flags            &= ~VK_CTX_FLAG_HDR_ENABLE;
+   ctx.swapchain_format  = VK_FORMAT_B8G8R8A8_UNORM;
+   CHECK(vulkan_output_resize(&out, VIDEO_SCALE_PACK(1240, 1080)));
+   CHECK(creates == 2);
+   CHECK(out.format == VK_FORMAT_B8G8R8A8_UNORM);
+   CHECK(out.color_space == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   CHECK(made_format == VK_FORMAT_B8G8R8A8_UNORM);
+   CHECK(made_space == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   CHECK(pass_asked == VK_FORMAT_B8G8R8A8_UNORM);
+   CHECK(meta_sends == 1);
    CHECK(vulkan_output_retire(&out));
    all_gone();
 }
@@ -875,6 +1043,11 @@ int main(void)
    test_hdr_owner_sdr_surface();
    test_hdr_owner_sdr_10bit();
    test_hdr_owner_no_8bit();
+   test_hdr_owner_other_10bit();
+   test_hdr_surface_takes_owner_mode();
+   test_scrgb_owner_hdr10_surface();
+   test_surface_loses_hdr();
+   test_owner_hdr_off_again();
    test_acquire();
    test_out_of_date();
    test_suboptimal();

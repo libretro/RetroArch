@@ -4236,7 +4236,8 @@ static bool vulkan_output_release(vulkan_output_t *output)
 
 /* The pair a second output is made in: the owner's format in sRGB, so
  * its render pass and the chains' pipelines draw there too; with HDR
- * output, SDR by the main window's own rule. */
+ * output, the owner's own pair where the surface lists it, else SDR by
+ * the main window's own rule. */
 static bool vulkan_output_pick(const vulkan_output_t *output,
       const VkSurfaceFormatKHR *formats, uint32_t count,
       VkSurfaceFormatKHR *picked)
@@ -4260,6 +4261,16 @@ static bool vulkan_output_pick(const vulkan_output_t *output,
             return true;
       return false;
    }
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+   for (i = 0; i < count; i++)
+      if (     formats[i].format     == ctx->swapchain_format
+            && formats[i].colorSpace == ctx->swapchain_colour_space)
+      {
+         *picked = formats[i];
+         return true;
+      }
+#endif
 
    if (output->sdr_10bit)
       for (i = 0; i < count; i++)
@@ -4482,8 +4493,17 @@ bool vulkan_output_resize(vulkan_output_t *output, unsigned dims)
 
    if (     picked.format     != output->format
          || picked.colorSpace != output->color_space)
-      RARCH_LOG("[Vulkan] Second output: SDR, format %d.\n",
+      RARCH_LOG("[Vulkan] Second output: %s, format %d.\n",
+              picked.colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT ? "HDR10"
+            : picked.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT
+            ? "scRGB" : "SDR",
             (int)picked.format);
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if (     picked.colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT
+         && output->set_hdr_metadata)
+      vulkan_hdr_metadata_send(output->set_hdr_metadata, ctx->device,
+            swapchain, output->peak_nits);
+#endif
    output->render_pass  = render_pass;
    output->format       = picked.format;
    output->color_space  = picked.colorSpace;
@@ -5082,6 +5102,52 @@ bool vulkan_is_hdr10_format(VkFormat format)
          format == VK_FORMAT_A2B10G10R10_UNORM_PACK32
       || format == VK_FORMAT_A2R10G10B10_UNORM_PACK32
    );
+}
+
+PFN_vkSetHdrMetadataEXT vulkan_hdr_metadata_entry(
+      const gfx_ctx_vulkan_data_t *vk)
+{
+   /* MoltenVK before 1.3.0 over-releases the autoreleased CAEDRMetadata
+    * and NSData objects it creates inside MVKSwapchain::setHDRMetadataEXT()
+    * (upstream commits 3b77dea and 8caa1d5, first shipped in 1.3.0); the
+    * pending autoreleases then crash the main-thread pool drain shortly
+    * after the call.  MoltenVK encodes driverVersion as
+    * major * 10000 + minor * 100 + patch, so 1.3.0 is 10300.  Skipping
+    * the call on affected versions only omits the SMPTE-2086 mastering
+    * hint; the layer colour space and EDR flag are still derived from
+    * the swapchain colour space by MoltenVK itself. */
+   if (     vk->set_hdr_metadata
+         && (vk->context.flags & VK_CTX_FLAG_HDR_ENABLE)
+         && vulkan_is_hdr10_format(vk->context.swapchain_format)
+         && !(   vk->wsi_type == VULKAN_WSI_MVK_MACOS
+              && vk->context.gpu_properties.driverVersion < 10300))
+      return vk->set_hdr_metadata;
+   return NULL;
+}
+
+/* The metadata the D3D path sends. Touches no formats or pipelines, so
+ * a wrong or ignored value at worst affects display tone mapping. */
+void vulkan_hdr_metadata_send(PFN_vkSetHdrMetadataEXT set_hdr_metadata,
+      VkDevice device, VkSwapchainKHR swapchain, float peak_nits)
+{
+   VkHdrMetadataEXT meta;
+   meta.sType                     = VK_STRUCTURE_TYPE_HDR_METADATA_EXT;
+   meta.pNext                     = NULL;
+   /* Rec.2020 display primaries and D65 white point. */
+   meta.displayPrimaryRed.x       = 0.708f;
+   meta.displayPrimaryRed.y       = 0.292f;
+   meta.displayPrimaryGreen.x     = 0.170f;
+   meta.displayPrimaryGreen.y     = 0.797f;
+   meta.displayPrimaryBlue.x      = 0.131f;
+   meta.displayPrimaryBlue.y      = 0.046f;
+   meta.whitePoint.x              = 0.3127f;
+   meta.whitePoint.y              = 0.3290f;
+   /* 1000 nits unless Use Display Peak supplies the display's */
+   meta.maxLuminance              = peak_nits > 0.0f ? peak_nits : 1000.0f;
+   meta.minLuminance              = 0.001f;
+   meta.maxContentLightLevel      = meta.maxLuminance;
+   meta.maxFrameAverageLightLevel = meta.maxLuminance;
+   set_hdr_metadata(device, 1, &swapchain, &meta);
 }
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
@@ -6059,46 +6125,12 @@ dxgi_unavailable:
    vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-   /* Signal SMPTE-2086 mastering-display metadata to the compositor for an
-    * HDR10 swapchain. Best-effort: only when VK_EXT_hdr_metadata was enabled
-    * (set_hdr_metadata non-NULL) and the swapchain is an HDR10 surface.
-    * Uses Rec.2020 primaries (matching the D3D path) and RetroArch's
-    * configured output-luminance range. Touches no formats or pipelines, so
-    * a wrong or ignored value at worst affects display tone mapping. */
-   /* MoltenVK before 1.3.0 over-releases the autoreleased CAEDRMetadata
-    * and NSData objects it creates inside MVKSwapchain::setHDRMetadataEXT()
-    * (upstream commits 3b77dea and 8caa1d5, first shipped in 1.3.0); the
-    * pending autoreleases then crash the main-thread pool drain shortly
-    * after the call.  MoltenVK encodes driverVersion as
-    * major * 10000 + minor * 100 + patch, so 1.3.0 is 10300.  Skipping
-    * the call on affected versions only omits the SMPTE-2086 mastering
-    * hint; the layer colour space and EDR flag are still derived from
-    * the swapchain colour space by MoltenVK itself. */
-   if (     vk->set_hdr_metadata
-         && (vk->context.flags & VK_CTX_FLAG_HDR_ENABLE)
-         && vulkan_is_hdr10_format(vk->context.swapchain_format)
-         && !(   vk->wsi_type == VULKAN_WSI_MVK_MACOS
-              && vk->context.gpu_properties.driverVersion < 10300))
    {
-      VkHdrMetadataEXT meta;
-      meta.sType                     = VK_STRUCTURE_TYPE_HDR_METADATA_EXT;
-      meta.pNext                     = NULL;
-      /* Rec.2020 display primaries and D65 white point. */
-      meta.displayPrimaryRed.x       = 0.708f;
-      meta.displayPrimaryRed.y       = 0.292f;
-      meta.displayPrimaryGreen.x     = 0.170f;
-      meta.displayPrimaryGreen.y     = 0.797f;
-      meta.displayPrimaryBlue.x      = 0.131f;
-      meta.displayPrimaryBlue.y      = 0.046f;
-      meta.whitePoint.x              = 0.3127f;
-      meta.whitePoint.y              = 0.3290f;
-      /* 1000 nits unless Use Display Peak supplies the display's */
-      meta.maxLuminance              = ss->display_peak > 0.0f
-            ? ss->display_peak : 1000.0f;
-      meta.minLuminance              = 0.001f;
-      meta.maxContentLightLevel      = meta.maxLuminance;
-      meta.maxFrameAverageLightLevel = meta.maxLuminance;
-      vk->set_hdr_metadata(vk->context.device, 1, &vk->swapchain, &meta);
+      PFN_vkSetHdrMetadataEXT set_hdr_metadata =
+         vulkan_hdr_metadata_entry(vk);
+      if (set_hdr_metadata)
+         vulkan_hdr_metadata_send(set_hdr_metadata, vk->context.device,
+               vk->swapchain, ss->display_peak);
    }
 #endif
 

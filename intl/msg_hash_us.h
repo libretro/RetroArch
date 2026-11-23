@@ -7987,7 +7987,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE_ANDROID,
-   "Let game screens and the menu use other displays. Off keeps everything in one window."
+   "Let game screens and the menu use other displays. Off keeps everything in one window. With HDR on, Android may leave a second screen dimmer; raise its brightness to match."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SETTINGS,

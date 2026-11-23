@@ -33,7 +33,8 @@ parts = [function(driver, name) for name in
           'vulkan_views_fp16_update', 'vulkan_views_chain_target',
           'vulkan_views_hdr_semantics', 'vulkan_views_target_make',
           'vulkan_views_target_pass', 'vulkan_views_target_premult',
-          'vulkan_views_targets_free')]
+          'vulkan_views_targets_free', 'vulkan_window_encodes',
+          'vulkan_window_output_stale')]
 for name in ('VV_FN', 'VV_DRV', 'VV_TARGET', 'VV_TARGET_MAKE',
              'VV_TARGET_RETIRE'):
     match = re.search(r'^#define ' + name + r'(?:\(|\s).*$', driver, re.M)

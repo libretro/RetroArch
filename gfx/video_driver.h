@@ -784,6 +784,8 @@ typedef struct video_frame_info
    float hdr_menu_nits;
    float hdr_paper_white_nits;
    float hdr_max_nits;
+   /* Use Display Peak: a screen window's display gives its own */
+   bool hdr_use_display_peak;
    bool overlay_behind_menu;
    bool scan_subframes;
    bool shader_active;

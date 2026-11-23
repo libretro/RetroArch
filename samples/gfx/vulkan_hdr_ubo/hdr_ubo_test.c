@@ -18,6 +18,7 @@
 #define VULKAN_DIRTY_DYNAMIC_BIT 1
 #define VIDEO_SCALE_W(d) (((unsigned)(d) >> 16) & 0xFFFF)
 #define VIDEO_SCALE_H(d) ((unsigned)(d) & 0xFFFF)
+#define VIDEO_SCALE_PACK(w, h) (((unsigned)(w) << 16) | ((unsigned)(h) & 0xFFFF))
 #define RGBA16_WHITE 0xFFFFFFFFUL
 #define VULKAN_SET_UNIFORM_BUFFER(dev, set, binding, buffer, offset, range) \
    set_uniform_buffer(dev, set, binding, buffer, offset, range)
@@ -134,6 +135,11 @@ static unsigned num_draws;
 static VkImageView set_images[MAX_SETS][3];
 static VkImageView draw_images[MAX_DRAWS][3];
 static bool pass_open;
+/* The last pass begun, viewport and scissor */
+static VkFramebuffer began_framebuffer;
+static VkRect2D began_area;
+static VkViewport set_viewport;
+static VkRect2D set_scissor;
 static unsigned failures;
 
 static struct context ctx;
@@ -144,8 +150,10 @@ static struct vk_image offscreen, backbuffer, readback_image;
 static void vkCmdBeginRenderPass(VkCommandBuffer cmd,
       const VkRenderPassBeginInfo *info, int contents)
 {
-   (void)cmd; (void)info; (void)contents;
-   pass_open = true;
+   (void)cmd; (void)contents;
+   pass_open         = true;
+   began_framebuffer = info->framebuffer;
+   began_area        = info->renderArea;
 }
 
 static void vkCmdEndRenderPass(VkCommandBuffer cmd)
@@ -205,13 +213,15 @@ static void vkCmdBindDescriptorSets(VkCommandBuffer cmd, int point,
 static void vkCmdSetViewport(VkCommandBuffer cmd, uint32_t first,
       uint32_t count, const VkViewport *vp)
 {
-   (void)cmd; (void)first; (void)count; (void)vp;
+   (void)cmd; (void)first; (void)count;
+   set_viewport = *vp;
 }
 
 static void vkCmdSetScissor(VkCommandBuffer cmd, uint32_t first,
       uint32_t count, const VkRect2D *sci)
 {
-   (void)cmd; (void)first; (void)count; (void)sci;
+   (void)cmd; (void)first; (void)count;
+   set_scissor = *sci;
 }
 
 static bool vulkan_buffer_chain_alloc(const struct context *c,
@@ -267,6 +277,10 @@ static void setup(void)
    ranges_used = sets_used = num_draws = 0;
    bound_set   = VK_NULL_HANDLE;
    pass_open   = false;
+   began_framebuffer = VK_NULL_HANDLE;
+   memset(&began_area, 0, sizeof(began_area));
+   memset(&set_viewport, 0, sizeof(set_viewport));
+   memset(&set_scissor, 0, sizeof(set_scissor));
 
    ctx.device         = 1;
    ctx.swapchain_dims = (640u << 16) | 480u;
@@ -332,8 +346,10 @@ static void test_two_passes_keep_their_values(void)
 
    setup();
    /* scRGB game pass decoding a PQ preset, then the SDR readback. */
-   vulkan_run_hdr_pipeline(1, 2, &offscreen, &backbuffer, &vk, 3, false);
-   vulkan_run_hdr_pipeline(3, 4, &backbuffer, &readback_image, &vk, 2, false);
+   vulkan_run_hdr_pipeline(1, 2, &offscreen, backbuffer.framebuffer,
+         ctx.swapchain_dims, &vk, 3, false);
+   vulkan_run_hdr_pipeline(3, 4, &backbuffer, readback_image.framebuffer,
+         ctx.swapchain_dims, &vk, 2, false);
    if (submit(t, 2, u))
    {
       expect(t, u[0].hdr_mode == 3, "first draw's hdr_mode is 3",
@@ -357,8 +373,10 @@ static void test_menu_nits_only_in_composite(void)
    unsigned before = failures;
 
    setup();
-   vulkan_run_hdr_pipeline(1, 2, &offscreen, &backbuffer, &vk, 1, false);
-   vulkan_run_hdr_pipeline(5, 6, &offscreen, &backbuffer, &vk, 1, true);
+   vulkan_run_hdr_pipeline(1, 2, &offscreen, backbuffer.framebuffer,
+         ctx.swapchain_dims, &vk, 1, false);
+   vulkan_run_hdr_pipeline(5, 6, &offscreen, backbuffer.framebuffer,
+         ctx.swapchain_dims, &vk, 1, true);
    if (submit(t, 2, u))
    {
       expect(t, u[0].paper_white_nits == 203.0f,
@@ -384,8 +402,10 @@ static void test_values_restored(void)
 
    setup();
    base = vk.hdr.ubo_values;
-   vulkan_run_hdr_pipeline(1, 2, &offscreen, &backbuffer, &vk, 3, false);
-   vulkan_run_hdr_pipeline(5, 6, &offscreen, &backbuffer, &vk, 2, true);
+   vulkan_run_hdr_pipeline(1, 2, &offscreen, backbuffer.framebuffer,
+         ctx.swapchain_dims, &vk, 3, false);
+   vulkan_run_hdr_pipeline(5, 6, &offscreen, backbuffer.framebuffer,
+         ctx.swapchain_dims, &vk, 2, true);
    for (i = 0; i < sizeof(base) && a[i] == b[i]; i++) { }
    expect(t, i == sizeof(base),
          "base uniform values unchanged; first changed byte", (double)i);
@@ -406,12 +426,39 @@ static void test_recycled_set_names_only_the_source(void)
 
    setup();
    set_images[1][1] = 99;
-   vulkan_run_hdr_pipeline(1, 2, &offscreen, &backbuffer, &vk, 1, false);
+   vulkan_run_hdr_pipeline(1, 2, &offscreen, backbuffer.framebuffer,
+         ctx.swapchain_dims, &vk, 1, false);
    if (submit(t, 1, u))
       for (b = 1; b < 3; b++)
          expect(t, draw_images[0][b] == offscreen.view,
                "every image binding of the drawn set names the source",
                draw_images[0][b]);
+   if (failures == before)
+      printf("[pass] %s\n", t);
+}
+
+/* A pass into a screen window's swapchain covers that swapchain, not
+ * the main window's */
+static void test_dims_set_render_area(void)
+{
+   static const char t[] = "test_dims_set_render_area";
+   unsigned before = failures;
+
+   setup();
+   ctx.swapchain_dims = VIDEO_SCALE_PACK(1600, 960);
+   vulkan_run_hdr_pipeline(1, 2, &offscreen, backbuffer.framebuffer,
+         VIDEO_SCALE_PACK(1240, 1080), &vk, 1, false);
+   expect(t, began_framebuffer == backbuffer.framebuffer,
+         "pass begins on the framebuffer given", began_framebuffer);
+   expect(t, began_area.extent.width == 1240,
+         "render area is 1240 wide", began_area.extent.width);
+   expect(t, began_area.extent.height == 1080,
+         "render area is 1080 high", began_area.extent.height);
+   expect(t, set_viewport.width == 1240.0f && set_viewport.height == 1080.0f,
+         "viewport is 1240x1080; width", set_viewport.width);
+   expect(t, set_scissor.extent.width == 1240
+         && set_scissor.extent.height == 1080,
+         "scissor is 1240x1080; width", set_scissor.extent.width);
    if (failures == before)
       printf("[pass] %s\n", t);
 }
@@ -422,5 +469,6 @@ int main(void)
    test_menu_nits_only_in_composite();
    test_values_restored();
    test_recycled_set_names_only_the_source();
+   test_dims_set_render_area();
    return failures ? 1 : 0;
 }

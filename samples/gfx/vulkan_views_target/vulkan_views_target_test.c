@@ -4,7 +4,8 @@
  * pass steps stubbed: what reaches the runtime's images, when a chain
  * ends a frame, and when a repeat replays the last frame's final pass.
  * The second outputs' render passes run against a fake device, and the
- * headset's format pick against a fake runtime. */
+ * headset's format pick against a fake runtime; a screen window's
+ * output is checked for whether it encodes HDR. */
 #include <stdio.h>
 #include <string.h>
 #include <vulkan/vulkan.h>
@@ -157,6 +158,7 @@ typedef struct
       bool scanlines_logged;
       bool preset_hdr_logged;
       struct vk_target_pass targets[VK_VIEWS_TARGETS];
+      unsigned passes_freed;
    } views;
    struct { struct vk_effect_template effect_tpl[2]; } display;
    struct
@@ -196,6 +198,21 @@ typedef struct
 } vk_t;
 
 typedef struct vulkan_openxr vulkan_openxr_t;
+
+typedef struct
+{
+   VkRenderPass render_pass;
+   VkFormat format;
+   VkColorSpaceKHR color_space;
+} vulkan_output_t;
+
+struct vk_window
+{
+   struct { void *surface; } native;
+   vulkan_output_t output;
+   void *surface;
+   unsigned passes_freed;
+};
 
 typedef struct
 {
@@ -816,6 +833,105 @@ static void test_target_passes(void)
    CHECK(passes_made == 3 && passes_destroyed == 3 && modules_live == 0);
    CHECK(vulkan_views_target_premult(&vk, VK_FORMAT_B8G8R8A8_UNORM)
          == VK_NULL_HANDLE);
+
+   /* A full cache makes no more */
+   fail_pipeline = false;
+   CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_UNORM, true)
+         != VK_NULL_HANDLE);
+   CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_R8G8B8A8_UNORM, true)
+         != VK_NULL_HANDLE);
+   CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_SRGB, true)
+         != VK_NULL_HANDLE);
+   CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+            true) != VK_NULL_HANDLE);
+   CHECK(passes_made == 7);
+   CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_R8G8B8A8_SRGB, true)
+         == VK_NULL_HANDLE);
+   CHECK(passes_made == 7);
+   vulkan_views_targets_free(&vk);
+   CHECK(passes_destroyed == 7 && pipes_destroyed == 6);
+
+   /* Nor any without the menu effects' pipeline state */
+   vk.display.effect_tpl[0].valid = false;
+   CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_UNORM, true)
+         == VK_NULL_HANDLE);
+   CHECK(passes_made == 7 && pipes_made == 6 && modules_live == 0);
+}
+
+/* A screen window encodes HDR as the main window does on an output that
+ * took the main window's HDR pair; an SDR output, or one in a format the
+ * encode passes are not made for, takes the copy */
+static void test_window_encodes(void)
+{
+   vk_t vk;
+   test_context_t context;
+   test_chain_t chain;
+   vulkan_output_t out;
+   unsigned mode = 0;
+   init(&vk, &context, &chain);
+   memset(&out, 0, sizeof(out));
+   context.flags            = VK_CTX_FLAG_HDR_ENABLE;
+   context.swapchain_format = VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+
+   out.format      = VK_FORMAT_B8G8R8A8_UNORM;
+   out.color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+   CHECK(!vulkan_window_encodes(&vk, &out, &mode));
+   out.format      = context.swapchain_format;
+   CHECK(!vulkan_window_encodes(&vk, &out, &mode));
+
+   out.color_space = VK_COLOR_SPACE_HDR10_ST2084_EXT;
+   CHECK(vulkan_window_encodes(&vk, &out, &mode) && mode == 1);
+
+   context.flags            = VK_CTX_FLAG_HDR_ENABLE | VK_CTX_FLAG_HDR_SCRGB;
+   context.swapchain_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+   out.format               = context.swapchain_format;
+   out.color_space          = VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT;
+   mode                     = 0;
+   CHECK(vulkan_window_encodes(&vk, &out, &mode) && mode == 2);
+
+   out.format      = VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+   out.color_space = VK_COLOR_SPACE_HDR10_ST2084_EXT;
+   CHECK(!vulkan_window_encodes(&vk, &out, &mode));
+}
+
+/* A swapchain rebuild remakes a screen window's output, also when the
+ * pass in the window's format comes back with the same handle */
+static void test_window_output_stale(void)
+{
+   vk_t vk;
+   test_context_t context;
+   test_chain_t chain;
+   struct vk_window win;
+   init(&vk, &context, &chain);
+   memset(&win, 0, sizeof(win));
+   context.swapchain_format       = VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+   vk.views.render_pass           = (VkRenderPass)(uintptr_t)0x77;
+   vk.pipelines.alpha_premult     = (VkPipeline)(uintptr_t)0x78;
+   vk.display.effect_tpl[0].valid = true;
+   win.surface                    = &win;
+   win.native.surface             = &win;
+   win.output.format              = context.swapchain_format;
+   win.output.render_pass         = vk.views.render_pass;
+   CHECK(!vulkan_window_output_stale(&vk, &win));
+   win.native.surface = &chain;
+   CHECK(vulkan_window_output_stale(&vk, &win));
+   win.native.surface = &win;
+
+   vulkan_views_targets_free(&vk);
+   CHECK(vulkan_window_output_stale(&vk, &win));
+
+   /* One in a format of its own */
+   memset(&win, 0, sizeof(win));
+   win.surface            = &win;
+   win.native.surface     = &win;
+   win.passes_freed       = vk.views.passes_freed;
+   win.output.format      = VK_FORMAT_B8G8R8A8_UNORM;
+   win.output.render_pass = vulkan_views_target_pass(&vk,
+         win.output.format, true);
+   CHECK(win.output.render_pass != VK_NULL_HANDLE);
+   CHECK(!vulkan_window_output_stale(&vk, &win));
+   vulkan_views_targets_free(&vk);
+   CHECK(vulkan_window_output_stale(&vk, &win));
 }
 
 /* @screens screens drawn whole, then the menu. */
@@ -1331,11 +1447,13 @@ int main(void)
    test_view_chain_target();
    test_view_chain_hdr_semantics();
    test_target_passes();
+   test_window_encodes();
+   test_window_output_stale();
    test_xr_slots_sdr_under_hdr();
    test_xr_draw_in_xr_pass();
    test_xr_hdr_preset_falls_back();
    test_views_preset_hdr();
    test_xr_pick_format();
-   printf("%u failed (18 Vulkan target cases)\n", failures);
+   printf("%u failed (20 Vulkan target cases)\n", failures);
    return failures ? 1 : 0;
 }
