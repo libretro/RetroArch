@@ -32,12 +32,20 @@ Wine's Z: drive has them; a D3DCompiler_47.dll next to the binary is
 taken over Wine's own (Windows-wine-views.yml). The cases that need a
 preset run only on drivers whose views take one.
 
+With RA_E2E_HDR=1 the vulkan cases have HDR10 output, HDR_CASES with
+them: in gamescope with its HDR on, or on an Xvfb of depth 30 through
+samples/gfx/vulkan_hdr_ui_pass's fake HDR10 layer. The 16-bit PQ
+screenshots are decoded back to the SDR colours the points name, and a
+case fails on any validation error or an HDR pass it should not take.
+
 Usage: run.py <retroarch binary> <output dir> <driver> [driver ...]
 """
 
 import ctypes
+import importlib.util
 import itertools
 import os
+import pathlib
 import random
 import re
 import shlex
@@ -59,6 +67,9 @@ CORE = os.path.normpath(os.path.join(
     HERE, '..', 'video_views_libretro.' + ('dll' if WINE else 'so')))
 W, H = 1600, 960
 TOLERANCE = 8
+# A 16-bit PQ screenshot decoded back to SDR: the 10-bit swapchain's
+# rounding lifts a saturated colour's zero channel by up to 10.
+HDR_TOLERANCE = 16
 # How long a case runs on once its views status is final: the frames
 # that take up the layout, with threaded video's one behind. Wine's
 # software D3D draws a frame in far longer.
@@ -417,6 +428,51 @@ COPY_RE = re.compile(r'\[GLCore\] Views copied by ([\w ]+)\.')
 STATUS_RE = re.compile(
     r'\[video_views\] presents=(\d) stereo=(\d) accepted=(\d)')
 
+# RA_E2E_HDR=1: the vulkan cases with HDR10 output, and HDR_CASES too.
+HDR = os.environ.get('RA_E2E_HDR') == '1'
+# Gamut 0 is "Accurate": plain Rec.709 to Rec.2020.
+HDR10_SETTINGS = {'video_hdr_mode': '1', 'video_hdr_paper_white_nits': '203',
+                  'video_hdr_max_nits': '1000', 'video_hdr_menu_nits': '203',
+                  'video_hdr_use_display_peak': 'false',
+                  'video_hdr_expand_gamut': '0'}
+# Builds the fake HDR10 layer for Xvfb.
+HDR_UI_PASS = os.path.normpath(os.path.join(
+    HERE, '../../../gfx/vulkan_hdr_ui_pass/run.py'))
+# What the driver logs as it takes each HDR pass.
+GAME_PASS = '[Vulkan] HDR game pass:'
+COMPOSITE_PASS = '[Vulkan] HDR composite pass:'
+# Run only with RA_E2E_HDR=1.
+# [(name, map option, settings, points, extra)]. extra may hold preset
+# (a preset's path), menu (opened, as in MENU_CASES), env (added to
+# RetroArch's), raw (points are the PQ codes' top bytes, not decoded),
+# game and composite (whether the HDR game pass and composite are taken:
+# True and menu by default) and log (lines the log holds, in order).
+HDR_CASES = [
+    ('hdr-preset-menu-sbs', '3ds',
+     {'video_stereo_mode': '2', 'video_shader_enable': 'true',
+      'menu_driver': 'rgui'}, [],
+     {'preset': os.path.join(HERE, 'pass.slangp'), 'menu': True}),
+]
+# (game, composite) for the other cases that check the HDR passes they
+# take; the runs made from a case (crop-threaded-menu-0,
+# view-rect-ds-rect-nearest) take its entry.
+HDR_PASSES = {'3ds-top-bottom': (True, False), '3ds-anaglyph': (True, False),
+              'view-rect-ds': (True, False),
+              # drawn whole, so straight to the swapchain
+              'crop-threaded-menu': (False, True)}
+# PQ (SMPTE ST 2084), and Rec.2020 primaries to Rec.709 as
+# hdr_common.glsl has them.
+M1, M2 = 2610 / 16384, 2523 / 4096 * 128
+C1, C2, C3 = 3424 / 4096, 2413 / 4096 * 32, 2392 / 4096 * 32
+BT2020_TO_709 = ((1.6604910, -0.5876411, -0.0728499),
+                 (-0.1245505, 1.1328999, -0.0083494),
+                 (-0.0181508, -0.1005789, 1.1187297))
+# The fake HDR10 layer's environment once built, and the directory it
+# is built in, which main() removes.
+HDR_LAYER_ENV = {}
+HDR_LAYER_DIRS = []
+HDR_LAYER_LOCK = threading.Lock()
+
 
 # The last few files read_png() decoded on this thread, by path, with
 # the stat that says they are the same file: a pointer case reads each
@@ -424,29 +480,32 @@ STATUS_RE = re.compile(
 PNG_CACHE = threading.local()
 
 
-def read_png(path):
-    """8-bit RGB or RGBA, non-interlaced: what rpng writes."""
+def read_png(path, raw=False):
+    """8-bit RGB or RGBA, or 16-bit PQ RGB as read_png_file() reads it;
+    non-interlaced: what rpng writes."""
     st    = os.stat(path)
-    key   = (st.st_mtime_ns, st.st_size, st.st_ino)
+    key   = (st.st_mtime_ns, st.st_size, st.st_ino, raw)
     cache = PNG_CACHE.__dict__.setdefault('files', {})
     hit   = cache.get(path)
     if hit and hit[0] == key:
         return hit[1]
-    png = read_png_file(path)
+    png = read_png_file(path, raw)
     if len(cache) >= 8:
         cache.pop(next(iter(cache)))
     cache[path] = (key, png)
     return png
 
 
-def read_png_file(path):
-    """read_png() without the cache."""
+def read_png_file(path, raw=False):
+    """read_png() without the cache. A 16-bit PQ screenshot (HDR10 or
+    scRGB) comes back as 8-bit RGB: the SDR colours it was encoded from,
+    or with raw the codes' top bytes."""
     with open(path, 'rb') as f:
         data = f.read()
     if data[:8] != b'\x89PNG\r\n\x1a\n':
         raise ValueError('not a PNG')
     pos, idat = 8, b''
-    w = h = ct = bd = None
+    w = h = ct = bd = cicp = None
     while pos < len(data):
         ln, = struct.unpack('>I', data[pos:pos + 4])
         typ = data[pos + 4:pos + 8]
@@ -456,12 +515,17 @@ def read_png_file(path):
             w, h, bd, ct = struct.unpack('>IIBB', body[:10])
         elif typ == b'IDAT':
             idat += body
+        elif typ == b'cICP':
+            cicp = body[:2]
         elif typ == b'IEND':
             break
-    if bd != 8 or ct not in (2, 6):
+    if (bd, ct) not in ((8, 2), (8, 6), (16, 2)):
         raise ValueError('unsupported PNG: depth %s type %s' % (bd, ct))
-    bpp = 3 if ct == 2 else 4
-    raw = zlib.decompress(idat)
+    # cICP primaries 9 (Rec.2020) or 1 (scRGB's Rec.709), transfer PQ
+    if bd == 16 and (not cicp or cicp[0] not in (1, 9) or cicp[1] != 16):
+        raise ValueError('16-bit PNG without PQ in its cICP')
+    bpp = (3 if ct == 2 else 4) * bd // 8
+    data = zlib.decompress(idat)
     stride = w * bpp
     rows, prev, i = [], bytearray(stride), 0
     # Up rows add the row above a byte at a time, with no carry between
@@ -470,8 +534,8 @@ def read_png_file(path):
     low = int.from_bytes(b'\x7f' * stride, 'little')
     top = int.from_bytes(b'\x80' * stride, 'little')
     for _ in range(h):
-        f = raw[i]
-        line = bytearray(raw[i + 1:i + 1 + stride])
+        f = data[i]
+        line = bytearray(data[i + 1:i + 1 + stride])
         i += 1 + stride
         if f == 2:
             p = int.from_bytes(line, 'little')
@@ -495,7 +559,49 @@ def read_png_file(path):
                 line[x] = (line[x] + pr) & 255
         rows.append(line)
         prev = line
+    if bd == 16:
+        memo = {}
+        rows = [pq_row(line, cicp[0] == 9, raw, memo) for line in rows]
+        bpp = 3
     return w, h, bpp, rows
+
+
+def png_depth(path):
+    """A PNG's bit depth, from its IHDR."""
+    with open(path, 'rb') as f:
+        return f.read(25)[24]
+
+
+def pq16_to_srgb8(code16, bt2020):
+    """The SDR colour hdr.frag encoded as a 16-bit PQ pixel (r, g, b):
+    PQ to nits, paper white to 1.0, Rec.2020 primaries to Rec.709 when
+    bt2020, gamma 2.4."""
+    white = float(HDR10_SETTINGS['video_hdr_paper_white_nits'])
+    lin = []
+    for c in code16:
+        e = (c / 65535) ** (1 / M2)
+        nits = 10000 * (max(e - C1, 0) / (C2 - C3 * e)) ** (1 / M1)
+        lin.append(nits / white)
+    if bt2020:
+        lin = [sum(m * v for m, v in zip(row, lin)) for row in BT2020_TO_709]
+    return tuple(round(255 * min(max(v, 0.0), 1.0) ** (1 / 2.4))
+                 for v in lin)
+
+
+def pq_row(line, bt2020, raw, memo):
+    """A row of 16-bit PQ RGB as read_png_file() returns it; memo holds
+    the pixels decoded so far."""
+    if raw:
+        return line[0::2]
+    out = bytearray(len(line) // 2)
+    for i in range(0, len(line), 6):
+        px = bytes(line[i:i + 6])
+        rgb = memo.get(px)
+        if rgb is None:
+            rgb = memo[px] = bytes(pq16_to_srgb8(struct.unpack('>3H', px),
+                                                 bt2020))
+        out[i // 2:i // 2 + 3] = rgb
+    return out
 
 
 def send(cmd, port):
@@ -599,6 +705,8 @@ def write_cfg(path, d, driver, settings, port):
     if WINE:
         cfg = {k: winpath(v) for k, v in cfg.items()}
         cfg.update(video_context_driver='', input_driver='dinput')
+    if HDR and driver == 'vulkan':
+        cfg.update(HDR10_SETTINGS)
     cfg.update(settings)
     with open(path, 'w') as f:
         for k in sorted(cfg):
@@ -702,6 +810,67 @@ def status_errors(d, driver, settings):
     if found[:2] != want:
         errors.append('status presents=%d stereo=%d, want presents=%d '
                       'stereo=%d' % (found[0], found[1], want[0], want[1]))
+    return errors
+
+
+def log_text(d):
+    """A case's run.log and retroarch.log, one after the other."""
+    text = ''
+    for name in ('run.log', 'retroarch.log'):
+        path = os.path.join(d, name)
+        if os.path.exists(path):
+            with open(path, errors='replace') as f:
+                text += f.read()
+    return text
+
+
+def hdr_env():
+    """The environment that loads the fake HDR10 layer, built the first
+    time it is asked for."""
+    with HDR_LAYER_LOCK:
+        if not HDR_LAYER_ENV:
+            spec = importlib.util.spec_from_file_location(
+                'vulkan_hdr_ui_pass', HDR_UI_PASS)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            d = tempfile.mkdtemp(prefix='ra-e2e-hdr-')
+            HDR_LAYER_DIRS.append(d)
+            manifest = mod.build_layer(pathlib.Path(d))
+            HDR_LAYER_ENV.update(VK_ADD_LAYER_PATH=str(manifest.parent),
+                                 VK_INSTANCE_LAYERS='VK_LAYER_RA_fake_hdr')
+        return dict(HDR_LAYER_ENV)
+
+
+def hdr_passes(name):
+    """(game, composite) from HDR_PASSES for a run named name; None for
+    a pass it does not check."""
+    found = [k for k in HDR_PASSES
+             if name == k or name.startswith(k + '-')]
+    return HDR_PASSES[max(found, key=len)] if found else (None, None)
+
+
+def hdr_errors(d, game, composite):
+    """A run with HDR10 output must have it (on Xvfb the fake layer logs
+    its HDR10 swapchain) and log no validation error. game and
+    composite say whether it takes the HDR game pass and composite;
+    None checks neither way."""
+    text = log_text(d)
+    errors = []
+    if XVFB and 'fake-hdr: HDR10 swapchain' not in text:
+        errors.append('no HDR10 swapchain was created (fell back to SDR?)')
+    vuids = {}
+    for line in text.splitlines():
+        if 'Validation Error' in line:
+            m = re.search(r'\[ (\S+) \]', line)
+            vuid = m.group(1) if m else line.strip()[:200]
+            vuids[vuid] = vuids.get(vuid, 0) + 1
+    if vuids:
+        errors.append('%d validation error(s)' % sum(vuids.values()))
+        errors += ['  %s x%d' % (v, vuids[v]) for v in sorted(vuids)]
+    for line, want, what in ((GAME_PASS, game, 'game pass'),
+                             (COMPOSITE_PASS, composite, 'composite')):
+        if want is not None and (line in text) != want:
+            errors.append('%s HDR %s' % ('no' if want else 'an', what))
     return errors
 
 
@@ -888,12 +1057,13 @@ def release_display(display):
         TAKEN_DISPLAYS.discard(int(display.lstrip(':')))
 
 
-def xvfb_start(env):
+def xvfb_start(env, depth=24):
     """An Xvfb of the window's size: its process and DISPLAY."""
     n = free_display()
     # A client disconnect must not reset the server during startup.
     p = subprocess.Popen(['Xvfb', ':%d' % n, '-screen', '0',
-                          '%dx%dx24' % (W, H), '-nolisten', 'tcp', '-noreset'],
+                          '%dx%dx%d' % (W, H, depth), '-nolisten', 'tcp',
+                          '-noreset'],
                          stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL, env=env,
                          start_new_session=True)
@@ -1062,15 +1232,18 @@ def case_dir(root, driver, name, hw='off'):
 
 def run_case(retroarch, root, driver, case, hw='off', menu=False,
              opts=None, args=(), gpu=None, pointer=(), env_extra=None,
-             pointer_check=None):
+             pointer_check=None, raw=False, passes=None):
     """gpu, a list, gets RetroArch's GPU memory in MiB sampled while it
     settles. pointer, window points, has the menu open with the pointer
     at each in turn, in d/pointer-N.png; pointer_check(d) gives the
     errors of a round of those, which is taken again, at most
     POINTER_ROUNDS times, until it has none: a frame the menu had not
     drawn the cursor in yet is not the code's failure. env_extra is
-    added to RetroArch's environment."""
+    added to RetroArch's environment. With HDR10 output raw reads the
+    points as read_png() does, and passes, (game, composite), are what
+    hdr_errors() checks; hdr_passes() gives them by default."""
     name, mapopt, settings, points = case
+    hdr = HDR and driver == 'vulkan'
     d = case_dir(root, driver, name, hw)
     if os.path.commonpath([root, d]) != root or d == root:
         raise RuntimeError('refusing to touch ' + d)
@@ -1102,17 +1275,20 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
              ' exec "$0" "$@"')
     cmd = ['gamescope', '--backend', 'headless',
            '-w', str(W), '-h', str(H), '-W', str(W), '-H', str(H),
-           '-r', '60', '--',
-           'sh', '-c', guard,
-           retroarch, '--config', cfg, '-L', CORE, '--verbose'] + list(args)
+           '-r', '60'] + \
+        (['--hdr-enabled', '--hdr-debug-force-support'] if hdr else []) + \
+        ['--', 'sh', '-c', guard,
+         retroarch, '--config', cfg, '-L', CORE, '--verbose'] + list(args)
     env = isolated_env()
+    if hdr:
+        env.update(hdr_env() if XVFB else {'ENABLE_GAMESCOPE_WSI': '1'})
     env.update(env_extra or {})
     # Xvfb has no XVideo adaptor: the stand-in's, preloaded
     if driver == 'xvideo' and XV_STANDIN:
         env['LD_PRELOAD'] = XV_STANDIN
     xvfb = wm = None
     if XVFB:
-        xvfb, env['DISPLAY'] = xvfb_start(env)
+        xvfb, env['DISPLAY'] = xvfb_start(env, 30 if hdr else 24)
         if driver in WM_DRIVERS:
             # sdl12-compat otherwise creates a GL renderer on Xvfb.
             env['SDL_RENDER_DRIVER'] = 'software'
@@ -1214,15 +1390,19 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
             shutil.rmtree(runtime_dir, ignore_errors=True)
 
     errors = status_errors(d, driver, settings)
+    if hdr:
+        errors += hdr_errors(d, *(passes or hdr_passes(name)))
     if not shot:
         return errors + ['no screenshot (see %s)'
                          % os.path.join(d, 'run.log')]
-    w, h, bpp, rows = read_png(shot)
+    w, h, bpp, rows = read_png(shot, raw)
     if (w, h) != (W, H):
         return errors + ['screenshot is %dx%d, want %dx%d' % (w, h, W, H)]
+    tolerance = HDR_TOLERANCE if png_depth(shot) == 16 and not raw \
+        else TOLERANCE
     for x, y, want in points:
         got = tuple(rows[y][x * bpp:x * bpp + 3])
-        if any(abs(g - e) > TOLERANCE for g, e in zip(got, want)):
+        if any(abs(g - e) > tolerance for g, e in zip(got, want)):
             errors.append('(%d,%d) got %s want %s' % (x, y, got, want))
     return errors
 
@@ -1435,6 +1615,28 @@ def run_menu_case(retroarch, root, driver, case):
         if diff > MENU_DIFF_MAX:
             errors.append('stereo mode %s: %d pixels differ from mode %s'
                           % (mode, diff, modes[0]))
+    return errors
+
+
+def run_hdr_case(retroarch, root, driver, case):
+    """An HDR_CASES case."""
+    name, mapopt, settings, points, extra = case
+    menu = extra.get('menu', False)
+    args = ('--set-shader=' + extra['preset'],) if 'preset' in extra else ()
+    errors = run_case(retroarch, root, driver,
+                      (name, mapopt, settings, points), menu=menu,
+                      args=args, env_extra=extra.get('env'),
+                      raw=extra.get('raw', False),
+                      passes=(extra.get('game', True),
+                              extra.get('composite', menu)))
+    text, at = log_text(case_dir(root, driver, name)), 0
+    for line in extra.get('log', ()):
+        at = text.find(line, at)
+        if at < 0:
+            errors.append('no "%s" in the log after the lines before it'
+                          % line)
+            break
+        at += len(line)
     return errors
 
 
@@ -1820,6 +2022,10 @@ def driver_jobs(retroarch, root, driver):
         errors = run_menu_case(retroarch, root, driver, case)
         return report('%s/%s' % (driver, case[0]), errors), bool(errors)
 
+    def hdr_case(case):
+        errors = run_hdr_case(retroarch, root, driver, case)
+        return report('%s/%s' % (driver, case[0]), errors), bool(errors)
+
     def menu_fit():
         errors = run_menu_fit_case(retroarch, root, driver, MENU_FIT_CASE)
         return report('%s/%s' % (driver, MENU_FIT_CASE[0]), errors), \
@@ -1860,6 +2066,9 @@ def driver_jobs(retroarch, root, driver):
              for c in (MEMORY_CASES if driver in MEMORY_HW and not XVFB
                        else []) if wanted(c[0])]
     jobs += [lambda c=c: menu_case(c) for c in MENU_CASES if wanted(c[0])]
+    jobs += [lambda c=c: hdr_case(c)
+             for c in (HDR_CASES if HDR and driver == 'vulkan' else [])
+             if wanted(c[0])]
     if driver in MENU_FIT_DRIVERS and wanted(MENU_FIT_CASE[0]):
         jobs.append(menu_fit)
     jobs += [lambda m=m, c=c: pointer(m, c) for m in sorted(POINTER_MENUS)
@@ -1902,6 +2111,8 @@ def main():
                            env=dict(os.environ, WINEPREFIX=p),
                            stderr=subprocess.DEVNULL)
             shutil.rmtree(os.path.dirname(p), ignore_errors=True)
+        for p in HDR_LAYER_DIRS:
+            shutil.rmtree(p, ignore_errors=True)
     print('%d failed' % failed)
     return 1 if failed else 0
 
