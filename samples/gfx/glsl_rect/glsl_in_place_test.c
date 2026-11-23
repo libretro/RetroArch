@@ -652,11 +652,13 @@ int main(int argc,char **argv)
 
    printf("[glsl_in_place] %s\n", (const char*)glGetString(GL_RENDERER));
 #ifdef GLSL_PLANAR_ORACLE
-   {unsigned layout,linear;for(layout=0;layout<3;layout++)for(linear=0;linear<2;linear++)
+   test_planar_dependencies();
+   {unsigned layout,linear,passes;for(passes=1;passes<=3;passes++)
+    for(layout=0;layout<3;layout++)for(linear=0;linear<2;linear++)
     {
-       test_planar_fusion(layout,linear!=0,false);
+       test_planar_fusion(layout,linear!=0,false,passes);
 #ifndef HAVE_OPENGLES2
-       test_planar_fusion(layout,linear!=0,true);
+       test_planar_fusion(layout,linear!=0,true,passes);
 #endif
     }}
 #endif

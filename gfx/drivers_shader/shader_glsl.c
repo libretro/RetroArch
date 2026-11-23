@@ -2501,12 +2501,15 @@ static bool gl_glsl_planar_eligible(const glsl_shader_data_t *glsl)
 {
    const struct video_shader_pass *pass;
    if (!glsl->shader || !(glsl->shader->flags & SHDR_FLAG_MODERN)
-         || glsl->shader->passes != 1 || glsl->shader->luts
+         || !glsl->shader->passes || glsl->shader->passes >= GFX_MAX_SHADERS
+         || glsl->shader->luts
          || glsl->shader->feedback_pass >= 0) return false;
    pass = &glsl->shader->pass[0];
-   return !pass->mipmap && pass->wrap == RARCH_WRAP_EDGE
-      && (!(pass->fbo.flags & FBO_SCALE_FLAG_VALID) || GFX_FBO_SCALE_IS_VIEWPORT(&pass->fbo))
-      && !(pass->fbo.flags & (FBO_SCALE_FLAG_FP_FBO | FBO_SCALE_FLAG_SRGB_FBO | FBO_SCALE_FLAG_RGB10_FBO));
+   if (pass->mipmap || pass->wrap != RARCH_WRAP_EDGE
+         || (pass->fbo.flags & (FBO_SCALE_FLAG_RGB10_FBO | FBO_SCALE_FLAG_SRGB_FBO))) return false;
+   return glsl->shader->passes > 1
+      || ((!(pass->fbo.flags & FBO_SCALE_FLAG_VALID) || GFX_FBO_SCALE_IS_VIEWPORT(&pass->fbo))
+            && !(pass->fbo.flags & (FBO_SCALE_FLAG_FP_FBO | FBO_SCALE_FLAG_SRGB_FBO)));
 }
 
 static void gl_glsl_planar_prepare(glsl_shader_data_t *glsl)
@@ -2524,6 +2527,13 @@ static void gl_glsl_planar_prepare(glsl_shader_data_t *glsl)
    bool vc = false, fc = false, made;
    gl_glsl_planar_free(glsl);
    if (!gl_glsl_planar_eligible(glsl) || gl_glsl_get_prev_textures(glsl)) return;
+   /* Only pass one borrows planes. Later passes must consume RGB pass
+    * outputs, never the original texture whose storage remains absent. */
+   for (i = 2; i <= (int)glsl->shader->passes; i++)
+   {
+      char name[1][64];
+      if (gl_glsl_viewer_names(glsl, (unsigned)i, name, 1) != 0) return;
+   }
    pass = &glsl->shader->pass[0];
    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &limit);
    if (limit < 4) return;
