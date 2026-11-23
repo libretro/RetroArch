@@ -4052,7 +4052,10 @@ struct retro_memory_status
  *   in the console's port list, or of every port it has attached if it gave
  *   none. A port attached later whose clock does not see its console's frame
  *   edge as a whole tick places that console again, as the end of a hold
- *   does.
+ *   does. While a console on the bus a join would make is inside a frame
+ *   and has made no frame-end publish since it was placed, its first frame
+ *   edge is not known: the join, or the end of a hold, waits for a later
+ *   moment, which the frontend records for replay.
  * - It takes a port off a bus (a cable pulled, a port left out under
  *   \c max_ports) only when that port's console is at a frame edge, at an
  *   instant t, and while no peer's console has passed its first frame edge at

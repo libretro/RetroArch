@@ -1267,6 +1267,18 @@ static void fuzz_spans_never_release(void)
  * whose message lands at one tick with another peer's under one index:
  * they come out in an order of their own, not in send order across
  * consoles */
+/* A radio attaches while console 0 is inside its first frame, whose span
+ * it has not shown: the join waits for a step's end at which console 0's
+ * first edge is known, rather than hold console 1 at its edge while the
+ * joiner waits for that edge to be placed */
+static void late_join_waits_for_first_span(void)
+{
+   static const struct fuzz_session u =
+      { { 1000000, 61440, 1000000 }, { 20000, 853, 17857 }, { 2, 6, 14 }, { 1, 0, 3 }, 3, 1, true };
+   unsigned waiting = 0;
+   CHECK(fuzz_same(&u, 491, &waiting));
+}
+
 static void late_radio_same_in_any_order(void)
 {
    static const struct fuzz_session cases[2] = {
@@ -1304,7 +1316,8 @@ static const struct
    { "run_frame_resets_journal",          run_frame_resets_journal },
    { "advance_multi_list_out_of_order",   advance_multi_list_out_of_order },
    { "fuzz_spans_never_release",          fuzz_spans_never_release },
-   { "late_radio_same_in_any_order",      late_radio_same_in_any_order }
+   { "late_radio_same_in_any_order",      late_radio_same_in_any_order },
+   { "late_join_waits_for_first_span",    late_join_waits_for_first_span }
 };
 
 int main(void)

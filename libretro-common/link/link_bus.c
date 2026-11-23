@@ -196,6 +196,10 @@ struct retro_link_port
    bool left_out;        /* scratch of link_bus_group: max_ports kept it off */
    bool admitted;        /* scratch of link_bus_group */
    bool placing;         /* scratch of link_bus_place: place is chosen */
+   /* scratch of link_bus_defer: its bus as the cables make it, and in that
+    * bus's root whether it joins ports and has a console of unknown edge */
+   struct retro_link_port *grp, *grp_was;
+   bool grp_seen, grp_join, grp_unsized;
 };
 
 struct link_bus_cable
@@ -209,6 +213,7 @@ struct link_bus_console
    uint64_t activity; /* its sends and recvs */
    bool in_frame;
    bool held;
+   bool unholding;    /* its hold's end waits for a step's end */
 };
 
 struct link_bus
@@ -907,6 +912,69 @@ static bool link_bus_admit(link_bus_t *b, bool keep)
    return pushed;
 }
 
+/* Inside a frame and no port of it has shown its span since it was placed:
+ * its first frame edge is not known */
+static bool link_bus_unsized(const link_bus_t *b, unsigned c)
+{
+   size_t i;
+   if (!b->consoles[c].in_frame || b->consoles[c].held)
+      return false;
+   for (i = link_bus_at(b, c, 0); i < b->recs_len && b->recs[i]->console == c; i++)
+      if (b->recs[i]->live && !b->recs[i]->unplaced && b->recs[i]->span_shown)
+         return false;
+   return true;
+}
+
+/* A join waits while a console on the bus it would make has an unknown
+ * first edge, which the join instant and a place need: that bus keeps the
+ * ports that were together, and link_bus_step_end forms it again. True if
+ * one waits. */
+static bool link_bus_defer(link_bus_t *b)
+{
+   size_t i;
+   bool any = false;
+   for (i = 0; i < b->recs_len; i++)
+   {
+      struct retro_link_port *p = b->recs[i];
+      p->grp         = p->live ? link_bus_root(p) : NULL;
+      p->grp_seen    = false;
+      p->grp_join    = false;
+      p->grp_unsized = false;
+   }
+   for (i = 0; i < b->recs_len; i++)
+   {
+      struct retro_link_port *p = b->recs[i], *r = p->grp;
+      if (!r)
+         continue;
+      if (!r->grp_seen)
+      {
+         r->grp_seen = true;
+         r->grp_was  = p->was_head;
+      }
+      else if (!p->was_head || p->was_head != r->grp_was)
+         r->grp_join = true;
+      if (link_bus_unsized(b, p->console))
+         r->grp_unsized = true;
+   }
+   for (i = 0; i < b->recs_len; i++)
+   {
+      struct retro_link_port *p = b->recs[i];
+      if (p->grp && p->grp->grp_join && p->grp->grp_unsized)
+         p->uf = p;
+   }
+   for (i = 0; i < b->recs_len; i++)
+   {
+      struct retro_link_port *p = b->recs[i], *m;
+      if (!p->grp || !p->grp->grp_join || !p->grp->grp_unsized)
+         continue;
+      any = true;
+      for (m = p->was_head; m && !(m->live && m->grp == p->grp); m = m->was_next);
+      if (m && m != p)
+         link_bus_unite(m, p);
+   }
+   return any;
+}
+
 /* Forms the buses from the cable map, the shared media and the live ports */
 static void link_bus_group(link_bus_t *b)
 {
@@ -952,9 +1020,12 @@ static void link_bus_group(link_bus_t *b)
    }
    /* A join that would push out a port whose console is inside a frame
     * waits for that console's edge: the ports on a bus go first until then */
-   b->held_back = link_bus_admit(b, false);
-   if (b->held_back)
+   b->held_back = link_bus_defer(b);
+   if (link_bus_admit(b, false))
+   {
+      b->held_back = true;
       link_bus_admit(b, true);
+   }
    for (i = 0; i < b->recs_len; i++)
    {
       struct retro_link_port *p = b->recs[i], *r;
@@ -2280,6 +2351,42 @@ void link_bus_frame_end(link_bus_t *b, unsigned console)
    link_bus_settle_all(b);
 }
 
+/* A console on one of console's buses has an unknown first edge */
+static bool link_bus_meets_unsized(const link_bus_t *b, unsigned console)
+{
+   size_t i;
+   const struct retro_link_port *m;
+   for (i = link_bus_at(b, console, 0); i < b->recs_len && b->recs[i]->console == console; i++)
+      for (m = b->recs[i]->head; m; m = m->next)
+         if (link_bus_unsized(b, m->console))
+            return true;
+   return false;
+}
+
+/* A re-join, placed as a plug places and joined as a plug joins: each port's
+ * next frame-start advance gives its tick */
+static void link_bus_end_hold(link_bus_t *b, unsigned console)
+{
+   size_t i, first;
+   struct retro_link_port *m;
+   b->consoles[console].held      = false;
+   b->consoles[console].unholding = false;
+   first                          = link_bus_at(b, console, 0);
+   for (i = first; i < b->recs_len && b->recs[i]->console == console; i++)
+   {
+      if (b->recs[i]->stale)
+         link_bus_rejoin(b->recs[i]);
+      link_bus_fresh(b->recs[i]);
+      b->recs[i]->unplaced = b->recs[i]->live;
+   }
+   for (i = first; i < b->recs_len && b->recs[i]->console == console; i++)
+      for (m = b->recs[i]->head; m; m = m->next)
+         if (m != b->recs[i])
+            link_bus_came_on(b, b->recs[i], m, LINK_BUS_LINK_HOLD);
+   link_bus_place(b);
+   link_bus_settle_all(b);
+}
+
 void link_bus_step_end(link_bus_t *b)
 {
    size_t i;
@@ -2329,6 +2436,9 @@ void link_bus_step_end(link_bus_t *b)
    }
    if (reform)
       link_bus_reform(b, t, rate);
+   for (i = 0; i < b->console_count; i++)
+      if (b->consoles[i].unholding && !link_bus_meets_unsized(b, (unsigned)i))
+         link_bus_end_hold(b, (unsigned)i);
 }
 
 bool link_bus_console_edge(const link_bus_t *b, unsigned console,
@@ -2428,36 +2538,20 @@ bool link_bus_hold(link_bus_t *b, unsigned console)
          if (q->queue || q->waiting || !link_bus_quiet(q))
             return false;
    }
-   b->consoles[console].held = true;
+   b->consoles[console].held      = true;
+   b->consoles[console].unholding = false;
    return true;
 }
 
 bool link_bus_unhold(link_bus_t *b, unsigned console)
 {
-   size_t i, first;
-   struct retro_link_port *m;
    if (!b || console >= b->console_count)
       return false;
-   if (b->consoles[console].held)
-   {
-      /* A re-join, placed as a plug places and joined as a plug joins: each
-       * port's next frame-start advance gives its tick */
-      b->consoles[console].held = false;
-      first                     = link_bus_at(b, console, 0);
-      for (i = first; i < b->recs_len && b->recs[i]->console == console; i++)
-      {
-         if (b->recs[i]->stale)
-            link_bus_rejoin(b->recs[i]);
-         link_bus_fresh(b->recs[i]);
-         b->recs[i]->unplaced = b->recs[i]->live;
-      }
-      for (i = first; i < b->recs_len && b->recs[i]->console == console; i++)
-         for (m = b->recs[i]->head; m; m = m->next)
-            if (m != b->recs[i])
-               link_bus_came_on(b, b->recs[i], m, LINK_BUS_LINK_HOLD);
-      link_bus_place(b);
-      link_bus_settle_all(b);
-   }
+   /* It waits as a join does */
+   if (b->consoles[console].held && link_bus_meets_unsized(b, console))
+      b->consoles[console].unholding = true;
+   else if (b->consoles[console].held)
+      link_bus_end_hold(b, console);
    return true;
 }
 
@@ -3082,7 +3176,10 @@ static bool link_bus_read(link_bus_t *b, struct link_bus_in *in, const void *buf
       if (held > 1)
          return false;
       if (in->pass == LINK_BUS_APPLY)
-         b->consoles[c].held = held != 0;
+      {
+         b->consoles[c].held      = held != 0;
+         b->consoles[c].unholding = false;
+      }
    }
    if (in->bad || in->recs > (size_t)(in->end - in->at) / 8)
       return false;

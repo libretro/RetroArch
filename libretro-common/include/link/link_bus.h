@@ -107,8 +107,8 @@ uint64_t link_bus_activity(const link_bus_t *b, unsigned console); /* the consol
  * where each of its ports sees the changes of its bus made by then.
  * step_end, when a step of the host ends, makes the attaches and detaches
  * made inside a frame by each console standing at an edge take effect
- * there, and a join max_ports held back. journal_reset starts the journal
- * over. */
+ * there, as does a join or the end of a hold that waited, for max_ports or
+ * for a first edge to be known. journal_reset starts the journal over. */
 void link_bus_frame_start(link_bus_t *b, unsigned console);
 void link_bus_frame_end(link_bus_t *b, unsigned console);
 void link_bus_step_end(link_bus_t *b);
@@ -128,7 +128,7 @@ bool link_bus_instant_before(uint64_t a, uint64_t ra, uint64_t b, uint64_t rb); 
 bool link_bus_cable(link_bus_t *b, unsigned console_a, unsigned port_a, unsigned console_b, unsigned port_b);
 bool link_bus_uncable(link_bus_t *b, unsigned console, unsigned port);
 bool link_bus_hold(link_bus_t *b, unsigned console);
-bool link_bus_unhold(link_bus_t *b, unsigned console);
+bool link_bus_unhold(link_bus_t *b, unsigned console);       /* true once asked: it stays held until a step_end can place it */
 bool link_bus_is_held(const link_bus_t *b, unsigned console);
 void link_bus_renumbered(link_bus_t *b, unsigned console);   /* after retro_unserialize or retro_reset */
 void link_bus_console_gone(link_bus_t *b, unsigned console); /* after retro_unload_game */

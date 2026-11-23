@@ -3077,11 +3077,12 @@ static void join_waits_for_unknown_frame_end(void)
    fx_span[1][0] = 280896;
    CHECK(fx_edge_is(1, 559800, 0, 16777216));
    CHECK(fx_open(1, 0) == RETRO_LINK_WAKE_NONE); /* its first frame: no span */
-   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0)); /* waits for a step's end */
    fx_open(0, 4000);
-   CHECK(!adv(0, fx_h[0][0], 2002, 4000, 2003, NULL, NULL));
+   CHECK(adv(0, fx_h[0][0], 2002, 4000, 2003, NULL, NULL));
    fx_own_end(1);                 /* edge 840696: 3006.5 on console 0 */
-   CHECK(adv(0, fx_h[0][0], 2002, 4000, 3003, &grant, NULL) && grant == 3003);
+   link_bus_step_end(fx_bus);     /* the join, at that later first edge */
+   CHECK(adv(0, fx_h[0][0], 2002, 4000, 3003, NULL, NULL));
    fx_own_end(0);
    fx_open(0, 4000);
    CHECK(adv(0, fx_h[0][0], 3003, 4000, 3006, &grant, NULL) && grant == 3006);
@@ -3348,15 +3349,17 @@ static void attach_in_frame_same_in_any_order(void)
    CHECK(fx_attach_in_order(2) == hash);
 }
 
-/* Console 1 is in its first frame, its span not known; console 2, cabled
- * to it at its edge, waits to be placed there. Console 2 opens its frame and
+/* Console 1 is in its first frame, its span not known; console 2 is cabled
+ * to it, and the join waits for a step's end. Console 2 opens its frame and
  * sends to console 1 before (order 0) or after (order 1) console 1's frame
- * ends: the message lands at the same tick either way */
+ * ends: it reaches nobody either way, and the join is made at the step's
+ * end */
 static void fx_unplaced_send(unsigned order, uint64_t out[4])
 {
    char buf[4];
-   size_t len    = sizeof(buf);
-   uint64_t tick = 0, grant = 0;
+   size_t len     = sizeof(buf);
+   uint64_t tick  = 0, grant = 0;
+   unsigned count = 0;
    fx_new(3);
    fx_port(0, 0, "test-cable", 60000, 2, 0);
    fx_port(1, 0, "test-cable", 16777216, 2, 0);
@@ -3381,8 +3384,9 @@ static void fx_unplaced_send(unsigned order, uint64_t out[4])
    fx_own_end(2);
    fx_open(1, FX_FAR);
    out[1] = adv(1, fx_h[1][0], 280896, FX_FAR, 290000, &grant, NULL);
-   out[2] = grant;
-   out[3] = link_bus_recv(fx_bus, 1, fx_h[1][0], &tick, NULL, buf, &len) ? tick : 0;
+   out[2] = link_bus_recv(fx_bus, 1, fx_h[1][0], &tick, NULL, buf, &len) ? tick : 0;
+   link_bus_step_end(fx_bus);
+   out[3] = link_bus_peers(fx_bus, 2, fx_h[2][0], &count) == 1 && count == 2;
    fx_free();
 }
 
@@ -3391,7 +3395,10 @@ static void unplaced_sender_same_in_any_order(void)
    uint64_t out[2][4];
    fx_unplaced_send(0, out[0]);
    fx_unplaced_send(1, out[1]);
-   CHECK(out[1][0] == 1 && out[1][1] == 1 && out[1][3] == 281019);
+   CHECK(out[1][0] == 1); /* sent, to nobody */
+   CHECK(out[1][1] == 1);
+   CHECK(out[1][2] == 0);
+   CHECK(out[1][3] == 1);
    CHECK(!memcmp(out[0], out[1], sizeof(out[0])));
 }
 
@@ -3482,6 +3489,38 @@ static void fx_pending_run(uint64_t out[8])
    len = sizeof(buf);
    CHECK(!link_bus_recv(fx_bus, 1, fx_h[1][0], NULL, NULL, buf, &len));
    out[7] = link_bus_hash(fx_bus);
+}
+
+/* Console 0 is inside its first frame and has shown no span, so its first
+ * edge is not known: a hold's end and a join wait for a step's end at
+ * which it is */
+static void join_waits_for_first_span(void)
+{
+   unsigned count = 0;
+   fx_new(3);
+   fx_port(0, 0, "test-cable", 61440, 3, 0);
+   fx_port(1, 0, "test-cable", 61440, 3, 0);
+   fx_port(2, 0, "test-cable", 61440, 3, 0);
+   fx_attach(0);
+   fx_attach(1);
+   fx_attach(2);
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(link_bus_hold(fx_bus, 1));
+   fx_own_start(0, 0);
+   CHECK(link_bus_unhold(fx_bus, 1));
+   CHECK(link_bus_is_held(fx_bus, 1));
+   CHECK(link_bus_cable(fx_bus, 1, 0, 2, 0));
+   CHECK(link_bus_peers(fx_bus, 2, fx_h[2][0], &count) == -1);
+   link_bus_step_end(fx_bus);
+   CHECK(link_bus_is_held(fx_bus, 1));
+   CHECK(link_bus_peers(fx_bus, 2, fx_h[2][0], &count) == -1);
+   fx_own_end(0);
+   CHECK(link_bus_is_held(fx_bus, 1));
+   link_bus_step_end(fx_bus);
+   CHECK(!link_bus_is_held(fx_bus, 1));
+   CHECK(fx_edge_is(1, 1024, 0, 61440));
+   CHECK(link_bus_peers(fx_bus, 2, fx_h[2][0], &count) == 2 && count == 3);
+   fx_free();
 }
 
 static void membership_blob_roundtrip(void)
@@ -3595,7 +3634,8 @@ static const struct
    { "unplaced_sender_same_in_any_order",    unplaced_sender_same_in_any_order },
    { "max_ports_keeps_place_in_frame",       max_ports_keeps_place_in_frame },
    { "join_places_console_with_no_span",     join_places_console_with_no_span },
-   { "membership_blob_roundtrip",            membership_blob_roundtrip }
+   { "membership_blob_roundtrip",            membership_blob_roundtrip },
+   { "join_waits_for_first_span",            join_waits_for_first_span }
 };
 
 int main(void)
