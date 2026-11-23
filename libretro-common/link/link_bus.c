@@ -609,13 +609,19 @@ static void link_bus_changed(link_bus_t *b, struct retro_link_port *p)
       }
 }
 
-/* a comes out before c: by landing, then the sender's index, then send order */
+/* a comes out before c: by landing, then the sender's index, then the
+ * sender, then send order */
 static bool link_bus_before(const struct link_bus_entry *a, const struct link_bus_entry *c)
 {
+   const struct retro_link_port *fa = a->msg->from, *fc = c->msg->from;
    if (a->landing != c->landing)
       return a->landing < c->landing;
    if (a->from_index != c->from_index)
       return a->from_index < c->from_index;
+   if (fa->console != fc->console)
+      return fa->console < fc->console;
+   if (fa->port != fc->port)
+      return fa->port < fc->port;
    return a->seq < c->seq;
 }
 

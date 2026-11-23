@@ -1263,6 +1263,22 @@ static void fuzz_spans_never_release(void)
    CHECK(waiting > 0); /* some steps end with a console parked */
 }
 
+/* A radio that joins late hears a peer that sent before it saw that peer,
+ * whose message lands at one tick with another peer's under one index:
+ * they come out in an order of their own, not in send order across
+ * consoles */
+static void late_radio_same_in_any_order(void)
+{
+   static const struct fuzz_session cases[2] = {
+      { { 60000, 16777216, 60000 }, { 1034, 258111, 845 }, { 7, 5, 10 }, { 3, 2, 4 }, 3, 8, true },
+      { { 60000, 61440, 4194304, 61440 }, { 937, 865, 56679, 1204 }, { 16, 7, 9, 11 }, { 0, 0, 1, 2 }, 4, 4, true }
+   };
+   static const uint32_t seeds[2] = { 268, 1234 };
+   unsigned i, waiting = 0;
+   for (i = 0; i < 2; i++)
+      CHECK(fuzz_same(&cases[i], seeds[i], &waiting));
+}
+
 static const struct
 {
    const char *name;
@@ -1287,7 +1303,8 @@ static const struct
    { "targets_to_first_edge_at_or_after", targets_to_first_edge_at_or_after },
    { "run_frame_resets_journal",          run_frame_resets_journal },
    { "advance_multi_list_out_of_order",   advance_multi_list_out_of_order },
-   { "fuzz_spans_never_release",          fuzz_spans_never_release }
+   { "fuzz_spans_never_release",          fuzz_spans_never_release },
+   { "late_radio_same_in_any_order",      late_radio_same_in_any_order }
 };
 
 int main(void)
