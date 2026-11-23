@@ -32,7 +32,7 @@
 
 enum link_sched_state
 {
-   LINK_SCHED_DONE = 0,  /* finished this frame, held, or added since */
+   LINK_SCHED_DONE = 0,  /* at an edge */
    LINK_SCHED_UNSTARTED,
    LINK_SCHED_RUNNING,
    LINK_SCHED_PARKED,    /* in an advance not grantable when it was made */
@@ -53,11 +53,14 @@ struct link_sched_console
    struct link_sched_mark *marks;        /* its previous advance, for the no-progress count */
    uint64_t activity;                    /* link_bus_activity after that advance */
    uint64_t changes;                     /* link_bus_changes when it was last tested */
+   uint64_t frames;                      /* finished since link_sched_add */
+   uint64_t target;                      /* frames to reach in this run */
    unsigned count;                       /* entries in waits */
    unsigned marks_count, marks_cap;
    unsigned spins;                       /* advances in a row without progress */
    bool marked;                          /* marks holds an advance of this frame */
    bool ready;                           /* parked, and grantable when last tested */
+   bool skipped;                         /* its last frame left a port's edge tick unknown */
    enum link_sched_state state;
 };
 
@@ -66,13 +69,14 @@ struct link_sched
    link_bus_t *bus;
    struct link_sched_console *consoles;
    struct link_sched_stuck *stuck; /* one per console, filled at a release */
-   cothread_t main;                /* where run_frame switches from */
+   cothread_t main;                /* where a run switches from */
+   link_sched_done_t done;
    struct link_sched_stats stats;
    unsigned count, stuck_count;
    int running, entered;
    uint32_t rng;
    enum link_sched_pick pick;
-   bool framing;                   /* inside link_sched_run_frame */
+   bool framing;                   /* inside a run */
 };
 
 /* The scheduler a console is running or entered in, read by the link
@@ -399,6 +403,126 @@ static void link_sched_release(link_sched_t *s)
    link_bus_release(s->bus);
 }
 
+/* Nothing can run: a parked console the bus would grant now is ready */
+static bool link_sched_freed(link_sched_t *s)
+{
+   unsigned c;
+   bool any = false;
+   for (c = 0; c < s->count; c++)
+   {
+      struct link_sched_console *k = &s->consoles[c];
+      if (     k->state == LINK_SCHED_PARKED && !k->ready
+            && link_bus_grantable(s->bus, c, k->waits, k->count))
+         k->ready = any = true;
+   }
+   return any;
+}
+
+/* A parked console's chain of blockers ends at a console standing at its
+ * target, whose next frame would free it; not at a parked console (a
+ * cycle, or one parked for no progress), nor at one whose last frame did
+ * not give the edge tick waited on */
+static bool link_sched_on_target(const link_sched_t *s, unsigned c)
+{
+   unsigned i;
+   for (i = 0; i < s->count; i++)
+   {
+      const struct link_sched_console *k = &s->consoles[c];
+      const struct link_sched_console *q;
+      struct link_bus_blocker by;
+      if (     k->state != LINK_SCHED_PARKED
+            || !link_bus_blocked_by(s->bus, c, k->waits, k->count, &by))
+         return false;
+      q = &s->consoles[by.peer_console];
+      if (!link_sched_waiting(q))
+         return !by.edge_unknown || !q->skipped;
+      c = by.peer_console;
+   }
+   return false;
+}
+
+static bool link_sched_stalled(const link_sched_t *s)
+{
+   unsigned c;
+   for (c = 0; c < s->count; c++)
+      if (link_sched_waiting(&s->consoles[c]) && link_sched_on_target(s, c))
+         return false;
+   return true;
+}
+
+static void link_sched_start(link_sched_t *s, unsigned c)
+{
+   struct link_sched_console *k = &s->consoles[c];
+   link_bus_frame_start(s->bus, c);
+   k->state  = LINK_SCHED_UNSTARTED;
+   k->spins  = 0;
+   k->marked = false;
+}
+
+/* On the main context once console c's retro_run has returned: its frame
+ * ends and, below its target, the next starts unless this run released */
+static void link_sched_finish(link_sched_t *s, unsigned c, bool released)
+{
+   struct link_sched_console *k = &s->consoles[c];
+   struct link_bus_counts before, after;
+   link_bus_get_counts(s->bus, &before);
+   link_bus_frame_end(s->bus, c);
+   link_bus_get_counts(s->bus, &after);
+   k->skipped = after.skipped_publish != before.skipped_publish;
+   k->frames++;
+   if (s->done)
+      s->done(k->user);
+   if (!released && k->frames < k->target && !link_bus_is_held(s->bus, c))
+      link_sched_start(s, c);
+}
+
+/* Runs to each console's target */
+static enum link_sched_frame link_sched_go(link_sched_t *s)
+{
+   unsigned c;
+   int next;
+   bool released     = false, waiting = false;
+   link_sched_t *was = link_sched_active;
+   s->framing        = true;
+   s->main           = co_active();
+   link_sched_active = s;
+   for (c = 0; c < s->count; c++)
+   {
+      struct link_sched_console *k = &s->consoles[c];
+      if (     k->state == LINK_SCHED_DONE && k->frames < k->target
+            && !link_bus_is_held(s->bus, c))
+         link_sched_start(s, c);
+   }
+   for (;;)
+   {
+      if ((next = link_sched_pick_next(s)) >= 0)
+      {
+         link_sched_resume(s, (unsigned)next);
+         if (s->consoles[next].state == LINK_SCHED_DONE)
+            link_sched_finish(s, (unsigned)next, released);
+         continue;
+      }
+      if (!link_sched_any_waiting(s))
+         break;
+      if (link_sched_freed(s))
+         continue;
+      if (!link_sched_stalled(s))
+      {
+         waiting = true;
+         break;
+      }
+      link_sched_release(s);
+      released = true;
+   }
+   link_bus_step_end(s->bus);
+   s->stats.frames++;
+   s->framing        = false;
+   link_sched_active = was;
+   if (released)
+      return LINK_SCHED_FRAME_RELEASED;
+   return waiting ? LINK_SCHED_FRAME_WAITING : LINK_SCHED_FRAME_DONE;
+}
+
 link_sched_t *link_sched_new(link_bus_t *bus)
 {
    link_sched_t *s;
@@ -522,50 +646,104 @@ int link_sched_console(const link_sched_t *s)
    return s->running >= 0 ? s->running : s->entered;
 }
 
+enum link_sched_frame link_sched_run(link_sched_t *s, const uint64_t *targets)
+{
+   unsigned c;
+   if (!s || !targets || s->framing)
+      return LINK_SCHED_FRAME_DONE;
+   for (c = 0; c < s->count; c++)
+      s->consoles[c].target = targets[c];
+   return link_sched_go(s);
+}
+
 enum link_sched_frame link_sched_run_frame(link_sched_t *s)
 {
    unsigned c;
-   int next;
-   bool released;
-   link_sched_t *was;
    if (!s || s->framing)
       return LINK_SCHED_FRAME_DONE;
-   was               = link_sched_active;
-   released          = false;
-   s->framing        = true;
-   s->main           = co_active();
-   link_sched_active = s;
    link_bus_journal_reset(s->bus);
    for (c = 0; c < s->count; c++)
+      s->consoles[c].target = s->consoles[c].frames + 1;
+   return link_sched_go(s);
+}
+
+uint64_t link_sched_frames(const link_sched_t *s, unsigned console)
+{
+   if (!s || console >= s->count)
+      return 0;
+   return s->consoles[console].frames;
+}
+
+bool link_sched_in_frame(const link_sched_t *s, unsigned console)
+{
+   return s && console < s->count && s->consoles[console].state != LINK_SCHED_DONE;
+}
+
+void link_sched_set_done(link_sched_t *s, link_sched_done_t done)
+{
+   if (s)
+      s->done = done;
+}
+
+/* Edge j of a console whose edge 0 is the instant at, as ticks of rate,
+ * stands before the instant end, as ticks of end_rate */
+static bool link_sched_short(uint64_t at, uint64_t span, uint64_t rate, uint64_t j,
+      uint64_t end, uint64_t end_rate)
+{
+   if (j && span > (~(uint64_t)0 - at) / j)
+      return false;
+   return link_bus_instant_before(at + j * span, rate, end, end_rate);
+}
+
+/* The first j whose edge stands at or after end */
+static uint64_t link_sched_edges_to(uint64_t at, uint64_t span, uint64_t rate,
+      uint64_t end, uint64_t end_rate)
+{
+   uint64_t lo = 0, hi = 1;
+   if (!link_sched_short(at, span, rate, 0, end, end_rate))
+      return 0;
+   while (link_sched_short(at, span, rate, hi, end, end_rate))
    {
-      struct link_sched_console *k = &s->consoles[c];
-      k->state = LINK_SCHED_DONE;
+      lo = hi;
+      if (hi > (~(uint64_t)0 >> 1))
+         return hi;
+      hi <<= 1;
+   }
+   while (hi - lo > 1)
+   {
+      uint64_t mid = lo + (hi - lo) / 2;
+      if (link_sched_short(at, span, rate, mid, end, end_rate))
+         lo = mid;
+      else
+         hi = mid;
+   }
+   return hi;
+}
+
+void link_sched_targets_to(const link_sched_t *s, unsigned ref, uint64_t *targets)
+{
+   uint64_t end = 0, span = 0, rate = 1;
+   unsigned c;
+   if (!s || !targets)
+      return;
+   /* ref's next edge */
+   if (     ref < s->count && link_bus_console_edge(s->bus, ref, &end, &span, &rate)
+         && span && end <= ~(uint64_t)0 - span)
+      end += span;
+   else
+      span = 0;
+   for (c = 0; c < s->count; c++)
+   {
+      uint64_t at, c_span, c_rate;
+      const struct link_sched_console *k = &s->consoles[c];
       if (link_bus_is_held(s->bus, c))
-         continue;
-      link_bus_frame_start(s->bus, c);
-      k->state  = LINK_SCHED_UNSTARTED;
-      k->spins  = 0;
-      k->marked = false;
+         targets[c] = k->frames;
+      else if (  c == ref || !span
+              || !link_bus_console_edge(s->bus, c, &at, &c_span, &c_rate) || !c_span)
+         targets[c] = k->frames + 1;
+      else
+         targets[c] = k->frames + link_sched_edges_to(at, c_span, c_rate, end, rate);
    }
-   for (;;)
-   {
-      if ((next = link_sched_pick_next(s)) >= 0)
-      {
-         link_sched_resume(s, (unsigned)next);
-         if (s->consoles[next].state == LINK_SCHED_DONE)
-            link_bus_frame_end(s->bus, (unsigned)next);
-         continue;
-      }
-      if (!link_sched_any_waiting(s))
-         break;
-      link_sched_release(s);
-      released = true;
-   }
-   link_bus_step_end(s->bus);
-   s->stats.frames++;
-   s->framing        = false;
-   link_sched_active = was;
-   return released ? LINK_SCHED_FRAME_RELEASED : LINK_SCHED_FRAME_DONE;
 }
 
 unsigned link_sched_stuck_report(const link_sched_t *s, struct link_sched_stuck *out, unsigned cap)

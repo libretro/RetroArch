@@ -29,9 +29,11 @@ RETRO_BEGIN_DECLS
 
 /* Runs the consoles of a link bus session on one OS thread, each on a libco
  * cothread of its own for the scheduler's life, and serves the link
- * interface over the bus. An advance that cannot be granted yet parks its
- * console and another console runs; when none can, the bus is released.
- * No clock, lock, thread or wait. */
+ * interface over the bus. Each console runs to a frame target of its own.
+ * An advance that cannot be granted yet parks its console and another
+ * console runs; when none can, the run returns LINK_SCHED_FRAME_WAITING if
+ * one is parked on a console standing at its target, or else releases the
+ * bus. No clock, lock, thread or wait. */
 
 #define LINK_SCHED_DEFAULT_STACK 1048576
 #define LINK_SCHED_SPIN_LIMIT    1024
@@ -49,8 +51,11 @@ enum link_sched_pick
 enum link_sched_frame
 {
    LINK_SCHED_FRAME_DONE = 0,
-   LINK_SCHED_FRAME_RELEASED
+   LINK_SCHED_FRAME_RELEASED,
+   LINK_SCHED_FRAME_WAITING  /* a console is parked on one standing at its target */
 };
+
+typedef void (*link_sched_done_t)(void *user);    /* after a console's frame ends, on the main context */
 
 /* One parked console at a release, from link_bus_blocked_by. A console
  * parked for making no progress is its own bound_console, with port and
@@ -65,7 +70,8 @@ struct link_sched_stuck
 
 struct link_sched_stats
 {
-   uint64_t switches, parks, spin_parks, frames;
+   uint64_t switches, parks, spin_parks;
+   uint64_t frames; /* runs, not frames finished */
 };
 
 link_sched_t *link_sched_new(link_bus_t *bus);
@@ -76,7 +82,19 @@ bool link_sched_environment(link_sched_t *s, void *data);   /* RETRO_ENVIRONMENT
 void link_sched_enter(link_sched_t *s, unsigned console);    /* around every other entry-point call */
 void link_sched_leave(link_sched_t *s);
 int link_sched_console(const link_sched_t *s);              /* the calling console, or -1 */
-enum link_sched_frame link_sched_run_frame(link_sched_t *s);
+/* Runs every console not held until it has finished targets[c] frames or
+ * is parked. A console at an edge below its target starts its next frame
+ * at once. After a release the run finishes each frame in progress and
+ * starts no new one. */
+enum link_sched_frame link_sched_run(link_sched_t *s, const uint64_t *targets);
+enum link_sched_frame link_sched_run_frame(link_sched_t *s); /* the journal started over, then every target one frame on */
+uint64_t link_sched_frames(const link_sched_t *s, unsigned console); /* frames finished since link_sched_add */
+bool link_sched_in_frame(const link_sched_t *s, unsigned console);   /* inside a frame: parked or stalled once a run returns */
+void link_sched_set_done(link_sched_t *s, link_sched_done_t done);
+/* Targets for one frame of console ref: for each other console not held,
+ * its frame count at its first edge at or after ref's next edge; one frame
+ * on where the bus cannot place a console or knows no span */
+void link_sched_targets_to(const link_sched_t *s, unsigned ref, uint64_t *targets);
 unsigned link_sched_stuck_report(const link_sched_t *s, struct link_sched_stuck *out, unsigned cap); /* returns the total */
 void link_sched_get_stats(const link_sched_t *s, struct link_sched_stats *out);
 
