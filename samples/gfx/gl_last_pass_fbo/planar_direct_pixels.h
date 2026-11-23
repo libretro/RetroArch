@@ -66,6 +66,8 @@ static void run_planar_direct(bool core, unsigned layout, bool linear, GLint for
 #else
       glReadPixels(0,0,4,3,GL_RGBA,GL_FLOAT,expected);
 #endif
+      /* The borrowed CPU frame may be released as soon as upload returns. */
+      memset(y,0x11,sizeof(y));
       glGetIntegerv(GL_CURRENT_PROGRAM,&prog);glGetIntegerv(GL_ACTIVE_TEXTURE,&active);
       glGetIntegerv(GL_TEXTURE_BINDING_2D,&binding);glGetIntegerv(GL_ARRAY_BUFFER_BINDING,&buffer);
       before=draws;
@@ -96,8 +98,12 @@ static void run_planar_direct(bool core, unsigned layout, bool linear, GLint for
 #ifndef HAVE_OPENGLES
    glGetTexLevelParameteriv(GL_TEXTURE_2D,0,GL_TEXTURE_WIDTH,&width);assert(width==5);
 #endif
-   assert(!gl_planar_update_deferred(&planar,handle,&image));
-   assert(!gl_planar_render(&planar,handle,vertex,uv,tint,transform));
+   before=draws;
+   assert(gl_planar_update_deferred(&planar,handle,&image));assert(draws==before);
+   assert(gl_planar_pending(&planar,handle,NULL,NULL));
+   assert(gl_planar_render(&planar,handle,vertex,uv,tint,transform));assert(draws==before+1);
+   assert(gl_planar_resolve(&planar,handle)==handle);assert(draws==before+2);
+   assert(!gl_planar_pending(&planar,handle,NULL,NULL));
    assert(gl_planar_update(&planar,handle,&image));
    gl_planar_forget(&planar,handle);glDeleteTextures(1,&handle);gl_planar_free(&planar);
    glBindFramebuffer(GL_FRAMEBUFFER,(GLuint)previous_fbo);

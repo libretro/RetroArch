@@ -215,9 +215,17 @@ unsigned gl_planar_load_deferred(gl_planar_t *p, const struct texture_image *ti,
       bool linear, bool core);
 bool gl_planar_update_deferred(gl_planar_t *p, unsigned tex,
       const struct texture_image *ti);
+/* A renderer reserves unreferenced RGB storage before converting a pending
+ * upload, then publishes that version. Plane updates never overwrite RGB
+ * held by history; ordinary draws keep reading the resident planes. */
+bool gl_planar_pending(gl_planar_t *p, unsigned tex,
+      unsigned *width, unsigned *height);
+unsigned gl_planar_prepare_rgb(gl_planar_t *p, unsigned tex);
+bool gl_planar_resolve_target(gl_planar_t *p, unsigned tex, unsigned target);
+/* Standalone resolve for an owner with exclusive access to the base RGB. */
 unsigned gl_planar_resolve(gl_planar_t *p, unsigned tex);
 /* A four-vertex strip, uniform tint, arbitrary MVP and source UVs. Returns
- * false for non-planar/materialized sources so the existing draw can run. */
+ * false for non-planar sources so the existing draw can run. */
 bool gl_planar_render(gl_planar_t *p, unsigned tex, const float *vertex,
       const float *uv, const float *colour, const float *mvp);
 

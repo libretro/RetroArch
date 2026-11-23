@@ -1179,7 +1179,7 @@ struct gl_planar_tex
    bool interleaved;
    bool swap;
    float coef[8];
-   bool deferred, materialized, linear;
+   bool deferred, materialized, linear, rgb_dirty;
 };
 
 /* Pixel centres, the chroma of a 2x2 block from the one sample it
@@ -1561,6 +1561,7 @@ restore:
    if (unpack)
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER, (GLuint)unpack);
 #endif
+   t->rgb_dirty = target == 0;
    return true;
 }
 
@@ -1684,11 +1685,11 @@ bool gl_planar_update_deferred(gl_planar_t *p, unsigned tex,
       const struct texture_image *ti)
 {
    gl_planar_tex_t *t = gl_planar_find(p, tex);
-   return t && t->deferred && !t->materialized && ti
+   return t && t->deferred && ti
       && gl_planar_draw(p, t, ti, 0);
 }
 
-unsigned gl_planar_resolve(gl_planar_t *p, unsigned tex)
+unsigned gl_planar_prepare_rgb(gl_planar_t *p, unsigned tex)
 {
    gl_planar_tex_t *t = gl_planar_find(p, tex);
    GLint bound, fbo;
@@ -1721,7 +1722,32 @@ unsigned gl_planar_resolve(gl_planar_t *p, unsigned tex)
       t->fbo = 0;
       return 0;
    }
-   if (!gl_planar_draw(p, t, NULL, t->tex)) return 0;
+   return tex;
+}
+
+bool gl_planar_pending(gl_planar_t *p, unsigned tex,
+      unsigned *width, unsigned *height)
+{
+   gl_planar_tex_t *t = gl_planar_find(p, tex);
+   if (!t || !t->deferred || !t->rgb_dirty) return false;
+   if (width) *width = t->w;
+   if (height) *height = t->h;
+   return true;
+}
+
+bool gl_planar_resolve_target(gl_planar_t *p, unsigned tex, unsigned target)
+{
+   gl_planar_tex_t *t = gl_planar_find(p, tex);
+   if (!t || !t->deferred || !t->materialized || !target) return false;
+   if (!t->rgb_dirty && t->target == target) return true;
+   return gl_planar_draw(p, t, NULL, (GLuint)target);
+}
+
+unsigned gl_planar_resolve(gl_planar_t *p, unsigned tex)
+{
+   if (!gl_planar_pending(p, tex, NULL, NULL)) return tex;
+   if (!gl_planar_prepare_rgb(p, tex)
+         || !gl_planar_resolve_target(p, tex, tex)) return 0;
    return tex;
 }
 
@@ -1827,7 +1853,7 @@ bool gl_planar_render(gl_planar_t *p, unsigned tex, const float *vertex,
    void *pointer = NULL;
    float vertices[16], size[4];
    unsigned i;
-   if (!t || !t->deferred || t->materialized || !vertex || !uv || !mvp)
+   if (!t || !t->deferred || !vertex || !uv || !mvp)
       return false;
    /* Gradients and effects retain the normal textured draw. */
    if (colour)

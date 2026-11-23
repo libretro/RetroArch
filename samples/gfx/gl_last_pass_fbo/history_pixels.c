@@ -262,8 +262,11 @@ static void run_pool(GLint format,float phase)
 }
 /* Exercise the shipping converter and history together: every new output
  * must leave the preceding RGB output intact, without a preservation draw. */
-static void run_planar(bool core, bool interleaved)
+static void run_planar(bool core, bool interleaved, bool deferred)
 {
+   static const float vertex[8]={0,0,1,0,0,1,1,1};
+   static const float uv[8]={0,1,1,1,0,0,1,0};
+   static const float transform[16]={2,0,0,0,0,2,0,0,0,0,1,0,-1,-1,0,1};
    gl_planar_t planar;
    struct texture_planar planes;
    struct texture_image image;
@@ -289,16 +292,52 @@ static void run_planar(bool core, bool interleaved)
    planes.strides[0]=4;planes.strides[1]=planes.strides[2]=interleaved?4:2;
    planes.chroma_step=interleaved?2:1;planes.yuv=IMAGE_YUV_FLAG_FULL_RANGE;
    image.width=4;image.height=3;image.planar=&planes;
-   handle=gl_planar_load(&planar,&image,true,core);assert(handle);
+   handle=deferred?gl_planar_load_deferred(&planar,&image,true,core)
+      :gl_planar_load(&planar,&image,true,core);assert(handle);
+   if(deferred)assert(gl_planar_resolve(&planar,handle)==handle);
    show_previous=0;previous_index=0;smooth_mode=true;
    assert(gl_media_shader_draw(&state,&backend,&backend,&backend,handle,VIDEO_SCALE_PACK(4,3),0,VIDEO_SCALE_PACK(4,3),0,NULL,true));
    for(frame=1;frame<=24;frame++)
    {
       unsigned prior=32+(frame-1)*4;
+      if(deferred)
+      {
+         unsigned skip, width=0, height=0;
+         GLuint retained=gl_media_pool_resolve(pool,handle), read_fbo;
+         float old[48];GLint saved;
+         unsigned count=pool?pool->count:0;
+         for(skip=0;skip<4;skip++)
+         {
+            for(i=0;i<12;i++)y[i]=(uint8_t)(frame+skip+i);
+            draw_before=draws;
+            assert(gl_planar_update_deferred(&planar,handle,&image));assert(draws==draw_before);
+            assert(gl_planar_pending(&planar,handle,&width,&height)&&width==4&&height==3);
+            assert(gl_planar_render(&planar,handle,vertex,uv,NULL,transform));
+            assert(draws==draw_before+1);
+            for(i=0;i<12;i++){expected[i*4]=expected[i*4+1]=expected[i*4+2]=(float)y[i]/255;expected[i*4+3]=1;}
+            expect(expected);assert((pool?pool->count:0)==count);
+         }
+         /* The held shader input must still contain the last RGB frame. */
+         glGetIntegerv(GL_FRAMEBUFFER_BINDING,&saved);glGenFramebuffers(1,&read_fbo);
+         glBindFramebuffer(GL_FRAMEBUFFER,read_fbo);
+         glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,retained,0);
+         assert(glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE);
+         glReadPixels(0,0,4,3,GL_RGBA,GL_FLOAT,old);
+         for(i=0;i<12;i++)assert(fabsf(old[i*4]-(float)(prior+i)/255)<0.005f);
+         glBindFramebuffer(GL_FRAMEBUFFER,(GLuint)saved);glDeleteFramebuffers(1,&read_fbo);
+      }
       target=prepare_pool(&pool,handle,&state);assert(target && target!=gl_media_pool_resolve(pool,handle));
       for(i=0;i<12;i++)y[i]=(uint8_t)(32+frame*4+i);
       glGetIntegerv(GL_FRAMEBUFFER_BINDING,&binding);
-      assert(gl_planar_update_target(&planar,handle,target,&image));
+      if(deferred)
+      {
+         draw_before=draws;
+         assert(gl_planar_update_deferred(&planar,handle,&image));assert(draws==draw_before);
+         assert(gl_planar_resolve_target(&planar,handle,target));assert(draws==draw_before+1);
+         assert(!gl_planar_pending(&planar,handle,NULL,NULL));
+         assert(gl_planar_resolve_target(&planar,handle,target));assert(draws==draw_before+1);
+      }
+      else assert(gl_planar_update_target(&planar,handle,target,&image));
       { GLint restored;glGetIntegerv(GL_FRAMEBUFFER_BINDING,&restored);assert(restored==binding); }
       gl_media_pool_publish(pool,handle,target);
       show_previous=1;draw_before=draws;
@@ -363,13 +402,15 @@ int main(void)
 #ifdef GL_POOL_LEGACY
    run_pool(GL_RGBA,0);
 #endif
-   run_planar(false,false);run_planar(false,true);
+   run_planar(false,false,false);run_planar(false,true,false);
+   run_planar(false,false,true);run_planar(false,true,true);
    {unsigned layout,linear;for(layout=0;layout<3;layout++)for(linear=0;linear<2;linear++)
     {run_planar_direct(false,layout,linear!=0,GL_RGBA8);run_planar_direct(false,layout,linear!=0,GL_RGBA16F);}}
    puts("Direct YUV viewer pixels: odd padded planes, NV12/NV21, filtering, crop, HDR storage, lazy RGB and state passed");
-   puts("Planar GL GPU pixels: separate/interleaved planes, immutable pooled history, rejected updates and no snapshots passed");
+   puts("Planar GL GPU pixels: separate/interleaved planes, on-demand RGB, retained history, direct draws after shaders and no snapshots passed");
 #ifndef GL_POOL_LEGACY
-   run_planar(true,false);run_planar(true,true);
+   run_planar(true,false,false);run_planar(true,true,false);
+   run_planar(true,false,true);run_planar(true,true,true);
    {unsigned layout,linear;for(layout=0;layout<3;layout++)for(linear=0;linear<2;linear++)
     {run_planar_direct(true,layout,linear!=0,GL_RGBA8);run_planar_direct(true,layout,linear!=0,GL_RGBA16F);}}
 #endif

@@ -836,10 +836,26 @@ static void gl2_draw_cg_effect(gl2_t *gl, const struct gl2_effect *fx,
 #endif
 #endif
 
+#ifdef HAVE_GL_PLANAR
+static bool gl2_media_referenced(void *context, GLuint image);
+#endif
 static GLuint gl2_media_resolve(gl2_t *gl, GLuint texture)
 {
 #ifdef HAVE_GL_PLANAR
-   if (!gl_planar_resolve(&gl->planar, texture)) return 0;
+   unsigned width, height;
+   if (gl_planar_pending(&gl->planar, texture, &width, &height))
+   {
+      GLuint destination;
+      if (!gl_planar_prepare_rgb(&gl->planar, texture)) return 0;
+      destination = gl_media_pool_prepare_ex(&gl->media_pool, texture, width, height,
+            gl2_media_referenced, gl, gl->media_pool_capabilities | GL_MEDIA_POOL_MUTABLE_MIPS);
+      if (!destination) return 0;
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+      if (!gl2_media_shader_preserve(gl->media_shader, destination)) return 0;
+#endif
+      if (!gl_planar_resolve_target(&gl->planar, texture, destination)) return 0;
+      gl_media_pool_publish(gl->media_pool, texture, destination);
+   }
 #endif
    return gl_media_pool_resolve(gl->media_pool, texture);
 }
@@ -10355,7 +10371,7 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
       gl2_media_texture_changed(gl, id, true);
       return VIDEO_TEXTURE_UPDATE_DONE;
    }
-   if (gl && !gl_planar_resolve(&gl->planar, (unsigned)id))
+   if (gl && !gl2_media_resolve(gl, (GLuint)id))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 #endif
 

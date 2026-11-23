@@ -1298,10 +1298,29 @@ static GLuint gl3_plastic_program(gl3_t *gl);
 static GLuint gl3_font_plastic_program(gl3_t *gl);
 #endif
 
+#ifdef HAVE_GL_PLANAR
+static bool gl3_media_referenced(void *context, GLuint image);
+#endif
 static GLuint gl3_media_resolve(gl3_t *gl, GLuint texture)
 {
 #ifdef HAVE_GL_PLANAR
-   if (!gl_planar_resolve(&gl->planar, texture)) return 0;
+   unsigned width, height;
+   if (gl_planar_pending(&gl->planar, texture, &width, &height))
+   {
+      GLuint destination;
+      if (!gl_planar_prepare_rgb(&gl->planar, texture)) return 0;
+      destination = gl_media_pool_prepare_ex(&gl->media_pool, texture, width, height,
+            gl3_media_referenced, gl, GL_MEDIA_POOL_SWIZZLE | GL_MEDIA_POOL_UNPACK | GL_MEDIA_POOL_MUTABLE_MIPS);
+      if (!destination) return 0;
+#ifdef HAVE_SLANG
+      if (!gl3_filter_chain_preserve_history(gl->media_shader_chain, destination)) return 0;
+#endif
+#ifdef HAVE_GLSL
+      if (!gl3_media_shader_preserve(gl->media_legacy_shader, destination)) return 0;
+#endif
+      if (!gl_planar_resolve_target(&gl->planar, texture, destination)) return 0;
+      gl_media_pool_publish(gl->media_pool, texture, destination);
+   }
 #endif
    return gl_media_pool_resolve(gl->media_pool, texture);
 }
@@ -8698,7 +8717,7 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
       gl3_media_texture_changed(gl, id, true);
       return VIDEO_TEXTURE_UPDATE_DONE;
    }
-   if (gl && !gl_planar_resolve(&gl->planar, (unsigned)id))
+   if (gl && !gl3_media_resolve(gl, (GLuint)id))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 #endif
 
@@ -9809,6 +9828,7 @@ static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
    math_matrix_4x4 mvp;
    struct video_shader *live, *preset;
    GLint target, viewport[4], format;
+   GLuint resolved;
    GLboolean blend, scissor;
    unsigned i;
    (void)video_dims;
@@ -9818,6 +9838,8 @@ static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
 #ifndef HAVE_RSLC
    if (gl->scrgb.active && gl3_fp16_is((GLuint)image)) return false;
 #endif
+   resolved = gl3_media_resolve(gl, (GLuint)image);
+   if (!resolved) return false; /* no free RGB version: retain direct drawing */
    live = gl3_filter_chain_get_preset(gl->filter_chain);
    preset = gl3_filter_chain_get_preset(chain);
    if (live && preset && live->num_parameters == preset->num_parameters)
@@ -9829,13 +9851,13 @@ static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
    blend = glIsEnabled(GL_BLEND);
    scissor = glIsEnabled(GL_SCISSOR_TEST);
    glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, gl3_media_resolve(gl, (GLuint)image));
+   glBindTexture(GL_TEXTURE_2D, resolved);
 #ifndef HAVE_OPENGLES
    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
 #else
    format = GL_RGBA8;
 #endif
-   texture.image = gl3_media_resolve(gl, (GLuint)image);
+   texture.image = resolved;
    texture.dims = source_dims;
    texture.padded_dims = source_dims;
    texture.origin = 0;
