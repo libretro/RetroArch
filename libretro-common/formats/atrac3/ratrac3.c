@@ -1020,11 +1020,8 @@ static bool ratrac3_parse_unit(ratrac3_t *d, ratrac3_br_t *b,
    if (b->pos > b->len * 8)
       return false;
 
-   /* The reference synthesises the spectral coefficients of only as
-    * many bands as reach the start of the last coded subband, or, with
-    * tonal components, of two bands more than the last one those
-    * reach; tonal values themselves are always kept. */
-   cut = (ratrac3_sb[field] + 255) >> 8;
+   /* Include the end of the last coded subband. */
+   cut = (ratrac3_sb[n] + 255) >> 8;
    if (tonal_max >= 0)
    {
       unsigned t = (unsigned)((tonal_max + 1) >> 8) + 2;
