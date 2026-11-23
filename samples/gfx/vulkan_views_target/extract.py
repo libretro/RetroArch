@@ -27,7 +27,9 @@ def function(source, name):
 
 
 parts = [function(driver, name) for name in
-         ('vulkan_views_retire', 'vulkan_views_make')]
+         ('vulkan_views_retire', 'vulkan_views_make',
+          'vulkan_views_hdr_direct', 'vulkan_views_chain_target',
+          'vulkan_views_hdr_semantics')]
 for name in ('VV_FN', 'VV_DRV', 'VV_TARGET', 'VV_TARGET_MAKE',
              'VV_TARGET_RETIRE'):
     match = re.search(r'^#define ' + name + r'(?:\(|\s).*$', driver, re.M)

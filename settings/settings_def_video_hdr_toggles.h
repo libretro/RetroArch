@@ -8,7 +8,7 @@ S_BOOL(video_hdr_scanlines, VIDEO_HDR_SCANLINES,
       "video_hdr_scanlines",
       DEFAULT_VIDEO_HDR_SCANLINES, SD_FLAG_NONE, SDESC_FLG_REFRESH, CMD_EVENT_VIDEO_APPLY_STATE_CHANGES,
       "Scanlines",
-      "Enable HDR scanlines.  Scanlines are the main reason for using HDR in RetroArch as an accurate scanline implementation turns off most of the screen and HDR recovers some of that lost brightness.  If you require more control over your scanlines, look to custom shaders that RetroArch provides.")
+      "Enable HDR scanlines.  Scanlines are the main reason for using HDR in RetroArch as an accurate scanline implementation turns off most of the screen and HDR recovers some of that lost brightness.  If you require more control over your scanlines, look to custom shaders that RetroArch provides.  Not drawn for games whose screens are drawn as views.")
 S_UINT_EX(video_hdr_subpixel_layout, VIDEO_HDR_SUBPIXEL_LAYOUT,
       "video_hdr_subpixel_layout",
       DEFAULT_VIDEO_HDR_SUBPIXEL_LAYOUT, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_hdr_subpixel_layout, NULL, NULL, NULL, NULL, 0,

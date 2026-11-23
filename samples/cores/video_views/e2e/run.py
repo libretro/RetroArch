@@ -452,6 +452,22 @@ HDR_CASES = [
      {'video_stereo_mode': '2', 'video_shader_enable': 'true',
       'menu_driver': 'rgui'}, [],
      {'preset': os.path.join(HERE, 'pass.slangp'), 'menu': True}),
+    # An SDR preset's views are drawn in FP16 and encoded by the game
+    # pass, as the preset's whole frame would be. The anaglyph's points
+    # are the 3ds map's only colours with a channel neither 0 nor 255,
+    # which a wrong encode moves.
+    ('hdr-preset-3ds', '3ds',
+     {'video_stereo_mode': '4', 'video_shader_enable': 'true'},
+     [c for c in CASES if c[0] == '3ds-anaglyph'][0][3],
+     {'preset': os.path.join(HERE, 'pass.slangp'),
+      'log': ["Views' presets read the frame where it lies."]}),
+    # A preset that writes HDR10 itself draws its views straight into the
+    # swapchain: its codes are the frame's colours, with no game pass.
+    ('hdr-emit-preset', '3ds',
+     {'video_stereo_mode': '0', 'video_shader_enable': 'true'},
+     [(800, 240, GREEN), (800, 720, YELLOW)],
+     {'preset': os.path.join(HERE, 'hdr10_pass.slangp'), 'raw': True,
+      'game': False}),
 ]
 # (game, composite) for the other cases that check the HDR passes they
 # take; the runs made from a case (crop-threaded-menu-0,

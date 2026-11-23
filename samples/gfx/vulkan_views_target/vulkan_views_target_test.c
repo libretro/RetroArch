@@ -12,6 +12,9 @@
 
 #define VULKAN_OPENXR_MAX_IMAGES 4
 #define VULKAN_DIRTY_DYNAMIC_BIT 0x0001
+#define VULKAN_HDR_SWAPCHAIN
+#define VK_CTX_FLAG_HDR_ENABLE 0x1
+#define VK_CTX_FLAG_HDR_SCRGB 0x2
 #define VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, img, a, b, c, d, e, f) \
    do { (void)(cmd); (void)(img); } while (0)
 
@@ -27,6 +30,7 @@ typedef struct
    struct { VkPhysicalDeviceLimits limits; } gpu_properties;
    VkDevice device;
    VkFormat swapchain_format;
+   uint32_t flags;
    struct vulkan_openxr *xr;
 } test_context_t;
 
@@ -35,10 +39,35 @@ typedef struct
    struct vk_image view_retired[2];
 } test_chain_t;
 
+typedef struct vulkan_filter_chain vulkan_filter_chain_t;
+
+struct vulkan_filter_chain_swapchain_info
+{
+   VkViewport vp;
+   VkFormat format;
+   VkRenderPass render_pass;
+   unsigned num_indices;
+};
+
 typedef struct
 {
    test_context_t *context;
    test_chain_t *chain;
+   vulkan_filter_chain_t *filter_chain;
+   VkRenderPass render_pass;
+   VkRenderPass sdr_render_pass;
+   float hdr_scanlines_latched;
+   unsigned hdr_subpixel_latched;
+   struct
+   {
+      struct
+      {
+         float paper_white_nits;
+         unsigned expand_gamut;
+         float inverse_tonemap;
+         float hdr10;
+      } ubo_values;
+   } hdr;
    VkCommandBuffer cmd;
    struct
    {
@@ -55,6 +84,10 @@ typedef struct
       VkFormat ui_format;
       VkRenderPass ui_render_pass;
       VkRenderPass render_pass;
+      char preset[64];
+      bool fp16;
+      bool canvas_fp16;
+      bool scanlines_logged;
    } views;
    struct vk_image cached[3];
    unsigned rotation_raw;
@@ -82,7 +115,6 @@ typedef struct
    } xr;
 } vk_t;
 
-typedef struct vulkan_filter_chain vulkan_filter_chain_t;
 typedef struct vulkan_openxr vulkan_openxr_t;
 
 typedef struct
@@ -119,6 +151,84 @@ static void RARCH_WARN(const char *format, ...)
 {
    (void)format;
    warnings++;
+}
+
+static unsigned logs;
+
+static void RARCH_LOG(const char *format, ...)
+{
+   (void)format;
+   logs++;
+}
+
+/* What the main chain's preset writes */
+static bool emits_hdr10, emits_hdr16;
+
+static bool vulkan_chain_emits_hdr10(vk_t *vk, vulkan_filter_chain_t *chain)
+{
+   (void)vk;
+   (void)chain;
+   return emits_hdr10;
+}
+
+static bool vulkan_chain_emits_hdr16(vk_t *vk, vulkan_filter_chain_t *chain)
+{
+   (void)vk;
+   (void)chain;
+   return emits_hdr16;
+}
+
+/* The HDR values last given a chain */
+static float set_paper_white, set_scanlines, set_inverse_tonemap, set_hdr10;
+static unsigned set_expand_gamut, set_subpixel;
+
+static void vulkan_filter_chain_set_paper_white_nits(
+      vulkan_filter_chain_t *chain, float paper_white_nits)
+{
+   (void)chain;
+   set_paper_white = paper_white_nits;
+}
+
+static void vulkan_filter_chain_set_expand_gamut(
+      vulkan_filter_chain_t *chain, unsigned expand_gamut)
+{
+   (void)chain;
+   set_expand_gamut = expand_gamut;
+}
+
+static void vulkan_filter_chain_set_scanlines(vulkan_filter_chain_t *chain,
+      float scanlines)
+{
+   (void)chain;
+   set_scanlines = scanlines;
+}
+
+static void vulkan_filter_chain_set_subpixel_layout(
+      vulkan_filter_chain_t *chain, unsigned subpixel_layout)
+{
+   (void)chain;
+   set_subpixel = subpixel_layout;
+}
+
+static void vulkan_filter_chain_set_inverse_tonemap(
+      vulkan_filter_chain_t *chain, float inverse_tonemap)
+{
+   (void)chain;
+   set_inverse_tonemap = inverse_tonemap;
+}
+
+static void vulkan_filter_chain_set_hdr10(vulkan_filter_chain_t *chain,
+      float hdr10)
+{
+   (void)chain;
+   set_hdr10 = hdr10;
+}
+
+static void hdr_values_unset(void)
+{
+   set_paper_white  = set_scanlines = -1.0f;
+   set_inverse_tonemap = set_hdr10  = -1.0f;
+   set_expand_gamut = set_subpixel  = 99;
 }
 
 static video_xr_quad_set_t planned;
@@ -335,6 +445,9 @@ static void init(vk_t *vk, test_context_t *context, test_chain_t *chain)
    chain_drawn = true;
    memset(slot_creates, 0, sizeof(slot_creates));
    slot_refuses = 0;
+   logs = 0;
+   emits_hdr10 = emits_hdr16 = false;
+   hdr_values_unset();
 }
 
 static void test_desktop_failure(bool ui)
@@ -603,6 +716,93 @@ static void test_xr_draw_slot_unmade(void)
    CHECK(vk.xr.set.num_quads == 1 && slot_creates[0] == 1);
 }
 
+/* Render passes the tests tell apart */
+#define TEST_RENDER_PASS     ((VkRenderPass)(uintptr_t)0x10)
+#define TEST_SDR_RENDER_PASS ((VkRenderPass)(uintptr_t)0x20)
+#define TEST_FP16            VK_FORMAT_R16G16B16A16_SFLOAT
+
+static bool chain_targets(vk_t *vk, bool preset, VkRenderPass pass,
+      VkFormat format)
+{
+   struct vulkan_filter_chain_swapchain_info info;
+   memset(&info, 0, sizeof(info));
+   vulkan_views_chain_target(vk, &info, preset);
+   return info.render_pass == pass && info.format == format;
+}
+
+/* With HDR output a view chain draws into FP16 for the HDR game pass to
+ * encode, unless it is a preset's and the preset writes the output's
+ * encoding, by the main window's rule. */
+static void test_view_chain_target(void)
+{
+   vk_t vk;
+   test_context_t context;
+   test_chain_t chain;
+   init(&vk, &context, &chain);
+   vk.render_pass     = TEST_RENDER_PASS;
+   vk.sdr_render_pass = TEST_SDR_RENDER_PASS;
+   vk.filter_chain    = XR_FRAME_CHAIN;
+
+   context.swapchain_format = VK_FORMAT_B8G8R8A8_UNORM;
+   strcpy(vk.views.preset, "pass.slangp");
+   CHECK(chain_targets(&vk, true, TEST_RENDER_PASS,
+            VK_FORMAT_B8G8R8A8_UNORM));
+   CHECK(chain_targets(&vk, false, TEST_RENDER_PASS,
+            VK_FORMAT_B8G8R8A8_UNORM));
+
+   context.flags            = VK_CTX_FLAG_HDR_ENABLE;
+   context.swapchain_format = VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+   vk.views.preset[0]       = '\0';
+   CHECK(chain_targets(&vk, false, TEST_SDR_RENDER_PASS, TEST_FP16));
+   strcpy(vk.views.preset, "pass.slangp");
+   CHECK(chain_targets(&vk, true, TEST_SDR_RENDER_PASS, TEST_FP16));
+   emits_hdr10 = true;
+   CHECK(chain_targets(&vk, true, TEST_RENDER_PASS,
+            VK_FORMAT_A2B10G10R10_UNORM_PACK32));
+   CHECK(chain_targets(&vk, false, TEST_SDR_RENDER_PASS, TEST_FP16));
+
+   context.flags            = VK_CTX_FLAG_HDR_ENABLE | VK_CTX_FLAG_HDR_SCRGB;
+   context.swapchain_format = VK_FORMAT_R16G16B16A16_SFLOAT;
+   CHECK(chain_targets(&vk, true, TEST_SDR_RENDER_PASS, TEST_FP16));
+   emits_hdr10 = false;
+   emits_hdr16 = true;
+   CHECK(chain_targets(&vk, true, TEST_RENDER_PASS,
+            VK_FORMAT_R16G16B16A16_SFLOAT));
+}
+
+/* A view chain takes the main chain's HDR values but no scanlines, which
+ * views do not draw, and the log says so once. */
+static void test_view_chain_hdr_semantics(void)
+{
+   vk_t vk;
+   test_context_t context;
+   test_chain_t chain;
+   init(&vk, &context, &chain);
+   context.flags                      = VK_CTX_FLAG_HDR_ENABLE;
+   vk.hdr.ubo_values.paper_white_nits = 203.0f;
+   vk.hdr.ubo_values.expand_gamut     = 0;
+   vk.hdr_subpixel_latched            = 1;
+   vk.hdr.ubo_values.inverse_tonemap  = 1.0f;
+   vk.hdr.ubo_values.hdr10            = 1.0f;
+   vk.hdr_scanlines_latched           = 1.0f;
+   vulkan_views_hdr_semantics(&vk, XR_FRAME_CHAIN);
+   CHECK(set_paper_white == 203.0f);
+   CHECK(set_expand_gamut == 0);
+   CHECK(set_scanlines == 0.0f);
+   CHECK(set_subpixel == 1);
+   CHECK(set_inverse_tonemap == 1.0f);
+   CHECK(set_hdr10 == 1.0f);
+   CHECK(logs == 1);
+   vulkan_views_hdr_semantics(&vk, XR_FRAME_CHAIN);
+   CHECK(logs == 1);
+
+   /* Without HDR output the chain is left alone */
+   context.flags = 0;
+   hdr_values_unset();
+   vulkan_views_hdr_semantics(&vk, XR_FRAME_CHAIN);
+   CHECK(set_paper_white == -1.0f && set_hdr10 == -1.0f);
+}
+
 int main(void)
 {
    test_desktop_failure(false);
@@ -615,6 +815,8 @@ int main(void)
    test_xr_draw_repeat_unready();
    test_xr_draw_slot_refused();
    test_xr_draw_slot_unmade();
-   printf("%u failed (10 Vulkan target cases)\n", failures);
+   test_view_chain_target();
+   test_view_chain_hdr_semantics();
+   printf("%u failed (12 Vulkan target cases)\n", failures);
    return failures ? 1 : 0;
 }
