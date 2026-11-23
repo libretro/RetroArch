@@ -1344,17 +1344,21 @@ static void link_bus_route(link_bus_t *b, struct retro_link_port *p,
    else
       e->state = LINK_BUS_AHEAD;
    e->from_index = link_bus_from(b, q, e);
-   if (e->journal_gen == b->journal_gen)
-      b->journal[e->journal].landing = e->landing;
    /* It lands no earlier than q's edge */
    land = link_bus_scale(at, q->rate, p->rate, true);
    if (!q->unplaced && land < q->since)
       land = q->since;
+   /* Dropped when sent, it lands nowhere: its landing would hang on
+    * whether q's tick at its edge is known yet */
    if (     !q->live || (e->state != LINK_BUS_JOINING
             && !link_bus_carries(k, at, p->rate, land, q->rate)))
       link_bus_retire(b, e);
    else if (e->state == LINK_BUS_LANDED)
+   {
+      if (e->journal_gen == b->journal_gen)
+         b->journal[e->journal].landing = e->landing;
       link_bus_enqueue(q, e);
+   }
    else
       link_bus_wait(q, e);
 }

@@ -3479,6 +3479,43 @@ static void detached_in_frame_lands_in_any_order(void)
    CHECK(fx_pulled_send(1) == 1500);
 }
 
+/* Console 0, at its edge 1024, is cabled to console 1 at its edge 2048 and
+ * sends to it at 1500, before the join instant: the message is dropped when
+ * sent. In order 1 a load has renumbered console 1, whose new frame has not
+ * published its tick yet; the message lands nowhere either way */
+static uint64_t fx_dropped_send(unsigned order)
+{
+   struct link_bus_sent j;
+   uint64_t landing = 0;
+   fx_new(2);
+   fx_port(0, 0, "test-cable", 61440, 2, 0);
+   fx_port(1, 0, "test-cable", 61440, 2, 0);
+   fx_attach(0);
+   fx_attach(1);
+   fx_own_frame(0, 0);
+   fx_own_frame(1, 0);
+   fx_own_frame(1, 0);
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   if (order)
+      link_bus_renumbered(fx_bus, 1);
+   link_bus_journal_reset(fx_bus);
+   link_bus_frame_start(fx_bus, 1);
+   link_bus_frame_start(fx_bus, 0);
+   CHECK(adv(0, fx_h[0][0], 1024, 1500, 1024, NULL, NULL));
+   CHECK(snd(0, 0, 1500, 1, "a", 1));
+   CHECK(link_bus_journal(fx_bus, &j, 1) == 1);
+   landing = j.landing;
+   fx_free();
+   return landing;
+}
+
+static void dropped_send_lands_nowhere(void)
+{
+   uint64_t landing = fx_dropped_send(0);
+   CHECK(fx_dropped_send(1) == landing);
+   CHECK(landing == RETRO_LINK_UNBOUNDED);
+}
+
 /* Console 1 is in its first frame, its span not known; console 2 is cabled
  * to it, and the join waits for a step's end. Console 2 opens its frame and
  * sends to console 1 before (order 0) or after (order 1) console 1's frame
@@ -3980,6 +4017,7 @@ static const struct
    { "attach_in_frame_joins_at_own_edge",    attach_in_frame_joins_at_own_edge },
    { "detach_in_frame_leaves_at_own_edge",   detach_in_frame_leaves_at_own_edge },
    { "detached_in_frame_lands_in_any_order", detached_in_frame_lands_in_any_order },
+   { "dropped_send_lands_nowhere",           dropped_send_lands_nowhere },
    { "attach_off_grid_places_again",         attach_off_grid_places_again },
    { "attach_in_frame_same_in_any_order",    attach_in_frame_same_in_any_order },
    { "unplaced_sender_same_in_any_order",    unplaced_sender_same_in_any_order },
