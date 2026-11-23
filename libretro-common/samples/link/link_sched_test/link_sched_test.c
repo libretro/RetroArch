@@ -1328,6 +1328,355 @@ static void middle_join_same_in_any_order(void)
       CHECK(fuzz_same(&cases[i], seeds[i], &waiting));
 }
 
+static void flags_from_environment(void)
+{
+   struct retro_link_interface link;
+   fx_new(2, fx_idle_run);
+   link_sched_enter(fx_sched, 0);
+   memset(&link, 0, sizeof(link));
+   link.interface_version = RETRO_LINK_INTERFACE_VERSION;
+   link.flags             = ~0u;
+   CHECK(link_sched_environment(fx_sched, &link));
+   link_sched_leave(fx_sched);
+   CHECK(link_bus_get_flags(fx_bus, 0) == RETRO_LINK_SAVE_IN_ADVANCE);
+   CHECK(link_bus_get_flags(fx_bus, 1) == 0);
+   link_sched_enter(fx_sched, 0);
+   link.flags = 0;
+   CHECK(link_sched_environment(fx_sched, &link));
+   link_sched_leave(fx_sched);
+   CHECK(link_bus_get_flags(fx_bus, 0) == 0);
+   fx_free();
+}
+
+/* sv_run: a core whose state a frontend can save inside an advance. Its
+ * frame of span ticks makes a frame-start advance promising promise ticks
+ * ahead, an advance requesting request, which asks for reports unless the
+ * core is a spinner, then for a spinner one advance at request repeated
+ * until its scheduler has seen it LINK_SCHED_SPIN_LIMIT times again, the
+ * last asking for reports, in its first frame, and the frame-end publish.
+ * Its state is its frame's start, the advance it is inside and what each
+ * advance that asked returned. */
+#define SV_LOG 8
+#define SV_FAR 1000000
+
+struct sv_state
+{
+   uint64_t tick, span, promise, request;
+   uint64_t grant[SV_LOG];
+   uint32_t flags[SV_LOG];
+   unsigned at;      /* 0 frame start, 1 the request, 2 the spin, 3 frame end, 4 done */
+   unsigned spins;
+   unsigned asked;
+   bool spinner, spun;
+   bool resume;      /* the next retro_run makes advance at again */
+};
+
+struct sv_result
+{
+   struct sv_state v[FX_MAX];
+   struct link_bus_counts counts;
+   uint64_t hash;
+};
+
+static struct sv_state sv[FX_MAX], sv_saved[FX_MAX];
+static unsigned char sv_blob[4096];
+static size_t sv_blob_len;
+
+static void sv_make(struct fx_console *k, struct sv_state *v, uint64_t local,
+      uint64_t safe, uint64_t request, bool ask)
+{
+   uint32_t flags = 0;
+   uint64_t g     = fx_adv(k, local, safe, request, ask ? &flags : NULL);
+   if (!ask)
+      return;
+   if (v->asked < SV_LOG)
+   {
+      v->grant[v->asked] = g;
+      v->flags[v->asked] = flags;
+   }
+   v->asked++;
+}
+
+static void sv_run(void *user)
+{
+   struct fx_console *k = (struct fx_console*)user;
+   struct sv_state *v   = &sv[k->index];
+   uint64_t t           = v->tick;
+   k->runs++;
+   if (!v->resume)
+   {
+      v->at    = 0;
+      v->spins = 0;
+   }
+   v->resume = false;
+   for (; v->at < 4; v->at++)
+   {
+      if (v->at == 0)
+         sv_make(k, v, t, t + v->promise, t, false);
+      else if (v->at == 1)
+         sv_make(k, v, t, t + v->promise, t + v->request, !v->spinner);
+      else if (v->at == 2 && v->spinner && !v->spun)
+      {
+         for (; v->spins <= LINK_SCHED_SPIN_LIMIT; v->spins++)
+            sv_make(k, v, t + v->request, t + v->promise, t + v->request,
+                  v->spins == LINK_SCHED_SPIN_LIMIT);
+         v->spun = true;
+      }
+      else if (v->at == 3)
+         sv_make(k, v, t + v->span, t + v->span + v->promise, t + v->span, false);
+   }
+   v->tick = t + v->span;
+   k->finished++;
+}
+
+/* n consoles on one radio at 61440. Console 0 promises 64 ticks ahead and
+ * requests 32; console 1, flagged, has a frame of 2048 ticks and requests
+ * 1500, past console 0's promise at its edge 1; console 2, flagged, spins
+ * at 512 */
+static void sv_session(unsigned n)
+{
+   unsigned c;
+   fx_new(n, sv_run);
+   memset(sv, 0, sizeof(sv));
+   for (c = 0; c < n; c++)
+   {
+      struct fx_console *k           = &fx_c[c];
+      struct retro_link_port_info *e = &fx_list[c][0];
+      e->port        = 0;
+      e->protocol_id = "test-radio";
+      e->desc        = "Link";
+      e->clock_rate  = FX_RATE;
+      e->max_ports   = n;
+      e->flags       = RETRO_LINK_PORT_SHARED_MEDIUM;
+      fx_ptrs[c][0]  = e;
+      link_sched_enter(fx_sched, c);
+      k->link.interface_version = RETRO_LINK_INTERFACE_VERSION;
+      k->link.ports             = fx_ptrs[c];
+      k->link.flags             = c ? RETRO_LINK_SAVE_IN_ADVANCE : 0;
+      CHECK(link_sched_environment(fx_sched, &k->link));
+      if (fx_linked(&k->link))
+         k->h = k->link.attach(0, "test-radio", FX_RATE);
+      CHECK(k->h != NULL);
+      link_sched_leave(fx_sched);
+      sv[c].span    = c == 1 ? 2048 : 1024;
+      sv[c].promise = c ? SV_FAR : 64;
+      sv[c].request = c == 0 ? 32 : c == 1 ? 1500 : 512;
+      sv[c].spinner = c == 2;
+   }
+}
+
+static enum link_sched_frame fx_run3(uint64_t t0, uint64_t t1, uint64_t t2)
+{
+   uint64_t targets[3];
+   targets[0] = t0;
+   targets[1] = t1;
+   targets[2] = t2;
+   return link_sched_run(fx_sched, targets);
+}
+
+/* The bus and every core's state, as a frontend saves them */
+static void sv_save(void)
+{
+   sv_blob_len = link_bus_save_size(fx_bus);
+   CHECK(sv_blob_len <= sizeof(sv_blob));
+   CHECK(link_bus_save(fx_bus, sv_blob, sizeof(sv_blob)));
+   memcpy(sv_saved, sv, sizeof(sv));
+}
+
+/* A new session of n consoles loads them; a core saved inside an advance
+ * makes it again, and its console is inside a frame until it has */
+static void sv_load(unsigned n)
+{
+   unsigned c;
+   sv_session(n);
+   CHECK(link_bus_load(fx_bus, sv_blob, sv_blob_len));
+   memcpy(sv, sv_saved, sizeof(sv));
+   for (c = 0; c < n; c++)
+   {
+      sv[c].resume = sv[c].at < 4;
+      CHECK(link_sched_in_frame(fx_sched, c) == sv[c].resume);
+   }
+}
+
+static void sv_result(struct sv_result *r)
+{
+   memcpy(r->v, sv, sizeof(sv));
+   memset(&r->counts, 0, sizeof(r->counts));
+   link_bus_get_counts(fx_bus, &r->counts);
+   r->counts.blocks = 0;
+   r->hash          = link_bus_hash(fx_bus);
+}
+
+static bool sv_same(const struct sv_result *a, const struct sv_result *b, unsigned n)
+{
+   unsigned c;
+   if (a->hash != b->hash || memcmp(&a->counts, &b->counts, sizeof(a->counts)))
+      return false;
+   for (c = 0; c < n; c++)
+   {
+      const struct sv_state *x = &a->v[c], *y = &b->v[c];
+      if (     x->tick != y->tick || x->at != y->at || x->asked != y->asked
+            || x->spun != y->spun || memcmp(x->grant, y->grant, sizeof(x->grant))
+            || memcmp(x->flags, y->flags, sizeof(x->flags)))
+         return false;
+   }
+   return true;
+}
+
+/* Two consoles: console 0 at its target 1, console 1 parked inside its
+ * advance requesting 1500 */
+static void sv_parked(void)
+{
+   sv_session(2);
+   CHECK(fx_run2(1, 1) == LINK_SCHED_FRAME_WAITING);
+   CHECK(fx_frames2(1, 0) && sv[1].at == 1);
+   CHECK(!link_sched_in_frame(fx_sched, 0) && link_sched_in_frame(fx_sched, 1));
+}
+
+/* A no-progress park comes before the grant: the spinner, saved there,
+ * still has its report pending, and loaded into a new session it makes the
+ * advance again and gets it */
+static void stalled_save_and_load(void)
+{
+   struct sv_result a, b;
+   sv_session(3);
+   CHECK(fx_run3(1, 1, 1) == LINK_SCHED_FRAME_WAITING);
+   CHECK(fx_stats().spin_parks == 1);
+   CHECK(link_sched_in_frame(fx_sched, 1) && link_sched_in_frame(fx_sched, 2));
+   CHECK(sv[2].at == 2 && sv[2].spins == LINK_SCHED_SPIN_LIMIT && sv[2].asked == 0);
+   sv_save();
+   CHECK(fx_run3(2, 1, 2) == LINK_SCHED_FRAME_DONE);
+   CHECK(sv[2].asked == 1 && sv[2].grant[0] == 512);
+   CHECK(sv[2].flags[0] == RETRO_LINK_WAKE_TOPOLOGY);
+   sv_result(&a);
+   fx_free();
+
+   sv_load(3);
+   CHECK(fx_run3(1, 1, 2) == LINK_SCHED_FRAME_DONE);
+   CHECK(link_sched_frames(fx_sched, 2) == 2);
+   sv_result(&b);
+   CHECK(sv_same(&a, &b, 3));
+   fx_free();
+}
+
+/* Console 1's entry points, called inside link_sched_enter while it is
+ * parked, make no link call: each call is answered as misplaced and
+ * counted, the bus is as it was, and the run goes on as without them */
+static void sv_misplaced(struct fx_console *k)
+{
+   struct link_bus_counts before, after;
+   struct retro_link_wait w;
+   struct retro_link_wait *list = &w;
+   unsigned char buf[4];
+   uint64_t hash  = link_bus_hash(fx_bus);
+   size_t len     = sizeof(buf);
+   uint32_t flags = 0;
+   memset(&before, 0, sizeof(before));
+   memset(&after, 0, sizeof(after));
+   link_bus_get_counts(fx_bus, &before);
+   link_sched_enter(fx_sched, k->index);
+   CHECK(!k->link.send_msg(k->h, 1500, RETRO_LINK_BROADCAST, "x", 1));
+   CHECK(!k->link.recv_msg(k->h, NULL, NULL, buf, &len) && len == 0);
+   len = sizeof(buf);
+   CHECK(!k->link.peek(k->h, NULL, NULL, &len) && len == 0);
+   CHECK(fx_adv(k, 0, SV_FAR, 1600, &flags) == RETRO_LINK_UNBOUNDED);
+   CHECK(flags == RETRO_LINK_WAKE_DETACHED);
+   fx_wait(&w, k->h, 0, SV_FAR, 1600, FX_ASK);
+   k->link.advance_multi(&list, 1);
+   CHECK(w.grant == RETRO_LINK_UNBOUNDED && w.wake_flags == RETRO_LINK_WAKE_DETACHED);
+   link_sched_leave(fx_sched);
+   link_bus_get_counts(fx_bus, &after);
+   CHECK(after.misplaced_call == before.misplaced_call + 5);
+   CHECK(link_bus_hash(fx_bus) == hash);
+}
+
+static void entry_point_while_parked_misplaced(void)
+{
+   struct sv_result r[2];
+   unsigned run;
+   for (run = 0; run < 2; run++)
+   {
+      sv_parked();
+      if (run)
+         sv_misplaced(&fx_c[1]);
+      CHECK(fx_run2(2, 1) == LINK_SCHED_FRAME_DONE);
+      sv_result(&r[run]);
+      fx_free();
+   }
+   CHECK(r[0].v[1].asked == 1 && r[0].v[1].grant[0] == 1500);
+   r[1].counts.misplaced_call -= 5;
+   CHECK(sv_same(&r[0], &r[1], 2));
+}
+
+static unsigned sv_done;
+
+static void sv_done_hook(void *user)
+{
+   (void)user;
+   sv_done++;
+}
+
+/* The parked advance returns as on a release and console 1 finishes its
+ * frame, uncounted; the bus stays released until a load, which leaves
+ * console 1 inside its frame again, and abandoning that frame runs it */
+static void abandon_finishes_frames(void)
+{
+   sv_done = 0;
+   sv_parked();
+   link_sched_set_done(fx_sched, sv_done_hook);
+   sv_save();
+   link_sched_abandon(fx_sched);
+   CHECK(sv[1].asked == 1 && sv[1].grant[0] == RETRO_LINK_UNBOUNDED);
+   CHECK(sv[1].flags[0] == RETRO_LINK_WAKE_DETACHED);
+   CHECK(sv[1].at == 4 && fx_c[1].finished == 1);
+   CHECK(!link_sched_in_frame(fx_sched, 0) && !link_sched_in_frame(fx_sched, 1));
+   CHECK(fx_frames2(1, 0) && sv_done == 0);
+   CHECK(link_bus_released(fx_bus));
+   CHECK(link_bus_load(fx_bus, sv_blob, sv_blob_len));
+   CHECK(!link_bus_released(fx_bus));
+   CHECK(link_sched_in_frame(fx_sched, 1));
+   memcpy(sv, sv_saved, sizeof(sv));
+   sv[1].resume = true;
+   link_sched_abandon(fx_sched);
+   CHECK(fx_c[1].runs == 2 && fx_c[1].finished == 2);
+   CHECK(sv[1].asked == 1 && sv[1].grant[0] == RETRO_LINK_UNBOUNDED);
+   CHECK(!link_sched_in_frame(fx_sched, 1) && !link_bus_resume_pending(fx_bus, 1));
+   CHECK(fx_frames2(1, 0) && sv_done == 0 && link_bus_released(fx_bus));
+   fx_free();
+}
+
+/* Loaded into a new session with console 1 inside its advance, the next
+ * run resumes its frame, which ends once, as it did where it was saved */
+static void resume_after_load(void)
+{
+   struct sv_result a, b;
+   sv_parked();
+   sv_save();
+   CHECK(fx_run2(2, 1) == LINK_SCHED_FRAME_DONE);
+   CHECK(fx_frames2(2, 1));
+   CHECK(sv[1].asked == 1 && sv[1].grant[0] == 1500);
+   CHECK(sv[1].flags[0] == RETRO_LINK_WAKE_TOPOLOGY);
+   sv_result(&a);
+   fx_free();
+
+   sv_load(2);
+   CHECK(link_bus_resume_pending(fx_bus, 1));
+   /* Its retro_unserialize may attach the ports its state has; a send
+    * before its frame resumes is misplaced */
+   link_sched_enter(fx_sched, 1);
+   CHECK(fx_c[1].link.attach(0, "test-radio", FX_RATE) == fx_c[1].h);
+   CHECK(!fx_c[1].link.send_msg(fx_c[1].h, 1500, RETRO_LINK_BROADCAST, "x", 1));
+   link_sched_leave(fx_sched);
+   CHECK(fx_run2(1, 1) == LINK_SCHED_FRAME_DONE);
+   CHECK(fx_frames2(1, 1) && fx_c[1].runs == 1 && fx_c[1].finished == 1);
+   CHECK(!link_sched_in_frame(fx_sched, 1) && !link_bus_resume_pending(fx_bus, 1));
+   sv_result(&b);
+   CHECK(b.counts.misplaced_call == a.counts.misplaced_call + 1);
+   b.counts.misplaced_call = a.counts.misplaced_call;
+   CHECK(sv_same(&a, &b, 2));
+   fx_free();
+}
+
 static const struct
 {
    const char *name;
@@ -1355,7 +1704,12 @@ static const struct
    { "fuzz_spans_never_release",          fuzz_spans_never_release },
    { "middle_join_same_in_any_order",     middle_join_same_in_any_order },
    { "late_join_waits_for_first_span",    late_join_waits_for_first_span },
-   { "late_sender_from_names_it",         late_sender_from_names_it }
+   { "late_sender_from_names_it",         late_sender_from_names_it },
+   { "flags_from_environment",            flags_from_environment },
+   { "stalled_save_and_load",             stalled_save_and_load },
+   { "entry_point_while_parked_misplaced", entry_point_while_parked_misplaced },
+   { "abandon_finishes_frames",           abandon_finishes_frames },
+   { "resume_after_load",                 resume_after_load }
 };
 
 int main(void)

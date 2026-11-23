@@ -4414,17 +4414,19 @@ typedef bool (RETRO_CALLCONV *retro_link_recv_t)(retro_link_port_t *handle, uint
  * #RETRO_ENVIRONMENT_GET_LINK_INTERFACE). The frontend grants a request that
  * passes the frame-end tick as if it were that tick. For this the frontend
  * takes the frame-end tick to be the port's tick at the frame edge plus the
- * span the port showed in its previous \c retro_run, from that run's
- * frame-start advance to its frame-end publish. The port's tick at the frame
- * edge is the one its frame-end publish gave; in the first \c retro_run after
- * a change of numbering (\c retro_unserialize or \c retro_reset), the
- * \c local_tick of its frame-start advance; and in a \c retro_run that
- * finishes a frame saved inside an advance, the tick that frame started at,
- * which the session state holds. A change of numbering keeps the span; a hold
- * does not. There is no such span, and no request is bounded by the frame end,
- * in the first \c retro_run after the port is attached, after a hold of its
- * console ends or after a \c retro_run with no frame-end publish, unless a
- * session state loaded since then restored the span.
+ * span the port showed in its previous \c retro_run: from the \c local_tick
+ * of that run's frame-start advance or, in a run that finished a frame saved
+ * inside an advance, from the tick that frame started at, to its frame-end
+ * publish. The port's tick at the frame edge is the one its frame-end publish
+ * gave; in a \c retro_run that finishes a frame saved inside an advance, the
+ * tick that frame started at, which the session state holds; and otherwise,
+ * in the first \c retro_run after a change of numbering (\c retro_unserialize
+ * or \c retro_reset), the \c local_tick of its frame-start advance. A change
+ * of numbering keeps the span; a hold does not. There is no such span, and
+ * no request is bounded by the frame end, in the first \c retro_run after
+ * the port is attached, after a hold of its console ends or after a
+ * \c retro_run with no frame-end publish, unless a session state loaded
+ * since then restored the span.
  *
  * The call returns when the request, bounded in these two ways, can be
  * granted. It never returns early for a message, and its grant is never short

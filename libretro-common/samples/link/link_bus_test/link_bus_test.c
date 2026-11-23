@@ -3541,6 +3541,224 @@ static void membership_blob_roundtrip(void)
    CHECK(!memcmp(out[0], out[1], sizeof(out[0])));
 }
 
+/* Console 1 inside a frame and console 0 at an edge, then both in a frame:
+ * a save needs the flag of every console inside one, and a load waits for
+ * every console at an edge */
+static void save_needs_flag_in_frame(void)
+{
+   static unsigned char edge[4096];
+   size_t n;
+   fx_two(61440, 61440);
+   fx_run_frame();
+   n = fx_save();
+   memcpy(edge, fx_blob, n);
+   link_bus_frame_start(fx_bus, 1);
+   fx_all_ports(1, false);
+   CHECK(!link_bus_save(fx_bus, fx_blob, sizeof(fx_blob)));
+   link_bus_set_flags(fx_bus, 1, ~0u);
+   CHECK(link_bus_get_flags(fx_bus, 1) == RETRO_LINK_SAVE_IN_ADVANCE);
+   CHECK(link_bus_get_flags(fx_bus, 0) == 0);
+   CHECK(link_bus_save(fx_bus, fx_blob, sizeof(fx_blob)));
+   link_bus_frame_start(fx_bus, 0);
+   CHECK(!link_bus_save(fx_bus, fx_blob, sizeof(fx_blob)));
+   link_bus_set_flags(fx_bus, 0, RETRO_LINK_SAVE_IN_ADVANCE);
+   CHECK(link_bus_save(fx_bus, fx_blob, sizeof(fx_blob)));
+   CHECK(!link_bus_load(fx_bus, edge, n));
+   fx_all_ports(0, false);
+   frame();
+   CHECK(link_bus_load(fx_bus, edge, n));
+   fx_free();
+}
+
+/* Console 1, flagged, is inside an advance requesting request that waits
+ * on console 0: console 0 has run its frame, promising 1100, and sent it a
+ * message stamped 600; console 1's frame-start advance asked for nothing
+ * and promised 2048 */
+static void fx_parked(uint64_t request, struct retro_link_wait *w)
+{
+   fx_two(61440, 61440);
+   link_bus_set_flags(fx_bus, 1, RETRO_LINK_SAVE_IN_ADVANCE);
+   link_bus_frame_start(fx_bus, 0);
+   CHECK(adv(0, fx_h[0][0], 0, 600, 0, NULL, NULL));
+   CHECK(snd(0, 0, 600, 1, "m", 1));
+   CHECK(adv(0, fx_h[0][0], 1024, 1100, 1024, NULL, NULL));
+   link_bus_frame_end(fx_bus, 0);
+   link_bus_frame_start(fx_bus, 1);
+   CHECK(adv(1, fx_h[1][0], 0, 2048, 0, NULL, NULL));
+   fx_wait(w, fx_h[1][0], 0, 2048, request, true);
+   CHECK(!advm(1, w, 1));
+}
+
+/* Console 0's next frame-start advance promises 2048 and the waiting
+ * advance is granted: its grant, its wake flags and the hash */
+static void fx_parked_run(struct retro_link_wait *w, uint64_t out[3])
+{
+   struct retro_link_wait *list = w;
+   link_bus_frame_start(fx_bus, 0);
+   CHECK(adv(0, fx_h[0][0], 1024, 2048, 1024, NULL, NULL));
+   CHECK(link_bus_grantable(fx_bus, 1, &list, 1));
+   link_bus_grant(fx_bus, 1, &list, 1);
+   out[0] = w->grant;
+   out[1] = w->wake_flags;
+   out[2] = link_bus_hash(fx_bus);
+}
+
+/* fx_parked's session run on (run 0), and saved there and loaded into a
+ * new bus, on which console 1 makes the advance again (run 1) */
+static void fx_parked_twice(uint64_t request, uint64_t out[2][3],
+      struct link_bus_counts k[2])
+{
+   unsigned run;
+   for (run = 0; run < 2; run++)
+   {
+      struct retro_link_wait w;
+      fx_parked(request, &w);
+      if (run)
+      {
+         fx_reload_bus();
+         CHECK(link_bus_resume_pending(fx_bus, 1));
+         link_bus_frame_resume(fx_bus, 1);
+         CHECK(!link_bus_resume_pending(fx_bus, 1));
+         fx_wait(&w, fx_h[1][0], 0, 2048, request, true);
+         CHECK(!advm(1, &w, 1));
+      }
+      fx_parked_run(&w, out[run]);
+      k[run]        = counts();
+      k[run].blocks = 0;
+      fx_free();
+   }
+}
+
+static void parked_save_load_remakes_advance(void)
+{
+   uint64_t out[2][3];
+   struct link_bus_counts k[2];
+   fx_parked_twice(1500, out, k);
+   CHECK(out[0][0] == 1500);
+   CHECK(out[0][1] == (RETRO_LINK_WAKE_TOPOLOGY | RETRO_LINK_WAKE_MESSAGE));
+   CHECK(!memcmp(out[0], out[1], sizeof(out[0])));
+   CHECK(!memcmp(&k[0], &k[1], sizeof(k[0])));
+}
+
+/* A request past the promise is repaired once: the advance made again
+ * after the load counts nothing again */
+static void parked_save_repaired_request(void)
+{
+   uint64_t out[2][3];
+   struct link_bus_counts k[2];
+   fx_parked_twice(3000, out, k);
+   CHECK(out[0][0] == 2048);
+   CHECK(k[0].request_past_promise == 1 && k[1].request_past_promise == 1);
+   CHECK(!memcmp(out[0], out[1], sizeof(out[0])));
+   CHECK(!memcmp(&k[0], &k[1], sizeof(k[0])));
+}
+
+/* The loaded console stays inside its frame, so the new bus saves only
+ * with its flag, and then the blob it loaded */
+static void save_right_after_load_equal(void)
+{
+   static unsigned char saved[4096];
+   struct retro_link_wait w;
+   size_t n;
+   fx_parked(1500, &w);
+   n = fx_save();
+   memcpy(saved, fx_blob, n);
+   fx_reload_bus();
+   CHECK(!link_bus_save(fx_bus, fx_blob, sizeof(fx_blob)));
+   link_bus_set_flags(fx_bus, 1, RETRO_LINK_SAVE_IN_ADVANCE);
+   CHECK(fx_save() == n && !memcmp(saved, fx_blob, n));
+   fx_free();
+}
+
+/* Console 0 takes its pending report, then the session is released: the
+ * load ends the release and the report is pending again */
+static void load_ends_release(void)
+{
+   uint64_t grant = 0;
+   uint32_t flags = 0;
+   size_t n;
+   fx_two(61440, 61440);
+   fx_run_frame();
+   n = fx_save();
+   fx_begin();
+   CHECK(adv(0, fx_h[0][0], 1024, 1100, 1024, NULL, &flags));
+   CHECK(flags == RETRO_LINK_WAKE_TOPOLOGY);
+   link_bus_release(fx_bus);
+   fx_starts();
+   frame();
+   CHECK(link_bus_released(fx_bus));
+   CHECK(link_bus_load(fx_bus, fx_blob, n));
+   CHECK(!link_bus_released(fx_bus));
+   fx_tick[0][0] = fx_tick[1][0] = 1024;
+   fx_begin();
+   flags = 0;
+   CHECK(adv(0, fx_h[0][0], 1024, 1100, 1024, &grant, &flags));
+   CHECK(grant == 1024 && flags == RETRO_LINK_WAKE_TOPOLOGY);
+   fx_free();
+}
+
+/* join_waits_for_first_span's session with console 0 flagged, at the step
+ * that ends inside console 0's first frame: the hold's end and the join
+ * that wait for its edge */
+static void fx_unholding(void)
+{
+   unsigned c;
+   fx_new(3);
+   for (c = 0; c < 3; c++)
+   {
+      fx_port(c, 0, "test-cable", 61440, 3, 0);
+      fx_attach(c);
+   }
+   link_bus_set_flags(fx_bus, 0, RETRO_LINK_SAVE_IN_ADVANCE);
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(link_bus_hold(fx_bus, 1));
+   fx_own_start(0, 0);
+   CHECK(link_bus_unhold(fx_bus, 1));
+   CHECK(link_bus_cable(fx_bus, 1, 0, 2, 0));
+   link_bus_step_end(fx_bus);
+}
+
+static void fx_unholding_run(uint64_t out[6])
+{
+   link_bus_step_end(fx_bus);
+   out[0] = link_bus_is_held(fx_bus, 1);
+   out[1] = (uint64_t)fx_peers(2, 0);
+   fx_own_end(0);
+   link_bus_step_end(fx_bus);
+   out[2] = link_bus_is_held(fx_bus, 1);
+   out[3] = (uint64_t)fx_peers(2, 0);
+   out[4] = (uint64_t)fx_peers(0, 0);
+   out[5] = link_bus_hash(fx_bus);
+}
+
+/* Saved there and loaded into a new bus, the session keeps the hold and
+ * the join waiting while console 0 is inside its frame, and ends the hold
+ * and makes the join at the same step */
+static void hold_and_join_survive_load(void)
+{
+   static unsigned char saved[4096];
+   uint64_t out[2][6];
+   unsigned run;
+   for (run = 0; run < 2; run++)
+   {
+      fx_unholding();
+      if (run)
+      {
+         size_t n = fx_save();
+         memcpy(saved, fx_blob, n);
+         fx_reload_bus();
+         link_bus_set_flags(fx_bus, 0, RETRO_LINK_SAVE_IN_ADVANCE);
+         CHECK(fx_save() == n && !memcmp(saved, fx_blob, n));
+         link_bus_frame_resume(fx_bus, 0);
+      }
+      fx_unholding_run(out[run]);
+      fx_free();
+   }
+   CHECK(out[0][0] == 1 && out[0][1] == 0);
+   CHECK(out[0][2] == 0 && out[0][3] == 3 * 16 + 3 && out[0][4] == 1 * 16 + 3);
+   CHECK(!memcmp(out[0], out[1], sizeof(out[0])));
+}
+
 static const struct
 {
    const char *name;
@@ -3635,7 +3853,13 @@ static const struct
    { "max_ports_keeps_place_in_frame",       max_ports_keeps_place_in_frame },
    { "join_places_console_with_no_span",     join_places_console_with_no_span },
    { "membership_blob_roundtrip",            membership_blob_roundtrip },
-   { "join_waits_for_first_span",            join_waits_for_first_span }
+   { "join_waits_for_first_span",            join_waits_for_first_span },
+   { "save_needs_flag_in_frame",             save_needs_flag_in_frame },
+   { "parked_save_load_remakes_advance",     parked_save_load_remakes_advance },
+   { "parked_save_repaired_request",         parked_save_repaired_request },
+   { "save_right_after_load_equal",          save_right_after_load_equal },
+   { "load_ends_release",                    load_ends_release },
+   { "hold_and_join_survive_load",           hold_and_join_survive_load }
 };
 
 int main(void)

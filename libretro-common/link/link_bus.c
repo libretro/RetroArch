@@ -54,7 +54,13 @@
 #define LINK_BUS_REC_VIEWED    256
 #define LINK_BUS_REC_CUT       512
 #define LINK_BUS_REC_JOIN      1024
-#define LINK_BUS_REC_BITS      2047
+#define LINK_BUS_REC_PUBLISHED 2048 /* its console's frame holds its publish */
+#define LINK_BUS_REC_ASKED     4096 /* that publish asked for reports */
+#define LINK_BUS_REC_BITS      8191
+#define LINK_BUS_CON_HELD      1
+#define LINK_BUS_CON_UNHOLDING 2
+#define LINK_BUS_CON_FRAME     4    /* inside a frame, which a load leaves to resume */
+#define LINK_BUS_CON_BITS      7
 /* A port's link to another port: what it sees of it and when the two hear
  * each other */
 #define LINK_BUS_LINK_TOGETHER 1   /* on one bus now */
@@ -190,6 +196,7 @@ struct retro_link_port
    bool promise_valid, span_valid, grant_valid;
    bool span_shown;      /* a span shown since placed: each frame end moves since by it */
    bool published;       /* in this frame */
+   bool asked;           /* its latest publish asked for reports */
    bool unplaced;        /* waits for link_bus_place: since not set */
    bool viewed;          /* view_at is set */
    bool apart;           /* cut from a port no longer on its bus */
@@ -211,7 +218,10 @@ struct link_bus_console
 {
    struct retro_link_port_info *ports; /* the list, strings included, or NULL */
    uint64_t activity; /* its sends and recvs */
+   unsigned flags;    /* its core's: RETRO_LINK_SAVE_IN_ADVANCE or 0 */
    bool in_frame;
+   bool resume;       /* a load left it inside an advance: frame_resume opens its frame */
+   bool resumed;      /* its next publish makes that advance again */
    bool held;
    bool unholding;    /* its hold's end waits for a step's end */
 };
@@ -481,10 +491,12 @@ static struct retro_link_port *link_bus_own(const link_bus_t *b,
    return h;
 }
 
-/* send, recv, peek and advance are allowed only inside the console's frame */
+/* send, recv, peek and advance are allowed only inside a frame the
+ * console's host has opened, not one a load left to resume */
 static bool link_bus_in_frame(const link_bus_t *b, unsigned console)
 {
-   return console < b->console_count && b->consoles[console].in_frame;
+   return console < b->console_count && b->consoles[console].in_frame
+      && !b->consoles[console].resume;
 }
 
 static bool link_bus_any_in_frame(const link_bus_t *b)
@@ -2065,6 +2077,7 @@ void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *c
          foreign = true;
       if (!p || !p->live || p->cut)
          continue;
+      p->asked = w[i]->wake_flags != RETRO_LINK_WAKE_NONE;
       if (!p->published)
       {
          /* The frame-start advance gives the tick at the edge if none is known */
@@ -2147,6 +2160,12 @@ void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *c
       as[was] = true;
    }
 
+   /* The advance made again in a resumed frame was counted when made */
+   if (b->consoles[console].resumed)
+   {
+      b->consoles[console].resumed = false;
+      return;
+   }
    if (foreign)
       b->counts.misplaced_call++;
    if (link_bus_left_out(b, console, w, n))
@@ -2165,6 +2184,31 @@ bool link_bus_grantable(const link_bus_t *b, unsigned console,
       struct retro_link_wait *const *w, unsigned n)
 {
    return !link_bus_blocked_by(b, console, w, n, NULL);
+}
+
+/* The grant of a joined port: its request repaired, never below its floor */
+static uint64_t link_bus_granted(const struct retro_link_port *p)
+{
+   uint64_t g = p->target;
+   if (g < link_bus_floor(p))
+      g = link_bus_floor(p);
+   if (g > LINK_BUS_TICK_MAX)
+      g = LINK_BUS_TICK_MAX;
+   return g;
+}
+
+void link_bus_preview(const link_bus_t *b, unsigned console, struct retro_link_wait *const *w,
+      unsigned n, uint64_t *grants)
+{
+   unsigned i;
+   if (!b || !grants)
+      return;
+   for (i = 0; i < n; i++)
+   {
+      const struct retro_link_port *p = link_bus_framed(b, console, w[i]->handle);
+      grants[i] = !p || b->released || !link_bus_joined(p)
+         ? RETRO_LINK_UNBOUNDED : link_bus_granted(p);
+   }
 }
 
 void link_bus_grant(link_bus_t *b, unsigned console, struct retro_link_wait *const *w, unsigned n)
@@ -2191,14 +2235,9 @@ void link_bus_grant(link_bus_t *b, unsigned console, struct retro_link_wait *con
       }
       if (link_bus_joined(p))
       {
-         uint64_t g = p->target;
-         if (g < link_bus_floor(p))
-            g = link_bus_floor(p);
-         if (g > LINK_BUS_TICK_MAX)
-            g = LINK_BUS_TICK_MAX;
-         p->grant       = g;
+         p->grant       = link_bus_granted(p);
          p->grant_valid = true;
-         w[i]->grant    = g;
+         w[i]->grant    = p->grant;
       }
       else
       {
@@ -2288,12 +2327,29 @@ void link_bus_frame_start(link_bus_t *b, unsigned console)
    if (!b || console >= b->console_count)
       return;
    b->consoles[console].in_frame = true;
+   b->consoles[console].resume   = false;
+   b->consoles[console].resumed  = false;
    for (i = link_bus_at(b, console, 0); i < b->recs_len && b->recs[i]->console == console; i++)
    {
       if (b->recs[i]->stale && !b->consoles[console].held)
          link_bus_rejoin(b->recs[i]);
       b->recs[i]->published = false;
    }
+}
+
+/* The frame keeps what was published in it before the save, so the advance
+ * made again moves no anchor */
+void link_bus_frame_resume(link_bus_t *b, unsigned console)
+{
+   if (!b || console >= b->console_count || !b->consoles[console].resume)
+      return;
+   b->consoles[console].resume  = false;
+   b->consoles[console].resumed = true;
+}
+
+bool link_bus_resume_pending(const link_bus_t *b, unsigned console)
+{
+   return b && console < b->console_count && b->consoles[console].resume;
 }
 
 void link_bus_journal_reset(link_bus_t *b)
@@ -2311,6 +2367,8 @@ void link_bus_frame_end(link_bus_t *b, unsigned console)
    if (!b || console >= b->console_count)
       return;
    b->consoles[console].in_frame = false;
+   b->consoles[console].resume   = false;
+   b->consoles[console].resumed  = false;
    first                         = link_bus_at(b, console, 0);
    for (i = first; i < b->recs_len && b->recs[i]->console == console; i++)
    {
@@ -2594,6 +2652,23 @@ void link_bus_console_gone(link_bus_t *b, unsigned console)
          link_bus_detach(b, console, b->recs[i]);
 }
 
+void link_bus_set_flags(link_bus_t *b, unsigned console, unsigned flags)
+{
+   if (b && console < b->console_count)
+      b->consoles[console].flags = flags & RETRO_LINK_SAVE_IN_ADVANCE;
+}
+
+unsigned link_bus_get_flags(const link_bus_t *b, unsigned console)
+{
+   return b && console < b->console_count ? b->consoles[console].flags : 0;
+}
+
+void link_bus_misplaced(link_bus_t *b)
+{
+   if (b)
+      b->counts.misplaced_call++;
+}
+
 void link_bus_release(link_bus_t *b)
 {
    if (b)
@@ -2727,6 +2802,7 @@ static void link_bus_walk_port(const link_bus_t *b, const struct retro_link_port
    size_t plen     = strlen(p->protocol);
    unsigned limit  = p->limit == RETRO_LINK_UNBOUNDED ? LINK_BUS_LIMIT_UNBOUNDED
       : p->grant_valid ? LINK_BUS_LIMIT_GRANT : LINK_BUS_LIMIT_NONE;
+   bool in_frame   = b->consoles[p->console].in_frame && p->published;
    unsigned bits   = (p->attached      ? LINK_BUS_REC_ATTACHED : 0)
                    | (p->edge_known    ? LINK_BUS_REC_EDGE     : 0)
                    | (p->promise_valid ? LINK_BUS_REC_PROMISE  : 0)
@@ -2737,7 +2813,9 @@ static void link_bus_walk_port(const link_bus_t *b, const struct retro_link_port
                    | (p->unplaced      ? LINK_BUS_REC_UNPLACED : 0)
                    | (p->viewed        ? LINK_BUS_REC_VIEWED   : 0)
                    | (p->cut           ? LINK_BUS_REC_CUT      : 0)
-                   | (p->join          ? LINK_BUS_REC_JOIN     : 0);
+                   | (p->join          ? LINK_BUS_REC_JOIN     : 0)
+                   | (in_frame         ? LINK_BUS_REC_PUBLISHED : 0)
+                   | (in_frame && p->asked ? LINK_BUS_REC_ASKED : 0);
    size_t i, links = 0;
    for (e = p->queue; e; e = e->next)
       n++;
@@ -2762,6 +2840,14 @@ static void link_bus_walk_port(const link_bus_t *b, const struct retro_link_port
    link_bus_put_u(o, p->span_shown ? p->span : 0, 8, true);
    link_bus_put_u(o, p->sent ? p->last_stamp - p->anchor : 0, 8, true);
    link_bus_put_u(o, p->viewed ? p->view_at : 0, 8, true);
+   if (in_frame)
+   {
+      /* What the frame has published, for the advance made again */
+      link_bus_put_u(o, p->start_local - p->anchor, 8, true);
+      link_bus_put_u(o, p->local - p->anchor, 8, true);
+      link_bus_put_u(o, p->request - p->anchor, 8, true);
+      link_bus_put_u(o, p->target - p->anchor, 8, true);
+   }
    link_bus_put_u(o, plen, 4, true);
    link_bus_put_bytes(o, p->protocol, plen);
    link_bus_put_u(o, links, 4, true);
@@ -2800,7 +2886,9 @@ static void link_bus_walk(const link_bus_t *b, struct link_bus_out *o)
       link_bus_put_u(o, *(const uint64_t*)((const char*)&b->counts
                + link_bus_saved_counts[i]), 8, false);
    for (c = 0; c < b->console_count; c++)
-      link_bus_put_u(o, b->consoles[c].held, 1, true);
+      link_bus_put_u(o, (b->consoles[c].held      ? LINK_BUS_CON_HELD      : 0)
+                      | (b->consoles[c].unholding ? LINK_BUS_CON_UNHOLDING : 0)
+                      | (b->consoles[c].in_frame  ? LINK_BUS_CON_FRAME     : 0), 1, true);
    for (i = 0; i < b->recs_len; i++)
    {
       link_bus_put_u(o, b->recs[i]->console, 4, true);
@@ -2826,10 +2914,20 @@ size_t link_bus_save_size(const link_bus_t *b)
    return o.len;
 }
 
+/* Every console inside a frame has a core that saves inside an advance */
+static bool link_bus_savable(const link_bus_t *b)
+{
+   unsigned c;
+   for (c = 0; c < b->console_count; c++)
+      if (b->consoles[c].in_frame && !(b->consoles[c].flags & RETRO_LINK_SAVE_IN_ADVANCE))
+         return false;
+   return true;
+}
+
 bool link_bus_save(const link_bus_t *b, void *buf, size_t len)
 {
    struct link_bus_out o;
-   if (!b || !buf || link_bus_any_in_frame(b) || len < link_bus_save_size(b))
+   if (!b || !buf || !link_bus_savable(b) || len < link_bus_save_size(b))
       return false;
    o.buf = (unsigned char*)buf;
    link_bus_walk(b, &o);
@@ -2850,6 +2948,7 @@ struct link_bus_in    /* a blob being read by link_bus_load */
 {
    const unsigned char *at, *end;
    const unsigned char *table; /* the records' consoles and ports, 8 bytes each */
+   const unsigned char *cons;  /* each console's LINK_BUS_CON_ bits */
    size_t recs;
    size_t need[LINK_BUS_POOLS]; /* CHECK: pool items its queues take */
    enum link_bus_pass pass;
@@ -3045,12 +3144,21 @@ static bool link_bus_read_port(link_bus_t *b, struct link_bus_in *in, size_t k)
    uint64_t span      = link_bus_get_u(in, 8);
    uint64_t stamp     = link_bus_get_u(in, 8);
    uint64_t view_at   = link_bus_get_u(in, 8);
-   size_t plen        = (size_t)link_bus_get_u(in, 4);
-   const unsigned char *protocol = link_bus_get_bytes(in, plen);
-   size_t links       = (size_t)link_bus_get_u(in, 4);
-   const unsigned char *link_at  = in->at;
-   size_t n, i;
-   if (in->bad || links > in->recs)
+   uint64_t frame[4]  = { 0, 0, 0, 0 }; /* start_local, local, request, target */
+   const unsigned char *protocol, *link_at;
+   size_t plen, links, n, i;
+   unsigned console, port;
+   link_bus_row(in, k, &console, &port);
+   if (bits & LINK_BUS_REC_PUBLISHED)
+      for (i = 0; i < 4; i++)
+         frame[i] = link_bus_get_u(in, 8);
+   plen     = (size_t)link_bus_get_u(in, 4);
+   protocol = link_bus_get_bytes(in, plen);
+   links    = (size_t)link_bus_get_u(in, 4);
+   link_at  = in->at;
+   if (     in->bad || links > in->recs
+         || ((bits & LINK_BUS_REC_PUBLISHED) && !(in->cons[console] & LINK_BUS_CON_FRAME))
+         || ((bits & LINK_BUS_REC_ASKED) && !(bits & LINK_BUS_REC_PUBLISHED)))
       return false;
    for (i = 0; i < links; i++)
    {
@@ -3071,8 +3179,6 @@ static bool link_bus_read_port(link_bus_t *b, struct link_bus_in *in, size_t k)
       return false;
    if (in->pass == LINK_BUS_MAKE)
    {
-      unsigned console, port;
-      link_bus_row(in, k, &console, &port);
       p = link_bus_find(b, console, port);
       if (!p || strlen(p->protocol) != plen || memcmp(p->protocol, protocol, plen))
       {
@@ -3118,7 +3224,8 @@ static bool link_bus_read_port(link_bus_t *b, struct link_bus_in *in, size_t k)
       p->viewed        = (bits & LINK_BUS_REC_VIEWED) != 0;
       p->view_at       = view_at;
       p->grant_valid   = limit == LINK_BUS_LIMIT_GRANT;
-      p->published     = false;
+      p->published     = (bits & LINK_BUS_REC_PUBLISHED) != 0;
+      p->asked         = (bits & LINK_BUS_REC_ASKED) != 0;
       p->flags         = flags & RETRO_LINK_PORT_SHARED_MEDIUM;
       p->max_ports     = max_ports;
       p->pending       = pending & (RETRO_LINK_WAKE_MESSAGE | RETRO_LINK_WAKE_TOPOLOGY);
@@ -3134,10 +3241,10 @@ static bool link_bus_read_port(link_bus_t *b, struct link_bus_in *in, size_t k)
       p->limit         = limit == LINK_BUS_LIMIT_GRANT ? anchor + grant
          : limit == LINK_BUS_LIMIT_UNBOUNDED ? RETRO_LINK_UNBOUNDED : 0;
       p->grant         = p->limit;
-      p->local         = anchor;
-      p->request       = anchor;
-      p->target        = anchor;
-      p->start_local   = anchor;
+      p->start_local   = anchor + frame[0];
+      p->local         = anchor + frame[1];
+      p->request       = anchor + frame[2];
+      p->target        = anchor + frame[3];
       p->seen          = 0;
       for (i = 0; i < links; i++)
       {
@@ -3183,15 +3290,21 @@ static bool link_bus_read(link_bus_t *b, struct link_bus_in *in, const void *buf
    cables   = (size_t)link_bus_get_u(in, 4);
    for (i = 0; i < LINK_BUS_SAVED_COUNTS; i++)
       counts[i] = link_bus_get_u(in, 8);
+   if (!(in->cons = link_bus_get_bytes(in, b->console_count)))
+      return false;
    for (c = 0; c < b->console_count; c++)
    {
-      unsigned held = (unsigned)link_bus_get_u(in, 1);
-      if (held > 1)
+      unsigned bits = in->cons[c];
+      if (     bits > LINK_BUS_CON_BITS
+            || ((bits & LINK_BUS_CON_UNHOLDING) && !(bits & LINK_BUS_CON_HELD)))
          return false;
       if (in->pass == LINK_BUS_APPLY)
       {
-         b->consoles[c].held      = held != 0;
-         b->consoles[c].unholding = false;
+         b->consoles[c].held      = (bits & LINK_BUS_CON_HELD) != 0;
+         b->consoles[c].unholding = (bits & LINK_BUS_CON_UNHOLDING) != 0;
+         b->consoles[c].in_frame  = (bits & LINK_BUS_CON_FRAME) != 0;
+         b->consoles[c].resume    = b->consoles[c].in_frame;
+         b->consoles[c].resumed   = false;
       }
    }
    if (in->bad || in->recs > (size_t)(in->end - in->at) / 8)
@@ -3250,6 +3363,31 @@ static bool link_bus_read(link_bus_t *b, struct link_bus_in *in, const void *buf
    return true;
 }
 
+/* The buses as the blob's links hold them, from which link_bus_group forms
+ * them again: a join that waited, or a port max_ports kept on a bus, waits
+ * or stays as it did. A port's head is the first port it was on a bus
+ * with, or itself. */
+static void link_bus_heads(link_bus_t *b)
+{
+   size_t i, j;
+   for (i = 0; i < b->recs_len; i++)
+   {
+      struct retro_link_port *p = b->recs[i];
+      p->head = NULL;
+      p->next = NULL;
+      for (j = 0; j < b->recs_len && !p->head; j++)
+         if (j != i && (link_bus_link(p, b->recs[j])->flags & LINK_BUS_LINK_TOGETHER))
+            p->head = j < i ? b->recs[j]->head : p;
+      if (p->head == p)
+         p->last = p;
+      else if (p->head)
+      {
+         p->head->last->next = p;
+         p->head->last       = p;
+      }
+   }
+}
+
 bool link_bus_load(link_bus_t *b, const void *buf, size_t len)
 {
    struct link_bus_in in;
@@ -3299,6 +3437,8 @@ bool link_bus_load(link_bus_t *b, const void *buf, size_t len)
    b->sends       = in.need[LINK_BUS_POOL_ENTRY]; /* above every loaded rank */
    b->journal_len = 0;
    b->journal_gen++;
+   b->released    = false;
+   link_bus_heads(b);
    link_bus_group(b);
    return true;
 }

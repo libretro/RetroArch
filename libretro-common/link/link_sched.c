@@ -84,13 +84,26 @@ struct link_sched
  * co_active is. */
 static link_sched_t *link_sched_active;
 
-/* The scheduler and console a link call comes from; false for none */
+static bool link_sched_waiting(const struct link_sched_console *k)
+{
+   return k->state == LINK_SCHED_PARKED || k->state == LINK_SCHED_STALLED;
+}
+
+/* The scheduler and console a link call comes from; false for none. An
+ * entry point of a parked console (its retro_serialize) makes no link call:
+ * each counts as misplaced. */
 static bool link_sched_caller(link_sched_t **s, unsigned *console)
 {
-   int c = link_sched_console(link_sched_active);
+   link_sched_t *a = link_sched_active;
+   int c           = link_sched_console(a);
    if (c < 0)
       return false;
-   *s       = link_sched_active;
+   if (a->running != c && link_sched_waiting(&a->consoles[c]))
+   {
+      link_bus_misplaced(a->bus);
+      return false;
+   }
+   *s       = a;
    *console = (unsigned)c;
    return true;
 }
@@ -125,59 +138,66 @@ static bool link_sched_mark_all(struct link_sched_console *k,
    return true;
 }
 
-/* After a granted advance: one with the previous one's local ticks and
- * grants and no send or recv between counts as no progress, and at the
- * limit the console parks until its buses change. Its result is already
- * written, so the park moves nothing. */
-static void link_sched_progress(link_sched_t *s, unsigned c,
+/* An advance with the previous one's local ticks and grants, and no send
+ * or recv between, makes no progress */
+static bool link_sched_same(const link_sched_t *s, unsigned c,
       struct retro_link_wait *const *w, unsigned n)
 {
-   struct link_sched_console *k = &s->consoles[c];
-   uint64_t activity            = link_bus_activity(s->bus, c);
-   bool same                    = k->marked && k->marks_count == n && k->activity == activity;
+   const struct link_sched_console *k = &s->consoles[c];
+   bool same = k->marked && k->marks_count == n && k->activity == link_bus_activity(s->bus, c);
    unsigned i;
    for (i = 0; same && i < n; i++)
-      same = k->marks[i].local == w[i]->local_tick && k->marks[i].grant == w[i]->grant;
-   if (!same)
    {
-      k->spins    = 0;
-      k->activity = activity;
-      k->marked   = link_sched_mark_all(k, w, n);
-      return;
+      uint64_t grant;
+      link_bus_preview(s->bus, c, &w[i], 1, &grant);
+      same = k->marks[i].local == w[i]->local_tick && k->marks[i].grant == grant;
    }
-   if (++k->spins < LINK_SCHED_SPIN_LIMIT || link_bus_released(s->bus))
-      return;
-   k->spins   = 0;
+   return same;
+}
+
+/* Parks console c on its cothread in an advance not yet granted */
+static void link_sched_park(link_sched_t *s, unsigned c,
+      struct retro_link_wait *const *w, unsigned n, enum link_sched_state state)
+{
+   struct link_sched_console *k = &s->consoles[c];
    k->waits   = w;
    k->count   = n;
    k->changes = link_bus_changes(s->bus, c);
-   s->stats.spin_parks++;
-   link_sched_switch_out(s, c, LINK_SCHED_STALLED);
+   link_sched_switch_out(s, c, state);
    s->consoles[c].waits = NULL;
    s->consoles[c].count = 0;
 }
 
-/* publish; if grantable, grant; else park on the console's cothread until
- * it is, or until a release, then grant */
+/* publish; if not grantable, park until it is or until a release. At the
+ * limit of advances in a row without progress, park until the console's
+ * buses change. Both parks come before the grant, so a console saved there
+ * still has its reports pending. */
 static void link_sched_advance(link_sched_t *s, unsigned c,
       struct retro_link_wait *const *w, unsigned n)
 {
-   bool own = s->running == (int)c; /* on its cothread, so it may park */
+   struct link_sched_console *k = &s->consoles[c];
+   bool own                     = s->running == (int)c; /* on its cothread, so it may park */
+   bool same                    = false;
    link_bus_publish(s->bus, c, w, n);
    if (own && !link_bus_grantable(s->bus, c, w, n))
    {
-      struct link_sched_console *k = &s->consoles[c];
-      k->waits   = w;
-      k->count   = n;
-      k->changes = link_bus_changes(s->bus, c);
       s->stats.parks++;
-      link_sched_switch_out(s, c, LINK_SCHED_PARKED);
-      s->consoles[c].waits = NULL;
-      s->consoles[c].count = 0;
+      link_sched_park(s, c, w, n, LINK_SCHED_PARKED);
+   }
+   if (     own && (same = link_sched_same(s, c, w, n))
+         && ++k->spins >= LINK_SCHED_SPIN_LIMIT && !link_bus_released(s->bus))
+   {
+      k->spins = 0;
+      s->stats.spin_parks++;
+      link_sched_park(s, c, w, n, LINK_SCHED_STALLED);
    }
    link_bus_grant(s->bus, c, w, n);
-   if (own)
-      link_sched_progress(s, c, w, n);
+   if (own && !same)
+   {
+      k->spins    = 0;
+      k->activity = link_bus_activity(s->bus, c);
+      k->marked   = link_sched_mark_all(k, w, n);
+   }
 }
 
 static retro_link_port_t *RETRO_CALLCONV link_sched_attach(unsigned port,
@@ -301,11 +321,6 @@ static void link_sched_resume(link_sched_t *s, unsigned c)
    s->running = -1;
 }
 
-static bool link_sched_waiting(const struct link_sched_console *k)
-{
-   return k->state == LINK_SCHED_PARKED || k->state == LINK_SCHED_STALLED;
-}
-
 /* Tests a parked console again once its buses have changed */
 static void link_sched_retest(link_sched_t *s, unsigned c)
 {
@@ -385,7 +400,9 @@ static void link_sched_record(link_sched_t *s, unsigned c, struct link_sched_stu
    out->port          = UINT_MAX;
    out->local_tick    = k->count ? k->waits[0]->local_tick : 0;
    out->request_tick  = k->count ? k->waits[0]->request_tick : 0;
-   out->bound         = k->count ? k->waits[0]->grant : 0;
+   out->bound         = 0;
+   if (k->count)
+      link_bus_preview(s->bus, c, k->waits, 1, &out->bound);
    out->bound_console = c;
    out->bound_port    = UINT_MAX;
    out->edge_unknown  = false;
@@ -450,25 +467,35 @@ static bool link_sched_stalled(const link_sched_t *s)
    return true;
 }
 
+/* A console a load left inside an advance resumes that frame */
 static void link_sched_start(link_sched_t *s, unsigned c)
 {
    struct link_sched_console *k = &s->consoles[c];
-   link_bus_frame_start(s->bus, c);
+   if (link_bus_resume_pending(s->bus, c))
+      link_bus_frame_resume(s->bus, c);
+   else
+      link_bus_frame_start(s->bus, c);
    k->state  = LINK_SCHED_UNSTARTED;
    k->spins  = 0;
    k->marked = false;
 }
 
-/* On the main context once console c's retro_run has returned: its frame
- * ends and, below its target, the next starts unless this run released */
-static void link_sched_finish(link_sched_t *s, unsigned c, bool released)
+/* On the main context once console c's retro_run has returned */
+static void link_sched_close(link_sched_t *s, unsigned c)
 {
-   struct link_sched_console *k = &s->consoles[c];
    struct link_bus_counts before, after;
    link_bus_get_counts(s->bus, &before);
    link_bus_frame_end(s->bus, c);
    link_bus_get_counts(s->bus, &after);
-   k->skipped = after.skipped_publish != before.skipped_publish;
+   s->consoles[c].skipped = after.skipped_publish != before.skipped_publish;
+}
+
+/* Console c's frame ends and, below its target, the next starts unless this
+ * run released */
+static void link_sched_finish(link_sched_t *s, unsigned c, bool released)
+{
+   struct link_sched_console *k = &s->consoles[c];
+   link_sched_close(s, c);
    k->frames++;
    if (s->done)
       s->done(k->user);
@@ -609,6 +636,7 @@ bool link_sched_environment(link_sched_t *s, void *data)
       return false;
    if (!link_bus_set_ports(s->bus, (unsigned)c, link->ports))
       return false;
+   link_bus_set_flags(s->bus, (unsigned)c, link->flags);
    if (link->interface_version > RETRO_LINK_INTERFACE_VERSION)
       link->interface_version = RETRO_LINK_INTERFACE_VERSION;
    link->attach        = link_sched_attach;
@@ -676,7 +704,8 @@ uint64_t link_sched_frames(const link_sched_t *s, unsigned console)
 
 bool link_sched_in_frame(const link_sched_t *s, unsigned console)
 {
-   return s && console < s->count && s->consoles[console].state != LINK_SCHED_DONE;
+   return s && console < s->count && (s->consoles[console].state != LINK_SCHED_DONE
+         || link_bus_resume_pending(s->bus, console));
 }
 
 void link_sched_set_done(link_sched_t *s, link_sched_done_t done)
@@ -744,6 +773,33 @@ void link_sched_targets_to(const link_sched_t *s, unsigned ref, uint64_t *target
       else
          targets[c] = k->frames + link_sched_edges_to(at, c_span, c_rate, end, rate);
    }
+}
+
+void link_sched_abandon(link_sched_t *s)
+{
+   unsigned c;
+   int next;
+   link_sched_t *was;
+   if (!s || s->framing)
+      return;
+   was               = link_sched_active;
+   s->framing        = true;
+   s->main           = co_active();
+   link_sched_active = s;
+   link_bus_release(s->bus);
+   for (c = 0; c < s->count; c++)
+      if (link_bus_resume_pending(s->bus, c))
+         link_sched_start(s, c);
+   /* Released, every advance returns at once and each core ends its frame */
+   while ((next = link_sched_pick_next(s)) >= 0)
+   {
+      link_sched_resume(s, (unsigned)next);
+      if (s->consoles[next].state == LINK_SCHED_DONE)
+         link_sched_close(s, (unsigned)next);
+   }
+   link_bus_step_end(s->bus);
+   s->framing        = false;
+   link_sched_active = was;
 }
 
 unsigned link_sched_stuck_report(const link_sched_t *s, struct link_sched_stuck *out, unsigned cap)

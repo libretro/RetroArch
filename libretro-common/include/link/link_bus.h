@@ -114,6 +114,20 @@ void link_bus_frame_end(link_bus_t *b, unsigned console);
 void link_bus_step_end(link_bus_t *b);
 void link_bus_journal_reset(link_bus_t *b);
 
+/* Saves inside an advance. set_flags keeps a console's core flags, of which
+ * RETRO_LINK_SAVE_IN_ADVANCE counts. A load leaves a console saved inside an
+ * advance inside its frame until frame_resume opens that frame for the
+ * retro_run that makes the advance again; that publish counts nothing
+ * again. preview writes the grants link_bus_grant would and changes
+ * nothing; misplaced counts a call its host answered as misplaced. */
+void link_bus_set_flags(link_bus_t *b, unsigned console, unsigned flags);
+unsigned link_bus_get_flags(const link_bus_t *b, unsigned console);
+void link_bus_frame_resume(link_bus_t *b, unsigned console);
+bool link_bus_resume_pending(const link_bus_t *b, unsigned console);
+void link_bus_preview(const link_bus_t *b, unsigned console, struct retro_link_wait *const *w,
+      unsigned n, uint64_t *grants);
+void link_bus_misplaced(link_bus_t *b);
+
 /* The timeline: an instant is a count of ticks of a clock rate since the
  * session began. console_edge gives the instant the console's current frame
  * edge stands at and its span, as ticks of one of its ports' rates; false
@@ -133,7 +147,9 @@ bool link_bus_is_held(const link_bus_t *b, unsigned console);
 void link_bus_renumbered(link_bus_t *b, unsigned console);   /* after retro_unserialize or retro_reset */
 void link_bus_console_gone(link_bus_t *b, unsigned console); /* after retro_unload_game */
 
-/* Release, state and inspection */
+/* Release, state and inspection. save refuses while a console whose core
+ * did not set RETRO_LINK_SAVE_IN_ADVANCE is inside a frame; load refuses
+ * while any console is, one left to resume included, and ends a release. */
 void link_bus_release(link_bus_t *b);
 bool link_bus_released(const link_bus_t *b);
 size_t link_bus_save_size(const link_bus_t *b);

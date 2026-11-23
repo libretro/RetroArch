@@ -79,22 +79,26 @@ void link_sched_free(link_sched_t *s);
 int link_sched_add(link_sched_t *s, link_sched_run_t run, void *user, size_t stack_size); /* console number or -1; 0 = default stack */
 void link_sched_set_pick(link_sched_t *s, enum link_sched_pick pick, uint32_t seed);
 bool link_sched_environment(link_sched_t *s, void *data);   /* RETRO_ENVIRONMENT_GET_LINK_INTERFACE */
-void link_sched_enter(link_sched_t *s, unsigned console);    /* around every other entry-point call */
+void link_sched_enter(link_sched_t *s, unsigned console);    /* around every other entry-point call; a parked console's entry point makes no link call */
 void link_sched_leave(link_sched_t *s);
 int link_sched_console(const link_sched_t *s);              /* the calling console, or -1 */
 /* Runs every console not held until it has finished targets[c] frames or
  * is parked. A console at an edge below its target starts its next frame
- * at once. After a release the run finishes each frame in progress and
- * starts no new one. */
+ * at once, or resumes the frame a load left it inside. After a release the
+ * run finishes each frame in progress and starts no new one. */
 enum link_sched_frame link_sched_run(link_sched_t *s, const uint64_t *targets);
 enum link_sched_frame link_sched_run_frame(link_sched_t *s); /* the journal started over, then every target one frame on */
 uint64_t link_sched_frames(const link_sched_t *s, unsigned console); /* frames finished since link_sched_add */
-bool link_sched_in_frame(const link_sched_t *s, unsigned console);   /* inside a frame: parked or stalled once a run returns */
+bool link_sched_in_frame(const link_sched_t *s, unsigned console);   /* parked or stalled once a run returns, or loaded inside an advance */
 void link_sched_set_done(link_sched_t *s, link_sched_done_t done);
 /* Targets for one frame of console ref: for each other console not held,
  * its frame count at its first edge at or after ref's next edge; one frame
  * on where the bus cannot place a console or knows no span */
 void link_sched_targets_to(const link_sched_t *s, unsigned ref, uint64_t *targets);
+/* Releases the bus and finishes every frame in progress, one a load left
+ * to resume included, counting none and calling no done hook, ahead of a
+ * load; the bus stays released until one */
+void link_sched_abandon(link_sched_t *s);
 unsigned link_sched_stuck_report(const link_sched_t *s, struct link_sched_stuck *out, unsigned cap); /* returns the total */
 void link_sched_get_stats(const link_sched_t *s, struct link_sched_stats *out);
 
