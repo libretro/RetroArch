@@ -44,6 +44,20 @@ struct link_console_variable     /* declared with SET_VARIABLES */
    char *key, *fallback;            /* fallback: the first value */
 };
 
+struct link_console_picture      /* ARGB, kept for a checkpoint */
+{
+   uint32_t *argb;
+   size_t size;                     /* allocated, in pixels */
+   unsigned width, height;
+};
+
+struct link_console_finished     /* a frame the console finished in this step */
+{
+   uint64_t video, audio, state;
+   unsigned long frame;             /* its own index */
+   bool saved;                      /* state hashes its retro_serialize output */
+};
+
 typedef struct link_console
 {
    struct link_console_api api;
@@ -53,27 +67,36 @@ typedef struct link_console
    void *rom_data;
    unsigned char *state;            /* retro_serialize output, for the trace */
    size_t state_size;               /* allocated */
-   uint32_t *picture;               /* ARGB, kept in a frame before a checkpoint */
-   size_t picture_size;
+   struct link_console_finished *finished;
+   size_t finished_count, finished_cap;
+   struct link_console_picture shown;   /* its last finished frame's */
+   struct link_console_picture drawn;   /* the frame it is in */
    struct link_console_variable *variables;
    size_t variable_count;
    struct retro_memory_descriptor *descriptors;  /* a copy of SET_MEMORY_MAPS's */
    unsigned descriptor_count;
    uint64_t video;                  /* the latest picture */
    enum retro_pixel_format format;
+   unsigned long frame;             /* its own frames finished, the index of the one it is in */
    unsigned index, bytes_per_pixel, errors;
-   unsigned picture_width, picture_height;
    bool started, loaded;
-   bool ran, drew;                  /* in this frame; drew: converted its picture */
-   bool drew_before;                /* drew in the frame before */
-   bool pictured;                   /* this frame's picture, or over a dupe the one before */
+   bool ran;                        /* finished a frame since it started or loaded */
+   bool keep;                       /* keeps this frame's picture */
+   bool drew, duped;                /* in this frame; drew: kept its picture in drawn */
+   bool drew_before;                /* its last finished frame drew */
+   bool pictured;                   /* shown is its last frame's, or over a dupe the one before */
 } link_console_t;
 
-/* The consoles the callbacks serve, and the frame they are in; with keep,
- * each console's picture of that frame is kept for a checkpoint */
+/* The consoles the callbacks serve */
 void link_console_session(link_sched_t *sched, link_bus_t *bus, link_console_t *consoles,
       const struct link_scenario *scn, const char *system_dir);
-void link_console_frame(unsigned long frame, bool keep);
+/* Before a step's run, with console 0 at its edge: the steps to the next
+ * checkpoint (0: none) and that checkpoint's instant as ticks of rate (rate
+ * 0: not known), by which each frame keeps its picture or not */
+void link_console_step(unsigned long steps, uint64_t at, uint64_t rate);
+/* link_sched_done_t: the frame's hashes into finished, its picture into
+ * shown, and the console on to its next frame */
+void link_console_done(void *user);
 
 /* Copies the core into out/c<n>/ and loads the copy */
 bool link_console_open(link_console_t *c, unsigned index, const char *out);
@@ -87,6 +110,8 @@ bool link_console_state(link_console_t *c, uint64_t *hash);
 size_t link_console_state_size(link_console_t *c);
 bool link_console_serialize(link_console_t *c, void *data, size_t size);
 bool link_console_unserialize(link_console_t *c, const void *data, size_t len);
+/* A hold applied: like a load, no picture is seen until a frame after it */
+void link_console_held(link_console_t *c);
 void link_console_reset(link_console_t *c);
 /* A byte of a RETRO_MEMORY_* region; false when the core has no such byte */
 bool link_console_byte(link_console_t *c, unsigned memory, unsigned long offset,

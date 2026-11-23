@@ -9,7 +9,10 @@
 # checkpoint pictures. A scenario must save before its last frame, or the
 # rewound run would load where it saved. Where the scenario restarts its
 # ticks at a load, both runs' messages.log are compared without them.
-# An in_flight checkpoint, at the save frame, must list a message. Then
+# An in_flight checkpoint, at the save frame, must list a message. In
+# spans_waiting console 0 must finish one frame a step, with console 1
+# parked at its checkpoint parked; in two_spans console 1 must finish 598
+# frames to console 0's 600. Then
 # each scenario in bad/ must exit 2 and each in fail/ exit 1, printing the
 # error its "# error:" line names, as must a truncated state, a state of
 # another scenario and an edited trace; each scenario in stale/ must pass
@@ -195,6 +198,19 @@ check: all
 	@for scn in $(SCENARIOS); do \
 	   $(call RUNS,$(BUILD_DIR)/out,--path test=$(CORE),$(ALL_RUNS)); \
 	done
+	@trace="$(BUILD_DIR)/out/spans_waiting/first/trace.txt"; \
+	n=`grep -c '^F [0-9]* C 0 N ' "$$trace"`; \
+	off=`awk '$$3 == "C" && $$4 == 0 && $$6 != $$2' "$$trace" | head -n 1`; \
+	[ "$$n" = 340 ] && [ -z "$$off" ] \
+	   || { echo "check: spans_waiting: console 0 finished $$n frames, not one a step: $$off"; exit 1; }; \
+	grep -q '^c1 frame [0-9]* in_frame 1$$' "$(BUILD_DIR)/out/spans_waiting/first/parked/consoles.txt" \
+	   || { echo "check: spans_waiting: console 1 is not parked at checkpoint parked"; exit 1; }
+	@trace="$(BUILD_DIR)/out/two_spans/first/trace.txt"; \
+	n=`grep -c '^F [0-9]* C 1 N ' "$$trace"`; \
+	last=`grep '^F [0-9]* C 1 N ' "$$trace" | tail -n 1 | cut -d ' ' -f 1-6`; \
+	[ "$$n" = 598 ] && [ "$$last" = "F 599 C 1 N 597" ] \
+	   || { echo "check: two_spans: console 1 finished $$n frames, the last $$last;" \
+	      "598 wanted, the last F 599 C 1 N 597"; exit 1; }
 	@mkdir -p "$(BUILD_DIR)/out/bad" "$(BUILD_DIR)/out/fail"; \
 	for scn in $(BAD_SCENARIOS) $(FAIL_SCENARIOS); do \
 	   name=`basename "$$scn" .scn`; kind=`dirname "$$scn"`; kind=`basename "$$kind"`; \
@@ -224,9 +240,9 @@ check: all
 	done
 	@edited="$(BUILD_DIR)/out/fail/edited.txt"; err="$(BUILD_DIR)/out/fail/edited.err"; \
 	what="two_unequal --expect an edited trace"; why="trace differs at frame 60 console 1:"; \
-	sed 's/^\(F 60 C 1 V \)[0-9a-f]*/\1edited/' "$(BUILD_DIR)/out/two_unequal/first/trace.txt" \
+	sed 's/^\(F 60 C 1 N [0-9]* V \)[0-9a-f]*/\1edited/' "$(BUILD_DIR)/out/two_unequal/first/trace.txt" \
 	   > "$$edited"; \
-	grep -q '^F 60 C 1 V edited ' "$$edited" || { echo "check: no frame 60 line of console 1 to edit"; exit 1; }; \
+	grep -q '^F 60 C 1 N [0-9]* V edited ' "$$edited" || { echo "check: no frame 60 line of console 1 to edit"; exit 1; }; \
 	echo "== $$what, exit 1 wanted"; \
 	$(RUNNER) $(HARNESS) --scenario ../scenarios/two_unequal.scn --path test=$(CORE) \
 	   --expect "$$edited" --out "$(BUILD_DIR)/out/fail/edited" 2>"$$err"; \

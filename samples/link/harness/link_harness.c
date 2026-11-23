@@ -1,7 +1,7 @@
-/* link_harness: runs a scenario's consoles on one link bus, frame by
- * frame, writes a trace of per-frame hashes and compares it with an
- * expected one. Exit 0: the run passed; 1: it failed; 2: a usage or input
- * error, with nothing run. */
+/* link_harness: runs a scenario's consoles on one link bus, a step to
+ * each frame of console 0, writes a trace of each console's per-frame
+ * hashes and compares it with an expected one. Exit 0: the run passed; 1:
+ * it failed; 2: a usage or input error, with nothing run. */
 
 #include <limits.h>
 #include <stdio.h>
@@ -24,7 +24,7 @@
 #define LINK_HARNESS_LINE  192
 #define LINK_HARNESS_CHUNK 65536
 #define LINK_HARNESS_STATE_MAGIC   "LNKS"
-#define LINK_HARNESS_STATE_VERSION 1
+#define LINK_HARNESS_STATE_VERSION 2
 
 #define LINK_HARNESS_HI(x) ((unsigned long)((x) >> 32))
 #define LINK_HARNESS_LO(x) ((unsigned long)((x) & 0xFFFFFFFFUL))
@@ -56,6 +56,7 @@ struct link_harness
    unsigned char *state;     /* that state, read whole */
    const unsigned char **saved; /* in it, each console's retro_serialize output */
    const unsigned char *saved_bus; /* and the bus blob */
+   uint64_t *saved_frame;    /* each console's own frames finished */
    size_t *saved_len;
    size_t saved_bus_len;
    char *expect_text;
@@ -67,6 +68,7 @@ struct link_harness
    RFILE *trace, *messages;
    struct link_bus_sent *journal;
    struct link_harness_sent *sent;
+   uint64_t *targets, *retargets; /* a step's run's, one per console */
    char *system_dir;
    size_t binding_count, min_stack;
    size_t expect_count, expect_next;
@@ -246,7 +248,7 @@ static bool link_harness_read_state(struct link_harness *h)
    if (!link_harness_get(&r, 4, &v))
       return link_harness_bad_state(h, "truncated");
    if (v != LINK_HARNESS_STATE_VERSION)
-      return link_harness_bad_state(h, "not version 1");
+      return link_harness_bad_state(h, "not version 2");
    if (!link_harness_get(&r, 8, &v))
       return link_harness_bad_state(h, "truncated");
    if (v > h->scn.end_frame)
@@ -268,11 +270,18 @@ static bool link_harness_read_state(struct link_harness *h)
    if (v != h->scn.console_count)
       return link_harness_bad_state(h, "a state of another number of consoles");
    if (     !(h->saved = (const unsigned char**)calloc(h->scn.console_count, sizeof(*h->saved)))
-         || !(h->saved_len = (size_t*)calloc(h->scn.console_count, sizeof(*h->saved_len))))
+         || !(h->saved_len = (size_t*)calloc(h->scn.console_count, sizeof(*h->saved_len)))
+         || !(h->saved_frame = (uint64_t*)calloc(h->scn.console_count,
+               sizeof(*h->saved_frame))))
       return link_harness_bad_state(h, "out of memory");
    for (i = 0; i < h->scn.console_count; i++)
-      if (!link_harness_get_block(&r, &h->saved[i], &h->saved_len[i]))
+   {
+      if (     !link_harness_get_block(&r, &h->saved[i], &h->saved_len[i])
+            || !link_harness_get(&r, 8, &h->saved_frame[i]))
          return link_harness_bad_state(h, "truncated");
+      if (h->saved_frame[i] != (unsigned long)h->saved_frame[i])
+         return link_harness_bad_state(h, "a frame index too large");
+   }
    if (!link_harness_get_block(&r, &h->saved_bus, &h->saved_bus_len))
       return link_harness_bad_state(h, "truncated");
    if (r.left)
@@ -393,9 +402,12 @@ static bool link_harness_session(struct link_harness *h)
    unsigned i;
    if (     !(h->bus = link_bus_new(n))
          || !(h->sched = link_sched_new(h->bus))
-         || !(h->consoles = (link_console_t*)calloc(n, sizeof(*h->consoles))))
+         || !(h->consoles = (link_console_t*)calloc(n, sizeof(*h->consoles)))
+         || !(h->targets = (uint64_t*)calloc(2 * (size_t)n, sizeof(*h->targets))))
       return false;
+   h->retargets = h->targets + n;
    link_sched_set_pick(h->sched, h->pick, h->seed);
+   link_sched_set_done(h->sched, link_console_done);
    link_console_session(h->sched, h->bus, h->consoles, &h->scn, h->system_dir);
    for (i = 0; i < n; i++)
    {
@@ -483,6 +495,7 @@ static bool link_harness_load_state(struct link_harness *h)
                h->state_path, i);
          return false;
       }
+      h->consoles[i].frame = (unsigned long)h->saved_frame[i];
       link_bus_renumbered(h->bus, i);
    }
    link_harness_resave(h);
@@ -526,8 +539,9 @@ static unsigned char *link_harness_put(unsigned char *s, uint64_t v, unsigned by
 }
 
 /* out/<name>.state: magic, version, frame, scenario hash, console count,
- * each console's retro_serialize output and the bus blob after its size;
- * little-endian. Each core and the bus write in place. */
+ * each console's retro_serialize output after its size and then its own
+ * frames finished, and the bus blob after its size; little-endian. Each
+ * core and the bus write in place. */
 static void link_harness_save(struct link_harness *h, const struct link_scenario_event *e,
       unsigned long frame)
 {
@@ -541,7 +555,7 @@ static void link_harness_save(struct link_harness *h, const struct link_scenario
    for (i = 0; ok && i < h->scn.console_count; i++)
    {
       sizes[i] = link_console_state_size(&h->consoles[i]);
-      len     += 8 + sizes[i];
+      len     += 8 + sizes[i] + 8;
    }
    if (ok)
    {
@@ -566,7 +580,7 @@ static void link_harness_save(struct link_harness *h, const struct link_scenario
                   h->scn.path, e->line, i);
             ok = false;
          }
-         s += sizes[i];
+         s = link_harness_put(s + sizes[i], h->consoles[i].frame, 8);
       }
       if (ok)
       {
@@ -586,8 +600,9 @@ static void link_harness_save(struct link_harness *h, const struct link_scenario
    free(sizes);
 }
 
-/* For a person: a PNG of each console's picture in the frame before, the
- * bus dump and the counts. A console that ran the frame before and kept no
+/* For a person: a PNG of each console's picture in its last finished frame,
+ * the bus dump, the counts, and where each console stands. A console not
+ * held that has finished a frame since it started or loaded and kept no
  * picture fails the run. */
 static void link_harness_checkpoint(struct link_harness *h, const struct link_scenario_event *e)
 {
@@ -604,6 +619,8 @@ static void link_harness_checkpoint(struct link_harness *h, const struct link_sc
    {
       const link_console_t *c = &h->consoles[i];
       char *path;
+      if (link_bus_is_held(h->bus, i))
+         continue;
       if (!c->pictured)
       {
          if (c->ran)
@@ -616,8 +633,8 @@ static void link_harness_checkpoint(struct link_harness *h, const struct link_sc
       }
       sprintf(line, "c%u.png", i);
       if (     !(path = link_scenario_join(dir, line))
-            || !rpng_save_image_argb(path, c->picture, c->picture_width, c->picture_height,
-               c->picture_width * (unsigned)sizeof(*c->picture)))
+            || !rpng_save_image_argb(path, c->shown.argb, c->shown.width, c->shown.height,
+               c->shown.width * (unsigned)sizeof(*c->shown.argb)))
          ok = false;
       free(path);
    }
@@ -640,6 +657,17 @@ static void link_harness_checkpoint(struct link_harness *h, const struct link_sc
       {
          sprintf(line, "%s %s", link_scenario_counter_name(i),
                link_harness_dec(dec, link_scenario_counter_value(&counts, i)));
+         link_harness_write(f, line);
+      }
+      filestream_close(f);
+      ok = (f = link_harness_create(dir, "consoles.txt")) != NULL;
+   }
+   if (ok)
+   {
+      for (i = 0; i < h->scn.console_count; i++)
+      {
+         sprintf(line, "c%u frame %lu in_frame %d", i, h->consoles[i].frame,
+               link_sched_in_frame(h->sched, i) ? 1 : 0);
          link_harness_write(f, line);
       }
       filestream_close(f);
@@ -723,7 +751,10 @@ static void link_harness_edge(struct link_harness *h, unsigned long frame, size_
             link_harness_member(h, e, link_bus_uncable(h->bus, e->console, e->port));
             break;
          case LINK_SCENARIO_HOLD:
-            link_harness_member(h, e, link_bus_hold(h->bus, e->console));
+            if (link_bus_hold(h->bus, e->console))
+               link_console_held(&h->consoles[e->console]);
+            else
+               link_harness_member(h, e, false);
             break;
          case LINK_SCENARIO_UNHOLD:
             link_harness_member(h, e, link_bus_unhold(h->bus, e->console));
@@ -747,15 +778,25 @@ static void link_harness_edge(struct link_harness *h, unsigned long frame, size_
    }
 }
 
-/* Whether a checkpoint comes at one of the two edges after this frame, so
- * that its pictures are kept while it runs: a checkpoint shows the frame
- * before it, or over a dupe there the frame before that */
-static bool link_harness_keep(const struct link_harness *h, size_t next, unsigned long frame)
+/* Before step frame's run, the next checkpoint, which each console's frames
+ * keep their pictures for: console 0 stands at edge frame, so the
+ * checkpoint's instant is its edge that many steps on */
+static void link_harness_keep(const struct link_harness *h, size_t next, unsigned long frame)
 {
-   for (; next < h->scn.event_count && h->scn.events[next].frame <= frame + 2; next++)
+   uint64_t since, span, rate = 0, at = 0;
+   unsigned long steps = 0;
+   for (; next < h->scn.event_count; next++)
       if (h->scn.events[next].kind == LINK_SCENARIO_CHECKPOINT)
-         return true;
-   return false;
+      {
+         steps = h->scn.events[next].frame - frame;
+         break;
+      }
+   if (     steps && link_bus_console_edge(h->bus, 0, &since, &span, &rate) && span
+         && steps <= (~(uint64_t)0 - since) / span)
+      at = since + steps * span;
+   else
+      rate = 0;
+   link_console_step(steps, at, rate);
 }
 
 /* out/stuck.txt: each console parked at the release, and what bounds it,
@@ -824,33 +865,40 @@ static void link_harness_compare(struct link_harness *h, const char *line)
    h->failed   = true;
 }
 
+/* Each frame a console finished in step frame, by console and then its own
+ * frame; a held console that finished none is HELD */
 static void link_harness_trace(struct link_harness *h, unsigned long frame)
 {
    char line[LINK_HARNESS_LINE];
    unsigned i;
+   size_t j;
    uint64_t bus;
    for (i = 0; i < h->scn.console_count; i++)
    {
       link_console_t *c = &h->consoles[i];
-      uint64_t audio, state = 0;
-      if (link_bus_is_held(h->bus, i))
-         sprintf(line, "F %lu C %u HELD", frame, i);
-      else
+      if (!c->finished_count && link_bus_is_held(h->bus, i))
       {
-         if (!link_console_state(c, &state))
+         sprintf(line, "F %lu C %u HELD", frame, i);
+         link_harness_write(h->trace, line);
+         link_harness_compare(h, line);
+      }
+      for (j = 0; j < c->finished_count; j++)
+      {
+         const struct link_console_finished *f = &c->finished[j];
+         if (!f->saved)
          {
-            fprintf(stderr, "link_harness: console %u: retro_serialize failed in frame %lu\n",
-                  i, frame);
+            fprintf(stderr, "link_harness: console %u: retro_serialize failed in its frame %lu\n",
+                  i, f->frame);
             h->failed = true;
          }
-         audio = link_console_audio(c);
-         sprintf(line, "F %lu C %u V %08lx%08lx A %08lx%08lx S %08lx%08lx", frame, i,
-               LINK_HARNESS_HI(c->video), LINK_HARNESS_LO(c->video),
-               LINK_HARNESS_HI(audio), LINK_HARNESS_LO(audio),
-               LINK_HARNESS_HI(state), LINK_HARNESS_LO(state));
+         sprintf(line, "F %lu C %u N %lu V %08lx%08lx A %08lx%08lx S %08lx%08lx", frame, i,
+               f->frame, LINK_HARNESS_HI(f->video), LINK_HARNESS_LO(f->video),
+               LINK_HARNESS_HI(f->audio), LINK_HARNESS_LO(f->audio),
+               LINK_HARNESS_HI(f->state), LINK_HARNESS_LO(f->state));
+         link_harness_write(h->trace, line);
+         link_harness_compare(h, line);
       }
-      link_harness_write(h->trace, line);
-      link_harness_compare(h, line);
+      c->finished_count = 0;
    }
    bus = link_bus_hash(h->bus);
    sprintf(line, "F %lu BUS %08lx%08lx", frame, LINK_HARNESS_HI(bus), LINK_HARNESS_LO(bus));
@@ -951,6 +999,37 @@ static void link_harness_check_counts(struct link_harness *h)
       }
 }
 
+/* Step frame: console 0 to its edge frame + 1, and every other console to
+ * its first edge at or after that instant or parked inside the frame that
+ * crosses it. A run that leaves console 0 short of its edge, parked on a
+ * console at its target, has made spans known that move the targets on: it
+ * runs again to them, which never take console 0 past its edge. False when
+ * they do not move. */
+static bool link_harness_step(struct link_harness *h, unsigned long frame,
+      enum link_sched_frame *result)
+{
+   size_t size = h->scn.console_count * sizeof(*h->targets);
+   uint64_t goal;
+   link_bus_journal_reset(h->bus);
+   link_sched_targets_to(h->sched, 0, h->targets);
+   goal = h->targets[0];
+   for (;;)
+   {
+      *result = link_sched_run(h->sched, h->targets);
+      if (*result == LINK_SCHED_FRAME_RELEASED || link_sched_frames(h->sched, 0) >= goal)
+         return true;
+      link_sched_targets_to(h->sched, 0, h->retargets);
+      if (!memcmp(h->retargets, h->targets, size))
+      {
+         fprintf(stderr, "link_harness: console 0 stopped short of its edge in frame %lu\n",
+               frame);
+         h->failed = true;
+         return false;
+      }
+      memcpy(h->targets, h->retargets, size);
+   }
+}
+
 /* Goes on from the state: the lines up to the save line that wrote it are
  * in it already and are skipped, and so are the expected trace's lines
  * before its frame */
@@ -983,6 +1062,7 @@ static void link_harness_run(struct link_harness *h)
    for (;; frame++)
    {
       enum link_sched_frame result;
+      bool stepped;
       if (rewinding && frame == last)
       {
          if (!link_harness_load_state(h))
@@ -996,11 +1076,13 @@ static void link_harness_run(struct link_harness *h)
       link_harness_edge(h, frame, &next);
       if (frame == s->end_frame)
          break;
-      link_console_frame(frame, link_harness_keep(h, next, frame));
-      result = link_sched_run_frame(h->sched);
+      link_harness_keep(h, next, frame);
+      stepped = link_harness_step(h, frame, &result);
       h->frames++;
       link_harness_trace(h, frame);
       link_harness_messages(h, frame);
+      if (!stepped)
+         break;
       if (result == LINK_SCHED_FRAME_RELEASED)
       {
          link_harness_stuck(h, frame);
@@ -1028,13 +1110,38 @@ static void link_harness_run(struct link_harness *h)
    link_harness_check_counts(h);
 }
 
+/* A core is not unloaded inside a frame: the frames in progress are
+ * abandoned, traced nowhere, and must not move the bus counts */
+static void link_harness_abandon(struct link_harness *h)
+{
+   struct link_bus_counts before, after;
+   unsigned i;
+   bool in_frame = false;
+   for (i = 0; i < h->scn.console_count; i++)
+      in_frame = in_frame || link_sched_in_frame(h->sched, i);
+   if (!in_frame)
+      return;
+   link_bus_get_counts(h->bus, &before);
+   link_sched_abandon(h->sched);
+   link_bus_get_counts(h->bus, &after);
+   for (i = 0; i < LINK_SCENARIO_COUNTERS; i++)
+      if (link_scenario_counter_value(&before, i) != link_scenario_counter_value(&after, i))
+      {
+         fprintf(stderr, "link_harness: abandoning the frames in progress at the end moved"
+               " the bus's count of %s\n", link_scenario_counter_name(i));
+         h->failed = true;
+      }
+}
+
 /* Every core unloaded; closing twice does nothing */
 static void link_harness_close(struct link_harness *h)
 {
    size_t i;
-   if (h->consoles)
-      for (i = 0; i < h->scn.console_count; i++)
-         link_console_close(&h->consoles[i]);
+   if (!h->consoles)
+      return;
+   link_harness_abandon(h);
+   for (i = 0; i < h->scn.console_count; i++)
+      link_console_close(&h->consoles[i]);
 }
 
 static void link_harness_free(struct link_harness *h)
@@ -1050,6 +1157,8 @@ static void link_harness_free(struct link_harness *h)
    free(h->state);
    free(h->saved);
    free(h->saved_len);
+   free(h->saved_frame);
+   free(h->targets);
    free(h->journal);
    free(h->sent);
    free(h->system_dir);

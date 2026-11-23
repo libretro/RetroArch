@@ -30,8 +30,8 @@ static struct
    link_console_t *consoles;
    const struct link_scenario *scn;
    const char *system_dir;
-   unsigned long frame;
-   bool keep;                       /* keep this frame's pictures */
+   uint64_t keep_at, keep_rate;     /* the next checkpoint's instant; rate 0: not known */
+   unsigned long keep_steps;        /* the steps to it; 0: none */
 } link_console_now;
 
 static link_console_t *link_console_current(void)
@@ -268,20 +268,21 @@ static uint32_t link_console_widen(unsigned v, unsigned bits)
 static void link_console_keep(link_console_t *c, const unsigned char *row,
       unsigned width, unsigned height, size_t pitch)
 {
-   size_t size = (size_t)width * height;
+   struct link_console_picture *p = &c->drawn;
+   size_t size                    = (size_t)width * height;
    unsigned x, y;
-   if (size > c->picture_size)
+   if (size > p->size)
    {
-      uint32_t *more = (uint32_t*)realloc(c->picture, size * sizeof(*more));
+      uint32_t *more = (uint32_t*)realloc(p->argb, size * sizeof(*more));
       if (!more)
          return;
-      c->picture      = more;
-      c->picture_size = size;
+      p->argb = more;
+      p->size = size;
    }
    for (y = 0; y < height; y++, row += pitch)
       for (x = 0; x < width; x++)
       {
-         uint32_t *out = &c->picture[(size_t)y * width + x];
+         uint32_t *out = &p->argb[(size_t)y * width + x];
          unsigned px;
          if (c->format == RETRO_PIXEL_FORMAT_XRGB8888)
          {
@@ -296,10 +297,9 @@ static void link_console_keep(link_console_t *c, const unsigned char *row,
             *out = 0xFF000000UL | (link_console_widen((px >> 10) & 31, 5) << 16)
                | (link_console_widen((px >> 5) & 31, 5) << 8) | link_console_widen(px & 31, 5);
       }
-   c->picture_width  = width;
-   c->picture_height = height;
-   c->drew           = true;
-   c->pictured       = true;
+   p->width  = width;
+   p->height = height;
+   c->drew   = true;
 }
 
 /* Hashes the rows of the picture, without any padding past them. NULL is a
@@ -315,7 +315,7 @@ static void RETRO_CALLCONV link_console_video(const void *data, unsigned width,
       return;
    if (!data)
    {
-      c->pictured = c->pictured || c->drew_before;
+      c->duped = true;
       return;
    }
    if (data == RETRO_HW_FRAME_BUFFER_VALID)
@@ -324,7 +324,7 @@ static void RETRO_CALLCONV link_console_video(const void *data, unsigned width,
    for (y = 0; y < height; y++, row += pitch)
       xxh64_update(&h, row, (size_t)width * c->bytes_per_pixel);
    c->video = xxh64_digest(&h);
-   if (link_console_now.keep)
+   if (c->keep)
       link_console_keep(c, (const unsigned char*)data, width, height, pitch);
 }
 
@@ -362,7 +362,7 @@ static int16_t RETRO_CALLCONV link_console_input(unsigned port, unsigned device,
       return 0;
    for (i = 0; i < scn->input_count; i++)
       if (scn->inputs[i].console == c->index && scn->inputs[i].port == port)
-         mask = link_scenario_mask(&scn->inputs[i], link_console_now.frame);
+         mask = link_scenario_mask(&scn->inputs[i], c->frame);
    if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
       return (int16_t)mask;
    return (int16_t)(id < 16 ? (mask >> id) & 1 : 0);
@@ -376,22 +376,71 @@ void link_console_session(link_sched_t *sched, link_bus_t *bus, link_console_t *
    link_console_now.consoles   = consoles;
    link_console_now.scn        = scn;
    link_console_now.system_dir = system_dir;
-   link_console_now.frame      = 0;
+   link_console_now.keep_steps = 0;
 }
 
-void link_console_frame(unsigned long frame, bool keep)
+void link_console_step(unsigned long steps, uint64_t at, uint64_t rate)
 {
-   size_t i;
-   link_console_now.frame = frame;
-   link_console_now.keep  = keep;
-   for (i = 0; i < link_console_now.scn->console_count; i++)
+   link_console_now.keep_steps = steps;
+   link_console_now.keep_at    = at;
+   link_console_now.keep_rate  = rate;
+}
+
+/* A checkpoint shows a console's last finished frame, or over a dupe the
+ * one before, and the console may be inside the frame after: a frame keeps
+ * its picture when the checkpoint comes by the console's edge three frames
+ * on, counted in steps where an instant is not known */
+static void link_console_frame(link_console_t *c)
+{
+   uint64_t since, span, rate;
+   c->drew  = false;
+   c->duped = false;
+   if (!link_console_now.keep_steps)
+      c->keep = false;
+   else if (link_console_now.keep_rate
+         && link_bus_console_edge(link_console_now.bus, c->index, &since, &span, &rate)
+         && span && span <= (~(uint64_t)0 - since) / 3)
+      c->keep = !link_bus_instant_before(since + 3 * span, rate,
+            link_console_now.keep_at, link_console_now.keep_rate);
+   else
+      c->keep = link_console_now.keep_steps <= 3;
+}
+
+void link_console_done(void *user)
+{
+   link_console_t *c = (link_console_t*)user;
+   struct link_console_finished *f;
+   if (c->finished_count == c->finished_cap)
    {
-      link_console_t *c = &link_console_now.consoles[i];
-      c->drew_before    = c->drew;
-      c->ran            = false;
-      c->drew           = false;
-      c->pictured       = false;
+      size_t cap = c->finished_cap ? c->finished_cap * 2 : 4;
+      struct link_console_finished *more = (struct link_console_finished*)realloc(c->finished,
+            cap * sizeof(*more));
+      if (!more)
+      {
+         fprintf(stderr, "link_harness: console %u: out of memory in its frame %lu\n",
+               c->index, c->frame);
+         c->errors++;
+         c->frame++;
+         return;
+      }
+      c->finished     = more;
+      c->finished_cap = cap;
    }
+   f        = &c->finished[c->finished_count++];
+   f->frame = c->frame++;
+   f->video = c->video;
+   f->audio = link_console_audio(c);
+   f->state = 0;
+   f->saved = link_console_state(c, &f->state);
+   if (c->drew)
+   {
+      struct link_console_picture p = c->shown;
+      c->shown = c->drawn;
+      c->drawn = p;
+   }
+   c->pictured    = c->drew || (c->duped && c->drew_before);
+   c->drew_before = c->drew;
+   c->ran         = true;
 }
 
 static bool link_console_symbols(link_console_t *c)
@@ -537,7 +586,7 @@ bool link_console_start(link_console_t *c)
 void link_console_run(void *user)
 {
    link_console_t *c = (link_console_t*)user;
-   c->ran = true;
+   link_console_frame(c);
    xxh64_reset(&c->audio, 0);
    c->api.run();
 }
@@ -589,11 +638,19 @@ bool link_console_unserialize(link_console_t *c, const void *data, size_t len)
    ok = c->api.unserialize(data, len);
    link_sched_leave(link_console_now.sched);
    /* No picture of the loaded state has been seen */
-   c->video    = 0;
-   c->ran      = false;
-   c->drew     = false;
-   c->pictured = false;
+   c->video       = 0;
+   c->ran         = false;
+   c->drew        = false;
+   c->drew_before = false;
+   c->pictured    = false;
    return ok;
+}
+
+void link_console_held(link_console_t *c)
+{
+   c->ran         = false;
+   c->drew_before = false;
+   c->pictured    = false;
 }
 
 void link_console_reset(link_console_t *c)
@@ -659,7 +716,9 @@ void link_console_close(link_console_t *c)
    free(c->descriptors);
    free(c->rom_data);
    free(c->state);
-   free(c->picture);
+   free(c->finished);
+   free(c->shown.argb);
+   free(c->drawn.argb);
    free(c->dir);
    free(c->save_dir);
    free(c->core_copy);
