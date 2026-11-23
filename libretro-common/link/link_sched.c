@@ -535,6 +535,7 @@ enum link_sched_frame link_sched_run_frame(link_sched_t *s)
    s->framing        = true;
    s->main           = co_active();
    link_sched_active = s;
+   link_bus_journal_reset(s->bus);
    for (c = 0; c < s->count; c++)
    {
       struct link_sched_console *k = &s->consoles[c];
@@ -560,7 +561,7 @@ enum link_sched_frame link_sched_run_frame(link_sched_t *s)
       link_sched_release(s);
       released = true;
    }
-   link_bus_edge(s->bus);
+   link_bus_step_end(s->bus);
    s->stats.frames++;
    s->framing        = false;
    link_sched_active = was;

@@ -103,22 +103,28 @@ bool link_bus_blocked_by(const link_bus_t *b, unsigned console, struct retro_lin
 uint64_t link_bus_changes(const link_bus_t *b, unsigned console);  /* moves on a changed publish or a send on the console's buses */
 uint64_t link_bus_activity(const link_bus_t *b, unsigned console); /* the console's own sends and recvs */
 
-/* Around each retro_run; frame_end moves the console to its next edge. Then
- * edge once every console has finished, for the attaches, detaches and cuts
- * made in the frame. */
+/* Around each retro_run; frame_end moves the console to its next edge,
+ * where each of its ports sees the changes of its bus made by then.
+ * step_end, when a step of the host ends, makes the attaches and detaches
+ * made inside a frame by each console standing at an edge take effect
+ * there, and a join max_ports held back. journal_reset starts the journal
+ * over. */
 void link_bus_frame_start(link_bus_t *b, unsigned console);
 void link_bus_frame_end(link_bus_t *b, unsigned console);
-void link_bus_edge(link_bus_t *b);
+void link_bus_step_end(link_bus_t *b);
+void link_bus_journal_reset(link_bus_t *b);
 
 /* The timeline: an instant is a count of ticks of a clock rate since the
  * session began. console_edge gives the instant the console's current frame
  * edge stands at and its span, as ticks of one of its ports' rates; false
- * while it has no place (held, or no port attached). */
+ * while it has no place (held, waiting to be placed, or no port attached). */
 bool link_bus_console_edge(const link_bus_t *b, unsigned console,
       uint64_t *since, uint64_t *span, uint64_t *rate); /* *span 0 until a port shows one */
 bool link_bus_instant_before(uint64_t a, uint64_t ra, uint64_t b, uint64_t rb); /* a / ra < b / rb, exactly */
 
-/* At an edge only; false when refused */
+/* Membership changes; false when refused. uncable needs the console at an
+ * edge and no running peer in a frame begun at or after that edge; hold
+ * needs the console at an edge with its buses idle. */
 bool link_bus_cable(link_bus_t *b, unsigned console_a, unsigned port_a, unsigned console_b, unsigned port_b);
 bool link_bus_uncable(link_bus_t *b, unsigned console, unsigned port);
 bool link_bus_hold(link_bus_t *b, unsigned console);

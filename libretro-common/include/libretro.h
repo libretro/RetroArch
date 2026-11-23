@@ -4043,16 +4043,24 @@ struct retro_memory_status
  *   frame edges at or after the change. Before that instant nothing passes
  *   between them and neither bounds the other's grant; from it each bounds the
  *   other as any peer does. A console with no place on the timeline (one never
- *   placed, or one held) is placed at the latest of its new peers' first frame
- *   edges at or after the change, so it joins every peer there.
+ *   placed, one held, or one at a frame edge that has made no frame-end
+ *   publish since it was placed) is placed at the latest of its placed new
+ *   peers' first frame edges at or after the change, so it joins every peer
+ *   there; with none, at the latest first frame edge of every placed console,
+ *   and with none of those, at the start of the session. A place is rounded
+ *   up to the next instant that is a whole tick of the clock of every port
+ *   in the console's port list, or of every port it has attached if it gave
+ *   none. A port attached later whose clock does not see its console's frame
+ *   edge as a whole tick places that console again, as the end of a hold
+ *   does.
  * - It takes a port off a bus (a cable pulled, a port left out under
  *   \c max_ports) only when that port's console is at a frame edge, at an
  *   instant t, and while no peer's console has passed its first frame edge at
  *   or after t. The port leaves at once. To each other port of the bus it is a
  *   silent member (see \c retro_link_detach_t) from t until that port's
- *   console reaches its first frame edge at or after t. Messages that would
- *   land at the pulled port at or after t are dropped; the messages it sent
- *   stay.
+ *   console reaches its first frame edge at or after t. A message sent to it
+ *   after the pull which would land at or after t is dropped; the messages sent
+ *   before, and those it sent, stay.
  * - Each port sees a change of its bus's membership at its own console's
  *   first frame edge at or after the change. The frontend records each change
  *   for replay with the frame index, for every console concerned, at which it
@@ -4223,8 +4231,9 @@ typedef struct retro_link_port retro_link_port_t;
 /**
  * Attaches one of the core's ports, which lets the frontend join it to a bus.
  *
- * An attach made inside \c retro_run takes effect at its console's next frame
- * edge; until then the port is cabled to nothing. An attach made inside
+ * An attach made inside \c retro_run takes effect at a later frame edge of its
+ * console, which the frontend chooses and records as an input for replay;
+ * until then the port is cabled to nothing. An attach made inside
  * \c retro_load_game, \c retro_reset, \c retro_unserialize or
  * \c retro_unload_game is at a frame edge already.
  *
@@ -4250,10 +4259,11 @@ typedef retro_link_port_t *(RETRO_CALLCONV *retro_link_attach_t)(unsigned port,
 /**
  * Detaches a port, which leaves its bus.
  *
- * A detach made inside \c retro_run takes effect at its console's next frame
- * edge. Until then the port stays on its bus as a silent member: from the
- * moment of the call it bounds no peer's grant, and at that edge the messages
- * sent to it are dropped. A port whose peers are all held or silent members is
+ * A detach made inside \c retro_run takes effect at a later frame edge of its
+ * console, which the frontend chooses and records as an input for replay.
+ * Until then the port stays on its bus as a silent member: from the moment
+ * of the call it bounds no peer's grant, and at that edge the messages sent
+ * to it are dropped. A port whose peers are all held or silent members is
  * granted its request, bounded as \c retro_link_advance_t says. The detached
  * port leaves its bus at that edge, a membership change each peer sees at the
  * first frame edge of its own console at or after it and is told of through
@@ -4277,7 +4287,8 @@ typedef void (RETRO_CALLCONV *retro_link_detach_t)(retro_link_port_t *handle);
  * flags, through #RETRO_LINK_WAKE_TOPOLOGY, and reads the new membership with
  * this call. A port's index on its bus is fixed while the membership it sees
  * is unchanged; indexes are assigned in the order of the session's consoles,
- * then of port numbers.
+ * then of port numbers. The indexes of the other calls on a port are in the
+ * membership that port sees.
  *
  * A pulled cable is a membership change, not a detach. The handle stays live,
  * the port is cabled to nothing, and this call returns -1. The ports left on
@@ -4296,10 +4307,10 @@ typedef int (RETRO_CALLCONV *retro_link_peers_t)(retro_link_port_t *handle, unsi
  * clock. The frontend copies the payload before the call returns. A payload
  * longer than #RETRO_LINK_MAX_PAYLOAD is refused.
  *
- * The message reaches the ports that are on the bus when it is sent: the port
- * that \c to names, or every other port with #RETRO_LINK_BROADCAST. A port on
- * the bus that has not yet advanced is among them. A port that joins the bus
- * later does not get the message.
+ * The message reaches the ports on the bus as this port sees it when it is
+ * sent: the port that \c to names, or every other port with
+ * #RETRO_LINK_BROADCAST. A port on the bus that has not yet advanced is among
+ * them. A port that joins the bus later does not get the message.
  *
  * @param handle The handle returned by \c retro_link_attach_t.
  * @param tick When the event happens, on this port's clock. The core stamps at
@@ -4351,7 +4362,9 @@ typedef bool (RETRO_CALLCONV *retro_link_send_t)(retro_link_port_t *handle, uint
  * @param handle The handle returned by \c retro_link_attach_t.
  * @param[out] tick The landing tick: when the event lands, on this port's
  * clock. Not written when \c NULL.
- * @param[out] from The sender's index on the bus. Not written when \c NULL.
+ * @param[out] from The sender's index on the bus, in the membership this port
+ * saw at the instant the sender stood at when it sent. Not written when
+ * \c NULL.
  * @param[out] buf Receives the payload. \c NULL to discard the message.
  * @param[in,out] len Buffer capacity on entry, bytes written on return. After
  * \c false, 0 or the length needed, as above. \c NULL only with a \c NULL
@@ -4519,7 +4532,10 @@ struct retro_link_port_info
     * more ports would form one bus than the \c max_ports of one of them allows,
     * the frontend takes them in the order of the session's consoles, then of
     * port numbers, and lets each join only if the bus with it stays within the
-    * \c max_ports of every port on it. A port left out is cabled to nothing
+    * \c max_ports of every port on it. A port that would take the place of a
+    * port whose console is inside a frame waits for a later frame edge of that
+    * console, chosen and recorded as for an attach made inside \c retro_run.
+    * A port left out is cabled to nothing
     * (\c retro_link_peers_t returns -1 and its grant is #RETRO_LINK_UNBOUNDED)
     * until a place frees at a later frame edge; its joining then is a
     * membership change, reported as #RETRO_LINK_WAKE_TOPOLOGY.
@@ -4641,7 +4657,9 @@ typedef void (RETRO_CALLCONV *retro_link_advance_multi_t)(
  * @param handle The handle returned by \c retro_link_attach_t.
  * @param[out] tick The landing tick: when the event lands, on this port's
  * clock. Not written when \c NULL.
- * @param[out] from The sender's index on the bus. Not written when \c NULL.
+ * @param[out] from The sender's index on the bus, in the membership this port
+ * saw at the instant the sender stood at when it sent. Not written when
+ * \c NULL.
  * @param[out] len The payload's length in bytes. 0 when there is no message to
  * return. Not written when \c NULL.
  * @return The payload, or \c NULL when there is no message to return. A

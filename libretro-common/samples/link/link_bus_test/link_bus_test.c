@@ -172,6 +172,7 @@ static bool fx_running(unsigned c)
 static void fx_begin(void)
 {
    unsigned c;
+   link_bus_journal_reset(fx_bus);
    for (c = 0; c < fx_consoles; c++)
       if (fx_running(c))
          link_bus_frame_start(fx_bus, c);
@@ -194,7 +195,7 @@ static void fx_far(unsigned c)
 }
 
 /* Ends the frame: the frame-end publish of every port, frame_end for every
- * console, the edge. */
+ * console, the step's end. */
 static void frame(void)
 {
    bool run[FX_CONSOLES];
@@ -207,7 +208,7 @@ static void frame(void)
    for (c = 0; c < fx_consoles; c++)
       if (run[c])
          link_bus_frame_end(fx_bus, c);
-   link_bus_edge(fx_bus);
+   link_bus_step_end(fx_bus);
    for (c = 0; c < fx_consoles; c++)
       for (p = 0; p < FX_PORTS; p++)
          if (fx_h[c][p] && run[c])
@@ -418,7 +419,6 @@ static void peers_index_and_count(void)
    count = 0;
    CHECK(link_bus_peers(fx_bus, 1, fx_h[1][0], &count) == 1 && count == 2);
    CHECK(link_bus_uncable(fx_bus, 0, 0));
-   link_bus_edge(fx_bus);
    count = 99;
    CHECK(link_bus_peers(fx_bus, 0, fx_h[0][0], &count) == -1 && count == 0);
    count = 99;
@@ -440,10 +440,7 @@ static void cable_rules(void)
    fx_attach(0);
    fx_attach(1);
    link_bus_frame_start(fx_bus, 0);
-   CHECK(!link_bus_cable(fx_bus, 0, 0, 1, 0));
-   link_bus_frame_end(fx_bus, 0);
-   link_bus_edge(fx_bus);
-   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0)); /* wherever the consoles stand */
    fx_free();
 
    fx_new(2);
@@ -1433,7 +1430,6 @@ static void hold_needs_idle(void)
    fx_all_ports(1, true);
    link_bus_frame_end(fx_bus, 0);
    link_bus_frame_end(fx_bus, 1);
-   link_bus_edge(fx_bus);
    fx_tick[0][0] += 1024;
    fx_tick[1][0] += 1024;
    CHECK(!link_bus_hold(fx_bus, 1)); /* edge 41 */
@@ -1998,7 +1994,6 @@ static void skipped_publish_breach(void)
    fx_all_ports(1, true); /* frame 2: console 0 makes no frame-end publish */
    link_bus_frame_end(fx_bus, 0);
    link_bus_frame_end(fx_bus, 1);
-   link_bus_edge(fx_bus);
    CHECK(counts().skipped_publish == 1);
    fx_begin();
    CHECK(adv(1, fx_h[1][0], 3072, FX_FAR, 3072, NULL, NULL));
@@ -2245,8 +2240,9 @@ static void save_load_roundtrip(void)
 
 /* The save blob's layout, for checks that corrupt one field */
 #define FX_BLOB_HEAD  84 /* magic, version, consoles, records, cables, counts */
-#define FX_BLOB_PORT  94 /* a record, up to its protocol's length */
-#define FX_BLOB_ENTRY 43 /* a message, up to its payload */
+#define FX_BLOB_PORT  103 /* a record, up to its protocol's length */
+#define FX_BLOB_LINK  38  /* a link to another record */
+#define FX_BLOB_ENTRY 59  /* a message, up to its payload */
 
 static size_t fx_u32(const unsigned char *s)
 {
@@ -2267,6 +2263,7 @@ static size_t fx_record_at(const unsigned char *blob, size_t k, size_t *first)
       size_t rec = at, i, n;
       at += FX_BLOB_PORT;
       at += 4 + fx_u32(blob + at);
+      at += 4 + fx_u32(blob + at) * FX_BLOB_LINK;
       n   = fx_u32(blob + at);
       at += 4;
       if (!k--)
@@ -2353,8 +2350,8 @@ static void load_checks_cables_and_reports(void)
    /* Console 1's port 0 with reports no port can have pending */
    memcpy(bad, fx_blob, n);
    rec = fx_record_at(bad, 1, &first);
-   bad[rec + 10] |= RETRO_LINK_WAKE_DETACHED | 8;
-   bad[rec + 13] |= 0x80;
+   bad[rec + 11] |= RETRO_LINK_WAKE_DETACHED | 8;
+   bad[rec + 14] |= 0x80;
    CHECK(link_bus_load(fx_bus, bad, n));
    CHECK(link_bus_hash(fx_bus) == hash_a);
    fx_free();
@@ -2903,10 +2900,7 @@ static void skipped_twice_keeps_place(void)
          fx_tick[1][0] += 1024;
          fx_own_end(0);
          if (f == 1 && i == 2)
-         {
-            link_bus_edge(fx_bus);
             fx_reload_bus();
-         }
       }
       CHECK(fx_edge_is(0, 3072, 1024, 61440));
       CHECK(fx_edge_is(1, 3072, 1024, 61440));
@@ -2932,7 +2926,6 @@ static void instants_near_top(void)
    for (f = 0; f < 3; f++)
       fx_own_frame(0, 0);
    CHECK(fx_edge_is(0, 3 * top, top, top));
-   link_bus_edge(fx_bus);
    link_bus_renumbered(fx_bus, 0);
    fx_tick[0][0] = 0;
    for (f = 0; f < 2; f++)
@@ -2956,7 +2949,6 @@ static uint64_t fx_lone_hash(unsigned f)
    fx_attach(0);
    while (f--)
       fx_own_frame(0, 0);
-   link_bus_edge(fx_bus);
    hash = link_bus_hash(fx_bus);
    fx_free();
    return hash;
@@ -2972,7 +2964,6 @@ static void blob_v2_since(void)
 
    fx_spans();
    fx_spans_frames();
-   link_bus_edge(fx_bus);
    len = fx_save();
    memcpy(old, fx_blob, len);
    old[4] = 1;                   /* version 1 */
@@ -2998,6 +2989,517 @@ static void blob_v2_since(void)
    fx_free();
 
    CHECK(fx_lone_hash(2) != fx_lone_hash(3));
+}
+
+/* Membership at each console's own edge: fx_spans' rates unless said,
+ * console 0 at 60000 with a span of 1001 and console 1 at 16777216 with
+ * 280896 */
+
+/* Console c opens its frame: its frame-start advance on port 0 promising
+ * safe, asking for reports */
+static uint32_t fx_open(unsigned c, uint64_t safe)
+{
+   uint32_t flags = 0;
+   link_bus_frame_start(fx_bus, c);
+   CHECK(adv(c, fx_h[c][0], fx_tick[c][0], safe, fx_tick[c][0], NULL, &flags));
+   return flags;
+}
+
+/* fx_spans' ports, not cabled; console 0 at edge 2 */
+static void fx_apart(void)
+{
+   fx_new(2);
+   fx_port(0, 0, "test-cable", 60000, 2, 0);
+   fx_port(1, 0, "test-cable", 16777216, 2, 0);
+   fx_attach(0);
+   fx_attach(1);
+   fx_span[0][0] = 1001;
+   fx_span[1][0] = 280896;
+   fx_own_frame(0, 0);
+   fx_own_frame(0, 0);
+}
+
+/* p's index and count, as one number */
+static int fx_peers(unsigned c, unsigned p)
+{
+   unsigned count = 99;
+   int index      = link_bus_peers(fx_bus, c, fx_h[c][p], &count);
+   return (index + 1) * 16 + (int)count;
+}
+
+static void plug_joins_at_later_first_edge(void)
+{
+   char buf[4];
+   uint64_t grant = 0, tick = 0;
+   size_t len     = sizeof(buf);
+
+   fx_apart();
+   fx_own_frame(1, 0);
+   CHECK(fx_open(1, 280896) == RETRO_LINK_WAKE_NONE); /* frame 1, to 561792 */
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(fx_peers(1, 0) == 0);
+   CHECK(fx_open(0, 2005) == RETRO_LINK_WAKE_TOPOLOGY);
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2);
+   /* J is console 1's frame end, 561792: 2009.12 on console 0 */
+   CHECK(snd(0, 0, 2005, 1, "a", 1));
+   CHECK(adv(0, fx_h[0][0], 2002, 2010, 2002, NULL, NULL));
+   CHECK(snd(0, 0, 2010, 1, "b", 1)); /* lands at 562037 */
+   CHECK(adv(0, fx_h[0][0], 2002, 2100, 2009, &grant, NULL) && grant == 2009);
+   CHECK(!adv(0, fx_h[0][0], 2002, 2100, 2010, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 280896, 280896, 280896, &grant, NULL));
+   CHECK(grant == RETRO_LINK_UNBOUNDED);
+   fx_own_end(1);
+   CHECK(fx_open(1, 562200) == RETRO_LINK_WAKE_TOPOLOGY);
+   CHECK(fx_peers(1, 0) == 2 * 16 + 2);
+   CHECK(adv(0, fx_h[0][0], 2002, 2100, 2010, &grant, NULL) && grant == 2010);
+   CHECK(!adv(0, fx_h[0][0], 2002, 2100, 2011, NULL, NULL));
+   CHECK(!adv(1, fx_h[1][0], 561792, 600000, 590000, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 561792, 600000, 587202, &grant, NULL) && grant == 587202);
+   CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], &tick, NULL, buf, &len));
+   CHECK(buf[0] == 'b' && tick == 562037);
+   len = sizeof(buf);
+   CHECK(!link_bus_recv(fx_bus, 1, fx_h[1][0], NULL, NULL, buf, &len));
+   fx_free();
+}
+
+static void join_waits_for_unknown_frame_end(void)
+{
+   uint64_t grant = 0;
+
+   fx_new(2);
+   fx_port(0, 0, "test-cable", 60000, 2, 0);
+   fx_port(1, 0, "test-cable", 16777216, 2, 0);
+   fx_attach(0);
+   fx_span[0][0] = 1001;
+   fx_own_frame(0, 0);
+   fx_own_frame(0, 0);
+   fx_attach(1);                  /* placed at console 0's edge, 2002: 559800 */
+   fx_span[1][0] = 280896;
+   CHECK(fx_edge_is(1, 559800, 0, 16777216));
+   CHECK(fx_open(1, 0) == RETRO_LINK_WAKE_NONE); /* its first frame: no span */
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   fx_open(0, 4000);
+   CHECK(!adv(0, fx_h[0][0], 2002, 4000, 2003, NULL, NULL));
+   fx_own_end(1);                 /* edge 840696: 3006.5 on console 0 */
+   CHECK(adv(0, fx_h[0][0], 2002, 4000, 3003, &grant, NULL) && grant == 3003);
+   fx_own_end(0);
+   fx_open(0, 4000);
+   CHECK(adv(0, fx_h[0][0], 3003, 4000, 3006, &grant, NULL) && grant == 3006);
+   CHECK(!adv(0, fx_h[0][0], 3003, 4000, 3007, NULL, NULL));
+   fx_free();
+}
+
+static void unplug_silent_until_own_edge(void)
+{
+   uint64_t grant = 0;
+
+   fx_spans();
+   fx_own_frame(0, 0);            /* edge 1001 */
+   fx_own_frame(1, 0);            /* edge t = 280896: 1004.56 on console 0 */
+   fx_open(0, 3000);              /* frame 1, begun before t */
+   CHECK(!adv(0, fx_h[0][0], 1001, 3000, 1500, NULL, NULL));
+   CHECK(link_bus_uncable(fx_bus, 1, 0));
+   CHECK(fx_peers(1, 0) == 0);
+   CHECK(adv(0, fx_h[0][0], 1001, 3000, 2002, &grant, NULL) && grant == 2002);
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2);
+   fx_own_end(0);
+   CHECK(fx_peers(0, 0) == 0);
+   CHECK(fx_open(0, 3000) == RETRO_LINK_WAKE_TOPOLOGY);
+   fx_free();
+}
+
+static void unplug_drops_late_landings(void)
+{
+   char buf[8];
+   uint64_t tick = 0, grant = 0;
+   size_t len    = sizeof(buf);
+
+   fx_spans();
+   fx_own_frame(0, 0);            /* edge 1001, promising it */
+   link_bus_frame_start(fx_bus, 1);
+   CHECK(adv(1, fx_h[1][0], 0, 280000, 0, NULL, NULL));
+   CHECK(snd(1, 0, 280000, 0, "own", 3)); /* lands at 1002 */
+   link_bus_frame_start(fx_bus, 0);
+   CHECK(adv(0, fx_h[0][0], 1001, 1002, 1001, NULL, NULL));
+   CHECK(snd(0, 0, 1002, 1, "early", 5)); /* lands at 280180 */
+   fx_own_end(1);                 /* edge t = 280896 */
+   CHECK(link_bus_uncable(fx_bus, 1, 0));
+   CHECK(snd(0, 0, 1003, 1, "late", 4));  /* at console 1's edge, t */
+   CHECK(snd(0, 0, 1020, 1, "late2", 5)); /* 285213 */
+   CHECK(adv(0, fx_h[0][0], 1001, 1100, 1100, &grant, NULL) && grant == 1100);
+   CHECK(link_bus_recv(fx_bus, 0, fx_h[0][0], &tick, NULL, buf, &len));
+   CHECK(len == 3 && !memcmp(buf, "own", 3) && tick == 1002);
+   link_bus_frame_start(fx_bus, 1);
+   CHECK(adv(1, fx_h[1][0], 280896, 290000, 280896, &grant, NULL));
+   CHECK(grant == RETRO_LINK_UNBOUNDED);
+   len = sizeof(buf);
+   CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], &tick, NULL, buf, &len));
+   CHECK(len == 5 && !memcmp(buf, "early", 5) && tick == 280180);
+   len = sizeof(buf);
+   CHECK(!link_bus_recv(fx_bus, 1, fx_h[1][0], NULL, NULL, buf, &len));
+   fx_free();
+}
+
+static void uncable_refused_past_first_edge(void)
+{
+   fx_spans();
+   fx_own_start(1, 0);
+   CHECK(!link_bus_uncable(fx_bus, 1, 0)); /* console 1 inside a frame */
+   fx_own_end(1);                 /* t = 280896 */
+   fx_own_frame(0, FX_FAR);
+   fx_own_start(0, FX_FAR);       /* begun at 1001, before t */
+   CHECK(link_bus_uncable(fx_bus, 1, 0));
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   fx_own_end(0);
+   fx_own_start(0, FX_FAR);       /* begun at 2002, after t */
+   CHECK(!link_bus_uncable(fx_bus, 1, 0));
+   fx_own_end(0);
+   CHECK(link_bus_uncable(fx_bus, 1, 0));
+   fx_free();
+}
+
+/* Console 2 sees console 1 pulled at its edge and sends from 1001; console
+ * 0, whose edge is at 280896, still saw console 2 as index 2 there */
+static void from_index_in_receiver_view(void)
+{
+   uint64_t grant = 0;
+   unsigned from  = 99, c;
+   size_t len     = 0;
+
+   fx_new(3);
+   fx_port(0, 0, "test-cable", 16777216, 3, 0);
+   fx_port(1, 0, "test-cable", 60000, 3, 0);
+   fx_port(2, 0, "test-cable", 60000, 3, 0);
+   for (c = 0; c < 3; c++)
+      fx_attach(c);
+   fx_span[0][0] = 280896;
+   fx_span[1][0] = 1001;
+   fx_span[2][0] = 1001;
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(link_bus_cable(fx_bus, 0, 0, 2, 0));
+   fx_own_frame(1, FX_FAR);       /* t = 1001 */
+   fx_own_start(0, FX_FAR);
+   fx_own_start(2, 0);
+   CHECK(link_bus_uncable(fx_bus, 1, 0));
+   fx_own_end(2);
+   CHECK(fx_peers(2, 0) == 2 * 16 + 2);
+   link_bus_frame_start(fx_bus, 2);
+   CHECK(adv(2, fx_h[2][0], 1001, 1001, 1001, NULL, NULL));
+   CHECK(snd(2, 0, 1001, 0, "x", 1)); /* lands at 279900 */
+   CHECK(adv(2, fx_h[2][0], 1001, 1100, 1001, NULL, NULL));
+   CHECK(fx_peers(0, 0) == 1 * 16 + 3);
+   CHECK(adv(0, fx_h[0][0], 0, FX_FAR, 279901, &grant, NULL) && grant == 279901);
+   CHECK(link_bus_peek(fx_bus, 0, fx_h[0][0], NULL, &from, &len) != NULL);
+   CHECK(from == 2);
+   fx_free();
+}
+
+static void hold_at_own_edge(void)
+{
+   fx_spans();
+   fx_own_start(1, 0);
+   CHECK(!link_bus_hold(fx_bus, 1));
+   fx_own_end(1);
+   fx_own_start(0, 0);
+   CHECK(link_bus_hold(fx_bus, 1));
+   CHECK(link_bus_is_held(fx_bus, 1));
+   fx_free();
+}
+
+/* Console 1's clocks, 16777216 and 4194304, have whole ticks every
+ * 1/4194304 s; console 0 has a span of 1000 at 60000 */
+static void unhold_places_on_rate_grid(void)
+{
+   struct link_bus_sent j;
+   uint64_t grant = 0;
+
+   fx_new(2);
+   fx_port(0, 0, "test-cable", 60000, 2, 0);
+   fx_port(1, 0, "test-cable", 16777216, 2, 0);
+   fx_port(1, 1, "test-other", 4194304, 2, 0);
+   fx_attach(0);
+   fx_attach(1);
+   fx_span[0][0] = 1000;
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(link_bus_hold(fx_bus, 1));
+   fx_own_frame(0, 0);            /* edge 1000 */
+   link_bus_frame_start(fx_bus, 0);
+   CHECK(adv(0, fx_h[0][0], 1000, 1500, 1000, NULL, NULL));
+   CHECK(link_bus_unhold(fx_bus, 1));
+   /* console 0's frame end, 2000: 139810.13 of 1/4194304 s, rounded up */
+   CHECK(fx_edge_is(1, 559244, 0, 16777216));
+   CHECK(snd(0, 0, 1500, 1, "m", 1));
+   CHECK(adv(0, fx_h[0][0], 1000, 1500, 1500, &grant, NULL) && grant == 1500);
+   link_bus_frame_start(fx_bus, 1);
+   fx_all_ports(1, false);
+   CHECK(link_bus_journal(fx_bus, &j, 1) == 1 && j.landing == 0);
+   fx_free();
+}
+
+static void attach_in_frame_joins_at_own_edge(void)
+{
+   retro_link_port_t *h;
+
+   fx_new(2);
+   fx_port(0, 0, "test-radio", 60000, 0, RETRO_LINK_PORT_SHARED_MEDIUM);
+   fx_port(1, 0, "test-radio", 16777216, 0, RETRO_LINK_PORT_SHARED_MEDIUM);
+   fx_attach(0);
+   fx_span[0][0] = 1001;
+   CHECK(link_bus_set_ports(fx_bus, 1, fx_ptrs[1]));
+   fx_own_frame(0, 0);            /* edge 1001 */
+   fx_open(0, 1001);              /* frame 1, to 2002 */
+   link_bus_frame_start(fx_bus, 1);
+   h = link_bus_attach(fx_bus, 1, 0, "test-radio", 16777216);
+   fx_h[1][0] = h;
+   CHECK(h != NULL && fx_peers(1, 0) == 0);
+   link_bus_frame_end(fx_bus, 1);
+   CHECK(fx_peers(1, 0) == 0);
+   link_bus_step_end(fx_bus);     /* placed at console 0's frame end: 559800 */
+   CHECK(fx_edge_is(1, 559800, 0, 16777216));
+   CHECK(fx_peers(1, 0) == 2 * 16 + 2);
+   CHECK(fx_peers(0, 0) == 0);
+   fx_own_end(0);
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2);
+   CHECK(fx_open(0, 2002) == RETRO_LINK_WAKE_TOPOLOGY);
+   fx_free();
+}
+
+static void detach_in_frame_leaves_at_own_edge(void)
+{
+   uint64_t grant = 0;
+
+   fx_new(2);
+   fx_port(0, 0, "test-radio", 60000, 0, RETRO_LINK_PORT_SHARED_MEDIUM);
+   fx_port(1, 0, "test-radio", 16777216, 0, RETRO_LINK_PORT_SHARED_MEDIUM);
+   fx_attach(0);
+   fx_attach(1);
+   fx_span[0][0] = 1001;
+   fx_span[1][0] = 280896;
+   fx_own_frame(0, 0);            /* edge 1001 */
+   fx_own_frame(1, 0);            /* edge 280896 */
+   fx_open(1, 280896);            /* frame 1, to t = 561792: 2009.12 on console 0 */
+   fx_open(0, 3000);              /* frame 1, to 2002 */
+   CHECK(!adv(0, fx_h[0][0], 1001, 3000, 1500, NULL, NULL));
+   link_bus_detach(fx_bus, 1, fx_h[1][0]);
+   CHECK(adv(0, fx_h[0][0], 1001, 3000, 2002, &grant, NULL) && grant == 2002);
+   link_bus_frame_end(fx_bus, 1);
+   link_bus_step_end(fx_bus);     /* leaves at t */
+   fx_own_end(0);                 /* 2002, before t */
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2);
+   CHECK(fx_open(0, 3000) == RETRO_LINK_WAKE_NONE);
+   fx_own_end(0);                 /* 3003 */
+   CHECK(fx_peers(0, 0) == 0);
+   CHECK(fx_open(0, 3003) == RETRO_LINK_WAKE_TOPOLOGY);
+   fx_free();
+}
+
+/* A port at 60000 attached beside one at 16777216 standing at 280896: the
+ * clocks share whole ticks every 1/32 s */
+static void attach_off_grid_places_again(void)
+{
+   fx_new(1);
+   fx_h[0][0] = link_bus_attach(fx_bus, 0, 0, "test-cable", 16777216);
+   CHECK(fx_h[0][0] != NULL);
+   fx_span[0][0] = 280896;
+   fx_own_frame(0, 0);
+   CHECK(fx_edge_is(0, 280896, 280896, 16777216));
+   CHECK(link_bus_attach(fx_bus, 0, 1, "test-other", 60000) != NULL);
+   CHECK(fx_edge_is(0, 524288, 0, 16777216));
+   fx_free();
+}
+
+/* Console 1 attaches its radio inside its frame 0 while console 0 runs two
+ * frames, in the order given: the join is made at the step's end, so its
+ * instants and the bus do not depend on the order */
+static uint64_t fx_attach_in_order(unsigned order)
+{
+   uint64_t hash;
+   fx_new(2);
+   fx_port(0, 0, "test-radio", 60000, 0, RETRO_LINK_PORT_SHARED_MEDIUM);
+   fx_port(1, 0, "test-radio", 16777216, 0, RETRO_LINK_PORT_SHARED_MEDIUM);
+   fx_attach(0);
+   fx_span[0][0] = 1001;
+   CHECK(link_bus_set_ports(fx_bus, 1, fx_ptrs[1]));
+   if (order)
+      fx_own_frame(0, 0);
+   if (order == 1)
+      fx_own_frame(0, 0);
+   link_bus_frame_start(fx_bus, 1);
+   fx_h[1][0] = link_bus_attach(fx_bus, 1, 0, "test-radio", 16777216);
+   CHECK(fx_h[1][0] != NULL);
+   link_bus_frame_end(fx_bus, 1);
+   if (order != 1)
+      fx_own_frame(0, 0);
+   if (!order)
+      fx_own_frame(0, 0);
+   link_bus_step_end(fx_bus);
+   /* placed at console 0's edge 2, 2002: 559800 */
+   CHECK(fx_edge_is(1, 559800, 0, 16777216));
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(1, 0) == 2 * 16 + 2);
+   hash = link_bus_hash(fx_bus);
+   fx_free();
+   return hash;
+}
+
+static void attach_in_frame_same_in_any_order(void)
+{
+   uint64_t hash = fx_attach_in_order(0);
+   CHECK(fx_attach_in_order(1) == hash);
+   CHECK(fx_attach_in_order(2) == hash);
+}
+
+/* Console 1 is in its first frame, its span not known; console 2, cabled
+ * to it at its edge, waits to be placed there. Console 2 opens its frame and
+ * sends to console 1 before (order 0) or after (order 1) console 1's frame
+ * ends: the message lands at the same tick either way */
+static void fx_unplaced_send(unsigned order, uint64_t out[4])
+{
+   char buf[4];
+   size_t len    = sizeof(buf);
+   uint64_t tick = 0, grant = 0;
+   fx_new(3);
+   fx_port(0, 0, "test-cable", 60000, 2, 0);
+   fx_port(1, 0, "test-cable", 16777216, 2, 0);
+   fx_port(2, 0, "test-cable", 60000, 2, 0);
+   fx_attach(0);
+   fx_span[0][0] = 1001;
+   fx_own_frame(0, 0);
+   fx_own_frame(0, 0);
+   fx_attach(1);
+   fx_span[1][0] = 280896;
+   fx_open(1, 0);
+   fx_attach(2);
+   fx_span[2][0] = 1001;
+   CHECK(link_bus_cable(fx_bus, 1, 0, 2, 0));
+   link_bus_frame_start(fx_bus, 2);
+   if (order)
+      fx_own_end(1);
+   CHECK(adv(2, fx_h[2][0], 0, 0, 0, NULL, NULL));
+   out[0] = snd(2, 0, 0, 0, "z", 1);
+   if (!order)
+      fx_own_end(1);
+   fx_own_end(2);
+   fx_open(1, FX_FAR);
+   out[1] = adv(1, fx_h[1][0], 280896, FX_FAR, 290000, &grant, NULL);
+   out[2] = grant;
+   out[3] = link_bus_recv(fx_bus, 1, fx_h[1][0], &tick, NULL, buf, &len) ? tick : 0;
+   fx_free();
+}
+
+static void unplaced_sender_same_in_any_order(void)
+{
+   uint64_t out[2][4];
+   fx_unplaced_send(0, out[0]);
+   fx_unplaced_send(1, out[1]);
+   CHECK(out[1][0] == 1 && out[1][1] == 1 && out[1][3] == 281019);
+   CHECK(!memcmp(out[0], out[1], sizeof(out[0])));
+}
+
+/* Radios taking two: consoles 1 and 2 on the medium, console 2 inside its
+ * frame 1; console 0's radio, attached at its edge, would push console 2's
+ * out, so it waits for console 2's edge */
+static void max_ports_keeps_place_in_frame(void)
+{
+   unsigned c;
+   fx_new(3);
+   for (c = 0; c < 3; c++)
+      fx_port(c, 0, "test-radio", 61440, 2, RETRO_LINK_PORT_SHARED_MEDIUM);
+   CHECK(link_bus_set_ports(fx_bus, 0, fx_ptrs[0]));
+   fx_attach(1);
+   fx_attach(2);
+   fx_own_frame(1, 0);
+   fx_own_frame(1, 0);
+   fx_own_frame(2, 0);
+   fx_own_start(2, 0);
+   fx_h[0][0] = link_bus_attach(fx_bus, 0, 0, "test-radio", 61440);
+   CHECK(fx_h[0][0] != NULL);
+   CHECK(fx_peers(0, 0) == 0);
+   CHECK(fx_peers(2, 0) == 2 * 16 + 2);
+   fx_own_end(2);
+   link_bus_step_end(fx_bus);
+   CHECK(fx_peers(2, 0) == 0);
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2);
+   CHECK(fx_peers(1, 0) == 2 * 16 + 2);
+   fx_free();
+}
+
+/* Console 1 has shown no span since it was placed at 0: its port joining a
+ * bus places it again, at console 0's edge 2 */
+static void join_places_console_with_no_span(void)
+{
+   fx_apart();
+   link_bus_frame_start(fx_bus, 1);
+   CHECK(adv(1, fx_h[1][0], 0, 0, 0, NULL, NULL));
+   link_bus_frame_end(fx_bus, 1);
+   CHECK(fx_edge_is(1, 0, 0, 16777216));
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(fx_edge_is(1, 559800, 0, 16777216));
+   fx_free();
+}
+
+/* Consoles 0 and 2 at 60000 with spans of 1001, console 1 as fx_spans';
+ * console 0 at edge 1 is cabled to console 1 at its edge 1, so they hear
+ * each other from 280896 (1004.56 on console 0), and console 2 at edge 2
+ * (2002) is pulled from console 0, which sees it until its edge 2 */
+static void fx_pending(void)
+{
+   unsigned c;
+   fx_new(3);
+   fx_port(0, 0, "test-cable", 60000, 3, 0);
+   fx_port(1, 0, "test-cable", 16777216, 3, 0);
+   fx_port(2, 0, "test-cable", 60000, 3, 0);
+   for (c = 0; c < 3; c++)
+      fx_attach(c);
+   fx_span[0][0] = 1001;
+   fx_span[1][0] = 280896;
+   fx_span[2][0] = 1001;
+   CHECK(link_bus_cable(fx_bus, 0, 0, 2, 0));
+   fx_own_frame(0, 0);
+   fx_own_frame(1, 0);
+   fx_own_frame(2, FX_FAR);
+   fx_own_frame(2, FX_FAR);
+   CHECK(link_bus_uncable(fx_bus, 2, 0));
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+}
+
+/* What fx_pending's session does next, the same on any bus */
+static void fx_pending_run(uint64_t out[8])
+{
+   char buf[4];
+   size_t len = sizeof(buf);
+   out[0] = fx_open(0, 1002);
+   out[1] = (uint64_t)fx_peers(0, 0);
+   CHECK(snd(0, 0, 1002, 1, "a", 1)); /* before 1004.56: dropped */
+   CHECK(adv(0, fx_h[0][0], 1001, 1005, 1001, NULL, NULL));
+   CHECK(snd(0, 0, 1005, 1, "b", 1));
+   out[2] = adv(0, fx_h[0][0], 1001, 1100, 1004, NULL, NULL);
+   out[3] = adv(0, fx_h[0][0], 1001, 1100, 1005, NULL, NULL);
+   fx_own_end(0);
+   out[4] = (uint64_t)fx_peers(0, 0);
+   out[5] = fx_open(1, 300000);
+   CHECK(adv(1, fx_h[1][0], 280896, 300000, 290000, NULL, NULL));
+   CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], &out[6], NULL, buf, &len) && buf[0] == 'b');
+   len = sizeof(buf);
+   CHECK(!link_bus_recv(fx_bus, 1, fx_h[1][0], NULL, NULL, buf, &len));
+   out[7] = link_bus_hash(fx_bus);
+}
+
+static void membership_blob_roundtrip(void)
+{
+   uint64_t out[2][8];
+   unsigned run;
+   for (run = 0; run < 2; run++)
+   {
+      fx_pending();
+      if (run)
+         fx_reload_bus();
+      fx_pending_run(out[run]);
+      fx_free();
+   }
+   CHECK(out[0][0] == RETRO_LINK_WAKE_TOPOLOGY && out[0][1] == 1 * 16 + 3);
+   CHECK(out[0][2] == 1 && out[0][3] == 0 && out[0][4] == 1 * 16 + 2);
+   CHECK(out[0][5] == RETRO_LINK_WAKE_TOPOLOGY);
+   CHECK(!memcmp(out[0], out[1], sizeof(out[0])));
 }
 
 static const struct
@@ -3077,7 +3579,23 @@ static const struct
    { "skipped_publish_lands_on_edge_before", skipped_publish_lands_on_edge_before },
    { "skipped_twice_keeps_place",            skipped_twice_keeps_place },
    { "instants_near_top",                    instants_near_top },
-   { "blob_v2_since",                        blob_v2_since }
+   { "blob_v2_since",                        blob_v2_since },
+   { "plug_joins_at_later_first_edge",       plug_joins_at_later_first_edge },
+   { "join_waits_for_unknown_frame_end",     join_waits_for_unknown_frame_end },
+   { "unplug_silent_until_own_edge",         unplug_silent_until_own_edge },
+   { "unplug_drops_late_landings",           unplug_drops_late_landings },
+   { "uncable_refused_past_first_edge",      uncable_refused_past_first_edge },
+   { "from_index_in_receiver_view",          from_index_in_receiver_view },
+   { "hold_at_own_edge",                     hold_at_own_edge },
+   { "unhold_places_on_rate_grid",           unhold_places_on_rate_grid },
+   { "attach_in_frame_joins_at_own_edge",    attach_in_frame_joins_at_own_edge },
+   { "detach_in_frame_leaves_at_own_edge",   detach_in_frame_leaves_at_own_edge },
+   { "attach_off_grid_places_again",         attach_off_grid_places_again },
+   { "attach_in_frame_same_in_any_order",    attach_in_frame_same_in_any_order },
+   { "unplaced_sender_same_in_any_order",    unplaced_sender_same_in_any_order },
+   { "max_ports_keeps_place_in_frame",       max_ports_keeps_place_in_frame },
+   { "join_places_console_with_no_span",     join_places_console_with_no_span },
+   { "membership_blob_roundtrip",            membership_blob_roundtrip }
 };
 
 int main(void)
