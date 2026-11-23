@@ -9929,6 +9929,22 @@ static bool gfx_display_gl3_media_shader_draw(void *data, uintptr_t image,
    bool hdr = gl && gl->scrgb.active && gl3_fp16_is((GLuint)image);
    if (hdr) hdr_viewer_colour_rows(rows, true, gl->scrgb.menu_nits,
          gl->scrgb.expand_gamut);
+#ifdef HAVE_GL_PLANAR
+   if (gl && gl->media_shader_enabled && gl->chain.active
+         && gl->chain.shader == &gl_glsl_backend)
+   {
+      struct gl_planar_sample sample;
+      if (gl_planar_sample_info(&gl->planar, (unsigned)image, &sample)
+            && gl_glsl_set_media_planar(gl->chain.shader_data, &sample))
+      {
+         bool drawn = gl3_media_shader_draw(&gl->media_legacy_shader, gl,
+               gl->chain.shader, gl->chain.shader_data, image, source_dims, pos,
+               dims, gl->media_shader_frame, NULL, false);
+         gl_glsl_set_media_planar(gl->chain.shader_data, NULL);
+         if (drawn) return true;
+      }
+   }
+#endif
    if (gl && gl->chain.active && gl->chain.shader)
       return gl->media_shader_enabled && gl->chain.shader_data
          && gl->chain.shader->num_shaders(gl->chain.shader_data) && gl3_media_shader_draw(

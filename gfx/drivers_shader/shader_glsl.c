@@ -33,6 +33,9 @@
 #include "shader_glsl.h"
 #include "glsl_rect.h"
 #include "glsl_colour.h"
+#ifdef HAVE_GL_PLANAR
+#include "glsl_planar.h"
+#endif
 #include "../common/xmb_plastic.h"
 #include "../video_shader_parse.h"
 #ifdef HAVE_REWIND
@@ -179,6 +182,15 @@ struct glsl_in_place
    bool swapped;
 };
 
+#ifdef HAVE_GL_PLANAR
+struct glsl_planar_state
+{
+   struct glsl_in_place_pass pass;
+   GLint loc[6], binding[3], sampler[3], active;
+   bool sampler_objects;
+};
+#endif
+
 typedef struct glsl_shader_data
 {
    char alias_define[1024];
@@ -212,6 +224,10 @@ typedef struct glsl_shader_data
    struct glsl_in_place viewer;
    struct glsl_in_place_pass *viewer_pass[VIDEO_SHADER_PROGRAM_COUNT];
    bool viewer_active;
+#ifdef HAVE_GL_PLANAR
+   struct glsl_planar_state *planar;
+   bool planar_active;
+#endif
    /* Compiling something that may fail, with the copy to fall back on */
    bool quiet;
 } glsl_shader_data_t;
@@ -222,6 +238,9 @@ static const struct shader_program_glsl_data *gl_glsl_program(
       const glsl_shader_data_t *glsl, unsigned index)
 {
    const struct glsl_in_place_pass *pass = glsl->viewer_pass[index];
+#ifdef HAVE_GL_PLANAR
+   if (glsl->planar_active && index == 1) return &glsl->planar->pass.prg;
+#endif
    return glsl->viewer_active && pass ? &pass->prg : &glsl->prg[index];
 }
 
@@ -229,12 +248,19 @@ static const struct shader_uniforms *gl_glsl_uniforms(
       const glsl_shader_data_t *glsl, unsigned index)
 {
    const struct glsl_in_place_pass *pass = glsl->viewer_pass[index];
+#ifdef HAVE_GL_PLANAR
+   if (glsl->planar_active && index == 1) return &glsl->planar->pass.uni;
+#endif
    return glsl->viewer_active && pass ? &pass->uni : &glsl->uniforms[index];
 }
 
 static void gl_glsl_in_place_free(glsl_shader_data_t *glsl);
 static void gl_glsl_viewer_prepare(glsl_shader_data_t *glsl);
 static void gl_glsl_viewer_free(glsl_shader_data_t *glsl);
+#ifdef HAVE_GL_PLANAR
+static void gl_glsl_planar_prepare(glsl_shader_data_t *glsl);
+static void gl_glsl_planar_free(glsl_shader_data_t *glsl);
+#endif
 
 /* A gfx_display mesh vertex: three floats, then texture coordinates and
  * colour as normalised integers the vertex fetch widens */
@@ -971,6 +997,9 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
     * swapped in */
    gl_glsl_in_place_free(glsl);
    gl_glsl_viewer_free(glsl);
+#ifdef HAVE_GL_PLANAR
+   gl_glsl_planar_free(glsl);
+#endif
 
    memset(glsl->prg, 0, sizeof(glsl->prg));
    memset(glsl->uniforms, 0, sizeof(glsl->uniforms));
@@ -1196,6 +1225,9 @@ static void *gl_glsl_init(void *data, const char *path)
 #endif
 
    if (glsl_viewer_hdr) gl_glsl_viewer_prepare(glsl);
+#ifdef HAVE_GL_PLANAR
+   gl_glsl_planar_prepare(glsl);
+#endif
 
    glsl->prg[glsl->shader->passes  + 1]     = glsl->prg[0];
    glsl->uniforms[glsl->shader->passes + 1] = glsl->uniforms[0];
@@ -2455,6 +2487,163 @@ fail:
    /* Unsupported sampling keeps the correctly coloured plain viewer. */
    gl_glsl_viewer_free(glsl);
 }
+
+#ifdef HAVE_GL_PLANAR
+static void gl_glsl_planar_free(glsl_shader_data_t *glsl)
+{
+   if (!glsl->planar) return;
+   gl_glsl_set_media_planar(glsl, NULL);
+   glDeleteProgram(glsl->planar->pass.prg.id);
+   free(glsl->planar); glsl->planar = NULL;
+}
+
+static bool gl_glsl_planar_eligible(const glsl_shader_data_t *glsl)
+{
+   const struct video_shader_pass *pass;
+   if (!glsl->shader || !(glsl->shader->flags & SHDR_FLAG_MODERN)
+         || glsl->shader->passes != 1 || glsl->shader->luts
+         || glsl->shader->feedback_pass >= 0) return false;
+   pass = &glsl->shader->pass[0];
+   return !pass->mipmap && pass->wrap == RARCH_WRAP_EDGE
+      && (!(pass->fbo.flags & FBO_SCALE_FLAG_VALID) || GFX_FBO_SCALE_IS_VIEWPORT(&pass->fbo))
+      && !(pass->fbo.flags & (FBO_SCALE_FLAG_FP_FBO | FBO_SCALE_FLAG_SRGB_FBO | FBO_SCALE_FLAG_RGB10_FBO));
+}
+
+static void gl_glsl_planar_prepare(glsl_shader_data_t *glsl)
+{
+   static const char *const uniforms[6] = { "RARCH_P_Y", "RARCH_P_C0", "RARCH_P_C1",
+      "RARCH_P_Size", "RARCH_P_Coef", "RARCH_P_Filter" };
+   struct glsl_planar_state *state = NULL;
+   struct shader_program_info info;
+   const struct video_shader_pass *pass;
+   char (*names)[64] = NULL;
+   const char **list = NULL;
+   char *vertex = NULL, *fragment = NULL;
+   GLint count = 0, limit = 0;
+   int num, i;
+   bool vc = false, fc = false, made;
+   gl_glsl_planar_free(glsl);
+   if (!gl_glsl_planar_eligible(glsl) || gl_glsl_get_prev_textures(glsl)) return;
+   pass = &glsl->shader->pass[0];
+   glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &limit);
+   if (limit < 4) return;
+   glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &limit);
+   if (limit < 3) return;
+   glGetProgramiv(glsl->prg[1].id, GL_ACTIVE_UNIFORMS, &count);
+   if (count <= 0 || (size_t)count > (size_t)-1 / sizeof(*names)
+         || (size_t)count > (size_t)-1 / sizeof(*list)) return;
+   names = (char (*)[64])calloc((size_t)count, sizeof(*names));
+   list = (const char**)calloc((size_t)count, sizeof(*list));
+   state = (struct glsl_planar_state*)calloc(1, sizeof(*state));
+   if (!names || !list || !state) goto done;
+   num = gl_glsl_viewer_names(glsl, 1, names, (unsigned)count);
+   if (num <= 0) goto done;
+   /* Only source samplers are accepted. Other samplers could bind over the
+    * plane units or require history/feedback that an RGB image must retain. */
+   for (i = 0; i < count; i++)
+   {
+      char name[64]; GLenum type = 0; GLint size = 0; GLsizei len = 0;
+      glGetActiveUniform(glsl->prg[1].id, (GLuint)i, sizeof(name), &len, &size, &type, name);
+      if (type == GL_SAMPLER_2D && gl_glsl_in_place_sampler(glsl, 1, name) != 1) goto done;
+   }
+   for (i = 0; i < num; i++) list[i] = names[i];
+   vertex = glsl_planar_rewrite(pass->source.string.vertex, list, (unsigned)num, &vc);
+   fragment = glsl_planar_rewrite(pass->source.string.fragment, list, (unsigned)num, &fc);
+   if (!vertex || !fragment || (!vc && !fc)) goto done;
+   info.vertex = vertex; info.fragment = fragment; info.is_file = false;
+   glsl->quiet = true;
+   made = gl_glsl_compile_program(glsl, 1, &state->pass.prg, &info);
+   glsl->quiet = false;
+   if (!made) goto done;
+   glGetProgramiv(state->pass.prg.id, GL_ACTIVE_UNIFORMS, &count);
+   for (i = 0; i < count; i++)
+   {
+      char name[64]; GLenum type = 0; GLint size = 0; GLsizei len = 0;
+      glGetActiveUniform(state->pass.prg.id, (GLuint)i, sizeof(name), &len, &size, &type, name);
+      if (type == GL_SAMPLER_2D && strncmp(name, "RARCH_P_", 8)) goto done;
+   }
+   gl_glsl_find_uniforms(glsl, 1, state->pass.prg.id, &state->pass.uni);
+   state->pass.idx = 1;
+   for (i = 0; i < 6; i++) state->loc[i] = glGetUniformLocation(state->pass.prg.id, uniforms[i]);
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
+#ifdef HAVE_OPENGLES
+   state->sampler_objects = gl_check_capability(GL_CAPS_GLES3_SUPPORTED);
+#else
+   {
+      const char *version = (const char*)glGetString(GL_VERSION);
+      unsigned major = 0, minor = 0;
+      if (version) sscanf(version, "%u.%u", &major, &minor);
+      state->sampler_objects = major > 3 || (major == 3 && minor >= 3)
+         || gl_query_extension("GL_ARB_sampler_objects");
+   }
+#endif
+#endif
+   glsl->planar = state; state = NULL;
+done:
+   if (state) { if (state->pass.prg.id) glDeleteProgram(state->pass.prg.id); free(state); }
+   free(vertex); free(fragment); free(names); free(list);
+}
+
+bool gl_glsl_set_media_planar(void *data, const struct gl_planar_sample *sample)
+{
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)data;
+   struct glsl_planar_state *state;
+   GLint program, active;
+   unsigned i;
+   bool smooth = true;
+   if (!glsl) return false;
+   state = glsl->planar;
+   if (!sample)
+   {
+      if (!glsl->planar_active) return true;
+      glsl->planar_active = false;
+      glsl->current_mat_data_pointer[1] = NULL;
+      glGetIntegerv(GL_ACTIVE_TEXTURE, &active);
+      for (i = 0; i < 3; i++)
+      {
+         glActiveTexture(GL_TEXTURE1 + i);
+         /* A history release can retire an old binding during the draw.
+          * Rebinding its deleted name would create an empty texture. */
+         if (state->binding[i] && !glIsTexture((GLuint)state->binding[i])) state->binding[i] = 0;
+         glBindTexture(GL_TEXTURE_2D, (GLuint)state->binding[i]);
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
+         if (state->sampler_objects) glBindSampler(1 + i, (GLuint)state->sampler[i]);
+#endif
+      }
+      glActiveTexture((GLenum)active);
+      return true;
+   }
+   if (!state || !gl_glsl_planar_eligible(glsl) || glsl->planar_active
+         || glsl->viewer_active || glsl->in_place.swapped
+         || !sample->planes[0] || !sample->planes[1] || !sample->planes[2]) return false;
+   glGetIntegerv(GL_ACTIVE_TEXTURE, &state->active);
+   glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+   for (i = 0; i < 3; i++)
+   {
+      glActiveTexture(GL_TEXTURE1 + i);
+      glGetIntegerv(GL_TEXTURE_BINDING_2D, &state->binding[i]);
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
+      if (state->sampler_objects)
+      {
+         glGetIntegerv(GL_SAMPLER_BINDING, &state->sampler[i]); glBindSampler(1 + i, 0);
+      }
+#endif
+      glBindTexture(GL_TEXTURE_2D, sample->planes[i]);
+   }
+   glUseProgram(state->pass.prg.id);
+   for (i = 0; i < 3; i++) glUniform1i(state->loc[i], 1 + i);
+   glUniform4fv(state->loc[3], 1, sample->size);
+   glUniform4fv(state->loc[4], 2, sample->coef);
+   gl_glsl_filter_type(glsl, 1, &smooth);
+   glUniform2f(state->loc[5], smooth ? 1.0f : 0.0f, sample->rg ? 1.0f : 0.0f);
+   glsl->planar_active = true;
+   glsl->current_mat_data_pointer[1] = NULL;
+   glUseProgram((GLuint)program);
+   glActiveTexture((GLenum)state->active);
+   return true;
+}
+#endif
+
 
 static bool gl_glsl_set_media_colour(void *data, const float *rows)
 {

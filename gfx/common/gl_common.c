@@ -1725,6 +1725,21 @@ unsigned gl_planar_prepare_rgb(gl_planar_t *p, unsigned tex)
    return tex;
 }
 
+bool gl_planar_sample_info(gl_planar_t *p, unsigned tex,
+      struct gl_planar_sample *sample)
+{
+   gl_planar_tex_t *t = gl_planar_find(p, tex);
+   if (!t || !t->deferred || !sample) return false;
+   sample->planes[0] = t->plane[0]; sample->planes[1] = t->plane[1];
+   sample->planes[2] = t->plane[t->interleaved ? 1 : 2];
+   sample->size[0] = (float)t->w; sample->size[1] = (float)t->h;
+   sample->size[2] = (float)((t->w + 1) / 2);
+   sample->size[3] = (float)((t->h + 1) / 2);
+   memcpy(sample->coef, t->coef, sizeof(sample->coef));
+   sample->rg = (p->flags & GL_PLANAR_CORE) != 0;
+   return true;
+}
+
 bool gl_planar_pending(gl_planar_t *p, unsigned tex,
       unsigned *width, unsigned *height)
 {
@@ -1769,33 +1784,16 @@ bool gl_planar_update(gl_planar_t *p, unsigned tex,
 /* A direct sample reproduces the old RGBA8 conversion before filtering.
  * Filtering Y/U/V independently would move chroma edges and interpolate
  * unclamped colours differently. Four RGB taps preserve that contract. */
-static const char gl_planar_sample_fs[] =
-   "vec3 pixel(vec2 p) {\n"
-   " p = clamp(p, vec2(0.0), uSize.xy - 1.0);\n"
-   " vec2 cc = (floor(p * 0.5) + 0.5) / uSize.zw;\n"
-   " float y = TEX(uY, (p + 0.5) / uSize.xy).r;\n"
-   " vec2 c = uCoef[1].z > 0.5 ? TEX(uC0,cc).CH\n"
-   "     : vec2(TEX(uC0,cc).r,TEX(uC1,cc).r);\n"
-   " if (uCoef[1].w > 0.5) c = c.yx;\n"
-   " c -= vec2(128.0/255.0);\n"
-   " vec3 rgb = vec3(uCoef[0].x*y+uCoef[0].y)\n"
-   "    + vec3(uCoef[0].z*c.y,uCoef[0].w*c.x+uCoef[1].x*c.y,uCoef[1].y*c.x);\n"
-   " return floor(clamp(rgb,0.0,1.0)*255.0+0.5)/255.0; }\n"
-   "uniform vec4 uTint; uniform float uLinear;\n"
-   "void main() {\n"
-   " vec2 q = vUV*uSize.xy; vec3 rgb;\n"
-   " if (uLinear > 0.5) {\n"
-   "   vec2 p = floor(q-0.5), f = fract(q-0.5);\n"
-   "   rgb = mix(mix(pixel(p),pixel(p+vec2(1,0)),f.x),\n"
-   "       mix(pixel(p+vec2(0,1)),pixel(p+vec2(1,1)),f.x),f.y);\n"
-   " } else rgb = pixel(floor(q));\n"
-   " OUT = vec4(rgb,1.0)*uTint; }\n";
+#include "gl_planar_sample.h"
+static const char gl_planar_sample_fs[] = GL_PLANAR_SAMPLE_SOURCE
+   "uniform vec4 uTint;\n"
+   "void main(){OUT=RARCH_P_sample(vUV)*uTint;}\n";
 
 static bool gl_planar_sample_init(gl_planar_t *p)
 {
    const char *src[4];
-   const char *names[8] = { "uY", "uC0", "uC1", "uSize", "uCoef",
-      "uMVP", "uTint", "uLinear" };
+   const char *names[8] = { "RARCH_P_Y", "RARCH_P_C0", "RARCH_P_C1",
+      "RARCH_P_Size", "RARCH_P_Coef", "uMVP", "uTint", "RARCH_P_Filter" };
    GLuint vs, fs;
    GLint ok = 0;
    unsigned i;
@@ -1815,7 +1813,7 @@ static bool gl_planar_sample_init(gl_planar_t *p)
         "out vec4 FragColor; in vec2 vUV;\n"
       : "#define TEX texture2D\n#define CH ra\n#define OUT gl_FragColor\n"
         "varying vec2 vUV;\n";
-   src[2] = gl_planar_fs_decl;
+   src[2] = "";
    src[3] = gl_planar_sample_fs;
    fs = gl_planar_shader(GL_FRAGMENT_SHADER, src, 4);
    if (vs && fs && (p->draw_prog = glCreateProgram()))
@@ -1900,7 +1898,8 @@ bool gl_planar_render(gl_planar_t *p, unsigned tex, const float *vertex,
    glUniformMatrix4fv(p->draw_loc[5], 1, GL_FALSE, mvp);
    if (colour) glUniform4fv(p->draw_loc[6], 1, colour);
    else glUniform4f(p->draw_loc[6], 1, 1, 1, 1);
-   glUniform1f(p->draw_loc[7], t->linear ? 1.0f : 0.0f);
+   glUniform2f(p->draw_loc[7], t->linear ? 1.0f : 0.0f,
+         (p->flags & GL_PLANAR_CORE) ? 1.0f : 0.0f);
    glBindBuffer(GL_ARRAY_BUFFER, p->draw_vbo);
    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STREAM_DRAW);
    glEnableVertexAttribArray(GL_PLANAR_ATTR);

@@ -25,6 +25,11 @@ void gl_glsl_set_context_type(bool core_profile, unsigned major, unsigned minor)
 /* Latched before loading a preset; no viewer compilation on SDR contexts. */
 void gl_glsl_set_viewer_hdr(bool enabled);
 
+/* Select a load-time planar variant; NULL restores the source programs and
+ * the texture bindings borrowed for the viewer draw. No compilation here. */
+struct gl_planar_sample;
+bool gl_glsl_set_media_planar(void *data, const struct gl_planar_sample *sample);
+
 #ifdef HAVE_SHADERPIPELINE
 #include "../gfx_display.h"
 

@@ -209,6 +209,16 @@ bool gl_planar_update(gl_planar_t *p, unsigned tex,
 bool gl_planar_update_target(gl_planar_t *p, unsigned tex, unsigned target,
       const struct texture_image *ti);
 
+/* Context-owner snapshot: GL names and coefficients, never CPU pixels. */
+struct gl_planar_sample
+{
+   float size[4], coef[8];
+   unsigned planes[3];
+   bool rg;
+};
+bool gl_planar_sample_info(gl_planar_t *p, unsigned tex,
+      struct gl_planar_sample *sample);
+
 /* Viewer uploads keep the planes and defer RGB storage/conversion until an
  * RGB-only consumer asks for resolve. The context owner makes every call. */
 unsigned gl_planar_load_deferred(gl_planar_t *p, const struct texture_image *ti,

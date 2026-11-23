@@ -14,7 +14,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 
-TARGETS := glsl_rect_test glsl_in_place_test glsl_colour_test
+TARGETS := glsl_rect_test glsl_in_place_test glsl_colour_test glsl_planar_test
 
 all: $(TARGETS)
 
@@ -36,8 +36,12 @@ glsl_in_place_test: glsl_in_place_test.c \
 glsl_colour_test: glsl_colour_test.c $(CORE_DIR)/gfx/drivers_shader/glsl_colour.h $(CORE_DIR)/gfx/drivers_shader/glsl_rect.h
 	$(CC) $(CFLAGS) -o $@ glsl_colour_test.c $(LDFLAGS)
 
+glsl_planar_test: glsl_planar_test.c $(CORE_DIR)/gfx/drivers_shader/glsl_planar.h $(CORE_DIR)/gfx/common/gl_planar_sample.h $(CORE_DIR)/gfx/drivers_shader/glsl_rect.h
+	$(CC) $(CFLAGS) -o $@ glsl_planar_test.c $(LDFLAGS)
+
 check: all
 	./glsl_colour_test
+	./glsl_planar_test
 	EGL_PLATFORM=surfaceless ./glsl_rect_test
 	EGL_PLATFORM=surfaceless ./glsl_in_place_test
 

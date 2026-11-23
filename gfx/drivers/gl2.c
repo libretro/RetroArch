@@ -11303,6 +11303,22 @@ static bool gfx_display_gl2_media_shader_draw(void *data, uintptr_t image,
    (void)video_dims;
    if (hdr) hdr_viewer_colour_rows(rows, true, gl->scrgb.menu_nits,
          gl->scrgb.expand_gamut);
+#if defined(HAVE_GLSL) && defined(HAVE_GL_PLANAR)
+   if (gl && gl->media_shader_enabled && gl->shader == &gl_glsl_backend
+         && (gl->flags & GL2_FLAG_HAVE_FBO))
+   {
+      struct gl_planar_sample sample;
+      if (gl_planar_sample_info(&gl->planar, (unsigned)image, &sample)
+            && gl_glsl_set_media_planar(gl->shader_data, &sample))
+      {
+         bool drawn = gl2_media_shader_draw(&gl->media_shader, gl, gl->shader,
+               gl->shader_data, image, source_dims, pos, dims,
+               gl->media_shader_frame, NULL, false);
+         gl_glsl_set_media_planar(gl->shader_data, NULL);
+         if (drawn) return true;
+      }
+   }
+#endif
    return gl && gl->shader && gl->shader_data
       && gl->shader->num_shaders(gl->shader_data)
       && (gl->flags & GL2_FLAG_HAVE_FBO) && gl->media_shader_enabled &&

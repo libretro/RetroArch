@@ -16,8 +16,18 @@
 #include "../../../gfx/common/hdr_viewer_colour.h"
 
 #include "../../../gfx/drivers_shader/shader_glsl.c"
+#ifndef GL_RGBA32F
+#define GL_RGBA32F 0x8814
+#endif
+#ifndef GL_RGBA16F
+#define GL_RGBA16F 0x881A
+#endif
 
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <EGL/egl.h>
+#endif
 
 /* The frontend shader_glsl.c refers to */
 void RARCH_LOG(const char *fmt, ...)  { (void)fmt; }
@@ -26,8 +36,15 @@ void RARCH_ERR(const char *fmt, ...)
 { va_list ap; va_start(ap, fmt); printf("      [err] "); vprintf(fmt, ap); va_end(ap); }
 bool gl2_load_luts(const void *shader, GLuint *textures)
 { (void)shader; (void)textures; return true; }
+bool gl_query_extension(const char *name) { (void)name; return false; }
 bool gl_check_capability(enum gl_capability_enum cap)
-{ return cap == GL_CAPS_GLES3_SUPPORTED; }
+{
+#ifdef HAVE_OPENGLES2
+   (void)cap;return false;
+#else
+   return cap == GL_CAPS_GLES3_SUPPORTED;
+#endif
+}
 void input_driver_read_sensor_snapshot(float *g, float *a, float *r)
 { (void)g; (void)a; (void)r; }
 void input_driver_set_shader_uses_sensors(bool v) { (void)v; }
@@ -193,6 +210,16 @@ static void free_glsl(glsl_shader_data_t *glsl)
    }
    gl_glsl_in_place_free(glsl);
    gl_glsl_viewer_free(glsl);
+#ifdef HAVE_GL_PLANAR
+   gl_glsl_planar_free(glsl);
+#endif
+   for(p=0;p<VIDEO_SHADER_PROGRAM_COUNT;p++)
+   {
+      if(glsl->vbo[p].vbo_primary)glDeleteBuffers(1,&glsl->vbo[p].vbo_primary);
+      if(glsl->vbo[p].vbo_secondary)glDeleteBuffers(1,&glsl->vbo[p].vbo_secondary);
+      free(glsl->vbo[p].buffer_primary);free(glsl->vbo[p].buffer_secondary);
+   }
+   free(glsl->coord_scratch);
    free(glsl->shader);
    free(glsl);
 }
@@ -561,16 +588,46 @@ static void test_viewer_history(void)
    free_glsl(glsl);
 }
 
-int main(void)
+#include "planar_gpu_cases.h"
+#ifdef _WIN32
+static rglgen_func_t resolve_gl(const char *name)
 {
+   PROC proc=wglGetProcAddress(name);rglgen_func_t result;
+   if(!proc || proc==(PROC)1 || proc==(PROC)2 || proc==(PROC)3 || proc==(PROC)-1)
+      proc=GetProcAddress(GetModuleHandleA("opengl32.dll"),name);
+   memcpy(&result,&proc,sizeof(result));return result;
+}
+#endif
+int main(int argc,char **argv)
+{
+   bool planar_only=argc==2 && !strcmp(argv[1],"--planar-only");
+#ifdef _WIN32
+   HWND window;HDC dc;HGLRC ctx;PIXELFORMATDESCRIPTOR descriptor;
+   unsigned x,y,c;
+   window=CreateWindowExA(0,"STATIC","GLSL planar regression",WS_POPUP,0,0,16,16,NULL,NULL,GetModuleHandle(NULL),NULL);
+   if(!window)return 77;
+   dc=GetDC(window);memset(&descriptor,0,sizeof(descriptor));
+   descriptor.nSize=sizeof(descriptor);descriptor.nVersion=1;
+   descriptor.dwFlags=PFD_DRAW_TO_WINDOW|PFD_SUPPORT_OPENGL;descriptor.iPixelType=PFD_TYPE_RGBA;descriptor.cColorBits=32;
+   if(!SetPixelFormat(dc,ChoosePixelFormat(dc,&descriptor),&descriptor))return 77;
+   ctx=wglCreateContext(dc);if(!ctx || !wglMakeCurrent(dc,ctx))return 77;
+   rglgen_resolve_symbols(resolve_gl);
+   gl_glsl_set_context_type(false,4,6);
+#else
    EGLDisplay dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
    EGLConfig cfg;
    EGLint n;
    EGLContext ctx;
    EGLSurface surf;
+#ifdef HAVE_OPENGLES2
+   EGLint cfg_attr[] = { EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+      EGL_SURFACE_TYPE, EGL_PBUFFER_BIT, EGL_NONE };
+   EGLint ctx_attr[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
+#else
    EGLint cfg_attr[] = { EGL_RENDERABLE_TYPE, 0x40 /* ES3 */,
       EGL_SURFACE_TYPE, EGL_PBUFFER_BIT, EGL_NONE };
    EGLint ctx_attr[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
+#endif
    EGLint pb_attr[]  = { EGL_WIDTH, 16, EGL_HEIGHT, 16, EGL_NONE };
    unsigned x, y, c;
 
@@ -586,6 +643,7 @@ int main(void)
       printf("[glsl_in_place] no GLES 3 device, skipped\n");
       return 0;
    }
+#endif
    srand(54321);
    for (y = 0; y < TEX_H; y++)
       for (x = 0; x < TEX_W; x++)
@@ -593,6 +651,17 @@ int main(void)
             frame_px[y][x][c] = (uint8_t)(rand() >> 7);
 
    printf("[glsl_in_place] %s\n", (const char*)glGetString(GL_RENDERER));
+#ifdef GLSL_PLANAR_ORACLE
+   {unsigned layout,linear;for(layout=0;layout<3;layout++)for(linear=0;linear<2;linear++)
+    {
+       test_planar_fusion(layout,linear!=0,false);
+#ifndef HAVE_OPENGLES2
+       test_planar_fusion(layout,linear!=0,true);
+#endif
+    }}
+#endif
+   if(!planar_only)
+   {
    test_viewer_colour();
    test_viewer_history();
    test_blur();
@@ -600,11 +669,16 @@ int main(void)
    test_unbound();
    test_kept(shader_prev, "a preset reading earlier frames keeps its copy");
    test_kept(shader_fetch, "one fetching the frame's texels keeps its copy");
+   }
 
+#ifdef _WIN32
+   wglMakeCurrent(NULL,NULL);wglDeleteContext(ctx);ReleaseDC(window,dc);DestroyWindow(window);
+#else
    eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
    eglDestroySurface(dpy, surf);
    eglDestroyContext(dpy, ctx);
    eglTerminate(dpy);
+#endif
    if (fails)
    {
       printf("[glsl_in_place] %d failure(s)\n", fails);
