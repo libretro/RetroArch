@@ -491,7 +491,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
 
 JNIEXPORT jint JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeSurfaceChanged(
       JNIEnv *env, jclass clazz, jobject surface, jint width, jint height,
-      jint request)
+      jint request, jfloat peak_nits)
 {
    ANativeWindow *window;
    struct android_second_surface *node;
@@ -537,6 +537,7 @@ JNIEXPORT jint JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
    }
    node->window                       = window;
    node->dims                         = dims;
+   node->peak_nits                    = (float)peak_nits;
    node->generation                   = generation;
    node->request                      = (int)request;
    android_app->posted_second_window  = window;

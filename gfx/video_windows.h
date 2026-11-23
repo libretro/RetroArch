@@ -104,6 +104,8 @@ typedef struct video_window_native
    unsigned kind;
    unsigned generation;
    unsigned dims;
+   /* The display's peak luminance in nits, 0 where it reports none */
+   float peak_nits;
    bool configured;
    bool focused;
    bool presentable;

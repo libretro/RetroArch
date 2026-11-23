@@ -192,6 +192,7 @@ struct android_second_surface
 {
    ANativeWindow *window;
    unsigned dims;       /* VIDEO_SCALE_PACK */
+   float peak_nits;     /* the display's, 0 where it reports none */
    int generation;
    int request;         /* the show request it was made for */
 };

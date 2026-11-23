@@ -53,6 +53,7 @@ bool android_windows_create(void *owner,
    window->kind            = VIDEO_WINDOW_NATIVE_ANDROID;
    window->generation      = request->generation;
    window->dims            = 0;
+   window->peak_nits       = 0.0f;
    window->configured      = false;
    window->focused         = false;
    window->presentable     = false;
@@ -105,6 +106,7 @@ unsigned android_windows_poll(void *owner, video_window_event_t *events,
          state->node         = NULL;
          native->surface     = NULL;
          native->dims        = 0;
+         native->peak_nits   = 0.0f;
          native->configured  = false;
          native->presentable = false;
          retro_atomic_store_release_int(&second->bound_surface, 0);
@@ -117,6 +119,7 @@ unsigned android_windows_poll(void *owner, video_window_event_t *events,
          state->node         = node;
          native->surface     = node->window;
          native->dims        = node->dims;
+         native->peak_nits   = node->peak_nits;
          native->configured  = true;
          native->presentable = true;
          state->common.pending |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
@@ -201,6 +204,7 @@ bool android_windows_take(void *owner, unsigned screen,
    window->kind         = VIDEO_WINDOW_NATIVE_ANDROID;
    window->generation   = state->common.request.generation;
    window->dims         = node ? node->dims : 0;
+   window->peak_nits    = node ? node->peak_nits : 0.0f;
    window->configured   = node != NULL;
    window->focused      = false;
    window->presentable  = node != NULL;

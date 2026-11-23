@@ -19,7 +19,9 @@
  *    GEOMETRY at that size: the same generation, no CLOSE, still
  *    shown; a window kept across a driver reinit meanwhile is taken
  *    at the size last drawn, and the next driver's first poll brings
- *    the new size.
+ *    the new size;
+ *  - the display's peak luminance goes with its surface to the window
+ *    that takes it.
  *
  * The functions are taken out of platform_unix.c and android_windows.c
  * at build time by extract.awk; the test supplies the types they touch,
@@ -38,6 +40,7 @@ typedef void *JNIEnv;
 typedef void *jclass;
 typedef void *jobject;
 typedef int jint;
+typedef float jfloat;
 #define JNIEXPORT
 #define JNICALL
 #define RARCH_ERR(...) ((void)0)
@@ -48,6 +51,7 @@ struct android_second_surface
 {
    ANativeWindow *window;
    unsigned dims;
+   float peak_nits;
    int generation;
    int request;
 };
@@ -165,9 +169,10 @@ static void poll_once(void)
    poll_for(&owner);
 }
 
-#define SURFACE_CHANGED(win, w, h) \
+#define SURFACE_CHANGED_PEAK(win, w, h, peak) \
    Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeSurfaceChanged( \
-         NULL, NULL, (jobject)(win), (w), (h), 1)
+         NULL, NULL, (jobject)(win), (w), (h), 1, (peak))
+#define SURFACE_CHANGED(win, w, h) SURFACE_CHANGED_PEAK(win, w, h, 0.0f)
 #define SURFACE_DESTROYED() \
    Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeSurfaceDestroyed( \
          NULL, NULL)
@@ -370,6 +375,40 @@ static void test_resize_kept(void)
    CHECK(a.refs == 0 && !android_windows[1], "then it goes");
 }
 
+/* The display's peak luminance, with each surface Java hands over */
+static void test_peak_reaches_window(void)
+{
+   static int next_owner;
+   ANativeWindow a;
+   video_window_native_t taken;
+   unsigned display = 0;
+   window_kept(&a);
+   SURFACE_CHANGED_PEAK(&a, 1080, 1240, 600.0f);
+   memset(&taken, 0, sizeof(taken));
+   android_windows_take(&next_owner, 1, &taken, &display);
+   poll_for(&next_owner);
+   CHECK(taken.surface == &a && taken.peak_nits == 600.0f,
+         "the poll that takes a surface takes its display's peak");
+   android_windows_keep(&next_owner, &taken);
+   memset(&native, 0, sizeof(native));
+   CHECK(android_windows_take(&owner, 1, &native, &display)
+         && native.peak_nits == 600.0f,
+         "and a window taken across a reinit keeps it");
+   SURFACE_CHANGED_PEAK(&a, 1240, 1080, 0.0f);
+   poll_once();
+   CHECK(native.dims == VIDEO_SCALE_PACK(1240, 1080)
+         && native.peak_nits == 0.0f,
+         "a later surface with none leaves none");
+   SURFACE_CHANGED_PEAK(&a, 1080, 1240, 600.0f);
+   poll_once();
+   SURFACE_DESTROYED();
+   poll_once();
+   CHECK(!native.surface && native.peak_nits == 0.0f,
+         "nor does a surface that went");
+   android_windows_destroy(&owner, &native);
+   CHECK(a.refs == 0 && !android_windows[1], "then it goes");
+}
+
 int main(void)
 {
    ANativeWindow a, b;
@@ -454,6 +493,7 @@ int main(void)
    test_handover();
    test_resize();
    test_resize_kept();
+   test_peak_reaches_window();
 
    if (failures)
    {

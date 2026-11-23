@@ -794,7 +794,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
           | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
     p.setCancelable(false);
     view   = new SurfaceView(p.getContext());
-    screen = new Screen(wantedRequest);
+    screen = new Screen(wantedRequest, display);
     view.setFocusable(false);
     view.setFocusableInTouchMode(false);
     view.setKeepScreenOn(true);
@@ -1041,14 +1041,16 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   {
     /* The show request its Presentation was made for */
     private final int request;
+    private final Display display;
     /* nativeSurfaceChanged()'s, 0 while there is none */
     private int generation;
     /* Native code has taken a surface of it */
     private boolean hadSurface;
 
-    Screen(int request)
+    Screen(int request, Display display)
     {
       this.request = request;
+      this.display = display;
     }
 
     @Override public void surfaceCreated(SurfaceHolder holder) { }
@@ -1059,7 +1061,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
         int width, int height)
     {
       int g = nativeSurfaceChanged(holder.getSurface(), width, height,
-          request);
+          request, peakNits(display));
       generation = g;
       if (g > 0)
       {
@@ -1106,6 +1108,29 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       if (Build.VERSION.SDK_INT >= 29)
         v.setSystemGestureExclusionRects(Collections.singletonList(
             new Rect(0, 0, right - left, bottom - top)));
+    }
+  }
+
+  /* The display's peak luminance in nits as its HDR capabilities report
+   * it (API 24), 0 where it reports none or is not HDR */
+  @SuppressWarnings("deprecation")
+  static float peakNits(Display display)
+  {
+    try
+    {
+      Display.HdrCapabilities caps;
+      float peak;
+      if (Build.VERSION.SDK_INT < 24)
+        return 0.0f;
+      caps = display.getHdrCapabilities();
+      if (caps == null || caps.getSupportedHdrTypes().length == 0)
+        return 0.0f;
+      peak = caps.getDesiredMaxLuminance();
+      return (Float.isNaN(peak) || peak <= 0.0f) ? 0.0f : peak;
+    }
+    catch (Exception e)
+    {
+      return 0.0f;
     }
   }
 
@@ -1173,7 +1198,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
   static native void nativeDisplaysChanged(int count, String[] names,
       String[] models);
   static native int nativeSurfaceChanged(Surface surface, int width,
-      int height, int request);
+      int height, int request, float peakNits);
   static native void nativeSurfaceDestroyed();
   static native void nativeShare(ByteBuffer shared);
   static native void nativeTouches(int count, int generation);
