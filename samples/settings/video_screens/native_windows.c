@@ -134,6 +134,12 @@ static void native_window_spare(const video_window_request_t *request,
 }
 
 #ifdef HAVE_VULKAN
+static VkRenderPass native_vk_pass(void *data, VkFormat format)
+{
+   (void)format;
+   return *(VkRenderPass*)data;
+}
+
 /* The surface and swapchain vulkan.c makes for a screen window */
 static void native_vk_output(const gfx_ctx_driver_t *ctx, void *data,
       video_window_native_t *window)
@@ -142,6 +148,7 @@ static void native_vk_output(const gfx_ctx_driver_t *ctx, void *data,
    VkAttachmentReference ref;
    VkSubpassDescription subpass;
    VkRenderPassCreateInfo info;
+   VkRenderPass pass;
    vulkan_output_t output;
    vulkan_context_t *vk = ctx->get_context_data
       ? (vulkan_context_t*)ctx->get_context_data(data) : NULL;
@@ -180,19 +187,20 @@ static void native_vk_output(const gfx_ctx_driver_t *ctx, void *data,
    info.dependencyCount            = 0;
    info.pDependencies              = NULL;
    memset(&output, 0, sizeof(output));
-   if (vkCreateRenderPass(vk->device, &info, NULL, &output.render_pass)
-         != VK_SUCCESS)
+   if (vkCreateRenderPass(vk->device, &info, NULL, &pass) != VK_SUCCESS)
    {
       CHECK(!"render pass");
       return;
    }
+   output.pass_for  = native_vk_pass;
+   output.pass_data = &pass;
    CHECK(vulkan_output_create(&output, vk,
          VULKAN_CTX_DATA_FROM_CONTEXT(vk)->wsi_type, window->display,
          window->surface, window->dims));
    CHECK(output.swapchain != VK_NULL_HANDLE);
    vulkan_output_finish(&output);
    CHECK(vulkan_output_retire(&output));
-   vkDestroyRenderPass(vk->device, output.render_pass, NULL);
+   vkDestroyRenderPass(vk->device, pass, NULL);
 }
 #endif
 

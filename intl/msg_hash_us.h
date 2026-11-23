@@ -7392,7 +7392,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
-   "Bit depth of the final output surface when HDR is off. 10-bit removes banding introduced by shaders that darken the image heavily, such as CRT beam profiles and aperture grille masks. Falls back to 8-bit if the display or compositor does not offer it. Ignored while HDR is enabled, which selects its own format."
+   "Bit depth of the final output surface when HDR is off. 10-bit removes banding introduced by shaders that darken the image heavily, such as CRT beam profiles and aperture grille masks. Falls back to 8-bit if the display or compositor does not offer it. Ignored while HDR is enabled, which selects its own format. Screens on other displays that cannot show HDR still use it."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_AUTO,

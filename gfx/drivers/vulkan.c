@@ -12590,6 +12590,14 @@ static void vulkan_window_ui_end(vk_t *vk, video_frame_info_t *video_info,
       vulkan_set_viewport(vk, video_info->dims, false, true);
 }
 
+/* The views' render pass, for a window in the main window's format */
+static VkRenderPass vulkan_window_pass_for(void *data, VkFormat format)
+{
+   vk_t *vk = (vk_t*)data;
+   return format == vk->context->swapchain_format
+      ? vk->views.render_pass : VK_NULL_HANDLE;
+}
+
 /* @win's output for the surface it has now: made the first time,
  * remade for a new surface or format, resized for new dims. 1 when it
  * may draw, 0 not this frame, -1 when it can't be made or kept. */
@@ -12605,11 +12613,10 @@ static int vulkan_window_output(vk_t *vk, struct vk_window *win)
    }
    if (     (win->flags & VK_WINDOW_FLAG_OUTPUT)
          && (     win->surface != win->native.surface
-               /* Made again by a swapchain rebuild: a resize would make
-                * framebuffers from the one destroyed */
-               || out->render_pass != vk->views.render_pass
-               || (   out->swapchain != VK_NULL_HANDLE
-                   && out->format != vk->context->swapchain_format)))
+               /* Its framebuffers are for a pass a swapchain rebuild
+                * destroyed */
+               || out->render_pass != vulkan_window_pass_for(vk,
+                  out->format)))
    {
       win->flags |= VK_WINDOW_FLAG_DROP;
       vulkan_output_retire(out);
@@ -12619,7 +12626,9 @@ static int vulkan_window_output(vk_t *vk, struct vk_window *win)
    {
       memset(out, 0, sizeof(*out));
       /* The chains' final passes draw in it, as for the headset */
-      out->render_pass = vk->views.render_pass;
+      out->pass_for    = vulkan_window_pass_for;
+      out->pass_data   = vk;
+      out->sdr_10bit   = vk->context->swapchain_settings.bit_depth == 2;
       win->flags      |= VK_WINDOW_FLAG_OUTPUT;
       win->surface     = win->native.surface;
       win->dims        = win->native.dims;

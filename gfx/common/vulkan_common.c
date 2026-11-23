@@ -4234,6 +4234,64 @@ static bool vulkan_output_release(vulkan_output_t *output)
    return true;
 }
 
+/* The pair a second output is made in: the owner's format in sRGB, so
+ * its render pass and the chains' pipelines draw there too; with HDR
+ * output, SDR by the main window's own rule. */
+static bool vulkan_output_pick(const vulkan_output_t *output,
+      const VkSurfaceFormatKHR *formats, uint32_t count,
+      VkSurfaceFormatKHR *picked)
+{
+   uint32_t i;
+   int sdr8;
+   const vulkan_context_t *ctx = output->owner;
+   /* The surface takes any format */
+   bool any                    =    count == 1
+                                 && formats[0].format == VK_FORMAT_UNDEFINED;
+
+   picked->colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+   if (!(ctx->flags & VK_CTX_FLAG_HDR_ENABLE))
+   {
+      picked->format = ctx->swapchain_format;
+      if (any)
+         return true;
+      for (i = 0; i < count; i++)
+         if (     formats[i].format     == ctx->swapchain_format
+               && formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            return true;
+      return false;
+   }
+
+   if (output->sdr_10bit)
+      for (i = 0; i < count; i++)
+         if (     (   formats[i].format == VK_FORMAT_A2B10G10R10_UNORM_PACK32
+                   || formats[i].format == VK_FORMAT_A2R10G10B10_UNORM_PACK32)
+               && formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+         {
+            *picked = formats[i];
+            return true;
+         }
+   if (any)
+   {
+      picked->format = VK_FORMAT_B8G8R8A8_UNORM;
+      return true;
+   }
+   sdr8 = vulkan_sdr8_surface_format(formats, count);
+   if (sdr8 >= 0)
+   {
+      *picked = formats[sdr8];
+      return true;
+   }
+   /* As the main window, the first format listed, but never in an HDR
+    * colour space */
+   for (i = 0; i < count; i++)
+      if (formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+      {
+         *picked = formats[i];
+         return true;
+      }
+   return false;
+}
+
 bool vulkan_output_resize(vulkan_output_t *output, unsigned dims)
 {
    unsigned i;
@@ -4247,10 +4305,11 @@ bool vulkan_output_resize(vulkan_output_t *output, unsigned dims)
    VkSwapchainCreateInfoKHR info;
    VkSurfaceCapabilitiesKHR caps;
    VkSurfaceFormatKHR formats[64];
+   VkSurfaceFormatKHR picked;
    VkPresentModeKHR modes[16];
+   VkRenderPass render_pass;
    VkSwapchainKHR swapchain       = VK_NULL_HANDLE;
    VkPresentModeKHR present_mode  = VK_PRESENT_MODE_FIFO_KHR;
-   bool format_ok                 = false;
    bool use_requested_extent      = false;
    vulkan_context_t *ctx          = output->owner;
 
@@ -4288,21 +4347,21 @@ bool vulkan_output_resize(vulkan_output_t *output, unsigned dims)
       return false;
    }
 
-   /* The main output's format, so its render pass and the chains'
-    * pipelines draw here too */
    count = sizeof(formats) / sizeof(formats[0]);
    vkGetPhysicalDeviceSurfaceFormatsKHR(ctx->gpu, output->surface,
          &count, formats);
-   if (count == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
-      format_ok = true;
-   for (i = 0; i < count; i++)
-      if (     formats[i].format     == ctx->swapchain_format
-            && formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-         format_ok = true;
-   if (!format_ok)
+   if (!vulkan_output_pick(output, formats, count, &picked))
    {
-      RARCH_ERR("[Vulkan] A second output's surface has no format %d.\n",
-            (int)ctx->swapchain_format);
+      RARCH_ERR("[Vulkan] A second output's surface has no SDR format "
+            "(main window: format %d).\n", (int)ctx->swapchain_format);
+      output->flags |= VK_OUTPUT_FLAG_LOST;
+      return false;
+   }
+   render_pass = output->pass_for(output->pass_data, picked.format);
+   if (render_pass == VK_NULL_HANDLE)
+   {
+      RARCH_ERR("[Vulkan] No render pass for a second output in "
+            "format %d.\n", (int)picked.format);
       output->flags |= VK_OUTPUT_FLAG_LOST;
       return false;
    }
@@ -4326,8 +4385,8 @@ bool vulkan_output_resize(vulkan_output_t *output, unsigned dims)
    info.flags                 = 0;
    info.surface               = output->surface;
    info.minImageCount         = num_images;
-   info.imageFormat           = ctx->swapchain_format;
-   info.imageColorSpace       = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+   info.imageFormat           = picked.format;
+   info.imageColorSpace       = picked.colorSpace;
    info.imageExtent           = extent;
    info.imageArrayLayers      = 1;
    info.imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -4378,7 +4437,7 @@ bool vulkan_output_resize(vulkan_output_t *output, unsigned dims)
    view.flags                           = 0;
    view.image                           = VK_NULL_HANDLE;
    view.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-   view.format                          = ctx->swapchain_format;
+   view.format                          = picked.format;
    view.components.r                    = VK_COMPONENT_SWIZZLE_R;
    view.components.g                    = VK_COMPONENT_SWIZZLE_G;
    view.components.b                    = VK_COMPONENT_SWIZZLE_B;
@@ -4391,7 +4450,7 @@ bool vulkan_output_resize(vulkan_output_t *output, unsigned dims)
    fb.sType                             = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
    fb.pNext                             = NULL;
    fb.flags                             = 0;
-   fb.renderPass                        = output->render_pass;
+   fb.renderPass                        = render_pass;
    fb.attachmentCount                   = 1;
    fb.pAttachments                      = NULL;
    fb.width                             = extent.width;
@@ -4421,7 +4480,13 @@ bool vulkan_output_resize(vulkan_output_t *output, unsigned dims)
       return false;
    }
 
-   output->format       = ctx->swapchain_format;
+   if (     picked.format     != output->format
+         || picked.colorSpace != output->color_space)
+      RARCH_LOG("[Vulkan] Second output: SDR, format %d.\n",
+            (int)picked.format);
+   output->render_pass  = render_pass;
+   output->format       = picked.format;
+   output->color_space  = picked.colorSpace;
    output->present_mode = present_mode;
    output->dims         = VIDEO_SCALE_PACK(extent.width, extent.height);
    output->flags       &= ~VK_OUTPUT_FLAG_RECREATE;
