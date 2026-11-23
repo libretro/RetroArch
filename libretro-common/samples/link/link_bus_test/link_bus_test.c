@@ -570,6 +570,106 @@ static void max_ports_caps_shared_medium(void)
    fx_free();
 }
 
+/* Port 0 of console c, attached with no port list */
+static void fx_bare(unsigned c, const char *protocol)
+{
+   fx_h[c][0]    = link_bus_attach(fx_bus, c, 0, protocol, 61440);
+   fx_span[c][0] = 1024;
+   CHECK(fx_h[c][0] != NULL);
+}
+
+/* A console that gives no port list: its ports have max_ports 0, flags 0
+ * and idle_ticks 0 */
+static void no_port_list_defaults(void)
+{
+   char tag;
+   size_t len = 1;
+   unsigned c, edge, count;
+
+   /* flags 0: no shared medium, though the radios with a list share one */
+   fx_new(3);
+   for (c = 0; c < 2; c++)
+   {
+      fx_port(c, 0, "test-radio", 61440, 0, RETRO_LINK_PORT_SHARED_MEDIUM);
+      fx_attach(c);
+   }
+   fx_bare(2, "test-radio");
+   count = 0;
+   CHECK(link_bus_peers(fx_bus, 0, fx_h[0][0], &count) == 0 && count == 2);
+   CHECK(link_bus_peers(fx_bus, 2, fx_h[2][0], NULL) == -1);
+   fx_free();
+
+   /* max_ports 0: three cabled in a line make one bus */
+   fx_new(3);
+   for (c = 0; c < 3; c++)
+      fx_bare(c, "test-cable");
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(link_bus_cable(fx_bus, 1, 0, 2, 0));
+   for (c = 0; c < 3; c++)
+   {
+      count = 0;
+      CHECK(link_bus_peers(fx_bus, c, fx_h[c][0], &count) == (int)c && count == 3);
+   }
+   fx_free();
+
+   /* idle_ticks 0: the default quiet span, as in hold_needs_idle */
+   fx_new(2);
+   fx_bare(0, "test-cable");
+   fx_bare(1, "test-cable");
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   fx_begin();
+   fx_starts();
+   CHECK(snd(0, 0, 512, 1, "a", 1));
+   CHECK(adv(0, fx_h[0][0], 0, 1024, 0, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 0, 1024, 513, NULL, NULL));
+   CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], NULL, NULL, &tag, &len));
+   frame();
+   for (edge = 1; edge <= 30; edge++)
+   {
+      CHECK(!link_bus_hold(fx_bus, 1));
+      fx_run_frame();
+   }
+   CHECK(link_bus_hold(fx_bus, 1));
+   fx_free();
+}
+
+/* At most 255 ports on a bus: of 256 radios on one shared medium, with no
+ * limit and with a max_ports above 255, the last is cabled to nothing */
+static void bus_size_caps_at_255(void)
+{
+   static retro_link_port_t *h[256];
+   static const unsigned limits[2] = { 0, 1000 };
+   struct retro_link_port_info l;
+   const struct retro_link_port_info *list[2];
+   link_bus_t *b;
+   unsigned c, k, count;
+
+   memset(&l, 0, sizeof(l));
+   l.protocol_id = "test-radio";
+   l.desc        = "Radio";
+   l.clock_rate  = 61440;
+   l.flags       = RETRO_LINK_PORT_SHARED_MEDIUM;
+   list[0]       = &l;
+   list[1]       = NULL;
+   for (k = 0; k < 2; k++)
+   {
+      l.max_ports = limits[k];
+      b           = link_bus_new(256);
+      for (c = 0; c < 256; c++)
+      {
+         CHECK(link_bus_set_ports(b, c, list));
+         h[c] = link_bus_attach(b, c, 0, "test-radio", 61440);
+         CHECK(h[c] != NULL);
+      }
+      count = 0;
+      CHECK(link_bus_peers(b, 0, h[0], &count) == 0 && count == 255);
+      count = 0;
+      CHECK(link_bus_peers(b, 254, h[254], &count) == 254 && count == 255);
+      CHECK(link_bus_peers(b, 255, h[255], NULL) == -1);
+      link_bus_free(b);
+   }
+}
+
 /* Four ports cabled in a line, each taking four */
 static void fx_line(void)
 {
@@ -3773,6 +3873,8 @@ static const struct
    { "cable_rules",                          cable_rules },
    { "shared_medium_joins",                  shared_medium_joins },
    { "max_ports_caps_shared_medium",         max_ports_caps_shared_medium },
+   { "no_port_list_defaults",                no_port_list_defaults },
+   { "bus_size_caps_at_255",                 bus_size_caps_at_255 },
    { "max_ports_caps_reattach",              max_ports_caps_reattach },
    { "grant_bounded_by_peer_promise",        grant_bounded_by_peer_promise },
    { "rounding_down_128",                    rounding_down_128 },

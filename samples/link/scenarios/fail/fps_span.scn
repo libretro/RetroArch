@@ -1,0 +1,8 @@
+# A rate that makes no frame a whole number of ticks: at 60000/1001 frames
+# a second, a frame of a 61440 Hz port is 1025.024 ticks. The core logs an
+# error, which fails the run.
+# error: link_test_rate_0
+console 0 core=test
+option 0 link_test_fps 60000/1001
+option 0 link_test_rate_0 61440
+10 end

@@ -1,0 +1,79 @@
+# Eight consoles on one Ethernet hub: no cable line, the protocol id and
+# the shared-medium flag make the LAN, and max_ports 0 sets no limit. Every
+# payload is a full Ethernet frame of 1514 bytes. Consoles 0 to 3
+# broadcast; consoles 4 to 7 each send to one of them, as through a switch.
+console 0 core=test
+console 1 core=test
+console 2 core=test
+console 3 core=test
+console 4 core=test
+console 5 core=test
+console 6 core=test
+console 7 core=test
+option 0 link_test_protocol_0 ethernet
+option 0 link_test_shared_0 on
+option 0 link_test_max_ports_0 0
+option 0 link_test_payload_len 1514
+option 0 link_test_send_0 broadcast
+option 0 link_test_seed 1
+option 1 link_test_protocol_0 ethernet
+option 1 link_test_shared_0 on
+option 1 link_test_max_ports_0 0
+option 1 link_test_payload_len 1514
+option 1 link_test_send_0 broadcast
+option 1 link_test_seed 2
+option 2 link_test_protocol_0 ethernet
+option 2 link_test_shared_0 on
+option 2 link_test_max_ports_0 0
+option 2 link_test_payload_len 1514
+option 2 link_test_send_0 broadcast
+option 2 link_test_seed 3
+option 3 link_test_protocol_0 ethernet
+option 3 link_test_shared_0 on
+option 3 link_test_max_ports_0 0
+option 3 link_test_payload_len 1514
+option 3 link_test_send_0 broadcast
+option 3 link_test_seed 4
+option 4 link_test_protocol_0 ethernet
+option 4 link_test_shared_0 on
+option 4 link_test_max_ports_0 0
+option 4 link_test_payload_len 1514
+option 4 link_test_send_0 0
+option 4 link_test_seed 5
+option 5 link_test_protocol_0 ethernet
+option 5 link_test_shared_0 on
+option 5 link_test_max_ports_0 0
+option 5 link_test_payload_len 1514
+option 5 link_test_send_0 1
+option 5 link_test_seed 6
+option 6 link_test_protocol_0 ethernet
+option 6 link_test_shared_0 on
+option 6 link_test_max_ports_0 0
+option 6 link_test_payload_len 1514
+option 6 link_test_send_0 2
+option 6 link_test_seed 7
+option 7 link_test_protocol_0 ethernet
+option 7 link_test_shared_0 on
+option 7 link_test_max_ports_0 0
+option 7 link_test_payload_len 1514
+option 7 link_test_send_0 3
+option 7 link_test_seed 8
+150 save mid
+150 checkpoint in_flight
+299 expect 0 system 9 8
+299 expect 0 system 12 0
+299 expect 1 system 9 8
+299 expect 1 system 12 1
+299 expect 2 system 9 8
+299 expect 2 system 12 2
+299 expect 3 system 9 8
+299 expect 3 system 12 3
+299 expect 4 system 9 8
+299 expect 4 system 12 4
+299 expect 5 system 9 8
+299 expect 5 system 12 5
+299 expect 6 system 9 8
+299 expect 6 system 12 6
+299 expect 7 system 9 8
+299 expect 7 system 12 7
+300 end

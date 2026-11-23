@@ -17,7 +17,9 @@
 #define LT_PENDING_MAX    64
 #define LT_PROTOCOL_MAX   64
 #define LT_SEND_NONE      0x100u
+#define LT_SEEDED         (RETRO_LINK_MAX_PAYLOAD + 1) /* payload lengths from the seed */
 #define LT_RATE_LIMIT     2147483647UL /* keeps 64-bit tick products exact */
+#define LT_SPAN_LIMIT     (LT_RATE_LIMIT / 60) /* the same, at any frame rate */
 #define LT_FRAME_LIMIT    0xFFFFFFFFUL
 #define LT_NEVER          (~(uint64_t)0)
 #define LT_RANGES_MAX     8
@@ -70,6 +72,7 @@ struct lt_config
    uint64_t rate[LT_MAX_PORTS];
    uint64_t detach[LT_MAX_PORTS], reattach[LT_MAX_PORTS]; /* frames, or LT_NEVER */
    uint64_t bad_frame;
+   uint64_t fps_num, fps_den;
    unsigned lookahead[LT_MAX_PORTS];
    unsigned max_ports[LT_MAX_PORTS];
    unsigned send[LT_MAX_PORTS];
@@ -77,10 +80,11 @@ struct lt_config
    char protocol[LT_MAX_PORTS][LT_PROTOCOL_MAX];
    struct lt_range sending[LT_RANGES_MAX];
    struct lt_range dupes[LT_RANGES_MAX];
-   unsigned ports, steps, sending_count, dupe_count;
+   unsigned ports, steps, sending_count, dupe_count, payload_len;
    uint32_t seed;
    enum lt_mode mode;
    bool restart_ticks;
+   bool extra_flags;
 };
 
 struct lt_message      /* received, applied once its landing tick is passed */
@@ -119,6 +123,7 @@ struct lt_machine
 static const struct retro_variable lt_variables[] = {
    { "link_test_ports",       "Ports; 1|2|3" },
    { "link_test_steps",       "Steps a frame; 16|1|2|4|8|10|32|64" },
+   { "link_test_fps",         "Frames a second, N or N/D; 60|50|60000/1001" },
    { "link_test_seed",        "Seed; 1|2|3|7|11|23" },
    { "link_test_rate_0",      "Port 0 ticks a second; 61440|60000" },
    { "link_test_rate_1",      "Port 1 ticks a second; 61440|60000" },
@@ -139,6 +144,7 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_send_1",      "Port 1 sends to; broadcast|none|0|1|2|3" },
    { "link_test_send_2",      "Port 2 sends to; broadcast|none|0|1|2|3" },
    { "link_test_send_frames", "Frames that may send, A-B[,A-B]...; 0-999999" },
+   { "link_test_payload_len", "Payload bytes; seeded|0|1514|4096" },
    { "link_test_dupe_frames", "Frames that pass no picture, A-B[,A-B]...; " },
    { "link_test_detach_0",    "Frame port 0 detaches in; -1" },
    { "link_test_detach_1",    "Frame port 1 detaches in; -1" },
@@ -147,6 +153,7 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_reattach_1",  "Frame port 1 attaches again in; -1" },
    { "link_test_reattach_2",  "Frame port 2 attaches again in; -1" },
    { "link_test_restart_ticks", "Ticks restart at a load and move at a reset; off|on" },
+   { "link_test_extra_flags", "Every undefined port and core flag bit set; off|on" },
    { "link_test_mode",        "Mode; conform|nonconform|never_advance|no_progress|stale_load|"
                               "stale_save|stale_send" },
    { "link_test_bad_frame",   "First frame of the mode; 0" },
@@ -344,6 +351,31 @@ static void lt_option_frame(const char *key, uint64_t *out)
       lt_fail_option(key, s);
 }
 
+/* N or N/D */
+static void lt_read_fps(void)
+{
+   const char *s = lt_option("link_test_fps");
+   const char *t;
+   uint64_t num, den = 1;
+   if (!s)
+      return;
+   if (     (t = lt_digits(s, LT_RATE_LIMIT, &num)) && num
+         && (!*t || (*t == '/' && lt_number(t + 1, LT_RATE_LIMIT, &den) && den)))
+   {
+      lt_cfg.fps_num = num;
+      lt_cfg.fps_den = den;
+   }
+   else
+      lt_fail_option("link_test_fps", s);
+}
+
+/* A frame is a whole number of ticks at this rate */
+static bool lt_whole_span(uint64_t rate)
+{
+   return rate * lt_cfg.fps_den % lt_cfg.fps_num == 0
+      && rate * lt_cfg.fps_den / lt_cfg.fps_num <= LT_SPAN_LIMIT;
+}
+
 static void lt_read_port(unsigned p)
 {
    char key[32];
@@ -353,7 +385,7 @@ static void lt_read_port(unsigned p)
    sprintf(key, "link_test_rate_%u", p);
    if ((s = lt_option(key)))
    {
-      if (lt_number(s, LT_RATE_LIMIT, &v) && v && v % 60 == 0)
+      if (lt_number(s, LT_RATE_LIMIT, &v) && v && (p >= lt_cfg.ports || lt_whole_span(v)))
          lt_cfg.rate[p] = v;
       else
          lt_fail_option(key, s);
@@ -422,6 +454,22 @@ static void lt_read_mode(void)
       else
          lt_fail_option("link_test_restart_ticks", s);
    }
+   if ((s = lt_option("link_test_extra_flags")))
+   {
+      if (!strcmp(s, "on") || !strcmp(s, "off"))
+         lt_cfg.extra_flags = !strcmp(s, "on");
+      else
+         lt_fail_option("link_test_extra_flags", s);
+   }
+   if ((s = lt_option("link_test_payload_len")))
+   {
+      if (!strcmp(s, "seeded"))
+         lt_cfg.payload_len = LT_SEEDED;
+      else if (lt_number(s, RETRO_LINK_MAX_PAYLOAD, &v))
+         lt_cfg.payload_len = (unsigned)v;
+      else
+         lt_fail_option("link_test_payload_len", s);
+   }
    if (     (s = lt_option("link_test_send_frames"))
          && !lt_ranges(s, lt_cfg.sending, &lt_cfg.sending_count))
       lt_fail_option("link_test_send_frames", s);
@@ -445,9 +493,12 @@ static void lt_read_options(void)
    uint64_t v;
 
    memset(&lt_cfg, 0, sizeof(lt_cfg));
-   lt_cfg.ports = 1;
-   lt_cfg.steps = 16;
-   lt_cfg.seed  = 1;
+   lt_cfg.ports       = 1;
+   lt_cfg.steps       = 16;
+   lt_cfg.seed        = 1;
+   lt_cfg.fps_num     = 60;
+   lt_cfg.fps_den     = 1;
+   lt_cfg.payload_len = LT_SEEDED;
    lt_cfg.sending[0].last = 999999;
    lt_cfg.sending_count   = 1;
    for (p = 0; p < LT_MAX_PORTS; p++)
@@ -469,6 +520,7 @@ static void lt_read_options(void)
       else
          lt_fail_option("link_test_seed", s);
    }
+   lt_read_fps();
    for (p = 0; p < LT_MAX_PORTS; p++)
       lt_read_port(p);
    lt_read_mode();
@@ -476,7 +528,8 @@ static void lt_read_options(void)
 
 static uint64_t lt_tick(unsigned p, unsigned m)
 {
-   return lt_state.port[p].base + (uint64_t)m * (lt_cfg.rate[p] / 60) / lt_cfg.steps;
+   uint64_t span = lt_cfg.rate[p] * lt_cfg.fps_den / lt_cfg.fps_num;
+   return lt_state.port[p].base + (uint64_t)m * span / lt_cfg.steps;
 }
 
 /* A position as the bus sees it, and back */
@@ -565,21 +618,70 @@ static void lt_granted(unsigned p, uint64_t grant, uint64_t lawful, unsigned wak
       lt_bump8(LT_RAM_DETACHED);
 }
 
+/* conform: peers with a NULL count gives the index a full call gives, and
+ * a port on no bus is given a count of 0 */
+static void lt_probe_peers(unsigned p)
+{
+   unsigned count = ~0u;
+   int bare       = lt_link.peers(lt_handle[p], NULL);
+   int index      = lt_link.peers(lt_handle[p], &count);
+   if (bare != index)
+      lt_fail("peers with a NULL count disagrees", p, (unsigned)bare, (unsigned)index);
+   if (index < 0 && count)
+      lt_fail("peers gave a count to a port on no bus", p, count, 0);
+}
+
+/* conform, before each take: a peek with every out argument NULL says what
+ * a full peek says, and recv_msg with a buffer and a NULL len takes nothing */
+static void lt_probe_queue(unsigned p)
+{
+   uint64_t tick = 0, digest = 0, again_tick = 0, again_digest = 0;
+   unsigned from = 0, again_from = 0;
+   size_t len    = 0, again_len = 0;
+   const void *peeked = lt_link.peek(lt_handle[p], &tick, &from, &len);
+   const void *again;
+   bool bare, took;
+   if (peeked)
+      digest = lt_digest(peeked, len);
+   bare = lt_link.peek(lt_handle[p], NULL, NULL, NULL) != NULL;
+   if (bare != (peeked != NULL))
+      lt_fail("peek with NULL out arguments disagrees", p, bare, peeked != NULL);
+   took  = lt_link.recv_msg(lt_handle[p], NULL, NULL, lt_payload, NULL);
+   again = lt_link.peek(lt_handle[p], &again_tick, &again_from, &again_len);
+   if (again)
+      again_digest = lt_digest(again, again_len);
+   if (     took || !again != !peeked || again_tick != tick || again_from != from
+         || again_len != len || again_digest != digest)
+      lt_fail("recv_msg with a NULL len took a message", p, tick, again_tick);
+}
+
 /* Takes every message that can be handed out, checking each against the
- * peek before it and the grant and tick of the advance that made it so */
+ * peek before it and the grant and tick of the advance that made it so.
+ * conform takes them with tick and from NULL in odd frames, as peeked. */
 static void lt_receive(unsigned p, uint64_t local, uint64_t grant)
 {
    struct lt_port *k = &lt_state.port[p];
+   bool conform      = lt_cfg.mode == LT_CONFORM;
    for (;;)
    {
       uint64_t peek_tick = 0, tick = 0, peek_digest = 0;
       unsigned peek_from = 0, from = 0;
       size_t peek_len    = 0, len = sizeof(lt_payload);
-      const void *peeked = lt_link.peek(lt_handle[p], &peek_tick, &peek_from, &peek_len);
+      const void *peeked;
       bool took;
+      if (conform)
+         lt_probe_queue(p);
+      peeked = lt_link.peek(lt_handle[p], &peek_tick, &peek_from, &peek_len);
       if (peeked)
          peek_digest = lt_digest(peeked, peek_len);
-      took = lt_link.recv_msg(lt_handle[p], &tick, &from, lt_payload, &len);
+      if (conform && (lt_state.frame & 1))
+      {
+         took = lt_link.recv_msg(lt_handle[p], NULL, NULL, lt_payload, &len);
+         tick = peek_tick;
+         from = peek_from;
+      }
+      else
+         took = lt_link.recv_msg(lt_handle[p], &tick, &from, lt_payload, &len);
       if (!peeked != !took)
          lt_fail("peek and recv disagree", p, peek_tick, tick);
       if (!took)
@@ -715,6 +817,8 @@ static bool lt_advance(enum lt_advance_kind kind, unsigned m, struct lt_stand *a
       unsigned p     = port[i];
       uint64_t grant = lt_in(w[i].grant);
       lt_granted(p, grant, lawful[i], w[i].wake_flags);
+      if (lt_cfg.mode == LT_CONFORM)
+         lt_probe_peers(p);
       lt_receive(p, local[i], grant);
       if (safe[i] > at->promise[p])
          at->promise[p] = safe[i];
@@ -726,10 +830,11 @@ static bool lt_advance(enum lt_advance_kind kind, unsigned m, struct lt_stand *a
    return released;
 }
 
-/* A payload of 8 to 64 bytes from the state, stamped at a position */
+/* A payload from the state, stamped at a position: 8 to 64 bytes by the
+ * seed, or of the set length, an empty one with a NULL buf */
 static void lt_send(unsigned p, uint64_t stamp, uint32_t r)
 {
-   unsigned len = 8 + r % 57;
+   unsigned len = lt_cfg.payload_len == LT_SEEDED ? 8 + r % 57 : lt_cfg.payload_len;
    uint64_t v   = lt_state.hash ^ r;
    unsigned i;
    if (lt_cfg.send[p] == LT_SEND_NONE || !lt_frame_in(lt_cfg.sending, lt_cfg.sending_count))
@@ -740,7 +845,7 @@ static void lt_send(unsigned p, uint64_t stamp, uint32_t r)
          v = lt_mix(v + i);
       lt_payload[i] = (unsigned char)(v >> ((i & 7) * 8));
    }
-   if (lt_link.send_msg(lt_handle[p], lt_out(stamp), lt_cfg.send[p], lt_payload, len))
+   if (lt_link.send_msg(lt_handle[p], lt_out(stamp), lt_cfg.send[p], len ? lt_payload : NULL, len))
    {
       lt_bump32(LT_RAM_SENT);
       lt_fold(lt_digest(lt_payload, len));
@@ -868,11 +973,14 @@ void retro_init(void)
       lt_port_info[p].clock_rate  = lt_cfg.rate[p];
       lt_port_info[p].max_ports   = lt_cfg.max_ports[p];
       lt_port_info[p].flags       = lt_cfg.shared[p] ? RETRO_LINK_PORT_SHARED_MEDIUM : 0;
+      if (lt_cfg.extra_flags)
+         lt_port_info[p].flags   |= ~(unsigned)RETRO_LINK_PORT_SHARED_MEDIUM;
       lt_port_list[p]             = &lt_port_info[p];
    }
    memset(&lt_link, 0, sizeof(lt_link));
    lt_link.interface_version = RETRO_LINK_INTERFACE_VERSION;
    lt_link.ports             = lt_port_list;
+   lt_link.flags             = lt_cfg.extra_flags ? ~(unsigned)RETRO_LINK_SAVE_IN_ADVANCE : 0;
    lt_linked = lt_environ(RETRO_ENVIRONMENT_GET_LINK_INTERFACE, &lt_link);
 }
 
@@ -902,7 +1010,7 @@ void retro_get_system_av_info(struct retro_system_av_info *info)
    info->geometry.max_width    = LT_WIDTH;
    info->geometry.max_height   = LT_HEIGHT;
    info->geometry.aspect_ratio = 4.0f / 3.0f;
-   info->timing.fps            = 60.0;
+   info->timing.fps            = (double)lt_cfg.fps_num / (double)lt_cfg.fps_den;
    info->timing.sample_rate    = 48000.0;
 }
 
