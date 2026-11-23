@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <locale.h>
 
 #include <file/file_path.h>
 
@@ -38,21 +39,56 @@ int main(void)
    struct tm tm;
    char s[64];
    char first[64];
+#ifndef _WIN32
+   char want[64];
+#endif
+   char am[32];
+   char pm[32];
+   char taken[128];
+   const char *name;
    size_t len;
    unsigned i;
 
-   /* Hours 1 and 13 give the two designators; whatever the host's
-    * locale calls them, they differ and follow the same clock */
+   /* Hours 1 and 13 give the two designators on the 12-hour clock */
    fill_tm(&tm, 13);
    len = strftime_am_pm(s, sizeof(s), "%I:%M %p", &tm);
    CHECK(len == strlen(s), "length %u for \"%s\"", (unsigned)len, s);
-   CHECK(!strncmp(s, "01:05", 5), "13:05 on the 12-hour clock: \"%s\"", s);
    strcpy(first, s);
    fill_tm(&tm, 1);
    strftime_am_pm(s, sizeof(s), "%I:%M %p", &tm);
-   CHECK(!strncmp(s, "01:05", 5), "01:05: \"%s\"", s);
-   CHECK(strcmp(s, first) || !strchr(s, ' '), "AM and PM read the same: \"%s\"",
-         s);
+
+   /* The locale taken is the host's LC_TIME (C if that is not
+    * installed), whose designators may be empty (de_DE, en_ZA) but are
+    * never the same non-empty text */
+   name     = setlocale(LC_TIME, NULL);
+   taken[0] = '\0';
+   if (name && strlen(name) < sizeof(taken))
+      strcpy(taken, name);
+   CHECK(*taken, "no LC_TIME name");
+   name = setlocale(LC_TIME, "");
+   CHECK(!strcmp(name ? name : "C", taken),
+         "took LC_TIME \"%s\", host's is \"%s\"", taken,
+         name ? name : "(none)");
+   /* A leading 'x': an empty %p alone is strftime()'s 0, no text */
+   strftime(am, sizeof(am), "x%p", &tm);
+   fill_tm(&tm, 13);
+   strftime(pm, sizeof(pm), "x%p", &tm);
+   CHECK((!am[1] && !pm[1]) || strcmp(am, pm), "AM and PM are both \"%s\"",
+         am + 1);
+   if (!strcmp(taken, "C") || !strcmp(taken, "POSIX"))
+      CHECK(!strcmp(am, "xAM") && !strcmp(pm, "xPM"),
+            "C locale gave \"%s\" and \"%s\"", am + 1, pm + 1);
+#ifdef _WIN32
+   /* Windows' designators are in the codepage, the result in UTF-8 */
+   CHECK(!strncmp(first, "01:05 ", 6) && !strncmp(s, "01:05 ", 6)
+         && !strcmp(s, first) == !strcmp(am, pm),
+         "\"%s\" and \"%s\"", first, s);
+#else
+   sprintf(want, "01:05 %s", pm + 1);
+   CHECK(!strcmp(first, want), "13:05: \"%s\", want \"%s\"", first, want);
+   sprintf(want, "01:05 %s", am + 1);
+   CHECK(!strcmp(s, want), "01:05: \"%s\", want \"%s\"", s, want);
+#endif
 
    /* Repeated calls give the same text */
    fill_tm(&tm, 23);
