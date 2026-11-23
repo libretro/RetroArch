@@ -62,6 +62,9 @@ typedef struct link_console
 {
    struct link_console_api api;
    xxh64_state_t audio;             /* hash of this frame's audio */
+   int16_t *kept_audio;             /* this frame's audio so far, kept while its core
+                                       may be saved inside an advance */
+   size_t kept_count, kept_cap;
    dylib_t lib;
    char *dir, *save_dir, *core_copy;
    void *rom_data;
@@ -80,7 +83,9 @@ typedef struct link_console
    unsigned long frame;             /* its own frames finished, the index of the one it is in */
    unsigned index, bytes_per_pixel, errors;
    bool started, loaded;
-   bool ran;                        /* finished a frame since it started or loaded */
+   bool resuming;                   /* a load left it inside its frame, which its next run
+                                       finishes */
+   bool ran;                        /* finished a frame since it started, loaded or was held */
    bool keep;                       /* keeps this frame's picture */
    bool drew, duped;                /* in this frame; drew: kept its picture in drawn */
    bool drew_before;                /* its last finished frame drew */
@@ -110,7 +115,11 @@ bool link_console_state(link_console_t *c, uint64_t *hash);
 size_t link_console_state_size(link_console_t *c);
 bool link_console_serialize(link_console_t *c, void *data, size_t size);
 bool link_console_unserialize(link_console_t *c, const void *data, size_t len);
-/* A hold applied: like a load, no picture is seen until a frame after it */
+/* A load left the console inside its frame: count samples of that frame's
+ * audio before the save, little-endian, which its hash starts from */
+bool link_console_resume(link_console_t *c, const unsigned char *audio, size_t count);
+/* A hold applied: no picture is seen until a frame after it, which may be a
+ * dupe of the frame before the hold */
 void link_console_held(link_console_t *c);
 void link_console_reset(link_console_t *c);
 /* A byte of a RETRO_MEMORY_* region; false when the core has no such byte */

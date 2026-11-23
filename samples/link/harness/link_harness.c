@@ -57,6 +57,9 @@ struct link_harness
    const unsigned char **saved; /* in it, each console's retro_serialize output */
    const unsigned char *saved_bus; /* and the bus blob */
    uint64_t *saved_frame;    /* each console's own frames finished */
+   bool *saved_in_frame;     /* whether it is inside an advance */
+   const unsigned char **saved_audio; /* and the audio of that frame before the save */
+   size_t *saved_audio_len;  /* its sample count */
    size_t *saved_len;
    size_t saved_bus_len;
    char *expect_text;
@@ -272,7 +275,13 @@ static bool link_harness_read_state(struct link_harness *h)
    if (     !(h->saved = (const unsigned char**)calloc(h->scn.console_count, sizeof(*h->saved)))
          || !(h->saved_len = (size_t*)calloc(h->scn.console_count, sizeof(*h->saved_len)))
          || !(h->saved_frame = (uint64_t*)calloc(h->scn.console_count,
-               sizeof(*h->saved_frame))))
+               sizeof(*h->saved_frame)))
+         || !(h->saved_in_frame = (bool*)calloc(h->scn.console_count,
+               sizeof(*h->saved_in_frame)))
+         || !(h->saved_audio = (const unsigned char**)calloc(h->scn.console_count,
+               sizeof(*h->saved_audio)))
+         || !(h->saved_audio_len = (size_t*)calloc(h->scn.console_count,
+               sizeof(*h->saved_audio_len))))
       return link_harness_bad_state(h, "out of memory");
    for (i = 0; i < h->scn.console_count; i++)
    {
@@ -281,6 +290,19 @@ static bool link_harness_read_state(struct link_harness *h)
          return link_harness_bad_state(h, "truncated");
       if (h->saved_frame[i] != (unsigned long)h->saved_frame[i])
          return link_harness_bad_state(h, "a frame index too large");
+      if (!link_harness_get(&r, 1, &v))
+         return link_harness_bad_state(h, "truncated");
+      if (v > 1)
+         return link_harness_bad_state(h, "an inside-an-advance byte neither 0 nor 1");
+      h->saved_in_frame[i] = v != 0;
+      if (!link_harness_get(&r, 4, &v) || v > r.left / 2)
+         return link_harness_bad_state(h, "truncated");
+      if (v && !h->saved_in_frame[i])
+         return link_harness_bad_state(h, "audio of a frame for a console at an edge");
+      h->saved_audio[i]     = r.s;
+      h->saved_audio_len[i] = (size_t)v;
+      r.s                  += 2 * (size_t)v;
+      r.left               -= 2 * (size_t)v;
    }
    if (!link_harness_get_block(&r, &h->saved_bus, &h->saved_bus_len))
       return link_harness_bad_state(h, "truncated");
@@ -495,6 +517,15 @@ static bool link_harness_load_state(struct link_harness *h)
                h->state_path, i);
          return false;
       }
+      if (link_sched_in_frame(h->sched, i) != h->saved_in_frame[i])
+      {
+         fprintf(stderr, "link_harness: %s: bad state: console %u is inside an advance in the"
+               " bus's state or in its own, not both\n", h->state_path, i);
+         return false;
+      }
+      if (     h->saved_in_frame[i]
+            && !link_console_resume(&h->consoles[i], h->saved_audio[i], h->saved_audio_len[i]))
+         return false;
       h->consoles[i].frame = (unsigned long)h->saved_frame[i];
       link_bus_renumbered(h->bus, i);
    }
@@ -538,10 +569,50 @@ static unsigned char *link_harness_put(unsigned char *s, uint64_t v, unsigned by
    return s;
 }
 
-/* out/<name>.state: magic, version, frame, scenario hash, console count,
- * each console's retro_serialize output after its size and then its own
- * frames finished, and the bus blob after its size; little-endian. Each
- * core and the bus write in place. */
+/* A console inside a frame is saved only if its core set
+ * RETRO_LINK_SAVE_IN_ADVANCE */
+static bool link_harness_savable(struct link_harness *h, const struct link_scenario_event *e)
+{
+   unsigned i;
+   bool ok = true;
+   for (i = 0; i < h->scn.console_count; i++)
+      if (     link_sched_in_frame(h->sched, i)
+            && !(link_bus_get_flags(h->bus, i) & RETRO_LINK_SAVE_IN_ADVANCE))
+      {
+         fprintf(stderr, "link_harness: %s:%u: console %u is inside a frame and its core did not"
+               " set RETRO_LINK_SAVE_IN_ADVANCE\n", h->scn.path, e->line, i);
+         h->failed = true;
+         ok        = false;
+      }
+   return ok;
+}
+
+/* The samples a save keeps of console i's frame: those before it, if it
+ * is inside an advance */
+static size_t link_harness_kept(const struct link_harness *h, unsigned i)
+{
+   return link_sched_in_frame(h->sched, i) ? h->consoles[i].kept_count : 0;
+}
+
+/* Whether console i is inside an advance, and the audio of that frame */
+static unsigned char *link_harness_save_frame(const struct link_harness *h, unsigned i,
+      unsigned char *s)
+{
+   size_t count = link_harness_kept(h, i);
+   size_t j;
+   s = link_harness_put(s, link_sched_in_frame(h->sched, i), 1);
+   s = link_harness_put(s, count, 4);
+   for (j = 0; j < count; j++)
+      s = link_harness_put(s, (uint16_t)h->consoles[i].kept_audio[j], 2);
+   return s;
+}
+
+/* out/<name>.state: magic, version, frame, scenario hash, console count;
+ * for each console its retro_serialize output after its size, its own
+ * frames finished, whether it is inside an advance (1 byte) and the audio
+ * of that frame before the save (a count of samples, 4 bytes, then the
+ * samples); then the bus blob after its size; little-endian. Each core and
+ * the bus write in place. */
 static void link_harness_save(struct link_harness *h, const struct link_scenario_event *e,
       unsigned long frame)
 {
@@ -552,10 +623,15 @@ static void link_harness_save(struct link_harness *h, const struct link_scenario
    char *name         = NULL;
    unsigned i;
    bool ok            = sizes != NULL;
+   if (!link_harness_savable(h, e))
+   {
+      free(sizes);
+      return;
+   }
    for (i = 0; ok && i < h->scn.console_count; i++)
    {
       sizes[i] = link_console_state_size(&h->consoles[i]);
-      len     += 8 + sizes[i] + 8;
+      len     += 8 + sizes[i] + 8 + 1 + 4 + 2 * link_harness_kept(h, i);
    }
    if (ok)
    {
@@ -581,6 +657,7 @@ static void link_harness_save(struct link_harness *h, const struct link_scenario
             ok = false;
          }
          s = link_harness_put(s + sizes[i], h->consoles[i].frame, 8);
+         s = link_harness_save_frame(h, i, s);
       }
       if (ok)
       {
@@ -602,8 +679,8 @@ static void link_harness_save(struct link_harness *h, const struct link_scenario
 
 /* For a person: a PNG of each console's picture in its last finished frame,
  * the bus dump, the counts, and where each console stands. A console not
- * held that has finished a frame since it started or loaded and kept no
- * picture fails the run. */
+ * held that has finished a frame since it started, loaded or was held and
+ * kept no picture fails the run. */
 static void link_harness_checkpoint(struct link_harness *h, const struct link_scenario_event *e)
 {
    struct link_bus_counts counts;
@@ -760,6 +837,13 @@ static void link_harness_edge(struct link_harness *h, unsigned long frame, size_
             link_harness_member(h, e, link_bus_unhold(h->bus, e->console));
             break;
          case LINK_SCENARIO_RESET:
+            if (link_sched_in_frame(h->sched, e->console))
+            {
+               fprintf(stderr, "link_harness: %s:%u: console %u is inside a frame\n",
+                     h->scn.path, e->line, e->console);
+               h->failed = true;
+               break;
+            }
             link_console_reset(&h->consoles[e->console]);
             link_bus_renumbered(h->bus, e->console);
             break;
@@ -1044,10 +1128,34 @@ static void link_harness_resume(struct link_harness *h, unsigned long *frame, si
       h->expect_next++;
 }
 
+/* A core is not loaded or unloaded inside a frame: the frames in progress
+ * are abandoned, traced nowhere, and must not move the bus counts */
+static void link_harness_abandon(struct link_harness *h)
+{
+   struct link_bus_counts before, after;
+   unsigned i;
+   bool in_frame = false;
+   for (i = 0; i < h->scn.console_count; i++)
+      in_frame = in_frame || link_sched_in_frame(h->sched, i);
+   if (!in_frame)
+      return;
+   link_bus_get_counts(h->bus, &before);
+   link_sched_abandon(h->sched);
+   link_bus_get_counts(h->bus, &after);
+   for (i = 0; i < LINK_SCENARIO_COUNTERS; i++)
+      if (link_scenario_counter_value(&before, i) != link_scenario_counter_value(&after, i))
+      {
+         fprintf(stderr, "link_harness: abandoning the frames in progress moved the bus's"
+               " count of %s\n", link_scenario_counter_name(i));
+         h->failed = true;
+      }
+}
+
 /* Runs from the first frame, or from the --from state. With --rewind the
  * session runs to the scenario's last edge, before the frame of its end or
- * of its release, and there, in place of that edge's lines, the state is
- * loaded into it and it goes on from the state. */
+ * of its release, and there, in place of that edge's lines, the frames in
+ * progress are abandoned, the state is loaded into it and it goes on from
+ * the state. */
 static void link_harness_run(struct link_harness *h)
 {
    const struct link_scenario *s = &h->scn;
@@ -1065,6 +1173,7 @@ static void link_harness_run(struct link_harness *h)
       bool stepped;
       if (rewinding && frame == last)
       {
+         link_harness_abandon(h);
          if (!link_harness_load_state(h))
          {
             h->failed = true;
@@ -1110,29 +1219,6 @@ static void link_harness_run(struct link_harness *h)
    link_harness_check_counts(h);
 }
 
-/* A core is not unloaded inside a frame: the frames in progress are
- * abandoned, traced nowhere, and must not move the bus counts */
-static void link_harness_abandon(struct link_harness *h)
-{
-   struct link_bus_counts before, after;
-   unsigned i;
-   bool in_frame = false;
-   for (i = 0; i < h->scn.console_count; i++)
-      in_frame = in_frame || link_sched_in_frame(h->sched, i);
-   if (!in_frame)
-      return;
-   link_bus_get_counts(h->bus, &before);
-   link_sched_abandon(h->sched);
-   link_bus_get_counts(h->bus, &after);
-   for (i = 0; i < LINK_SCENARIO_COUNTERS; i++)
-      if (link_scenario_counter_value(&before, i) != link_scenario_counter_value(&after, i))
-      {
-         fprintf(stderr, "link_harness: abandoning the frames in progress at the end moved"
-               " the bus's count of %s\n", link_scenario_counter_name(i));
-         h->failed = true;
-      }
-}
-
 /* Every core unloaded; closing twice does nothing */
 static void link_harness_close(struct link_harness *h)
 {
@@ -1158,6 +1244,9 @@ static void link_harness_free(struct link_harness *h)
    free(h->saved);
    free(h->saved_len);
    free(h->saved_frame);
+   free(h->saved_in_frame);
+   free(h->saved_audio);
+   free(h->saved_audio_len);
    free(h->targets);
    free(h->journal);
    free(h->sent);

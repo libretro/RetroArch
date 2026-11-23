@@ -12,7 +12,8 @@
 # An in_flight checkpoint, at the save frame, must list a message. In
 # spans_waiting console 0 must finish one frame a step, with console 1
 # parked at its checkpoint parked; in two_spans console 1 must finish 598
-# frames to console 0's 600. Then
+# frames to console 0's 600; in spans_save_in_advance consoles 1 and 2 must
+# be parked at its checkpoints in_flight and last. Then
 # each scenario in bad/ must exit 2 and each in fail/ exit 1, printing the
 # error its "# error:" line names, as must a truncated state, a state of
 # another scenario and an edited trace; each scenario in stale/ must pass
@@ -205,6 +206,14 @@ check: all
 	   || { echo "check: spans_waiting: console 0 finished $$n frames, not one a step: $$off"; exit 1; }; \
 	grep -q '^c1 frame [0-9]* in_frame 1$$' "$(BUILD_DIR)/out/spans_waiting/first/parked/consoles.txt" \
 	   || { echo "check: spans_waiting: console 1 is not parked at checkpoint parked"; exit 1; }
+	@for at in in_flight last; do \
+	   for c in 1 2; do \
+	      grep -q "^c$$c frame [0-9]* in_frame 1$$" \
+	         "$(BUILD_DIR)/out/spans_save_in_advance/first/$$at/consoles.txt" \
+	         || { echo "check: spans_save_in_advance: console $$c is not parked at checkpoint $$at"; \
+	            exit 1; }; \
+	   done; \
+	done
 	@trace="$(BUILD_DIR)/out/two_spans/first/trace.txt"; \
 	n=`grep -c '^F [0-9]* C 1 N ' "$$trace"`; \
 	last=`grep '^F [0-9]* C 1 N ' "$$trace" | tail -n 1 | cut -d ' ' -f 1-6`; \

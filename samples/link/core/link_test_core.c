@@ -27,6 +27,7 @@
 #define LT_EPOCH_LOAD     1000003
 #define LT_EPOCH_RESET    7919
 #define LT_STATE_MAGIC    0x4C545354UL /* "LTST" */
+#define LT_STEP_AUDIO     16           /* save_in_advance: audio frames a step */
 #define LT_ASK            (RETRO_LINK_WAKE_MESSAGE | RETRO_LINK_WAKE_TOPOLOGY | RETRO_LINK_WAKE_DETACHED)
 
 /* System RAM layout */
@@ -59,7 +60,8 @@ enum lt_mode
    LT_NO_PROGRESS,
    LT_STALE_LOAD,
    LT_STALE_SAVE,
-   LT_STALE_SEND
+   LT_STALE_SEND,
+   LT_STALE_RELEASE
 };
 
 struct lt_range
@@ -85,6 +87,7 @@ struct lt_config
    enum lt_mode mode;
    bool restart_ticks;
    bool extra_flags;
+   bool save_in_advance;
 };
 
 struct lt_message      /* received, applied once its landing tick is passed */
@@ -110,6 +113,23 @@ struct lt_stand        /* where each port stands in this frame, as positions */
    uint64_t promise[LT_MAX_PORTS]; /* the highest promise published */
 };
 
+struct lt_entries      /* one advance's entries, as positions */
+{
+   uint64_t local[LT_MAX_PORTS], safe[LT_MAX_PORTS], request[LT_MAX_PORTS];
+   uint64_t lawful[LT_MAX_PORTS]; /* the request as the bus repairs it */
+   unsigned port[LT_MAX_PORTS];
+   unsigned n;
+};
+
+struct lt_parked       /* the advance being made, which a save inside it holds */
+{
+   struct lt_stand at;    /* where each port stood before it */
+   struct lt_entries e;
+   enum lt_advance_kind kind;
+   unsigned m;            /* its step */
+   bool in;               /* not returned, or a load left it to make again */
+};
+
 struct lt_machine
 {
    uint64_t frame, hash;
@@ -118,6 +138,7 @@ struct lt_machine
    unsigned char sysram[LT_SYSRAM_SIZE];
    unsigned char sram[LT_SRAM_SIZE];
    struct lt_port port[LT_MAX_PORTS];
+   struct lt_parked parked;
 };
 
 static const struct retro_variable lt_variables[] = {
@@ -154,8 +175,9 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_reattach_2",  "Frame port 2 attaches again in; -1" },
    { "link_test_restart_ticks", "Ticks restart at a load and move at a reset; off|on" },
    { "link_test_extra_flags", "Every undefined port and core flag bit set; off|on" },
+   { "link_test_save_in_advance", "Saves inside an advance; off|on" },
    { "link_test_mode",        "Mode; conform|nonconform|never_advance|no_progress|stale_load|"
-                              "stale_save|stale_send" },
+                              "stale_save|stale_send|stale_release" },
    { "link_test_bad_frame",   "First frame of the mode; 0" },
    { NULL, NULL }
 };
@@ -180,8 +202,9 @@ static bool lt_linked;
 static uint64_t lt_epoch;
 static uint64_t lt_loads;
 
-/* stale_load: set from the mode's first frame on; in no save state, and
- * no load clears it */
+/* stale_load: set from the mode's first frame on; stale_release: set by a
+ * report of RETRO_LINK_WAKE_DETACHED, as a release gives. In no save state,
+ * and no load clears it */
 static bool lt_latch;
 
 /* stale_save, stale_send: the state's hash as the last retro_run left it,
@@ -432,7 +455,7 @@ static void lt_read_mode(void)
 {
    static const char *const names[] = {
       "conform", "nonconform", "never_advance", "no_progress", "stale_load", "stale_save",
-      "stale_send"
+      "stale_send", "stale_release"
    };
    const char *s = lt_option("link_test_mode");
    unsigned i;
@@ -460,6 +483,23 @@ static void lt_read_mode(void)
          lt_cfg.extra_flags = !strcmp(s, "on");
       else
          lt_fail_option("link_test_extra_flags", s);
+   }
+   if ((s = lt_option("link_test_save_in_advance")))
+   {
+      if (!strcmp(s, "on") || !strcmp(s, "off"))
+         lt_cfg.save_in_advance = !strcmp(s, "on");
+      else
+         lt_fail_option("link_test_save_in_advance", s);
+   }
+   /* An advance made again has the ticks it was saved with, and only the
+    * advances of a conforming frame are made again */
+   if (     lt_cfg.save_in_advance
+         && (lt_cfg.restart_ticks || lt_cfg.mode == LT_NONCONFORM || lt_cfg.mode == LT_NO_PROGRESS))
+   {
+      lt_bump8(LT_RAM_ERRORS);
+      if (lt_log)
+         lt_log(RETRO_LOG_ERROR, "link test: link_test_save_in_advance: not with"
+               " link_test_restart_ticks, nonconform or no_progress\n");
    }
    if ((s = lt_option("link_test_payload_len")))
    {
@@ -615,7 +655,11 @@ static void lt_granted(unsigned p, uint64_t grant, uint64_t lawful, unsigned wak
       lt_peers(p);
    }
    if (wake & RETRO_LINK_WAKE_DETACHED)
+   {
       lt_bump8(LT_RAM_DETACHED);
+      if (lt_cfg.mode == LT_STALE_RELEASE && lt_state.frame >= lt_cfg.bad_frame)
+         lt_latch = true;
+   }
 }
 
 /* conform: peers with a NULL count gives the index a full call gives, and
@@ -734,96 +778,121 @@ static void lt_apply(unsigned p, uint64_t tick)
    memmove(k->pending, k->pending + done, k->pending_count * sizeof(*k->pending));
 }
 
-/* One advance of every attached port, as kind says; at says where each
- * port stands. A step ends at its end tick or at the grant, if that is
- * lower, so the core never runs past a grant. True when every entry came
- * back RETRO_LINK_UNBOUNDED with RETRO_LINK_WAKE_DETACHED, as after a
- * release. */
-static bool lt_advance(enum lt_advance_kind kind, unsigned m, struct lt_stand *at)
+/* The entries of an advance of every attached port, as kind says; at says
+ * where each port stands */
+static void lt_entries(enum lt_advance_kind kind, unsigned m, const struct lt_stand *at,
+      struct lt_entries *e)
 {
-   struct retro_link_wait w[LT_MAX_PORTS];
-   struct retro_link_wait *list[LT_MAX_PORTS];
-   uint64_t local[LT_MAX_PORTS], safe[LT_MAX_PORTS], request[LT_MAX_PORTS];
-   uint64_t lawful[LT_MAX_PORTS]; /* the request as the bus repairs it */
-   unsigned port[LT_MAX_PORTS];
-   unsigned i, n = 0;
-   bool released  = true;
+   unsigned i;
+   e->n = 0;
    for (i = 0; i < lt_cfg.ports; i++)
    {
       uint64_t end = lt_tick(i, lt_cfg.steps);
+      unsigned n   = e->n;
       if (!lt_handle[i])
          continue;
-      local[n]   = at->local[i];
-      safe[n]    = at->promise[i];
-      request[n] = local[n];
+      e->local[n]   = at->local[i];
+      e->safe[n]    = at->promise[i];
+      e->request[n] = e->local[n];
       switch (kind)
       {
          case LT_FRAME_START:
-            safe[n] = lt_tick(i, lt_cfg.lookahead[i]);
+            e->safe[n] = lt_tick(i, lt_cfg.lookahead[i]);
             break;
          case LT_STEP:
-            safe[n]    = lt_tick(i, m + lt_cfg.lookahead[i]);
-            request[n] = lt_tick(i, m + 1) < safe[n] ? lt_tick(i, m + 1) : safe[n];
+            e->safe[n]    = lt_tick(i, m + lt_cfg.lookahead[i]);
+            e->request[n] = lt_tick(i, m + 1) < e->safe[n] ? lt_tick(i, m + 1) : e->safe[n];
+            if (e->request[n] > end)
+               e->request[n] = end;
             break;
          case LT_FRAME_END:
-            local[n]   = end;
-            safe[n]    = lt_tick(i, lt_cfg.steps + lt_cfg.lookahead[i]);
-            request[n] = end;
+            e->local[n]   = end;
+            e->safe[n]    = lt_tick(i, lt_cfg.steps + lt_cfg.lookahead[i]);
+            e->request[n] = end;
             break;
          case LT_LOWER:
-            safe[n]--;
+            e->safe[n]--;
             break;
          case LT_PAST_PROMISE:
-            request[n] = safe[n] + lt_tick(i, 1) - lt_tick(i, 0);
+            e->request[n] = e->safe[n] + lt_tick(i, 1) - lt_tick(i, 0);
             break;
          case LT_PAST_END:
-            request[n] = end + 1;
-            if (safe[n] < request[n])
-               safe[n] = request[n];
+            e->request[n] = end + 1;
+            if (e->safe[n] < e->request[n])
+               e->safe[n] = e->request[n];
             break;
          default:
             break;
       }
-      lawful[n] = request[n] < end ? request[n] : end;
-      if (lawful[n] > safe[n] && lawful[n] > at->promise[i])
-         lawful[n] = safe[n] > at->promise[i] ? safe[n] : at->promise[i];
-      port[n++] = i;
+      e->lawful[n] = e->request[n] < end ? e->request[n] : end;
+      if (e->lawful[n] > e->safe[n] && e->lawful[n] > at->promise[i])
+         e->lawful[n] = e->safe[n] > at->promise[i] ? e->safe[n] : at->promise[i];
+      e->port[e->n++] = i;
    }
-   if (!n)
-      return true;
-   if (n > 1)
+   if (e->n > 1)
    {
-      lt_cap_earliest(safe, port, n, lawful);
+      lt_cap_earliest(e->safe, e->port, e->n, e->lawful);
       if (kind == LT_STEP)
-         lt_cap_earliest(safe, port, n, request);
+         lt_cap_earliest(e->safe, e->port, e->n, e->request);
    }
-   for (i = 0; i < n; i++)
+}
+
+/* One advance of every attached port, as kind says; at says where each
+ * port stands. A step ends at its end tick or at the grant, if that is
+ * lower, so the core never runs past a grant. True when every entry came
+ * back RETRO_LINK_UNBOUNDED with RETRO_LINK_WAKE_DETACHED, as after a
+ * release. A load inside it leaves it in lt_state.parked to make again,
+ * with the entries it was saved with. */
+static bool lt_advance(enum lt_advance_kind kind, unsigned m, struct lt_stand *at)
+{
+   struct lt_parked *k        = &lt_state.parked;
+   const struct lt_entries *e = &k->e;
+   struct retro_link_wait w[LT_MAX_PORTS];
+   struct retro_link_wait *list[LT_MAX_PORTS];
+   unsigned i;
+   bool released = true;
+   if (!k->in)
+   {
+      lt_entries(kind, m, at, &k->e);
+      k->at   = *at;
+      k->kind = kind;
+      k->m    = m;
+   }
+   k->in = false;
+   if (!e->n)
+      return true;
+   for (i = 0; i < e->n; i++)
    {
       list[i]           = &w[i];
-      w[i].handle       = lt_handle[port[i]];
-      w[i].local_tick   = lt_out(local[i]);
-      w[i].safe_tick    = lt_out(safe[i]);
-      w[i].request_tick = lt_out(request[i]);
+      w[i].handle       = lt_handle[e->port[i]];
+      w[i].local_tick   = lt_out(e->local[i]);
+      w[i].safe_tick    = lt_out(e->safe[i]);
+      w[i].request_tick = lt_out(e->request[i]);
       w[i].grant        = 0;
       w[i].wake_flags   = LT_ASK;
    }
-   if (n == 1)
+   k->in = true;
+   if (e->n == 1)
       w[0].grant = lt_link.advance(w[0].handle, w[0].local_tick, w[0].safe_tick,
             w[0].request_tick, &w[0].wake_flags);
    else
-      lt_link.advance_multi(list, n);
-   for (i = 0; i < n; i++)
+      lt_link.advance_multi(list, e->n);
+   k->in = false;
+   for (i = 0; i < e->n; i++)
    {
-      unsigned p     = port[i];
+      unsigned p     = e->port[i];
       uint64_t grant = lt_in(w[i].grant);
-      lt_granted(p, grant, lawful[i], w[i].wake_flags);
+      lt_granted(p, grant, e->lawful[i], w[i].wake_flags);
       if (lt_cfg.mode == LT_CONFORM)
          lt_probe_peers(p);
-      lt_receive(p, local[i], grant);
-      if (safe[i] > at->promise[p])
-         at->promise[p] = safe[i];
+      lt_receive(p, e->local[i], grant);
+      if (e->safe[i] > at->promise[p])
+         at->promise[p] = e->safe[i];
       if (kind == LT_STEP)
-         at->local[p] = grant < lt_tick(p, m + 1) ? grant : lt_tick(p, m + 1);
+      {
+         uint64_t to = lt_tick(p, m < lt_cfg.steps ? m + 1 : lt_cfg.steps);
+         at->local[p] = grant < to ? grant : to;
+      }
       if (w[i].grant != RETRO_LINK_UNBOUNDED || !(w[i].wake_flags & RETRO_LINK_WAKE_DETACHED))
          released = false;
    }
@@ -926,12 +995,12 @@ static void lt_draw(bool dupe)
    lt_video(lt_picture, LT_WIDTH, LT_HEIGHT, LT_WIDTH * sizeof(*lt_picture));
 }
 
-static void lt_sound(void)
+static void lt_sound(unsigned frames)
 {
    unsigned i;
-   for (i = 0; i < LT_AUDIO_FRAMES * 2; i++)
+   for (i = 0; i < frames * 2; i++)
       lt_samples[i] = (int16_t)((int)((lt_mix(lt_state.hash + i) >> 52) & 0x0FFF) - 0x800);
-   lt_audio(lt_samples, LT_AUDIO_FRAMES);
+   lt_audio(lt_samples, frames);
 }
 
 void retro_set_environment(retro_environment_t cb)
@@ -980,7 +1049,8 @@ void retro_init(void)
    memset(&lt_link, 0, sizeof(lt_link));
    lt_link.interface_version = RETRO_LINK_INTERFACE_VERSION;
    lt_link.ports             = lt_port_list;
-   lt_link.flags             = lt_cfg.extra_flags ? ~(unsigned)RETRO_LINK_SAVE_IN_ADVANCE : 0;
+   lt_link.flags             = (lt_cfg.extra_flags ? ~(unsigned)RETRO_LINK_SAVE_IN_ADVANCE : 0)
+      | (lt_cfg.save_in_advance ? RETRO_LINK_SAVE_IN_ADVANCE : 0);
    lt_linked = lt_environ(RETRO_ENVIRONMENT_GET_LINK_INTERFACE, &lt_link);
 }
 
@@ -1026,51 +1096,96 @@ void retro_reset(void)
       lt_epoch += LT_EPOCH_RESET;
 }
 
+/* Step m: an advance, then each port's messages landing before its tick
+ * applied, and perhaps a send. save_in_advance makes part of its frame's
+ * audio in each step, which a save inside a later advance must keep. */
+static void lt_step(unsigned m, struct lt_stand *at)
+{
+   unsigned p;
+   lt_advance(LT_STEP, m, at);
+   for (p = 0; p < lt_cfg.ports; p++)
+   {
+      uint32_t r = lt_next();
+      if (!lt_handle[p])
+         continue;
+      lt_apply(p, at->local[p]);
+      if (!(r & 3))
+         lt_send(p, lt_tick(p, m + lt_cfg.lookahead[p]), r);
+   }
+   if (lt_cfg.save_in_advance)
+      lt_sound(LT_STEP_AUDIO);
+}
+
+/* A port whose promise is its tick (lookahead 0) made its last send after
+ * its last grant, so it stands short of its frame-end tick: the rest of the
+ * frame waits for a grant of its own */
+static void lt_finish(struct lt_stand *at)
+{
+   unsigned p;
+   bool short_of_end = false;
+   for (p = 0; p < lt_cfg.ports; p++)
+      if (lt_handle[p] && at->local[p] < lt_tick(p, lt_cfg.steps))
+         short_of_end = true;
+   if (!short_of_end)
+      return;
+   lt_advance(LT_STEP, lt_cfg.steps, at);
+   for (p = 0; p < lt_cfg.ports; p++)
+      if (lt_handle[p])
+         lt_apply(p, at->local[p]);
+}
+
 void retro_run(void)
 {
    struct lt_stand at;
-   unsigned m, p;
+   enum lt_advance_kind from = LT_FRAME_START;
+   unsigned m = 0, p;
    bool bad  = lt_cfg.mode != LT_CONFORM && lt_state.frame >= lt_cfg.bad_frame;
    bool dupe = lt_frame_in(lt_cfg.dupes, lt_cfg.dupe_count);
-   if (!lt_state.sram_folded)
+   if (lt_state.parked.in)
    {
-      lt_fold(lt_digest(lt_state.sram, sizeof(lt_state.sram)));
-      lt_state.sram_folded = true;
+      /* Loaded inside an advance: the frame goes on from that advance */
+      at   = lt_state.parked.at;
+      from = lt_state.parked.kind;
+      m    = lt_state.parked.m;
    }
-   lt_input_poll();
-   lt_fold(lt_state.frame);
-   lt_fold((uint16_t)lt_input_state(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK));
-   if (bad && lt_cfg.mode == LT_STALE_LOAD)
-      lt_latch = true;
-   if (lt_latch)
+   else
+   {
+      if (!lt_state.sram_folded)
+      {
+         lt_fold(lt_digest(lt_state.sram, sizeof(lt_state.sram)));
+         lt_state.sram_folded = true;
+      }
+      lt_input_poll();
       lt_fold(lt_state.frame);
+      lt_fold((uint16_t)lt_input_state(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK));
+      if (bad && lt_cfg.mode == LT_STALE_LOAD)
+         lt_latch = true;
+      if (lt_latch)
+         lt_fold(lt_state.frame);
+      memset(&at, 0, sizeof(at));
+      for (p = 0; p < lt_cfg.ports; p++)
+         at.local[p] = lt_tick(p, 0);
+   }
 
-   memset(&at, 0, sizeof(at));
-   for (p = 0; p < lt_cfg.ports; p++)
-      at.local[p] = lt_tick(p, 0);
    if (!bad || lt_cfg.mode != LT_NEVER_ADVANCE)
    {
-      lt_advance(LT_FRAME_START, 0, &at);
-      lt_membership();
-      if (bad && lt_cfg.mode == LT_NO_PROGRESS && lt_state.frame == lt_cfg.bad_frame)
-         lt_stall(&at);
-      if (bad && lt_cfg.mode == LT_NONCONFORM)
-         lt_nonconform(&at);
-      for (m = 0; m < lt_cfg.steps; m++)
+      if (from == LT_FRAME_START)
       {
-         lt_advance(LT_STEP, m, &at);
-         for (p = 0; p < lt_cfg.ports; p++)
-         {
-            uint32_t r = lt_next();
-            if (!lt_handle[p])
-               continue;
-            lt_apply(p, at.local[p]);
-            if (!(r & 3))
-               lt_send(p, lt_tick(p, m + lt_cfg.lookahead[p]), r);
-         }
+         lt_advance(LT_FRAME_START, 0, &at);
+         lt_membership();
+         if (bad && lt_cfg.mode == LT_NO_PROGRESS && lt_state.frame == lt_cfg.bad_frame)
+            lt_stall(&at);
+         if (bad && lt_cfg.mode == LT_NONCONFORM)
+            lt_nonconform(&at);
       }
-      if (bad && lt_cfg.mode == LT_NONCONFORM)
-         lt_advance(LT_PAST_END, lt_cfg.steps, &at);
+      if (from != LT_FRAME_END)
+      {
+         for (; m < lt_cfg.steps; m++)
+            lt_step(m, &at);
+         lt_finish(&at);
+         if (bad && lt_cfg.mode == LT_NONCONFORM)
+            lt_advance(LT_PAST_END, lt_cfg.steps, &at);
+      }
       /* nonconform: no frame-end publish in its fourth frame */
       if (!bad || lt_cfg.mode != LT_NONCONFORM || lt_state.frame != lt_cfg.bad_frame + 3)
          lt_advance(LT_FRAME_END, lt_cfg.steps, &at);
@@ -1081,7 +1196,7 @@ void retro_run(void)
    lt_state.frame++;
    lt_store_hash();
    lt_draw(dupe);
-   lt_sound();
+   lt_sound(LT_AUDIO_FRAMES);
    if (bad && (lt_cfg.mode == LT_STALE_SAVE || lt_cfg.mode == LT_STALE_SEND))
       lt_kept = true;
    lt_kept_hash = lt_state.hash;
@@ -1089,8 +1204,10 @@ void retro_run(void)
 
 /* Save state: little-endian, one fixed size; ticks as positions */
 #define LT_PORT_STATE_SIZE  (8 + 8 + 8 + 4 + 4 + 1 + 1 + 1 + LT_PENDING_MAX * (8 + 8 + 4 + 4))
+#define LT_PARKED_SIZE      (1 + 1 + 4 + LT_MAX_PORTS * (8 + 8) + 1 \
+                             + LT_MAX_PORTS * (1 + 8 + 8 + 8 + 8))
 #define LT_STATE_SIZE       (4 + 8 + 8 + 4 + 1 + LT_SYSRAM_SIZE + LT_SRAM_SIZE \
-                             + LT_MAX_PORTS * LT_PORT_STATE_SIZE)
+                             + LT_MAX_PORTS * LT_PORT_STATE_SIZE + LT_PARKED_SIZE)
 
 static unsigned char *lt_put(unsigned char *s, uint64_t v, unsigned bytes)
 {
@@ -1107,6 +1224,71 @@ static const unsigned char *lt_get(const unsigned char *s, uint64_t *v, unsigned
    for (i = 0; i < bytes; i++)
       *v |= (uint64_t)*s++ << (i * 8);
    return s;
+}
+
+/* save_in_advance: the advance a save inside it holds, else zeros */
+static unsigned char *lt_put_parked(unsigned char *s)
+{
+   const struct lt_parked *k = &lt_state.parked;
+   bool in                   = lt_cfg.save_in_advance && k->in;
+   unsigned i;
+   s = lt_put(s, in, 1);
+   s = lt_put(s, in ? k->kind : 0, 1);
+   s = lt_put(s, in ? k->m : 0, 4);
+   for (i = 0; i < LT_MAX_PORTS; i++)
+   {
+      s = lt_put(s, in ? k->at.local[i] : 0, 8);
+      s = lt_put(s, in ? k->at.promise[i] : 0, 8);
+   }
+   s = lt_put(s, in ? k->e.n : 0, 1);
+   for (i = 0; i < LT_MAX_PORTS; i++)
+   {
+      bool live = in && i < k->e.n;
+      s = lt_put(s, live ? k->e.port[i] : 0, 1);
+      s = lt_put(s, live ? k->e.local[i] : 0, 8);
+      s = lt_put(s, live ? k->e.safe[i] : 0, 8);
+      s = lt_put(s, live ? k->e.request[i] : 0, 8);
+      s = lt_put(s, live ? k->e.lawful[i] : 0, 8);
+   }
+   return s;
+}
+
+/* False for an advance this core makes no such entries for */
+static bool lt_get_parked(const unsigned char *s, struct lt_parked *k)
+{
+   uint64_t v;
+   unsigned i;
+   s = lt_get(s, &v, 1);
+   k->in = v != 0;
+   s = lt_get(s, &v, 1);
+   k->kind = (enum lt_advance_kind)v;
+   if (v > LT_PAST_END)
+      return false;
+   s = lt_get(s, &v, 4);
+   k->m = (unsigned)v;
+   if (v > lt_cfg.steps)
+      return false;
+   for (i = 0; i < LT_MAX_PORTS; i++)
+   {
+      s = lt_get(s, &k->at.local[i], 8);
+      s = lt_get(s, &k->at.promise[i], 8);
+   }
+   s = lt_get(s, &v, 1);
+   k->e.n = (unsigned)v;
+   if (v > LT_MAX_PORTS)
+      return false;
+   for (i = 0; i < LT_MAX_PORTS; i++)
+   {
+      s = lt_get(s, &v, 1);
+      k->e.port[i] = (unsigned)v;
+      if (v >= LT_MAX_PORTS)
+         return false;
+      s = lt_get(s, &k->e.local[i], 8);
+      s = lt_get(s, &k->e.safe[i], 8);
+      s = lt_get(s, &k->e.request[i], 8);
+      s = lt_get(s, &k->e.lawful[i], 8);
+   }
+   return true;
 }
 
 size_t retro_serialize_size(void)
@@ -1150,6 +1332,7 @@ bool retro_serialize(void *data, size_t size)
          s = lt_put(s, live ? e->len : 0, 4);
       }
    }
+   s = lt_put_parked(s);
    /* stale_send: a transfer the kept hash says is due, started by a save */
    if (lt_kept && lt_cfg.mode == LT_STALE_SEND && lt_kept_hash != lt_state.hash && lt_handle[0])
       lt_link.send_msg(lt_handle[0], lt_out(lt_state.port[0].base), RETRO_LINK_BROADCAST,
@@ -1210,6 +1393,11 @@ bool retro_unserialize(const void *data, size_t size)
          free(loaded);
          return false;
       }
+   }
+   if (!lt_get_parked(s, &loaded->parked))
+   {
+      free(loaded);
+      return false;
    }
    lt_state = *loaded;
    free(loaded);

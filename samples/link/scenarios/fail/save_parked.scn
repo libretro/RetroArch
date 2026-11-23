@@ -1,0 +1,22 @@
+# spans_save_in_advance with cores that set every core flag but
+# RETRO_LINK_SAVE_IN_ADVANCE: the save at 270, with consoles 1 and 2
+# parked inside a frame, fails the run.
+# error: is inside a frame and its core did not set RETRO_LINK_SAVE_IN_ADVANCE
+console 0 core=test
+console 1 core=test
+console 2 core=test
+option 0 link_test_fps 60000/1001
+option 0 link_test_rate_0 60000
+option 0 link_test_lookahead_0 1
+option 1 link_test_ports 2
+option 1 link_test_fps 16777216/280896
+option 1 link_test_rate_0 16777216
+option 1 link_test_rate_1 16777216
+option 1 link_test_extra_flags on
+option 2 link_test_fps 16777216/280896
+option 2 link_test_rate_0 16777216
+option 2 link_test_extra_flags on
+0 cable 0:0 1:0
+0 cable 1:1 2:0
+270 save mid
+600 end

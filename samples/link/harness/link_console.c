@@ -328,6 +328,39 @@ static void RETRO_CALLCONV link_console_video(const void *data, unsigned width,
       link_console_keep(c, (const unsigned char*)data, width, height, pitch);
 }
 
+/* Room for count samples in all */
+static bool link_console_room(link_console_t *c, size_t count)
+{
+   int16_t *more;
+   size_t cap = c->kept_cap ? c->kept_cap : 4096;
+   if (count <= c->kept_cap)
+      return true;
+   while (cap < count)
+      cap *= 2;
+   if (!(more = (int16_t*)realloc(c->kept_audio, cap * sizeof(*more))))
+   {
+      fprintf(stderr, "link_harness: console %u: out of memory in its frame %lu\n",
+            c->index, c->frame);
+      c->errors++;
+      return false;
+   }
+   c->kept_audio = more;
+   c->kept_cap   = cap;
+   return true;
+}
+
+/* The frame's audio, hashed and, while its core may be saved inside an
+ * advance, kept for a save before the frame ends */
+static void link_console_hear(link_console_t *c, const int16_t *data, size_t count)
+{
+   xxh64_update(&c->audio, data, count * sizeof(*data));
+   if (!(link_bus_get_flags(link_console_now.bus, c->index) & RETRO_LINK_SAVE_IN_ADVANCE)
+         || !link_console_room(c, c->kept_count + count))
+      return;
+   memcpy(c->kept_audio + c->kept_count, data, count * sizeof(*data));
+   c->kept_count += count;
+}
+
 static void RETRO_CALLCONV link_console_sample(int16_t left, int16_t right)
 {
    link_console_t *c = link_console_current();
@@ -336,14 +369,14 @@ static void RETRO_CALLCONV link_console_sample(int16_t left, int16_t right)
       return;
    frame[0] = left;
    frame[1] = right;
-   xxh64_update(&c->audio, frame, sizeof(frame));
+   link_console_hear(c, frame, 2);
 }
 
 static size_t RETRO_CALLCONV link_console_batch(const int16_t *data, size_t frames)
 {
    link_console_t *c = link_console_current();
    if (c && data)
-      xxh64_update(&c->audio, data, frames * 2 * sizeof(*data));
+      link_console_hear(c, data, frames * 2);
    return frames;
 }
 
@@ -587,7 +620,13 @@ void link_console_run(void *user)
 {
    link_console_t *c = (link_console_t*)user;
    link_console_frame(c);
-   xxh64_reset(&c->audio, 0);
+   if (c->resuming)
+      c->resuming = false;
+   else
+   {
+      xxh64_reset(&c->audio, 0);
+      c->kept_count = 0;
+   }
    c->api.run();
 }
 
@@ -637,20 +676,36 @@ bool link_console_unserialize(link_console_t *c, const void *data, size_t len)
    link_sched_enter(link_console_now.sched, c->index);
    ok = c->api.unserialize(data, len);
    link_sched_leave(link_console_now.sched);
-   /* No picture of the loaded state has been seen */
-   c->video       = 0;
-   c->ran         = false;
-   c->drew        = false;
-   c->drew_before = false;
-   c->pictured    = false;
+   /* No picture of the loaded state has been seen, nor any of its audio */
+   c->video        = 0;
+   c->ran          = false;
+   c->drew         = false;
+   c->drew_before  = false;
+   c->pictured     = false;
+   c->resuming     = false;
+   c->kept_count   = 0;
+   xxh64_reset(&c->audio, 0);
    return ok;
+}
+
+bool link_console_resume(link_console_t *c, const unsigned char *audio, size_t count)
+{
+   size_t i;
+   if (!link_console_room(c, count))
+      return false;
+   for (i = 0; i < count; i++)
+      c->kept_audio[i] = (int16_t)(uint16_t)(audio[2 * i] | (audio[2 * i + 1] << 8));
+   c->kept_count = count;
+   if (count)
+      xxh64_update(&c->audio, c->kept_audio, count * sizeof(*c->kept_audio));
+   c->resuming = true;
+   return true;
 }
 
 void link_console_held(link_console_t *c)
 {
-   c->ran         = false;
-   c->drew_before = false;
-   c->pictured    = false;
+   c->ran      = false;
+   c->pictured = false;
 }
 
 void link_console_reset(link_console_t *c)
@@ -716,6 +771,7 @@ void link_console_close(link_console_t *c)
    free(c->descriptors);
    free(c->rom_data);
    free(c->state);
+   free(c->kept_audio);
    free(c->finished);
    free(c->shown.argb);
    free(c->drawn.argb);
