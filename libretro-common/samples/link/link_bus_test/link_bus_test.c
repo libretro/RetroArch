@@ -3449,6 +3449,36 @@ static void attach_in_frame_same_in_any_order(void)
    CHECK(fx_attach_in_order(2) == hash);
 }
 
+/* Console 1 detaches its port inside its frame 1, and console 0 sends to it
+ * at 1500, inside that frame, before (order 0) or after (order 1) console
+ * 1's frame ends: the message lands at the same tick either way */
+static uint64_t fx_pulled_send(unsigned order)
+{
+   struct link_bus_sent j;
+   uint64_t landing = 0;
+   fx_two(61440, 61440);
+   fx_run_frame();
+   fx_begin();
+   CHECK(adv(0, fx_h[0][0], 1024, 1500, 1024, NULL, NULL));
+   CHECK(adv(1, fx_h[1][0], 1024, 2048, 1024, NULL, NULL));
+   link_bus_detach(fx_bus, 1, fx_h[1][0]);
+   if (order)
+      link_bus_frame_end(fx_bus, 1);
+   CHECK(snd(0, 0, 1500, 1, "a", 1));
+   if (!order)
+      link_bus_frame_end(fx_bus, 1);
+   CHECK(link_bus_journal(fx_bus, &j, 1) == 1);
+   landing = j.landing;
+   fx_free();
+   return landing;
+}
+
+static void detached_in_frame_lands_in_any_order(void)
+{
+   CHECK(fx_pulled_send(0) == 1500);
+   CHECK(fx_pulled_send(1) == 1500);
+}
+
 /* Console 1 is in its first frame, its span not known; console 2 is cabled
  * to it, and the join waits for a step's end. Console 2 opens its frame and
  * sends to console 1 before (order 0) or after (order 1) console 1's frame
@@ -3949,6 +3979,7 @@ static const struct
    { "unhold_places_on_rate_grid",           unhold_places_on_rate_grid },
    { "attach_in_frame_joins_at_own_edge",    attach_in_frame_joins_at_own_edge },
    { "detach_in_frame_leaves_at_own_edge",   detach_in_frame_leaves_at_own_edge },
+   { "detached_in_frame_lands_in_any_order", detached_in_frame_lands_in_any_order },
    { "attach_off_grid_places_again",         attach_off_grid_places_again },
    { "attach_in_frame_same_in_any_order",    attach_in_frame_same_in_any_order },
    { "unplaced_sender_same_in_any_order",    unplaced_sender_same_in_any_order },

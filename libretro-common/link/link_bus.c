@@ -1321,6 +1321,14 @@ static void link_bus_route(link_bus_t *b, struct retro_link_port *p,
       e->state = LINK_BUS_JOINING;
    else if (q->unplaced)
       e->state = LINK_BUS_AHEAD;
+   else if (q->cut && q->edge_known)
+   {
+      /* It hears nothing more: it lands where it would have, whether or
+       * not the frame that detached it has ended */
+      e->state   = LINK_BUS_LANDED;
+      e->landing = link_bus_move(link_bus_scale(at, q->rate, p->rate, true),
+            q->since, q->anchor);
+   }
    else if (q->edge_known)
    {
       e->state   = LINK_BUS_LANDED;
@@ -2378,9 +2386,13 @@ void link_bus_frame_end(link_bus_t *b, unsigned console)
          continue;
       if (p->cut)
       {
-         /* A silent member until the step's end: it keeps its console's edge */
+         /* A silent member until the step's end: it keeps its console's
+          * edge, its clock moving with it */
          if (p->span_shown)
-            p->since = link_bus_add(p->since, p->span);
+         {
+            p->since  = link_bus_add(p->since, p->span);
+            p->anchor = link_bus_add(p->anchor, p->span);
+         }
          continue;
       }
       /* The frame-end publish is the latest, asking for nothing, past the
