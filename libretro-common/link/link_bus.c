@@ -38,9 +38,10 @@
 #define LINK_BUS_POOLS      (LINK_BUS_CELLS + 2)
 
 /* The save blob: little-endian, every tick but an anchor taken relative to
- * its port's anchor, so the hash leaves out only anchors and counts */
+ * its port's anchor and every instant as it is, so the hash leaves out only
+ * anchors and counts */
 #define LINK_BUS_MAGIC         "LBUS"
-#define LINK_BUS_VERSION       1
+#define LINK_BUS_VERSION       2
 #define LINK_BUS_SAVED_COUNTS  8
 #define LINK_BUS_REC_ATTACHED  1
 #define LINK_BUS_REC_EDGE      2
@@ -48,7 +49,8 @@
 #define LINK_BUS_REC_SPAN      8
 #define LINK_BUS_REC_SENT      16
 #define LINK_BUS_REC_RENUMBER  32
-#define LINK_BUS_REC_BITS      63
+#define LINK_BUS_REC_SHOWN     64
+#define LINK_BUS_REC_BITS      127
 #define LINK_BUS_FNV_BASIS     ((((uint64_t)0xCBF29CE4UL) << 32) | 0x84222325UL)
 #define LINK_BUS_FNV_PRIME     ((((uint64_t)0x100UL) << 32) | 0x1B3UL)
 
@@ -105,7 +107,7 @@ struct link_bus_entry /* one receiver's copy of a message */
    struct link_bus_entry *next;
    struct link_bus_msg *msg;
    uint64_t landing;
-   uint64_t ahead, rate; /* LINK_BUS_AHEAD: ticks of rate past the sender's anchor */
+   uint64_t instant, rate; /* LINK_BUS_AHEAD: its stamp's instant, as ticks of rate */
    uint64_t seq;         /* send order: link_bus::sends at send, or its loaded rank */
    uint64_t journal_gen;
    size_t journal;       /* its journal entry while journal_gen is the bus's */
@@ -124,12 +126,14 @@ struct retro_link_port
    /* scratch of link_bus_form and link_bus_reach */
    struct retro_link_port *was_head, *was_next, *uf, *first, *last;
    uint64_t rate;
-   uint64_t anchor;      /* tick at the edge the session stands at */
-   uint64_t next_anchor; /* tick at the coming edge, from the frame-end publish */
+   uint64_t anchor;      /* tick at its console's current edge */
+   uint64_t since;       /* that edge's instant, as ticks of rate */
+   uint64_t last_anchor; /* the edge before, kept while a frame with no */
+   uint64_t last_since;  /* frame-end publish leaves this edge's tick unknown */
    uint64_t promise;
    uint64_t local, request, target; /* latest publish; target is the request repaired */
    uint64_t start_local; /* this frame's frame-start advance */
-   uint64_t span;        /* previous frame, frame-start advance to frame-end publish */
+   uint64_t span;        /* the last frame shown, frame-start advance to frame-end publish */
    uint64_t grant;
    uint64_t seq;         /* in a bus's first member: link_bus::seq at the bus's last change */
    unsigned console, port;
@@ -149,10 +153,11 @@ struct retro_link_port
    bool live;            /* in the membership formed at the edge */
    bool cut;             /* detached in this frame: a silent member until the edge */
    bool join;            /* attached in this frame: joins at the edge */
-   bool edge_known, next_known;
+   bool edge_known;
    bool promise_valid, span_valid, grant_valid;
+   bool span_shown;      /* a span shown since placed: each frame end moves since by it */
    bool published;       /* in this frame */
-   bool ended;           /* frame_end seen; the anchor moves at the edge */
+   bool unplaced;        /* scratch of link_bus_place: live again, since not set */
 };
 
 struct link_bus_cable
@@ -302,8 +307,7 @@ static uint64_t link_bus_add(uint64_t a, uint64_t b)
    return a + b;
 }
 
-/* a / ra is before b / rb */
-static bool link_bus_sooner(uint64_t a, uint64_t ra, uint64_t b, uint64_t rb)
+bool link_bus_instant_before(uint64_t a, uint64_t ra, uint64_t b, uint64_t rb)
 {
    uint64_t ah, al, bh, bl;
    link_bus_mul(a, rb, &ah, &al);
@@ -311,17 +315,50 @@ static bool link_bus_sooner(uint64_t a, uint64_t ra, uint64_t b, uint64_t rb)
    return ah < bh || (ah == bh && al < bl);
 }
 
-/* The promise as ticks past the edge */
-static uint64_t link_bus_ahead(const struct retro_link_port *p)
+/* The instant of tick t on a clock whose tick anchor stands at the instant
+ * since, as ticks of that clock; a tick before anchor counts as anchor */
+static uint64_t link_bus_when(uint64_t since, uint64_t anchor, uint64_t t)
 {
-   return p->promise > p->anchor ? p->promise - p->anchor : 0;
+   return link_bus_add(since, t > anchor ? t - anchor : 0);
 }
 
-/* The instant ahead ticks of q past the edge, on p's clock, rounded down */
-static uint64_t link_bus_onto(const struct retro_link_port *p,
-      const struct retro_link_port *q, uint64_t ahead)
+static uint64_t link_bus_instant(const struct retro_link_port *p, uint64_t t)
 {
-   return link_bus_add(p->anchor, link_bus_scale(ahead, p->rate, q->rate, false));
+   return link_bus_when(p->since, p->anchor, t);
+}
+
+/* The tick of the instant at, given as ticks of rate, on a clock of rate r
+ * whose tick anchor stands at the instant since: rounded down for a bound
+ * or up for a landing, never before anchor */
+static uint64_t link_bus_tick(uint64_t since, uint64_t anchor, uint64_t r,
+      uint64_t at, uint64_t rate, bool up)
+{
+   uint64_t t = link_bus_scale(at, r, rate, up);
+   return t > since ? link_bus_add(anchor, t - since) : anchor;
+}
+
+static uint64_t link_bus_onto(const struct retro_link_port *p,
+      uint64_t at, uint64_t rate, bool up)
+{
+   return link_bus_tick(p->since, p->anchor, p->rate, at, rate, up);
+}
+
+/* Its tick at its edge is not known because its frame ended with no
+ * frame-end publish; its promise still binds, on the edge before */
+static bool link_bus_skipped(const struct retro_link_port *p)
+{
+   return !p->edge_known && p->promise_valid;
+}
+
+static uint64_t link_bus_gcd(uint64_t a, uint64_t b)
+{
+   while (b)
+   {
+      uint64_t r = a % b;
+      a          = b;
+      b          = r;
+   }
+   return a;
 }
 
 /* t, given against the anchor from, given against the anchor to */
@@ -417,12 +454,11 @@ static bool link_bus_joined(const struct retro_link_port *p)
 static void link_bus_fresh(struct retro_link_port *p)
 {
    p->edge_known    = false;
-   p->next_known    = false;
    p->promise_valid = false;
    p->span_valid    = false;
+   p->span_shown    = false;
    p->grant_valid   = false;
    p->published     = false;
-   p->ended         = false;
    p->limit         = 0;
 }
 
@@ -431,8 +467,10 @@ static void link_bus_fresh(struct retro_link_port *p)
 static void link_bus_rejoin(struct retro_link_port *p)
 {
    bool span_valid = p->span_valid;
+   bool span_shown = p->span_shown;
    link_bus_fresh(p);
    p->span_valid = span_valid;
+   p->span_shown = span_shown;
    p->renumber   = true;
    p->stale      = false;
 }
@@ -519,8 +557,7 @@ static void link_bus_land(link_bus_t *b, struct retro_link_port *p)
       next       = e->next;
       e->landing = p->anchor;
       if (e->state == LINK_BUS_AHEAD)
-         e->landing = link_bus_add(p->anchor,
-               link_bus_scale(e->ahead, p->rate, e->rate, true));
+         e->landing = link_bus_onto(p, e->instant, e->rate, true);
       e->state = LINK_BUS_LANDED;
       if (e->journal_gen == b->journal_gen)
          b->journal[e->journal].landing = e->landing;
@@ -587,8 +624,10 @@ static bool link_bus_quiet(const struct retro_link_port *p)
 }
 
 /* The highest tick on p's clock its peers allow, and the peer that sets it;
- * RETRO_LINK_UNBOUNDED when no peer bounds p. A peer whose tick at this edge
- * is not known holds p at the edge; a held or silent one holds nobody. */
+ * RETRO_LINK_UNBOUNDED when no peer bounds p. A peer whose tick at its edge
+ * is not known holds p at that edge's instant, or at its promise's if a
+ * frame that ended with no frame-end publish left it earlier; a held or
+ * silent one holds nobody. */
 static uint64_t link_bus_bound(const struct retro_link_port *p,
       const struct retro_link_port **by)
 {
@@ -596,10 +635,17 @@ static uint64_t link_bus_bound(const struct retro_link_port *p,
    uint64_t bound = RETRO_LINK_UNBOUNDED;
    for (q = p->head; q; q = q->next)
    {
-      uint64_t t;
+      uint64_t at, t;
       if (q == p || q->cut || q->owner->consoles[q->console].held)
          continue;
-      t = q->edge_known ? link_bus_onto(p, q, link_bus_ahead(q)) : p->anchor;
+      at = q->edge_known ? link_bus_instant(q, q->promise) : q->since;
+      if (link_bus_skipped(q))
+      {
+         uint64_t was = link_bus_when(q->last_since, q->last_anchor, q->promise);
+         if (was < at)
+            at = was;
+      }
+      t = link_bus_onto(p, at, q->rate, false);
       if (t < bound)
       {
          bound = t;
@@ -748,6 +794,94 @@ static void link_bus_form(link_bus_t *b)
    for (i = 0; i < b->recs_len; i++)
       if (link_bus_moved(b->recs[i]))
          b->recs[i]->pending |= RETRO_LINK_WAKE_TOPOLOGY;
+}
+
+/* Its since is its console's current edge's instant */
+static bool link_bus_placed(const struct retro_link_port *p)
+{
+   return p->live && !p->cut && !p->unplaced && !p->owner->consoles[p->console].held;
+}
+
+/* The gcd of the clock rates in console's port list or, with none, of its
+ * ports: its edges stand on whole multiples of 1 / grid seconds */
+static uint64_t link_bus_grid(const link_bus_t *b, unsigned console)
+{
+   const struct retro_link_port_info *e = b->consoles[console].ports;
+   uint64_t g                           = 0;
+   size_t i;
+   if (e)
+      for (; e->protocol_id; e++)
+         g = link_bus_gcd(g, e->clock_rate);
+   else
+      for (i = link_bus_at(b, console, 0); i < b->recs_len && b->recs[i]->console == console; i++)
+         g = link_bus_gcd(g, b->recs[i]->rate);
+   return g ? g : 1;
+}
+
+/* Of at and q, the placed port of a console other than console's whose
+ * edge is later */
+static const struct retro_link_port *link_bus_later(const struct retro_link_port *at,
+      const struct retro_link_port *q, unsigned console)
+{
+   if (q->console == console || !link_bus_placed(q))
+      return at;
+   return !at || link_bus_instant_before(at->since, at->rate, q->since, q->rate) ? q : at;
+}
+
+/* The placed port of another console whose edge is latest: among the peers
+ * of records first to end, one console's, else among every console */
+static const struct retro_link_port *link_bus_latest(const link_bus_t *b,
+      size_t first, size_t end)
+{
+   const struct retro_link_port *at = NULL, *q;
+   unsigned console                 = b->recs[first]->console;
+   size_t i;
+   for (i = first; i < end; i++)
+      for (q = b->recs[i]->head; q; q = q->next)
+         at = link_bus_later(at, q, console);
+   if (!at)
+      for (i = 0; i < b->recs_len; i++)
+         at = link_bus_later(at, b->recs[i], console);
+   return at;
+}
+
+/* Gives each unplaced port its console's place: the edge of a placed port of
+ * the same console or, with none, the latest edge of its peers, else of every
+ * placed console, else 0; rounded up onto the console's rate grid */
+static void link_bus_place(link_bus_t *b)
+{
+   size_t i, j, k;
+   for (i = 0; i < b->recs_len; i = j)
+   {
+      const struct retro_link_port *ref = NULL;
+      unsigned console                  = b->recs[i]->console;
+      uint64_t at                       = 0, rate = 1, grid;
+      bool any                          = false;
+      for (j = i; j < b->recs_len && b->recs[j]->console == console; j++)
+      {
+         if (b->recs[j]->unplaced)
+            any = true;
+         else if (!ref && link_bus_placed(b->recs[j]))
+            ref = b->recs[j];
+      }
+      if (!any)
+         continue;
+      if (!ref)
+         ref = link_bus_latest(b, i, j);
+      if (ref)
+      {
+         at   = ref->since;
+         rate = ref->rate;
+      }
+      grid = link_bus_grid(b, console);
+      at   = link_bus_scale(at, grid, rate, true);
+      for (k = i; k < j; k++)
+         if (b->recs[k]->unplaced)
+         {
+            b->recs[k]->since    = link_bus_scale(at, b->recs[k]->rate, grid, false);
+            b->recs[k]->unplaced = false;
+         }
+   }
 }
 
 /* An attached port of console's that none of the entries names */
@@ -965,9 +1099,11 @@ retro_link_port_t *link_bus_attach(link_bus_t *b, unsigned console, unsigned por
       p->join = true;
    else
    {
-      p->live = true;
+      p->live     = true;
+      p->unplaced = true;
       link_bus_fresh(p);
       link_bus_form(b);
+      link_bus_place(b);
    }
    return p;
 }
@@ -1025,7 +1161,7 @@ bool link_bus_send(link_bus_t *b, unsigned console, retro_link_port_t *h, uint64
    struct retro_link_port *p = NULL, *q;
    struct link_bus_msg *m;
    unsigned cell = 0, n;
-   uint64_t ahead;
+   uint64_t at;
    if (b)
       p = link_bus_call(b, console, h);
    if (!p || len > RETRO_LINK_MAX_PAYLOAD || (!buf && len))
@@ -1055,7 +1191,7 @@ bool link_bus_send(link_bus_t *b, unsigned console, retro_link_port_t *h, uint64
    if (!p->sent || tick > p->last_stamp)
       p->last_stamp = tick;
    p->sent = true;
-   ahead   = tick > p->anchor ? tick - p->anchor : 0;
+   at      = link_bus_instant(p, tick);
 
    /* The one copy: the core reuses its buffer */
    m            = (struct link_bus_msg*)link_bus_take(&b->pools[LINK_BUS_POOL_MSG]);
@@ -1077,7 +1213,7 @@ bool link_bus_send(link_bus_t *b, unsigned console, retro_link_port_t *h, uint64
       e              = (struct link_bus_entry*)link_bus_take(&b->pools[LINK_BUS_POOL_ENTRY]);
       e->msg         = m;
       e->landing     = RETRO_LINK_UNBOUNDED;
-      e->ahead       = ahead;
+      e->instant     = at;
       e->rate        = p->rate;
       e->seq         = b->sends;
       e->journal_gen = b->journal_gen;
@@ -1086,14 +1222,20 @@ bool link_bus_send(link_bus_t *b, unsigned console, retro_link_port_t *h, uint64
       e->seen        = false;
       if (b->consoles[q->console].held)
          e->state = LINK_BUS_REJOIN;
-      else if (!q->edge_known)
-         e->state = LINK_BUS_AHEAD;
-      else
+      else if (q->edge_known)
       {
          e->state   = LINK_BUS_LANDED;
-         e->landing = link_bus_add(q->anchor,
-               link_bus_scale(ahead, q->rate, p->rate, true));
+         e->landing = link_bus_onto(q, at, p->rate, true);
       }
+      else if (link_bus_skipped(q)
+            && link_bus_instant_before(p->since, p->rate, q->since, q->rate))
+      {
+         /* Sent from a frame begun before q's edge: on the edge before */
+         e->state   = LINK_BUS_LANDED;
+         e->landing = link_bus_tick(q->last_since, q->last_anchor, q->rate, at, p->rate, true);
+      }
+      else
+         e->state = LINK_BUS_AHEAD;
       j               = &b->journal[b->journal_len++];
       j->from_console = p->console;
       j->from_port    = p->port;
@@ -1175,7 +1317,7 @@ void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *c
    bool lowered                         = false;
    bool as[LINK_BUS_AS_EARLIEST + 1]    = { false, false, false, false };
    const struct retro_link_port *early = NULL;
-   uint64_t early_ahead                 = 0;
+   uint64_t early_at                    = 0;
    if (!b)
       return;
    if (!link_bus_in_frame(b, console))
@@ -1229,12 +1371,14 @@ void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *c
    for (i = 0; i < n; i++)
    {
       const struct retro_link_port *p = link_bus_own(b, console, w[i]->handle);
+      uint64_t at;
       if (!p || !link_bus_joined(p))
          continue;
-      if (!early || link_bus_sooner(link_bus_ahead(p), p->rate, early_ahead, early->rate))
+      at = link_bus_instant(p, p->promise);
+      if (!early || link_bus_instant_before(at, p->rate, early_at, early->rate))
       {
-         early       = p;
-         early_ahead = link_bus_ahead(p);
+         early    = p;
+         early_at = at;
       }
    }
 
@@ -1250,7 +1394,7 @@ void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *c
       if (!link_bus_joined(p) || p->target <= link_bus_floor(p))
          continue;
       end      = link_bus_add(p->anchor, p->span);
-      earliest = link_bus_onto(p, early, early_ahead);
+      earliest = link_bus_onto(p, early_at, early->rate, false);
       if (p->target > p->promise)
       {
          p->target = p->promise;
@@ -1423,16 +1567,30 @@ void link_bus_frame_end(link_bus_t *b, unsigned console)
    for (i = link_bus_at(b, console, 0); i < b->recs_len && b->recs[i]->console == console; i++)
    {
       struct retro_link_port *p = b->recs[i];
+      bool known;
       if (!p->live || p->cut)
          continue;
       /* The frame-end publish is the latest, asking for nothing, past the
-       * frame-start advance */
-      p->ended       = true;
-      p->next_known  = p->published && p->local == p->request && p->local > p->start_local;
-      p->next_anchor = p->local;
-      p->span_valid  = p->next_known;
-      p->span        = p->local - p->start_local;
-      if (!p->next_known)
+       * frame-start advance. Without it the new edge's tick is not known,
+       * and its instant follows by the last span shown since the port was
+       * placed, if any. */
+      known = p->published && p->local == p->request && p->local > p->start_local;
+      if (known)
+      {
+         p->span       = p->local - p->start_local;
+         p->span_shown = true;
+      }
+      else
+      {
+         p->last_anchor = p->anchor;
+         p->last_since  = p->since;
+      }
+      if (p->span_shown)
+         p->since = link_bus_add(p->since, p->span);
+      p->anchor     = p->local;
+      p->edge_known = known;
+      p->span_valid = known;
+      if (!known)
          skipped = true;
    }
    if (skipped)
@@ -1449,12 +1607,6 @@ void link_bus_edge(link_bus_t *b)
    for (i = 0; i < b->recs_len; i++)
    {
       struct retro_link_port *p = b->recs[i];
-      if (p->ended)
-      {
-         p->anchor     = p->next_anchor;
-         p->edge_known = p->next_known;
-         p->ended      = false;
-      }
       if (p->cut)
       {
          struct retro_link_port *q;
@@ -1474,9 +1626,10 @@ void link_bus_edge(link_bus_t *b)
          p->join = false;
          if (p->attached)
          {
-            p->live = true;
+            p->live     = true;
+            p->unplaced = true;
             link_bus_fresh(p);
-            reform  = true;
+            reform      = true;
          }
       }
    }
@@ -1484,7 +1637,32 @@ void link_bus_edge(link_bus_t *b)
       b->consoles[c].in_frame = false;
    b->frame_open = false;
    if (reform)
+   {
       link_bus_form(b);
+      link_bus_place(b);
+   }
+}
+
+bool link_bus_console_edge(const link_bus_t *b, unsigned console,
+      uint64_t *since, uint64_t *span, uint64_t *rate)
+{
+   const struct retro_link_port *at = NULL;
+   size_t i;
+   if (!b || console >= b->console_count || b->consoles[console].held)
+      return false;
+   /* Its first placed port, one that showed its span if any did */
+   for (i = link_bus_at(b, console, 0); i < b->recs_len && b->recs[i]->console == console; i++)
+      if (link_bus_placed(b->recs[i]) && (!at || (!at->span_shown && b->recs[i]->span_shown)))
+         at = b->recs[i];
+   if (!at)
+      return false;
+   if (since)
+      *since = at->since;
+   if (span)
+      *span = at->span_shown ? at->span : 0;
+   if (rate)
+      *rate = at->rate;
+   return true;
 }
 
 bool link_bus_cable(link_bus_t *b, unsigned console_a, unsigned port_a,
@@ -1571,14 +1749,17 @@ bool link_bus_unhold(link_bus_t *b, unsigned console)
       return false;
    if (b->consoles[console].held)
    {
-      /* A re-join: each port's next frame-start advance gives its tick */
+      /* A re-join, placed by its peers' edges: each port's next
+       * frame-start advance gives its tick */
       b->consoles[console].held = false;
       for (i = link_bus_at(b, console, 0); i < b->recs_len && b->recs[i]->console == console; i++)
       {
          if (b->recs[i]->stale)
             link_bus_rejoin(b->recs[i]);
          link_bus_fresh(b->recs[i]);
+         b->recs[i]->unplaced = b->recs[i]->live;
       }
+      link_bus_place(b);
    }
    return true;
 }
@@ -1725,7 +1906,7 @@ static void link_bus_walk_entry(const link_bus_t *b, const struct retro_link_por
    link_bus_put_u(o, e->from_index, 1, true);
    link_bus_put_u(o, rank, 8, true);
    link_bus_put_u(o, e->state == LINK_BUS_LANDED ? e->landing - p->anchor : 0, 8, true);
-   link_bus_put_u(o, e->state == LINK_BUS_AHEAD ? e->ahead : 0, 8, true);
+   link_bus_put_u(o, e->state == LINK_BUS_AHEAD ? e->instant : 0, 8, true);
    link_bus_put_u(o, e->state == LINK_BUS_AHEAD ? e->rate : 0, 8, true);
    link_bus_put_u(o, m->len, 4, true);
    link_bus_put_bytes(o, m->cell, m->len);
@@ -1745,7 +1926,8 @@ static void link_bus_walk_port(const link_bus_t *b, const struct retro_link_port
                    | (p->promise_valid ? LINK_BUS_REC_PROMISE  : 0)
                    | (p->span_valid    ? LINK_BUS_REC_SPAN     : 0)
                    | (p->sent          ? LINK_BUS_REC_SENT     : 0)
-                   | (p->renumber      ? LINK_BUS_REC_RENUMBER : 0);
+                   | (p->renumber      ? LINK_BUS_REC_RENUMBER : 0)
+                   | (p->span_shown    ? LINK_BUS_REC_SHOWN    : 0);
    for (e = p->queue; e; e = e->next)
       n++;
    for (e = p->waiting; e; e = e->next)
@@ -1758,9 +1940,12 @@ static void link_bus_walk_port(const link_bus_t *b, const struct retro_link_port
    link_bus_put_u(o, p->rate, 8, true);
    link_bus_put_u(o, p->idle, 8, true);
    link_bus_put_u(o, p->anchor, 8, false);
+   link_bus_put_u(o, p->since, 8, true);
+   link_bus_put_u(o, link_bus_skipped(p) ? p->last_since : 0, 8, true);
+   link_bus_put_u(o, link_bus_skipped(p) ? p->last_anchor - p->anchor : 0, 8, true);
    link_bus_put_u(o, p->promise_valid ? p->promise - p->anchor : 0, 8, true);
    link_bus_put_u(o, limit == LINK_BUS_LIMIT_GRANT ? p->limit - p->anchor : 0, 8, true);
-   link_bus_put_u(o, p->span_valid ? p->span : 0, 8, true);
+   link_bus_put_u(o, p->span_shown ? p->span : 0, 8, true);
    link_bus_put_u(o, p->sent ? p->last_stamp - p->anchor : 0, 8, true);
    link_bus_put_u(o, plen, 4, true);
    link_bus_put_bytes(o, p->protocol, plen);
@@ -1960,16 +2145,16 @@ static bool link_bus_read_entry(link_bus_t *b, struct link_bus_in *in,
    unsigned state  = (unsigned)link_bus_get_u(in, 1);
    unsigned seen   = (unsigned)link_bus_get_u(in, 1);
    size_t from     = (size_t)link_bus_get_u(in, 4);
-   unsigned at     = (unsigned)link_bus_get_u(in, 1);
+   unsigned index  = (unsigned)link_bus_get_u(in, 1);
    uint64_t rank   = link_bus_get_u(in, 8);
    uint64_t landed = link_bus_get_u(in, 8);
-   uint64_t ahead  = link_bus_get_u(in, 8);
+   uint64_t at     = link_bus_get_u(in, 8);
    uint64_t rate   = link_bus_get_u(in, 8);
    size_t len      = (size_t)link_bus_get_u(in, 4);
    const unsigned char *payload = link_bus_get_bytes(in, len);
    unsigned cell   = 0;
    if (     in->bad || state > LINK_BUS_REJOIN || seen > 1 || from >= in->recs || rank >= n
-         || at >= LINK_BUS_MAX_BUS_PORTS || len > RETRO_LINK_MAX_PAYLOAD
+         || index >= LINK_BUS_MAX_BUS_PORTS || len > RETRO_LINK_MAX_PAYLOAD
          || (state == LINK_BUS_AHEAD && !rate))
       return false;
    while (((size_t)64 << cell) < len)
@@ -1994,10 +2179,10 @@ static bool link_bus_read_entry(link_bus_t *b, struct link_bus_in *in,
       e->msg         = m;
       e->state       = (unsigned char)state;
       e->seen        = seen != 0;
-      e->from_index  = at;
+      e->from_index  = index;
       e->seq         = rank;
       e->landing     = state == LINK_BUS_LANDED ? p->anchor + landed : RETRO_LINK_UNBOUNDED;
-      e->ahead       = ahead;
+      e->instant     = at;
       e->rate        = rate;
       e->journal_gen = b->journal_gen;
       e->journal     = 0;
@@ -2020,6 +2205,9 @@ static bool link_bus_read_port(link_bus_t *b, struct link_bus_in *in, size_t k)
    uint64_t rate      = link_bus_get_u(in, 8);
    uint64_t idle      = link_bus_get_u(in, 8);
    uint64_t anchor    = link_bus_get_u(in, 8);
+   uint64_t since     = link_bus_get_u(in, 8);
+   uint64_t last_at   = link_bus_get_u(in, 8);
+   uint64_t last_tick = link_bus_get_u(in, 8);
    uint64_t promise   = link_bus_get_u(in, 8);
    uint64_t grant     = link_bus_get_u(in, 8);
    uint64_t span      = link_bus_get_u(in, 8);
@@ -2073,16 +2261,18 @@ static bool link_bus_read_port(link_bus_t *b, struct link_bus_in *in, size_t k)
       p->span_valid    = (bits & LINK_BUS_REC_SPAN) != 0;
       p->sent          = (bits & LINK_BUS_REC_SENT) != 0;
       p->renumber      = (bits & LINK_BUS_REC_RENUMBER) != 0;
+      p->span_shown    = (bits & LINK_BUS_REC_SHOWN) != 0;
       p->grant_valid   = limit == LINK_BUS_LIMIT_GRANT;
-      p->next_known    = false;
       p->published     = false;
-      p->ended         = false;
       p->flags         = flags & RETRO_LINK_PORT_SHARED_MEDIUM;
       p->max_ports     = max_ports;
       p->pending       = pending & (RETRO_LINK_WAKE_MESSAGE | RETRO_LINK_WAKE_TOPOLOGY);
       p->rate          = rate;
       p->idle          = idle;
       p->anchor        = anchor;
+      p->since         = since;
+      p->last_since    = last_at;
+      p->last_anchor   = anchor + last_tick;
       p->promise       = anchor + promise;
       p->span          = span;
       p->last_stamp    = anchor + stamp;
@@ -2093,7 +2283,6 @@ static bool link_bus_read_port(link_bus_t *b, struct link_bus_in *in, size_t k)
       p->request       = anchor;
       p->target        = anchor;
       p->start_local   = anchor;
-      p->next_anchor   = anchor;
    }
    for (i = 0; i < n; i++)
       if (!link_bus_read_entry(b, in, p, n))
@@ -2221,6 +2410,7 @@ bool link_bus_load(link_bus_t *b, const void *buf, size_t len)
       p->renumber = false;
       p->sent     = false;
       p->pending  = 0;
+      p->since    = 0;
    }
    in.pass = LINK_BUS_APPLY;
    link_bus_read(b, &in, buf, len);
@@ -2299,8 +2489,8 @@ static void link_bus_dump_entry(struct link_bus_text *t, const struct retro_link
    }
    else if (e->state == LINK_BUS_AHEAD)
    {
-      link_bus_text_add(t, " ahead ");
-      link_bus_text_tick(t, true, e->ahead);
+      link_bus_text_add(t, " at ");
+      link_bus_text_tick(t, true, e->instant);
       link_bus_text_add(t, " rate ");
       link_bus_text_dec(t, e->rate);
    }
@@ -2334,6 +2524,8 @@ static void link_bus_dump_port(struct link_bus_text *t, const link_bus_t *b,
       link_bus_text_add(t, "-");
    link_bus_text_add(t, " anchor ");
    link_bus_text_tick(t, true, p->anchor);
+   link_bus_text_add(t, " since ");
+   link_bus_text_tick(t, true, p->since);
    link_bus_text_add(t, p->edge_known ? " edge 1 promise " : " edge 0 promise ");
    link_bus_text_tick(t, p->promise_valid, p->promise);
    link_bus_text_add(t, " limit ");

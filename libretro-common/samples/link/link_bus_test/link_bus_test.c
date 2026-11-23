@@ -1,8 +1,9 @@
 /* link/link_bus.c alone, one check per rule: records, membership, the
  * advance (bounds, repairs, rounding, reports), messages, holds, idle,
- * renumbering, release, breaches, save, load and inspection. The
- * values are worked out by hand; frames are 1/60 s, so 1024 ticks at 61440
- * and 1000 at 60000. */
+ * renumbering, release, breaches, save, load, inspection and the timeline.
+ * The values are worked out by hand; frames are 1/60 s, so 1024 ticks at
+ * 61440 and 1000 at 60000, except in the timeline checks, where each console
+ * has a span of its own. */
 
 #include <stdio.h>
 #include <string.h>
@@ -218,6 +219,41 @@ static void fx_run_frame(void)
    fx_begin();
    fx_starts();
    frame();
+}
+
+/* Opens console c's own frame: its frame-start advance on every port,
+ * promising past ticks beyond the frame end */
+static void fx_own_start(unsigned c, uint64_t past)
+{
+   struct retro_link_wait w[FX_PORTS];
+   unsigned p, n = 0;
+   link_bus_frame_start(fx_bus, c);
+   for (p = 0; p < FX_PORTS; p++)
+   {
+      uint64_t t = fx_tick[c][p];
+      if (fx_h[c][p])
+         fx_wait(&w[n++], fx_h[c][p], t,
+               fx_max(fx_safe[c][p], t + fx_span[c][p] + past), t, false);
+   }
+   if (n)
+      CHECK(advm(c, w, n));
+}
+
+/* Ends console c's own frame: its frame-end publish and link_bus_frame_end */
+static void fx_own_end(unsigned c)
+{
+   unsigned p;
+   fx_all_ports(c, true);
+   link_bus_frame_end(fx_bus, c);
+   for (p = 0; p < FX_PORTS; p++)
+      if (fx_h[c][p])
+         fx_tick[c][p] += fx_span[c][p];
+}
+
+static void fx_own_frame(unsigned c, uint64_t past)
+{
+   fx_own_start(c, past);
+   fx_own_end(c);
 }
 
 /* A send on console c's port p */
@@ -2209,7 +2245,7 @@ static void save_load_roundtrip(void)
 
 /* The save blob's layout, for checks that corrupt one field */
 #define FX_BLOB_HEAD  84 /* magic, version, consoles, records, cables, counts */
-#define FX_BLOB_PORT  70 /* a record, up to its protocol's length */
+#define FX_BLOB_PORT  94 /* a record, up to its protocol's length */
 #define FX_BLOB_ENTRY 43 /* a message, up to its payload */
 
 static size_t fx_u32(const unsigned char *s)
@@ -2647,6 +2683,323 @@ static void hash_and_save_ignore_interleaving(void)
    CHECK(after[0] == after[1] && after[1] == after[2]);
 }
 
+/* Console 0 at 60000 with a span of 1001, console 1 at 16777216 with a span
+ * of 280896, both from tick 0, cabled */
+static void fx_spans(void)
+{
+   fx_new(2);
+   fx_port(0, 0, "test-cable", 60000, 2, 0);
+   fx_port(1, 0, "test-cable", 16777216, 2, 0);
+   fx_attach(0);
+   fx_attach(1);
+   fx_span[0][0] = 1001;
+   fx_span[1][0] = 280896;
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+}
+
+static bool fx_edge_is(unsigned c, uint64_t since, uint64_t span, uint64_t rate)
+{
+   uint64_t s = 0, n = 0, r = 0;
+   return link_bus_console_edge(fx_bus, c, &s, &n, &r)
+      && s == since && n == span && r == rate;
+}
+
+/* fx_spans run to console 0's edge 3 and console 1's edge 2, each promising
+ * far ahead; no frame of one console moves the other's edge */
+static void fx_spans_frames(void)
+{
+   fx_own_start(0, FX_FAR);
+   fx_own_start(1, FX_FAR);
+   fx_own_end(0);
+   CHECK(fx_edge_is(1, 0, 0, 16777216));
+   fx_own_end(1);
+   CHECK(fx_edge_is(0, 1001, 1001, 60000));
+   fx_own_frame(0, FX_FAR);
+   CHECK(fx_edge_is(1, 280896, 280896, 16777216));
+   fx_own_frame(1, FX_FAR);
+   CHECK(fx_edge_is(0, 2002, 1001, 60000));
+   fx_own_frame(0, FX_FAR);
+   CHECK(fx_edge_is(1, 561792, 280896, 16777216));
+}
+
+static void instants_across_spans(void)
+{
+   struct retro_link_wait w;
+   struct retro_link_wait *list = &w;
+   struct link_bus_blocker why;
+
+   fx_spans();
+   link_bus_frame_start(fx_bus, 0);
+   fx_far(0);
+   fx_own_frame(1, 0);           /* stands at 280896, promising it */
+   fx_own_end(0);
+   link_bus_frame_start(fx_bus, 0);
+   fx_wait(&w, fx_h[0][0], 1001, fx_max(fx_safe[0][0], 1001), 2002, false);
+   CHECK(!advm(0, &w, 1));
+   memset(&why, 0, sizeof(why));
+   CHECK(link_bus_blocked_by(fx_bus, 0, &list, 1, &why));
+   CHECK(why.request == 2002 && why.bound == 1004); /* 1004.56, down */
+   CHECK(why.peer_console == 1 && !why.edge_unknown);
+   fx_free();
+}
+
+static void instants_rounding_both_ends(void)
+{
+   struct link_bus_sent j;
+   uint64_t tick = 0, grant = 0;
+   size_t len    = 0;
+
+   fx_spans();
+   link_bus_frame_start(fx_bus, 0);
+   fx_far(0);
+   fx_own_start(1, 0);
+   CHECK(snd(1, 0, 280896, 0, "a", 1));
+   CHECK(link_bus_journal(fx_bus, &j, 1) == 1 && j.landing == 1005); /* 1004.56, up */
+   fx_own_end(1);
+   fx_own_end(0);
+   link_bus_frame_start(fx_bus, 0);
+   CHECK(!adv(0, fx_h[0][0], 1001, fx_safe[0][0], 2002, NULL, NULL));
+   CHECK(link_bus_peek(fx_bus, 0, fx_h[0][0], NULL, NULL, &len) == NULL);
+   fx_own_start(1, 0);           /* promises 561792: 2009.12 on console 0 */
+   CHECK(adv(0, fx_h[0][0], 1001, fx_safe[0][0], 2002, &grant, NULL));
+   CHECK(grant == 2002);
+   CHECK(link_bus_recv(fx_bus, 0, fx_h[0][0], &tick, NULL, NULL, NULL) && tick == 1005);
+   fx_free();
+}
+
+static void edges_at_own_spans(void)
+{
+   fx_spans();
+   CHECK(fx_edge_is(0, 0, 0, 60000));
+   CHECK(fx_edge_is(1, 0, 0, 16777216));
+   fx_spans_frames();
+   CHECK(fx_edge_is(0, 3003, 1001, 60000));
+   CHECK(fx_edge_is(1, 561792, 280896, 16777216));
+   fx_free();
+}
+
+/* fx_spans after a frame of each, console 0 promising far ahead and console
+ * 1 its frame end; then console 0 opens its frame 1 and console 1 runs its
+ * frame 1 promising past ticks beyond its edge and makes no frame-end
+ * publish, which leaves its tick at edge 561792 unknown */
+static void fx_skipped(uint64_t past)
+{
+   fx_spans();
+   fx_own_frame(0, FX_FAR);
+   fx_own_frame(1, 0);
+   link_bus_frame_start(fx_bus, 0);
+   CHECK(adv(0, fx_h[0][0], 1001, fx_safe[0][0], 1001, NULL, NULL));
+   link_bus_frame_start(fx_bus, 1);
+   CHECK(adv(1, fx_h[1][0], 280896, 280896 + past, 280896, NULL, NULL));
+   link_bus_frame_end(fx_bus, 1);
+}
+
+/* Such a port holds its peers at its promise, never past its new edge,
+ * until its frame-start advance */
+static void skipped_publish_holds_at_promise(void)
+{
+   struct retro_link_wait w;
+   struct retro_link_wait *list = &w;
+   struct link_bus_blocker why;
+
+   fx_skipped(100000);           /* 380896: 1362.18 on console 0 */
+   CHECK(fx_edge_is(1, 561792, 280896, 16777216));
+   CHECK(adv(0, fx_h[0][0], 1001, fx_safe[0][0], 1362, NULL, NULL));
+   fx_wait(&w, fx_h[0][0], 1001, fx_safe[0][0], 1363, false);
+   CHECK(!advm(0, &w, 1));
+   memset(&why, 0, sizeof(why));
+   CHECK(link_bus_blocked_by(fx_bus, 0, &list, 1, &why));
+   CHECK(why.bound == 1362 && why.peer_console == 1 && why.edge_unknown);
+   link_bus_frame_start(fx_bus, 1);
+   CHECK(adv(1, fx_h[1][0], 561792, 842688, 561792, NULL, NULL));
+   CHECK(adv(0, fx_h[0][0], 1001, fx_safe[0][0], 2002, NULL, NULL));
+   fx_free();
+
+   fx_skipped(FX_FAR);           /* edge 561792: 2009.12 on console 0 */
+   fx_own_end(0);
+   link_bus_frame_start(fx_bus, 0);
+   CHECK(adv(0, fx_h[0][0], 2002, fx_safe[0][0], 2009, NULL, NULL));
+   CHECK(!adv(0, fx_h[0][0], 2002, fx_safe[0][0], 2010, NULL, NULL));
+   fx_free();
+}
+
+/* A message for a port whose frame ended with no frame-end publish, sent
+ * from a frame begun before that port's new edge, lands on the edge before,
+ * whether sent before or after the port's frame ended */
+static void skipped_publish_lands_on_edge_before(void)
+{
+   struct link_bus_sent j[2];
+   uint64_t hash[2];
+   unsigned i;
+
+   for (i = 0; i < 2; i++)
+   {
+      fx_spans();
+      fx_own_frame(0, 0);
+      fx_own_frame(1, 0);
+      link_bus_frame_start(fx_bus, 0);
+      CHECK(adv(0, fx_h[0][0], 1001, 1001, 1001, NULL, NULL));
+      link_bus_frame_start(fx_bus, 1);
+      CHECK(adv(1, fx_h[1][0], 280896, 380896, 280896, NULL, NULL));
+      if (i)
+         link_bus_frame_end(fx_bus, 1);
+      CHECK(snd(0, 0, 1500, 1, "a", 1));
+      if (!i)
+         link_bus_frame_end(fx_bus, 1);
+      memset(&j[i], 0, sizeof(j[i]));
+      CHECK(link_bus_journal(fx_bus, &j[i], 1) == 1);
+      hash[i] = link_bus_hash(fx_bus);
+      fx_free();
+   }
+   CHECK(j[0].landing == 419431 && j[1].landing == 419431); /* 419430.4, up */
+   CHECK(hash[0] == hash[1]);
+}
+
+/* fx_bus replaced by a new bus loaded from its save, the same ports attached */
+static void fx_reload_bus(void)
+{
+   link_bus_t *b = link_bus_new(fx_consoles);
+   size_t n      = fx_save();
+   unsigned c, p;
+   for (c = 0; c < fx_consoles; c++)
+   {
+      CHECK(link_bus_set_ports(b, c, fx_ptrs[c]));
+      for (p = 0; p < FX_PORTS && fx_list[c][p].protocol_id; p++)
+         fx_h[c][p] = link_bus_attach(b, c, p, fx_list[c][p].protocol_id,
+               fx_list[c][p].clock_rate);
+   }
+   CHECK(link_bus_load(b, fx_blob, n));
+   link_bus_free(fx_bus);
+   fx_bus = b;
+}
+
+/* Equal spans: console 1 makes no frame-end publish in frames 1 and 2 and
+ * keeps its place. Console 0 sends to it in frame 2 before its frame ends
+ * (run 0), after (run 1), or before on a bus loaded between the two (run 2):
+ * one landing and one hash. */
+static void skipped_twice_keeps_place(void)
+{
+   struct link_bus_sent j[3];
+   uint64_t hash[3];
+   unsigned i, f;
+
+   for (i = 0; i < 3; i++)
+   {
+      fx_two(61440, 61440);
+      fx_own_frame(0, 0);
+      fx_own_frame(1, 0);
+      for (f = 1; f < 3; f++)
+      {
+         link_bus_frame_start(fx_bus, 0);
+         CHECK(adv(0, fx_h[0][0], fx_tick[0][0], fx_tick[0][0] + 1024, fx_tick[0][0], NULL, NULL));
+         link_bus_frame_start(fx_bus, 1);
+         CHECK(adv(1, fx_h[1][0], fx_tick[1][0], fx_tick[1][0] + 1024, fx_tick[1][0], NULL, NULL));
+         if (f == 2 && i == 1)
+            link_bus_frame_end(fx_bus, 1);
+         if (f == 2)
+            CHECK(snd(0, 0, fx_tick[0][0] + 1500, 1, "a", 1));
+         if (f != 2 || i != 1)
+            link_bus_frame_end(fx_bus, 1);
+         fx_tick[1][0] += 1024;
+         fx_own_end(0);
+         if (f == 1 && i == 2)
+         {
+            link_bus_edge(fx_bus);
+            fx_reload_bus();
+         }
+      }
+      CHECK(fx_edge_is(0, 3072, 1024, 61440));
+      CHECK(fx_edge_is(1, 3072, 1024, 61440));
+      fx_own_start(1, 0);
+      memset(&j[i], 0, sizeof(j[i]));
+      CHECK(link_bus_journal(fx_bus, &j[i], 1) == 1);
+      hash[i] = link_bus_hash(fx_bus);
+      fx_free();
+   }
+   for (i = 0; i < 3; i++)
+      CHECK(j[i].landing == 3548 && hash[i] == hash[0]);
+}
+
+static void instants_near_top(void)
+{
+   uint64_t top = (uint64_t)1 << 62;
+   unsigned f;
+
+   fx_new(1);
+   fx_port(0, 0, "test-cable", top, 2, 0);
+   fx_attach(0);
+   fx_span[0][0] = top;
+   for (f = 0; f < 3; f++)
+      fx_own_frame(0, 0);
+   CHECK(fx_edge_is(0, 3 * top, top, top));
+   link_bus_edge(fx_bus);
+   link_bus_renumbered(fx_bus, 0);
+   fx_tick[0][0] = 0;
+   for (f = 0; f < 2; f++)
+      fx_own_frame(0, 0);
+   CHECK(fx_tick[0][0] == (uint64_t)1 << 63);
+   CHECK(fx_edge_is(0, TICK_MAX, top, top));
+   fx_free();
+
+   CHECK(link_bus_instant_before((uint64_t)-3, 3, (uint64_t)-2, 3));
+   CHECK(!link_bus_instant_before((uint64_t)-2, 3, (uint64_t)-3, 3));
+   CHECK(link_bus_instant_before((uint64_t)-2, (uint64_t)-1, 1, 1));
+   CHECK(!link_bus_instant_before((uint64_t)-1, (uint64_t)-2, 1, 1));
+}
+
+/* A lone port's hash after f frames: only since differs */
+static uint64_t fx_lone_hash(unsigned f)
+{
+   uint64_t hash;
+   fx_new(1);
+   fx_port(0, 0, "test-cable", 61440, 2, 0);
+   fx_attach(0);
+   while (f--)
+      fx_own_frame(0, 0);
+   link_bus_edge(fx_bus);
+   hash = link_bus_hash(fx_bus);
+   fx_free();
+   return hash;
+}
+
+static void blob_v2_since(void)
+{
+   static unsigned char old[sizeof(fx_blob)];
+   uint64_t s[2], n[2], r[2], hash;
+   link_bus_t *b;
+   size_t len;
+   unsigned c;
+
+   fx_spans();
+   fx_spans_frames();
+   link_bus_edge(fx_bus);
+   len = fx_save();
+   memcpy(old, fx_blob, len);
+   old[4] = 1;                   /* version 1 */
+   b = link_bus_new(2);
+   for (c = 0; c < 2; c++)
+   {
+      CHECK(link_bus_set_ports(b, c, fx_ptrs[c]));
+      CHECK(link_bus_attach(b, c, 0, "test-cable", fx_list[c][0].clock_rate) != NULL);
+   }
+   hash = link_bus_hash(b);
+   CHECK(!link_bus_load(b, old, len));
+   CHECK(link_bus_hash(b) == hash);
+   CHECK(link_bus_load(b, fx_blob, len));
+   CHECK(link_bus_hash(b) == link_bus_hash(fx_bus));
+   for (c = 0; c < 2; c++)
+   {
+      CHECK(link_bus_console_edge(b, c, &s[0], &n[0], &r[0]));
+      CHECK(link_bus_console_edge(fx_bus, c, &s[1], &n[1], &r[1]));
+      CHECK(s[0] == s[1] && n[0] == n[1] && r[0] == r[1]);
+   }
+   CHECK(fx_reloads());
+   link_bus_free(b);
+   fx_free();
+
+   CHECK(fx_lone_hash(2) != fx_lone_hash(3));
+}
+
 static const struct
 {
    const char *name;
@@ -2716,7 +3069,15 @@ static const struct
    { "hash_ignores_numbering",               hash_ignores_numbering },
    { "dump_lists_ports_and_messages",        dump_lists_ports_and_messages },
    { "counts_survive_load",                  counts_survive_load },
-   { "hash_and_save_ignore_interleaving",    hash_and_save_ignore_interleaving }
+   { "hash_and_save_ignore_interleaving",    hash_and_save_ignore_interleaving },
+   { "instants_across_spans",                instants_across_spans },
+   { "instants_rounding_both_ends",          instants_rounding_both_ends },
+   { "edges_at_own_spans",                   edges_at_own_spans },
+   { "skipped_publish_holds_at_promise",     skipped_publish_holds_at_promise },
+   { "skipped_publish_lands_on_edge_before", skipped_publish_lands_on_edge_before },
+   { "skipped_twice_keeps_place",            skipped_twice_keeps_place },
+   { "instants_near_top",                    instants_near_top },
+   { "blob_v2_since",                        blob_v2_since }
 };
 
 int main(void)

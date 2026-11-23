@@ -36,8 +36,9 @@ RETRO_BEGIN_DECLS
  * for every bus of a session. Consoles are numbered from 0 in session order
  * and every call names its console. Every call answers at once: the bus never
  * waits, calls back, reads a clock or logs. Its host parks an advance that is
- * not grantable and tests it again when link_bus_changes moves. The host puts
- * only consoles of one frame span on a bus; the bus does not compare spans. */
+ * not grantable and tests it again when link_bus_changes moves. Each
+ * console's frame edges follow at its own span on one timeline, whose
+ * instants the bus compares across clock rates. */
 
 #define LINK_BUS_MAX_BUS_PORTS 255
 #define LINK_BUS_IDLE_SPANS    30
@@ -102,10 +103,20 @@ bool link_bus_blocked_by(const link_bus_t *b, unsigned console, struct retro_lin
 uint64_t link_bus_changes(const link_bus_t *b, unsigned console);  /* moves on a changed publish or a send on the console's buses */
 uint64_t link_bus_activity(const link_bus_t *b, unsigned console); /* the console's own sends and recvs */
 
-/* Around each retro_run, then edge once every console has finished */
+/* Around each retro_run; frame_end moves the console to its next edge. Then
+ * edge once every console has finished, for the attaches, detaches and cuts
+ * made in the frame. */
 void link_bus_frame_start(link_bus_t *b, unsigned console);
 void link_bus_frame_end(link_bus_t *b, unsigned console);
 void link_bus_edge(link_bus_t *b);
+
+/* The timeline: an instant is a count of ticks of a clock rate since the
+ * session began. console_edge gives the instant the console's current frame
+ * edge stands at and its span, as ticks of one of its ports' rates; false
+ * while it has no place (held, or no port attached). */
+bool link_bus_console_edge(const link_bus_t *b, unsigned console,
+      uint64_t *since, uint64_t *span, uint64_t *rate); /* *span 0 until a port shows one */
+bool link_bus_instant_before(uint64_t a, uint64_t ra, uint64_t b, uint64_t rb); /* a / ra < b / rb, exactly */
 
 /* At an edge only; false when refused */
 bool link_bus_cable(link_bus_t *b, unsigned console_a, unsigned port_a, unsigned console_b, unsigned port_b);
