@@ -373,6 +373,9 @@ static const struct
    char s_8fc168f0[18];
    char s_213c44cf[17];
    char s_4f4b0d00[13];
+   char s_bb275379[18];
+   char s_ff539b01[28];
+   char s_88d944d3[33];
    char s_f18e3072[13];
    char s_b6cd2ff0[69];
    char s_40e7aacd[15];
@@ -1303,6 +1306,7 @@ static const struct
    char s_9da5609f[12];
    char s_269e5dff[22];
    char s_25464734[35];
+   char s_c3fc7c56[16];
 #ifdef _3DS
    char s_fcde5521[42];
 #endif
@@ -1820,6 +1824,7 @@ static const struct
    char s_39b2f935[14];
    char s_f585917a[31];
    char s_2942bc3c[38];
+   char s_3794f2cd[7];
    char s_0a3c5b6b[35];
    char s_c46fdd49[44];
    char s_a2fd58a6[37];
@@ -1911,6 +1916,7 @@ static const struct
    char s_d725639f[11];
    char s_4707850d[24];
    char s_cbddcf50[23];
+   char s_fc5ea9dc[19];
    char s_9abb40fc[27];
    char s_a9dc9f21[136];
    char s_6c786a36[46];
@@ -3075,6 +3081,9 @@ static const struct
    char s_680226fd[48];
    char s_6ecd34ee[218];
    char s_6fb18a2a[77];
+   char s_d912d227[230];
+   char s_e26409ef[68];
+   char s_91852041[69];
    char s_01555620[220];
    char s_2ae9d7ef[81];
    char s_16a53432[79];
@@ -3617,6 +3626,7 @@ static const struct
    char s_b3c6310f[86];
    char s_b1305e15[134];
    char s_2b2a7762[72];
+   char s_091ac904[142];
 #ifdef _3DS
    char s_02c2854f[56];
 #endif
@@ -6336,6 +6346,9 @@ static const struct
    "B\341\273\231 nh\341\273\233 \304\221\341\273\207m",
    "Cho ph\303\251p Camera",
    "Thi\341\272\277t b\341\273\213",
+   "H\303\254nh trong h\303\254nh",
+   "V\341\273\213 tr\303\255 h\303\254nh trong h\303\254nh",
+   "K\303\255ch th\306\260\341\273\233c h\303\254nh trong h\303\254nh",
    "Xem tr\306\260\341\273\233c",
    "Kh\303\264ng th\341\273\203 k\303\255ch ho\341\272\241t th\303\240nh t\303\255ch v\341\273\233i "
    "tr\303\254nh gi\341\272\243 l\341\272\255p n\303\240y",
@@ -7399,6 +7412,7 @@ static const struct
    "Menu ch\303\255nh",
    "Menu danh s\303\241ch ch\306\241i",
    "Cho ph\303\251p quay l\341\272\241i t\341\273\253 c\303\241c tab",
+   "L\303\240m m\341\273\235 n\341\273\201n",
 #ifdef _3DS
    "Hi\341\273\203n th\341\273\213 m\303\240n h\303\254nh d\306\260\341\273\233i c\341\273\247a 3DS",
 #endif
@@ -8016,6 +8030,7 @@ static const struct
    "\304\220\306\260\341\273\235ng d\341\272\253n t\341\273\207p tr\341\273\221ng.",
    "Kh\303\264ng th\341\273\203 m\341\273\237 t\341\273\207p \304\221\341\273\203 \304\221\341\273"
    "\215c.",
+   "Lo\341\272\241i",
    "Kh\303\264ng th\341\273\203 m\341\273\237 t\341\273\207p \304\221\341\273\203 ghi.",
    "(\304\221\306\260\341\273\243c d\303\271ng \304\221\341\273\203 t\303\254m h\303\254nh thu nh"
    "\341\273\217)",
@@ -8133,6 +8148,7 @@ static const struct
    "\341\272\242nh b\303\254a",
    "Ch\341\273\245p \341\272\243nh m\303\240n h\303\254nh",
    "M\303\240n h\303\254nh ti\303\252u \304\221\341\273\201",
+   "Tr\303\254nh gi\341\272\243 l\341\272\255p",
    "C\341\272\255p nh\341\272\255t th\341\272\245t b\341\272\241i.",
    "RetroArch \304\221\303\243 \304\221\306\260\341\273\243c c\341\272\255p nh\341\272\255t th\303"
    "\240nh c\303\264ng. Vui l\303\262ng kh\341\273\237i \304\221\341\273\231ng l\341\272\241i \341"
@@ -9828,6 +9844,16 @@ static const struct
    "t b\341\273\213 m\341\272\267c \304\221\341\273\213nh.",
    "Tr\303\254nh \304\221i\341\273\201u khi\341\273\203n camera s\341\272\275 s\341\273\255 d\341"
    "\273\245ng. (C\341\272\247n kh\341\273\237i \304\221\341\273\231ng l\341\272\241i)",
+   "Hi\341\273\203n th\341\273\213 h\303\254nh \341\272\243nh tr\341\273\261c ti\341\272\277p t\341"
+   "\273\253 camera \341\273\237 m\341\273\231t g\303\263c m\303\240n h\303\254nh trong khi n\341"
+   "\273\231i dung \304\221ang ch\341\272\241y. Camera ri\303\252ng c\341\273\247a tr\303\254nh gi"
+   "\341\272\243 l\341\272\255p s\341\272\275 \304\221\306\260\341\273\243c hi\341\273\203n th\341"
+   "\273\213 theo c\303\241ch m\303\240 tr\303\254nh gi\341\272\243 l\341\272\255p \304\221\303\263 "
+   "s\341\273\255 d\341\273\245ng.",
+   "G\303\263c m\303\240n h\303\254nh n\306\241i h\303\254nh \341\272\243nh t\341\273\253 camera "
+   "\304\221\306\260\341\273\243c hi\341\273\203n th\341\273\213.",
+   "Chi\341\273\201u cao h\303\254nh \341\272\243nh t\341\273\253 camera so v\341\273\233i chi\341"
+   "\273\201u cao m\303\240n h\303\254nh.",
    "Hi\341\273\203n th\341\273\213 h\303\254nh \341\272\243nh tr\341\273\261c ti\341\272\277p t\341"
    "\273\253 m\303\241y \341\272\243nh khi m\341\273\245c n\303\240y \304\221\306\260\341\273\243c c"
    "h\341\273\215n. N\341\272\277u m\341\273\231t tr\303\254nh gi\341\272\243 l\341\272\255p \304"
@@ -11658,6 +11684,10 @@ static const struct
    "\261ng khung h\303\254nh.",
    "Tr\341\273\237 l\341\272\241i Menu ch\303\255nh t\341\273\253 c\303\241c tab/thanh b\303\252n kh"
    "i nh\341\272\245n Quay l\341\272\241i.",
+   "L\303\240m m\341\273\235 tr\303\254nh \304\221\306\241n ph\303\255a sau c\303\241c h\341\273\231"
+   "p th\303\264ng b\303\241o v\303\240 b\303\240n ph\303\255m tr\303\252n m\303\240n h\303\254nh, n"
+   "\341\272\277u tr\303\254nh \304\221i\341\273\201u khi\341\273\203n \304\221\341\273\223 h\341"
+   "\273\215a h\341\273\227 tr\341\273\243.",
 #ifdef _3DS
    "Thay \304\221\341\273\225i c\303\240i \304\221\341\272\267t giao di\341\273\207n m\303\240n h"
    "\303\254nh d\306\260\341\273\233i.",
@@ -16322,7 +16352,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (329562u
+      (sizeof(msg_hash_vn_blob) == (330192u
 #ifdef ANDROID
        + 373u
 #endif
@@ -17269,6 +17299,9 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_PIP,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_PIP_CORNER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_PIP_SIZE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_PREVIEW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
@@ -18199,6 +18232,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_BACKDROP_BLUR,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
 #endif
@@ -18716,6 +18750,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -18806,6 +18841,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
@@ -19958,6 +19994,9 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_PIP,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_PIP_CORNER,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_PIP_SIZE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_PREVIEW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
@@ -20493,6 +20532,7 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_BACKDROP_BLUR,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
 #endif

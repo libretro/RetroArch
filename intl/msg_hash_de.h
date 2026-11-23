@@ -1722,6 +1722,7 @@ static const struct
    char s_39b2f935[16];
    char s_f585917a[20];
    char s_2942bc3c[47];
+   char s_3794f2cd[4];
    char s_0a3c5b6b[51];
    char s_c46fdd49[41];
    char s_a2fd58a6[36];
@@ -6863,6 +6864,7 @@ static const struct
    "Datei ist leer.",
    "Dateipfad ist leer.",
    "Datei konnte nicht zum Lesen ge\303\266ffnet werden.",
+   "Typ",
    "Datei konnte nicht zum Schreiben ge\303\266ffnet werden.",
    "(verwendet, um Vorschaubilder zu finden)",
    "Liste von Dateien wird gesammelt...",
@@ -11276,7 +11278,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (256804u
+      (sizeof(msg_hash_de_blob) == (256808u
 #ifdef ANDROID
        + 358u
 #endif
@@ -13564,6 +13566,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,

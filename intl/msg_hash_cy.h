@@ -132,6 +132,7 @@ static const struct
    char s_64dd7209[40];
    char s_56e21ee1[15];
    char s_6d025795[7];
+   char s_3794f2cd[5];
    char s_6d059c18[11];
    char s_99d648f2[11];
    char s_2aeb5474[15];
@@ -408,6 +409,7 @@ static const struct
    "Diweddarwr M\303\242n-luniau y Rhestr Chwarae",
    "Rheolaeth Pwer",
    "Craidd",
+   "Math",
    "Gwybodaeth",
    "Gwybodaeth",
    "Llwytho Craidd",
@@ -575,7 +577,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cy_blob_check[
-      (sizeof(msg_hash_cy_blob) == (5233u
+      (sizeof(msg_hash_cy_blob) == (5238u
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
@@ -704,6 +706,7 @@ static const msg_hash_id_t msg_hash_cy_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_INFO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,

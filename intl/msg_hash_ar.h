@@ -991,6 +991,7 @@ static const struct
    char s_39b2f935[21];
    char s_f585917a[30];
    char s_2942bc3c[43];
+   char s_3794f2cd[11];
    char s_0a3c5b6b[43];
    char s_c46fdd49[63];
    char s_a2fd58a6[36];
@@ -1081,6 +1082,7 @@ static const struct
    char s_d725639f[20];
    char s_4707850d[22];
    char s_cbddcf50[24];
+   char s_fc5ea9dc[15];
    char s_9abb40fc[23];
    char s_a9dc9f21[121];
    char s_6c786a36[37];
@@ -4132,6 +4134,7 @@ static const struct
    "\261\330\272.",
    "\330\252\330\271\330\260\330\261 \331\201\330\252\330\255 \330\247\331\204\331\205\331\204\331"
    "\201 \331\204\331\204\331\202\330\261\330\247\330\241\330\251.",
+   "\330\247\331\204\331\206\331\210\330\271",
    "\330\252\330\271\330\260\330\261 \331\201\330\252\330\255 \330\247\331\204\331\205\331\204\331"
    "\201 \331\204\331\204\331\203\330\252\330\247\330\250\330\251.",
    "(\331\212\330\263\330\252\330\256\330\257\331\205 \331\204\331\204\330\271\330\253\331\210\330"
@@ -4298,6 +4301,7 @@ static const struct
    "\330\264\331\203\331\204 \330\247\331\204\330\272\331\204\330\247\331\201",
    "\331\204\331\202\330\267\330\251 \330\247\331\204\330\264\330\247\330\264\330\251",
    "\330\271\331\206\331\210\330\247\331\206 \330\247\331\204\330\264\330\247\330\264\330\251",
+   "\330\247\331\204\330\243\331\206\331\210\331\212\330\251",
    "\331\201\330\264\331\204 \330\247\331\204\330\252\330\255\330\257\331\212\330\253.",
    "\330\252\331\205 \330\252\330\255\330\257\331\212\330\253 RetroArch \330\250\331\206\330\254\330"
    "\247\330\255. \330\247\331\204\330\261\330\254\330\247\330\241 \330\245\330\271\330\247\330\257"
@@ -7901,7 +7905,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ar_blob_check[
-      (sizeof(msg_hash_ar_blob) == (106231u
+      (sizeof(msg_hash_ar_blob) == (106257u
 #ifdef HAVE_LAKKA
        + 287u
 #endif
@@ -9092,6 +9096,7 @@ static const msg_hash_id_t msg_hash_ar_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -9181,6 +9186,7 @@ static const msg_hash_id_t msg_hash_ar_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,

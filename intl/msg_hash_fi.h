@@ -1340,6 +1340,7 @@ static const struct
    char s_39b2f935[20];
    char s_f585917a[25];
    char s_2942bc3c[43];
+   char s_3794f2cd[7];
    char s_0a3c5b6b[45];
    char s_c46fdd49[46];
    char s_a2fd58a6[35];
@@ -1430,6 +1431,7 @@ static const struct
    char s_d725639f[10];
    char s_4707850d[13];
    char s_cbddcf50[12];
+   char s_fc5ea9dc[7];
    char s_9abb40fc[24];
    char s_a9dc9f21[102];
    char s_6c786a36[30];
@@ -4887,6 +4889,7 @@ static const struct
    "Tiedosto on tyhj\303\244.",
    "Tiedostopolku on tyhj\303\244.",
    "Tiedostoa ei voitu avata lukemista varten.",
+   "Tyyppi",
    "Tiedostoa ei voitu avata kirjoitusta varten.",
    "(k\303\244ytet\303\244\303\244n esikatselukuvien l\303\266yt\303\244miseen)",
    "Ker\303\244t\303\244\303\244n listaa tiedostoista...",
@@ -4984,6 +4987,7 @@ static const struct
    "Kansikuva",
    "Kuvakaappaus",
    "Otsikkokuva",
+   "Ytimet",
    "P\303\244ivitys ep\303\244onnistui.",
    "RetroArch p\303\244ivitetty onnistuneesti. K\303\244ynnist\303\244 sovellus uudelleen, jotta muu"
    "tokset tulevat voimaan.",
@@ -7571,7 +7575,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123159u
+      (sizeof(msg_hash_fi_blob) == (123173u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -9237,6 +9241,7 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -9326,6 +9331,7 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,

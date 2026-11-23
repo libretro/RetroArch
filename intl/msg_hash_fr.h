@@ -1812,6 +1812,7 @@ static const struct
    char s_d725639f[9];
    char s_4707850d[17];
    char s_cbddcf50[13];
+   char s_fc5ea9dc[8];
    char s_9abb40fc[24];
    char s_a9dc9f21[122];
    char s_6c786a36[35];
@@ -6792,6 +6793,7 @@ static const struct
    "Jaquette",
    "Capture d'\303\251cran",
    "\303\211cran titre",
+   "C\305\223urs ",
    "Mise \303\240 jour \303\251chou\303\251e.",
    "RetroArch a \303\251t\303\251 mis \303\240 jour avec succ\303\250s. Veuillez red\303\251marrer l"
    "'application pour que les modifications prennent effet.",
@@ -10989,7 +10991,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (256758u
+      (sizeof(msg_hash_fr_blob) == (256766u
 #ifdef ANDROID
        + 373u
 #endif
@@ -13345,6 +13347,7 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,

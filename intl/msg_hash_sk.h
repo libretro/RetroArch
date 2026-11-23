@@ -1734,6 +1734,7 @@ static const struct
    char s_39b2f935[20];
    char s_f585917a[27];
    char s_2942bc3c[45];
+   char s_3794f2cd[4];
    char s_0a3c5b6b[42];
    char s_c46fdd49[39];
    char s_a2fd58a6[36];
@@ -1821,6 +1822,7 @@ static const struct
    char s_d725639f[13];
    char s_4707850d[18];
    char s_cbddcf50[19];
+   char s_fc5ea9dc[7];
    char s_9abb40fc[23];
    char s_a9dc9f21[86];
    char s_6c786a36[34];
@@ -6940,6 +6942,7 @@ static const struct
    "S\303\272bor je pr\303\241zdny.",
    "Cesta s\303\272boru je pr\303\241zdna.",
    "S\303\272bor nebolo mo\305\276n\303\251 otvori\305\245 na \304\215\303\255tanie.",
+   "Typ",
    "S\303\272bor nebolo mo\305\276n\303\251 otvori\305\245 na z\303\241pis.",
    "(pou\305\276\303\255va sa na h\304\276adanie n\303\241h\304\276adov)",
    "Zhroma\305\276\304\217uje sa zoznam s\303\272borov...",
@@ -7036,6 +7039,7 @@ static const struct
    "Obal krabice",
    "Sn\303\255mka obrazovky",
    "Tituln\303\241 obrazovka",
+   "Jadr\303\241",
    "Aktualiz\303\241cia zlyhala.",
    "RetroArch bol \303\272spe\305\241ne aktualizovan\303\275. Pre uplatnenie zmien re\305\241tartujt"
    "e aplik\303\241ciu.",
@@ -11750,7 +11754,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (234922u
+      (sizeof(msg_hash_sk_blob) == (234933u
 #ifdef ANDROID
        + 389u
 #endif
@@ -14046,6 +14050,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -14132,6 +14137,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,

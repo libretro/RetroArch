@@ -1413,6 +1413,7 @@ static const struct
    char s_39b2f935[28];
    char s_f585917a[37];
    char s_2942bc3c[52];
+   char s_3794f2cd[7];
    char s_0a3c5b6b[52];
    char s_c46fdd49[60];
    char s_a2fd58a6[49];
@@ -1504,6 +1505,7 @@ static const struct
    char s_ea5b5020[7];
    char s_4707850d[28];
    char s_cbddcf50[28];
+   char s_fc5ea9dc[7];
    char s_9abb40fc[31];
    char s_a9dc9f21[115];
    char s_6c786a36[30];
@@ -6744,6 +6746,7 @@ static const struct
    "\343\203\225\343\202\241\343\202\244\343\203\253\343\201\256\350\252\255\343\201\277\350\276\274"
    "\343\201\277\343\201\253\345\244\261\346\225\227\343\201\227\343\201\276\343\201\227\343\201\237"
    "\343\200\202",
+   "\347\250\256\345\210\245",
    "\343\203\225\343\202\241\343\202\244\343\203\253\343\201\256\346\233\270\343\201\215\350\276\274"
    "\343\201\277\343\201\253\345\244\261\346\225\227\343\201\227\343\201\276\343\201\227\343\201\237"
    "\343\200\202",
@@ -6905,6 +6908,7 @@ static const struct
    "\343\203\210",
    "\343\202\277\343\202\244\343\203\210\343\203\253\343\202\271\343\202\257\343\203\252\343\203\274"
    "\343\203\263",
+   "\343\202\263\343\202\242",
    "\346\233\264\346\226\260\343\201\253\345\244\261\346\225\227\343\201\227\343\201\276\343\201\227"
    "\343\201\237\343\200\202",
    "RetroArch \343\201\256\346\233\264\346\226\260\343\201\253\346\210\220\345\212\237\343\201\227"
@@ -13901,7 +13905,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ja_blob_check[
-      (sizeof(msg_hash_ja_blob) == (198900u
+      (sizeof(msg_hash_ja_blob) == (198914u
 #ifdef ANDROID
        + 484u
 #endif
@@ -15637,6 +15641,7 @@ static const msg_hash_id_t msg_hash_ja_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -15727,6 +15732,7 @@ static const msg_hash_id_t msg_hash_ja_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,

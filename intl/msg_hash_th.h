@@ -1660,6 +1660,7 @@ static const struct
    char s_39b2f935[40];
    char s_f585917a[61];
    char s_2942bc3c[88];
+   char s_3794f2cd[19];
    char s_0a3c5b6b[91];
    char s_c46fdd49[75];
    char s_a2fd58a6[70];
@@ -10456,6 +10457,7 @@ static const struct
    "\340\270\226\340\271\200\340\270\233\340\270\264\340\270\224\340\271\204\340\270\237\340\270\245"
    "\340\271\214\340\271\200\340\270\236\340\270\267\340\271\210\340\270\255\340\270\255\340\271\210"
    "\340\270\262\340\270\231\340\271\204\340\270\224\340\271\211",
+   "\340\270\233\340\270\243\340\270\260\340\271\200\340\270\240\340\270\227",
    "\340\271\204\340\270\241\340\271\210\340\270\252\340\270\262\340\270\241\340\270\262\340\270\243"
    "\340\270\226\340\271\200\340\270\233\340\270\264\340\270\224\340\271\204\340\270\237\340\270\245"
    "\340\271\214\340\271\200\340\270\236\340\270\267\340\271\210\340\270\255\340\271\200\340\270\202"
@@ -26430,7 +26432,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_th_blob_check[
-      (sizeof(msg_hash_th_blob) == (452578u
+      (sizeof(msg_hash_th_blob) == (452597u
 #ifdef ANDROID
        + 757u
 #endif
@@ -28584,6 +28586,7 @@ static const msg_hash_id_t msg_hash_th_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,

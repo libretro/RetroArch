@@ -364,6 +364,9 @@ static const struct
    char s_213c44cf[17];
    char s_4f4b0d00[7];
    char s_502f623c[8];
+   char s_bb275379[21];
+   char s_ff539b01[29];
+   char s_88d944d3[32];
    char s_f18e3072[13];
    char s_223dfc81[8];
    char s_b6cd2ff0[57];
@@ -1300,6 +1303,7 @@ static const struct
    char s_9da5609f[19];
    char s_269e5dff[25];
    char s_25464734[34];
+   char s_c3fc7c56[19];
 #ifdef _3DS
    char s_fcde5521[28];
 #endif
@@ -1813,6 +1817,7 @@ static const struct
    char s_39b2f935[22];
    char s_f585917a[28];
    char s_2942bc3c[67];
+   char s_3794f2cd[8];
    char s_0a3c5b6b[69];
    char s_c46fdd49[45];
    char s_a2fd58a6[28];
@@ -1905,6 +1910,7 @@ static const struct
    char s_ea5b5020[7];
    char s_4707850d[17];
    char s_cbddcf50[18];
+   char s_fc5ea9dc[9];
    char s_9abb40fc[24];
    char s_a9dc9f21[106];
    char s_6c786a36[37];
@@ -3048,6 +3054,9 @@ static const struct
    char s_680226fd[50];
    char s_6ecd34ee[167];
    char s_6fb18a2a[54];
+   char s_d912d227[182];
+   char s_e26409ef[65];
+   char s_91852041[61];
    char s_01555620[168];
    char s_2ae9d7ef[71];
    char s_16a53432[78];
@@ -3588,6 +3597,7 @@ static const struct
    char s_b3c6310f[89];
    char s_b1305e15[92];
    char s_2b2a7762[92];
+   char s_091ac904[177];
 #ifdef _3DS
    char s_02c2854f[44];
 #endif
@@ -5918,6 +5928,9 @@ static const struct
    "Ceadaigh Ceamara",
    "Gl\303\251as",
    "Ceamara",
+   "Picti\303\272r-i-bPicti\303\272r",
+   "Su\303\255omh Picti\303\272r-i-bPicti\303\272r",
+   "M\303\251id an Phicti\303\272ir-i-bPicti\303\272r",
    "R\303\251amhamharc",
    "Ceamara",
    "N\303\255 f\303\251idir \303\251achta\303\255 a ghn\303\255omhacht\303\272 leis an cro\303\255 s"
@@ -6863,6 +6876,7 @@ static const struct
    "Pr\303\255omh-Roghchl\303\241r",
    "Roghchl\303\241r Seinmliosta\303\255",
    "Ceadaigh Filleadh \303\263 Chluais\303\255n\303\255",
+   "Doil\303\251iri\303\272 C\303\272lra",
 #ifdef _3DS
    "Dealramh Bunsc\303\241ile\303\241in 3DS",
 #endif
@@ -7382,6 +7396,7 @@ static const struct
    "T\303\241 an comhad folamh.",
    "T\303\241 an cos\303\241n comhaid b\303\241n.",
    "N\303\255orbh fh\303\251idir an comhad a oscailt le haghaidh l\303\251itheoireachta.",
+   "Cine\303\241l",
    "N\303\255orbh fh\303\251idir an comhad a oscailt le haghaidh scr\303\255bhneoireachta.",
    "(a \303\272s\303\241idtear chun mionsamhlacha a aimsi\303\272)",
    "Ag baili\303\272 liosta comhad...",
@@ -7484,6 +7499,7 @@ static const struct
    "L\303\263g\303\263",
    "Seat sc\303\241ile\303\241in",
    "Sc\303\241ile\303\241n Teidil",
+   "Cro\303\255the",
    "Theip ar an nuashonr\303\272.",
    "Nuashonra\303\255odh RetroArch go rath\303\272il. Atosaigh an feidhmchl\303\241r le go dtiocfaid"
    "h na hathruithe i bhfeidhm.",
@@ -8804,6 +8820,13 @@ static const struct
    "\241na\303\255 an cheamara. Braitheann s\303\251 seo ar an tiom\303\241na\303\255; f\303\241g fo"
    "lamh \303\251 chun an r\303\251amhshocr\303\272 a \303\272s\303\241id.",
    "Tiom\303\241na\303\255 ceamara le h\303\272s\303\241id. (Atos\303\272 ag teast\303\241il)",
+   "Taispe\303\241in \303\255omh\303\241 bheo \303\263n gceamara i gc\303\272inne den sc\303\241ile"
+   "\303\241n fad is at\303\241 \303\241bhar \303\241 sheinm. Taispe\303\241ntar ceamara an chro\303"
+   "\255leac\303\241in f\303\251in nuair a bh\303\255onn an cro\303\255leac\303\241n \303\241 \303"
+   "\272s\303\241id.",
+   "An c\303\272inne den sc\303\241ile\303\241n ina dtaispe\303\241ntar \303\255omh\303\241 an cheam"
+   "ara.",
+   "Airde \303\255omh\303\241 an cheamara, mar chuid d'airde an sc\303\241ile\303\241in.",
    "Taispe\303\241in \303\255omh\303\241 bheo \303\263n gceamara fad is at\303\241 an iontr\303\241i"
    "l seo roghnaithe. Taispe\303\241ntar \303\255omh\303\241 \303\263 cheamara cro\303\255 at\303"
    "\241 ag rith, fad is at\303\241 an cro\303\255 sin \303\241 \303\272s\303\241id.",
@@ -9939,6 +9962,9 @@ static const struct
    "h socraithe i bhfr\303\241ma\303\255.",
    "Fill ar an bPr\303\255omh-Roghchl\303\241r \303\263 na cluais\303\255n\303\255/an barra taobh nu"
    "air a bhr\303\272nn t\303\272 Ar Ais.",
+   "D\303\251an an roghchl\303\241r taobh thiar de bhosca\303\255 teachtaireachta\303\255 agus den m"
+   "h\303\251archl\303\241r ar an sc\303\241ile\303\241n doil\303\251ir, sa ch\303\241s gur f\303"
+   "\251idir leis an tiom\303\241na\303\255 f\303\255se \303\251 sin a dh\303\251anamh.",
 #ifdef _3DS
    "Athraigh socruithe cuma bun an sc\303\241ile\303\241in.",
 #endif
@@ -12904,7 +12930,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (287741u
+      (sizeof(msg_hash_ga_blob) == (288344u
 #ifdef ANDROID
        + 390u
 #endif
@@ -13836,6 +13862,9 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_PIP,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_PIP_CORNER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_PIP_SIZE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_PREVIEW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
@@ -14772,6 +14801,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_BACKDROP_BLUR,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
 #endif
@@ -15285,6 +15315,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -15376,6 +15407,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
@@ -16511,6 +16543,9 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_PIP,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_PIP_CORNER,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_PIP_SIZE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_PREVIEW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
@@ -17047,6 +17082,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_BACKDROP_BLUR,
 #ifdef _3DS
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
 #endif

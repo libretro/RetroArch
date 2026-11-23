@@ -1497,6 +1497,7 @@ static const struct
    char s_39b2f935[12];
    char s_f585917a[17];
    char s_2942bc3c[33];
+   char s_3794f2cd[5];
    char s_0a3c5b6b[33];
    char s_c46fdd49[47];
    char s_a2fd58a6[29];
@@ -1587,6 +1588,7 @@ static const struct
    char s_d725639f[12];
    char s_4707850d[20];
    char s_cbddcf50[18];
+   char s_fc5ea9dc[13];
    char s_9abb40fc[26];
    char s_a9dc9f21[103];
    char s_6c786a36[41];
@@ -5737,6 +5739,7 @@ static const struct
    "Dosya bo\305\237.",
    "Dosya yolu bo\305\237.",
    "Dosya okumak i\303\247in a\303\247\304\261lamad\304\261.",
+   "T\303\274r",
    "Dosya yazmak i\303\247in a\303\247\304\261lamad\304\261.",
    "(k\303\274\303\247\303\274k resimleri bulmak i\303\247in kullan\304\261l\304\261r)",
    "Dosya listesi toplan\304\261yor...",
@@ -5840,6 +5843,7 @@ static const struct
    "Kapak Resmi",
    "Ekran G\303\266r\303\274nt\303\274s\303\274",
    "Ekran Ba\305\237l\304\261\304\237\304\261",
+   "\303\207ekirdekler",
    "G\303\274ncelleme ba\305\237ar\304\261s\304\261z.",
    "RetroArch ba\305\237ar\304\261yla g\303\274ncellendi. De\304\237i\305\237ikliklerin etkili olmas"
    "\304\261 i\303\247in l\303\274tfen yeniden ba\305\237lat\304\261n.",
@@ -9169,7 +9173,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (168860u
+      (sizeof(msg_hash_tr_blob) == (168878u
 #ifdef ANDROID
        + 340u
 #endif
@@ -11022,6 +11026,7 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -11111,6 +11116,7 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,

@@ -1704,6 +1704,7 @@ static const struct
    char s_f70406ce[15];
    char s_66df5c89[15];
    char s_ca981b76[10];
+   char s_46f4826e[12];
    char s_5c3ed998[34];
    char s_26d7f366[19];
    char s_26e72a47[22];
@@ -1739,6 +1740,7 @@ static const struct
    char s_39b2f935[15];
    char s_f585917a[29];
    char s_2942bc3c[40];
+   char s_3794f2cd[4];
    char s_0a3c5b6b[41];
    char s_c46fdd49[41];
    char s_a2fd58a6[34];
@@ -1828,6 +1830,7 @@ static const struct
    char s_ea5b5020[8];
    char s_4707850d[11];
    char s_cbddcf50[12];
+   char s_fc5ea9dc[8];
    char s_9abb40fc[28];
    char s_a9dc9f21[82];
    char s_6c786a36[38];
@@ -4273,6 +4276,7 @@ static const struct
    char s_9506fc7e[97];
    char s_47ae341f[105];
    char s_cc84c32d[67];
+   char s_317fe827[9];
    char s_fa09f4f6[42];
    char s_48696c85[74];
 #if defined (WIIU)
@@ -6932,6 +6936,7 @@ static const struct
    "Finns, valfri:",
    "Finns, kr\303\244vs:",
    "Sekretess",
+   "Skicka till",
    "L\303\244gger till filer i spellista...",
    "L\303\244gg till post...",
    "L\303\244gg till fil(er)...",
@@ -6967,6 +6972,7 @@ static const struct
    "Filen \303\244r tom.",
    "S\303\266kv\303\244g till filen \303\244r tom.",
    "Kunde inte \303\266ppna filen f\303\266r att l\303\244sa.",
+   "Typ",
    "Kunde inte \303\266ppna filen f\303\266r att skriva.",
    "(anv\303\244nds f\303\266r att hitta miniatyrbilder)",
    "Samlar in en lista \303\266ver filer...",
@@ -7063,6 +7069,7 @@ static const struct
    "Logotyp",
    "Sk\303\244rmdump",
    "Titelsk\303\244rm",
+   "K\303\244rnor",
    "Uppdateringen misslyckades.",
    "RetroArch uppdaterades. Starta om programmet f\303\266r att \303\244ndringarna ska ta effekt.",
    "Uppdatera RetroArch (nattlig version)",
@@ -10757,6 +10764,7 @@ static const struct
    "Synkronisera videoutmatningen fr\303\245n grafikkortet till bildsk\303\244rmens uppdateringsfrek"
    "vens. Rekommenderas.",
    "Kraschade vid f\303\266reg\303\245ende k\303\266rning, anv\303\244nder systemets drivrutin",
+   "Fr\303\245n %s",
    "%s anv\303\244nds igen vid n\303\244sta vanliga start",
    "H\303\245rdsynkronisera CPU och GPU. Minskar latens p\303\245 bekostnad av prestanda.",
 #if defined (WIIU)
@@ -11607,7 +11615,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (241721u
+      (sizeof(msg_hash_sv_blob) == (241754u
 #ifdef ANDROID
        + 361u
 #endif
@@ -13882,6 +13890,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_SEND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ADD_FILES,
@@ -13917,6 +13926,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -14005,6 +14015,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
@@ -16435,6 +16446,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_FROM,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)

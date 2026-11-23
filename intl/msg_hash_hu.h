@@ -1523,6 +1523,7 @@ static const struct
    char s_39b2f935[15];
    char s_f585917a[31];
    char s_2942bc3c[46];
+   char s_3794f2cd[7];
    char s_0a3c5b6b[44];
    char s_c46fdd49[30];
    char s_a2fd58a6[41];
@@ -1613,6 +1614,7 @@ static const struct
    char s_ea5b5020[6];
    char s_4707850d[15];
    char s_cbddcf50[18];
+   char s_fc5ea9dc[6];
    char s_9abb40fc[24];
    char s_a9dc9f21[101];
    char s_6c786a36[40];
@@ -5973,6 +5975,7 @@ static const struct
    "A f\303\241jl \303\274res.",
    "A f\303\241jl el\303\251r\303\251si \303\272tja \303\274res.",
    "Nem siker\303\274lt megnyitni a f\303\241jlt olvas\303\241shoz.",
+   "T\303\255pus",
    "Nem siker\303\274lt megnyitni a f\303\241jlt \303\255r\303\241shoz.",
    "(b\303\251lyegk\303\251pek keres\303\251s\303\251hez)",
    "F\303\241jlok list\303\241j\303\241nak \303\266sszegy\305\261jt\303\251se...",
@@ -6074,6 +6077,7 @@ static const struct
    "Log\303\263",
    "K\303\251perny\305\221k\303\251p",
    "Kezd\305\221 k\303\251perny\305\221",
+   "Magok",
    "Friss\303\255t\303\251s sikertelen.",
    "A RetroArch friss\303\255t\303\251se sikeres. A v\303\241ltoz\303\241sok \303\251letbel\303\251p"
    "\303\251s\303\251hez ind\303\255tsa \303\272jra az alkalmaz\303\241st.",
@@ -9783,7 +9787,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (186491u
+      (sizeof(msg_hash_hu_blob) == (186504u
 #ifdef ANDROID
        + 316u
 #endif
@@ -11732,6 +11736,7 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -11821,6 +11826,7 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,

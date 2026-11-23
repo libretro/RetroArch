@@ -491,6 +491,7 @@ static const struct
    char s_5dff78c4[37];
    char s_9cfaa012[23];
    char s_39b2f935[22];
+   char s_3794f2cd[5];
    char s_c46fdd49[29];
    char s_a2fd58a6[43];
    char s_99e7641c[19];
@@ -544,6 +545,7 @@ static const struct
    char s_094e2bc9[6];
    char s_b71e6907[8];
    char s_d725639f[10];
+   char s_fc5ea9dc[8];
    char s_a9dc9f21[91];
    char s_6c786a36[27];
    char s_6d0ca7a7[6];
@@ -1571,6 +1573,7 @@ static const struct
    "Introduz el nome de la llista nueva:",
    "El ficheru nun esiste.",
    "El ficheru ta baleru.",
+   "Tipu",
    "(\303\272sase p'atopar miniatures)",
    "Diendo en cata de la llista de ficheros...",
    "Llistes escond\303\255es",
@@ -1624,6 +1627,7 @@ static const struct
    "Xubir",
    "Llistes",
    "Car\303\241tula",
+   "Nucleos",
    "RetroArch anov\303\263se correutamente. Reanicia l'aplicaci\303\263n pa que los cambeos faigan e"
    "feutu.",
    "Anovar RetroArch (nightly)",
@@ -2215,7 +2219,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (25834u
+      (sizeof(msg_hash_ast_blob) == (25847u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2780,6 +2784,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
@@ -2833,6 +2838,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_VIEW,

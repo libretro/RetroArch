@@ -585,6 +585,7 @@ static const struct
    char s_094e2bc9[4];
    char s_b71e6907[13];
    char s_4707850d[12];
+   char s_fc5ea9dc[8];
    char s_78b36202[9];
    char s_8b826990[17];
    char s_900848a8[19];
@@ -1861,6 +1862,7 @@ static const struct
    "Opp",
    "Spillelister",
    "Skjermbilde",
+   "Kjerner",
    "Advarsel",
    "Vis 'Juksekoder'",
    "Vis \"Lukk innhold\"",
@@ -2619,7 +2621,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (29028u
+      (sizeof(msg_hash_no_blob) == (29036u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -3334,6 +3336,7 @@ static const msg_hash_id_t msg_hash_no_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_WARNING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,

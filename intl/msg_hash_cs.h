@@ -1439,6 +1439,7 @@ static const struct
    char s_39b2f935[21];
    char s_f585917a[33];
    char s_2942bc3c[36];
+   char s_3794f2cd[4];
    char s_0a3c5b6b[35];
    char s_c46fdd49[37];
    char s_a2fd58a6[33];
@@ -1529,6 +1530,7 @@ static const struct
    char s_d725639f[15];
    char s_4707850d[18];
    char s_cbddcf50[19];
+   char s_fc5ea9dc[7];
    char s_9abb40fc[21];
    char s_a9dc9f21[96];
    char s_6c786a36[41];
@@ -5492,6 +5494,7 @@ static const struct
    "Soubor je pr\303\241zdn\303\275.",
    "Cesta k souboru je nevypln\304\233n\303\241.",
    "Nelze otev\305\231\303\255t soubor pro \304\215ten\303\255.",
+   "Typ",
    "Nelze otev\305\231\303\255t soubor pro z\303\241pis.",
    "(slou\305\276\303\255 k vyhled\303\241v\303\241n\303\255 miniatur)",
    "Shroma\305\276\304\217uji seznam soubor\305\257...",
@@ -5592,6 +5595,7 @@ static const struct
    "Obr\303\241zek obalu",
    "Sn\303\255mek obrazovky",
    "\303\232vodn\303\255 obrazovka",
+   "J\303\241dra",
    "Aktualizace selhala.",
    "RetroArch byl \303\272sp\304\233\305\241n\304\233 aktualizov\303\241n. Aby se zm\304\233ny proje"
    "vily, restartujte pros\303\255m aplikaci.",
@@ -8786,7 +8790,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (161105u
+      (sizeof(msg_hash_cs_blob) == (161116u
 #ifdef ANDROID
        + 390u
 #endif
@@ -10572,6 +10576,7 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -10661,6 +10666,7 @@ static const msg_hash_id_t msg_hash_cs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,

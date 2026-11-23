@@ -1503,6 +1503,7 @@ static const struct
    char s_39b2f935[18];
    char s_f585917a[31];
    char s_2942bc3c[39];
+   char s_3794f2cd[5];
    char s_0a3c5b6b[41];
    char s_c46fdd49[33];
    char s_a2fd58a6[27];
@@ -1588,6 +1589,7 @@ static const struct
    char s_b71e6907[9];
    char s_d725639f[10];
    char s_cbddcf50[21];
+   char s_fc5ea9dc[7];
    char s_9abb40fc[28];
    char s_a9dc9f21[94];
    char s_6c786a36[29];
@@ -5757,6 +5759,7 @@ static const struct
    "Il file \303\250 vuoto.",
    "Il percorso del file \303\250 vuoto.",
    "Impossibile aprire il file in lettura.",
+   "Tipo",
    "Impossibile aprire il file in scrittura.",
    "(usato per trovare le miniature)",
    "Raccolta elenco di file...",
@@ -5848,6 +5851,7 @@ static const struct
    "Playlist",
    "Copertina",
    "Schermata del Titolo",
+   "Nuclei",
    "Aggiornamento non riuscito.",
    "RetroArch aggiornato con successo. Riavvia l'applicazione per rendere effettive le modifiche.",
    "Aggiorna RetroArch (nightly)",
@@ -8845,7 +8849,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (182014u
+      (sizeof(msg_hash_it_blob) == (182026u
 #ifdef ANDROID
        + 376u
 #endif
@@ -10775,6 +10779,7 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -10859,6 +10864,7 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
