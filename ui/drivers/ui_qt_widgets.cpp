@@ -8026,6 +8026,9 @@ QWidget *VideoPage::widget()
    CheckableSettingsGroup *windowCustomSizeGroup =
       new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE);
 #endif
+   CheckableSettingsGroup *windowFitDisplayGroup =
+      new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_WINDOW_FIT_DISPLAY);
+   FormLayout *windowFitDisplayForm = new FormLayout;
    QHBoxLayout *fullscreenSizeLayout = new QHBoxLayout;
    FormLayout *leftFullscreenSizeForm = new FormLayout;
    FormLayout *rightFullscreenSizeForm = new FormLayout;
@@ -8067,6 +8070,9 @@ QWidget *VideoPage::widget()
 #else
       MENU_ENUM_LABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
 #endif
+      MENU_ENUM_LABEL_VIDEO_WINDOW_FIT_DISPLAY,
+      MENU_ENUM_LABEL_VIDEO_WINDOW_FIT_ASPECT_RATIO_INDEX,
+      MENU_ENUM_LABEL_VIDEO_WINDOW_FIT_MARGIN,
       MENU_ENUM_LABEL_VIDEO_SCALE,
       MENU_ENUM_LABEL_VIDEO_WINDOW_WIDTH,
       MENU_ENUM_LABEL_VIDEO_WINDOW_HEIGHT,
@@ -8216,6 +8222,11 @@ QWidget *VideoPage::widget()
    windowedCustomSizeLayout->addLayout(rightWindowedCustomSizeForm);
    windowCustomSizeGroup->addRow(windowedCustomSizeLayout);
    windowedGroup->addRow(windowCustomSizeGroup);
+   windowFitDisplayGroup->add(MENU_ENUM_LABEL_VIDEO_WINDOW_FIT_ASPECT_RATIO_INDEX);
+   windowFitDisplayForm->addRow("Margin:",
+         new UIntSpinBox(MENU_ENUM_LABEL_VIDEO_WINDOW_FIT_MARGIN));
+   windowFitDisplayGroup->addRow(windowFitDisplayForm);
+   windowedGroup->addRow(windowFitDisplayGroup);
 
    /* Keep the dependent VSync and hard-sync controls grouped with their
     * master switches. The remaining synchronization settings come from the

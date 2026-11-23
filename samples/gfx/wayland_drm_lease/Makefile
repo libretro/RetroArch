@@ -32,6 +32,10 @@ WLR_HDRS := $(REPO_ROOT)/gfx/common/wayland/wlr-output-management-unstable-v1.h
 WLR_CODE := wlr-output-management-unstable-v1-protocol.c
 # ...and its server side, for the test compositor's output manager
 WLR_SRV  := wlr-output-management-unstable-v1-server-protocol.h
+# xdg-output, for each output's logical size
+XDG_XML  := $(REPO_ROOT)/deps/wayland-protocols/unstable/xdg-output
+XDG_HDRS := $(REPO_ROOT)/gfx/common/wayland/xdg-output-unstable-v1.h
+XDG_CODE := xdg-output-unstable-v1-protocol.c
 SOURCES := wayland_drm_lease_test.c \
            drm-lease-v1-protocol.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_wl.c \
@@ -42,6 +46,7 @@ SOURCES := wayland_drm_lease_test.c \
            kde-output-management-v2-protocol.c \
            $(REPO_ROOT)/gfx/common/wayland_wlr_output.c \
            wlr-output-management-unstable-v1-protocol.c \
+           xdg-output-unstable-v1-protocol.c \
            $(LRC)/rthreads/rthreads.c \
            $(LRC)/compat/compat_strl.c
 
@@ -98,7 +103,11 @@ wlr-%-protocol.c: $(WLR_XML)/wlr-%.xml
 	wayland-scanner private-code $< $@
 wlr-%-server-protocol.h: $(WLR_XML)/wlr-%.xml
 	wayland-scanner server-header $< $@
-$(OBJS): $(KDE_HDRS) $(WLR_HDRS) $(WLR_SRV)
+$(REPO_ROOT)/gfx/common/wayland/xdg-%.h: $(XDG_XML)/xdg-%.xml
+	wayland-scanner client-header $< $@
+xdg-%-protocol.c: $(XDG_XML)/xdg-%.xml
+	wayland-scanner private-code $< $@
+$(OBJS): $(KDE_HDRS) $(WLR_HDRS) $(WLR_SRV) $(XDG_HDRS)
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -108,6 +117,6 @@ check: $(TARGET)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS) $(GENERATED) $(KDE_CODE) $(WLR_CODE) $(WLR_SRV)
+	rm -f $(TARGET) $(OBJS) $(GENERATED) $(KDE_CODE) $(WLR_CODE) $(WLR_SRV) $(XDG_CODE)
 
 .PHONY: all check clean

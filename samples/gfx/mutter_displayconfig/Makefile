@@ -17,6 +17,10 @@ KDE_CODE := kde-output-device-v2-protocol.c kde-output-management-v2-protocol.c
 WLR_XML  := $(REPO_ROOT)/deps/wayland-protocols/wlr
 WLR_HDRS := $(REPO_ROOT)/gfx/common/wayland/wlr-output-management-unstable-v1.h
 WLR_CODE := wlr-output-management-unstable-v1-protocol.c
+# xdg-output, for each output's logical size
+XDG_XML  := $(REPO_ROOT)/deps/wayland-protocols/unstable/xdg-output
+XDG_HDRS := $(REPO_ROOT)/gfx/common/wayland/xdg-output-unstable-v1.h
+XDG_CODE := xdg-output-unstable-v1-protocol.c
 SOURCES := mutter_displayconfig_test.c \
            $(REPO_ROOT)/gfx/common/mutter_displayconfig.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_x11.c \
@@ -33,6 +37,7 @@ SOURCES := mutter_displayconfig_test.c \
            kde-output-management-v2-protocol.c \
            $(REPO_ROOT)/gfx/common/wayland_wlr_output.c \
            wlr-output-management-unstable-v1-protocol.c \
+           xdg-output-unstable-v1-protocol.c \
            $(LRC)/compat/compat_strl.c
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O0 \
@@ -68,12 +73,16 @@ $(REPO_ROOT)/gfx/common/wayland/wlr-%.h: $(WLR_XML)/wlr-%.xml
 	wayland-scanner client-header $< $@
 wlr-%-protocol.c: $(WLR_XML)/wlr-%.xml
 	wayland-scanner private-code $< $@
-$(OBJS): $(KDE_HDRS) $(WLR_HDRS)
+$(REPO_ROOT)/gfx/common/wayland/xdg-%.h: $(XDG_XML)/xdg-%.xml
+	wayland-scanner client-header $< $@
+xdg-%-protocol.c: $(XDG_XML)/xdg-%.xml
+	wayland-scanner private-code $< $@
+$(OBJS): $(KDE_HDRS) $(WLR_HDRS) $(XDG_HDRS)
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 clean:
-	rm -rf $(TARGET) obj $(KDE_CODE) $(WLR_CODE)
+	rm -rf $(TARGET) obj $(KDE_CODE) $(WLR_CODE) $(XDG_CODE)
 
 .PHONY: clean
