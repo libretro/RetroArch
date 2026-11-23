@@ -1264,6 +1264,11 @@ bool image_transfer_anim_stream_retain_planar(const void *stream,
       enum image_type_enum type, void **owner, void (**release)(void*))
 {
    (void)stream; (void)type; (void)owner; (void)release;
+#ifdef HAVE_RWEBM
+   if (type == IMAGE_TYPE_WEBM)
+      return rwebm_video_stream_retain_planar(
+            (const rwebm_video_stream_t*)stream, owner, release);
+#endif
 #ifdef HAVE_RMP4
    if (type == IMAGE_TYPE_MP4)
       return rmp4_video_stream_retain_planar(

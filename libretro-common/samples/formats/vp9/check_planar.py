@@ -36,6 +36,11 @@ CASES = [
         1, 0),
     ('h264.mkv', 'webm', SOURCE + ['-c:v', 'libx264', '-pix_fmt',
         'yuv420p'], 1, 0),
+    ('h264_bframes.mkv', 'webm', SOURCE + ['-c:v', 'libx264', '-bf', '2',
+        '-pix_fmt', 'yuv420p'], 1, 0),
+    ('h264_709_full.mkv', 'webm', SOURCE + ['-c:v', 'libx264', '-pix_fmt',
+        'yuv420p', '-colorspace', 'bt709', '-color_primaries', 'bt709',
+        '-color_trc', 'bt709', '-color_range', 'pc'], 1, BT709 | FULL_RANGE),
     ('h265.mkv', 'webm', SOURCE + ['-c:v', 'libx265', '-x265-params',
         'log-level=error', '-pix_fmt', 'yuv420p'], 1, 0),
     ('vp9.webm', 'webm', SOURCE + ['-c:v', 'libvpx-vp9', '-pix_fmt',
@@ -75,7 +80,7 @@ def main():
                 command.append(str(flags))
             env = os.environ.copy()
             env.pop('RETAIN_PLANAR', None)
-            if name.startswith('h264_') and container == 'mp4' and planar:
+            if name.startswith('h264') and planar:
                 env['RETAIN_PLANAR'] = '1'
             subprocess.run(command, check=True, env=env)
 
