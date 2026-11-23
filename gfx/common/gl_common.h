@@ -180,7 +180,10 @@ typedef struct
    unsigned vbo;
    unsigned vao;
    int loc[5];       /* uY, uC0, uC1, uSize, uCoef */
+   unsigned draw_prog, draw_vbo, draw_vao;
+   int draw_loc[8];
    uint8_t flags;    /* GL_PLANAR_* */
+   bool draw_failed; /* context-owner only; does not change upload capabilities */
 } gl_planar_t;
 
 #define GL_PLANAR_CORE   (1 << 0) /* R8/RG8, a VAO, GLSL 1.40 or 3.00 es */
@@ -205,6 +208,18 @@ bool gl_planar_update(gl_planar_t *p, unsigned tex,
  * public identity or duplicating the uploaded planes. */
 bool gl_planar_update_target(gl_planar_t *p, unsigned tex, unsigned target,
       const struct texture_image *ti);
+
+/* Viewer uploads keep the planes and defer RGB storage/conversion until an
+ * RGB-only consumer asks for resolve. The context owner makes every call. */
+unsigned gl_planar_load_deferred(gl_planar_t *p, const struct texture_image *ti,
+      bool linear, bool core);
+bool gl_planar_update_deferred(gl_planar_t *p, unsigned tex,
+      const struct texture_image *ti);
+unsigned gl_planar_resolve(gl_planar_t *p, unsigned tex);
+/* A four-vertex strip, uniform tint, arbitrary MVP and source UVs. Returns
+ * false for non-planar/materialized sources so the existing draw can run. */
+bool gl_planar_render(gl_planar_t *p, unsigned tex, const float *vertex,
+      const float *uv, const float *colour, const float *mvp);
 
 /* Before @tex is deleted: its planes and framebuffer go. Any texture. */
 void gl_planar_forget(gl_planar_t *p, unsigned tex);

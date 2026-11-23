@@ -836,6 +836,14 @@ static void gl2_draw_cg_effect(gl2_t *gl, const struct gl2_effect *fx,
 #endif
 #endif
 
+static GLuint gl2_media_resolve(gl2_t *gl, GLuint texture)
+{
+#ifdef HAVE_GL_PLANAR
+   if (!gl_planar_resolve(&gl->planar, texture)) return 0;
+#endif
+   return gl_media_pool_resolve(gl->media_pool, texture);
+}
+
 static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
@@ -871,8 +879,17 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
 
    glViewport(VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos),
          VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
+#ifdef HAVE_GL_PLANAR
+   if (!draw->effect && !draw->pipeline_id
+         && coords.vertices == 4 && draw->texture
+         && gl_planar_render(&gl->planar, (unsigned)draw->texture,
+            coords.vertex, coords.tex_coord, coords.color,
+            draw->matrix_data ? (const float*)draw->matrix_data : gl->mvp_no_rot.data))
+      return;
+#endif
+
    glBindTexture(GL_TEXTURE_2D, draw->texture
-         ? gl_media_pool_resolve(gl->media_pool,(GLuint)draw->texture) : gl->white_texture);
+         ? gl2_media_resolve(gl, (GLuint)draw->texture) : gl->white_texture);
 
 #ifdef GL2_EFFECTS
    if (draw->effect)
@@ -1222,7 +1239,7 @@ static bool gfx_display_gl2_mesh_draw(void *data, unsigned video_dims,
 
    /* The whole display, as draw() sets it for a strip at the origin */
    glViewport(0, 0, VIDEO_SCALE_W(video_dims), VIDEO_SCALE_H(video_dims));
-   glBindTexture(GL_TEXTURE_2D, texture ? gl_media_pool_resolve(gl->media_pool,(GLuint)texture) : gl->white_texture);
+   glBindTexture(GL_TEXTURE_2D, texture ? gl2_media_resolve(gl, (GLuint)texture) : gl->white_texture);
    /* Meshes are drawn blended, as every driver draws them */
    blend = glIsEnabled(GL_BLEND);
    glEnable(GL_BLEND);
@@ -3735,7 +3752,7 @@ static void gl2_render_overlay(gl2_t *gl)
 
    for (i = 0; i < gl->overlays; i++)
    {
-      glBindTexture(GL_TEXTURE_2D, gl_media_pool_resolve(gl->media_pool,gl->overlay_tex[i]));
+      glBindTexture(GL_TEXTURE_2D, gl2_media_resolve(gl, gl->overlay_tex[i]));
       glDrawArrays(GL_TRIANGLE_STRIP, 4 * i, 4);
    }
 
@@ -10148,7 +10165,7 @@ static void gl2_texture_load(gl2_t *gl, const struct texture_image *ti,
    {
 #ifdef HAVE_GL_PLANAR
       if (gl)
-         *id = gl_planar_load(&gl->planar, ti,
+         *id = gl_planar_load_deferred(&gl->planar, ti,
                filter_type != TEXTURE_FILTER_NEAREST
                && filter_type != TEXTURE_FILTER_MIPMAP_NEAREST,
                (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE) != 0);
@@ -10332,6 +10349,16 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
 #ifdef HAVE_GL_TEXTURE_LEND
    int lent           = -1;
 #endif
+#ifdef HAVE_GL_PLANAR
+   if (gl && ti->planar && gl_planar_update_deferred(&gl->planar, (unsigned)id, ti))
+   {
+      gl2_media_texture_changed(gl, id, true);
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   }
+   if (gl && !gl_planar_resolve(&gl->planar, (unsigned)id))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#endif
+
    if (gl)
    {
       destination=gl_media_pool_prepare_ex(&gl->media_pool,(GLuint)id,ti->width,ti->height,
@@ -11260,9 +11287,11 @@ static bool gfx_display_gl2_media_shader_draw(void *data, uintptr_t image,
    (void)video_dims;
    if (hdr) hdr_viewer_colour_rows(rows, true, gl->scrgb.menu_nits,
          gl->scrgb.expand_gamut);
-   return gl && (gl->flags & GL2_FLAG_HAVE_FBO) && gl->media_shader_enabled &&
+   return gl && gl->shader && gl->shader_data
+      && gl->shader->num_shaders(gl->shader_data)
+      && (gl->flags & GL2_FLAG_HAVE_FBO) && gl->media_shader_enabled &&
       gl2_media_shader_draw(&gl->media_shader, gl, gl->shader, gl->shader_data,
-            gl_media_pool_resolve(gl->media_pool,(GLuint)image), source_dims, pos, dims,
+            gl2_media_resolve(gl, (GLuint)image), source_dims, pos, dims,
             gl->media_shader_frame, hdr ? rows : NULL,
             gl->media_last_texture == image);
 }

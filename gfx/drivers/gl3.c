@@ -1298,6 +1298,14 @@ static GLuint gl3_plastic_program(gl3_t *gl);
 static GLuint gl3_font_plastic_program(gl3_t *gl);
 #endif
 
+static GLuint gl3_media_resolve(gl3_t *gl, GLuint texture)
+{
+#ifdef HAVE_GL_PLANAR
+   if (!gl_planar_resolve(&gl->planar, texture)) return 0;
+#endif
+   return gl_media_pool_resolve(gl->media_pool, texture);
+}
+
 static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
@@ -1323,6 +1331,15 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
 
    glViewport(VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos),
          VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
+#ifdef HAVE_GL_PLANAR
+   if (!draw->effect && !draw->pipeline_id
+         && coords.vertices == 4 && draw->texture
+         && gl_planar_render(&gl->planar, (unsigned)draw->texture,
+            coords.vertex, coords.tex_coord, coords.color,
+            draw->matrix_data ? (const float*)draw->matrix_data : gl->mvp_no_rot.data))
+      return;
+#endif
+
 
 #if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
    {
@@ -1340,7 +1357,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
    {
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, draw->texture
-            ? gl_media_pool_resolve(gl->media_pool,(GLuint)draw->texture) : gl->white_texture);
+            ? gl3_media_resolve(gl, (GLuint)draw->texture) : gl->white_texture);
 
       if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC)
          gl->chain.shader->use(gl, gl->chain.shader_data,
@@ -1369,7 +1386,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
 
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, draw->texture
-            ? gl_media_pool_resolve(gl->media_pool,(GLuint)draw->texture) : gl->white_texture);
+            ? gl3_media_resolve(gl, (GLuint)draw->texture) : gl->white_texture);
 
 #ifdef HAVE_SHADERPIPELINE
       if (fx && (fx->flags & GFX_EFFECT_BLEND_ADD))
@@ -1574,7 +1591,7 @@ static bool gfx_display_gl3_mesh_draw(void *data, unsigned video_dims,
    glUseProgram(gl->pipelines.mesh);
    glUniform4fv(gl->pipelines.mesh_loc.flat_ubo_vertex, 5, ubo);
    glActiveTexture(GL_TEXTURE1);
-   glBindTexture(GL_TEXTURE_2D, texture ? gl_media_pool_resolve(gl->media_pool,(GLuint)texture) : gl->white_texture);
+   glBindTexture(GL_TEXTURE_2D, texture ? gl3_media_resolve(gl, (GLuint)texture) : gl->white_texture);
 
    /* Read as stored: three floats, two 16-bit and four 8-bit
     * normalised integers */
@@ -2473,7 +2490,7 @@ static void gl3_render_overlay(gl3_t *gl,
       if (!gl->overlay_tex[i])
          continue;
       glActiveTexture(GL_TEXTURE1);
-      glBindTexture(GL_TEXTURE_2D, gl_media_pool_resolve(gl->media_pool,gl->overlay_tex[i]));
+      glBindTexture(GL_TEXTURE_2D, gl3_media_resolve(gl, gl->overlay_tex[i]));
       glDrawArrays(GL_TRIANGLE_STRIP, (GLint)(4 * i), 4);
    }
 
@@ -8537,7 +8554,7 @@ static void gl3_texture_load(gl3_t *gl, const struct texture_image *ti,
    {
 #ifdef HAVE_GL_PLANAR
       if (gl)
-         *id = gl_planar_load(&gl->planar, ti,
+         *id = gl_planar_load_deferred(&gl->planar, ti,
                filter_type != TEXTURE_FILTER_NEAREST
                && filter_type != TEXTURE_FILTER_MIPMAP_NEAREST, true);
 #endif
@@ -8675,6 +8692,16 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
    const void *pixels = ti->pixels;
    int lent           = -1;
    GLuint destination = gl ? gl_media_pool_resolve(gl->media_pool,(GLuint)id) : (GLuint)id;
+#ifdef HAVE_GL_PLANAR
+   if (gl && ti->planar && gl_planar_update_deferred(&gl->planar, (unsigned)id, ti))
+   {
+      gl3_media_texture_changed(gl, id, true);
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   }
+   if (gl && !gl_planar_resolve(&gl->planar, (unsigned)id))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#endif
+
    if (gl)
    {
       destination=gl_media_pool_prepare_ex(&gl->media_pool,(GLuint)id,ti->width,ti->height,
@@ -9802,13 +9829,13 @@ static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
    blend = glIsEnabled(GL_BLEND);
    scissor = glIsEnabled(GL_SCISSOR_TEST);
    glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, gl_media_pool_resolve(gl->media_pool,(GLuint)image));
+   glBindTexture(GL_TEXTURE_2D, gl3_media_resolve(gl, (GLuint)image));
 #ifndef HAVE_OPENGLES
    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
 #else
    format = GL_RGBA8;
 #endif
-   texture.image = gl_media_pool_resolve(gl->media_pool,(GLuint)image);
+   texture.image = gl3_media_resolve(gl, (GLuint)image);
    texture.dims = source_dims;
    texture.padded_dims = source_dims;
    texture.origin = 0;
@@ -9881,9 +9908,10 @@ static bool gfx_display_gl3_media_shader_draw(void *data, uintptr_t image,
    if (hdr) hdr_viewer_colour_rows(rows, true, gl->scrgb.menu_nits,
          gl->scrgb.expand_gamut);
    if (gl && gl->chain.active && gl->chain.shader)
-      return gl->media_shader_enabled && gl3_media_shader_draw(
+      return gl->media_shader_enabled && gl->chain.shader_data
+         && gl->chain.shader->num_shaders(gl->chain.shader_data) && gl3_media_shader_draw(
             &gl->media_legacy_shader, gl, gl->chain.shader, gl->chain.shader_data,
-            gl_media_pool_resolve(gl->media_pool,(GLuint)image), source_dims, pos, dims,
+            gl3_media_resolve(gl, (GLuint)image), source_dims, pos, dims,
             gl->media_shader_frame, hdr ? rows : NULL,
             gl->media_last_texture == image);
 #endif

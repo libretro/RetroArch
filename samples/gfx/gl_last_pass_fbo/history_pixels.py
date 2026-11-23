@@ -6,6 +6,7 @@ from pathlib import Path
 import shlex
 import subprocess
 import tempfile
+import sys
 here = Path(__file__).resolve().parent
 root = here.parents[2]
 with tempfile.TemporaryDirectory(prefix="gl-history-pixels-") as directory:
@@ -20,15 +21,36 @@ with tempfile.TemporaryDirectory(prefix="gl-history-pixels-") as directory:
     command += ["-std=c99", "-O1", "-g", "-Wall", "-Wextra", "-Werror"]
     command += shlex.split(os.environ.get("CFLAGS", ""))
     command += ["-I" + str(directory), "-I" + str(root), "-I" + str(root / "libretro-common/include"),
-                str(here / "history_pixels.c"), str(root / "libretro-common/formats/image/image_yuv_blit.c"), "-o", str(exe), "-lEGL", "-lGL", "-lm"]
+                str(here / "history_pixels.c"), str(root / "libretro-common/formats/image/image_yuv_blit.c"), "-o", str(exe)]
+    if os.name == "nt":
+        command += [str(root / "libretro-common/glsym/rglgen.c"),
+                    str(root / "libretro-common/glsym/glsym_gl.c"),
+                    "-I" + str(root / "gfx/include"), "-lopengl32", "-lgdi32", "-lm"]
+    else:
+        command += ["-lEGL", "-lGL", "-lm"]
     subprocess.run(command, check=True)
     subprocess.run([str(exe)], check=True)
+    for version in (2, 3):
+        gles = Path(directory) / ("planar-es" + str(version))
+        gles_command = shlex.split(os.environ.get("CC", "cc"))
+        gles_command += ["-std=c99", "-O1", "-g", "-Wall", "-Wextra", "-Werror",
+                         "-DHAVE_OPENGLES", "-DHAVE_OPENGLES" + str(version),
+                         "-I" + str(directory), "-I" + str(root / "libretro-common/include"),
+                         str(here / "gles_planar_pixels.c"),
+                         str(root / "libretro-common/formats/image/image_yuv_blit.c"),
+                         "-o", str(gles), "-lEGL", "-lGLESv2", "-lm"]
+        if os.name != "nt":
+            subprocess.run(gles_command, check=True)
+            subprocess.run([str(gles)], check=True)
     legacy = Path(directory) / "legacy-pixels"
     legacy_command = [str(legacy) if item == str(exe) else item for item in command]
     legacy_command.insert(1, "-DGL_POOL_LEGACY")
     subprocess.run(legacy_command, check=True)
     subprocess.run([str(legacy)], check=True, env={**os.environ,
                    "MESA_GL_VERSION_OVERRIDE": "2.1", "MESA_GLSL_VERSION_OVERRIDE": "120"})
+
+if os.name == "nt":
+    sys.exit(0)
 
 # Compile the shipping GLCore lifecycle separately with real texture/FBO pixels.
 source = (root / "gfx/drivers_shader/shader_gl3.c").read_text(encoding="utf-8")

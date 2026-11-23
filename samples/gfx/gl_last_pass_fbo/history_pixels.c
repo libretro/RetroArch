@@ -1,9 +1,14 @@
 /* Real EGL/GL pixels through the shared GLSL/Cg viewer history code. */
+#ifdef _WIN32
+#include <windows.h>
+#include <glsym/glsym.h>
+#else
 #define GL_GLEXT_PROTOTYPES 1
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#endif
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -37,6 +42,7 @@ static void legacy_pool_buffer(GLenum target,GLuint buffer)
 {(void)target;(void)buffer;assert(!"legacy pool used a pixel buffer API");}
 #define glGetIntegerv legacy_pool_integer
 #define glGetTexParameteriv legacy_pool_parameter
+#undef glBindBuffer
 #define glBindBuffer legacy_pool_buffer
 #endif
 #include "../../../gfx/common/gl_media_pool.h"
@@ -44,13 +50,18 @@ static void legacy_pool_buffer(GLenum target,GLuint buffer)
 #undef glGetIntegerv
 #undef glGetTexParameteriv
 #undef glBindBuffer
+#ifdef _WIN32
+#define glBindBuffer __rglgen_glBindBuffer
+#endif
 #endif
 #undef glDrawArrays
 #undef glCopyTexSubImage2D
 #include <formats/image.h>
 #include <formats/image_yuv_blit.h>
 #define HAVE_GL_PLANAR 1
+#define glDrawArrays counted_draw
 #include "planar.inc"
+#undef glDrawArrays
 static GLuint compile(GLenum type,const char *source)
 {
    GLint ok;GLuint shader=glCreateShader(type);glShaderSource(shader,1,&source,NULL);glCompileShader(shader);
@@ -306,10 +317,33 @@ static void run_planar(bool core, bool interleaved)
    gl_media_shader_free(&state);gl_planar_free(&planar);
    assert(glGetError()==GL_NO_ERROR);
 }
+#include "planar_direct_pixels.h"
+#ifdef _WIN32
+static rglgen_func_t resolve_gl(const char *name)
+{
+   PROC proc=wglGetProcAddress(name);
+   rglgen_func_t result;
+   if(!proc || proc==(PROC)1 || proc==(PROC)2 || proc==(PROC)3 || proc==(PROC)-1)
+      proc=GetProcAddress(GetModuleHandleA("opengl32.dll"),name);
+   memcpy(&result,&proc,sizeof(result));return result;
+}
+#endif
 int main(void)
 {
    const char *vs="#version 120\nattribute vec2 pos,uv;varying vec2 current,previous;uniform float flip;void main(){gl_Position=vec4(pos*2.-1.,0,1);current=uv;previous=vec2(pos.x,mix(pos.y,1.-pos.y,flip));}";
    const char *fs="#version 120\nvarying vec2 current,previous;uniform sampler2D image,old;uniform bool pick;void main(){gl_FragColor=pick?texture2D(old,previous):texture2D(image,current);}";
+#ifdef _WIN32
+   HWND window;HDC dc;HGLRC context;PIXELFORMATDESCRIPTOR descriptor;
+   GLuint vertex,fragment,target,fbo;
+   window=CreateWindowExA(0,"STATIC","GL viewer regression",WS_POPUP,0,0,16,16,NULL,NULL,GetModuleHandle(NULL),NULL);
+   assert(window);dc=GetDC(window);assert(dc);
+   memset(&descriptor,0,sizeof(descriptor));descriptor.nSize=sizeof(descriptor);
+   descriptor.nVersion=1;descriptor.dwFlags=PFD_DRAW_TO_WINDOW|PFD_SUPPORT_OPENGL;
+   descriptor.iPixelType=PFD_TYPE_RGBA;descriptor.cColorBits=32;
+   assert(SetPixelFormat(dc,ChoosePixelFormat(dc,&descriptor),&descriptor));
+   context=wglCreateContext(dc);assert(context && wglMakeCurrent(dc,context));
+   rglgen_resolve_symbols(resolve_gl);
+#else
    EGLDisplay display;EGLConfig config;EGLSurface surface;EGLContext context;EGLint count;
    const EGLint attributes[]={EGL_SURFACE_TYPE,EGL_PBUFFER_BIT,EGL_RENDERABLE_TYPE,EGL_OPENGL_BIT,EGL_NONE};
    const EGLint size[]={EGL_WIDTH,4,EGL_HEIGHT,3,EGL_NONE};GLuint vertex,fragment,target,fbo;
@@ -319,6 +353,8 @@ int main(void)
    assert(eglBindAPI(EGL_OPENGL_API));assert(eglChooseConfig(display,attributes,&config,1,&count)&&count);
    surface=eglCreatePbufferSurface(display,config,size);context=eglCreateContext(display,config,EGL_NO_CONTEXT,NULL);
    assert(eglMakeCurrent(display,surface,surface,context));
+#endif
+   printf("GPU reference: %s / %s\n",glGetString(GL_VENDOR),glGetString(GL_RENDERER));
    vertex=compile(GL_VERTEX_SHADER,vs);fragment=compile(GL_FRAGMENT_SHADER,fs);program=glCreateProgram();
    glAttachShader(program,vertex);glAttachShader(program,fragment);glBindAttribLocation(program,0,"pos");glBindAttribLocation(program,1,"uv");glLinkProgram(program);
    target=texture(GL_RGBA32F,NULL);glGenFramebuffers(1,&fbo);glBindFramebuffer(GL_FRAMEBUFFER,fbo);glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,target,0);assert(glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE);
@@ -328,12 +364,21 @@ int main(void)
    run_pool(GL_RGBA,0);
 #endif
    run_planar(false,false);run_planar(false,true);
+   {unsigned layout,linear;for(layout=0;layout<3;layout++)for(linear=0;linear<2;linear++)
+    {run_planar_direct(false,layout,linear!=0,GL_RGBA8);run_planar_direct(false,layout,linear!=0,GL_RGBA16F);}}
+   puts("Direct YUV viewer pixels: odd padded planes, NV12/NV21, filtering, crop, HDR storage, lazy RGB and state passed");
    puts("Planar GL GPU pixels: separate/interleaved planes, immutable pooled history, rejected updates and no snapshots passed");
 #ifndef GL_POOL_LEGACY
    run_planar(true,false);run_planar(true,true);
+   {unsigned layout,linear;for(layout=0;layout<3;layout++)for(linear=0;linear<2;linear++)
+    {run_planar_direct(true,layout,linear!=0,GL_RGBA8);run_planar_direct(true,layout,linear!=0,GL_RGBA16F);}}
 #endif
    glDeleteFramebuffers(1,&fbo);glDeleteTextures(1,&target);glDeleteProgram(program);glDeleteShader(vertex);glDeleteShader(fragment);
+#ifdef _WIN32
+   wglMakeCurrent(NULL,NULL);wglDeleteContext(context);ReleaseDC(window,dc);DestroyWindow(window);
+#else
    eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);eglDestroyContext(display,context);eglDestroySurface(display,surface);eglTerminate(display);
+#endif
 #ifdef GL_POOL_LEGACY
    puts("GL 2.1 pool GPU pixels: RGBA/RGBA8/FP16 uploads, no swizzle/PBO queries, history and retirement passed");
 #else

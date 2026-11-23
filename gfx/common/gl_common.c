@@ -1178,6 +1178,8 @@ struct gl_planar_tex
    /* Chroma in one interleaved plane, and Cr first in it */
    bool interleaved;
    bool swap;
+   float coef[8];
+   bool deferred, materialized, linear;
 };
 
 /* Pixel centres, the chroma of a 2x2 block from the one sample it
@@ -1358,53 +1360,69 @@ static void gl_planar_plane(GLenum fmt, unsigned bpp, unsigned w,
             GL_UNSIGNED_BYTE, src + (size_t)y * stride);
 }
 
-/* The planes of @ti into @t's textures and the draw that converts them
- * into @target, the driver's state put back as it was */
+/* Upload @ti when supplied, then convert the resident planes into @target.
+ * A zero target uploads only; NULL @ti materializes an earlier upload.
+ * Restore the driver state, including the upload-only case. */
 static bool gl_planar_draw(gl_planar_t *p, gl_planar_tex_t *t,
       const struct texture_image *ti, GLuint target)
 {
-   const struct texture_planar *tp = ti->planar;
+   const struct texture_planar *tp = ti ? ti->planar : NULL;
    bool core   = (p->flags & GL_PLANAR_CORE) != 0;
    GLenum one  = core ? GL_RED : GL_LUMINANCE;
    GLenum two  = core ? GL_RG  : GL_LUMINANCE_ALPHA;
    unsigned cw = (t->w + 1) / 2;
    unsigned ch = (t->h + 1) / 2;
    const uint8_t *c0;
-   GLint fbo = 0, prog = 0, active = 0, align = 4, vao = 0, abuf = 0;
-   GLint unpack = 0, attr_on = 0, row_length = 0;
+   GLint fbo = 0, prog = 0, active = 0, align = 4, abuf = 0;
+   GLint attr_on = 0, row_length = 0;
+#ifdef GL_PLANAR_HAVE_VAO
+   GLint vao = 0;
+#endif
+#ifdef GL_PLANAR_HAVE_UNPACK_BUFFER
+   GLint unpack = 0;
+#endif
    GLint bound[3], vp[4];
    GLboolean blend, scissor, depth, cull, stencil;
    float size[4], coef[8], k[6];
    bool interleaved, swap;
    unsigned i;
 
-   if (     !tp || !tp->planes[0] || !tp->planes[1] || !tp->planes[2]
-         || ti->width != t->w || ti->height != t->h)
-      return false;
-   /* One interleaved plane, either order, or two */
-   if (tp->chroma_step == 1)
+   if (ti)
    {
-      interleaved = false;
-      swap        = false;
-      c0          = tp->planes[1];
-   }
-   else if (tp->chroma_step == 2 && tp->planes[2] == tp->planes[1] + 1)
-   {
-      interleaved = true;
-      swap        = false;
-      c0          = tp->planes[1];
-   }
-   else if (tp->chroma_step == 2 && tp->planes[1] == tp->planes[2] + 1)
-   {
-      interleaved = true;
-      swap        = true;
-      c0          = tp->planes[2];
+      if (     !tp || !tp->planes[0] || !tp->planes[1] || !tp->planes[2]
+            || ti->width != t->w || ti->height != t->h)
+         return false;
+      /* One interleaved plane, either order, or two. */
+      if (tp->chroma_step == 1)
+      {
+         interleaved = false;
+         swap        = false;
+         c0          = tp->planes[1];
+      }
+      else if (tp->chroma_step == 2 && tp->planes[2] == tp->planes[1] + 1)
+      {
+         interleaved = true;
+         swap        = false;
+         c0          = tp->planes[1];
+      }
+      else if (tp->chroma_step == 2 && tp->planes[1] == tp->planes[2] + 1)
+      {
+         interleaved = true;
+         swap        = true;
+         c0          = tp->planes[2];
+      }
+      else
+         return false;
+      if (interleaved != t->interleaved)
+         return false;
+      t->swap = swap;
    }
    else
-      return false;
-   if (interleaved != t->interleaved)
-      return false;
-   t->swap = swap;
+   {
+      interleaved = t->interleaved;
+      swap        = t->swap;
+      c0          = NULL;
+   }
 
    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
    glGetIntegerv(GL_CURRENT_PROGRAM, &prog);
@@ -1435,33 +1453,45 @@ static bool gl_planar_draw(gl_planar_t *p, gl_planar_tex_t *t,
    cull    = glIsEnabled(GL_CULL_FACE);
    stencil = glIsEnabled(GL_STENCIL_TEST);
 
-   /* The planes, from where they lie */
-   glActiveTexture(GL_TEXTURE0);
-   glBindTexture(GL_TEXTURE_2D, t->plane[0]);
-   gl_planar_plane(one, 1, t->w, t->h, tp->planes[0], tp->strides[0]);
-   glActiveTexture(GL_TEXTURE1);
-   glBindTexture(GL_TEXTURE_2D, t->plane[1]);
-   gl_planar_plane(interleaved ? two : one, interleaved ? 2 : 1, cw, ch,
-         c0, swap ? tp->strides[2] : tp->strides[1]);
-   glActiveTexture(GL_TEXTURE2);
-   glBindTexture(GL_TEXTURE_2D, interleaved ? t->plane[1] : t->plane[2]);
-   if (!interleaved)
-      gl_planar_plane(one, 1, cw, ch, tp->planes[2], tp->strides[2]);
+   size[0] = (float)t->w; size[1] = (float)t->h;
+   size[2] = (float)cw; size[3] = (float)ch;
+   if (ti)
+   {
+      /* The planes, from where they lie */
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, t->plane[0]);
+      gl_planar_plane(one, 1, t->w, t->h, tp->planes[0], tp->strides[0]);
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D, t->plane[1]);
+      gl_planar_plane(interleaved ? two : one, interleaved ? 2 : 1, cw, ch,
+            c0, swap ? tp->strides[2] : tp->strides[1]);
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D, interleaved ? t->plane[1] : t->plane[2]);
+      if (!interleaved)
+         gl_planar_plane(one, 1, cw, ch, tp->planes[2], tp->strides[2]);
 
-   /* The conversion */
-   image_yuv_coefficients(tp->yuv, k);
-   size[0] = (float)t->w;
-   size[1] = (float)t->h;
-   size[2] = (float)cw;
-   size[3] = (float)ch;
-   coef[0] = k[0];
-   coef[1] = k[1];
-   coef[2] = k[2];
-   coef[3] = k[3];
-   coef[4] = k[4];
-   coef[5] = k[5];
-   coef[6] = interleaved ? 1.0f : 0.0f;
-   coef[7] = swap ? 1.0f : 0.0f;
+      /* The conversion */
+      image_yuv_coefficients(tp->yuv, k);
+      coef[0] = k[0];
+      coef[1] = k[1];
+      coef[2] = k[2];
+      coef[3] = k[3];
+      coef[4] = k[4];
+      coef[5] = k[5];
+      coef[6] = interleaved ? 1.0f : 0.0f;
+      coef[7] = swap ? 1.0f : 0.0f;
+      memcpy(t->coef, coef, sizeof(coef));
+   }
+   else
+   {
+      memcpy(coef, t->coef, sizeof(coef));
+      for (i = 0; i < 3; i++)
+      {
+         glActiveTexture(GL_TEXTURE0 + i);
+         glBindTexture(GL_TEXTURE_2D, t->plane[i == 2 && t->interleaved ? 1 : i]);
+      }
+   }
+   if (!target) goto restore;
    glBindFramebuffer(GL_FRAMEBUFFER, t->fbo);
    if (t->target != target)
    {
@@ -1495,13 +1525,14 @@ static bool gl_planar_draw(gl_planar_t *p, gl_planar_tex_t *t,
    }
    glDrawArrays(GL_TRIANGLES, 0, 3);
 
+restore:
    /* The driver's state as it was */
 #ifdef GL_PLANAR_HAVE_VAO
    if (core)
       glBindVertexArray((GLuint)vao);
    else
 #endif
-   if (!attr_on)
+   if (target && !attr_on)
       glDisableVertexAttribArray(GL_PLANAR_ATTR);
    glBindBuffer(GL_ARRAY_BUFFER, (GLuint)abuf);
    glUseProgram((GLuint)prog);
@@ -1559,8 +1590,8 @@ static void gl_planar_destroy(gl_planar_tex_t *t)
    free(t);
 }
 
-unsigned gl_planar_load(gl_planar_t *p, const struct texture_image *ti,
-      bool linear, bool core)
+static unsigned gl_planar_load_internal(gl_planar_t *p, const struct texture_image *ti,
+      bool linear, bool core, bool deferred)
 {
    const struct texture_planar *tp = ti ? ti->planar : NULL;
    gl_planar_tex_t *t;
@@ -1585,6 +1616,8 @@ unsigned gl_planar_load(gl_planar_t *p, const struct texture_image *ti,
 #else
    rgba_int = GL_RGBA8;
 #endif
+   t->deferred    = deferred;
+   t->linear      = linear;
    t->w           = ti->width;
    t->h           = ti->height;
    t->interleaved = tp->chroma_step == 2;
@@ -1595,24 +1628,39 @@ unsigned gl_planar_load(gl_planar_t *p, const struct texture_image *ti,
    glActiveTexture(GL_TEXTURE0);
    glGetIntegerv(GL_TEXTURE_BINDING_2D, &prev_tex);
    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &prev_fbo);
-   t->tex      = gl_planar_texture(rgba_int, GL_RGBA, t->w, t->h,
-         linear ? GL_LINEAR : GL_NEAREST);
+   if (deferred)
+   {
+      glGenTextures(1, &t->tex);
+      glBindTexture(GL_TEXTURE_2D, t->tex);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   }
+   else
+      t->tex = gl_planar_texture(rgba_int, GL_RGBA, t->w, t->h,
+            linear ? GL_LINEAR : GL_NEAREST);
    t->target   = t->tex;
    t->plane[0] = gl_planar_texture(one_int, one, t->w, t->h, GL_NEAREST);
    t->plane[1] = gl_planar_texture(t->interleaved ? two_int : one_int,
          t->interleaved ? two : one, cw, ch, GL_NEAREST);
    if (!t->interleaved)
       t->plane[2] = gl_planar_texture(one_int, one, cw, ch, GL_NEAREST);
-   glGenFramebuffers(1, &t->fbo);
-   glBindFramebuffer(GL_FRAMEBUFFER, t->fbo);
-   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-         GL_TEXTURE_2D, t->tex, 0);
-   ok = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+   ok = true;
+   if (!deferred)
+   {
+      glGenFramebuffers(1, &t->fbo);
+      glBindFramebuffer(GL_FRAMEBUFFER, t->fbo);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, t->tex, 0);
+      ok = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+      t->materialized = true;
+   }
    glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)prev_fbo);
    glBindTexture(GL_TEXTURE_2D, (GLuint)prev_tex);
    glActiveTexture((GLenum)active);
 
-   if (!ok || !t->tex || !gl_planar_draw(p, t, ti, t->tex))
+   if (!ok || !t->tex || !gl_planar_draw(p, t, ti, deferred ? 0 : t->tex))
    {
       if (t->tex)
          glDeleteTextures(1, &t->tex);
@@ -1622,6 +1670,59 @@ unsigned gl_planar_load(gl_planar_t *p, const struct texture_image *ti,
    t->next = p->list;
    p->list = t;
    return t->tex;
+}
+
+unsigned gl_planar_load(gl_planar_t *p, const struct texture_image *ti,
+      bool linear, bool core)
+{ return gl_planar_load_internal(p, ti, linear, core, false); }
+
+unsigned gl_planar_load_deferred(gl_planar_t *p, const struct texture_image *ti,
+      bool linear, bool core)
+{ return gl_planar_load_internal(p, ti, linear, core, true); }
+
+bool gl_planar_update_deferred(gl_planar_t *p, unsigned tex,
+      const struct texture_image *ti)
+{
+   gl_planar_tex_t *t = gl_planar_find(p, tex);
+   return t && t->deferred && !t->materialized && ti
+      && gl_planar_draw(p, t, ti, 0);
+}
+
+unsigned gl_planar_resolve(gl_planar_t *p, unsigned tex)
+{
+   gl_planar_tex_t *t = gl_planar_find(p, tex);
+   GLint bound, fbo;
+#ifdef GL_PLANAR_HAVE_UNPACK_BUFFER
+   GLint unpack;
+#endif
+   if (!t || !t->deferred || t->materialized) return tex;
+   glGetIntegerv(GL_TEXTURE_BINDING_2D, &bound);
+   glGetIntegerv(GL_FRAMEBUFFER_BINDING, &fbo);
+#ifdef GL_PLANAR_HAVE_UNPACK_BUFFER
+   glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &unpack);
+   if (unpack) glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+#endif
+   glBindTexture(GL_TEXTURE_2D, t->tex);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, t->w, t->h, 0,
+         GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+   glGenFramebuffers(1, &t->fbo);
+   glBindFramebuffer(GL_FRAMEBUFFER, t->fbo);
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, t->tex, 0);
+   t->materialized = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+   glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)fbo);
+   glBindTexture(GL_TEXTURE_2D, (GLuint)bound);
+#ifdef GL_PLANAR_HAVE_UNPACK_BUFFER
+   if (unpack) glBindBuffer(GL_PIXEL_UNPACK_BUFFER, (GLuint)unpack);
+#endif
+   if (!t->materialized)
+   {
+      glDeleteFramebuffers(1, &t->fbo);
+      t->fbo = 0;
+      return 0;
+   }
+   if (!gl_planar_draw(p, t, NULL, t->tex)) return 0;
+   return tex;
 }
 
 bool gl_planar_update_target(gl_planar_t *p, unsigned tex, unsigned target,
@@ -1638,6 +1739,167 @@ bool gl_planar_update(gl_planar_t *p, unsigned tex,
 {
    return gl_planar_update_target(p, tex, tex, ti);
 }
+
+/* A direct sample reproduces the old RGBA8 conversion before filtering.
+ * Filtering Y/U/V independently would move chroma edges and interpolate
+ * unclamped colours differently. Four RGB taps preserve that contract. */
+static const char gl_planar_sample_fs[] =
+   "vec3 pixel(vec2 p) {\n"
+   " p = clamp(p, vec2(0.0), uSize.xy - 1.0);\n"
+   " vec2 cc = (floor(p * 0.5) + 0.5) / uSize.zw;\n"
+   " float y = TEX(uY, (p + 0.5) / uSize.xy).r;\n"
+   " vec2 c = uCoef[1].z > 0.5 ? TEX(uC0,cc).CH\n"
+   "     : vec2(TEX(uC0,cc).r,TEX(uC1,cc).r);\n"
+   " if (uCoef[1].w > 0.5) c = c.yx;\n"
+   " c -= vec2(128.0/255.0);\n"
+   " vec3 rgb = vec3(uCoef[0].x*y+uCoef[0].y)\n"
+   "    + vec3(uCoef[0].z*c.y,uCoef[0].w*c.x+uCoef[1].x*c.y,uCoef[1].y*c.x);\n"
+   " return floor(clamp(rgb,0.0,1.0)*255.0+0.5)/255.0; }\n"
+   "uniform vec4 uTint; uniform float uLinear;\n"
+   "void main() {\n"
+   " vec2 q = vUV*uSize.xy; vec3 rgb;\n"
+   " if (uLinear > 0.5) {\n"
+   "   vec2 p = floor(q-0.5), f = fract(q-0.5);\n"
+   "   rgb = mix(mix(pixel(p),pixel(p+vec2(1,0)),f.x),\n"
+   "       mix(pixel(p+vec2(0,1)),pixel(p+vec2(1,1)),f.x),f.y);\n"
+   " } else rgb = pixel(floor(q));\n"
+   " OUT = vec4(rgb,1.0)*uTint; }\n";
+
+static bool gl_planar_sample_init(gl_planar_t *p)
+{
+   const char *src[4];
+   const char *names[8] = { "uY", "uC0", "uC1", "uSize", "uCoef",
+      "uMVP", "uTint", "uLinear" };
+   GLuint vs, fs;
+   GLint ok = 0;
+   unsigned i;
+   bool core = (p->flags & GL_PLANAR_CORE) != 0;
+   if (p->draw_prog) return true;
+   if (p->draw_failed) return false;
+   p->draw_failed = true; /* decline direct sampling after a failed program build */
+   src[0] = core ? gl_planar_core_head : gl_planar_legacy_head;
+   src[1] = core
+      ? "in vec4 aPos; out vec2 vUV; uniform mat4 uMVP;\n"
+        "void main(){gl_Position=uMVP*vec4(aPos.xy,0,1);vUV=aPos.zw;}\n"
+      : "attribute vec4 aPos; varying vec2 vUV; uniform mat4 uMVP;\n"
+        "void main(){gl_Position=uMVP*vec4(aPos.xy,0,1);vUV=aPos.zw;}\n";
+   vs = gl_planar_shader(GL_VERTEX_SHADER, src, 2);
+   src[1] = core
+      ? "#define TEX texture\n#define CH rg\n#define OUT FragColor\n"
+        "out vec4 FragColor; in vec2 vUV;\n"
+      : "#define TEX texture2D\n#define CH ra\n#define OUT gl_FragColor\n"
+        "varying vec2 vUV;\n";
+   src[2] = gl_planar_fs_decl;
+   src[3] = gl_planar_sample_fs;
+   fs = gl_planar_shader(GL_FRAGMENT_SHADER, src, 4);
+   if (vs && fs && (p->draw_prog = glCreateProgram()))
+   {
+      glAttachShader(p->draw_prog, vs); glAttachShader(p->draw_prog, fs);
+      glBindAttribLocation(p->draw_prog, GL_PLANAR_ATTR, "aPos");
+      glLinkProgram(p->draw_prog);
+      glGetProgramiv(p->draw_prog, GL_LINK_STATUS, &ok);
+   }
+   if (vs) glDeleteShader(vs);
+   if (fs) glDeleteShader(fs);
+   if (!ok)
+   {
+      if (p->draw_prog) glDeleteProgram(p->draw_prog);
+      p->draw_prog = 0;
+      return false;
+   }
+   for (i = 0; i < 8; i++) p->draw_loc[i] = glGetUniformLocation(p->draw_prog, names[i]);
+   glGenBuffers(1, &p->draw_vbo);
+#ifdef GL_PLANAR_HAVE_VAO
+   if (core) glGenVertexArrays(1, &p->draw_vao);
+#endif
+   return true;
+}
+
+bool gl_planar_render(gl_planar_t *p, unsigned tex, const float *vertex,
+      const float *uv, const float *colour, const float *mvp)
+{
+   gl_planar_tex_t *t = gl_planar_find(p, tex);
+   GLint program, active, bound[3], buffer, attr[6] = {0};
+#ifdef GL_PLANAR_HAVE_VAO
+   GLint vao = 0;
+   bool core = (p->flags & GL_PLANAR_CORE) != 0;
+#endif
+   void *pointer = NULL;
+   float vertices[16], size[4];
+   unsigned i;
+   if (!t || !t->deferred || t->materialized || !vertex || !uv || !mvp)
+      return false;
+   /* Gradients and effects retain the normal textured draw. */
+   if (colour)
+      for (i = 4; i < 16; i++)
+         if (colour[i] != colour[i & 3]) return false;
+   if (!gl_planar_sample_init(p)) return false;
+   for (i = 0; i < 4; i++)
+   {
+      vertices[i*4] = vertex[i*2]; vertices[i*4+1] = vertex[i*2+1];
+      vertices[i*4+2] = uv[i*2]; vertices[i*4+3] = uv[i*2+1];
+   }
+   size[0] = (float)t->w; size[1] = (float)t->h;
+   size[2] = (float)((t->w+1)/2); size[3] = (float)((t->h+1)/2);
+   glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+   glGetIntegerv(GL_ACTIVE_TEXTURE, &active);
+   glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &buffer);
+#ifdef GL_PLANAR_HAVE_VAO
+   if (core)
+   {
+      glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &vao);
+      glBindVertexArray(p->draw_vao);
+   }
+   else
+#endif
+   {
+      glGetVertexAttribiv(GL_PLANAR_ATTR, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &attr[0]);
+      glGetVertexAttribiv(GL_PLANAR_ATTR, GL_VERTEX_ATTRIB_ARRAY_SIZE, &attr[1]);
+      glGetVertexAttribiv(GL_PLANAR_ATTR, GL_VERTEX_ATTRIB_ARRAY_TYPE, &attr[2]);
+      glGetVertexAttribiv(GL_PLANAR_ATTR, GL_VERTEX_ATTRIB_ARRAY_NORMALIZED, &attr[3]);
+      glGetVertexAttribiv(GL_PLANAR_ATTR, GL_VERTEX_ATTRIB_ARRAY_STRIDE, &attr[4]);
+      glGetVertexAttribiv(GL_PLANAR_ATTR, GL_VERTEX_ATTRIB_ARRAY_BUFFER_BINDING, &attr[5]);
+      glGetVertexAttribPointerv(GL_PLANAR_ATTR, GL_VERTEX_ATTRIB_ARRAY_POINTER, &pointer);
+   }
+   for (i = 0; i < 3; i++)
+   {
+      glActiveTexture(GL_TEXTURE0 + i);
+      glGetIntegerv(GL_TEXTURE_BINDING_2D, &bound[i]);
+      glBindTexture(GL_TEXTURE_2D, t->plane[i == 2 && t->interleaved ? 1 : i]);
+   }
+   glUseProgram(p->draw_prog);
+   glUniform1i(p->draw_loc[0], 0); glUniform1i(p->draw_loc[1], 1);
+   glUniform1i(p->draw_loc[2], 2); glUniform4fv(p->draw_loc[3], 1, size);
+   glUniform4fv(p->draw_loc[4], 2, t->coef);
+   glUniformMatrix4fv(p->draw_loc[5], 1, GL_FALSE, mvp);
+   if (colour) glUniform4fv(p->draw_loc[6], 1, colour);
+   else glUniform4f(p->draw_loc[6], 1, 1, 1, 1);
+   glUniform1f(p->draw_loc[7], t->linear ? 1.0f : 0.0f);
+   glBindBuffer(GL_ARRAY_BUFFER, p->draw_vbo);
+   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STREAM_DRAW);
+   glEnableVertexAttribArray(GL_PLANAR_ATTR);
+   glVertexAttribPointer(GL_PLANAR_ATTR, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+#ifdef GL_PLANAR_HAVE_VAO
+   if (core) glBindVertexArray((GLuint)vao);
+   else
+#endif
+   {
+      glBindBuffer(GL_ARRAY_BUFFER, (GLuint)attr[5]);
+      glVertexAttribPointer(GL_PLANAR_ATTR, attr[1], attr[2], (GLboolean)attr[3], attr[4], pointer);
+      if (!attr[0]) glDisableVertexAttribArray(GL_PLANAR_ATTR);
+   }
+   glBindBuffer(GL_ARRAY_BUFFER, (GLuint)buffer);
+   glUseProgram((GLuint)program);
+   for (i = 0; i < 3; i++)
+   {
+      glActiveTexture(GL_TEXTURE0 + i);
+      glBindTexture(GL_TEXTURE_2D, (GLuint)bound[i]);
+   }
+   glActiveTexture((GLenum)active);
+   return true;
+}
+
 
 void gl_planar_forget(gl_planar_t *p, unsigned tex)
 {
@@ -1663,6 +1925,11 @@ void gl_planar_free(gl_planar_t *p)
       p->list            = t->next;
       gl_planar_destroy(t);
    }
+   if (p->draw_prog) glDeleteProgram(p->draw_prog);
+   if (p->draw_vbo) glDeleteBuffers(1, &p->draw_vbo);
+#ifdef GL_PLANAR_HAVE_VAO
+   if (p->draw_vao) glDeleteVertexArrays(1, &p->draw_vao);
+#endif
    if (p->prog)
       glDeleteProgram(p->prog);
    if (p->vbo)
