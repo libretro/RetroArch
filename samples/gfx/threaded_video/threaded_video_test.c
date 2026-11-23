@@ -10027,6 +10027,70 @@ static bool lend_gl_readback(const char *drv, uintptr_t id, bool rgba,
 }
 #endif
 
+#if defined(HAVE_OPENGL) && defined(HAVE_GL_TEXTURE_LEND)
+/* Planar handles may have no RGB storage until sampled. Exercise the
+ * display consumer instead of attaching the producer handle to an FBO. */
+static bool planar_gl_readback(unsigned width, unsigned height, uintptr_t image,
+      uint32_t *out)
+{
+   static const float vertex[8] = { -1, -1, 1, -1, -1, 1, 1, 1 };
+   static const float texcoord[8] = { 0, 0, 1, 0, 0, 1, 1, 1 };
+   static const float colour[16] = {
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+   math_matrix_4x4 matrix;
+   video_driver_state_t *video = video_state_get_ptr();
+   gfx_display_t *display = disp_get_ptr();
+   gfx_display_ctx_draw_t draw;
+   video_coords_t coords;
+   GLint old_fbo, viewport[4], pack;
+   GLuint texture, fbo;
+   bool ok;
+   GLboolean blend = glIsEnabled(GL_BLEND);
+   GLboolean scissor = glIsEnabled(GL_SCISSOR_TEST);
+   glGetIntegerv(GL_FRAMEBUFFER_BINDING, &old_fbo);
+   glGetIntegerv(GL_VIEWPORT, viewport);
+   glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING, &pack);
+   glGenTextures(1, &texture);
+   glBindTexture(GL_TEXTURE_2D, texture);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
+         GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+   glGenFramebuffers(1, &fbo);
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, texture, 0);
+   ok = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+   memset(&draw, 0, sizeof(draw));
+   memset(&coords, 0, sizeof(coords));
+   memset(&matrix, 0, sizeof(matrix));
+   matrix.data[0] = matrix.data[5] = matrix.data[10] = matrix.data[15] = 1;
+   coords.vertices = 4;
+   coords.vertex = vertex;
+   coords.tex_coord = texcoord;
+   coords.color = colour;
+   draw.coords = &coords;
+   draw.matrix_data = &matrix;
+   draw.texture = image;
+   draw.dims = VIDEO_SCALE_PACK(width, height);
+   glDisable(GL_BLEND);
+   glDisable(GL_SCISSOR_TEST);
+   if (ok)
+      gfx_display_draw(display->dispctx, &draw, video->data, draw.dims);
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+   glPixelStorei(GL_PACK_ALIGNMENT, 4);
+   if (ok)
+      glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, out);
+   ok = glGetError() == GL_NO_ERROR && ok;
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)pack);
+   glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)old_fbo);
+   glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+   if (blend) glEnable(GL_BLEND);
+   if (scissor) glEnable(GL_SCISSOR_TEST);
+   glDeleteFramebuffers(1, &fbo);
+   glDeleteTextures(1, &texture);
+   return ok;
+}
+#endif
+
 static unsigned surf_releases;
 static unsigned surf_last_slot;
 
@@ -14045,7 +14109,8 @@ static void lane_surface_planar(void)
             bool core    = !strcmp(drv, "glcore");
             image_yuv_420_to_rgb32(want, PW, y, PS, u, PS, v, PS, 1,
                   PW, PH, flags | (core ? IMAGE_YUV_FLAG_RGBA : 0));
-            CHECK(lend_gl_readback(drv, s->handle, false, PW, PH, got),
+            CHECK(core ? planar_gl_readback(PW, PH, s->handle, got)
+                  : lend_gl_readback(drv, s->handle, false, PW, PH, got),
                   "surface planar lane: GL readback failed");
             for (i = 0; i < PW * PH && bad == PW * PH; i++)
                if (!planar_close(got[i], want[i], 2))
