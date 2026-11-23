@@ -30,7 +30,7 @@ second_surface_driver.h: extract.awk $(CORE_DIR)/frontend/drivers/platform_unix.
 		$(CORE_DIR)/gfx/common/android_windows.c
 	( awk -v FUNCS=android_second_surface_free,android_second_surface_term,$(JNI)_nativeSurfaceChanged,$(JNI)_nativeSurfaceDestroyed \
 	     -f extract.awk $(CORE_DIR)/frontend/drivers/platform_unix.c && \
-	  awk -v FUNCS=android_windows_at,android_windows_poll,android_windows_let_go,android_windows_destroy,android_windows_keep,android_windows_take,android_windows_release_kept,android_windows_free \
+	  awk -v FUNCS=android_windows_at,android_windows_unbind,android_windows_poll,android_windows_let_go,android_windows_destroy,android_windows_keep,android_windows_take,android_windows_release_kept,android_windows_free \
 	     -f extract.awk $(CORE_DIR)/gfx/common/android_windows.c ) > $@.tmp
 	mv $@.tmp $@
 

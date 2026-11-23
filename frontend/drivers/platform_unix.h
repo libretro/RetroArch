@@ -351,6 +351,7 @@ struct android_app
    jmethodID showKeyboard;
    jmethodID hideKeyboard;
    jmethodID setSecondDisplay;
+   jmethodID renewSecondSurface;
    jmethodID moveToDisplay;
    jmethodID setBlankDisplays;
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
@@ -564,6 +565,11 @@ extern struct android_app *g_android;
  * display's surfaces: those made for earlier requests are dropped as
  * they arrive. */
 void android_second_display_request(unsigned ordinal, bool given_up);
+
+/* Any native thread, never waits: asks Java to replace the second
+ * display's surface of generation @generation with a new one, which
+ * comes as any other. False where Java could not be asked. */
+bool android_second_surface_renew(int generation);
 
 /* App thread, never waits: asks Java to cover the displays whose ids
  * are the @count in @ids with black, and no others. */

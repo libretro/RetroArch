@@ -1939,6 +1939,20 @@ public class RetroActivityCommon extends NativeActivity
   }
 
   /**
+   * Replaces the second display's surface of generation with a new one.
+   * Called from native code on any thread; posts to the UI thread and
+   * returns.
+   */
+  public void renewSecondSurface(final int generation) {
+    runOnUiThread(new Runnable() {
+      @Override public void run() {
+        if (secondDisplay != null)
+          secondDisplay.renew(generation);
+      }
+    });
+  }
+
+  /**
    * Covers the displays whose ids are in ids with black, and uncovers
    * the rest. Called from native code on any thread; posts to the UI
    * thread and returns.

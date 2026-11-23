@@ -360,6 +360,22 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
       showOn(wantedId);
   }
 
+  /** Replaces the surface of generation @generation, if it is still
+   * the one shown, with a new one: Android makes a new layer, so the
+   * display keeps nothing from the buffers drawn into the old. */
+  void renew(int generation)
+  {
+    final Screen screen = presentationScreen;
+    if (screen == null || screen.generation != generation)
+      return;
+    screen.view.setVisibility(View.INVISIBLE);
+    handler.post(new Runnable() {
+      @Override public void run() {
+        screen.view.setVisibility(View.VISIBLE);
+      }
+    });
+  }
+
   /** Covers the displays whose ids are @ids with black, and no others;
    * never RetroArch's own display, a move's target or the game's. */
   void blank(int[] ids)
@@ -794,7 +810,7 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
           | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
     p.setCancelable(false);
     view   = new SurfaceView(p.getContext());
-    screen = new Screen(wantedRequest, display);
+    screen = new Screen(wantedRequest, display, view);
     view.setFocusable(false);
     view.setFocusableInTouchMode(false);
     view.setKeepScreenOn(true);
@@ -1042,15 +1058,17 @@ final class SecondDisplayController implements DisplayManager.DisplayListener
     /* The show request its Presentation was made for */
     private final int request;
     private final Display display;
+    private final SurfaceView view;
     /* nativeSurfaceChanged()'s, 0 while there is none */
     private int generation;
     /* Native code has taken a surface of it */
     private boolean hadSurface;
 
-    Screen(int request, Display display)
+    Screen(int request, Display display, SurfaceView view)
     {
       this.request = request;
       this.display = display;
+      this.view    = view;
     }
 
     @Override public void surfaceCreated(SurfaceHolder holder) { }

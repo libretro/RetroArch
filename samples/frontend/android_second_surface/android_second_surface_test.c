@@ -21,7 +21,11 @@
  *    at the size last drawn, and the next driver's first poll brings
  *    the new size;
  *  - the display's peak luminance goes with its surface to the window
- *    that takes it.
+ *    that takes it;
+ *  - a kept surface the next renderer would draw another kind of
+ *    buffer into is not drawn: Java is asked once for a new surface,
+ *    which is, across a driver reinit too; the same kind, or a kind
+ *    unknown on either side, is drawn as before.
  *
  * The functions are taken out of platform_unix.c and android_windows.c
  * at build time by extract.awk; the test supplies the types they touch,
@@ -131,6 +135,18 @@ static void android_second_display_request(unsigned ordinal, bool given_up)
    last_given_up = given_up;
 }
 
+/* What the windows asked Java to replace */
+static unsigned renews;
+static int last_renew;
+static bool renew_asked = true;
+
+static bool android_second_surface_renew(int generation)
+{
+   renews++;
+   last_renew = generation;
+   return renew_asked;
+}
+
 #include "second_surface_driver.h"
 
 static unsigned failures;
@@ -177,9 +193,9 @@ static void poll_once(void)
    Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeSurfaceDestroyed( \
          NULL, NULL)
 
-/* Window 1 on display 2, made and shown on @a by 'owner', then kept
- * as a driver teardown keeps it */
-static android_window_t *window_kept(ANativeWindow *a)
+/* Window 1 on display 2, made and shown on @a by 'owner', which draws
+ * @buffers there, then kept as a driver teardown keeps it */
+static android_window_t *window_kept_as(ANativeWindow *a, unsigned buffers)
 {
    android_window_t *kept = (android_window_t*)calloc(1, sizeof(*kept));
    memset(&app, 0, sizeof(app));
@@ -192,12 +208,19 @@ static android_window_t *window_kept(ANativeWindow *a)
    kept->common.request.display    = 2;
    native.state                    = kept;
    native.generation               = 7;
+   native.buffers                  = buffers;
    android_windows[1]              = kept;
    SURFACE_CHANGED(a, 1240, 1080);
    poll_once();
    requests = 0;
+   renews   = 0;
    android_windows_keep(&owner, &native);
    return kept;
+}
+
+static android_window_t *window_kept(ANativeWindow *a)
+{
+   return window_kept_as(a, 0);
 }
 
 /* A driver reinit: the old owner keeps the window up, the next one
@@ -409,6 +432,118 @@ static void test_peak_reaches_window(void)
    CHECK(a.refs == 0 && !android_windows[1], "then it goes");
 }
 
+/* The next owner takes the window kept on @a, where 'owner' drew
+ * @was, and polls once to draw @now */
+static void take_kept(ANativeWindow *a, unsigned was, unsigned now,
+      video_window_native_t *taken, void *next_owner)
+{
+   unsigned display = 0;
+   window_kept_as(a, was);
+   memset(taken, 0, sizeof(*taken));
+   android_windows_take(next_owner, 1, taken, &display);
+   taken->buffers = now;
+   poll_for(next_owner);
+}
+
+/* A surface kept from a renderer that drew another kind of buffer */
+static void test_renew(void)
+{
+   static int next_owner;
+   ANativeWindow a, b;
+   video_window_native_t taken;
+   unsigned display = 0;
+   int gen_a, gen_b;
+
+   /* Another kind: a new surface asked for, once; the old one not
+    * drawn, at any size */
+   take_kept(&a, 1, 2, &taken, &next_owner);
+   gen_a = retro_atomic_load_acquire_int(
+         &app.second_display.surface_generation);
+   CHECK(renews == 1 && last_renew == gen_a && requests == 0,
+         "another kind asks Java for a new surface");
+   CHECK(!taken.surface && !taken.presentable && !taken.configured
+         && a.refs == 0, "and the kept one is let go of, not drawn");
+   CHECK(!retro_atomic_load_acquire_int(&app.second_display.bound_surface),
+         "input stops mapping into it");
+   poll_for(&next_owner);
+   CHECK(renews == 1, "asked once");
+   SURFACE_CHANGED(&a, 1080, 1240);
+   poll_for(&next_owner);
+   CHECK(!taken.surface && a.refs == 0 && renews == 1,
+         "nor is it drawn at another size");
+   SURFACE_DESTROYED();
+   memset(&b, 0, sizeof(b));
+   gen_b = SURFACE_CHANGED(&b, 1240, 1080);
+   poll_for(&next_owner);
+   CHECK(gen_b != gen_a && taken.surface == &b && taken.presentable
+         && taken.configured
+         && retro_atomic_load_acquire_int(
+            &app.second_display.bound_surface) == gen_b,
+         "the new surface is drawn");
+   poll_for(&next_owner);
+   CHECK(renews == 1 && taken.surface == &b,
+         "and kept: it carried nothing before");
+   /* The renderer's kind changes while it draws */
+   taken.buffers = 1;
+   poll_for(&next_owner);
+   CHECK(renews == 2 && last_renew == gen_b && !taken.surface
+         && b.refs == 0, "a kind changed on the way is a new surface too");
+   android_windows_destroy(&next_owner, &taken);
+   CHECK(!android_windows[1], "then it goes");
+
+   /* A driver reinit before the new surface comes */
+   take_kept(&a, 1, 2, &taken, &next_owner);
+   gen_a = retro_atomic_load_acquire_int(
+         &app.second_display.surface_generation);
+   android_windows_keep(&next_owner, &taken);
+   memset(&native, 0, sizeof(native));
+   CHECK(android_windows_take(&owner, 1, &native, &display)
+         && !native.surface && !native.presentable,
+         "a reinit meanwhile takes the window with no surface");
+   native.buffers = 2;
+   poll_once();
+   SURFACE_CHANGED(&a, 1080, 1240);
+   poll_once();
+   CHECK(!native.surface && a.refs == 0 && renews == 1,
+         "the old one is still not drawn, nor asked for again");
+   SURFACE_DESTROYED();
+   memset(&b, 0, sizeof(b));
+   gen_b = SURFACE_CHANGED(&b, 1240, 1080);
+   poll_once();
+   CHECK(gen_b != gen_a && native.surface == &b && native.presentable
+         && retro_atomic_load_acquire_int(
+            &app.second_display.bound_surface) == gen_b,
+         "the new surface is drawn");
+   poll_once();
+   CHECK(renews == 1 && native.surface == &b, "and kept");
+   android_windows_destroy(&owner, &native);
+   CHECK(b.refs == 0 && !android_windows[1], "then it goes");
+
+   /* The same kind: drawn as before */
+   take_kept(&a, 1, 1, &taken, &next_owner);
+   CHECK(renews == 0 && taken.surface == &a && taken.presentable,
+         "the same kind draws the kept surface, asking nothing");
+   android_windows_destroy(&next_owner, &taken);
+   CHECK(a.refs == 0 && !android_windows[1], "then it goes");
+
+   /* Unknown on either side, or Java not there to ask: as before */
+   take_kept(&a, 0, 2, &taken, &next_owner);
+   CHECK(renews == 0 && taken.surface == &a && taken.presentable,
+         "after a renderer that did not say, the kept surface is drawn");
+   android_windows_destroy(&next_owner, &taken);
+   take_kept(&a, 1, 0, &taken, &next_owner);
+   CHECK(renews == 0 && taken.surface == &a && taken.presentable,
+         "a renderer that does not say draws the kept surface");
+   android_windows_destroy(&next_owner, &taken);
+   renew_asked = false;
+   take_kept(&a, 1, 2, &taken, &next_owner);
+   renew_asked = true;
+   CHECK(renews == 1 && taken.surface == &a && taken.presentable,
+         "with Java not asked, the kept surface is drawn");
+   android_windows_destroy(&next_owner, &taken);
+   CHECK(a.refs == 0 && !android_windows[1], "then it goes");
+}
+
 int main(void)
 {
    ANativeWindow a, b;
@@ -494,6 +629,7 @@ int main(void)
    test_resize();
    test_resize_kept();
    test_peak_reaches_window();
+   test_renew();
 
    if (failures)
    {

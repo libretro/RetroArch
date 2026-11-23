@@ -12952,6 +12952,21 @@ static int vulkan_window_output(vk_t *vk, struct vk_window *win,
    return (out->flags & VK_OUTPUT_FLAG_LOST) ? -1 : 1;
 }
 
+/* A window's buffers (video_window_native_t): what vulkan_output_pick()
+ * picks by, so one value is one pick on one surface; never 0 */
+static unsigned vulkan_window_buffers(const vk_t *vk)
+{
+   const vulkan_context_t *ctx = vk->context;
+   unsigned space              = 0; /* SDR, HDR10, scRGB */
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if (ctx->flags & VK_CTX_FLAG_HDR_ENABLE)
+      space = (ctx->swapchain_colour_space
+            == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT) ? 2 : 1;
+#endif
+   return 1 + ((unsigned)ctx->swapchain_format * 4 + space) * 2
+      + (space && ctx->swapchain_settings.bit_depth == 2);
+}
+
 /* The windows' part of a frame, before its views are settled: each one
  * made or let go of, polled, and given an output and a free image.
  * Those that will draw their screens put their views' chains, sized for
@@ -12984,6 +12999,10 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
    {
       unsigned count;
       video_window_event_t events[VK_WINDOW_EVENTS];
+      unsigned buffers = vulkan_window_buffers(vk);
+      for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+         if (vk->windows.held.live & (1u << w))
+            vk->windows.win[w].native.buffers = buffers;
       count = ctx->poll(vk->ctx_data, events, VK_WINDOW_EVENTS);
       for (i = 0; i < count; i++)
       {

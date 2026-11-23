@@ -334,6 +334,19 @@ void android_second_display_request(unsigned ordinal, bool given_up)
          android_app->setSecondDisplay, (jint)ordinal, (jint)number);
 }
 
+bool android_second_surface_renew(int generation)
+{
+   JNIEnv *env;
+   struct android_app *android_app = (struct android_app*)g_android;
+
+   if (     !android_app || !android_app->renewSecondSurface
+         || !(env = jni_thread_getenv()))
+      return false;
+   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz,
+         android_app->renewSecondSurface, (jint)generation);
+   return true;
+}
+
 void android_blank_displays_request(const int *ids, unsigned count)
 {
    JNIEnv *env;
@@ -4169,6 +4182,8 @@ static void frontend_unix_init(void *data)
          "hideKeyboard", "()V");
    GET_METHOD_ID(env, android_app->setSecondDisplay, class,
          "setSecondDisplay", "(II)V");
+   GET_METHOD_ID(env, android_app->renewSecondSurface, class,
+         "renewSecondSurface", "(I)V");
    GET_METHOD_ID(env, android_app->moveToDisplay, class,
          "moveToDisplay", "(II)V");
    GET_METHOD_ID(env, android_app->setBlankDisplays, class,
