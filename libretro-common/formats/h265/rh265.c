@@ -4253,7 +4253,7 @@ static retro_atomic_int_t *rh265_picture_refs(const void *arena)
 void rh265_video_release_planes(void *owner)
 {
    if (owner && retro_atomic_fetch_sub_int(rh265_picture_refs(owner), 1) == 1)
-      free(rh265_picture_refs(owner));
+      free((void*)rh265_picture_refs(owner));
 }
 
 static void rh265_free_frame(rh265_video *v)
