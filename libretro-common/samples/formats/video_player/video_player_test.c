@@ -94,6 +94,24 @@ static void CHECK(int cond, const char *fmt, ...)
 /* ---- the stream: frame k is every pixel 0xAA000000 | k, emitted as
  * ARGB when asked or with red and blue exchanged ---- */
 
+typedef struct retained_planes
+{
+   retro_atomic_int_t refs;
+   uint8_t pixels[N * 2];
+} retained_planes_t;
+static retro_atomic_int_t retained_live;
+static unsigned retained_shown;
+static const uint8_t *retained_last;
+static void retained_release(void *owner)
+{
+   retained_planes_t *p = (retained_planes_t*)owner;
+   if (p && retro_atomic_fetch_sub_int(&p->refs, 1) == 1)
+   {
+      retro_atomic_fetch_sub_int(&retained_live, 1);
+      free(p);
+   }
+}
+
 typedef struct
 {
    uint32_t canvas[N];
@@ -119,6 +137,9 @@ typedef struct
    bool planar_on;
    bool planar_borrow;
    bool planar_strided;
+   bool planar_retain;
+   retro_atomic_int_t planar_decoded;
+   retained_planes_t *current_planes;
    struct texture_planar planar_view;
    int planar_sets;
    unsigned planar_yuv;
@@ -217,6 +238,15 @@ const uint32_t *image_transfer_anim_stream_next(void *stream,
    if (f->planar_on && f->direct && f->out)
    {
       uint8_t *planes = (uint8_t*)(f->planar_borrow ? f->canvas : f->out);
+      if (f->planar_retain && f->planar_borrow)
+      {
+         retained_release(f->current_planes);
+         f->current_planes = (retained_planes_t*)calloc(1, sizeof(*f->current_planes));
+         if (!f->current_planes) return NULL;
+         retro_atomic_int_init(&f->current_planes->refs, 1);
+         retro_atomic_fetch_add_int(&retained_live, 1);
+         planes = f->current_planes->pixels;
+      }
       memset(planes, f->pos + 1, N);
       memset(planes + N, 0x80, 2 * ((W + 1) / 2) * ((H + 1) / 2));
       f->planar_yuv = (1u << 2) | ((f->pos & 1) ? (1u << 1) : 0u);
@@ -228,6 +258,7 @@ const uint32_t *image_transfer_anim_stream_next(void *stream,
       f->planar_view.chroma_step = 1;
       f->planar_view.yuv = f->planar_yuv;
       f->pos++;
+      retro_atomic_fetch_add_int(&f->planar_decoded, 1);
       *duration_ms = f->duration_ms;
       return f->out;
    }
@@ -366,6 +397,18 @@ bool image_transfer_anim_stream_borrow_planar(void *stream,
    f->planar_strided = strided;
    f->planar_borrow = f->planar_on;
    return f->planar_borrow;
+}
+
+bool image_transfer_anim_stream_retain_planar(const void *stream,
+      enum image_type_enum type, void **owner, void (**release)(void*))
+{
+   const fake_t *f = (const fake_t*)stream;
+   (void)type;
+   if (!f->planar_retain || !f->current_planes) return false;
+   retro_atomic_fetch_add_int(&f->current_planes->refs, 1);
+   *owner = f->current_planes;
+   *release = retained_release;
+   return true;
 }
 
 const struct texture_planar *image_transfer_anim_stream_borrowed_planar(
@@ -577,6 +620,7 @@ static void sink_init_hw(sink_t *k, video_player_sink_t *s)
 static void fake_init(fake_t *f, int frames, int duration_ms)
 {
    memset(f, 0, sizeof(*f));
+   retro_atomic_int_init(&f->planar_decoded, 0);
    retro_atomic_int_init(&f->startup_hold,0);
    retro_atomic_int_init(&f->startup_entered,0);
    f->frames        = frames;
@@ -748,6 +792,11 @@ static enum video_player_present sink_present_planar(void *user,
       : (const uint8_t*)k->slots[fr->slot];
    int idx               = (int)planes[0] - 1;
    unsigned want         = (1u << 2) | ((idx & 1) ? (1u << 1) : 0u);
+   if (fr->planar)
+   {
+      retained_shown++;
+      retained_last = fr->planar->planes[0];
+   }
    CHECK(!k->begun[fr->slot], "planar: slot still being written");
    if (     fr->pixels || fr->how != VIDEO_PLAYER_DIRECT || fr->yuv != want
          || planes[N] != 0x80)
@@ -768,6 +817,47 @@ static enum video_player_present sink_present_planar(void *user,
  * in its slot, with that frame's own colour flags, ahead of any half
  * float request; a frame that does not come into the slot, or a stream
  * that cannot hand planes out, ends the playback with nothing shown. */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+static void lane_retained_stop(void)
+{
+   fake_t f;
+   sink_t k;
+   video_player_sink_t s;
+   video_player_t *p;
+   int polls = 0;
+   bool stopped;
+   fake_init(&f, 5, 5);
+   f.direct = f.planar_can = f.planar_retain = true;
+   retained_last = NULL;
+   sink_init(&k, &s, true);
+   s.present = sink_present_planar;
+   k.start_flags = VIDEO_PLAYER_I420 | VIDEO_PLAYER_BORROW_PLANES;
+   k.queue_every = 1;
+   p = video_player_new(&f, IMAGE_TYPE_MP4, 1, &s, 0);
+   while (p && k.held < 0 && polls++ < 2000)
+   {
+      video_player_poll(p, (int64_t)polls * 6000);
+      retro_sleep(1);
+   }
+   CHECK(p && k.held >= 0, "retained stop: no queued frame");
+   polls = 0;
+   while (retro_atomic_load_acquire_int(&f.planar_decoded) < 2 && polls++ < 2000)
+      retro_sleep(1);
+   CHECK(retro_atomic_load_acquire_int(&f.planar_decoded) >= 2,
+         "retained stop: decode-ahead was serialized behind the upload");
+   CHECK(retained_last && retained_last[0] == 1 && retained_last[N - 1] == 1,
+         "retained stop: decode-ahead rewrote the queued frame");
+   CHECK(!video_player_stop(p), "retained stop: released queued decoder planes");
+   if (k.held >= 0) video_player_slot_released(p, (unsigned)k.held);
+   polls = 0;
+   while (!(stopped = video_player_stop(p)) && polls++ < 2000) retro_sleep(1);
+   CHECK(stopped, "retained stop: did not retire after upload");
+   video_player_free(p);
+   retained_release(f.current_planes);
+   CHECK(!retro_atomic_load_acquire_int(&retained_live), "retained stop: leaked planes");
+}
+#endif
+
 static void lane_planar(bool threaded, unsigned borrow)
 {
    fake_t f;
@@ -781,13 +871,14 @@ static void lane_planar(bool threaded, unsigned borrow)
    fake_init(&f, 5, 5);
    f.direct     = true;
    f.planar_can = true;
+   f.planar_retain = borrow == 3;
    sink_init(&k, &s, true);
    s.present     = sink_present_planar;
    k.start_flags = VIDEO_PLAYER_I420 | VIDEO_PLAYER_FP16
       | (borrow ? VIDEO_PLAYER_BORROW_PLANES : 0)
       | (borrow == 2 ? VIDEO_PLAYER_BORROW_STRIDED : 0);
    k.queue_every = threaded ? 2 : 0;
-   planar_seen   = planar_bad = 0;
+   planar_seen   = planar_bad = retained_shown = 0;
    p = video_player_new(&f, IMAGE_TYPE_MP4, 2, &s,
          threaded ? 0 : VIDEO_PLAYER_INLINE);
    do
@@ -802,10 +893,10 @@ static void lane_planar(bool threaded, unsigned borrow)
       if (threaded)
          retro_sleep(1);
    } while (st == VIDEO_PLAYER_PLAYING && ++polls < 5000);
-   CHECK(f.planar_strided == (borrow == 2 && !threaded),
+   CHECK(f.planar_strided == (borrow == 2),
          "planar: padded borrow policy lost");
-   CHECK(f.planar_borrow == (borrow && !threaded),
-         "planar: borrow negotiation crossed worker boundary");
+   CHECK(f.planar_borrow == (borrow != 0),
+         "planar: borrow negotiation lost");
    CHECK(f.planar_on && !f.want_fp16,
          "planar%s: stream not asked for planes alone",
          threaded ? " threaded" : "");
@@ -814,7 +905,12 @@ static void lane_planar(bool threaded, unsigned borrow)
          threaded ? " threaded" : "", planar_seen);
    CHECK(planar_bad == 0, "planar%s: %d frames described wrongly",
          threaded ? " threaded" : "", planar_bad);
+   if (threaded && borrow == 3)
+      CHECK(retained_shown == 10, "planar: retained frames were copied into slots");
    video_player_free(p);
+   retained_release(f.current_planes);
+   f.current_planes = NULL;
+   CHECK(!retro_atomic_load_acquire_int(&retained_live), "planar: leaked a retained frame");
    CHECK(!k.begun[0] && !k.begun[1], "planar: a slot not ended");
 
    /* frames out of the stream's canvas cannot be planes */
@@ -2611,6 +2707,10 @@ int main(void)
    lane_planar(true, false);
    lane_planar(true, true);
    lane_planar(true, 2);
+   lane_planar(true, 3);
+#ifdef RETRO_ATOMIC_HAS_PTR
+   lane_retained_stop();
+#endif
    lane_churn();
 #endif
 recovery_only:

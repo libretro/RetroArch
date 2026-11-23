@@ -53,8 +53,9 @@ static int gfx_surface_player_start(void *user, unsigned width,
         | (gsp->rgba ? VIDEO_PLAYER_RGBA : 0)
         | (s->pixfmt == IMAGE_PIXFMT_FP16 ? VIDEO_PLAYER_FP16 : 0)
         | (s->pixfmt == IMAGE_PIXFMT_I420 ? VIDEO_PLAYER_I420 : 0)
-        | (s->pixfmt == IMAGE_PIXFMT_I420 && num_slots == 1
-              && (gsp->hold_canvas || !video_driver_thread_wrapper_active())
+        | (s->pixfmt == IMAGE_PIXFMT_I420
+              && (gsp->hold_canvas || (num_slots == 1
+                    && !video_driver_thread_wrapper_active()))
               ? VIDEO_PLAYER_BORROW_PLANES
                  | (have_req && req.planar_strided ? VIDEO_PLAYER_BORROW_STRIDED : 0)
               : 0);
@@ -210,7 +211,7 @@ static enum video_player_present gfx_surface_player_present(void *user,
       }
       planes.chroma_step = fr->planar->chroma_step;
       res = gsp->hold_canvas
-         ? gfx_surface_submit_planes_held(s, &planes, gsp->rgba)
+         ? gfx_surface_submit_planes_held(s, fr->slot, &planes, gsp->rgba)
          : gfx_surface_submit_planes(s, &planes, gsp->rgba);
    }
    else
@@ -367,11 +368,27 @@ bool gfx_surface_player_release(gfx_surface_player_t *gsp,
    /* Only a two-slot surface is fed by the worker, whose frame sits in
     * its slot until shown; a frame decoded in line has a successor due
     * already. */
-   if (     s->dropped && s->num_slots > 1
-         && gfx_surface_submit(s, slot,
-               gsp ? gsp->rgba : gfx_surface_wants_rgba())
-            == GFX_SURFACE_SUBMIT_QUEUED)
-      return true;
+   if (s->dropped && s->num_slots > 1)
+   {
+      enum gfx_surface_submit_result r;
+      bool rgba = gsp ? gsp->rgba : gfx_surface_wants_rgba();
+      if (gsp && gsp->hold_canvas && s->img.planar)
+      {
+         gfx_surface_planes_t planes;
+         unsigned i;
+         for (i = 0; i < 3; i++)
+         {
+            planes.planes[i] = s->planar.planes[i];
+            planes.strides[i] = s->planar.strides[i];
+         }
+         planes.chroma_step = s->planar.chroma_step;
+         gfx_surface_set_yuv(s, s->planar.yuv);
+         r = gfx_surface_submit_planes_held(s, slot, &planes, rgba);
+      }
+      else
+         r = gfx_surface_submit(s, slot, rgba);
+      if (r == GFX_SURFACE_SUBMIT_QUEUED) return true;
+   }
    if (gsp)
       video_player_slot_released(gsp->vp, slot);
    return false;

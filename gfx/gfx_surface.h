@@ -483,8 +483,9 @@ enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
 
 /* As submit_planes, but the caller keeps the planes and their owner
  * alive and unchanged until release() after QUEUED. Keep the surface
- * alive as well. CPU conversion uses the surface's owned RGB buffer. */
-enum gfx_surface_submit_result gfx_surface_submit_planes_held(gfx_surface_t *s,
+ * alive as well. Completion releases @slot, which identifies the retained
+ * producer frame. CPU conversion uses the surface's owned RGB buffer. */
+enum gfx_surface_submit_result gfx_surface_submit_planes_held(gfx_surface_t *s, unsigned slot,
       const gfx_surface_planes_t *p, bool rgba);
 
 /* Whether slot @slot may be written now. A slot lent the driver's upload

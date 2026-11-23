@@ -1057,12 +1057,13 @@ void gfx_surface_set_yuv(gfx_surface_t *s, unsigned flags)
 }
 
 static enum gfx_surface_submit_result gfx_surface_submit_planes_internal(gfx_surface_t *s,
-      const gfx_surface_planes_t *p, bool rgba, bool held)
+      const gfx_surface_planes_t *p, bool rgba, bool held, unsigned slot)
 {
    enum gfx_surface_submit_result r;
    uint8_t fmt;
 
-   if (!s || !GFX_SURFACE_IS_PLANAR(s) || !p)
+   if (!s || !GFX_SURFACE_IS_PLANAR(s) || !p
+         || (held && slot >= (s->num_slots ? s->num_slots : 1)))
    {
       GFX_INSTR_INC(GFX_INSTR_SUBMIT_FAILED);
       return GFX_SURFACE_SUBMIT_FAILED;
@@ -1092,7 +1093,7 @@ static enum gfx_surface_submit_result gfx_surface_submit_planes_internal(gfx_sur
    (void)held;
 #endif
    r = gfx_surface_planar(s, p, rgba, &fmt)
-      ? gfx_surface_submit_img(s, 0, fmt)
+      ? gfx_surface_submit_img(s, slot, fmt)
       : GFX_SURFACE_SUBMIT_FAILED;
    gfx_surface_count(r);
    return r;
@@ -1101,13 +1102,13 @@ static enum gfx_surface_submit_result gfx_surface_submit_planes_internal(gfx_sur
 enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
       const gfx_surface_planes_t *p, bool rgba)
 {
-   return gfx_surface_submit_planes_internal(s, p, rgba, false);
+   return gfx_surface_submit_planes_internal(s, p, rgba, false, 0);
 }
 
-enum gfx_surface_submit_result gfx_surface_submit_planes_held(gfx_surface_t *s,
+enum gfx_surface_submit_result gfx_surface_submit_planes_held(gfx_surface_t *s, unsigned slot,
       const gfx_surface_planes_t *p, bool rgba)
 {
-   return gfx_surface_submit_planes_internal(s, p, rgba, true);
+   return gfx_surface_submit_planes_internal(s, p, rgba, true, slot);
 }
 
 enum gfx_surface_submit_result gfx_surface_submit_external(gfx_surface_t *s,

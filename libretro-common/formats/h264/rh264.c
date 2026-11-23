@@ -11373,6 +11373,21 @@ int rh264_video_bit_depth(const rh264_video *v)
    return f->bd ? f->bd : 8;
 }
 
+void *rh264_video_retain_planes(const rh264_video *v)
+{
+   const rh264_frame *f;
+   if (!v || v->hw || v->out_show < 0) return NULL;
+   f = &v->out[v->out_show];
+   if (!f->planes || f->field) return NULL;
+   retro_atomic_fetch_add_int(&rh264_block_of(f->planes)->refs, 1);
+   return f->planes;
+}
+
+void rh264_video_release_planes(void *owner)
+{
+   rh264_block_release(owner);
+}
+
 const uint8_t *rh264_video_plane(const rh264_video *v, int plane,
       int *stride, int *width, int *height)
 {

@@ -650,7 +650,8 @@ bool image_transfer_anim_stream_can_planar(const void *stream,
       enum image_type_enum type);
 bool image_transfer_anim_stream_set_planar(void *stream,
       enum image_type_enum type, bool planar);
-/* Opt in after set_planar, only for a synchronous consumer. Where the
+/* Opt in after set_planar. Consume synchronously unless retain_planar
+ * extends the borrow through an immutable decoder-frame lease. Where the
  * decoder can lend its current planes, next() leaves the output slot
  * untouched and borrowed_planar() describes the frame instead. Otherwise
  * the packed-slot fallback remains. The borrow lasts until the next
@@ -659,6 +660,11 @@ bool image_transfer_anim_stream_set_planar(void *stream,
  * otherwise uploads each row separately keeps the packed fallback. */
 bool image_transfer_anim_stream_borrow_planar(void *stream,
       enum image_type_enum type, bool strided);
+/* Extend the current planar borrow beyond the next decode. The decoder
+ * owner acquires it; release(*owner) may run on any thread after the reader
+ * finishes, including after stream free. False keeps the copy fallback. */
+bool image_transfer_anim_stream_retain_planar(const void *stream,
+      enum image_type_enum type, void **owner, void (**release)(void*));
 const struct texture_planar *image_transfer_anim_stream_borrowed_planar(
       const void *stream, enum image_type_enum type);
 unsigned image_transfer_anim_stream_planar_yuv(const void *stream,

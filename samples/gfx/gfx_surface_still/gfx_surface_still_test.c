@@ -492,6 +492,12 @@ static void st_abandon_import(void *owner, uint64_t done, uint64_t value)
          "retired import lost its release destination");
    st_abandoned++;
 }
+static void st_plane_released(void *user, gfx_surface_t *surface, unsigned slot)
+{
+   (void)surface;
+   *(unsigned*)user = slot;
+}
+
 static void st_release_import(void *user, gfx_surface_t *surface, unsigned slot)
 {
    (void)user; (void)surface; (void)slot;
@@ -1266,8 +1272,9 @@ int main(void)
    {
       static uint8_t frame[64];
       gfx_surface_planes_t p;
-      gfx_surface_t *s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 1,
-            IMAGE_PIXFMT_NV12, TEXTURE_FILTER_NEAREST, NULL, NULL);
+      unsigned returned_slot = 99;
+      gfx_surface_t *s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 2,
+            IMAGE_PIXFMT_NV12, TEXTURE_FILTER_NEAREST, st_plane_released, &returned_slot);
       int reads = st_planar_reads;
       memset(frame, 0, sizeof(frame));
       frame[16] = 1;  /* Cb, Cr of the first pair */
@@ -1292,15 +1299,17 @@ int main(void)
             "direct planes not handed over as they lie");
       st_async = 1;
       memset(s->slots[0], 0x55, IMAGE_PIXFMT_FRAME_SIZE(s->pixfmt, 4, 4));
-      CHECK(gfx_surface_submit_planes_held(s, &p, false)
+      CHECK(gfx_surface_submit_planes_held(s, 1, &p, false)
             == GFX_SURFACE_SUBMIT_QUEUED, "leased planes not queued");
       CHECK(s->planar.planes[0] == frame && s->planar.planes[1] == frame + 17
             && s->planar.planes[2] == frame + 16 && s->planar.strides[1] == 8
             && ((uint8_t*)s->slots[0])[0] == 0x55 && !s->rgb,
             "leased planes copied or lost padded chroma metadata");
-      CHECK(gfx_surface_submit_planes_held(s, &p, false)
+      CHECK(gfx_surface_submit_planes_held(s, 1, &p, false)
             == GFX_SURFACE_SUBMIT_BUSY, "leased planes replaced while in flight");
+      CHECK(s->inflight_slot == 1, "leased planes lost the producer slot");
       st_flush();
+      CHECK(returned_slot == 1, "leased planes released the wrong producer slot");
       CHECK(st_planar.planes[0] == frame && st_planar.planes[1][0] == 2
             && st_planar.strides[1] == 8 && st_planar.yuv == IMAGE_YUV_FLAG_BT709,
             "leased planes lost their source on the video thread");

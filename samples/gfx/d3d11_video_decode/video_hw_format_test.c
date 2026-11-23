@@ -71,9 +71,10 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s,
    return gfx_surface_submit_pixels(s, pixels, rgba);
 }
 
-enum gfx_surface_submit_result gfx_surface_submit_planes_held(gfx_surface_t *s,
+enum gfx_surface_submit_result gfx_surface_submit_planes_held(gfx_surface_t *s, unsigned slot,
       const gfx_surface_planes_t *p, bool rgba)
 {
+   (void)slot;
    return gfx_surface_submit_planes(s, p, rgba);
 }
 

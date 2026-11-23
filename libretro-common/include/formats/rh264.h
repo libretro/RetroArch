@@ -202,6 +202,12 @@ int rh264_video_bit_depth(const rh264_video *v);
 unsigned rh264_video_reorder_depth(const rh264_video *v);
 
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */
+/* Retain the current software picture's plane block on the decode owner.
+ * The opaque token survives further decode, seek and decoder free. Release
+ * it once, on any thread. NULL for hardware/readback or absent output. */
+void *rh264_video_retain_planes(const rh264_video *v);
+void rh264_video_release_planes(void *owner);
+
 const uint8_t *rh264_video_plane(const rh264_video *v, int plane,
       int *stride, int *width, int *height);
 

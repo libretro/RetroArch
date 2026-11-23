@@ -233,6 +233,10 @@ int rmp4_video_stream_can_planar(const rmp4_video_stream_t *stream);
  * The borrow ends at the next decode, seek, rewind or stream free. */
 int rmp4_video_stream_set_planar(rmp4_video_stream_t *stream, int planar);
 struct texture_planar;
+/* Retain the current borrowed planes when their decoder provides immutable
+ * counted storage. On success release(*owner) retires the lease once. */
+bool rmp4_video_stream_retain_planar(const rmp4_video_stream_t *s,
+      void **owner, void (**release)(void*));
 const struct texture_planar *rmp4_video_stream_borrowed_planar(
       const rmp4_video_stream_t *stream);
 unsigned rmp4_video_stream_planar_yuv(const rmp4_video_stream_t *stream);

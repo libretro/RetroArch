@@ -68,6 +68,22 @@ static int channel_diff(uint32_t a, uint32_t b, unsigned shift)
    return d < 0 ? -d : d;
 }
 
+static uint32_t planes_hash(const struct texture_planar *p, unsigned w, unsigned h)
+{
+   uint32_t hash = 2166136261u;
+   unsigned plane, x, y;
+   for (plane = 0; plane < 3; plane++)
+   {
+      unsigned width = plane ? (w + 1) / 2 : w;
+      unsigned height = plane ? (h + 1) / 2 : h;
+      unsigned step = plane ? p->chroma_step : 1;
+      for (y = 0; y < height; y++)
+         for (x = 0; x < width; x++)
+            hash = (hash ^ p->planes[plane][(size_t)y * p->strides[plane] + x * step]) * 16777619u;
+   }
+   return hash;
+}
+
 int main(int argc, char **argv)
 {
    enum image_type_enum type;
@@ -78,6 +94,11 @@ int main(int argc, char **argv)
    unsigned w = 0, h = 0, cw, ch, expect, frames = 0, want_flags = 0;
    int num_frames = 0, loops = 0, worst = 0, have_flags, status = 1;
    bool decoder_tight = false;
+   bool require_retained = getenv("RETAIN_PLANAR") != NULL;
+   void *held = NULL;
+   void (*release_held)(void*) = NULL;
+   struct texture_planar held_view;
+   uint32_t held_hash = 0;
 
    if (argc < 4 || argc > 5)
    {
@@ -202,6 +223,17 @@ int main(int argc, char **argv)
       {
          bool tight = view->strides[0] == w && view->strides[1] == cw
             && view->strides[2] == cw;
+         if (require_retained && !held)
+         {
+            if (!image_transfer_anim_stream_retain_planar(planar_stream, type,
+                     &held, &release_held))
+            {
+               fprintf(stderr, "%s: decoder planes could not be retained\n", argv[1]);
+               goto done;
+            }
+            held_view = *view;
+            held_hash = planes_hash(&held_view, w, h);
+         }
          if (!frames) decoder_tight = tight;
          if (!borrow || (!strided && !tight)
                || view->planes[0] == planes || view->yuv != flags)
@@ -269,6 +301,17 @@ done:
       image_transfer_anim_stream_free(planar_stream, type);
    if (rgb_stream)
       image_transfer_anim_stream_free(rgb_stream, type);
+   if (held)
+   {
+      if (planes_hash(&held_view, w, h) != held_hash)
+      {
+         fprintf(stderr, "%s: retained picture changed after decode and stream free\n", argv[1]);
+         status = 1;
+      }
+      release_held(held);
+   }
+   else if (!status && require_retained)
+      status = 1;
    free(planes);
    free(rgb);
    free(converted);

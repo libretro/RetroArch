@@ -1260,6 +1260,18 @@ bool image_transfer_anim_stream_borrow_planar(
    return false;
 }
 
+bool image_transfer_anim_stream_retain_planar(const void *stream,
+      enum image_type_enum type, void **owner, void (**release)(void*))
+{
+   (void)stream; (void)type; (void)owner; (void)release;
+#ifdef HAVE_RMP4
+   if (type == IMAGE_TYPE_MP4)
+      return rmp4_video_stream_retain_planar(
+            (const rmp4_video_stream_t*)stream, owner, release);
+#endif
+   return false;
+}
+
 const struct texture_planar *image_transfer_anim_stream_borrowed_planar(
       const void *stream, enum image_type_enum type)
 {

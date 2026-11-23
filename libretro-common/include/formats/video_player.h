@@ -73,9 +73,11 @@ enum video_player_flags
     * any frame that does not come out so ends the playback. Takes
     * precedence over VIDEO_PLAYER_FP16. */
    VIDEO_PLAYER_I420   = (1 << 3),
-   /* With I420, an inline sink may read decoder-owned planes directly.
-    * Consume them in present, copy them, or hold them with HOLD_CANVAS.
-    * Worker decoding always keeps the packed-slot fallback. */
+   /* With I420, accept decoder-owned planes. Inline sinks consume them
+    * in present or keep the borrow with HOLD_CANVAS. Worker decoding
+    * retains immutable decoder storage where available; other decoders
+    * keep the packed-slot fallback. A queued present owns the lease
+    * until slot_released. Stop must succeed before freeing the sink. */
    VIDEO_PLAYER_BORROW_PLANES = (1 << 4),
    /* With BORROW_PLANES, also accept decoder row padding. Without it,
     * only tight planes are borrowed, preserving efficient row uploads. */

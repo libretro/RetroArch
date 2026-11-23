@@ -2208,6 +2208,19 @@ int rmp4_video_stream_set_planar(rmp4_video_stream_t *s, int planar)
    return 1;
 }
 
+bool rmp4_video_stream_retain_planar(const rmp4_video_stream_t *s,
+      void **owner, void (**release)(void*))
+{
+   void *held;
+   if (!s || !owner || !release || s->rndr_kind != 3
+         || !s->borrowed_planar.planes[0]) return false;
+   held = rh264_video_retain_planes(s->h264);
+   if (!held) return false;
+   *owner = held;
+   *release = rh264_video_release_planes;
+   return true;
+}
+
 const struct texture_planar *rmp4_video_stream_borrowed_planar(
       const rmp4_video_stream_t *s)
 {

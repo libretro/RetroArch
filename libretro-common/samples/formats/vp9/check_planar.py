@@ -73,7 +73,11 @@ def main():
             command = runner + [test, str(path), container, str(planar)]
             if flags is not None:
                 command.append(str(flags))
-            subprocess.run(command, check=True)
+            env = os.environ.copy()
+            env.pop('RETAIN_PLANAR', None)
+            if name.startswith('h264_') and container == 'mp4' and planar:
+                env['RETAIN_PLANAR'] = '1'
+            subprocess.run(command, check=True, env=env)
 
 
 if __name__ == '__main__':

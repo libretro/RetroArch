@@ -27,6 +27,7 @@
 #include <features/features_cpu.h>
 #include <formats/image.h>
 #include <formats/video_player.h>
+#include <formats/image_yuv_blit.h>
 
 /* The worker's queue is lock-free and needs the atomic pointer ops; a
  * build whose atomic backend has none decodes on the polling thread,
@@ -152,6 +153,12 @@ struct video_player
    /* Each job's READY frame's IMAGE_YUV_FLAG_*, published with it as
     * the job's own fields are */
    unsigned planar_yuv[2];
+#ifdef VIDEO_PLAYER_WORKER
+   /* Each job owns its retained decoder planes through READY/HELD. */
+   struct texture_planar cpu_planes[2];
+   void *cpu_owner[2];
+   void (*cpu_release[2])(void*);
+#endif
    /* GPU frames, one per job (or [0] decoding in line): written by
     * the side that decodes, as the job's frame is */
    video_hw_frame_t hw[2];
@@ -451,6 +458,14 @@ static void vp_pool_sync(void)
    }
 }
 
+static void vp_cpu_release(video_player_t *p, unsigned slot)
+{
+   if (p->cpu_owner[slot])
+      p->cpu_release[slot](p->cpu_owner[slot]);
+   p->cpu_owner[slot] = NULL;
+   p->cpu_release[slot] = NULL;
+}
+
 /* Worker: one shown frame into job->frame in its final order. false
  * when the playback is over. The job is RUNNING: the stream is the
  * worker's alone. */
@@ -463,7 +478,9 @@ static int vp_job_step(vp_job_t *job)
    int duration_ms      = 0;
    bool native, direct;
    enum video_player_how how;
+   unsigned slot = job == p->job[1] ? 1 : 0;
 
+   vp_cpu_release(p, slot);
    if (job->startup)
    {
       job->gpu = image_transfer_anim_stream_set_hw(stream, type, true);
@@ -527,11 +544,27 @@ static int vp_job_step(vp_job_t *job)
 
    if (p->planar)
    {
-      /* planes only come from a decode into the slot itself */
+      const struct texture_planar *planes;
+      /* Packed fallback still comes from a decode into this job's slot. */
       if (!direct || frame != job->frame)
          return false;
-      p->planar_yuv[(job == p->job[1]) ? 1 : 0] =
-            image_transfer_anim_stream_planar_yuv(stream, type);
+      planes = image_transfer_anim_stream_borrowed_planar(stream, type);
+      p->planar_yuv[slot] = image_transfer_anim_stream_planar_yuv(stream, type);
+      if (planes)
+      {
+         if (image_transfer_anim_stream_retain_planar(stream, type,
+                  &p->cpu_owner[slot], &p->cpu_release[slot]))
+            p->cpu_planes[slot] = *planes;
+         else
+         {
+            /* A decoder without immutable storage keeps the packed copy. */
+            if (planes->chroma_step != 1
+                  || planes->strides[1] != planes->strides[2]) return false;
+            image_yuv_420_pack((uint8_t*)job->frame, p->width, p->height,
+                  planes->planes[0], planes->strides[0], planes->planes[1],
+                  planes->planes[2], planes->strides[1], p->width, p->height);
+         }
+      }
       how = VIDEO_PLAYER_DIRECT;
    }
    else if (job->fp16)
@@ -924,7 +957,7 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
       return VIDEO_PLAYER_PLAYING;
 
    /* READY and not queued: the frame is shown from its slot */
-   fr.planar      = NULL;
+   fr.planar      = p->cpu_owner[p->upload] ? &p->cpu_planes[p->upload] : NULL;
    fr.pixels      = NULL;
    fr.slot        = p->upload;
    fr.width       = p->width;
@@ -1509,7 +1542,7 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
          p->flags |= VP_STOPPED;
          return VIDEO_PLAYER_ENDED;
       }
-      if (p->planar && !threaded && ((unsigned)r & VIDEO_PLAYER_BORROW_PLANES))
+      if (p->planar && ((unsigned)r & VIDEO_PLAYER_BORROW_PLANES))
          image_transfer_anim_stream_borrow_planar(p->stream, p->type,
                ((unsigned)r & VIDEO_PLAYER_BORROW_STRIDED) != 0);
       image_transfer_anim_stream_set_want_fp16(p->stream, p->type,
@@ -1688,7 +1721,8 @@ bool video_player_stop(video_player_t *p)
                continue;
             status = retro_atomic_load_acquire_int(&job->status);
          }
-         if (status == VP_JOB_RUNNING)
+         if (status == VP_JOB_RUNNING
+               || (status == VP_JOB_HELD && p->cpu_owner[i]))
             stopped = false;
       }
    }
@@ -1713,6 +1747,8 @@ void video_player_free(video_player_t *p)
       bool free_now = vp_job_release(p->job[1]);
       if (!vp_job_release(j0))
          free_now = false;
+      vp_cpu_release(p, 0);
+      vp_cpu_release(p, 1);
       /* a GPU frame decoded and never shown goes back */
       for (i = 0; i < 2; i++)
          if (     p->job[i]->hw
