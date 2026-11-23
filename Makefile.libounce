@@ -27,6 +27,10 @@ HAVE_SCREENSHOTS = 1
 HAVE_REWIND = 1
 HAVE_AUDIOMIXER = 1
 HAVE_CC_RESAMPLER = 1
+# A static dummy is a static build with no core linked in
+ifneq ($(strip $(HAVE_STATIC_DUMMY)),)
+HAVE_DYNAMIC ?= 0
+endif
 HAVE_DYNAMIC ?= 1
 HAVE_MENU_COMMON = 1
 HAVE_RTGA = 1
