@@ -1,4 +1,11 @@
 /* SPDX-License-Identifier: MIT */
+#ifndef _WIN32
+#define _DEFAULT_SOURCE
+#include <sys/mman.h>
+#include <unistd.h>
+#else
+#include <windows.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -233,6 +240,143 @@ static void fallback(const unsigned char *blob, size_t len, int retained)
 }
 static unsigned read32(const unsigned char *p)
 { return p[0] | ((unsigned)p[1] << 8) | ((unsigned)p[2] << 16) | ((unsigned)p[3] << 24); }
+
+/* Space frames onto separate pages, so retired headers can be unreadable. */
+static void write32(unsigned char *p, size_t n)
+{
+   p[0] = (unsigned char)n; p[1] = (unsigned char)(n >> 8);
+   p[2] = (unsigned char)(n >> 16); p[3] = (unsigned char)(n >> 24);
+}
+static size_t frame_at(const unsigned char *b, unsigned frame)
+{
+   size_t at = 12;
+   while (memcmp(b + at, "ANMF", 4) || frame--)
+      at += 8 + read32(b + at + 4) + (read32(b + at + 4) & 1);
+   return at;
+}
+static void protect_page(unsigned char *b, size_t page, int readable)
+{
+#ifdef _WIN32
+   DWORD old;
+   CHECK(VirtualProtect(b, page, readable ? PAGE_READWRITE : PAGE_NOACCESS, &old));
+#else
+   CHECK(!mprotect(b, page, readable ? PROT_READ | PROT_WRITE : PROT_NONE));
+#endif
+}
+static void progressive(int argb, int dependent, int background)
+{
+   unsigned char *b;
+   size_t page, len, at[3], sizes[3], i, pos;
+   rwebp_anim_stream_t *s, *ref;
+   uint32_t slots[2][CELLS], saved[CELLS], expected[3][35];
+   const uint32_t *pixels;
+   void *owner;
+   int duration;
+#ifdef _WIN32
+   SYSTEM_INFO info;
+   GetSystemInfo(&info); page = info.dwPageSize;
+   b = (unsigned char*)VirtualAlloc(NULL, page * 4, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+   CHECK(b);
+#else
+   page = (size_t)sysconf(_SC_PAGESIZE);
+   b = (unsigned char*)mmap(NULL, page * 4, PROT_READ | PROT_WRITE,
+         MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+   CHECK(b != MAP_FAILED);
+#endif
+   memset(b, 0, page * 4);
+   memcpy(b, alpha_over, frame_at(alpha_over, 0));
+   pos = frame_at(alpha_over, 0);
+   for (i = 0; i < 3; i++)
+   {
+      const unsigned char *src = i == 1 && dependent ? alpha_over : odd;
+      size_t off = frame_at(src, (unsigned)i);
+      at[i] = page * (i + 1);
+      memcpy(b + pos, "JUNK", 4); write32(b + pos + 4, at[i] - pos - 8);
+      sizes[i] = 8 + read32(src + off + 4);
+      memcpy(b + at[i], src + off, sizes[i]);
+      pos = at[i] + sizes[i];
+   }
+   if (background) b[at[0] + 23] |= 1;
+   len = pos; write32(b + 4, len - 8);
+   ref = rwebp_anim_stream_open(b, len); CHECK(ref);
+   rwebp_anim_stream_set_argb(ref, argb);
+   for (i = 0; i < 3; i++)
+   {
+      pixels = rwebp_anim_stream_next(ref, &duration); CHECK(pixels);
+      memcpy(expected[i], pixels, sizeof(expected[i]));
+   }
+   rwebp_anim_stream_close(ref);
+   protect_page(b + at[2], page, 0);
+   s = rwebp_anim_stream_open_avail(b, len, at[1] + 8, NULL); CHECK(s);
+   rwebp_anim_stream_set_argb(s, argb);
+   memset(slots, 0x55, sizeof(slots));
+   CHECK(rwebp_anim_stream_set_output_stride(s, slots[0], STRIDE) == (background != 0));
+   /* Only the successor's 16-byte frame header arrives, no codec body. */
+   for (i = at[1] + 9; i < at[1] + 24; i++)
+   {
+      rwebp_anim_stream_set_avail(s, i);
+      CHECK(rwebp_anim_stream_set_output_stride(s, slots[0], STRIDE)
+            == (background != 0));
+   }
+   rwebp_anim_stream_set_avail(s, at[1] + 24);
+   CHECK(rwebp_anim_stream_set_output_stride(s, slots[0], STRIDE)
+         == (!dependent || background));
+   pixels = rwebp_anim_stream_next(s, &duration); CHECK(pixels);
+   for (i = 0; i < 7; i++) CHECK(!memcmp(pixels + i *
+         ((!dependent || background) ? STRIDE : 5), expected[0] + i * 5, 20));
+   CHECK(!rwebp_anim_stream_take_pixels(s));
+   memcpy(saved, slots[0], sizeof(saved));
+   protect_page(b + at[0], page, 0);
+   /* Decline before feed: metadata arriving later must not revive slot 0. */
+   CHECK(!rwebp_anim_stream_set_output_stride(s, slots[1], STRIDE));
+   rwebp_anim_stream_set_avail(s, at[1] + sizes[1]);
+   pixels = rwebp_anim_stream_next(s, &duration); CHECK(pixels);
+   CHECK(!memcmp(pixels, expected[1], sizeof(expected[1])));
+   CHECK(!rwebp_anim_stream_take_pixels(s)); /* successor still unknown */
+   CHECK(!memcmp(saved, slots[0], sizeof(saved)));
+   protect_page(b + at[2], page, 1);
+   rwebp_anim_stream_set_avail(s, at[2] + 24);
+   owner = rwebp_anim_stream_take_pixels(s); CHECK(owner == pixels);
+   protect_page(b + at[1], page, 0);
+   rwebp_anim_stream_set_avail(s, len);
+   CHECK(rwebp_anim_stream_set_output_stride(s, slots[1], STRIDE));
+   pixels = rwebp_anim_stream_next(s, &duration); CHECK(pixels == slots[1]);
+   for (i = 0; i < 7; i++) CHECK(!memcmp(pixels + i * STRIDE, expected[2] + i * 5, 20));
+   CHECK(!memcmp(owner, expected[1], sizeof(expected[1])));
+   free(owner);
+   protect_page(b + at[0], page, 1); protect_page(b + at[1], page, 1);
+   rwebp_anim_stream_rewind(s);
+   CHECK(rwebp_anim_stream_set_output_stride(s, NULL, 0));
+   pixels = rwebp_anim_stream_next(s, &duration); CHECK(pixels);
+   CHECK(!memcmp(pixels, expected[0], sizeof(expected[0])));
+   rwebp_anim_stream_close(s);
+   if (!dependent && !background)
+   {
+      /* The promised full SOURCE replacement is corrupt. A following OVER
+       * frame must never blend against the discarded lent baseline. */
+      size_t bad = frame_at(lossless, 1);
+      size_t over = frame_at(alpha_over, 2);
+      memcpy(b + at[1], lossless + bad, 8 + read32(lossless + bad + 4));
+      b[at[1] + 32] = 0; /* invalid VP8L signature */
+      memcpy(b + at[1] + 8 + read32(b + at[1] + 4), "JUNK", 4);
+      write32(b + at[1] + 12 + read32(b + at[1] + 4),
+            at[2] - at[1] - 16 - read32(b + at[1] + 4));
+      memcpy(b + at[2], alpha_over + over, 8 + read32(alpha_over + over + 4));
+      len = at[2] + 8 + read32(b + at[2] + 4); write32(b + 4, len - 8);
+      s = rwebp_anim_stream_open(b, len); CHECK(s);
+      CHECK(rwebp_anim_stream_set_output_stride(s, slots[0], STRIDE));
+      CHECK(rwebp_anim_stream_next(s, &duration) == slots[0]);
+      CHECK(!rwebp_anim_stream_set_output_stride(s, slots[1], STRIDE));
+      CHECK(!rwebp_anim_stream_next(s, &duration));
+      rwebp_anim_stream_close(s);
+   }
+#ifdef _WIN32
+   CHECK(VirtualFree(b, 0, MEM_RELEASE));
+#else
+   CHECK(!munmap(b, page * 4));
+#endif
+}
+
 static void resumable(void)
 {
    rvp8_dec *s = (rvp8_dec*)calloc(1, sizeof(*s));
@@ -270,6 +414,7 @@ struct state
    unsigned w, h, shown;
    const uint32_t *held[2];
    int mode;
+   int borrowed[2];
    retro_atomic_int_t copies;
 };
 static int start(void *user, unsigned w, unsigned h, unsigned count)
@@ -290,7 +435,9 @@ static enum video_player_present present(void *user, const video_player_frame_t 
    CHECK(fr->slot < 2 && !fr->planar);
    pixels = fr->pixels ? fr->pixels : s->slots[fr->slot] + 1;
    s->held[fr->slot] = pixels;
-   CHECK(s->mode == 2 ? fr->pixels != NULL : fr->pixels == NULL);
+   s->borrowed[fr->slot] = fr->pixels != NULL;
+   CHECK((s->mode == 2 || (s->mode == 3 && s->shown == 1))
+         ? fr->pixels != NULL : fr->pixels == NULL);
    for (y = 0; y < s->h; y++)
       memcpy(s->saved[fr->slot] + 1 + y * STRIDE,
             pixels + y * (fr->pixels ? s->w : STRIDE), s->w * sizeof(uint32_t));
@@ -327,13 +474,13 @@ static void worker(const unsigned char *blob, size_t len, int mode)
    {
       for (y = 0; y < s.h; y++)
       {
-         CHECK(!memcmp(s.held[i] + y * (mode == 2 ? s.w : STRIDE),
+         CHECK(!memcmp(s.held[i] + y * (s.borrowed[i] ? s.w : STRIDE),
                s.saved[i] + 1 + y * STRIDE, s.w * sizeof(uint32_t)));
          for (x = s.w; x < STRIDE; x++) CHECK(s.slots[i][1 + y * STRIDE + x] == 0x55555555u);
       }
       CHECK(s.slots[i][0] == 0x55555555u);
       for (x = 1 + s.h * STRIDE; x < CELLS; x++) CHECK(s.slots[i][x] == 0x55555555u);
-      if (mode == 2)
+      if (s.borrowed[i])
          for (x = 0; x < CELLS; x++) CHECK(s.slots[i][x] == 0x55555555u);
       video_player_slot_released(p, i);
    }
@@ -350,16 +497,18 @@ int main(void)
    {
       direct(odd, sizeof(odd), argb); direct(even, sizeof(even), argb);
       direct(opaque_over, sizeof(opaque_over), argb);
+      progressive(argb, 0, 0); progressive(argb, 1, 0);
+      progressive(argb, 1, 1);
    }
    resumable(); fallback(alpha, sizeof(alpha), 1);
-   fallback(lossless, sizeof(lossless), 1); fallback(mixed, sizeof(mixed), 1);
+   fallback(lossless, sizeof(lossless), 1);
    fallback(alpha_over, sizeof(alpha_over), 0);
 #ifdef HAVE_THREADS
    worker(odd, sizeof(odd), 1); worker(even, sizeof(even), 1);
    worker(opaque_over, sizeof(opaque_over), 1);
    worker(alpha, sizeof(alpha), 2); worker(lossless, sizeof(lossless), 2);
-   worker(mixed, sizeof(mixed), 2); worker(alpha_over, sizeof(alpha_over), 0);
+   worker(mixed, sizeof(mixed), 3); worker(alpha_over, sizeof(alpha_over), 0);
 #endif
-   puts("PASS: strided VP8 stores, opaque WebP lends, cached alpha/lossless and copy fallbacks");
+   puts("PASS: progressive WebP lends, protected retired pages, dependent transitions and worker ownership");
    return 0;
 }

@@ -1499,7 +1499,22 @@ const uint32_t *rwebp_anim_get_frame(const rwebp_anim_t *a, int index,
  * compositing canvas or caller-lent independent output. The eager decoder
  * below collects emitted canvases into a frame array. */
 
-struct rwebp_anmf_ent { size_t off; uint32_t sz; };
+enum rwebp_frame_facts
+{
+   RWEBP_FRAME_HEADER = 1,
+   RWEBP_FRAME_FULL = 2,
+   RWEBP_FRAME_SOURCE = 4,
+   RWEBP_FRAME_BACKGROUND = 8,
+   RWEBP_FRAME_VP8 = 16,
+   RWEBP_FRAME_OPAQUE = 32,
+   RWEBP_FRAME_PROBED = 64
+};
+struct rwebp_anmf_ent
+{
+   size_t off, probe;
+   uint32_t sz;
+   unsigned facts;
+};
 struct rwebp_anim_stream
 {
    const uint8_t *buf;    /* borrowed; must outlive the stream */
@@ -1519,6 +1534,7 @@ struct rwebp_anim_stream
    struct rwebp_anmf_ent *anmf; /* ANMF payload offsets */
    int       num_anmf;
    int       cap_anmf;
+   int       probe_next;  /* first frame with unfinished header probing */
    int       cursor;      /* next ANMF index to try */
    int       emitted;     /* frames emitted since open/rewind */
    int       canvas_w, canvas_h;
@@ -1540,8 +1556,7 @@ struct rwebp_anim_stream
     * canvas, since frames blend onto it; switched at frame boundaries
     * by rwebp_anim_stream_set_argb. */
    int       emit_argb;
-   int       independent; /* every indexed frame replaces the full canvas */
-   int       direct_vp8;
+   int       canvas_lost; /* a lent/transferred frame is no longer a baseline */
    int       lent_frame; /* the last emitted frame belongs to the caller */
 };
 
@@ -1558,8 +1573,116 @@ void rwebp_anim_stream_close(rwebp_anim_stream_t *s)
    free(s);
 }
 
+/* Cache facts before the feeder can retire a frame's pages. Only chunk
+ * headers and the VP8 key-frame header are read; compressed payloads are
+ * skipped arithmetically. A blocked probe resumes at that chunk, not at
+ * earlier headers whose pages may already have been decommitted. */
+static void rwebp_anim_probe(rwebp_anim_stream_t *s, struct rwebp_anmf_ent *e)
+{
+   size_t end = e->off + e->sz;
+   if (e->facts & RWEBP_FRAME_PROBED) return;
+   if (!(e->facts & RWEBP_FRAME_HEADER))
+   {
+      const uint8_t *d;
+      unsigned w, h;
+      if (e->off > s->avail || s->avail - e->off < 16) return;
+      d = s->buf + e->off;
+      w = 1 + d[6] + ((unsigned)d[7] << 8) + ((unsigned)d[8] << 16);
+      h = 1 + d[9] + ((unsigned)d[10] << 8) + ((unsigned)d[11] << 16);
+      e->facts = RWEBP_FRAME_HEADER;
+      if (!d[0] && !d[1] && !d[2] && !d[3] && !d[4] && !d[5]
+            && w == (unsigned)s->canvas_w && h == (unsigned)s->canvas_h)
+         e->facts |= RWEBP_FRAME_FULL;
+      if (d[15] & 2) e->facts |= RWEBP_FRAME_SOURCE;
+      if (d[15] & 1) e->facts |= RWEBP_FRAME_BACKGROUND;
+      e->probe = e->off + 16;
+      if (!(e->facts & RWEBP_FRAME_FULL)) goto done;
+   }
+   while (e->probe < end)
+   {
+      const uint8_t *d;
+      uint32_t tag, n;
+      size_t step;
+      if (end - e->probe < 8) goto done;
+      if (e->probe > s->avail || s->avail - e->probe < 8) return;
+      d = s->buf + e->probe;
+      tag = rw32(d); n = rw32(d + 4);
+      if ((size_t)n > end - e->probe - 8) goto done;
+      step = 8 + (size_t)n;
+      if (n & 1)
+      {
+         if (step == end - e->probe) goto done;
+         step++;
+      }
+      if (tag == RW_CC('A','L','P','H') || tag == RW_CC('V','P','8','L'))
+         goto done;
+      if (tag == RW_CC('V','P','8',' '))
+      {
+         const uint8_t *vp8;
+         unsigned w, h;
+         if ((e->facts & RWEBP_FRAME_VP8) || n < 10) goto done;
+         if (s->avail - e->probe < 18) return;
+         vp8 = d + 8;
+         w = (vp8[6] | ((unsigned)vp8[7] << 8)) & 0x3fff;
+         h = (vp8[8] | ((unsigned)vp8[9] << 8)) & 0x3fff;
+         if ((vp8[0] & 1) || vp8[3] != 0x9d || vp8[4] != 1 || vp8[5] != 0x2a
+               || w != (unsigned)s->canvas_w || h != (unsigned)s->canvas_h)
+            goto done;
+         e->facts |= RWEBP_FRAME_VP8;
+      }
+      e->probe += step;
+   }
+   if (e->facts & RWEBP_FRAME_VP8) e->facts |= RWEBP_FRAME_OPAQUE;
+done:
+   e->facts |= RWEBP_FRAME_PROBED;
+}
+
+static void rwebp_anim_probe_pending(rwebp_anim_stream_t *s)
+{
+   while (s->probe_next < s->num_anmf)
+   {
+      struct rwebp_anmf_ent *e = &s->anmf[s->probe_next];
+      rwebp_anim_probe(s, e);
+      if (!(e->facts & RWEBP_FRAME_PROBED)) break;
+      s->probe_next++;
+   }
+}
+
+static bool rwebp_anim_independent(const struct rwebp_anmf_ent *e)
+{
+   return (e->facts & RWEBP_FRAME_FULL)
+      && (e->facts & (RWEBP_FRAME_SOURCE | RWEBP_FRAME_OPAQUE));
+}
+
+/* A discarded frame must not be the baseline for its successor. Full
+ * background disposal supplies zero; otherwise require a known replacement
+ * or a known end of pass (rewind starts from zero). Unknown means keep it. */
+static bool rwebp_anim_discard_after(const rwebp_anim_stream_t *s, int frame)
+{
+   unsigned facts = s->anmf[frame].facts;
+   if ((facts & (RWEBP_FRAME_FULL | RWEBP_FRAME_BACKGROUND))
+         == (RWEBP_FRAME_FULL | RWEBP_FRAME_BACKGROUND))
+      return true;
+   if (frame + 1 < s->num_anmf)
+      return rwebp_anim_independent(&s->anmf[frame + 1]);
+   return s->scan_done != 0;
+}
+
+static bool rwebp_anim_can_lend(const rwebp_anim_stream_t *s)
+{
+   int frame = s->cursor;
+   if (!s->num_anmf) return false;
+   if (frame >= s->num_anmf)
+   {
+      if (!s->scan_done) return false;
+      frame = 0; /* an output may be armed before rewinding a completed pass */
+   }
+   return (s->anmf[frame].facts & RWEBP_FRAME_OPAQUE)
+      && rwebp_anim_discard_after(s, frame);
+}
+
 /* Index chunks from scan_pos as far as the wall allows.  Only the
- * 8-byte chunk headers (and the 10/6-byte VP8X/ANIM bodies) are read,
+ * chunk headers and small image/frame headers are read,
  * so a frame is indexed as soon as its header is resident; its payload
  * is checked against the wall when it is decoded.  Stops at the wall
  * (resumed by the next set_avail/next), at the end of the file, or at
@@ -1635,6 +1758,7 @@ static void rwebp_anim_scan(rwebp_anim_stream_t *s)
          }
          if (s->num_anmf == 0)
             s->media_floor = p;
+         memset(&s->anmf[s->num_anmf], 0, sizeof(*s->anmf));
          s->anmf[s->num_anmf].off = body;
          s->anmf[s->num_anmf].sz  = sz;
          s->num_anmf++;
@@ -1644,6 +1768,7 @@ static void rwebp_anim_scan(rwebp_anim_stream_t *s)
       p           = body + (size_t)sz + (size_t)(sz & 1);
       s->scan_pos = p;
    }
+   rwebp_anim_probe_pending(s);
 }
 
 rwebp_anim_stream_t *rwebp_anim_stream_open_avail(const uint8_t *buf,
@@ -1705,39 +1830,7 @@ rwebp_anim_stream_t *rwebp_anim_stream_open_avail(const uint8_t *buf,
       goto ofail;
    }
 
-   /* Only a fully indexed animation can give away its canvas: all future
-    * frames, including after rewind, must be independent replacements. */
-   if (s->scan_done && s->avail == s->len)
-   {
-      int i;
-      s->independent = 1;
-      s->direct_vp8 = 1;
-      for (i = 0; i < s->num_anmf; i++)
-      {
-         const uint8_t *d = s->buf + s->anmf[i].off;
-         unsigned w = 1 + d[6] + ((unsigned)d[7] << 8) + ((unsigned)d[8] << 16);
-         unsigned h = 1 + d[9] + ((unsigned)d[10] << 8) + ((unsigned)d[11] << 16);
-         const uint8_t *vp8 = NULL;
-         bool opaque = rwebp_anim_opaque_vp8(d + 16, s->anmf[i].sz - 16,
-               &vp8, NULL);
-         if (!opaque || ((vp8[6] | ((unsigned)vp8[7] << 8)) & 0x3fff) != w
-               || ((vp8[8] | ((unsigned)vp8[9] << 8)) & 0x3fff) != h)
-            s->direct_vp8 = 0;
-         if (d[0] || d[1] || d[2] || d[3] || d[4] || d[5]
-               || w != (unsigned)s->canvas_w || h != (unsigned)s->canvas_h
-               || (!(d[15] & 2) && !opaque))
-         {
-            s->independent = 0;
-            break;
-         }
-      }
-   }
-   if (s->independent)
-      return s; /* the first full replacement supplies its own canvas */
-   s->canvas = (uint32_t*)calloc((size_t)s->canvas_w * s->canvas_h,
-         sizeof(uint32_t));
-   if (!s->canvas)
-      goto ofail;
+   /* Allocate a private canvas only when a frame actually needs one. */
    return s;
 
 ofail:
@@ -1836,6 +1929,7 @@ void rwebp_anim_stream_rewind(rwebp_anim_stream_t *s)
    s->prev_disp_bg = 0;
    s->prev_full    = 0;
    s->prev_key     = 0;
+   s->canvas_lost  = 0;
    /* No canvas clearing needed: the first emitted frame is always a
     * key frame, which memsets the canvas before compositing. */
 }
@@ -1876,6 +1970,10 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
        * consumed; the caller retries after raising the bound. */
       if (off > s->avail || (size_t)sz > s->avail - off)
          return NULL;
+      /* A persistent lend is suspended before a dependent or unknown frame.
+       * Refused set_output calls also clear it, so feeding more metadata
+       * cannot accidentally revive the previous job's output pointer. */
+      if (s->out && !rwebp_anim_can_lend(s)) s->out = NULL;
       d        = s->buf + off;
       fx       = (int)(((uint32_t)d[0] | ((uint32_t)d[1]<<8) | ((uint32_t)d[2]<<16)) * 2);
       fy       = (int)(((uint32_t)d[3] | ((uint32_t)d[4]<<8) | ((uint32_t)d[5]<<16)) * 2);
@@ -1910,6 +2008,7 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
             return NULL;
          is_key = 1;
          s->lent_frame = 1;
+         s->canvas_lost = 1;
          goto frame_done;
       }
       sub = rwebp_anim_frame_pixels(d + 16, sz - 16, &sub_w, &sub_h,
@@ -1918,8 +2017,6 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
          continue;
       if ((int)sub_w != fw || (int)sub_h != fh)
       { free(sub); continue; }
-      s->lent_frame = 0;
-
       if (s->emitted == 0)
          is_key = 1;
       else if (no_blend && rwebp_full_frame(fw, fh, cw, ch))
@@ -1941,9 +2038,18 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
          s->canvas     = sub;
          sub           = old;
       }
-      else if (is_key)
+      else
+      {
+         /* A bad replacement may have been skipped after a frame was lent.
+          * Do not composite from absent or stale pixels in that case. */
+         if (s->canvas_lost && !is_key) { free(sub); return NULL; }
+         if (!s->canvas)
+            s->canvas = (uint32_t*)calloc((size_t)cw * ch, sizeof(uint32_t));
+         if (!s->canvas) { free(sub); return NULL; }
+      }
+      if (!swapped && is_key)
          memset(s->canvas, 0, (size_t)cw * ch * sizeof(uint32_t));
-      else if (s->prev_disp_bg)
+      else if (!swapped && s->prev_disp_bg)
       {
          /* Lazily apply the previous frame's dispose-to-background:
           * clear its rectangle (the only region where the disposal
@@ -1970,6 +2076,8 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
          }
       }
       free(sub);
+      s->lent_frame = 0;
+      s->canvas_lost = 0;
 
 frame_done:
       s->prev_fx      = fx;
@@ -1989,9 +2097,13 @@ frame_done:
 bool rwebp_anim_stream_set_output_stride(rwebp_anim_stream_t *s,
       uint32_t *out, unsigned stride)
 {
-   if (!s || (out && (!s->independent || !s->direct_vp8
-            || (stride && stride < (unsigned)s->canvas_w))))
+   if (!s || (out && stride && stride < (unsigned)s->canvas_w))
       return false;
+   if (out && !rwebp_anim_can_lend(s))
+   {
+      s->out = NULL;
+      return false;
+   }
    s->out = out;
    s->out_stride = stride ? stride : (unsigned)s->canvas_w;
    return true;
@@ -2000,10 +2112,17 @@ bool rwebp_anim_stream_set_output_stride(rwebp_anim_stream_t *s,
 void *rwebp_anim_stream_take_pixels(rwebp_anim_stream_t *s)
 {
    void *pixels;
-   if (!s || !s->independent || !s->emitted || !s->canvas || s->lent_frame)
-      return NULL;
+   bool discard;
+   if (!s || !s->emitted || !s->canvas || s->lent_frame) return NULL;
+   discard = s->prev_disp_bg && (s->prev_full || s->prev_key);
+   if (s->cursor < s->num_anmf)
+      discard = discard || rwebp_anim_independent(&s->anmf[s->cursor]);
+   else
+      discard = discard || s->scan_done;
+   if (!discard) return NULL;
    pixels = s->canvas;
    s->canvas = NULL;
+   s->canvas_lost = 1;
    return pixels;
 }
 

@@ -148,17 +148,18 @@ void rwebp_anim_stream_next_span(const rwebp_anim_stream_t *stream,
 
 void rwebp_anim_stream_rewind(rwebp_anim_stream_t *stream);
 
-/* Transfer the last emitted canvas when every frame in the fully indexed
- * animation is a full independent replacement. NULL declines the transfer,
- * including when the last frame was written into caller-owned output.
- * Acquire on the decode owner; free() the returned pixels on any thread,
- * even after further decoding, rewind, colour-order changes or stream close. */
+/* Transfer the last emitted canvas when its successor is known not to need
+ * it, or disposal/end-of-pass supplies a fresh baseline. Unknown successor
+ * metadata declines the transfer. Acquire on the decode owner; free() the
+ * returned pixels on any thread, even after decoding, rewind or stream close.
+ * A frame written into caller-owned output cannot be taken. */
 void *rwebp_anim_stream_take_pixels(rwebp_anim_stream_t *stream);
 
-/* Lend output for fully indexed independent opaque VP8 frames. Stride is in
- * pixels (0 means width); too-small strides and other frame types are refused
- * without changing the previous output. Caller owns the memory, written only
- * by next(); NULL restores cached decoder output. */
+/* Lend output for an opaque full-frame VP8 replacement whose successor does
+ * not need its pixels. Progressive streams may qualify from cached header
+ * facts before the complete file arrives. Stride is in pixels (0 = width).
+ * Unknown/dependent frames disable the previous lend and return false;
+ * invalid strides leave it unchanged. NULL restores cached decoder output. */
 bool rwebp_anim_stream_set_output_stride(rwebp_anim_stream_t *stream,
       uint32_t *out, unsigned stride);
 
