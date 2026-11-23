@@ -1546,6 +1546,10 @@ float audio_driver_mixer_get_stream_volume(unsigned i);
 
 void audio_driver_mixer_set_stream_volume(unsigned i, float vol);
 
+/* Stop sounds and refuse late stream admissions before draining exit tasks.
+ * Voice infrastructure stays alive until normal audio driver teardown. */
+void audio_driver_mixer_shutdown(void);
+
 void audio_driver_mixer_remove_stream(unsigned i);
 
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);

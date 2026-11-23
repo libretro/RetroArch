@@ -164,7 +164,7 @@ jobs:
     name: Release build, frame-path heap and cost
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential libxkbcommon-dev libx11-xcb-dev zlib1g-dev libfreetype-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev libavcodec-dev libsdl2-dev libxml2-dev yasm
+      APT_PKGS: ffmpeg build-essential libxkbcommon-dev libx11-xcb-dev zlib1g-dev libfreetype-dev libegl1-mesa-dev libgles2-mesa-dev libgbm-dev libavcodec-dev libsdl2-dev libxml2-dev yasm
     timeout-minutes: 30
 
     steps:
@@ -210,3 +210,14 @@ jobs:
           set -o pipefail
           SAN=none make -C samples/runloop/frontend_overhead check
           make -C samples/runloop/frontend_overhead clean
+
+      - name: FLAC playback releases its feeder before the quit task drain
+        shell: bash
+        run: |
+          set -eu
+          samples/tasks/exit_drain/build.sh
+          ffmpeg -y -v error -f lavfi -i sine=frequency=440:sample_rate=48000 \
+            -t 5 -c:a flac "$RUNNER_TEMP/exit-flac.flac"
+          FLAC_FIXTURE="$RUNNER_TEMP/exit-flac.flac" \
+            timeout 20 samples/tasks/exit_drain/exit_drain_test
+          MODE=old timeout 20 samples/tasks/exit_drain/exit_drain_test

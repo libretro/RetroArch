@@ -7134,6 +7134,11 @@ void retroarch_save_for_suspend(void)
  * 'when') do not hold the wait and are dropped as designed. */
 void retroarch_drain_tasks_for_exit(void)
 {
+#ifdef HAVE_AUDIOMIXER
+   /* Streaming feeders own the decoder windows until their sounds are
+    * released. Stop playback before waiting for those tasks to finish. */
+   audio_driver_mixer_shutdown();
+#endif
    task_queue_reset();
    task_queue_wait_timeout(NULL, NULL, 3 * 1000 * 1000);
 }

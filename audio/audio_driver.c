@@ -1593,7 +1593,7 @@ static void audio_driver_mixer_hold(void);
 static void audio_driver_mixer_release(void);
 static void audio_driver_mixer_remove_stream_held(unsigned i);
 
-static void audio_driver_mixer_deinit(void)
+void audio_driver_mixer_shutdown(void)
 {
    unsigned i;
 
@@ -1603,7 +1603,11 @@ static void audio_driver_mixer_deinit(void)
    for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
       audio_driver_mixer_remove_stream_held(i);
    audio_driver_mixer_release();
+}
 
+static void audio_driver_mixer_deinit(void)
+{
+   audio_driver_mixer_shutdown();
    audio_mixer_done();
 }
 #endif
