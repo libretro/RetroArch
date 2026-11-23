@@ -5512,10 +5512,8 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
          /* Held back until everything held now is let go. */
          input_driver_hold_held_input();
 
-         /* Use human readable order instead */
+         /* Use human readable order instead; past the last, done */
          _binds->order++;
-         _binds->begin = MENU_SETTINGS_BIND_BEGIN + input_config_bind_order[_binds->order];
-
          if (     _binds->order > ARRAY_SIZE(input_config_bind_order) - 1
                || stop_binding)
          {
@@ -5523,6 +5521,8 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
             input_driver_set_keyboard_mapping_blocked(false);
             return true;
          }
+         _binds->begin = MENU_SETTINGS_BIND_BEGIN
+               + input_config_bind_order[_binds->order];
 
          input_driver_set_keyboard_mapping_blocked(false);
          input_driver_set_wait_input_release(true);

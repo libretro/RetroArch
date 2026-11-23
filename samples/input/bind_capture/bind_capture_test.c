@@ -206,6 +206,12 @@ static int menu_input_key_bind_set_mode_common(struct menu_state *menu_st,
    state->last     = setting->bind_type;
    state->out_user = setting->index_offset;
    state->out_id   = setting->bind_type - MENU_SETTINGS_BIND_BEGIN;
+   if (mode == MENU_INPUT_BINDS_CTL_BIND_ALL)
+   {
+      state->begin  = MENU_SETTINGS_BIND_BEGIN + input_config_bind_order[0];
+      state->last   = MENU_SETTINGS_BIND_LAST;
+      state->out_id = input_config_bind_order[0];
+   }
    state->buffer   = *input_config_bind(state->out_user, state->out_id);
    state->user     = setting->index_offset;
    return 0;
@@ -444,6 +450,32 @@ static void test_companion_key(bool at_once)
    CHECK(!bind_step());
 }
 
+/* Binding them all ends on the last in the order, which is not read
+ * past. */
+static void test_bind_all(void)
+{
+   unsigned i;
+   rarch_setting_t setting;
+   reset();
+   memset(&setting, 0, sizeof(setting));
+   setting.bind_type = MENU_SETTINGS_BIND_BEGIN;
+   CHECK(menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_ALL,
+            &setting));
+   CHECK(!bind_step());
+   for (i = 0; i < ARRAY_SIZE(input_config_bind_order); i++)
+   {
+      bool done;
+      driver_key = RETROK_a;
+      done       = bind_step();
+      CHECK(done == (i == ARRAY_SIZE(input_config_bind_order) - 1));
+      driver_key = 0;
+      if (done)
+         break;
+      CHECK(!bind_step());
+   }
+   CHECK(i == ARRAY_SIZE(input_config_bind_order) - 1);
+}
+
 /* the highest button there is, among the bits */
 static void test_last_button(void)
 {
@@ -500,6 +532,7 @@ int main(void)
    test_keys(true);
    test_companion_key(false);
    test_companion_key(true);
+   test_bind_all();
    test_last_button();
    test_get_buttons();
    if (failures)
