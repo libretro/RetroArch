@@ -50,9 +50,6 @@ HAVE_STATIC_AUDIO_FILTERS = 1
 
 ifeq ($(HAVE_DYNAMIC),1)
   DEFINES += -DHAVE_DYNAMIC
-  ifeq ($(HAVE_LIBOUNCE_MODULE_TRACE),1)
-    DEFINES += -DHAVE_LIBOUNCE_MODULE_TRACE
-  endif
 else
   HAVE_STATIC_CORES = 1
 endif
@@ -137,6 +134,10 @@ APP_ICON := pkg/libnx/retroarch.jpg
 #---------------------------------------------------------------------------------
 ARCH	:=	$(SWITCH2_CPU) -mtp=soft -fPIE
 
+ifeq ($(HAVE_DYNAMIC),1)
+  ARCH := $(SWITCH2_SHARED_ARCH)
+endif
+
 CFLAGS := -g -Wall -O3 -fcommon -ffunction-sections \
           $(ARCH) $(DEFINES) $(INCLUDE_DIRS) -I$(LIBNX)/include -I$(PORTLIBS)/include/ -include $(LIBNX)/include/switch.h
 
@@ -156,21 +157,13 @@ ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libounce/switch.specs $(ARCH) -Wl,--allow-multiple-definition -Wl,-Map,$(notdir $*.map)
 
 ifeq ($(HAVE_DYNAMIC),1)
-  LDFLAGS += -Wl,--export-dynamic,--hash-style=sysv
-  LDFLAGS += -Wl,-T,$(TOPDIR)/pkg/libounce/libounce_runtime.exports
+  LDFLAGS := -specs=$(SWITCH2_SHARED_SPECS) $(ARCH) $(SWITCH2_SHARED_LIBPATHS) -Wl,--allow-multiple-definition -Wl,-Map,$(notdir $*.map)
 endif
 
 # add things from Makefile.common
 CFLAGS += $(DEF_FLAGS)
 
 LIBS := -lswresample -lavformat -lavcodec -lavutil -lswscale -lstdc++ -lbz2 -lpng -lz -lnx -lvpx -lopus -llzma -lnx -lm
-
-ifeq ($(HAVE_DYNAMIC),1)
-  # Keep the runtime ABI independent of the cores installed.
-  LIBS := $(filter-out -lstdc++ -lz,$(LIBS))
-  LIBS += -Wl,--whole-archive -lstdc++ -lz -Wl,--no-whole-archive -lm -lc -lnx
-  LIBS += $(PORTLIBS_SWITCH2)/lib/kaihen-jit.o
-endif
 
 ifeq ($(HAVE_OPENGL), 1)
   LIBS := -lGLESv2 -lEGL -lglapi -ldrm_nouveau $(LIBS)
@@ -287,10 +280,6 @@ $(OUTPUT).nro	:	$(OUTPUT).elf
 endif
 
 $(OUTPUT).elf	:	$(OBJ)
-ifeq ($(HAVE_DYNAMIC),1)
-  $(OUTPUT).elf: $(TOPDIR)/pkg/libounce/libounce_runtime.exports
-endif
-
 clean:
 	rm -f $(DEPENDS) $(OBJ) $(OUTPUT).pfs0 $(OUTPUT).nro $(OUTPUT).elf
 

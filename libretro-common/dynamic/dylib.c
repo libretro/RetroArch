@@ -37,8 +37,6 @@
 #ifdef _WIN32
 #include <compat/posix_string.h>
 #include <windows.h>
-#elif defined(__SWITCH2__)
-#include <switch2/runtime/module.h>
 #else
 #if !defined(ORBIS)
 #include <dlfcn.h>
@@ -133,15 +131,6 @@ dylib_t dylib_load(const char *path)
       return NULL;
    }
    last_dyn_err[0] = 0;
-#elif defined(__SWITCH2__)
-   /* Only a module exporting retro_api_version is a core */
-   ModuleLoadOptions options = {0};
-   dylib_t lib;
-   options.required_symbol   = "retro_api_version";
-#ifdef HAVE_LIBOUNCE_MODULE_TRACE
-   options.trace_path        = "sdmc:/retroarch/module-loader.log";
-#endif
-   lib = (dylib_t)moduleLoad(path, &options);
 #elif defined(ORBIS)
    int res;
    dylib_t lib = (dylib_t)sceKernelLoadStartModule(path, 0, NULL, 0, NULL, &res);
@@ -173,8 +162,6 @@ char *dylib_error(void)
    if (last_dyn_err[0])
       return last_dyn_err;
    return NULL;
-#elif defined(__SWITCH2__)
-   return (char*)moduleGetError();
 #else
    return (char*)dlerror();
 #endif
@@ -204,8 +191,6 @@ function_t dylib_proc(dylib_t lib, const char *proc)
       return NULL;
    }
    last_dyn_err[0] = 0;
-#elif defined(__SWITCH2__)
-   sym = (function_t)moduleGetFunction((Module*)lib, proc);
 #elif defined(ORBIS)
    void *ptr_sym = NULL;
    sym = NULL;
@@ -250,8 +235,6 @@ void dylib_close(dylib_t lib)
    if (!FreeLibrary((HMODULE)lib))
       set_dl_err();
    last_dyn_err[0] = 0;
-#elif defined(__SWITCH2__)
-   moduleClose((Module*)lib);
 #elif defined(ORBIS)
    int res;
    sceKernelStopUnloadModule((SceKernelModule)lib, 0, NULL, 0, NULL, &res);

@@ -34,6 +34,12 @@
 #include <unistd.h>
 #endif
 
+#ifdef __SWITCH2__
+// not implemented for Switch2
+#define geteuid() 0
+#define getegid() 0
+#endif
+
 #include <encodings/utf.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
