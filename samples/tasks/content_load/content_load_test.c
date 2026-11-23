@@ -3858,7 +3858,11 @@ static void lane_not_a_core(void)
 /* The Quick Menu's Close Content: the frame loop unloads the core,
  * which loads the dummy core - a staged load - and asks for the core
  * library to be loaded back afterwards, for Start Core.  That reload
- * must follow the dummy session, not land in the middle of it. */
+ * must follow the dummy session, not land in the middle of it.  With
+ * nothing to wait for, the old core closes in the frame the menu is
+ * flushed to the Main Menu, which is still owed a full populate: a
+ * header-only refresh leaves the menu driver in its Quick Menu state
+ * (Ozone hides its sidebar). */
 static void lane_close_content(void)
 {
    struct load_frame log[LOAD_FRAMES];
@@ -3877,6 +3881,11 @@ static void lane_close_content(void)
          "closing content did not start a staged load of the dummy core");
    CHECK(menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE,
          "no core reload pending after the close");
+   CHECK(!runloop_st->system.info.library_name,
+         "the old core did not close in the frame of the close");
+   CHECK(   (menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH)
+         && !(menu_st->flags & MENU_ST_FLAG_PREVENT_POPULATE),
+         "the Main Menu is not owed a full populate after the close");
 
    n = run_load(log, LOAD_FRAMES);
    CHECK(n < LOAD_FRAMES && !runloop_is_content_switching(),
