@@ -740,9 +740,9 @@ static void st_pitched_lending(void)
    st_async = 0;
 }
 
-/* Immutable 10-bit input converts once into the upload slot, including
- * padded lent storage. The literal colours pin the existing >>2 baseline. */
-static void st_narrow_upload(void)
+/* Immutable input and decoder-written slots narrow without a raw-frame
+ * copy, including padded loans. Literal colours pin the >>2 baseline. */
+static void st_narrow_upload(bool decoded)
 {
    static const uint32_t source[] = {0, 0x3fffffffu, 0x3ff00000u,
       0x000ffc00u, 0x000003ffu, 0x20080002u, 0x1ff7fdffu,
@@ -781,10 +781,16 @@ static void st_narrow_upload(void)
                st_lend_busy = 1;
                CHECK(gfx_surface_slot_writable(s, 0), "narrow upload: spare unavailable");
             }
+            if (decoded)
+               for (i = 0; i < 4; i++)
+                  memcpy((uint8_t*)s->slots[0] + i * s->pitch[0], pixels + i * 4, 16);
             retro_atomic_store_release_int(&st_copy_bytes, 0);
-            retro_atomic_store_release_int(&st_copy_size, s->pitch[0] * 4);
-            retro_atomic_store_release_ptr(&st_copy_target, s->slots[0]);
-            CHECK(gfx_surface_submit_pixels(s, pixels, rgba != 0)
+            retro_atomic_store_release_int(&st_copy_size,
+                  decoded ? sizeof(pixels) : s->pitch[0] * 4);
+            retro_atomic_store_release_ptr(&st_copy_target,
+                  decoded ? s->own_slots[0] : s->slots[0]);
+            CHECK((decoded ? gfx_surface_submit(s, 0, rgba != 0)
+                           : gfx_surface_submit_pixels(s, pixels, rgba != 0))
                   == (threaded ? GFX_SURFACE_SUBMIT_QUEUED : GFX_SURFACE_SUBMIT_DONE),
                   "narrow upload: submit");
             upload = (const uint8_t*)s->img.pixels;
@@ -968,7 +974,8 @@ int main(void)
    st_pitched_lending();
    st_compressed_stills();
    st_async = 1;
-   st_narrow_upload();
+   st_narrow_upload(false);
+   st_narrow_upload(true);
    st_canvas_lease();
    st_still_recovery();
 

@@ -247,8 +247,9 @@ static void gfx_surface_pack(gfx_surface_t *s)
 /* s->img for an upload of @pixels in @pixfmt, and the texture key it
  * makes: the layout bit above the channel order, which is all an
  * in-place update has to agree with. A 2101010 frame the driver cannot
- * sample is narrowed in place to 8888 in the order @rgba names - only
- * for a slot, which is the surface's to rewrite. False for anything
+ * sample is narrowed into packed slot storage in the order @rgba names
+ * (in place for packed rows). Only slots are the surface's to rewrite.
+ * False for anything
  * else that cannot reach the GPU as it is: the submit fails rather
  * than upload one layout as another. */
 static bool gfx_surface_prepare(gfx_surface_t *s, const void *pixels,
@@ -285,10 +286,27 @@ static bool gfx_surface_prepare(gfx_surface_t *s, const void *pixels,
          s->img.pix10   = true;
          if (gfx_surface_must_narrow(pixfmt))
          {
+            size_t row = (size_t)s->img.width * sizeof(uint32_t);
             if (!is_slot)
                return false;
-            gfx_surface_pack(s);
-            image_texture_narrow_10bit(&s->img);
+            if (s->img_pitch > row)
+            {
+               const uint8_t *src = (const uint8_t*)s->img.pixels;
+               uint32_t *dst = (uint32_t*)s->own_slots[s->inflight_slot];
+               unsigned y;
+               /* The replacement needs packed rows. Narrow straight into
+                * its owned buffer instead of packing raw 10-bit pixels
+                * there and reading them a second time for conversion. */
+               for (y = 0; y < s->img.height; y++)
+                  image_texture_narrow_10bit_row(dst + (size_t)y * s->img.width,
+                        (const uint32_t*)(src + (size_t)y * s->img_pitch),
+                        s->img.width, rgba);
+               s->img.pixels = dst;
+               s->img_pitch = row;
+               s->img.pix10 = false;
+            }
+            else
+               image_texture_narrow_10bit(&s->img);
          }
          break;
       default:
