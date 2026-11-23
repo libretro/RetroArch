@@ -746,7 +746,6 @@ static bool win32_drag_query_file_ansi(HWND hwnd, WPARAM wparam)
       char szFilename[1024];
 #ifdef HAVE_MENU
       UINT i;
-      char utf8[1024];
       union string_list_elem_attr attr;
       struct string_list *files = string_list_new();
       attr.i                    = 0;
@@ -755,8 +754,9 @@ static bool win32_drag_query_file_ansi(HWND hwnd, WPARAM wparam)
       {
          szFilename[0] = '\0';
          DragQueryFileA((HDROP)wparam, i, szFilename, sizeof(szFilename));
-         if (     local_to_utf8_string(szFilename, utf8, sizeof(utf8))
-               && !string_list_append(files, utf8, attr))
+         if (     local_to_utf8_string(szFilename, szFilename,
+                  sizeof(szFilename))
+               && !string_list_append(files, szFilename, attr))
          {
             string_list_free(files);
             files = NULL;

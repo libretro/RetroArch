@@ -97,19 +97,12 @@ size_t strftime_am_pm(char *s, size_t len, const char* format,
 
 #if defined(_WIN32) && !defined(_XBOX) && !defined(UNICODE)
    /* Only Windows writes the local codepage; an ASCII result is
-    * already UTF-8 */
+    * already UTF-8, any other converts in place */
    for (i = 0; i < _len; i++)
       if ((unsigned char)s[i] >= 0x80)
          break;
-   if (i < _len)
-   {
-      char local[256];
-      if (strlcpy(local, s, sizeof(local)) < sizeof(local)
-            && local_to_utf8_string(local, s, len) && *s)
-         _len = strlen(s);
-      else
-         _len = strlcpy(s, local, len);
-   }
+   if (i < _len && local_to_utf8_string(s, s, len))
+      _len = strlen(s);
 #endif
    return _len;
 }

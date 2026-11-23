@@ -175,18 +175,9 @@ void menu_timedate_capture_ampm(void)
    for (i = 0; i < 2; i++)
    {
       tm.tm_hour = i ? 13 : 1;
-      if (!strftime(local, sizeof(local), "%p", &tm) || !*local)
-         continue;
-#if defined(__linux__) && !defined(ANDROID)
-      strlcpy(menu_timedate_ampm[i], local, sizeof(menu_timedate_ampm[i]));
-#else
-      {
-         char utf8[sizeof(menu_timedate_ampm[i])];
-         if (local_to_utf8_string(local, utf8, sizeof(utf8)) && *utf8)
-            strlcpy(menu_timedate_ampm[i], utf8,
-                  sizeof(menu_timedate_ampm[i]));
-      }
-#endif
+      if (     strftime(local, sizeof(local), "%p", &tm) && *local
+            && local_to_utf8_string(local, local, sizeof(local)))
+         strlcpy(menu_timedate_ampm[i], local, sizeof(menu_timedate_ampm[i]));
    }
 }
 

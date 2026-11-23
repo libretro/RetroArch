@@ -160,6 +160,7 @@ char *local_to_utf8_string_alloc(const char *str);
  * Same conversion as local_to_utf8_string_alloc(), into a caller buffer.
  * Targets where the local codepage needs no conversion - Xbox, and any
  * UNICODE build - copy rather than allocate.  Truncates like strlcpy().
+ * @in may be @s, converting in place; a failure then leaves @s as it was.
  *
  * @return false only if the conversion itself failed.
  **/

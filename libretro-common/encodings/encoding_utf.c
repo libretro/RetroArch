@@ -852,19 +852,43 @@ bool local_to_utf8_string(const char *in, char *s, size_t len)
 {
    if (!s || !len)
       return false;
-   s[0] = '\0';
    if (!in || !*in)
+   {
+      *s = '\0';
       return true;
+   }
 #if defined(_WIN32) && !defined(_XBOX) && !defined(UNICODE)
    {
-      char *tmp = mb_to_mb_string_alloc(in, CODEPAGE_LOCAL, CODEPAGE_UTF8);
-      if (!tmp)
+      /* Nothing is written to @s until the whole result fits, so @in
+       * may be @s; a name too long for the stack takes the heap */
+      wchar_t wide[260];
+      char *tmp;
+      if (MultiByteToWideChar(CODEPAGE_LOCAL, 0, in, -1, wide,
+               (int)(sizeof(wide) / sizeof(wide[0]))) > 0)
+      {
+         int _len = WideCharToMultiByte(CODEPAGE_UTF8, 0, wide, -1,
+               NULL, 0, NULL, NULL);
+         if (_len > 0 && (size_t)_len <= len)
+         {
+            WideCharToMultiByte(CODEPAGE_UTF8, 0, wide, -1, s, _len,
+                  NULL, NULL);
+            return true;
+         }
+      }
+      if (!(tmp = mb_to_mb_string_alloc(in, CODEPAGE_LOCAL, CODEPAGE_UTF8)))
+      {
+         if (in != s)
+            *s = '\0';
          return false;
+      }
       strlcpy(s, tmp, len);
       free(tmp);
    }
 #else
-   strlcpy(s, in, len);
+   if (in != s)
+      strlcpy(s, in, len);
+   else if (strlen(s) >= len)
+      s[len - 1] = '\0';
 #endif
    return true;
 }
