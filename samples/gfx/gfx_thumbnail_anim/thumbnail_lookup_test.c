@@ -161,6 +161,40 @@ int gt_thumbnail_lookup_test(void)
    lk_entry(pd, "Tetris (U) [!]", "/roms/tet-u.nes");
    bad |= lk_case(pd, &cfg, "a worker's config never reads the store", NULL);
 
+   lk_file("GAME, THE.png", true);
+   lk_entry(pd, "GAME, THE (UNDUB)", "/roms/GAME, THE (UNDUB).nes");
+   bad |= lk_case(pd, &cfg, "short custom names stay opt-in", NULL);
+   cfg.playlist_use_filename = true;
+   bad |= lk_case(pd, &cfg, "filename matching accepts the untagged custom image",
+         "GAME, THE.png");
+   lk_entry(pd, "A different label", "/roms/GAME, THE (UNDUB).nes");
+   bad |= lk_case(pd, &cfg, "shortening uses the filename, not its label",
+         "GAME, THE.png");
+   lk_file("GAME, THE (UNDUB).png", true);
+   bad |= lk_case(pd, &cfg, "the full filename still comes before its short name",
+         "GAME, THE (UNDUB).png");
+   lk_file("GAME, THE (UNDUB).png", false);
+   lk_file("GAME, THE.png", false);
+   lk_file("GAME, THE.jpg", true);
+   bad |= lk_case(pd, &cfg, "a shortened filename does not enable other image types", NULL);
+   cfg.playlist_allow_non_png = true;
+   bad |= lk_case(pd, &cfg, "short filenames respect the non-PNG setting",
+         "GAME, THE.jpg");
+   cfg.playlist_allow_non_png = false;
+   lk_file("GAME, THE.jpg", false);
+   lk_file("GAME, THE.png", true);
+   lk_entry(pd, "GAME, THE (UNDUB)", "/roms/Another Name.nes");
+   bad |= lk_case(pd, &cfg, "filename matching never shortens a different label", NULL);
+   cfg.playlist_use_filename = false;
+   lk_entry(pd, "A different label", "/roms/GAME, THE (UNDUB).nes");
+   pd->playlist_use_filename = true;
+   bad |= lk_case(pd, &cfg, "per-playlist filename matching uses the same fallback",
+         "GAME, THE.png");
+   gfx_thumbnail_path_reset(pd);
+   if (pd->playlist_use_filename)
+      bad = 1;
+   lk_file("GAME, THE.png", false);
+
    gfx_thumbnail_results_deinit();
    lk_file("Tetris.png", false);
    lk_file("Tetris (USA).png", false);

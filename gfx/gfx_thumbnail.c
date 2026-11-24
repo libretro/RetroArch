@@ -3003,6 +3003,7 @@ void gfx_thumbnail_path_reset(gfx_thumbnail_path_data_t *path_data)
    if (!path_data)
       return;
 
+   path_data->playlist_use_filename = false;
    path_data->system_len           = 0;
    path_data->system[0]            = '\0';
    path_data->content_path[0]      = '\0';
@@ -3217,6 +3218,7 @@ bool gfx_thumbnail_set_content(gfx_thumbnail_path_data_t *path_data, const char 
    path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_left_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_index       = 0;
+   path_data->playlist_use_filename = false;
 
    if (!label || !*label)
       return false;
@@ -3268,6 +3270,7 @@ bool gfx_thumbnail_set_content_image(
    path_data->playlist_right_mode  = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_left_mode   = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_index       = 0;
+   path_data->playlist_use_filename = false;
 
    if ((!img_dir || !*img_dir) || (!img_name || !*img_name))
       return false;
@@ -3356,6 +3359,7 @@ bool gfx_thumbnail_set_content_playlist(
    path_data->playlist_right_mode     = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_left_mode      = PLAYLIST_THUMBNAIL_MODE_DEFAULT;
    path_data->playlist_index          = 0;
+   path_data->playlist_use_filename   = false;
 
    if (!playlist)
       return false;
@@ -3369,6 +3373,8 @@ bool gfx_thumbnail_set_content_playlist(
    if (!entry)
       return false;
 
+   path_data->playlist_use_filename =
+         playlist_thumbnail_match_with_filename(playlist);
    content_path  = entry->path;
    content_label = entry->label;
    core_name     = entry->core_name;
@@ -3459,6 +3465,7 @@ void gfx_thumbnail_dir_config_capture(gfx_thumbnail_dir_config_t *cfg)
    settings_t *settings        = config_get_ptr();
    strlcpy(cfg->dir_thumbnails, settings->paths.directory_thumbnails,
          sizeof(cfg->dir_thumbnails));
+   cfg->playlist_use_filename  = settings->bools.playlist_use_filename;
    cfg->playlist_allow_non_png = settings->bools.playlist_allow_non_png;
    cfg->playlist_thumbnail_other_regions =
          settings->bools.playlist_thumbnail_other_regions;
@@ -3649,6 +3656,40 @@ bool gfx_thumbnail_update_path_cfg(
                      gfx_thumbnail_image_exts[i], 6);
                thumbnail_found = path_is_valid(thumbnail_path);
             }
+         }
+      }
+
+      /* Explicit filename matching also accepts a title-only local image. */
+      if (!thumbnail_found && (cfg->playlist_use_filename
+               || path_data->playlist_use_filename))
+      {
+         const char *filename = *path_data->content_img_full
+            ? path_data->content_img_full : path_data->content_img;
+         const char *bracket = strstr(filename, " (");
+         if (bracket && bracket != filename)
+         {
+            size_t title_len = bracket - filename;
+            size_t dir_len = fill_pathname_join_special(thumbnail_path,
+                  tmp_buf, "", PATH_MAX_LENGTH);
+            if (dir_len < PATH_MAX_LENGTH
+                  && title_len + sizeof(".png") <= PATH_MAX_LENGTH - dir_len)
+            {
+               memcpy(thumbnail_path + dir_len, filename, title_len);
+               memcpy(thumbnail_path + dir_len + title_len, ".png", sizeof(".png"));
+               thumbnail_found = path_is_valid(thumbnail_path);
+               if (playlist_allow_non_png)
+                  for (i = 1; gfx_thumbnail_image_exts[i] && !thumbnail_found; i++)
+                  {
+                     char *extension = thumbnail_path + dir_len + title_len;
+                     size_t capacity = PATH_MAX_LENGTH - (extension - thumbnail_path);
+                     if (strlen(gfx_thumbnail_image_exts[i]) >= capacity)
+                        continue;
+                     strlcpy(extension, gfx_thumbnail_image_exts[i], capacity);
+                     thumbnail_found = path_is_valid(thumbnail_path);
+                  }
+            }
+            else
+               thumbnail_path[0] = '\0';
          }
       }
 

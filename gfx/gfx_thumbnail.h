@@ -68,6 +68,7 @@ struct gfx_thumbnail_path_data
    enum playlist_thumbnail_mode playlist_icon_mode;
    size_t playlist_index;
    size_t system_len;
+   bool playlist_use_filename;
    char content_label[NAME_MAX_LENGTH];
    char content_core_name[NAME_MAX_LENGTH];
    char system[NAME_MAX_LENGTH];
@@ -149,6 +150,7 @@ bool gfx_thumbnail_update_path(gfx_thumbnail_path_data_t *path_data, enum gfx_th
 typedef struct gfx_thumbnail_dir_config
 {
    char dir_thumbnails[DIR_MAX_LENGTH];
+   bool playlist_use_filename;
    bool playlist_allow_non_png;
    bool playlist_thumbnail_other_regions;
    bool use_results; /* the match store: main thread only */

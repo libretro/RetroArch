@@ -483,3 +483,6 @@ bool video_thread_lend_get(int idx, void **mem, size_t *pitch)
    (void)pitch;
    return false;
 }
+
+bool playlist_thumbnail_match_with_filename(void *playlist)
+{ (void)playlist; return false; }
