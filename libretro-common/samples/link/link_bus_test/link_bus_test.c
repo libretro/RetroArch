@@ -1774,6 +1774,41 @@ static bool fx_reloads(void)
    return same;
 }
 
+/* Console 1 is held at 1024 while console 0, in its frame from 1024, sends
+ * to it stamped 4096. The unhold places console 1 at console 0's edge 2048
+ * with its tick 1024 there: the message lands at its own instant, tick
+ * 3072, not where the hold ends; the same from a save taken before it lands */
+static void held_message_lands_at_own_instant(void)
+{
+   uint64_t tick = 0;
+   unsigned from = 99, k;
+   size_t len    = 0, n;
+
+   fx_two(61440, 61440);
+   fx_run_frame();
+   CHECK(link_bus_hold(fx_bus, 1));
+   fx_begin();
+   CHECK(adv(0, fx_h[0][0], 1024, 4096, 1024, NULL, NULL));
+   CHECK(snd(0, 0, 4096, 1, "a", 1));
+   frame();
+   CHECK(link_bus_unhold(fx_bus, 1));
+   n = fx_save();
+   for (k = 0; k < 2; k++)
+   {
+      CHECK(!k || link_bus_load(fx_bus, fx_blob, n));
+      fx_begin();
+      CHECK(adv(0, fx_h[0][0], 2048, 2048 + FX_FAR, 2048, NULL, NULL));
+      CHECK(adv(1, fx_h[1][0], 1024, 1024 + FX_FAR, 3072, NULL, NULL));
+      CHECK(link_bus_peek(fx_bus, 1, fx_h[1][0], NULL, NULL, &len) == NULL);
+      CHECK(adv(1, fx_h[1][0], 1024, 1024 + FX_FAR, 3073, NULL, NULL));
+      CHECK(link_bus_peek(fx_bus, 1, fx_h[1][0], &tick, &from, &len) != NULL);
+      CHECK(tick == 3072 && from == 0 && len == 1);
+      link_bus_frame_end(fx_bus, 0);
+      link_bus_frame_end(fx_bus, 1);
+   }
+   fx_free();
+}
+
 /* Frame 2: console 0 promises 4000 and sends console 1 a message stamped
  * 4000; at edge 3 console 1 is renumbered and stands at 100. Its joining
  * report is still pending. */
@@ -3307,8 +3342,8 @@ static void max_ports_push_out_waits_for_peers(void)
 
 /* Console 1, held at its edge 3000, is pulled while console 0 is inside its
  * frame begun at 5000: console 0 sees it at its edge 6000, console 1 at its
- * first frame after the unhold, where console 0's message sent at 3500
- * lands */
+ * first frame after the unhold, placed at 6000, where console 0's message
+ * sent at 3500, its stamp raised to the promise, lands at its own instant */
 static void uncable_held_at_once(void)
 {
    char buf[2];
@@ -3340,11 +3375,11 @@ static void uncable_held_at_once(void)
    fx_own_end(0);
    CHECK(fx_peers(0, 0) == 0);
    CHECK(link_bus_unhold(fx_bus, 1));
-   /* Nothing bounds it: the message is receivable at its re-join */
+   /* Nothing bounds it: the message is receivable */
    CHECK(fx_open(1, fx_safe[1][0]) == (RETRO_LINK_WAKE_TOPOLOGY | RETRO_LINK_WAKE_MESSAGE));
    CHECK(fx_peers(1, 0) == 0);
    CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], &tick, &from, buf, &len));
-   CHECK(len == 1 && buf[0] == 'a' && tick == 3000 && from == 0);
+   CHECK(len == 1 && buf[0] == 'a' && tick == FX_FAR + 1000 && from == 0);
    fx_free();
 }
 
@@ -4252,6 +4287,7 @@ static const struct
    { "hold_needs_idle",                      hold_needs_idle },
    { "held_peer_silent",                     held_peer_silent },
    { "held_console_message_lands_at_rejoin", held_console_message_lands_at_rejoin },
+   { "held_message_lands_at_own_instant",    held_message_lands_at_own_instant },
    { "unknown_anchor_message_resolves",      unknown_anchor_message_resolves },
    { "steady_state_allocates_nothing",       steady_state_allocates_nothing },
    { "thousands_in_flight",                  thousands_in_flight },

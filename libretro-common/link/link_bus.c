@@ -88,7 +88,7 @@ enum link_bus_landing
 {
    LINK_BUS_LANDED = 0, /* landing is on the receiver's clock */
    LINK_BUS_AHEAD,      /* the receiver's anchor is not known yet */
-   LINK_BUS_REJOIN      /* for a held console: lands at its re-join anchor */
+   LINK_BUS_REJOIN      /* for a held console: as AHEAD, no earlier than its re-join */
 };
 
 enum link_bus_limit   /* what a port's limit holds, in the blob */
@@ -129,7 +129,7 @@ struct link_bus_entry /* one receiver's copy of a message */
    struct link_bus_entry *next;
    struct link_bus_msg *msg;
    uint64_t landing;
-   uint64_t instant, rate; /* LINK_BUS_AHEAD: its stamp's instant, as ticks of rate */
+   uint64_t instant, rate; /* not LANDED: its stamp's instant, as ticks of rate */
    uint64_t sent_at, sent_rate; /* the instant its sender stood at, for from_index */
    uint64_t seq;         /* send order: link_bus::sends at send, or its loaded rank */
    uint64_t journal_gen;
@@ -712,10 +712,8 @@ static void link_bus_land(link_bus_t *b, struct retro_link_port *p)
    p->waiting_tail          = NULL;
    for (; e; e = next)
    {
-      next       = e->next;
-      e->landing = p->anchor;
-      if (e->state == LINK_BUS_AHEAD)
-         e->landing = link_bus_onto(p, e->instant, e->rate, true);
+      next          = e->next;
+      e->landing    = link_bus_onto(p, e->instant, e->rate, true);
       e->state      = LINK_BUS_LANDED;
       e->from_index = link_bus_from(b, p, e);
       if (e->journal_gen == b->journal_gen)
@@ -2705,8 +2703,8 @@ static void link_bus_walk_entry(const link_bus_t *b, const struct retro_link_por
    link_bus_put_u(o, e->from_index, 1, true);
    link_bus_put_u(o, rank, 8, true);
    link_bus_put_u(o, e->state == LINK_BUS_LANDED ? e->landing - p->anchor : 0, 8, true);
-   link_bus_put_u(o, e->state == LINK_BUS_AHEAD ? e->instant : 0, 8, true);
-   link_bus_put_u(o, e->state == LINK_BUS_AHEAD ? e->rate : 0, 8, true);
+   link_bus_put_u(o, e->state != LINK_BUS_LANDED ? e->instant : 0, 8, true);
+   link_bus_put_u(o, e->state != LINK_BUS_LANDED ? e->rate : 0, 8, true);
    link_bus_put_u(o, e->sent_at, 8, true);
    link_bus_put_u(o, e->sent_rate, 8, true);
    link_bus_put_u(o, m->len, 4, true);
@@ -3003,7 +3001,7 @@ static bool link_bus_read_entry(link_bus_t *b, struct link_bus_in *in,
    unsigned cell   = 0;
    if (     in->bad || state > LINK_BUS_REJOIN || seen > 1 || from >= in->recs || rank >= n
          || index >= LINK_BUS_MAX_BUS_PORTS || len > RETRO_LINK_MAX_PAYLOAD
-         || (state == LINK_BUS_AHEAD && !rate))
+         || (state != LINK_BUS_LANDED && !rate))
       return false;
    while (((size_t)64 << cell) < len)
       cell++;
@@ -3427,15 +3425,15 @@ static void link_bus_dump_entry(struct link_bus_text *t, const struct retro_link
       link_bus_text_add(t, " landing ");
       link_bus_text_tick(t, true, e->landing);
    }
-   else if (e->state == LINK_BUS_AHEAD)
+   else
    {
       link_bus_text_add(t, " at ");
       link_bus_text_tick(t, true, e->instant);
       link_bus_text_add(t, " rate ");
       link_bus_text_dec(t, e->rate);
+      if (e->state == LINK_BUS_REJOIN)
+         link_bus_text_add(t, " rejoin");
    }
-   else
-      link_bus_text_add(t, " rejoin");
    link_bus_text_add(t, e->seen ? " seen 1 len " : " seen 0 len ");
    link_bus_text_dec(t, e->msg->len);
    link_bus_text_add(t, "\n");
