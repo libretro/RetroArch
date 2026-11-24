@@ -95,3 +95,5 @@ jobs:
       - name: Companion persistence regression
         timeout-minutes: 10
         run: tools/companion_qt_persist_test.sh
+      - name: Qt event pump regression
+        run: python3 samples/gfx/win32_window_proc/qt_modal_run.py

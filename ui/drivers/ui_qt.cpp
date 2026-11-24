@@ -133,6 +133,10 @@ companion_core_t *ui_companion_qt_core(void)
 #include <compat/strl.h>
 #endif
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#include "../../gfx/common/win32_common.h"
+#endif
+
 #ifndef CXX_BUILD
 }
 #endif
@@ -5845,13 +5849,24 @@ static void* ui_application_qt_initialize(void)
    return &ui_application;
 }
 
-static void ui_application_qt_process_events(void)
+static bool ui_application_qt_next_message(void)
 {
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
    QAbstractEventDispatcher *dispatcher = QApplication::eventDispatcher();
    if (dispatcher && dispatcher->hasPendingEvents())
 #endif
    QApplication::processEvents();
+   /* Qt drains a batch rather than one native message. */
+   return false;
+}
+
+static void ui_application_qt_process_events(void)
+{
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   if (win32_message_pump(ui_application_qt_next_message))
+      return;
+#endif
+   ui_application_qt_next_message();
 }
 
 static void ui_application_qt_quit(void)
