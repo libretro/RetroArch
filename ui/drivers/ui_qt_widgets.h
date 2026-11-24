@@ -823,10 +823,17 @@ protected:
    void changeEvent(QEvent *event);
 private:
    void buildLayout();
+   void refreshRows();
    void buildSettingsPage(QVBoxLayout *layout);
    void stopDetection();
    static ControlsDialog *s_detect;
    QScrollArea *m_scrollArea;
+   /* the active remap file's line; what the rows were built for: the
+    * core, the port's mapped port and that port's device type */
+   QPointer<QLabel> m_remapLabel;
+   const char *m_builtCore;
+   unsigned m_builtPort;
+   unsigned m_builtDevice;
    /* the input being set (a core input, or a keyboard device's key),
     * by whose button, from which user; the button found and whether
     * all had been let go first */

@@ -3600,6 +3600,10 @@ ControlsDialog *ControlsDialog::s_detect = NULL;
 ControlsDialog::ControlsDialog(QWidget *parent) :
    QDialog(parent)
    ,m_scrollArea(new QScrollArea(this))
+   ,m_remapLabel()
+   ,m_builtCore(NULL)
+   ,m_builtPort(MAX_USERS)
+   ,m_builtDevice(RETRO_DEVICE_NONE)
    ,m_detectButton()
    ,m_selectedUser(0)
    ,m_detectDescriptor(RARCH_UNMAPPED)
@@ -3634,14 +3638,15 @@ void ControlsDialog::hideEvent(QHideEvent *event)
 }
 
 /* Coming back from RetroArch's own menu, which may have changed them,
- * shows the remaps as they are. */
+ * shows the remaps as they are, in place: the click that brings the
+ * window back lands on the row it was aimed at. */
 void ControlsDialog::changeEvent(QEvent *event)
 {
    if (     event->type() == QEvent::ActivationChange
          && isActiveWindow()
          && isVisible()
          && s_detect != this)
-      buildLayout();
+      refreshRows();
    QDialog::changeEvent(event);
 }
 
@@ -3699,7 +3704,8 @@ void ControlsDialog::detectIterate(void)
       else
          input_config_set_remap_id(dialog->m_detectUser,
                (unsigned)dialog->m_detectFound, dialog->m_detectDescriptor);
-      dialog->buildLayout();
+      dialog->stopDetection();
+      dialog->refreshRows();
    }
    else if (!dialog->m_detectReleased)
    {
@@ -3788,7 +3794,7 @@ void ControlsDialog::onClearClicked()
    for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
       if (settings->uints.input_remap_ids[m_selectedUser][i] == descriptor)
          input_config_set_remap_id(m_selectedUser, i, RARCH_UNMAPPED);
-   buildLayout();
+   refreshRows();
 }
 
 /* the RetroPad's own input of the same number gives it, and no other */
@@ -3807,7 +3813,7 @@ void ControlsDialog::onDefaultClicked()
       if (settings->uints.input_remap_ids[m_selectedUser][i] == descriptor)
          input_config_set_remap_id(m_selectedUser, i, RARCH_UNMAPPED);
    input_config_set_remap_id(m_selectedUser, descriptor, descriptor);
-   buildLayout();
+   refreshRows();
 }
 
 /* a keyboard device's: no controller button gives the key */
@@ -3823,7 +3829,7 @@ void ControlsDialog::onKeyClearClicked()
    for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
       if (settings->uints.input_keymapper_ids[m_selectedUser][i] == key)
          settings->uints.input_keymapper_ids[m_selectedUser][i] = RETROK_FIRST;
-   buildLayout();
+   refreshRows();
 }
 
 void ControlsDialog::onSettingsClicked()
@@ -3987,6 +3993,23 @@ static void controls_append_bind(QString *mapped, settings_t *settings,
    *mapped += QString::fromUtf8(bind);
 }
 
+/* The controller inputs giving core input @d (a keyboard device's key
+ * @d), or the unbound mark. */
+static QString controls_mapped_text(settings_t *settings, unsigned user,
+      unsigned d, bool keyboard)
+{
+   unsigned retro_id;
+   QString mapped;
+   for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
+      if ((keyboard
+               ? settings->uints.input_keymapper_ids[user][retro_id]
+               : settings->uints.input_remap_ids[user][retro_id]) == d)
+         controls_append_bind(&mapped, settings, user, retro_id);
+   if (mapped.isEmpty())
+      mapped = QStringLiteral(RARCH_NO_BIND);
+   return mapped;
+}
+
 /* The port's row: which port it is, the core port it is mapped to,
  * that port's device type and the analog to digital mode, all as the
  * menu's Port Controls has them. */
@@ -4140,7 +4163,6 @@ static bool controls_joypad_rows(ControlsDialog *dialog, QFormLayout *form,
 
    for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
    {
-      unsigned retro_id;
       QString label, mapped;
       QHBoxLayout *row;
       QPushButton *button, *clear;
@@ -4156,11 +4178,7 @@ static bool controls_joypad_rows(ControlsDialog *dialog, QFormLayout *form,
       if (d >= RARCH_FIRST_CUSTOM_BIND)
          label += QLatin1Char((d % 2) == 0 ? '+' : '-');
 
-      for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
-         if (settings->uints.input_remap_ids[user][retro_id] == d)
-            controls_append_bind(&mapped, settings, user, retro_id);
-      if (mapped.isEmpty())
-         mapped = QStringLiteral(RARCH_NO_BIND);
+      mapped = controls_mapped_text(settings, user, d, false);
 
       row    = new QHBoxLayout();
       button = new QPushButton(mapped, contents);
@@ -4202,7 +4220,6 @@ static void controls_keyboard_rows(ControlsDialog *dialog,
 
    for (k = 0; k < RARCH_MAX_KEYS; k++)
    {
-      unsigned retro_id;
       QString mapped;
       QHBoxLayout *row;
       QPushButton *button, *clear;
@@ -4211,11 +4228,7 @@ static void controls_keyboard_rows(ControlsDialog *dialog,
 
       if (!name || !*name || key == RETROK_FIRST)
          continue;
-      for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
-         if (settings->uints.input_keymapper_ids[user][retro_id] == key)
-            controls_append_bind(&mapped, settings, user, retro_id);
-      if (mapped.isEmpty())
-         mapped = QStringLiteral(RARCH_NO_BIND);
+      mapped = controls_mapped_text(settings, user, key, true);
 
       row    = new QHBoxLayout();
       button = new QPushButton(mapped, contents);
@@ -4280,7 +4293,8 @@ void ControlsDialog::buildLayout()
             (remapfile && *remapfile)
             ? path_basename_nocompression(remapfile)
             : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE));
-      top->addWidget(new QLabel(QString::fromUtf8(s), contents), 1);
+      m_remapLabel = new QLabel(QString::fromUtf8(s), contents);
+      top->addWidget(m_remapLabel, 1);
       manage->setAutoDefault(false);
       top->addWidget(manage);
       top->addWidget(settingsButton);
@@ -4289,10 +4303,12 @@ void ControlsDialog::buildLayout()
 
       controls_port_row(this, outer, contents, user, mapped_port);
 
-      device = (mapped_port < MAX_USERS)
-         ? (settings->uints.input_libretro_device[mapped_port]
-               & RETRO_DEVICE_MASK)
+      m_builtCore   = runloop_st->system.info.library_name;
+      m_builtPort   = mapped_port;
+      m_builtDevice = (mapped_port < MAX_USERS)
+         ? settings->uints.input_libretro_device[mapped_port]
          : RETRO_DEVICE_NONE;
+      device        = m_builtDevice & RETRO_DEVICE_MASK;
       if (mapped_port < MAX_USERS)
          controls_title_row(form, contents, mapped_port);
       if (device == RETRO_DEVICE_KEYBOARD)
@@ -4312,9 +4328,69 @@ void ControlsDialog::buildLayout()
       outer->addStretch();
    }
 
-   if (m_scrollArea->widget())
-      m_scrollArea->takeWidget()->deleteLater();
-   m_scrollArea->setWidget(contents);
+   /* in the same place in the list as before */
+   {
+      int x = m_scrollArea->horizontalScrollBar()->value();
+      int y = m_scrollArea->verticalScrollBar()->value();
+      if (m_scrollArea->widget())
+         m_scrollArea->takeWidget()->deleteLater();
+      m_scrollArea->setWidget(contents);
+      m_scrollArea->horizontalScrollBar()->setValue(x);
+      m_scrollArea->verticalScrollBar()->setValue(y);
+   }
+}
+
+/* The rows' controller inputs and the active remap file as they are
+ * now, without building the rows again; built again only for another
+ * core, mapped port or device type. */
+void ControlsDialog::refreshRows()
+{
+#ifdef HAVE_MENU
+   int i;
+   char s[PATH_MAX_LENGTH];
+   QList<QPushButton*> buttons;
+   settings_t *settings        = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   const char *remapfile       = runloop_st->name.remapfile;
+   unsigned mapped_port        = input_remapping_user_port(m_selectedUser);
+   unsigned device             = (mapped_port < MAX_USERS)
+      ? settings->uints.input_libretro_device[mapped_port]
+      : RETRO_DEVICE_NONE;
+
+   if (     m_settingsPage
+         || !m_scrollArea->widget()
+         || m_builtCore   != runloop_st->system.info.library_name
+         || m_builtPort   != mapped_port
+         || m_builtDevice != device)
+   {
+      buildLayout();
+      return;
+   }
+   if (m_remapLabel)
+   {
+      snprintf(s, sizeof(s), "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO),
+            (remapfile && *remapfile)
+            ? path_basename_nocompression(remapfile)
+            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE));
+      m_remapLabel->setText(QString::fromUtf8(s));
+   }
+   buttons = m_scrollArea->widget()->findChildren<QPushButton*>();
+   for (i = 0; i < buttons.size(); i++)
+   {
+      QPushButton *button = buttons.at(i);
+      QString mapped;
+      if (!button->property("idle").isValid() || button == m_detectButton)
+         continue;
+      mapped = controls_mapped_text(settings, m_selectedUser,
+            button->property("descriptor").toUInt(),
+            button->property("keyboard").toBool());
+      button->setProperty("idle", mapped);
+      button->setText(mapped);
+   }
+#else
+   buildLayout();
+#endif
 }
 
 CoreOptionsDialog::CoreOptionsDialog(QWidget *parent) :
