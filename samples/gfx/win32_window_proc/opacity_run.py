@@ -1,14 +1,21 @@
 """Check the shipping Win32 opacity policy with native APIs and host stubs."""
 from pathlib import Path
+import argparse
 import os
 import shutil
 import subprocess
 import tempfile
 
 root = Path(__file__).resolve().parents[3]
-source = (root / "gfx/common/win32_common.c").read_text(encoding="utf-8")
+parser = argparse.ArgumentParser()
+parser.add_argument("--source", type=Path, default=root / "gfx/common/win32_common.c")
+args = parser.parse_args()
+source = args.source.read_text(encoding="utf-8")
 start = source.index("bool win32_window_set_opacity(")
 end = source.index("\nstatic bool win32_window_create(", start)
+message_start = source.find("   if (message == WIN32_WM_OPACITY)")
+message = "" if message_start < 0 else source[
+    message_start:source.index("\n   }\n", message_start) + len("\n   }\n")]
 compiler = (os.environ.get("CC") or shutil.which("cc")
             or shutil.which("gcc") or shutil.which("clang"))
 if not compiler:
@@ -19,6 +26,7 @@ if "clang" in subprocess.check_output([compiler, "--version"], text=True).lower(
 with tempfile.TemporaryDirectory(prefix="window-opacity-") as directory:
     temporary = Path(directory)
     (temporary / "opacity_impl.inc").write_text(source[start:end], encoding="utf-8")
+    (temporary / "opacity_message.inc").write_text(message, encoding="utf-8")
     executable = temporary / ("opacity_test.exe" if os.name == "nt" else "opacity_test")
     for enabled in (False, True):
         command = [compiler, "-std=c89", "-pedantic", "-Wall", "-Wextra", "-Werror",

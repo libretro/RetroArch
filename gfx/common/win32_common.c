@@ -122,6 +122,7 @@ typedef char win32_dwm_timing_info_size_check[
 #include "win32_common.h"
 #include "win32_msg_route.h"
 #include "win32_ime.h"
+#include "win32_opacity.h"
 #include "win32_foreground.h"
 
 
@@ -1864,6 +1865,14 @@ LRESULT CALLBACK win32_window_proc(HWND hwnd, UINT message,
    if (hwnd == win32_retiring_hwnd)
       return DefWindowProc(hwnd, message, wparam, lparam);
 
+#ifdef HAVE_WINDOW_TRANSP
+   if (message == WIN32_WM_OPACITY)
+   {
+      win32_opacity_apply(hwnd);
+      return 0;
+   }
+#endif
+
    if (message == WIN32_WM_TEXT_ENTRY)
    {
       win32_ime_sync(hwnd);
@@ -2225,21 +2234,7 @@ bool win32_window_set_opacity(HWND hwnd, unsigned opacity,
       bool fullscreen, bool vrr_workaround)
 {
 #ifdef HAVE_WINDOW_TRANSP
-   LONG_PTR style;
-   unsigned alpha = opacity < 100 ? (255 * opacity) / 100 : 255;
-   if (!hwnd)
-      return false;
-   if (!fullscreen && vrr_workaround && alpha == 255)
-      alpha = 254;
-   style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
-   SetLastError(0);
-   if (!SetWindowLongPtr(hwnd, GWL_EXSTYLE, alpha < 255
-            ? style | WS_EX_LAYERED : style & ~WS_EX_LAYERED)
-         && GetLastError())
-      return false;
-   if (alpha < 255)
-      return SetLayeredWindowAttributes(hwnd, 0, (BYTE)alpha, LWA_ALPHA) != 0;
-   return true;
+   return win32_opacity_request(hwnd, opacity, fullscreen, vrr_workaround);
 #else
    (void)hwnd;
    (void)opacity;
