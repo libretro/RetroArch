@@ -27,13 +27,14 @@ CFLAGS  += -Wall -Wno-unused-function $(INCDIRS) -std=gnu99 -g1 -O1 \
 LDFLAGS += -static
 
 COMPAT_OBJ := $(call sample_objs,$(LIBRETRO_COMM_DIR)/compat/compat_strl.o)
+MEMALIGN_OBJ := $(call sample_objs,$(LIBRETRO_COMM_DIR)/memmap/memalign.o)
 
 all: $(TARGETS)
 
-d3d9hlsl_menu_ring_test.exe: d3d9hlsl_menu_ring_test.o stubs_hlsl.o $(COMPAT_OBJ)
+d3d9hlsl_menu_ring_test.exe: d3d9hlsl_menu_ring_test.o stubs_hlsl.o $(COMPAT_OBJ) $(MEMALIGN_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-d3d9cg_menu_ring_test.exe: d3d9cg_menu_ring_test.o stubs_cg.o $(COMPAT_OBJ)
+d3d9cg_menu_ring_test.exe: d3d9cg_menu_ring_test.o stubs_cg.o $(COMPAT_OBJ) $(MEMALIGN_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 d3d9hlsl_menu_ring_test.o: $(CORE_DIR)/gfx/drivers/d3d9hlsl.c d3d9_menu_ring_cases.h

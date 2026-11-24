@@ -21,6 +21,7 @@ CFLAGS   += -flto -fwhole-program
 LDFLAGS  += -static -flto
 THREAD_SRCS := $(CORE_DIR)/libretro-common/rthreads/rthreads.c \
 	$(CORE_DIR)/libretro-common/rthreads/retro_eventcount.c
+MEMORY_SRC := $(CORE_DIR)/libretro-common/memmap/memalign.c
 
 TARGET := d3d9_ex_test.exe
 
@@ -30,8 +31,8 @@ $(TARGET): d3d9_ex_test.c $(CORE_DIR)/gfx/common/d3d9_tex.h \
 		$(CORE_DIR)/gfx/common/d3d9_sw_fb.h $(CORE_DIR)/gfx/common/d3d9_common.c \
 		$(CORE_DIR)/gfx/drivers/d3d9hlsl.c $(CORE_DIR)/gfx/video_thread_hw.c \
 		$(CORE_DIR)/gfx/video_thread_hw.h $(CORE_DIR)/gfx/video_thread_wrapper.h \
-		$(CORE_DIR)/gfx/video_thread_hw_fence.h $(THREAD_SRCS)
-	$(CC) $(CFLAGS) -o $@ $< $(THREAD_SRCS) $(LDFLAGS)
+		$(CORE_DIR)/gfx/video_thread_hw_fence.h $(THREAD_SRCS) $(MEMORY_SRC)
+	$(CC) $(CFLAGS) -o $@ $< $(THREAD_SRCS) $(MEMORY_SRC) $(LDFLAGS)
 
 ifeq ($(OS),Windows_NT)
 RUN :=
