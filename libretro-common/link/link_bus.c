@@ -896,10 +896,29 @@ static bool link_bus_shared(const struct retro_link_port *p)
    return (p->flags & RETRO_LINK_PORT_SHARED_MEDIUM) != 0;
 }
 
+/* q's console, running, has passed its first frame edge at or after the
+ * instant t (ticks of rate): it is inside a frame begun at or after t, or
+ * at an edge whose edge before is */
+static bool link_bus_passed(const link_bus_t *b, const struct retro_link_port *q,
+      uint64_t t, uint64_t rate)
+{
+   uint64_t at = q->since;
+   if (b->consoles[q->console].held || q->unplaced)
+      return false;
+   if (!b->consoles[q->console].in_frame)
+   {
+      if (!q->span_shown || q->span > at)
+         return false;
+      at -= q->span;
+   }
+   return !link_bus_instant_before(at, q->rate, t, rate);
+}
+
 /* Takes the live ports in index order, by console then port number, each
  * joining only if its bus stays within every member's max_ports; with keep,
- * the ports that were on a bus first. True if a port whose console is
- * inside a frame is left off the bus it was on. */
+ * the ports that were on a bus first. True if a port is left off the bus
+ * it was on while its console is inside a frame, or while a running peer
+ * there has passed its first edge at or after the port's. */
 static bool link_bus_admit(link_bus_t *b, bool keep)
 {
    size_t i;
@@ -925,9 +944,13 @@ static bool link_bus_admit(link_bus_t *b, bool keep)
             cap = p->max_ports;
          if (r->size >= LINK_BUS_MAX_BUS_PORTS || (cap && r->size >= cap))
          {
+            const struct retro_link_port *q;
             p->left_out = true;
             if (p->was_head && b->consoles[p->console].in_frame)
                pushed = true;
+            for (q = p->was_head; q && !pushed; q = q->was_next)
+               if (q != p && link_bus_passed(b, q, p->since, p->rate))
+                  pushed = true;
             continue;
          }
          r->cap      = cap;
@@ -1043,8 +1066,8 @@ static void link_bus_group(link_bus_t *b)
          }
       }
    }
-   /* A join that would push out a port whose console is inside a frame
-    * waits for that console's edge: the ports on a bus go first until then */
+   /* A join that would push out a port that may not leave its bus yet
+    * waits: the ports on a bus go first until then */
    b->held_back = link_bus_defer(b);
    if (link_bus_admit(b, false))
    {
@@ -2619,8 +2642,7 @@ bool link_bus_uncable(link_bus_t *b, unsigned console, unsigned port)
    /* Pulled at its edge t, while no running peer has passed its first edge
     * at or after t */
    for (q = p->head; q; q = q->next)
-      if (     q != p && b->consoles[q->console].in_frame && !b->consoles[q->console].held
-            && !link_bus_instant_before(q->since, q->rate, p->since, p->rate))
+      if (q != p && link_bus_passed(b, q, p->since, p->rate))
          return false;
    for (i = 0; i < b->cables_len; i++)
       if (b->cables[i].a != p && b->cables[i].b != p)

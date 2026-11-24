@@ -3254,8 +3254,45 @@ static void uncable_refused_past_first_edge(void)
    fx_own_end(0);
    fx_own_start(0, FX_FAR);       /* begun at 2002, after t */
    CHECK(!link_bus_uncable(fx_bus, 1, 0));
-   fx_own_end(0);
+   fx_own_end(0);                 /* at 3003, past 2002 */
+   CHECK(!link_bus_uncable(fx_bus, 1, 0));
+   fx_own_frame(1, FX_FAR);       /* t = 561792: 2009.12 on console 0 */
    CHECK(link_bus_uncable(fx_bus, 1, 0));
+   fx_free();
+}
+
+/* Three radios with max_ports 2: console 0's attach would push console 2
+ * out at its edge, 3000, while console 1 is past its first edge at or
+ * after it. The join waits until console 2 stands at an edge, 6000, that
+ * no running peer has passed. */
+static void max_ports_push_out_waits_for_peers(void)
+{
+   unsigned c;
+
+   fx_new(3);
+   for (c = 0; c < 3; c++)
+      fx_port(c, 0, "test-radio", 60000, 2, RETRO_LINK_PORT_SHARED_MEDIUM);
+   CHECK(link_bus_set_ports(fx_bus, 0, fx_ptrs[0]));
+   fx_attach(1);
+   fx_attach(2);
+   fx_span[1][0] = 1000;
+   fx_span[2][0] = 3000;
+   fx_own_frame(2, FX_FAR);
+   for (c = 0; c < 3; c++)
+      fx_own_frame(1, FX_FAR);
+   link_bus_step_end(fx_bus);
+   fx_own_start(1, FX_FAR);       /* begun at 3000 */
+   fx_h[0][0] = link_bus_attach(fx_bus, 0, 0, "test-radio", 60000);
+   CHECK(fx_h[0][0] != NULL);
+   CHECK(fx_peers(2, 0) == 2 * 16 + 2 && fx_peers(0, 0) == 0);
+   link_bus_step_end(fx_bus);
+   CHECK(fx_peers(2, 0) == 2 * 16 + 2);
+   fx_own_end(1);                 /* at 4000, past 3000 */
+   link_bus_step_end(fx_bus);
+   CHECK(fx_peers(2, 0) == 2 * 16 + 2 && fx_peers(0, 0) == 0);
+   fx_own_frame(2, FX_FAR);       /* at 6000 */
+   link_bus_step_end(fx_bus);
+   CHECK(fx_peers(2, 0) == 0 && fx_peers(0, 0) == 1 * 16 + 2);
    fx_free();
 }
 
@@ -4048,6 +4085,7 @@ static const struct
    { "unplug_silent_until_own_edge",         unplug_silent_until_own_edge },
    { "unplug_drops_late_landings",           unplug_drops_late_landings },
    { "uncable_refused_past_first_edge",      uncable_refused_past_first_edge },
+   { "max_ports_push_out_waits_for_peers",   max_ports_push_out_waits_for_peers },
    { "from_index_in_receiver_view",          from_index_in_receiver_view },
    { "hold_at_own_edge",                     hold_at_own_edge },
    { "unhold_places_on_rate_grid",           unhold_places_on_rate_grid },

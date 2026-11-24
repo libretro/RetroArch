@@ -137,7 +137,7 @@ bool link_bus_console_edge(const link_bus_t *b, unsigned console,
 bool link_bus_instant_before(uint64_t a, uint64_t ra, uint64_t b, uint64_t rb); /* a / ra < b / rb, exactly */
 
 /* Membership changes; false when refused. uncable needs the console at an
- * edge and no running peer in a frame begun at or after that edge; hold
+ * edge and no running peer past its first edge at or after that edge; hold
  * needs the console at an edge with its buses idle. */
 bool link_bus_cable(link_bus_t *b, unsigned console_a, unsigned port_a, unsigned console_b, unsigned port_b);
 bool link_bus_uncable(link_bus_t *b, unsigned console, unsigned port);
