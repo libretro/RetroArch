@@ -28,6 +28,8 @@ if not qt:
     raise SystemExit("Qt Widgets development files are required")
 flags = shlex.split(subprocess.check_output(
     [pkg_config, "--cflags", "--libs", qt], text=True))
+# Keep dependency-header warnings separate from the shipping code's -Werror.
+flags = ["-isystem" + flag[2:] if flag.startswith("-I") else flag for flag in flags]
 with tempfile.TemporaryDirectory(prefix="qt-modal-") as directory:
     temporary = Path(directory)
     (temporary / "qt_process_events.inc").write_text(source[start:end], encoding="utf-8")
