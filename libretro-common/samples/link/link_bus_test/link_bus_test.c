@@ -2403,6 +2403,11 @@ static void load_refuses_bad_input(void)
    bad[first + 7] = 0xFF; /* the rank of console 0's one message */
    CHECK(!link_bus_load(fx_bus, bad, n));
    CHECK(link_bus_hash(fx_bus) == hash_b);
+   memcpy(bad, fx_blob, n);
+   bad[first]      = 3;   /* no state a message takes, */
+   bad[first + 31] = 1;   /* with a rate */
+   CHECK(!link_bus_load(fx_bus, bad, n));
+   CHECK(link_bus_hash(fx_bus) == hash_b);
    CHECK(link_bus_load(fx_bus, fx_blob, n));
    CHECK(link_bus_hash(fx_bus) == hash_a);
    fx_free();
@@ -3162,7 +3167,7 @@ static void plug_joins_at_later_first_edge(void)
    fx_free();
 }
 
-static void join_waits_for_unknown_frame_end(void)
+static void unknown_edge_cable_joins_at_step_end(void)
 {
    uint64_t grant = 0;
 
@@ -3631,7 +3636,7 @@ static void fx_unplaced_send(unsigned order, uint64_t out[4])
    fx_free();
 }
 
-static void unplaced_sender_same_in_any_order(void)
+static void send_before_placing_reaches_nobody(void)
 {
    uint64_t out[2][4];
    fx_unplaced_send(0, out[0]);
@@ -4081,7 +4086,7 @@ static const struct
    { "instants_near_top",                    instants_near_top },
    { "blob_v2_since",                        blob_v2_since },
    { "plug_joins_at_later_first_edge",       plug_joins_at_later_first_edge },
-   { "join_waits_for_unknown_frame_end",     join_waits_for_unknown_frame_end },
+   { "unknown_edge_cable_joins_at_step_end", unknown_edge_cable_joins_at_step_end },
    { "unplug_silent_until_own_edge",         unplug_silent_until_own_edge },
    { "unplug_drops_late_landings",           unplug_drops_late_landings },
    { "uncable_refused_past_first_edge",      uncable_refused_past_first_edge },
@@ -4096,7 +4101,7 @@ static const struct
    { "dropped_send_lands_nowhere",           dropped_send_lands_nowhere },
    { "attach_off_grid_places_again",         attach_off_grid_places_again },
    { "attach_in_frame_same_in_any_order",    attach_in_frame_same_in_any_order },
-   { "unplaced_sender_same_in_any_order",    unplaced_sender_same_in_any_order },
+   { "send_before_placing_reaches_nobody",   send_before_placing_reaches_nobody },
    { "max_ports_keeps_place_in_frame",       max_ports_keeps_place_in_frame },
    { "join_places_console_with_no_span",     join_places_console_with_no_span },
    { "membership_blob_roundtrip",            membership_blob_roundtrip },

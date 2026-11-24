@@ -131,7 +131,7 @@ void link_bus_misplaced(link_bus_t *b);
 /* The timeline: an instant is a count of ticks of a clock rate since the
  * session began. console_edge gives the instant the console's current frame
  * edge stands at and its span, as ticks of one of its ports' rates; false
- * while it has no place (held, waiting to be placed, or no port attached). */
+ * while it has no place (held, or no port attached). */
 bool link_bus_console_edge(const link_bus_t *b, unsigned console,
       uint64_t *since, uint64_t *span, uint64_t *rate); /* *span 0 until a port shows one */
 bool link_bus_instant_before(uint64_t a, uint64_t ra, uint64_t b, uint64_t rb); /* a / ra < b / rb, exactly */
