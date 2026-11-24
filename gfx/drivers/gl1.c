@@ -36,6 +36,7 @@
 #include <retro_math.h>
 #include <gfx/video_frame.h>
 #include <gfx/scaler/pixconv.h>
+#include <memalign.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -220,6 +221,15 @@ struct gl1_views_fbo
 };
 #endif
 
+#ifdef HAVE_THREADS
+typedef struct gl1_menu_mem
+{
+   struct gl1_menu_mem *next;
+   void *pixels;
+   size_t size;
+} gl1_menu_mem_t;
+#endif
+
 typedef struct gl1
 {
    struct video_viewport vp;
@@ -238,6 +248,10 @@ typedef struct gl1
    const float *vertex_ptr;
    const float *white_color_ptr;
    unsigned char *menu_frame;
+   const unsigned char *menu_source;
+#ifdef HAVE_THREADS
+   gl1_menu_mem_t *menu_mem;
+#endif
    unsigned char *video_buf;
    unsigned char *menu_video_buf;
    size_t menu_frame_cap;
@@ -3123,7 +3137,7 @@ static bool gl1_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_MENU
-   if (gl1->menu_frame && menu_is_alive)
+   if (gl1->menu_source && menu_is_alive)
    {
       bool fb_4444;
 
@@ -3168,7 +3182,7 @@ static bool gl1_frame(void *data, const void *frame,
              * R in bits 15..12, G 11..8, B 7..4, A 3..0), which is what
              * GL_UNSIGNED_SHORT_4_4_4_4 reads on LE and BE hosts alike,
              * so it is uploaded from RGUI's buffer at its pitch. */
-            frame_to_copy = gl1->menu_frame;
+            frame_to_copy = gl1->menu_source;
             src_row       = pitch >> 1;
          }
          else
@@ -3177,7 +3191,7 @@ static bool gl1_frame(void *data, const void *frame,
              * GL_EXT_packed_pixels (and for the Vita build).  This
              * preserves the original behaviour. */
             conv_rgba4444_argb8888(gl1->menu_video_buf,
-                  gl1->menu_frame, width, height,
+                  gl1->menu_source, width, height,
                   pot_width * sizeof(unsigned), pitch);
             frame_to_copy = gl1->menu_video_buf;
             src_row       = pot_width;
@@ -3515,6 +3529,80 @@ static bool gl1_focus(void *data)
 
 static bool gl1_suppress_screensaver(void *data, bool enable) { return false; }
 
+/* Context-owner menu storage. The wrapper writes only retired slots; the
+ * current source stays retained for every redraw until another is published. */
+#ifdef HAVE_THREADS
+static gl1_menu_mem_t *gl1_menu_mem_find(gl1_t *gl1,
+      const void *pixels)
+{
+   gl1_menu_mem_t *m;
+   for (m = gl1->menu_mem; m; m = m->next)
+      if (m->pixels == pixels)
+         return m;
+   return NULL;
+}
+
+static void *gl1_menu_mem_alloc(void *data, size_t size, uintptr_t *id)
+{
+   gl1_t *gl1 = (gl1_t*)data;
+   gl1_menu_mem_t *m;
+   unsigned count = 0;
+   if (!id)
+      return NULL;
+   *id = 0;
+   if (!gl1 || !size)
+      return NULL;
+   /* The wrapper owns a fixed number of outstanding menu allocations. */
+   for (m = gl1->menu_mem; m; m = m->next)
+      if (++count == VIDEO_THREAD_MENU_MEM)
+         return NULL;
+   if (!(m = (gl1_menu_mem_t*)malloc(sizeof(*m))))
+      return NULL;
+   if (!(m->pixels = memalign_alloc(64, size)))
+   {
+      free(m);
+      return NULL;
+   }
+   m->size = size;
+   m->next = gl1->menu_mem;
+   gl1->menu_mem = m;
+   *id = (uintptr_t)m;
+   return m->pixels;
+}
+
+static bool gl1_menu_mem_ready(void *data, uintptr_t id)
+{
+   gl1_t *gl1 = (gl1_t*)data;
+   gl1_menu_mem_t *m;
+   if (!gl1)
+      return true;
+   for (m = gl1->menu_mem; m; m = m->next)
+      if ((uintptr_t)m == id)
+         return gl1->menu_source != m->pixels;
+   return true;
+}
+
+static void gl1_menu_mem_free(void *data, uintptr_t id)
+{
+   gl1_t *gl1 = (gl1_t*)data;
+   gl1_menu_mem_t **at, *m;
+   if (!gl1)
+      return;
+   for (at = &gl1->menu_mem; *at; at = &(*at)->next)
+      if ((uintptr_t)*at == id)
+      {
+         m = *at;
+         *at = m->next;
+         if (gl1->menu_source == m->pixels)
+            gl1->menu_source = NULL;
+         memalign_free(m->pixels);
+         free(m);
+         return;
+      }
+}
+
+#endif
+
 static void gl1_free(void *data)
 {
    gl1_t *gl1 = (gl1_t*)data;
@@ -3547,6 +3635,11 @@ static void gl1_free(void *data)
    if (gl1->menu_frame)
       free(gl1->menu_frame);
    gl1->menu_frame = NULL;
+   gl1->menu_source = NULL;
+#ifdef HAVE_THREADS
+   while (gl1->menu_mem)
+      gl1_menu_mem_free(gl1, (uintptr_t)gl1->menu_mem);
+#endif
 
    if (gl1->video_buf)
       free(gl1->video_buf);
@@ -3696,6 +3789,10 @@ static void gl1_set_texture_frame(void *data,
    unsigned pitch            = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    gl1_t              *gl1   = (gl1_t*)data;
    size_t required;
+   bool borrowed             = false;
+#ifdef HAVE_THREADS
+   gl1_menu_mem_t *loan;
+#endif
    /* What the last frame carried, not what the setting says now: the
     * video thread applies this in thread_update_driver_state(). */
    bool menu_linear_filter;
@@ -3710,9 +3807,17 @@ static void gl1_set_texture_frame(void *data,
    else
       gl1->flags            &= ~GL1_FLAG_MENU_SMOOTH;
 
+   if ((size_t)pitch > (size_t)-1 / VIDEO_SCALE_H(dims))
+      return;
    required = (size_t)pitch * (size_t)VIDEO_SCALE_H(dims);
+#ifdef HAVE_THREADS
+   loan = gl1_menu_mem_find(gl1, frame);
+   if (loan && loan->size < required)
+      return;
+   borrowed = loan != NULL;
+#endif
 
-   if (required > gl1->menu_frame_cap)
+   if (!borrowed && required > gl1->menu_frame_cap)
    {
       /* FIXME? We have to assume the pitch has no
        * extra padding in it because that will
@@ -3733,7 +3838,9 @@ static void gl1_set_texture_frame(void *data,
          || gl1->menu_pitch  != pitch)
       gl1->flags |= GL1_FLAG_MENU_SIZE_CHANGED;
 
-   memcpy(gl1->menu_frame, frame, required);
+   if (!borrowed)
+      memcpy(gl1->menu_frame, frame, required);
+   gl1->menu_source = borrowed ? (const unsigned char*)frame : gl1->menu_frame;
    gl1->menu_dims   = dims;
    gl1->menu_pitch  = pitch;
    gl1->menu_bits   = rgb32 ? 32 : 16;
@@ -4106,13 +4213,38 @@ static const video_poke_interface_t gl1_poke_interface = {
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
    gl1_update_texture,
-#ifdef GL1_VIEWS
    NULL, /* get_swap_interval_cap */
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
    NULL, /* get_last_present_wait */
-   gl1_set_view_count
+#ifdef GL1_VIEWS
+   gl1_set_view_count,
+#else
+   NULL, /* set_view_count */
 #endif
+   NULL, /* hw_context_destroying */
+   NULL, /* get_headset_refresh */
+   NULL, /* set_frame_format */
+   NULL, /* frame_mem_alloc */
+#ifdef HAVE_THREADS
+   gl1_menu_mem_ready,
+   gl1_menu_mem_free,
+#else
+   NULL, /* frame_mem_ready */
+   NULL, /* frame_mem_free */
+#endif
+   NULL, /* get_device */
+   NULL, /* import_texture */
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+   NULL, /* import_movie_frame */
+   NULL, /* get_menu_framebuffer */
+#ifdef HAVE_THREADS
+   gl1_menu_mem_alloc,
+#else
+   NULL, /* menu_mem_alloc */
+#endif
+   0 /* menu_mem_pitch_align */
 };
 
 static void gl1_get_poke_interface(void *data,
