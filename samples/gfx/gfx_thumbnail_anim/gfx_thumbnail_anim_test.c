@@ -560,9 +560,10 @@ int main(void)
          printf("[FAIL] baseline: %d surfaces for one animation\n", news);
          bad = 1;
       }
-      /* WEBP composes on a canvas, so a copy a frame is expected here
-       * and the direct count is zero; what must not happen is both. */
-      if (direct && copies)
+      /* Complete replacement frames can be borrowed directly while delta
+       * frames still compose on a canvas. Each decoded frame takes one
+       * route; a mixed animation must not be charged twice per frame. */
+      if (direct + copies != frames)
       {
          printf("[FAIL] baseline: %d direct and %d copied frames\n",
                 direct, copies);

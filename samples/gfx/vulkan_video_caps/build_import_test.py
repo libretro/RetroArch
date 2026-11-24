@@ -23,7 +23,8 @@ def function(text, signature):
     return text[start:text.index('\n}', start) + 2]
 
 types = []
-for name in ('vk_texture', 'vk_media_version', 'vk_media_pool', 'vk_stream_state'):
+for name in ('vk_texture', 'vk_media_version', 'vk_media_pool', 'vk_stream_state',
+             'vk_planar_atlas_slot', 'vk_planar_atlas'):
     start = source.index('struct ' + name + '\n')
     types.append(source[start:source.index('\n};', start) + 3])
 with tempfile.TemporaryDirectory() as directory:

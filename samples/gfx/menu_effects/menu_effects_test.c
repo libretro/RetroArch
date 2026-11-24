@@ -90,6 +90,9 @@ void RARCH_ERR(const char *fmt, ...)
 /* The rest of the frontend shader_glsl.c refers to */
 bool gl2_load_luts(const void *shader, GLuint *textures)
 { (void)shader; (void)textures; return true; }
+/* These effect draws have no planar input. The isolated shader backend
+ * exposes no optional planar conversion extensions. */
+bool gl_query_extension(const char *ext) { (void)ext; return false; }
 static bool gles3_context;
 bool gl_check_capability(enum gl_capability_enum cap)
 { return cap == GL_CAPS_GLES3_SUPPORTED && gles3_context; }

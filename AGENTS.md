@@ -308,3 +308,16 @@ Keep changes focused.
 If a task requires a broad change, make the breadth necessary for the feature rather than artificially minimizing the number of files changed.
 
 A change touching many files is not inherently a problem in RetroArch. Missing a required layer of an established multi-file system is a problem.
+
+## CI regression impact
+
+Before delivering a change, run `tools/ci_local.py which` for every changed
+source and inspect the matching workflow run steps. Build and run the affected
+regressions with their workflow flags and auxiliary targets, including strict
+C89, sanitizers, cross compilation and GPU validation where applicable.
+A sample's default target is not a substitute for its workflow's commands.
+
+Changes to a shared structure, function or ownership contract also require
+updating every source-extracting fixture and isolated backend harness that
+consumes it. Search those consumers explicitly. Report platform or dependency
+checks that could not run; do not describe a subset as all CI passing.

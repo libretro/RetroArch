@@ -228,7 +228,8 @@ check-hdr:
 clean:
 	rm -f $(TARGET) check.log harness_core.so retroarch_nomain.o retroarch_nomain.d \
 	      harness_main.o harness_main.d harness_cocoa.o harness_cocoa.d default.metallib \
-	      rebar.log mapfail.log libfake_rebar_layer.so fake_rebar_layer.dll fake_rebar_layer.json
+	      rebar.log mapfail.log libfake_rebar_layer.so fake_rebar_layer.dll fake_rebar_layer.json \
+	      vulkan_readback_types.h vulkan_readback_types.h.tmp
 
 .PHONY: all check check-vulkan check-vulkan-rebar check-vulkan-mapfail check-vulkan-noncoherent check-driver check-movie-gpu check-still check-hdr clean
 

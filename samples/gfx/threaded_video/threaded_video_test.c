@@ -13813,33 +13813,16 @@ static void lane_hw_cached_context(void)
 }
 
 #ifdef HAVE_VULKAN
-/* The heads of struct vk_texture and struct vk_media_pool, as
- * gfx/drivers/vulkan.c lays them out. A pool's versions begin with
- * their texture. */
-typedef struct planar_vk_texture_head planar_vk_texture_head_t;
-
-typedef struct
-{
-   void *versions;
-   planar_vk_texture_head_t *current;
-} planar_vk_media_pool_head_t;
-
-struct planar_vk_texture_head
-{
-   VkDeviceSize memory_size;
-   planar_vk_texture_head_t *media_owner;
-   planar_vk_media_pool_head_t *media_pool;
-   void *media_version;
-   void *mapped;
-   VkImage image;
-};
+/* Prefixes extracted by build.sh from the shipping driver's structures. */
+#include "vulkan_readback_types.h"
 
 /* What Vulkan texture @id holds, as R,G,B,A bytes; direct video only,
  * the queue taken under its lock and waited idle - a test's readback */
 static bool planar_vk_readback(uintptr_t id, unsigned w, unsigned h,
       uint32_t *out)
 {
-   const planar_vk_texture_head_t *tex = (const planar_vk_texture_head_t*)id;
+   const struct planar_vk_texture_head *tex =
+         (const struct planar_vk_texture_head*)id;
    vulkan_context_t *ctx = hwcached_context();
    VkBufferCreateInfo binfo;
    VkMemoryRequirements req;
@@ -13861,7 +13844,7 @@ static bool planar_vk_readback(uintptr_t id, unsigned w, unsigned h,
    if (tex && tex->media_owner)
       tex = tex->media_owner;
    if (tex && tex->media_pool)
-      tex = tex->media_pool->current;
+      tex = &tex->media_pool->current->texture;
    if (!ctx || !tex || !tex->image)
       return false;
    memset(&binfo, 0, sizeof(binfo));
@@ -14101,16 +14084,14 @@ static void lane_surface_planar(void)
          }
 #endif
 #if defined(HAVE_OPENGL) && defined(HAVE_GL_TEXTURE_LEND)
-         /* glcore reads back R,G,B,A bytes, gl the words as BGRA */
+         /* Draw through the display consumer; planar handles may defer RGB. */
          if (     !threaded && gpu && drv
                && (!strcmp(drv, "gl") || !strcmp(drv, "glcore")))
          {
             unsigned bad = PW * PH;
-            bool core    = !strcmp(drv, "glcore");
             image_yuv_420_to_rgb32(want, PW, y, PS, u, PS, v, PS, 1,
-                  PW, PH, flags | (core ? IMAGE_YUV_FLAG_RGBA : 0));
-            CHECK(core ? planar_gl_readback(PW, PH, s->handle, got)
-                  : lend_gl_readback(drv, s->handle, false, PW, PH, got),
+                  PW, PH, flags | IMAGE_YUV_FLAG_RGBA);
+            CHECK(planar_gl_readback(PW, PH, s->handle, got),
                   "surface planar lane: GL readback failed");
             for (i = 0; i < PW * PH && bad == PW * PH; i++)
                if (!planar_close(got[i], want[i], 2))

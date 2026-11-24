@@ -414,13 +414,22 @@ static void drivers(void)
    cpu_frame(&v12, true);
 }
 #define VK_FLAG_HW_ENABLE 1
-struct vk_texture { unsigned image, view, layout, dims, format; };
+struct vk_texture {
+   unsigned image, view, layout, dims, format;
+   struct vk_texture *media_owner;
+   struct vk_media_pool *media_pool;
+};
+struct vk_media_version { struct vk_texture texture; };
+struct vk_media_pool { struct vk_media_version *current; };
+static struct vk_texture *materialized;
+static void vulkan_planar_materialize(struct vk_texture *texture)
+{ materialized = texture; }
 struct vulkan_filter_chain_texture
 {
    unsigned image, view, layout, dims, format, padded_dims, origin;
 };
 typedef struct { unsigned flags; uintptr_t movie_texture; bool movie_pending, movie_cpu; } vk_t;
-static struct vk_texture movie = { 1, 2, 3, 4, 5 };
+static struct vk_texture movie = { 1, 2, 3, 4, 5, NULL, NULL };
 static unsigned retired;
 static void vulkan_unload_texture_internal(vk_t *vk, uintptr_t id)
 { (void)vk; if (id) { CHECK(id == (uintptr_t)&movie); retired++; } }
@@ -500,6 +509,20 @@ static void vulkan_movie(void)
    vulkan_movie_input((struct vk_texture*)vk.movie_texture, &input);
    CHECK(input.image == 1 && input.view == 2 && input.layout == 3
          && input.dims == 4 && input.format == 5 && !input.origin && !input.padded_dims);
+   {
+      struct vk_media_version version;
+      struct vk_media_pool pool;
+      struct vk_texture alias;
+      memset(&alias, 0, sizeof(alias));
+      version.texture = movie;
+      version.texture.image = 77;
+      pool.current = &version;
+      movie.media_pool = &pool;
+      alias.media_owner = &movie;
+      vulkan_movie_input(&alias, &input);
+      CHECK(input.image == 77 && materialized == &movie);
+      movie.media_pool = NULL;
+   }
    CHECK(vulkan_movie_prepare(&vk, NULL) == NULL);
    CHECK(vulkan_movie_prepare(&vk, RETRO_HW_FRAME_BUFFER_VALID) == NULL
          && vk.movie_texture == (uintptr_t)&movie && !retired);

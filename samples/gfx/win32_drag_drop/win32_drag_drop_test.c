@@ -181,7 +181,8 @@ bool local_to_utf8_string(const char *in, char *s, size_t len)
 {
    if (!len || strlen(in) >= len)
       return false;
-   strcpy(s, in);
+   if (s != in)
+      memmove(s, in, strlen(in) + 1);
    return true;
 }
 

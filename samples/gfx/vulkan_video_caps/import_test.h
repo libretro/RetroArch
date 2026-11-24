@@ -1,5 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include <math.h>
+#include <assert.h>
 #include <formats/rwebm_video.h>
 #include <stdarg.h>
 #include <rthreads/rthreads.h>
@@ -13,6 +14,7 @@
 #include "../../../gfx/common/vulkan_video_import.h"
 #include "../../../gfx/common/vulkan_video_planes.h"
 #define VK_STREAM_SLOTS 2
+#define VK_PLANAR_ATLAS_SLOTS 4
 #define VK_PLANAR_HEADER VULKAN_VIDEO_HEADER_WORDS
 #if defined(_WIN32) && !defined(__WINRT__)
 #include "import_win32_types.inc"
@@ -51,6 +53,12 @@ static void vulkan_check_device_lost(vk_t *vk, VkResult result)
 #if defined(_WIN32) && !defined(__WINRT__)
 #include "import_win32_functions.inc"
 #endif
+/* Native-import oracles own no CPU planar atlas. Keep this explicit so
+ * adding CPU planar input here cannot silently skip its lifetime handling. */
+static void vulkan_planar_materialize(struct vk_texture *texture)
+{ assert(!texture->planar_atlas); }
+static void vulkan_planar_atlas_free(VkDevice device, struct vk_texture *texture)
+{ (void)device; assert(!texture->planar_atlas); }
 #include "import_pool_support.inc"
 #include "../../../gfx/common/vulkan_media_pool.h"
 #include "import_functions.inc"

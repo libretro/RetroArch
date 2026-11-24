@@ -7675,15 +7675,18 @@ static bool rslc_rm_planar_snippet(struct rslc_rm *r, struct rslc_pbuf *b)
          "vec4 rarch_planar_pixel(sampler2D s,ivec2 p) {\n"
          "ivec2 n=rarch_planar_size(s);p=clamp(p,ivec2(0),n-1);\n"
          "int ch=(n.y+1)/2;int tag=int(floor(texelFetch(s,ivec2(0,n.y+2*ch),0).r*255.0+.5));\n"
-         "bool full=(tag&1)!=0;bool hd=(tag&2)!=0;\n"
+         "bool full=(tag&1)!=0;bool hd=(tag&2)!=0;\n")
+      && rslc_rm_text(r, b,
          "float y=texelFetch(s,p,0).r;\n"
          "float u=texelFetch(s,ivec2(p.x/2,n.y+p.y/2),0).r-128.0/255.0;\n"
          "float v=texelFetch(s,ivec2(p.x/2,n.y+ch+p.y/2),0).r-128.0/255.0;\n"
-         "float yy=full?y:(19077.0/16384.0)*y+(-305232.0/16384.0)/255.0;\n"
+         "float yy=full?y:(19077.0/16384.0)*y+(-305232.0/16384.0)/255.0;\n")
+      && rslc_rm_text(r, b,
          "vec4 k=hd?(full?vec4(25802,-3069,-7670,30402):vec4(29372,-3494,-8731,34610))\n"
          ":(full?vec4(22970,-5638,-11700,29032):vec4(26149,-6419,-13320,33050));\n"
          "k=k/16384.0;vec3 rgb=vec3(yy)+vec3(k.x*v,k.y*u+k.z*v,k.w*u);\n"
-         "return vec4(floor(clamp(rgb,0.0,1.0)*255.0+.5)/255.0,1.0); }\n"
+         "return vec4(floor(clamp(rgb,0.0,1.0)*255.0+.5)/255.0,1.0); }\n")
+      && rslc_rm_text(r, b,
          "vec4 rarch_rect_texelFetch(sampler2D s,ivec2 p,int lod) {return rarch_sample_colour(rarch_planar_pixel(s,p));}\n"
          "ivec2 rarch_rect_textureSize(sampler2D s,int lod) {return rarch_planar_size(s);}\n"
          "vec4 rarch_rect_texture(sampler2D s,vec2 uv) {\n"

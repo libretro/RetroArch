@@ -35,6 +35,8 @@ with tempfile.TemporaryDirectory() as directory:
              'static enum video_texture_update ' + api + '_import_movie_frame(void *data,',
              'static const void *' + api + '_movie_prepare(')))
     with (tmp / 'vulkan.inc').open('a', encoding='utf-8') as output:
+        pool = (root / 'gfx/common/vulkan_media_pool.h').read_text(encoding='utf-8')
+        output.write('\n' + body(pool, 'static struct vk_texture *vulkan_media_sample_texture('))
         output.write('\n' + body(source, 'static void vulkan_movie_input('))
     source = (root / 'gfx/video_driver.h').read_text(encoding='utf-8')
     start = source.index('typedef struct video_frame_import\n')

@@ -50,6 +50,36 @@ if [ ! -f "$objdir/video_driver.o" ] && [ ! -f "$objdir/gfx/video_driver.o" ]; t
    exit 1
 fi
 
+# Readback inspects only these prefixes. Extract them on every harness build
+# so a field added to the shipping driver cannot silently shift its reads.
+texture_prefix() {
+   awk -v name="$1" -v last="$2" '
+      { sub(/\r$/, "") }
+      $0 == "struct " name { on = 1 }
+      on { print }
+      on && $0 ~ last { print "};"; done = 1; exit }
+      END {
+         if (!done) {
+            print "build.sh: cannot extract Vulkan prefix " name > "/dev/stderr"
+            exit 1
+         }
+      }
+   ' gfx/drivers/vulkan.c
+}
+texture_prefix vk_texture '^[[:space:]]*VkImage image;' \
+   > "$out/vulkan_readback_types.h.tmp"
+texture_prefix vk_media_version '^[[:space:]]*struct vk_texture texture;' \
+   >> "$out/vulkan_readback_types.h.tmp"
+texture_prefix vk_media_pool '^[[:space:]]*struct vk_media_version [*]current;' \
+   >> "$out/vulkan_readback_types.h.tmp"
+sed -e 's/vk_texture/planar_vk_texture_head/g' \
+    -e 's/vk_media_version/planar_vk_media_version_head/g' \
+    -e 's/vk_media_pool/planar_vk_media_pool_head/g' \
+   "$out/vulkan_readback_types.h.tmp" > "$out/vulkan_readback_types.h"
+rm -f "$out/vulkan_readback_types.h.tmp"
+grep -q 'VkImage image;' "$out/vulkan_readback_types.h"
+grep -q 'struct planar_vk_media_version_head \*current;' "$out/vulkan_readback_types.h"
+
 # On macOS main() is Cocoa's (HAVE_MAIN in ui_cocoa.m) and it calls
 # rarch_main() with the application up; the harness keeps that main
 # and takes rarch_main() over (harness_cocoa.m). Elsewhere main() is

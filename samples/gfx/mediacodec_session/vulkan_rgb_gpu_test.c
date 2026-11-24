@@ -84,6 +84,13 @@ static void transition(VkImage image, VkImageLayout old, VkImageLayout next,
       VkAccessFlags src, VkAccessFlags dst)
 {
    VkImageMemoryBarrier b;
+   VkPipelineStageFlags src_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+   VkPipelineStageFlags dst_stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+   /* ALL_COMMANDS contains device stages, not the host access stage. */
+   if (src & (VK_ACCESS_HOST_READ_BIT | VK_ACCESS_HOST_WRITE_BIT))
+      src_stage |= VK_PIPELINE_STAGE_HOST_BIT;
+   if (dst & (VK_ACCESS_HOST_READ_BIT | VK_ACCESS_HOST_WRITE_BIT))
+      dst_stage |= VK_PIPELINE_STAGE_HOST_BIT;
    memset(&b, 0, sizeof(b));
    b.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
    b.image = image;
@@ -94,8 +101,8 @@ static void transition(VkImage image, VkImageLayout old, VkImageLayout next,
    b.srcQueueFamilyIndex = b.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
    b.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    b.subresourceRange.levelCount = b.subresourceRange.layerCount = 1;
-   vkCmdPipelineBarrier(command, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, 1, &b);
+   vkCmdPipelineBarrier(command, src_stage, dst_stage,
+         0, 0, NULL, 0, NULL, 1, &b);
 }
 static double half_value(uint16_t h)
 {
