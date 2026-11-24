@@ -30,6 +30,9 @@
 #include <formats/image.h>
 
 #include "d3d_common.h"
+#ifdef HAVE_THREADS
+#include "cpu_menu_memory.h"
+#endif
 #include "menu_bloom.h"
 #include "../../verbosity.h"
 
@@ -174,6 +177,9 @@ typedef struct d3d9_video
     * with a different `rgb32` value.  Defaults to false; the first
     * call will see a NULL tex and create one regardless. */
    bool menu_tex_rgb32;
+#ifdef HAVE_THREADS
+   gfx_cpu_menu_memory_t menu_mem;
+#endif
    /* With Direct3D 9Ex Presentation on, the device's Ex interface
     * (held by the device, so not released here), and where frames
     * wait for the display beside Present: 1 after it, -1 before it

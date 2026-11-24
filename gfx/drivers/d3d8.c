@@ -106,6 +106,10 @@
 #define D3D8_ARGB4444_FORMAT D3DFMT_A4R4G4B4
 #endif
 
+#ifdef HAVE_THREADS
+#include "../common/cpu_menu_memory.h"
+#endif
+
 typedef struct d3d8_video
 {
    overlay_t *menu;
@@ -174,6 +178,9 @@ typedef struct d3d8_video
     * with a different `rgb32` value.  Defaults to false; the first
     * call will see a NULL tex and create one regardless. */
    bool menu_tex_rgb32;
+#ifdef HAVE_THREADS
+   gfx_cpu_menu_memory_t menu_mem;
+#endif
 
 #ifdef D3D8_VIEWS
    struct
@@ -2693,6 +2700,21 @@ static void d3d8_free_overlays(d3d8_video_t *d3d)
 }
 #endif
 
+#ifdef HAVE_THREADS
+static void *d3d8_menu_mem_alloc(void *data, size_t size, uintptr_t *id)
+{
+   d3d8_video_t *vid = (d3d8_video_t*)data;
+   return gfx_cpu_menu_memory_alloc(vid ? &vid->menu_mem : NULL, size, id);
+}
+
+static void d3d8_menu_mem_free(void *data, uintptr_t id)
+{
+   d3d8_video_t *vid = (d3d8_video_t*)data;
+   if (vid)
+      gfx_cpu_menu_memory_free(&vid->menu_mem, id);
+}
+#endif
+
 static void d3d8_free(void *data)
 {
    d3d8_video_t   *d3d = (d3d8_video_t*)data;
@@ -2731,6 +2753,9 @@ static void d3d8_free(void *data)
 #ifndef _XBOX
    win32_monitor_from_window();
    win32_destroy_window();
+#endif
+#ifdef HAVE_THREADS
+   gfx_cpu_menu_memory_destroy(&d3d->menu_mem);
 #endif
    free(d3d);
 }
@@ -4205,14 +4230,38 @@ static const video_poke_interface_t d3d_poke_interface = {
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
    d3d8_update_texture,
-   d3d8_get_swap_interval_cap
-#ifdef D3D8_VIEWS
-   ,
+   d3d8_get_swap_interval_cap,
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
    NULL, /* get_last_present_wait */
-   d3d8_set_view_count
+#ifdef D3D8_VIEWS
+   d3d8_set_view_count,
+#else
+   NULL, /* set_view_count */
 #endif
+   NULL, /* hw_context_destroying */
+   NULL, /* get_headset_refresh */
+   NULL, /* set_frame_format */
+   NULL, /* frame_mem_alloc */
+#ifdef HAVE_THREADS
+   gfx_cpu_menu_memory_ready,
+   d3d8_menu_mem_free,
+#else
+   NULL, /* frame_mem_ready */
+   NULL, /* frame_mem_free */
+#endif
+   NULL, /* get_device */
+   NULL, /* import_texture */
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+   NULL, /* import_movie_frame */
+   NULL, /* get_menu_framebuffer */
+#ifdef HAVE_THREADS
+   d3d8_menu_mem_alloc,
+#else
+   NULL, /* menu_mem_alloc */
+#endif
+   0 /* menu_mem_pitch_align */
 };
 
 static void d3d8_get_poke_interface(void *data,

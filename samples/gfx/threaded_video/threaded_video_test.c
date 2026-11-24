@@ -5378,8 +5378,31 @@ static void lane_menu_texture(void)
          (struct video_thread_menu_texture*)retro_triple_buffer_back(&thr->texture.frames);
       struct video_thread_menu_mem *m = &thr->texture.mem[0];
       uint16_t *pixels;
-      CHECK(!m->ptr, "synthetic menu memory slot was already occupied");
-      if (!m->ptr)
+      if (m->ptr)
+      {
+         bool borrowed = false;
+         free(back->frame);
+         back->frame = NULL;
+         back->frame_cap = 0;
+         pixels = (uint16_t*)video_thread_get_menu_framebuffer(
+               VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), false, NULL);
+         for (i = 0; i < VIDEO_THREAD_MENU_MEM; i++)
+            if (pixels && pixels == thr->texture.mem[i].ptr)
+               borrowed = true;
+         CHECK(borrowed, "menu did not use the backend's existing loan");
+         if (borrowed)
+         {
+            for (i = 0; i < MENUTEX_W * MENUTEX_H; i++)
+               pixels[i] = MENUTEX_MARK | 0x40;
+            video_st->poke->set_texture_frame(video_st->data, pixels, false,
+                  VIDEO_SCALE_PACK(MENUTEX_W, MENUTEX_H), 1.0f);
+            CHECK(back->mem && !back->frame,
+                  "backend menu loan acquired host staging storage");
+            run_frames(1);
+            video_thread_wait_idle();
+         }
+      }
+      else
       {
          /* Only the producer can touch the back slot. */
          free(back->frame);

@@ -47,6 +47,10 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 
+#ifdef HAVE_THREADS
+#include "../common/cpu_menu_memory.h"
+#endif
+
 typedef struct sdl_menu_frame
 {
    struct scaler_ctx scaler;
@@ -58,6 +62,9 @@ typedef struct sdl_video
 {
    struct scaler_ctx scaler;
    sdl_menu_frame_t menu;
+#ifdef HAVE_THREADS
+   gfx_cpu_menu_memory_t menu_mem;
+#endif
    struct
    {
       video_views_cpu_t cpu;
@@ -83,6 +90,21 @@ typedef struct sdl_video
    bool quitting;
 } sdl_video_t;
 
+#ifdef HAVE_THREADS
+static void *sdl_menu_mem_alloc(void *data, size_t size, uintptr_t *id)
+{
+   sdl_video_t *vid = (sdl_video_t*)data;
+   return gfx_cpu_menu_memory_alloc(vid ? &vid->menu_mem : NULL, size, id);
+}
+
+static void sdl_menu_mem_free(void *data, uintptr_t id)
+{
+   sdl_video_t *vid = (sdl_video_t*)data;
+   if (vid)
+      gfx_cpu_menu_memory_free(&vid->menu_mem, id);
+}
+#endif
+
 static void sdl_gfx_free(void *data)
 {
    sdl_video_t *vid = (sdl_video_t*)data;
@@ -103,6 +125,9 @@ static void sdl_gfx_free(void *data)
    scaler_ctx_gen_reset(&vid->scaler);
    scaler_ctx_gen_reset(&vid->menu.scaler);
 
+#ifdef HAVE_THREADS
+   gfx_cpu_menu_memory_destroy(&vid->menu_mem);
+#endif
    free(vid);
 }
 
@@ -828,7 +853,50 @@ static const video_poke_interface_t sdl_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   NULL, /* supports_texture_format */
+   NULL, /* load_texture_compressed */
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   NULL, /* update_texture */
+   NULL, /* get_swap_interval_cap */
+   NULL, /* texture_lend */
+   NULL, /* texture_lend_ready */
+   NULL, /* get_last_present_wait */
+   NULL, /* set_view_count */
+   NULL, /* hw_context_destroying */
+   NULL, /* get_headset_refresh */
+   NULL, /* set_frame_format */
+   NULL, /* frame_mem_alloc */
+#ifdef HAVE_THREADS
+   gfx_cpu_menu_memory_ready,
+   sdl_menu_mem_free,
+#else
+   NULL, /* frame_mem_ready */
+   NULL, /* frame_mem_free */
+#endif
+   NULL, /* get_device */
+   NULL, /* import_texture */
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+   NULL, /* import_movie_frame */
+   NULL, /* get_menu_framebuffer */
+#ifdef HAVE_THREADS
+   sdl_menu_mem_alloc,
+#else
+   NULL, /* menu_mem_alloc */
+#endif
+   0 /* menu_mem_pitch_align */
 };
 
 static void sdl_get_poke_interface(void *data, const video_poke_interface_t **iface)

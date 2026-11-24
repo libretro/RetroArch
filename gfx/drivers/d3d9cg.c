@@ -4536,6 +4536,9 @@ static void d3d9_cg_free(void *data)
 
    win32_monitor_from_window();
    win32_destroy_window();
+#ifdef HAVE_THREADS
+   gfx_cpu_menu_memory_destroy(&d3d->menu_mem);
+#endif
    free(d3d);
 }
 
@@ -5255,8 +5258,30 @@ static void d3d9_cg_frame_mem_free(void *data, uintptr_t id)
 {
    d3d9_video_t *d3d = (d3d9_video_t*)data;
    if (d3d)
+   {
+#ifdef HAVE_THREADS
+      if (gfx_cpu_menu_memory_free(&d3d->menu_mem, id))
+         return;
+#endif
       d3d9_frame_mem_free(&d3d->sw_fb, id);
+   }
 }
+#endif
+
+#ifdef HAVE_THREADS
+static void *d3d9_cg_menu_mem_alloc(void *data, size_t size, uintptr_t *id)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   return gfx_cpu_menu_memory_alloc(d3d ? &d3d->menu_mem : NULL, size, id);
+}
+#ifndef D3D9_VIEWS
+static void d3d9_cg_menu_mem_free(void *data, uintptr_t id)
+{
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+   if (d3d)
+      gfx_cpu_menu_memory_free(&d3d->menu_mem, id);
+}
+#endif
 #endif
 
 static const video_poke_interface_t d3d9_cg_poke_interface = {
@@ -5306,20 +5331,45 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
    d3d9_cg_update_texture,
-   d3d9_cg_get_swap_interval_cap
-#ifdef D3D9_VIEWS
-   ,
+   d3d9_cg_get_swap_interval_cap,
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
+#ifdef D3D9_VIEWS
    d3d9_cg_get_last_present_wait,
    d3d9_cg_set_view_count,
+#else
+   NULL, /* get_last_present_wait */
+   NULL, /* set_view_count */
+#endif
    NULL, /* hw_context_destroying */
    NULL, /* get_headset_refresh */
    NULL, /* set_frame_format */
+#ifdef D3D9_VIEWS
    d3d9_cg_frame_mem_alloc,
    d3d9_cg_frame_mem_ready,
-   d3d9_cg_frame_mem_free
+   d3d9_cg_frame_mem_free,
+#else
+   NULL, /* frame_mem_alloc */
+#ifdef HAVE_THREADS
+   gfx_cpu_menu_memory_ready,
+   d3d9_cg_menu_mem_free,
+#else
+   NULL, /* frame_mem_ready */
+   NULL, /* frame_mem_free */
 #endif
+#endif
+   NULL, /* get_device */
+   NULL, /* import_texture */
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+   NULL, /* import_movie_frame */
+   NULL, /* get_menu_framebuffer */
+#ifdef HAVE_THREADS
+   d3d9_cg_menu_mem_alloc,
+#else
+   NULL, /* menu_mem_alloc */
+#endif
+   0 /* menu_mem_pitch_align */
 };
 
 static void d3d9_cg_get_poke_interface(void *data,
