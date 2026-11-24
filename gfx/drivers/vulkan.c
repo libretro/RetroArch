@@ -15,6 +15,7 @@
  */
 
 #include "../common/media_history.h"
+#include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <math.h>
@@ -17077,7 +17078,9 @@ static enum video_texture_update vulkan_planar_atlas_update(vk_t *vk, struct vk_
          struct vk_texture *t = &atlas->slots[i].texture;
          *t = vulkan_create_texture(vk, NULL, w, height, VK_FORMAT_R8_UNORM, NULL, NULL,
                                     VULKAN_TEXTURE_STREAMED);
-         if (!t->image || !t->view || !t->memory ||
+         /* CPU planar consumers use unsigned byte strides. Refuse an
+          * unrepresentable pitch before accepting the atlas slot. */
+         if (!t->image || !t->view || !t->memory || t->stride > UINT_MAX ||
              vkMapMemory(vk->context->device, t->memory, 0, VK_WHOLE_SIZE, 0, &t->mapped) !=
                  VK_SUCCESS)
             break;
@@ -17162,7 +17165,7 @@ static void vulkan_planar_materialize(struct vk_texture *texture)
    planes.planes[0] = bytes;
    planes.planes[1] = bytes + h * source->stride;
    planes.planes[2] = bytes + (h + (h + 1) / 2) * source->stride;
-   planes.strides[0] = planes.strides[1] = planes.strides[2] = source->stride;
+   planes.strides[0] = planes.strides[1] = planes.strides[2] = (unsigned)source->stride;
    planes.chroma_step = 1;
    planes.yuv = atlas->flags;
    image.width = VIDEO_SCALE_W(texture->dims);

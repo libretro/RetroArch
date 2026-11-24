@@ -3910,7 +3910,6 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
    {
       rarch_setting_t *setting     = NULL;
       bool                 ret     = false;
-      struct menu_state *menu_st   = menu_state_get_ptr();
       const char *label            = input_driver_text_entry_label();
       settings_t *settings         = config_get_ptr();
       const char *dir_video_shader = settings->paths.directory_video_shader;
@@ -4187,7 +4186,6 @@ static void menu_input_st_string_cb_cheat_file_save_as(
    if (str && *str)
    {
       rarch_setting_t *setting        = NULL;
-      struct menu_state *menu_st      = menu_state_get_ptr();
       const char *label               = input_driver_text_entry_label();
       settings_t *settings            = config_get_ptr();
       const char *path_cheat_database = settings->paths.path_cheat_database;
@@ -4419,7 +4417,6 @@ static void menu_input_st_string_cb_remap_file_save_as(
    if (str && *str)
    {
       rarch_setting_t *setting        = NULL;
-      struct menu_state *menu_st      = menu_state_get_ptr();
       const char *label               = input_driver_text_entry_label();
       if (label && *label)
          setting = menu_setting_find(label);
@@ -4563,7 +4560,6 @@ static void menu_input_st_string_cb_config_file_save_as(
    if (str && *str)
    {
       rarch_setting_t *setting        = NULL;
-      struct menu_state *menu_st      = menu_state_get_ptr();
       const char *label               = input_driver_text_entry_label();
       if (label && *label)
          setting = menu_setting_find(label);
@@ -4595,7 +4591,6 @@ static void menu_input_st_string_cb_override_file_save_as(
    if (str && *str)
    {
       rarch_setting_t *setting        = NULL;
-      struct menu_state *menu_st      = menu_state_get_ptr();
       const char *label               = input_driver_text_entry_label();
       const char *msg_str             = NULL;
       int ret                         = false;

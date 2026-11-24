@@ -5709,11 +5709,13 @@ static void rgui_render_messagebox(
          rgui_blit_line(rgui, fb_width, text_x, text_y, msg,
                rgui->colors.normal_color, rgui->colors.shadow_color);
 
+         /* Both the path offset and its glyph count are bounded by
+          * wrapped_message, whose size fits the rectangle API. */
          if (path)
             rgui_color_rect(frame_buf_data, fb_dims,
-                  text_x + (path - msg) * rgui->font_width_stride,
+                  text_x + (unsigned)(path - msg) * rgui->font_width_stride,
                   text_y + VIDEO_SCALE_H(rgui->font_dims),
-                  utf8len(path) * rgui->font_width_stride - 1, 1,
+                  (unsigned)utf8len(path) * rgui->font_width_stride - 1, 1,
                   rgui->colors.normal_color);
 
          /* Centred between the heading's glyphs and the next line */
