@@ -9900,8 +9900,15 @@ static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
    glDisable(GL_SCISSOR_TEST);
    gl3_filter_chain_set_frame_count(chain, gl->media_shader_frame);
    gl3_filter_chain_set_frame_direction(chain, 1);
+   gl3_filter_chain_set_frame_time_delta(chain,
+         (uint32_t)video_driver_get_frame_time_delta_usec());
+   gl3_filter_chain_set_original_fps(chain, video_driver_get_original_fps());
+   gl3_filter_chain_set_shader_subframes(chain, 1);
+   gl3_filter_chain_set_current_shader_subframe(chain, 1);
    gl3_filter_chain_set_rotation(chain, 0);
    gl3_filter_chain_set_core_aspect(chain,
+         (float)VIDEO_SCALE_W(source_dims) / VIDEO_SCALE_H(source_dims));
+   gl3_filter_chain_set_core_aspect_rot(chain,
          (float)VIDEO_SCALE_W(source_dims) / VIDEO_SCALE_H(source_dims));
    {
       float rows[12];

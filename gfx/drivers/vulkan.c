@@ -20057,8 +20057,15 @@ static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
    vulkan_filter_chain_notify_sync_index(chain, vk->context->current_frame_index);
    vulkan_filter_chain_set_frame_count(chain, vk->media_shader_frame);
    vulkan_filter_chain_set_frame_direction(chain, 1);
+   vulkan_filter_chain_set_frame_time_delta(chain,
+         (uint32_t)video_driver_get_frame_time_delta_usec());
+   vulkan_filter_chain_set_original_fps(chain, video_driver_get_original_fps());
+   vulkan_filter_chain_set_shader_subframes(chain, 1);
+   vulkan_filter_chain_set_current_shader_subframe(chain, 1);
    vulkan_filter_chain_set_rotation(chain, 0);
    vulkan_filter_chain_set_core_aspect(chain,
+         (float)VIDEO_SCALE_W(source_dims) / VIDEO_SCALE_H(source_dims));
+   vulkan_filter_chain_set_core_aspect_rot(chain,
          (float)VIDEO_SCALE_W(source_dims) / VIDEO_SCALE_H(source_dims));
    memset(&rp, 0, sizeof(rp));
    rp.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

@@ -69,7 +69,7 @@ struct vk_planar_atlas_slot { struct vk_texture texture; uint64_t readers,serial
 struct vk_planar_atlas { struct vk_planar_atlas_slot slots[4]; unsigned current; bool pending; };
 struct vulkan_filter_chain_texture { unsigned image,view,dims,layout; };
 #define VK_IMAGE_LAYOUT_GENERAL 1
-typedef struct { unsigned image, hdr; float rows[12]; void *owner; unsigned lease_view; void (*release)(void *); } vulkan_filter_chain_t;
+typedef struct { unsigned image, hdr, metadata; float aspect; float rows[12]; void *owner; unsigned lease_view; void (*release)(void *); } vulkan_filter_chain_t;
 struct image { unsigned image,framebuffer; };
 struct context { unsigned current_frame_index,num_swapchain_images,device; };
 typedef struct {
@@ -98,7 +98,14 @@ static void vulkan_filter_chain_notify_sync_index(vulkan_filter_chain_t *c,unsig
 static void vulkan_filter_chain_set_frame_count(vulkan_filter_chain_t *c,unsigned i) { (void)c;(void)i; }
 static void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *c,int i) { (void)c;(void)i; }
 static void vulkan_filter_chain_set_rotation(vulkan_filter_chain_t *c,unsigned i) { (void)c;(void)i; }
-static void vulkan_filter_chain_set_core_aspect(vulkan_filter_chain_t *c,float f) { (void)c;(void)f; }
+static void vulkan_filter_chain_set_core_aspect(vulkan_filter_chain_t *c,float f) { c->aspect=f; }
+static uint32_t video_driver_get_frame_time_delta_usec(void) { return 20000; }
+static float video_driver_get_original_fps(void) { return 50.0f; }
+static void vulkan_filter_chain_set_frame_time_delta(vulkan_filter_chain_t *c,uint32_t t) { assert(t==20000);c->metadata|=1; }
+static void vulkan_filter_chain_set_original_fps(vulkan_filter_chain_t *c,float fps) { assert(fps==50.0f);c->metadata|=2; }
+static void vulkan_filter_chain_set_shader_subframes(vulkan_filter_chain_t *c,unsigned n) { assert(n==1);c->metadata|=4; }
+static void vulkan_filter_chain_set_current_shader_subframe(vulkan_filter_chain_t *c,unsigned n) { assert(n==1);c->metadata|=8; }
+static void vulkan_filter_chain_set_core_aspect_rot(vulkan_filter_chain_t *c,float f) { assert(f==c->aspect);c->metadata|=16; }
 static void vulkan_filter_chain_set_viewer_colour(vulkan_filter_chain_t *c,const float *r) { memcpy(c->rows,r,sizeof(c->rows)); }
 static void vulkan_filter_chain_set_input_texture_history(vulkan_filter_chain_t *c,const struct vulkan_filter_chain_texture *i, struct gfx_media_history *h) { (void)h;c->image=i->image;input_dims=i->dims;input_layout=i->layout; }
 static void vulkan_filter_chain_set_source_hdr(vulkan_filter_chain_t *c,unsigned i) { (void)c;assert(!i); }
@@ -162,6 +169,7 @@ int main(void)
       assert(gfx_display_vk_media_shader_draw(&v,(uintptr_t)&texture,
          VIDEO_SCALE_PACK(320,240),VIDEO_SCALE_PACK(640,480),0,VIDEO_SCALE_PACK(320,240)));
       assert(chains[i==0 ? 1:0].image==texture.image);
+      assert(chains[i==0 ? 1:0].metadata==31);
 #ifdef VULKAN_HDR_SWAPCHAIN
       assert(chains[i==0 ? 1:0].rows[3]==(i==0 ? 1.0f:0.0f));
 #else

@@ -13,7 +13,7 @@ a, extra = p.parse_known_args()
 root = Path(__file__).resolve().parents[3]
 slang = '''#version 450
 layout(push_constant) uniform Push { vec4 SourceSize; vec4 OriginalSize; vec4 OutputSize; uint FrameCount; } params;
-layout(std140, set = 0, binding = 0) uniform UBO { mat4 MVP; } global;
+layout(std140, set = 0, binding = 0) uniform UBO { mat4 MVP; uint FrameTimeDelta; float OriginalFPS; uint TotalSubFrames; uint CurrentSubFrame; float OriginalAspect; float OriginalAspectRotated; } global;
 #pragma stage vertex
 layout(location = 0) in vec4 Position;
 layout(location = 1) in vec2 TexCoord;
@@ -52,6 +52,9 @@ with tempfile.TemporaryDirectory(prefix='media-shaders-') as tmp:
     ext = 'glsl' if a.video_driver == 'gl' else 'slang'
     source = glsl if ext == 'glsl' else slang
     sample = 'texture(Texture, uv)' if ext == 'glsl' else 'texture(Source, uv)'
+    if ext == 'slang':
+        source = source.replace('FragColor = vec4(COLOUR, 1.0);',
+            'bool valid = global.OriginalFPS > 1.0 && global.TotalSubFrames == 1u && global.CurrentSubFrame == 1u && abs(global.OriginalAspectRotated - global.OriginalAspect) < 0.001; FragColor = valid ? vec4(COLOUR, 1.0) : vec4(1.0, 0.0, 1.0, 1.0);')
     for name, colour in [('invert', 'vec3(1.0) - ' + sample + '.rgb'), ('blue', sample + '.bgr')]:
         (dst / (name + '.' + ext)).write_text(source.replace('COLOUR', colour))
         (dst / (name + '.' + ext + 'p')).write_text('shaders = "1"\nshader0 = "' + name + '.' + ext + '"\n')
