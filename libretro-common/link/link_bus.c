@@ -55,8 +55,7 @@
 #define LINK_BUS_REC_CUT       512
 #define LINK_BUS_REC_JOIN      1024
 #define LINK_BUS_REC_PUBLISHED 2048 /* its console's frame holds its publish */
-#define LINK_BUS_REC_ASKED     4096 /* that publish asked for reports */
-#define LINK_BUS_REC_BITS      8191
+#define LINK_BUS_REC_BITS      4095
 #define LINK_BUS_CON_HELD      1
 #define LINK_BUS_CON_UNHOLDING 2
 #define LINK_BUS_CON_FRAME     4    /* inside a frame, which a load leaves to resume */
@@ -70,10 +69,10 @@
 #define LINK_BUS_LINK_CUT      16  /* they carry and bound before cut */
 #define LINK_BUS_LINK_GAP      32  /* joined again after the cut: before cut or from join */
 #define LINK_BUS_LINK_MINE     64  /* join waits for this port's console's first edge */
-#define LINK_BUS_LINK_THEIRS   128 /* join waits for the other port's console's */
-#define LINK_BUS_LINK_HOLD     256 /* a hold's end: join bounds, drops nothing */
-#define LINK_BUS_LINK_FLIPPED  512 /* off and on again since its view last changed */
-#define LINK_BUS_LINK_BITS     1023
+#define LINK_BUS_LINK_HOLD     128 /* a hold's end: join bounds, drops nothing */
+#define LINK_BUS_LINK_FLIPPED  256 /* off and on again since its view last changed */
+#define LINK_BUS_LINK_BITS     511
+#define LINK_BUS_LINK_RECORD   38  /* a link's bytes: other, flags, join, join_rate, cut, cut_rate */
 #define LINK_BUS_FNV_BASIS     ((((uint64_t)0xCBF29CE4UL) << 32) | 0x84222325UL)
 #define LINK_BUS_FNV_PRIME     ((((uint64_t)0x100UL) << 32) | 0x1B3UL)
 
@@ -174,7 +173,7 @@ struct retro_link_port
    unsigned slot;        /* creation order: its place in every port's links */
    unsigned seen;        /* the other ports in its view */
    unsigned flags, max_ports;
-   unsigned index, count, was_count, size;
+   unsigned index, count, size;
    unsigned cap;         /* link_bus_group's, in a root: the lowest max_ports joined, 0 for none */
    uint32_t pending;     /* reports not yet given */
    struct link_bus_entry *queue, *queue_tail;     /* landed, in the order recv takes them */
@@ -193,7 +192,6 @@ struct retro_link_port
    bool promise_valid, span_valid, grant_valid;
    bool span_shown;      /* a span shown since placed: each frame end moves since by it */
    bool published;       /* in this frame */
-   bool asked;           /* its latest publish asked for reports */
    bool unplaced;        /* waits for link_bus_place: since not set */
    bool viewed;          /* view_at is set */
    bool apart;           /* cut from a port no longer on its bus */
@@ -1042,7 +1040,6 @@ static void link_bus_group(link_bus_t *b)
       struct retro_link_port *p = b->recs[i];
       p->was_head  = p->head;
       p->was_next  = p->next;
-      p->was_count = p->count;
       p->head      = NULL;
       p->next      = NULL;
       p->first     = NULL;
@@ -1149,7 +1146,7 @@ static bool link_bus_stands(const link_bus_t *b, const struct retro_link_port *p
 }
 
 static void link_bus_on(struct link_bus_link *k, uint64_t j, uint64_t rate,
-      bool mine, bool theirs, unsigned hold)
+      bool mine, unsigned hold)
 {
    unsigned f = k->flags & (LINK_BUS_LINK_VIEW | LINK_BUS_LINK_WAS | LINK_BUS_LINK_CUT
          | (hold ? LINK_BUS_LINK_FLIPPED | LINK_BUS_LINK_GAP : 0));
@@ -1160,8 +1157,6 @@ static void link_bus_on(struct link_bus_link *k, uint64_t j, uint64_t rate,
       f |= LINK_BUS_LINK_FLIPPED;
    if (mine)
       f |= LINK_BUS_LINK_MINE;
-   if (theirs)
-      f |= LINK_BUS_LINK_THEIRS;
    k->flags     = f;
    k->join      = j;
    k->join_rate = rate;
@@ -1188,8 +1183,8 @@ static void link_bus_came_on(const link_bus_t *b, struct retro_link_port *r,
       j    = c;
       rate = m->rate;
    }
-   link_bus_on(link_bus_link(r, m), j, rate, !ka, !kc, hold);
-   link_bus_on(link_bus_link(m, r), j, rate, !kc, !ka, hold);
+   link_bus_on(link_bus_link(r, m), j, rate, !ka, hold);
+   link_bus_on(link_bus_link(m, r), j, rate, !kc, hold);
 }
 
 /* r and m leave one bus at t (ticks of rate): from now on they carry and
@@ -1270,7 +1265,6 @@ static void link_bus_known(link_bus_t *b, struct retro_link_port *p)
          k->join_rate = p->rate;
       }
       k->flags     &= ~LINK_BUS_LINK_MINE;
-      l->flags     &= ~LINK_BUS_LINK_THEIRS;
       l->join       = k->join;
       l->join_rate  = k->join_rate;
    }
@@ -1522,7 +1516,7 @@ static void link_bus_settle(const link_bus_t *b, struct retro_link_port *r,
    if (     (f & LINK_BUS_LINK_CUT) && !(f & (LINK_BUS_LINK_TOGETHER | LINK_BUS_LINK_VIEW))
          && !(link_bus_link(m, r)->flags & LINK_BUS_LINK_VIEW))
       f &= ~(LINK_BUS_LINK_CUT | LINK_BUS_LINK_JOIN | LINK_BUS_LINK_MINE
-            | LINK_BUS_LINK_THEIRS | LINK_BUS_LINK_HOLD);
+            | LINK_BUS_LINK_HOLD);
    k->flags = f;
 }
 
@@ -2002,7 +1996,6 @@ void link_bus_publish(link_bus_t *b, unsigned console, struct retro_link_wait *c
          foreign = true;
       if (!p || !p->live || p->cut)
          continue;
-      p->asked = w[i]->wake_flags != RETRO_LINK_WAKE_NONE;
       if (!p->published)
       {
          /* The frame-start advance gives the tick at the edge if none is known */
@@ -2741,8 +2734,7 @@ static void link_bus_walk_port(const link_bus_t *b, const struct retro_link_port
                    | (p->viewed        ? LINK_BUS_REC_VIEWED   : 0)
                    | (p->cut           ? LINK_BUS_REC_CUT      : 0)
                    | (p->join          ? LINK_BUS_REC_JOIN     : 0)
-                   | (in_frame         ? LINK_BUS_REC_PUBLISHED : 0)
-                   | (in_frame && p->asked ? LINK_BUS_REC_ASKED : 0);
+                   | (in_frame         ? LINK_BUS_REC_PUBLISHED : 0);
    size_t i, links = 0;
    for (e = p->queue; e; e = e->next)
       n++;
@@ -3084,20 +3076,19 @@ static bool link_bus_read_port(link_bus_t *b, struct link_bus_in *in, size_t k)
    links    = (size_t)link_bus_get_u(in, 4);
    link_at  = in->at;
    if (     in->bad || links > in->recs
-         || ((bits & LINK_BUS_REC_PUBLISHED) && !(in->cons[console] & LINK_BUS_CON_FRAME))
-         || ((bits & LINK_BUS_REC_ASKED) && !(bits & LINK_BUS_REC_PUBLISHED)))
+         || ((bits & LINK_BUS_REC_PUBLISHED) && !(in->cons[console] & LINK_BUS_CON_FRAME)))
       return false;
    for (i = 0; i < links; i++)
    {
       size_t other    = (size_t)link_bus_get_u(in, 4);
-      unsigned flags  = (unsigned)link_bus_get_u(in, 2);
+      unsigned lflags = (unsigned)link_bus_get_u(in, 2);
       uint64_t join_r, cut_r;
       link_bus_get_u(in, 8);
       join_r = link_bus_get_u(in, 8);
       link_bus_get_u(in, 8);
       cut_r  = link_bus_get_u(in, 8);
-      if (     in->bad || other >= in->recs || other == k || !flags || flags > LINK_BUS_LINK_BITS
-            || ((flags & LINK_BUS_LINK_JOIN) && !join_r) || ((flags & LINK_BUS_LINK_CUT) && !cut_r))
+      if (     in->bad || other >= in->recs || other == k || !lflags || lflags > LINK_BUS_LINK_BITS
+            || ((lflags & LINK_BUS_LINK_JOIN) && !join_r) || ((lflags & LINK_BUS_LINK_CUT) && !cut_r))
          return false;
    }
    n = (size_t)link_bus_get_u(in, 4);
@@ -3152,7 +3143,6 @@ static bool link_bus_read_port(link_bus_t *b, struct link_bus_in *in, size_t k)
       p->view_at       = view_at;
       p->grant_valid   = limit == LINK_BUS_LIMIT_GRANT;
       p->published     = (bits & LINK_BUS_REC_PUBLISHED) != 0;
-      p->asked         = (bits & LINK_BUS_REC_ASKED) != 0;
       p->flags         = flags & RETRO_LINK_PORT_SHARED_MEDIUM;
       p->max_ports     = max_ports;
       p->pending       = pending & (RETRO_LINK_WAKE_MESSAGE | RETRO_LINK_WAKE_TOPOLOGY);
@@ -3177,8 +3167,8 @@ static bool link_bus_read_port(link_bus_t *b, struct link_bus_in *in, size_t k)
       {
          struct link_bus_in t;
          struct link_bus_link *l;
-         t.at          = link_at + i * 38;
-         t.end         = t.at + 38;
+         t.at          = link_at + i * LINK_BUS_LINK_RECORD;
+         t.end         = t.at + LINK_BUS_LINK_RECORD;
          t.bad         = false;
          l             = link_bus_link(p, link_bus_listed(b, in, (size_t)link_bus_get_u(&t, 4)));
          l->flags      = (unsigned)link_bus_get_u(&t, 2);
