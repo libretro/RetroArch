@@ -7255,7 +7255,13 @@ bool retro_vfs_dirent_is_link_impl(libretro_vfs_implementation_dir *rdir)
       return false;
 #endif
 #if defined(_WIN32) && !defined(_XBOX)
-   return VFS_FIND_DATA_IS_LINK((const WIN32_FIND_DATA*)&rdir->entry);
+#if defined(LEGACY_WIN32_RUNTIME)
+   if (win32_needs_local_encoding())
+      return VFS_FIND_DATA_IS_LINK(&rdir->entry.a);
+   return VFS_FIND_DATA_IS_LINK(&rdir->entry.w);
+#else
+   return VFS_FIND_DATA_IS_LINK(&rdir->entry);
+#endif
 #elif defined(_WIN32) || defined(VITA) || defined(__PSL1GHT__) || defined(__PS3__)
    return false;
 #else
