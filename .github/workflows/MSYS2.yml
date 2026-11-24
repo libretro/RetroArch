@@ -140,6 +140,10 @@ jobs:
         shell: msys2 {0}
         run: python3 samples/gfx/win32_window_proc/opacity_run.py
 
+      - name: Unicode command-line regression
+        shell: msys2 {0}
+        run: python3 samples/gfx/win32_window_proc/argv_run.py
+
       - name: Collect DLLs and binaries
         shell: msys2 {0}
         run: |

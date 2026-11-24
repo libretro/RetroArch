@@ -2884,6 +2884,7 @@ jobs:
           samples/gfx/win32_window_proc/run.sh
           python3 samples/gfx/win32_window_proc/modal_frame_run.py
           python3 samples/gfx/win32_window_proc/opacity_run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/win32_window_proc/argv_run.py
 
       - name: D3DKMT binding and vblank clock (mingw + Wine, headless)
         shell: bash

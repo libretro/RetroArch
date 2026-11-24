@@ -7636,7 +7636,11 @@ int main(int argc, char *argv[])
    if (argc == 2 && winusb_bind_command(argv[1], &ret))
       return ret;
 #endif
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   return frontend_win32_main(argc, argv, rarch_main);
+#else
    return rarch_main(argc, argv, NULL);
+#endif
 }
 #endif
 

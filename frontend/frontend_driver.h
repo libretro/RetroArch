@@ -29,6 +29,11 @@
 
 RETRO_BEGIN_DECLS
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+int frontend_win32_main(int argc, char *argv[],
+      int (*entry)(int, char *[], void *));
+#endif
+
 enum frontend_powerstate
 {
    FRONTEND_POWERSTATE_NONE = 0,

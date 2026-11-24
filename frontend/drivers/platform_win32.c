@@ -17,6 +17,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <retro_miscellaneous.h>
@@ -1907,6 +1908,58 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL                             /* set_power_plan      */
 #endif
 };
+
+#if !defined(_XBOX) && !defined(__WINRT__)
+#include <shellapi.h>
+
+int frontend_win32_main(int argc, char *argv[],
+      int (*entry)(int, char *[], void *))
+{
+   char **utf8_argv;
+   int i;
+   int result = 1;
+#if !defined(LEGACY_WIN32)
+   LPWSTR *wide_argv = NULL;
+#ifdef LEGACY_WIN32_RUNTIME
+   if (!win32_needs_local_encoding())
+#endif
+   {
+      wide_argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+      if (!wide_argv)
+         return 1;
+   }
+#endif
+   utf8_argv = (char**)calloc((size_t)argc + 1, sizeof(*utf8_argv));
+   if (utf8_argv)
+   {
+      for (i = 0; i < argc; i++)
+      {
+#if !defined(LEGACY_WIN32)
+         if (wide_argv)
+            utf8_argv[i] = *wide_argv[i]
+               ? utf16_to_utf8_string_alloc(wide_argv[i])
+               : (char*)calloc(1, 1);
+         else
+#endif
+            utf8_argv[i] = *argv[i]
+               ? local_to_utf8_string_alloc(argv[i])
+               : (char*)calloc(1, 1);
+         if (!utf8_argv[i])
+            break;
+      }
+      if (i == argc)
+         result = entry(argc, utf8_argv, NULL);
+      for (i = 0; i < argc; i++)
+         free(utf8_argv[i]);
+      free(utf8_argv);
+   }
+#if !defined(LEGACY_WIN32)
+   if (wide_argv)
+      LocalFree(wide_argv);
+#endif
+   return result;
+}
+#endif
 
 /* Windows GUI-subsystem entry point.
  *
