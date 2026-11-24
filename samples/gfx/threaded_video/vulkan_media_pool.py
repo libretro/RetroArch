@@ -41,7 +41,7 @@ with tempfile.TemporaryDirectory(prefix="vulkan-media-pool-") as directory:
     driver = (root / "gfx/video_driver.h").read_text(encoding="utf-8")
     start = driver.index("enum video_texture_update\n{")
     types.append(driver[start:driver.index("\n};", start) + 3])
-    (tmp / "pool_types.inc").write_text("\n".join(types), encoding="utf-8")
+    (tmp / "pool_types.inc").write_text("\n".join(types) + "\n", encoding="utf-8")
     signatures = (
         "static void vulkan_destroy_texture(",
         "static void vulkan_media_history_retain(",
@@ -67,7 +67,7 @@ with tempfile.TemporaryDirectory(prefix="vulkan-media-pool-") as directory:
             start = adapter.index(name + "(")
             start = adapter.rfind("static ", 0, start)
             opaque.append(adapter[start:adapter.index("\n}", start) + 2])
-    (tmp / "pool_opaque.inc").write_text("\n".join(opaque), encoding="utf-8")
+    (tmp / "pool_opaque.inc").write_text("\n".join(opaque) + "\n", encoding="utf-8")
 
     common = (root / "gfx/common/vulkan_common.c").read_text(encoding="utf-8")
     start = common.index("uint32_t vulkan_find_memory_type_fallback(")

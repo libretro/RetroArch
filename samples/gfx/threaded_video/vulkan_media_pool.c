@@ -1,6 +1,7 @@
 #define VK_NO_PROTOTYPES
 #include <vulkan/vulkan.h>
 #include <assert.h>
+#include <limits.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -57,6 +58,7 @@ static bool fail_image,fail_submit,fail_end;
 static bool ready[2]={true,true};
 static bool atlas_fences[4],atlas_supported=true;
 static unsigned atlas_map_fail,atlas_map_calls;
+static size_t atlas_stride=8;
 static uint8_t atlas_maps[128][512];
 static uint8_t staging[2][256];
 static unsigned bpp(VkFormat format){return format==VK_FORMAT_R16G16B16A16_SFLOAT?8:4;}
@@ -181,7 +183,7 @@ static void *upload_copy(void *destination,const void *source,size_t bytes)
 static void vkGetPhysicalDeviceFormatProperties(VkPhysicalDevice p,VkFormat f,VkFormatProperties *out)
 {(void)p;(void)f;memset(out,0,sizeof(*out));out->linearTilingFeatures=atlas_supported?VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT:0;}
 static VkResult vkMapMemory(VkDevice d,VkDeviceMemory memory,VkDeviceSize offset,VkDeviceSize size,VkMemoryMapFlags flags,void **out)
-{(void)d;(void)offset;(void)size;(void)flags;assert(ID(memory)<128);if(atlas_map_fail && ++atlas_map_calls==atlas_map_fail)return VK_ERROR_MEMORY_MAP_FAILED;*out=atlas_maps[ID(memory)];return VK_SUCCESS;}
+{(void)d;(void)offset;(void)size;(void)flags;assert(ID(memory)<128);assert(atlas_stride<=UINT_MAX);atlas_map_calls++;if(atlas_map_fail && atlas_map_calls==atlas_map_fail)return VK_ERROR_MEMORY_MAP_FAILED;*out=atlas_maps[ID(memory)];return VK_SUCCESS;}
 static struct vk_texture vulkan_create_texture(vk_t *v,struct vk_texture *old,unsigned w,unsigned h,
       VkFormat format,const void *initial,const VkComponentMapping *swizzle,enum vk_texture_type type)
 {
@@ -192,8 +194,8 @@ static struct vk_texture vulkan_create_texture(vk_t *v,struct vk_texture *old,un
    assert(vkCreateImage(v->context->device,&image,NULL,&t.image)==VK_SUCCESS);
    assert(vkAllocateMemory(v->context->device,&alloc,NULL,&t.memory)==VK_SUCCESS);
    view.image=t.image;view.subresourceRange.levelCount=1;assert(vkCreateImageView(v->context->device,&view,NULL,&t.view)==VK_SUCCESS);
-   t.dims=VIDEO_SCALE_PACK(w,h);t.stride=8;t.size=t.stride*h;t.format=format;t.type=type;t.layout=VK_IMAGE_LAYOUT_PREINITIALIZED;
-   assert(t.size<=512);return t;
+   t.dims=VIDEO_SCALE_PACK(w,h);t.stride=atlas_stride;t.size=t.stride*h;t.format=format;t.type=type;t.layout=VK_IMAGE_LAYOUT_PREINITIALIZED;
+   assert(t.size<=512 || t.stride>UINT_MAX);return t;
 }
 #include "pool_atlas.inc"
 static unsigned retired;
@@ -514,7 +516,22 @@ static void atlas_run(void)
       vulkan_media_pool_free(&v,&texture);
    }
    atlas_map_fail=0;
-   puts("PASS Vulkan planar atlas: mapped planes, interleaved input, unsubmitted readers, fences, bounded reuse, RGB demand and refusal");
+#if SIZE_MAX > UINT_MAX
+   /* A pitch wider than texture_planar.strides is refused before mapping,
+    * with the partial allocation retired and refusal latched. */
+   setup(&v,&texture,&st,VK_FORMAT_R8G8B8A8_UNORM,true,false);
+   v.media_shader_enabled=true;texture.planar_source=true;texture.planar_draw_serial=1;
+   atlas_stride=(size_t)UINT_MAX+1;atlas_map_calls=0;old=allocations;
+   assert(vulkan_planar_atlas_update(&v,&texture,&image)==VIDEO_TEXTURE_UPDATE_REFUSED);
+   assert(texture.planar_atlas && !texture.planar_atlas->ready);
+   assert(allocations==old+1 && !atlas_map_calls);
+   old=allocations;
+   assert(vulkan_planar_atlas_update(&v,&texture,&image)==VIDEO_TEXTURE_UPDATE_REFUSED);
+   assert(allocations==old && !atlas_map_calls);
+   vulkan_media_pool_free(&v,&texture);
+   atlas_stride=8;
+#endif
+   puts("PASS Vulkan planar atlas: mapped planes, interleaved input, unsubmitted readers, fences, bounded reuse, RGB demand, oversized pitches and refusal");
 }
 
 int main(void)
