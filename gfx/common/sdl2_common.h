@@ -75,6 +75,10 @@ typedef struct _sdl2_video
    sdl2_tex_t frame; /* ptr alignment */
    sdl2_tex_t menu;  /* ptr alignment */
    sdl2_tex_t font;  /* ptr alignment */
+#ifdef HAVE_THREADS
+#define SDL2_MENU_MEM_MAX 6
+   void *menu_mem[SDL2_MENU_MEM_MAX];
+#endif
 
    /* The frame texture while it is locked and lent to the core.
     * scratch holds a window of it pushed at another size or pitch. */

@@ -24,6 +24,7 @@
 #include <gfx/scaler/pixconv.h>
 #include <formats/image.h>
 #include <string/stdstring.h>
+#include <memalign.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -1444,9 +1445,52 @@ static bool sdl2_gfx_suspend_screensaver(void *data, bool enable) { return false
 /* TODO/FIXME - implement */
 static bool sdl2_gfx_has_windowed(void *data) { return true; }
 
+#ifdef HAVE_THREADS
+/* SDL_UpdateTexture consumes its CPU source before returning. These
+ * cached buffers let the wrapper publish that source without staging it. */
+static void *sdl2_menu_mem_alloc(void *data, size_t size, uintptr_t *id)
+{
+   sdl2_video_t *vid = (sdl2_video_t*)data;
+   unsigned i;
+   if (!id)
+      return NULL;
+   *id = 0;
+   if (!vid || !size)
+      return NULL;
+   for (i = 0; i < SDL2_MENU_MEM_MAX; i++)
+      if (!vid->menu_mem[i])
+      {
+         if (!(vid->menu_mem[i] = memalign_alloc(64, size)))
+            return NULL;
+         *id = (uintptr_t)i + 1;
+         return vid->menu_mem[i];
+      }
+   return NULL;
+}
+
+static bool sdl2_menu_mem_ready(void *data, uintptr_t id)
+{
+   (void)data;
+   (void)id;
+   return true;
+}
+
+static void sdl2_menu_mem_free(void *data, uintptr_t id)
+{
+   sdl2_video_t *vid = (sdl2_video_t*)data;
+   if (!vid || !id || id > SDL2_MENU_MEM_MAX)
+      return;
+   memalign_free(vid->menu_mem[id - 1]);
+   vid->menu_mem[id - 1] = NULL;
+}
+#endif
+
 static void sdl2_gfx_free(void *data)
 {
    sdl2_video_t *vid = (sdl2_video_t*)data;
+#ifdef HAVE_THREADS
+   unsigned i;
+#endif
    if (!vid)
       return;
 
@@ -1485,6 +1529,10 @@ static void sdl2_gfx_free(void *data)
    if (vid->font_data)
       vid->font_driver->free(vid->font_data);
    free(vid->font_staging);
+#ifdef HAVE_THREADS
+   for (i = 0; i < SDL2_MENU_MEM_MAX; i++)
+      sdl2_menu_mem_free(vid, (uintptr_t)i + 1);
+#endif
 
    free(vid);
 }
@@ -1833,18 +1881,42 @@ static video_poke_interface_t sdl2_video_poke_interface = {
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
 #if SDL_VERSION_ATLEAST(2, 0, 18)
-   sdl2_update_texture
+   sdl2_update_texture,
 #else
-   NULL  /* update_texture */
+   NULL, /* update_texture */
 #endif
-#ifdef SDL2_VIEWS
-   ,
    NULL, /* get_swap_interval_cap */
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
    NULL, /* get_last_present_wait */
-   sdl2_set_view_count
+#ifdef SDL2_VIEWS
+   sdl2_set_view_count,
+#else
+   NULL, /* set_view_count */
 #endif
+   NULL, /* hw_context_destroying */
+   NULL, /* get_headset_refresh */
+   NULL, /* set_frame_format */
+   NULL, /* frame_mem_alloc */
+#ifdef HAVE_THREADS
+   sdl2_menu_mem_ready,
+   sdl2_menu_mem_free,
+#else
+   NULL, /* frame_mem_ready */
+   NULL, /* frame_mem_free */
+#endif
+   NULL, /* get_device */
+   NULL, /* import_texture */
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+   NULL, /* import_movie_frame */
+   NULL, /* get_menu_framebuffer */
+#ifdef HAVE_THREADS
+   sdl2_menu_mem_alloc,
+#else
+   NULL, /* menu_mem_alloc */
+#endif
+   0 /* menu_mem_pitch_align */
 };
 
 static void sdl2_gfx_poke_interface(void *data, const video_poke_interface_t **iface)
