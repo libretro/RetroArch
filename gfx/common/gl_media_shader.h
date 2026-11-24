@@ -380,7 +380,8 @@ static bool gl_media_shader_draw(gl_media_shader_t **state, void *driver,
          glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
          /* Match the old snapshot precision and transfer behavior. Other
           * storage formats keep the established materialized fallback. */
-         borrow = format == GL_RGBA || format == GL_RGBA8 || format == GL_RGB8
+         borrow = format == GL_RGB || format == GL_RGB8
+            || format == GL_RGBA || format == GL_RGBA8
             || ((hdr_flags & GL_MEDIA_LINEAR_HDR) && format == GL_RGBA16F);
       }
 #endif

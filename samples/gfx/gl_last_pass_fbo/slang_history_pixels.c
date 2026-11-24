@@ -160,7 +160,11 @@ static void run_pool(GLenum format)
          glGetTexParameteriv(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,&mag);assert(mag==GL_NEAREST);
       }
 
+      if(format==GL_RGB || format==GL_RGB8)
+         for(i=0;i<12;i++)fresh[i*4+3]=0;
       glBindTexture(GL_TEXTURE_2D,target);glTexSubImage2D(GL_TEXTURE_2D,0,0,0,4,3,GL_RGBA,GL_FLOAT,fresh);
+      if(format==GL_RGB || format==GL_RGB8)
+         for(i=0;i<12;i++)fresh[i*4+3]=1;
       gl_media_pool_publish(pool,handle,target);t.image=gl_media_pool_resolve(pool,handle);history.copies=0;
       for(j=2;j;j--)memmove(expected[j],expected[j-1],sizeof(fresh));
       memcpy(expected[0],fresh,sizeof(fresh));
@@ -187,6 +191,7 @@ int main(void)
    assert(eglInitialize(d,NULL,NULL));assert(eglBindAPI(EGL_OPENGL_API));assert(eglChooseConfig(d,attrs,&cfg,1,&count)&&count);
    s=eglCreatePbufferSurface(d,cfg,size);c=eglCreateContext(d,cfg,EGL_NO_CONTEXT,NULL);assert(eglMakeCurrent(d,s,s,c));
    run(GL_RGBA8);run(GL_RGBA16F);run_pool(GL_RGBA8);run_pool(GL_RGBA16F);
+   run_pool(GL_RGB8);run_pool(GL_RGB);
    eglMakeCurrent(d,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);eglDestroyContext(d,c);eglDestroySurface(d,s);eglTerminate(d);
    puts("GLCore Slang history GPU pixels: direct leases, raw preservation, HDR precision, GL state and deferred deletion passed");return 0;
 }

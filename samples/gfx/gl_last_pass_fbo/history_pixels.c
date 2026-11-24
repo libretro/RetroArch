@@ -194,6 +194,9 @@ static void run_pool(GLint format,float phase)
    for(frame=1;frame<=24;frame++)
    {
       pixels(fresh,phase+(float)(frame%3)*0.0625f);
+      /* RGB storage must keep implicit opaque alpha even after rotation. */
+      if(format==GL_RGB || format==GL_RGB8)
+         for(i=0;i<12;i++)fresh[i*4+3]=0;
       if(frame==12)
       {
          const GLint filter[4]={GL_NEAREST,GL_NEAREST,GL_REPEAT,GL_REPEAT};
@@ -234,6 +237,8 @@ static void run_pool(GLint format,float phase)
       glBindBuffer(GL_PIXEL_UNPACK_BUFFER,0);
 #endif
       gl_media_pool_publish(pool,handle,target);
+      if(format==GL_RGB || format==GL_RGB8)
+         for(i=0;i<12;i++)fresh[i*4+3]=1;
       show_previous=1;
       assert(gl_media_shader_draw(&state,&backend,&backend,&backend,gl_media_pool_resolve(pool,handle),VIDEO_SCALE_PACK(4,3),0,VIDEO_SCALE_PACK(4,3),frame+3,hdr,true));
       memcpy(sampled,old,sizeof(old));
@@ -399,6 +404,7 @@ int main(void)
    target=texture(GL_RGBA32F,NULL);glGenFramebuffers(1,&fbo);glBindFramebuffer(GL_FRAMEBUFFER,fbo);glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,target,0);assert(glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE);
    glViewport(0,0,4,3);run(GL_RGBA8,0);run(GL_RGBA16F,-0.5f);
    run_pool(GL_RGBA8,0);run_pool(GL_RGBA16F,-0.5f);
+   run_pool(GL_RGB8,0);run_pool(GL_RGB,0);
 #ifdef GL_POOL_LEGACY
    run_pool(GL_RGBA,0);
 #endif

@@ -136,7 +136,8 @@ static GLuint gl_media_pool_prepare_ex(gl_media_pool_t **list, GLuint handle,
          glGetTexParameteriv(GL_TEXTURE_2D,GL_TEXTURE_SWIZZLE_A,&pool->swizzle[3]);
       }
       glBindTexture(GL_TEXTURE_2D,(GLuint)old_texture);
-      pool->eligible=!mip && (format==GL_RGBA || format==GL_RGBA8 || format==GL_RGBA16F);
+      pool->eligible=!mip && (format==GL_RGB || format==GL_RGB8
+            || format==GL_RGBA || format==GL_RGBA8 || format==GL_RGBA16F);
       pool->next=*list;*list=pool;
 #endif
    }
