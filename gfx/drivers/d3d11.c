@@ -11479,7 +11479,7 @@ static bool d3d11_set_frame_format(void *data, bool rgb32,
    if (     !d3d11
          || (d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE)
          || d3d11->format == DXGI_FORMAT_R10G10B10A2_UNORM
-         || d3d11->format == DXGI_FORMAT_R16G16B16A16_FLOAT, NULL)
+         || d3d11->format == DXGI_FORMAT_R16G16B16A16_FLOAT)
       return false;
    d3d11->format = rgb32
       ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;

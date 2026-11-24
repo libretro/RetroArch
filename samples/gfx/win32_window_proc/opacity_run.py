@@ -9,9 +9,13 @@ root = Path(__file__).resolve().parents[3]
 source = (root / "gfx/common/win32_common.c").read_text(encoding="utf-8")
 start = source.index("bool win32_window_set_opacity(")
 end = source.index("\nstatic bool win32_window_create(", start)
-compiler = os.environ.get("CC") or shutil.which("gcc")
+compiler = (os.environ.get("CC") or shutil.which("cc")
+            or shutil.which("gcc") or shutil.which("clang"))
 if not compiler:
     raise SystemExit("A C compiler is required")
+compiler_flags = []
+if "clang" in subprocess.check_output([compiler, "--version"], text=True).lower():
+    compiler_flags = ["-Wno-c99-extensions", "-Wno-c11-extensions"]
 with tempfile.TemporaryDirectory(prefix="window-opacity-") as directory:
     temporary = Path(directory)
     (temporary / "opacity_impl.inc").write_text(source[start:end], encoding="utf-8")
@@ -25,5 +29,5 @@ with tempfile.TemporaryDirectory(prefix="window-opacity-") as directory:
             command += ["-DHAVE_WINDOW_TRANSP"]
         if os.name == "nt":
             command += ["-luser32"]
-        subprocess.run(command, check=True)
+        subprocess.run(command + compiler_flags, check=True)
         subprocess.run([str(executable)], check=True, timeout=15)

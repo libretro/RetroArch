@@ -15068,7 +15068,7 @@ video_driver_t video_d3d12 = {
 static void d3d12_media_read_history(d3d12_video_t *video,
       d3d12_filter_chain_t *chain, d3d12_texture_t *texture)
 {
-   unsigned i;
+   int i;
    d3d12_media_read_texture(video, texture);
    if (chain->history_borrowed)
       for (i = 0; i <= chain->shader_preset->history_size; i++)

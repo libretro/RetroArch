@@ -106,7 +106,7 @@ typedef struct {
    float4 size_data;
 } d3d12_texture_t;
 struct d3d12_media_version {d3d12_texture_t texture;unsigned refs;uint64_t read_serial;};
-typedef struct { unsigned history_size; } preset;
+typedef struct { int history_size; } preset;
 typedef struct {
    preset *shader_preset;
    d3d12_texture_t history[4];
