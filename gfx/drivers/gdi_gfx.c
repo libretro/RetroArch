@@ -16,6 +16,7 @@
  */
 
 #include <stdlib.h>
+#include <memalign.h>
 
 #include <encodings/utf.h>
 #include <lists/string_list.h>
@@ -3046,7 +3047,7 @@ static bool gdi_frame(void *data, const void *frame,
     * and we don't want to pay the bmp_menu allocation/clear cost
     * for it. */
 #ifdef HAVE_MENU
-   menu_textured = menu_is_alive && gdi->menu_enable && !gdi->menu_frame;
+   menu_textured = menu_is_alive && gdi->menu_enable && !gdi->menu_source;
 #endif
    {
       bool need_bmp_menu = false;
@@ -3184,9 +3185,9 @@ static bool gdi_frame(void *data, const void *frame,
     * draw=false to skip the upload entirely (the menu surface is
     * the final image). */
 #ifdef HAVE_MENU
-   if (gdi->menu_frame && menu_is_alive)
+   if (gdi->menu_source && menu_is_alive)
    {
-      frame_to_copy = gdi->menu_frame;
+      frame_to_copy = gdi->menu_source;
       width         = VIDEO_SCALE_W(gdi->menu_dims);
       height        = VIDEO_SCALE_H(gdi->menu_dims);
       pitch         = gdi->menu_pitch;
@@ -3314,7 +3315,7 @@ static bool gdi_frame(void *data, const void *frame,
          {
             info.header.biCompression = BI_BITFIELDS;
             /* default 16-bit format on Windows is XRGB1555 */
-            if (frame_to_copy == gdi->menu_frame)
+            if (frame_to_copy == gdi->menu_source)
             {
                /* RGB444 for RGUI */
                info.u.masks[0] = 0xF000;
@@ -3366,7 +3367,7 @@ static bool gdi_frame(void *data, const void *frame,
           *     becomes solid, which is the same behaviour
           *     non-transparency-capable backends give. */
 #if GDI_HAS_ALPHABLEND
-         if (frame_to_copy == gdi->menu_frame && bits == 16)
+         if (frame_to_copy == gdi->menu_source && bits == 16)
          {
             gdi_blit_rgui_alpha(gdi, frame_to_copy, width, height,
                   VIDEO_POS_X(gdi->vp.pos), VIDEO_POS_Y(gdi->vp.pos), VIDEO_SCALE_W(gdi->vp.dims), VIDEO_SCALE_H(gdi->vp.dims));
@@ -3594,10 +3595,58 @@ static bool gdi_focus(void *data) { return true; }
 static bool gdi_suppress_screensaver(void *a, bool b) { return false; }
 static bool gdi_has_windowed(void *data) { return true; }
 
+#ifdef HAVE_THREADS
+/* Retain the current CPU source across cached redraws. Only allocations
+ * offered to the wrapper may be retained; ordinary pointers are copied. */
+static void *gdi_menu_mem_alloc(void *data, size_t size, uintptr_t *id)
+{
+   gdi_t *gdi = (gdi_t*)data;
+   unsigned i;
+   if (!id)
+      return NULL;
+   *id = 0;
+   if (!gdi || !size)
+      return NULL;
+   for (i = 0; i < GDI_MENU_MEM_MAX; i++)
+      if (!gdi->menu_mem[i])
+      {
+         if (!(gdi->menu_mem[i] = memalign_alloc(64, size)))
+            return NULL;
+         gdi->menu_mem_size[i] = size;
+         *id = (uintptr_t)i + 1;
+         return gdi->menu_mem[i];
+      }
+   return NULL;
+}
+
+static bool gdi_menu_mem_ready(void *data, uintptr_t id)
+{
+   gdi_t *gdi = (gdi_t*)data;
+   return !gdi || !id || id > GDI_MENU_MEM_MAX
+      || !gdi->menu_mem[id - 1]
+      || gdi->menu_source != gdi->menu_mem[id - 1];
+}
+
+static void gdi_menu_mem_free(void *data, uintptr_t id)
+{
+   gdi_t *gdi = (gdi_t*)data;
+   if (!gdi || !id || id > GDI_MENU_MEM_MAX)
+      return;
+   if (gdi->menu_source == gdi->menu_mem[id - 1])
+      gdi->menu_source = NULL;
+   memalign_free(gdi->menu_mem[id - 1]);
+   gdi->menu_mem[id - 1] = NULL;
+   gdi->menu_mem_size[id - 1] = 0;
+}
+#endif
+
 static void gdi_free(void *data)
 {
    gdi_t *gdi = (gdi_t*)data;
    HWND hwnd  = win32_get_window();
+#ifdef HAVE_THREADS
+   unsigned i;
+#endif
 
    if (!gdi)
       return;
@@ -3605,6 +3654,11 @@ static void gdi_free(void *data)
    if (gdi->menu_frame)
       free(gdi->menu_frame);
    gdi->menu_frame = NULL;
+   gdi->menu_source = NULL;
+#ifdef HAVE_THREADS
+   for (i = 0; i < GDI_MENU_MEM_MAX; i++)
+      gdi_menu_mem_free(gdi, (uintptr_t)i + 1);
+#endif
 
    if (gdi->temp_buf)
       free(gdi->temp_buf);
@@ -3674,13 +3728,29 @@ static void gdi_set_texture_frame(void *data,
    gdi_t   *gdi     = (gdi_t*)data;
    unsigned pitch   = VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2);
    size_t   required;
+   bool borrowed = false;
+#ifdef HAVE_THREADS
+   unsigned i;
+#endif
 
-   if (!frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
+   if (!gdi || !frame || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims) || !pitch)
       return;
 
+   if ((size_t)pitch > (size_t)-1 / VIDEO_SCALE_H(dims))
+      return;
    required = (size_t)pitch * (size_t)VIDEO_SCALE_H(dims);
+#ifdef HAVE_THREADS
+   for (i = 0; i < GDI_MENU_MEM_MAX; i++)
+      if (frame == gdi->menu_mem[i])
+      {
+         if (required > gdi->menu_mem_size[i])
+            return;
+         borrowed = true;
+         break;
+      }
+#endif
 
-   if (required > gdi->menu_frame_cap)
+   if (!borrowed && required > gdi->menu_frame_cap)
    {
       uint8_t *tmp = (uint8_t*)realloc(gdi->menu_frame, required);
       if (!tmp)
@@ -3689,7 +3759,9 @@ static void gdi_set_texture_frame(void *data,
       gdi->menu_frame_cap = required;
    }
 
-   memcpy(gdi->menu_frame, frame, required);
+   if (!borrowed)
+      memcpy(gdi->menu_frame, frame, required);
+   gdi->menu_source = borrowed ? (const uint8_t*)frame : gdi->menu_frame;
    gdi->menu_dims = dims;
    gdi->menu_pitch  = pitch;
    gdi->menu_bits   = rgb32 ? 32 : 16;
@@ -4014,7 +4086,30 @@ static const video_poke_interface_t gdi_poke_interface = {
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
    NULL, /* get_last_present_wait */
-   gdi_set_view_count
+   gdi_set_view_count,
+   NULL, /* hw_context_destroying */
+   NULL, /* get_headset_refresh */
+   NULL, /* set_frame_format */
+   NULL, /* frame_mem_alloc */
+#ifdef HAVE_THREADS
+   gdi_menu_mem_ready,
+   gdi_menu_mem_free,
+#else
+   NULL, /* frame_mem_ready */
+   NULL, /* frame_mem_free */
+#endif
+   NULL, /* get_device */
+   NULL, /* import_texture */
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+   NULL, /* import_movie_frame */
+   NULL, /* get_menu_framebuffer */
+#ifdef HAVE_THREADS
+   gdi_menu_mem_alloc,
+#else
+   NULL, /* menu_mem_alloc */
+#endif
+   0 /* menu_mem_pitch_align */
 };
 
 static void gdi_get_poke_interface(void *data,

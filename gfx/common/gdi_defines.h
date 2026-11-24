@@ -64,6 +64,12 @@ typedef struct gdi
    uint16_t *temp_buf;
    uint8_t *menu_frame;
    size_t menu_frame_cap;
+   const uint8_t *menu_source;
+#ifdef HAVE_THREADS
+#define GDI_MENU_MEM_MAX 6
+   void *menu_mem[GDI_MENU_MEM_MAX];
+   size_t menu_mem_size[GDI_MENU_MEM_MAX];
+#endif
 
    /* Backing bitmap for the menu/widget compositing surface.
     * Distinct from gdi->bmp (which is a DDB sized to the core

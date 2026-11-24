@@ -2653,6 +2653,16 @@ jobs:
           CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
             python3 samples/gfx/d3d_failure_paths/menu_mem_sdl2.py
 
+      - name: GDI retained menu loans and DIB pixels (ASan and Wine)
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
+            python3 samples/gfx/d3d_failure_paths/gdi_menu.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all \
+            xvfb-run -a python3 samples/gfx/d3d_failure_paths/gdi_menu.py
+
       - name: D3D9 HLSL failed locks (Linux and mingw + Wine)
         run: |
           set -eu
