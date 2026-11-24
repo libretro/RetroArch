@@ -121,6 +121,7 @@ static void render_subtitles(struct menu_state *menu_st)
 }
 
 #include "native_media_capture.h"
+#include "shader_media_test.h"
 #include "win32_modal_test.h"
 #include "subtitle_media_test.h"
 #include "audio_media_test.h"
@@ -274,7 +275,7 @@ int main(int argc,char **argv)
    const video_poke_interface_t *old_poke;
    static video_poke_interface_t poke;
    file_list_t *list,*stack;
-   char *rarch_argv[4];
+   char *rarch_argv[6];
    static char directory[PATH_MAX_LENGTH];
    gfx_media_playback_state_t state;
    int tick;
@@ -290,7 +291,12 @@ int main(int argc,char **argv)
    retroarch_ctl(RARCH_CTL_STATE_FREE,NULL);frontend_driver_init_first(NULL);
    rarch_argv[0]=(char*)"retroarch";rarch_argv[1]=getenv("MEDIA_TEST_EXTERNAL")?argv[1]:(char*)"--menu";
    rarch_argv[2]=(char*)"--config";rarch_argv[3]=argv[2];
-   if(!retroarch_main_init(4,rarch_argv))return 1;
+   if (getenv("MEDIA_TEST_SHADER_PRESET"))
+   {
+      rarch_argv[4] = (char*)"--set-shader";
+      rarch_argv[5] = getenv("MEDIA_TEST_SHADER_PRESET");
+   }
+   if(!retroarch_main_init(getenv("MEDIA_TEST_SHADER_PRESET") ? 6 : 4,rarch_argv))return 1;
    if (!media_native_video_driver_ready())
    {
       main_exit(NULL);
@@ -433,6 +439,11 @@ int main(int argc,char **argv)
       CHECK("opened file does not launch a content core",
             runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY
             && !*path_get(RARCH_PATH_CONTENT));
+      if (getenv("MEDIA_TEST_SHADER_PRESET"))
+      {
+         media_shader_check(menu_st, viewer);
+         goto media_test_done;
+      }
 #ifdef _WIN32
       if (image && getenv("MEDIA_TEST_MODAL_MODE"))
       {

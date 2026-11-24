@@ -4350,13 +4350,9 @@ const char *video_shader_get_current_shader_preset(void)
    if (video_shader_delay && !runloop_st->shader_delay_timer.timer_end)
       return NULL;
 
-   /* Disallow loading auto-shaders when no core is loaded; a stream
-    * being received has none, and takes the --set-shader preset */
-   if (     (!core_name || !*core_name)
-#ifdef HAVE_PYROWAVE
-         && !(record_pyrowave_receiver_active() && *video_st->cli_shader_path)
-#endif
-      )
+   /* Explicit presets also serve built-in media without a content core. */
+   if ((!core_name || !*core_name) && !*video_st->cli_shader_path
+         && !*runloop_st->runtime_shader_preset_path)
       return NULL;
 
    if (*runloop_st->runtime_shader_preset_path)
@@ -4379,7 +4375,7 @@ const char *video_shader_get_current_shader_preset(void)
                sizeof(runloop_st->runtime_shader_preset_path));
       else
       {
-         if (auto_shaders_enable) /* sets runtime_shader_preset_path */
+         if (auto_shaders_enable && core_name && *core_name)
          {
             if (video_shader_load_auto_shader_preset(
                      settings->paths.directory_video_shader,

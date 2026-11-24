@@ -8,9 +8,14 @@ p.add_argument('--base-config', help='read display/menu preferences; keep harnes
 p.add_argument('--cold-cancel',action='store_true',help='close and reopen while native decoder admission is held on the worker')
 p.add_argument('--cold-reset',action='store_true',help='reinitialize video while native decoder admission is held on the worker')
 p.add_argument('--audio-latency',type=int)
+p.add_argument('--shader-preset', help='invert preset for the red-image shader regression')
+p.add_argument('--shader-reload', help='blue preset applied through the external shader manager')
 p.add_argument('--audio-sync',choices=['true','false'])
 p.add_argument('--validation',action='store_true',help='enable Vulkan validation and fail on any VUID')
 a=p.parse_args()
+if a.shader_preset or a.shader_reload:
+ if not (a.shader_preset and a.shader_reload and a.external and a.video_driver!='null' and a.driver!='rgui'):
+  p.error('shader checks require both presets, external media, and a texture menu on a GPU driver')
 if a.external_settings and (not a.external or a.driver == 'rgui'):
  p.error('--external-settings requires external launch and a texture menu')
 if a.validation and a.video_driver!='vulkan':p.error('--validation requires Vulkan')
@@ -75,6 +80,7 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
   values.update(cache_directory=temp, log_dir=temp, libretro_directory=temp,
                 libretro_info_path=temp, core_info_cache_enable='false')
  values.update(video_driver=a.video_driver,video_threaded='true' if a.threaded else 'false',video_vsync='false',pause_nonactive='false',video_hw_decode='1')
+ if a.shader_preset:values.update(video_shader_enable='true',video_shader_delay='0',video_shader_deferred_loading='false',video_hdr_enable='false',log_verbosity='true')
  if a.continuous:values['media_player_continuous']='true'
  if a.history_image:values.update(history_list_enable='true',menu_content_show_images='true',content_image_history_directory=temp)
  if a.require_cadence:values.update(media_player_crt_switch='true',crt_switch_resolution='1' if os.environ.get('MEDIA_TEST_CRT_ENGINE') else '0',crt_switch_resolution_super='0')
@@ -97,6 +103,9 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  native_cmd=cmd
  if os.name=='nt' and os.environ.get('GDB')=='1':cmd=['gdb','--batch','-return-child-result','-ex','run','-ex','thread apply all bt','--args']+cmd
  env=os.environ.copy();env['MEDIA_TEST_VIDEO_DRIVER']=a.video_driver
+ if a.shader_preset:
+  env['MEDIA_TEST_SHADER_PRESET']=str(Path(a.shader_preset).resolve())
+  env['MEDIA_TEST_SHADER_RELOAD']=str(Path(a.shader_reload).resolve())
  if a.validation:
   layers=env.get('VK_INSTANCE_LAYERS','').split(':')
   env['VK_INSTANCE_LAYERS']=':'.join(dict.fromkeys(x for x in layers+['VK_LAYER_KHRONOS_validation'] if x))

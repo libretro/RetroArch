@@ -2807,14 +2807,28 @@ void menu_driver_get_last_shader_pass_path(
          directory, file_name);
 }
 
+static void menu_shader_manager_refresh(void)
+{
+   const char *label = NULL;
+   menu_entries_get_last_stack(NULL, &label, NULL, NULL, NULL);
+   /* External preset changes do not change a browser's entries or media. */
+   if (label && (
+            string_is_equal(label, MENU_ENUM_LABEL_SHADER_OPTIONS_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_SHADER_PARAMETERS_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PARAMETERS_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PARAMETER_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_PRESET_PARAMETER_STR)
+         || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_VIDEO_SHADER_NUM_PASSES_STR)))
+      menu_driver_state.flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+}
+
 static int menu_shader_manager_clear_num_passes_internal(
       struct video_shader *shader, bool apply_changes)
 {
    if (shader)
    {
-      struct menu_state *menu_st  = &menu_driver_state;
       shader->passes              = 0;
-      menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      menu_shader_manager_refresh();
       video_shader_resolve_parameters(shader);
       shader->flags              |= SHDR_FLAG_MODIFIED;
       if (apply_changes)
@@ -5073,6 +5087,11 @@ bool menu_driver_init(bool video_is_threaded)
       {
          menu_st->driver_ctx->context_reset(menu_st->userdata,
                video_is_threaded);
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_HLSL) || defined(HAVE_SLANG)
+         /* Built-in media can use shaders without loading a content core. */
+         if (!video_state_get_ptr()->menu_driver_shader)
+            menu_shader_manager_init();
+#endif
          return true;
       }
    }
@@ -8112,14 +8131,12 @@ bool menu_shader_manager_set_preset_from_live(
       struct video_shader *menu_shader,
       const struct video_shader *live_shader)
 {
-   struct menu_state *menu_st = &menu_driver_state;
-
    if (!menu_shader || !live_shader)
       return false;
 
    video_shader_copy_for_menu(menu_shader, live_shader);
 
-   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   menu_shader_manager_refresh();
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return true;
 }
@@ -8128,7 +8145,6 @@ bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
       enum rarch_shader_type type, const char *preset_path, bool apply)
 {
    bool ret                      = false;
-   struct menu_state *menu_st    = &menu_driver_state;
    settings_t *settings          = config_get_ptr();
 
    if (apply && !video_shader_apply_shader(settings, type, preset_path, true))
@@ -8164,7 +8180,7 @@ bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
    ret = true;
 
 end:
-   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   menu_shader_manager_refresh();
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 
@@ -8195,7 +8211,6 @@ bool menu_shader_manager_append_preset(struct video_shader *shader,
    bool ret                      = false;
    const char *dir_video_shader  = config_get_ptr()->paths.directory_video_shader;
    enum rarch_shader_type type   = menu_shader_manager_get_type(shader);
-   struct menu_state *menu_st    = &menu_driver_state;
 
    if (!preset_path || !*preset_path)
    {
@@ -8209,7 +8224,7 @@ bool menu_shader_manager_append_preset(struct video_shader *shader,
 
    ret = true;
 
-   menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   menu_shader_manager_refresh();
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 
