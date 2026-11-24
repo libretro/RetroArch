@@ -4431,6 +4431,10 @@ static void gl2_set_texture_frame(void *data,
    enum texture_filter_type menu_filter;
    unsigned base_size              = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl2_t *gl                       = (gl2_t*)data;
+#ifdef HAVE_GL_FRAME_MEM
+   int fm_slot                     = -1;
+   size_t offset                   = 0;
+#endif
    if (!gl)
       return;
 
@@ -4446,11 +4450,22 @@ static void gl2_set_texture_frame(void *data,
    if (!gl->menu_texture)
       glGenTextures(1, &gl->menu_texture);
 
+#ifdef HAVE_GL_FRAME_MEM
+   fm_slot = gl_frame_mem_bind(gl->frame_mem, frame,
+         (size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * base_size,
+         &offset);
+   if (fm_slot >= 0)
+      frame = (const void*)offset;
+#endif
    gl_load_texture_data(gl->menu_texture,
          RARCH_WRAP_EDGE, menu_filter,
          gl2_get_alignment(VIDEO_SCALE_W(dims) * base_size),
          VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), frame,
          base_size, false);
+#ifdef HAVE_GL_FRAME_MEM
+   if (fm_slot >= 0)
+      gl_frame_mem_unbind(gl->frame_mem, fm_slot);
+#endif
 
    gl->menu_texture_alpha = alpha;
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -10567,6 +10582,16 @@ static bool gl2_frame_mem_lend_fb(gl2_t *gl, struct retro_framebuffer *fb)
    return true;
 }
 
+/* Menu uploads read their own pixel format, independently of the core.
+ * The wrapper retires these persistent mappings through the upload fence. */
+static void *gl2_menu_mem_alloc(void *data, size_t size, uintptr_t *id)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl)
+      return NULL;
+   return gl_frame_mem_alloc(&gl->frame_mem, size, id);
+}
+
 static bool gl2_frame_mem_ready(void *data, uintptr_t id)
 {
    gl2_t *gl = (gl2_t*)data;
@@ -11022,7 +11047,11 @@ static const video_poke_interface_t gl2_poke_interface = {
    NULL, /* import_movie_frame */
 #endif
    NULL, /* get_menu_framebuffer */
+#ifdef HAVE_GL_FRAME_MEM
+   gl2_menu_mem_alloc,
+#else
    NULL, /* menu_mem_alloc */
+#endif
    0,    /* menu_mem_pitch_align */
    false, /* texture_lend_per_write */
    NULL, /* driver_pacing_set */

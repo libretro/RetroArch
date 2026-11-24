@@ -8878,6 +8878,16 @@ static bool gl3_get_current_software_framebuffer(void *data,
    return true;
 }
 
+/* Menu uploads read their own pixel format, independently of the core.
+ * The wrapper retires these persistent mappings through the upload fence. */
+static void *gl3_menu_mem_alloc(void *data, size_t size, uintptr_t *id)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl)
+      return NULL;
+   return gl_frame_mem_alloc(&gl->frame_mem, size, id);
+}
+
 static bool gl3_frame_mem_ready(void *data, uintptr_t id)
 {
    gl3_t *gl = (gl3_t*)data;
@@ -8958,6 +8968,10 @@ static void gl3_set_texture_frame(void *data,
    unsigned base_size   = rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
    gl3_t *gl            = (gl3_t*)data;
    bool recreate;
+#ifdef HAVE_GL_FRAME_MEM
+   int fm_slot         = -1;
+   size_t offset       = 0;
+#endif
    /* What the last frame carried, not what the setting says now: the
     * video thread applies this in thread_update_driver_state(). */
    GLenum menu_filter;
@@ -8997,10 +9011,21 @@ static void gl3_set_texture_frame(void *data,
    glPixelStorei(GL_UNPACK_ALIGNMENT, base_size);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#ifdef HAVE_GL_FRAME_MEM
+   fm_slot = gl_frame_mem_bind(gl->frame_mem, frame,
+         (size_t)VIDEO_SCALE_W(dims) * VIDEO_SCALE_H(dims) * base_size,
+         &offset);
+   if (fm_slot >= 0)
+      frame = (const void*)offset;
+#endif
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
                    VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), GL_RGBA, rgb32
                    ? GL_UNSIGNED_BYTE
                    : GL_UNSIGNED_SHORT_4_4_4_4, frame);
+#ifdef HAVE_GL_FRAME_MEM
+   if (fm_slot >= 0)
+      gl_frame_mem_unbind(gl->frame_mem, fm_slot);
+#endif
 
    /* Filter/wrap/swizzle are set every call: the linear-filter menu
     * setting can toggle at runtime, and the cost of these calls is
@@ -9651,10 +9676,17 @@ static const video_poke_interface_t gl3_poke_interface = {
    NULL, /* get_last_present_sync */
    NULL, /* record_read */
 #ifdef HAVE_GL_PLANAR
-   gl3_import_movie_frame
+   gl3_import_movie_frame,
 #else
-   NULL  /* import_movie_frame */
+   NULL, /* import_movie_frame */
 #endif
+   NULL, /* get_menu_framebuffer */
+#ifdef HAVE_GL_FRAME_MEM
+   gl3_menu_mem_alloc,
+#else
+   NULL, /* menu_mem_alloc */
+#endif
+   0 /* menu_mem_pitch_align */
 };
 
 static void gl3_get_poke_interface(void *data,
