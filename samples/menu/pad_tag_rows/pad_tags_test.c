@@ -1225,7 +1225,7 @@ static void lane_press_trigger(void)
  * the generic names. */
 static void lane_device_names(void)
 {
-   char s[NAME_MAX_LENGTH];
+   const char *name;
    unsigned devices[16];
    unsigned types;
    static const struct retro_controller_description descs[] = {
@@ -1250,24 +1250,23 @@ static void lane_device_names(void)
          && devices[3] == RETRO_DEVICE_KEYBOARD,
          "device names: port 1 lists none, the RetroPad and the core's"
          " two others (%u types)", types);
-   s[0] = '\0';
-   menu_setting_libretro_device_name(0, RETRO_DEVICE_JOYPAD, s, sizeof(s));
-   check(string_is_equal(s, "Auto"),
-         "device names: the RetroPad is the core's \"Auto\" (\"%s\")", s);
-   s[0] = '\0';
-   menu_setting_libretro_device_name(0,
-         RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1), s, sizeof(s));
-   check(string_is_equal(s, "2-button joystick"),
-         "device names: the core's subclass keeps its name (\"%s\")", s);
-   s[0] = '\0';
-   menu_setting_libretro_device_name(0, RETRO_DEVICE_NONE, s, sizeof(s));
-   check(string_is_equal(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE)),
-         "device names: none is None (\"%s\")", s);
-   s[0] = '\0';
-   menu_setting_libretro_device_name(1, RETRO_DEVICE_JOYPAD, s, sizeof(s));
-   check(string_is_equal(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD)),
+   name = menu_setting_libretro_device_name(0, RETRO_DEVICE_JOYPAD);
+   check(string_is_equal(name, "Auto"),
+         "device names: the RetroPad is the core's \"Auto\" (\"%s\")", name);
+   name = menu_setting_libretro_device_name(0,
+         RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1));
+   check(string_is_equal(name, "2-button joystick"),
+         "device names: the core's subclass keeps its name (\"%s\")", name);
+   /* lent from the core's own description, not copied */
+   check(name == descs[1].desc,
+         "device names: the core's name is lent, not copied");
+   name = menu_setting_libretro_device_name(0, RETRO_DEVICE_NONE);
+   check(string_is_equal(name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE)),
+         "device names: none is None (\"%s\")", name);
+   name = menu_setting_libretro_device_name(1, RETRO_DEVICE_JOYPAD);
+   check(string_is_equal(name, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD)),
          "device names: a port the core does not describe has the"
-         " RetroPad (\"%s\")", s);
+         " RetroPad (\"%s\")", name);
 
    sys->ports.data = kept_data;
    sys->ports.size = kept_size;

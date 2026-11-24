@@ -30,6 +30,7 @@
 #include <QSlider>
 #include <QSpinBox>
 #include <QStackedLayout>
+#include <QStandardItemModel>
 #include <QStyle>
 #include <QStyleOption>
 #include <QTimer>
@@ -3965,9 +3966,11 @@ static void controls_port_row(ControlsDialog *dialog, QVBoxLayout *outer,
          (uint)MAX_USERS);
    for (i = 0; i < MAX_USERS; i++)
    {
+      QString port;
       snprintf(s, sizeof(s), "%s %u", port_lbl, i + 1);
-      portCombo->addItem(QString::fromUtf8(s));
-      mappedCombo->addItem(QString::fromUtf8(s), (uint)i);
+      port = QString::fromUtf8(s);
+      portCombo->addItem(port);
+      mappedCombo->addItem(port, (uint)i);
    }
    portCombo->setCurrentIndex((int)user);
    font.setBold(true);
@@ -3986,10 +3989,9 @@ static void controls_port_row(ControlsDialog *dialog, QVBoxLayout *outer,
       unsigned current = input_config_get_device(mapped_port);
       for (i = 0; i < types; i++)
       {
-         s[0] = '\0';
-         menu_setting_libretro_device_name(mapped_port, devices[i],
-               s, sizeof(s));
-         deviceCombo->addItem(QString::fromUtf8(s), (uint)devices[i]);
+         deviceCombo->addItem(QString::fromUtf8(
+                  menu_setting_libretro_device_name(mapped_port, devices[i])),
+               (uint)devices[i]);
          if (devices[i] == current)
             deviceCombo->setCurrentIndex((int)i);
       }
@@ -4162,7 +4164,33 @@ static void controls_keyboard_rows(ControlsDialog *dialog,
       QFormLayout *form, QWidget *contents, unsigned user)
 {
    unsigned j, k;
-   settings_t *settings = config_get_ptr();
+   int key_row[RETROK_LAST];
+   settings_t *settings     = config_get_ptr();
+   /* the menu's key list, made once: every row's picker shows it */
+   QStandardItemModel *list = new QStandardItemModel(contents);
+
+   for (k = 0; k < RETROK_LAST; k++)
+      key_row[k] = -1;
+   for (k = 0; k < RARCH_MAX_KEYS; k++)
+   {
+      char s[NAME_MAX_LENGTH];
+      QStandardItem *item;
+      unsigned key     = key_descriptors[k].key;
+      const char *name = key_descriptors[k].desc;
+      if (!name || !*name || key >= RETROK_LAST)
+         continue;
+      if (key == RETROK_FIRST)
+         item = new QStandardItem(QStringLiteral(RARCH_NO_BIND));
+      else
+      {
+         snprintf(s, sizeof(s), msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY), name);
+         item = new QStandardItem(QString::fromUtf8(s));
+      }
+      item->setData(key, Qt::UserRole);
+      key_row[key] = list->rowCount();
+      list->appendRow(item);
+   }
 
    for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
    {
@@ -4185,22 +4213,8 @@ static void controls_keyboard_rows(ControlsDialog *dialog,
             sizeof(bind));
       label->setToolTip(QString::fromUtf8(bind));
 
-      for (k = 0; k < RARCH_MAX_KEYS; k++)
-      {
-         char s[NAME_MAX_LENGTH];
-         unsigned key     = key_descriptors[k].key;
-         const char *name = key_descriptors[k].desc;
-         if (!name || !*name)
-            continue;
-         if (key == RETROK_FIRST)
-            strlcpy(s, RARCH_NO_BIND, sizeof(s));
-         else
-            snprintf(s, sizeof(s), msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY), name);
-         keys->addItem(QString::fromUtf8(s), key);
-         if (key == current)
-            keys->setCurrentIndex(keys->count() - 1);
-      }
+      keys->setModel(list);
+      keys->setCurrentIndex((current < RETROK_LAST) ? key_row[current] : -1);
       keys->setProperty("retro_id", retro_id);
       clear->setProperty("retro_id", retro_id);
       QObject::connect(keys, SIGNAL(currentIndexChanged(int)), dialog,

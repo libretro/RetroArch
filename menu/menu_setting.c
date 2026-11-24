@@ -7466,8 +7466,8 @@ void menu_setting_libretro_device_set(unsigned port, unsigned device)
    core_set_controller_port_device(&pad);
 }
 
-size_t menu_setting_libretro_device_name(unsigned port, unsigned device,
-      char *s, size_t len)
+const char *menu_setting_libretro_device_name(unsigned port,
+      unsigned device)
 {
    const struct retro_controller_description *desc = NULL;
    const char *name              = NULL;
@@ -7496,9 +7496,7 @@ size_t menu_setting_libretro_device_name(unsigned port, unsigned device,
             break;
       }
    }
-   if (name && *name)
-      return strlcpy(s, name, len);
-   return 0;
+   return name ? name : "";
 }
 
 static int setting_action_left_libretro_device_type(
@@ -9026,8 +9024,8 @@ static size_t setting_get_string_representation_uint_libretro_device(
 {
    if (!setting)
       return 0;
-   return menu_setting_libretro_device_name(setting->index_offset,
-         input_config_get_device(setting->index_offset), s, len);
+   return strlcpy(s, menu_setting_libretro_device_name(setting->index_offset,
+         input_config_get_device(setting->index_offset)), len);
 }
 
 static size_t setting_get_string_representation_uint_analog_dpad_mode(

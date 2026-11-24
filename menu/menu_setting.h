@@ -104,9 +104,11 @@ int menu_setting_bind_clear(rarch_setting_t *setting);
 /* @port's device type set to @device, and handed to the core. */
 void menu_setting_libretro_device_set(unsigned port, unsigned device);
 
-/* @device's name on @port: the core's own for it, else the generic one. */
-size_t menu_setting_libretro_device_name(unsigned port, unsigned device,
-      char *s, size_t len);
+/* @device's name on @port: the core's own for it, else the generic one.
+ * Lent, not copied: the core's description or the label's own string,
+ * good while the core stays loaded. */
+const char *menu_setting_libretro_device_name(unsigned port,
+      unsigned device);
 
 enum setting_type menu_setting_get_browser_selection_type(
       rarch_setting_t *setting);
