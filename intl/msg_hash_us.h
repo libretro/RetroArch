@@ -32288,6 +32288,30 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    "Default"
    )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONTROLS_ANALOG,
+   "Analog"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONTROLS_DETECT,
+   "Press a controller button"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONTROLS_DETECT_TIP,
+   "Click, then press the controller button that gives this input."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONTROLS_NO_MAPPING,
+   "No inputs to map for this device type."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONTROLS_DEVICE_ON_PORT,
+   "%s on port %u"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_CONTROLS_NO_DEVICE_ON_PORT,
+   "No controller on port %u"
+   )
 
 /* Unsorted */
 

@@ -1,5 +1,4 @@
 #include <QAction>
-#include <QAbstractItemView>
 #include <QApplication>
 #include <QBitmap>
 #include <QButtonGroup>
@@ -10,9 +9,7 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QFileDialog>
-#include <QFile>
 #include <QFileInfo>
-#include <QFontMetrics>
 #include <QHeaderView>
 #include <QLabel>
 #include <QLineEdit>
@@ -49,9 +46,7 @@
  * pulls in the C++ <atomic> header.  Templates inside extern "C" are a
  * hard error, so these must live outside the extern "C" block. */
 #include "../../config.def.h"
-#include "../../configuration.h"
 #include "../../command.h"
-#include "../../core.h"
 #include "../../driver.h"
 #include "../../core_info.h"
 #include "../../core_option_manager.h"
@@ -73,6 +68,8 @@
 #include "../../menu/menu_driver.h"
 #include "../../menu/menu_entries.h"
 #include "../../menu/menu_displaylist.h"
+#include "../../menu/menu_cbs.h"
+#include "../../menu/menu_setting.h"
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 #include "../../menu/menu_shader.h"
 #endif
@@ -3595,40 +3592,53 @@ static void qt_settings_group_add_displaylist(SettingsGroup *group,
       const enum msg_hash_enums *only_entries, size_t only_count);
 #endif
 
+/* the window whose capture of a controller button is under way */
+ControlsDialog *ControlsDialog::s_detect = NULL;
+
 ControlsDialog::ControlsDialog(QWidget *parent) :
    QDialog(parent)
-   ,m_scrollArea()
-   ,m_portCombo()
-   ,m_detectionLabel()
-   ,m_detectionTimer(new QTimer(this))
-   ,m_settingsPage(false)
+   ,m_scrollArea(new QScrollArea(this))
+   ,m_detectButton()
    ,m_selectedUser(0)
    ,m_detectDescriptor(RARCH_UNMAPPED)
    ,m_detectUser(0)
+   ,m_detectFound(-1)
+   ,m_settingsPage(false)
    ,m_detectReleased(false)
-   ,m_detecting(false)
 {
-   setWindowTitle(QObject::tr("Controls"));
+   QVBoxLayout *dialogLayout = new QVBoxLayout(this);
+
+   setWindowTitle(msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS));
    setObjectName("controlsDialog");
    resize(760, 560);
-   m_detectionTimer->setInterval(16);
-   connect(m_detectionTimer, SIGNAL(timeout()), this, SLOT(pollInput()));
-   m_scrollArea = new QScrollArea(this);
    m_scrollArea->setWidgetResizable(true);
-   QVBoxLayout *dialogLayout = new QVBoxLayout(this);
    dialogLayout->addWidget(m_scrollArea);
    buildLayout();
 }
 
 ControlsDialog::~ControlsDialog()
 {
-   stopDetection();
+   if (s_detect == this)
+      s_detect = NULL;
 }
 
-void ControlsDialog::closeEvent(QCloseEvent *event)
+void ControlsDialog::hideEvent(QHideEvent *event)
 {
    stopDetection();
-   QDialog::closeEvent(event);
+   QDialog::hideEvent(event);
+}
+
+/* Coming back from RetroArch's own menu, which may have changed them,
+ * shows the remaps as they are. */
+void ControlsDialog::changeEvent(QEvent *event)
+{
+   if (     event->type() == QEvent::ActivationChange
+         && isActiveWindow()
+         && isVisible()
+         && s_detect != this)
+      buildLayout();
+   QDialog::changeEvent(event);
 }
 
 void ControlsDialog::reload()
@@ -3638,141 +3648,252 @@ void ControlsDialog::reload()
 
 void ControlsDialog::stopDetection()
 {
-   if (m_detectionTimer)
-      m_detectionTimer->stop();
-   m_detecting = false;
+   if (s_detect == this)
+      s_detect = NULL;
+   if (m_detectButton)
+      m_detectButton->setText(m_detectButton->property("idle").toString());
+   m_detectButton     = NULL;
    m_detectDescriptor = RARCH_UNMAPPED;
-   if (m_detectionLabel)
-      m_detectionLabel->clear();
+   m_detectFound      = -1;
+}
+
+/* Once a frame, as the menu's own "find" reads it: everything let go,
+ * then the first button pressed, set once it is let go again so that
+ * it acts on nothing else. A button before a stick, when both answer. */
+void ControlsDialog::detectIterate(void)
+{
+   ControlsDialog *dialog = s_detect;
+   uint32_t held;
+
+   if (!dialog)
+      return;
+   held = input_driver_user_controls_bound(dialog->m_detectUser);
+   if (dialog->m_detectFound >= 0)
+   {
+      if (held)
+         return;
+      input_config_set_remap_id(dialog->m_detectUser,
+            (unsigned)dialog->m_detectFound, dialog->m_detectDescriptor);
+      dialog->buildLayout();
+   }
+   else if (!dialog->m_detectReleased)
+   {
+      if (!held)
+         dialog->m_detectReleased = true;
+   }
+   else if (held)
+   {
+      unsigned id;
+      for (id = 0; id < RARCH_ANALOG_BIND_LIST_END; id++)
+         if (held & (1U << id))
+            break;
+      dialog->m_detectFound = (int)id;
+   }
 }
 
 void ControlsDialog::onPortChanged(int index)
 {
-   Q_UNUSED(index);
-   stopDetection();
+   if (index < 0 || index >= MAX_USERS)
+      return;
+   m_selectedUser = (unsigned)index;
    buildLayout();
+}
+
+/* as the menu's Mapped Port does */
+void ControlsDialog::onMappedPortChanged(int index)
+{
+   QComboBox *combo     = qobject_cast<QComboBox*>(sender());
+   settings_t *settings = config_get_ptr();
+   unsigned port;
+
+   if (!combo || index < 0)
+      return;
+   port = combo->itemData(index).toUInt();
+   if (port > MAX_USERS)
+      return;
+   settings->uints.input_remap_ports[m_selectedUser] = port;
+   input_first_press_set_by_hand(m_selectedUser);
+   input_remapping_update_port_map();
+   /* a core port left unused is set to no device */
+   command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
+   buildLayout();
+}
+
+void ControlsDialog::onDeviceChanged(int index)
+{
+#ifdef HAVE_MENU
+   QComboBox *combo = qobject_cast<QComboBox*>(sender());
+   unsigned port    = input_remapping_user_port(m_selectedUser);
+
+   if (!combo || index < 0 || port >= MAX_USERS)
+      return;
+   menu_setting_libretro_device_set(port, combo->itemData(index).toUInt());
+   buildLayout();
+#else
+   (void)index;
+#endif
 }
 
 void ControlsDialog::onDetectClicked()
 {
    QPushButton *button = qobject_cast<QPushButton*>(sender());
-   bool ok = false;
-   unsigned descriptor;
-   unsigned user;
 
    if (!button)
       return;
-
-   descriptor = button->property("descriptor").toUInt(&ok);
-   if (!ok)
-      return;
-
-   user = m_portCombo ? (unsigned)m_portCombo->currentIndex() : 0;
-   if (user >= MAX_USERS)
-      return;
-
    stopDetection();
-   m_detectDescriptor = descriptor;
-   m_detectUser = user;
-   m_detectReleased = false;
-   m_detecting = true;
-   button->setText(QObject::tr("Press a button…"));
-   if (m_detectionLabel)
-      m_detectionLabel->setText(QObject::tr("Press a logical controller button…"));
-   m_detectionTimer->start();
+   m_detectButton     = button;
+   m_detectDescriptor = button->property("descriptor").toUInt();
+   m_detectUser       = m_selectedUser;
+   m_detectReleased   = false;
+   s_detect           = this;
+   button->setText(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONTROLS_DETECT));
 }
 
+/* no controller button gives the core input */
 void ControlsDialog::onClearClicked()
 {
    QPushButton *button = qobject_cast<QPushButton*>(sender());
-   bool ok = false;
-   unsigned descriptor;
-   unsigned user = m_portCombo ? (unsigned)m_portCombo->currentIndex() : 0;
-   unsigned i;
    settings_t *settings = config_get_ptr();
+   unsigned descriptor, i;
 
-   if (!button || !settings)
+   if (!button)
       return;
-   descriptor = button->property("descriptor").toUInt(&ok);
-   if (!ok || user >= MAX_USERS)
-      return;
-
-   for (i = 0; i < 24; i++)
-      if (settings->uints.input_remap_ids[user][i] == descriptor)
-         input_config_set_remap_id(user, i, RARCH_UNMAPPED);
+   descriptor = button->property("descriptor").toUInt();
+   for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
+      if (settings->uints.input_remap_ids[m_selectedUser][i] == descriptor)
+         input_config_set_remap_id(m_selectedUser, i, RARCH_UNMAPPED);
    buildLayout();
 }
 
+/* the RetroPad's own input of the same number gives it, and no other */
 void ControlsDialog::onDefaultClicked()
 {
    QPushButton *button = qobject_cast<QPushButton*>(sender());
-   bool ok = false;
-   unsigned descriptor;
-   unsigned user = m_portCombo ? (unsigned)m_portCombo->currentIndex() : 0;
-   unsigned mapped_port;
    settings_t *settings = config_get_ptr();
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   unsigned descriptor, i;
 
-   if (!button || !settings || !runloop_st || user >= MAX_USERS)
+   if (!button)
       return;
-   descriptor = button->property("descriptor").toUInt(&ok);
-   if (!ok)
+   descriptor = button->property("descriptor").toUInt();
+   if (descriptor >= RARCH_ANALOG_BIND_LIST_END)
       return;
-
-   mapped_port = input_remapping_user_port(user);
-   if (mapped_port >= MAX_USERS)
-      return;
-
-   /* The default remap is the identity mapping: each logical RetroPad
-    * input maps to the core descriptor with the same bind index. */
-   if (descriptor < 24
-       && runloop_st->system.input_desc_btn[mapped_port][descriptor]
-       && *runloop_st->system.input_desc_btn[mapped_port][descriptor])
-   {
-      unsigned i;
-      for (i = 0; i < 24; i++)
-         if (settings->uints.input_remap_ids[user][i] == descriptor)
-            input_config_set_remap_id(user, i, RARCH_UNMAPPED);
-      input_config_set_remap_id(user, descriptor, descriptor);
-   }
+   for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
+      if (settings->uints.input_remap_ids[m_selectedUser][i] == descriptor)
+         input_config_set_remap_id(m_selectedUser, i, RARCH_UNMAPPED);
+   input_config_set_remap_id(m_selectedUser, descriptor, descriptor);
    buildLayout();
 }
 
-void ControlsDialog::pollInput()
+/* a keyboard device's: the key a RetroPad input gives */
+void ControlsDialog::onKeyChanged(int index)
 {
-   unsigned i;
-   uint32_t held;
+   QComboBox *combo     = qobject_cast<QComboBox*>(sender());
+   settings_t *settings = config_get_ptr();
+   unsigned retro_id;
 
-   if (!m_detecting)
+   if (!combo || index < 0)
+      return;
+   retro_id = combo->property("retro_id").toUInt();
+   if (retro_id < RARCH_CUSTOM_BIND_LIST_END)
+      settings->uints.input_keymapper_ids[m_selectedUser][retro_id] =
+         combo->itemData(index).toUInt();
+}
+
+void ControlsDialog::onKeyClearClicked()
+{
+   QPushButton *button  = qobject_cast<QPushButton*>(sender());
+   settings_t *settings = config_get_ptr();
+   unsigned retro_id;
+
+   if (!button)
+      return;
+   retro_id = button->property("retro_id").toUInt();
+   if (retro_id < RARCH_CUSTOM_BIND_LIST_END)
+      settings->uints.input_keymapper_ids[m_selectedUser][retro_id] =
+         RETROK_FIRST;
+   buildLayout();
+}
+
+void ControlsDialog::onSettingsClicked()
+{
+   m_settingsPage = !m_settingsPage;
+   buildLayout();
+}
+
+/* The menu's Manage Remap Files list, each entry running the menu's
+ * own action; loading and naming a file are asked for here. */
+void ControlsDialog::onManageClicked()
+{
+#ifdef HAVE_MENU
+   size_t i;
+   QAction *chosen;
+   QMenu menu(this);
+   QPushButton *anchor  = qobject_cast<QPushButton*>(sender());
+   settings_t *settings = config_get_ptr();
+   file_list_t *list    = (file_list_t*)calloc(1, sizeof(*list));
+
+   if (!anchor || !list)
    {
-      stopDetection();
+      free(list);
       return;
    }
-
-   input_driver_poll_devices();
-   held = input_driver_user_controls_bound(m_detectUser);
-
-   /* Ignore the button that opened detection. Match the native menu's
-    * release-then-press sequence and its logical, autoconfig-resolved
-    * RetroPad controls (including analog directions). */
-   if (!m_detectReleased)
+   menu_displaylist_parse_remap_file_manager_list(list,
+         settings->bools.remap_save_on_exit);
+   for (i = 0; i < list->size; i++)
    {
-      if (!held)
-         m_detectReleased = true;
-      return;
+      const menu_file_list_cbs_t *cbs = (const menu_file_list_cbs_t*)
+         list->list[i].actiondata;
+      QString text;
+      if (!cbs || cbs->enum_idx == MENU_ENUM_LABEL_REMAP_FILE_INFO)
+         continue;
+      text = QString::fromUtf8(list->list[i].path);
+      if (     cbs->enum_idx == MENU_ENUM_LABEL_REMAP_FILE_LOAD
+            || cbs->enum_idx == MENU_ENUM_LABEL_REMAP_FILE_SAVE_AS)
+         text += QStringLiteral("...");
+      menu.addAction(text)->setData((qulonglong)i);
    }
 
-   if (!held)
-      return;
-
-   for (i = 0; i < 24; i++)
-      if (held & (1u << i))
+   if ((chosen = menu.exec(anchor->mapToGlobal(QPoint(0, anchor->height())))))
+   {
+      const menu_file_list_cbs_t *cbs;
+      i   = (size_t)chosen->data().toULongLong();
+      cbs = (const menu_file_list_cbs_t*)list->list[i].actiondata;
+      if (cbs->enum_idx == MENU_ENUM_LABEL_REMAP_FILE_LOAD)
       {
-         input_config_set_remap_id(m_detectUser, i, m_detectDescriptor);
-         stopDetection();
-         buildLayout();
-         return;
+         char dir[PATH_MAX_LENGTH];
+         const char *core_name = runloop_state_get_ptr()->system.info.library_name;
+         QString path;
+         /* the core's own remap folder, where the menu's saves go */
+         fill_pathname_join_special(dir,
+               settings->paths.directory_input_remapping,
+               core_name ? core_name : "", sizeof(dir));
+         if (!path_is_directory(dir))
+            strlcpy(dir, settings->paths.directory_input_remapping,
+                  sizeof(dir));
+         path = QFileDialog::getOpenFileName(this,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD),
+               QString::fromUtf8(dir),
+               QStringLiteral("*") + QLatin1String(FILE_PATH_REMAP_EXTENSION));
+         if (!path.isEmpty())
+            menu_remap_file_load(path.toUtf8().constData());
       }
+      else if (cbs->enum_idx == MENU_ENUM_LABEL_REMAP_FILE_SAVE_AS)
+      {
+         bool ok      = false;
+         QString name = QInputDialog::getText(this,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS),
+               msg_hash_to_str(MSG_INPUT_REMAP_FILENAME),
+               QLineEdit::Normal, QString(), &ok);
+         if (ok && !name.isEmpty())
+            menu_remap_file_save_as(name.toUtf8().constData());
+      }
+      else if (cbs->action_ok)
+         cbs->action_ok(list->list[i].path, list->list[i].label,
+               list->list[i].type, i, i);
+   }
+   file_list_free(list);
+   buildLayout();
+#endif
 }
 
 void ControlsDialog::buildSettingsPage(QVBoxLayout *outer)
@@ -3785,7 +3906,8 @@ void ControlsDialog::buildSettingsPage(QVBoxLayout *outer)
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS));
    SettingsGroup *hapticGroup = new SettingsGroup(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS));
-   SettingsGroup *analogGroup = new SettingsGroup(QObject::tr("Analog"));
+   SettingsGroup *analogGroup = new SettingsGroup(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONTROLS_ANALOG));
    static const enum msg_hash_enums analogEntries[] = {
       MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,
       MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,
@@ -3804,8 +3926,7 @@ void ControlsDialog::buildSettingsPage(QVBoxLayout *outer)
          NULL, 0, NULL, 0);
    qt_settings_group_add_displaylist(analogGroup,
          DISPLAYLIST_INPUT_SETTINGS_LIST,
-         NULL, 0, analogEntries,
-         sizeof(analogEntries) / sizeof(analogEntries[0]));
+         NULL, 0, analogEntries, ARRAY_SIZE(analogEntries));
 
    left->addWidget(turboGroup);
    left->addWidget(hapticGroup);
@@ -3815,534 +3936,360 @@ void ControlsDialog::buildSettingsPage(QVBoxLayout *outer)
    columns->addLayout(left, 1);
    columns->addLayout(right, 1);
    outer->addLayout(columns);
-   outer->addStretch();
 #else
-   outer->addWidget(new QLabel(QObject::tr(
-         "Input settings are unavailable in this build.")));
-   outer->addStretch();
+   outer->addWidget(new QLabel(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ITEMS)));
 #endif
+   outer->addStretch();
 }
 
-void ControlsDialog::showManageMenu(QWidget *anchor)
+#ifdef HAVE_MENU
+/* The port's row: which port it is, the core port it is mapped to,
+ * that port's device type and the analog to digital mode, all as the
+ * menu's Port Controls has them. */
+static void controls_port_row(ControlsDialog *dialog, QVBoxLayout *outer,
+      QWidget *contents, unsigned user, unsigned mapped_port)
 {
-   QMenu menu(anchor);
-   QAction *loadAction = menu.addAction(QObject::tr("Load"));
-   QAction *saveAsAction = menu.addAction(QObject::tr("Save as…"));
-   menu.addSeparator();
-   QAction *saveGameAction = menu.addAction(QObject::tr("Save Game Remap"));
-   QAction *saveDirAction = menu.addAction(QObject::tr("Save Content Directory Remap"));
-   QAction *saveCoreAction = menu.addAction(QObject::tr("Save Core Remap"));
-   menu.addSeparator();
-   QAction *removeAction = menu.addAction(QObject::tr("Remove"));
-   QAction *updateAction = menu.addAction(QObject::tr("Update Current"));
-   QAction *resetAction = menu.addAction(QObject::tr("Reset Input Mapping"));
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   const char *content_path = path_get(RARCH_PATH_BASENAME);
-   bool hasCurrentRemap = runloop_st && runloop_st->name.remapfile
-      && *runloop_st->name.remapfile;
-   bool hasContent = content_path && *content_path;
-   uint32_t remapFlags = runloop_st ? runloop_st->flags : 0;
-   bool coreRemapActive = (remapFlags & RUNLOOP_FLAG_REMAPS_CORE_ACTIVE) != 0;
-   bool gameRemapActive = (remapFlags & RUNLOOP_FLAG_REMAPS_GAME_ACTIVE) != 0;
-   bool contentDirRemapActive = (remapFlags & RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE) != 0;
-   removeAction->setEnabled(hasCurrentRemap);
-   updateAction->setEnabled(hasCurrentRemap);
-   saveGameAction->setEnabled(hasContent && !gameRemapActive);
-   saveDirAction->setEnabled(hasContent && !gameRemapActive && !contentDirRemapActive);
-   saveCoreAction->setEnabled(!gameRemapActive && !contentDirRemapActive && !coreRemapActive);
+   char s[NAME_MAX_LENGTH];
+   unsigned i;
+   settings_t *settings     = config_get_ptr();
+   QHBoxLayout *row         = new QHBoxLayout();
+   QComboBox *portCombo     = new QComboBox(contents);
+   QComboBox *mappedCombo   = new QComboBox(contents);
+   QComboBox *deviceCombo   = new QComboBox(contents);
+   rarch_setting_t *adc     = menu_setting_find_enum((enum msg_hash_enums)
+         (MENU_ENUM_LABEL_INPUT_PLAYER_ANALOG_DPAD_MODE + user));
+   const char *port_lbl     = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT);
+   QFont font               = portCombo->font();
 
-   QAction *chosen = menu.exec(anchor->mapToGlobal(QPoint(0, anchor->height())));
-   if (!chosen)
-      return;
-
-   settings_t *settings = config_get_ptr();
-   const char *remap_dir = settings ? settings->paths.directory_input_remapping : NULL;
-   const char *core_name = runloop_st ? runloop_st->system.info.library_name : NULL;
-   char core_remap_dir[PATH_MAX_LENGTH];
-   char filename[PATH_MAX_LENGTH];
-   bool saved = false;
-
-   if (!runloop_st || !settings || !remap_dir || !*remap_dir
-       || !core_name || !*core_name)
-      return;
-
-   strlcpy(core_remap_dir, core_name, sizeof(core_remap_dir));
-   if (settings->bools.input_remap_sort_by_controller_enable)
+   mappedCombo->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE),
+         (uint)MAX_USERS);
+   for (i = 0; i < MAX_USERS; i++)
    {
-      unsigned joypad_port = settings->uints.input_joypad_index[0];
-      const char *device_name = input_config_get_device_display_name(joypad_port);
-      if (device_name && *device_name)
+      snprintf(s, sizeof(s), "%s %u", port_lbl, i + 1);
+      portCombo->addItem(QString::fromUtf8(s));
+      mappedCombo->addItem(QString::fromUtf8(s), (uint)i);
+   }
+   portCombo->setCurrentIndex((int)user);
+   font.setBold(true);
+   portCombo->setFont(font);
+   mappedCombo->setCurrentIndex(mappedCombo->findData(
+            (uint)settings->uints.input_remap_ports[user]));
+   snprintf(s, sizeof(s), msg_hash_to_str(MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT),
+         user + 1);
+   mappedCombo->setToolTip(QString::fromUtf8(s));
+
+   if (mapped_port < MAX_USERS)
+   {
+      unsigned devices[128];
+      unsigned types   = libretro_device_get_size(devices,
+            ARRAY_SIZE(devices), mapped_port);
+      unsigned current = input_config_get_device(mapped_port);
+      for (i = 0; i < types; i++)
       {
-         char *safe_name = sanitize_path_part(device_name, strlen(device_name));
-         if (safe_name)
-         {
-            fill_pathname_join_special(core_remap_dir, core_name, safe_name,
-                  sizeof(core_remap_dir));
-            free(safe_name);
-         }
+         s[0] = '\0';
+         menu_setting_libretro_device_name(mapped_port, devices[i],
+               s, sizeof(s));
+         deviceCombo->addItem(QString::fromUtf8(s), (uint)devices[i]);
+         if (devices[i] == current)
+            deviceCombo->setCurrentIndex((int)i);
       }
    }
+   else
+   {
+      deviceCombo->addItem(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE));
+      deviceCombo->setEnabled(false);
+   }
+   deviceCombo->setToolTip(msg_hash_to_str(
+            MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE));
 
-   if (chosen == loadAction)
+   row->addWidget(portCombo);
+   row->addWidget(new QLabel(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT), contents));
+   row->addWidget(mappedCombo);
+   row->addWidget(new QLabel(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE), contents));
+   row->addWidget(deviceCombo);
+   if (adc)
    {
-      QString path = QFileDialog::getOpenFileName(this,
-            QObject::tr("Load Input Remap"), QString::fromUtf8(remap_dir),
-            QObject::tr("Remap Files (*.rmp);;All Files (*)"));
-      if (path.isEmpty())
-         return;
-      config_file_t *conf = config_file_new_from_path_to_string(
-            path.toUtf8().constData());
-      if (!conf)
-      {
-         QMessageBox::warning(this, QObject::tr("Controls"),
-               QObject::tr("Could not open the remap file."));
-         return;
-      }
-      saved = input_remapping_load_file(conf, path.toUtf8().constData());
-      if (saved)
-      {
-         unsigned port;
-         char key[64];
-         size_t keyLength = strlcpy_lit(key, "input_libretro_device_p", sizeof(key));
-         runloop_st->flags &= ~(RUNLOOP_FLAG_REMAPS_CORE_ACTIVE
-               | RUNLOOP_FLAG_REMAPS_GAME_ACTIVE
-               | RUNLOOP_FLAG_REMAPS_CONTENT_DIR_ACTIVE);
-         for (port = 0; port < MAX_USERS; port++)
-         {
-            int configuredDevice = 0;
-            retro_ctx_controller_info_t pad;
-            unsigned currentDevice;
-            snprintf(key + keyLength, sizeof(key) - keyLength, "%u", port + 1);
-            if (!config_get_int(conf, key, &configuredDevice))
-               continue;
-            Q_UNUSED(configuredDevice);
-            currentDevice = input_config_get_device(port);
-            input_config_set_device(port, currentDevice);
-            pad.port = port;
-            pad.device = currentDevice;
-            core_set_controller_port_device(&pad);
-         }
-      }
-      config_file_free(conf);
+      row->addWidget(new QLabel(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE), contents));
+      row->addWidget(new UIntComboBox(adc, contents));
    }
-   else if (chosen == updateAction)
-   {
-      if (runloop_st->name.remapfile && *runloop_st->name.remapfile)
-         saved = input_remapping_save_file(runloop_st->name.remapfile);
-   }
-   else if (chosen == saveAsAction)
-   {
-      QString path = QFileDialog::getSaveFileName(this,
-            QObject::tr("Save Input Remap As"),
-            QString::fromUtf8(remap_dir) + QLatin1Char('/')
-               + QString::fromUtf8(core_remap_dir) + QLatin1String(".rmp"),
-            QObject::tr("Remap Files (*.rmp);;All Files (*)"));
-      if (path.isEmpty())
-         return;
-      if (!path.endsWith(QLatin1String(".rmp"), Qt::CaseInsensitive))
-         path += QLatin1String(".rmp");
-      saved = input_remapping_save_file(path.toUtf8().constData());
-      /* input_remapping_save_file() caches the selected path. */
-   }
-   else if (chosen == saveGameAction || chosen == saveDirAction
-         || chosen == saveCoreAction)
-   {
-      if ((chosen == saveGameAction || chosen == saveDirAction)
-            && (!content_path || !*content_path))
-         return;
-      if (chosen == saveGameAction)
-         fill_pathname_join_special_ext(filename, remap_dir, core_remap_dir,
-               path_basename(content_path), FILE_PATH_REMAP_EXTENSION,
-               sizeof(filename));
-      else if (chosen == saveDirAction)
-      {
-         char content_dir[DIR_MAX_LENGTH];
-         fill_pathname_parent_dir_name(content_dir, content_path, sizeof(content_dir));
-         fill_pathname_join_special_ext(filename, remap_dir, core_remap_dir,
-               content_dir, FILE_PATH_REMAP_EXTENSION, sizeof(filename));
-      }
-      else
-         fill_pathname_join_special_ext(filename, remap_dir, core_remap_dir,
-               core_name, FILE_PATH_REMAP_EXTENSION, sizeof(filename));
-      saved = input_remapping_save_file(filename);
-      if (saved)
-      {
-         if (chosen == saveGameAction)
-            retroarch_ctl(RARCH_CTL_SET_REMAPS_GAME_ACTIVE, NULL);
-         else if (chosen == saveDirAction)
-            retroarch_ctl(RARCH_CTL_SET_REMAPS_CONTENT_DIR_ACTIVE, NULL);
-         else
-            retroarch_ctl(RARCH_CTL_SET_REMAPS_CORE_ACTIVE, NULL);
-         if (chosen != saveCoreAction)
-            config_load_remap(remap_dir, &runloop_st->system);
-      }
-   }
-   else if (chosen == resetAction)
-   {
-      const char *message = msg_hash_to_str(MSG_REMAP_FILE_RESET);
-      input_remapping_set_defaults(false);
-      runloop_msg_queue_push(message, strlen(message), 1, 100, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      saved = true;
-   }
-   else if (chosen == removeAction)
-   {
-      const char *active_path = runloop_st->name.remapfile;
-      if (active_path && *active_path)
-      {
-         saved = QFile::remove(QString::fromUtf8(active_path));
-         if (saved)
-         {
-            input_remapping_deinit(false);
-            config_load_remap(remap_dir, &runloop_st->system);
-         }
-      }
-   }
+   row->addStretch();
+   outer->addLayout(row);
 
-   if ((chosen == loadAction || chosen == saveAsAction || chosen == saveGameAction
-         || chosen == saveDirAction || chosen == saveCoreAction) && !saved)
-      QMessageBox::warning(this, QObject::tr("Controls"),
-            QObject::tr("The remap operation failed."));
-   buildLayout();
+   QObject::connect(portCombo, SIGNAL(currentIndexChanged(int)),
+         dialog, SLOT(onPortChanged(int)));
+   QObject::connect(mappedCombo, SIGNAL(currentIndexChanged(int)),
+         dialog, SLOT(onMappedPortChanged(int)));
+   QObject::connect(deviceCombo, SIGNAL(currentIndexChanged(int)),
+         dialog, SLOT(onDeviceChanged(int)));
 }
+
+/* the core's name and the controller the port's input comes from */
+static void controls_title_row(QFormLayout *form, QWidget *contents,
+      unsigned mapped_port)
+{
+   char name[NAME_MAX_LENGTH];
+   char s[NAME_MAX_LENGTH + 64];
+   const char *core_name  = runloop_state_get_ptr()->system.info.library_name;
+   const char *device     = input_config_get_device_display_name(mapped_port);
+   QWidget *titleWidget   = new QWidget(contents);
+   QHBoxLayout *title     = new QHBoxLayout(titleWidget);
+   QLabel *coreTitle      = new QLabel(QString::fromUtf8(
+            core_name ? core_name : ""), contents);
+   QLabel *controller;
+   QFont font             = coreTitle->font();
+   size_t _len            = 0;
+
+   if (!device || !*device)
+      device = input_config_get_device_name(mapped_port);
+   name[0] = '\0';
+   if (device && *device)
+   {
+      _len  = strlcpy(name, device, sizeof(name));
+      if (_len < sizeof(name))
+         _len += input_config_get_device_tag(mapped_port, true,
+               name + _len, sizeof(name) - _len);
+      if (     !input_config_get_device_autoconfigured(mapped_port)
+            && _len < sizeof(name))
+         snprintf(name + _len, sizeof(name) - _len, " (%s)",
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE));
+      snprintf(s, sizeof(s), msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_QT_CONTROLS_DEVICE_ON_PORT),
+            name, mapped_port + 1);
+   }
+   else
+      snprintf(s, sizeof(s), msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_QT_CONTROLS_NO_DEVICE_ON_PORT),
+            mapped_port + 1);
+
+   controller = new QLabel(QString::fromUtf8(s), titleWidget);
+   font.setBold(true);
+   controller->setFont(font);
+   controller->setAlignment(Qt::AlignCenter);
+   font.setPointSize(font.pointSize() + 1);
+   coreTitle->setFont(font);
+   title->setContentsMargins(0, 0, 0, 0);
+   title->addWidget(controller, 1);
+   /* centred over the input buttons, the Clear and Default columns
+    * aside */
+   title->addSpacing(180);
+   form->addRow(coreTitle, titleWidget);
+}
+
+/* A joypad's: a row per input the core describes, with the controller
+ * buttons that give it. */
+static bool controls_joypad_rows(ControlsDialog *dialog, QFormLayout *form,
+      QWidget *contents, unsigned user, unsigned mapped_port)
+{
+   unsigned j;
+   bool any                 = false;
+   settings_t *settings     = config_get_ptr();
+   rarch_system_info_t *sys = &runloop_state_get_ptr()->system;
+
+   for (j = 0; j < RARCH_CUSTOM_BIND_LIST_END; j++)
+   {
+      unsigned retro_id;
+      QString label, mapped;
+      QHBoxLayout *row;
+      QPushButton *button, *clear;
+      unsigned d       = (j < RARCH_ANALOG_BIND_LIST_END)
+         ? input_config_bind_order[j] : j;
+      const char *desc = sys->input_desc_btn[mapped_port][d];
+
+      if (!desc || !*desc)
+         continue;
+      any   = true;
+      label = QString::fromUtf8(desc);
+      /* the sticks' and the rest past the buttons, by direction */
+      if (d >= RARCH_FIRST_CUSTOM_BIND)
+         label += QLatin1Char((d % 2) == 0 ? '+' : '-');
+
+      for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
+      {
+         char bind[300];
+         if (settings->uints.input_remap_ids[user][retro_id] != d)
+            continue;
+         bind[0] = '\0';
+         input_config_get_bind_string(settings, bind,
+               input_config_bind(user, retro_id),
+               input_config_get_bind_auto(user, retro_id),
+               input_config_bind_names(user, retro_id),
+               input_autoconf_bind_names(user, retro_id),
+               sizeof(bind));
+         if (!*bind)
+            continue;
+         if (!mapped.isEmpty())
+            mapped += QStringLiteral(", ");
+         mapped += QString::fromUtf8(bind);
+      }
+      if (mapped.isEmpty())
+         mapped = QStringLiteral(RARCH_NO_BIND);
+
+      row    = new QHBoxLayout();
+      button = new QPushButton(mapped, contents);
+      clear  = new QPushButton(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_CLEAR_SETTING), contents);
+      button->setProperty("descriptor", d);
+      button->setProperty("idle", mapped);
+      button->setToolTip(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_QT_CONTROLS_DETECT_TIP));
+      clear->setProperty("descriptor", d);
+      QObject::connect(button, SIGNAL(clicked()), dialog,
+            SLOT(onDetectClicked()));
+      QObject::connect(clear, SIGNAL(clicked()), dialog,
+            SLOT(onClearClicked()));
+      row->addWidget(button, 1);
+      row->addWidget(clear);
+      if (d < RARCH_ANALOG_BIND_LIST_END)
+      {
+         QPushButton *reset = new QPushButton(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT), contents);
+         reset->setProperty("descriptor", d);
+         QObject::connect(reset, SIGNAL(clicked()), dialog,
+               SLOT(onDefaultClicked()));
+         row->addWidget(reset);
+      }
+      form->addRow(label, row);
+   }
+   return any;
+}
+
+/* A keyboard's, as the menu has it: a row per RetroPad input, with the
+ * key it gives. */
+static void controls_keyboard_rows(ControlsDialog *dialog,
+      QFormLayout *form, QWidget *contents, unsigned user)
+{
+   unsigned j, k;
+   settings_t *settings = config_get_ptr();
+
+   for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
+   {
+      char bind[300];
+      unsigned retro_id   = input_config_bind_order[j];
+      unsigned current    = settings->uints.input_keymapper_ids[user][retro_id];
+      QHBoxLayout *row    = new QHBoxLayout();
+      QComboBox *keys     = new QComboBox(contents);
+      QPushButton *clear  = new QPushButton(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_CLEAR_SETTING), contents);
+      QLabel *label       = new QLabel(msg_hash_to_str(
+               input_config_bind_label(retro_id)), contents);
+
+      bind[0] = '\0';
+      input_config_get_bind_string(settings, bind,
+            input_config_bind(user, retro_id),
+            input_config_get_bind_auto(user, retro_id),
+            input_config_bind_names(user, retro_id),
+            input_autoconf_bind_names(user, retro_id),
+            sizeof(bind));
+      label->setToolTip(QString::fromUtf8(bind));
+
+      for (k = 0; k < RARCH_MAX_KEYS; k++)
+      {
+         char s[NAME_MAX_LENGTH];
+         unsigned key     = key_descriptors[k].key;
+         const char *name = key_descriptors[k].desc;
+         if (!name || !*name)
+            continue;
+         if (key == RETROK_FIRST)
+            strlcpy(s, RARCH_NO_BIND, sizeof(s));
+         else
+            snprintf(s, sizeof(s), msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY), name);
+         keys->addItem(QString::fromUtf8(s), key);
+         if (key == current)
+            keys->setCurrentIndex(keys->count() - 1);
+      }
+      keys->setProperty("retro_id", retro_id);
+      clear->setProperty("retro_id", retro_id);
+      QObject::connect(keys, SIGNAL(currentIndexChanged(int)), dialog,
+            SLOT(onKeyChanged(int)));
+      QObject::connect(clear, SIGNAL(clicked()), dialog,
+            SLOT(onKeyClearClicked()));
+      row->addWidget(keys, 1);
+      row->addWidget(clear);
+      form->addRow(label, row);
+   }
+}
+#endif
 
 void ControlsDialog::buildLayout()
 {
-   unsigned user, port_index, mapped_port, j;
-   settings_t *settings = config_get_ptr();
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   QWidget *contents = new QWidget(this);
-   QVBoxLayout *outer = new QVBoxLayout(contents);
-   QHBoxLayout *topLayout = new QHBoxLayout;
-   QPushButton *manageButton = NULL;
-   QPushButton *settingsButton = new QPushButton(
-         m_settingsPage ? QObject::tr("Back") : QObject::tr("Settings"), contents);
+   QWidget *contents           = new QWidget();
+   QVBoxLayout *outer          = new QVBoxLayout(contents);
+   QHBoxLayout *top            = new QHBoxLayout();
+   QPushButton *settingsButton = new QPushButton(msg_hash_to_str(
+            m_settingsPage
+            ? MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK
+            : MENU_ENUM_LABEL_VALUE_SETTINGS_TAB), contents);
 
    stopDetection();
-   user = m_portCombo ? (unsigned)m_portCombo->currentIndex() : m_selectedUser;
-   if (user >= MAX_USERS)
-      user = 0;
-   m_selectedUser = user;
+   if (m_selectedUser >= MAX_USERS)
+      m_selectedUser = 0;
+   settingsButton->setAutoDefault(false);
+   connect(settingsButton, SIGNAL(clicked()), this, SLOT(onSettingsClicked()));
 
    if (m_settingsPage)
    {
-      settingsButton->setMaximumWidth(100);
-      topLayout->addStretch();
-      topLayout->addWidget(settingsButton);
-      outer->addLayout(topLayout);
-      connect(settingsButton, &QPushButton::clicked, this, [this]()
-      {
-         m_settingsPage = false;
-         buildLayout();
-      });
+      top->addStretch();
+      top->addWidget(settingsButton);
+      outer->addLayout(top);
       buildSettingsPage(outer);
    }
    else
    {
-      QString activeName = QObject::tr("None");
-      if (runloop_st && runloop_st->name.remapfile && *runloop_st->name.remapfile)
-         activeName = QString::fromUtf8(path_basename_nocompression(
-                  runloop_st->name.remapfile));
-      QLabel *activeLabel = new QLabel(
-            QObject::tr("Active Remap: %1").arg(activeName), contents);
-      topLayout->addWidget(activeLabel, 1);
-      manageButton = new QPushButton(QObject::tr("Manage"), contents);
-      topLayout->addWidget(manageButton);
-      settingsButton->setMaximumWidth(100);
-      topLayout->addWidget(settingsButton);
-      outer->addLayout(topLayout);
-      connect(manageButton, &QPushButton::clicked, this,
-            [this, manageButton]() { showManageMenu(manageButton); });
-      connect(settingsButton, &QPushButton::clicked, this, [this]()
-      {
-         m_settingsPage = true;
-         buildLayout();
-      });
+#ifdef HAVE_MENU
+      char s[PATH_MAX_LENGTH];
+      unsigned device;
+      unsigned user               = m_selectedUser;
+      unsigned mapped_port        = input_remapping_user_port(user);
+      settings_t *settings        = config_get_ptr();
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+      const char *remapfile       = runloop_st->name.remapfile;
+      QPushButton *manage         = new QPushButton(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST), contents);
+      QFormLayout *form           = new QFormLayout();
 
-      QHBoxLayout *portLayout = new QHBoxLayout();
-      QComboBox *portCombo = new QComboBox(contents);
-      QComboBox *mappedCombo = new QComboBox(contents);
-      QComboBox *deviceCombo = new QComboBox(contents);
-      QComboBox *analogDpadCombo = new QComboBox(contents);
-      QFormLayout *form = new QFormLayout();
+      snprintf(s, sizeof(s), "%s: %s",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO),
+            (remapfile && *remapfile)
+            ? path_basename_nocompression(remapfile)
+            : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE));
+      top->addWidget(new QLabel(QString::fromUtf8(s), contents), 1);
+      manage->setAutoDefault(false);
+      top->addWidget(manage);
+      top->addWidget(settingsButton);
+      outer->addLayout(top);
+      connect(manage, SIGNAL(clicked()), this, SLOT(onManageClicked()));
 
-      for (port_index = 0; port_index < MAX_USERS; port_index++)
-         portCombo->addItem(QObject::tr("Port %1").arg(port_index + 1));
-      portCombo->setCurrentIndex((int)user);
-      {
-         QFont portFont = portCombo->font();
-         portFont.setBold(true);
-         portCombo->setFont(portFont);
-         portCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
-         portCombo->setMinimumWidth(portCombo->sizeHint().width() + 12);
-      }
-      m_portCombo = portCombo;
-      connect(portCombo, SIGNAL(currentIndexChanged(int)),
-            this, SLOT(onPortChanged(int)));
+      controls_port_row(this, outer, contents, user, mapped_port);
 
-      mappedCombo->addItem(QObject::tr("None"), (int)MAX_USERS);
-      for (port_index = 0; port_index < MAX_USERS; port_index++)
-         mappedCombo->addItem(QObject::tr("Port %1").arg(port_index + 1),
-               (int)port_index);
-      mapped_port = input_remapping_user_port(user);
-      {
-         int mappedIndex = settings
-            ? mappedCombo->findData((int)settings->uints.input_remap_ports[user])
-            : mappedCombo->findData((int)user);
-         mappedCombo->setCurrentIndex(mappedIndex >= 0 ? mappedIndex : 0);
-      }
-      mappedCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
-      mappedCombo->setMinimumWidth(mappedCombo->sizeHint().width() + 12);
-      {
-         const char *mappedPortSubLabel = msg_hash_to_str(
-               MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT);
-         if (mappedPortSubLabel && *mappedPortSubLabel)
-         {
-            QString toolTip = QString::asprintf(mappedPortSubLabel, user + 1);
-            QLabel *mappedLabel = new QLabel(QObject::tr("mapped to"), contents);
-            mappedLabel->setToolTip(toolTip);
-            mappedCombo->setToolTip(toolTip);
-            portLayout->addWidget(portCombo);
-            portLayout->addWidget(mappedLabel);
-            portLayout->addWidget(mappedCombo);
-         }
-         else
-         {
-            portLayout->addWidget(portCombo);
-            portLayout->addWidget(new QLabel(QObject::tr("mapped to"), contents));
-            portLayout->addWidget(mappedCombo);
-         }
-      }
-
-      if (settings && mapped_port < MAX_USERS)
-      {
-         unsigned currentDevice = input_config_get_device(mapped_port);
-         unsigned deviceIndex = 0;
-         deviceCombo->addItem(QObject::tr("None"), (int)RETRO_DEVICE_NONE);
-         deviceCombo->addItem(QObject::tr("RetroPad"), (int)RETRO_DEVICE_JOYPAD);
-         if (runloop_st && mapped_port < runloop_st->system.ports.size)
-         {
-            const struct retro_controller_info *portInfo =
-               &runloop_st->system.ports.data[mapped_port];
-            for (deviceIndex = 0; deviceIndex < portInfo->num_types; deviceIndex++)
-            {
-               const struct retro_controller_description *type =
-                  &portInfo->types[deviceIndex];
-               if (type->id == RETRO_DEVICE_NONE || type->id == RETRO_DEVICE_JOYPAD)
-                  continue;
-               deviceCombo->addItem(QString::fromUtf8(type->desc), (int)type->id);
-            }
-         }
-         int selectedDevice = deviceCombo->findData((int)currentDevice);
-         if (selectedDevice >= 0)
-            deviceCombo->setCurrentIndex(selectedDevice);
-      }
-      else
-      {
-         deviceCombo->addItem(QObject::tr("Unavailable"));
-         deviceCombo->setEnabled(false);
-      }
-      deviceCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
-      deviceCombo->setMinimumWidth(deviceCombo->sizeHint().width() + 20);
-      {
-         const char *deviceSubLabel = msg_hash_to_str(
-               MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE);
-         if (deviceSubLabel && *deviceSubLabel)
-            deviceCombo->setToolTip(QString::fromUtf8(deviceSubLabel));
-      }
-
-      {
-         static const char *analogNames[ANALOG_DPAD_LAST] = {
-            "None", "Left Analog", "Right Analog", "Left Analog (Forced)",
-            "Right Analog (Forced)", "Both Analog Sticks", "Twin Stick",
-            "Both Analog Sticks (Forced)", "Twin Stick (Forced)"
-         };
-         const char *analogSubLabel = msg_hash_to_str(
-               MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE);
-         QFontMetrics metrics(analogDpadCombo->font());
-         int popupWidth = 0;
-
-         for (port_index = 0; port_index < ANALOG_DPAD_LAST; port_index++)
-         {
-            QString itemText = QObject::tr(analogNames[port_index]);
-            analogDpadCombo->addItem(itemText, (int)port_index);
-            popupWidth = qMax(popupWidth, metrics.horizontalAdvance(itemText));
-            if (analogSubLabel && *analogSubLabel)
-               analogDpadCombo->setItemData((int)port_index,
-                     QString::fromUtf8(analogSubLabel), Qt::ToolTipRole);
-         }
-
-         if (analogSubLabel && *analogSubLabel)
-            analogDpadCombo->setToolTip(QString::fromUtf8(analogSubLabel));
-         analogDpadCombo->view()->setMinimumWidth(popupWidth + 36);
-      }
-      analogDpadCombo->setCurrentIndex(settings
-            ? (int)settings->uints.input_analog_dpad_mode[
-               mapped_port < MAX_USERS ? mapped_port : user] : 0);
-      portLayout->addWidget(new QLabel(QObject::tr("Device Type:"), contents));
-      portLayout->addWidget(deviceCombo);
-      portLayout->addWidget(new QLabel(QObject::tr("Analog to Digital:"), contents));
-      portLayout->addWidget(analogDpadCombo);
-      portLayout->addStretch();
-      outer->addLayout(portLayout);
-
-      connect(mappedCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, [this, mappedCombo, user](int index)
-            {
-               settings_t *settings = config_get_ptr();
-               unsigned newPort = (unsigned)mappedCombo->itemData(index).toUInt();
-               if (!settings || newPort > MAX_USERS)
-                  return;
-               settings->uints.input_remap_ports[user] = newPort;
-               settings->flags |= SETTINGS_FLG_MODIFIED;
-               input_first_press_set_by_hand(user);
-               input_remapping_update_port_map();
-               command_event(CMD_EVENT_CONTROLLER_INIT, NULL);
-               buildLayout();
-            });
-      connect(deviceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, [this, deviceCombo, mapped_port](int index)
-            {
-               if (mapped_port >= MAX_USERS || index < 0)
-                  return;
-               unsigned device = (unsigned)deviceCombo->itemData(index).toUInt();
-               retro_ctx_controller_info_t pad;
-               input_config_set_device(mapped_port, device);
-               pad.port = mapped_port;
-               pad.device = device;
-               core_set_controller_port_device(&pad);
-               buildLayout();
-            });
-      connect(analogDpadCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, [analogDpadCombo, mapped_port, user](int index)
-            {
-               settings_t *settings = config_get_ptr();
-               unsigned port = mapped_port < MAX_USERS ? mapped_port : user;
-               if (!settings || index < 0 || index >= ANALOG_DPAD_LAST)
-                  return;
-               settings->uints.input_analog_dpad_mode[port] =
-                  (unsigned)analogDpadCombo->itemData(index).toUInt();
-               settings->flags |= SETTINGS_FLG_MODIFIED;
-            });
-
-      m_detectionLabel = new QLabel(contents);
-      m_detectionLabel->setStyleSheet(QStringLiteral("color: palette(highlight);"));
-      outer->addWidget(m_detectionLabel);
-
-      if (runloop_st && settings && mapped_port < MAX_USERS)
-      {
-         char deviceName[NAME_MAX_LENGTH];
-         const char *deviceNamePtr = input_config_get_device_display_name(mapped_port);
-         if (!deviceNamePtr || !*deviceNamePtr)
-            deviceNamePtr = input_config_get_device_name(mapped_port);
-         size_t deviceNameLength = 0;
-         deviceName[0] = '\0';
-         if (deviceNamePtr && *deviceNamePtr)
-         {
-            deviceNameLength = strlcpy(deviceName, deviceNamePtr, sizeof(deviceName));
-            if (deviceNameLength < sizeof(deviceName))
-               deviceNameLength += input_config_get_device_tag(mapped_port, true,
-                     deviceName + deviceNameLength,
-                     sizeof(deviceName) - deviceNameLength);
-            if (!input_config_get_device_autoconfigured(mapped_port)
-                  && deviceNameLength < sizeof(deviceName))
-               snprintf(deviceName + deviceNameLength,
-                     sizeof(deviceName) - deviceNameLength, " (%s)",
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE));
-         }
-         QString controllerLabel = *deviceName
-            ? QObject::tr("%1 on port %2").arg(QString::fromUtf8(deviceName)).arg(mapped_port + 1)
-            : QObject::tr("No controller detected on port %1").arg(mapped_port + 1);
-         QWidget *titleWidget = new QWidget(contents);
-         QHBoxLayout *titleLayout = new QHBoxLayout(titleWidget);
-         QLabel *coreTitle = new QLabel(
-               runloop_st->system.info.library_name
-               ? QString::fromUtf8(runloop_st->system.info.library_name) : QString(), contents);
-         QLabel *controllerTitle = new QLabel(controllerLabel, titleWidget);
-         QFont titleFont = coreTitle->font();
-         titleFont.setBold(true);
-         titleFont.setPointSize(titleFont.pointSize() + 1);
-         coreTitle->setFont(titleFont);
-         QFont controllerFont = controllerTitle->font();
-         controllerFont.setBold(true);
-         controllerTitle->setFont(controllerFont);
-         controllerTitle->setAlignment(Qt::AlignCenter);
-         titleLayout->setContentsMargins(0, 0, 0, 0);
-         titleLayout->addWidget(controllerTitle, 1);
-         /* Leave room for the Clear and Default columns so the controller
-          * title is centered over the mapped-input buttons only. */
-         titleLayout->addSpacing(180);
-         form->addRow(coreTitle, titleWidget);
-
-         bool hasDescriptors = false;
-         for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
-         {
-            unsigned descriptor = input_config_bind_order[j];
-            const char *description = runloop_st->system.input_desc_btn[mapped_port][descriptor];
-            QString label;
-            QHBoxLayout *row;
-            QPushButton *mappedButton;
-            QPushButton *clear;
-            QPushButton *defaults;
-            QStringList mappedNames;
-            unsigned retro_id;
-
-            if (!description || !*description)
-               continue;
-
-            hasDescriptors = true;
-            label = QString::fromUtf8(description);
-            if (descriptor >= RARCH_FIRST_CUSTOM_BIND)
-               label += ((descriptor % 2) == 0) ? "+" : "-";
-
-            for (retro_id = 0; retro_id < 24; retro_id++)
-               if (settings->uints.input_remap_ids[user][retro_id] == descriptor)
-               {
-                  char bindDescription[300] = {0};
-                  const struct retro_keybind *keybind = input_config_bind(user, retro_id);
-                  const struct retro_keybind *autoBind = input_config_get_bind_auto(user, retro_id);
-                  input_config_get_bind_string(settings, bindDescription,
-                        keybind, autoBind,
-                        input_config_bind_names(user, retro_id),
-                        input_autoconf_bind_names(user, retro_id),
-                        sizeof(bindDescription));
-                  if (bindDescription[0])
-                     mappedNames << QString::fromUtf8(bindDescription);
-               }
-
-            row = new QHBoxLayout();
-            mappedButton = new QPushButton(mappedNames.isEmpty()
-                  ? QStringLiteral("---") : mappedNames.join(", "), contents);
-            mappedButton->setProperty("descriptor", descriptor);
-            mappedButton->setToolTip(QObject::tr("Click to detect a logical controller input"));
-            clear = new QPushButton(QObject::tr("Clear"), contents);
-            clear->setProperty("descriptor", descriptor);
-            defaults = new QPushButton(QObject::tr("Default"), contents);
-            defaults->setProperty("descriptor", descriptor);
-            connect(mappedButton, SIGNAL(clicked()), this, SLOT(onDetectClicked()));
-            connect(clear, SIGNAL(clicked()), this, SLOT(onClearClicked()));
-            connect(defaults, SIGNAL(clicked()), this, SLOT(onDefaultClicked()));
-            row->addWidget(mappedButton, 1);
-            row->addWidget(clear);
-            row->addWidget(defaults);
-            form->addRow(label, row);
-         }
-         if (!hasDescriptors)
-            form->addRow(new QLabel(QObject::tr("No mapping Support."), contents));
-      }
-      else
-         outer->addWidget(new QLabel(QObject::tr("No mapping Support."), contents));
-
+      device = (mapped_port < MAX_USERS)
+         ? (settings->uints.input_libretro_device[mapped_port]
+               & RETRO_DEVICE_MASK)
+         : RETRO_DEVICE_NONE;
+      if (mapped_port < MAX_USERS)
+         controls_title_row(form, contents, mapped_port);
+      if (device == RETRO_DEVICE_KEYBOARD)
+         controls_keyboard_rows(this, form, contents, user);
+      else if (   (device != RETRO_DEVICE_JOYPAD && device != RETRO_DEVICE_ANALOG)
+               || !controls_joypad_rows(this, form, contents, user, mapped_port))
+         form->addRow(new QLabel(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_QT_CONTROLS_NO_MAPPING), contents));
       outer->addLayout(form);
+#else
+      top->addStretch();
+      top->addWidget(settingsButton);
+      outer->addLayout(top);
+      outer->addWidget(new QLabel(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_NO_ITEMS), contents));
+#endif
       outer->addStretch();
    }
 
    if (m_scrollArea->widget())
-   {
-      QWidget *oldContents = m_scrollArea->takeWidget();
-      if (oldContents)
-         oldContents->deleteLater();
-   }
+      m_scrollArea->takeWidget()->deleteLater();
    m_scrollArea->setWidget(contents);
 }
 

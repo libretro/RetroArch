@@ -795,37 +795,48 @@ private:
    QLineEdit *m_edit;
 };
 
+/* The loaded core's controls, as the Quick Menu's Port Controls has
+ * them: a port's mapped port, device type and analog to digital mode,
+ * then the inputs, each set by pressing the controller button for it
+ * (a keyboard device's by picking its key), and the remap files. */
 class ControlsDialog : public QDialog
 {
    Q_OBJECT
 public:
    ControlsDialog(QWidget *parent = 0);
    ~ControlsDialog();
+   /* Once a frame: the capture of a controller button under way. */
+   static void detectIterate(void);
 public slots:
    void reload();
-private slots:
    void onPortChanged(int index);
+   void onMappedPortChanged(int index);
+   void onDeviceChanged(int index);
    void onDetectClicked();
    void onClearClicked();
    void onDefaultClicked();
-   void pollInput();
+   void onKeyChanged(int index);
+   void onKeyClearClicked();
+   void onSettingsClicked();
+   void onManageClicked();
+protected:
+   void hideEvent(QHideEvent *event);
+   void changeEvent(QEvent *event);
 private:
    void buildLayout();
    void buildSettingsPage(QVBoxLayout *layout);
-   void showManageMenu(QWidget *anchor);
    void stopDetection();
-   QPointer<QScrollArea> m_scrollArea;
-   QPointer<QComboBox> m_portCombo;
-   QPointer<QLabel> m_detectionLabel;
-   QPointer<QTimer> m_detectionTimer;
-   bool m_settingsPage;
+   static ControlsDialog *s_detect;
+   QScrollArea *m_scrollArea;
+   /* the input being set, by whose button, from which user; the
+    * button found and whether all had been let go first */
+   QPointer<QPushButton> m_detectButton;
    unsigned m_selectedUser;
    unsigned m_detectDescriptor;
    unsigned m_detectUser;
+   int m_detectFound;
+   bool m_settingsPage;
    bool m_detectReleased;
-   bool m_detecting;
-protected:
-   void closeEvent(QCloseEvent *event);
 };
 
 class CoreOptionsDialog : public QDialog

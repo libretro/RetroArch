@@ -6220,7 +6220,8 @@ static void qt_companion_build_menubar(MainWindow *mainwindow)
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS),
          mainwindow, SLOT(onCoreOptionsClicked()));
    {
-      QAction *controlsAction = viewMenu->addAction(QObject::tr("Controls"),
+      QAction *controlsAction = viewMenu->addAction(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS),
             mainwindow, SLOT(onControlsClicked()));
       controlsAction->setObjectName("controlsViewAction");
       controlsAction->setEnabled(false);
@@ -6764,6 +6765,7 @@ static void ui_companion_qt_iterate(void *data)
 #ifdef HAVE_MENU
    BindButton::captureIterate();
 #endif
+   ControlsDialog::detectIterate();
 }
 
 static void ui_companion_qt_event_command(void *data, enum event_command cmd)
