@@ -320,6 +320,13 @@ void input_keyboard_mapping_bits(unsigned mode, unsigned key);
 
 unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsigned port);
 
+/* Loads the remap file at @path, handing the core the device types it
+ * sets. */
+bool menu_remap_file_load(const char *path);
+
+/* Saves the remaps as @name in the core's remap folder. */
+int menu_remap_file_save_as(const char *name);
+
 /* End of function callbacks */
 
 int menu_cbs_init_bind_left(menu_file_list_cbs_t *cbs,

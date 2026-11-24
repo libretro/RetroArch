@@ -2708,39 +2708,8 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_LOAD_REMAPPING_FILE:
-#ifdef HAVE_CONFIGFILE
-         {
-            retro_ctx_controller_info_t pad;
-            config_file_t *conf     = NULL;
-            flush_char              = msg_hash_to_str(flush_id);
-
-            if ((conf = config_file_new_from_path_to_string(action_path)))
-            {
-               char conf_key[64];
-               if (input_remapping_load_file(conf, action_path))
-               {
-                  unsigned port;
-                  size_t _len = strlcpy_lit(conf_key, "input_libretro_device_p", sizeof(conf_key));
-                  for (port = 0; port < MAX_USERS; port++)
-                  {
-                     unsigned current_device;
-                     int conf_val = 0;
-                     snprintf(conf_key + _len, sizeof(conf_key) - _len, "%u", port + 1);
-                     if (!config_get_int(conf, conf_key, &conf_val))
-                        continue;
-
-                     current_device = input_config_get_device(port);
-                     input_config_set_device(port, current_device);
-                     pad.port       = port;
-                     pad.device     = current_device;
-                     core_set_controller_port_device(&pad);
-                  }
-               }
-               config_file_free(conf);
-               conf = NULL;
-            }
-         }
-#endif
+         flush_char = msg_hash_to_str(flush_id);
+         menu_remap_file_load(action_path);
          break;
       case ACTION_OK_LOAD_OVERRIDE_FILE:
 #ifdef HAVE_CONFIGFILE
@@ -4251,6 +4220,39 @@ static int action_ok_rename_entry(const char *path,
 }
 
 
+bool menu_remap_file_load(const char *path)
+{
+   bool ret = false;
+#ifdef HAVE_CONFIGFILE
+   config_file_t *conf = config_file_new_from_path_to_string(path);
+
+   if (!conf)
+      return false;
+   if ((ret = input_remapping_load_file(conf, path)))
+   {
+      char conf_key[64];
+      unsigned port;
+      size_t _len = strlcpy_lit(conf_key, "input_libretro_device_p",
+            sizeof(conf_key));
+      /* the device types the file sets are handed to the core */
+      for (port = 0; port < MAX_USERS; port++)
+      {
+         retro_ctx_controller_info_t pad;
+         int conf_val = 0;
+         snprintf(conf_key + _len, sizeof(conf_key) - _len, "%u", port + 1);
+         if (!config_get_int(conf, conf_key, &conf_val))
+            continue;
+         pad.port   = port;
+         pad.device = input_config_get_device(port);
+         input_config_set_device(port, pad.device);
+         core_set_controller_port_device(&pad);
+      }
+   }
+   config_file_free(conf);
+#endif
+   return ret;
+}
+
 static int generic_action_ok_remap_file_operation(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx,
       unsigned action_type)
@@ -4408,6 +4410,12 @@ static int generic_action_ok_remap_file_operation(const char *path,
                                    |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
    return 0;
+}
+
+int menu_remap_file_save_as(const char *name)
+{
+   return generic_action_ok_remap_file_operation(name, NULL, 0, 0, 0,
+         ACTION_OK_REMAP_FILE_SAVE_AS);
 }
 
 static void menu_input_st_string_cb_remap_file_save_as(

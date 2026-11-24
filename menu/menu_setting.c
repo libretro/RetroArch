@@ -7457,10 +7457,53 @@ unsigned libretro_device_get_size(unsigned *devices, size_t devices_size, unsign
    return types;
 }
 
+void menu_setting_libretro_device_set(unsigned port, unsigned device)
+{
+   retro_ctx_controller_info_t pad;
+   input_config_set_device(port, device);
+   pad.port   = port;
+   pad.device = device;
+   core_set_controller_port_device(&pad);
+}
+
+size_t menu_setting_libretro_device_name(unsigned port, unsigned device,
+      char *s, size_t len)
+{
+   const struct retro_controller_description *desc = NULL;
+   const char *name              = NULL;
+   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+   if (port < sys_info->ports.size)
+      desc = libretro_find_controller_description(
+            &sys_info->ports.data[port], device);
+   if (desc)
+      name = desc->desc;
+   if (!name)
+   {
+      /* Find generic name. */
+      switch (device)
+      {
+         case RETRO_DEVICE_NONE:
+            name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+            break;
+         case RETRO_DEVICE_JOYPAD:
+            name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD);
+            break;
+         case RETRO_DEVICE_ANALOG:
+            name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG);
+            break;
+         default:
+            name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
+            break;
+      }
+   }
+   if (name && *name)
+      return strlcpy(s, name, len);
+   return 0;
+}
+
 static int setting_action_left_libretro_device_type(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   retro_ctx_controller_info_t pad;
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
    struct menu_state *menu_st     = menu_state_get_ptr();
@@ -7484,12 +7527,7 @@ static int setting_action_left_libretro_device_type(
    current_device = devices
       [(current_idx + types - 1) % types];
 
-   input_config_set_device(port, current_device);
-
-   pad.port   = port;
-   pad.device = current_device;
-
-   core_set_controller_port_device(&pad);
+   menu_setting_libretro_device_set(port, current_device);
 
    menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
@@ -8986,45 +9024,10 @@ static size_t setting_get_string_representation_uint_libretro_device(
       rarch_setting_t *setting,
       char *s, size_t len)
 {
-   unsigned index_offset, device;
-   const struct retro_controller_description *desc = NULL;
-   const char *name              = NULL;
-   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
    if (!setting)
       return 0;
-   index_offset                = setting->index_offset;
-   device                      = input_config_get_device(index_offset);
-   if (sys_info)
-   {
-      if (index_offset < sys_info->ports.size)
-         desc = libretro_find_controller_description(
-               &sys_info->ports.data[index_offset],
-               device);
-   }
-   if (desc)
-      name = desc->desc;
-   if (!name)
-   {
-      /* Find generic name. */
-      switch (device)
-      {
-         case RETRO_DEVICE_NONE:
-            name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
-            break;
-         case RETRO_DEVICE_JOYPAD:
-            name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD);
-            break;
-         case RETRO_DEVICE_ANALOG:
-            name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG);
-            break;
-         default:
-            name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN);
-            break;
-      }
-   }
-   if (name && *name)
-      return strlcpy(s, name, len);
-   return 0;
+   return menu_setting_libretro_device_name(setting->index_offset,
+         input_config_get_device(setting->index_offset), s, len);
 }
 
 static size_t setting_get_string_representation_uint_analog_dpad_mode(
@@ -10443,20 +10446,11 @@ static int setting_action_start_custom_vp_height(rarch_setting_t *setting)
 
 static int setting_action_start_libretro_device_type(rarch_setting_t *setting)
 {
-   retro_ctx_controller_info_t pad;
-   unsigned port = 0;
-
    if (!setting || setting_generic_action_start_default(setting) != 0)
       return -1;
 
-   port             = setting->index_offset;
-
-   input_config_set_device(port, RETRO_DEVICE_JOYPAD);
-
-   pad.port         = port;
-   pad.device       = RETRO_DEVICE_JOYPAD;
-
-   core_set_controller_port_device(&pad);
+   menu_setting_libretro_device_set(setting->index_offset,
+         RETRO_DEVICE_JOYPAD);
 
    return 0;
 }
@@ -10559,7 +10553,6 @@ static int setting_action_right_analog_dpad_mode(
 static int setting_action_right_libretro_device_type(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   retro_ctx_controller_info_t pad;
    unsigned current_device, current_idx, i, devices[128],
             types = 0, port = 0;
    struct menu_state *menu_st     = menu_state_get_ptr();
@@ -10583,12 +10576,7 @@ static int setting_action_right_libretro_device_type(
    current_device = devices
       [(current_idx + 1) % types];
 
-   input_config_set_device(port, current_device);
-
-   pad.port   = port;
-   pad.device = current_device;
-
-   core_set_controller_port_device(&pad);
+   menu_setting_libretro_device_set(port, current_device);
 
    menu_st->flags            |=  MENU_ST_FLAG_PREVENT_POPULATE
                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;

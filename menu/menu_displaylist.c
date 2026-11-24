@@ -2116,7 +2116,7 @@ end:
    return count;
 }
 
-static unsigned menu_displaylist_parse_remap_file_manager_list(file_list_t *list,
+unsigned menu_displaylist_parse_remap_file_manager_list(file_list_t *list,
       bool remap_save_on_exit)
 {
    unsigned count                = 0;

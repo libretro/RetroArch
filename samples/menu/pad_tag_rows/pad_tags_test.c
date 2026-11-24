@@ -51,6 +51,7 @@
 #include "../../../menu/menu_cbs.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_entries.h"
+#include "../../../menu/menu_setting.h"
 #include "../../../input/input_driver.h"
 #include "../../../tasks/tasks_internal.h"
 #include "../../../gfx/video_driver.h"
@@ -1218,6 +1219,60 @@ static void lane_press_trigger(void)
    forget_press(1);
 }
 
+/* A port's device types are named as its core names them, the
+ * RetroPad's own included, as the desktop menu's Controls window and
+ * the Quick Menu show them; a port the core describes nothing for has
+ * the generic names. */
+static void lane_device_names(void)
+{
+   char s[NAME_MAX_LENGTH];
+   unsigned devices[16];
+   unsigned types;
+   static const struct retro_controller_description descs[] = {
+      { "Auto",              RETRO_DEVICE_JOYPAD },
+      { "2-button joystick", RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1) },
+      { "Keyboard",          RETRO_DEVICE_KEYBOARD }
+   };
+   struct retro_controller_info info;
+   rarch_system_info_t *sys = &runloop_state_get_ptr()->system;
+   struct retro_controller_info *kept_data = sys->ports.data;
+   unsigned kept_size                      = sys->ports.size;
+
+   info.types         = descs;
+   info.num_types     = ARRAY_SIZE(descs);
+   sys->ports.data    = &info;
+   sys->ports.size    = 1;
+
+   types = libretro_device_get_size(devices, ARRAY_SIZE(devices), 0);
+   check(types == 4 && devices[0] == RETRO_DEVICE_NONE
+         && devices[1] == RETRO_DEVICE_JOYPAD
+         && devices[2] == RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1)
+         && devices[3] == RETRO_DEVICE_KEYBOARD,
+         "device names: port 1 lists none, the RetroPad and the core's"
+         " two others (%u types)", types);
+   s[0] = '\0';
+   menu_setting_libretro_device_name(0, RETRO_DEVICE_JOYPAD, s, sizeof(s));
+   check(string_is_equal(s, "Auto"),
+         "device names: the RetroPad is the core's \"Auto\" (\"%s\")", s);
+   s[0] = '\0';
+   menu_setting_libretro_device_name(0,
+         RETRO_DEVICE_SUBCLASS(RETRO_DEVICE_JOYPAD, 1), s, sizeof(s));
+   check(string_is_equal(s, "2-button joystick"),
+         "device names: the core's subclass keeps its name (\"%s\")", s);
+   s[0] = '\0';
+   menu_setting_libretro_device_name(0, RETRO_DEVICE_NONE, s, sizeof(s));
+   check(string_is_equal(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE)),
+         "device names: none is None (\"%s\")", s);
+   s[0] = '\0';
+   menu_setting_libretro_device_name(1, RETRO_DEVICE_JOYPAD, s, sizeof(s));
+   check(string_is_equal(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RETROPAD)),
+         "device names: a port the core does not describe has the"
+         " RetroPad (\"%s\")", s);
+
+   sys->ports.data = kept_data;
+   sys->ports.size = kept_size;
+}
+
 int main(int argc, char *argv[])
 {
    FILE *f;
@@ -1305,6 +1360,7 @@ int main(int argc, char *argv[])
    lane_share_remakes();
    lane_scan_leaves();
    lane_press_trigger();
+   lane_device_names();
 
    filestream_delete(ratst_path);
    filestream_delete(cfg_path);
