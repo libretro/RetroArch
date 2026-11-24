@@ -1838,6 +1838,7 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #define MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX)
 #define MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX)
 #define MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY)
+#define MENU_ENUM_LABEL_VIDEO_WINDOWED_VRR_WORKAROUND_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_VIDEO_WINDOWED_VRR_WORKAROUND)
 #else
 #define MENU_ENUM_LABEL_ACCOUNTS_CHEEVOS_USERNAME_STR "accounts_cheevos_username"
 #define MENU_ENUM_LABEL_CHEEVOS_MENU_SUBMENU_STR "cheevos_menu_submenu"
@@ -3668,6 +3669,7 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #define MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX_STR "video_window_auto_width_max"
 #define MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX_STR "video_window_auto_height_max"
 #define MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY_STR "video_window_opacity"
+#define MENU_ENUM_LABEL_VIDEO_WINDOWED_VRR_WORKAROUND_STR "video_windowed_vrr_workaround"
 #endif
 #if defined(HAVE_MENU) && (((defined(HAVE_MICROPHONE))))
 #define MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_MICROPHONE_RESAMPLER_DRIVER)

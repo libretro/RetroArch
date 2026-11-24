@@ -368,6 +368,7 @@ bool	settings_show_network	1	1
 bool	settings_show_playlists	1	1
 bool	settings_show_user	1	1
 bool	settings_show_directory	1	1
+bool	video_windowed_vrr_workaround	1	0
 bool	auto_overrides_enable	1	1
 bool	auto_remaps_enable	1	1
 bool	auto_shaders_enable	1	1
@@ -1117,6 +1118,7 @@ bool	settings_show_network	1	1
 bool	settings_show_playlists	1	1
 bool	settings_show_user	1	1
 bool	settings_show_directory	1	1
+bool	video_windowed_vrr_workaround	1	0
 bool	auto_overrides_enable	1	1
 bool	auto_remaps_enable	1	1
 bool	auto_shaders_enable	1	1
@@ -1865,6 +1867,7 @@ bool	settings_show_network	1	1
 bool	settings_show_playlists	1	1
 bool	settings_show_user	1	1
 bool	settings_show_directory	1	1
+bool	video_windowed_vrr_workaround	1	0
 bool	auto_overrides_enable	1	1
 bool	auto_remaps_enable	1	1
 bool	auto_shaders_enable	1	1

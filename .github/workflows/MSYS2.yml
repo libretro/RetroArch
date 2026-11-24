@@ -136,6 +136,10 @@ jobs:
         shell: msys2 {0}
         run: python3 samples/gfx/win32_window_proc/qt_modal_run.py
 
+      - name: Window opacity policy regression
+        shell: msys2 {0}
+        run: python3 samples/gfx/win32_window_proc/opacity_run.py
+
       - name: Collect DLLs and binaries
         shell: msys2 {0}
         run: |

@@ -12061,6 +12061,7 @@ static void general_write_handler(rarch_setting_t *setting)
 #endif
          break;
       case MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY:
+      case MENU_ENUM_LABEL_VIDEO_WINDOWED_VRR_WORKAROUND:
          video_display_server_set_window_opacity(settings->uints.video_window_opacity);
          break;
       case MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS:

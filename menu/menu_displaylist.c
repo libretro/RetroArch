@@ -12899,6 +12899,10 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,     PARSE_ONLY_UINT,  false},
                {MENU_ENUM_LABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,    PARSE_ONLY_UINT,  false},
                {MENU_ENUM_LABEL_VIDEO_WINDOW_OPACITY,            PARSE_ONLY_UINT,  true },
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) \
+      && (!defined(_WIN32_WINNT) || _WIN32_WINNT >= 0x0500)
+               {MENU_ENUM_LABEL_VIDEO_WINDOWED_VRR_WORKAROUND,    PARSE_ONLY_BOOL,  true },
+#endif
                {MENU_ENUM_LABEL_VIDEO_WINDOW_SHOW_DECORATIONS,   PARSE_ONLY_BOOL,  true },
                {MENU_ENUM_LABEL_UI_MENUBAR_ENABLE,               PARSE_ONLY_BOOL,  true },
             };

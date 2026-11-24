@@ -45,3 +45,8 @@ S_UINT(video_window_opacity, VIDEO_WINDOW_OPACITY,
       DEFAULT_WINDOW_OPACITY, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 1, 100, 1, 1, setting_action_ok_uint, NULL,
       "Window Opacity",
       "Set the window transparency.")
+S_BOOL(video_windowed_vrr_workaround, VIDEO_WINDOWED_VRR_WORKAROUND,
+      "video_windowed_vrr_workaround",
+      false, SD_FLAG_CMD_APPLY_AUTO, 0, CMD_EVENT_NONE,
+      "Windowed VRR Workaround",
+      "Apply minimal transparency in windowed mode to avoid unwanted variable refresh and window-drag stutter. Slightly changes pixel values. Fullscreen is unaffected.")

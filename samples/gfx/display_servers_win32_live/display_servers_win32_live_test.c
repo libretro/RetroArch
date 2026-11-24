@@ -43,6 +43,7 @@
 #include "../../../gfx/video_display_server.h"
 #include "../../../gfx/modeline/modeline_list.h"
 #include "../../../gfx/common/win32_common.h"
+#include "../../../configuration.h"
 
 static int s_verbose;
 
@@ -86,6 +87,20 @@ int win32_change_display_settings(const char *str, void *devmode_data, unsigned 
 }
 uint8_t win32_get_flags(void) { return 0; }
 HWND win32_get_window(void) { return NULL; }
+settings_t *config_get_ptr(void)
+{
+   static settings_t settings;
+   return &settings;
+}
+bool win32_window_set_opacity(HWND hwnd, unsigned opacity,
+      bool fullscreen, bool workaround)
+{
+   (void)hwnd;
+   (void)opacity;
+   (void)fullscreen;
+   (void)workaround;
+   return false;
+}
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id)
 {
    MONITORINFOEX *info = (MONITORINFOEX *)data;

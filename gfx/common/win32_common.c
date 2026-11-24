@@ -2221,6 +2221,34 @@ static HMENU win32_menu_take(void)
    return menu;
 }
 
+bool win32_window_set_opacity(HWND hwnd, unsigned opacity,
+      bool fullscreen, bool vrr_workaround)
+{
+#ifdef HAVE_WINDOW_TRANSP
+   LONG_PTR style;
+   unsigned alpha = opacity < 100 ? (255 * opacity) / 100 : 255;
+   if (!hwnd)
+      return false;
+   if (!fullscreen && vrr_workaround && alpha == 255)
+      alpha = 254;
+   style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+   SetLastError(0);
+   if (!SetWindowLongPtr(hwnd, GWL_EXSTYLE, alpha < 255
+            ? style | WS_EX_LAYERED : style & ~WS_EX_LAYERED)
+         && GetLastError())
+      return false;
+   if (alpha < 255)
+      return SetLayeredWindowAttributes(hwnd, 0, (BYTE)alpha, LWA_ALPHA) != 0;
+   return true;
+#else
+   (void)hwnd;
+   (void)opacity;
+   (void)fullscreen;
+   (void)vrr_workaround;
+   return false;
+#endif
+}
+
 static bool win32_window_create(void *data, unsigned style,
       RECT *mon_rect, unsigned width,
       unsigned height, bool fullscreen)
@@ -2229,9 +2257,6 @@ static bool win32_window_create(void *data, unsigned style,
    settings_t       *settings    = config_get_ptr();
 #ifdef HAVE_TASKBAR
    DEV_BROADCAST_DEVICEINTERFACE notification_filter;
-#endif
-#ifdef HAVE_WINDOW_TRANSP
-   unsigned    window_opacity    = settings->uints.video_window_opacity;
 #endif
    bool    window_save_positions = settings->bools.video_window_save_positions;
    unsigned    user_width        = width;
@@ -2355,15 +2380,8 @@ static bool win32_window_create(void *data, unsigned style,
    video_driver_window_set((uintptr_t)main_window.hwnd);
 
 #ifdef HAVE_WINDOW_TRANSP
-   /* Windows 2000 and above use layered windows to enable transparency */
-   if (window_opacity < 100)
-   {
-      SetWindowLongPtr(main_window.hwnd,
-           GWL_EXSTYLE,
-           GetWindowLongPtr(main_window.hwnd, GWL_EXSTYLE) | WS_EX_LAYERED);
-      SetLayeredWindowAttributes(main_window.hwnd, 0, (255 *
-               window_opacity) / 100, LWA_ALPHA);
-   }
+   win32_window_set_opacity(main_window.hwnd, settings->uints.video_window_opacity,
+         fullscreen, settings->bools.video_windowed_vrr_workaround);
 #endif
    return true;
 }
@@ -3874,6 +3892,10 @@ static bool win32_window_change_fullscreen(unsigned dims, bool fullscreen,
          y = mon_rect.top;
    }
 
+#ifdef HAVE_WINDOW_TRANSP
+   win32_window_set_opacity(hwnd, settings->uints.video_window_opacity,
+         fullscreen, settings->bools.video_windowed_vrr_workaround);
+#endif
    SetWindowLongPtr(hwnd, GWL_STYLE, style | WS_VISIBLE);
    SetWindowPos(hwnd, HWND_TOP, x, y, width, height,
          SWP_FRAMECHANGED | SWP_NOOWNERZORDER);

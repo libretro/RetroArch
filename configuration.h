@@ -1268,6 +1268,7 @@ typedef struct settings
 
       bool video_window_show_decorations;
       bool video_window_save_positions;
+      bool video_windowed_vrr_workaround;
       bool video_window_custom_size_enable;
 
       bool sustained_performance_mode;

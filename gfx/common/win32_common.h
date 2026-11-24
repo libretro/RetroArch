@@ -129,6 +129,9 @@ void win32_show_cursor(void *data, bool state);
 
 HWND win32_get_window(void);
 
+bool win32_window_set_opacity(HWND hwnd, unsigned opacity,
+      bool fullscreen, bool vrr_workaround);
+
 bool win32_get_client_rect(RECT* rect);
 
 bool is_running_on_xbox(void);
