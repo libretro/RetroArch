@@ -153,17 +153,6 @@ static bool menu_media_controls_shaders(void *user)
    return menu_media_controls_open_settings(user, true);
 }
 
-static bool menu_media_controls_image_state(void *user, int64_t now,
-      gfx_media_playback_state_t *out)
-{
-   gfx_thumbnail_t *thumbnail = (gfx_thumbnail_t*)user;
-   (void)now;
-   memset(out, 0, sizeof(*out));
-   out->dims = thumbnail->dims;
-   out->paused = true;
-   return retro_atomic_load_acquire_int(&thumbnail->status) == GFX_THUMBNAIL_STATUS_AVAILABLE;
-}
-
 bool menu_media_controls_settings_active(const menu_media_controls_t *media)
 {
    return media->settings_open || media->settings_returning;
@@ -340,19 +329,6 @@ void menu_media_controls_thumbnail(menu_media_controls_t *media,
    {
       gfx_thumbnail_set_repeat(primary, true);
       gfx_thumbnail_set_repeat(secondary, true);
-   }
-   if (shown && !target.user)
-   {
-      gfx_thumbnail_t *image = primary
-         && retro_atomic_load_acquire_int(&primary->status) == GFX_THUMBNAIL_STATUS_AVAILABLE
-         ? primary : secondary;
-      if (image && retro_atomic_load_acquire_int(&image->status) == GFX_THUMBNAIL_STATUS_AVAILABLE)
-      {
-         target.user = image;
-         target.identity = (const void*)image->texture;
-         target.state = menu_media_controls_image_state;
-         target.image = true;
-      }
    }
    menu_media_controls_update(media, &target, width, height, pointer, now);
 }

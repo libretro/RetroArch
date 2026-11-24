@@ -133,9 +133,9 @@ static bool fake_step(void *user, int direction)
    return true;
 }
 
-/* The thumbnail adapter is not used by this CPU/texture-neutral oracle. */
+static bool static_thumbnail_navigation;
 bool gfx_thumbnail_get_playback_state(gfx_thumbnail_t *t, retro_time_t n, gfx_thumbnail_playback_state_t *s)
-{ (void)t; (void)n; (void)s; abort(); return false; }
+{ (void)t; (void)n; (void)s; if (!static_thumbnail_navigation) abort(); return false; }
 bool gfx_thumbnail_set_paused(gfx_thumbnail_t *t, bool p, retro_time_t n)
 { (void)t; (void)p; (void)n; abort(); return false; }
 bool gfx_thumbnail_request_audio(gfx_thumbnail_t *t, int index)
@@ -1602,8 +1602,62 @@ static void image_navigation(void)
    free(media);
 }
 
+static bool thumbnail_shader_draw(void *data, uintptr_t texture,
+      unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
+{
+   (void)data; (void)texture; (void)source_dims;
+   (void)video_dims; (void)pos; (void)dims;
+   return false;
+}
+
+static void still_thumbnail_navigation(void)
+{
+   menu_media_controls_t *media = (menu_media_controls_t*)calloc(1, sizeof(*media));
+   gfx_thumbnail_t *primary = (gfx_thumbnail_t*)calloc(1, sizeof(*primary));
+   gfx_thumbnail_t *secondary = (gfx_thumbnail_t*)calloc(1, sizeof(*secondary));
+   static gfx_display_ctx_driver_t context;
+   unsigned i, side;
+   const enum menu_action actions[] = {
+      MENU_ACTION_START, MENU_ACTION_SCAN, MENU_ACTION_INFO,
+      MENU_ACTION_UP, MENU_ACTION_DOWN, MENU_ACTION_LEFT,
+      MENU_ACTION_RIGHT, MENU_ACTION_OK, MENU_ACTION_CANCEL
+   };
+   CHECK(media && primary && secondary);
+   if (!media || !primary || !secondary)
+      goto cleanup;
+   context.media_shader_draw = thumbnail_shader_draw;
+   test_display.dispctx = &context;
+   static_thumbnail_navigation = true;
+   for (side = 0; side < 2; side++)
+   {
+      gfx_thumbnail_t *image = side ? secondary : primary;
+      retro_atomic_store_release_int(&primary->status, GFX_THUMBNAIL_STATUS_UNKNOWN);
+      retro_atomic_store_release_int(&secondary->status, GFX_THUMBNAIL_STATUS_UNKNOWN);
+      retro_atomic_store_release_int(&image->status, GFX_THUMBNAIL_STATUS_AVAILABLE);
+      image->texture = 1;
+      image->dims = VIDEO_SCALE_PACK(320, 240);
+      menu_media_controls_thumbnail(media, primary, secondary, true,
+            640, 480, NULL, 1);
+      CHECK(!media->controls.target.user);
+      CHECK(!media->controls.layout.button_count);
+      for (i = 0; i < sizeof(actions) / sizeof(actions[0]); i++)
+         CHECK(!menu_media_controls_action(media, actions[i], 2));
+      menu_media_controls_thumbnail(media, primary, secondary, false,
+            640, 480, NULL, 3);
+      CHECK(!media->controls.target.user);
+   }
+   menu_media_controls_cancel(media);
+cleanup:
+   test_display.dispctx = NULL;
+   static_thumbnail_navigation = false;
+   free(primary);
+   free(secondary);
+   free(media);
+}
+
 int main(void)
 {
+   still_thumbnail_navigation();
    test_settings.uints.media_player_seek_seconds = 5;
    test_settings.uints.media_player_controls_timeout = 3;
    display_owner_lifecycle();
