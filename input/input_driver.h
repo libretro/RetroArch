@@ -2438,13 +2438,15 @@ void input_game_focus_free(void);
  * @param buf        A string which will be overwritten with the returned value
  * @param bind       A binding to convert to a string
  * @param auto_bind  A default binding which will be used after `bind`. Can be NULL.
+ * @param show_auto  Whether a binding taken from `auto_bind` is tagged "(Auto)".
  * @param size       The maximum length that will be written to `buf`
  */
 size_t input_config_get_bind_string(void *settings_data,
       char *s, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind,
       const struct input_bind_label *label,
-      const struct input_bind_label *auto_label, size_t len);
+      const struct input_bind_label *auto_label, bool show_auto,
+      size_t len);
 
 size_t input_config_get_bind_string_joyaxis(
       bool input_descriptor_label_show,

@@ -73,7 +73,8 @@ size_t input_config_get_bind_string(void *settings_data,
       char *s, const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind,
       const struct input_bind_label *label,
-      const struct input_bind_label *auto_label, size_t len)
+      const struct input_bind_label *auto_label, bool show_auto,
+      size_t len)
 {
    *s = '\0';
    return 0;

@@ -3972,12 +3972,14 @@ static void controls_append_bind(QString *mapped, settings_t *settings,
 {
    char bind[300];
    bind[0] = '\0';
+   /* which controller input, not where its bind came from: a remap
+    * leaves an autoconfigured bind autoconfigured */
    input_config_get_bind_string(settings, bind,
          input_config_bind(user, retro_id),
          input_config_get_bind_auto(user, retro_id),
          input_config_bind_names(user, retro_id),
          input_autoconf_bind_names(user, retro_id),
-         sizeof(bind));
+         false, sizeof(bind));
    if (!*bind)
       return;
    if (!mapped->isEmpty())
@@ -7287,7 +7289,7 @@ QWidget *UserBindsPage::widget()
             keybind, auto_bind,
             input_config_bind_names(p, retro_id),
             input_autoconf_bind_names(p, retro_id),
-            sizeof(descriptor));
+            true, sizeof(descriptor));
 
          QString label = msg_hash_to_str(input_config_bind_label(retro_id));
 

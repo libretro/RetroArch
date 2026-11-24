@@ -1875,7 +1875,7 @@ static size_t setting_get_string_representation_st_bind(rarch_setting_t *setting
       input_config_get_bind_auto(index_offset, id);
    _len         = input_config_get_bind_string(settings, s, keybind,
          auto_bind, input_config_bind_names(index_offset, id),
-         input_autoconf_bind_names(index_offset, id), len);
+         input_autoconf_bind_names(index_offset, id), true, len);
    /* a hotkey's, then the controllers' own */
    if (id >= RARCH_FIRST_META_KEY && _len < len)
       _len     += input_config_plays_as_hotkey_string(id, s + _len,

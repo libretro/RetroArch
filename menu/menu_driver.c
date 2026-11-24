@@ -5435,7 +5435,8 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
             /* Transient bind under capture: it lives on the stack and has
              * no entry in the label arrays, so it carries no labels. */
             input_config_get_bind_string(settings, hold_label,
-                  &_binds->buffer, NULL, NULL, NULL, sizeof(hold_label));
+                  &_binds->buffer, NULL, NULL, NULL, true,
+                  sizeof(hold_label));
 
             snprintf(bind->s, bind->len,
                   "%s..\n(%s %1.1f %s)\n \n%s\n   %s%s",

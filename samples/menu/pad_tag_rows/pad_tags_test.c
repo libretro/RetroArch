@@ -1272,6 +1272,39 @@ static void lane_device_names(void)
    sys->ports.size = kept_size;
 }
 
+/* An input bound by the controller's autoconfig profile is tagged so
+ * where the menu shows its binds; the desktop menu's Controls window,
+ * which shows only which input gives a remapped one, leaves the tag
+ * off. A bind set by hand has none either way. */
+static void lane_auto_tag(void)
+{
+   char s[256];
+   struct retro_keybind bind;
+   struct retro_keybind auto_bind;
+   settings_t *settings = config_get_ptr();
+
+   memset(&bind, 0, sizeof(bind));
+   memset(&auto_bind, 0, sizeof(auto_bind));
+   bind.joykey       = NO_BTN;
+   bind.joyaxis      = AXIS_NONE;
+   auto_bind.joykey  = 3;
+   auto_bind.joyaxis = AXIS_NONE;
+
+   input_config_get_bind_string(settings, s, &bind, &auto_bind,
+         NULL, NULL, true, sizeof(s));
+   check(strstr(s, "(Auto)") != NULL,
+         "auto tag: the menu tags an autoconfigured bind (\"%s\")", s);
+   input_config_get_bind_string(settings, s, &bind, &auto_bind,
+         NULL, NULL, false, sizeof(s));
+   check(*s && !strstr(s, "(Auto)"),
+         "auto tag: the Controls window names it untagged (\"%s\")", s);
+   bind.joykey = 3;
+   input_config_get_bind_string(settings, s, &bind, &auto_bind,
+         NULL, NULL, true, sizeof(s));
+   check(*s && !strstr(s, "(Auto)"),
+         "auto tag: a bind set by hand is untagged (\"%s\")", s);
+}
+
 int main(int argc, char *argv[])
 {
    FILE *f;
@@ -1360,6 +1393,7 @@ int main(int argc, char *argv[])
    lane_scan_leaves();
    lane_press_trigger();
    lane_device_names();
+   lane_auto_tag();
 
    filestream_delete(ratst_path);
    filestream_delete(cfg_path);

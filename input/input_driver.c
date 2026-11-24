@@ -7950,9 +7950,11 @@ size_t input_config_get_bind_string(
       const struct retro_keybind *auto_bind,
       const struct input_bind_label *label,
       const struct input_bind_label *auto_label,
+      bool show_auto,
       size_t len)
 {
    settings_t *settings                 = (settings_t*)settings_data;
+   const char *auto_suffix              = show_auto ? "(Auto)" : "";
    size_t _len                          = 0;
    int delim                            = 0;
    bool  input_descriptor_label_show    =
@@ -7973,11 +7975,11 @@ size_t input_config_get_bind_string(
    else if (auto_bind && auto_bind->joykey != NO_BTN)
       _len = input_config_get_bind_string_joykey(
             input_descriptor_label_show,
-            s, "(Auto)", auto_bind, auto_label, len);
+            s, auto_suffix, auto_bind, auto_label, len);
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
       _len = input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
-            s, "(Auto)", auto_bind, auto_label, len);
+            s, auto_suffix, auto_bind, auto_label, len);
    _len = BIND_STR_CLAMP(_len, len);
 
    if (*s)
