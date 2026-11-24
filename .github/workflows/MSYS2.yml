@@ -96,7 +96,7 @@ jobs:
           # its shell. These retries install dependencies only.
           p=$MINGW_PACKAGE_PREFIX
           pkgs="base-devel git $p-gettext $p-gobject-introspection
-            $p-graphite2 $p-p11-kit $p-qt6-base $p-x264 $p-cc"
+            $p-graphite2 $p-p11-kit $p-qt6-base $p-x264 $p-cc $p-pkgconf"
           for i in 1 2 3 4 5; do
             pacman -S --noconfirm --needed $pkgs && exit 0
             [ $i = 5 ] && break
