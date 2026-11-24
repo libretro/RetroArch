@@ -3850,6 +3850,11 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
    }
 }
 
+#if defined(_MSC_VER) && _MSC_VER == 1400
+/* VC8's P2 optimizer crashes here in /O2 Griffin builds. Keep this
+ * cold playlist setup out of that optimizer, as for dialog setup. */
+#pragma optimize("", off)
+#endif
 static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 {
    menu_displaylist_info_t info;
@@ -3939,6 +3944,10 @@ static void xmb_init_horizontal_list(xmb_handle_t *xmb)
 
    menu_displaylist_info_free(&info);
 }
+
+#if defined(_MSC_VER) && _MSC_VER == 1400
+#pragma optimize("", on)
+#endif
 
 static void xmb_toggle_horizontal_list(xmb_handle_t *xmb)
 {
