@@ -32,6 +32,8 @@ typedef struct {
 } resource_vtbl_t;
 typedef struct resource { resource_vtbl_t *lpVtbl; } resource_t;
 typedef resource_t *D3D10Resource;
+typedef resource_t *D3D10Texture2D;
+#include "lend_type.inc"
 struct device;
 typedef struct {
    void (*CopySubresourceRegion)(struct device*, D3D10Resource, UINT, UINT, UINT, UINT,
@@ -41,9 +43,10 @@ typedef struct {
 typedef struct device { device_vtbl_t *lpVtbl; } device_t;
 typedef device_t *D3D10Device;
 typedef struct { struct { UINT Width, Height, MiscFlags; DXGI_FORMAT Format; } desc;
-   resource_t *handle, *staging; void *sampler, *view; } d3d10_texture_t;
+   resource_t *handle, *staging; void *sampler, *view;
+   d3d10_texture_lend_t *lend; } d3d10_texture_t;
 typedef struct { D3D10Device device; void *samplers[2][1]; } d3d10_video_t;
-struct texture_image { unsigned width, height; uint32_t *pixels; bool pix10; };
+struct texture_image { unsigned width, height; uint32_t *pixels; bool pix10, supports_rgba; };
 static uint32_t staging_pixels[3], gpu_pixels[3];
 static HRESULT map_result;
 static unsigned copies, nonblocking, failures;
@@ -86,17 +89,17 @@ int main(void)
    unsigned i, before;
    memset(&video, 0, sizeof(video)); video.device = &device;
    memset(&image, 0, sizeof(image)); image.width = 2; image.height = 1; image.pixels = pink;
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < 4; i++)
    {
       uint32_t initial[3];
-      fallback = formats[i]; map_result = 0;
+      fallback = formats[i%2]; map_result = 0; image.supports_rgba = i >= 2;
       texture = (d3d10_texture_t*)d3d10_gfx_load_texture_internal(&video, &image, TEXTURE_FILTER_LINEAR);
       if (!texture) { failures++; continue; }
       memcpy(initial, gpu_pixels, sizeof(initial));
       memset(staging_pixels, 0, sizeof(staging_pixels));
       if (d3d10_gfx_update_texture_internal(&video, (uintptr_t)texture, &image)
             != VIDEO_TEXTURE_UPDATE_DONE || memcmp(initial, gpu_pixels, 8)) failures++;
-      if (i == 1 && gpu_pixels[0] != UINT32_C(0xff3070f0)) failures++;
+      if (gpu_pixels[0] != ((i == 1 || i == 2) ? UINT32_C(0xff3070f0) : pink[0])) failures++;
       before = copies; map_result = DXGI_ERROR_WAS_STILL_DRAWING;
       if (d3d10_gfx_update_texture_internal(&video, (uintptr_t)texture, &image)
             != VIDEO_TEXTURE_UPDATE_DROPPED || copies != before) failures++;
@@ -105,7 +108,7 @@ int main(void)
             != VIDEO_TEXTURE_UPDATE_REFUSED || copies != before) failures++;
       free(texture);
    }
-   if (nonblocking != 6) failures++;
+   if (nonblocking != 12) failures++;
    printf("D3D preview update formats: %u failures\n", failures);
    return failures ? 1 : 0;
 }

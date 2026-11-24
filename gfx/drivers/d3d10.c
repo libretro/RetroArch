@@ -146,8 +146,16 @@ typedef ID3D10InfoQueue*          D3D10InfoQueue;
 
 typedef struct
 {
+   D3D10Texture2D staging[2];
+   D3D10_MAPPED_TEXTURE2D mapped[2];
+   unsigned valid, failed;
+} d3d10_texture_lend_t;
+
+typedef struct
+{
    D3D10Texture2D          handle;
    D3D10Texture2D          staging;
+   d3d10_texture_lend_t   *lend;
    D3D10_TEXTURE2D_DESC    desc;
    D3D10RenderTargetView   rt_view;
    D3D10ShaderResourceView view;
@@ -552,6 +560,19 @@ d3d10_set_texture_and_sampler(D3D10Device ctx, UINT slot,
 
 static INLINE void d3d10_release_texture(d3d10_texture_t* texture)
 {
+   if (texture->lend)
+   {
+      unsigned slot;
+      for (slot = 0; slot < 2; slot++)
+      {
+         if (texture->lend->valid & (1u << slot))
+            texture->lend->staging[slot]->lpVtbl->Unmap(
+                  texture->lend->staging[slot], 0);
+         Release(texture->lend->staging[slot]);
+      }
+      free(texture->lend);
+      texture->lend = NULL;
+   }
    Release(texture->handle);
    Release(texture->staging);
    Release(texture->view);
@@ -4103,6 +4124,9 @@ static void *d3d10_gfx_init(const video_info_t* video)
       }
    }
 
+   /* RGBA8 is native even when this D3D10 device cannot sample BGRA8.
+    * Image producers can write that order straight into upload loans. */
+   video_driver_modify_disp_flags(VIDEO_FLAG_USE_RGBA, 0);
    d3d10_views_publish(d3d10);
    return d3d10;
 
@@ -6086,7 +6110,8 @@ static uintptr_t d3d10_gfx_load_texture_internal(
 
    texture->desc.Width  = image->width;
    texture->desc.Height = image->height;
-   texture->desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+   texture->desc.Format = image->supports_rgba
+      ? DXGI_FORMAT_R8G8B8A8_UNORM : DXGI_FORMAT_B8G8R8A8_UNORM;
 
    d3d10_release_texture(texture);
    d3d10_init_texture(d3d10->device, texture);
@@ -6095,7 +6120,8 @@ static uintptr_t d3d10_gfx_load_texture_internal(
       d3d10_update_texture(
             d3d10->device,
             image->width, image->height, 0,
-            DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels,
+            image->supports_rgba ? DXGI_FORMAT_R8G8B8A8_UNORM
+               : DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels,
             texture);
 
    return (uintptr_t)texture;
@@ -6111,9 +6137,7 @@ static void d3d10_gfx_unload_texture_internal(uintptr_t handle)
    if (!texture)
       return;
 
-   Release(texture->view);
-   Release(texture->staging);
-   Release(texture->handle);
+   d3d10_release_texture(texture);
    free(texture);
 }
 
@@ -6134,12 +6158,79 @@ static uintptr_t d3d10_texture_unload_wrap(void *data)
 }
 #endif
 
-/* Same-size contents into a texture d3d10_gfx_load_texture made,
- * through the staging texture it was given: the texture stays, so a
- * streaming surface costs a copy a frame rather than a texture
- * created and released. The staging texture the last update copied
- * from may still be the GPU's; mapping it would wait, so the frame is
- * dropped instead and the texture keeps what it shows. */
+/* Map only after the previous GPU copy has finished. Addresses and pitches
+ * are offered anew for each write; busy slots are never waited on. */
+static bool d3d10_texture_lend_map(d3d10_texture_lend_t *lend, unsigned slot)
+{
+   D3D10_MAPPED_TEXTURE2D mapped;
+   unsigned bit = 1u << slot;
+   HRESULT hr;
+   if (lend->valid & bit || lend->failed & bit)
+      return true;
+   hr = lend->staging[slot]->lpVtbl->Map(lend->staging[slot], 0,
+         D3D10_MAP_READ_WRITE, D3D10_MAP_FLAG_DO_NOT_WAIT, &mapped);
+   if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
+      return false;
+   if (FAILED(hr))
+      lend->failed |= bit;
+   else
+   {
+      lend->mapped[slot] = mapped;
+      lend->valid |= bit;
+   }
+   return true;
+}
+
+static void *d3d10_gfx_texture_lend(void *data, uintptr_t id, unsigned slot,
+      size_t pitch, size_t *out_pitch)
+{
+   d3d10_video_t *video = (d3d10_video_t*)data;
+   d3d10_texture_t *texture = (d3d10_texture_t*)id;
+   d3d10_texture_lend_t *lend;
+   if (     !video || !video->device || !texture || !texture->handle
+         || slot >= 2 || texture->desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM
+         || texture->desc.MipLevels != 1
+         || texture->desc.MiscFlags & D3D10_RESOURCE_MISC_GENERATE_MIPS
+         || pitch != (size_t)texture->desc.Width * 4)
+      return NULL;
+   if (!texture->lend && !(texture->lend = (d3d10_texture_lend_t*)calloc(1,
+               sizeof(*texture->lend))))
+      return NULL;
+   lend = texture->lend;
+   if (!lend->staging[slot])
+   {
+      D3D10_TEXTURE2D_DESC desc = texture->desc;
+      desc.BindFlags = desc.MiscFlags = 0;
+      desc.Usage = D3D10_USAGE_STAGING;
+      /* Surface replacement may read a loan before retiring it. */
+      desc.CPUAccessFlags = D3D10_CPU_ACCESS_READ | D3D10_CPU_ACCESS_WRITE;
+      video->device->lpVtbl->CreateTexture2D(video->device, &desc, NULL,
+            &lend->staging[slot]);
+      if (!lend->staging[slot])
+         return NULL;
+   }
+   if (     !d3d10_texture_lend_map(lend, slot) || lend->failed & (1u << slot)
+         || lend->mapped[slot].RowPitch < pitch
+         || (!out_pitch && lend->mapped[slot].RowPitch != pitch))
+      return NULL;
+   if (out_pitch)
+      *out_pitch = lend->mapped[slot].RowPitch;
+   return lend->mapped[slot].pData;
+}
+
+static bool d3d10_gfx_texture_lend_ready(void *data, uintptr_t id, unsigned slot)
+{
+   d3d10_texture_t *texture = (d3d10_texture_t*)id;
+   (void)data;
+   if (!texture || !texture->lend || slot >= 2
+         || !texture->lend->staging[slot])
+      return true;
+   return d3d10_texture_lend_map(texture->lend, slot);
+}
+
+/* Same-size contents reuse the producer's loan when available. Other
+ * frames copy through the original staging texture, without waiting if
+ * its previous GPU copy is still pending. */
 static enum video_texture_update d3d10_gfx_update_texture_internal(
       d3d10_video_t *d3d10, uintptr_t handle,
       const struct texture_image *image)
@@ -6147,11 +6238,34 @@ static enum video_texture_update d3d10_gfx_update_texture_internal(
    D3D10_MAPPED_TEXTURE2D mapped;
    D3D10_BOX box;
    d3d10_texture_t *texture = (d3d10_texture_t*)handle;
+   D3D10Resource upload;
    HRESULT hr;
 
-   if (     !d3d10 || !texture || !texture->staging || image->pix10
+   if (     !d3d10 || !texture || image->pix10
          || texture->desc.Width  != image->width
          || texture->desc.Height != image->height)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+   if (texture->lend)
+   {
+      unsigned slot;
+      for (slot = 0; slot < 2; slot++)
+         if (image->pixels && image->pixels == texture->lend->mapped[slot].pData)
+         {
+            if (!image->supports_rgba)
+               return VIDEO_TEXTURE_UPDATE_REFUSED;
+            if (!(texture->lend->valid & (1u << slot)))
+               return VIDEO_TEXTURE_UPDATE_DROPPED;
+            upload = (D3D10Resource)texture->lend->staging[slot];
+            texture->lend->staging[slot]->lpVtbl->Unmap(
+                  texture->lend->staging[slot], 0);
+            texture->lend->valid &= ~(1u << slot);
+            texture->lend->mapped[slot].pData = NULL;
+            goto upload;
+         }
+   }
+
+   if (!texture->staging)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
    hr = texture->staging->lpVtbl->Map(texture->staging, 0,
@@ -6161,11 +6275,15 @@ static enum video_texture_update d3d10_gfx_update_texture_internal(
    if (FAILED(hr))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
-   dxgi_copy(image->width, image->height, DXGI_FORMAT_B8G8R8A8_UNORM, 0,
+   dxgi_copy(image->width, image->height,
+         image->supports_rgba ? DXGI_FORMAT_R8G8B8A8_UNORM
+            : DXGI_FORMAT_B8G8R8A8_UNORM, 0,
          image->pixels, texture->desc.Format, mapped.RowPitch,
          mapped.pData);
    texture->staging->lpVtbl->Unmap(texture->staging, 0);
+   upload = (D3D10Resource)texture->staging;
 
+upload:
    box.left   = 0;
    box.top    = 0;
    box.front  = 0;
@@ -6174,7 +6292,7 @@ static enum video_texture_update d3d10_gfx_update_texture_internal(
    box.back   = 1;
    d3d10->device->lpVtbl->CopySubresourceRegion(d3d10->device,
          (D3D10Resource)texture->handle, 0, 0, 0, 0,
-         (D3D10Resource)texture->staging, 0, &box);
+         upload, 0, &box);
    if (texture->desc.MiscFlags & D3D10_RESOURCE_MISC_GENERATE_MIPS)
       d3d10->device->lpVtbl->GenerateMips(d3d10->device, texture->view);
    return VIDEO_TEXTURE_UPDATE_DONE;
@@ -6515,8 +6633,8 @@ static const video_poke_interface_t d3d10_poke_interface = {
    NULL, /* hw_ring_framebuffer */
    d3d10_gfx_update_texture,
    d3d10_get_swap_interval_cap,
-   NULL, /* texture_lend */
-   NULL, /* texture_lend_ready */
+   d3d10_gfx_texture_lend,
+   d3d10_gfx_texture_lend_ready,
    NULL, /* get_last_present_wait */
    d3d10_set_view_count,
    NULL, /* hw_context_destroying */
@@ -6533,7 +6651,7 @@ static const video_poke_interface_t d3d10_poke_interface = {
    NULL, /* get_menu_framebuffer */
    NULL, /* menu_mem_alloc */
    0,    /* menu_mem_pitch_align */
-   false, /* texture_lend_per_write */
+   true, /* texture_lend_per_write */
    NULL, /* driver_pacing_set */
    NULL, /* driver_pacing_wait */
    NULL, /* driver_pacing_mark */

@@ -17,6 +17,16 @@ with tempfile.TemporaryDirectory() as tmp:
     tmp = Path(tmp)
     (tmp / 'formats.inc').write_text('typedef enum { ' + ', '.join(formats) + ' } DXGI_FORMAT;\n')
     (tmp / 'copy.inc').write_text(copy)
+    end = driver.index('} d3d10_texture_lend_t;') + len('} d3d10_texture_lend_t;')
+    start = driver.rindex('typedef struct', 0, end)
+    (tmp / 'lend_type.inc').write_text(driver[start:end])
+    (tmp / 'lend.inc').write_text('\n'.join(function(driver, s) for s in (
+        'static INLINE void d3d10_release_texture(',
+        'static void d3d10_gfx_unload_texture_internal(',
+        'static bool d3d10_texture_lend_map(',
+        'static void *d3d10_gfx_texture_lend(',
+        'static bool d3d10_gfx_texture_lend_ready(',
+        'static enum video_texture_update d3d10_gfx_update_texture_internal(')))
     bodies = [function(driver, s) for s in (
         'static void d3d10_update_texture(',
         'static uintptr_t d3d10_gfx_load_texture_internal(',
@@ -29,3 +39,9 @@ with tempfile.TemporaryDirectory() as tmp:
         str(Path(__file__).with_name('test.c')), str(root / 'libretro-common/gfx/scaler/pixconv.c'),
         '-o', str(exe)], check=True)
     subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(exe)], check=True)
+    for name in ('lend_test.c', 'lend_gpu_test.c'):
+        target = tmp / (name + ('.exe' if 'mingw' in cc[0] or os.name == 'nt' else '.bin'))
+        libs = ['-ld3d10'] if name == 'lend_gpu_test.c' and ('mingw' in cc[0] or os.name == 'nt') else []
+        subprocess.run(cc + flags + ['-I' + str(tmp), '-I' + str(root / 'libretro-common/include'),
+            str(Path(__file__).with_name(name)), '-o', str(target)] + libs, check=True)
+        subprocess.run(shlex.split(os.environ.get('RUNNER', '')) + [str(target)], check=True)
