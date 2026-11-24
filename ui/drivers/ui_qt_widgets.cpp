@@ -30,11 +30,12 @@
 #include <QSlider>
 #include <QSpinBox>
 #include <QStackedLayout>
-#include <QStandardItemModel>
+#include <QAbstractItemView>
 #include <QStyle>
 #include <QStyleOption>
 #include <QTimer>
 #include <QWhatsThis>
+#include <QWindow>
 
 #include "ui_qt_widgets.h"
 #include "ui_qt.h"
@@ -3606,6 +3607,8 @@ ControlsDialog::ControlsDialog(QWidget *parent) :
    ,m_detectFound(-1)
    ,m_settingsPage(false)
    ,m_detectReleased(false)
+   ,m_detectKeyboard(false)
+   ,m_sized(false)
 {
    QVBoxLayout *dialogLayout = new QVBoxLayout(this);
 
@@ -3642,9 +3645,26 @@ void ControlsDialog::changeEvent(QEvent *event)
    QDialog::changeEvent(event);
 }
 
+/* The first time it is opened it is made as big as what it shows,
+ * within the screen it is on. */
 void ControlsDialog::reload()
 {
    buildLayout();
+   if (!m_sized && isVisible() && m_scrollArea->widget())
+   {
+      QScreen *screen = windowHandle() ? windowHandle()->screen()
+         : QGuiApplication::primaryScreen();
+      QSize want      = m_scrollArea->widget()->sizeHint()
+         + (size() - m_scrollArea->viewport()->size());
+      m_sized         = true;
+      if (screen)
+      {
+         QRect room = screen->availableGeometry();
+         want       = want.boundedTo(QSize(room.width()  * 9 / 10,
+                  room.height() * 9 / 10));
+      }
+      resize(want.expandedTo(size()));
+   }
 }
 
 void ControlsDialog::stopDetection()
@@ -3673,8 +3693,12 @@ void ControlsDialog::detectIterate(void)
    {
       if (held)
          return;
-      input_config_set_remap_id(dialog->m_detectUser,
-            (unsigned)dialog->m_detectFound, dialog->m_detectDescriptor);
+      if (dialog->m_detectKeyboard)
+         config_get_ptr()->uints.input_keymapper_ids[dialog->m_detectUser]
+            [dialog->m_detectFound] = dialog->m_detectDescriptor;
+      else
+         input_config_set_remap_id(dialog->m_detectUser,
+               (unsigned)dialog->m_detectFound, dialog->m_detectDescriptor);
       dialog->buildLayout();
    }
    else if (!dialog->m_detectReleased)
@@ -3744,6 +3768,7 @@ void ControlsDialog::onDetectClicked()
    stopDetection();
    m_detectButton     = button;
    m_detectDescriptor = button->property("descriptor").toUInt();
+   m_detectKeyboard   = button->property("keyboard").toBool();
    m_detectUser       = m_selectedUser;
    m_detectReleased   = false;
    s_detect           = this;
@@ -3785,33 +3810,19 @@ void ControlsDialog::onDefaultClicked()
    buildLayout();
 }
 
-/* a keyboard device's: the key a RetroPad input gives */
-void ControlsDialog::onKeyChanged(int index)
-{
-   QComboBox *combo     = qobject_cast<QComboBox*>(sender());
-   settings_t *settings = config_get_ptr();
-   unsigned retro_id;
-
-   if (!combo || index < 0)
-      return;
-   retro_id = combo->property("retro_id").toUInt();
-   if (retro_id < RARCH_CUSTOM_BIND_LIST_END)
-      settings->uints.input_keymapper_ids[m_selectedUser][retro_id] =
-         combo->itemData(index).toUInt();
-}
-
+/* a keyboard device's: no controller button gives the key */
 void ControlsDialog::onKeyClearClicked()
 {
    QPushButton *button  = qobject_cast<QPushButton*>(sender());
    settings_t *settings = config_get_ptr();
-   unsigned retro_id;
+   unsigned key, i;
 
    if (!button)
       return;
-   retro_id = button->property("retro_id").toUInt();
-   if (retro_id < RARCH_CUSTOM_BIND_LIST_END)
-      settings->uints.input_keymapper_ids[m_selectedUser][retro_id] =
-         RETROK_FIRST;
+   key = button->property("descriptor").toUInt();
+   for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
+      if (settings->uints.input_keymapper_ids[m_selectedUser][i] == key)
+         settings->uints.input_keymapper_ids[m_selectedUser][i] = RETROK_FIRST;
    buildLayout();
 }
 
@@ -3944,6 +3955,36 @@ void ControlsDialog::buildSettingsPage(QVBoxLayout *outer)
 }
 
 #ifdef HAVE_MENU
+/* A list as wide as its widest entry, rather than cut to its box's. */
+static void controls_combo_fit(QComboBox *combo)
+{
+   QAbstractItemView *view = combo->view();
+   combo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+   view->setTextElideMode(Qt::ElideNone);
+   view->setMinimumWidth(view->sizeHintForColumn(0)
+         + 2 * view->frameWidth()
+         + combo->style()->pixelMetric(QStyle::PM_ScrollBarExtent));
+}
+
+/* the controller input bound to @retro_id, after those in @mapped */
+static void controls_append_bind(QString *mapped, settings_t *settings,
+      unsigned user, unsigned retro_id)
+{
+   char bind[300];
+   bind[0] = '\0';
+   input_config_get_bind_string(settings, bind,
+         input_config_bind(user, retro_id),
+         input_config_get_bind_auto(user, retro_id),
+         input_config_bind_names(user, retro_id),
+         input_autoconf_bind_names(user, retro_id),
+         sizeof(bind));
+   if (!*bind)
+      return;
+   if (!mapped->isEmpty())
+      *mapped += QStringLiteral(", ");
+   *mapped += QString::fromUtf8(bind);
+}
+
 /* The port's row: which port it is, the core port it is mapped to,
  * that port's device type and the analog to digital mode, all as the
  * menu's Port Controls has them. */
@@ -4004,6 +4045,9 @@ static void controls_port_row(ControlsDialog *dialog, QVBoxLayout *outer,
    deviceCombo->setToolTip(msg_hash_to_str(
             MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE));
 
+   controls_combo_fit(portCombo);
+   controls_combo_fit(mappedCombo);
+   controls_combo_fit(deviceCombo);
    row->addWidget(portCombo);
    row->addWidget(new QLabel(msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT), contents));
@@ -4015,7 +4059,9 @@ static void controls_port_row(ControlsDialog *dialog, QVBoxLayout *outer,
    {
       row->addWidget(new QLabel(msg_hash_to_str(
                   MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE), contents));
-      row->addWidget(new UIntComboBox(adc, contents));
+      UIntComboBox *adcCombo = new UIntComboBox(adc, contents);
+      controls_combo_fit(adcCombo);
+      row->addWidget(adcCombo);
    }
    row->addStretch();
    outer->addLayout(row);
@@ -4109,23 +4155,8 @@ static bool controls_joypad_rows(ControlsDialog *dialog, QFormLayout *form,
          label += QLatin1Char((d % 2) == 0 ? '+' : '-');
 
       for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
-      {
-         char bind[300];
-         if (settings->uints.input_remap_ids[user][retro_id] != d)
-            continue;
-         bind[0] = '\0';
-         input_config_get_bind_string(settings, bind,
-               input_config_bind(user, retro_id),
-               input_config_get_bind_auto(user, retro_id),
-               input_config_bind_names(user, retro_id),
-               input_autoconf_bind_names(user, retro_id),
-               sizeof(bind));
-         if (!*bind)
-            continue;
-         if (!mapped.isEmpty())
-            mapped += QStringLiteral(", ");
-         mapped += QString::fromUtf8(bind);
-      }
+         if (settings->uints.input_remap_ids[user][retro_id] == d)
+            controls_append_bind(&mapped, settings, user, retro_id);
       if (mapped.isEmpty())
          mapped = QStringLiteral(RARCH_NO_BIND);
 
@@ -4158,72 +4189,49 @@ static bool controls_joypad_rows(ControlsDialog *dialog, QFormLayout *form,
    return any;
 }
 
-/* A keyboard's, as the menu has it: a row per RetroPad input, with the
- * key it gives. */
+/* A keyboard device's: a row per key, with the controller buttons that
+ * give it, set as a joypad's are. There is no default: unmapped is the
+ * menu's. */
 static void controls_keyboard_rows(ControlsDialog *dialog,
       QFormLayout *form, QWidget *contents, unsigned user)
 {
-   unsigned j, k;
-   int key_row[RETROK_LAST];
-   settings_t *settings     = config_get_ptr();
-   /* the menu's key list, made once: every row's picker shows it */
-   QStandardItemModel *list = new QStandardItemModel(contents);
+   unsigned k;
+   settings_t *settings = config_get_ptr();
 
-   for (k = 0; k < RETROK_LAST; k++)
-      key_row[k] = -1;
    for (k = 0; k < RARCH_MAX_KEYS; k++)
    {
-      char s[NAME_MAX_LENGTH];
-      QStandardItem *item;
+      unsigned retro_id;
+      QString mapped;
+      QHBoxLayout *row;
+      QPushButton *button, *clear;
       unsigned key     = key_descriptors[k].key;
       const char *name = key_descriptors[k].desc;
-      if (!name || !*name || key >= RETROK_LAST)
+
+      if (!name || !*name || key == RETROK_FIRST)
          continue;
-      if (key == RETROK_FIRST)
-         item = new QStandardItem(QStringLiteral(RARCH_NO_BIND));
-      else
-      {
-         snprintf(s, sizeof(s), msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY), name);
-         item = new QStandardItem(QString::fromUtf8(s));
-      }
-      item->setData(key, Qt::UserRole);
-      key_row[key] = list->rowCount();
-      list->appendRow(item);
-   }
+      for (retro_id = 0; retro_id < RARCH_ANALOG_BIND_LIST_END; retro_id++)
+         if (settings->uints.input_keymapper_ids[user][retro_id] == key)
+            controls_append_bind(&mapped, settings, user, retro_id);
+      if (mapped.isEmpty())
+         mapped = QStringLiteral(RARCH_NO_BIND);
 
-   for (j = 0; j < RARCH_ANALOG_BIND_LIST_END; j++)
-   {
-      char bind[300];
-      unsigned retro_id   = input_config_bind_order[j];
-      unsigned current    = settings->uints.input_keymapper_ids[user][retro_id];
-      QHBoxLayout *row    = new QHBoxLayout();
-      QComboBox *keys     = new QComboBox(contents);
-      QPushButton *clear  = new QPushButton(msg_hash_to_str(
+      row    = new QHBoxLayout();
+      button = new QPushButton(mapped, contents);
+      clear  = new QPushButton(msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_CLEAR_SETTING), contents);
-      QLabel *label       = new QLabel(msg_hash_to_str(
-               input_config_bind_label(retro_id)), contents);
-
-      bind[0] = '\0';
-      input_config_get_bind_string(settings, bind,
-            input_config_bind(user, retro_id),
-            input_config_get_bind_auto(user, retro_id),
-            input_config_bind_names(user, retro_id),
-            input_autoconf_bind_names(user, retro_id),
-            sizeof(bind));
-      label->setToolTip(QString::fromUtf8(bind));
-
-      keys->setModel(list);
-      keys->setCurrentIndex((current < RETROK_LAST) ? key_row[current] : -1);
-      keys->setProperty("retro_id", retro_id);
-      clear->setProperty("retro_id", retro_id);
-      QObject::connect(keys, SIGNAL(currentIndexChanged(int)), dialog,
-            SLOT(onKeyChanged(int)));
+      button->setProperty("descriptor", key);
+      button->setProperty("keyboard", true);
+      button->setProperty("idle", mapped);
+      button->setToolTip(msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_QT_CONTROLS_DETECT_TIP));
+      clear->setProperty("descriptor", key);
+      QObject::connect(button, SIGNAL(clicked()), dialog,
+            SLOT(onDetectClicked()));
       QObject::connect(clear, SIGNAL(clicked()), dialog,
             SLOT(onKeyClearClicked()));
-      row->addWidget(keys, 1);
+      row->addWidget(button, 1);
       row->addWidget(clear);
-      form->addRow(label, row);
+      form->addRow(QString::fromUtf8(name), row);
    }
 }
 #endif

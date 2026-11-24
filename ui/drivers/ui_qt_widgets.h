@@ -815,7 +815,6 @@ public slots:
    void onDetectClicked();
    void onClearClicked();
    void onDefaultClicked();
-   void onKeyChanged(int index);
    void onKeyClearClicked();
    void onSettingsClicked();
    void onManageClicked();
@@ -828,8 +827,9 @@ private:
    void stopDetection();
    static ControlsDialog *s_detect;
    QScrollArea *m_scrollArea;
-   /* the input being set, by whose button, from which user; the
-    * button found and whether all had been let go first */
+   /* the input being set (a core input, or a keyboard device's key),
+    * by whose button, from which user; the button found and whether
+    * all had been let go first */
    QPointer<QPushButton> m_detectButton;
    unsigned m_selectedUser;
    unsigned m_detectDescriptor;
@@ -837,6 +837,9 @@ private:
    int m_detectFound;
    bool m_settingsPage;
    bool m_detectReleased;
+   bool m_detectKeyboard;
+   /* sized to what it shows once, the first time it is opened */
+   bool m_sized;
 };
 
 class CoreOptionsDialog : public QDialog
