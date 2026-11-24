@@ -2482,14 +2482,35 @@ void link_bus_step_end(link_bus_t *b)
    if (!b)
       return;
    reform = b->held_back;
-   for (i = 0; i < b->recs_len; i++)
+   /* Each console's leave at its own edge, the earliest first, so that a
+    * pair parts at the first leave that separates it */
+   for (;;)
    {
-      struct retro_link_port *p = b->recs[i];
-      if (b->consoles[p->console].in_frame)
-         continue;
-      if (p->cut)
+      const struct retro_link_port *x = NULL;
+      unsigned c;
+      for (i = 0; i < b->recs_len; i++)
       {
-         struct retro_link_port *m;
+         const struct retro_link_port *p = b->recs[i];
+         if (     p->cut && !b->consoles[p->console].in_frame
+               && (!x || link_bus_instant_before(p->since, p->rate, x->since, x->rate)))
+            x = p;
+      }
+      if (!x)
+         break;
+      if (any)
+      {
+         link_bus_group(b);
+         link_bus_relate(b, t, rate);
+      }
+      c    = x->console;
+      t    = x->since;
+      rate = x->rate;
+      any  = true;
+      for (i = link_bus_at(b, c, 0); i < b->recs_len && b->recs[i]->console == c; i++)
+      {
+         struct retro_link_port *p = b->recs[i], *m;
+         if (!p->cut)
+            continue;
          /* It leaves at its console's edge, off its bus before any re-join
           * so that both are seen */
          for (m = p->head; m; m = m->next)
@@ -2498,17 +2519,17 @@ void link_bus_step_end(link_bus_t *b)
                link_bus_off(p, m, p->since, p->rate);
                link_bus_off(m, p, p->since, p->rate);
             }
-         if (!any)
-         {
-            t    = p->since;
-            rate = p->rate;
-            any  = true;
-         }
          p->cut  = false;
          p->live = false;
          reform  = true;
          link_bus_drop(b, p);
       }
+   }
+   for (i = 0; i < b->recs_len; i++)
+   {
+      struct retro_link_port *p = b->recs[i];
+      if (b->consoles[p->console].in_frame)
+         continue;
       if (p->join)
       {
          p->join = false;

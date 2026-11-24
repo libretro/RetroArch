@@ -3394,6 +3394,43 @@ static void detach_in_frame_leaves_at_own_edge(void)
    fx_free();
 }
 
+/* In one step console 0 leaves the bus 0-1 at its edge 6000 and console 2,
+ * the middle of the chain 1:1-2-3, at its edge 2000: the chain's ends part
+ * at 2000, so at their edges, 3000, they no longer see each other */
+static void two_detaches_part_at_own_edges(void)
+{
+   unsigned c;
+
+   fx_new(4);
+   for (c = 0; c < 4; c++)
+      fx_port(c, 0, "test-cable", 60000, 0, 0);
+   fx_port(1, 1, "test-cable", 60000, 0, 0);
+   for (c = 0; c < 4; c++)
+      fx_attach(c);
+   fx_span[0][0] = 3000;
+   fx_span[1][0] = 3000;
+   fx_span[1][1] = 3000;
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   CHECK(link_bus_cable(fx_bus, 1, 1, 2, 0));
+   CHECK(link_bus_cable(fx_bus, 2, 0, 3, 0));
+   fx_own_frame(0, FX_FAR);
+   fx_own_start(0, FX_FAR);
+   link_bus_detach(fx_bus, 0, fx_h[0][0]);
+   link_bus_frame_end(fx_bus, 0);
+   fx_own_frame(1, FX_FAR);
+   fx_own_frame(2, FX_FAR);
+   fx_own_start(2, FX_FAR);
+   link_bus_detach(fx_bus, 2, fx_h[2][0]);
+   link_bus_frame_end(fx_bus, 2);
+   for (c = 0; c < 3; c++)
+      fx_own_frame(3, FX_FAR);
+   link_bus_step_end(fx_bus);
+   CHECK(fx_peers(1, 0) == 2 * 16 + 2);
+   CHECK(fx_peers(1, 1) == 0);
+   CHECK(fx_peers(3, 0) == 0);
+   fx_free();
+}
+
 /* A port at 60000 attached beside one at 16777216 standing at 280896: the
  * clocks share whole ticks every 1/32 s */
 static void attach_off_grid_places_again(void)
@@ -4016,6 +4053,7 @@ static const struct
    { "unhold_places_on_rate_grid",           unhold_places_on_rate_grid },
    { "attach_in_frame_joins_at_own_edge",    attach_in_frame_joins_at_own_edge },
    { "detach_in_frame_leaves_at_own_edge",   detach_in_frame_leaves_at_own_edge },
+   { "two_detaches_part_at_own_edges",       two_detaches_part_at_own_edges },
    { "detached_in_frame_lands_in_any_order", detached_in_frame_lands_in_any_order },
    { "dropped_send_lands_nowhere",           dropped_send_lands_nowhere },
    { "attach_off_grid_places_again",         attach_off_grid_places_again },
