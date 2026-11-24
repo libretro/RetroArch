@@ -9568,6 +9568,8 @@ static int rgui_environ(
 
    switch (type)
    {
+      case MENU_ENVIRON_QUERY_FULLSCREEN_THUMBNAILS:
+         return (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) ? 0 : -1;
       case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
          rgui->flags              |=  RGUI_FLAG_SHOW_MOUSE;
          p_disp->flags            |=  GFX_DISP_FLAG_FB_DIRTY;

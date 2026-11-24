@@ -8678,7 +8678,8 @@ static enum runloop_state_enum runloop_check_state(
 
          if (menu_st->flags & MENU_ST_FLAG_ALIVE)
          {
-            if (rarch_is_initialized && !core_type_is_dummy && core_is_running)
+            if (!menu_driver_dismiss_fullscreen() && rarch_is_initialized
+                  && !core_type_is_dummy && core_is_running)
                retroarch_menu_running_finished(false);
          }
          else

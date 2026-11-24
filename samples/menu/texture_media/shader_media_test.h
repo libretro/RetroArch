@@ -91,6 +91,10 @@ static void media_shader_check(struct menu_state *menu_st, test_viewer_t *viewer
       stack->list[stack->size - 1].label = label;
       menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    }
+   CHECK("menu toggle dismisses the fullscreen viewer", command_event(CMD_EVENT_MENU_TOGGLE, NULL));
+   CHECK("menu toggle reveals the browser without closing the menu",
+         !test_showing(viewer) && (menu_st->flags & MENU_ST_FLAG_ALIVE));
+   CHECK("ordinary menu keeps normal toggle behavior", !menu_driver_dismiss_fullscreen());
 }
 #else
 static void media_shader_check(struct menu_state *menu_st, test_viewer_t *viewer)

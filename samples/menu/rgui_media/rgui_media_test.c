@@ -433,8 +433,10 @@ int main(int argc, char **argv)
          goto cleanup;
       }
 #endif
-      rgui_parse_menu_entry_action(rgui, entry, MENU_ACTION_CANCEL);
-      MEDIA_CHECK("Back closes internal view", !media_folder_shown(rgui));
+      MEDIA_CHECK("menu toggle dismisses internal view", command_event(CMD_EVENT_MENU_TOGGLE, NULL));
+      MEDIA_CHECK("menu toggle reveals the browser", !media_folder_shown(rgui)
+            && (menu_st->flags & MENU_ST_FLAG_ALIVE));
+      MEDIA_CHECK("ordinary menu retains toggle behavior", !menu_driver_dismiss_fullscreen());
       MEDIA_CHECK("cancellation and stale startup acknowledgements stay isolated",
             media_startup_cancellation_check(menu_st, argv[1], startup_token));
       goto cleanup;

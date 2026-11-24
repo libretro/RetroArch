@@ -845,6 +845,8 @@ bool menu_driver_drop(struct string_list *payload);
  * Decodes @list in place. */
 bool menu_driver_drop_uri_list(char *list);
 
+bool menu_driver_dismiss_fullscreen(void);
+
 int generic_menu_entry_action(void *userdata, menu_entry_t *entry, size_t i, enum menu_action action);
 
 void menu_entries_build_scroll_indices(

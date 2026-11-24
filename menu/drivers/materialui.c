@@ -11058,6 +11058,8 @@ static int materialui_environ(enum menu_environ_cb type, void *data,
 
    switch (type)
    {
+      case MENU_ENVIRON_QUERY_FULLSCREEN_THUMBNAILS:
+         return (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS) ? 0 : -1;
       case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
          mui->flags     |=  MUI_FLAG_SHOW_MOUSE;
          break;

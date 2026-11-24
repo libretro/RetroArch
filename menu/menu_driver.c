@@ -8908,6 +8908,20 @@ static int generic_menu_iterate(
    return 0;
 }
 
+bool menu_driver_dismiss_fullscreen(void)
+{
+   struct menu_state *menu_st = &menu_driver_state;
+   menu_entry_t entry;
+   if (!menu_st->driver_ctx || !menu_st->driver_ctx->environ_cb
+         || menu_st->driver_ctx->environ_cb(
+            MENU_ENVIRON_QUERY_FULLSCREEN_THUMBNAILS, NULL, menu_st->userdata) != 0)
+      return false;
+   MENU_ENTRY_INITIALIZE(entry);
+   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+   menu_entry_action(&entry, menu_st->selection_ptr, MENU_ACTION_CANCEL);
+   return true;
+}
+
 int generic_menu_entry_action(
       void *userdata, menu_entry_t *entry, size_t i,
       enum menu_action action)

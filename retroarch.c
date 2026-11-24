@@ -4398,7 +4398,10 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_MENU_TOGGLE:
 #ifdef HAVE_MENU
          if (menu_st->flags & MENU_ST_FLAG_ALIVE)
-            retroarch_menu_running_finished(false);
+         {
+            if (!menu_driver_dismiss_fullscreen())
+               retroarch_menu_running_finished(false);
+         }
          else
             retroarch_menu_running();
 #endif

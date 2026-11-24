@@ -4175,6 +4175,8 @@ static int xmb_environ(enum menu_environ_cb type, void *data, void *userdata)
 
    switch (type)
    {
+      case MENU_ENVIRON_QUERY_FULLSCREEN_THUMBNAILS:
+         return (xmb->show_fullscreen_thumbnails) ? 0 : -1;
       case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
          xmb->show_mouse = true;
          break;

@@ -14594,6 +14594,8 @@ static int ozone_environ_cb(enum menu_environ_cb type, void *data, void *userdat
 
    switch (type)
    {
+      case MENU_ENVIRON_QUERY_FULLSCREEN_THUMBNAILS:
+         return (ozone->flags2 & (OZONE_FLAG2_SHOW_FULLSCREEN_THUMBNAILS | OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS)) ? 0 : -1;
       case MENU_ENVIRON_ENABLE_MOUSE_CURSOR:
          ozone->flags |=  OZONE_FLAG_SHOW_CURSOR;
          break;
