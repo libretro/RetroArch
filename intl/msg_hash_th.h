@@ -1634,6 +1634,7 @@ static const struct
    char s_2324cc29[52];
    char s_0d299e52[28];
    char s_92830f70[33];
+   char s_5502abed[34];
    char s_9ecf53d5[121];
    char s_b67675ad[20];
    char s_3361e11d[118];
@@ -10386,6 +10387,8 @@ static const struct
    "\340\270\243",
    "\340\271\200\340\270\212\340\270\267\340\271\210\340\270\255\340\270\241\340\271\202\340\270\242"
    "\340\270\207 Core",
+   "\340\270\204\340\271\210\340\270\262\340\271\200\340\270\243\340\270\264\340\271\210\340\270\241"
+   "\340\270\225\340\271\211\340\270\231",
    "\340\270\201\340\270\243\340\270\270\340\270\223\340\270\262\340\271\200\340\270\245\340\270\267"
    "\340\270\255\340\270\201\340\271\200\340\270\236\340\270\245\340\270\242\340\271\214\340\270\245"
    "\340\270\264\340\270\252\340\270\225\340\271\214\340\270\201\340\271\210\340\270\255\340\270\231"
@@ -26432,7 +26435,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_th_blob_check[
-      (sizeof(msg_hash_th_blob) == (452597u
+      (sizeof(msg_hash_th_blob) == (452631u
 #ifdef ANDROID
        + 757u
 #endif
@@ -28560,6 +28563,7 @@ static const msg_hash_id_t msg_hash_th_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,

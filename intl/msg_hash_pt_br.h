@@ -1565,6 +1565,7 @@ static const struct
    char s_2324cc29[19];
    char s_0d299e52[8];
    char s_92830f70[17];
+   char s_5502abed[8];
    char s_9ecf53d5[62];
    char s_b67675ad[13];
    char s_3361e11d[64];
@@ -6058,6 +6059,7 @@ static const struct
    "Todas as playlists",
    "Aplicar",
    "Associar n\303\272cleo",
+   "Padr\303\243o",
    "Por favor, primeiro escolha uma \303\272nica lista de reprodu\303\247\303\243o.",
    "&Escolher...",
    "Tem certeza de que deseja excluir a lista de reprodu\303\247\303\243o \"%1\"?",
@@ -9522,7 +9524,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193234u
+      (sizeof(msg_hash_pt_br_blob) == (193242u
 #ifdef ANDROID
        + 352u
 #endif
@@ -11542,6 +11544,7 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,

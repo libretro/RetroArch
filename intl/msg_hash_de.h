@@ -1695,6 +1695,7 @@ static const struct
    char s_2324cc29[22];
    char s_0d299e52[12];
    char s_92830f70[14];
+   char s_5502abed[9];
    char s_9ecf53d5[51];
    char s_b67675ad[15];
    char s_3361e11d[53];
@@ -6837,6 +6838,7 @@ static const struct
    "Alle Wiedergabelisten",
    "\303\234bernehmen",
    "Core zuordnen",
+   "Standard",
    "Bitte w\303\244hle zuerst eine einzelne Wiedergabeliste.",
    "Aus&w\303\244hlen...",
    "M\303\266chtest Du Wiedergabeliste \"%1\" wirklich l\303\266schen?",
@@ -11278,7 +11280,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (256808u
+      (sizeof(msg_hash_de_blob) == (256817u
 #ifdef ANDROID
        + 358u
 #endif
@@ -13539,6 +13541,7 @@ static const msg_hash_id_t msg_hash_de_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,

@@ -1384,6 +1384,7 @@ static const struct
    char s_2324cc29[31];
    char s_0d299e52[7];
    char s_92830f70[25];
+   char s_5502abed[16];
    char s_9ecf53d5[58];
    char s_b67675ad[14];
    char s_3361e11d[69];
@@ -6695,6 +6696,7 @@ static const struct
    "\343\202\271\343\203\210",
    "\351\201\251\347\224\250",
    "\343\202\263\343\202\242\343\202\222\351\226\242\351\200\243\344\273\230\343\201\221\343\202\213",
+   "\343\203\207\343\203\225\343\202\251\343\203\253\343\203\210",
    "\343\201\276\343\201\232\343\203\227\343\203\254\343\202\244\343\203\252\343\202\271\343\203\210"
    "\343\202\222 1 \343\201\244\351\201\270\343\202\223\343\201\247\343\201\217\343\201\240\343\201"
    "\225\343\201\204\343\200\202",
@@ -13905,7 +13907,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ja_blob_check[
-      (sizeof(msg_hash_ja_blob) == (198914u
+      (sizeof(msg_hash_ja_blob) == (198930u
 #ifdef ANDROID
        + 484u
 #endif
@@ -15612,6 +15614,7 @@ static const msg_hash_id_t msg_hash_ja_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,

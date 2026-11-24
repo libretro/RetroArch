@@ -625,6 +625,7 @@ static const struct
    char s_66df5c89[38];
    char s_ca981b76[25];
    char s_0d299e52[17];
+   char s_5502abed[29];
    char s_6d025795[15];
    char s_3181d160[36];
    char s_9433fa60[30];
@@ -2756,6 +2757,8 @@ static const struct
    "\204\316\265\316\257\317\204\316\261\316\271:",
    "\316\231\316\264\316\271\317\211\317\204\316\271\316\272\317\214\317\204\316\267\317\204\316\261",
    "\316\225\317\206\316\261\317\201\316\274\316\277\316\263\316\256",
+   "\316\240\317\201\316\277\316\272\316\261\316\270\316\277\317\201\316\271\317\203\316\274\316\255"
+   "\316\275\316\277",
    "\316\240\317\205\317\201\316\256\316\275\316\261\317\202",
    "\316\240\316\273\316\267\317\201\316\277\317\206\316\277\317\201\316\257\316\265\317\202 \316"
    "\240\317\205\317\201\316\256\316\275\316\261",
@@ -4768,7 +4771,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_el_blob_check[
-      (sizeof(msg_hash_el_blob) == (68572u
+      (sizeof(msg_hash_el_blob) == (68601u
 #ifdef HAVE_LAKKA
        + 35u
 #endif
@@ -5480,6 +5483,7 @@ static const msg_hash_id_t msg_hash_el_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,

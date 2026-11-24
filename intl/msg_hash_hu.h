@@ -1494,6 +1494,7 @@ static const struct
    char s_2324cc29[20];
    char s_0d299e52[12];
    char s_92830f70[21];
+   char s_5502abed[17];
    char s_9ecf53d5[49];
    char s_b67675ad[16];
    char s_3361e11d[52];
@@ -5946,6 +5947,7 @@ static const struct
    "Minden j\303\241t\303\251klista",
    "Alkalmaz\303\241s",
    "Mag hozz\303\241rendel\303\251se",
+   "Alap\303\251rtelmezett",
    "El\305\221sz\303\266r v\303\241lasszon ki csak egy j\303\241t\303\251klist\303\241t.",
    "&V\303\241laszt\303\241s...",
    "Biztosan t\303\266r\303\266lni szeretn\303\251 a \"%1\" j\303\241t\303\251klist\303\241t?",
@@ -9787,7 +9789,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (186504u
+      (sizeof(msg_hash_hu_blob) == (186521u
 #ifdef ANDROID
        + 316u
 #endif
@@ -11707,6 +11709,7 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,

@@ -1792,6 +1792,7 @@ static const struct
    char s_2324cc29[13];
    char s_0d299e52[7];
    char s_92830f70[13];
+   char s_5502abed[7];
    char s_9ecf53d5[28];
    char s_b67675ad[14];
    char s_3361e11d[39];
@@ -7880,6 +7881,7 @@ static const struct
    "\346\211\200\346\234\211\345\210\227\350\241\250",
    "\345\272\224\347\224\250",
    "\345\205\263\350\201\224\346\240\270\345\277\203",
+   "\351\273\230\350\256\244",
    "\350\257\267\345\205\210\351\200\211\346\213\251\345\215\225\344\270\252\345\210\227\350\241\250"
    "\343\200\202",
    "\351\200\211\346\213\251(&C)...",
@@ -16184,7 +16186,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_chs_blob_check[
-      (sizeof(msg_hash_chs_blob) == (201295u
+      (sizeof(msg_hash_chs_blob) == (201302u
 #ifdef ANDROID
        + 220u
 #endif
@@ -18554,6 +18556,7 @@ static const msg_hash_id_t msg_hash_chs_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,

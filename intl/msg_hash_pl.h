@@ -1654,6 +1654,7 @@ static const struct
    char s_2324cc29[20];
    char s_0d299e52[9];
    char s_92830f70[16];
+   char s_5502abed[10];
    char s_9ecf53d5[49];
    char s_b67675ad[12];
    char s_3361e11d[46];
@@ -6393,6 +6394,7 @@ static const struct
    "Wszystkie playlisty",
    "Zastosuj",
    "Powi\304\205\305\274 rdze\305\204",
+   "Domy\305\233lny",
    "Prosz\304\231 najpierw wybra\304\207 pojedyncz\304\205 playlist\304\231.",
    "Wy&bierz...",
    "Czy na pewno chcesz usun\304\205\304\207 playlist\304\231 \"%1\"?",
@@ -10228,7 +10230,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (199247u
+      (sizeof(msg_hash_pl_blob) == (199257u
 #ifdef ANDROID
        + 385u
 #endif
@@ -12379,6 +12381,7 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,

@@ -1311,6 +1311,7 @@ static const struct
    char s_2324cc29[20];
    char s_0d299e52[8];
    char s_92830f70[12];
+   char s_5502abed[7];
    char s_9ecf53d5[32];
    char s_b67675ad[12];
    char s_3361e11d[45];
@@ -4860,6 +4861,7 @@ static const struct
    "Kaikki soittolistat",
    "Toteuta",
    "Liit\303\244 ydin",
+   "Oletus",
    "Valitse ensin yksi soittolista.",
    "&Valitse...",
    "Haluatko varmasti poistaa soittolistan \"%1\"?",
@@ -7575,7 +7577,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123173u
+      (sizeof(msg_hash_fi_blob) == (123180u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -9212,6 +9214,7 @@ static const msg_hash_id_t msg_hash_fi_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,

@@ -1752,6 +1752,7 @@ static const struct
    char s_3dabafc0[19];
    char s_aaccb3e6[9];
    char s_f51dc087[31];
+   char s_f80f9c54[30];
    char s_20d15d46[64];
    char s_7a24b32c[49];
    char s_2010df6a[16];
@@ -1788,6 +1789,7 @@ static const struct
    char s_2324cc29[17];
    char s_0d299e52[13];
    char s_92830f70[15];
+   char s_5502abed[14];
    char s_9ecf53d5[52];
    char s_b67675ad[14];
    char s_3361e11d[68];
@@ -1802,6 +1804,14 @@ static const struct
    char s_4c11d465[20];
    char s_50a04cd9[20];
    char s_b893853f[7];
+   char s_4b45cce1[68];
+   char s_acb72279[35];
+   char s_c8fda88b[66];
+   char s_03228e63[33];
+   char s_59aa1662[36];
+   char s_4ace5c07[96];
+   char s_d257935f[36];
+   char s_ca344a5e[40];
    char s_11121f30[19];
    char s_01badaa0[25];
    char s_6127cc52[30];
@@ -1813,10 +1823,13 @@ static const struct
    char s_5dff78c4[50];
    char s_0d7321f6[9];
    char s_da05709b[12];
+   char s_6f9005a9[16];
    char s_9cfaa012[20];
    char s_39b2f935[22];
+   char s_37925bb8[7];
    char s_f585917a[28];
    char s_2942bc3c[67];
+   char s_379423a6[6];
    char s_3794f2cd[8];
    char s_0a3c5b6b[69];
    char s_c46fdd49[45];
@@ -1910,7 +1923,21 @@ static const struct
    char s_ea5b5020[7];
    char s_4707850d[17];
    char s_cbddcf50[18];
+   char s_c3f5a23a[43];
    char s_fc5ea9dc[9];
+   char s_0c328c48[42];
+   char s_b721a87b[34];
+   char s_046a7b75[58];
+   char s_5cfb6d7e[6];
+   char s_5d4eaaf8[13];
+   char s_eba55221[19];
+   char s_6998d87c[29];
+   char s_432e1ea9[32];
+   char s_042a2b60[17];
+   char s_f15876c3[45];
+   char s_c65fb536[32];
+   char s_a9f7cb6f[28];
+   char s_638bb6f6[53];
    char s_9abb40fc[24];
    char s_a9dc9f21[106];
    char s_6c786a36[37];
@@ -1918,6 +1945,7 @@ static const struct
    char s_25486b43[12];
    char s_37708c23[7];
    char s_78b36202[8];
+   char s_3b062f2a[12];
    char s_6d0ef3f1[9];
    char s_eb9ccf03[10];
    char s_a85eb9f5[30];
@@ -2768,6 +2796,7 @@ static const struct
    char s_d59de774[30];
    char s_75c24fec[18];
    char s_697c4a13[21];
+   char s_b7331e1b[29];
    char s_2cb6ab5c[24];
    char s_552163d9[37];
    char s_c5055b7f[29];
@@ -3899,6 +3928,7 @@ static const struct
    char s_49a0a568[129];
    char s_e75f4bb2[185];
    char s_00a68235[176];
+   char s_08cf8182[259];
    char s_e33b9334[110];
    char s_7ff41c9a[190];
    char s_fb6c33d8[67];
@@ -4430,6 +4460,7 @@ static const struct
    char s_e65dcca2[251];
    char s_b0e2d55a[88];
    char s_7acad9c1[83];
+   char s_33d41589[86];
    char s_3c679f0a[334];
    char s_5b059407[178];
    char s_d4b64f2d_0[500];
@@ -7330,6 +7361,7 @@ static const struct
    "Comhaireamh Imirt:",
    "Am rith:",
    "Am Rith Fo-lip\303\251ad Seinmliosta",
+   "Mionsamhla \303\263 R\303\251igi\303\272in Eile",
    "\303\232s\303\241id Ainmneacha Comhad le haghaidh Meaitse\303\241la Mionsamhlacha",
    "S\303\241bh\303\241il Seinmliosta\303\255 Ag \303\232s\303\241id Seanfhorm\303\241id",
    "Seinn Athsheinm",
@@ -7367,6 +7399,7 @@ static const struct
    "Gach Seinmliosta",
    "Cuir isteach",
    "Comhlach Cro\303\255",
+   "R\303\251amhshocr\303\272",
    "Roghnaigh seinmliosta amh\303\241in ar dt\303\272s le do thoil.",
    "&Roghnaigh...",
    "An bhfuil t\303\272 cinnte gur mian leat an seinmliosta \"%1\" a scriosadh?",
@@ -7381,6 +7414,15 @@ static const struct
    "Sc\303\241thad\303\263ir reatha",
    "T\303\251ama Saincheaptha",
    "Scrios",
+   "An bhfuil t\303\272 cinnte gur mian leat an c\303\272ltaca seo a scriosadh?\n\n%1",
+   "Scriosadh an c\303\272ltaca go rath\303\272il.",
+   "An bhfuil t\303\272 cinnte gur mian leat an comhad seo a scriosadh?\n\n%1",
+   "Scriosadh an comhad go rath\303\272il.",
+   "Theip ar an gcomhad a scriosadh:\n%1",
+   "An bhfuil t\303\272 cinnte gur mian leat an fillte\303\241n seo agus a bhfuil ann go l\303\251ir"
+   " a scriosadh?\n\n%1",
+   "Scriosadh an fillte\303\241n go rath\303\272il.",
+   "Theip ar an bhfillte\303\241n a scriosadh:\n%1",
    "Scrios Seinmliosta",
    "N\303\241 taispe\303\241in seo ar\303\255s",
    "\303\215osl\303\263d\303\241il Gach Mionsamhail",
@@ -7392,10 +7434,13 @@ static const struct
    "Cuir isteach ainm an seinmliosta nua le do thoil:",
    "Earr\303\241id",
    "<iomad\303\272il>",
+   "D\303\241ta Athraithe",
    "N\303\255l an comhad ann.",
    "T\303\241 an comhad folamh.",
+   "Conair",
    "T\303\241 an cos\303\241n comhaid b\303\241n.",
    "N\303\255orbh fh\303\251idir an comhad a oscailt le haghaidh l\303\251itheoireachta.",
+   "M\303\251id",
    "Cine\303\241l",
    "N\303\255orbh fh\303\251idir an comhad a oscailt le haghaidh scr\303\255bhneoireachta.",
    "(a \303\272s\303\241idtear chun mionsamhlacha a aimsi\303\272)",
@@ -7499,7 +7544,21 @@ static const struct
    "L\303\263g\303\263",
    "Seat sc\303\241ile\303\241in",
    "Sc\303\241ile\303\241n Teidil",
+   "Theip ar an iarratas ar an liosta \303\241bhair.",
    "Cro\303\255the",
+   "N\303\255orbh fh\303\251idir an cro\303\255liosta a fh\303\241il.",
+   "Theip ar th\303\272s\303\272 an liosta cro\303\255.",
+   "Theip ar th\303\272s a chur le h\303\255osl\303\263d\303\241il an phr\303\255omhliosta.",
+   "D\303\241ta",
+   "\303\215osl\303\263d\303\241il",
+   "\303\215osl\303\263d\303\241ilte: %1",
+   "Theip ar an \303\255osl\303\263d\303\241il: %1",
+   "Theip ar th\303\272s an \303\255osl\303\263d\303\241la.",
+   "Ainm an Chomhaid",
+   "N\303\255l URL s\303\263cmhainn\303\255 an buildbot cumraithe.",
+   "N\303\255l aon iontr\303\241lacha ar f\303\241il.",
+   "N\303\255l aon chomhaid ar f\303\241il.",
+   "Theip ar an iarratas ar liosta chomhaid an ch\303\263rais.",
    "Theip ar an nuashonr\303\272.",
    "Nuashonra\303\255odh RetroArch go rath\303\272il. Atosaigh an feidhmchl\303\241r le go dtiocfaid"
    "h na hathruithe i bhfeidhm.",
@@ -7508,6 +7567,7 @@ static const struct
    "Deilbh\303\255n\303\255",
    "Liosta",
    "Rabhadh",
+   "Cad \303\251 seo?",
    "Z\303\272m\303\241il",
    "S\303\241ruithe",
    "Taispe\303\241in 'Cuir le Cean\303\241in'",
@@ -8367,6 +8427,7 @@ static const struct
    "Taifeach Ionchuir Insamhailte",
    "Airde Shamhlaithe",
    "Leithead Insamhailte",
+   "\303\232s\303\241id Taifeach Insamhailte",
    "Fo-fhr\303\241ma\303\255 Sc\303\241th\303\263ra",
    "Comhth\303\251acs Comhroinnte Crua-earra\303\255",
    "Scipe\303\241il Fr\303\241ma\303\255 D\303\272blacha",
@@ -10606,6 +10667,10 @@ static const struct
    "Roghnaigh an cine\303\241l taifid loga ama rite le taispe\303\241int ar fholip\303\251id seinmli"
    "osta. N\303\255 m\303\263r an loga ama rite comhfhreagrach a chumas\303\272 tr\303\255d an roghc"
    "hl\303\241r roghanna 'Coigilt'.",
+   "Taispe\303\241in mionsamhail r\303\251igi\303\272in eile nuair nach bhfuil aon cheann i r\303"
+   "\251igi\303\272n an chluiche f\303\251in. Nuair a bh\303\255onn s\303\251 m\303\272chta, n\303"
+   "\255 thaispe\303\241nann cluiche ach a r\303\251igi\303\272n f\303\251in, an Domhan n\303\263 mi"
+   "onsamhail gan chlib (\303\272s\303\241ideann t\303\255r Eorpach an Eoraip freisin).",
    "Nuair a bheidh s\303\251 cumasaithe, aimseofar mionsamhlacha de r\303\251ir ainm comhaid an iont"
    "r\303\241la, seachas a lip\303\251id.",
    "Scr\303\255obh seinmliosta\303\255 ag baint \303\272s\303\241ide as form\303\241id t\303\251acs "
@@ -11735,6 +11800,8 @@ static const struct
    "\303\251ad phas sc\303\241thaithe.",
    "Cuirtear in i\303\272l don ch\303\251ad phas sc\303\241thaithe c\303\251 chomh leathan is at\303"
    "\241 an \303\255omh\303\241.",
+   "\303\232s\303\241id an taifeach ionchuir insamhalta cumraithe le haghaidh SourceSize an phas seo"
+   ".",
    "RABHADH: D\342\200\231fh\303\251adfadh caochadh tapa a bheith ina ch\303\272is le buanseasmhacht"
    " \303\255omh\303\241 ar roinnt taispe\303\241ntais. \303\232s\303\241id ar do phriacal f\303\251"
    "in // Insamhladh l\303\255ne scanadh rollta bhun\303\272sach thar ilfho-fhr\303\241ma\303\255 tr"
@@ -12930,7 +12997,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (288344u
+      (sizeof(msg_hash_ga_blob) == (289664u
 #ifdef ANDROID
        + 390u
 #endif
@@ -15250,6 +15317,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_THUMBNAIL_OTHER_REGIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
@@ -15286,6 +15354,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
@@ -15300,6 +15369,14 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_BACKUP_CONFIRM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_BACKUP_DONE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_CONFIRM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_DONE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_CONFIRM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_DONE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
@@ -15311,10 +15388,13 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ERROR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FIELD_MULTIPLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_DATE_MODIFIED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_SIZE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
@@ -15407,7 +15487,21 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CONTENT_LIST_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORE_LIST_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORE_LIST_INIT_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORE_LIST_START_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_DATE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOAD,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOADED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOAD_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOAD_START_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_FILE_NAME,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_NO_BUILDBOT_URL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_NO_ENTRIES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_NO_FILES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_SYSTEM_FILES_LIST_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
@@ -15415,6 +15509,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_WARNING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_WHATS_THIS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ZOOM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
@@ -16265,6 +16360,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_INPUT_RES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_INPUT_RES_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_INPUT_RES_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_RES_PASS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SKIP_DUPE_FRAMES,
@@ -17382,6 +17478,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_RUNTIME_TYPE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_THUMBNAIL_OTHER_REGIONS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PLAY_REPLAY,
@@ -17909,6 +18006,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SIMULATED_INPUT_RES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SIMULATED_INPUT_RES_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SIMULATED_INPUT_RES_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SIMULATED_RES_PASS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SKIP_DUPE_FRAMES,

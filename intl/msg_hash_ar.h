@@ -962,6 +962,7 @@ static const struct
    char s_2324cc29[35];
    char s_0d299e52[30];
    char s_92830f70[30];
+   char s_5502abed[19];
    char s_9ecf53d5[71];
    char s_b67675ad[17];
    char s_3361e11d[83];
@@ -4081,6 +4082,7 @@ static const struct
    "\261\330\247\330\252",
    "\330\247\331\204\331\206\331\210\330\247\330\251 \330\247\331\204\331\205\330\265\330\247\330"
    "\255\330\250\330\251",
+   "\330\247\331\204\330\247\331\201\330\252\330\261\330\247\330\266\331\212",
    "\330\247\331\204\330\261\330\254\330\247\330\241 \330\247\330\256\330\252\331\212\330\247\330"
    "\261 \331\202\330\247\330\246\331\205\330\251 \330\252\330\264\330\272\331\212\331\204 \331\210"
    "\330\247\330\255\330\257\330\251 \330\243\331\210\331\204\330\247\331\213.",
@@ -7905,7 +7907,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ar_blob_check[
-      (sizeof(msg_hash_ar_blob) == (106257u
+      (sizeof(msg_hash_ar_blob) == (106276u
 #ifdef HAVE_LAKKA
        + 287u
 #endif
@@ -9067,6 +9069,7 @@ static const msg_hash_id_t msg_hash_ar_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,

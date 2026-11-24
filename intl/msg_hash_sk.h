@@ -1707,6 +1707,7 @@ static const struct
    char s_2324cc29[23];
    char s_0d299e52[9];
    char s_92830f70[16];
+   char s_5502abed[12];
    char s_9ecf53d5[29];
    char s_b67675ad[11];
    char s_3361e11d[39];
@@ -6915,6 +6916,7 @@ static const struct
    "V\305\241etky hracie zoznamy",
    "Pou\305\276i\305\245",
    "Priradi\305\245 jadro",
+   "Predvolen\303\251",
    "Najprv vyberte jeden zoznam.",
    "Vybra\305\245...",
    "Naozaj chcete odstr\303\241ni\305\245 zoznam \"%1\"?",
@@ -11754,7 +11756,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (234933u
+      (sizeof(msg_hash_sk_blob) == (234945u
 #ifdef ANDROID
        + 389u
 #endif
@@ -14023,6 +14025,7 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,

@@ -1712,6 +1712,7 @@ static const struct
    char s_2324cc29[16];
    char s_0d299e52[10];
    char s_92830f70[17];
+   char s_5502abed[9];
    char s_9ecf53d5[27];
    char s_b67675ad[10];
    char s_3361e11d[54];
@@ -6944,6 +6945,7 @@ static const struct
    "Alla spellistor",
    "Till\303\244mpa",
    "Associera k\303\244rna",
+   "Standard",
    "V\303\244lj en spellista f\303\266rst.",
    "V&\303\244lj...",
    "\303\204r du s\303\244ker p\303\245 att du vill radera spellistan \"%1\"?",
@@ -11615,7 +11617,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (241754u
+      (sizeof(msg_hash_sv_blob) == (241763u
 #ifdef ANDROID
        + 361u
 #endif
@@ -13898,6 +13900,7 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
