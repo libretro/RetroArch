@@ -1024,6 +1024,17 @@ jobs:
           ninja -C /tmp/sdl3-build > /tmp/sdl3-build.log
           sudo ninja -C /tmp/sdl3-build install > /tmp/sdl3-install.log
 
+      - name: SDL3 menu upload loans and conversion fallbacks
+        run: |
+          set -eu
+          export PKG_CONFIG_PATH=/opt/sdl3/lib/pkgconfig
+          export LD_LIBRARY_PATH=/opt/sdl3/lib
+          export CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          SDL_VIDEODRIVER=dummy ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
+            python3 samples/gfx/d3d_failure_paths/menu_mem_sdl3.py
+          LIBGL_ALWAYS_SOFTWARE=1 ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 \
+            xvfb-run -a python3 samples/gfx/d3d_failure_paths/menu_mem_sdl3.py
+
       - name: Build retroarch with SDL3
         run: |
           set -eu

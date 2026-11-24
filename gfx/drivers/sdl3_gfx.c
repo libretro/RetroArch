@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <memalign.h>
 
 #include <retro_inline.h>
 #include <string/stdstring.h>
@@ -298,6 +299,51 @@ static void sdl3_stream_upload(sdl3_tex_t *target, const void *src,
       }
 
    SDL_UnlockTexture(target->tex);
+}
+
+static void sdl3_menu_lend_close(sdl3_video_t *vid)
+{
+   if (!vid->menu_lend.pixels)
+      return;
+   SDL_UnlockTexture(vid->menu.tex);
+   memset(&vid->menu_lend, 0, sizeof(vid->menu_lend));
+}
+
+/* Final writes go straight into a matching native texture. Converted
+ * formats keep the cached source the widening path reads. */
+static void *sdl3_get_menu_framebuffer(void *data, bool rgb32,
+      unsigned dims, size_t *pitch)
+{
+   sdl3_video_t *vid = (sdl3_video_t*)data;
+   unsigned bpp = rgb32 ? 4 : 2;
+   void *pixels;
+   int row_pitch;
+   if (!vid || !pitch || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return NULL;
+   if (vid->menu_lend.pixels && (vid->menu_lend.dims != dims
+            || vid->menu_lend.rgb32 != rgb32))
+      sdl3_menu_lend_close(vid);
+   if (!vid->menu.tex || vid->menu.w != VIDEO_SCALE_W(dims)
+         || vid->menu.h != VIDEO_SCALE_H(dims) || vid->menu.rgb32 != rgb32
+         || vid->menu.widen != SDL_PIXELFORMAT_UNKNOWN)
+      return NULL;
+   if (!vid->menu_lend.pixels)
+   {
+      if (!SDL_LockTexture(vid->menu.tex, NULL, &pixels, &row_pitch))
+         return NULL;
+      if (row_pitch <= 0 || (size_t)row_pitch < (size_t)VIDEO_SCALE_W(dims) * bpp
+            || (unsigned)row_pitch % bpp)
+      {
+         SDL_UnlockTexture(vid->menu.tex);
+         return NULL;
+      }
+      vid->menu_lend.pixels = pixels;
+      vid->menu_lend.pitch = (size_t)row_pitch;
+      vid->menu_lend.dims = dims;
+      vid->menu_lend.rgb32 = rgb32;
+   }
+   *pitch = vid->menu_lend.pitch;
+   return vid->menu_lend.pixels;
 }
 
 static void *sdl3_gfx_init(const video_info_t *video)
@@ -1303,9 +1349,51 @@ static bool sdl3_gfx_has_windowed(void *data)
    return !string_is_equal(SDL_GetCurrentVideoDriver(), "kmsdrm");
 }
 
+#ifdef HAVE_THREADS
+/* The streaming upload consumes its cached source before returning. */
+static void *sdl3_menu_mem_alloc(void *data, size_t size, uintptr_t *id)
+{
+   sdl3_video_t *vid = (sdl3_video_t*)data;
+   unsigned i;
+   if (!id)
+      return NULL;
+   *id = 0;
+   if (!vid || !size)
+      return NULL;
+   for (i = 0; i < SDL3_MENU_MEM_MAX; i++)
+      if (!vid->menu_mem[i])
+      {
+         if (!(vid->menu_mem[i] = memalign_alloc(64, size)))
+            return NULL;
+         *id = (uintptr_t)i + 1;
+         return vid->menu_mem[i];
+      }
+   return NULL;
+}
+
+static bool sdl3_menu_mem_ready(void *data, uintptr_t id)
+{
+   (void)data;
+   (void)id;
+   return true;
+}
+
+static void sdl3_menu_mem_free(void *data, uintptr_t id)
+{
+   sdl3_video_t *vid = (sdl3_video_t*)data;
+   if (!vid || !id || id > SDL3_MENU_MEM_MAX)
+      return;
+   memalign_free(vid->menu_mem[id - 1]);
+   vid->menu_mem[id - 1] = NULL;
+}
+#endif
+
 static void sdl3_gfx_free(void *data)
 {
    sdl3_video_t *vid = (sdl3_video_t*)data;
+#ifdef HAVE_THREADS
+   unsigned i;
+#endif
    if (!vid)
       return;
 
@@ -1313,6 +1401,11 @@ static void sdl3_gfx_free(void *data)
 
    sdl3_sw_lend_close(vid, true);
    free(vid->sw_lend.scratch);
+   sdl3_menu_lend_close(vid);
+#ifdef HAVE_THREADS
+   for (i = 0; i < SDL3_MENU_MEM_MAX; i++)
+      sdl3_menu_mem_free(vid, (uintptr_t)i + 1);
+#endif
    sdl3_tex_zero(&vid->frame);
    sdl3_tex_zero(&vid->menu);
    if (vid->renderer)
@@ -1543,6 +1636,14 @@ static void sdl3_poke_set_texture_frame(void *data,
    sdl3_video_t *vid = (sdl3_video_t*)data;
    if (!vid || !frame)
       return;
+   if (vid->menu_lend.pixels)
+   {
+      bool borrowed = frame == vid->menu_lend.pixels;
+      sdl3_menu_lend_close(vid);
+      /* Never read an unlocked mapping, including an invalid publication. */
+      if (borrowed)
+         return;
+   }
    sdl3_refresh_input_size(vid, true, rgb32, VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
    sdl3_stream_upload(&vid->menu, frame, VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2));
 }
@@ -2831,7 +2932,30 @@ static video_poke_interface_t sdl3_video_poke_interface = {
    NULL,                            /* texture_lend */
    NULL,                            /* texture_lend_ready */
    NULL,                            /* get_last_present_wait */
-   sdl3_set_view_count
+   sdl3_set_view_count,
+   NULL, /* hw_context_destroying */
+   NULL, /* get_headset_refresh */
+   NULL, /* set_frame_format */
+   NULL, /* frame_mem_alloc */
+#ifdef HAVE_THREADS
+   sdl3_menu_mem_ready,
+   sdl3_menu_mem_free,
+#else
+   NULL, /* frame_mem_ready */
+   NULL, /* frame_mem_free */
+#endif
+   NULL, /* get_device */
+   NULL, /* import_texture */
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+   NULL, /* import_movie_frame */
+   sdl3_get_menu_framebuffer,
+#ifdef HAVE_THREADS
+   sdl3_menu_mem_alloc,
+#else
+   NULL, /* menu_mem_alloc */
+#endif
+   0 /* menu_mem_pitch_align */
 };
 
 static void sdl3_gfx_poke_interface(void *data, const video_poke_interface_t **iface)

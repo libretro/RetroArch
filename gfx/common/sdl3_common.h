@@ -90,6 +90,17 @@ typedef struct _sdl3_video
 
    sdl3_tex_t frame; /* ptr alignment */
    sdl3_tex_t menu;  /* ptr alignment */
+#ifdef HAVE_THREADS
+#define SDL3_MENU_MEM_MAX 6
+   void *menu_mem[SDL3_MENU_MEM_MAX];
+#endif
+   struct
+   {
+      void *pixels;
+      size_t pitch;
+      unsigned dims;
+      bool rgb32;
+   } menu_lend;
 
    SDL_Renderer *renderer;
 
