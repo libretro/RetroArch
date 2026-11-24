@@ -126,12 +126,14 @@ typedef struct d3d11vd_dec
    ID3D11Texture2D              *readback;
    ID3D11Texture2D *pack_input;
    ID3D11ShaderResourceView *pack_views[2];
+   ID3D11ShaderResourceView *pack_dpb_views[D3D11VD_MAX_SLOTS][2];
    ID3D11UnorderedAccessView *pack_output[D3D11VD_OUTS];
    ID3D11ComputeShader *pack_shader;
    ID3D11VideoDecoderOutputView *view[D3D11VD_MAX_SLOTS + D3D11VD_OUTS];
    HANDLE dpb_handle;
    bool direct_dpb;
    bool packed_yuv;
+   bool pack_dpb;
    unsigned physical_slots, slot_map[D3D11VD_MAX_SLOTS];
    unsigned out_slot[D3D11VD_OUTS];
 
@@ -224,6 +226,11 @@ static void d3d11vd_destroy(d3d11vd_dec_t *d)
    D3D11VD_RELEASE(d->pack_shader);
    D3D11VD_RELEASE(d->pack_views[0]);
    D3D11VD_RELEASE(d->pack_views[1]);
+   for (i = 0; i < D3D11VD_MAX_SLOTS; i++)
+   {
+      D3D11VD_RELEASE(d->pack_dpb_views[i][0]);
+      D3D11VD_RELEASE(d->pack_dpb_views[i][1]);
+   }
    D3D11VD_RELEASE(d->pack_input);
    D3D11VD_RELEASE(d->readback);
    D3D11VD_RELEASE(d->dpb);
@@ -383,6 +390,8 @@ static bool d3d11vd_make_dpb_storage(d3d11vd_dec_t *d, unsigned min_targets)
    desc.SampleDesc.Quality = 0;
    desc.CPUAccessFlags     = 0;
    desc.MiscFlags          = 0;
+   if (d->pack_dpb)
+      desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
    if (d->direct_dpb)
    {
       desc.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
@@ -440,14 +449,16 @@ static bool d3d11vd_make_dpb(d3d11vd_dec_t *d, unsigned min_targets)
    unsigned i;
    d->direct_dpb = !d->packed_yuv && d3d11vd.shared_dpb
          && d->slots <= D3D11VD_MAX_SLOTS - D3D11VD_OUTS;
+   d->pack_dpb = d->packed_yuv;
    if (d3d11vd_make_dpb_storage(d, min_targets)) return true;
-   if (!d->direct_dpb) return false;
+   if (!d->direct_dpb && !d->pack_dpb) return false;
    for (i = 0; i < D3D11VD_MAX_SLOTS + D3D11VD_OUTS; i++)
       D3D11VD_RELEASE(d->view[i]);
    if (d->dpb_handle) CloseHandle(d->dpb_handle);
    d->dpb_handle = NULL;
    D3D11VD_RELEASE(d->dpb);
    d->direct_dpb = false;
+   d->pack_dpb = false;
    return d3d11vd_make_dpb_storage(d, min_targets);
 }
 
@@ -737,7 +748,8 @@ static int d3d11vd_decode(void *dec, const rh264_hw_pic_t *pic)
 
 /* ---- output ---- */
 
-/* The visible window of @slot into a shared texture of its own. */
+/* Export @slot directly, pack its planes, or copy its visible window.
+ * Direct packing reads the DPB on the decoder's own ordered context. */
 static int d3d11vd_output(void *dec, unsigned slot, video_hw_frame_t *out)
 {
    d3d11vd_dec_t *d = (d3d11vd_dec_t*)dec;
@@ -764,14 +776,14 @@ static int d3d11vd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    box.right  = d->crop_x + d->visible_w;
    box.bottom = d->crop_y + d->visible_h;
    box.back   = 1;
-   if (!d->direct_dpb)
+   if (!d->direct_dpb && !d->pack_dpb)
    {
       d->ctx->lpVtbl->CopySubresourceRegion(d->ctx,
             (ID3D11Resource*)(d->packed_yuv ? d->pack_input : d->out[o]),
             0, 0, 0, 0, (ID3D11Resource*)d->dpb, d->slot_map[slot], &box);
-      if (d->packed_yuv)
-         d3d11vd_pack(d, o);
    }
+   if (d->packed_yuv)
+      d3d11vd_pack(d, o, d->slot_map[slot]);
    d->out_slot[o] = d->slot_map[slot];
    if (FAILED(d->ctx4->lpVtbl->Signal(d->ctx4, d->ready,
          d->ready_value + 1)))

@@ -51,6 +51,7 @@ static const GUID test_iid_texture2d =
    { 0x6f15aaf2, 0xd208, 0x4e89, { 0x9a, 0xb4, 0x48, 0x95, 0x35, 0xd3, 0x4f, 0x9c } };
 
 static int fails;
+static unsigned direct_pack_frames;
 static ID3D11Device         *dev;
 static ID3D11DeviceContext  *ctx;
 static ID3D11Device5        *dev5;
@@ -183,6 +184,124 @@ static int shared_dpb_expected(const video_hw_frame_t *fr)
    return 0;
 }
 
+/* Exercise the shipping packer independently of video decoder availability. */
+static unsigned test_pack_pixels(void)
+{
+   unsigned depth, direct, crop, slice, x, y, i, cases = 0;
+   for (depth = 8; depth <= 10; depth += 2)
+      for (direct = 0; direct < 2; direct++)
+         for (crop = 0; crop < 3; crop++)
+         {
+            d3d11vd_dec_t d;
+            D3D11_TEXTURE2D_DESC desc;
+            D3D11_SUBRESOURCE_DATA data[2];
+            ID3D11Texture2D *output = NULL, *read = NULL;
+            unsigned bpp = depth == 10 ? 2 : 1, pitch = 32 * bpp;
+            unsigned size = pitch * 36, mask = (1u << depth) - 1;
+            uint8_t *bytes = (uint8_t*)malloc(size * 2);
+            bool ok;
+            memset(&d, 0, sizeof(d));
+            memset(&desc, 0, sizeof(desc));
+            check("packed GPU fixture allocation", bytes != NULL);
+            if (!bytes) return cases;
+            for (slice = 0; slice < 2; slice++)
+            {
+               for (y = 0; y < 36; y++)
+                  for (x = 0; x < 32; x++)
+                  {
+                     unsigned value = (slice * 31 + x * 7 + y * 13) & mask;
+                     if (bpp == 2)
+                        ((uint16_t*)(bytes + slice * size + y * pitch))[x] = (uint16_t)(value << 6);
+                     else bytes[slice * size + y * pitch + x] = (uint8_t)value;
+                  }
+               memset(&data[slice], 0, sizeof(data[slice]));
+               data[slice].pSysMem = bytes + slice * size;
+               data[slice].SysMemPitch = pitch;
+            }
+            d.dev = dev; d.ctx = ctx; d.slots = 2; d.bit_depth = depth;
+            d.format = depth == 10 ? DXGI_FORMAT_P010 : DXGI_FORMAT_NV12;
+            d.visible_w = 6; d.visible_h = 4;
+            d.crop_x = crop * 2; d.crop_y = crop * 4;
+            desc.Width = 32; desc.Height = 24; desc.ArraySize = 2;
+            desc.MipLevels = desc.SampleDesc.Count = 1;
+            desc.Format = d.format; desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+            ok = SUCCEEDED(dev->lpVtbl->CreateTexture2D(dev, &desc, data, &d.dpb));
+            free(bytes);
+            if (!ok)
+            {
+               puts("packed GPU fixture: SKIP unsupported planar array storage");
+               continue;
+            }
+            d.pack_dpb = direct != 0;
+            ok = d3d11vd_pack_init(&d);
+            check("shipping packed shader and views initialize", ok);
+            if (ok && direct && !d.pack_dpb)
+               puts("packed GPU fixture: direct views unsupported, fallback tested");
+            if (ok)
+            {
+               check("direct packing allocates no temporary planar image", !d.pack_dpb || !d.pack_input);
+               desc.Width = 6; desc.Height = 4; desc.ArraySize = 1;
+               desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+               desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+               ok = SUCCEEDED(dev->lpVtbl->CreateTexture2D(dev, &desc, NULL, &output));
+               if (ok) ok = SUCCEEDED(dev->lpVtbl->CreateUnorderedAccessView(dev,
+                        (ID3D11Resource*)output, NULL, &d.pack_output[0]));
+               desc.BindFlags = 0; desc.Usage = D3D11_USAGE_STAGING;
+               desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+               if (ok) ok = SUCCEEDED(dev->lpVtbl->CreateTexture2D(dev, &desc, NULL, &read));
+               check("packed GPU fixture output allocation", ok);
+            }
+            for (slice = 0; ok && slice < 2; slice++)
+            {
+               D3D11_MAPPED_SUBRESOURCE map;
+               if (!d.pack_dpb)
+               {
+                  D3D11_BOX box = {0,0,0,0,0,1};
+                  box.left = d.crop_x; box.top = d.crop_y;
+                  box.right = box.left + 6; box.bottom = box.top + 4;
+                  ctx->lpVtbl->CopySubresourceRegion(ctx, (ID3D11Resource*)d.pack_input,
+                        0, 0, 0, 0, (ID3D11Resource*)d.dpb, slice, &box);
+               }
+               d3d11vd_pack(&d, 0, slice);
+               ctx->lpVtbl->CopyResource(ctx, (ID3D11Resource*)read, (ID3D11Resource*)output);
+               ok = SUCCEEDED(ctx->lpVtbl->Map(ctx, (ID3D11Resource*)read, 0, D3D11_MAP_READ, 0, &map));
+               check("packed GPU fixture readback", ok);
+               if (!ok) break;
+               for (y = 0; y < 4; y++) for (x = 0; x < 6; x++)
+               {
+                  const uint16_t *pixel = (const uint16_t*)((const uint8_t*)map.pData + y * map.RowPitch) + x * 4;
+                  unsigned expected[3];
+                  expected[0] = (slice * 31 + (x + d.crop_x) * 7 + (y + d.crop_y) * 13) & mask;
+                  expected[1] = (slice * 31 + ((x + d.crop_x) / 2 * 2) * 7 + (24 + (y + d.crop_y) / 2) * 13) & mask;
+                  expected[2] = (expected[1] + 7) & mask;
+                  for (i = 0; i < 3; i++)
+                  {
+                     unsigned exponent = (pixel[i] >> 10) & 31;
+                     unsigned value = exponent && exponent <= 25
+                        ? (1024 + (pixel[i] & 1023)) >> (25 - exponent) : 0;
+                     if (exponent > 25 || value != expected[i] || (pixel[i] & 0x8000)) ok = false;
+                  }
+                  if (pixel[3] != 0x3c00) ok = false;
+               }
+               ctx->lpVtbl->Unmap(ctx, (ID3D11Resource*)read, 0);
+               check("packed GPU pixels: array slice, crop, Y/U/V and opaque alpha", ok);
+               if (ok) cases++;
+            }
+            D3D11VD_RELEASE(read); D3D11VD_RELEASE(output);
+            D3D11VD_RELEASE(d.pack_shader); D3D11VD_RELEASE(d.pack_input);
+            D3D11VD_RELEASE(d.pack_output[0]);
+            for (i = 0; i < 2; i++)
+            {
+               D3D11VD_RELEASE(d.pack_views[i]);
+               D3D11VD_RELEASE(d.pack_dpb_views[i][0]);
+               D3D11VD_RELEASE(d.pack_dpb_views[i][1]);
+            }
+            D3D11VD_RELEASE(d.dpb);
+         }
+   printf("Packed GPU reference: %u slice/crop/depth/path cases passed\n", cases);
+   return cases;
+}
+
 static uint8_t packed_sample(uint16_t value)
 {
    unsigned exponent = (value >> 10) & 31;
@@ -208,6 +327,9 @@ static int take_hw(frames_t *f, opened_t *o, const video_hw_frame_t *fr)
    unsigned y, bps = fr->pixfmt == IMAGE_PIXFMT_P010 ? 2 : 1;
    bool packed = fr->pixfmt == IMAGE_PIXFMT_YUV8_FP16;
    int i;
+
+   if (packed && ((d3d11vd_dec_t*)fr->owner)->pack_dpb)
+      direct_pack_frames++;
 
    if (d3d11vd.packed_yuv && !packed)
    {
@@ -1455,6 +1577,14 @@ int main(int argc, char **argv)
       printf("d3d11_video_decode_test: SKIP (no D3D11.4 device)\n");
       return argc > 1 ? 77 : 0;
    }
+   if (argc > 1 && !strcmp(argv[1], "--pack-only"))
+   {
+      unsigned cases = test_pack_pixels();
+      D3D11VD_RELEASE(ctx4); D3D11VD_RELEASE(dev5);
+      D3D11VD_RELEASE(ctx); D3D11VD_RELEASE(dev);
+      return fails ? 1 : cases ? 0 : 77;
+   }
+   test_pack_pixels();
    if (!d3d11_video_decode_init_formats(dev,
             IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010
             | (getenv("D3D11_TEST_SHADER_DPB") ? D3D11_VIDEO_DECODE_SHADER_DPB
@@ -1615,6 +1745,9 @@ int main(int argc, char **argv)
       frames_free(&hw);
    }
 
+   printf("Direct decoder-slice packed exports: %u frames\n", direct_pack_frames);
+   if (getenv("D3D11_TEST_REQUIRE_PACK_DPB"))
+      check("native decoder exercised direct packed export", direct_pack_frames != 0);
    if (lists_seen)
       printf("scaling lists: the GPU took them in %s order\n",
             (zigzag_ok && !raster_ok) ? "zig-zag (as sent)"

@@ -166,6 +166,7 @@ static HRESULT STDMETHODCALLTYPE m_get_adapter(mock_t *m, void **out)
 
 static int dpb_array, n_out_tex, out_flags_ok, reject_shared_dpb;
 static int reject_shader_plane, shader_probes;
+static int reject_shader_decoder;
 static HRESULT STDMETHODCALLTYPE m_create_srv(mock_t *m, mock_t *texture,
       const D3D11_SHADER_RESOURCE_VIEW_DESC *desc, void **out)
 {
@@ -193,6 +194,9 @@ static HRESULT STDMETHODCALLTYPE m_create_texture(mock_t *m,
       const D3D11_TEXTURE2D_DESC *d, const void *init, void **out)
 {
    mock_t *t;
+   if (reject_shader_decoder && (d->BindFlags & D3D11_BIND_DECODER)
+         && (d->BindFlags & D3D11_BIND_SHADER_RESOURCE))
+   { *out = NULL; return E_FAIL; }
    if (reject_shared_dpb && (d->BindFlags & D3D11_BIND_DECODER)
          && (d->MiscFlags & D3D11_RESOURCE_MISC_SHARED))
    { *out = NULL; return E_FAIL; }
@@ -1309,6 +1313,48 @@ static void test_packed_vp9_registry(void)
    m_release(adapter);
 }
 
+static void test_pack_plane_views(ID3D11Device *device)
+{
+   d3d11vd_dec_t *d = (d3d11vd_dec_t*)calloc(1, sizeof(*d));
+   mock_t *texture = mock_new(K_TEXTURE);
+   int plane, before;
+   unsigned i;
+   check("packed plane test allocation", d != NULL);
+   if (!d) { m_release(texture); return; }
+   texture->desc.ArraySize = 3;
+   d->dev = device; d->dpb = (ID3D11Texture2D*)texture;
+   d->slots = 3; d->bit_depth = 8;
+   before = live;
+   for (plane = 0; plane <= 2; plane++)
+   {
+      d->pack_dpb = true; reject_shader_plane = plane;
+      check("packed direct views accept both planes or decline",
+            d3d11vd_pack_dpb_views(d) == (plane == 0));
+      check("unreadable packed plane selects copy fallback",
+            d->pack_dpb == (plane == 0));
+      for (i = 0; i < d->slots; i++)
+      {
+         D3D11VD_RELEASE(d->pack_dpb_views[i][0]);
+         D3D11VD_RELEASE(d->pack_dpb_views[i][1]);
+      }
+      check("partial packed views release every reference", live == before);
+   }
+   reject_shader_plane = 0;
+   m_release(texture); d->dpb = NULL;
+   d->vdev = (ID3D11VideoDevice*)mock_new(K_VDEVICE);
+   d->packed_yuv = true; d->coded_w = d->coded_h = 32;
+   d->format = DXGI_FORMAT_NV12;
+   reject_shader_decoder = 1;
+   check("unreadable decoder storage keeps packed hardware decode",
+         d3d11vd_make_dpb(d, 1) && !d->pack_dpb && d->dpb
+         && !(((mock_t*)d->dpb)->desc.BindFlags & D3D11_BIND_SHADER_RESOURCE));
+   reject_shader_decoder = 0;
+   for (i = 0; i < D3D11VD_MAX_SLOTS + D3D11VD_OUTS; i++)
+      D3D11VD_RELEASE(d->view[i]);
+   D3D11VD_RELEASE(d->vdev); D3D11VD_RELEASE(d->dpb);
+   free(d);
+}
+
 int main(void)
 {
    ID3D11Device *dev;
@@ -1425,6 +1471,7 @@ int main(void)
    check("deinit lets the adapter go", live == live0);
    test_packed_vp9_registry();
    check("packed registry releases its adapter", live == live0);
+   test_pack_plane_views(dev);
    m_release(m);
    check("no mock object left", live == 0);
    subs_free();
