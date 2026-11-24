@@ -1757,6 +1757,7 @@ MainWindow::MainWindow(QWidget *parent) :
 #endif
 #endif
    ,m_coreOptionsDialog(new CoreOptionsDialog(this))
+   ,m_controlsDialog(new ControlsDialog(this))
    ,m_downloadingPlaylistThumbnails(false)
    ,m_thumbnailDownloadProgressDialog(new QProgressDialog(this))
    ,m_pendingThumbnailDownloadTypes()
@@ -2867,6 +2868,29 @@ void MainWindow::onGotReloadShaderParams()
       m_shaderParamsDialog->reload();
 #endif
 #endif
+}
+
+void MainWindow::onViewMenuAboutToShow()
+{
+   QAction *action = findChild<QAction*>("controlsViewAction");
+   const char *core_path = path_get(RARCH_PATH_CORE);
+
+   if (action)
+      action->setEnabled(core_path && *core_path
+            && retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path));
+}
+
+void MainWindow::onControlsClicked()
+{
+   const char *core_path = path_get(RARCH_PATH_CORE);
+
+   if (!core_path || !*core_path
+       || !retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path)
+       || !m_controlsDialog)
+      return;
+
+   m_controlsDialog->show();
+   m_controlsDialog->reload();
 }
 
 void MainWindow::onCoreOptionsClicked()
@@ -6184,6 +6208,8 @@ static void qt_companion_build_menubar(MainWindow *mainwindow)
 
    viewMenu = menu->addMenu(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW));
+   QObject::connect(viewMenu, SIGNAL(aboutToShow()), mainwindow,
+         SLOT(onViewMenuAboutToShow()));
    viewClosedDocksMenu = viewMenu->addMenu(msg_hash_to_str(
             MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS));
    viewClosedDocksMenu->setObjectName("viewClosedDocksMenu");
@@ -6193,6 +6219,12 @@ static void qt_companion_build_menubar(MainWindow *mainwindow)
 
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS),
          mainwindow, SLOT(onCoreOptionsClicked()));
+   {
+      QAction *controlsAction = viewMenu->addAction(QObject::tr("Controls"),
+            mainwindow, SLOT(onControlsClicked()));
+      controlsAction->setObjectName("controlsViewAction");
+      controlsAction->setEnabled(false);
+   }
 #if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    viewMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS),

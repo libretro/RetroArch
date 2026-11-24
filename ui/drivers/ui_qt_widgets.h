@@ -795,6 +795,39 @@ private:
    QLineEdit *m_edit;
 };
 
+class ControlsDialog : public QDialog
+{
+   Q_OBJECT
+public:
+   ControlsDialog(QWidget *parent = 0);
+   ~ControlsDialog();
+public slots:
+   void reload();
+private slots:
+   void onPortChanged(int index);
+   void onDetectClicked();
+   void onClearClicked();
+   void onDefaultClicked();
+   void pollInput();
+private:
+   void buildLayout();
+   void buildSettingsPage(QVBoxLayout *layout);
+   void showManageMenu(QWidget *anchor);
+   void stopDetection();
+   QPointer<QScrollArea> m_scrollArea;
+   QPointer<QComboBox> m_portCombo;
+   QPointer<QLabel> m_detectionLabel;
+   QPointer<QTimer> m_detectionTimer;
+   bool m_settingsPage;
+   unsigned m_selectedUser;
+   unsigned m_detectDescriptor;
+   unsigned m_detectUser;
+   bool m_detectReleased;
+   bool m_detecting;
+protected:
+   void closeEvent(QCloseEvent *event);
+};
+
 class CoreOptionsDialog : public QDialog
 {
    Q_OBJECT
