@@ -143,8 +143,9 @@ link_harness --scenario FILE --out DIR [--path NAME=FILE]...
 The exit code is:
 
 - 0 when the run reached its `end` line, every `expect` held, no core
-  logged an error, the bus counts and the frame of any release were those
-  the scenario expects, every compared trace line matched, every console
+  logged an error, not even finishing a frame abandoned at the close, the
+  bus counts and the frame of any release were those the scenario
+  expects, every compared trace line matched, every console
   that ran the frame before a checkpoint kept its picture, each state saved
   again right after a load was the state loaded, with no `send_msg`,
   `recv_msg`, `peek`, `advance` or `advance_multi` call, and no
@@ -278,7 +279,8 @@ The scenarios here:
   joins it again, and a late join that makes a step run again.
 - `unhold_dupe`: a dupe right after a hold ends.
 - `bad/`: scenarios the harness refuses before anything runs.
-- `fail/`: scenarios that run and fail: a core that logs an error, a count the
+- `fail/`: scenarios that run and fail: a core that logs an error, one that
+  logs it while it finishes a frame abandoned at the close, a count the
   bus does not reach, an `expect` line that does not hold, a release the
   scenario does not expect, two dupes in a row before a checkpoint,
   addresses the memory map does not map, a frame rate that makes a port's
@@ -354,7 +356,7 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_restart_ticks` | off, on | off |
 | `link_test_extra_flags` | off, on: every undefined bit set in its port and core flags | off |
 | `link_test_save_in_advance` | off, on | off |
-| `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load, stale_save, stale_send, stale_release | conform |
+| `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load, stale_save, stale_send, stale_release, release_error | conform |
 | `link_test_bad_frame` | the first frame of the mode | 0 |
 
 In each `retro_run` the core advances its ports at the frame start, at each
@@ -402,6 +404,8 @@ From `link_test_bad_frame` on, the modes break the rules:
 - `stale_release`: an advance that reports `RETRO_LINK_WAKE_DETACHED` sets
   a latch, and while the latch is set it folds the frame number into its
   state every frame. The latch is in no save state, and no load clears it.
+- `release_error`: an advance that reports `RETRO_LINK_WAKE_DETACHED`
+  logs an error.
 
 Its system RAM, for `expect` lines: 0x00-0x07 the state hash; 0x08 the ports
 attached; 0x09-0x0B each port's peer count; 0x0C-0x0E each port's index, 255

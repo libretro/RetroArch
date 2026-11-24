@@ -1060,8 +1060,7 @@ static void link_harness_messages(struct link_harness *h, unsigned long frame)
    }
 }
 
-/* Every counter must be the scenario's expect-count, else 0, and no core
- * may have logged an error */
+/* Every counter must be the scenario's expect-count, else 0 */
 static void link_harness_check_counts(struct link_harness *h)
 {
    struct link_bus_counts counts;
@@ -1083,6 +1082,12 @@ static void link_harness_check_counts(struct link_harness *h)
             link_harness_dec(want, wanted));
       h->failed = true;
    }
+}
+
+/* No core may have logged an error, finishing an abandoned frame included */
+static void link_harness_check_errors(struct link_harness *h)
+{
+   unsigned i;
    for (i = 0; i < h->scn.console_count; i++)
       if (h->consoles[i].errors)
       {
@@ -1228,13 +1233,15 @@ static void link_harness_run(struct link_harness *h)
    link_harness_check_counts(h);
 }
 
-/* Every core unloaded; closing twice does nothing */
+/* The frames in progress abandoned and every core unloaded; closing twice
+ * does nothing */
 static void link_harness_close(struct link_harness *h)
 {
    size_t i;
    if (!h->consoles)
       return;
    link_harness_abandon(h);
+   link_harness_check_errors(h);
    for (i = 0; i < h->scn.console_count; i++)
       link_console_close(&h->consoles[i]);
 }

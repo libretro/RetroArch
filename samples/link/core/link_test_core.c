@@ -61,7 +61,8 @@ enum lt_mode
    LT_STALE_LOAD,
    LT_STALE_SAVE,
    LT_STALE_SEND,
-   LT_STALE_RELEASE
+   LT_STALE_RELEASE,
+   LT_RELEASE_ERROR
 };
 
 struct lt_range
@@ -177,7 +178,7 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_extra_flags", "Every undefined port and core flag bit set; off|on" },
    { "link_test_save_in_advance", "Saves inside an advance; off|on" },
    { "link_test_mode",        "Mode; conform|nonconform|never_advance|no_progress|stale_load|"
-                              "stale_save|stale_send|stale_release" },
+                              "stale_save|stale_send|stale_release|release_error" },
    { "link_test_bad_frame",   "First frame of the mode; 0" },
    { NULL, NULL }
 };
@@ -455,7 +456,7 @@ static void lt_read_mode(void)
 {
    static const char *const names[] = {
       "conform", "nonconform", "never_advance", "no_progress", "stale_load", "stale_save",
-      "stale_send", "stale_release"
+      "stale_send", "stale_release", "release_error"
    };
    const char *s = lt_option("link_test_mode");
    unsigned i;
@@ -659,6 +660,8 @@ static void lt_granted(unsigned p, uint64_t grant, uint64_t lawful, unsigned wak
       lt_bump8(LT_RAM_DETACHED);
       if (lt_cfg.mode == LT_STALE_RELEASE && lt_state.frame >= lt_cfg.bad_frame)
          lt_latch = true;
+      if (lt_cfg.mode == LT_RELEASE_ERROR && lt_state.frame >= lt_cfg.bad_frame)
+         lt_fail("released", p, grant, lawful);
    }
 }
 
