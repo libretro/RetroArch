@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Install compiler and independent GLSL validator
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
 
       - name: Restore pinned SPIR-V validator build
