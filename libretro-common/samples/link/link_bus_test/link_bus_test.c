@@ -2375,7 +2375,7 @@ static void save_load_roundtrip(void)
 }
 
 /* The save blob's layout, for checks that corrupt one field */
-#define FX_BLOB_HEAD  84 /* magic, version, consoles, records, cables, counts */
+#define FX_BLOB_HEAD  85 /* magic, version, consoles, records, cables, counts, held_back */
 #define FX_BLOB_PORT  103 /* a record, up to its protocol's length */
 #define FX_BLOB_LINK  38  /* a link to another record */
 #define FX_BLOB_ENTRY 59  /* a message, up to its payload */
@@ -2442,6 +2442,10 @@ static void load_refuses_bad_input(void)
    memcpy(bad, fx_blob, n);
    bad[first]      = 3;   /* no state a message takes, */
    bad[first + 31] = 1;   /* with a rate */
+   CHECK(!link_bus_load(fx_bus, bad, n));
+   CHECK(link_bus_hash(fx_bus) == hash_b);
+   memcpy(bad, fx_blob, n);
+   bad[FX_BLOB_HEAD - 1] = 2; /* held_back neither set nor clear */
    CHECK(!link_bus_load(fx_bus, bad, n));
    CHECK(link_bus_hash(fx_bus) == hash_b);
    memcpy(bad, fx_blob, n);
@@ -3309,41 +3313,59 @@ static void uncable_refused_past_first_edge(void)
 /* Three radios with max_ports 2: console 0's attach would push console 2
  * out at its edge, 3000, while console 1 is past its first edge at or
  * after it. The join waits until console 2 stands at an edge, 6000, that
- * no running peer has passed. */
+ * no running peer has passed, and console 1, whose view holds console 2
+ * until then, has reached it; the same with a save loaded before each of
+ * those two step ends */
 static void max_ports_push_out_waits_for_peers(void)
 {
-   unsigned c;
+   uint64_t hash[2];
+   unsigned c, run;
 
-   fx_new(3);
-   for (c = 0; c < 3; c++)
-      fx_port(c, 0, "test-radio", 60000, 2, RETRO_LINK_PORT_SHARED_MEDIUM);
-   CHECK(link_bus_set_ports(fx_bus, 0, fx_ptrs[0]));
-   fx_attach(1);
-   fx_attach(2);
-   fx_span[1][0] = 1000;
-   fx_span[2][0] = 3000;
-   fx_own_frame(2, FX_FAR);
-   for (c = 0; c < 3; c++)
+   for (run = 0; run < 2; run++)
+   {
+      fx_new(3);
+      for (c = 0; c < 3; c++)
+         fx_port(c, 0, "test-radio", 60000, 2, RETRO_LINK_PORT_SHARED_MEDIUM);
+      CHECK(link_bus_set_ports(fx_bus, 0, fx_ptrs[0]));
+      fx_attach(1);
+      fx_attach(2);
+      fx_span[1][0] = 1000;
+      fx_span[2][0] = 3000;
+      fx_own_frame(2, FX_FAR);
+      for (c = 0; c < 3; c++)
+         fx_own_frame(1, FX_FAR);
+      link_bus_step_end(fx_bus);
+      fx_own_start(1, FX_FAR);    /* begun at 3000 */
+      fx_h[0][0] = link_bus_attach(fx_bus, 0, 0, "test-radio", 60000);
+      CHECK(fx_h[0][0] != NULL);
+      CHECK(fx_peers(2, 0) == 2 * 16 + 2 && fx_peers(0, 0) == 0);
+      link_bus_step_end(fx_bus);
+      CHECK(fx_peers(2, 0) == 2 * 16 + 2);
+      fx_own_end(1);              /* at 4000, past 3000 */
+      link_bus_step_end(fx_bus);
+      CHECK(fx_peers(2, 0) == 2 * 16 + 2 && fx_peers(0, 0) == 0);
+      fx_own_frame(2, FX_FAR);    /* at 6000 */
+      if (run)
+      {
+         CHECK(fx_reloads());
+         fx_reload_bus();
+      }
+      link_bus_step_end(fx_bus);
+      /* Console 1, at 4000, would see console 2 still beside console 0 */
+      CHECK(fx_peers(2, 0) == 2 * 16 + 2 && fx_peers(0, 0) == 0);
       fx_own_frame(1, FX_FAR);
-   link_bus_step_end(fx_bus);
-   fx_own_start(1, FX_FAR);       /* begun at 3000 */
-   fx_h[0][0] = link_bus_attach(fx_bus, 0, 0, "test-radio", 60000);
-   CHECK(fx_h[0][0] != NULL);
-   CHECK(fx_peers(2, 0) == 2 * 16 + 2 && fx_peers(0, 0) == 0);
-   link_bus_step_end(fx_bus);
-   CHECK(fx_peers(2, 0) == 2 * 16 + 2);
-   fx_own_end(1);                 /* at 4000, past 3000 */
-   link_bus_step_end(fx_bus);
-   CHECK(fx_peers(2, 0) == 2 * 16 + 2 && fx_peers(0, 0) == 0);
-   fx_own_frame(2, FX_FAR);       /* at 6000 */
-   link_bus_step_end(fx_bus);
-   /* Console 1, at 4000, would see console 2 still beside console 0 */
-   CHECK(fx_peers(2, 0) == 2 * 16 + 2 && fx_peers(0, 0) == 0);
-   fx_own_frame(1, FX_FAR);
-   fx_own_frame(1, FX_FAR);       /* at 6000 */
-   link_bus_step_end(fx_bus);
-   CHECK(fx_peers(2, 0) == 0 && fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(1, 0) == 2 * 16 + 2);
-   fx_free();
+      fx_own_frame(1, FX_FAR);    /* at 6000 */
+      if (run)
+      {
+         CHECK(fx_reloads());
+         fx_reload_bus();
+      }
+      link_bus_step_end(fx_bus);
+      CHECK(fx_peers(2, 0) == 0 && fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(1, 0) == 2 * 16 + 2);
+      hash[run] = link_bus_hash(fx_bus);
+      fx_free();
+   }
+   CHECK(hash[0] == hash[1]);
 }
 
 /* Console 1, held at its edge 3000, is pulled while console 0 is inside its
@@ -3515,34 +3537,46 @@ static void max_ports_reattach_left_out_at_once(void)
 
 /* Three cable ports taking two. Console 1, a frame ahead of console 0, is
  * pulled at its edge 2048; console 2, cabled to console 0 then, joins only
- * once console 0 has reached 2048, as console 0 sees console 1 until then */
+ * once console 0 has reached 2048, as console 0 sees console 1 until then;
+ * the same with a save loaded before the step end that makes the join */
 static void join_waits_for_view_of_leaver(void)
 {
-   unsigned c;
+   uint64_t hash[2];
+   unsigned c, run;
 
-   fx_new(3);
-   for (c = 0; c < 3; c++)
+   for (run = 0; run < 2; run++)
    {
-      fx_port(c, 0, "test-cable", 61440, 2, 0);
-      fx_attach(c);
+      fx_new(3);
+      for (c = 0; c < 3; c++)
+      {
+         fx_port(c, 0, "test-cable", 61440, 2, 0);
+         fx_attach(c);
+      }
+      CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+      for (c = 0; c < 3; c++)
+         fx_own_frame(c, FX_FAR);
+      link_bus_step_end(fx_bus);
+      fx_own_frame(1, FX_FAR);
+      link_bus_step_end(fx_bus);
+      CHECK(link_bus_uncable(fx_bus, 1, 0));
+      CHECK(link_bus_cable(fx_bus, 0, 0, 2, 0));
+      CHECK(fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(2, 0) == 0);
+      CHECK(fx_reloads());
+      link_bus_step_end(fx_bus);
+      CHECK(fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(2, 0) == 0);
+      fx_own_frame(0, FX_FAR);    /* at 2048 */
+      if (run)
+      {
+         CHECK(fx_reloads());
+         fx_reload_bus();
+      }
+      link_bus_step_end(fx_bus);
+      CHECK(fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(2, 0) == 2 * 16 + 2);
+      CHECK(fx_reloads());
+      hash[run] = link_bus_hash(fx_bus);
+      fx_free();
    }
-   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
-   for (c = 0; c < 3; c++)
-      fx_own_frame(c, FX_FAR);
-   link_bus_step_end(fx_bus);
-   fx_own_frame(1, FX_FAR);
-   link_bus_step_end(fx_bus);
-   CHECK(link_bus_uncable(fx_bus, 1, 0));
-   CHECK(link_bus_cable(fx_bus, 0, 0, 2, 0));
-   CHECK(fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(2, 0) == 0);
-   CHECK(fx_reloads());
-   link_bus_step_end(fx_bus);
-   CHECK(fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(2, 0) == 0);
-   fx_own_frame(0, FX_FAR);       /* at 2048 */
-   link_bus_step_end(fx_bus);
-   CHECK(fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(2, 0) == 2 * 16 + 2);
-   CHECK(fx_reloads());
-   fx_free();
+   CHECK(hash[0] == hash[1]);
 }
 
 /* A session of 256 radios, one frame of 1024 ticks at a time */

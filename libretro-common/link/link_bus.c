@@ -2860,8 +2860,8 @@ static void link_bus_walk_port(const link_bus_t *b, const struct retro_link_port
       link_bus_walk_entry(b, p, order.e, order.rank, o);
 }
 
-/* The blob: header, counts, holds, the records' consoles and ports, the
- * cables between them, then each record with its queue */
+/* The blob: header, counts, held_back, holds, the records' consoles and
+ * ports, the cables between them, then each record with its queue */
 static void link_bus_walk(const link_bus_t *b, struct link_bus_out *o)
 {
    size_t i;
@@ -2876,6 +2876,7 @@ static void link_bus_walk(const link_bus_t *b, struct link_bus_out *o)
    for (i = 0; i < LINK_BUS_SAVED_COUNTS; i++)
       link_bus_put_u(o, *(const uint64_t*)((const char*)&b->counts
                + link_bus_saved_counts[i]), 8, false);
+   link_bus_put_u(o, b->held_back ? 1 : 0, 1, true);
    for (c = 0; c < b->console_count; c++)
       link_bus_put_u(o, (b->consoles[c].held      ? LINK_BUS_CON_HELD      : 0)
                       | (b->consoles[c].unholding ? LINK_BUS_CON_UNHOLDING : 0)
@@ -3265,6 +3266,7 @@ static bool link_bus_read(link_bus_t *b, struct link_bus_in *in, const void *buf
 {
    const unsigned char *magic, *pairs;
    uint64_t counts[LINK_BUS_SAVED_COUNTS];
+   uint64_t held_back;
    size_t i, cables;
    unsigned c;
    in->at  = (const unsigned char*)buf;
@@ -3279,7 +3281,8 @@ static bool link_bus_read(link_bus_t *b, struct link_bus_in *in, const void *buf
    cables   = (size_t)link_bus_get_u(in, 4);
    for (i = 0; i < LINK_BUS_SAVED_COUNTS; i++)
       counts[i] = link_bus_get_u(in, 8);
-   if (!(in->cons = link_bus_get_bytes(in, b->console_count)))
+   held_back = link_bus_get_u(in, 1);
+   if (held_back > 1 || !(in->cons = link_bus_get_bytes(in, b->console_count)))
       return false;
    for (c = 0; c < b->console_count; c++)
    {
@@ -3347,35 +3350,43 @@ static bool link_bus_read(link_bus_t *b, struct link_bus_in *in, const void *buf
    if (in->pass == LINK_BUS_APPLY)
    {
       b->cables_len = cables;
+      b->held_back  = held_back != 0;
       for (i = 0; i < LINK_BUS_SAVED_COUNTS; i++)
          *(uint64_t*)((char*)&b->counts + link_bus_saved_counts[i]) = counts[i];
    }
    return true;
 }
 
-/* The buses as the blob's links hold them, from which link_bus_group forms
- * them again: a join that waited, or a port max_ports kept on a bus, waits
- * or stays as it did. A port's head is the first port it was on a bus
- * with, or itself. */
+/* The buses as the blob's links hold them, as they stood at the save: a
+ * join or push-out that waited is made by the next step_end, as held_back
+ * says. A port's head is the first port it was on a bus with, or itself. */
 static void link_bus_heads(link_bus_t *b)
 {
    size_t i, j;
+   b->seq++;
    for (i = 0; i < b->recs_len; i++)
    {
       struct retro_link_port *p = b->recs[i];
-      p->head = NULL;
-      p->next = NULL;
+      p->head  = NULL;
+      p->next  = NULL;
+      p->index = 0;
       for (j = 0; j < b->recs_len && !p->head; j++)
          if (j != i && (link_bus_link(p, b->recs[j])->flags & LINK_BUS_LINK_TOGETHER))
             p->head = j < i ? b->recs[j]->head : p;
       if (p->head == p)
+      {
          p->last = p;
+         p->seq  = b->seq;
+      }
       else if (p->head)
       {
+         p->index            = p->head->last->index + 1;
          p->head->last->next = p;
          p->head->last       = p;
       }
    }
+   for (i = 0; i < b->recs_len; i++)
+      b->recs[i]->count = b->recs[i]->head ? b->recs[i]->head->last->index + 1 : 0;
 }
 
 bool link_bus_load(link_bus_t *b, const void *buf, size_t len)
@@ -3429,7 +3440,6 @@ bool link_bus_load(link_bus_t *b, const void *buf, size_t len)
    b->journal_gen++;
    b->released    = false;
    link_bus_heads(b);
-   link_bus_group(b, 0, 1);
    return true;
 }
 
