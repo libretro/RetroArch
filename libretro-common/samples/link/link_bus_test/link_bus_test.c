@@ -2408,6 +2408,10 @@ static void load_refuses_bad_input(void)
    bad[first + 31] = 1;   /* with a rate */
    CHECK(!link_bus_load(fx_bus, bad, n));
    CHECK(link_bus_hash(fx_bus) == hash_b);
+   memcpy(bad, fx_blob, n);
+   bad[FX_BLOB_HEAD] |= 1 | 4; /* console 0 held, and inside a frame */
+   CHECK(!link_bus_load(fx_bus, bad, n));
+   CHECK(link_bus_hash(fx_bus) == hash_b);
    CHECK(link_bus_load(fx_bus, fx_blob, n));
    CHECK(link_bus_hash(fx_bus) == hash_a);
    fx_free();

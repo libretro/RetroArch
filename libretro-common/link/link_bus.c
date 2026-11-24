@@ -3213,7 +3213,8 @@ static bool link_bus_read(link_bus_t *b, struct link_bus_in *in, const void *buf
    {
       unsigned bits = in->cons[c];
       if (     bits > LINK_BUS_CON_BITS
-            || ((bits & LINK_BUS_CON_UNHOLDING) && !(bits & LINK_BUS_CON_HELD)))
+            || ((bits & LINK_BUS_CON_UNHOLDING) && !(bits & LINK_BUS_CON_HELD))
+            || ((bits & LINK_BUS_CON_HELD) && (bits & LINK_BUS_CON_FRAME)))
          return false;
       if (in->pass == LINK_BUS_APPLY)
       {
