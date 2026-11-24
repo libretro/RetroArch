@@ -48,6 +48,7 @@ typedef struct { float x,y,width,height,minDepth,maxDepth; } VkViewport;
 typedef struct { struct { int x,y; } offset; struct { unsigned width,height; } extent; } VkRect2D;
 typedef struct { unsigned sType,renderPass,framebuffer; VkRect2D renderArea; } VkRenderPassBeginInfo;
 typedef unsigned VkDevice;
+typedef unsigned VkFence;
 #define VULKAN_TEXTURE_STREAMED 1
 #define VK_FORMAT_UNDEFINED 0
 #define VK_IMAGE_LAYOUT_UNDEFINED 0
@@ -64,7 +65,7 @@ struct vk_texture {
    bool immutable,planar_source;
    mpsc_stack_node_t park;
 };
-struct vk_planar_atlas_slot { struct vk_texture texture; uint64_t readers,serial; };
+struct vk_planar_atlas_slot { struct vk_texture texture; uint64_t readers,serial,layout_serial; VkFence conversion; };
 struct vk_planar_atlas { struct vk_planar_atlas_slot slots[4]; unsigned current; bool pending; };
 struct vulkan_filter_chain_texture { unsigned image,view,dims,layout; };
 #define VK_IMAGE_LAYOUT_GENERAL 1
@@ -215,6 +216,11 @@ int main(void)
       assert(input_layout==VK_IMAGE_LAYOUT_GENERAL && atlas.slots[2].texture.layout==VK_IMAGE_LAYOUT_GENERAL);
       assert(atlas.slots[2].readers==2 && atlas.slots[2].serial==51);
       assert(texture.planar_draw_serial==51 && v.vk_vp.x==17);
+      assert(atlas.slots[2].layout_serial==51);
+      v.media_submit_serial=52;
+      assert(gfx_display_vk_media_shader_draw(&v,(uintptr_t)&texture,
+         VIDEO_SCALE_PACK(320,240),VIDEO_SCALE_PACK(640,480),0,VIDEO_SCALE_PACK(320,240)));
+      assert(atlas.slots[2].layout_serial==51 && atlas.slots[2].serial==53);
       assert(!planar_chain.owner);
       texture.planar_atlas=NULL;
    }

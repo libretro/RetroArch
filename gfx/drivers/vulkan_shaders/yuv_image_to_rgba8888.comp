@@ -18,7 +18,13 @@ void main()
    uvec2 p = gl_GlobalInvocationID.xy;
    if (p.x >= words[0] || p.y >= words[1]) return;
    ivec2 origin = ivec2(words[2], words[3]);
-#ifdef PACKED_YUV
+#ifdef PLANAR_ATLAS
+   float y = texelFetch(Y, ivec2(p), 0).r;
+   ivec2 uv = ivec2(p >> 1u);
+   float cb = texelFetch(Y, uv + ivec2(0, words[1]), 0).r;
+   float cr = texelFetch(Y, uv + ivec2(0, words[1] + (words[1] + 1u) / 2u), 0).r;
+   vec2 c = vec2(cb, cr) - 128.0 / 255.0;
+#elif defined(PACKED_YUV)
    float divisor = words[14] == 2u ? (words[15] != 0u ? 1023.0 : 1020.0) : 255.0;
    float center = words[14] == 2u && words[15] != 0u ? 512.0 / 1023.0 : 128.0 / 255.0;
    vec3 samples = texelFetch(Y, ivec2(p) + origin, 0).rgb / divisor;

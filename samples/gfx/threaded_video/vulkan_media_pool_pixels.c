@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <boolean.h>
+#include <formats/image_yuv_blit.h>
+#include "gfx/common/vulkan_android_pipeline.c"
 #include <queues/mpsc_stack.h>
 #include "gfx/video_defines.h"
 #define VK_PLANAR_ATLAS_SLOTS 4
@@ -16,8 +18,12 @@
 typedef unsigned vk_win32_video_import_t;
 enum vk_texture_type { VULKAN_TEXTURE_STREAMED, VULKAN_TEXTURE_STATIC, VULKAN_TEXTURE_DYNAMIC };
 #include "pool_types.inc"
-struct context { VkDevice device; VkPhysicalDeviceMemoryProperties memory_properties; };
-typedef struct { struct context *context; struct vk_stream_state *stream_states; uint64_t media_submit_serial; } vk_t;
+struct context { VkDevice device; VkPhysicalDeviceMemoryProperties memory_properties; VkPhysicalDevice gpu; };
+typedef struct {
+   struct context *context; struct vk_stream_state *stream_states; uint64_t media_submit_serial;
+   struct { VkPipeline yuv_atlas_to_rgba8888; VkPipelineLayout layout; } pipelines;
+   struct { VkSampler nearest; } samplers;
+} vk_t;
 static void RARCH_ERR(const char *text){fputs(text,stderr);}
 #include "pool_memory.inc"
 static void vulkan_planar_materialize(struct vk_texture *t){assert(!t->planar_atlas);}
@@ -69,6 +75,8 @@ static void pixels(VkQueue queue,VkCommandBuffer cmd,VkBuffer buffer,void *mappe
    submit(queue,cmd);
    for(i=0;i<count;i++)assert(!memcmp((uint8_t*)mapped+i*bpp,expected,bpp));
 }
+#include "vulkan_atlas_pixels.h"
+
 static void run(vk_t *v,VkQueue queue,VkCommandBuffer cmd,VkBuffer buffer,void *mapped,VkFormat format,bool storage)
 {
    struct vk_media_pool *pool=(struct vk_media_pool*)calloc(1,sizeof(*pool));
@@ -146,7 +154,7 @@ int main(void)
    if(validation)assert(create_debug(instance,&debug,NULL,&messenger)==VK_SUCCESS);
    assert(vkEnumeratePhysicalDevices(instance,&count,NULL)==VK_SUCCESS && count);
    gpus=(VkPhysicalDevice*)calloc(count,sizeof(*gpus));assert(vkEnumeratePhysicalDevices(instance,&count,gpus)==VK_SUCCESS);
-   vkGetPhysicalDeviceMemoryProperties(gpus[0],&context.memory_properties);
+   vkGetPhysicalDeviceMemoryProperties(gpus[0],&context.memory_properties);context.gpu=gpus[0];
    vkGetPhysicalDeviceQueueFamilyProperties(gpus[0],&count,NULL);families=(VkQueueFamilyProperties*)calloc(count,sizeof(*families));
    vkGetPhysicalDeviceQueueFamilyProperties(gpus[0],&count,families);
    for(i=0;i<count;i++)if(families[i].queueFlags&VK_QUEUE_GRAPHICS_BIT){family=i;break;}
@@ -170,6 +178,7 @@ int main(void)
    run(&v,queue,cmd,buffer,mapped,VK_FORMAT_B8G8R8A8_UNORM,false);
    run(&v,queue,cmd,buffer,mapped,VK_FORMAT_R16G16B16A16_SFLOAT,false);
    run(&v,queue,cmd,buffer,mapped,VK_FORMAT_R8G8B8A8_UNORM,true);
+   atlas_pixels(&v,queue,command_pool,cmd,buffer,mapped);
    vkUnmapMemory(context.device,memory);vkDestroyBuffer(context.device,buffer,NULL);vkFreeMemory(context.device,memory,NULL);
    vkDestroyCommandPool(context.device,command_pool,NULL);vkDestroyDevice(context.device,NULL);
    if(messenger)destroy_debug(instance,messenger,NULL);

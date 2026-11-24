@@ -2424,7 +2424,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono libfreetype-dev libvulkan-dev vulkan-validationlayers
+      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono libfreetype-dev libvulkan-dev vulkan-validationlayers glslang-tools
 
     steps:
       - name: Checkout

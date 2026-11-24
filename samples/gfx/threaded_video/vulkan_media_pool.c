@@ -43,15 +43,18 @@ typedef struct {
    struct vk_texture *android_textures, *vaapi_textures;
    uint64_t media_submit_serial;
    bool media_shader_enabled;void *media_planar_chain[2];
-   struct { VkPipeline yuv420_to_rgba8888; VkPipelineLayout layout; } pipelines;
+   struct { VkPipeline yuv420_to_rgba8888, yuv_atlas_to_rgba8888; VkPipelineLayout layout; } pipelines;
+   struct { VkSampler nearest; } samplers;
 } vk_t;
-struct image { uint32_t pixels[4][32]; unsigned levels,format,destroyed; };
+struct image { uint32_t pixels[4][32]; unsigned levels,format,destroyed,memory,offset,stride; };
 struct view { unsigned image,levels,deleted; };
 struct operation { unsigned kind,image,source,level; };
 static struct image images[128];
 static struct view views[256];
 static struct operation operations[2][16];
 static unsigned operation_count[2],image_count,view_count,memory_count;
+static unsigned input_view[2],pipeline_bound[2];
+static uint32_t pushed_header[2][20];
 static unsigned allocations,blits,uploads,dispatches,changed,storage_view[2],bound_set[2];
 static unsigned deleted_memory[128];
 static bool fail_image,fail_submit,fail_end;
@@ -79,7 +82,7 @@ static VkResult vkAllocateMemory(VkDevice device,const VkMemoryAllocateInfo *inf
       const VkAllocationCallbacks *allocator,VkDeviceMemory *memory)
 {(void)device;(void)info;(void)allocator;*memory=HANDLE(VkDeviceMemory,++memory_count);return VK_SUCCESS;}
 static VkResult vkBindImageMemory(VkDevice device,VkImage image,VkDeviceMemory memory,VkDeviceSize offset)
-{(void)device;(void)image;(void)memory;(void)offset;return VK_SUCCESS;}
+{(void)device;(void)offset;images[ID(image)].memory=ID(memory);return VK_SUCCESS;}
 static VkResult vkCreateImageView(VkDevice device,const VkImageViewCreateInfo *info,
       const VkAllocationCallbacks *allocator,VkImageView *view)
 {
@@ -142,14 +145,21 @@ static void vkCmdCopyBufferToImage(VkCommandBuffer cmd,VkBuffer buffer,VkImage i
 {(void)layout;assert(count==1 && !r->imageSubresource.mipLevel);operation_add(cmd,1,ID(image),ID(buffer)-1,0);uploads++;}
 static void vkUpdateDescriptorSets(VkDevice d,uint32_t count,const VkWriteDescriptorSet *writes,
       uint32_t copies,const VkCopyDescriptorSet *copy)
-{(void)d;(void)copy;assert(count==1 && !copies && writes->dstBinding==3);storage_view[ID(writes->dstSet)-1]=ID(writes->pImageInfo->imageView);}
+{(void)d;(void)copy;assert(count==1 && !copies);
+ if(writes->dstBinding==3)storage_view[ID(writes->dstSet)-1]=ID(writes->pImageInfo->imageView);
+ else{assert(writes->dstBinding==1 && writes->descriptorType==VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);input_view[ID(writes->dstSet)-1]=ID(writes->pImageInfo->imageView);}}
 static void vkCmdBindPipeline(VkCommandBuffer cmd,VkPipelineBindPoint p,VkPipeline pipeline)
-{(void)cmd;(void)p;(void)pipeline;}
+{(void)p;pipeline_bound[ID(cmd)-1]=ID(pipeline);}
 static void vkCmdBindDescriptorSets(VkCommandBuffer cmd,VkPipelineBindPoint point,VkPipelineLayout layout,
       uint32_t first,uint32_t count,const VkDescriptorSet *set,uint32_t offsets,const uint32_t *values)
 {(void)point;(void)layout;(void)first;(void)offsets;(void)values;assert(count==1);bound_set[ID(cmd)-1]=ID(*set)-1;}
 static void vkCmdDispatch(VkCommandBuffer cmd,uint32_t x,uint32_t y,uint32_t z)
-{(void)x;(void)y;(void)z;operation_add(cmd,3,views[storage_view[bound_set[ID(cmd)-1]]].image,ID(cmd)-1,0);dispatches++;}
+{unsigned slot=ID(cmd)-1;(void)x;(void)y;(void)z;
+ operation_add(cmd,pipeline_bound[slot]==2?4:3,views[storage_view[bound_set[slot]]].image,
+       pipeline_bound[slot]==2?views[input_view[bound_set[slot]]].image:slot,0);dispatches++;}
+static void vkCmdPushConstants(VkCommandBuffer cmd,VkPipelineLayout layout,VkShaderStageFlags stages,
+      uint32_t offset,uint32_t size,const void *data)
+{(void)layout;assert(stages==VK_SHADER_STAGE_COMPUTE_BIT && !offset && size==80);memcpy(pushed_header[ID(cmd)-1],data,size);}
 void image_yuv_coefficients(unsigned flags,float coef[6])
 {unsigned i;(void)flags;for(i=0;i<6;i++)coef[i]=1;}
 static enum video_texture_update vulkan_stream_submit(vk_t *v,struct vk_stream_state *st,unsigned slot)
@@ -161,6 +171,14 @@ static enum video_texture_update vulkan_stream_submit(vk_t *v,struct vk_stream_s
       struct operation *o=&operations[slot][i];struct image *image=&images[o->image];
       if(o->kind==1)memcpy(image->pixels[0],staging[o->source],16*bpp(image->format));
       else if(o->kind==2)memmove(image->pixels[o->level],image->pixels[0],bpp(image->format));
+      else if(o->kind==4)
+      {
+         const struct image *src=&images[o->source];
+         const uint8_t *pixels=atlas_maps[src->memory]+src->offset;
+         unsigned w=pushed_header[slot][0];
+         assert(src->stride && w);
+         for(j=0;j<16;j++)image->pixels[0][j]=pixels[(j/w)*src->stride+j%w];
+      }
       else
       {
          uint32_t *header=(uint32_t*)staging[o->source];
@@ -195,6 +213,7 @@ static struct vk_texture vulkan_create_texture(vk_t *v,struct vk_texture *old,un
    assert(vkAllocateMemory(v->context->device,&alloc,NULL,&t.memory)==VK_SUCCESS);
    view.image=t.image;view.subresourceRange.levelCount=1;assert(vkCreateImageView(v->context->device,&view,NULL,&t.view)==VK_SUCCESS);
    t.dims=VIDEO_SCALE_PACK(w,h);t.stride=atlas_stride;t.size=t.stride*h;t.format=format;t.type=type;t.layout=VK_IMAGE_LAYOUT_PREINITIALIZED;
+   images[ID(t.image)].offset=(unsigned)t.offset;images[ID(t.image)].stride=(unsigned)t.stride;
    assert(t.size<=512 || t.stride>UINT_MAX);return t;
 }
 #include "pool_atlas.inc"
@@ -490,6 +509,40 @@ static void atlas_run(void)
    atlas->pending=true;texture.planar_source=true;
    vulkan_media_publish(&texture,&texture.media_pool->current->texture);
    assert(!texture.planar_source && !atlas->pending && texture.planar_atlas==atlas);
+   /* GPU materialization must not repack or touch the upload buffers. */
+   v.pipelines.yuv_atlas_to_rgba8888=HANDLE(VkPipeline,2);
+   v.samplers.nearest=HANDLE(VkSampler,1);
+   atlas->pending=true;before=cpu_frame_copies;old=dispatches;current=st.next_slot;
+   memset(staging,0xa5,sizeof(staging));
+   vulkan_planar_materialize(&texture);
+   assert(!atlas->pending && dispatches==old+1 && cpu_frame_copies==before);
+   for(i=0;i<sizeof(staging);i++)assert(((uint8_t*)staging)[i]==0xa5);
+   slot=&atlas->slots[atlas->current];
+   assert(slot->conversion==st.fence[current]);
+   ready[current]=false;assert(!vulkan_planar_atlas_idle(&v,slot));
+   ready[current]=true;assert(vulkan_planar_atlas_idle(&v,slot) && !slot->conversion);
+   /* Busy conversion slots preserve the pending frame without a CPU retry. */
+   atlas->pending=true;ready[0]=ready[1]=false;
+   vulkan_planar_materialize(&texture);
+   assert(atlas->pending && cpu_frame_copies==before && dispatches==old+1);
+   ready[0]=ready[1]=true;
+   /* Already committed GENERAL permits a compute read before recorded draws. */
+   slot->readers=1;slot->serial=v.media_submit_serial+1;slot->layout_serial=0;
+   vulkan_planar_materialize(&texture);
+   assert(!atlas->pending);
+   for(i=0;i<sizeof(staging);i++)assert(((uint8_t*)staging)[i]==0xa5);
+   /* Only an unsubmitted first transition still owns this source layout. */
+   atlas->pending=true;slot->layout_serial=v.media_submit_serial+1;
+   vulkan_planar_materialize(&texture);
+   assert(!atlas->pending && (staging[0][0]!=0xa5 || staging[1][0]!=0xa5));
+   assert(!vulkan_planar_atlas_idle(&v,slot));
+   slot->readers=0;slot->layout_serial=0;
+   /* Failed GPU publication cannot pin the atlas or consume its pending frame. */
+   atlas->pending=true;fail_submit=true;
+   vulkan_planar_materialize(&texture);
+   assert(atlas->pending && !slot->conversion);
+   fail_submit=false;
+   v.pipelines.yuv_atlas_to_rgba8888=VK_NULL_HANDLE;
    v.media_shader_enabled=false;assert(vulkan_planar_atlas_update(&v,&texture,&image)==VIDEO_TEXTURE_UPDATE_REFUSED);
    vulkan_media_pool_free(&v,&texture);assert(!texture.planar_atlas);
    /* Unsupported mapped sampling latches a refusal and keeps RGB ownership. */

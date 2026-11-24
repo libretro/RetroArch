@@ -718,6 +718,7 @@ typedef struct vk
       VkPipeline rgb565_to_rgba8888;
       VkPipeline yuv420_to_rgba8888;
       VkPipeline yuv_image_to_rgba8888;
+      VkPipeline yuv_atlas_to_rgba8888;
       VkPipeline yuv420_to_rgba16f;
       VkPipeline yuv_image_to_rgba16f;
 #if defined(_WIN32) && !defined(__WINRT__)
@@ -1844,6 +1845,8 @@ struct vk_planar_atlas_slot
 {
    struct vk_texture texture;
    uint64_t readers, serial;
+   uint64_t layout_serial; /* first GENERAL transition, until submitted */
+   VkFence conversion;    /* borrowed from this texture's stream state */
 };
 struct vk_planar_atlas
 {
@@ -5879,6 +5882,9 @@ static void vulkan_init_pipelines(vk_t *vk)
    static const uint32_t yuv_image_to_rgba8888_comp[] =
 #include "vulkan_shaders/yuv_image_to_rgba8888.comp.inc"
    ;
+   static const uint32_t yuv_atlas_to_rgba8888_comp[] =
+#include "vulkan_shaders/yuv_atlas_to_rgba8888.comp.inc"
+   ;
    static const uint32_t yuv420_to_rgba16f_comp[] =
 #include "vulkan_shaders/yuv420_to_rgba16f.comp.inc"
    ;
@@ -6449,6 +6455,18 @@ static void vulkan_init_pipelines(vk_t *vk)
          vk->pipelines.yuv_image_to_rgba8888 = VK_NULL_HANDLE;
       vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
    }
+   module_info.codeSize = sizeof(yuv_atlas_to_rgba8888_comp);
+   module_info.pCode = yuv_atlas_to_rgba8888_comp;
+   cpipe.stage.module = VK_NULL_HANDLE;
+   vk->pipelines.yuv_atlas_to_rgba8888 = VK_NULL_HANDLE;
+   if (vkCreateShaderModule(vk->context->device, &module_info, NULL,
+            &cpipe.stage.module) == VK_SUCCESS)
+   {
+      if (vkCreateComputePipelines(vk->context->device, vk->pipelines.cache,
+               1, &cpipe, NULL, &vk->pipelines.yuv_atlas_to_rgba8888) != VK_SUCCESS)
+         vk->pipelines.yuv_atlas_to_rgba8888 = VK_NULL_HANDLE;
+      vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
+   }
    module_info.codeSize = sizeof(yuv420_to_rgba16f_comp);
    module_info.pCode = yuv420_to_rgba16f_comp;
    cpipe.stage.module = VK_NULL_HANDLE;
@@ -6750,6 +6768,8 @@ static void vulkan_deinit_pipelines(vk_t *vk)
    vk->pipelines.yuv420_to_rgba8888 = VK_NULL_HANDLE;
    vkDestroyPipeline(vk->context->device, vk->pipelines.yuv_image_to_rgba8888, NULL);
    vk->pipelines.yuv_image_to_rgba8888 = VK_NULL_HANDLE;
+   vkDestroyPipeline(vk->context->device, vk->pipelines.yuv_atlas_to_rgba8888, NULL);
+   vk->pipelines.yuv_atlas_to_rgba8888 = VK_NULL_HANDLE;
    vkDestroyPipeline(vk->context->device, vk->pipelines.yuv420_to_rgba16f, NULL);
    vk->pipelines.yuv420_to_rgba16f = VK_NULL_HANDLE;
    vkDestroyPipeline(vk->context->device, vk->pipelines.yuv_image_to_rgba16f, NULL);
@@ -17027,6 +17047,12 @@ static void vulkan_planar_atlas_free(VkDevice device, struct vk_texture *texture
 static bool vulkan_planar_atlas_idle(vk_t *vk, struct vk_planar_atlas_slot *slot)
 {
    unsigned i;
+   if (slot->conversion)
+   {
+      if (vkGetFenceStatus(vk->context->device, slot->conversion) != VK_SUCCESS)
+         return false;
+      slot->conversion = VK_NULL_HANDLE;
+   }
    if (slot->readers && slot->serial > vk->media_submit_serial)
       return false;
    for (i = 0; i < 64; i++)
@@ -17145,6 +17171,103 @@ static enum video_texture_update vulkan_planar_atlas_update(vk_t *vk, struct vk_
    return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
+/* Read already uploaded planes in place. Only the first, unsubmitted
+ * transition to GENERAL needs the CPU fallback; concurrent reads are safe. */
+static enum video_texture_update vulkan_planar_materialize_gpu(vk_t *vk,
+      struct vk_texture *texture)
+{
+   struct vk_planar_atlas *atlas = texture->planar_atlas;
+   struct vk_planar_atlas_slot *source = &atlas->slots[atlas->current];
+   struct vk_stream_state *st;
+   struct vk_texture *destination;
+   VkDescriptorImageInfo input;
+   VkWriteDescriptorSet write;
+   VkCommandBufferBeginInfo begin;
+   VkCommandBuffer cmd;
+   uint32_t header[VK_PLANAR_HEADER];
+   float coef[6];
+   unsigned slot, i;
+   unsigned w = VIDEO_SCALE_W(texture->dims);
+   unsigned h = VIDEO_SCALE_H(texture->dims);
+   enum video_texture_update result;
+   if (!vk->pipelines.yuv_atlas_to_rgba8888 || !vk->samplers.nearest
+         || source->layout_serial > vk->media_submit_serial
+         || !(st = vulkan_planar_state_get(vk, texture)))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   slot = st->next_slot;
+   if (vkGetFenceStatus(vk->context->device, st->fence[slot]) != VK_SUCCESS)
+   {
+      slot ^= 1;
+      if (vkGetFenceStatus(vk->context->device, st->fence[slot]) != VK_SUCCESS)
+         return VIDEO_TEXTURE_UPDATE_DROPPED;
+   }
+   destination = vulkan_media_writable(vk, texture);
+   if (!destination)
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
+   vulkan_media_storage_target(vk, st, slot, destination);
+   memset(&input, 0, sizeof(input));
+   input.sampler = vk->samplers.nearest;
+   input.imageView = source->texture.view;
+   input.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+   memset(&write, 0, sizeof(write));
+   write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+   write.dstSet = st->set[slot];
+   write.dstBinding = 1;
+   write.descriptorCount = 1;
+   write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+   write.pImageInfo = &input;
+   vkUpdateDescriptorSets(vk->context->device, 1, &write, 0, NULL);
+   memset(header, 0, sizeof(header));
+   header[0] = w;
+   header[1] = h;
+   image_yuv_coefficients(atlas->flags, coef);
+   for (i = 0; i < 6; i++)
+      memcpy(&header[8 + i], &coef[i], sizeof(float));
+   memset(&begin, 0, sizeof(begin));
+   begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   cmd = st->cmd[slot];
+   if (vkResetCommandBuffer(cmd, 0) != VK_SUCCESS
+         || vkBeginCommandBuffer(cmd, &begin) != VK_SUCCESS)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, source->texture.image,
+         source->texture.layout, VK_IMAGE_LAYOUT_GENERAL,
+         VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, destination->image,
+         destination->layout, VK_IMAGE_LAYOUT_GENERAL,
+         destination->layout == VK_IMAGE_LAYOUT_UNDEFINED ? 0 : VK_ACCESS_SHADER_READ_BIT,
+         VK_ACCESS_SHADER_WRITE_BIT,
+         destination->layout == VK_IMAGE_LAYOUT_UNDEFINED ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+         vk->pipelines.yuv_atlas_to_rgba8888);
+   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+         vk->pipelines.layout, 0, 1, &st->set[slot], 0, NULL);
+   vkCmdPushConstants(cmd, vk->pipelines.layout, VK_SHADER_STAGE_COMPUTE_BIT,
+         0, sizeof(header), header);
+   vkCmdDispatch(cmd, (w + 7) / 8, (h + 7) / 8, 1);
+   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, destination->image,
+         VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+   if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   result = vulkan_stream_submit(vk, st, slot);
+   if (result == VIDEO_TEXTURE_UPDATE_DONE)
+   {
+      source->texture.layout = VK_IMAGE_LAYOUT_GENERAL;
+      source->layout_serial = 0;
+      source->conversion = st->fence[slot];
+      st->next_slot = slot ^ 1;
+      vulkan_media_publish(texture, destination);
+      texture->planar_source = true;
+      atlas->pending = false;
+      vulkan_media_texture_changed(vk, (uintptr_t)texture, true);
+   }
+   return result;
+}
+
 /* An incompatible RGB consumer can materialize from the retained mapped
  * atlas. Decoder memory is never retained past its upload callback. */
 static void vulkan_planar_materialize(struct vk_texture *texture)
@@ -17156,6 +17279,9 @@ static void vulkan_planar_materialize(struct vk_texture *texture)
    uint8_t *bytes;
    unsigned h;
    if (!atlas || !atlas->pending || atlas->resolving)
+      return;
+   if (vulkan_planar_materialize_gpu((vk_t*)atlas->driver, texture)
+         != VIDEO_TEXTURE_UPDATE_REFUSED)
       return;
    source = &atlas->slots[atlas->current].texture;
    h = VIDEO_SCALE_H(texture->dims);
@@ -19943,6 +20069,8 @@ static bool gfx_display_vk_media_shader_draw(void *data, uintptr_t image,
    vkCmdEndRenderPass(vk->cmd);
    if (planar)
    {
+      if (atlas_slot->texture.layout != VK_IMAGE_LAYOUT_GENERAL)
+         atlas_slot->layout_serial = vk->media_submit_serial + 1;
       VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, atlas_slot->texture.image,
             atlas_slot->texture.layout, VK_IMAGE_LAYOUT_GENERAL,
             VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
