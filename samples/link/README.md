@@ -270,7 +270,8 @@ The scenarios here:
 - `spans_lookahead_zero`: a port that promises no step ahead beside a peer
   of another span.
 - `spans_save_in_advance`: a save and checkpoints with two consoles inside
-  a frame, as at the last step.
+  a frame, as at the last step, whose input scripts give each frame around
+  the save a mask of its own.
 - `spans_membership`: membership changes between consoles of three spans: a
   cable plugged with a console inside a frame and a save before the join it
   makes, a cable pulled, a hold, a port that leaves a shared medium and
@@ -375,7 +376,9 @@ With `link_test_save_in_advance` on, the core sets
 `RETRO_LINK_SAVE_IN_ADVANCE`: its state holds the advance it is inside,
 and its first `retro_run` after a load makes that advance again and goes
 on from there. It then also sends 16 audio frames at each of its steps, so a
-save inside a frame has audio of that frame to keep. With
+save inside a frame has audio of that frame to keep, and folds its input
+into its state at each step, so a frame finished after a load must get that
+frame's input. With
 `link_test_restart_ticks`, `nonconform` or `no_progress` it logs an error.
 
 From `link_test_bad_frame` on, the modes break the rules:

@@ -1,0 +1,10 @@
+# frame, joypad mask (hex), held until the next line: each frame around
+# 269, the one saved inside an advance, has a mask of its own
+266 0001
+267 0002
+268 0004
+269 0008
+270 0010
+271 0020
+272 0040
+273 0000

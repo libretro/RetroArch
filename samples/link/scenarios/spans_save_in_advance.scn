@@ -4,7 +4,9 @@
 # parked inside a frame at 270, with messages in flight, so the save holds
 # their advances and the from and rewound runs make them again. Both are
 # parked at 600 as well, so the rewound run abandons their frames before it
-# loads, and every run abandons them before it unloads the cores.
+# loads, and every run abandons them before it unloads the cores. Their
+# input scripts give each frame around the one saved a mask of its own: a
+# frame finished after a load with another frame's input fails those runs.
 console 0 core=test
 console 1 core=test
 console 2 core=test
@@ -19,6 +21,8 @@ option 1 link_test_save_in_advance on
 option 2 link_test_fps 16777216/280896
 option 2 link_test_rate_0 16777216
 option 2 link_test_save_in_advance on
+input 1 0 spans_save_in_advance_c1.inp
+input 2 0 spans_save_in_advance_c2.inp
 0 cable 0:0 1:0
 0 cable 1:1 2:0
 270 save mid

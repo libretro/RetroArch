@@ -1098,11 +1098,15 @@ void retro_reset(void)
 
 /* Step m: an advance, then each port's messages landing before its tick
  * applied, and perhaps a send. save_in_advance makes part of its frame's
- * audio in each step, which a save inside a later advance must keep. */
+ * audio in each step, which a save inside a later advance must keep, and
+ * reads its frame's input again, which the run that finishes the frame
+ * after a load must give. */
 static void lt_step(unsigned m, struct lt_stand *at)
 {
    unsigned p;
    lt_advance(LT_STEP, m, at);
+   if (lt_cfg.save_in_advance)
+      lt_fold((uint16_t)lt_input_state(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK));
    for (p = 0; p < lt_cfg.ports; p++)
    {
       uint32_t r = lt_next();
@@ -1141,6 +1145,7 @@ void retro_run(void)
    unsigned m = 0, p;
    bool bad  = lt_cfg.mode != LT_CONFORM && lt_state.frame >= lt_cfg.bad_frame;
    bool dupe = lt_frame_in(lt_cfg.dupes, lt_cfg.dupe_count);
+   lt_input_poll();
    if (lt_state.parked.in)
    {
       /* Loaded inside an advance: the frame goes on from that advance */
@@ -1155,7 +1160,6 @@ void retro_run(void)
          lt_fold(lt_digest(lt_state.sram, sizeof(lt_state.sram)));
          lt_state.sram_folded = true;
       }
-      lt_input_poll();
       lt_fold(lt_state.frame);
       lt_fold((uint16_t)lt_input_state(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK));
       if (bad && lt_cfg.mode == LT_STALE_LOAD)
