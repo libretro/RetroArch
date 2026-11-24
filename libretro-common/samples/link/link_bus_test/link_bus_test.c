@@ -3603,6 +3603,34 @@ static void detach_in_frame_leaves_at_own_edge(void)
    fx_free();
 }
 
+/* Console 1 detaches inside its frame and attaches again at its edge 2000,
+ * before the step's end: the port leaves at that edge and joins again, and
+ * a save and a load keep it on the bus */
+static void attach_at_edge_after_detach_in_frame(void)
+{
+   fx_new(2);
+   fx_port(0, 0, "test-cable", 60000, 2, 0);
+   fx_port(1, 0, "test-cable", 60000, 2, 0);
+   fx_attach(0);
+   fx_attach(1);
+   fx_span[0][0] = 1000;
+   fx_span[1][0] = 1000;
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   fx_own_frame(0, FX_FAR);
+   fx_own_frame(1, FX_FAR);
+   link_bus_step_end(fx_bus);
+   fx_own_start(1, FX_FAR);
+   link_bus_detach(fx_bus, 1, fx_h[1][0]);
+   link_bus_frame_end(fx_bus, 1);
+   CHECK(link_bus_attach(fx_bus, 1, 0, "test-cable", 60000) == fx_h[1][0]);
+   link_bus_step_end(fx_bus);
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(1, 0) == 2 * 16 + 2);
+   CHECK(fx_reloads());
+   CHECK(link_bus_load(fx_bus, fx_blob, fx_save()));
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(1, 0) == 2 * 16 + 2);
+   fx_free();
+}
+
 /* In one step console 0 leaves the bus 0-1 at its edge 6000 and console 2,
  * the middle of the chain 1:1-2-3, at its edge 2000: the chain's ends part
  * at 2000, so at their edges, 3000, they no longer see each other */
@@ -4268,6 +4296,7 @@ static const struct
    { "unhold_places_on_rate_grid",           unhold_places_on_rate_grid },
    { "attach_in_frame_joins_at_own_edge",    attach_in_frame_joins_at_own_edge },
    { "detach_in_frame_leaves_at_own_edge",   detach_in_frame_leaves_at_own_edge },
+   { "attach_at_edge_after_detach_in_frame", attach_at_edge_after_detach_in_frame },
    { "two_detaches_part_at_own_edges",       two_detaches_part_at_own_edges },
    { "detached_in_frame_lands_in_any_order", detached_in_frame_lands_in_any_order },
    { "dropped_send_lands_nowhere",           dropped_send_lands_nowhere },

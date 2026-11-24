@@ -1776,7 +1776,9 @@ retro_link_port_t *link_bus_attach(link_bus_t *b, unsigned console, unsigned por
    p->idle      = e ? e->idle_ticks : 0;
    p->attached  = true;
    p->pending   = 0;
-   if (b->consoles[console].in_frame)
+   /* Inside a frame, or still cut from the one just ended: it joins at the
+    * step's end, after its leave */
+   if (b->consoles[console].in_frame || p->cut)
       p->join = true;
    else
    {
