@@ -240,7 +240,7 @@ struct link_bus
    size_t cables_len, cables_cap;
    size_t links_cap;     /* every port's links */
    unsigned console_count;
-   bool held_back;       /* link_bus_group kept a port's place for a console in a frame */
+   bool held_back;       /* link_bus_group made a join wait: step_end forms the buses again */
    bool released;
 };
 
@@ -897,8 +897,9 @@ static bool link_bus_passed(const link_bus_t *b, const struct retro_link_port *q
 /* Takes the live ports in index order, by console then port number, each
  * joining only if its bus stays within every member's max_ports; with keep,
  * the ports that were on a bus first. True if a port is left off the bus
- * it was on while its console is inside a frame, or while a running peer
- * there has passed its first edge at or after the port's. */
+ * it was on while its console is inside a frame or, not held, while a
+ * running peer there has passed its first edge at or after the port's; an
+ * unplaced port counts only the peers it is still together with. */
 static bool link_bus_admit(link_bus_t *b, bool keep)
 {
    size_t i;
@@ -928,8 +929,13 @@ static bool link_bus_admit(link_bus_t *b, bool keep)
             p->left_out = true;
             if (p->was_head && b->consoles[p->console].in_frame)
                pushed = true;
+            /* Held: no peer has seen it past its edge */
+            if (b->consoles[p->console].held)
+               continue;
+            /* Unplaced, it has already left a peer it is not together with */
             for (q = p->was_head; q && !pushed; q = q->was_next)
-               if (q != p && link_bus_passed(b, q, p->since, p->rate))
+               if (     q != p && link_bus_passed(b, q, p->since, p->rate)
+                     && (!p->unplaced || (link_bus_link(p, q)->flags & LINK_BUS_LINK_TOGETHER)))
                   pushed = true;
             continue;
          }
@@ -2499,10 +2505,11 @@ bool link_bus_uncable(link_bus_t *b, unsigned console, unsigned port)
          || b->consoles[console].in_frame)
       return false;
    /* Pulled at its edge t, while no running peer has passed its first edge
-    * at or after t */
-   for (q = p->head; q; q = q->next)
-      if (q != p && link_bus_passed(b, q, p->since, p->rate))
-         return false;
+    * at or after t; a held console's at once */
+   if (!b->consoles[console].held)
+      for (q = p->head; q; q = q->next)
+         if (q != p && link_bus_passed(b, q, p->since, p->rate))
+            return false;
    for (i = 0; i < b->cables_len; i++)
       if (b->cables[i].a != p && b->cables[i].b != p)
          b->cables[kept++] = b->cables[i];

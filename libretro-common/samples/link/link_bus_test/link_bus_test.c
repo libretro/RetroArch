@@ -3301,6 +3301,173 @@ static void max_ports_push_out_waits_for_peers(void)
    fx_free();
 }
 
+/* Console 1, held at its edge 3000, is pulled while console 0 is inside its
+ * frame begun at 5000: console 0 sees it at its edge 6000, console 1 at its
+ * first frame after the unhold, where console 0's message sent at 3500
+ * lands */
+static void uncable_held_at_once(void)
+{
+   char buf[2];
+   uint64_t tick = 0;
+   unsigned from = 99, f;
+   size_t len    = sizeof(buf);
+
+   fx_new(2);
+   fx_port(0, 0, "test-cable", 60000, 2, 0);
+   fx_port(1, 0, "test-cable", 60000, 2, 0);
+   fx_attach(0);
+   fx_attach(1);
+   fx_span[0][0] = 1000;
+   fx_span[1][0] = 3000;
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   fx_own_frame(1, FX_FAR);
+   for (f = 0; f < 3; f++)
+      fx_own_frame(0, FX_FAR);
+   link_bus_step_end(fx_bus);
+   CHECK(link_bus_hold(fx_bus, 1));
+   fx_own_start(0, FX_FAR);
+   CHECK(snd(0, 0, 3500, 1, "a", 1));
+   fx_own_end(0);
+   fx_own_frame(0, FX_FAR);
+   link_bus_step_end(fx_bus);
+   fx_own_start(0, FX_FAR);       /* begun at 5000 */
+   CHECK(link_bus_uncable(fx_bus, 1, 0));
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2);
+   fx_own_end(0);
+   CHECK(fx_peers(0, 0) == 0);
+   CHECK(link_bus_unhold(fx_bus, 1));
+   /* Nothing bounds it: the message is receivable at its re-join */
+   CHECK(fx_open(1, fx_safe[1][0]) == (RETRO_LINK_WAKE_TOPOLOGY | RETRO_LINK_WAKE_MESSAGE));
+   CHECK(fx_peers(1, 0) == 0);
+   CHECK(link_bus_recv(fx_bus, 1, fx_h[1][0], &tick, &from, buf, &len));
+   CHECK(len == 1 && buf[0] == 'a' && tick == 3000 && from == 0);
+   fx_free();
+}
+
+/* Console 1 is held at its edge 3000 while console 0 stands at 1000, and
+ * pulled while console 0 is inside its frame begun there: console 0 keeps
+ * the port at its edge 2000 and loses it at 3000, where the hold began */
+static void uncable_held_peer_behind_keeps_port(void)
+{
+   fx_new(2);
+   fx_port(0, 0, "test-cable", 60000, 2, 0);
+   fx_port(1, 0, "test-cable", 60000, 2, 0);
+   fx_attach(0);
+   fx_attach(1);
+   fx_span[0][0] = 1000;
+   fx_span[1][0] = 3000;
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   fx_own_frame(1, FX_FAR);
+   fx_own_frame(0, FX_FAR);
+   link_bus_step_end(fx_bus);
+   CHECK(link_bus_hold(fx_bus, 1));
+   fx_own_start(0, FX_FAR);
+   CHECK(link_bus_uncable(fx_bus, 1, 0));
+   fx_own_end(0);
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2);
+   fx_own_frame(0, FX_FAR);
+   CHECK(fx_peers(0, 0) == 0);
+   fx_free();
+}
+
+/* Console 1, held at its edge 3000, is pulled while console 0 stands at its
+ * edge 4000: console 0 sees it at once */
+static void uncable_held_peer_at_edge_sees_at_once(void)
+{
+   unsigned f;
+
+   fx_new(2);
+   fx_port(0, 0, "test-cable", 60000, 2, 0);
+   fx_port(1, 0, "test-cable", 60000, 2, 0);
+   fx_attach(0);
+   fx_attach(1);
+   fx_span[0][0] = 1000;
+   fx_span[1][0] = 3000;
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   fx_own_frame(1, FX_FAR);
+   for (f = 0; f < 3; f++)
+      fx_own_frame(0, FX_FAR);
+   link_bus_step_end(fx_bus);
+   CHECK(link_bus_hold(fx_bus, 1));
+   fx_own_frame(0, FX_FAR);
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2);
+   CHECK(link_bus_uncable(fx_bus, 1, 0));
+   CHECK(fx_peers(0, 0) == 0);
+   fx_free();
+}
+
+/* Three radios with max_ports 2, console 2 held at its edge 3000: console
+ * 0's attach pushes it out at once, while console 1 is inside its frame
+ * begun at 5000. Console 1 sees the change at its edge 6000, console 2 at
+ * its first frame after the unhold. */
+static void max_ports_pushes_held_out_at_once(void)
+{
+   unsigned c;
+
+   fx_new(3);
+   for (c = 0; c < 3; c++)
+      fx_port(c, 0, "test-radio", 60000, 2, RETRO_LINK_PORT_SHARED_MEDIUM);
+   CHECK(link_bus_set_ports(fx_bus, 0, fx_ptrs[0]));
+   fx_attach(1);
+   fx_attach(2);
+   fx_span[1][0] = 1000;
+   fx_span[2][0] = 3000;
+   fx_own_frame(2, FX_FAR);
+   for (c = 0; c < 3; c++)
+      fx_own_frame(1, FX_FAR);
+   link_bus_step_end(fx_bus);
+   CHECK(link_bus_hold(fx_bus, 2));
+   fx_own_frame(1, FX_FAR);
+   fx_own_frame(1, FX_FAR);
+   link_bus_step_end(fx_bus);
+   fx_own_start(1, FX_FAR);       /* begun at 5000 */
+   fx_h[0][0] = link_bus_attach(fx_bus, 0, 0, "test-radio", 60000);
+   CHECK(fx_h[0][0] != NULL);
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(1, 0) == 1 * 16 + 2);
+   link_bus_step_end(fx_bus);
+   fx_own_end(1);
+   CHECK(fx_peers(1, 0) == 2 * 16 + 2);
+   CHECK(link_bus_unhold(fx_bus, 2));
+   CHECK(fx_open(2, fx_safe[2][0]) == RETRO_LINK_WAKE_TOPOLOGY);
+   CHECK(fx_peers(2, 0) == 0);
+   fx_free();
+}
+
+/* Three radios with max_ports 2: console 2 detaches and attaches again
+ * inside its frame, which ends at 2000, while console 1 attaches inside its
+ * own. Console 2's port left its bus at 2000, so leaving it out at the
+ * step's end pushes nothing out, though console 0 is at 3000: console 1
+ * joins at once. */
+static void max_ports_reattach_left_out_at_once(void)
+{
+   unsigned c;
+
+   fx_new(3);
+   for (c = 0; c < 3; c++)
+      fx_port(c, 0, "test-radio", 60000, 2, RETRO_LINK_PORT_SHARED_MEDIUM);
+   CHECK(link_bus_set_ports(fx_bus, 1, fx_ptrs[1]));
+   fx_attach(0);
+   fx_attach(2);
+   fx_span[0][0] = 1000;
+   fx_span[2][0] = 1000;
+   fx_own_frame(2, FX_FAR);
+   for (c = 0; c < 3; c++)
+      fx_own_frame(0, FX_FAR);
+   link_bus_step_end(fx_bus);
+   fx_own_start(2, FX_FAR);
+   link_bus_detach(fx_bus, 2, fx_h[2][0]);
+   CHECK(link_bus_attach(fx_bus, 2, 0, "test-radio", 60000) == fx_h[2][0]);
+   fx_own_end(2);
+   link_bus_frame_start(fx_bus, 1);
+   fx_h[1][0] = link_bus_attach(fx_bus, 1, 0, "test-radio", 60000);
+   CHECK(fx_h[1][0] != NULL);
+   link_bus_frame_end(fx_bus, 1);
+   link_bus_step_end(fx_bus);
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2);
+   CHECK(fx_peers(1, 0) == 2 * 16 + 2 && fx_peers(2, 0) == 0);
+   fx_free();
+}
+
 /* Console 2 sees console 1 pulled at its edge and sends from 1001; console
  * 0, whose edge is at 280896, still saw console 2 as index 2 there */
 static void from_index_in_receiver_view(void)
@@ -4091,6 +4258,11 @@ static const struct
    { "unplug_drops_late_landings",           unplug_drops_late_landings },
    { "uncable_refused_past_first_edge",      uncable_refused_past_first_edge },
    { "max_ports_push_out_waits_for_peers",   max_ports_push_out_waits_for_peers },
+   { "uncable_held_at_once",                 uncable_held_at_once },
+   { "uncable_held_peer_behind_keeps_port",  uncable_held_peer_behind_keeps_port },
+   { "uncable_held_peer_at_edge_sees_at_once", uncable_held_peer_at_edge_sees_at_once },
+   { "max_ports_pushes_held_out_at_once",    max_ports_pushes_held_out_at_once },
+   { "max_ports_reattach_left_out_at_once",  max_ports_reattach_left_out_at_once },
    { "from_index_in_receiver_view",          from_index_in_receiver_view },
    { "hold_at_own_edge",                     hold_at_own_edge },
    { "unhold_places_on_rate_grid",           unhold_places_on_rate_grid },

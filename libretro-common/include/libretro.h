@@ -4046,16 +4046,17 @@ struct retro_memory_status
  *   placed, one held, or one at a frame edge that has made no frame-end
  *   publish since it was placed) is placed at the latest of its placed new
  *   peers' first frame edges at or after the change, so it joins every peer
- *   there; with none, at the latest first frame edge of every placed console,
- *   and with none of those, at the start of the session. A place is rounded
- *   up to the next instant that is a whole tick of the clock of every port
- *   in the console's port list, or of every port it has attached if it gave
- *   none. A port attached later whose clock does not see its console's frame
- *   edge as a whole tick places that console again, as the end of a hold
- *   does. While a console on the bus a join would make is inside a frame
- *   and has made no frame-end publish since it was placed, its first frame
- *   edge is not known: the join, or the end of a hold, waits for a later
- *   moment, which the frontend records for replay.
+ *   there; with none, at the latest first frame edge of every placed console
+ *   (its current edge, for one whose first frame edge is not known yet), and
+ *   with none of those, at the start of the session. A place is rounded up to
+ *   the next instant that is a whole tick of the clock of every port in the
+ *   console's port list, or of every port it has attached if it gave none. A
+ *   port attached later whose clock does not see its console's frame edge as
+ *   a whole tick places that console again, as the end of a hold does. While
+ *   a console on the bus a join would make is inside a frame and has made no
+ *   frame-end publish since it was placed, its first frame edge is not known:
+ *   the join, or the end of a hold, waits for a later moment, which the
+ *   frontend records for replay.
  * - It takes a port off a bus (a cable pulled, a port left out under
  *   \c max_ports) only when that port's console is at a frame edge, at an
  *   instant t, and while no peer's console has passed its first frame edge at
@@ -4063,7 +4064,10 @@ struct retro_memory_status
  *   silent member (see \c retro_link_detach_t) from t until that port's
  *   console reaches its first frame edge at or after t. A message sent to it
  *   after the pull which would land at or after t is dropped; the messages sent
- *   before, and those it sent, stay.
+ *   before, and those it sent, stay. A held console's port may be taken off
+ *   at any moment: each other port sees it go at its own console's first
+ *   frame edge at or after both that moment and the edge where the hold
+ *   began, and the held console when its hold ends.
  * - Each port sees a change of its bus's membership at its own console's
  *   first frame edge at or after the change. The frontend records each change
  *   for replay with the frame index, for every console concerned, at which it
