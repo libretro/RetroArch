@@ -3138,7 +3138,7 @@ static bool link_bus_read_port(link_bus_t *b, struct link_bus_in *in, size_t k)
    uint64_t view_at   = link_bus_get_u(in, 8);
    uint64_t frame[4]  = { 0, 0, 0, 0 }; /* start_local, local, request, target */
    const unsigned char *protocol, *link_at;
-   size_t plen, links, n, i;
+   size_t plen, links, n, i, views = 0, together = 0;
    unsigned console, port;
    link_bus_row(in, k, &console, &port);
    if (bits & LINK_BUS_REC_PUBLISHED)
@@ -3163,10 +3163,15 @@ static bool link_bus_read_port(link_bus_t *b, struct link_bus_in *in, size_t k)
       if (     in->bad || other >= in->recs || other == k || !lflags || lflags > LINK_BUS_LINK_BITS
             || ((lflags & LINK_BUS_LINK_JOIN) && !join_r) || ((lflags & LINK_BUS_LINK_CUT) && !cut_r))
          return false;
+      if (lflags & LINK_BUS_LINK_VIEW)
+         views++;
+      if (lflags & LINK_BUS_LINK_TOGETHER)
+         together++;
    }
    n = (size_t)link_bus_get_u(in, 4);
    if (     in->bad || bits > LINK_BUS_REC_BITS || limit > LINK_BUS_LIMIT_GRANT || !rate
-         || memchr(protocol, '\0', plen))
+         || memchr(protocol, '\0', plen)
+         || views >= LINK_BUS_MAX_BUS_PORTS || together >= LINK_BUS_MAX_BUS_PORTS)
       return false;
    if (in->pass == LINK_BUS_MAKE)
    {

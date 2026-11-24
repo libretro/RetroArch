@@ -2374,6 +2374,74 @@ static void save_load_roundtrip(void)
    link_bus_free(a.bus);
 }
 
+/* A session of 256 radios, one frame of 1024 ticks at a time */
+static link_bus_t *fx_wide;
+static retro_link_port_t *fx_wide_h[256];
+static uint64_t fx_wide_tick[256];
+
+/* Console c's frame: its frame-start advance, then its frame-end publish,
+ * a detach (what 1) or a broadcast at its frame end and the publish (2) */
+static void fx_wide_frame(unsigned c, unsigned what)
+{
+   struct retro_link_wait w;
+   struct retro_link_wait *l = &w;
+   uint64_t t                = fx_wide_tick[c];
+   link_bus_frame_start(fx_wide, c);
+   fx_wait(&w, fx_wide_h[c], t, t + 1024, t, false);
+   link_bus_publish(fx_wide, c, &l, 1);
+   link_bus_grant(fx_wide, c, &l, 1);
+   if (what == 1)
+      link_bus_detach(fx_wide, c, fx_wide_h[c]);
+   else
+   {
+      if (what == 2)
+         CHECK(link_bus_send(fx_wide, c, fx_wide_h[c], t + 1024, RETRO_LINK_BROADCAST, "w", 1));
+      fx_wait(&w, fx_wide_h[c], t + 1024, t + 2048, t + 1024, false);
+      link_bus_publish(fx_wide, c, &l, 1);
+      link_bus_grant(fx_wide, c, &l, 1);
+   }
+   fx_wide_tick[c] = t + 1024;
+   link_bus_frame_end(fx_wide, c);
+}
+
+/* fx_wide's blob loads back */
+static bool fx_wide_reloads(void)
+{
+   size_t n  = link_bus_save_size(fx_wide);
+   void *buf = malloc(n);
+   bool ok   = buf && link_bus_save(fx_wide, buf, n) && link_bus_load(fx_wide, buf, n);
+   free(buf);
+   return ok;
+}
+
+/* 256 radios on one shared medium after a frame each: consoles 0 to 254
+ * on a bus of 255, console 255 left out */
+static void fx_wide_bus(void)
+{
+   struct retro_link_port_info l;
+   const struct retro_link_port_info *list[2];
+   unsigned c;
+
+   memset(&l, 0, sizeof(l));
+   l.protocol_id = "test-radio";
+   l.desc        = "Radio";
+   l.clock_rate  = 61440;
+   l.flags       = RETRO_LINK_PORT_SHARED_MEDIUM;
+   list[0]       = &l;
+   list[1]       = NULL;
+   memset(fx_wide_tick, 0, sizeof(fx_wide_tick));
+   fx_wide = link_bus_new(256);
+   for (c = 0; c < 256; c++)
+   {
+      CHECK(link_bus_set_ports(fx_wide, c, list));
+      fx_wide_h[c] = link_bus_attach(fx_wide, c, 0, "test-radio", 61440);
+      CHECK(fx_wide_h[c] != NULL);
+   }
+   for (c = 0; c < 256; c++)
+      fx_wide_frame(c, 0);
+   link_bus_step_end(fx_wide);
+}
+
 /* The save blob's layout, for checks that corrupt one field */
 #define FX_BLOB_HEAD  85 /* magic, version, consoles, records, cables, counts, held_back */
 #define FX_BLOB_PORT  103 /* a record, up to its protocol's length */
@@ -2412,12 +2480,30 @@ static size_t fx_record_at(const unsigned char *blob, size_t k, size_t *first)
    }
 }
 
+/* blob, n bytes, copied to out with one link more on record 0: to record
+ * 255, of flags f (1 on one bus, 2 in view) */
+static void fx_link_added(unsigned char *out, const unsigned char *blob, size_t n,
+      unsigned f)
+{
+   size_t first, at = fx_record_at(blob, 0, &first) + FX_BLOB_PORT, end;
+   at += 4 + fx_u32(blob + at);
+   end = at + 4 + fx_u32(blob + at) * FX_BLOB_LINK;
+   memcpy(out, blob, end);
+   memset(out + end, 0, FX_BLOB_LINK);
+   out[end]     = 255;
+   out[end + 4] = (unsigned char)f;
+   memcpy(out + end + FX_BLOB_LINK, blob + end, n - end);
+   out[at]++; /* a link count below 255 */
+}
+
 static void load_refuses_bad_input(void)
 {
    static unsigned char bad[sizeof(fx_blob)];
    struct fx_session a;
+   unsigned char *blob, *more;
    uint64_t hash_a, hash_b;
    size_t n, first;
+   unsigned count = 0;
 
    fx_roundtrip();
    n      = fx_save();
@@ -2456,6 +2542,32 @@ static void load_refuses_bad_input(void)
    CHECK(link_bus_hash(fx_bus) == hash_a);
    fx_free();
    link_bus_free(a.bus);
+
+   /* Console 0 with a 255th peer in its view, or on its bus, which no
+    * session makes: an index of 255 is RETRO_LINK_BROADCAST. At 254, as
+    * every port of a full bus has, it loads. */
+   fx_wide_bus();
+   n      = link_bus_save_size(fx_wide);
+   blob   = (unsigned char*)malloc(n);
+   more   = (unsigned char*)malloc(n + FX_BLOB_LINK);
+   hash_b = link_bus_hash(fx_wide);
+   CHECK(blob && more && link_bus_save(fx_wide, blob, n));
+   if (blob && more)
+   {
+      fx_link_added(more, blob, n, 2);
+      CHECK(!link_bus_load(fx_wide, more, n + FX_BLOB_LINK));
+      CHECK(link_bus_hash(fx_wide) == hash_b);
+      fx_link_added(more, blob, n, 1);
+      CHECK(!link_bus_load(fx_wide, more, n + FX_BLOB_LINK));
+      CHECK(link_bus_hash(fx_wide) == hash_b);
+      CHECK(link_bus_load(fx_wide, blob, n));
+      CHECK(link_bus_hash(fx_wide) == hash_b);
+      CHECK(link_bus_peers(fx_wide, 0, fx_wide_h[0], &count) == 0 && count == 255);
+   }
+   free(blob);
+   free(more);
+   link_bus_free(fx_wide);
+   fx_wide = NULL;
 }
 
 static void load_checks_cables_and_reports(void)
@@ -3579,78 +3691,19 @@ static void join_waits_for_view_of_leaver(void)
    CHECK(hash[0] == hash[1]);
 }
 
-/* A session of 256 radios, one frame of 1024 ticks at a time */
-static link_bus_t *fx_wide;
-static retro_link_port_t *fx_wide_h[256];
-static uint64_t fx_wide_tick[256];
-
-/* Console c's frame: its frame-start advance, then its frame-end publish,
- * a detach (what 1) or a broadcast at its frame end and the publish (2) */
-static void fx_wide_frame(unsigned c, unsigned what)
-{
-   struct retro_link_wait w;
-   struct retro_link_wait *l = &w;
-   uint64_t t                = fx_wide_tick[c];
-   link_bus_frame_start(fx_wide, c);
-   fx_wait(&w, fx_wide_h[c], t, t + 1024, t, false);
-   link_bus_publish(fx_wide, c, &l, 1);
-   link_bus_grant(fx_wide, c, &l, 1);
-   if (what == 1)
-      link_bus_detach(fx_wide, c, fx_wide_h[c]);
-   else
-   {
-      if (what == 2)
-         CHECK(link_bus_send(fx_wide, c, fx_wide_h[c], t + 1024, RETRO_LINK_BROADCAST, "w", 1));
-      fx_wait(&w, fx_wide_h[c], t + 1024, t + 2048, t + 1024, false);
-      link_bus_publish(fx_wide, c, &l, 1);
-      link_bus_grant(fx_wide, c, &l, 1);
-   }
-   fx_wide_tick[c] = t + 1024;
-   link_bus_frame_end(fx_wide, c);
-}
-
-/* fx_wide's blob loads back */
-static bool fx_wide_reloads(void)
-{
-   size_t n  = link_bus_save_size(fx_wide);
-   void *buf = malloc(n);
-   bool ok   = buf && link_bus_save(fx_wide, buf, n) && link_bus_load(fx_wide, buf, n);
-   free(buf);
-   return ok;
-}
-
 /* 256 radios: console 255 is left out of the bus of 255. Console 1 leaves
  * at its edge 2048 while console 0 stands at 1024 and still sees it, so
  * console 255 joins only once console 0 has reached 2048: no view holds a
  * 256th port, no index is 255 and every blob loads */
 static void view_never_over_255(void)
 {
-   struct retro_link_port_info l;
-   const struct retro_link_port_info *list[2];
    struct retro_link_wait w;
    struct retro_link_wait *wl = &w;
    uint64_t tick = 0;
    unsigned c, from = 99, count = 0;
    size_t len    = 0;
 
-   memset(&l, 0, sizeof(l));
-   l.protocol_id = "test-radio";
-   l.desc        = "Radio";
-   l.clock_rate  = 61440;
-   l.flags       = RETRO_LINK_PORT_SHARED_MEDIUM;
-   list[0]       = &l;
-   list[1]       = NULL;
-   memset(fx_wide_tick, 0, sizeof(fx_wide_tick));
-   fx_wide = link_bus_new(256);
-   for (c = 0; c < 256; c++)
-   {
-      CHECK(link_bus_set_ports(fx_wide, c, list));
-      fx_wide_h[c] = link_bus_attach(fx_wide, c, 0, "test-radio", 61440);
-      CHECK(fx_wide_h[c] != NULL);
-   }
-   for (c = 0; c < 256; c++)
-      fx_wide_frame(c, 0);
-   link_bus_step_end(fx_wide);
+   fx_wide_bus();
    fx_wide_frame(1, 1);
    link_bus_step_end(fx_wide);
    CHECK(link_bus_peers(fx_wide, 0, fx_wide_h[0], &count) == 0 && count == 255);
