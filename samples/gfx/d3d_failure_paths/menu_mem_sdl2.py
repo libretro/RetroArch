@@ -28,9 +28,14 @@ with tempfile.TemporaryDirectory(prefix="sdl2-menu-memory-") as directory:
     (temp / "texture.inc").write_text(common[start:end])
     start = common.index("#define SDL2_MENU_MEM_MAX")
     (temp / "memory.inc").write_text(common[start:common.index("#endif", start)])
+    end = common.index("} menu_lend;") + len("} menu_lend;")
+    start = common.rindex("   struct\n   {\n", 0, end)
+    (temp / "menu_lend.inc").write_text(common[start:end])
     (temp / "callbacks.inc").write_text("\n".join(function(name) for name in (
         "static INLINE void sdl_tex_zero(",
         "static void sdl_refresh_input_size(",
+        "static void sdl2_menu_lend_close(",
+        "static void *sdl2_get_menu_framebuffer(",
         "static void *sdl2_menu_mem_alloc(",
         "static bool sdl2_menu_mem_ready(",
         "static void sdl2_menu_mem_free(",

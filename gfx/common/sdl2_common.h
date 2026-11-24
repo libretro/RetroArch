@@ -79,6 +79,13 @@ typedef struct _sdl2_video
 #define SDL2_MENU_MEM_MAX 6
    void *menu_mem[SDL2_MENU_MEM_MAX];
 #endif
+   struct
+   {
+      void *pixels;
+      size_t pitch;
+      unsigned dims;
+      bool rgb32;
+   } menu_lend;
 
    /* The frame texture while it is locked and lent to the core.
     * scratch holds a window of it pushed at another size or pitch. */

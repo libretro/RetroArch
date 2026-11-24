@@ -390,6 +390,49 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
    }
 }
 
+static void sdl2_menu_lend_close(sdl2_video_t *vid)
+{
+   if (!vid->menu_lend.pixels)
+      return;
+   SDL_UnlockTexture(vid->menu.tex);
+   memset(&vid->menu_lend, 0, sizeof(vid->menu_lend));
+}
+
+/* The producer writes only the final upload, at SDL's row pitch. A menu
+ * texture of another size or format keeps the ordinary upload fallback. */
+static void *sdl2_get_menu_framebuffer(void *data, bool rgb32,
+      unsigned dims, size_t *pitch)
+{
+   sdl2_video_t *vid = (sdl2_video_t*)data;
+   unsigned bpp = rgb32 ? 4 : 2;
+   void *pixels;
+   int row_pitch;
+   if (!vid || !pitch || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return NULL;
+   if (vid->menu_lend.pixels && (vid->menu_lend.dims != dims
+            || vid->menu_lend.rgb32 != rgb32))
+      sdl2_menu_lend_close(vid);
+   if (!vid->menu.tex || vid->menu.dims != dims || vid->menu.rgb32 != rgb32)
+      return NULL;
+   if (!vid->menu_lend.pixels)
+   {
+      if (SDL_LockTexture(vid->menu.tex, NULL, &pixels, &row_pitch))
+         return NULL;
+      if (row_pitch <= 0 || (size_t)row_pitch < (size_t)VIDEO_SCALE_W(dims) * bpp
+            || (unsigned)row_pitch % bpp)
+      {
+         SDL_UnlockTexture(vid->menu.tex);
+         return NULL;
+      }
+      vid->menu_lend.pixels = pixels;
+      vid->menu_lend.pitch = (size_t)row_pitch;
+      vid->menu_lend.dims = dims;
+      vid->menu_lend.rgb32 = rgb32;
+   }
+   *pitch = vid->menu_lend.pitch;
+   return vid->menu_lend.pixels;
+}
+
 static void *sdl2_gfx_init(const video_info_t *video)
 {
    int i;
@@ -1519,6 +1562,7 @@ static void sdl2_gfx_free(void *data)
    if (vid->frame.tex)
       sdl2_sw_lend_close(vid, true);
    free(vid->sw_lend.scratch);
+   sdl2_menu_lend_close(vid);
 
    if (vid->renderer)
       SDL_DestroyRenderer(vid->renderer);
@@ -1677,15 +1721,21 @@ static void sdl2_poke_set_texture_frame(void *data,
       const void *frame, bool rgb32,
       unsigned dims, float alpha)
 {
-   if (frame)
+   sdl2_video_t *vid = (sdl2_video_t*)data;
+   if (!vid || !frame)
+      return;
+   if (vid->menu_lend.pixels)
    {
-      sdl2_video_t *vid = (sdl2_video_t*)data;
-
-      sdl_refresh_input_size(vid, true, rgb32, dims,
-            VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2));
-
-      SDL_UpdateTexture(vid->menu.tex, NULL, frame, (int)vid->menu.pitch);
+      bool borrowed = frame == vid->menu_lend.pixels;
+      sdl2_menu_lend_close(vid);
+      /* The loan was made at its texture's dimensions and format. An
+       * invalid publication must not read an unlocked mapping either. */
+      if (borrowed)
+         return;
    }
+   sdl_refresh_input_size(vid, true, rgb32, dims,
+         VIDEO_SCALE_W(dims) * (rgb32 ? 4 : 2));
+   SDL_UpdateTexture(vid->menu.tex, NULL, frame, (int)vid->menu.pitch);
 }
 
 static void sdl2_poke_texture_enable(void *data,
@@ -1910,7 +1960,7 @@ static video_poke_interface_t sdl2_video_poke_interface = {
    NULL, /* get_last_present_sync */
    NULL, /* record_read */
    NULL, /* import_movie_frame */
-   NULL, /* get_menu_framebuffer */
+   sdl2_get_menu_framebuffer,
 #ifdef HAVE_THREADS
    sdl2_menu_mem_alloc,
 #else

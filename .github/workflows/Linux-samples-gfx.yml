@@ -2645,7 +2645,7 @@ jobs:
           python3 samples/gfx/d3d_failure_paths/sw_lend_dingux.py
           python3 samples/gfx/d3d_failure_paths/sw_lend_ctr.py
 
-      - name: SDL2 cached menu loans (ASan and UBSan)
+      - name: SDL2 cached and direct menu loans (ASan and UBSan)
         run: |
           set -eu
           SDL_VIDEODRIVER=dummy ASAN_OPTIONS=detect_leaks=1 \
