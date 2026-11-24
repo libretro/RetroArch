@@ -6,6 +6,7 @@
  * has a span of its own. */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <link/link_bus.h>
@@ -3336,7 +3337,12 @@ static void max_ports_push_out_waits_for_peers(void)
    CHECK(fx_peers(2, 0) == 2 * 16 + 2 && fx_peers(0, 0) == 0);
    fx_own_frame(2, FX_FAR);       /* at 6000 */
    link_bus_step_end(fx_bus);
-   CHECK(fx_peers(2, 0) == 0 && fx_peers(0, 0) == 1 * 16 + 2);
+   /* Console 1, at 4000, would see console 2 still beside console 0 */
+   CHECK(fx_peers(2, 0) == 2 * 16 + 2 && fx_peers(0, 0) == 0);
+   fx_own_frame(1, FX_FAR);
+   fx_own_frame(1, FX_FAR);       /* at 6000 */
+   link_bus_step_end(fx_bus);
+   CHECK(fx_peers(2, 0) == 0 && fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(1, 0) == 2 * 16 + 2);
    fx_free();
 }
 
@@ -3505,6 +3511,140 @@ static void max_ports_reattach_left_out_at_once(void)
    CHECK(fx_peers(0, 0) == 1 * 16 + 2);
    CHECK(fx_peers(1, 0) == 2 * 16 + 2 && fx_peers(2, 0) == 0);
    fx_free();
+}
+
+/* Three cable ports taking two. Console 1, a frame ahead of console 0, is
+ * pulled at its edge 2048; console 2, cabled to console 0 then, joins only
+ * once console 0 has reached 2048, as console 0 sees console 1 until then */
+static void join_waits_for_view_of_leaver(void)
+{
+   unsigned c;
+
+   fx_new(3);
+   for (c = 0; c < 3; c++)
+   {
+      fx_port(c, 0, "test-cable", 61440, 2, 0);
+      fx_attach(c);
+   }
+   CHECK(link_bus_cable(fx_bus, 0, 0, 1, 0));
+   for (c = 0; c < 3; c++)
+      fx_own_frame(c, FX_FAR);
+   link_bus_step_end(fx_bus);
+   fx_own_frame(1, FX_FAR);
+   link_bus_step_end(fx_bus);
+   CHECK(link_bus_uncable(fx_bus, 1, 0));
+   CHECK(link_bus_cable(fx_bus, 0, 0, 2, 0));
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(2, 0) == 0);
+   CHECK(fx_reloads());
+   link_bus_step_end(fx_bus);
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(2, 0) == 0);
+   fx_own_frame(0, FX_FAR);       /* at 2048 */
+   link_bus_step_end(fx_bus);
+   CHECK(fx_peers(0, 0) == 1 * 16 + 2 && fx_peers(2, 0) == 2 * 16 + 2);
+   CHECK(fx_reloads());
+   fx_free();
+}
+
+/* A session of 256 radios, one frame of 1024 ticks at a time */
+static link_bus_t *fx_wide;
+static retro_link_port_t *fx_wide_h[256];
+static uint64_t fx_wide_tick[256];
+
+/* Console c's frame: its frame-start advance, then its frame-end publish,
+ * a detach (what 1) or a broadcast at its frame end and the publish (2) */
+static void fx_wide_frame(unsigned c, unsigned what)
+{
+   struct retro_link_wait w;
+   struct retro_link_wait *l = &w;
+   uint64_t t                = fx_wide_tick[c];
+   link_bus_frame_start(fx_wide, c);
+   fx_wait(&w, fx_wide_h[c], t, t + 1024, t, false);
+   link_bus_publish(fx_wide, c, &l, 1);
+   link_bus_grant(fx_wide, c, &l, 1);
+   if (what == 1)
+      link_bus_detach(fx_wide, c, fx_wide_h[c]);
+   else
+   {
+      if (what == 2)
+         CHECK(link_bus_send(fx_wide, c, fx_wide_h[c], t + 1024, RETRO_LINK_BROADCAST, "w", 1));
+      fx_wait(&w, fx_wide_h[c], t + 1024, t + 2048, t + 1024, false);
+      link_bus_publish(fx_wide, c, &l, 1);
+      link_bus_grant(fx_wide, c, &l, 1);
+   }
+   fx_wide_tick[c] = t + 1024;
+   link_bus_frame_end(fx_wide, c);
+}
+
+/* fx_wide's blob loads back */
+static bool fx_wide_reloads(void)
+{
+   size_t n  = link_bus_save_size(fx_wide);
+   void *buf = malloc(n);
+   bool ok   = buf && link_bus_save(fx_wide, buf, n) && link_bus_load(fx_wide, buf, n);
+   free(buf);
+   return ok;
+}
+
+/* 256 radios: console 255 is left out of the bus of 255. Console 1 leaves
+ * at its edge 2048 while console 0 stands at 1024 and still sees it, so
+ * console 255 joins only once console 0 has reached 2048: no view holds a
+ * 256th port, no index is 255 and every blob loads */
+static void view_never_over_255(void)
+{
+   struct retro_link_port_info l;
+   const struct retro_link_port_info *list[2];
+   struct retro_link_wait w;
+   struct retro_link_wait *wl = &w;
+   uint64_t tick = 0;
+   unsigned c, from = 99, count = 0;
+   size_t len    = 0;
+
+   memset(&l, 0, sizeof(l));
+   l.protocol_id = "test-radio";
+   l.desc        = "Radio";
+   l.clock_rate  = 61440;
+   l.flags       = RETRO_LINK_PORT_SHARED_MEDIUM;
+   list[0]       = &l;
+   list[1]       = NULL;
+   memset(fx_wide_tick, 0, sizeof(fx_wide_tick));
+   fx_wide = link_bus_new(256);
+   for (c = 0; c < 256; c++)
+   {
+      CHECK(link_bus_set_ports(fx_wide, c, list));
+      fx_wide_h[c] = link_bus_attach(fx_wide, c, 0, "test-radio", 61440);
+      CHECK(fx_wide_h[c] != NULL);
+   }
+   for (c = 0; c < 256; c++)
+      fx_wide_frame(c, 0);
+   link_bus_step_end(fx_wide);
+   fx_wide_frame(1, 1);
+   link_bus_step_end(fx_wide);
+   CHECK(link_bus_peers(fx_wide, 0, fx_wide_h[0], &count) == 0 && count == 255);
+   CHECK(link_bus_peers(fx_wide, 255, fx_wide_h[255], NULL) == -1);
+   fx_wide_frame(255, 2);
+   link_bus_step_end(fx_wide);
+   CHECK(fx_wide_reloads());
+   for (c = 0; c < 255; c++)
+      if (c != 1)
+         fx_wide_frame(c, 0);
+   link_bus_step_end(fx_wide);
+   CHECK(link_bus_peers(fx_wide, 0, fx_wide_h[0], &count) == 0 && count == 255);
+   CHECK(link_bus_peers(fx_wide, 255, fx_wide_h[255], &count) == 254 && count == 255);
+   for (c = 0; c < 256; c++)
+      if (c != 1)
+         fx_wide_frame(c, c == 255 ? 2 : 0);
+   link_bus_step_end(fx_wide);
+   CHECK(fx_wide_reloads());
+   link_bus_frame_start(fx_wide, 0);
+   fx_wait(&w, fx_wide_h[0], 3072, 4096, 3073, false);
+   link_bus_publish(fx_wide, 0, &wl, 1);
+   CHECK(link_bus_grantable(fx_wide, 0, &wl, 1));
+   link_bus_grant(fx_wide, 0, &wl, 1);
+   CHECK(link_bus_peek(fx_wide, 0, fx_wide_h[0], &tick, &from, &len) != NULL);
+   CHECK(tick == 3072 && from == 254);
+   link_bus_frame_end(fx_wide, 0);
+   link_bus_free(fx_wide);
+   fx_wide = NULL;
 }
 
 /* Console 2 sees console 1 pulled at its edge and sends from 1001; console
@@ -4331,6 +4471,8 @@ static const struct
    { "uncable_held_peer_at_edge_sees_at_once", uncable_held_peer_at_edge_sees_at_once },
    { "max_ports_pushes_held_out_at_once",    max_ports_pushes_held_out_at_once },
    { "max_ports_reattach_left_out_at_once",  max_ports_reattach_left_out_at_once },
+   { "join_waits_for_view_of_leaver",        join_waits_for_view_of_leaver },
+   { "view_never_over_255",                  view_never_over_255 },
    { "from_index_in_receiver_view",          from_index_in_receiver_view },
    { "hold_at_own_edge",                     hold_at_own_edge },
    { "unhold_places_on_rate_grid",           unhold_places_on_rate_grid },

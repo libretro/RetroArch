@@ -4543,10 +4543,12 @@ struct retro_link_port_info
     * more ports would form one bus than the \c max_ports of one of them allows,
     * the frontend takes them in the order of the session's consoles, then of
     * port numbers, and lets each join only if the bus with it stays within the
-    * \c max_ports of every port on it. A port that would take the place of a
-    * port whose console is inside a frame waits for a later frame edge of that
-    * console, chosen and recorded as for an attach made inside \c retro_run.
-    * A port left out is cabled to nothing
+    * \c max_ports of every port on it. A port that leaves the bus keeps its
+    * place there for each port that still sees it as a silent member, until
+    * that port sees it go. A port that would take the place of a port whose
+    * console is inside a frame waits for a later frame edge of that console,
+    * chosen and recorded as for an attach made inside \c retro_run. A port
+    * left out is cabled to nothing
     * (\c retro_link_peers_t returns -1 and its grant is #RETRO_LINK_UNBOUNDED)
     * until a place frees at a later frame edge; its joining then is a
     * membership change, reported as #RETRO_LINK_WAKE_TOPOLOGY.

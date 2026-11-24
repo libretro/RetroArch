@@ -175,6 +175,7 @@ struct retro_link_port
    unsigned flags, max_ports;
    unsigned index, count, size;
    unsigned cap;         /* link_bus_group's, in a root: the lowest max_ports joined, 0 for none */
+   unsigned kept;        /* scratch of link_bus_admit: ports off its bus its view would hold */
    uint32_t pending;     /* reports not yet given */
    struct link_bus_entry *queue, *queue_tail;     /* landed, in the order recv takes them */
    struct link_bus_entry *waiting, *waiting_tail; /* landing not known yet; send order per index at send */
@@ -872,76 +873,6 @@ static bool link_bus_shared(const struct retro_link_port *p)
    return (p->flags & RETRO_LINK_PORT_SHARED_MEDIUM) != 0;
 }
 
-/* q's console, running, has passed its first frame edge at or after the
- * instant t (ticks of rate): it is inside a frame begun at or after t, or
- * at an edge whose edge before is */
-static bool link_bus_passed(const link_bus_t *b, const struct retro_link_port *q,
-      uint64_t t, uint64_t rate)
-{
-   uint64_t at = q->since;
-   if (b->consoles[q->console].held || q->unplaced)
-      return false;
-   if (!b->consoles[q->console].in_frame)
-   {
-      if (!q->span_shown || q->span > at)
-         return false;
-      at -= q->span;
-   }
-   return !link_bus_instant_before(at, q->rate, t, rate);
-}
-
-/* Takes the live ports in index order, by console then port number, each
- * joining only if its bus stays within every member's max_ports; with keep,
- * the ports that were on a bus first. True if a port is left off the bus
- * it was on while its console is inside a frame or, not held, while a
- * running peer there has passed its first edge at or after the port's; an
- * unplaced port counts only the peers it is still together with. */
-static bool link_bus_admit(link_bus_t *b, bool keep)
-{
-   size_t i;
-   unsigned pass;
-   bool pushed = false;
-   for (i = 0; i < b->recs_len; i++)
-   {
-      b->recs[i]->size     = 0;
-      b->recs[i]->cap      = 0;
-      b->recs[i]->admitted = false;
-      b->recs[i]->left_out = false;
-   }
-   for (pass = 0; pass < 2; pass++)
-      for (i = 0; i < b->recs_len; i++)
-      {
-         struct retro_link_port *p = b->recs[i], *r;
-         unsigned cap;
-         if (!p->live || p->admitted || (keep && p->was_head) != (pass == 0))
-            continue;
-         r   = link_bus_root(p);
-         cap = r->cap;
-         if (p->max_ports && (!cap || p->max_ports < cap))
-            cap = p->max_ports;
-         if (r->size >= LINK_BUS_MAX_BUS_PORTS || (cap && r->size >= cap))
-         {
-            const struct retro_link_port *q;
-            p->left_out = true;
-            if (p->was_head && b->consoles[p->console].in_frame)
-               pushed = true;
-            /* Held: no peer has seen it past its edge */
-            if (b->consoles[p->console].held)
-               continue;
-            /* Unplaced, it has already left a peer it is not together with */
-            for (q = p->was_head; q && !pushed; q = q->was_next)
-               if (     q != p && link_bus_passed(b, q, p->since, p->rate)
-                     && (!p->unplaced || (link_bus_link(p, q)->flags & LINK_BUS_LINK_TOGETHER)))
-                  pushed = true;
-            continue;
-         }
-         r->cap      = cap;
-         p->admitted = true;
-         r->size++;
-      }
-   return pushed;
-}
-
 /* The first frame edge at or after now of p's console, as ticks of p's
  * rate; false while it is not known: held, not placed, or inside a frame
  * whose span no port of it has shown */
@@ -967,6 +898,148 @@ static bool link_bus_first_edge(const link_bus_t *b, const struct retro_link_por
       }
    }
    return false;
+}
+
+/* q's console, running, has passed its first frame edge at or after the
+ * instant t (ticks of rate): it is inside a frame begun at or after t, or
+ * at an edge whose edge before is */
+static bool link_bus_passed(const link_bus_t *b, const struct retro_link_port *q,
+      uint64_t t, uint64_t rate)
+{
+   uint64_t at = q->since;
+   if (b->consoles[q->console].held || q->unplaced)
+      return false;
+   if (!b->consoles[q->console].in_frame)
+   {
+      if (!q->span_shown || q->span > at)
+         return false;
+      at -= q->span;
+   }
+   return !link_bus_instant_before(at, q->rate, t, rate);
+}
+
+/* q's view at its next frame edge still holds a port that leaves its bus
+ * at the instant c (ticks of rate) */
+static bool link_bus_sees_until(const link_bus_t *b, const struct retro_link_port *q,
+      uint64_t c, uint64_t rate)
+{
+   uint64_t at;
+   if (!q->live || q->cut || b->consoles[q->console].held)
+      return false;
+   return !link_bus_first_edge(b, q, &at) || link_bus_instant_before(at, q->rate, c, rate);
+}
+
+/* q's view at its next frame edge holds m, and would with m off its bus:
+ * m left it, or leaves it at t (ticks of rate) with the change. One of the
+ * ports forming q's bus leaves only if left out, which admit tests. */
+static bool link_bus_keeps(const link_bus_t *b, struct retro_link_port *q,
+      struct retro_link_port *m, uint64_t t, uint64_t rate)
+{
+   const struct link_bus_link *k = link_bus_link(q, m);
+   if (m == q || !(k->flags & LINK_BUS_LINK_VIEW))
+      return false;
+   if (!(k->flags & LINK_BUS_LINK_TOGETHER))
+      return link_bus_sees_until(b, q, k->cut, k->cut_rate);
+   if (m->live && link_bus_root(m) == link_bus_root(q))
+      return false;
+   return link_bus_sees_until(b, q, t, rate);
+}
+
+/* Takes the live ports in index order, by console then port number, each
+ * joining only if its bus stays within every member's max_ports, each view
+ * on it counting the ports off it that it still holds; with keep, the ports
+ * that were on a bus first. A newcomer short of room only in a view sets
+ * held_back. True if a port is left off the bus it was on while its console
+ * is inside a frame, while a peer's view there would still hold it or, not
+ * held, while a running peer there has passed its first edge at or after
+ * the port's; an unplaced port counts only the peers it is still together
+ * with. Pairs parted by the change leave at t (ticks of rate). */
+static bool link_bus_admit(link_bus_t *b, bool keep, uint64_t t, uint64_t rate)
+{
+   size_t i, j;
+   unsigned pass;
+   bool pushed = false, any = false;
+   for (i = 0; i < b->recs_len; i++)
+   {
+      b->recs[i]->size     = 0;
+      b->recs[i]->cap      = 0;
+      b->recs[i]->kept     = 0;
+      b->recs[i]->admitted = false;
+      b->recs[i]->left_out = false;
+   }
+   for (i = 0; i < b->recs_len; i++)
+      for (j = 0; j < b->recs_len && b->recs[i]->live; j++)
+         if (link_bus_keeps(b, b->recs[i], b->recs[j], t, rate))
+         {
+            b->recs[i]->kept++;
+            any = true;
+         }
+   for (pass = 0; pass < 2; pass++)
+      for (i = 0; i < b->recs_len; i++)
+      {
+         struct retro_link_port *p = b->recs[i], *r;
+         unsigned cap, lim, own, most = 0;
+         if (!p->live || p->admitted || (keep && p->was_head) != (pass == 0))
+            continue;
+         r   = link_bus_root(p);
+         cap = r->cap;
+         if (p->max_ports && (!cap || p->max_ports < cap))
+            cap = p->max_ports;
+         lim = cap && cap < LINK_BUS_MAX_BUS_PORTS ? cap : LINK_BUS_MAX_BUS_PORTS;
+         own = p->kept;
+         for (j = 0; j < b->recs_len && any; j++)
+         {
+            struct retro_link_port *q = b->recs[j];
+            unsigned n;
+            if (!q->admitted || link_bus_root(q) != r)
+               continue;
+            if (link_bus_keeps(b, p, q, t, rate))
+               own--;
+            n = q->kept - (link_bus_keeps(b, q, p, t, rate) ? 1 : 0);
+            if (n > most)
+               most = n;
+         }
+         if (own > most)
+            most = own;
+         if (r->size + 1 + most > lim)
+         {
+            const struct retro_link_port *q;
+            p->left_out = true;
+            if (p->was_head && b->consoles[p->console].in_frame)
+               pushed = true;
+            /* Short of room only in a view: a newcomer waits for it */
+            if (r->size < lim)
+            {
+               if (p->was_head)
+                  pushed = true;
+               else
+                  b->held_back = true;
+               continue;
+            }
+            /* Held: no peer has seen it past its edge. Unplaced, it has
+             * already left a peer it is not together with. */
+            for (q = p->was_head; q && !pushed; q = q->was_next)
+               if (     q != p
+                     && (!p->unplaced || (link_bus_link(p, q)->flags & LINK_BUS_LINK_TOGETHER))
+                     && (     (!b->consoles[p->console].held
+                              && link_bus_passed(b, q, p->since, p->rate))
+                           || ((link_bus_link(q, p)->flags & LINK_BUS_LINK_VIEW)
+                              && link_bus_sees_until(b, q, p->since, p->rate))))
+                  pushed = true;
+            continue;
+         }
+         for (j = 0; j < b->recs_len && any; j++)
+         {
+            struct retro_link_port *q = b->recs[j];
+            if (q->admitted && link_bus_root(q) == r && link_bus_keeps(b, q, p, t, rate))
+               q->kept--;
+         }
+         p->kept     = own;
+         r->cap      = cap;
+         p->admitted = true;
+         r->size++;
+      }
+   return pushed;
 }
 
 /* Inside a frame whose first frame edge is not known */
@@ -1028,8 +1101,9 @@ static bool link_bus_defer(link_bus_t *b)
    return any;
 }
 
-/* Forms the buses from the cable map, the shared media and the live ports */
-static void link_bus_group(link_bus_t *b)
+/* Forms the buses from the cable map, the shared media and the live ports;
+ * pairs parted leave at t (ticks of rate) */
+static void link_bus_group(link_bus_t *b, uint64_t t, uint64_t rate)
 {
    size_t i, j;
    b->seq++;
@@ -1073,10 +1147,10 @@ static void link_bus_group(link_bus_t *b)
    /* A join that would push out a port that may not leave its bus yet
     * waits: the ports on a bus go first until then */
    b->held_back = link_bus_defer(b);
-   if (link_bus_admit(b, false))
+   if (link_bus_admit(b, false, t, rate))
    {
       b->held_back = true;
-      link_bus_admit(b, true);
+      link_bus_admit(b, true, t, rate);
    }
    for (i = 0; i < b->recs_len; i++)
    {
@@ -1542,7 +1616,7 @@ static void link_bus_settle_all(link_bus_t *b)
 static void link_bus_reform(link_bus_t *b, uint64_t t, uint64_t rate)
 {
    unsigned c;
-   link_bus_group(b);
+   link_bus_group(b, t, rate);
    link_bus_relate(b, t, rate);
    link_bus_place(b);
    for (c = 0; c < b->console_count; c++)
@@ -2380,7 +2454,7 @@ void link_bus_step_end(link_bus_t *b)
          break;
       if (any)
       {
-         link_bus_group(b);
+         link_bus_group(b, t, rate);
          link_bus_relate(b, t, rate);
       }
       c    = x->console;
@@ -3355,7 +3429,7 @@ bool link_bus_load(link_bus_t *b, const void *buf, size_t len)
    b->journal_gen++;
    b->released    = false;
    link_bus_heads(b);
-   link_bus_group(b);
+   link_bus_group(b, 0, 1);
    return true;
 }
 
