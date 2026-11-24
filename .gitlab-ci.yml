@@ -398,6 +398,39 @@ build-retroarch-webos-armv7a:
     - cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio
     - cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video
 
+# 64-bit webOS, the same feature set as the aarch64 build in
+# .github/workflows/webOS.yml. Allowed to fail: needs:project in the
+# packaging jobs takes RetroArch's artifacts from the last successful
+# pipeline, so a broken webOS build must not hold the other platforms back.
+build-retroarch-webos-aarch64:
+  image: $CI_SERVER_HOST:5050/libretro-infrastructure/libretro-build-webos:latest
+  stage: build
+  allow_failure: true
+  variables:
+    MEDIA_PATH: .media
+  before_script:
+    - export NUMPROC=$(($(nproc)/3))
+    - . /developer/aarch64-webos-linux-gnu_sdk-buildroot/environment-setup
+  artifacts:
+    paths:
+    - retroarch
+    - ${MEDIA_PATH}
+    expire_in: 10 min
+  dependencies: []
+  script:
+    - bash gfx/common/wayland/generate_wayland_protos.sh
+    - >-
+      make -f Makefile.webos retroarch -j$NUMPROC
+      HAVE_SDL2=0 HAVE_SDL3=1
+      HAVE_XKBCOMMON=1 HAVE_USERLAND=1 HAVE_EGL=1 HAVE_WAYLAND=1
+      HAVE_OPENGLES3=1 HAVE_OPENGLES3_1=1 HAVE_OPENGLES3_2=1
+      HAVE_WAYLAND_BACKPORT=0 HAVE_64TO32BIT_BRIDGE=1 SET_ELF_INTERPRETER=1 HAVE_UDEV=1
+    - aarch64-webos-linux-gnu-strip --strip-unneeded retroarch
+    - mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio
+    - mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video
+    - cp -f libretro-common/audio/dsp_filters/*.dsp ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/audio
+    - cp -f gfx/video_filters/*.filt ${MEDIA_PATH}/${CI_PROJECT_NAME}/filters/video
+
 .build-retroarch-macos-xcode:
   # Metal/Universal x86_64 arm64 is default
   tags:
