@@ -1,0 +1,151 @@
+{
+  "artifacts": {
+    "color.comp": {
+      "bytes": 39996,
+      "language": "GLSL",
+      "sha256": "ae76eaa09898b04382c13ad98ac73e5f0132cc6e0dbac0a764db06b352128715",
+      "symbol": "rpyrowave_shader_color_glsl",
+      "text": true
+    },
+    "color.dxbc": {
+      "bytes": 17912,
+      "language": "D3D",
+      "sha256": "3ba17b2457affb63aab6893dbb1d26aa90c18b21fc6f530e105ad9ba7a34426a",
+      "symbol": "rpyrowave_shader_color_dxbc",
+      "text": false
+    },
+    "color.dxil": {
+      "bytes": 14592,
+      "language": "D3D",
+      "sha256": "6b4dab5899067c09056d6acb880da344e1e877eecada4b678b788a7ecc1c35bd",
+      "symbol": "rpyrowave_shader_color_dxil",
+      "text": false
+    },
+    "color.es.comp": {
+      "bytes": 39879,
+      "language": "GLES",
+      "sha256": "b988e90f32a6a41dda7ff25a03fe73798c4018190c19b4a1bf94620aad1e8592",
+      "symbol": "rpyrowave_shader_color_gles",
+      "text": true
+    },
+    "color.metal": {
+      "bytes": 40178,
+      "language": "METAL",
+      "sha256": "2c0df0bda3755a0e5fc672e4bc1d79722eee0f9c54031e0b4d8a72280b0bf659",
+      "symbol": "rpyrowave_shader_color_metal",
+      "text": true
+    },
+    "color.spv": {
+      "bytes": 33312,
+      "language": "SPIRV",
+      "sha256": "919410fb94dcdc15617ab0b3d51b3d8aea80f8707d6af7d2f136e2eb8b797cf0",
+      "symbol": "rpyrowave_shader_color_spirv",
+      "text": false
+    },
+    "dwt.comp": {
+      "bytes": 3542,
+      "language": "GLSL",
+      "sha256": "f764e1f1ff2fa2cd229624ebf89ae7463629ff3d9fdd845156e25789b3c03a0f",
+      "symbol": "rpyrowave_shader_dwt_glsl",
+      "text": true
+    },
+    "dwt.dxbc": {
+      "bytes": 3684,
+      "language": "D3D",
+      "sha256": "feca8ee8e13bd4844468593602ea949fab827714013d0a9457d780c70ee71a81",
+      "symbol": "rpyrowave_shader_dwt_dxbc",
+      "text": false
+    },
+    "dwt.dxil": {
+      "bytes": 4428,
+      "language": "D3D",
+      "sha256": "2cb9d5ce90a85ac30934d834fbb5f6fa50e603005c3bcacc2c44e23a3f62cb26",
+      "symbol": "rpyrowave_shader_dwt_dxil",
+      "text": false
+    },
+    "dwt.es.comp": {
+      "bytes": 3545,
+      "language": "GLES",
+      "sha256": "bd1d5b700c6b7a648b59883d6377ae6775021e240df3816619aeeea3775cf928",
+      "symbol": "rpyrowave_shader_dwt_gles",
+      "text": true
+    },
+    "dwt.metal": {
+      "bytes": 3620,
+      "language": "METAL",
+      "sha256": "931a19498162f44c819e7508d4ca361f429c0a44c8d26e61a575201595fcff75",
+      "symbol": "rpyrowave_shader_dwt_metal",
+      "text": true
+    },
+    "dwt.spv": {
+      "bytes": 4144,
+      "language": "SPIRV",
+      "sha256": "997dfffe898f6fadb1874a91a4686a903645fbeae2c04dc73190f473c76bd5eb",
+      "symbol": "rpyrowave_shader_dwt_spirv",
+      "text": false
+    },
+    "packet.comp": {
+      "bytes": 65584,
+      "language": "GLSL",
+      "sha256": "26f34526479c81ebf4ca4b9b2e61287d8c7ccbccd0b6fa7b1099fe1a54ea539a",
+      "symbol": "rpyrowave_shader_packet_glsl",
+      "text": true
+    },
+    "packet.dxbc": {
+      "bytes": 33436,
+      "language": "D3D",
+      "sha256": "bf8e025c8620ae2bc2cd5d9e93058492d3d7a18a744de1f17d86db63770cbcb0",
+      "symbol": "rpyrowave_shader_packet_dxbc",
+      "text": false
+    },
+    "packet.dxil": {
+      "bytes": 17000,
+      "language": "D3D",
+      "sha256": "69cc5d6bb6d8ea036ccfa6e99721ef19f76afa6ab2919eefbb8d508cc10510aa",
+      "symbol": "rpyrowave_shader_packet_dxil",
+      "text": false
+    },
+    "packet.es.comp": {
+      "bytes": 65587,
+      "language": "GLES",
+      "sha256": "899ed8cd5f1f8c1880b0349aa96763c4751448bf2b6064e768d762acc3bd968e",
+      "symbol": "rpyrowave_shader_packet_gles",
+      "text": true
+    },
+    "packet.metal": {
+      "bytes": 68576,
+      "language": "METAL",
+      "sha256": "220aa3767d245ad02f894a970154e59dd836744d9103576b03442428ee3fed67",
+      "symbol": "rpyrowave_shader_packet_metal",
+      "text": true
+    },
+    "packet.spv": {
+      "bytes": 42060,
+      "language": "SPIRV",
+      "sha256": "ab9914a7db30d447ece1d06710a21ba3938a92f3e3c9fd91602d42f6a53b34b8",
+      "symbol": "rpyrowave_shader_packet_spirv",
+      "text": false
+    }
+  },
+  "sources": {
+    "color.hlsl": "932a9d59ed97edf706c2ba3991ad924393c7a6e36c6373e246d7f468de260204",
+    "dwt.hlsl": "94b0f2af7e9231b972711f5e58f99c0d9d2498c62aa378d4dffb16c8b59a3334",
+    "packet.hlsl": "e785b70035884a67d68d42ec6cd1615095519d1256de1dcdee7c1e49a38a51c8"
+  },
+  "tools": {
+    "dxbc_profile": "cs_5_0",
+    "dxc": "dxcompiler.dll: 1.8 - 1.8.2502.11 (239921522); dxil.dll: 1.8(1.8.2502.11)",
+    "dxil_profile": "cs_6_0",
+    "fxc": "Microsoft (R) Direct3D Shader Compiler 10.1",
+    "gles_target": "310",
+    "glsl_target": "430",
+    "glslang": "Glslang Version: 11:16.6.0",
+    "msl_target": "metal2.1",
+    "spirv_cross_sha256": "6c083dd12f99f218e5851c4a67b41f87ebd21b8d21e1665c79ecd53545137e0b",
+    "spirv_opt": "SPIRV-Tools v2026.4 unknown hash, 2026-10-01T23:51:15+00:00",
+    "spirv_optimization": "-Os --preserve-bindings --preserve-interface --preserve-spec-constants --strip-debug",
+    "spirv_target": "vulkan1.0",
+    "spirv_val": "SPIRV-Tools v2026.4 unknown hash, 2026-10-01T23:51:15+00:00"
+  },
+  "version": 1
+}

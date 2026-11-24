@@ -174,7 +174,9 @@ static ID3D11Fence *open_fence(opened_t *o, uint64_t h)
 static int shared_dpb_expected(const video_hw_frame_t *fr)
 {
    d3d11vd_dec_t *d = (d3d11vd_dec_t*)fr->owner;
-   if (!getenv("D3D11_TEST_SHARED_DPB")) return 1;
+   if (d && d->packed_yuv) return 1;
+   if (!getenv("D3D11_TEST_SHARED_DPB")
+         && !getenv("D3D11_TEST_SHADER_DPB")) return 1;
    if (d && d->direct_dpb && !d->out[0]
          && fr->image == (uint64_t)(uintptr_t)d->dpb_handle) return 1;
    video_hw_frame_abandon(fr);
@@ -1455,7 +1457,8 @@ int main(int argc, char **argv)
    }
    if (!d3d11_video_decode_init_formats(dev,
             IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010
-            | (getenv("D3D11_TEST_SHARED_DPB") ? D3D11_VIDEO_DECODE_SHARED_DPB : 0)))
+            | (getenv("D3D11_TEST_SHADER_DPB") ? D3D11_VIDEO_DECODE_SHADER_DPB
+               : getenv("D3D11_TEST_SHARED_DPB") ? D3D11_VIDEO_DECODE_SHARED_DPB : 0)))
    {
       printf("d3d11_video_decode_test: SKIP (the backend did not start)\n");
       return argc > 1 ? 77 : 0;

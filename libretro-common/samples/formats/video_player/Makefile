@@ -55,6 +55,52 @@ $(TARGET): $(OBJS)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(OBJS) webp_canvas_test webp_canvas_test.exe apng_canvas_test apng_canvas_test.exe webp_direct_test webp_direct_test.exe
 
 .PHONY: all clean
+
+WEBP_SOURCES := webp_canvas_test.c \
+ $(LIBRETRO_COMM_DIR)/formats/video_player.c \
+ $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
+ $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.c \
+ $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c \
+ $(LIBRETRO_COMM_DIR)/formats/image/image_blit_bands.c \
+ $(filter-out video_player_test.c $(LIBRETRO_COMM_DIR)/formats/video_player.c,$(SOURCES))
+
+webp_canvas_test: $(WEBP_SOURCES) $(LIBRETRO_COMM_DIR)/include/formats/rwebp.h \
+ $(LIBRETRO_COMM_DIR)/include/formats/video_player.h $(LIBRETRO_COMM_DIR)/include/formats/image.h
+	$(CC) $(CFLAGS) -DHAVE_RWEBP $(WEBP_SOURCES) -o $@ $(LDFLAGS) -lm
+
+webp-check: webp_canvas_test
+	./webp_canvas_test
+
+.PHONY: webp-check
+
+APNG_SOURCES := apng_canvas_test.c \
+ $(filter-out webp_canvas_test.c $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.c $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c,$(WEBP_SOURCES)) \
+ $(LIBRETRO_COMM_DIR)/formats/png/rpng.c \
+ $(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.c \
+ $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+ $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
+ $(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
+ $(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+ $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c
+
+apng_canvas_test: $(APNG_SOURCES) $(LIBRETRO_COMM_DIR)/include/formats/rpng.h
+	$(CC) $(CFLAGS) -DHAVE_RPNG $(APNG_SOURCES) -o $@ $(LDFLAGS) -lm
+
+apng-check: apng_canvas_test
+	./apng_canvas_test
+
+.PHONY: apng-check
+
+WEBP_DIRECT_SOURCES := webp_direct_test.c $(filter-out webp_canvas_test.c,$(WEBP_SOURCES))
+
+webp_direct_test: $(WEBP_DIRECT_SOURCES) $(LIBRETRO_COMM_DIR)/include/formats/rwebp.h \
+ $(LIBRETRO_COMM_DIR)/include/formats/rvp8.h
+	$(CC) $(CFLAGS) -DHAVE_RWEBP $(WEBP_DIRECT_SOURCES) -o $@ $(LDFLAGS) -lm
+
+webp-direct-check: webp_direct_test
+	./webp_direct_test
+
+.PHONY: webp-direct-check

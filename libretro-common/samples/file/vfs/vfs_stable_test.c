@@ -472,6 +472,61 @@ end:
       retro_vfs_file_close_impl(t);
 }
 
+/* fs-verity: sealed and measured by the kernel, in the folder
+ * VFS_VERITY_DIR names (a filesystem with it on); elsewhere "not here" */
+static void test_verity(void)
+{
+   libretro_vfs_implementation_file *s;
+   struct retro_vfs_file_identity id;
+   uint8_t d[RETRO_VFS_VERITY_MAX], e[RETRO_VFS_VERITY_MAX];
+   char path[1024];
+   const char *dir = getenv("VFS_VERITY_DIR");
+   size_t n;
+   CHECK(!retro_vfs_file_verity_measure_impl(NULL, d, sizeof(d)));
+   CHECK(retro_vfs_file_verity_enable_impl(NULL) == -1);
+   /* the test folder: no seal to measure */
+   if ((s = retro_vfs_file_open_stable_impl(FILE_A, &id)))
+   {
+      CHECK(!retro_vfs_file_verity_measure_impl(s, d, sizeof(d)));
+      retro_vfs_file_close_impl(s);
+   }
+   if (!dir)
+   {
+      printf("note: VFS_VERITY_DIR not set, sealing not checked\n");
+      return;
+   }
+   snprintf(path, sizeof(path), "%s/sealed.bin", dir);
+   retro_vfs_file_remove_impl(path);
+   CHECK(filestream_write_file(path, data, sizeof(data)));
+   CHECK((s = retro_vfs_file_open_stable_impl(path, &id)) != NULL);
+   if (!s)
+      return;
+   CHECK(!retro_vfs_file_verity_measure_impl(s, d, sizeof(d)));
+   if (retro_vfs_file_verity_enable_impl(s) == 0)
+   {
+      printf("note: no fs-verity on this kernel or filesystem\n");
+      retro_vfs_file_close_impl(s);
+      retro_vfs_file_remove_impl(path);
+      return;
+   }
+   CHECK((n = retro_vfs_file_verity_measure_impl(s, d, sizeof(d))) == 32);
+   /* Again: already sealed; too small a buffer tells nothing */
+   CHECK(retro_vfs_file_verity_enable_impl(s) == 1);
+   CHECK(!retro_vfs_file_verity_measure_impl(s, e, 31));
+   retro_vfs_file_close_impl(s);
+   CHECK((s = retro_vfs_file_open_stable_impl(path, &id)) != NULL);
+   if (s)
+   {
+      CHECK(retro_vfs_file_verity_measure_impl(s, e, sizeof(e)) == n
+            && !memcmp(d, e, n));
+      retro_vfs_file_close_impl(s);
+   }
+   /* Sealed for good: no writer opens it */
+   CHECK(!retro_vfs_file_open_impl(path, RETRO_VFS_FILE_ACCESS_READ_WRITE
+            | RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING, 0));
+   retro_vfs_file_remove_impl(path);
+}
+
 int main(void)
 {
    unsigned i;
@@ -495,6 +550,7 @@ int main(void)
    test_open_stable_identity();
    test_stat_identity();
    test_volume();
+   test_verity();
    test_identity_follows_handle();
    retro_vfs_file_remove_impl(FILE_A);
    retro_vfs_file_remove_impl(FILE_B);

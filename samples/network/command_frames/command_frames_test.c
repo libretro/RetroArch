@@ -20,6 +20,7 @@
 #include "../../../gfx/video_driver.h"
 #include "../../../network/netplay/netplay.h"
 #include "../../../menu/menu_driver.h"
+#include "../../../verbosity.h"
 static unsigned failures;
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "FAIL %u: %s\n", (unsigned)__LINE__, #c); failures++; } } while (0)
 static bool blocked;
@@ -52,6 +53,33 @@ static void receive(command_t *cmd, const char *data, size_t n)
    (void)cmd;
    if (n >= sizeof(reply)) n = sizeof(reply)-1;
    memcpy(reply,data,n); reply[n]=0;
+}
+/* An interface that lends its own buffer for a reply: what it was
+ * asked for, and whether the reply came back where it was lent. */
+static char   lend_buf[65536];
+static size_t lend_asked;
+static bool   lend_in_place;
+static char *lend_room(command_t *cmd, size_t n)
+{
+   (void)cmd;
+   lend_asked = n;
+   return n <= sizeof(lend_buf) ? lend_buf : NULL;
+}
+static void lend_receive(command_t *cmd, const char *data, size_t n)
+{
+   lend_in_place = data == lend_buf && n <= lend_asked;
+   receive(cmd, data, n);
+}
+/* a whole reply, however long */
+static char   whole[65536];
+static size_t whole_len;
+static void whole_receive(command_t *cmd, const char *data, size_t n)
+{
+   if (cmd->reply_room)
+      lend_in_place = data == lend_buf && n <= lend_asked;
+   whole_len = n < sizeof(whole) ? n : sizeof(whole) - 1;
+   memcpy(whole, data, whole_len);
+   whole[whole_len] = '\0';
 }
 /* @line sent to the network command interface as a client would, read
  * through its own parser; the reply, if any, in @out. */
@@ -219,6 +247,31 @@ int main(int argc, char **argv)
       CHECK(ram7(&cmd) == ((at + 1) & 0xff));
       (void)want;
    }
+   /* checkpoints in turn, the second written beside the first and the
+    * third over it: each rolls back to its own state */
+   {
+      unsigned k, at;
+      for (k=0;k<3;k++)
+      {
+         reply[0]=0;
+         CHECK(command_state(&cmd,"checkpoint"));
+         for (i=0;i<8 && !reply[0];i++) { task_queue_check(); }
+         CHECK(!strcmp(reply,"STATE checkpoint"));
+         at=ram7(&cmd);
+         CHECK(command_run_frames(&cmd,"3"));
+         for (i=0;i<3;i++) runloop_iterate();
+         reply[0]=0;
+         CHECK(command_state(&cmd,"rollback"));
+         for (i=0;i<8 && !reply[0];i++) { task_queue_check(); }
+         CHECK(!strcmp(reply,"STATE rollback"));
+         CHECK(command_run_frames(&cmd,"1"));
+         runloop_iterate();
+         CHECK(ram7(&cmd) == ((at + 1) & 0xff));
+         /* on past it, so the next checkpoint holds another state */
+         CHECK(command_run_frames(&cmd,"2"));
+         for (i=0;i<2;i++) runloop_iterate();
+      }
+   }
 #ifdef HAVE_BSV_MOVIE
    /* a recording would go on from a state it never saw: refused, as a
     * load from a slot is */
@@ -376,6 +429,29 @@ int main(int argc, char **argv)
    reply[0]=0;
    CHECK(command_read_memory(&cmd,"100e 8")
          && !strcmp(reply,"READ_CORE_MEMORY 100e 0E 0F 10 11 12 13 14 15\n"));
+   /* several ranges, a line each, as one range answers */
+   reply[0]=0;
+   CHECK(command_read_memory(&cmd,"1001 2 1010 3")
+         && !strcmp(reply,"READ_CORE_MEMORY 1001 0F 10\n"
+            "READ_CORE_MEMORY 1010 10 11 12\n"));
+   reply[0]=0;
+   CHECK(command_read_memory(&cmd,"101e 4  1000 1 ")
+         && !strcmp(reply,"READ_CORE_MEMORY 101e 1E 1F\nTRUNCATED 2\n"
+            "READ_CORE_MEMORY 1000 00\n"));
+   /* one nothing maps is the answer, alone */
+   reply[0]=0;
+   CHECK(!command_read_memory(&cmd,"1000 1 20000 1")
+         && !strncmp(reply,"READ_CORE_MEMORY 20000 -1",25));
+   cmd.error=false; reply[0]=0;
+   CHECK(!command_read_memory(&cmd,"1000 1 zz")
+         && strstr(reply,"READ_CORE_MEMORY ERROR"));
+   reply[0]=0;
+   CHECK(!command_read_memory(&cmd,"1000 1 1001")
+         && strstr(reply,"READ_CORE_MEMORY ERROR"));
+   reply[0]=0;
+   CHECK(!command_read_memory(&cmd,"1000 16384 1000 1")
+         && strstr(reply,"16384 in all"));
+   cmd.error=false;
    /* and one outside every region says so, as it always has */
    reply[0]=0;
    CHECK(!command_read_memory(&cmd,"20000 1")
@@ -388,6 +464,59 @@ int main(int argc, char **argv)
              * region where the core leaves it zero */
             "1000\t10\t1ff0\t0\tsystem\trw\tlittle\tram\n"
             "1010\t10\t1ff0\t0\tsystem\trw\tlittle\tram\n"));
+   /* where the interface lends room, a read and the map are written
+    * there and sent from it, the same bytes as from a copy */
+   cmd.replier=lend_receive; cmd.reply_room=lend_room;
+   cmd.error=false; reply[0]=0; lend_in_place=false;
+   CHECK(command_read_memory(&cmd,"1001 2 1010 3") && lend_in_place
+         && !strcmp(reply,"READ_CORE_MEMORY 1001 0F 10\n"
+            "READ_CORE_MEMORY 1010 10 11 12\n"));
+   reply[0]=0; lend_in_place=false;
+   CHECK(!command_read_memory(&cmd,"1000 1 20000 1") && lend_in_place
+         && !strncmp(reply,"READ_CORE_MEMORY 20000 -1",25));
+   cmd.error=false; reply[0]=0; lend_in_place=false;
+   CHECK(command_get_memory_map(&cmd,"") && lend_in_place
+         && !strncmp(reply,"1000\t10\t1ff0\t0\tsystem\t",22));
+   /* through a family too: the rows go on as they are, still where
+    * they were lent */
+   reply[0]=0; lend_in_place=false;
+   CHECK(command_option(&cmd,"show pause") && lend_in_place
+         && !strncmp(reply,"pause\t",6));
+   reply[0]=0; lend_in_place=false;
+   CHECK(command_option(&cmd,"show") && lend_in_place
+         && strstr(reply,"pause\t"));
+   reply[0]=0; lend_in_place=false;
+   CHECK(command_list_cores(&cmd,"") && lend_in_place
+         && (strstr(reply,"\t") || !strcmp(reply,"LIST_CORES none\n")));
+   /* the log, with lines gone before they were read, the same from
+    * lent room as from a buffer of its own */
+   {
+      static char a[sizeof(whole)];
+      char     req[32];
+      unsigned k, since = 0;
+      const char *nx;
+      bool verbose = verbosity_is_enabled();
+      verbosity_enable();
+      cmd.replier=whole_receive; cmd.reply_room=NULL;
+      CHECK(command_get_log(&cmd,"") && (nx = strstr(whole,"NEXT ")));
+      since = nx ? (unsigned)strtoul(nx + 5, NULL, 10) : 0;
+      for (k=0;k<300;k++)
+         RARCH_LOG("[Test] lent log line %u\n", k);
+      snprintf(req,sizeof(req),"%u",since);
+      CHECK(command_get_log(&cmd,req) && !strncmp(whole,"SKIPPED ",8)
+            && strstr(whole,"lent log line 299\n"));
+      memcpy(a, whole, whole_len + 1);
+      cmd.reply_room=lend_room; lend_in_place=false;
+      CHECK(command_get_log(&cmd,req) && lend_in_place && !strcmp(a, whole));
+      /* and with none gone */
+      snprintf(req,sizeof(req),"%u",since + 290);
+      lend_in_place=false;
+      CHECK(command_get_log(&cmd,req) && lend_in_place
+            && !strncmp(whole,"[",1) && strstr(whole,"lent log line 299\nNEXT "));
+      if (!verbose)
+         verbosity_disable();
+   }
+   cmd.replier=receive; cmd.reply_room=NULL;
 
    /* GET_INPUT reads what a player holds without changing it, which
     * SET_INPUT cannot do and RELEASE_INPUT undoes before answering */
@@ -667,6 +796,15 @@ int main(int argc, char **argv)
             && strstr(reply,"at most 16 bytes watched"));
       /* room made earlier in the same request counts */
       CHECK(command_watch(&cmd,"w15 off w16 1009 w16 off w15 100f"));
+      /* an off after it makes room as well: the limit is on the list
+       * the request leaves */
+      reply[0]=0;
+      CHECK(command_watch(&cmd,"w16 1009 w0 off")
+            && !strncmp(reply,"w1\t",3) && strstr(reply,"w16\t1009\t"));
+      reply[0]=0;
+      CHECK(!command_watch(&cmd,"w17 100a w18 100b w1 off")
+            && strstr(reply,"at most 16 bytes watched"));
+      CHECK(command_watch(&cmd,"w16 off w0 1000"));
       /* but replacing one of the sixteen still works */
       CHECK(command_watch(&cmd,"w0 1005"));
       for (w = 0; w < 16; w++)
@@ -994,6 +1132,83 @@ int main(int argc, char **argv)
       reply[0]=0;
       CHECK(!command_run_until(&cmd,"1006 & 0x+4 == 4") && strstr(reply,"a mask"));
       cmd.error=false;
+      /* how far apart two bytes are, signed: ram[5] holds 5, ram[6] 6 */
+      reply[0]=0;
+      CHECK(command_run_until(&cmd,"1006 - 1005 == 1") && !strcmp(reply,"MET 0\nVALUE 1\n"));
+      reply[0]=0;
+      CHECK(command_run_until(&cmd,"1005 - 1006 == -1") && !strcmp(reply,"MET 0\nVALUE -1\n"));
+      reply[0]=0;
+      CHECK(command_run_until(&cmd,"1005-1006 < 0") && !strcmp(reply,"MET 0\nVALUE -1\n"));
+      reply[0]=0;
+      CHECK(command_run_until(&cmd,"1006:1007 - 1006:1007 == 0") && !strcmp(reply,"MET 0\nVALUE 0\n"));
+      {
+         char want[64];
+         int  v;
+         now=ram7(&cmd); reply[0]=0;
+         v=(int)((now + 2) & 0xff) - 6;
+         snprintf(req,sizeof(req),"1007 - 1006 == %d",v);
+         CHECK(command_run_until(&cmd,req) && !reply[0]);
+         runloop_iterate(); runloop_iterate();
+         snprintf(want,sizeof(want),"MET 2\nVALUE %d\n",v);
+         CHECK(!strcmp(reply,want));
+      }
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"until 1006 - 1005 == 1") && !strcmp(reply,"DONE 0\nSTEP 1\n"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 - == 1") && strstr(reply,"after the \"-\""));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 - 1005 == 256") && strstr(reply,"-255 to 255"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 - 1005 == -256") && strstr(reply,"-255 to 255"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006:1007 - 1005 == 65536") && strstr(reply,"-65535 to 65535"));
+      /* below zero only for a difference */
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 == -1") && strstr(reply,"0 to 255"));
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 - 1005 & 1 == 0") && strstr(reply,"a mask"));
+      /* the second address is found before any frame runs, as the first */
+      reply[0]=0;
+      CHECK(!command_run_until(&cmd,"1006 - 99000 == 0") && strstr(reply,"RUN_UNTIL ERROR"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"run 1; stop 1006 - 99000 == 0") && strstr(reply,"STEPS ERROR"));
+      cmd.error=false;
+      /* a stop already holding ends the list at its first frame; one
+       * that becomes true only once it starts to */
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 3; stop 1006 == 6"));
+      runloop_iterate();
+      CHECK(!strcmp(reply,"STOPPED 1\nSTOP 1\nSTEP 1\n"));
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 3; stop becomes 1006 == 6"));
+      for (i=0;i<3;i++) runloop_iterate();
+      CHECK(!strcmp(reply,"DONE 3\nSTEP 1\n"));
+      /* spaced out all the same */
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"run 3; stop  becomes  1006 == 6"));
+      for (i=0;i<3;i++) runloop_iterate();
+      CHECK(!strcmp(reply,"DONE 3\nSTEP 1\n"));
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"run 10; stop becomes 1007 == %u",(now + 3) & 0xff);
+      CHECK(command_steps(&cmd,req));
+      for (i=0;i<3;i++) runloop_iterate();
+      CHECK(!strcmp(reply,"STOPPED 3\nSTOP 1\nSTEP 1\n"));
+      /* true, false for a frame, then true again: it fires there */
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"run 10; stop becomes 1007 != %u",(now + 2) & 0xff);
+      CHECK(command_steps(&cmd,req));
+      for (i=0;i<3;i++) runloop_iterate();
+      CHECK(!strcmp(reply,"STOPPED 3\nSTOP 1\nSTEP 1\n"));
+      /* so a checkpoint after a wait is kept, the stop already holding */
+      now=ram7(&cmd); reply[0]=0;
+      snprintf(req,sizeof(req),"until 1007 == %u; checkpoint; run 1; "
+            "stop becomes 1006 == 6",(now + 2) & 0xff);
+      CHECK(command_steps(&cmd,req));
+      for (i=0;i<3;i++) runloop_iterate();
+      CHECK(!strcmp(reply,"DONE 3\nSTEP 3\n"));
+      reply[0]=0;
+      CHECK(!command_steps(&cmd,"run 1; stop becomes") && strstr(reply,"STEPS ERROR"));
+      cmd.error=false;
       /* any of several stops ends the list */
       now=ram7(&cmd); reply[0]=0;
       snprintf(req,sizeof(req),"run 20; stop 1006 == 7; stop 1007 == %u",(now + 2) & 0xff);
@@ -1174,6 +1389,13 @@ int main(int argc, char **argv)
             && !(loop->frame_work & RUNLOOP_WORK_RUN_FRAMES));
       reply[0]=0;
       CHECK(command_steps(&cmd,"|on") && !strcmp(reply,"QUEUED 0\n"));
+      /* a queued list's stop that becomes true is read as that list
+       * starts, not as it is queued */
+      CHECK(command_steps(&cmd,"run 2|on"));
+      CHECK(command_steps(&cmd,"run 3; stop becomes 1006 == 6|on"));
+      for (i=0;i<6;i++) runloop_iterate();
+      reply[0]=0;
+      CHECK(command_steps(&cmd,"|on") && !strncmp(reply,"QUEUED 0\nIDLE ",14));
       /* each queued list runs with its own stops, none where it has
        * none, and counts its own frames */
       now=ram7(&cmd); reply[0]=0;

@@ -182,11 +182,19 @@ typedef struct rchd_info
    uint32_t unit_bytes;
    uint32_t hunk_count;
    uint32_t compressors[4]; /* RCHD_CODEC_*; V5 only, else derived  */
+   uint32_t flags;          /* RCHD_FLAG_*; V5 stores none, so only
+                               RCHD_FLAG_HAS_PARENT is set there     */
    uint8_t  sha1[20];       /* raw+meta; zeroed before V3           */
    uint8_t  raw_sha1[20];   /* raw only; zeroed before V4           */
    uint8_t  parent_sha1[20];
+   uint8_t  md5[16];        /* V1 to V3; zeroed from V4             */
+   uint8_t  parent_md5[16]; /* V1 to V3; zeroed from V4             */
    int      has_parent;
 } rchd_info_t;
+
+/* Header flags of a version 1 to 4 image. */
+#define RCHD_FLAG_HAS_PARENT    0x00000001U
+#define RCHD_FLAG_WRITEABLE     0x00000002U
 
 /**
  * rchd_metadata_t:
@@ -482,7 +490,7 @@ size_t rchd_read_progress(const rchd_t *chd);
  * rchd_read_hunk_begin:
  * @chd        : opened decoder
  * @hunk       : hunk index, below rchd_info()->hunk_count
- * @dst        : destination, at least hunk_bytes
+ * @dst        : destination, at least hunk_bytes; or NULL
  *
  * Arms a read of one whole hunk, addressed by index rather than by byte
  * offset. Equivalent to arming a byte read of hunk_bytes at
@@ -490,9 +498,21 @@ size_t rchd_read_progress(const rchd_t *chd);
  * format is written against hunk indices; a consumer being ported does
  * not have to convert its call sites to offsets to use this one.
  *
+ * With @dst NULL nothing is copied: once the read completes the hunk is
+ * read where the decoder built it, through rchd_hunk_cache().
+ *
  * Returns: RCHD_OK, or RCHD_ERROR_PARAM if @hunk is out of range.
  */
 int rchd_read_hunk_begin(rchd_t *chd, uint32_t hunk, void *dst);
+
+/**
+ * rchd_hunk_cache:
+ *
+ * Returns: the hunk the decoder built last, hunk_bytes long - after a
+ * completed rchd_read_hunk_begin(chd, hunk, NULL), that hunk. Valid
+ * until the next read armed on @chd. NULL before the first read.
+ */
+const uint8_t *rchd_hunk_cache(const rchd_t *chd);
 
 /* -------- pipelining -------- */
 
@@ -611,6 +631,20 @@ int rchd_hunk_location(const rchd_t *chd, uint32_t hunk,
       rchd_request_t *req);
 
 /**
+ * rchd_hunk_crc32:
+ * @chd        : opened decoder
+ * @hunk       : hunk index, below rchd_info()->hunk_count
+ * @crc        : receives the CRC-32 the map records for the decoded
+ *               hunk, or 0 where it records none
+ *
+ * Versions 3 and 4 keep a CRC-32 of every hunk in the map; an image
+ * that differences against one copies them into its own map.
+ *
+ * Returns: RCHD_OK, or RCHD_ERROR_PARAM.
+ */
+int rchd_hunk_crc32(const rchd_t *chd, uint32_t hunk, uint32_t *crc);
+
+/**
  * rchd_hunk_for_offset:
  *
  * Returns: the hunk index containing logical byte @offset.
@@ -682,10 +716,12 @@ int rchd_av_parse(const uint8_t *data, size_t len, rchd_av_frame_t *out);
  * caller writing to a stream that cannot seek should buffer the first
  * rchd_write_prefix_size(w) bytes and fill them in at the end.
  *
- * What this does NOT do is compress. The four compressor slots are
- * written as zero, which is what the format calls an uncompressed file,
- * so the codec paths (LZMA, zlib, FLAC, Huffman) are not exercised by
- * anything it produces. It is a fixture generator, not an archiver.
+ * What this does NOT do is compress. A writer from rchd_write_new
+ * leaves the four compressor slots zero, which is what the format calls
+ * an uncompressed file. One from rchd_write_new_coded names compressors
+ * and takes hunks the caller has already coded, so the codec paths can
+ * be exercised by images built in a test. It is a fixture generator,
+ * not an archiver.
  *
  * Usage:
  *
@@ -730,6 +766,91 @@ typedef int (*rchd_write_fn)(void *ctx, uint64_t offset,
  */
 rchd_writer_t *rchd_write_new(uint64_t logical_bytes, uint32_t hunk_bytes,
       uint32_t unit_bytes, rchd_write_fn sink, void *ctx);
+
+/**
+ * rchd_write_new_coded:
+ * @compressors  : the image's four compressor slots, RCHD_CODEC_*; the
+ *                 first must name one.
+ *
+ * As rchd_write_new, for an image with a compressed map. Hunks are laid
+ * end to end after the header in the order written and the map follows
+ * them, so the prefix is the header alone. rchd_write_hunk stores a
+ * hunk uncompressed, and an all-zero hunk is stored like any other.
+ *
+ * Returns: a writer, or NULL on bad arguments or allocation failure.
+ */
+rchd_writer_t *rchd_write_new_coded(uint64_t logical_bytes,
+      uint32_t hunk_bytes, uint32_t unit_bytes,
+      const uint32_t compressors[4], rchd_write_fn sink, void *ctx);
+
+/* ---------------------------------------------------------------------
+ * Writable images
+ *
+ * MAME keeps the changes a running machine makes to a disk in a diff:
+ * a version 4 image that names the original as its parent, refers each
+ * hunk to it, and stores a hunk of its own once that hunk is written.
+ * These two make and update one, byte for byte as MAME 0.139 does, and
+ * like the rest of this file they write through rchd_write_fn and do
+ * no I/O of their own.
+ * --------------------------------------------------------------------- */
+
+/**
+ * rchd_write_diff:
+ * @parent : opened decoder for the image the diff differences against
+ * @sha1   : 20 bytes for the header's combined SHA-1, or NULL for zero.
+ *           MAME stores there the SHA-1 of the raw data's SHA-1 (zero,
+ *           for a diff) and the sorted SHA-1s of the metadata entries
+ *           flagged for checksumming; a caller wanting the file MAME
+ *           would write computes it.
+ * @sink   : positioned-write callback
+ * @ctx    : passed to @sink untouched
+ *
+ * Writes a new diff: the header, flagged writeable and as having a
+ * parent, a map referring every hunk to the parent, the end-of-list
+ * cookie and a copy of the parent's metadata chain. The diff then opens
+ * like any other image, and rchd_update_hunk() writes into it.
+ *
+ * Returns: RCHD_OK, RCHD_ERROR_PARAM if @parent is not open,
+ * RCHD_ERROR_MEM, or RCHD_ERROR_STATE if @sink failed.
+ */
+int rchd_write_diff(const rchd_t *parent, const uint8_t *sha1,
+      rchd_write_fn sink, void *ctx);
+
+/**
+ * rchd_update_hunk:
+ * @chd      : opened decoder for a writeable version 3 or 4 image
+ * @hunk     : hunk index, below rchd_info()->hunk_count
+ * @data     : hunk_bytes of new contents
+ * @file_end : in, the size of the image file; out, its size after the
+ *             write
+ * @sink     : positioned-write callback for the image file
+ * @ctx      : passed to @sink untouched
+ *
+ * Stores @data uncompressed as hunk @hunk: over the hunk's own data
+ * when it already holds a whole uncompressed hunk, else appended at
+ * @file_end. The map entry is rewritten in the file and in @chd, so a
+ * later read sees the new contents. Not while a read is armed.
+ *
+ * Returns: RCHD_OK, RCHD_ERROR_PARAM, RCHD_ERROR_UNSUPPORTED for an
+ * image of another version or not flagged writeable, RCHD_ERROR_STATE
+ * while a read is armed or if @sink failed.
+ */
+int rchd_update_hunk(rchd_t *chd, uint32_t hunk, const uint8_t *data,
+      uint64_t *file_end, rchd_write_fn sink, void *ctx);
+
+/**
+ * rchd_write_hunk_coded:
+ * @w          : a writer from rchd_write_new_coded.
+ * @compressor : which of the four slots coded @blob, 0 to 3.
+ * @blob       : the hunk as that codec stores it.
+ * @len        : its length, under 16 MiB.
+ * @crc        : CRC-16-CCITT (initial 0xffff) of the decoded hunk.
+ *
+ * Returns: RCHD_OK, or an error if the slot names no compressor, every
+ * hunk is already written, or @sink failed.
+ */
+int rchd_write_hunk_coded(rchd_writer_t *w, uint32_t compressor,
+      const uint8_t *blob, uint32_t len, uint16_t crc);
 
 /**
  * rchd_write_prefix_size:

@@ -14,7 +14,7 @@ hash=$(printf '%s' "$pkgs" | sha256sum | cut -c1-16)
 arch=
 [ "${RUNNER_ARCH:-X64}" = X64 ] || arch="$RUNNER_ARCH-"
 prefix="apt-${ImageOS:-unknown}-$arch$hash-"
-key="$prefix${ImageVersion:-unknown}"
+key="$prefix${ImageVersion:-unknown}-v2"
 echo "key=$key" >> "$GITHUB_OUTPUT"
 echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
 echo "apt cache key: $key"

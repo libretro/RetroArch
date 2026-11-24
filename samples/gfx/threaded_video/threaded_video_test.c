@@ -108,6 +108,33 @@ void *__wrap_calloc(size_t nmemb, size_t size)
    return __real_calloc(nmemb, size);
 }
 
+/* cpu_features_get_time_usec() through the same --wrap: armed (1), the
+ * thread that armed it reads harness_clock_now, which the lane moves
+ * itself; counting (2), it reads the real clock; either way its reads
+ * are counted. Every other thread reads the real clock. */
+#define HARNESS_WRAP_CLOCK 1
+retro_time_t __real_cpu_features_get_time_usec(void);
+static retro_atomic_int_t harness_clock_armed;
+static uintptr_t harness_clock_owner;
+static retro_time_t harness_clock_now;
+/* Reads the armed thread made; that thread's own to count */
+static unsigned harness_clock_reads;
+/* Reads the other threads made while the clock was left running (2) */
+static retro_atomic_int_t harness_clock_reads_off;
+retro_time_t __wrap_cpu_features_get_time_usec(void)
+{
+   int armed = retro_atomic_load_acquire_int(&harness_clock_armed);
+   if (armed && sthread_get_current_thread_id() == harness_clock_owner)
+   {
+      harness_clock_reads++;
+      if (armed == 1)
+         return harness_clock_now;
+   }
+   else if (armed == 2)
+      retro_atomic_inc_int(&harness_clock_reads_off);
+   return __real_cpu_features_get_time_usec();
+}
+
 /* A GL driver whose own struct cannot be allocated returns no driver,
  * touching nothing (its init allocates that struct first). Run before
  * the frontend is up: the init's error path frees the current context
@@ -7605,6 +7632,221 @@ static void skiplane_push(const void *pix, bool threaded)
       video_thread_wait_idle();
 }
 
+#ifdef HARNESS_WRAP_CLOCK
+/* The FPS counter over real, repeat pairs, the clock moved one period
+ * per push: enough pushes that the last window the counter closed lies
+ * wholly inside them. Read from the window title, where the counter
+ * puts it. */
+#define SKIPLANE_FPS_INTERVAL 8
+#define SKIPLANE_FPS_PERIOD   5000
+static double skiplane_fps(const void *pix, bool threaded)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   const char *fps;
+   unsigned i;
+
+   for (i = 0; i < 3 * SKIPLANE_FPS_INTERVAL; i++)
+   {
+      harness_clock_now += SKIPLANE_FPS_PERIOD;
+      skiplane_push((i & 1) ? NULL : pix, threaded);
+   }
+   fps = strstr(video_st->window_title, "FPS:");
+   return fps ? strtod(fps + 4, NULL) : -1.0;
+}
+#endif
+
+#if defined(__linux__) && !defined(ANDROID)
+#include <sys/prctl.h>
+/* The frontend's thread sleeps without the default timer slack, which
+ * the frame limiter would otherwise spin through every frame */
+static void lane_timer_slack(void)
+{
+#ifdef PR_GET_TIMERSLACK
+   int slack = prctl(PR_GET_TIMERSLACK, 0UL, 0UL, 0UL, 0UL);
+   CHECK(slack == 1, "timer slack lane: the frontend's thread has %d ns "
+         "of timer slack, want 1", slack);
+   if (slack == 1)
+      fprintf(stderr, "[pass] timer slack lane\n");
+#endif
+}
+#endif
+
+#ifdef HARNESS_WRAP_CLOCK
+/* The clock reads one frame's push makes on the main thread, with the
+ * video thread idle before it so the push neither waits for the ring
+ * nor holds for the display. */
+#define HANDOFF_CLOCK_PUSHES 16
+static unsigned handoff_clock_reads(bool threaded)
+{
+   static uint8_t pix[32 * 32 * sizeof(uint32_t)];
+   unsigned reads = 0;
+   unsigned i;
+
+   set_threaded_via_setting(threaded);
+   run_frames(3);
+   expect_wrapper(threaded, "handoff clock lane");
+   if (threaded)
+      video_thread_wait_idle();
+   harness_clock_now   = __real_cpu_features_get_time_usec();
+   harness_clock_owner = sthread_get_current_thread_id();
+   for (i = 0; i < HANDOFF_CLOCK_PUSHES; i++)
+   {
+      memset(pix, (int)i, sizeof(pix));
+      harness_clock_now  += 16667;
+      harness_clock_reads = 0;
+      retro_atomic_store_release_int(&harness_clock_armed, 1);
+      video_driver_frame(pix, 32, 32, 32 * sizeof(uint32_t));
+      retro_atomic_store_release_int(&harness_clock_armed, 0);
+      reads += harness_clock_reads;
+      if (threaded)
+         video_thread_wait_idle();
+   }
+   return reads;
+}
+
+/* The clock reads the main thread makes over @n runloop iterations,
+ * the clock left running */
+static unsigned runloop_clock_reads(unsigned n, bool vsync)
+{
+   settings_t *settings = config_get_ptr();
+   bool saved_vsync     = settings->bools.video_vsync;
+   unsigned reads;
+   /* With vsync on the display paces; with it off the runloop's own
+    * frame limiter does, sleeping and then spinning to its deadline.
+    * The frames before the count let the perf counter's rate settle. */
+   settings->bools.video_vsync = vsync;
+   run_frames(8);
+   harness_clock_owner = sthread_get_current_thread_id();
+   harness_clock_reads = 0;
+   retro_atomic_store_release_int(&harness_clock_armed, 2);
+   run_frames(n);
+   retro_atomic_store_release_int(&harness_clock_armed, 0);
+   reads = harness_clock_reads;
+   settings->bools.video_vsync = saved_vsync;
+   return reads;
+}
+
+/* A frame pushed inside an iteration reads no clock, and the handover
+ * to the video thread none either: what they want of "now" is the
+ * iteration's own reading moved on by the perf counter */
+static void lane_handoff_clock(void)
+{
+   unsigned had           = failures;
+   settings_t *settings   = config_get_ptr();
+   bool saved_pacing      = settings->bools.video_threaded_display_pacing;
+   unsigned direct, handed;
+
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   settings->bools.video_threaded_display_pacing = false;
+   direct = handoff_clock_reads(false);
+   handed = handoff_clock_reads(true);
+   settings->bools.video_threaded_display_pacing = saved_pacing;
+   video_driver_cached_frame_invalidate();
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   CHECK(handed == 0 && direct == 0,
+         "handoff clock lane: %u pushes read the clock %u times threaded "
+         "and %u times direct, want none", HANDOFF_CLOCK_PUSHES,
+         handed, direct);
+   {
+      /* A whole iteration reads the clock once, for the runloop's
+       * anchor; the audio sink estimate, where it is on, once a window
+       * on top */
+      unsigned iter_reads;
+      set_threaded_via_setting(false);
+      run_frames(3);
+      iter_reads = runloop_clock_reads(HANDOFF_CLOCK_PUSHES, true);
+      CHECK(iter_reads <= HANDOFF_CLOCK_PUSHES + 2,
+            "handoff clock lane: %u iterations read the clock %u times, "
+            "want at most %u", HANDOFF_CLOCK_PUSHES, iter_reads,
+            HANDOFF_CLOCK_PUSHES + 2);
+      {
+         /* Automatic frame delay times each iteration's leftover from
+          * the iteration's own reading, moved on by a mark */
+         settings_t *st        = config_get_ptr();
+         bool saved_auto       = st->bools.video_frame_delay_auto;
+         unsigned saved_delay  = st->uints.video_frame_delay;
+         st->bools.video_frame_delay_auto = true;
+         st->uints.video_frame_delay      = 0;
+         iter_reads = runloop_clock_reads(HANDOFF_CLOCK_PUSHES, true);
+         st->bools.video_frame_delay_auto = saved_auto;
+         st->uints.video_frame_delay      = saved_delay;
+         CHECK(iter_reads <= HANDOFF_CLOCK_PUSHES + 2,
+               "handoff clock lane: %u iterations under automatic frame "
+               "delay read the clock %u times, want at most %u",
+               HANDOFF_CLOCK_PUSHES, iter_reads, HANDOFF_CLOCK_PUSHES + 2);
+      }
+#ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
+      /* The frame limiter spins to its deadline on the perf counter:
+       * the clock is read for the sleep's own use at most (Windows and
+       * Darwin read it to arm the sleep), never once a turn of the spin */
+      iter_reads = runloop_clock_reads(HANDOFF_CLOCK_PUSHES, false);
+      CHECK(iter_reads <= 6 * HANDOFF_CLOCK_PUSHES,
+            "handoff clock lane: %u iterations paced by the frame limiter "
+            "read the clock %u times, want at most %u",
+            HANDOFF_CLOCK_PUSHES, iter_reads, 6 * HANDOFF_CLOCK_PUSHES);
+#endif
+   }
+   if (failures == had)
+      fprintf(stderr, "[pass] handoff clock lane (no clock read in %u "
+            "pushes, threaded or direct; one per iteration for the "
+            "runloop)\n", HANDOFF_CLOCK_PUSHES);
+}
+#endif
+
+#if defined(HARNESS_WRAP_CLOCK) && defined(CPU_FEATURES_PERF_COUNTER_CHEAP)
+/* Display pacing's hold and the presenter's repeat deadline pace on the
+ * clock without a reading of their own: the hold tells "now" from the
+ * frame's reading, the video thread from the one it takes at each
+ * present. */
+#define PACING_CLOCK_FRAMES 60
+static void lane_pacing_clock(void)
+{
+   unsigned had         = failures;
+   settings_t *settings = config_get_ptr();
+   bool saved_pacing    = settings->bools.video_threaded_display_pacing;
+   bool saved_repeat    = settings->bools.video_threaded_present_repeat;
+   int repeat;
+
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   settings->bools.video_threaded_display_pacing = true;
+   for (repeat = 0; repeat < 2; repeat++)
+   {
+      unsigned main_reads;
+      int other_reads;
+      settings->bools.video_threaded_present_repeat = repeat != 0;
+      set_threaded_via_setting(true);
+      run_frames(30);
+      expect_wrapper(true, "pacing clock lane");
+      retro_atomic_store_release_int(&harness_clock_reads_off, 0);
+      main_reads  = runloop_clock_reads(PACING_CLOCK_FRAMES, true);
+      other_reads = retro_atomic_load_acquire_int(&harness_clock_reads_off);
+      CHECK(main_reads <= PACING_CLOCK_FRAMES + 2,
+            "pacing clock lane (repeat %d): %u held iterations read the "
+            "clock %u times on the main thread, want at most %u", repeat,
+            PACING_CLOCK_FRAMES, main_reads, PACING_CLOCK_FRAMES + 2);
+      /* The video thread reads it once a present, to hold the display's
+       * timestamp against, and tells its other instants from that: a
+       * frame and its repeats, not a reading at each wake besides */
+      CHECK(other_reads <= PACING_CLOCK_FRAMES * 5 / 2,
+            "pacing clock lane (repeat %d): the other threads read the "
+            "clock %d times over %u frames, want at most %u", repeat,
+            other_reads, PACING_CLOCK_FRAMES, PACING_CLOCK_FRAMES * 5 / 2);
+   }
+   settings->bools.video_threaded_display_pacing = saved_pacing;
+   settings->bools.video_threaded_present_repeat = saved_repeat;
+   video_driver_cached_frame_invalidate();
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] pacing clock lane\n");
+}
+#endif
+
 static void lane_dupe_skip(bool threaded)
 {
    unsigned had                   = failures;
@@ -7671,6 +7913,39 @@ static void lane_dupe_skip(bool threaded)
          "the runloop would not pace it", mode,
          (unsigned)video_st->dupe_skip_hold);
 
+#ifdef HARNESS_WRAP_CLOCK
+   /* The FPS counter counts what was shown: half the pushes when every
+    * other one is a skipped repeat, all of them with the setting off */
+   {
+      bool saved_fps_show     = settings->bools.video_fps_show;
+      unsigned saved_interval = settings->uints.fps_update_interval;
+      double on, off;
+      runloop_state_t *runloop_st = runloop_state_get_ptr();
+      retro_time_t saved_iter     = runloop_st->iter_time;
+      settings->bools.video_fps_show      = true;
+      settings->uints.fps_update_interval = SKIPLANE_FPS_INTERVAL;
+      /* Outside an iteration: video_driver_frame() reads the clock the
+       * lane moves for the frame's time */
+      runloop_st->iter_time = 0;
+      harness_clock_now   = __real_cpu_features_get_time_usec();
+      harness_clock_owner = sthread_get_current_thread_id();
+      retro_atomic_store_release_int(&harness_clock_armed, 1);
+      on  = skiplane_fps(pix_a, threaded);
+      settings->bools.video_skip_dupe_frames = false;
+      off = skiplane_fps(pix_a, threaded);
+      retro_atomic_store_release_int(&harness_clock_armed, 0);
+      runloop_st->iter_time = saved_iter;
+      settings->bools.video_skip_dupe_frames = true;
+      settings->bools.video_fps_show      = saved_fps_show;
+      settings->uints.fps_update_interval = saved_interval;
+      video_st->dupe_skip_hold            = 0;
+      CHECK(on == 100.0 && off == 200.0,
+            "dupe skip lane (%s): FPS counter read %.2f with repeats "
+            "skipped and %.2f with them shown, want 100.00 and 200.00",
+            mode, on, off);
+   }
+#endif
+
    /* Black Frame Insertion: the presents are the effect */
    settings->uints.video_black_frame_insertion = 1;
    retro_atomic_store_release_size(&skiplane_count, 0);
@@ -7712,7 +7987,8 @@ static void lane_dupe_skip(bool threaded)
    run_frames(2);
    if (failures == had)
       fprintf(stderr, "[pass] dupe skip lane (%s: repeats unpresented, "
-            "BFI and setting off present them)\n", mode);
+            "FPS counts what was shown, BFI and setting off present "
+            "them)\n", mode);
 }
 
 /* ------------------------------------------------------------------ */
@@ -7858,11 +8134,21 @@ static int vshrink_find(char kind, unsigned value)
    return -1;
 }
 
+/* What video_driver_frame() stamps on the info it builds: the frame's
+ * time and its mark, which the handoff takes "now" from. A lane that
+ * pushes its own info takes them too. */
+static void harness_frame_stamp(video_frame_info_t *info)
+{
+   info->frame_time = cpu_features_get_time_usec();
+   info->frame_mark = CPU_FEATURES_MARK_WITH(info->frame_time);
+}
+
 static void vshrink_push(video_frame_info_t *info, uint32_t *pixels,
       unsigned frame, unsigned views)
 {
    video_driver_state_t *video = video_state_get_ptr();
    info->views.num_views = views;
+   harness_frame_stamp(info);
    video->current_video->frame(video->data, pixels,
          VIDEO_SCALE_PACK(8, 8), frame, 32, NULL, info);
 }
@@ -9738,6 +10024,70 @@ static bool lend_gl_readback(const char *drv, uintptr_t id, bool rgba,
    glBindTexture(GL_TEXTURE_2D, 0);
    return glGetError() == GL_NO_ERROR;
 #endif
+}
+#endif
+
+#if defined(HAVE_OPENGL) && defined(HAVE_GL_TEXTURE_LEND)
+/* Planar handles may have no RGB storage until sampled. Exercise the
+ * display consumer instead of attaching the producer handle to an FBO. */
+static bool planar_gl_readback(unsigned width, unsigned height, uintptr_t image,
+      uint32_t *out)
+{
+   static const float vertex[8] = { -1, -1, 1, -1, -1, 1, 1, 1 };
+   static const float texcoord[8] = { 0, 0, 1, 0, 0, 1, 1, 1 };
+   static const float colour[16] = {
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+   math_matrix_4x4 matrix;
+   video_driver_state_t *video = video_state_get_ptr();
+   gfx_display_t *display = disp_get_ptr();
+   gfx_display_ctx_draw_t draw;
+   video_coords_t coords;
+   GLint old_fbo, viewport[4], pack;
+   GLuint texture, fbo;
+   bool ok;
+   GLboolean blend = glIsEnabled(GL_BLEND);
+   GLboolean scissor = glIsEnabled(GL_SCISSOR_TEST);
+   glGetIntegerv(GL_FRAMEBUFFER_BINDING, &old_fbo);
+   glGetIntegerv(GL_VIEWPORT, viewport);
+   glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING, &pack);
+   glGenTextures(1, &texture);
+   glBindTexture(GL_TEXTURE_2D, texture);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0,
+         GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+   glGenFramebuffers(1, &fbo);
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, texture, 0);
+   ok = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+   memset(&draw, 0, sizeof(draw));
+   memset(&coords, 0, sizeof(coords));
+   memset(&matrix, 0, sizeof(matrix));
+   matrix.data[0] = matrix.data[5] = matrix.data[10] = matrix.data[15] = 1;
+   coords.vertices = 4;
+   coords.vertex = vertex;
+   coords.tex_coord = texcoord;
+   coords.color = colour;
+   draw.coords = &coords;
+   draw.matrix_data = &matrix;
+   draw.texture = image;
+   draw.dims = VIDEO_SCALE_PACK(width, height);
+   glDisable(GL_BLEND);
+   glDisable(GL_SCISSOR_TEST);
+   if (ok)
+      gfx_display_draw(display->dispctx, &draw, video->data, draw.dims);
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+   glPixelStorei(GL_PACK_ALIGNMENT, 4);
+   if (ok)
+      glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, out);
+   ok = glGetError() == GL_NO_ERROR && ok;
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, (GLuint)pack);
+   glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)old_fbo);
+   glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+   if (blend) glEnable(GL_BLEND);
+   if (scissor) glEnable(GL_SCISSOR_TEST);
+   glDeleteFramebuffers(1, &fbo);
+   glDeleteTextures(1, &texture);
+   return ok;
 }
 #endif
 
@@ -12140,6 +12490,7 @@ static void record_gpu_stop_in_flight(void)
    info.recording_gpu = &rstop_driver;
    retro_atomic_store_release_int(&rstop_held, 0);
    retro_atomic_store_release_int(&rstop_hold, 1);
+   harness_frame_stamp(&info);
    video->current_video->frame(video->data, pixels, VIDEO_SCALE_PACK(8, 8),
          0, 32, NULL, &info);
    for (i = 0; i < 1000 && !retro_atomic_load_acquire_int(&rstop_held); i++)
@@ -12151,6 +12502,7 @@ static void record_gpu_stop_in_flight(void)
          thr->frame.slot[0].video_info.recording_gpu,
          thr->frame.slot[1].video_info.recording_gpu, (void*)&rstop_driver);
    info.recording_gpu = &rstop_hold;
+   harness_frame_stamp(&info);
    video->current_video->frame(video->data, pixels, VIDEO_SCALE_PACK(8, 8),
          1, 32, NULL, &info);
    CHECK(video_thread_record_gpu_in_flight(thr, &rstop_hold),
@@ -13461,13 +13813,26 @@ static void lane_hw_cached_context(void)
 }
 
 #ifdef HAVE_VULKAN
-/* The head of struct vk_texture, as gfx/drivers/vulkan.c lays it out */
+/* The heads of struct vk_texture and struct vk_media_pool, as
+ * gfx/drivers/vulkan.c lays them out. A pool's versions begin with
+ * their texture. */
+typedef struct planar_vk_texture_head planar_vk_texture_head_t;
+
 typedef struct
 {
+   void *versions;
+   planar_vk_texture_head_t *current;
+} planar_vk_media_pool_head_t;
+
+struct planar_vk_texture_head
+{
    VkDeviceSize memory_size;
+   planar_vk_texture_head_t *media_owner;
+   planar_vk_media_pool_head_t *media_pool;
+   void *media_version;
    void *mapped;
    VkImage image;
-} planar_vk_texture_head_t;
+};
 
 /* What Vulkan texture @id holds, as R,G,B,A bytes; direct video only,
  * the queue taken under its lock and waited idle - a test's readback */
@@ -13492,6 +13857,11 @@ static bool planar_vk_readback(uintptr_t id, unsigned w, unsigned h,
    void *ptr             = NULL;
    bool ok               = false;
    uint32_t i;
+   /* The pixels live where the driver samples them from */
+   if (tex && tex->media_owner)
+      tex = tex->media_owner;
+   if (tex && tex->media_pool)
+      tex = tex->media_pool->current;
    if (!ctx || !tex || !tex->image)
       return false;
    memset(&binfo, 0, sizeof(binfo));
@@ -13739,7 +14109,8 @@ static void lane_surface_planar(void)
             bool core    = !strcmp(drv, "glcore");
             image_yuv_420_to_rgb32(want, PW, y, PS, u, PS, v, PS, 1,
                   PW, PH, flags | (core ? IMAGE_YUV_FLAG_RGBA : 0));
-            CHECK(lend_gl_readback(drv, s->handle, false, PW, PH, got),
+            CHECK(core ? planar_gl_readback(PW, PH, s->handle, got)
+                  : lend_gl_readback(drv, s->handle, false, PW, PH, got),
                   "surface planar lane: GL readback failed");
             for (i = 0; i < PW * PH && bad == PW * PH; i++)
                if (!planar_close(got[i], want[i], 2))
@@ -15085,6 +15456,15 @@ int main(int argc, char *argv[])
       lane_dupe_under_wrapper();
       lane_dupe_skip(false);
       lane_dupe_skip(true);
+#ifdef HARNESS_WRAP_CLOCK
+      lane_handoff_clock();
+#endif
+#if defined(__linux__) && !defined(ANDROID)
+      lane_timer_slack();
+#endif
+#if defined(HARNESS_WRAP_CLOCK) && defined(CPU_FEATURES_PERF_COUNTER_CHEAP)
+      lane_pacing_clock();
+#endif
       lane_view_count_shrink();
       lane_movie_ring();
       lane_suppress_screensaver();

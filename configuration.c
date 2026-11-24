@@ -448,6 +448,7 @@ const struct input_bind_map input_config_bind_map[RARCH_BIND_LIST_END_NULL] = {
    DECLARE_META_BIND(2, game_focus_toggle,     RARCH_GAME_FOCUS_TOGGLE,      MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE),
    DECLARE_META_BIND(2, toggle_fullscreen,     RARCH_FULLSCREEN_TOGGLE_KEY,  MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY),
    DECLARE_META_BIND(2, desktop_menu_toggle,   RARCH_UI_COMPANION_TOGGLE,    MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE),
+   DECLARE_META_BIND(2, blank_unused_toggle,   RARCH_BLANK_UNUSED_TOGGLE,    MENU_ENUM_LABEL_VALUE_INPUT_META_BLANK_UNUSED_TOGGLE),
 
    DECLARE_META_BIND(2, toggle_vrr_runloop,    RARCH_VRR_RUNLOOP_TOGGLE,     MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE),
    DECLARE_META_BIND(2, runahead_toggle,       RARCH_RUNAHEAD_TOGGLE,        MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE),
@@ -490,6 +491,8 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D11;
 #elif defined(HAVE_GXM)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GXM;
+#elif defined(__SWITCH2__) && defined(HAVE_VULKAN)
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VULKAN;
 #elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_PSGL)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #elif defined(HAVE_OPENGL_CORE) && !defined(__HAIKU__)
@@ -2004,6 +2007,9 @@ static struct config_array_setting *populate_settings_array(
    if (!tmp)
       return NULL;
 
+#ifdef HAVE_PYROWAVE
+   SETTING_ARRAY("pyrowave_device_name", settings->arrays.pyrowave_device_name, false, NULL, true);
+#endif
    /* Arrays */
    SETTING_ARRAY("audio_driver",                 settings->arrays.audio_driver, false, NULL, true);
 #ifdef HAVE_COMPANION_WIMP
@@ -2191,6 +2197,9 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("core_updater_buildbot_cores_url",  settings->paths.network_buildbot_url, false, NULL, true);
    SETTING_PATH("core_updater_buildbot_assets_url", settings->paths.network_buildbot_assets_url, false, NULL, true);
    SETTING_PATH("libretro_directory",            settings->paths.directory_libretro, false, NULL, false);
+#ifdef HAVE_PYROWAVE
+   SETTING_PATH("pyrowave_shader_directory", settings->paths.directory_pyrowave_shaders, false, NULL, true);
+#endif
    SETTING_PATH("core_options_path",             settings->paths.path_core_options, false, NULL, true);
    SETTING_PATH("libretro_info_path",            settings->paths.path_libretro_info, false, NULL, true);
    SETTING_PATH("playlist_directory",            settings->paths.directory_playlist, true, NULL, true);
@@ -3094,8 +3103,12 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("menu_swap_ok_cancel_buttons",   &settings->bools.input_menu_swap_ok_cancel_buttons, true, DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS, false);
    SETTING_BOOL("menu_swap_scroll_buttons",      &settings->bools.input_menu_swap_scroll_buttons, true, DEFAULT_MENU_SWAP_SCROLL_BUTTONS, false);
 #endif
+#ifdef ANDROID
    SETTING_BOOL("input_android_system_keyboard", &settings->bools.input_android_system_keyboard, true, DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD, false);
+#endif
+#ifdef HAVE_SDL3
    SETTING_BOOL("input_sdl3_system_keyboard",    &settings->bools.input_sdl3_system_keyboard, true, DEFAULT_INPUT_SDL3_SYSTEM_KEYBOARD, false);
+#endif
 
 
 
@@ -6383,8 +6396,8 @@ void config_set_defaults(settings_t *target)
    {
       settings->uints.video_screen_window_pos[i] = 0;
       settings->uints.video_screen_window_dims[i] = 0;
-      settings->uints.video_screen_window_monitor[i] = 0;
       settings->bools.video_screen_window_fullscreen[i] = false;
+      settings->bools.video_screen_window_pos_set[i] = false;
       settings->arrays.video_screen_display[i][0] = '\0';
    }
    settings->arrays.video_menu_display[0] = '\0';
@@ -6798,7 +6811,8 @@ static bool check_menu_driver_compatibility(settings_t *settings)
              || (memcmp(video_driver, "d3d9_cg",  7) == 0 && video_driver[7]  == '\0')
              || (memcmp(video_driver, "d3d10",    5) == 0 && video_driver[5]  == '\0')
              || (memcmp(video_driver, "d3d11",    5) == 0 && video_driver[5]  == '\0')
-             || (memcmp(video_driver, "d3d12",    5) == 0 && video_driver[5]  == '\0');
+             || (memcmp(video_driver, "d3d12",    5) == 0 && video_driver[5]  == '\0')
+             || (memcmp(video_driver, "deko3d",   6) == 0 && video_driver[6]  == '\0');
       case 'g':
          if (video_driver[1] == 'l')
             return (memcmp(video_driver, "gl",     2) == 0 && video_driver[2] == '\0')
@@ -6827,7 +6841,8 @@ static bool check_menu_driver_compatibility(settings_t *settings)
           * of the runtime SDL version. sdl3 always has
           * SDL_RenderGeometry. */
          return (memcmp(video_driver, "sdl2",   4) == 0 && video_driver[4] == '\0')
-             || (memcmp(video_driver, "sdl3",   4) == 0 && video_driver[4] == '\0');
+             || (memcmp(video_driver, "sdl3",   4) == 0 && video_driver[4] == '\0')
+             || (memcmp(video_driver, "switch", 6) == 0 && video_driver[6] == '\0');
       case 'c':
          return (memcmp(video_driver, "ctr",    3) == 0 && video_driver[3] == '\0');
       default:
@@ -7089,13 +7104,14 @@ CONFIG_NOINLINE static void config_load_video_windows(settings_t *settings, conf
       int x = 0, y = 0;
       unsigned width = 0, height = 0;
       unsigned old_mode = VIDEO_WINDOW_ATTACHED;
+      bool had_mode;
       size_t len = snprintf(cfg, sizeof(cfg), "video_screen%u_window_", i + 1);
 
-      settings->uints.video_screen_window_monitor[i] = 0;
       settings->bools.video_screen_window_fullscreen[i] = false;
+      settings->bools.video_screen_window_pos_set[i] = false;
       settings->arrays.video_screen_display[i][0] = '\0';
       strlcpy_lit(cfg + len, "mode", sizeof(cfg) - len);
-      config_get_uint(conf, cfg, &old_mode);
+      had_mode = config_get_uint(conf, cfg, &old_mode);
       strlcpy_lit(cfg + len, "x", sizeof(cfg) - len);
       config_get_int(conf, cfg, &x);
       strlcpy_lit(cfg + len, "y", sizeof(cfg) - len);
@@ -7104,8 +7120,8 @@ CONFIG_NOINLINE static void config_load_video_windows(settings_t *settings, conf
       config_get_uint(conf, cfg, &width);
       strlcpy_lit(cfg + len, "height", sizeof(cfg) - len);
       config_get_uint(conf, cfg, &height);
-      strlcpy_lit(cfg + len, "monitor", sizeof(cfg) - len);
-      config_get_uint(conf, cfg, &settings->uints.video_screen_window_monitor[i]);
+      strlcpy_lit(cfg + len, "pos_set", sizeof(cfg) - len);
+      config_get_bool(conf, cfg, &settings->bools.video_screen_window_pos_set[i]);
       strlcpy_lit(cfg + len, "fullscreen", sizeof(cfg) - len);
       config_get_bool(conf, cfg, &settings->bools.video_screen_window_fullscreen[i]);
       settings->uints.video_screen_window_pos[i] =
@@ -7117,13 +7133,22 @@ CONFIG_NOINLINE static void config_load_video_windows(settings_t *settings, conf
       snprintf(cfg, sizeof(cfg), "video_screen%u_display", i + 1);
       config_get_array(conf, cfg, settings->arrays.video_screen_display[i],
             sizeof(settings->arrays.video_screen_display[i]));
-      /* Hidden, saved before a display could be Off. Auto does not
-       * stop it: a full save writes every display, "" included */
-      if (     old_mode == VIDEO_WINDOW_HIDDEN
-            && !settings->arrays.video_screen_display[i][0])
-         strlcpy(settings->arrays.video_screen_display[i],
-               VIDEO_WINDOW_DISPLAY_OFF,
-               sizeof(settings->arrays.video_screen_display[i]));
+      /* Saved before the display rows. Auto does not stop it: a full
+       * save writes every display, "" included */
+      if (had_mode && !settings->arrays.video_screen_display[i][0])
+      {
+         if (old_mode == VIDEO_WINDOW_HIDDEN)
+            strlcpy(settings->arrays.video_screen_display[i],
+                  VIDEO_WINDOW_DISPLAY_OFF,
+                  sizeof(settings->arrays.video_screen_display[i]));
+#ifndef ANDROID
+         /* Attached was the main window's */
+         else if (i && old_mode == VIDEO_WINDOW_ATTACHED)
+            strlcpy(settings->arrays.video_screen_display[i],
+                  VIDEO_WINDOW_DISPLAY_MAIN,
+                  sizeof(settings->arrays.video_screen_display[i]));
+#endif
+      }
    }
    settings->arrays.video_menu_display[0] = '\0';
    config_get_array(conf, "video_menu_display",
@@ -7135,6 +7160,10 @@ CONFIG_NOINLINE static void config_load_video_windows(settings_t *settings, conf
          > VIDEO_NOTIFICATIONS_WITH_MENU)
       settings->uints.video_notifications_window =
          VIDEO_NOTIFICATIONS_WITH_GAME;
+   if (settings->uints.video_blank_unused_screens
+         > VIDEO_BLANK_UNUSED_ALWAYS)
+      settings->uints.video_blank_unused_screens =
+         VIDEO_BLANK_UNUSED_OFF;
 }
 
 #undef CONFIG_NOINLINE
@@ -9955,9 +9984,11 @@ bool config_save_file(const char *path)
       char cfg[64];
       size_t len = snprintf(cfg, sizeof(cfg), "video_screen%u_window_", i + 1);
 
-      /* Migrated on load; one left in the file would hide the screen
-       * again */
+      /* Migrated or retired on load; a mode left in the file would
+       * hide the screen again */
       strlcpy_lit(cfg + len, "mode", sizeof(cfg) - len);
+      config_unset(conf, cfg);
+      strlcpy_lit(cfg + len, "monitor", sizeof(cfg) - len);
       config_unset(conf, cfg);
 
       strlcpy_lit(cfg + len, "x", sizeof(cfg) - len);
@@ -9988,10 +10019,10 @@ bool config_save_file(const char *path)
       else
          config_unset(conf, cfg);
 
-      strlcpy_lit(cfg + len, "monitor", sizeof(cfg) - len);
+      strlcpy_lit(cfg + len, "pos_set", sizeof(cfg) - len);
       if (   !minimal
-          || settings->uints.video_screen_window_monitor[i] != defaults->uints.video_screen_window_monitor[i])
-         config_set_int(conf, cfg, settings->uints.video_screen_window_monitor[i]);
+          || settings->bools.video_screen_window_pos_set[i] != defaults->bools.video_screen_window_pos_set[i])
+         config_set_string(conf, cfg, settings->bools.video_screen_window_pos_set[i] ? "true" : "false");
       else
          config_unset(conf, cfg);
 
@@ -10784,9 +10815,9 @@ int8_t config_save_overrides(enum override_type type,
          if (VIDEO_SCALE_H(settings->uints.video_screen_window_dims[i]) != VIDEO_SCALE_H(overrides->uints.video_screen_window_dims[i]))
             config_set_int(conf, cfg, VIDEO_SCALE_H(overrides->uints.video_screen_window_dims[i]));
 
-         strlcpy_lit(cfg + len, "monitor", sizeof(cfg) - len);
-         if (settings->uints.video_screen_window_monitor[i] != overrides->uints.video_screen_window_monitor[i])
-            config_set_int(conf, cfg, overrides->uints.video_screen_window_monitor[i]);
+         strlcpy_lit(cfg + len, "pos_set", sizeof(cfg) - len);
+         if (settings->bools.video_screen_window_pos_set[i] != overrides->bools.video_screen_window_pos_set[i])
+            config_set_string(conf, cfg, overrides->bools.video_screen_window_pos_set[i] ? "true" : "false");
 
          strlcpy_lit(cfg + len, "fullscreen", sizeof(cfg) - len);
          if (settings->bools.video_screen_window_fullscreen[i] != overrides->bools.video_screen_window_fullscreen[i])

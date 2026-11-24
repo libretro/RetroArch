@@ -20,6 +20,8 @@
 static retro_atomic_int_t fault, env_fault, startup_fault, output_fault;
 static retro_atomic_int_t inputs, live, descriptors;
 static retro_atomic_int_t hold_start;
+static retro_atomic_int_t encoding, steps, waits, woken;
+static int output_ready = -1;
 static void pause_test(void);
 struct record_session_mediacodec
 {
@@ -159,11 +161,32 @@ void record_session_mediacodec_cancel(record_session_mediacodec_t *s)
 int record_session_mediacodec_step(record_session_mediacodec_t *s)
 {
    owner(s);
+   retro_atomic_fetch_add_int(&steps, 1);
    if (!s->audio_closed || !s->gpu_done || !s->gpu_released)
       return RECORD_MC_WORKER_BUSY;
    return s->cancelled || retro_atomic_load_acquire_int(&output_fault)
          ? RECORD_MC_WORKER_ERROR
          : RECORD_MC_WORKER_END;
+}
+/* While encoding, blocks like the codec until output_ready or the bound */
+bool record_session_mediacodec_wait(record_session_mediacodec_t *s,
+      int64_t timeout_us)
+{
+   struct pollfd ready;
+   uint64_t value;
+   owner(s);
+   if (!retro_atomic_load_acquire_int(&encoding) || s->cancelled
+         || (s->audio_closed && s->gpu_done))
+      return false;
+   assert(timeout_us >= 1000 && timeout_us <= 20000);
+   retro_atomic_fetch_add_int(&waits, 1);
+   ready.fd = output_ready;
+   ready.events = POLLIN;
+   ready.revents = 0;
+   if (poll(&ready, 1, (int)(timeout_us / 1000)) == 1
+         && read(output_ready, &value, sizeof(value)) == sizeof(value))
+      retro_atomic_fetch_add_int(&woken, 1);
+   return true;
 }
 enum record_session_mediacodec_error record_session_mediacodec_error(
       const record_session_mediacodec_t *s, int *error)
@@ -260,6 +283,12 @@ int main(void)
    retro_atomic_int_init(&live, 0);
    retro_atomic_int_init(&descriptors, 0);
    retro_atomic_int_init(&hold_start, 0);
+   retro_atomic_int_init(&encoding, 0);
+   retro_atomic_int_init(&steps, 0);
+   retro_atomic_int_init(&waits, 0);
+   retro_atomic_int_init(&woken, 0);
+   output_ready = eventfd(0, EFD_NONBLOCK);
+   assert(output_ready >= 0);
    for (i = 1; i <= 2; i++)
    {
       retro_atomic_store_release_int(&fault, i);
@@ -341,9 +370,51 @@ int main(void)
             && detail == (i == 3 ? 5 : 0));
       collect(j);
    }
+   /* Encoding with no output: the I/O thread sleeps in the codec, bounded
+    * by a frame, instead of polling; output wakes it at once */
+   retro_atomic_store_release_int(&fault, 0);
+   retro_atomic_store_release_int(&env_fault, 0);
+   retro_atomic_store_release_int(&startup_fault, 0);
+   retro_atomic_store_release_int(&output_fault, 0);
+   retro_atomic_store_release_int(&encoding, 1);
+   j = start();
+   assert(j);
+   wait_state(j, RECORD_MC_DISPATCH_READY);
+   {
+      unsigned at;
+      int before, after;
+      uint64_t one = 1;
+      for (at = 0; at < 10000 && !retro_atomic_load_acquire_int(&waits); at++)
+         pause_test();
+      assert(at < 10000);
+      before = retro_atomic_load_acquire_int(&steps);
+      for (at = 0; at < 50; at++)
+         pause_test();
+      after = retro_atomic_load_acquire_int(&steps);
+      if (after - before > 12)
+      {
+         printf("FAIL: %d services in 50 ms with no output\n", after - before);
+         return 1;
+      }
+      assert(write(output_ready, &one, sizeof(one)) == sizeof(one));
+      for (at = 0; at < 10000 && !retro_atomic_load_acquire_int(&woken); at++)
+         pause_test();
+      assert(at < 10000);
+   }
+   assert(record_dispatch_mediacodec_gpu_claim(j));
+   assert(!pthread_create(&producer, NULL, pcm_producer, j));
+   assert(!pthread_create(&gpu, NULL, gpu_executor, j));
+   assert(!pthread_join(producer, NULL) && !pthread_join(gpu, NULL));
+   wait_state(j, RECORD_MC_DISPATCH_DONE);
+   record_dispatch_mediacodec_gpu_release_claim(j);
+   record_dispatch_mediacodec_status(j, &error, &detail, &system);
+   assert(!error && !detail && !system);
+   collect(j);
+   retro_atomic_store_release_int(&encoding, 0);
+   close(output_ready);
    puts("PASS: independent I/O thread, 64000 notifications, JNI thread "
         "ownership, "
-        "deep copies, startup/detach faults and deferred GPU/PCM closure; "
+        "deep copies, startup/detach faults, codec-bounded idle and deferred GPU/PCM closure; "
         "session mocked");
    return 0;
 }

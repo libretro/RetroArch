@@ -206,6 +206,12 @@ static int menu_input_key_bind_set_mode_common(struct menu_state *menu_st,
    state->last     = setting->bind_type;
    state->out_user = setting->index_offset;
    state->out_id   = setting->bind_type - MENU_SETTINGS_BIND_BEGIN;
+   if (mode == MENU_INPUT_BINDS_CTL_BIND_ALL)
+   {
+      state->begin  = MENU_SETTINGS_BIND_BEGIN + input_config_bind_order[0];
+      state->last   = MENU_SETTINGS_BIND_LAST;
+      state->out_id = input_config_bind_order[0];
+   }
    state->buffer   = *input_config_bind(state->out_user, state->out_id);
    state->user     = setting->index_offset;
    return 0;
@@ -413,6 +419,63 @@ static void test_keys(bool at_once)
          == RETROK_LAST - 1);
 }
 
+/* A key held in a companion window, which the driver never reports,
+ * is captured, read one by one or all at once, and so is one tapped
+ * between two reads; let go and read, it is not. */
+static void test_companion_key(bool at_once)
+{
+   reset();
+   if (at_once)
+      driver.keys_down = driver_keys_down;
+   CHECK(bind_start(0, RETRO_DEVICE_ID_JOYPAD_Y));
+   input_driver_companion_key(RETROK_BACKSPACE - 1, true);
+   input_driver_companion_key(RETROK_LAST, true);
+   CHECK(!bind_step());
+   input_driver_companion_key(RETROK_w, false);
+   CHECK(!bind_step());
+   input_driver_companion_key(RETROK_q, true);
+   CHECK(bind_step());
+   CHECK(RETRO_KEYBIND_KEY(&binds[0][RETRO_DEVICE_ID_JOYPAD_Y]) == RETROK_q);
+   input_driver_companion_key(RETROK_q, false);
+   /* the release seen, nothing is held for the next one */
+   CHECK(bind_start(0, RETRO_DEVICE_ID_JOYPAD_X));
+   input_driver_companion_key(RETROK_e, true);
+   input_driver_companion_key(RETROK_e, false);
+   CHECK(bind_step());
+   CHECK(RETRO_KEYBIND_KEY(&binds[0][RETRO_DEVICE_ID_JOYPAD_X]) == RETROK_e);
+   CHECK(bind_start(0, RETRO_DEVICE_ID_JOYPAD_L));
+   CHECK(!bind_step());
+   input_driver_companion_key(RETROK_r, true);
+   input_driver_companion_keys_clear();
+   CHECK(!bind_step());
+}
+
+/* Binding them all ends on the last in the order, which is not read
+ * past. */
+static void test_bind_all(void)
+{
+   unsigned i;
+   rarch_setting_t setting;
+   reset();
+   memset(&setting, 0, sizeof(setting));
+   setting.bind_type = MENU_SETTINGS_BIND_BEGIN;
+   CHECK(menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_ALL,
+            &setting));
+   CHECK(!bind_step());
+   for (i = 0; i < ARRAY_SIZE(input_config_bind_order); i++)
+   {
+      bool done;
+      driver_key = RETROK_a;
+      done       = bind_step();
+      CHECK(done == (i == ARRAY_SIZE(input_config_bind_order) - 1));
+      driver_key = 0;
+      if (done)
+         break;
+      CHECK(!bind_step());
+   }
+   CHECK(i == ARRAY_SIZE(input_config_bind_order) - 1);
+}
+
 /* the highest button there is, among the bits */
 static void test_last_button(void)
 {
@@ -467,6 +530,9 @@ int main(void)
    test_hotkey_sharer();
    test_keys(false);
    test_keys(true);
+   test_companion_key(false);
+   test_companion_key(true);
+   test_bind_all();
    test_last_button();
    test_get_buttons();
    if (failures)

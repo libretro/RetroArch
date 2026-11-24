@@ -15,7 +15,7 @@ void ra_vulkan_dxgi_destroy(ra_vulkan_dxgi_t *presenter);
 void ra_vulkan_dxgi_hdr_metadata(ra_vulkan_dxgi_t *presenter, float peak);
 int64_t ra_vulkan_dxgi_present_time(ra_vulkan_dxgi_t *presenter);
 /* ra_dxgi_bridge_immediate() of the presenter's bridge */
-int ra_vulkan_dxgi_immediate(ra_vulkan_dxgi_t *presenter);
+int ra_vulkan_dxgi_immediate(ra_vulkan_dxgi_t *presenter, unsigned generation);
 /* ra_dxgi_window_flips_fullscreen(), for a swapchain of Vulkan's own */
 int ra_vulkan_dxgi_window_flips_fullscreen(HWND window);
 /* The ID3D12Device the presenter presents with, for NVAPI */

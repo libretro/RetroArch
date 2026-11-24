@@ -26,6 +26,7 @@
 #include <retro_common_api.h>
 #include <retro_spsc.h>
 #include <retro_atomic.h>
+#include "audio_presentation.h"
 /* Outside the HAVE_THREADS guard below: its struct is a value member of
  * the state, needs only retro_atomic, and a build without threads never
  * calls into it - so the type has to exist there even though nothing
@@ -467,6 +468,14 @@ typedef struct audio_driver
     * NULL and keeps the copy inside write(). */
    size_t  (*write_begin)(void *data, size_t len, void **region);
    ssize_t (*write_end)(void *data, size_t len);
+   /* Optional, called only by the device's write owner. Counts refer to
+    * PCM frames accepted by write/write_end, including partial writes.
+    * valid maps actual presentation to those frames; device-inserted silence
+    * is invalid. Frontend-inserted silence needs its own provenance.
+    * drained proves the accepted tail played, without mapping silence.
+    * A discarded device queue changes epoch before any new valid position.
+    * False means unsupported, rather than a guessed playback position. */
+   bool (*presentation_position)(void *data, audio_presentation_position_t *position);
 } audio_driver_t;
 
 /* What a driver's device-clock word holds until it has an estimate.
@@ -510,7 +519,7 @@ typedef struct
    uint64_t free_samples_count;
 
    struct audio_record_source *record_source;
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
    audio_driver_ptr_t record_tap;       /* struct record_audio_tap */
    /* Taken out of record_tap, not yet past the passes that saw it. */
    struct record_audio_tap *record_tap_detached;
@@ -878,6 +887,10 @@ typedef struct
    retro_time_t menu_feed_last;
    double menu_feed_frac;
    bool menu_source_enabled;
+   /* Main thread: audio_driver_set_away(true) is in effect, and the
+    * device was stopped by it and is started again on return. */
+   bool away;
+   bool away_stopped;
 
    /* Rate-limit state for the DRC compute.
     *
@@ -924,6 +937,10 @@ typedef struct
     * counter is what makes it testable. */
    unsigned sink_discarded;
    int64_t  sink_window_at;            /* usec; when the open window closes */
+   /* audio_driver_sink_poll(): a mark, and how long after it the open
+    * window closes - the clock is not read before then */
+   retro_perf_tick_t sink_poll_mark;
+   int64_t  sink_poll_span;
    double   sink_alt_ppm;              /* the driver's own approximation against its clock, ppm */
    int64_t  sink_apply_at;             /* usec; the next setting of the bias */
    audio_sink_mark_t sink_at_window;   /* the counts when the open window opened */
@@ -1472,6 +1489,10 @@ bool audio_driver_mixer_prepare_format(unsigned *rate, bool *s16);
 
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
 
+bool audio_driver_mixer_add_stream_observed(audio_mixer_stream_params_t *params,
+      audio_mixer_voice_t **voice, size_t *serial,
+      const audio_mixer_observer_t *observer);
+
 /* As add_stream, with a clock binding captured before the existing
  * state lock is released. The static-pool voice stays addressable;
  * compare its serial before using a later clock snapshot. Outputs
@@ -1525,6 +1546,10 @@ float audio_driver_mixer_get_stream_volume(unsigned i);
 
 void audio_driver_mixer_set_stream_volume(unsigned i, float vol);
 
+/* Stop sounds and refuse late stream admissions before draining exit tasks.
+ * Voice infrastructure stays alive until normal audio driver teardown. */
+void audio_driver_mixer_shutdown(void);
+
 void audio_driver_mixer_remove_stream(unsigned i);
 
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
@@ -1540,6 +1565,20 @@ void audio_driver_load_system_sounds(void);
 bool audio_driver_start(bool is_shutdown);
 
 bool audio_driver_stop(void);
+
+/**
+ * audio_driver_set_away:
+ * @away : the platform has taken the application away (RUNLOOP_FLAG_IDLE)
+ *
+ * Main thread, outside the core. A device left playing while the
+ * application is away holds the platform's audio wake lock and keeps it
+ * from suspending, whether it is fed silence by the threaded pipeline's
+ * menu source or by a driver's own data callback. A running device and an open
+ * microphone are stopped while away and started again on return; one
+ * already stopped stays stopped. A device started while away clears
+ * the away state, so the next call stops it again.
+ **/
+void audio_driver_set_away(bool away);
 
 #ifdef HAVE_TRANSLATE
 /* TODO/FIXME - Doesn't currently work.  Fix this. */
@@ -1637,8 +1676,9 @@ size_t audio_driver_sample_batch_rewind(
 #ifdef HAVE_MENU
 /**
  * audio_driver_menu_sample:
- * @by_clock : feed the silence the clock says has played since the last
- *             feed, rather than one content frame of it.
+ * @now : the runloop iteration's clock reading, to feed the silence
+ *        that has played since the last feed; 0 to feed one content
+ *        frame of it.
  *
  * Feeds the device silence while the core is not running behind the
  * menu, with the menu sounds, the mixer and thumbnail audio mixed in.
@@ -1646,7 +1686,7 @@ size_t audio_driver_sample_batch_rewind(
  * rate; by the clock, with a non-blocking writer, the device is kept fed
  * at whatever rate the menu runs.
  **/
-void audio_driver_menu_sample(bool by_clock);
+void audio_driver_menu_sample(retro_time_t now);
 #endif
 
 extern audio_driver_t audio_rsound;

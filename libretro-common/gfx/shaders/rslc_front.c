@@ -155,19 +155,39 @@ static unsigned rslc_lex_punct(const char *s, size_t avail, uint8_t *kind)
    return 0;
 }
 
+/* What a byte is to the lexer, one load to tell: */
+#define RSLC_CH_IDENT_START 1u /* a letter or '_' */
+#define RSLC_CH_DIGIT       2u
+#define RSLC_CH_SPACE       4u /* ' ' '\t' '\r' '\f' '\v' */
+#define RSLC_CH_LINE_STOP   8u /* what changes how a line reads: '\n' '/' '\\' '"' */
+#define RSLC_CH_SKIP       16u /* where rslc_lex_skip has something to do: whitespace, '/' '\\' */
+static const uint8_t rslc_ch_class[256] =
+{
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 8, 20, 20, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   20, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0,
+   0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 24, 0, 0, 1,
+   0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
+#define RSLC_CH(ch) rslc_ch_class[(uint8_t)(ch)]
+
 static int rslc_is_ident_start(char ch)
 {
-   return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_';
+   return RSLC_CH(ch) & RSLC_CH_IDENT_START;
 }
 
 static int rslc_is_digit(char ch)
 {
-   return ch >= '0' && ch <= '9';
+   return RSLC_CH(ch) & RSLC_CH_DIGIT;
 }
 
 static int rslc_is_ident(char ch)
 {
-   return rslc_is_ident_start(ch) || rslc_is_digit(ch);
+   return RSLC_CH(ch) & (RSLC_CH_IDENT_START | RSLC_CH_DIGIT);
 }
 
 /* Byte at pos + off, or 0 past the end. */
@@ -193,7 +213,7 @@ static void rslc_lex_skip(struct rslc_lex *l, bool *space)
       if (s >= end)
          break;
       ch = *s;
-      if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\f' || ch == '\v')
+      if (RSLC_CH(ch) & RSLC_CH_SPACE)
       {
          s++;
          *space = true;
@@ -282,7 +302,12 @@ static bool rslc_lex_next(struct rslc_lex *l, struct rslc_tok *t)
    char   ch;
    size_t start;
 
-   rslc_lex_skip(l, &space);
+   /* Most tokens follow nothing to skip: the call only when the next
+    * byte could start whitespace, a comment or a splice */
+   if (l->pos < l->len && !(RSLC_CH(l->src[l->pos]) & RSLC_CH_SKIP))
+      space = false;
+   else
+      rslc_lex_skip(l, &space);
    memset(t, 0, sizeof(*t));
    t->line  = l->line;
    t->file  = l->file;
@@ -627,6 +652,55 @@ static bool rslc_tok_is_eol(const struct rslc_tok *t)
 
 #define RSLC_TXT(pp, t) rslc_tok_text((pp)->c, (t))
 #define RSLC_SYM(pp, t) rslc_tok_sym((pp)->c, (t))
+
+/* An inactive branch's text, from the start of a line to the next line
+ * that begins with '#' (or the end): what lexing it would have skipped,
+ * without making a token of it. Whitespace and comments are skipped by
+ * rslc_lex_skip, as for a token, so line counts, splices and comments
+ * come out as they would; a string is stepped over whole, as the lexer
+ * takes it; anything else is one character at a time, with nothing
+ * hashed or interned. Stops with the lexer where it would have read the
+ * '#' (or EOF): at the start of its line, the BOL flag as it was. */
+static void rslc_pp_skip_inactive(struct rslc_lex *l)
+{
+   for (;;)
+   {
+      bool space;
+      char ch;
+      rslc_lex_skip(l, &space);
+      if (l->pos >= l->len)
+         return;
+      ch = l->src[l->pos];
+      if (ch == '\n')
+      {
+         l->pos++;
+         l->line++;
+         l->bol = true;
+         continue;
+      }
+      if (ch == '#' && l->bol)
+         return;
+      l->bol = false;
+      if (ch == '"')
+      {
+         l->pos++;
+         while (l->pos < l->len && l->src[l->pos] != '"' && l->src[l->pos] != '\n')
+            l->pos++;
+         if (l->pos < l->len && l->src[l->pos] == '"')
+            l->pos++;
+         continue;
+      }
+      /* The rest of the line up to what can change how it reads (a
+       * newline, a comment, a splice, a string): with the line under
+       * way, nothing else in it matters */
+      for (l->pos++; l->pos < l->len; l->pos++)
+      {
+         ch = l->src[l->pos];
+         if (RSLC_CH(ch) & RSLC_CH_LINE_STOP)
+            break;
+      }
+   }
+}
 
 /* Skips the rest of the current line in the raw stream. */
 static bool rslc_pp_skip_line(struct rslc_pp *pp)
@@ -1662,6 +1736,12 @@ bool rslc_pp_run(struct rslc_ctx *c, const char *src, size_t len)
    {
       bool expanded;
       rslc_pp_settle(pp);
+      /* An inactive branch read straight from the source is skipped to
+       * its next directive without being lexed: a stage that includes a
+       * long library and switches most of it off (an emulator's
+       * decompiled programs) spent most of its compile there */
+      if (!rslc_pp_active(pp) && pp->nsrc == 0 && !pp->has_peek && pp->lex.bol)
+         rslc_pp_skip_inactive(&pp->lex);
       if (!rslc_pp_raw(pp, &t))
          return false;
       if (t.kind == RSLC_TK_EOF)
@@ -1796,6 +1876,8 @@ struct rslc_quals
    bool     coherent;
    uint8_t  img_fmt;          /* RSLC_IMGFMT_* */
    uint32_t cs_local[3];
+   uint32_t cs_local_id[3];   /* local_size_*_id plus one; 0 when unsaid */
+   uint32_t spec_id;          /* constant_id plus one; 0 when unsaid */
    bool     early_fragment_tests;
    uint8_t  gs_prim;          /* RSLC_GS_* named in the layout */
    uint32_t index;
@@ -4054,6 +4136,12 @@ static uint32_t rslc_p_var_ref(struct rslc_parser *p, struct rslc_var *v, uint32
       p->c->prog.spirv_only = v->name->str;
 #endif
    e = rslc_p_mk(p, RSLC_OP_VAR, v->type, v->id, 0, 0, 0, line, v->precision);
+#ifdef RSLC_EXTENDED
+   /* a specialization constant is set when the pipeline is made: never
+    * folded to its default, so neither is what is made from it */
+   if (e && v->spec)
+      rslc_p_node(p, e)->nonconstant = 1;
+#endif
    if (e && v->storage == RSLC_ST_MEMBER)
    {
       /* A bare block member reads through the block. */
@@ -4149,7 +4237,13 @@ static uint32_t rslc_p_primary(struct rslc_parser *p)
          for (k = 0; k < 3; k++)
          {
             uint32_t n = p->c->prog.cs_local[k];
-            if (!(args[k] = rslc_p_const_uint(p, n ? n : 1, line)))
+            if (p->c->prog.cs_local_spec[k])
+            {
+               /* the specialization constant: what it is set to */
+               if (!(args[k] = rslc_p_var_ref(p, p->c->prog.cs_local_spec[k], line)))
+                  return 0;
+            }
+            else if (!(args[k] = rslc_p_const_uint(p, n ? n : 1, line)))
                return 0;
          }
          return rslc_p_construct(p, rslc_ty_vecn(p, RSLC_BASE_UINT, 3), args, 3, line);
@@ -4764,6 +4858,9 @@ static bool rslc_p_layout(struct rslc_parser *p, struct rslc_quals *q)
       const char            *s;
       uint32_t               len;
       uint32_t              *slot = NULL;
+#ifdef RSLC_EXTENDED
+      bool                   plus_one = false;
+#endif
       if (t->kind != RSLC_TK_IDENT)
          return rslc_p_fail(p, "bad layout qualifier", NULL);
       s   = rslc_tok_text(p->c, t);
@@ -4798,6 +4895,12 @@ static bool rslc_p_layout(struct rslc_parser *p, struct rslc_quals *q)
       else if (len == 12 && !memcmp(s, "local_size_x", 12)) slot = &q->cs_local[0];
       else if (len == 12 && !memcmp(s, "local_size_y", 12)) slot = &q->cs_local[1];
       else if (len == 12 && !memcmp(s, "local_size_z", 12)) slot = &q->cs_local[2];
+      /* specialization constants (SPIR-V only): the value is the id, kept
+       * plus one so that 0 says none */
+      else if (len == 15 && !memcmp(s, "local_size_x_id", 15)) { slot = &q->cs_local_id[0]; plus_one = true; }
+      else if (len == 15 && !memcmp(s, "local_size_y_id", 15)) { slot = &q->cs_local_id[1]; plus_one = true; }
+      else if (len == 15 && !memcmp(s, "local_size_z_id", 15)) { slot = &q->cs_local_id[2]; plus_one = true; }
+      else if (len == 11 && !memcmp(s, "constant_id", 11)) { slot = &q->spec_id; plus_one = true; }
       else if (len == 22 && !memcmp(s, "input_attachment_index", 22)) slot = &q->input_att;
       else if (rslc_p_image_format(s, len, &q->img_fmt)) { }
 #endif
@@ -4814,6 +4917,10 @@ static bool rslc_p_layout(struct rslc_parser *p, struct rslc_quals *q)
             return rslc_p_fail(p, "layout value must be a non-negative constant", NULL);
          if (slot)
             *slot = (uint32_t)v;
+#ifdef RSLC_EXTENDED
+         if (plus_one)
+            *slot = (uint32_t)v + 1u;
+#endif
       }
       else if (slot)
          return rslc_p_fail(p, "layout qualifier needs a value", NULL);
@@ -6267,8 +6374,10 @@ static bool rslc_p_stage_layout(struct rslc_parser *p, const struct rslc_quals *
       p->c->prog.early_fragment_tests = true;
       return true;
    }
-   /* layout(local_size_x = 8, local_size_y = 8) in; */
-   if (q->cs_local[0] || q->cs_local[1] || q->cs_local[2])
+   /* layout(local_size_x = 8, local_size_y = 8) in;
+    * layout(local_size_x_id = 0, local_size_y = 8) in; */
+   if (     q->cs_local[0] || q->cs_local[1] || q->cs_local[2]
+         || q->cs_local_id[0] || q->cs_local_id[1] || q->cs_local_id[2])
    {
       unsigned k;
       if (!global || !q->is_in || p->c->stage != RSLC_STAGE_COMPUTE)
@@ -6276,6 +6385,29 @@ static bool rslc_p_stage_layout(struct rslc_parser *p, const struct rslc_quals *
       for (k = 0; k < 3; k++)
          if (q->cs_local[k])
             p->c->prog.cs_local[k] = q->cs_local[k];
+      for (k = 0; k < 3; k++)
+      {
+         /* a size given by a specialization constant: one of its own,
+          * its default the size said (1 where none was), unnamed */
+         struct rslc_var *v;
+         uint32_t         n;
+         if (!q->cs_local_id[k])
+            continue;
+         if (p->c->prog.cs_local_spec[k])
+            return rslc_p_fail(p, "a local size's id said twice", NULL);
+         n = p->c->prog.cs_local[k];
+         v = rslc_p_new_var(p, NULL, rslc_ty_vecn(p, RSLC_BASE_UINT, 1), P_LINE(p));
+         if (!v)
+            return false;
+         v->storage = RSLC_ST_CONST;
+         v->global  = 1;
+         v->spec    = q->cs_local_id[k];
+         v->init    = rslc_p_const_uint(p, n ? n : 1, P_LINE(p));
+         if (!v->init)
+            return false;
+         p->c->prog.cs_local_spec[k] = v;
+         p->c->prog.spirv_only       = "a specialization constant";
+      }
       return true;
    }
    /* layout(lines, invocations = 2) in;  layout(triangle_strip, max_vertices = 4) out; */
@@ -6345,6 +6477,18 @@ static struct rslc_var *rslc_p_var_make(struct rslc_parser *p, const struct rslc
    v->quals     = q->vq;
    v->location  = q->location;
 #ifdef RSLC_EXTENDED
+   if (q->spec_id)
+   {
+      /* layout(constant_id = N) const T name = literal; */
+      if (     !global || !q->is_const || vt->kind != RSLC_TY_SCALAR
+            || vt->base == RSLC_BASE_DOUBLE || vt->base == RSLC_BASE_VOID)
+      {
+         rslc_p_fail(p, "a specialization constant is a global const bool, int, uint or float: ", name->str);
+         return NULL;
+      }
+      v->spec               = q->spec_id;
+      p->c->prog.spirv_only = "a specialization constant";
+   }
    if (q->index > 1)
    {
       rslc_p_fail(p, "a fragment output's index is 0 or 1", NULL);
@@ -6551,6 +6695,7 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
    /* layout(early_fragment_tests) in;  layout(local_size_x = 8) in;
     * layout(triangles) in;  layout(triangle_strip, max_vertices = 4) out; */
    if (q.early_fragment_tests || q.cs_local[0] || q.cs_local[1] || q.cs_local[2]
+         || q.cs_local_id[0] || q.cs_local_id[1] || q.cs_local_id[2]
          || q.gs_prim || q.gs_invocations || q.gs_max_vertices)
       return rslc_p_stage_layout(p, &q, global) && rslc_p_expect(p, RSLC_P_SEMI, "';'") ? 1 : 0;
 #endif
@@ -6652,6 +6797,10 @@ static uint32_t rslc_p_declaration(struct rslc_parser *p, bool global)
       }
       else if (v->storage == RSLC_ST_CONST)
          return rslc_p_fail(p, "const without an initialiser: ", name->str);
+#ifdef RSLC_EXTENDED
+      if (v->spec && v->storage != RSLC_ST_CONST)
+         return rslc_p_fail(p, "a specialization constant's default is a constant: ", name->str);
+#endif
 
       if (!rslc_p_var_commit(p, v, name, vline))
          return 0;

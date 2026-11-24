@@ -1161,6 +1161,20 @@ bool image_transfer_anim_stream_set_output_stride(void *stream,
 {
    switch (type)
    {
+      case IMAGE_TYPE_PNG:
+#ifdef HAVE_RPNG
+         return rpng_apng_stream_set_output_stride(
+               (rpng_apng_stream_t*)stream, out, stride);
+#else
+         break;
+#endif
+      case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
+         return rwebp_anim_stream_set_output_stride(
+               (rwebp_anim_stream_t*)stream, out, stride);
+#else
+         break;
+#endif
       case IMAGE_TYPE_WEBM:
 #ifdef HAVE_RWEBM
          return rwebm_video_stream_set_output_stride(
@@ -1176,12 +1190,171 @@ bool image_transfer_anim_stream_set_output_stride(void *stream,
          break;
 #endif
       default:
-         /* APNG and WEBP compose each frame on a persistent canvas
-          * that the next frame is built from: their frames come out
-          * of the canvas. */
+         /* Other animations compose on a persistent canvas. */
          break;
    }
    return false;
+}
+
+/* Only the video streams decode planes; APNG and WEBP compose RGB. */
+bool image_transfer_anim_stream_can_planar(const void *stream,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_can_planar(
+               (const rwebm_video_stream_t*)stream) != 0;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_can_planar(
+               (const rmp4_video_stream_t*)stream) != 0;
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
+bool image_transfer_anim_stream_set_planar(void *stream,
+      enum image_type_enum type, bool planar)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_set_planar(
+               (rwebm_video_stream_t*)stream, planar) != 0;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_set_planar(
+               (rmp4_video_stream_t*)stream, planar) != 0;
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return !planar;
+}
+
+bool image_transfer_anim_stream_borrow_planar(
+      void *stream, enum image_type_enum type, bool strided)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_set_planar(
+               (rwebm_video_stream_t*)stream, strided ? 2 : 3) != 0;
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_set_planar(
+               (rmp4_video_stream_t*)stream, strided ? 2 : 3) != 0;
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
+bool image_transfer_anim_stream_retain_pixels(void *stream,
+      enum image_type_enum type, void **owner, void (**release)(void*))
+{
+   (void)stream; (void)type;
+   if (!owner || !release) return false;
+#ifdef HAVE_RWEBP
+   if (type == IMAGE_TYPE_WEBP)
+   {
+      void *pixels = rwebp_anim_stream_take_pixels((rwebp_anim_stream_t*)stream);
+      if (!pixels) return false;
+      *owner = pixels;
+      *release = free;
+      return true;
+   }
+#endif
+   return false;
+}
+
+bool image_transfer_anim_stream_retain_planar(const void *stream,
+      enum image_type_enum type, void **owner, void (**release)(void*))
+{
+   (void)stream; (void)type; (void)owner; (void)release;
+#ifdef HAVE_RWEBM
+   if (type == IMAGE_TYPE_WEBM)
+      return rwebm_video_stream_retain_planar(
+            (const rwebm_video_stream_t*)stream, owner, release);
+#endif
+#ifdef HAVE_RMP4
+   if (type == IMAGE_TYPE_MP4)
+      return rmp4_video_stream_retain_planar(
+            (const rmp4_video_stream_t*)stream, owner, release);
+#endif
+   return false;
+}
+
+const struct texture_planar *image_transfer_anim_stream_borrowed_planar(
+      const void *stream, enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_borrowed_planar(
+               (const rwebm_video_stream_t*)stream);
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_borrowed_planar(
+               (const rmp4_video_stream_t*)stream);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return NULL;
+}
+
+unsigned image_transfer_anim_stream_planar_yuv(const void *stream,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_planar_yuv(
+               (const rwebm_video_stream_t*)stream);
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_planar_yuv(
+               (const rmp4_video_stream_t*)stream);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return 0;
 }
 
 bool image_transfer_anim_stream_set_output(void *stream,
@@ -1723,6 +1896,25 @@ int64_t image_transfer_anim_stream_frame_time_ns(void *stream, enum image_type_e
 #endif
    (void)stream; (void)type;
    return -1;
+}
+
+bool image_transfer_anim_stream_audio_track(const void *stream,
+      enum image_type_enum type, unsigned ordinal, video_audio_track_t *out)
+{
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+#ifdef HAVE_RMP4
+   if (type == IMAGE_TYPE_MP4)
+      return rmp4_video_stream_audio_track((const rmp4_video_stream_t*)stream,
+            ordinal, out);
+#endif
+#ifdef HAVE_RWEBM
+   if (type == IMAGE_TYPE_WEBM)
+      return rwebm_video_stream_audio_track((const rwebm_video_stream_t*)stream,
+            ordinal, out);
+#endif
+   (void)stream; (void)type; (void)ordinal;
+   return false;
 }
 
 bool image_transfer_anim_stream_seekable(void *stream, enum image_type_enum type)

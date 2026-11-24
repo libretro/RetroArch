@@ -42,6 +42,45 @@ int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream, int
  * filestream_get_sparse_granularity. 0 when unknown. */
 int64_t retro_vfs_file_get_sparse_granularity_impl(libretro_vfs_implementation_file *stream);
 
+/**
+ * retro_vfs_file_get_real_path_impl:
+ * @stream : an open file
+ * @s      : output buffer, UTF-8
+ * @len    : size of @s
+ *
+ * Where @stream really is: past any symlink or junction, with long
+ * names and the case they have on disk where the system tells them
+ * (Windows Vista and later, macOS, Linux).  On Windows NT it is read
+ * from the handle through ntdll, as GetFinalPathNameByHandleW() would
+ * answer, but from NT 4.0 on and without reaching a device driver; on
+ * 95, 98 and ME, which have neither links nor a name for a handle, it
+ * is the path the file was opened by, made long.  Elsewhere the
+ * kernel's name for the file, or realpath() of the path it was opened
+ * by.
+ *
+ * Returns: 0 on success, -1 where it cannot tell (consoles, UWP, a
+ * volume without a drive letter, a buffer too small).
+ **/
+int retro_vfs_file_get_real_path_impl(libretro_vfs_implementation_file *stream,
+      char *s, size_t len);
+
+/**
+ * retro_vfs_resolve_path_impl:
+ * @s   : input and output buffer for a path, UTF-8
+ * @len : size of @s
+ *
+ * As std::filesystem::weakly_canonical: the longest leading part of @s
+ * that exists resolved as retro_vfs_file_get_real_path_impl() would
+ * resolve it, the rest (which need not exist) appended, and ".", ".."
+ * and repeated separators resolved by their text.  So a path about to
+ * be created is judged by where its existing directories really are.
+ * Where nothing can be resolved (9x has no links; a volume without a
+ * letter) the path is made absolute by its text alone.
+ *
+ * Returns: 0 on success, -1 on failure (and on consoles, UWP and Xbox).
+ **/
+int retro_vfs_resolve_path_impl(char *s, size_t len);
+
 /* Consumes stream even when reporting final I/O failure; do not retry close. */
 int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream);
 
@@ -133,35 +172,7 @@ int64_t retro_vfs_file_view_impl(libretro_vfs_implementation_file *stream,
  * before. */
 #define RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE (1 << 16)
 
-/* Which file an open stream is, read from the open handle itself rather
- * than by path, so it describes the file being read even after the path
- * has been pointed elsewhere. */
-struct retro_vfs_file_identity
-{
-   uint64_t dev;          /* the volume                                 */
-   uint64_t size;
-   int64_t  mtime;        /* last write, seconds since 1970             */
-   int64_t  ctime;        /* last status change (Windows: ChangeTime),
-                           * 0 where the platform has none             */
-   uint32_t mtime_nsec;
-   uint32_t ctime_nsec;
-   uint8_t  id[16];       /* the file on the volume: Windows' 128-bit
-                           * id, else the inode, big-endian, in the
-                           * last 8 octets                              */
-   uint32_t uid;          /* owner and group, where flags has
-                           * RETRO_VFS_IDENTITY_HAS_OWNER (POSIX)       */
-   uint32_t gid;
-   uint16_t perm;         /* POSIX permission bits (07777), with owner */
-   uint8_t  type;         /* RETRO_VFS_IDENTITY_REGULAR, ..._DIRECTORY
-                           * or ..._OTHER                               */
-   uint8_t  flags;        /* RETRO_VFS_IDENTITY_HAS_OWNER              */
-};
-
-#define RETRO_VFS_IDENTITY_REGULAR   1
-#define RETRO_VFS_IDENTITY_DIRECTORY 2
-#define RETRO_VFS_IDENTITY_OTHER     3   /* a FIFO, device, socket... */
-
-#define RETRO_VFS_IDENTITY_HAS_OWNER (1 << 0)
+/* struct retro_vfs_file_identity is libretro.h's (VFS API v7) */
 
 /* Fills @id for a plain-file stream opened on the descriptor path
  * (RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK, ..._FREQUENT_ACCESS or
@@ -178,32 +189,7 @@ bool retro_vfs_file_identity_impl(libretro_vfs_implementation_file *stream,
 int retro_vfs_stat_identity_impl(const char *path,
       struct retro_vfs_file_identity *id);
 
-/* What a file's volume is: how it is mounted and what kind of drive. */
-struct retro_vfs_volume
-{
-   uint64_t mount;   /* the mount's id, with RETRO_VFS_VOLUME_MOUNT (Linux) */
-   uint8_t  kind;    /* RETRO_VFS_VOLUME_FIXED..., 0 where not known */
-   uint8_t  flags;   /* RETRO_VFS_VOLUME_READ_ONLY... */
-};
-
-/* flags */
-#define RETRO_VFS_VOLUME_READ_ONLY  (1 << 0) /* mounted read-only */
-#define RETRO_VFS_VOLUME_CTIME_KEPT (1 << 1) /* a filesystem whose kernel
-                                              * alone sets change times,
-                                              * not stacked on another, so
-                                              * no user can forge one  */
-#define RETRO_VFS_VOLUME_MOUNT      (1 << 2) /* mount holds its id       */
-
-/* kind: Windows' drive type; elsewhere not known */
-#define RETRO_VFS_VOLUME_FIXED     1
-#define RETRO_VFS_VOLUME_REMOVABLE 2   /* removable or optical */
-#define RETRO_VFS_VOLUME_REMOTE    3
-#define RETRO_VFS_VOLUME_RAM       4
-
-/* What to ask: each costs a query of its own on some platforms */
-#define RETRO_VFS_VOLUME_WANT_FLAGS (1 << 0) /* READ_ONLY, CTIME_KEPT */
-#define RETRO_VFS_VOLUME_WANT_MOUNT (1 << 1)
-#define RETRO_VFS_VOLUME_WANT_KIND  (1 << 2)
+/* struct retro_vfs_volume and its flags are libretro.h's (VFS API v7) */
 
 /* The volume of an open stream's file. True when everything in @want
  * was told (a flag clear is then a no); false, @vol zeroed, where any of
@@ -216,6 +202,22 @@ bool retro_vfs_file_volume_impl(libretro_vfs_implementation_file *stream,
  * there, -1 where it can't be told, as retro_vfs_stat_identity_impl(). */
 int retro_vfs_stat_volume_impl(const char *path, unsigned want,
       struct retro_vfs_volume *vol);
+
+/* fs-verity (Linux 5.4 on, Android 11 on): a file sealed for good, its
+ * contents checked by the kernel against a Merkle tree on every read.
+ * Descriptor streams only. */
+
+/* The digest the kernel keeps for a sealed file into @digest (up to
+ * @cap octets): its length, or 0 where the file isn't sealed, @cap is
+ * too small or it can't be told. */
+size_t retro_vfs_file_verity_measure_impl(
+      libretro_vfs_implementation_file *stream, uint8_t *digest, size_t cap);
+
+/* Seal the file (SHA-256, 4 KiB blocks): 1 sealed, now or before; 0
+ * where it can't be here (filesystem, mount or kernel without it, a file
+ * not ours, or one open for writing somewhere); -1 failed otherwise. */
+int retro_vfs_file_verity_enable_impl(
+      libretro_vfs_implementation_file *stream);
 
 /* A stable open (RETRO_VFS_FILE_ACCESS_HINT_IMPL_STABLE) that also
  * fills @id, from the query the open makes anyway to vouch for the file:
@@ -297,6 +299,13 @@ bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *dirstream);
 const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *dirstream);
 
 bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *dirstream);
+
+/* Whether the entry is a link of its own (a symbolic link, or on
+ * Windows a symbolic link or junction); dirent_is_dir follows links. */
+bool retro_vfs_dirent_is_link_impl(libretro_vfs_implementation_dir *dirstream);
+
+/* Whether @path names a link of its own, as dirent_is_link says. */
+bool retro_vfs_path_is_link_impl(const char *path);
 
 int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *dirstream);
 

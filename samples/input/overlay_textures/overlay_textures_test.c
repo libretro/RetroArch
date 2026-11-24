@@ -642,6 +642,7 @@ static void lane_anim_dropped(bool threaded)
                                : "dropped animation frame";
    input_overlay_t *ol;
    gfx_surface_t *s;
+   uintptr_t first_pixels;
    drv_reset();
 #ifdef HAVE_THREADS
    stub_thread_active    = threaded;
@@ -652,6 +653,7 @@ static void lane_anim_dropped(bool threaded)
    ol->anim_player    = (void**)calloc(NUM_IMAGES, sizeof(void*));
    ol->anim_resend    = (uint8_t*)calloc(NUM_IMAGES, sizeof(uint8_t));
    ol->anim_stream[0] = &dummy_stream; /* image 0 animates */
+   first_pixels = (uintptr_t)ol->images[0]->pixels;
    pack_show(ol, 0);
    input_overlay_load_page(ol);
 #ifdef HAVE_THREADS
@@ -660,6 +662,9 @@ static void lane_anim_dropped(bool threaded)
 #endif
    s = ol->surfaces ? (gfx_surface_t*)ol->surfaces[0] : NULL;
    CHECK(s && s->num_slots == 1 && s->handle, "%s: no animated surface", lane);
+   if (s && s->handle)
+      CHECK((stub_texture_get(s->handle)->source == first_pixels)
+            == !threaded, "%s: initial upload did not use the expected owner", lane);
    if (s && s->num_slots == 1 && s->handle)
    {
       struct texture_image want;

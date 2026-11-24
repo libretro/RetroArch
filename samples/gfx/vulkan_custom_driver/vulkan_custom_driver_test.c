@@ -402,19 +402,26 @@ struct fake_loader
 
 static void *fake_load(void *data, const char *path, uint32_t key,
       struct vulkan_custom_driver_meta *meta,
-      enum vulkan_custom_driver_msg *msg)
+      enum vulkan_custom_driver_msg *msg, const char **reason)
 {
    struct fake_loader *f = (struct fake_loader*)data;
    (void)key;
    f->loads++;
    if (strstr(path, "bad") && !f->fixed)
    {
-      *msg = VULKAN_CUSTOM_DRIVER_MSG_INVALID;
+      *msg    = VULKAN_CUSTOM_DRIVER_MSG_INVALID;
+      *reason = "meta.json is not valid JSON";
+      return NULL;
+   }
+   if (strstr(path, "quarantined") && !f->fixed)
+   {
+      *msg = VULKAN_CUSTOM_DRIVER_MSG_QUARANTINED;
       return NULL;
    }
    if (strstr(path, "broken"))
    {
-      *msg = VULKAN_CUSTOM_DRIVER_MSG_FAILED;
+      *msg    = VULKAN_CUSTOM_DRIVER_MSG_FAILED;
+      *reason = "linker namespaces unavailable";
       return NULL;
    }
    strcpy(meta->library_name, path + strlen(path) - 5);
@@ -483,7 +490,7 @@ static void test_session(void)
    CHECK(!open_req(&req, &msg) && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
    CHECK(loader.loads == 0);
 
-   /* not Adreno: UNSUPPORTED once per path */
+   /* below API 28: UNSUPPORTED once per path */
    req           = request("/d/A.zip", "Core");
    req.supported = false;
    CHECK(!open_req(&req, &msg) && msg == VULKAN_CUSTOM_DRIVER_MSG_UNSUPPORTED);
@@ -582,6 +589,279 @@ static void test_session(void)
          == VULKAN_CUSTOM_DRIVER_MSG_RESTART);
    CHECK(!open_drv("/d/A.zip", "Core", &msg)
          && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE && loader.loads == 2);
+}
+
+static enum vulkan_custom_driver_msg why(const char *path,
+      const char **detail)
+{
+   return vulkan_custom_driver_session_why(&session, path, detail);
+}
+
+static void test_session_why(void)
+{
+   enum vulkan_custom_driver_msg msg;
+   struct vulkan_custom_driver_request req;
+   const char *detail;
+
+   /* a bad package keeps its reason after its message is shown */
+   begin(NULL, NULL);
+   CHECK(!open_drv("/d/bad.zip", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_INVALID);
+   CHECK(why("/d/bad.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_INVALID);
+   CHECK(!strcmp(detail, "meta.json is not valid JSON"));
+   CHECK(!open_drv("/d/bad.zip", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(why("/d/bad.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_INVALID);
+
+   /* picked again: the reason goes before it is tried again */
+   CHECK(vulkan_custom_driver_session_picked(&session, "/d/bad.zip")
+         == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(why("/d/bad.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(!*detail);
+   /* and fixed: it loads */
+   loader.fixed = true;
+   CHECK(open_drv("/d/bad.zip", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(why("/d/bad.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(!*detail);
+
+   /* a missing zip */
+   req      = request("/d/gone.zip", "Core");
+   req.size = -1;
+   CHECK(!open_req(&req, &msg) && msg == VULKAN_CUSTOM_DRIVER_MSG_INVALID);
+   CHECK(why("/d/gone.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_INVALID);
+   CHECK(!strcmp(detail, "the zip is missing or not readable"));
+
+   /* failed to load, or to start: for the rest of the session */
+   CHECK(!open_drv("/d/broken.zip", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(why("/d/broken.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(!strcmp(detail, "linker namespaces unavailable"));
+   /* picked again, it waits for a restart and keeps its reason */
+   CHECK(vulkan_custom_driver_session_picked(&session, "/d/broken.zip")
+         == VULKAN_CUSTOM_DRIVER_MSG_RESTART);
+   CHECK(why("/d/broken.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(!strcmp(detail, "linker namespaces unavailable"));
+   CHECK(open_drv("/d/A.zip", "Core", &msg));
+   CHECK(why("/d/A.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(why("/d/A.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(!*detail);
+   CHECK(!open_drv("/d/A.zip", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(why("/d/A.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+
+   /* never tried */
+   CHECK(why("/d/other.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(!*detail);
+   CHECK(why(NULL, &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+}
+
+static const char *trim(const char *err, size_t len)
+{
+   static char out[256];
+   memset(out, 'x', sizeof(out));
+   vulkan_custom_driver_trim_dlerror(out, len, err);
+   return out;
+}
+
+static void test_trim_dlerror(void)
+{
+   char err[256];
+   const char *s;
+
+   /* bionic's text for a missing DT_NEEDED */
+   CHECK(!strcmp(trim("dlopen failed: library \"libnope.so\" not found: "
+         "needed by /data/user/0/com.retroarch/files/vulkan_drivers/"
+         "0a1b2c3d/vulkan.broken.so in namespace vulkan.adreno.so",
+         sizeof(err)), "library \"libnope.so\" not found"));
+   CHECK(!strcmp(trim("dlopen failed: library \"vulkan.x.so\" not found",
+         sizeof(err)), "library \"vulkan.x.so\" not found"));
+   CHECK(!strcmp(trim("cannot locate symbol \"vkGetInstanceProcAddr\"",
+         sizeof(err)), "cannot locate symbol \"vkGetInstanceProcAddr\""));
+   /* a missing symbol: the library that wanted it goes */
+   CHECK(!strcmp(trim("dlopen failed: cannot locate symbol "
+         "\"AHardwareBuffer_getId\" referenced by \"/data/user/0/"
+         "com.retroarch/files/vulkan_drivers/0a1b2c3d/vulkan.broken.so\"...",
+         sizeof(err)), "cannot locate symbol \"AHardwareBuffer_getId\""));
+   /* a library the namespace cannot see: the path in the middle goes */
+   CHECK(!strcmp(trim("dlopen failed: library \"libgsl.so\" needed or "
+         "dlopened by \"/data/user/0/com.retroarch/files/vulkan_drivers/"
+         "0a1b2c3d/vulkan.broken.so\" is not accessible for the namespace "
+         "\"vulkan.mali.so\"", sizeof(err)),
+         "library \"libgsl.so\" is not accessible for the namespace "
+         "\"vulkan.mali.so\""));
+   CHECK(!strcmp(trim("dlopen failed: library \"libgsl.so\" needed or "
+         "dlopened by \"(unknown)\" is not accessible for the namespace "
+         "\"vulkan.mali.so\"", 30), "library \"libgsl.so\" is not..."));
+   /* nothing left after trimming: kept whole */
+   CHECK(!strcmp(trim("dlopen failed: ", sizeof(err)), "dlopen failed: "));
+   CHECK(!strcmp(trim(": needed by x", sizeof(err)), ": needed by x"));
+   CHECK(!strcmp(trim("", sizeof(err)), ""));
+   CHECK(!strcmp(trim(NULL, sizeof(err)), ""));
+
+   /* cut to the buffer, marked */
+   memset(err, 'a', 200);
+   err[200] = '\0';
+   s = trim(err, VULKAN_CUSTOM_DRIVER_DETAIL_MAX);
+   CHECK(strlen(s) == VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 1);
+   CHECK(!strcmp(s + VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 4, "..."));
+   CHECK(s[VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 5] == 'a');
+   /* the cut never splits a UTF-8 sequence */
+   memcpy(err + VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 5, "\xC3\xA9", 2);
+   s = trim(err, VULKAN_CUSTOM_DRIVER_DETAIL_MAX);
+   CHECK(strlen(s) == VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 2);
+   CHECK(!strcmp(s + VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 5, "..."));
+   /* an exact fit is not cut */
+   err[VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 1] = '\0';
+   memset(err, 'b', VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 1);
+   s = trim(err, VULKAN_CUSTOM_DRIVER_DETAIL_MAX);
+   CHECK(strlen(s) == VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 1 && s[2] == 'b');
+   CHECK(s[VULKAN_CUSTOM_DRIVER_DETAIL_MAX - 2] == 'b');
+   /* a buffer too small for the mark */
+   CHECK(!strcmp(trim("abcdef", 3), "ab"));
+}
+
+static void test_verdict(void)
+{
+   /* the hook's state decides; the GPU count only once it loaded */
+   CHECK(vulkan_custom_driver_verdict(VULKAN_CUSTOM_DRIVER_HOOK_LOADED, 1)
+         == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_verdict(VULKAN_CUSTOM_DRIVER_HOOK_LOADED, 0)
+         == VULKAN_CUSTOM_DRIVER_MSG_NO_GPU);
+   CHECK(vulkan_custom_driver_verdict(VULKAN_CUSTOM_DRIVER_HOOK_FAILED, 1)
+         == VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED);
+   CHECK(vulkan_custom_driver_verdict(VULKAN_CUSTOM_DRIVER_HOOK_FAILED, 0)
+         == VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED);
+   CHECK(vulkan_custom_driver_verdict(VULKAN_CUSTOM_DRIVER_HOOK_NOT_CALLED, 1)
+         == VULKAN_CUSTOM_DRIVER_MSG_LOADER);
+   /* a stub HAL with no GPU: the uncalled hook decides, not the count */
+   CHECK(vulkan_custom_driver_verdict(VULKAN_CUSTOM_DRIVER_HOOK_NOT_CALLED, 0)
+         == VULKAN_CUSTOM_DRIVER_MSG_LOADER);
+
+   /* the GPU is named when one device node says which */
+   CHECK(vulkan_custom_driver_no_gpu(false, false)
+         == VULKAN_CUSTOM_DRIVER_MSG_NO_GPU);
+   CHECK(vulkan_custom_driver_no_gpu(true, false)
+         == VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_ADRENO);
+   CHECK(vulkan_custom_driver_no_gpu(false, true)
+         == VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_MALI);
+   CHECK(vulkan_custom_driver_no_gpu(true, true)
+         == VULKAN_CUSTOM_DRIVER_MSG_NO_GPU);
+}
+
+static void test_session_reason_detail(void)
+{
+   enum vulkan_custom_driver_msg msg;
+   const char *detail;
+
+   /* the reason replaces FAILED, once, and stays for the path */
+   begin(NULL, NULL);
+   CHECK(open_drv("/d/A.zip", "Core", &msg));
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED,
+         "library \"libnope.so\" not found");
+   /* the first one stands */
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_LOADER, NULL);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED);
+   CHECK(why("/d/A.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NOT_LOADED);
+   CHECK(!strcmp(detail, "library \"libnope.so\" not found"));
+   CHECK(!open_drv("/d/A.zip", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+
+   /* no reason: FAILED */
+   CHECK(open_drv("/d/B.zip", "Core", &msg));
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(why("/d/B.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(!*detail);
+
+   /* an earlier init's reason does not carry over */
+   CHECK(open_drv("/d/C.zip", "Core", &msg));
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_NO_GPU_MALI, NULL);
+   CHECK(vulkan_custom_driver_session_started(&session));
+   CHECK(open_drv("/d/D.zip", "Core", &msg));
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(why("/d/C.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+
+   /* nothing this init's to fail: ignored */
+   begin(NULL, NULL);
+   CHECK(open_drv("/d/E.zip", "Core", &msg));
+   vulkan_custom_driver_session_kept(&session);
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_LOADER, NULL);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(why("/d/E.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+}
+
+static const char *result_text(int result)
+{
+   static char out[VULKAN_CUSTOM_DRIVER_DETAIL_MAX];
+   vulkan_custom_driver_result_text(out, sizeof(out), result);
+   return out;
+}
+
+static void test_result(void)
+{
+   enum vulkan_custom_driver_msg msg;
+   const char *detail;
+
+   /* VkResult values from vulkan_core.h */
+   CHECK(!strcmp(result_text(-3), "VK_ERROR_INITIALIZATION_FAILED"));
+   CHECK(!strcmp(result_text(-7), "VK_ERROR_EXTENSION_NOT_PRESENT"));
+   CHECK(!strcmp(result_text(-9), "VK_ERROR_INCOMPATIBLE_DRIVER"));
+   CHECK(!strcmp(result_text(-13), "VK_ERROR_UNKNOWN"));
+   CHECK(!strcmp(result_text(-1000000001),
+         "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR"));
+   CHECK(!strcmp(result_text(-1000001004), "VK_ERROR_OUT_OF_DATE_KHR"));
+   CHECK(!strcmp(result_text(-1000174001), "VK_ERROR_NOT_PERMITTED_KHR"));
+   CHECK(!strcmp(result_text(-42), "VkResult -42"));
+   CHECK(!strcmp(result_text(-2147483647 - 1), "VkResult -2147483648"));
+
+   /* the last step's result names a failure that has no reason */
+   begin(NULL, NULL);
+   CHECK(open_drv("/d/A.zip", "Core", &msg));
+   vulkan_custom_driver_session_result(&session, -8);
+   vulkan_custom_driver_session_result(&session, 0);
+   vulkan_custom_driver_session_result(&session, -3);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_NO_START);
+   CHECK(why("/d/A.zip", &detail) == VULKAN_CUSTOM_DRIVER_MSG_NO_START);
+   CHECK(!strcmp(detail, "VK_ERROR_INITIALIZATION_FAILED"));
+
+   /* a later success clears an earlier failure */
+   CHECK(open_drv("/d/B.zip", "Core", &msg));
+   vulkan_custom_driver_session_result(&session, -8);
+   vulkan_custom_driver_session_result(&session, 0);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+
+   /* a reason comes first */
+   CHECK(open_drv("/d/C.zip", "Core", &msg));
+   vulkan_custom_driver_session_result(&session, -3);
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_LOADER, NULL);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_LOADER);
+
+   /* started, or a new init: an old result does not count */
+   CHECK(open_drv("/d/D.zip", "Core", &msg));
+   vulkan_custom_driver_session_result(&session, -3);
+   CHECK(vulkan_custom_driver_session_started(&session));
+   vulkan_custom_driver_session_result(&session, -4);
+   CHECK(session.result == -3);
+   begin(NULL, NULL);
+   CHECK(open_drv("/d/E.zip", "Core", &msg));
+   vulkan_custom_driver_session_result(&session, -3);
+   CHECK(open_drv("/d/F.zip", "Core", &msg));
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
 }
 
 static void test_trust(void)
@@ -851,6 +1131,28 @@ static void test_crash_marker(void)
          NULL, 0, "Core\t\n", 6));
    CHECK(vulkan_custom_driver_session_init(&session, fake_load, &loader,
          NULL, 0, marker, strlen(marker)));
+
+   /* state read into the session in place: kept, the rest reset, a
+    * marker appended after it, and a partial last line dropped */
+   CHECK(open_drv("/d/A.zip", "Core", &msg));
+   CHECK(session.path_count && session.current);
+   len = vulkan_custom_driver_crash_add(session.state, 0,
+         sizeof(session.state), "/d/B.zip", "Other");
+   memcpy(session.state + len, "Cut\t/d/C", 9);
+   CHECK(vulkan_custom_driver_session_init(&session, fake_load, &loader,
+         session.state, len + 9, marker, strlen(marker)));
+   CHECK(!session.path_count && !session.current && !session.pending);
+   CHECK(session.load == fake_load && session.load_data == &loader);
+   CHECK(vulkan_custom_driver_crash_find(session.state, session.state_len,
+         "/d/B.zip", "Other"));
+   CHECK(vulkan_custom_driver_crash_find(session.state, session.state_len,
+         "/d/A.zip", ""));
+   CHECK(!vulkan_custom_driver_crash_find(session.state, session.state_len,
+         "/d/C", "Cut"));
+   CHECK(!vulkan_custom_driver_session_init(&session, fake_load, &loader,
+         session.state, session.state_len, NULL, 0));
+   CHECK(vulkan_custom_driver_crash_find(session.state, session.state_len,
+         "/d/B.zip", "Other"));
 }
 
 #define ELF_LEN 336
@@ -1015,6 +1317,376 @@ static void test_patch_soname(void)
    CHECK(!memcmp(elf, want, ELF_LEN));
 }
 
+/* An ICD manifest as Mesa installs it */
+static const char radv_icd[] =
+   "{\n"
+   "    \"ICD\": {\n"
+   "        \"api_version\": \"1.4.367\",\n"
+   "        \"library_arch\": \"64\",\n"
+   "        \"library_path\": \"/opt/mesa/lib/libvulkan_radeon.so\"\n"
+   "    },\n"
+   "    \"file_format_version\": \"1.0.1\"\n"
+   "}\n";
+
+static struct vulkan_custom_driver_icd icd;
+
+static const char *icd_of(const char *text)
+{
+   return vulkan_custom_driver_parse_icd(text, strlen(text), &icd);
+}
+
+static void test_icd(void)
+{
+   CHECK(!icd_of(radv_icd));
+   CHECK(!strcmp(icd.library_path, "/opt/mesa/lib/libvulkan_radeon.so"));
+   CHECK(!strcmp(icd.api_version, "1.4.367"));
+   /* JSON escapes: a Windows manifest's backslashes */
+   CHECK(!icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":"
+         "{\"library_path\":\".\\\\vulkan_lvp.dll\",\"api_version\":\"1.3.290\"}}"));
+   CHECK(!strcmp(icd.library_path, ".\\vulkan_lvp.dll"));
+   /* other keys, and the same names deeper down, are not read */
+   CHECK(!icd_of("{\"x\":[1,{\"library_path\":2}],\"file_format_version\":\"1.0.0\","
+         "\"ICD\":{\"is_portability_driver\":false,\"library_path\":\"./a.so\","
+         "\"api_version\":\"1.3.0\",\"y\":{\"api_version\":3}}}"));
+   CHECK(!strcmp(icd.library_path, "./a.so"));
+   CHECK(!strcmp(icd.api_version, "1.3.0"));
+   /* missing fields; library_path outside ICD is not ICD's */
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"library_path\":\"./a.so\","
+         "\"ICD\":{\"api_version\":\"1.3.0\"}}") != NULL);
+   CHECK(icd_of("{\"ICD\":{\"library_path\":\"./a.so\",\"api_version\":\"1.3.0\"}}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"\",\"ICD\":"
+         "{\"library_path\":\"./a.so\",\"api_version\":\"1.3.0\"}}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":{\"library_path\":\"./a.so\"}}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":"
+         "{\"library_path\":\"\",\"api_version\":\"1.3.0\"}}") != NULL);
+   /* wrong types */
+   CHECK(icd_of("{\"file_format_version\":1,\"ICD\":"
+         "{\"library_path\":\"./a.so\",\"api_version\":\"1.3.0\"}}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":\"./a.so\"}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":[]}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":"
+         "{\"library_path\":[\"./a.so\"],\"api_version\":\"1.3.0\"}}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":"
+         "{\"library_path\":null,\"api_version\":\"1.3.0\"}}") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":"
+         "{\"library_path\":\"./a.so\",\"api_version\":{}}}") != NULL);
+   /* not an object, not JSON, cut short */
+   CHECK(icd_of("[]") != NULL);
+   CHECK(icd_of("\"ICD\"") != NULL);
+   CHECK(icd_of("") != NULL);
+   CHECK(icd_of("not json") != NULL);
+   CHECK(icd_of("{\"file_format_version\":\"1.0.0\",\"ICD\":{\"library_path\":\"./a.so\"") != NULL);
+   /* over 4 KiB */
+   memset(json, ' ', VULKAN_CUSTOM_DRIVER_META_MAX + 1);
+   memcpy(json, radv_icd, strlen(radv_icd));
+   CHECK(vulkan_custom_driver_parse_icd(json, VULKAN_CUSTOM_DRIVER_META_MAX + 1,
+            &icd) != NULL);
+   CHECK(!vulkan_custom_driver_parse_icd(json, VULKAN_CUSTOM_DRIVER_META_MAX,
+            &icd));
+}
+
+static char lib[PATH_MAX_LENGTH];
+
+static const char *lib_of(const char *json_path, const char *library_path)
+{
+   lib[0] = '\0';
+   return vulkan_custom_driver_icd_library(json_path, library_path,
+         lib, sizeof(lib));
+}
+
+static void test_icd_library(void)
+{
+   CHECK(!lib_of("/m/share/vulkan/icd.d/radeon_icd.x86_64.json",
+            "/m/lib/libvulkan_radeon.so"));
+   CHECK(!strcmp(lib, "/m/lib/libvulkan_radeon.so"));
+   CHECK(!lib_of("/m/share/vulkan/icd.d/radeon_icd.x86_64.json",
+            "../../../lib/libvulkan_radeon.so"));
+   CHECK(!strcmp(lib, "/m/share/vulkan/icd.d/../../../lib/libvulkan_radeon.so"));
+   CHECK(!lib_of("/d/icd.json", "./libvulkan_freedreno.so"));
+   CHECK(!strcmp(lib, "/d/./libvulkan_freedreno.so"));
+   /* a bare name is the system's library */
+   CHECK(lib_of("/d/icd.json", "libvulkan_radeon.so") != NULL);
+   CHECK(lib_of("C:\\Mesa\\lvp_icd.x86_64.json", "vulkan_lvp.dll") != NULL);
+   CHECK(lib_of("C:\\Mesa\\lvp_icd.x86_64.json", "C:vulkan_lvp.dll") != NULL);
+   /* Windows: backslashes, drive letters, forward slashes, shares */
+   CHECK(!lib_of("C:\\Mesa\\lvp_icd.x86_64.json", ".\\vulkan_lvp.dll"));
+   CHECK(!strcmp(lib, "C:\\Mesa\\.\\vulkan_lvp.dll"));
+   CHECK(!lib_of("C:\\Mesa\\lvp_icd.x86_64.json", "d:\\lvp\\vulkan_lvp.dll"));
+   CHECK(!strcmp(lib, "d:\\lvp\\vulkan_lvp.dll"));
+   CHECK(!lib_of("C:/Mesa/lvp_icd.x86_64.json", "bin/vulkan_lvp.dll"));
+   CHECK(!strcmp(lib, "C:/Mesa/bin/vulkan_lvp.dll"));
+   CHECK(!lib_of("\\\\nas\\mesa\\icd.json", "\\\\nas\\mesa\\vulkan_lvp.dll"));
+   CHECK(!strcmp(lib, "\\\\nas\\mesa\\vulkan_lvp.dll"));
+   /* a manifest path with no directory leaves the name as it is */
+   CHECK(!lib_of("icd.json", "./a.so"));
+   CHECK(!strcmp(lib, "./a.so"));
+   /* out holds PATH_MAX_LENGTH - 1 characters */
+   memset(json, 'a', PATH_MAX_LENGTH + 1);
+   json[0]                   = '/';
+   json[PATH_MAX_LENGTH - 1] = '\0';
+   CHECK(!lib_of("/d/icd.json", json));
+   CHECK(strlen(lib) == PATH_MAX_LENGTH - 1);
+   json[PATH_MAX_LENGTH - 1] = 'a';
+   json[PATH_MAX_LENGTH]     = '\0';
+   CHECK(lib_of("/d/icd.json", json) != NULL);
+   json[0]                   = 'a';
+   json[1]                   = '/';
+   json[PATH_MAX_LENGTH - 4] = '\0';
+   CHECK(!lib_of("/d/icd.json", json));
+   CHECK(strlen(lib) == PATH_MAX_LENGTH - 1);
+   json[PATH_MAX_LENGTH - 4] = 'a';
+   json[PATH_MAX_LENGTH - 3] = '\0';
+   CHECK(lib_of("/d/icd.json", json) != NULL);
+}
+
+static void test_session_device(void)
+{
+   enum vulkan_custom_driver_msg msg;
+   void *a;
+   void *b;
+
+   begin(NULL, NULL);
+   /* a custom init: its own library, or a layer in front, passes */
+   a = open_drv("/d/a.json", "Core", &msg);
+   CHECK(a && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_CURRENT, &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_UNKNOWN, &msg));
+   CHECK(!vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_SYSTEM, &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(!vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_OTHER, &msg));
+   /* it failed and was closed: its slot is free */
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   CHECK(vulkan_custom_driver_session_drop(&session, a));
+   CHECK(!session.slots[0].handle);
+   CHECK(!vulkan_custom_driver_session_drop(&session, a));
+   CHECK(!vulkan_custom_driver_session_drop(&session, NULL));
+   /* the system init after it: RESTART once for a custom library */
+   CHECK(!open_drv("/d/a.json", "Core", &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_SYSTEM, &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_UNKNOWN, &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_OTHER, &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_RESTART);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_OTHER, &msg));
+   CHECK(msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   /* the freed slot takes the next driver */
+   b = open_drv("/d/b.json", "Core", &msg);
+   CHECK(b && b != a && loader.loads == 2);
+   CHECK(session.slots[0].handle == b);
+   /* a kept instance is not judged, the next open() is */
+   vulkan_custom_driver_session_kept(&session);
+   CHECK(vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_SYSTEM, &msg));
+   CHECK(open_drv("/d/b.json", "Core", &msg) == b && loader.loads == 2);
+   CHECK(!vulkan_custom_driver_session_device(&session,
+            VULKAN_CUSTOM_DRIVER_MODULE_SYSTEM, &msg));
+}
+
+static void test_session_reason(void)
+{
+   enum vulkan_custom_driver_msg msg;
+
+   begin(NULL, NULL);
+   /* no custom driver starting: nothing to give a reason for */
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED, NULL);
+   CHECK(session.reason == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   /* the first reason stands, in place of FAILED */
+   CHECK(open_drv("/d/a.json", "Core", &msg));
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED, NULL);
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES, NULL);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED);
+   CHECK(session.reason == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   /* the system driver all session, the notice once */
+   CHECK(!open_drv("/d/a.json", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(open_drv("/d/b.json", "Core", &msg));
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES, NULL);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES);
+   /* an init that never called failed(): the next open() drops its reason */
+   CHECK(open_drv("/d/c.json", "Core", &msg));
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_MISSING_FEATURES, NULL);
+   CHECK(open_drv("/d/c.json", "Core", &msg));
+   CHECK(session.reason == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_FAILED);
+   /* a started driver, or a kept instance, takes none */
+   CHECK(open_drv("/d/d.json", "Core", &msg));
+   CHECK(vulkan_custom_driver_session_started(&session));
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED, NULL);
+   CHECK(session.reason == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   vulkan_custom_driver_session_kept(&session);
+   vulkan_custom_driver_session_reason(&session,
+         VULKAN_CUSTOM_DRIVER_MSG_XR_UNSUPPORTED, NULL);
+   CHECK(session.reason == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(vulkan_custom_driver_session_failed(&session)
+         == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+}
+
+/* VkExtensionProperties' layout */
+struct ext_rec
+{
+   char name[VULKAN_CUSTOM_DRIVER_EXT_NAME_MAX];
+   uint32_t spec;
+};
+
+static struct ext_rec exts[8];
+
+/* A driver's list of up to two names; the records after it are junk. */
+static size_t exts_of(const char *a, const char *b)
+{
+   size_t n = 0;
+   memset(exts, 0x5a, sizeof(exts));
+   if (a)
+   {
+      strcpy(exts[n].name, a);
+      exts[n++].spec = 1;
+   }
+   if (b)
+   {
+      strcpy(exts[n].name, b);
+      exts[n++].spec = 1;
+   }
+   return n;
+}
+
+static unsigned exts_count(size_t n, const char *name)
+{
+   size_t i;
+   unsigned found = 0;
+   for (i = 0; i < n; i++)
+      if (!strcmp(exts[i].name, name))
+         found++;
+   return found;
+}
+
+static size_t add_loader_exts(size_t n, size_t cap)
+{
+   return vulkan_custom_driver_loader_exts((char*)exts, sizeof(exts[0]),
+         n, cap);
+}
+
+static void test_loader_exts(void)
+{
+   size_t n;
+
+   /* a WSI-only driver: the loader's four follow, zero-filled */
+   n = add_loader_exts(exts_of("VK_KHR_surface", "VK_KHR_xlib_surface"), 8);
+   CHECK(n == 6);
+   CHECK(!strcmp(exts[0].name, "VK_KHR_surface") && exts[0].spec == 1);
+   CHECK(!strcmp(exts[1].name, "VK_KHR_xlib_surface") && exts[1].spec == 1);
+   CHECK(!strcmp(exts[2].name, "VK_EXT_debug_report"));
+   CHECK(!strcmp(exts[3].name, "VK_EXT_debug_utils"));
+   CHECK(!strcmp(exts[4].name, "VK_KHR_portability_enumeration"));
+   CHECK(!strcmp(exts[5].name, "VK_LUNARG_direct_driver_loading"));
+   CHECK(exts[5].spec == 0
+         && !exts[5].name[VULKAN_CUSTOM_DRIVER_EXT_NAME_MAX - 1]);
+   CHECK(exts[6].spec == 0x5a5a5a5aUL);
+   /* Mesa lists the debug extensions itself: no duplicates */
+   n = add_loader_exts(exts_of("VK_EXT_debug_utils", "VK_EXT_debug_report"), 8);
+   CHECK(n == 4);
+   CHECK(exts_count(n, "VK_EXT_debug_utils") == 1);
+   CHECK(exts_count(n, "VK_EXT_debug_report") == 1);
+   CHECK(exts_count(n, "VK_LUNARG_direct_driver_loading") == 1);
+   /* a longer name is another extension */
+   n = add_loader_exts(exts_of("VK_EXT_debug_utils_x", NULL), 8);
+   CHECK(n == 5 && exts_count(n, "VK_EXT_debug_utils") == 1);
+   /* a driver with none */
+   CHECK(add_loader_exts(exts_of(NULL, NULL), 8)
+         == VULKAN_CUSTOM_DRIVER_LOADER_EXTS);
+   /* cap records at most */
+   n = add_loader_exts(exts_of("VK_KHR_surface", NULL), 2);
+   CHECK(n == 2 && !strcmp(exts[1].name, "VK_EXT_debug_report"));
+   CHECK(exts[2].spec == 0x5a5a5a5aUL);
+   CHECK(add_loader_exts(2, 2) == 2);
+   /* records too small for a Vulkan name are left alone */
+   CHECK(vulkan_custom_driver_loader_exts((char*)exts, 16, 1, 8) == 1);
+}
+
+static void test_icd_folder(void)
+{
+   char f[PATH_MAX_LENGTH];
+   char small[8];
+   vulkan_custom_driver_icd_folder("/home/d/x/mesa-linux/install-radv/"
+         "share/vulkan/icd.d/radeon_icd.x86_64.json", f, sizeof(f));
+   CHECK(!strcmp(f, ".../mesa-linux/install-radv"));
+   vulkan_custom_driver_icd_folder(
+         "/usr/share/vulkan/icd.d/radeon_icd.x86_64.json", f, sizeof(f));
+   CHECK(!strcmp(f, "/usr"));
+   vulkan_custom_driver_icd_folder(
+         "C:\\mesa\\x64\\lvp_icd.x86_64.json", f, sizeof(f));
+   CHECK(!strcmp(f, "...\\mesa\\x64"));
+   vulkan_custom_driver_icd_folder("C:\\m\\inst\\share\\vulkan\\icd.d\\x.json", f, sizeof(f));
+   CHECK(!strcmp(f, "...\\m\\inst"));
+   vulkan_custom_driver_icd_folder("C:\\x.json", f, sizeof(f));
+   CHECK(!strcmp(f, "C:\\"));
+   vulkan_custom_driver_icd_folder("/opt/mesa/lib/x.json", f, sizeof(f));
+   CHECK(!strcmp(f, ".../mesa/lib"));
+   vulkan_custom_driver_icd_folder("/a/b/x.json", f, sizeof(f));
+   CHECK(!strcmp(f, "/a/b"));
+   vulkan_custom_driver_icd_folder("/radeon.json", f, sizeof(f));
+   CHECK(!strcmp(f, "/"));
+   vulkan_custom_driver_icd_folder("/share/vulkan/icd.d/x.json", f, sizeof(f));
+   CHECK(!strcmp(f, "/"));
+   vulkan_custom_driver_icd_folder("radeon.json", f, sizeof(f));
+   CHECK(!strcmp(f, "."));
+   vulkan_custom_driver_icd_folder("share/vulkan/icd.d/x.json", f, sizeof(f));
+   CHECK(!strcmp(f, "."));
+   vulkan_custom_driver_icd_folder("icd/radeon.json", f, sizeof(f));
+   CHECK(!strcmp(f, "icd"));
+   /* truncated, still terminated */
+   CHECK(vulkan_custom_driver_icd_folder("/opt/mesa/lib/x.json",
+            small, sizeof(small)) == sizeof(small) - 1);
+   CHECK(!strcmp(small, ".../mes"));
+}
+
+static void test_session_quarantined(void)
+{
+   enum vulkan_custom_driver_msg msg;
+
+   begin(NULL, NULL);
+   /* its own notice once, and the system driver until picked again */
+   CHECK(!open_drv("/d/quarantined.json", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_QUARANTINED);
+   CHECK(!open_drv("/d/quarantined.json", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(loader.loads == 1);
+   /* never opened: picking it again retries it, no restart */
+   CHECK(vulkan_custom_driver_session_picked(&session,
+            "/d/quarantined.json") == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(!open_drv("/d/quarantined.json", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_QUARANTINED);
+   CHECK(loader.loads == 2);
+   /* cleared: it loads */
+   loader.fixed = true;
+   CHECK(vulkan_custom_driver_session_picked(&session,
+            "/d/quarantined.json") == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(open_drv("/d/quarantined.json", "Core", &msg)
+         && msg == VULKAN_CUSTOM_DRIVER_MSG_NONE);
+   CHECK(loader.loads == 3);
+}
+
 int main(void)
 {
    test_meta();
@@ -1024,10 +1696,22 @@ int main(void)
    test_key();
    test_crash_state();
    test_session();
+   test_session_why();
+   test_trim_dlerror();
+   test_verdict();
+   test_session_reason_detail();
+   test_result();
    test_trust();
    test_session_table();
    test_crash_marker();
    test_patch_soname();
+   test_icd();
+   test_icd_library();
+   test_session_device();
+   test_session_reason();
+   test_loader_exts();
+   test_icd_folder();
+   test_session_quarantined();
    printf("vulkan_custom_driver_test: %u checks, %u failures\n",
          checks, failures);
    return failures ? 1 : 0;

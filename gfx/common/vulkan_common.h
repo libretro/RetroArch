@@ -192,7 +192,8 @@ enum vulkan_wsi_type
    VULKAN_WSI_DISPLAY,
    VULKAN_WSI_MVK_MACOS,
    VULKAN_WSI_MVK_IOS,
-   VULKAN_WSI_SDL3
+   VULKAN_WSI_SDL3,
+   VULKAN_WSI_SWITCH
 };
 
 enum vulkan_context_flags
@@ -277,6 +278,8 @@ typedef struct vulkan_context
    struct vulkan_session_key *session_device_key;
    struct vulkan_upscaler *session_upscaler;
    char *session_upscaler_dir;
+   struct vulkan_upscaler_instance *upscaler_instance_owner;
+   struct vulkan_upscaler_device *upscaler_device_owner;
 
    VkInstance instance;
    VkPhysicalDevice gpu;
@@ -705,7 +708,8 @@ void vulkan_context_finish_frames(gfx_ctx_vulkan_data_t *vk);
 #ifdef __APPLE__
 /* Returns the version string of the MoltenVK implementation in use,
  * captured at Vulkan context creation. Returns an empty string if no
- * Vulkan context has been initialized yet. */
+ * Vulkan context has been initialized yet, or if its driver is not
+ * MoltenVK. */
 const char *vulkan_get_moltenvk_version(void);
 #endif
 

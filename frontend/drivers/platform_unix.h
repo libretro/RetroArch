@@ -303,7 +303,6 @@ struct android_app
    bool     gravity_calibrated;
    char current_ime[NAME_MAX_LENGTH];
    bool input_alive;
-   int16_t analog_state[DEFAULT_MAX_PADS][MAX_AXIS];
    int8_t hat_state[DEFAULT_MAX_PADS][2];
    jmethodID getIntent;
    jmethodID onRetroArchExit;
@@ -352,6 +351,7 @@ struct android_app
    jmethodID hideKeyboard;
    jmethodID setSecondDisplay;
    jmethodID moveToDisplay;
+   jmethodID setBlankDisplays;
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
    jmethodID addSafeStartShortcut;
 #endif
@@ -563,6 +563,10 @@ extern struct android_app *g_android;
  * display's surfaces: those made for earlier requests are dropped as
  * they arrive. */
 void android_second_display_request(unsigned ordinal, bool given_up);
+
+/* App thread, never waits: asks Java to cover the displays whose ids
+ * are the @count in @ids with black, and no others. */
+void android_blank_displays_request(const int *ids, unsigned count);
 
 /* App thread: asks Java to move RetroArch's Activity onto the display
  * whose id is @display_id; @move numbers the move. One-way: posts and

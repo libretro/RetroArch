@@ -108,7 +108,7 @@ static unsigned ask_until(bool want_ticking)
 
 int main(void)
 {
-   unsigned i, n, seen;
+   unsigned i, n, seen, gen;
    LONG calls;
    retro_time_t at = 0;
    retro_time_t t0, took;
@@ -139,7 +139,10 @@ int main(void)
    /* ---- the binding follows the window ---- */
    CHECK(!d3dkmt_bound(&adapter, &source), "bound before a window said where");
    CHECK(d3dkmt_scanline_get() == -1, "a scanline with nothing bound");
+   gen = win32_d3dkmt_generation();
    win32_d3dkmt_follow(hwnd, false);
+   CHECK(win32_d3dkmt_generation() == gen + 1,
+         "a window on its first monitor is not another output");
    CHECK(fk_opens == 1 && d3dkmt_bound(&adapter, &source)
          && adapter == 0x101 && source == 3,
          "window's monitor not bound: %ld opens, adapter %x source %u",
@@ -151,18 +154,31 @@ int main(void)
       win32_d3dkmt_follow(hwnd, false);
    CHECK(fk_opens == 1 && !fk_closes, "same monitor rebound: %ld opens",
          (long)fk_opens);
+   CHECK(win32_d3dkmt_generation() == gen + 1,
+         "moves about one monitor counted as other outputs");
    /* a display change rebinds, and closes what it leaves */
    win32_d3dkmt_follow(hwnd, true);
+   CHECK(win32_d3dkmt_generation() == gen + 2,
+         "a display change is not another output");
    CHECK(fk_opens == 2 && fk_closes == 1 && fk_closed == 0x101
          && d3dkmt_bound(&adapter, &source) && adapter == 0x102,
          "display change: %ld opens, %ld closes of %lx, adapter %x",
          (long)fk_opens, (long)fk_closes, (long)fk_closed, (unsigned)adapter);
    win32_d3dkmt_follow(NULL, true);
    CHECK(fk_opens == 2, "followed no window");
+   CHECK(win32_d3dkmt_generation() == gen + 2, "no window counted");
    /* a monitor that does not open leaves the last binding */
    fk_open_fails = 1;
    win32_d3dkmt_follow(hwnd, true);
    fk_open_fails = 0;
+   /* but is another output all the same, as it is with no D3DKMT */
+   CHECK(win32_d3dkmt_generation() == gen + 3,
+         "an output that does not open is not counted");
+   pD3DKMTOpenAdapterFromHdc = NULL;
+   win32_d3dkmt_follow(hwnd, true);
+   pD3DKMTOpenAdapterFromHdc = fk_open;
+   CHECK(win32_d3dkmt_generation() == gen + 4 && fk_opens == 3,
+         "an output without D3DKMT is not counted");
    CHECK(fk_opens == 3 && fk_closes == 1
          && d3dkmt_bound(&adapter, &source) && adapter == 0x102,
          "failed open: %ld closes, adapter %x", (long)fk_closes,

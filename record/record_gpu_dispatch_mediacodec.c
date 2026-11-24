@@ -36,8 +36,8 @@ static void record_mgd_fail(record_gpu_dispatch_mediacodec_t *j, int error)
 {
    retro_atomic_cas_int(&j->error, 0, error);
    retro_atomic_store_release_int(&j->cancelled, 1);
-   retro_atomic_store_release_int(&j->state, RECORD_MC_DISPATCH_DRAINING);
    record_dispatch_mediacodec_cancel(j->io);
+   retro_atomic_store_release_int(&j->state, RECORD_MC_DISPATCH_DRAINING);
 }
 static void record_mgd_system(record_gpu_dispatch_mediacodec_t *j, int error)
 {
@@ -177,6 +177,12 @@ static void *record_mgd_run(void *context)
          break;
       if (result == 1)
          continue;
+      /* A GPU read completing is what nothing notifies: wait in GL for it.
+       * A submission meanwhile is picked up by the service after it. */
+      if (     j->worker
+            && !retro_atomic_load_acquire_int(&j->cancelled)
+            && record_mediacodec_gpu_worker_wait(j->worker, 20000000))
+         continue;
       retro_atomic_fetch_add_seq_cst_int(&j->epoch, 1);
       result = record_mgd_service(j);
       if (result)
@@ -189,7 +195,9 @@ static void *record_mgd_run(void *context)
       descriptor.revents = 0;
       if (retro_atomic_load_acquire_int(&j->system_error))
          descriptor.fd = -1;
-      waited = poll(&descriptor, 1, 1);
+      /* Idle, only the I/O side failing goes unnotified */
+      waited = poll(&descriptor, 1, j->worker && !j->reads_retired
+            && record_mediacodec_gpu_worker_idle(j->worker) ? 100 : 1);
       retro_atomic_fetch_and_int(&j->epoch, ~1);
       if (waited < 0 && errno != EINTR)
          record_mgd_system(j, errno);

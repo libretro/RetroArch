@@ -16,7 +16,7 @@ out.mkdir(parents=True, exist_ok=True)
 # long reaches the encoder as they leave the filter, timestamps included:
 # ffmpeg 8 otherwise regroups them into encoder frames and
 # keeps only the first one's timestamp, closing a gap or an overlap.
-FRAME = {"libopus": 960, "libvorbis": 64}
+FRAME = {"libopus": 960, "libvorbis": 64, "flac": 4608}
 
 def make(name, *, delay=0, duration=4, audio_duration=2, codec="libopus", filter=None, mp4=False, trim=0, framed=False, drop=None):
     frames = f":samples_per_frame={FRAME[codec]}" if framed else ""
@@ -38,6 +38,8 @@ def make(name, *, delay=0, duration=4, audio_duration=2, codec="libopus", filter
         # cut before the encoder by giving the next frame the previous
         # one's end
         args += ["-bsf:a", f"noise=drop=gte(pts*tb\\,{drop[0]})*lt(pts*tb\\,{drop[1]})"]
+    if codec == "flac":
+        args += ["-avoid_negative_ts", "disabled"]
     args += [str(out / name)]
     subprocess.run(args, check=True)
     if trim:
@@ -139,3 +141,11 @@ for codec in ("libopus", "libvorbis"):
 make("timeline-delayed-vorbis.webm", delay=1, codec="libvorbis")
 for delay in (0, 1):
     make(f"timeline-aac-{delay}.mkv", delay=delay, codec="aac")
+
+make("timeline-flac-1.mkv", delay=1, codec="flac")
+make("timeline-flac-gap.mkv", duration=5, audio_duration=4,
+     codec="flac", drop=(1, 2))
+make("timeline-flac-overlap.mkv", duration=5, audio_duration=4, codec="flac",
+     filter=r"asetpts=PTS-0.5/TB*gte(T\,2)", framed=True)
+make("timeline-flac-negative.mkv", delay=-0.096, codec="flac")
+make("timeline-flac-late.mkv", delay=30, duration=35, codec="flac")

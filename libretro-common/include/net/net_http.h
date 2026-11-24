@@ -53,6 +53,10 @@ void net_http_connection_set_user_agent(struct http_connection_t *conn, const ch
  * User-Agent among them replaces net_http's own. */
 void net_http_connection_set_headers(struct http_connection_t *conn, const char *headers);
 
+/* As net_http_connection_set_headers, adopting @headers (from malloc)
+ * instead of copying it. */
+void net_http_connection_take_headers(struct http_connection_t *conn, char *headers);
+
 /* false: a 3xx response is returned as it is (status, headers and
  * body), for a caller applying its own redirect rules. Followed by
  * default. */
@@ -197,6 +201,8 @@ const char *net_http_connection_url(struct http_connection_t *conn);
 
 const char* net_http_connection_method(struct http_connection_t* conn);
 
+/* Takes @conn's headers and body; free @conn afterwards, it cannot
+ * start a second transfer. */
 struct http_t *net_http_new(struct http_connection_t *conn);
 
 /**
@@ -397,6 +403,10 @@ void net_http_delete(struct http_t *state);
  * caller is responsible for deleting the destination buffer
  **/
 void net_http_urlencode(char **dest, const char *source);
+
+/* As net_http_urlencode, into @s of @len bytes, never splitting an
+ * escape.  Returns the length of the whole encoding, as strlcpy() does. */
+size_t net_http_urlencode_to(char *s, size_t len, const char *source);
 
 /**
  * net_http_urlencode_full:

@@ -6,6 +6,14 @@
 static unsigned imported, shown, failures;
 static uint32_t received;
 
+enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
+      const gfx_surface_planes_t *planes, bool rgba)
+{
+   (void)s; (void)planes; (void)rgba;
+   failures++;
+   return GFX_SURFACE_SUBMIT_FAILED;
+}
+
 settings_t *config_get_ptr(void)
 {
    failures++;
@@ -28,6 +36,8 @@ bool video_player_request_software(video_player_t *p)
 }
 
 /* The format path must not enter CPU playback or upload methods. */
+void gfx_surface_set_yuv(gfx_surface_t *s, unsigned flags)
+{ (void)s; (void)flags; failures++; }
 bool gfx_surface_slot_writable(gfx_surface_t *s, unsigned slot)
 { (void)s; (void)slot; failures++; return false; }
 uint32_t *gfx_surface_slot_begin(gfx_surface_t *s, unsigned slot)
@@ -39,6 +49,8 @@ bool gfx_surface_query_requirements(unsigned width, gfx_surface_requirements_t *
 bool gfx_surface_wants_rgba(void)
 { failures++; return false; }
 bool image_transfer_anim_stream_is_hdr(const void *stream, enum image_type_enum type)
+{ (void)stream; (void)type; failures++; return false; }
+bool image_transfer_anim_stream_can_planar(const void *stream, enum image_type_enum type)
 { (void)stream; (void)type; failures++; return false; }
 video_player_t *video_player_new(void *stream, enum image_type_enum type,
       int loops, const video_player_sink_t *sink, unsigned flags)
@@ -52,6 +64,20 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s, unsigned slo
 enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
       const void *pixels, bool rgba)
 { (void)s; (void)pixels; (void)rgba; failures++; return GFX_SURFACE_SUBMIT_FAILED; }
+
+enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s, unsigned slot,
+      const void *pixels, bool rgba)
+{
+   (void)slot;
+   return gfx_surface_submit_pixels(s, pixels, rgba);
+}
+
+enum gfx_surface_submit_result gfx_surface_submit_planes_held(gfx_surface_t *s, unsigned slot,
+      const gfx_surface_planes_t *p, bool rgba)
+{
+   (void)slot;
+   return gfx_surface_submit_planes(s, p, rgba);
+}
 
 enum gfx_surface_submit_result gfx_surface_submit_import(gfx_surface_t *surface,
       const video_frame_import_t *frame)

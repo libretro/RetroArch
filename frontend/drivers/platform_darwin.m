@@ -88,6 +88,20 @@
 #include <TargetConditionals.h>
 #endif
 
+#if defined(__ppc__) && !defined(__ppc64__) && !defined(__STATIC__)
+/* crt1's _start branches to this gcc3 frame-registration hook, which it
+ * calls only when the hook's first word is non-zero, and crt1 supplies it
+ * as a zero common symbol: at the end of __DATA, past the 16 MB a PowerPC
+ * branch reaches once the image grows that large. The same zero word in
+ * __text keeps the branch in reach and the call skipped. */
+__asm__(
+      ".text\n"
+      ".align 2\n"
+      ".globl ___darwin_gcc3_preregister_frame_info\n"
+      "___darwin_gcc3_preregister_frame_info:\n"
+      ".long 0\n");
+#endif
+
 typedef enum
 {
    CFApplicationDirectory           = 1,   /* Supported applications (Applications) */

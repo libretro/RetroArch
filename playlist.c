@@ -4496,52 +4496,6 @@ bool playlist_index_is_valid(playlist_t *playlist, size_t idx,
                 path_basename_nocompression(core_path));
 }
 
-bool playlist_entries_are_equal(
-      const struct playlist_entry *entry_a,
-      const struct playlist_entry *entry_b,
-      const playlist_config_t *config)
-{
-   char real_path_a[PATH_MAX_LENGTH];
-   char real_core_path_a[PATH_MAX_LENGTH];
-
-   /* Sanity check */
-   if (!entry_a || !entry_b || !config)
-      return false;
-
-   if (   (!entry_a->path || !*entry_a->path)
-       && (!entry_a->core_path || !*entry_a->core_path)
-       && (!entry_b->path || !*entry_b->path)
-       && (!entry_b->core_path || !*entry_b->core_path))
-      return true;
-
-   /* Check content paths */
-   if (entry_a->path && *entry_a->path)
-   {
-      strlcpy(real_path_a, entry_a->path, sizeof(real_path_a));
-      path_resolve_realpath(real_path_a, sizeof(real_path_a), true);
-   }
-   else
-      real_path_a[0]      = '\0';
-
-   if (!playlist_path_equal(
-         real_path_a, entry_b->path, config))
-      return false;
-
-   /* Check core paths */
-   if (entry_a->core_path && *entry_a->core_path)
-   {
-      strlcpy(real_core_path_a, entry_a->core_path, sizeof(real_core_path_a));
-      if (   !string_is_equal(real_core_path_a, FILE_PATH_DETECT)
-          && !string_is_equal(real_core_path_a, FILE_PATH_BUILTIN))
-         playlist_resolve_path(PLAYLIST_SAVE, true,
-               real_core_path_a, sizeof(real_core_path_a));
-   }
-   else
-      real_core_path_a[0] = '\0';
-
-   return playlist_core_path_equal(real_core_path_a, entry_b->core_path, config);
-}
-
 /* Returns true if entries at specified indices
  * of specified playlist have identical content
  * and core paths */

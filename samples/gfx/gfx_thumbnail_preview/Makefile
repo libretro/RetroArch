@@ -41,9 +41,11 @@ PLAYER_OBJ := gfx_surface_player_uut.o
 LAYOUT_OBJ := settings_layout_uut.o
 
 SOURCES := gfx_thumbnail_preview_test.c \
+           $(REPO_ROOT)/gfx/gfx_thumbnail_results.c \
+           $(REPO_ROOT)/gfx/gfx_thumbnail_match.c \
            $(REPO_ROOT)/gfx/gfx_media_player.c \
            $(REPO_ROOT)/gfx/gfx_media_cpu.c \
-           stubs_retroarch.c \
+           stubs_retroarch.c music_player_stubs.c \
            $(REPO_ROOT)/libretro-common/audio/audio_mixer.c \
            $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler.c \
  $(LIBRETRO_COMM_DIR)/audio/resampler/audio_resampler_int16.c \
@@ -68,6 +70,7 @@ SOURCES := gfx_thumbnail_preview_test.c \
            $(LIBRETRO_COMM_DIR)/formats/aac/raac.c \
            $(LIBRETRO_COMM_DIR)/formats/opus/ropus.c \
            $(LIBRETRO_COMM_DIR)/formats/vorbis/rvorbis.c \
+           $(LIBRETRO_COMM_DIR)/formats/flac/rflac.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
            $(LIBRETRO_COMM_DIR)/formats/h264/rh264.c \
            $(LIBRETRO_COMM_DIR)/formats/h265/rh265.c \
@@ -88,7 +91,7 @@ SOURCES := gfx_thumbnail_preview_test.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
 CFLAGS  += -Wall -std=gnu99 -g1 -O1 \
-           -DHAVE_RMP4 -DHAVE_RWEBM -DHAVE_RAAC -DHAVE_ROPUS -DHAVE_RVORBIS -DHAVE_RH264 -DHAVE_RWEBP \
+           -DHAVE_RMP4 -DHAVE_RWEBM -DHAVE_RAAC -DHAVE_ROPUS -DHAVE_RVORBIS -DHAVE_RFLAC -DHAVE_RH264 -DHAVE_RWEBP \
            -DHAVE_AUDIOMIXER \
            $(MMAP_DEF) -D_GNU_SOURCE -DMEMMAP_TEST_NO_RESERVE \
            -I. -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include
@@ -277,13 +280,14 @@ AUDIO_FEED_SOURCES := preview_audio_feed_test.c $(ANIM_PREVIEW_SRC) \
                      $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
                      $(LIBRETRO_COMM_DIR)/formats/opus/ropus.c \
                      $(LIBRETRO_COMM_DIR)/formats/vorbis/rvorbis.c \
+                     $(LIBRETRO_COMM_DIR)/formats/flac/rflac.c \
                      $(filter-out preview_audio_oracle_test.c,$(AUDIO_ORACLE_SOURCES)) \
                      $(LIBRETRO_COMM_DIR)/compat/compat_strldup.c
 
 AUDIO_TIMELINE_SOURCES := preview_audio_timeline_test.c \
                      $(filter-out preview_audio_feed_test.c $(ANIM_PREVIEW_SRC),$(AUDIO_FEED_SOURCES))
 $(AUDIO_TIMELINE_TARGET): $(AUDIO_TIMELINE_SOURCES)
-	$(CC) -o $@ $^ $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS \
+	$(CC) -o $@ $^ $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS -DHAVE_RFLAC \
 	      -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(LDFLAGS)
 
 # Independent container movie positions, silence and complete loop period.
@@ -297,16 +301,18 @@ audio-timeline-check: $(AUDIO_TIMELINE_TARGET)
 	   timeline-0.webm timeline-1.webm timeline-gap-libopus.webm \
 	   timeline-gap-libvorbis.webm timeline-overlap.webm \
 	   timeline-late-libopus.webm timeline-late-libvorbis.webm timeline-delayed-vorbis.webm \
-	   timeline-aac-0.mkv timeline-aac-1.mkv; do \
+	   timeline-aac-0.mkv timeline-aac-1.mkv timeline-flac-1.mkv timeline-flac-gap.mkv \
+	   timeline-flac-overlap.mkv timeline-flac-negative.mkv timeline-flac-late.mkv; do \
 	   file=fixtures/audio-movie-timeline/$$fixture; \
 	   echo "$$fixture"; \
 	   ./$(AUDIO_TIMELINE_TARGET) "$$file" "$$(cat "$$file.onset")" \
 	      "$$file.activity" "$$(cat "$$file.period")"; \
 	done
 	python3 audio_movie_edge_fixtures.py fixtures/audio-movie-timeline
-	@set -e; base=fixtures/audio-movie-timeline; for codec in opus vorbis aac; do \
+	@set -e; base=fixtures/audio-movie-timeline; for codec in opus vorbis aac flac; do \
 	   case "$$codec" in opus) source=timeline-0.webm;; \
-	      vorbis) source=timeline-delayed-vorbis.webm;; aac) source=timeline-aac-1.mkv;; esac; \
+	      vorbis) source=timeline-delayed-vorbis.webm;; aac) source=timeline-aac-1.mkv;; \
+	      flac) source=timeline-flac-1.mkv;; esac; \
 	   period=$$(cat "$$base/$$source.period"); \
 	   for flags in 1-0 0-1 1-1; do \
 	      unknown=$${flags%-*}; empty=$${flags#*-}; \
@@ -322,11 +328,11 @@ FEED_IO_LIBS := -Wl,--wrap=filestream_read -Wl,--wrap=filestream_read_at
 endif
 
 $(AUDIO_FEED_TARGET): $(AUDIO_FEED_SOURCES)
-	$(CC) -o $@ $(AUDIO_FEED_SOURCES) $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS \
+	$(CC) -o $@ $(AUDIO_FEED_SOURCES) $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS -DHAVE_RFLAC \
 	      -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(FEED_IO_FLAGS) $(LDFLAGS) $(FEED_IO_LIBS)
 
 $(AUDIO_FEED_THREADED_TARGET): $(AUDIO_FEED_SOURCES) $(THREADED_EXTRA)
-	$(CC) -o $@ $^ $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS -DHAVE_THREADS \
+	$(CC) -o $@ $(filter %.c,$^) $(DECODE_CFLAGS_COMMON) -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS -DHAVE_RFLAC -DHAVE_THREADS \
 	      -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(FEED_IO_FLAGS) $(LDFLAGS) $(FEED_IO_LIBS) -lpthread
 
 # The banded colour conversion against the single-threaded one, frame
@@ -460,7 +466,8 @@ endif
 	./$(AUDIO_ORACLE_TARGET) fixtures/trailing_small.mp4 fixtures/trailing_large.mp4
 	./$(AUDIO_FEED_TARGET) fixtures/audio_large_packet.m4a
 	./$(AUDIO_FEED_TARGET) --prepared-only fixtures/audio_seek_gap.m4a
-	./$(AUDIO_FEED_TARGET) --prepared-webm fixtures/audio_seek_opus_window.webm fixtures/audio_seek_vorbis_window.webm
+	./$(AUDIO_FEED_TARGET) --prepared-webm fixtures/audio_seek_opus_window.webm fixtures/audio_seek_vorbis_window.webm fixtures/audio_seek_flac_window.webm
+	./$(AUDIO_FEED_TARGET) --continuous-webm fixtures/audio_group_flac.webm
 	FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=500 NOAUDIO=1 ./$(TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	THREADS=4 FRAMES=180 PACE_HZ=60 PACE_MAX_STALL_MS=500 NOAUDIO=1 ./$(THREADED_TARGET) fixtures/bframes_h264.mp4 fixtures/bframes_hevc.mp4
 	./$(BLIT_BANDS_TARGET) fixtures/long_video.mp4
@@ -476,6 +483,9 @@ endif
 # a different SANITIZER=, and a clean that took the fixtures with it
 # left the following run globbing nothing.  Use distclean to drop them.
 clean:
+	rm -f preview_m4a_load.h preview_audio_feed_test_ac3 preview_audio_feed_test_ac3.exe
+	rm -f preview_audio_feed_test_flac preview_audio_feed_test_flac.exe
+	rm -f preview_audio_tracks_test preview_audio_tracks_test.exe
 	rm -f $(AUDIO_TIMELINE_TARGET) $(AUDIO_TIMELINE_TARGET).exe
 	rm -f $(AUDIO_FEED_THREADED_TARGET) $(AUDIO_FEED_THREADED_TARGET).exe
 	rm -f $(AV1_HW_TARGET) $(AV1_HW_TARGET).exe av1-preview-fixture.mp4 av1-preview-fixture.webm
@@ -492,3 +502,55 @@ distclean: clean
 	rm -rf fixtures
 
 .PHONY: bench all check audio-timeline-check fixtures clean distclean
+
+# Checked-in two-tone, two-audio-track movies: no runtime encoder needed.
+audio-track-check: $(AUDIO_FEED_TARGET)
+	./$(AUDIO_FEED_TARGET) --selected-track mp4 $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_tracks/fixtures/aac-mp4.bin
+	./$(AUDIO_FEED_TARGET) --selected-track webm $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_tracks/fixtures/aac-webm.bin
+	./$(AUDIO_FEED_TARGET) --selected-track webm $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_tracks/fixtures/opus.bin
+	./$(AUDIO_FEED_TARGET) --selected-track webm $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_tracks/fixtures/vorbis.bin
+	./$(AUDIO_FEED_TARGET) --selected-track webm $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_tracks/fixtures/flac.bin
+.PHONY: audio-track-check
+
+check: audio-track-check
+
+AUDIO_TRACKS_METADATA_SOURCES := preview_audio_tracks_test.c $(filter-out preview_anim_window_test.c,$(ANIM_WINDOW_SOURCES))
+preview_audio_tracks_test: $(AUDIO_TRACKS_METADATA_SOURCES)
+	$(CC) -o $@ $(AUDIO_TRACKS_METADATA_SOURCES) $(ANIM_WINDOW_CFLAGS) $(LDFLAGS) -lz
+audio-track-metadata-check: preview_audio_tracks_test
+	./preview_audio_tracks_test
+check: audio-track-metadata-check
+.PHONY: audio-track-metadata-check
+
+audio-selection-check: $(TARGET)
+	mkdir -p fixtures
+	cp $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_tracks/fixtures/aac-mp4.bin fixtures/audio-track-select.mp4
+	AUDIO_SELECT=1 ./$(TARGET) fixtures/audio-track-select.mp4
+	cp $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_tracks/fixtures/flac.bin fixtures/audio-track-select.webm
+	AUDIO_SELECT=1 ./$(TARGET) fixtures/audio-track-select.webm
+check: audio-selection-check
+.PHONY: audio-selection-check
+
+FLAC_FEED_SOURCES := $(filter-out $(LIBRETRO_COMM_DIR)/formats/aac/raac.c \
+   $(LIBRETRO_COMM_DIR)/formats/opus/ropus.c \
+   $(LIBRETRO_COMM_DIR)/formats/vorbis/rvorbis.c,$(AUDIO_FEED_SOURCES))
+preview_audio_feed_test_flac: $(FLAC_FEED_SOURCES)
+	$(CC) -o $@ $(filter %.c,$^) $(DECODE_CFLAGS_COMMON) -UHAVE_RAAC -DHAVE_RWEBM -DHAVE_RFLAC \
+	      -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(LDFLAGS)
+audio-flac-only-check: preview_audio_feed_test_flac
+	./preview_audio_feed_test_flac --selected-track webm $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_tracks/fixtures/flac.bin
+check: audio-flac-only-check
+.PHONY: audio-flac-only-check
+
+AC3_FEED_SOURCES := $(AUDIO_FEED_SOURCES) $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_frame.c $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_decode.c
+preview_audio_feed_test_ac3: $(AC3_FEED_SOURCES)
+	$(CC) -o $@ $(AC3_FEED_SOURCES) $(DECODE_CFLAGS_COMMON) -DHAVE_RAC3 -DHAVE_RWEBM -DHAVE_ROPUS -DHAVE_RVORBIS -DHAVE_RFLAC -I$(REPO_ROOT) -I$(REPO_ROOT)/deps $(FEED_IO_FLAGS) $(LDFLAGS) $(FEED_IO_LIBS)
+audio-ac3-check: preview_audio_feed_test_ac3
+	$(MAKE) -C $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_ac3 mp4_test
+	python3 $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_ac3/mp4_test.py --test $(LIBRETRO_COMM_DIR)/samples/formats/audio_transfer_ac3/mp4_test --preview-test ./preview_audio_feed_test_ac3
+check: audio-ac3-check
+.PHONY: audio-ac3-check
+
+preview_m4a_load.h: $(REPO_ROOT)/audio/audio_driver.c extract_m4a_load.py
+	python3 extract_m4a_load.py
+$(AUDIO_FEED_TARGET) $(AUDIO_FEED_THREADED_TARGET) preview_audio_feed_test_flac preview_audio_feed_test_ac3: preview_m4a_load.h

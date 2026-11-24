@@ -55,6 +55,10 @@ bool record_android_capture_gl_end(
  * context retirement proves completion. */
 int record_android_capture_gl_poll(
       record_android_capture_gl_t *capture, unsigned slot);
+/* Blocks until the slot's GPU read completes or @timeout_ns passes; the
+ * next poll consumes it. False, without waiting, with no read to wait for. */
+bool record_android_capture_gl_wait(record_android_capture_gl_t *capture,
+      unsigned slot, uint64_t timeout_ns);
 /* Terminal worker recovery, same context current, no more source draws.
  * A fresh fence covers every preceding command, including failed slot fences.
  * One creation/flush or one zero-timeout query per call. 1 proves all reads

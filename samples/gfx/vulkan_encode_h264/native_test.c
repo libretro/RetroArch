@@ -178,6 +178,7 @@ static void load_ops(struct native_encoder *c)
    DEVICE(ops.submit.submit, QueueSubmit);
    DEVICE(ops.submit.status, GetFenceStatus);
    DEVICE(ops.submit.feedback, GetQueryPoolResults);
+   DEVICE(ops.submit.wait, WaitForFences);
 }
 static void load_capture_ops(struct native_encoder *c)
 {

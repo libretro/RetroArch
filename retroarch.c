@@ -136,10 +136,16 @@
 #ifdef HAVE_VULKAN
 #include "gfx/common/vulkan_common.h"
 #endif
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+#include "gfx/common/vulkan_custom_driver.h"
+#endif
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
-#include "record/record_driver.h"
+#ifdef HAVE_PYROWAVE
+#include "record/record_pyrowave_receiver.h"
+#include "record/drivers/record_pyrowave.h"
+#endif
 
 #ifdef HAVE_MICROPHONE
 #include "audio/microphone_driver.h"
@@ -160,6 +166,9 @@
 
 #include <audio/audio_resampler.h>
 
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+#include "gfx/gfx_music_player.h"
+#endif
 #include "audio/audio_driver.h"
 
 #include "gfx/gfx_display.h"
@@ -220,6 +229,9 @@
 #include "verbosity.h"
 
 #include "gfx/video_driver.h"
+#ifdef HAVE_TEMPORAL_UPSCALER
+#include "gfx/video_upscaler.h"
+#endif
 #include "gfx/video_display_server.h"
 #ifdef HAVE_THREADS
 #include "gfx/video_thread_wrapper.h"
@@ -391,6 +403,7 @@ enum
    RA_OPT_XDELTA,
    RA_OPT_NO_PATCH,
    RA_OPT_RECORDCONFIG,
+   RA_OPT_PYROWAVE_RECEIVE,
    RA_OPT_SUBSYSTEM,
    RA_OPT_SIZE,
    RA_OPT_FEATURES,
@@ -418,7 +431,8 @@ enum
    RA_OPT_ACCESSIBILITY,
    RA_OPT_LOAD_MENU_ON_ERROR,
    RA_OPT_CLOUDSYNC,
-   RA_OPT_MCP_STDIO
+   RA_OPT_MCP_STDIO,
+   RA_OPT_VULKAN_DRIVER
 };
 
 /* DRIVERS */
@@ -1859,6 +1873,9 @@ void drivers_init(
          if (!video_driver_hw_render_interface_kept())
          {
             video_driver_invalidate_hw_render_cache();
+#ifdef HAVE_RUNAHEAD
+            serialization_clear_history();
+#endif
             if (hwr->context_destroy)
                hwr->context_destroy();
             video_driver_hw_render_interface_note(NULL);
@@ -1937,7 +1954,7 @@ void drivers_init(
    {
       audio_driver_init_internal(
             settings,
-            audio_st->callback.callback != NULL);
+            audio_driver_has_callback());
       audio_driver_drop_kept();
       /* Whether or not init succeeded: the list is how the user gets
        * out of a failed device choice. */
@@ -1962,6 +1979,8 @@ void drivers_init(
          /* Resource leaks will follow if camera is initialized twice. */
          if (!camera_st->data)
          {
+            /* The core's camera replaces a preview's own. */
+            camera_driver_preview_release();
             if (!camera_driver_find_driver("camera driver",
                      verbosity_enabled))
                retroarch_fail(1, "find_camera_driver()");
@@ -2247,6 +2266,7 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
       }
 
       camera_st->data = NULL;
+      camera_driver_preview_release();
       runloop_frame_work_set(RUNLOOP_WORK_CAMERA, false);
    }
 
@@ -2278,6 +2298,12 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
             video_st->data);
       if (lifetime_flags & DRIVER_LIFETIME_SESSION_SWITCH)
          video_driver_modify_disp_flags(VIDEO_FLAG_KEEP_VULKAN_SESSION, 0);
+#ifdef HAVE_RUNAHEAD
+      /* Managed states may hold objects of the hardware context the
+       * core is about to destroy. */
+      if (flags & DRIVER_VIDEO_MASK)
+         serialization_clear_history();
+#endif
       video_driver_free_internal();
       video_driver_modify_disp_flags(0, VIDEO_FLAG_KEEP_VULKAN_SESSION);
 #ifdef HAVE_THREADS
@@ -4378,6 +4404,9 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_RESET:
+#ifdef HAVE_PYROWAVE
+         if (record_pyrowave_receiver_reset()) break;
+#endif
          {
             const char *_msg = msg_hash_to_str(MSG_RESET);
 #ifdef HAVE_COMMAND
@@ -5263,6 +5292,10 @@ bool command_event(enum event_command cmd, void *data)
              * directory) is skipped. */
             bool force                     = data ? *(bool*)data : false;
 
+#ifdef HAVE_CORE_SIGNATURES
+            /* Also where a changed cores directory lands */
+            core_trust_runtime_set_cores_dir(dir_libretro);
+#endif
             if (  !force
                 && core_info_list_is_current(
                      path_libretro_info, dir_libretro,
@@ -6526,7 +6559,10 @@ bool command_event(enum event_command cmd, void *data)
           * start() for the camera to come up, and that start raises
           * the bit. Disallowing stops a camera that is running. */
          if (!settings->bools.camera_allow)
+         {
             driver_camera_stop();
+            camera_driver_preview_release();
+         }
          break;
       case CMD_EVENT_DISCORD_INIT:
 #ifdef HAVE_DISCORD
@@ -6663,6 +6699,23 @@ bool command_event(enum event_command cmd, void *data)
                   msg_hash_to_str(value));
             RARCH_LOG("[OpenXR] %s\n", msg);
             runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+         break;
+      case CMD_EVENT_BLANK_UNUSED_TOGGLE:
+         {
+            bool blanked     = false;
+            unsigned covered = 0;
+            const char *_msg;
+            if (!video_driver_blank_unused_toggle(&blanked, &covered))
+               return false;
+            _msg = msg_hash_to_str(!blanked
+                  ? MSG_BLANK_UNUSED_SCREENS_OFF
+                  : covered
+                  ? MSG_BLANK_UNUSED_SCREENS_ON
+                  : MSG_BLANK_UNUSED_SCREENS_NONE);
+            RARCH_LOG("[Video] %s\n", _msg);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
          break;
@@ -7081,6 +7134,11 @@ void retroarch_save_for_suspend(void)
  * 'when') do not hold the wait and are dropped as designed. */
 void retroarch_drain_tasks_for_exit(void)
 {
+#ifdef HAVE_AUDIOMIXER
+   /* Streaming feeders own the decoder windows until their sounds are
+    * released. Stop playback before waiting for those tasks to finish. */
+   audio_driver_mixer_shutdown();
+#endif
    task_queue_reset();
    task_queue_wait_timeout(NULL, NULL, 3 * 1000 * 1000);
 }
@@ -7166,6 +7224,9 @@ void main_exit(void *args)
 #ifdef HAVE_VULKAN
    vulkan_context_session_cache_free();
 #endif
+#ifdef HAVE_TEMPORAL_UPSCALER
+   video_upscaler_async_shutdown();
+#endif
    /* an input driver kept for drivers that then failed to start */
    input_driver_drop_kept();
 
@@ -7174,6 +7235,9 @@ void main_exit(void *args)
    retroarch_ctl(RARCH_CTL_STATE_FREE,  NULL);
    global_free(p_rarch);
    task_queue_deinit();
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   gfx_music_player_reap();
+#endif
 #ifdef HAVE_NETWORKING
    /* After task_queue_deinit(), so no transfer can still be holding a
     * pooled connection. */
@@ -8151,6 +8215,7 @@ static void retroarch_print_help(const char *arg0)
          "Path to record video file. Using mkv extension is recommended.\n"
          "      --recordconfig             "
          "Path to settings used during recording.\n"
+         "      --pyrowave-receive FILE     Receive a stream inside the frontend.\n"
          "      --size=WIDTHxHEIGHT        "
          "Overrides output video size when recording.\n");
 
@@ -8167,6 +8232,11 @@ static void retroarch_print_help(const char *arg0)
    strlcpy_append(buf, sizeof(buf), &_len,
          "      --mcp-stdio                "
          "Serves MCP on stdin and stdout, for a client that starts RetroArch.\n");
+#endif
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+   strlcpy_append(buf, sizeof(buf), &_len,
+         "      --vulkan-driver=system     "
+         "Starts with the system Vulkan driver, not the custom one, for this run.\n");
 #endif
 
 #ifdef HAVE_PATCH
@@ -8715,6 +8785,7 @@ static bool retroarch_parse_input_and_config(
       { "save",               1, NULL, 's' },
       { "fullscreen",         0, NULL, 'f' },
       { "record",             1, NULL, 'r' },
+      { "pyrowave-receive",   1, NULL, RA_OPT_PYROWAVE_RECEIVE },
       { "recordconfig",       1, NULL, RA_OPT_RECORDCONFIG },
       { "size",               1, NULL, RA_OPT_SIZE },
       { "verbose",            0, NULL, 'v' },
@@ -8785,6 +8856,9 @@ static bool retroarch_parse_input_and_config(
 #endif
 #ifdef HAVE_MCP
       { "mcp-stdio",          0, NULL, RA_OPT_MCP_STDIO },
+#endif
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+      { "vulkan-driver",      1, NULL, RA_OPT_VULKAN_DRIVER },
 #endif
       { NULL, 0, NULL, 0 }
    };
@@ -9147,6 +9221,16 @@ static bool retroarch_parse_input_and_config(
             settings->paths.log_dir);
 
    /* Second pass: All other arguments override the config file */
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+   {
+      const char *env = getenv("RETROARCH_VULKAN_DRIVER");
+      if (string_is_equal(env, "system"))
+         vulkan_custom_driver_set_safe_mode(true);
+      else if (!string_is_empty(env))
+         RARCH_WARN("[Vulkan] Ignoring RETROARCH_VULKAN_DRIVER=%s: only \"system\" is known.\n",
+               env);
+   }
+#endif
    optind = 1;
 
    if (argc)
@@ -9425,6 +9509,15 @@ static bool retroarch_parse_input_and_config(
                }
                break;
 
+            case RA_OPT_PYROWAVE_RECEIVE:
+#ifdef HAVE_PYROWAVE
+               if (!record_pyrowave_receiver_start(optarg))
+                  retroarch_fail(1, "Could not start embedded PyroWave receiver.");
+#else
+               retroarch_fail(1, "PyroWave support is not enabled.");
+#endif
+               break;
+
             case RA_OPT_RECORDCONFIG:
                strlcpy(rec_st->config, optarg, sizeof(rec_st->config));
                break;
@@ -9489,6 +9582,15 @@ static bool retroarch_parse_input_and_config(
             case RA_OPT_LOAD_MENU_ON_ERROR:
                rarch_st.flags |= RARCH_FLAGS_CLI_LOAD_MENU_ON_ERR;
                break;
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+            case RA_OPT_VULKAN_DRIVER:
+               if (string_is_equal(optarg, "system"))
+                  vulkan_custom_driver_set_safe_mode(true);
+               else
+                  RARCH_WARN("[Vulkan] Ignoring --vulkan-driver=%s: only \"system\" is known.\n",
+                        optarg);
+               break;
+#endif
             case 'e':
                {
                   char *endptr;
@@ -9798,6 +9900,52 @@ static void retroarch_find_drivers(settings_t *settings,
 #endif
 }
 
+enum rarch_core_type retroarch_builtin_core_type(const char *fullpath)
+{
+   settings_t *settings              = config_get_ptr();
+   enum rarch_content_type cont_type = path_is_media_type(fullpath);
+#ifdef HAVE_IMAGEVIEWER
+   bool builtin_imageviewer          = settings->bools.multimedia_builtin_imageviewer_enable;
+#endif
+   bool builtin_mediaplayer          = settings->bools.multimedia_builtin_mediaplayer_enable;
+
+   switch (cont_type)
+   {
+      case RARCH_CONTENT_MOVIE:
+      case RARCH_CONTENT_MUSIC:
+         if (builtin_mediaplayer)
+         {
+            /* TODO/FIXME - it needs to become possible to
+             * switch between FFmpeg and MPV at runtime */
+#if defined(HAVE_MPV)
+            return CORE_TYPE_MPV;
+#elif defined(HAVE_FFMPEG)
+            return CORE_TYPE_FFMPEG;
+#elif defined(HAVE_WEBMPLAYER)
+            if (cont_type == RARCH_CONTENT_MOVIE
+#ifdef HAVE_RWMA
+                  || (cont_type == RARCH_CONTENT_MUSIC &&
+                     (string_is_equal_noncase(path_get_extension(fullpath), "wma") ||
+                      string_is_equal_noncase(path_get_extension(fullpath), "xwma") ||
+                      string_is_equal_noncase(path_get_extension(fullpath), "xma")))
+#endif
+               )
+               return CORE_TYPE_WEBM;
+#endif
+         }
+         break;
+#ifdef HAVE_IMAGEVIEWER
+      case RARCH_CONTENT_IMAGE:
+         if (builtin_imageviewer)
+            return CORE_TYPE_IMAGEVIEWER;
+         break;
+#endif
+      default:
+         break;
+   }
+   return CORE_TYPE_PLAIN;
+}
+
 bool retroarch_main_init_core(int argc, char *argv[],
       bool find_drivers, bool *verbosity)
 {
@@ -10050,6 +10198,7 @@ bool retroarch_main_init_core(int argc, char *argv[],
       if (!frontend_driver_get_core_extension(core_ext, sizeof(core_ext)))
          core_ext[0] = '\0';
       core_trust_runtime_init(NULL, seed_dir, core_ext);
+      core_trust_runtime_set_cores_dir(settings->paths.directory_libretro);
    }
 #endif
 
@@ -10061,12 +10210,6 @@ bool retroarch_main_init_core(int argc, char *argv[],
 #endif
       if (fullpath && *fullpath)
       {
-         enum rarch_content_type cont_type = path_is_media_type(fullpath);
-#ifdef HAVE_IMAGEVIEWER
-         bool builtin_imageviewer          = settings->bools.multimedia_builtin_imageviewer_enable;
-#endif
-         bool builtin_mediaplayer          = settings->bools.multimedia_builtin_mediaplayer_enable;
-
 #ifdef HAVE_MENU
          if (!(runloop_st->flags & RUNLOOP_FLAG_HAS_SET_CORE)
                && !retroarch_override_setting_is_set(
@@ -10079,47 +10222,14 @@ bool retroarch_main_init_core(int argc, char *argv[],
          }
          else
 #endif
-         switch (cont_type)
          {
-            case RARCH_CONTENT_MOVIE:
-            case RARCH_CONTENT_MUSIC:
-               if (builtin_mediaplayer)
-               {
-                  /* TODO/FIXME - it needs to become possible to
-                   * switch between FFmpeg and MPV at runtime */
-#if defined(HAVE_MPV)
-                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                  runloop_set_current_core_type(CORE_TYPE_MPV, false);
-#elif defined(HAVE_FFMPEG)
-                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                  runloop_set_current_core_type(CORE_TYPE_FFMPEG, false);
-#elif defined(HAVE_WEBMPLAYER)
-                  if (cont_type == RARCH_CONTENT_MOVIE
-#ifdef HAVE_RWMA
-                        || (cont_type == RARCH_CONTENT_MUSIC &&
-                           (string_is_equal_noncase(path_get_extension(fullpath), "wma") ||
-                            string_is_equal_noncase(path_get_extension(fullpath), "xwma") ||
-                            string_is_equal_noncase(path_get_extension(fullpath), "xma")))
-#endif
-                     )
-                  {
-                     retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                     runloop_set_current_core_type(CORE_TYPE_WEBM, false);
-                  }
-#endif
-               }
-               break;
-#ifdef HAVE_IMAGEVIEWER
-            case RARCH_CONTENT_IMAGE:
-               if (builtin_imageviewer)
-               {
-                  retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
-                  runloop_set_current_core_type(CORE_TYPE_IMAGEVIEWER, false);
-               }
-               break;
-#endif
-            default:
-               break;
+            enum rarch_core_type builtin_type =
+               retroarch_builtin_core_type(fullpath);
+            if (builtin_type != CORE_TYPE_PLAIN)
+            {
+               retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_LIBRETRO, NULL);
+               runloop_set_current_core_type(builtin_type, false);
+            }
          }
       }
    }
@@ -10621,7 +10731,10 @@ bool retroarch_main_deinit_begin(void)
       autosave_deinit();
 #endif
 
-   command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+#ifdef HAVE_PYROWAVE
+   if (!record_pyrowave_frontend_pause())
+#endif
+      command_event(CMD_EVENT_RECORD_DEINIT, NULL);
 
    command_event(CMD_EVENT_SAVE_FILES, NULL);
 
@@ -10640,7 +10753,11 @@ bool retroarch_main_deinit_begin(void)
 
 bool retroarch_main_deinit_pending(void)
 {
-   return command_event_core_deinit_pending();
+   return command_event_core_deinit_pending()
+#ifdef HAVE_PYROWAVE
+      || (record_pyrowave_frontend_active() && record_pyrowave_reset_pending())
+#endif
+      ;
 }
 
 void retroarch_main_deinit_finish(void)
@@ -11128,6 +11245,10 @@ static bool retroarch_main_quit_begin(void)
     * settings_t before the config is written below; its own
     * deinit runs only after the run loop has left, too late. */
    ui_companion_event_command(CMD_EVENT_QUIT);
+#ifdef HAVE_VIDEO_WINDOWS
+   /* And the bounds the screen windows were left at */
+   video_driver_take_window_bounds();
+#endif
 
    /* Restore video driver before saving */
    video_driver_restore_cached(settings);
@@ -11174,6 +11295,11 @@ static bool retroarch_main_quit_begin(void)
 
    if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
       return false;
+#ifdef HAVE_PYROWAVE
+   /* quit_pending is published after begin returns; end a frontend stream
+    * now rather than treating this teardown as a content transition. */
+   record_pyrowave_stop();
+#endif
    recording_gpu_stop();
    if (recording_state_get_ptr()->start_pending)
       command_event(CMD_EVENT_RECORD_DEINIT, NULL);
@@ -11401,6 +11527,7 @@ enum retro_language retroarch_get_language_from_iso(const char *iso639)
       {"sk", RETRO_LANGUAGE_SLOVAK},
       {"fa", RETRO_LANGUAGE_PERSIAN},
       {"he", RETRO_LANGUAGE_HEBREW},
+      {"iw", RETRO_LANGUAGE_HEBREW}, /* Java and Android name Hebrew "iw" */
       {"ast", RETRO_LANGUAGE_ASTURIAN},
       {"fi", RETRO_LANGUAGE_FINNISH},
       {"id", RETRO_LANGUAGE_INDONESIAN},

@@ -21,6 +21,7 @@
 #include <QObject>
 #include <QMainWindow>
 #include <QTreeView>
+#include <QTreeWidget>
 #include <QListWidget>
 #include <QTableView>
 #include <QFrame>
@@ -34,6 +35,8 @@
 #include <QHash>
 #include <QPersistentModelIndex>
 #include <QAbstractTableModel>
+#include <QAtomicInt>
+#include <QSharedPointer>
 #include <QIcon>
 #include <QImage>
 #include <QPointer>
@@ -43,6 +46,7 @@
 #include <QVBoxLayout>
 #include <QCache>
 #include <QSortFilterProxyModel>
+#include <QBitArray>
 #include <QDir>
 #include <QThread>
 #include <QMutex>
@@ -88,6 +92,8 @@ class QTimer;
 class QFileSystemModel;
 class QListWidgetItem;
 class QTableWidgetItem;
+class QTreeWidgetItem;
+struct file_list;
 class QResizeEvent;
 class QDockWidget;
 class QComboBox;
@@ -154,6 +160,8 @@ public:
    /* True while addPlaylistItems() is still waiting on the companion
     * core's budgeted parse of one or more playlists. */
    bool isLoadingPlaylists() const;
+   /* The entries, shared: what a search worker reads in place. */
+   const QVector<PlaylistEntry> &entries() const { return m_contents; }
    /* Companion core notification: the requested playlist finished
     * parsing. Appends its entries and starts the next pending one. */
    void onCorePlaylistChanged();
@@ -163,6 +171,8 @@ public:
    void reloadThumbnail(const QModelIndex &index);
    void reloadThumbnailPath(const QString path);
    void reloadSystemThumbnails(const QString system);
+   /* Forget the rows' resolved thumbnail paths. */
+   void clearThumbnailPaths();
    void setThumbnailCacheLimit(int limit);
    /* Edge (px) the grid draws thumbnails at; requests are made at this
     * size so the engine hands back cells that need no further scaling. */
@@ -183,9 +193,9 @@ public:
    void abandonPending();
    bool isSupportedImage(const QString path) const;
    QString getPlaylistThumbnailsDir(const QString playlistName, const QString type) const;
-   /* Repository thumbnail file for a label, ignoring whether the content
-    * itself is an image (the save target / the sidebar images). */
-   QString getRepositoryThumbnailPath(const QString playlistName, const QString labelNoExt, const QString type) const;
+   QString getThumbnailPath(const PlaylistEntry &entry, QString type) const;
+   /* Where an image dropped for @entry is saved. */
+   QString getThumbnailSavePath(const PlaylistEntry &entry, const QString type) const;
 
 signals:
    void imageLoaded(const QImage image, const QModelIndex &index, const QString &path);
@@ -217,13 +227,15 @@ private:
    QVector<PlaylistEntry> m_pendingContents;
    bool m_loadingPlaylists = false;
    void appendEntriesFromCore();
-   void startNextPendingPlaylist();
+   void startNextPendingPlaylist(bool append);
    mutable QCache<QString, QPixmap> m_cache; /* filled lazily from data() */
    /* stages of imageAt()/data(): one conversion per (path, dims) */
    QPixmap *pixmapFor(const QString &path, unsigned dims) const;
    ThumbnailType m_thumbnailType = THUMBNAIL_TYPE_BOXART;
+   /* Per row, at m_thumbnailType: a lookup stats up to about twenty
+    * files, too many for every paint. */
+   mutable QHash<int, QString> m_thumbnailPaths;
    QString getThumbnailPath(const QModelIndex &index, QString type) const;
-   QString getThumbnailPath(const PlaylistEntry &entry, QString type) const;
    QString getCurrentTypeThumbnailPath(const QModelIndex &index) const;
 };
 
@@ -361,19 +373,20 @@ public:
 /* The file browser's table, backed by the companion core's browse
  * listing (enumerated, stat'ed and formatted off the UI thread, shared
  * by every companion): this class only paints it. Columns are Qt's
- * Name / Size / Type / Date Modified. A search filter keeps a row map. */
+ * Name / Size / Type / Date Modified / Path; a row is the listing's
+ * index, a search's matches included (the companion core walks it). */
+
 class BrowseTableModel : public QAbstractTableModel
 {
    Q_OBJECT
 public:
    BrowseTableModel(QObject *parent = 0) : QAbstractTableModel(parent) {}
    int rowCount(const QModelIndex &parent = QModelIndex()) const;
-   int columnCount(const QModelIndex &parent = QModelIndex()) const { (void)parent; return 4; }
+   int columnCount(const QModelIndex &parent = QModelIndex()) const { (void)parent; return 5; }
    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
    QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
-   /* The core listing changed: rebuild the row map and reset. */
+   /* The core listing changed: reset. */
    void reload();
-   void setFilter(const QRegularExpression &re);
    /* Header click: the core sorts, every companion the same way. */
    void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
    /* Browse index (into the core listing) behind a table row, or -1. */
@@ -381,9 +394,31 @@ public:
    QString pathAt(const QModelIndex &index) const;
    bool isDirAt(const QModelIndex &index) const;
 private:
-   QVector<long> m_rows;   /* table row -> browse index */
-   QRegularExpression m_filter;
+   size_t m_count = 0;     /* rows: the core's listing, by its index */
+   QString m_dir;          /* the listing's folder, for the Path column */
    QIcon m_folderIcon, m_fileIcon, m_driveIcon;
+};
+
+/* Playlist filtering is performed off the UI thread. This proxy only
+ * applies the completed row bitmap, keeping the view's sorting and
+ * selection behaviour unchanged. */
+class PlaylistSearchProxyModel : public QSortFilterProxyModel
+{
+   Q_OBJECT
+public:
+   PlaylistSearchProxyModel(QObject *parent = 0)
+      : QSortFilterProxyModel(parent), m_searchActive(false), m_generation(0) {}
+   Q_INVOKABLE void setSearchRows(const QBitArray &rows,
+         quint64 generation, bool active);
+signals:
+   void searchResultsChanged();
+protected:
+   bool filterAcceptsRow(int sourceRow,
+         const QModelIndex &sourceParent) const;
+private:
+   QBitArray m_searchRows;   /* source row -> matched */
+   bool m_searchActive;
+   quint64 m_generation;
 };
 
 class LoadCoreTableWidget : public QTableWidget
@@ -438,14 +473,16 @@ public:
    enum BrowserType
    {
       BROWSER_TYPE_PLAYLISTS,
-      BROWSER_TYPE_FILES
+      BROWSER_TYPE_FILES,
+      BROWSER_TYPE_UPDATER,
+      BROWSER_TYPE_SETTINGS
    };
 
    enum Theme
    {
-      THEME_SYSTEM_DEFAULT,
-      THEME_DARK,
-      THEME_CUSTOM
+      THEME_SYSTEM_DEFAULT = 0,
+      THEME_DARK           = 1,
+      THEME_CUSTOM         = 2,
    };
 
    enum MessageBoxType
@@ -473,12 +510,20 @@ public:
    QToolButton* runPushButton();
    QToolButton* stopPushButton();
    QTabWidget* browserAndPlaylistTabWidget();
+   QWidget* updaterHomeWidget();
+   QTableWidget* coreUpdaterTable();
+   QWidget* updaterNavigationWidget();
+   QWidget* updaterContentWidget();
+   QTreeWidget* updaterDirectoryTree();
+   QWidget* updaterEmptyWidget();
    QString getPlaylistDefaultCore(QString plName);
    ViewOptionsDialog* viewOptionsDialog();
    ShortcutsDialog* shortcutsDialog();
    QVector<QHash<QString, QString> > getCoreInfo();
    void setTheme(Theme theme = THEME_SYSTEM_DEFAULT);
    Theme theme();
+   bool isDarkTheme() const;
+   void rebuildUpdaterButtons();
    Theme getThemeFromString(QString themeString);
    const char *getThemeString(Theme theme);
    QString getSelectedCorePath();
@@ -523,6 +568,18 @@ public slots:
    void onBrowserDownloadsClicked();
    void onBrowserUpClicked();
    void onBrowserStartClicked();
+   void onUpdaterActionClicked();
+   void onBrowseDeleteFinished(QString path, bool ok);
+   void onCoreUpdaterTableContextMenuRequested(const QPoint &pos);
+   void onCoreUpdaterListPublished();
+   void onUpdaterListingFinished(QStringList entries, int type, QString path);
+   void onUpdaterDownloadFinished(QString fileName, bool success, QString folder);
+   void onUpdaterBackClicked();
+   void onUpdaterUpClicked();
+   void onUpdaterTopClicked();
+   void onUpdaterTableDoubleClicked(const QModelIndex &index);
+   void onUpdaterDirectoryExpanded(QTreeWidgetItem *item);
+   void onUpdaterDirectoryClicked(QTreeWidgetItem *item, int column);
    void initContentTableWidget();
    void onViewClosedDocksAboutToShow();
    void onShowHiddenDockWidgetAction();
@@ -565,19 +622,18 @@ public slots:
    void onTabWidgetIndexChanged(int index);
    void deleteCurrentPlaylistItem();
    void onFileDropWidgetContextMenuRequested(const QPoint &pos);
-   void showAbout();
    void showDocs();
    /* companion core download results (see ui_companion_qt_core_callbacks) */
    void onCoreThumbnailDownloaded(QString system, QString title, QString path, bool success);
-   void onCoreThumbnailPackFinished(int result);
    void onBrowseChanged();
+   /* The stored thumbnail matches changed. */
+   void onThumbnailsChanged(const QString &playlistPath);
    void onSingleThumbnailDownloadFinishedInternal(QString system, QString title, QString path, bool success);
    void onPlaylistThumbnailDownloadFinishedInternal(QString path, bool success);
    void deferReloadShaderParams();
    void downloadThumbnail(QString system, QString title, QUrl url = QUrl());
-   void downloadAllThumbnails(QString system, QUrl url = QUrl());
    void downloadPlaylistThumbnails(QString playlistPath);
-   void downloadNextPlaylistThumbnail(QString system, QString title, QString type, QUrl url = QUrl());
+   void downloadNextPlaylistThumbnail(QString system, QString title, QString path, QString type, QUrl url = QUrl());
    void changeThumbnailType(ThumbnailType type);
    void onThumbnailDropped(const QImage &image, ThumbnailType type);
 
@@ -589,6 +645,7 @@ private slots:
    void onCurrentTableItemDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles);
    void onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
    void onPlaylistModelLoaded();
+   void onPlaylistSearchResultsReady();
    void onScanDirectoryClicked();
    void onQuitRetroArchClicked();
    void onCurrentListItemDataChanged(QListWidgetItem *item);
@@ -607,6 +664,7 @@ private slots:
    void onSearchResetClicked();
    void onLaunchWithComboBoxIndexChanged(int index);
    void onFileBrowserTreeContextMenuRequested(const QPoint &pos);
+   void onFileBrowserTableContextMenuRequested(const QPoint &pos);
    void onPlaylistWidgetContextMenuRequested(const QPoint &pos);
    void onStopClicked();
    void onZoomValueChanged(int value);
@@ -622,8 +680,6 @@ private slots:
 
    void onThumbnailDownloadCanceled();
    void onDownloadThumbnail(QString system, QString title);
-
-   void onThumbnailPackDownloadCanceled();
 
    void onPlaylistThumbnailDownloadCanceled();
 
@@ -648,11 +704,14 @@ private:
    void setupPlaylistFooter();
    void setupModels();
    void setupFileSystemBrowser();
+   void relistFileSystemFolder(const QString &path);
    void setupDockWidgets();
    void setupSignalConnections();
 
    PlaylistModel *m_playlistModel;
-   QSortFilterProxyModel *m_proxyModel;
+   PlaylistSearchProxyModel *m_proxyModel;
+   QSharedPointer<QAtomicInt> m_playlistSearchCancel;
+   quint64 m_playlistSearchGeneration = 0;
    BrowseTableModel *m_browseModel;
    LoadCoreWindow *m_loadCoreWindow;
    QTimer *m_timer;
@@ -668,6 +727,7 @@ private:
    FileDropWidget *m_playlistViews;
    QWidget *m_searchWidget;
    QLineEdit *m_searchLineEdit;
+   QTimer *m_searchDebounceTimer;
    QDockWidget *m_searchDock;
    QStringList m_playlistFiles;
    QComboBox *m_launchWithComboBox;
@@ -676,6 +736,20 @@ private:
    QToolButton *m_runPushButton;
    QToolButton *m_stopPushButton;
    QTabWidget *m_browserAndPlaylistTabWidget;
+   QWidget *m_updaterHomeWidget;
+   QWidget *m_updaterEmptyWidget;
+   QWidget *m_updaterNavigationWidget;
+   QWidget *m_updaterContentWidget;
+   QString m_updaterContentPath;
+   int m_updaterViewType;
+   QTableWidget *m_coreUpdaterTable;
+   QTreeWidget *m_updaterDirectoryTree;
+   /* deletes asked of the companion core: path -> 1 folder | 2 backup */
+   QHash<QString, int> m_pendingDeletes;
+   /* the words the file browser was last searched for */
+   QString m_browseSearchText;
+   /* the menu's Online Updater list the buttons were made from */
+   struct file_list *m_updaterList = NULL;
    bool m_pendingRun;
    /* Sidebar (four thumbnail widgets) and file-browser preview: the
     * path each widget is waiting on from the model's engine. */
@@ -717,8 +791,7 @@ private:
 
    QProgressDialog *m_thumbnailDownloadProgressDialog;
    QStringList m_pendingThumbnailDownloadTypes;
-
-   QProgressDialog *m_thumbnailPackDownloadProgressDialog;
+   QString m_pendingThumbnailDownloadPath;
 
    QProgressDialog *m_playlistThumbnailDownloadProgressDialog;
    QList<QHash<QString, QString> > m_pendingPlaylistThumbnails;
@@ -726,17 +799,14 @@ private:
    unsigned m_failedThumbnails;
    bool m_playlistThumbnailDownloadWasCanceled;
    bool m_hasBeenShown;
+   bool m_fileBrowserInitialized;
    QString m_pendingDirScrollPath;
 
    QTimer *m_thumbnailTimer;
    QTimer *m_persistTimer;
    GridItem m_gridItem;
    BrowserType m_currentBrowser;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
    QRegularExpression m_searchRegularExpression;
-#else
-   QRegExp m_searchRegExp;
-#endif
    QByteArray m_fileTableHeaderState;
    QWidget *m_zoomWidget;
    QString m_itemsCountLiteral;

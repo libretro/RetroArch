@@ -1,0 +1,8 @@
+# Ordinary builds consume committed shader data, with no generator.
+PYTHON ?= python3
+PYROWAVE_GENERATED_DIR := libretro-common/formats/pyrowave/shaders
+PYROWAVE_GENERATED_HEADER := $(PYROWAVE_GENERATED_DIR)/rpyrowave_shaders.h
+
+.PHONY: regenerate-pyrowave-shaders
+regenerate-pyrowave-shaders:
+	$(PYTHON) tools/pyrowave_embed_shaders.py --output $(PYROWAVE_GENERATED_HEADER)

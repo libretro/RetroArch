@@ -66,7 +66,9 @@ jobs:
       # setup-msys2 has no retry of its own, and its system upgrade fails
       # the job when mirror.msys2.org stalls ("Operation too slow") on the
       # package databases. A failed attempt is run once more after a
-      # minute; the second reinstalls over the first.
+      # minute, into a folder of its own: setup-msys2 will not install
+      # over the msys64 the first attempt left behind, and that one's
+      # files can still be held by the processes it started.
       - name: Wait before retrying MSYS2
         if: steps.msys2.outcome == 'failure'
         shell: bash
@@ -78,6 +80,7 @@ jobs:
         with:
           msystem: ${{ matrix.sys }}
           update: true
+          location: ${{ runner.temp }}/msys2-retry
 
       - name: Install packages
         shell: msys2 {0}

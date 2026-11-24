@@ -1,0 +1,4 @@
+*.vpo binary
+*.fpo binary
+*.json text eol=lf
+*.md text eol=lf

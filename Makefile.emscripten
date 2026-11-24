@@ -69,12 +69,9 @@ HAVE_AUDIOWORKLET ?= 0
 # doesn't work on PROXY_TO_PTHREAD
 HAVE_RWEBAUDIO ?= 1
 
-# requires ASYNC or PROXY_TO_PTHREAD. Prefer another driver.
-HAVE_AL ?= 0
-
-# whether the browser thread is allowed to block to wait for audio to play, not CPU usage-friendly!
-# currently this variable is only used by rwebaudio and audioworklet; openal will never busywait.
-ALLOW_AUDIO_BUSYWAIT ?= 0
+# no OpenAL: the web's has no completion events to wait on, and the
+# audioworklet and rwebaudio drivers wait on theirs.
+override HAVE_AL = 0
 
 # asyncify: enable fibers and sleeping on the browser thread,
 # this has a noticeable impact on compile time, output wasm size, and speed.
@@ -176,9 +173,6 @@ ifeq ($(PROXY_TO_PTHREAD), 1)
    override WASM_WORKERS = 1
    # use the default stack size for the browser thread; the RetroArch thread will be created with the specified stack size
    override STACK_SIZE = 4194304
-else ifeq ($(HAVE_AL), 1)
-   override ASYNC = 1
-   override MIN_ASYNC = 0
 endif
 
 ifeq ($(HAVE_SDL2), 1)
@@ -230,11 +224,6 @@ ifeq ($(HAVE_AUDIOWORKLET), 1)
    endif
 endif
 
-ifeq ($(HAVE_AL), 1)
-   LDFLAGS += -lopenal
-   DEFINES += -DHAVE_AL
-endif
-
 ifeq ($(PROXY_TO_PTHREAD), 1)
 else ifeq ($(JSPI), 1)
 else ifeq ($(ASYNC), 1)
@@ -245,20 +234,11 @@ else
    else
       DEFINES += -DEMSCRIPTEN_AUDIO_FAKE_BLOCK
    endif
-   ifneq ($(ALLOW_AUDIO_BUSYWAIT), 1)
-      DEFINES += -DEMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
-   endif
-endif
-
-ifeq ($(ALLOW_AUDIO_BUSYWAIT), 1)
-   DEFINES += -DEMSCRIPTEN_AUDIO_BUSYWAIT
 endif
 
 # explanation of some of these defines:
 # EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK: audio blocking occurs in the main loop instead of in the audio driver functions.
-# EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK: along with above, enables external blocking in the write function.
-# EMSCRIPTEN_AUDIO_BUSYWAIT: write function will busywait. init function may still use an external block.
-# EMSCRIPTEN_AUDIO_ASYNC_BLOCK: external block uses emscripten_sleep (requires MIN_ASYNC).
+# EMSCRIPTEN_AUDIO_ASYNC_BLOCK: external block waits with asyncify (requires MIN_ASYNC).
 # EMSCRIPTEN_AUDIO_FAKE_BLOCK: external block uses main loop timing (doesn't require asyncify).
 # when building with either PROXY_TO_PTHREAD or ASYNC (full asyncify), none of the above are required.
 
@@ -346,7 +326,9 @@ all: $(TARGET)
 $(libretro_new): ;
 
 mv_libretro:
+ifneq ($(strip $(libretro)),)
 	$(Q)mv -f $(libretro) $(libretro_new) || true
+endif
 
 $(TARGET): $(RARCH_OBJ) $(libretro_new) mv_libretro
 	@$(if $(Q), $(shell echo echo "LD $@ \<obj\> $(libretro_new) $(LIBS) $(LDFLAGS)"),)

@@ -16,7 +16,9 @@ var LibraryRWebAudio = {
       latency: 0,
       virtualBufferFrames: 0,
       currentTimeDiff: 0,
-      extraLatencySec: 0
+      extraLatencySec: 0,
+      /* A room wait's resolver, while one is pending. */
+      wake: null
    },
 
    /* AudioContext.currentTime can be inaccurate: https://bugzilla.mozilla.org/show_bug.cgi?id=901247 */
@@ -24,8 +26,18 @@ var LibraryRWebAudio = {
       return performance.now() / 1000 - RWA.currentTimeDiff;
    },
 
+   /* The context's own clock moved on: a source finished playing, or
+    * the context started or stopped. A pending room wait looks again. */
+   $RWebAudioWake: function() {
+      var wake = RWA.wake;
+      RWA.wake = null;
+      if (wake) wake(1);
+   },
+
+   $RWebAudioStateChangeCB__deps: ["$RWebAudioWake"],
    $RWebAudioStateChangeCB: function() {
       RWA.contextRunning = RWA.context.state == "running";
+      RWebAudioWake();
    },
 
    RWebAudioResumeCtx: function() {
@@ -72,7 +84,7 @@ var LibraryRWebAudio = {
       return RWA.context.sampleRate;
    },
 
-   RWebAudioQueueBuffer__deps: ["$RWebAudioGetCurrentTime", "RWebAudioResumeCtx", "RWebAudioWriteAvailFrames"],
+   RWebAudioQueueBuffer__deps: ["$RWebAudioGetCurrentTime", "$RWebAudioWake", "RWebAudioResumeCtx", "RWebAudioWriteAvailFrames"],
    RWebAudioQueueBuffer: function(num_frames, planes, plane_frames) {
       if (RWA.nonblock && _RWebAudioWriteAvailFrames() < num_frames) return 0;
       if (!_RWebAudioResumeCtx()) return 0;
@@ -84,6 +96,7 @@ var LibraryRWebAudio = {
       }
       var bufferSource = RWA.context.createBufferSource();
       bufferSource.buffer = buffer;
+      bufferSource.onended = RWebAudioWake;
       bufferSource.connect(RWA.context.destination);
 
       var currentTime = RWebAudioGetCurrentTime();
@@ -124,6 +137,35 @@ var LibraryRWebAudio = {
       if (avail <= 0) return 0;
       if (avail >= RWA.virtualBufferFrames) return RWA.virtualBufferFrames;
       return avail;
+   },
+
+   /* Until there is room, or the context's clock moves on - a source
+    * ends, the context starts or stops - for the caller to look again.
+    * Resolves 1 when it did, 0 when only the watchdog ran out: one that
+    * frees nothing, suspended until the page is clicked or the tab is
+    * shown, is the caller's to give up on. */
+   RWebAudioWaitRoom__deps: ["$Asyncify", "RWebAudioWriteAvailFrames", "RWebAudioResumeCtx"],
+   RWebAudioWaitRoom__async: true,
+   RWebAudioWaitRoom__sig: "ii",
+   RWebAudioWaitRoom: function(ms) {
+      return Asyncify.handleAsync(function() {
+         return new Promise(function(resolve) {
+            var timer;
+            if (_RWebAudioWriteAvailFrames() > 0) {
+               resolve(1);
+               return;
+            }
+            _RWebAudioResumeCtx();
+            RWA.wake = function(r) {
+               clearTimeout(timer);
+               resolve(r);
+            };
+            timer = setTimeout(function() {
+               RWA.wake = null;
+               resolve(0);
+            }, ms);
+         });
+      });
    },
 
    RWebAudioRecalibrateTime: function() {

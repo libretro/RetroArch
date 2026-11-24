@@ -33,6 +33,7 @@
 #include <boolean.h>
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
+#include <encodings/base64.h>
 
 #include "../../../network/cloud_sync/webdav.c"
 
@@ -375,7 +376,7 @@ static void test_rejected_challenge_after_digest(void)
    {
       http_transfer_data_t resp;
       char  blk[256];
-      char *h;
+      const char *h;
       /* one-line header block: the line, its NUL, the closing NUL */
       size_t n = strlcpy(blk, digest_header, sizeof(blk) - 1);
 
@@ -386,7 +387,6 @@ static void test_rejected_challenge_after_digest(void)
       h = webdav_get_auth_header("GET", url);
       CHECK(h, "rejected[%u]: no header for an accepted challenge",
             (unsigned)i);
-      free(h);
 
       n = strlcpy(blk, rejected[i], sizeof(blk) - 1);
       blk[n + 1] = '\0';
@@ -395,9 +395,63 @@ static void test_rejected_challenge_after_digest(void)
       h = webdav_get_auth_header("GET", url);
       CHECK(!h, "rejected[%u]: a digest header was built from a "
             "rejected challenge", (unsigned)i);
-      free(h);
    }
    webdav_cleanup_digest();
+}
+
+/* Basic auth with both fields at their configured maximum: the
+ * header is the prefix, the Base64 of "user:password" and CRLF. */
+static void test_basic_auth_full_length(void)
+{
+   settings_t     *settings  = config_get_ptr();
+   webdav_state_t *webdav_st = webdav_state_get_ptr();
+   size_t          ulen      = sizeof(settings->arrays.webdav_username) - 1;
+   size_t          plen      = sizeof(settings->arrays.webdav_password) - 1;
+   char            saved_user[sizeof(settings->arrays.webdav_username)];
+   char            saved_pass[sizeof(settings->arrays.webdav_password)];
+   unsigned char  *plain;
+   const char     *h;
+   int             flen      = 0;
+   size_t          n;
+
+   strlcpy(saved_user, settings->arrays.webdav_username, sizeof(saved_user));
+   strlcpy(saved_pass, settings->arrays.webdav_password, sizeof(saved_pass));
+   memset(settings->arrays.webdav_username, 'u', ulen);
+   settings->arrays.webdav_username[ulen] = '\0';
+   memset(settings->arrays.webdav_password, 'p', plen);
+   settings->arrays.webdav_password[plen] = '\0';
+
+   webdav_cleanup_digest();
+   free(webdav_st->basic_auth_header);
+   webdav_st->basic_auth_header = NULL;
+   webdav_st->basic             = true;
+
+   h = webdav_get_auth_header(NULL, NULL);
+   CHECK(h, "basic: no header for full-length credentials");
+   if (h)
+   {
+      n = strlen(h);
+      CHECK(string_starts_with(h, "Authorization: Basic "), "basic: prefix");
+      CHECK(   n > STRLEN_CONST("Authorization: Basic \r\n")
+            && h[n - 2] == '\r' && h[n - 1] == '\n',
+            "basic: CRLF terminator");
+      plain = unbase64(h + STRLEN_CONST("Authorization: Basic "),
+            (int)(n - STRLEN_CONST("Authorization: Basic \r\n")), &flen);
+      CHECK(plain && (size_t)flen == ulen + 1 + plen
+            && plain[ulen] == ':'
+            && plain[0] == 'u' && plain[flen - 1] == 'p',
+            "basic: Base64 does not decode to user:password (%d bytes)",
+            flen);
+      free(plain);
+   }
+
+   free(webdav_st->basic_auth_header);
+   webdav_st->basic_auth_header = NULL;
+   webdav_st->basic             = false;
+   strlcpy(settings->arrays.webdav_username, saved_user,
+         sizeof(settings->arrays.webdav_username));
+   strlcpy(settings->arrays.webdav_password, saved_pass,
+         sizeof(settings->arrays.webdav_password));
 }
 
 int main(void)
@@ -429,6 +483,7 @@ int main(void)
    test_stale_nonce_recovers(&challenge, tmp);
    test_malformed_challenges();
    test_rejected_challenge_after_digest();
+   test_basic_auth_full_length();
 
    stub_reset();
    webdav_cleanup_digest();

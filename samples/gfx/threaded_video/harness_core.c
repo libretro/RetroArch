@@ -471,6 +471,18 @@ static void hw_context_reset(void)
       hw_image_create();
 }
 
+/* Devices made through create_device, and destroy_device calls. Each
+ * must have had its destroy_device by retro_deinit: past it the
+ * frontend closes this library, and a call then lands in unmapped
+ * code. */
+static unsigned hw_devices_created;
+static unsigned hw_devices_destroyed;
+
+static void hw_destroy_device(void)
+{
+   hw_devices_destroyed++;
+}
+
 static bool hw_create_device(struct retro_vulkan_context *context,
       VkInstance instance, VkPhysicalDevice gpu, VkSurfaceKHR surface,
       PFN_vkGetInstanceProcAddr gipa,
@@ -543,6 +555,7 @@ static bool hw_create_device(struct retro_vulkan_context *context,
    di.pEnabledFeatures        = features;
    if (create_device(gpu, &di, NULL, &device) != VK_SUCCESS)
       return false;
+   hw_devices_created++;
 
    get_queue = (PFN_vkGetDeviceQueue)gdpa(device, "vkGetDeviceQueue");
    context->gpu                             = gpu;
@@ -554,13 +567,14 @@ static bool hw_create_device(struct retro_vulkan_context *context,
    return true;
 }
 
-/* Version 1: create_device, and the frontend destroys what it made. */
+/* Version 1: create_device, and the frontend destroys what it made;
+ * destroy_device only counts, and must come while this library is loaded. */
 static const struct retro_hw_render_context_negotiation_interface_vulkan hw_negotiation = {
    RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN,
    1,
    NULL,
    hw_create_device,
-   NULL
+   hw_destroy_device
 };
 
 /* The image goes with the context, and the frontend is not told. */
@@ -658,7 +672,19 @@ void retro_set_input_state(retro_input_state_t cb) { (void)cb; }
 static void harness_env_init(void);
 static void harness_env_report(void);
 void retro_init(void) { harness_env_init(); }
-void retro_deinit(void) { harness_env_report(); }
+void retro_deinit(void)
+{
+   if (hw_devices_created)
+   {
+      if (hw_devices_destroyed == hw_devices_created)
+         fprintf(stderr, "harness: destroy_device ran before retro_deinit (%u of %u)\n",
+               hw_devices_destroyed, hw_devices_created);
+      else
+         fprintf(stderr, "harness: FAIL destroy_device ran %u times for %u devices by retro_deinit\n",
+               hw_devices_destroyed, hw_devices_created);
+   }
+   harness_env_report();
+}
 unsigned retro_api_version(void) { return RETRO_API_VERSION; }
 void retro_get_system_info(struct retro_system_info *info)
 {

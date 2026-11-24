@@ -73,6 +73,15 @@ void ssl_socket_log_verify_fail(int mode_required, const char *domain,
             verify_info ? verify_info : "");
 }
 
+void ssl_socket_log_trust_store(const char *source, int anchors)
+{
+   if (source)
+      RARCH_LOG("[TLS] Trusting %d root certificates from \"%s\".\n",
+            anchors, source);
+   else
+      RARCH_LOG("[TLS] Trusting the built-in root certificates.\n");
+}
+
 void ssl_socket_log_verify_disabled(const char *domain)
 {
    (void)domain;

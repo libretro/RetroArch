@@ -29,6 +29,7 @@ void glslang_last_pass_init(const void *s, void *c, void *state)
 int slang_last_pass_feedback(void *s, const void *o)
 { (void)s; (void)o; return 0; }
 int  slang_compile_remapped(void) { return 0; }
+int  slang_compile_colour(void) { return 0; }
 void rslc_result_free(void *r) { (void)r; }
 unsigned glslang_num_miplevels(unsigned w, unsigned h) { (void)w; (void)h; return 1; }
 void glslang_output_free(void *o) { (void)o; }
@@ -44,3 +45,5 @@ int  slang_texture_semantic_name_map_set_unique(void) { return 0; }
 void vulkan_debug_mark_image(void) { }
 void vulkan_debug_mark_memory(void) { }
 int  vulkan_is_hdr10_format(int f) { (void)f; return 0; }
+
+int slang_compile_planar(void) { return 0; }

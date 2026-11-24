@@ -1,0 +1,8 @@
+# Ordinary builds consume committed shader data, with no generator.
+PYTHON ?= python3
+D3D_SHADER_GENERATED_DIR := gfx/common
+D3D_SHADER_GENERATED_HEADER := $(D3D_SHADER_GENERATED_DIR)/d3d_builtin_data.h
+
+.PHONY: regenerate-d3d-shaders
+regenerate-d3d-shaders:
+	$(PYTHON) tools/d3d_shader_embed.py --output $(D3D_SHADER_GENERATED_HEADER)

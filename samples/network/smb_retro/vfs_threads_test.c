@@ -8,6 +8,7 @@
 #include <net/net_compat.h>
 #include <streams/file_stream.h>
 #include <vfs/vfs.h>
+#include <vfs/vfs_implementation_file.h>
 #include <file/file_path.h>
 #include <retro_dirent.h>
 #include <rthreads/rthreads.h>

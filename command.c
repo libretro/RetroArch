@@ -134,6 +134,16 @@ void command_reply_error(command_t *cmd, const char *name,
    cmd->replier(cmd, msg, _len);
 }
 
+/* Room for a reply of up to @len bytes: the interface's own where it
+ * lends it, so the reply is written where it is sent from (@lent set,
+ * nothing to free), else from the heap. */
+static char *command_reply_alloc(command_t *cmd, size_t len, bool *lent)
+{
+   char *s = cmd->reply_room ? cmd->reply_room(cmd, len) : NULL;
+   *lent   = s != NULL;
+   return s ? s : (char*)malloc(len);
+}
+
 #ifdef HAVE_COMMAND
 /* a queued STEPS was dropped since the reply now sent began */
 static bool command_queue_ended;
@@ -814,12 +824,16 @@ static char *command_family_rename(const struct command_family *f,
 {
    size_t n    = strlen(f->name);
    size_t size = len + strlen(f->family) + strlen(f->word) + 3;
-   char  *s    = (char*)malloc(size);
+   bool   tail = len > n && !strncmp(msg, f->name, n)
+         && (msg[n] == ' ' || msg[n] == '\n' || msg[n] == ',');
+   char  *s;
    int    _len;
-   if (!s)
+   /* rows, which name nothing, are the tool's answer as they are */
+   if (!tail && !(len == n && !strncmp(msg, f->name, n)))
       return NULL;
-   if (     len > n && !strncmp(msg, f->name, n)
-         && (msg[n] == ' ' || msg[n] == '\n' || msg[n] == ','))
+   if (!(s = (char*)malloc(size)))
+      return NULL;
+   if (tail)
    {
       msg += n;
       len -= n;
@@ -829,14 +843,8 @@ static char *command_family_rename(const struct command_family *f,
          _len = snprintf(s, size, "%s %s%.*s", f->family, f->word,
                (int)len, msg);
    }
-   else if (len == n && !strncmp(msg, f->name, n))
-      _len = snprintf(s, size, "%s %s", f->family, f->word);
-   /* rows, which name nothing, are the tool's answer as they are */
    else
-   {
-      free(s);
-      return NULL;
-   }
+      _len = snprintf(s, size, "%s %s", f->family, f->word);
    if (_len <= 0 || (size_t)_len >= size)
    {
       free(s);
@@ -1460,8 +1468,8 @@ static char *command_menu_answer(bool has_from, unsigned from,
     * second a confirms - "Press again to quit" */
    if (menu_input_dialog_get_display_kb())
    {
-      char label[sizeof(menu_st->input_dialog_kb_label)];
-      strlcpy(label, menu_st->input_dialog_kb_label, sizeof(label));
+      char label[256];
+      strlcpy(label, input_driver_text_entry_label(), sizeof(label));
       command_menu_clean(label);
       _len += (size_t)snprintf(out + _len, size - _len, "KEYBOARD %s\n",
             label);
@@ -2160,18 +2168,28 @@ static bool command_state_slot(command_t *cmd, const char *arg, bool load)
 }
 
 /* The state STATE checkpoint keeps, in memory rather than a slot's
- * file, for STATE rollback; dropped when the content closes. */
+ * file, for STATE rollback; dropped when the content closes. The next
+ * one is serialized into @spare and the two swap once it is whole, so
+ * a checkpoint reuses the buffer of the one before last and a failed
+ * one leaves the last as it was. */
 static struct
 {
    void  *data;
+   void  *spare;
    size_t size;
+   size_t cap;       /* what @data holds */
+   size_t spare_cap; /* what @spare holds */
 } command_checkpoint;
 
 void command_checkpoint_clear(void)
 {
    free(command_checkpoint.data);
-   command_checkpoint.data = NULL;
-   command_checkpoint.size = 0;
+   free(command_checkpoint.spare);
+   command_checkpoint.data      = NULL;
+   command_checkpoint.spare     = NULL;
+   command_checkpoint.size      = 0;
+   command_checkpoint.cap       = 0;
+   command_checkpoint.spare_cap = 0;
 }
 
 /* Keeps the core's state as the checkpoint. Serializing re-enters the
@@ -2180,18 +2198,30 @@ static bool command_checkpoint_take(void)
 {
    retro_ctx_serialize_info_t info;
    size_t len = core_serialize_size();
-   void  *buf = len ? malloc(len) : NULL;
-   info.data_const = NULL;
-   info.data       = buf;
-   info.size       = len;
-   if (!buf || !core_serialize(&info))
-   {
-      free(buf);
+   void  *buf;
+   if (!len)
       return false;
+   if (command_checkpoint.spare_cap < len)
+   {
+      /* nothing in it is kept, so no realloc to copy it */
+      free(command_checkpoint.spare);
+      command_checkpoint.spare     = malloc(len);
+      command_checkpoint.spare_cap = command_checkpoint.spare ? len : 0;
+      if (!command_checkpoint.spare)
+         return false;
    }
-   free(command_checkpoint.data);
-   command_checkpoint.data = buf;
-   command_checkpoint.size = len;
+   info.data_const = NULL;
+   info.data       = command_checkpoint.spare;
+   info.size       = len;
+   if (!core_serialize(&info))
+      return false;
+   buf                          = command_checkpoint.data;
+   command_checkpoint.data      = command_checkpoint.spare;
+   command_checkpoint.spare     = buf;
+   command_checkpoint.size      = len;
+   len                          = command_checkpoint.cap;
+   command_checkpoint.cap       = command_checkpoint.spare_cap;
+   command_checkpoint.spare_cap = len;
    return true;
 }
 
@@ -3051,6 +3081,7 @@ bool command_get_option(command_t *cmd, const char *arg)
    bool   one;
    size_t cap;
    char  *reply;
+   bool   lent;
 
    while (arg && *arg == ' ')
       arg++;
@@ -3060,7 +3091,7 @@ bool command_get_option(command_t *cmd, const char *arg)
    cap = one ? NAME_MAX_LENGTH + PATH_MAX_LENGTH + 2
              : COMMAND_LIST_REPLY_MAX;
 
-   if (!(reply = (char*)malloc(cap + 1)))
+   if (!(reply = command_reply_alloc(cmd, cap + 1, &lent)))
    {
       command_reply_error(cmd, "GET_OPTION", "out of memory");
       return false;
@@ -3080,7 +3111,8 @@ bool command_get_option(command_t *cmd, const char *arg)
        * read as the whole of it, so say so instead. */
       if (n < 0 || (size_t)n >= cap - _len)
       {
-         free(reply);
+         if (!lent)
+            free(reply);
          command_reply_error(cmd, "GET_OPTION",
                "the options did not fit one reply, stopping at %s",
                option_map[i].str);
@@ -3091,14 +3123,16 @@ bool command_get_option(command_t *cmd, const char *arg)
 
    if (!found)
    {
-      free(reply);
+      if (!lent)
+         free(reply);
       command_reply_error(cmd, "GET_OPTION",
             "no such option %s; OPTION show lists them", arg);
       return false;
    }
 
    cmd->replier(cmd, reply, _len);
-   free(reply);
+   if (!lent)
+      free(reply);
    return true;
 }
 
@@ -3185,6 +3219,7 @@ bool command_get_log(command_t *cmd, const char *arg)
    size_t first, next, _len;
    unsigned since = 0;
    char  *reply;
+   bool   lent;
 
    while (arg && *arg == ' ')
       arg++;
@@ -3194,46 +3229,77 @@ bool command_get_log(command_t *cmd, const char *arg)
       return false;
    }
    verbosity_ring_arm();
-   if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 1)))
+   if (!(reply = command_reply_alloc(cmd, COMMAND_LIST_REPLY_MAX + 1,
+               &lent)))
    {
       command_reply_error(cmd, "GET_LOG", "out of memory");
       return false;
    }
-   /* room kept for the SKIPPED and NEXT lines */
-   _len = verbosity_ring_read(since, reply + 32, COMMAND_LIST_REPLY_MAX - 64,
+   /* room kept for the SKIPPED and NEXT lines; the lines move for
+    * SKIPPED only where some were gone, which is seldom */
+   _len = verbosity_ring_read(since, reply, COMMAND_LIST_REPLY_MAX - 64,
          &first, &next);
    if (first > since)
    {
-      int n = snprintf(reply, 32, "SKIPPED %u\n", (unsigned)(first - since));
-      memmove(reply + n, reply + 32, _len);
+      char skipped[32];
+      int  n = snprintf(skipped, sizeof(skipped), "SKIPPED %u\n",
+            (unsigned)(first - since));
+      memmove(reply + n, reply, _len);
+      memcpy(reply, skipped, (size_t)n);
       _len += (size_t)n;
    }
-   else
-      memmove(reply, reply + 32, _len);
    _len += (size_t)snprintf(reply + _len, 32, "NEXT %u\n", (unsigned)next);
    cmd->replier(cmd, reply, _len);
-   free(reply);
+   if (!lent)
+      free(reply);
    return true;
 }
 #endif
 
 /* Where a system address lands, defined with the memory commands. */
-static uint8_t *command_memory_get_pointer(
-      const rarch_system_info_t* sys_info,
+struct command_ram_block
+{
+   uint8_t *data;
+   size_t   start;
+   size_t   size;
+};
+
+/* What memory lookups read through: the system's map, or, for a core
+ * that maps none, the RAM it hands over, asked of the core once for a
+ * whole request or frame rather than at every address. */
+struct command_mem
+{
+   const rarch_system_info_t *sys;
+   struct command_ram_block   blocks[2];
+   bool                       asked;
+   bool                       any;
+};
+
+#define COMMAND_MEM_INIT(m) \
+   ((m)->sys = &runloop_state_get_ptr()->system, (m)->asked = false)
+
+static uint8_t *command_memory_get_pointer(struct command_mem *m,
       unsigned address, unsigned int* max_bytes,
       int for_write, char *s, size_t len);
 
 /* What RUN_UNTIL, a PRESS that waits after it and a STEPS list wait on:
  * the byte at @lo, or with @wide the value @hi * 256 + @lo, from two
- * bytes that need not be adjacent. */
+ * bytes that need not be adjacent. With @diff, that less the value at
+ * @sub_lo, or @sub_hi:@sub_lo: how far apart two things are, signed. */
 struct command_cond
 {
    unsigned hi;
    unsigned lo;
+   unsigned sub_hi;
+   unsigned sub_lo;
    unsigned mask;   /* "& <mask>": the bits compared; 0 for all */
-   unsigned want;
+   int      want;
    uint8_t  op;     /* enum cmd_until_op */
    bool     wide;
+   bool     sub_wide;
+   bool     diff;
+   /* a stop: fires only on a frame it holds after one it did not */
+   bool     edge;
 };
 
 /* "<address>[:<address>]" into @c, @end after it: 0, or 1 where the
@@ -3256,20 +3322,33 @@ static int command_cond_address(const char *s, struct command_cond *c,
    return 0;
 }
 
-static bool command_cond_read(const struct command_cond *c,
-      unsigned *out, char *why, size_t why_len)
+/* The byte at @lo, or with @wide the value @hi * 256 + @lo. */
+static bool command_cond_value(struct command_mem *m, unsigned hi,
+      unsigned lo, bool wide, unsigned *out, char *why, size_t why_len)
 {
    unsigned       avail = 0;
-   const rarch_system_info_t *sys = &runloop_state_get_ptr()->system;
-   const uint8_t *lo    = command_memory_get_pointer(sys, c->lo, &avail, 0,
+   const uint8_t *l     = command_memory_get_pointer(m, lo, &avail, 0,
          why, why_len);
-   const uint8_t *hi    = NULL;
-   if (!lo || (c->wide && !(hi = command_memory_get_pointer(sys, c->hi,
+   const uint8_t *h     = NULL;
+   if (!l || (wide && !(h = command_memory_get_pointer(m, hi,
                   &avail, 0, why, why_len))))
       return false;
-   *out = hi ? ((unsigned)*hi << 8) | *lo : *lo;
+   *out = h ? ((unsigned)*h << 8) | *l : *l;
+   return true;
+}
+
+static bool command_cond_read(struct command_mem *m,
+      const struct command_cond *c, int *out, char *why, size_t why_len)
+{
+   unsigned a = 0;
+   unsigned b = 0;
+   if (     !command_cond_value(m, c->hi, c->lo, c->wide, &a, why, why_len)
+         || (c->diff && !command_cond_value(m, c->sub_hi, c->sub_lo,
+               c->sub_wide, &b, why, why_len)))
+      return false;
    if (c->mask)
-      *out &= c->mask;
+      a &= c->mask;
+   *out = (int)a - (int)b;
    return true;
 }
 
@@ -3316,15 +3395,17 @@ static size_t command_watch_lines(char *s, size_t len)
    char      value[8];
    char      where[24];
    char      reason[128];
+   struct command_mem mem;
    size_t    _len = 0;
    unsigned  i;
+   COMMAND_MEM_INIT(&mem);
    for (i = 0; i < command_watch_count && _len + COMMAND_WATCH_LINE < len;
          i++)
    {
       const struct command_watch_entry *e = &command_watches[i];
-      unsigned now = 0;
-      if (command_cond_read(&e->where, &now, reason, sizeof(reason)))
-         snprintf(value, sizeof(value), "%u", now);
+      int now = 0;
+      if (command_cond_read(&mem, &e->where, &now, reason, sizeof(reason)))
+         snprintf(value, sizeof(value), "%d", now);
       else
          strlcpy(value, "none", sizeof(value));
       if (e->where.wide)
@@ -3369,15 +3450,17 @@ static bool command_cond_number(const char *s, char **end,
    return errno != ERANGE;
 }
 
-/* "<address>[:<address>] <condition> <value>", @end after the value;
- * false with what was wrong in @why. */
+/* "<address>[:<address>] [- <address>[:<address>]] <condition>
+ * <value>", @end after the value; false with what was wrong in @why. */
 static bool command_cond_parse(const char *s, struct command_cond *c,
       char **end, char *why, size_t why_len)
 {
    unsigned      i;
    unsigned long num;
+   unsigned long max;
    const char   *sp;
    int           bad;
+   bool          neg = false;
 
    memset(c, 0, sizeof(*c));
    if ((bad = command_cond_address(s, c, end)))
@@ -3390,6 +3473,32 @@ static bool command_cond_parse(const char *s, struct command_cond *c,
    }
    while (**end == ' ')
       (*end)++;
+   /* "485 - 47e": the second's value taken from the first's, signed,
+    * so how far an enemy is from the player is one condition */
+   if (**end == '-')
+   {
+      struct command_cond sub;
+      memset(&sub, 0, sizeof(sub));
+      if (command_cond_address(*end + 1, &sub, end))
+      {
+         strlcpy(why, "a hexadecimal address, or two as high:low, after "
+               "the \"-\"", why_len);
+         return false;
+      }
+      c->sub_hi   = sub.hi;
+      c->sub_lo   = sub.lo;
+      c->sub_wide = sub.wide;
+      c->diff     = true;
+      while (**end == ' ')
+         (*end)++;
+   }
+   max = (c->wide || c->sub_wide) ? 65535UL : 255UL;
+   if (**end == '&' && c->diff)
+   {
+      strlcpy(why, "a mask compares one address's bits, not a difference",
+            why_len);
+      return false;
+   }
    /* "& 0x40" or "& 64": only those bits, as a game keeps its flags */
    if (**end == '&')
    {
@@ -3428,17 +3537,29 @@ static bool command_cond_parse(const char *s, struct command_cond *c,
    }
    while (*sp == ' ')
       sp++;
-   /* "== 112" or "== 0x70", as a mask is given */
-   if (     !command_cond_number(sp, end, &num)
-         || num > (c->wide ? 65535UL : 255UL))
+   /* a difference may be below zero: "<= -16" */
+   if (c->diff && *sp == '-')
    {
-      strlcpy(why, c->wide
-            ? "a value from 0 to 65535 (0xFFFF), which is what two bytes hold"
-            : "a value from 0 to 255 (0xFF), which is what a byte holds",
-            why_len);
+      neg = true;
+      sp++;
+   }
+   /* "== 112" or "== 0x70", as a mask is given */
+   if (!command_cond_number(sp, end, &num) || num > max)
+   {
+      if (c->diff)
+         strlcpy(why, max > 255UL
+               ? "a value from -65535 to 65535, which is what two values "
+                 "of two bytes differ by"
+               : "a value from -255 to 255, which is what two bytes "
+                 "differ by", why_len);
+      else
+         strlcpy(why, c->wide
+               ? "a value from 0 to 65535 (0xFFFF), which is what two bytes hold"
+               : "a value from 0 to 255 (0xFF), which is what a byte holds",
+               why_len);
       return false;
    }
-   c->want = (unsigned)num;
+   c->want = neg ? -(int)num : (int)num;
    c->op   = (uint8_t)i;
    return true;
 }
@@ -3446,7 +3567,7 @@ static bool command_cond_parse(const char *s, struct command_cond *c,
 /* What @c's memory holds now, looked up afresh as WATCH's bytes are,
  * since a core may move its memory while the content runs; false where
  * nothing maps it, with the reason as line clients read it in @why. */
-static bool command_cond_met(const struct command_cond *c, unsigned now)
+static bool command_cond_met(const struct command_cond *c, int now)
 {
    switch (c->op)
    {
@@ -3468,8 +3589,10 @@ static bool command_cond_mapped(command_t *cmd, const char *name,
       const struct command_cond *c)
 {
    char     reason[128];
-   unsigned now = 0;
-   if (command_cond_read(c, &now, reason, sizeof(reason)))
+   struct command_mem mem;
+   int      now = 0;
+   COMMAND_MEM_INIT(&mem);
+   if (command_cond_read(&mem, c, &now, reason, sizeof(reason)))
       return true;
    command_reply_error(cmd, name, "%s", command_memory_why(reason));
    return false;
@@ -3536,12 +3659,15 @@ static struct
    unsigned            left;    /* frames left in a RUN or PRESS step */
    unsigned            budget;  /* frames left for the whole job */
    unsigned            ran;     /* frames run so far */
-   unsigned            value;   /* what the last condition read held */
+   int                 value;   /* what the last condition read held */
    unsigned            port;    /* the player whose buttons are held */
    uint16_t            held;    /* the buttons the job let go of, by bit */
    uint8_t             answer;  /* enum cmd_job_answer */
    unsigned            nstops;
    unsigned            stopped; /* which stop held, from 1 */
+   /* whether each stop held on the frame before: one that becomes
+    * fires only where it did not */
+   bool                stop_was[COMMAND_STOPS_MAX];
    /* a frame with the buttons let go between two presses of the same
     * one, so the game sees two taps rather than one long press */
    bool                gap;
@@ -3663,7 +3789,7 @@ static void command_run_frames_end(const char *how)
       case CMD_ANSWER_UNTIL:
          snprintf(first, sizeof(first), "%s %u\n", how,
                command_run_frames_st.ran);
-         snprintf(last, sizeof(last), "VALUE %u\n",
+         snprintf(last, sizeof(last), "VALUE %d\n",
                command_run_frames_st.value);
          command_run_frames_answer(first, last, false);
          break;
@@ -3793,6 +3919,9 @@ static void command_run_frames_hold(const struct command_step *s)
 static void command_run_frames_enter(bool safe)
 {
    char     why[128];
+   /* no frame runs here, so what the core hands over stays put */
+   struct command_mem mem;
+   COMMAND_MEM_INIT(&mem);
    while (command_run_frames_st.cur < command_run_frames_st.count)
    {
       struct command_step *s =
@@ -3808,8 +3937,14 @@ static void command_run_frames_enter(bool safe)
          }
          else
          {
+            int now = 0;
             command_run_frames_st.stops[s->idx - 1] = s->cond;
             command_run_frames_st.nstops            = s->idx;
+            /* what it holds as it takes over, so one already true when
+             * the list starts waits for it to stop holding first */
+            command_run_frames_st.stop_was[s->idx - 1] =
+                  command_cond_read(&mem, &s->cond, &now, why, sizeof(why))
+               && command_cond_met(&s->cond, now);
          }
          command_run_frames_st.cur++;
          continue;
@@ -3829,8 +3964,8 @@ static void command_run_frames_enter(bool safe)
       }
       if (s->kind == CMD_STEP_UNTIL)
       {
-         if (!command_cond_read(&s->cond, &command_run_frames_st.value,
-                  why, sizeof(why)))
+         if (!command_cond_read(&mem, &s->cond,
+                  &command_run_frames_st.value, why, sizeof(why)))
          {
             command_run_frames_cancel("nothing maps the address waited "
                   "on now");
@@ -3958,7 +4093,8 @@ void command_run_frames_between(void)
 void command_run_frames_tick(void)
 {
    char                 why[128];
-   unsigned             now = 0;
+   struct command_mem   mem;
+   int                  now = 0;
    unsigned             i;
    struct command_step *s;
 
@@ -3969,9 +4105,10 @@ void command_run_frames_tick(void)
    command_run_frames_st.ran++;
    if (command_run_frames_st.budget)
       command_run_frames_st.budget--;
+   COMMAND_MEM_INIT(&mem);
    for (i = 0; i < command_run_frames_st.nstops; i++)
    {
-      if (!command_cond_read(&command_run_frames_st.stops[i], &now, why,
+      if (!command_cond_read(&mem, &command_run_frames_st.stops[i], &now, why,
                sizeof(why)))
       {
          command_run_frames_cancel("nothing maps the stop address now");
@@ -3979,10 +4116,17 @@ void command_run_frames_tick(void)
       }
       if (command_cond_met(&command_run_frames_st.stops[i], now))
       {
-         command_run_frames_st.stopped = i + 1;
-         command_run_frames_end("STOPPED");
-         return;
+         bool was = command_run_frames_st.stop_was[i];
+         command_run_frames_st.stop_was[i] = true;
+         if (!command_run_frames_st.stops[i].edge || !was)
+         {
+            command_run_frames_st.stopped = i + 1;
+            command_run_frames_end("STOPPED");
+            return;
+         }
       }
+      else
+         command_run_frames_st.stop_was[i] = false;
    }
    s = &command_run_frames_st.steps[command_run_frames_st.cur];
    if (command_run_frames_st.gap)
@@ -3996,8 +4140,8 @@ void command_run_frames_tick(void)
       command_run_frames_enter(true);
    else if (s->kind == CMD_STEP_UNTIL)
    {
-      if (!command_cond_read(&s->cond, &command_run_frames_st.value, why,
-               sizeof(why)))
+      if (!command_cond_read(&mem, &s->cond, &command_run_frames_st.value,
+               why, sizeof(why)))
       {
          command_run_frames_cancel("nothing maps the address waited on "
                "now");
@@ -4315,22 +4459,26 @@ bool command_set_input(command_t *cmd, const char *arg)
  * With nothing, what is watched now. Each label and address watches the
  * byte there under that label, carried by RUN_FRAMES, PRESS and
  * RUN_UNTIL; a label and "off" stops watching it. Every pair is taken
- * or none is, so a refusal leaves the list as it was.
+ * or none is, so a refusal leaves the list as it was. The limit is on
+ * the list they leave, so an off later in the request makes room.
  *
  * Answers with the list either way, so a client sees what it has. */
 bool command_watch(command_t *cmd, const char *arg)
 {
-   struct command_watch_entry next[COMMAND_WATCH_MAX];
+   /* room past the limit for those an off further on takes back out */
+   struct command_watch_entry next[2 * COMMAND_WATCH_MAX];
    char      reply[64 + COMMAND_WATCH_MAX * COMMAND_WATCH_LINE];
    char      label[sizeof(next[0].label)];
    char      reason[128];
+   struct command_mem mem;
    size_t    _len  = 0;
    size_t    n;
    unsigned  count = command_watch_count;
    unsigned  i;
    const char *sp;
 
-   memcpy(next, command_watches, sizeof(next));
+   COMMAND_MEM_INIT(&mem);
+   memcpy(next, command_watches, sizeof(command_watches));
    while (arg && *arg)
    {
       while (*arg == ' ')
@@ -4377,7 +4525,7 @@ bool command_watch(command_t *cmd, const char *arg)
       else
       {
          struct command_cond where;
-         unsigned  now = 0;
+         int       now = 0;
          char     *end = NULL;
          memset(&where, 0, sizeof(where));
          /* high:low, two bytes as one value, as conditions take them */
@@ -4389,7 +4537,7 @@ bool command_watch(command_t *cmd, const char *arg)
             return false;
          }
          /* only a label that is not watched yet needs room */
-         if (i == count && count >= COMMAND_WATCH_MAX)
+         if (i == count && count >= ARRAY_SIZE(next))
          {
             command_reply_error(cmd, "WATCH", "at most %u bytes watched "
                   "at once", (unsigned)COMMAND_WATCH_MAX);
@@ -4397,7 +4545,7 @@ bool command_watch(command_t *cmd, const char *arg)
          }
          /* found now, as RUN_UNTIL finds the byte it waits on, so an
           * address nothing maps is refused rather than read later */
-         if (!command_cond_read(&where, &now, reason, sizeof(reason)))
+         if (!command_cond_read(&mem, &where, &now, reason, sizeof(reason)))
          {
             command_reply_error(cmd, "WATCH", "%s: %s", label,
                   command_memory_why(reason));
@@ -4409,7 +4557,13 @@ bool command_watch(command_t *cmd, const char *arg)
          strlcpy(next[i].label, label, sizeof(next[i].label));
       }
    }
-   memcpy(command_watches, next, sizeof(next));
+   if (count > COMMAND_WATCH_MAX)
+   {
+      command_reply_error(cmd, "WATCH", "at most %u bytes watched "
+            "at once", (unsigned)COMMAND_WATCH_MAX);
+      return false;
+   }
+   memcpy(command_watches, next, sizeof(command_watches));
    command_watch_count = count;
 
    _len = command_watch_lines(reply, sizeof(reply));
@@ -4419,11 +4573,12 @@ bool command_watch(command_t *cmd, const char *arg)
    return true;
 }
 
-/* RUN_UNTIL <address> <condition> <value> [max frames]
+/* RUN_UNTIL <address> [- <address>] <condition> <value> [max frames]
  *
  * Runs the content until the byte at a system address meets what was
  * asked, then answers with how many frames that took and the value it
- * found. Where a client would otherwise run a few frames, read the
+ * found. With "- <address>" it is that byte less the other, signed:
+ * how far apart two things are. Where a client would otherwise run a few frames, read the
  * byte, and go round again - which is where a field run spent most of
  * its calls - this is one request.
  *
@@ -4635,7 +4790,9 @@ static void command_steps_report(command_t *cmd, long idle,
  * <player> <controls> <frames>" and "until <condition>", in order, then
  * answers with how it ended and what WATCH watches. A "stop
  * <condition>" entry ends the list after any frame where it holds, so a
- * death does not play out the rest, and "checkpoint" keeps the state
+ * death does not play out the rest; "stop becomes <condition>" only
+ * after one where it starts to, so one already true does not end the
+ * list at its first frame. "checkpoint" keeps the state
  * STATE rollback returns to. The whole list runs no longer than a wait
  * does; past that it answers WAITING and the step it was on, and the
  * next request carries on from there.
@@ -4693,9 +4850,10 @@ bool command_steps(command_t *cmd, const char *arg)
    for (entry = list; entry; entry = next)
    {
       struct command_step *s;
-      struct command_cond *c   = NULL;
-      char                *end = NULL;
+      struct command_cond *c    = NULL;
+      char                *end  = NULL;
       size_t               n;
+      bool                 edge = false;
       if ((next = strchr(entry, ';')))
          *next++ = '\0';
       while (*entry == ' ')
@@ -4717,6 +4875,17 @@ bool command_steps(command_t *cmd, const char *arg)
          }
          c      = &stops[nstops++];
          entry += 5;
+         while (*entry == ' ')
+            entry++;
+         /* "stop becomes <condition>": only once it starts to hold, so
+          * one true as the list starts does not end it at once */
+         if (!strncmp(entry, "becomes ", 8))
+         {
+            entry += 8;
+            edge   = true;
+            while (*entry == ' ')
+               entry++;
+         }
       }
       else if (count >= COMMAND_STEPS_MAX)
       {
@@ -4816,6 +4985,7 @@ bool command_steps(command_t *cmd, const char *arg)
             command_reply_error(cmd, "STEPS", "%s", why);
             return false;
          }
+         c->edge = edge;
          while (*end == ' ')
             end++;
          if (*end)
@@ -5016,13 +5186,15 @@ bool command_get_core_option(command_t *cmd, const char *arg)
    size_t _len                = 0;
    size_t i;
    char  *reply;
+   bool   lent;
 
    while (arg && *arg == ' ')
       arg++;
    if (!command_core_option_find(cmd, "GET_CORE_OPTION",
             arg && *arg ? arg : NULL, &opt, &idx))
       return false;
-   if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 1)))
+   if (!(reply = command_reply_alloc(cmd, COMMAND_LIST_REPLY_MAX + 1,
+               &lent)))
    {
       command_reply_error(cmd, "GET_CORE_OPTION", "out of memory");
       return false;
@@ -5034,7 +5206,8 @@ bool command_get_core_option(command_t *cmd, const char *arg)
             COMMAND_LIST_REPLY_MAX + 1 - _len, arg && *arg);
       if (!n)
       {
-         free(reply);
+         if (!lent)
+            free(reply);
          command_reply_error(cmd, "GET_CORE_OPTION",
                "the options did not fit one reply, stopping at %s",
                opt->opts[i].key);
@@ -5046,7 +5219,8 @@ bool command_get_core_option(command_t *cmd, const char *arg)
    }
 
    cmd->replier(cmd, reply, _len);
-   free(reply);
+   if (!lent)
+      free(reply);
    return true;
 }
 
@@ -5145,12 +5319,17 @@ bool command_list_cores(command_t *cmd, const char *arg)
    size_t             count = 0;
    size_t i, len = 0;
    char  *reply;
+   bool   lent;
 
    while (arg && *arg == ' ')
       arg++;
 
-   if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 64)))
+   if (!(reply = command_reply_alloc(cmd, COMMAND_LIST_REPLY_MAX + 64,
+               &lent)))
+   {
+      command_reply_error(cmd, "LIST_CORES", "out of memory");
       return false;
+   }
    reply[0] = '\0';
    if (core_info_get_list(&list) && list)
    {
@@ -5180,7 +5359,8 @@ bool command_list_cores(command_t *cmd, const char *arg)
    if (!len)
       len = strlcpy(reply, "LIST_CORES none\n", COMMAND_LIST_REPLY_MAX);
    cmd->replier(cmd, reply, len);
-   free(reply);
+   if (!lent)
+      free(reply);
    return true;
 }
 
@@ -5558,6 +5738,13 @@ bool command_load_core(command_t *cmd, const char* arg)
 #else
    strlcpy(path, arg, sizeof(path));
 #endif
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(path))
+   {
+      command_reply_error(cmd, "LOAD_CORE", "could not load %s", path);
+      return false;
+   }
+#endif
    if (!command_core_at(cmd, "LOAD_CORE", path))
       return false;
    if (!task_push_load_new_core(path, NULL,
@@ -5583,7 +5770,14 @@ bool command_start_core(command_t *cmd, const char* arg)
 {
    content_ctx_info_t content_info = {0};
 
-   path_clear(RARCH_PATH_BASENAME);
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(path_get(RARCH_PATH_CORE)))
+   {
+      command_reply_error(cmd, "START_CORE", "could not start %s",
+            path_get(RARCH_PATH_CORE));
+      return false;
+   }
+#endif
 
    if (!task_push_start_current_core(&content_info))
       return false;
@@ -5667,6 +5861,17 @@ bool command_load_content(command_t *cmd, const char* arg)
             content_path);
       goto end;
    }
+
+#ifdef HAVE_CORE_LOAD_CHECK
+   /* Before the core's probe, which would put it through the load
+    * check while the Security Warning waits */
+   if (task_content_warning_waits(content_path))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT", "could not load %s",
+            content_path);
+      goto end;
+   }
+#endif
 
    /* A playlist entry with no core of its own carries DETECT, so take
     * that, and nothing at all, as a request for a core that supports
@@ -5880,13 +6085,6 @@ static const rarch_memory_descriptor_t* command_memory_get_descriptor(const rarc
  * the SNES, the addresses RetroAchievements' notes give. Fills @blocks
  * (data, start, size) for the system and the save block, a NULL data
  * where the core has none; false where it has neither. */
-struct command_ram_block
-{
-   uint8_t *data;
-   size_t   start;
-   size_t   size;
-};
-
 static bool command_memory_core_blocks(struct command_ram_block blocks[2])
 {
    runloop_state_t        *runloop_st = runloop_state_get_ptr();
@@ -5914,16 +6112,20 @@ static bool command_memory_core_blocks(struct command_ram_block blocks[2])
    return blocks[0].data || blocks[1].data;
 }
 
-static uint8_t *command_memory_get_pointer(
-      const rarch_system_info_t* sys_info,
+static uint8_t *command_memory_get_pointer(struct command_mem *m,
       unsigned address, unsigned int* max_bytes,
       int for_write, char *s, size_t len)
 {
+   const rarch_system_info_t *sys_info = m->sys;
    if (!sys_info || sys_info->mmaps.num_descriptors == 0)
    {
-      struct command_ram_block blocks[2];
-      unsigned                 n;
-      bool                     any = command_memory_core_blocks(blocks);
+      const struct command_ram_block *blocks = m->blocks;
+      unsigned                        n;
+      if (!m->asked)
+      {
+         m->any   = command_memory_core_blocks(m->blocks);
+         m->asked = true;
+      }
       for (n = 0; n < 2; n++)
          if (     blocks[n].data && address >= blocks[n].start
                && address < blocks[n].start + blocks[n].size)
@@ -5932,7 +6134,7 @@ static uint8_t *command_memory_get_pointer(
                   - address);
             return blocks[n].data + (address - blocks[n].start);
          }
-      if (any)
+      if (m->any)
          strlcpy_lit(s, " -1 no descriptor for address\n", len);
       else
          strlcpy_lit(s, " -1 no memory map defined\n", len);
@@ -5985,11 +6187,13 @@ bool command_get_memory_map(command_t *cmd, const char *arg)
    unsigned i;
    size_t _len                     = 0;
    char *reply;
+   bool lent;
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    const rarch_memory_map_t *mmap  = runloop_st ? &runloop_st->system.mmaps
                                                 : NULL;
 
-   if (!(reply = (char*)malloc(COMMAND_LIST_REPLY_MAX + 1)))
+   if (!(reply = command_reply_alloc(cmd, COMMAND_LIST_REPLY_MAX + 1,
+               &lent)))
    {
       command_reply_error(cmd, "GET_MEMORY_MAP", "out of memory");
       return false;
@@ -6014,13 +6218,15 @@ bool command_get_memory_map(command_t *cmd, const char *arg)
       }
       if (!_len)
       {
-         free(reply);
+         if (!lent)
+            free(reply);
          command_reply_error(cmd, "GET_MEMORY_MAP",
                "the running core has no memory map, and hands over no RAM");
          return false;
       }
       cmd->replier(cmd, reply, _len);
-      free(reply);
+      if (!lent)
+         free(reply);
       return true;
    }
 
@@ -6046,7 +6252,8 @@ bool command_get_memory_map(command_t *cmd, const char *arg)
             d->addrspace ? d->addrspace : "");
       if (n < 0 || (size_t)n >= COMMAND_LIST_REPLY_MAX + 1 - _len)
       {
-         free(reply);
+         if (!lent)
+            free(reply);
          command_reply_error(cmd, "GET_MEMORY_MAP",
                "the map did not fit one reply, stopping at region %u", i);
          return false;
@@ -6055,7 +6262,8 @@ bool command_get_memory_map(command_t *cmd, const char *arg)
    }
 
    cmd->replier(cmd, reply, _len);
-   free(reply);
+   if (!lent)
+      free(reply);
    return true;
 }
 
@@ -6131,88 +6339,133 @@ bool command_get_status(command_t *cmd, const char* arg)
    return true;
 }
 
+/* READ_CORE_MEMORY <address> <bytes> [<address> <bytes>]...
+ *
+ * Each range a line of its own, in the order asked, so the arrays a
+ * step needs - positions, health - are one request rather than one
+ * apiece. Where nothing maps one, that line alone is the answer. */
+#define COMMAND_READ_RANGES_MAX 16
+
 bool command_read_memory(command_t *cmd, const char *arg)
 {
    char* reply                        = NULL;
    char* reply_at                     = NULL;
    const uint8_t* data                = NULL;
+   unsigned int addrs[COMMAND_READ_RANGES_MAX];
+   unsigned int counts[COMMAND_READ_RANGES_MAX];
+   unsigned int nranges               = 0;
+   unsigned int total                 = 0;
+   unsigned int r;
    unsigned int nbytes                = 0;
    unsigned int alloc_size            = 0;
    unsigned int address               = -1;
    size_t _len                        = 0;
    unsigned int max_bytes             = 0;
-   runloop_state_t *runloop_st        = runloop_state_get_ptr();
-   const rarch_system_info_t* sys_info= &runloop_st->system;
+   bool lent;
+   struct command_mem mem;
 
+   COMMAND_MEM_INIT(&mem);
+   while (arg && *arg)
    {
       char *end       = NULL;
       unsigned long num;
+      if (nranges >= COMMAND_READ_RANGES_MAX)
+      {
+         command_reply_error(cmd, "READ_CORE_MEMORY",
+               "at most %u ranges", (unsigned)COMMAND_READ_RANGES_MAX);
+         return false;
+      }
       if (!command_parse_address(arg, &address, &end) || *end != ' ')
       {
          command_reply_error(cmd, "READ_CORE_MEMORY",
                "a hexadecimal address, a space and a byte count");
          return false;
       }
-      num             = strtoul(end + 1, NULL, 10);
+      num             = strtoul(end + 1, &end, 10);
       nbytes          = num <= COMMAND_READ_NBYTES_MAX ? (unsigned)num : 0;
-      if (nbytes == 0)
+      if (nbytes == 0 || total + nbytes > COMMAND_READ_NBYTES_MAX)
       {
-         command_reply_error(cmd, "READ_CORE_MEMORY",
-               "a byte count from 1 to %u", COMMAND_READ_NBYTES_MAX);
+         command_reply_error(cmd, "READ_CORE_MEMORY", nranges
+               ? "byte counts from 1, %u in all"
+               : "a byte count from 1 to %u", COMMAND_READ_NBYTES_MAX);
          return false;
       }
+      addrs[nranges]  = address;
+      counts[nranges] = nbytes;
+      nranges++;
+      total          += nbytes;
+      /* another address and count, or the end of the line */
+      for (arg = end; *arg && (unsigned char)*arg <= ' '; arg++)
+         ;
+   }
+   if (!nranges)
+   {
+      command_reply_error(cmd, "READ_CORE_MEMORY",
+            "a hexadecimal address, a space and a byte count");
+      return false;
    }
 
    /* Ensure large enough to return all requested bytes or an error message */
-   alloc_size = 96 + nbytes * 3;
-   reply      = (char*)malloc(alloc_size);
-   
+   alloc_size = 96 * nranges + total * 3;
+   reply      = command_reply_alloc(cmd, alloc_size, &lent);
+
    if (!reply)
    {
       command_reply_error(cmd, "READ_CORE_MEMORY", "out of memory");
       return false;
    }
-   
-   reply_at   = reply + snprintf(reply, alloc_size - 1, "READ_CORE_MEMORY %x", address);
 
-   if ((data = command_memory_get_pointer(
-               sys_info, address, &max_bytes,
-               0, reply_at, alloc_size - strlen(reply))))
+   for (r = 0; r < nranges; r++)
    {
-      char         why[128];
-      char        *end  = reply_at;
-      unsigned int read = 0;
-      /* on into the region that follows, as a core that splits its RAM
-       * maps it; where nothing maps the rest, how much was read */
-      while (data)
+      char *line = reply + _len;
+      address    = addrs[r];
+      nbytes     = counts[r];
+      reply_at   = line + snprintf(line, alloc_size - _len - 1,
+            "READ_CORE_MEMORY %x", address);
+
+      if ((data = command_memory_get_pointer(
+                  &mem, address, &max_bytes,
+                  0, reply_at, alloc_size - (size_t)(reply_at - reply))))
       {
-         unsigned int n = nbytes - read < max_bytes
-            ? nbytes - read : max_bytes;
-         if (!n)
-            break;
-         end   = command_hex_bytes(end, data, n);
-         read += n;
-         if (read >= nbytes)
-            break;
-         data  = command_memory_get_pointer(sys_info, address + read,
-               &max_bytes, 0, why, sizeof(why));
+         char         why[128];
+         char        *end  = reply_at;
+         unsigned int read = 0;
+         /* on into the region that follows, as a core that splits its RAM
+          * maps it; where nothing maps the rest, how much was read */
+         while (data)
+         {
+            unsigned int n = nbytes - read < max_bytes
+               ? nbytes - read : max_bytes;
+            if (!n)
+               break;
+            end   = command_hex_bytes(end, data, n);
+            read += n;
+            if (read >= nbytes)
+               break;
+            data  = command_memory_get_pointer(&mem, address + read,
+                  &max_bytes, 0, why, sizeof(why));
+         }
+         *end++               = '\n';
+         if (read < nbytes)
+            end += snprintf(end, alloc_size - (size_t)(end - reply),
+                  "TRUNCATED %u\n", read);
+         _len                 = (size_t)(end - reply);
       }
-      *end++               = '\n';
-      if (read < nbytes)
-         end += snprintf(end, alloc_size - (size_t)(end - reply),
-               "TRUNCATED %u\n", read);
-      _len                 = (size_t)(end - reply);
-   }
-   else
-   {
-      /* command_memory_get_pointer() has put the reason in the reply,
-       * in the form line clients have always read */
-      _len                 = strlen(reply);
-      cmd->error           = true;
+      else
+      {
+         /* command_memory_get_pointer() has put the reason in the reply,
+          * in the form line clients have always read: this range's line
+          * alone */
+         _len                 = strlen(line);
+         memmove(reply, line, _len + 1);
+         cmd->error           = true;
+         break;
+      }
    }
 
    cmd->replier(cmd, reply, _len);
-   free(reply);
+   if (!lent)
+      free(reply);
    return !cmd->error;
 }
 
@@ -6222,11 +6475,9 @@ bool command_write_memory(command_t *cmd, const char *arg)
    unsigned int max_bytes       = 0;
    char reply[128]              = "";
    char *end                    = NULL;
-   runloop_state_t *runloop_st  = runloop_state_get_ptr();
-   const rarch_system_info_t
-      *sys_info                 = &runloop_st->system;
    char *reply_at;
    uint8_t *data;
+   struct command_mem mem;
 
    if (     !command_parse_address(arg, &address, &end)
          || !command_bytes_valid(end))
@@ -6236,8 +6487,9 @@ bool command_write_memory(command_t *cmd, const char *arg)
       return false;
    }
    arg      = end;
+   COMMAND_MEM_INIT(&mem);
    reply_at = reply + snprintf(reply, sizeof(reply) - 1, "WRITE_CORE_MEMORY %x", address);
-   data     = command_memory_get_pointer(sys_info, address, &max_bytes, 1,
+   data     = command_memory_get_pointer(&mem, address, &max_bytes, 1,
          reply_at, sizeof(reply) - strlen(reply) - 1);
 
    if (data)

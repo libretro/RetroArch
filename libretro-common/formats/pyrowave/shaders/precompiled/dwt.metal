@@ -1,0 +1,96 @@
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using namespace metal;
+
+struct Parameters
+{
+    uint image_width;
+    uint image_height;
+    uint level0;
+    uint axis;
+    uint phase;
+    uint _inverse;
+    uint chroma_444;
+    uint reserved;
+};
+
+struct destination
+{
+    float _data[1];
+};
+
+struct source
+{
+    float _data[1];
+};
+
+kernel void rpyrowave_main(device source& source_1 [[buffer(0)]], device destination& destination_1 [[buffer(1)]], constant Parameters& _47 [[buffer(2)]], uint3 gl_GlobalInvocationID [[thread_position_in_grid]])
+{
+    do
+    {
+        uint _380 = _47.image_width >> _47.level0;
+        uint _385 = _47.image_height >> _47.level0;
+        uint _393 = (_47.axis == 0u) ? gl_GlobalInvocationID.x : gl_GlobalInvocationID.y;
+        uint _399 = (_47.axis == 0u) ? _380 : _385;
+        uint _405 = (_47.axis == 0u) ? 1u : _47.image_width;
+        uint _422 = (((gl_GlobalInvocationID.z * _47.image_width) * _47.image_height) + (gl_GlobalInvocationID.y * _47.image_width)) + gl_GlobalInvocationID.x;
+        if (((gl_GlobalInvocationID.x >= _380) || (gl_GlobalInvocationID.y >= _385)) || (gl_GlobalInvocationID.z >= 3u))
+        {
+            break;
+        }
+        if (((_47.level0 == 0u) && (gl_GlobalInvocationID.z != 0u)) && (_47.chroma_444 == 0u))
+        {
+            break;
+        }
+        if ((_47._inverse == 0u) && (_47.phase == 4u))
+        {
+            destination_1._data[_422] = source_1._data[(_422 - (_393 * _405)) + (((_393 < (_399 / 2u)) ? (_393 * 2u) : (((_393 - (_399 / 2u)) * 2u) + 1u)) * _405)] * ((_393 < (_399 / 2u)) ? 0.812893092632293701171875 : 1.23017406463623046875);
+        }
+        else
+        {
+            if ((_47._inverse != 0u) && (_47.phase == 0u))
+            {
+                destination_1._data[_422] = source_1._data[(_422 - (_393 * _405)) + (((_393 / 2u) + (((_393 & 1u) != 0u) ? (_399 / 2u) : 0u)) * _405)] * (((_393 & 1u) != 0u) ? 0.812893092632293701171875 : 1.23017406463623046875);
+            }
+            else
+            {
+                uint _540 = (_47._inverse != 0u) ? (_47.phase - 1u) : _47.phase;
+                float _639;
+                if ((_393 & 1u) == ((_47._inverse != 0u) ? (_540 & 1u) : (1u - (_540 & 1u))))
+                {
+                    uint _576 = _422 - (_393 * _405);
+                    uint _598 = (_47._inverse != 0u) ? (3u - _540) : _540;
+                    float _637;
+                    do
+                    {
+                        if (_598 == 0u)
+                        {
+                            _637 = -1.58613431453704833984375;
+                            break;
+                        }
+                        if (_598 == 1u)
+                        {
+                            _637 = -0.052980117499828338623046875;
+                            break;
+                        }
+                        if (_598 == 2u)
+                        {
+                            _637 = 0.88291108608245849609375;
+                            break;
+                        }
+                        _637 = 0.4435068666934967041015625;
+                        break;
+                    } while(false);
+                    _639 = source_1._data[_422] + (((_47._inverse != 0u) ? (-_637) : _637) * (source_1._data[_576 + (((_393 != 0u) ? (_393 - 1u) : 1u) * _405)] + source_1._data[_576 + ((((_393 + 1u) < _399) ? (_393 + 1u) : (_399 - 2u)) * _405)]));
+                }
+                else
+                {
+                    _639 = source_1._data[_422];
+                }
+                destination_1._data[_422] = _639;
+            }
+        }
+        break;
+    } while(false);
+}

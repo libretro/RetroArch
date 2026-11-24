@@ -334,6 +334,20 @@ static GLuint gl2_linear_program(gl2_t *gl);
 #ifndef GL_SRGB_ALPHA_EXT
 #define GL_SRGB_ALPHA_EXT 0x8C42
 #endif
+
+/* GLES 3.0 */
+#ifndef GL_TEXTURE_SWIZZLE_R
+#define GL_TEXTURE_SWIZZLE_R  0x8E42
+#endif
+#ifndef GL_TEXTURE_SWIZZLE_B
+#define GL_TEXTURE_SWIZZLE_B  0x8E44
+#endif
+#ifndef GL_RED
+#define GL_RED                0x1903
+#endif
+#ifndef GL_BLUE
+#define GL_BLUE               0x1905
+#endif
 #endif
 
 #define GL2_BIND_TEXTURE(id, wrap_mode, mag_filter, min_filter) \
@@ -432,6 +446,34 @@ static void gl2_free_pbo_readback(gl2_t *gl);
 
 #endif
 
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+#define MEDIA_GEN_FB gl2_gen_fb
+#define MEDIA_DELETE_FB gl2_delete_fb
+#define MEDIA_BIND_FB gl2_bind_fb
+#ifdef GL2_MAC_EXT_FBO
+/* A macOS SDK before 10.12 names it with the EXT suffix only */
+#define MEDIA_FB_BINDING GL_FRAMEBUFFER_BINDING_EXT
+#else
+#define MEDIA_FB_BINDING GL_FRAMEBUFFER_BINDING
+#endif
+#define MEDIA_ATTACH(tex) gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0)
+#define MEDIA_FB_COMPLETE() (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER) == RARCH_GL_FRAMEBUFFER_COMPLETE)
+#define gl_media_source_release gl2_media_source_release
+#define gl_media_source_acquire gl2_media_source_acquire
+#define gl_media_shader_retire gl2_media_shader_retire
+#define gl_media_shader_references gl2_media_shader_references
+#define gl_media_shader_preserve gl2_media_shader_preserve
+#define gl_media_target_free gl2_media_target_free
+#define gl_media_shader_free gl2_media_shader_free
+#define gl_media_target_fit gl2_media_target_fit
+#define gl_media_info gl2_media_info
+#define gl_media_scale gl2_media_scale
+#define gl_media_shader_changed gl2_media_shader_changed
+#define gl_media_shader_draw gl2_media_shader_draw
+#include "../common/gl_media_shader.h"
+#endif
+#include "../common/gl_media_pool.h"
+
 #ifndef GL_SYNC_GPU_COMMANDS_COMPLETE
 #define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
 #endif
@@ -459,7 +501,10 @@ enum gl2_renderchain_flags
    GL2_CHAIN_FLAG_EGL_IMAGES           = (1 << 0),
    GL2_CHAIN_FLAG_HAS_FP_FBO           = (1 << 1),
    GL2_CHAIN_FLAG_HAS_SRGB_FBO         = (1 << 2),
-   GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT = (1 << 3)
+   GL2_CHAIN_FLAG_HW_RENDER_DEPTH_INIT = (1 << 3),
+   /* GLES 3 without BGRA8888: the frame textures swap R and B as they
+    * are sampled, so a 32-bit software frame goes up as it is */
+   GL2_CHAIN_FLAG_FRAME_SWIZZLE        = (1 << 4)
 };
 
 typedef struct video_shader_ctx_scale
@@ -791,6 +836,30 @@ static void gl2_draw_cg_effect(gl2_t *gl, const struct gl2_effect *fx,
 #endif
 #endif
 
+#ifdef HAVE_GL_PLANAR
+static bool gl2_media_referenced(void *context, GLuint image);
+#endif
+static GLuint gl2_media_resolve(gl2_t *gl, GLuint texture)
+{
+#ifdef HAVE_GL_PLANAR
+   unsigned width, height;
+   if (gl_planar_pending(&gl->planar, texture, &width, &height))
+   {
+      GLuint destination;
+      if (!gl_planar_prepare_rgb(&gl->planar, texture)) return 0;
+      destination = gl_media_pool_prepare_ex(&gl->media_pool, texture, width, height,
+            gl2_media_referenced, gl, gl->media_pool_capabilities | GL_MEDIA_POOL_MUTABLE_MIPS);
+      if (!destination) return 0;
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+      if (!gl2_media_shader_preserve(gl->media_shader, destination)) return 0;
+#endif
+      if (!gl_planar_resolve_target(&gl->planar, texture, destination)) return 0;
+      gl_media_pool_publish(gl->media_pool, texture, destination);
+   }
+#endif
+   return gl_media_pool_resolve(gl->media_pool, texture);
+}
+
 static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
@@ -826,8 +895,17 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
 
    glViewport(VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos),
          VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
+#ifdef HAVE_GL_PLANAR
+   if (!draw->effect && !draw->pipeline_id
+         && coords.vertices == 4 && draw->texture
+         && gl_planar_render(&gl->planar, (unsigned)draw->texture,
+            coords.vertex, coords.tex_coord, coords.color,
+            draw->matrix_data ? (const float*)draw->matrix_data : gl->mvp_no_rot.data))
+      return;
+#endif
+
    glBindTexture(GL_TEXTURE_2D, draw->texture
-         ? (GLuint)draw->texture : gl->white_texture);
+         ? gl2_media_resolve(gl, (GLuint)draw->texture) : gl->white_texture);
 
 #ifdef GL2_EFFECTS
    if (draw->effect)
@@ -1177,7 +1255,7 @@ static bool gfx_display_gl2_mesh_draw(void *data, unsigned video_dims,
 
    /* The whole display, as draw() sets it for a strip at the origin */
    glViewport(0, 0, VIDEO_SCALE_W(video_dims), VIDEO_SCALE_H(video_dims));
-   glBindTexture(GL_TEXTURE_2D, texture ? (GLuint)texture : gl->white_texture);
+   glBindTexture(GL_TEXTURE_2D, texture ? gl2_media_resolve(gl, (GLuint)texture) : gl->white_texture);
    /* Meshes are drawn blended, as every driver draws them */
    blend = glIsEnabled(GL_BLEND);
    glEnable(GL_BLEND);
@@ -3145,8 +3223,10 @@ static void gl2_renderchain_copy_frame(
       glPixelStorei(GL_UNPACK_ALIGNMENT,
             gl2_get_alignment(width * gl->base_size));
 
-      /* Fallback for GLES devices without GL_BGRA_EXT. */
-      if (gl->base_size == 4 && use_rgba)
+      /* Fallback for GLES devices without GL_BGRA_EXT, where the
+       * texture cannot swizzle */
+      if (     gl->base_size == 4 && use_rgba
+            && !(chain->flags & GL2_CHAIN_FLAG_FRAME_SWIZZLE))
       {
          video_frame_convert_argb8888_to_abgr8888(
                &gl->scaler,
@@ -3688,7 +3768,7 @@ static void gl2_render_overlay(gl2_t *gl)
 
    for (i = 0; i < gl->overlays; i++)
    {
-      glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
+      glBindTexture(GL_TEXTURE_2D, gl2_media_resolve(gl, gl->overlay_tex[i]));
       glDrawArrays(GL_TRIANGLE_STRIP, 4 * i, 4);
    }
 
@@ -3847,6 +3927,7 @@ static bool gl2_shader_init(gl2_t *gl, const gfx_ctx_driver_t *ctx_driver,
     * dialect, under a Cg chain too */
    gl_glsl_set_context_type(gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE,
          hwr->version_major, hwr->version_minor);
+   gl_glsl_set_viewer_hdr(gl->scrgb.active);
 #endif
 
    init_data.gl.core_context_enabled = (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE) ? true : false;
@@ -4314,6 +4395,17 @@ static void gl2_init_textures(gl2_t *gl)
             gl, (gl2_renderchain_data_t*)gl->renderchain_data,
             i, internal_fmt,
             texture_fmt, texture_type);
+#if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+      /* BGRX bytes stored as RGBA: R and B put back as sampled */
+      if (     gl->base_size == sizeof(uint32_t)
+            && gl->renderchain_data
+            && (((gl2_renderchain_data_t*)gl->renderchain_data)->flags
+               & GL2_CHAIN_FLAG_FRAME_SWIZZLE))
+      {
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+      }
+#endif
    }
 
    glBindTexture(GL_TEXTURE_2D, gl->texture[gl->tex_index]);
@@ -7166,16 +7258,41 @@ static void gl2_windows_take(gl2_t *gl)
    }
 }
 
-/* Window @w's screens back in the main window, until the next restore
- * (video_driver_restore_windows()) */
+/* Window @w's screens back in the main window: closed by the @user
+ * until the next restore or an edit of their rows, failed until the
+ * next retry */
 static void gl2_window_attach(gl2_t *gl, const video_windows_frame_t *f,
-      unsigned w)
+      unsigned w, bool user)
 {
-   if (f)
-      video_driver_attach_windows(f->window_screens[w], f->restore);
-   gl->windows.held.failed |= 1u << w;
+   if (user)
+   {
+      if (f)
+      {
+         video_driver_close_windows(f, f->window_screens[w]);
+         gl->windows.held.closed_edit[w] = f->settings[w].edit;
+      }
+      gl->windows.held.closed |= 1u << w;
+   }
+   else
+   {
+      if (f)
+         video_driver_attach_windows(f->window_screens[w], f->retry);
+      gl->windows.held.failed |= 1u << w;
+   }
    if (gl->windows.held.live & (1u << w))
       gl2_window_retire(gl, w, false);
+}
+
+/* What @f asks of window @w, at the generation it has */
+static void gl2_window_request(gl2_t *gl, const video_windows_frame_t *f,
+      unsigned w, video_window_request_t *out)
+{
+   memset(out, 0, sizeof(*out));
+   out->screen     = w;
+   out->screens    = f->window_screens[w];
+   out->generation = gl->windows.win[w].native.generation;
+   out->settings   = f->settings[w];
+   out->display    = f->display;
 }
 
 /* Window @w for @f's screens there, on @f's display */
@@ -7185,12 +7302,9 @@ static bool gl2_window_make(gl2_t *gl, const video_windows_frame_t *f,
    video_window_request_t request;
    struct gl2_window *win = &gl->windows.win[w];
 
-   memset(&request, 0, sizeof(request));
    memset(win, 0, sizeof(*win));
-   request.screen     = w;
+   gl2_window_request(gl, f, w, &request);
    request.generation = video_driver_window_generation();
-   request.settings   = f->settings[w];
-   request.display    = f->display;
    if (     !request.generation
          || !gl->ctx_driver->windows->create(gl->ctx_data, &request,
             &win->native))
@@ -7235,7 +7349,8 @@ static bool gl2_window_draw(gl2_t *gl,
    const video_windows_frame_t *f     = video_info->windows;
    const gfx_ctx_window_driver_t *ctx = gl->ctx_driver->windows;
    struct gl2_window *win             = &gl->windows.win[w];
-   video_views_layout_t *layout       = &win->layout;
+   /* Laid out in the slot it is published in */
+   video_views_layout_t *layout       = video_driver_lend_window_layout(w);
    unsigned dims                      = win->native.dims;
    bool stock                         = !video_info->shader_active
       || !gl->views.preset;
@@ -7274,7 +7389,7 @@ static bool gl2_window_draw(gl2_t *gl,
       ctx->bind_gl(gl->ctx_data, NULL);
       RARCH_WARN("[GL] A screen window can't be drawn. "
             "What it shows stays in the main window.\n");
-      gl2_window_attach(gl, f, w);
+      gl2_window_attach(gl, f, w, false);
       return false;
    }
    if (screens)
@@ -7318,6 +7433,7 @@ static bool gl2_windows_draw(gl2_t *gl,
 {
    unsigned w, retire, create;
    unsigned closed                    = 0;
+   unsigned user_closed               = 0;
    const video_windows_frame_t *f     = video_info->windows;
    const gfx_ctx_window_driver_t *ctx = gl->ctx_driver->windows;
    bool drawn                         = false;
@@ -7332,12 +7448,33 @@ static bool gl2_windows_draw(gl2_t *gl,
       for (i = 0; i < count; i++)
       {
          unsigned id = events[i].screen;
-         if (     events[i].kind == VIDEO_WINDOW_EVENT_CLOSE
-               && id && id < RETRO_VIDEO_VIEWS_MAX
-               && (gl->windows.held.live & (1u << id))
-               && gl->windows.win[id].native.generation
-                  == events[i].generation)
+         if (     !id || id >= RETRO_VIDEO_VIEWS_MAX
+               || !(gl->windows.held.live & (1u << id))
+               || gl->windows.win[id].native.generation
+                  != events[i].generation)
+            continue;
+         if (events[i].kind == VIDEO_WINDOW_EVENT_CLOSE)
+         {
             closed |= 1u << id;
+            if (events[i].user)
+               user_closed |= 1u << id;
+         }
+         else if (     events[i].kind == VIDEO_WINDOW_EVENT_GEOMETRY
+                    && events[i].save_dims
+                    && (gl->windows.held.made_known & (1u << id)))
+         {
+            video_driver_publish_window_bounds(id,
+                  gl->windows.held.made_screens[id],
+                  gl->windows.held.made[id].edit, events[i].save_pos,
+                  events[i].save_dims, events[i].save_moved);
+            video_windows_held_saved(&gl->windows.held, id,
+                  events[i].save_pos, events[i].save_dims,
+                  events[i].save_moved);
+         }
+         else if (     events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_GAIN
+                    || events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_LOSS)
+            video_driver_publish_window_focus(id, events[i].generation,
+                  events[i].kind == VIDEO_WINDOW_EVENT_FOCUS_GAIN);
       }
    }
    video_windows_steps(&gl->windows.held, f, &retire, &create);
@@ -7347,11 +7484,11 @@ static bool gl2_windows_draw(gl2_t *gl,
    if (!f)
       return false;
    /* Marked after steps(), which clears the marks when this frame's
-    * restore count moved, so a closed window waits for the next one */
+    * counts moved, so a closed window waits for the next one */
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (     (closed & (1u << w))
             && (f->window_screens[w] || f->window_ui[w]))
-         gl2_window_attach(gl, f, w);
+         gl2_window_attach(gl, f, w, (user_closed & (1u << w)) != 0);
    create &= ~closed;
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
    {
@@ -7359,8 +7496,15 @@ static bool gl2_windows_draw(gl2_t *gl,
          continue;
       RARCH_WARN("[GL] A screen window can't be made. "
             "What it shows stays in the main window.\n");
-      gl2_window_attach(gl, f, w);
+      gl2_window_attach(gl, f, w, false);
    }
+   for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
+      if (gl->windows.held.update & gl->windows.held.live & (1u << w))
+      {
+         video_window_request_t request;
+         gl2_window_request(gl, f, w, &request);
+         ctx->update(gl->ctx_data, &gl->windows.win[w].native, &request);
+      }
    /* A kept window keeps its last image */
    for (w = 1; w < RETRO_VIDEO_VIEWS_MAX; w++)
       if (     (gl->windows.held.live & (1u << w))
@@ -7372,6 +7516,96 @@ static bool gl2_windows_draw(gl2_t *gl,
    return drawn;
 }
 #endif
+#endif
+
+#ifdef HAVE_GL_PLANAR
+static void gl2_movie_drop(gl2_t *gl)
+{
+   if (gl->movie_texture)
+   {
+      gl_planar_forget(&gl->planar, gl->movie_texture);
+      glDeleteTextures(1, &gl->movie_texture);
+      /* The core's next frame sets its texture coordinates again */
+      memset(gl->last_width,  0, sizeof(gl->last_width));
+      memset(gl->last_height, 0, sizeof(gl->last_height));
+   }
+   gl->movie_texture = 0;
+   gl->movie_dims    = 0;
+   gl->movie_pending = false;
+}
+
+/* What the frame draws: a core frame ends the movie, otherwise the
+ * movie stands in for it, at its size. True when a movie frame came
+ * since the last draw. */
+static bool gl2_movie_prepare(gl2_t *gl, const void **frame, unsigned *dims)
+{
+   bool fresh        = gl->movie_pending;
+   gl->movie_pending = false;
+   if (!gl->movie_texture)
+      return false;
+   if (*frame && *frame != RETRO_HW_FRAME_BUFFER_VALID)
+   {
+      gl2_movie_drop(gl);
+      return false;
+   }
+   *frame = NULL;
+   *dims  = gl->movie_dims;
+   return fresh;
+}
+
+/* A movie frame in memory, converted by the planar upload into one
+ * texture kept across frames; NULL drops it. The planes are released
+ * once the upload has read them. */
+static enum video_texture_update gl2_import_movie_frame(void *data,
+      const video_frame_import_t *f)
+{
+   struct texture_image img;
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!f || (gl->movie_texture && gl->movie_dims != f->dims))
+      gl2_movie_drop(gl);
+   if (!f)
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   if (     !VIDEO_FRAME_IMPORT_IS_CPU(f)
+         || !(gl->flags & GL2_FLAG_HAVE_FBO) || !GL_PLANAR_OK(&gl->planar)
+         || !VIDEO_SCALE_W(f->dims) || !VIDEO_SCALE_H(f->dims))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   memset(&img, 0, sizeof(img));
+   img.width  = VIDEO_SCALE_W(f->dims);
+   img.height = VIDEO_SCALE_H(f->dims);
+   img.planar = &f->planar;
+   if (gl->movie_texture)
+   {
+      if (!gl_planar_update(&gl->planar, gl->movie_texture, &img))
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+   else
+   {
+      if (!(gl->movie_texture = gl_planar_load(&gl->planar, &img, true,
+                  (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE) != 0)))
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      RARCH_LOG("[GL] Movie frames of %ux%u converted from their planes.\n",
+            img.width, img.height);
+   }
+   gl->movie_dims    = f->dims;
+   gl->movie_pending = true;
+   if (f->abandon)
+      f->abandon(f->owner, f->done, f->done_value);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
+/* The movie frames taken; there is no device to share */
+static bool gl2_get_device(void *data, video_device_info_t *info)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || !info)
+      return false;
+   memset(info, 0, sizeof(*info));
+   if ((gl->flags & GL2_FLAG_HAVE_FBO) && GL_PLANAR_OK(&gl->planar))
+      info->import_formats = IMAGE_PIXFMT_I420;
+   return info->import_formats != 0;
+}
 #endif
 
 static bool gl2_frame(void *data, const void *frame,
@@ -7408,6 +7642,7 @@ static bool gl2_frame(void *data, const void *frame,
    /* The menu and the notifications are drawn in the main window */
    bool menu_here                      = true;
    bool notes_here                     = true;
+   bool movie_frame                    = false;
 #if defined(GL2_VIEWS) && defined(HAVE_VIDEO_WINDOWS)
    video_views_ui_dims_t window_ui_saved;
    unsigned window_ui_away             = 0;
@@ -7479,6 +7714,16 @@ static bool gl2_frame(void *data, const void *frame,
    width  = VIDEO_SCALE_W(gl->video_dims);
    height = VIDEO_SCALE_H(gl->video_dims);
 
+#ifdef HAVE_GL_PLANAR
+   movie_frame  = gl2_movie_prepare(gl, &frame, &dims);
+   frame_width  = VIDEO_SCALE_W(dims);
+   frame_height = VIDEO_SCALE_H(dims);
+#endif
+   (void)movie_frame; /* only the headsets ask */
+
+   gl->media_shader_enabled = video_info->shader_active;
+   gl->media_shader_frame = frame_count;
+
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
 
@@ -7489,7 +7734,7 @@ static bool gl2_frame(void *data, const void *frame,
 #ifdef HAVE_GL_MENU_BLOOM
    /* Before the frame draws into any framebuffer of its own */
    if (gl->flags & GL2_FLAG_HAVE_FBO)
-      gfx_display_bloom_prepass(gl);
+      gfx_display_bloom_prepass(gl, video_info->frame_time);
 #endif
 
    gl->shader->use(gl, gl->shader_data, 1, true);
@@ -7611,6 +7856,17 @@ static bool gl2_frame(void *data, const void *frame,
    gl->tex_info.input_size[1] = frame_height;
    gl->tex_info.tex_size[0]   = VIDEO_SCALE_W(gl->tex_dims);
    gl->tex_info.tex_size[1]   = VIDEO_SCALE_H(gl->tex_dims);
+#ifdef HAVE_GL_PLANAR
+   /* The movie's texture is its own size */
+   if (gl->movie_texture)
+   {
+      gl->tex_info.tex         = gl->movie_texture;
+      gl->tex_info.tex_size[0] = frame_width;
+      gl->tex_info.tex_size[1] = frame_height;
+      SET_TEXTURE_COORDS(gl->tex_info.coord, 1.0f, 1.0f);
+      glBindTexture(GL_TEXTURE_2D, gl->movie_texture);
+   }
+#endif
 
    feedback_info              = gl->tex_info;
 
@@ -7673,6 +7929,10 @@ static bool gl2_frame(void *data, const void *frame,
    params.vp_dims          = gl->out_vp_dims;
    params.dims             = dims;
    params.tex_dims         = gl->tex_dims;
+#ifdef HAVE_GL_PLANAR
+   if (gl->movie_texture)
+      params.tex_dims      = gl->movie_dims;
+#endif
    params.out_dims         = gl->vp.dims;
    params.frame_counter    = (unsigned int)frame_count;
    params.swap_counter    = (unsigned int)video_info->swap_count;
@@ -7974,7 +8234,7 @@ static bool gl2_frame(void *data, const void *frame,
          video_info->headset_edit_seq, video_info->headset_editing);
    if (gl_android_openxr_active())
    {
-      bool new_frame = frame && !video_info->frame_repeat;
+      bool new_frame = (frame || movie_frame) && !video_info->frame_repeat;
       /* Views kept across a reinit drew only the frame a repeat shows. */
       if (new_frame)
          gl_android_openxr_new_frame();
@@ -7991,14 +8251,15 @@ static bool gl2_frame(void *data, const void *frame,
    /* The back buffer is what the window shows until the swap. Not from
     * the BFI light dupes, which would only copy the same image. */
    if (gl->desktop_xr && !(gl->flags & GL2_FLAG_FRAME_DUPE_LOCK))
-      gl2_desktop_xr_frame(gl, video_info, frame != NULL, dims, &xr_vp);
+      gl2_desktop_xr_frame(gl, video_info, frame || movie_frame, dims,
+            &xr_vp);
 #endif
 
 #if defined(GL2_VIEWS) && defined(HAVE_VIDEO_WINDOWS)
    /* Before the ring's fence: the windows read the frame too. Not from
     * the BFI light dupes. */
    if (     (video_info->windows || gl->windows.held.live
-            || gl->windows.held.failed)
+            || gl->windows.held.failed || gl->windows.held.closed)
          && !(gl->flags & GL2_FLAG_FRAME_DUPE_LOCK))
    {
       gl->windows.frame_count = (unsigned)frame_count;
@@ -8017,9 +8278,10 @@ static bool gl2_frame(void *data, const void *frame,
     if (gl->ctx_driver->swap_buffers)
     {
        /* timed: see gl2_get_last_present_wait() */
-       retro_time_t swap_at = cpu_features_get_time_usec();
+       retro_perf_tick_t swap_at = cpu_features_get_perf_counter();
        gl->ctx_driver->swap_buffers(gl->ctx_data);
-       gl2_present_wait = cpu_features_get_time_usec() - swap_at;
+       gl2_present_wait = cpu_features_perf_to_usec(
+             cpu_features_get_perf_counter() - swap_at);
     }
 
  /* Emscripten has to do black frame insertion in its main loop */
@@ -8210,6 +8472,10 @@ static void gl2_free(void *data)
             gl->renderchain_data);
 
 
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   gl2_media_shader_free(&gl->media_shader);
+#endif
+   gl_media_pool_free(&gl->media_pool);
    gl->shader->deinit(gl->shader_data);
 
    gl2_scrgb_deinit(gl);
@@ -8221,6 +8487,7 @@ static void gl2_free(void *data)
    gl2_views_release(gl);
 #endif
 #ifdef HAVE_GL_PLANAR
+   gl2_movie_drop(gl);
    gl_planar_free(&gl->planar);
 #endif
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
@@ -8379,9 +8646,22 @@ static bool gl2_resolve_extensions(gl2_t *gl, const char *context_ident, const v
 #if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    if (!gl_check_capability(GL_CAPS_BGRA8888))
    {
+      gl2_renderchain_data_t *chain = (gl2_renderchain_data_t*)
+         gl->renderchain_data;
       video_driver_modify_disp_flags(VIDEO_FLAG_USE_RGBA, 0);
-      RARCH_WARN("[GL] GLES implementation does not have BGRA8888 extension.\n"
-                 "[GL] 32-bit path will require conversion.\n");
+      /* The frame textures swap R and B as they are sampled; a
+       * hardware core renders into them, so not for one */
+      if (     chain
+            && gl_check_capability(GL_CAPS_GLES3_SUPPORTED)
+            && !(gl->flags & GL2_FLAG_HW_RENDER_USE))
+      {
+         chain->flags |= GL2_CHAIN_FLAG_FRAME_SWIZZLE;
+         RARCH_LOG("[GL] GLES implementation does not have BGRA8888"
+               " extension; 32-bit frames are swizzled as sampled.\n");
+      }
+      else
+         RARCH_WARN("[GL] GLES implementation does not have BGRA8888 extension.\n"
+                    "[GL] 32-bit path will require conversion.\n");
    }
 #endif
 
@@ -8938,6 +9218,16 @@ static void *gl2_init(const video_info_t *video)
       if (end && *end == '.')
          gl->version_minor = (int)strtol(end + 1, NULL, 10);
    }
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   if (gl->version_major>2 || (gl->version_major==2 && gl->version_minor>=1)
+         || gl_query_extension("ARB_pixel_buffer_object")
+         || gl_query_extension("EXT_pixel_buffer_object"))
+      gl->media_pool_capabilities |= GL_MEDIA_POOL_UNPACK;
+   if (gl->version_major>3 || (gl->version_major==3 && gl->version_minor>=3)
+         || gl_query_extension("ARB_texture_swizzle")
+         || gl_query_extension("EXT_texture_swizzle"))
+      gl->media_pool_capabilities |= GL_MEDIA_POOL_SWIZZLE;
+#endif
 
    {
       size_t _len = 0;
@@ -9430,6 +9720,9 @@ static bool gl2_set_shader(void *data,
       goto error;
    }
 
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   gl2_media_shader_free(&gl->media_shader);
+#endif
    gl->shader->deinit(gl->shader_data);
    gl->shader_data = NULL;
 
@@ -9845,6 +10138,39 @@ static void video_texture_load_gl2(
          ti ? ti->pix10 : false);
 }
 
+/* Called only by the render owner after a managed texture changes. */
+static void gl2_media_texture_changed(gl2_t *gl, uintptr_t id, bool uploaded)
+{
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   if (gl)
+   {
+      gl2_media_shader_changed(gl->media_shader, id);
+      if (uploaded || gl->media_last_texture == id)
+         gl->media_last_texture = uploaded ? id : 0;
+   }
+#else
+   (void)gl; (void)id; (void)uploaded;
+#endif
+}
+
+static bool gl2_media_referenced(void *context, GLuint image)
+{
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   return gl2_media_shader_references(((gl2_t*)context)->media_shader,image);
+#else
+   (void)context;(void)image;return false;
+#endif
+}
+
+static bool gl2_media_retire(void *context, GLuint image)
+{
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   return gl2_media_shader_retire(((gl2_t*)context)->media_shader,image);
+#else
+   (void)context;(void)image;return false;
+#endif
+}
+
 /* A texture of @ti: a planar frame converted on the GPU, anything else
  * uploaded as it is */
 static void gl2_texture_load(gl2_t *gl, const struct texture_image *ti,
@@ -9855,14 +10181,29 @@ static void gl2_texture_load(gl2_t *gl, const struct texture_image *ti,
    {
 #ifdef HAVE_GL_PLANAR
       if (gl)
-         *id = gl_planar_load(&gl->planar, ti,
+         *id = gl_planar_load_deferred(&gl->planar, ti,
                filter_type != TEXTURE_FILTER_NEAREST
                && filter_type != TEXTURE_FILTER_MIPMAP_NEAREST,
                (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE) != 0);
 #endif
-      return;
    }
-   video_texture_load_gl2(ti, filter_type, id);
+   else
+      video_texture_load_gl2(ti, filter_type, id);
+   if (*id)
+   {
+#if defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+      if (gl && !ti->fp16 && !ti->pix10)
+      {
+         bool rgba = ti->planar || (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+         gl_media_pool_register(&gl->media_pool, (GLuint)*id, ti->width, ti->height,
+               rgba ? GL_RGBA : RARCH_GL_INTERNAL_FORMAT32,
+               rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32, GL_UNSIGNED_BYTE,
+               ti->planar || (filter_type != TEXTURE_FILTER_MIPMAP_LINEAR
+                  && filter_type != TEXTURE_FILTER_MIPMAP_NEAREST), true, 0);
+      }
+#endif
+      gl2_media_texture_changed(gl, *id, true);
+   }
 }
 
 #ifdef HAVE_THREADS
@@ -9927,7 +10268,12 @@ static uintptr_t video_texture_unload_wrap_gl2(void *data)
    if (gl)
       gl_planar_forget(&gl->planar, glid);
 #endif
-   glDeleteTextures(1, &glid);
+   gl2_media_texture_changed(gl, id, false);
+   if (gl && gl_media_pool_forget(&gl->media_pool,glid,gl2_media_retire,gl)) return 0;
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   if (!gl2_media_shader_retire(gl ? gl->media_shader : NULL, glid))
+#endif
+      glDeleteTextures(1, &glid);
    return 0;
 }
 #endif
@@ -9997,7 +10343,12 @@ static void gl2_unload_texture(void *data,
    if (data)
       gl_planar_forget(&((gl2_t*)data)->planar, glid);
 #endif
-   glDeleteTextures(1, &glid);
+   gl2_media_texture_changed((gl2_t*)data, id, false);
+   if (data && gl_media_pool_forget(&((gl2_t*)data)->media_pool,glid,gl2_media_retire,data)) return;
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   if (!gl2_media_shader_retire(data ? ((gl2_t*)data)->media_shader : NULL, glid))
+#endif
+      glDeleteTextures(1, &glid);
 }
 
 /* Same-size, same-order contents into a texture gl2_load_texture made:
@@ -10009,14 +10360,40 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
 {
    bool use_rgba      = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    const void *pixels = ti->pixels;
+   GLuint destination = gl ? gl_media_pool_resolve(gl->media_pool,(GLuint)id) : (GLuint)id;
+
 #ifdef HAVE_GL_TEXTURE_LEND
    int lent           = -1;
+#endif
+#ifdef HAVE_GL_PLANAR
+   if (gl && ti->planar && gl_planar_update_deferred(&gl->planar, (unsigned)id, ti))
+   {
+      gl2_media_texture_changed(gl, id, true);
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   }
+   if (gl && !gl2_media_resolve(gl, (GLuint)id))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#endif
+
+   if (gl)
+   {
+      destination=gl_media_pool_prepare_ex(&gl->media_pool,(GLuint)id,ti->width,ti->height,
+            gl2_media_referenced,gl,gl->media_pool_capabilities | GL_MEDIA_POOL_MUTABLE_MIPS);
+      if (!destination) return VIDEO_TEXTURE_UPDATE_DROPPED;
+   }
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   if (gl && !gl2_media_shader_preserve(gl->media_shader, destination))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 #endif
    if (ti->planar)
    {
 #ifdef HAVE_GL_PLANAR
-      if (gl && gl_planar_update(&gl->planar, (unsigned)id, ti))
+      if (gl && gl_planar_update_target(&gl->planar, (unsigned)id, destination, ti))
+      {
+         gl_media_pool_publish(gl->media_pool, (GLuint)id, destination);
+         gl2_media_texture_changed(gl, id, true);
          return VIDEO_TEXTURE_UPDATE_DONE;
+      }
 #endif
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
@@ -10030,7 +10407,7 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
       pixels = NULL;
    }
 #endif
-   glBindTexture(GL_TEXTURE_2D, (GLuint)id);
+   glBindTexture(GL_TEXTURE_2D, destination);
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    if (ti->fp16)
@@ -10048,6 +10425,8 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
    if (lent >= 0)
       gl_texture_lend_unbind(gl->lend, (unsigned)id, lent);
 #endif
+   if (gl) gl_media_pool_publish(gl->media_pool,(GLuint)id,destination);
+   gl2_media_texture_changed(gl, id, true);
    return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
@@ -10060,9 +10439,8 @@ static uintptr_t video_texture_update_wrap_gl2(void *data)
    if (gl && gl->ctx_driver->make_current)
       gl->ctx_driver->make_current(false);
 
-   gl2_update_texture_internal(gl, (uintptr_t)cmd->handle,
+   return (uintptr_t)gl2_update_texture_internal(gl, (uintptr_t)cmd->handle,
          (const struct texture_image*)cmd->payload);
-   return 1;
 }
 #endif
 
@@ -10090,8 +10468,8 @@ static enum video_texture_update gl2_update_texture(void *video_data,
       cmd.gl      = (gl2_t*)video_data;
       cmd.payload = (void*)ti;
       cmd.handle  = id;
-      video_thread_texture_handle(&cmd, video_texture_update_wrap_gl2);
-      return VIDEO_TEXTURE_UPDATE_DONE;
+      return (enum video_texture_update)video_thread_texture_handle(
+            &cmd, video_texture_update_wrap_gl2);
    }
 #endif
 
@@ -10129,7 +10507,10 @@ static bool gl2_frame_mem_uploads(gl2_t *gl)
       return false;
 #if defined(HAVE_OPENGLES)
    if (     (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
-         && gl->base_size == 4)
+         && gl->base_size == 4
+         && !(     gl->renderchain_data
+               && (((gl2_renderchain_data_t*)gl->renderchain_data)->flags
+                  & GL2_CHAIN_FLAG_FRAME_SWIZZLE)))
       return false;
    if (!(gl->flags & GL2_FLAG_HAVE_UNPACK_ROW_LENGTH))
       return false;
@@ -10320,7 +10701,7 @@ static uint32_t gl2_get_flags(void *data)
 #if defined(HAVE_VIDEO_WINDOWS) && !(defined(HAVE_OPENXR) && defined(ANDROID))
       /* The context can make screens windows of their own. Not in the
        * Quest's build, whose back buffer is the headset's framebuffer. */
-      if (gl2->ctx_driver && gl2->ctx_driver->windows)
+      if (gl2->ctx_driver && video_windows_usable(gl2->ctx_driver->windows))
          BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_WINDOWS);
 #endif
    }
@@ -10378,6 +10759,11 @@ static bool gl2_supports_texture_format(void *data,
    switch (fmt)
    {
       /* Converted by a draw into a framebuffer (gl_planar_load) */
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
+      /* gl_planar_plane can upload padded rows in one call. GLES2's
+       * row-at-a-time fallback is cheaper with packed decoder output. */
+      case TEXTURE_GPU_FORMAT_YUV420_STRIDED:
+#endif
       case TEXTURE_GPU_FORMAT_YUV420:
 #ifdef HAVE_GL_PLANAR
          return gl && (gl->flags & GL2_FLAG_HAVE_FBO)
@@ -10618,7 +11004,11 @@ static const video_poke_interface_t gl2_poke_interface = {
    NULL, /* frame_mem_ready */
    NULL, /* frame_mem_free */
 #endif
+#ifdef HAVE_GL_PLANAR
+   gl2_get_device,
+#else
    NULL, /* get_device */
+#endif
    NULL, /* import_texture */
    NULL, /* get_last_present_sync */
 #if defined(HAVE_GL_ASYNC_READBACK) && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
@@ -10626,7 +11016,11 @@ static const video_poke_interface_t gl2_poke_interface = {
 #else
    NULL, /* record_read */
 #endif
+#ifdef HAVE_GL_PLANAR
+   gl2_import_movie_frame,
+#else
    NULL, /* import_movie_frame */
+#endif
    NULL, /* get_menu_framebuffer */
    NULL, /* menu_mem_alloc */
    0,    /* menu_mem_pitch_align */
@@ -10869,10 +11263,69 @@ static void gfx_display_gl2_bloom_end(void *data, unsigned dims, bool defer)
    gl_menu_bloom_end(gl->menu_bloom, dims, defer);
 }
 
+#ifdef HAVE_GL_MENU_BLUR
+static bool gfx_display_gl2_blur_rect(void *data, unsigned video_dims,
+      int x, int y, unsigned dims, float alpha, float dim)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || !(gl->flags & GL2_FLAG_HAVE_FBO))
+      return false;
+   return gl_menu_blur(&gl->menu_bloom, video_dims, x, y, dims, alpha, dim,
+         gl_query_core_context_in_use(),
+#ifdef HAVE_OPENGLES
+         true
+#else
+         false
+#endif
+         );
+}
+#endif
+
 static void gfx_display_gl2_bloom_composite(void *data, unsigned dims)
 {
    gl2_t *gl = (gl2_t*)data;
    gl_menu_bloom_composite(gl->menu_bloom, dims);
+}
+#endif
+
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+#include "../common/hdr_viewer_colour.h"
+
+static bool gfx_display_gl2_media_shader_draw(void *data, uintptr_t image,
+      unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
+{
+   gl2_t *gl = (gl2_t*)data;
+   float rows[12];
+   bool hdr = false;
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   hdr = gl && gl->scrgb.active && gl2_fp16_is((GLuint)image);
+#endif
+   (void)video_dims;
+   if (hdr) hdr_viewer_colour_rows(rows, true, gl->scrgb.menu_nits,
+         gl->scrgb.expand_gamut);
+#if defined(HAVE_GLSL) && defined(HAVE_GL_PLANAR)
+   if (gl && gl->media_shader_enabled && gl->shader == &gl_glsl_backend
+         && (gl->flags & GL2_FLAG_HAVE_FBO))
+   {
+      struct gl_planar_sample sample;
+      if (gl_planar_sample_info(&gl->planar, (unsigned)image, &sample)
+            && gl_glsl_set_media_planar(gl->shader_data, &sample))
+      {
+         bool drawn = gl2_media_shader_draw(&gl->media_shader, gl, gl->shader,
+               gl->shader_data, image, source_dims, pos, dims,
+               gl->media_shader_frame, NULL, false);
+         gl_glsl_set_media_planar(gl->shader_data, NULL);
+         if (drawn) return true;
+      }
+   }
+#endif
+   return gl && gl->shader && gl->shader_data
+      && gl->shader->num_shaders(gl->shader_data)
+      && (gl->flags & GL2_FLAG_HAVE_FBO) && gl->media_shader_enabled &&
+      gl2_media_shader_draw(&gl->media_shader, gl, gl->shader, gl->shader_data,
+            gl2_media_resolve(gl, (GLuint)image), source_dims, pos, dims,
+            gl->media_shader_frame, hdr ? rows : NULL,
+            gl->media_last_texture == image);
 }
 #endif
 
@@ -10904,7 +11357,17 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl = {
    NULL, NULL, NULL,
 #endif
 #ifdef GL2_EFFECTS
-   gfx_display_gl2_effect_install
+   gfx_display_gl2_effect_install,
+#else
+   NULL,
+#endif
+#if defined(HAVE_GLSL) || defined(HAVE_CG)
+   gfx_display_gl2_media_shader_draw,
+#else
+   NULL,
+#endif
+#ifdef HAVE_GL_MENU_BLUR
+   gfx_display_gl2_blur_rect
 #else
    NULL
 #endif

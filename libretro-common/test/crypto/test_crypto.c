@@ -1146,6 +1146,37 @@ START_TEST (test_x509)
       ck_assert_int_eq(x509_trust_load_der_parts(&part, &len, 1), -1);
    }
    x509_trust_free();
+   /* CRLF line breaks decode as LF ones */
+   {
+      char   crlf[sizeof(x509_root_pem) * 2];
+      size_t i, n = 0;
+      for (i = 0; i < sizeof(x509_root_pem) - 1; i++)
+      {
+         if (x509_root_pem[i] == '\n')
+            crlf[n++] = '\r';
+         crlf[n++] = x509_root_pem[i];
+      }
+      ck_assert_int_eq(x509_trust_load_pem(crlf, n), 1);
+   }
+   x509_trust_free();
+   /* an adopted bundle is decoded where it lies and trusted as a copied
+    * one; one with nothing usable is freed, the published store kept */
+   {
+      char *pem = (char*)malloc(sizeof(x509_root_pem));
+      ck_assert(pem != NULL);
+      memcpy(pem, x509_root_pem, sizeof(x509_root_pem));
+      chain[0] = x509_leaf;  lens[0] = sizeof(x509_leaf);
+      chain[1] = x509_inter; lens[1] = sizeof(x509_inter);
+      ck_assert_int_eq(x509_trust_adopt_pem(pem, sizeof(x509_root_pem) - 1), 1);
+      ck_assert_int_eq(x509_verify_chain(chain, lens, 2, "example.com", X509_TEST_NOW, info, sizeof(info)), 0);
+      pem = (char*)malloc(sizeof(x509_root_pem));
+      ck_assert(pem != NULL);
+      memcpy(pem, x509_root_pem, sizeof(x509_root_pem));
+      memset(strstr(pem, "-----BEGIN"), '-', 11);   /* no certificate begins */
+      ck_assert_int_eq(x509_trust_adopt_pem(pem, sizeof(x509_root_pem) - 1), 0);
+      ck_assert_int_eq(x509_verify_chain(chain, lens, 2, "example.com", X509_TEST_NOW, info, sizeof(info)), 0);
+   }
+   x509_trust_free();
 }
 END_TEST
 

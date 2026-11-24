@@ -10,18 +10,23 @@
 
 #include "core_install_check.h"
 
-bool core_install_check_begin(struct core_install_check *ic,
+/* The staged file opened, its quick answer and the folder key: false,
+ * with ic freed, when c.result is final already */
+static bool core_install_check_open(struct core_install_check *ic,
       const core_trust_set_t *s, const char *staged,
       const char *install_path)
 {
    struct core_identity id;
-   memset(ic, 0, sizeof(*ic));
+   memset(&ic->c, 0, sizeof(ic->c));
    ic->step     = -1;
    ic->c.result = CORE_CHECK_ERROR;
    strlcpy(ic->c.rec.name, path_basename_nocompression(staged),
          sizeof(ic->c.rec.name));
    if (!(ic->f = core_file_open_id(staged, &id)))
+   {
+      core_install_check_free(ic);
       return false;
+   }
    /* A record or the folder rule vouches for a file in place, not for
     * a download: only ERROR, or checks off, ends it before hashing */
    if (     core_check_quick_id(s, ic->f, staged, &id, &ic->c)
@@ -31,16 +36,58 @@ bool core_install_check_begin(struct core_install_check *ic,
       core_install_check_free(ic);
       return false;
    }
-   if (     !core_folder_key(install_path, ic->c.folder)
-         || !core_hash_init(&ic->h))
+   if (!core_folder_key(install_path, ic->c.folder))
    {
       ic->c.result = CORE_CHECK_ERROR;
       core_install_check_free(ic);
       return false;
    }
    ic->c.result = CORE_CHECK_ERROR;
+   return true;
+}
+
+bool core_install_check_begin(struct core_install_check *ic,
+      const core_trust_set_t *s, const char *staged,
+      const char *install_path)
+{
+   memset(ic, 0, sizeof(*ic));
+   if (!core_install_check_open(ic, s, staged, install_path))
+      return false;
+   if (!core_hash_init(&ic->h))
+   {
+      core_install_check_free(ic);
+      return false;
+   }
+   ic->hashing = true;
+   ic->step    = 1;
+   return true;
+}
+
+void core_install_check_stream_init(struct core_install_check *ic)
+{
+   memset(ic, 0, sizeof(*ic));
+   ic->step     = -1;
+   ic->c.result = CORE_CHECK_ERROR;
+   core_hash_init_stream(&ic->h);
    ic->hashing  = true;
-   ic->step     = 1;
+   ic->streamed = true;
+}
+
+void core_install_check_stream(struct core_install_check *ic,
+      const void *data, size_t len)
+{
+   core_hash_update(&ic->h, data, len);
+}
+
+bool core_install_check_begin_streamed(struct core_install_check *ic,
+      const core_trust_set_t *s, const char *staged,
+      const char *install_path)
+{
+   if (!core_install_check_open(ic, s, staged, install_path))
+      return false;
+   /* Hashed as it was written: the staged file's size, in its identity,
+    * must be what passed through, or core_check_hashed() refuses it */
+   ic->step = 0;
    return true;
 }
 

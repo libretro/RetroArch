@@ -490,6 +490,34 @@ int main(void)
          checks++;
          if (h != want)
             fail("xxh3 split anywhere", (unsigned)n, seed, h, want);
+      }      /* xxh3_64_pair: two spans hashed as the one they make, split
+       * on a stripe (the direct path) and anywhere (the incremental
+       * one), over the lengths either side of 240 and of a block */
+      {
+         static const size_t lens[] = { 0, 1, 16, 17, 128, 129, 240, 241,
+            300, 1024, 1087, 1088, 2048, 3000, 4100 };
+         for (i = 0; i < sizeof(lens) / sizeof(lens[0]); i++)
+         {
+            size_t   len = lens[i], cut;
+            uint64_t seed = (i & 1) ? (uint64_t)len * PRIME64 : 0;
+            uint64_t want = xxh3_64(buf + 3, len, seed);
+            for (cut = 0; cut <= len; cut += (len < 300 ? 1 : 61))
+            {
+               uint64_t h = xxh3_64_pair(cut ? buf + 3 : NULL, cut,
+                     len - cut ? buf + 3 + cut : NULL, len - cut, seed);
+               checks++;
+               if (h != want)
+                  fail("xxh3_64_pair", (unsigned)cut, seed, h, want);
+            }
+            for (cut = 0; cut <= len; cut += 64)
+            {
+               uint64_t h = xxh3_64_pair(cut ? buf + 3 : NULL, cut,
+                     len - cut ? buf + 3 + cut : NULL, len - cut, seed);
+               checks++;
+               if (h != want)
+                  fail("xxh3_64_pair on a stripe", (unsigned)cut, seed, h, want);
+            }
+         }
       }
    }
 

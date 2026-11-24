@@ -306,6 +306,11 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
 audio_mixer_sound_t *audio_mixer_load_ac3(void *buffer, size_t size)
 { (void)buffer; (void)size; return NULL; }
 
+/* Its MP4 loader, which carries AC-3 too: the same dispatch */
+audio_mixer_sound_t *audio_mixer_load_m4a_track_avail(void *buffer,
+      size_t size, size_t avail, int track)
+{ (void)buffer; (void)size; (void)avail; (void)track; return NULL; }
+
 /* The platform's audio defaults: audio_driver_device_block_frames()
  * reads the device's transfer granularity from here, and no platform
  * in a harness reports one. */
@@ -331,6 +336,9 @@ bool content_serialize_state_rewind(void *data, size_t size)
    memcpy(data, &test_rewind_core_frame, size);
    return true;
 }
+const void *content_rewind_state_core(const void *state, size_t len,
+      size_t *core_size)
+{ *core_size = len; return state; }
 bool content_deserialize_state(const void *data, size_t size)
 {
    if (!data || size != sizeof(test_rewind_core_frame)) return false;
@@ -377,6 +385,13 @@ bool audio_mixer_voice_clock(audio_mixer_voice_t *voice,
    if (serial) *serial = voice ? 1 : 0;
    return voice != NULL;
 }
+void audio_mixer_sound_set_observer(audio_mixer_sound_t *sound,
+      const audio_mixer_observer_t *observer)
+{
+   (void)sound;
+   if (observer) abort();
+}
+
 void audio_mixer_sound_set_tag(audio_mixer_sound_t *sound, unsigned tag)
 { (void)sound; (void)tag; }
 unsigned audio_mixer_sound_tag(const audio_mixer_sound_t *sound)

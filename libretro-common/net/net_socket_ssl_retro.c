@@ -365,13 +365,40 @@ static void tls_cache_put(const char *host, const struct tls_session_put *put,
 #endif
 }
 
-/* The trust bundle is net/cacert.h's DER parts unless a test swapped
- * a PEM in. */
-static const char *tls_test_pem     = NULL;
-static size_t      tls_test_pem_len = 0;
+/* The trust bundle is net/cacert.h's DER parts, a system bundle
+ * preloaded at startup, or a test's PEM. Both statics are written
+ * before any network thread exists. */
+static const char *tls_test_pem       = NULL;
+static size_t      tls_test_pem_len   = 0;
+static int         tls_system_anchors = 0;
+static char        tls_system_source[PATH_MAX_LENGTH];
+static retro_atomic_int_t tls_trust_logged;
+
+#ifndef TLS_LOG_TRUST_STORE
+#define TLS_LOG_TRUST_STORE ssl_socket_log_trust_store
+#endif
+
+int ssl_socket_retro_adopt_trust_pem(char *pem, size_t len,
+      const char *name)
+{
+   int loaded;
+   if (tls_system_anchors || tls_test_pem || !pem || !len)
+   {
+      free(pem);
+      return tls_system_anchors;
+   }
+   if ((loaded = x509_trust_adopt_pem(pem, len)) <= 0)
+      return 0;
+   tls_system_anchors = loaded;
+   strlcpy(tls_system_source, name ? name : "",
+         sizeof(tls_system_source));
+   return loaded;
+}
 
 void ssl_socket_retro_set_trust_pem(const char *pem, size_t len)
 {
+   if (tls_system_anchors)
+      return;
    tls_test_pem     = pem;
    tls_test_pem_len = len;
 }
@@ -467,6 +494,7 @@ struct ssl_state
    uint8_t  tx_encrypted;
    uint8_t  handshake_done;
    uint8_t  closed;
+   uint8_t  notified;       /* close_notify sent: no more records out */
    bool connect_nonblock;
    bool connect_read;
    bool connect_write;
@@ -1933,7 +1961,13 @@ static int tls_verify_peer(struct ssl_state *s, const uint8_t **ders,
       return 0;
    }
    if (!s->cfg.trust)
-      tls_trust_load();
+   {
+      if (!tls_system_anchors)
+         tls_trust_load();
+      if (retro_atomic_cas_int(&tls_trust_logged, 0, 1))
+         TLS_LOG_TRUST_STORE(tls_system_anchors ? tls_system_source : NULL,
+               tls_system_anchors);
+   }
    info[0] = '\0';
    if (x509_verify_chain_ex(ders, lens, n, host, time(NULL),
             s->cfg.trust, s->cfg.trust_lens, s->cfg.trust_count,
@@ -3575,20 +3609,29 @@ void ssl_socket_close(void *state_data)
    struct ssl_state *s = (struct ssl_state*)state_data;
    if (!s || s->fd < 0)
       return;
-   if (s->handshake_done && !s->closed && s->tx_off >= s->tx_len
-         && !retro_atomic_load_relaxed_int(&s->key_update)
-         && s->cork_off >= s->cork_len)
-   {
-      static const uint8_t alert[2] = {1, 0};
-      size_t length;
-      if (tls_set_block(s, false)
-            && tls_seal_record(s, TLS_CT_ALERT, alert, sizeof(alert),
-               s->cork, &length) == 0)
-         socket_send_all_nonblocking(s->fd, s->cork, length, true);
-   }
+   if (!s->notified)
+      ssl_socket_close_notify(s);
    socket_close(s->fd);
    s->fd = -1;
    s->closed = 1;
+}
+
+int ssl_socket_close_notify(void *state_data)
+{
+   static const uint8_t alert[2] = {1, 0};
+   struct ssl_state *s = (struct ssl_state*)state_data;
+   size_t length;
+   if (     !s || s->fd < 0 || !s->handshake_done || s->closed || s->notified
+         || s->tx_off < s->tx_len
+         || retro_atomic_load_relaxed_int(&s->key_update)
+         || s->cork_off < s->cork_len
+         || !tls_set_block(s, false)
+         || tls_seal_record(s, TLS_CT_ALERT, alert, sizeof(alert),
+               s->cork, &length) != 0)
+      return -1;
+   s->notified = 1;
+   return socket_send_all_nonblocking(s->fd, s->cork, length, true)
+      == (ssize_t)length ? 0 : -1;
 }
 
 void ssl_socket_free(void *state_data)
@@ -3628,5 +3671,12 @@ __attribute__((weak))
 void ssl_socket_log_verify_disabled(const char *domain)
 {
    (void)domain;
+}
+
+__attribute__((weak))
+void ssl_socket_log_trust_store(const char *source, int anchors)
+{
+   (void)source;
+   (void)anchors;
 }
 #endif

@@ -272,3 +272,73 @@ jobs:
             ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
               make -C "$sample" check THREADS=0 SANITIZER=address,undefined
           done
+
+
+  audio-track-menus:
+    runs-on: ubuntu-latest
+    env:
+      APT_PKGS: libasound2-dev ffmpeg
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        threads: [enable, disable]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+
+      - name: Configure audio-enabled frontend
+        run: ./configure --enable-alsa --disable-qt --disable-vulkan --disable-wayland --disable-x11 --disable-opengl --disable-opengl1 --disable-opengl_core --disable-ffmpeg --disable-cheevos --disable-webmplayer --${{ matrix.threads }}-threads
+      - name: Build shipping frontend
+        run: make -j2
+      - name: Audio-track selection and video reinit across all four menus
+        run: |
+          set -eu
+          cp libretro-common/samples/formats/audio_transfer_tracks/fixtures/aac-mp4.bin samples/menu/rgui_media/audio-tracks.mp4
+          cp libretro-common/samples/formats/audio_transfer_tracks/fixtures/flac.bin samples/menu/rgui_media/audio-tracks.webm
+          for movie in samples/menu/rgui_media/audio-tracks.mp4 samples/menu/rgui_media/audio-tracks.webm; do
+            for driver in rgui ozone materialui xmb; do
+              MEDIA_TEST_AUDIO_TRACKS=1 python3 samples/menu/rgui_media/run.py --driver "$driver" "$movie"
+            done
+          done
+
+      - name: Renderer-independent music spectrum and borrowed history
+        run: |
+          set -eu
+          make -C samples/gfx/music_visualizer test
+          make -B -C samples/gfx/music_visualizer CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" test
+          make -B -C samples/gfx/music_visualizer CFLAGS="-O1 -g -fsanitize=thread" visualizer_thread_test visualizer_lifetime_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 samples/gfx/music_visualizer/visualizer_thread_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 samples/gfx/music_visualizer/visualizer_lifetime_test
+      - name: RGUI thumbnails sample directly into native pixels and row loans
+        run: |
+          python3 samples/menu/rgui_media/build.py --test-source samples/menu/rgui_media/thumbnail_point_test.c --output samples/menu/rgui_media/thumbnail_point_test
+          samples/menu/rgui_media/thumbnail_point_test
+          python3 samples/menu/rgui_media/build.py --test-source samples/menu/rgui_media/thumbnail_filtered_test.c --output samples/menu/rgui_media/thumbnail_filtered_test
+          samples/menu/rgui_media/thumbnail_filtered_test
+      - name: Opened music uses menu audio across all four menus
+        run: |
+          set -eu
+          ffmpeg -v error -y -f lavfi -i sine=frequency=750:sample_rate=48000 -t 30 -ac 2 -c:a pcm_s16le "$RUNNER_TEMP/music.wav"
+          for driver in rgui ozone materialui xmb; do
+            MEDIA_TEST_MUSIC=1 python3 samples/menu/rgui_media/run.py --driver "$driver" "$RUNNER_TEMP/music.wav"
+          done

@@ -49,3 +49,18 @@ window toggling and modal-loop acceptance; incompatible modes are rejected.
 timestamps through the active menu player. Use a constant-rate fixture long
 enough for 32 picture intervals. This checks timing metadata, not physical
 refresh-rate switching or VRR.
+
+Audio-track selection is covered by the shared-control oracle and by this
+real-frontend mode, repeated for each of the four menu drivers:
+
+```sh
+cp libretro-common/samples/formats/audio_transfer_tracks/fixtures/aac-mp4.bin /tmp/audio-tracks.mp4
+MEDIA_TEST_AUDIO_TRACKS=1 python3 samples/menu/rgui_media/run.py --driver ozone /tmp/audio-tracks.mp4
+```
+
+On Linux this mode uses ALSA's virtual `null` PCM device and requires an
+ALSA-enabled build. It checks focused activation, pointer selection, track
+snapshots and preservation of pause and movie position. It verifies frontend
+routing and mixer integration; it does not establish physical input-device,
+audio-device or GPU presentation acceptance. The standalone preview PCM
+oracle separately checks that switching tracks changes the decoded tone.

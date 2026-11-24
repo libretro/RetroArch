@@ -17,6 +17,16 @@ Subdirectories with rules of their own carry their own AGENTS.md.
 `tools/compile_commands.py`, after ./configure, writes compile_commands.json
 for clangd and other code navigation.
 
+## Build dependencies
+
+Normal RetroArch builds must not require Python. In particular, do not add
+Python dependencies for shader generation, embedding or validation. Commit
+the precompiled shader assets and the C headers needed to embed them, and
+compile those committed files directly.
+Keep regeneration and asset validation in explicit developer tools and CI;
+never run them implicitly from ordinary Make or MSBuild targets. Do not fix
+a missing Python error by adding Python as a normal build dependency.
+
 ## Copies
 
 Remove a copy wherever one can be removed, on every change: look for one
@@ -32,6 +42,28 @@ each time a data path is written or touched, not only when asked.
   the memory before the reader is done, or uncached memory would be read
   back).
 
+## Real time
+
+RetroArch is a soft real-time system. The main, video and audio paths
+must stay within a frame's budget, and a lock, a sleep or a blocking wait
+on them shows up as jitter, audio underruns or extra frames of latency -
+which run-ahead, hard sync and the low-latency modes cannot absorb.
+
+The primitives allowed are the ones the concurrency actually needs:
+
+- SPSC rings for a producer-consumer handoff (core to video, the audio
+  callbacks and the like).
+- Atomics for flags and simple shared state.
+- Eventcounts for a wait that neither spins nor puts a sleep in front of
+  the caller.
+
+Spinlocks and busy-waiting are out: they burn power, hurt the caches and
+invert priorities. Needing to block means the design is wrong; reshape it
+around lends and borrows, slots allocated ahead and progress that never
+waits, as the Copies section does for data. Pacing follows the same rule:
+frames are timed by the audio clock or the display's vsync, never by
+wall-clock sleeps, so nothing drifts and no latency is added.
+
 ## Threads
 
 - Nothing may block: no sleeping, busy-waiting, wait-for-idle or round-trip
@@ -42,6 +74,27 @@ each time a data path is written or touched, not only when asked.
 - Guard threaded code with HAVE_THREADS, and check it with a full
   `./configure --disable-threads` build that links, not a single TU.
 - No logging inside pacing or sync paths.
+
+## Clocks
+
+No wall clocks and no spinning, as far as there is any way to avoid them.
+Each exception must be the only way, and say why in a comment.
+
+- Do not read the clock (`cpu_features_get_time_usec()`) on a per-frame or
+  real-time path. A frame has one reading, taken by `video_driver_frame()`
+  and carried in `video_frame_info_t::frame_time`; whatever draws or hands
+  over that frame takes "now" from it, moved on by a mark where it needs
+  a later instant. A runloop iteration likewise has one reading,
+  `runloop_state_t::iter_time`, and `RUNLOOP_NOW()` moves it on.
+- Time a span with `CPU_FEATURES_MARK()` at each end and
+  `CPU_FEATURES_MARK_TO_USEC()` of the difference, not with two clock
+  reads: a mark is the perf counter where that is a register read, the
+  clock where it is not.
+- Do not spin on the clock, or on anything else: no loop that polls a
+  time, a flag or a counter until it changes. Wait on the event that
+  ends the wait (a fence, a vblank, the device's notification, an
+  eventcount); a clock deadline is only a watchdog on that wait.
+- Do not pace on a timer where the hardware gives a signal to pace on.
 
 RetroArch contains deliberately complex, cross-file systems. Do not simplify, consolidate, refactor, or redesign an existing subsystem merely because its structure appears unnecessarily complicated.
 
@@ -169,6 +222,25 @@ Historical commits may be used to understand established implementation patterns
 - Do not reproduce obsolete workarounds merely because they appear in an old commit.
 - Inspect surrounding current code before applying a historical pattern.
 
+## Before every commit
+
+Run CI's tree-wide checks before committing; most broken CI runs come
+from commits that skipped them.
+
+- Once per clone: `git config core.hooksPath tools/hooks`. The
+  pre-commit hook then runs `tools/precommit.sh` on the staged files:
+  the Windows SDK macro names, overlapping copies, the Vulkan and D3D12
+  wait, submit and teardown rules, the msg_hash and sublabel tables,
+  the settings table, sample object directories and workflow paths.
+  Each is the check its workflow runs.
+- A failing hook means CI would fail. Fix the cause; do not commit with
+  `--no-verify`, and do not change a checker or its allow list to let
+  the commit through.
+- The hook ends by listing the CI jobs the staged files reach
+  (`tools/ci_local.py which`). Run each of them with
+  `tools/ci_local.py run` before pushing, as the next section says.
+- Without the hook, run `sh tools/precommit.sh <changed files>` by hand.
+
 ## Regression tests
 
 Regression tests must build on both Windows and Linux.
@@ -207,6 +279,9 @@ The runner image moves under the tree: Ubuntu releases bring new Mesa, Wine, ffm
 Nothing built is ever committed: no executables, objects, libraries,
 archives, generated images or captures. This includes every sample and
 tool harness built under samples/, libretro-common/samples/ and tools/.
+
+Committed shader bytecode and its C embedding headers are the intentional
+exception described under Build dependencies.
 
 - Stage files by name (`git add path/file.c`), never a directory or
   `git add -A`, so a build that ran after a `make clean` cannot slip in.

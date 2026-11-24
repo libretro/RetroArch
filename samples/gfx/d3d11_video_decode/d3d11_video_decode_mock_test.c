@@ -165,6 +165,24 @@ static HRESULT STDMETHODCALLTYPE m_get_adapter(mock_t *m, void **out)
 /* ---- device ---- */
 
 static int dpb_array, n_out_tex, out_flags_ok, reject_shared_dpb;
+static int reject_shader_plane, shader_probes;
+static HRESULT STDMETHODCALLTYPE m_create_srv(mock_t *m, mock_t *texture,
+      const D3D11_SHADER_RESOURCE_VIEW_DESC *desc, void **out)
+{
+   int plane = desc->Format == DXGI_FORMAT_R8_UNORM
+      || desc->Format == DXGI_FORMAT_R16_UNORM ? 1 : 2;
+   (void)m;
+   check("shader DPB probes one physical slice",
+         desc->ViewDimension == D3D11_SRV_DIMENSION_TEXTURE2DARRAY
+         && desc->Texture2DArray.ArraySize == 1
+         && desc->Texture2DArray.FirstArraySlice < texture->desc.ArraySize);
+   shader_probes++;
+   *out = NULL;
+   if (reject_shader_plane == plane) return E_FAIL;
+   *out = mock_new(K_PLAIN);
+   return S_OK;
+}
+
 
 static void STDMETHODCALLTYPE m_texture_desc(mock_t *m, D3D11_TEXTURE2D_DESC *desc)
 {
@@ -495,6 +513,7 @@ static void mocks_init(void)
    for (k = 0; k < K_COUNT; k++)
       vt_fill(k, VT_SLOTS);
    vt[K_DEVICE][SLOT(ID3D11DeviceVtbl, CreateTexture2D)]     = (void*)m_create_texture;
+   vt[K_DEVICE][SLOT(ID3D11DeviceVtbl, CreateShaderResourceView)] = (void*)m_create_srv;
    vt[K_TEXTURE][SLOT(ID3D11Texture2DVtbl, GetDesc)]         = (void*)m_texture_desc;
    vt[K_DEVICE][SLOT(ID3D11DeviceVtbl, CheckFeatureSupport)] = (void*)m_feature;
    vt[K_DEVICE5][SLOT(ID3D11Device5Vtbl, CreateFence)]       = (void*)m_create_fence;
@@ -1368,6 +1387,40 @@ int main(void)
    d3d11vd.create = mock_create;
    test_shared_dpb(8);
    test_shared_dpb(10);
+   d3d11_video_decode_deinit();
+   check("D3D11 shader DPB renderer starts", d3d11_video_decode_init_formats(dev,
+         IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010 | D3D11_VIDEO_DECODE_SHADER_DPB));
+   check("shader DPB preserves the format mask", d3d11vd.shared_dpb
+         && d3d11vd.shader_dpb && d3d11vd.import_formats
+               == (IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010));
+   the_adapter = (mock_t*)d3d11vd.adapter;
+   d3d11vd.create = mock_create;
+   test_shared_dpb(8);
+   test_shared_dpb(10);
+   {
+      rvp9_hdr header;
+      rvp9_hw_ops_t ops;
+      int plane;
+      memset(&header, 0, sizeof(header));
+      header.w = 320; header.h = 192; header.bit_depth = 8;
+      header.show_frame = 1; header.uncomp_size = 1; header.first_partition_size = 1;
+      header.subsampling_x = header.subsampling_y = 1;
+      header.color_space = 2; header.color_range = 1;
+      for (plane = 1; plane <= 2; plane++)
+      {
+         int before = live;
+         reject_shader_plane = plane;
+         check("unreadable DPB plane keeps hardware decode",
+               d3d11_video_decode_vp9_open(&header, 10, &ops));
+         check("unreadable DPB plane selects copied outputs",
+               ops.decoder && !((d3d11vd_dec_t*)ops.decoder)->direct_dpb
+               && ((d3d11vd_dec_t*)ops.decoder)->out[0]);
+         d3d11_video_decode_vp9_close(&ops);
+         check("failed DPB probe releases all resources", live == before);
+      }
+      reject_shader_plane = 0;
+      check("DPB plane probes executed", shader_probes > 8);
+   }
    d3d11_video_decode_deinit();
    check("deinit lets the adapter go", live == live0);
    test_packed_vp9_registry();

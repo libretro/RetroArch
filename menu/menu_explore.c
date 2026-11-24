@@ -39,6 +39,7 @@
 #include "../verbosity.h"
 #include "../libretro-db/libretrodb.h"
 #include "../tasks/tasks_internal.h"
+#include "../gfx/gfx_thumbnail_results.h"
 
 /* Explore */
 enum
@@ -122,6 +123,9 @@ struct explore_state
    explore_string_t **by[EXPLORE_CAT_COUNT];
    explore_entry_t *entries;
    playlist_t **playlists;
+   uint8_t *thumb_pushed; /* per playlist: its matches are held */
+   size_t thumb_last;     /* the playlist an entry was last found in */
+   unsigned thumb_gen;    /* the store's generation they were held in */
    gfx_surface_t **icons;
    const char *label_explore_item_str;
 
@@ -2110,6 +2114,7 @@ ssize_t menu_explore_get_entry_playlist_index(unsigned type,
          *playlist = pl;
       if (playlist_entry)
          *playlist_entry = entry->playlist_entry;
+      explore_state->thumb_last = (size_t)pl_idx;
 
       /* correct numbers of list pos and list size */
       if (list && list_pos && list_size)
@@ -2121,6 +2126,51 @@ ssize_t menu_explore_get_entry_playlist_index(unsigned type,
       return (ssize_t)(entry->playlist_entry - pl_first);
    }
    return -1;
+}
+
+/* Explore holds each playlist it shows until it is freed. */
+void menu_explore_push_thumbnail_match(playlist_t *playlist)
+{
+   size_t i;
+   settings_t *settings;
+   playlist_config_t *cfg;
+   size_t count = explore_state ? RBUF_LEN(explore_state->playlists) : 0;
+
+   /* Mostly the one its entry was just found in */
+   if (     count && explore_state->thumb_last < count
+         && explore_state->playlists[explore_state->thumb_last] == playlist)
+      i = explore_state->thumb_last;
+   else
+   {
+      for (i = 0; i < count; i++)
+         if (explore_state->playlists[i] == playlist)
+            break;
+      if (i == count)
+         return;
+   }
+   settings = config_get_ptr();
+   /* An override skips the menu's handler: apply the rule first */
+   gfx_thumbnail_results_set_other_regions(
+         settings->bools.playlist_thumbnail_other_regions);
+   if (explore_state->thumb_gen != gfx_thumbnail_results_generation())
+   {
+      if (explore_state->thumb_pushed)
+         memset(explore_state->thumb_pushed, 0, count);
+      explore_state->thumb_gen = gfx_thumbnail_results_generation();
+   }
+   if (     !explore_state->thumb_pushed
+         && !(explore_state->thumb_pushed = (uint8_t*)calloc(count, 1)))
+      return;
+   if (explore_state->thumb_pushed[i])
+      return;
+   cfg = playlist_get_config(playlist);
+   task_push_pl_thumbnail_match(cfg, playlist,
+         settings->paths.directory_thumbnails,
+         settings->paths.path_content_database,
+         settings->bools.playlist_allow_non_png,
+         settings->bools.playlist_thumbnail_other_regions);
+   explore_state->thumb_pushed[i] = gfx_thumbnail_results_hold(cfg->path,
+         GFX_THUMBNAIL_RESULTS_HOLD_EXPLORE);
 }
 
 ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
@@ -2147,6 +2197,7 @@ ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
 
    if (playlist_index >= 0 && playlist)
    {
+      menu_explore_push_thumbnail_match(playlist);
       gfx_thumbnail_set_system(thumbnail_path_data, db_name, playlist);
       gfx_thumbnail_set_content_playlist(thumbnail_path_data,
             playlist, playlist_index);
@@ -2192,6 +2243,7 @@ void menu_explore_free_state(explore_state_t *state)
    for (i = 0; i != RBUF_LEN(state->playlists); i++)
       playlist_free(state->playlists[i]);
    RBUF_FREE(state->playlists);
+   free(state->thumb_pushed);
 
    explore_unload_icons(state);
    RBUF_FREE(state->icons);
@@ -2207,6 +2259,7 @@ void menu_explore_free(void)
    menu_explore_free_state(explore_state);
    free(explore_state);
    explore_state = NULL;
+   gfx_thumbnail_results_release(GFX_THUMBNAIL_RESULTS_HOLD_EXPLORE);
 }
 
 void menu_explore_set_state(explore_state_t *state)

@@ -45,7 +45,6 @@ typedef struct
 
 
 #define kVTVideoDecoderSpecification_RequireHardwareAcceleratedVideoDecoder ((void*)1)
-#define kCVPixelBufferPixelFormatTypeKey ((void*)2)
 #define kCVPixelBufferMetalCompatibilityKey ((void*)3)
 #define kCFBooleanTrue ((void*)4)
 static const int kCFTypeDictionaryKeyCallBacks = 0;
@@ -70,6 +69,7 @@ OSStatus CMBlockBufferCopyDataBytes(CMBlockBufferRef, size_t, size_t, void*);
 OSStatus CMSampleBufferCreateReady(void*, CMBlockBufferRef, CMVideoFormatDescriptionRef,
       long, long, const CMSampleTimingInfo*, long, const size_t*, CMSampleBufferRef*);
 CMBlockBufferRef CMSampleBufferGetDataBuffer(CMSampleBufferRef);
+CVImageBufferRef CMSampleBufferGetImageBuffer(CMSampleBufferRef);
 size_t CMSampleBufferGetTotalSampleSize(CMSampleBufferRef);
 OSStatus VTDecompressionSessionDecodeFrame(VTDecompressionSessionRef, CMSampleBufferRef,
       unsigned, void*, VTDecodeInfoFlags*);

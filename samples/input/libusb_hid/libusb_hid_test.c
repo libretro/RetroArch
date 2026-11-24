@@ -108,8 +108,12 @@ void pad_connection_packet(joypad_connection_t *c, uint32_t idx,
    }
 }
 bool pad_connection_has_interface(joypad_connection_t *c, unsigned idx) { return true; }
-void pad_connection_get_buttons(joypad_connection_t *c, unsigned idx, input_bits_t *s) { }
-int16_t pad_connection_get_axis(joypad_connection_t *c, unsigned idx, unsigned i) { return 0; }
+static input_bits_t fake_pad_buttons;
+static int16_t      fake_pad_axes[16];
+void pad_connection_get_buttons(joypad_connection_t *c, unsigned idx, input_bits_t *s)
+{ *s = fake_pad_buttons; }
+int16_t pad_connection_get_axis(joypad_connection_t *c, unsigned idx, unsigned i)
+{ return (i < 16) ? fake_pad_axes[i] : 0; }
 bool pad_connection_rumble(joypad_connection_t *c, unsigned pad,
       enum retro_rumble_effect e, uint16_t s) { return false; }
 void pad_connection_set_player(joypad_connection_t *c, unsigned player) { }
@@ -195,6 +199,49 @@ static void *one_send(void *unused)
    return NULL;
 }
 
+
+/* ---- what the snapshot bridge assumes of the driver ---- */
+#include "../joypad_bridge_checked/bridge_view.h"
+
+/* the handler's state the stand-ins above answer: buttons past the
+ * first 32 (a home button's menu toggle) and sixteen axes */
+
+static void *bridge_hid;
+static int32_t bridge_button(unsigned pad, uint16_t key)
+{ return libusb_hid.button(bridge_hid, pad, key); }
+static int16_t bridge_axis(unsigned pad, uint32_t axis)
+{ return libusb_hid.axis(bridge_hid, pad, axis); }
+static void bridge_get_buttons(unsigned pad, input_bits_t *state)
+{ libusb_hid.get_buttons(bridge_hid, pad, state); }
+static int16_t bridge_state(rarch_joypad_info_t *info,
+      const uint16_t *keys, const uint32_t *axes, unsigned port)
+{ return libusb_hid.state(bridge_hid, info, keys, axes, port); }
+
+/* the disagreements the bridge would find on pad 0 of @hid, over
+ * random handler states */
+static unsigned bridge_check(void *hid)
+{
+   unsigned n, i, bad = 0;
+   input_device_driver_t drv;
+   memset(&drv, 0, sizeof(drv));
+   drv.button      = bridge_button;
+   drv.axis        = bridge_axis;
+   drv.get_buttons = bridge_get_buttons;
+   drv.state       = bridge_state;
+   bridge_hid      = hid;
+   for (n = 0; n < 500; n++)
+   {
+      BIT256_CLEAR_ALL(fake_pad_buttons);
+      fake_pad_buttons.data[0] = bv_rand();
+      if (bv_rand() & 1)
+         BIT256_SET(fake_pad_buttons, RARCH_MENU_TOGGLE);
+      for (i = 0; i < 16; i++)
+         fake_pad_axes[i] = bv_rand_axis();
+      bad += bv_compare(&drv, 0);
+   }
+   return bad;
+}
+
 int main(void)
 {
    struct libusb_device *pad = fake_new_device();
@@ -210,6 +257,8 @@ int main(void)
    if (!hid)
       return 1;
    check(fake_snapshot().opens == 1, "the pad is opened");
+   check(bridge_check(hid) == 0,
+         "the bridge reads the pad as the driver does");
    check(fake_in_flight(pad, 1) == 1, "one read is in flight");
 
    printf("reports\n");

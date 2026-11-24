@@ -369,6 +369,8 @@ typedef struct xmb_handle
    retro_time_t current_menu_icon_retry_until;
 
    char *bg_file_path;
+   /* The font the clock's cached width was measured with */
+   const void *timedate_font;
 
    file_list_t horizontal_list;   /* ptr alignment */
    /* Maps console tabs to playlist database names */
@@ -418,6 +420,7 @@ typedef struct xmb_handle
       gfx_thumbnail_t left;
       gfx_thumbnail_t icon;
       gfx_thumbnail_t savestate;
+      gfx_thumbnail_t camera;      /* Settings > Camera > Preview */
       enum xmb_pending_thumbnail_type pending;
       enum xmb_pending_thumbnail_type pending_icons;
    } thumbnails;
@@ -456,6 +459,10 @@ typedef struct xmb_handle
    unsigned categories_active_idx;
    unsigned categories_active_idx_old;
    unsigned ticker_limit;
+   /* The clock's width, at timedate_gen with timedate_font at
+    * timedate_font_size; drawing thread only */
+   unsigned timedate_gen;
+   int timedate_width;
 
    float fullscreen_thumbnail_alpha;
    float x;
@@ -468,6 +475,8 @@ typedef struct xmb_handle
    float shadow_offset;
    float font_size;
    float font2_size;
+   /* The font size the clock's cached width was measured at */
+   float timedate_font_size;
    float last_scale_factor;
    /* Snapshot of menu_scale_factor clamped to a floor of 1, taken by
     * xmb_layout() at the same time as scale_mod and the margins. The
@@ -527,12 +536,14 @@ typedef struct xmb_handle
       float margins_dialog;
       unsigned dims;
       unsigned line_count;
+      unsigned rule_line; /* where the heading's rule goes; 0 for none */
       unsigned buttons;
       int wideglyph_width;
       int stack_h;
       int usable_width;
       int longest_width;
       bool assets_missing;
+      bool heading;
       char text[MENU_LABEL_MAX_LENGTH];
       char wrapped[MENU_LABEL_MAX_LENGTH];
    } box_wrap;
@@ -1366,7 +1377,8 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    int slice_y                         = 0;
    int slice_w                         = 0;
    int slice_h                         = 0;
-   bool draw_selection = draw_caret && input_driver_keyboard_line_selected();
+   unsigned kb_state   = draw_caret ? input_driver_keyboard_line_state() : 0;
+   bool draw_selection = (kb_state & INPUT_KEYBOARD_LINE_SELECTED) != 0;
    unsigned selection_first_line = 1;
    float selection_color[16] = {
       0.20f, 0.40f, 0.80f, 0.35f,
@@ -1389,7 +1401,9 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    bool text_only                      = false;
    bool stacked                        = false;
    bool input_dialog_display_kb        = false;
-   unsigned firmware_line_state        = 0;
+   unsigned rule_line                  = 0;
+   bool add_row                        = false;
+   bool heading                        = false;
    size_t wrapped_len                  = 0;
    size_t msg_len                      = strlen(message);
    char wrapped_buf[MENU_LABEL_MAX_LENGTH];
@@ -1401,6 +1415,9 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    char *start, *nl, *end;
 
    menu_dialog_get_buttons(menu_st, &buttons);
+   /* The input dialog's label is no heading */
+   if (!draw_caret)
+      heading = menu_st->dialog_st.heading;
 
    usable_width = (int)video_width - (xmb->margins_dialog * (landscape ? 4 : 1));
    if (usable_width < 1)
@@ -1477,9 +1494,11 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             && xmb->box_wrap.wideglyph_width == xmb->wideglyph_width
             && xmb->box_wrap.stack_h         == stack_h
             && xmb->box_wrap.assets_missing  == xmb->assets_missing
+            && xmb->box_wrap.heading         == heading
             && !memcmp(xmb->box_wrap.text, message, msg_len))
       {
          line_count    = xmb->box_wrap.line_count;
+         rule_line     = xmb->box_wrap.rule_line;
          wrapped_len   = xmb->box_wrap.wrapped_len;
          usable_width  = xmb->box_wrap.usable_width;
          longest_width = xmb->box_wrap.longest_width;
@@ -1556,11 +1575,16 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       if (line_count == 0)
          return;
 
+      if (heading)
+         rule_line = menu_dialog_rule_line(message, wrapped_message,
+               wrapped_len, line_count);
+
       if (keep_wrap)
       {
-         /* The input dialog may hand back the kept text itself */
+         /* The input dialog may hand back the kept text itself, and
+          * the box measures what it is handed by its terminator */
          if (message != xmb->box_wrap.text)
-            memcpy(xmb->box_wrap.text, message, msg_len);
+            memcpy(xmb->box_wrap.text, message, msg_len + 1);
          xmb->box_wrap.font            = xmb->font;
          xmb->box_wrap.font_generation = font_generation;
          xmb->box_wrap.font_size       = xmb->font_size;
@@ -1570,7 +1594,9 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
          xmb->box_wrap.wideglyph_width = xmb->wideglyph_width;
          xmb->box_wrap.stack_h         = stack_h;
          xmb->box_wrap.assets_missing  = xmb->assets_missing;
+         xmb->box_wrap.heading         = heading;
          xmb->box_wrap.line_count      = line_count;
+         xmb->box_wrap.rule_line       = rule_line;
          xmb->box_wrap.wrapped_len     = wrapped_len;
          xmb->box_wrap.usable_width    = usable_width;
          xmb->box_wrap.longest_width   = longest_width;
@@ -1583,7 +1609,21 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    y_position              = (input_dialog_display_kb)
                            ? video_height / 4 : video_height / 2;
    x                       = video_width / 2;
-   y                       = y_position - (line_count - 1) * line_height / 2;
+
+   /* The heading's rule, in the blank line under it or in a row added
+    * there, only while the box fits the screen with it */
+   if (rule_line)
+   {
+      bool blank = rule_line < line_count && !*lines[rule_line];
+      if (     buttons.count
+            && xmb_confirm_box_h(xmb, line_height, line_count + !blank,
+                  stack_h, NULL) > (int)video_height)
+         rule_line = 0;
+      add_row    = rule_line && !blank;
+   }
+
+   y                       = y_position
+         - (line_count + add_row - 1) * line_height / 2;
 
    if (buttons.count)
    {
@@ -1626,8 +1666,10 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
          if (d > (n = strlen(lines[l])))
             d = n;
          cursor_line = l;
-         cursor_x    = font_driver_get_message_width(xmb->font, lines[l], d,
-               1.0f);
+         /* Among Hebrew or Arabic, where the caret lands as drawn */
+         cursor_x    = (kb_state & INPUT_KEYBOARD_LINE_RTL)
+            ? font_driver_get_caret_x(xmb->font, lines[l], n, d, 1.0f)
+            : font_driver_get_message_width(xmb->font, lines[l], d, 1.0f);
 
          draw_caret  = !draw_selection;
       }
@@ -1636,7 +1678,8 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
    slice_x                 = x - (longest_width / 2) - xmb->margins_dialog;
    slice_y                 = y + xmb->margins_slice - xmb->margins_dialog;
    slice_w                 = longest_width + (xmb->margins_dialog * 2);
-   slice_h                 = (line_height * line_count) + (xmb->margins_dialog * 2);
+   slice_h                 = (line_height * (line_count + add_row))
+         + (xmb->margins_dialog * 2);
 
    /* Extra room for confirm buttons */
    if (buttons.count)
@@ -1645,7 +1688,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       int box_top          = slice_y - (xmb->assets_missing
             ? 0 : (int)(xmb->margins_slice * xmb->last_scale_factor));
       int box_h            = xmb_confirm_box_h(xmb, line_height,
-            line_count, stack_h, &slice_h);
+            line_count + add_row, stack_h, &slice_h);
       /* Centred with its buttons, but not above the top */
       int lift             = box_top + box_h / 2 - (int)y_position;
       if (lift > box_top)
@@ -1706,53 +1749,55 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       xmb->osk_textbox_h = slice_h;
    }
 
-   if (input_dialog_display_kb && input_driver_keyboard_textbox_focus() && line_count > 1)
+   /* The box's slices in one blend group; quads blend on their own and
+    * are gathered into one strip ahead of the text */
+   if (     !xmb->assets_missing
+         || (input_dialog_display_kb
+            && input_driver_keyboard_textbox_focus() && line_count > 1))
    {
-      int cursor_offset = (xmb->margins_dialog + (xmb->margins_slice * 2)) / 3;
-
       gfx_display_blend_begin(dispctx, userdata);
 
-      gfx_display_draw_texture_slice(
-            p_disp,
-            userdata,
-            video_dims,
-            slice_x - cursor_offset,
-            slice_y - cursor_offset,
-            VIDEO_SCALE_PACK(256, 256),
-            VIDEO_SCALE_PACK(slice_w + (cursor_offset * 2),
-                  slice_h + (cursor_offset * 2)),
-            video_dims,
-            NULL,
-            xmb->margins_slice,
-            xmb->last_scale_factor,
-            GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_KEY_HOVER]),
-            mymat);
+      if (input_dialog_display_kb && input_driver_keyboard_textbox_focus() && line_count > 1)
+      {
+         int cursor_offset = (xmb->margins_dialog + (xmb->margins_slice * 2)) / 3;
+
+         gfx_display_draw_texture_slice(
+               p_disp,
+               userdata,
+               video_dims,
+               slice_x - cursor_offset,
+               slice_y - cursor_offset,
+               VIDEO_SCALE_PACK(256, 256),
+               VIDEO_SCALE_PACK(slice_w + (cursor_offset * 2),
+                     slice_h + (cursor_offset * 2)),
+               video_dims,
+               NULL,
+               xmb->margins_slice,
+               xmb->last_scale_factor,
+               GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_KEY_HOVER]),
+               mymat);
+      }
+
+      if (!xmb->assets_missing)
+         gfx_display_draw_texture_slice(
+               p_disp,
+               userdata,
+               video_dims,
+               slice_x,
+               slice_y,
+               VIDEO_SCALE_PACK(256, 256),
+               VIDEO_SCALE_PACK(slice_w, slice_h),
+               video_dims,
+               NULL,
+               xmb->margins_slice,
+               xmb->last_scale_factor,
+               GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]),
+               mymat);
 
       gfx_display_blend_end(dispctx, userdata);
    }
 
-   if (!xmb->assets_missing)
-   {
-      gfx_display_blend_begin(dispctx, userdata);
-
-      gfx_display_draw_texture_slice(
-            p_disp,
-            userdata,
-            video_dims,
-            slice_x,
-            slice_y,
-            VIDEO_SCALE_PACK(256, 256),
-            VIDEO_SCALE_PACK(slice_w, slice_h),
-            video_dims,
-            NULL,
-            xmb->margins_slice,
-            xmb->last_scale_factor,
-            GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_DIALOG_SLICE]),
-            mymat);
-
-      gfx_display_blend_end(dispctx, userdata);
-   }
-   else
+   if (xmb->assets_missing)
    {
       /* Fallback background without assets */
       float frame_color[16]                  = {
@@ -1776,30 +1821,65 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             NULL);
    }
 
+   if (draw_selection)
+      for (i = selection_first_line; i < line_count; i++)
+      {
+         const char *msg = lines[i];
+         unsigned row    = (add_row && i >= rule_line) ? i + 1 : i;
+         if (msg && *msg)
+            gfx_display_draw_quad(p_disp, userdata, video_dims,
+                  x - (longest_width / 2.0), y + (row * line_height),
+                  VIDEO_SCALE_PACK(font_driver_get_message_width(
+                        xmb->font, msg, strlen(msg), 1.0f), line_height),
+                  video_dims, selection_color, NULL);
+      }
+
+   if (heading)
+   {
+      unsigned firmware_line_state = 0;
+
+      for (i = 0; i < line_count; i++)
+      {
+         unsigned row = (add_row && i >= rule_line) ? i + 1 : i;
+         menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
+               lines[i], xmb->font, p_disp, userdata, video_dims,
+               x - (longest_width / 2.0), y + ((row + 0.85) * line_height),
+               0x444444ff);
+      }
+
+      if (rule_line)
+      {
+         /* The path underline's colour */
+         float rule_color[16] = {
+               0.27f, 0.27f, 0.27f, 1.0f,
+               0.27f, 0.27f, 0.27f, 1.0f,
+               0.27f, 0.27f, 0.27f, 1.0f,
+               0.27f, 0.27f, 0.27f, 1.0f,
+         };
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_dims,
+               x - (longest_width / 2.0),
+               y + ((rule_line + 0.6) * line_height),
+               VIDEO_SCALE_PACK(longest_width, 1),
+               video_dims,
+               rule_color,
+               NULL);
+      }
+   }
+
    for (i = 0; i < line_count; i++)
    {
       const char *msg = lines[i];
-      if (draw_selection && i >= selection_first_line && msg && *msg)
-      {
-         gfx_display_blend_begin(dispctx, userdata);
-         gfx_display_draw_quad(p_disp, userdata, video_dims,
-               x - (longest_width / 2.0), y + (i * line_height),
-               VIDEO_SCALE_PACK(font_driver_get_message_width(
-                     xmb->font, msg, strlen(msg), 1.0f), line_height),
-               video_dims, selection_color, NULL);
-         gfx_display_blend_end(dispctx, userdata);
-      }
+      unsigned row    = (add_row && i >= rule_line) ? i + 1 : i;
       if (msg)
          gfx_display_draw_text(xmb->font, msg,
                x - (longest_width / 2.0),
-               y + ((i + 0.85) * line_height),
+               y + ((row + 0.85) * line_height),
                video_dims, 0x444444ff,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
-
-      menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
-            msg, xmb->font, p_disp, userdata, video_dims,
-            x - (longest_width / 2.0), y + ((i + 0.85) * line_height),
-            0x444444ff);
    }
 
    if (draw_caret && (cursor_line < line_count))
@@ -2275,6 +2355,7 @@ static void xmb_unload_thumbnail_textures(void *data)
    gfx_thumbnail_reset(&xmb->thumbnails.left);
    gfx_thumbnail_reset(&xmb->thumbnails.icon);
    gfx_thumbnail_reset(&xmb->thumbnails.savestate);
+   gfx_thumbnail_reset(&xmb->thumbnails.camera);
 }
 
 static void xmb_unload_icon_thumbnail_textures(void *xmb_handle_ptr)
@@ -4755,7 +4836,9 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_INPUT_LIBRETRO_DEVICE:
       case MENU_ENUM_LABEL_INPUT_DEVICE_INDEX:
       case MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS:
+      case MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS:
       case MENU_ENUM_LABEL_INPUT_CONTROLLERS:
+      case MENU_ENUM_LABEL_INPUT_PLAYS_AS:
       case MENU_ENUM_LABEL_INPUT_USER_1_BINDS:
       case MENU_ENUM_LABEL_INPUT_USER_2_BINDS:
       case MENU_ENUM_LABEL_INPUT_USER_3_BINDS:
@@ -4834,6 +4917,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_RECORDING:
       case MENU_ENUM_LABEL_RECORDING_SETTINGS:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_RECORDING:
+      case MENU_ENUM_LABEL_CAMERA_SETTINGS:
+      case MENU_ENUM_LABEL_CAMERA_PREVIEW:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_RECORD]);
       case MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING:
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_START_STREAMING:
@@ -4873,6 +4958,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_FILE]);
       case MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK:
+      case MENU_ENUM_LABEL_CORE_TRUST:
       case MENU_ENUM_LABEL_CORE_LOCK:
       case MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_CORE]);
@@ -5062,6 +5148,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case FILE_TYPE_SHADER_PRESET:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_SHADER_OPTIONS]);
       case FILE_TYPE_USE_DIRECTORY:
+      case FILE_TYPE_VULKAN_DRIVER_SYSTEM:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_CHECKMARK]);
       case FILE_TYPE_CARCHIVE:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_ZIP]);
@@ -6321,6 +6408,14 @@ static void xmb_hide_fullscreen_thumbnails(
       xmb_handle_t *xmb, bool animate)
 {
    uintptr_t alpha_tag                = (uintptr_t)&xmb->fullscreen_thumbnail_alpha;
+
+#ifdef HAVE_AUDIOMIXER
+   if (xmb->show_fullscreen_thumbnails && !menu_media_controls_settings_active(&xmb->media))
+   {
+      if (xmb->thumbnails.left.music_player) gfx_thumbnail_reset(&xmb->thumbnails.left);
+      if (xmb->thumbnails.right.music_player) gfx_thumbnail_reset(&xmb->thumbnails.right);
+   }
+#endif
 
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);
@@ -8231,6 +8326,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       gfx_display_ctx_driver_t *dispctx,
       const gfx_display_mesh_t *ribbon_mesh,
       const gfx_display_effect_t *const *effects,
+      retro_time_t frame_time,
       unsigned video_dims,
       unsigned menu_shader_pipeline,
       unsigned xmb_color_theme,
@@ -8300,6 +8396,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       md.vertex_count = 0;
       md.program      = GFX_MESH_PROGRAM_EFFECT;
       md.effect       = NULL;
+      md.time         = frame_time;
       switch (menu_shader_pipeline)
       {
          case XMB_SHADER_PIPELINE_RIBBON:
@@ -8496,7 +8593,7 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
       float right_thumbnail_draw_height = 0.0f;
       float left_thumbnail_draw_width   = 0.0f;
       float left_thumbnail_draw_height  = 0.0f;
-      float background_alpha            = 0.95f;
+      float background_alpha            = xmb->is_file_list ? 1.0f : 0.95f;
       float background_color[16]        = {
             0.0f, 0.0f, 0.0f, 1.0f,
             0.0f, 0.0f, 0.0f, 1.0f,
@@ -8779,7 +8876,7 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
                NULL);
 
          /* Thumbnail */
-         gfx_thumbnail_draw(
+         gfx_thumbnail_draw_shader(
                userdata,
                video_dims,
                right_thumbnail,
@@ -8815,7 +8912,7 @@ XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
                NULL);
 
          /* Thumbnail */
-         gfx_thumbnail_draw(
+         gfx_thumbnail_draw_shader(
                userdata,
                video_dims,
                left_thumbnail,
@@ -9042,6 +9139,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 #else
             NULL,
 #endif
+            video_info->frame_time,
             video_info->dims,
             menu_shader_pipeline,
             color_theme,
@@ -9319,6 +9417,22 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    else if (!xmb->show_fullscreen_thumbnails
          &&  xmb->want_fullscreen_thumbnails)
       xmb_show_fullscreen_thumbnails(xmb, menu_st, menu_st->selection_ptr);
+
+   /* The camera preview, where a save state thumbnail would be */
+   if (     !xmb->show_fullscreen_thumbnails
+         && menu_camera_preview_update(&xmb->thumbnails.camera))
+   {
+      float thumb_width         = right_thumbnail_margin_width;
+      float thumb_height        = thumb_width - (thumb_width / 4);
+      float scaled_thumb_width  = thumb_width * thumbnail_scale_factor;
+      float scaled_thumb_height = thumb_height * thumbnail_scale_factor;
+      menu_camera_preview_draw(&xmb->thumbnails.camera, userdata,
+            video_info->dims,
+            right_thumbnail_margin_x + ((thumb_width - scaled_thumb_width) / 2.0f),
+            (video_height - scaled_thumb_height) / 2.0f,
+            VIDEO_SCALE_PACK(scaled_thumb_width  > 0.0f ? (unsigned)scaled_thumb_width  : 0,
+                             scaled_thumb_height > 0.0f ? (unsigned)scaled_thumb_height : 0));
+   }
 
    /* Save state thumbnail, right side in PS3 layout, left in PSP layout */
    if (     (xmb->is_quick_menu || xmb->is_state_slot)
@@ -9750,9 +9864,9 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    /* Clock */
    if (timedate_enable)
    {
-      gfx_display_ctx_datetime_t datetime;
-      char timedate[256];
+      const char *timedate;
       size_t _len        = 0;
+      unsigned gen       = 0;
       size_t x_pos       = 0;
       float scale_factor = xmb->scale_cap;
       float icon_size    = (!xmb->assets_missing) ? xmb->icon_size * 0.90f : 0;
@@ -9792,12 +9906,21 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
          gfx_display_blend_end(dispctx, userdata);
       }
 
-      datetime.time_mode      = video_info->menu.timedate_style;
-      datetime.date_separator = video_info->menu.timedate_date_separator;
-      _len = menu_display_timedate(&datetime, timedate, sizeof(timedate));
+      timedate = menu_display_timedate(video_info->menu.timedate_style,
+            video_info->menu.timedate_date_separator, &_len, &gen);
 
-      title_header_max_width = x_pos + font_driver_get_message_width(
-            xmb->font, timedate, _len, 1.0f);
+      /* Measured again only when the text or the font changes */
+      if (     gen                 != xmb->timedate_gen
+            || (const void*)xmb->font != xmb->timedate_font
+            || xmb->font_size      != xmb->timedate_font_size)
+      {
+         xmb->timedate_width     = font_driver_get_message_width(
+               xmb->font, timedate, _len, 1.0f);
+         xmb->timedate_gen       = gen;
+         xmb->timedate_font      = xmb->font;
+         xmb->timedate_font_size = xmb->font_size;
+      }
+      title_header_max_width = x_pos + xmb->timedate_width;
 
       xmb_draw_text(shadows_enable, xmb, video_info, timedate,
             video_width - xmb->margins_title_left - x_pos
@@ -9951,7 +10074,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
       unsigned preview_height = video_height / 2;
       gfx_thumbnail_t *preview = xmb->thumbnails.right.status == GFX_THUMBNAIL_STATUS_AVAILABLE
          ? &xmb->thumbnails.right : &xmb->thumbnails.left;
-      gfx_thumbnail_draw(userdata, video_info->dims, preview,
+      gfx_thumbnail_draw_shader(userdata, video_info->dims, preview,
             (float)(video_width - preview_width), (float)(video_height / 4),
             VIDEO_SCALE_PACK(preview_width, preview_height),
             GFX_THUMBNAIL_ALIGN_CENTRE, 1.0f, 1.0f, NULL);
@@ -9960,7 +10083,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (input_dialog_display_kb)
    {
       const char *str             = menu_input_dialog_get_buffer();
-      const char *label           = menu_st->input_dialog_kb_label;
+      const char *label           = input_driver_text_entry_label();
       /* Unchanged since it was last wrapped: drawn from there */
       if (     xmb->box_wrap.len
             && menu_input_dialog_text_is(xmb->box_wrap.text,
@@ -9988,10 +10111,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
    if (render_background)
    {
-      if (dispctx)
+      float dark = MIN(xmb->alpha,
+            (input_dialog_display_kb) ? 0.95f : 0.75f);
+      /* Blurred, the dark layer is lighter and the driver lays it on
+       * with the blur, so the screen is not drawn over twice */
+      if (     dispctx
+            && !(   video_info->menu.backdrop_blur
+                 && gfx_display_draw_blur(p_disp, userdata,
+                    video_info->dims, 0, 0, video_info->dims,
+                    dark / 0.75f, dark * 0.6f)))
          xmb_draw_dark_layer(xmb, p_disp, dispctx,
-               userdata, video_info->dims,
-               (input_dialog_display_kb) ? 0.95f : 0.75f);
+               userdata, video_info->dims, dark);
       if (xmb->font && *box)
          xmb_render_messagebox_internal(userdata, video_info, p_disp,
                dispctx,

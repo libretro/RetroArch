@@ -1,0 +1,69 @@
+/* Core-independent C and math ABI. C++ is retained from libstdc++. */
+EXTERN(
+   threadTlsAlloc threadTlsGet threadTlsSet threadTlsFree
+   jitCreate jitClose threadGetSelf
+   armDCacheFlush armICacheInvalidate svcSetMemoryPermission svcGetInfo
+   smGetServiceOverride svcSendSyncRequest
+   abort abs labs div ldiv atoi atol atof
+   strtod strtol strtoul rand srand malloc calloc realloc
+   free memalign aligned_alloc memcpy memmove memset memcmp
+   memchr strlen strcmp strncmp strcpy stpcpy strncpy strcat strncat
+   strchr strrchr strstr strspn strcspn strpbrk strtok strerror
+   strdup strndup strcasecmp strncasecmp qsort bsearch getenv putenv
+   setenv unsetenv atexit exit fopen freopen fclose fflush
+   fread fwrite fseek ftell rewind fgetpos fsetpos feof
+   ferror clearerr fileno setbuf setvbuf printf fprintf sprintf
+   snprintf vprintf vfprintf vsprintf vsnprintf scanf fscanf sscanf
+   vscanf vfscanf vsscanf fgetc getc getchar fgets fputc
+   putc putchar fputs puts ungetc remove rename tmpfile
+   tmpnam perror open close read write lseek fstat
+   stat unlink access mkdir rmdir getcwd chdir opendir
+   readdir closedir rewinddir time clock difftime mktime localtime
+   gmtime strftime asctime ctime gettimeofday nanosleep usleep sleep
+   isalnum isalpha iscntrl isdigit isgraph islower isprint ispunct
+   isspace isupper isxdigit tolower toupper setlocale localeconv mblen
+   mbtowc wctomb mbstowcs wcstombs mbrtowc wcrtomb mbsrtowcs wcsrtombs
+   wcslen wcscmp wcscpy wmemcpy wmemmove wmemset wmemcmp __cxa_atexit
+   __cxa_finalize __cxa_guard_acquire __cxa_guard_release __getreent acos asin atan atan2
+   ceil cos cosh exp fabs floor fmod frexp
+   ldexp log log10 modf pow sin sinh sqrt
+   tan tanh copysign exp2 expm1 log1p log2 hypot
+   round trunc nearbyint rint fmin fmax fma acosf
+   asinf atanf atan2f ceilf cosf coshf expf fabsf
+   floorf fmodf frexpf ldexpf logf log10f modff powf
+   sinf sinhf sqrtf tanf tanhf copysignf exp2f expm1f
+   log1pf log2f hypotf roundf truncf nearbyintf rintf fminf
+   fmaxf fmaf acosl asinl atanl atan2l ceill cosl
+   coshl expl fabsl floorl fmodl frexpl ldexpl logl
+   log10l modfl powl sinl sinhl sqrtl tanl tanhl
+   copysignl exp2l expm1l log1pl log2l hypotl roundl truncl
+   nearbyintl rintl fminl fmaxl fmal
+)
+
+/* POSIX threading, file I/O and SDK networking services. */
+EXTERN(
+   __cxa_allocate_exception __cxa_init_primary_exception __dynamic_cast __errno __locale_mb_cur_max
+   __once_proxy __xpg_strerror_r _ctype_ accept bind
+   clock_gettime connect csrngExit csrngGetRandomBytes csrngInitialize
+   dup fcntl fdopen flockfile fnmatch
+   freeaddrinfo fseeko fsync ftello ftruncate
+   funlockfile gai_strerror getaddrinfo gethostbyname gethostname
+   getnameinfo getpeername getpid getsockname getsockopt
+   gmtime_r hosversionGet inet_addr inet_ntoa inet_ntop
+   inet_pton ioctl isatty listen localtime_r
+   mkdtemp newlocale nifmExit nifmGetCurrentIpConfigInfo nifmGetCurrentNetworkProfile
+   nifmInitialize nl_langinfo poll pthread_cond_broadcast pthread_cond_destroy
+   pthread_cond_init pthread_cond_signal pthread_cond_timedwait pthread_cond_wait pthread_create
+   pthread_join pthread_mutex_destroy pthread_mutex_init pthread_mutex_lock pthread_mutex_trylock
+   pthread_mutex_unlock pthread_once pthread_rwlock_rdlock pthread_rwlock_unlock pthread_rwlock_wrlock
+   pthread_self putc_unlocked readlink recv recvfrom
+   recvmsg sched_yield select send sendmsg
+   sendto setsockopt sha256CalculateHash shutdown signal
+   socket socketSslConnectionSetSocketDescriptor socketpair sslConnectionClose sslConnectionDoHandshake
+   sslConnectionGetServerCertDetail sslConnectionGetVerifyCertError sslConnectionPeek sslConnectionPending sslConnectionRead
+   sslConnectionSetHostName sslConnectionSetIoMode sslConnectionSetOption sslConnectionSetSessionCacheMode sslConnectionSetVerifyOption
+   sslConnectionWrite sslContextClose sslContextCreateConnection sslContextImportClientPki sslContextImportServerPki
+   sslCreateContext sslExit sslInitialize strnlen strtok_r
+   strtoll strtoull svcSleepThread threadClose threadCreate
+   threadStart threadWaitForExit uselocale
+)

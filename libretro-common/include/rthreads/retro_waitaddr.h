@@ -109,6 +109,17 @@ void retro_waitaddr_notify_one(const void *addr);
 void retro_waitaddr_notify_all(const void *addr);
 
 /**
+ * retro_waitaddr_reserve:
+ * @waiters : how many threads may wait at once.
+ * Makes the records for that many waiters now, so no wait has to
+ * allocate one - a wait reached from a signal handler (a fault handler)
+ * must not call calloc.  Call it before such waits can happen.
+ * Returns false if the records could not all be made, or @waiters is
+ * more than the pool can ever hold (4096).
+ */
+bool retro_waitaddr_reserve(unsigned waiters);
+
+/**
  * retro_waitaddr_free_all:
  * Releases the records and what their eventcounts hold.  No thread may
  * be inside a wait or a notify; for a module about to be unloaded.

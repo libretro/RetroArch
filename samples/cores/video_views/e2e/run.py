@@ -36,7 +36,9 @@ Usage: run.py <retroarch binary> <output dir> <driver> [driver ...]
 """
 
 import ctypes
+import itertools
 import os
+import random
 import re
 import shlex
 import shutil
@@ -384,6 +386,7 @@ RECT_PRESETS = [('rect_nearest.slangp', True, 0),
                 ('rect_nearest_mirror.slangp', True, 0),
                 ('rect_linear.slangp', True, 0),
                 ('rect_linear_border.slangp', True, 1),
+                ('rect_hist_linear_repeat.slangp', False, 0),
                 ('rect_full.slangp', True, 0),
                 ('rect_two.slangp', True, 0)]
 RECT_HW = {'glcore': ('gl', 'gl_topleft')}
@@ -415,8 +418,29 @@ STATUS_RE = re.compile(
     r'\[video_views\] presents=(\d) stereo=(\d) accepted=(\d)')
 
 
+# The last few files read_png() decoded on this thread, by path, with
+# the stat that says they are the same file: a pointer case reads each
+# screenshot to wait on it and again to check it.
+PNG_CACHE = threading.local()
+
+
 def read_png(path):
     """8-bit RGB or RGBA, non-interlaced: what rpng writes."""
+    st    = os.stat(path)
+    key   = (st.st_mtime_ns, st.st_size, st.st_ino)
+    cache = PNG_CACHE.__dict__.setdefault('files', {})
+    hit   = cache.get(path)
+    if hit and hit[0] == key:
+        return hit[1]
+    png = read_png_file(path)
+    if len(cache) >= 8:
+        cache.pop(next(iter(cache)))
+    cache[path] = (key, png)
+    return png
+
+
+def read_png_file(path):
+    """read_png() without the cache."""
     with open(path, 'rb') as f:
         data = f.read()
     if data[:8] != b'\x89PNG\r\n\x1a\n':
@@ -440,11 +464,21 @@ def read_png(path):
     raw = zlib.decompress(idat)
     stride = w * bpp
     rows, prev, i = [], bytearray(stride), 0
+    # Up rows add the row above a byte at a time, with no carry between
+    # bytes: done on the whole row as one integer, low 7 bits and top bit
+    # apart, instead of byte by byte.
+    low = int.from_bytes(b'\x7f' * stride, 'little')
+    top = int.from_bytes(b'\x80' * stride, 'little')
     for _ in range(h):
         f = raw[i]
         line = bytearray(raw[i + 1:i + 1 + stride])
         i += 1 + stride
-        for x in range(stride):
+        if f == 2:
+            p = int.from_bytes(line, 'little')
+            q = int.from_bytes(prev, 'little')
+            line = bytearray((((p & low) + (q & low)) ^ ((p ^ q) & top))
+                             .to_bytes(stride, 'little'))
+        for x in range(stride if f not in (0, 2) else 0):
             a = line[x - bpp] if x >= bpp else 0
             b = prev[x]
             c = prev[x - bpp] if x >= bpp else 0
@@ -793,40 +827,60 @@ def wm_ready_probe(timeout=10):
         x11.XCloseDisplay(display)
 
 
-def wm_start(env):
-    """openbox on env's display."""
-    p = subprocess.Popen(['openbox'], stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL, env=env,
-                         start_new_session=True)
+def wm_start(env, starts=3):
+    """openbox on env's display. One that exits before it is ready is
+    started again, until the deadline."""
     deadline = time.monotonic() + 30
-    try:
-        while p.poll() is None and time.monotonic() < deadline:
-            # A probe that is slow to answer on a loaded runner, with
-            # the other cases' servers and players beside it, is not an
-            # answer: ask again until the deadline.
-            try:
-                probe = subprocess.run(
-                    ['xprop', '-root', '_NET_SUPPORTING_WM_CHECK'], env=env,
-                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                    timeout=5, text=True)
-            except subprocess.TimeoutExpired:
-                continue
-            if probe.returncode == 0 and 'window id #' in probe.stdout:
-                ready = subprocess.run(
-                    [sys.executable, os.path.abspath(__file__), '--wm-ready'],
-                    env=env, timeout=max(0.1, deadline - time.monotonic()))
-                if ready.returncode == 0 and p.poll() is None:
-                    return p
-            time.sleep(0.05)
-        raise RuntimeError('openbox did not become ready on ' + env['DISPLAY'])
-    except BaseException:
-        p.terminate()
+    why = 'not ready in time'
+    for _ in range(starts):
+        log = tempfile.TemporaryFile()
+        p = subprocess.Popen(['openbox'], stdout=subprocess.DEVNULL,
+                             stderr=log, env=env, start_new_session=True)
         try:
-            p.wait(5)
-        except subprocess.TimeoutExpired:
-            p.kill()
-            p.wait()
-        raise
+            while p.poll() is None and time.monotonic() < deadline:
+                # A probe that is slow to answer on a loaded runner, with
+                # the other cases' servers and players beside it, is not
+                # an answer: ask again until the deadline.
+                try:
+                    probe = subprocess.run(
+                        ['xprop', '-root', '_NET_SUPPORTING_WM_CHECK'],
+                        env=env, stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL, timeout=5, text=True)
+                except subprocess.TimeoutExpired:
+                    continue
+                if probe.returncode == 0 and 'window id #' in probe.stdout:
+                    ready = subprocess.run(
+                        [sys.executable, os.path.abspath(__file__),
+                         '--wm-ready'], env=env,
+                        timeout=max(0.1, deadline - time.monotonic()))
+                    if ready.returncode == 0 and p.poll() is None:
+                        log.close()
+                        return p
+                time.sleep(0.05)
+            code = p.poll()
+            if code is None:
+                raise RuntimeError('openbox did not become ready on ' +
+                                   env['DISPLAY'])
+            try:
+                log.seek(0)
+                said = log.read()[-500:].decode(errors='replace').strip()
+            except (OSError, AttributeError, TypeError):
+                said = ''
+            why = 'exited with %s%s' % (code, ': ' + said if said else '')
+        except BaseException:
+            p.terminate()
+            try:
+                p.wait(5)
+            except subprocess.TimeoutExpired:
+                p.kill()
+                p.wait()
+            raise
+        finally:
+            log.close()
+        if time.monotonic() >= deadline:
+            break
+    raise RuntimeError('openbox did not become ready on %s: %s' %
+                       (env['DISPLAY'], why))
 
 
 def release_display(display):
@@ -889,9 +943,41 @@ def gamescope_shot(d, env, name='menu.png'):
     return out
 
 
+# Rounds of screenshots a pointer case takes before it gives up on the
+# cursor showing where its check wants it.
+POINTER_ROUNDS = 5
+
+
+def pointer_shot(d, env, name, seq, point, before):
+    """A screenshot in d/name, and its rows, once the menu has drawn the
+    pointer put at a window point: white pixels within POINTER_REACH of
+    it changed since @before, the rows of the screenshot before it (none:
+    the first, taken as it comes). A loaded runner can show a frame from
+    before the move for seconds; this waits on the screen, not a clock."""
+    out = os.path.join(d, name)
+    if not move_pointer(d, next(seq), point):
+        return None, None
+    deadline = time.time() + 60
+    while time.time() < deadline:
+        try:
+            os.remove(out)
+        except OSError:
+            pass
+        if not gamescope_shot(d, env, name):
+            return None, None
+        try:
+            w, h, bpp, rows = read_png(out)
+        except (OSError, ValueError):
+            return None, None
+        if before is None:
+            return out, rows
+        if w == W and h == H and cursor_near(rows, before, bpp, point):
+            return out, rows
+    return None, None
+
+
 def move_pointer(d, n, point):
-    """Has the case's pointer helper put the pointer at a window point,
-    and gives the menu time to draw it there."""
+    """Has the case's pointer helper put the pointer at a window point."""
     tmp = os.path.join(d, 'pointer.tmp')
     with open(tmp, 'w') as f:
         f.write('%d %d %d\n' % ((n,) + tuple(point)))
@@ -901,7 +987,6 @@ def move_pointer(d, n, point):
         try:
             with open(os.path.join(d, 'pointer.done')) as f:
                 if f.read().split() == [str(n)]:
-                    time.sleep(1.5)
                     return True
         except OSError:
             pass
@@ -976,11 +1061,15 @@ def case_dir(root, driver, name, hw='off'):
 
 
 def run_case(retroarch, root, driver, case, hw='off', menu=False,
-             opts=None, args=(), gpu=None, pointer=(), env_extra=None):
+             opts=None, args=(), gpu=None, pointer=(), env_extra=None,
+             pointer_check=None):
     """gpu, a list, gets RetroArch's GPU memory in MiB sampled while it
     settles. pointer, window points, has the menu open with the pointer
-    at each in turn, in d/pointer-N.png. env_extra is added to
-    RetroArch's environment."""
+    at each in turn, in d/pointer-N.png; pointer_check(d) gives the
+    errors of a round of those, which is taken again, at most
+    POINTER_ROUNDS times, until it has none: a frame the menu had not
+    drawn the cursor in yet is not the code's failure. env_extra is
+    added to RetroArch's environment."""
     name, mapopt, settings, points = case
     d = case_dir(root, driver, name, hw)
     if os.path.commonpath([root, d]) != root or d == root:
@@ -1067,13 +1156,18 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
             send('MENU_TOGGLE', port)
             time.sleep(3)
             # The menu takes the pointer once it has seen it move.
-            moved = move_pointer(d, 0, POINTER_PARK)
-            for i, point in enumerate(pointer):
-                moved = moved and move_pointer(d, i + 1, point)
-                shot = gamescope_shot(d, env, 'pointer-%d.png' % i)
-                if not (moved and shot):
-                    shot = None
+            seq = itertools.count()
+            shot, rows = pointer_shot(d, env, 'pointer-park.png', seq,
+                                      POINTER_PARK, None)
+            for _ in range(POINTER_ROUNDS if pointer_check else 1):
+                for i, point in enumerate(pointer):
+                    if shot:
+                        shot, rows = pointer_shot(
+                            d, env, 'pointer-%d.png' % i, seq, point, rows)
+                if not shot or not pointer_check or not pointer_check(d):
                     break
+            if not shot:
+                shot = None
         elif menu:
             send('MENU_TOGGLE', port)
             time.sleep(3)
@@ -1381,30 +1475,44 @@ def cursor_pixels(rows, others, bpp):
     return found
 
 
+def cursor_near(rows, others, bpp, point):
+    """Whether cursor_pixels() would find one within POINTER_REACH of
+    @point, looking only there."""
+    x0 = max(0, point[0] - POINTER_REACH)
+    x1 = min(W, point[0] + POINTER_REACH + 1)
+    for y in range(max(0, point[1] - POINTER_REACH),
+                   min(H, point[1] + POINTER_REACH + 1)):
+        a_row, b_row = rows[y], others[y]
+        if a_row[x0 * bpp:x1 * bpp] == b_row[x0 * bpp:x1 * bpp]:
+            continue
+        for x in range(x0, x1):
+            a = a_row[x * bpp:x * bpp + 3]
+            if min(a) < 200:
+                continue
+            b = b_row[x * bpp:x * bpp + 3]
+            if any(abs(p - q) > TOLERANCE for p, q in zip(a, b)):
+                return True
+    return False
+
+
 def box_of(pixels):
     xs, ys = [p[0] for p in pixels], [p[1] for p in pixels]
     return (min(xs), min(ys), max(xs), max(ys))
 
 
-def run_pointer_case(retroarch, root, driver, menu, case):
-    """The case's menu with the pointer at each of its points. Each
-    screen must show the cursor at the pointer and at the same place in
-    every other eye's area, and nowhere else."""
-    name, mapopt, settings, areas, points = case
-    c = ('%s-%s' % (name, menu), mapopt,
-         dict(POINTER_SETTINGS, **dict(POINTER_MENUS[menu], **settings)), [])
-    errors = run_case(retroarch, root, driver, c, pointer=points)
-    d = os.path.join(root, '%s-%s' % (driver, c[0]))
+def pointer_errors(d, areas, points):
+    """What is wrong with a pointer case's screenshots in d: each must
+    show the cursor at the pointer and at the same place in every other
+    eye's area, and nowhere else."""
     images = []
     for i in range(len(points)):
         try:
             images.append(read_png(os.path.join(d, 'pointer-%d.png' % i)))
         except (OSError, ValueError):
-            return errors or ['no screenshot with the pointer']
-    if errors:
-        return errors
+            return ['no screenshot with the pointer']
     if any(im[:3] != (W, H, images[0][2]) for im in images):
         return ['a screenshot is not %dx%d' % (W, H)]
+    errors = []
     shapes = []
     for i, pt in enumerate(points):
         bpp, rows = images[i][2:]
@@ -1440,6 +1548,20 @@ def run_pointer_case(retroarch, root, driver, menu, case):
     if any(abs(p - q) > 2 for s in shapes for p, q in zip(s, shapes[0])):
         errors.append('cursors differ about the pointer: %s' % shapes)
     return errors
+
+
+def run_pointer_case(retroarch, root, driver, menu, case):
+    """The case's menu with the pointer at each of its points, checked
+    by pointer_errors()."""
+    name, mapopt, settings, areas, points = case
+    c = ('%s-%s' % (name, menu), mapopt,
+         dict(POINTER_SETTINGS, **dict(POINTER_MENUS[menu], **settings)), [])
+    errors = run_case(retroarch, root, driver, c, pointer=points,
+                      pointer_check=lambda d: pointer_errors(d, areas, points))
+    if errors:
+        return errors
+    return pointer_errors(os.path.join(root, '%s-%s' % (driver, c[0])),
+                          areas, points)
 
 
 def run_memory_case(retroarch, root, driver, case):
@@ -1498,8 +1620,12 @@ def gamescope_root(x11, dpy):
 
 def pointer_helper(d):
     """Inside a case's gamescope: puts the pointer of gamescope's own X
-    server at each point the runner writes to d/pointer.at. Never on a
-    display that isn't this gamescope's."""
+    server at each point the runner writes to d/pointer.at, and keeps it
+    moving there, between the point and the pixel right of it at uneven
+    intervals: the menu hides a cursor that has not moved for 4 s
+    (MENU_INPUT_HIDE_CURSOR_DELAY), and a screenshot of a loaded runner
+    can come later than that. Never on a display that isn't this
+    gamescope's."""
     if os.environ.get('DISPLAY', '') in ('', ':0'):
         return 99
     x11 = ctypes.CDLL('libX11.so.6')
@@ -1526,6 +1652,7 @@ def pointer_helper(d):
               % os.environ['DISPLAY'], flush=True)
         return 99
     done, deadline = None, time.time() + 120
+    at, off, wiggle = None, 0, 0.0
     while (time.time() < deadline
            and not os.path.exists(os.path.join(d, 'pointer.quit'))):
         try:
@@ -1536,13 +1663,21 @@ def pointer_helper(d):
         if n != done:
             x11.XWarpPointer(dpy, 0, root, 0, 0, 0, 0, x, y)
             x11.XSync(dpy, 0)
-            done = n
+            done, at, off = n, (x, y), 0
+            # Alive while the runner keeps moving it, however slowly
+            deadline = time.time() + 120
+            wiggle = time.time() + random.uniform(0.05, 0.15)
             tmp = os.path.join(d, 'pointer.done.tmp')
             with open(tmp, 'w') as f:
                 f.write('%d\n' % n)
             os.replace(tmp, os.path.join(d, 'pointer.done'))
             print('[e2e] pointer at (%d,%d).' % (x, y), flush=True)
-        time.sleep(0.05)
+        elif at and time.time() >= wiggle:
+            off = 1 - off
+            x11.XWarpPointer(dpy, 0, root, 0, 0, 0, 0, at[0] + off, at[1])
+            x11.XSync(dpy, 0)
+            wiggle = time.time() + random.uniform(0.05, 0.15)
+        time.sleep(0.02)
     return 0
 
 

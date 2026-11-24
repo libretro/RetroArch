@@ -9,11 +9,12 @@ struct record_audio_tap
 {
    uint64_t frames;
    int (*submit)(void *, const int16_t *, size_t, uint64_t);
+   int (*submit_raw)(void *, const void *, size_t, bool, uint64_t);
    void *context;
    unsigned rate;
    retro_atomic_int_t state, failed;
    bool producer_failed;
-   int16_t scratch[RECORD_AUDIO_TAP_FRAMES * 2];
+   int16_t *scratch;
 };
 record_audio_tap_t *record_audio_tap_new(unsigned rate,
       int (*submit)(void *, const int16_t *, size_t, uint64_t), void *context)
@@ -24,11 +25,24 @@ record_audio_tap_t *record_audio_tap_new(unsigned rate,
    t = (record_audio_tap_t *)calloc(1, sizeof(*t));
    if (!t)
       return NULL;
+   t->scratch = (int16_t*)malloc(RECORD_AUDIO_TAP_FRAMES * 2 * sizeof(int16_t));
+   if (!t->scratch) { free(t); return NULL; }
    t->rate = rate;
    t->submit = submit;
    t->context = context;
    retro_atomic_int_init(&t->state, 0);
    retro_atomic_int_init(&t->failed, 0);
+   return t;
+}
+record_audio_tap_t *record_audio_tap_new_raw(unsigned rate,
+      int (*submit)(void *, const void *, size_t, bool, uint64_t), void *context)
+{
+   record_audio_tap_t *t;
+   if (!submit || rate < 8000 || rate > 192000) return NULL;
+   t = (record_audio_tap_t*)calloc(1, sizeof(*t));
+   if (!t) return NULL;
+   t->rate = rate; t->submit_raw = submit; t->context = context;
+   retro_atomic_int_init(&t->state, 0); retro_atomic_int_init(&t->failed, 0);
    return t;
 }
 unsigned record_audio_tap_rate(const record_audio_tap_t *t)
@@ -64,6 +78,12 @@ bool record_audio_tap_push(record_audio_tap_t *t, const void *data,
                > (~(size_t)0) / 2 / (floating ? sizeof(float) : sizeof(int16_t))
          || t->frames > ~(uint64_t)0 - frames)
       goto failed;
+   if (t->submit_raw)
+   {
+      if (t->submit_raw(t->context, data, frames, floating, t->frames) != RECORD_AUDIO_OK) goto failed;
+      t->frames += frames;
+      return true;
+   }
    while (frames)
    {
       size_t n = frames > RECORD_AUDIO_TAP_FRAMES ? RECORD_AUDIO_TAP_FRAMES
@@ -98,6 +118,7 @@ bool record_audio_tap_free(record_audio_tap_t *t)
 {
    if (t && !record_audio_tap_end(t, NULL))
       return false;
+   if (t) free(t->scratch);
    free(t);
    return true;
 }

@@ -11,6 +11,7 @@ static AMediaFormat config_format, output_format;
 static ANativeWindow window;
 static int lookup, missing, libs, codecs, formats, names, stage, input_busy,
       output_mode, rendered, released, bad_crop;
+static int rect_crop, no_rect;
 static uint8_t bytes[8];
 static uint64_t queued_pts;
 static uint32_t queued_flags;
@@ -178,6 +179,18 @@ static bool get_integer(AMediaFormat *f, const char *key, int32_t *value)
    }
    return false;
 }
+static bool get_rect(AMediaFormat *f, const char *key, int32_t *left,
+      int32_t *top, int32_t *right, int32_t *bottom)
+{
+   assert(f == &output_format && !strcmp(key, "crop"));
+   if (!rect_crop)
+      return false;
+   *left = 0;
+   *top = 0;
+   *right = rect_crop == 2 ? 320 : 319;
+   *bottom = 179;
+   return true;
+}
 dylib_t dylib_load(const char *path)
 {
    assert(!strcmp(path, "libmediandk.so"));
@@ -218,6 +231,8 @@ function_t dylib_proc(dylib_t lib, const char *symbol)
    FN("AMediaFormat_setInt32", set_integer);
    FN("AMediaFormat_setBuffer", set_buffer);
    FN("AMediaFormat_getInt32", get_integer);
+   if (!strcmp(symbol, "AMediaFormat_getRect"))
+      return no_rect ? NULL : (function_t)get_rect;
 #undef FN
    assert(0);
    return NULL;
@@ -270,6 +285,11 @@ int main(void)
    assert(mediacodec_session_format(s)->right == 320
          && mediacodec_session_format(s)->serial == 1
          && !mediacodec_session_format(s)->color_transfer);
+   rect_crop = 1;
+   assert(mediacodec_session_pump(s, &pts) == 2);
+   assert(mediacodec_session_format(s)->bottom == 180
+         && mediacodec_session_format(s)->height == 192);
+   rect_crop = 0;
    output_mode = 3;
    assert(mediacodec_session_pump(s, &pts) == 1 && pts == 12345
          && rendered == 1);
@@ -321,6 +341,20 @@ int main(void)
    assert(mediacodec_session_pump(s, &pts) == -1 && rendered == before);
    mediacodec_session_free(s);
    balanced();
+   output_mode = 1;
+   bad_crop = 0;
+   rect_crop = 2;
+   s = mediacodec_session_new(NULL, &config, &window);
+   assert(s && mediacodec_session_pump(s, &pts) == -1);
+   mediacodec_session_free(s);
+   balanced();
+   no_rect = 1;
+   s = mediacodec_session_new(NULL, &config, &window);
+   assert(s && mediacodec_session_pump(s, &pts) == 2);
+   assert(mediacodec_session_format(s)->bottom == 192);
+   mediacodec_session_free(s);
+   balanced();
+   no_rect = rect_crop = 0;
    config.color_standard = 6;
    config.color_transfer = 6;
    config.color_range = 2;

@@ -95,6 +95,7 @@ typedef struct ffmpeg_camera
    uint8_t *target_planes[4];
    int target_linesizes[4];
    unsigned target_dims;             /* VIDEO_SCALE_PACK */
+   enum AVPixelFormat target_format; /* NV12 for planes, else BGRA */
    struct SwsContext *scale_context;
 
    /* "name" for the camera device.
@@ -114,7 +115,13 @@ typedef struct ffmpeg_camera
    retro_atomic_int_t poll_epoch;
    retro_eventcount_t read_retry;
    bool read_retry_init;
+   bool want_planar;
 } ffmpeg_camera_t;
+
+/* Each planar target buffer carries its frame's RETRO_CAMERA_PLANAR_*
+ * flags in a byte past swscale's padding, so a poll reads the colour
+ * of the frame it hands out. */
+#define FFMPEG_CAMERA_FLAGS_OFFSET(len) ((size_t)(len) + AV_INPUT_BUFFER_PADDING_SIZE)
 
 static void ffmpeg_camera_free(void *data);
 
@@ -346,10 +353,13 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned dims
    int ret         = 0;
    int num_sources = 0;
 
-   /* If the core didn't ask for raw framebuffers... */
-   if ((caps & (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)) == 0)
+   bool want_planar = (caps
+         & (UINT64_C(1) << RETRO_CAMERA_BUFFER_PLANAR)) != 0;
+
+   if (!want_planar && (caps
+         & (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)) == 0)
    {
-      RARCH_ERR("[FFMPEG] Camera driver only supports raw framebuffer output.\n");
+      RARCH_ERR("[FFMPEG] Camera driver only supports raw framebuffer or planar output.\n");
       return NULL;
    }
 
@@ -359,6 +369,7 @@ static void *ffmpeg_camera_init(const char *device, uint64_t caps, unsigned dims
       RARCH_ERR("[FFMPEG] Failed to allocate memory for camera driver.\n");
       return NULL;
    }
+   ffmpeg->want_planar = want_planar;
 
    ffmpeg->requested_dims   = dims;
    ffmpeg->read_retry_init = retro_eventcount_init(&ffmpeg->read_retry);
@@ -599,8 +610,10 @@ static bool ffmpeg_camera_start(void *data)
          ? VIDEO_SCALE_H(ffmpeg->requested_dims)
          : (unsigned)ffmpeg->decoder_context->height);
 
+   ffmpeg->target_format = ffmpeg->want_planar
+      ? AV_PIX_FMT_NV12 : AV_PIX_FMT_BGRA;
    target_buffer_length = av_image_get_buffer_size(
-      AV_PIX_FMT_BGRA,
+      ffmpeg->target_format,
       VIDEO_SCALE_W(ffmpeg->target_dims),
       VIDEO_SCALE_H(ffmpeg->target_dims),
       1
@@ -615,20 +628,42 @@ static bool ffmpeg_camera_start(void *data)
 
    /* Aligned and padded for swscale's direct output. */
    ffmpeg->target_buffer_length = target_buffer_length;
-   ffmpeg->target_linesizes[0] = VIDEO_SCALE_W(ffmpeg->target_dims) * 4;
-   for (i = 0; i < 3; i++)
-      if ((ffmpeg->target_buffers[i] = (uint8_t*)memalign_alloc(32,
-                  (size_t)target_buffer_length + AV_INPUT_BUFFER_PADDING_SIZE)))
-         /* black until the first frame is in */
-         memset(ffmpeg->target_buffers[i], 0,
-               (size_t)target_buffer_length + AV_INPUT_BUFFER_PADDING_SIZE);
+   if (ffmpeg->want_planar)
+   {
+      /* NV12: luma rows, then interleaved chroma rows of whole pairs. */
+      size_t luma = (size_t)VIDEO_SCALE_W(ffmpeg->target_dims)
+                  * VIDEO_SCALE_H(ffmpeg->target_dims);
+      ffmpeg->target_linesizes[0] = VIDEO_SCALE_W(ffmpeg->target_dims);
+      ffmpeg->target_linesizes[1] = (VIDEO_SCALE_W(ffmpeg->target_dims) + 1) & ~1u;
+      for (i = 0; i < 3; i++)
+         if ((ffmpeg->target_buffers[i] = (uint8_t*)memalign_alloc(32,
+                     FFMPEG_CAMERA_FLAGS_OFFSET(target_buffer_length) + 1)))
+         {
+            /* black until the first frame is in */
+            memset(ffmpeg->target_buffers[i], 16, luma);
+            memset(ffmpeg->target_buffers[i] + luma, 128,
+                  FFMPEG_CAMERA_FLAGS_OFFSET(target_buffer_length) - luma);
+            ffmpeg->target_buffers[i][FFMPEG_CAMERA_FLAGS_OFFSET(
+                  target_buffer_length)] = 0;
+         }
+   }
+   else
+   {
+      ffmpeg->target_linesizes[0] = VIDEO_SCALE_W(ffmpeg->target_dims) * 4;
+      for (i = 0; i < 3; i++)
+         if ((ffmpeg->target_buffers[i] = (uint8_t*)memalign_alloc(32,
+                     (size_t)target_buffer_length + AV_INPUT_BUFFER_PADDING_SIZE)))
+            /* black until the first frame is in */
+            memset(ffmpeg->target_buffers[i], 0,
+                  (size_t)target_buffer_length + AV_INPUT_BUFFER_PADDING_SIZE);
+   }
    if (!ffmpeg->target_buffers[0] || !ffmpeg->target_buffers[1] || !ffmpeg->target_buffers[2])
    {
       RARCH_ERR("[FFMPEG] Failed to allocate target %d-byte buffer for %dx%d %s-formatted video data.\n",
          target_buffer_length,
          ffmpeg->decoder_context->width,
          ffmpeg->decoder_context->height,
-         av_get_pix_fmt_name(AV_PIX_FMT_BGRA)
+         av_get_pix_fmt_name(ffmpeg->target_format)
       );
       goto error;
    }
@@ -646,7 +681,7 @@ static bool ffmpeg_camera_start(void *data)
       ffmpeg->decoder_context->pix_fmt,
       VIDEO_SCALE_W(ffmpeg->target_dims),
       VIDEO_SCALE_H(ffmpeg->target_dims),
-      AV_PIX_FMT_BGRA,
+      ffmpeg->target_format,
       SWS_BILINEAR,
       NULL, NULL, NULL
    );
@@ -730,7 +765,8 @@ static void ffmpeg_camera_stop(void *data)
    RARCH_LOG("[FFMPEG] Closed video input device %s.\n", ffmpeg->url);
 }
 
-static int ffmpeg_camera_frame_colorspace(ffmpeg_camera_t *ffmpeg)
+static int ffmpeg_camera_frame_colorspace(ffmpeg_camera_t *ffmpeg,
+      unsigned *planar_flags)
 {
    const AVFrame *frame = ffmpeg->camera_frame;
    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(
@@ -764,6 +800,22 @@ static int ffmpeg_camera_frame_colorspace(ffmpeg_camera_t *ffmpeg)
       }
    }
    coefficients = sws_getCoefficients(space);
+   if (ffmpeg->want_planar)
+   {
+      /* YCbCr keeps its matrix and range; RGB and grey become BT.601
+       * limited range. */
+      bool keep = desc && !(desc->flags & AV_PIX_FMT_FLAG_RGB)
+         && desc->nb_components > 2;
+      *planar_flags = keep
+         ? ((full_range ? RETRO_CAMERA_PLANAR_FULL_RANGE : 0)
+            | (space == AVCOL_SPC_BT709 ? RETRO_CAMERA_PLANAR_BT709 : 0))
+         : 0;
+      return sws_setColorspaceDetails(ffmpeg->scale_context,
+            coefficients, full_range,
+            keep ? coefficients : sws_getCoefficients(SWS_CS_ITU601),
+            keep ? full_range : 0, 0, 1 << 16, 1 << 16);
+   }
+   *planar_flags = 0;
    return sws_setColorspaceDetails(ffmpeg->scale_context,
          coefficients, full_range, coefficients, 1, 0, 1 << 16, 1 << 16);
 }
@@ -780,6 +832,7 @@ static void ffmpeg_camera_poll_thread(void *data)
       int poll_epoch = retro_atomic_load_acquire_int(&ffmpeg->poll_epoch);
       int ret = av_read_frame(ffmpeg->format_context, ffmpeg->packet);
       bool draining = ret == AVERROR_EOF;
+      unsigned planar_flags = 0;
       bool retry_packet = false;
       bool progress = false;
       if (ret == AVERROR_EXIT && retro_atomic_load_acquire_int(&ffmpeg->done))
@@ -863,7 +916,7 @@ receive_frame:
             ffmpeg->camera_frame->width, ffmpeg->camera_frame->height,
             (enum AVPixelFormat)ffmpeg->camera_frame->format,
             VIDEO_SCALE_W(ffmpeg->target_dims),
-            VIDEO_SCALE_H(ffmpeg->target_dims), AV_PIX_FMT_BGRA,
+            VIDEO_SCALE_H(ffmpeg->target_dims), ffmpeg->target_format,
             SWS_BILINEAR, NULL, NULL, NULL);
       if (!ffmpeg->scale_context)
       {
@@ -871,7 +924,7 @@ receive_frame:
          goto done_loop;
       }
 
-      if (ffmpeg_camera_frame_colorspace(ffmpeg) < 0)
+      if (ffmpeg_camera_frame_colorspace(ffmpeg, &planar_flags) < 0)
       {
          RARCH_ERR("[FFMPEG] Failed to configure frame colorspace.\n");
          goto done_loop;
@@ -879,6 +932,14 @@ receive_frame:
 
       /* sws_scale_frame is tidier but isn't as widely available */
       ffmpeg->target_planes[0] = (uint8_t*)retro_triple_buffer_back(&ffmpeg->frames);
+      if (ffmpeg->want_planar)
+      {
+         ffmpeg->target_planes[1] = ffmpeg->target_planes[0]
+            + (size_t)ffmpeg->target_linesizes[0]
+            * VIDEO_SCALE_H(ffmpeg->target_dims);
+         ffmpeg->target_planes[0][FFMPEG_CAMERA_FLAGS_OFFSET(
+               ffmpeg->target_buffer_length)] = (uint8_t)planar_flags;
+      }
       ret = sws_scale(
          ffmpeg->scale_context,
          (const uint8_t *const *)ffmpeg->camera_frame->data,
@@ -920,12 +981,37 @@ static bool ffmpeg_camera_poll(void *data,
    retro_camera_frame_planar_t frame_planar_cb)
 {
    ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
-   (void)frame_planar_cb;
 
    if (!ffmpeg->format_context)
    {
       RARCH_ERR("[FFMPEG] Camera is not started, cannot poll.\n");
       return false;
+   }
+
+   if (ffmpeg->want_planar)
+   {
+      struct retro_camera_planar_frame f;
+      const uint8_t *front;
+      unsigned w = VIDEO_SCALE_W(ffmpeg->target_dims);
+      unsigned h = VIDEO_SCALE_H(ffmpeg->target_dims);
+      if (!frame_planar_cb)
+         return false;
+      retro_atomic_fetch_add_int(&ffmpeg->poll_epoch, 1);
+      retro_eventcount_notify(&ffmpeg->read_retry);
+      front         = (const uint8_t*)retro_triple_buffer_front(&ffmpeg->frames);
+      f.planes[0]   = front;
+      f.planes[1]   = front + (size_t)ffmpeg->target_linesizes[0] * h;
+      f.planes[2]   = f.planes[1] + 1;
+      f.strides[0]  = (size_t)ffmpeg->target_linesizes[0];
+      f.strides[1]  = f.strides[2] = (size_t)ffmpeg->target_linesizes[1];
+      f.chroma_step = 2;
+      f.width       = w;
+      f.height      = h;
+      f.rotation    = 0;
+      f.flags       = front[FFMPEG_CAMERA_FLAGS_OFFSET(
+            ffmpeg->target_buffer_length)];
+      frame_planar_cb(&f);
+      return true;
    }
 
    if (!frame_raw_cb)

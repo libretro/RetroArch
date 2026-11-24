@@ -20,6 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <retro_posix_source.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -409,6 +411,7 @@ bool addr_6to4(struct sockaddr_storage *addr)
          /* Is the address provided an IPv4? */
          if (!memcmp(&addr6->sin6_addr, prefix, sizeof(prefix)))
             break;
+         /* fall through */
       default:
          /* We don't know how to handle this. */
          return false;

@@ -245,6 +245,7 @@ endif
 OBJ += frontend/frontend_driver.o \
        retroarch.o \
        runloop.o \
+       calendar_time.o \
        ui/ui_companion_driver.o \
        camera/camera_driver.o \
        record/record_driver.o \
@@ -278,6 +279,7 @@ OBJ += \
        tasks/task_content_prefetch.o \
        tasks/task_image.o \
        tasks/task_playlist_manager.o \
+       tasks/task_pl_thumbnail_match.o \
        tasks/task_core_backup.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.o \
@@ -346,6 +348,8 @@ OBJ += \
        gfx/gfx_surface.o \
        gfx/gfx_surface_player.o \
        gfx/gfx_thumbnail.o \
+       gfx/gfx_thumbnail_match.o \
+       gfx/gfx_thumbnail_results.o \
        gfx/gfx_media_controls.o \
        gfx/gfx_media_display.o \
        gfx/gfx_media_player.o \
@@ -501,6 +505,12 @@ ifeq ($(HAVE_AUDIOMIXER), 1)
    OBJ += tasks/task_audio_mixer.o \
           $(LIBRETRO_COMM_DIR)/audio/audio_mix.o \
           $(LIBRETRO_COMM_DIR)/audio/audio_mixer.o
+   ifeq ($(HAVE_MENU), 1)
+      OBJ += gfx/gfx_music_visualizer.o gfx/gfx_music_player.o
+      ifneq ($(HAVE_STATIC_AUDIO_FILTERS), 1)
+         OBJ += $(LIBRETRO_COMM_DIR)/audio/dsp_filters/fft/fft.o
+      endif
+   endif
 endif
 
 ifeq ($(HAVE_BSV_MOVIE), 1)
@@ -656,6 +666,9 @@ endif
 ifeq ($(HAVE_RETROSSL), 1)
    HAVE_SSL = 1
    DEFINES += -DHAVE_SSL -DHAVE_RETROSSL
+   ifeq ($(HAVE_SYSTEM_CA), 1)
+      DEFINES += -DHAVE_SYSTEM_CA
+   endif
 else ifeq ($(HAVE_BEARSSL), 1)
    HAVE_SSL = 1
    DEFINES += -DHAVE_SSL -DHAVE_BEARSSL
@@ -1094,6 +1107,7 @@ endif
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
           menu/menu_driver.o \
+          menu/menu_timedate.o \
           menu/menu_media_controls.o \
           gfx/gfx_media_subtitle.o \
           tasks/task_subtitle.o \
@@ -1133,6 +1147,7 @@ ifeq ($(HAVE_GFX_WIDGETS), 1)
 
    OBJ += \
           gfx/widgets/gfx_widget_volume.o \
+          gfx/widgets/gfx_widget_camera_pip.o \
           gfx/widgets/gfx_widget_generic_message.o \
           gfx/widgets/gfx_widget_libretro_message.o \
           gfx/widgets/gfx_widget_progress_message.o \
@@ -1250,7 +1265,6 @@ ifeq ($(TARGET), retroarch_wiiu)
 	   input/drivers_joypad/wiiu_joypad.o \
 	   input/drivers_joypad/wiiu/wpad_driver.o \
 	   input/drivers_joypad/wiiu/kpad_driver.o \
-	   input/drivers_joypad/wiiu/pad_functions.o \
 	   audio/drivers/wiiu_audio.o \
 	   frontend/drivers/platform_wiiu.o
 
@@ -1262,11 +1276,20 @@ ifeq ($(TARGET), retroarch_wiiu)
       endif
 endif
 
-ifeq ($(TARGET), retroarch_switch)
+ifeq ($(HAVE_SWITCH), 1)
    OBJ += gfx/drivers/switch_nx_gfx.o \
           audio/drivers/switch_libnx_audren_audio.o
    ifeq ($(HAVE_OPENGL), 1)
       OBJ += gfx/drivers_context/switch_ctx.o
+   endif
+   ifeq ($(HAVE_VULKAN), 1)
+      OBJ += gfx/drivers_context/switch_vk_ctx.o
+   endif
+   ifeq ($(TARGET), retroarch_switch)
+      ifeq ($(HAVE_DEKO3D), 1)
+         DEFINES += -DHAVE_DEKO3D
+         OBJ += gfx/drivers/deko3d.o
+      endif
    endif
    OBJ += audio/drivers/switch_audio.o \
           input/drivers/switch_input.o \
@@ -1396,6 +1419,7 @@ ifeq ($(HAVE_X11), 1)
    OBJ += input/common/input_x11_common.o \
           input/drivers/x11_input.o \
           gfx/common/x11_common.o \
+          gfx/common/x11_monitors.o \
           gfx/common/xinerama_common.o \
           gfx/display_servers/dispserv_x11.o
 
@@ -1953,6 +1977,12 @@ ifeq ($(HAVE_VULKAN), 1)
    ifeq ($(HAVE_OPENXR), 1)
       OBJ += gfx/common/vulkan_openxr.o
    endif
+   ifeq ($(HAVE_VULKAN_CUSTOM_DRIVER), 1)
+      OBJ += gfx/common/vulkan_custom_driver.o \
+             gfx/common/vulkan_custom_driver_glue.o \
+             gfx/common/vulkan_custom_driver_desktop.o
+      DEFINES += -DHAVE_VULKAN_CUSTOM_DRIVER
+   endif
    NEED_CXX_LINKER = 1
    DEFINES += -DHAVE_VULKAN
    INCLUDE_DIRS += -Igfx/include
@@ -2081,7 +2111,7 @@ ifeq ($(HAVE_MF_AUDIO), 1)
       ifeq ($(HAVE_RTMP), 1)
          ifeq ($(HAVE_RFLV), 1)
             ifneq ($(filter 1,$(HAVE_D3D12) $(HAVE_RECORD_VULKAN)),)
-               OBJ += record/record_stream_gpu.o
+               OBJ += record/record_stream_gpu.o record/record_aac_audio.o
             endif
             ifeq ($(HAVE_D3D12), 1)
                OBJ += record/record_stream_d3d12.o
@@ -2105,6 +2135,7 @@ endif
 ifneq ($(findstring 1, $(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
    INCLUDE_DIRS += -isystemgfx/include/dxsdk
    OBJ += gfx/common/d3dcompiler_common.o \
+          gfx/common/d3d_builtin.o \
           gfx/common/dxgi_common.o
    DEF_FLAGS += -Wno-unknown-pragmas
 endif
@@ -2809,9 +2840,57 @@ endif
 
 
 # Things that depend on network availability
+ifeq ($(HAVE_PYROWAVE), 1)
+   ifneq ($(HAVE_NETWORKING), 1)
+      $(error PyroWave streaming requires networking)
+   endif
+endif
 
 ifeq ($(HAVE_NETWORKING), 1)
    DEFINES += -DHAVE_NETWORKING
+   ifeq ($(HAVE_PYROWAVE), 1)
+      DEFINES += -DHAVE_PYROWAVE -DHAVE_MDNS
+      PYROWAVE_OBJ := $(LIBRETRO_COMM_DIR)/formats/pyrowave/rpyrowave.o \
+         $(LIBRETRO_COMM_DIR)/formats/pyrowave/rpyrowave_image.o \
+         $(LIBRETRO_COMM_DIR)/formats/pyrowave/rpyrowave_gpu.o \
+         $(LIBRETRO_COMM_DIR)/formats/pyrowave/rpyrowave_stream.o \
+         $(LIBRETRO_COMM_DIR)/net/rpyrowave_socket.o \
+         record/record_gpu_queue.o record/record_pyrowave_pcm.o \
+         record/record_pyrowave_clock.o record/record_pyrowave_audio_clock.o \
+         record/record_pyrowave_session.o \
+         record/record_pyrowave_connection.o record/record_pyrowave_dispatch.o
+      PYROWAVE_OBJ += $(LIBRETRO_COMM_DIR)/net/net_mdns.o $(LIBRETRO_COMM_DIR)/net/net_mdns_socket.o record/record_pyrowave_lan.o
+      PYROWAVE_OBJ += record/record_pyrowave_video_link.o
+      ifneq ($(HAVE_RECORD_MEDIACODEC), 1)
+         PYROWAVE_OBJ += record/record_audio_tap.o
+      endif
+      PYROWAVE_OBJ += record/drivers/record_pyrowave.o record/record_pyrowave_receiver.o
+      PYROWAVE_OBJ += record/record_pyrowave_source.o record/record_pyrowave_source_d3d12.o
+      PYROWAVE_OBJ += record/record_pyrowave_source_d3d11.o
+      ifeq ($(HAVE_OPENGLES), 1)
+         ifeq ($(HAVE_OPENGLES3), 1)
+            PYROWAVE_OBJ += record/record_pyrowave_gl.o
+         endif
+      else ifneq ($(filter 1,$(HAVE_OPENGL) $(HAVE_OPENGL_CORE)),)
+         PYROWAVE_OBJ += record/record_pyrowave_gl.o
+      endif
+      ifeq ($(HAVE_OPENGL_CORE), 1)
+         PYROWAVE_OBJ += record/record_pyrowave_source_gl.o
+      endif
+      ifeq ($(HAVE_VULKAN), 1)
+         PYROWAVE_OBJ += record/record_pyrowave_vulkan.o record/record_pyrowave_source_vulkan.o
+      endif
+      ifeq ($(HAVE_D3D12), 1)
+         PYROWAVE_OBJ += record/record_pyrowave_d3d12.o
+      endif
+      ifeq ($(HAVE_D3D11), 1)
+         PYROWAVE_OBJ += record/record_pyrowave_d3d11.o
+      endif
+      ifeq ($(HAVE_METAL), 1)
+         PYROWAVE_OBJ += record/record_pyrowave_metal.o record/record_pyrowave_metal_runtime.o
+      endif
+      OBJ += $(filter-out $(OBJ),$(PYROWAVE_OBJ))
+   endif
    ifeq ($(HAVE_RTMP), 1)
       DEFINES += -DHAVE_RTMP
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_rtmp_chunk.o \

@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 typedef int bool;
+enum { false = 0, true = 1 };
 #define FBO_SCALE_FLAG_VALID 1
 #define RARCH_SCALE_INPUT 1
 #define RARCH_SCALE_VIEWPORT 2

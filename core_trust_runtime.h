@@ -27,13 +27,41 @@ void core_trust_runtime_deinit(void);
 void core_trust_runtime_notify(void);
 
 bool core_trust_runtime_active(void);
-/* The store couldn't be read: changes last for this session only */
+/* No store file to keep changes in, one that couldn't be read, or a
+ * newer RetroArch's: changes last for this session only */
 bool core_trust_runtime_read_only(void);
+/* Read-only because a newer RetroArch saved the store */
+bool core_trust_runtime_newer(void);
+/* Read-only because the store's file couldn't be read */
+bool core_trust_runtime_unreadable(void);
+/* False when inactive, read-only, or from a failed write until one
+ * goes through */
+bool core_trust_runtime_can_save(void);
+/* A message saying the list can't be saved went on screen: a write
+ * that fails later this session says nothing more */
+void core_trust_runtime_cant_save_told(void);
 /* NULL when inactive */
 core_trust_set_t *core_trust_runtime_get(void);
 /* core_trust_apply() and core_trust_always(), then saved */
 bool core_trust_runtime_apply(const struct core_check *c);
+#define CORE_TRUST_SWEEP_WAIT_MAX 8
+/* With the load check, also true when the list is full and c waits on
+ * a sweep of the seed folder and the cores directory, which drops the
+ * hashes no core in either has and none trusted this session (nothing
+ * when either folder doesn't open); at most CORE_TRUST_SWEEP_WAIT_MAX
+ * wait */
 bool core_trust_runtime_always(const struct core_check *c);
+/* The cores directory setting: the sweep keeps the hashes of cores
+ * there too. NULL or empty: the seed folder alone */
+void core_trust_runtime_set_cores_dir(const char *dir);
+/* c is waiting on that sweep, whose end tells the user */
+bool core_trust_runtime_waits(const struct core_check *c);
+/* Untrust: drops the hash of the core at core_path when its record says
+ * the user trusted it, then ends the load check's passes for it. False,
+ * changing nothing, otherwise or when inactive. */
+bool core_trust_runtime_forget(const char *core_path);
+/* core_trust_state_file() on the store; UNCHECKED when inactive */
+enum core_trust_state core_trust_runtime_state(const char *core_path);
 bool core_trust_runtime_checks_on(void);
 /* False, changing nothing, when inactive or read-only */
 bool core_trust_runtime_set_checks(bool on);

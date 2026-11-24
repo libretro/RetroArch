@@ -31,7 +31,8 @@ vulkan_encode_h264_t *vulkan_encode_h264_open(
        !ops->submit.barrier || !ops->submit.reset_query || !ops->submit.begin_query ||
        !ops->submit.end_query || !ops->submit.begin_coding || !ops->submit.control ||
        !ops->submit.encode || !ops->submit.end_coding || !ops->submit.reset_fence ||
-       !ops->submit.submit || !ops->submit.status || !ops->submit.feedback)
+       !ops->submit.submit || !ops->submit.status || !ops->submit.feedback ||
+       !ops->submit.wait)
       return NULL;
    e = (vulkan_encode_h264_t*)calloc(1, sizeof(*e));
    if (!e)
@@ -167,6 +168,14 @@ int vulkan_encode_h264_poll(vulkan_encode_h264_t *e, vulkan_encode_packet_t *pac
    e->borrowed = true;
    *packet = *oldest;
    return VULKAN_ENCODE_OK;
+}
+
+bool vulkan_encode_h264_wait(vulkan_encode_h264_t *e, uint64_t timeout_ns)
+{
+   if (!e || e->failed || e->borrowed || !e->count)
+      return false;
+   return vulkan_encode_h264_submit_wait(&e->transaction[e->fifo[e->head]],
+         timeout_ns);
 }
 
 bool vulkan_encode_h264_release(vulkan_encode_h264_t *e)

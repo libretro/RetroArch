@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <formats/image_narrow.h>
 #include <stddef.h>
 
 #include <boolean.h>
@@ -626,37 +627,10 @@ bool image_texture_realize_rgba(struct texture_image *img)
 
 void image_texture_narrow_10bit(struct texture_image *img)
 {
-   size_t n, i;
-   uint32_t *px;
    if (!img || !img->pix10 || !img->pixels)
       return;
-   px = img->pixels;
-   n  = (size_t)img->width * img->height;
-   /* Narrow packed XRGB2101010 (R[29:20] G[19:10] B[9:0]) to opaque 8-bit
-    * in place, in the order supports_rgba names - so the descriptor is
-    * right as it stands and no caller swizzles after. Matches the >> 2
-    * narrowing used elsewhere. */
-   if (img->supports_rgba)
-   {
-      uint8_t *d = (uint8_t*)px;
-      for (i = 0; i < n; i++, d += 4)
-      {
-         uint32_t p = px[i];
-         d[0] = (uint8_t)(p >> 22);
-         d[1] = (uint8_t)(p >> 12);
-         d[2] = (uint8_t)(p >>  2);
-         d[3] = 0xff;
-      }
-   }
-   else
-      for (i = 0; i < n; i++)
-      {
-         uint32_t p = px[i];
-         px[i] = 0xff000000u
-               | ((p >>  6) & 0xff0000u)
-               | ((p >>  4) & 0x00ff00u)
-               | ((p >>  2) & 0x0000ffu);
-      }
+   image_texture_narrow_10bit_row(img->pixels, img->pixels,
+         (size_t)img->width * img->height, img->supports_rgba);
    img->pix10 = false;
 }
 

@@ -6,10 +6,13 @@
 #include "gfx_thumbnail.h"
 #include <retro_atomic.h>
 
+struct gfx_anim_preview;
+struct gfx_anim_preview_audio_track;
+
 typedef struct gfx_media_rect { int x, y, w, h; } gfx_media_rect_t;
 typedef struct gfx_media_layout
 {
-   gfx_media_rect_t panel, timeline, buttons[8];
+   gfx_media_rect_t panel, timeline, buttons[10];
    int unit;
    unsigned button_count;
 } gfx_media_layout_t;
@@ -34,7 +37,14 @@ typedef struct gfx_media_target
    bool (*step)(void *user, int direction);
    void *settings_user;
    bool (*settings)(void *user);
+   bool (*shaders)(void *user);
+   bool image;
    const char *source_path; /* main thread, immutable session path */
+   const struct gfx_anim_preview_audio_track *audio_tracks;
+   bool (*select_audio)(void *user, int index, int64_t now);
+   bool (*request_audio)(void *user, int index);
+   unsigned audio_track_count;
+   int audio_track_index;
    unsigned directions;
    bool subtitle_tracks;
 } gfx_media_target_t;
@@ -53,8 +63,8 @@ typedef struct gfx_media_controls
    bool visible, row_focus, held, dragging, release_inhibit;
 } gfx_media_controls_t;
 
-/* Numeric-only snapshots cross to a video/render thread. Three bounded
- * slot attempts; a busy producer/consumer keeps its previous frame.
+/* Value snapshots, including bounded text, cross to a video/render thread.
+ * Three bounded slot attempts; a busy producer keeps its previous frame.
  * Single producer and single consumer. Zero-initialize once. Never reset this mailbox while a reader runs. */
 typedef struct gfx_media_view
 {
@@ -64,9 +74,11 @@ typedef struct gfx_media_view
    unsigned focus;
    unsigned seek_seconds;
    unsigned directions;
+   unsigned audio_track_number;
    int hover;
    bool visible, row_focus, dragging, subtitle_tracks;
-   bool settings_preview;
+   bool settings_preview, audio_tracks, shaders, image;
+   char audio_language[64];
 } gfx_media_view_t;
 typedef struct gfx_media_mailbox
 {
@@ -77,6 +89,11 @@ RETRO_BEGIN_DECLS
 
 void gfx_media_controls_publish(const gfx_media_controls_t *c, gfx_media_mailbox_t *m);
 bool gfx_media_controls_consume(gfx_media_mailbox_t *m, gfx_media_view_t *out);
+void gfx_media_controls_audio_target(gfx_media_target_t *target,
+      const struct gfx_anim_preview *session,
+      bool (*select_audio)(void *user, int index, int64_t now),
+      bool (*request_audio)(void *user, int index));
+
 void gfx_media_controls_thumbnail_target(gfx_thumbnail_t *thumbnail, gfx_media_target_t *out);
 
 void gfx_media_controls_reset(gfx_media_controls_t *c);

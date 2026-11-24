@@ -191,6 +191,20 @@ int x509_trust_load_pem_parts(const char *const *parts, const size_t *lens,
 int x509_trust_load_der_parts(const unsigned char *const *parts,
       const size_t *lens, unsigned count);
 
+/**
+ * x509_trust_adopt_pem:
+ * @pem, @len         : A malloc()ed PEM bundle, taken whatever the
+ *                      outcome.
+ *
+ * As x509_trust_load_pem() with no copy: the certificates are decoded in
+ * place and @pem is kept as the store's DER, freed with the store. The
+ * store is replaced only when @pem holds an anchor this code can use;
+ * otherwise the published one stays and @pem is freed.
+ *
+ * Returns: the number of anchors loaded, 0 for none, -1 out of memory.
+ **/
+int x509_trust_adopt_pem(char *pem, size_t len);
+
 void x509_trust_free(void);
 
 /**

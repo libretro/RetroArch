@@ -220,6 +220,7 @@ static INLINE int rthreads_gk_cond_broadcast(gk_cond_t *c)
 #elif defined(__SWITCH__)
 #define USE_SWITCH_THREADS
 #include <switch.h>
+#include <retro_horizon.h>
 #define STACKSIZE (128 * 1024)
 #elif defined(VITA)
 #define USE_VITA_THREADS
@@ -930,6 +931,36 @@ static bool ps2_cond_withdraw(scond_t *cond, struct ps2_cond_waiter *w)
 static Mutex     switch_reap_lock;
 static sthread_t *switch_reap_list;
 
+static retro_atomic_int_t switch_next_core;
+
+/* A core the process may run on other than the creator's, in turn, so
+ * a worker never waits behind the thread that runs the emulator flat
+ * out; -2 (the default core) when there is no other. */
+static int switch_worker_core(void)
+{
+   uint64_t mask = 0;
+   uint32_t rc;
+   int self;
+   int n    = 0;
+   int pick;
+   int i;
+   RETRO_HORIZON_CORE_MASK(rc, mask);
+   if (rc)
+      return -2;
+   RETRO_HORIZON_CURRENT_CORE(self);
+   mask &= ~((uint64_t)1 << self);
+   for (i = 0; i < 64; i++)
+      n += (int)((mask >> i) & 1);
+   if (!n)
+      return -2;
+   pick = (int)((unsigned)retro_atomic_fetch_add_int(
+            &switch_next_core, 1) % (unsigned)n);
+   for (i = 0; i < 64; i++)
+      if (((mask >> i) & 1) && !pick--)
+         return i;
+   return -2;
+}
+
 static void switch_reap(void)
 {
    sthread_t **pp;
@@ -1255,11 +1286,14 @@ static sthread_t *sthread_create_ex(void (*thread_func)(void*),
        * within whatever band the process is allowed; 0x2C is where
        * the main thread runs. Workers inherit the creator's priority,
        * and an explicit rthreads priority maps across 0x1C..0x3F,
-       * falling back to inheriting if the kernel refuses it. libnx
-       * allocates and maps the stack itself, so the thread lands on
-       * the process's default core. */
+       * falling back to inheriting if the kernel refuses it. Equal
+       * priorities do not time-slice on a core, so a worker sharing
+       * the creator's would wait for it to block: it goes to another
+       * core the process may use. libnx allocates and maps the stack
+       * itself. */
       s32 prio = 0x2C;
       Result rc;
+      int core = switch_worker_core();
 
       switch_reap();
       svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
@@ -1267,13 +1301,16 @@ static sthread_t *sthread_create_ex(void (*thread_func)(void*),
       {
          s32 want = 0x3F - ((thread_priority - 1) * (0x3F - 0x1C)) / 99;
          rc       = threadCreate(&thread->t, thread_wrap, data,
-               NULL, stack, want, -2);
+               NULL, stack, want, core);
          if (R_FAILED(rc))
             rc    = threadCreate(&thread->t, thread_wrap, data,
-                  NULL, stack, prio, -2);
+                  NULL, stack, prio, core);
       }
       else
          rc       = threadCreate(&thread->t, thread_wrap, data,
+               NULL, stack, prio, core);
+      if (R_FAILED(rc) && core != -2)
+         rc = threadCreate(&thread->t, thread_wrap, data,
                NULL, stack, prio, -2);
 
       if (R_SUCCEEDED(rc))
@@ -2658,6 +2695,13 @@ void scond_free(scond_t *cond)
 #define SCOND_HAVE_UMWAIT 1
 #endif
 
+/* Core builds can require an iteration-only spin, including when a user
+ * requests a hardware timed-wait mode through the diagnostic environment. */
+#if defined(RTHREADS_SCOND_FIXED_SPIN)
+#undef SCOND_HAVE_MWAITX
+#undef SCOND_HAVE_UMWAIT
+#endif
+
 #if defined(SCOND_HAVE_X86_INTRIN) || defined(SCOND_HAVE_X86_ASM)
 #define SCOND_HAVE_X86 1
 #endif
@@ -2677,6 +2721,7 @@ static void scond_cpuid(unsigned leaf, unsigned sub, unsigned r[4])
 #endif
 }
 
+#if !defined(RTHREADS_SCOND_FIXED_SPIN)
 static INLINE unsigned __int64 scond_tsc(void)
 {
 #if defined(SCOND_HAVE_X86_INTRIN)
@@ -2687,6 +2732,7 @@ static INLINE unsigned __int64 scond_tsc(void)
    return ((unsigned __int64)hi << 32) | lo;
 #endif
 }
+#endif
 
 static INLINE void scond_pause(void)
 {
@@ -2830,7 +2876,7 @@ static void scond_global_resolve(void)
     * measuring against it. */
    scond_g.hires     = false;
    scond_g.tls_timer = TLS_OUT_OF_INDEXES;
-#if !defined(_XBOX) && !defined(__WINRT__) && !(defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+#if !defined(RETRO_DISABLE_HOST_CLOCK) && !defined(_XBOX) && !defined(__WINRT__) && !(defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
    env = getenv("RTHREADS_SCOND_HIRES");
    if (!(env && !strcmp(env, "0")))
    {
@@ -2918,6 +2964,12 @@ static void scond_global_resolve(void)
    scond_g.spin_iters  = cycles / 128u;
    if (!scond_g.spin_iters)
       scond_g.spin_iters = 1;
+#if defined(RTHREADS_SCOND_FIXED_SPIN)
+   if (scond_g.spin != SCOND_SPIN_NONE)
+      scond_g.spin = RTHREADS_SCOND_FIXED_SPIN ? SCOND_SPIN_PAUSE : SCOND_SPIN_NONE;
+   scond_g.spin_iters = RTHREADS_SCOND_FIXED_SPIN;
+   scond_g.spin_cycles = 0;
+#endif
 }
 
 static void scond_global_init(void)
@@ -3030,31 +3082,30 @@ static bool scond_sleep_hires(struct scond_waiter *w, HANDLE timer,
 
 static void scond_wake_one(struct scond_waiter *w)
 {
-   /* copies taken first: the waiter may leave as soon as it sees WOKEN */
-   DWORD  tid   = w->tid;
+   /* Copies taken first: the waiter may leave as soon as it sees WOKEN */
    HANDLE event = w->event;
    int prev     = retro_atomic_fetch_or_int(&w->flags, SCOND_W_WOKEN);
    if (!(prev & SCOND_W_ASLEEP))
       return;   /* still spinning: it sees the flag, no syscall */
    /* A waiter that sleeps on its event - every waiter on the event
     * tier, and bounded ones on the others - is woken through it */
-   if (event)
+   if (!event)
    {
-      SetEvent(event);
-      return;
+      switch (scond_g.sleep)
+      {
+         case SCOND_SLEEP_ALERT:
+            scond_g.alert_tid((HANDLE)(uintptr_t)w->tid);
+            return;
+            break;
+         case SCOND_SLEEP_KEYED:
+            scond_g.release_keyed(scond_g.keyed, w, FALSE, NULL);
+            return;
+         default:
+            break;
+      }
    }
-   switch (scond_g.sleep)
-   {
-      case SCOND_SLEEP_ALERT:
-         scond_g.alert_tid((HANDLE)(uintptr_t)tid);
-         break;
-      case SCOND_SLEEP_KEYED:
-         scond_g.release_keyed(scond_g.keyed, w, FALSE, NULL);
-         break;
-      default:
-         SetEvent(event);
-         break;
-   }
+
+   SetEvent(event);
 }
 
 /* ---- the list ------------------------------------------------------ */
@@ -3500,6 +3551,7 @@ void scond_signal(scond_t *cond)
 }
 
 
+#ifndef RETRO_DISABLE_HOST_CLOCK
 bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
 {
 #if defined(USE_WIN32_THREADS)
@@ -3756,6 +3808,7 @@ bool scond_wait_timeout(scond_t *cond, slock_t *lock, int64_t timeout_us)
    return (pthread_cond_timedwait(&cond->cond, &lock->lock, &now) == 0);
 #endif
 }
+#endif /* RETRO_DISABLE_HOST_CLOCK */
 
 #ifdef HAVE_THREAD_STORAGE
 bool sthread_tls_create(sthread_tls_t *tls)

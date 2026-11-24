@@ -65,8 +65,9 @@ struct http_handle
     * buffers the whole response either way, so unlike the native
     * backend this is not a memory optimisation -- it exists so the
     * two backends honour the same API contract: body on disk,
-    * data == NULL in the callback. */
+    * data == NULL in the callback unless the response was an error. */
    char                 *sink_path;
+   bool                  sink_in_place; /* the caller's staging file */
    /* Set by the fetch callbacks on the thread that started the fetch,
     * after the response; read by the handler, which may be on the
     * task worker. */
@@ -84,6 +85,11 @@ typedef struct http_handle http_handle_t;
 
 /* Watchdog for a task waiting on its fetch, which wakes it. */
 #define HTTP_EMSCRIPTEN_PARK_USEC 1000000
+
+/* What a download's error response hands its callback; see
+ * task_push_http_download_file_with_headers(). */
+#define HTTP_EMSCRIPTEN_ERROR_BODY_MAX 4096
+#define HTTP_EMSCRIPTEN_ERR_WRITE "Download failed: cannot write the file."
 
 /* ------------------------------------------------------------------ */
 /* Header marshalling                                                  */
@@ -278,11 +284,52 @@ task_finished:
       }
       else
       {
+         http_transfer_data_t *resp = http->response;
          bool mute      = ((task_get_flags(task) & RETRO_TASK_FLG_MUTE) > 0);
-         int  status    = http->response->status;
-         task_set_data(task, http->response);
+         bool failed    = false;
+         int  status;
+         /* Written here, past the cancel check.  Only a whole 2xx body
+          * replaces the file; it is written in place only when there
+          * is no file to lose, or it is the caller's staging file.  An
+          * error response keeps the start of its body for the callback,
+          * as the native backend does. */
+         if (http->sink_path)
+         {
+            if (resp->status >= 200 && resp->status <= 299)
+            {
+               const char *body = resp->data ? resp->data : "";
+               if (     http->sink_in_place
+                     || !filestream_write_file_atomic(http->sink_path, body,
+                        (int64_t)resp->len))
+               {
+                  if (!http->sink_in_place && path_is_valid(http->sink_path))
+                     failed = true;
+                  else if (!filestream_write_file(http->sink_path, body,
+                           (int64_t)resp->len))
+                  {
+                     filestream_delete(http->sink_path);
+                     failed = true;
+                  }
+               }
+               free(resp->data);
+               resp->data = NULL;
+               resp->len  = 0;
+            }
+            else if (resp->len > HTTP_EMSCRIPTEN_ERROR_BODY_MAX)
+               resp->len = HTTP_EMSCRIPTEN_ERROR_BODY_MAX;
+            if (failed)
+            {
+               RARCH_ERR("[HTTP] Failed writing %s\n", http->sink_path);
+               resp->status = -1;
+            }
+         }
+         status         = resp->status;
+         task_set_data(task, resp);
          http->response = NULL;
-         if (!mute && status >= 400)
+         if (failed)
+            task_set_error(task, strldup(HTTP_EMSCRIPTEN_ERR_WRITE,
+                  sizeof(HTTP_EMSCRIPTEN_ERR_WRITE)));
+         else if (!mute && status >= 400)
             task_set_error(task, strldup("Download failed.",
                sizeof("Download failed.")));
       }
@@ -351,41 +398,16 @@ static void http_fetch_settle(emscripten_fetch_t *fetch)
       resp->status  = (int)fetch->status;
       resp->headers = http_response_headers(fetch);
 
-      /* fetch->data belongs to the fetch and dies with
-       * emscripten_fetch_close(), so it has to be copied out.  The
-       * old wget2 path handed the callback's buffer straight to the
-       * caller, which worked only because wget2 transferred
-       * ownership; fetch does not. */
-      if (http->sink_path)
+      /* fetch->data is malloc()ed in this heap and freed by
+       * emscripten_fetch_close(), which skips a NULL one: the body is
+       * taken over rather than copied out.  A download's body is
+       * written by the handler, which sees a cancel. */
+      if (fetch->numBytes > 0 && fetch->data)
       {
-         /* Write straight through; the caller gets status and headers
-          * only.  A failed or non-2xx transfer leaves no file behind,
-          * matching the native backend. */
-         if (     fetch->status >= 200 && fetch->status <= 299
-               && fetch->numBytes > 0 && fetch->data)
-         {
-            if (!filestream_write_file(http->sink_path, fetch->data,
-                     (int64_t)fetch->numBytes))
-            {
-               RARCH_ERR("[HTTP] Failed writing %s\n", http->sink_path);
-               resp->status = -1;
-            }
-         }
-         else
-            filestream_delete(http->sink_path);
-      }
-      else if (fetch->numBytes > 0 && fetch->data)
-      {
-         if ((resp->data = (char*)malloc((size_t)fetch->numBytes)))
-         {
-            memcpy(resp->data, fetch->data, (size_t)fetch->numBytes);
-            resp->len = (size_t)fetch->numBytes;
-         }
-         else
-            /* Keep the status and headers so the caller still sees a
-             * coherent, if empty, response. */
-            RARCH_ERR("[HTTP] Out of memory buffering %llu byte response.\n",
-                  (unsigned long long)fetch->numBytes);
+         resp->data      = (char*)fetch->data;
+         resp->len       = (size_t)fetch->numBytes;
+         fetch->data     = NULL;
+         fetch->numBytes = 0;
       }
 
       http->response = resp;
@@ -588,18 +610,25 @@ static void *task_push_webdav_to_destination(const char *url,
       const char *method, const char *dest, bool mute, const char *headers,
       retro_task_callback_t cb, void *user_data)
 {
-   size_t _len;
-   char dest_header[PATH_MAX_LENGTH + 512];
+   void  *t;
+   size_t d_len = strlen(dest);
+   size_t h_len = headers ? strlen(headers) : 0;
+   size_t _len  = STRLEN_CONST("Destination: ");
+   char  *h     = (char*)malloc(_len + d_len + 2 + h_len + 1);
 
-   _len  = strlcpy_lit(dest_header, "Destination: ", sizeof(dest_header));
-   _len += strlcpy(dest_header + _len, dest,   sizeof(dest_header) - _len);
-   _len += strlcpy_lit(dest_header + _len, "\r\n", sizeof(dest_header) - _len);
-
-   if (headers)
-      strlcpy(dest_header + _len, headers, sizeof(dest_header) - _len);
-
-   return task_push_http_transfer_generic(url, method, NULL, 0, NULL,
-         dest_header, mute, NULL, cb, user_data);
+   if (!h)
+      return NULL;
+   memcpy(h, "Destination: ", _len);
+   memcpy(h + _len, dest, d_len);
+   _len      += d_len;
+   h[_len++]  = '\r';
+   h[_len++]  = '\n';
+   memcpy(h + _len, headers ? headers : "", h_len + 1);
+   /* Parsed into the request's own storage */
+   t = task_push_http_transfer_generic(url, method, NULL, 0, NULL,
+         h, mute, NULL, cb, user_data);
+   free(h);
+   return t;
 }
 
 void *task_push_webdav_move(const char *url,
@@ -729,9 +758,9 @@ void *task_push_http_download_file(const char *url, const char *path,
          title, NULL, cb, user_data);
 }
 
-void *task_push_http_download_file_with_headers(const char *url,
+static void *task_push_http_download(const char *url,
       const char *path, bool mute, const char *title, const char *headers,
-      retro_task_callback_t cb, void *user_data)
+      bool in_place, retro_task_callback_t cb, void *user_data)
 {
    retro_task_t  *t;
    http_handle_t *http;
@@ -747,7 +776,26 @@ void *task_push_http_download_file_with_headers(const char *url,
     * settled yet, since its callbacks only run once this function
     * yields to the browser event loop. */
    if ((http = (http_handle_t*)t->state))
-      http->sink_path = strdup(path);
+   {
+      http->sink_path     = strdup(path);
+      http->sink_in_place = in_place;
+   }
 
    return t;
+}
+
+void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   return task_push_http_download(url, path, mute, title, headers,
+         false, cb, user_data);
+}
+
+void *task_push_http_download_staged_file(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data)
+{
+   return task_push_http_download(url, path, mute, title, headers,
+         true, cb, user_data);
 }

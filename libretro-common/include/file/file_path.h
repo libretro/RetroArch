@@ -224,6 +224,38 @@ size_t path_parent_dir(char *s, size_t len);
 char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks);
 
 /**
+ * path_resolve_realpath_weak:
+ * @s                  : input and output buffer for path
+ * @len                : size of buffer
+ *
+ * Resolves @s as std::filesystem::weakly_canonical does: the longest
+ * leading part that exists with its symlinks resolved, the rest (which
+ * need not exist) appended and ".", ".." and repeated separators
+ * resolved by their text.  A relative path is rebased on the current
+ * working dir.  Built in cores as well as RetroArch; it is in
+ * file_path_io.c, on retro_vfs_resolve_path_impl().
+ *
+ * @return @s if successful, NULL otherwise (and on consoles, UWP and Xbox).
+ **/
+char *path_resolve_realpath_weak(char *s, size_t len);
+
+#if !defined(RARCH_CONSOLE) && !defined(_WIN32)
+/**
+ * path_resolve_lexical:
+ * @s                  : input and output buffer for path
+ * @len                : size of buffer
+ *
+ * Resolves ".", ".." and repeated slashes in @s by its text alone,
+ * rebasing a relative path on the current working directory; no
+ * component needs to exist.
+ *
+ * @return @s, or NULL when the result would not fit or a ".." would
+ * climb above the root.
+ **/
+char *path_resolve_lexical(char *s, size_t len);
+#endif
+
+/**
  * path_relative_to:
  * @s                  : buffer to write the relative path to
  * @path               : path to be expressed relatively
@@ -301,7 +333,9 @@ size_t fill_pathname(char *s, const char *in_path,
  * - Calls strlcpy
  *
  **/
+#ifndef RETRO_DISABLE_HOST_CLOCK
 size_t fill_dated_filename(char *s, const char *ext, size_t len);
+#endif
 
 /**
  * fill_str_dated_filename:
@@ -324,7 +358,9 @@ size_t fill_dated_filename(char *s, const char *ext, size_t len);
  *
  * @return Length of the string copied into @s
  **/
+#ifndef RETRO_DISABLE_HOST_CLOCK
 size_t fill_str_dated_filename(char *s, const char *in_str, const char *ext, size_t len);
+#endif
 
 /**
  * find_last_slash:
@@ -731,9 +767,11 @@ bool path_is_empty_directory(const char *dir);
  */
 int64_t path_get_free_space(const char *path);
 
-/* Time format strings with AM-PM designation require special
- * handling due to platform dependence
- * @return Length of the string written to @s
+/* strftime() under the host's LC_TIME, which the first call sets, so
+ * %p and the names come out localized; the result is UTF-8. Allocates
+ * nothing; any thread.
+ * @return Length of the string written to @s, or 0 with @s empty when
+ * it does not fit
  */
 size_t strftime_am_pm(char *s, size_t len, const char* format,
       const void* timeptr);

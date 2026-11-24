@@ -57,9 +57,10 @@ def main():
         section = section.replace('#include "../common/metal_frame.h"', '#include "' + (ROOT / "gfx/common/metal_frame.h").as_posix() + '"')
         driver_header = (ROOT / "gfx/video_driver.h").read_text(encoding="utf-8")
         carrier = driver_header.split("typedef struct video_frame_import\n", 1)[1].split("} video_frame_import_t;", 1)[0]
-        preamble = '#include <formats/video_hw_frame.h>\n#include <formats/image_yuv_blit.h>\n#include <defines/cocoa_defines.h>\n#include <string.h>\n#include <assert.h>\n'
+        preamble = '#include <formats/image.h>\n#include <formats/video_hw_frame.h>\n#include <formats/image_yuv_blit.h>\n#include <defines/cocoa_defines.h>\n#include <string.h>\n#include <assert.h>\n'
         preamble += 'enum video_texture_update' + driver_header.split('enum video_texture_update', 1)[1].split('};', 1)[0] + '};\n'
         preamble += 'typedef struct video_frame_import\n' + carrier + '} video_frame_import_t;\n'
+        preamble += '#define VIDEO_FRAME_IMPORT_IS_CPU' + driver_header.split('#define VIDEO_FRAME_IMPORT_IS_CPU', 1)[1].split('\n', 1)[0] + '\n'
         fixture = HERE / ("mock.m" if args.mock else "native.m")
         text = fixture.read_text(encoding="utf-8").replace("/* SHIPPING_LEASE */", preamble + section)
         if args.native:
@@ -114,6 +115,20 @@ def main():
         else:
             flags += ["-fobjc-arc", "-mmacosx-version-min=10.14"]
             libs = ["-framework", "Foundation", "-framework", "Metal", "-framework", "CoreFoundation", "-framework", "CoreVideo"]
+        # Compile the shipping selector and Texture teardown as Objective-C,
+        # checking actual retained references in MRC (--mock) and ARC (--native).
+        pool = (HERE / "history_pool.m").read_text(encoding="utf-8")
+        fields = source.split("   __unsafe_unretained id<MTLTexture> *_mediaTextures;", 1)[1]
+        fields = "   __unsafe_unretained id<MTLTexture> *_mediaTextures;" + fields.split("   unsigned _stagingNext;", 1)[0]
+        dealloc = source.split("@implementation Texture\n", 1)[1].split("\n@end", 1)[0]
+        selector = source.split("static id<MTLTexture> metal_media_writable(", 1)[1].split("\n}\n", 1)[0]
+        pool = pool.replace("/* POOL_FIELDS */", fields).replace("/* POOL_DEALLOC */", dealloc)
+        pool = pool.replace("/* POOL_SELECTOR */", "static id<MTLTexture> metal_media_writable(" + selector + "\n}\n")
+        pool_unit = tmp / "history_pool.m"
+        pool_unit.write_text(pool, encoding="utf-8")
+        pool_exe = tmp / "history_pool"
+        run([os.environ.get("OBJC", "clang")] + flags + [str(pool_unit), "-o", str(pool_exe)] + libs)
+        run([str(pool_exe)])
         exe = tmp / "lease"
         run([os.environ.get("OBJC", "clang")] + flags + [str(unit), "-o", str(exe)] + libs)
         result = subprocess.run([str(exe)], check=False)

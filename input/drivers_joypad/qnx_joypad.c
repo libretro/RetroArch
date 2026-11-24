@@ -19,6 +19,7 @@
 
 #include "../../tasks/tasks_internal.h"
 #include "../../configuration.h"
+#include "../include/input_pad_view.h"
 
 static const char *qnx_joypad_name(unsigned pad)
 {
@@ -28,75 +29,35 @@ static const char *qnx_joypad_name(unsigned pad)
 /* Gamepads are announced by the input driver as libscreen finds them. */
 static void *qnx_joypad_init(void *data) { return (void*)-1; }
 
-static int32_t qnx_joypad_button(unsigned port, uint16_t joykey)
+/* The view of the controller in @port, as the input driver's last
+ * event for it left it; NULL for none */
+static const input_pad_view_t *qnx_joypad_view(unsigned port)
 {
-   qnx_input_device_t* controller       = NULL;
-   qnx_input_t *qnx                     =
-(qnx_input_t*)input_driver_current_data();
-
+   qnx_input_t *qnx = (qnx_input_t*)input_driver_current_data();
    if (!qnx || port >= DEFAULT_MAX_PADS)
-      return 0;
-
-   controller = (qnx_input_device_t*)&qnx->devices[port];
-
-   if (joykey <= 19)
-      return ((controller->buttons & (1 << joykey)) != 0);
-   return 0;
+      return NULL;
+   return &qnx->devices[port].view;
 }
 
-static int16_t qnx_joypad_axis_state(
-      qnx_input_t *qnx,
-      qnx_input_device_t *controller,
-      unsigned port, uint32_t joyaxis)
+static int32_t qnx_joypad_button(unsigned port, uint16_t joykey)
 {
-   if (AXIS_NEG_GET(joyaxis) < 4)
-   {
-      int16_t val   = 0;
-      int16_t axis  = AXIS_NEG_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-         case 1:
-            val = controller->analog0[axis];
-            break;
-         case 2:
-         case 3:
-            val = controller->analog1[axis - 2];
-            break;
-      }
-      if (val < 0)
-         return val;
-   }
-   else if (AXIS_POS_GET(joyaxis) < 4)
-   {
-      int16_t val   = 0;
-      int16_t axis  = AXIS_POS_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-         case 1:
-            val = controller->analog0[axis];
-            break;
-         case 2:
-         case 3:
-            val = controller->analog1[axis - 2];
-            break;
-      }
-      if (val > 0)
-         return val;
-   }
-   return 0;
+   const input_pad_view_t *v = qnx_joypad_view(port);
+   return v ? input_pad_view_button(v, joykey) : 0;
+}
+
+static void qnx_joypad_get_buttons(unsigned port, input_bits_t *state)
+{
+   const input_pad_view_t *v = qnx_joypad_view(port);
+   if (v)
+      *state = v->buttons;
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t qnx_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   qnx_input_t *qnx               =
-      (qnx_input_t*)input_driver_current_data();
-   qnx_input_device_t* controller = NULL;
-   if (!qnx || port >= DEFAULT_MAX_PADS)
-      return 0;
-   controller                     = (qnx_input_device_t*)&qnx->devices[port];
-   return qnx_joypad_axis_state(qnx, controller, port, joyaxis);
+   const input_pad_view_t *v = qnx_joypad_view(port);
+   return v ? input_pad_view_axis(v, joyaxis) : 0;
 }
 
 static int16_t qnx_joypad_state(
@@ -105,34 +66,8 @@ static int16_t qnx_joypad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   int i;
-   int16_t ret                    = 0;
-   qnx_input_t *qnx               =
-      (qnx_input_t*)input_driver_current_data();
-   qnx_input_device_t* controller = NULL;
-   uint16_t port_idx              = joypad_info->joy_idx;
-
-   if (!qnx || port_idx >= DEFAULT_MAX_PADS)
-      return 0;
-   controller                     = (qnx_input_device_t*)&qnx->devices[port_idx];
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-   {
-      const uint64_t joykey  = joykeys[i];
-      const uint32_t joyaxis = joyaxes[i];
-      if (
-               (uint16_t)joykey != NO_BTN
-            && (joykey <= 19)
-            && ((controller->buttons & (1 << (uint16_t)joykey)) != 0)
-         )
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(qnx_joypad_axis_state(qnx, controller, port_idx, joyaxis))
-             / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
-   }
-
-   return ret;
+   const input_pad_view_t *v = qnx_joypad_view(joypad_info->joy_idx);
+   return v ? input_pad_view_state(v, joypad_info, joykeys, joyaxes) : 0;
 }
 
 static void qnx_joypad_poll(void) { }
@@ -152,7 +87,7 @@ input_device_driver_t qnx_joypad = {
    qnx_joypad_destroy,
    qnx_joypad_button,
    qnx_joypad_state,
-   NULL,
+   qnx_joypad_get_buttons,
    qnx_joypad_axis,
    qnx_joypad_poll,
    NULL, /* set_rumble */
@@ -161,4 +96,9 @@ input_device_driver_t qnx_joypad = {
    NULL, /* get_sensor_input */
    qnx_joypad_name,
    "qnx",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   qnx_joypad_view
 };

@@ -24,6 +24,9 @@ void RARCH_DBG(const char *fmt, ...)  { (void)fmt; }
 static settings_t stub_settings;
 settings_t *config_get_ptr(void) { return &stub_settings; }
 retro_time_t cpu_features_get_time_usec(void) { return 0; }
+retro_perf_tick_t cpu_features_get_perf_counter(void) { return 0; }
+retro_time_t cpu_features_perf_to_usec(retro_perf_tick_t ticks)
+{ (void)ticks; return 0; }
 uint64_t cpu_features_get(void) { return 0; }
 uint32_t runloop_get_flags(void) { return 0; }
 static recording_state_t stub_recording;
@@ -75,18 +78,31 @@ void video_driver_attach_windows(unsigned screens, unsigned restore)
 { (void)screens; (void)restore; }
 void video_driver_cached_frame(void) { }
 void video_driver_cached_frame_retire(void) { }
+void video_driver_close_windows(const video_windows_frame_t *frame,
+      unsigned screens) { (void)frame; (void)screens; }
 void video_driver_hw_context_shared_note(bool shared) { (void)shared; }
 uint32_t video_driver_get_disp_flags(void) { return 0; }
 struct retro_hw_render_callback *video_driver_get_hw_context(void)
 { static struct retro_hw_render_callback cb; return &cb; }
 unsigned video_driver_get_output_dims(void) { return 0; }
 void video_driver_modify_disp_flags(uint32_t set_bits, uint32_t clear_bits) { (void)set_bits; (void)clear_bits; }
+void video_driver_publish_window_bounds(unsigned window, unsigned screens,
+      unsigned edit, unsigned pos, unsigned dims, bool moved)
+{ (void)window; (void)screens; (void)edit; (void)pos; (void)dims; (void)moved; }
+void video_driver_publish_window_focus(unsigned window,
+      unsigned generation, bool focused)
+{ (void)window; (void)generation; (void)focused; }
 void video_driver_publish_window_layout(unsigned window,
       unsigned generation, unsigned display,
       const video_views_layout_t *layout,
       const video_views_map_t *core_map, unsigned core_dims,
       unsigned window_dims)
 { (void)window; (void)generation; (void)display; (void)layout; (void)core_map; (void)core_dims; (void)window_dims; }
+video_views_layout_t *video_driver_lend_window_layout(unsigned window)
+{
+   static video_views_layout_t slot[RETRO_VIDEO_VIEWS_MAX];
+   return (window && window < RETRO_VIDEO_VIEWS_MAX) ? &slot[window] : NULL;
+}
 void video_driver_set_output_dims(unsigned dims) { (void)dims; }
 bool video_driver_test_all_flags(enum display_flags testflag) { (void)testflag; return false; }
 bool video_driver_thread_wrapper_active(void) { return false; }
@@ -106,10 +122,15 @@ bool video_thread_hw_allowed(void) { return false; }
 uint64_t video_thread_swap_count(void) { return 0; }
 uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
 { (void)data; (void)func; return 0; }
+void video_windows_held_saved(video_windows_held_t *held, unsigned w,
+      unsigned pos, unsigned dims, bool moved)
+{ (void)held; (void)w; (void)pos; (void)dims; (void)moved; }
 void video_windows_steps(video_windows_held_t *held,
       const video_windows_frame_t *frame, unsigned *retire,
       unsigned *create)
 { (void)held; (void)frame; *retire = 0; *create = 0; }
+bool video_windows_usable(const gfx_ctx_window_driver_t *windows)
+{ return windows && (!windows->usable || windows->usable()); }
 
 static void stub_glsl_use(void *data, void *shader_data, unsigned index,
       bool set_active)
@@ -153,3 +174,9 @@ void gl_glsl_in_place_begin(void *shader_data, bool flipped,
 void gl_glsl_in_place_end(void *shader_data)
 { (void)shader_data; stub_in_place_ends++; }
 size_t video_driver_set_gpu_api_version_string(const char *str) { (void)str; return 0; }
+
+void gl_glsl_set_viewer_hdr(bool enabled) { (void)enabled; }
+
+struct gl_planar_sample;
+bool gl_glsl_set_media_planar(void *data, const struct gl_planar_sample *sample)
+{ (void)data; (void)sample; return false; }

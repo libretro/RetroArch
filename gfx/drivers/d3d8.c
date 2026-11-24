@@ -2301,7 +2301,14 @@ static bool d3d8_initialize(d3d8_video_t *d3d, const video_info_t *info)
       }
 
 #ifdef HAVE_MENU
-      menu_driver_init(info->is_threaded);
+      /* With threaded video a restore runs on the video thread (the
+       * main thread forwards a nonblock change here), at the same time
+       * as the main thread's own menu_driver_init(): two menu inits
+       * building the settings list at once overran it. The menu is the
+       * main thread's, and the menu textures are managed, so they come
+       * through the reset without one. */
+      if (!info->is_threaded)
+         menu_driver_init(info->is_threaded);
 #endif
    }
 

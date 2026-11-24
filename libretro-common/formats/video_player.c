@@ -27,6 +27,7 @@
 #include <features/features_cpu.h>
 #include <formats/image.h>
 #include <formats/video_player.h>
+#include <formats/image_yuv_blit.h>
 
 /* The worker's queue is lock-free and needs the atomic pointer ops; a
  * build whose atomic backend has none decodes on the polling thread,
@@ -146,6 +147,20 @@ struct video_player
    int32_t loops_left;     /* -1 forever                            */
    enum image_type_enum type;
    uint8_t upload;         /* the job whose frame is shown next     */
+   /* VIDEO_PLAYER_I420: set at start, before any decode is posted, and
+    * read-only while decodes run */
+   bool planar;
+   /* Each job's READY frame's IMAGE_YUV_FLAG_*, published with it as
+    * the job's own fields are */
+   unsigned planar_yuv[2];
+#ifdef VIDEO_PLAYER_WORKER
+   /* Each job owns its retained decoder planes through READY/HELD. */
+   struct texture_planar cpu_planes[2];
+   const uint32_t *cpu_pixels[2];
+   void *cpu_owner[2];
+   void (*cpu_release[2])(void*);
+   bool borrow_pixels;
+#endif
    /* GPU frames, one per job (or [0] decoding in line): written by
     * the side that decodes, as the job's frame is */
    video_hw_frame_t hw[2];
@@ -445,6 +460,15 @@ static void vp_pool_sync(void)
    }
 }
 
+static void vp_cpu_release(video_player_t *p, unsigned slot)
+{
+   if (p->cpu_owner[slot])
+      p->cpu_release[slot](p->cpu_owner[slot]);
+   p->cpu_owner[slot] = NULL;
+   p->cpu_pixels[slot] = NULL;
+   p->cpu_release[slot] = NULL;
+}
+
 /* Worker: one shown frame into job->frame in its final order. false
  * when the playback is over. The job is RUNNING: the stream is the
  * worker's alone. */
@@ -457,7 +481,9 @@ static int vp_job_step(vp_job_t *job)
    int duration_ms      = 0;
    bool native, direct;
    enum video_player_how how;
+   unsigned slot = job == p->job[1] ? 1 : 0;
 
+   vp_cpu_release(p, slot);
    if (job->startup)
    {
       job->gpu = image_transfer_anim_stream_set_hw(stream, type, true);
@@ -495,8 +521,8 @@ static int vp_job_step(vp_job_t *job)
     * order already emitted answers yes. */
    native = image_transfer_anim_stream_set_argb(stream, type,
          job->rgba ? 0 : 1);
-   /* The video streams decode into the slot; APNG and WEBP hand out
-    * their canvas, copied below. */
+   /* Eligible streams decode into the slot. Other animations hand out
+    * a canvas, copied or retained below. */
    direct = image_transfer_anim_stream_set_output_stride(stream, type,
          job->frame, job->stride);
 
@@ -519,7 +545,32 @@ static int vp_job_step(vp_job_t *job)
    }
    job->time_us = vp_frame_time(p, false);
 
-   if (job->fp16)
+   if (p->planar)
+   {
+      const struct texture_planar *planes;
+      /* Packed fallback still comes from a decode into this job's slot. */
+      if (!direct || frame != job->frame)
+         return false;
+      planes = image_transfer_anim_stream_borrowed_planar(stream, type);
+      p->planar_yuv[slot] = image_transfer_anim_stream_planar_yuv(stream, type);
+      if (planes)
+      {
+         if (image_transfer_anim_stream_retain_planar(stream, type,
+                  &p->cpu_owner[slot], &p->cpu_release[slot]))
+            p->cpu_planes[slot] = *planes;
+         else
+         {
+            /* A decoder without immutable storage keeps the packed copy. */
+            if (planes->chroma_step != 1
+                  || planes->strides[1] != planes->strides[2]) return false;
+            image_yuv_420_pack((uint8_t*)job->frame, p->width, p->height,
+                  planes->planes[0], planes->strides[0], planes->planes[1],
+                  planes->planes[2], planes->strides[1], p->width, p->height);
+         }
+      }
+      how = VIDEO_PLAYER_DIRECT;
+   }
+   else if (job->fp16)
    {
       /* half floats only come from a decode into the slot itself */
       if (     !direct || frame != job->frame
@@ -539,10 +590,19 @@ static int vp_job_step(vp_job_t *job)
    }
    else if (job->rgba || native)
    {
-      /* decouples the slot from the canvas the next decode rewrites */
-      vp_copy_frame(job->frame, frame, p->width, p->height,
-            job->stride, p->width, false);
-      how = VIDEO_PLAYER_COPY;
+      if (p->borrow_pixels && image_transfer_anim_stream_retain_pixels(
+               stream, type, &p->cpu_owner[slot], &p->cpu_release[slot]))
+      {
+         p->cpu_pixels[slot] = frame;
+         how = VIDEO_PLAYER_DIRECT;
+      }
+      else
+      {
+         /* Mutable canvases still need independent slot storage. */
+         vp_copy_frame(job->frame, frame, p->width, p->height,
+               job->stride, p->width, false);
+         how = VIDEO_PLAYER_COPY;
+      }
    }
    else
    {
@@ -909,7 +969,9 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
       return VIDEO_PLAYER_PLAYING;
 
    /* READY and not queued: the frame is shown from its slot */
-   fr.pixels      = NULL;
+   fr.planar      = p->planar && p->cpu_owner[p->upload]
+      ? &p->cpu_planes[p->upload] : NULL;
+   fr.pixels      = p->cpu_pixels[p->upload];
    fr.slot        = p->upload;
    fr.width       = p->width;
    fr.height      = p->height;
@@ -918,6 +980,7 @@ static enum video_player_state vp_poll_threaded(video_player_t *p,
    fr.how         = VIDEO_PLAYER_DIRECT;
    fr.native      = true;
    fr.hw          = ju->hw ? &p->hw[p->upload] : NULL;
+   fr.yuv         = (p->planar && !fr.hw) ? p->planar_yuv[p->upload] : 0;
    res            = p->sink.present(p->sink.user, &fr);
    if (res == VIDEO_PLAYER_PRESENT_BUSY)
       return VIDEO_PLAYER_PLAYING;
@@ -1005,6 +1068,7 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
          return VIDEO_PLAYER_PLAYING;
       if (!r)
          goto finished;
+      fr.planar      = NULL;
       fr.pixels      = NULL;
       fr.slot        = 0;
       fr.width       = p->width;
@@ -1013,6 +1077,7 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
       fr.native      = true;
       fr.how         = VIDEO_PLAYER_DIRECT;
       fr.hw          = &p->hw[0];
+      fr.yuv         = 0;
       goto decoded_frame;
    }
 
@@ -1045,13 +1110,23 @@ static enum video_player_state vp_poll_inline(video_player_t *p,
       goto finished;
    }
 
+   fr.planar      = NULL;
    fr.pixels      = NULL;
    fr.slot        = 0;
    fr.width       = p->width;
    fr.height      = p->height;
    fr.duration_ms = duration_ms;
    fr.native      = true;
-   if (p->flags & VIDEO_PLAYER_FP16)
+   fr.yuv         = 0;
+   if (p->planar)
+   {
+      if (!direct || frame != buf)
+         goto ended;
+      fr.how = VIDEO_PLAYER_DIRECT;
+      fr.yuv = image_transfer_anim_stream_planar_yuv(p->stream, p->type);
+      fr.planar = image_transfer_anim_stream_borrowed_planar(p->stream, p->type);
+   }
+   else if (p->flags & VIDEO_PLAYER_FP16)
    {
       if (     !direct || frame != buf
             || !image_transfer_anim_stream_is_fp16(p->stream, p->type))
@@ -1111,7 +1186,8 @@ present_frame:
          return VIDEO_PLAYER_PLAYING;
       return VIDEO_PLAYER_ENDED;
    }
-   p->inline_held = fr.hw && res == VIDEO_PLAYER_PRESENT_QUEUED;
+   p->inline_held = res == VIDEO_PLAYER_PRESENT_QUEUED
+      && (fr.hw || ((fr.pixels || fr.planar) && (p->flags & VIDEO_PLAYER_HOLD_CANVAS)));
    vp_cadence_present(p, fr.time_us);
    vp_schedule(p, fr.duration_ms, now);
    return VIDEO_PLAYER_PLAYING;
@@ -1465,7 +1541,27 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
          return VIDEO_PLAYER_PLAYING;
       p->flags = (p->flags & VIDEO_PLAYER_INLINE) | (hw ? VP_HW
          : ((unsigned)r & (VIDEO_PLAYER_RGBA | VIDEO_PLAYER_FP16)));
+#ifdef VIDEO_PLAYER_WORKER
+      p->borrow_pixels = !hw && threaded
+         && ((unsigned)r & VIDEO_PLAYER_BORROW_PIXELS);
+#endif
+      if (!hw && !threaded && ((unsigned)r & VIDEO_PLAYER_HOLD_CANVAS))
+         p->flags |= VIDEO_PLAYER_HOLD_CANVAS;
+      /* planes need a slot to go to, and are one format or the other */
+      p->planar = !hw && ((unsigned)r & VIDEO_PLAYER_I420)
+         && p->sink.slot_begin;
+      if (p->planar)
+         p->flags &= ~(unsigned)VIDEO_PLAYER_FP16;
       /* told once, before any decode */
+      if (!image_transfer_anim_stream_set_planar(p->stream, p->type,
+               p->planar))
+      {
+         p->flags |= VP_STOPPED;
+         return VIDEO_PLAYER_ENDED;
+      }
+      if (p->planar && ((unsigned)r & VIDEO_PLAYER_BORROW_PLANES))
+         image_transfer_anim_stream_borrow_planar(p->stream, p->type,
+               ((unsigned)r & VIDEO_PLAYER_BORROW_STRIDED) != 0);
       image_transfer_anim_stream_set_want_fp16(p->stream, p->type,
             (p->flags & VIDEO_PLAYER_FP16) ? true : false);
       if (!p->preserve_origin) p->origin_us = now_us;
@@ -1488,6 +1584,8 @@ enum video_player_state video_player_poll(video_player_t *p, int64_t now_us)
       p->flags |= VP_STARTED;
    }
 
+   if (p->inline_held && (p->flags & VIDEO_PLAYER_HOLD_CANVAS))
+      return VIDEO_PLAYER_PLAYING;
    if (p->seek_pending)
    {
       int r = vp_poll_seek(p, now_us);
@@ -1622,6 +1720,8 @@ bool video_player_stop(video_player_t *p)
    if (!p)
       return true;
    p->flags |= VP_STOPPED;
+   if (p->inline_held && (p->flags & VIDEO_PLAYER_HOLD_CANVAS))
+      stopped = false;
 #ifdef VIDEO_PLAYER_WORKER
    retro_atomic_store_release_int(&p->seek_interrupt, 1);
    if (p->job[0])
@@ -1638,7 +1738,8 @@ bool video_player_stop(video_player_t *p)
                continue;
             status = retro_atomic_load_acquire_int(&job->status);
          }
-         if (status == VP_JOB_RUNNING)
+         if (status == VP_JOB_RUNNING
+               || (status == VP_JOB_HELD && p->cpu_owner[i]))
             stopped = false;
       }
    }
@@ -1663,6 +1764,8 @@ void video_player_free(video_player_t *p)
       bool free_now = vp_job_release(p->job[1]);
       if (!vp_job_release(j0))
          free_now = false;
+      vp_cpu_release(p, 0);
+      vp_cpu_release(p, 1);
       /* a GPU frame decoded and never shown goes back */
       for (i = 0; i < 2; i++)
          if (     p->job[i]->hw

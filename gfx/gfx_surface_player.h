@@ -36,6 +36,9 @@ RETRO_BEGIN_DECLS
  * decoded on the GPU are taken, into a surface asked for with no slots
  * in IMAGE_PIXFMT_NV12 (gfx_surface_new_import). */
 #define GFX_SURFACE_PLAYER_GPU (1u << 16)
+/* The consumer retains the decoder until stop succeeds, including a
+ * queued canvas upload, and forwards releases after retirement. */
+#define GFX_SURFACE_PLAYER_HOLD_CANVAS (1u << 17)
 
 typedef struct gfx_surface_player_cbs
 {
@@ -62,6 +65,7 @@ typedef struct gfx_surface_player
    enum image_type_enum type;
    uint32_t hw_output_pixfmt;
    unsigned hw_slot;          /* the player's job a queued GPU frame is */
+   bool hold_canvas;
    bool rgba;
    bool threaded;             /* two slots, decoded on the worker */
    bool hw_confirmed;         /* renderer accepted at least one GPU picture */

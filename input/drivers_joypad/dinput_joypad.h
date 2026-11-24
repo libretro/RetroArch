@@ -38,7 +38,9 @@
 #define __DINPUT_JOYPAD_H
 
 #include <stdint.h>
+#include <string.h>
 #include <boolean.h>
+#include <retro_miscellaneous.h>
 #include <retro_common_api.h>
 #include <retro_atomic.h>
 
@@ -46,6 +48,7 @@
 #include <dinput.h>
 
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 #include "../common/win_pad_ident.h"
 
 /* For DIJOYSTATE2 struct, rgbButtons will always have 128 elements */
@@ -61,6 +64,9 @@ struct dinput_joypad_data
 {
    LPDIRECTINPUTDEVICE8 joypad;
    DIJOYSTATE2          joy_state;
+   /* joy_state as the poll left it, lent to the readers
+    * (input_pad_view.h): 128 buttons, eight axes, four hats */
+   input_pad_view_t     view;
    char                *joy_name;
    char                *joy_friendly_name;
    int32_t              vid;
@@ -167,6 +173,61 @@ void dinput_pad_release(struct dinput_joypad_data *pad);
  * effects were not created. Main thread. */
 void dinput_pad_report_rumble(unsigned port,
       const struct dinput_joypad_data *pad);
+
+/* A hat's POV, hundredths of a degree clockwise from up, as a view's
+ * hat bits (up 1, down 2, left 4, right 8): the four ways and the four
+ * between them; anything else, centred included, holds none */
+static INLINE uint16_t dinput_pov_hat(DWORD pov)
+{
+   switch (pov)
+   {
+      case 0:     return 1;
+      case 4500:  return 1 | 8;
+      case 9000:  return 8;
+      case 13500: return 2 | 8;
+      case 18000: return 2;
+      case 22500: return 2 | 4;
+      case 27000: return 4;
+      case 31500: return 1 | 4;
+      default:    break;
+   }
+   return 0;
+}
+
+/* @pad's view of its joy_state, after the poll has read it */
+static INLINE void dinput_pad_make_view(struct dinput_joypad_data *pad)
+{
+   unsigned i;
+   const DIJOYSTATE2 *js = &pad->joy_state;
+   input_pad_view_t  *v  = &pad->view;
+
+   memset(&v->buttons, 0, sizeof(v->buttons));
+   for (i = 0; i < ARRAY_SIZE_RGB_BUTTONS; i++)
+      if (js->rgbButtons[i])
+         BIT256_SET(v->buttons, i);
+   v->axes[0] = (int16_t)js->lX;
+   v->axes[1] = (int16_t)js->lY;
+   v->axes[2] = (int16_t)js->lZ;
+   v->axes[3] = (int16_t)js->lRx;
+   v->axes[4] = (int16_t)js->lRy;
+   v->axes[5] = (int16_t)js->lRz;
+   v->axes[6] = (int16_t)js->rglSlider[0];
+   v->axes[7] = (int16_t)js->rglSlider[1];
+   v->hats    = 0;
+   for (i = 0; i < 4; i++)
+      v->hats |= (uint16_t)(dinput_pov_hat(js->rgdwPOV[i]) << (i * 4));
+}
+
+/* @pad's state with nothing held: buttons up, axes at 0, hats centred */
+static INLINE void dinput_pad_release_state(struct dinput_joypad_data *pad)
+{
+   unsigned h;
+   memset(&pad->joy_state, 0, sizeof(pad->joy_state));
+   /* zero is a valid POV direction (north): a hat is centred apart */
+   for (h = 0; h < ARRAY_SIZE(pad->joy_state.rgdwPOV); h++)
+      pad->joy_state.rgdwPOV[h] = DINPUT_POV_CENTERED;
+   memset(&pad->view, 0, sizeof(pad->view));
+}
 
 RETRO_END_DECLS
 

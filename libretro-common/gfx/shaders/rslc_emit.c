@@ -6914,9 +6914,16 @@ struct rslc_rm_spec
    uint32_t clone;   /* the function written for it; fid for mask 0 */
 };
 
+struct rslc_rm_colour_call
+{
+   const struct rslc_type *args[8];
+   int32_t offset[2];
+   unsigned bfn, nargs;
+};
+
 struct rslc_rm;
 static uint32_t rslc_rm_helper(struct rslc_rm *r, unsigned bfn, unsigned nargs,
-      const struct rslc_type *sampler);
+      const struct rslc_type *sampler, const struct rslc_node *node);
 
 struct rslc_rm
 {
@@ -6929,6 +6936,8 @@ struct rslc_rm
    uint32_t                  nvars0;    /* vars before cloning */
    bool                      fail;
    bool                      touched;
+   struct rslc_rm_colour_call *colours;
+   unsigned                  ncolours;
 };
 
 /* Whether a read of the frame, of builtin n->a with @nargs arguments,
@@ -6940,12 +6949,29 @@ static bool rslc_rm_supported(const struct rslc_rm *r, const struct rslc_node *n
    const struct rslc_remap *rm   = r->rm;
    const struct rslc_type  *vec4 = rslc_type_basic(r->c, RSLC_TY_VEC,
          sampler->base, 4, 1);
-   bool lin_ok = !rm->linear
+   bool lin_ok = rm->colour || !rm->linear
       || rm->wrap == RSLC_REMAP_WRAP_EDGE || rm->wrap == RSLC_REMAP_WRAP_BORDER;
+   if (rm->planar)
+   {
+      struct rslc_cval level;
+      if (sampler->kind != RSLC_TY_SAMPLER2D || sampler->base != RSLC_BASE_FLOAT
+            || rm->wrap != RSLC_REMAP_WRAP_EDGE) return false;
+      if (n->a == RSLC_BFN_TEXTURE) return nargs == 2 && n->type == vec4;
+      if ((n->a != RSLC_BFN_TEXELFETCH && n->a != RSLC_BFN_TEXTURESIZE)
+            || nargs != (n->a == RSLC_BFN_TEXELFETCH ? 3u : 2u)) return false;
+      memset(&level, 0, sizeof(level));
+      return rslc_const_eval(r->c, rslc_list_item(r->c, n->b, nargs - 1), &level)
+         && level.v[0] == 0;
+   }
+
    if (     sampler->base != RSLC_BASE_FLOAT
          && n->a != RSLC_BFN_TEXELFETCH && n->a != RSLC_BFN_TEXELFETCHOFFSET
          && n->a != RSLC_BFN_TEXTURESIZE)
       return false;
+   if (rm->colour)
+      return nargs <= 8 && sampler->base == RSLC_BASE_FLOAT
+         && (n->type == vec4 || n->a == RSLC_BFN_TEXTURESIZE
+            || n->a == RSLC_BFN_TEXTUREQUERYLOD || n->a == RSLC_BFN_TEXTUREQUERYLEVELS);
    switch (n->a)
    {
       case RSLC_BFN_TEXTURE:
@@ -7054,12 +7080,71 @@ static void rslc_rm_walk(struct rslc_rm *r, uint32_t node, bool apply)
                r->fail = true;
                return;
             }
+            if (r->rm->colour && (n->a == RSLC_BFN_TEXTURESIZE
+                     || n->a == RSLC_BFN_TEXTUREQUERYLOD
+                     || n->a == RSLC_BFN_TEXTUREQUERYLEVELS))
+               return;
+            if (r->rm->colour && !apply
+                  && (n->a == RSLC_BFN_TEXTUREGATHER
+                     || n->a == RSLC_BFN_TEXTUREGATHEROFFSET))
+            {
+               unsigned at, k;
+               struct rslc_cval offset;
+               memset(&offset, 0, sizeof(offset));
+               if (n->a == RSLC_BFN_TEXTUREGATHEROFFSET
+                     && !rslc_const_eval(c, rslc_list_item(c, n->b, 2), &offset))
+               { r->fail = true; return; }
+               for (at = 0; at < r->ncolours; at++)
+               {
+                  struct rslc_rm_colour_call *call = &r->colours[at];
+                  if (call->bfn != n->a || call->nargs != cnt
+                        || call->offset[0] != (int32_t)offset.v[0]
+                        || call->offset[1] != (int32_t)offset.v[1]) continue;
+                  for (k = 0; k < cnt; k++)
+                     if (call->args[k] != rslc_node_at(c,
+                              rslc_list_item(c, n->b, k))->type) break;
+                  if (k == cnt) break;
+               }
+               if (at == r->ncolours)
+               {
+                  struct rslc_rm_colour_call *call;
+                  if (at == 64) { r->fail = true; return; }
+                  call = &r->colours[r->ncolours++];
+                  call->bfn = n->a;
+                  call->nargs = cnt;
+                  call->offset[0] = (int32_t)offset.v[0];
+                  call->offset[1] = (int32_t)offset.v[1];
+                  for (k = 0; k < cnt; k++)
+                     call->args[k] = rslc_node_at(c,
+                           rslc_list_item(c, n->b, k))->type;
+               }
+            }
             r->touched = true;
             for (i = 1; i < cnt; i++)
                rslc_rm_walk(r, rslc_list_item(c, n->b, i), apply);
             if (apply)
             {
-               uint32_t f = rslc_rm_helper(r, n->a, cnt, st);
+               uint32_t f;
+               if (r->rm->colour && n->a != RSLC_BFN_TEXTUREGATHER
+                     && n->a != RSLC_BFN_TEXTUREGATHEROFFSET)
+               {
+                  struct rslc_node original = *n;
+                  uint32_t arg, args;
+                  for (f = 1; f < c->prog.nfuncs; f++)
+                     if (!strcmp(c->prog.funcs[f]->name->str,
+                              "rarch_sample_colour")) break;
+                  if (f == c->prog.nfuncs) { r->fail = true; return; }
+                  arg = rslc_node_new(c, RSLC_OP_BUILTIN, original.type,
+                        original.a, original.b, original.c, original.aux,
+                        original.line);
+                  args = rslc_list_new(c, &arg, 1);
+                  n = rslc_node_at(c, node);
+                  n->op = RSLC_OP_CALL;
+                  n->a = f;
+                  n->b = args;
+                  return;
+               }
+               f = rslc_rm_helper(r, n->a, cnt, st, n);
                if (!f)
                {
                   r->fail = true;
@@ -7287,7 +7372,7 @@ static bool rslc_rm_clone(struct rslc_rm *r, struct rslc_rm_spec *s)
 /* The helper parsed for builtin @bfn with @nargs arguments, the first
  * a @sampler. */
 static uint32_t rslc_rm_helper(struct rslc_rm *r, unsigned bfn, unsigned nargs,
-      const struct rslc_type *sampler)
+      const struct rslc_type *sampler, const struct rslc_node *node)
 {
    struct rslc_ctx  *c = r->c;
    const char       *bn = rslc_bfn_name(bfn);
@@ -7295,14 +7380,38 @@ static uint32_t rslc_rm_helper(struct rslc_rm *r, unsigned bfn, unsigned nargs,
    size_t            len;
    struct rslc_sym  *s;
    uint32_t          i;
-   if (!bn)
-      return 0;
-   len = strlen(bn);
-   if (len > sizeof(name) - 12)
-      return 0;
-   memcpy(name, "rarch_rect_", 11);
-   memcpy(name + 11, bn, len);
-   len += 11;
+   if (r->rm->colour)
+   {
+      struct rslc_cval offset;
+      unsigned at, k;
+      memset(&offset, 0, sizeof(offset));
+      if (bfn == RSLC_BFN_TEXTUREGATHEROFFSET
+            && !rslc_const_eval(c, rslc_list_item(c, node->b, 2), &offset)) return 0;
+      for (at = 0; at < r->ncolours; at++)
+      {
+         const struct rslc_rm_colour_call *call = &r->colours[at];
+         if (call->bfn != bfn || call->nargs != nargs
+               || call->offset[0] != (int32_t)offset.v[0]
+               || call->offset[1] != (int32_t)offset.v[1]) continue;
+         for (k = 0; k < nargs; k++)
+            if (call->args[k] != rslc_node_at(c,
+                     rslc_list_item(c, node->b, k))->type) break;
+         if (k == nargs) break;
+      }
+      if (at == r->ncolours) return 0;
+      /* C89 has no snprintf: 20 characters and ten digits fit */
+      sprintf(name, "rarch_colour_gather_%u", at);
+      len = strlen(name);
+   }
+   else
+   {
+      if (!bn) return 0;
+      len = strlen(bn);
+      if (len > sizeof(name) - 12) return 0;
+      memcpy(name, "rarch_rect_", 11);
+      memcpy(name + 11, bn, len);
+      len += 11;
+   }
    if (!(s = rslc_sym(c, name, len)))
       return 0;
    for (i = 1; i < c->prog.nfuncs; i++)
@@ -7310,7 +7419,14 @@ static uint32_t rslc_rm_helper(struct rslc_rm *r, unsigned bfn, unsigned nargs,
       const struct rslc_func *f = c->prog.funcs[i];
       if (     f->name == s && f->nparams == nargs && f->body
             && f->params[0]->type == sampler)
-         return f->id;
+      {
+         unsigned k;
+         if (!r->rm->colour) return f->id;
+         for (k = 1; k < nargs; k++)
+            if (f->params[k]->type != rslc_node_at(c,
+                     rslc_list_item(c, node->b, k))->type) break;
+         if (k == nargs) return f->id;
+      }
    }
    return 0;
 }
@@ -7458,7 +7574,128 @@ static bool rslc_rm_text_gather(struct rslc_rm *r, struct rslc_pbuf *b,
            "rarch_rect_v2[0], rarch_rect_v3[0]);\n}\n");
 }
 
+/* Typed wrappers preserve the sampling operation itself. The IR walk
+ * only redirects the selected samplers, including function arguments. */
+static bool rslc_rm_colour_type(struct rslc_rm *r, struct rslc_pbuf *b,
+      const struct rslc_type *type)
+{
+   const char *base = type->base == RSLC_BASE_FLOAT ? "float"
+      : type->base == RSLC_BASE_INT ? "int" : "uint";
+   if (type->kind == RSLC_TY_SAMPLER2D)
+      return rslc_rm_text(r, b, "sampler2D");
+   if (type->kind == RSLC_TY_SCALAR) return rslc_rm_text(r, b, base);
+   if (type->kind != RSLC_TY_VEC) return false;
+   return rslc_rm_text(r, b, type->base == RSLC_BASE_FLOAT ? "vec"
+         : type->base == RSLC_BASE_INT ? "ivec" : "uvec")
+      && rslc_pbuf_putu(r->c, b, type->rows);
+}
+
+static bool rslc_rm_colour_args(struct rslc_rm *r, struct rslc_pbuf *b,
+      unsigned count)
+{
+   unsigned k;
+   for (k = 0; k < count; k++)
+      if (!(rslc_rm_text(r, b, k ? ", a" : "a")
+               && rslc_pbuf_putu(r->c, b, k))) return false;
+   return true;
+}
+
+static bool rslc_rm_colour_snippet(struct rslc_rm *r, struct rslc_pbuf *b)
+{
+   unsigned i, k;
+   bool ok = rslc_rm_text(r, b,
+         "#version 450\n"
+         "vec4 rarch_sample_colour(vec4 v) {\n"
+         "if ($R.w == 0.0) return v;\n"
+         "vec3 x = vec3(dot($R.xyz, v.rgb), dot($C.xyz, v.rgb), dot($T.xyz, v.rgb));\n"
+         "return vec4(sign(x) * pow(abs(x), vec3($C.w)), v.a);\n}\n");
+   for (i = 0; ok && i < r->ncolours; i++)
+   {
+      const struct rslc_rm_colour_call *call = &r->colours[i];
+      const char *bn = rslc_bfn_name(call->bfn);
+      unsigned gather_args = call->bfn == RSLC_BFN_TEXTUREGATHEROFFSET ? 3 : 2;
+      char offset[64];
+      /* C89 has no snprintf: two longs and the text fit in 64 */
+      sprintf(offset, ", ivec2(%ld, %ld)",
+            (long)call->offset[0], (long)call->offset[1]);
+      ok = rslc_rm_text(r, b, "vec4 ")
+         && rslc_rm_text(r, b, "rarch_colour_gather_") && rslc_pbuf_putu(r->c, b, i)
+         && rslc_rm_text(r, b, "(");
+      for (k = 0; ok && k < call->nargs; k++)
+         ok = rslc_rm_text(r, b, k ? ", " : "")
+            && rslc_rm_colour_type(r, b, call->args[k])
+            && rslc_rm_text(r, b, " a") && rslc_pbuf_putu(r->c, b, k);
+      ok = ok && rslc_rm_text(r, b, ") {\n");
+      ok = ok && rslc_rm_text(r, b, "if ($R.w == 0.0) {\n");
+      for (k = 0; ok && k < (call->nargs > gather_args ? 4u : 1u); k++)
+      {
+         if (call->nargs > gather_args)
+            ok = rslc_rm_text(r, b, "if (a")
+               && rslc_pbuf_putu(r->c, b, gather_args)
+               && rslc_rm_text(r, b, " == ") && rslc_pbuf_putu(r->c, b, k)
+               && rslc_rm_text(r, b, ") ");
+         ok = ok && rslc_rm_text(r, b, "return ") && rslc_rm_text(r, b, bn)
+            && rslc_rm_text(r, b, "(") && rslc_rm_colour_args(r, b, 2)
+            && (gather_args == 2 || rslc_rm_text(r, b, offset))
+            && rslc_rm_text(r, b, ", ") && rslc_pbuf_putu(r->c, b, k)
+            && rslc_rm_text(r, b, ");\n");
+      }
+      ok = ok && rslc_rm_text(r, b, "}\n");
+      for (k = 0; ok && k < 4; k++)
+         ok = rslc_rm_text(r, b, "vec4 c") && rslc_pbuf_putu(r->c, b, k)
+            && rslc_rm_text(r, b, " = ") && rslc_rm_text(r, b, bn)
+            && rslc_rm_text(r, b, "(") && rslc_rm_colour_args(r, b, 2)
+            && (gather_args == 2 || rslc_rm_text(r, b, offset))
+            && rslc_rm_text(r, b, ", ") && rslc_pbuf_putu(r->c, b, k)
+            && rslc_rm_text(r, b, ");\n");
+      ok = ok && rslc_rm_text(r, b, "vec4 result;\n");
+      for (k = 0; ok && k < 4; k++)
+         ok = rslc_rm_text(r, b, "result[") && rslc_pbuf_putu(r->c, b, k)
+            && rslc_rm_text(r, b, "] = rarch_sample_colour(vec4(c0[")
+            && rslc_pbuf_putu(r->c, b, k) && rslc_rm_text(r, b, "], c1[")
+            && rslc_pbuf_putu(r->c, b, k) && rslc_rm_text(r, b, "], c2[")
+            && rslc_pbuf_putu(r->c, b, k) && rslc_rm_text(r, b, "], c3[")
+            && rslc_pbuf_putu(r->c, b, k) && rslc_rm_text(r, b, "]))[")
+            && (call->nargs > gather_args
+               ? rslc_rm_text(r, b, "a") && rslc_pbuf_putu(r->c, b, gather_args)
+               : rslc_rm_text(r, b, "0")) && rslc_rm_text(r, b, "];\n");
+      ok = ok && rslc_rm_text(r, b, "return result;\n}\n");
+
+   }
+   return ok;
+}
+
 /* The helpers for the pass's sampling, as GLSL. */
+static bool rslc_rm_planar_snippet(struct rslc_rm *r, struct rslc_pbuf *b)
+{
+   return rslc_rm_colour_snippet(r, b) && rslc_rm_text(r, b,
+         "ivec2 rarch_planar_size(sampler2D s) {\n"
+         "ivec2 n=textureSize(s,0);int h=(n.y-1)/2;\n"
+         "if((n.y&3)==0)h=n.y/2-1;return ivec2(n.x,h); }\n"
+         "vec4 rarch_planar_pixel(sampler2D s,ivec2 p) {\n"
+         "ivec2 n=rarch_planar_size(s);p=clamp(p,ivec2(0),n-1);\n"
+         "int ch=(n.y+1)/2;int tag=int(floor(texelFetch(s,ivec2(0,n.y+2*ch),0).r*255.0+.5));\n"
+         "bool full=(tag&1)!=0;bool hd=(tag&2)!=0;\n"
+         "float y=texelFetch(s,p,0).r;\n"
+         "float u=texelFetch(s,ivec2(p.x/2,n.y+p.y/2),0).r-128.0/255.0;\n"
+         "float v=texelFetch(s,ivec2(p.x/2,n.y+ch+p.y/2),0).r-128.0/255.0;\n"
+         "float yy=full?y:(19077.0/16384.0)*y+(-305232.0/16384.0)/255.0;\n"
+         "vec4 k=hd?(full?vec4(25802,-3069,-7670,30402):vec4(29372,-3494,-8731,34610))\n"
+         ":(full?vec4(22970,-5638,-11700,29032):vec4(26149,-6419,-13320,33050));\n"
+         "k=k/16384.0;vec3 rgb=vec3(yy)+vec3(k.x*v,k.y*u+k.z*v,k.w*u);\n"
+         "return vec4(floor(clamp(rgb,0.0,1.0)*255.0+.5)/255.0,1.0); }\n"
+         "vec4 rarch_rect_texelFetch(sampler2D s,ivec2 p,int lod) {return rarch_sample_colour(rarch_planar_pixel(s,p));}\n"
+         "ivec2 rarch_rect_textureSize(sampler2D s,int lod) {return rarch_planar_size(s);}\n"
+         "vec4 rarch_rect_texture(sampler2D s,vec2 uv) {\n"
+         "vec2 q=uv*vec2(rarch_planar_size(s));\n")
+      && rslc_rm_text(r, b, r->rm->linear
+         ? "ivec2 p=ivec2(floor(q-.5));vec2 f=fract(q-.5);\n"
+           "vec4 a=mix(rarch_planar_pixel(s,p),rarch_planar_pixel(s,p+ivec2(1,0)),f.x);\n"
+           "vec4 z=mix(rarch_planar_pixel(s,p+ivec2(0,1)),rarch_planar_pixel(s,p+ivec2(1,1)),f.x);\n"
+           "return rarch_sample_colour(mix(a,z,f.y));}\n"
+         : "return rarch_sample_colour(rarch_planar_pixel(s,ivec2(floor(q))));}\n");
+}
+
 static bool rslc_rm_snippet(struct rslc_rm *r, struct rslc_pbuf *b)
 {
    enum rslc_remap_wrap w = r->rm->wrap;
@@ -7700,6 +7937,7 @@ bool rslc_remap_run(struct rslc_ctx *c)
    bool                     any = false, ok;
 
    c->remap = RSLC_REMAP_UNSUPPORTED;
+   if (rm->planar && rm->colour) return true;
    memset(&r, 0, sizeof(r));
    r.c  = c;
    r.rm = rm;
@@ -7730,6 +7968,8 @@ bool rslc_remap_run(struct rslc_ctx *c)
    if (idx == 1 && base + 48 > RSLC_REMAP_PUSH_LIMIT)
       return true;
 
+   if (rm->colour && !(r.colours = (struct rslc_rm_colour_call*)rslc_arena_zalloc(c,
+               64 * sizeof(*r.colours)))) return false;
    if (!(r.specs = (struct rslc_rm_spec*)rslc_arena_alloc(c,
                RSLC_RM_MAX_SPECS * sizeof(*r.specs))))
       return false;
@@ -7749,7 +7989,8 @@ bool rslc_remap_run(struct rslc_ctx *c)
       return false;
    if (!rslc_pbuf_init(c, &text, 0, 6144))
       return false;
-   ok = rslc_rm_snippet(&r, &text)
+   ok = (rm->planar ? rslc_rm_planar_snippet(&r, &text)
+         : rm->colour ? rslc_rm_colour_snippet(&r, &text) : rslc_rm_snippet(&r, &text))
       && rslc_front_parse(c, (const char*)text.data, text.len);
    rslc_pbuf_free(c, &text);
    if (!ok)

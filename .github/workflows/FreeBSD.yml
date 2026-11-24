@@ -88,7 +88,8 @@ jobs:
               --enable-ffmpeg --enable-pipewire --enable-alsa \
               --enable-pulse --enable-oss
             gmake -j$NCPU clean
-            gmake -j$NCPU info all
+            # Shader data is committed; ordinary builds must not run Python.
+            gmake -j$NCPU info all PYTHON=false
             ./retroarch --version
             # udev input must multiplex with kqueue here, so the binary
             # must not need libepoll-shim's epoll_* at all.

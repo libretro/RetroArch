@@ -109,6 +109,8 @@ static void pixels(int iw, int ih, int ow, int oh, unsigned flip,
             memcpy(&pixel, p, 4);
          if (out_fmt == SCALER_FMT_BGR24)
             conv_argb8888_bgr24(q, &pixel, 1, 1, 3, 4);
+         else if (out_fmt == SCALER_FMT_ABGR8888)
+            conv_argb8888_abgr8888(q, &pixel, 1, 1, 4, 4);
          else if (out_fmt == SCALER_FMT_RGB565)
          {
             uint16_t rgb = (uint16_t)((((pixel >> 19) & 0x1f) << 11)
@@ -224,6 +226,8 @@ static void all_rgb565_values(enum scaler_pix_fmt out_fmt)
    conv_rgb565_argb8888(argb, input, 256, 256, 256 * 4, 256 * 8);
    if (out_fmt == SCALER_FMT_BGR24)
       conv_argb8888_bgr24(expected, argb, 256, 256, 256 * 3, 256 * 4);
+   else if (out_fmt == SCALER_FMT_ABGR8888)
+      conv_argb8888_abgr8888(expected, argb, 256, 256, 256 * 4, 256 * 4);
    else
       memcpy(expected, argb, out_size);
    init(&ctx, SCALER_TYPE_POINT, SCALER_FMT_RGB565, out_fmt,
@@ -286,6 +290,8 @@ static void centres(void)
 int main(int argc, char **argv)
 {
    static const enum scaler_pix_fmt fmts[][2] = {
+      {SCALER_FMT_ARGB8888, SCALER_FMT_ABGR8888},
+      {SCALER_FMT_RGB565, SCALER_FMT_ABGR8888},
       {SCALER_FMT_ARGB8888, SCALER_FMT_ARGB8888},
       {SCALER_FMT_RGB565, SCALER_FMT_BGR24},
       {SCALER_FMT_XRGB2101010, SCALER_FMT_XRGB2101010},
@@ -313,6 +319,14 @@ int main(int argc, char **argv)
       pixels(3840, 2160, 640, 480, 0, SCALER_FMT_BGR24, SCALER_FMT_ARGB8888, 1);
       pixels(3840, 2160, 640, 480, 0, SCALER_FMT_BGR24, SCALER_FMT_RGB565, 1);
       pixels(1920, 1080, 1920, 1079, 0, SCALER_FMT_BGR24, SCALER_FMT_RGB565, 1);
+      /* The Switch software driver's frames: a core's output scaled up
+       * to its ABGR8888 framebuffer */
+      pixels(256, 224, 1280, 720, 0, SCALER_FMT_RGB565, SCALER_FMT_ABGR8888, 1);
+      pixels(256, 224, 1280, 720, 0, SCALER_FMT_ARGB8888, SCALER_FMT_ABGR8888, 1);
+      pixels(320, 240, 960, 720, 0, SCALER_FMT_RGB565, SCALER_FMT_ABGR8888, 1);
+      pixels(640, 480, 960, 720, 0, SCALER_FMT_ARGB8888, SCALER_FMT_ABGR8888, 1);
+      pixels(1280, 720, 1280, 720, 0, SCALER_FMT_RGB565, SCALER_FMT_ABGR8888, 1);
+      pixels(3840, 2160, 640, 480, 0, SCALER_FMT_ARGB8888, SCALER_FMT_ABGR8888, 1);
       return 0;
    }
    for (size = 0; size < sizeof(sizes) / sizeof(sizes[0]); size++)
@@ -324,6 +338,7 @@ int main(int argc, char **argv)
    modes_and_failures();
    all_rgb565_values(SCALER_FMT_ARGB8888);
    all_rgb565_values(SCALER_FMT_BGR24);
-   puts("PASS: point pixels at the nearest centres, pixels/strides, native and converted formats, mode changes, allocation failure and bounds");
+   all_rgb565_values(SCALER_FMT_ABGR8888);
+   puts("PASS: point pixels at the nearest centres, pixels/strides, native and converted formats incl. one-pass ABGR8888, mode changes, allocation failure and bounds");
    return 0;
 }

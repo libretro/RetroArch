@@ -46,7 +46,9 @@ static const struct
    char s_7fc52043[16];
    char s_9509d1c2[19];
    char s_c7a999e6[14];
+   char s_4f4b0d00[8];
    char s_502f623c[7];
+   char s_223dfc81[7];
    char s_5b51050b[5];
    char s_565cbabb[12];
    char s_6322a8fa[16];
@@ -310,6 +312,8 @@ static const struct
    char s_6c1369c6[16];
    char s_4d7e9b13[22];
    char s_69b801ef[11];
+   char s_34a16f69[15];
+   char s_7706edf0[16];
    char s_f5911f43[25];
    char s_ef3d53d8[18];
    char s_730df420[15];
@@ -503,6 +507,8 @@ static const struct
    "Skroluj na gore",
    "Prika\305\276i tastaturu",
    "Prika\305\276i meni",
+   "Ure\304\221aj",
+   "Kamera",
    "Kamera",
    "Opis",
    "Dostignu\304\207a",
@@ -768,6 +774,8 @@ static const struct
    "Razmera prozora",
    "Celobrojno skaliranje",
    "Skaliranje",
+   "Visina prozora",
+   "\305\240irina prozora",
    "Ka\305\241njenje auto-\305\241ejdera",
    "Bilinearni filter",
    "Sinhronizacija",
@@ -962,7 +970,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sr_blob_check[
-      (sizeof(msg_hash_sr_blob) == (12110u
+      (sizeof(msg_hash_sr_blob) == (12156u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -1063,7 +1071,9 @@ static const msg_hash_id_t msg_hash_sr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
@@ -1327,6 +1337,8 @@ static const msg_hash_id_t msg_hash_sr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,

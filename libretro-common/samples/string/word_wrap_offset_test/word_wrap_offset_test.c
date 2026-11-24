@@ -27,6 +27,91 @@ typedef size_t (*wrap_fn)(char *s, size_t len, const char *src,
 
 static unsigned failures = 0;
 
+/* word_wrap_offset() as it walked byte by byte: what the run-wise walk
+ * must still return for every source, wrap and offset */
+static size_t ref_offset(const char *src, size_t at, const char *wrapped,
+      size_t wrapped_len)
+{
+   size_t i = 0;
+   size_t d = 0;
+   while (i < at && d < wrapped_len)
+   {
+      char w = wrapped[d];
+      char c = src[i];
+      if (w == c)
+         i++;
+      else if (w == '\0' || w == '\n')
+      {
+         if (c == ' ' || c == '\n')
+            i++;
+      }
+      else
+         break;
+      d++;
+   }
+   if (i == at && src[i] != ' ' && src[i] != '\n')
+      while (d < wrapped_len && (wrapped[d] == '\0' || wrapped[d] == '\n'))
+         d++;
+   return d;
+}
+
+/* Random sources wrapped, with their wraps changed here and there as a
+ * wrap of other text would be, against the byte-wise walk */
+static void check_runs(wrap_fn wrap, const char *name)
+{
+   static const char *const pieces[] = { "a", "bc", " ", " ", "\n",
+      "\xD7\x90", "\xE4\xB8\xAD", "word", "x" };
+   unsigned seed = 2024;
+   unsigned k;
+   for (k = 0; k < 4000; k++)
+   {
+      char   src[256];
+      char   out[1024];
+      size_t src_len = 0, len, at, m, parts;
+      seed  = seed * 1103515245u + 12345u;
+      parts = 1 + (seed >> 16) % 40;
+      src[0] = '\0';
+      for (m = 0; m < parts; m++)
+      {
+         const char *pc;
+         seed = seed * 1103515245u + 12345u;
+         pc   = pieces[(seed >> 16) % (sizeof(pieces) / sizeof(pieces[0]))];
+         if (src_len + strlen(pc) >= sizeof(src))
+            break;
+         strcpy(src + src_len, pc);
+         src_len += strlen(pc);
+      }
+      seed = seed * 1103515245u + 12345u;
+      if (!(len = wrap(out, sizeof(out), src, src_len,
+                  1 + (int)((seed >> 16) % 12), 2, 0)))
+         continue;
+      if (k & 1)
+         for (m = 0; m < len; m++)
+            if (out[m] == '\n')
+               out[m] = '\0';
+      /* A changed byte, so the walks stop where the wrap differs */
+      if (k % 3 == 0)
+      {
+         seed = seed * 1103515245u + 12345u;
+         out[(seed >> 16) % len] = '#';
+      }
+      for (at = 0; at <= src_len; at++)
+      {
+         size_t got  = word_wrap_offset(src, at, out, len);
+         size_t want = ref_offset(src, at, out, len);
+         if (got != want)
+         {
+            if (failures < 10)
+               fprintf(stderr, "[FAIL] %s: source of %u bytes at %u: %u, "
+                     "the byte-wise walk %u\n", name, (unsigned)src_len,
+                     (unsigned)at, (unsigned)got, (unsigned)want);
+            failures++;
+            break;
+         }
+      }
+   }
+}
+
 static void check_text(wrap_fn wrap, const char *name, const char *src,
       int width, int nul_ends)
 {
@@ -121,6 +206,9 @@ int main(void)
             check_text(word_wrap_wideglyph, "word_wrap_wideglyph",
                   texts[t], width, nul);
          }
+
+   check_runs(word_wrap, "word_wrap");
+   check_runs(word_wrap_wideglyph, "word_wrap_wideglyph");
 
    /* "is" moved to the next line: the caret before it is there */
    {

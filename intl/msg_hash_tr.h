@@ -254,7 +254,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[59];
 #endif
-   char s_4e447c6c[48];
    char s_d9a51d02[17];
    char s_12e77e8f[12];
    char s_da068369[7];
@@ -326,7 +325,9 @@ static const struct
    char s_314539a4[21];
    char s_8fc168f0[10];
    char s_213c44cf[19];
+   char s_4f4b0d00[7];
    char s_502f623c[7];
+   char s_223dfc81[7];
    char s_b6cd2ff0[46];
    char s_40e7aacd[5];
    char s_fe2b08f2[14];
@@ -1125,9 +1126,7 @@ static const struct
    char s_dcbf8b04[27];
    char s_dcbffdfe[22];
    char s_7816d5d5[36];
-   char s_2b1f17e8[30];
    char s_36c3acc7[28];
-   char s_b4c3612a[36];
    char s_f638f238[18];
    char s_f3358a59[31];
    char s_0d7d9688[34];
@@ -1469,6 +1468,7 @@ static const struct
    char s_2324cc29[23];
    char s_0d299e52[7];
    char s_92830f70[31];
+   char s_5502abed[12];
    char s_9ecf53d5[46];
    char s_b67675ad[9];
    char s_3361e11d[47];
@@ -1479,7 +1479,6 @@ static const struct
    char s_a38500d8[6];
    char s_9544161a[8];
    char s_76ac1944[18];
-   char s_ded7e809[34];
    char s_d8820ed7[46];
    char s_4c11d465[23];
    char s_50a04cd9[11];
@@ -1487,8 +1486,6 @@ static const struct
    char s_11121f30[22];
    char s_01badaa0[24];
    char s_6127cc52[31];
-   char s_9d52f73c[12];
-   char s_bc30b87a[19];
    char s_2fd5302f[40];
    char s_2dff21ec[33];
    char s_a2a28187[21];
@@ -1501,6 +1498,7 @@ static const struct
    char s_39b2f935[12];
    char s_f585917a[17];
    char s_2942bc3c[33];
+   char s_3794f2cd[5];
    char s_0a3c5b6b[33];
    char s_c46fdd49[47];
    char s_a2fd58a6[29];
@@ -1550,7 +1548,6 @@ static const struct
    char s_f24476fa[16];
    char s_97d90c67[15];
    char s_6d08238d[6];
-   char s_033bf99f[12];
    char s_8076aea7[21];
    char s_a00583cf[24];
    char s_e8a86d57[11];
@@ -1590,9 +1587,9 @@ static const struct
    char s_094e2bc9[8];
    char s_b71e6907[18];
    char s_d725639f[12];
-   char s_fef383d2[41];
    char s_4707850d[20];
    char s_cbddcf50[18];
+   char s_fc5ea9dc[13];
    char s_9abb40fc[26];
    char s_a9dc9f21[103];
    char s_6c786a36[41];
@@ -1969,6 +1966,8 @@ static const struct
    char s_579c3ea7[28];
    char s_cc7bf1b9[12];
    char s_b300fc03[23];
+   char s_e29ee11f[9];
+   char s_714b59b6[8];
    char s_ccf131c5[27];
    char s_e5124bba[8];
    char s_875bc33e[11];
@@ -2169,6 +2168,8 @@ static const struct
    char s_52e3d6ea[31];
    char s_2c868ae4[6];
    char s_9c535394[6];
+   char s_34a16f69[21];
+   char s_7706edf0[20];
    char s_3253994e[8];
    char s_a9c8430e[22];
    char s_f5911f43[35];
@@ -2819,9 +2820,7 @@ static const struct
    char s_c5a76d72[55];
    char s_c5a7e06c[50];
    char s_37d36d03[64];
-   char s_eadbaf16[58];
    char s_54eaf5f5[42];
-   char s_7de5d198[64];
    char s_3b573ee6[30];
    char s_dc1d6cc7[45];
    char s_aebcb136[165];
@@ -4483,7 +4482,6 @@ static const struct
    "Her \303\207al\304\261\305\237t\304\261rmada \304\260\303\247erik \303\207ekirde\304\237ini Yeni"
    "den Y\303\274kle",
 #endif
-   "Android ba\304\237lant\304\261 kesilmesi ge\303\247ici \303\247\303\266z\303\274m\303\274",
    "Uygulama Simgesi",
    "\304\260\303\247erikler",
    "Ayg\304\261t",
@@ -4555,6 +4553,8 @@ static const struct
    "Paket Tan\304\261mlay\304\261c\304\261",
    "\303\226nbellek",
    "Kameraya \304\260zin Ver",
+   "Ayg\304\261t",
+   "Kamera",
    "Kamera",
    "Ba\305\237ar\304\261lar bu \303\247ekirdekle etkinle\305\237tirilemez",
    "Hile",
@@ -5362,9 +5362,7 @@ static const struct
    "'\303\207ekirdek Y\303\274kle' G\303\266ster",
    "'Disk Y\303\274kle' G\303\266ster",
    "'\303\207evrimi\303\247i G\303\274ncelleyici' G\303\266ster",
-   "'RetroArch \303\207\304\261k\304\261\305\237' G\303\266ster",
    "'Yeniden Ba\305\237lat'\304\261 G\303\266ster",
-   "'RetroArch Yeniden Ba\305\237lat' G\303\266ster",
    "'Kapat\304\261' G\303\266ster",
    "Men\303\274 Alt Etiketlerini G\303\266ster",
    "Tek T\304\261klamal\304\261 Oynatma Listeleri",
@@ -5713,6 +5711,7 @@ static const struct
    "T\303\274m Oynatma Listeleri",
    "Uygula",
    "Ba\304\237da\305\237t\304\261r\304\261lm\304\261\305\237 \303\207ekirdek",
+   "Varsay\304\261lan",
    "L\303\274tfen \303\266nce tek bir oynatma listesi se\303\247in.",
    "&Se\303\247...",
    "Oynatma listesini silmek istiyor musunuz \"%1\"?",
@@ -5723,7 +5722,6 @@ static const struct
    "<Sor>",
    "S\303\274r\303\274m",
    "Dosya silinemedi.",
-   "Dosya yeniden adland\304\261r\304\261lamad\304\261.",
    "Oynatma listesi girdisi g\303\274ncellenirken hata.",
    "Mevcut g\303\266lgelendirici",
    "\303\226zel Tema",
@@ -5731,8 +5729,6 @@ static const struct
    "Oynatma Listesini Sil",
    "Bunu bir daha g\303\266sterme",
    "T\303\274m K\303\274\303\247\303\274k Resimleri \304\260ndir",
-   "T\303\274m Sistem",
-   "Bu Oynatma Listesi",
    "Bir indirme i\305\237lemi zaten devam ediyor.",
    "Ba\305\237ar\304\261l\304\261: %1 Ba\305\237ar\304\261s\304\261z: %2",
    "K\303\274\303\247\303\274k resim indir",
@@ -5745,6 +5741,7 @@ static const struct
    "Dosya bo\305\237.",
    "Dosya yolu bo\305\237.",
    "Dosya okumak i\303\247in a\303\247\304\261lamad\304\261.",
+   "T\303\274r",
    "Dosya yazmak i\303\247in a\303\247\304\261lamad\304\261.",
    "(k\303\274\303\247\303\274k resimleri bulmak i\303\247in kullan\304\261l\304\261r)",
    "Dosya listesi toplan\304\261yor...",
@@ -5795,7 +5792,6 @@ static const struct
    "A\305\237a\304\237\304\261 Ta\305\237\304\261",
    "Yukar\304\261 Ta\305\237\304\261",
    "\304\260sim",
-   "A\304\237 Hatas\304\261",
    "Yeni Oynatma Listesi",
    "Oynatma Listesi Girdisi",
    "\303\207ekirdek:",
@@ -5847,9 +5843,9 @@ static const struct
    "Yukar\304\261",
    "Oynatma Listeleri",
    "Kapak Resmi",
-   "K\303\274\303\247\303\274k resimler ba\305\237ar\304\261yla indirildi.",
    "Ekran G\303\266r\303\274nt\303\274s\303\274",
    "Ekran Ba\305\237l\304\261\304\237\304\261",
+   "\303\207ekirdekler",
    "G\303\274ncelleme ba\305\237ar\304\261s\304\261z.",
    "RetroArch ba\305\237ar\304\261yla g\303\274ncellendi. De\304\237i\305\237ikliklerin etkili olmas"
    "\304\261 i\303\247in l\303\274tfen yeniden ba\305\237lat\304\261n.",
@@ -6229,6 +6225,8 @@ static const struct
    "AA-GG-YYYY SS:DD (\303\226\303\226/\303\226S)",
    "AA-GG SS:DD",
    "AA-GG SS:DD (\303\226\303\226/\303\226S)",
+   "Otomatik",
+   "El \304\260le",
    "Tarih ve Saat G\303\266r\303\274n\303\274m\303\274",
    "YYYY-AA",
    "YYYY-AA-GG",
@@ -6433,6 +6431,8 @@ static const struct
    "D\303\266nen tarama \303\247izgisi taklidi",
    "Yatay",
    "Dikey",
+   "Pencere Y\303\274ksekli\304\237i",
+   "Pencere Geni\305\237li\304\237i",
    "\303\226l\303\247ek",
    "Video G\303\266lgelendirici",
    "Otomatik G\303\266lgelendirici Gecikmesi",
@@ -7510,10 +7510,7 @@ static const struct
    "Ana Men\303\274de 'Disk Y\303\274kle' se\303\247ene\304\237ini g\303\266sterin.",
    "Ana Men\303\274de '\303\207evrimi\303\247i G\303\274ncelleyici' se\303\247ene\304\237ini g\303"
    "\266sterin.",
-   "Ana Men\303\274de 'RetroArch \303\207\304\261k\304\261\305\237' se\303\247ene\304\237ini g\303"
-   "\266sterin.",
    "'Yeniden Ba\305\237lat' se\303\247ene\304\237ini g\303\266sterir.",
-   "Ana Men\303\274de 'RetroArch Yeniden Ba\305\237lat' se\303\247ene\304\237ini g\303\266sterin.",
    "'Kapat' se\303\247ene\304\237ini g\303\266ster.",
    "Men\303\274 \303\266geleri i\303\247in ek bilgileri g\303\266sterin.",
    "Oynatma listesi giri\305\237lerini ba\305\237lat\304\261rken '\303\207al\304\261\305\237t\304"
@@ -9178,7 +9175,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (169142u
+      (sizeof(msg_hash_tr_blob) == (168890u
 #ifdef ANDROID
        + 340u
 #endif
@@ -9788,7 +9785,6 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
@@ -9860,7 +9856,9 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
@@ -10659,9 +10657,7 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
@@ -11003,6 +10999,7 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
@@ -11013,7 +11010,6 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
@@ -11021,8 +11017,6 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
@@ -11035,6 +11029,7 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -11084,7 +11079,6 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -11123,9 +11117,9 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
@@ -11502,6 +11496,8 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,
@@ -11702,6 +11698,8 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
@@ -12352,9 +12350,7 @@ static const msg_hash_id_t msg_hash_tr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,

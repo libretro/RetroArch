@@ -51,7 +51,7 @@ fi
 
 mkdir -p "$cache/archives/partial" "$cache/lists/partial"
 dirs="-o Dir::Cache::Archives=$cache/archives -o Dir::State::Lists=$cache/lists"
-net="-o Acquire::Retries=3 -o Acquire::http::Timeout=30"
+net="-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
 # No package may stop the install to ask a question
 apt="sudo env DEBIAN_FRONTEND=noninteractive apt-get"
 
@@ -59,52 +59,74 @@ saved() {
    # A later plain apt-get install in the job resolves from the same
    # lists, and the cache action runs as the runner's user
    sudo cp -a "$cache/lists/." /var/lib/apt/lists/
-   sudo rm -f /var/lib/apt/lists/.complete
+   sudo rm -f /var/lib/apt/lists/.complete /var/lib/apt/lists/.complete-v2 /var/lib/apt/lists/.main-archive
    sudo chown -R "$(id -u):$(id -g)" "$cache"
 }
 
+# Cached list filenames are tied to the source URI. Restore the mirror
+# choice too, so a cache populated by fallback works on the next fresh VM.
+main=archive.ubuntu.com/ubuntu
+case $(dpkg --print-architecture) in
+   amd64|i386) ;;
+   *) main=ports.ubuntu.com/ubuntu-ports ;;
+esac
+main_archive=0
+use_main_archive() {
+   for f in "${APT_SOURCES_LIST:-/etc/apt/sources.list}" "${APT_SOURCES_DIR:-/etc/apt/sources.list.d}"/*; do
+      [ -f "$f" ] || continue
+      sudo sed -i -e "s#mirror+file:/etc/apt/apt-mirrors.txt#https://$main/#g" \
+         -e "s#http[s]\?://azure\.$main#https://$main#g" "$f"
+   done
+   main_archive=1
+}
+[ ! -f "$cache/lists/.main-archive" ] || use_main_archive
+
 # Warm: everything from the cache
-if [ -f "$cache/lists/.complete" ] \
+if [ -f "$cache/lists/.complete-v2" ] \
       && $apt install -y --no-download $dirs $opts $pkgs; then
    echo "apt-install.sh: installed from the cache."
    saved
    exit 0
 fi
 
+# A source URI change invalidates the old list filenames. Do not combine
+# partial/stale indexes with a successful InRelease fetch and then report
+# ordinary packages as missing. Keep downloaded archives, rebuild the lists.
+refresh_lists() {
+   sudo rm -rf "$cache/lists"
+   mkdir -p "$cache/lists/partial"
+   for refresh_attempt in 1 2 3; do
+      if sudo timeout -k 10 120 apt-get update -y $dirs $upd; then
+         if [ $main_archive = 1 ]; then
+            touch "$cache/lists/.main-archive"
+         fi
+         return 0
+      fi
+      [ $refresh_attempt = 3 ] && return 1
+      echo "apt-get update failed (attempt $refresh_attempt); retrying in 10s"
+      sleep 10
+   done
+}
+
 echo "apt-install.sh: refreshing the cache."
-rm -f "$cache/lists/.complete"
-upd="$net -o Acquire::Languages=none
+upd="$net -o Acquire::Languages=none -o APT::Update::Error-Mode=any
    -o Acquire::IndexTargets::deb::CNF::DefaultEnabled=false"
-for i in 1 2 3; do
-   sudo timeout 120 apt-get update -y $dirs $upd && break
-   [ $i = 3 ] && exit 1
-   echo "apt-get update failed (attempt $i); retrying in 10s"
-   sleep 10
-done
+refresh_lists || exit 1
 
 # Fetch first, under a bound: a download is safe to stop and resumes, an
 # install is not. A mirror that stalls is left for the main archive.
-main=archive.ubuntu.com/ubuntu
-case $(dpkg --print-architecture) in
-   amd64|i386) ;;
-   *) main=ports.ubuntu.com/ubuntu-ports ;;
-esac
 for i in 1 2 3; do
-   sudo timeout 240 apt-get install -y --download-only $dirs $net $opts $pkgs \
+   sudo timeout -k 10 240 apt-get install -y --download-only $dirs $net $opts $pkgs \
       && break
    [ $i = 3 ] && exit 1
    echo "package download failed or stalled (attempt $i); retrying from ${main%%/*}"
-   for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
-      [ -f "$f" ] || continue
-      sudo sed -i -e "s#mirror+file:/etc/apt/apt-mirrors.txt#http://$main/#g" \
-         -e "s#http://azure\.$main#http://$main#g" "$f"
-   done
-   sudo timeout 120 apt-get update -y $dirs $upd || true
+   use_main_archive
+   refresh_lists || exit 1
 done
 
 $apt install -y $dirs $net $opts $pkgs
 # Only what this job installs is kept: the lists, and its own packages
-sudo touch "$cache/lists/.complete"
+sudo touch "$cache/lists/.complete-v2"
 sudo rm -rf "$cache/archives/partial" "$cache/lists/partial"
 saved
 if [ -n "${GITHUB_ENV:-}" ]; then

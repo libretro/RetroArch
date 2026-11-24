@@ -41,7 +41,7 @@
 #include <encodings/utf.h>
 
 #include <string.h>
-#include "d3d_shaders/xmb_plastic_sm3.h"
+#include "d3d_sm3_shaders/effects/xmb_plastic_sm3.h"
 #include <retro_inline.h>
 #include <retro_math.h>
 #include <math.h>
@@ -54,6 +54,7 @@
 #include "../common/d3d9_common.h"
 
 #include "../video_driver.h"
+#include "../video_thread_hw_fence.h"
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -86,7 +87,7 @@
 #include "../../verbosity.h"
 #include "../../retroarch.h"
 
-#include "d3d_shaders/shaders_common.h"
+#include "d3d_sm3_shaders/effects/shaders_common.h"
 
 static const char *stock_hlsl_program = CG(
       void main_vertex
@@ -7015,7 +7016,7 @@ static void d3d9_hlsl_views_draw_pass(d3d9_video_t *d3d,
       (LPDIRECT3DPIXELSHADER9)(d)->views.ps[i])
 #include "../common/d3d9_views.h"
 
-#include "d3d_shaders/bloom_sm3.hlsl.h"
+#include "d3d_sm3_shaders/effects/bloom_sm3.hlsl.h"
 
 static bool d3d9_hlsl_bloom_ps_make(d3d9_video_t *d3d)
 {
@@ -7371,6 +7372,10 @@ static void d3d9_hlsl_hw_context_destroy(d3d9_video_t *d3d)
    d3d9_hlsl_hw_take_texture(d3d, NULL);
    d3d->hw.lost = true;
    hwr          = video_driver_get_hw_context();
+#ifdef HAVE_RUNAHEAD
+   /* Managed states may hold objects of the context about to go */
+   serialization_clear_history();
+#endif
    if (hwr->context_destroy)
       hwr->context_destroy();
 }
@@ -7454,42 +7459,6 @@ static bool d3d9_hlsl_hw_ring_install(void *data, const void *image,
       return false;
    d3d->hw.ring_tex = (LPDIRECT3DTEXTURE9)image;
    return true;
-}
-
-/* One device, one command stream: a frame issued is a frame done */
-static bool d3d9_hlsl_hw_ring_fence_new(void *data, void **fence)
-{
-   HANDLE ev;
-   (void)data;
-   if (!fence || !(ev = CreateEvent(NULL, FALSE, FALSE, NULL)))
-      return false;
-   *fence = (void*)ev;
-   return true;
-}
-
-static void d3d9_hlsl_hw_ring_fence_free(void *data, void *fence)
-{
-   (void)data;
-   if (fence)
-      CloseHandle((HANDLE)fence);
-}
-
-static void d3d9_hlsl_hw_ring_fence_signal(void *data, void *fence)
-{
-   (void)data;
-   if (fence)
-      SetEvent((HANDLE)fence);
-}
-
-static bool d3d9_hlsl_hw_ring_fence_wait(void *data, void *fence,
-      unsigned timeout_us)
-{
-   (void)data;
-   if (!fence)
-      return true;
-   return WaitForSingleObject((HANDLE)fence,
-         timeout_us == HW_RING_WAIT_FOREVER
-         ? INFINITE : (timeout_us + 999) / 1000) == WAIT_OBJECT_0;
 }
 
 static void d3d9_hlsl_hw_init(d3d9_video_t *d3d, const video_info_t *info)
@@ -9769,10 +9738,10 @@ static const video_poke_interface_t d3d9_hlsl_poke_interface = {
    d3d9_hlsl_get_last_present_time,
 #ifdef D3D9_HW_RENDER
    d3d9_hlsl_hw_ring_install,
-   d3d9_hlsl_hw_ring_fence_new,
-   d3d9_hlsl_hw_ring_fence_free,
-   d3d9_hlsl_hw_ring_fence_signal,
-   d3d9_hlsl_hw_ring_fence_wait,
+   hw_fence_issued_new, /* one device, one command stream */
+   hw_fence_issued_free,
+   hw_fence_issued_signal,
+   hw_fence_issued_wait,
 #else
    NULL, /* hw_ring_install */
    NULL, /* hw_ring_fence_new */
@@ -10086,5 +10055,11 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl = {
    NULL, NULL,
 #endif
    NULL,                                     /* bloom_composite */
-   gfx_display_d3d9_hlsl_effect_install
+   gfx_display_d3d9_hlsl_effect_install,
+   NULL,                                     /* media_shader_draw */
+#ifdef D3D9_VIEWS
+   d3d9_hlsl_blur_rect
+#else
+   NULL
+#endif
 };

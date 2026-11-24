@@ -5,6 +5,11 @@
 #undef audio_init_thread
 #undef audio_thread_parked
 #undef command_event
+#ifdef HAVE_PYROWAVE
+void record_pyrowave_receiver_audio_control(bool exiting) { (void)exiting; }
+bool record_pyrowave_receiver_audio_enabled(void) { return false; }
+bool record_pyrowave_receiver_audio_run(void) { return false; }
+#endif
 
 /* These fixtures have no wrapper worker: it is always parked. */
 bool audio_thread_parked(void *data)

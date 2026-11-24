@@ -23,7 +23,7 @@ void ra_dxgi_bridge_hdr_metadata(ra_dxgi_bridge_t *b, float peak) { }
 unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *b, unsigned interval)
 { return 2; }
 int64_t ra_dxgi_bridge_present_time(ra_dxgi_bridge_t *b) { return 0; }
-int ra_dxgi_bridge_immediate(ra_dxgi_bridge_t *b) { return 0; }
+int ra_dxgi_bridge_immediate(ra_dxgi_bridge_t *b, unsigned generation) { return 0; }
 int ra_dxgi_window_flips_fullscreen(HWND window) { return 0; }
 void *ra_dxgi_bridge_device(ra_dxgi_bridge_t *b) { return NULL; }
 uint64_t ra_dxgi_bridge_last_use(ra_dxgi_bridge_t *b, unsigned index)
@@ -83,6 +83,8 @@ struct ra_dxgi_bridge
    int failed;
    BOOL tearing;
    int flips;
+   /* the caller's count of its window's outputs, as flips was asked */
+   unsigned generation;
    int occluded, resized;
    UINT64 sequence, last_use[2];
 };
@@ -279,8 +281,17 @@ static void ra_dxgi_bridge_ask_output(ra_dxgi_bridge_t *b)
    DROP(output);
 }
 
-int ra_dxgi_bridge_immediate(ra_dxgi_bridge_t *b)
-{ return b && !b->failed && b->tearing && b->flips; }
+int ra_dxgi_bridge_immediate(ra_dxgi_bridge_t *b, unsigned generation)
+{
+   if (!b || b->failed || !b->tearing)
+      return 0;
+   if (b->generation != generation)
+   {
+      b->generation = generation;
+      ra_dxgi_bridge_ask_output(b);
+   }
+   return b->flips;
+}
 
 static int ra_dxgi_bridge_color_space(ra_dxgi_bridge_t *b, unsigned format)
 {

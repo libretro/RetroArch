@@ -57,15 +57,74 @@
 #define AES_ARM_NEEDS_TARGET 1
 #define AES_ARM_DISPATCH     1
 #endif
+#elif defined(__arm__) && defined(__ARMEL__) && !defined(_MSC_VER) \
+   && (defined(__ARM_NEON) || defined(__ARM_NEON__)) && !defined(AES_NO_ARM)
+/* 32-bit code on an ARMv8 CPU with the Cryptographic Extension: the
+ * same instructions in AArch32 (Android's armeabi-v7a among others).
+ * GCC's arm_neon.h declares them under a target pragma of its own;
+ * Clang's declares the AES ones only for an ARMv8 baseline and the
+ * 64-bit multiply only for AArch64, so its path spells them out. */
+#if defined(__ARM_FEATURE_CRYPTO) && !defined(__clang__)
+#define AES_HAVE_ARM_PATH 1
+#elif defined(__clang__) && __clang_major__ >= 16
+#define AES_HAVE_ARM_PATH    1
+#define AES_ARM_NEEDS_TARGET 1
+#define AES_ARM_DISPATCH     1
+#define AES_ARM_A32_CLANG    1
+#elif !defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 9
+#define AES_HAVE_ARM_PATH    1
+#define AES_ARM_NEEDS_TARGET 1
+#define AES_ARM_DISPATCH     1
+#endif
 #endif
 
 #if defined(AES_HAVE_ARM_PATH)
 #include <arm_neon.h>
 #include <features/features_cpu.h>
-#if defined(AES_ARM_NEEDS_TARGET)
-#define AES_TARGET_ARM __attribute__((target("+crypto")))
-#else
+#if !defined(AES_ARM_NEEDS_TARGET)
 #define AES_TARGET_ARM
+#elif defined(__aarch64__) || defined(_M_ARM64)
+#define AES_TARGET_ARM __attribute__((target("+crypto")))
+#elif defined(AES_ARM_A32_CLANG)
+#define AES_TARGET_ARM __attribute__((target("armv8-a,aes")))
+#else
+#define AES_TARGET_ARM __attribute__((target("fpu=crypto-neon-fp-armv8")))
+#endif
+
+#if defined(AES_ARM_A32_CLANG)
+/* As clang's arm_neon.h defines them for little-endian ARMv8; 48 is
+ * the builtin's type code for uint8x16_t */
+#define vaeseq_u8(b, k) ((uint8x16_t)__builtin_neon_vaeseq_u8( \
+      (int8x16_t)(b), (int8x16_t)(k), 48))
+#define vaesdq_u8(b, k) ((uint8x16_t)__builtin_neon_vaesdq_u8( \
+      (int8x16_t)(b), (int8x16_t)(k), 48))
+#define vaesmcq_u8(b)   ((uint8x16_t)__builtin_neon_vaesmcq_u8( \
+      (int8x16_t)(b), 48))
+#define vaesimcq_u8(b)  ((uint8x16_t)__builtin_neon_vaesimcq_u8( \
+      (int8x16_t)(b), 48))
+
+/* VMULL.P64, which clang has no AArch32 builtin for */
+AES_TARGET_ARM
+static INLINE uint8x16_t aes_arm_a32_pmull(uint64x1_t a, uint64x1_t b)
+{
+   uint8x16_t r;
+   __asm__("vmull.p64 %q0, %P1, %P2" : "=w"(r) : "w"(a), "w"(b));
+   return r;
+}
+#define AES_ARM_LANE(v, i) ((i) \
+      ? vget_high_u64(vreinterpretq_u64_u8(v)) \
+      : vget_low_u64(vreinterpretq_u64_u8(v)))
+#define AES_ARM_PMULL(a, i, b, j) \
+   aes_arm_a32_pmull(AES_ARM_LANE(a, i), AES_ARM_LANE(b, j))
+#define AES_ARM_PMULL_HI(a, b) AES_ARM_PMULL(a, 1, b, 1)
+#else
+/* The 128-bit carry-less product of 64-bit lane i of a and lane j of
+ * b; _HI of both high lanes */
+#define AES_ARM_PMULL(a, i, b, j) vreinterpretq_u8_p128(vmull_p64( \
+      (poly64_t)vgetq_lane_p64(vreinterpretq_p64_u8(a), i), \
+      (poly64_t)vgetq_lane_p64(vreinterpretq_p64_u8(b), j)))
+#define AES_ARM_PMULL_HI(a, b) vreinterpretq_u8_p128(vmull_high_p64( \
+      vreinterpretq_p64_u8(a), vreinterpretq_p64_u8(b)))
 #endif
 #endif
 
@@ -907,13 +966,23 @@ static void aes_x86_ghash(const struct aes_gcm_ctx *ctx,
 #endif
 
 #if defined(AES_HAVE_ARM_PATH)
+#if defined(AES_ARM_DISPATCH)
+/* -1 not checked yet, else whether the CPU has the instructions.
+ * Threads that check at once all store the same answer, which orders
+ * nothing else: relaxed. */
+static retro_atomic_int_t aes_arm_ok = -1;
+#endif
+
 static int aes_arm_available(void)
 {
 #if defined(AES_ARM_DISPATCH)
-   static int ok = -1;
-   if (ok < 0)
-      ok = (cpu_features_get() & RETRO_SIMD_AES) ? 1 : 0;
-   return ok;
+   int v = retro_atomic_load_relaxed_int(&aes_arm_ok);
+   if (v < 0)
+   {
+      v = (cpu_features_get() & RETRO_SIMD_AES) ? 1 : 0;
+      retro_atomic_store_relaxed_int(&aes_arm_ok, v);
+   }
+   return v;
 #else
    return 1;
 #endif
@@ -1240,12 +1309,10 @@ AES_TARGET_ARM
 static void aes_arm_clmul(uint8x16_t a, uint8x16_t b, uint8x16_t *lo, uint8x16_t *hi)
 {
    const uint8x16_t z = vdupq_n_u8(0);
-   poly64x2_t pa = vreinterpretq_p64_u8(a);
-   poly64x2_t pb = vreinterpretq_p64_u8(b);
-   uint8x16_t t3 = vreinterpretq_u8_p128(vmull_p64((poly64_t)vgetq_lane_p64(pa, 0), (poly64_t)vgetq_lane_p64(pb, 0)));
-   uint8x16_t t4 = vreinterpretq_u8_p128(vmull_p64((poly64_t)vgetq_lane_p64(pa, 0), (poly64_t)vgetq_lane_p64(pb, 1)));
-   uint8x16_t t5 = vreinterpretq_u8_p128(vmull_p64((poly64_t)vgetq_lane_p64(pa, 1), (poly64_t)vgetq_lane_p64(pb, 0)));
-   uint8x16_t t6 = vreinterpretq_u8_p128(vmull_high_p64(pa, pb));
+   uint8x16_t t3 = AES_ARM_PMULL(a, 0, b, 0);
+   uint8x16_t t4 = AES_ARM_PMULL(a, 0, b, 1);
+   uint8x16_t t5 = AES_ARM_PMULL(a, 1, b, 0);
+   uint8x16_t t6 = AES_ARM_PMULL_HI(a, b);
    t4  = veorq_u8(t4, t5);
    *lo = veorq_u8(t3, vextq_u8(z, t4, 8));    /* slli_si128 8 */
    *hi = veorq_u8(t6, vextq_u8(t4, z, 8));    /* srli_si128 8 */
@@ -1335,18 +1402,13 @@ static void aes_arm_ghash(const struct aes_gcm_ctx *ctx,
          {
             uint8x16_t d = vld1q_u8(data + 16 * j);
             uint8x16_t dk;
-            poly64x2_t pd, pp, pdk, ppk;
             d = vrev64q_u8(vextq_u8(d, d, 8));
             if (!j)
                d = veorq_u8(d, y);
             dk  = veorq_u8(d, vextq_u8(d, d, 8));
-            pd  = vreinterpretq_p64_u8(d);
-            pp  = vreinterpretq_p64_u8(hp[7 - j]);
-            pdk = vreinterpretq_p64_u8(dk);
-            ppk = vreinterpretq_p64_u8(hk[7 - j]);
-            lo  = veorq_u8(lo,  vreinterpretq_u8_p128(vmull_p64((poly64_t)vgetq_lane_p64(pd, 0), (poly64_t)vgetq_lane_p64(pp, 0))));
-            hi  = veorq_u8(hi,  vreinterpretq_u8_p128(vmull_high_p64(pd, pp)));
-            mid = veorq_u8(mid, vreinterpretq_u8_p128(vmull_p64((poly64_t)vgetq_lane_p64(pdk, 0), (poly64_t)vgetq_lane_p64(ppk, 0))));
+            lo  = veorq_u8(lo,  AES_ARM_PMULL(d, 0, hp[7 - j], 0));
+            hi  = veorq_u8(hi,  AES_ARM_PMULL_HI(d, hp[7 - j]));
+            mid = veorq_u8(mid, AES_ARM_PMULL(dk, 0, hk[7 - j], 0));
          }
          mid = veorq_u8(mid, veorq_u8(lo, hi));
          lo  = veorq_u8(lo, vextq_u8(z, mid, 8));    /* slli_si128 8 */

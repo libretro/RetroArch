@@ -1,0 +1,81 @@
+{
+  "artifacts": {
+    "modern_alpha_blend.fpo": {
+      "bytes": 256,
+      "program": {
+        "attributes": [
+          "color",
+          "texcoord",
+          "texture"
+        ],
+        "constants": [
+          "bgcolor"
+        ],
+        "instructions": 7,
+        "registers": 2
+      },
+      "sha256": "a4e58e66722e2f8785b5cb30b5715683bec54a0070f7589da7c16ce2a5acae62"
+    },
+    "modern_alpha_blend.vpo": {
+      "bytes": 352,
+      "program": {
+        "attributes": [
+          "color",
+          "position",
+          "texcoord"
+        ],
+        "constants": [
+          "modelViewProj"
+        ],
+        "instructions": 6,
+        "registers": 1
+      },
+      "sha256": "3be8055e6e0213b61c4141ce556522831e4ca8b4d178968fbf26fe336cd09361"
+    },
+    "modern_opaque.fpo": {
+      "bytes": 128,
+      "program": {
+        "attributes": [
+          "texcoord",
+          "texture"
+        ],
+        "constants": [],
+        "instructions": 3,
+        "registers": 2
+      },
+      "sha256": "5649edda501eeba090d24e0156520fd2f34afd3eba14863ef972ab6b8618fb8e"
+    },
+    "modern_opaque.vpo": {
+      "bytes": 352,
+      "program": {
+        "attributes": [
+          "color",
+          "position",
+          "texcoord"
+        ],
+        "constants": [
+          "modelViewProj"
+        ],
+        "instructions": 6,
+        "registers": 1
+      },
+      "sha256": "3be8055e6e0213b61c4141ce556522831e4ca8b4d178968fbf26fe336cd09361"
+    }
+  },
+  "sources": {
+    "modern_alpha_blend.fcg": "7dbc31fc8ae51953f834453df7bf6e84e74b97a42f8138ea69869105084d69b3",
+    "modern_alpha_blend.vcg": "f5d4fa2962f4f4ecd407017f0bf3e10a030674c555ecdf5ce7db83d6d95ce418",
+    "modern_opaque.fcg": "d5e7a6c07e304b7b46da0767c5f84678cb08e8fe3ae825e2fa241fbc885df4b8",
+    "modern_opaque.vcg": "f5d4fa2962f4f4ecd407017f0bf3e10a030674c555ecdf5ce7db83d6d95ce418"
+  },
+  "tools": {
+    "cg_library_sha256": "124c758001dd52bd6ef04db670fe93b2107c7d4c9930eed805b766f30418e8fd",
+    "cg_options": "-O3 -fastmath -fastprecision -unroll count=8 -ifcvt all",
+    "cgcomp_revision": "dd4e8c9be744e3273d665c393fa6d97a87402e2e",
+    "cgcomp_sha256": "c6c8b5da87cb5e9b4d25828a806a93bcb9be592466e0b7030d264abd97e78961",
+    "fragment_profile": "fp40",
+    "note": "Upstream main.cpp argv initialization corrected to memset(argv, 0, numArgs * sizeof(*argv)) for the 64-bit host; built with MinGW-w64 g++ -O2 -std=c++11 -DWIN32.",
+    "vertex_profile": "vp40"
+  },
+  "version": 1
+}

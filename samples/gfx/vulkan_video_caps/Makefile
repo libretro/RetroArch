@@ -42,6 +42,7 @@ $(SESSION): probe.c hevc_session.h hevc_params_test.c $(DECODERS) $(HEVC_DEPS) $
 	$(CC) $(CFLAGS) -DHEVC_SESSION_TEST -o $@ probe.c $(DECODERS) $(LDFLAGS) -lm $(if $(filter .exe,$(EXE)),,-ldl)
 
 AV1_CORE_SOURCES := $(RA)/libretro-common/compat/compat_strl.c \
+      $(RA)/libretro-common/formats/image/image_yuv_blit.c \
       $(RA)/libretro-common/compat/compat_strcasestr.c \
       $(RA)/libretro-common/compat/fopen_utf8.c \
       $(RA)/libretro-common/encodings/encoding_utf.c \
@@ -88,12 +89,12 @@ probe$(EXE): probe.c $(RA)/gfx/common/vulkan_video_caps.h $(VP9_DEPS)
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(if $(filter .exe,$(EXE)),,-ldl)
 
 import_test$(EXE): $(SAMPLED_DEPS) probe.c import_test.h build_import_test.py $(RA)/gfx/drivers/vulkan.c \
-      $(RA)/gfx/common/vulkan_common.c $(RA)/gfx/drivers/vulkan_win32_video.h \
+      $(RA)/gfx/common/vulkan_common.c $(RA)/gfx/common/vulkan_media_pool.h $(RA)/gfx/drivers/vulkan_win32_video.h \
       $(RA)/gfx/common/vulkan_video_import.h $(RA)/gfx/drivers/vulkan_shaders/yuv420_to_rgba8888.comp.inc
 	CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)" python3 build_import_test.py $@
 
 hevc_render_test$(EXE): av1_core_decode.h $(RA)/cores/libretro-media/media_core.c $(AV1_CORE_SOURCES) av1_mp4_decode.h av1_webm_decode.h $(AV1_MP4_SOURCES) $(AV1_PARAMS_DEPS) av1_decode.h $(RA)/gfx/common/vulkan_video_decode_av1.h $(RA)/libretro-common/formats/av1/rav1_hw.c $(SAMPLED_DEPS) probe.c hevc_decode.h vp9_decode.h vp9_mp4_decode.h hevc_render.c hevc_render.h import_test.h \
-      build_import_test.py $(HEVC_DEPS) $(DECODERS) $(RA)/gfx/drivers/vulkan.c \
+      build_import_test.py $(RA)/gfx/common/vulkan_media_pool.h $(HEVC_DEPS) $(DECODERS) $(RA)/gfx/drivers/vulkan.c \
       $(RA)/gfx/drivers/vulkan_win32_video.h \
       h264_decode.h ../d3d11_video_decode/d3d11_video_decode_test_data.h \
       $(RA)/gfx/common/vulkan_common.c $(RA)/gfx/common/vulkan_video_import.h \

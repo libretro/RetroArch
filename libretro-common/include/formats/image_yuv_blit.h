@@ -25,7 +25,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 RETRO_BEGIN_DECLS
 
@@ -116,6 +118,72 @@ void image_yuv_420_to_uyvy(uint8_t *dst, size_t dst_stride,
  *    B = c[0] * Y + c[1] + c[5] * Cb
  * the same matrix the conversions above use. */
 void image_yuv_coefficients(unsigned flags, float c[6]);
+
+/* An 8-bit 4:2:0 frame's planes copied into one packed I420 frame of
+ * @dst_w x @dst_h (IMAGE_PIXFMT_FRAME_SIZE of IMAGE_PIXFMT_I420): Y
+ * rows @dst_w bytes apart, then Cb, then Cr, rows (@dst_w + 1) / 2
+ * apart. @w x @h of it are written, clipped to the frame; @uv_stride
+ * is both chroma planes'. */
+static INLINE void image_yuv_420_pack(uint8_t *dst,
+      unsigned dst_w, unsigned dst_h,
+      const uint8_t *y, unsigned y_stride,
+      const uint8_t *cb, const uint8_t *cr, unsigned uv_stride,
+      unsigned w, unsigned h)
+{
+   unsigned row;
+   unsigned dcw  = (dst_w + 1) >> 1;
+   size_t   csz  = (size_t)dcw * ((dst_h + 1) >> 1);
+   uint8_t *ob   = dst + (size_t)dst_w * dst_h;
+   uint8_t *oc   = ob + csz;
+   unsigned cw, ch;
+   if (w > dst_w)
+      w = dst_w;
+   if (h > dst_h)
+      h = dst_h;
+   cw = (w + 1) >> 1;
+   ch = (h + 1) >> 1;
+   if (y_stride == dst_w && w == dst_w)
+      memcpy(dst, y, (size_t)dst_w * h);
+   else
+      for (row = 0; row < h; row++)
+         memcpy(dst + (size_t)row * dst_w, y + (size_t)row * y_stride, w);
+   for (row = 0; row < ch; row++)
+   {
+      memcpy(ob + (size_t)row * dcw, cb + (size_t)row * uv_stride, cw);
+      memcpy(oc + (size_t)row * dcw, cr + (size_t)row * uv_stride, cw);
+   }
+}
+
+/* Packed 4:2:2 Y0 Cb Y1 Cr (YUYV) rows @src_pitch apart into NV12:
+ * @w x @h luma at @y, rows @w apart, then (@h + 1) / 2 rows of
+ * interleaved CbCr at @uv, also @w apart. A row pair's chroma is
+ * averaged; a lone last row keeps its own. @w is even, as YUYV's
+ * macropixels are. */
+static INLINE void image_yuv_422_to_nv12(uint8_t *y, uint8_t *uv,
+      const uint8_t *src, size_t src_pitch, unsigned w, unsigned h)
+{
+   unsigned row, x;
+   unsigned pairs = w >> 1;
+   for (row = 0; row < h; row += 2)
+   {
+      const uint8_t *s0 = src + (size_t)row * src_pitch;
+      const uint8_t *s1 = row + 1 < h ? s0 + src_pitch : s0;
+      uint8_t       *y0 = y  + (size_t)row * w;
+      uint8_t       *y1 = row + 1 < h ? y0 + w : y0;
+      uint8_t       *c  = uv + (size_t)(row >> 1) * w;
+      for (x = 0; x < pairs; x++)
+      {
+         const uint8_t *a = s0 + 4 * x;
+         const uint8_t *b = s1 + 4 * x;
+         y0[2 * x]     = a[0];
+         y0[2 * x + 1] = a[2];
+         y1[2 * x]     = b[0];
+         y1[2 * x + 1] = b[2];
+         c[2 * x]      = (uint8_t)((a[1] + b[1] + 1) >> 1);
+         c[2 * x + 1]  = (uint8_t)((a[3] + b[3] + 1) >> 1);
+      }
+   }
+}
 
 RETRO_END_DECLS
 

@@ -25,8 +25,10 @@ LC=libretro-common
 INC="-I. -I$LC/include -Ideps -Igfx/include"
 # HAVE_GLSL: the fixture stubs menu_shader_get(); the core only compiles
 # its shader accessors when some shader stack is present.
-DEFS="-DRARCH_INTERNAL -DLIBRETRO_STRL_CHECK_OVERLAP -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_THREADS -DHAVE_COMPANION_WIMP -DHAVE_RPNG -DHAVE_RTGA -DHAVE_GLSL -DCOMPANION_CORE_TESTING"
+DEFS="-DRARCH_INTERNAL -DLIBRETRO_STRL_CHECK_OVERLAP -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_THREADS -DHAVE_COMPANION_WIMP -DHAVE_RPNG -DHAVE_RTGA -DHAVE_GLSL -DCOMPANION_CORE_TESTING -DHAVE_NETWORKING"
 SRCS="ui/companion/companion_core.c \
+      gfx/gfx_thumbnail_results.c \
+      gfx/gfx_thumbnail_match.c \
       ui/companion/companion_thumbs.c \
       ui/companion/companion_dock.c \
       gfx/gfx_anim_preview.c \

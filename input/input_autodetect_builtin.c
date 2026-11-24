@@ -68,8 +68,8 @@ DECL_AXIS(l_y_plus,  +1) \
 DECL_AXIS(l_y_minus, -1) \
 DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
 
 #ifdef WEBOS
 /* Switch Pro on webOS — working physical remap. */
@@ -96,8 +96,8 @@ DECL_AXIS(l_y_plus,  +1) \
 DECL_AXIS(l_y_minus, -1) \
 DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3) \
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3) \
 DECL_MENU(11)
 #endif
 
@@ -124,8 +124,8 @@ DECL_AXIS_EX(l_y_plus,  +1, "Left Thumbstick Y+")  /* SDL_GAMEPAD_AXIS_LEFTY    
 DECL_AXIS_EX(l_y_minus, -1, "Left Thumbstick Y-")  /* SDL_GAMEPAD_AXIS_LEFTY            */ \
 DECL_AXIS_EX(r_x_plus,  +2, "Right Thumbstick X+") /* SDL_GAMEPAD_AXIS_RIGHTX           */ \
 DECL_AXIS_EX(r_x_minus, -2, "Right Thumbstick X-") /* SDL_GAMEPAD_AXIS_RIGHTX           */ \
-DECL_AXIS_EX(r_y_plus,  -3, "Right Thumbstick Y+") /* SDL_GAMEPAD_AXIS_RIGHTY           */ \
-DECL_AXIS_EX(r_y_minus, +3, "Right Thumbstick Y-") /* SDL_GAMEPAD_AXIS_RIGHTY           */ \
+DECL_AXIS_EX(r_y_plus,  +3, "Right Thumbstick Y+") /* SDL_GAMEPAD_AXIS_RIGHTY           */ \
+DECL_AXIS_EX(r_y_minus, -3, "Right Thumbstick Y-") /* SDL_GAMEPAD_AXIS_RIGHTY           */ \
 DECL_MENU_EX(5, "Guide")                           /* SDL_GAMEPAD_BUTTON_GUIDE          */
 
 /* A PS3 controller under SDL's own driver for it (SDL_JOYSTICK_HIDAPI_PS3)
@@ -199,8 +199,8 @@ DECL_AXIS(l_y_plus,  +1) \
 DECL_AXIS(l_y_minus, -1) \
 DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
 
 #define XPERIA_PLAY_DEFAULT_BINDS \
 DECL_BTN_EX(a, 4, "Circle") \
@@ -227,34 +227,6 @@ DECL_AXIS(r_y_minus, +3)
 #endif
 
 #ifdef __QNX__
-#define QNX_DEFAULT_BINDS \
-DECL_BTN(a, 3) \
-DECL_BTN(b, 2 ) \
-DECL_BTN(x, 4 ) \
-DECL_BTN(y, 1 ) \
-DECL_BTN(start, 10) \
-DECL_BTN(select, 9 ) \
-DECL_MENU(13) \
-DECL_BTN(up, 16 ) \
-DECL_BTN(down, 17) \
-DECL_BTN(left, 18 ) \
-DECL_BTN(right, 19 ) \
-DECL_BTN(l, 5 ) \
-DECL_BTN(r, 6 ) \
-DECL_BTN(l2, 7 ) \
-DECL_BTN(r2, 8 ) \
-DECL_BTN(l3, 11 ) \
-DECL_BTN(r3, 12 ) \
-DECL_BTN(enable_hotkey, 0) \
-DECL_AXIS(l_x_plus,  +0) \
-DECL_AXIS(l_x_minus, -0) \
-DECL_AXIS(l_y_plus,  +1) \
-DECL_AXIS(l_y_minus, -1) \
-DECL_AXIS(r_x_plus,  +2) \
-DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
-
 #define QNX_DUALSHOCK_BINDS \
 DECL_BTN(a, 3) \
 DECL_BTN(b, 2 ) \
@@ -280,8 +252,8 @@ DECL_AXIS(l_y_plus,  +1) \
 DECL_AXIS(l_y_minus, -1) \
 DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
 #endif
 
 #define PSPINPUT_DEFAULT_BINDS \
@@ -567,8 +539,8 @@ DECL_AXIS(l_y_plus,  +1) \
 DECL_AXIS(l_y_minus, -1) \
 DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
 
 #define GXINPUT_WIIMOTE_DEFAULT_BINDS \
 DECL_BTN_EX(a, 31, "2") \
@@ -668,8 +640,8 @@ DECL_AXIS(l_y_plus,  +1) \
 DECL_AXIS(l_y_minus, -1) \
 DECL_AXIS(r_x_plus,  +2) \
 DECL_AXIS(r_x_minus, -2) \
-DECL_AXIS(r_y_plus,  -3) \
-DECL_AXIS(r_y_minus, +3)
+DECL_AXIS(r_y_plus,  +3) \
+DECL_AXIS(r_y_minus, -3)
 
 #ifndef _XBOX
 #define XINPUT_DEFAULT_BINDS \
@@ -996,7 +968,6 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("XPERIA Play", "android", XPERIA_PLAY_DEFAULT_BINDS),
 #endif
 #ifdef __QNX__
-   DECL_AUTOCONF_DEVICE("QNX Controller", "qnx", QNX_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("DS4 Controller", "qnx", QNX_DUALSHOCK_BINDS),
 #endif
 #if defined(ORBIS)

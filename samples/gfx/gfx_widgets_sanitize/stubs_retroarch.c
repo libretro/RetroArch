@@ -268,15 +268,24 @@ void gfx_animation_timer_start_widget(float *timer,
       gfx_timer_ctx_entry_t *timer_entry)
 { (void)timer_entry; if (timer) *timer = 0.0f; }
 void gfx_animation_widgets_own(bool worker) { (void)worker; }
+retro_time_t stub_widgets_anim_time;
 void gfx_animation_update_widgets(retro_time_t current_time,
       float ticker_speed, unsigned video_dims)
-{ (void)current_time; (void)ticker_speed; (void)video_dims; }
+{
+   stub_widgets_anim_time = current_time;
+   (void)ticker_speed; (void)video_dims;
+}
 
 /* --- the threaded video worker's widget step and its text handoff,
  *     which no test here drives --- */
 static settings_t s_settings;
 settings_t *config_get_ptr(void) { return &s_settings; }
-retro_time_t cpu_features_get_time_usec(void) { return 0; }
+unsigned stub_clock_reads;
+retro_time_t cpu_features_get_time_usec(void)
+{
+   stub_clock_reads++;
+   return 0;
+}
 void video_thread_status_text(const char *s) { (void)s; }
 bool video_driver_thread_wrapper_active(void) { return false; }
 bool video_thread_run_queued(custom_command_method_t func, void *data)
@@ -302,6 +311,7 @@ STUB_WIDGET(gfx_widget_generic_message);
 STUB_WIDGET(gfx_widget_libretro_message);
 STUB_WIDGET(gfx_widget_progress_message);
 STUB_WIDGET(gfx_widget_load_content_animation);
+STUB_WIDGET(gfx_widget_camera_pip);
 STUB_WIDGET(gfx_widget_achievement_popup);
 STUB_WIDGET(gfx_widget_leaderboard_display);
 STUB_WIDGET(gfx_widget_netplay_chat);

@@ -1,0 +1,6 @@
+*.spv binary
+*.dxil binary
+*.dxbc binary
+*.comp text eol=lf
+*.metal text eol=lf
+*.json text eol=lf

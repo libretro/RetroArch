@@ -9,6 +9,11 @@ typedef struct record_audio_tap record_audio_tap_t;
  * stereo for the call only and returns RECORD_AUDIO_OK/BUSY/ERROR. */
 record_audio_tap_t *record_audio_tap_new(unsigned rate,
       int (*submit)(void *, const int16_t *, size_t, uint64_t), void *context);
+/* Native post-mixer borrow. A pool-owning consumer can convert float input
+ * directly into its lent S16 span, avoiding an intermediate conversion copy.
+ * Data expires when submit returns; callbacks keep the same serialization. */
+record_audio_tap_t *record_audio_tap_new_raw(unsigned rate,
+      int (*submit)(void *, const void *, size_t, bool, uint64_t), void *context);
 unsigned record_audio_tap_rate(const record_audio_tap_t *tap);
 /* Audio driver cold owner under its existing state serialization. begin is
  * once-only. retire requires producer quiescence; disconnected marks failure.

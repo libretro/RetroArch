@@ -26,9 +26,12 @@
 
 #include "../common/switch_defines.h"
 #include "../../frontend/frontend_driver.h"
+#include "../../verbosity.h"
 
 /* TODO/FIXME - global referenced */
 extern bool platform_switch_has_focus;
+extern bool switch_ctx_get_metrics(void *data,
+      enum display_metric_types type, float *value);
 
 void switch_ctx_destroy(void *data)
 {
@@ -50,7 +53,11 @@ static void switch_ctx_get_video_size(void *data,
    {
       default:
       case AppletOperationMode_Handheld:
-         *dims = VIDEO_SCALE_PACK(1280, 720);
+#ifdef __SWITCH2__
+         *dims = VIDEO_SCALE_PACK(1920, 1080);
+#else
+          *dims = VIDEO_SCALE_PACK(1280, 720);
+#endif
          break;
       case AppletOperationMode_Console:
          *dims = VIDEO_SCALE_PACK(1920, 1080);
@@ -68,6 +75,11 @@ static void *switch_ctx_init(void *video_driver)
         EGL_GREEN_SIZE, 8,
         EGL_RED_SIZE, 8,
         EGL_ALPHA_SIZE, 8,
+#if defined(HAVE_OPENGLES3)
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
+#elif defined(HAVE_OPENGLES)
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+#endif
         EGL_NONE};
 #endif
 
@@ -136,8 +148,18 @@ static bool switch_ctx_set_video_mode(void *data,
     /* Create an EGL rendering context */
     static const EGLint contextAttributeList[] =
         {
+#ifdef HAVE_OPENGLES3
+            EGL_CONTEXT_MAJOR_VERSION, 3,
+#else
+            EGL_CONTEXT_CLIENT_VERSION, 2,
+#endif
+            EGL_NONE};
+#ifdef HAVE_OPENGLES3
+    static const EGLint contextAttributeListES2[] =
+        {
             EGL_CONTEXT_CLIENT_VERSION, 2,
             EGL_NONE};
+#endif
 
     switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
     unsigned win_dims         = 0;
@@ -150,7 +172,17 @@ static bool switch_ctx_set_video_mode(void *data,
     if (!egl_create_context(&ctx_nx->egl, contextAttributeList))
     {
         egl_report_error();
+#ifdef HAVE_OPENGLES3
+        /* no ES 3 context: fall back to ES 2 */
+        RARCH_WARN("[EGL] No OpenGL ES 3 context, trying OpenGL ES 2.\n");
+        if (!egl_create_context(&ctx_nx->egl, contextAttributeListES2))
+        {
+            egl_report_error();
+            goto error;
+        }
+#else
         goto error;
+#endif
     }
 #endif
 
@@ -174,7 +206,11 @@ static void switch_ctx_input_driver(void *data,
 {
 }
 
+#ifdef HAVE_OPENGLES
+static enum gfx_ctx_api switch_ctx_get_api(void *data) { return GFX_CTX_OPENGL_ES_API; }
+#else
 static enum gfx_ctx_api switch_ctx_get_api(void *data) { return GFX_CTX_OPENGL_API; }
+#endif
 
 static bool switch_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor)
@@ -182,6 +218,11 @@ static bool switch_ctx_bind_api(void *data,
     if (api == GFX_CTX_OPENGL_API)
         if (egl_bind_api(EGL_OPENGL_API))
             return true;
+#ifdef HAVE_OPENGLES
+    if (api == GFX_CTX_OPENGL_ES_API)
+        if (egl_bind_api(EGL_OPENGL_ES_API))
+            return true;
+#endif
     return false;
 }
 
@@ -215,13 +256,17 @@ static void switch_ctx_bind_hw_render(void *data, bool enable)
 static uint32_t switch_ctx_get_flags(void *data)
 {
    uint32_t flags = 0;
+#ifdef __SWITCH2__
+   switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
+#endif
 
    if (string_is_equal(video_driver_get_ident(), "glcore"))
    {
 #if defined(HAVE_SLANG) && (defined(HAVE_SPIRV_CROSS) || defined(HAVE_RSLC))
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
-#elif defined(HAVE_GLSL)
-      /* No slang to draw through: glcore draws through GLSL */
+#endif
+#ifdef HAVE_GLSL
+      /* GLSL and Slang presets can share the same context. */
       BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
 #endif
    }
@@ -232,10 +277,12 @@ static uint32_t switch_ctx_get_flags(void *data)
 #endif
    }
 
-   /* nvservices gives a process one GL context: a second one, shared
-    * or not, is not usable. The threaded wrapper's ring hands this one
-    * between the threads instead. */
-   BIT32_SET(flags, GFX_CTX_FLAGS_NO_SHARED_CONTEXT);
+#ifdef __SWITCH2__
+   if (ctx_nx && egl_no_shared_context(&ctx_nx->egl))
+#else
+   /* Original Switch nvservices supports only one GL context. */
+#endif
+      BIT32_SET(flags, GFX_CTX_FLAGS_NO_SHARED_CONTEXT);
 
     return flags;
 }
@@ -255,56 +302,6 @@ static float switch_ctx_get_refresh_rate(void *data)
 {
     switch_ctx_data_t *ctx_nx = (switch_ctx_data_t *)data;
     return ctx_nx->refresh_rate;
-}
-
-bool switch_ctx_get_metrics(void *data,
-   enum display_metric_types type, float *value)
-{
-   switch (type)
-   {
-      case DISPLAY_METRIC_DPI:
-         /* FIXME: DPI values should be obtained by querying
-          * the hardware - these hard-coded values are a kludge */
-         switch (appletGetOperationMode())
-         {
-            case AppletOperationMode_Console:
-               /* Docked mode
-                * > Resolution:  1920x1080
-                * > Screen Size: 39 inch
-                *   - Have to make an assumption here. We select
-                *     a 'default' screen size of 39 inches which
-                *     corresponds to the optimal diagonal screen
-                *     size for HD television as reported in:
-                *       "HDTV displays: subjective effects of scanning
-                *       standards and domestic picture sizes,"
-                *       N. E. Tanton and M. A. Stone,
-                *       BBC Research Department Report 1989/09,
-                *       January 1989
-                *     This agrees with the median recorded TV
-                *     size in:
-                *       "A Survey of UK Television Viewing Conditions,"
-                *       Katy C. Noland and Louise H. Truong,
-                *       BBC R&D White Paper WHP 287 January 2015
-                * > DPI:         sqrt((1920 * 1920) + (1080 * 1080)) / 39
-                */
-               *value = 56.48480f;
-               break;
-            case AppletOperationMode_Handheld:
-            default:
-               /* Handheld mode
-                * > Resolution:  1280x720
-                * > Screen size: 6.2 inch
-                * > DPI:         sqrt((1280 * 1280) + (720 * 720)) / 6.2
-                */
-               *value = 236.8717f;
-               break;
-         }
-         return true;
-      default:
-         break;
-   }
-
-   return false;
 }
 
 static bool switch_ctx_create_surface(void *data)

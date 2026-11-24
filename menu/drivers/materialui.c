@@ -178,7 +178,6 @@
 #define MUI_NAV_BAR_NUM_ACTION_TABS 2
 
 #define MUI_BATTERY_PERCENT_MAX_LENGTH 12
-#define MUI_TIMEDATE_MAX_LENGTH        255
 
 /* Maximum number of playlist tabs whose last-selected
  * entry index can be cached in mui->playlist_selection[].
@@ -546,8 +545,9 @@ typedef struct
 {
    int battery_percent_width;
    int timedate_width;
+   /* The clock text timedate_width was measured for; 0 for none */
+   unsigned timedate_gen;
    char battery_percent_str[MUI_BATTERY_PERCENT_MAX_LENGTH];
-   char timedate_str[MUI_TIMEDATE_MAX_LENGTH];
 } materialui_sys_bar_cache_t;
 
 /* This structure holds all runtime parameters
@@ -653,6 +653,7 @@ typedef struct materialui_handle
    struct
    {
       gfx_thumbnail_t savestate;   /* uintptr_t alignment */
+      gfx_thumbnail_t camera;      /* Settings > Camera > Preview */
    } thumbnails;
 
    size_t (*word_wrap)(
@@ -785,7 +786,9 @@ typedef struct materialui_handle
       unsigned columns;
       unsigned wideglyph_width;
       int line_count;
+      int rule_line; /* where the heading's rule goes; 0 for none */
       int longest_width;
+      bool heading;
       char text[MENU_LABEL_MAX_LENGTH];
       char wrapped[MENU_LABEL_MAX_LENGTH];
    } box_wrap;
@@ -2823,6 +2826,20 @@ static void materialui_draw_thumbnail(
    }
 }
 
+/* The message box's height with n lines of text; with buttons, their
+ * row and stack_h of buttons stacked under it */
+static int materialui_messagebox_h(const materialui_handle_t *mui, int n,
+      bool buttons, int stack_h)
+{
+   int h  = mui->font_data.list.line_height * n + mui->margin * 4.0;
+   if (buttons)
+   {
+      h  += (mui->font_data.list.line_height + mui->margin) * 2;
+      h  += stack_h;
+   }
+   return h;
+}
+
 static void materialui_render_messagebox(
       materialui_handle_t *mui,
       gfx_display_t *p_disp,
@@ -2846,7 +2863,8 @@ static void materialui_render_messagebox(
    int slice_y                = 0;
    int slice_w                = 0;
    int slice_h                = 0;
-   bool draw_selection = draw_caret && input_driver_keyboard_line_selected();
+   unsigned kb_state   = draw_caret ? input_driver_keyboard_line_state() : 0;
+   bool draw_selection = (kb_state & INPUT_KEYBOARD_LINE_SELECTED) != 0;
    unsigned selection_first_line = 1;
    float selection_color[16] = {
       0.20f, 0.40f, 0.80f, 0.35f,
@@ -2877,7 +2895,9 @@ static void materialui_render_messagebox(
    int stack_h                = 0;
    bool text_only             = false;
    bool stacked               = false;
-   unsigned firmware_line_state = 0;
+   int rule_line              = 0;
+   bool add_row               = false;
+   bool heading               = false;
 
    wrapped_buf[0] = '\0';
    menu_dialog_get_buttons(menu_st, &buttons);
@@ -2887,6 +2907,10 @@ static void materialui_render_messagebox(
        || !mui
        || !mui->font_data.list.font)
       return;
+
+   /* The input dialog's label is no heading */
+   if (!draw_caret)
+      heading = menu_st->dialog_st.heading;
 
    usable_width = (int)video_width - (mui->margin * (landscape ? 4.0 : 1.0));
    if (usable_width < 1)
@@ -2910,9 +2934,11 @@ static void materialui_render_messagebox(
             && mui->box_wrap.columns == columns
             && mui->box_wrap.wideglyph_width
                == mui->font_data.list.wideglyph_width
+            && mui->box_wrap.heading == heading
             && !memcmp(mui->box_wrap.text, msg, msg_len))
       {
          line_count    = mui->box_wrap.line_count;
+         rule_line     = mui->box_wrap.rule_line;
          wrapped_len   = mui->box_wrap.wrapped_len;
          longest_width = mui->box_wrap.longest_width;
       }
@@ -2971,16 +2997,23 @@ static void materialui_render_messagebox(
          }
       }
 
+      if (heading)
+         rule_line = (int)menu_dialog_rule_line(msg, wrapped_msg,
+               wrapped_len, (unsigned)line_count);
+
       if (keep_wrap)
       {
-         /* The input dialog may hand back the kept text itself */
+         /* The input dialog may hand back the kept text itself, and
+          * the box measures what it is handed by its terminator */
          if (msg != mui->box_wrap.text)
-            memcpy(mui->box_wrap.text, msg, msg_len);
+            memcpy(mui->box_wrap.text, msg, msg_len + 1);
          mui->box_wrap.font            = mui->font_data.list.font;
          mui->box_wrap.font_generation = mui->font_data.list.metrics_generation;
          mui->box_wrap.columns         = columns;
          mui->box_wrap.wideglyph_width = mui->font_data.list.wideglyph_width;
+         mui->box_wrap.heading         = heading;
          mui->box_wrap.line_count      = line_count;
+         mui->box_wrap.rule_line       = rule_line;
          mui->box_wrap.wrapped_len     = wrapped_len;
          mui->box_wrap.longest_width   = longest_width;
          mui->box_wrap.len             = msg_len;
@@ -2989,7 +3022,6 @@ static void materialui_render_messagebox(
 
    /* Get coordinates of message box centre */
    x = video_width / 2;
-   y = (int)(y_centre - (line_count * mui->font_data.list.line_height) / 2);
 
    if (buttons.count)
    {
@@ -3056,6 +3088,21 @@ static void materialui_render_messagebox(
          longest_width = row_need;
    }
 
+   /* The heading's rule, in the blank line under it or in a row added
+    * there, only while the box fits the screen with it */
+   if (rule_line)
+   {
+      bool blank = rule_line < line_count && !lengths[rule_line];
+      if (     buttons.count
+            && materialui_messagebox_h(mui, line_count + !blank, true, stack_h)
+               > (int)video_height)
+         rule_line = 0;
+      add_row    = rule_line && !blank;
+   }
+
+   y = (int)(y_centre - ((line_count + add_row)
+         * mui->font_data.list.line_height) / 2);
+
    if (draw_caret)
    {
       size_t line_cursor             = 0;
@@ -3088,8 +3135,12 @@ static void materialui_render_messagebox(
          if (d > (size_t)lengths[l])
             d = (size_t)lengths[l];
          cursor_line = (unsigned)l;
-         cursor_x    = font_driver_get_message_width(
-               mui->font_data.list.font, lines[l], d, 1.0f);
+         /* Among Hebrew or Arabic, where the caret lands as drawn */
+         cursor_x    = (kb_state & INPUT_KEYBOARD_LINE_RTL)
+            ? font_driver_get_caret_x(mui->font_data.list.font, lines[l],
+                  (size_t)lengths[l], d, 1.0f)
+            : font_driver_get_message_width(
+                  mui->font_data.list.font, lines[l], d, 1.0f);
 
          draw_caret  = !draw_selection;
       }
@@ -3098,14 +3149,13 @@ static void materialui_render_messagebox(
    slice_x                 = x - longest_width / 2.0 - mui->margin * (landscape ? 2.0 : 4.0);
    slice_y                 = y - mui->margin * 2.0;
    slice_w                 = longest_width + mui->margin * (landscape ? 4.0 : 8.0);
-   slice_h                 = mui->font_data.list.line_height * line_count + mui->margin * 4.0;
+   slice_h                 = materialui_messagebox_h(mui, line_count + add_row,
+         buttons.count > 0, stack_h);
 
    /* Extra room for confirm buttons */
    if (buttons.count)
    {
       int lift;
-      slice_h             += (mui->font_data.list.line_height + mui->margin) * 2;
-      slice_h             += stack_h;
       /* Centred with its buttons, but not above the top */
       lift                 = slice_y + slice_h / 2 - y_centre;
       if (lift > slice_y)
@@ -3208,33 +3258,64 @@ static void materialui_render_messagebox(
       }
    }
 
+   /* What sits under the text, gathered into the background's strip
+    * ahead of it */
+   if (draw_selection)
+      for (i = (int)selection_first_line; i < line_count; i++)
+      {
+         int row = (add_row && i >= rule_line) ? i + 1 : i;
+         if (lengths[i] > 0)
+            gfx_display_draw_quad(p_disp, userdata, video_dims,
+                  x - longest_width / 2.0f,
+                  y + (row * mui->font_data.list.line_height),
+                  VIDEO_SCALE_PACK(font_driver_get_message_width(
+                        mui->font_data.list.font, lines[i], lengths[i],
+                        1.0f), mui->font_data.list.line_ascender),
+                  video_dims, selection_color, NULL);
+      }
+
+   if (heading)
+   {
+      unsigned firmware_line_state = 0;
+
+      for (i = 0; i < line_count; i++)
+      {
+         int row = (add_row && i >= rule_line) ? i + 1 : i;
+         menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
+               lines[i], mui->font_data.list.font, p_disp, userdata,
+               video_dims, x - longest_width / 2.0f,
+               y + (row * mui->font_data.list.line_height)
+                  + mui->font_data.list.line_ascender,
+               mui->colors.list_text);
+      }
+
+      if (rule_line)
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_dims,
+               x - longest_width / 2.0f,
+               y + (rule_line + 0.5f) * mui->font_data.list.line_height
+                  - mui->entry_divider_width / 2,
+               VIDEO_SCALE_PACK((unsigned)longest_width,
+                  mui->entry_divider_width),
+               video_dims,
+               mui->colors.entry_divider,
+               NULL);
+   }
+
    /* Print each line of the message */
    for (i = 0; i < line_count; i++)
    {
-      if (draw_selection && (unsigned)i >= selection_first_line && lengths[i] > 0)
-         gfx_display_draw_quad(p_disp, userdata, video_dims,
-               x - longest_width / 2.0f,
-               y + (i * mui->font_data.list.line_height),
-               VIDEO_SCALE_PACK(font_driver_get_message_width(
-                     mui->font_data.list.font, lines[i], lengths[i], 1.0f),
-                     mui->font_data.list.line_ascender),
-               video_dims, selection_color, NULL);
-
+      int row = (add_row && i >= rule_line) ? i + 1 : i;
       if (lengths[i] > 0)
          gfx_display_draw_text(
                mui->font_data.list.font, lines[i],
                x - longest_width / 2.0f,
-               y + (i * mui->font_data.list.line_height)
+               y + (row * mui->font_data.list.line_height)
                   + mui->font_data.list.line_ascender,
                video_dims, mui->colors.list_text,
                TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, true);
-
-      menu_dialog_draw_path_underline(menu_st, &firmware_line_state,
-            lines[i], mui->font_data.list.font, p_disp, userdata, video_dims,
-            x - longest_width / 2.0f,
-            y + (i * mui->font_data.list.line_height)
-               + mui->font_data.list.line_ascender,
-            mui->colors.list_text);
    }
 
    if (draw_caret && (cursor_line < (unsigned)line_count))
@@ -4533,7 +4614,9 @@ static void materialui_browser_update(materialui_handle_t *mui,
       const struct item_file *item = &list->list[menu_st->selection_ptr];
       enum image_type_enum type = image_texture_get_type(item->path);
       if (item->type == FILE_TYPE_IMAGE || item->type == FILE_TYPE_IMAGEVIEWER
-            || type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
+            || type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM
+            || ((open_history || (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS))
+               && menu_media_music_supported(item->path)))
       {
          directory = stack->list[stack->size - 1].path;
          name = item->path;
@@ -4567,8 +4650,13 @@ static void materialui_browser_update(materialui_handle_t *mui,
       strlcpy(mui->browser_directory, directory, sizeof(mui->browser_directory));
       strlcpy(mui->browser_name, name, sizeof(mui->browser_name));
       fill_pathname_join_special(mui->browser_path, directory, name, sizeof(mui->browser_path));
-      gfx_thumbnail_request_file(mui->browser_path, &mui->browser_thumbnail,
-            config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
+#ifdef HAVE_AUDIOMIXER
+      if (menu_media_music_supported(mui->browser_path))
+         gfx_thumbnail_request_music_file(mui->browser_path, &mui->browser_thumbnail);
+      else
+#endif
+         gfx_thumbnail_request_file(mui->browser_path, &mui->browser_thumbnail,
+               config_get_ptr()->uints.gfx_thumbnail_upscale_threshold);
    }
    if (mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)
    {
@@ -4981,7 +5069,10 @@ static void materialui_render(void *data,
                   list->list[entry_idx].type, &mui->playlist, &playlist_entry, list, &entry_idx, &list_size);
 
             if (list_idx > -1)
+            {
                playlist_idx = list_idx;
+               menu_explore_push_thumbnail_match(mui->playlist);
+            }
          }
 
          if (!materialui_render_process_entry(
@@ -7432,29 +7523,17 @@ MUI_NOINLINE static void materialui_render_header(
    /* > Draw clock (if required) */
    if (menu_timedate_enable)
    {
-      gfx_display_ctx_datetime_t datetime;
-      char timedate_str[MUI_TIMEDATE_MAX_LENGTH];
-      datetime.time_mode      = menu_timedate_style;
-      datetime.date_separator = menu_timedate_date_separator;
+      size_t timedate_len;
+      unsigned timedate_gen;
+      const char *timedate_str = menu_display_timedate(menu_timedate_style,
+            menu_timedate_date_separator, &timedate_len, &timedate_gen);
 
-      menu_display_timedate(&datetime, timedate_str, sizeof(timedate_str));
-
-      /* Need to determine pixel width of time string
-       * > This is somewhat expensive, so utilise a cache
-       *   and only update when the string actually changes */
-      if (!string_is_equal(timedate_str, mui->sys_bar_cache.timedate_str))
+      /* Measuring is expensive: only when the text changes */
+      if (timedate_gen != mui->sys_bar_cache.timedate_gen)
       {
-         /* Cache new string */
-         size_t _len = strlcpy(mui->sys_bar_cache.timedate_str, timedate_str,
-               MUI_TIMEDATE_MAX_LENGTH * sizeof(char));
-
-         /* Cache width */
-         mui->sys_bar_cache.timedate_width
-            = font_driver_get_message_width(
-               mui->font_data.hint.font,
-               mui->sys_bar_cache.timedate_str,
-               _len,
-               1.0f);
+         mui->sys_bar_cache.timedate_gen   = timedate_gen;
+         mui->sys_bar_cache.timedate_width = font_driver_get_message_width(
+               mui->font_data.hint.font, timedate_str, timedate_len, 1.0f);
       }
 
       /* Draw time string */
@@ -7467,7 +7546,7 @@ MUI_NOINLINE static void materialui_render_header(
             sys_bar_clock_width += mui->sys_bar_margin;
 
          gfx_display_draw_text(mui->font_data.hint.font,
-               mui->sys_bar_cache.timedate_str,
+               timedate_str,
                (int)video_width - (
                     (int)sys_bar_clock_width
                   + (int)sys_bar_battery_width
@@ -8003,6 +8082,12 @@ static void materialui_hide_fullscreen_thumbnails(
 {
    uintptr_t alpha_tag = (uintptr_t)&mui->fullscreen_thumbnail_alpha;
 
+#ifdef HAVE_AUDIOMIXER
+   if ((mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS) && mui->browser_thumbnail.music_player
+         && !menu_media_controls_settings_active(&mui->media))
+      gfx_thumbnail_reset(&mui->browser_thumbnail);
+#endif
+
    /* Kill any existing fade in/out animations */
    gfx_animation_kill_by_tag(&alpha_tag);
 
@@ -8378,7 +8463,7 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
                NULL);
 
          /* Thumbnail */
-         gfx_thumbnail_draw(
+         gfx_thumbnail_draw_shader(
                userdata,
                video_dims,
                primary_thumbnail,
@@ -8414,7 +8499,7 @@ MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_hand
                NULL);
 
          /* Thumbnail */
-         gfx_thumbnail_draw(
+         gfx_thumbnail_draw_shader(
                userdata,
                video_dims,
                secondary_thumbnail,
@@ -8869,11 +8954,32 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       unsigned preview_height = video_height / 4;
       unsigned right = video_width > VIDEO_SCALE_W(mui->nav_bar_layout_dims)
          ? video_width - VIDEO_SCALE_W(mui->nav_bar_layout_dims) : video_width;
-      gfx_thumbnail_draw(userdata, video_info->dims, &mui->browser_thumbnail,
+      gfx_thumbnail_draw_shader(userdata, video_info->dims, &mui->browser_thumbnail,
             (float)(right > preview_width ? right - preview_width : 0),
             (float)(video_height - preview_height) / 2.0f,
             VIDEO_SCALE_PACK(preview_width, preview_height), GFX_THUMBNAIL_ALIGN_CENTRE,
             1.0f, 1.0f, NULL);
+   }
+
+   /* The camera preview, at the foot of the entries clear of the
+    * navigation bar: the camera page is a few entries tall. */
+   if (menu_camera_preview_update(&mui->thumbnails.camera))
+   {
+      unsigned right  = video_width;
+      unsigned bottom = video_height;
+      unsigned w      = (video_height > video_width)
+         ? video_width * 3 / 4 : video_width * 2 / 5;
+      unsigned h      = w * 3 / 4;
+      unsigned margin = mui->margin;
+      if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_RIGHT)
+         right  -= MIN(right, mui->nav_bar.width);
+      else if (mui->nav_bar.location == MUI_NAV_BAR_LOCATION_BOTTOM)
+         bottom -= MIN(bottom, mui->nav_bar.width);
+      menu_camera_preview_draw(&mui->thumbnails.camera, userdata,
+            video_info->dims,
+            (float)((int)right - (int)w - (int)margin),
+            (float)((int)bottom - (int)h - (int)margin),
+            VIDEO_SCALE_PACK(w, h));
    }
 
    /* Draw title + system bar */
@@ -8896,10 +9002,11 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    if (menu_input_dialog_get_display_kb())
    {
       size_t _len;
-      char msg[NAME_MAX_LENGTH];
+      /* As long as the text the box wraps and keeps */
+      char msg[MENU_LABEL_MAX_LENGTH];
       const char *text;
       const char *str                = menu_input_dialog_get_buffer();
-      const char *label              = menu_st->input_dialog_kb_label;
+      const char *label              = input_driver_text_entry_label();
 
       /* Darken screen */
       gfx_display_set_alpha(
@@ -9881,7 +9988,7 @@ static void materialui_layout(materialui_handle_t *mui,
     * size will change) */
    mui->sys_bar_cache.battery_percent_str[0] = '\0';
    mui->sys_bar_cache.battery_percent_width  = 0;
-   mui->sys_bar_cache.timedate_str[0]        = '\0';
+   mui->sys_bar_cache.timedate_gen           = 0;
    mui->sys_bar_cache.timedate_width         = 0;
 
    materialui_update_list_view(mui, menu_st, settings);
@@ -10146,6 +10253,7 @@ static void materialui_reset_thumbnails(materialui_handle_t *mui)
    }
 
    gfx_thumbnail_reset(&mui->thumbnails.savestate);
+   gfx_thumbnail_reset(&mui->thumbnails.camera);
 }
 
 static void materialui_context_destroy(void *data)
@@ -12396,6 +12504,7 @@ static void materialui_list_insert(void *userdata,
          case MENU_SETTING_ACTION_CORE_LOCK:
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:
          case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
+         case MENU_SETTING_ACTION_CORE_TRUST:
          case MENU_CONTENTLESS_CORES_TAB:
             node->icon_texture_index = MUI_TEXTURE_CORES;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
@@ -12409,7 +12518,6 @@ static void materialui_list_insert(void *userdata,
             node->icon_texture_index = MUI_TEXTURE_SETTINGS;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
-         case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
          case FILE_TYPE_DOWNLOAD_PL_THUMBNAIL_CONTENT:
             node->icon_texture_index = MUI_TEXTURE_IMAGE;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
@@ -12419,6 +12527,7 @@ static void materialui_list_insert(void *userdata,
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
          case FILE_TYPE_USE_DIRECTORY:
+         case FILE_TYPE_VULKAN_DRIVER_SYSTEM:
             node->icon_texture_index = MUI_TEXTURE_CHECKMARK;
             node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             break;
@@ -12673,8 +12782,10 @@ static void materialui_list_insert(void *userdata,
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
             }
             else if (string_is_equal(label, MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS_STR)
-                  || string_is_equal(label, MENU_ENUM_LABEL_INPUT_CONTROLLERS_STR))
+                  || string_is_equal(label, MENU_ENUM_LABEL_INPUT_CONTROLLERS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_INPUT_PLAYS_AS_STR))
             {
                node->icon_texture_index = MUI_TEXTURE_CONTROLS;
                node->icon_type          = MUI_ICON_TYPE_INTERNAL;
@@ -12964,6 +13075,8 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_HEADSET_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_DLSS_NR_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_AUDIO_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS_STR)
@@ -12978,6 +13091,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_INPUT_MENU_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_INPUT_SENSOR_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_INPUT_HEADSET_CONTROLS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_LATENCY_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS_STR)
@@ -13017,6 +13131,7 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_DIRECTORY_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_PRIVACY_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_MIDI_SETTINGS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_CAMERA_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS_STR)
@@ -13102,6 +13217,16 @@ static void materialui_list_insert(void *userdata,
                   }
                }
             }
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+            else if (string_starts_with_size(label, "video_screen",
+                     STRLEN_CONST("video_screen"))
+                  && menu_setting_video_screen_page(label)
+                  < RETRO_VIDEO_VIEWS_MAX)
+            {
+               node->icon_texture_index = MUI_TEXTURE_SETTINGS;
+               node->icon_type          = MUI_ICON_TYPE_INTERNAL;
+            }
+#endif
             /* Playlist manager icons */
             else if (string_is_equal(fullpath, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST)))
             {

@@ -33,6 +33,13 @@ bool record_gpu_worker_vulkan_release(record_gpu_worker_vulkan_t *worker)
 {
    return record_gpu_worker_d3d12_release(worker->source);
 }
+bool record_gpu_worker_vulkan_wait(const record_gpu_worker_vulkan_t *worker,
+      uint64_t timeout_ns)
+{
+   (void)worker;
+   (void)timeout_ns;
+   return false;
+}
 bool record_gpu_worker_vulkan_retry_needed(const record_gpu_worker_vulkan_t *worker)
 {
    return record_gpu_worker_d3d12_retry_needed(worker->source);

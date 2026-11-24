@@ -1010,7 +1010,12 @@
  * will display a screensaver after SCREENSAVER_TIMEOUT
  * seconds of inactivity. A timeout of zero disables
  * the screensaver */
+#if defined(WEBOS)
+/* OLED TVs: blank an idle menu after 3 minutes */
+#define DEFAULT_MENU_SCREENSAVER_TIMEOUT 180
+#else
 #define DEFAULT_MENU_SCREENSAVER_TIMEOUT 0
+#endif
 
 #if defined(HAVE_MATERIALUI) || defined(HAVE_XMB) || defined(HAVE_OZONE)
 /* When menu screensaver is enabled, specifies
@@ -1930,6 +1935,8 @@
 
 #define DEFAULT_PLAYLIST_SHOW_LOAD_STATE true
 
+#define DEFAULT_PLAYLIST_THUMBNAIL_OTHER_REGIONS false
+
 /* Show Menu start-up screen on boot. */
 #define DEFAULT_MENU_SHOW_START_SCREEN true
 
@@ -2100,7 +2107,10 @@
 #define DEFAULT_MENU_TIMEDATE_ENABLE true
 #endif
 #define DEFAULT_MENU_TIMEDATE_STYLE          MENU_TIMEDATE_STYLE_YMD_HM
+#define DEFAULT_MENU_TIMEDATE_MODE           MENU_TIMEDATE_MODE_MANUAL
+#define DEFAULT_MENU_TIMEDATE_12HOUR         false
 #define DEFAULT_MENU_TIMEDATE_DATE_SEPARATOR MENU_TIMEDATE_DATE_SEPARATOR_HYPHEN
+#define DEFAULT_MENU_BACKDROP_BLUR true
 #define DEFAULT_MENU_REMEMBER_SELECTION      MENU_REMEMBER_SELECTION_ALWAYS
 #define DEFAULT_MENU_STARTUP_PAGE            MENU_STARTUP_PAGE_MAIN_MENU
 #endif
@@ -2332,6 +2342,8 @@
 #endif
 #elif defined(WIIU)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/wiiu/latest/"
+#elif defined(__SWITCH2__)
+#define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/switch2/libounce/latest/"
 #elif defined(HAVE_LIBNX)
 #define DEFAULT_BUILDBOT_SERVER_URL "http://buildbot.libretro.com/nightly/nintendo/switch/libnx/latest/"
 #elif defined(_3DS)

@@ -28,6 +28,11 @@ struct frame_shader { int history_size; };
    bool init_history;
    struct { struct { texture_t texture[4]; } frame; } _engine;
    texture_t _moviePrevious[4];
+   /* The planar conversion, stood in for: what it was given and says */
+   const video_frame_import_t *planes_frame;
+   id<MTLTexture> planes_into;
+   unsigned planes_calls;
+   enum video_texture_update planes_result;
 }
 @property(nonatomic) CGSize size;
 - (void)syncViewport;
@@ -36,10 +41,18 @@ struct frame_shader { int history_size; };
 - (void)_ensureFront;
 - (void)_initTexture:(texture_t*)texture withDescriptor:(MTLTextureDescriptor*)descriptor;
 - (enum video_texture_update)importMovieFrame:(const video_frame_import_t*)frame;
+- (enum video_texture_update)_convertMoviePlanes:(const video_frame_import_t*)frame
+      into:(id<MTLTexture>)texture;
 @end
 @implementation FrameView
 @synthesize size = _size;
 - (void)syncViewport { viewport_updates++; }
+- (enum video_texture_update)_convertMoviePlanes:(const video_frame_import_t*)frame
+      into:(id<MTLTexture>)texture
+{
+   planes_calls++; planes_frame = frame; planes_into = texture;
+   return planes_result;
+}
 - (void)dealloc
 {
    for (unsigned i = 0; i < 4; i++)

@@ -1497,6 +1497,7 @@ bool android_core_path_resolve(const char *path, char *s, size_t len)
 
 static unsigned dlext_loads;
 static unsigned dlext_moved;  /* loads from an fd not at offset 0 */
+static uint64_t dlext_flags;  /* the last load's */
 
 /* Android 5.0's linker, which core_load_file.c finds by dlsym: it
  * read()s the ELF header from the fd's offset (later ones pread at 0),
@@ -1508,6 +1509,7 @@ void *android_dlopen_ext(const char *name, int flags,
    char fd_path[32];
    (void)name;
    dlext_loads++;
+   dlext_flags = info->flags;
    if (lseek(info->library_fd, 0, SEEK_CUR) != 0)
       dlext_moved++;
    if (     read(info->library_fd, head, sizeof(head)) != (ssize_t)sizeof(head)
@@ -2151,6 +2153,309 @@ static void test_park_always_full(void)
    stop();
 }
 
+/* A seeded store of n fake hashes and nothing else */
+static bool write_hashes(const char *path, unsigned n)
+{
+   struct core_check c;
+   core_trust_t *t = core_trust_new();
+   size_t len      = 0;
+   uint8_t *buf    = NULL;
+   unsigned i;
+   bool ok         = t && core_trust_set_flag(t, CORE_TRUST_SEEDED, true);
+   memset(&c, 0, sizeof(c));
+   c.result = CORE_CHECK_UNSIGNED;
+   strlcpy(c.rec.name, "fill_libretro" LIB_EXT, sizeof(c.rec.name));
+   c.rec.sha256[2] = 0xa6;
+   for (i = 0; ok && i < n; i++)
+   {
+      c.rec.sha256[0] = (uint8_t)i;
+      c.rec.sha256[1] = (uint8_t)(i >> 8);
+      ok = core_trust_always(t, &c);
+   }
+   if (ok)
+      buf = core_trust_serialize(t, &len);
+   ok = buf && filestream_write_file(path, buf, (int64_t)len);
+   free(buf);
+   core_trust_free(t);
+   return ok;
+}
+
+/* start() on a store already written, with a seed folder */
+static void start_with(const char *store, const char *seed_dir)
+{
+   task_queue_init(false, NULL);
+   path_mkdir(TMP_DIR "/cores");
+   CHECK(core_trust_runtime_init(store, seed_dir, CORE_EXT));
+}
+
+static bool copy_core(const char *from, const char *to);
+
+/* Always Trust with the list full loads the core at once and waits on a
+ * sweep of the cores folder, which makes room: nothing to say */
+static void test_park_always_sweeps(void)
+{
+   struct core_check c;
+   char store[64];
+   char core[256];
+   unsigned shown;
+   size_t n            = 0;
+   const uint8_t *keys = core_sig_builtin_keys(&n);
+   core_trust_set_t *s = NULL;
+   sprintf(store, TMP_DIR "/trust_%u", ++store_n);
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES));
+   path_mkdir(TMP_DIR "/sweep_cores");
+   strlcpy(core, TMP_DIR "/sweep_cores/sweep_libretro." CORE_EXT,
+         sizeof(core));
+   CHECK(copy_core("core_load_check_test_a" LIB_EXT, core));
+   start_with(store, TMP_DIR "/sweep_cores");
+   park_reset();
+   CHECK(park(core));
+   drain();
+   last_log[0] = '\0';
+   shown       = osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL);
+   CHECK(core_warning_choose(CORE_WARNING_ALWAYS_TRUST));
+   park_wait(1);
+   CHECK(reruns == 1);
+   CHECK(rerun_id == 1);
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL) == shown);
+   drain();
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL) == shown);
+   CHECK(!strstr(last_log, "Could not trust"));
+   CHECK((s = core_trust_runtime_get()) != NULL);
+   if (s)
+   {
+      CHECK(core_check_file(s, keys, n, core, 0, &c) == CORE_CHECK_OK);
+      core_trust_set_put(s);
+   }
+   stop();
+}
+
+/* Always Trust while the trusted cores list can't be saved: loaded
+ * this once, and the OSD and the log say so */
+static void test_park_always_cant_save(void)
+{
+   char store[64];
+   char core[256];
+   unsigned full;
+   sprintf(store, TMP_DIR "/trust_%u", ++store_n);
+   CHECK(path_mkdir(store));
+   start_with(store, NULL);
+   CHECK(core_trust_runtime_read_only());
+   park_reset();
+   CHECK(put_core(core, "cant_save_libretro" LIB_EXT, 'a'));
+   CHECK(park(core));
+   drain();
+   last_log[0] = '\0';
+   full        = osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL);
+   CHECK(core_warning_choose(CORE_WARNING_ALWAYS_TRUST));
+   CHECK(strstr(last_log, "Could not trust") != NULL);
+   park_wait(1);
+   CHECK(reruns == 1);
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_CANT_SAVE) == 1);
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL) == full);
+   stop();
+}
+
+static int RETRO_CALLCONV refuse_rename(const char *old_path,
+      const char *new_path)
+{
+   (void)old_path;
+   (void)new_path;
+   return -1;
+}
+
+/* Every store write fails at its rename while on */
+static void saves_fail(bool on)
+{
+   static struct retro_vfs_interface iface;
+   struct retro_vfs_interface_info info;
+   iface.rename                    = refuse_rename;
+   info.required_interface_version = FILESTREAM_REQUIRED_VFS_VERSION;
+   info.iface                      = on ? &iface : NULL;
+   filestream_vfs_init(&info);
+}
+
+/* The seed's save failed, then Always Trust's own does too: the user
+ * hears it once, from the can't-save message */
+static void test_park_always_save_fails(void)
+{
+   char store[64];
+   char core[256];
+   unsigned osd, cant, failed;
+   sprintf(store, TMP_DIR "/trust_%u", ++store_n);
+   path_mkdir(TMP_DIR "/seed_fails");
+   saves_fail(true);
+   start_with(store, TMP_DIR "/seed_fails");
+   drain();
+   CHECK(!core_trust_runtime_read_only() && !core_trust_runtime_can_save());
+   park_reset();
+   CHECK(put_core(core, "save_fails_libretro" LIB_EXT, 'a'));
+   CHECK(park(core));
+   drain();
+   osd    = osd_count;
+   cant   = osd_shown(MSG_CORE_LOAD_TRUST_CANT_SAVE);
+   failed = osd_shown(MSG_CORE_TRUST_SAVE_FAILED);
+   CHECK(core_warning_choose(CORE_WARNING_ALWAYS_TRUST));
+   park_wait(1);
+   drain();
+   CHECK(reruns == 1);
+   CHECK(osd_count == osd + 1);
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_CANT_SAVE) == cant + 1);
+   CHECK(osd_shown(MSG_CORE_TRUST_SAVE_FAILED) == failed);
+   saves_fail(false);
+   stop();
+}
+
+/* Always Trust with the list full and not saveable, and a sweep that
+ * frees nothing: never trusted, so only the list-full message */
+static void test_park_always_full_cant_save(void)
+{
+   struct core_check fill;
+   char store[64];
+   char core[256];
+   unsigned i;
+   unsigned osd, full, cant;
+   sprintf(store, TMP_DIR "/trust_%u", ++store_n);
+   CHECK(write_hashes(store, 0));
+   path_mkdir(TMP_DIR "/no_cores");
+   start_with(store, TMP_DIR "/no_cores");
+   saves_fail(true);
+   /* Trusted this session: the sweep keeps them all */
+   memset(&fill, 0, sizeof(fill));
+   fill.result = CORE_CHECK_UNSIGNED;
+   strlcpy(fill.rec.name, "fill_libretro" LIB_EXT, sizeof(fill.rec.name));
+   fill.rec.sha256[2] = 0xa8;
+   for (i = 0; i < CORE_TRUST_MAX_HASHES; i++)
+   {
+      fill.rec.sha256[0] = (uint8_t)i;
+      fill.rec.sha256[1] = (uint8_t)(i >> 8);
+      if (!core_trust_runtime_always(&fill))
+         break;
+   }
+   CHECK(i == CORE_TRUST_MAX_HASHES);
+   drain();
+   CHECK(!core_trust_runtime_can_save());
+   park_reset();
+   CHECK(put_core(core, "full_cant_save_libretro" LIB_EXT, 'a'));
+   CHECK(park(core));
+   drain();
+   osd  = osd_count;
+   full = osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL);
+   cant = osd_shown(MSG_CORE_LOAD_TRUST_CANT_SAVE);
+   CHECK(core_warning_choose(CORE_WARNING_ALWAYS_TRUST));
+   CHECK(osd_count == osd);
+   park_wait(1);
+   drain();
+   CHECK(reruns == 1);
+   CHECK(osd_count == osd + 1);
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_LIST_FULL) == full + 1);
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_CANT_SAVE) == cant);
+   saves_fail(false);
+   stop();
+}
+
+/* Always Trust with the list full and not saveable, and a sweep that
+ * makes room: trusted for this session, said once the sweep trusted it */
+static void test_park_always_sweeps_cant_save(void)
+{
+   struct core_check c;
+   char store[64];
+   char core[256];
+   unsigned osd, cant;
+   size_t n            = 0;
+   const uint8_t *keys = core_sig_builtin_keys(&n);
+   core_trust_set_t *s = NULL;
+   sprintf(store, TMP_DIR "/trust_%u", ++store_n);
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES));
+   path_mkdir(TMP_DIR "/no_cores");
+   start_with(store, TMP_DIR "/no_cores");
+   saves_fail(true);
+   /* A failed save of no change of the user's says nothing */
+   memset(&c, 0, sizeof(c));
+   strlcpy(c.rec.name, "newest_libretro" LIB_EXT, sizeof(c.rec.name));
+   c.result         = CORE_CHECK_OK;
+   c.folder[0]      = 7;
+   c.rec.build_time = 5;
+   c.raise_newest   = true;
+   CHECK(core_trust_runtime_apply(&c));
+   drain();
+   CHECK(!core_trust_runtime_read_only() && !core_trust_runtime_can_save());
+   park_reset();
+   CHECK(put_core(core, "sweeps_cant_save_libretro" LIB_EXT, 'a'));
+   CHECK(park(core));
+   drain();
+   osd  = osd_count;
+   cant = osd_shown(MSG_CORE_LOAD_TRUST_CANT_SAVE);
+   CHECK(core_warning_choose(CORE_WARNING_ALWAYS_TRUST));
+   CHECK(osd_count == osd);
+   park_wait(1);
+   drain();
+   CHECK(reruns == 1);
+   CHECK(osd_count == osd + 1);
+   CHECK(osd_shown(MSG_CORE_LOAD_TRUST_CANT_SAVE) == cant + 1);
+   CHECK((s = core_trust_runtime_get()) != NULL);
+   if (s)
+   {
+      CHECK(core_check_file(s, keys, n, core, 0, &c) == CORE_CHECK_OK);
+      core_trust_set_put(s);
+   }
+   saves_fail(false);
+   stop();
+}
+
+#ifdef COUNT_HASHES
+static enum core_trust_state state_now(const char *path)
+{
+   core_trust_set_t *s         = core_trust_runtime_get();
+   enum core_trust_state state = s ? core_trust_state_file(s, path, NULL)
+      : CORE_TRUST_STATE_UNCHECKED;
+   core_trust_set_put(s);
+   return state;
+}
+
+/* A sweep takes a recorded core's hash from its record, unread */
+static void test_sweep_uses_records(void)
+{
+   struct core_check c;
+   char store[64];
+   char x[256], y[256];
+   unsigned n;
+   size_t num_keys     = 0;
+   const uint8_t *keys = core_sig_builtin_keys(&num_keys);
+   core_trust_set_t *s;
+   memset(&c, 0, sizeof(c));
+   sprintf(store, TMP_DIR "/trust_%u", ++store_n);
+   CHECK(write_hashes(store, CORE_TRUST_MAX_HASHES - 1));
+   path_mkdir(TMP_DIR "/sweep_records");
+   strlcpy(x, TMP_DIR "/sweep_records/x_libretro." CORE_EXT, sizeof(x));
+   strlcpy(y, TMP_DIR "/sweep_records/y_libretro." CORE_EXT, sizeof(y));
+   CHECK(copy_core("core_load_check_test_a" LIB_EXT, x));
+   CHECK(copy_core("core_load_check_test_b" LIB_EXT, y));
+   start_with(store, NULL);
+   CHECK(trust(x));
+   if (state_now(x) != CORE_TRUST_STATE_TRUSTED)
+   {
+      printf("note: test_sweep_uses_records skipped, no records on this filesystem\n");
+      stop();
+      return;
+   }
+   stop();
+   start_with(store, TMP_DIR "/sweep_records");
+   s = core_trust_runtime_get();
+   CHECK(s && core_check_file(s, keys, num_keys, y, 0, &c)
+         == CORE_CHECK_UNSIGNED);
+   core_trust_set_put(s);
+   n = hashes;
+   CHECK(core_trust_runtime_always(&c));
+   CHECK(state_now(y) != CORE_TRUST_STATE_TRUSTED);
+   drain();
+   CHECK(hashes - n == 1);
+   CHECK(state_now(x) == CORE_TRUST_STATE_TRUSTED);
+   CHECK(state_now(y) == CORE_TRUST_STATE_TRUSTED);
+   stop();
+}
+#endif
+
 static void test_park_cancel(void)
 {
    char core[256];
@@ -2654,6 +2959,147 @@ static void test_park_other_load(void)
    park_other_load(PARK_IN_SEED, false);
 }
 
+static unsigned ends_cancelled;
+static unsigned ends_dropped;
+static unsigned ends_rerun;
+static unsigned ends_reran;
+static unsigned rerun_at_rerun; /* reruns when RERUN came */
+static unsigned rerun_at_reran; /* reruns when RERAN came */
+
+static void end_fn(enum core_load_park_end end)
+{
+   switch (end)
+   {
+      case CORE_LOAD_PARK_END_CANCELLED:
+         ends_cancelled++;
+         break;
+      case CORE_LOAD_PARK_END_DROPPED:
+         ends_dropped++;
+         break;
+      case CORE_LOAD_PARK_END_RERUN:
+         ends_rerun++;
+         rerun_at_rerun = reruns;
+         break;
+      case CORE_LOAD_PARK_END_RERAN:
+         ends_reran++;
+         rerun_at_reran = reruns;
+         break;
+   }
+}
+
+/* A park with its end callback, its warning up */
+static void park_end_start(char *core, const char *name)
+{
+   start(false);
+   park_reset();
+   ends_cancelled = 0;
+   ends_dropped   = 0;
+   ends_rerun     = 0;
+   ends_reran     = 0;
+   rerun_at_rerun = 0;
+   rerun_at_reran = 0;
+   CHECK(put_core(core, name, 'a'));
+   CHECK(park(core));
+   core_load_check_park_on_end(end_fn);
+   drain();
+}
+
+/* Cancel ends the park from the frame loop, not inside the warning */
+static void test_park_end_cancel(void)
+{
+   char core[256];
+   park_end_start(core, "end_cancel_libretro" LIB_EXT);
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   CHECK(ends_cancelled == 0);
+   park_frames(1);
+   CHECK(ends_cancelled == 1);
+   CHECK(ends_dropped == 0);
+   CHECK(reruns == 0);
+   CHECK(frees == 1);
+   park_frames(3);
+   CHECK(ends_cancelled == 1);
+   stop();
+}
+
+/* A load on its way ends first */
+static void test_park_end_waits_for_load(void)
+{
+   char core[256];
+   park_end_start(core, "end_waits_libretro" LIB_EXT);
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   load_pending = true;
+   park_frames(3);
+   CHECK(ends_cancelled == 0);
+   load_pending = false;
+   park_frames(1);
+   CHECK(ends_cancelled == 1);
+   CHECK(ends_dropped == 0);
+   stop();
+}
+
+/* A newer warning over the park's ends it as a Cancel does */
+static void test_park_end_replaced_warning(void)
+{
+   char core[256];
+   struct core_check c;
+   park_end_start(core, "end_replaced_libretro" LIB_EXT);
+   memset(&c, 0, sizeof(c));
+   c.result = CORE_CHECK_UNSIGNED;
+   CHECK(core_warning_push(&c, CORE_WARNING_INSTALL, core,
+            other_choice, NULL));
+   CHECK(ends_cancelled == 0);
+   park_frames(1);
+   CHECK(ends_cancelled == 1);
+   CHECK(ends_dropped == 0);
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   stop();
+}
+
+/* Another core's load takes over: nothing is put back over it */
+static void test_park_end_other_load(void)
+{
+   char core[256];
+   char other[256];
+   park_end_start(core, "end_other_a_libretro" LIB_EXT);
+   CHECK(put_core(other, "end_other_b_libretro" LIB_EXT, 'b'));
+   CHECK(trust(other));
+   load_other(other, 2);
+   CHECK(ends_dropped == 1);
+   CHECK(ends_cancelled == 0);
+   CHECK(frees == 1);
+   park_frames(3);
+   CHECK(ends_dropped == 1);
+   CHECK(ends_cancelled == 0);
+   stop();
+}
+
+/* A re-run ends its park with RERUN before it and RERAN after it */
+static void test_park_end_rerun(void)
+{
+   char core[256];
+   park_end_start(core, "end_rerun_libretro" LIB_EXT);
+   CHECK(core_warning_choose(CORE_WARNING_LOAD_ONCE));
+   park_wait(1);
+   CHECK(reruns == 1);
+   CHECK(ends_cancelled == 0);
+   CHECK(ends_dropped == 0);
+   CHECK(ends_rerun == 1);
+   CHECK(ends_reran == 1);
+   CHECK(rerun_at_rerun == 0);
+   CHECK(rerun_at_reran == 1);
+   stop();
+}
+
+static void test_park_end_deinit(void)
+{
+   char core[256];
+   park_end_start(core, "end_deinit_libretro" LIB_EXT);
+   core_load_check_deinit();
+   CHECK(ends_dropped == 1);
+   CHECK(ends_cancelled == 0);
+   stop();
+}
+
 /* A built-in core's start is another core's load: it ends a waiting
  * park and the Load Once of the core loaded last */
 static void test_builtin_load(void)
@@ -2872,6 +3318,57 @@ static void test_load_once_lasts(void)
    CHECK(!lib);
    CHECK(queued() == 1);
 #endif
+   stop();
+}
+
+/* Untrust ends the passes kept for the core, however its path is
+ * spelled; the core running keeps its run-ahead source */
+static void test_forget_rechecks(void)
+{
+   struct core_load_source src;
+   dylib_t lib = NULL;
+   char core[256];
+   core_trust_set_t *s;
+   enum core_trust_state state;
+#ifdef COUNT_HASHES
+   unsigned n;
+#endif
+   start(false);
+   CHECK(put_core(core, "forget_libretro" LIB_EXT, 'a'));
+   CHECK(trust(core));
+   s     = core_trust_runtime_get();
+   state = s ? core_trust_state_file(s, core, NULL)
+      : CORE_TRUST_STATE_UNCHECKED;
+   core_trust_set_put(s);
+   if (state != CORE_TRUST_STATE_TRUSTED)
+   {
+      printf("note: test_forget_rechecks skipped, no records on this filesystem\n");
+      stop();
+      return;
+   }
+   CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_OPENED);
+   CHECK(lib_id(lib) == 1);
+   core_load_check_loaded();
+#ifdef COUNT_HASHES
+   n = hashes;
+#endif
+   CHECK(core_trust_runtime_forget(
+         TMP_DIR "/cores/../cores/forget_libretro" LIB_EXT));
+   /* Its save */
+   drain();
+#ifdef COUNT_HASHES
+   CHECK(hashes == n);
+#endif
+   CHECK(core_load_check_copy_source(core, &src) == CORE_LOAD_COPY_CHECK);
+   if (lib)
+      dylib_close(lib);
+   lib = NULL;
+   core_load_check_unloaded();
+   CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_REFUSED);
+   CHECK(!lib);
+   CHECK(queued() == 1);
+   drain();
+   CHECK(core_load_check_refused(core));
    stop();
 }
 
@@ -3235,6 +3732,111 @@ static void test_android_held_rewritten(void)
 
 /* Refused and gone: the open that fails next never reached the gate,
  * so it isn't the check's refusal */
+/* Built only into the Android objects (core_load_check_android.o,
+ * core_load_file_android.o): weak, so the desktop test links */
+__attribute__((weak)) core_file_t *core_load_check_instance_file(
+      const char *path, char **load_path);
+__attribute__((weak)) dylib_t core_load_file_instance(core_file_t *f,
+      const char *path);
+
+/* core_load_check_instance_file(), with the path it gives checked:
+ * path's real path, as the running core was loaded by */
+static core_file_t *instance_file(const char *path)
+{
+   char real[256];
+   char *load_path = NULL;
+   core_file_t *f  = core_load_check_instance_file(path, &load_path);
+   CHECK(!f == !load_path);
+   if (load_path)
+   {
+      strlcpy(real, path, sizeof(real));
+      CHECK(path_resolve_realpath(real, sizeof(real), true)
+            && string_is_equal(load_path, real));
+      free(load_path);
+   }
+   return f;
+}
+
+/* fd's file is path's */
+static bool fd_is_path(int fd, const char *path)
+{
+   struct stat a, b;
+   return   fstat(fd, &a) == 0 && stat(path, &b) == 0
+         && a.st_dev == b.st_dev && a.st_ino == b.st_ino;
+}
+
+/* Run-ahead's second instance on Android 6+: the running core's file,
+ * the one it passed from and unchanged, as a file of its own, loaded
+ * again as a new instance; none once the file is written, for another
+ * core, or with nothing running. Checks off: the path's file. */
+static void test_android_instance(void)
+{
+   dylib_t lib = NULL;
+   core_file_t *f;
+   core_file_t *g;
+   char core[256];
+   char other[256];
+   int i;
+   CHECK(core_load_check_instance_file && core_load_file_instance);
+   if (!core_load_check_instance_file || !core_load_file_instance)
+      return;
+   for (i = 0; i < 2; i++)
+   {
+      no_ctime_fs = i;
+      start(false);
+      CHECK(put_core(core, "inst_libretro" LIB_EXT, 'a'));
+      CHECK(put_core(other, "inst_other_libretro" LIB_EXT, 'b'));
+      CHECK(trust(core));
+      CHECK(!instance_file(core));
+      /* Hashed at its load, as a startup load is */
+      CHECK(put_core(core, "inst_libretro" LIB_EXT, 'a'));
+      core_load_check_set_startup(true);
+      CHECK(core_load_check_open(core, &lib) == CORE_LOAD_GATE_OPENED);
+      core_load_check_set_startup(false);
+      core_load_check_loaded();
+      f = instance_file(core);
+      g = instance_file(core);
+      CHECK(f && g && core_file_fd(f) != core_file_fd(g));
+      CHECK(f && fd_is_path(core_file_fd(f), core));
+      /* An offset of its own: moving one moves no other */
+      if (f && g)
+      {
+         CHECK(lseek(core_file_fd(f), 7, SEEK_SET) == 7);
+         CHECK(lseek(core_file_fd(g), 0, SEEK_CUR) == 0);
+      }
+      dlext_flags = 0;
+      if (f)
+      {
+         dylib_t again = core_load_file_instance(f, core);
+         CHECK(again != NULL);
+         CHECK(dlext_flags == (ANDROID_DLEXT_USE_LIBRARY_FD | 0x40));
+         CHECK(lseek(core_file_fd(f), 0, SEEK_CUR) != 7);
+         if (again)
+            dylib_close(again);
+      }
+      core_file_close(f);
+      core_file_close(g);
+      CHECK(!instance_file(other));
+      if (lib)
+         dylib_close(lib);
+      lib = NULL;
+      CHECK(write_in_place(core, 'c'));
+      CHECK(!instance_file(core));
+      core_load_check_unloaded();
+      CHECK(!instance_file(core));
+      stop();
+   }
+   no_ctime_fs = 0;
+   start(false);
+   CHECK(put_core(core, "inst_off_libretro" LIB_EXT, 'a'));
+   CHECK(core_trust_runtime_set_checks(false));
+   drain();
+   f = instance_file(core);
+   CHECK(f && fd_is_path(core_file_fd(f), core));
+   core_file_close(f);
+   stop();
+}
+
 static void test_android_refused_gone(void)
 {
    dylib_t lib = NULL;
@@ -3767,6 +4369,7 @@ int main(int argc, char *argv[])
       test_stage_rewritten();
       test_android_held_rewritten();
       test_android_refused_gone();
+      test_android_instance();
       printf("%u checks, %u failures\n", checks, failures);
       return failures ? 1 : 0;
    }
@@ -3814,7 +4417,21 @@ int main(int argc, char *argv[])
    test_park_load_once();
    test_park_always();
    test_park_always_full();
+   test_park_always_sweeps();
+   test_park_always_cant_save();
+   test_park_always_save_fails();
+   test_park_always_full_cant_save();
+   test_park_always_sweeps_cant_save();
+#ifdef COUNT_HASHES
+   test_sweep_uses_records();
+#endif
    test_park_cancel();
+   test_park_end_cancel();
+   test_park_end_waits_for_load();
+   test_park_end_replaced_warning();
+   test_park_end_other_load();
+   test_park_end_rerun();
+   test_park_end_deinit();
    test_park_replaced_other();
    test_park_pass();
    test_park_stage_drift();
@@ -3842,6 +4459,7 @@ int main(int argc, char *argv[])
    test_park_rerun_no_open();
    test_park_fallback();
    test_load_once_lasts();
+   test_forget_rechecks();
    test_held_ctime_moved();
    test_startup_seed();
    test_startup_refused();

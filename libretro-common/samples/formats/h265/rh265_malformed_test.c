@@ -10,7 +10,10 @@
  *    ids were negative, passed the id bound, and were stored at
  *    v->sps[id];
  *  - sps_max_latency_increase_plus1 at 2^32 - 2, which the spec
- *    allows and nothing reads, still parses.
+ *    allows and nothing reads, still parses;
+ *  - a conformance window that crops the whole width or height, or a
+ *    chroma_format_idc past 3, is malformed. Stored, its offsets moved
+ *    rh265_video_plane()'s pointer outside the plane.
  * Exit status is the outcome. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -114,7 +117,8 @@ static size_t hvcc(uint8_t *out, const uint8_t *const *nals,
 enum field { F_NONE = 0, F_ID_OVERLONG, F_ID_HUGE, F_WIDTH_HUGE,
    F_LATENCY_HUGE, F_SCALING, F_CROP, F_BAD_CROP, F_RPS, F_LT, F_LT_TABLE,
    F_SEQUENCE, F_INFERRED, F_BAD_LAYERS, F_DPB_HUGE, F_BAD_REORDER, F_RPS_PRED,
-   F_VUI_SDR, F_VUI_HDR, F_VUI_RANGE, F_VUI_FIELD, F_VUI_SHORT };
+   F_VUI_SDR, F_VUI_HDR, F_VUI_RANGE, F_VUI_FIELD, F_VUI_SHORT,
+   F_BAD_CROP_V, F_EDGE_CROP, F_BAD_CHROMA };
 
 /* An SPS for a 64x64 8-bit-or-@depth 4:2:0 picture, one field crafted */
 static void sps(bitw *w, enum field f, int depth)
@@ -148,14 +152,20 @@ static void sps(bitw *w, enum field f, int depth)
       putue_overlong(w);
    else
       putue(w, f == F_ID_HUGE ? 0xfffffffeu : 0);   /* sps_id */
-   putue(w, 1);                      /* chroma_format_idc 4:2:0 */
+   putue(w, f == F_BAD_CHROMA ? 4 : 1);  /* chroma_format_idc 4:2:0 */
    putue(w, f == F_WIDTH_HUGE ? 0x1ffffffu : 64);
    putue(w, 64);
-   put1(w, f == F_CROP || f == F_BAD_CROP);
-   if (f == F_CROP || f == F_BAD_CROP)
+   /* offsets are in chroma units: 2x each in luma on the 64x64 picture */
+   put1(w, f == F_CROP || f == F_BAD_CROP || f == F_BAD_CROP_V
+         || f == F_EDGE_CROP);
+   if (f == F_CROP || f == F_BAD_CROP || f == F_BAD_CROP_V
+         || f == F_EDGE_CROP)
    {
-      putue(w, f == F_CROP ? 1 : 32); putue(w, f == F_CROP ? 2 : 0);
-      putue(w, 3); putue(w, 4);
+      putue(w, f == F_CROP ? 1 : f == F_BAD_CROP ? 32
+            : f == F_EDGE_CROP ? 31 : 0);
+      putue(w, f == F_CROP ? 2 : 0);
+      putue(w, f == F_BAD_CROP_V ? 16 : 3);
+      putue(w, f == F_BAD_CROP_V ? 16 : 4);
    }
    putue(w, (uint32_t)(depth - 8));  /* bit_depth_luma_minus8 */
    putue(w, (uint32_t)(depth - 8));  /* bit_depth_chroma_minus8 */
@@ -357,7 +367,10 @@ static void test_params(void)
    sps(&w, F_BAD_CROP, 8); lens[0] = nal(units_buf[0], 33, &w);
    n = hvcc(buf, units, lens, 2);
    expect("invalid crop input", rh265_video_set_extradata(v, buf, n), 0);
-   expect("invalid crop snapshot", rh265_video_get_params(v, 0, &out), -1);
+   /* refused as malformed: the SPS it would have replaced stays */
+   expect("invalid crop keeps prior SPS", rh265_video_get_params(v, 0, &out), 0);
+   if (out.crop_left != 2 || out.crop_right != 4 || out.crop_top != 6
+         || out.crop_bottom != 8) failures++;
    pps(&w, 0, 1); lens[0] = nal(units_buf[0], 34, &w);
    n = hvcc(buf, units, lens, 1);
    expect("missing SPS input", rh265_video_set_extradata(v, buf, n), 0);
@@ -365,6 +378,14 @@ static void test_params(void)
    expect("invalid PPS ID", rh265_video_get_params(v, ~0u, &out), -1);
    expect("null decoder", rh265_video_get_params(NULL, 0, &out), -1);
    expect("null snapshot", rh265_video_get_params(v, 0, NULL), -1);
+   rh265_video_close(v);
+   v = rh265_video_open();
+   if (!v) abort();
+   sps(&w, F_BAD_CROP, 8); lens[0] = nal(units_buf[0], 33, &w);
+   pps(&w, 0, 0); lens[1] = nal(units_buf[1], 34, &w);
+   n = hvcc(buf, units, lens, 2);
+   expect("invalid crop alone input", rh265_video_set_extradata(v, buf, n), 0);
+   expect("invalid crop alone snapshot", rh265_video_get_params(v, 0, &out), -1);
    rh265_video_close(v);
 }
 
@@ -676,6 +697,78 @@ static void test_access_unit(void)
    rh265_video_close(v);
 }
 
+/* A VPS, mode 0 well formed; the VPS lane's other modes craft one
+ * field each */
+static void vps(bitw *w, unsigned mode)
+{
+   memset(w, 0, sizeof(*w));
+   putn(w, 0, 4); putn(w, 3, 2); putn(w, mode == 2, 6);
+   putn(w, mode == 6 ? 7 : 0, 3); put1(w, 1); putn(w, 65535, 16);
+   putn(w, 1, 8); putn(w, 0x60000000u, 32);
+   putn(w, 0xb0000000u, 32); putn(w, 0, 16); putn(w, 93, 8);
+   put1(w, 0); putue(w, mode == 7 ? 16 : 4); putue(w, mode == 8 ? 5 : 2);
+   putue(w, 0xfffffffeu);
+   putn(w, 0, 6); putue(w, 0);
+   put1(w, mode == 1 || mode == 3);
+   if (mode == 1 || mode == 3)
+   {
+      putn(w, 1001, 32); putn(w, 60000, 32);
+      put1(w, 1); putue(w, 0xfffffffeu); putue(w, mode == 3);
+   }
+   put1(w, mode == 4); trailing(w);
+}
+
+/* Retained parameter sets: a repeat whose bytes are a set already
+ * taken matches without a parse, one whose bytes differ but whose
+ * content does not still matches, a changed set is refused; and a new
+ * set of the same size replaces the retained bytes. */
+static void test_raw_repeat(void)
+{
+   static uint8_t unit[3][1024], buf[3300], packet[2200];
+   static rh265_access_unit_t out;
+   const uint8_t *units[3];
+   rh265_nal_t slices[2], raw[3];
+   bitw w;
+   size_t lens[3], n, first;
+   rh265_video *v = rh265_video_open();
+   if (!v) abort();
+   units[0] = unit[0]; units[1] = unit[1]; units[2] = unit[2];
+   expect("raw repeat retain", rh265_video_retain_parameter_sets(v), 0);
+   vps(&w, 0); lens[2] = nal(unit[2], 32, &w);
+   sps(&w, F_NONE, 8); lens[0] = nal(unit[0], 33, &w);
+   slice_pps(&w, 0, 0); lens[1] = nal(unit[1], 34, &w);
+   first = lens[0];
+   n = hvcc(buf, units, lens, 3);
+   expect("raw repeat input", rh265_video_set_extradata(v, buf, n), 0);
+   sps(&w, F_LT, 8); lens[0] = nal(unit[0], 33, &w);
+   if (lens[0] != first) failures++;  /* the same size, other content */
+   n = hvcc(buf, units, lens, 2);
+   expect("raw replacement input", rh265_video_set_extradata(v, buf, n), 0);
+   expect("raw replacement chain", rh265_video_get_parameter_sets(v, 0, raw), 0);
+   if (raw[1].size != lens[0] || memcmp(raw[1].data, unit[0], lens[0]))
+      failures++;
+   /* length-prefixed, so a trailing zero stays inside the NAL */
+   packet[0] = 0; packet[1] = 0; packet[2] = 0; packet[3] = (uint8_t)lens[0];
+   memcpy(packet + 4, unit[0], lens[0]);
+   expect("raw repeat matches", rh265_video_get_access_unit(v, packet,
+         4 + lens[0], 4, slices, 2, &out), 0);
+   packet[3] = (uint8_t)(lens[0] + 1); packet[4 + lens[0]] = 0;
+   expect("raw repeat with other bytes matches", rh265_video_get_access_unit(v,
+         packet, 5 + lens[0], 4, slices, 2, &out), 0);
+   sps(&w, F_NONE, 8); lens[0] = nal(unit[0], 33, &w);
+   packet[3] = (uint8_t)lens[0]; memcpy(packet + 4, unit[0], lens[0]);
+   expect("raw repeat changed SPS refused", rh265_video_get_access_unit(v,
+         packet, 4 + lens[0], 4, slices, 2, &out), -2);
+   packet[3] = (uint8_t)lens[1]; memcpy(packet + 4, unit[1], lens[1]);
+   expect("raw repeat PPS matches", rh265_video_get_access_unit(v, packet,
+         4 + lens[1], 4, slices, 2, &out), 0);
+   slice_pps(&w, 0, 1); lens[1] = nal(unit[1], 34, &w);
+   packet[3] = (uint8_t)lens[1]; memcpy(packet + 4, unit[1], lens[1]);
+   expect("raw repeat changed PPS refused", rh265_video_get_access_unit(v,
+         packet, 4 + lens[1], 4, slices, 2, &out), -2);
+   rh265_video_close(v);
+}
+
 static void test_color_info(void)
 {
    static uint8_t units_buf[2][1024], buf[2200];
@@ -810,21 +903,7 @@ static void test_vps_info(void)
    expect("missing VPS", rh265_video_get_vps(v, 0, &out), -1);
    for (mode = 0; mode < 9; mode++)
    {
-      memset(&w, 0, sizeof(w));
-      putn(&w, 0, 4); putn(&w, 3, 2); putn(&w, mode == 2, 6);
-      putn(&w, mode == 6 ? 7 : 0, 3); put1(&w, 1); putn(&w, 65535, 16);
-      putn(&w, 1, 8); putn(&w, 0x60000000u, 32);
-      putn(&w, 0xb0000000u, 32); putn(&w, 0, 16); putn(&w, 93, 8);
-      put1(&w, 0); putue(&w, mode == 7 ? 16 : 4); putue(&w, mode == 8 ? 5 : 2);
-      putue(&w, 0xfffffffeu);
-      putn(&w, 0, 6); putue(&w, 0);
-      put1(&w, mode == 1 || mode == 3);
-      if (mode == 1 || mode == 3)
-      {
-         putn(&w, 1001, 32); putn(&w, 60000, 32);
-         put1(&w, 1); putue(&w, 0xfffffffeu); putue(&w, mode == 3);
-      }
-      put1(&w, mode == 4); trailing(&w);
+      vps(&w, mode);
       lens[0] = nal(units_buf[0], 32, &w);
       if (mode == 5) lens[0] = 3;
       n = hvcc(buf, units, lens, 3);
@@ -913,6 +992,7 @@ int main(void)
    test_annexb_extradata();
    test_nal_iterator(); test_access_unit();
    test_slice_info();
+   test_raw_repeat();
    test_color_info();
    test_params();
    test_sequence_info();
@@ -930,6 +1010,10 @@ int main(void)
    expect("eight temporal layers are malformed", feed_sps(F_BAD_LAYERS, 9), 0);
    expect("oversized DPB is malformed", feed_sps(F_DPB_HUGE, 9), 0);
    expect("reorder limit exceeding DPB is malformed", feed_sps(F_BAD_REORDER, 9), 0);
+   expect("a crop of the full width is malformed", feed_sps(F_BAD_CROP, 9), 0);
+   expect("a crop of the full height is malformed", feed_sps(F_BAD_CROP_V, 9), 0);
+   expect("a crop leaving two columns is read", feed_sps(F_EDGE_CROP, 9), -1);
+   expect("chroma_format_idc 4 is malformed", feed_sps(F_BAD_CHROMA, 9), 0);
 
    if (failures)
       return 1;

@@ -72,6 +72,11 @@ int record_gpu_output_vulkan_step(record_gpu_output_vulkan_t *output);
  * false awaits producer input/close.
  * Includes pending file cancellation; no service or ownership changes. */
 bool record_gpu_output_vulkan_retry_needed(const record_gpu_output_vulkan_t *p);
+/* Blocks until the encoder's oldest GPU work completes or @timeout_ns
+ * passes, when that is what the retry waits for; false, without waiting,
+ * otherwise. A local file only: a stream waits on its network too. */
+bool record_gpu_output_vulkan_wait(const record_gpu_output_vulkan_t *p,
+      uint64_t timeout_ns);
 /* Worker-only cancellation request, no wait; may need a later retry. */
 bool record_gpu_output_vulkan_abort(record_gpu_output_vulkan_t *output);
 enum record_gpu_output_vulkan_error

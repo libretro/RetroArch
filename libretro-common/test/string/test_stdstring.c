@@ -267,6 +267,27 @@ START_TEST (test_utf8_conv_utf32)
 }
 END_TEST
 
+START_TEST (test_utf8_conv_utf16)
+{
+   uint16_t out[8];
+   /* a, æ, ⠻, 𠀤 (a surrogate pair), then a stray continuation byte */
+   const char test1[] = "a\xc3\xa6\xe2\xa0\xbb\xf0\xa0\x80\xa4\x80z";
+   ck_assert_uint_eq(5, utf8_conv_utf16(out, 8, test1, strlen(test1)));
+   ck_assert_uint_eq(0x0061, out[0]);
+   ck_assert_uint_eq(0x00e6, out[1]);
+   ck_assert_uint_eq(0x283b, out[2]);
+   ck_assert_uint_eq(0xd840, out[3]);
+   ck_assert_uint_eq(0xdc24, out[4]);
+   /* The pair does not fit in one unit: stops before it */
+   ck_assert_uint_eq(3, utf8_conv_utf16(out, 4, test1, strlen(test1)));
+   /* Cut off by the size given: stops before the cut character */
+   ck_assert_uint_eq(2, utf8_conv_utf16(out, 8, test1, 4));
+   /* A NUL is a character */
+   ck_assert_uint_eq(3, utf8_conv_utf16(out, 8, "a\0b", 3));
+   ck_assert_uint_eq(0, out[1]);
+}
+END_TEST
+
 START_TEST (test_utf8_util)
 {
    const char *test1 = "aæ⠻จ𠀤";
@@ -424,6 +445,7 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_strldup);
    tcase_add_test(tc_core, test_utf8_conv_utf32);
    tcase_add_test(tc_core, test_utf16_conv);
+   tcase_add_test(tc_core, test_utf8_conv_utf16);
    tcase_add_test(tc_core, test_utf8_util);
    suite_add_tcase(s, tc_core);
 

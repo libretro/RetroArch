@@ -225,6 +225,7 @@ check_enabled RWEBM WEBMPLAYER 'the WebM player' 'RWEBM is' false
 check_enabled RVP9 WEBMPLAYER 'the WebM player' 'RVP9 is' false
 
 check_enabled NETWORKING CHEEVOS cheevos 'Networking is' false
+check_enabled NETWORKING PYROWAVE 'PyroWave streaming' 'Networking is' false
 check_enabled NETWORKING DISCORD discord 'Networking is' false
 check_enabled NETWORKING SSL ssl 'Networking is' false
 check_enabled NETWORKING MCP 'the MCP server' 'Networking is' false
@@ -626,6 +627,7 @@ if [ "$SSL_BACKEND_CHOSEN" = "no" ] && [ "$HAVE_RETROSSL" = "auto" ]; then
   SSL_BACKEND_CHOSEN=yes
 fi
 if [ "$HAVE_RETROSSL" = "auto" ]; then HAVE_RETROSSL=no; fi
+check_enabled RETROSSL SYSTEM_CA 'system CA bundle' 'retro ssl is' false
 if [ "$HAVE_MBEDX509" = "auto" ]; then HAVE_MBEDX509=no; fi
 if [ "$HAVE_MBEDCRYPTO" = "auto" ]; then HAVE_MBEDCRYPTO=no; fi
 
@@ -1078,6 +1080,10 @@ check_enabled 'SPIRV_CROSS RSLC GLSL' OPENGL_CORE 'OpenGL core' 'SPIRV-Cross and
 check_enabled 'SPIRV_CROSS RSLC' VULKAN vulkan 'SPIRV-Cross is' false
 check_enabled 'SPIRV_CROSS RSLC' METAL metal 'SPIRV-Cross is' false
 
+check_platform 'Linux Win32 Darwin' VULKAN_CUSTOM_DRIVER 'Custom Vulkan drivers are' true
+check_enabled VULKAN VULKAN_CUSTOM_DRIVER 'custom Vulkan drivers' 'Vulkan is' false
+check_enabled DYLIB VULKAN_CUSTOM_DRIVER 'custom Vulkan drivers' 'Dynamic loading is' false
+
 check_enabled 'OPENGL_CORE METAL VULKAN' SLANG slang '' user
 check_enabled 'OPENGL_CORE METAL VULKAN' GLSLANG glslang '' user
 check_enabled 'OPENGL_CORE METAL VULKAN' SPIRV_CROSS SPIRV-Cross '' user
@@ -1128,6 +1134,10 @@ if [ "$HAVE_RETRONFS" = 'auto' ]; then HAVE_RETRONFS=yes; fi
 # Native recording is optional; Vulkan device admission still requires the
 # encode extensions and a separate queue, without changing renderer fallback.
 check_platform 'Linux Win32' RECORD_VULKAN 'Vulkan recording is' true
+case "$OS" in
+   Linux|Win32) ;;
+   *) HAVE_RECORD_VULKAN=no ;;
+esac
 check_enabled VULKAN RECORD_VULKAN 'Vulkan recording' 'Vulkan is' false
 check_enabled THREADS RECORD_VULKAN 'Vulkan recording' 'Threads are' false
 check_enabled CONFIGFILE RECORD_VULKAN 'Vulkan recording' 'Configuration files are' false
@@ -1184,5 +1194,16 @@ else
    fi
    if [ "$HAVE_SMBCLIENT" = 'yes' ]; then
       echo "SMB support enabled (system libsmb2)"
+   fi
+fi
+
+# The screens' own windows need a desktop window system to make them
+# in: X11, Wayland or SDL (not SDL under Cocoa), or Win32's own.
+if [ "$HAVE_VIDEO_WINDOWS" != 'no' ] && [ "$OS" != 'Win32' ]; then
+   if [ "$OS" = 'Darwin' ] || [ "$OS" = 'Haiku' ]; then
+      HAVE_VIDEO_WINDOWS=no
+   else
+      check_enabled 'X11 WAYLAND SDL2 SDL3' VIDEO_WINDOWS \
+         "screens' own windows" 'X11, Wayland and SDL are' false
    fi
 fi

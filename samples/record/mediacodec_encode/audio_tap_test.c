@@ -31,6 +31,16 @@ static record_audio_tap_t *create(void)
    assert(!record_audio_tap_end(t, NULL) && !record_audio_tap_free(t));
    return t;
 }
+static const void *raw_input;
+static bool raw_float;
+static int submit_raw(void *context, const void *samples, size_t frames, bool floating, uint64_t pts)
+{
+   assert(context == &accepted && samples == raw_input && floating == raw_float && pts == accepted);
+   calls++;
+   if (calls == fail_at) return RECORD_AUDIO_BUSY;
+   accepted += frames;
+   return RECORD_AUDIO_OK;
+}
 int main(void)
 {
    static int16_t input[10000];
@@ -77,6 +87,19 @@ int main(void)
    assert(record_audio_tap_free(t));
    assert(!record_audio_tap_new(0, submit, NULL));
    assert(!record_audio_tap_new(48000, NULL, NULL));
+   calls = fail_at = 0; accepted = 0;
+   t = record_audio_tap_new_raw(48000, submit_raw, &accepted);
+   assert(t && !t->scratch && record_audio_tap_begin(t));
+   raw_input = floating; raw_float = true;
+   assert(record_audio_tap_push(t, floating, 5000, true, 48000) && calls == 1 && accepted == 5000);
+   raw_input = input; raw_float = false;
+   assert(record_audio_tap_push(t, input, 1, false, 48000) && accepted == 5001);
+   fail_at = 3;
+   assert(!record_audio_tap_push(t, input, 1, false, 48000) && record_audio_tap_failed(t));
+   record_audio_tap_retire(t, false);
+   assert(record_audio_tap_end(t, &end) && end == 5001 && record_audio_tap_free(t));
+   assert(!record_audio_tap_new_raw(0, submit_raw, NULL));
+   assert(!record_audio_tap_new_raw(48000, NULL, NULL));
    assert(record_audio_tap_free(NULL));
    puts("PASS post-mixer S16/float capture, bounded packets, source clock, "
         "backpressure and independent producer retirement");

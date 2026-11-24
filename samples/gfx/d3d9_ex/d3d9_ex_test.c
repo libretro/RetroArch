@@ -50,7 +50,8 @@ struct retro_hw_render_callback *video_driver_get_hw_context(void)
 
 void video_driver_cached_frame_retire(void)     { retires++; }
 
-/* d3d9_present times itself on this clock */
+/* d3d9_present times itself on the perf counter, told in microseconds
+ * at its rate: QPC here, as the real one is where there is no rdtsc */
 retro_time_t cpu_features_get_time_usec(void)
 {
    LARGE_INTEGER c, f;
@@ -58,6 +59,20 @@ retro_time_t cpu_features_get_time_usec(void)
    QueryPerformanceFrequency(&f);
    return (retro_time_t)(c.QuadPart / f.QuadPart * 1000000
          + c.QuadPart % f.QuadPart * 1000000 / f.QuadPart);
+}
+retro_perf_tick_t cpu_features_get_perf_counter(void)
+{
+   LARGE_INTEGER c;
+   QueryPerformanceCounter(&c);
+   return (retro_perf_tick_t)c.QuadPart;
+}
+retro_time_t cpu_features_perf_to_usec(retro_perf_tick_t ticks)
+{
+   LARGE_INTEGER f;
+   QueryPerformanceFrequency(&f);
+   return (retro_time_t)(ticks / (retro_perf_tick_t)f.QuadPart * 1000000
+         + ticks % (retro_perf_tick_t)f.QuadPart * 1000000
+         / (retro_perf_tick_t)f.QuadPart);
 }
 void video_driver_cached_frame_invalidate(void) { }
 
@@ -786,10 +801,10 @@ static void ring_run(HWND w, bool ex, bool dupe)
       return;
    d3d.hw.enable = true;
    poke.hw_ring_install = d3d9_hlsl_hw_ring_install;
-   poke.hw_ring_fence_new = d3d9_hlsl_hw_ring_fence_new;
-   poke.hw_ring_fence_free = d3d9_hlsl_hw_ring_fence_free;
-   poke.hw_ring_fence_signal = d3d9_hlsl_hw_ring_fence_signal;
-   poke.hw_ring_fence_wait = d3d9_hlsl_hw_ring_fence_wait;
+   poke.hw_ring_fence_new = hw_fence_issued_new;
+   poke.hw_ring_fence_free = hw_fence_issued_free;
+   poke.hw_ring_fence_signal = hw_fence_issued_signal;
+   poke.hw_ring_fence_wait = hw_fence_issued_wait;
    thr.poke = &poke;
    thr.driver_data = &d3d;
    if (!retro_eventcount_init(&thr.frame.ring) || !hw_ring_setup(&thr, &ring))

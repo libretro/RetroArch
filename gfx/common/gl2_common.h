@@ -98,8 +98,6 @@ struct gl2_views_prog
 struct gl2_window
 {
    video_window_native_t native;
-   /* As last drawn and published */
-   video_views_layout_t  layout;
    /* Anaglyph and interlaced draw both eyes into it first */
    struct gl2_views_fbo  canvas;
    video_views_target_t  canvas_target;
@@ -161,6 +159,12 @@ enum gl2_flags
 
 struct gl2
 {
+   struct gl_media_shader *media_shader;
+   struct gl_media_pool *media_pool;
+   unsigned media_pool_capabilities;
+   uintptr_t media_last_texture;
+   uint64_t media_shader_frame;
+   bool media_shader_enabled;
    /* gfx_display meshes kept on the GPU, by mesh id: vertices, and
     * indices where the mesh has them. GL retires a deleted buffer once
     * nothing in flight reads it, so the one drawn longest ago simply
@@ -295,6 +299,11 @@ struct gl2
 #endif
 #ifdef HAVE_GL_PLANAR
    gl_planar_t planar;
+   /* A movie frame shown in the core frame's place: converted from
+    * the media core's planes, drawn until a core frame comes */
+   GLuint movie_texture;
+   unsigned movie_dims;
+   bool movie_pending;  /* a frame imported since the last draw */
 #endif
    bool pbo_readback_valid[4];
    /* At init: textures take half floats (TEXTURE_GPU_FORMAT_RGBA16F) */

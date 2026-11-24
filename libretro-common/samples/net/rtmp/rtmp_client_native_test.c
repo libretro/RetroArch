@@ -31,6 +31,7 @@ int main(int argc, char **argv)
    size_t length;
    int fd;
    unsigned i;
+   bool closing = false;
 #ifdef HAVE_SSL
    const char *ca = getenv("RTMPS_CA");
    char *pem = NULL;
@@ -111,9 +112,18 @@ int main(int argc, char **argv)
       assert(cpu_features_get_time_usec() < deadline);
       state = net_rtmp_client_step(active_client, 0, &view);
       assert(state != NET_RTMP_CLIENT_FAILED);
+      closing = closing || state == NET_RTMP_CLIENT_CLOSING;
       if (!view.again && view.fd >= 0)
          socket_wait(view.fd, &view.read, &view.write, 10);
    } while (state != NET_RTMP_CLIENT_FINISHED);
+   /* Half-closed and read until the server closed, over TLS as over TCP:
+    * a close with the server's last replies unread resets the
+    * connection, which can discard the end of the stream */
+   if (!closing)
+   {
+      fprintf(stderr, "The client closed without half-closing first\n");
+      return 1;
+   }
    assert(net_rtmp_session_status(view.session, NULL, NULL) == NET_RTMP_SESSION_FINISHED);
    assert(net_rtmp_client_free(active_client));
    sthread_join(resolver_thread);

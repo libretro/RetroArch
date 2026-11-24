@@ -67,8 +67,11 @@ ifeq ($(TEST_KEY),1)
 endif
 LIBS += -lm
 # The slice clock, so a lane can cancel a restore part-way through its
-# check
-LDFLAGS += -Wl,--wrap=cpu_features_get_time_usec
+# check; the VFS copy, so a lane can take the buffered restore a
+# compressed backup takes (no zlib here); the file hash, to count reads
+LDFLAGS += -Wl,--wrap=cpu_features_get_time_usec \
+           -Wl,--wrap=filestream_copy_begin \
+           -Wl,--wrap=core_hash_step
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
@@ -77,8 +80,8 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-# Only these two, which share the menu's ANDROID layout; the others
-# hand msg_hash values only to the stand-in, which ignores them
+# Only these two, which share the menu's ANDROID layout; no test looks
+# at a msg_hash value the others hand the stand-in
 ifeq ($(PLAY),1)
 core_backup_sig_test.o $(call sample_objs,$(REPO_ROOT)/tasks/task_core_backup.o): \
    CFLAGS += -DANDROID

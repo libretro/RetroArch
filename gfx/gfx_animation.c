@@ -1200,10 +1200,110 @@ static size_t build_ticker_loop_string(
    return _len;
 }
 
+/* utf8cpy() for a run of n one-byte characters: copies what fits of
+ * them to s, len bytes, terminates it and returns the bytes copied */
+static size_t ticker_cpy_bytes(char *s, size_t len, const char *in,
+      size_t n)
+{
+   if (!len)
+      return 0;
+   if (n > len - 1)
+      n = len - 1;
+   memcpy(s, in, n);
+   s[n] = '\0';
+   return n;
+}
+
+/* utf8cpy() of the characters of in that end n bytes in, n at a
+ * character boundary: what fits of them copied to s, len bytes, and
+ * terminated; returns the bytes copied */
+static size_t ticker_cpy_cut(char *s, size_t len, const char *in, size_t n)
+{
+   if (!len)
+      return 0;
+   if (n > len - 1)
+   {
+      n = len - 1;
+      while (n > 0 && ((unsigned char)in[n] & 0xC0) == 0x80)
+         n--;
+   }
+   memcpy(s, in, n);
+   s[n] = '\0';
+   return n;
+}
+
+/* build_ticker_loop_string() for a source and spacer of one-byte
+ * characters, whose character offsets are byte offsets */
+static INLINE void build_ticker_loop_bytes(
+      const char* src_str, const char *spacer,
+      size_t char_offset1, size_t num_chars1,
+      size_t char_offset2, size_t num_chars2,
+      size_t char_offset3, size_t num_chars3,
+      char *s, size_t len)
+{
+   size_t _len = 0;
+   if (num_chars1 > 0)
+      _len += ticker_cpy_bytes(s, len, src_str + char_offset1,
+            num_chars1);
+   if (num_chars2 > 0)
+      _len += ticker_cpy_bytes(s + _len, len - _len,
+            spacer + char_offset2, num_chars2);
+   if (num_chars3 > 0)
+      ticker_cpy_bytes(s + _len, len - _len, src_str + char_offset3,
+            num_chars3);
+}
+
+/* ticker_scan() flags: a byte at or above 0x80, and a Hebrew or Arabic
+ * lead byte (0xD6 - 0xDB) */
+#define TICKER_SCAN_HIGH 1
+#define TICKER_SCAN_RTL  2
+
+/* The characters of s, its bytes in *len and TICKER_SCAN_* in *flags.
+ * Words with no byte at or above 0x80 are counted whole. */
+static INLINE size_t ticker_scan(const char *s, size_t *len,
+      unsigned *flags)
+{
+   const unsigned char *p     = (const unsigned char*)s;
+   const size_t         mask  = (size_t)~(size_t)0 / 0xFF * 0x80;
+   size_t               n     = strlen(s);
+   size_t               chars = 0;
+   unsigned             f     = 0;
+   const unsigned char *e     = p + n;
+
+   while (p + sizeof(size_t) <= e)
+   {
+      size_t w;
+      memcpy(&w, p, sizeof(w));
+      if (w & mask)
+         break;
+      chars += sizeof(size_t);
+      p     += sizeof(size_t);
+   }
+   for (; p < e; p++)
+   {
+      if (*p & 0x80)
+      {
+         f |= TICKER_SCAN_HIGH;
+         if (*p - 0xD6u < 6)
+            f |= TICKER_SCAN_RTL;
+      }
+      chars += ((*p & 0xC0) != 0x80);
+   }
+   *len   = n;
+   *flags = f;
+   return chars;
+}
+
+#ifdef HAVE_LANGEXTRA
+static int ticker_stepped_rtl(gfx_animation_ctx_ticker_t *ticker);
+#endif
+
 static bool gfx_animation_ticker_in(gfx_animation_t *p_anim,
       gfx_animation_ctx_ticker_t *ticker)
 {
-   size_t str_len = 0;
+   size_t   str_len = 0;
+   size_t   bytes   = 0;
+   unsigned flags   = TICKER_SCAN_HIGH;
 
    /* utf8cpy() computes its clamp as (len - 1), so a zero here
     * underflows to SIZE_MAX and the clamp never fires.  A caller that
@@ -1212,35 +1312,63 @@ static bool gfx_animation_ticker_in(gfx_animation_t *p_anim,
    if (ticker->s_len < 1)
       return false;
 
-   if (ticker->selected)
-      str_len = utf8len(ticker->str);
-   else if (ticker->str)
+   if (!ticker->str)
+      ;
+   else if (ticker->selected)
+      str_len = ticker_scan(ticker->str, &bytes, &flags);
+   else
    {
       const unsigned char *p = (const unsigned char*)ticker->str;
-      /* Clipped labels only need to know whether the field overflows. */
+      /* Clipped labels only need to know whether the field overflows */
       while (*p)
       {
          if ((*p++ & 0xc0) != 0x80 && ++str_len > ticker->len)
             break;
       }
+      bytes = (size_t)(p - (const unsigned char*)ticker->str);
    }
 
    if (!ticker->spacer)
       ticker->spacer       = TICKER_SPACER_DEFAULT;
 
+   /* Characters are counted from their lead bytes, which a string
+    * opening on a continuation byte does not have for its first one:
+    * that one goes through utf8cpy(), which counts it */
    if ((size_t)str_len <= ticker->len)
    {
-      utf8cpy(ticker->s,
-            ticker->s_len,
-            ticker->str,
-            ticker->len);
+      if (     ticker->str
+            && ((unsigned char)*ticker->str & 0xC0) != 0x80)
+         ticker_cpy_cut(ticker->s, ticker->s_len, ticker->str, bytes);
+      else
+         utf8cpy(ticker->s,
+               ticker->s_len,
+               ticker->str,
+               ticker->len);
       return false;
    }
 
    if (!ticker->selected)
    {
-      size_t _len = utf8cpy(ticker->s,
-            ticker->s_len, ticker->str, ticker->len - 3);
+      size_t _len;
+      if (     ticker->len >= 3
+            && ((unsigned char)*ticker->str & 0xC0) != 0x80)
+      {
+         /* The count stopped past the lead byte of character len + 1;
+          * three characters back is where the first len - 3 end */
+         const char *q = ticker->str + bytes - 1;
+         unsigned    k;
+         for (k = 0; k < 3; k++)
+         {
+            q--;
+            while (q > ticker->str && ((unsigned char)*q & 0xC0) == 0x80)
+               q--;
+         }
+         _len = ticker_cpy_cut(ticker->s, ticker->s_len, ticker->str,
+               (size_t)(q - ticker->str));
+      }
+      else
+         _len = utf8cpy(ticker->s,
+               ticker->s_len, ticker->str, ticker->len - 3);
       if (_len + 4 <= ticker->s_len)
       {
          ticker->s[  _len] = '.';
@@ -1253,6 +1381,22 @@ static bool gfx_animation_ticker_in(gfx_animation_t *p_anim,
       return false;
    }
 
+#ifdef HAVE_LANGEXTRA
+   /* A label holding right-to-left text steps over the glyphs it
+    * draws */
+   if (flags & TICKER_SCAN_RTL)
+   {
+      int r = ticker_stepped_rtl(ticker);
+      if (r == 0)
+         return false;
+      if (r > 0)
+      {
+         p_anim->flags |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
+         return true;
+      }
+   }
+#endif
+
    /* Note: If we reach this point then str_len > ticker->len
     * (previously had an unnecessary 'if (str_len > ticker->len)'
     * check here...) */
@@ -1260,23 +1404,38 @@ static bool gfx_animation_ticker_in(gfx_animation_t *p_anim,
    {
       case TICKER_TYPE_LOOP:
          {
-            size_t offset1, offset2, offset3;
-            size_t width1, width2, width3;
+            size_t   offset1, offset2, offset3;
+            size_t   width1, width2, width3;
+            size_t   spacer_bytes;
+            unsigned spacer_flags;
+            size_t   spacer_len = ticker_scan(ticker->spacer,
+                  &spacer_bytes, &spacer_flags);
 
             gfx_animation_ticker_loop(
                   ticker->idx,
                   ticker->len,
-                  str_len, utf8len(ticker->spacer),
+                  str_len, spacer_len,
                   &offset1, &width1,
                   &offset2, &width2,
                   &offset3, &width3);
 
-            build_ticker_loop_string(
-                  ticker->str, ticker->spacer,
-                  offset1, width1,
-                  offset2, width2,
-                  offset3, width3,
-                  ticker->s, ticker->s_len);
+            /* A field no character wide has nothing in it */
+            if (!(width1 | width2 | width3))
+               ticker->s[0] = '\0';
+            else if (!flags && !spacer_flags)
+               build_ticker_loop_bytes(
+                     ticker->str, ticker->spacer,
+                     offset1, width1,
+                     offset2, width2,
+                     offset3, width3,
+                     ticker->s, ticker->s_len);
+            else
+               build_ticker_loop_string(
+                     ticker->str, ticker->spacer,
+                     offset1, width1,
+                     offset2, width2,
+                     offset3, width3,
+                     ticker->s, ticker->s_len);
          }
          break;
       case TICKER_TYPE_BOUNCE:
@@ -1288,11 +1447,15 @@ static bool gfx_animation_ticker_in(gfx_animation_t *p_anim,
 
             str_len       = ticker->len;
 
-            utf8cpy(
-                  ticker->s,
-                  ticker->s_len,
-                  utf8skip(ticker->str, offset),
-                  str_len);
+            if (!flags)
+               ticker_cpy_bytes(ticker->s, ticker->s_len,
+                     ticker->str + offset, str_len);
+            else
+               utf8cpy(
+                     ticker->s,
+                     ticker->s_len,
+                     utf8skip(ticker->str, offset),
+                     str_len);
          }
          break;
    }
@@ -1353,7 +1516,47 @@ typedef struct
    uint32_t last_use;     /* lookup sequence stamp for eviction */
    unsigned total_width;
    float font_scale;
+   bool has_vis;          /* laid out as drawn: see ticker_vis_t */
 } ticker_wcache_entry_t;
+
+/* Every character of the entry's string is one byte, so a run of
+ * characters is a run of bytes */
+#define TICKER_WCACHE_IS_BYTES(e) ((e)->len == (e)->num_chars)
+
+#ifdef HAVE_LANGEXTRA
+/* A line holding right-to-left text scrolls over the glyphs it draws,
+ * laid out once when its entry is made: its widths, num_chars and
+ * total_width are those of the drawn glyphs in reading order (right to
+ * left for a right-to-left line), a mark counted with the glyph it
+ * sits on. This sits in the allocation of the entry's str, after its
+ * terminator, and is followed by unsigned offs[num + 1], the byte
+ * offset of each drawn glyph left to right and then their end, and the
+ * drawn bytes. */
+typedef struct
+{
+   size_t num;            /* drawn glyphs */
+   bool rtl;              /* read right to left */
+} ticker_vis_t;
+
+#define TICKER_VIS(e) ((const ticker_vis_t*)((e)->str \
+      + (((e)->len + sizeof(size_t)) & ~(sizeof(size_t) - 1))))
+#define TICKER_VIS_OFFS(v)   ((const unsigned*)((v) + 1))
+#define TICKER_VIS_BYTES(v)  ((const char*)(TICKER_VIS_OFFS(v) + (v)->num + 1))
+
+/* Kept out of line: the layout runs once per label and the writer only
+ * for right-to-left labels, and neither belongs on the fall-through
+ * path of gfx_animation_ticker_smooth() or ticker_wcache_get(). Follows
+ * the RXML_NOINLINE precedent in libretro-common/formats/xml/rxml.c. */
+#if defined(__OPTIMIZE_SIZE__)
+#define TICKER_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define TICKER_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define TICKER_NOINLINE __declspec(noinline)
+#else
+#define TICKER_NOINLINE
+#endif
+#endif
 
 static ticker_wcache_entry_t ticker_wcache
       [TICKER_WCACHE_SETS][TICKER_WCACHE_WAYS];
@@ -1387,6 +1590,201 @@ static void ticker_wcache_flush(void)
       for (j = 0; j < TICKER_WCACHE_WAYS; j++)
          ticker_wcache_entry_clear(&ticker_wcache[i][j]);
 }
+
+#ifdef HAVE_LANGEXTRA
+/* Lays out the line of an entry holding right-to-left text as it is
+ * drawn. Every other line, and any failure, leaves the entry as typed. */
+static TICKER_NOINLINE void ticker_wcache_layout(
+      ticker_wcache_entry_t *e)
+{
+   char          buf[FONT_LAYOUT_LINE_SIZE];
+   bool          rtl   = false;
+   size_t        i, n, cap, hdr;
+   unsigned      total = 0;
+   const char   *p;
+   char         *str;
+   ticker_vis_t *v;
+   unsigned     *offs;
+   unsigned     *widths;
+
+   if (!(n = font_driver_layout_line(e->str, e->len, buf, sizeof(buf),
+               &rtl)))
+      return;
+
+   /* Each character typed draws at most one */
+   for (i = 0, cap = 0; i < n; i++)
+      cap += ((buf[i] & 0xC0) != 0x80);
+   if (cap > e->num_chars)
+      return;
+   hdr = (e->len + sizeof(size_t)) & ~(sizeof(size_t) - 1);
+   if (!(str = (char*)realloc(e->str, hdr + sizeof(ticker_vis_t)
+               + (2 * cap + 1) * sizeof(unsigned) + n)))
+      return;
+   e->str = str;
+   v      = (ticker_vis_t*)(str + hdr);
+   offs   = (unsigned*)(v + 1);
+   widths = offs + cap + 1;
+
+   /* A glyph with no advance, a mark, stays with the glyph before it.
+    * Without a font every other glyph is one cell wide. */
+   for (i = 0, p = buf; p < buf + n; p = utf8skip(p, 1))
+   {
+      int w = e->font
+         ? font_driver_get_message_width(e->font, p, 1, e->font_scale)
+         : !font_driver_is_mark(p, (size_t)(utf8skip(p, 1) - p));
+      if (w < 0)
+         return;
+      if (w > 0 || !i)
+      {
+         offs[i]     = (unsigned)(p - buf);
+         widths[i++] = 0;
+      }
+      widths[i - 1] += (unsigned)w;
+      total         += (unsigned)w;
+   }
+   offs[i] = (unsigned)n;
+
+   for (n = 0; n < i; n++)
+      e->widths[n] = widths[rtl ? i - 1 - n : n];
+   memcpy(offs + i + 1, buf, offs[i]);
+
+   v->num         = i;
+   v->rtl         = rtl;
+   e->num_chars   = i;
+   e->total_width = total;
+   e->has_vis     = true;
+}
+
+/* Appends the drawn glyphs of v from reading-order glyph first, count
+ * of them (at most v->num - first), to dst at *pos: one run of the
+ * drawn bytes either way */
+static INLINE void ticker_vis_run(const ticker_vis_t *v, unsigned first,
+      unsigned count, char *dst, size_t dst_len, size_t *pos)
+{
+   size_t          a, b;
+   const unsigned *offs   = TICKER_VIS_OFFS(v);
+   const char     *bytes  = TICKER_VIS_BYTES(v);
+   if (v->rtl)
+   {
+      a = offs[v->num - first - count];
+      b = offs[v->num - first];
+   }
+   else
+   {
+      a = offs[first];
+      b = offs[first + count];
+   }
+   if (b - a > dst_len - 1 - *pos)
+   {
+      b = a + (dst_len - 1 - *pos);
+      while (b > a && (bytes[b] & 0xC0) == 0x80)
+         b--;
+   }
+   memcpy(dst + *pos, bytes + a, b - a);
+   *pos += b - a;
+}
+
+/* ticker_vis_run(), returning the glyphs' advances, from widths */
+static unsigned ticker_vis_put(const ticker_vis_t *v,
+      const unsigned *widths, unsigned first, unsigned count, char *dst,
+      size_t dst_len, size_t *pos)
+{
+   size_t   i;
+   unsigned width = 0;
+   if (!count || first + count > v->num)
+      return 0;
+   for (i = first; i < first + count; i++)
+      width += widths[i];
+   ticker_vis_run(v, first, count, dst, dst_len, pos);
+   return width;
+}
+
+/* Appends spacer characters first to first + count to dst at *pos,
+ * last to first for a right-to-left line. Returns their advances. */
+static unsigned ticker_vis_put_spacer(const char *spacer,
+      const unsigned *widths, size_t num, bool rtl, unsigned first,
+      unsigned count, char *dst, size_t dst_len, size_t *pos)
+{
+   unsigned i;
+   unsigned width = 0;
+   for (i = 0; i < count && first + count <= num; i++)
+   {
+      unsigned    j = rtl ? first + count - 1 - i : first + i;
+      const char *c = utf8skip(spacer, j);
+      size_t      k = (size_t)(utf8skip(c, 1) - c);
+      if (k > dst_len - 1 - *pos)
+         break;
+      memcpy(dst + *pos, c, k);
+      *pos  += k;
+      width += widths[j];
+   }
+   return width;
+}
+
+/* Writes the ticker's pieces of a line holding right-to-left text,
+ * drawn behind FONT_LRO so the reshaper does not lay them out again,
+ * and turns its x offset to the left edge of what is drawn: the
+ * offsets found run from the field's reading start, which is its
+ * right edge for a right-to-left line. Pieces are given in reading
+ * order; a bouncing ticker passes count2 and count3 0. */
+static TICKER_NOINLINE void ticker_vis_write(
+      gfx_animation_ctx_ticker_smooth_t *ticker,
+      const ticker_wcache_entry_t *src, const unsigned *spacer_widths,
+      size_t spacer_len, unsigned first1, unsigned count1,
+      unsigned first2, unsigned count2, unsigned count3)
+{
+   const ticker_vis_t *v = TICKER_VIS(src);
+   size_t   i;
+   unsigned width = 0;
+   size_t   pos   = sizeof(FONT_LRO) - 1;
+   char    *dst   = ticker->dst_str;
+   size_t   len   = ticker->dst_str_len;
+   bool     mark  = false;
+
+   if (len <= pos + 1)
+   {
+      if (len)
+         dst[0] = '\0';
+      return;
+   }
+
+   /* Read right to left, the first piece is drawn rightmost */
+   if (v->rtl)
+   {
+      width += ticker_vis_put(v, src->widths, 0, count3, dst, len, &pos);
+      width += ticker_vis_put_spacer(ticker->spacer, spacer_widths,
+            spacer_len, true, first2, count2, dst, len, &pos);
+      width += ticker_vis_put(v, src->widths, first1, count1, dst, len,
+            &pos);
+   }
+   else
+   {
+      width += ticker_vis_put(v, src->widths, first1, count1, dst, len,
+            &pos);
+      width += ticker_vis_put_spacer(ticker->spacer, spacer_widths,
+            spacer_len, false, first2, count2, dst, len, &pos);
+      width += ticker_vis_put(v, src->widths, 0, count3, dst, len, &pos);
+   }
+
+   /* The mark only goes in front of a piece the reshaper would lay
+    * out; any other piece is drawn as given anyway */
+   for (i = sizeof(FONT_LRO) - 1; i < pos && !mark; i++)
+      mark = (     ((unsigned char)dst[i] & 0xFE) == 0xD6
+               || ((unsigned char)dst[i] & 0xFC) == 0xD8);
+   if (mark)
+      memcpy(dst, FONT_LRO, sizeof(FONT_LRO) - 1);
+   else
+   {
+      pos -= sizeof(FONT_LRO) - 1;
+      memmove(dst, dst + sizeof(FONT_LRO) - 1, pos);
+   }
+   dst[pos] = '\0';
+
+   if (v->rtl && *ticker->x_offset + width <= ticker->field_width)
+      *ticker->x_offset = ticker->field_width - *ticker->x_offset - width;
+}
+
+#endif
 
 /* Returns the cached (or freshly computed and inserted) per
  * character width data for 'str' rendered with 'font' at
@@ -1437,11 +1835,12 @@ static const ticker_wcache_entry_t *ticker_wcache_get(
    if (!(widths = (unsigned*)malloc(num_chars * sizeof(unsigned))))
       return NULL;
 
+   /* Without a font, as for the stepped ticker, a character is a cell */
    str_ptr = str;
    for (i = 0; i < num_chars; i++)
    {
-      int glyph_width = font_driver_get_message_width(
-            font, str_ptr, 1, font_scale);
+      int glyph_width = font ? font_driver_get_message_width(
+            font, str_ptr, 1, font_scale) : 1;
 
       if (glyph_width < 0)
       {
@@ -1482,8 +1881,109 @@ static const ticker_wcache_entry_t *ticker_wcache_get(
    victim->total_width = total;
    victim->font_scale  = font_scale;
 
+#ifdef HAVE_LANGEXTRA
+   ticker_wcache_layout(victim);
+#endif
+
    return victim;
 }
+
+#ifdef HAVE_LANGEXTRA
+/* Spacer characters first to first + count to dst at *pos, last to
+ * first for a right-to-left line */
+static void ticker_cells_put_spacer(const char *spacer, bool rtl,
+      size_t first, size_t count, char *dst, size_t dst_len, size_t *pos)
+{
+   size_t i;
+   for (i = 0; i < count; i++)
+   {
+      const char *c = utf8skip(spacer, rtl ? first + count - 1 - i
+            : first + i);
+      size_t      k = (size_t)(utf8skip(c, 1) - c);
+      if (!*c || k > dst_len - 1 - *pos)
+         break;
+      memcpy(dst + *pos, c, k);
+      *pos += k;
+   }
+}
+
+/* The stepped ticker of a selected label holding right-to-left text,
+ * one cell per glyph of the whole line as drawn: 0 when every glyph
+ * fits and the label is copied whole, 1 when a window of it is
+ * written, behind FONT_LRO when the reshaper would lay it out again,
+ * and -1 to step over the typed characters instead */
+static TICKER_NOINLINE int ticker_stepped_rtl(
+      gfx_animation_ctx_ticker_t *ticker)
+{
+   const ticker_wcache_entry_t *e   = ticker_wcache_get(NULL, 0.0f,
+         ticker->str);
+   const ticker_vis_t          *v;
+   char                        *dst = ticker->s;
+   size_t                       len = ticker->s_len;
+   size_t                       pos = sizeof(FONT_LRO) - 1;
+   size_t                       i;
+   bool                         mark = false;
+
+   if (!e || !e->has_vis)
+      return -1;
+   v = TICKER_VIS(e);
+   if (v->num <= ticker->len)
+   {
+      utf8cpy(dst, len, ticker->str, (size_t)-1);
+      return 0;
+   }
+   if (len <= pos + 1)
+   {
+      dst[0] = '\0';
+      return 1;
+   }
+
+   if (ticker->type_enum == TICKER_TYPE_LOOP)
+   {
+      size_t o1, w1, o2, w2, o3, w3;
+      gfx_animation_ticker_loop(ticker->idx, ticker->len, v->num,
+            utf8len(ticker->spacer), &o1, &w1, &o2, &w2, &o3, &w3);
+      /* Read right to left, the first piece is drawn rightmost */
+      if (v->rtl)
+      {
+         if (w3)
+            ticker_vis_run(v, 0, (unsigned)w3, dst, len, &pos);
+         ticker_cells_put_spacer(ticker->spacer, true, o2, w2, dst, len,
+               &pos);
+         if (w1)
+            ticker_vis_run(v, (unsigned)o1, (unsigned)w1, dst, len, &pos);
+      }
+      else
+      {
+         if (w1)
+            ticker_vis_run(v, (unsigned)o1, (unsigned)w1, dst, len, &pos);
+         ticker_cells_put_spacer(ticker->spacer, false, o2, w2, dst, len,
+               &pos);
+         if (w3)
+            ticker_vis_run(v, 0, (unsigned)w3, dst, len, &pos);
+      }
+   }
+   else
+      ticker_vis_run(v, (unsigned)gfx_animation_ticker_generic(
+               ticker->idx, v->num - ticker->len),
+            (unsigned)ticker->len, dst, len, &pos);
+
+   /* The mark only goes in front of a piece the reshaper would lay
+    * out; any other piece is drawn as given anyway */
+   for (i = sizeof(FONT_LRO) - 1; i < pos && !mark; i++)
+      mark = (     ((unsigned char)dst[i] & 0xFE) == 0xD6
+               || ((unsigned char)dst[i] & 0xFC) == 0xD8);
+   if (mark)
+      memcpy(dst, FONT_LRO, sizeof(FONT_LRO) - 1);
+   else
+   {
+      pos -= sizeof(FONT_LRO) - 1;
+      memmove(dst, dst + sizeof(FONT_LRO) - 1, pos);
+   }
+   dst[pos] = '\0';
+   return 1;
+}
+#endif
 
 /* 'Fixed width' font version of gfx_animation_ticker_smooth() */
 static bool gfx_animation_ticker_smooth_fw(
@@ -1684,8 +2184,12 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
     * can just copy the entire string */
    if (src_str_width <= ticker->field_width)
    {
-      utf8cpy(ticker->dst_str, ticker->dst_str_len,
-            ticker->src_str, src_str_len);
+      if (TICKER_WCACHE_IS_BYTES(src_entry))
+         ticker_cpy_bytes(ticker->dst_str, ticker->dst_str_len,
+               ticker->src_str, src_entry->len);
+      else
+         utf8cpy(ticker->dst_str, ticker->dst_str_len,
+               ticker->src_str, (size_t)-1);
 
       if (ticker->dst_str_width)
          *ticker->dst_str_width = src_str_width;
@@ -1734,8 +2238,11 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
       }
 
       /* Copy string segment + add suffix */
-      _len = utf8cpy(ticker->dst_str, ticker->dst_str_len,
-            ticker->src_str, num_chars);
+      _len = TICKER_WCACHE_IS_BYTES(src_entry)
+         ? ticker_cpy_bytes(ticker->dst_str, ticker->dst_str_len,
+               ticker->src_str, num_chars)
+         : utf8cpy(ticker->dst_str, ticker->dst_str_len,
+               ticker->src_str, num_chars);
       if (_len + 4 <= ticker->dst_str_len)
       {
          ticker->dst_str[  _len] = '.';
@@ -1792,7 +2299,24 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
                &char_offset3, &num_chars3,
                ticker->x_offset, ticker->dst_str_width);
 
-         build_ticker_loop_string(
+         if (     TICKER_WCACHE_IS_BYTES(src_entry)
+               && TICKER_WCACHE_IS_BYTES(spacer_entry))
+            build_ticker_loop_bytes(
+                  ticker->src_str, ticker->spacer,
+                  char_offset1, num_chars1,
+                  char_offset2, num_chars2,
+                  char_offset3, num_chars3,
+                  ticker->dst_str, ticker->dst_str_len);
+#ifdef HAVE_LANGEXTRA
+         /* A line holding right-to-left text scrolls over what it
+          * draws */
+         else if (src_entry->has_vis)
+            ticker_vis_write(ticker, src_entry, spacer_char_widths,
+                  spacer_len, char_offset1, num_chars1, char_offset2,
+                  num_chars2, num_chars3);
+#endif
+         else
+            build_ticker_loop_string(
                ticker->src_str, ticker->spacer,
                char_offset1, num_chars1,
                char_offset2, num_chars2,
@@ -1815,7 +2339,15 @@ bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker)
                ticker->x_offset, ticker->dst_str_width);
 
          /* Copy required substring */
-         if (num_chars > 0)
+         if (TICKER_WCACHE_IS_BYTES(src_entry))
+            ticker_cpy_bytes(ticker->dst_str, ticker->dst_str_len,
+                  ticker->src_str + char_offset, num_chars);
+#ifdef HAVE_LANGEXTRA
+         else if (src_entry->has_vis)
+            ticker_vis_write(ticker, src_entry, NULL, 0,
+                  char_offset, num_chars, 0, 0, 0);
+#endif
+         else if (num_chars > 0)
             utf8cpy(
                   ticker->dst_str, ticker->dst_str_len,
                   utf8skip(ticker->src_str, char_offset), num_chars);

@@ -108,10 +108,13 @@ enum slang_semantic
    SLANG_SEMANTIC_SOURCE_HDR          = 32,
    /* uint, native HDR ownership without creative curves or white scaling */
    SLANG_SEMANTIC_PASSTHROUGH         = 33,
-   SLANG_NUM_BASE_SEMANTICS        = 34,
+   SLANG_SEMANTIC_VIEWER_COLOUR0     = 34,
+   SLANG_SEMANTIC_VIEWER_COLOUR1     = 35,
+   SLANG_SEMANTIC_VIEWER_COLOUR2     = 36,
+   SLANG_NUM_BASE_SEMANTICS        = 37,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER  = 34,
+   SLANG_SEMANTIC_FLOAT_PARAMETER  = 37,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC          = -1
@@ -154,6 +157,7 @@ typedef struct
    texture_map_t textures[SLANG_NUM_TEXTURE_SEMANTICS];
    void*         uniforms[SLANG_NUM_BASE_SEMANTICS];
    bool          frame_smooth;
+   bool          viewer_colour;
 } semantics_map_t;
 
 typedef struct
@@ -445,6 +449,23 @@ bool slang_compile_builtin(const char *source, bool fragment,
  * their text; a stage left as it was comes back NULL. *verdict as
  * slang_rect_remap_pass() says. False when rslc cannot do it: the
  * caller rewrites the SPIR-V. */
+bool slang_compile_colour(const char *shader_path,
+      const uint32_t *vs, size_t vs_words,
+      const uint32_t *fs, size_t fs_words, bool source,
+      const struct slang_text_target *text,
+      enum slang_rect_result *verdict,
+      struct slang_blob **vs_out, struct slang_blob **fs_out,
+      char **vs_text, char **fs_text);
+
+/* R8 Y/Cb/Cr atlas input, sampled without an RGB intermediate. */
+bool slang_compile_planar(const char *shader_path,
+      const uint32_t *vs, size_t vs_words,
+      const uint32_t *fs, size_t fs_words, bool source, bool linear,
+      const struct slang_text_target *text,
+      enum slang_rect_result *verdict,
+      struct slang_blob **vs_out, struct slang_blob **fs_out,
+      char **vs_text, char **fs_text);
+
 bool slang_compile_remapped(const char *shader_path,
       const uint32_t *vs, size_t vs_words,
       const uint32_t *fs, size_t fs_words,

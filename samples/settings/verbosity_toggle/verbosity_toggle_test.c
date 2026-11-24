@@ -3,9 +3,9 @@
  * Links the shipping objects with only main() replaced, boots the
  * menu headless, finds the LOG_VERBOSITY setting, and drives its
  * own action handler - the exact path a person's right-press takes:
- * the framework writes the bound flag, then the change handler runs
- * the enable/disable transition with its side effects (console
- * attach, log-file init/deinit).
+ * the framework writes the main-thread copy the setting is bound to,
+ * then the change handler runs the enable/disable transition with
+ * its side effects (console attach, log-file init/deinit).
  *
  * The claims, from verbosity off: one press lands enabled - the
  * flag holds and, with log_to_file set, the log file is open; a
@@ -117,13 +117,13 @@ int main(int argc, char *argv[])
    retroarch_menu_running();
 
    /* The settings list is built when the menu is; the entry must be
-    * findable and bool-bound to the verbosity flag. */
+    * findable and bool-bound to the flag's main-thread copy. */
    s = menu_setting_find_enum(MENU_ENUM_LABEL_LOG_VERBOSITY);
    CHECK(s != NULL, "fixture: LOG_VERBOSITY setting not found");
    if (!s)
       goto done;
    CHECK(s->value.target.boolean == verbosity_get_ptr(),
-         "fixture: setting is not bound to the verbosity flag");
+         "fixture: setting is not bound to the main-thread copy");
 
    /* Baseline: off, no file. */
    CHECK(!verbosity_is_enabled(), "fixture: verbosity starts enabled");

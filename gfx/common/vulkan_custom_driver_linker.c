@@ -122,6 +122,7 @@ bool vulkan_custom_driver_patch_soname(uint8_t *elf, size_t len,
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <android/api-level.h>
@@ -145,13 +146,21 @@ typedef bool (*vkcd_link_ns_t)(struct android_namespace_t *from,
 typedef bool (*vkcd_link_all_t)(struct android_namespace_t *from,
       struct android_namespace_t *to);
 
-/* Filled by libretroarch-activity.so; the hook keeps it for good */
+#define VKCD_HOOK_LOADED 1
+#define VKCD_HOOK_FAILED 2
+
+/* Filled by libretroarch-activity.so; the hook keeps it for good and
+ * writes state and error when its loader opens the HAL */
 struct vkcd_hook_params
 {
    vkcd_dlopen_ext_t dlopen_ext; /* libdl's, never the hook's own */
    vkcd_create_ns_t create_ns;
    vkcd_exported_ns_t exported_ns;
    vkcd_link_ns_t link_ns;
+   void *loader;                 /* the loader copy it serves */
+   struct vkcd_hook_params *next;
+   int state;                    /* 0: not called, or VKCD_HOOK_* */
+   char error[1024];             /* dlerror() when FAILED */
    char hook_dir[PATH_MAX];
    char driver_dir[PATH_MAX];
    char driver_name[PATH_MAX];
@@ -160,7 +169,7 @@ struct vkcd_hook_params
 #ifndef VULKAN_CUSTOM_DRIVER_HOOK
 typedef void *(*vkcd_loader_dlopen_t)(const char *name, int flags,
       const void *caller);
-typedef void (*vkcd_hook_init_t)(const struct vkcd_hook_params *params);
+typedef void (*vkcd_hook_init_t)(struct vkcd_hook_params *params);
 
 static struct
 {
@@ -169,6 +178,7 @@ static struct
    vkcd_link_ns_t link_ns;
    vkcd_link_all_t link_all;
    struct android_namespace_t *default_ns;
+   struct vkcd_hook_params *hooks; /* one per loader copy */
    unsigned copies;
    bool tried;
    bool ready;
@@ -252,6 +262,21 @@ static bool vkcd_read_all(int fd, uint8_t *buf, size_t len)
    return true;
 }
 
+/* in's len bytes into fd, which map maps: copied in the kernel, with no
+ * pass through user memory. Where sendfile() stops short (a kernel
+ * refusing this pair of files), the rest is read through the map. */
+static bool vkcd_copy_fd(int fd, int in, uint8_t *map, size_t len)
+{
+   off_t off = 0;
+   while ((size_t)off < len)
+      if (sendfile(fd, in, &off, len - (size_t)off) <= 0)
+         break;
+   if ((size_t)off == len)
+      return true;
+   return     lseek(in, off, SEEK_SET) == off
+          &&  vkcd_read_all(in, map + off, len - (size_t)off);
+}
+
 /* The system loader is loaded already; a copy whose soname differs is a
  * library of its own, and its HAL lookups reach the hook. */
 static void *vkcd_load_copy(const char *tmp_dir, int flags,
@@ -283,7 +308,7 @@ static void *vkcd_load_copy(const char *tmp_dir, int flags,
          && !ftruncate(fd, st.st_size)
          && (map = (uint8_t*)mmap(NULL, (size_t)st.st_size,
                PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) != MAP_FAILED
-         && vkcd_read_all(in, map, (size_t)st.st_size)
+         && vkcd_copy_fd(fd, in, map, (size_t)st.st_size)
          && vulkan_custom_driver_patch_soname(map, (size_t)st.st_size,
                patch))
    {
@@ -368,20 +393,55 @@ void *vulkan_custom_driver_linker_open(const char *hook_dir,
    *reason = "Vulkan loader copy did not load";
    if (!(handle = vkcd_load_copy(tmp_dir, flags, ns)))
       return NULL;
+   params->loader = handle;
+   params->next   = vkcd_st.hooks;
+   vkcd_st.hooks  = params;
    *reason = NULL;
    return handle;
+}
+
+enum vulkan_custom_driver_hook vulkan_custom_driver_linker_hook(
+      const void *loader, const char **error)
+{
+   const struct vkcd_hook_params *p;
+   for (p = vkcd_st.hooks; p; p = p->next)
+      if (p->loader == loader)
+      {
+         *error = p->error;
+         if (p->state == VKCD_HOOK_LOADED)
+            return VULKAN_CUSTOM_DRIVER_HOOK_LOADED;
+         if (p->state == VKCD_HOOK_FAILED)
+            return VULKAN_CUSTOM_DRIVER_HOOK_FAILED;
+         return VULKAN_CUSTOM_DRIVER_HOOK_NOT_CALLED;
+      }
+   *error = "";
+   return VULKAN_CUSTOM_DRIVER_HOOK_NOT_CALLED;
 }
 
 #else /* VULKAN_CUSTOM_DRIVER_HOOK */
 
 #define VKCD_EXPORT __attribute__((visibility("default")))
 
-static const struct vkcd_hook_params *vkcd_hook;
+static struct vkcd_hook_params *vkcd_hook;
 
 VKCD_EXPORT void vulkan_custom_driver_hook_init(
-      const struct vkcd_hook_params *params)
+      struct vkcd_hook_params *params)
 {
    vkcd_hook = params;
+}
+
+/* RetroArch reads it after the loader call, on the same thread */
+static void vkcd_hook_report(int state, const char *err)
+{
+   size_t n;
+   if (!err)
+      err = "unknown error";
+   n = strlen(err);
+   if (n >= sizeof(vkcd_hook->error))
+      n = sizeof(vkcd_hook->error) - 1;
+   memcpy(vkcd_hook->error, err, n);
+   vkcd_hook->error[n] = '\0';
+   vkcd_hook->state    = state;
 }
 
 /* The loader asks for its HAL here: the custom driver goes in a namespace
@@ -405,11 +465,11 @@ static void *vkcd_hook_open(const char *name, int flags,
                info->library_namespace,
                (const void*)&vulkan_custom_driver_hook_init)))
    {
-      const char *err = dlerror();
+      vkcd_hook_report(VKCD_HOOK_FAILED, dlerror());
       __android_log_print(ANDROID_LOG_ERROR, "RetroArch",
             "[Vulkan] Driver hook: failed to load custom driver %s: "
             "no namespace (%s)\n", vkcd_hook->driver_name,
-            err ? err : "unknown");
+            vkcd_hook->error);
       return vkcd_hook->dlopen_ext(name, flags, info);
    }
    vkcd_hook->link_ns(ns, NULL, "libandroid.so");
@@ -417,10 +477,14 @@ static void *vkcd_hook_open(const char *name, int flags,
    driver_info.library_namespace = ns;
    if ((handle = vkcd_hook->dlopen_ext(vkcd_hook->driver_name, flags,
                &driver_info)))
+   {
+      vkcd_hook_report(VKCD_HOOK_LOADED, "");
       return handle;
+   }
+   vkcd_hook_report(VKCD_HOOK_FAILED, dlerror());
    __android_log_print(ANDROID_LOG_ERROR, "RetroArch",
          "[Vulkan] Driver hook: failed to load custom driver %s: %s\n",
-         vkcd_hook->driver_name, dlerror());
+         vkcd_hook->driver_name, vkcd_hook->error);
    return vkcd_hook->dlopen_ext(name, flags, info);
 }
 

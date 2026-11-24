@@ -33,6 +33,7 @@
 RETRO_BEGIN_DECLS
 
 typedef struct vulkan_filter_chain vulkan_filter_chain_t;
+struct gfx_media_history;
 
 struct vulkan_filter_chain_texture
 {
@@ -112,6 +113,8 @@ struct vulkan_filter_chain_create_info
    /* Frames may come inside a larger image (padded_dims, origin): the
     * passes are built to read them there where the preset allows. */
    bool frame_rect;
+   bool viewer_colour;
+   bool frame_planar;
    /* The chain may draw its last frame's final pass again in a later
     * frame (build_viewport_pass_replay): its history keeps one more
     * image for that. */
@@ -146,11 +149,33 @@ bool vulkan_filter_chain_init(vulkan_filter_chain_t *chain);
 void vulkan_filter_chain_set_passthrough(
       vulkan_filter_chain_t *chain, unsigned passthrough);
 
+void vulkan_filter_chain_set_viewer_colour(
+      vulkan_filter_chain_t *chain, const float *rows);
+
 void vulkan_filter_chain_set_source_hdr(
       vulkan_filter_chain_t *chain, unsigned source_hdr);
 
+bool vulkan_filter_chain_uses_history(const vulkan_filter_chain_t *chain);
+
+/* Mark the immutable inputs consumed by the commands about to be recorded. */
+void vulkan_filter_chain_visit_history(const vulkan_filter_chain_t *chain,
+      void (*read)(void *));
+
+/* Immutable, level-zero history storage; its owner survives until the
+ * input and every history alias release it. NULL disables borrowing. */
+void vulkan_filter_chain_set_history_lease(vulkan_filter_chain_t *chain,
+      const struct vulkan_filter_chain_texture *texture, void *owner,
+      void (*retain)(void *), void (*release)(void *));
+
 void vulkan_filter_chain_set_input_texture(vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_texture *texture);
+
+/* Producer state is borrowed through end_frame. Reset its copies after
+ * accepted uploads; NULL keeps the ordinary copy path. */
+void vulkan_filter_chain_set_input_texture_history(
+      vulkan_filter_chain_t *chain,
+      const struct vulkan_filter_chain_texture *texture,
+      struct gfx_media_history *history);
 
 /* Whether the chain reads a frame where it lies in a larger image. */
 bool vulkan_filter_chain_reads_in_place(vulkan_filter_chain_t *chain);

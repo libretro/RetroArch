@@ -10,6 +10,7 @@
 #include <math.h>
 #include <limits.h>
 #include <gfx/scaler/pixconv.h>
+#include "../../../gfx/common/media_history.h"
 #define W 257
 #define H 256
 #define COUNT (W * H)
@@ -18,6 +19,7 @@
 #define Release(p) do { if (p) { (p)->lpVtbl->Release(p); (p)=NULL; } } while (0)
 typedef ID3D11DeviceContext *D3D11DeviceContext;
 typedef ID3D11Resource *D3D11Resource;
+typedef ID3D11ShaderResourceView *D3D11ShaderResourceView;
 typedef struct {
    D3D11DeviceContext context;
    ID3D11Texture2D * staging[2];
@@ -32,6 +34,10 @@ typedef struct {
    size_t upload_size;
    d3d11_texture_lend_t *lend;
    unsigned lend_bpp;
+   gfx_media_history_t media_history;
+   D3D11ShaderResourceView *media_versions;
+   unsigned media_version_count;
+   bool media_borrowable;
    D3D11_TEXTURE2D_DESC desc;
 } d3d11_texture_t;
 #include "copy.inc"

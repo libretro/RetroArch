@@ -19,7 +19,6 @@
 #include <malloc.h>   /* memalign(), as in audioworklet.c */
 #include <unistd.h>
 #include <boolean.h>
-#include <retro_timers.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -39,6 +38,9 @@ size_t RWebAudioWriteAvailFrames(void);
 size_t RWebAudioBufferSizeFrames(void);
 void RWebAudioRecalibrateTime(void);
 bool RWebAudioResumeCtx(void);
+#if defined(EMSCRIPTEN_FULL_ASYNCIFY) || defined(EMSCRIPTEN_AUDIO_ASYNC_BLOCK)
+int RWebAudioWaitRoom(unsigned ms);
+#endif
 
 typedef struct rwebaudio_data
 {
@@ -120,15 +122,30 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
    return rwebaudio;
 }
 
-/* How many times a blocking write asks the context for room before
- * dropping the rest. With ASYNCIFY each lap sleeps a millisecond, so
- * this is about two seconds; without it the laps are resume attempts
- * back to back on the page's thread, so it is a count that ends the
- * spin within a few milliseconds. */
 #if defined(EMSCRIPTEN_FULL_ASYNCIFY) || defined(EMSCRIPTEN_AUDIO_ASYNC_BLOCK)
-#define RWEBAUDIO_WAIT_LAPS 2000
-#else
-#define RWEBAUDIO_WAIT_LAPS 100000
+/* A blocking write, or the external block, with no room: the page's
+ * thread awaits its context's clock - a source finishing, the context
+ * starting or stopping - and looks again. Bounded by watchdogs in a
+ * row with nothing of that: a context that will not run - suspended by
+ * the autoplay policy until the page is clicked, or by the browser for
+ * a background tab - frees nothing, and the audio is then dropped
+ * rather than the tab freezing. */
+#define RWEBAUDIO_WAIT_LAPS 8
+#ifndef RWEBAUDIO_WAIT_MS
+#define RWEBAUDIO_WAIT_MS   50
+#endif
+
+static void rwebaudio_wait_room(void)
+{
+   unsigned laps = RWEBAUDIO_WAIT_LAPS;
+   while (RWebAudioWriteAvailFrames() == 0)
+   {
+      if (RWebAudioWaitRoom(RWEBAUDIO_WAIT_MS))
+         laps = RWEBAUDIO_WAIT_LAPS;
+      else if (!laps--)
+         break;
+   }
+}
 #endif
 
 static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
@@ -163,7 +180,7 @@ static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
 
    if (!rwebaudio->nonblock)
    {
-#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
+#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK
 #ifdef EMSCRIPTEN_AUDIO_FAKE_BLOCK
       if (RWebAudioWriteAvailFrames() == 0)
       {
@@ -172,22 +189,8 @@ static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
       }
 #endif
       /* async external block doesn't need to do anything else */
-#else
-      {
-         /* Bounded: a context that will not run - suspended by the
-          * autoplay policy until the page is clicked, or by the browser
-          * for a background tab - frees nothing, and without ASYNCIFY
-          * this loop is a spin on the page's own thread. It ends, and
-          * the audio is dropped, rather than the tab freezing. */
-         unsigned laps = RWEBAUDIO_WAIT_LAPS;
-         while (RWebAudioWriteAvailFrames() == 0 && laps--)
-         {
-#ifdef EMSCRIPTEN_FULL_ASYNCIFY
-            retro_sleep(1);
-#endif
-            RWebAudioResumeCtx();
-         }
-      }
+#elif defined(EMSCRIPTEN_FULL_ASYNCIFY)
+      rwebaudio_wait_room();
 #endif
    }
 
@@ -215,22 +218,14 @@ bool rwebaudio_external_block(void)
       return false;
 #endif
 
-#ifdef EMSCRIPTEN_AUDIO_EXTERNAL_WRITE_BLOCK
-   {
-      unsigned laps = RWEBAUDIO_WAIT_LAPS;
-      while (!rwebaudio->nonblock && RWebAudioWriteAvailFrames() == 0)
-      {
-         RWebAudioResumeCtx();
 #ifdef EMSCRIPTEN_AUDIO_ASYNC_BLOCK
-         retro_sleep(1);
-         /* Bounded, as the write's own wait is. */
-         if (!laps--)
-            break;
+   if (!rwebaudio->nonblock)
+      rwebaudio_wait_room();
 #else
-         (void)laps;
-         return true;
-#endif
-      }
+   if (!rwebaudio->nonblock && RWebAudioWriteAvailFrames() == 0)
+   {
+      RWebAudioResumeCtx();
+      return true;
    }
 #endif
 

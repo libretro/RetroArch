@@ -113,7 +113,8 @@ struct ssl_state
    * holds that record half-sent and must be called again with the same
    * buffer and length to finish it. */
   size_t wpend;
-  int handshake_state; /* 0: setup, 1: active, 2: complete, -1: failed */
+  int handshake_state; /* 0: setup, 1: active, 2: complete,
+                        * 3: close_notify sent, -1: failed */
 };
 
 static void ssl_debug(void *ctx, int level,
@@ -399,7 +400,7 @@ int ssl_socket_handshake_step(void *state_data, bool *read, bool *write)
       *write = false;
    if (!state || state->handshake_state < 0)
       return -1;
-   if (state->handshake_state == 2)
+   if (state->handshake_state >= 2)
       return 1;
    if (!state->handshake_state && ssl_mbed_start(state) != 0)
    {
@@ -660,13 +661,24 @@ int ssl_socket_flush_nonblocking(void *state_data)
    return state->wpend ? 0 : 1;
 }
 
+int ssl_socket_close_notify(void *state_data)
+{
+   struct ssl_state *state = (struct ssl_state*)state_data;
+   if (     !state || SSL_MBED_FD(&state->net_ctx) < 0
+         || state->handshake_state != 2
+         || !socket_set_block(SSL_MBED_FD(&state->net_ctx), false))
+      return -1;
+   /* Sent: no second one at the close */
+   state->handshake_state = 3;
+   return mbedtls_ssl_close_notify(&state->ctx) == 0 ? 0 : -1;
+}
+
 void ssl_socket_close(void *state_data)
 {
    struct ssl_state *state = (struct ssl_state*)state_data;
    if (!state || SSL_MBED_FD(&state->net_ctx) < 0)
       return;
-   if (state->handshake_state == 2 && socket_set_block(SSL_MBED_FD(&state->net_ctx), false))
-      mbedtls_ssl_close_notify(&state->ctx);
+   ssl_socket_close_notify(state);
    socket_close(SSL_MBED_FD(&state->net_ctx));
    SSL_MBED_FD(&state->net_ctx) = -1;
    state->handshake_state = -1;

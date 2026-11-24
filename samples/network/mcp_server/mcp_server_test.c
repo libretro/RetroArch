@@ -69,6 +69,27 @@ static bool act_ping(command_t *cmd, const char *arg)
 #define MOJI_TEXT "caf\xC3\xA9 \xE6\x97\n"
 static bool act_moji(command_t *cmd, const char *arg)
 { (void)arg; cmd->replier(cmd, MOJI_TEXT, sizeof(MOJI_TEXT) - 1); return true; }
+/* "MOJIAT <at>": ASCII with one byte that is not UTF-8 at @at, or, as
+ * "v<at>", a two-byte character there that is, then ASCII to the end */
+#define MOJIAT_LEN 100
+static bool act_mojiat(command_t *cmd, const char *arg)
+{
+   char   text[MOJIAT_LEN + 2];
+   bool   valid = arg && *arg == 'v';
+   size_t at    = (size_t)strtoul(arg ? arg + valid : "0", NULL, 10);
+   size_t i;
+   for (i = 0; i < MOJIAT_LEN; i++)
+      text[i] = 'a' + (char)(i % 26);
+   if (valid)
+   {
+      text[at]     = '\xC3';
+      text[at + 1] = '\xA9';
+   }
+   else
+      text[at] = '\xFF';
+   cmd->replier(cmd, text, MOJIAT_LEN);
+   return true;
+}
 /* a status with a comma in the name, and a read, as the real commands
  * answer */
 #define STAT_TEXT "GET_STATUS PLAYING nes,Mario, Luigi & Co.nes\n"
@@ -110,6 +131,10 @@ static bool act_later(command_t *cmd, const char *arg)
  * set the schema offers as an enum. */
 static const struct cmd_param test_params_wipe[] = {
    { "what", "What to wipe.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param test_params_mojiat[] = {
+   { "at", "Where.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { NULL }
 };
 static const struct cmd_param test_params_join[] = {
@@ -200,6 +225,14 @@ static bool act_until(command_t *cmd, const char *arg)
    cmd->replier(cmd, UNTIL_TEXT, sizeof(UNTIL_TEXT) - 1);
    return true;
 }
+/* a wait on how far apart two bytes are, which may be below zero */
+#define APART_TEXT "MET 0\nVALUE -3\n"
+static bool act_apart(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, APART_TEXT, sizeof(APART_TEXT) - 1);
+   return true;
+}
 
 /* answers through its destination before it returns, as RUN_UNTIL does
  * when the byte already holds what was asked */
@@ -281,6 +314,33 @@ static bool act_readt(command_t *cmd, const char *arg)
 {
    (void)arg;
    cmd->replier(cmd, READT_TEXT, sizeof(READT_TEXT) - 1);
+   return true;
+}
+/* a read of several ranges, the second cut short */
+#define READM_TEXT "READM 1000 AA 0F\nREADM 101e 1E 1F\nTRUNCATED 2\n" \
+                   "READM 1010 10\n"
+static bool act_readm(command_t *cmd, const char *arg)
+{
+   (void)arg;
+   cmd->replier(cmd, READM_TEXT, sizeof(READM_TEXT) - 1);
+   return true;
+}
+
+/* a read written where the interface lends room, after a first part
+ * replied the ordinary way, as READ_CORE_MEMORY writes its lines */
+static bool lend_given;
+static bool act_lend(command_t *cmd, const char *arg)
+{
+   static const char rest[] = " AA BB\n";
+   char *room;
+   (void)arg;
+   cmd->replier(cmd, "READL 1000", 10);
+   room       = cmd->reply_room ? cmd->reply_room(cmd, 64) : NULL;
+   lend_given = room != NULL;
+   if (!room)
+      return false;
+   memcpy(room, rest, sizeof(rest) - 1);
+   cmd->replier(cmd, room, sizeof(rest) - 1);
    return true;
 }
 
@@ -372,6 +432,7 @@ static struct cmd_action_map test_actions[] = {
    { "GET_STATUS", act_stat, "No argument", "Report the status.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_status },
    { "READ_CORE_MEMORY", act_read, "No argument", "Read bytes.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
    { "MOJI",  act_moji,  "No argument", "Answer text that is not all UTF-8.", 0, NULL },
+   { "MOJIAT", act_mojiat, "<at>", "Answer ASCII with one character at a place.", 0, test_params_mojiat },
    { "QUIET", act_quiet_fail, "No argument", "Fail without saying ERROR.", 0, NULL },
    { "JOIN",  act_join,  "<a>|<b> [n]", "Echo the line it was given.", 0, test_params_join },
    { "ROWS",  act_rows,  "No argument", "Answer rows of named columns.", CMD_INFO_READ_ONLY, NULL, &test_rows },
@@ -381,6 +442,7 @@ static struct cmd_action_map test_actions[] = {
    { "LOGR",  act_log,   "No argument", "Answer rows between two trailers.", CMD_INFO_READ_ONLY, NULL, &test_rows_log },
    { "BARE",  act_log,   "No argument", "Answer trailers and no rows.", CMD_INFO_READ_ONLY, NULL, &test_rows_bare },
    { "UNTIL", act_until, "No argument", "Answer as RUN_UNTIL meets.", 0, NULL, &cmd_rows_until },
+   { "APART", act_apart, "No argument", "Answer as RUN_UNTIL on a difference.", 0, NULL, &cmd_rows_until },
    { "NOW",   act_now,   "No argument", "Answer before returning.", 0, NULL, &cmd_rows_until },
    { "WAIT",  act_wait,  "No argument", "Answer as RUN_UNTIL waits.", 0, NULL, &cmd_rows_until },
    { "RUN_FRAMES", act_runf,  "No argument", "Answer as RUN_FRAMES does.", 0, NULL, &cmd_rows_frames },
@@ -393,6 +455,8 @@ static struct cmd_action_map test_actions[] = {
    { "PREVF", act_prevf, "No argument", "Answer as RUN_FRAMES after a queue gave up.", 0, NULL, &cmd_rows_frames },
    { "PREVE", act_preve, "No argument", "Answer as STEPS after a queue failed.", 0, NULL, &cmd_rows_steps },
    { "READT", act_readt, "No argument", "Answer as a read cut short.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
+   { "READM", act_readm, "No argument", "Answer as a read of several ranges.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
+   { "READL", act_lend,  "No argument", "Answer as a read written in lent room.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_read },
    { "MENUS", act_menus, "No argument", "Answer as MENU does.", 0, NULL, &cmd_rows_menu },
    { "MENUC", act_menuc, "No argument", "Answer as MENU does when closed.", 0, NULL, &cmd_rows_menu },
    { "MENUD", act_menud, "No argument", "Answer as MENU does over a dialog.", 0, NULL, &cmd_rows_menu },
@@ -942,9 +1006,10 @@ int main(void)
             && strstr(rs, "\"required\":[\"index\",\"label\",\"path\"]")
             && strstr(rs, "\"next\":{\"type\":\"integer\""));
       /* GET_STATUS, READ_CORE_MEMORY, ROWS, LROWS, SHORT, ONE, LOGR,
-       * BARE, UNTIL, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STOPS, STEPS,
-       * STEP, PREVS, PREVF, PREVE, READT, MENUS, MENUC and MENUD */
-      check("only the commands that answer rows declare one", n == 24);
+       * BARE, UNTIL, APART, NOW, WAIT, RUN_FRAMES, PRESS, PRESSU, STOPS,
+       * STEPS, STEP, PREVS, PREVF, PREVE, READT, READM, READL, MENUS, MENUC
+       * and MENUD */
+      check("only the commands that answer rows declare one", n == 27);
    }
    {
       /* ROWS describes its columns; LROWS, answering the same ones,
@@ -1213,6 +1278,11 @@ int main(void)
                "{\"label\":\"x\",\"address\":\"7e0086\",\"value\":\"52\"},"
                "{\"label\":\"mode\",\"address\":\"7e0770\",\"value\":\"8\"}],"
                "\"met\":12,\"value\":5}"));
+   st = post(cmd, PORT_OPEN, NULL, call("APART", NULL), out, sizeof(out), NULL);
+   check("a difference below zero is a number all the same",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"rows\":[],"
+               "\"met\":0,\"value\":-3}"));
    st = post(cmd, PORT_OPEN, NULL, call("NOW", NULL), out, sizeof(out), NULL);
    check("answered before the command returns, it is answered once, whole",
          st == 200 && json_valid(body_of(out)) && !strstr(out, "Done.")
@@ -1267,6 +1337,22 @@ int main(void)
          st == 200 && json_valid(body_of(out))
          && strstr(out, "\"structuredContent\":{\"address\":\"101e\","
                "\"bytes\":\"1E 1F\",\"truncated\":true,\"read\":2}"));
+   st = post(cmd, PORT_OPEN, NULL, call("READM", NULL), out, sizeof(out), NULL);
+   check("a read of several ranges is the first, and each in ranges",
+         st == 200 && json_valid(body_of(out))
+         && strstr(out, "\"structuredContent\":{\"address\":\"1000\","
+               "\"bytes\":\"AA 0F\",\"ranges\":["
+               "{\"address\":\"1000\",\"bytes\":\"AA 0F\"},"
+               "{\"address\":\"101e\",\"bytes\":\"1E 1F\","
+               "\"truncated\":true,\"read\":2},"
+               "{\"address\":\"1010\",\"bytes\":\"10\"}]}"));
+   lend_given = false;
+   st = post(cmd, PORT_OPEN, NULL, call("READL", NULL), out, sizeof(out), NULL);
+   check("a reply written in the room lent is answered whole",
+         st == 200 && json_valid(body_of(out)) && lend_given
+         && strstr(out, "\"text\":\"READL 1000 AA BB\\n\"")
+         && strstr(out, "\"structuredContent\":{\"address\":\"1000\","
+               "\"bytes\":\"AA BB\"}"));
    st = post(cmd, PORT_OPEN, NULL, call("MENUS", NULL), out, sizeof(out), NULL);
    check("the menu's title, path, and three closing lines",
          st == 200 && json_valid(body_of(out))
@@ -1297,6 +1383,9 @@ int main(void)
                   "\"description\":\"The menu is closed.\"}"));
       check("and a text line is declared a string",
             m && strstr(m, "\"message\":{\"type\":\"string\","));
+      m = strstr(out, "\"name\":\"READ_CORE_MEMORY\"");
+      check("a read declares its ranges",
+            m && strstr(m, "\"ranges\":{\"type\":\"array\","));
    }
    st = post(cmd, PORT_OPEN, NULL, call("PREVS", NULL), out, sizeof(out), NULL);
    check("a queued STEPS after a stop: its steps dropped, and the stop",
@@ -1454,6 +1543,49 @@ int main(void)
          st == 200 && json_valid(body_of(out))
          && strstr(out, "caf\xC3\xA9 \xEF\xBF\xBD\xEF\xBF\xBD\\n")
          && !strstr(out, "\xE6\x97"));
+   /* past a stretch of ASCII read a word at a time: the byte that is
+    * not UTF-8 at the start, inside a word, on a word's edge or in the
+    * short tail is found all the same, and a character that is is kept */
+   {
+      static const unsigned ats[] = { 0, 3, 7, 8, 9, 63, 64, 95, 99 };
+      unsigned k;
+      bool     ok = true;
+      for (k = 0; k < sizeof(ats) / sizeof(ats[0]); k++)
+      {
+         char args[64], want[MOJIAT_LEN + 4];
+         size_t i, o = 0;
+         for (i = 0; i < MOJIAT_LEN; i++)
+            if (i == ats[k])
+            {
+               memcpy(want + o, "\xEF\xBF\xBD", 3);
+               o += 3;
+            }
+            else
+               want[o++] = 'a' + (char)(i % 26);
+         want[o] = '\0';
+         snprintf(args, sizeof(args), "{\"at\":\"%u\"}", ats[k]);
+         st = post(cmd, PORT_OPEN, NULL, call("MOJIAT", args), out,
+               sizeof(out), NULL);
+         if (st != 200 || !json_valid(body_of(out)) || !strstr(out, want))
+         {
+            printf("  byte at %u not repaired\n", ats[k]);
+            ok = false;
+         }
+         if (ats[k] + 1 < MOJIAT_LEN)
+         {
+            snprintf(args, sizeof(args), "{\"at\":\"v%u\"}", ats[k]);
+            st = post(cmd, PORT_OPEN, NULL, call("MOJIAT", args), out,
+                  sizeof(out), NULL);
+            if (st != 200 || !json_valid(body_of(out))
+                  || strstr(out, "\xEF\xBF\xBD") || !strstr(out, "\xC3\xA9"))
+            {
+               printf("  character at %u not kept\n", ats[k]);
+               ok = false;
+            }
+         }
+      }
+      check("past ASCII, what is not UTF-8 is found wherever it falls", ok);
+   }
    {
       char req[1024];
       const char *b = call("PING", NULL);

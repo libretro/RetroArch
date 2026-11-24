@@ -160,6 +160,30 @@ int record_mediacodec_gpu_worker_retire_step(record_mediacodec_gpu_worker_t *w)
 {
    return record_mcg_service(w, true);
 }
+bool record_mediacodec_gpu_worker_wait(
+      record_mediacodec_gpu_worker_t *w, uint64_t timeout_ns)
+{
+   unsigned i, slot;
+   bool waited;
+   if (!w || w->failed || w->context_retired || w->ended)
+      return false;
+   for (i = 0; i < w->count; i++)
+   {
+      slot = (w->next + i) % w->count;
+      if (!(w->pending & ((uint32_t)1 << slot)))
+         continue;
+      if (!record_mediacodec_surface_begin(w->surface))
+         return false;
+      waited = record_android_capture_gl_wait(w->capture, slot, timeout_ns);
+      return record_mediacodec_surface_leave(w->surface) && waited;
+   }
+   return false;
+}
+bool record_mediacodec_gpu_worker_idle(
+      const record_mediacodec_gpu_worker_t *w)
+{
+   return w && !w->failed && !w->pending;
+}
 void record_mediacodec_gpu_worker_after_context_retired(
       record_mediacodec_gpu_worker_t *w)
 {

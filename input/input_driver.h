@@ -279,6 +279,15 @@ struct bsv_movie
    uint32s_index_t *blocks;
    uint32_t *superblock_seq;
    size_t superblock_seq_len;
+   /* The checkpoint encoder's [0] and decoder's [1] streams, kept for
+    * the movie's life and pointed at each checkpoint's buffer */
+   intfstream_t *mem_stream[2];
+   /* What the encoder and decoder have done over the movie's life,
+    * logged once when it is freed */
+   uint64_t enc_bytes_in, enc_bytes_out;
+   uint32_t enc_checkpoints, enc_blocks, enc_reused_blocks;
+   uint32_t enc_skipped_blocks, enc_memcmps, enc_hashes;
+   uint32_t enc_superblocks, enc_reused_superblocks, dec_checkpoints;
    uint8_t commit_interval, commit_threshold;
 #endif
 
@@ -286,11 +295,15 @@ struct bsv_movie
 
    uint8_t *last_save, *cur_save;
    size_t last_save_size, cur_save_size;
+   /* How far the file is known to reach while recording; UINT64_MAX
+    * when it is not known, after a write from somewhere else */
+   uint64_t write_end;
 
-   /* A checkpoint's encoding [0] and compression [1] buffers, kept from
-    * one checkpoint to the next: see bsv_movie_scratch() */
-   uint8_t *ckpt_scratch[2];
-   size_t ckpt_scratch_cap[2];
+   /* A checkpoint's encoding [0] and compression [1] buffers, and the
+    * statestream encoder's superblock list and padded tail block [2],
+    * kept from one checkpoint to the next: see bsv_movie_scratch() */
+   uint8_t *ckpt_scratch[3];
+   size_t ckpt_scratch_cap[3];
 
    bool cur_save_valid;
 };
@@ -335,6 +348,7 @@ struct input_keyboard_line
    bool enabled;
    bool select_all;
    bool fixed;       /* a native keyboard owns the buffer: it cannot move */
+   bool rtl;         /* holds Hebrew or Arabic */
 };
 
 /* The buffer a native (Android, iOS) keyboard puts under the line */
@@ -350,8 +364,17 @@ struct rarch_joypad_info
 typedef struct
 {
    unsigned name_index;
+   /* the controller's own identity and its tag (input_pad_tag.h), 0
+    * and "" for none */
+   uint32_t ident;
    uint16_t vid;
    uint16_t pid;
+   char tag[7];
+   /* What follows its name where another connected controller shows
+    * the same one (input_config_get_device_tag()), "" for a name of
+    * its own: kept by input_config_retag_devices() as they connect,
+    * go and change, so a row that shows it only copies it. */
+   char shown_tag[16];
    char joypad_driver[32];
    char name[128];
    char display_name[128];
@@ -1042,6 +1065,13 @@ typedef struct
     * map (or a change in who shares a player, to announce) at the
     * next frame boundary, and whether any of it is live. */
    uint32_t first_press_released[MAX_USERS];
+   /* Keys held down in a companion window (the desktop menu), which
+    * the input driver does not see: a bind being captured reads them
+    * with the driver's own. Those let go since the last read go once
+    * read, so that a tap pressed and let go between two reads is
+    * still seen. On the main thread. */
+   uint32_t companion_keys[(RETROK_LAST + 31) / 32];
+   uint32_t companion_keys_up[(RETROK_LAST + 31) / 32];
    uint32_t first_press_pending;
    /* users whose core port a press gave them, not the user */
    uint32_t first_press_assigned;
@@ -1215,6 +1245,7 @@ unsigned input_config_get_joypad_index(unsigned port);
 unsigned input_config_get_rumble_gain(void);
 bool input_config_get_nowinkey_enable(void);
 bool input_config_get_keyboard_background(void);
+bool input_config_get_video_windows_enable(void);
 bool input_config_get_winraw_xinput_enable(void);
 bool input_config_get_winraw_player_lights(void);
 bool input_config_get_sdl3_system_keyboard(void);
@@ -1350,6 +1381,9 @@ bool input_driver_overlay_active_page(void);
  * once. For the menu as it opens and closes, a bind or a text entry
  * ends, or the mouse clicks: the press that did it does nothing more. */
 void input_driver_hold_held_input(void);
+/* The same for a text entry ending: the key that ended it may reach
+ * the poll a frame late, and is held back then too. */
+void input_driver_hold_held_input_late(void);
 
 /* The window has changed - fullscreen toggled, the video driver
  * restarted: what is down is not to count again until it has been let
@@ -1396,6 +1430,16 @@ void input_driver_keyboard_line_append(const char *utf8, size_t len);
  * NULL, and where the cursor stands in them. And whether the text box
  * has the focus, and not the on-screen keyboard. */
 const char *input_driver_keyboard_line_view(size_t *cursor);
+
+/* input_driver_keyboard_line_state(): the whole line is selected, and
+ * it holds Hebrew or Arabic, which a menu places its caret in as drawn
+ * rather than as typed */
+#define INPUT_KEYBOARD_LINE_SELECTED 1u
+#define INPUT_KEYBOARD_LINE_RTL      2u
+unsigned input_driver_keyboard_line_state(void);
+
+/* A native keyboard has written the line's buffer itself */
+void input_driver_keyboard_line_changed(void);
 bool input_driver_keyboard_line_selected(void);
 bool input_driver_keyboard_textbox_focus(void);
 void input_driver_keyboard_line_end(void);
@@ -1435,6 +1479,12 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
 /* Every key down, a bit per key in @down, which the caller has cleared
  * and holds RETROK_LAST bits. */
 void input_driver_bind_capture_keys(unsigned joy_idx, uint32_t *down);
+/* A key pressed or let go in a companion window, which a bind capture
+ * reads with the input driver's own; one let go is read once more.
+ * On the main thread. */
+void input_driver_companion_key(unsigned key, bool down);
+/* Every companion window key let go. */
+void input_driver_companion_keys_clear(void);
 
 /* Port 0's mouse and first touch, read from the driver once per poll,
  * so every reader in a frame sees one state and a wheel notch once. */
@@ -1623,6 +1673,10 @@ void input_driver_publish_window_touches(const uint32_t *pos,
  * has not shown (video_driver_window_shown()). App thread. */
 bool input_driver_window_touch(unsigned window, unsigned idx,
       uint32_t *screen_pos, bool *down);
+
+/* Screen window @window is gone: the buttons, motion and touches
+ * published in it are let go until the next poll. App thread. */
+void input_driver_release_window(unsigned window);
 #endif
 
 typedef struct input_pointer_view
@@ -1634,6 +1688,13 @@ typedef struct input_pointer_view
 } input_pointer_view_t;
 
 const input_pointer_view_t *input_driver_pointer_view(void);
+
+/* What each connected controller holds down, a word a slot, into
+ * @held[MAX_INPUT_DEVICES], and where its axes are, into
+ * @axes[MAX_INPUT_DEVICES], read where this poll left it; returns the
+ * slots that have a controller (input_driver.c) */
+uint32_t input_driver_pads_held(uint32_t *held,
+      int16_t (*axes)[INPUT_PAD_VIEW_AXES]);
 
 /* A controller as the controller has it, for the capture of a bind:
  * each array that is given is filled - @buttons with whether each is
@@ -1829,6 +1890,12 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver);
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
 
+/* A key for the core's keyboard callback, on the frontend's thread,
+ * after the frontend has had it. @replayed is set for a key a replay
+ * gives back; while one plays, only those reach the core. */
+void input_keyboard_event_core(bool down, unsigned code,
+      uint32_t character, uint16_t mod, bool replayed);
+
 /* Keyboard events reported from another thread wait for the poll in a
  * queue (see input_keyboard_event() in input_driver.c); this is how
  * many were dropped because it was full. */
@@ -1982,6 +2049,11 @@ void input_config_set_device_joypad_driver(unsigned port, const char *driver);
  * The physical location to set the given port to.
  */
 void input_config_set_device_phys(unsigned port, const char *phys);
+
+/* The identity of the controller in @port (input_pad_tag_ident()) and
+ * its tag (input_pad_tag_text()): 0 and NULL for none. */
+void input_config_set_device_ident(unsigned port, uint32_t ident,
+      const char *tag);
 
 /**
  * Set the vendor ID (vid) for the device in the specified port
@@ -2216,6 +2288,25 @@ bool input_config_get_device_autoconfigured(unsigned port);
  * @return the name index for this device
  */
 unsigned input_config_get_device_name_index(unsigned port);
+
+uint32_t input_config_get_device_ident(unsigned port);
+const char *input_config_get_device_ident_tag(unsigned port);
+
+/* The slots whose input_device_info_t.shown_tag is set, a bit each:
+ * non-zero while two connected controllers show one name. Written only
+ * by input_driver.c as they connect, go and change; a global so that
+ * code run every frame tests it with one load. */
+extern uint32_t input_devices_tagged;
+#define INPUT_DEVICES_SHARE_NAME() (input_devices_tagged != 0)
+
+/* After the name of the controller in @port when another connected one
+ * shows the same name: " [9f2b7e]", its tag; " [9f2b7e #2]" when the
+ * other's tag is the same, in identity order; " (#2)", its place among
+ * those of that name, with no identity - unless @slot_shown, where the
+ * row already numbers the slot and that is what tells them apart. ""
+ * for a name of its own. Returns strlcpy()'s. */
+size_t input_config_get_device_tag(unsigned port, bool slot_shown,
+      char *s, size_t len);
 
 
 /*****************************************************************************/
@@ -2479,7 +2570,7 @@ void bsv_movie_set_end(void);
 bsv_movie_t *input_driver_netplay_bsv_recording(void);
 void input_driver_netplay_bsv_stop(const char *reason, bool checkpoint_failed);
 bool input_driver_netplay_bsv_take_checkpoint(void);
-bool input_driver_netplay_bsv_next_frame(const void *state, size_t size,
+bool input_driver_netplay_bsv_next_frame(uint8_t **state, size_t *size,
       bool forced);
 bool input_driver_bsv_stop_recording(void);
 #endif

@@ -35,6 +35,7 @@
 #include "../../../gfx/common/d3d12_upscaler.h"
 #include <file/file_path.h>
 #include "fake_ngx.h"
+#include "../upscaler_async_test.h"
 #include "../../../libretro-common/samples/gfx/amd/fake_ffx.h"
 #include "../../../libretro-common/samples/gfx/intel/fake_xess.h"
 
@@ -241,12 +242,20 @@ static void begin_frame(void)
 }
 
 /* A test: the frame is over before the next is recorded */
+static d3d12_upscaler_t *async_frame_up;
+static unsigned setup_submits;
+
 static void end_frame(void)
 {
-   ID3D12CommandList *lists[1];
-   lists[0] = (ID3D12CommandList*)cmd;
+   ID3D12CommandList *lists[2];
+   unsigned count;
+   lists[0] = (ID3D12CommandList*)d3d12_upscaler_take_commands(async_frame_up);
+   lists[1] = (ID3D12CommandList*)cmd;
+   count = lists[0] ? 2 : 1;
+   if (lists[0]) setup_submits++;
    ID3D12GraphicsCommandList_Close(cmd);
-   ID3D12CommandQueue_ExecuteCommandLists(queue, 1, lists);
+   ID3D12CommandQueue_ExecuteCommandLists(queue, count, lists + 2 - count);
+   d3d12_upscaler_signal_reload(async_frame_up, queue);
    ID3D12CommandQueue_Signal(queue, fence, ++fence_value);
    if (ID3D12Fence_GetCompletedValue(fence) < fence_value)
    {
@@ -984,7 +993,7 @@ static void test_nr(settings_t *settings, texture_t *color, texture_t *mv,
    CHECK(ngx != NULL);
    if (ngx)
    {
-      CHECK(!video_upscaler_nr_available());
+      CHECK(video_upscaler_nr_available());
       d3d12_ngx_free(ngx);
    }
 
@@ -993,9 +1002,7 @@ static void test_nr(settings_t *settings, texture_t *color, texture_t *mv,
    settings->bools.video_dlss_nr_enable = true;
    ngx = d3d12_ngx_init(device, "Zdir");
    CHECK(ngx != NULL);
-   CHECK(!video_upscaler_nr_available());
-   video_upscaler_status_string(status, sizeof(status));
-   CHECK(strstr(status, "Neural Rendering: needs a newer driver") != NULL);
+   CHECK(video_upscaler_nr_available());
    if (ngx)
    {
       creates = rec->creates;
@@ -1004,6 +1011,9 @@ static void test_nr(settings_t *settings, texture_t *color, texture_t *mv,
                VIDEO_SCALE_PACK(1920, 1080), &out));
       end_frame();
       d3d12_ngx_frame_done(ngx);
+      CHECK(!video_upscaler_nr_available());
+      video_upscaler_status_string(status, sizeof(status));
+      CHECK(strstr(status, "Neural Rendering: needs a newer driver") != NULL);
       CHECK(rec->creates == creates + 1
             && rec->create[creates % FAKE_NGX_MAX].feature == 1);
       d3d12_ngx_free(ngx);
@@ -1031,6 +1041,7 @@ int main(void)
    unsigned i;
 
    /* as a core does in retro_load_game */
+   CHECK(async_test_exclusive_borrow());
    video_upscaler_note_wanted();
    if (!setup_d3d12())
    {
@@ -1387,6 +1398,158 @@ int main(void)
 
    test_ffx(settings, &color, &mv, &depth);
    test_xess(settings, &color, &mv, &depth);
+
+   {
+      d3d12_upscaler_t *up;
+      d3d12_upscaler_image_t din, dout;
+      async_test_gate_t gate;
+      unsigned init_calls = rec->init_calls;
+      unsigned shutdown_calls = rec->shutdown_calls;
+      memset(&gate, 0, sizeof(gate));
+      CHECK(retro_eventcount_init(&gate.wake));
+      rec->optiscaler = 0;
+      rec->init_hook = async_test_hold;
+      rec->init_hook_data = &gate;
+      up = d3d12_upscaler_init_async(VIDEO_TEMPORAL_UPSCALER_DLSS, device, "Zdir");
+      CHECK(up != NULL && rec->init_calls == init_calls);
+      CHECK(!d3d12_upscaler_optimal(up, QUALITY(QUALITY), VIDEO_SCALE_PACK(1920, 1080),
+               &render_dims, &min_dims, &max_dims));
+      d3d12_upscaler_free(up);
+      CHECK(async_test_idle() && rec->init_calls == init_calls);
+      up = d3d12_upscaler_init_async(VIDEO_TEMPORAL_UPSCALER_DLSS, device, "Zdir");
+      CHECK(up != NULL);
+      begin_frame();
+      end_frame();
+      d3d12_upscaler_frame_done(up);
+      CHECK(async_test_wait(&gate.wake, &gate.entered));
+      for (i = 0; i < 8; i++)
+      {
+         CHECK(!d3d12_upscaler_optimal(up, QUALITY(QUALITY), VIDEO_SCALE_PACK(1920, 1080),
+                  &render_dims, &min_dims, &max_dims));
+         CHECK(!d3d12_upscaler_upscale(up, NULL, NULL, NULL, 0, 0, NULL));
+         begin_frame();
+         end_frame();
+         d3d12_upscaler_frame_done(up);
+      }
+      CHECK(rec->init_calls == init_calls);
+      async_test_release(&gate);
+      CHECK(async_test_idle());
+      CHECK(d3d12_upscaler_optimal(up, QUALITY(QUALITY), VIDEO_SCALE_PACK(1920, 1080),
+               &render_dims, &min_dims, &max_dims));
+      CHECK(rec->init_calls == init_calls + 1);
+      din.texture = color.resource;
+      din.format  = color.format;
+      din.state   = color.state;
+      din.dims    = VIDEO_SCALE_PACK(color.width, color.height);
+      {
+         async_test_gate_t feature_gate;
+         unsigned creates = rec->creates;
+         memset(&feature_gate, 0, sizeof(feature_gate));
+         CHECK(retro_eventcount_init(&feature_gate.wake));
+         rec->create_hook = async_test_hold;
+         rec->create_hook_data = &feature_gate;
+         settings->bools.video_dlss_nr_enable = false;
+         async_frame_up = up;
+         begin_frame();
+         CHECK(!d3d12_upscaler_upscale(up, cmd, &din, &inputs, QUALITY(QUALITY),
+                  VIDEO_SCALE_PACK(1920, 1080), &dout));
+         end_frame();
+         CHECK(async_test_wait(&feature_gate.wake, &feature_gate.entered));
+         for (i = 0; i < 8; i++)
+         {
+            CHECK(d3d12_upscaler_optimal(up, QUALITY(QUALITY), VIDEO_SCALE_PACK(1920, 1080),
+                     &render_dims, &min_dims, &max_dims));
+            begin_frame();
+            CHECK(!d3d12_upscaler_upscale(up, cmd, &din, &inputs, QUALITY(QUALITY),
+                     VIDEO_SCALE_PACK(1920, 1080), &dout));
+            end_frame();
+            d3d12_upscaler_frame_done(up);
+         }
+         CHECK(rec->creates == creates);
+         async_test_release(&feature_gate);
+         CHECK(async_test_idle());
+         CHECK(!retro_atomic_load_acquire_int(&feature_gate.timed_out));
+         CHECK(rec->creates == creates + 1);
+         begin_frame();
+         CHECK(d3d12_upscaler_upscale(up, cmd, &din, &inputs, QUALITY(QUALITY),
+                  VIDEO_SCALE_PACK(1920, 1080), &dout));
+         end_frame();
+         CHECK(setup_submits == 1);
+         retro_eventcount_free(&feature_gate.wake);
+
+         /* First enable promotes the SR-only SDK once. The renderer
+          * signals a private fence; only the SDK worker waits for it. */
+         memset(&feature_gate, 0, sizeof(feature_gate));
+         CHECK(retro_eventcount_init(&feature_gate.wake));
+         CHECK(async_test_park_cache());
+         rec->create_hook_feature = 18;
+         settings->bools.video_dlss_nr_enable = true;
+         for (i = 0; i < 5000 && !retro_atomic_load_acquire_int(&feature_gate.entered); i++)
+         {
+            begin_frame();
+            d3d12_upscaler_upscale(up, cmd, &din, &inputs, QUALITY(QUALITY),
+                  VIDEO_SCALE_PACK(1920, 1080), &dout);
+            end_frame();
+            d3d12_upscaler_frame_done(up);
+            retro_sleep(1);
+         }
+         CHECK(retro_atomic_load_acquire_int(&feature_gate.entered));
+         async_test_release(&feature_gate);
+         CHECK(async_test_idle());
+         CHECK(!retro_atomic_load_acquire_int(&feature_gate.timed_out));
+         CHECK(rec->creates == creates + 3
+               && rec->create[(rec->creates - 1) % FAKE_NGX_MAX].feature == 18);
+         begin_frame();
+         CHECK(d3d12_upscaler_upscale(up, cmd, &din, &inputs, QUALITY(QUALITY),
+                  VIDEO_SCALE_PACK(1920, 1080), &dout));
+         end_frame();
+         CHECK(setup_submits == 2);
+         CHECK(rec->init_calls == init_calls + 2);
+         CHECK(rec->shutdown_calls == shutdown_calls + 1);
+         for (i = 0; i < 6; i++)
+         {
+            settings->bools.video_dlss_nr_enable = (i & 1) != 0;
+            begin_frame();
+            CHECK(d3d12_upscaler_upscale(up, cmd, &din, &inputs, QUALITY(QUALITY),
+                     VIDEO_SCALE_PACK(1920, 1080), &dout));
+            end_frame();
+            d3d12_upscaler_frame_done(up);
+         }
+         CHECK(rec->init_calls == init_calls + 2 && rec->creates == creates + 3);
+         CHECK(async_test_retire_calls == 1 && async_test_parked_destroyed);
+         CHECK(async_test_parked == NULL);
+         video_upscaler_retire_cached();
+         CHECK(async_test_retire_calls == 1);
+         CHECK(setup_submits == 2);
+         rec->create_hook_feature = 0;
+         rec->create_hook = NULL;
+         rec->create_hook_data = NULL;
+         settings->bools.video_dlss_nr_enable = false;
+         async_frame_up = NULL;
+         retro_eventcount_free(&feature_gate.wake);
+      }
+      d3d12_upscaler_free(up);
+      CHECK(async_test_idle() && rec->shutdown_calls == shutdown_calls + 2);
+      CHECK(!retro_atomic_load_acquire_int(&gate.timed_out));
+      retro_eventcount_free(&gate.wake);
+
+      memset(&gate, 0, sizeof(gate));
+      CHECK(retro_eventcount_init(&gate.wake));
+      up = d3d12_upscaler_init_async(VIDEO_TEMPORAL_UPSCALER_DLSS, device, "Zdir");
+      CHECK(up != NULL);
+      d3d12_upscaler_frame_done(up);
+      CHECK(async_test_wait(&gate.wake, &gate.entered));
+      d3d12_upscaler_free(up);
+      async_test_release(&gate);
+      CHECK(async_test_idle());
+      CHECK(rec->init_calls == init_calls + 3
+            && rec->shutdown_calls == shutdown_calls + 3);
+      CHECK(!retro_atomic_load_acquire_int(&gate.timed_out));
+      rec->init_hook = NULL;
+      rec->init_hook_data = NULL;
+      retro_eventcount_free(&gate.wake);
+      video_upscaler_async_shutdown();
+   }
 
    free_texture(&color);
    free_texture(&mv);

@@ -295,6 +295,7 @@ static struct slang_blob *stock_blob(const uint32_t *words, size_t len)
  * text rslc printed for them. */
 static bool chain_replay;
 static bool chain_frame_rect;
+static bool chain_viewer_colour;
 static struct gl3_filter_chain *chain_of(unsigned passes,
       struct slang_blob *vs, struct slang_blob *fs)
 {
@@ -305,6 +306,14 @@ static struct gl3_filter_chain *chain_of(unsigned passes,
       return NULL;
    chain->replay            = chain_replay;
    chain->common.frame_rect = chain_frame_rect;
+   chain->common.viewer_colour = chain_viewer_colour;
+   if (chain_viewer_colour)
+   {
+      chain->common.shader_preset = (struct video_shader*)calloc(1,
+            sizeof(struct video_shader));
+      if (!chain->common.shader_preset) { gl3_chain_free(chain); return NULL; }
+      chain->common.shader_preset->passes = passes;
+   }
    pass_info.scale_type_x  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
    pass_info.scale_type_y  = GLSLANG_FILTER_CHAIN_SCALE_VIEWPORT;
    pass_info.scale_x       = 1.0f;
@@ -333,6 +342,44 @@ static struct gl3_filter_chain *chain_of(unsigned passes,
 /* Passes that bind the same two blobs share one linked program, within
  * a chain and across the chain being built and the one it replaces;
  * the program goes with the last pass that holds it. */
+static void test_viewer_colour(void)
+{
+   extern unsigned test_colour_compiles;
+   extern bool test_colour_refused;
+   struct slang_blob *vs = stock_blob(spirv_opaque_vert, spirv_opaque_vert_size);
+   struct slang_blob *fs = stock_blob(spirv_opaque_frag, spirv_opaque_frag_size);
+   struct gl3_filter_chain *chain;
+   unsigned before = test_colour_compiles;
+   chain_viewer_colour = true;
+   chain = chain_of(1, vs, fs);
+   CHECK(chain && test_colour_compiles == before + 1,
+         "viewer pass did not request fused sample conversion");
+   if (chain)
+   {
+      CHECK(gl3_pass_build(chain->passes[0])
+            && test_colour_compiles == before + 1,
+            "rebuilding a pass compiled the colour rewrite again");
+      gl3_pass_set_blob(chain->passes[0], GL_VERTEX_SHADER, slang_blob_ref(vs));
+      CHECK(gl3_pass_build(chain->passes[0])
+            && test_colour_compiles == before + 2,
+            "replaced stages kept a stale colour rewrite");
+      gl3_chain_free(chain);
+   }
+   test_colour_refused = true;
+   chain = chain_of(1, vs, fs);
+   CHECK(!chain, "unsupported colour rewrite fell back to a frame copy");
+   gl3_chain_free(chain);
+   test_colour_refused = false;
+   chain_viewer_colour = false;
+   before = test_colour_compiles;
+   chain = chain_of(1, vs, fs);
+   CHECK(chain && test_colour_compiles == before,
+         "ordinary core chain requested viewer colour conversion");
+   gl3_chain_free(chain);
+   slang_blob_unref(vs);
+   slang_blob_unref(fs);
+}
+
 static void test_shared_programs(void)
 {
    struct slang_blob *vs = stock_blob(spirv_opaque_vert, spirv_opaque_vert_size);
@@ -643,7 +690,7 @@ static void test_history_in_place(void)
    gl3_filter_chain_build_viewport_pass(chain, &vp, mvp);
    gl3_filter_chain_end_frame(chain);
    test_framebuffer_copied = NULL;
-   newest = chain->original_history[0];
+   newest = chain->original_history[gfx_media_history_ring_get(&chain->history_ring, 0)];
    CHECK(test_partial_copy.calls == 1 && !whole_copies,
          "history: %u copies from the rectangle, %u of the whole texture",
          test_partial_copy.calls, whole_copies);
@@ -728,6 +775,7 @@ int main(void)
 
    test_shrink_chain();
    test_shared_programs();
+   test_viewer_colour();
    test_unread_luts();
    test_replay();
    test_history_in_place();

@@ -313,6 +313,34 @@ int font_renderer_get_message_width(
 
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
+/* The x, from the left end of the drawn line, of a caret before byte at
+ * of the one-line text line, len bytes: where it lands among the glyphs
+ * as drawn, Hebrew and Arabic laid out right to left */
+int font_driver_get_caret_x(void *font_data, const char *line,
+      size_t len, size_t at, float scale);
+
+#ifdef HAVE_LANGEXTRA
+/* Presentation forms of the Arabic block, indexed by the low byte of
+ * the codepoint: isolated, final, initial, medial; 0 where none */
+extern const uint16_t font_driver_arabic_shapes[0x100][0x4];
+
+/* The one-line msg as font_driver_render_msg() draws it, read left to
+ * right, written to s, len bytes and at least FONT_LAYOUT_LINE_SIZE.
+ * Returns its length, or 0 for a line with nothing right-to-left, more
+ * than one line, or one too long to lay out; *rtl is set for a
+ * right-to-left line. Text drawn after FONT_LRO is drawn as given, so a
+ * caller that cuts this result can draw the cut piece behind that
+ * mark. */
+#define FONT_LAYOUT_LINE_SIZE 1536
+#define FONT_LRO "\xE2\x80\xAD"
+size_t font_driver_layout_line(const char *msg, size_t msg_len,
+      char *s, size_t len, bool *rtl);
+
+/* True when the len-byte character at s is a combining mark, drawn on
+ * the glyph before it */
+bool font_driver_is_mark(const char *s, size_t len);
+#endif
+
 /* Would rebuilding this font at this path and size produce the font
  * that is already there? Lets a caller skip a rebuild that would
  * rasterise an identical atlas and re-upload an identical texture,

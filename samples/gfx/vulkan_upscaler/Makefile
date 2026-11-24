@@ -13,6 +13,7 @@ REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 SOURCES := vulkan_upscaler_test.c \
+           session_cache.c \
            ../vulkan_validation/stubs_retroarch.c \
            $(REPO_ROOT)/gfx/common/vulkan_upscaler.c \
            $(REPO_ROOT)/gfx/common/vulkan_ngx.c \
@@ -22,6 +23,7 @@ SOURCES := vulkan_upscaler_test.c \
            $(REPO_ROOT)/gfx/common/xess_common.c \
            $(REPO_ROOT)/gfx/video_upscaler.c \
            $(LIBRETRO_COMM_DIR)/gfx/nvidia/ngx_loader.c \
+           $(LIBRETRO_COMM_DIR)/dynamic/dylib.c \
            $(LIBRETRO_COMM_DIR)/gfx/amd/ffx_loader.c \
            $(LIBRETRO_COMM_DIR)/gfx/intel/xess_loader.c \
            $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.c \
@@ -44,6 +46,12 @@ SOURCES := vulkan_upscaler_test.c \
            $(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
 ifneq ($(findstring mingw,$(CC)),)
+   # session_cache.c builds in gfx/common/vulkan_common.c, whose DLSS
+   # session cache is Win64-only
+   SOURCES += ../vulkan_output/stubs_win32.c \
+              $(REPO_ROOT)/gfx/common/d3d_driver_pacing.c \
+              $(LIBRETRO_COMM_DIR)/gfx/nvidia/nvapi_loader.c \
+              $(LIBRETRO_COMM_DIR)/dynamic/dylib.c
    EXE    := .exe
    FAKE   := _nvngx.dll nvngx_dlss.dll Zdir_fsr/amd_fidelityfx_vk.dll Zdir_xess/libxess.dll
    LDLIBS := -ladvapi32
@@ -110,10 +118,10 @@ $(TARGET)$(EXE): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 check: all
-	$(RUNNER) ./$(TARGET)$(EXE)
+	LSAN_OPTIONS=suppressions=$(CURDIR)/lsan.supp $(RUNNER) ./$(TARGET)$(EXE)
 
 clean:
-	rm -f $(TARGET) $(TARGET).exe $(TARGET).o _nvngx.dll libnvidia-ngx.so.1 nvngx_dlss.dll libnvidia-ngx-dlss.so.310.2.1 fake_dlss_res.o
+	rm -f $(TARGET) $(TARGET).exe $(TARGET).o session_cache.o _nvngx.dll libnvidia-ngx.so.1 nvngx_dlss.dll libnvidia-ngx-dlss.so.310.2.1 fake_dlss_res.o
 	rm -rf $(SAMPLE_OBJDIR) Zdir Zdir_fsr Zdir_xess Zdir_none Zdir_keep
 
 .PHONY: all check clean

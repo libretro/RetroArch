@@ -513,6 +513,54 @@ static INLINE uint8_t rflac_crc8_byte(uint8_t crc, uint8_t data)
    return rflac__crc8_table[crc ^ data];
 }
 
+int rflac_packet_frames(const uint8_t *packet, size_t size)
+{
+   unsigned code, rate, count = 1, i, frames;
+   size_t at;
+   uint8_t first, crc = 0;
+   if (!packet || size < 6 || packet[0] != 0xff
+         || (packet[1] & 0xfe) != 0xf8 || (packet[3] & 1)
+         || (packet[3] >> 4) > 10 || ((packet[3] >> 1) & 7) == 3)
+      return -1;
+   code = packet[2] >> 4;
+   rate = packet[2] & 15;
+   if (!code || rate == 15) return -1;
+   first = packet[4];
+   if (first & 0x80)
+   {
+      if ((first & 0xe0) == 0xc0) count = 2;
+      else if ((first & 0xf0) == 0xe0) count = 3;
+      else if ((first & 0xf8) == 0xf0) count = 4;
+      else if ((first & 0xfc) == 0xf8) count = 5;
+      else if ((first & 0xfe) == 0xfc) count = 6;
+      else if (first == 0xfe) count = 7;
+      else return -1;
+   }
+   at = 4 + count;
+   if (at >= size) return -1;
+   for (i = 1; i < count; i++)
+      if ((packet[4 + i] & 0xc0) != 0x80) return -1;
+   if (code == 1) frames = 192;
+   else if (code <= 5) frames = 576U << (code - 2);
+   else if (code == 6)
+   {
+      if (size - at < 2) return -1;
+      frames = (unsigned)packet[at++] + 1;
+   }
+   else if (code == 7)
+   {
+      if (size - at < 3) return -1;
+      frames = ((unsigned)packet[at] << 8) + packet[at + 1] + 1;
+      at += 2;
+      if (frames > RFLAC_MAX_BLOCK_SIZE) return -1;
+   }
+   else frames = 256U << (code - 8);
+   at += rate == 12 ? 1 : rate >= 13 ? 2 : 0;
+   if (at >= size) return -1;
+   for (i = 0; i < at; i++) crc = rflac_crc8_byte(crc, packet[i]);
+   return crc == packet[at] ? (int)frames : -1;
+}
+
 static INLINE uint8_t rflac_crc8(uint8_t crc, uint32_t data, uint32_t count)
 {
    uint32_t wholeBytes;
@@ -3327,6 +3375,12 @@ static uint32_t rflac__decode_subframe_wide(rflac_bs* bs, rflac_frame* frame,
    if (!rflac__read_subframe_header(bs, pSubframe))
       return 0;
 
+   /* Predictor warm-up samples must fit in the frame's sample block. */
+   if ((pSubframe->subframeType == RFLAC_SUBFRAME_FIXED ||
+        pSubframe->subframeType == RFLAC_SUBFRAME_LPC) &&
+       pSubframe->lpcOrder > frame->header.blockSizeInPCMFrames)
+      return 0;
+
    if (pSubframe->wastedBitsPerSample >= subframeBitsPerSample)
       return 0;
    subframeBitsPerSample -= pSubframe->wastedBitsPerSample;
@@ -3354,6 +3408,12 @@ static uint32_t rflac__decode_subframe(rflac_bs* bs, rflac_frame* frame,
    uint32_t subframeBitsPerSample;
    rflac_subframe* pSubframe = frame->subframes + subframeIndex;
    if (!rflac__read_subframe_header(bs, pSubframe))
+      return 0;
+
+   /* Predictor warm-up samples must fit in the frame's sample block. */
+   if ((pSubframe->subframeType == RFLAC_SUBFRAME_FIXED ||
+        pSubframe->subframeType == RFLAC_SUBFRAME_LPC) &&
+       pSubframe->lpcOrder > frame->header.blockSizeInPCMFrames)
       return 0;
 
    /* Side channels require an extra bit per sample. Took a while to figure that
@@ -6371,11 +6431,13 @@ struct rflac_ctx
    float             *out_f32;
    size_t             out_frames;
    size_t             out_done;
+   int                discard;      /* consume PCM without interleaving */
    int                ended;
    size_t             span_taken;    /* of the current span, last call   */
    int                eof_in;        /* caller has no more input to give */
    int                need_header;   /* set until a header is parsed */
    int                raw;           /* made by rflac_new_raw()          */
+   int                swap_out;      /* s16 out in the other byte order  */
 };
 
 static size_t rflac__on_read_push(void *pUserData, void *bufferOut,
@@ -6648,6 +6710,40 @@ static size_t rflac__max_frame_bytes(const rflac_t *f)
         * ((f->fmt.bits_per_sample + 7) / 8) + 64;
 }
 
+/* Byte-swaps @n samples in place: run on what the frame just wrote,
+ * while it is still in L1, rather than as a pass of the caller's. */
+static void rflac__swap_s16(int16_t *p, size_t n)
+{
+   size_t i = 0;
+#if defined(RFLAC_SUPPORT_SSE2)
+   if (rflac__gIsSSE2Supported)
+   {
+      for (; i + 16 <= n; i += 16)
+      {
+         __m128i a = _mm_loadu_si128((const __m128i*)(p + i));
+         __m128i b = _mm_loadu_si128((const __m128i*)(p + i + 8));
+         a = _mm_or_si128(_mm_slli_epi16(a, 8), _mm_srli_epi16(a, 8));
+         b = _mm_or_si128(_mm_slli_epi16(b, 8), _mm_srli_epi16(b, 8));
+         _mm_storeu_si128((__m128i*)(p + i),     a);
+         _mm_storeu_si128((__m128i*)(p + i + 8), b);
+      }
+   }
+#elif defined(RFLAC_SUPPORT_NEON)
+   if (rflac__gIsNEONSupported)
+   {
+      for (; i + 16 <= n; i += 16)
+      {
+         uint8x16_t a = vld1q_u8((const uint8_t*)(p + i));
+         uint8x16_t b = vld1q_u8((const uint8_t*)(p + i + 8));
+         vst1q_u8((uint8_t*)(p + i),     vrev16q_u8(a));
+         vst1q_u8((uint8_t*)(p + i + 8), vrev16q_u8(b));
+      }
+   }
+#endif
+   for (; i < n; i++)
+      p[i] = (int16_t)rflac__swap_endian_uint16((uint16_t)p[i]);
+}
+
 int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
 {
    size_t   start_pos;
@@ -6704,7 +6800,7 @@ int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
 
    if (!f->dec)
       return RFLAC_PROCESS_ERROR;
-   if (!f->out_s16 && !f->out_f32)
+   if (!f->discard && !f->out_s16 && !f->out_f32)
       return RFLAC_PROCESS_NEXT;
    if (f->out_done >= f->out_frames)
       return RFLAC_PROCESS_NEXT;
@@ -6749,9 +6845,15 @@ int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
 
    f->src.underrun = 0;
 
-   if (f->out_s16)
-      produced = (size_t)rflac_read_pcm_frames_s16(f->dec, want,
-            f->out_s16 + f->out_done * f->fmt.channels);
+   if (f->discard)
+      produced = (size_t)rflac_read_pcm_frames_s16(f->dec, want, NULL);
+   else if (f->out_s16)
+   {
+      int16_t *out = f->out_s16 + f->out_done * f->fmt.channels;
+      produced = (size_t)rflac_read_pcm_frames_s16(f->dec, want, out);
+      if (f->swap_out)
+         rflac__swap_s16(out, produced * f->fmt.channels);
+   }
    else
       produced = (size_t)rflac_read_pcm_frames_f32(f->dec, want,
             f->out_f32 + f->out_done * f->fmt.channels);
@@ -7024,6 +7126,17 @@ void rflac_set_out_s16(rflac_t *f, int16_t *out, size_t out_frames)
    f->out_f32    = NULL;
    f->out_frames = out_frames;
    f->out_done   = 0;
+   f->discard    = 0;
+   f->swap_out   = 0;
+}
+
+void rflac_set_out_s16_order(rflac_t *f, int16_t *out, size_t out_frames,
+      int big_endian)
+{
+   if (!f)
+      return;
+   rflac_set_out_s16(f, out, out_frames);
+   f->swap_out   = (big_endian != 0) != (RETRO_IS_BIG_ENDIAN != 0);
 }
 
 void rflac_set_out_f32(rflac_t *f, float *out, size_t out_frames)
@@ -7034,6 +7147,20 @@ void rflac_set_out_f32(rflac_t *f, float *out, size_t out_frames)
    f->out_s16    = NULL;
    f->out_frames = out_frames;
    f->out_done   = 0;
+   f->discard    = 0;
+   f->swap_out   = 0;
+}
+
+void rflac_set_out_discard(rflac_t *f, size_t frames)
+{
+   if (!f)
+      return;
+   f->out_s16    = NULL;
+   f->out_f32    = NULL;
+   f->out_frames = frames;
+   f->out_done   = 0;
+   f->discard    = 1;
+   f->swap_out   = 0;
 }
 
 const rflac_format_t *rflac_format(const rflac_t *f)

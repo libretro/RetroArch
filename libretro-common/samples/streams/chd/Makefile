@@ -4,6 +4,9 @@ TARGET         := chd_meta_overflow_test
 TARGET_TEST    := chd_stream_threads_test$(EXE)
 TARGET_TEST2   := chd_stream_ahead_test$(EXE)
 TARGET_TEST3   := chd_map_alloc_test$(EXE)
+TARGET_TEST4   := rchd_hunk_cache_test$(EXE)
+TARGET_TEST5   := rchd_flac_test$(EXE)
+TARGET_TEST6   := rchd_write_test$(EXE)
 .DEFAULT_GOAL  := all
 
 LIBRETRO_COMM_DIR := ../../..
@@ -53,6 +56,10 @@ LIBCHDR_SOURCES := \
 
 LIBCHDR_OBJS := $(call sample_objs,$(LIBCHDR_SOURCES:.c=.o))
 
+# rchd again with its FLAC codecs, and rflac, for rchd_flac_test
+FLAC_OBJS := $(filter-out $(SAMPLE_OBJDIR)/__/__/__/formats/chd/rchd.o,$(THREADS_OBJS)) \
+	$(SAMPLE_OBJDIR)/rchd_flac.o $(SAMPLE_OBJDIR)/rflac.o
+
 CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O0
 
 THREADS_CFLAGS := -I$(LIBRETRO_COMM_DIR)/include -DHAVE_THREADS \
@@ -70,7 +77,8 @@ else
    THREADS_LDLIBS += -lpthread
 endif
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
+	$(TARGET_TEST5) $(TARGET_TEST6)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -92,14 +100,40 @@ $(TARGET_TEST2): $(SAMPLE_OBJDIR)/chd_stream_ahead_test.o $(THREADS_OBJS)
 $(TARGET_TEST3): $(SAMPLE_OBJDIR)/chd_map_alloc_test.o $(LIBCHDR_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LIBCHDR_LDLIBS)
 
-check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
+# rchd's in-place hunk read, over an image its own writer makes
+$(TARGET_TEST4): $(SAMPLE_OBJDIR)/rchd_hunk_cache_test.o $(THREADS_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(THREADS_LDLIBS)
+
+# rchd's FLAC codecs, over coded images its writer builds
+$(SAMPLE_OBJDIR)/rchd_flac.o: $(LIBRETRO_COMM_DIR)/formats/chd/rchd.c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS) $(THREADS_CFLAGS) -DHAVE_RCHD_FLAC -DHAVE_RFLAC
+
+$(SAMPLE_OBJDIR)/rflac.o: $(LIBRETRO_COMM_DIR)/formats/flac/rflac.c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS) $(THREADS_CFLAGS)
+
+$(TARGET_TEST5): $(SAMPLE_OBJDIR)/rchd_flac_test.o $(FLAC_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(THREADS_LDLIBS)
+
+# rchd over images MAME 0.139 wrote, its diffs written and updated; the
+# A/V decoder is built with the FLAC codecs
+$(TARGET_TEST6): $(SAMPLE_OBJDIR)/rchd_write_test.o $(FLAC_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(THREADS_LDLIBS)
+
+check: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
+		$(TARGET_TEST5) $(TARGET_TEST6)
 	./$(TARGET)
 	./$(TARGET_TEST)
 	./$(TARGET_TEST2)
 	./$(TARGET_TEST3)
+	./$(TARGET_TEST4)
+	./$(TARGET_TEST5)
+	./$(TARGET_TEST6)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
-	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
+	   $(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) $(OBJS)
 
 .PHONY: all check clean

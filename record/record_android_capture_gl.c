@@ -231,6 +231,20 @@ int record_android_capture_gl_poll(
    s->ended = false;
    return 1;
 }
+bool record_android_capture_gl_wait(
+      record_android_capture_gl_t *c, unsigned slot, uint64_t timeout_ns)
+{
+   record_capture_gl_slot_t *s;
+   GLenum status;
+   if (!c || c->failed || slot >= c->count)
+      return false;
+   s = &c->slots[slot];
+   if (!s->reading || !s->done)
+      return false;
+   /* The end flushed the fence; a failure here is the poll's to report */
+   status = c->ops.poll(s->done, 0, (GLuint64)timeout_ns);
+   return status != GL_WAIT_FAILED;
+}
 int record_android_capture_gl_recover_step(record_android_capture_gl_t *c)
 {
    unsigned i;

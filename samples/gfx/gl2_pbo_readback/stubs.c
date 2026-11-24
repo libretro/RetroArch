@@ -24,6 +24,9 @@ void RARCH_DBG(const char *fmt, ...)  { (void)fmt; }
 static settings_t stub_settings;
 settings_t *config_get_ptr(void) { return &stub_settings; }
 retro_time_t cpu_features_get_time_usec(void) { return 0; }
+retro_perf_tick_t cpu_features_get_perf_counter(void) { return 0; }
+retro_time_t cpu_features_perf_to_usec(retro_perf_tick_t ticks)
+{ (void)ticks; return 0; }
 uint64_t cpu_features_get(void) { return 0; }
 uint32_t runloop_get_flags(void) { return 0; }
 static recording_state_t stub_recording;
@@ -80,6 +83,11 @@ void video_driver_publish_window_layout(unsigned window,
       const video_views_map_t *core_map, unsigned core_dims,
       unsigned window_dims)
 { (void)window; (void)generation; (void)display; (void)layout; (void)core_map; (void)core_dims; (void)window_dims; }
+video_views_layout_t *video_driver_lend_window_layout(unsigned window)
+{
+   static video_views_layout_t slot[RETRO_VIDEO_VIEWS_MAX];
+   return (window && window < RETRO_VIDEO_VIEWS_MAX) ? &slot[window] : NULL;
+}
 void video_driver_set_output_dims(unsigned dims) { (void)dims; }
 bool video_driver_test_all_flags(enum display_flags testflag) { (void)testflag; return false; }
 bool video_driver_thread_wrapper_active(void) { return false; }
@@ -118,3 +126,9 @@ void gl_glsl_in_place_begin(void *shader_data, bool flipped,
 { (void)shader_data; (void)flipped; (void)view_pos; (void)view_dims; (void)frame_h; (void)tex_dims; }
 void gl_glsl_in_place_end(void *shader_data) { (void)shader_data; }
 size_t video_driver_set_gpu_api_version_string(const char *str) { (void)str; return 0; }
+
+void gl_glsl_set_viewer_hdr(bool enabled) { (void)enabled; }
+
+struct gl_planar_sample;
+bool gl_glsl_set_media_planar(void *data, const struct gl_planar_sample *sample)
+{ (void)data; (void)sample; return false; }

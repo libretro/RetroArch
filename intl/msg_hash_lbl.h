@@ -312,10 +312,6 @@ MSG_HASH(
    "cb_core_system_files_list"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD,
-   "cb_core_thumbnails_download"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_CB_CORE_UPDATER_DOWNLOAD,
    "cb_core_updater_download"
    )
@@ -906,6 +902,10 @@ MSG_HASH(
    "deferred_input_controllers_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_INPUT_HEADSET_CONTROLS_LIST,
+   "deferred_input_headset_controls_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST,
    "deferred_input_hotkey_binds"
    )
@@ -1084,6 +1084,10 @@ MSG_HASH(
    "deferred_midi_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CAMERA_SETTINGS_LIST,
+   "deferred_camera_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_RDB_ENTRY_DETAIL,
    "deferred_rdb_entry_detail"
    )
@@ -1140,6 +1144,10 @@ MSG_HASH(
    "deferred_user_binds_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_INPUT_PORT_CONTROLLERS_LIST,
+   "deferred_input_port_controllers_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_USER_INTERFACE_SETTINGS_LIST,
    "deferred_user_interface_settings_list"
    )
@@ -1180,20 +1188,48 @@ MSG_HASH(
    "deferred_video_stereo_settings_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST,
+   "deferred_video_game_screens_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_VIDEO_HEADSET_SETTINGS_LIST,
+   "deferred_video_headset_settings_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST,
+   "deferred_video_screen_settings_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_VIDEO_DLSS_NR_SETTINGS_LIST,
    "deferred_video_dlss_nr_settings_list"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MODE,
-   "video_screen%u_window_mode"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_MONITOR,
-   "video_screen%u_window_monitor"
+   MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS,
+   "video_screen%u_settings"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY,
    "video_screen%u_display"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN,
+   "video_screen%u_window_fullscreen"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X,
+   "video_screen%u_window_x"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_Y,
+   "video_screen%u_window_y"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_WIDTH,
+   "video_screen%u_window_width"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_HEIGHT,
+   "video_screen%u_window_height"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_MENU_DISPLAY,
@@ -2967,6 +3003,10 @@ MSG_HASH(
    "video_shader_scale_pass"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_RES_PASS,
+   "video_shader_simulated_res_pass"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VIDEO_SHARED_CONTEXT,
    "video_shared_context"
    )
@@ -3107,6 +3147,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_SIGNATURE_CHECK,
    "core_signature_check"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CORE_TRUST,
+   "core_trust"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_CORE_SET_STANDALONE_EXEMPT,
@@ -3900,3 +3944,24 @@ MSG_HASH(
    "nfs_client_browse"
    )
 #endif
+
+MSG_HASH(
+   MENU_ENUM_LABEL_PYROWAVE_DEVICES,
+   "pyrowave_devices"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PYROWAVE_SEND,
+   "pyrowave_send"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PYROWAVE_ACCEPT,
+   "pyrowave_accept"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PYROWAVE_DECLINE,
+   "pyrowave_decline"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_PYROWAVE_STOP,
+   "pyrowave_stop"
+   )

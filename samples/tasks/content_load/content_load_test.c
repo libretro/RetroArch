@@ -63,6 +63,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <boolean.h>
 #include <dynamic/dylib.h>
@@ -1540,8 +1541,10 @@ static void lane_queue_survives(void)
  * the close unloads the library), and the wait is spent in the frame
  * loop - frames presented, retro_run never entered - rather than
  * blocking inside one frame. */
-/* Frames the close waits with the save held inside the core */
-#define CLOSE_SAVE_HELD_FRAMES 3
+/* Frames a close or quit waits with the save held inside the core */
+#define SAVE_HELD_FRAMES 3
+/* A close or quit that has not ended in this long never will */
+#define SAVE_WAIT_MAX_USEC 60000000
 
 static void core_hold_serialize(unsigned on)
 {
@@ -1559,6 +1562,7 @@ static void lane_close_waits_for_save(void)
    unsigned had = failures;
    unsigned i, runs_at_wait = 0, presented_waiting = 0, waited = 0;
    bool ran_while_closing = false, held = false;
+   retro_time_t deadline;
    settings_t *settings = config_get_ptr();
 
    /* The core runs (menu closed) so a save can be taken. */
@@ -1596,9 +1600,11 @@ static void lane_close_waits_for_save(void)
 
    /* The save is written under the per-frame I/O window, so the frames
     * it takes follow the machine's speed: a dozen on a release build,
-    * some five hundred under TSan.  The bound only stops a close that
-    * never ends. */
-   for (i = 0; i < 20000 && runloop_is_content_switching(); i++)
+    * some five hundred under TSan.  The bound is time, as the frames
+    * are not paced; it only stops a close that never ends. */
+   deadline = cpu_features_get_time_usec() + SAVE_WAIT_MAX_USEC;
+   for (i = 0;    cpu_features_get_time_usec() < deadline
+               && runloop_is_content_switching(); i++)
    {
       unsigned before = presented;
       pump(1);
@@ -1614,7 +1620,7 @@ static void lane_close_waits_for_save(void)
          presented_waiting += presented - before;
          CHECK(!content_save_state_in_progress(NULL) || hook_installed(),
                "drivers rebuilt while the close was still waiting");
-         if (held && waited == CLOSE_SAVE_HELD_FRAMES)
+         if (held && waited == SAVE_HELD_FRAMES)
          {
             CHECK(core_export("harness_core_serialize_held"),
                   "the save was not inside the core while the close "
@@ -1657,6 +1663,129 @@ static void lane_close_waits_for_save(void)
             "%u presented)\n", waited, presented_waiting);
 }
 
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+/* Whether the menu's current list holds an entry labelled @label */
+static bool menu_list_has_label(const char *label)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *buf           = menu_list
+      ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
+   size_t i;
+   if (!buf)
+      return false;
+   for (i = 0; i < buf->size; i++)
+      if (string_is_equal(buf->list[i].label, label))
+         return true;
+   return false;
+}
+
+/* ------------------------------------------------------------------ */
+/* Lane: a waiting close leaves no core on the Main Menu              */
+/* ------------------------------------------------------------------ */
+
+/* Close Content on a core no one loaded by hand (a playlist launch
+ * leaves no last core), while a save is still being written: the
+ * menu is up and populated through the frames the close waits, with
+ * the old core's system information still standing.  Once the close
+ * is through no core is loaded, and the Main Menu offers Load Core,
+ * not Unload Core. */
+static void lane_close_waits_main_menu(void)
+{
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   unsigned had = failures;
+   unsigned i, waited = 0;
+   bool held = false, stale_seen = false;
+   retro_time_t deadline;
+
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   pump(2);
+   CHECK(core_is_up() && !menu_is_up(), "not running the core");
+
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, true);
+   task_queue_set_threaded();
+   task_queue_check();
+   if (task_queue_is_threaded())
+   {
+      set_save_state_in_background(true);
+      core_hold_serialize(1);
+      held = true;
+   }
+
+   configuration_set_int(settings, settings->ints.state_slot, 0);
+   CHECK(command_event(CMD_EVENT_SAVE_STATE, NULL), "save state not started");
+
+   open_menu();
+   path_clear(RARCH_PATH_CORE_LAST);
+   menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+   pump(1);
+   CHECK(runloop_is_content_switching(), "the close did not start a staged load");
+
+   deadline = cpu_features_get_time_usec() + SAVE_WAIT_MAX_USEC;
+   for (i = 0;    cpu_features_get_time_usec() < deadline
+               && runloop_is_content_switching(); i++)
+   {
+      pump(1);
+      if (runloop_is_content_closing())
+      {
+         waited++;
+         if (menu_list_has_label(MENU_ENUM_LABEL_CORE_LIST_UNLOAD_STR))
+            stale_seen = true;
+         if (held && waited == SAVE_HELD_FRAMES)
+         {
+            core_hold_serialize(0);
+            held = false;
+         }
+      }
+   }
+   core_hold_serialize(0);
+   set_save_state_in_background(false);
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   task_queue_check();
+   CHECK(!runloop_is_content_switching(), "the close did not finish");
+   pump(3);
+
+   CHECK(!(runloop_st->system.info.library_name
+            && *runloop_st->system.info.library_name),
+         "a core is still named after the close (\"%s\")",
+         runloop_st->system.info.library_name);
+   CHECK(!menu_list_has_label(MENU_ENUM_LABEL_CORE_LIST_UNLOAD_STR),
+         "the Main Menu offers Unload Core with no core loaded "
+         "(%u frames waited, listed while waiting: %d)",
+         waited, (int)stale_seen);
+   CHECK(menu_list_has_label(MENU_ENUM_LABEL_CORE_LIST_STR),
+         "the Main Menu does not offer Load Core after the close");
+
+   /* Back on the harness core for the lanes after this one */
+   {
+      content_ctx_info_t content_info = {0};
+      struct load_frame log[LOAD_FRAMES];
+      unsigned n;
+      path_set(RARCH_PATH_CORE, core_path);
+      path_set(RARCH_PATH_CORE_LAST, core_path);
+      CHECK(task_push_start_dummy_core(&content_info),
+            "the dummy session was not started");
+      n = run_load(log, LOAD_FRAMES);
+      CHECK(n < LOAD_FRAMES, "the dummy session did not come up");
+      CHECK(task_push_start_current_core(&content_info),
+            "Start Core not started");
+      n = run_load(log, LOAD_FRAMES);
+      CHECK(n < LOAD_FRAMES && core_is_up(), "Start Core did not go through");
+      pump(1);
+   }
+
+   if (failures == had)
+      fprintf(stderr, "[pass] close-waits-main-menu lane (%u frames "
+            "waited)\n", waited);
+}
+#endif
+
 /* ------------------------------------------------------------------ */
 /* Lane: a quit waits for a save in flight, presenting                */
 /* ------------------------------------------------------------------ */
@@ -1680,7 +1809,8 @@ static void lane_quit_waits_for_save(void)
    settings_t *settings        = config_get_ptr();
    unsigned had = failures;
    unsigned i, runs_at_quit, presented_waiting = 0, waited = 0;
-   bool shutdown_early = false;
+   bool shutdown_early = false, held = false, armed = false, seen_held = false;
+   retro_time_t deadline;
    int ret = 1;
 
    if (menu_is_up())
@@ -1696,6 +1826,24 @@ static void lane_quit_waits_for_save(void)
             sizeof(state_dir));
       path_mkdir(state_dir);
    }
+   /* As in the close lane: a background save on the threaded queue,
+    * held inside the core, so the quit finds it in flight however fast
+    * the machine writes it. */
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, true);
+   task_queue_set_threaded();
+   task_queue_check();
+   if (task_queue_is_threaded())
+   {
+      set_save_state_in_background(true);
+      core_hold_serialize(1);
+      held  = true;
+      armed = true;
+   }
+   else
+      fprintf(stderr, "[note] quit-waits-for-save lane: no threaded "
+            "queue, the save is not held\n");
+
    /* The slot's file exists from the lanes before, so the save first
     * loads it into the undo buffer and is only pushed once that load
     * is through: the quit has to wait for the pair. */
@@ -1712,9 +1860,13 @@ static void lane_quit_waits_for_save(void)
    CHECK(!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED),
          "shutdown began before the save was written");
 
-   /* As the main loop drives it, the queue checked after each frame;
-    * the bound only stops a quit that never ends. */
-   for (i = 0; i < 20000; i++)
+   /* As the main loop drives it, the queue checked after each frame.
+    * The bound is time, not frames: this loop's frames are not paced,
+    * and a threaded queue's tasks take what time they take - a
+    * hundred thousand frames go by in the 100 ms the save needs. It
+    * only stops a quit that never ends. */
+   deadline = cpu_features_get_time_usec() + SAVE_WAIT_MAX_USEC;
+   for (i = 0; cpu_features_get_time_usec() < deadline; i++)
    {
       unsigned before = presented;
       ret = runloop_iterate();
@@ -1725,7 +1877,25 @@ static void lane_quit_waits_for_save(void)
       presented_waiting += presented - before;
       if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
          shutdown_early = true;
+      /* The save reaches the core once its backup load is through:
+       * held there for some frames, then let go. */
+      if (held && waited >= SAVE_HELD_FRAMES
+            && core_export("harness_core_serialize_held"))
+      {
+         seen_held = true;
+         core_hold_serialize(0);
+         held = false;
+      }
    }
+   /* Never leave a worker inside the core */
+   core_hold_serialize(0);
+   CHECK(!armed || seen_held,
+         "the save was never inside the core while the quit waited");
+   set_save_state_in_background(false);
+   configuration_set_bool(settings,
+         settings->bools.threaded_data_runloop_enable, false);
+   task_queue_unset_threaded();
+   task_queue_check();
    CHECK(ret == -1, "the loop did not end after the save (%u frames)", waited);
    CHECK(waited >= 1, "the quit never waited for the save (%u frames)", waited);
    CHECK(presented_waiting >= 1,
@@ -3689,7 +3859,11 @@ static void lane_not_a_core(void)
 /* The Quick Menu's Close Content: the frame loop unloads the core,
  * which loads the dummy core - a staged load - and asks for the core
  * library to be loaded back afterwards, for Start Core.  That reload
- * must follow the dummy session, not land in the middle of it. */
+ * must follow the dummy session, not land in the middle of it.  With
+ * nothing to wait for, the old core closes in the frame the menu is
+ * flushed to the Main Menu, which is still owed a full populate: a
+ * header-only refresh leaves the menu driver in its Quick Menu state
+ * (Ozone hides its sidebar). */
 static void lane_close_content(void)
 {
    struct load_frame log[LOAD_FRAMES];
@@ -3708,6 +3882,11 @@ static void lane_close_content(void)
          "closing content did not start a staged load of the dummy core");
    CHECK(menu_st->flags & MENU_ST_FLAG_PENDING_RELOAD_CORE,
          "no core reload pending after the close");
+   CHECK(!runloop_st->system.info.library_name,
+         "the old core did not close in the frame of the close");
+   CHECK(   (menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH)
+         && !(menu_st->flags & MENU_ST_FLAG_PREVENT_POPULATE),
+         "the Main Menu is not owed a full populate after the close");
 
    n = run_load(log, LOAD_FRAMES);
    CHECK(n < LOAD_FRAMES && !runloop_is_content_switching(),
@@ -3744,6 +3923,65 @@ static void lane_close_content(void)
 
    if (failures == had)
       fprintf(stderr, "[pass] close-content lane\n");
+}
+
+/* Close Content walks the menu stack back to a known parent; an
+ * entry without a label is stepped over, not walked forever.  The
+ * alarm turns a walk that never ends into a failure. */
+static void close_walk_hung(int sig)
+{
+   (void)sig;
+   fprintf(stderr, "FAIL %s: Close Content never left the menu stack "
+         "walk on an entry without a label\n", __FILE__);
+   _exit(1);
+}
+
+static void lane_close_unlabelled_stack(void)
+{
+   struct load_frame log[LOAD_FRAMES];
+   unsigned n;
+   unsigned had                = failures;
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   file_list_t *stack;
+
+   open_menu();
+   stack = MENU_LIST_GET(menu_st->entries.list, 0);
+   CHECK(stack && stack->size, "no menu stack to close from");
+   if (!stack || !stack->size)
+      return;
+   free(stack->list[stack->size - 1].label);
+   stack->list[stack->size - 1].label = strdup("");
+   path_set(RARCH_PATH_CORE_LAST, core_path);
+
+   menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+   signal(SIGALRM, close_walk_hung);
+   alarm(10);
+   pump(1);
+   alarm(0);
+   signal(SIGALRM, SIG_DFL);
+   CHECK(!(menu_st->flags & MENU_ST_FLAG_PENDING_CLOSE_CONTENT),
+         "the close was not taken");
+
+   n = run_load(log, LOAD_FRAMES);
+   CHECK(n < LOAD_FRAMES && !runloop_is_content_switching(),
+         "the close did not finish within %u frames", LOAD_FRAMES);
+   pump(2);
+
+   /* Start Core, to leave a core running as the lane before did. */
+   {
+      content_ctx_info_t content_info = {0};
+      CHECK(task_push_start_current_core(&content_info),
+            "Start Core was not started");
+      n = run_load(log, LOAD_FRAMES);
+      CHECK(n < LOAD_FRAMES && core_is_up()
+            && runloop_st->current_core_type != CORE_TYPE_DUMMY,
+            "Start Core did not go through");
+      runloop_iterate();
+   }
+
+   if (failures == had)
+      fprintf(stderr, "[pass] close-unlabelled-stack lane\n");
 }
 
 /* ------------------------------------------------------------------ */
@@ -4026,9 +4264,13 @@ int main(int argc, char *argv[])
    lane_hw_request();
    lane_queue_survives();
    lane_close_content();
+   lane_close_unlabelled_stack();
    lane_dummy_selected_core();
    lane_focus_follows_frames();
    lane_close_waits_for_save();
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+   lane_close_waits_main_menu();
+#endif
 #ifdef HAVE_NETWORKING
    lane_host_setup_deferred();
 #endif

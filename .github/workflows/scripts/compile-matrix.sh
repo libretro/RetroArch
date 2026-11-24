@@ -468,6 +468,12 @@ d3d_video "d3d12 XeSS backend" "$D3DDEFS -DHAVE_D3D12 -DHAVE_TEMPORAL_UPSCALER" 
    gfx/common/d3d12_xess.c
 d3d_video "d3d12 XeSS backend, no threads" \
    "$D3DDEFS -DHAVE_D3D12 -DHAVE_TEMPORAL_UPSCALER -UHAVE_THREADS" gfx/common/d3d12_xess.c
+# NVENC recording as a --disable-networking build has it: no
+# HAVE_NETWORKING and no HAVE_COMMAND, so nothing reaches command.h
+# through input_driver.h and the file has to include it itself.
+d3d_video "nvenc record, no networking" \
+   "$D3DDEFS -DHAVE_D3D12 -DHAVE_RAC3 -UHAVE_NETWORKING -UHAVE_COMMAND" \
+   record/drivers/record_nvenc.c
 # With the MP4 previews: frames from rh264's D3D11 video backend,
 # imported by D3D11 and D3D12 through shared handles and fences (11.4
 # interfaces from the bundled headers), and the backend itself.
@@ -765,6 +771,13 @@ check "features_cpu: ps3"        "$HOSTOFF -Itools/platform_stubs/ps3 -D__PS3__ 
 check "features_cpu: psl1ght"    "$HOSTOFF -Itools/platform_stubs/psl1ght -D__PS3__ -D__PSL1GHT__ -DRARCH_CONSOLE" $FCPU_TU
 check "features_cpu: emscripten" "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN" $FCPU_TU
 
+# The Allegrex (VFPU) branches of the sample converters, which only the
+# PSP toolchain compiles. The host cannot assemble the VFPU, but the C
+# around it - alignment heads, loop selection - is checked here, with
+# the x86 SIMD paths that would otherwise take precedence shed.
+CONV_TUS="libretro-common/audio/conversion/float_to_s16.c libretro-common/audio/conversion/s16_to_float.c"
+check "conversion: allegrex" "$HOSTOFF -U__SSE__ -U__SSE2__ -U__AVX2__ -U__AVX512F__ -DPSP -D_MIPS_ARCH_ALLEGREX -DDEBUG -std=c89 -pedantic -Wno-long-long -Werror" $CONV_TUS
+
 # Shared menu and video code under the console platform macros. These
 # files are compiled by every desktop job, but the blocks inside them
 # that a console selects are not, and a change to a struct those blocks
@@ -773,7 +786,8 @@ check "features_cpu: emscripten" "$HOSTOFF -Itools/platform_stubs/emscripten -D_
 # the stubs already here and shed the host identity like the ones
 # above.
 MENUGFX="gfx/video_driver.c gfx/gfx_display.c gfx/gfx_widgets.c \
- gfx/gfx_thumbnail.c gfx/gfx_surface.c gfx/gfx_surface_player.c \
+ gfx/gfx_thumbnail.c gfx/gfx_thumbnail_match.c gfx/gfx_thumbnail_results.c \
+ gfx/gfx_surface.c gfx/gfx_surface_player.c \
  gfx/video_thread_wrapper.c menu/drivers/xmb.c menu/drivers/ozone.c menu/drivers/materialui.c"
 MG_BASE="-DHAVE_XMB -DHAVE_OZONE -DHAVE_MATERIALUI -DHAVE_RGUI \
  -DHAVE_GFX_WIDGETS -DHAVE_OVERLAY -DHAVE_CONFIGFILE -DRARCH_CONSOLE \
@@ -949,6 +963,46 @@ for mk in Makefile.*.salamander Makefile.wiiu; do
    rm -f /tmp/salamander_link_check
 done
 
+# The calendar reads in rtime.c and the snapshot behind them, down each
+# arm of rtime.c's ladder: POSIX with a looked-up clock_gettime on
+# Apple, the system property on Android, the plain time(NULL) arm every
+# other console takes, and Win32 desktop and WinRT through mingw-w64.
+# Orbis is FreeBSD to its compiler, so it is checked with that target.
+CALTU="libretro-common/time/rtime.c calendar_time.c"
+check "calendar: apple"   "$HOSTOFF -D__APPLE__ -D__MACH__ -Itools/platform_stubs/apple -Werror" $CALTU
+check "calendar: android" "$HOSTOFF -DANDROID -Itools/platform_stubs/android -Werror" $CALTU
+for plat in GEKKO _3DS __SWITCH__ VITA PSP DJGPP __EMSCRIPTEN__ __QNX__ _XBOX; do
+   check "calendar: $plat, C89" "$HOSTOFF -D$plat $C89" $CALTU
+done
+if command -v clang > /dev/null 2>&1 \
+      && clang --target=x86_64-scei-ps4 -x c -c -o /dev/null /dev/null \
+         > /dev/null 2>&1; then
+   CC_SAVED=$CC
+   CC="clang --target=x86_64-scei-ps4 -isystem tools/platform_stubs/sce -isystem /usr/include"
+   [ -d /usr/include/x86_64-linux-gnu ] \
+      && CC="$CC -isystem /usr/include/x86_64-linux-gnu"
+   check "calendar: orbis" "$HOSTOFF -DORBIS -Itools/platform_stubs/orbis -Werror" $CALTU
+   CC=$CC_SAVED
+else
+   echo "skip  calendar: orbis (no clang for x86_64-scei-ps4)"
+fi
+for mingw in x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc; do
+   if ! command -v $mingw > /dev/null 2>&1; then
+      echo "skip  calendar: $mingw"
+      continue
+   fi
+   for winrt in "" "-D__WINRT__ -D_WIN32_WINNT=0x0A00"; do
+      if ! out=$($mingw -std=gnu99 -Wall -Werror $INC $winrt \
+            -fsyntax-only $CALTU 2>&1); then
+         echo "FAIL  calendar: $mingw $winrt"
+         show_out "$out"
+         fail=1
+      else
+         echo "ok    calendar: $mingw $winrt"
+      fi
+   done
+done
+
 # runloop.c under Android: runloop_idle_wait's looper branch, and every
 # other ANDROID block in the file, compiled against hermetic NDK stubs
 # (jni, looper, native_activity, sensor, configuration, window) with
@@ -1091,6 +1145,17 @@ check_gates "griffin: HAVE_RETROSMB + cloud sync"  "$UIDEFS -DRARCH_INTERNAL -DH
 # collides here, so this lane carries as much of griffin as a host can.
 GRIFFIN_FULL="-DRARCH_INTERNAL -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_XMB -DHAVE_OZONE -DHAVE_MATERIALUI -DHAVE_GFX_WIDGETS -DHAVE_OVERLAY -DHAVE_CONFIGFILE -DHAVE_CHEEVOS -DRC_DISABLE_LUA -DHAVE_RUNAHEAD -DHAVE_REWIND -DHAVE_PATCH -DHAVE_XDELTA -DHAVE_CHEATS -DHAVE_SCREENSHOTS -DHAVE_TRANSLATE -DHAVE_LIBRETRODB -DHAVE_DYNAMIC -DHAVE_DYLIB -DHAVE_THREADS -DHAVE_AUDIOMIXER -DHAVE_DSP_FILTER -DHAVE_VIDEO_FILTER -DHAVE_RWAV -DHAVE_RFLAC -DHAVE_RVORBIS -DHAVE_RMP3 -DHAVE_RAC3 -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DHAVE_RGIF -DHAVE_RWEBP -DHAVE_RDDS -DHAVE_RZSTD -DHAVE_7ZIP -DHAVE_CHD -DHAVE_RCHD -DHAVE_STB_FONT -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_NETWORK_CMD -DHAVE_NETPLAYDISCOVERY -DHAVE_ONLINE_UPDATER -DHAVE_UPDATE_ASSETS -DHAVE_UPDATE_CORES -DHAVE_UPDATE_CORE_INFO -DHAVE_CORE_INFO_CACHE -DHAVE_CLOUDSYNC -DHAVE_S3 -DHAVE_CRYPTO -DHAVE_KEYCHAIN -DHAVE_SSL -DHAVE_RETROSSL -DHAVE_SMBCLIENT -DHAVE_RETROSMB -DHAVE_NFSCLIENT -DHAVE_RETRONFS -DHAVE_LANGEXTRA -DHAVE_SHADERPIPELINE -DHAVE_GLSL -DHAVE_OPENGL -D_GNU_SOURCE"
 check_gates "griffin: full unity (every codec + network stack)" "$UIDEFS $GRIFFIN_FULL" griffin/griffin.c
+check_gates "griffin: full unity + built-in filters" \
+   "$UIDEFS $GRIFFIN_FULL -DHAVE_FILTERS_BUILTIN" griffin/griffin.c
+GRIFFIN_MUSIC="-DRARCH_INTERNAL -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_RGUI -DHAVE_AUDIOMIXER -DHAVE_CONFIGFILE -DHAVE_RWAV -D_GNU_SOURCE"
+check_gates "griffin: music + built-in DSP (Android)" \
+   "$UIDEFS $GRIFFIN_MUSIC -DHAVE_FILTERS_BUILTIN -DHAVE_DSP_FILTER" griffin/griffin.c
+check_gates "griffin: music + built-in filters, no DSP" \
+   "$UIDEFS $GRIFFIN_MUSIC -DHAVE_FILTERS_BUILTIN" griffin/griffin.c
+check_gates "griffin: music + external DSP" \
+   "$UIDEFS $GRIFFIN_MUSIC -DHAVE_DSP_FILTER" griffin/griffin.c
+check_gates "griffin: music, no DSP" \
+   "$UIDEFS $GRIFFIN_MUSIC" griffin/griffin.c
 # The SMB show-settings row read a HAVE_MENU-only default under
 # HAVE_SMBCLIENT alone; with the built-in client on by default that
 # broke every --disable-menu build. configuration.c with SMB and no
@@ -1190,9 +1255,12 @@ check "runahead: both"             "$RADEFS -DHAVE_DYNAMIC -DHAVE_DYLIB" runahea
 # macOS SDK it uses (tools/platform_stubs/metal). No runner here has the
 # SDK, so the Apple jobs used to be the first to compile it. A selector
 # the stand-ins do not declare is an error: a new Metal call needs its
-# declaration added there.
+# declaration added there. HAVE_SHADERPIPELINE reaches the menu effects'
+# calls into gfx_display (the glow prepass), which no other set compiles.
 if command -v clang > /dev/null 2>&1; then
-   for metal_features in "" "-DHAVE_RMP4 -DHAVE_THREADS" "-DHAVE_RWEBM -DHAVE_THREADS"; do
+   for metal_features in "" "-DHAVE_RMP4 -DHAVE_THREADS" "-DHAVE_RWEBM -DHAVE_THREADS" \
+         "-DHAVE_SHADERPIPELINE" "-DHAVE_SLANG -DHAVE_RSLC" \
+         "-DHAVE_SLANG -DHAVE_RSLC -UHAVE_THREADS"; do
    for metal_ownership in "" "-fobjc-arc"; do
    if ! out=$(clang -x objective-c -fobjc-runtime=macosx-10.13 -fblocks $metal_ownership \
          -fsyntax-only -Wall -Wno-unused-function -Werror=objc-method-access \
@@ -1320,9 +1388,8 @@ check "image YUV: PS2 C89" "-DPS2 -DRARCH_CONSOLE $HOSTOFF -std=c89" \
    libretro-common/formats/image/image_yuv_blit.c
 
 echo "== screens' own windows: with HAVE_VIDEO_WINDOWS =="
-# Android builds the screens' windows and a desktop build does not, so
-# no other lane compiles the drivers' window code or the frontend's
-# with it; and without threads, as a --disable-threads build would.
+# The drivers' window code and the frontend's with GLES2, GLES3 and
+# without threads, which a default desktop build does not compile.
 WINDEFS="-DHAVE_VIDEO_WINDOWS -DHAVE_EGL"
 WINTU="gfx/video_driver.c gfx/video_thread_wrapper.c input/input_driver.c \
    configuration.c menu/menu_setting.c menu/menu_displaylist.c \
@@ -1365,7 +1432,7 @@ else
       | grep -vE '^(deps|samples|libretro-common/samples|tools|pkg|os|wiiu)/')
 fi
 SCE_CC=${SCE_CC:-clang}
-SCE_SYS="-isystem /usr/include"
+SCE_SYS="-isystem tools/platform_stubs/sce -isystem /usr/include"
 [ -d /usr/include/x86_64-linux-gnu ] \
    && SCE_SYS="$SCE_SYS -isystem /usr/include/x86_64-linux-gnu"
 SCE_DEFS="-DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_REWIND -DHAVE_CHEATS -D_BSD_SOURCE"

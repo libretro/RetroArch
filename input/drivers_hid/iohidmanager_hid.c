@@ -26,6 +26,7 @@
 
 #include "../input_defines.h"
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 
 #include "../connect/joypad_connection.h"
 #include "../../tasks/tasks_internal.h"
@@ -45,9 +46,11 @@ typedef struct apple_hid
 {
    IOHIDManagerRef ptr;
    joypad_connection_t *slots;
-   uint32_t buttons[MAX_USERS];
-   int16_t axes[MAX_USERS][11];
-   int8_t hats[MAX_USERS][2]; /* MacOS only supports 1 hat AFAICT */
+   /* Each pad no handler reads, as its elements' values left it, lent
+    * to the readers (input_pad_view.h): 32 buttons, 11 axes and one
+    * hat. The values arrive on the main thread's run loop between
+    * frames, never inside one. A handler's pad is its handler's view. */
+   input_pad_view_t views[MAX_USERS];
 } iohidmanager_hid_t;
 
 struct iohidmanager_hid_adapter
@@ -159,82 +162,72 @@ static const char *iohidmanager_hid_joypad_name(void *data, unsigned pad)
    return NULL;
 }
 
+/* Pad @pad's state: its handler's, or for a pad no handler reads, its
+ * elements'; NULL for a handler that cannot lend */
+static const input_pad_view_t *iohidmanager_hid_joypad_view(void *data,
+      unsigned pad)
+{
+   iohidmanager_hid_t *hid = (iohidmanager_hid_t*)data;
+   if (!hid || pad >= MAX_USERS)
+      return NULL;
+   if (pad_connection_has_interface(hid->slots, pad))
+      return pad_connection_view(&hid->slots[pad]);
+   return &hid->views[pad];
+}
+
 static void iohidmanager_hid_joypad_get_buttons(void *data,
       unsigned port, input_bits_t *state)
 {
-  iohidmanager_hid_t        *hid   = (iohidmanager_hid_t*)data;
-  if (hid)
-    pad_connection_get_buttons(&hid->slots[port], port, state);
-  else
-    BIT256_CLEAR_ALL_PTR(state);
+   iohidmanager_hid_t *hid   = (iohidmanager_hid_t*)data;
+   const input_pad_view_t *v = iohidmanager_hid_joypad_view(data, port);
+   if (v)
+      *state = v->buttons;
+   else if (hid && port < MAX_USERS)
+      pad_connection_get_buttons(&hid->slots[port], port, state);
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t iohidmanager_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
-   iohidmanager_hid_t *hid              = (iohidmanager_hid_t*)data;
-
-   if (port < DEFAULT_MAX_PADS)
-   {
-      unsigned hat_dir;
-      input_bits_t buttons;
-      iohidmanager_hid_joypad_get_buttons(data, port, &buttons);
-
-      /* Check hat. */
-      if ((hat_dir = GET_HAT_DIR(joykey)))
-      {
-         unsigned h = GET_HAT(joykey);
-         if (h >= 1)
-            return 0;
-
-         switch (hat_dir)
-         {
-            case HAT_LEFT_MASK:
-               return (hid->hats[port][0] < 0);
-            case HAT_RIGHT_MASK:
-               return (hid->hats[port][0] > 0);
-            case HAT_UP_MASK:
-               return (hid->hats[port][1] < 0);
-            case HAT_DOWN_MASK:
-               return (hid->hats[port][1] > 0);
-            default:
-               break;
-         }
-         /* hat requested and no hat button down */
-      }
-      else if (joykey < 32)
-         return ((BIT256_GET(buttons, joykey) != 0)
-               || ((hid->buttons[port] & (1 << joykey)) != 0));
-   }
-   return 0;
+   input_bits_t buttons;
+   const input_pad_view_t *v = iohidmanager_hid_joypad_view(data, port);
+   if (v)
+      return input_pad_view_button(v, joykey);
+   /* a handler that cannot lend: its buttons, no hat */
+   if (port >= MAX_USERS || GET_HAT_DIR(joykey) || joykey >= 256)
+      return 0;
+   iohidmanager_hid_joypad_get_buttons(data, port, &buttons);
+   return BIT256_GET(buttons, joykey) != 0;
 }
 
 static int16_t iohidmanager_hid_joypad_axis(void *data,
       unsigned port, uint32_t joyaxis)
 {
    iohidmanager_hid_t   *hid = (iohidmanager_hid_t*)data;
+   const input_pad_view_t *v = iohidmanager_hid_joypad_view(data, port);
+   int16_t val;
 
-   if (AXIS_NEG_GET(joyaxis) < 11)
+   if (v)
+      return input_pad_view_axis(v, joyaxis);
+   if (!hid || port >= MAX_USERS)
+      return 0;
+   /* a handler that cannot lend */
+   if (AXIS_NEG_GET(joyaxis) < 16)
    {
-      int16_t val  = hid->axes[port][AXIS_NEG_GET(joyaxis)]
-         + pad_connection_get_axis(&hid->slots[port],
-               port, AXIS_NEG_GET(joyaxis));
-
-      if (val < 0)
-         return val;
+      val = pad_connection_get_axis(&hid->slots[port], port,
+            AXIS_NEG_GET(joyaxis));
+      return (val < 0) ? val : 0;
    }
-   else if (AXIS_POS_GET(joyaxis) < 11)
+   if (AXIS_POS_GET(joyaxis) < 16)
    {
-      int16_t val = hid->axes[port][AXIS_POS_GET(joyaxis)]
-         + pad_connection_get_axis(&hid->slots[port],
-               port, AXIS_POS_GET(joyaxis));
-
-      if (val > 0)
-         return val;
+      val = pad_connection_get_axis(&hid->slots[port], port,
+            AXIS_POS_GET(joyaxis));
+      return (val > 0) ? val : 0;
    }
    return 0;
 }
-
 
 static int16_t iohidmanager_hid_joypad_state(
       void *data,
@@ -244,20 +237,17 @@ static int16_t iohidmanager_hid_joypad_state(
       unsigned port)
 {
    unsigned i;
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
+   int16_t ret       = 0;
+   uint16_t port_idx = joypad_info->joy_idx;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
-      const uint64_t joykey  = joykeys[i];
-      const uint32_t joyaxis = joyaxes[i];
-      if (
-               (uint16_t)joykey != NO_BTN
-            && iohidmanager_hid_joypad_button(data, port_idx, (uint16_t)joykey))
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(iohidmanager_hid_joypad_axis(data, port_idx, joyaxis))
-             / 0x8000) > joypad_info->axis_threshold)
+      if (     joykeys[i] != NO_BTN
+            && iohidmanager_hid_joypad_button(data, port_idx, joykeys[i]))
+         ret |= (1 << i);
+      else if (joyaxes[i] != AXIS_NONE &&
+            ((float)abs(iohidmanager_hid_joypad_axis(data, port_idx,
+                  joyaxes[i])) / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
 
@@ -348,6 +338,11 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
 
                         if (tmp && tmp->cookie == (IOHIDElementCookie)cookie)
                         {
+                           /* up, then clockwise in eighths: the
+                            * view's hat bits, up 1, down 2, left 4,
+                            * right 8; anything else is centred */
+                           static const uint16_t ways[8] = {
+                              1, 1 | 8, 8, 2 | 8, 2, 2 | 4, 4, 1 | 4 };
                            CFIndex min = IOHIDElementGetLogicalMin(element);
                            CFIndex range = IOHIDElementGetLogicalMax(element) - min;
                            CFIndex val   = IOHIDValueGetIntegerValue(value);
@@ -358,54 +353,8 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                            if (min == 1)
                               val--;
 
-                           switch(val)
-                           {
-                              case 0:
-                                 /* pos = up */
-                                 hid->hats[adapter->slot][0] = 0;
-                                 hid->hats[adapter->slot][1] = -1;
-                                 break;
-                              case 1:
-                                 /* pos = up+right */
-                                 hid->hats[adapter->slot][0] = 1;
-                                 hid->hats[adapter->slot][1] = -1;
-                                 break;
-                              case 2:
-                                 /* pos = right */
-                                 hid->hats[adapter->slot][0] = 1;
-                                 hid->hats[adapter->slot][1] = 0;
-                                 break;
-                              case 3:
-                                 /* pos = down+right */
-                                 hid->hats[adapter->slot][0] = 1;
-                                 hid->hats[adapter->slot][1] = 1;
-                                 break;
-                              case 4:
-                                 /* pos = down */
-                                 hid->hats[adapter->slot][0] = 0;
-                                 hid->hats[adapter->slot][1] = 1;
-                                 break;
-                              case 5:
-                                 /* pos = down+left */
-                                 hid->hats[adapter->slot][0] = -1;
-                                 hid->hats[adapter->slot][1] =  1;
-                                 break;
-                              case 6:
-                                 /* pos = left */
-                                 hid->hats[adapter->slot][0] = -1;
-                                 hid->hats[adapter->slot][1] =  0;
-                                 break;
-                              case 7:
-                                 /* pos = up_left */
-                                 hid->hats[adapter->slot][0] = -1;
-                                 hid->hats[adapter->slot][1] = -1;
-                                 break;
-                              default:
-                                 /* pos = centered */
-                                 hid->hats[adapter->slot][0] = 0;
-                                 hid->hats[adapter->slot][1] = 0;
-                                 break;
-                           }
+                           hid->views[adapter->slot].hats =
+                              (val >= 0 && val < 8) ? ways[val] : 0;
                         }
                      }
                      break;
@@ -424,7 +373,7 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                            CFIndex max   = IOHIDElementGetPhysicalMax(element) - min;
                            float val     = (float)state / (float)max;
 
-                           hid->axes[adapter->slot][tmp->id] =
+                           hid->views[adapter->slot].axes[tmp->id] =
                               ((val * 2.0f) - 1.0f) * 32767.0f;
                         }
                      }
@@ -464,7 +413,7 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
                            CFIndex max   = IOHIDElementGetPhysicalMax(element) - min;
                            float val     = (float)state / (float)max;
 
-                           hid->axes[adapter->slot][tmp->id] =
+                           hid->views[adapter->slot].axes[tmp->id] =
                               ((val * 2.0f) - 1.0f) * 32767.0f;
                         }
                      }
@@ -479,7 +428,7 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
 
    if (pushed_button)
    {
-      uint8_t bit = 0;
+      unsigned bit = 0;
 
       tmp         = adapter->buttons;
 
@@ -489,13 +438,14 @@ static void iohidmanager_hid_device_input_callback(void *data, IOReturn result,
          tmp = tmp->next;
       }
 
-      if (tmp && tmp->cookie == (IOHIDElementCookie)cookie)
+      /* the first 32 */
+      if (tmp && tmp->cookie == (IOHIDElementCookie)cookie && bit < 32)
       {
          CFIndex state = IOHIDValueGetIntegerValue(value);
          if (state)
-            BIT64_SET(hid->buttons[adapter->slot], bit);
+            BIT256_SET(hid->views[adapter->slot].buttons, bit);
          else
-            BIT64_CLEAR(hid->buttons[adapter->slot], bit);
+            BIT256_CLEAR(hid->views[adapter->slot].buttons, bit);
       }
    }
 }
@@ -529,8 +479,9 @@ static void iohidmanager_hid_device_remove(IOHIDDeviceRef device, iohidmanager_h
    {
       input_autoconfigure_disconnect(adapter->slot, adapter->name);
 
-      hid->buttons[adapter->slot] = 0;
-      memset(hid->axes[adapter->slot], 0, sizeof(hid->axes));
+      /* nothing it held stays held */
+      memset(&hid->views[adapter->slot], 0,
+            sizeof(hid->views[adapter->slot]));
       hid->slots[adapter->slot].data = NULL;
 
       pad_connection_pad_deinit(&hid->slots[adapter->slot], adapter->slot);
@@ -1161,5 +1112,6 @@ hid_driver_t iohidmanager_hid = {
    NULL, /* get_bt_host */
    NULL, /* set_bt_host */
    NULL, /* is_bluetooth */
-   iohidmanager_hid_set_player
+   iohidmanager_hid_set_player,
+   iohidmanager_hid_joypad_view
 };

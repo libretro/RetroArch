@@ -76,6 +76,7 @@ int main(void)
    vulkan_note_built(&vk);
    CHECK(!vulkan_supports_texture_format(NULL, TEXTURE_GPU_FORMAT_SCRGB));
    CHECK(!vulkan_supports_texture_format(&vk, TEXTURE_GPU_FORMAT_YUV420));
+   CHECK(!vulkan_supports_texture_format(&vk, TEXTURE_GPU_FORMAT_YUV420_STRIDED));
    CHECK(!vulkan_supports_texture_format(&vk, TEXTURE_GPU_FORMAT_SCRGB));
    vk.pipelines.yuv420_to_rgba8888 = (VkPipeline)(uintptr_t)1;
    vk.display.pipeline_linear_sdr = (VkPipeline)(uintptr_t)1;
@@ -94,6 +95,7 @@ int main(void)
    vulkan_note_built(&vk);
    CHECK(!vulkan_supports_texture_format(&vk, TEXTURE_GPU_FORMAT_SCRGB));
    CHECK(!vulkan_supports_texture_format(&vk, TEXTURE_GPU_FORMAT_YUV420));
+   CHECK(!vulkan_supports_texture_format(&vk, TEXTURE_GPU_FORMAT_YUV420_STRIDED));
    CHECK(vulkan_supports_texture_format(&vk, TEXTURE_GPU_FORMAT_RGBA16F));
    CHECK(vulkan_supports_texture_format(&vk, TEXTURE_GPU_FORMAT_RGB10A2));
    CHECK(property_queries == 0);
@@ -104,6 +106,7 @@ int main(void)
    {
       observed += vulkan_supports_texture_format(&vk, TEXTURE_GPU_FORMAT_SCRGB);
       observed += vulkan_supports_texture_format(&vk, TEXTURE_GPU_FORMAT_YUV420);
+      observed += vulkan_supports_texture_format(&vk, TEXTURE_GPU_FORMAT_YUV420_STRIDED);
    }
    sthread_join(worker);
    CHECK(property_queries == 0);

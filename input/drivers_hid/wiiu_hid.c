@@ -151,7 +151,7 @@ static const char *wiiu_hid_joypad_name(void *data, unsigned slot)
 static void wiiu_hid_joypad_get_buttons(void *data, unsigned slot, input_bits_t *state)
 {
    joypad_connection_t *pad = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
-
+   BIT256_CLEAR_ALL_PTR(state);
    if (!pad)
       return;
    if (pad->iface->get_buttons)
@@ -162,30 +162,29 @@ static void wiiu_hid_joypad_get_buttons(void *data, unsigned slot, input_bits_t 
 static int16_t wiiu_hid_joypad_button(void *data,
       unsigned slot, uint16_t joykey)
 {
-   int16_t ret              = 0;
-   joypad_connection_t *pad = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
-   if (!pad)
+   input_bits_t buttons;
+   /* every one get_buttons() says; no hat, the handlers give theirs as
+    * the D-pad */
+   if (GET_HAT_DIR(joykey) || joykey >= 256)
       return 0;
-   if (pad->iface->button)
-      ret = pad->iface->button(pad->connection, joykey);
-   wiiu_hid_put_pad(pad);
-   return ret;
+   wiiu_hid_joypad_get_buttons(data, slot, &buttons);
+   return BIT256_GET(buttons, joykey) != 0;
 }
 
 static int16_t wiiu_hid_joypad_axis(void *data, unsigned slot, uint32_t joyaxis)
 {
    int16_t ret              = 0;
    joypad_connection_t *pad = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
-
    if (!pad)
       return 0;
-   if (AXIS_NEG_GET(joyaxis) < 4)
+   /* the sticks, then what a handler has past them */
+   if (AXIS_NEG_GET(joyaxis) < 16)
    {
       int16_t val = pad->iface->get_axis(pad->connection, AXIS_NEG_GET(joyaxis));
       if (val < 0)
          ret = val;
    }
-   else if (AXIS_POS_GET(joyaxis) < 4)
+   else if (AXIS_POS_GET(joyaxis) < 16)
    {
       int16_t val = pad->iface->get_axis(pad->connection, AXIS_POS_GET(joyaxis));
       if (val > 0)
@@ -202,26 +201,24 @@ static int16_t wiiu_hid_joypad_state(void *data,
       unsigned port)
 {
    unsigned i;
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
-   joypad_connection_t *pad             = wiiu_hid_get_pad((wiiu_hid_t *)data, port_idx);
-   if (!pad)
-      return 0;
+   input_bits_t buttons;
+   int16_t ret       = 0;
+   uint16_t port_idx = joypad_info->joy_idx;
 
+   /* the common loop, the buttons read once */
+   wiiu_hid_joypad_get_buttons(data, port_idx, &buttons);
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
-      const uint64_t joykey  = joykeys[i];
+      const uint16_t joykey  = joykeys[i];
       const uint32_t joyaxis = joyaxes[i];
-      if (
-               (uint16_t)joykey != NO_BTN
-            && pad->iface->button && pad->iface->button(pad->connection, (uint16_t)joykey))
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE && pad->iface->get_axis &&
-            ((float)abs(pad->iface->get_axis(pad->connection, joyaxis))
+      if (     joykey != NO_BTN && !GET_HAT_DIR(joykey) && joykey < 256
+            && BIT256_GET(buttons, joykey))
+         ret |= (1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(wiiu_hid_joypad_axis(data, port_idx, joyaxis))
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
-   wiiu_hid_put_pad(pad);
 
    return ret;
 }

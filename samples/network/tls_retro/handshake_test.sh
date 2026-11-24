@@ -19,6 +19,10 @@ cleanup() {
 }
 trap cleanup EXIT
 make -s -B tls_handshake SSL_BACKEND="$backend"
+if [ "$backend" = bear ]; then
+   make -s -B tls_bear_anchors
+   ./tls_bear_anchors
+fi
 openssl req -x509 -newkey rsa:2048 -nodes -keyout "$D/ca.key" -out "$D/ca.pem" \
    -days 2 -subj '/CN=TLS step test CA' 2>/dev/null
 openssl req -newkey rsa:2048 -nodes -keyout "$D/server.key" -out "$D/server.csr" \

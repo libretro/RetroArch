@@ -150,6 +150,8 @@ typedef struct gfx_thumbnail_dir_config
 {
    char dir_thumbnails[DIR_MAX_LENGTH];
    bool playlist_allow_non_png;
+   bool playlist_thumbnail_other_regions;
+   bool use_results; /* the match store: main thread only */
    unsigned gfx_thumbnails;
    unsigned menu_left_thumbnails;
    unsigned menu_icon_thumbnails;
@@ -256,6 +258,7 @@ typedef struct
    /* The playback (gfx_surface_player_t*): its clock and loops, and
     * the decode, a frame ahead on a worker where there is one. */
    void *anim_player;
+   void *music_player; /* explicit fullscreen music only; never a preview */
    void *anim_lifetime;
    /* The GPU surface (gfx_surface_t*) the still goes to, and the
     * animation's frames are decoded into and shown from: one
@@ -320,6 +323,7 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim_dt         = NULL;
    t->anim_sess       = NULL;
    t->anim_player     = NULL;
+   t->music_player    = NULL;
    t->anim_lifetime   = NULL;
    t->anim_surface    = NULL;
    t->anim_buf_len    = 0;
@@ -464,6 +468,10 @@ void gfx_thumbnail_request(
  *   set to MUI_THUMBNAIL_STATUS_PENDING
  * 'thumbnail' will be populated with texture info/metadata
  * once the image load is complete */
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+bool gfx_thumbnail_request_music_file(const char *path, gfx_thumbnail_t *thumbnail);
+#endif
+
 void gfx_thumbnail_request_file(
       const char *file_path, gfx_thumbnail_t *thumbnail,
       unsigned gfx_thumbnail_upscale_threshold);
@@ -477,6 +485,25 @@ void gfx_thumbnail_flush_requests(void);
 /* Resets (and free()s the current texture of) the
  * specified thumbnail */
 void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail);
+
+/* A thumbnail fed frames by a live source - the camera preview - one
+ * thumbnail at a time. _begin resets @thumbnail (and any thumbnail
+ * fed before) and leaves it PENDING; each frame goes up from where it
+ * lies, and the first to reach the texture makes it AVAILABLE. The
+ * reset that ends the thumbnail calls @end(@user), which stops the
+ * source and must not reset the thumbnail itself. Main thread. */
+typedef void (*gfx_thumbnail_live_end_t)(void *user);
+void gfx_thumbnail_live_begin(gfx_thumbnail_t *thumbnail,
+      gfx_thumbnail_live_end_t end, void *user);
+/* A 4:2:0 frame of @dims in @yuv (IMAGE_YUV_FLAG_*) as luma, Cb and
+ * Cr planes, chroma samples @chroma_step bytes apart; or XRGB words
+ * rows @pitch bytes apart, copied in opaque. False when the frame was not taken - a
+ * thumbnail no longer live, or the last frame still on its way. */
+bool gfx_thumbnail_live_planes(gfx_thumbnail_t *thumbnail,
+      const uint8_t *const planes[3], const size_t strides[3],
+      unsigned chroma_step, unsigned dims, unsigned yuv);
+bool gfx_thumbnail_live_pixels(gfx_thumbnail_t *thumbnail,
+      const uint32_t *pixels, unsigned dims, size_t pitch);
 
 /* Advances an animated thumbnail (animated WebP / WebM) by at most one frame,
  * if its frame duration has elapsed. Call once per frame, on the main
@@ -515,6 +542,10 @@ bool gfx_thumbnail_get_playback_state(gfx_thumbnail_t *thumbnail,
 /* Main-thread absolute media seek, currently MP4. Latest request wins;
  * decoding and audio preparation use the existing player worker.
  * Keeps the last texture visible and preserves the user's pause state. */
+bool gfx_thumbnail_request_audio(gfx_thumbnail_t *thumbnail, int index);
+bool gfx_thumbnail_select_audio(gfx_thumbnail_t *thumbnail, int index,
+      retro_time_t current_time);
+
 bool gfx_thumbnail_seek(gfx_thumbnail_t *thumbnail, int64_t target_us,
       retro_time_t current_time);
 
@@ -647,6 +678,15 @@ void gfx_thumbnail_get_draw_dimensions(
  * thumbnail is fitted into, each with both axes in one word,
  * VIDEO_SCALE_PACK's layout. */
 void gfx_thumbnail_draw(
+      void *userdata,
+      unsigned video_dims,
+      gfx_thumbnail_t *thumbnail,
+      float x, float y, unsigned dims,
+      enum gfx_thumbnail_alignment alignment,
+      float alpha, float scale_factor,
+      gfx_thumbnail_shadow_t *shadow);
+
+void gfx_thumbnail_draw_shader(
       void *userdata,
       unsigned video_dims,
       gfx_thumbnail_t *thumbnail,

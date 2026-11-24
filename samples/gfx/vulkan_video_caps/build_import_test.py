@@ -16,23 +16,32 @@ win32_types, separator, win32_functions = win32.partition('static bool vulkan_wi
 assert separator
 
 def function(text, signature):
+    # The definition, not a declaration ahead of it
     start = text.index(signature)
+    while text.index(';', start) < text.index('{', start):
+        start = text.index(signature, start + 1)
     return text[start:text.index('\n}', start) + 2]
 
 types = []
-for name in ('vk_texture', 'vk_stream_state'):
+for name in ('vk_texture', 'vk_media_version', 'vk_media_pool', 'vk_stream_state'):
     start = source.index('struct ' + name + '\n')
     types.append(source[start:source.index('\n};', start) + 3])
 with tempfile.TemporaryDirectory() as directory:
     tmp = Path(directory)
     (tmp / 'import_win32_types.inc').write_text(win32_types)
     (tmp / 'import_win32_functions.inc').write_text(separator + win32_functions)
+    start = source.index('enum vulkan_texture_support\n')
+    types.append(source[start:source.index('\n};', start) + 3])
     (tmp / 'import_types.inc').write_text('\n'.join(types))
+    (tmp / 'import_pool_support.inc').write_text(function(source, 'static void vulkan_destroy_texture('))
     bodies = [function(common, 'uint32_t vulkan_find_memory_type_fallback('),
-              function(common, 'VkResult vulkan_queue_signal_fence(')]
+              function(common, 'VkResult vulkan_queue_signal_fence('),
+              function(source, 'static void vulkan_media_texture_changed(')]
     for signature in ('static bool vulkan_import_buffer(',
                       'static struct vk_stream_state *vulkan_import_state_get(',
                       'static enum video_texture_update vulkan_import_convert(',
+                      'static bool vulkan_gpu_format_to_vk(',
+                      'static bool vulkan_supports_texture_format(',
                       'static bool vulkan_get_device(',
                       'static void vulkan_movie_input('):
         bodies.append(function(source, signature))

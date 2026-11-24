@@ -573,6 +573,8 @@ typedef struct udev_input
 #ifdef UDEV_XKB_HANDLING
    bool xkb_handling;
 #endif
+   /* The monitor is in the device set, as its one entry without a device */
+   bool monitor_watched;
 
 #ifdef __linux__
    linux_illuminance_sensor_t *illuminance_sensor;
@@ -3709,6 +3711,28 @@ static bool udev_input_poll_hotplug_available(struct udev_monitor *dev)
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
 
+#if defined(HAVE_EPOLL)
+#define UDEV_EVENT_DEVICE(e) ((udev_input_device_t*)(e).data.ptr)
+#elif defined(HAVE_KQUEUE)
+#define UDEV_EVENT_DEVICE(e) ((udev_input_device_t*)(e).udata)
+#endif
+
+static void udev_input_watch_monitor(udev_input_t *udev)
+{
+#if defined(HAVE_EPOLL)
+   struct epoll_event event;
+   event.events            = EPOLLIN;
+   event.data.ptr          = NULL;
+   udev->monitor_watched   = epoll_ctl(udev->fd, EPOLL_CTL_ADD,
+         udev_monitor_get_fd(udev->monitor), &event) == 0;
+#elif defined(HAVE_KQUEUE)
+   struct kevent event;
+   EV_SET(&event, udev_monitor_get_fd(udev->monitor), EVFILT_READ, EV_ADD,
+         0, 0, UDEV_KQ_UDATA(NULL));
+   udev->monitor_watched   = kevent(udev->fd, &event, 1, NULL, 0, NULL) == 0;
+#endif
+}
+
 static void udev_input_poll(void *data)
 {
    int i, ret;
@@ -3719,6 +3743,7 @@ static void udev_input_poll(void *data)
 #endif
    udev_input_mouse_t *mouse = NULL;
    udev_input_t *udev        = (udev_input_t*)data;
+   bool hotplugged           = false;
 
    /* this poll's viewport, for every event and read until the next */
    memset(&udev_vp, 0, sizeof(udev_vp));
@@ -3751,9 +3776,11 @@ static void udev_input_poll(void *data)
 #endif
    }
 
-   while (udev->monitor && udev_input_poll_hotplug_available(udev->monitor))
-      udev_input_handle_hotplug(udev);
+   if (udev->monitor && !udev->monitor_watched)
+      while (udev_input_poll_hotplug_available(udev->monitor))
+         udev_input_handle_hotplug(udev);
 
+rewait:
 #if defined(HAVE_EPOLL)
    ret = epoll_wait(udev->fd, events, ARRAY_SIZE(events), 0);
 #elif defined(HAVE_KQUEUE)
@@ -3767,6 +3794,20 @@ static void udev_input_poll(void *data)
    }
 #endif
 
+   /* A hotplug can take a device away: it comes first, and what was
+    * waited for before it is waited for again */
+   for (i = 0; i < ret; i++)
+   {
+      if (UDEV_EVENT_DEVICE(events[i]))
+         continue;
+      while (udev_input_poll_hotplug_available(udev->monitor))
+         udev_input_handle_hotplug(udev);
+      if (hotplugged)
+         return;
+      hotplugged = true;
+      goto rewait;
+   }
+
    for (i = 0; i < ret; i++)
    {
 #if defined(HAVE_EPOLL)
@@ -3778,11 +3819,7 @@ static void udev_input_poll(void *data)
       {
          int j, len;
          struct input_event input_events[32];
-#if defined(HAVE_EPOLL)
-         udev_input_device_t *device = (udev_input_device_t*)events[i].data.ptr;
-#elif defined(HAVE_KQUEUE)
-         udev_input_device_t *device = (udev_input_device_t*)events[i].udata;
-#endif
+         udev_input_device_t *device = UDEV_EVENT_DEVICE(events[i]);
 
          while ((len = (int)read(device->fd,
                      input_events, sizeof(input_events))) > 0)
@@ -4296,6 +4333,9 @@ static void *udev_input_init(const char *joypad_driver)
 #endif
 
    udev->fd  = fd;
+
+   if (udev->monitor)
+      udev_input_watch_monitor(udev);
 
    if (!open_devices(udev, UDEV_INPUT_KEYBOARD, udev_handle_keyboard, &denied))
       goto error;

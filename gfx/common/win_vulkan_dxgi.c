@@ -396,9 +396,9 @@ int64_t ra_vulkan_dxgi_present_time(ra_vulkan_dxgi_t *p)
    return p ? ra_dxgi_bridge_present_time(p->bridge) : 0;
 }
 
-int ra_vulkan_dxgi_immediate(ra_vulkan_dxgi_t *p)
+int ra_vulkan_dxgi_immediate(ra_vulkan_dxgi_t *p, unsigned generation)
 {
-   return p ? ra_dxgi_bridge_immediate(p->bridge) : 0;
+   return p ? ra_dxgi_bridge_immediate(p->bridge, generation) : 0;
 }
 
 int ra_vulkan_dxgi_window_flips_fullscreen(HWND window)

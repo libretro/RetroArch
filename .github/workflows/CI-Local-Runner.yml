@@ -28,6 +28,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Dependency installer recovery regressions (offline)
+        run: python3 tools/ci_apt_install_test.py
+
       - name: Apt cache key
         id: apt
         run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"

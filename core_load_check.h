@@ -35,6 +35,9 @@ bool core_load_verbatim_dot(const char *path);
 bool core_load_check_refused(const char *path);
 /* That refusal waits only for the first run's seed */
 bool core_load_check_refused_seed(const char *path);
+/* path's launch ended before a core loaded: its pass ends, and the
+ * next open of path is checked again */
+void core_load_check_forget(const char *path);
 /* The core the last core_load_check_open() opened is now running. A
  * waiting park ends, as the user's Cancel would end it. */
 void core_load_check_loaded(void);
@@ -48,6 +51,9 @@ void core_load_check_unloaded(void);
  * pass of the core loaded last and closes every file a record keeps.
  * Never from a worker. */
 void core_load_check_release_held(void);
+/* Its trust taken back: ends the passes kept for the core at path. A
+ * running core keeps its record for run-ahead's copy. */
+void core_load_check_untrust(const char *path);
 /* While the startup load runs before the frame loop: a core the quick
  * check doesn't pass is checked whole, in place */
 void core_load_check_set_startup(bool on);
@@ -83,6 +89,25 @@ typedef void (*core_load_rerun_t)(void *userdata);
  * load error beyond its failed probe's. */
 bool core_load_check_park(const char *path, core_load_rerun_t rerun,
       core_load_rerun_t free_cb, void *userdata);
+
+enum core_load_park_end
+{
+   /* Its warning was cancelled or replaced: from the frame loop */
+   CORE_LOAD_PARK_END_CANCELLED = 0,
+   /* Another load took over, or the park could not go on */
+   CORE_LOAD_PARK_END_DROPPED,
+   /* Its re-run is about to start, the park already dropped */
+   CORE_LOAD_PARK_END_RERUN,
+   /* Its re-run has returned: always follows RERUN */
+   CORE_LOAD_PARK_END_RERAN
+};
+typedef void (*core_load_park_end_t)(enum core_load_park_end end);
+
+/* After a true core_load_check_park(): end runs once with CANCELLED or
+ * DROPPED, or with RERUN then RERAN around the re-run. It must not
+ * push or choose a warning. */
+void core_load_check_park_on_end(core_load_park_end_t end);
+
 /* Each frame while RUNLOOP_WORK_CORE_PARK is up, which a park raises
  * and its drop lowers: the parked request's waits */
 void core_load_check_iterate(void);
@@ -120,6 +145,17 @@ enum core_load_copy
 /* Main thread: what a copy of the running core at path must match */
 enum core_load_copy core_load_check_copy_source(const char *path,
       struct core_load_source *src);
+
+#ifdef ANDROID
+/* Main thread: the running core's file at path for a second instance
+ * to load as it is (core_load_file_instance), the caller's to close,
+ * and in *load_path (malloc'd, the caller's to free) the path to load
+ * it by, as the running core was. With checks on, only the file the
+ * running core passed its check from, unchanged since; NULL otherwise,
+ * and the copy is made. */
+core_file_t *core_load_check_instance_file(const char *path,
+      char **load_path);
+#endif
 
 typedef struct core_load_match core_load_match_t;
 /* Any thread. NULL when the copy can't be opened, or the source (hashed

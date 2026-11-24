@@ -46,6 +46,8 @@ typedef struct wl_present
    /* The compositor's clock is one clock_gettime can read */
    bool                    clock;
    bool                    presented;
+   /* The last frame presented was not held for a vblank: it tore */
+   bool                    tearing;
 } wl_present_t;
 
 /* From the registry listener. */

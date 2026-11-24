@@ -160,6 +160,25 @@ static void bsv_net_free(netplay_t *netplay)
    memset(&networking_driver_st, 0, sizeof(networking_driver_st));
 }
 
+/* The states a commit can hand the movie: the slots' initial states
+ * and checkpoints, before the commit runs. */
+static unsigned bsv_net_lent(netplay_t *netplay, const uint8_t **lent,
+      unsigned cap)
+{
+   unsigned i, n = 0;
+   for (i = 0; i < netplay->buffer_size && n + 2 <= cap; i++)
+   {
+      struct netplay_bsv_frame *frame = netplay->buffer[i].bsv;
+      if (!frame || !(frame->flags & NETPLAY_BSV_FRAME_VALID))
+         continue;
+      if (frame->initial_state)
+         lent[n++] = frame->initial_state;
+      if (frame->checkpoint)
+         lent[n++] = frame->checkpoint;
+   }
+   return n;
+}
+
 /* Committed frames keep no state, and a stopped recording keeps no
  * staging at all, so a long session cannot pile up savestates. */
 static void bsv_net_check_released(netplay_t *netplay, bool all,
@@ -180,6 +199,7 @@ static void bsv_net_check_released(netplay_t *netplay, bool all,
 static void bsv_net_record(const char *path, unsigned role, unsigned start)
 {
    unsigned i;
+   unsigned adopted   = 0;
    netplay_t *netplay = (netplay_t*)calloc(1, sizeof(*netplay));
    bsv_net_setup(netplay, role);
    settings.uints.replay_checkpoint_interval = 1;
@@ -215,7 +235,25 @@ static void bsv_net_record(const char *path, unsigned role, unsigned start)
       netplay->unread_ptr = (5 + netplay->unread_frame_count - bsv_first_frame) % 8;
       netplay->read_frame_count[0] = netplay->read_frame_count[1] = netplay->unread_frame_count;
       netplay->server_frame_count = netplay->unread_frame_count;
-      netplay_sync_input_post_frame(netplay, false);
+      {
+         /* A committed state becomes the movie's checkpoint buffer
+          * as it is, not a copy of it. */
+         const uint8_t *lent[16];
+         unsigned n_lent     = bsv_net_lent(netplay, lent, 16);
+         bsv_movie_t *movie  = input_st.bsv_movie_state_handle;
+         const uint8_t *last = movie ? movie->last_save : NULL;
+         netplay_sync_input_post_frame(netplay, false);
+         movie = input_st.bsv_movie_state_handle;
+         if (movie && movie->last_save && movie->last_save != last)
+         {
+            unsigned k;
+            bool found = false;
+            for (k = 0; k < n_lent; k++)
+               found = found || movie->last_save == lent[k];
+            CHECK(found, "checkpoint at %u copied, not taken over", i);
+            adopted++;
+         }
+      }
       if (i >= start)
       {
          CHECK(input_st.bsv_movie_state_handle != NULL, "recording still active at %u", i);
@@ -233,6 +271,7 @@ static void bsv_net_record(const char *path, unsigned role, unsigned start)
    netplay_sync_input_post_frame(netplay, true);
    CHECK(input_st.bsv_movie_state_handle->frame_counter == 64, "64 confirmed frames");
    CHECK(bsv_core_runs > 64, "rollback actually ran");
+   CHECK(adopted >= 2, "%u committed states taken over", adopted);
    bsv_net_check_released(netplay, false, "after commit");
    CHECK(movie_stop_record(&input_st), "stop netplay recording");
    /* Stopped from the menu, not by netplay: the next frame drops staging. */

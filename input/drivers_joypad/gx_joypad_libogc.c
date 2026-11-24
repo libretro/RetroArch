@@ -27,6 +27,7 @@
 #include "../../config.def.h"
 
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 #include "../../retroarch.h"
 #include "../../tasks/tasks_internal.h"
 
@@ -124,9 +125,10 @@ enum
 #define WII_JOYSTICK_THRESHOLD (40 * 256)
 
 /* TODO/FIXME - static globals */
-static uint64_t pad_state[DEFAULT_MAX_PADS];
+/* each pad as its poll left it, lent to the readers (input_pad_view.h):
+ * the GX_* buttons, axes 0-3 the sticks' x and y */
+static input_pad_view_t gx_pads[DEFAULT_MAX_PADS];
 static uint32_t pad_type[DEFAULT_MAX_PADS] = { WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER, WPAD_EXP_NOCONTROLLER };
-static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
 static bool g_menu = false;
 #ifdef HW_RVL
 static bool g_quit = false;
@@ -238,72 +240,22 @@ static int32_t gx_joypad_button(unsigned port, uint16_t joykey)
 {
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   /* pad_state is uint64_t and enums run up to bit 62 (GX_QUIT_KEY).
-    * The previous implementation returned the uint64_t mask directly,
-    * which truncated to int32_t and reported "not pressed" for every
-    * joykey >= 32 (i.e. every Wiimote/Classic/Nunchuk binding). */
-   return (pad_state[port] & (UINT64_C(1) << joykey)) != 0;
+   return input_pad_view_button(&gx_pads[port], joykey);
 }
 
 static void gx_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
    if (port < DEFAULT_MAX_PADS)
-   {
-      /* pad_state[] is uint64_t. The previous BITS_COPY16_PTR only
-       * preserved bits 0..15, dropping every Wiimote/Classic/Nunchuk
-       * bit (28..44) and GX_QUIT_KEY (62). */
-      BITS_COPY64_PTR( state, pad_state[port] );
-   }
+      *state = gx_pads[port].buttons;
    else
       BIT256_CLEAR_ALL_PTR(state);
-}
-
-static int16_t gx_joypad_axis_state(unsigned port, uint32_t joyaxis)
-{
-   if (AXIS_NEG_GET(joyaxis) < 4)
-   {
-      int16_t val  = 0;
-      int16_t axis = AXIS_NEG_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-         case 1:
-            val   = analog_state[port][0][axis];
-            break;
-         case 2:
-         case 3:
-            val   = analog_state[port][1][axis - 2];
-            break;
-      }
-      if (val < 0)
-         return val;
-   }
-   else if (AXIS_POS_GET(joyaxis) < 4)
-   {
-      int16_t val  = 0;
-      int16_t axis = AXIS_POS_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-         case 1:
-            val   = analog_state[port][0][axis];
-            break;
-         case 2:
-         case 3:
-            val   = analog_state[port][1][axis - 2];
-            break;
-      }
-      if (val > 0)
-         return val;
-   }
-   return 0;
 }
 
 static int16_t gx_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return gx_joypad_axis_state(port, joyaxis);
+   return input_pad_view_axis(&gx_pads[port], joyaxis);
 }
 
 static int16_t gx_joypad_state(
@@ -312,29 +264,17 @@ static int16_t gx_joypad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   unsigned i;
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
-
+   uint16_t port_idx = joypad_info->joy_idx;
    if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
+   return input_pad_view_state(&gx_pads[port_idx], joypad_info,
+         joykeys, joyaxes);
+}
 
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-   {
-      const uint64_t joykey  = joykeys[i];
-      const uint32_t joyaxis = joyaxes[i];
-      if (
-            (uint16_t)joykey != NO_BTN &&
-            (pad_state[port_idx] & (UINT64_C(1) << joykey))
-         )
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(gx_joypad_axis_state(port_idx, joyaxis))
-             / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
-   }
-
-   return ret;
+/* Read in the poll alone: the same until the next */
+static const input_pad_view_t *gx_joypad_view(unsigned port)
+{
+   return (port < DEFAULT_MAX_PADS) ? &gx_pads[port] : NULL;
 }
 
 #ifdef HW_RVL
@@ -439,17 +379,15 @@ static bool gx_joypad_query_pad(unsigned pad)
 
 static void gx_joypad_poll(void)
 {
-   int i, j;
+   int i;
    unsigned port;
    uint64_t state_p1          = 0;
    uint64_t check_menu_toggle = 0;
    uint8_t pad_count          = 0;
    uint8_t gcpad              = 0;
 
-   pad_state[0] = 0;
-   pad_state[1] = 0;
-   pad_state[2] = 0;
-   pad_state[3] = 0;
+   for (port = 0; port < DEFAULT_MAX_PADS; port++)
+      INPUT_PAD_VIEW_SET_BITS64(&gx_pads[port], 0);
 
    gcpad = PAD_ScanPads();
 
@@ -467,13 +405,13 @@ static void gx_joypad_poll(void)
    for (port = 0; port < DEFAULT_MAX_PADS; port++)
    {
       uint32_t down = 0, ptype = WPAD_EXP_NOCONTROLLER;
-      uint64_t *state_cur = &pad_state[port];
+      uint64_t bits       = 0;
+      uint64_t *state_cur = &bits;
+      input_pad_view_t *v = &gx_pads[port];
 
       /* Centred unless the pad read below has the stick. */
-      analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = 0;
-      analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = 0;
-      analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = 0;
-      analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = 0;
+      for (i = 0; i < 4; i++)
+         v->axes[i] = 0;
 
       if (gcpad & (1 << port))
       {
@@ -500,10 +438,10 @@ static void gx_joypad_poll(void)
          rs_x = (int16_t)PAD_SubStickX(port) * 256;
          rs_y = (int16_t)PAD_SubStickY(port) * -256;
 
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = ls_x;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = ls_y;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rs_x;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = rs_y;
+         v->axes[0] = ls_x;
+         v->axes[1] = ls_y;
+         v->axes[2] = rs_x;
+         v->axes[3] = rs_y;
 
          menu_combo = (UINT64_C(1) << GX_GC_START) | (UINT64_C(1) << GX_GC_Z_TRIGGER) |
                       (UINT64_C(1) << GX_GC_L_TRIGGER) | (UINT64_C(1) << GX_GC_R_TRIGGER);
@@ -560,10 +498,10 @@ static void gx_joypad_poll(void)
             *state_cur |= (down & WPAD_CLASSIC_BUTTON_ZL) ? (UINT64_C(1) << GX_CLASSIC_ZL_TRIGGER) : 0;
             *state_cur |= (down & WPAD_CLASSIC_BUTTON_ZR) ? (UINT64_C(1) << GX_CLASSIC_ZR_TRIGGER) : 0;
 
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X]  = WPAD_StickX(wpaddata, 0);
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y]  = WPAD_StickY(wpaddata, 0);
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = WPAD_StickX(wpaddata, 1);
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = WPAD_StickY(wpaddata, 1);
+            v->axes[0]  = WPAD_StickX(wpaddata, 0);
+            v->axes[1]  = WPAD_StickY(wpaddata, 0);
+            v->axes[2] = WPAD_StickX(wpaddata, 1);
+            v->axes[3] = WPAD_StickY(wpaddata, 1);
          }
          else if (ptype == WPAD_EXP_NUNCHUK)
          {
@@ -577,8 +515,8 @@ static void gx_joypad_poll(void)
             *state_cur |= (down & WPAD_NUNCHUK_BUTTON_Z) ? (UINT64_C(1) << GX_NUNCHUK_Z) : 0;
             *state_cur |= (down & WPAD_NUNCHUK_BUTTON_C) ? (UINT64_C(1) << GX_NUNCHUK_C) : 0;
 
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_X] = WPAD_StickX(wpaddata, 0);
-            analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT][RETRO_DEVICE_ID_ANALOG_Y] = WPAD_StickY(wpaddata, 0);
+            v->axes[0] = WPAD_StickX(wpaddata, 0);
+            v->axes[1] = WPAD_StickY(wpaddata, 0);
          }
       }
 #endif
@@ -590,10 +528,10 @@ static void gx_joypad_poll(void)
       if (ptype != pad_type[port])
          handle_hotplug(port, ptype);
 
-      for (i = 0; i < 2; i++)
-         for (j = 0; j < 2; j++)
-            if (analog_state[port][i][j] == -0x8000)
-               analog_state[port][i][j] = -0x7fff;
+      INPUT_PAD_VIEW_SET_BITS64(v, bits);
+      for (i = 0; i < 4; i++)
+         if (v->axes[i] == -0x8000)
+            v->axes[i] = -0x7fff;
    }
 
    /* Always enable 1 pad in port 0 if there's only 1 controller connected.
@@ -602,7 +540,8 @@ static void gx_joypad_poll(void)
     * which could mis-fire force-enable on the first few iterations. */
    check_port0_active(pad_count);
 
-   state_p1 = pad_state[0];
+   state_p1 = gx_pads[0].buttons.data[0]
+      | ((uint64_t)gx_pads[0].buttons.data[1] << 32);
 
    input_driver_set_platform_menu_button(false);
    if (g_menu)
@@ -661,4 +600,9 @@ input_device_driver_t gx_joypad = {
    NULL, /* get_sensor_input */
    gx_joypad_name,
    "gx",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   gx_joypad_view
 };

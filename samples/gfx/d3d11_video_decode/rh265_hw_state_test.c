@@ -236,8 +236,31 @@ static void test_writable_slots(void)
             UINT32_C(1) << 31, &picture) && picture.slot == 31);
 }
 
+static void test_input_delay(void)
+{
+   unsigned i;
+   setup(6); params.max_dec_pic_buffering = 1;
+   state.input_delay = 4;
+   CHECK(!rh265_hw_prepare(&state, &params, &au, &picture));
+   CHECK(rh265_hw_commit(&state, &picture));
+   for (i = 1; i < 5; i++)
+   {
+      frame((int)i, 0, 0);
+      CHECK(!rh265_hw_prepare(&state, &params, &au, &picture));
+      CHECK(rh265_hw_commit(&state, &picture));
+   }
+   frame(5, 0, 0); saved = state;
+   CHECK(rh265_hw_prepare(&state, &params, &au, &picture) == 1);
+   CHECK(!memcmp(&state, &saved, sizeof(state)));
+   CHECK(rh265_hw_output_release(&state, 0));
+   CHECK(!rh265_hw_prepare(&state, &params, &au, &picture));
+   state.input_delay = 6;
+   CHECK(rh265_hw_prepare(&state, &params, &au, &picture) == -2);
+}
+
 int main(void)
 {
+   test_input_delay();
    test_transaction(); test_pressure(); test_reorder(); test_wrap_and_epochs(); test_empty_long_term(); test_long_term(); test_reference_capacity(); test_invalid(); test_writable_slots();
    printf("HEVC hardware owner state: %u failures\n", failures);
    return failures ? 1 : 0;

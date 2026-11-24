@@ -52,7 +52,8 @@ out = base / "edges"
 out.mkdir(exist_ok=True)
 for label, name in (("opus", "timeline-0.webm"),
                     ("vorbis", "timeline-delayed-vorbis.webm"),
-                    ("aac", "timeline-aac-1.mkv")):
+                    ("aac", "timeline-aac-1.mkv"),
+                    ("flac", "timeline-flac-1.mkv")):
     for unknown, empty in ((True, False), (False, True), (True, True)):
         target = out / f"{label}-unknown{int(unknown)}-empty{int(empty)}.mkv"
         rewrite(base / name, target, unknown, empty)

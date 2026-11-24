@@ -52,7 +52,7 @@
 
 #ifdef HAVE_NETWORKING
 #include <net/net_http_parse.h>
-#include "../../network/netplay/netplay.h"
+#include "../network/netplay/netplay.h"
 #include "../core_updater_list.h"
 #endif
 
@@ -95,6 +95,10 @@
 #include "../audio/audio_driver.h"
 #include "../midi_driver.h"
 #include "../record/record_driver.h"
+#ifdef HAVE_PYROWAVE
+#include "../record/record_pyrowave_lan.h"
+#include "../record/record_pyrowave_receiver.h"
+#endif
 #include "../msg_hash_lbl_str.h"
 #ifdef __MACH__
 #include <TargetConditionals.h>
@@ -153,6 +157,7 @@
 #endif
 #include "../tasks/task_content.h"
 #include "../tasks/tasks_internal.h"
+#include "../gfx/gfx_thumbnail_results.h"
 #include "../dynamic.h"
 #include "../runtime_file.h"
 #include "../manual_content_scan.h"
@@ -579,6 +584,17 @@ static bool filebrowser_parent_is_hidden_root(const char *dir)
    return slash - 1 == dir;
 }
 
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+static void filebrowser_prepend_vulkan_driver_system(file_list_t *list)
+{
+   menu_entries_prepend(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_USE_SYSTEM),
+         "",
+         MSG_UNKNOWN,
+         FILE_TYPE_VULKAN_DRIVER_SYSTEM, 0, 0);
+}
+#endif
+
 static int filebrowser_parse(
       file_list_t *info_list,
       const char *path,
@@ -977,6 +993,10 @@ end:
             path,
             MENU_ENUM_LABEL_PARENT_DIRECTORY,
             FILE_TYPE_PARENT_DIRECTORY, 0, 0);
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+   if (type == DISPLAYLIST_VULKAN_DRIVERS)
+      filebrowser_prepend_vulkan_driver_system(info_list);
+#endif
    return count;
 }
 
@@ -1541,6 +1561,23 @@ end:
                count++;
             }
          }
+
+#if defined(HAVE_CORE_SIGNATURES) && defined(HAVE_CORE_LOAD_CHECK)
+         /* Core trust: its state is kept in entry_idx, so drawing
+          * the row never touches the disk */
+         if (     core_trust_runtime_checks_on()
+               && menu_entries_append(list,
+                     core_path,
+                     core_path,
+                     MENU_ENUM_LABEL_CORE_TRUST,
+                     MENU_SETTING_ACTION_CORE_TRUST, 0,
+                     (size_t)core_trust_runtime_state(core_path), NULL))
+         {
+            file_list_set_alt_at_offset(
+                  list, count, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_TRUST));
+            count++;
+         }
+#endif
 
          /* Backup core */
          if (menu_entries_append(list,
@@ -3105,15 +3142,25 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
 
    for (port = 0; port < MAX_USERS; port++)
    {
+      char name_buf[NAME_MAX_LENGTH];
       const char *name = input_config_get_device_name(port);
       size_t _len;
       if (!name)
          continue;
+      _len = strlcpy(name_buf, name, sizeof(name_buf));
+      /* the tag goes with the name it tells apart: the display name,
+       * where the controller has one of its own */
+      if (     _len < sizeof(name_buf)
+            && (   !input_config_get_device_display_name(port)
+                || string_is_equal(name,
+                      input_config_get_device_display_name(port))))
+         input_config_get_device_tag(port, true, name_buf + _len,
+               sizeof(name_buf) - _len);
 
       /* Port and Device Name */
       _len = snprintf(entry, sizeof(entry), /* Note: format string below */
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME),
-            port + 1, name);
+            port + 1, name_buf);
       if (!input_config_get_device_autoconfigured(port) && _len < sizeof(entry))
          snprintf(entry + _len, sizeof(entry) - _len, " (%s)",
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE));
@@ -3125,12 +3172,24 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
 #ifdef HAVE_RGUI
       if (!strcmp(menu_driver, "rgui"))
       {
+         const char *display_name =
+               input_config_get_device_display_name(port);
+
          /* Device Display Name */
-         snprintf(entry, sizeof(entry), /* TODO/FIXME: localize */
-               "- Device Display Name: %s",
-               input_config_get_device_display_name(port)
-               ? input_config_get_device_display_name(port)
-               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+         _len = strlcpy(entry, /* TODO/FIXME: localize */
+               "- Device Display Name: ", sizeof(entry));
+         if (display_name)
+         {
+            _len += strlcpy(entry + _len, display_name,
+                  sizeof(entry) - _len);
+            if (_len < sizeof(entry))
+               input_config_get_device_tag(port, true, entry + _len,
+                     sizeof(entry) - _len);
+         }
+         else
+            strlcpy(entry + _len,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+                  sizeof(entry) - _len);
          if (menu_entries_append(list, entry, "",
                MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
                MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
@@ -4903,7 +4962,9 @@ static void menu_displaylist_set_new_playlist(
 
       if (pl_r == 0)
       {
-         /* Still parsing: come back next frame. */
+         /* Still parsing: come back next frame, where the menu's
+          * frame pumps it (MENU_FRAME_WORK_PLAYLIST). */
+         menu_state_get_ptr()->frame_work |= MENU_FRAME_WORK_PLAYLIST;
          menu_displaylist_dirwalk_refresh(0);
          return;
       }
@@ -4922,6 +4983,15 @@ static void menu_displaylist_set_new_playlist(
          playlist_qsort(playlist);
 
       strlcpy(menu->db_playlist_file, path, sizeof(menu->db_playlist_file));
+
+      gfx_thumbnail_results_release(GFX_THUMBNAIL_RESULTS_HOLD_MENU);
+      task_push_pl_thumbnail_match(&playlist_config, playlist,
+            settings->paths.directory_thumbnails,
+            settings->paths.path_content_database,
+            settings->bools.playlist_allow_non_png,
+            settings->bools.playlist_thumbnail_other_regions);
+      gfx_thumbnail_results_hold(playlist_config.path,
+            GFX_THUMBNAIL_RESULTS_HOLD_MENU);
    }
 }
 
@@ -5133,6 +5203,11 @@ static int menu_displaylist_parse_load_content_settings(
       }
 #endif
 
+#ifdef HAVE_PYROWAVE
+      if (menu_entries_append(list, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_DEVICES),
+               MENU_ENUM_LABEL_PYROWAVE_DEVICES_STR, MENU_ENUM_LABEL_PYROWAVE_DEVICES,
+               MENU_SETTING_ACTION, 0, 0, NULL)) count++;
+#endif
       if (string_is_not_equal(settings->arrays.record_driver, "null"))
       {
          recording_state_t *recording_st = recording_state_get_ptr();
@@ -8101,69 +8176,40 @@ static bool menu_displaylist_refresh(struct menu_state *menu_st, file_list_t *li
    return true;
 }
 
-/* The first headset row's plays_as_row: past every controller row's,
- * so the two cannot mix. */
-#define PLAYS_AS_ROW_LAYOUT (MAX_INPUT_DEVICES + MAX_USERS + 1)
+/* Headset Controls' plays_as_row: past every controller row's, so the
+ * two cannot mix. */
+#define PLAYS_AS_ROW_HEADSET (MAX_INPUT_DEVICES + MAX_USERS + 1)
 
-/* The headset's rows at the end of Settings > Input > Controllers, in
- * order, or NULL past them. */
-static const char *menu_displaylist_headset_row(unsigned i)
-{
-   switch (i)
-   {
-      case 0:
-         return MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR;
-      case 1:
-         return MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_STR;
-      case 2:
-         return MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM_STR;
-      case 3:
-         return MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_HANDS_STR;
-      case 4:
-         return MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON_STR;
-      case 5:
-         return MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_PASSTHROUGH_STR;
-      default:
-         break;
-   }
-   return NULL;
-}
-
-/* Put the cursor back on the Controllers or Port N Controls (@page) row
- * in plays_as_row: the rows go in port order, so its index moves. Once
- * the list is made it is forgotten, so a row that is gone leaves the
- * cursor at its index, or on Port N Controls after the controller rows. */
+/* Put the cursor back on the Controllers or Port N Controls >
+ * Controllers (@page) row in plays_as_row: the rows go in port order,
+ * so its index moves. Once the list is made it is forgotten, so a row
+ * that is gone leaves the cursor at its index, or on Add Controller. */
 static void menu_displaylist_restore_plays_as_row(
       struct menu_state *menu_st, file_list_t *list, unsigned page)
 {
    size_t i;
    size_t rows         = 0;
-   size_t links        = 0;
    size_t to           = list->size;
    menu_handle_t *menu = menu_st->driver_data;
 
    if (!menu)
       return;
 
+   /* Add Controller, then the controller rows; the links after them */
    if (page)
    {
+      rows = 1;
       while (     rows < list->size
             && list->list[rows].type >= MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN
             && list->list[rows].type <  MENU_SETTINGS_INPUT_PLAYS_AS_END)
          rows++;
-      /* Add Controller, then the links to sharers' pages */
-      while (     rows + 1 + links < list->size
-            && string_ends_with(list->list[rows + 1 + links].label,
-                  "_input_binds_list"))
-         links++;
    }
    for (i = 0; menu->plays_as_row && i < list->size; i++)
    {
-      if (menu->plays_as_row >= PLAYS_AS_ROW_LAYOUT)
+      if (menu->plays_as_row == PLAYS_AS_ROW_HEADSET)
       {
-         const char *row = menu_displaylist_headset_row(
-               menu->plays_as_row - PLAYS_AS_ROW_LAYOUT);
-         if (!row || !string_is_equal(list->list[i].label, row))
+         if (!string_is_equal(list->list[i].label,
+                  MENU_ENUM_LABEL_INPUT_HEADSET_CONTROLS_STR))
             continue;
       }
       else if (list->list[i].type
@@ -8176,20 +8222,14 @@ static void menu_displaylist_restore_plays_as_row(
    if (page && to == list->size)
    {
       if (menu->plays_as_row)
-         to = rows;
-      /* a cursor below the controller rows stays on its row, one
-       * below the links too */
+         to = 0;
+      /* a cursor on a link moves with the controller rows above it */
       else if (   menu->plays_as_page == page
                && menu_st->selection_ptr >= menu->plays_as_rows)
       {
          to = menu_st->selection_ptr + rows - menu->plays_as_rows;
-         if (menu_st->selection_ptr
-               > menu->plays_as_rows + menu->plays_as_links)
-            to = to + links - menu->plays_as_links;
-         /* on a link: within the links when its sharer left */
-         else if (   menu_st->selection_ptr > menu->plays_as_rows
-                  && to > rows + links)
-            to = rows + links;
+         if (to >= list->size)
+            to = list->size - 1;
       }
    }
    if (to < list->size)
@@ -8201,7 +8241,6 @@ static void menu_displaylist_restore_plays_as_row(
    menu->plays_as_row   = 0;
    menu->plays_as_page  = page;
    menu->plays_as_rows  = (unsigned)rows;
-   menu->plays_as_links = (unsigned)links;
 }
 
 /* A hotplug, or a layout change reconnecting the headset's controllers,
@@ -8220,14 +8259,9 @@ static void menu_displaylist_keep_plays_as_row(
    if (     type >= MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN
          && type <  MENU_SETTINGS_INPUT_PLAYS_AS_END)
       menu->plays_as_row = type - MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + 1;
-   else
-   {
-      unsigned r;
-      const char *row;
-      for (r = 0; (row = menu_displaylist_headset_row(r)); r++)
-         if (string_is_equal(list->list[sel].label, row))
-            menu->plays_as_row = PLAYS_AS_ROW_LAYOUT + r;
-   }
+   else if (string_is_equal(list->list[sel].label,
+            MENU_ENUM_LABEL_INPUT_HEADSET_CONTROLS_STR))
+      menu->plays_as_row = PLAYS_AS_ROW_HEADSET;
 }
 
 #ifdef HAVE_NETWORKING
@@ -8359,6 +8393,9 @@ bool menu_displaylist_process(menu_displaylist_info_t *info)
                menu_st->userdata, info->path,
                info->label, info->type);
    }
+   /* finding a controller by a press: one load while names differ */
+   if (INPUT_DEVICES_SHARE_NAME())
+      menu_driver_pads_list_made();
    return true;
 }
 
@@ -9219,7 +9256,8 @@ void menu_displaylist_validation_dump(rarch_setting_t *list_settings)
             || t == (unsigned)DISPLAYLIST_PLAYLIST_COLLECTION
             || t == (unsigned)DISPLAYLIST_DATABASES
             || t == (unsigned)DISPLAYLIST_DATABASE_QUERY
-            || t == (unsigned)DISPLAYLIST_USER_BINDS_LIST)
+            || t == (unsigned)DISPLAYLIST_USER_BINDS_LIST
+            || t == (unsigned)DISPLAYLIST_INPUT_PORT_CONTROLLERS_LIST)
       {
          filestream_printf(f, "=c= %u needs-input\n", t);
          continue;
@@ -9338,6 +9376,41 @@ static unsigned menu_displaylist_parse_settings_rows(
    return count;
 }
 
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+/* Game Screen @screen's own window: fullscreen and size, and where it
+ * goes once it has a size */
+static unsigned menu_displaylist_video_screen_window_rows(
+      file_list_t *list, settings_t *settings, unsigned screen)
+{
+   static const struct
+   {
+      enum msg_hash_enums first;
+      enum menu_displaylist_parse_type type;
+      bool sized;
+   } rows[] = {
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN, PARSE_ONLY_BOOL, false },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_WIDTH,      PARSE_ONLY_UINT, false },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_HEIGHT,     PARSE_ONLY_UINT, false },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_X,          PARSE_ONLY_INT,  true  },
+      { MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOW_Y,          PARSE_ONLY_INT,  true  },
+   };
+   unsigned i;
+   unsigned count = 0;
+   if (!menu_setting_video_screen_window_own(screen))
+      return 0;
+   for (i = 0; i < ARRAY_SIZE(rows); i++)
+   {
+      if (rows[i].sized && !settings->uints.video_screen_window_dims[screen])
+         continue;
+      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+               (enum msg_hash_enums)(rows[i].first + screen),
+               rows[i].type, false) == 0)
+         count++;
+   }
+   return count;
+}
+#endif
+
 /* Monitor Index offers Auto and the monitors the display server
  * lists, plus the index chosen now whatever it is; a server without
  * a list keeps the setting's full range. The output table lives in
@@ -9365,13 +9438,22 @@ static VIDEO_NOINLINE void menu_displaylist_monitor_index_range(void)
       setting->max          = (float)(cur > (unsigned)n ? cur : (unsigned)n);
 }
 
-/* The name a controller row shows; NULL with none in @slot. */
-static const char *menu_displaylist_controller_name(unsigned slot)
+/* The name a controller row shows, in @s, with the tag that tells it
+ * from a connected controller of the same name; NULL with none in
+ * @slot. */
+static const char *menu_displaylist_controller_name(unsigned slot,
+      char *s, size_t len)
 {
+   size_t _len;
    const char *name = input_config_get_device_name(slot);
-   if (name && input_config_get_device_display_name(slot))
-      return input_config_get_device_display_name(slot);
-   return name;
+   if (!name)
+      return NULL;
+   if (input_config_get_device_display_name(slot))
+      name = input_config_get_device_display_name(slot);
+   _len = strlcpy(s, name, len);
+   if (_len < len)
+      input_config_get_device_tag(slot, false, s + _len, len - _len);
+   return s;
 }
 
 /* The connected controllers' slots into @slots (MAX_INPUT_DEVICES
@@ -9393,7 +9475,7 @@ static unsigned menu_displaylist_controller_slots(settings_t *settings,
          ? settings->uints.input_joypad_index[u] : u - max_users;
       if (     s >= MAX_INPUT_DEVICES
             || (listed & (1U << s))
-            || !menu_displaylist_controller_name(s))
+            || !input_config_get_device_name(s))
          continue;
       listed    |= 1U << s;
       slots[n++] = s;
@@ -9402,7 +9484,8 @@ static unsigned menu_displaylist_controller_slots(settings_t *settings,
 }
 
 /* A Plays As row for @row (a slot, or MAX_INPUT_DEVICES and an entry);
- * @page is Port N Controls' N, 0 in Controllers. */
+ * @page is the N of Port N Controls > Controllers, 0 in
+ * Settings > Input > Controllers. */
 static bool menu_displaylist_append_plays_as_row(file_list_t *list,
       const char *name, unsigned row, size_t page)
 {
@@ -9412,7 +9495,7 @@ static bool menu_displaylist_append_plays_as_row(file_list_t *list,
          MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN + row, 0, page, NULL);
 }
 
-/* On Port N Controls (@user = N - 1), a link to Port M Controls for
+/* For Port N (@user = N - 1), a link to Port M Controls for
  * each controller playing as player N from port M, in port order: its
  * binds and remaps are port M's. Settings' links (@remaps false) are
  * RetroPad Binds' entries, the Quick Menu's are Controls' entries. */
@@ -9428,13 +9511,15 @@ static unsigned menu_displaylist_parse_input_port_links(
    for (u = 0; u < max_users; u++)
    {
       char text[NAME_MAX_LENGTH];
+      char name_buf[NAME_MAX_LENGTH];
       bool added;
       const char *name;
       unsigned s = settings->uints.input_joypad_index[u];
       if (     u == user
             || s >= MAX_INPUT_DEVICES
             || input_config_slot_user(s) != u
-            || !(name = menu_displaylist_controller_name(s))
+            || !(name = menu_displaylist_controller_name(s,
+                  name_buf, sizeof(name_buf)))
             || input_config_user_player(u) != user)
          continue;
       snprintf(text, sizeof(text),
@@ -9478,10 +9563,10 @@ static unsigned menu_displaylist_remap_port_row(file_list_t *list,
    return 0;
 }
 
-/* RetroPad Binds > Port N Controls (@user = N - 1): a row for each
- * connected controller playing as the player port N feeds, in port
- * order, then Add Controller, carrying that player's user, then the
- * links to the sharers' own pages. */
+/* RetroPad Binds > Port N Controls > Controllers (@user = N - 1): Add
+ * Controller, carrying the player port N feeds, then a row for each
+ * connected controller playing as that player, in port order, then
+ * the links to the sharers' own pages. */
 static void menu_displaylist_parse_input_port_controllers(
       file_list_t *list, settings_t *settings, unsigned user)
 {
@@ -9489,24 +9574,26 @@ static void menu_displaylist_parse_input_port_controllers(
    unsigned p_user    = input_config_user_player(user);
    unsigned max_users = settings->uints.input_max_users;
 
-   if (max_users > MAX_USERS)
-      max_users = MAX_USERS;
-   for (u = 0; u < max_users; u++)
-   {
-      const char *name;
-      unsigned s = settings->uints.input_joypad_index[u];
-      if (     s >= MAX_INPUT_DEVICES
-            || input_config_slot_user(s) != u
-            || !(name = menu_displaylist_controller_name(s))
-            || input_config_user_player(u) != p_user)
-         continue;
-      menu_displaylist_append_plays_as_row(list, name, s, user + 1);
-   }
    menu_entries_append(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD),
          MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD_STR,
          MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD,
          MENU_SETTING_ACTION, 0, p_user, NULL);
+   if (max_users > MAX_USERS)
+      max_users = MAX_USERS;
+   for (u = 0; u < max_users; u++)
+   {
+      char name_buf[NAME_MAX_LENGTH];
+      const char *name;
+      unsigned s = settings->uints.input_joypad_index[u];
+      if (     s >= MAX_INPUT_DEVICES
+            || input_config_slot_user(s) != u
+            || !(name = menu_displaylist_controller_name(s,
+                  name_buf, sizeof(name_buf)))
+            || input_config_user_player(u) != p_user)
+         continue;
+      menu_displaylist_append_plays_as_row(list, name, s, user + 1);
+   }
    menu_displaylist_parse_input_port_links(list, settings, user, false);
 }
 
@@ -9519,6 +9606,7 @@ static unsigned menu_displaylist_parse_input_plays_as_add_list(
 {
    char entry_lbl[12];
    char text[NAME_MAX_LENGTH];
+   char name_buf[NAME_MAX_LENGTH];
    unsigned slots[MAX_INPUT_DEVICES];
    unsigned i, n;
    unsigned count  = 0;
@@ -9537,7 +9625,9 @@ static unsigned menu_displaylist_parse_input_plays_as_add_list(
          continue;
       snprintf(text, sizeof(text),
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PLAYS_AS_ADD_ITEM),
-            menu_displaylist_controller_name(slots[i]), player);
+            menu_displaylist_controller_name(slots[i], name_buf,
+               sizeof(name_buf)),
+            player);
       if (menu_entries_append(info->list, text, entry_lbl, MSG_UNKNOWN,
                MENU_SETTING_DROPDOWN_ITEM_INPUT_PLAYS_AS_ADD, 0, slots[i],
                NULL))
@@ -9548,10 +9638,11 @@ static unsigned menu_displaylist_parse_input_plays_as_add_list(
 
 /* Settings > Input > Controllers: the connected controllers in port
  * order, then those past Max Users, then the Plays As entries of the
- * controllers that are gone, then the headset's rows. */
+ * controllers that are gone, then Headset Controls. */
 static unsigned menu_displaylist_parse_input_controllers(
       file_list_t *list, settings_t *settings)
 {
+   char name_buf[NAME_MAX_LENGTH];
    unsigned slots[MAX_INPUT_DEVICES];
    unsigned i, e;
    unsigned count = 0;
@@ -9559,7 +9650,8 @@ static unsigned menu_displaylist_parse_input_controllers(
 
    for (i = 0; i < n; i++)
       if (menu_displaylist_append_plays_as_row(list,
-               menu_displaylist_controller_name(slots[i]), slots[i], 0))
+               menu_displaylist_controller_name(slots[i], name_buf,
+                  sizeof(name_buf)), slots[i], 0))
          count++;
    for (e = 0; e < MAX_USERS; e++)
    {
@@ -9571,33 +9663,11 @@ static unsigned menu_displaylist_parse_input_controllers(
          count++;
    }
 #ifdef HAVE_OPENXR
-   if (video_driver_has_headset_path(settings->arrays.video_driver))
-   {
-      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-               MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS,
-               PARSE_ONLY_UINT, false) == 0)
-         count++;
-      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-               MENU_ENUM_LABEL_VIDEO_OPENXR_LASER,
-               PARSE_ONLY_UINT, false) == 0)
-         count++;
-      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-               MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM,
-               PARSE_ONLY_UINT, false) == 0)
-         count++;
-      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-               MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_HANDS,
-               PARSE_ONLY_UINT, false) == 0)
-         count++;
-      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-               MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON,
-               PARSE_ONLY_UINT, false) == 0)
-         count++;
-      if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-               MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_PASSTHROUGH,
-               PARSE_ONLY_BOOL, false) == 0)
-         count++;
-   }
+   if (     video_driver_has_headset_path(settings->arrays.video_driver)
+         && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+               MENU_ENUM_LABEL_INPUT_HEADSET_CONTROLS,
+               PARSE_ACTION, false) == 0)
+      count++;
 #endif
    return count;
 }
@@ -9814,6 +9884,7 @@ unsigned menu_displaylist_build_list(
 #endif
                {MENU_ENUM_LABEL_PLAYLIST_USE_FILENAME,               PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_ALLOW_NON_PNG,              PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_PLAYLIST_THUMBNAIL_OTHER_REGIONS,    PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_MENU_SINGLECLICK_PLAYLISTS,          PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_HISTORY_LIST_ENABLE,                 PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE,                PARSE_ONLY_UINT, false},
@@ -9984,6 +10055,22 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_INPUT_CONTROLLERS_LIST:
          count = menu_displaylist_parse_input_controllers(list, settings);
          break;
+#ifdef HAVE_OPENXR
+      case DISPLAYLIST_INPUT_HEADSET_CONTROLS_LIST:
+         {
+            static const menu_displaylist_settings_row_t headset_rows[] = {
+               { MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_OPENXR_LASER, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_BEAM, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_HANDS, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_BUTTON, PARSE_ONLY_UINT, false },
+               { MENU_ENUM_LABEL_VIDEO_OPENXR_TOUCH_PASSTHROUGH, PARSE_ONLY_BOOL, false },
+            };
+            count = menu_displaylist_parse_settings_rows(list, settings,
+                  headset_rows, (unsigned)ARRAY_SIZE(headset_rows));
+         }
+         break;
+#endif
       case DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST:
          {
             unsigned user;
@@ -10031,6 +10118,10 @@ unsigned menu_displaylist_build_list(
                           || key == RARCH_LASER_POINTER_TOGGLE
                           || key == RARCH_HEADSET_VIEW_TOGGLE
                           || key == RARCH_HEADSET_EDIT_SCREENS)
+                  continue;
+#endif
+#if !(defined(ANDROID) && defined(HAVE_VIDEO_WINDOWS))
+               else if (key == RARCH_BLANK_UNUSED_TOGGLE)
                   continue;
 #endif
                /* Show combo entries before normal binds */
@@ -10616,11 +10707,22 @@ unsigned menu_displaylist_build_list(
                   { MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS, PARSE_ACTION, false },
                   { MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS, PARSE_ACTION, false },
                   { MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS, PARSE_ACTION, false },
-                  { MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS, PARSE_ACTION, false },
+                  { MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS, PARSE_ACTION, false },
                };
                count += menu_displaylist_parse_settings_rows(list, settings,
                      dl_rows_6, (unsigned)ARRAY_SIZE(dl_rows_6));
             }
+#ifdef HAVE_OPENXR
+            if (     video_driver_has_headset_path(settings->arrays.video_driver)
+                  && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_HEADSET_SETTINGS,
+                     PARSE_ACTION, false) == 0)
+               count++;
+#endif
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS,
+                     PARSE_ACTION, false) == 0)
+               count++;
 
             if (video_display_server_get_flags(&flags))
             {
@@ -12403,6 +12505,42 @@ unsigned menu_displaylist_build_list(
                         false) == 0)
                   count++;
             }
+#ifdef HAVE_PYROWAVE
+            {
+               static const menu_displaylist_build_info_t lan_settings[] = {
+                  {MENU_ENUM_LABEL_PYROWAVE_DISCOVERY_ENABLE, PARSE_ONLY_BOOL},
+                  {MENU_ENUM_LABEL_PYROWAVE_FULL_OUTPUT, PARSE_ONLY_BOOL},
+                  {MENU_ENUM_LABEL_PYROWAVE_DEVICE_NAME, PARSE_ONLY_STRING},
+                  {MENU_ENUM_LABEL_PYROWAVE_SHADER_DIRECTORY, PARSE_ONLY_DIR}
+               };
+               size_t peer_index;
+               for (peer_index = 0; peer_index < ARRAY_SIZE(lan_settings); peer_index++)
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list, lan_settings[peer_index].enum_idx,
+                           lan_settings[peer_index].parse_type, false) == 0) count++;
+               if (record_pyrowave_receiver_incoming())
+               {
+                  if (menu_entries_append(list, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_ACCEPT),
+                           MENU_ENUM_LABEL_PYROWAVE_ACCEPT_STR, MENU_ENUM_LABEL_PYROWAVE_ACCEPT,
+                           MENU_SETTING_ACTION, 0, 0, NULL)) count++;
+                  if (menu_entries_append(list, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_DECLINE),
+                           MENU_ENUM_LABEL_PYROWAVE_DECLINE_STR, MENU_ENUM_LABEL_PYROWAVE_DECLINE,
+                           MENU_SETTING_ACTION, 0, 0, NULL)) count++;
+               }
+               if (record_pyrowave_receiver_active() || record_pyrowave_lan_sending())
+                  if (menu_entries_append(list, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_STOP),
+                           MENU_ENUM_LABEL_PYROWAVE_STOP_STR, MENU_ENUM_LABEL_PYROWAVE_STOP,
+                           MENU_SETTING_ACTION, 0, 0, NULL)) count++;
+               for (peer_index = 0; peer_index < record_pyrowave_lan_count(); peer_index++)
+               {
+                  const record_pyrowave_lan_peer_t *peer = record_pyrowave_lan_peer(peer_index);
+                  char text[160];
+                  if (!peer) continue;
+                  snprintf(text, sizeof(text), "%s %s", msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PYROWAVE_SEND), peer->name);
+                  if (menu_entries_append(list, text, peer->key, MENU_ENUM_LABEL_PYROWAVE_SEND,
+                           MENU_SETTING_ACTION, 0, 0, NULL)) count++;
+               }
+            }
+#endif
          }
          break;
       case DISPLAYLIST_ACCOUNTS_YOUTUBE_LIST:
@@ -12699,6 +12837,29 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_OPTIONS_DISK:
          count = menu_displaylist_parse_disk_options(list);
          break;
+      case DISPLAYLIST_CAMERA_SETTINGS_LIST:
+         {
+            static const menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_CAMERA_DRIVER,  PARSE_ONLY_STRING_OPTIONS},
+               {MENU_ENUM_LABEL_CAMERA_DEVICE,  PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_CAMERA_ALLOW,   PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CAMERA_PREVIEW, PARSE_ACTION},
+#ifdef HAVE_GFX_WIDGETS
+               {MENU_ENUM_LABEL_CAMERA_PIP,        PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CAMERA_PIP_CORNER, PARSE_ONLY_UINT},
+               {MENU_ENUM_LABEL_CAMERA_PIP_SIZE,   PARSE_ONLY_UINT},
+#endif
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
       case DISPLAYLIST_MIDI_SETTINGS_LIST:
          {
             static const menu_displaylist_build_info_t build_list[] = {
@@ -12960,7 +13121,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_VIDEO_WAITABLE_SWAPCHAINS,  PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING, PARSE_ONLY_BOOL, false},
-#if defined(HAVE_D3DKMT) || defined(HAVE_KMS) || (defined(HAVE_X11) && defined(HAVE_XCB))
+#if defined(HAVE_D3DKMT) || defined(HAVE_KMS) || (defined(HAVE_X11) && defined(HAVE_XCB)) || (defined(HAVE_WAYLAND) && defined(__linux__))
                {MENU_ENUM_LABEL_VIDEO_THREADED_PACING_VBLANK, PARSE_ONLY_BOOL, false},
 #endif
                {MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY, PARSE_ONLY_BOOL, false},
@@ -13176,6 +13337,8 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_VIDEO_STEREO_SWAP_EYES,
                   PARSE_ONLY_BOOL, false) == 0)
             count++;
+         break;
+      case DISPLAYLIST_VIDEO_GAME_SCREENS_SETTINGS_LIST:
          if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                   MENU_ENUM_LABEL_VIDEO_SCREEN_LAYOUT,
                   PARSE_ONLY_UINT, false) == 0)
@@ -13187,21 +13350,45 @@ unsigned menu_displaylist_build_list(
                      MENU_ENUM_LABEL_VIDEO_WINDOWS_ENABLE,
                      PARSE_ONLY_BOOL, false) == 0)
                count++;
-#ifdef ANDROID
-            /* Only Android places screens and the menu */
             if (settings->bools.video_windows_enable)
             {
                unsigned screens = menu_setting_video_screens();
                unsigned screen;
+#ifdef ANDROID
                menu_setting_video_screen_display_values();
+#endif
                for (screen = 0; screen < screens; screen++)
                {
+#ifdef ANDROID
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            (enum msg_hash_enums)
                            (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + screen),
                            PARSE_ONLY_STRING_OPTIONS, false) == 0)
                      count++;
+#else
+                  /* The companion has no submenus: each screen's rows
+                   * inline, as its page lists them */
+                  if (include_everything)
+                  {
+                     if (screen == 0)
+                        menu_setting_video_screen_display_values();
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                              (enum msg_hash_enums)
+                              (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + screen),
+                              PARSE_ONLY_STRING_OPTIONS, false) == 0)
+                        count++;
+                     count += menu_displaylist_video_screen_window_rows(
+                           list, settings, screen);
+                  }
+                  else if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           (enum msg_hash_enums)
+                           (MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS + screen),
+                           PARSE_ACTION, false) == 0)
+                     count++;
+#endif
                }
+#ifdef ANDROID
+               /* Only Android places the menu and notifications */
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIDEO_MENU_FOLLOWS,
                         PARSE_ONLY_UINT, false) == 0)
@@ -13216,10 +13403,23 @@ unsigned menu_displaylist_build_list(
                         MENU_ENUM_LABEL_VIDEO_NOTIFICATIONS_WINDOW,
                         PARSE_ONLY_UINT, false) == 0)
                   count++;
+#else
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        MENU_ENUM_LABEL_VIDEO_SCREEN_WINDOWS_RESTORE,
+                        PARSE_ACTION, false) == 0)
+                  count++;
+#endif
             }
-#endif
          }
+#ifdef ANDROID
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_VIDEO_BLANK_UNUSED_SCREENS,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
 #endif
+#endif
+         break;
+      case DISPLAYLIST_VIDEO_HEADSET_SETTINGS_LIST:
 #ifdef HAVE_OPENXR
          if (video_driver_has_headset_path(settings->arrays.video_driver))
          {
@@ -13576,8 +13776,6 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_SHOW_REBOOT,                                      PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_SHUTDOWN,                                    PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_TIMEDATE_ENABLE,                                       PARSE_ONLY_BOOL, true  },
-               {MENU_ENUM_LABEL_TIMEDATE_STYLE,                                        PARSE_ONLY_UINT, true  },
-               {MENU_ENUM_LABEL_TIMEDATE_DATE_SEPARATOR,                               PARSE_ONLY_UINT, true  },
                {MENU_ENUM_LABEL_BATTERY_LEVEL_ENABLE,                                  PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_CORE_ENABLE,                                           PARSE_ONLY_BOOL, true  },
                {MENU_ENUM_LABEL_MENU_SHOW_SUBLABELS,                                   PARSE_ONLY_BOOL, true  },
@@ -14280,6 +14478,10 @@ unsigned menu_displaylist_build_list(
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
+               /* Privacy lists the camera only with a driver for it */
+               if (     build_list[i].enum_idx == MENU_ENUM_LABEL_CAMERA_ALLOW
+                     && string_is_equal(settings->arrays.camera_driver, "null"))
+                  continue;
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
                         false) == 0)
@@ -14501,6 +14703,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_CORE_SETTINGS,               PARSE_ACTION, true},
                {MENU_ENUM_LABEL_SAVING_SETTINGS,             PARSE_ACTION, true},
                {MENU_ENUM_LABEL_RECORDING_SETTINGS,          PARSE_ACTION, true},
+               {MENU_ENUM_LABEL_CAMERA_SETTINGS,             PARSE_ACTION, true},
                {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,      PARSE_ACTION, true},
                {MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS,      PARSE_ACTION, true},
                {MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,   PARSE_ACTION, true},
@@ -15203,6 +15406,10 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_SCALE_FACTOR,                            PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_OZONE_PADDING_FACTOR,                         PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_MENU_FRAMEBUFFER_OPACITY,                     PARSE_ONLY_FLOAT,  true},
+               {MENU_ENUM_LABEL_TIMEDATE_MODE,                                PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_TIMEDATE_12HOUR,                              PARSE_ONLY_BOOL,   false},
+               {MENU_ENUM_LABEL_TIMEDATE_STYLE,                               PARSE_ONLY_UINT,   false},
+               {MENU_ENUM_LABEL_TIMEDATE_DATE_SEPARATOR,                      PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS,                     PARSE_ONLY_FLOAT,  false},
                {MENU_ENUM_LABEL_XMB_RIBBON_ENABLE,                            PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_XMB_THEME,                                    PARSE_ONLY_UINT,   true},
@@ -15239,6 +15446,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_XMB_PLASTIC_EFFECT_ENABLE,                    PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_XMB_RIBBON_BLOOM_ENABLE,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_XMB_RIBBON_PARTICLES_ENABLE,                  PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_MENU_BACKDROP_BLUR,                           PARSE_ONLY_BOOL,   false},
                {MENU_ENUM_LABEL_MENU_TEXTURE_MIPMAPPING,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_ICONS_ENABLE,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,             PARSE_ONLY_BOOL,   false},
@@ -15309,6 +15517,12 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU:
                      build_list[i].checked = menu_horizontal_animation;
                      break;
+                  case MENU_ENUM_LABEL_MENU_BACKDROP_BLUR:
+                     /* The menus that blur behind their dialogs */
+                     build_list[i].checked =
+                           string_is_equal(settings->arrays.menu_driver, "xmb")
+                        || string_is_equal(settings->arrays.menu_driver, "ozone");
+                     break;
                   case MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET:
                      build_list[i].checked = (menu_rgui_color_theme == RGUI_THEME_CUSTOM);
                      break;
@@ -15351,6 +15565,14 @@ unsigned menu_displaylist_build_list(
                      break;
                   case MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS:
                      build_list[i].checked = (settings->uints.video_hdr_mode > 0);
+                     break;
+                  case MENU_ENUM_LABEL_TIMEDATE_12HOUR:
+                     build_list[i].checked = settings->uints.menu_timedate_mode
+                                          != MENU_TIMEDATE_MODE_MANUAL;
+                     break;
+                  case MENU_ENUM_LABEL_TIMEDATE_STYLE:
+                     build_list[i].checked = settings->uints.menu_timedate_mode
+                                          == MENU_TIMEDATE_MODE_MANUAL;
                      break;
                   default:
                      break;
@@ -15764,6 +15986,222 @@ static bool menu_displaylist_keyboard_index(const rarch_setting_t *setting)
        && setting->enum_idx <= MENU_ENUM_LABEL_INPUT_KEYBOARD_INDEX_LAST;
 }
 
+/* The Online Updater's entries, as the menu shows them: every build
+ * and setting gate in one place, for the menu and the companions. */
+unsigned menu_displaylist_parse_online_updater(file_list_t *list,
+      settings_t *settings)
+{
+   unsigned count = 0;
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   gfx_ctx_flags_t flags;
+   flags.flags     = 0;
+   video_context_driver_get_flags(&flags);
+#endif
+#ifdef HAVE_LAKKA
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA),
+            MENU_ENUM_LABEL_UPDATE_LAKKA_STR,
+            MENU_ENUM_LABEL_UPDATE_LAKKA,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR,
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
+            MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST_STR,
+            MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+#elif defined(HAVE_NETWORKING)
+#ifdef HAVE_UPDATE_CORES
+   if (settings->bools.menu_show_core_updater)
+   {
+      if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
+               MENU_ENUM_LABEL_CORE_UPDATER_LIST_STR,
+               MENU_ENUM_LABEL_CORE_UPDATER_LIST,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+
+      /* Only show 'update installed cores' if
+       * one or more cores are installed */
+      if (core_info_count() > 0)
+      {
+#if defined(ANDROID)
+         /* When using Play Store builds, cores are
+          * updated automatically - the 'update
+          * installed cores' option is therefore
+          * irrelevant/useless, so we instead present
+          * an option for switching any existing buildbot
+          * or sideloaded cores to the latest Play Store
+          * version */
+         if (play_feature_delivery_enabled())
+         {
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD),
+                     MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD_STR,
+                     MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+         }
+         else
+#endif
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES),
+                     MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES_STR,
+                     MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+      }
+   }
+#endif /* HAVE_UPDATE_CORES */
+
+#if defined(HAVE_COMPRESSION) && !defined(HAVE_MIST)
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES),
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES_STR,
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+#endif
+
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR,
+            MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+#ifdef HAVE_ONLINE_UPDATER
+   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+         MENU_ENUM_LABEL_UPDATER_SETTINGS,
+         PARSE_ACTION, false) == 0)
+      count++;
+#endif
+
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
+            MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST_STR,
+            MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+#ifdef HAVE_NETWORKING
+   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+            MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+            PARSE_ONLY_BOOL, false) != -1)
+      count++;
+#endif
+
+#ifdef HAVE_COMPRESSION
+#ifdef HAVE_UPDATE_CORE_INFO
+   if (settings->bools.menu_show_core_updater)
+   {
+      if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES),
+               MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES_STR,
+               MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+   }
+#endif
+
+#ifdef HAVE_UPDATE_ASSETS
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS),
+            MENU_ENUM_LABEL_UPDATE_ASSETS_STR,
+            MENU_ENUM_LABEL_UPDATE_ASSETS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+#endif
+#if !defined(_3DS)
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES),
+            MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES_STR,
+            MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS),
+            MENU_ENUM_LABEL_UPDATE_CHEATS_STR,
+            MENU_ENUM_LABEL_UPDATE_CHEATS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+#endif
+#ifdef HAVE_LIBRETRODB
+#if !defined(VITA)
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES),
+            MENU_ENUM_LABEL_UPDATE_DATABASES_STR,
+            MENU_ENUM_LABEL_UPDATE_DATABASES,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+#endif
+#endif /* HAVE_LIBRETRODB */
+#if !defined(_3DS)
+   if (menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS),
+            MENU_ENUM_LABEL_UPDATE_OVERLAYS_STR,
+            MENU_ENUM_LABEL_UPDATE_OVERLAYS,
+            MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
+   {
+      if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS),
+               MENU_ENUM_LABEL_UPDATE_CG_SHADERS_STR,
+               MENU_ENUM_LABEL_UPDATE_CG_SHADERS,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+   }
+
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+   {
+      if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS),
+               MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS_STR,
+               MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+   }
+
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+   {
+      if (menu_entries_append(list,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS),
+               MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS_STR,
+               MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS,
+               MENU_SETTING_ACTION, 0, 0, NULL))
+         count++;
+   }
+#endif
+#endif /* !defined(_3DS) */
+#endif /* HAVE_COMPRESSION */
+#endif
+   return count;
+}
+
+/* Whether the main menu offers the Online Updater at all. */
+bool menu_displaylist_online_updater_shown(settings_t *settings)
+{
+#if defined(HAVE_NETWORKING) && defined(HAVE_ONLINE_UPDATER)
+   return  settings->bools.menu_show_online_updater
+      && !settings->bools.kiosk_mode_enable;
+#else
+   return false;
+#endif
+}
+
 static bool menu_displaylist_ctl_internal(
       enum menu_displaylist_ctl_state type,
       menu_displaylist_info_t *info,
@@ -15775,12 +16213,23 @@ static bool menu_displaylist_ctl_internal(
          && menu_st->driver_ctx->list_push(menu_st->driver_data,
             menu_st->userdata, info, type) == 0);
 
-   /* any other list shown in the menu replaces Port N Controls */
-   if (     type != DISPLAYLIST_USER_BINDS_LIST
-         && menu_st->driver_data
+   if (     menu_st->driver_data
          && info->list == MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(
                menu_st, 0))
-      menu_st->driver_data->plays_as_page = 0;
+   {
+      menu_handle_t *menu = menu_st->driver_data;
+      /* any other list shown in the menu replaces Port N Controls >
+       * Controllers */
+      if (type != DISPLAYLIST_INPUT_PORT_CONTROLLERS_LIST)
+         menu->plays_as_page = 0;
+      /* back on Controllers, the cursor goes to Headset Controls
+       * wherever the controllers above have moved it */
+      if (type == DISPLAYLIST_INPUT_HEADSET_CONTROLS_LIST)
+         menu->plays_as_row = PLAYS_AS_ROW_HEADSET;
+      else if (   type != DISPLAYLIST_INPUT_CONTROLLERS_LIST
+               && menu->plays_as_row == PLAYS_AS_ROW_HEADSET)
+         menu->plays_as_row = 0;
+   }
 
    if (!push_list)
    {
@@ -16407,11 +16856,13 @@ static bool menu_displaylist_ctl_internal(
 #if defined(HAVE_AUDIOMIXER) || defined(HAVE_FFMPEG) || defined(HAVE_MPV)
                char combined_path[PATH_MAX_LENGTH];
                const char *ext  = NULL;
+               bool run_music;
                bool multimedia_builtin_mediaplayer_enable = settings->bools.multimedia_builtin_mediaplayer_enable;
 
                fill_pathname_join_special(combined_path, menu->scratch2_buf,
                      menu->scratch_buf, sizeof(combined_path));
                ext = path_get_extension(combined_path);
+               run_music = menu_driver_media_can_open(combined_path);
 #endif
                menu_entries_clear(info->list);
 
@@ -16445,7 +16896,10 @@ static bool menu_displaylist_ctl_internal(
 #elif defined(HAVE_MPV)
                   libretro_mpv_retro_get_system_info(&sysinfo);
 #endif
-                  if (strstr(sysinfo.valid_extensions,ext))
+                  if (sysinfo.valid_extensions && strstr(sysinfo.valid_extensions, ext))
+                     run_music = true;
+#endif
+                  if (run_music)
                   {
                      if (menu_entries_append(info->list,
                               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RUN_MUSIC),
@@ -16454,7 +16908,6 @@ static bool menu_displaylist_ctl_internal(
                               FILE_TYPE_PLAYLIST_ENTRY, 0, 0, NULL))
                         count++;
                   }
-#endif
                }
 #endif
             }
@@ -16796,6 +17249,23 @@ static bool menu_displaylist_ctl_internal(
                               MENU_ENUM_LABEL_VIDEO_SHADER_SCALE_PASS,
                               MENU_SETTINGS_SHADER_PASS_SCALE_0 + i, 0, 0, NULL))
                         count++;
+
+#ifdef HAVE_SLANG
+                     if (settings->bools.video_shader_simulated_input_resolution
+                           && video_driver_test_all_flags(GFX_CTX_FLAGS_SHADERS_SLANG))
+                     {
+                        _len3 = _len2;
+                        strlcpy(buf_tmp + _len3,
+                              msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_RES_PASS),
+                              sizeof(buf_tmp) - _len3);
+                        if (menu_entries_append(info->list, buf_tmp,
+                                 MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_RES_PASS_STR,
+                                 MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_RES_PASS,
+                                 MENU_SETTINGS_SHADER_PASS_SIMULATED_RES_0 + i,
+                                 0, 0, NULL))
+                           count++;
+                     }
+#endif
                   }
                }
             }
@@ -18030,12 +18500,15 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_LAKKA_SWITCH_OPTIONS_LIST:
 #endif
          case DISPLAYLIST_MIDI_SETTINGS_LIST:
+         case DISPLAYLIST_CAMERA_SETTINGS_LIST:
          case DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST:
+         case DISPLAYLIST_VIDEO_GAME_SCREENS_SETTINGS_LIST:
+         case DISPLAYLIST_VIDEO_HEADSET_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_DLSS_NR_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
@@ -18115,6 +18588,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_SHADER_PRESET_MANAGER:
          case DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST:
          case DISPLAYLIST_INPUT_CONTROLLERS_LIST:
+         case DISPLAYLIST_INPUT_HEADSET_CONTROLS_LIST:
          case DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST:
          case DISPLAYLIST_INPUT_TURBO_FIRE_SETTINGS_LIST:
          case DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST:
@@ -18256,204 +18730,8 @@ static bool menu_displaylist_ctl_internal(
             break;
          case DISPLAYLIST_OPTIONS:
             menu_entries_clear(info->list);
-            {
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-               gfx_ctx_flags_t flags;
-               flags.flags     = 0;
-               video_context_driver_get_flags(&flags);
-#endif
-#ifdef HAVE_LAKKA
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA),
-                        MENU_ENUM_LABEL_UPDATE_LAKKA_STR,
-                        MENU_ENUM_LABEL_UPDATE_LAKKA,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
-                        MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR,
-                        MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
-                        MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST_STR,
-                        MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-#elif defined(HAVE_NETWORKING)
-#ifdef HAVE_UPDATE_CORES
-               if (settings->bools.menu_show_core_updater)
-               {
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST),
-                           MENU_ENUM_LABEL_CORE_UPDATER_LIST_STR,
-                           MENU_ENUM_LABEL_CORE_UPDATER_LIST,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-
-                  /* Only show 'update installed cores' if
-                   * one or more cores are installed */
-                  if (core_info_count() > 0)
-                  {
-#if defined(ANDROID)
-                     /* When using Play Store builds, cores are
-                      * updated automatically - the 'update
-                      * installed cores' option is therefore
-                      * irrelevant/useless, so we instead present
-                      * an option for switching any existing buildbot
-                      * or sideloaded cores to the latest Play Store
-                      * version */
-                     if (play_feature_delivery_enabled())
-                     {
-                        if (menu_entries_append(info->list,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD),
-                                 MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD_STR,
-                                 MENU_ENUM_LABEL_SWITCH_INSTALLED_CORES_PFD,
-                                 MENU_SETTING_ACTION, 0, 0, NULL))
-                           count++;
-                     }
-                     else
-#endif
-                        if (menu_entries_append(info->list,
-                                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES),
-                                 MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES_STR,
-                                 MENU_ENUM_LABEL_UPDATE_INSTALLED_CORES,
-                                 MENU_SETTING_ACTION, 0, 0, NULL))
-                           count++;
-                  }
-               }
-#endif /* HAVE_UPDATE_CORES */
-
-#if defined(HAVE_COMPRESSION) && !defined(HAVE_MIST)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES),
-                        MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES_STR,
-                        MENU_ENUM_LABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-#endif
-
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT),
-                        MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR,
-                        MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-#ifdef HAVE_ONLINE_UPDATER
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
-                     MENU_ENUM_LABEL_UPDATER_SETTINGS,
-                     PARSE_ACTION, false) == 0)
-                  count++;
-#endif
-
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST),
-                        MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST_STR,
-                        MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-#ifdef HAVE_NETWORKING
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
-                        MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-                        PARSE_ONLY_BOOL, false) != -1)
-                  count++;
-#endif
-
-#ifdef HAVE_COMPRESSION
-#ifdef HAVE_UPDATE_CORE_INFO
-               if (settings->bools.menu_show_core_updater)
-               {
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES),
-                           MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES_STR,
-                           MENU_ENUM_LABEL_UPDATE_CORE_INFO_FILES,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-               }
-#endif
-
-#ifdef HAVE_UPDATE_ASSETS
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS),
-                        MENU_ENUM_LABEL_UPDATE_ASSETS_STR,
-                        MENU_ENUM_LABEL_UPDATE_ASSETS,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-#endif
-#if !defined(_3DS)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES),
-                        MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES_STR,
-                        MENU_ENUM_LABEL_UPDATE_AUTOCONFIG_PROFILES,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS),
-                        MENU_ENUM_LABEL_UPDATE_CHEATS_STR,
-                        MENU_ENUM_LABEL_UPDATE_CHEATS,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-#endif
-#ifdef HAVE_LIBRETRODB
-#if !defined(VITA)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES),
-                        MENU_ENUM_LABEL_UPDATE_DATABASES_STR,
-                        MENU_ENUM_LABEL_UPDATE_DATABASES,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-#endif
-#endif /* HAVE_LIBRETRODB */
-#if !defined(_3DS)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS),
-                        MENU_ENUM_LABEL_UPDATE_OVERLAYS_STR,
-                        MENU_ENUM_LABEL_UPDATE_OVERLAYS,
-                        MENU_SETTING_ACTION, 0, 0, NULL))
-                  count++;
-
-#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
-               {
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS),
-                           MENU_ENUM_LABEL_UPDATE_CG_SHADERS_STR,
-                           MENU_ENUM_LABEL_UPDATE_CG_SHADERS,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-               }
-
-               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
-               {
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS),
-                           MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS_STR,
-                           MENU_ENUM_LABEL_UPDATE_GLSL_SHADERS,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-               }
-
-               if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
-               {
-                  if (menu_entries_append(info->list,
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS),
-                           MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS_STR,
-                           MENU_ENUM_LABEL_UPDATE_SLANG_SHADERS,
-                           MENU_SETTING_ACTION, 0, 0, NULL))
-                     count++;
-               }
-#endif
-#endif /* !defined(_3DS) */
-#endif /* HAVE_COMPRESSION */
-#endif
-            }
+            count = menu_displaylist_parse_online_updater(
+                  info->list, settings);
 
             if (count == 0)
                menu_entries_append(info->list,
@@ -18682,8 +18960,7 @@ static bool menu_displaylist_ctl_internal(
                      count++;
 
 #ifdef HAVE_ONLINE_UPDATER
-               if (      settings->bools.menu_show_online_updater
-                     && !settings->bools.kiosk_mode_enable)
+               if (menu_displaylist_online_updater_shown(settings))
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                            MENU_ENUM_LABEL_ONLINE_UPDATER,
                            PARSE_ACTION, false) == 0)
@@ -18755,7 +19032,7 @@ static bool menu_displaylist_ctl_internal(
                      count++;
 #endif
 
-#if defined(HAVE_LIBNX)
+#if defined(HAVE_LIBNX) && !defined(__SWITCH2__)
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                      info->list,
                      MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,
@@ -18763,11 +19040,13 @@ static bool menu_displaylist_ctl_internal(
                   count++;
 #endif
 
+#ifndef __SWITCH2__
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(
                      info->list,
                      MENU_ENUM_LABEL_SWITCH_GPU_PROFILE,
                      PARSE_ACTION, false) == 0)
                   count++;
+#endif
 
 #if !TARGET_OS_IPHONE
                if (settings->bools.menu_show_restart_retroarch)
@@ -18851,11 +19130,56 @@ static bool menu_displaylist_ctl_internal(
 
             info->flags      |=  MD_FLAG_NEED_ENTRIES_REFRESH;
             break;
+         case DISPLAYLIST_VIDEO_SCREEN_SETTINGS_LIST:
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+            {
+               unsigned screen = menu_setting_video_screen_page(info->path);
+               menu_entries_clear(info->list);
+               /* None for a screen the core no longer has */
+               if (screen < menu_setting_video_screens())
+               {
+                  menu_setting_video_screen_display_values();
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
+                           (enum msg_hash_enums)
+                           (MENU_ENUM_LABEL_VIDEO_SCREEN_DISPLAY + screen),
+                           PARSE_ONLY_STRING_OPTIONS, false) == 0)
+                     count++;
+                  count += menu_displaylist_video_screen_window_rows(
+                        info->list, settings, screen);
+               }
+               if (!count)
+                  menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND),
+                        MENU_ENUM_LABEL_NO_SETTINGS_FOUND_STR,
+                        MENU_ENUM_LABEL_NO_SETTINGS_FOUND,
+                        0, 0, 0, NULL);
+               info->flags |= MD_FLAG_NEED_REFRESH
+                            | MD_FLAG_NEED_PUSH;
+            }
+#endif
+            break;
          case DISPLAYLIST_USER_BINDS_LIST:
             {
                unsigned val              = atoi(info->path);
                const char *temp_val      = msg_hash_to_str(
                      (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + (val-1)));
+               menu_entries_clear(info->list);
+               /* Controllers, carrying N */
+               if (val >= 1 && val <= MAX_USERS)
+                  menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_PORT_CONTROLLERS),
+                        MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS_STR,
+                        MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS,
+                        MENU_SETTING_ACTION, 0, val, NULL);
+               ret                = MENU_DISPLAYLIST_PARSE_SETTINGS(info->list,
+                     temp_val, PARSE_NONE, true, MENU_SETTINGS_INPUT_BEGIN);
+               info->flags       |=  MD_FLAG_NEED_REFRESH
+                                  |  MD_FLAG_NEED_PUSH;
+            }
+            break;
+         case DISPLAYLIST_INPUT_PORT_CONTROLLERS_LIST:
+            {
+               unsigned val              = atoi(info->path);
                /* the list still holds this page only if none was made since */
                if (menu && val && menu->plays_as_page == val)
                   menu_displaylist_keep_plays_as_row(menu_st, info->list);
@@ -18863,8 +19187,6 @@ static bool menu_displaylist_ctl_internal(
                if (val >= 1 && val <= MAX_USERS)
                   menu_displaylist_parse_input_port_controllers(
                         info->list, settings, val - 1);
-               ret                = MENU_DISPLAYLIST_PARSE_SETTINGS(info->list,
-                     temp_val, PARSE_NONE, true, MENU_SETTINGS_INPUT_BEGIN);
                menu_displaylist_restore_plays_as_row(menu_st, info->list,
                      val);
                info->flags       |=  MD_FLAG_NEED_REFRESH
@@ -19145,7 +19467,11 @@ static bool menu_displaylist_ctl_internal(
                   break;
                case DISPLAYLIST_VULKAN_DRIVERS:
                   info->type_default = FILE_TYPE_VULKAN_DRIVER;
+#ifdef ANDROID
                   info->exts         = strldup("zip", sizeof("zip"));
+#else
+                  info->exts         = strldup("json", sizeof("json"));
+#endif
                   break;
                case DISPLAYLIST_STREAM_CONFIG_FILES:
                   info->type_default = FILE_TYPE_STREAM_CONFIG;
@@ -20120,6 +20446,10 @@ static bool menu_displaylist_ctl_internal(
                            FILE_TYPE_DIRECTORY, 0, 0, NULL))
                      count++;
             }
+#endif
+#ifdef HAVE_VULKAN_CUSTOM_DRIVER
+            if (type == DISPLAYLIST_VULKAN_DRIVERS)
+               filebrowser_prepend_vulkan_driver_system(info->list);
 #endif
          }
          else

@@ -57,6 +57,11 @@
 #include "../../verbosity.h"
 #include "../../configuration.h"
 
+#if defined(HAVE_PYROWAVE) && defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_64)
+#define WASAPI_PRESENTATION
+#include "../../record/record_pyrowave_clock.h"
+#endif
+
 #define WASAPI_TIMEOUT 256
 
 #ifndef AUDCLNT_E_ENGINE_PERIODICITY_LOCKED
@@ -107,6 +112,12 @@ typedef struct
    retro_spsc_t        ring;
    size_t              fifo_size;
    size_t engine_buffer_size;
+#ifdef WASAPI_PRESENTATION
+   record_pyrowave_clock_t *presentation;
+   retro_atomic_64_t presentation_position;
+   uint64_t presentation_end, presentation_taken, presentation_written, presentation_cursor;
+   bool presentation_failed;
+#endif
 #ifdef HAVE_THREADS
    /* Exclusive mode: the thread that owns the device's event. Each
     * period it takes one from the ring and releases it, or releases
@@ -970,15 +981,15 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
           * the engine buffer in the statistics overlay against what the
           * device can do needs to know why it is 10 ms and not 3. */
          if (FAILED(hr))
-            RARCH_LOG("[WASAPI] IAudioClient3::GetSharedModeEnginePeriod failed: %s; using the engine's default period.\n",
+            RARCH_DBG("[WASAPI] IAudioClient3::GetSharedModeEnginePeriod failed: %s; using the engine's default period.\n",
                   mmdevice_hresult_name(hr));
          else if (!(p_min > 0 && p_min < p_default))
-            RARCH_LOG("[WASAPI] Engine periods: default %u, fundamental %u, min %u, max %u frames; the minimum is not below the default, so the default period it is.\n",
+            RARCH_DBG("[WASAPI] Engine periods: default %u, fundamental %u, min %u, max %u frames; the minimum is not below the default, so the default period it is.\n",
                   p_default, p_fundamental, p_min, p_max);
          else
          {
             UINT32 period = p_min;
-            RARCH_LOG("[WASAPI] Engine periods: default %u, fundamental %u, min %u, max %u frames; asking for %u.\n",
+            RARCH_DBG("[WASAPI] Engine periods: default %u, fundamental %u, min %u, max %u frames; asking for %u.\n",
                   p_default, p_fundamental, p_min, p_max, period);
             hr = _IAudioClient3_InitializeSharedAudioStream(client3,
                   AUDCLNT_STREAMFLAGS_EVENTCALLBACK, period,
@@ -1318,7 +1329,7 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
             &mic_input, &frames_read, &buffer_status_flags, NULL, NULL);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] Failed to get capture device \"%s\"'s buffer: %s.\n",
+         RARCH_ERR("[WASAPI mic] Failed to get capture device \"%s\"'s buffer: %s.\n",
             mic->device_name, mmdevice_hresult_name(hr));
          return -1;
       }
@@ -1336,7 +1347,7 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
       hr = _IAudioCaptureClient_ReleaseBuffer(mic->capture, frames_read);
       if (FAILED(hr))
       {
-         RARCH_ERR("[WASAPI] Failed to release capture device \"%s\"'s buffer after consuming %u frames: %s.\n",
+         RARCH_ERR("[WASAPI mic] Failed to release capture device \"%s\"'s buffer after consuming %u frames: %s.\n",
             mic->device_name, frames_read, mmdevice_hresult_name(hr));
          return -1;
       }
@@ -1349,7 +1360,7 @@ static int wasapi_microphone_fetch_fifo(wasapi_microphone_handle_t *mic)
          /* Get the number of frames that the mic has for us. */
          if (FAILED(hr))
          {
-            RARCH_ERR("[WASAPI] Failed to get capture device \"%s\"'s next packet size: %s.\n",
+            RARCH_ERR("[WASAPI mic] Failed to get capture device \"%s\"'s next packet size: %s.\n",
                       mic->device_name, mmdevice_hresult_name(hr));
             return -1;
          }
@@ -1380,11 +1391,11 @@ static bool wasapi_microphone_wait_for_capture_event(wasapi_microphone_handle_t 
          return true;
       case WAIT_TIMEOUT:
          /* Time out; there's nothing here for us. */
-         RARCH_ERR("[WASAPI] Failed to wait for capture device \"%s\" event: Timeout after %ums.\n",
+         RARCH_ERR("[WASAPI mic] Failed to wait for capture device \"%s\" event: Timeout after %ums.\n",
                mic->device_name, timeout);
          break;
       default:
-         RARCH_ERR("[WASAPI] Failed to wait for capture device \"%s\" event: %s.\n",
+         RARCH_ERR("[WASAPI mic] Failed to wait for capture device \"%s\" event: %s.\n",
                mic->device_name, wasapi_error(GetLastError()));
          break;
    }
@@ -1547,20 +1558,20 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    /* If we requested a particular capture device, but couldn't open it... */
    if (device && !mic->device)
    {
-      RARCH_WARN("[WASAPI] Failed to open requested capture device \"%s\", attempting to open default device.\n",
+      RARCH_WARN("[WASAPI mic] Failed to open requested capture device \"%s\", attempting to open default device.\n",
             device);
       mic->device = (IMMDevice*)mmdevice_init_device(NULL, 1 /* eCapture */);
    }
 
    if (!mic->device)
    {
-      RARCH_ERR("[WASAPI] Failed to open capture device.\n");
+      RARCH_ERR("[WASAPI mic] Failed to open capture device.\n");
       goto error;
    }
 
    if (!(mic->device_name = mmdevice_name(mic->device)))
    {
-      RARCH_ERR("[WASAPI] Failed to get friendly name of capture device.\n");
+      RARCH_ERR("[WASAPI mic] Failed to get friendly name of capture device.\n");
       goto error;
    }
 
@@ -1569,14 +1580,14 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
       AUDIO_LAYOUT_STEREO, NULL, NULL);
    if (!mic->client)
    {
-      RARCH_ERR("[WASAPI] Failed to open client for capture device \"%s\".\n", mic->device_name);
+      RARCH_ERR("[WASAPI mic] Failed to open client for capture device \"%s\".\n", mic->device_name);
       goto error;
    }
 
    hr = _IAudioClient_GetBufferSize(mic->client, &frame_count);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to get buffer size of IAudioClient for capture device \"%s\": %s.\n",
+      RARCH_ERR("[WASAPI mic] Failed to get buffer size of IAudioClient for capture device \"%s\": %s.\n",
           mic->device_name, mmdevice_hresult_name(hr));
       goto error;
    }
@@ -1590,11 +1601,11 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
       mic->buffer = fifo_new(mic->engine_buffer_size);
       if (!mic->buffer)
       {
-         RARCH_ERR("[WASAPI] Failed to initialize FIFO queue for capture device.\n");
+         RARCH_ERR("[WASAPI mic] Failed to initialize FIFO queue for capture device.\n");
          goto error;
       }
 
-      RARCH_LOG("[WASAPI] Intermediate exclusive-mode capture buffer length is %u frames (%.1fms, %u bytes).\n",
+      RARCH_LOG("[WASAPI mic] Intermediate exclusive-mode capture buffer length is %u frames (%.1fms, %u bytes).\n",
                 frame_count, (double)frame_count * 1000.0 / rate, mic->engine_buffer_size);
    }
    else
@@ -1619,7 +1630,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
          if (!(mic->buffer = fifo_new(fifo_bytes)))
             goto error;
 
-         RARCH_LOG("[WASAPI] Intermediate shared-mode capture buffer length is %u frames (%.1fms, %u bytes).\n",
+         RARCH_LOG("[WASAPI mic] Intermediate shared-mode capture buffer length is %u frames (%.1fms, %u bytes).\n",
                    (unsigned)fifo_frames, (double)fifo_frames * 1000.0 / rate,
                    (unsigned)fifo_bytes);
       }
@@ -1627,14 +1638,14 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
 
    if (!(mic->read_event = CreateEventA(NULL, FALSE, FALSE, NULL)))
    {
-      RARCH_ERR("[WASAPI] Failed to allocate capture device's event handle.\n");
+      RARCH_ERR("[WASAPI mic] Failed to allocate capture device's event handle.\n");
       goto error;
    }
 
    hr = _IAudioClient_SetEventHandle(mic->client, mic->read_event);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to set capture device's event handle: %s.\n",
+      RARCH_ERR("[WASAPI mic] Failed to set capture device's event handle: %s.\n",
             mmdevice_hresult_name(hr));
       goto error;
    }
@@ -1643,7 +1654,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
          IID_IAudioCaptureClient, (void**)&mic->capture);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to get capture device's IAudioCaptureClient service: %s.\n",
+      RARCH_ERR("[WASAPI mic] Failed to get capture device's IAudioCaptureClient service: %s.\n",
             mmdevice_hresult_name(hr));
       goto error;
    }
@@ -1652,7 +1663,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    hr = _IAudioCaptureClient_GetBuffer(mic->capture, &dest, &frame_count, &flags, NULL, NULL);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to get capture client buffer: %s.\n",
+      RARCH_ERR("[WASAPI mic] Failed to get capture client buffer: %s.\n",
             mmdevice_hresult_name(hr));
       goto error;
    }
@@ -1660,7 +1671,7 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
    hr = _IAudioCaptureClient_ReleaseBuffer(mic->capture, 0);
    if (FAILED(hr))
    {
-      RARCH_ERR("[WASAPI] Failed to release capture client buffer: %s.\n",
+      RARCH_ERR("[WASAPI mic] Failed to release capture client buffer: %s.\n",
             mmdevice_hresult_name(hr));
       goto error;
    }
@@ -2135,6 +2146,16 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
          : w->clock ? "stream position (IAudioClock)"
          : "none; the service events are counted instead");
 
+#ifdef WASAPI_PRESENTATION
+   if (audio_driver_presentation_requested() && w->clock && !w->clock_start && !w->ac3)
+   {
+      w->presentation = record_pyrowave_clock_new(256);
+      if (!w->presentation || !record_pyrowave_clock_reset(w->presentation, 1, 1)) goto error;
+      retro_atomic_64_init(&w->presentation_position, 0);
+      w->presentation_end = frame_count;
+   }
+#endif
+
    hr = _IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest);
    if (FAILED(hr))
       goto error;
@@ -2219,6 +2240,9 @@ error:
    if (w->write_event)
       CloseHandle(w->write_event);
    retro_spsc_free(&w->ring);
+#ifdef WASAPI_PRESENTATION
+   record_pyrowave_clock_free(w->presentation);
+#endif
    if (w->ac3)
       rac3_encoder_free(w->ac3);
    if (w->ac3_in)
@@ -2251,6 +2275,67 @@ static INLINE size_t wasapi_ring_room(wasapi_t *w)
  * every one: a period from the fifo when one is there, silence and an
  * underrun counted when not. */
 static bool wasapi_push_sh(wasapi_t *w);
+
+#ifdef WASAPI_PRESENTATION
+static void wasapi_presentation_fail(wasapi_t *w)
+{
+   w->presentation_failed = true;
+   retro_atomic_store_release_64(&w->presentation_position, 3);
+}
+
+/* Pump owner. Absolute stream frames, including the known initial prefill
+ * and every explicit silent packet. Never extrapolate a missed period. */
+static void wasapi_presentation_poll(wasapi_t *w)
+{
+   UINT64 raw = 0, qpc = 0, frame, whole, fraction;
+   record_pyrowave_clock_position_t position;
+   HRESULT result;
+   int64_t packed = 0;
+   if (!w->presentation || w->presentation_failed) return;
+   result = _IAudioClock_GetPosition(w->clock, &raw, &qpc);
+   if (FAILED(result)) { wasapi_presentation_fail(w); return; }
+   if (result != S_OK)
+   {
+      retro_atomic_store_release_64(&w->presentation_position, 0);
+      return;
+   }
+   whole = raw / w->clock_frequency;
+   fraction = raw % w->clock_frequency;
+   if (whole > (((uint64_t)-1) >> 3) / w->rate
+         || fraction > ((uint64_t)-1) / w->rate)
+   { wasapi_presentation_fail(w); return; }
+   frame = whole * w->rate + fraction * w->rate / w->clock_frequency;
+   if (frame > w->presentation_end || frame < w->presentation_cursor)
+   { wasapi_presentation_fail(w); return; }
+   w->presentation_cursor = frame;
+   if (record_pyrowave_clock_poll(w->presentation, frame, &position))
+      packed = (int64_t)(position.source_sample * 4 + 1);
+   else if (w->presentation_taken
+         && record_pyrowave_clock_drained(w->presentation, w->presentation_taken))
+      packed = (int64_t)(w->presentation_taken * 4 + 2);
+   retro_atomic_store_release_64(&w->presentation_position, packed);
+}
+
+static bool wasapi_presentation_room(wasapi_t *w)
+{
+   return !w->presentation || (!w->presentation_failed
+         && record_pyrowave_clock_room(w->presentation));
+}
+
+/* Commit only after ReleaseBuffer accepted the packet. */
+static void wasapi_presentation_commit(wasapi_t *w, UINT32 frames, UINT32 audio_frames)
+{
+   if (!w->presentation || w->presentation_failed) return;
+   if (w->presentation_end > (uint64_t)-1 - frames
+         || w->presentation_taken > (((uint64_t)-1) >> 3) - audio_frames
+         || (audio_frames && !record_pyrowave_clock_commit(w->presentation,
+            w->presentation_end, audio_frames, w->presentation_taken,
+            audio_frames, audio_frames, 0)))
+   { wasapi_presentation_fail(w); return; }
+   w->presentation_end += frames;
+   w->presentation_taken += audio_frames;
+}
+#endif
 
 /* The multimedia class scheduler, where the system has it: what
  * Windows offers a thread that must run inside a device period, and
@@ -2370,6 +2455,10 @@ static void wasapi_pump_thread(void *data)
       if (!retro_atomic_load_acquire_int(&w->pump_run))
          break;
 
+#ifdef WASAPI_PRESENTATION
+      wasapi_presentation_poll(w);
+#endif
+
       /* How late against the period this wake was due at. The first
        * wake has nothing to be late against and only sets the mark. */
       if (period_us > 0)
@@ -2398,13 +2487,31 @@ static void wasapi_pump_thread(void *data)
       {
          BYTE *dest         = NULL;
          UINT32 frame_count = (UINT32)(w->engine_buffer_size / w->frame_size);
+         UINT32 audio_frames = 0;
+         size_t audio_bytes;
          DWORD  flags       = 0;
          if (FAILED(_IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest)))
-            continue;
-         if (retro_spsc_read_avail(&w->ring) >= w->engine_buffer_size)
          {
-            retro_spsc_read(&w->ring, dest, w->engine_buffer_size);
-            wasapi_ac3_drained(w, w->engine_buffer_size);
+#ifdef WASAPI_PRESENTATION
+            if (w->presentation) wasapi_presentation_fail(w);
+#endif
+            continue;
+         }
+         audio_bytes = retro_spsc_read_avail(&w->ring);
+         if (audio_bytes > w->engine_buffer_size) audio_bytes = w->engine_buffer_size;
+#ifdef WASAPI_PRESENTATION
+         if ((!w->presentation && audio_bytes < w->engine_buffer_size)
+               || !wasapi_presentation_room(w)) audio_bytes = 0;
+#else
+         if (audio_bytes < w->engine_buffer_size) audio_bytes = 0;
+#endif
+         if (audio_bytes)
+         {
+            retro_spsc_read(&w->ring, dest, audio_bytes);
+            if (audio_bytes < w->engine_buffer_size)
+               memset(dest + audio_bytes, 0, w->engine_buffer_size - audio_bytes);
+            wasapi_ac3_drained(w, audio_bytes);
+            audio_frames = (UINT32)(audio_bytes / w->frame_size);
          }
          else
          {
@@ -2420,7 +2527,16 @@ static void wasapi_pump_thread(void *data)
                retro_atomic_load_acquire_64(&w->consumed)
                      + (int64_t)frame_count);
          retro_eventcount_notify(&w->park);
-         _IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, flags);
+         {
+            HRESULT released = _IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, flags);
+#ifdef WASAPI_PRESENTATION
+            if (FAILED(released) && w->presentation) wasapi_presentation_fail(w);
+            else wasapi_presentation_commit(w, frame_count, audio_frames);
+#else
+            (void)released;
+            (void)audio_frames;
+#endif
+         }
       }
       else
       {
@@ -2491,22 +2607,49 @@ static void wasapi_pump_stop(wasapi_t *w)
 static bool wasapi_push_sh(wasapi_t *w)
 {
    UINT32 padding    = 0;
-   size_t read_avail, engine_free, n;
-   if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
+   size_t read_avail, engine_free, n, audio_bytes;
+   if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding))
+         || padding > w->engine_buffer_size / w->frame_size)
+   {
+#ifdef WASAPI_PRESENTATION
+      if (w->presentation) wasapi_presentation_fail(w);
+#endif
       return false;
+   }
    read_avail  = retro_spsc_read_avail(&w->ring);
    engine_free = w->engine_buffer_size - padding * w->frame_size;
    n           = read_avail < engine_free ? read_avail : engine_free;
    n           = (n / w->frame_size) * w->frame_size;
+   audio_bytes = n;
+#ifdef WASAPI_PRESENTATION
+   if (w->presentation)
+   {
+      /* A drained shared endpoint can insert unaccounted engine silence.
+       * Reject that timeline rather than placing new data after a guess. */
+      if (!padding) wasapi_presentation_fail(w);
+      if (!wasapi_presentation_room(w)) audio_bytes = 0;
+      n = engine_free;
+   }
+#endif
    if (n)
    {
       BYTE *dest         = NULL;
       UINT32 frame_count = (UINT32)(n / w->frame_size);
       if (FAILED(_IAudioRenderClient_GetBuffer(w->renderer, frame_count, &dest)))
          return false;
-      retro_spsc_read(&w->ring, dest, n);
-      if (FAILED(_IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count, 0)))
+      if (audio_bytes) retro_spsc_read(&w->ring, dest, audio_bytes);
+      if (n > audio_bytes) memset(dest + audio_bytes, 0, n - audio_bytes);
+      if (FAILED(_IAudioRenderClient_ReleaseBuffer(w->renderer, frame_count,
+                  audio_bytes ? 0 : AUDCLNT_BUFFERFLAGS_SILENT)))
+      {
+#ifdef WASAPI_PRESENTATION
+         if (w->presentation) wasapi_presentation_fail(w);
+#endif
          return false;
+      }
+#ifdef WASAPI_PRESENTATION
+      wasapi_presentation_commit(w, frame_count, (UINT32)(audio_bytes / w->frame_size));
+#endif
 #ifdef HAVE_THREADS
       /* Single writer (the pump, in threaded builds): load and store. */
       retro_atomic_store_release_64(&w->released,
@@ -2590,6 +2733,10 @@ static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len)
    size_t _len = 0;
    uint8_t flg = w->flags;
 
+#ifdef WASAPI_PRESENTATION
+   if (w->presentation && len % w->frame_size) return -1;
+#endif
+
 #ifdef HAVE_THREADS
    {
       /* Both modes: the fifo only; the pump feeds the device.
@@ -2622,6 +2769,9 @@ static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len)
          }
          if (ir > room)
             ir = room;
+#ifdef WASAPI_PRESENTATION
+         if (w->presentation) w->presentation_written += ir / w->frame_size;
+#endif
          retro_spsc_write(&w->ring, (const char*)data + _len, ir);
          retro_atomic_store_release_int(&w->fed, 1);
          _len += ir;
@@ -2722,6 +2872,9 @@ static size_t wasapi_write_begin(void *wh, size_t len, void **region)
          span = room;
       if (span > len)
          span = len;
+#ifdef WASAPI_PRESENTATION
+      if (w->presentation) span -= span % w->frame_size;
+#endif
       if (!span || !ptr)
       {
          retro_spsc_write_end(&w->ring, 0);
@@ -2741,6 +2894,14 @@ static ssize_t wasapi_write_end(void *wh, size_t len)
 {
    wasapi_t *w = (wasapi_t*)wh;
 #ifdef HAVE_THREADS
+#ifdef WASAPI_PRESENTATION
+   if (w->presentation && len % w->frame_size)
+   {
+      retro_spsc_write_end(&w->ring, 0);
+      return -1;
+   }
+   if (w->presentation) w->presentation_written += len / w->frame_size;
+#endif
    retro_spsc_write_end(&w->ring, len);
    if (len)
       retro_atomic_store_release_int(&w->fed, 1);
@@ -2761,6 +2922,11 @@ static bool wasapi_stop(void *wh)
 #endif
    if (FAILED(_IAudioClient_Stop(w->client)))
       return (!(w->flags & WASAPI_FLG_RUNNING));
+
+#ifdef WASAPI_PRESENTATION
+   /* The pump is quiescent and the stream clock is now frozen. */
+   wasapi_presentation_poll(w);
+#endif
 
    w->flags &= ~WASAPI_FLG_RUNNING;
    return true;
@@ -2825,14 +2991,14 @@ static void wasapi_free(void *wh)
    /* And what the device's clock was doing against nominal, for the
     * same reason the other drivers say it: logged, never acted on. */
    if (w && w->clk_valid)
-      RARCH_LOG("[WASAPI] Device clock, fitted against the QPC"
+      RARCH_DBG("[WASAPI] Device clock, fitted against the QPC"
             " timestamps: %+d ppm against %u Hz.\n", w->clk_ppm, w->rate);
 
    if (w)
    {
       size_t wakes = retro_atomic_load_acquire_size(&w->late_wakes);
       if (wakes)
-         RARCH_LOG("[WASAPI] Pump (%s): %u wake%s, %.2f ms late on average, %.2f ms at worst, %u a period or more late.\n",
+         RARCH_DBG("[WASAPI] Pump (%s): %u wake%s, %.2f ms late on average, %.2f ms at worst, %u a period or more late.\n",
                w->mmcss ? "Pro Audio" : "time-critical",
                (unsigned)wakes, wakes == 1 ? "" : "s",
                (double)retro_atomic_load_acquire_size(&w->late_usec_sum)
@@ -2849,6 +3015,10 @@ static void wasapi_free(void *wh)
 #endif
    if (w->client)
       _IAudioClient_Stop(w->client);
+
+#ifdef WASAPI_PRESENTATION
+   record_pyrowave_clock_free(w->presentation);
+#endif
 
    RELEASE(w->clock2);
    RELEASE(w->clock);
@@ -3191,6 +3361,31 @@ static size_t wasapi_frames_consumed_fallback(void *wh)
    return 0;
 }
 
+static bool wasapi_presentation_position(void *wh,
+      audio_presentation_position_t *position)
+{
+#ifdef WASAPI_PRESENTATION
+   wasapi_t *w = (wasapi_t*)wh;
+   uint64_t packed;
+   if (!w || !w->presentation || !position) return false;
+   packed = (uint64_t)retro_atomic_load_acquire_64(&w->presentation_position);
+   memset(position, 0, sizeof(*position));
+   position->epoch = 1;
+   position->lend_complete = true;
+   position->silence_continuous = true;
+   position->written = w->presentation_written;
+   position->played = packed >> 2;
+   position->valid = (packed & 3) == 1;
+   position->drained = (packed & 3) == 2 && position->played == position->written;
+   position->failed = (packed & 3) == 3;
+   return true;
+#else
+   (void)wh;
+   (void)position;
+   return false;
+#endif
+}
+
 audio_driver_t audio_wasapi = {
    wasapi_init,
    wasapi_write,
@@ -3214,5 +3409,6 @@ audio_driver_t audio_wasapi = {
    wasapi_device_clock_ppm,
    wasapi_thread_grant,
    wasapi_write_begin,
-   wasapi_write_end
+   wasapi_write_end,
+   wasapi_presentation_position
 };

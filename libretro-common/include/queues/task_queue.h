@@ -855,6 +855,10 @@ void task_queue_set_parallel_workers(unsigned count);
  * way.  Such a find can miss a task, its own thread's held push
  * included, so a push it guards against may be made twice.
  *
+ * A task is found until its callback has run, on every runner.  From a
+ * handler or callback on the unthreaded queue it misses the tasks that
+ * check has taken off the queue.
+ *
  * @param find_data Parameters for the search.
  * Behavior is undefined if \c NULL.
  * @return \c true if \c find_data::func returned \c true for any task.

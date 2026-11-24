@@ -52,9 +52,17 @@ typedef struct preemptive_frames_data
    uint8_t replay_ptr;
    /* Number of latency frames to remove */
    uint8_t frames;
+   bool state_owned[MAX_RUNAHEAD_FRAMES];
 } preempt_t;
 
 RETRO_BEGIN_DECLS
+
+enum retro_execution_phase runahead_get_execution_phase(void);
+bool serialization_register(const struct retro_savestate_lifetime *iface);
+bool serialization_owned_context(void);
+bool serialization_lifetime_active(void);
+void serialization_clear_history(void);
+void serialization_close(void);
 
 typedef bool(*runahead_load_state_function)(const void*, size_t);
 

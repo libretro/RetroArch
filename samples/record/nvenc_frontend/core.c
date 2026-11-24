@@ -11,7 +11,7 @@ static retro_video_refresh_t video;
 static retro_environment_t environment;
 static struct retro_audio_sample_multi_callback multi;
 static unsigned layout = RETRO_AUDIO_LAYOUT_STEREO, channels = 2;
-static bool floating;
+static bool floating, noisy;
 static uint32_t pixels[WIDTH * HEIGHT];
 static unsigned frames;
 static double sample_rate = 48000;
@@ -40,6 +40,9 @@ void retro_init(void)
    channels = 0;
    for (bits = layout; bits; bits >>= 1) channels += bits & 1;
    floating = getenv("NATIVE_RECORD_FLOAT") != NULL;
+   noisy = getenv("NATIVE_RECORD_NOISE") != NULL;
+   if (noisy)
+      fprintf(stderr, "[fixture] deterministic noise for network pressure\n");
    frames = 0;
    sample_rate = rate ? strtod(rate, NULL) : 48000;
    if (!(sample_rate >= 8000 && sample_rate <= 192000))
@@ -66,6 +69,7 @@ void retro_run(void)
    static const uint32_t colors[] = {0xffff2020u, 0xff20ff20u, 0xff2020ffu, 0xffc0c0c0u};
    static const unsigned frequencies[] = {440, 660, 880, 80, 1000, 1200, 1400, 1600};
    unsigned i, c;
+   uint32_t noise = frames + 1;
    uint64_t first;
    size_t count;
    if (floor(sample_rate) == sample_rate)
@@ -99,7 +103,17 @@ void retro_run(void)
          multi.batch_int16(samples, count, channels, layout);
       else if (audio) audio(samples, count);
    }
-   for (i = 0; i < WIDTH * HEIGHT; i++) pixels[i] = colors[(frames / 15) % 4];
+   for (i = 0; i < WIDTH * HEIGHT; i++)
+   {
+      if (noisy)
+      {
+         noise ^= noise << 13;
+         noise ^= noise >> 17;
+         noise ^= noise << 5;
+      }
+      pixels[i] = noisy ? (0xff000000u | (noise & 0xffffffu))
+         : colors[(frames / 15) % 4];
+   }
    frames++;
    video(pixels, WIDTH, HEIGHT, WIDTH * sizeof(*pixels));
 }

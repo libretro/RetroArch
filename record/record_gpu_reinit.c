@@ -37,3 +37,6 @@ void recording_gpu_reinit_poll(void)
    recording_reinit_flags = 0;
    command_event_reinit(flags);
 }
+
+bool recording_gpu_reinit_pending(void)
+{ return recording_reinit_flags != 0; }

@@ -349,6 +349,10 @@ typedef struct shader_backend
 
    /* Human readable string. */
    const char *ident;
+   /* A borrowed preset drawing a viewer: zero restores core semantics. */
+   void (*set_media_source)(void *shader_data, unsigned dims);
+   /* Select precompiled viewer programs and upload sampling colour rows. */
+   bool (*set_media_colour)(void *shader_data, const float *rows);
 } shader_backend_t;
 
 typedef struct video_shader_ctx_params
@@ -552,6 +556,7 @@ typedef struct video_frame_menu_settings
    int      xmb_title_margin;
    int      xmb_title_margin_horizontal_offset;
    uint32_t flags; /* enum video_frame_menu_flags */
+   bool     backdrop_blur;
    /* Derived: whether path_menu_xmb_font is the FILE_PATH_UNKNOWN
     * placeholder, i.e. no custom menu font is configured. The path
     * itself stays out of the per-frame snapshot; the one frame-path
@@ -574,6 +579,15 @@ typedef struct video_frame_info
     * whichever thread it is on. */
    uint64_t driver_pacing_id;
    uint64_t recording_gpu_timestamp;
+   uint64_t recording_pyrowave_duration;
+   /* cpu_features_get_time_usec() as video_driver_frame() read it for
+    * this frame: what anything drawn with the frame animates by, on
+    * whichever thread draws it */
+   retro_time_t frame_time;
+   /* The CPU_FEATURES_MARK() frame_time is the instant of: a later
+    * instant is frame_time plus CPU_FEATURES_MARK_TO_USEC() of the span
+    * since, with no clock read for it where the perf counter is cheap */
+   retro_perf_tick_t frame_mark;
    void *recording_gpu;
    void *userdata;
    void *widgets_userdata;
@@ -686,6 +700,9 @@ typedef struct video_frame_info
    bool video_wiiu_prefer_drc;
 #endif
    bool widgets_active;
+   /* The widgets are off and their pass draws only the camera's
+    * picture-in-picture (widgets_active is set for it) */
+   bool camera_pip_only;
    /* gfx_widgets_visible() for this frame, answered once on the thread
     * that draws the widgets: whether the frame carries any of them */
    bool widgets_visible;
@@ -780,6 +797,10 @@ typedef struct video_frame_info
    bool gpu_recording;
    bool recording_gpu_pending;
    bool recording_gpu_capture;
+   bool recording_pyrowave;
+   bool recording_pyrowave_full_output;
+   bool recording_pyrowave_receive;
+   bool recording_pyrowave_clock_valid;
    /* Record Game Only: the driver reads the recording's frame back
     * before drawing any UI over it. */
    bool record_game_only;
@@ -1076,7 +1097,8 @@ enum video_device_api
    VIDEO_DEVICE_VULKAN,
    VIDEO_DEVICE_D3D11,
    VIDEO_DEVICE_D3D12,
-   VIDEO_DEVICE_METAL
+   VIDEO_DEVICE_METAL,
+   VIDEO_DEVICE_OPENGL
 };
 
 enum video_device_recording_cap
@@ -1095,16 +1117,21 @@ typedef struct video_device_info
    void *instance;
    void *physical_device;
    void *device;
-   /* Vulkan or D3D12 render queue, borrowed with the device. */
+   /* Vulkan/D3D12 render queue, or D3D11 immediate context; borrowed. */
    void *queue;
    /* Existing Vulkan queue serialization; cold render-owner jobs only. */
    void *queue_lock;
    /* Optional immutable recording device descriptor, owned by the renderer. */
    const void *recording;
    retro_proc_address_t get_instance_proc_addr;
+   retro_proc_address_t (*get_gl_proc_address)(const char *name);
+   /* Render-owner jobs: enter frontend context, then restore core context. */
+   void (*bind_gl_context)(void *data, bool enter);
    /* The driver's queue family: an image the driver imports is either
     * exclusive to it or shared with it (concurrent). */
    unsigned queue_family;
+   /* API-specific final output format and precision, for cold capture setup. */
+   unsigned output_format, output_bit_depth;
    /* image_pixfmt bits import_texture takes; 0 when it takes none. */
    uint32_t import_formats;
    uint32_t recording_caps;
@@ -1144,10 +1171,20 @@ typedef struct video_frame_import
    unsigned crop_x, crop_y;
    /* The producer's, for a consumer that will not have the frame read
     * after all: signals @done in the driver's place. The driver never
-    * calls it. NULL: nothing to do. */
+    * calls it for a GPU frame. NULL: nothing to do. */
    void (*abandon)(void *owner, uint64_t done, uint64_t done_value);
    void *owner;
+   /* A frame in memory (@planar.planes[0] set, @image 0): 8-bit 4:2:0
+    * planes the producer lends, @planar.yuv its colour space. Only
+    * import_movie_frame takes one, from a driver listing
+    * IMAGE_PIXFMT_I420 in video_device_info_t::import_formats; @abandon
+    * is the planes' release, which that driver calls once its upload
+    * has copied them, when it returns DONE - for any other answer the
+    * caller releases or retries them, as it would a GPU frame. */
+   struct texture_planar planar;
 } video_frame_import_t;
+
+#define VIDEO_FRAME_IMPORT_IS_CPU(f) ((f)->planar.planes[0] != NULL)
 
 /* A mapping is valid until frame() consumes it; renew on the driver thread. */
 typedef struct video_frame_memory
@@ -1504,6 +1541,13 @@ typedef struct video_poke_interface
     * compositor. Called after a frame, on its thread. A driver that
     * cannot tell leaves it NULL. */
    bool (*present_immediate)(void *data);
+
+   /* The core's context_destroy has run and its library closes next:
+    * the driver lets go of whatever it holds of the core's, calling
+    * any teardown callback of the core's now, while its code is still
+    * loaded. The driver may present on, as after hw_context_destroying.
+    * The main thread calls it, or waits while the video thread runs it. */
+   void (*hw_context_destroyed)(void *data);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
@@ -1770,12 +1814,29 @@ bool video_driver_get_vr_controller_poses(
 bool video_driver_get_vr_frame_state(struct retro_vr_frame_state *out);
 #endif
 
+/* A window's bounds as the user left them, for its screen's settings */
+typedef struct video_window_bounds
+{
+   unsigned pos;
+   unsigned dims;
+   /* The screens of the window they are from */
+   unsigned screens;
+   /* The edit count of what it was made for at the last save, and at
+    * the last move */
+   unsigned edit;
+   unsigned pos_edit;
+   /* Count moves, and moves or resizes; 0 for none yet */
+   unsigned moves;
+   unsigned sizes;
+} video_window_bounds_t;
+
 /* A screen's own window's layout, as its renderer last published it;
  * generation 0 for none */
 typedef struct video_window_layout
 {
    video_views_layout_t layout;
    video_views_map_t core_map;
+   video_window_bounds_t bounds;
    unsigned core_dims;
    unsigned window_dims;
    /* The display it was drawn on */
@@ -1783,6 +1844,8 @@ typedef struct video_window_layout
    /* The serial of the frame snapshot it was drawn from */
    unsigned serial;
    unsigned generation;
+   /* It had the keyboard focus */
+   bool focused;
 } video_window_layout_t;
 
 /* One window's published layouts, handed over by index as the window
@@ -1792,10 +1855,14 @@ typedef struct video_window_layout
 typedef struct video_window_layouts
 {
    video_window_layout_t slot[3];
+   video_window_bounds_t bounds;  /* the publisher's */
    retro_atomic_int_t published;  /* slot + 1; 0: nothing new */
    unsigned next;                 /* the publisher's: slot to fill */
    unsigned last;                 /* the publisher's: slot + 1 */
+   unsigned focus;                /* the publisher's: focused generation */
    unsigned held;                 /* the main thread's: slot + 1 */
+   unsigned bounds_moves;         /* the main thread's: last taken */
+   unsigned bounds_sizes;
    /* The main thread's: the serial of the snapshot that last asked
     * for the window differently; a layout drawn before it is not
     * shown */
@@ -1813,7 +1880,19 @@ typedef struct video_window_displays
    unsigned next;                 /* the publisher's: slot to fill */
    unsigned last;                 /* the publisher's: slot + 1 */
    unsigned held;                 /* the app thread's: slot + 1 */
+   bool pending[3];               /* no list yet, one is coming */
 } video_window_displays_t;
+
+/* The app thread's route for a redraw, which may run on the video
+ * thread: video_window_displays_t's three slots */
+typedef struct video_windows_routes
+{
+   video_windows_route_t slot[3];
+   retro_atomic_int_t published;  /* slot + 1; 0: nothing new */
+   unsigned next;                 /* the app thread's: slot to fill */
+   unsigned last;                 /* the app thread's: slot + 1 */
+   unsigned held;                 /* the redraw's: slot + 1 */
+} video_windows_routes_t;
 
 /* Slots of video_driver_state_t::vp_params_bits in use. The array has
  * headroom above this so a parameter can be added without moving
@@ -2188,9 +2267,10 @@ typedef struct
    /* The video thread's redraw of the cached frame fills its own. */
    video_windows_frame_t windows_redraw;
 #endif
-   /* The main thread's last route, which a redraw keeps; written only
-    * when it changes, as Win32's redraws run beside the main thread */
+   /* The main thread's last route, and the redraw's copy of it,
+    * handed over when it changes */
    video_windows_route_t windows_route;
+   video_windows_routes_t windows_routes;
    /* RetroArch's moves between displays; app thread */
    video_windows_host_t windows_host;
    /* Each UI layer's target as this frame laid it out, and the next */
@@ -2203,17 +2283,37 @@ typedef struct
    /* The last video_driver_window_generation(); never reset, so a
     * replacement window never reuses one. */
    retro_atomic_int_t window_generation;
-   /* Screens video_driver_attach_windows() sent back, for the next
-    * frame */
+   /* Screens video_driver_attach_windows() and
+    * video_driver_close_windows() sent back, for the next frame */
    retro_atomic_int_t windows_failed;
+   retro_atomic_int_t windows_closed;
+   /* Each screen's edit count in the frame of its last close, as a
+    * VIDEO_WINDOWS_FAILED_TAG() */
+   retro_atomic_int_t windows_closed_edit[RETRO_VIDEO_VIEWS_MAX];
    unsigned windows_forced_attached;
+   unsigned windows_closed_attached;
    unsigned windows_restore;
+   unsigned windows_retry;
+   /* Each screen's video_window_settings_t::edit */
+   unsigned windows_edit[RETRO_VIDEO_VIEWS_MAX];
+#ifdef HAVE_MENU
+   /* A bit a screen: rows a take changed, and of them those that had
+    * no size before, until the menu reads them; main thread */
+   unsigned windows_rows_moved;
+   unsigned windows_rows_sized;
+#endif
    /* A bit a window id: those the last snapshot wanted, 0 while
     * windows are off; main thread */
    unsigned windows_wanted;
    /* The serial of the snapshot the driver draws: the video thread's
     * under the wrapper */
    unsigned windows_drawn;
+#ifdef ANDROID
+   /* Any thread sets it, the app thread takes it: the next frame sends
+    * Java the whole set, changed or not */
+   retro_atomic_int_t windows_blank_resend;
+   video_windows_blank_t windows_blank;
+#endif
 #endif
 } video_driver_state_t;
 
@@ -2637,6 +2737,11 @@ void video_driver_headset_recenter(void);
  * video_headset_view and return it; VIDEO_HEADSET_VIEW_LAST, unchanged,
  * without a presenting headset. */
 unsigned video_driver_headset_view_toggle(void);
+/* Main thread: flips Blank Unused Screens for the running content, sets
+ * @blanked to whether unused panels are covered now and @covered to how
+ * many there are to cover; false, with nothing changed, without content
+ * or off Android. */
+bool video_driver_blank_unused_toggle(bool *blanked, unsigned *covered);
 /* Main thread: the headset's edit mode, on or off, and its count of
  * let-go grabs, for the next frame snapshot. */
 void video_driver_headset_edit(bool editing, unsigned seq);
@@ -2849,8 +2954,17 @@ void *video_driver_get_menu_framebuffer(unsigned dims, bool rgb32,
  * REFUSED under the thread wrapper, which takes imports as nodes
  * (VIDEO_THREAD_ASYNC_IMPORT). Main thread. */
 bool video_driver_get_device(video_device_info_t *info);
+
+#ifdef HAVE_GFX_WIDGETS
+/* Whether the video driver draws a widget pass, whether or not the
+ * widgets are on: the camera's picture-in-picture is drawn in it. */
+bool video_driver_widgets_supported(void);
+#endif
 struct video_hw_frame;
 bool video_driver_movie_refresh(void *user, const struct video_hw_frame *frame);
+/* The same for a frame in memory (video_hw_frame_t::planes): NULL asks
+ * whether the driver takes such frames now. */
+bool video_driver_movie_planes(void *user, const struct video_hw_frame *frame);
 void video_driver_movie_clear(void);
 
 enum video_texture_update video_driver_texture_import(uintptr_t *id,
@@ -3232,6 +3346,7 @@ extern video_driver_t video_ps2;
 extern video_driver_t video_ctr;
 extern video_driver_t video_gcm;
 extern video_driver_t video_switch;
+extern video_driver_t video_deko3d;
 extern video_driver_t video_d3d8;
 extern video_driver_t video_d3d9_cg;
 extern video_driver_t video_d3d9_hlsl;
@@ -3295,6 +3410,7 @@ extern const gfx_ctx_driver_t gfx_ctx_emscripten;
 extern const gfx_ctx_driver_t gfx_ctx_emscripten_webgl;
 extern const gfx_ctx_driver_t gfx_ctx_opendingux_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_khr_display;
+extern const gfx_ctx_driver_t gfx_ctx_switch_vk;
 extern const gfx_ctx_driver_t gfx_ctx_gdi;
 extern const gfx_ctx_driver_t gfx_ctx_fpga;
 extern const gfx_ctx_driver_t gfx_ctx_sixel;
@@ -3306,6 +3422,11 @@ extern const gfx_ctx_driver_t gfx_ctx_null;
 
 extern const shader_backend_t gl_glsl_backend;
 extern const shader_backend_t gl_cg_backend;
+
+/* The screens' windows a driver left up that the next did not take go.
+ * On the thread of the context: after a driver's init, and once the
+ * last driver is gone. */
+void video_driver_release_kept_windows(void);
 
 RETRO_END_DECLS
 

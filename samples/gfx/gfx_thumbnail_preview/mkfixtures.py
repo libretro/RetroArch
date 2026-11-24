@@ -460,7 +460,7 @@ def main():
 
     # Interleaved blocks beyond the audio window's permanent head. The
     # padded video payload is only for demux/audio residency acceptance.
-    for codec in ['opus', 'vorbis']:
+    for codec in ['opus', 'vorbis', 'flac']:
         seed_path = j('audio_seek_' + codec + '_seed.webm')
         subprocess.check_call([
             'ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i',
@@ -468,10 +468,12 @@ def main():
             '-f', 'lavfi', '-i',
             'sine=frequency=440:sample_rate=48000:duration=4',
             '-ac', '2', '-c:v', 'libvpx-vp9', '-g', '12', '-auto-alt-ref', '0',
-            '-c:a', 'lib' + codec, seed_path])
+            '-c:a', codec if codec == 'flac' else 'lib' + codec,
+            '-f', 'matroska' if codec == 'flac' else 'webm', seed_path])
         pad_webm_audio(seed_path, j('audio_seek_' + codec + '_window.webm'))
         insert_void(seed_path, j('audio_group_' + codec + '.webm'),
-                    after_picture=13, in_group=True)
+                    after_picture=13, in_group=True,
+                    track=2 if codec == 'flac' else 1)
         os.unlink(seed_path)
 
     # Legal padding gaps both inside and beyond the permanent head. Noise

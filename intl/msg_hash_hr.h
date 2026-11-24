@@ -30,6 +30,7 @@ static const struct
    char s_14ec7b7e[8];
    char s_005cc6dc[12];
    char s_00614813[6];
+   char s_4f4b0d00[8];
    char s_5b51050b[5];
    char s_565cbabb[12];
    char s_7d00b7ed[8];
@@ -257,6 +258,8 @@ static const struct
    char s_78585119[8];
    char s_2c868ae4[13];
    char s_9c535394[11];
+   char s_34a16f69[15];
+   char s_7706edf0[16];
    char s_c017f975[11];
    char s_730df420[15];
    char s_bcddf275[12];
@@ -324,6 +327,7 @@ static const struct
    "Potvrdi",
    "Informacije",
    "Izlaz",
+   "Ure\304\221aj",
    "Opis",
    "Postignu\304\207a",
    "Lozinka",
@@ -551,6 +555,8 @@ static const struct
    "Pametno",
    "Horizontalno",
    "Vertikalno",
+   "Visina prozora",
+   "\305\240irina prozora",
    "Automatski",
    "Sinkronizacija",
    "Videozapisi",
@@ -609,7 +615,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hr_blob_check[
-      (sizeof(msg_hash_hr_blob) == (4297u
+      (sizeof(msg_hash_hr_blob) == (4336u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -669,6 +675,7 @@ static const msg_hash_id_t msg_hash_hr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
@@ -896,6 +903,8 @@ static const msg_hash_id_t msg_hash_hr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,

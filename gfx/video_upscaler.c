@@ -14,6 +14,7 @@
  */
 
 #include <math.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -29,6 +30,369 @@
 #include "../verbosity.h"
 #include "video_driver.h"
 #include "video_upscaler.h"
+
+/* Serialized with the video-driver lifecycle, like the SDK job producer. */
+static void (*upscaler_cached_retire)(void);
+
+void video_upscaler_set_cached_retire(void (*retire)(void))
+{
+   upscaler_cached_retire = retire;
+}
+
+void video_upscaler_retire_cached(void)
+{
+   void (*retire)(void) = upscaler_cached_retire;
+   upscaler_cached_retire = NULL;
+   if (retire)
+      retire();
+}
+
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
+
+typedef struct video_upscaler_job
+{
+   retro_atomic_ptr_t next;
+   struct video_upscaler_async *owner;
+   void (*work)(void *);
+   unsigned op;
+} video_upscaler_job_t;
+
+struct video_upscaler_async
+{
+   void *data;
+   bool (*init)(void *);
+   void (*reset)(void *);
+   void (*destroy)(void *);
+   video_upscaler_job_t *init_job;
+   video_upscaler_job_t *retry_job;
+   video_upscaler_job_t *free_job;
+   retro_atomic_ptr_t reset_job;
+   retro_atomic_ptr_t work_job;
+   retro_atomic_int_t ready;
+};
+
+static struct
+{
+   sthread_t *thread;
+   video_upscaler_job_t *head;
+   video_upscaler_job_t *tail;
+   retro_eventcount_t wake;
+   retro_atomic_int_t pending;
+   retro_atomic_int_t borrowers;
+   retro_atomic_int_t stop;
+} upscaler_worker;
+
+enum { UPSCALER_JOB_INIT, UPSCALER_JOB_RESET, UPSCALER_JOB_FREE, UPSCALER_JOB_WORK };
+
+static video_upscaler_job_t *video_upscaler_job_new(
+      video_upscaler_async_t *async, unsigned op)
+{
+   video_upscaler_job_t *job = (video_upscaler_job_t*)calloc(1, sizeof(*job));
+   if (job)
+   {
+      job->owner = async;
+      job->op    = op;
+   }
+   return job;
+}
+
+static void video_upscaler_worker_run(void *unused)
+{
+   (void)unused;
+   for (;;)
+   {
+      video_upscaler_job_t *job = (video_upscaler_job_t*)
+         retro_atomic_load_acquire_ptr(&upscaler_worker.head->next);
+      video_upscaler_async_t *async;
+      if (!job)
+      {
+         int key = retro_eventcount_prepare_wait(&upscaler_worker.wake);
+         if (retro_atomic_load_acquire_ptr(&upscaler_worker.head->next)
+               || retro_atomic_load_acquire_int(&upscaler_worker.stop))
+         {
+            retro_eventcount_cancel_wait(&upscaler_worker.wake);
+            if (!retro_atomic_load_acquire_ptr(&upscaler_worker.head->next)
+                  && retro_atomic_load_acquire_int(&upscaler_worker.stop))
+               break;
+         }
+         else
+            retro_eventcount_commit_wait(&upscaler_worker.wake, key);
+         continue;
+      }
+      free(upscaler_worker.head);
+      upscaler_worker.head = job;
+      async = job->owner;
+      /* A job may be offered while the core's last optimal-size query
+       * is finishing. The worker parks; neither video nor core waits. */
+      while (retro_atomic_load_seq_cst_int(&upscaler_worker.borrowers))
+      {
+         int key = retro_eventcount_prepare_wait(&upscaler_worker.wake);
+         if (!retro_atomic_load_seq_cst_int(&upscaler_worker.borrowers))
+            retro_eventcount_cancel_wait(&upscaler_worker.wake);
+         else
+            retro_eventcount_commit_wait(&upscaler_worker.wake, key);
+      }
+      switch (job->op)
+      {
+         case UPSCALER_JOB_INIT:
+            retro_atomic_store_release_int(&async->ready,
+                  async->init(async->data) ? 1 : -1);
+            break;
+         case UPSCALER_JOB_RESET:
+         {
+            video_upscaler_job_t *replacement;
+            if (async->reset)
+               async->reset(async->data);
+            replacement = video_upscaler_job_new(async, UPSCALER_JOB_RESET);
+            if (!replacement)
+               retro_atomic_store_release_int(&async->ready, 0);
+            retro_atomic_store_release_ptr(&async->reset_job, replacement);
+            break;
+         }
+         case UPSCALER_JOB_FREE:
+            async->destroy(async->data);
+            free(async->init_job);
+            free(async->retry_job);
+            free(retro_atomic_load_acquire_ptr(&async->reset_job));
+            free(retro_atomic_load_acquire_ptr(&async->work_job));
+            free(async);
+            break;
+         case UPSCALER_JOB_WORK:
+         {
+            video_upscaler_job_t *replacement;
+            job->work(async->data);
+            replacement = video_upscaler_job_new(async, UPSCALER_JOB_WORK);
+            if (!replacement)
+               retro_atomic_store_release_int(&async->ready, 0);
+            retro_atomic_store_release_ptr(&async->work_job, replacement);
+            break;
+         }
+      }
+      retro_atomic_fetch_sub_int(&upscaler_worker.pending, 1);
+   }
+   retro_eventcount_thread_cleanup();
+}
+
+/* SPSC: driver lifecycle/frame callbacks are serialized by their video
+ * owner, including a threaded-video handoff. Only the worker consumes.
+ * The consumed node stays as the next dummy, so data can retire in its
+ * callback without leaving an embedded queue link pointing into it. */
+static void video_upscaler_job_submit(video_upscaler_job_t *job)
+{
+   retro_atomic_fetch_add_seq_cst_int(&upscaler_worker.pending, 1);
+   retro_atomic_store_release_ptr(&upscaler_worker.tail->next, job);
+   upscaler_worker.tail = job;
+   retro_eventcount_notify(&upscaler_worker.wake);
+}
+
+video_upscaler_async_t *video_upscaler_async_new(void *data,
+      bool (*init)(void *), void (*reset)(void *), void (*destroy)(void *))
+{
+   video_upscaler_async_t *async;
+   if (!upscaler_worker.thread)
+   {
+      if (!retro_eventcount_init_lock_free(&upscaler_worker.wake))
+         return NULL;
+      upscaler_worker.head = video_upscaler_job_new(NULL, 0);
+      upscaler_worker.tail = upscaler_worker.head;
+      if (!upscaler_worker.head)
+      {
+         retro_eventcount_free(&upscaler_worker.wake);
+         return NULL;
+      }
+      upscaler_worker.thread = sthread_create(video_upscaler_worker_run, NULL);
+      if (!upscaler_worker.thread)
+      {
+         free(upscaler_worker.head);
+         upscaler_worker.head = upscaler_worker.tail = NULL;
+         retro_eventcount_free(&upscaler_worker.wake);
+         return NULL;
+      }
+   }
+   async = (video_upscaler_async_t*)calloc(1, sizeof(*async));
+   if (!async)
+      return NULL;
+   async->data     = data;
+   async->init     = init;
+   async->reset    = reset;
+   async->destroy  = destroy;
+   async->init_job = video_upscaler_job_new(async, UPSCALER_JOB_INIT);
+   async->retry_job = video_upscaler_job_new(async, UPSCALER_JOB_INIT);
+   async->free_job = video_upscaler_job_new(async, UPSCALER_JOB_FREE);
+   retro_atomic_store_release_ptr(&async->reset_job,
+         video_upscaler_job_new(async, UPSCALER_JOB_RESET));
+   retro_atomic_store_release_ptr(&async->work_job,
+         video_upscaler_job_new(async, UPSCALER_JOB_WORK));
+   if (!async->init_job || !async->retry_job || !async->free_job
+         || !retro_atomic_load_acquire_ptr(&async->reset_job)
+         || !retro_atomic_load_acquire_ptr(&async->work_job))
+   {
+      free(async->init_job);
+      free(async->retry_job);
+      free(async->free_job);
+      free(retro_atomic_load_acquire_ptr(&async->reset_job));
+      free(retro_atomic_load_acquire_ptr(&async->work_job));
+      free(async);
+      return NULL;
+   }
+   return async;
+}
+
+void video_upscaler_async_start(video_upscaler_async_t *async)
+{
+   if (async->init_job)
+   {
+      video_upscaler_job_t *job = async->init_job;
+      async->init_job = NULL;
+      video_upscaler_job_submit(job);
+   }
+   else if (async->retry_job && !video_upscaler_async_busy()
+         && retro_atomic_load_acquire_int(&async->ready) < 0)
+   {
+      video_upscaler_job_t *job = async->retry_job;
+      async->retry_job = NULL;
+      retro_atomic_store_release_int(&async->ready, 0);
+      video_upscaler_job_submit(job);
+   }
+}
+
+bool video_upscaler_async_pending(video_upscaler_async_t *async)
+{
+   return async->init_job != NULL;
+}
+
+void video_upscaler_async_begin(void)
+{
+   retro_atomic_fetch_add_int(&upscaler_worker.pending, 1);
+}
+
+void video_upscaler_async_end(void)
+{
+   retro_atomic_fetch_sub_int(&upscaler_worker.pending, 1);
+}
+
+bool video_upscaler_async_busy(void)
+{
+   return retro_atomic_load_acquire_int(&upscaler_worker.pending) != 0;
+}
+
+bool video_upscaler_async_ready(video_upscaler_async_t *async)
+{
+   return !video_upscaler_async_busy()
+      && retro_atomic_load_acquire_int(&async->ready) > 0;
+}
+
+bool video_upscaler_async_enter(video_upscaler_async_t *async)
+{
+   /* NGX also forbids simultaneous core/video SDK calls. Offer a single
+    * borrow; a caller that finds one outstanding immediately falls back
+    * to its sizing snapshot or native frame. Only the worker parks. */
+   if (retro_atomic_fetch_add_seq_cst_int(&upscaler_worker.borrowers, 1) != 0)
+   {
+      video_upscaler_async_leave();
+      return false;
+   }
+   if (!retro_atomic_load_seq_cst_int(&upscaler_worker.pending)
+         && retro_atomic_load_acquire_int(&async->ready) > 0)
+      return true;
+   video_upscaler_async_leave();
+   return false;
+}
+
+void video_upscaler_async_leave(void)
+{
+   if (retro_atomic_fetch_add_seq_cst_int(&upscaler_worker.borrowers, -1) == 1
+         && video_upscaler_async_busy())
+      retro_eventcount_notify(&upscaler_worker.wake);
+}
+
+bool video_upscaler_async_work(video_upscaler_async_t *async, void (*work)(void *))
+{
+   video_upscaler_job_t *job = (video_upscaler_job_t*)
+      retro_atomic_exchange_ptr(&async->work_job, NULL);
+   if (!job)
+      return false;
+   job->work = work;
+   video_upscaler_job_submit(job);
+   return true;
+}
+
+void video_upscaler_async_fail(video_upscaler_async_t *async)
+{
+   retro_atomic_store_release_int(&async->ready, 0);
+}
+
+void video_upscaler_async_reset(video_upscaler_async_t *async)
+{
+   video_upscaler_job_t *job;
+   if (async->init_job)
+      return;
+   job = (video_upscaler_job_t*)retro_atomic_exchange_ptr(&async->reset_job, NULL);
+   if (job)
+      video_upscaler_job_submit(job);
+}
+
+void video_upscaler_async_free(video_upscaler_async_t *async)
+{
+   video_upscaler_job_submit(async->free_job);
+}
+
+void video_upscaler_async_shutdown(void)
+{
+   if (!upscaler_worker.thread)
+      return;
+   retro_atomic_store_release_int(&upscaler_worker.stop, 1);
+   retro_eventcount_notify(&upscaler_worker.wake);
+   /* Process exit is the only join: SDK callbacks must finish before
+    * DLL detach. Core/video teardown only transfers ownership above. */
+   sthread_join(upscaler_worker.thread);
+   free(upscaler_worker.head);
+   retro_eventcount_free(&upscaler_worker.wake);
+   memset(&upscaler_worker, 0, sizeof(upscaler_worker));
+}
+#else
+video_upscaler_async_t *video_upscaler_async_new(void *data,
+      bool (*init)(void *), void (*reset)(void *), void (*destroy)(void *))
+{
+   (void)data;
+   (void)init;
+   (void)reset;
+   (void)destroy;
+   return NULL;
+}
+void video_upscaler_async_start(video_upscaler_async_t *async) { (void)async; }
+bool video_upscaler_async_pending(video_upscaler_async_t *async)
+{
+   (void)async;
+   return false;
+}
+void video_upscaler_async_begin(void) { }
+void video_upscaler_async_end(void) { }
+bool video_upscaler_async_ready(video_upscaler_async_t *async)
+{
+   (void)async;
+   return false;
+}
+bool video_upscaler_async_busy(void) { return false; }
+bool video_upscaler_async_enter(video_upscaler_async_t *async)
+{
+   (void)async;
+   return false;
+}
+void video_upscaler_async_leave(void) { }
+void video_upscaler_async_fail(video_upscaler_async_t *async) { (void)async; }
+bool video_upscaler_async_work(video_upscaler_async_t *async, void (*work)(void *))
+{
+   (void)async;
+   (void)work;
+   return false;
+}
+void video_upscaler_async_reset(video_upscaler_async_t *async) { (void)async; }
+void video_upscaler_async_free(video_upscaler_async_t *async) { (void)async; }
+void video_upscaler_async_shutdown(void) { }
+#endif
 
 const char *video_upscaler_name(enum video_temporal_upscaler kind)
 {
@@ -84,7 +448,7 @@ static enum ffx_api video_upscaler_ffx_api(void)
 static uint32_t upscaler_dlss_version;
 static char upscaler_dlss_version_dir[DIR_MAX_LENGTH];
 /* UPSCALER_FLAG_* */
-static unsigned upscaler_flags;
+static retro_atomic_int_t upscaler_flags;
 #define UPSCALER_FLAG_WANTED     0x1u
 #define UPSCALER_FLAG_OPTISCALER 0x2u
 
@@ -153,6 +517,11 @@ void video_upscaler_note_nr(bool supported)
          supported ? UPSCALER_NR_SUPPORTED : UPSCALER_NR_UNSUPPORTED);
 }
 
+void video_upscaler_reset_nr_status(void)
+{
+   retro_atomic_store_relaxed_int(&upscaler_nr_state, UPSCALER_NR_UNKNOWN);
+}
+
 unsigned video_upscaler_nr_mode(void)
 {
    settings_t *settings = config_get_ptr();
@@ -187,7 +556,7 @@ unsigned video_upscaler_nr_mode(void)
 bool video_upscaler_optiscaler(void)
 {
    char dir[DIR_MAX_LENGTH];
-   if (     (upscaler_flags & UPSCALER_FLAG_OPTISCALER)
+   if (     (retro_atomic_load_acquire_int(&upscaler_flags) & UPSCALER_FLAG_OPTISCALER)
          || (ngx_lib_present() & NGX_PRESENT_OPTISCALER))
       return true;
    video_upscaler_dir(VIDEO_TEMPORAL_UPSCALER_DLSS, dir, sizeof(dir));
@@ -196,20 +565,20 @@ bool video_upscaler_optiscaler(void)
 
 void video_upscaler_note_optiscaler(void)
 {
-   upscaler_flags |= UPSCALER_FLAG_OPTISCALER;
+   retro_atomic_fetch_or_int(&upscaler_flags, UPSCALER_FLAG_OPTISCALER);
 }
 
 bool video_upscaler_wanted(void)
 {
-   return (upscaler_flags & UPSCALER_FLAG_WANTED) != 0;
+   return (retro_atomic_load_acquire_int(&upscaler_flags) & UPSCALER_FLAG_WANTED) != 0;
 }
 
 void video_upscaler_note_wanted(void)
 {
    char dir[DIR_MAX_LENGTH];
-   if (upscaler_flags & UPSCALER_FLAG_WANTED)
+   if (retro_atomic_load_acquire_int(&upscaler_flags) & UPSCALER_FLAG_WANTED)
       return;
-   upscaler_flags |= UPSCALER_FLAG_WANTED;
+   retro_atomic_fetch_or_int(&upscaler_flags, UPSCALER_FLAG_WANTED);
    if (config_get_ptr()->uints.video_temporal_upscaler != VIDEO_TEMPORAL_UPSCALER_DLSS)
       return;
    /* ahead of NGX, which it then hooks */
@@ -220,7 +589,7 @@ void video_upscaler_note_wanted(void)
 
 void video_upscaler_clear_wanted(void)
 {
-   upscaler_flags &= ~UPSCALER_FLAG_WANTED;
+   retro_atomic_fetch_and_int(&upscaler_flags, ~UPSCALER_FLAG_WANTED);
 }
 
 unsigned video_upscaler_probe(enum video_temporal_upscaler kind)

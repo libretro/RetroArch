@@ -42,6 +42,7 @@
 #include "../gfx/gfx_animation.h"
 #include "../gfx/gfx_display.h"
 #include "../gfx/gfx_thumbnail.h"
+#include "../camera/camera_driver.h"
 #include "../gfx/font_driver.h"
 #include "../performance_counters.h"
 
@@ -79,6 +80,24 @@ RETRO_BEGIN_DECLS
 
 #define MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(menu_st, idx) ((menu_st->entries.list) ? MENU_LIST_GET_SELECTION(menu_st->entries.list, (unsigned)idx) : NULL)
 #define MENU_ENTRIES_NEEDS_REFRESH(menu_st) (!((menu_st->flags & MENU_ST_FLAG_ENTRIES_NONBLOCKING_REFRESH) || !(menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH)))
+
+/* How long a press marks a controller's rows */
+#define MENU_PAD_PRESSED_HOLD_US 1000000
+
+/* Whether a press on the controller in @slot marks its rows now */
+/* menu_state.frame_work: what a frame has to do beyond drawing */
+enum menu_frame_work
+{
+   /* a deferred playlist read (playlist_init_cached_deferred()) */
+   MENU_FRAME_WORK_PLAYLIST = (1 << 0),
+   /* presses to look for: two connected controllers show one name,
+    * or did at the last frame */
+   MENU_FRAME_WORK_PAD_FIND = (1 << 1),
+   MENU_FRAME_WORK_PYROWAVE = (1 << 2)
+};
+
+#define MENU_PAD_MARKED(menu_st, slot) ((slot) < MAX_INPUT_DEVICES \
+      && (((menu_st)->pads_marked >> (slot)) & 1))
 
 #define MENU_SETTINGS_CORE_INFO_NONE             0xffff
 #define MENU_SETTINGS_CORE_OPTION_NONE           0xffff
@@ -182,6 +201,7 @@ enum menu_settings_type
    MENU_SETTING_ACTION_CORE_LOCK,
    MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT,
    MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK,
+   MENU_SETTING_ACTION_CORE_TRUST,
    MENU_SETTING_ACTION_CORE_DELETE,
    MENU_SETTING_ACTION_FAVORITES_DIR, /* "Start Directory" */
    MENU_SETTING_STRING_OPTIONS,
@@ -216,6 +236,8 @@ enum menu_settings_type
    MENU_SETTINGS_SHADER_PASS_FILTER_LAST = MENU_SETTINGS_SHADER_PASS_FILTER_0  + (GFX_MAX_SHADERS - 1),
    MENU_SETTINGS_SHADER_PASS_SCALE_0,
    MENU_SETTINGS_SHADER_PASS_SCALE_LAST = MENU_SETTINGS_SHADER_PASS_SCALE_0  + (GFX_MAX_SHADERS - 1),
+   MENU_SETTINGS_SHADER_PASS_SIMULATED_RES_0,
+   MENU_SETTINGS_SHADER_PASS_SIMULATED_RES_LAST = MENU_SETTINGS_SHADER_PASS_SIMULATED_RES_0 + (GFX_MAX_SHADERS - 1),
 
    MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_INDEX,
    MENU_SETTINGS_CORE_DISK_OPTIONS_DISK_IMAGE_APPEND,
@@ -511,14 +533,14 @@ typedef struct
 
    /* The Controllers row to put the cursor back on: a controller's
     * row type less MENU_SETTINGS_INPUT_PLAYS_AS_BEGIN, and one, or
-    * PLAYS_AS_ROW_LAYOUT plus a headset row's index
-    * (menu_displaylist.c); 0 for none. */
+    * PLAYS_AS_ROW_HEADSET for Headset Controls (menu_displaylist.c);
+    * 0 for none. */
    unsigned plays_as_row;
-   /* Port N Controls as last made, N, its controller rows and its
-    * links, while no other list was made since; N is 0 for none. */
+   /* Port N Controls > Controllers as last made, N and the index of
+    * its first link, while no other list was made since; N is 0 for
+    * none. */
    unsigned plays_as_page;
    unsigned plays_as_rows;
-   unsigned plays_as_links;
 } menu_handle_t;
 
 /* The text the menu's message box shows */
@@ -542,6 +564,11 @@ struct menu_state
    /* How long a held direction has been repeating, in real time: held
     * Left/Right on a number speeds up by it. Set by menu_event(). */
    retro_time_t action_press_time;
+
+   /* When each controller slot last had a button pressed while a list
+    * of the controllers was shown and two connected ones shared a
+    * name; 0 for not since */
+   retro_time_t pad_pressed_us[MAX_INPUT_DEVICES];
 
    struct menu_bind_state input_binds;     /* uint64_t alignment */
 
@@ -577,6 +604,12 @@ struct menu_state
    /* unsigned alignment */
    unsigned input_dialog_kb_idx;
    unsigned video_screen_selected;
+   /* The slots whose rows read "Pressed", a bit each */
+   uint32_t pads_marked;
+   /* Each slot's buttons and hats down at the last scan, folded */
+   uint32_t pad_down[MAX_INPUT_DEVICES];
+   /* The slots whose axes' rest is in pad_axis_rest, a bit each */
+   uint32_t pad_rest_known;
    menu_dialog_t dialog_st;
    enum menu_input_dialog_kb_text_type input_dialog_kb_text_type;
 #ifdef HAVE_RUNAHEAD
@@ -585,6 +618,12 @@ struct menu_state
 
    /* int16_t alignment */
    menu_input_pointer_hw_state_t input_pointer_hw_state;
+   /* Where each slot's axes were as the scan began: a trigger rests at
+    * one end, a stick in the middle */
+   int16_t pad_axis_rest[MAX_INPUT_DEVICES][INPUT_PAD_VIEW_AXES];
+   /* Each slot's axes half their range off that rest at the last scan,
+    * a bit each */
+   uint16_t pad_axis_off[MAX_INPUT_DEVICES];
 
    uint16_t flags;
 #ifdef HAVE_OVERLAY
@@ -595,12 +634,6 @@ struct menu_state
     * the entry with a label matching 'pending_selection' will
     * be selected automatically */
    char pending_selection[PATH_MAX_LENGTH];
-   /* Filled with current content path when a core calls
-    * RETRO_ENVIRONMENT_SHUTDOWN. Value is required in
-    * generic_menu_entry_action(), and must be cached
-    * since RETRO_ENVIRONMENT_SHUTDOWN will cause
-    * RARCH_PATH_CONTENT to be cleared */
-   char pending_env_shutdown_content_path[PATH_MAX_LENGTH];
    /* Path of a configuration file whose load has been deferred
     * (see MENU_ST_FLAG_PENDING_CONFIG_REPLACE). The actual
     * config_replace() is performed from runloop_check_state(),
@@ -609,7 +642,6 @@ struct menu_state
 
 #ifdef HAVE_MENU
    char input_dialog_kb_label_setting[256];
-   char input_dialog_kb_label[256];
 
    /* The on-screen keyboard, which is the menu's widget: what its keys
     * show, where its cursor is, and which page of keys is up. What it
@@ -626,6 +658,19 @@ struct menu_state
     * that frame at 4312 where this tree allows four thousand. One is
     * looked at a time, on the thread that iterates. */
    menu_entry_t iterate_entry;
+
+   /* A list of the controllers is shown and two connected ones show one
+    * name: Ozone's footer says a press finds one */
+   bool pad_find_hint;
+   /* The list on screen lists the controllers: kept while two of them
+    * show one name (menu_driver_pads_list_made()) */
+   bool pads_listed;
+   /* enum menu_frame_work: a frame with none tests this alone */
+   uint8_t frame_work;
+   /* enum menu_timedate_date_order of the host's zone, taken on the main
+    * thread when the menu opens and when Lakka's zone changes */
+   uint8_t timedate_zone_order;
+
 };
 
 typedef struct menu_content_ctx_defer_info
@@ -717,6 +762,7 @@ ssize_t menu_explore_get_entry_playlist_index(unsigned type,
       file_list_t *list, size_t *list_pos, size_t *list_size);
 ssize_t menu_explore_set_playlist_thumbnail(unsigned type,
       gfx_thumbnail_path_data_t *thumbnail_path_data); /* returns list index */
+void menu_explore_push_thumbnail_match(playlist_t *playlist);
 bool menu_explore_is_content_list(void);
 void menu_explore_context_init(void);
 void menu_explore_context_deinit(void);
@@ -726,6 +772,13 @@ void menu_explore_set_state(explore_state_t *state);
 #endif
 
 const char *menu_driver_ident(void);
+
+/* Two connected controllers came to show one name, or no longer do. */
+void menu_driver_pads_alike_changed(void);
+
+/* A list was made for the screen: tested as one load while every
+ * connected controller shows a name of its own */
+void menu_driver_pads_list_made(void);
 
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data);
 
@@ -741,7 +794,12 @@ void menu_driver_context_rebuild(void);
 
 retro_time_t menu_driver_get_current_time(void);
 
-size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime, char *s, size_t len);
+/* The clock in @style with @separator, rebuilt once a second or when
+ * either changes. Returns the string, valid until the next call; its
+ * length goes in @len and in @gen a number, never zero, that moves only
+ * when the text does, either one when not NULL. Drawing thread only. */
+const char *menu_display_timedate(unsigned style, unsigned separator,
+      size_t *len, unsigned *gen);
 
 size_t menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate, char *s, size_t len);
 
@@ -845,6 +903,8 @@ void menu_driver_toggle(
 
 /* Queue a fullscreen file-browser launch; NULL cancels it. */
 bool menu_driver_media_open(const char *path);
+/* Whether menu_driver_media_open() would take path; queues nothing. */
+bool menu_driver_media_can_open(const char *path);
 /* Startup presentation is released only by the activated fullscreen view. */
 int menu_driver_media_startup_token(void);
 void menu_driver_media_startup_ready(int token);
@@ -897,10 +957,16 @@ size_t menu_playlists_tab_random_selection(size_t selection);
 
 const char *menu_dialog_firmware_path_line(const struct menu_state *menu_st,
       const char *line, unsigned *state);
+/* One quad, gathered with the caller's: it opens no blend group */
 void menu_dialog_draw_path_underline(const struct menu_state *menu_st,
       unsigned *state, const char *line, font_data_t *font,
       gfx_display_t *p_disp, void *userdata, unsigned video_dims,
       float x, float baseline, uint32_t color);
+/* The line, counted from 1, the heading of a box whose dialog has one
+ * (menu_dialog_t.heading) ends on once text is wrapped; 0 for a first
+ * line that is not a heading. Line ends in wrapped may be '\0'. */
+unsigned menu_dialog_rule_line(const char *text, const char *wrapped,
+      size_t wrapped_len, unsigned line_count);
 
 void menu_dialog_confirm_set(struct menu_state *menu_st,
       unsigned msg, unsigned cmd);
@@ -961,6 +1027,8 @@ typedef struct menu_dialog_label_widths
  * that changed since c was filled */
 const int *menu_dialog_label_widths(menu_dialog_label_widths_t *c,
       const menu_dialog_buttons_t *b, font_data_t *font, float size);
+/* False when the driver shows no screens (null) */
+bool menu_core_warning_can_open(void);
 #ifdef HAVE_CORE_SIGNATURES
 /* Raises the Security Warning's box for the request pending, or takes
  * it down when none is; true on the frame it went up */
@@ -978,6 +1046,27 @@ extern menu_ctx_driver_t menu_ctx_ozone;
 extern menu_ctx_driver_t menu_ctx_rgui;
 extern menu_ctx_driver_t menu_ctx_mui;
 extern menu_ctx_driver_t menu_ctx_xmb;
+
+/* The camera preview. A menu driver shows it in a thumbnail of its own
+ * while menu_camera_preview_selected(), calling
+ * menu_camera_preview_frame() with that thumbnail every frame it is
+ * shown, and resets the thumbnail when it stops showing it, which
+ * closes the camera. The state says what, if anything, the thumbnail
+ * is receiving. */
+bool menu_camera_preview_selected(void);
+enum camera_preview_state menu_camera_preview_frame(gfx_thumbnail_t *thumbnail);
+void menu_camera_preview_stop(void);
+/* For a driver with a sink of its own (camera_driver_preview_open):
+ * polls the preview and tells the user once of a state that shows no
+ * picture. */
+enum camera_preview_state menu_camera_preview_poll(void);
+/* The two together, for a driver drawing with gfx_display: _update
+ * each frame, true while the preview is to be drawn (and the
+ * thumbnail reset once it is not); _draw a black box of @dims at
+ * @x, @y with the picture fitted in it. */
+bool menu_camera_preview_update(gfx_thumbnail_t *thumbnail);
+void menu_camera_preview_draw(gfx_thumbnail_t *thumbnail, void *userdata,
+      unsigned video_dims, float x, float y, unsigned dims);
 
 RETRO_END_DECLS
 

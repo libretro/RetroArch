@@ -261,7 +261,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[63];
 #endif
-   char s_4e447c6c[40];
    char s_d9a51d02[16];
    char s_12e77e8f[7];
    char s_98760b94[30];
@@ -349,7 +348,9 @@ static const struct
    char s_314539a4[22];
    char s_8fc168f0[20];
    char s_213c44cf[20];
+   char s_4f4b0d00[12];
    char s_502f623c[7];
+   char s_223dfc81[7];
    char s_b6cd2ff0[55];
    char s_40e7aacd[9];
    char s_fe2b08f2[15];
@@ -1277,9 +1278,7 @@ static const struct
    char s_dcbf8b04[25];
    char s_dcbffdfe[26];
    char s_7816d5d5[29];
-   char s_2b1f17e8[27];
    char s_36c3acc7[26];
-   char s_b4c3612a[36];
    char s_f638f238[17];
    char s_f3358a59[32];
    char s_f8098721[53];
@@ -1655,6 +1654,7 @@ static const struct
    char s_2324cc29[20];
    char s_0d299e52[9];
    char s_92830f70[16];
+   char s_5502abed[10];
    char s_9ecf53d5[49];
    char s_b67675ad[12];
    char s_3361e11d[46];
@@ -1665,7 +1665,6 @@ static const struct
    char s_a38500d8[10];
    char s_9544161a[7];
    char s_76ac1944[27];
-   char s_ded7e809[33];
    char s_d8820ed7[45];
    char s_4c11d465[17];
    char s_50a04cd9[21];
@@ -1673,8 +1672,6 @@ static const struct
    char s_11121f30[17];
    char s_01badaa0[26];
    char s_6127cc52[28];
-   char s_9d52f73c[13];
-   char s_bc30b87a[13];
    char s_2fd5302f[29];
    char s_2dff21ec[29];
    char s_a2a28187[18];
@@ -1687,6 +1684,7 @@ static const struct
    char s_39b2f935[17];
    char s_f585917a[31];
    char s_2942bc3c[39];
+   char s_3794f2cd[4];
    char s_0a3c5b6b[38];
    char s_c46fdd49[36];
    char s_a2fd58a6[27];
@@ -1735,7 +1733,6 @@ static const struct
    char s_f24476fa[17];
    char s_97d90c67[18];
    char s_6d08238d[6];
-   char s_033bf99f[13];
    char s_8076aea7[15];
    char s_a00583cf[15];
    char s_e8a86d57[8];
@@ -1774,9 +1771,9 @@ static const struct
    char s_094e2bc9[9];
    char s_b71e6907[10];
    char s_d725639f[9];
-   char s_fef383d2[42];
    char s_4707850d[13];
    char s_cbddcf50[14];
+   char s_fc5ea9dc[8];
    char s_9abb40fc[33];
    char s_a9dc9f21[94];
    char s_6c786a36[31];
@@ -2238,6 +2235,8 @@ static const struct
    char s_579c3ea7[25];
    char s_cc7bf1b9[12];
    char s_b300fc03[20];
+   char s_e29ee11f[13];
+   char s_714b59b6[8];
    char s_ccf131c5[18];
    char s_e5124bba[8];
    char s_875bc33e[11];
@@ -2475,7 +2474,9 @@ static const struct
    char s_52e3d6ea[26];
    char s_2c868ae4[8];
    char s_9c535394[8];
-   char s_5c12d979[9];
+   char s_34a16f69[16];
+   char s_7706edf0[17];
+   char s_92c235ae[9];
    char s_3253994e[6];
    char s_c992346c[39];
    char s_580e244f[6];
@@ -2541,12 +2542,10 @@ static const struct
 #endif
    char s_84c46931[28];
    char s_ebf10493[15];
-   char s_539d5393[14];
    char s_a64b3a0b[27];
    char s_83e8dc72[28];
    char s_7cf985f0[37];
    char s_0f5266ce[16];
-   char s_0f97fdc1[7];
    char s_ea2674d3[32];
    char s_ea2674d4[30];
    char s_2d8cb7ce[23];
@@ -3240,9 +3239,7 @@ static const struct
    char s_c5a76d72[50];
    char s_c5a7e06c[51];
    char s_37d36d03[54];
-   char s_eadbaf16[53];
    char s_54eaf5f5[34];
-   char s_7de5d198[61];
    char s_3b573ee6[29];
    char s_dc1d6cc7[49];
    char s_28543dcf[76];
@@ -4997,7 +4994,6 @@ static const struct
 #ifndef HAVE_DYNAMIC
    "Zawsze \305\202aduj ponownie rdze\305\204 podczas uruchamiania zawarto\305\233ci",
 #endif
-   "Obej\305\233cie roz\305\202\304\205czania systemu Android",
    "Ikona aplikacji",
    "Assety",
    "Otw\303\263rz panel sterowania ASIO",
@@ -5085,6 +5081,8 @@ static const struct
    "Identyfikator Pakietu",
    "Pami\304\231\304\207 podr\304\231czna",
    "Zezwalaj na kamer\304\231",
+   "Urz\304\205dzenie",
+   "Kamera",
    "Kamera",
    "Osi\304\205gni\304\231cia nie mog\304\205 by\304\207 w\305\202\304\205czone z tym rdzeniem",
    "Oszuka\304\207",
@@ -6017,9 +6015,7 @@ static const struct
    "Poka\305\274 'Za\305\202aduj rdze\305\204'",
    "Poka\305\274 'Za\305\202aduj p\305\202yt\304\231'",
    "Poka\305\274 'Aktualizator Online'",
-   "Poka\305\274 'Zamknij RetroArch'",
    "Poka\305\274 'Uruchom Ponownie'",
-   "Poka\305\274 'Uruchom ponownie RetroArch'",
    "Poka\305\274 'Zamknij'",
    "Poka\305\274 etykiety podrz\304\231dne menu",
    "Poka\305\274 podedtykiety menu tylko dla aktualnego wyboru",
@@ -6398,6 +6394,7 @@ static const struct
    "Wszystkie playlisty",
    "Zastosuj",
    "Powi\304\205\305\274 rdze\305\204",
+   "Domy\305\233lny",
    "Prosz\304\231 najpierw wybra\304\207 pojedyncz\304\205 playlist\304\231.",
    "Wy&bierz...",
    "Czy na pewno chcesz usun\304\205\304\207 playlist\304\231 \"%1\"?",
@@ -6408,7 +6405,6 @@ static const struct
    "<Zapytaj>",
    "Wersja",
    "Nie mo\305\274na usun\304\205\304\207 pliku.",
-   "Nie mo\305\274na zmieni\304\207 nazwy pliku.",
    "B\305\202\304\205d podczas aktualizacji wpisu playlisty.",
    "Bie\305\274\304\205cy shader",
    "Motyw niestandardowy",
@@ -6416,8 +6412,6 @@ static const struct
    "Usu\305\204 playlist\304\231",
    "Nie pokazuj tego ponownie",
    "Pobierz wszystkie miniatury",
-   "Ca\305\202y system",
-   "Ta playlista",
    "Pobieranie jest ju\305\274 w toku.",
    "Sukces: %1 Niepowodzenie: %2",
    "Pobierz miniatury",
@@ -6430,6 +6424,7 @@ static const struct
    "Plik jest pusty.",
    "\305\232cie\305\274ka do pliku jest pusta.",
    "Nie mo\305\274na otworzy\304\207 pliku do odczytu.",
+   "Typ",
    "Nie mo\305\274na otworzy\304\207 pliku do zapisu.",
    "(u\305\274ywany do wyszukiwania miniatur)",
    "Zbieranie listy plik\303\263w...",
@@ -6478,7 +6473,6 @@ static const struct
    "Przesu\305\204 w d\303\263\305\202",
    "Przesu\305\204 w g\303\263r\304\231",
    "Nazwa",
-   "B\305\202\304\205d sieci",
    "Nowa playlista",
    "Wpis playlisty",
    "Rdze\305\204:",
@@ -6525,9 +6519,9 @@ static const struct
    "Do g\303\263ry",
    "Playlisty",
    "Ok\305\202adka",
-   "Pobieranie miniatur zako\305\204czone sukcesem.",
    "Zrzut ekranu",
    "Ekran tytu\305\202u",
+   "Rdzenie",
    "Aktualizacja nie powiod\305\202a si\304\231.",
    "RetroArch zaktualizowano pomy\305\233lnie. Uruchom ponownie aplikacj\304\231, aby zmiany odnios"
    "\305\202y efekt.",
@@ -6990,6 +6984,8 @@ static const struct
    "MM-DD-RRRR GG:MM (AM/PM)",
    "MM-DD GG:MM",
    "MM-DD GG:MM (AM/PM)",
+   "Automatyczny",
+   "R\304\231czny",
    "Styl daty i czasu",
    "RRRR-MM",
    "RRRR-MM-DD",
@@ -7230,6 +7226,8 @@ static const struct
    "Symulacja prze\305\233wietlania",
    "Poziomo",
    "Pionowo",
+   "Wysoko\305\233\304\207 okna",
+   "Szeroko\305\233\304\207 okna",
    "Ekran %u",
    "Skala",
    "Prze\305\202\304\205czanie trybu wy\305\233wietlania SDL",
@@ -7296,12 +7294,10 @@ static const struct
 #endif
    "Tryb pe\305\202noekranowy w oknie",
    "Tryb okienkowy",
-   "Przy\305\202\304\205czone",
    "Maksymalna wysoko\305\233\304\207 okna",
    "Maksymalna szeroko\305\233\304\207 okna",
    "U\305\274yj niestandardowego rozmiaru okna",
    "Wysoko\305\233\304\207 okna",
-   "Ukryte",
    "Przesuni\304\231cie ekranu w poziomie",
    "Przesuni\304\231cie ekranu w pionie",
    "Przezroczysto\305\233\304\207 okna",
@@ -8417,9 +8413,7 @@ static const struct
    "Poka\305\274 opcj\304\231 \"Za\305\202aduj Rdze\305\204\" w menu g\305\202\303\263wnym.",
    "Poka\305\274 opcj\304\231 \"Za\305\202aduj p\305\202yt\304\231\" w menu g\305\202\303\263wnym.",
    "Poka\305\274 opcj\304\231 \"Aktualizator Online\" w menu g\305\202\303\263wnym.",
-   "Poka\305\274 opcj\304\231 \"Wyjd\305\272 z RetroArch\" w menu g\305\202\303\263wnym.",
    "Poka\305\274 opcj\304\231 \"Uruchom ponownie\".",
-   "Poka\305\274 opcj\304\231 'Uruchom ponownie RetroArch' w menu g\305\202\303\263wnym.",
    "Poka\305\274 opcj\304\231 \"Zamkni\304\231cie\".",
    "Poka\305\274 dodatkowe informacje dla element\303\263w menu.",
    "Wy\305\233wietlaj podetykiet\304\231 tylko dla aktualnego pod\305\233wietlonego wpisu w menu.",
@@ -10236,7 +10230,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (199514u
+      (sizeof(msg_hash_pl_blob) == (199257u
 #ifdef ANDROID
        + 385u
 #endif
@@ -10994,7 +10988,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
@@ -11082,7 +11075,9 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
@@ -12010,9 +12005,7 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
@@ -12388,6 +12381,7 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
@@ -12398,7 +12392,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
@@ -12406,8 +12399,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
@@ -12420,6 +12411,7 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
@@ -12468,7 +12460,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
@@ -12506,9 +12497,9 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
@@ -12970,6 +12961,8 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MDYYYY_HM_AMPM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MD_HM_AMPM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD,
@@ -13207,7 +13200,9 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_MODE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
@@ -13273,12 +13268,10 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_ATTACHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HIDDEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
@@ -13969,9 +13962,7 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,

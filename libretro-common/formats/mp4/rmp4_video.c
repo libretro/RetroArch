@@ -166,6 +166,9 @@ struct rmp4_video_stream
    int          is_fp16;    /* last decoded frame written so          */
    int          emit_argb;  /* emit ARGB words instead of the default
                                R,G,B,A memory order (8-bit paths)     */
+   struct texture_planar borrowed_planar; /* decoder-owned, until next step */
+   int          want_planar; /* 0: RGB, 1: I420, 2: borrow, 3: tight borrow */
+   unsigned     planar_yuv; /* IMAGE_YUV_FLAG_* of the last such frame */
    int          want_hw;    /* H.264/HEVC/VP9/AV1 on the hardware backend */
    /* The hardware frame of the picture the last step produced
     * (rndr_kind 5), and whether the caller has yet to take it: one
@@ -1009,6 +1012,13 @@ static rmp4_video_stream_t *rmp4_video_stream_open_begin(
          need_lo, need_hi)))
       goto fail;
 
+   /* The video timeline and seek table are immutable after open. */
+   if (!rmp4_index_complete(s->demux))
+   {
+      if (need_more) *need_more = 1;
+      goto fail;
+   }
+
    s->input = buf;
    s->input_len = len;
    s->input_avail = avail > len ? len : avail;
@@ -1178,6 +1188,46 @@ rmp4_video_stream_t *rmp4_video_stream_open_hw_avail(const uint8_t *buf,
 {
    return rmp4_video_stream_open_avail_internal(buf, len, avail, need_more,
                                                 need_lo, need_hi, 1);
+}
+
+bool rmp4_video_stream_audio_track(const rmp4_video_stream_t *s,
+      unsigned ordinal, video_audio_track_t *out)
+{
+   int i;
+   enum rmp4_language_kind kind;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!s) return false;
+   for (i = 0; i < rmp4_num_tracks(s->demux); i++)
+   {
+      const rmp4_track *track = rmp4_get_track(s->demux, i);
+      if (!track || track->type != RMP4_TRACK_AUDIO) continue;
+      if (ordinal)
+      {
+         ordinal--;
+         continue;
+      }
+      out->index = i;
+      out->sample_rate = track->sample_rate;
+      out->channels = track->channels;
+      out->codec_id = track->codec_id;
+      out->language = rmp4_get_track_language(s->demux, i,
+            &out->language_size, &kind);
+      if (kind == RMP4_LANGUAGE_MDHD)
+         out->language_kind = VIDEO_AUDIO_LANGUAGE_MP4_PACKED;
+      else if (kind == RMP4_LANGUAGE_BCP47)
+         out->language_kind = VIDEO_AUDIO_LANGUAGE_TEXT;
+      switch (track->codec)
+      {
+         case RMP4_CODEC_AAC: out->codec = VIDEO_AUDIO_AAC; break;
+         case RMP4_CODEC_AC3: out->codec = VIDEO_AUDIO_AC3; break;
+         case RMP4_CODEC_OPUS: out->codec = VIDEO_AUDIO_OPUS; break;
+         case RMP4_CODEC_VORBIS: out->codec = VIDEO_AUDIO_VORBIS; break;
+         default: break;
+      }
+      return true;
+   }
+   return false;
 }
 
 void rmp4_video_stream_close(rmp4_video_stream_t *s)
@@ -1955,7 +2005,7 @@ static int rmp4_video_stream_advance(rmp4_video_stream_t *s,
 
    if (!s)
       return -1;
-   bounded = s->h265_ahead && s->h265 && rh265_video_is_hw(s->h265);
+   bounded = s->h265 && rh265_video_is_hw(s->h265);
    s->completed = 0;
    s->waiting = 0;
 #ifdef HAVE_RAV1
@@ -2117,6 +2167,98 @@ int rmp4_video_stream_is_fp16(const rmp4_video_stream_t *s)
 int rmp4_video_stream_is_hdr(const rmp4_video_stream_t *s)
 {
    return s && (s->transfer == 16 || s->transfer == 18);
+}
+
+/* 8-bit 4:2:0 by the sample entry, in a matrix the planes' consumer
+ * knows (BT.601 or BT.709; BT.2020 needs a wider format). */
+int rmp4_video_stream_can_planar(const rmp4_video_stream_t *s)
+{
+   const rmp4_track *t;
+   if (     !s || rmp4_video_stream_is_hdr(s)
+         || s->matrix == 9 || s->matrix == 10
+         || !(t = rmp4_get_track(s->demux, s->track)))
+      return 0;
+   switch (s->codec)
+   {
+      case RMP4_CODEC_VP8:
+         return 1;
+#ifdef HAVE_RVP9
+      case RMP4_CODEC_VP9:
+         return s->vp9_have_config && s->vp9_config.bit_depth == 8
+            && s->vp9_config.chroma < 2;
+#endif
+      case RMP4_CODEC_H264:
+         return rh264_avcc_is_420_8bit(t->codec_private,
+               t->codec_private_size);
+      case RMP4_CODEC_H265:
+         return rh265_hvcc_is_420_8bit(t->codec_private,
+               t->codec_private_size);
+      default:
+         break;
+   }
+   return 0;
+}
+
+int rmp4_video_stream_set_planar(rmp4_video_stream_t *s, int planar)
+{
+   if (!s || (planar && !rmp4_video_stream_can_planar(s)))
+      return 0;
+   s->want_planar = planar;
+   s->borrowed_planar.planes[0] = NULL;
+   return 1;
+}
+
+bool rmp4_video_stream_retain_planar(const rmp4_video_stream_t *s,
+      void **owner, void (**release)(void*))
+{
+   void *held;
+   if (!s || !owner || !release || !s->borrowed_planar.planes[0])
+      return false;
+   if (s->rndr_kind == 1)
+   {
+      held = rvp8_video_retain_planes(s->vp8);
+      if (!held) return false;
+      *owner = held;
+      *release = rvp8_video_release_planes;
+      return true;
+   }
+#ifdef HAVE_RVP9
+   if (s->rndr_kind == 2)
+   {
+      held = rvp9_retain_planes(s->vp9, s->borrowed_planar.planes[0]);
+      if (!held) return false;
+      *owner = held;
+      *release = rvp9_release_planes;
+      return true;
+   }
+#endif
+   if (s->rndr_kind == 4)
+   {
+      held = rh265_video_retain_planes(s->h265);
+      if (!held) return false;
+      *owner = held;
+      *release = rh265_video_release_planes;
+      return true;
+   }
+   if (s->rndr_kind != 3) return false;
+   held = rh264_video_retain_planes(s->h264);
+   if (!held) return false;
+   *owner = held;
+   *release = rh264_video_release_planes;
+   return true;
+}
+
+const struct texture_planar *rmp4_video_stream_borrowed_planar(
+      const rmp4_video_stream_t *s)
+{
+   return s && (s->want_planar == 2 || s->want_planar == 3)
+      && s->borrowed_planar.planes[0]
+      ? &s->borrowed_planar : NULL;
+}
+
+unsigned rmp4_video_stream_planar_yuv(const rmp4_video_stream_t *s)
+{
+   return s ? s->planar_yuv : 0;
 }
 
 void *rmp4_video_stream_h264(rmp4_video_stream_t *s)
@@ -2349,13 +2491,132 @@ int64_t rmp4_video_stream_duration_ns(rmp4_video_stream_t *s)
    return (s && s->demux) ? rmp4_duration_ns(s->demux) : 0;
 }
 
+/* The shown picture's 8-bit 4:2:0 planes where they lie in the decoder
+ * and the IMAGE_YUV_FLAG_* of the matrix and range the RGB blit would
+ * use: 0 for a picture that is not so, or in BT.2020. */
+static int rmp4_video_shown_planes(const rmp4_video_stream_t *s,
+      const uint8_t *planes[3], unsigned strides[3],
+      unsigned *width, unsigned *height, unsigned *yuv)
+{
+   const uint8_t *y = NULL, *u = NULL, *v = NULL;
+   int ys = 0, uvs = 0, w = 0, h = 0, cw = 0, ch = 0;
+   unsigned matrix = s->matrix;
+   if (s->h265_picture_pending)
+      return 0;
+   switch (s->rndr_kind)
+   {
+      case 1:
+         y = rvp8_video_plane(s->vp8, 0, &ys,  &w,  &h);
+         u = rvp8_video_plane(s->vp8, 1, &uvs, &cw, &ch);
+         v = rvp8_video_plane(s->vp8, 2, &uvs, &cw, &ch);
+         break;
+#ifdef HAVE_RVP9
+      case 2:
+      {
+         const rvp9_fb *fb = &s->vp9->fbs[s->rndr_vp9_show];
+         if (     s->vp9->hd.bit_depth != 8
+               || !s->vp9->hd.subsampling_x || !s->vp9->hd.subsampling_y)
+            return 0;
+         y   = fb->y;
+         u   = fb->u;
+         v   = fb->v;
+         ys  = s->vp9->ys;
+         uvs = s->vp9->uvs;
+         w   = fb->w;
+         h   = fb->h;
+         cw  = (w + 1) / 2;
+         ch  = (h + 1) / 2;
+         break;
+      }
+#endif
+      case 3:
+         if (rh264_video_bit_depth(s->h264) != 8)
+            return 0;
+         y = rh264_video_plane(s->h264, 0, &ys,  &w,  &h);
+         u = rh264_video_plane(s->h264, 1, &uvs, &cw, &ch);
+         v = rh264_video_plane(s->h264, 2, &uvs, &cw, &ch);
+         break;
+      case 4:
+         if (rh265_video_bit_depth(s->h265) != 8)
+            return 0;
+         y = rh265_video_plane(s->h265, 0, &ys,  &w,  &h);
+         u = rh265_video_plane(s->h265, 1, &uvs, &cw, &ch);
+         v = rh265_video_plane(s->h265, 2, &uvs, &cw, &ch);
+         break;
+      default:
+         return 0;
+   }
+   if (     !y || !u || !v || w <= 0 || h <= 0
+         || cw != (w + 1) / 2 || ch != (h + 1) / 2)
+      return 0;
+   if ((unsigned)w > s->width)
+      w = (int)s->width;
+   if ((unsigned)h > s->height)
+      h = (int)s->height;
+   if (!(matrix == 1 || matrix == 5 || matrix == 6
+            || matrix == 9 || matrix == 10))
+      matrix = h >= 720 ? 1 : 5;
+   if (matrix == 9 || matrix == 10)
+      return 0;
+   planes[0]  = y;
+   planes[1]  = u;
+   planes[2]  = v;
+   strides[0] = (unsigned)ys;
+   strides[1] = strides[2] = (unsigned)uvs;
+   *width     = (unsigned)w;
+   *height    = (unsigned)h;
+   *yuv       = (matrix == 1 ? IMAGE_YUV_FLAG_BT709 : 0)
+      | (s->range ? IMAGE_YUV_FLAG_FULL_RANGE : 0);
+   return 1;
+}
+
+int rmp4_video_stream_planes(const rmp4_video_stream_t *s,
+      const uint8_t *planes[3], unsigned strides[3],
+      unsigned *width, unsigned *height, unsigned *yuv)
+{
+   return s && planes && strides && width && height && yuv
+      && rmp4_video_shown_planes(s, planes, strides, width, height, yuv);
+}
+
+/* The shown picture's planes copied into the caller's frame as packed
+ * I420. */
+static const uint32_t *rmp4_video_render_planar(rmp4_video_stream_t *s)
+{
+   const uint8_t *planes[3];
+   unsigned strides[3], w, h, yuv;
+   if (!rmp4_video_shown_planes(s, planes, strides, &w, &h, &yuv))
+      return NULL;
+   s->borrowed_planar.planes[0] = NULL;
+   if ((s->want_planar == 2 || s->want_planar == 3)
+         && w == s->width && h == s->height
+         && (s->want_planar == 2 || (strides[0] == w
+               && strides[1] == (w + 1) / 2)))
+   {
+      unsigned i;
+      for (i = 0; i < 3; i++)
+      {
+         s->borrowed_planar.planes[i] = planes[i];
+         s->borrowed_planar.strides[i] = strides[i];
+      }
+      s->borrowed_planar.chroma_step = 1;
+      s->borrowed_planar.yuv = yuv;
+   }
+   else
+      image_yuv_420_pack((uint8_t*)s->out, s->width, s->height,
+            planes[0], strides[0], planes[1], planes[2], strides[1], w, h);
+   s->planar_yuv = yuv;
+   return s->out;
+}
+
 const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
 {
    uint32_t *dst;
    if (!s || s->h265_picture_pending)
       return NULL;
-   dst        = s->out ? s->out : s->frame;
    s->is_fp16 = 0;
+   if (s->want_planar && s->out && s->rndr_kind != 5)
+      return rmp4_video_render_planar(s);
+   dst        = s->out ? s->out : s->frame;
    if (!dst && s->rndr_kind >= 1 && s->rndr_kind <= 4)
    {
       s->frame = (uint32_t*)malloc((size_t)s->width * s->height
@@ -3254,7 +3515,6 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
    rmp4_video_stream_t *s;
    const uint32_t *frame;
    uint32_t *out;
-   size_t n;
    int r;
    int duration_ms = 0;
 
@@ -3355,17 +3615,13 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
    }
    else
    {
-      n = (size_t)s->width * s->height;
-      if (!(out = (uint32_t*)malloc(n * sizeof(uint32_t))))
+      /* Hand the renderer's canvas to the image owner. Playback either
+       * renders into a caller's slot or allocates a new canvas; it must
+       * never overwrite or free the still after this transfer. */
+      if (!frame || frame != s->frame)
          goto fail;
-
-      /* The canvas is already in the caller's channel order: 10-bit
-       * output is packed XRGB2101010, and the 8-bit blit emitted ARGB
-       * or ABGR words per supports_rgba (set at the scan/decode
-       * transition above), so the copy is verbatim in every case - the
-       * per-pixel R/B swizzle this replaced was a full extra pass over
-       * the frame. */
-      memcpy(out, frame, n * sizeof(uint32_t));
+      out = s->frame;
+      s->frame = NULL;
    }
 
    if (width)

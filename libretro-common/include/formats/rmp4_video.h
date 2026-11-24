@@ -34,6 +34,7 @@
 #include <retro_common_api.h>
 
 #include <formats/video_hw_frame.h>
+#include <formats/video_audio_track.h>
 
 RETRO_BEGIN_DECLS
 
@@ -81,6 +82,10 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
 /* ---- Streaming animation ---- */
 
 typedef struct rmp4_video_stream rmp4_video_stream_t;
+
+/* Zero-based audio ordinal; metadata borrows the live stream. */
+bool rmp4_video_stream_audio_track(const rmp4_video_stream_t *stream,
+      unsigned ordinal, video_audio_track_t *out);
 
 /* Take ownership of the stream a successful rmp4_video_process_image
  * left open, positioned just past the first displayed frame, so the
@@ -212,6 +217,38 @@ void rmp4_video_stream_set_want_fp16(rmp4_video_stream_t *stream,
       int want);
 int rmp4_video_stream_is_fp16(const rmp4_video_stream_t *stream);
 int rmp4_video_stream_is_hdr(const rmp4_video_stream_t *stream);
+
+/* The decoded planes of an 8-bit 4:2:0 SDR source, for a caller whose
+ * GPU converts them: can_planar answers from the container before any
+ * decode; with set_planar on (0 where the stream cannot), each frame
+ * decoded into the caller's frame (rmp4_video_stream_set_output) is
+ * packed I420 of the stream's size - Y, then Cb, then Cr - and a
+ * frame that cannot be so ends the stream. planar_yuv is that
+ * frame's IMAGE_YUV_FLAG_* (BT709, FULL_RANGE). */
+int rmp4_video_stream_can_planar(const rmp4_video_stream_t *stream);
+/* planar 2 borrows arbitrary strides, 3 only tightly packed planes,
+ * instead of filling the output
+ * slot where possible. The next successful frame returns that slot as
+ * usual; borrowed_planar tells whether to read the planes instead.
+ * The borrow ends at the next decode, seek, rewind or stream free. */
+int rmp4_video_stream_set_planar(rmp4_video_stream_t *stream, int planar);
+struct texture_planar;
+/* Retain the current borrowed planes when their decoder provides immutable
+ * counted storage. On success release(*owner) retires the lease once. */
+bool rmp4_video_stream_retain_planar(const rmp4_video_stream_t *s,
+      void **owner, void (**release)(void*));
+const struct texture_planar *rmp4_video_stream_borrowed_planar(
+      const rmp4_video_stream_t *stream);
+unsigned rmp4_video_stream_planar_yuv(const rmp4_video_stream_t *stream);
+
+/* The picture the last step showed, as its decoded 8-bit 4:2:0 planes
+ * where they lie in the decoder - lent until the next call that decodes
+ * - with the IMAGE_YUV_FLAG_* of its matrix and range and its size
+ * clipped to the track's. 0 for a picture that is not so, or in
+ * BT.2020, which the caller then renders. */
+int rmp4_video_stream_planes(const rmp4_video_stream_t *stream,
+      const uint8_t *planes[3], unsigned strides[3],
+      unsigned *width, unsigned *height, unsigned *yuv);
 
 /* Convert decoded frames in @bands row bands on @pool (an rthreads
  * tpool_t of at least bands - 1 threads; the calling thread takes one

@@ -17,7 +17,7 @@
 /* Possible improvement list:
  * Add vid/pid to autoconf profile step, if autoconf matching needs testing
  * Multiple device autoconf profiles, with different analog/digital setup, analog buttons, extra buttons, unconfigured buttons...
- * Unimplemented functions (get_button, rumble)
+ * Unimplemented functions (rumble)
  */
 
 #include <stdint.h>
@@ -39,14 +39,12 @@
 #include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../gfx/video_driver.h"
 
 #define MAX_TEST_STEPS 200
-#define NUM_BUTTONS 32
-#ifndef MAX_AXIS
-#define MAX_AXIS 10
-#endif
+#define TEST_JOYPAD_AXES 10
 
 #define JOYPAD_TEST_COMMAND_ADD_CONTROLLER          1
 #define JOYPAD_TEST_COMMAND_REMOVE_CONTROLLER       2
@@ -59,13 +57,15 @@
 #define JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST   32
 #define JOYPAD_TEST_COMMAND_BUTTON_RELEASE_LAST    47
 #define JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST    1000
-#define JOYPAD_TEST_COMMAND_BUTTON_AXIS_LAST     JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST+MAX_AXIS*DEFAULT_MAX_PADS
+#define JOYPAD_TEST_COMMAND_BUTTON_AXIS_LAST     JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST+TEST_JOYPAD_AXES*DEFAULT_MAX_PADS
 
 typedef struct
 {
    char* name;
-   uint32_t button_state;
-   int32_t axis_state[MAX_AXIS];
+   /* what the script has pressed and moved: the first 32 buttons and
+    * TEST_JOYPAD_AXES axes, changed only in the poll and read through
+    * input_pad_view.h */
+   input_pad_view_t view;
 } test_joypad_data;
 
 static test_joypad_data test_joypads[MAX_USERS];
@@ -322,6 +322,9 @@ static const char *test_joypad_phys(unsigned pad)
 
 static void test_joypad_autodetect_add(unsigned autoconf_pad)
 {
+   char phys[256];
+   const char *at;
+   char *uniq       = NULL;
    unsigned int vid = 0;
    unsigned int pid = 0;
    const char *tmp  = test_joypads[autoconf_pad].name
@@ -337,14 +340,41 @@ static void test_joypad_autodetect_add(unsigned autoconf_pad)
    }
    RARCH_DBG("[Test input] Autoconf vid/pid %x:%x.\n", vid, pid);
 
-   input_autoconfigure_connect(
+   /* "name@@port@@serial": the pad's own serial after where it is
+    * plugged in; a name alone tells it apart by nothing */
+   if ((at = test_joypad_phys(autoconf_pad)))
+   {
+      strlcpy(phys, at, sizeof(phys));
+      if ((uniq = strstr(phys, "@@")))
+      {
+         *uniq = '\0';
+         uniq += 2;
+      }
+      else
+         uniq = phys + strlen(phys);
+   }
+
+   input_autoconfigure_connect_uniq(
          test_joypad_name(autoconf_pad),
-         NULL, test_joypad_phys(autoconf_pad),
+         NULL, at ? phys : NULL, uniq,
          "test",
          autoconf_pad,
          vid,
          pid
          );
+}
+
+/* Plugs in the pad a step names, on a port the driver has */
+static void test_joypad_add(input_test_step_t *step)
+{
+   if (step->param_num >= DEFAULT_MAX_PADS)
+   {
+      RARCH_WARN("[Test joypad] No port %u to plug into, skipping.\n",
+            step->param_num);
+      return;
+   }
+   test_joypads[step->param_num].name = step->param_str;
+   test_joypad_autodetect_add(step->param_num);
 }
 
 static void test_joypad_autodetect_remove(unsigned autoconf_pad)
@@ -374,8 +404,7 @@ static void *test_joypad_init(void *data)
          continue;
       if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_ADD_CONTROLLER)
       {
-         test_joypads[input_test_steps[i].param_num].name = input_test_steps[i].param_str;
-         test_joypad_autodetect_add(input_test_steps[i].param_num);
+         test_joypad_add(&input_test_steps[i]);
          input_test_steps[i].handled = true;
       }
 
@@ -387,31 +416,22 @@ static int32_t test_joypad_button(unsigned port_num, uint16_t joykey)
 {
    if (port_num >= DEFAULT_MAX_PADS)
       return 0;
-   if (joykey < NUM_BUTTONS)
-      return (BIT32_GET(test_joypads[port_num].button_state, joykey));
+   return input_pad_view_button(&test_joypads[port_num].view, joykey);
+}
 
-   return 0;
+static void test_joypad_get_buttons(unsigned port_num, input_bits_t *state)
+{
+   if (port_num < DEFAULT_MAX_PADS)
+      *state = test_joypads[port_num].view.buttons;
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t test_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    if (port_num >= DEFAULT_MAX_PADS)
       return 0;
-   if (AXIS_NEG_GET(joyaxis) < MAX_AXIS)
-   {
-      /* Kernel returns values in range [-0x7fff, 0x7fff]. */
-      int16_t val = test_joypads[port_num].axis_state[AXIS_NEG_GET(joyaxis)];
-      if (val < 0)
-         return val;
-   }
-   else if (AXIS_POS_GET(joyaxis) < MAX_AXIS)
-   {
-      int16_t val = test_joypads[port_num].axis_state[AXIS_POS_GET(joyaxis)];
-      if (val > 0)
-         return val;
-   }
-   return 0;
-
+   return input_pad_view_axis(&test_joypads[port_num].view, joyaxis);
 }
 
 static int16_t test_joypad_state(
@@ -420,25 +440,19 @@ static int16_t test_joypad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-
-   unsigned i;
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
-
-   if (port_idx < DEFAULT_MAX_PADS)
-   {
-	   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-	   {
-		   const uint16_t joykey  = joykeys[i];
-		   /* Test input driver uses same button layout internally as RA, so no conversion is needed */
-		   if (joykey != NO_BTN && (test_joypads[port_idx].button_state & (1 << i)))
-			   ret |= ( 1 << i);
-	   }
-   }
-
-   return ret;
+   uint16_t port_idx = joypad_info->joy_idx;
+   if (port_idx >= DEFAULT_MAX_PADS)
+      return 0;
+   return input_pad_view_state(&test_joypads[port_idx].view, joypad_info,
+         joykeys, joyaxes);
 }
 
+/* Lent to the snapshot bridge where a harness turns it on for this
+ * driver */
+static const input_pad_view_t *test_joypad_view(unsigned port)
+{
+   return (port < DEFAULT_MAX_PADS) ? &test_joypads[port].view : NULL;
+}
 
 static void test_joypad_poll(void)
 {
@@ -452,13 +466,16 @@ static void test_joypad_poll(void)
       {
          if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_ADD_CONTROLLER)
          {
-            test_joypads[input_test_steps[i].param_num].name = input_test_steps[i].param_str;
-            test_joypad_autodetect_add(input_test_steps[i].param_num);
+            test_joypad_add(&input_test_steps[i]);
             input_test_steps[i].handled = true;
          }
          else if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_REMOVE_CONTROLLER)
          {
-            test_joypad_autodetect_remove(input_test_steps[i].param_num);
+            if (input_test_steps[i].param_num < DEFAULT_MAX_PADS)
+               test_joypad_autodetect_remove(input_test_steps[i].param_num);
+            else
+               RARCH_WARN("[Test joypad] No port %u to unplug, skipping.\n",
+                     input_test_steps[i].param_num);
             input_test_steps[i].handled = true;
          }
          else if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_SAVE_PROFILE)
@@ -502,31 +519,33 @@ static void test_joypad_poll(void)
                   && input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST)
          {
             unsigned targetpad = input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST;
-            test_joypads[targetpad].button_state |= input_test_steps[i].param_num;
+            if (targetpad < DEFAULT_MAX_PADS)
+               test_joypads[targetpad].view.buttons.data[0] |= input_test_steps[i].param_num;
             input_test_steps[i].handled = true;
             RARCH_DBG(
-               "[Test joypad] Pressing device %d buttons %x, new state %x.\n",
-               targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
+               "[Test joypad] Pressing device %d buttons %x.\n",
+               targetpad, input_test_steps[i].param_num);
          }
          else if (   input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST
                   && input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_RELEASE_LAST)
          {
             unsigned targetpad = input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST;
-            test_joypads[targetpad].button_state &= ~input_test_steps[i].param_num;
+            if (targetpad < DEFAULT_MAX_PADS)
+               test_joypads[targetpad].view.buttons.data[0] &= ~input_test_steps[i].param_num;
             input_test_steps[i].handled = true;
             RARCH_DBG(
-               "[Test joypad] Releasing device %d buttons %x, new state %x.\n",
-               targetpad,input_test_steps[i].param_num,test_joypads[targetpad].button_state);
+               "[Test joypad] Releasing device %d buttons %x.\n",
+               targetpad, input_test_steps[i].param_num);
          }
          else if (   input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST
                   && input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_AXIS_LAST)
          {
             unsigned targetpad =
-               (input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST) / MAX_AXIS;
+               (input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST) / TEST_JOYPAD_AXES;
             unsigned targetaxis =
-               input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST - (targetpad*MAX_AXIS);
-            if (targetpad < DEFAULT_MAX_PADS && targetaxis < MAX_AXIS)
-               test_joypads[targetpad].axis_state[targetaxis] = (int16_t) input_test_steps[i].param_num;
+               input_test_steps[i].action - JOYPAD_TEST_COMMAND_BUTTON_AXIS_FIRST - (targetpad*TEST_JOYPAD_AXES);
+            if (targetpad < DEFAULT_MAX_PADS && targetaxis < TEST_JOYPAD_AXES)
+               test_joypads[targetpad].view.axes[targetaxis] = (int16_t)input_test_steps[i].param_num;
             else
                RARCH_WARN(
                   "[Test joypad] Decoded axis outside target range: action %d pad %d axis %d.\n",
@@ -554,11 +573,16 @@ static bool test_joypad_query_pad(unsigned pad)
    return (pad < MAX_USERS);
 }
 
+/* Pads' names are the steps' strings: they go with them, and an init
+ * after reads the script from its first step again */
 static void test_joypad_destroy(void)
 {
    if (input_test_steps)
       free(input_test_steps);
-   input_test_steps = NULL;
+   input_test_steps  = NULL;
+   current_test_step = 0;
+   last_test_step    = MAX_TEST_STEPS + 1;
+   memset(test_joypads, 0, sizeof(test_joypads));
 }
 
 input_device_driver_t test_joypad = {
@@ -567,7 +591,7 @@ input_device_driver_t test_joypad = {
    test_joypad_destroy,
    test_joypad_button,
    test_joypad_state,
-   NULL, /* get_buttons */
+   test_joypad_get_buttons,
    test_joypad_axis,
    test_joypad_poll,
    NULL, /* set_rumble */
@@ -576,4 +600,9 @@ input_device_driver_t test_joypad = {
    NULL, /* get_sensor_input */
    test_joypad_name,
    "test",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   test_joypad_view
 };

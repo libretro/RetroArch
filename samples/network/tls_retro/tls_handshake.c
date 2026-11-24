@@ -60,6 +60,10 @@ void ssl_socket_log_verify_disabled(const char *domain)
    (void)domain;
    assert(!"verification must remain required");
 }
+void ssl_socket_log_trust_store(const char *source, int anchors)
+{
+   (void)source; (void)anchors;
+}
 
 static bool wait_for(int fd, bool write, retro_time_t deadline)
 {

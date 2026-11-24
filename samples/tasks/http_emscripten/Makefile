@@ -44,6 +44,10 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+# The unit under test is #included, so the test's object depends on it
+http_emscripten_park_test.o: $(REPO_ROOT)/tasks/task_http_emscripten.c \
+	$(wildcard include/emscripten/*.h)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
 

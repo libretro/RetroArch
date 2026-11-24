@@ -50,8 +50,12 @@
 #include <libretro_d3d9.h>
 #endif
 
+#ifdef HAVE_DEKO3D
+#include <libretro_deko3d.h>
+#endif
+
 #if defined(HAVE_VULKAN) || defined(HAVE_D3D12) || defined(HAVE_D3D11) \
-   || defined(VIDEO_THREAD_HW_D3D9) \
+   || defined(VIDEO_THREAD_HW_D3D9) || defined(HAVE_DEKO3D) \
    || defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 #define VIDEO_THREAD_HW_ANY 1
 #endif
@@ -103,6 +107,16 @@ typedef struct
     * is device work, which only the device's holder may do. */
    IDirect3DTexture9 *d3d9_texture;
 #endif
+#ifdef HAVE_DEKO3D
+   /* deko3d: the core's image for the slot and the fence it is complete
+    * behind, copies. The image is the core's own and read where it is;
+    * dk_desc.image points at dk_image. */
+   struct retro_deko3d_image dk_desc;
+   DkImage          dk_image;
+   DkFence          dk_acquire;
+   bool             dk_has_image;
+   bool             dk_has_acquire;
+#endif
    /* Armed by the video thread after every frame it drives the driver
     * with from this slot, and by the core's thread behind a frame it
     * took back; the next user of the slot waits it first. Handed
@@ -125,6 +139,7 @@ enum hw_api
    HW_API_D3D12,
    HW_API_D3D11,
    HW_API_D3D9,
+   HW_API_DEKO3D,
    HW_API_GL
 };
 
@@ -143,6 +158,9 @@ typedef struct
 #endif
 #ifdef VIDEO_THREAD_HW_D3D9
       struct retro_hw_render_interface_d3d9   d3d9;
+#endif
+#ifdef HAVE_DEKO3D
+      struct retro_hw_render_interface_deko3d dk3d;
 #endif
       /* OpenGL interposes nothing; this keeps the union non-empty on
        * a build with only OpenGL. */
@@ -417,7 +435,8 @@ static void hw_set_signal_semaphore(void *handle, VkSemaphore semaphore)
 #endif /* HAVE_VULKAN */
 
 #if defined(HAVE_VULKAN) || defined(HAVE_D3D11) || defined(HAVE_D3D12) \
-   || defined(VIDEO_THREAD_HW_D3D9) || defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+   || defined(VIDEO_THREAD_HW_D3D9) || defined(HAVE_DEKO3D) \
+   || defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 /* --- slots that are the core's own texture -----------------------------
  * Vulkan, libretro_d3d12.h version 2 and libretro_d3d11.h version 3:
  * nothing is copied into the slot, the driver reads the core's image or
@@ -450,7 +469,7 @@ static bool hw_slot_queued(const thread_video_t *thr, unsigned i, int st)
 }
 
 #if defined(HAVE_D3D11) || defined(HAVE_D3D12) || defined(VIDEO_THREAD_HW_D3D9) \
-   || defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
+   || defined(HAVE_DEKO3D) || defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
 /* The wait itself, for any slot that is the core's own texture: parks
  * on the ring until the word has moved and the slot is no longer
  * named. */
@@ -760,6 +779,63 @@ static void hw_d3d9_wait_sync_index(void *handle)
 }
 #endif /* VIDEO_THREAD_HW_D3D9 */
 
+#ifdef HAVE_DEKO3D
+/* --- deko3d ------------------------------------------------------------
+ * The core renders into an image per sync index on its own queue; the
+ * slot remembers which, and the fence it is complete behind. */
+
+static uint32_t hw_dk3d_get_sync_index(void *handle)
+{
+   hw_ring_t *ring = hw_ring_of(handle);
+   return ring ? ring->index : 0;
+}
+
+static uint32_t hw_dk3d_get_sync_index_mask(void *handle)
+{
+   (void)handle;
+   return (1u << VIDEO_THREAD_HW_RING) - 1;
+}
+
+/* Until no queued frame names the slot and the GPU is done with the
+ * frame that did */
+static void hw_dk3d_wait_sync_index(void *handle)
+{
+   hw_ring_t *ring = hw_ring_of(handle);
+   if (!ring)
+      return;
+   hw_wait_queued(ring, ring->index);
+   hw_wait_slot(ring, ring->index);
+}
+
+/* The slot's copies are what the video thread installs from: not
+ * rewritten while a queued frame still names it */
+static void hw_dk3d_set_image(void *handle,
+      const struct retro_deko3d_image *image, const DkFence *acquire)
+{
+   hw_ring_t *ring = hw_ring_of(handle);
+   hw_slot_t *s;
+   if (!ring)
+      return;
+   s = &ring->slot[ring->index];
+   hw_wait_queued(ring, ring->index);
+   if (!image || !image->image)
+   {
+      s->dk_has_image   = false;
+      s->dk_has_acquire = false;
+      /* Every frame after this one, dupes included: see hw_set_image */
+      video_thread_invalidate_hw_render_cache(ring->thr);
+      return;
+   }
+   s->dk_image       = *image->image;
+   s->dk_desc        = *image;
+   s->dk_desc.image  = &s->dk_image;
+   s->dk_has_image   = true;
+   s->dk_has_acquire = acquire != NULL;
+   if (acquire)
+      s->dk_acquire  = *acquire;
+}
+#endif /* HAVE_DEKO3D */
+
 /* --- the wrapper's side ---------------------------------------------- */
 
 static bool hw_ring_setup(thread_video_t *thr, hw_ring_t **out)
@@ -805,7 +881,7 @@ bool video_thread_get_hw_render_interface(void *data,
    thread_video_t *thr = (thread_video_t*)data;
    const struct retro_hw_render_interface *real = NULL;
 #if defined(HAVE_VULKAN) || defined(HAVE_D3D12) || defined(HAVE_D3D11) \
-   || defined(VIDEO_THREAD_HW_D3D9)
+   || defined(VIDEO_THREAD_HW_D3D9) || defined(HAVE_DEKO3D)
    hw_ring_t *ring;
 #endif
 
@@ -974,6 +1050,24 @@ bool video_thread_get_hw_render_interface(void *data,
                   ring->iface.d3d9.interface_version);
          }
          *iface = (const struct retro_hw_render_interface*)&ring->iface.d3d9;
+         return true;
+#endif
+#ifdef HAVE_DEKO3D
+      case RETRO_HW_RENDER_INTERFACE_DEKO3D:
+         if (!thr->poke->hw_ring_install)
+            return false;
+         if (!hw_ring_setup(thr, &ring))
+            return false;
+         ring->api                            = HW_API_DEKO3D;
+         ring->real                           = real;
+         /* The device passes through; the core's queue is its own */
+         ring->iface.dk3d                     = *(const struct retro_hw_render_interface_deko3d*)real;
+         ring->iface.dk3d.handle              = thr;
+         ring->iface.dk3d.set_image           = hw_dk3d_set_image;
+         ring->iface.dk3d.get_sync_index      = hw_dk3d_get_sync_index;
+         ring->iface.dk3d.get_sync_index_mask = hw_dk3d_get_sync_index_mask;
+         ring->iface.dk3d.wait_sync_index     = hw_dk3d_wait_sync_index;
+         *iface = (const struct retro_hw_render_interface*)&ring->iface.dk3d;
          return true;
 #endif
       default:
@@ -1183,6 +1277,10 @@ int video_thread_hw_publish(thread_video_t *thr, unsigned *taken_back)
          return -1;
    }
 #endif
+#ifdef HAVE_DEKO3D
+   if (ring->api == HW_API_DEKO3D && !ring->slot[published].dk_has_image)
+      return -1;
+#endif
    if (ring->api == HW_API_GL)
    {
       /* Fence the core's rendering into the slot, on its context. */
@@ -1257,6 +1355,10 @@ int video_thread_hw_publish(thread_video_t *thr, unsigned *taken_back)
 #endif
 #ifdef VIDEO_THREAD_HW_D3D9
    if (ring->api == HW_API_D3D9)
+      hw_wait_queued(ring, ring->index);
+#endif
+#ifdef HAVE_DEKO3D
+   if (ring->api == HW_API_DEKO3D)
       hw_wait_queued(ring, ring->index);
 #endif
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
@@ -1344,6 +1446,20 @@ void video_thread_hw_before_frame(thread_video_t *thr, int hw_slot,
          thr->poke->hw_ring_install(thr->driver_data,
                ring->slot[hw_slot].d3d9_texture, NULL, 0, 0, NULL, 0);
          break;
+#endif
+#ifdef HAVE_DEKO3D
+      case HW_API_DEKO3D:
+      {
+         /* The acquire fence is waited once: a frame that reads the slot
+          * again takes only its image */
+         hw_slot_t *s = &ring->slot[hw_slot];
+         bool fence   = !reread && s->dk_has_acquire;
+         thr->poke->hw_ring_install(thr->driver_data,
+               s->dk_has_image ? &s->dk_desc : NULL,
+               fence ? &s->dk_acquire : NULL, fence ? 1 : 0, 0, NULL, 0);
+         s->dk_has_acquire = false;
+         break;
+      }
 #endif
       case HW_API_GL:
          thr->poke->hw_ring_present_slot(thr->driver_data, (unsigned)hw_slot);
@@ -1443,7 +1559,7 @@ void video_thread_hw_drop(thread_video_t *thr, int hw_slot)
 
 bool video_thread_hw_holds_frame(thread_video_t *thr)
 {
-#if defined(HAVE_VULKAN) || defined(VIDEO_THREAD_HW_D3D9)
+#if defined(HAVE_VULKAN) || defined(VIDEO_THREAD_HW_D3D9) || defined(HAVE_DEKO3D)
    hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
    unsigned i;
    if (!ring)
@@ -1472,6 +1588,18 @@ bool video_thread_hw_holds_frame(thread_video_t *thr)
       }
    }
 #endif
+#ifdef HAVE_DEKO3D
+   if (ring->api == HW_API_DEKO3D)
+   {
+      if (retro_atomic_load_acquire_int(&ring->last_presented) >= 0)
+         return true;
+      for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+      {
+         if (ring->slot[i].dk_has_image)
+            return true;
+      }
+   }
+#endif
 #else
    (void)thr;
 #endif
@@ -1480,7 +1608,7 @@ bool video_thread_hw_holds_frame(thread_video_t *thr)
 
 void video_thread_hw_forget(thread_video_t *thr)
 {
-#if defined(HAVE_VULKAN) || defined(VIDEO_THREAD_HW_D3D9)
+#if defined(HAVE_VULKAN) || defined(VIDEO_THREAD_HW_D3D9) || defined(HAVE_DEKO3D)
    hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
    unsigned i;
    if (!ring)
@@ -1506,6 +1634,16 @@ void video_thread_hw_forget(thread_video_t *thr)
          {
             hw_wait_slot(ring, i);
             ring->slot[i].d3d9_texture = NULL;
+         }
+         break;
+#endif
+#ifdef HAVE_DEKO3D
+      case HW_API_DEKO3D:
+         for (i = 0; i < VIDEO_THREAD_HW_RING; i++)
+         {
+            hw_wait_slot(ring, i);
+            ring->slot[i].dk_has_image   = false;
+            ring->slot[i].dk_has_acquire = false;
          }
          break;
 #endif
@@ -1714,6 +1852,10 @@ bool video_thread_hw_allowed(void)
 #ifdef VIDEO_THREAD_HW_D3D9
       case RETRO_HW_CONTEXT_D3D9:
          return string_is_equal(settings->arrays.video_driver, "d3d9_hlsl");
+#endif
+#ifdef HAVE_DEKO3D
+      case RETRO_HW_CONTEXT_DEKO3D:
+         return string_is_equal(settings->arrays.video_driver, "deko3d");
 #endif
       default:
          return false;

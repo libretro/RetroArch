@@ -24,6 +24,11 @@ on:
       - 'samples/menu/playlist_nav/**'
       - 'samples/network/command_frames/**'
       - 'samples/menu/nav_repeat_stall/**'
+      - 'samples/menu/pad_tag_rows/**'
+      - 'input/input_pad_tag.h'
+      - 'input/input_driver.c'
+      - 'input/drivers_joypad/test_joypad.c'
+      - 'tasks/task_autodetect.c'
       - 'samples/menu/mouse_click/**'
       - 'samples/menu/menu_icon_ownership/**'
       - 'samples/menu/ozone_sublabel_scroll/**'
@@ -69,6 +74,11 @@ on:
       - 'samples/menu/playlist_nav/**'
       - 'samples/network/command_frames/**'
       - 'samples/menu/nav_repeat_stall/**'
+      - 'samples/menu/pad_tag_rows/**'
+      - 'input/input_pad_tag.h'
+      - 'input/input_driver.c'
+      - 'input/drivers_joypad/test_joypad.c'
+      - 'tasks/task_autodetect.c'
       - 'samples/menu/mouse_click/**'
       - 'samples/menu/menu_icon_ownership/**'
       - 'samples/menu/ozone_sublabel_scroll/**'
@@ -264,6 +274,27 @@ jobs:
           ./samples/menu/nav_repeat_stall/menu_nav_repeat_stall_test
           make -C samples/menu/nav_repeat_stall clean
 
+      - name: Build and run pad_tags_test
+        shell: bash
+        run: |
+          set -eu
+          # Two controllers shown with one name: each is told apart by
+          # a tag hashed from its own identity (its serial or address,
+          # none of which is shown, else its port, never the slot),
+          # numbered when two tags are the same, "#N" with no identity
+          # where no slot number is beside it. While two share a name,
+          # a press of a button or a pull of a trigger marks the pad's
+          # rows "Pressed" for a second and the rows' sublabels say a
+          # press finds one, except in Ozone, whose footer hint is up on
+          # the controller pages only. Test joypad pads through the real
+          # frame loop. Shares the non-Qt build made above. --bridge
+          # runs it all again with the pads read through the snapshot
+          # bridge, where a press is found in the view the poll left.
+          samples/menu/pad_tag_rows/build.sh
+          ./samples/menu/pad_tag_rows/pad_tags_test
+          ./samples/menu/pad_tag_rows/pad_tags_test --bridge
+          make -C samples/menu/pad_tag_rows clean
+
       - name: Build and run menu_icon_ownership_test
         shell: bash
         run: |
@@ -305,9 +336,23 @@ jobs:
             ./samples/menu/msgbox_layout/msgbox_layout_test "$d" tall
             ./samples/menu/msgbox_layout/msgbox_layout_test "$d" firmware
           done
+          # A rule under the confirm box's heading, under its last line
+          # when it wraps; none without a heading, or where the box fits
+          # only without the rule's line, or under the input dialog's
+          # label.
+          for d in ozone xmb materialui; do
+            for l in heading heading_wrap heading_none heading_fit; do
+              ./samples/menu/msgbox_layout/msgbox_layout_test "$d" "$l"
+            done
+          done
+          ./samples/menu/msgbox_layout/msgbox_layout_test xmb heading_osk
+          ./samples/menu/msgbox_layout/msgbox_layout_test materialui heading_osk
           # The input dialog's caret, at the wrap's line breaks too.
           ./samples/menu/msgbox_layout/msgbox_layout_test xmb caret
           ./samples/menu/msgbox_layout/msgbox_layout_test materialui caret
+          # The input dialog opened again draws only its own text.
+          ./samples/menu/msgbox_layout/msgbox_layout_test xmb reopen
+          ./samples/menu/msgbox_layout/msgbox_layout_test materialui reopen
           # RGUI uploads its framebuffer once per change to the box,
           # not every frame the box is up.
           ./samples/menu/msgbox_layout/msgbox_layout_test rgui redraw
@@ -535,8 +580,17 @@ jobs:
           # open after it, refused again with no menu); the first run's
           # seed, with and without a menu and a refusal it holds;
           # run-ahead's copy; Load Once lasting until another core
-          # loads; another load ending a waiting park; and a built-in
-          # core's load, which ends a park as another core's load does.
+          # loads; another load ending a waiting park; a built-in
+          # core's load, which ends a park as another core's load does;
+          # and the firmware box, whose answer keeps the menu's level,
+          # which a contentless core's refused probe still shows, and
+          # whose wait behind a confirm opens the menu to show it; with
+          # a null menu the load runs and says what firmware is missing;
+          # a load the Security Warning re-runs does not ask again; the
+          # box's Cancel leaves the running game as it was and spends a
+          # Load Once; a built-in core's start asks for no other core's
+          # firmware; and a load asked for while the box waits is turned
+          # away before it can change what the box's answer loads.
           make -C samples/tasks/core_load_paths check
           make -C samples/tasks/core_load_paths clean
 

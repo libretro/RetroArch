@@ -32,6 +32,280 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
 
 jobs:
+  pyrowave-frontend-source:
+    name: PyroWave actual GPU sender and receiver over TCP
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      APT_PKGS: build-essential pkg-config xvfb xauth python3-pil ffmpeg libasound2-dev libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers libgl1-mesa-dev libegl1-mesa-dev glslang-tools spirv-tools spirv-cross zlib1g-dev
+    steps:
+      - uses: actions/checkout@v6
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+      - name: Build the source frontend and independent fixtures
+        run: |
+          ./configure --enable-pyrowave --enable-vulkan --enable-x11 --enable-opengl --enable-opengl_core --enable-menu --enable-rgui --disable-qt --disable-wayland --disable-ffmpeg --disable-cheevos --disable-discord --disable-ssl --disable-sdl2 --disable-sdl --enable-alsa --disable-pulse --disable-jack --disable-oss --disable-udev --disable-dbus
+          grep -q '^HAVE_XCB = 1' config.mk
+          make -j2 GL_DEBUG=1
+          python3 tools/pyrowave_embed_shaders.py --check
+          python3 tools/pyrowave_embed_shaders_test.py
+          python3 tools/glsl_minify_test.py
+          python3 tools/spirv_optimize_test.py
+          make -C samples/gfx/pyrowave_session check frontend-fixtures
+          python3 tools/pyrowave_shaders.py --output "$RUNNER_TEMP/pyrowave-shaders/rpyrowave_shaders.h" --export-spirv "$RUNNER_TEMP/pyrowave-shaders" --export-glsl "$RUNNER_TEMP/pyrowave-shaders"
+      - name: PyroWave built-in menus, LAN opt-in and receive consent
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          xvfb-run -a python3 samples/gfx/pyrowave_session/lan_menu_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-lan-menu" --backend glcore
+          xvfb-run -a python3 samples/gfx/pyrowave_session/lan_menu_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-lan-menu-threaded" --backend glcore --threaded --record-driver nvenc
+      - name: Entire frontend menus, content transitions, resize and media playback
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          ffmpeg -v error -f lavfi -i testsrc2=size=320x180:rate=30 -f lavfi -i sine=frequency=440:sample_rate=48000 -t 20 -c:v libvpx-vp9 -cpu-used 8 -b:v 300k -c:a aac "$RUNNER_TEMP/pyrowave-media.mp4"
+          for backend in glcore vulkan; do
+            xvfb-run -a python3 samples/gfx/pyrowave_session/lan_menu_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --embedded-shaders --output "$RUNNER_TEMP/pyrowave-lan-menu-full-$backend" --backend "$backend" --threaded --frontend-only --pixels --transition --resize --media "$RUNNER_TEMP/pyrowave-media.mp4"
+            xvfb-run -a python3 samples/gfx/pyrowave_session/frontend_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --embedded-shaders --output "$RUNNER_TEMP/pyrowave-full-audio-$backend" --backend "$backend" --threaded --full-output --audio-driver alsa --audio-device null
+          done
+      - name: Preserve PyroWave LAN menu diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyrowave-lan-menu-diagnostics
+          path: ${{ runner.temp }}/pyrowave-lan-menu*
+          if-no-files-found: ignore
+      - name: Exercise actual GPU capture, PCM, threaded retirement and peer abort
+        shell: bash
+        run: |
+          set -eu
+          cat > "$RUNNER_TEMP/vk_layer_settings.txt" <<'EOF'
+          khronos_validation.validate_sync = true
+          khronos_validation.syncval_shader_accesses_heuristic = true
+          khronos_validation.debug_action = VK_DBG_LAYER_ACTION_LOG_MSG
+          khronos_validation.report_flags = error,warn,info
+          khronos_validation.log_filename = stdout
+          EOF
+          export VK_LAYER_SETTINGS_PATH="$RUNNER_TEMP"
+          export VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation
+          export VK_LOADER_DEBUG=layer
+          for icd in /usr/share/vulkan/icd.d/lvp*.json; do
+            if [ -f "$icd" ]; then export VK_ICD_FILENAMES="$icd"; break; fi
+          done
+          test -n "${VK_ICD_FILENAMES:-}"
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/frontend_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-direct" --backend vulkan --require-validation
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/frontend_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-threaded" --backend vulkan --threaded --require-validation
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/frontend_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-abort" --backend vulkan --threaded --disconnect-after 12 --require-validation
+          python3 samples/gfx/pyrowave_session/frontend_fault.py --build-directory "$PWD" --retroarch "$PWD/retroarch" --output "$RUNNER_TEMP/retroarch-finalization-fault"
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/frontend_oracle.py --retroarch "$RUNNER_TEMP/retroarch-finalization-fault" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-finalization-fault" --backend vulkan --threaded --expect-abort --require-validation
+          export LIBGL_ALWAYS_SOFTWARE=1
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/frontend_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-gl-direct" --backend glcore --require-gl-debug
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/frontend_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-gl-threaded" --backend glcore --threaded --require-gl-debug
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/frontend_oracle.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-gl-abort" --backend glcore --threaded --disconnect-after 12 --require-gl-debug
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/frontend_cancel.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-gl-cancel-direct" --backend glcore
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/frontend_cancel.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-gl-cancel-threaded" --backend glcore --threaded
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/frontend_cancel.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-gl-missing" --backend glcore --threaded --missing-shaders
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/frontend_cancel.py --retroarch "$PWD/retroarch" --core "$PWD/samples/gfx/pyrowave_session/frontend_core.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/pyrowave-vk-cancel" --backend vulkan --threaded
+
+      - name: Exercise actual GL receiver pixels, PCM and lifecycle
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        shell: bash
+        run: |
+          set -eu
+          receiver() {
+            xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/receiver_oracle.py --retroarch "$PWD/retroarch" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/receiver-$1" "${@:2}"
+          }
+          receiver direct --mode playback
+          receiver threaded --mode playback --threaded
+          receiver history --mode playback --threaded --history-shader
+          receiver hdr --mode playback --hdr
+          receiver hdr-history --mode playback --threaded --history-shader --hdr
+          receiver hdr-end --mode end --threaded --hdr
+          receiver end --mode end
+          receiver retained-core --mode end --threaded --retained-core "$PWD/samples/gfx/pyrowave_session/frontend_core.so"
+          receiver mono --mode end --threaded --audio-channels 1
+          receiver silent --mode end --threaded --audio-channels 0
+          receiver abort --mode abort --threaded
+          receiver early --mode early --threaded
+          receiver missing --mode missing-shaders --threaded
+          receiver reconnect --mode reconnect --threaded
+
+      - name: Exercise Vulkan receiver pixels, history and GPU cancellation
+        shell: bash
+        run: |
+          set -eu
+          export VK_LAYER_SETTINGS_PATH="$RUNNER_TEMP"
+          export VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation
+          export VK_LOADER_DEBUG=layer
+          for icd in /usr/share/vulkan/icd.d/lvp*.json; do
+            if [ -f "$icd" ]; then export VK_ICD_FILENAMES="$icd"; break; fi
+          done
+          test -n "${VK_ICD_FILENAMES:-}"
+          receiver_vk() {
+            xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/receiver_oracle.py --retroarch "$PWD/retroarch" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/receiver-vk-$1" --backend vulkan --require-validation "${@:2}"
+          }
+          receiver_vk direct --mode playback
+          receiver_vk threaded --mode playback --threaded
+          receiver_vk history --mode playback --threaded --history-shader
+          receiver_vk hdr --mode playback --hdr
+          receiver_vk hdr-history --mode playback --threaded --history-shader --hdr
+          receiver_vk hdr-end --mode end --threaded --hdr
+          receiver_vk end --mode end
+          receiver_vk retained-core --mode end --threaded --retained-core "$PWD/samples/gfx/pyrowave_session/frontend_core.so"
+          receiver_vk mono --mode end --threaded --audio-channels 1
+          receiver_vk silent --mode end --threaded --audio-channels 0
+          receiver_vk abort --mode abort --threaded
+          receiver_vk early --mode early --threaded
+          receiver_vk missing --mode missing-shaders --threaded
+          receiver_vk reconnect --mode reconnect --threaded
+          python3 samples/gfx/pyrowave_session/frontend_fault.py --receiver --build-directory "$PWD" --retroarch "$PWD/retroarch" --output "$RUNNER_TEMP/retroarch-receiver-fault"
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/receiver_oracle.py --retroarch "$RUNNER_TEMP/retroarch-receiver-fault" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/receiver-vk-gpu-failure" --backend vulkan --threaded --mode gpu-failure --require-validation
+          python3 samples/gfx/pyrowave_session/frontend_fault.py --build-directory "$PWD" --retroarch "$PWD/retroarch" --output "$RUNNER_TEMP/retroarch-receiver-retained" --receiver --retain-unsubmitted
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/receiver_oracle.py --retroarch "$RUNNER_TEMP/retroarch-receiver-retained" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/receiver-vk-retained" --backend vulkan --threaded --mode gpu-failure --require-validation --require-retirement-marker
+          python3 samples/gfx/pyrowave_session/frontend_fault.py --build-directory "$PWD" --retroarch "$PWD/retroarch" --output "$RUNNER_TEMP/retroarch-receiver-loss-report" --receiver --retain-unsubmitted --report-marker-loss
+          xvfb-run -n 99 -s '-screen 0 640x480x24 -nolisten tcp -pn' python3 samples/gfx/pyrowave_session/receiver_oracle.py --retroarch "$RUNNER_TEMP/retroarch-receiver-loss-report" --codec "$PWD/samples/gfx/pyrowave_session/frontend_codec.so" --shader-directory "$RUNNER_TEMP/pyrowave-shaders" --output "$RUNNER_TEMP/receiver-vk-loss-report" --backend vulkan --threaded --mode gpu-failure --require-validation --require-retirement-marker
+
+  pyrowave-frontend-build:
+    name: PyroWave frontend link (${{ matrix.threads }} threads, ${{ matrix.vulkan }} Vulkan, ${{ matrix.opengl }} GL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        include:
+          - threads: enable
+            vulkan: enable
+            opengl: enable
+          - threads: disable
+            vulkan: disable
+            opengl: enable
+          - threads: enable
+            vulkan: enable
+            opengl: disable
+    env:
+      APT_PKGS: build-essential pkg-config libgl-dev libegl-dev libgles-dev libvulkan-dev zlib1g-dev
+    steps:
+      - uses: actions/checkout@v6
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+      - name: Configure PyroWave and applicable compute backends
+        run: >-
+          ./configure --enable-pyrowave --${{ matrix.vulkan }}-vulkan
+          --${{ matrix.threads }}-threads --${{ matrix.opengl }}-opengl --${{ matrix.opengl }}-opengl_core
+          --disable-menu --disable-qt --disable-x11 --disable-wayland
+          --disable-ffmpeg --disable-cheevos --disable-discord --disable-ssl
+          --disable-sdl2 --disable-sdl --disable-alsa --disable-pulse
+          --disable-jack --disable-oss --disable-udev --disable-dbus
+      - name: Link the full frontend
+        run: make clean && make -j2
+
+  pyrowave-compute:
+    name: PyroWave transport and asynchronous compute ownership
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APT_PKGS: build-essential clang libasound2-dev libegl-dev libgl-dev libgles-dev libegl-mesa0 libgl1-mesa-dri glslang-tools spirv-tools spirv-cross gcc-mingw-w64-x86-64 libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers
+      EGL_PLATFORM: surfaceless
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+      - name: Save apt cache
+        if: env.APT_CACHE_SAVE == '1'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+      - name: Exercise fragmented video and PCM sessions over nonblocking TCP
+        run: |
+          make -C libretro-common/samples/formats/pyrowave clean check SANITIZER=address,undefined
+          make -C libretro-common/samples/formats/pyrowave clean all CC=x86_64-w64-mingw32-gcc EXE=.exe
+      - name: Build independent kernels and exercise bounded capture ownership
+        run: |
+          make -C samples/gfx/pyrowave_gl clean check
+          python3 tools/pyrowave_shaders.py --output samples/gfx/pyrowave_gl/.pyrowave-shaders/rpyrowave_shaders.h --check
+      - name: Exercise direct PCM session handoffs
+        run: |
+          make -C samples/gfx/pyrowave_session clean check SANITIZER=address,undefined
+          make -C samples/gfx/pyrowave_session clean all device5-abi-build CC=x86_64-w64-mingw32-gcc EXE=.exe
+          make -C samples/gfx/pyrowave_session frontend-fixtures
+          make -C samples/gfx/pyrowave_session frontend-fixtures CC=x86_64-w64-mingw32-gcc EXE=.exe
+      - name: Validate device presentation and queue-loss epochs
+        run: |
+          make -C samples/audio/pyrowave_presentation clean check SANITIZER=address,undefined
+          make -C samples/audio/pyrowave_presentation all CC=x86_64-w64-mingw32-gcc
+          make -C samples/audio/lend_write -j2 PYROWAVE=1 SANITIZER=address,undefined check
+      - name: Vulkan asynchronous encoder and receiver ownership
+        env:
+          RPY_ALLOW_SOFTWARE: '1'
+          RPY_REQUIRE_VALIDATION: '1'
+          RPY_VALIDATE_SYNC: '1'
+          RPY_VALIDATE_SHADER_ACCESSES: '1'
+          ASAN_OPTIONS: detect_leaks=0
+        run: |
+          make -C samples/gfx/pyrowave_vulkan clean check check-player SANITIZER=address,undefined
+          make -C samples/gfx/pyrowave_vulkan clean all pyrowave_player_vulkan_test.exe CC=x86_64-w64-mingw32-gcc EXE=.exe
+      - name: Cross-compile D3D12 asynchronous encoder and receiver
+        run: make -C samples/gfx/pyrowave_d3d12 clean all pyrowave_player_d3d12_test.exe CC=x86_64-w64-mingw32-gcc
+      - name: Cross-compile D3D11 compute adapter and native oracle
+        run: make -C samples/gfx/pyrowave_d3d11 clean all CC=x86_64-w64-mingw32-gcc
+      - name: Validate scRGB gamut and transfer conversion
+        run: |
+          make -C libretro-common/samples/formats/pyrowave color-check SANITIZER=address,undefined COLOR_SHADER="$PWD/samples/gfx/pyrowave_gl/.pyrowave-shaders/color.comp"
+          make -C libretro-common/samples/formats/pyrowave clean color-build CC=x86_64-w64-mingw32-gcc EXE=.exe
+      - name: Compile Windows C89 capture and GLES capability branches
+        run: |
+          make -C samples/gfx/pyrowave_gl clean all CC=x86_64-w64-mingw32-gcc EXE=.exe
+          cc -std=c89 -pedantic -Wall -Wextra -Werror -O2 -DHAVE_OPENGLES -DHAVE_OPENGLES3 -Ilibretro-common/include -c record/record_pyrowave_gl.c -o /tmp/record_pyrowave_gl_es.o
+      - name: Metal C89 binding and ownership contracts with shared and managed storage
+        run: |
+          make -C samples/gfx/pyrowave_metal clean check native-compile SANITIZER=address,undefined
+          make -C samples/gfx/pyrowave_metal clean check native-compile CC=clang SANITIZER=address,undefined
+          make -C samples/gfx/pyrowave_metal clean all CC=x86_64-w64-mingw32-gcc EXE=.exe
+
   vaapi-hevc-parameters:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -251,6 +525,10 @@ jobs:
           # Then dispserv_kms.c's vblank clock on the same kernel: its
           # CRTC's vblanks counted one by one on a description that is
           # not the master's, whose page flip event is left to it.
+          # And gfx/common/drm_vblank.h as a compositor's client has
+          # it: a second opener of the card, not its master, finds the
+          # CRTC by its connector's kind and number and reads its
+          # vblanks while the master drives it.
           make SANITIZER=address,undefined
           make check SANITIZER=address,undefined
 
@@ -366,7 +644,7 @@ jobs:
           make -C samples/gfx/vulkan_driver_pacing clean
 
   vulkan-custom-driver:
-    name: Android custom Vulkan driver packages and crash state
+    name: "Custom Vulkan drivers: packages, ICD manifests and crash state"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -400,9 +678,10 @@ jobs:
 
       - name: Regression test (Linux, ASan + UBSan)
         run: |
-          # Package checks, the extraction key, the sticky crash state,
-          # the session's driver choices and the soname patch, fed from
-          # buffers; the loader itself is Android-only.
+          # Package and ICD manifest checks, the extraction key, the sticky
+          # crash state, the session's driver choices and the soname patch,
+          # fed from buffers; and the desktop glue loading stand-in drivers
+          # (fake_icd.c) through ICD manifests. The Vulkan loader is not run.
           UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              make -C samples/gfx/vulkan_custom_driver SANITIZER=address,undefined check
           make -C samples/gfx/vulkan_custom_driver clean
@@ -606,7 +885,7 @@ jobs:
     timeout-minutes: 20
 
     env:
-      APT_PKGS: build-essential libgl-dev gcc-mingw-w64-x86-64 wine64
+      APT_PKGS: build-essential libgl-dev libegl-dev libgles-dev libegl-mesa0 libgl1-mesa-dri gcc-mingw-w64-x86-64 wine64
 
     steps:
       - name: Checkout
@@ -641,7 +920,7 @@ jobs:
           set -eu
           # The real slang_process(): rslc hands a pass back as HLSL for
           # the Direct3D 10/11/12 drivers, and a preset's simulated
-          # SourceSize reaches the first pass only, from
+          # SourceSize reaches the passes that opt in (the first by default), from
           # storage that outlives the semantics the D3D drivers copy.
           make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
@@ -710,6 +989,9 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
              timeout 60 make check
           make clean
+
+      - name: Viewer history GPU pixels (surfaceless OpenGL, RGBA8 and FP16)
+        run: python3 samples/gfx/gl_last_pass_fbo/history_pixels.py
 
       - name: Build and run gl2/gl3 last_pass_fbo tests (mingw-w64, Wine)
         shell: bash
@@ -916,6 +1198,7 @@ jobs:
              EXTRA=""
              if [ "$backend" = "PS2" ]; then EXTRA="-I$PS2STUB/ps2stub"; fi
              for f in gfx/video_thread_wrapper.c \
+                      calendar_time.c \
                       gfx/font_driver.c \
                       gfx/gfx_thumbnail.c \
                       libretro-common/formats/video_player.c \
@@ -1149,7 +1432,7 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE=1 ASAN_OPTIONS=detect_leaks=0 \
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 120 make check SANITIZER=address,undefined
-          echo "[pass] glsl_rect_test, glsl_in_place_test"
+          echo "[pass] glsl_rect_test, glsl_in_place_test, glsl_colour_test"
 
       - name: XMB menu effects on every backend's sources, GL and GLES programs drawn (Mesa EGL, ASan + UBSan)
         shell: bash
@@ -1339,6 +1622,41 @@ jobs:
              timeout 60 ./shader_dir_cycle_test "$T"
           rm -rf "${T:?}"
           echo "[pass] shader_dir_cycle_test"
+
+      - name: Build and run shader_sim_res_preset_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/shader_sim_res_preset
+        run: |
+          set -eu
+          # The per-pass use_simulated_res key through the real preset
+          # parser and writers: the first pass is on by default, the
+          # key is written only where it differs from that, and a toggled
+          # flag forces a full preset instead of a #reference.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          test -x shader_sim_res_preset_test
+          T=$(mktemp -d)
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+             timeout 60 ./shader_sim_res_preset_test "$T"
+          rm -rf "${T:?}"
+          echo "[pass] shader_sim_res_preset_test"
+
+      - name: Build and run shader_preset_combine_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/shader_preset_combine
+        run: |
+          set -eu
+          # Prepend/append combine a preset into the one that comes
+          # first, in place: passes past the limit are dropped with the
+          # parameters they own, LUTs keep their filter, wrap and mipmap
+          # settings, and the parameter list merged from the two
+          # resolved lists matches a fresh resolve of every source.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          test -x shader_preset_combine_test
+          T=$(mktemp -d)
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+             timeout 60 ./shader_preset_combine_test "$T"
+          rm -rf "${T:?}"
+          echo "[pass] shader_preset_combine_test"
 
       - name: Build and run vulkan_mailbox_init_leak_test (ASan + LSan)
         shell: bash
@@ -2046,6 +2364,29 @@ jobs:
                 setarch "$(uname -m)" -R timeout 120 ./run.sh)
           echo "[pass] mutter_displayconfig_test"
 
+      - name: X11 monitors on a worker thread (Xvfb, ASan + UBSan, TSan)
+        shell: bash
+        run: |
+          set -eu
+          # The screens' Display setting lists the X11 monitors and the
+          # one the main window is on. A worker thread on its own X
+          # connection asks the server, so the context thread makes no
+          # round trip for them; it publishes each snapshot by swapping
+          # a pointer and frees the one it replaced once no reader is
+          # inside it. run.sh starts a fresh Xvfb per case; the threads
+          # case reads from four threads while the RandR monitors flip,
+          # and freeing a snapshot a reader is in is a TSan data race.
+          (cd samples/gfx/x11_monitors \
+             && make clean all SANITIZER=address,undefined \
+             && ASAN_OPTIONS=detect_leaks=1 \
+                UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+                timeout 300 ./run.sh)
+          (cd samples/gfx/x11_monitors \
+             && make clean all SANITIZER=thread \
+             && TSAN_OPTIONS=halt_on_error=1 THREADS_ONLY=1 \
+                setarch "$(uname -m)" -R timeout 120 ./run.sh)
+          echo "[pass] x11_monitors_test"
+
       - name: Build and run dbus_screensaver_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/dbus_screensaver
@@ -2083,7 +2424,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono libfreetype-dev
+      APT_PKGS: build-essential libx11-dev libxrandr-dev libdrm-dev xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev libwayland-dev libegl-dev libgles-dev libgbm-dev gcc-mingw-w64-x86-64 wine64 openbox cmake ninja-build ccache libgl-dev xvfb libdbus-1-dev dbus python3-dbus python3-gi weston xwayland mutter libvkd3d1 mesa-vulkan-drivers fonts-dejavu-core fonts-dejavu-mono libfreetype-dev libvulkan-dev vulkan-validationlayers
 
     steps:
       - name: Checkout
@@ -2160,6 +2501,28 @@ jobs:
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/d3d12_menu.py
           CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/hdr_view_crop.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/hdr_view_crop.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/glsl_viewer_route.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/glsl_viewer_route.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/viewer_hdr.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/viewer_hdr.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/viewer_vulkan_hdr.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/viewer_vulkan_hdr.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/d3d11_viewer_colour.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/d3d11_viewer_colour.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/d3d12_viewer_colour.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/d3d12_viewer_colour.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/slang_history.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/slang_history.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/vulkan_media_pool.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/vulkan_media_pool.py
+          python3 samples/gfx/threaded_video/vulkan_media_pool.py --gpu
+          VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation python3 samples/gfx/rslc_remap/planar_pixels.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/viewer_history.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/viewer_history.py
+          CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/metal_viewer_colour.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/metal_viewer_colour.py
+          CXXFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/metal_viewer_pixels.py
+          CXX=x86_64-w64-mingw32-g++ RUNNER=wine python3 samples/gfx/threaded_video/metal_viewer_pixels.py
           CFLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" python3 samples/gfx/threaded_video/d3d12_raw_frame.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine python3 samples/gfx/threaded_video/d3d12_raw_frame.py
           python3 samples/gfx/d3d12_menu_mapping/run.py
@@ -2433,8 +2796,10 @@ jobs:
         run: |
           set -o pipefail
           # A core that locks and unlocks the context in a tight loop
-          # gives way to a frontend waiting for it, parked on an event
-          # rather than spinning; a core that does not must be caught.
+          # gives way to a frontend waiting for it, parked on an
+          # eventcount rather than spinning, and a wake left over from a
+          # frontend nobody was parked for does not let it skip the
+          # next one; a core that does not give way must be caught.
           samples/gfx/d3d11_turns/run.sh
 
       - name: libretro_d3d12.h version 2, the contract run (mingw + Wine + vkd3d, headless)
@@ -3142,6 +3507,22 @@ jobs:
           test -f gfx_thumbnail_anim_test.exe
           make clean TARGET=gfx_thumbnail_anim_test.exe
 
+      - name: Build and run gfx_thumbnail_match_test (ASan + UBSan, mingw-w64)
+        shell: bash
+        working-directory: samples/gfx/gfx_thumbnail_match
+        run: |
+          set -eu
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          # Thumbnail name matching on trimmed libretro-thumbnails
+          # listings: the names it must match and the games it must
+          # keep apart.
+          make clean
+          UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+             ASAN_OPTIONS=detect_leaks=1 make check SANITIZER=address,undefined
+          make clean
+          make check CC=x86_64-w64-mingw32-gcc LDFLAGS=-static RUNNER=wine
+          make clean
+
       - name: Build and run gfx_surface_still_test (ASan + UBSan, mingw-w64)
         shell: bash
         working-directory: samples/gfx/gfx_surface_still
@@ -3373,6 +3754,19 @@ jobs:
           # once, and again after the chain is resized.
           CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/dxgi_present_immediate/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/dxgi_present_immediate/run.py
+          # The same question on X11: GLX and EGL with no swap interval,
+          # Vulkan in immediate mode, each only where no compositor shows
+          # the window - it asked to bypass one, or none owns the
+          # screen's selection.
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/x11_present_immediate/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/x11_present_immediate/run.py
+          # And on Wayland: the connector a wl_output's name stands for,
+          # the CRTC behind it among made-up cards (never probing a
+          # connector), the display server's clock following the
+          # window's connector, and a present counted as tearing only
+          # where the compositor was asked and its feedback says so.
+          CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer' python3 samples/gfx/wayland_vblank/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/wayland_vblank/run.py
 
       - name: Build and run hw_ring_fence_test (ASan + UBSan, TSan)
         shell: bash
@@ -3681,6 +4075,7 @@ jobs:
           ./preview_audio_feed_test --prepared-webm fixtures/audio_group_opus.webm fixtures/audio_group_vorbis.webm
           AUDIO_FEED_RACE=1 ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_refill_opus.webm
           AUDIO_FEED_RACE=1 ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_refill_vorbis.webm
+          AUDIO_MOVIE_LOOPS=1 AUDIO_FEED_RACE=1 ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_flac.webm
           make -B -j2 preview_audio_feed_test preview_audio_feed_test_threaded COUNT_IO=1 SANITIZER=address,undefined
           ./preview_audio_feed_test --seek-batch
           ./preview_audio_feed_test_threaded --seek-batch
@@ -3787,6 +4182,8 @@ jobs:
           done
           AUDIO_MOVIE_LOOPS=1 AUDIO_FEED_RACE=1 TSAN_OPTIONS=halt_on_error=1 timeout 120 \
             ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_refill_aac.mkv
+          AUDIO_MOVIE_LOOPS=1 AUDIO_FEED_RACE=1 TSAN_OPTIONS=halt_on_error=1 timeout 120 \
+            ./preview_audio_feed_test_threaded --continuous-webm fixtures/audio_group_flac.webm
           # The pool and the tile-column threads under TSan: the
           # shared frame buffers and contexts are written in disjoint
           # columns, the counts merged after the join.

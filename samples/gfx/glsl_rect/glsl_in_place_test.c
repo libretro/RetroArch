@@ -11,10 +11,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <math.h>
+#include <boolean.h>
+#include "../../../gfx/common/hdr_viewer_colour.h"
 
 #include "../../../gfx/drivers_shader/shader_glsl.c"
+#ifndef GL_RGBA32F
+#define GL_RGBA32F 0x8814
+#endif
+#ifndef GL_RGBA16F
+#define GL_RGBA16F 0x881A
+#endif
 
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <EGL/egl.h>
+#endif
 
 /* The frontend shader_glsl.c refers to */
 void RARCH_LOG(const char *fmt, ...)  { (void)fmt; }
@@ -23,8 +36,15 @@ void RARCH_ERR(const char *fmt, ...)
 { va_list ap; va_start(ap, fmt); printf("      [err] "); vprintf(fmt, ap); va_end(ap); }
 bool gl2_load_luts(const void *shader, GLuint *textures)
 { (void)shader; (void)textures; return true; }
+bool gl_query_extension(const char *name) { (void)name; return false; }
 bool gl_check_capability(enum gl_capability_enum cap)
-{ return cap == GL_CAPS_GLES3_SUPPORTED; }
+{
+#ifdef HAVE_OPENGLES2
+   (void)cap;return false;
+#else
+   return cap == GL_CAPS_GLES3_SUPPORTED;
+#endif
+}
 void input_driver_read_sensor_snapshot(float *g, float *a, float *r)
 { (void)g; (void)a; (void)r; }
 void input_driver_set_shader_uses_sensors(bool v) { (void)v; }
@@ -189,6 +209,17 @@ static void free_glsl(glsl_shader_data_t *glsl)
       free(glsl->shader->pass[p - 1].source.string.fragment);
    }
    gl_glsl_in_place_free(glsl);
+   gl_glsl_viewer_free(glsl);
+#ifdef HAVE_GL_PLANAR
+   gl_glsl_planar_free(glsl);
+#endif
+   for(p=0;p<VIDEO_SHADER_PROGRAM_COUNT;p++)
+   {
+      if(glsl->vbo[p].vbo_primary)glDeleteBuffers(1,&glsl->vbo[p].vbo_primary);
+      if(glsl->vbo[p].vbo_secondary)glDeleteBuffers(1,&glsl->vbo[p].vbo_secondary);
+      free(glsl->vbo[p].buffer_primary);free(glsl->vbo[p].buffer_secondary);
+   }
+   free(glsl->coord_scratch);
    free(glsl->shader);
    free(glsl);
 }
@@ -249,6 +280,54 @@ static void draw(GLuint prog, GLuint tex, GLuint orig, unsigned in_w,
    glVertexAttribPointer(tloc, 4, GL_FLOAT, GL_FALSE, 0, coords);
    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
    glReadPixels(0, 0, ow, oh, GL_RGBA, GL_UNSIGNED_BYTE, out);
+   glDisableVertexAttribArray(vloc);
+   glDisableVertexAttribArray(tloc);
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   glDeleteFramebuffers(1, &fbo);
+   glDeleteTextures(1, &target);
+}
+
+static void draw_hdr(GLuint prog, GLuint tex, GLuint orig, unsigned in_w,
+      unsigned in_h, unsigned ow, unsigned oh, float *out)
+{
+   static const GLfloat quad[] = {
+      -1, -1, 0, 1,   1, -1, 0, 1,   -1, 1, 0, 1,   1, 1, 0, 1 };
+   static const GLfloat coords[] = {
+      0, 0, 0, 0,   1, 0, 0, 0,   0, 1, 0, 0,   1, 1, 0, 0 };
+   GLuint fbo, target;
+   GLint loc, vloc, tloc;
+   glGenTextures(1, &target);
+   glBindTexture(GL_TEXTURE_2D, target);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, ow, oh, 0, GL_RGBA,
+         GL_FLOAT, NULL);
+   glGenFramebuffers(1, &fbo);
+   glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, target, 0);
+   glViewport(0, 0, ow, oh);
+   glUseProgram(prog);
+   if (orig)
+   {
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_2D, orig);
+      if ((loc = glGetUniformLocation(prog, "OrigTexture")) >= 0)
+         glUniform1i(loc, 1);
+      if ((loc = glGetUniformLocation(prog, "PrevTexture")) >= 0)
+         glUniform1i(loc, 1);
+   }
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, tex);
+   if ((loc = glGetUniformLocation(prog, "TextureSize")) >= 0)
+      glUniform2f(loc, (float)in_w, (float)in_h);
+   vloc = glGetAttribLocation(prog, "VertexCoord");
+   tloc = glGetAttribLocation(prog, "TexCoord");
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+   glEnableVertexAttribArray(vloc);
+   glEnableVertexAttribArray(tloc);
+   glVertexAttribPointer(vloc, 4, GL_FLOAT, GL_FALSE, 0, quad);
+   glVertexAttribPointer(tloc, 4, GL_FLOAT, GL_FALSE, 0, coords);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   glReadPixels(0, 0, ow, oh, GL_RGBA, GL_FLOAT, out);
    glDisableVertexAttribArray(vloc);
    glDisableVertexAttribArray(tloc);
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -407,16 +486,148 @@ static void test_kept(const char *src, const char *what)
    free_glsl(glsl);
 }
 
-int main(void)
+static void test_viewer_colour(void)
 {
+   static const float whites[] = {80, 100, 203, 400};
+   static const char *src = SHADER_HEAD
+      "uniform sampler2D OrigTexture;\n"
+      "void main() { FragColor = COMPAT_TEXTURE(Texture,vTex)*0.75"
+      "+COMPAT_TEXTURE(OrigTexture,vTex)*0.25; }\n#endif\n";
+   float pixels[32], lut[32], out[32], rows[12];
+   GLuint texture, lookup, core;
+   unsigned g, w, i, c, failures = 0;
+   glsl_shader_data_t *glsl = make_glsl(&src, 1);
+   core = glsl->prg[1].id;
+   glsl->shader->luts = 1;
+   strlcpy(glsl->shader->lut[0].id, "OrigTexture", sizeof(glsl->shader->lut[0].id));
+   gl_glsl_viewer_prepare(glsl);
+   CHECK(glsl->viewer.ok && glsl->viewer.count == 1, "HDR viewer variant compiled during preset loading");
+   CHECK(glsl->prg[1].id == core, "preparing the viewer keeps the core program");
+   texture = make_texture(8, 1, NULL);
+   lookup = make_texture(8, 1, NULL);
+   for (i = 0; i < 8; i++)
+      for (c = 0; c < 4; c++)
+      {
+         pixels[i * 4 + c] = c == 3 ? 0.6f : ((float)i - 2.0f) * (float)(c + 1) * 0.8f;
+         lut[i * 4 + c] = 0.1f * (float)(c + 1);
+      }
+   glBindTexture(GL_TEXTURE_2D, texture);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 8, 1, 0, GL_RGBA, GL_FLOAT, pixels);
+   glBindTexture(GL_TEXTURE_2D, lookup);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 8, 1, 0, GL_RGBA, GL_FLOAT, lut);
+   for (g = 0; g < 4; g++)
+      for (w = 0; w < 4; w++)
+      {
+         hdr_viewer_colour_rows(rows, true, whites[w], g);
+         CHECK(gl_glsl_set_media_colour(glsl, rows), "select the precompiled viewer");
+         {
+            GLint current = 0;
+            gl_glsl_use(NULL, glsl, 1, true);
+            glGetIntegerv(GL_CURRENT_PROGRAM, &current);
+            CHECK((GLuint)current == gl_glsl_program(glsl, 1)->id
+                  && (GLuint)current != core && glsl->prg[1].id == core,
+                  "shipping use selects the viewer without changing the core table");
+         }
+         draw_hdr(gl_glsl_program(glsl, 1)->id, texture, lookup, 8, 1, 8, 1, out);
+         for (i = 0; i < 8; i++)
+            for (c = 0; c < 4; c++)
+            {
+               float expected = pixels[i * 4 + c];
+               if (c != 3)
+               {
+                  const float *r = rows + c * 4;
+                  float x = r[0] * pixels[i * 4] + r[1] * pixels[i * 4 + 1]
+                     + r[2] * pixels[i * 4 + 2];
+                  expected = (x < 0 ? -1.0f : 1.0f) * powf(fabsf(x), rows[7]);
+               }
+               expected = expected * 0.75f + lut[i * 4 + c] * 0.25f;
+               if (fabsf(out[i * 4 + c] - expected) > 0.006f) failures++;
+            }
+         gl_glsl_set_media_colour(glsl, NULL);
+         CHECK(glsl->prg[1].id == core && !glsl->viewer_active,
+               "the core gets its program and uniform metadata back");
+      }
+   CHECK(!failures, "128 signed HDR GPU vectors preserve alpha and leave LUT samples unchanged");
+   glDeleteTextures(1, &texture);
+   glDeleteTextures(1, &lookup);
+   free_glsl(glsl);
+}
+
+static void test_viewer_history(void)
+{
+   const char *sources[2] = {shader_prev, shader_blur};
+   static const float frame[4] = {4.0f, 1.0f, 0.25f, 0.6f};
+   static const float history[4] = {1.0f, 0.25f, 0.0625f, 0.3f};
+   glsl_shader_data_t *glsl = make_glsl(sources, 2);
+   float rows[12], out[4];
+   GLuint second = glsl->prg[2].id;
+   GLuint texture = make_texture(1, 1, NULL);
+   GLuint previous = make_texture(1, 1, NULL);
+   unsigned c, failures = 0;
+   glBindTexture(GL_TEXTURE_2D, texture);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 1, 1, 0, GL_RGBA, GL_FLOAT, frame);
+   glBindTexture(GL_TEXTURE_2D, previous);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 1, 1, 0, GL_RGBA, GL_FLOAT, history);
+   gl_glsl_viewer_prepare(glsl);
+   CHECK(glsl->viewer.ok && glsl->viewer.count == 1,
+         "history reads are specialized while later processed Source stays untouched");
+   hdr_viewer_colour_rows(rows, true, 80, 0);
+   CHECK(gl_glsl_set_media_colour(glsl, rows) && gl_glsl_program(glsl, 2)->id == second,
+         "later pass keeps its original program");
+   draw_hdr(gl_glsl_program(glsl, 1)->id, texture, previous, 1, 1, 1, 1, out);
+   for (c = 0; c < 4; c++)
+   {
+      float expected = c == 3 ? frame[c] - history[c]
+         : powf(frame[c], rows[7]) - powf(history[c], rows[7]);
+      if (fabsf(out[c] - expected) > 0.006f) failures++;
+   }
+   CHECK(!failures, "raw HDR history is normalized at its own sample");
+   gl_glsl_set_media_colour(glsl, NULL);
+   glDeleteTextures(1, &texture);
+   glDeleteTextures(1, &previous);
+   free_glsl(glsl);
+}
+
+#include "planar_gpu_cases.h"
+#ifdef _WIN32
+static rglgen_func_t resolve_gl(const char *name)
+{
+   PROC proc=wglGetProcAddress(name);rglgen_func_t result;
+   if(!proc || proc==(PROC)1 || proc==(PROC)2 || proc==(PROC)3 || proc==(PROC)-1)
+      proc=GetProcAddress(GetModuleHandleA("opengl32.dll"),name);
+   memcpy(&result,&proc,sizeof(result));return result;
+}
+#endif
+int main(int argc,char **argv)
+{
+   bool planar_only=argc==2 && !strcmp(argv[1],"--planar-only");
+#ifdef _WIN32
+   HWND window;HDC dc;HGLRC ctx;PIXELFORMATDESCRIPTOR descriptor;
+   unsigned x,y,c;
+   window=CreateWindowExA(0,"STATIC","GLSL planar regression",WS_POPUP,0,0,16,16,NULL,NULL,GetModuleHandle(NULL),NULL);
+   if(!window)return 77;
+   dc=GetDC(window);memset(&descriptor,0,sizeof(descriptor));
+   descriptor.nSize=sizeof(descriptor);descriptor.nVersion=1;
+   descriptor.dwFlags=PFD_DRAW_TO_WINDOW|PFD_SUPPORT_OPENGL;descriptor.iPixelType=PFD_TYPE_RGBA;descriptor.cColorBits=32;
+   if(!SetPixelFormat(dc,ChoosePixelFormat(dc,&descriptor),&descriptor))return 77;
+   ctx=wglCreateContext(dc);if(!ctx || !wglMakeCurrent(dc,ctx))return 77;
+   rglgen_resolve_symbols(resolve_gl);
+   gl_glsl_set_context_type(false,4,6);
+#else
    EGLDisplay dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
    EGLConfig cfg;
    EGLint n;
    EGLContext ctx;
    EGLSurface surf;
+#ifdef HAVE_OPENGLES2
+   EGLint cfg_attr[] = { EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+      EGL_SURFACE_TYPE, EGL_PBUFFER_BIT, EGL_NONE };
+   EGLint ctx_attr[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
+#else
    EGLint cfg_attr[] = { EGL_RENDERABLE_TYPE, 0x40 /* ES3 */,
       EGL_SURFACE_TYPE, EGL_PBUFFER_BIT, EGL_NONE };
    EGLint ctx_attr[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
+#endif
    EGLint pb_attr[]  = { EGL_WIDTH, 16, EGL_HEIGHT, 16, EGL_NONE };
    unsigned x, y, c;
 
@@ -432,6 +643,7 @@ int main(void)
       printf("[glsl_in_place] no GLES 3 device, skipped\n");
       return 0;
    }
+#endif
    srand(54321);
    for (y = 0; y < TEX_H; y++)
       for (x = 0; x < TEX_W; x++)
@@ -439,16 +651,39 @@ int main(void)
             frame_px[y][x][c] = (uint8_t)(rand() >> 7);
 
    printf("[glsl_in_place] %s\n", (const char*)glGetString(GL_RENDERER));
+#ifdef GLSL_PLANAR_ORACLE
+   test_planar_dependencies();
+   {unsigned layout,linear,passes,lookups,original;for(original=0;original<2;original++)
+    for(lookups=0;lookups<=2;lookups+=2)
+    for(passes=1;passes<=3;passes++)
+    for(layout=0;layout<3;layout++)for(linear=0;linear<2;linear++)
+    {
+       if(original && passes==1)continue;
+       test_planar_fusion(layout,linear!=0,false,passes,lookups,original!=0);
+#ifndef HAVE_OPENGLES2
+       test_planar_fusion(layout,linear!=0,true,passes,lookups,original!=0);
+#endif
+    }}
+#endif
+   if(!planar_only)
+   {
+   test_viewer_colour();
+   test_viewer_history();
    test_blur();
    test_orig();
    test_unbound();
    test_kept(shader_prev, "a preset reading earlier frames keeps its copy");
    test_kept(shader_fetch, "one fetching the frame's texels keeps its copy");
+   }
 
+#ifdef _WIN32
+   wglMakeCurrent(NULL,NULL);wglDeleteContext(ctx);ReleaseDC(window,dc);DestroyWindow(window);
+#else
    eglMakeCurrent(dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
    eglDestroySurface(dpy, surf);
    eglDestroyContext(dpy, ctx);
    eglTerminate(dpy);
+#endif
    if (fails)
    {
       printf("[glsl_in_place] %d failure(s)\n", fails);

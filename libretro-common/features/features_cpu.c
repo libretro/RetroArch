@@ -20,6 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <retro_posix_source.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -120,6 +122,7 @@ extern long syscall(long number, ...);
 
 #if defined(HAVE_LIBNX)
 #include <switch.h>
+#include <retro_horizon.h>
 #endif
 
 #if defined(_3DS)
@@ -185,6 +188,7 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 
 #include <string.h>
 
+#ifndef RETRO_DISABLE_HOST_CLOCK
 retro_perf_tick_t cpu_features_get_perf_counter(void)
 {
    retro_perf_tick_t time_ticks = 0;
@@ -198,6 +202,9 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
       __asm__ __volatile__ ("rdtsc" : "=a" (a), "=d" (d));
       time_ticks = (retro_perf_tick_t)a | ((retro_perf_tick_t)d << 32);
    }
+#elif defined(HAVE_LIBNX)
+   /* cntpct_el0: the counter Horizon gives the process */
+   RETRO_HORIZON_TICK(time_ticks);
 #elif defined(__GNUC__) && defined(__aarch64__)
    __asm__ __volatile__ ("mrs %0, cntvct_el0" : "=r" (time_ticks));
 #elif defined(__GNUC__) && defined(__ARM_ARCH_6__)
@@ -214,7 +221,10 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = gettime();
 #elif !defined(__MACH__) && !defined(__FreeBSD__) && (defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__) || defined(__PSL1GHT__) || defined(__PPC64__) || defined(__powerpc64__))
    time_ticks = __mftb();
-#elif (defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK > 0) || defined(__QNX__) || defined(ANDROID)
+#elif (defined(_POSIX_MONOTONIC_CLOCK) && (_POSIX_MONOTONIC_CLOCK > 0 \
+         || defined(__GLIBC__))) || defined(__QNX__) || defined(ANDROID)
+   /* glibc (uClibc too) defines _POSIX_MONOTONIC_CLOCK as 0, "ask at
+    * run time"; the monotonic clock is there on every Linux it runs */
    {
       struct timespec tv;
       if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) == 0)
@@ -231,8 +241,6 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = svcGetSystemTick();
 #elif defined(WIIU)
    time_ticks = OSGetSystemTime();
-#elif defined(HAVE_LIBNX)
-   time_ticks = armGetSystemTick();
 #elif defined(__EMSCRIPTEN__)
    time_ticks = emscripten_get_now() * 1000;
 #endif
@@ -264,7 +272,15 @@ retro_time_t cpu_features_get_time_usec(void)
 #elif defined(WIIU)
    return ticks_to_us(OSGetSystemTime());
 #elif defined(SWITCH) || defined(HAVE_LIBNX)
-   return (svcGetSystemTick() * 10) / 192;
+   {
+      /* At the counter's own rate: 19.2 MHz on the Switch, 31.25 MHz
+       * on the Switch 2. Split so the scale cannot overflow. */
+      uint64_t t;
+      uint64_t f;
+      RETRO_HORIZON_TICK(t);
+      RETRO_HORIZON_TICK_FREQ(f);
+      return (retro_time_t)((t / f) * 1000000 + ((t % f) * 1000000) / f);
+   }
 #elif defined(_3DS)
    return osGetTime() * 1000;
 #elif defined(_POSIX_MONOTONIC_CLOCK) || defined(__QNX__) || defined(ANDROID) || defined(__MACH__)
@@ -288,6 +304,183 @@ retro_time_t cpu_features_get_time_usec(void)
 #error "Your platform does not have a timer function implemented in cpu_features_get_time_usec(). Cannot continue."
 #endif
 }
+
+/* Ticks of cpu_features_get_perf_counter() per millisecond where the
+ * counter runs at a rate the platform states, 0 where it has to be
+ * measured: a cycle counter (rdtsc, the ARMv6 PMU), a timebase whose
+ * rate the platform does not report (mftb, gettime, the console
+ * system ticks). Branches follow cpu_features_get_perf_counter()'s. */
+static int cpu_features_perf_rate_stated(void)
+{
+#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+   return 0;
+#elif defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+   return 0;
+#elif defined(HAVE_LIBNX)
+   uint64_t hz;
+   RETRO_HORIZON_TICK_FREQ(hz);
+   return (int)(hz / 1000);
+#elif defined(__GNUC__) && defined(__aarch64__)
+   uint64_t hz;
+   __asm__ __volatile__ ("mrs %0, cntfrq_el0" : "=r" (hz));
+   return (int)(hz / 1000);
+#elif defined(__GNUC__) && defined(__ARM_ARCH_6__)
+   return 0;
+#elif defined(_WIN32)
+   LARGE_INTEGER hz;
+   if (!QueryPerformanceFrequency(&hz))
+      return 0;
+   return (int)(hz.QuadPart / 1000);
+#elif defined(GEKKO_NATIVE) || defined(GEKKO)
+   return 0;
+#elif !defined(__MACH__) && !defined(__FreeBSD__) && (defined(_XBOX360) || defined(__powerpc__) || defined(__ppc__) || defined(__POWERPC__) || defined(__PSL1GHT__) || defined(__PPC64__) || defined(__powerpc64__))
+   return 0;
+#elif (defined(_POSIX_MONOTONIC_CLOCK) && (_POSIX_MONOTONIC_CLOCK > 0 \
+         || defined(__GLIBC__))) || defined(__QNX__) || defined(ANDROID)
+   return 1000000; /* nanoseconds */
+#elif defined(PSP) || defined(VITA)
+   return 1000;    /* microseconds */
+#elif defined(__EMSCRIPTEN__)
+   return 1000;    /* microseconds */
+#else
+   return 0;
+#endif
+}
+
+#if defined(ANDROID) && defined(__aarch64__)
+/* Some firmware exposes a nonzero but incorrect CNTFRQ_EL0. Confirm
+ * it against existing clock samples before trusting it; a valid rate
+ * then costs no further calibration reads. Calibrating thread only. */
+#define CPU_PERF_VALIDATE_STATED 1
+static int cpu_perf_candidate;
+#endif
+
+/* The rate cpu_features_perf_to_usec() divides by, in ticks per
+ * millisecond; 0 until known. Published by the calibrating thread,
+ * read by any. */
+static retro_atomic_int_t cpu_perf_rate_ms;
+/* Set by a conversion asked for before the rate is known: until then a
+ * measured rate is not measured, and the counter not read for it */
+static retro_atomic_int_t cpu_perf_wanted;
+/* The calibrating thread's own: 0 not started, 1 stated, 2 measured */
+static int               cpu_perf_mode;
+static int               cpu_perf_anchored;
+static int               cpu_perf_settled;
+static retro_perf_tick_t cpu_perf_anchor_ticks;
+static retro_time_t      cpu_perf_anchor_us;
+
+void cpu_features_perf_calibrate(retro_time_t now)
+{
+   retro_perf_tick_t ticks;
+   retro_time_t      us;
+   int               measured;
+
+   if (cpu_perf_mode == 1)
+      return;
+   if (!cpu_perf_mode)
+   {
+      int stated = cpu_features_perf_rate_stated();
+#ifdef CPU_PERF_VALIDATE_STATED
+      cpu_perf_candidate = stated;
+#else
+      if (stated > 0)
+      {
+         retro_atomic_store_release_int(&cpu_perf_rate_ms, stated);
+         cpu_perf_mode = 1;
+         return;
+      }
+#endif
+      cpu_perf_mode = 2;
+   }
+   if (!retro_atomic_load_acquire_int(&cpu_perf_wanted))
+      return;
+
+   ticks = cpu_features_get_perf_counter();
+   if (!cpu_perf_anchored)
+   {
+      cpu_perf_anchored     = 1;
+      cpu_perf_anchor_ticks = ticks;
+      cpu_perf_anchor_us    = now;
+      return;
+   }
+   us    = now - cpu_perf_anchor_us;
+   /* Either clock stepped back (a counter reset over a suspend): the
+    * span is no measure, start a new one */
+   if (us < 0 || ticks < cpu_perf_anchor_ticks)
+   {
+      /* The rate there is stands until a whole second betters it */
+      if (retro_atomic_load_acquire_int(&cpu_perf_rate_ms))
+         cpu_perf_settled   = 1;
+      cpu_perf_anchor_ticks = ticks;
+      cpu_perf_anchor_us    = now;
+      return;
+   }
+   /* The first rate from a millisecond's span, bettered at each call as
+    * the span grows to a second; from then on a second's, of which the
+    * clock's microsecond is a part in a million */
+   if (us < (cpu_perf_settled ? 1000000 : 1000))
+      return;
+   measured = (int)((ticks - cpu_perf_anchor_ticks) * 1000 / (retro_perf_tick_t)us);
+#ifdef CPU_PERF_VALIDATE_STATED
+   if (cpu_perf_candidate > 0 && measured > 0 && us >= 20000)
+   {
+      int difference = measured > cpu_perf_candidate
+         ? measured - cpu_perf_candidate : cpu_perf_candidate - measured;
+      /* A long enough span to reject quantisation and a short startup
+       * preemption. Keep the stated rate when it agrees within 0.1%. */
+      if (difference <= cpu_perf_candidate / 1000)
+      {
+         retro_atomic_store_release_int(&cpu_perf_rate_ms, cpu_perf_candidate);
+         cpu_perf_mode = 1;
+         return;
+      }
+   }
+#endif
+   retro_atomic_store_release_int(&cpu_perf_rate_ms, measured);
+   if (us < 1000000)
+      return;
+   cpu_perf_settled      = 1;
+   cpu_perf_anchor_ticks = ticks;
+   cpu_perf_anchor_us    = now;
+}
+
+retro_time_t cpu_features_perf_to_usec(retro_perf_tick_t ticks)
+{
+   int rate = retro_atomic_load_acquire_int(&cpu_perf_rate_ms);
+   if (ticks >> 63)
+      return 0;
+#ifndef CPU_PERF_VALIDATE_STATED
+   if (rate <= 0)
+      rate = cpu_features_perf_rate_stated();
+#endif
+   if (rate <= 0)
+   {
+      if (!retro_atomic_load_acquire_int(&cpu_perf_wanted))
+         retro_atomic_store_release_int(&cpu_perf_wanted, 1);
+      return 0;
+   }
+   return (retro_time_t)(ticks * 1000 / (retro_perf_tick_t)rate);
+}
+
+retro_perf_tick_t cpu_features_perf_from_usec(retro_time_t usec)
+{
+   int rate = retro_atomic_load_acquire_int(&cpu_perf_rate_ms);
+   if (usec <= 0)
+      return 0;
+#ifndef CPU_PERF_VALIDATE_STATED
+   if (rate <= 0)
+      rate = cpu_features_perf_rate_stated();
+#endif
+   if (rate <= 0)
+   {
+      if (!retro_atomic_load_acquire_int(&cpu_perf_wanted))
+         retro_atomic_store_release_int(&cpu_perf_wanted, 1);
+      return 0;
+   }
+   return (retro_perf_tick_t)usec * (retro_perf_tick_t)rate / 1000;
+}
+
+#endif /* RETRO_DISABLE_HOST_CLOCK */
 
 #if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || (defined(_M_X64) && _MSC_VER > 1310) || (defined(_M_IX86) && _MSC_VER > 1310)
 #define CPU_X86
@@ -1115,8 +1308,19 @@ unsigned cpu_features_get_core_amount(void)
    return 1; /* Only one PPU, SPUs don't really count */
 #elif defined(VITA)
    return 4;
-#elif defined(HAVE_LIBNX) || defined(SWITCH)
-   return 4;
+#elif defined(HAVE_LIBNX)
+   {
+      /* The cores the process may run on, not the console's */
+      uint64_t mask = 0;
+      uint32_t rc;
+      unsigned n    = 0;
+      RETRO_HORIZON_CORE_MASK(rc, mask);
+      if (rc)
+         return 3;
+      for (; mask; mask &= mask - 1)
+         n++;
+      return n ? n : 1;
+   }
 #elif defined(_3DS)
    u8 device_model = 0xFF;
    CFGU_GetSystemModel(&device_model);/*(0 = O3DS, 1 = O3DSXL, 2 = N3DS, 3 = 2DS, 4 = N3DSXL, 5 = N2DSXL)*/
@@ -1845,6 +2049,7 @@ end:
 #endif
 }
 
+#ifndef RETRO_DISABLE_HOST_CLOCK
 /* Sleep until cpu_features_get_time_usec() reads at least @deadline.
  * It lives here, beside the clock it is measured on, and nowhere a
  * launcher compiles: the salamanders build rtime.c for localtime alone
@@ -1856,7 +2061,10 @@ end:
  * against that clock on any backend; late as every sleep may be, and
  * a caller that needs the instant itself sleeps short and spins the
  * rest, as the frame limiter does with its measured margin. */
-#if (defined(__linux__) || defined(ANDROID)) && !defined(__MACH__)
+/* uClibc before 1.0 (OpenDingux GCW0) keeps clock_nanosleep() in librt,
+ * which a core need not link, and takes the relative loop below. */
+#if (defined(__linux__) || defined(ANDROID)) && !defined(__MACH__) \
+   && !(defined(__UCLIBC__) && __UCLIBC_MAJOR__ < 1)
 /* The exact tool: the clock above is clock_gettime(CLOCK_MONOTONIC)
  * here, and clock_nanosleep() takes an absolute deadline on the same
  * clock. EINTR re-arms against the unchanged deadline by definition
@@ -1910,3 +2118,5 @@ void retro_sleep_until_us(retro_time_t deadline)
    }
 }
 #endif
+
+#endif /* RETRO_DISABLE_HOST_CLOCK */

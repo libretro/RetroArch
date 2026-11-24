@@ -286,6 +286,73 @@ static void test_frontend_mapping(void)
    install_shim_vfs(false);
 }
 
+/* A v7 frontend's own mapping, counted */
+static int v7_maps;
+
+static const uint8_t *v7_map(struct retro_vfs_file_handle *s, int64_t *len)
+{
+   v7_maps++;
+   return retro_vfs_file_map_impl((libretro_vfs_implementation_file*)s, len);
+}
+
+static void install_v7_vfs(unsigned version)
+{
+   struct retro_vfs_interface_info info;
+
+   install_shim_vfs(true);
+   filestream_set_mapped_ptr_cb(NULL);
+   shim_iface.map                  = v7_map;
+   info.required_interface_version = version;
+   info.iface                      = &shim_iface;
+   filestream_vfs_init(&info);
+}
+
+/* filestream_get_mapped_ptr under a v7 frontend: its mapping of a file
+ * opened to be mapped, and nothing for any other stream or from an
+ * older frontend */
+static void test_frontend_v7_mapping(void)
+{
+   RFILE         *f;
+   const uint8_t *p;
+   int64_t        len;
+
+   install_v7_vfs(7);
+   v7_maps = 0;
+   f = filestream_open(FIXTURE, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
+   CHECK(f != NULL, "v7: a mapped open goes through the frontend");
+   if (f)
+   {
+      p = filestream_get_mapped_ptr(f, &len);
+#if defined(HAVE_MMAP) || defined(_WIN32)
+      CHECK(p && len == FILE_LEN && !memcmp(p, body, FILE_LEN)
+            && v7_maps == 1, "v7: the frontend's mapping is handed over");
+      CHECK(filestream_get_mapped_ptr(f, &len) == p,
+            "v7: and the same one again");
+#else
+      CHECK(!p && !len, "v7: no mapping without mmap");
+#endif
+      filestream_close(f);
+   }
+   v7_maps = 0;
+   if ((f = filestream_open(FIXTURE, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+   {
+      CHECK(!filestream_get_mapped_ptr(f, &len) && !len && !v7_maps,
+            "v7: a stream not opened to be mapped is never mapped");
+      filestream_close(f);
+   }
+   install_v7_vfs(6);
+   if ((f = filestream_open(FIXTURE, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)))
+   {
+      CHECK(!filestream_get_mapped_ptr(f, &len) && !len && !v7_maps,
+            "v6: no mapping, and v7's map is never called");
+      filestream_close(f);
+   }
+   install_shim_vfs(false);
+}
+
 static void test_sha1(void)
 {
    char digest[41];
@@ -318,6 +385,7 @@ int main(void)
    test_lookahead();
    test_update_stream();
    test_frontend_mapping();
+   test_frontend_v7_mapping();
    test_sha1();
 
    filestream_delete(FIXTURE);

@@ -29,6 +29,7 @@
 #include "fft.h"
 
 #include <retro_miscellaneous.h>
+#include <retro_math.h>
 
 struct fft
 {
@@ -197,6 +198,22 @@ void fft_process_forward(fft_t *fft,
             fft->phase_lut + samples,
             -1, step_size, samples);
    }
+}
+
+void fft_process_forward_stereo_window(fft_t *fft, fft_complex_t *out,
+      const float *stereo, const float *window, unsigned offset)
+{
+   unsigned i, step_size;
+   unsigned samples = fft->size;
+   for (i = 0; i < samples; i++)
+   {
+      unsigned source = ((offset + i) & (samples - 1)) * 2;
+      unsigned target = fft->bitinverse_buffer[i];
+      out[target].real = stereo[source] * window[i];
+      out[target].imag = stereo[source + 1] * window[i];
+   }
+   for (step_size = 1; step_size < samples; step_size <<= 1)
+      butterflies(out, fft->phase_lut + samples, -1, step_size, samples);
 }
 
 void fft_process_inverse(fft_t *fft,

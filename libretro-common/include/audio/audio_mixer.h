@@ -73,6 +73,24 @@ typedef struct audio_mixer_voice audio_mixer_voice_t;
 
 typedef void (*audio_mixer_stop_cb_t)(audio_mixer_sound_t* sound, unsigned reason);
 
+typedef struct audio_mixer_observer
+{
+   void *user;
+   void (*samples)(void *user, const void *pcm, size_t frames, bool floating);
+   void (*retain)(void *user);
+   void (*release)(void *user);
+   /* Stream format during play setup, before the caller gets the voice.
+    * Source PCM frames and Hz; frames is zero for unknown duration. */
+   void (*format)(void *user, unsigned rate, uint64_t frames);
+} audio_mixer_observer_t;
+
+/* Before play only. PCM is borrowed read-only before gain/mixing;
+ * the samples callback must not retain it or block. Paired retain/release
+ * callbacks keep the observer
+ * alive until sound destruction; leave both NULL for static userdata. */
+void audio_mixer_sound_set_observer(audio_mixer_sound_t *sound,
+      const audio_mixer_observer_t *observer);
+
 /* Reasons passed to the stop callback. */
 #define AUDIO_MIXER_SOUND_FINISHED 0
 #define AUDIO_MIXER_SOUND_STOPPED  1
@@ -96,12 +114,20 @@ audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, size_t size);
+/* Immutable container choice for this sound: -1 automatic, otherwise a
+ * zero-based demux index. MP4 supports AAC and AC-3 here. Explicit invalid/wrong-codec
+ * choices fail at voice open; prepared transfers must match this index.
+ * The encoded source retains the ordinary load/borrow ownership contract. */
+audio_mixer_sound_t* audio_mixer_load_m4a_track_avail(void *buffer, size_t size,
+      size_t avail, int track);
+audio_mixer_sound_t* audio_mixer_load_m4a_track(void *buffer, size_t size,
+      int track);
 audio_mixer_sound_t* audio_mixer_load_ac3(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_wma(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_lpcm(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, size_t size);
 /* WebM audio (.weba): identifies the track's codec and returns a sound
- * of the matching existing type (OPUS or OGG), or NULL when the
+ * of the matching existing type (OPUS/OGG/M4A/FLAC), or NULL when the
  * container carries no supported track. */
 audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, size_t size);
 /* As above, but the codec sniff reads no further than 'avail' bytes.
@@ -109,6 +135,11 @@ audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, size_t size);
  * with the file's whole length, which is not resident. */
 audio_mixer_sound_t* audio_mixer_load_weba_avail(void *buffer, size_t size,
       size_t avail);
+/* Same borrowed bytes and resident-prefix sniff, restricted to a demux index.
+ * -1 retains automatic selection. Missing/non-audio/uncompiled-codec choices
+ * return NULL; decoder/profile admission still belongs to voice open. */
+audio_mixer_sound_t* audio_mixer_load_weba_track(void *buffer, size_t size,
+      size_t avail, int track);
 
 /* Compressed-byte read position of a stream voice's decoder as of the
  * last mix (0 when not a live buffer-mode stream voice).  Takes no

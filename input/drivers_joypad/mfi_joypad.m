@@ -27,6 +27,7 @@
 #import <CoreHaptics/CoreHaptics.h>
 
 #include "../../configuration.h"
+#include "../include/input_pad_view.h"
 #include "../../verbosity.h"
 #include "../../input/input_driver.h"
 #include "../../tasks/tasks_internal.h"
@@ -36,9 +37,6 @@
 
 #ifndef MAX_MFI_CONTROLLERS
 #define MAX_MFI_CONTROLLERS 4
-#endif
-#ifndef MAX_MFI_AXES
-#define MAX_MFI_AXES 6
 #endif
 
 /* Minimum delay between CoreHaptics engine (re)creation attempts after a
@@ -88,8 +86,10 @@ static id mfi_device_haptics(void)
 @class MFIRumbleController;
 
 /* TODO/FIXME - static globals */
-static uint32_t mfi_buttons[MAX_USERS];
-static int16_t  mfi_axes[MAX_USERS][MAX_MFI_AXES];
+/* each pad as its poll left it, lent to the readers (input_pad_view.h):
+ * the RetroPad's buttons and the home button past them, axes 0-3 the
+ * sticks' x and y, 4 and 5 the triggers */
+static input_pad_view_t mfi_pads[MAX_USERS];
 static __weak GCController *mfi_controllers[MAX_MFI_CONTROLLERS];
 static MFIRumbleController *mfi_rumblers[MAX_MFI_CONTROLLERS];
 #define MFI_WEAK_RUMBLE 0.7f
@@ -247,7 +247,7 @@ static bool mfi_controller_is_connected(GCController *controller)
 
 static void apple_gamecontroller_joypad_poll_internal(GCController *controller, uint32_t slot)
 {
-    uint32_t *buttons        = &mfi_buttons[slot];
+    uint32_t *buttons        = &mfi_pads[slot].buttons.data[0];
     /* Retain the values from the paused controller handler and pass them through.
      * The menu button can be pressed/unpressed
      * like any other button in iOS 13,
@@ -263,7 +263,7 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
        uint32_t r3           = *buttons & (1 << RETRO_DEVICE_ID_JOYPAD_R3);
        *buttons              = 0 | pause | select | l3 | r3;
     }
-    memset(mfi_axes[slot], 0, sizeof(mfi_axes[0]));
+    memset(mfi_pads[slot].axes, 0, sizeof(mfi_pads[slot].axes));
 
     if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
     {
@@ -294,12 +294,12 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
         *buttons |= MFI_PROFILE_PRESSED(pb, MFI_KEY_BUTTON_MENU)    ? (1 << RETRO_DEVICE_ID_JOYPAD_START)  : 0;
         *buttons |= MFI_PROFILE_PRESSED(pb, MFI_KEY_BUTTON_HOME)    ? (1 << RARCH_FIRST_CUSTOM_BIND)       : 0;
 
-        mfi_axes[slot][0] = [[ls xAxis] value] * 32767.0f;
-        mfi_axes[slot][1] = [[ls yAxis] value] * 32767.0f;
-        mfi_axes[slot][2] = [[rs xAxis] value] * 32767.0f;
-        mfi_axes[slot][3] = [[rs yAxis] value] * 32767.0f;
-        mfi_axes[slot][4] = [lt value]         * 32767.0f;
-        mfi_axes[slot][5] = [rt value]         * 32767.0f;
+        mfi_pads[slot].axes[0] = [[ls xAxis] value] * 32767.0f;
+        mfi_pads[slot].axes[1] = [[ls yAxis] value] * 32767.0f;
+        mfi_pads[slot].axes[2] = [[rs xAxis] value] * 32767.0f;
+        mfi_pads[slot].axes[3] = [[rs yAxis] value] * 32767.0f;
+        mfi_pads[slot].axes[4] = [lt value]         * 32767.0f;
+        mfi_pads[slot].axes[5] = [rt value]         * 32767.0f;
     }
     else if (controller.extendedGamepad)
     {
@@ -352,12 +352,12 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
             }
         }
 
-        mfi_axes[slot][0]         = gp.leftThumbstick.xAxis.value * 32767.0f;
-        mfi_axes[slot][1]         = gp.leftThumbstick.yAxis.value * 32767.0f;
-        mfi_axes[slot][2]         = gp.rightThumbstick.xAxis.value * 32767.0f;
-        mfi_axes[slot][3]         = gp.rightThumbstick.yAxis.value * 32767.0f;
-        mfi_axes[slot][4]         = gp.leftTrigger.value * 32767.0f;
-        mfi_axes[slot][5]         = gp.rightTrigger.value * 32767.0f;
+        mfi_pads[slot].axes[0]         = gp.leftThumbstick.xAxis.value * 32767.0f;
+        mfi_pads[slot].axes[1]         = gp.leftThumbstick.yAxis.value * 32767.0f;
+        mfi_pads[slot].axes[2]         = gp.rightThumbstick.xAxis.value * 32767.0f;
+        mfi_pads[slot].axes[3]         = gp.rightThumbstick.yAxis.value * 32767.0f;
+        mfi_pads[slot].axes[4]         = gp.leftTrigger.value * 32767.0f;
+        mfi_pads[slot].axes[5]         = gp.rightTrigger.value * 32767.0f;
     }
 
     /* GCGamepad is deprecated */
@@ -443,6 +443,10 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
         {
            uint32_t slot      = (uint32_t)controller.playerIndex;
 
+           /* a controller with no player yet has no pad to press */
+           if (slot >= MAX_USERS)
+              return;
+
            /* Support buttons that aren't supported by the mFi
             * controller via "hotkey" combinations:
             *
@@ -455,45 +459,45 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
            if (     controller.gamepad.leftShoulder.pressed
                  || controller.extendedGamepad.leftShoulder.pressed )
            {
-              mfi_buttons[slot]       &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
-              mfi_buttons[slot]       &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L);
-              mfi_buttons[slot]       |=  (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+              mfi_pads[slot].buttons.data[0]       &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
+              mfi_pads[slot].buttons.data[0]       &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L);
+              mfi_pads[slot].buttons.data[0]       |=  (1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
               dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
                     dispatch_get_main_queue(), ^{
-                    mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
+                    mfi_pads[slot].buttons.data[0] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_SELECT);
                     });
               return;
            }
 
            if (controller.extendedGamepad.leftTrigger.pressed )
            {
-              mfi_buttons[slot]       &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L2);
-              mfi_buttons[slot]       &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
-              mfi_buttons[slot]       |=  (1 << RETRO_DEVICE_ID_JOYPAD_L3);
+              mfi_pads[slot].buttons.data[0]       &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L2);
+              mfi_pads[slot].buttons.data[0]       &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
+              mfi_pads[slot].buttons.data[0]       |=  (1 << RETRO_DEVICE_ID_JOYPAD_L3);
               dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
                     dispatch_get_main_queue(), ^{
-                    mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L3);
+                    mfi_pads[slot].buttons.data[0] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_L3);
                     });
               return;
            }
 
            if (controller.extendedGamepad.rightTrigger.pressed )
            {
-              mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_R2);
-              mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
-              mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_R3);
+              mfi_pads[slot].buttons.data[0] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_R2);
+              mfi_pads[slot].buttons.data[0] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
+              mfi_pads[slot].buttons.data[0] |= (1 << RETRO_DEVICE_ID_JOYPAD_R3);
               dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
                     dispatch_get_main_queue(), ^{
-                    mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_R3);
+                    mfi_pads[slot].buttons.data[0] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_R3);
                     });
               return;
            }
 
-           mfi_buttons[slot] |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
+           mfi_pads[slot].buttons.data[0] |= (1 << RETRO_DEVICE_ID_JOYPAD_START);
 
            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
                  dispatch_get_main_queue(), ^{
-                 mfi_buttons[slot] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
+                 mfi_pads[slot].buttons.data[0] &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
                  });
         };
     }
@@ -1206,40 +1210,37 @@ static void apple_gamecontroller_joypad_destroy(void)
 static int32_t apple_gamecontroller_joypad_button(
       unsigned port, uint16_t joykey)
 {
-   if (port >= DEFAULT_MAX_PADS)
+   if (port >= DEFAULT_MAX_PADS || port >= MAX_USERS)
       return 0;
-   /* Check hat. */
-   else if (GET_HAT_DIR(joykey))
-      return 0;
-   else if (joykey < 32)
-      return ((mfi_buttons[port] & (1 << joykey)) != 0);
-   return 0;
+   return input_pad_view_button(&mfi_pads[port], joykey);
 }
 
 static void apple_gamecontroller_joypad_get_buttons(unsigned port,
       input_bits_t *state)
 {
-    BITS_COPY16_PTR(state, mfi_buttons[port]);
+   if (port >= DEFAULT_MAX_PADS || port >= MAX_USERS)
+   {
+      BIT256_CLEAR_ALL_PTR(state);
+      return;
+   }
+   *state = mfi_pads[port].buttons;
 }
 
 static int16_t apple_gamecontroller_joypad_axis(
       unsigned port, uint32_t joyaxis)
 {
-    if (AXIS_NEG_GET(joyaxis) < MAX_MFI_AXES)
-    {
-       int16_t axis = AXIS_NEG_GET(joyaxis);
-       int16_t val  = mfi_axes[port][axis];
-       if (val < 0)
-          return val;
-    }
-    else if (AXIS_POS_GET(joyaxis) < MAX_MFI_AXES)
-    {
-       int16_t axis = AXIS_POS_GET(joyaxis);
-       int16_t val  = mfi_axes[port][axis];
-       if (val > 0)
-          return val;
-    }
-    return 0;
+   if (port >= DEFAULT_MAX_PADS || port >= MAX_USERS)
+      return 0;
+   return input_pad_view_axis(&mfi_pads[port], joyaxis);
+}
+
+/* Read in the poll alone: the same until the next */
+static const input_pad_view_t *apple_gamecontroller_joypad_view(
+      unsigned port)
+{
+   if (port >= DEFAULT_MAX_PADS || port >= MAX_USERS)
+      return NULL;
+   return &mfi_pads[port];
 }
 
 static int16_t apple_gamecontroller_joypad_state(
@@ -1248,27 +1249,9 @@ static int16_t apple_gamecontroller_joypad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   int i;
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
-
-   if (port_idx < DEFAULT_MAX_PADS)
-   {
-      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-      {
-         const uint64_t joykey  = joykeys[i];
-         const uint32_t joyaxis = joyaxes[i];
-         if ((uint16_t)joykey != NO_BTN
-               && apple_gamecontroller_joypad_button(port_idx, (uint16_t)joykey))
-            ret |= (1 << i);
-         else if (joyaxis != AXIS_NONE &&
-               ((float)abs(apple_gamecontroller_joypad_axis(port_idx, joyaxis))
-                / 0x8000) > joypad_info->axis_threshold)
-            ret |= (1 << i);
-      }
-   }
-
-   return ret;
+   const input_pad_view_t *v = apple_gamecontroller_joypad_view(
+         joypad_info->joy_idx);
+   return v ? input_pad_view_state(v, joypad_info, joykeys, joyaxes) : 0;
 }
 
 static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
@@ -1343,4 +1326,9 @@ input_device_driver_t mfi_joypad = {
     NULL,
     apple_gamecontroller_joypad_name,
     "mfi",
+    NULL, /* get_bt_host */
+    NULL, /* set_bt_host */
+    NULL, /* survives_video */
+    NULL, /* set_player */
+    apple_gamecontroller_joypad_view
 };

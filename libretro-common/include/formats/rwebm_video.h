@@ -33,6 +33,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <formats/video_hw_frame.h>
+#include <formats/video_audio_track.h>
 
 RETRO_BEGIN_DECLS
 
@@ -163,6 +164,10 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
 
 typedef struct rwebm_video_stream rwebm_video_stream_t;
 
+/* Zero-based audio ordinal; metadata borrows the live stream. */
+bool rwebm_video_stream_audio_track(const rwebm_video_stream_t *stream,
+      unsigned ordinal, video_audio_track_t *out);
+
 /* Take ownership of the stream a successful rwebm_video_process_image
  * left open, positioned just past the first displayed frame, so the
  * caller can continue the video as an animation without re-opening
@@ -269,6 +274,29 @@ void rwebm_video_stream_set_want_fp16(rwebm_video_stream_t *stream,
       int want);
 int rwebm_video_stream_is_fp16(const rwebm_video_stream_t *stream);
 int rwebm_video_stream_is_hdr(const rwebm_video_stream_t *stream);
+
+/* The decoded planes of an 8-bit 4:2:0 SDR source, for a caller whose
+ * GPU converts them: can_planar answers from the container before any
+ * decode; with set_planar on (0 where the stream cannot), each frame
+ * decoded into the caller's frame (rwebm_video_stream_set_output) is
+ * packed I420 of the stream's size - Y, then Cb, then Cr - and a
+ * frame that cannot be so ends the stream. planar_yuv is that
+ * frame's IMAGE_YUV_FLAG_* (BT709, FULL_RANGE). */
+int rwebm_video_stream_can_planar(const rwebm_video_stream_t *stream);
+/* planar 2 borrows arbitrary strides, 3 only tightly packed planes,
+ * instead of filling the output
+ * slot where possible. The next successful frame returns that slot as
+ * usual; borrowed_planar tells whether to read the planes instead.
+ * The borrow ends at the next decode, seek, rewind or stream free. */
+int rwebm_video_stream_set_planar(rwebm_video_stream_t *stream, int planar);
+struct texture_planar;
+/* Retain current decoder planes when immutable counted storage is available.
+ * On success release(*owner) retires the lease once, even after stream free. */
+bool rwebm_video_stream_retain_planar(const rwebm_video_stream_t *s,
+      void **owner, void (**release)(void*));
+const struct texture_planar *rwebm_video_stream_borrowed_planar(
+      const rwebm_video_stream_t *stream);
+unsigned rwebm_video_stream_planar_yuv(const rwebm_video_stream_t *stream);
 
 /* Convert decoded frames in @bands row bands on @pool (an rthreads
  * tpool_t of at least bands - 1 threads; the calling thread takes one

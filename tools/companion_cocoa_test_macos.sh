@@ -19,6 +19,8 @@ INC="-I. -I$LC/include -Ideps -Igfx/include"
 DEFS="-DRARCH_INTERNAL -DHAVE_MENU -DHAVE_GLSL -DHAVE_CONFIGFILE -DHAVE_THREADS -DHAVE_COCOA -DTARGET_OS_OSX=1 -DHAVE_RPNG -DHAVE_RTGA -DHAVE_COMPANION_WIMP -DCOMPANION_TEST_NO_MAIN -DCOMPANION_CORE_TESTING"
 
 CSRCS="ui/companion/companion_core.c \
+       gfx/gfx_thumbnail_results.c \
+       gfx/gfx_thumbnail_match.c \
        ui/companion/companion_thumbs.c \
        ui/companion/companion_dock.c \
        gfx/gfx_anim_preview.c \

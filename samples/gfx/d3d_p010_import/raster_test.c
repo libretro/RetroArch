@@ -40,9 +40,9 @@ int main(void)
    static const float nits[4] = {80,203,400,1000};
    ID3D11Device *device = NULL;
    ID3D11DeviceContext *ctx = NULL;
-   ID3D11PixelShader *encode = NULL, *decode = NULL;
+   ID3D11PixelShader *encode[2] = {NULL,NULL}, *decode = NULL;
    ID3D11VertexShader *vs = NULL;
-   ID3DBlob *blobs[3] = {NULL,NULL,NULL};
+   ID3DBlob *blobs[4] = {NULL,NULL,NULL,NULL};
    ID3D11InputLayout *layout = NULL;
    ID3D11Buffer *vertices = NULL;
    ID3D11RasterizerState *raster = NULL;
@@ -67,9 +67,9 @@ int main(void)
    D3D11_BUFFER_DESC bd;
    D3D11_SAMPLER_DESC sd;
    D3D11_MAPPED_SUBRESOURCE map;
-   float pixels[8][4], sprite[4];
+   float pixels[8][4], reference[8][4], sprite[4];
    uint32_t globals[28];
-   unsigned gamut, white, mode, direct, i, ch;
+   unsigned gamut, white, mode, direct, source, i, ch;
    int failures = 0, compile_failed = 0;
    HRESULT hr = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0,
          NULL, 0, D3D11_SDK_VERSION, &device, &level, &ctx);
@@ -85,14 +85,17 @@ int main(void)
    blobs[0] = compile(sprite_source, "PSMainLinearHDR", "ps_4_0", &compile_failed);
    blobs[1] = compile(composite_source, "PSMain", "ps_5_0", &compile_failed);
    blobs[2] = compile(composite_source, "VSMain", "vs_5_0", &compile_failed);
+   blobs[3] = compile(sprite_source, "PSMainPQHDR", "ps_4_0", &compile_failed);
    if (compile_failed && GetProcAddress(GetModuleHandleA("ntdll.dll"), "wine_get_version"))
    {
       puts("SKIP HDR UI raster: Wine shader compiler lacks required HLSL support");
       goto end;
    }
-   CHECK(blobs[0] && blobs[1] && blobs[2]);
+   CHECK(blobs[0] && blobs[1] && blobs[2] && blobs[3]);
    CHECK(SUCCEEDED(ID3D11Device_CreatePixelShader(device,
-         ID3D10Blob_GetBufferPointer(blobs[0]), ID3D10Blob_GetBufferSize(blobs[0]), NULL, &encode)));
+         ID3D10Blob_GetBufferPointer(blobs[0]), ID3D10Blob_GetBufferSize(blobs[0]), NULL, &encode[0])));
+   CHECK(SUCCEEDED(ID3D11Device_CreatePixelShader(device,
+         ID3D10Blob_GetBufferPointer(blobs[3]), ID3D10Blob_GetBufferSize(blobs[3]), NULL, &encode[1])));
    CHECK(SUCCEEDED(ID3D11Device_CreatePixelShader(device,
          ID3D10Blob_GetBufferPointer(blobs[1]), ID3D10Blob_GetBufferSize(blobs[1]), NULL, &decode)));
    CHECK(SUCCEEDED(ID3D11Device_CreateVertexShader(device,
@@ -154,8 +157,19 @@ int main(void)
       pixels[i][2] = (float)(-.0181508*r - .1005789*g + 1.1187297*b);
       pixels[i][3] = (float)(i % 4 + 1) / 4;
    }
-   ID3D11DeviceContext_UpdateSubresource(ctx, (ID3D11Resource*)input, 0, NULL, pixels, sizeof(pixels), 0);
+   memcpy(reference, pixels, sizeof(reference));
    ID3D11DeviceContext_PSSetSamplers(ctx, 0, 1, &sampler);
+   for (source = 0; source < 2; source++)
+   {
+      for (i = 0; i < 8; i++)
+         for (ch = 0; ch < 3; ch++)
+         {
+            double p = pow(colors[i][ch] * .1, 2610.0 / 16384.0);
+            pixels[i][ch] = source ? (float)pow((3424.0 / 4096.0
+                  + 2413.0 / 128.0 * p) / (1 + 2392.0 / 128.0 * p), 2523.0 / 32.0)
+               : reference[i][ch];
+         }
+      ID3D11DeviceContext_UpdateSubresource(ctx, (ID3D11Resource*)input, 0, NULL, pixels, sizeof(pixels), 0);
    for (direct = 0; direct < 2; direct++)
    for (white = 0; white < 4; white++)
    for (gamut = 0; gamut < 4; gamut++)
@@ -178,7 +192,7 @@ int main(void)
       ID3D11DeviceContext_UpdateSubresource(ctx, (ID3D11Resource*)cb[0], 0, NULL, sprite, 0, 0);
       ID3D11DeviceContext_UpdateSubresource(ctx, (ID3D11Resource*)cb[1], 0, NULL, globals, 0, 0);
       ID3D11DeviceContext_VSSetConstantBuffers(ctx, 0, 1, &cb[1]);
-      ID3D11DeviceContext_PSSetShader(ctx, encode, NULL, 0);
+      ID3D11DeviceContext_PSSetShader(ctx, encode[source], NULL, 0);
       ID3D11DeviceContext_PSSetConstantBuffers(ctx, 1, 1, &cb[0]);
       ID3D11DeviceContext_PSSetShaderResources(ctx, 0, 1, &srv[0]);
       ID3D11DeviceContext_OMSetRenderTargets(ctx, 1, &rtv[direct], NULL);
@@ -199,12 +213,12 @@ int main(void)
       for (i = 0; i < 8; i++)
       for (ch = 0; ch < 4; ch++)
       {
-         double expected = pixels[i][ch], actual = ((const float*)map.pData)[i * 4 + ch];
-         double peak = fabs(pixels[i][0]);
-         if (fabs(pixels[i][1])
-            > peak) peak = fabs(pixels[i][1]);
-         if (fabs(pixels[i][2])
-            > peak) peak = fabs(pixels[i][2]);
+         double expected = reference[i][ch], actual = ((const float*)map.pData)[i * 4 + ch];
+         double peak = fabs(reference[i][0]);
+         if (fabs(reference[i][1])
+            > peak) peak = fabs(reference[i][1]);
+         if (fabs(reference[i][2])
+            > peak) peak = fabs(reference[i][2]);
          if (mode == 1 && ch < 3)
          {
             expected = colors[i][ch] * 12.5;
@@ -221,7 +235,8 @@ int main(void)
       }
       ID3D11DeviceContext_Unmap(ctx, (ID3D11Resource*)readback, 0);
    }
-   printf("D3D HDR UI raster: 64 cases, %d failures\n", failures);
+   }
+   printf("D3D HDR UI raster: linear/PQ sources, 128 cases, %d failures\n", failures);
 end:
    if (ctx)
       ID3D11DeviceContext_ClearState(ctx);
@@ -231,8 +246,8 @@ end:
       DROP(rtv[i]);
       DROP(cb[i]);
    }
-   DROP(encode); DROP(decode); DROP(input); DROP(layer); DROP(output); DROP(readback);
-   for (i = 0; i < 3; i++)
+   DROP(encode[0]); DROP(encode[1]); DROP(decode); DROP(input); DROP(layer); DROP(output); DROP(readback);
+   for (i = 0; i < 4; i++)
       DROP(blobs[i]);
    DROP(vs); DROP(layout); DROP(vertices); DROP(raster);
    DROP(sampler); DROP(ctx); DROP(device);

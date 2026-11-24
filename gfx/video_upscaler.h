@@ -229,6 +229,40 @@ void video_upscaler_carry_inputs(const struct retro_hw_upscaler_inputs *inputs);
  * own again */
 void video_upscaler_drop_carry(void);
 
+/* One SDK worker, shared by the video backends. Create/free/reset are
+ * lifecycle operations on the video owner; start is called after its
+ * first native frame. While any SDK job is outstanding, ready is false:
+ * NGX init/shutdown must not race another session's evaluation. The
+ * callbacks own data until destroy returns, including the graphics device.
+ * No core unload waits for the worker. */
+typedef struct video_upscaler_async video_upscaler_async_t;
+video_upscaler_async_t *video_upscaler_async_new(void *data,
+      bool (*init)(void *), void (*reset)(void *), void (*destroy)(void *));
+void video_upscaler_async_start(video_upscaler_async_t *async);
+bool video_upscaler_async_pending(video_upscaler_async_t *async);
+/* Group the first init and the previous session's retirement so readiness
+ * cannot briefly become visible between those two queue publications. */
+void video_upscaler_async_begin(void);
+void video_upscaler_async_end(void);
+bool video_upscaler_async_ready(video_upscaler_async_t *async);
+/* A nonblocking SDK borrow. Only the worker waits for outstanding borrows;
+ * a video/core caller declines immediately when a job owns the SDK. */
+bool video_upscaler_async_enter(video_upscaler_async_t *async);
+void video_upscaler_async_leave(void);
+bool video_upscaler_async_work(video_upscaler_async_t *async, void (*work)(void *));
+void video_upscaler_async_fail(video_upscaler_async_t *async);
+bool video_upscaler_async_busy(void);
+void video_upscaler_async_reset(video_upscaler_async_t *async);
+void video_upscaler_async_free(video_upscaler_async_t *async);
+/* Process exit only, after all video drivers and cached sessions retire. */
+void video_upscaler_async_shutdown(void);
+void video_upscaler_reset_nr_status(void);
+/* A parked SDK cache lends its retirement callback to the video/lifecycle
+ * owner. Retire it before expanding a native NGX feature catalog: NGX
+ * caches missing features until all earlier SDK sessions are retired. */
+void video_upscaler_set_cached_retire(void (*retire)(void));
+void video_upscaler_retire_cached(void);
+
 RETRO_END_DECLS
 
 #endif

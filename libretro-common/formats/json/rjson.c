@@ -811,6 +811,12 @@ static int _rjsonwriter_memory_io(const void* buf, int len, void *user)
       return 0;
    }
    target = (size_t)writer->buf_num + append_len + 512;
+   /* doubling, so a document written in small pieces grows in a few
+    * steps rather than one every 512 bytes */
+   if (target < (size_t)writer->buf_cap * 2)
+      target = (size_t)writer->buf_cap * 2;
+   if (target > _RJSON_MAX_SIZE)
+      target = _RJSON_MAX_SIZE;
    new_cap = (int)target;
    if (!writer->final_flush && (is_append || new_cap > writer->buf_cap))
    {
@@ -851,6 +857,27 @@ char* rjsonwriter_get_memory_buffer(rjsonwriter_t *writer, int* len)
    if (len)
       *len = writer->buf_num;
    return writer->buf;
+}
+
+char* rjsonwriter_take_memory_buffer(rjsonwriter_t *writer, int* len)
+{
+   int   num;
+   char *out = rjsonwriter_get_memory_buffer(writer, &num);
+   if (!out)
+      return NULL;
+   /* only the inline buffer is copied: it is the writer's own */
+   if (out == writer->inline_buf)
+   {
+      if (!(out = (char*)malloc((size_t)num + 1)))
+         return NULL;
+      memcpy(out, writer->inline_buf, (size_t)num + 1);
+   }
+   writer->buf     = writer->inline_buf;
+   writer->buf_cap = sizeof(writer->inline_buf);
+   writer->buf_num = 0;
+   if (len)
+      *len = num;
+   return out;
 }
 
 int rjsonwriter_count_memory_buffer(rjsonwriter_t *writer)

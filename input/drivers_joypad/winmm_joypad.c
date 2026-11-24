@@ -39,6 +39,7 @@
 #endif
 
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
 
@@ -50,9 +51,9 @@
 
 typedef struct winmm_joypad
 {
-   uint32_t buttons;
-   int16_t  axes[WINMM_JOYPAD_AXES];
-   uint16_t hat;                 /* HAT_*_MASK bits */
+   /* the pad as its poll left it, lent to the readers (input_pad_view.h):
+    * 32 buttons, six axes and one hat */
+   input_pad_view_t view;
    bool     present;
    /* what the controller says of itself, asked when it is found */
    uint8_t  num_axes;
@@ -89,14 +90,12 @@ static int16_t winmm_joypad_scale(uint32_t v, uint32_t lo, uint32_t hi)
 }
 
 /* A hat's position, in hundredths of a degree clockwise from up, as
- * the directions held. Anything past a full turn is "centred". */
+ * the directions held, a view's hat bits: up 1, down 2, left 4, right 8.
+ * Anything past a full turn is "centred". */
 static uint16_t winmm_joypad_hat(DWORD pov)
 {
    static const uint16_t dir[8] = {
-      HAT_UP_MASK,   HAT_UP_MASK   | HAT_RIGHT_MASK,
-      HAT_RIGHT_MASK, HAT_DOWN_MASK | HAT_RIGHT_MASK,
-      HAT_DOWN_MASK, HAT_DOWN_MASK | HAT_LEFT_MASK,
-      HAT_LEFT_MASK, HAT_UP_MASK   | HAT_LEFT_MASK };
+      1, 1 | 8, 8, 2 | 8, 2, 2 | 4, 4, 1 | 4 };
    if (pov >= 36000)
       return 0;
    /* the nearest of the eight ways */
@@ -124,11 +123,12 @@ static bool winmm_joypad_read(unsigned id, winmm_joypad_t *pad)
    v[4] = info.dwUpos;
    v[5] = info.dwVpos;
    for (i = 0; i < WINMM_JOYPAD_AXES; i++)
-      pad->axes[i] = (i < pad->num_axes)
+      pad->view.axes[i] = (i < pad->num_axes)
          ? winmm_joypad_scale(v[i], pad->axis_min[i], pad->axis_max[i])
          : 0;
-   pad->buttons = info.dwButtons;
-   pad->hat     = pad->has_pov ? winmm_joypad_hat(info.dwPOV) : 0;
+   pad->view.buttons.data[0] = (uint32_t)info.dwButtons;
+   pad->view.hats            = pad->has_pov
+      ? winmm_joypad_hat(info.dwPOV) : 0;
    return true;
 }
 
@@ -242,58 +242,26 @@ static const char *winmm_joypad_name(unsigned pad)
    return winmm_pads[pad].name;
 }
 
-static int32_t winmm_joypad_button_state(const winmm_joypad_t *pad,
-      uint16_t joykey)
-{
-   unsigned hat_dir = GET_HAT_DIR(joykey);
-   if (hat_dir)
-      /* the one hat there is */
-      return (GET_HAT(joykey) == 0 && (pad->hat & hat_dir)) ? 1 : 0;
-   if (joykey < 32)
-      return (pad->buttons >> joykey) & 1;
-   return 0;
-}
-
 static int32_t winmm_joypad_button(unsigned port, uint16_t joykey)
 {
    if (port >= WINMM_JOYPAD_MAX)
       return 0;
-   return winmm_joypad_button_state(&winmm_pads[port], joykey);
+   return input_pad_view_button(&winmm_pads[port].view, joykey);
 }
 
 static void winmm_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
    if (port < WINMM_JOYPAD_MAX)
-   {
-      BITS_COPY32_PTR(state, winmm_pads[port].buttons);
-   }
+      *state = winmm_pads[port].view.buttons;
    else
       BIT256_CLEAR_ALL_PTR(state);
-}
-
-static int16_t winmm_joypad_axis_state(const winmm_joypad_t *pad,
-      uint32_t joyaxis)
-{
-   if (AXIS_NEG_GET(joyaxis) < WINMM_JOYPAD_AXES)
-   {
-      int16_t val = pad->axes[AXIS_NEG_GET(joyaxis)];
-      if (val < 0)
-         return val;
-   }
-   else if (AXIS_POS_GET(joyaxis) < WINMM_JOYPAD_AXES)
-   {
-      int16_t val = pad->axes[AXIS_POS_GET(joyaxis)];
-      if (val > 0)
-         return val;
-   }
-   return 0;
 }
 
 static int16_t winmm_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    if (port >= WINMM_JOYPAD_MAX)
       return 0;
-   return winmm_joypad_axis_state(&winmm_pads[port], joyaxis);
+   return input_pad_view_axis(&winmm_pads[port].view, joyaxis);
 }
 
 static int16_t winmm_joypad_state(
@@ -302,29 +270,17 @@ static int16_t winmm_joypad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   unsigned i;
-   int16_t ret                = 0;
-   uint16_t port_idx          = joypad_info->joy_idx;
-   const winmm_joypad_t *pad;
-
+   uint16_t port_idx = joypad_info->joy_idx;
    if (port_idx >= WINMM_JOYPAD_MAX)
       return 0;
-   pad = &winmm_pads[port_idx];
+   return input_pad_view_state(&winmm_pads[port_idx].view, joypad_info,
+         joykeys, joyaxes);
+}
 
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-   {
-      const uint64_t joykey  = joykeys[i];
-      const uint32_t joyaxis = joyaxes[i];
-      if (     (uint16_t)joykey != NO_BTN
-            && winmm_joypad_button_state(pad, (uint16_t)joykey))
-         ret |= (1 << i);
-      else if (joyaxis != AXIS_NONE
-            && ((float)abs(winmm_joypad_axis_state(pad, joyaxis))
-               / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
-   }
-
-   return ret;
+/* Read in the poll alone: the same until the next */
+static const input_pad_view_t *winmm_joypad_view(unsigned port)
+{
+   return (port < WINMM_JOYPAD_MAX) ? &winmm_pads[port].view : NULL;
 }
 
 input_device_driver_t winmm_joypad = {
@@ -342,4 +298,9 @@ input_device_driver_t winmm_joypad = {
    NULL, /* get_sensor_input */
    winmm_joypad_name,
    "winmm",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   winmm_joypad_view
 };

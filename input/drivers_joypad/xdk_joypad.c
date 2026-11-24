@@ -20,10 +20,14 @@
 
 #include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
+#include "../include/input_pad_view.h"
 
 typedef struct
 {
    HANDLE id;
+   /* the pad as its poll left it, lent to the readers (input_pad_view.h):
+    * the RetroPad's buttons, the d-pad as hat 0, axes 0-3 the sticks */
+   input_pad_view_t view;
    XINPUT_STATE xstate;
    bool connected;
 } xinput_joypad_state;
@@ -62,137 +66,87 @@ static void *xdk_joypad_init(void *data)
    return (void*)-1;
 }
 
-static int32_t xdk_joypad_button_state(
-      XINPUT_GAMEPAD *pad,
-      uint16_t btn_word,
-      unsigned port, uint16_t joykey)
+/* Whether RetroPad button @id is down on @pad */
+static bool xdk_joypad_button_state(const XINPUT_GAMEPAD *pad, unsigned id)
 {
-   unsigned hat_dir  = GET_HAT_DIR(joykey);
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_JOYPAD_A:
+         return (pad->bAnalogButtons[XINPUT_GAMEPAD_B] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+      case RETRO_DEVICE_ID_JOYPAD_B:
+         return (pad->bAnalogButtons[XINPUT_GAMEPAD_A] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+      case RETRO_DEVICE_ID_JOYPAD_Y:
+         return (pad->bAnalogButtons[XINPUT_GAMEPAD_X] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+      case RETRO_DEVICE_ID_JOYPAD_X:
+         return (pad->bAnalogButtons[XINPUT_GAMEPAD_Y] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+      case RETRO_DEVICE_ID_JOYPAD_START:
+         return (pad->wButtons & XINPUT_GAMEPAD_START) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_SELECT:
+         return (pad->wButtons & XINPUT_GAMEPAD_BACK) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_L3:
+         return (pad->wButtons & XINPUT_GAMEPAD_LEFT_THUMB) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_R3:
+         return (pad->wButtons & XINPUT_GAMEPAD_RIGHT_THUMB) != 0;
+      case RETRO_DEVICE_ID_JOYPAD_L2:
+         return (pad->bAnalogButtons[XINPUT_GAMEPAD_WHITE] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+      case RETRO_DEVICE_ID_JOYPAD_R2:
+         return (pad->bAnalogButtons[XINPUT_GAMEPAD_BLACK] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+      case RETRO_DEVICE_ID_JOYPAD_L:
+         return (pad->bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+      case RETRO_DEVICE_ID_JOYPAD_R:
+         return (pad->bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER] > XINPUT_GAMEPAD_MAX_CROSSTALK);
+      default:
+         break;
+   }
+   return false;
+}
 
-   if (hat_dir)
-   {
-      switch (hat_dir)
-      {
-         case HAT_UP_MASK:
-            return (btn_word & XINPUT_GAMEPAD_DPAD_UP);
-         case HAT_DOWN_MASK:
-            return (btn_word & XINPUT_GAMEPAD_DPAD_DOWN);
-         case HAT_LEFT_MASK:
-            return (btn_word & XINPUT_GAMEPAD_DPAD_LEFT);
-         case HAT_RIGHT_MASK:
-            return (btn_word & XINPUT_GAMEPAD_DPAD_RIGHT);
-         default:
-            break;
-      }
-      /* hat requested and no hat button down */
-   }
-   else
-   {
-      switch (joykey)
-      {
-         case RETRO_DEVICE_ID_JOYPAD_A:
-            return (pad->bAnalogButtons[XINPUT_GAMEPAD_B] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-         case RETRO_DEVICE_ID_JOYPAD_B:
-            return (pad->bAnalogButtons[XINPUT_GAMEPAD_A] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-         case RETRO_DEVICE_ID_JOYPAD_Y:
-            return (pad->bAnalogButtons[XINPUT_GAMEPAD_X] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-         case RETRO_DEVICE_ID_JOYPAD_X:
-            return (pad->bAnalogButtons[XINPUT_GAMEPAD_Y] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-         case RETRO_DEVICE_ID_JOYPAD_START:
-               return (pad->wButtons & XINPUT_GAMEPAD_START);
-         case RETRO_DEVICE_ID_JOYPAD_SELECT:
-               return (pad->wButtons & XINPUT_GAMEPAD_BACK);
-         case RETRO_DEVICE_ID_JOYPAD_L3:
-               return (pad->wButtons & XINPUT_GAMEPAD_LEFT_THUMB);
-         case RETRO_DEVICE_ID_JOYPAD_R3:
-               return (pad->wButtons & XINPUT_GAMEPAD_RIGHT_THUMB);
-         case RETRO_DEVICE_ID_JOYPAD_L2:
-               return (pad->bAnalogButtons[XINPUT_GAMEPAD_WHITE] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-         case RETRO_DEVICE_ID_JOYPAD_R2:
-               return (pad->bAnalogButtons[XINPUT_GAMEPAD_BLACK] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-         case RETRO_DEVICE_ID_JOYPAD_L:
-               return (pad->bAnalogButtons[XINPUT_GAMEPAD_LEFT_TRIGGER] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-         case RETRO_DEVICE_ID_JOYPAD_R:
-               return (pad->bAnalogButtons[XINPUT_GAMEPAD_RIGHT_TRIGGER] > XINPUT_GAMEPAD_MAX_CROSSTALK);
-         default:
-               break;
-      }
-   }
-   return 0;
+/* The view of what the poll read into @st->xstate */
+static void xdk_joypad_make_view(xinput_joypad_state *st)
+{
+   unsigned i;
+   XINPUT_GAMEPAD *pad = &st->xstate.Gamepad;
+   input_pad_view_t *v = &st->view;
+   uint32_t bits       = 0;
+   int16_t sticks[4];
+
+   for (i = 0; i < 16; i++)
+      if (xdk_joypad_button_state(pad, i))
+         bits |= (1u << i);
+   v->buttons.data[0] = bits;
+   v->hats            = (uint16_t)(
+           ((pad->wButtons & XINPUT_GAMEPAD_DPAD_UP)    ? 1 : 0)
+         | ((pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)  ? 2 : 0)
+         | ((pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)  ? 4 : 0)
+         | ((pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? 8 : 0));
+   sticks[0]          = pad->sThumbLX;
+   sticks[1]          = pad->sThumbLY;
+   sticks[2]          = pad->sThumbRX;
+   sticks[3]          = pad->sThumbRY;
+   for (i = 0; i < 4; i++)
+      v->axes[i]      = (sticks[i] == -32768) ? -32767 : sticks[i];
 }
 
 static int32_t xdk_joypad_button(unsigned port, uint16_t joykey)
 {
-   uint16_t btn_word   = 0;
-   XINPUT_GAMEPAD *pad = NULL;
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   pad                 = &(g_xinput_states[port].xstate.Gamepad);
-   btn_word            = pad->wButtons;
-   return xdk_joypad_button_state(pad, btn_word, port, joykey);
+   return input_pad_view_button(&g_xinput_states[port].view, joykey);
 }
 
-static int16_t xdk_joypad_axis_state(XINPUT_GAMEPAD *pad,
-      unsigned port, uint32_t joyaxis)
+static void xdk_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-   if (AXIS_NEG_GET(joyaxis) <= 3)
-   {
-      int16_t val  = 0;
-      int16_t axis = AXIS_NEG_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-            val = pad->sThumbLX;
-            break;
-         case 1:
-            val = pad->sThumbLY;
-            break;
-         case 2:
-            val = pad->sThumbRX;
-            break;
-         case 3:
-            val = pad->sThumbRY;
-            break;
-      }
-      if (val < 0)
-      {
-         /* Clamp to avoid warnings */
-         if (val == -32768)
-            return -32767;
-         return val;
-      }
-   }
-   else if (AXIS_POS_GET(joyaxis) <= 5)
-   {
-      int16_t val  = 0;
-      int16_t axis = AXIS_POS_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-            val = pad->sThumbLX;
-            break;
-         case 1:
-            val = pad->sThumbLY;
-            break;
-         case 2:
-            val = pad->sThumbRX;
-            break;
-         case 3:
-            val = pad->sThumbRY;
-            break;
-      }
-      if (val > 0)
-         return val;
-   }
-   return 0;
+   if (port < DEFAULT_MAX_PADS)
+      *state = g_xinput_states[port].view.buttons;
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t xdk_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return xdk_joypad_axis_state(&g_xinput_states[port].xstate.Gamepad,
-         port, joyaxis);
+   return input_pad_view_axis(&g_xinput_states[port].view, joyaxis);
 }
 
 static int16_t xdk_joypad_state(
@@ -201,32 +155,17 @@ static int16_t xdk_joypad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   int16_t ret            = 0;
-   uint16_t port_idx      = joypad_info->joy_idx;
+   uint16_t port_idx = joypad_info->joy_idx;
+   if (port_idx >= DEFAULT_MAX_PADS)
+      return 0;
+   return input_pad_view_state(&g_xinput_states[port_idx].view,
+         joypad_info, joykeys, joyaxes);
+}
 
-   if (port_idx < DEFAULT_MAX_PADS)
-   {
-      int i;
-      XINPUT_GAMEPAD *pad = &(g_xinput_states[port_idx].xstate.Gamepad);
-      uint16_t btn_word   = pad->wButtons;
-
-      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-      {
-         const uint64_t joykey  = joykeys[i];
-         const uint32_t joyaxis = joyaxes[i];
-         if (
-               (uint16_t)joykey != NO_BTN
-               && xdk_joypad_button_state(
-                  pad, btn_word, port_idx, (uint16_t)joykey))
-            ret |= ( 1 << i);
-         else if (joyaxis != AXIS_NONE &&
-               ((float)abs(xdk_joypad_axis_state(pad, port_idx, joyaxis))
-                / 0x8000) > joypad_info->axis_threshold)
-            ret |= (1 << i);
-      }
-   }
-
-   return ret;
+/* Read in the poll alone: the same until the next */
+static const input_pad_view_t *xdk_joypad_view(unsigned port)
+{
+   return (port < DEFAULT_MAX_PADS) ? &g_xinput_states[port].view : NULL;
 }
 
 static void xdk_joypad_poll(void)
@@ -258,6 +197,7 @@ static void xdk_joypad_poll(void)
          g_xinput_states[port].id        = 0;
          g_xinput_states[port].connected = false;
          memset(&g_xinput_states[port].xstate, 0, sizeof(XINPUT_STATE));
+         memset(&g_xinput_states[port].view, 0, sizeof(input_pad_view_t));
 
          input_autoconfigure_disconnect(port, xdk_joypad.ident);
       }
@@ -289,10 +229,12 @@ static void xdk_joypad_poll(void)
       {
          g_xinput_states[port].connected = false;
          memset(&g_xinput_states[port].xstate, 0, sizeof(XINPUT_STATE));
+         memset(&g_xinput_states[port].view, 0, sizeof(input_pad_view_t));
          continue;
       }
 
       g_xinput_states[port].connected = true;
+      xdk_joypad_make_view(&g_xinput_states[port]);
    }
 }
 
@@ -318,7 +260,7 @@ input_device_driver_t xdk_joypad = {
    xdk_joypad_destroy,
    xdk_joypad_button,
    xdk_joypad_state,
-   NULL,
+   xdk_joypad_get_buttons,
    xdk_joypad_axis,
    xdk_joypad_poll,
    NULL, /* set_rumble */
@@ -327,4 +269,9 @@ input_device_driver_t xdk_joypad = {
    NULL, /* get_sensor_input */
    xdk_joypad_name,
    "xdk",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   xdk_joypad_view
 };

@@ -34,3 +34,24 @@ S_UINT(video_record_fifo_frames, VIDEO_RECORD_FIFO_FRAMES,
       DEFAULT_VIDEO_RECORD_FIFO_FRAMES, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, 0, MIN_VIDEO_RECORD_FIFO_FRAMES, MAX_VIDEO_RECORD_FIFO_FRAMES, 4, MIN_VIDEO_RECORD_FIFO_FRAMES, setting_action_ok_uint, NULL,
       "Recording Video Buffer (Frames)",
       "Frames queued between the game and the encoder. Larger values absorb encoder hiccups but use more memory. Applies to the next recording.")
+
+#if defined(HAVE_PYROWAVE) || defined(SETTINGS_DEF_STRINGS_PASS)
+S_BOOL(pyrowave_discovery_enable, PYROWAVE_DISCOVERY_ENABLE,
+      "pyrowave_discovery_enable", false, SD_FLAG_NONE, 0, 0,
+      "PyroWave LAN Discovery",
+      "Find nearby RetroArch receivers and allow stream requests on this network. Incoming streams require your approval.")
+S_BOOL(pyrowave_full_output, PYROWAVE_FULL_OUTPUT,
+      "pyrowave_full_output", true, SD_FLAG_NONE, 0, 0,
+      "Stream Entire RetroArch",
+      "Include menus, notifications and the built-in player with mixed frontend audio. Disable to use the content viewport and core audio. Applies to the next PyroWave stream.")
+#ifndef SETTINGS_DEF_CONFIG_PASS
+S_STRING(pyrowave_device_name, PYROWAVE_DEVICE_NAME,
+      "pyrowave_device_name", "", SD_FLAG_ALLOW_INPUT, 0,
+      NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_STRING_LINE_EDIT,
+      "PyroWave Device Name", "Name shown to other RetroArch devices. Leave empty to use this computer's name.")
+S_DIR(directory_pyrowave_shaders, PYROWAVE_SHADER_DIRECTORY,
+      "pyrowave_shader_directory", "", DIRECTORY_DEFAULT, SD_FLAG_ADVANCED, 0,
+      directory_action_start_generic,
+      "PyroWave Shader Directory", "Optional development override. Leave empty to use the shaders embedded in RetroArch.")
+#endif
+#endif

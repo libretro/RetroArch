@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Shader C headers are committed and included directly by their consumers.
+       Ordinary builds never execute shader generation or embedding tools. -->
+</Project>

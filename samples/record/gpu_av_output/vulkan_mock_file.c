@@ -3,6 +3,7 @@
 #include "vulkan_mock_file.h"
 unsigned file_delay, file_writes;
 bool file_open_fail, file_push_fail, file_step_fail, file_finish_fail, file_cancel_fail;
+bool file_chunked;
 record_file_posix_t *record_file_posix_new(const char *path)
 {
    (void)path;
@@ -31,6 +32,8 @@ int record_file_posix_step(record_file_posix_t *f)
    if (f->pending)
    {
       f->pending--;
+      if (file_chunked)
+         f->bytes++;
       return RECORD_FILE_POSIX_BUSY;
    }
    f->active = false;

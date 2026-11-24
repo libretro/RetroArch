@@ -399,6 +399,57 @@ static void test_expand_special_truncation(void)
    free(out);
 }
 
+/* A saf:// path is the tree URI serialized with its '%' and '/'
+ * escaped, then the path inside the tree. Directly under the tree the
+ * parent component is that URI, and the folder it names is the last
+ * component of the tree's document ID. */
+#define SAF_TREE(id) "saf://content%3A%2F%2Fcom.android.externalstorage.documents%2Ftree%2F" id
+
+static void check_parent_dir_name(const char *label, const char *in,
+      size_t len, const char *expected)
+{
+   char   buf[GUARD_LEN];
+   size_t n;
+   memset(buf, SENTINEL, sizeof(buf));
+   n = fill_pathname_parent_dir_name(buf, in, len);
+   if (     strcmp(buf, expected)
+         || n != strlen(expected)
+         || (unsigned char)buf[len] != SENTINEL)
+   {
+      printf("[ERROR] parent dir name: %s: got \"%s\" (%u), want \"%s\"\n",
+            label, buf, (unsigned)n, expected);
+      failures++;
+   }
+   else
+      printf("[SUCCESS] parent dir name: %s\n", label);
+}
+
+static void test_parent_dir_name_saf(void)
+{
+   check_parent_dir_name("plain path", "/roms/snes/game.sfc",
+         DST_LEN, "snes");
+   check_parent_dir_name("saf folder grant",
+         SAF_TREE("primary%253ARoms") "/game.sfc", DST_LEN, "Roms");
+   check_parent_dir_name("saf nested folder grant",
+         SAF_TREE("primary%253AGames%252FRoms") "/game.sfc", DST_LEN, "Roms");
+   check_parent_dir_name("saf lowercase escapes",
+         "saf://content%3a%2f%2fcom.android.externalstorage.documents%2ftree%2f1234-ABCD%253aSNES/game.sfc",
+         DST_LEN, "SNES");
+   check_parent_dir_name("saf volume root",
+         SAF_TREE("primary%253A") "/game.sfc", DST_LEN, "");
+   check_parent_dir_name("saf subfolder is a plain component",
+         SAF_TREE("primary%253ARoms") "/snes/game.sfc", DST_LEN, "snes");
+   check_parent_dir_name("saf tree pointing at a document",
+         SAF_TREE("primary%253ARoms%2Fdocument%2Fprimary%253ARoms%252Fx") "/game.sfc",
+         DST_LEN, "");
+   check_parent_dir_name("saf tree longer than the buffer",
+         SAF_TREE("primary%253ARoms") "/game.sfc", 16, "Roms");
+   check_parent_dir_name("saf name longer than the buffer",
+         SAF_TREE("primary%253ARoms") "/game.sfc", 4, "");
+   check_parent_dir_name("saf name exactly fits",
+         SAF_TREE("primary%253ARoms") "/game.sfc", 5, "Roms");
+}
+
 int main(void)
 {
    /* Documented semantics. */
@@ -421,6 +472,7 @@ int main(void)
    test_abbreviated_or_relative_long_join();
    test_expand_special_home();
    test_expand_special_truncation();
+   test_parent_dir_name_saf();
 
    if (failures)
    {

@@ -66,6 +66,8 @@ typedef struct intfstream_info
 
 void *intfstream_init(intfstream_info_t *info);
 
+/* Points an open memory stream at @info's buffer, from its start, as
+ * if it had been opened on it; false for any other kind of stream. */
 bool intfstream_resize(intfstream_internal_t *intf,
       intfstream_info_t *info);
 

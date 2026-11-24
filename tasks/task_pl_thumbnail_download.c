@@ -36,6 +36,7 @@
 #ifdef RARCH_INTERNAL
 #include "../gfx/gfx_thumbnail.h"
 #ifdef HAVE_MENU
+#include "../gfx/gfx_thumbnail_results.h"
 #include "../menu/menu_cbs.h"
 #include "../menu/menu_driver.h"
 #else
@@ -70,6 +71,8 @@ typedef struct pl_thumb_handle
    playlist_t *playlist;
    gfx_thumbnail_path_data_t *thumbnail_path_data;
    retro_task_t *http_task;
+   /* The file the transfer in flight writes, lent to its callback */
+   char http_path[PATH_MAX_LENGTH];
 
    /* Captured on the main thread when the per-entry task is pushed:
     * its handler runs on the threaded task queue's worker and
@@ -179,6 +182,32 @@ static bool gfx_thumbnail_get_img_name(
 }
 
 
+/* The thumbnails/<system> folder the menu looks in */
+static const char *pl_thumb_system_name(
+      gfx_thumbnail_path_data_t *path_data, char *s, size_t len)
+{
+   const char *db_name = NULL;
+   const char *system  = path_data->system;
+
+   gfx_thumbnail_get_db_name(path_data, &db_name);
+   if (db_name && *db_name)
+      return db_name;
+   if (!system || !*system)
+      return NULL;
+   /* If this is a content history or favorites playlist
+    * then the current 'path_data->system' string is
+    * meaningless. In this case, we fall back to the
+    * content directory name */
+   if (   !strcmp(system, "history")
+       || !strcmp(system, "favorites"))
+   {
+      if (gfx_thumbnail_get_content_dir(path_data, s, len) == 0)
+         return NULL;
+      return s;
+   }
+   return system;
+}
+
 /* Fetches local and remote paths for current thumbnail
  * of current type */
 static bool task_pl_thumbnail_get_thumbnail_paths(
@@ -188,55 +217,26 @@ static bool task_pl_thumbnail_get_thumbnail_paths(
 {
    char content_dir[DIR_MAX_LENGTH];
    char tmp_buf[PATH_MAX_LENGTH];
-   size_t raw_url_len      = sizeof(char) * 8192; /* TODO/FIXME - check size */
-   char *raw_url           = NULL;
-   const char *db_name     = NULL;
    const char *img_name    = NULL;
    const char *sub_dir     = NULL;
    const char *system_name = NULL;
-   const char *system      = NULL;
 
    content_dir[0]          = '\0';
 
    if (!pl_thumb->thumbnail_path_data)
       return false;
 
-   system = pl_thumb->thumbnail_path_data->system;
-
    if (!pl_thumb->dir_thumbnails || !*pl_thumb->dir_thumbnails)
       return false;
 
    /* Extract required strings */
-   gfx_thumbnail_get_db_name(pl_thumb->thumbnail_path_data, &db_name);
    if (!gfx_thumbnail_get_img_name(pl_thumb->thumbnail_path_data, &img_name, pl_thumb->name_flags))
       return false;
    if (!gfx_thumbnail_get_sub_directory(pl_thumb->type_idx, &sub_dir))
       return false;
-
-   /* Determine system name */
-   if (!db_name || !*db_name)
-   {
-      if (!system || !*system)
-         return false;
-
-      /* If this is a content history or favorites playlist
-       * then the current 'path_data->system' string is
-       * meaningless. In this case, we fall back to the
-       * content directory name */
-      if (   !strcmp(system, "history")
-		    || !strcmp(system, "favorites"))
-      {
-         if (gfx_thumbnail_get_content_dir(
-               pl_thumb->thumbnail_path_data, content_dir, sizeof(content_dir)) == 0)
-            return false;
-
-         system_name = content_dir;
-      }
-      else
-         system_name = system;
-   }
-   else
-      system_name = db_name;
+   if (!(system_name = pl_thumb_system_name(pl_thumb->thumbnail_path_data,
+         content_dir, sizeof(content_dir))))
+      return false;
 
    /* Generate local path */
    fill_pathname_join_special(path, pl_thumb->dir_thumbnails,
@@ -246,23 +246,16 @@ static bool task_pl_thumbnail_get_thumbnail_paths(
 
    if (!path || !*path)
       return false;
-   if (!(raw_url = (char*)malloc(8192 * sizeof(char)))) /* TODO/FIXME - check size */
+
+   /* Generate remote path, in tmp_buf, which the local one is done
+    * with; one longer than that is not encoded, as the encoding of it
+    * would not fit in @s either */
+   if ((size_t)snprintf(tmp_buf, sizeof(tmp_buf), "%s/%s/%s/%s",
+            FILE_PATH_CORE_THUMBNAILS_URL,
+            system_name, sub_dir, img_name) >= sizeof(tmp_buf))
       return false;
-   raw_url[0]     = '\0';
 
-   /* Generate remote path */
-   snprintf(raw_url, raw_url_len, "%s/%s/%s/%s",
-         FILE_PATH_CORE_THUMBNAILS_URL,
-         system_name, sub_dir, img_name);
-
-   if (!raw_url || !*raw_url)
-   {
-      free(raw_url);
-      return false;
-   }
-
-   net_http_urlencode_full(s, raw_url, len);
-   free(raw_url);
+   net_http_urlencode_full(s, tmp_buf, len);
 
    return s && *s;
 }
@@ -274,115 +267,86 @@ void cb_http_task_download_pl_thumbnail(
       void *user_data, const char *err)
 {
    http_transfer_data_t *data  = (http_transfer_data_t*)task_data;
-   file_transfer_t *transf     = (file_transfer_t*)user_data;
-   pl_thumb_handle_t *pl_thumb = NULL;
+   pl_thumb_handle_t *pl_thumb = (pl_thumb_handle_t*)user_data;
+   uint32_t ident;
 
-   /* Update pl_thumb task status
-    * > Do this first, to minimise the risk of hanging
-    *   the parent task in the event of an http error */
-   if (!transf)
-      goto finish;
+   if (!pl_thumb)
+      return;
 
-   if (!(pl_thumb = (pl_thumb_handle_t*)transf->user_data))
-      goto finish;
-
-   /* The task keeps pl_thumb until it has seen this, so both stay
-    * valid here. */
-   retro_atomic_store_release_int(&pl_thumb->http_done, 1);
-   task_queue_wake(pl_thumb->ident);
-
-   /* Remaining sanity checks...
-    * > data->data is NULL by design: the body was streamed to
-    *   transf->path as it arrived, and task_push_http_download_file()
-    *   removes the partial file unless the transfer finished cleanly,
-    *   so there is nothing to write here. */
-   if (!data || !*transf->path)
-      goto finish;
-
-   /* Skip if data can't be good */
-   if (data->status != 200)
+   /* data->data is NULL by design: the body was streamed to the file
+    * as it arrived, and task_push_http_download_file() replaces it only
+    * when the transfer finished cleanly, so there is nothing to write
+    * here.  A transfer that got its 200 can still fail to put the file
+    * in place, which only @err reports. */
+   if (!(err && *err))
    {
-      err = "File not found.";
-      goto finish;
+      if (!data)
+         err = "No response.";
+      else if (data->status != 200)
+         err = "File not found.";
    }
 
-finish:
-
+   /* Logged from the handle's path while the task still waits on this
+    * callback, so the path is still this transfer's */
    if (err && *err)
       RARCH_ERR("[Thumbnail] Download \"%s\" failed: %s\n",
-            (transf ? transf->path : "unknown"), err);
+            pl_thumb->http_path, err);
    else
-      RARCH_LOG("[Thumbnail] Download \"%s\".\n",
-            (transf ? transf->path : "unknown"));
+      RARCH_LOG("[Thumbnail] Download \"%s\".\n", pl_thumb->http_path);
 
-   if (transf)
-      free(transf);
+   /* Once this is seen the task may free pl_thumb */
+   ident = pl_thumb->ident;
+   retro_atomic_store_release_int(&pl_thumb->http_done, 1);
+   task_queue_wake(ident);
 }
 
 /* Download thumbnail of the current type for the current
  * playlist entry */
 static void download_pl_thumbnail(pl_thumb_handle_t *pl_thumb)
 {
-   char path[PATH_MAX_LENGTH];
    char url[2048];
+   char *slash;
 
-   path[0] = '\0';
-   url[0]  = '\0';
+   url[0] = '\0';
 
    /* Check if paths are valid */
-   if (task_pl_thumbnail_get_thumbnail_paths(pl_thumb,
-            path, sizeof(path),
+   if (!task_pl_thumbnail_get_thumbnail_paths(pl_thumb,
+            pl_thumb->http_path, sizeof(pl_thumb->http_path),
             url,  sizeof(url)))
+      return;
+
+   /* Only download missing thumbnails */
+   if (     path_is_valid(pl_thumb->http_path)
+         && !(pl_thumb->flags & PL_THUMB_FLAG_OVERWRITE))
+      return;
+
+   /* The body is streamed straight to the file as it arrives, so the
+    * output directory has to exist before the transfer starts: made
+    * from the path itself, cut at its last separator for the call */
+   if (     (slash = find_last_slash(pl_thumb->http_path))
+         && slash > pl_thumb->http_path)
    {
-      /* Only download missing thumbnails */
-      if (     !path_is_valid(path)
-            || (pl_thumb->flags & PL_THUMB_FLAG_OVERWRITE))
+      char c   = *slash;
+      bool ok;
+      *slash   = '\0';
+      ok       = path_mkdir(pl_thumb->http_path);
+      *slash   = c;
+      if (!ok)
       {
-         file_transfer_t *transf = (file_transfer_t*)malloc(sizeof(file_transfer_t));
-         if (!transf)
-            return; /* If this happens then everything is broken anyway... */
-
-         /* Initialise http task status */
-         retro_atomic_store_release_int(&pl_thumb->http_done, 0);
-
-         transf->enum_idx             = MSG_UNKNOWN;
-         transf->path[0]              = '\0';
-         /* Initialise file transfer */
-         transf->user_data            = (void*)pl_thumb;
-         strlcpy(transf->path, path, sizeof(transf->path));
-
-         /* The body is streamed straight to transf->path as it
-          * arrives, so the output directory has to exist before the
-          * transfer starts rather than being created in the
-          * completion callback. */
-         {
-            char output_dir[DIR_MAX_LENGTH];
-            strlcpy(output_dir, transf->path, sizeof(output_dir));
-            path_basedir_wrapper(output_dir);
-
-            if (!path_mkdir(output_dir))
-            {
-               RARCH_ERR("[Thumbnail] Download \"%s\" failed: %s\n",
-                     transf->path,
-                     msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY));
-               free(transf);
-               retro_atomic_store_release_int(&pl_thumb->http_done, 1);
-               return;
-            }
-         }
-
-         /* Note: We don't actually care if this fails since that
-          * just means the file is missing from the server, so it's
-          * not something we can handle here... */
-
-         /* ...if it does fail, however, we can immediately
-          * signal that the task is 'complete' */
-         if (!(pl_thumb->http_task = (retro_task_t*)task_push_http_download_file(
-               url, transf->path, true, NULL,
-               cb_http_task_download_pl_thumbnail, transf)))
-            retro_atomic_store_release_int(&pl_thumb->http_done, 1);
+         RARCH_ERR("[Thumbnail] Download \"%s\" failed: %s\n",
+               pl_thumb->http_path,
+               msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY));
+         return;
       }
    }
+
+   /* A transfer that cannot start leaves nothing to wait for; one that
+    * fails just means the file is missing from the server */
+   retro_atomic_store_release_int(&pl_thumb->http_done, 0);
+   if (!(pl_thumb->http_task = (retro_task_t*)task_push_http_download_file(
+         url, pl_thumb->http_path, true, NULL,
+         cb_http_task_download_pl_thumbnail, pl_thumb)))
+      retro_atomic_store_release_int(&pl_thumb->http_done, 1);
 }
 
 /* Whether the transfer this task started has yet to call back.  The
@@ -695,6 +659,39 @@ error:
 /* Playlist Entry Thumbnail Download */
 /*************************************/
 
+#if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
+/* A short-name download shows only for an entry it matches. */
+static void pl_thumb_note_short_name(pl_thumb_handle_t *pl_thumb)
+{
+   char content_dir[DIR_MAX_LENGTH];
+   char path[PATH_MAX_LENGTH];
+   unsigned type_idx;
+   gfx_thumbnail_path_data_t *pd = pl_thumb->thumbnail_path_data;
+   const char *system_name       = pl_thumb_system_name(pd,
+         content_dir, sizeof(content_dir));
+
+   if (!system_name || !*pd->content_img_short)
+      return;
+   for (type_idx = 1; type_idx <= 3; type_idx++)
+   {
+      size_t _len;
+      const char *sub_dir = NULL;
+      if (!gfx_thumbnail_get_sub_directory(type_idx, &sub_dir))
+         continue;
+      fill_pathname_join_special_ext(path, pl_thumb->dir_thumbnails,
+            system_name, sub_dir, "", sizeof(path));
+      _len = fill_pathname_slash(path, sizeof(path));
+      strlcpy(path + _len, pd->content_img_short, sizeof(path) - _len);
+      if (path_is_valid(path))
+         task_pl_thumbnail_match_note_download(pl_thumb->playlist_path,
+               pd->content_path, pd->content_label, system_name,
+               gfx_thumbnail_result_type_of(sub_dir), pd->content_img_short,
+               pl_thumb->thumb_dir_config.playlist_allow_non_png,
+               pl_thumb->thumb_dir_config.playlist_thumbnail_other_regions);
+   }
+}
+#endif
+
 static void cb_task_pl_entry_thumbnail_refresh_menu(
       retro_task_t *task, void *task_data,
       void *user_data, const char *err)
@@ -716,6 +713,9 @@ static void cb_task_pl_entry_thumbnail_refresh_menu(
 
    if (!pl_thumb || !pl_thumb->thumbnail_path_data)
       return;
+
+   if (pl_thumb->name_flags & PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME)
+      pl_thumb_note_short_name(pl_thumb);
 
    /* Only refresh if current playlist hasn't changed,
     * and menu selection pointer is on the same entry

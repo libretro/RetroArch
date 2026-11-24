@@ -30,6 +30,7 @@
 #include <lrc_hash.h>
 #include <encodings/base64.h>
 #include <compat/strl.h>
+#include <time/rtime.h>
 
 /* ---- DER ---------------------------------------------------------- */
 
@@ -193,18 +194,6 @@ static int x509_digits(const uint8_t *p, unsigned n, unsigned *out)
    return 0;
 }
 
-/* Days since 1970-01-01 for a proleptic Gregorian date. */
-static long x509_days_from_civil(long y, unsigned m, unsigned d)
-{
-   long era, yoe, doy, doe;
-   y  -= m <= 2;
-   era = (y >= 0 ? y : y - 399) / 400;
-   yoe = y - era * 400;
-   doy = (153 * (long)(m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;
-   doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
-   return era * 146097 + doe - 719468;
-}
-
 static int der_read_time(struct der *d, time_t *t)
 {
    const uint8_t *v;
@@ -250,7 +239,7 @@ static int der_read_time(struct der *d, time_t *t)
        * longer fit it, so widen first, and where time_t itself is 32
        * bits saturate rather than wrap a far-future notAfter into the
        * past (a leaf good until 2046 must not read as expired). */
-      int64_t secs = (int64_t)x509_days_from_civil((long)y, mo, da) * 86400
+      int64_t secs = rtime_days_from_civil(y, mo, da) * 86400
             + (int64_t)h * 3600 + (int64_t)mi * 60 + (int64_t)s;
       if (sizeof(time_t) < 8)
       {
@@ -943,12 +932,12 @@ struct x509_store
 {
    mpsc_stack_node_t node;   /* lock-free: on the retire list */
    struct x509_anchor *anchors;
-   unsigned count;
-   unsigned cap;
+   uint8_t *arena;        /* PEM: the decoded DER; DER: NULL, read in place */
    const char *src;       /* the source it was loaded from */
    size_t src_len;
+   unsigned count;
+   unsigned cap;
    unsigned refs;         /* under the lock: the published slot's + walks' */
-   unsigned owns_der;     /* PEM: decoded copies; DER: read in place */
 };
 
 /* The store is process-wide and TLS handshakes run on several threads
@@ -1018,12 +1007,9 @@ static void x509_store_lock(void)
 
 static void x509_store_free(struct x509_store *st)
 {
-   unsigned i;
    if (!st)
       return;
-   if (st->owns_der)
-      for (i = 0; i < st->count; i++)
-         free((uint8_t*)st->anchors[i].der);
+   free(st->arena);
    free(st->anchors);
    free(st);
 }
@@ -1063,7 +1049,9 @@ void x509_trust_free(void)
 }
 
 /* @der appended as an anchor: 1 when taken, 0 when it is unparseable
- * or has a key this code cannot use (P-384 roots), -1 out of memory. */
+ * or has a key this code cannot use (P-384 roots), -1 out of memory.
+ * A PEM store's table was sized by its counting pass; a DER one grows,
+ * walking the bundle once. */
 static int x509_store_push(struct x509_store *st, const uint8_t *der,
       size_t der_len)
 {
@@ -1088,64 +1076,81 @@ static int x509_store_push(struct x509_store *st, const uint8_t *der,
    return 1;
 }
 
-/* Every certificate in @pem added to @st's anchors. */
-static int x509_store_append_pem(struct x509_store *st, const char *pem, size_t len)
+/* A slot for each of @n certificates. */
+static int x509_store_reserve(struct x509_store *st, unsigned n)
 {
-   static const char begin[] = "-----BEGIN CERTIFICATE-----";
-   static const char end_[]  = "-----END CERTIFICATE-----";
-   const char *p   = pem;
-   const char *e   = pem + len;
+   if (!n)
+      return 0;
+   if (!(st->anchors = (struct x509_anchor*)malloc(n * sizeof(*st->anchors))))
+      return -1;
+   st->cap = n;
+   return 0;
+}
+
+static const char x509_pem_begin[] = "-----BEGIN CERTIFICATE-----";
+static const char x509_pem_end[]   = "-----END CERTIFICATE-----";
+
+/* The first @tag (@tag_len) in [@p, @e), NULL without one. */
+static const char *x509_pem_find(const char *p, const char *e,
+      const char *tag, size_t tag_len)
+{
+   while ((size_t)(e - p) >= tag_len)
+   {
+      const char *q = (const char*)memchr(p, '-',
+            (size_t)(e - p) - tag_len + 1);
+      if (!q)
+         return NULL;
+      if (memcmp(q, tag, tag_len) == 0)
+         return q;
+      p = q + 1;
+   }
+   return NULL;
+}
+
+/* The number of certificates that begin in @pem. */
+static unsigned x509_pem_count(const char *pem, size_t len)
+{
+   const char *p = pem;
+   const char *e = pem + len;
+   unsigned    n = 0;
+   while ((p = x509_pem_find(p, e, x509_pem_begin,
+               sizeof(x509_pem_begin) - 1)))
+   {
+      p += sizeof(x509_pem_begin) - 1;
+      n++;
+   }
+   return n;
+}
+
+/* Every certificate in @pem decoded to @st's arena at @used and added
+ * to its anchors. Only the taken ones keep their bytes, so the arena
+ * stays packed; it may be @pem itself, the writes trailing the reads. */
+static int x509_store_append_pem(struct x509_store *st, const char *pem,
+      size_t len, size_t *used)
+{
+   const char *p = pem;
+   const char *e = pem + len;
 
    for (;;)
    {
-      const char *b, *stop, *q;
-      char   *clean;
-      size_t  n;
-      int     der_len = 0;
-      int     r;
-      uint8_t *der;
+      const char *b, *stop;
+      uint8_t    *der;
+      size_t      der_len;
 
-      b = NULL;
-      for (q = p; q + sizeof(begin) - 1 <= e; q++)
-         if (memcmp(q, begin, sizeof(begin) - 1) == 0)
-         {
-            b = q + sizeof(begin) - 1;
-            break;
-         }
-      if (!b)
+      if (!(b = x509_pem_find(p, e, x509_pem_begin,
+                  sizeof(x509_pem_begin) - 1)))
          break;
-      stop = NULL;
-      for (q = b; q + sizeof(end_) - 1 <= e; q++)
-         if (memcmp(q, end_, sizeof(end_) - 1) == 0)
-         {
-            stop = q;
-            break;
-         }
-      if (!stop)
+      b += sizeof(x509_pem_begin) - 1;
+      if (!(stop = x509_pem_find(b, e, x509_pem_end,
+                  sizeof(x509_pem_end) - 1)))
          break;
-      p = stop + sizeof(end_) - 1;
-
-      /* base64 body without the line breaks */
-      if (!(clean = (char*)malloc((size_t)(stop - b) + 1)))
-         return -1;
-      n = 0;
-      for (q = b; q < stop; q++)
-         if (*q != '\n' && *q != '\r' && *q != ' ' && *q != '\t')
-            clean[n++] = *q;
-      clean[n] = '\0';
-      der = unbase64(clean, (int)n, &der_len);
-      free(clean);
-      if (!der || der_len <= 0)
-      {
-         free(der);
-         continue;
-      }
-
-      r = x509_store_push(st, der, (size_t)der_len);
-      if (r <= 0)
-         free(der);
-      if (r < 0)
-         return -1;
+      p       = stop + sizeof(x509_pem_end) - 1;
+      der     = st->arena + *used;
+      der_len = unbase64_into(b, (size_t)(stop - b), der);
+      /* the table holds a slot for every certificate counted */
+      if (der_len != (size_t)-1 && der_len
+            && x509_store_push(st, der, der_len) > 0)
+         *used += der_len;
    }
    return (int)st->count;
 }
@@ -1182,34 +1187,86 @@ static int x509_store_is(const struct x509_store *st, const char *src,
    return st && st->src == src && st->src_len == src_len && st->anchors;
 }
 
+enum x509_src
+{
+   X509_SRC_DER = 0, /* read in place for the store's life */
+   X509_SRC_PEM,     /* decoded into an arena of the store's */
+   X509_SRC_ADOPT    /* one malloc()ed PEM, decoded in place, the arena */
+};
+
+/* @st's anchors from @parts. PEM certificates are counted first, in a
+ * scan for their markers, so the table is allocated once. */
+static int x509_store_build(struct x509_store *st, const char *const *parts,
+      const size_t *lens, unsigned count, enum x509_src mode)
+{
+   unsigned i, total = 0;
+   size_t   used     = 0;
+
+   if (mode == X509_SRC_DER)
+   {
+      for (i = 0; i < count; i++)
+         if (x509_store_append_der(st, (const uint8_t*)parts[i], lens[i]) < 0)
+            return -1;
+      return (int)st->count;
+   }
+
+   if (mode == X509_SRC_PEM)
+   {
+      size_t bound = 0;
+      for (i = 0; i < count; i++)
+         bound += lens[i] / 4 * 3 + 2;
+      if (!(st->arena = (uint8_t*)malloc(bound ? bound : 1)))
+         return -1;
+   }
+   for (i = 0; i < count; i++)
+      total += x509_pem_count(parts[i], lens[i]);
+   if (x509_store_reserve(st, total) != 0)
+      return -1;
+   for (i = 0; i < count; i++)
+      x509_store_append_pem(st, parts[i], lens[i], &used);
+   return (int)st->count;
+}
+
 static int x509_trust_load(const char *const *parts, const size_t *lens,
-      unsigned count, const char *src, size_t src_len, int pem)
+      unsigned count, const char *src, size_t src_len, enum x509_src mode)
 {
    struct x509_store *st, *old;
-   unsigned i;
    int      n = 0;
 
+   /* An adopted bundle is a new block, never the published source. */
+   if (mode != X509_SRC_ADOPT)
+   {
 #ifdef X509_STORE_LOCK_FREE
-   old = x509_store_enter();
-   if (x509_store_is(old, src, src_len))
-      n = (int)old->count;
-   x509_store_leave();
+      old = x509_store_enter();
+      if (x509_store_is(old, src, src_len))
+         n = (int)old->count;
+      x509_store_leave();
 #else
-   X509_LOCK();
-   if (x509_store_is(x509_store_cur, src, src_len))
-      n = (int)x509_store_cur->count;
-   X509_UNLOCK();
+      X509_LOCK();
+      if (x509_store_is(x509_store_cur, src, src_len))
+         n = (int)x509_store_cur->count;
+      X509_UNLOCK();
 #endif
-   if (n)
-      return n;
+      if (n)
+         return n;
+   }
 
    if (!(st = (struct x509_store*)calloc(1, sizeof(*st))))
-      n = -1;
-   else
-      st->owns_der = pem ? 1 : 0;
-   for (i = 0; i < count && n >= 0; i++)
-      n = pem ? x509_store_append_pem(st, parts[i], lens[i])
-              : x509_store_append_der(st, (const uint8_t*)parts[i], lens[i]);
+   {
+      if (mode == X509_SRC_ADOPT)
+         free((char*)parts[0]);
+      return -1;
+   }
+   if (mode == X509_SRC_ADOPT)
+      st->arena = (uint8_t*)parts[0];
+   n = x509_store_build(st, parts, lens, count, mode);
+
+   /* An adopted bundle replaces the store only with roots to offer. */
+   if (mode == X509_SRC_ADOPT && n <= 0)
+   {
+      x509_store_free(st);
+      return n;
+   }
 
 #ifdef X509_STORE_LOCK_FREE
    if (n >= 0)
@@ -1261,21 +1318,28 @@ static int x509_trust_load(const char *const *parts, const size_t *lens,
 
 int x509_trust_load_pem(const char *pem, size_t len)
 {
-   return x509_trust_load(&pem, &len, 1, pem, len, 1);
+   return x509_trust_load(&pem, &len, 1, pem, len, X509_SRC_PEM);
 }
 
 int x509_trust_load_pem_parts(const char *const *parts, const size_t *lens,
       unsigned count)
 {
    /* the part table is the source: loaded once, as a single one is */
-   return x509_trust_load(parts, lens, count, (const char*)parts, count, 1);
+   return x509_trust_load(parts, lens, count, (const char*)parts, count,
+         X509_SRC_PEM);
 }
 
 int x509_trust_load_der_parts(const unsigned char *const *parts,
       const size_t *lens, unsigned count)
 {
    return x509_trust_load((const char *const*)parts, lens, count,
-         (const char*)parts, count, 0);
+         (const char*)parts, count, X509_SRC_DER);
+}
+
+int x509_trust_adopt_pem(char *pem, size_t len)
+{
+   const char *part = pem;
+   return x509_trust_load(&part, &len, 1, pem, len, X509_SRC_ADOPT);
 }
 
 /* ---- chain -------------------------------------------------------- */

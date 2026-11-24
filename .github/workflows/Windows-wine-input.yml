@@ -44,6 +44,10 @@ on:
       - 'gfx/common/win32_msg_route.h'
       - 'gfx/common/win32_ime.h'
       - 'samples/input/win32_ime/**'
+      - 'gfx/common/win32_foreground.h'
+      - 'input/drivers/dinput.c'
+      - 'input/drivers/win32_input.c'
+      - 'samples/input/win32_foreground/**'
       - 'gfx/display_servers/dispserv_win32.c'
       - 'gfx/drivers/gdi_gfx.c'
       - 'gfx/drivers_context/wgl_ctx.c'
@@ -67,6 +71,10 @@ on:
       - 'gfx/common/win32_msg_route.h'
       - 'gfx/common/win32_ime.h'
       - 'samples/input/win32_ime/**'
+      - 'gfx/common/win32_foreground.h'
+      - 'input/drivers/dinput.c'
+      - 'input/drivers/win32_input.c'
+      - 'samples/input/win32_foreground/**'
       - 'gfx/display_servers/dispserv_win32.c'
       - 'gfx/drivers/gdi_gfx.c'
       - 'gfx/video_driver.c'
@@ -145,6 +153,19 @@ jobs:
           export DISPLAY=:97
           make -C samples/input/win32_ime check
           make -C samples/input/win32_ime clean
+
+      - name: Build and run win32_foreground_test under Wine
+        shell: bash
+        run: |
+          set -eu
+          # The foreground the input drivers read every frame is asked
+          # of Windows only after one of RetroArch's windows was told it
+          # moved, and is right when it moves to another program.
+          Xvfb :96 -screen 0 640x480x24 > /dev/null 2>&1 &
+          trap 'kill $! 2>/dev/null; wineserver -k >/dev/null 2>&1 || true' EXIT
+          export DISPLAY=:96
+          make -C samples/input/win32_foreground check
+          make -C samples/input/win32_foreground clean
 
       - name: Build and run winusb_hid_test under Wine
         shell: bash

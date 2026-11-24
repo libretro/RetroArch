@@ -104,6 +104,12 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #ifdef HAVE_GCM
    &gfx_display_ctx_rsx,
 #endif
+#ifdef HAVE_LIBNX
+   &gfx_display_ctx_switch,
+#endif
+#ifdef HAVE_DEKO3D
+   &gfx_display_ctx_deko3d,
+#endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #ifdef HAVE_GDI
    &gfx_display_ctx_gdi,
@@ -1020,7 +1026,7 @@ static void gfx_display_mesh_draw_effect(gfx_display_t *p_disp,
          md->color[3]);
    draw.effect       = md->effect->program;
 
-   now = cpu_features_get_time_usec();
+   now = md->time;
    if (!p_disp->effect_start_time || now < p_disp->effect_start_time)
       p_disp->effect_start_time = now;
    p_disp->effect_time = (float)fmod(
@@ -1081,7 +1087,7 @@ static void gfx_display_mesh_draw_effect(gfx_display_t *p_disp,
 #endif
 }
 
-void gfx_display_bloom_prepass(void *userdata)
+void gfx_display_bloom_prepass(void *userdata, retro_time_t now)
 {
 #ifdef HAVE_SHADERPIPELINE
    gfx_display_t *p_disp             = &dispgfx_st;
@@ -1103,7 +1109,7 @@ void gfx_display_bloom_prepass(void *userdata)
 
    p_disp->ribbon = &gfx_display_ribbon_st;
    menu_ribbon_update(p_disp->ribbon,
-         cpu_features_get_time_usec() * 0.000001,
+         now * 0.000001,
          VIDEO_SCALE_W(output_dims), VIDEO_SCALE_H(output_dims),
          p_disp->bloom_alpha);
    p_disp->ribbon_fresh = true;
@@ -1373,6 +1379,27 @@ void gfx_display_blend_end(gfx_display_ctx_driver_t *dispctx,
  * the helpers above it, which is what lets this file know the order
  * things are drawn in - and, when quads start being gathered rather
  * than drawn one at a time, where the gathered ones have to go out. */
+bool gfx_display_draw_media_shader(gfx_display_ctx_driver_t *dispctx,
+      void *userdata, uintptr_t texture, unsigned source_dims,
+      unsigned video_dims, unsigned pos, unsigned dims)
+{
+   gfx_display_t *p_disp = disp_get_ptr();
+   if (!dispctx || !dispctx->media_shader_draw) return false;
+   gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_DRAW);
+   if (gfx_display_stretched(p_disp, video_dims))
+   {
+      int x = VIDEO_POS_X(pos);
+      int x1 = gfx_display_stretch_x(p_disp, video_dims,
+            x + (int)VIDEO_SCALE_W(dims));
+      x = gfx_display_stretch_x(p_disp, video_dims, x);
+      pos = VIDEO_POS_PACK(x, VIDEO_POS_Y(pos));
+      dims = VIDEO_SCALE_PACK(x1 - x, VIDEO_SCALE_H(dims));
+      video_dims = p_disp->output_dims;
+   }
+   return dispctx->media_shader_draw(userdata, texture, source_dims,
+         video_dims, pos, dims);
+}
+
 void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       gfx_display_ctx_draw_t *draw, void *userdata,
       unsigned video_dims)
@@ -1398,6 +1425,33 @@ void gfx_display_draw(gfx_display_ctx_driver_t *dispctx,
       return;
    }
    dispctx->draw(draw, userdata, video_dims);
+}
+
+bool gfx_display_draw_blur(
+      gfx_display_t *p_disp,
+      void *data,
+      unsigned video_dims,
+      int x, int y, unsigned dims,
+      float alpha, float dim)
+{
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   unsigned w = VIDEO_SCALE_W(dims);
+   unsigned h = VIDEO_SCALE_H(dims);
+   if (     !dispctx || !dispctx->blur_rect || alpha <= 0.0f
+         || w < 8 || h < 8)
+      return false;
+   if (gfx_display_stretched(p_disp, video_dims))
+   {
+      int x1     = gfx_display_stretch_x(p_disp, video_dims, x + (int)w);
+      x          = gfx_display_stretch_x(p_disp, video_dims, x);
+      dims       = VIDEO_SCALE_PACK((unsigned)(x1 - x), h);
+      video_dims = p_disp->output_dims;
+   }
+   /* What is under it is drawn first */
+   gfx_display_flush_batch(p_disp);
+   return dispctx->blur_rect(data, video_dims, x, y, dims,
+         alpha > 1.0f ? 1.0f : alpha,
+         dim < 0.0f ? 0.0f : dim > 1.0f ? 1.0f : dim);
 }
 
 void gfx_display_draw_quad(
@@ -1986,7 +2040,9 @@ bool gfx_display_init_first_driver(gfx_display_t *p_disp,
             && (!string_is_equal(video_driver, ident)))
          continue;
       RARCH_LOG("[Display] Found display driver: \"%s\".\n", ident);
-      p_disp->dispctx = dispctx;
+      /* Widget restarts leave the render owner's driver unchanged. */
+      if (p_disp->dispctx != dispctx)
+         p_disp->dispctx = dispctx;
       return true;
    }
    return false;

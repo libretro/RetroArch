@@ -1,7 +1,8 @@
 /* A video filter (gfx/video_filters/<name>.c, chosen with FILTER_C and
  * its table with GOLDEN_H at build time; the Makefile builds one binary
  * per filter it lists) against output hashes recorded from its earlier
- * implementation: game-like frames (flat areas, banded
+ * implementation (SNES NTSC uses the intentional fixed-point baseline
+ * documented in README.md): game-like frames (flat areas, banded
  * gradients, tiles, outlined sprites, checkerboard dither and dither in
  * alternating rows) and noise, each pixel
  * format the filter takes, widths and heights from 1 up, frames

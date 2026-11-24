@@ -1681,6 +1681,7 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
       /* Keep ptr in sync with size to prevent buffer overrun when appending */
       if (self.keyboardPtrPtr)
          *self.keyboardPtrPtr = newLen;
+      input_driver_keyboard_line_changed();
    }
 
    return YES;
@@ -1702,6 +1703,7 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
             *self.keyboardSizePtr = finalLen;
             if (self.keyboardPtrPtr)
                *self.keyboardPtrPtr = finalLen;
+            input_driver_keyboard_line_changed();
          }
       }
 
@@ -1788,6 +1790,8 @@ ui_companion_driver_t ui_companion_cocoatouch = {
    NULL, /* iterate */
    ui_companion_cocoatouch_event_command,
    NULL, /* notify_refresh */
+   NULL, /* notify_thumbnails */
+   NULL, /* notify_core_updater_list */
    NULL, /* msg_queue_push */
    NULL, /* render_messagebox */
    NULL, /* get_main_window */

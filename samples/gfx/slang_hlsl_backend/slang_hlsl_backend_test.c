@@ -41,6 +41,7 @@
 
 #include "gfx/video_shader_parse.h"
 #include "gfx/drivers_shader/slang_process.h"
+#include "gfx/drivers_shader/slang_blob.h"
 
 #include "gfx/video_defines.h"
 
@@ -207,6 +208,34 @@ static const char unread_slang[] =
       "   FragColor = texture(Source, vTexCoord);\n"
       "}\n";
 
+static const char full_push_slang[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { mat4 MVP; vec4 OutputSize;"
+      "vec4 OriginalSize; vec4 SourceSize; uint FrameCount; } params;\n"
+      "#pragma stage vertex\n"
+      "layout(location=0) in vec4 Position;\n"
+      "layout(binding=1) uniform sampler2D LUT;\n"
+      "void main() { gl_Position=params.MVP*Position+textureLod(LUT,vec2(0.5),0.0); }\n"
+      "#pragma stage fragment\n"
+      "layout(binding=0) uniform sampler2D Source;\n"
+      "layout(location=0) out vec4 colour;\n"
+      "void main() { colour=texture(Source,vec2(0.5)); }\n";
+
+static const char viewer_push_slang[] =
+      "#version 450\n"
+      "layout(push_constant) uniform Push { mat4 MVP; vec4 OutputSize;"
+      "vec4 OriginalSize; vec4 SourceSize; uint FrameCount; } params;\n"
+      "#pragma stage vertex\n"
+      "layout(location=0) in vec4 Position;\n"
+      "layout(location=1) in vec2 TexCoord;\n"
+      "layout(location=0) out vec2 uv;\n"
+      "void main() { gl_Position=params.MVP*Position; uv=TexCoord; }\n"
+      "#pragma stage fragment\n"
+      "layout(binding=0) uniform sampler2D Source;\n"
+      "layout(location=0) in vec2 uv;\n"
+      "layout(location=0) out vec4 colour;\n"
+      "void main() { colour=texture(Source,uv); }\n";
+
 bool video_shader_source_read(const char *ident, char **buf, int64_t *len)
 {
    const char *src;
@@ -215,6 +244,10 @@ bool video_shader_source_read(const char *ident, char **buf, int64_t *len)
       return false;
    if (!strcmp(ident, "stock.slang"))
       src = stock_slang;
+   else if (!strcmp(ident, "full-push.slang"))
+      src = full_push_slang;
+   else if (!strcmp(ident, "viewer-push.slang"))
+      src = viewer_push_slang;
    else if (!strcmp(ident, "sized.slang"))
       src = sized_slang;
    else if (!strcmp(ident, "unread.slang"))
@@ -314,6 +347,9 @@ static void check_simulated_source_size(void)
    shader.sim_source_dims = VIDEO_SCALE_PACK(320, 240);
    strcpy(shader.pass[0].source.path, "sized.slang");
    strcpy(shader.pass[1].source.path, "sized.slang");
+   /* As the preset parser defaults: the first pass only. */
+   shader.pass[0].use_simulated_res = true;
+   shader.pass[1].use_simulated_res = false;
 
    CHECK(slang_process(&shader, 0, RARCH_SHADER_HLSL, 50, &map, &sem),
          "the SourceSize pass did not translate");
@@ -342,6 +378,27 @@ static void check_simulated_source_size(void)
    CHECK(u && u->data == (void*)source_size,
          "a later pass was told the simulated size");
    free_pass(&shader, 1, &sem);
+
+   /* A later pass that opts in is told the simulated size, and a
+    * first pass that opts out keeps the real one. */
+   shader.pass[0].use_simulated_res = false;
+   shader.pass[1].use_simulated_res = true;
+   CHECK(slang_process(&shader, 1, RARCH_SHADER_HLSL, 50, &map, &sem),
+         "the opted-in second pass did not translate");
+   u = find_uniform(&sem, "SourceSize");
+   v = u ? (const float*)u->data : NULL;
+   CHECK(v && v != source_size && v[0] == 320.0f && v[1] == 240.0f,
+         "an opted-in later pass was not told the simulated size");
+   free_pass(&shader, 1, &sem);
+
+   CHECK(slang_process(&shader, 0, RARCH_SHADER_HLSL, 50, &map, &sem),
+         "the opted-out first pass did not translate");
+   u = find_uniform(&sem, "SourceSize");
+   CHECK(u && u->data == (void*)source_size,
+         "an opted-out first pass was told the simulated size");
+   free_pass(&shader, 0, &sem);
+   shader.pass[0].use_simulated_res = true;
+   shader.pass[1].use_simulated_res = false;
 
    shader.sim_source_dims = 0;
    CHECK(slang_process(&shader, 0, RARCH_SHADER_HLSL, 50, &map, &sem),
@@ -390,6 +447,87 @@ static void check_unread_samplers(void)
 
 /* --- the lane ------------------------------------------------------- */
 
+static void check_viewer_process(enum rarch_shader_type type, unsigned version)
+{
+   static struct video_shader shader;
+   semantics_map_t map;
+   pass_semantics_t sem;
+   float rows[12], mvp[16], sizes[4];
+   void *views[2] = { NULL, NULL };
+   unsigned i, j, found = 0;
+   memset(&map, 0, sizeof(map));
+   memset(&sem, 0, sizeof(sem));
+   memset(&shader, 0, sizeof(shader));
+   shader.passes = 1;
+   strcpy(shader.pass[0].source.path, "viewer-push.slang");
+   map.viewer_colour = true;
+   map.uniforms[SLANG_SEMANTIC_MVP] = mvp;
+   for (i = 0; i < 3; i++)
+      map.uniforms[SLANG_SEMANTIC_VIEWER_COLOUR0 + i] = rows + i * 4;
+   map.textures[SLANG_TEXTURE_SEMANTIC_SOURCE].image = &views[0];
+   map.textures[SLANG_TEXTURE_SEMANTIC_SOURCE].size = sizes;
+   map.textures[SLANG_TEXTURE_SEMANTIC_USER].image = &views[1];
+   map.textures[SLANG_TEXTURE_SEMANTIC_USER].size = sizes;
+   CHECK(slang_process(&shader, 0, type, version, &map, &sem),
+         "viewer source did not translate");
+   if (!shader.pass[0].source.string.fragment) printf("viewer: %s\n", last_error);
+   CHECK(sem.cbuffers[SLANG_CBUFFER_UBO].binding == 0
+         && sem.cbuffers[SLANG_CBUFFER_PC].binding == 1,
+         "reflected cbuffer slots differ from the source printer");
+   CHECK(shader.pass[0].source.string.fragment
+         && strstr(shader.pass[0].source.string.fragment, "rarch_sample_colour"),
+         "viewer source did not normalize its samples");
+   for (i = 0; i < SLANG_CBUFFER_MAX; i++)
+   {
+      for (j = 0; j < (unsigned)sem.cbuffers[i].uniform_count; j++)
+         if (sem.cbuffers[i].uniforms[j].data == rows
+               || sem.cbuffers[i].uniforms[j].data == rows + 4
+               || sem.cbuffers[i].uniforms[j].data == rows + 8) found++;
+      free(sem.cbuffers[i].uniforms);
+   }
+   CHECK(found == 3, "viewer colour rows are not bound to their owner");
+   free(sem.textures);
+   free(shader.pass[0].source.string.vertex);
+   free(shader.pass[0].source.string.fragment);
+}
+
+static void check_viewer_colour(void)
+{
+   glslang_output output;
+   struct slang_blob *vb = NULL, *fb = NULL;
+   enum slang_rect_result result;
+   glslang_output_init(&output);
+   CHECK(glslang_compile_shader("stock.slang", &output), "compile viewer source");
+   CHECK(slang_compile_colour("stock.slang", output.vertex, output.vertex_len,
+            output.fragment, output.fragment_len, true, NULL,
+            &result, &vb, &fb, NULL, NULL), "compile fused viewer stages");
+   CHECK(result == SLANG_RECT_REWRITTEN && fb && fb->refl,
+         "fused viewer reflection is missing");
+   slang_blob_unref(vb);
+   slang_blob_unref(fb);
+   vb = fb = NULL;
+   CHECK(slang_compile_colour("stock.slang", output.vertex, output.vertex_len,
+            output.fragment, output.fragment_len, false, NULL,
+            &result, &vb, &fb, NULL, NULL), "compile later viewer pass");
+   CHECK(result == SLANG_RECT_UNCHANGED && !vb && !fb,
+         "later pass Source must not be converted twice");
+   slang_blob_unref(vb);
+   slang_blob_unref(fb);
+   glslang_output_free(&output);
+   glslang_output_init(&output);
+   CHECK(glslang_compile_shader("full-push.slang", &output), "compile full push block");
+   vb = fb = NULL;
+   CHECK(slang_compile_colour("full-push.slang", output.vertex, output.vertex_len,
+            output.fragment, output.fragment_len, true, NULL,
+            &result, &vb, &fb, NULL, NULL), "place colour uniforms outside full push block");
+   CHECK(result == SLANG_RECT_REWRITTEN && !vb && fb && fb->refl
+         && fb->refl->ubo.binding == 2 && fb->refl->ubo.size == 48,
+         "new colour block collided with the source sampler");
+   slang_blob_unref(vb);
+   slang_blob_unref(fb);
+   glslang_output_free(&output);
+}
+
 int main(void)
 {
    static struct video_shader shader;
@@ -437,6 +575,9 @@ int main(void)
 
    check_simulated_source_size();
    check_unread_samplers();
+   check_viewer_colour();
+   check_viewer_process(RARCH_SHADER_HLSL, 50);
+   check_viewer_process(RARCH_SHADER_METAL, 20000);
 
    printf("%s slang_hlsl_backend\n", failures ? "[FAIL]" : "[pass]");
    return failures ? 1 : 0;

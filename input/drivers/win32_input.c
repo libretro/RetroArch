@@ -48,6 +48,7 @@
 #include "../input_driver.h"
 #include "../input_keymaps.h"
 #include "../../gfx/video_driver.h"
+#include "../../gfx/common/win32_common.h"
 
 /* By scancode - the extended keys with 0x80 added, as the window
  * procedure hands them over: down. */
@@ -104,7 +105,17 @@ static void win32_input_poll(void *data)
    POINT pt;
    win32_input_t *w32 = (win32_input_t*)data;
    HWND hwnd          = (HWND)video_driver_window_get();
-   bool focused       = hwnd && GetForegroundWindow() == hwnd;
+   HWND front         = hwnd ? win32_foreground_window() : NULL;
+   bool focused       = hwnd && front == hwnd;
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   input_video_window_t window;
+   bool windows       = input_config_get_video_windows_enable();
+   window.window      = 0;
+   window.generation  = 0;
+   /* a screen's own window in front is RetroArch's too */
+   if (!focused && hwnd && windows)
+      focused         = win32_video_window_open(front);
+#endif
 
    frame->pos     = w32->mouse_pos;
    frame->rel     = VIDEO_POS_PACK(0, 0);
@@ -117,7 +128,16 @@ static void win32_input_poll(void *data)
       win32_input_keys_clear();
       w32->have_pos = false;
    }
-   else if (GetCursorPos(&pt) && ScreenToClient(hwnd, &pt))
+   else if (GetCursorPos(&pt)
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+         /* over a screen's own window, in that window */
+         && (     (windows && (window.window = win32_video_window_under(pt,
+                     &window.generation, &pt)))
+               || ScreenToClient(hwnd, &pt))
+#else
+         && ScreenToClient(hwnd, &pt)
+#endif
+         )
    {
       /* the left and right buttons as the user has them, not as the
        * mouse does */
@@ -142,9 +162,15 @@ static void win32_input_poll(void *data)
 
    /* The mouse is the port's whose Mouse Index is 0; the pointer and
     * the lightgun's aim are every port's. */
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(__WINRT__)
+   input_driver_publish_window_pointers(frame, &window, 1,
+           INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
+         | INPUT_POINTERS_GUN_BUTTONS_BOUND);
+#else
    input_driver_publish_pointers(frame, 1,
            INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
          | INPUT_POINTERS_GUN_BUTTONS_BOUND);
+#endif
 }
 
 static bool win32_input_key_down(unsigned key)

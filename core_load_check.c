@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef ANDROID
+#include <stdio.h>
 #include <unistd.h>
 #endif
 
@@ -80,7 +81,8 @@ enum core_load_park_state
    CORE_LOAD_PARK_SEED,
    CORE_LOAD_PARK_CHECK,
    CORE_LOAD_PARK_USER,
-   CORE_LOAD_PARK_IDLE
+   CORE_LOAD_PARK_IDLE,
+   CORE_LOAD_PARK_CANCELLED
 };
 
 /* A refused user-started load, waiting to run again */
@@ -91,6 +93,7 @@ struct core_load_park
    void *userdata;
    core_load_rerun_t rerun;
    core_load_rerun_t free_cb;
+   core_load_park_end_t end;
    char path[PATH_MAX_LENGTH];
    enum core_load_park_state state;
    unsigned serial;
@@ -857,6 +860,7 @@ static void core_load_check_stage_result(const char *path, bool pass)
 static void core_load_park_drop(void)
 {
    struct core_load_park *p = &core_load_rt.park;
+   core_load_park_end_t end = p->end;
    unsigned serial          = p->serial;
    core_file_close(p->f);
    if (p->free_cb)
@@ -864,6 +868,8 @@ static void core_load_park_drop(void)
    memset(p, 0, sizeof(*p));
    p->serial                = serial;
    runloop_frame_work_set(RUNLOOP_WORK_CORE_PARK, false);
+   if (end)
+      end(CORE_LOAD_PARK_END_DROPPED);
 }
 
 /* Ended as the user's Cancel ends it: a warning up for it closes
@@ -919,6 +925,7 @@ static void core_load_park_choice(enum core_warning_choice choice,
 {
    struct core_load_park *p = &core_load_rt.park;
    unsigned serial          = *(unsigned*)userdata;
+   bool took;
    (void)core_path;
    free(userdata);
    /* A newer push runs this with CANCEL inside itself, its request
@@ -935,14 +942,20 @@ static void core_load_park_choice(enum core_warning_choice choice,
          p->state = CORE_LOAD_PARK_IDLE;
          break;
       case CORE_WARNING_ALWAYS_TRUST:
-         /* Not recorded, so this once */
-         if (!core_trust_runtime_always(c))
+         /* Not recorded, or not kept, so this once */
+         if (     !(took = core_trust_runtime_always(c))
+               || (  !core_trust_runtime_can_save()
+                  && !core_trust_runtime_waits(c)))
          {
-            const char *msg = msg_hash_to_str(MSG_CORE_LOAD_TRUST_LIST_FULL);
+            const char *msg = msg_hash_to_str(took
+                  ? MSG_CORE_LOAD_TRUST_CANT_SAVE
+                  : MSG_CORE_LOAD_TRUST_LIST_FULL);
             RARCH_WARN("[Core] Could not trust \"%s\" for good: loading it once.\n",
                   p->path);
             runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+            if (took)
+               core_trust_runtime_cant_save_told();
          }
          p->state = CORE_LOAD_PARK_IDLE;
          break;
@@ -951,7 +964,11 @@ static void core_load_park_choice(enum core_warning_choice choice,
          if (core_warning_pending(NULL, NULL))
             RARCH_WARN("[Core] Not loading \"%s\": another Security Warning replaced its warning.\n",
                   p->path);
-         core_load_park_drop();
+         /* Its end runs from the frame loop, outside this warning */
+         if (p->end)
+            p->state = CORE_LOAD_PARK_CANCELLED;
+         else
+            core_load_park_drop();
          break;
    }
 }
@@ -1090,16 +1107,22 @@ static void core_load_park_rerun(void)
    struct core_load_park *p  = &core_load_rt.park;
    core_load_rerun_t rerun   = p->rerun;
    core_load_rerun_t free_cb = p->free_cb;
+   core_load_park_end_t end  = p->end;
    void *userdata            = p->userdata;
    /* The pass for the re-run's open, bound to the file checked: kept
     * open for a refused result (the user chose), else by identity */
    core_load_slot_set(&core_load_rt.slot, p->path, &p->c, &p->f, true);
    core_load_rt.slot.pass    = true;
    p->free_cb                = NULL;
+   p->end                    = NULL;
    core_load_park_drop();
    /* Only the re-run's own open may refuse it again */
    core_load_rt.refused[0]   = '\0';
+   if (end)
+      end(CORE_LOAD_PARK_END_RERUN);
    rerun(userdata);
+   if (end)
+      end(CORE_LOAD_PARK_END_RERAN);
    if (free_cb)
       free_cb(userdata);
 }
@@ -1288,6 +1311,21 @@ bool core_load_check_refused_seed(const char *path)
    return core_load_rt.refused_seed && core_load_check_refused(path);
 }
 
+void core_load_check_forget(const char *path)
+{
+   if (!path || !*path)
+      return;
+#ifdef ANDROID
+   if (android_core_path_resolve(path, core_load_rt.check_path,
+            sizeof(core_load_rt.check_path)))
+      path = core_load_rt.check_path;
+#endif
+   core_load_abs(path, core_load_rt.path, sizeof(core_load_rt.path));
+   if (     core_load_rt.slot.pass
+         && core_load_slot_is(&core_load_rt.slot, core_load_rt.path))
+      core_load_slot_clear(&core_load_rt.slot);
+}
+
 void core_load_check_loaded(void)
 {
    struct core_load_slot *from = NULL;
@@ -1295,7 +1333,11 @@ void core_load_check_loaded(void)
    /* A load while a park waits, the same core's too: the re-run would
     * replace that session. The park's own re-run dropped it first. */
    if (core_load_rt.park.state != CORE_LOAD_PARK_NONE)
+   {
+      RARCH_WARN("[Core] Not loading \"%s\": another load replaced it.\n",
+            core_load_rt.park.path);
       core_load_park_cancel();
+   }
    /* Any other pass the slot keeps, such as a Load Once whose re-run
     * only probed, ends when a core loads */
    if (     core_load_rt.slot.pass
@@ -1353,6 +1395,31 @@ void core_load_check_release_held(void)
       core_load_slot_clear(&core_load_rt.slot);
 }
 
+void core_load_check_untrust(const char *path)
+{
+   if (!path)
+      return;
+#ifdef ANDROID
+   if (!android_core_path_resolve(path, core_load_rt.check_path,
+            sizeof(core_load_rt.check_path)))
+      return;
+   path = core_load_rt.check_path;
+#endif
+   core_load_abs(path, core_load_rt.path, sizeof(core_load_rt.path));
+   path = core_load_rt.path;
+   if (core_load_slot_is(&core_load_rt.slot, path))
+      core_load_slot_clear(&core_load_rt.slot);
+   if (core_load_slot_is(&core_load_rt.quick, path))
+      core_load_slot_clear(&core_load_rt.quick);
+   if (!core_load_slot_is(&core_load_rt.loaded, path))
+      return;
+   core_file_close(core_load_rt.loaded.f);
+   core_load_rt.loaded.f    = NULL;
+   core_load_rt.loaded.pass = false;
+   if (!core_load_rt.running)
+      core_load_slot_clear(&core_load_rt.loaded);
+}
+
 void core_load_check_set_startup(bool on)
 {
    core_load_rt.startup       = on;
@@ -1389,6 +1456,54 @@ enum core_load_copy core_load_check_copy_source(const char *path,
             CORE_SHA256_LEN);
    return CORE_LOAD_COPY_CHECK;
 }
+
+#ifdef ANDROID
+core_file_t *core_load_check_instance_file(const char *path,
+      char **load_path)
+{
+   char fd_path[32];
+   core_file_t *f    = NULL;
+   core_file_t *own  = NULL;
+   bool lent;
+   *load_path = NULL;
+   /* As the running core was loaded: by its real path */
+   if (android_core_path_resolve(path, core_load_rt.check_path,
+            sizeof(core_load_rt.check_path)))
+      path = core_load_rt.check_path;
+   if (!core_trust_runtime_active() || !core_trust_runtime_checks_on())
+      own = core_file_open(path);
+   else
+   {
+      core_load_abs(path, core_load_rt.path, sizeof(core_load_rt.path));
+      if (     !core_load_rt.running
+            || !core_load_rt.loaded.pass
+            || !core_load_slot_is(&core_load_rt.loaded, core_load_rt.path)
+            || !(f = core_load_slot_file(&core_load_rt.loaded,
+                  core_load_rt.check_path, &lent)))
+         return NULL;
+      if (!lent)
+         own = f;
+      else
+      {
+         /* The held file, opened again: an offset of the caller's own */
+         snprintf(fd_path, sizeof(fd_path), "/proc/self/fd/%d",
+               core_file_fd(f));
+         if (     (own = core_file_open(fd_path))
+               && !core_load_same_held(&core_load_rt.loaded.c.rec.id, own))
+         {
+            core_file_close(own);
+            own = NULL;
+         }
+      }
+   }
+   if (own && !(*load_path = strdup(path)))
+   {
+      core_file_close(own);
+      own = NULL;
+   }
+   return own;
+}
+#endif
 
 struct core_load_match
 {
@@ -1576,7 +1691,11 @@ bool core_load_check_park(const char *path, core_load_rerun_t rerun,
    path = core_load_rt.check_path;
 #endif
    if (p->state != CORE_LOAD_PARK_NONE)
+   {
+      RARCH_WARN("[Core] Not loading \"%s\": another load replaced it.\n",
+            p->path);
       core_load_park_drop();
+   }
    core_load_abs(path, p->path, sizeof(p->path));
    /* Before the start can push: the older request's CANCEL, run inside
     * that push, must not match this park */
@@ -1599,6 +1718,12 @@ bool core_load_check_park(const char *path, core_load_rerun_t rerun,
    return true;
 }
 
+void core_load_check_park_on_end(core_load_park_end_t end)
+{
+   if (core_load_rt.park.state != CORE_LOAD_PARK_NONE)
+      core_load_rt.park.end = end;
+}
+
 void core_load_check_iterate(void)
 {
    switch (core_load_rt.park.state)
@@ -1611,6 +1736,16 @@ void core_load_check_iterate(void)
          /* A refused staged load ends its own way first */
          if (!task_content_load_pending())
             core_load_park_rerun();
+         break;
+      case CORE_LOAD_PARK_CANCELLED:
+         if (!task_content_load_pending())
+         {
+            core_load_park_end_t end = core_load_rt.park.end;
+            core_load_rt.park.end    = NULL;
+            core_load_park_drop();
+            if (end)
+               end(CORE_LOAD_PARK_END_CANCELLED);
+         }
          break;
       default:
          break;

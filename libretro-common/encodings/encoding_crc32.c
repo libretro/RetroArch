@@ -39,7 +39,8 @@
  *
  *   1. Carry-less multiply folding (x86 PCLMULQDQ, chosen at runtime),
  *      512 bits wide where AVX-512 has VPCLMULQDQ.
- *   2. ARMv8 CRC32 instructions (chosen at compile time).
+ *   2. ARMv8 CRC32 instructions, in AArch64 or AArch32 (at compile
+ *      time where the baseline has them, else at runtime).
  *   3. Slicing-by-8 over a const table (every other target, both endians).
  *
  * The byte-at-a-time loop survives only as the tail handler for the
@@ -75,6 +76,18 @@
 #define CRC32_HAVE_ARM_PATH     1
 #define CRC32_ARM_NEEDS_TARGET  1
 #define CRC32_ARM_DISPATCH      1
+#elif defined(__arm__) && defined(__ARMEL__) && !defined(_MSC_VER) \
+   && defined(__ARM_ARCH) && __ARM_ARCH >= 7 \
+   && ((defined(__clang__) && __clang_major__ >= 16) \
+      || (!defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 9))
+/* 32-bit code on an ARMv8 CPU (Android's armeabi-v7a among others):
+ * the same instructions in AArch32, chosen at runtime. Both compilers
+ * declare the ACLE functions there only for a CRC baseline, so this
+ * path calls the builtins under them. */
+#define CRC32_HAVE_ARM_PATH     1
+#define CRC32_ARM_NEEDS_TARGET  1
+#define CRC32_ARM_DISPATCH      1
+#define CRC32_ARM_A32_BUILTINS  1
 #elif defined(__x86_64__) || defined(__i386__) \
    || defined(_M_X64)     || defined(_M_IX86)
 /* Being on x86 is necessary but not sufficient: the toolchain also has
@@ -735,11 +748,24 @@ static uint32_t crc_msb(const crc_msb_t *m, uint32_t crc,
 #include <features/features_cpu.h>
 #if defined(__clang__)
 #define CRC32_TARGET_ARM __attribute__((target("crc")))
+#elif defined(CRC32_ARM_A32_BUILTINS)
+/* +simd keeps an FPU for a hard-float build */
+#define CRC32_TARGET_ARM __attribute__((target("arch=armv8-a+crc+simd")))
 #else
 #define CRC32_TARGET_ARM __attribute__((target("arch=armv8-a+crc")))
 #endif
 #else
 #define CRC32_TARGET_ARM
+#endif
+
+#if defined(CRC32_ARM_A32_BUILTINS)
+/* AArch32 has no 64-bit CRC32 operation: two words, low first */
+#define CRC32_ARM_B(crc, v) __builtin_arm_crc32b((crc), (v))
+#define CRC32_ARM_D(crc, v) __builtin_arm_crc32w(__builtin_arm_crc32w( \
+      (crc), (uint32_t)(v)), (uint32_t)((v) >> 32))
+#else
+#define CRC32_ARM_B(crc, v) __crc32b((crc), (v))
+#define CRC32_ARM_D(crc, v) __crc32d((crc), (v))
 #endif
 
 /* Three chains of CRC32X, each a lane of 1 KiB, keep the instruction's
@@ -814,7 +840,7 @@ static uint32_t crc32_arm(uint32_t crc, const uint8_t *data, size_t len)
 {
    while (((uintptr_t)data & 7) && len > 0)
    {
-      crc = __crc32b(crc, *data);
+      crc = CRC32_ARM_B(crc, *data);
       data++;
       len--;
    }
@@ -828,9 +854,9 @@ static uint32_t crc32_arm(uint32_t crc, const uint8_t *data, size_t len)
          memcpy(&v0, data + i, sizeof(v0));
          memcpy(&v1, data + CRC32_ARM_LANE + i, sizeof(v1));
          memcpy(&v2, data + 2 * CRC32_ARM_LANE + i, sizeof(v2));
-         crc = __crc32d(crc, v0);
-         c1  = __crc32d(c1, v1);
-         c2  = __crc32d(c2, v2);
+         crc = CRC32_ARM_D(crc, v0);
+         c1  = CRC32_ARM_D(c1, v1);
+         c2  = CRC32_ARM_D(c2, v2);
       }
       crc   = crc32_arm_lane_on(crc32_arm_lane_on(crc) ^ c1) ^ c2;
       data += 3 * CRC32_ARM_LANE;
@@ -840,13 +866,13 @@ static uint32_t crc32_arm(uint32_t crc, const uint8_t *data, size_t len)
    {
       uint64_t v;
       memcpy(&v, data, sizeof(v));
-      crc = __crc32d(crc, v);
+      crc = CRC32_ARM_D(crc, v);
       data += 8;
       len  -= 8;
    }
    while (len > 0)
    {
-      crc = __crc32b(crc, *data++);
+      crc = CRC32_ARM_B(crc, *data++);
       len--;
    }
    return crc;

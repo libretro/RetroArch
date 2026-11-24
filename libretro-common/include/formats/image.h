@@ -30,6 +30,7 @@
 
 #include <boolean.h>
 #include <formats/video_hw_frame.h>
+#include <formats/video_audio_track.h>
 
 RETRO_BEGIN_DECLS
 
@@ -147,7 +148,11 @@ enum texture_gpu_format
    TEXTURE_GPU_FORMAT_SCRGB,
    /* 8-bit YCbCr 4:2:0 on ->planar (I420 or NV12), converted to RGB
     * on the GPU: whether load_texture and update_texture take one. */
-   TEXTURE_GPU_FORMAT_YUV420
+   TEXTURE_GPU_FORMAT_YUV420,
+   /* Capability, not a storage format: YUV420 uploads consume padded
+    * rows without a separate API upload per row. A decoder may lend
+    * its padded planes instead of packing another frame with this. */
+   TEXTURE_GPU_FORMAT_YUV420_STRIDED
 };
 
 /* Numeric mip layout reported by a loader without decoding.  Offsets are
@@ -631,6 +636,46 @@ void image_transfer_anim_stream_set_want_fp16(void *stream,
 bool image_transfer_anim_stream_is_fp16(const void *stream,
       enum image_type_enum type);
 
+/* 8-bit 4:2:0 SDR video sources: whether the stream can hand its
+ * frames out as their decoded planes rather than converted pixels, so
+ * the caller's GPU does the colour conversion - known from the
+ * container before any decode. With set_planar on, each frame goes
+ * into the caller's frame (image_transfer_anim_stream_set_output) as
+ * packed I420 of the stream's size (IMAGE_PIXFMT_FRAME_SIZE of
+ * IMAGE_PIXFMT_I420) instead; set_planar is false where the stream
+ * cannot. planar_yuv is the IMAGE_YUV_FLAG_* (BT709, FULL_RANGE) of
+ * the last frame so decoded. A frame that cannot be handed out so
+ * ends the stream there. */
+bool image_transfer_anim_stream_can_planar(const void *stream,
+      enum image_type_enum type);
+bool image_transfer_anim_stream_set_planar(void *stream,
+      enum image_type_enum type, bool planar);
+/* Opt in after set_planar. Consume synchronously unless retain_planar
+ * extends the borrow through an immutable decoder-frame lease. Where the
+ * decoder can lend its current planes, next() leaves the output slot
+ * untouched and borrowed_planar() describes the frame instead. Otherwise
+ * the packed-slot fallback remains. The borrow lasts until the next
+ * decode, seek, rewind or stream free; consume it before any of those. */
+/* Without @strided, borrow only tightly packed planes: a backend that
+ * otherwise uploads each row separately keeps the packed fallback. */
+bool image_transfer_anim_stream_borrow_planar(void *stream,
+      enum image_type_enum type, bool strided);
+/* Retain the last packed frame when it can outlive decoder progress.
+ * Acquire on the decode owner. On success release(*owner) exactly once on
+ * any thread, including after stream free. False keeps the copy fallback. */
+bool image_transfer_anim_stream_retain_pixels(void *stream,
+      enum image_type_enum type, void **owner, void (**release)(void*));
+
+/* Extend the current planar borrow beyond the next decode. The decoder
+ * owner acquires it; release(*owner) may run on any thread after the reader
+ * finishes, including after stream free. False keeps the copy fallback. */
+bool image_transfer_anim_stream_retain_planar(const void *stream,
+      enum image_type_enum type, void **owner, void (**release)(void*));
+const struct texture_planar *image_transfer_anim_stream_borrowed_planar(
+      const void *stream, enum image_type_enum type);
+unsigned image_transfer_anim_stream_planar_yuv(const void *stream,
+      enum image_type_enum type);
+
 bool image_transfer_anim_stream_set_output(void *stream,
       enum image_type_enum type, uint32_t *out);
 
@@ -755,6 +800,12 @@ int64_t image_transfer_anim_stream_start_ns(void *stream, enum image_type_enum t
  * MP4 and WebM. Still-image decoding and decoder-specific raw seek
  * coordinates do not change. Generic seeks below use movie time. */
 int64_t image_transfer_anim_stream_frame_time_ns(void *stream, enum image_type_enum type);
+
+/* Decoder owner: enumerate audio without allocating, reading or seeking.
+ * Ordinals skip non-audio tracks; out->index retains the demux index.
+ * Borrowed fields expire with the stream/input. Clears out on failure. */
+bool image_transfer_anim_stream_audio_track(const void *stream,
+      enum image_type_enum type, unsigned ordinal, video_audio_track_t *out);
 
 bool image_transfer_anim_stream_seekable(void *stream, enum image_type_enum type);
 bool image_transfer_anim_stream_seek_begin(void *stream,

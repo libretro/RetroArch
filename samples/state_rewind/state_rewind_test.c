@@ -58,6 +58,13 @@ bool content_serialize_state_rewind(void *buffer, size_t buffer_size)
    memcpy(buffer, core_state, core_state_size);
    return true;
 }
+const void *content_rewind_state_core(const void *state, size_t len,
+      size_t *core_size)
+{
+   if (len < core_state_size) return NULL;
+   *core_size = core_state_size;
+   return state;
+}
 bool content_deserialize_state(const void *data, size_t size)
 {
    core_unserialize_calls++;
@@ -544,6 +551,57 @@ static void t_pathological_state_size(void)
    }
 }
 
+/* The push the preemptive frames share: the check leaves it, their save
+ * point makes it with one serialize and is handed the core block, and a
+ * push nobody took is dropped by the next check. */
+static void t_deferred_push(void)
+{
+   struct state_manager_rewind_state rs;
+   uint8_t out[sizeof(core_state)];
+   char s[64];
+   unsigned t = 0, before, entries;
+   printf("   deferred_push: one serialize for the rewind push and the save point\n");
+   memset(&rs, 0, sizeof(rs));
+   core_state_size = sizeof(core_state);
+   memset(core_state, 0x5A, sizeof(core_state));
+   state_manager_event_init(&rs, 1 << 20);
+   CHECK(rs.state != NULL, "no rewind buffer");
+   if (!rs.state)
+      return;
+   /* The first check only notes the hotkey */
+   state_manager_check_rewind(&rs, NULL, false, 1, false, s, sizeof(s), &t);
+   before  = core_serialize_calls;
+   entries = rs.state->entries;
+
+   rs.flags |= STATE_MGR_REWIND_ST_FLAG_DEFER_PUSH;
+   core_state[7] = 0x11;
+   state_manager_check_rewind(&rs, NULL, false, 1, false, s, sizeof(s), &t);
+   CHECK(core_serialize_calls == before, "the check serialized the push it was to leave");
+   CHECK(rs.flags & STATE_MGR_REWIND_ST_FLAG_PUSH_PENDING, "the check left no push pending");
+   /* What is pushed is the state at the save point */
+   core_state[9] = 0x22;
+   CHECK(state_manager_push_deferred(&rs, out, sizeof(out)), "the save point was not handed the state");
+   CHECK(core_serialize_calls == before + 1, "%u serializes for one push", core_serialize_calls - before);
+   CHECK(memcmp(out, core_state, sizeof(out)) == 0, "the state handed over is not the pushed one");
+   CHECK(!state_manager_push_deferred(&rs, out, sizeof(out)), "one pending push was made twice");
+   CHECK(core_serialize_calls == before + 1, "a push nothing left pending serialized");
+
+   /* A save point of another size is not handed the block; the push
+    * is still made */
+   state_manager_check_rewind(&rs, NULL, false, 1, false, s, sizeof(s), &t);
+   CHECK(!state_manager_push_deferred(&rs, out, sizeof(out) - 2), "a block of the wrong size was handed over");
+   CHECK(core_serialize_calls == before + 2, "the push of a refused hand-over was not made");
+
+   /* Left pending, it is dropped by the next check, which decides anew */
+   state_manager_check_rewind(&rs, NULL, false, 1, false, s, sizeof(s), &t);
+   rs.flags &= ~STATE_MGR_REWIND_ST_FLAG_DEFER_PUSH;
+   state_manager_check_rewind(&rs, NULL, false, 1, false, s, sizeof(s), &t);
+   CHECK(!(rs.flags & STATE_MGR_REWIND_ST_FLAG_PUSH_PENDING), "a push stayed pending past its frame");
+   CHECK(core_serialize_calls == before + 3, "%u serializes where three pushes were made", core_serialize_calls - before);
+   CHECK(rs.state->entries == entries + 3, "%u entries for three pushes", rs.state->entries - entries);
+   state_manager_event_deinit(&rs, NULL);
+}
+
 int main(void)
 {
    printf("state_rewind:\n");
@@ -558,6 +616,7 @@ int main(void)
    t_wrap_near_end();
    t_drop_oldest();
    t_init_oom_guard();
+   t_deferred_push();
    t_pathological_state_size();
    t_decompress_oob();
    t_decompress_atomic();

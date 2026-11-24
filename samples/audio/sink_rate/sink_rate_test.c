@@ -17,7 +17,30 @@
 #include <string.h>
 #include <math.h>
 
+/* audio_driver_sink_poll() reads the clock and takes its marks through
+ * these: the test moves both and counts the clock's reads */
+#include <features/features_cpu.h>
+static int64_t  poll_clock;
+static uint64_t poll_ticks;
+static unsigned poll_clock_reads;
+static bool     poll_rate_known = true;
+static retro_time_t poll_time_usec(void)
+{
+   poll_clock_reads++;
+   return poll_clock;
+}
+static retro_perf_tick_t poll_perf_counter(void) { return poll_ticks; }
+static retro_time_t poll_perf_to_usec(retro_perf_tick_t t)
+{
+   return poll_rate_known ? (retro_time_t)t : 0;
+}
+#define cpu_features_get_time_usec    poll_time_usec
+#define cpu_features_get_perf_counter poll_perf_counter
+#define cpu_features_perf_to_usec     poll_perf_to_usec
 #include "../../../audio/audio_driver.c"
+#undef cpu_features_get_time_usec
+#undef cpu_features_get_perf_counter
+#undef cpu_features_perf_to_usec
 
 static unsigned failures = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { printf("      FAIL: "); printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
@@ -533,7 +556,77 @@ typedef struct
    void (*run)(audio_driver_state_t *st);
 } scenario_t;
 
+/* The write paths' poll: no clock read while the window is open, one
+ * for the update that closes it, none with the estimate off; and the
+ * clock decides while the mark's rate is not known. */
+static void poll_advance(int64_t usec)
+{
+   poll_clock += usec;
+   poll_ticks += (uint64_t)usec;
+   clock_usec  = poll_clock;
+}
+static void s_poll_clock_reads(audio_driver_state_t *st)
+{
+   unsigned i;
+   int64_t window_at;
+
+   reset(st, false);
+   poll_clock = 5000000; poll_ticks = 777; clock_usec = poll_clock;
+   poll_rate_known = true;
+   st->sink_started = 0;
+   audio_driver_sink_poll(st);                 /* opens the baseline */
+   CHECK(st->sink_started == poll_clock, "the poll did not open the baseline");
+   window_at        = st->sink_window_at;
+   poll_clock_reads = 0;
+   for (i = 0; i < 100; i++)
+   {
+      poll_advance(AUDIO_SINK_WINDOW_USEC / 200);
+      audio_driver_sink_poll(st);
+   }
+#ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
+   CHECK(poll_clock_reads == 0,
+         "100 polls inside the window read the clock %u times", poll_clock_reads);
+#endif
+   CHECK(st->sink_window_at == window_at, "a poll inside the window closed it");
+   poll_advance(AUDIO_SINK_WINDOW_USEC / 2 + 1);
+   poll_clock_reads = 0;
+   audio_driver_sink_poll(st);
+   CHECK(st->sink_window_at == poll_clock + AUDIO_SINK_WINDOW_USEC,
+         "the poll past the window's end did not close it");
+#ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
+   CHECK(poll_clock_reads == 1,
+         "closing the window read the clock %u times, want once", poll_clock_reads);
+#endif
+
+   /* The rate not known: every poll reads the clock, and the window
+    * closes on it all the same */
+   poll_rate_known  = false;
+   window_at        = st->sink_window_at;
+   poll_advance(1000);
+   audio_driver_sink_poll(st);
+   CHECK(st->sink_window_at == window_at, "the clock closed a window early");
+   poll_advance(AUDIO_SINK_WINDOW_USEC);
+   audio_driver_sink_poll(st);
+   CHECK(st->sink_window_at == poll_clock + AUDIO_SINK_WINDOW_USEC,
+         "with no rate for the mark the clock did not close the window");
+   poll_rate_known  = true;
+
+   /* Off: nothing is read, and the estimate is put away */
+   config_get_ptr()->bools.audio_sink_rate_estimation = false;
+   audio_driver_publish_runloop();
+   poll_clock_reads = 0;
+   for (i = 0; i < 10; i++)
+   {
+      poll_advance(AUDIO_SINK_WINDOW_USEC);
+      audio_driver_sink_poll(st);
+   }
+   CHECK(poll_clock_reads == 0,
+         "10 polls with the estimate off read the clock %u times", poll_clock_reads);
+   CHECK(st->sink_started == 0, "the estimate stayed up with the option off");
+}
+
 static const scenario_t scenarios[] = {
+   { "the write paths' poll reads the clock once a window", s_poll_clock_reads },
    { "a device 120 ppm fast, counting in periods",        s_fast_device },
    { "a device 80 ppm slow",                               s_slow_device },
    { "two hours at +37 ppm",                               s_long_session },

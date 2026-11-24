@@ -20,7 +20,17 @@
  *              draws no effect.
  *  quads-only  a driver that takes no strips is handed nothing.
  *  stretch     with an output size set, quads and draws laid out at
- *              another width reach the driver across the output's. */
+ *              another width reach the driver across the output's.
+ *  blur plans  the backdrop blur's sizes - a quarter of the rect, at
+ *              most 480 x 270, from a copy at twice that - and its six
+ *              passes, one axis each, each reading the last and twice
+ *              as wide as the round before, ending in image 0.
+ *  blur        a backdrop blur reaches a driver that has one after
+ *              the quads gathered before it are drawn, with its alpha
+ *              and dim held to 0..1 and its rect stretched like a
+ *              quad's; with no hook, no alpha, a rect under 8 pixels
+ *              or a driver that cannot, nothing is blurred and the
+ *              caller is told. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -59,8 +69,15 @@ font_data_t *font_driver_init_first(void *data, const char *path,
    return NULL;
 }
 
+/* The effects animate by the frame's time they are handed; the clock
+ * itself is not theirs to read, and a read here is counted. */
 static retro_time_t test_time = 1000000;
-retro_time_t cpu_features_get_time_usec(void) { return test_time; }
+static unsigned test_clock_reads;
+retro_time_t cpu_features_get_time_usec(void)
+{
+   test_clock_reads++;
+   return 0;
+}
 
 /* ---- a recording display driver ------------------------------------ */
 
@@ -86,6 +103,18 @@ static void rec_draw(gfx_display_ctx_draw_t *d, void *data, unsigned vd)
    if (d->coords && d->coords->color && rec_vertices <= 2048)
       memcpy(rec_col, d->coords->color, rec_vertices * 4 * sizeof(float));
 }
+static bool rec_media_shader(void *data, uintptr_t texture, unsigned source,
+      unsigned video, unsigned pos, unsigned dims)
+{
+   CHECK(rec_draws == 1, "menu batches draw before a viewer shader");
+   CHECK(texture == 123 && source == VIDEO_SCALE_PACK(160, 120),
+         "the viewer lends its original texture and dimensions");
+   rec_vd = video;
+   rec_pos = pos;
+   rec_dims = dims;
+   return true;
+}
+
 static const float *rec_effect_vertex;
 static unsigned     rec_effect_vertices;
 static float        rec_effect_time;
@@ -139,6 +168,26 @@ static void rec_bloom_composite(void *data, unsigned vd)
    rec_bloom_composites++;
    rec_bloom_draws_at_composite = rec_draws;
 }
+/* The backdrop blur: what it was asked, and what was drawn by then */
+static unsigned rec_blurs, rec_blur_vd, rec_blur_dims, rec_blur_draws;
+static int rec_blur_x, rec_blur_y;
+static float rec_blur_alpha, rec_blur_dim;
+static bool rec_blur_result;
+static bool rec_blur_rect(void *data, unsigned vd, int x, int y,
+      unsigned dims, float alpha, float dim)
+{
+   (void)data;
+   rec_blurs++;
+   rec_blur_vd    = vd;
+   rec_blur_x     = x;
+   rec_blur_y     = y;
+   rec_blur_dims  = dims;
+   rec_blur_alpha = alpha;
+   rec_blur_dim   = dim;
+   rec_blur_draws = rec_draws;
+   return rec_blur_result;
+}
+
 static const float def_vert[8] = { 0, 0, 1, 0, 0, 1, 1, 1 };
 static const float def_tex[8]  = { 0, 1, 1, 1, 0, 0, 1, 0 };
 static const float *rec_def_vert(void) { return def_vert; }
@@ -321,6 +370,48 @@ static void bloom_plans(void)
          "and only the last of the five writes the output");
 }
 
+/* The backdrop blur's sizes and passes, shared by the drivers */
+static void blur_plans(void)
+{
+   menu_bloom_pass_t plan[MENU_BLUR_PASSES];
+   unsigned small = menu_blur_dims(VIDEO_SCALE_PACK(1920, 1080));
+   unsigned i, last = 1;
+   bool ok = true;
+   CHECK(small == VIDEO_SCALE_PACK(480, 270)
+         && MENU_BLUR_COPY_DIMS(small) == VIDEO_SCALE_PACK(960, 540),
+         "1080p blurs at a quarter, from a copy at half");
+   CHECK(menu_blur_dims(VIDEO_SCALE_PACK(3840, 2160))
+            == VIDEO_SCALE_PACK(480, 270)
+         && menu_blur_dims(VIDEO_SCALE_PACK(3840, 1080))
+            == VIDEO_SCALE_PACK(480, 135),
+         "larger outputs are held to 480 x 270, their aspect kept");
+   CHECK(menu_blur_dims(VIDEO_SCALE_PACK(640, 480))
+            == VIDEO_SCALE_PACK(160, 120)
+         && menu_blur_dims(VIDEO_SCALE_PACK(9, 2))
+            == VIDEO_SCALE_PACK(3, 1),
+         "smaller ones at a quarter, never to nothing");
+   menu_blur_plan(plan, small);
+   CHECK(plan[0].src == MENU_BLUR_COPY, "the first pass reads the copy");
+   for (i = 0; i < MENU_BLUR_PASSES; i++)
+   {
+      float w = plan[i].params[0] * 480.0f, h = plan[i].params[1] * 270.0f;
+      if (i && plan[i].src != last)
+         ok = false;
+      if (     plan[i].add || plan[i].dst > 1 || plan[i].dst == plan[i].src
+            || plan[i].params[2] != 0.0f || plan[i].params[3] != 1.0f
+            || (w != 0.0f) == (h != 0.0f))
+         ok = false;
+      /* Each round twice as wide as the last, the first at the copy's
+       * texel */
+      if (TEST_NEAR(w + h, 0.0f) || !TEST_NEAR(w + h,
+               i < 1 ? 0.5f : (float)(1u << (i / 2))))
+         ok = false;
+      last = plan[i].dst;
+   }
+   CHECK(ok && last == 0,
+         "one axis a pass, each reading the last, widening, into image 0");
+}
+
 int main(void)
 {
    gfx_display_t *p_disp = disp_get_ptr();
@@ -333,6 +424,7 @@ int main(void)
 
    ribbon_motion();
    bloom_plans();
+   blur_plans();
 
    for (i = 0; i < 16; i++)
       white[i] = 1.0f;
@@ -381,6 +473,7 @@ int main(void)
    md.mvp = NULL; md.color = white; md.texture = 7; md.program = GFX_MESH_PROGRAM_TEXTURED;
    md.bloom = false;
    md.vertex_count = 0;
+   md.time = test_time;
    gfx_display_mesh_draw(p_disp, NULL, vd, mesh, &md);
    CHECK(rec_draws == 1 && rec_vertices == 10, "two triangles are ten strip vertices, one draw");
    CHECK(rec_texture == 7, "TEXTURED draws with its texture");
@@ -528,27 +621,33 @@ int main(void)
       md.program = GFX_MESH_PROGRAM_EFFECT;
       md.effect  = gfx_display_effect_install(&ribbon_desc);
       md.vertex_count = 0;
+      test_clock_reads = 0;
       for (rate = 0; rate < sizeof(rates) / sizeof(rates[0]); rate++)
       {
          p_disp->effect_start_time = 0;
          test_time = 1000000;
+         md.time = test_time;
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
          for (frame = 1; frame <= rates[rate]; frame++)
          {
             test_time = 1000000 + (retro_time_t)frame * 1000000 / rates[rate];
-            gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+            md.time = test_time;
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
          }
          CHECK(TEST_NEAR(rec_effect_time, 0.6f), "one second has the same phase at 30, 60 and 144 Hz");
+         md.time = test_time;
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
          CHECK(TEST_NEAR(rec_effect_time, 0.6f), "a repeated timestamp does not advance the effect");
       }
       rec_ctx.bloom_begin = rec_bloom_begin;
       rec_ctx.bloom_end   = rec_bloom_end;
       rec_bloom_calls     = 0;
-      gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+      md.time = test_time;
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
       CHECK(rec_bloom_calls == 0, "no glow unless the menu asks for it");
       md.bloom = true;
-      gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+      md.time = test_time;
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
       CHECK(rec_bloom_calls == 1, "the glow is drawn when the menu asks for it");
       CHECK(TEST_NEAR(rec_effect_time, 0.6f) && TEST_NEAR(p_disp->effect_time, 0.6f),
             "bloom and base use the same phase despite time spent drawing");
@@ -559,25 +658,28 @@ int main(void)
          rec_ctx.bloom_composite = rec_bloom_composite;
          rec_bloom_check_time    = false;
          rec_bloom_calls = rec_bloom_deferred = rec_bloom_composites = 0;
-         gfx_display_bloom_prepass(NULL);
+         gfx_display_bloom_prepass(NULL, test_time);
          CHECK(rec_bloom_calls == 0, "no prepass before the ribbon asks for one");
+         md.time = test_time;
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
          CHECK(rec_bloom_calls == 1 && rec_bloom_deferred == 0
                && rec_bloom_composites == 0,
                "the first frame draws its glow in place");
-         gfx_display_bloom_prepass(NULL);
+         gfx_display_bloom_prepass(NULL, test_time);
          CHECK(rec_bloom_calls == 2 && rec_bloom_deferred == 1,
                "the prepass draws the next frame's glow, deferred");
          draws = rec_draws;
+         md.time = test_time;
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
          CHECK(rec_bloom_calls == 2 && rec_bloom_composites == 1
                && rec_bloom_draws_at_composite == draws,
                "the ribbon adds the ready glow in, before it is drawn");
          md.bloom = false;
-         gfx_display_bloom_prepass(NULL);
+         gfx_display_bloom_prepass(NULL, test_time);
+         md.time = test_time;
          gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
          CHECK(rec_bloom_composites == 1, "nor is one added in without it");
-         gfx_display_bloom_prepass(NULL);
+         gfx_display_bloom_prepass(NULL, test_time);
          CHECK(rec_bloom_calls == 3, "a frame without the glow asks for none");
          rec_ctx.bloom_composite = NULL;
       }
@@ -585,8 +687,11 @@ int main(void)
       rec_ctx.bloom_begin = NULL;
       rec_ctx.bloom_end   = NULL;
       test_time = 500000;
-      gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
+      md.time = test_time;
+         gfx_display_mesh_draw(p_disp, NULL, vd, gfx_display_mesh_fullscreen(), &md);
       CHECK(TEST_NEAR(rec_effect_time, 0.0f), "a clock reset restarts the effect");
+      CHECK(test_clock_reads == 0,
+            "the effects and the glow animate by the frame's time, not the clock");
    }
 
    /* quads-only */
@@ -635,6 +740,24 @@ int main(void)
       CHECK(gfx_display_output_dims(p_disp, layout) == output, "the driver is handed the output size");
       CHECK(gfx_display_output_dims(p_disp, output) == output, "drawing at the output size stretches nothing");
 
+      rec_ctx.handles_vertex_strip = true;
+      rec_ctx.media_shader_draw = rec_media_shader;
+      reset();
+      gfx_display_draw_quad(p_disp, NULL, layout, 10, 20,
+            VIDEO_SCALE_PACK(30, 40), layout, white, NULL);
+      CHECK(rec_draws == 0, "the menu background is queued");
+      CHECK(gfx_display_draw_media_shader(&rec_ctx, NULL, 123,
+               VIDEO_SCALE_PACK(160, 120), layout, d.pos, d.dims),
+            "a supported viewer shader draws");
+      CHECK(rec_vd == output && rec_pos == VIDEO_POS_PACK(-8, 20)
+            && rec_dims == VIDEO_SCALE_PACK(24, 40),
+            "viewer shaders use the ordinary thumbnail coordinate conversion");
+      rec_ctx.media_shader_draw = NULL;
+      CHECK(!gfx_display_draw_media_shader(&rec_ctx, NULL, 123,
+               VIDEO_SCALE_PACK(160, 120), layout, d.pos, d.dims),
+            "an unsupported backend keeps the plain thumbnail fallback");
+      rec_ctx.handles_vertex_strip = false;
+
       gfx_display_set_output_dims(p_disp, 0);
       reset();
       gfx_display_draw(&rec_ctx, &d, NULL, layout);
@@ -642,6 +765,66 @@ int main(void)
       CHECK(gfx_display_output_dims(p_disp, layout) == layout, "and the size is passed through");
       rec_ctx.handles_vertex_strip = true;
       p_disp->dispctx              = NULL;
+   }
+
+   /* blur */
+   {
+      const unsigned layout = VIDEO_SCALE_PACK(320, 240);
+      const unsigned output = VIDEO_SCALE_PACK(640, 240);
+      p_disp->dispctx  = &rec_ctx;
+      rec_blur_result  = true;
+
+      reset();
+      rec_blurs = 0;
+      CHECK(!gfx_display_draw_blur(p_disp, NULL, vd, 0, 0, vd, 1.0f, 0.5f)
+            && rec_blurs == 0, "with no hook nothing is blurred");
+
+      rec_ctx.blur_rect = rec_blur_rect;
+      gfx_display_draw_quad(p_disp, NULL, vd, 10, 20,
+            VIDEO_SCALE_PACK(30, 40), vd, white, NULL);
+      CHECK(rec_draws == 0, "a quad is gathered, not drawn");
+      CHECK(gfx_display_draw_blur(p_disp, NULL, vd, 4, 6,
+               VIDEO_SCALE_PACK(100, 50), 2.0f, -1.0f),
+            "a driver that blurs says so");
+      CHECK(rec_blurs == 1 && rec_blur_draws == 1,
+            "the quad under the rect is drawn before it is blurred");
+      CHECK(rec_blur_vd == vd && rec_blur_x == 4 && rec_blur_y == 6
+            && rec_blur_dims == VIDEO_SCALE_PACK(100, 50),
+            "the rect reaches the driver as asked");
+      CHECK(TEST_NEAR(rec_blur_alpha, 1.0f), "the alpha is held to 1");
+      CHECK(TEST_NEAR(rec_blur_dim, 0.0f), "the dim is held to 0..1");
+
+      CHECK(gfx_display_draw_blur(p_disp, NULL, vd, 0, 0, vd, 0.25f, 0.15f)
+            && TEST_NEAR(rec_blur_alpha, 0.25f)
+            && TEST_NEAR(rec_blur_dim, 0.15f), "a fading alpha and its dim are kept");
+      CHECK(gfx_display_draw_blur(p_disp, NULL, vd, 0, 0, vd, 1.0f, 3.0f)
+            && TEST_NEAR(rec_blur_dim, 1.0f), "a dim past 1 is held to 1");
+      rec_blurs = 0;
+      CHECK(!gfx_display_draw_blur(p_disp, NULL, vd, 0, 0, vd, 0.0f, 0.5f)
+            && rec_blurs == 0, "no alpha, no blur");
+      CHECK(!gfx_display_draw_blur(p_disp, NULL, vd, 0, 0,
+               VIDEO_SCALE_PACK(7, 100), 1.0f, 0.5f)
+            && !gfx_display_draw_blur(p_disp, NULL, vd, 0, 0,
+               VIDEO_SCALE_PACK(100, 7), 1.0f, 0.5f)
+            && rec_blurs == 0, "a rect under 8 pixels is not blurred");
+
+      rec_blur_result = false;
+      CHECK(!gfx_display_draw_blur(p_disp, NULL, vd, 0, 0, vd, 1.0f, 0.5f)
+            && rec_blurs == 1, "a driver that cannot blur says so");
+      rec_blur_result = true;
+
+      gfx_display_set_output_dims(p_disp, output);
+      CHECK(gfx_display_draw_blur(p_disp, NULL, layout, 10, 20,
+               VIDEO_SCALE_PACK(30, 40), 1.0f, 0.5f),
+            "a stretched rect is blurred");
+      CHECK(rec_blur_vd == output && rec_blur_x == 20 && rec_blur_y == 20
+            && rec_blur_dims == VIDEO_SCALE_PACK(60, 40),
+            "across the output, its x and width stretched and its y not");
+      gfx_display_set_output_dims(p_disp, 0);
+
+      rec_ctx.blur_rect = NULL;
+      p_disp->dispctx   = NULL;
+      gfx_display_free();
    }
 
    if (fails)

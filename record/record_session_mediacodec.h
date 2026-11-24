@@ -49,6 +49,11 @@ bool record_session_mediacodec_cancelled(
  * retire. On failure drains at most one queued PCM packet per step. No wait
  * loop or dispatcher here; executor must wake for input/close/cancellation. */
 int record_session_mediacodec_step(record_session_mediacodec_t *session);
+/* Blocks until the video encoder has output or @timeout_us passes, while
+ * recording; false, without waiting, otherwise. Producer notifications
+ * meanwhile are picked up by the step after it. */
+bool record_session_mediacodec_wait(record_session_mediacodec_t *session,
+      int64_t timeout_us);
 enum record_session_mediacodec_error record_session_mediacodec_error(
       const record_session_mediacodec_t *session, int *file_error);
 /* I/O owner, all callers quiescent; refuses unretired sessions. */

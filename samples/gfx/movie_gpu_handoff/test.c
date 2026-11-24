@@ -3,7 +3,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <boolean.h>
+#include <stdlib.h>
 #include <formats/image.h>
+#include <formats/image_yuv_blit.h>
 #include <formats/video_hw_frame.h>
 #include "gfx/video_defines.h"
 #include "frame.inc"
@@ -44,7 +46,8 @@ static bool video_thread_is_self(thread_video_t *thr) { return thr->self; }
 #include "wrapper.inc"
 static video_driver_state_t video_driver_st;
 static bool threaded, device_ok = true;
-static uint32_t formats = IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010;
+static uint32_t formats = IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010
+      | IMAGE_PIXFMT_I420;
 static struct { bool enable, streaming_enable; } recorder;
 static unsigned failures, abandoned, imports, invalidated;
 static enum video_texture_update outcome;
@@ -246,17 +249,17 @@ static void release(resource *r) { CHECK(r->refs); r->refs--; }
 static resource_vtable methods = { add_ref, release };
 static resource image = { &methods, 1 };
 #define Release(p) do { if (p) (p)->lpVtbl->Release(p); } while (0)
-typedef struct { unsigned Format, Width; } desc_t;
+typedef struct { unsigned Format, Width, Height; } desc_t;
 typedef struct { resource *handle; desc_t desc; } d3d11_texture_t;
 typedef d3d11_texture_t d3d12_texture_t;
-static d3d11_texture_t converted = { &image, { 2, 640 } };
+static d3d11_texture_t converted = { &image, { 2, 640, 0 } };
 #define D3D11_ST_FLAG_INIT_HISTORY 1
 #define D3D11_ST_FLAG_RESIZE_RTS 2
 #define D3D12_ST_FLAG_INIT_HISTORY 1
 #define D3D12_ST_FLAG_RESIZE_RTS 2
 typedef struct
 {
-   uintptr_t movie_texture; bool movie_pending;
+   uintptr_t movie_texture; bool movie_pending, movie_cpu;
    struct { resource *texture; } hw_v2;
    struct { void *view; bool eligible; } hw_direct;
    struct { struct { desc_t desc; } history[1]; } chain;
@@ -264,7 +267,7 @@ typedef struct
 } d3d11_video_t;
 typedef struct
 {
-   uintptr_t movie_texture; bool movie_pending, movie_importing;
+   uintptr_t movie_texture; bool movie_pending, movie_importing, movie_cpu;
    resource *hw_render_texture; unsigned hw_render_texture_format;
    struct { resource *current; struct { uint64_t ptr; } current_gpu; bool eligible; } hw_direct;
    struct { struct { desc_t desc; } history[1]; } filter;
@@ -280,9 +283,103 @@ static void d3d11_gfx_unload_texture_internal(d3d11_video_t *v, uintptr_t id)
 { (void)v; if (id) { CHECK(id == (uintptr_t)&converted); release(&image); } }
 static void d3d12_gfx_unload_texture_internal(d3d12_video_t *v, uintptr_t id)
 { (void)v; d3d11_gfx_unload_texture_internal(NULL, id); }
+/* The planar upload, for a frame in memory: what it was given, and the
+ * texture it makes, a converted one of the frame's size */
+static bool cpu_planar = true;
+static enum video_texture_update cpu_outcome = VIDEO_TEXTURE_UPDATE_DONE;
+static unsigned cpu_loads, cpu_updates, cpu_released;
+static const struct texture_planar *cpu_seen;
+static bool d3d11_gfx_supports_texture_format(void *v, enum texture_gpu_format fmt)
+{ (void)v; return cpu_planar && fmt == TEXTURE_GPU_FORMAT_YUV420; }
+static bool d3d12_gfx_supports_texture_format(void *v, enum texture_gpu_format fmt)
+{ return d3d11_gfx_supports_texture_format(v, fmt); }
+static uintptr_t cpu_load(struct texture_image *img, enum texture_filter_type f)
+{
+   CHECK(f == TEXTURE_FILTER_LINEAR && img->planar && !img->pixels);
+   cpu_loads++; cpu_seen = img->planar;
+   if (cpu_outcome != VIDEO_TEXTURE_UPDATE_DONE)
+      return 0;
+   converted.desc.Width = img->width; converted.desc.Height = img->height;
+   image.refs++;
+   return (uintptr_t)&converted;
+}
+static enum video_texture_update cpu_update(uintptr_t id,
+      const struct texture_image *img)
+{
+   CHECK(id == (uintptr_t)&converted && img->planar);
+   cpu_updates++; cpu_seen = img->planar;
+   return cpu_outcome;
+}
+static uintptr_t d3d11_gfx_load_texture_internal(d3d11_video_t *v,
+      struct texture_image *img, enum texture_filter_type f)
+{ (void)v; return cpu_load(img, f); }
+static enum video_texture_update d3d11_gfx_update_texture_internal(
+      d3d11_video_t *v, uintptr_t id, const struct texture_image *img)
+{ (void)v; return cpu_update(id, img); }
+static uintptr_t d3d12_gfx_load_texture_internal(d3d12_video_t *v,
+      struct texture_image *img, enum texture_filter_type f)
+{ (void)v; return cpu_load(img, f); }
+static enum video_texture_update d3d12_gfx_update_texture_internal(
+      d3d12_video_t *v, uintptr_t id, const struct texture_image *img)
+{ (void)v; return cpu_update(id, img); }
+static void cpu_release(void *owner, uint64_t done, uint64_t value)
+{ CHECK(owner == &cpu_released && done == 5 && value == 6); cpu_released++; }
+static enum video_texture_update d3d11_import_movie_frame(void *data,
+      const video_frame_import_t *f);
+static enum video_texture_update d3d12_import_movie_frame(void *data,
+      const video_frame_import_t *f);
 #include "d3d11.inc"
 #include "d3d12.inc"
 #undef Release
+/* A frame in memory goes through the planar upload into a texture of
+ * its own and is released once copied, only when taken; the next one
+ * updates that texture in place, one of another size or a decoder's
+ * frame replaces it. */
+static void cpu_frame(void *v, bool d12)
+{
+   static const uint8_t planes[12] = { 0 };
+   video_frame_import_t f;
+   uintptr_t *movie   = d12 ? &((d3d12_video_t*)v)->movie_texture
+                            : &((d3d11_video_t*)v)->movie_texture;
+   bool *pending      = d12 ? &((d3d12_video_t*)v)->movie_pending
+                            : &((d3d11_video_t*)v)->movie_pending;
+   bool *cpu          = d12 ? &((d3d12_video_t*)v)->movie_cpu
+                            : &((d3d11_video_t*)v)->movie_cpu;
+#define IMPORT(x) (d12 ? d3d12_import_movie_frame(v, (x)) : d3d11_import_movie_frame(v, (x)))
+   memset(&f, 0, sizeof(f));
+   f.planar.planes[0] = planes; f.planar.planes[1] = planes + 8;
+   f.planar.planes[2] = planes + 10; f.planar.strides[0] = 4;
+   f.planar.strides[1] = f.planar.strides[2] = 2;
+   f.dims = VIDEO_SCALE_PACK(4, 2); f.pixfmt = IMAGE_PIXFMT_I420;
+   f.abandon = cpu_release; f.owner = &cpu_released; f.done = 5; f.done_value = 6;
+   cpu_loads = cpu_updates = cpu_released = 0; image.refs = 1;
+   cpu_planar = false;
+   CHECK(IMPORT(&f) == VIDEO_TEXTURE_UPDATE_REFUSED && !cpu_released && !*movie);
+   cpu_planar = true; cpu_outcome = VIDEO_TEXTURE_UPDATE_REFUSED;
+   CHECK(IMPORT(&f) == VIDEO_TEXTURE_UPDATE_REFUSED && !cpu_released && !*movie);
+   cpu_outcome = VIDEO_TEXTURE_UPDATE_DONE;
+   CHECK(IMPORT(&f) == VIDEO_TEXTURE_UPDATE_DONE && cpu_loads == 2
+         && cpu_seen == &f.planar && cpu_released == 1 && *pending && *cpu
+         && *movie == (uintptr_t)&converted);
+   *pending = false;
+   cpu_outcome = VIDEO_TEXTURE_UPDATE_DROPPED;
+   CHECK(IMPORT(&f) == VIDEO_TEXTURE_UPDATE_DROPPED && cpu_updates == 1
+         && cpu_released == 1 && !*pending);
+   cpu_outcome = VIDEO_TEXTURE_UPDATE_DONE;
+   CHECK(IMPORT(&f) == VIDEO_TEXTURE_UPDATE_DONE && cpu_updates == 2
+         && cpu_loads == 2 && cpu_released == 2 && *pending);
+   /* another size: a texture of that size */
+   f.dims = VIDEO_SCALE_PACK(8, 2);
+   CHECK(IMPORT(&f) == VIDEO_TEXTURE_UPDATE_DONE && cpu_loads == 3
+         && cpu_released == 3 && image.refs == 2);
+   /* a decoder's frame after them: the texture made for it */
+   memset(&f, 0, sizeof(f)); outcome = VIDEO_TEXTURE_UPDATE_DONE;
+   CHECK(IMPORT(&f) == VIDEO_TEXTURE_UPDATE_DONE && !*cpu && image.refs == 1);
+   CHECK(IMPORT(NULL) == VIDEO_TEXTURE_UPDATE_DONE && !*movie && !*cpu);
+   converted.desc.Width = 640; converted.desc.Height = 0;
+   image.refs = 1;
+#undef IMPORT
+}
 static void drivers(void)
 {
    d3d11_video_t v11;
@@ -311,6 +408,10 @@ static void drivers(void)
    CHECK(d3d12_movie_prepare(&v12, RETRO_HW_FRAME_BUFFER_VALID) == RETRO_HW_FRAME_BUFFER_VALID);
    CHECK(d3d12_movie_prepare(&v12, &f) == &f && !v12.movie_texture && image.refs == 0
          && v12.filter.history[0].desc.Format == 1 && v12.filter.history[0].desc.Width == 0 && v12.flags == 3);
+   memset(&v11, 0, sizeof(v11)); memset(&v12, 0, sizeof(v12));
+   v11.format = v12.format = 1;
+   cpu_frame(&v11, false);
+   cpu_frame(&v12, true);
 }
 #define VK_FLAG_HW_ENABLE 1
 struct vk_texture { unsigned image, view, layout, dims, format; };
@@ -318,7 +419,7 @@ struct vulkan_filter_chain_texture
 {
    unsigned image, view, layout, dims, format, padded_dims, origin;
 };
-typedef struct { unsigned flags; uintptr_t movie_texture; bool movie_pending; } vk_t;
+typedef struct { unsigned flags; uintptr_t movie_texture; bool movie_pending, movie_cpu; } vk_t;
 static struct vk_texture movie = { 1, 2, 3, 4, 5 };
 static unsigned retired;
 static void vulkan_unload_texture_internal(vk_t *vk, uintptr_t id)
@@ -331,7 +432,62 @@ static enum video_texture_update vulkan_import_texture(void *vk, uintptr_t *id,
    { movie.dims = f->dims; *id = (uintptr_t)&movie; }
    return outcome;
 }
+static bool vulkan_supports_texture_format(void *data, enum texture_gpu_format fmt)
+{ (void)data; return cpu_planar && fmt == TEXTURE_GPU_FORMAT_YUV420; }
+static uintptr_t vulkan_load_texture_internal(vk_t *vk, void *data,
+      enum texture_filter_type f)
+{
+   struct texture_image *img = (struct texture_image*)data;
+   (void)vk; CHECK(f == TEXTURE_FILTER_LINEAR && img->planar);
+   cpu_loads++; cpu_seen = img->planar;
+   if (cpu_outcome != VIDEO_TEXTURE_UPDATE_DONE)
+      return 0;
+   movie.dims = VIDEO_SCALE_PACK(img->width, img->height);
+   return (uintptr_t)&movie;
+}
+static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
+      uintptr_t id, const struct texture_image *img)
+{
+   (void)vk; CHECK(id == (uintptr_t)&movie && img->planar);
+   cpu_updates++; cpu_seen = img->planar;
+   return cpu_outcome;
+}
+static enum video_texture_update vulkan_import_movie_frame(void *data,
+      const video_frame_import_t *f);
 #include "vulkan.inc"
+static void vulkan_cpu_frame(void)
+{
+   static const uint8_t planes[12] = { 0 };
+   vk_t vk;
+   video_frame_import_t f;
+   memset(&vk, 0, sizeof(vk)); memset(&f, 0, sizeof(f));
+   f.planar.planes[0] = planes; f.planar.planes[1] = planes + 8;
+   f.planar.planes[2] = planes + 10; f.planar.strides[0] = 4;
+   f.planar.strides[1] = f.planar.strides[2] = 2;
+   f.dims = VIDEO_SCALE_PACK(4, 2); f.pixfmt = IMAGE_PIXFMT_I420;
+   f.abandon = cpu_release; f.owner = &cpu_released; f.done = 5; f.done_value = 6;
+   cpu_loads = cpu_updates = cpu_released = retired = 0;
+   cpu_planar = false;
+   CHECK(vulkan_import_movie_frame(&vk, &f) == VIDEO_TEXTURE_UPDATE_REFUSED && !cpu_released);
+   cpu_planar = true; cpu_outcome = VIDEO_TEXTURE_UPDATE_DONE;
+   CHECK(vulkan_import_movie_frame(&vk, &f) == VIDEO_TEXTURE_UPDATE_DONE
+         && cpu_loads == 1 && cpu_seen == &f.planar && cpu_released == 1
+         && vk.movie_pending && vk.movie_cpu);
+   vk.movie_pending = false; cpu_outcome = VIDEO_TEXTURE_UPDATE_DROPPED;
+   CHECK(vulkan_import_movie_frame(&vk, &f) == VIDEO_TEXTURE_UPDATE_DROPPED
+         && cpu_updates == 1 && cpu_released == 1 && !vk.movie_pending);
+   cpu_outcome = VIDEO_TEXTURE_UPDATE_DONE;
+   CHECK(vulkan_import_movie_frame(&vk, &f) == VIDEO_TEXTURE_UPDATE_DONE
+         && cpu_updates == 2 && cpu_loads == 1 && cpu_released == 2);
+   /* a decoder's frame of the same size: the texture made for it */
+   memset(&f, 0, sizeof(f)); f.dims = VIDEO_SCALE_PACK(4, 2);
+   outcome = VIDEO_TEXTURE_UPDATE_DONE;
+   CHECK(vulkan_import_movie_frame(&vk, &f) == VIDEO_TEXTURE_UPDATE_DONE
+         && retired == 1 && !vk.movie_cpu && vk.movie_texture == (uintptr_t)&movie);
+   CHECK(vulkan_import_movie_frame(&vk, NULL) == VIDEO_TEXTURE_UPDATE_DONE
+         && retired == 2 && !vk.movie_cpu);
+   movie.dims = 4; retired = 0;
+}
 static void vulkan_movie(void)
 {
    vk_t vk;
@@ -576,7 +732,94 @@ static void replacement_race(void)
    printf("Movie refusal: 100 delayed worker results preserve replacement readiness\n");
 }
 
+/* Frames in memory: asked for by their own format bit; passed as they
+ * are under direct video, where the driver's upload reads them in the
+ * call; under the wrapper copied, packed, into a block the video
+ * thread's release gives back - three of them, reused once given back,
+ * one not taken given back at once, one still lent when the driver goes
+ * freed by its release. */
+static void frontend_planes(void)
+{
+   static const uint8_t y[5 * 3] = { 1, 2, 3, 4, 0, 5, 6, 7, 8, 0, 9, 10, 11, 12, 0 };
+   static const uint8_t u[3 * 2] = { 20, 21, 0, 22, 23, 0 };
+   static const uint8_t v[3 * 2] = { 30, 31, 0, 32, 33, 0 };
+   static const uint8_t packed[12 + 4 + 4] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+      11, 12, 20, 21, 22, 23, 30, 31, 32, 33 };
+   video_hw_frame_t hw;
+   video_poke_interface_t poke;
+   thread_video_t thr;
+   video_frame_import_t lent[4];
+   unsigned i, before;
+   memset(&thr, 0, sizeof(thr));
+   retro_atomic_int_init(&thr.movie_capable, 1);
+   video_thread_movie_state_init(&thr.movie_state);
+   video_thread_thr_capture = &thr;
+   memset(&hw, 0, sizeof(hw)); memset(&poke, 0, sizeof(poke));
+   poke.import_movie_frame = import;
+   video_driver_st.poke = &poke; video_driver_st.data = &imports;
+   video_driver_st.movie_refused = false;
+   threaded = false;
+   formats = IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010 | IMAGE_PIXFMT_I420;
+   CHECK(video_driver_movie_planes(NULL, NULL));
+   formats = IMAGE_PIXFMT_NV12;
+   CHECK(!video_driver_movie_planes(NULL, NULL) && video_driver_movie_refresh(NULL, NULL));
+   formats = IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010 | IMAGE_PIXFMT_I420;
+   hw.planes[0] = y; hw.planes[1] = u; hw.planes[2] = v;
+   hw.strides[0] = 5; hw.strides[1] = hw.strides[2] = 3;
+   hw.chroma_step = 1; hw.width = 4; hw.height = 3; hw.yuv = 6;
+   hw.pixfmt = IMAGE_PIXFMT_I420;
+   outcome = VIDEO_TEXTURE_UPDATE_DONE;
+   before = imports;
+   CHECK(video_driver_movie_planes(NULL, &hw) && imports == before + 1);
+   CHECK(captured.planar.planes[0] == y && captured.planar.planes[1] == u
+         && captured.planar.planes[2] == v && captured.planar.strides[0] == 5
+         && captured.planar.strides[1] == 3 && captured.planar.chroma_step == 1
+         && captured.planar.yuv == 6 && captured.pixfmt == IMAGE_PIXFMT_I420
+         && !captured.image && !captured.abandon
+         && captured.dims == VIDEO_SCALE_PACK(4, 3) && VIDEO_FRAME_IMPORT_IS_CPU(&captured));
+   hw.chroma_step = 2;
+   CHECK(!video_driver_movie_planes(NULL, &hw) && imports == before + 1);
+   hw.chroma_step = 1;
+
+   threaded = true;
+   CHECK(video_driver_movie_planes(NULL, NULL));
+   for (i = 0; i < 3; i++)
+   {
+      CHECK(video_driver_movie_planes(NULL, &hw));
+      lent[i] = captured;
+      CHECK(captured.planar.planes[0] != y && captured.abandon && captured.owner
+            && captured.planar.strides[0] == 4 && captured.planar.strides[1] == 2
+            && captured.planar.strides[2] == 2
+            && captured.planar.planes[1] == captured.planar.planes[0] + 12
+            && captured.planar.planes[2] == captured.planar.planes[1] + 4
+            && !memcmp(captured.planar.planes[0], packed, sizeof(packed)));
+   }
+   before = imports;
+   CHECK(!video_driver_movie_planes(NULL, &hw) && imports == before);
+   lent[1].abandon(lent[1].owner, lent[1].done, lent[1].done_value);
+   CHECK(video_driver_movie_planes(NULL, &hw) && captured.owner == lent[1].owner);
+   lent[1] = captured;
+   /* not taken: the block is free again at once */
+   lent[0].abandon(lent[0].owner, 0, 0);
+   outcome = VIDEO_TEXTURE_UPDATE_DROPPED;
+   CHECK(!video_driver_movie_planes(NULL, &hw));
+   outcome = VIDEO_TEXTURE_UPDATE_DONE;
+   CHECK(video_driver_movie_planes(NULL, &hw) && captured.owner == lent[0].owner);
+   lent[0] = captured;
+   /* the driver goes with two blocks lent and one given back meanwhile */
+   lent[2].abandon(lent[2].owner, 0, 0);
+   video_driver_movie_blocks_free();
+   lent[0].abandon(lent[0].owner, 0, 0);
+   lent[1].abandon(lent[1].owner, 0, 0);
+   CHECK(video_driver_movie_planes(NULL, &hw));
+   captured.abandon(captured.owner, 0, 0);
+   video_driver_movie_blocks_free();
+   threaded = false;
+   video_driver_movie_clear();
+   video_driver_st.poke = NULL; video_driver_st.data = NULL;
+}
+
 int main(void)
 {
-   texture_preparation(); wrapper_texture_preparation(); frontend(); drivers(); vulkan_movie(); movie_queue(); wrapper_failure(); replacement_race(); printf("Frontend movie GPU handoff: %u failures\n", failures); return failures ? 1 : 0;
+   texture_preparation(); wrapper_texture_preparation(); frontend(); frontend_planes(); drivers(); vulkan_movie(); vulkan_cpu_frame(); movie_queue(); wrapper_failure(); replacement_race(); printf("Frontend movie GPU handoff: %u failures\n", failures); return failures ? 1 : 0;
 }

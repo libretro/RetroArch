@@ -41,14 +41,56 @@
 #include "../verbosity.h"
 
 #include "task_file_transfer.h"
+#include "task_audio_mixer.h"
 #include "tasks_internal.h"
 
 struct audio_mixer_userdata
 {
+   task_audio_mixer_viewer_t viewer;
    unsigned slot_selection_idx;
    enum audio_mixer_stream_type stream_type;
    enum audio_mixer_slot_selection_type slot_selection_type;
 };
+
+static void task_audio_mixer_user_free(retro_task_t *task, void *data)
+{
+   struct audio_mixer_userdata *user = (struct audio_mixer_userdata*)data;
+   if (!user) return;
+   if (task && task->user_data == user) task->user_data = NULL;
+   if (user->viewer.observer.release)
+      user->viewer.observer.release(user->viewer.observer.user);
+   free(user);
+}
+
+static void task_audio_mixer_user_viewer(struct audio_mixer_userdata *user,
+      const task_audio_mixer_viewer_t *viewer)
+{
+   if (!user || !viewer) return;
+   user->viewer = *viewer;
+   if (viewer->observer.retain) viewer->observer.retain(viewer->observer.user);
+}
+
+static bool task_audio_mixer_add_stream(audio_mixer_stream_params_t *params,
+      struct audio_mixer_userdata *user)
+{
+   audio_mixer_voice_t *voice = NULL;
+   size_t serial = 0;
+   int slot = -1;
+   bool result;
+   task_audio_mixer_viewer_t *viewer = &user->viewer;
+   if (!viewer->observer.samples) return audio_driver_mixer_add_stream(params);
+   if (viewer->active && !viewer->active(viewer->observer.user))
+   {
+      if (params->buf_owner) params->buf_owner_free(params->buf_owner);
+      return false;
+   }
+   if (!params->out_slot) params->out_slot = &slot;
+   result = audio_driver_mixer_add_stream_observed(params, &voice, &serial,
+         &viewer->observer);
+   if (result && viewer->started && *params->out_slot >= 0)
+      viewer->started(viewer->observer.user, (unsigned)*params->out_slot, voice, serial);
+   return result;
+}
 
 /* task_data handed to the upload callbacks: the classic buffer view
  * plus the data_transfer that owns the bytes, donated onward to the
@@ -78,6 +120,8 @@ static void task_audio_mixer_load_free(retro_task_t *task)
 {
    nbio_handle_t       *nbio        = (nbio_handle_t*)task->state;
    struct audio_mixer_handle *mixer = (struct audio_mixer_handle*)nbio->data;
+
+   task_audio_mixer_user_free(task, task->user_data);
 
    if (mixer)
    {
@@ -137,10 +181,11 @@ static void task_audio_mixer_handle_upload_ogg(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -156,12 +201,12 @@ static void task_audio_mixer_handle_upload_ogg(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_ogg_and_play(retro_task_t *task,
@@ -182,10 +227,11 @@ static void task_audio_mixer_handle_upload_ogg_and_play(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -201,12 +247,12 @@ static void task_audio_mixer_handle_upload_ogg_and_play(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_flac(retro_task_t *task,
@@ -227,10 +273,11 @@ static void task_audio_mixer_handle_upload_flac(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -246,12 +293,12 @@ static void task_audio_mixer_handle_upload_flac(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_flac_and_play(retro_task_t *task,
@@ -272,10 +319,11 @@ static void task_audio_mixer_handle_upload_flac_and_play(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -291,12 +339,12 @@ static void task_audio_mixer_handle_upload_flac_and_play(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_mp3(retro_task_t *task,
@@ -317,10 +365,11 @@ static void task_audio_mixer_handle_upload_mp3(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -336,12 +385,12 @@ static void task_audio_mixer_handle_upload_mp3(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_mp3_and_play(retro_task_t *task,
@@ -362,10 +411,11 @@ static void task_audio_mixer_handle_upload_mp3_and_play(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -381,12 +431,12 @@ static void task_audio_mixer_handle_upload_mp3_and_play(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_m4a(retro_task_t *task,
@@ -407,10 +457,11 @@ static void task_audio_mixer_handle_upload_m4a(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -426,12 +477,12 @@ static void task_audio_mixer_handle_upload_m4a(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_m4a_and_play(retro_task_t *task,
@@ -452,10 +503,11 @@ static void task_audio_mixer_handle_upload_m4a_and_play(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -471,12 +523,12 @@ static void task_audio_mixer_handle_upload_m4a_and_play(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_ac3(retro_task_t *task,
@@ -497,10 +549,11 @@ static void task_audio_mixer_handle_upload_ac3(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -516,12 +569,12 @@ static void task_audio_mixer_handle_upload_ac3(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_lpcm(retro_task_t *task,
@@ -542,10 +595,11 @@ static void task_audio_mixer_handle_upload_lpcm(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -561,12 +615,12 @@ static void task_audio_mixer_handle_upload_lpcm(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_ac3_and_play(retro_task_t *task,
@@ -587,10 +641,11 @@ static void task_audio_mixer_handle_upload_ac3_and_play(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -606,12 +661,12 @@ static void task_audio_mixer_handle_upload_ac3_and_play(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_lpcm_and_play(retro_task_t *task,
@@ -632,10 +687,11 @@ static void task_audio_mixer_handle_upload_lpcm_and_play(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -651,12 +707,12 @@ static void task_audio_mixer_handle_upload_lpcm_and_play(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_opus(retro_task_t *task,
@@ -677,10 +733,11 @@ static void task_audio_mixer_handle_upload_opus(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -696,12 +753,12 @@ static void task_audio_mixer_handle_upload_opus(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_opus_and_play(retro_task_t *task,
@@ -722,10 +779,11 @@ static void task_audio_mixer_handle_upload_opus_and_play(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -741,12 +799,12 @@ static void task_audio_mixer_handle_upload_opus_and_play(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_weba(retro_task_t *task,
@@ -767,10 +825,11 @@ static void task_audio_mixer_handle_upload_weba(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -786,12 +845,12 @@ static void task_audio_mixer_handle_upload_weba(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_weba_and_play(retro_task_t *task,
@@ -812,10 +871,11 @@ static void task_audio_mixer_handle_upload_weba_and_play(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -831,12 +891,12 @@ static void task_audio_mixer_handle_upload_weba_and_play(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_mod(retro_task_t *task,
@@ -857,10 +917,11 @@ static void task_audio_mixer_handle_upload_mod(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -876,12 +937,12 @@ static void task_audio_mixer_handle_upload_mod(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_mod_and_play(retro_task_t *task,
@@ -902,10 +963,11 @@ static void task_audio_mixer_handle_upload_mod_and_play(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -921,12 +983,12 @@ static void task_audio_mixer_handle_upload_mod_and_play(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 #ifdef HAVE_RWAV
@@ -948,10 +1010,11 @@ static void task_audio_mixer_handle_upload_wav(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -967,12 +1030,12 @@ static void task_audio_mixer_handle_upload_wav(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 
 static void task_audio_mixer_handle_upload_wav_and_play(retro_task_t *task,
@@ -993,10 +1056,11 @@ static void task_audio_mixer_handle_upload_wav_and_play(retro_task_t *task,
             free(img->b.path);
          free(img);
       }
-      free(user_data);
+      task_audio_mixer_user_free(task, user_data);
       return;
    }
 
+   memset(&params, 0, sizeof(params));
    params.volume               = 1.0f;
    params.slot_selection_type  = user->slot_selection_type;
    params.slot_selection_idx   = user->slot_selection_idx;
@@ -1012,12 +1076,12 @@ static void task_audio_mixer_handle_upload_wav_and_play(retro_task_t *task,
    params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
-   audio_driver_mixer_add_stream(&params);
+   task_audio_mixer_add_stream(&params, user);
 
    if (img->b.path)
       free(img->b.path);
    free(img);
-   free(user_data);
+   task_audio_mixer_user_free(task, user_data);
 }
 #endif
 
@@ -1247,7 +1311,7 @@ static void task_audio_mixer_wfeed_free(retro_task_t *task)
    if (w->path)
       free(w->path);
    if (w->user)
-      free(w->user);
+      task_audio_mixer_user_free(NULL, w->user);
    free(w);
 }
 
@@ -1371,6 +1435,7 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
                flen < AMIX_WINDOW_KEEP ? flen : AMIX_WINDOW_KEEP)
                != RWAV_ITERATE_DONE)
             goto bail;
+         w->avail = flen < AMIX_WINDOW_KEEP ? flen : AMIX_WINDOW_KEEP;
       }
 #endif
 #ifdef HAVE_RFLAC
@@ -1450,6 +1515,7 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
       }
 #endif
 
+      memset(&params, 0, sizeof(params));
       params.volume               = 1.0f;
       params.slot_selection_type  = w->user->slot_selection_type;
       params.slot_selection_idx   = w->user->slot_selection_idx;
@@ -1470,7 +1536,7 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
 
       w->added = true;   /* ownership transfers on the call in every
                           * outcome: from here the release runs */
-      if (!audio_driver_mixer_add_stream(&params))
+      if (!task_audio_mixer_add_stream(&params, w->user))
       {
          /* release already ran synchronously: dead is set and the
           * next tick frees the window */
@@ -1603,7 +1669,7 @@ static int64_t task_audio_mixer_threshold(enum audio_mixer_type mtype)
 static bool task_audio_mixer_try_windowed(const char *fullpath,
       bool system, bool play,
       enum audio_mixer_slot_selection_type slot_selection_type,
-      int slot_selection_idx)
+      int slot_selection_idx, const task_audio_mixer_viewer_t *viewer)
 {
    enum audio_mixer_type mtype = AUDIO_MIXER_TYPE_NONE;
    struct audio_mixer_wfeed *w = NULL;
@@ -1677,9 +1743,9 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
     * on some platforms and, on one that has no accounting to consult, a
     * probe that transiently allocates most of RAM.  Menu sounds come
     * through here, and they are kilobytes. */
-   if (mtype != AUDIO_MIXER_TYPE_WMA && sz < (int64_t)AMIX_WINDOW_THRESHOLD)
+   if (!viewer && mtype != AUDIO_MIXER_TYPE_WMA && sz < (int64_t)AMIX_WINDOW_THRESHOLD)
       return false;
-   if (mtype != AUDIO_MIXER_TYPE_WMA && sz < task_audio_mixer_threshold(mtype))
+   if (!viewer && mtype != AUDIO_MIXER_TYPE_WMA && sz < task_audio_mixer_threshold(mtype))
       return false;
 
    if (!(t = task_init()))
@@ -1692,6 +1758,7 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
       goto error;
    if (!(w->path = strdup(fullpath)))
       goto error;
+   task_audio_mixer_user_viewer(w->user, viewer);
    w->mtype                     = mtype;
    w->play                      = play;
    w->slot                      = -1;
@@ -1711,7 +1778,7 @@ error:
    if (w)
    {
       if (w->user)
-         free(w->user);
+         task_audio_mixer_user_free(NULL, w->user);
       if (w->path)
          free(w->path);
       free(w);
@@ -1721,15 +1788,16 @@ error:
 }
 #endif /* windowed streaming */
 
-bool task_push_audio_mixer_load_and_play(
+static bool task_audio_mixer_load_and_play(
       const char *fullpath, retro_task_callback_t cb, void *user_data,
       bool system,
       enum audio_mixer_slot_selection_type slot_selection_type,
-      int slot_selection_idx)
+      int slot_selection_idx, const task_audio_mixer_viewer_t *viewer)
 {
-#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3) || defined(HAVE_RWMA))
+#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3) \
+      || defined(HAVE_RFLAC) || defined(HAVE_RWAV) || defined(HAVE_RWMA))
    if (task_audio_mixer_try_windowed(fullpath, system, true,
-         slot_selection_type, slot_selection_idx))
+         slot_selection_type, slot_selection_idx, viewer))
       return true;
 #endif
    {
@@ -1745,6 +1813,7 @@ bool task_push_audio_mixer_load_and_play(
    const char *ext                    = NULL;
    char ext_lower[6];
 
+   task_audio_mixer_user_viewer(user, viewer);
    if (!t || !user)
       goto error;
 
@@ -1886,7 +1955,7 @@ error:
       free(nbio);
    }
    if (user)
-      free(user);
+      task_audio_mixer_user_free(t, user);
    if (t)
       free(t);
 
@@ -1897,15 +1966,33 @@ error:
    }
 }
 
+bool task_push_audio_mixer_load_and_play(const char *fullpath,
+      retro_task_callback_t cb, void *user_data, bool system,
+      enum audio_mixer_slot_selection_type slot_selection_type,
+      int slot_selection_idx)
+{
+   return task_audio_mixer_load_and_play(fullpath, cb, user_data, system,
+         slot_selection_type, slot_selection_idx, NULL);
+}
+
+bool task_push_audio_mixer_viewer(const char *fullpath,
+      const task_audio_mixer_viewer_t *viewer)
+{
+   return task_audio_mixer_load_and_play(fullpath, NULL, NULL, false,
+         AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC, 0, viewer);
+}
+
+
 bool task_push_audio_mixer_load(
       const char *fullpath, retro_task_callback_t cb, void *user_data,
       bool system,
       enum audio_mixer_slot_selection_type slot_selection_type,
       int slot_selection_idx)
 {
-#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3) || defined(HAVE_RWMA))
+#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3) \
+      || defined(HAVE_RFLAC) || defined(HAVE_RWAV) || defined(HAVE_RWMA))
    if (task_audio_mixer_try_windowed(fullpath, system, false,
-         slot_selection_type, slot_selection_idx))
+         slot_selection_type, slot_selection_idx, NULL))
       return true;
 #endif
    {
@@ -2062,7 +2149,7 @@ error:
       free(nbio);
    }
    if (user)
-      free(user);
+      task_audio_mixer_user_free(t, user);
    if (t)
       free(t);
 

@@ -280,6 +280,53 @@ static void frame_gl_cb(unsigned texture_id, unsigned texture_target,
 }
 
 #define CAPS (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)
+#define PLANAR_CAPS (UINT64_C(1) << RETRO_CAMERA_BUFFER_PLANAR)
+
+/* What a planar consumer was handed: the frame, and its first luma and
+ * chroma samples, read across the whole frame so ASan sees a short
+ * buffer. */
+static unsigned planar_seen;
+static struct retro_camera_planar_frame planar_last;
+static int planar_y = -1, planar_cb_s = -1, planar_cr = -1;
+static bool planar_uniform;
+
+static void frame_planar_cb(const struct retro_camera_planar_frame *f)
+{
+   unsigned x, y;
+   bool same = true;
+   planar_seen++;
+   planar_last = *f;
+   planar_y    = f->planes[0][0];
+   planar_cb_s = f->planes[1][0];
+   planar_cr   = f->planes[2][0];
+   for (y = 0; y < f->height; y++)
+      for (x = 0; x < f->width; x++)
+         same = same && f->planes[0][y * f->strides[0] + x] == planar_y;
+   for (y = 0; y < (f->height + 1) / 2; y++)
+      for (x = 0; x < (f->width + 1) / 2; x++)
+         same = same
+            && f->planes[1][y * f->strides[1] + x * f->chroma_step] == planar_cb_s
+            && f->planes[2][y * f->strides[2] + x * f->chroma_step] == planar_cr;
+   planar_uniform = same;
+}
+
+static bool near(int got, int want) { return abs(got - want) <= 2; }
+
+/* Polls a planar camera until a uniform frame of the wanted samples
+ * arrives. */
+static bool planar_until(void *h, int y, int cb, int cr)
+{
+   unsigned tries;
+   for (tries = 0; tries < 100; tries++)
+   {
+      camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, frame_planar_cb);
+      if (planar_uniform && near(planar_y, y) && near(planar_cb_s, cb)
+            && near(planar_cr, cr))
+         return true;
+      usleep(10000);
+   }
+   return false;
+}
 #define SRC  "testsrc=size=320x240:rate=30"
 
 static void *open_camera(void)
@@ -769,6 +816,76 @@ int main(void)
          retro_atomic_store_release_int(&colour_source, 0);
          retro_atomic_store_release_int(&relabel_after, 0);
       }
+   }
+   current = "planar output";
+   printf("   a planar consumer gets NV12 with the source's colour\n");
+   {
+      static const struct
+      {
+         const char *src;
+         int y, cb, cr;
+         unsigned flags;
+      } cases[] = {
+         /* YCbCr keeps its matrix and range. */
+         { "nullsrc=s=34x18:r=25,format=yuv420p,geq=lum=100:cb=90:cr=170,setparams=range=full:colorspace=bt709",
+            100, 90, 170, RETRO_CAMERA_PLANAR_FULL_RANGE | RETRO_CAMERA_PLANAR_BT709 },
+         { "nullsrc=s=34x18:r=25,format=yuv422p,geq=lum=60:cb=110:cr=150,setparams=range=limited",
+            60, 110, 150, 0 },
+         /* RGB is converted to BT.601 limited range. */
+         { "color=c=red:size=34x18:rate=25", 81, 90, 240, 0 },
+      };
+      unsigned lane;
+      for (lane = 0; lane < sizeof(cases) / sizeof(cases[0]); lane++)
+      {
+         unsigned raw_before = frames_seen;
+         h = camera_ffmpeg.init(cases[lane].src, PLANAR_CAPS | CAPS,
+               VIDEO_SCALE_PACK(17, 9));
+         CHECK(h != NULL, "planar source %u would not open", lane);
+         if (!h)
+            continue;
+         planar_seen = 0;
+         CHECK(camera_ffmpeg.start(h), "planar source %u start failed", lane);
+         CHECK(planar_until(h, cases[lane].y, cases[lane].cb, cases[lane].cr),
+               "planar source %u: Y %d Cb %d Cr %d, wanted %d %d %d", lane,
+               planar_y, planar_cb_s, planar_cr,
+               cases[lane].y, cases[lane].cb, cases[lane].cr);
+         CHECK(planar_last.flags == cases[lane].flags,
+               "planar source %u flags %u, wanted %u", lane,
+               planar_last.flags, cases[lane].flags);
+         CHECK(planar_last.width == 17 && planar_last.height == 9
+               && planar_last.chroma_step == 2
+               && planar_last.planes[2] == planar_last.planes[1] + 1
+               && planar_last.strides[0] >= 17 && planar_last.strides[1] >= 18,
+               "planar source %u: not NV12 of the size asked for", lane);
+         CHECK(frames_seen == raw_before,
+               "planar source %u also delivered raw frames", lane);
+         camera_ffmpeg.stop(h);
+         camera_ffmpeg.free(h);
+      }
+      h = open_camera();
+      if (h)
+      {
+         unsigned before = planar_seen;
+         CHECK(camera_ffmpeg.start(h), "raw camera start failed");
+         poll_until_frame(h, 100);
+         camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, frame_planar_cb);
+         CHECK(planar_seen == before, "a raw-only camera delivered planes");
+         camera_ffmpeg.stop(h);
+         camera_ffmpeg.free(h);
+      }
+      h = camera_ffmpeg.init(SRC, PLANAR_CAPS, VIDEO_SCALE_PACK(32, 16));
+      if (h)
+      {
+         CHECK(camera_ffmpeg.start(h), "planar camera start failed");
+         CHECK(!camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL),
+               "a planar camera polled without a planar callback");
+         camera_ffmpeg.stop(h);
+         camera_ffmpeg.free(h);
+      }
+      CHECK(camera_ffmpeg.init(SRC, UINT64_C(1)
+               << RETRO_CAMERA_BUFFER_OPENGL_TEXTURE,
+               VIDEO_SCALE_PACK(32, 16)) == NULL,
+            "a texture-only camera was accepted");
    }
    current = "direct output";
    printf("   %u frame(s) through the driver in all\n", frames_seen);

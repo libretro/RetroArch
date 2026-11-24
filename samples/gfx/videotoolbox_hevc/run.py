@@ -15,10 +15,11 @@ ROOT = HERE.parents[2]
 def metal_test_source():
     source = (ROOT / 'gfx/drivers/metal.m').read_text(encoding='utf8')
     header = (ROOT / 'gfx/video_driver.h').read_text(encoding='utf8')
-    text = '#include <formats/video_hw_frame.h>\n#include <formats/image_yuv_blit.h>\n'
+    text = '#include <formats/image.h>\n#include <formats/video_hw_frame.h>\n#include <formats/image_yuv_blit.h>\n'
     text += '#include <defines/cocoa_defines.h>\n'
     text += 'enum video_texture_update' + header.split('enum video_texture_update', 1)[1].split('};', 1)[0] + '};\n'
     text += 'typedef struct video_frame_import\n' + header.split('typedef struct video_frame_import\n', 1)[1].split('} video_frame_import_t;', 1)[0] + '} video_frame_import_t;\n'
+    text += '#define VIDEO_FRAME_IMPORT_IS_CPU' + header.split('#define VIDEO_FRAME_IMPORT_IS_CPU', 1)[1].split('\n', 1)[0] + '\n'
     for section in ('LEASE', 'CV', 'CV_POOL', 'CV_POOL_SETUP', 'SDR_PIPELINE', 'SDR_CONVERT'):
         text += source.split('/* METAL_FRAME_' + section + '_BEGIN */', 1)[1].split('/* METAL_FRAME_' + section + '_END */', 1)[0]
     text = text.replace('#include "../common/metal_frame.h"', '#include "' + (ROOT / 'gfx/common/metal_frame.h').as_posix() + '"')

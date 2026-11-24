@@ -16,11 +16,15 @@ LDFLAGS += -fsanitize=$(SANITIZER)
 endif
 LDLIBS += -lm
 
-all: encode_test$(EXE)
+all: encode_test$(EXE) facade_test$(EXE)
 encode_test$(EXE): encode_test.c $(RA)/record/record_mf_audio.c $(RA)/record/record_mf_audio.h $(GUIDS)
 	$(CC) $(CFLAGS) -o $@ encode_test.c $(RA)/record/record_mf_audio.c $(GUIDS) $(LDFLAGS) $(LDLIBS)
+facade_test$(EXE): facade_test.c encode_test.c $(RA)/record/record_aac_audio.c $(RA)/record/record_aac_audio.h $(RA)/record/record_mf_audio.c $(RA)/record/record_mf_audio.h $(GUIDS)
+	$(CC) $(CFLAGS) -o $@ facade_test.c $(RA)/record/record_aac_audio.c $(RA)/record/record_mf_audio.c $(GUIDS) $(LDFLAGS) $(LDLIBS)
 native-check: all
 	python3 run.py ./encode_test$(EXE)
+	python3 run.py ./facade_test$(EXE)
 clean:
+	rm -f facade_test facade_test.exe
 	rm -f encode_test encode_test.exe imports.txt
 .PHONY: all native-check clean

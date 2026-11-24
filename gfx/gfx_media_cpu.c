@@ -18,11 +18,18 @@
 
 #include "gfx_media_cpu.h"
 #include "video_defines.h"
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+#include "gfx_music_player.h"
+#include "gfx_music_visualizer.h"
+#endif
 
 struct gfx_media_cpu
 {
    gfx_anim_preview_t *session;
    video_player_t *player;
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   gfx_music_player_t *music;
+#endif
    gfx_media_cpu_present_t present;
    void *user;
    uint32_t *slots[2];
@@ -102,10 +109,49 @@ gfx_media_cpu_t *gfx_media_cpu_new(gfx_anim_preview_t *session,
    return p;
 }
 
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+gfx_media_cpu_t *gfx_media_cpu_new_music(const char *path,
+      gfx_media_cpu_present_t present, void *user)
+{
+   gfx_media_cpu_t *p;
+   if (!present || !(p = (gfx_media_cpu_t*)calloc(1, sizeof(*p)))) return NULL;
+   p->present = present;
+   p->user = user;
+   p->slots[0] = (uint32_t*)malloc(GFX_MUSIC_VISUALIZER_WIDTH
+         * GFX_MUSIC_VISUALIZER_HEIGHT * sizeof(uint32_t));
+   if (!p->slots[0] || !(p->music = gfx_music_player_new(path)))
+   {
+      free(p->slots[0]);
+      free(p);
+      return NULL;
+   }
+   p->num_slots = 1;
+   return p;
+}
+#endif
+
 enum video_player_state gfx_media_cpu_poll(gfx_media_cpu_t *p, int64_t wall_us)
 {
    enum video_player_state result;
    if (!p || p->ended) return VIDEO_PLAYER_ENDED;
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (p->music)
+   {
+      if (gfx_music_player_render(p->music, p->slots[0],
+               GFX_MUSIC_VISUALIZER_WIDTH * sizeof(uint32_t), false))
+      {
+         video_player_frame_t frame;
+         memset(&frame, 0, sizeof(frame));
+         frame.pixels = p->slots[0];
+         frame.width = GFX_MUSIC_VISUALIZER_WIDTH;
+         frame.height = GFX_MUSIC_VISUALIZER_HEIGHT;
+         frame.native = true;
+         frame.how = VIDEO_PLAYER_DIRECT;
+         if (!p->present(p->user, &frame)) gfx_music_player_invalidate(p->music);
+      }
+      return VIDEO_PLAYER_PLAYING;
+   }
+#endif
    gfx_anim_preview_audio_feed(p->session);
    result = gfx_media_player_poll(p->session, p->player, wall_us);
    if (result == VIDEO_PLAYER_ENDED && video_player_completed(p->player))
@@ -135,6 +181,9 @@ bool gfx_media_cpu_take_completed(gfx_media_cpu_t *p)
 
 bool gfx_media_cpu_pause(gfx_media_cpu_t *p, bool paused, int64_t wall_us)
 {
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (p && p->music) return gfx_music_player_pause(p->music, paused);
+#endif
    return p && gfx_media_player_set_paused(p->session, p->player,
          paused, true, wall_us);
 }
@@ -148,9 +197,31 @@ bool gfx_media_cpu_seek(gfx_media_cpu_t *p, int64_t target_us,
    return result;
 }
 
+const gfx_anim_preview_t *gfx_media_cpu_session(const gfx_media_cpu_t *p)
+{
+   return p ? p->session : NULL;
+}
+
+bool gfx_media_cpu_request_audio(gfx_media_cpu_t *p, int index)
+{
+   return p && gfx_anim_preview_audio_set_track(p->session, index);
+}
+
+bool gfx_media_cpu_select_audio(gfx_media_cpu_t *p, int index,
+      unsigned mix_rate, bool s16, int64_t wall_us)
+{
+   bool result = p && gfx_media_player_select_audio(p->session, p->player,
+         index, mix_rate, s16, wall_us);
+   if (result) p->ended = p->completed_pending = false;
+   return result;
+}
+
 bool gfx_media_cpu_state(gfx_media_cpu_t *p, int64_t wall_us,
       gfx_media_playback_state_t *state)
 {
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (p && p->music) return gfx_music_player_state(p->music, state);
+#endif
    return gfx_media_player_state(p ? p->session : NULL,
          p ? p->player : NULL, wall_us, state);
 }
@@ -159,6 +230,15 @@ bool gfx_media_cpu_free(gfx_media_cpu_t *p)
 {
    unsigned i;
    if (!p) return true;
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (p->music)
+   {
+      gfx_music_player_close(p->music);
+      free(p->slots[0]);
+      free(p);
+      return true;
+   }
+#endif
    gfx_anim_preview_audio_stop(p->session);
    if (!video_player_stop(p->player)) return false;
    video_player_free(p->player);

@@ -59,5 +59,31 @@ want seqlock_reader "dmb"  "acquire fence"
 want seqlock_reader "ldar" "acquire loads for the stamps"
 want seqlock_reader "ldr"  "plain loads for the relaxed fields"
 
+# The acq_rel fence is one full barrier, not an acquire and a release
+n=$("$OBJDUMP" -d "$OBJ" --disassemble=acq_rel_fence_shape 2>/dev/null | grep -cE "[[:space:]]dmb[[:space:]]+ish$")
+m=$("$OBJDUMP" -d "$OBJ" --disassemble=acq_rel_fence_shape 2>/dev/null | grep -cE "[[:space:]]dmb[[:space:]]")
+if [ "$n" -ne 1 ] || [ "$m" -ne 1 ]; then
+   echo "FAIL  acq_rel_fence_shape: $m barriers, $n of them a full dmb ish - want exactly one"
+   rc=1
+else
+   echo "ok    acq_rel_fence_shape: one dmb ish"
+fi
+
+# The 128-bit release store is one exclusive-pair loop: LDXP then STLXP,
+# with no compare of a value read before it
+dis=$("$OBJDUMP" -d "$OBJ" --disassemble=store_128_shape 2>/dev/null)
+if ! echo "$dis" | grep -q "stlxp" || echo "$dis" | grep -qE "[[:space:]](cmp|ccmp)[[:space:]]"; then
+   echo "FAIL  store_128_shape: want an ldxp/stlxp loop with no compare"
+   rc=1
+else
+   echo "ok    store_128_shape: ldxp/stlxp, no compare"
+fi
+
+# Bytes and halfwords: one acquire load or release store of their width
+want load_acquire_8_shape   "ldarb" "an acquire byte load"
+want store_release_8_shape  "stlrb" "a release byte store"
+want load_acquire_16_shape  "ldarh" "an acquire halfword load"
+want store_release_16_shape "stlrh" "a release halfword store"
+
 rm -f "$OBJ"
 exit $rc

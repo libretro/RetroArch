@@ -162,6 +162,9 @@ jobs:
           make clean
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
             make check SANITIZER=address,undefined
+          python3 gles_upload.py
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+            CFLAGS='-fsanitize=address,undefined -fno-omit-frame-pointer -g1' python3 gles_upload.py
 
       - name: FFmpeg subtitle hand-off to the renderer (plain, ASan + UBSan, TSan)
         working-directory: samples/cores/ffmpeg_ass_events

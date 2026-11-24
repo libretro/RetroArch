@@ -88,17 +88,17 @@ static void wpad_register(unsigned channel)
    joypad_state.wpad.channel_slot_map[channel] = slot;
 }
 
-static void wpad_update_button_state(uint64_t *state, uint32_t held_buttons)
+static void wpad_update_button_state(input_pad_view_t *v, uint32_t held_buttons)
 {
-   *state = held_buttons & VPAD_MASK_BUTTONS;
+   v->buttons.data[0] = held_buttons & VPAD_MASK_BUTTONS;
 }
 
-static void wpad_update_analog_state(int16_t state[3][2], VPADStatus *vpad)
+static void wpad_update_analog_state(input_pad_view_t *v, VPADStatus *vpad)
 {
-   state[RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = WIIU_READ_STICK(vpad->leftStick.x);
-   state[RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = WIIU_READ_STICK(vpad->leftStick.y);
-   state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = WIIU_READ_STICK(vpad->rightStick.x);
-   state[RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = WIIU_READ_STICK(vpad->rightStick.y);
+   v->axes[0] = WIIU_READ_STICK(vpad->leftStick.x);
+   v->axes[1] = WIIU_READ_STICK(vpad->leftStick.y);
+   v->axes[2] = WIIU_READ_STICK(vpad->rightStick.x);
+   v->axes[3] = WIIU_READ_STICK(vpad->rightStick.y);
 }
 
 static int16_t wpad_scale_touchpad(int16_t from_min, int16_t from_max,
@@ -154,8 +154,8 @@ static void wpad_get_touch_coordinates(VPADTouchData *point, VPADStatus *vpad,
    wpad_apply_clamping(point, viewport, clamped);
 }
 
-static void wpad_update_touch_state(int16_t state[3][2],
-      uint64_t *buttons, VPADStatus *vpad, VPADChan channel)
+static void wpad_update_touch_state(input_pad_view_t *v,
+      VPADStatus *vpad, VPADChan channel)
 {
    VPADTouchData point            = {0};
    struct video_viewport viewport = {0};
@@ -163,22 +163,22 @@ static void wpad_update_touch_state(int16_t state[3][2],
 
    if (!vpad->tpNormal.touched || vpad->tpNormal.validity != VPAD_VALID)
    {
-      *buttons &= ~VPAD_BUTTON_TOUCH;
+      v->buttons.data[0] &= ~(uint32_t)VPAD_BUTTON_TOUCH;
       return;
    }
 
    video_driver_get_viewport_info(&viewport);
    wpad_get_touch_coordinates(&point, vpad, channel, &viewport, &touch_clamped);
 
-   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_X] = wpad_scale_touchpad(
+   v->axes[WIIU_AXIS_TOUCH_X] = wpad_scale_touchpad(
          VIDEO_POS_X(viewport.pos), VIDEO_POS_X(viewport.pos) + VIDEO_SCALE_W(viewport.dims), -0x7fff, 0x7fff, point.x);
-   state[WIIU_DEVICE_INDEX_TOUCHPAD][RETRO_DEVICE_ID_ANALOG_Y] = wpad_scale_touchpad(
+   v->axes[WIIU_AXIS_TOUCH_Y] = wpad_scale_touchpad(
          VIDEO_POS_Y(viewport.pos), VIDEO_POS_Y(viewport.pos) + VIDEO_SCALE_H(viewport.dims), -0x7fff, 0x7fff, point.y);
 
    if (!touch_clamped)
-      *buttons |= VPAD_BUTTON_TOUCH;
+      v->buttons.data[0] |= (uint32_t)VPAD_BUTTON_TOUCH;
    else
-      *buttons &= ~VPAD_BUTTON_TOUCH;
+      v->buttons.data[0] &= ~(uint32_t)VPAD_BUTTON_TOUCH;
 }
 
 static void wpad_check_panic_button(uint32_t held_buttons)
@@ -205,10 +205,10 @@ static void wpad_poll(void)
 
       if (err == VPAD_READ_SUCCESS)
       {
-         wpad_update_button_state(&joypad_state.wpad.pads[channel].button_state, vpad.hold);
-         wpad_update_analog_state(joypad_state.wpad.pads[channel].analog_state, &vpad);
-         wpad_update_touch_state(joypad_state.wpad.pads[channel].analog_state,
-               &joypad_state.wpad.pads[channel].button_state, &vpad, channel);
+         input_pad_view_t *v = &joypad_state.wpad.pads[channel].view;
+         wpad_update_button_state(v, vpad.hold);
+         wpad_update_analog_state(v, &vpad);
+         wpad_update_touch_state(v, &vpad, channel);
          wpad_check_panic_button(vpad.hold);
       }
    }
@@ -232,51 +232,35 @@ static bool wpad_query_pad(unsigned port)
 
 static void wpad_destroy(void) { }
 
+/* The view of the GamePad on @port; NULL for none */
+static const input_pad_view_t *wpad_view(unsigned port)
+{
+   VPADChan channel;
+   if (!wpad_query_pad(port))
+      return NULL;
+   channel = wpad_to_gamepad_channel(port);
+   return (channel >= 0) ? &joypad_state.wpad.pads[channel].view : NULL;
+}
+
 static int32_t wpad_button(unsigned port, uint16_t joykey)
 {
-   if (wpad_query_pad(port))
-   {
-      VPADChan channel = wpad_to_gamepad_channel(port);
-      if (channel >= 0)
-         return (joypad_state.wpad.pads[channel].button_state & (UINT64_C(1) << joykey));
-   }
-   return 0;
+   const input_pad_view_t *v = wpad_view(port);
+   return v ? input_pad_view_button(v, joykey) : 0;
 }
 
 static void wpad_get_buttons(unsigned port, input_bits_t *state)
 {
-   VPADChan channel;
-
-   if (!wpad_query_pad(port))
-   {
+   const input_pad_view_t *v = wpad_view(port);
+   if (v)
+      *state = v->buttons;
+   else
       BIT256_CLEAR_ALL_PTR(state);
-      return;
-   }
-
-   if ((channel = wpad_to_gamepad_channel(port)) < 0)
-   {
-      BIT256_CLEAR_ALL_PTR(state);
-      return;
-   }
-
-   BITS_COPY32_PTR(state, joypad_state.wpad.pads[channel].button_state);
 }
 
 static int16_t wpad_axis(unsigned port, uint32_t axis)
 {
-   axis_data data;
-   VPADChan channel;
-
-   if (!wpad_query_pad(port))
-      return 0;
-
-   channel = wpad_to_gamepad_channel(port);
-   if (channel < 0)
-      return 0;
-
-   pad_functions.read_axis_data(axis, &data);
-   return pad_functions.get_axis_value(data.axis,
-         joypad_state.wpad.pads[channel].analog_state, data.is_negative);
+   const input_pad_view_t *v = wpad_view(port);
+   return v ? input_pad_view_axis(v, axis) : 0;
 }
 
 static int16_t wpad_state(
@@ -285,25 +269,8 @@ static int16_t wpad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   int i;
-   int16_t ret       = 0;
-   uint16_t port_idx = joypad_info->joy_idx;
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-   {
-      const uint64_t joykey  = joykeys[i];
-      const uint32_t joyaxis = joyaxes[i];
-      if (
-               (uint16_t)joykey != NO_BTN
-            && wpad_button(port_idx, (uint16_t)joykey))
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(wpad_axis(port_idx, joyaxis))
-             / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
-   }
-
-   return ret;
+   const input_pad_view_t *v = wpad_view(joypad_info->joy_idx);
+   return v ? input_pad_view_state(v, joypad_info, joykeys, joyaxes) : 0;
 }
 
 static const char *wpad_name(unsigned port)
@@ -327,4 +294,9 @@ input_device_driver_t wpad_driver =
   NULL, /* get_sensor_input */
   wpad_name,
   "gamepad",
+  NULL, /* get_bt_host */
+  NULL, /* set_bt_host */
+  NULL, /* survives_video */
+  NULL, /* set_player */
+  wpad_view
 };

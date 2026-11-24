@@ -22,19 +22,19 @@
 #include "../../tasks/tasks_internal.h"
 
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 
 #include "libmtap.h"
 #include "libpad.h"
 
 #define PS2_MAX_PORT 2 /* each ps2 has 2 ports */
 #define PS2_MAX_SLOT 4 /* maximum - 4 slots in one multitap */
-#define PS2_ANALOG_STICKS 2
-#define PS2_ANALOG_AXIS 2
 
 /* TODO/FIXME - static globals */
 static unsigned char padBuf[PS2_MAX_PORT][PS2_MAX_SLOT][256] ALIGNED(64);
-static uint64_t pad_state[DEFAULT_MAX_PADS];
-static int16_t analog_state[DEFAULT_MAX_PADS][PS2_ANALOG_STICKS][PS2_ANALOG_AXIS];
+/* each pad as its poll left it, lent to the readers (input_pad_view.h):
+ * the buttons as RetroPad ids, axes 0-3 the sticks' x and y */
+static input_pad_view_t ps2_pads[DEFAULT_MAX_PADS];
 static bool pad_present[DEFAULT_MAX_PADS];
 static bool pad_mode_asked[DEFAULT_MAX_PADS];
 
@@ -118,48 +118,7 @@ static int32_t ps2_joypad_button(unsigned port, uint16_t joykey)
 {
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return pad_state[port] & (UINT64_C(1) << joykey);
-}
-
-static int16_t ps2_joypad_axis_state(unsigned port_num, uint32_t joyaxis)
-{
-   if (AXIS_NEG_GET(joyaxis) < 4)
-   {
-      int16_t val  = 0;
-      int16_t axis = AXIS_NEG_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-         case 1:
-            val = analog_state[port_num][0][axis];
-            break;
-         case 2:
-         case 3:
-            val = analog_state[port_num][1][axis - 2];
-            break;
-      }
-      if (val < 0)
-         return val;
-   }
-   else if (AXIS_POS_GET(joyaxis) < 4)
-   {
-      int16_t val  = 0;
-      int16_t axis = AXIS_POS_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-         case 1:
-            val = analog_state[port_num][0][axis];
-            break;
-         case 2:
-         case 3:
-            val = analog_state[port_num][1][axis - 2];
-            break;
-      }
-      if (val > 0)
-         return val;
-   }
-   return 0;
+   return input_pad_view_button(&ps2_pads[port], joykey);
 }
 
 static int16_t ps2_joypad_state(
@@ -168,41 +127,32 @@ static int16_t ps2_joypad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
-
-   if (port_idx < DEFAULT_MAX_PADS)
-   {
-      int i;
-      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-      {
-         const uint64_t joykey  = joykeys[i];
-         const uint32_t joyaxis = joyaxes[i];
-         if (
-               (uint16_t)joykey != NO_BTN
-               && pad_state[port_idx] & (UINT64_C(1) << joykey)
-            )
-            ret |= ( 1 << i);
-         else if (joyaxis != AXIS_NONE &&
-               ((float)abs(ps2_joypad_axis_state(port_idx, joyaxis))
-                / 0x8000) > joypad_info->axis_threshold)
-            ret |= (1 << i);
-      }
-   }
-
-   return ret;
+   uint16_t port_idx = joypad_info->joy_idx;
+   if (port_idx >= DEFAULT_MAX_PADS)
+      return 0;
+   return input_pad_view_state(&ps2_pads[port_idx], joypad_info,
+         joykeys, joyaxes);
 }
 
 static int16_t ps2_joypad_axis(unsigned port_num, uint32_t joyaxis)
 {
    if (port_num >= DEFAULT_MAX_PADS)
       return 0;
-   return ps2_joypad_axis_state(port_num, joyaxis);
+   return input_pad_view_axis(&ps2_pads[port_num], joyaxis);
 }
 
 static void ps2_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
-   BIT256_CLEAR_ALL_PTR(state);
+   if (port_num < DEFAULT_MAX_PADS)
+      *state = ps2_pads[port_num].buttons;
+   else
+      BIT256_CLEAR_ALL_PTR(state);
+}
+
+/* Read in the poll alone: the same until the next */
+static const input_pad_view_t *ps2_joypad_view(unsigned port_num)
+{
+   return (port_num < DEFAULT_MAX_PADS) ? &ps2_pads[port_num] : NULL;
 }
 
 static void ps2_joypad_poll(void)
@@ -273,11 +223,11 @@ static void ps2_joypad_poll(void)
 
       /* Disconnected, executing a command, in error or unreadable:
        * nothing held and sticks centred. */
-      pad_state[i] = bits;
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = lx;
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = ly;
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = rx;
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = ry;
+      INPUT_PAD_VIEW_SET_BITS64(&ps2_pads[i], bits);
+      ps2_pads[i].axes[0] = lx;
+      ps2_pads[i].axes[1] = ly;
+      ps2_pads[i].axes[2] = rx;
+      ps2_pads[i].axes[3] = ry;
    }
 }
 
@@ -316,4 +266,9 @@ input_device_driver_t ps2_joypad = {
    NULL, /* get_sensor_input */
    ps2_joypad_name,
    "ps2",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   ps2_joypad_view
 };

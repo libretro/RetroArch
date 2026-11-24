@@ -18,6 +18,8 @@ SNES_NTSC := $(wildcard ../../../gfx/video_filters/snes_ntsc/*)
 
 CFLAGS  += -Wall -std=gnu99 -O2 -I../../../libretro-common/include \
 	-I../../../gfx/video_filters
+# Recorded floating-point kernels use separate multiply/add rounding.
+GOLDEN_FP_FLAGS := -ffp-contract=off
 LDFLAGS += -lm
 
 ifneq ($(SANITIZER),)
@@ -28,7 +30,7 @@ endif
 all: $(TARGETS)
 
 golden_%: filter_golden_test.c golden_%.h ../../../gfx/video_filters/%.c
-	$(CC) $(CFLAGS) -DFILTER_C='"../../../gfx/video_filters/$*.c"' \
+	$(CC) $(CFLAGS) $(GOLDEN_FP_FLAGS) -DFILTER_C='"../../../gfx/video_filters/$*.c"' \
 		-DGOLDEN_H='"golden_$*.h"' -DFILTER_NAME='"golden_$*"' \
 		-o $@ filter_golden_test.c $(LDFLAGS)
 
@@ -36,7 +38,7 @@ golden_blargg_ntsc_snes: $(SNES_NTSC)
 
 golden_blargg_ntsc_snes_%: filter_golden_test.c golden_blargg_ntsc_snes_%.h \
 		../../../gfx/video_filters/blargg_ntsc_snes.c $(SNES_NTSC)
-	$(CC) $(CFLAGS) \
+	$(CC) $(CFLAGS) $(GOLDEN_FP_FLAGS) \
 		-DFILTER_C='"../../../gfx/video_filters/blargg_ntsc_snes.c"' \
 		-DGOLDEN_H='"golden_blargg_ntsc_snes_$*.h"' -DGOLDEN_STR='"$*"' \
 		-DFILTER_NAME='"golden_blargg_ntsc_snes_$*"' \
@@ -46,7 +48,7 @@ golden_blargg_ntsc_snes_%: filter_golden_test.c golden_blargg_ntsc_snes_%.h \
 # same table.
 $(C_TARGETS): golden_%_c: filter_golden_test.c golden_%.h \
 		../../../gfx/video_filters/%.c $(SNES_NTSC)
-	$(CC) $(CFLAGS) -DSOFTFILTER_NO_SIMD \
+	$(CC) $(CFLAGS) $(GOLDEN_FP_FLAGS) -DSOFTFILTER_NO_SIMD \
 		-DFILTER_C='"../../../gfx/video_filters/$*.c"' \
 		-DGOLDEN_H='"golden_$*.h"' -DFILTER_NAME='"golden_$*_c"' \
 		-o $@ filter_golden_test.c $(LDFLAGS)
@@ -57,9 +59,32 @@ RUNS := $(addprefix run_,$(TARGETS))
 check: $(RUNS)
 
 $(RUNS): run_%: %
-	@./$*
+	@$(RUNNER) ./$*
+
+fp_contract_probe_test: fp_contract_probe_test.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+
+FMA_TARGETS := golden_blargg_ntsc_snes golden_blargg_ntsc_snes_c \
+	$(addprefix golden_blargg_ntsc_snes_,$(SNES_TV))
+check-fma: fp_contract_probe_test
+	@status=0; $(RUNNER) ./fp_contract_probe_test || status=$$?; \
+	if [ $$status -eq 77 ]; then \
+		echo "skip: FMA compiler target needs an FMA-capable x86 host"; \
+	elif [ $$status -ne 0 ]; then exit $$status; \
+	else $(MAKE) -B GOLDEN_FP_FLAGS=-ffp-contract=fast CC="$(CC) -mfma" $(addprefix run_,$(FMA_TARGETS)); fi
 
 clean:
-	rm -f $(TARGETS)
+	rm -f $(TARGETS) fp_contract_probe_test snes_fixed_math_test snes_fixed_math_portable_test
 
-.PHONY: all check clean $(RUNS)
+.PHONY: all check check-fma clean $(RUNS)
+
+# Native and limb arithmetic, both checked against an independent 128-bit oracle.
+snes_fixed_math_test: snes_fixed_math_test.c $(SNES_NTSC)
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+snes_fixed_math_portable_test: snes_fixed_math_test.c $(SNES_NTSC)
+	$(CC) $(CFLAGS) -DSNES_NTSC_FIXED_PORTABLE -o $@ $< $(LDFLAGS)
+check-fixed: snes_fixed_math_test snes_fixed_math_portable_test
+	$(RUNNER) ./snes_fixed_math_test
+	$(RUNNER) ./snes_fixed_math_portable_test
+	CC="$(CC)" RUNNER="$(RUNNER)" COMPARE_CFLAGS="$(CFLAGS)" python3 snes_fixed_compare.py
+.PHONY: check-fixed

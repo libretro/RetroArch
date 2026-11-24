@@ -127,6 +127,8 @@ int main(void)
 {
    rarch_setting_t setting;
    unsigned mode, offered[6], slots;
+   /* Metal records through its own driver, never handed to another */
+   assert(!strcmp(recording_capture_driver("metal"), "metal"));
    for (slots = 0; slots <= RECORD_GPU_QUEUE_SLOTS + 1; slots++)
    {
       assert(recording_native_buffer_count("metal",slots)

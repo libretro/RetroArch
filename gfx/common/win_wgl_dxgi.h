@@ -9,6 +9,6 @@ int ra_wgl_dxgi_resize(ra_wgl_dxgi_t *presenter, unsigned width, unsigned height
 int ra_wgl_dxgi_present(ra_wgl_dxgi_t *presenter, unsigned interval);
 int ra_wgl_dxgi_presentable(ra_wgl_dxgi_t *presenter);
 /* ra_dxgi_bridge_immediate() of the presenter's bridge */
-int ra_wgl_dxgi_immediate(ra_wgl_dxgi_t *presenter);
+int ra_wgl_dxgi_immediate(ra_wgl_dxgi_t *presenter, unsigned generation);
 void ra_wgl_dxgi_destroy(ra_wgl_dxgi_t *presenter);
 #endif

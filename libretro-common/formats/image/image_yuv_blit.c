@@ -21,6 +21,15 @@
  */
 
 #include <stddef.h>
+#include <string.h>
+
+#if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#define IMAGE_YUV_SSE2
+#include <emmintrin.h>
+#elif (defined(__ARM_NEON) || defined(__ARM_NEON__)) && !defined(__ARM_BIG_ENDIAN)
+#define IMAGE_YUV_NEON
+#include <arm_neon.h>
+#endif
 
 #include <formats/image_yuv_blit.h>
 
@@ -107,8 +116,161 @@ static void image_yuv_pair(uint32_t *d, unsigned n,
    }
 }
 
-/* The frame, two rows at a time, with the chroma of pixel pair @x
- * fetched by @cb_at / @cr_at as the layout dictates. */
+/* Pixels @x on of one row, a pair at a time, with the chroma of pair
+ * @x fetched by step as the layout dictates. */
+static void image_yuv_row(uint32_t *d, const uint8_t *yp,
+      const uint8_t *cb, unsigned cb_step,
+      const uint8_t *cr, unsigned cr_step,
+      unsigned x, unsigned w, const image_yuv_coef_t *c, unsigned rgba)
+{
+   for (; x < w; x += 2)
+   {
+      unsigned n = (x + 1 < w) ? 2 : 1;
+      int u      = (int)cb[(x >> 1) * cb_step] - 128;
+      int v      = (int)cr[(x >> 1) * cr_step] - 128;
+      image_yuv_pair(d + x, n, yp + x, u, v, c, rgba);
+   }
+}
+
+/* Eight pixels at a time, the same arithmetic in the same fixed point
+ * as image_yuv_pair, so every pixel is the one it gives. Returns how
+ * many pixels were done, a multiple of eight; the row's rest is
+ * image_yuv_row's. Interleaved chroma (@step 2) is read eight bytes at
+ * a time, one past the last sample a group uses, so a group runs only
+ * where the row has a sample after it. */
+#if defined(IMAGE_YUV_SSE2)
+static unsigned image_yuv_row_simd(uint32_t *d, const uint8_t *yp,
+      const uint8_t *cb, const uint8_t *cr, unsigned step, unsigned w,
+      const image_yuv_coef_t *c, unsigned rgba)
+{
+   const __m128i zero  = _mm_setzero_si128();
+   const __m128i lo8   = _mm_set1_epi16(0xFF);
+   const __m128i c128  = _mm_set1_epi16(128);
+   const __m128i alpha = _mm_set1_epi8(-1);
+   const __m128i ym    = _mm_set1_epi16((short)c->ym);
+   const __m128i yb    = _mm_set1_epi32(c->yb);
+   /* on (Cb, Cr) pairs; Cb -> B is even and past int16, so halved */
+   const __m128i kr    = _mm_set_epi16((short)c->rv, 0, (short)c->rv, 0,
+         (short)c->rv, 0, (short)c->rv, 0);
+   const __m128i kg    = _mm_set_epi16((short)c->gv, (short)c->gu,
+         (short)c->gv, (short)c->gu, (short)c->gv, (short)c->gu,
+         (short)c->gv, (short)c->gu);
+   const __m128i kb    = _mm_set_epi16(0, (short)(c->bu >> 1),
+         0, (short)(c->bu >> 1), 0, (short)(c->bu >> 1),
+         0, (short)(c->bu >> 1));
+   unsigned need       = step == 2 ? 9 : 8;
+   unsigned x          = 0;
+
+   for (; x + need <= w; x += 8)
+   {
+      __m128i yv = _mm_unpacklo_epi8(
+            _mm_loadl_epi64((const __m128i*)(yp + x)), zero);
+      __m128i u, v, uv, rr, gg, bb, ylo, yhi, lo, hi, r, g, b, p, q;
+      if (step == 2)
+      {
+         u = _mm_and_si128(_mm_loadl_epi64((const __m128i*)(cb + x)), lo8);
+         v = _mm_and_si128(_mm_loadl_epi64((const __m128i*)(cr + x)), lo8);
+      }
+      else
+      {
+         uint32_t cu, cv;
+         memcpy(&cu, cb + (x >> 1), 4);
+         memcpy(&cv, cr + (x >> 1), 4);
+         u = _mm_unpacklo_epi8(_mm_cvtsi32_si128((int)cu), zero);
+         v = _mm_unpacklo_epi8(_mm_cvtsi32_si128((int)cv), zero);
+      }
+      uv  = _mm_unpacklo_epi16(_mm_sub_epi16(u, c128),
+            _mm_sub_epi16(v, c128));
+      rr  = _mm_madd_epi16(uv, kr);
+      gg  = _mm_madd_epi16(uv, kg);
+      bb  = _mm_slli_epi32(_mm_madd_epi16(uv, kb), 1);
+      lo  = _mm_mullo_epi16(yv, ym);
+      hi  = _mm_mulhi_epi16(yv, ym);
+      ylo = _mm_add_epi32(_mm_unpacklo_epi16(lo, hi), yb);
+      yhi = _mm_add_epi32(_mm_unpackhi_epi16(lo, hi), yb);
+#define IMAGE_YUV_SSE2_CH(t) _mm_packus_epi16(_mm_packs_epi32( \
+         _mm_srai_epi32(_mm_add_epi32(ylo, \
+               _mm_shuffle_epi32(t, _MM_SHUFFLE(1, 1, 0, 0))), IMAGE_YUV_SHIFT), \
+         _mm_srai_epi32(_mm_add_epi32(yhi, \
+               _mm_shuffle_epi32(t, _MM_SHUFFLE(3, 3, 2, 2))), IMAGE_YUV_SHIFT)), \
+         zero)
+      r   = IMAGE_YUV_SSE2_CH(rr);
+      g   = IMAGE_YUV_SSE2_CH(gg);
+      b   = IMAGE_YUV_SSE2_CH(bb);
+#undef IMAGE_YUV_SSE2_CH
+      /* ARGB words are B, G, R, A in memory; FLAG_RGBA R, G, B, A */
+      p   = _mm_unpacklo_epi8(rgba ? r : b, g);
+      q   = _mm_unpacklo_epi8(rgba ? b : r, alpha);
+      _mm_storeu_si128((__m128i*)(d + x),     _mm_unpacklo_epi16(p, q));
+      _mm_storeu_si128((__m128i*)(d + x + 4), _mm_unpackhi_epi16(p, q));
+   }
+   return x;
+}
+#elif defined(IMAGE_YUV_NEON)
+static unsigned image_yuv_row_simd(uint32_t *d, const uint8_t *yp,
+      const uint8_t *cb, const uint8_t *cr, unsigned step, unsigned w,
+      const image_yuv_coef_t *c, unsigned rgba)
+{
+   const int32x4_t yb = vdupq_n_s32(c->yb);
+   const int16x4_t mid = vdup_n_s16(128);
+   unsigned need       = step == 2 ? 9 : 8;
+   unsigned x          = 0;
+
+   for (; x + need <= w; x += 8)
+   {
+      int16x8_t yv = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(yp + x)));
+      int16x4_t u, v;
+      int32x4_t rr, gg, bb, ylo, yhi;
+      int32x4x2_t r2, g2, b2;
+      uint8x8x4_t px;
+      uint8x8_t r, g, b;
+      if (step == 2)
+      {
+         const uint16x4_t lo8 = vdup_n_u16(0xFF);
+         u = vreinterpret_s16_u16(vand_u16(
+               vreinterpret_u16_u8(vld1_u8(cb + x)), lo8));
+         v = vreinterpret_s16_u16(vand_u16(
+               vreinterpret_u16_u8(vld1_u8(cr + x)), lo8));
+      }
+      else
+      {
+         uint32_t cu, cv;
+         memcpy(&cu, cb + (x >> 1), 4);
+         memcpy(&cv, cr + (x >> 1), 4);
+         u = vreinterpret_s16_u16(vget_low_u16(
+               vmovl_u8(vreinterpret_u8_u32(vdup_n_u32(cu)))));
+         v = vreinterpret_s16_u16(vget_low_u16(
+               vmovl_u8(vreinterpret_u8_u32(vdup_n_u32(cv)))));
+      }
+      u   = vsub_s16(u, mid);
+      v   = vsub_s16(v, mid);
+      rr  = vmull_n_s16(v, (int16_t)c->rv);
+      gg  = vmlal_n_s16(vmull_n_s16(u, (int16_t)c->gu), v, (int16_t)c->gv);
+      bb  = vmulq_n_s32(vmovl_s16(u), c->bu);
+      ylo = vaddq_s32(vmull_n_s16(vget_low_s16(yv), (int16_t)c->ym), yb);
+      yhi = vaddq_s32(vmull_n_s16(vget_high_s16(yv), (int16_t)c->ym), yb);
+      r2  = vzipq_s32(rr, rr);
+      g2  = vzipq_s32(gg, gg);
+      b2  = vzipq_s32(bb, bb);
+#define IMAGE_YUV_NEON_CH(t) vqmovun_s16(vcombine_s16( \
+         vqmovn_s32(vshrq_n_s32(vaddq_s32(ylo, (t).val[0]), IMAGE_YUV_SHIFT)), \
+         vqmovn_s32(vshrq_n_s32(vaddq_s32(yhi, (t).val[1]), IMAGE_YUV_SHIFT))))
+      r   = IMAGE_YUV_NEON_CH(r2);
+      g   = IMAGE_YUV_NEON_CH(g2);
+      b   = IMAGE_YUV_NEON_CH(b2);
+#undef IMAGE_YUV_NEON_CH
+      /* ARGB words are B, G, R, A in memory; FLAG_RGBA R, G, B, A */
+      px.val[0] = rgba ? r : b;
+      px.val[1] = g;
+      px.val[2] = rgba ? b : r;
+      px.val[3] = vdup_n_u8(0xFF);
+      vst4_u8((uint8_t*)(d + x), px);
+   }
+   return x;
+}
+#endif
+
+/* The frame, two rows at a time sharing their chroma row. */
 static void image_yuv_frame(uint32_t *dst, unsigned dst_stride,
       const uint8_t *y, unsigned y_stride,
       const uint8_t *c0, unsigned c0_stride, unsigned c0_step,
@@ -123,23 +285,21 @@ static void image_yuv_frame(uint32_t *dst, unsigned dst_stride,
 
    for (row = 0; row < h; row += 2)
    {
-      const uint8_t *y0  = y + (size_t)row * y_stride;
-      const uint8_t *y1  = y0 + y_stride;
       const uint8_t *cb  = c0 + (size_t)(row >> 1) * c0_stride;
       const uint8_t *cr  = c1 + (size_t)(row >> 1) * c1_stride;
-      uint32_t *d0       = dst + (size_t)row * dst_stride;
-      uint32_t *d1       = d0 + dst_stride;
       unsigned rows      = (row + 1 < h) ? 2 : 1;
-      unsigned x;
+      unsigned i;
 
-      for (x = 0; x < w; x += 2)
+      for (i = 0; i < rows; i++)
       {
-         unsigned n = (x + 1 < w) ? 2 : 1;
-         int u      = (int)cb[(x >> 1) * c0_step] - 128;
-         int v      = (int)cr[(x >> 1) * c1_step] - 128;
-         image_yuv_pair(d0 + x, n, y0 + x, u, v, c, rgba);
-         if (rows == 2)
-            image_yuv_pair(d1 + x, n, y1 + x, u, v, c, rgba);
+         const uint8_t *yp = y + (size_t)(row + i) * y_stride;
+         uint32_t *d       = dst + (size_t)(row + i) * dst_stride;
+         unsigned x        = 0;
+#if defined(IMAGE_YUV_SSE2) || defined(IMAGE_YUV_NEON)
+         if (c0_step == c1_step && c0_step <= 2)
+            x = image_yuv_row_simd(d, yp, cb, cr, c0_step, w, c, rgba);
+#endif
+         image_yuv_row(d, yp, cb, c0_step, cr, c1_step, x, w, c, rgba);
       }
    }
 }

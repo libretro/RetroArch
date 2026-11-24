@@ -102,12 +102,12 @@ endif
    OBJ += gfx/drivers/gx2_shaders/tex.o
    OBJ += gfx/drivers/gx2_shaders/sprite.o
    OBJ += gfx/drivers/gx2_shaders/frame.o
-   OBJ += gfx/drivers/gx2_shaders/ribbon.o
-   OBJ += gfx/drivers/gx2_shaders/ribbon_simple.o
-   OBJ += gfx/drivers/gx2_shaders/bokeh.o
-   OBJ += gfx/drivers/gx2_shaders/snow.o
-   OBJ += gfx/drivers/gx2_shaders/snow_simple.o
-   OBJ += gfx/drivers/gx2_shaders/snowflake.o
+   OBJ += gfx/drivers/gx2_shaders/effects/ribbon.o
+   OBJ += gfx/drivers/gx2_shaders/effects/ribbon_simple.o
+   OBJ += gfx/drivers/gx2_shaders/effects/bokeh.o
+   OBJ += gfx/drivers/gx2_shaders/effects/snow.o
+   OBJ += gfx/drivers/gx2_shaders/effects/snow_simple.o
+   OBJ += gfx/drivers/gx2_shaders/effects/snowflake.o
 
    ifeq ($(GRIFFIN_BUILD), 1)
       OBJ += griffin/griffin.o griffin/griffin_cpp.o griffin/griffin_rslc.o
@@ -115,13 +115,14 @@ endif
       INCDIRS +=
       # for stb, libfat, iosuhax
       INCDIRS += -Ideps -Ideps/libfat/include -Ios/wiiu/fs
-      # pad_functions uses wiiu/input.h
+      # the Wii U pad drivers use wiiu/input.h
       INCDIRS += -Iinput/include
 
       DEFINES += -DHAVE_AUDIOMIXER
       DEFINES += -DHAVE_RWAV
       DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_CHEATS -DHAVE_RGUI -DHAVE_LIBRETRODB
       DEFINES += -DHAVE_REWIND
+      DEFINES += -DHAVE_CHD -DHAVE_RCHD
       DEFINES += -DHAVE_RPNG -DHAVE_RWEBP -DHAVE_RDDS -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DHAVE_RGIF -DHAVE_CC_RESAMPLER
       DEFINES += -DHAVE_RSLC -DHAVE_SLANG
       DEFINES += -DHAVE_RVORBIS -DHAVE_LANGEXTRA -DHAVE_LIBRETRODB -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_NETPLAYDISCOVERY
@@ -154,6 +155,9 @@ endif
       HAVE_RGUI = 1
       HAVE_7ZIP = 1
       HAVE_RZSTD = 1
+      HAVE_RFLAC = 1
+      HAVE_CHD = 1
+      HAVE_RCHD = 1
       HAVE_LIBRETRODB = 1
       HAVE_MATERIALUI = 1
       HAVE_XMB = 1

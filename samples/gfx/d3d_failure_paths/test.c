@@ -39,6 +39,8 @@ typedef object *D3D10Texture2D;
 typedef object *D3D11Texture2D;
 typedef object *D3D11RenderTargetView;
 static object back = {0}, target = {0};
+/* The backdrop blur's view of the buffer, a reference to it */
+static object blur_view = {0};
 #define Release(p) do { if (p) { assert((p)->refs > 0); --(p)->refs; (p) = NULL; } } while (0)
 typedef struct staging staging;
 struct staging
@@ -97,6 +99,7 @@ typedef struct
    struct { object *ubo; int ubo_values; } hdr;
    unsigned flags, chain_bit_depth, chain_formats[2];
    math_matrix_4x4 mvp;
+   struct { object *target_view; object *target_res; } blur;
 } d3d10_video_t;
 typedef d3d10_video_t d3d11_video_t;
 static int stage_map(staging *s, unsigned a, unsigned b, unsigned c, D3D10_MAPPED_TEXTURE2D *m)
@@ -118,7 +121,19 @@ static int create_view(device *d, object *b, void *desc, object **p)
 static void bind(device *d, unsigned n, object **v, void *ds) { (void)d; (void)n; (void)v; (void)ds; }
 static void flush(device *d) { (void)d; }
 static int resize(swapchain *s, unsigned n, unsigned w, unsigned h, unsigned f, unsigned flags)
-{ (void)s; (void)n; (void)w; (void)h; (void)f; (void)flags; return fail_resize ? -1 : 0; }
+{
+   (void)s; (void)n; (void)w; (void)h; (void)f; (void)flags;
+   /* DXGI refuses while anything holds a buffer */
+   assert(blur_view.refs == 0);
+   return fail_resize ? -1 : 0;
+}
+/* The blur reading the buffer through a view it keeps */
+static void blur_holds(d3d10_video_t *drv)
+{
+   blur_view.refs = 1;
+   drv->blur.target_view = &blur_view;
+   drv->blur.target_res  = &back;
+}
 #define DXGIResizeBuffers resize
 static void video_driver_modify_disp_flags(unsigned set, unsigned clear) { (void)clear; lost |= set; }
 static void video_driver_set_output_dims(unsigned dims) { (void)dims; output_dims++; }
@@ -187,7 +202,9 @@ int main(void)
    {
       fail_resize=i==0; fail_get=i==1; fail_view=i==2;
       drv.flags=1; drv.viewport.Width=0; lost=output_dims=buffer_gets=creates=0;
+      blur_holds(&drv);
       assert(resize10(&drv)==(i==3));
+      assert(!drv.blur.target_view && !drv.blur.target_res);
       assert((i==3) ? (output_dims==1 && drv.viewport.Width==800) :
             (lost==32 && output_dims==0 && drv.viewport.Width==0));
       assert(buffer_gets==(i==0 ? 0 : 1));
@@ -196,9 +213,13 @@ int main(void)
    }
    fail_get=fail_view=0; fail_resize=1;
    drv.flags=0; drv.chain_bit_depth=0; drv.viewport.Width=0; lost=output_dims=0;
+   blur_holds(&drv);
    assert(!resize11(&drv));
+   assert(!drv.blur.target_view && !drv.blur.target_res);
    assert(lost==32 && drv.viewport.Width==0 && output_dims==0 && drv.chain_bit_depth==0 && drv.flags==0);
-   fail_resize=0; assert(resize11(&drv)); assert(output_dims==1 && drv.viewport.Width==800);
+   fail_resize=0; blur_holds(&drv);
+   assert(resize11(&drv)); assert(output_dims==1 && drv.viewport.Width==800);
+   assert(blur_view.refs==0);
 #ifdef HAVE_DXGI_HDR
    assert(drv.chain_bit_depth==1 && (drv.flags & D3D11_ST_FLAG_HDR_ENABLE));
 #else
@@ -211,6 +232,6 @@ int main(void)
       assert(back.refs==0 && target.refs==0);
       if(i<2) assert(lost==32);
    }
-   puts("D3D failure paths: maps, resize, back buffer and recovery PASS");
+   puts("D3D failure paths: maps, resize, back buffer, the blur's view and recovery PASS");
    return 0;
 }

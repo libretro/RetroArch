@@ -361,6 +361,7 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/android_vk_ctx.c"
 #if defined(HAVE_VULKAN_CUSTOM_DRIVER)
 #include "../gfx/common/vulkan_custom_driver.c"
+#include "../gfx/common/vulkan_custom_driver_glue.c"
 #include "../gfx/common/vulkan_custom_driver_android.c"
 #include "../gfx/common/vulkan_custom_driver_linker.c"
 #endif
@@ -440,6 +441,11 @@ VIDEO CONTEXT
 #include "../gfx/common/vulkan_common.c"
 #include "../gfx/common/vulkan_encode_device.c"
 #include "../libretro-common/vulkan/vulkan_symbol_wrapper.c"
+#if defined(HAVE_VULKAN_CUSTOM_DRIVER) && !defined(ANDROID)
+#include "../gfx/common/vulkan_custom_driver.c"
+#include "../gfx/common/vulkan_custom_driver_glue.c"
+#include "../gfx/common/vulkan_custom_driver_desktop.c"
+#endif
 #ifdef HAVE_RMP4
 #include "../gfx/common/vulkan_video_decode.c"
 #endif
@@ -496,6 +502,7 @@ VIDEO CONTEXT
 
 #if defined(HAVE_X11)
 #include "../gfx/common/x11_common.c"
+#include "../gfx/common/x11_monitors.c"
 #include "../gfx/common/xinerama_common.c"
 #include "../gfx/display_servers/dispserv_x11.c"
 
@@ -764,7 +771,9 @@ VIDEO DRIVER
 
 #if defined(HAVE_D3D12)
 #include "../gfx/common/nvenc_d3d12.c"
+#ifndef HAVE_PYROWAVE
 #include "../record/record_gpu_queue.c"
+#endif
 #include "../record/record_gpu_capture_d3d12.c"
 #include "../record/record_gpu_worker_d3d12.c"
 #ifndef HAVE_RAC3
@@ -783,6 +792,7 @@ VIDEO DRIVER
 #ifdef HAVE_MF_AUDIO
 #include "../record/record_mf_audio.c"
 #if (defined(HAVE_D3D12) || defined(HAVE_RECORD_VULKAN)) && defined(HAVE_RTMP) && defined(HAVE_RFLV)
+#include "../record/record_aac_audio.c"
 #include "../record/record_stream_gpu.c"
 #ifdef HAVE_D3D12
 #include "../record/record_stream_d3d12.c"
@@ -797,6 +807,9 @@ VIDEO DRIVER
 #include "../gfx/drivers/d3d10.c"
 #endif
 
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
+#include "../gfx/common/d3d_builtin.c"
+#endif
 #if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12) \
  || (defined(HAVE_D3D9) && defined(HAVE_HLSL))
 #include "../gfx/common/d3dcompiler_common.c"
@@ -843,7 +856,7 @@ VIDEO DRIVER
 #include "../gfx/common/spirv_shaders.c"
 #endif
 
-#ifdef HAVE_VULKAN
+#if defined(HAVE_VULKAN) && !defined(HAVE_VULKAN_GRIFFIN_SEPARATE)
 #include "../gfx/drivers/vulkan.c"
 #endif
 
@@ -1010,7 +1023,6 @@ INPUT
 #include "../input/drivers_joypad/wiiu/hidpad_driver.c"
 #include "../input/drivers_joypad/wiiu/kpad_driver.c"
 #include "../input/drivers_joypad/wiiu/wpad_driver.c"
-#include "../input/drivers_joypad/wiiu/pad_functions.c"
 #elif defined(_XBOX)
 #include "../input/drivers/xdk_xinput_input.c"
 #ifdef _XBOX1
@@ -1406,6 +1418,8 @@ DRIVERS
 #include "../gfx/gfx_surface.c"
 #include "../gfx/gfx_surface_player.c"
 #include "../gfx/gfx_thumbnail.c"
+#include "../gfx/gfx_thumbnail_match.c"
+#include "../gfx/gfx_thumbnail_results.c"
 #include "../gfx/gfx_media_controls.c"
 #include "../gfx/gfx_media_display.c"
 #include "../gfx/gfx_media_player.c"
@@ -1509,6 +1523,14 @@ DYNAMIC
 /*============================================================
 CORES
 ============================================================ */
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+#if !defined(HAVE_FILTERS_BUILTIN) || !defined(HAVE_DSP_FILTER)
+/* The built-in equalizer already includes the FFT implementation. */
+#include "../libretro-common/audio/dsp_filters/fft/fft.c"
+#endif
+#include "../gfx/gfx_music_visualizer.c"
+#include "../gfx/gfx_music_player.c"
+#endif
 #ifdef HAVE_FFMPEG
 #include "../cores/libretro-ffmpeg/ffmpeg_core.c"
 #endif
@@ -1682,6 +1704,7 @@ RETROARCH
 ============================================================ */
 #include "../retroarch.c"
 #include "../runloop.c"
+#include "../calendar_time.c"
 #ifdef HAVE_RUNAHEAD
 #include "../runahead.c"
 #endif
@@ -1762,11 +1785,15 @@ RECORDING
 #include "../record/record_android_capture_egl.c"
 #include "../record/record_android_capture_gl.c"
 #include "../record/record_android_capture_draw.c"
+#ifndef HAVE_PYROWAVE
 #include "../record/record_gpu_queue.c"
+#endif
 #include "../record/record_audio_queue.c"
 #endif
 #ifdef HAVE_RECORD_METAL
+#ifndef HAVE_PYROWAVE
 #include "../record/record_gpu_queue.c"
+#endif
 #include "../record/record_audio_queue.c"
 #include "../record/record_gpu_worker_vt.c"
 #include "../record/record_avfoundation_worker.c"
@@ -1781,6 +1808,59 @@ RECORDING
 #endif
 #ifdef HAVE_FFMPEG
 #include "../record/drivers/record_ffmpeg.c"
+#endif
+
+#ifdef HAVE_PYROWAVE
+#ifndef HAVE_NETWORKING
+#error PyroWave streaming requires networking
+#endif
+#include "../libretro-common/formats/pyrowave/rpyrowave.c"
+#include "../libretro-common/formats/pyrowave/rpyrowave_image.c"
+#include "../libretro-common/formats/pyrowave/rpyrowave_gpu.c"
+#include "../libretro-common/formats/pyrowave/rpyrowave_stream.c"
+#include "../libretro-common/net/rpyrowave_socket.c"
+#include "../record/record_gpu_queue.c"
+#include "../record/record_pyrowave_pcm.c"
+#include "../record/record_pyrowave_clock.c"
+#include "../record/record_pyrowave_audio_clock.c"
+#include "../record/record_pyrowave_session.c"
+#include "../record/record_pyrowave_connection.c"
+#include "../record/record_pyrowave_dispatch.c"
+#include "../record/record_pyrowave_source.c"
+#include "../record/record_pyrowave_source_d3d12.c"
+#include "../record/record_pyrowave_source_d3d11.c"
+#ifndef HAVE_RECORD_MEDIACODEC
+#include "../record/record_audio_tap.c"
+#endif
+#include "../record/record_pyrowave_video_link.c"
+#include "../record/drivers/record_pyrowave.c"
+#include "../record/record_pyrowave_receiver.c"
+#ifndef HAVE_MDNS
+#define HAVE_MDNS 1
+#endif
+#include "../libretro-common/net/net_mdns.c"
+#include "../libretro-common/net/net_mdns_socket.c"
+#include "../record/record_pyrowave_lan.c"
+#if (!defined(HAVE_OPENGLES) && (defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE))) || defined(HAVE_OPENGLES3)
+#include "../record/record_pyrowave_gl.c"
+#ifdef HAVE_OPENGL_CORE
+#include "../record/record_pyrowave_source_gl.c"
+#endif
+#endif
+#ifdef HAVE_VULKAN
+#include "../record/record_pyrowave_vulkan.c"
+#include "../record/record_pyrowave_source_vulkan.c"
+#endif
+#ifdef HAVE_D3D12
+#include "../record/record_pyrowave_d3d12.c"
+#endif
+#ifdef HAVE_D3D11
+#include "../record/record_pyrowave_d3d11.c"
+#endif
+#ifdef HAVE_METAL
+#include "../record/record_pyrowave_metal.c"
+#include "../record/record_pyrowave_metal_runtime.c"
+#endif
 #endif
 
 /*============================================================
@@ -1881,6 +1961,7 @@ DATA RUNLOOP
 #include "../tasks/task_file_transfer.c"
 #include "../tasks/task_nbio_slice.c"
 #include "../tasks/task_playlist_manager.c"
+#include "../tasks/task_pl_thumbnail_match.c"
 #include "../tasks/task_core_backup.c"
 #ifdef HAVE_TRANSLATE
 #include "../tasks/task_translation.c"
@@ -1923,6 +2004,7 @@ MENU
 #include "../gfx/widgets/gfx_widget_screenshot.c"
 #endif
 #include "../gfx/widgets/gfx_widget_volume.c"
+#include "../gfx/widgets/gfx_widget_camera_pip.c"
 #include "../gfx/widgets/gfx_widget_generic_message.c"
 #include "../gfx/widgets/gfx_widget_libretro_message.c"
 #include "../gfx/widgets/gfx_widget_progress_message.c"
@@ -1936,6 +2018,7 @@ MENU
 #ifdef HAVE_MENU
 #include "../menu/menu_str.c"
 #include "../menu/menu_driver.c"
+#include "../menu/menu_timedate.c"
 #include "../libretro-common/formats/subtitle/rsubtitle_vtt.c"
 #include "../libretro-common/formats/subtitle/rsubtitle_vtt_css.c"
 #include "../libretro-common/formats/subtitle/rsubtitle_vtt_css_tree.c"
@@ -2008,9 +2091,29 @@ DEPENDENCIES
 /* The built-in reader, and the codecs it calls directly. Huffman is not
  * optional: a version 5 map is Huffman-coded, so it is needed to open
  * an image at all. libchdr's own huffman is a different interface and
- * does not serve -- it exports huffman_*, this wants rhuff_*. */
+ * does not serve -- it exports huffman_*, this wants rhuff_*.
+ *
+ * Every codec rchd can call is already in this unit -- deflate and crc32
+ * always, rflac whenever HAVE_CHD is, rzstd with HAVE_RZSTD, r7z_lzma
+ * just below -- so the codecs are switched on here rather than in each
+ * console Makefile, which then needs only HAVE_CHD and HAVE_RCHD. */
+#ifndef HAVE_RCHD_DEFLATE
+#define HAVE_RCHD_DEFLATE 1
+#endif
+#ifndef HAVE_RCHD_LZMA
+#define HAVE_RCHD_LZMA 1
+#endif
+#ifndef HAVE_RCHD_FLAC
+#define HAVE_RCHD_FLAC 1
+#endif
+#if defined(HAVE_RZSTD) && !defined(HAVE_RCHD_ZSTD)
+#define HAVE_RCHD_ZSTD 1
+#endif
 #include "../libretro-common/encodings/encoding_huffman.c"
 #include "../libretro-common/formats/chd/rchd.c"
+/* rchd's LZMA codec, built here whether or not the 7z backend is. */
+#define GRIFFIN_HAVE_R7Z_LZMA 1
+#include "../libretro-common/formats/7z/r7z_lzma.c"
 #else
 #include "../libretro-common/formats/libchdr/libchdr_zlib.c"
 #include "../libretro-common/formats/libchdr/libchdr_bitstream.c"

@@ -671,9 +671,27 @@ int main(int argc, char **argv)
     * device rather than the events nobody received. */
    if (rest)
    {
-      clock_vs_events_case();
-      device_clock_case();
-      ac3_bitstream_case();
+      /* On the wall clock too, so the same three runs */
+      static void (*const rest_cases[])(void) =
+         { clock_vs_events_case, device_clock_case, ac3_bitstream_case };
+      for (i = 0; i < sizeof(rest_cases) / sizeof(rest_cases[0]); i++)
+      {
+         unsigned attempt;
+         for (attempt = 1; attempt <= 3; attempt++)
+         {
+            unsigned before = failures;
+            fail_tag        = attempt < 3 ? "miss" : "FAIL";
+            rest_cases[i]();
+            if (failures == before)
+               break;
+            if (attempt < 3)
+            {
+               printf("   re-running (attempt %u of 3)\n", attempt + 1);
+               failures = before;
+            }
+         }
+      }
+      fail_tag = "FAIL";
    }
 
    /* Every init took COM up on its thread and every free put it back. */

@@ -50,6 +50,11 @@ void *record_mediacodec_encoder_surface(record_mediacodec_encoder_t *encoder);
  * exact HDR static metadata. Format is borrowed until the next pump or free. */
 int record_mediacodec_encoder_pump(
       record_mediacodec_encoder_t *encoder, record_mediacodec_packet_t *packet);
+/* Worker only: blocks in the codec until it has output or @timeout_us
+ * passes, and keeps what it dequeued for the next pump. False, without
+ * waiting, when there is no output to wait for. */
+bool record_mediacodec_encoder_wait(
+      record_mediacodec_encoder_t *encoder, int64_t timeout_us);
 void *record_mediacodec_encoder_format(record_mediacodec_encoder_t *encoder);
 /* AAC configuration borrowed for the current output format. */
 bool record_mediacodec_encoder_audio_config(

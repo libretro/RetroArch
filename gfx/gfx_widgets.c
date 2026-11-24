@@ -134,7 +134,8 @@ static const gfx_widget_t* const widgets[] = {
    &gfx_widget_generic_message,
    &gfx_widget_libretro_message,
    &gfx_widget_progress_message,
-   &gfx_widget_load_content_animation
+   &gfx_widget_load_content_animation,
+   &gfx_widget_camera_pip
 };
 
 #if defined(HAVE_MENU) && defined(HAVE_XMB)
@@ -2465,11 +2466,35 @@ static void gfx_widgets_frame_state(void *data)
             video_st->data, output_dims, false, true);
 }
 
+/* The camera's picture alone, the widgets off: across the whole output,
+ * as the widgets are drawn */
+static void gfx_widgets_frame_camera_pip(video_frame_info_t *video_info)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   bool viewport                  = video_st->current_video
+      && video_st->current_video->set_viewport;
+   if (viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_info->dims, true, false);
+   gfx_widget_camera_pip.frame(video_info, NULL);
+   gfx_display_flush_batch(disp_get_ptr());
+   if (viewport)
+      video_st->current_video->set_viewport(
+            video_st->data, video_info->dims, false, true);
+}
+
 void gfx_widgets_frame(void *data)
 {
 #ifdef HAVE_THREADS
    dispgfx_widget_t *p_dispwidget = &dispwidget_st;
 #endif
+
+   /* The widgets off: the camera's picture is all this pass draws */
+   if (((video_frame_info_t*)data)->camera_pip_only)
+   {
+      gfx_widgets_frame_camera_pip((video_frame_info_t*)data);
+      return;
+   }
 
 #ifdef HAVE_THREADS
    /* A frame the wrapper already had queued still says the widgets
@@ -3141,7 +3166,7 @@ void gfx_widgets_worker_step(void *data,
    }
    /* What the frame carried, not what the setting says now: this runs
     * on the video thread under the threaded wrapper. */
-   gfx_animation_update_widgets(cpu_features_get_time_usec(),
+   gfx_animation_update_widgets(video_info->frame_time,
          video_info->menu_ticker_speed,
          widget_dims);
    /* What the frame carried, not the settings the main thread writes:

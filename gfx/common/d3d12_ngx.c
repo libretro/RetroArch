@@ -20,6 +20,7 @@
 #endif
 #include <stdlib.h>
 #include <string.h>
+#include <compat/strl.h>
 
 #include <retro_miscellaneous.h>
 #include <features/features_cpu.h>
@@ -55,6 +56,12 @@ struct d3d12_ngx
    ngx_parameter_t *params;
    ngx_handle_t *feature;
    ID3D12Device *device;
+   unsigned prepare_kind, prepare_quality, prepare_flags;
+   unsigned prepare_out_dims, prepare_max_dims, prepare_nr;
+   DXGI_FORMAT prepare_format;
+   bool defer_create;
+   bool nr_checked;
+   char runtime_dir[DIR_MAX_LENGTH];
    /* What Init was given, alive until after Shutdown: NGX keeps
     * reading it */
    wchar_t *wdir;
@@ -149,6 +156,7 @@ d3d12_ngx_t *d3d12_ngx_init(ID3D12Device *device, const char *dlss_dir)
       return NULL;
    }
    ngx_utf8_to_wide(ngx->wdir, DIR_MAX_LENGTH, dlss_dir ? dlss_dir : "");
+   strlcpy(ngx->runtime_dir, dlss_dir ? dlss_dir : "", sizeof(ngx->runtime_dir));
    ngx->paths[0]              = ngx->wdir;
    ngx->info.path_list.path   = ngx->paths;
    ngx->info.path_list.length = 1;
@@ -201,19 +209,7 @@ d3d12_ngx_t *d3d12_ngx_init(ID3D12Device *device, const char *dlss_dir)
       video_upscaler_note_optiscaler();
       RARCH_LOG("[D3D12] Temporal Upscaler: NGX answered by OptiScaler.\n");
    }
-   else if (ngx_dlssnr_feature_in(dlss_dir ? dlss_dir : ""))
-   {
-      /* What the core says of Neural Rendering: a core without it has
-       * no such capability */
-      int nr = 0;
-      if (     NGX_FAILED(lib->param.get_i(ngx->caps, NGX_PARAM_DLSSNR_AVAILABLE, &nr))
-            || !nr)
-      {
-         ngx->nr_unsupported = true;
-         video_upscaler_note_nr(false);
-         RARCH_WARN("[D3D12] Temporal Upscaler: DLSS Neural Rendering needs a newer NVIDIA driver.\n");
-      }
-   }
+   video_upscaler_reset_nr_status();
    RARCH_LOG("[D3D12] Temporal Upscaler: DLSS Super Resolution ready in %u ms.\n",
          (unsigned)((cpu_features_get_time_usec() - start) / 1000));
    return ngx;
@@ -488,22 +484,26 @@ static bool d3d12_ngx_create_output(d3d12_ngx_t *ngx, DXGI_FORMAT format,
 
 /* NGX unloads its feature libraries at every shutdown: kept, a device
  * made again (content loaded, the driver restarted) finds them in */
-static void d3d12_ngx_keep_features(void)
-{
-   char dir[DIR_MAX_LENGTH];
-   video_upscaler_dir(VIDEO_TEMPORAL_UPSCALER_DLSS, dir, sizeof(dir));
-   ngx_lib_keep_features(dir);
-}
-
 static bool d3d12_ngx_create_feature(d3d12_ngx_t *ngx,
       ID3D12GraphicsCommandList *cmd, DXGI_FORMAT format, unsigned quality,
-      unsigned flags, unsigned out_dims, unsigned max_dims)
+      unsigned flags, unsigned out_dims, unsigned max_dims, unsigned nr)
 {
    const ngx_lib_t *lib = ngx->lib;
    ngx_parameter_t *p   = ngx->params;
    ngx_result_t res;
    retro_time_t start;
 
+   if (ngx->defer_create)
+   {
+      ngx->prepare_kind     = 1;
+      ngx->prepare_format   = format;
+      ngx->prepare_quality  = quality;
+      ngx->prepare_flags    = flags;
+      ngx->prepare_out_dims = out_dims;
+      ngx->prepare_max_dims = max_dims;
+      ngx->prepare_nr       = nr;
+      return false;
+   }
    d3d12_ngx_retire(ngx);
    if (!d3d12_ngx_create_output(ngx, format, out_dims, &ngx->out_texture))
    {
@@ -541,7 +541,7 @@ static bool d3d12_ngx_create_feature(d3d12_ngx_t *ngx,
    ngx->feature_flags    = flags;
    ngx->feature_quality  = NGX_MODE_FEATURE(quality);
    ngx->reset_pending    = true;
-   d3d12_ngx_keep_features();
+   ngx_lib_keep_feature(ngx->runtime_dir, NGX_FEATURE_SUPER_SAMPLING);
    RARCH_LOG("[D3D12] Temporal Upscaler: DLSS feature up to %ux%u -> %ux%u (%s%s), flags 0x%x, in %u ms.\n",
          VIDEO_SCALE_W(max_dims), VIDEO_SCALE_H(max_dims),
          VIDEO_SCALE_W(out_dims), VIDEO_SCALE_H(out_dims),
@@ -568,6 +568,27 @@ static bool d3d12_ngx_nr_create(d3d12_ngx_t *ngx,
    ngx_result_t res;
    retro_time_t start;
 
+   if (ngx->defer_create)
+   {
+      ngx->prepare_kind     = 2;
+      ngx->prepare_format   = format;
+      ngx->prepare_out_dims = dims;
+      ngx->prepare_nr       = nr;
+      return false;
+   }
+   if (!ngx->nr_checked)
+   {
+      int available = 0;
+      ngx->nr_checked = true;
+      if (NGX_FAILED(lib->param.get_i(ngx->caps, NGX_PARAM_DLSSNR_AVAILABLE, &available))
+            || !available)
+      {
+         ngx->nr_unsupported = true;
+         video_upscaler_note_nr(false);
+         RARCH_WARN("[D3D12] Temporal Upscaler: DLSS Neural Rendering needs a newer NVIDIA driver.\n");
+         return false;
+      }
+   }
    d3d12_ngx_nr_retire(ngx);
    if (!ngx->nr_params && NGX_FAILED(lib->d3d12.allocate_parameters(&ngx->nr_params)))
    {
@@ -627,7 +648,7 @@ static bool d3d12_ngx_nr_create(d3d12_ngx_t *ngx,
    ngx->nr_pending_frames = 0;
    ngx->nr_format         = format;
    ngx->nr_reset          = true;
-   d3d12_ngx_keep_features();
+   ngx_lib_keep_feature(ngx->runtime_dir, NGX_FEATURE_DLSS_NR);
    RARCH_LOG("[D3D12] Temporal Upscaler: DLSS Neural Rendering feature at %ux%u, in %u ms.\n",
          VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims),
          (unsigned)((cpu_features_get_time_usec() - start) / 1000));
@@ -635,6 +656,55 @@ static bool d3d12_ngx_nr_create(d3d12_ngx_t *ngx,
 }
 
 #define D3D12_NGX_RES(img) ((ID3D12Resource*)(uintptr_t)(img)->image)
+
+void d3d12_ngx_defer(d3d12_ngx_t *ngx)
+{
+   if (ngx)
+      ngx->defer_create = true;
+}
+
+bool d3d12_ngx_prepare_pending(d3d12_ngx_t *ngx)
+{
+   return ngx && ngx->prepare_kind != 0;
+}
+
+void d3d12_ngx_cancel_prepare(d3d12_ngx_t *ngx)
+{
+   if (ngx->prepare_kind == 1)
+   {
+      ngx->failed_out_dims = ngx->prepare_out_dims;
+      ngx->failed_quality  = ngx->prepare_quality;
+   }
+   else if (ngx->prepare_kind == 2)
+   {
+      ngx->nr_failed_word = ngx->prepare_nr;
+      ngx->nr_failed_dims = ngx->prepare_out_dims;
+   }
+   ngx->prepare_kind = 0;
+}
+
+void d3d12_ngx_prepare(d3d12_ngx_t *ngx, ID3D12GraphicsCommandList * cmd)
+{
+   ngx->defer_create = false;
+   if (ngx->prepare_kind == 1)
+   {
+      bool created = d3d12_ngx_create_feature(ngx, cmd, ngx->prepare_format,
+            ngx->prepare_quality, ngx->prepare_flags,
+            ngx->prepare_out_dims, ngx->prepare_max_dims, ngx->prepare_nr);
+      /* Both features can record setup before either evaluates a frame. */
+      if (created && (ngx->prepare_nr & VIDEO_UPSCALER_NR_ON)
+            && !ngx->nr_feature && !ngx->nr_unsupported
+            && !(ngx->nr_failed_word == ngx->prepare_nr
+               && ngx->nr_failed_dims == ngx->prepare_out_dims))
+         d3d12_ngx_nr_create(ngx, cmd, ngx->prepare_format,
+               ngx->prepare_out_dims, ngx->prepare_nr);
+   }
+   else if (ngx->prepare_kind == 2)
+      d3d12_ngx_nr_create(ngx, cmd, ngx->prepare_format,
+            ngx->prepare_out_dims, ngx->prepare_nr);
+   ngx->prepare_kind = 0;
+   ngx->defer_create = true;
+}
 
 /* Neural Rendering over @io, Super Resolution's output (a copy source),
  * recorded into @cmd: @io names its output on success. The core's
@@ -812,7 +882,7 @@ bool d3d12_ngx_upscale(d3d12_ngx_t *ngx, ID3D12GraphicsCommandList *cmd,
        || ngx->out_format != color->format)
    {
       if (!d3d12_ngx_create_feature(ngx, cmd, color->format, quality,
-               flags, out_dims, max_dims))
+               flags, out_dims, max_dims, nr))
          return false;
    }
 

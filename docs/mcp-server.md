@@ -143,6 +143,15 @@ goes on into the next; where nothing maps the rest it stops there and
 says so, `TRUNCATED 2` after the bytes, given as `truncated: true,
 read: 2`.
 
+`READ_CORE_MEMORY 47e 18 4a2 18 568 18` reads several ranges in one
+request (`more: "4a2 18 568 18"` over MCP), up to sixteen and 16384
+bytes in all: a line for each, in the order asked, each with its own
+`TRUNCATED` after it where it was cut short. The record's fields are
+the first range's, and `ranges` gives every one, the first too, as
+`{"address", "bytes"}` with `truncated` and `read` where cut short.
+Where nothing maps one of them, its line alone is the answer, as a
+single range's is.
+
 ## Results that are rows
 
 The replies that are lines of tab-separated fields - `OPTION`,
@@ -446,7 +455,9 @@ its place in the list when its address changes; with nothing watched
 it answers `WATCH none`. Values are decimal, 0 to 255 - or to 65535
 for a `high:low` watch - as `RUN_UNTIL` takes them; addresses are hexadecimal. A label is up to 15 characters,
 with no tab or newline in it. `x 6d:86` watches two bytes as one value,
-high:low, as conditions read them. Sixteen at once. Each is checked when it is
+high:low, as conditions read them. Sixteen at once, counted on the
+list the request leaves: `WATCH lives 4d e13h off` with sixteen watched
+adds one and drops one. Each is checked when it is
 set - an address nothing maps is refused there -
 and read afresh on every reply, so a core that moves its memory is
 followed; one that stops mapping a watched address answers `none` for
@@ -473,6 +484,14 @@ x	7e0086	52
 VALUE 5
 ```
 
+`<address> - <address>` compares the first's value less the second's,
+signed, each one byte or `high:low`: `485 - 47e <= 32` waits until an
+enemy at x `485` is no more than 32 to the right of the player at
+`47e`, walking in until it is in range. The value may be below zero, from -255 to 255, or -65535 to
+65535 where either side is `high:low`, and `VALUE` answers the
+difference, `VALUE -12`. Both addresses must be mapped, and a mask is
+refused on one.
+
 Where a client would otherwise run a few frames, read the byte and go
 round again, this is one request. The address is the kind
 `GET_MEMORY_MAP` gives and `READ_CORE_MEMORY` takes, and one nothing
@@ -493,7 +512,11 @@ told it failed.
 step is `run <frames>`, `press <player> <controls> <frames>`, `until
 <condition>` or `checkpoint`, in order; up to four `stop <condition>`
 entries anywhere in the list end it after any frame where one holds - a
-death, the level's end - so neither plays out the rest. `checkpoint`
+death, the level's end - so neither plays out the rest. `stop becomes
+<condition>` ends it only after a frame where the condition starts to
+hold: one already true when the list starts - `stop becomes 412 == 4`
+while the player is still reeling - waits for it to stop holding and
+hold again, rather than ending the list at its first frame. `checkpoint`
 keeps the state `STATE rollback` returns to, where the list has got to,
 so a stretch can mark its own retry point:
 

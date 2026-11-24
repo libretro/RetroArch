@@ -32,6 +32,22 @@ bool slang_compile_builtin(const char *source, bool fragment,
    return *blob && *text;
 }
 bool slang_compile_remapped(void) { return false; }
+unsigned test_colour_compiles;
+bool test_colour_refused;
+bool slang_compile_colour(const char *path,
+      const uint32_t *vs, size_t vs_words,
+      const uint32_t *fs, size_t fs_words, bool source,
+      const void *target, int *verdict,
+      struct slang_blob **vb, struct slang_blob **fb, char **vt, char **ft)
+{
+   (void)path; (void)vs; (void)vs_words; (void)fs; (void)fs_words;
+   (void)source; (void)target;
+   test_colour_compiles++;
+   *verdict = test_colour_refused ? 2 : 0;
+   *vb = *fb = NULL;
+   *vt = *ft = NULL;
+   return true;
+}
 void rslc_result_free(void *r) { (void)r; }
 
 void RARCH_LOG(const char *fmt, ...)  { (void)fmt; }
@@ -103,12 +119,14 @@ void glBindTexture(void) { }
 void glClear(void) { }
 void glClearColor(void) { }
 void glColorMask(void) { }
+void glCopyTexSubImage2D(void) { }
 void glDeleteTextures(void) { }
 void glDisable(void) { }
 void glDrawArrays(void) { }
 void glEnable(void) { }
 void glGenTextures(void) { }
 unsigned glGetError(void) { return 0; }
+void glGetIntegerv(unsigned pname, int *v) { (void)pname; *v = 0; }
 void glPixelStorei(void) { }
 void glScissor(void) { }
 void glTexParameteri(void) { }

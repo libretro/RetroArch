@@ -151,6 +151,7 @@ struct scaler_ctx
    enum scaler_type scaler_type;
 
    bool unscaled;
+   bool streaming; /* Tap-sized workspace; use only scale_stream_rows. */
 };
 
 bool scaler_ctx_gen_filter(struct scaler_ctx *ctx);
@@ -167,6 +168,45 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx);
  **/
 void scaler_ctx_scale(struct scaler_ctx *ctx,
       void *output, const void *input);
+
+/* ARGB8888 bilinear/sinc output, one borrowed row per callback in y order.
+ * Scratch holds out_width pixels, aliases no input/workspace, and is reused
+ * after each callback returns. Unscaled input rows are borrowed directly
+ * and need no scratch buffer. Keep input/context unchanged during callbacks.
+ * Unsupported contexts or inadequate scratch return false without callbacks. */
+typedef void (*scaler_row_callback_t)(void *user, const uint32_t *pixels,
+      unsigned width, unsigned y);
+bool scaler_ctx_scale_rows(struct scaler_ctx *ctx, uint32_t *scratch,
+      size_t scratch_bytes, const void *input,
+      scaler_row_callback_t callback, void *user);
+
+/* Filter caller-produced ARGB rows without an intermediate source image.
+ * source is called once per input row, in order; each aligned row contains
+ * in_width pixels and stays valid until the next source call. The filter
+ * consumes it before requesting the next row.
+ * All input loans finish before output callbacks start; scratch may therefore
+ * also back source rows. NULL/misaligned source rows return false without any
+ * output callbacks (the internal workspace may have been partially written).
+ * Other restrictions match scale_rows; unscaled contexts are unsupported.
+ * Keep the context unchanged throughout both callbacks. */
+typedef const uint32_t *(*scaler_row_source_t)(void *user, unsigned y);
+bool scaler_ctx_scale_rows_from(struct scaler_ctx *ctx, uint32_t *scratch,
+      size_t scratch_bytes, scaler_row_source_t source, void *source_user,
+      scaler_row_callback_t callback, void *user);
+
+/* ARGB bilinear/sinc streaming mode: allocate only the live vertical taps,
+ * never a whole horizontal frame. Unsupported tap counts/formats return false
+ * with an inert context; callers can retry ordinary filter generation.
+ * Streaming contexts must only be used with scale_stream_rows below. */
+bool scaler_ctx_gen_filter_stream(struct scaler_ctx *ctx);
+/* Inputs are requested in ascending order and consumed immediately; output
+ * callbacks interleave once their taps are ready. One scratch buffer may serve
+ * input and output. Callbacks must not change the context. A failed input loan
+ * returns false; output rows already delivered remain valid. No allocations
+ * or pixel copies occur while scaling; the cache is overwritten in place. */
+bool scaler_ctx_scale_stream_rows(struct scaler_ctx *ctx, uint32_t *scratch,
+      size_t scratch_bytes, scaler_row_source_t source, void *source_user,
+      scaler_row_callback_t callback, void *user);
 
 RETRO_END_DECLS
 

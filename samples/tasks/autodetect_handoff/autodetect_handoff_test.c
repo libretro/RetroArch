@@ -184,6 +184,10 @@ void input_config_set_device_display_name(unsigned port, const char *name) { }
 void input_config_set_device_joypad_driver(unsigned port,
       const char *driver) { }
 void input_config_set_device_phys(unsigned port, const char *phys) { }
+void input_config_set_device_ident(unsigned port, uint32_t ident,
+      const char *tag) { }
+uint32_t input_config_get_device_ident(unsigned port) { return 0; }
+const char *input_config_get_device_ident_tag(unsigned port) { return ""; }
 void input_config_set_device_pid(unsigned port, uint16_t pid) { }
 void input_config_set_device_vid(unsigned port, uint16_t vid) { }
 unsigned input_config_shared_ports(uint8_t *leader) { return 0; }

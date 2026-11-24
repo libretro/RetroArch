@@ -79,6 +79,7 @@ struct PlaylistEntry
    QString coreName;
    QString crc32;
    QString dbName;
+   QString thumbnailSystem; /* thumbnails/<system> folder */
    QString plName;
    QString plPath;
    unsigned index = 0;
@@ -583,16 +584,34 @@ private:
    FloatSpinBox *m_spinBox;
 };
 
+/* A bind: clicked, the menu captures it, and the keys pressed here
+ * meanwhile are handed to that capture. */
 class BindButton : public QPushButton
 {
    Q_OBJECT
 public:
    BindButton(rarch_setting_t *setting, QWidget *parent = 0);
    BindButton(msg_hash_enums enum_idx, QWidget *parent = 0);
+   ~BindButton();
+   /* Once a frame: ends the capture under way once the menu has. */
+   static void captureIterate(void);
+public slots:
+   void setDefault(void);
+   void clear(void);
+protected:
+   bool event(QEvent *event);
 private slots:
    void onClicked(bool checked);
 private:
+   void refresh(void);
+   void captureEnd(void);
    rarch_setting_t *m_setting;
+   /* the button capturing, frames waited for the menu to start it,
+    * whether it has, and whether the click opened the menu for it */
+   static BindButton *s_capture;
+   static unsigned s_captureWait;
+   static bool s_captureSeen;
+   static bool s_captureMenu;
 };
 
 class ColorButton : public QToolButton
@@ -935,6 +954,12 @@ public:
 public slots:
    void showDialog();
    void hideDialog();
+#ifdef HAVE_MENU
+   QListWidget *categoryListWidget() const;
+   QWidget *categoryPagesWidget() const;
+   void loadCategory(int index);
+   void applyCurrentCategory();
+#endif
 private slots:
    void onRejected();
 protected:
@@ -952,6 +977,9 @@ private:
    QVector<OptionsCategory*> m_categoryList;
    QListWidget *m_optionsList;
    QStackedLayout *m_optionsStack;
+   QWidget *m_categoryPagesWidget;
+   QLabel *m_headerLabel;
+   int m_currentCategoryIndex;
 #else
    ViewOptionsWidget *m_viewOptionsWidget;
 #endif
@@ -1476,6 +1504,38 @@ class DirectoryCategory : public OptionsCategory
 public:
    DirectoryCategory(QWidget *parent);
    QVector<OptionsPage*> pages();
+};
+
+/************************************************************
+   Information
+************************************************************/
+class InformationPage;
+
+class InformationCategory : public OptionsCategory
+{
+public:
+   InformationCategory(QWidget *parent);
+   QVector<OptionsPage*> pages();
+   void load();
+
+private:
+   InformationPage *m_page;
+};
+
+class InformationPage : public OptionsPage
+{
+public:
+   InformationPage(QObject *parent = nullptr);
+   QWidget *widget();
+   void load();
+
+private:
+   QWidget *m_widget;
+   QGroupBox *m_systemGroup;
+   QGroupBox *m_aboutGroup;
+   QGroupBox *m_displayGroup;
+   QGroupBox *m_inputGroup;
+   QGroupBox *m_networkGroup;
 };
 
 static inline QWidget *create_widget(enum menu_displaylist_ctl_state name)

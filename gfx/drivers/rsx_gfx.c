@@ -52,6 +52,8 @@
 #include "../../retroarch.h"
 #include <libretro_rsx.h>
 #ifdef HAVE_THREADS
+#include <retro_atomic.h>
+#include <rthreads/retro_eventcount.h>
 #include "../video_thread_wrapper.h"
 #endif
 #include "../display_servers/dispserv_ps3.h"
@@ -117,6 +119,8 @@ typedef struct
    u32 mag_filter;
    u32 width;
    u32 height;
+   /* RSX_FRAME_LABEL's value once the last draw sampling it is done */
+   u32 fence;
 } rsx_texture_t;
 
 #ifdef HAVE_OVERLAY
@@ -155,6 +159,8 @@ typedef struct
    gcmSurface surface[RSX_MAX_BUFFERS];
 #endif
    rsx_texture_t texture[RSX_MAX_TEXTURES];
+   /* Written to RSX_FRAME_LABEL after each draw of a frame texture */
+   u32 frame_serial;
    rsx_texture_t menu_texture;
    /* Sampled by a quad drawn with no texture: solid colour */
    rsx_texture_t *white_texture;
@@ -293,6 +299,7 @@ static bool rsx_get_hw_render_interface(void *data,
 
 #define RSX_RETIRED_MEMORY_COUNT 256 /* power of two */
 #define RSX_RETIRED_MEMORY_LABEL 199
+#define RSX_FRAME_LABEL          198
 static struct
 {
    void *memory;
@@ -331,14 +338,12 @@ static void rsx_fence_retired_memory(gcmContextData *context)
    rsx_retired_memory_queued = false;
 }
 
-static bool rsx_retire_hw_memory(void *data, void *memory)
+/* @memory freed once the RSX is past every command issued before the
+ * next frame's fence; on the thread that draws the frames. False when
+ * the queue is still full after collecting. */
+static bool rsx_retire_memory(void *memory)
 {
    unsigned i;
-   rsx_t *rsx = (rsx_t*)data;
-   if (!memory)
-      return true;
-   if (!rsx || !rsx->hw_render || rsx->video_info.is_threaded)
-      return false;
    if (rsx_retired_memory_tail - rsx_retired_memory_head
          == RSX_RETIRED_MEMORY_COUNT)
    {
@@ -352,6 +357,36 @@ static bool rsx_retire_hw_memory(void *data, void *memory)
    rsx_retired_memory[i].fence  = rsx_retired_memory_serial + 1;
    rsx_retired_memory_queued    = true;
    return true;
+}
+
+/* Retired from the thread that draws the frames, or freed at once
+ * after the RSX finishes everything issued: what a texture load or
+ * unload made on another thread under the threaded wrapper does */
+static void rsx_release_memory(rsx_t *rsx, void *memory)
+{
+#ifdef HAVE_THREADS
+   bool here = !rsx || !rsx->video_info.is_threaded
+      || video_thread_is_video_thread();
+#else
+   bool here = true;
+#endif
+   if (here && rsx_retire_memory(memory))
+      return;
+   if (rsx && rsx->context)
+      rsxFinish(rsx->context, 0);
+   rsxFree(memory);
+}
+
+/* The core's own retirement comes from its thread: refused under the
+ * threaded wrapper, where the frames are drawn on another */
+static bool rsx_retire_hw_memory(void *data, void *memory)
+{
+   rsx_t *rsx = (rsx_t*)data;
+   if (!memory)
+      return true;
+   if (!rsx || !rsx->hw_render || rsx->video_info.is_threaded)
+      return false;
+   return rsx_retire_memory(memory);
 }
 
 #define rsx_context_bind_hw_render(rsx, enable) \
@@ -1277,11 +1312,8 @@ static bool rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
     * (a taller frame, a wider pitch, 16 to 32 bits) gets a new one */
    if (texture->data && bytes > texture->size)
    {
-      /* The RSX may still be reading it, as in
-       * rsx_unload_texture_internal */
-      if (rsx && rsx->context)
-         rsxFinish(rsx->context, 0);
-      rsxFree(texture->data);
+      /* The RSX may still be reading it: freed once it is past it */
+      rsx_release_memory(rsx, texture->data);
       texture->data = NULL;
       texture->size = 0;
    }
@@ -1298,7 +1330,9 @@ static bool rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
    }
 
    texbuffer              = (u8*)texture->data;
-   memcpy(texbuffer, data, height * pitch);
+   /* A frame the core wrote into this texture, lent, is there already */
+   if (texbuffer != data)
+      memcpy(texbuffer, data, height * pitch);
 
    texture->tex.format    = (rgb32
                             ? GCM_TEXTURE_FORMAT_A8R8G8B8 :
@@ -1479,11 +1513,30 @@ error:
    return 0;
 }
 
+#ifdef HAVE_THREADS
+/* Flips queued, by the thread that draws, and flips done, counted by the
+ * flip handler, which notifies the eventcount the flip wait parks on */
+static retro_eventcount_t rsx_flip_ec;
+static retro_atomic_int_t rsx_flips_done;
+static int                rsx_flips_asked;
+static bool               rsx_flip_ec_live;
+
+static void rsx_flip_handler(const u32 head)
+{
+   (void)head;
+   retro_atomic_inc_int(&rsx_flips_done);
+   retro_eventcount_notify(&rsx_flip_ec);
+}
+#endif
+
 static int rsx_flip(gcmContextData *context, s32 buffer)
 {
    gcmResetFlipStatus();
    if (gcmSetFlip(context, buffer) == 0)
    {
+#ifdef HAVE_THREADS
+      rsx_flips_asked++;
+#endif
       rsxFlushBuffer (context);
       return 1;
    }
@@ -1516,10 +1569,31 @@ static void rsx_wait_rsx_idle(gcmContextData *context)
   rsx_wait_finish(context, sLabelVal);
 }
 
+/* Until every flip queued has happened: parked on the flip handler's
+ * eventcount, under a watchdog that rereads the flip status */
 static void rsx_wait_flip(void)
 {
+#ifdef HAVE_THREADS
+   while (     rsx_flip_ec_live
+         &&    retro_atomic_load_acquire_int(&rsx_flips_done)
+             - rsx_flips_asked < 0)
+   {
+      int key = retro_eventcount_prepare_wait(&rsx_flip_ec);
+      if (   retro_atomic_load_acquire_int(&rsx_flips_done)
+           - rsx_flips_asked >= 0)
+      {
+         retro_eventcount_cancel_wait(&rsx_flip_ec);
+         break;
+      }
+      if (     !retro_eventcount_commit_wait_timeout(&rsx_flip_ec, key,
+                  100000)
+            && gcmGetFlipStatus() == 0)
+         break;
+   }
+#else
   while(gcmGetFlipStatus() != 0)
     usleep(200);  /* Sleep, to not stress the cpu. */
+#endif
 }
 
 static gcmContextData *rsx_init_screen(rsx_t* gcm)
@@ -1592,6 +1666,17 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
       goto error;
 
    gcmSetFlipMode(GCM_FLIP_VSYNC); /* Wait for VSYNC to flip */
+#ifdef HAVE_THREADS
+   if (!rsx_flip_ec_live)
+   {
+      if (!retro_eventcount_init(&rsx_flip_ec))
+         goto error;
+      retro_atomic_int_init(&rsx_flips_done, 0);
+      rsx_flips_asked  = 0;
+      rsx_flip_ec_live = true;
+      gcmSetFlipHandler(rsx_flip_handler);
+   }
+#endif
 
    gcm->depth_pitch  = res.width * sizeof(u32);
    if (!(gcm->depth_buffer = (u32 *)rsxMemalign(64, (res.height * gcm->depth_pitch))))  /* Beware, if was (res.height * gcm->depth_pitch) * 2 */
@@ -1830,6 +1915,7 @@ static void* rsx_init(const video_info_t* video)
    {
       *(volatile u32*)gcmGetLabelAddress(RSX_FONT_VERTEX_LABEL)    = 0;
       *(volatile u32*)gcmGetLabelAddress(RSX_RETIRED_MEMORY_LABEL) = 0;
+      *(volatile u32*)gcmGetLabelAddress(RSX_FRAME_LABEL)          = 0;
       rsx_labels_initialized = true;
    }
    rsx->hw_render = video_driver_get_hw_context()->context_type
@@ -1913,18 +1999,9 @@ static void rsx_unload_texture_internal(void *data, uintptr_t handle)
       if (texture->data)
       {
          rsx_t *rsx = (rsx_t *)data;
-         /* Drain the RSX command queue before freeing texture
-          * memory.  The GPU may still be reading this memory for
-          * the current frame's draw.  rsxFinish blocks until all
-          * submitted commands complete — equivalent to
-          * vkQueueWaitIdle / D3D12 Signal+Wait.
-          *
-          * This was previously #if 0'd out, leaking every menu
-          * texture's RSX memory permanently.  On PS3 with 256MB
-          * RAM, menu navigation would eventually exhaust memory. */
-         if (rsx && rsx->context)
-            rsxFinish(rsx->context, 0);
-         rsxFree(texture->data);
+         /* The GPU may still be reading it for a frame in flight:
+          * freed once the RSX is past that frame */
+         rsx_release_memory(rsx, texture->data);
       }
       free(texture);
    }
@@ -2685,6 +2762,45 @@ static void rsx_draw_hw_image(rsx_t *gcm)
    rsx_draw_vertices(gcm);
 }
 
+/* After a draw sampling @texture: RSX_FRAME_LABEL takes the next serial
+ * once the RSX is past it, and the texture is free to write from then */
+static void rsx_fence_frame_texture(rsx_t *gcm, rsx_texture_t *texture)
+{
+   rsxSetWriteBackendLabel(gcm->context, RSX_FRAME_LABEL,
+         ++gcm->frame_serial);
+   texture->fence = gcm->frame_serial;
+}
+
+/* The frame texture the next frame goes into, once the RSX is past the
+ * last draw that sampled it and it holds the frame: a frame the core
+ * writes there is drawn without a copy. Not under the threaded wrapper,
+ * whose lends are its own, nor for a hardware core. */
+static bool rsx_get_current_software_framebuffer(void *data,
+      struct retro_framebuffer *fb)
+{
+   rsx_t         *gcm = (rsx_t*)data;
+   rsx_texture_t *t;
+   size_t         pitch;
+   u32            done;
+
+   if (     !gcm || !fb || !fb->width || !fb->height
+         || gcm->hw_render || gcm->video_info.is_threaded)
+      return false;
+   pitch = (size_t)fb->width * (gcm->rgb32 ? 4 : 2);
+   t     = &gcm->texture[(gcm->tex_index + 1) % RSX_MAX_TEXTURES];
+   if (!t->data || pitch * fb->height > t->size)
+      return false;
+   done  = *(volatile u32*)gcmGetLabelAddress(RSX_FRAME_LABEL);
+   if ((int32_t)(done - t->fence) < 0)
+      return false;
+   fb->data         = t->data;
+   fb->pitch        = pitch;
+   fb->format       = gcm->rgb32
+      ? RETRO_PIXEL_FORMAT_XRGB8888 : RETRO_PIXEL_FORMAT_RGB565;
+   fb->memory_flags = RETRO_MEMORY_TYPE_CACHED;
+   return true;
+}
+
 static bool rsx_frame(void* data, const void* frame,
       unsigned dims,
       uint64_t frame_count,
@@ -2811,6 +2927,7 @@ static bool rsx_frame(void* data, const void* frame,
           * shouldn't this be RSX_SHADER_STOCK_BLEND instead? */
          rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
          rsx_draw_vertices(gcm);
+         rsx_fence_frame_texture(gcm, &gcm->texture[gcm->tex_index]);
          draw = true;
       }
    }
@@ -2827,6 +2944,7 @@ static bool rsx_frame(void* data, const void* frame,
       {
          rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
          rsx_draw_vertices(gcm);
+         rsx_fence_frame_texture(gcm, &gcm->texture[gcm->tex_index]);
          draw = true;
       }
       /* Nothing cached: a cleared buffer goes out only to put up or
@@ -3172,7 +3290,7 @@ static const video_poke_interface_t rsx_poke_interface = {
    NULL, /* show_mouse */
    NULL, /* grab_mouse_toggle */
    NULL, /* get_current_shader */
-   NULL, /* get_current_software_framebuffer */
+   rsx_get_current_software_framebuffer,
    rsx_get_hw_render_interface,
    NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */

@@ -18,6 +18,7 @@
 #include "../../audio/audio_driver.h"
 #include "../../audio/audio_upmix.h"
 #include "../../configuration.h"
+#include "../../command.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
 #include "../../defaults.h"

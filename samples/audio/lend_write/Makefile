@@ -64,12 +64,20 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
+ifeq ($(PYROWAVE),1)
+CFLAGS += -DHAVE_PYROWAVE
+SOURCES_C += $(CORE_DIR)/record/record_audio_tap.c $(CORE_DIR)/record/record_pyrowave_clock.c $(CORE_DIR)/record/record_pyrowave_audio_clock.c
+TARGET := pyrowave_output_test
+SAMPLE_OBJDIR := obj-pyrowave
+OBJS := $(addprefix $(SAMPLE_OBJDIR)/,$(subst ../,__/,$(SOURCES_C:.c=.o)))
+else
 OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
+endif
 
 all: $(TARGET)
 
-lend_write_test.o: ../../../audio/audio_driver.c
-stubs_retroarch.o: ../pipeline_clocked/stubs_retroarch.c
+$(filter %lend_write_test.o,$(OBJS)): ../../../audio/audio_driver.c pyrowave_output_test.h
+$(filter %stubs_retroarch.o,$(OBJS)): ../pipeline_clocked/stubs_retroarch.c
 
 %.o: %.c
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<

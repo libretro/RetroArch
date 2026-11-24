@@ -46,6 +46,7 @@
 
 #include "../../config.def.h"
 #include "../../gfx/gfx_surface.h"
+#include "../../gfx/gfx_thumbnail_results.h"
 #ifdef HAVE_GFX_WIDGETS
 #include "../../gfx/gfx_widgets.h"
 #endif
@@ -67,6 +68,10 @@
 #include "../../core_info.h"
 #include "../../audio/audio_driver.h"
 #include "../../record/record_driver.h"
+#ifdef HAVE_PYROWAVE
+#include "../../record/record_pyrowave_lan.h"
+#include "../../record/record_pyrowave_receiver.h"
+#endif
 #include "../../frontend/frontend_driver.h"
 #include "../../defaults.h"
 #include "../../core_option_manager.h"
@@ -408,6 +413,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST;
       case ACTION_OK_DL_VIDEO_STEREO_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST;
+      case ACTION_OK_DL_VIDEO_GAME_SCREENS_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_VIDEO_GAME_SCREENS_SETTINGS_LIST;
+      case ACTION_OK_DL_VIDEO_HEADSET_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_VIDEO_HEADSET_SETTINGS_LIST;
       case ACTION_OK_DL_VIDEO_DLSS_NR_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_VIDEO_DLSS_NR_SETTINGS_LIST;
       case ACTION_OK_DL_VIDEO_OUTPUT_SETTINGS_LIST:
@@ -526,6 +535,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_PRIVACY_SETTINGS_LIST;
       case ACTION_OK_DL_MIDI_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_MIDI_SETTINGS_LIST;
+      case ACTION_OK_DL_CAMERA_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_CAMERA_SETTINGS_LIST;
       case ACTION_OK_DL_AUDIO_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST;
       case ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST:
@@ -540,8 +551,12 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_AUDIO_MIXER_SETTINGS_LIST;
       case ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_RETROPAD_BINDS_LIST;
+      case ACTION_OK_DL_INPUT_PORT_CONTROLLERS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_INPUT_PORT_CONTROLLERS_LIST;
       case ACTION_OK_DL_INPUT_CONTROLLERS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_CONTROLLERS_LIST;
+      case ACTION_OK_DL_INPUT_HEADSET_CONTROLS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_INPUT_HEADSET_CONTROLS_LIST;
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_INPUT_HOTKEY_BINDS_LIST;
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
@@ -1088,6 +1103,14 @@ int generic_action_ok_displaylist_push(
          info_path          = label;
          info_label         = MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST_STR;
          info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST;
+         dl_type            = DISPLAYLIST_GENERIC;
+         break;
+      case ACTION_OK_DL_VIDEO_SCREEN_SETTINGS_LIST:
+         info.type          = type;
+         info.directory_ptr = idx;
+         info_path          = label;
+         info_label         = MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST_STR;
+         info.enum_idx      = MENU_ENUM_LABEL_DEFERRED_VIDEO_SCREEN_SETTINGS_LIST;
          dl_type            = DISPLAYLIST_GENERIC;
          break;
       case ACTION_OK_DL_MUSIC:
@@ -1885,6 +1908,8 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_VIDEO_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_HDR_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_STEREO_SETTINGS_LIST:
+      case ACTION_OK_DL_VIDEO_GAME_SCREENS_SETTINGS_LIST:
+      case ACTION_OK_DL_VIDEO_HEADSET_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_DLSS_NR_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
       case ACTION_OK_DL_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST:
@@ -1950,6 +1975,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_DIRECTORY_SETTINGS_LIST:
       case ACTION_OK_DL_PRIVACY_SETTINGS_LIST:
       case ACTION_OK_DL_MIDI_SETTINGS_LIST:
+      case ACTION_OK_DL_CAMERA_SETTINGS_LIST:
       case ACTION_OK_DL_AUDIO_SETTINGS_LIST:
       case ACTION_OK_DL_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
       case ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST:
@@ -1958,7 +1984,9 @@ int generic_action_ok_displaylist_push(
 #endif
       case ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST:
       case ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST:
+      case ACTION_OK_DL_INPUT_PORT_CONTROLLERS_LIST:
       case ACTION_OK_DL_INPUT_CONTROLLERS_LIST:
+      case ACTION_OK_DL_INPUT_HEADSET_CONTROLS_LIST:
       case ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST:
       case ACTION_OK_DL_RECORDING_SETTINGS_LIST:
       case ACTION_OK_DL_PLAYLIST_SETTINGS_LIST:
@@ -2078,6 +2106,8 @@ static const ok_dl_map_t ok_dl_map[] = {
    { MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS, ACTION_OK_DL_VIDEO_SCALING_SETTINGS_LIST },
    { MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS, ACTION_OK_DL_VIDEO_HDR_SETTINGS_LIST },
    { MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS, ACTION_OK_DL_VIDEO_STEREO_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_GAME_SCREENS_SETTINGS, ACTION_OK_DL_VIDEO_GAME_SCREENS_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_HEADSET_SETTINGS, ACTION_OK_DL_VIDEO_HEADSET_SETTINGS_LIST },
    { MENU_ENUM_LABEL_VIDEO_DLSS_NR_SETTINGS, ACTION_OK_DL_VIDEO_DLSS_NR_SETTINGS_LIST },
    { MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS, ACTION_OK_DL_VIDEO_OUTPUT_SETTINGS_LIST },
    { MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS, ACTION_OK_DL_CRT_SWITCHRES_SETTINGS_LIST },
@@ -2091,8 +2121,12 @@ static const ok_dl_map_t ok_dl_map[] = {
    { MENU_ENUM_LABEL_PLAYLIST_SETTINGS, ACTION_OK_DL_PLAYLIST_SETTINGS_LIST },
    { MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST, ACTION_OK_DL_PLAYLIST_MANAGER_LIST },
    { MENU_ENUM_LABEL_RECORDING_SETTINGS, ACTION_OK_DL_RECORDING_SETTINGS_LIST },
+#ifdef HAVE_PYROWAVE
+   { MENU_ENUM_LABEL_PYROWAVE_DEVICES, ACTION_OK_DL_RECORDING_SETTINGS_LIST },
+#endif
    { MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS, ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST },
    { MENU_ENUM_LABEL_INPUT_CONTROLLERS, ACTION_OK_DL_INPUT_CONTROLLERS_LIST },
+   { MENU_ENUM_LABEL_INPUT_HEADSET_CONTROLS, ACTION_OK_DL_INPUT_HEADSET_CONTROLS_LIST },
    { MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS, ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST },
    { MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE, ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST },
    { MENU_ENUM_LABEL_ACCOUNTS_TWITCH, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST },
@@ -2153,6 +2187,7 @@ static const ok_dl_map_t ok_dl_map[] = {
    { MENU_ENUM_LABEL_DIRECTORY_SETTINGS, ACTION_OK_DL_DIRECTORY_SETTINGS_LIST },
    { MENU_ENUM_LABEL_PRIVACY_SETTINGS, ACTION_OK_DL_PRIVACY_SETTINGS_LIST },
    { MENU_ENUM_LABEL_MIDI_SETTINGS, ACTION_OK_DL_MIDI_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_CAMERA_SETTINGS, ACTION_OK_DL_CAMERA_SETTINGS_LIST },
    { MENU_ENUM_LABEL_CORE_MANAGER_LIST, ACTION_OK_DL_CORE_MANAGER_LIST },
 };
 
@@ -2752,7 +2787,13 @@ static int generic_action_ok(const char *path,
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
       case ACTION_OK_LOAD_VULKAN_DRIVER:
          flush_char = MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST_STR;
-         if (settings)
+         if (type == FILE_TYPE_VULKAN_DRIVER_SYSTEM)
+         {
+            if (settings && *settings->paths.path_vulkan_driver)
+               configuration_set_string(settings,
+                     settings->paths.path_vulkan_driver, "");
+         }
+         else if (settings)
          {
             configuration_set_string(settings,
                   settings->paths.path_vulkan_driver, action_path);
@@ -3870,7 +3911,7 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
       rarch_setting_t *setting     = NULL;
       bool                 ret     = false;
       struct menu_state *menu_st   = menu_state_get_ptr();
-      const char *label            = menu_st->input_dialog_kb_label;
+      const char *label            = input_driver_text_entry_label();
       settings_t *settings         = config_get_ptr();
       const char *dir_video_shader = settings->paths.directory_video_shader;
       const char *dir_menu_config  = settings->paths.directory_menu_config;
@@ -4147,7 +4188,7 @@ static void menu_input_st_string_cb_cheat_file_save_as(
    {
       rarch_setting_t *setting        = NULL;
       struct menu_state *menu_st      = menu_state_get_ptr();
-      const char *label               = menu_st->input_dialog_kb_label;
+      const char *label               = input_driver_text_entry_label();
       settings_t *settings            = config_get_ptr();
       const char *path_cheat_database = settings->paths.path_cheat_database;
       if (label && *label)
@@ -4379,7 +4420,7 @@ static void menu_input_st_string_cb_remap_file_save_as(
    {
       rarch_setting_t *setting        = NULL;
       struct menu_state *menu_st      = menu_state_get_ptr();
-      const char *label               = menu_st->input_dialog_kb_label;
+      const char *label               = input_driver_text_entry_label();
       if (label && *label)
          setting = menu_setting_find(label);
       if (setting)
@@ -4523,7 +4564,7 @@ static void menu_input_st_string_cb_config_file_save_as(
    {
       rarch_setting_t *setting        = NULL;
       struct menu_state *menu_st      = menu_state_get_ptr();
-      const char *label               = menu_st->input_dialog_kb_label;
+      const char *label               = input_driver_text_entry_label();
       if (label && *label)
          setting = menu_setting_find(label);
       if (setting)
@@ -4555,7 +4596,7 @@ static void menu_input_st_string_cb_override_file_save_as(
    {
       rarch_setting_t *setting        = NULL;
       struct menu_state *menu_st      = menu_state_get_ptr();
-      const char *label               = menu_st->input_dialog_kb_label;
+      const char *label               = input_driver_text_entry_label();
       const char *msg_str             = NULL;
       int ret                         = false;
       enum message_queue_category msg_cat = MESSAGE_QUEUE_CATEGORY_INFO;
@@ -4894,13 +4935,19 @@ static int action_ok_audio_run(const char *path,
    fill_pathname_join_special(combined_path, menu->scratch2_buf,
          menu->scratch_buf, sizeof(combined_path));
 
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (menu_driver_media_open(combined_path)) return 0;
+#endif
+
    /* TODO/FIXME - should become runtime optional */
 #ifdef HAVE_MPV
    return default_action_ok_load_content_with_core_from_menu(
          combined_path, CORE_TYPE_MPV);
-#else
+#elif defined(HAVE_FFMPEG)
    return default_action_ok_load_content_with_core_from_menu(
          combined_path, CORE_TYPE_FFMPEG);
+#else
+   return -1;
 #endif
 }
 
@@ -5131,6 +5178,38 @@ static int action_ok_start_recording(const char *path,
    command_event(CMD_EVENT_RECORD_INIT, NULL);
    return generic_action_ok_command(CMD_EVENT_RESUME);
 }
+
+#ifdef HAVE_PYROWAVE
+static int action_ok_pyrowave_send(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   (void)path; (void)type; (void)idx; (void)entry_idx;
+   if (!record_pyrowave_lan_send(label)) return -1;
+   return generic_action_ok_command(CMD_EVENT_RESUME);
+}
+static int action_ok_pyrowave_accept(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   (void)path; (void)label; (void)type; (void)idx; (void)entry_idx;
+   if (!record_pyrowave_receiver_consent(true)) return -1;
+   return generic_action_ok_command(CMD_EVENT_RESUME);
+}
+static int action_ok_pyrowave_decline(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   (void)path; (void)label; (void)type; (void)idx; (void)entry_idx;
+   return record_pyrowave_receiver_consent(false) ? 0 : -1;
+}
+static int action_ok_pyrowave_stop(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   (void)path; (void)label; (void)type; (void)idx; (void)entry_idx;
+   if (record_pyrowave_lan_sending()) command_event(CMD_EVENT_RECORD_DEINIT, NULL);
+   record_pyrowave_lan_stop();
+   record_pyrowave_receiver_stop();
+   return 0;
+}
+#endif
 
 static int action_ok_start_streaming(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
@@ -5890,8 +5969,6 @@ static const char *download_dir_for_transfer(
 {
    switch (enum_idx)
    {
-      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         return settings->paths.directory_thumbnails;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          return settings->paths.directory_core_assets;
       case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
@@ -5953,17 +6030,16 @@ static const char *download_dir_for_transfer(
 }
 
 /* The kinds of transfer whose destination is known at push time and
- * whose body is streamed straight to it.  These are the bundles - a
- * thumbnail pack, assets.zip, cheats.zip - that run to tens or
- * hundreds of megabytes: holding one in memory until the transfer
- * completes is a large contiguous allocation on top of everything the
- * menu already has, which on a console is what fails or starves the
- * GPU allocator.  The rest are small and keep the in-memory hand-off. */
+ * whose body is streamed straight to it.  These are the bundles -
+ * assets.zip, cheats.zip - that run to tens or hundreds of megabytes:
+ * holding one in memory until the transfer completes is a large
+ * contiguous allocation on top of everything the menu already has,
+ * which on a console is what fails or starves the GPU allocator.  The
+ * rest are small and keep the in-memory hand-off. */
 static bool download_streams_to_disk(enum msg_hash_enums enum_idx)
 {
    switch (enum_idx)
    {
-      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
       case MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD:
       case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
@@ -6288,9 +6364,6 @@ static int action_ok_download_generic(const char *path,
       case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
          path = FILE_PATH_SHADERS_CG_ZIP;
          break;
-      case MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD:
-         strlcpy(s, FILE_PATH_CORE_THUMBNAILPACKS_URL, sizeof(s));
-         break;
       default:
          strlcpy(s, network_buildbot_url, sizeof(s));
          break;
@@ -6509,7 +6582,6 @@ int action_ok_download_bundle(enum msg_hash_enums enum_idx)
 }
 
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_system_files_download, MENU_ENUM_LABEL_CB_CORE_SYSTEM_FILES_DOWNLOAD)
-DEFAULT_ACTION_OK_DOWNLOAD(action_ok_core_content_thumbnails, MENU_ENUM_LABEL_CB_CORE_THUMBNAILS_DOWNLOAD)
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_download_url, MENU_ENUM_LABEL_CB_DOWNLOAD_URL)
 #ifdef HAVE_LAKKA
 DEFAULT_ACTION_OK_DOWNLOAD(action_ok_lakka_download, MENU_ENUM_LABEL_CB_LAKKA_DOWNLOAD)
@@ -6691,7 +6763,9 @@ int action_ok_core_signature_check(const char *path,
                CMD_EVENT_CORE_SIGNATURE_CHECK_OFF);
          return action_ok_dialog_init(menu_st);
       case CORE_TRUST_TOGGLE_READ_ONLY:
-         msg = msg_hash_to_str(MSG_CORE_TRUST_READ_ONLY);
+         msg = msg_hash_to_str(core_trust_runtime_newer()
+               ? MSG_CORE_TRUST_NEWER
+               : MSG_CORE_TRUST_READ_ONLY);
          runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
                MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
          break;
@@ -7459,6 +7533,9 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_smb_client_settings_list, ACTION_OK
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_nfs_client_settings_list, ACTION_OK_DL_NFS_CLIENT_SETTINGS_LIST)
 #endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_user_binds_list, ACTION_OK_DL_USER_BINDS_LIST)
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_video_screen_settings_list, ACTION_OK_DL_VIDEO_SCREEN_SETTINGS_LIST)
+#endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST)
 #ifdef HAVE_LAKKA
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_eject_disc, ACTION_OK_DL_EJECT_DISC)
@@ -8847,7 +8924,6 @@ static int action_ok_start_core(const char *path,
       menu_st->driver_ctx->list_cache(menu_st->userdata,
             MENU_LIST_PLAIN, MENU_ACTION_NOOP);
 
-   path_clear(RARCH_PATH_BASENAME);
    if (!task_push_start_current_core(&content_info))
       return -1;
 
@@ -8902,7 +8978,6 @@ static int action_ok_contentless_core_run(const char *path,
    menu_st->contentless_core_ptr    = selection;
 
    /* Load and start core */
-   path_clear(RARCH_PATH_BASENAME);
    if (!task_push_load_contentless_core_from_menu(core_path))
    {
       if (retroarch_ctl(RARCH_CTL_IS_CORE_LOADED, (void*)core_path))
@@ -9226,6 +9301,19 @@ static int action_ok_input_plays_as_dropdown_box_list(const char *path,
       label, type,
       idx, entry_idx,
       ACTION_OK_DL_DROPDOWN_BOX_LIST_INPUT_PLAYS_AS);
+}
+
+static int action_ok_push_input_port_controllers_list(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char port_str[12];
+   /* the list reads its port from its path */
+   snprintf(port_str, sizeof(port_str), "%u", (unsigned)entry_idx);
+   return generic_action_ok_displaylist_push(
+      port_str, NULL,
+      label, type,
+      idx, entry_idx,
+      ACTION_OK_DL_INPUT_PORT_CONTROLLERS_LIST);
 }
 
 static int action_ok_input_plays_as_add_dropdown_box_list(const char *path,
@@ -9560,6 +9648,33 @@ int action_ok_core_lock(const char *path,
    return ret;
 }
 
+#ifdef HAVE_CORE_SIGNATURES
+static int action_ok_core_trust(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   const char *msg;
+   bool kept;
+   /* A row built before the trust changed shows what is so now */
+   menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                                    | MENU_ST_FLAG_PREVENT_POPULATE;
+   /* Does nothing else unless the core is Trusted by you */
+   if (!core_trust_runtime_forget(path))
+      return 0;
+   kept = core_trust_runtime_can_save();
+   msg  = msg_hash_to_str(kept
+         ? MSG_CORE_TRUST_FORGOTTEN
+         : MSG_CORE_TRUST_FORGOTTEN_CANT_SAVE);
+   runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, kept
+         ? MESSAGE_QUEUE_CATEGORY_INFO
+         : MESSAGE_QUEUE_CATEGORY_WARNING);
+   if (!kept)
+      core_trust_runtime_cant_save_told();
+   return 0;
+}
+#endif
+
 /* Do not declare this static - it is also used
  * in menu_cbs_left.c and menu_cbs_right.c */
 int action_ok_core_set_standalone_exempt(const char *path,
@@ -9658,6 +9773,9 @@ static int action_ok_core_delete(const char *path,
 #ifdef HAVE_CORE_LOAD_CHECK
    core_load_check_release_held();
 #endif
+#ifdef HAVE_CORE_SIGNATURES
+   core_trust_runtime_forget(core_path);
+#endif
 
    /* Delete core file */
 #if defined(ANDROID)
@@ -9726,6 +9844,7 @@ static int action_ok_delete_playlist(const char *path,
    path = playlist_get_conf_path(playlist);
 
    filestream_delete(path);
+   gfx_thumbnail_results_forget(path);
 
    if (menu_st->driver_ctx->environ_cb)
       menu_st->driver_ctx->environ_cb(MENU_ENVIRON_RESET_HORIZONTAL_LIST,
@@ -10075,6 +10194,15 @@ static int action_ok_smb_browse(const char *path,
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+   if (     cbs->enum_idx >= MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS
+         && cbs->enum_idx <= MENU_ENUM_LABEL_VIDEO_SCREEN_SETTINGS_LAST)
+   {
+      BIND_ACTION_OK(cbs, action_ok_push_video_screen_settings_list);
+      return 0;
+   }
+#endif
+
    if (cbs->enum_idx != MSG_UNKNOWN)
    {
       const char     *str = msg_hash_to_str(cbs->enum_idx);
@@ -10117,6 +10245,12 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       } temp_ok_list_t;
 
       static const temp_ok_list_t ok_list[] = {
+#ifdef HAVE_PYROWAVE
+         {MENU_ENUM_LABEL_PYROWAVE_SEND, action_ok_pyrowave_send},
+         {MENU_ENUM_LABEL_PYROWAVE_ACCEPT, action_ok_pyrowave_accept},
+         {MENU_ENUM_LABEL_PYROWAVE_DECLINE, action_ok_pyrowave_decline},
+         {MENU_ENUM_LABEL_PYROWAVE_STOP, action_ok_pyrowave_stop},
+#endif
          {MENU_ENUM_LABEL_QUICK_MENU_START_RECORDING,          action_ok_start_recording},
          {MENU_ENUM_LABEL_QUICK_MENU_START_STREAMING,          action_ok_start_streaming},
          {MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING,           action_ok_stop_recording},
@@ -10366,6 +10500,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_REMAP_FILE_REMOVE_GAME,              action_ok_remap_file_remove_game},
          {MENU_ENUM_LABEL_REMAP_FILE_RESET,                    action_ok_remap_file_reset},
          {MENU_ENUM_LABEL_INPUT_REMAP_FIND,                    action_ok_input_remap_find},
+         {MENU_ENUM_LABEL_INPUT_PORT_CONTROLLERS,              action_ok_push_input_port_controllers_list},
          {MENU_ENUM_LABEL_INPUT_PLAYS_AS_ADD,                  action_ok_input_plays_as_add_dropdown_box_list},
          {MENU_ENUM_LABEL_REMAP_FILE_FLUSH,                    action_ok_remap_file_flush},
          {MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD,                  action_ok_override_file},
@@ -10749,6 +10884,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             break;
 #ifdef HAVE_VULKAN_CUSTOM_DRIVER
          case FILE_TYPE_VULKAN_DRIVER:
+         case FILE_TYPE_VULKAN_DRIVER_SYSTEM:
             BIND_ACTION_OK(cbs, action_ok_vulkan_driver_load);
             break;
 #endif
@@ -10888,11 +11024,6 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
          case FILE_TYPE_DOWNLOAD_CORE_SYSTEM_FILES:
 #ifdef HAVE_NETWORKING
             BIND_ACTION_OK(cbs, action_ok_core_system_files_download);
-#endif
-            break;
-         case FILE_TYPE_DOWNLOAD_THUMBNAIL_CONTENT:
-#ifdef HAVE_NETWORKING
-            BIND_ACTION_OK(cbs, action_ok_core_content_thumbnails);
 #endif
             break;
          case FILE_TYPE_DOWNLOAD_PL_THUMBNAIL_CONTENT:
@@ -11150,6 +11281,9 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_CORE_SIGNATURES
          case MENU_SETTING_ACTION_CORE_SIGNATURE_CHECK:
             BIND_ACTION_OK(cbs, action_ok_core_signature_check);
+            break;
+         case MENU_SETTING_ACTION_CORE_TRUST:
+            BIND_ACTION_OK(cbs, action_ok_core_trust);
             break;
 #endif
          case MENU_SETTING_ACTION_CORE_SET_STANDALONE_EXEMPT:

@@ -542,6 +542,39 @@ int main(void)
       CHECK(retro_atomic_load_acquire_int(&stub_dsp_frees) == frees + 3,
             "dsp: a filter no pass runs was not freed at once");
    }
+   /* Quit releases the streaming owner before draining its feeder, but
+    * leaves voice infrastructure intact until normal driver teardown. */
+   {
+      unsigned releases = owner_frees;
+      int destroys = retro_atomic_load_acquire_int(&stub_sound_destroys);
+      fill_params(&params, slot);
+      params.state = AUDIO_STREAM_STATE_PLAYING_LOOPED;
+      CHECK(audio_driver_mixer_add_stream(&params), "shutdown: add playing stream");
+      audio_driver_mixer_shutdown();
+      CHECK(retro_atomic_load_acquire_int(&stub_sound_destroys) == destroys + 1 && !playing(),
+            "shutdown: stream owner or playing voice survived");
+      CHECK(!(AUDIO_FLAGS_GET(&audio_driver_st)
+               & (AUDIO_FLAG_MIXER_ACTIVE | AUDIO_FLAG_MIXER_INITED)),
+            "shutdown: mixer still accepts streams");
+      CHECK(audio_driver_st.mixer_streams[slot].state == AUDIO_STREAM_STATE_NONE,
+            "shutdown: stream slot retained");
+      params.buf_owner = dummy_wav;
+      params.buf_owner_free = counting_owner_free;
+      CHECK(!audio_driver_mixer_add_stream(&params) && owner_frees == releases + 1,
+            "shutdown: late stream accepted or owner leaked");
+      audio_driver_mixer_shutdown();
+      CHECK(owner_frees == releases + 1, "shutdown: owner released twice");
+      /* A decoder already being prepared when quit starts must not
+       * install its sound after the table has been shut down. */
+      AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_MIXER_INITED);
+      fill_params(&params, slot);
+      stub_load_hook = audio_driver_mixer_shutdown;
+      CHECK(!audio_driver_mixer_add_stream(&params),
+            "shutdown: in-progress load installed a sound");
+      stub_load_hook = NULL;
+      CHECK(retro_atomic_load_acquire_int(&stub_sound_destroys) == destroys + 2,
+            "shutdown: in-progress sound leaked");
+   }
    slock_free(audio_driver_st.state_lock);
    audio_driver_st.state_lock = NULL;
 

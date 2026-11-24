@@ -110,12 +110,15 @@ static int consume_one(void)
    return 1;   /* spurious wake; harmless */
 }
 
+/* force_symmetric: 1 tells the object after init that it has no
+ * barrier, 2 asks for the symmetric protocol at init */
 static int run_mode(const char *label, int rounds, int force_symmetric)
 {
    sthread_t *p;
    int r, lost = 0;
 
-   if (!retro_asym_eventcount_init(&g_ec))
+   if (!(force_symmetric == 2 ? retro_asym_eventcount_init_symmetric(&g_ec)
+            : retro_asym_eventcount_init(&g_ec)))
    {
       printf("  %s: init failed\n", label);
       return 0;
@@ -123,8 +126,14 @@ static int run_mode(const char *label, int rounds, int force_symmetric)
    /* The fallback is forced by the test, not by a hook in the primitive:
     * the object is simply told after init that it has no barrier, which
     * is what a multi-core console's init does for itself. */
-   if (force_symmetric)
+   if (force_symmetric == 1)
       g_ec.asymmetric = 0;
+   if (force_symmetric == 2 && retro_asym_eventcount_is_asymmetric(&g_ec))
+   {
+      printf("  %s: asked for symmetric, got asymmetric\n", label);
+      retro_asym_eventcount_free(&g_ec);
+      return 0;
+   }
    printf("  %s: object is %s\n", label,
           retro_asym_eventcount_is_asymmetric(&g_ec) ? "asymmetric" : "symmetric");
 
@@ -164,6 +173,7 @@ int main(void)
     * machine, so both protocols are exercised wherever this runs. */
    ok &= run_mode("natural",          20000, 0);
    ok &= run_mode("forced-symmetric", 20000, 1);
+   ok &= run_mode("init-symmetric",   20000, 2);
 
    printf(ok ? "asym_eventcount: ok\n" : "asym_eventcount: FAILED\n");
    return ok ? 0 : 1;

@@ -1376,6 +1376,10 @@ static void open_core_handler(ui_browser_window_state_t *state, bool result)
       return;
    if (!result)
       return;
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(state->result))
+      return;
+#endif
 
    path_set(RARCH_PATH_CORE, state->result);
 #ifdef HAVE_CORE_LOAD_CHECK
@@ -1416,6 +1420,10 @@ static void open_document_handler(
    else
 #endif
    {
+#ifdef HAVE_CORE_LOAD_CHECK
+      if (task_content_warning_waits(state->result))
+         return;
+#endif
       path_set(RARCH_PATH_CONTENT, state->result);
 
       if (core_name && *core_name)
@@ -1984,6 +1992,8 @@ ui_companion_driver_t ui_companion_cocoa = {
    NULL, /* iterate */
    ui_companion_cocoa_event_command,
    NULL, /* notify_refresh */
+   NULL, /* notify_thumbnails */
+   NULL, /* notify_core_updater_list */
    NULL, /* msg_queue_push */
    NULL, /* render_messagebox */
    ui_companion_cocoa_get_main_window,

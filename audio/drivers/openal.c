@@ -50,9 +50,9 @@
 
 /* AL_SOFT_events, declared here rather than through alext.h, which
  * Apple's framework does not ship. Resolved through alGetProcAddress()
- * at init, so a library without it (that framework, older builds)
- * takes the sleep-poll path below and nothing here refers to a symbol
- * it lacks. The mixer thread raises BUFFER_COMPLETED the moment a
+ * at init, so a library without it (that framework, which has its own
+ * notification below; older builds) does without and nothing here
+ * refers to a symbol it lacks. The mixer thread raises BUFFER_COMPLETED the moment a
  * queued buffer has played, which is the wake this driver otherwise
  * has to poll for. */
 #define AL_EVENT_TYPE_BUFFER_COMPLETED_SOFT 0x19A4
@@ -63,6 +63,20 @@ typedef void (AL_APIENTRY *al_event_control_t)(ALsizei count,
       const ALenum *types, ALboolean enable);
 typedef void (AL_APIENTRY *al_event_callback_t)(al_event_proc_t callback,
       void *user);
+
+/* AL_EXT_SOURCE_NOTIFICATIONS, Apple's (MacOSX_OALExtensions.h, Mac OS
+ * X 10.7 on): a procedure OpenAL calls on its own thread as a source
+ * finishes with a buffer - the wake its framework gives in place of
+ * AL_SOFT_events. Resolved through alGetProcAddress() the same way, so
+ * nothing here refers to a symbol a library lacks. */
+typedef ALvoid (*al_source_notification_proc_t)(ALuint sid,
+      ALuint notification, ALvoid *user);
+typedef ALenum (*al_source_add_notification_t)(ALuint sid,
+      ALuint notification, al_source_notification_proc_t proc,
+      ALvoid *user);
+typedef ALvoid (*al_source_remove_notification_t)(ALuint sid,
+      ALuint notification, al_source_notification_proc_t proc,
+      ALvoid *user);
 
 /* ALC_SOFT_device_clock, declared here for the same reason and
  * resolved the same way: the device's own clock, in nanoseconds. Core
@@ -95,12 +109,17 @@ typedef struct al
     * protocol this file used to spell out with a mutex. No AL call is
     * ever made inside the window. */
    retro_eventcount_t park;
+   /* What al_wait_free() parks on: park, or al_notify_park while Apple's
+    * source notification is the wake */
+   retro_eventcount_t *wait_park;
    /* Set by the callback on AL_EVENT_TYPE_DISCONNECTED_SOFT, read by
     * the waiter: release/acquire atomic, no lock. */
    retro_atomic_int_t disconnected_atomic;
 #endif
    al_event_control_t  event_control;
    al_event_callback_t event_callback;
+   /* Set while Apple's source notification is registered */
+   al_source_remove_notification_t notify_remove;
    size_t res_ptr;
    ALsizei num_buffers;
    int rate;
@@ -149,6 +168,25 @@ typedef struct al
    retro_atomic_size_t underruns;
 } al_t;
 
+#ifdef HAVE_THREADS
+/* What Apple's source notification wakes. Its removal is not said to
+ * wait for a call already on its way, so the call touches nothing the
+ * driver frees: this lives as long as the process, made once. */
+static retro_eventcount_t al_notify_park;
+static bool               al_notify_park_live;
+
+/* Apple's source notification, on OpenAL's own thread: only wakes
+ * whoever is waiting for a buffer, as al_event_cb does */
+static ALvoid al_source_notify_cb(ALuint sid, ALuint notification,
+      ALvoid *user)
+{
+   (void)sid;
+   (void)user;
+   if (notification == AL_BUFFERS_PROCESSED)
+      retro_eventcount_notify(&al_notify_park);
+}
+#endif
+
 static void al_free(void *data)
 {
    al_t *al = (al_t*)data;
@@ -166,6 +204,11 @@ static void al_free(void *data)
     * until the callback is cleared. */
    if (al->events && al->event_callback)
       al->event_callback(NULL, NULL);
+#ifdef HAVE_THREADS
+   if (al->notify_remove)
+      al->notify_remove(al->source, AL_BUFFERS_PROCESSED,
+            al_source_notify_cb, NULL);
+#endif
 
    alSourceStop(al->source);
    alDeleteSources(1, &al->source);
@@ -226,6 +269,7 @@ static void al_init_events(al_t *al)
 
    al->event_control  = ctl.f;
    al->event_callback = cb.f;
+   al->wait_park      = &al->park;
    types[0] = AL_EVENT_TYPE_BUFFER_COMPLETED_SOFT;
    types[1] = AL_EVENT_TYPE_DISCONNECTED_SOFT;
    alGetError();
@@ -239,6 +283,35 @@ static void al_init_events(al_t *al)
    }
    al->events = true;
    RARCH_LOG("[OpenAL] Buffer completion events available; waiting on them rather than polling.\n");
+}
+
+/* Where AL_SOFT_events is not offered, Apple's source notification on
+ * the source once it exists: the same wake, through the same park. */
+static void al_init_source_notification(al_t *al)
+{
+   union { void *p; al_source_add_notification_t    f; } add;
+   union { void *p; al_source_remove_notification_t f; } rem;
+
+   if (al->events)
+      return;
+   add.p = alGetProcAddress("alSourceAddNotification");
+   rem.p = alGetProcAddress("alSourceRemoveNotification");
+   if (!add.p || !rem.p)
+      return;
+   retro_atomic_int_init(&al->disconnected_atomic, 0);
+   if (!al_notify_park_live)
+   {
+      if (!retro_eventcount_init(&al_notify_park))
+         return;
+      al_notify_park_live = true;
+   }
+   if (add.f(al->source, AL_BUFFERS_PROCESSED, al_source_notify_cb, NULL)
+         != AL_NO_ERROR)
+      return;
+   al->notify_remove = rem.f;
+   al->wait_park     = &al_notify_park;
+   al->events        = true;
+   RARCH_LOG("[OpenAL] Source notifications available; waiting on them rather than polling.\n");
 }
 #endif
 
@@ -436,6 +509,9 @@ static void *al_init(const char *device, unsigned rate, unsigned latency,
    alGenSources(1, &al->source);
    alSourcei(al->source, AL_LOOPING, AL_FALSE);
    alGenBuffers(al->num_buffers, al->buffers);
+#ifdef HAVE_THREADS
+   al_init_source_notification(al);
+#endif
 
    memcpy(al->res_buf, al->buffers, al->num_buffers * sizeof(ALuint));
 
@@ -489,10 +565,12 @@ static bool al_unqueue_buffers(al_t *al)
    return true;
 }
 
-/* Sleep until at least want buffers are free in res_buf, or until the
- * bound. With events the mixer thread wakes this the moment a buffer
- * completes; without them there is nothing to wake on, so it sleeps a
- * millisecond and asks again. Returns false on the bound, on a
+/* Until at least want buffers are free in res_buf, or until the bound.
+ * With AL_SOFT_events or Apple's source notification, OpenAL's thread
+ * wakes this the moment a buffer completes. A library with neither -
+ * OpenAL Soft before 1.21, Creative's old drivers - offers nothing to
+ * wake on: the one exception, it sleeps out what is left of the buffer
+ * playing, the only way there. Returns false on the bound, on a
  * disconnected device, or at once in non-blocking mode. */
 static bool al_wait_free(al_t *al, size_t want)
 {
@@ -521,22 +599,22 @@ static bool al_wait_free(al_t *al, size_t want)
           * fine - the window is bookkeeping, not a lock, and rule 2
           * of the eventcount's contract only asks that it be
           * answered. */
-         int key = retro_eventcount_prepare_wait(&al->park);
+         int key = retro_eventcount_prepare_wait(al->wait_park);
 
          al_unqueue_buffers(al);
          if (al->res_ptr >= want)
          {
-            retro_eventcount_cancel_wait(&al->park);
+            retro_eventcount_cancel_wait(al->wait_park);
             return true;
          }
          if (   retro_atomic_load_acquire_int(&al->disconnected_atomic)
              || waited_ms >= OPENAL_GET_BUFFER_WAIT_MS)
          {
-            retro_eventcount_cancel_wait(&al->park);
+            retro_eventcount_cancel_wait(al->wait_park);
             return false;
          }
 
-         if (!retro_eventcount_commit_wait_timeout(&al->park, key,
+         if (!retro_eventcount_commit_wait_timeout(al->wait_park, key,
                   (int64_t)OPENAL_WAIT_STEP_MS * 1000))
             waited_ms += OPENAL_WAIT_STEP_MS;
       }

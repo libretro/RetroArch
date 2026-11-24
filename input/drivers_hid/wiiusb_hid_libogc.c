@@ -548,55 +548,46 @@ static bool wiiusb_hid_joypad_query(void *data, unsigned pad)
    return pad < MAX_USERS;
 }
 
-static void wiiusb_hid_joypad_get_buttons(void *data,
-      unsigned port, input_bits_t *state)
+static void wiiusb_hid_joypad_get_buttons(void *data, unsigned port,
+      input_bits_t *state)
 {
-  wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
-  if (hid)
-  {
-    pad_connection_get_buttons(&hid->connections[port], port, state);
-    return;
-  }
-  BIT256_CLEAR_ALL_PTR(state);
+   wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
+   if (hid && port < MAX_USERS)
+      pad_connection_get_buttons(&hid->connections[port], port, state);
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t wiiusb_hid_joypad_button(void *data,
       unsigned port, uint16_t joykey)
 {
    input_bits_t buttons;
-
-   if (port >= DEFAULT_MAX_PADS)
+   /* every one get_buttons() says: a home button's menu toggle is past
+    * the first 32; no hat, the handlers give theirs as the D-pad */
+   if (port >= MAX_USERS || GET_HAT_DIR(joykey) || joykey >= 256)
       return 0;
    wiiusb_hid_joypad_get_buttons(data, port, &buttons);
-
-   /* Check hat. */
-   if (GET_HAT_DIR(joykey))
-      return 0;
-   else if (joykey < 32)
-      return (BIT256_GET(buttons, joykey) != 0);
-   return 0;
+   return BIT256_GET(buttons, joykey) != 0;
 }
 
 static int16_t wiiusb_hid_joypad_axis(void *data,
       unsigned port, uint32_t joyaxis)
 {
    wiiusb_hid_t *hid = (wiiusb_hid_t*)data;
-
-   if (AXIS_NEG_GET(joyaxis) < 4)
+   int16_t val;
+   if (!hid || port >= MAX_USERS)
+      return 0;
+   /* the sticks, then what a handler has past them: a DualShock 3's
+    * pressures */
+   if (AXIS_NEG_GET(joyaxis) < 16)
    {
-      int16_t val = pad_connection_get_axis(&hid->connections[port],
-            port, AXIS_NEG_GET(joyaxis));
-
-      if (val < 0)
-         return val;
+      val = pad_connection_get_axis(&hid->connections[port], port, AXIS_NEG_GET(joyaxis));
+      return (val < 0) ? val : 0;
    }
-   else if (AXIS_POS_GET(joyaxis) < 4)
+   if (AXIS_POS_GET(joyaxis) < 16)
    {
-      int16_t val = pad_connection_get_axis(&hid->connections[port],
-            port, AXIS_POS_GET(joyaxis));
-
-      if (val > 0)
-         return val;
+      val = pad_connection_get_axis(&hid->connections[port], port, AXIS_POS_GET(joyaxis));
+      return (val > 0) ? val : 0;
    }
    return 0;
 }

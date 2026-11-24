@@ -23,6 +23,7 @@
 #include <libretro.h>
 #include <vfs/vfs.h>
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_implementation_file.h>
 
 static unsigned failures = 0;
 

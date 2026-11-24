@@ -66,14 +66,38 @@ static size_t frame_bytes(size_t stride, size_t rows)
    return stride * rows;
 }
 
-static bool point_can_convert_direct(const struct scaler_ctx *ctx)
+/* At most a quarter of the input's pixels are read: converting just
+ * those beats converting the whole input with SIMD. */
+static bool point_is_reduction(const struct scaler_ctx *ctx)
+{
+   return ctx->out_width     <= ctx->in_width
+      && ctx->out_height     <= ctx->in_height
+      && (uint64_t)ctx->out_width * ctx->out_height
+         <= (uint64_t)ctx->in_width * ctx->in_height / 4;
+}
+
+/* Into ABGR8888 reading more than that: the whole input is converted
+ * once (SIMD) into the input frame, and the selection is plain copies
+ * straight into the destination. */
+static bool point_abgr_preconvert(const struct scaler_ctx *ctx)
 {
    return ctx->scaler_type == SCALER_TYPE_POINT
-      && ctx->out_width <= ctx->in_width
-      && ctx->out_height <= ctx->in_height
-      /* Near unity, full-frame SIMD conversion is cheaper. */
-      && (uint64_t)ctx->out_width * ctx->out_height
-         <= (uint64_t)ctx->in_width * ctx->in_height / 4
+      && ctx->out_fmt      == SCALER_FMT_ABGR8888
+      && (     ctx->in_fmt == SCALER_FMT_RGB565
+            || ctx->in_fmt == SCALER_FMT_ARGB8888)
+      && !point_is_reduction(ctx);
+}
+
+static bool point_can_convert_direct(const struct scaler_ctx *ctx)
+{
+   if (ctx->scaler_type != SCALER_TYPE_POINT)
+      return false;
+   /* Into ABGR8888 the selection writes the destination itself: no
+    * scaled output in the frame arena and no pass converting it. */
+   if (ctx->out_fmt == SCALER_FMT_ABGR8888)
+      return ctx->in_fmt == SCALER_FMT_ARGB8888
+         || ctx->in_fmt == SCALER_FMT_RGB565;
+   return point_is_reduction(ctx)
       && ((ctx->in_fmt == SCALER_FMT_RGB565
                && (ctx->out_fmt == SCALER_FMT_ARGB8888
                   || ctx->out_fmt == SCALER_FMT_BGR24))
@@ -99,6 +123,19 @@ static void scaler_point_convert(const struct scaler_ctx *ctx,
    int output_step = ctx->out_fmt == SCALER_FMT_BGR24 ? out_stride
       : (ctx->out_fmt == SCALER_FMT_RGB565
          ? (out_stride >> 1) * 2 : (out_stride >> 2) * 4);
+   bool copy32     = point_abgr_preconvert(ctx);
+
+   if (copy32)
+   {
+      if (ctx->in_fmt == SCALER_FMT_RGB565)
+         conv_rgb565_abgr8888(ctx->input.frame, input_, in_width, in_height,
+               ctx->input.stride, in_stride);
+      else
+         conv_argb8888_abgr8888(ctx->input.frame, input_, in_width, in_height,
+               ctx->input.stride, in_stride);
+      input      = (const uint8_t*)ctx->input.frame;
+      input_step = ctx->input.stride;
+   }
 
    for (y = 0; y < out_height; y++, output += output_step)
    {
@@ -124,6 +161,33 @@ static void scaler_point_convert(const struct scaler_ctx *ctx,
                const uint8_t *p = row + (size_t)ctx->horiz.filter_pos[x] * 3;
                dst[x] = (uint16_t)(((p[2] & 0xf8) << 8)
                      | ((p[1] & 0xfc) << 3) | (p[0] >> 3));
+            }
+         }
+      }
+      else if (ctx->out_fmt == SCALER_FMT_ABGR8888)
+      {
+         uint32_t *dst = (uint32_t*)output;
+         if (copy32)
+         {
+            const uint32_t *src = (const uint32_t*)row;
+            for (x = 0; x < out_width; x++)
+               dst[x] = src[ctx->horiz.filter_pos[x]];
+         }
+         else if (ctx->in_fmt == SCALER_FMT_RGB565)
+         {
+            const uint16_t *src = (const uint16_t*)row;
+            for (x = 0; x < out_width; x++)
+               dst[x] = 0xff000000u | pixconv_rgb565_to_xbgr8888(
+                     src[ctx->horiz.filter_pos[x]]);
+         }
+         else
+         {
+            const uint32_t *src = (const uint32_t*)row;
+            for (x = 0; x < out_width; x++)
+            {
+               uint32_t p = src[ctx->horiz.filter_pos[x]];
+               dst[x] = (p & 0xff00ff00u) | ((p >> 16) & 0xffu)
+                  | ((p & 0xffu) << 16);
             }
          }
       }
@@ -213,9 +277,22 @@ static bool allocate_frames(struct scaler_ctx *ctx)
    if (!scaled_bytes && !input_bytes && !output_bytes)
       return true;
 
-   /* Convert only the selected pixels, straight into the destination. */
+   /* Convert only the selected pixels, straight into the destination;
+    * a pre-converted input keeps only its input frame. */
    if (point_can_convert_direct(ctx))
-      return true;
+   {
+      if (!point_abgr_preconvert(ctx))
+         return true;
+      output_bytes = 0;
+      if (!input_bytes)
+      {
+         stride           = (((size_t)ctx->in_width + 7) & ~(size_t)7)
+                          * sizeof(uint32_t);
+         if (!(input_bytes = frame_bytes(stride, (size_t)ctx->in_height)))
+            return false;
+         ctx->input.stride = (int)stride;
+      }
+   }
 
    /* One block for all three, laid out scaled | input | output with the
     * regions that are not needed given zero size. Each frame_bytes()
@@ -544,6 +621,56 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
    return false;
 }
 
+#define SCALER_STREAM_MAX_ROWS 64
+
+bool scaler_ctx_gen_filter_stream(struct scaler_ctx *ctx)
+{
+   size_t stride, bytes;
+   void *raw;
+   int y, previous = 0;
+   if (!ctx) return false;
+   scaler_ctx_gen_reset(ctx);
+   ctx->scaler_horiz = NULL;
+   ctx->scaler_vert = NULL;
+   ctx->scaler_special = NULL;
+   ctx->direct_pixconv = NULL;
+   ctx->in_pixconv = NULL;
+   ctx->out_pixconv = NULL;
+   ctx->unscaled = false;
+   if (ctx->in_fmt != SCALER_FMT_ARGB8888 || ctx->out_fmt != SCALER_FMT_ARGB8888
+         || (ctx->scaler_type != SCALER_TYPE_BILINEAR && ctx->scaler_type != SCALER_TYPE_SINC)
+         || ctx->in_width <= 0 || ctx->in_height <= 0 || ctx->out_width <= 0 || ctx->out_height <= 0
+         || ctx->in_width > INT_MAX / 65536 || ctx->in_height > INT_MAX / 65536
+         || ctx->out_width > INT_MAX / 65536 || ctx->out_height > INT_MAX / 65536
+         || (ctx->in_width == ctx->out_width && ctx->in_height == ctx->out_height)
+         || (ctx->scaler_type == SCALER_TYPE_SINC && ctx->in_width / ctx->out_width > 8))
+      return false;
+   if (!scaler_gen_filter(ctx)) goto fail;
+   if (ctx->vert.filter_len <= 0 || ctx->vert.filter_len > SCALER_STREAM_MAX_ROWS)
+      goto fail;
+   for (y = 0; y < ctx->out_height; y++)
+   {
+      int pos = ctx->vert.filter_pos[y];
+      if (pos < previous || pos > ctx->in_height - ctx->vert.filter_len) goto fail;
+      previous = pos;
+   }
+   stride = (((size_t)ctx->out_width + 7) & ~(size_t)7) * sizeof(uint64_t);
+   if (!(bytes = frame_bytes(stride, ctx->vert.filter_len))) goto fail;
+   if (!(raw = malloc(bytes + SCALER_ARENA_SLACK))) goto fail;
+   ctx->frame_arena = raw;
+   ctx->scaled.frame = (uint64_t*)SCALER_ARENA_BASE(raw);
+   ctx->scaled.width = ctx->out_width;
+   ctx->scaled.height = ctx->vert.filter_len;
+   ctx->scaled.stride = (int)stride;
+   ctx->scaler_horiz = scaler_argb8888_horiz;
+   ctx->scaler_vert = scaler_argb8888_vert;
+   ctx->streaming = true;
+   return true;
+fail:
+   scaler_ctx_gen_reset(ctx);
+   return false;
+}
+
 void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
 {
    /* The typed buffer pointers are views into the two arenas. */
@@ -564,6 +691,7 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
    ctx->vert.filter_stride  = 0;
    ctx->vert.filter_pos     = NULL;
 
+   ctx->streaming           = false;
    ctx->scaled.frame        = NULL;
    ctx->scaled.width        = 0;
    ctx->scaled.height       = 0;
@@ -584,6 +712,119 @@ void scaler_ctx_gen_reset(struct scaler_ctx *ctx)
  *
  * Scales an input image to an output image.
  **/
+static void scaler_ctx_deliver_rows(struct scaler_ctx *ctx, uint32_t *scratch,
+      scaler_row_callback_t callback, void *user)
+{
+   struct scaler_ctx row;
+   int y, stride;
+   stride = ctx->out_width * (int)sizeof(uint32_t);
+   row = *ctx;
+   row.out_height = 1;
+   row.out_stride = stride;
+   for (y = 0; y < ctx->out_height; y++)
+   {
+      row.vert.filter = ctx->vert.filter + (size_t)y * ctx->vert.filter_stride;
+      row.vert.filter_pos = ctx->vert.filter_pos + y;
+      row.scaler_vert(&row, scratch, stride);
+      callback(user, scratch, ctx->out_width, y);
+   }
+}
+
+bool scaler_ctx_scale_rows(struct scaler_ctx *ctx, uint32_t *scratch,
+      size_t scratch_bytes, const void *input,
+      scaler_row_callback_t callback, void *user)
+{
+   int y;
+   if (!ctx || ctx->streaming || !input || !callback || ctx->out_width <= 0
+         || ctx->out_width > INT_MAX / (int)sizeof(uint32_t) || ctx->out_height <= 0
+         || ctx->in_fmt != SCALER_FMT_ARGB8888 || ctx->out_fmt != SCALER_FMT_ARGB8888)
+      return false;
+   if (ctx->unscaled)
+   {
+      for (y = 0; y < ctx->out_height; y++)
+         callback(user, (const uint32_t*)((const uint8_t*)input
+                  + (ptrdiff_t)y * ctx->in_stride), ctx->out_width, y);
+      return true;
+   }
+   if (!scratch || ((uintptr_t)scratch & 3)
+         || (size_t)ctx->out_width > scratch_bytes / sizeof(*scratch)
+         || ctx->scaler_special || !ctx->scaler_horiz || !ctx->scaler_vert
+         || !ctx->scaled.frame || !ctx->vert.filter || !ctx->vert.filter_pos)
+      return false;
+   ctx->scaler_horiz(ctx, input, ctx->in_stride);
+   scaler_ctx_deliver_rows(ctx, scratch, callback, user);
+   return true;
+}
+
+/* Source lends last only through the horizontal pass for that row. All
+ * source rows are consumed before output loans begin, so one scratch buffer
+ * can serve both ends of a producer/filter/consumer pipeline. */
+bool scaler_ctx_scale_rows_from(struct scaler_ctx *ctx, uint32_t *scratch,
+      size_t scratch_bytes, scaler_row_source_t source, void *source_user,
+      scaler_row_callback_t callback, void *user)
+{
+   struct scaler_ctx row;
+   int y;
+   if (!ctx || ctx->streaming || !source || !callback || !scratch || ((uintptr_t)scratch & 3)
+         || ctx->in_width <= 0 || ctx->in_width > INT_MAX / 4 || ctx->in_height <= 0
+         || ctx->out_width <= 0 || ctx->out_width > INT_MAX / 4 || ctx->out_height <= 0
+         || (size_t)ctx->out_width > scratch_bytes / sizeof(*scratch)
+         || ctx->in_fmt != SCALER_FMT_ARGB8888 || ctx->out_fmt != SCALER_FMT_ARGB8888
+         || ctx->unscaled || ctx->scaler_special || !ctx->scaler_horiz || !ctx->scaler_vert
+         || !ctx->scaled.frame || !ctx->vert.filter || !ctx->vert.filter_pos)
+      return false;
+   row = *ctx;
+   row.in_height = row.scaled.height = 1;
+   for (y = 0; y < ctx->in_height; y++)
+   {
+      const uint32_t *pixels = source(source_user, y);
+      if (!pixels || ((uintptr_t)pixels & 3))
+         return false;
+      row.scaled.frame = (uint64_t*)((uint8_t*)ctx->scaled.frame
+            + (ptrdiff_t)y * ctx->scaled.stride);
+      row.scaler_horiz(&row, pixels, ctx->in_width * 4);
+   }
+   scaler_ctx_deliver_rows(ctx, scratch, callback, user);
+   return true;
+}
+
+bool scaler_ctx_scale_stream_rows(struct scaler_ctx *ctx, uint32_t *scratch,
+      size_t scratch_bytes, scaler_row_source_t source, void *source_user,
+      scaler_row_callback_t callback, void *user)
+{
+   const uint64_t *rows[SCALER_STREAM_MAX_ROWS];
+   struct scaler_ctx row;
+   int y, next = 0, taps, k;
+   if (!ctx || !ctx->streaming || !source || !callback || !scratch
+         || ((uintptr_t)scratch & 3) || !ctx->scaled.frame || !ctx->scaler_horiz
+         || ctx->out_width <= 0 || (size_t)ctx->out_width > scratch_bytes / sizeof(*scratch)
+         || ctx->vert.filter_len <= 0 || ctx->vert.filter_len > SCALER_STREAM_MAX_ROWS)
+      return false;
+   taps = ctx->vert.filter_len;
+   row = *ctx;
+   row.in_height = row.scaled.height = row.out_height = 1;
+   for (y = 0; y < ctx->out_height; y++)
+   {
+      int first = ctx->vert.filter_pos[y];
+      while (next < first + taps)
+      {
+         const uint32_t *pixels = source(source_user, next);
+         if (!pixels || ((uintptr_t)pixels & 3)) return false;
+         row.scaled.frame = (uint64_t*)((uint8_t*)ctx->scaled.frame
+               + (ptrdiff_t)(next % taps) * ctx->scaled.stride);
+         row.scaler_horiz(&row, pixels, ctx->in_width * 4);
+         next++;
+      }
+      for (k = 0; k < taps; k++)
+         rows[k] = (const uint64_t*)((const uint8_t*)ctx->scaled.frame
+               + (ptrdiff_t)((first + k) % taps) * ctx->scaled.stride);
+      row.vert.filter = ctx->vert.filter + (size_t)y * ctx->vert.filter_stride;
+      scaler_argb8888_vert_row(&row, rows, scratch);
+      callback(user, scratch, ctx->out_width, y);
+   }
+   return true;
+}
+
 void scaler_ctx_scale(struct scaler_ctx *ctx,
       void *output, const void *input)
 {
@@ -591,6 +832,8 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
    void *output_frame      = output;
    int input_stride        = ctx->in_stride;
    int output_stride       = ctx->out_stride;
+
+   if (ctx->streaming) return;
 
    /* Source and destination are the same size: there is nothing to
     * filter, only a possible pixel format conversion.

@@ -39,6 +39,7 @@
 
 #include "../../tasks/tasks_internal.h"
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 
 #include "../../verbosity.h"
 
@@ -110,6 +111,10 @@ typedef struct
 
 typedef struct
 {
+   /* xstate as the poll left it, lent to the readers (input_pad_view.h):
+    * the buttons by their index, the d-pad as hat 0, axes 0-3 the
+    * sticks and 4 and 5 the triggers */
+   input_pad_view_t view;
    XINPUT_STATE xstate;
    bool         connected;
 } xinput_joypad_state;
@@ -202,86 +207,33 @@ static bool load_xinput_dll(void)
 }
 #endif
 
-static int32_t xinput_joypad_button_state(
-      unsigned xuser, uint16_t btn_word,
-      unsigned port, uint16_t joykey)
+/* The view of what the poll read into @st->xstate */
+static void xinput_joypad_make_view(xinput_joypad_state *st)
 {
-   unsigned hat_dir  = GET_HAT_DIR(joykey);
+   unsigned i;
+   const XINPUT_GAMEPAD *pad = &st->xstate.Gamepad;
+   input_pad_view_t *v       = &st->view;
+   uint32_t bits             = 0;
+   int16_t sticks[4];
 
-   if (hat_dir)
-   {
-      switch (hat_dir)
-      {
-         case HAT_UP_MASK:
-            return (btn_word & XINPUT_GAMEPAD_DPAD_UP);
-         case HAT_DOWN_MASK:
-            return (btn_word & XINPUT_GAMEPAD_DPAD_DOWN);
-         case HAT_LEFT_MASK:
-            return (btn_word & XINPUT_GAMEPAD_DPAD_LEFT);
-         case HAT_RIGHT_MASK:
-            return (btn_word & XINPUT_GAMEPAD_DPAD_RIGHT);
-         default:
-            break;
-      }
-      /* hat requested and no hat button down */
-   }
-   else if (joykey < g_xinput_num_buttons)
-      return (btn_word & button_index_to_bitmap_code[joykey]);
-   return 0;
-}
-
-static int16_t xinput_joypad_axis_state(
-      XINPUT_GAMEPAD *pad,
-      unsigned port, uint32_t joyaxis)
-{
-   int16_t val         = 0;
-   int     axis        = -1;
-   bool is_neg         = false;
-   bool is_pos         = false;
-   /* triggers (axes 4,5) cannot be negative */
-   if (AXIS_NEG_GET(joyaxis) <= 3)
-   {
-      axis             = AXIS_NEG_GET(joyaxis);
-      is_neg           = true;
-   }
-   else if (AXIS_POS_GET(joyaxis) <= 5)
-   {
-      axis             = AXIS_POS_GET(joyaxis);
-      is_pos           = true;
-   }
-   else
-      return 0;
-
-   switch (axis)
-   {
-      case 0:
-         val = pad->sThumbLX;
-         break;
-      case 1:
-         val = pad->sThumbLY;
-         break;
-      case 2:
-         val = pad->sThumbRX;
-         break;
-      case 3:
-         val = pad->sThumbRY;
-         break;
-      case 4:
-         val = pad->bLeftTrigger  * 32767 / 255;
-         break; /* map 0..255 to 0..32767 */
-      case 5:
-         val = pad->bRightTrigger * 32767 / 255;
-         break;
-   }
-
-   if (is_neg && val > 0)
-      return 0;
-   else if (is_pos && val < 0)
-      return 0;
-   /* Clamp to avoid overflow error. */
-   else if (val == -32768)
-      return -32767;
-   return val;
+   for (i = 0; i < g_xinput_num_buttons; i++)
+      if (pad->wButtons & button_index_to_bitmap_code[i])
+         bits |= (1u << i);
+   v->buttons.data[0] = bits;
+   v->hats            = (uint16_t)(
+           ((pad->wButtons & XINPUT_GAMEPAD_DPAD_UP)    ? 1 : 0)
+         | ((pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)  ? 2 : 0)
+         | ((pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)  ? 4 : 0)
+         | ((pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) ? 8 : 0));
+   sticks[0]          = pad->sThumbLX;
+   sticks[1]          = pad->sThumbLY;
+   sticks[2]          = pad->sThumbRX;
+   sticks[3]          = pad->sThumbRY;
+   for (i = 0; i < 4; i++)
+      v->axes[i]      = (sticks[i] == -32768) ? -32767 : sticks[i];
+   /* a trigger, 0 to 255, as 0 to 32767 */
+   v->axes[4]         = (int16_t)(pad->bLeftTrigger  * 32767 / 255);
+   v->axes[5]         = (int16_t)(pad->bRightTrigger * 32767 / 255);
 }
 
 #endif
@@ -381,6 +333,7 @@ static void *xinput_joypad_init(void *data)
       g_xinput_states[i].xstate.Gamepad.sThumbLY      = 0;
       g_xinput_states[i].xstate.Gamepad.sThumbRX      = 0;
       g_xinput_states[i].xstate.Gamepad.sThumbRY      = 0;
+      memset(&g_xinput_states[i].view, 0, sizeof(g_xinput_states[i].view));
       g_xinput_states[i].connected                    =
          !(g_XInputGetStateEx(i, &dummy_state) == ERROR_DEVICE_NOT_CONNECTED);
    }
@@ -470,6 +423,7 @@ static void xinput_joypad_destroy(void)
       g_xinput_states[i].xstate.Gamepad.sThumbLY = 0;
       g_xinput_states[i].xstate.Gamepad.sThumbRX = 0;
       g_xinput_states[i].xstate.Gamepad.sThumbRY = 0;
+      memset(&g_xinput_states[i].view, 0, sizeof(g_xinput_states[i].view));
       g_xinput_states[i].connected = false;
    }
 
@@ -482,52 +436,33 @@ static void xinput_joypad_destroy(void)
    g_XInputSetState = NULL;
 }
 
-static int32_t xinput_joypad_button(unsigned port, uint16_t joykey)
+/* The pad on @port's view, read in the poll alone and the same until
+ * the next; NULL with no controller there */
+static const input_pad_view_t *xinput_joypad_view(unsigned port)
 {
-   int xuser                  = pad_index_to_xuser_index(port);
-   uint16_t btn_word          = 0;
-   xinput_joypad_state *state;
-   /* a port with no controller on it: there is no state to index
-    * (this used to read the entry before the first) */
-   if (xuser < 0)
-      return 0;
-   state                      = &g_xinput_states[xuser];
-   if (!state->connected)
-      return 0;
-   btn_word                   = state->xstate.Gamepad.wButtons;
-   return xinput_joypad_button_state(xuser, btn_word, port, joykey);
+   int xuser = pad_index_to_xuser_index(port);
+   return (xuser < 0) ? NULL : &g_xinput_states[xuser].view;
 }
 
-/* Every plain button of the pad at once, as xinput_joypad_button()
- * gives them one by one; the d-pad is a hat and is read through
- * xinput_joypad_button() with a hat key. This is what lets the
- * frontend copy the pad once a poll (the snapshot bridge in
- * input_driver.c) instead of calling in for each button. */
+static int32_t xinput_joypad_button(unsigned port, uint16_t joykey)
+{
+   const input_pad_view_t *v = xinput_joypad_view(port);
+   return v ? input_pad_view_button(v, joykey) : 0;
+}
+
 static void xinput_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-   unsigned i;
-   uint16_t btn_word;
-   int xuser = pad_index_to_xuser_index(port);
-
-   BIT256_CLEAR_ALL_PTR(state);
-   if (xuser < 0)
-      return;
-   btn_word = g_xinput_states[xuser].xstate.Gamepad.wButtons;
-   for (i = 0; i < g_xinput_num_buttons; i++)
-      if (btn_word & button_index_to_bitmap_code[i])
-         BIT256_SET_PTR(state, i);
+   const input_pad_view_t *v = xinput_joypad_view(port);
+   if (v)
+      *state = v->buttons;
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t xinput_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   int xuser                  = pad_index_to_xuser_index(port);
-   xinput_joypad_state *state;
-   if (xuser < 0)
-      return 0;
-   state                      = &g_xinput_states[xuser];
-   if (!state->connected)
-      return 0;
-   return xinput_joypad_axis_state(&state->xstate.Gamepad, port, joyaxis);
+   const input_pad_view_t *v = xinput_joypad_view(port);
+   return v ? input_pad_view_axis(v, joyaxis) : 0;
 }
 
 static int16_t xinput_joypad_state_func(
@@ -536,37 +471,8 @@ static int16_t xinput_joypad_state_func(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   int i;
-   uint16_t btn_word;
-   int16_t ret                = 0;
-   uint16_t port_idx          = joypad_info->joy_idx;
-   int xuser                  = pad_index_to_xuser_index(port_idx);
-   xinput_joypad_state *state;
-   XINPUT_GAMEPAD *pad;
-   if (xuser < 0)
-      return 0;
-   state                      = &g_xinput_states[xuser];
-   pad                        = &state->xstate.Gamepad;
-   if (!state->connected)
-      return 0;
-   btn_word                   = state->xstate.Gamepad.wButtons;
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-   {
-      const uint64_t joykey  = joykeys[i];
-      const uint32_t joyaxis = joyaxes[i];
-      if (
-               (uint16_t)joykey != NO_BTN
-            && xinput_joypad_button_state(
-               xuser, btn_word, port_idx, (uint16_t)joykey))
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(xinput_joypad_axis_state(pad, port_idx, joyaxis))
-             / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
-   }
-
-   return ret;
+   const input_pad_view_t *v = xinput_joypad_view(joypad_info->joy_idx);
+   return v ? input_pad_view_state(v, joypad_info, joykeys, joyaxes) : 0;
 }
 
 static void xinput_joypad_poll(void)
@@ -660,6 +566,7 @@ static void xinput_joypad_poll(void)
          state->xstate.Gamepad.sThumbRX      = 0;
          state->xstate.Gamepad.sThumbRY      = 0;
       }
+      xinput_joypad_make_view(state);
 
       if (new_connected != state->connected)
       {
@@ -736,4 +643,9 @@ input_device_driver_t xinput_joypad = {
    NULL, /* get_sensor_input */
    xinput_joypad_name,
    "xinput",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   xinput_joypad_view
 };

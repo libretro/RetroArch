@@ -9,6 +9,9 @@
 #if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_LOCK_FREE) \
       && (defined(__linux__) || (defined(_WIN32) && !defined(__WINRT__) && !defined(_XBOX)))
 #include <rthreads/retro_eventcount.h>
+
+/* How long the worker waits on the encoder's fence before looking again */
+#define RECORD_VKD_GPU_WAIT_NS ((uint64_t)100000000UL)
 #ifdef _WIN32
 #if defined(HAVE_MF_AUDIO) && defined(HAVE_RTMP) && defined(HAVE_RFLV) && defined(HAVE_CRYPTO)
 #define RECORD_VKD_STREAM
@@ -432,6 +435,13 @@ static void *record_vkd_run(void *opaque)
          break;
       if (result != RECORD_VULKAN_OUTPUT_BUSY)
          continue;
+      /* Held up by the encoder's GPU work: wait on its fence, which one
+       * frame's encode ends; a producer's notify meanwhile is picked up
+       * by the service after it. The bound is a watchdog. */
+      if (     j->session
+            && record_gpu_session_vulkan_retry_needed(j->session)
+            && record_gpu_session_vulkan_wait(j->session, RECORD_VKD_GPU_WAIT_NS))
+         continue;
       key = retro_eventcount_prepare_wait(&j->wake);
       result = record_vkd_service(j);
       if (result != RECORD_VULKAN_OUTPUT_BUSY)
@@ -485,6 +495,20 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_capture(
    config.h264.ops = *ops;
    return record_gpu_dispatch_vulkan_new_backend(&config, record_vkd_h264_start,
          output, path, capture_ops);
+}
+
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_stream(
+      const vulkan_encode_h264_open_t *encoder, const vulkan_encode_h264_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *output, const char *url,
+      const vulkan_encode_capture_ops_t *capture_ops, bool legacy)
+{
+   record_gpu_dispatch_vulkan_config_t config;
+   if (!encoder || !ops || !output || output->video.codec != RECORD_MP4_H264)
+      return NULL;
+   config.h264.encoder = *encoder;
+   config.h264.ops = *ops;
+   return record_gpu_dispatch_vulkan_new_backend_stream(&config, record_vkd_h264_start,
+         output, url, capture_ops, legacy);
 }
 
 static record_gpu_dispatch_vulkan_t *record_vkd_new(
@@ -730,6 +754,12 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_backend(
       const record_gpu_output_vulkan_config_t *o, const char *p,
       const vulkan_encode_capture_ops_t *ops)
 { (void)c; (void)start; (void)o; (void)p; (void)ops; return NULL; }
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_stream(
+      const vulkan_encode_h264_open_t *e, const vulkan_encode_h264_ops_t *o,
+      const record_gpu_output_vulkan_config_t *c, const char *url,
+      const vulkan_encode_capture_ops_t *ops, bool legacy)
+{ (void)e; (void)o; (void)c; (void)url; (void)ops; (void)legacy; return NULL; }
+
 record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_backend_stream(
       const record_gpu_dispatch_vulkan_config_t *c,
       record_gpu_dispatch_vulkan_start_t start,

@@ -25,6 +25,7 @@ with tempfile.TemporaryDirectory(prefix="retroarch-two-frame-") as directory:
     exe = temp / ("test.exe" if os.name == "nt" or "mingw" in cc[0] else "test")
     flags = ["-std=gnu99", "-O1", "-g1", "-Wall", "-Wextra", "-DHAVE_THREADS", "-DRARCH_INTERNAL",
         "-I" + str(root), "-I" + str(root / "libretro-common/include"), "-I" + str(root / "deps")]
+    flags += ["-include", str(root / "samples/gfx/gfx_surface_still/copy_count.h")]
     flags += shlex.split(os.environ.get("CFLAGS", ""))
     subprocess.run(cc + flags + [str(src)] + [str(root / s) for s in sources] + ["-lm", "-lpthread", "-o", str(exe)], check=True)
     subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(exe)], check=True)

@@ -196,7 +196,20 @@ static int CONV optimal_cb(param_t *p)
    return OK;
 }
 
-/* OptiScaler's shape: no NVSDK_NGX_VULKAN_RequiredExtensions, only the
+EXPORT int CONV NVSDK_NGX_VULKAN_RequiredExtensions(unsigned *ic,
+      const char ***ie, unsigned *dc, const char ***de)
+{
+   static const char *inst[] = { "VK_KHR_get_physical_device_properties2" };
+   static const char *dev[] = { "VK_KHR_maintenance1" };
+   if (!rec.legacy_requirements)
+      return FAIL;
+   rec.legacy_calls++;
+   *ic = 1; *ie = inst;
+   *dc = 1; *de = dev;
+   return OK;
+}
+
+/* OptiScaler's shape: absent/successfully unavailable common requirements, only the
  * feature requirement calls; the discovery info's feature id (its
  * second int) is recorded */
 EXPORT int CONV NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements(const void *info, uint32_t *count, void **props)
@@ -238,6 +251,8 @@ EXPORT int CONV NVSDK_NGX_VULKAN_Init_ProjectID_Ext(const char *project, int eng
    if (!project || !inst || !pd || !dev || !gipa || !gdpa || engine != 0
          || sdk_version != 0x15 || !common_info)
       return FAIL;
+   if (rec.init_hook)
+      rec.init_hook(rec.init_hook_data);
    if (inited && (rec.overlap_fails || getenv("FAKE_NGX_FAIL_OVERLAP")))
       return FAIL | 5;
    for (slot = 0; slot < 16 && sessions[slot].device; slot++)
@@ -323,6 +338,8 @@ EXPORT int CONV NVSDK_NGX_VULKAN_CreateFeature1(void *dev, void *cmd, int featur
       return FAIL | 5;
    if (feature == 18 && rec.nr_missing)
       return FAIL | 12;
+   if (rec.create_hook && (!rec.create_hook_feature || rec.create_hook_feature == feature))
+      rec.create_hook(rec.create_hook_data);
    if (rec.create_fails)
       return FAIL | 11;
    memset(c, 0, sizeof(*c));

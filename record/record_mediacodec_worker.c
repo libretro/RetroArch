@@ -313,6 +313,13 @@ failed:
    return RECORD_MC_WORKER_ERROR;
 }
 
+bool record_mediacodec_worker_wait(record_mediacodec_worker_t *w,
+      int64_t timeout_us)
+{
+   return w && !w->failed && !w->finished && !w->ended[0]
+      && record_mediacodec_encoder_wait(w->encoder[0], timeout_us);
+}
+
 void record_mediacodec_worker_abort(record_mediacodec_worker_t *w)
 {
    if (w)

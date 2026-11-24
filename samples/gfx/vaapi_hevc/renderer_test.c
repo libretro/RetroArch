@@ -202,6 +202,14 @@ static PFN_vkGetInstanceProcAddr renderer_instance_proc(void)
 #define vkGetDeviceProcAddr renderer_get_device
 #define vulkan_symbol_wrapper_instance_proc_addr renderer_instance_proc
 #define vulkan_prime_image_bind_io renderer_bind_io
+static void vulkan_media_pool_destroy(VkDevice d, struct vk_texture *texture)
+{ vulkan_destroy_texture(d, texture); }
+static struct vk_texture *vulkan_media_writable(vk_t *vk, struct vk_texture *texture)
+{ assert(vk == &renderer); return texture; }
+static void vulkan_media_publish(struct vk_texture *texture, struct vk_texture *destination)
+{ assert(texture == destination); texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; }
+static void vulkan_media_texture_changed(vk_t *vk, uintptr_t texture, bool uploaded)
+{ assert(vk == &renderer && texture == (uintptr_t)renderer_texture && uploaded); }
 #include "../../../gfx/drivers/vulkan_vaapi_video.h"
 #undef vulkan_prime_image_bind_io
 #undef vulkan_symbol_wrapper_instance_proc_addr

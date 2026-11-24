@@ -30,6 +30,16 @@
 
 #include <formats/rmp4.h>
 
+/* A track's parse and its sample description's, once per track: kept
+ * out of their callers so no one frame carries the whole movie parse */
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define RMP4_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define RMP4_NOINLINE __declspec(noinline)
+#else
+#define RMP4_NOINLINE
+#endif
+
 #define RMP4_MAX_TRACKS       8
 /* Bound each track's parallel sample arrays to 64 MiB. */
 #define RMP4_MAX_SAMPLES ((uint32_t)((64u * 1024u * 1024u) / \
@@ -162,6 +172,8 @@ struct rmp4
    size_t         avail;
    rmp4_itrack    trk[RMP4_MAX_TRACKS];
    int            num_tracks;
+   uint64_t       fragment_pos;
+   size_t         fragment_need_lo, fragment_need_hi;
    int            fragmented;      /* an mvex box was present        */
    int            sample_error;
    uint64_t       media_max_end;   /* highest sample end delivered   */
@@ -357,7 +369,7 @@ static void rmp4_parse_mastering(const rmp4_box *box,
    *out = m;
 }
 
-static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
+static RMP4_NOINLINE void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
 {
    uint64_t next;
    rmp4_box e;
@@ -523,7 +535,19 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
              && e.size >= 10 && rmp4_be16(e.body + 8) == 1)
             child_off = 44;
       }
-      if (e.type == RMP4_FOURCC('O','p','u','s'))
+      if (e.type == RMP4_FOURCC('a','c','-','3'))
+      {
+         rmp4_box dac3;
+         if (child_off < e.size && rmp4_find_child(e.body + child_off,
+                  e.size - child_off, RMP4_FOURCC('d','a','c','3'), &dac3)
+               && dac3.size >= 3)
+         {
+            t->pub.codec = RMP4_CODEC_AC3;
+            t->pub.codec_private = dac3.body;
+            t->pub.codec_private_size = (size_t)dac3.size;
+         }
+      }
+      else if (e.type == RMP4_FOURCC('O','p','u','s'))
       {
          rmp4_box dops;
          if (child_off < e.size
@@ -795,7 +819,7 @@ static int rmp4_keep_codec_private(rmp4_itrack *t)
    return 1;
 }
 
-static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
+static RMP4_NOINLINE void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
 {
    rmp4_box mdia, mdhd, hdlr, minf, stbl, b;
    rmp4_itrack *t;
@@ -1229,6 +1253,45 @@ static void rmp4_parse_moof(rmp4_t *m, const uint8_t *body, uint64_t size,
 
 /* ===== public API ===== */
 
+/* Index resident fragment headers without touching intervening media. */
+static void rmp4_scan_fragments(rmp4_t *m)
+{
+   unsigned budget = 64;
+   m->fragment_need_lo = m->fragment_need_hi = 0;
+   while (m->fragment_pos < m->len && budget--)
+   {
+      uint64_t pos = m->fragment_pos, next;
+      uint64_t header_end = pos + (m->len - pos < 16 ? m->len - pos : 16);
+      rmp4_box b;
+      if (header_end > m->avail)
+      {
+         m->fragment_need_lo = (size_t)pos;
+         m->fragment_need_hi = (size_t)header_end;
+         return;
+      }
+      if (!rmp4_box_at(m->buf, m->len, pos, &b, &next) || next <= pos)
+      { m->sample_error = 1; return; }
+      if (b.type == RMP4_FOURCC('m','o','o','f'))
+      {
+         if (next > m->avail)
+         {
+            m->fragment_need_lo = (size_t)pos;
+            m->fragment_need_hi = (size_t)next;
+            return;
+         }
+         rmp4_parse_moof(m, b.body, b.size, pos);
+         if (m->sample_error) return;
+      }
+      m->fragment_pos = next;
+   }
+   if (m->fragment_pos < m->len)
+   {
+      m->fragment_need_lo = (size_t)m->fragment_pos;
+      m->fragment_need_hi = m->fragment_need_lo +
+         (m->len - m->fragment_need_lo < 16 ? m->len - m->fragment_need_lo : 16);
+   }
+}
+
 rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
       size_t avail, int *need_more, size_t *need_lo, size_t *need_hi)
 {
@@ -1335,30 +1398,11 @@ rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
     * trex defaults exist. */
    if (m->fragmented)
    {
-      /* moof boxes interleave with the media data through to the end
-       * of the file, so a fragmented movie effectively needs the whole
-       * file resident before its sample tables exist. */
-      if (avail < size)
+      do
       {
-         rmp4_close(m);
-         if (need_more)
-            *need_more = 1;
-         return NULL;
-      }
-      pos = 0;
-      while (pos < size && rmp4_box_at(data, (uint64_t)size, pos, &b, &next))
-      {
-         if (b.type == RMP4_FOURCC('m','o','o','f'))
-            rmp4_parse_moof(m, b.body, b.size, pos);
-         if (m->sample_error)
-         {
-            rmp4_close(m);
-            return NULL;
-         }
-         if (next <= pos)
-            break;
-         pos = next;
-      }
+         rmp4_scan_fragments(m);
+         if (m->sample_error) { rmp4_close(m); return NULL; }
+      } while (avail == size && m->fragment_pos < size);
    }
    return m;
 }
@@ -1502,6 +1546,11 @@ void rmp4_close(rmp4_t *m)
    free(m);
 }
 
+int rmp4_index_complete(const rmp4_t *m)
+{
+   return m && (!m->fragmented || m->fragment_pos >= m->len);
+}
+
 int rmp4_num_tracks(const rmp4_t *m)
 {
    return m ? m->num_tracks : 0;
@@ -1546,10 +1595,22 @@ const uint8_t *rmp4_get_track_language(const rmp4_t *m, int index,
 
 int64_t rmp4_duration_ns(const rmp4_t *m)
 {
-   if (!m || !m->movie_timescale)
-      return 0;
-   return rmp4_ticks_to_ns((int64_t)m->movie_duration,
-         m->movie_timescale);
+   int64_t duration = 0;
+   int i;
+   if (!m) return 0;
+   if (m->movie_timescale && m->movie_duration
+         && m->movie_duration <= (uint64_t)INT64_MAX)
+      return rmp4_ticks_to_ns((int64_t)m->movie_duration, m->movie_timescale);
+   if (!m->fragmented) return 0;
+   for (i = 0; i < m->num_tracks; i++)
+   {
+      const rmp4_itrack *t = &m->trk[i];
+      int64_t end;
+      if (!t->timescale || t->frag_dts > (uint64_t)INT64_MAX) continue;
+      end = rmp4_ticks_to_ns((int64_t)t->frag_dts, t->timescale);
+      if (end > duration) duration = end;
+   }
+   return duration;
 }
 
 void rmp4_rewind(rmp4_t *m)
@@ -1585,7 +1646,7 @@ void rmp4_rewind(rmp4_t *m)
    m->media_max_end = have ? next : 0;
 }
 
-void rmp4_read_span(const rmp4_t *m, size_t *lo, size_t *hi)
+void rmp4_read_span(rmp4_t *m, size_t *lo, size_t *hi)
 {
    uint64_t offset = 0;
    uint32_t size = 0;
@@ -1603,6 +1664,16 @@ void rmp4_read_span(const rmp4_t *m, size_t *lo, size_t *hi)
          size = t->size[c];
          found = 1;
       }
+   }
+   if (!found && m->fragmented && m->fragment_pos < m->len)
+   {
+      rmp4_scan_fragments(m);
+      for (i = 0; i < m->num_tracks; i++)
+         if (m->trk[i].cursor < m->trk[i].count)
+         { rmp4_read_span(m, lo, hi); return; }
+      if (lo) *lo = m->fragment_need_lo;
+      if (hi) *hi = m->fragment_need_hi;
+      return;
    }
    if (!found || offset > (uint64_t)m->len
          || size > (uint64_t)m->len - offset)
@@ -1632,6 +1703,16 @@ int rmp4_read_packet(rmp4_t *m, rmp4_packet *pkt)
          best     = i;
          best_off = t->off[t->cursor];
       }
+   }
+   if (best < 0 && m->fragmented && m->fragment_pos < m->len)
+   {
+      size_t lo, hi;
+      rmp4_read_span(m, &lo, &hi);
+      if (m->sample_error) return -1;
+      for (i = 0; i < m->num_tracks; i++)
+         if (m->trk[i].cursor < m->trk[i].count)
+            return rmp4_read_packet(m, pkt);
+      return RMP4_READ_AGAIN;
    }
    if (best < 0)
       return 0;

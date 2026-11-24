@@ -1145,6 +1145,71 @@ static void menu_delivery(void *userdata)
    *difference = audio_driver_st.sink_offered_raw - audio_driver_st.sink_accepted;
 }
 
+/* No device write for a tenth of a second. */
+static bool device_quiet(void)
+{
+   size_t before = retro_atomic_load_acquire_size(&cnt_writes);
+   retro_sleep(100);
+   return retro_atomic_load_acquire_size(&cnt_writes) == before;
+}
+
+/* The platform takes the application away with the menu source feeding
+ * the device, and the runloop stops iterating: the device has to stop
+ * with it, or it holds the platform's audio wake lock. The frontend's
+ * runloop asks for this on every iteration while away. */
+static void menu_source_away(void)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   size_t before;
+   int stops = retro_atomic_load_acquire_int(&dev_stops);
+   /* The fixture started the wrapper itself; audio_driver_start() would
+    * have marked it */
+   AUDIO_FLAGS_SET(st, AUDIO_FLAG_STARTED);
+   audio_driver_set_away(true);
+   audio_driver_set_away(true);
+   if (     retro_atomic_load_acquire_int(&dev_stops) != stops + 1
+         || !device_quiet()
+         || !(retro_atomic_load_acquire_int(&st->runloop_snapshot) & AUDIO_SNAP_MENU_SOURCE))
+   {
+      fputs("menu audio kept the device playing while away\n", stderr);
+      fixture_failures++;
+   }
+   /* Started while away, as the background save or a reinit can: the
+    * runloop sees the away state cleared and stops it again */
+   stops = retro_atomic_load_acquire_int(&dev_stops);
+   before = retro_atomic_load_acquire_size(&cnt_writes);
+   if (!audio_driver_start(false) || st->away) fixture_failures++;
+   if (!wait_progress(wrote_since, &before)) fixture_failures++;
+   audio_driver_set_away(true);
+   if (     retro_atomic_load_acquire_int(&dev_stops) != stops + 1
+         || !device_quiet())
+   {
+      fputs("a device started while away kept playing\n", stderr);
+      fixture_failures++;
+   }
+   before = retro_atomic_load_acquire_size(&cnt_writes);
+   audio_driver_set_away(false);
+   if (!wait_progress(wrote_since, &before))
+   {
+      fputs("menu audio did not come back from away\n", stderr);
+      fixture_failures++;
+   }
+   /* Stopped by the frontend before going away: asked whether it is
+    * alive and to stop again on the way, it stays stopped on return. */
+   if (!audio_driver_stop()) fixture_failures++;
+   audio_driver_stop();
+   audio_driver_set_away(true);
+   audio_driver_set_away(false);
+   if (!device_quiet() || audio_driver_alive())
+   {
+      fputs("a stopped device was started again\n", stderr);
+      fixture_failures++;
+   }
+   before = retro_atomic_load_acquire_size(&cnt_writes);
+   if (!audio_driver_start(false)) fixture_failures++;
+   if (!wait_progress(wrote_since, &before)) fixture_failures++;
+}
+
 static void menu_source_run(void)
 {
    audio_driver_state_t *st = &audio_driver_st;
@@ -1155,7 +1220,7 @@ static void menu_source_run(void)
    retro_time_t failed_at, elapsed;
    video_state_get_ptr()->av_info.timing.sample_rate = CORE_RATE;
    video_state_get_ptr()->av_info.timing.fps = FPS;
-   audio_driver_menu_sample(false);
+   audio_driver_menu_sample(0);
    if (!(retro_atomic_load_acquire_int(&st->runloop_snapshot) & AUDIO_SNAP_MENU_SOURCE)
          || !wait_progress(wrote_since, &before))
    {
@@ -1163,6 +1228,7 @@ static void menu_source_run(void)
       fixture_failures++;
       return;
    }
+   menu_source_away();
    for (i = 0; i < 3; i++)
    {
       if (i == 1)
@@ -1209,7 +1275,7 @@ static void menu_source_run(void)
       fixture_failures++;
    }
    before = retro_atomic_load_acquire_size(&cnt_writes);
-   audio_driver_menu_sample(false);
+   audio_driver_menu_sample(0);
    if (!wait_progress(wrote_since, &before)) fixture_failures++;
    retro_atomic_store_release_int(&menu_wait_fail, 1);
    idle_wakes = retro_atomic_load_acquire_size(&cnt_wakes);
@@ -1545,7 +1611,6 @@ static void pause_boundary_resume_parked(void *userdata)
 
 static void pause_boundary_case(void)
 {
-   audio_driver_state_t *st = &audio_driver_st;
    size_t per_frame = (size_t)(CORE_RATE / FPS);
    unsigned frame;
    double head_mean = 0.0, tail_mean = 0.0;

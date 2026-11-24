@@ -24,6 +24,7 @@
 
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
+#include <formats/image_yuv_blit.h>
 #include <libretro.h>
 #include <retro_assert.h>
 #include <retro_miscellaneous.h>
@@ -49,10 +50,14 @@ typedef struct pipewire_camera
 
    struct scaler_ctx scaler;
    uint32_t *buffer_output;
+   uint8_t *planar;             /* NV12 repacked from YUY2 */
 
    struct spa_io_position *position;
    struct spa_video_info format;
    struct spa_rectangle size;
+   unsigned planar_stride;      /* negotiated first-plane stride */
+   unsigned planar_flags;       /* RETRO_CAMERA_PLANAR_* */
+   bool want_planar;
 } pipewire_camera_t;
 
 static struct
@@ -96,8 +101,22 @@ static uint32_t id_to_scaler_format(uint32_t id)
    return SCALER_FMT_ARGB8888;
 }
 
+/* What a planar consumer takes: 4:2:0 in place, YUY2 repacked. */
+static const uint32_t planar_video_formats[] = {
+   SPA_VIDEO_FORMAT_NV12, SPA_VIDEO_FORMAT_I420, SPA_VIDEO_FORMAT_YUY2
+};
+
+static bool planar_format(uint32_t id)
+{
+   size_t i;
+   for (i = 0; i < SPA_N_ELEMENTS(planar_video_formats); i++)
+      if (planar_video_formats[i] == id)
+         return true;
+   return false;
+}
+
 static int build_format(struct spa_pod_builder *b, const struct spa_pod **params,
-      unsigned dims)
+      unsigned dims, bool want_planar)
 {
    uint32_t width  = VIDEO_SCALE_W(dims);
    uint32_t height = VIDEO_SCALE_H(dims);
@@ -118,12 +137,21 @@ static int build_format(struct spa_pod_builder *b, const struct spa_pod **params
    /* build an enumeration of formats */
    spa_pod_builder_prop(b, SPA_FORMAT_VIDEO_format, 0);
    spa_pod_builder_push_choice(b, &frame[1], SPA_CHOICE_Enum, 0);
-   spa_pod_builder_id(b, SPA_VIDEO_FORMAT_YUY2);  /* default */
-   for (i = 0; i < SPA_N_ELEMENTS(scaler_video_formats); i++)
+   if (want_planar)
    {
-      uint32_t id = scaler_video_formats[i].id;
-      if (id != SPA_VIDEO_FORMAT_UNKNOWN)
-         spa_pod_builder_id(b, id);  /* alternative */
+      spa_pod_builder_id(b, planar_video_formats[0]);  /* default */
+      for (i = 0; i < SPA_N_ELEMENTS(planar_video_formats); i++)
+         spa_pod_builder_id(b, planar_video_formats[i]);
+   }
+   else
+   {
+      spa_pod_builder_id(b, SPA_VIDEO_FORMAT_YUY2);  /* default */
+      for (i = 0; i < SPA_N_ELEMENTS(scaler_video_formats); i++)
+      {
+         uint32_t id = scaler_video_formats[i].id;
+         if (id != SPA_VIDEO_FORMAT_UNKNOWN)
+            spa_pod_builder_id(b, id);  /* alternative */
+      }
    }
 
    spa_pod_builder_pop(b, &frame[1]);
@@ -229,6 +257,123 @@ done:
    return ret;
 }
 
+/* Plane @i of @buf: its own data when the producer splits planes,
+ * else @off into the first. NULL when @rows rows of @row_bytes at
+ * @stride would run past what the chunk holds. */
+static const uint8_t *planar_plane(struct spa_buffer *buf, unsigned i,
+      size_t off, size_t stride, size_t rows, size_t row_bytes)
+{
+   struct spa_data  *d;
+   struct spa_chunk *chunk;
+   size_t start, need;
+
+   if (buf->n_datas > i && i)
+      off = 0;
+   else
+      i = 0;
+   d     = &buf->datas[i];
+   chunk = d->chunk;
+   if (!d->data || !chunk || !d->maxsize || !rows
+         || (chunk->flags & SPA_CHUNK_FLAG_CORRUPTED))
+      return NULL;
+   start = (chunk->offset % d->maxsize) + off;
+   need  = (rows - 1) * stride + row_bytes;
+   if (off + need > chunk->size || start + need > d->maxsize)
+      return NULL;
+   return (const uint8_t*)d->data + start;
+}
+
+static size_t planar_stride(struct spa_buffer *buf, unsigned i,
+      size_t fallback)
+{
+   if (buf->n_datas > i && buf->datas[i].chunk
+         && buf->datas[i].chunk->stride > 0)
+      return (size_t)buf->datas[i].chunk->stride;
+   return fallback;
+}
+
+static bool preprocess_planar(pipewire_camera_t *camera,
+      retro_camera_frame_planar_t frame_planar_cb)
+{
+   struct retro_camera_planar_frame f;
+   struct spa_meta_header *h;
+   struct spa_buffer *buf;
+   struct pw_buffer  *b;
+   size_t w    = camera->size.width;
+   size_t ht   = camera->size.height;
+   size_t rows = (ht + 1) >> 1;
+   size_t s0, s1;
+   bool   ret  = false;
+
+   if (!(b = pw_stream_dequeue_buffer(camera->stream)))
+      return false;
+
+   buf = b->buffer;
+   if (!buf || !buf->n_datas || !buf->datas || !w || !ht)
+      goto done;
+   if ((h = spa_buffer_find_meta_data(buf, SPA_META_Header, sizeof(*h)))
+         && (h->flags & SPA_META_HEADER_FLAG_CORRUPTED))
+      goto done;
+
+   s0 = planar_stride(buf, 0, camera->planar_stride);
+   f.width    = (unsigned)w;
+   f.height   = (unsigned)ht;
+   f.rotation = 0;
+   f.flags    = camera->planar_flags;
+
+   switch (camera->format.info.raw.format)
+   {
+      case SPA_VIDEO_FORMAT_YUY2:
+         if (s0 < w * 2 || !camera->planar
+               || !(f.planes[0] = planar_plane(buf, 0, 0, s0, ht, w * 2)))
+            goto done;
+         image_yuv_422_to_nv12(camera->planar, camera->planar + w * ht,
+               f.planes[0], s0, (unsigned)w, (unsigned)ht);
+         f.planes[0]   = camera->planar;
+         f.planes[1]   = camera->planar + w * ht;
+         f.planes[2]   = f.planes[1] + 1;
+         f.strides[0]  = f.strides[1] = f.strides[2] = w;
+         f.chroma_step = 2;
+         break;
+      case SPA_VIDEO_FORMAT_NV12:
+         s1 = planar_stride(buf, 1, s0);
+         if (s0 < w || s1 < ((w + 1) & ~(size_t)1)
+               || !(f.planes[0] = planar_plane(buf, 0, 0, s0, ht, w))
+               || !(f.planes[1] = planar_plane(buf, 1, s0 * ht, s1, rows,
+                     (w + 1) & ~(size_t)1)))
+            goto done;
+         f.planes[2]   = f.planes[1] + 1;
+         f.strides[0]  = s0;
+         f.strides[1]  = f.strides[2] = s1;
+         f.chroma_step = 2;
+         break;
+      case SPA_VIDEO_FORMAT_I420:
+         s1 = planar_stride(buf, 1, s0 >> 1);
+         if (s0 < w || s1 < (w + 1) >> 1
+               || planar_stride(buf, 2, s1) != s1
+               || !(f.planes[0] = planar_plane(buf, 0, 0, s0, ht, w))
+               || !(f.planes[1] = planar_plane(buf, 1, s0 * ht, s1, rows,
+                     (w + 1) >> 1))
+               || !(f.planes[2] = planar_plane(buf, 2, s0 * ht + s1 * rows,
+                     s1, rows, (w + 1) >> 1)))
+            goto done;
+         f.strides[0]  = s0;
+         f.strides[1]  = f.strides[2] = s1;
+         f.chroma_step = 1;
+         break;
+      default:
+         goto done;
+   }
+
+   /* The capture buffer is borrowed only until the callback returns. */
+   frame_planar_cb(&f);
+   ret = true;
+
+done:
+   pw_stream_queue_buffer(camera->stream, b);
+   return ret;
+}
+
 static void stream_state_changed_cb(void *data, enum pw_stream_state old,
                                     enum pw_stream_state state, const char *error)
 {
@@ -280,6 +425,8 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
    {
       free(camera->buffer_output);
       camera->buffer_output = NULL;
+      free(camera->planar);
+      camera->planar        = NULL;
       scaler_ctx_gen_reset(&camera->scaler);
       memset(&camera->scaler, 0, sizeof(camera->scaler));
       memset(&camera->format, 0, sizeof(camera->format));
@@ -318,7 +465,24 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
       return;
    }
 
-   switch (camera->scaler.in_fmt)
+   if (camera->want_planar)
+   {
+      const struct spa_video_info_raw *raw = &camera->format.info.raw;
+      if (!planar_format(raw->format))
+      {
+         pw_stream_set_error(camera->stream, -EINVAL, "unsupported format");
+         return;
+      }
+      input_stride = raw->format == SPA_VIDEO_FORMAT_YUY2
+         ? camera->size.width * 2 : camera->size.width;
+      camera->planar_stride = input_stride;
+      camera->planar_flags  = 0;
+      if (raw->color_matrix == SPA_VIDEO_COLOR_MATRIX_BT709)
+         camera->planar_flags |= RETRO_CAMERA_PLANAR_BT709;
+      if (raw->color_range == SPA_VIDEO_COLOR_RANGE_0_255)
+         camera->planar_flags |= RETRO_CAMERA_PLANAR_FULL_RANGE;
+   }
+   else switch (camera->scaler.in_fmt)
    {
       case SCALER_FMT_ARGB8888:
       case SCALER_FMT_ABGR8888:
@@ -354,6 +518,30 @@ static void stream_param_changed_cb(void *data, uint32_t id, const struct spa_po
          SPA_PARAM_META_type,        SPA_POD_Id(SPA_META_VideoTransform),
          SPA_PARAM_META_size,        SPA_POD_Int(sizeof(struct spa_meta_videotransform)));
 #endif
+
+   free(camera->planar);
+   camera->planar = NULL;
+   if (camera->want_planar)
+   {
+      size_t w = camera->size.width;
+      size_t h = camera->size.height;
+      if (camera->format.info.raw.format == SPA_VIDEO_FORMAT_YUY2)
+      {
+         /* Macropixels: the repack needs whole ones. */
+         if (w & 1)
+         {
+            pw_stream_set_error(camera->stream, -EINVAL, "odd YUY2 width");
+            return;
+         }
+         if (!(camera->planar = (uint8_t*)malloc(w * h + w * ((h + 1) >> 1))))
+         {
+            RARCH_ERR("[Camera] [PipeWire] Failed to allocate planar buffer.\n");
+            return;
+         }
+      }
+      pw_stream_update_params(camera->stream, params, 2);
+      return;
+   }
 
    free(camera->buffer_output);
    camera->buffer_output = (uint32_t *)
@@ -432,8 +620,8 @@ static void pwire_camera_free(void *data)
 
    pipewire_core_deinit(camera->pw);
 
-   if (camera->buffer_output)
-      free(camera->buffer_output);
+   free(camera->buffer_output);
+   free(camera->planar);
 
    scaler_ctx_gen_reset(&camera->scaler);
    free(camera);
@@ -446,11 +634,24 @@ static void *pwire_camera_init(const char *device, uint64_t caps,
    const struct spa_pod *params[3];
    struct     pw_properties *props;
    uint8_t            buffer[1024];
-   pipewire_camera_t       *camera = (pipewire_camera_t*)calloc(1, sizeof(*camera));
+   pipewire_camera_t       *camera = NULL;
    struct spa_pod_builder        b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
+   bool               want_planar = (caps
+         & (UINT64_C(1) << RETRO_CAMERA_BUFFER_PLANAR)) != 0;
+
+   if (!want_planar && (caps
+         & (UINT64_C(1) << RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER)) == 0)
+   {
+      RARCH_ERR("[Camera] [PipeWire] Returns raw framebuffers or planes.\n");
+      return NULL;
+   }
+
+   camera = (pipewire_camera_t*)calloc(1, sizeof(*camera));
 
    if (!camera)
       goto error;
+
+   camera->want_planar = want_planar;
 
    if (!pipewire_core_init(&camera->pw, "camera_driver", NULL))
       goto error;
@@ -474,7 +675,7 @@ static void *pwire_camera_init(const char *device, uint64_t caps,
    /* build the extra parameters to connect with. To connect, we can provide
     * a list of supported formats. We use a builder that writes the param
     * object to the stack. */
-   n_params = build_format(&b, params, dims);
+   n_params = build_format(&b, params, dims, camera->want_planar);
    {
       struct spa_pod_frame f;
       struct spa_dict_item items[1];
@@ -518,13 +719,14 @@ static bool pwire_camera_poll(void *data,
    const char         *error = NULL;
 
    (void)frame_gl_cb;
-   (void)frame_planar_cb;
 
    retro_assert(camera);
 
    if (pw_stream_get_state(camera->stream, &error) != PW_STREAM_STATE_STREAMING)
       return false;
 
+   if (camera->want_planar)
+      return frame_planar_cb && preprocess_planar(camera, frame_planar_cb);
    return frame_raw_cb && preprocess_image(camera, frame_raw_cb);
 }
 

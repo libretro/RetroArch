@@ -94,8 +94,11 @@ static void drain(size_t bytes)
 /* One menu frame, @us after the last feed */
 static void menu_frame(retro_time_t us)
 {
-   audio_driver_st.menu_feed_last = cpu_features_get_time_usec() - us;
-   audio_driver_menu_sample(true);
+   /* The iteration's reading, as the runloop hands it over */
+   static retro_time_t now = 10000000;
+   now                           += us;
+   audio_driver_st.menu_feed_last = now - us;
+   audio_driver_menu_sample(now);
 }
 
 static void expect(const char *what, bool ok)

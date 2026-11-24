@@ -7,7 +7,10 @@
  * frame or the whole screen as the base, per-image alpha blended
  * exactly, per-texel alpha and sub-rectangles of the image, the
  * memory-order RGBA images, the menu with the overlay over or behind
- * it, the bilinear mode's scaled-up window, and the page freed. */
+ * it, the bilinear mode's scaled-up window, and the page freed; then
+ * the frame as the framebuffer receives it - point mode's viewport and
+ * black border over a buffer still holding the last frame, bilinear
+ * mode's frame at x_offset, the masked menu - and what a frame costs. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,6 +59,15 @@ void framebufferClose(Framebuffer *fb) { (void)fb; }
 /* --- the frontend ------------------------------------------------ */
 
 uint64_t cpu_features_get(void) { return 0; }
+AppletOperationMode appletGetOperationMode(void)
+{
+   return AppletOperationMode_Handheld;
+}
+bool video_context_driver_set(const gfx_ctx_driver_t *data)
+{
+   (void)data;
+   return true;
+}
 
 void video_driver_update_viewport(struct video_viewport *vp,
       bool force_full, bool keep_aspect, bool y_down)
@@ -348,6 +360,157 @@ static void lane_smooth(void)
          failures == before ? "pass" : "fail");
 }
 
+/* --- the frame as the framebuffer receives it --------------------- */
+
+#define FB_STALE 0xdeadbeefu   /* last frame's OSD and overlay */
+
+static uint32_t argb_to_abgr(uint32_t p)
+{
+   return (p & 0xff00ff00u) | ((p >> 16) & 0xffu) | ((p & 0xffu) << 16);
+}
+
+static uint32_t src_abgr(const void *src, bool rgb32, unsigned iw,
+      unsigned sx, unsigned sy)
+{
+   if (rgb32)
+      return argb_to_abgr(((const uint32_t*)src)[sy * iw + sx]);
+   return 0xff000000u
+      | pixconv_rgb565_to_xbgr8888(((const uint16_t*)src)[sy * iw + sx]);
+}
+
+static void fill_core(bool rgb32, unsigned w, unsigned h)
+{
+   unsigned i;
+   for (i = 0; i < w * h; i++)
+   {
+      if (rgb32)
+         core_frame[i] = 0xff000000u | (i * 2654435761u >> 8);
+      else
+         ((uint16_t*)core_frame)[i] = (uint16_t)(i * 40503u);
+   }
+}
+
+/* Point mode: the viewport is the nearest-centre sample of the frame
+ * and everything around it black, whatever the buffer held */
+static void lane_point_frame(bool rgb32)
+{
+   int before = failures;
+   unsigned w = 256, h = 224, x, y, bad = 0, bad_border = 0;
+   unsigned vx, vy, vw, vh;
+   video_info_t info;
+   switch_video_t *sw;
+   size_t i;
+   memset(&info, 0, sizeof(info));
+   info.dims  = VIDEO_SCALE_PACK(w, h);
+   info.rgb32 = rgb32;
+   sw         = (switch_video_t*)video_switch.init(&info);
+   fill_core(rgb32, w, h);
+   for (i = 0; i < FB_W * FB_H; i++)
+      fb_mem[i] = FB_STALE;
+   video_switch.frame(sw, core_frame, VIDEO_SCALE_PACK(w, h), 1,
+         w * (rgb32 ? 4 : 2), NULL, &vfi);
+   vx = VIDEO_POS_X(sw->vp.pos);
+   vy = VIDEO_POS_Y(sw->vp.pos);
+   vw = VIDEO_SCALE_W(sw->vp.dims);
+   vh = VIDEO_SCALE_H(sw->vp.dims);
+   CHECK(vw > 0 && vh > 0 && vw <= FB_W && vh <= FB_H,
+         "point: viewport %ux%u", vw, vh);
+   for (y = 0; y < FB_H; y++)
+      for (x = 0; x < FB_W; x++)
+      {
+         uint32_t got = fb_mem[(size_t)y * FB_W + x];
+         if (x >= vx && x < vx + vw && y >= vy && y < vy + vh)
+         {
+            unsigned sx = (2 * (x - vx) + 1) * w / (2 * vw);
+            unsigned sy = (2 * (y - vy) + 1) * h / (2 * vh);
+            if (got != src_abgr(core_frame, rgb32, w, sx, sy))
+               bad++;
+         }
+         else if (got != 0)
+            bad_border++;
+      }
+   CHECK(!bad, "point %s: %u viewport pixels not the frame's",
+         rgb32 ? "XRGB8888" : "RGB565", bad);
+   CHECK(!bad_border, "point %s: %u border pixels not black",
+         rgb32 ? "XRGB8888" : "RGB565", bad_border);
+   video_switch.free(sw);
+   printf("[%s] point mode's frame and border (%s)\n",
+         failures == before ? "pass" : "fail",
+         rgb32 ? "XRGB8888" : "RGB565");
+}
+
+/* Bilinear mode: the frame at its own size at x_offset, the
+ * compositor scaling the window up */
+static void lane_smooth_frame(void)
+{
+   int before = failures;
+   unsigned w = 320, h = 240, x, y, x0, bad = 0;
+   switch_video_t *sw = driver_new(w, h, true);
+   size_t i;
+   fill_core(true, w, h);
+   for (i = 0; i < FB_W * FB_H; i++)
+      fb_mem[i] = FB_STALE;
+   video_switch.frame(sw, core_frame, VIDEO_SCALE_PACK(w, h), 1,
+         w * sizeof(uint32_t), NULL, &vfi);
+   x0 = sw->hw_scale.x_offset;
+   for (y = 0; y < h; y++)
+      for (x = 0; x < w; x++)
+         if (fb_mem[(size_t)y * FB_W + x0 + x]
+               != src_abgr(core_frame, true, w, x, y))
+            bad++;
+   CHECK(!bad, "smooth: %u frame pixels not the frame's", bad);
+   video_switch.free(sw);
+   printf("[%s] bilinear mode's frame\n",
+         failures == before ? "pass" : "fail");
+}
+
+/* The menu: its texture scaled by a whole factor and centred, texels
+ * without alpha black, the rest of the screen black */
+static void lane_menu_frame(void)
+{
+   int before = failures;
+   static uint32_t menu[320 * 240];
+   unsigned mw = 320, mh = 240, tw, th, ox, oy, x, y, bad = 0;
+   switch_video_t *sw = driver_new(640, 360, false);
+   size_t i;
+   for (i = 0; i < mw * mh; i++)
+      menu[i] = ((i % 7) ? 0xff000000u : 0)
+         | (uint32_t)(i * 2246822519u >> 8);
+   video_switch.poke_interface(sw, &sw_poke);
+   sw_poke->set_texture_frame(sw, menu, true,
+         VIDEO_SCALE_PACK(mw, mh), 1.0f);
+   sw_poke->set_texture_enable(sw, true, false);
+   vfi.menu_st_flags = MENU_ST_FLAG_ALIVE;
+   fill_core(true, 640, 360);
+   for (i = 0; i < FB_W * FB_H; i++)
+      fb_mem[i] = FB_STALE;
+   video_switch.frame(sw, core_frame, VIDEO_SCALE_PACK(640, 360), 1,
+         640 * sizeof(uint32_t), NULL, &vfi);
+   tw = VIDEO_SCALE_W(sw->menu_texture.tgt_dims);
+   th = VIDEO_SCALE_H(sw->menu_texture.tgt_dims);
+   ox = (FB_W - tw) / 2;
+   oy = (FB_H - th) / 2;
+   for (y = 0; y < FB_H; y++)
+      for (x = 0; x < FB_W; x++)
+      {
+         uint32_t want = 0;
+         if (x >= ox && x < ox + tw && y >= oy && y < oy + th)
+         {
+            uint32_t s = menu[((y - oy) * mh / th) * mw + (x - ox) * mw / tw];
+            want = (s >> 24) ? (argb_to_abgr(s) & 0xffffffu) : 0;
+         }
+         if (fb_mem[(size_t)y * FB_W + x] != want)
+            bad++;
+      }
+   CHECK(tw == 960 && th == 720, "menu: scaled to %ux%u", tw, th);
+   CHECK(!bad, "menu: %u pixels not the masked texture", bad);
+   vfi.menu_st_flags = 0;
+   sw_poke->set_texture_enable(sw, false, false);
+   video_switch.free(sw);
+   printf("[%s] the menu's frame\n",
+         failures == before ? "pass" : "fail");
+}
+
 /* A page with no images, setters past the page, a page freed */
 static void lane_pages(void)
 {
@@ -394,6 +557,35 @@ static void lane_cost(void)
    video_switch.free(sw);
 }
 
+/* What a frame costs, point and bilinear, a core's RGB565 */
+static void lane_frame_cost(void)
+{
+   static const bool modes[2] = { false, true };
+   unsigned m;
+   for (m = 0; m < 2; m++)
+   {
+      int i;
+      clock_t t0;
+      video_info_t info;
+      switch_video_t *sw;
+      memset(&info, 0, sizeof(info));
+      info.dims   = VIDEO_SCALE_PACK(256, 224);
+      info.smooth = modes[m];
+      sw          = (switch_video_t*)video_switch.init(&info);
+      fill_core(false, 256, 224);
+      video_switch.frame(sw, core_frame, VIDEO_SCALE_PACK(256, 224), 1,
+            256 * 2, NULL, &vfi);
+      t0 = clock();
+      for (i = 0; i < 100; i++)
+         video_switch.frame(sw, core_frame, VIDEO_SCALE_PACK(256, 224), 1,
+               256 * 2, NULL, &vfi);
+      printf("[info] %s frame, 256x224 RGB565: %.0f us on this host\n",
+            modes[m] ? "bilinear" : "point",
+            (double)(clock() - t0) * 1e6 / CLOCKS_PER_SEC / 100.0);
+      video_switch.free(sw);
+   }
+}
+
 int main(void)
 {
    lane_viewport();
@@ -402,7 +594,12 @@ int main(void)
    lane_menu();
    lane_smooth();
    lane_pages();
+   lane_point_frame(true);
+   lane_point_frame(false);
+   lane_smooth_frame();
+   lane_menu_frame();
    lane_cost();
+   lane_frame_cost();
    printf("%s switch_nx_overlay_test\n", failures ? "FAIL" : "PASS");
    return failures ? 1 : 0;
 }

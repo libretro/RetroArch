@@ -66,6 +66,7 @@
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../runloop.h"
+#include "../../audio/audio_driver.h"
 #include "../input_driver.h"
 #include "android_pointers.h"
 
@@ -121,11 +122,36 @@ enum {
 
 #define MAX_KEYS ((LAST_KEYCODE + 7) / 8)
 
-/* First ports are used to keep track of gamepad states.
- * Last port is used for keyboard state.
- * Every bit index used against a row must be < LAST_KEYCODE;
- * writers bound incoming keycodes, readers bound bind keysyms. */
-static uint8_t android_key_state[DEFAULT_MAX_PADS + 1][MAX_KEYS];
+/* Each pad as the poll leaves it, lent to the readers by the joypad
+ * driver (input_pad_view.h): its keys are its buttons, its axes and
+ * its hat as android_app's events give them. A row of keys is the
+ * bytes of a view's buttons - bit n of byte k is key 8k+n, which on a
+ * little-endian machine is that bit of the words - and the keyboard has
+ * a row of its own (ANDROID_KEYBOARD_PORT). Every bit index used
+ * against a row must be < LAST_KEYCODE; writers bound incoming
+ * keycodes, readers bound bind keysyms. */
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+#error "android_input.c: a row of keys is a view's buttons only little-endian"
+#endif
+static input_pad_view_t android_pad_views[DEFAULT_MAX_PADS];
+static uint8_t android_keyboard_row[MAX_KEYS];
+typedef char android_key_row_fits[
+   (MAX_KEYS <= sizeof(((input_pad_view_t*)0)->buttons)) ? 1 : -1];
+#define ANDROID_KEY_ROW(port) (((port) < DEFAULT_MAX_PADS) \
+      ? (uint8_t*)android_pad_views[(port)].buttons.data \
+      : android_keyboard_row)
+
+/* The hat's view bits from what android_app keeps of it */
+static void android_pad_view_hat(struct android_app *android_app,
+      unsigned port)
+{
+   const int8_t *hat = android_app->hat_state[port];
+   android_pad_views[port].hats = (uint16_t)(
+           ((hat[1] == -1) ? 1 : 0)
+         | ((hat[1] ==  1) ? 2 : 0)
+         | ((hat[0] == -1) ? 4 : 0)
+         | ((hat[0] ==  1) ? 8 : 0));
+}
 /* A poll keeps track of every key of every row (android_poll_changes.h) */
 typedef char android_poll_changes_rows_check[
    (     ANDROID_POLL_CHANGES_ROWS      >= DEFAULT_MAX_PADS + 1
@@ -172,11 +198,11 @@ static bool hover_guard_drop(float x, float y, int64_t now_ms, float eps_px)
 }
 
 
-#define ANDROID_KEYBOARD_INPUT_PRESSED(key) (BIT_GET(android_key_state[0], (key)))
+#define ANDROID_KEYBOARD_INPUT_PRESSED(key) (BIT_GET(ANDROID_KEY_ROW(0), (key)))
 
-uint8_t *android_keyboard_state_get(unsigned port)
+struct input_pad_view *android_input_pad_view(unsigned port)
 {
-   return android_key_state[port];
+   return (port < DEFAULT_MAX_PADS) ? &android_pad_views[port] : NULL;
 }
 
 typedef struct
@@ -528,6 +554,7 @@ void android_keyboard_poll(void)
          *android_kbd_size_ptr = len;
       if (android_kbd_ptr_ptr)
          *android_kbd_ptr_ptr  = len;
+      input_driver_keyboard_line_changed();
    }
 
    finished = node->finished;
@@ -568,7 +595,7 @@ static void android_keyboard_free(void)
 
     for (i = 0; i < DEFAULT_MAX_PADS; i++)
         for (j = 0; j < MAX_KEYS; j++)
-            android_key_state[i][j] = 0;
+            ANDROID_KEY_ROW(i)[j] = 0;
 
     for (i = 0; i < (unsigned) kbd_num; i++)
         kbd_id[i] = -1;
@@ -802,6 +829,10 @@ void android_input_flush_pending_state(void)
    if (!android_state_flushed)
    {
       android_state_flushed = true;
+      /* Stopped before the save, which can take a while: a device left
+       * running through it underruns and stutters on the way out */
+      if (runloop_get_flags() & RUNLOOP_FLAG_IDLE)
+         audio_driver_set_away(true);
       retroarch_save_for_suspend();
    }
 
@@ -1055,6 +1086,10 @@ static void android_input_poll_main_cmd(void)
 
          if (cmd == APP_CMD_PAUSE)
          {
+            /* Away from here: the focus loss comes only once onPause()
+             * has returned, which is after the flush, so the core and
+             * the audio device are stopped for it now */
+            runloop_set_platform_paused(true);
             android_state_flush_pending = true;
             retro_atomic_store_release_int(&android_keypress_vibrate_pending, 0);
             if (hold_ack)
@@ -1062,6 +1097,11 @@ static void android_input_poll_main_cmd(void)
          }
          else
          {
+            /* A pause the focus never followed ends here; one it did
+             * ends with the focus gain */
+            if (     cmd == APP_CMD_RESUME
+                  && !retro_atomic_load_acquire_int(&android_app->unfocused))
+               runloop_set_platform_paused(false);
             /* A callback still waiting on a held-back acknowledgement
              * has timed out by now; this state supersedes it. */
             android_state_flush_pending = false;
@@ -1206,22 +1246,23 @@ static void android_input_dpad_fields(struct android_app *android,
    if (port < 0 || port >= DEFAULT_MAX_PADS)
       return;
 
-   android->analog_state[port][0] = (int16_t)(axes[0] * 32767.0f);
-   android->analog_state[port][1] = (int16_t)(axes[1] * 32767.0f);
+   android_pad_views[port].axes[0] = (int16_t)(axes[0] * 32767.0f);
+   android_pad_views[port].axes[1] = (int16_t)(axes[1] * 32767.0f);
    if (!all_axes)
       return;
 
    android->hat_state[port][0]    = (int)axes[4];
    android->hat_state[port][1]    = (int)axes[5];
+   android_pad_view_hat(android, (unsigned)port);
 
    /* XXX: this could be a loop instead, but do we really want to
     * loop through every axis? */
-   android->analog_state[port][2] = (int16_t)(axes[2] * 32767.0f);
-   android->analog_state[port][3] = (int16_t)(axes[3] * 32767.0f);
-   android->analog_state[port][6] = (int16_t)(axes[6] * 32767.0f);
-   android->analog_state[port][7] = (int16_t)(axes[7] * 32767.0f);
-   android->analog_state[port][8] = (int16_t)(axes[8] * 32767.0f);
-   android->analog_state[port][9] = (int16_t)(axes[9] * 32767.0f);
+   android_pad_views[port].axes[2] = (int16_t)(axes[2] * 32767.0f);
+   android_pad_views[port].axes[3] = (int16_t)(axes[3] * 32767.0f);
+   android_pad_views[port].axes[6] = (int16_t)(axes[6] * 32767.0f);
+   android_pad_views[port].axes[7] = (int16_t)(axes[7] * 32767.0f);
+   android_pad_views[port].axes[8] = (int16_t)(axes[8] * 32767.0f);
+   android_pad_views[port].axes[9] = (int16_t)(axes[9] * 32767.0f);
 }
 
 /* The calls above that not every Android release has, looked up once,
@@ -1995,8 +2036,8 @@ static INLINE void android_input_poll_event_type_key(int port,
    int action  = key->action;
    int keycode = key->keycode;
 
-   /* android_key_state[] has one row per pad slot plus the
-    * dedicated keyboard row at ANDROID_KEYBOARD_PORT. */
+   /* a row of keys for each pad slot, and the keyboard's at
+    * ANDROID_KEYBOARD_PORT */
    if (port < 0 || port > ANDROID_KEYBOARD_PORT)
       return;
 
@@ -2024,8 +2065,8 @@ static INLINE void android_input_poll_event_type_key(int port,
    if (     action == AKEY_EVENT_ACTION_DOWN
          || action == AKEY_EVENT_ACTION_UP)
       android_key_state_write(
-            android_key_state[port],
-            android_key_state[ANDROID_KEYBOARD_PORT],
+            ANDROID_KEY_ROW(port),
+            ANDROID_KEY_ROW(ANDROID_KEYBOARD_PORT),
             LAST_KEYCODE, keycode, key->source,
             action == AKEY_EVENT_ACTION_DOWN);
 
@@ -2358,7 +2399,7 @@ static void handle_hotplug(android_input_t *android,
    /* All pad slots exhausted: refuse to register the device instead
     * of writing out of bounds. Although pad_states[] holds MAX_USERS
     * entries, every consumer of the port index on the event path
-    * (analog_state[], hat_state[], android_key_state[]) is sized
+    * (android_pad_views[], hat_state[], the rows of keys) is sized
     * DEFAULT_MAX_PADS, so any port at or beyond that limit corrupts
     * adjacent memory. Slots can realistically run out because Android
     * re-enumerates input devices with fresh ids on every
@@ -2482,17 +2523,17 @@ static void engine_handle_touchpad(
          int y = touchstate[pointer_id].y  = ev->pointer[n].y;
          if (x < 360)
          {
-            android->analog_state[port][0] =
+            android_pad_views[port].axes[0] =
                (int16_t)((x / 180.0 - 1.0f) * 32767.0f);
-            android->analog_state[port][1] =
+            android_pad_views[port].axes[1] =
                (int16_t)((y / 180.0 - 1.0f) * 32767.0f);
          }
          else if (x >= 606)
          {
             x -= 606;
-            android->analog_state[port][2] =
+            android_pad_views[port].axes[2] =
                (int16_t)((x / 180.0 - 1.0f) * 32767.0f);
-            android->analog_state[port][3] =
+            android_pad_views[port].axes[3] =
                (int16_t)((y / 180.0 - 1.0f) * 32767.0f);
          }
       }
@@ -2500,13 +2541,13 @@ static void engine_handle_touchpad(
       {
          if (touchstate[pointer_id].x < 360)
          {
-            android->analog_state[port][0] = 0.0f;
-            android->analog_state[port][1] = 0.0f;
+            android_pad_views[port].axes[0] = 0.0f;
+            android_pad_views[port].axes[1] = 0.0f;
          }
          else if (touchstate[pointer_id].x >= 606)
          {
-            android->analog_state[port][2] = 0.0f;
-            android->analog_state[port][3] = 0.0f;
+            android_pad_views[port].axes[2] = 0.0f;
+            android_pad_views[port].axes[3] = 0.0f;
          }
       }
    }
@@ -2956,7 +2997,7 @@ static bool android_input_event_key_change(android_input_t *android,
    if (keysym < 0 || keysym >= LAST_KEYCODE)
       return true;
    return android_poll_changes_key(&android->changes, (unsigned)row,
-         (unsigned)keysym, BIT_GET(android_key_state[row], keysym) != 0,
+         (unsigned)keysym, BIT_GET(ANDROID_KEY_ROW(row), keysym) != 0,
          action == AKEY_EVENT_ACTION_DOWN);
 }
 
@@ -3295,13 +3336,14 @@ static void android_input_pad_removed(android_input_t *android,
     * device that is gone. */
    if (port < DEFAULT_MAX_PADS)
    {
-      android_key_state_release_row(android_key_state[port],
-            android_key_state[ANDROID_KEYBOARD_PORT], LAST_KEYCODE);
+      android_key_state_release_row(ANDROID_KEY_ROW(port),
+            ANDROID_KEY_ROW(ANDROID_KEYBOARD_PORT), LAST_KEYCODE);
       memset(&android_press_group[port], 0, sizeof(android_press_group[port]));
-      memset(android_app->analog_state[port], 0,
-            sizeof(android_app->analog_state[port]));
+      memset(android_pad_views[port].axes, 0,
+            sizeof(android_pad_views[port].axes));
       memset(android_app->hat_state[port], 0,
             sizeof(android_app->hat_state[port]));
+      android_pad_views[port].hats = 0;
    }
 
    android_app->id[port] = 0;
@@ -3346,7 +3388,7 @@ static void android_input_poll_press_groups(void)
       android_press_group_t *g = &android_press_group[p];
       if (!g->any_fresh && !g->any_held && !g->any_untap)
          continue;
-      android_press_group_end(g, android_key_state[p], MAX_KEYS, now,
+      android_press_group_end(g, ANDROID_KEY_ROW(p), MAX_KEYS, now,
             android_press_window_ns);
       if (g->any_held || g->any_untap)
          any = true;
@@ -3506,7 +3548,7 @@ static void android_input_keys_down(void *data, unsigned port,
       return;
    for (i = 0; i < count; i++)
       if (     keys[i] < RETROK_LAST
-            && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT],
+            && BIT_GET(ANDROID_KEY_ROW(ANDROID_KEYBOARD_PORT),
                rarch_keysym_lut[keys[i]]))
          down[i >> 5] |= (1u << (i & 31));
 }
@@ -3539,7 +3581,7 @@ static int16_t android_input_state(
       case RETRO_DEVICE_ANALOG:
          break;
       case RETRO_DEVICE_KEYBOARD:
-         return (id && id < RETROK_LAST) && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[id]);
+         return (id && id < RETROK_LAST) && BIT_GET(ANDROID_KEY_ROW(ANDROID_KEYBOARD_PORT), rarch_keysym_lut[id]);
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
          {

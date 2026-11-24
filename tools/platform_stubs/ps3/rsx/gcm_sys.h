@@ -120,5 +120,6 @@ s32  gcmSetDisplayBuffer(const u8 bufferId, const u32 offset,
 s32  gcmSetFlip(gcmContextData *context, const u8 bufferId);
 void gcmSetFlipMode(const u32 mode);
 void gcmSetWaitFlip(gcmContextData *context);
+void gcmSetFlipHandler(void (*handler)(const u32 head));
 
 #endif

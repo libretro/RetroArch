@@ -51,6 +51,10 @@ typedef struct d3d12_upscaler_image
 
 d3d12_upscaler_t *d3d12_upscaler_init(enum video_temporal_upscaler kind,
       ID3D12Device *device, const char *dir);
+d3d12_upscaler_t *d3d12_upscaler_init_async(enum video_temporal_upscaler kind,
+      ID3D12Device *device, const char *dir);
+ID3D12GraphicsCommandList *d3d12_upscaler_take_commands(d3d12_upscaler_t *up);
+void d3d12_upscaler_signal_reload(d3d12_upscaler_t *up, ID3D12CommandQueue *queue);
 
 /* @mode is video_upscaler_mode()'s word */
 bool d3d12_upscaler_optimal(d3d12_upscaler_t *up, unsigned mode,

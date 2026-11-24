@@ -84,6 +84,45 @@ size_t rjpeg_encode(const rjpeg_encoder_t *e, uint8_t *dst, size_t cap,
       const uint8_t *cb, size_t cb_stride,
       const uint8_t *cr, size_t cr_stride);
 
+/* Where rjpeg_encode_blocks() takes its samples from: a block at a time,
+ * so a picture in any layout (RGB, packed YUV, ...) is encoded where it
+ * lies, with no planes made of it. */
+struct rjpeg_encode_source
+{
+   /* Writes the 8x8 block of component @c (0 Y, 1 Cb, 2 Cr) whose
+    * top-left sample is (@x, @y) of that component's plane, as 64 samples
+    * row by row, past-the-edge samples repeating the plane's last row and
+    * column. Y's plane is the picture's size; Cb's and Cr's are
+    * (width + 1) / 2 wide, and (height + 1) / 2 tall under 4:2:0 or the
+    * picture's height under 4:2:2. Blocks are asked for in the order the
+    * file holds them. */
+   void (*block)(void *user, unsigned c, unsigned x, unsigned y, uint8_t *px);
+   void *user;
+   enum rjpeg_encode_sampling sampling; /* not read when grey */
+   unsigned grey;             /* non-zero: one component, Y only */
+   unsigned restart_interval; /* MCUs between restart markers, 0 for none */
+};
+
+/**
+ * rjpeg_encode_blocks:
+ * @e      : tables from rjpeg_encoder_init()
+ * @dst    : the output
+ * @cap    : its size
+ * @width  : the picture's size
+ * @height :
+ * @src    : where the samples come from
+ *
+ * As rjpeg_encode(), with the samples asked of @src a block at a time,
+ * a greyscale picture written as one component, and restart markers
+ * when @src asks for them. rjpeg_encode_bound() bounds the output when
+ * there are none.
+ *
+ * Returns: the bytes written, or 0 if @cap was too small or the size is
+ * not one JPEG can carry.
+ */
+size_t rjpeg_encode_blocks(const rjpeg_encoder_t *e, uint8_t *dst, size_t cap,
+      unsigned width, unsigned height, const struct rjpeg_encode_source *src);
+
 RETRO_END_DECLS
 
 #endif

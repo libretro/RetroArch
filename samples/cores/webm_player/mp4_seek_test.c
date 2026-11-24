@@ -6,6 +6,8 @@
 #include <formats/rmp4.h>
 #include <formats/rmp4_video.h>
 
+static int metadata_only;
+
 static int compare_pts(const void *a, const void *b)
 {
    int64_t x = *(const int64_t*)a, y = *(const int64_t*)b;
@@ -46,13 +48,62 @@ static int check_file(const char *path)
       }
    }
    if (!raw_times || !samples || samples > 16384) goto done;
+   {
+      rmp4_t *partial = rmp4_open_memory_avail(data, size, size / 2, NULL, NULL, NULL);
+      uint32_t partial_samples = 0;
+      if (partial) rmp4_track_pts(partial, track, &partial_samples);
+      if (partial && partial_samples < samples)
+      {
+         int need_more = 0;
+         stream = rmp4_video_stream_open_avail(data, size, size / 2,
+               &need_more, NULL, NULL);
+         if (stream || !need_more)
+         {
+            fprintf(stderr, "FAIL: partial fragment index published as complete movie\n");
+            rmp4_close(partial);
+            goto done;
+         }
+      }
+      rmp4_close(partial);
+   }
    if (!(stream = rmp4_video_stream_open(data, size))) goto done;
    rmp4_video_stream_get_info(stream, &width, &height, &frames, &loops);
-   if (!width || !height || width > 512 || height > 512
+   if (!width || !height || (!metadata_only && (width > 512 || height > 512))
          || frames != (int)samples)
    {
       printf("%s: metadata samples %u, stream frames %d\n", path,
             (unsigned)samples, frames);
+      goto done;
+   }
+   if (rmp4_video_stream_duration_ns(stream) != rmp4_duration_ns(demux)) goto done;
+   if (metadata_only)
+   {
+      printf("complete recording timeline: frames=%d duration=%.3f seconds\n",
+            frames, (double)rmp4_video_stream_duration_ns(stream) / 1000000000.0);
+      if (metadata_only == 2)
+      {
+         int64_t targets[3];
+         int probe_index;
+         targets[0] = rmp4_video_stream_duration_ns(stream) * 3 / 4;
+         targets[1] = rmp4_video_stream_duration_ns(stream) / 4;
+         targets[2] = 1000000000;
+         for (probe_index = 0; probe_index < 3; probe_index++)
+         {
+            int state = 0, steps = 0;
+            int64_t position = -1;
+            if (!rmp4_video_stream_seek_begin_ns(stream, targets[probe_index])) goto done;
+            while (!state && steps++ < 10000)
+               state = rmp4_video_stream_seek_step(stream, &position);
+            if (state != 1 || position < 0
+                  || position > targets[probe_index] / 1000
+                  || targets[probe_index] / 1000 - position > 100000) goto done;
+            if (!rmp4_video_stream_next(stream, &duration)) goto done;
+            printf("recording seek: target=%.3f actual=%.3f PASS\n",
+                  (double)targets[probe_index] / 1000000000.0,
+                  (double)position / 1000000.0);
+         }
+      }
+      failures = 0;
       goto done;
    }
    pixels = (size_t)width * height;
@@ -148,8 +199,12 @@ done:
 
 int main(int argc, char **argv)
 {
-   int i, failed = argc < 2;
+   int i, first = 1, failed = argc < 2;
+   if (argc > 2 && !strcmp(argv[1], "--metadata"))
+   { metadata_only = 1; first = 2; }
+   if (argc > 2 && !strcmp(argv[1], "--probe"))
+   { metadata_only = 2; first = 2; }
    if (rmp4_video_stream_seek_movie_ms(NULL, 0) != -1) failed = 1;
-   for (i = 1; i < argc; i++) failed |= check_file(argv[i]);
+   for (i = first; i < argc; i++) failed |= check_file(argv[i]);
    return failed;
 }

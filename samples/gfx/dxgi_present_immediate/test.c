@@ -85,13 +85,20 @@ typedef struct
 {
    uint32_t flags;
    DXGISwapChain swapChain;
+   unsigned flips_generation;
 } d3d11_video_t;
 
 typedef struct
 {
    uint32_t flags;
    struct { DXGISwapChain handle; } chain;
+   unsigned flips_generation;
 } d3d12_video_t;
+
+/* the outputs the window has been on */
+#define HAVE_D3DKMT 1
+static unsigned generation;
+static unsigned win32_d3dkmt_generation(void) { return generation; }
 
 #include "shipping.inc"
 
@@ -136,6 +143,7 @@ int main(void)
    /* ---- D3D11: tearing allowed, vsync off, and past the compositor ---- */
    d3d11.swapChain = &c;
    d3d11.flags     = D3D11_ST_FLAG_HAS_ALLOW_TEARING | D3D11_ST_FLAG_VSYNC;
+   d3d11.flips_generation = 0;
    out_asked       = 0;
    CHECK(!d3d11_present_immediate(&d3d11) && !out_asked,
          "d3d11: vsync on is not immediate, and asks nothing");
@@ -151,12 +159,22 @@ int main(void)
    d3d11.flags &= ~D3D11_ST_FLAG_FLIPS_ASKED;
    CHECK(!d3d11_present_immediate(&d3d11) && out_asked == 2,
          "d3d11: composed after a resize is not immediate");
+   /* the window moved, its chain as it was, to an output that flips */
+   out_support  = DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAG_FULLSCREEN;
+   CHECK(!d3d11_present_immediate(&d3d11) && out_asked == 2,
+         "d3d11: asked again with nothing changed");
+   generation++;
+   for (i = 0; i < 100; i++)
+      CHECK(d3d11_present_immediate(&d3d11),
+            "d3d11: on another output its answer is not asked for");
+   CHECK(out_asked == 3, "d3d11: another output is asked once");
    CHECK(!d3d11_present_immediate(NULL), "d3d11: no driver");
 
    /* ---- D3D12 ---- */
    out_support       = DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAG_FULLSCREEN;
    d3d12.chain.handle = &c;
    d3d12.flags       = D3D12_ST_FLAG_VSYNC;
+   d3d12.flips_generation = generation;
    out_asked         = 0;
    CHECK(!d3d12_present_immediate(&d3d12) && !out_asked,
          "d3d12: vsync on is not immediate, and asks nothing");
@@ -168,6 +186,14 @@ int main(void)
    d3d12.flags &= ~D3D12_ST_FLAG_FLIPS_ASKED;
    CHECK(!d3d12_present_immediate(&d3d12) && out_asked == 2,
          "d3d12: composed after a resize is not immediate");
+   out_support  = DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAG_FULLSCREEN;
+   CHECK(!d3d12_present_immediate(&d3d12) && out_asked == 2,
+         "d3d12: asked again with nothing changed");
+   generation++;
+   for (i = 0; i < 100; i++)
+      CHECK(d3d12_present_immediate(&d3d12),
+            "d3d12: on another output its answer is not asked for");
+   CHECK(out_asked == 3, "d3d12: another output is asked once");
    CHECK(!d3d12_present_immediate(NULL), "d3d12: no driver");
    CHECK(out_refs == 0, "an output was left referenced by a driver's ask");
 

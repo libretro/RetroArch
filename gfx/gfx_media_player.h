@@ -18,6 +18,9 @@ bool gfx_media_player_state(struct gfx_anim_preview *session,
 bool gfx_media_player_seek(struct gfx_anim_preview *session,
       video_player_t *player, int64_t target_us, unsigned mix_rate,
       bool s16, int64_t wall_us);
+bool gfx_media_player_select_audio(struct gfx_anim_preview *session,
+      video_player_t *player, int index, unsigned mix_rate, bool s16, int64_t wall_us);
+
 enum video_player_state gfx_media_player_poll(struct gfx_anim_preview *session,
       video_player_t *player, int64_t wall_us);
 

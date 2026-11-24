@@ -20,7 +20,7 @@
 #include <kernel.h>
 #include <audsrv.h>
 
-#include <retro_timers.h>
+#include <retro_atomic.h>
 
 #include "../audio_driver.h"
 
@@ -29,14 +29,18 @@
 #define AUDIO_BITS 16
 #define AUDIO_FRAME_BYTES (AUDIO_CHANNELS * (AUDIO_BITS / 8))
 
-/* audsrv_wait_audio() is the SDK's own wait and has no bound, so a
- * server that stops draining parks the caller for good. Polling what
- * audsrv reports free ends either way: the laps cap the case where it
- * keeps draining but never frees enough, and the case where it has
- * stopped. Never reached while audio plays - a period frees long
- * before this does. */
-#define AUDIO_WAIT_LAPS 8
-#define AUDIO_WAIT_US   4000
+/* What audsrv calls back on: the IOP sends the fill-buffer callback
+ * after each block the SPU takes while at least this much of its ring
+ * is free, so a waiter wakes once a block for as long as there is room
+ * to look at. One SPU block of stereo 16-bit. */
+#define AUDIO_ROOM_THRESHOLD (512 * AUDIO_FRAME_BYTES)
+
+/* audsrv_wait_audio() is the SDK's own wait and has no bound, and
+ * WaitSema() has none either, so the writable wait is bounded by a
+ * kernel alarm posting the same semaphore: H-SYNC ticks, about 64 us
+ * each, so roughly 32 ms. Never reached while audio plays - a block
+ * frees long before it. */
+#define AUDIO_WAIT_HSYNC 500
 
 typedef struct ps2_audio
 {
@@ -46,21 +50,57 @@ typedef struct ps2_audio
    /* What audsrv reported free before anything was queued, which is
     * its ring. write_avail() is measured against it. */
    size_t   ring_size;
+   /* Posted by audsrv's fill-buffer callback, and by the writable
+    * wait's alarm */
+   s32  room_sema;
    /* TODO/FIXME - nonblock is not implemented */
    bool nonblock;
    bool running;
 } ps2_audio_t;
+
+/* Set by the writable wait's alarm; one driver at a time. A plain word
+ * store on the EE, safe from the alarm's interrupt context. */
+static retro_atomic_int_t ps2_audio_alarm_rang;
+
+/* On audsrv's RPC server thread, an ordinary EE thread: the semaphore
+ * alone, so a call still on its way after the driver is gone touches
+ * nothing it freed */
+static int ps2_audio_room_cb(void *arg)
+{
+   SignalSema((s32)(intptr_t)arg);
+   return 0;
+}
+
+/* In the alarm's interrupt context */
+static void ps2_audio_alarm(s32 alarm_id, u16 time, void *arg)
+{
+   (void)alarm_id;
+   (void)time;
+   retro_atomic_store_release_int(&ps2_audio_alarm_rang, 1);
+   iSignalSema((s32)(intptr_t)arg);
+   ExitHandler();
+}
 
 static void *ps2_audio_init(const char *device,
       unsigned rate, unsigned latency,
       unsigned *new_rate)
 {
    int avail;
+   ee_sema_t sema;
    struct audsrv_fmt_t format;
    ps2_audio_t *ps2 = (ps2_audio_t*)calloc(1, sizeof(ps2_audio_t));
 
    if (!ps2)
       return NULL;
+
+   sema.init_count = 0;
+   sema.max_count  = 1;
+   sema.option     = 0;
+   if ((ps2->room_sema = CreateSema(&sema)) < 0)
+   {
+      free(ps2);
+      return NULL;
+   }
 
    format.bits     = AUDIO_BITS;
    format.freq     = rate;
@@ -73,6 +113,9 @@ static void *ps2_audio_init(const char *device,
    avail           = audsrv_available();
    ps2->ring_size  = (avail > 0) ? (size_t)avail : (size_t)AUDIO_BUFFER;
 
+   audsrv_on_fillbuf(AUDIO_ROOM_THRESHOLD, ps2_audio_room_cb,
+         (void*)(intptr_t)ps2->room_sema);
+
    return ps2;
 }
 
@@ -84,6 +127,9 @@ static void ps2_audio_free(void *data)
 
    ps2->running = false;
    audsrv_stop_audio();
+   /* A threshold of zero calls back no more */
+   audsrv_on_fillbuf(0, NULL, NULL);
+   DeleteSema(ps2->room_sema);
    free(ps2);
 }
 
@@ -169,9 +215,13 @@ static size_t ps2_audio_frames_consumed(void *data)
    return (size_t)(played / AUDIO_FRAME_BYTES);
 }
 
+/* Until len bytes fit, on the semaphore audsrv's fill-buffer callback
+ * posts once a block while there is room, bounded by one alarm for the
+ * whole wait. Returns the free space then, or 0 at the bound. */
 static size_t ps2_audio_wait_writable(void *data, size_t len)
 {
-   int laps         = AUDIO_WAIT_LAPS;
+   s32 alarm;
+   size_t avail;
    ps2_audio_t *ps2 = (ps2_audio_t*)data;
 
    if (!ps2 || !ps2->running)
@@ -181,16 +231,38 @@ static size_t ps2_audio_wait_writable(void *data, size_t len)
    if (len > ps2->ring_size / 2)
       len = ps2->ring_size / 2;
 
+   if ((avail = ps2_audio_write_avail(ps2)) >= len)
+      return avail;
+
+   /* Posts from before this wait say nothing about now */
+   retro_atomic_store_release_int(&ps2_audio_alarm_rang, 0);
+   while (PollSema(ps2->room_sema) >= 0) { }
+   if ((alarm = SetAlarm(AUDIO_WAIT_HSYNC, ps2_audio_alarm,
+               (void*)(intptr_t)ps2->room_sema)) < 0)
+      return 0;
    for (;;)
    {
-      size_t avail = ps2_audio_write_avail(ps2);
-      if (avail >= len)
-         return avail;
-      if (--laps < 0)
+      if ((avail = ps2_audio_write_avail(ps2)) >= len)
          break;
-      retro_sleep_us(AUDIO_WAIT_US);
+      if (     retro_atomic_load_acquire_int(&ps2_audio_alarm_rang)
+            || !ps2->running)
+      {
+         avail = 0;
+         break;
+      }
+      WaitSema(ps2->room_sema);
    }
-   return 0;
+   /* With interrupts off the alarm cannot ring between the look and
+    * the release, so an alarm id the kernel has since reused is never
+    * the one released */
+   {
+      int masked = DIntr();
+      if (!retro_atomic_load_acquire_int(&ps2_audio_alarm_rang))
+         iReleaseAlarm(alarm);
+      if (masked)
+         EIntr();
+   }
+   return avail;
 }
 
 static bool ps2_audio_use_float(void *data) { return false; }

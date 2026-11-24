@@ -1556,6 +1556,7 @@ static void lane_core_view(void)
     * buttons and axes the lane sets frame by frame */
    joypad_real              = input_st->primary_joypad;
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -2093,6 +2094,7 @@ static void lane_socd(void)
    }
    joypad_real              = input_st->primary_joypad;
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -2222,6 +2224,7 @@ static void lane_remap_idle(void)
    }
    joypad_real              = input_st->primary_joypad;
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -2316,6 +2319,7 @@ static void lane_input_rotation(void)
    }
    joypad_real              = input_st->primary_joypad;
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -2469,6 +2473,7 @@ static void lane_triggers(void)
    }
    joypad_real              = input_st->primary_joypad;
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -2674,6 +2679,7 @@ static void lane_beside_source(void)
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
    /* the scripted pad's driver, which can lend, with nothing held */
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -2829,6 +2835,7 @@ static void lane_remap_pressure(void)
    }
    joypad_real              = input_st->primary_joypad;
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -3319,6 +3326,7 @@ static void lane_menu_combo_gate(void)
       return;
    }
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -3511,6 +3519,7 @@ static void lane_enabler_tap(void)
       return;
    }
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -3681,6 +3690,7 @@ static void lane_enabler_tap_polled(void)
       return;
    }
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -3778,6 +3788,7 @@ static void lane_hotkey_facts(void)
       return;
    }
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -4030,6 +4041,7 @@ static void lane_gun_buttons_kept_mice(void)
       return;
    }
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -4198,6 +4210,7 @@ static void lane_menu_pause(void)
    }
 
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -4658,6 +4671,7 @@ static void lane_dpad_sticks_once(void)
       return;
    }
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -4803,6 +4817,7 @@ static void lane_deadzone_numbers(void)
       return;
    }
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -5011,6 +5026,7 @@ static void lane_sticks_read_once(void)
    }
    /* the stand-in pad, with the sticks on its axes 0-3 */
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -5148,6 +5164,7 @@ static void lane_menu_playlist_stick(void)
       return;
    }
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -5259,6 +5276,7 @@ static void lane_mapping_changes(void)
 
    joypad_real              = input_st->primary_joypad;
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -5468,6 +5486,7 @@ static void lane_quit_combo(void)
 
    joypad_real              = input_st->primary_joypad;
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -5776,6 +5795,7 @@ static void lane_stick_sources(void)
       return;
    }
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -5919,6 +5939,7 @@ static void lane_mask_and_buttons(void)
       return;
    }
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -6727,6 +6748,7 @@ static void lane_bind_settings(void)
    if (joypad_real)
    {
       syn_joypad               = *joypad_real;
+      syn_joypad.view          = NULL; /* its reads are the harness's */
       syn_joypad.button        = syn_button;
       syn_joypad.axis          = syn_axis;
       syn_joypad.state         = syn_state;
@@ -6811,6 +6833,7 @@ static void lane_bind_all_device_index(void)
    BIT512_SET(input_st->keyboard_mapping_bits, RETROK_F13);
 
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -6966,6 +6989,7 @@ static void bind_mouse_device_index_run(enum bm_how how, const char *shape)
    }
 
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -7238,6 +7262,7 @@ static void lane_entries(void)
 
    /* the controller: start, select and L3 on its buttons 20 to 22 */
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -7539,6 +7564,7 @@ static void lane_macros(void)
          "macros: cleared, the first is not read again");
 
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -7765,6 +7791,7 @@ static void lane_macro_modes(void)
    input_entries_clear();
    CHECK(input_macro_add(1, "a 3, a+b 2, - 2, b 4"), "macro modes: the macro is not read");
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -8364,6 +8391,7 @@ static void lane_entry_capture(void)
    saved[2] = *input_autoconf_bind(0, RIGHT);
    saved[3] = *input_autoconf_bind(0, DOWN);
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -8560,6 +8588,7 @@ static void lane_entry_target_pick(void)
    saved[2] = *input_autoconf_bind(0, A);
    saved[3] = *input_autoconf_bind(0, B);
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -8861,6 +8890,7 @@ static void lane_aim_stick(void)
       return;
    }
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -9002,6 +9032,7 @@ static void lane_touchpad(void)
       return;
    }
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;
@@ -9549,6 +9580,7 @@ static void lane_first_press(void)
    }
    joypad_real              = input_st->primary_joypad;
    syn_joypad               = *joypad_real;
+   syn_joypad.view          = NULL; /* its reads are the harness's */
    syn_joypad.button        = syn_button;
    syn_joypad.axis          = syn_axis;
    syn_joypad.state         = syn_state;

@@ -33,6 +33,7 @@
 #include <QStyle>
 #include <QStyleOption>
 #include <QTimer>
+#include <QWhatsThis>
 
 #include "ui_qt_widgets.h"
 #include "ui_qt.h"
@@ -53,8 +54,10 @@
 #include "../../msg_hash.h"
 #include "../../paths.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../gfx/gfx_thumbnail_results.h"
 #include "../../verbosity.h"
 #include "../../version.h"
+#include "../../version_git.h"
 #include "../../gfx/video_display_server.h"
 #include "../../input/input_driver.h"
 #include "../../input/input_remapping.h"
@@ -131,10 +134,28 @@ static inline void add_sublabel_and_whats_this(
       widget->setToolTip(wrapped_tooltip(tmp));
 
    msg_hash_get_help_enum((enum msg_hash_enums)setting->enum_idx,
-         tmp, sizeof(tmp));
+      tmp, sizeof(tmp));
 
    if (!string_is_equal(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
+   {
+      QAction *whatsThisAction;
       widget->setWhatsThis(tmp);
+      /* text fields keep their own edit menu; Shift+F1 still works */
+      if (     qobject_cast<QLineEdit*>(widget)
+            || qobject_cast<QAbstractSpinBox*>(widget))
+         return;
+      whatsThisAction = new QAction(
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_WHATS_THIS), widget);
+
+      QObject::connect(whatsThisAction, &QAction::triggered,
+            widget, [widget]()
+            {
+               QWhatsThis::enterWhatsThisMode();
+            });
+
+      widget->addAction(whatsThisAction);
+      widget->setContextMenuPolicy(Qt::ActionsContextMenu);
+   }
 }
 
 /* A setting's range is stored as float; converting a float outside
@@ -295,7 +316,24 @@ bool FormLayout::addBindButton(rarch_setting_t *setting)
    if (!setting || !setting->short_description)
       return false;
 
-   addRow(QString(setting->short_description), new BindButton(setting));
+   {
+      QWidget       *row = new QWidget();
+      QHBoxLayout   *box = new QHBoxLayout(row);
+      BindButton   *bind = new BindButton(setting);
+      QPushButton *reset = new QPushButton(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_BIND_DEFAULT));
+      QPushButton *clear = new QPushButton(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CLEAR_SETTING));
+      box->setContentsMargins(0, 0, 0, 0);
+      box->addWidget(bind, 1);
+      box->addWidget(reset);
+      box->addWidget(clear);
+      reset->setAutoDefault(false);
+      clear->setAutoDefault(false);
+      connect(reset, SIGNAL(clicked()), bind, SLOT(setDefault()));
+      connect(clear, SIGNAL(clicked()), bind, SLOT(clear()));
+      addRow(QString(setting->short_description), row);
+   }
 
    return true;
 }
@@ -941,7 +979,9 @@ RefreshRateControl::RefreshRateControl(rarch_setting_t *setting, QWidget *parent
    ,m_synced(*setting->value.target.fraction)
    ,m_dirty(false)
 {
+   setObjectName("refreshRateControl");
    int i;
+   m_slider->setObjectName("refreshRateSlider");
    QPushButton *setButton = new QPushButton(QObject::tr("Set"), this);
    const char *fmt        = setting->aux.rounding_fraction;
    /* "%.Nf" - read N directly instead of compiling a regex per widget. */
@@ -977,7 +1017,10 @@ RefreshRateControl::RefreshRateControl(rarch_setting_t *setting, QWidget *parent
       m_dirty = true;
       m_spinBox->setValue((double)value / m_scale);
    });
-   connect(m_spinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+   /* QOverload needs Qt 5.7; the cast resolves the overload on every Qt. */
+   connect(m_spinBox,
+         static_cast<void (QDoubleSpinBox::*)(double)>(
+            &QDoubleSpinBox::valueChanged),
          this, [this](double value)
    {
       m_dirty = true;
@@ -1248,15 +1291,200 @@ void FloatSliderAndSpinBox::onSpinBoxValueChanged(double value)
    m_slider->update();
 }
 
+/* Qt's keys and RetroArch's, the keypad's apart; shifted symbols go
+ * to the key they are on (a US layout's). */
+struct bind_qt_key
+{
+   int qt;
+   unsigned rk;
+};
+
+static const struct bind_qt_key bind_qt_keys[] = {
+   { Qt::Key_Backspace,    RETROK_BACKSPACE },
+   { Qt::Key_Tab,          RETROK_TAB },
+   { Qt::Key_Backtab,      RETROK_TAB },
+   { Qt::Key_Clear,        RETROK_CLEAR },
+   { Qt::Key_Return,       RETROK_RETURN },
+   { Qt::Key_Enter,        RETROK_RETURN },
+   { Qt::Key_Pause,        RETROK_PAUSE },
+   { Qt::Key_Escape,       RETROK_ESCAPE },
+   { Qt::Key_Space,        RETROK_SPACE },
+   { Qt::Key_Exclam,       RETROK_1 },
+   { Qt::Key_QuoteDbl,     RETROK_QUOTE },
+   { Qt::Key_NumberSign,   RETROK_3 },
+   { Qt::Key_Dollar,       RETROK_4 },
+   { Qt::Key_Percent,      RETROK_5 },
+   { Qt::Key_Ampersand,    RETROK_7 },
+   { Qt::Key_Apostrophe,   RETROK_QUOTE },
+   { Qt::Key_ParenLeft,    RETROK_9 },
+   { Qt::Key_ParenRight,   RETROK_0 },
+   { Qt::Key_Asterisk,     RETROK_8 },
+   { Qt::Key_Plus,         RETROK_EQUALS },
+   { Qt::Key_Comma,        RETROK_COMMA },
+   { Qt::Key_Minus,        RETROK_MINUS },
+   { Qt::Key_Period,       RETROK_PERIOD },
+   { Qt::Key_Slash,        RETROK_SLASH },
+   { Qt::Key_Colon,        RETROK_SEMICOLON },
+   { Qt::Key_Semicolon,    RETROK_SEMICOLON },
+   { Qt::Key_Less,         RETROK_COMMA },
+   { Qt::Key_Equal,        RETROK_EQUALS },
+   { Qt::Key_Greater,      RETROK_PERIOD },
+   { Qt::Key_Question,     RETROK_SLASH },
+   { Qt::Key_At,           RETROK_2 },
+   { Qt::Key_BracketLeft,  RETROK_LEFTBRACKET },
+   { Qt::Key_Backslash,    RETROK_BACKSLASH },
+   { Qt::Key_BracketRight, RETROK_RIGHTBRACKET },
+   { Qt::Key_AsciiCircum,  RETROK_6 },
+   { Qt::Key_Underscore,   RETROK_MINUS },
+   { Qt::Key_QuoteLeft,    RETROK_BACKQUOTE },
+   { Qt::Key_BraceLeft,    RETROK_LEFTBRACKET },
+   { Qt::Key_Bar,          RETROK_BACKSLASH },
+   { Qt::Key_BraceRight,   RETROK_RIGHTBRACKET },
+   { Qt::Key_AsciiTilde,   RETROK_BACKQUOTE },
+   { Qt::Key_Delete,       RETROK_DELETE },
+   { Qt::Key_Up,           RETROK_UP },
+   { Qt::Key_Down,         RETROK_DOWN },
+   { Qt::Key_Right,        RETROK_RIGHT },
+   { Qt::Key_Left,         RETROK_LEFT },
+   { Qt::Key_Insert,       RETROK_INSERT },
+   { Qt::Key_Home,         RETROK_HOME },
+   { Qt::Key_End,          RETROK_END },
+   { Qt::Key_PageUp,       RETROK_PAGEUP },
+   { Qt::Key_PageDown,     RETROK_PAGEDOWN },
+   { Qt::Key_NumLock,      RETROK_NUMLOCK },
+   { Qt::Key_CapsLock,     RETROK_CAPSLOCK },
+   { Qt::Key_ScrollLock,   RETROK_SCROLLOCK },
+   { Qt::Key_Shift,        RETROK_LSHIFT },
+   { Qt::Key_Control,      RETROK_LCTRL },
+   { Qt::Key_Alt,          RETROK_LALT },
+   { Qt::Key_AltGr,        RETROK_RALT },
+   { Qt::Key_Meta,         RETROK_LSUPER },
+   { Qt::Key_Super_L,      RETROK_LSUPER },
+   { Qt::Key_Super_R,      RETROK_RSUPER },
+   { Qt::Key_Mode_switch,  RETROK_MODE },
+   { Qt::Key_Multi_key,    RETROK_COMPOSE },
+   { Qt::Key_Help,         RETROK_HELP },
+   { Qt::Key_Print,        RETROK_PRINT },
+   { Qt::Key_SysReq,       RETROK_SYSREQ },
+   { Qt::Key_Menu,         RETROK_MENU },
+   { Qt::Key_PowerOff,     RETROK_POWER },
+   { Qt::Key_Undo,         RETROK_UNDO }
+};
+
+/* the keypad's, numbers or what they do with Num Lock off */
+static const struct bind_qt_key bind_qt_keypad[] = {
+   { Qt::Key_0,        RETROK_KP0 },
+   { Qt::Key_Insert,   RETROK_KP0 },
+   { Qt::Key_1,        RETROK_KP1 },
+   { Qt::Key_End,      RETROK_KP1 },
+   { Qt::Key_2,        RETROK_KP2 },
+   { Qt::Key_Down,     RETROK_KP2 },
+   { Qt::Key_3,        RETROK_KP3 },
+   { Qt::Key_PageDown, RETROK_KP3 },
+   { Qt::Key_4,        RETROK_KP4 },
+   { Qt::Key_Left,     RETROK_KP4 },
+   { Qt::Key_5,        RETROK_KP5 },
+   { Qt::Key_Clear,    RETROK_KP5 },
+   { Qt::Key_6,        RETROK_KP6 },
+   { Qt::Key_Right,    RETROK_KP6 },
+   { Qt::Key_7,        RETROK_KP7 },
+   { Qt::Key_Home,     RETROK_KP7 },
+   { Qt::Key_8,        RETROK_KP8 },
+   { Qt::Key_Up,       RETROK_KP8 },
+   { Qt::Key_9,        RETROK_KP9 },
+   { Qt::Key_PageUp,   RETROK_KP9 },
+   { Qt::Key_Period,   RETROK_KP_PERIOD },
+   { Qt::Key_Comma,    RETROK_KP_PERIOD },
+   { Qt::Key_Delete,   RETROK_KP_PERIOD },
+   { Qt::Key_Slash,    RETROK_KP_DIVIDE },
+   { Qt::Key_Asterisk, RETROK_KP_MULTIPLY },
+   { Qt::Key_Minus,    RETROK_KP_MINUS },
+   { Qt::Key_Plus,     RETROK_KP_PLUS },
+   { Qt::Key_Enter,    RETROK_KP_ENTER },
+   { Qt::Key_Return,   RETROK_KP_ENTER },
+   { Qt::Key_Equal,    RETROK_KP_EQUALS }
+};
+
+/* A modifier's side, which only the platform's own code tells:
+ * macOS' virtual key, a Windows scan code (0x100 extended), an X11 or
+ * Wayland key code (evdev's plus 8). */
+static unsigned bind_qt_modifier_side(const QKeyEvent *ev)
+{
+#if defined(__APPLE__)
+   switch (ev->nativeVirtualKey())
+   {
+      case 56: return RETROK_LSHIFT;
+      case 60: return RETROK_RSHIFT;
+      case 59: return RETROK_LCTRL;
+      case 62: return RETROK_RCTRL;
+      case 58: return RETROK_LALT;
+      case 61: return RETROK_RALT;
+      case 55: return RETROK_LMETA;
+      case 54: return RETROK_RMETA;
+      case 57: return RETROK_CAPSLOCK;
+   }
+#elif defined(_WIN32)
+   switch (ev->nativeScanCode())
+   {
+      case 0x02A: return RETROK_LSHIFT;
+      case 0x036: return RETROK_RSHIFT;
+      case 0x01D: return RETROK_LCTRL;
+      case 0x11D: return RETROK_RCTRL;
+      case 0x038: return RETROK_LALT;
+      case 0x138: return RETROK_RALT;
+      case 0x15B: return RETROK_LSUPER;
+      case 0x15C: return RETROK_RSUPER;
+   }
+#else
+   switch (ev->nativeScanCode())
+   {
+      case 50:  return RETROK_LSHIFT;
+      case 62:  return RETROK_RSHIFT;
+      case 37:  return RETROK_LCTRL;
+      case 105: return RETROK_RCTRL;
+      case 64:  return RETROK_LALT;
+      case 108: return RETROK_RALT;
+      case 133: return RETROK_LSUPER;
+      case 134: return RETROK_RSUPER;
+   }
+#endif
+   return RETROK_UNKNOWN;
+}
+
+static unsigned bind_qt_key_to_retrok(const QKeyEvent *ev)
+{
+   size_t i;
+   int key = ev->key();
+   unsigned rk;
+
+   if ((rk = bind_qt_modifier_side(ev)) != RETROK_UNKNOWN)
+      return rk;
+   if (ev->modifiers() & Qt::KeypadModifier)
+      for (i = 0; i < ARRAY_SIZE(bind_qt_keypad); i++)
+         if (bind_qt_keypad[i].qt == key)
+            return bind_qt_keypad[i].rk;
+   if (key >= Qt::Key_A && key <= Qt::Key_Z)
+      return RETROK_a + (key - Qt::Key_A);
+   if (key >= Qt::Key_0 && key <= Qt::Key_9)
+      return RETROK_0 + (key - Qt::Key_0);
+   if (key >= Qt::Key_F1 && key <= Qt::Key_F15)
+      return RETROK_F1 + (key - Qt::Key_F1);
+   for (i = 0; i < ARRAY_SIZE(bind_qt_keys); i++)
+      if (bind_qt_keys[i].qt == key)
+         return bind_qt_keys[i].rk;
+   return RETROK_UNKNOWN;
+}
+
+BindButton *BindButton::s_capture     = NULL;
+unsigned    BindButton::s_captureWait = 0;
+bool        BindButton::s_captureSeen = false;
+bool        BindButton::s_captureMenu = false;
+
 BindButton::BindButton(rarch_setting_t *setting, QWidget *parent) :
    QPushButton(parent)
    ,m_setting(setting)
 {
-   char val_s[NAME_MAX_LENGTH];
-
-   setting->actions->repr(setting, val_s, sizeof(val_s));
-
-   setText(val_s);
+   refresh();
    setAutoDefault(false);
 
    connect(this, SIGNAL(clicked(bool)), this, SLOT(onClicked(bool)));
@@ -1267,12 +1495,114 @@ BindButton::BindButton(msg_hash_enums enum_idx, QWidget *parent) :
 {
 }
 
+/* gone mid-capture (the window torn down): nothing more is handed on */
+BindButton::~BindButton()
+{
+   if (s_capture == this)
+   {
+      s_capture = NULL;
+      input_driver_companion_keys_clear();
+   }
+}
+
+void BindButton::refresh(void)
+{
+   char val_s[NAME_MAX_LENGTH];
+   m_setting->actions->repr(m_setting, val_s, sizeof(val_s));
+   setText(val_s);
+}
+
 void BindButton::onClicked(bool checked)
 {
    (void)(checked);
 
-   m_setting->actions->ok(m_setting, 0, false);
+   if (s_capture)
+      return;
+   /* The menu runs the capture, so it is shown for it, and hidden
+    * again after. */
+   s_captureMenu = !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE);
+   if (s_captureMenu)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   if (m_setting->actions->ok(m_setting, 0, false) != 0)
+      return;
+   s_capture     = this;
+   s_captureWait = 0;
+   s_captureSeen = false;
+   input_driver_companion_keys_clear();
+   setText(msg_hash_to_str(MSG_INPUT_BIND_PRESS));
+   grabKeyboard();
 }
+
+void BindButton::captureEnd(void)
+{
+   s_capture = NULL;
+   releaseKeyboard();
+   input_driver_companion_keys_clear();
+   if (     s_captureMenu
+         && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   refresh();
+}
+
+/* The menu's capture is under way on every frame it sets the flag:
+ * from the frame after the click, up to its end. One never started
+ * (the menu not running) is let go a few frames on. */
+void BindButton::captureIterate(void)
+{
+   if (!s_capture)
+      return;
+   if (menu_state_get_ptr()->flags & MENU_ST_FLAG_IS_BINDING)
+      s_captureSeen = true;
+   else if (s_captureSeen || ++s_captureWait > 4)
+      s_capture->captureEnd();
+}
+
+/* While capturing, every key here goes to the capture rather than to
+ * the window: no shortcut, focus move or click by keyboard. */
+bool BindButton::event(QEvent *event)
+{
+   if (s_capture == this)
+   {
+      switch (event->type())
+      {
+         case QEvent::ShortcutOverride:
+            event->accept();
+            return true;
+         case QEvent::KeyPress:
+         case QEvent::KeyRelease:
+            {
+               QKeyEvent *ev = static_cast<QKeyEvent*>(event);
+               if (!ev->isAutoRepeat())
+                  input_driver_companion_key(bind_qt_key_to_retrok(ev),
+                        event->type() == QEvent::KeyPress);
+            }
+            return true;
+         default:
+            break;
+      }
+   }
+   /* a bind set in RetroArch's own menu meanwhile */
+   else if (event->type() == QEvent::ActivationChange && isActiveWindow())
+      refresh();
+   return QPushButton::event(event);
+}
+
+void BindButton::setDefault(void)
+{
+   if (s_capture)
+      return;
+   m_setting->actions->start(m_setting);
+   refresh();
+}
+
+void BindButton::clear(void)
+{
+   if (s_capture)
+      return;
+   menu_setting_bind_clear(m_setting);
+   refresh();
+}
+
 
 ColorButton::ColorButton(rarch_setting_t *red, rarch_setting_t *green, rarch_setting_t *blue, QWidget *parent) :
    QToolButton(parent)
@@ -1501,7 +1831,7 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
       if (selectedAction == downloadThumbnailAction.data())
       {
          PlaylistEntry entry = getCurrentContentEntry();
-         QString system = QFileInfo(getCurrentPlaylistPath()).completeBaseName();
+         QString system = entry.thumbnailSystem;
          QString title  = entry.label;
 
          if (!title.isEmpty())
@@ -1512,6 +1842,7 @@ void MainWindow::onFileDropWidgetContextMenuRequested(const QPoint &pos)
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_SCREENSHOT);
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_TITLE);
                m_pendingThumbnailDownloadTypes.append(THUMBNAIL_LOGO);
+               m_pendingThumbnailDownloadPath = entry.path;
                downloadThumbnail(system, title);
             }
             else
@@ -2717,10 +3048,11 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow,
    QDialog(mainwindow)
    ,m_optionsList(new QListWidget(this))
    ,m_optionsStack(new QStackedLayout)
+   ,m_categoryPagesWidget(new QWidget(this))
+   ,m_headerLabel(new QLabel(m_categoryPagesWidget))
+   ,m_currentCategoryIndex(-1)
 {
-   int width;
    QGridLayout        *layout = new QGridLayout(this);
-   QLabel      *m_headerLabel = new QLabel(this);
    /* Header label with large font and a bit of spacing
     * (align with group boxes) */
    QFont      headerLabelFont = m_headerLabel->font();
@@ -2790,29 +3122,63 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow,
    addCategory(new PlaylistsCategory(this));
    addCategory(new UserCategory(this));
    addCategory(new DirectoryCategory(this));
+   addCategory(new InformationCategory(this));
 
-   width  =
-        m_optionsList->sizeHintForColumn(0)
-      + m_optionsList->frameWidth() * 2
-      + 5;
-   width += m_optionsList->verticalScrollBar()->sizeHint().width();
-
-   m_optionsList->setMaximumWidth(width);
-   m_optionsList->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Minimum);
+   /* The category list is also embedded in the Content Browser dock.
+    * Let it use the available width there instead of sizing it only to
+    * the longest category label. */
+   m_optionsList->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 
    setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE));
 
-   layout->addWidget(m_optionsList, 0, 0, 2, 1);
-   layout->addLayout(headerHLayout, 0, 1);
-   layout->addLayout(m_optionsStack, 1, 1);
+   QVBoxLayout *categoryPagesLayout = new QVBoxLayout(m_categoryPagesWidget);
+   categoryPagesLayout->setContentsMargins(0, 0, 0, 0);
+   categoryPagesLayout->addLayout(headerHLayout);
+   categoryPagesLayout->addLayout(m_optionsStack);
+
+   layout->addWidget(m_optionsList, 0, 0);
+   layout->addWidget(m_categoryPagesWidget, 0, 1);
 
    connect(m_optionsList, SIGNAL(currentRowChanged(int)),
-         m_optionsStack, SLOT(setCurrentIndex(int)));
+         this, SLOT(loadCategory(int)));
    connect(m_optionsList, SIGNAL(currentTextChanged(const QString&)),
          m_headerLabel, SLOT(setText(const QString&)));
 
    connect(this, SIGNAL(rejected()), this, SLOT(onRejected()));
+   if (m_optionsList->count() > 0)
+      m_optionsList->setCurrentRow(0);
 }
+
+#ifdef HAVE_MENU
+QListWidget *ViewOptionsDialog::categoryListWidget() const
+{
+   return m_optionsList;
+}
+
+QWidget *ViewOptionsDialog::categoryPagesWidget() const
+{
+   return m_categoryPagesWidget;
+}
+
+void ViewOptionsDialog::loadCategory(int index)
+{
+   if (index < 0 || index >= m_categoryList.size())
+      return;
+   if (m_currentCategoryIndex >= 0
+         && m_currentCategoryIndex < m_categoryList.size())
+      m_categoryList.at(m_currentCategoryIndex)->apply();
+   m_currentCategoryIndex = index;
+   m_optionsStack->setCurrentIndex(index);
+   m_categoryList.at(index)->load();
+}
+
+void ViewOptionsDialog::applyCurrentCategory()
+{
+   if (m_currentCategoryIndex >= 0
+         && m_currentCategoryIndex < m_categoryList.size())
+      m_categoryList.at(m_currentCategoryIndex)->apply();
+}
+#endif
 
 QIcon getIcon(OptionsCategory *category)
 {
@@ -2891,10 +3257,7 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow, QWidget *parent) :
 void ViewOptionsDialog::showDialog()
 {
 #ifdef HAVE_MENU
-   unsigned i;
-   size_t list_size = (size_t)m_categoryList.size();
-   for (i = 0; i < list_size; i++)
-      m_categoryList.at(i)->load();
+   loadCategory(m_optionsList->currentRow());
 #else
    m_viewOptionsWidget->loadViewOptions();
 #endif
@@ -3175,7 +3538,7 @@ void ViewOptionsWidget::loadViewOptions()
 
 void ViewOptionsWidget::showOrHideHighlightColor()
 {
-   if (m_mainwindow->theme() == MainWindow::THEME_DARK)
+   if (m_mainwindow->isDarkTheme())
    {
       m_highlightColorLabel->show();
       m_highlightColorPushButton->show();
@@ -5282,80 +5645,11 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
 #endif
 #endif
 
-/* Thumbnail downloads. URLs, .partial handling, the pack extraction
- * and the file replacement rules are the companion core's
- * (companion_core_thumbnail_download / _pack_download); Qt keeps the
- * queues, counters and progress dialogs. Results arrive through the
- * driver's callback table as onCoreThumbnailDownloaded /
- * onCoreThumbnailPackFinished. */
-
-/* ---- Thumbnail Pack Download ---- */
-
-void MainWindow::onThumbnailPackDownloadCanceled()
-{
-   companion_core_download_cancel(ui_companion_qt_core());
-}
-
-void MainWindow::downloadAllThumbnails(QString system, QUrl url)
-{
-   QByteArray systemArray = system.toUtf8();
-
-   (void)url; /* the server layout is the core's */
-
-   if (!companion_core_thumbnail_pack_download(ui_companion_qt_core(),
-            systemArray.constData()))
-   {
-      RARCH_ERR("[Qt] Failed to start thumbnail pack download.\n");
-      return;
-   }
-
-   m_thumbnailPackDownloadProgressDialog->setWindowModality(Qt::NonModal);
-   m_thumbnailPackDownloadProgressDialog->setMinimumDuration(0);
-   m_thumbnailPackDownloadProgressDialog->setRange(0, 0);
-   m_thumbnailPackDownloadProgressDialog->setAutoClose(true);
-   m_thumbnailPackDownloadProgressDialog->setAutoReset(true);
-   m_thumbnailPackDownloadProgressDialog->setValue(0);
-   m_thumbnailPackDownloadProgressDialog->setLabelText(
-         QString(msg_hash_to_str(MSG_DOWNLOADING)) + "...");
-   m_thumbnailPackDownloadProgressDialog->setCancelButtonText(tr("Cancel"));
-   m_thumbnailPackDownloadProgressDialog->show();
-}
-
-void MainWindow::onCoreThumbnailPackFinished(int result)
-{
-   m_thumbnailPackDownloadProgressDialog->cancel();
-
-   switch ((enum companion_download_result)result)
-   {
-      case COMPANION_DL_OK:
-         RARCH_LOG("[Qt] Thumbnail pack extracted successfully.\n");
-         emit showInfoMessageDeferred(msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY));
-         updateVisibleItems();
-         emit itemChanged(); /* reload thumbnail image */
-         return;
-      case COMPANION_DL_ERR_NETWORK:
-         emit showErrorMessageDeferred(msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR));
-         return;
-      case COMPANION_DL_ERR_RENAME:
-         emit showErrorMessageDeferred(msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE));
-         return;
-      case COMPANION_DL_ERR_DELETE:
-         emit showErrorMessageDeferred(msg_hash_to_str(
-                  MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE));
-         return;
-      case COMPANION_DL_ERR_ARCHIVE_EMPTY:
-         emit showErrorMessageDeferred("Error: Archive is empty.");
-         return;
-      case COMPANION_DL_ERR_EXTRACT:
-      case COMPANION_DL_ERR_WRITE:
-      default:
-         emit showErrorMessageDeferred(msg_hash_to_str(MSG_DECOMPRESSION_FAILED));
-         return;
-   }
-}
+/* Thumbnail downloads. URLs and the file replacement rules are the
+ * companion core's
+ * (companion_core_thumbnail_download); Qt keeps the queues, counters
+ * and progress dialogs. Results arrive through the driver's callback
+ * table as onCoreThumbnailDownloaded. */
 
 /* ---- Single Thumbnail Download ---- */
 
@@ -5411,7 +5705,7 @@ void MainWindow::onSingleThumbnailDownloadFinishedInternal(
 void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
 {
    QString downloadType;
-   QByteArray systemArray, titleArray, typeArray;
+   QByteArray systemArray, titleArray, pathArray, typeArray;
 
    (void)url;
 
@@ -5421,13 +5715,14 @@ void MainWindow::downloadThumbnail(QString system, QString title, QUrl url)
    downloadType = m_pendingThumbnailDownloadTypes.takeFirst();
    systemArray  = system.toUtf8();
    titleArray   = title.toUtf8();
+   pathArray    = m_pendingThumbnailDownloadPath.toUtf8();
    typeArray    = downloadType.toUtf8();
 
    m_downloadingPlaylistThumbnails = false;
 
    if (!companion_core_thumbnail_download(ui_companion_qt_core(),
             systemArray.constData(), titleArray.constData(),
-            typeArray.constData()))
+            pathArray.constData(), typeArray.constData()))
    {
       RARCH_ERR("[Qt] Failed to start thumbnail download.\n");
       m_pendingThumbnailDownloadTypes.clear();
@@ -5491,6 +5786,7 @@ void MainWindow::onPlaylistThumbnailDownloadFinishedInternal(
       downloadNextPlaylistThumbnail(
             nextThumbnail.value("db_name"),
             nextThumbnail.value("label_noext"),
+            nextThumbnail.value("path"),
             nextThumbnail.value("type"));
    }
    else
@@ -5509,10 +5805,11 @@ void MainWindow::onPlaylistThumbnailDownloadFinishedInternal(
 }
 
 void MainWindow::downloadNextPlaylistThumbnail(
-      QString system, QString title, QString type, QUrl url)
+      QString system, QString title, QString path, QString type, QUrl url)
 {
    QByteArray systemArray = system.toUtf8();
    QByteArray titleArray  = title.toUtf8();
+   QByteArray pathArray   = path.toUtf8();
    QByteArray typeArray   = type.toUtf8();
 
    (void)url;
@@ -5521,7 +5818,7 @@ void MainWindow::downloadNextPlaylistThumbnail(
     * core reports every one it does start. */
    while (!companion_core_thumbnail_download(ui_companion_qt_core(),
             systemArray.constData(), titleArray.constData(),
-            typeArray.constData()))
+            pathArray.constData(), typeArray.constData()))
    {
       m_failedThumbnails++;
 
@@ -5536,6 +5833,7 @@ void MainWindow::downloadNextPlaylistThumbnail(
          QHash<QString, QString> next = m_pendingPlaylistThumbnails.takeAt(0);
          systemArray = next.value("db_name").toUtf8();
          titleArray  = next.value("label_noext").toUtf8();
+         pathArray   = next.value("path").toUtf8();
          typeArray   = next.value("type").toUtf8();
       }
    }
@@ -5569,8 +5867,9 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
          m_playlistModel->index(i, 0).data(
                PlaylistModel::ENTRY).value<PlaylistEntry>();
 
-      hash["db_name"]     = itemEntry.dbName;
+      hash["db_name"]     = itemEntry.thumbnailSystem;
       hash["label_noext"] = itemEntry.labelNoExt;
+      hash["path"]        = itemEntry.path;
       hash["type"]        = THUMBNAIL_BOXART;
 
       hash2               = hash;
@@ -5606,6 +5905,7 @@ void MainWindow::downloadPlaylistThumbnails(QString playlistPath)
       downloadNextPlaylistThumbnail(
             firstThumbnail.value("db_name"),
             firstThumbnail.value("label_noext"),
+            firstThumbnail.value("path"),
             firstThumbnail.value("type"));
    }
 }
@@ -5726,6 +6026,227 @@ void AchievementsPage::onAchievementEnabledChanged(int state)
 
 static file_list_t *qt_displaylist_build(
       enum menu_displaylist_ctl_state state);
+QPixmap getInvader(void);
+/* The desktop Information page presents the same live display lists as
+ * the internal menu. Rebuild them whenever the category is selected so
+ * display, input and network changes are reflected without restarting. */
+static void qt_information_clear_group(QWidget *group)
+{
+   QLayout *layout = group ? group->layout() : NULL;
+   QLayoutItem *item = NULL;
+
+   if (!layout)
+      return;
+
+   while ((item = layout->takeAt(0)) != NULL)
+   {
+      if (item->widget())
+         delete item->widget();
+      delete item;
+   }
+}
+
+static void qt_information_populate_group(QWidget *group,
+      enum menu_displaylist_ctl_state state)
+{
+   file_list_t *list;
+   QVBoxLayout *layout;
+   size_t i;
+
+   if (!group)
+      return;
+
+   qt_information_clear_group(group);
+   layout = qobject_cast<QVBoxLayout*>(group->layout());
+   if (!layout)
+      return;
+
+   list = qt_displaylist_build(state);
+   if (list)
+   {
+      for (i = 0; i < list->size; i++)
+      {
+         menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+            file_list_get_actiondata_at_offset(list, i);
+         const char *entry = list->list[i].path;
+         QString text = entry ? QString::fromUtf8(entry).trimmed() : QString();
+         QLabel *label;
+
+#ifdef HAVE_MODELINE
+         if (state == DISPLAYLIST_DISPLAY_INFO
+               && cbs
+               && cbs->enum_idx == MENU_ENUM_LABEL_DISPLAY_EDID_INFORMATION)
+         {
+            QPushButton *button = new QPushButton(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INFORMATION),
+                  group);
+            QWidget *details = new QWidget(group);
+            QVBoxLayout *detailsLayout = new QVBoxLayout(details);
+            detailsLayout->setContentsMargins(12, 4, 0, 4);
+            details->setVisible(false);
+            button->setCheckable(true);
+            layout->addWidget(button);
+            layout->addWidget(details);
+            QObject::connect(button, &QPushButton::toggled,
+                  [button, details](bool checked)
+            {
+               if (checked && details->layout()->count() == 0)
+                  qt_information_populate_group(details,
+                        DISPLAYLIST_DISPLAY_EDID_INFO);
+               details->setVisible(checked);
+            });
+            continue;
+         }
+#endif
+
+         if (text.isEmpty())
+            continue;
+
+         label = new QLabel(text, group);
+         label->setTextFormat(Qt::PlainText);
+         label->setWordWrap(true);
+         label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+         label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+         layout->addWidget(label);
+      }
+      file_list_free(list);
+   }
+
+   if (layout->count() == 0)
+   {
+      QLabel *label = new QLabel(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), group);
+      label->setTextFormat(Qt::PlainText);
+      label->setWordWrap(true);
+      label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+      layout->addWidget(label);
+   }
+   layout->addStretch();
+}
+
+InformationCategory::InformationCategory(QWidget *parent)
+   : OptionsCategory(parent)
+   , m_page(NULL)
+{
+   setDisplayName(MENU_ENUM_LABEL_VALUE_INFORMATION);
+   setCategoryIcon("menu_info");
+}
+
+QVector<OptionsPage*> InformationCategory::pages()
+{
+   QVector<OptionsPage*> pages;
+   m_page = new InformationPage(this);
+   pages << m_page;
+   return pages;
+}
+
+void InformationCategory::load()
+{
+   if (m_page)
+      m_page->load();
+}
+
+InformationPage::InformationPage(QObject *parent)
+   : OptionsPage(parent)
+   , m_widget(NULL)
+   , m_systemGroup(NULL)
+   , m_aboutGroup(NULL)
+   , m_displayGroup(NULL)
+   , m_inputGroup(NULL)
+   , m_networkGroup(NULL)
+{
+   setDisplayName(MENU_ENUM_LABEL_VALUE_INFORMATION);
+}
+
+QWidget *InformationPage::widget()
+{
+   QHBoxLayout *columns;
+   QVBoxLayout *left;
+   QVBoxLayout *right;
+
+   if (m_widget)
+      return m_widget;
+
+   m_widget = new QWidget;
+   columns = new QHBoxLayout(m_widget);
+   left = new QVBoxLayout;
+   right = new QVBoxLayout;
+
+   m_systemGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION), m_widget);
+   m_aboutGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT), m_widget);
+   m_displayGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION), m_widget);
+   m_inputGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_INFORMATION), m_widget);
+   m_networkGroup = new QGroupBox(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION), m_widget);
+
+   m_systemGroup->setLayout(new QVBoxLayout);
+   m_aboutGroup->setLayout(new QVBoxLayout);
+   m_displayGroup->setLayout(new QVBoxLayout);
+   m_inputGroup->setLayout(new QVBoxLayout);
+   m_networkGroup->setLayout(new QVBoxLayout);
+
+   left->addWidget(m_systemGroup);
+   left->addStretch();
+   right->addWidget(m_aboutGroup);
+   right->addWidget(m_displayGroup);
+   right->addWidget(m_inputGroup);
+   right->addWidget(m_networkGroup);
+   right->addStretch();
+
+   columns->addLayout(left, 1);
+   columns->addLayout(right, 1);
+   columns->setAlignment(Qt::AlignTop);
+
+   load();
+   return m_widget;
+}
+
+void InformationPage::load()
+{
+   if (!m_widget)
+      return;
+
+   qt_information_populate_group(m_systemGroup, DISPLAYLIST_SYSTEM_INFO);
+   qt_information_clear_group(m_aboutGroup);
+   {
+      QLabel *pixLabel = new QLabel(m_aboutGroup);
+      QLabel *aboutLabel = new QLabel(m_aboutGroup);
+      QString text = QString("RetroArch ")
+         + QString(PACKAGE_VERSION)
+         + QString("<br><br>")
+         + "<a href=\"https://www.libretro.com/\">www.libretro.com</a>"
+            "<br><br>"
+         + "<a href=\"https://www.retroarch.com/\">www.retroarch.com</a>"
+#ifdef HAVE_GIT_VERSION
+            "<br><br>"
+         + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION)
+         + QString(": ")
+         + retroarch_git_version
+#endif
+         + QString("<br>")
+         + msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE)
+         + QString(": ")
+         + __DATE__;
+      QPixmap pix = getInvader();
+      pixLabel->setAlignment(Qt::AlignCenter);
+      pixLabel->setPixmap(pix);
+      aboutLabel->setText(text);
+      aboutLabel->setTextFormat(Qt::RichText);
+      aboutLabel->setAlignment(Qt::AlignCenter);
+      aboutLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
+      aboutLabel->setOpenExternalLinks(true);
+      m_aboutGroup->layout()->addWidget(pixLabel);
+      m_aboutGroup->layout()->addWidget(aboutLabel);
+   }
+   qt_information_populate_group(m_displayGroup, DISPLAYLIST_DISPLAY_INFO);
+   qt_information_populate_group(m_inputGroup, DISPLAYLIST_INPUT_INFO);
+   qt_information_populate_group(m_networkGroup, DISPLAYLIST_NETWORK_INFO);
+}
+
 static bool qt_list_has_entry(const file_list_t *list,
       enum msg_hash_enums entry);
 static void qt_settings_group_add_list(SettingsGroup *group,
@@ -7488,7 +8009,14 @@ QWidget *VideoPage::widget()
    SettingsGroup *windowedGroup = new SettingsGroup("Windowed Mode");
    SettingsGroup *syncGroup = new SettingsGroup("Synchronization");
    SettingsGroup *miscGroup = new SettingsGroup("Miscellaneous");
-   SettingsGroup *stereo3dGroup = new SettingsGroup("Stereo 3D and Screens");
+   SettingsGroup *stereo3dGroup = new SettingsGroup(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SETTINGS));
+   SettingsGroup *gameScreensGroup = new SettingsGroup(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_GAME_SCREENS_SETTINGS));
+#ifdef HAVE_OPENXR
+   SettingsGroup *headsetGroup = new SettingsGroup(
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_HEADSET_SETTINGS));
+#endif
    CheckableSettingsGroup *vSyncGroup =
       new CheckableSettingsGroup(MENU_ENUM_LABEL_VIDEO_VSYNC);
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
@@ -7718,6 +8246,12 @@ QWidget *VideoPage::widget()
 
    qt_settings_group_add_displaylist(stereo3dGroup,
          DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST, NULL, 0, NULL, 0);
+   qt_settings_group_add_displaylist(gameScreensGroup,
+         DISPLAYLIST_VIDEO_GAME_SCREENS_SETTINGS_LIST, NULL, 0, NULL, 0);
+#ifdef HAVE_OPENXR
+   qt_settings_group_add_displaylist(headsetGroup,
+         DISPLAYLIST_VIDEO_HEADSET_SETTINGS_LIST, NULL, 0, NULL, 0);
+#endif
    qt_settings_group_add_list(miscGroup, videoList,
          filterEntries, ARRAY_SIZE(filterEntries), NULL, 0);
 
@@ -7774,6 +8308,10 @@ QWidget *VideoPage::widget()
    }
 #endif
    rightColumn->addWidget(stereo3dGroup);
+   rightColumn->addWidget(gameScreensGroup);
+#ifdef HAVE_OPENXR
+   rightColumn->addWidget(headsetGroup);
+#endif
    if (videoList)
       file_list_free(videoList);
 
@@ -8250,6 +8788,7 @@ bool PlaylistModel::setData(const QModelIndex &index, const QVariant &value, int
       rowEntry.labelNoExt = QFileInfo(value.toString()).completeBaseName();
 
       m_contents.replace(index.row(), rowEntry);
+      m_thumbnailPaths.remove(index.row());
       emit dataChanged(index, index, { role });
       return true;
    }
@@ -8270,6 +8809,12 @@ QVariant PlaylistModel::headerData(int section,
 void PlaylistModel::setThumbnailType(const ThumbnailType type)
 {
    m_thumbnailType = type;
+   m_thumbnailPaths.clear();
+}
+
+void PlaylistModel::clearThumbnailPaths()
+{
+   m_thumbnailPaths.clear();
 }
 
 void PlaylistModel::setThumbnailCacheLimit(int limit)
@@ -8322,24 +8867,25 @@ bool PlaylistModel::isSupportedImage(const QString path) const
    return image_texture_get_type(pathArray.constData()) != IMAGE_TYPE_NONE;
 }
 
-QString PlaylistModel::getRepositoryThumbnailPath(const QString playlistName,
-      const QString labelNoExt, const QString type) const
+QString PlaylistModel::getThumbnailSavePath(const PlaylistEntry &entry,
+      const QString type) const
 {
    char path[PATH_MAX_LENGTH];
-   QByteArray dbArray    = playlistName.toUtf8();
+   QByteArray dbArray    = entry.thumbnailSystem.toUtf8();
    QByteArray typeArray  = type.toUtf8();
-   QByteArray labelArray = labelNoExt.toUtf8();
+   QByteArray labelArray = entry.labelNoExt.toUtf8();
+   QByteArray pathArray  = entry.path.toUtf8();
 
-   companion_core_thumbnail_path(ui_companion_qt_core(),
+   companion_core_thumbnail_save_path(ui_companion_qt_core(),
          dbArray.constData(), typeArray.constData(), labelArray.constData(),
-         NULL, path, sizeof(path));
+         pathArray.constData(), path, sizeof(path));
    return QString::fromUtf8(path);
 }
 
 QString PlaylistModel::getThumbnailPath(const PlaylistEntry &entry, QString type) const
 {
    char path[PATH_MAX_LENGTH];
-   QByteArray dbArray    = entry.dbName.toUtf8();
+   QByteArray dbArray    = entry.thumbnailSystem.toUtf8();
    QByteArray typeArray  = type.toUtf8();
    QByteArray labelArray = entry.labelNoExt.toUtf8();
    QByteArray pathArray  = entry.path.toUtf8();
@@ -8352,21 +8898,33 @@ QString PlaylistModel::getThumbnailPath(const PlaylistEntry &entry, QString type
 
 QString PlaylistModel::getCurrentTypeThumbnailPath(const QModelIndex &index) const
 {
+   QString path;
+   QHash<int, QString>::const_iterator it =
+      m_thumbnailPaths.constFind(index.row());
+
+   if (it != m_thumbnailPaths.constEnd())
+      return it.value();
+
    switch (m_thumbnailType)
    {
       case THUMBNAIL_TYPE_BOXART:
-         return getThumbnailPath(index, THUMBNAIL_BOXART);
+         path = getThumbnailPath(index, THUMBNAIL_BOXART);
+         break;
       case THUMBNAIL_TYPE_SCREENSHOT:
-         return getThumbnailPath(index, THUMBNAIL_SCREENSHOT);
+         path = getThumbnailPath(index, THUMBNAIL_SCREENSHOT);
+         break;
       case THUMBNAIL_TYPE_TITLE_SCREEN:
-         return getThumbnailPath(index, THUMBNAIL_TITLE);
+         path = getThumbnailPath(index, THUMBNAIL_TITLE);
+         break;
       case THUMBNAIL_TYPE_LOGO:
-         return getThumbnailPath(index, THUMBNAIL_LOGO);
+         path = getThumbnailPath(index, THUMBNAIL_LOGO);
+         break;
       default:
          break;
    }
 
-   return QString();
+   m_thumbnailPaths.insert(index.row(), path);
+   return path;
 }
 
 void PlaylistModel::reloadThumbnail(const QModelIndex &index)
@@ -8387,6 +8945,7 @@ void PlaylistModel::reloadSystemThumbnails(const QString system)
 	   + QString("/") + system;
    QList<QString>             keys = m_cache.keys();
 
+   m_thumbnailPaths.clear();
    for (i = 0; i < keys.size(); i++)
    {
       QString key = keys.at(i);
@@ -8404,6 +8963,7 @@ void PlaylistModel::reloadThumbnailPath(const QString path)
 {
    QList<QString> keys = m_cache.keys();
    int i;
+   m_thumbnailPaths.clear();
    for (i = 0; i < keys.size(); i++)
       if (keys.at(i).startsWith(path + QLatin1Char('@')))
          m_cache.remove(keys.at(i));
@@ -9020,13 +9580,11 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
    QScopedPointer<QMenu> menu;
    QScopedPointer<QMenu> associateMenu;
    QScopedPointer<QMenu> hiddenPlaylistsMenu;
-   QScopedPointer<QMenu> downloadAllThumbnailsMenu;
    QScopedPointer<QAction> hideAction;
    QScopedPointer<QAction> newPlaylistAction;
    QScopedPointer<QAction> deletePlaylistAction;
    QScopedPointer<QAction> renamePlaylistAction;
-   QScopedPointer<QAction> downloadAllThumbnailsEntireSystemAction;
-   QScopedPointer<QAction> downloadAllThumbnailsThisPlaylistAction;
+   QScopedPointer<QAction> downloadAllThumbnailsAction;
    QPointer<QAction> selectedAction;
    QPoint cursorPos                    = QCursor::pos();
    settings_t *settings                = config_get_ptr();
@@ -9171,25 +9729,9 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
 
    if (!specialPlaylist)
    {
-      downloadAllThumbnailsMenu.reset(new QMenu(
-		msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS), this));
-      downloadAllThumbnailsMenu->setObjectName("downloadAllThumbnailsMenu");
-
-      downloadAllThumbnailsThisPlaylistAction.reset(
-		      new QAction(msg_hash_to_str(
-		MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST),
-			      downloadAllThumbnailsMenu.data()));
-      downloadAllThumbnailsEntireSystemAction.reset(
-		      new QAction(msg_hash_to_str(
-		MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM),
-			      downloadAllThumbnailsMenu.data()));
-
-      downloadAllThumbnailsMenu->addAction(
-		      downloadAllThumbnailsThisPlaylistAction.data());
-      downloadAllThumbnailsMenu->addAction(
-		      downloadAllThumbnailsEntireSystemAction.data());
-
-      menu->addMenu(downloadAllThumbnailsMenu.data());
+      downloadAllThumbnailsAction.reset(new QAction(msg_hash_to_str(
+		MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS), this));
+      menu->addAction(downloadAllThumbnailsAction.data());
    }
 
    selectedAction = menu->exec(cursorPos);
@@ -9213,7 +9755,11 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
          if (showMessageBox(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST)).arg(selectedItem->text()), MainWindow::MSGBOX_TYPE_QUESTION_YESNO, Qt::ApplicationModal, false))
          {
             if (currentPlaylistFile.remove())
+            {
+               QByteArray pathArray = currentPlaylistFile.fileName().toUtf8();
+               gfx_thumbnail_results_forget(pathArray.constData());
                reloadPlaylists();
+            }
             else
                showMessageBox(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE), MainWindow::MSGBOX_TYPE_ERROR, Qt::ApplicationModal, false);
          }
@@ -9278,18 +9824,8 @@ void MainWindow::onPlaylistWidgetContextMenuRequested(const QPoint&)
          }
       }
    }
-   else if (selectedItem && !specialPlaylist && selectedAction->parent() == downloadAllThumbnailsMenu.data())
-   {
-      if (selectedAction == downloadAllThumbnailsEntireSystemAction.data())
-      {
-         int row = m_listWidget->row(selectedItem);
-
-         if (row >= 0)
-            downloadAllThumbnails(currentPlaylistFileInfo.completeBaseName());
-      }
-      else if (selectedAction == downloadAllThumbnailsThisPlaylistAction.data())
-         downloadPlaylistThumbnails(currentPlaylistPath);
-   }
+   else if (selectedItem && selectedAction == downloadAllThumbnailsAction.data())
+      downloadPlaylistThumbnails(currentPlaylistPath);
 
    setCoreActions();
 }
@@ -9555,11 +10091,17 @@ QString MainWindow::getPlaylistDefaultCore(QString plName)
 
 void MainWindow::getPlaylistFiles()
 {
+   int i;
    settings_t *settings = config_get_ptr();
    QDir playlistDir(settings->paths.directory_playlist);
 
    m_playlistFiles = playlistDir.entryList(
          QDir::NoDotAndDotDot | QDir::Readable | QDir::Files, QDir::Name);
+   for (i = m_playlistFiles.count() - 1; i >= 0; i--)
+      if (m_playlistFiles.at(i).endsWith(
+            FILE_PATH_LPL_EXTENSION FILE_PATH_THUMBS_EXTENSION,
+            Qt::CaseInsensitive))
+         m_playlistFiles.removeAt(i);
 }
 
 /* Copy the companion core's currently loaded playlist into the pending
@@ -9579,6 +10121,7 @@ void PlaylistModel::appendEntriesFromCore()
    for (i = 0; i < playlistSize; i++)
    {
       PlaylistEntry rowEntry;
+      char system[NAME_MAX_LENGTH];
       const struct playlist_entry *pl_row = companion_core_entry(core, i);
 
       if (!pl_row || !pl_row->path || !*pl_row->path)
@@ -9613,6 +10156,9 @@ void PlaylistModel::appendEntriesFromCore()
          rowEntry.dbName.remove(".lpl");
       }
 
+      companion_core_entry_thumbnail_system(core, i, system, sizeof(system));
+      rowEntry.thumbnailSystem = system;
+
       if (playlistName && *playlistName)
       {
          rowEntry.plName      = playlistName;
@@ -9623,7 +10169,9 @@ void PlaylistModel::appendEntriesFromCore()
    }
 }
 
-void PlaylistModel::startNextPendingPlaylist()
+/* @append: the playlists loaded before keep their thumbnail matches
+ * in the core, so every one of All Playlists does. */
+void PlaylistModel::startNextPendingPlaylist(bool append)
 {
    while (!m_pendingPaths.isEmpty())
    {
@@ -9632,7 +10180,10 @@ void PlaylistModel::startNextPendingPlaylist()
       /* The parse is driven from the runloop by companion_core_iterate()
        * under a time budget; onCorePlaylistChanged() fires when it is
        * done. Nothing blocks here, however large the playlist. */
-      if (companion_core_select_playlist_path(ui_companion_qt_core(),
+      if (append
+            ? companion_core_append_playlist_path(ui_companion_qt_core(),
+               pathArray.constData())
+            : companion_core_select_playlist_path(ui_companion_qt_core(),
                pathArray.constData()))
          return;
       /* Unreadable path: skip it and try the next one. */
@@ -9642,6 +10193,7 @@ void PlaylistModel::startNextPendingPlaylist()
    beginResetModel();
    m_contents          = m_pendingContents;
    m_pendingContents.clear();
+   m_thumbnailPaths.clear();
    m_loadingPlaylists  = false;
    endResetModel();
 
@@ -9653,7 +10205,7 @@ void PlaylistModel::onCorePlaylistChanged()
    if (!m_loadingPlaylists)
       return;
    appendEntriesFromCore();
-   startNextPendingPlaylist();
+   startNextPendingPlaylist(true);
 }
 
 bool PlaylistModel::isLoadingPlaylists() const
@@ -9673,7 +10225,7 @@ void PlaylistModel::addPlaylistItems(const QStringList &paths, bool add)
    m_pendingContents.clear();
    m_loadingPlaylists = true;
 
-   startNextPendingPlaylist();
+   startNextPendingPlaylist(false);
 }
 
 void PlaylistModel::addDir(QString path, QFlags<QDir::Filter> showHidden)
@@ -9693,6 +10245,7 @@ void PlaylistModel::addDir(QString path, QFlags<QDir::Filter> showHidden)
    beginResetModel();
 
    m_contents.clear();
+   m_thumbnailPaths.clear();
 
    for (i = 0; i < dirList.count(); i++)
    {
@@ -9706,6 +10259,7 @@ void PlaylistModel::addDir(QString path, QFlags<QDir::Filter> showHidden)
       rowEntry.label      = filePath;
       rowEntry.labelNoExt = fileInfo.completeBaseName();
       rowEntry.dbName     = fileInfo.dir().dirName();
+      rowEntry.thumbnailSystem = rowEntry.dbName;
 
       m_contents.append(rowEntry);
    }

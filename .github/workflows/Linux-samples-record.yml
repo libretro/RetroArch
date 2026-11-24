@@ -188,11 +188,13 @@ jobs:
           set -eu
           make clean all SANITIZER=address,undefined
           make clean all CC=x86_64-w64-mingw32-gcc EXE=.exe
-          x86_64-w64-mingw32-objdump -p encode_test.exe > imports.txt
-          if grep -Ei 'DLL Name:.*(mfplat|mfaacenc|ole32)\.dll' imports.txt; then
-            echo 'Native AAC must load optional entry points at runtime'
-            exit 1
-          fi
+          for binary in encode_test.exe facade_test.exe; do
+            x86_64-w64-mingw32-objdump -p "$binary" > imports.txt
+            if grep -Ei 'DLL Name:.*(mfplat|mfaacenc|ole32)\.dll' imports.txt; then
+              echo 'Native AAC must load optional entry points at runtime'
+              exit 1
+            fi
+          done
           make clean
 
       - name: Pollable producer wake (Clang ASan + UBSan, mingw-w64)
@@ -375,11 +377,13 @@ jobs:
         run: |
           set -eu
           make clean native-check CC=gcc EXE=.exe
-          objdump -p encode_test.exe > imports.txt
-          if grep -Ei 'DLL Name:.*(mfplat|mfaacenc|ole32)\.dll' imports.txt; then
-            echo 'Native AAC must load optional entry points at runtime'
-            exit 1
-          fi
+          for binary in encode_test.exe facade_test.exe; do
+            objdump -p "$binary" > imports.txt
+            if grep -Ei 'DLL Name:.*(mfplat|mfaacenc|ole32)\.dll' imports.txt; then
+              echo 'Native AAC must load optional entry points at runtime'
+              exit 1
+            fi
+          done
           make clean
 
       - name: Native Metal frontend profiles and source clocks

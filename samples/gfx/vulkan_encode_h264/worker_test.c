@@ -6,7 +6,7 @@
 struct vulkan_encode_h264
 {
    vulkan_encode_packet_t packets[16];
-   unsigned head,count,submits,polls,releases,finishes;
+   unsigned head,count,submits,polls,releases,finishes,waits;
    int submit_fault,poll_fault,finish_fault;
    bool done,locked,closed,release_fault,dead,invalid_slot;
 };
@@ -38,6 +38,12 @@ bool vulkan_encode_h264_release(vulkan_encode_h264_t *e)
    if (e->release_fault) return false;
    assert(e->locked && e->count); e->count--; e->head=(e->head+1)%16; e->locked=false;
    return true;
+}
+bool vulkan_encode_h264_wait(vulkan_encode_h264_t *e,uint64_t timeout)
+{
+   assert(!e->dead && timeout==55);
+   if (!e->count || e->done || e->locked) return false;
+   e->waits++; return true;
 }
 int vulkan_encode_h264_finish(vulkan_encode_h264_t *e)
 {
@@ -71,12 +77,16 @@ static void normal(void)
    assert(record_gpu_worker_vulkan_step(w,&packet)==RECORD_GPU_VULKAN_PROGRESS && e.count==1);
    assert(record_gpu_worker_vulkan_step(w,&packet)==RECORD_GPU_VULKAN_PROGRESS && e.count==2);
    assert(!record_gpu_worker_vulkan_free(w) && !record_gpu_queue_free(q));
+   /* Frames in flight: the retry waits on the encoder's GPU work */
+   assert(record_gpu_worker_vulkan_wait(w,55) && e.waits==1);
    e.done=true;
    for (i=0;i<2;i++)
    {
       assert(record_gpu_worker_vulkan_step(w,&packet)==RECORD_GPU_VULKAN_PACKET);
       assert(packet.timestamp==i*10 && packet.duration==3 && packet.slot==i && packet.keyframe==!i);
       calls=e.polls; assert(record_gpu_worker_vulkan_step(w,&held)==RECORD_GPU_VULKAN_PACKET);
+      /* A packet held for the output is not the encoder's to wait on */
+      assert(!record_gpu_worker_vulkan_wait(w,55) && e.waits==1);
       assert(calls==e.polls && packet.data==held.data && packet.size==held.size);
       if (!i)
       {
@@ -96,6 +106,7 @@ static void normal(void)
    assert(record_gpu_worker_vulkan_step(w,&packet)==RECORD_GPU_VULKAN_END);
    calls=e.polls; assert(record_gpu_worker_vulkan_step(w,&packet)==RECORD_GPU_VULKAN_END && calls==e.polls);
    assert(!record_gpu_worker_vulkan_retry_needed(w));
+   assert(!record_gpu_worker_vulkan_wait(w,55) && !record_gpu_worker_vulkan_wait(NULL,55));
    assert(record_gpu_worker_vulkan_free(w) && record_gpu_queue_free(q));
 }
 static void failures(void)

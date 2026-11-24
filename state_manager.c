@@ -1107,6 +1107,7 @@ void state_manager_event_deinit(
                         | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED
                         | STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED
                         | STATE_MGR_REWIND_ST_FLAG_INIT_PENDING
+                        | STATE_MGR_REWIND_ST_FLAG_PUSH_PENDING
                         );
 
    /* Restore regular (non-rewind) core audio
@@ -1127,6 +1128,36 @@ void state_manager_event_deinit(
  *
  * Checks if rewind toggle/hold was being pressed and/or held.
  **/
+bool state_manager_push_deferred(
+      struct state_manager_rewind_state *rewind_st,
+      void *core, size_t core_size)
+{
+   void *state         = NULL;
+   const void *block;
+   size_t block_size   = 0;
+   bool serialized;
+
+   if (     !rewind_st
+         || !(rewind_st->flags & STATE_MGR_REWIND_ST_FLAG_PUSH_PENDING))
+      return false;
+   rewind_st->flags &= ~STATE_MGR_REWIND_ST_FLAG_PUSH_PENDING;
+   if (!rewind_st->state)
+      return false;
+
+   state_manager_push_where(rewind_st->state, &state);
+   serialized = content_serialize_state_rewind(state, rewind_st->size);
+   /* The pushed block stays as it was written until the next push */
+   state_manager_push_do(rewind_st->state);
+
+   if (     !serialized || !core
+         || !(block = content_rewind_state_core(state, rewind_st->size,
+               &block_size))
+         || block_size != core_size)
+      return false;
+   memcpy(core, block, core_size);
+   return true;
+}
+
 bool state_manager_check_rewind(
       struct state_manager_rewind_state *rewind_st,
       struct retro_core_t *current_core,
@@ -1142,6 +1173,9 @@ bool state_manager_check_rewind(
    if (    !rewind_st
        || (!(rewind_st->flags & STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED)))
       return false;
+
+   /* A push is left pending for the frame it was checked on only */
+   rewind_st->flags &= ~STATE_MGR_REWIND_ST_FLAG_PUSH_PENDING;
 
    if (!(rewind_st->flags & STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED))
    {
@@ -1254,12 +1288,17 @@ bool state_manager_check_rewind(
       if (     !is_paused
             && ((cnt == 0) || retroarch_ctl(RARCH_CTL_BSV_MOVIE_IS_INITED, NULL)))
       {
-         void *state = NULL;
-         state_manager_push_where(rewind_st->state, &state);
+         if (rewind_st->flags & STATE_MGR_REWIND_ST_FLAG_DEFER_PUSH)
+            rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_PUSH_PENDING;
+         else
+         {
+            void *state = NULL;
+            state_manager_push_where(rewind_st->state, &state);
 
-         content_serialize_state_rewind(state, rewind_st->size);
+            content_serialize_state_rewind(state, rewind_st->size);
 
-         state_manager_push_do(rewind_st->state);
+            state_manager_push_do(rewind_st->state);
+         }
       }
    }
 

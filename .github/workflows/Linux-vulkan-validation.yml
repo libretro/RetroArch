@@ -314,8 +314,11 @@ jobs:
           # anything the driver or the filter chain does that leans on
           # an optional extension is a validation error here and nowhere
           # else. The filter chain's mirror-clamp samplers were.
-          # It passes the required extensions, so none are added.
+          # It passes the required extensions, so none are added. Its
+          # destroy_device must have run by its retro_deinit: after it
+          # the library is closed.
           HARNESS_CORE_HW_VULKAN=2 FORBID_LOG='left out required device extensions' \
+            EXPECT_LOG='destroy_device ran before retro_deinit' \
             SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
           # And as one whose create_device leaves the required extensions

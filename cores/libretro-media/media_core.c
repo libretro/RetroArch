@@ -32,6 +32,8 @@
 #include <formats/rwebm.h>
 #include <formats/rwebm_video.h>
 #include <formats/rvp9.h>
+#include <formats/image.h>
+#include <formats/image_yuv_blit.h>
 #ifdef HAVE_RAV1
 #include <formats/rav1_frame.h>
 #endif
@@ -265,6 +267,8 @@ typedef struct
    int          seeking;             /* suppress presentation           */
    rwebm_video_hdr_tone_t tone;
    int          pix10;               /* frontend accepted XRGB2101010   */
+   int          planes_shown;        /* the picture up went to the planes
+                                        sink, not p->fb                 */
 } media_player_t;
 
 #if defined(HAVE_RMP4) && defined(MEDIA_HAVE_AUDIO)
@@ -276,6 +280,11 @@ static int media_ts_cmp(const void *a, const void *b);
 static media_player_t media_player;
 static media_hw_refresh_t media_hw_refresh;
 static void *media_hw_user;
+static media_hw_refresh_t media_planes_refresh;
+static void *media_planes_user;
+static int media_send_planes(media_player_t *p,
+      const uint8_t *y, unsigned ys, const uint8_t *u, const uint8_t *v,
+      unsigned uvs, unsigned w, unsigned h, unsigned yuv);
 
 #ifdef RARCH_INTERNAL
 bool libretro_media_set_video_hw_refresh(media_hw_refresh_t cb, void *user)
@@ -291,6 +300,23 @@ bool media_set_video_hw_refresh(media_hw_refresh_t cb, void *user)
       return false;
    media_hw_refresh = cb;
    media_hw_user = user;
+   return true;
+}
+
+#ifdef RARCH_INTERNAL
+bool libretro_media_set_video_planes_refresh(media_hw_refresh_t cb, void *user)
+#else
+bool media_set_video_planes_refresh(media_hw_refresh_t cb, void *user)
+#endif
+{
+   if (media_player.dt || media_player.webm
+#ifdef HAVE_RMP4
+         || media_player.mp4vs
+#endif
+      )
+      return false;
+   media_planes_refresh = cb;
+   media_planes_user    = user;
    return true;
 }
 
@@ -705,6 +731,17 @@ static bool media_make_framebuffer(media_player_t *p, bool blank)
    return p->fb != NULL;
 }
 
+/* The picture up, again: from p->fb, or the frontend's copy of the
+ * last planes it took. */
+static void media_hold_picture(media_player_t *p)
+{
+   if (p->planes_shown)
+      MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+   else
+      MEDIA_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
+            p->width * sizeof(uint32_t));
+}
+
 static void media_present_hw(media_player_t *p)
 {
    if (p->hw_frame.image && media_hw_refresh(media_hw_user, &p->hw_frame))
@@ -802,6 +839,22 @@ static void media_present_mp4(media_player_t *p, int have)
 {
    if (!p->hw_video)
    {
+      const uint8_t *planes[3];
+      unsigned strides[3], w, h, yuv;
+      /* the decoder's planes, lent, to the planes sink; no new picture
+       * holds the one up */
+      if (     have && media_planes_refresh
+            && rmp4_video_stream_planes(p->mp4vs, planes, strides,
+               &w, &h, &yuv)
+            && media_send_planes(p, planes[0], strides[0], planes[1],
+               planes[2], strides[1], w, h, yuv) >= 0)
+         return;
+      if (!have && p->planes_shown)
+      {
+         MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+         return;
+      }
+      p->planes_shown = 0;
       if (!media_make_framebuffer(p, false))
       {
          p->eof = 1;
@@ -930,12 +983,22 @@ static void media_expand_8888_to_2101010(uint32_t *dst, unsigned stride,
    }
 }
 
-static void media_blit_yuv(uint32_t *dst, unsigned w, unsigned h,
+static void media_blit_yuv(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h,
       const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v, int uvs,
       unsigned matrix, int cvsh, int full)
 {
    const int16_t *k = media_yuv_coefs(matrix, h);
    unsigned i, j;
+   /* 4:2:0 in BT.601 or BT.709: the shared converter's vectorised rows */
+   if (cvsh && k != media_coef_2020)
+   {
+      image_yuv_420_to_rgb32(dst, dst_stride, y, (unsigned)ys, u, (unsigned)uvs,
+            v, (unsigned)uvs, 1, w, h,
+            (k == media_coef_709 ? IMAGE_YUV_FLAG_BT709 : 0)
+            | (full ? IMAGE_YUV_FLAG_FULL_RANGE : 0));
+      return;
+   }
    if (full)
       k = k == media_coef_709 ? media_full_709
          : (k == media_coef_2020 ? media_full_2020 : media_full_601);
@@ -944,18 +1007,63 @@ static void media_blit_yuv(uint32_t *dst, unsigned w, unsigned h,
       const uint8_t *yr = y + j * ys;
       const uint8_t *ur = u + (j >> cvsh) * uvs;
       const uint8_t *vr = v + (j >> cvsh) * uvs;
-      uint32_t *dr      = dst + j * w;
+      uint32_t *dr      = dst + (size_t)j * dst_stride;
       for (i = 0; i < w; i++)
          dr[i] = media_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k, full);
    }
 }
 
 /* 4:2:0: two luma rows share a chroma row. */
-static void media_blit_i420(uint32_t *dst, unsigned w, unsigned h,
+static void media_blit_i420(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h,
       const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v, int uvs,
       unsigned matrix, int full)
 {
-   media_blit_yuv(dst, w, h, y, ys, u, v, uvs, matrix, 1, full);
+   media_blit_yuv(dst, dst_stride, w, h, y, ys, u, v, uvs, matrix, 1, full);
+}
+
+/* A software frame's 8-bit 4:2:0 planes, lent for the call, to the
+ * planes sink in the RGB blit's place, so the frontend's GPU converts
+ * them: 1 shown, 0 not taken now (the last frame stays up), -1 no
+ * sink to take them, or a matrix it does not speak (BT.2020) - blit. */
+static int media_send_planes(media_player_t *p,
+      const uint8_t *y, unsigned ys, const uint8_t *u, const uint8_t *v,
+      unsigned uvs, unsigned w, unsigned h, unsigned yuv)
+{
+   video_hw_frame_t f;
+   if (!media_planes_refresh || !media_planes_refresh(media_planes_user, NULL))
+      return -1;
+   memset(&f, 0, sizeof(f));
+   f.planes[0]   = y;
+   f.planes[1]   = u;
+   f.planes[2]   = v;
+   f.strides[0]  = ys;
+   f.strides[1]  = f.strides[2] = uvs;
+   f.chroma_step = 1;
+   f.width       = w;
+   f.height      = h;
+   f.pixfmt      = IMAGE_PIXFMT_I420;
+   f.yuv         = yuv;
+   if (!media_planes_refresh(media_planes_user, &f))
+   {
+      MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+      return 0;
+   }
+   p->planes_shown = 1;
+   MEDIA_CORE_PREFIX(video_cb)(NULL, p->width, p->height, 0);
+   return 1;
+}
+
+static int media_present_planes(media_player_t *p,
+      const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v, int uvs,
+      unsigned w, unsigned h, unsigned matrix, int full)
+{
+   const int16_t *k = media_yuv_coefs(matrix, h);
+   if (k == media_coef_2020)
+      return -1;
+   return media_send_planes(p, y, (unsigned)ys, u, v, (unsigned)uvs, w, h,
+         (k == media_coef_709 ? IMAGE_YUV_FLAG_BT709 : 0)
+         | (full ? IMAGE_YUV_FLAG_FULL_RANGE : 0));
 }
 
 /* -------------------------------------------------------------------- */
@@ -1098,13 +1206,19 @@ static int media_present_vp9(media_player_t *p, int show)
    else
       {
          const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
-         media_blit_i420(p->fb, w, h, fb->y, p->vp9->ys, fb->u, fb->v,
-            p->vp9->uvs, ct ? ct->matrix_coefficients : 0,
-            ct && ct->colour_range ? ct->colour_range == 2
-               : p->vp9->hd.color_range);
+         int full = ct && ct->colour_range ? ct->colour_range == 2
+               : p->vp9->hd.color_range;
+         if (     p->vp9->hd.subsampling_x && p->vp9->hd.subsampling_y
+               && media_present_planes(p, fb->y, p->vp9->ys, fb->u, fb->v,
+                  p->vp9->uvs, w, h, ct ? ct->matrix_coefficients : 0,
+                  full) >= 0)
+            return 1;
+         media_blit_i420(p->fb, p->width, w, h, fb->y, p->vp9->ys, fb->u, fb->v,
+            p->vp9->uvs, ct ? ct->matrix_coefficients : 0, full);
          if (p->pix10)
             media_expand_8888_to_2101010(p->fb, p->width, w, h);
       }
+   p->planes_shown = 0;
    MEDIA_CORE_PREFIX(video_cb)(p->fb, w, h, p->width * sizeof(uint32_t));
    return 1;
 }
@@ -1187,12 +1301,16 @@ static int media_decode_packet(media_player_t *p, const rwebm_packet *pkt)
          return 1;
       {
          const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
-         media_blit_i420(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+         if (media_present_planes(p, y, ys, u, v, uvs, (unsigned)w,
+                  (unsigned)h, ct ? ct->matrix_coefficients : 0, 0) >= 0)
+            return 1;
+         media_blit_i420(p->fb, p->width, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
             ct ? ct->matrix_coefficients : 0, 0);
          if (p->pix10)
             media_expand_8888_to_2101010(p->fb, p->width,
                (unsigned)w, (unsigned)h);
       }
+      p->planes_shown = 0;
       MEDIA_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
          p->width * sizeof(uint32_t));
       return 1;
@@ -1236,13 +1354,18 @@ static int media_decode_packet(media_player_t *p, const rwebm_packet *pkt)
          return 1;
       {
          const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
-         media_blit_yuv(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+         if (     cw < w && ch < h && rh264_video_bit_depth(p->h264) == 8
+               && media_present_planes(p, y, ys, u, v, uvs, (unsigned)w,
+                  (unsigned)h, ct ? ct->matrix_coefficients : 0, 0) >= 0)
+            return 1;
+         media_blit_yuv(p->fb, p->width, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
             ct ? ct->matrix_coefficients : 0,
                (ch < h) ? 1 : 0, 0);
          if (p->pix10)
             media_expand_8888_to_2101010(p->fb, p->width,
                (unsigned)w, (unsigned)h);
       }
+      p->planes_shown = 0;
       MEDIA_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
          p->width * sizeof(uint32_t));
       return 1;
@@ -1272,13 +1395,18 @@ static int media_drain_h264(media_player_t *p)
       return 1;
    {
       const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
-      media_blit_yuv(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+      if (     cw < w && ch < h && rh264_video_bit_depth(p->h264) == 8
+            && media_present_planes(p, y, ys, u, v, uvs, (unsigned)w,
+               (unsigned)h, ct ? ct->matrix_coefficients : 0, 0) >= 0)
+         return 1;
+      media_blit_yuv(p->fb, p->width, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
          ct ? ct->matrix_coefficients : 0,
          (ch < h) ? 1 : 0, 0);
       if (p->pix10)
          media_expand_8888_to_2101010(p->fb, p->width,
             (unsigned)w, (unsigned)h);
    }
+   p->planes_shown = 0;
    MEDIA_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
       p->width * sizeof(uint32_t));
    return 1;
@@ -2267,8 +2395,7 @@ static void media_run_webm_cpu(media_player_t *p, int advance_clock)
       }
       p->seeking = 0;
       if (!shown_now)   /* nothing due this run: hold the picture */
-         MEDIA_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
-            p->width * sizeof(uint32_t));
+         media_hold_picture(p);
       /* every display slot shown and a further interval elapsed: the
        * stream is over (the packet reader no longer runs each frame,
        * so it cannot notice on its own) */
@@ -2284,8 +2411,7 @@ static void media_run_webm_cpu(media_player_t *p, int advance_clock)
       if (p->actx && !p->aeof)
          audio_done = 0;
 #endif
-      MEDIA_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
-         p->width * sizeof(uint32_t));
+      media_hold_picture(p);
       if (audio_done)
          MEDIA_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
    }

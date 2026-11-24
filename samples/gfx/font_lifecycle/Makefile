@@ -11,7 +11,7 @@ SRC     := $(RA)/gfx/font_driver.c \
            $(RA)/libretro-common/encodings/encoding_utf.c \
            $(RA)/libretro-common/lists/string_list.c \
            $(RA)/libretro-common/time/rtime.c
-all: lifecycle lifecycle-threaded owner create fallback chain frame vg sdl2 omap
+all: lifecycle lifecycle-threaded owner create fallback chain frame vg sdl2 omap bidi ticker
 lifecycle: font_lifecycle_test.c stubs_retroarch.c $(SRC)
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 # Same tests with the marshalling branch compiled in, so a rebuild
@@ -23,6 +23,16 @@ lifecycle-threaded: font_lifecycle_test.c stubs_retroarch.c $(SRC)
 owner: font_owner_test.c stubs_retroarch.c $(SRC)
 	$(CC) $(CFLAGS) -DHAVE_THREADS -o $@ font_owner_test.c stubs_retroarch.c \
 	   $(filter-out $(RA)/gfx/font_driver.c,$(SRC)) -lm
+# Right-to-left lines laid out in visual order; the test includes
+# font_driver.c for the reshaper.
+bidi: font_bidi_test.c stubs_retroarch.c $(SRC)
+	$(CC) $(CFLAGS) -DHAVE_LANGEXTRA -o $@ font_bidi_test.c stubs_retroarch.c \
+	   $(filter-out $(RA)/gfx/font_driver.c,$(SRC)) -lm
+# Right-to-left labels scrolled by the smooth ticker and drawn through
+# the reshaper, from the shipping gfx_animation.c
+ticker: font_ticker_test.c stubs_retroarch.c $(SRC) $(RA)/gfx/gfx_animation.c \
+        $(RA)/libretro-common/encodings/encoding_xxh64.c
+	$(CC) $(CFLAGS) -DHAVE_LANGEXTRA -o $@ $^ -lm
 create: font_create_test.c stubs_retroarch.c $(SRC) \
         $(RA)/gfx/drivers_font_renderer/stb.c $(RA)/gfx/bitmapfont.c \
         $(RA)/libretro-common/gfx/font/rtt.c
@@ -110,6 +120,8 @@ check: all
 	ASAN_OPTIONS=detect_leaks=1 ./vg
 	ASAN_OPTIONS=detect_leaks=1 ./sdl2
 	ASAN_OPTIONS=detect_leaks=1 ./omap
+	ASAN_OPTIONS=detect_leaks=1 ./bidi
+	ASAN_OPTIONS=detect_leaks=1 ./ticker
 clean:
-	rm -f lifecycle lifecycle-threaded owner create fallback chain frame vg sdl2 omap
+	rm -f lifecycle lifecycle-threaded owner create fallback chain frame vg sdl2 omap bidi ticker
 .PHONY: all check clean

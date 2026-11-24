@@ -178,6 +178,13 @@ void audio_mixer_sound_set_tag(audio_mixer_sound_t *sound, unsigned tag)
       sound->tag = tag;
 }
 
+void audio_mixer_sound_set_observer(audio_mixer_sound_t *sound,
+      const audio_mixer_observer_t *observer)
+{
+   (void)sound;
+   if (observer) abort();
+}
+
 unsigned audio_mixer_sound_tag(const audio_mixer_sound_t *sound)
 {
    return sound ? sound->tag : 0;

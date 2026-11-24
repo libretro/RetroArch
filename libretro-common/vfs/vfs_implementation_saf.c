@@ -32,20 +32,12 @@ static jclass vfs_saf_vfs_implementation_saf_class;
 static jmethodID vfs_saf_open_saf_file_method;
 static jmethodID vfs_saf_remove_saf_file_method;
 static jmethodID vfs_saf_rename_saf_file_method;
-static jclass vfs_saf_saf_stat_class;
-static jmethodID vfs_saf_saf_stat_init_method;
-static jmethodID vfs_saf_saf_stat_get_is_open_method;
-static jmethodID vfs_saf_saf_stat_get_is_directory_method;
-static jmethodID vfs_saf_saf_stat_get_size_method;
+static jmethodID vfs_saf_stat_saf_method;
 static jmethodID vfs_saf_mkdir_saf_method;
 static jclass vfs_saf_saf_directory_class;
 static jmethodID vfs_saf_saf_directory_init_method;
 static jmethodID vfs_saf_saf_directory_close_method;
-static jmethodID vfs_saf_saf_directory_readdir_method;
-static jmethodID vfs_saf_saf_directory_get_dirent_name_method;
-static jmethodID vfs_saf_saf_directory_get_dirent_is_directory_method;
 static jmethodID vfs_saf_saf_directory_readdir_batch_method;
-static jmethodID vfs_saf_saf_directory_get_batch_is_directory_method;
 
 bool retro_vfs_init_saf(JNIEnv *(*get_jni_env)(void), jobject activity_object)
 {
@@ -68,13 +60,11 @@ bool retro_vfs_init_saf(JNIEnv *(*get_jni_env)(void), jobject activity_object)
 
    vfs_saf_content_resolver_object = NULL;
    vfs_saf_vfs_implementation_saf_class = NULL;
-   vfs_saf_saf_stat_class = NULL;
    vfs_saf_saf_directory_class = NULL;
 
    /*
     * ClassLoader class_loader_object = activity_object.getClassLoader();
     * Class<?> vfs_saf_vfs_implementation_saf_class = class_loader_object.loadClass("com.libretro.common.vfs.VfsImplementationSaf");
-    * Class<?> vfs_saf_saf_stat_class = class_loader_object.loadClass("com.libretro.common.vfs.VfsImplementationSaf$SafStat");
     * Class<?> vfs_saf_saf_directory_class = class_loader_object.loadClass("com.libretro.common.vfs.VfsImplementationSaf$SafDirectory");
     */
    {
@@ -82,8 +72,6 @@ bool retro_vfs_init_saf(JNIEnv *(*get_jni_env)(void), jobject activity_object)
       jmethodID load_class_method;
       jstring vfs_implementation_saf_string;
       jclass vfs_implementation_saf_class;
-      jstring saf_stat_string;
-      jclass saf_stat_class;
       jstring saf_directory_string;
       jclass saf_directory_class;
 
@@ -111,14 +99,6 @@ bool retro_vfs_init_saf(JNIEnv *(*get_jni_env)(void), jobject activity_object)
       if ((*env)->ExceptionOccurred(env)) goto error;
       vfs_saf_vfs_implementation_saf_class = vfs_implementation_saf_class;
 
-      saf_stat_string = (*env)->NewStringUTF(env, "com.libretro.common.vfs.VfsImplementationSaf$SafStat");
-      if ((*env)->ExceptionOccurred(env)) goto error;
-      saf_stat_class = (jclass)(*env)->CallObjectMethod(env, class_loader_object, load_class_method, saf_stat_string);
-      if ((*env)->ExceptionOccurred(env)) goto error;
-      saf_stat_class = (jclass)(*env)->NewGlobalRef(env, saf_stat_class);
-      if ((*env)->ExceptionOccurred(env)) goto error;
-      vfs_saf_saf_stat_class = saf_stat_class;
-
       saf_directory_string = (*env)->NewStringUTF(env, "com.libretro.common.vfs.VfsImplementationSaf$SafDirectory");
       if ((*env)->ExceptionOccurred(env)) goto error;
       saf_directory_class = (jclass)(*env)->CallObjectMethod(env, class_loader_object, load_class_method, saf_directory_string);
@@ -137,16 +117,7 @@ bool retro_vfs_init_saf(JNIEnv *(*get_jni_env)(void), jobject activity_object)
    vfs_saf_rename_saf_file_method = (*env)->GetStaticMethodID(env, vfs_saf_vfs_implementation_saf_class, "renameSafFile", "(Landroid/content/ContentResolver;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Z");
    if ((*env)->ExceptionOccurred(env)) goto error;
 
-   vfs_saf_saf_stat_init_method = (*env)->GetMethodID(env, vfs_saf_saf_stat_class, "<init>", "(Landroid/content/ContentResolver;Ljava/lang/String;Ljava/lang/String;Z)V");
-   if ((*env)->ExceptionOccurred(env)) goto error;
-
-   vfs_saf_saf_stat_get_is_open_method = (*env)->GetMethodID(env, vfs_saf_saf_stat_class, "getIsOpen", "()Z");
-   if ((*env)->ExceptionOccurred(env)) goto error;
-
-   vfs_saf_saf_stat_get_is_directory_method = (*env)->GetMethodID(env, vfs_saf_saf_stat_class, "getIsDirectory", "()Z");
-   if ((*env)->ExceptionOccurred(env)) goto error;
-
-   vfs_saf_saf_stat_get_size_method = (*env)->GetMethodID(env, vfs_saf_saf_stat_class, "getSize", "()J");
+   vfs_saf_stat_saf_method = (*env)->GetStaticMethodID(env, vfs_saf_vfs_implementation_saf_class, "statSaf", "(Landroid/content/ContentResolver;Ljava/lang/String;Ljava/lang/String;Z)J");
    if ((*env)->ExceptionOccurred(env)) goto error;
 
    vfs_saf_mkdir_saf_method = (*env)->GetStaticMethodID(env, vfs_saf_vfs_implementation_saf_class, "mkdirSaf", "(Landroid/content/ContentResolver;Ljava/lang/String;Ljava/lang/String;)I");
@@ -158,19 +129,7 @@ bool retro_vfs_init_saf(JNIEnv *(*get_jni_env)(void), jobject activity_object)
    vfs_saf_saf_directory_close_method = (*env)->GetMethodID(env, vfs_saf_saf_directory_class, "close", "()V");
    if ((*env)->ExceptionOccurred(env)) goto error;
 
-   vfs_saf_saf_directory_readdir_method = (*env)->GetMethodID(env, vfs_saf_saf_directory_class, "readdir", "()Z");
-   if ((*env)->ExceptionOccurred(env)) goto error;
-
-   vfs_saf_saf_directory_get_dirent_name_method = (*env)->GetMethodID(env, vfs_saf_saf_directory_class, "getDirentName", "()Ljava/lang/String;");
-   if ((*env)->ExceptionOccurred(env)) goto error;
-
-   vfs_saf_saf_directory_get_dirent_is_directory_method = (*env)->GetMethodID(env, vfs_saf_saf_directory_class, "getDirentIsDirectory", "()Z");
-   if ((*env)->ExceptionCheck(env)) goto error;
-
-   vfs_saf_saf_directory_readdir_batch_method = (*env)->GetMethodID(env, vfs_saf_saf_directory_class, "readdirBatch", "(I)[Ljava/lang/String;");
-   if ((*env)->ExceptionCheck(env)) goto error;
-
-   vfs_saf_saf_directory_get_batch_is_directory_method = (*env)->GetMethodID(env, vfs_saf_saf_directory_class, "getBatchIsDirectory", "()[Z");
+   vfs_saf_saf_directory_readdir_batch_method = (*env)->GetMethodID(env, vfs_saf_saf_directory_class, "readdirBatch", "(I)[B");
    if ((*env)->ExceptionOccurred(env)) goto error;
 
    /*
@@ -210,12 +169,6 @@ error:
       vfs_saf_vfs_implementation_saf_class = NULL;
       if ((*env)->ExceptionOccurred(env)) goto error;
    }
-   if (vfs_saf_saf_stat_class != NULL)
-   {
-      (*env)->DeleteGlobalRef(env, vfs_saf_saf_stat_class);
-      vfs_saf_saf_stat_class = NULL;
-      if ((*env)->ExceptionOccurred(env)) goto error;
-   }
    if (vfs_saf_saf_directory_class != NULL)
    {
       (*env)->DeleteGlobalRef(env, vfs_saf_saf_directory_class);
@@ -244,13 +197,6 @@ bool retro_vfs_deinit_saf(void)
    }
 
    (*env)->DeleteGlobalRef(env, vfs_saf_vfs_implementation_saf_class);
-   if ((*env)->ExceptionOccurred(env))
-   {
-      (*env)->ExceptionDescribe(env);
-      (*env)->ExceptionClear(env);
-   }
-
-   (*env)->DeleteGlobalRef(env, vfs_saf_saf_stat_class);
    if ((*env)->ExceptionOccurred(env))
    {
       (*env)->ExceptionDescribe(env);
@@ -680,9 +626,7 @@ int retro_vfs_stat_saf(const char *tree, const char *path, int64_t *size)
    JNIEnv *env;
    jstring tree_object;
    jstring path_object;
-   jobject saf_stat;
-   int64_t saf_stat_size;
-   bool saf_stat_is_directory;
+   jlong packed;
 
    if (vfs_saf_get_jni_env == NULL)
       return 0;
@@ -690,7 +634,7 @@ int retro_vfs_stat_saf(const char *tree, const char *path, int64_t *size)
    if (env == NULL)
       return 0;
 
-   (*env)->PushLocalFrame(env, 3);
+   (*env)->PushLocalFrame(env, 2);
    if ((*env)->ExceptionOccurred(env))
    {
       (*env)->ExceptionDescribe(env);
@@ -704,38 +648,17 @@ int retro_vfs_stat_saf(const char *tree, const char *path, int64_t *size)
    path_object = (*env)->NewStringUTF(env, path);
    if ((*env)->ExceptionOccurred(env)) goto error;
 
-   saf_stat = (*env)->NewObject(env, vfs_saf_saf_stat_class, vfs_saf_saf_stat_init_method, vfs_saf_content_resolver_object, tree_object, path_object, size != NULL);
+   /* Size << 1 | is-directory, or INT64_MIN if it could not be queried */
+   packed = (*env)->CallStaticLongMethod(env, vfs_saf_vfs_implementation_saf_class, vfs_saf_stat_saf_method, vfs_saf_content_resolver_object, tree_object, path_object, size != NULL);
    if ((*env)->ExceptionOccurred(env)) goto error;
-
-   if (size != NULL)
-   {
-      saf_stat_size = (*env)->CallLongMethod(env, saf_stat, vfs_saf_saf_stat_get_size_method);
-      if ((*env)->ExceptionOccurred(env)) goto error;
-      if (saf_stat_size < 0)
-      {
-         (*env)->PopLocalFrame(env, NULL);
-         return 0;
-      }
-   }
-   else
-   {
-      bool saf_stat_is_open = (*env)->CallBooleanMethod(env, saf_stat, vfs_saf_saf_stat_get_is_open_method);
-      if ((*env)->ExceptionOccurred(env)) goto error;
-      if (!saf_stat_is_open)
-      {
-         (*env)->PopLocalFrame(env, NULL);
-         return 0;
-      }
-   }
-
-   saf_stat_is_directory = (*env)->CallBooleanMethod(env, saf_stat, vfs_saf_saf_stat_get_is_directory_method);
-   if ((*env)->ExceptionOccurred(env)) goto error;
-
-   if (size != NULL)
-      *size = saf_stat_size > INT64_MAX ? INT64_MAX : (int64_t)saf_stat_size;
 
    (*env)->PopLocalFrame(env, NULL);
-   return saf_stat_is_directory ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
+
+   if (packed == (jlong)INT64_MIN)
+      return 0;
+   if (size != NULL)
+      *size = (int64_t)((uint64_t)packed >> 1);
+   return (packed & 1) ? RETRO_VFS_STAT_IS_VALID | RETRO_VFS_STAT_IS_DIRECTORY : RETRO_VFS_STAT_IS_VALID;
 
 error:
    (*env)->ExceptionDescribe(env);
@@ -840,39 +763,26 @@ error:
    return NULL;
 }
 
-static void saf_batch_release(libretro_vfs_implementation_saf_dir *dirstream)
-{
-   int i;
-
-   for (i = 0; i < dirstream->batch_count; i++)
-   {
-      free(dirstream->batch_name[i]);
-      dirstream->batch_name[i] = NULL;
-   }
-
-   dirstream->batch_count = 0;
-   dirstream->batch_pos   = 0;
-}
-
-/* Pull the next batch of entries across in two JNI calls and copy the
- * names into native memory, so that stepping through them afterwards
- * costs nothing. Returns false when the directory is exhausted. */
+/* Pull the next batch across in one JNI call and one copy into the
+ * reused arena, then lend names out of it, so that stepping through
+ * them afterwards costs nothing. Returns false when the directory is
+ * exhausted. */
 static bool saf_batch_fill(JNIEnv *env,
       libretro_vfs_implementation_saf_dir *dirstream)
 {
-   jobjectArray  names;
-   jbooleanArray flags;
-   jboolean     *flag_elems = NULL;
-   jsize         count;
-   jsize         i;
-   bool          ok         = false;
+   jbyteArray  batch;
+   jsize       length;
+   const char *p;
+   const char *end;
+   bool        ok = false;
 
-   saf_batch_release(dirstream);
+   dirstream->batch_count = 0;
+   dirstream->batch_pos   = 0;
 
    if (dirstream->exhausted)
       return false;
 
-   if ((*env)->PushLocalFrame(env, 4) < 0)
+   if ((*env)->PushLocalFrame(env, 1) < 0)
    {
       if ((*env)->ExceptionCheck(env))
       {
@@ -882,67 +792,48 @@ static bool saf_batch_fill(JNIEnv *env,
       return false;
    }
 
-   names = (jobjectArray)(*env)->CallObjectMethod(env,
+   batch = (jbyteArray)(*env)->CallObjectMethod(env,
          dirstream->directory_object,
          vfs_saf_saf_directory_readdir_batch_method,
          (jint)RETRO_VFS_SAF_DIRENT_BATCH);
-   if ((*env)->ExceptionCheck(env) || !names)
+   if ((*env)->ExceptionCheck(env) || !batch)
       goto done;
 
-   flags = (jbooleanArray)(*env)->CallObjectMethod(env,
-         dirstream->directory_object,
-         vfs_saf_saf_directory_get_batch_is_directory_method);
-   if ((*env)->ExceptionCheck(env) || !flags)
-      goto done;
-
-   count = (*env)->GetArrayLength(env, names);
-   if (count > RETRO_VFS_SAF_DIRENT_BATCH)
-      count = RETRO_VFS_SAF_DIRENT_BATCH;
-   if ((*env)->GetArrayLength(env, flags) < count)
-      goto done;
-
-   if (count == 0)
+   if ((length = (*env)->GetArrayLength(env, batch)) <= 0)
    {
       dirstream->exhausted = true;
-      ok                   = true;
       goto done;
    }
 
-   flag_elems = (*env)->GetBooleanArrayElements(env, flags, NULL);
-   if (!flag_elems)
-      goto done;
-
-   for (i = 0; i < count; i++)
+   if ((size_t)length > dirstream->arena_size)
    {
-      jstring     jname = (jstring)(*env)->GetObjectArrayElement(env, names, i);
-      const char *cname;
-
-      if ((*env)->ExceptionCheck(env) || !jname)
-         break;
-
-      if ((cname = (*env)->GetStringUTFChars(env, jname, NULL)))
-      {
-         dirstream->batch_name[dirstream->batch_count] = strdup(cname);
-         (*env)->ReleaseStringUTFChars(env, jname, cname);
-
-         if (!dirstream->batch_name[dirstream->batch_count])
-         {
-            (*env)->DeleteLocalRef(env, jname);
-            break;
-         }
-
-         dirstream->batch_is_dir[dirstream->batch_count] =
-            (flag_elems[i] != JNI_FALSE);
-         dirstream->batch_count++;
-      }
-
-      (*env)->DeleteLocalRef(env, jname);
+      char *arena = (char *)realloc(dirstream->arena, (size_t)length);
+      if (!arena)
+         goto done;
+      dirstream->arena      = arena;
+      dirstream->arena_size = (size_t)length;
    }
 
-   (*env)->ReleaseBooleanArrayElements(env, flags, flag_elems, JNI_ABORT);
+   (*env)->GetByteArrayRegion(env, batch, 0, length, (jbyte *)dirstream->arena);
+   if ((*env)->ExceptionCheck(env))
+      goto done;
+
+   /* Per entry: a directory flag, the name, its terminator */
+   for (  p = dirstream->arena, end = p + length;
+          p < end && dirstream->batch_count < RETRO_VFS_SAF_DIRENT_BATCH;)
+   {
+      const char *name = p + 1;
+      const char *nul  = (const char *)memchr(name, 0, (size_t)(end - name));
+      if (!nul)
+         break;
+      dirstream->batch_name[dirstream->batch_count]   = name;
+      dirstream->batch_is_dir[dirstream->batch_count] = (*p != 0);
+      dirstream->batch_count++;
+      p = nul + 1;
+   }
 
    /* A short batch means the cursor ran dry; do not ask again. */
-   if (count < RETRO_VFS_SAF_DIRENT_BATCH)
+   if (dirstream->batch_count < RETRO_VFS_SAF_DIRENT_BATCH)
       dirstream->exhausted = true;
 
    ok = (dirstream->batch_count > 0);
@@ -1014,7 +905,7 @@ int retro_vfs_closedir_saf(libretro_vfs_implementation_saf_dir *dirstream)
    if (env == NULL)
       return -1;
 
-   saf_batch_release(dirstream);
+   dirstream->batch_count   = 0;
    dirstream->dirent_name   = NULL;
    dirstream->dirent_is_dir = false;
 
@@ -1032,6 +923,7 @@ int retro_vfs_closedir_saf(libretro_vfs_implementation_saf_dir *dirstream)
       (*env)->ExceptionClear(env);
    }
 
+   free(dirstream->arena);
    free(dirstream);
    return 0;
 }

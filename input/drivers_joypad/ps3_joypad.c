@@ -28,10 +28,12 @@
 #endif
 
 #include "../../tasks/tasks_internal.h"
+#include "../include/input_pad_view.h"
 
 /* TODO/FIXME - static globals */
-static uint64_t pad_state[DEFAULT_MAX_PADS];
-static int16_t  analog_state[DEFAULT_MAX_PADS][2][2];
+/* each pad as its poll left it, lent to the readers (input_pad_view.h):
+ * the buttons as RetroPad ids, axes 0-3 the sticks' x and y */
+static input_pad_view_t ps3_pads[DEFAULT_MAX_PADS];
 static uint64_t pads_connected[DEFAULT_MAX_PADS];
 static uint8_t  rumble_motor[DEFAULT_MAX_PADS][2];
 #if 0
@@ -73,65 +75,22 @@ static int32_t ps3_joypad_button(unsigned port, uint16_t joykey)
 {
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return pad_state[port] & (UINT64_C(1) << joykey);
+   return input_pad_view_button(&ps3_pads[port], joykey);
 }
 
 static void ps3_joypad_get_buttons(unsigned port_num, input_bits_t *state)
 {
    if (port_num < DEFAULT_MAX_PADS)
-   {
-      BITS_COPY16_PTR( state, pad_state[port_num] );
-   }
+      *state = ps3_pads[port_num].buttons;
    else
       BIT256_CLEAR_ALL_PTR(state);
-}
-
-static int16_t ps3_joypad_axis_state(unsigned port, uint32_t joyaxis)
-{
-   if (AXIS_NEG_GET(joyaxis) < 4)
-   {
-      int16_t val  = 0;
-      int16_t axis = AXIS_NEG_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-         case 1:
-            val = analog_state[port][0][axis];
-            break;
-         case 2:
-         case 3:
-            val = analog_state[port][1][axis - 2];
-            break;
-      }
-      if (val < 0)
-         return val;
-   }
-   else if (AXIS_POS_GET(joyaxis) < 4)
-   {
-      int16_t val  = 0;
-      int16_t axis = AXIS_POS_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-         case 1:
-            val = analog_state[port][0][axis];
-            break;
-         case 2:
-         case 3:
-            val = analog_state[port][1][axis - 2];
-            break;
-      }
-      if (val > 0)
-         return val;
-   }
-   return 0;
 }
 
 static int16_t ps3_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return ps3_joypad_axis_state(port, joyaxis);
+   return input_pad_view_axis(&ps3_pads[port], joyaxis);
 }
 
 static int16_t ps3_joypad_state(
@@ -140,29 +99,17 @@ static int16_t ps3_joypad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
+   uint16_t port_idx = joypad_info->joy_idx;
+   if (port_idx >= DEFAULT_MAX_PADS)
+      return 0;
+   return input_pad_view_state(&ps3_pads[port_idx], joypad_info,
+         joykeys, joyaxes);
+}
 
-   if (port_idx < DEFAULT_MAX_PADS)
-   {
-      int i;
-      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-      {
-         const uint64_t joykey  = joykeys[i];
-         const uint32_t joyaxis = joyaxes[i];
-         if (
-               (uint16_t)joykey != NO_BTN
-               && pad_state[port_idx] & (UINT64_C(1) << (uint16_t)joykey)
-            )
-            ret |= ( 1 << i);
-         else if (joyaxis != AXIS_NONE &&
-               ((float)abs(ps3_joypad_axis_state(port_idx, joyaxis))
-                / 0x8000) > joypad_info->axis_threshold)
-            ret |= (1 << i);
-      }
-   }
-
-   return ret;
+/* Read in the poll alone: the same until the next */
+static const input_pad_view_t *ps3_joypad_view(unsigned port)
+{
+   return (port < DEFAULT_MAX_PADS) ? &ps3_pads[port] : NULL;
 }
 
 static void ps3_joypad_poll(void)
@@ -174,8 +121,9 @@ static void ps3_joypad_poll(void)
 
    for (port = 0; port < DEFAULT_MAX_PADS; port++)
    {
-      int i, j;
+      int i;
       padData state_tmp;
+      input_pad_view_t *v = &ps3_pads[port];
 
       if (pad_info.port_status[port] & CELL_PAD_STATUS_ASSIGN_CHANGES)
       {
@@ -196,11 +144,9 @@ static void ps3_joypad_poll(void)
       if (pads_connected[port] == 0)
       {
          /* Nothing held and sticks centred until the pad returns. */
-         pad_state[port] = 0;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = 0;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = 0;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = 0;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = 0;
+         INPUT_PAD_VIEW_SET_BITS64(v, 0);
+         for (i = 0; i < 4; i++)
+            v->axes[i] = 0;
          continue;
       }
 
@@ -208,8 +154,8 @@ static void ps3_joypad_poll(void)
 
       if (state_tmp.len != 0)
       {
-         uint64_t *state_cur = &pad_state[port];
-         *state_cur = 0;
+         uint64_t bits       = 0;
+         uint64_t *state_cur = &bits;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL1] & CELL_PAD_CTRL_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
@@ -243,22 +189,16 @@ static void ps3_joypad_poll(void)
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L1) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_R2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_L2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16((uint8_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X]);
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_LEFT ][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16((uint8_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y]);
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = convert_u8_to_s16((uint8_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X]);
-         analog_state[port][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = convert_u8_to_s16((uint8_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y]);
-
-#if 0
-         accelerometer_state[port].x = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_X];
-         accelerometer_state[port].y = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Y];
-         accelerometer_state[port].z = state_tmp.button[CELL_PAD_BTN_OFFSET_SENSOR_Z];
-#endif
+         INPUT_PAD_VIEW_SET_BITS64(v, bits);
+         v->axes[0] = convert_u8_to_s16((uint8_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_X]);
+         v->axes[1] = convert_u8_to_s16((uint8_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_LEFT_Y]);
+         v->axes[2] = convert_u8_to_s16((uint8_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_X]);
+         v->axes[3] = convert_u8_to_s16((uint8_t)state_tmp.button[CELL_PAD_BTN_OFFSET_ANALOG_RIGHT_Y]);
       }
 
-      for (i = 0; i < 2; i++)
-         for (j = 0; j < 2; j++)
-            if (analog_state[port][i][j] == -0x8000)
-               analog_state[port][i][j] = -0x7fff;
+      for (i = 0; i < 4; i++)
+         if (v->axes[i] == -0x8000)
+            v->axes[i] = -0x7fff;
    }
 }
 
@@ -320,4 +260,9 @@ input_device_driver_t ps3_joypad = {
    NULL, /* get_sensor_input */
    ps3_joypad_name,
    "ps3",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   ps3_joypad_view
 };

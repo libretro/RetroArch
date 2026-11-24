@@ -44,6 +44,7 @@
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <vfs/vfs_implementation.h>
 #ifdef HAVE_NETWORKING
 #include <net/net_http.h>
 #endif
@@ -66,6 +67,8 @@
 #include "../../version.h"
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
+#include "../../tasks/task_file_transfer.h"
+#include "../../gfx/gfx_thumbnail_results.h"
 #ifdef HAVE_MENU
 #include "../../menu/menu_driver.h"
 #endif
@@ -109,6 +112,10 @@ struct companion_core
    playlist_t *playlist;
    playlist_parse_t *pending_parse;
    size_t selected;
+   /* The thumbnail store's generation its playlists were pushed under */
+   unsigned results_gen;
+   /* Files appended before it: held, by path only */
+   struct string_list *appended;
 
    /* File the selected playlist was loaded from (select_playlist_path
     * may name a file outside the playlist directory). */
@@ -131,6 +138,12 @@ struct companion_core
 
    /* File-system browser listing. */
    struct string_list *browse;
+   /* The search every listing is made with: folded terms, each ended by
+    * a NUL, the last by two (NULL: the folder as it is). */
+   char *browse_pattern;
+   /* Deletes finished on the worker, path and outcome (attr.b), told
+    * from iterate() in order. */
+   struct string_list *delete_done;
    char browse_dir[PATH_MAX_LENGTH];
    /* Per entry of @browse: size and mtime, gathered with the listing. */
    uint64_t *browse_size;
@@ -145,16 +158,23 @@ struct companion_core
       struct string_list *list;
       uint64_t *size;
       int64_t  *mtime;
+      /* A search of @dir (as browse_pattern), or NULL. */
+      char *pattern;
+      /* Removed before @dir is listed, or NULL. */
+      char *remove;
       int gen;
       /* Stored by the worker, release, after everything above. */
       retro_atomic_int_t done;
       bool ok;
+      bool removed;
    } *browse_job;
    /* Written by the UI thread only; the worker reads it between
     * entries to see whether its job has been superseded. */
    retro_atomic_int_t browse_gen;
    enum companion_browse_column browse_sort_col;
    bool browse_sort_desc;
+   /* The landed listing is a search: its rows are from many folders. */
+   bool browse_is_search;
 #ifdef HAVE_THREADS
    sthread_t *browse_thread;
 #endif
@@ -194,6 +214,8 @@ static void companion_core_clear_playlist(companion_core_t *core)
       playlist_free(core->playlist);
       core->playlist = NULL;
    }
+   string_list_free(core->appended);
+   core->appended = NULL;
    for (i = 0; i < core->all_n; i++)
       if (core->all_lists[i])
          playlist_free(core->all_lists[i]);
@@ -203,6 +225,7 @@ static void companion_core_clear_playlist(companion_core_t *core)
    core->all_index = NULL;
    core->all_n     = core->all_count = core->all_next = 0;
    core->all_mode  = false;
+   gfx_thumbnail_results_release(GFX_THUMBNAIL_RESULTS_HOLD_COMPANION);
 }
 
 static bool companion_core_budget_cb(void *ud)
@@ -367,6 +390,7 @@ const char *companion_core_selected_playlist_path(companion_core_t *core);
 bool companion_core_select_playlist_path(companion_core_t *core, const char *path);
 static void companion_core_browse_worker_stop(companion_core_t *core);
 static void companion_core_browse_poll(companion_core_t *core);
+static void companion_core_delete_tell(companion_core_t *core);
 static long companion_core_browse_real(companion_core_t *core, size_t i);
 
 companion_core_t *companion_core_new(const companion_callbacks_t *cb,
@@ -410,6 +434,9 @@ void companion_core_free(companion_core_t *core)
       string_list_free(core->browse);
    free(core->browse_size);
    free(core->browse_mtime);
+   free(core->browse_pattern);
+   if (core->delete_done)
+      string_list_free(core->delete_done);
    free(core);
 }
 
@@ -982,6 +1009,7 @@ bool companion_core_playlist_rename(companion_core_t *core,
       return false;                /* a playlist by that name exists */
    if (filestream_rename(path, new_path) != 0)
       return false;
+   gfx_thumbnail_results_rename(path, new_path);
    if (out_path)
       strlcpy(out_path, new_path, len);
    companion_core_refresh_playlists(core);
@@ -1059,11 +1087,13 @@ size_t companion_core_playlist_add_files(companion_core_t *core,
 
 bool companion_core_thumbnail_install(companion_core_t *core,
       const char *db_name, const char *type, const char *label,
-      const char *image_path, char *out_path, size_t len)
+      const char *content_path, const char *image_path,
+      char *out_path, size_t len)
 {
    settings_t *settings = config_get_ptr();
-   char dir[PATH_MAX_LENGTH], dst[PATH_MAX_LENGTH];
+   char dst[PATH_MAX_LENGTH];
    struct texture_image img;
+   char *slash;
    uint32_t *bits = NULL;
    unsigned w, h;
    bool ok;
@@ -1071,13 +1101,20 @@ bool companion_core_thumbnail_install(companion_core_t *core,
          || string_is_empty(type) || string_is_empty(label))
       return false;
    /* the repository path, which also names the directory */
-   if (!companion_core_thumbnail_path(core, db_name, type, label, NULL,
-            dst, sizeof(dst)))
+   if (!companion_core_thumbnail_save_path(core, db_name, type, label,
+            content_path, dst, sizeof(dst)))
       return false;
-   strlcpy(dir, dst, sizeof(dir));
-   path_basedir(dir);
-   if (!path_is_directory(dir) && !path_mkdir(dir))
-      return false;
+   /* The directory, cut from the path in place: a second path buffer
+    * would pass 4 KiB. */
+   if ((slash = find_last_slash(dst)))
+   {
+      char kept = slash[1];
+      slash[1]  = '\0';
+      ok        = path_is_directory(dst) || path_mkdir(dst);
+      slash[1]  = kept;
+      if (!ok)
+         return false;
+   }
    memset(&img, 0, sizeof(img));
    if (!image_texture_load(&img, image_path) || !img.pixels || !img.width || !img.height)
    {
@@ -1228,6 +1265,41 @@ static void companion_core_all_finish(companion_core_t *core)
       core->all_count = cap;
 }
 
+static void companion_core_push_match(const playlist_config_t *cfg,
+      playlist_t *pl)
+{
+   settings_t *settings = config_get_ptr();
+   task_push_pl_thumbnail_match(cfg, pl,
+         settings->paths.directory_thumbnails,
+         settings->paths.path_content_database,
+         settings->bools.playlist_allow_non_png,
+         settings->bools.playlist_thumbnail_other_regions);
+   gfx_thumbnail_results_hold(cfg->path,
+         GFX_THUMBNAIL_RESULTS_HOLD_COMPANION);
+}
+
+/* The shown playlists keep their thumbnail matches in the store. */
+static void companion_core_push_matches(companion_core_t *core)
+{
+   size_t i;
+   core->results_gen = gfx_thumbnail_results_generation();
+   if (core->playlist)
+      companion_core_push_match(playlist_get_config(core->playlist),
+            core->playlist);
+   for (i = 0; i < core->all_n; i++)
+      if (core->all_lists[i])
+         companion_core_push_match(playlist_get_config(core->all_lists[i]),
+               core->all_lists[i]);
+   /* Without its playlist, history and favorites only load their cache;
+    * rows added since get their art when shown again. */
+   for (i = 0; core->appended && i < core->appended->size; i++)
+   {
+      companion_core_playlist_config_init(&core->playlist_cfg,
+            core->appended->elems[i].data);
+      companion_core_push_match(&core->playlist_cfg, NULL);
+   }
+}
+
 void companion_core_iterate(companion_core_t *core, unsigned budget_us)
 {
    int ret;
@@ -1235,8 +1307,15 @@ void companion_core_iterate(companion_core_t *core, unsigned budget_us)
    if (!core)
       return;
    companion_core_browse_poll(core);
+   if (core->delete_done && core->delete_done->size)
+      companion_core_delete_tell(core);
    if (!core->pending_parse)
+   {
+      /* The store started over */
+      if (core->results_gen != gfx_thumbnail_results_generation())
+         companion_core_push_matches(core);
       return;
+   }
 
    core->budget_end = cpu_features_get_time_usec() + (retro_time_t)budget_us;
    ret              = playlist_parse_step(core->pending_parse,
@@ -1262,6 +1341,13 @@ void companion_core_iterate(companion_core_t *core, unsigned budget_us)
       core->playlist      = playlist_parse_end(core->pending_parse);
       core->pending_parse = NULL;
    }
+   /* Those appended before were pushed under this generation */
+   if (     core->all_mode
+         || core->results_gen != gfx_thumbnail_results_generation())
+      companion_core_push_matches(core);
+   else if (core->playlist)
+      companion_core_push_match(playlist_get_config(core->playlist),
+            core->playlist);
 
    if (core->cb.on_playlist_changed)
       core->cb.on_playlist_changed(core->ud);
@@ -1553,6 +1639,7 @@ bool companion_core_playlist_delete(companion_core_t *core, const char *path)
       return false;
    if (!path_is_valid(path) || filestream_delete(path) != 0)
       return false;
+   gfx_thumbnail_results_forget(path);
    companion_core_playlist_set_hidden(core, path, false); /* forget it */
    companion_core_refresh_playlists(core);
    return true;
@@ -1561,11 +1648,12 @@ bool companion_core_playlist_delete(companion_core_t *core, const char *path)
 /* --- Selected playlist ----------------------------------------------- */
 
 static bool companion_core_begin_playlist(companion_core_t *core,
-      const char *path, size_t index)
+      const char *path, size_t index, bool keep)
 {
    playlist_config_t *cfg = &core->playlist_cfg;
 
-   companion_core_clear_playlist(core);
+   if (!keep)
+      companion_core_clear_playlist(core);
    core->selected = index;
    /* @path may be the core's own selected_path (a backend reloading
     * the shown playlist hands companion_core_selected_playlist_path()
@@ -1600,25 +1688,57 @@ bool companion_core_select_playlist(companion_core_t *core, size_t i)
    const char *path = companion_core_playlist_path(core, i);
    if (!path)
       return false;
-   return companion_core_begin_playlist(core, path, i);
+   return companion_core_begin_playlist(core, path, i, false);
+}
+
+static bool companion_core_select_path(companion_core_t *core,
+      const char *path, bool keep)
+{
+   size_t i;
+   size_t n = companion_core_playlist_count(core);
+   for (i = 0; i < n; i++)
+   {
+      const char *p_i = companion_core_playlist_path(core, i);
+      if (p_i && string_is_equal(path, p_i))
+         return companion_core_begin_playlist(core, path, i, keep);
+   }
+   return companion_core_begin_playlist(core, path, COMPANION_NO_SELECTION,
+         keep);
 }
 
 bool companion_core_select_playlist_path(companion_core_t *core,
       const char *path)
 {
-   size_t i, n;
+   if (!core || string_is_empty(path))
+      return false;
+   return companion_core_select_path(core, path, false);
+}
+
+/* The playlists listed before keep only their paths, held: pushed again
+ * when the store starts over, released with the listing. */
+bool companion_core_append_playlist_path(companion_core_t *core,
+      const char *path)
+{
+   union string_list_elem_attr attr;
 
    if (!core || string_is_empty(path))
       return false;
-
-   n = companion_core_playlist_count(core);
-   for (i = 0; i < n; i++)
+   if (     core->all_mode || core->pending_parse
+         || string_is_equal(path, COMPANION_ALL_PLAYLISTS_TOKEN))
+      return companion_core_select_path(core, path, false);
+   if (core->playlist)
    {
-      const char *p_i = companion_core_playlist_path(core, i);
-      if (p_i && string_is_equal(path, p_i))
-         return companion_core_begin_playlist(core, path, i);
+      attr.i = 0;
+      if (!core->appended)
+         core->appended = string_list_new();
+      if (     !core->appended
+            || !string_list_append(core->appended,
+               playlist_get_conf_path(core->playlist), attr))
+         return companion_core_select_path(core, path, false);
+      playlist_free(core->playlist);
+      core->playlist = NULL;
    }
-   return companion_core_begin_playlist(core, path, COMPANION_NO_SELECTION);
+   return companion_core_select_path(core, path, true);
 }
 
 size_t companion_core_selected_playlist(companion_core_t *core)
@@ -1726,6 +1846,10 @@ bool companion_core_request_load_content(companion_core_t *core,
 
    if (!core || string_is_empty(core_path) || string_is_empty(content_path))
       return false;
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(core_path))
+      return false;
+#endif
 
    /* Search for the specified core - ensures the path is sanitised. */
    if (core_info_find(core_path, &info) && !string_is_empty(info->path))
@@ -1769,33 +1893,33 @@ bool companion_core_start_core(companion_core_t *core)
    content_ctx_info_t content_info;
    if (!core)
       return false;
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(path_get(RARCH_PATH_CORE)))
+      return false;
+#endif
    memset(&content_info, 0, sizeof(content_info));
-   path_clear(RARCH_PATH_BASENAME);
    return task_push_start_current_core(&content_info);
 }
 
 bool companion_core_load_core(companion_core_t *core, const char *path)
 {
 #ifdef HAVE_DYNAMIC
+   content_ctx_info_t content_info;
    if (!core || string_is_empty(path))
       return false;
-
-   path_set(RARCH_PATH_CORE, path);
-
-   command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-
-   core_info_init_current_core();
-
 #ifdef HAVE_CORE_LOAD_CHECK
-   if (command_event(CMD_EVENT_LOAD_CORE, NULL))
-      return true;
-   /* path may be the core list's, freed by the deinit above */
-   task_content_park_core_load(path_get(RARCH_PATH_CORE));
-   return false;
-#else
-   return command_event(CMD_EVENT_LOAD_CORE, NULL);
+   if (task_content_warning_waits(path))
+      return false;
 #endif
+   memset(&content_info, 0, sizeof(content_info));
+   /* As the menu's Load Core: the probe loads the core's info */
+   if (task_push_load_new_core(path, NULL, &content_info,
+            CORE_TYPE_PLAIN, NULL, NULL))
+      return true;
+#ifdef HAVE_CORE_LOAD_CHECK
+   task_content_park_core_load(path);
+#endif
+   return false;
 #else
    (void)core;
    (void)path;
@@ -2048,14 +2172,126 @@ size_t companion_core_thumbnail_dir(companion_core_t *core,
    return fill_pathname_join_special(s, s, subdir, len);
 }
 
+/* @s holds a thumbnail folder of @dir_len: @name with the first image
+ * extension that exists. Returns its length, else 0. */
+static size_t companion_core_thumbnail_probe(char *s, size_t len,
+      size_t dir_len, const char *name)
+{
+   size_t i, _len;
+
+   s[dir_len] = '\0';
+   _len       = fill_pathname_join_special(s, s, name, len);
+   for (i = 0; gfx_thumbnail_image_exts[i]; i++)
+   {
+      if (_len + strlen(gfx_thumbnail_image_exts[i]) >= len)
+         continue;
+      strlcpy(s + _len, gfx_thumbnail_image_exts[i], len - _len);
+      if (path_is_valid(s))
+         return strlen(s);
+   }
+   return 0;
+}
+
+/* The menu's label, @content_path's file stem into @stem. Front ends
+ * pass the path or file name as the label of an entry without one: the
+ * stem stands in. A label the menu would cut is cut into @key. */
+static const char *companion_core_thumbnail_key(const char *label,
+      const char *content_path, char *key, size_t key_len,
+      char *stem, size_t stem_len)
+{
+   stem[0] = '\0';
+   if (!string_is_empty(content_path))
+      fill_pathname(stem, path_basename(content_path), "", stem_len);
+   if (     *stem
+         && (   !*label
+             || string_is_equal(label, content_path)
+             || string_is_equal(label, path_basename(content_path))))
+      return stem;
+   if (strlen(label) < key_len)
+      return label;
+   strlcpy(key, label, key_len);
+   return key;
+}
+
+size_t companion_core_thumbnail_save_path(companion_core_t *core,
+      const char *db_name, const char *subdir, const char *label,
+      const char *content_path, char *s, size_t len)
+{
+   char key_label[NAME_MAX_LENGTH];
+   char name[NAME_MAX_LENGTH];
+   char stem[NAME_MAX_LENGTH];
+   const char *key;
+   size_t _len;
+
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   if (!core || !label)
+      return 0;
+
+   key = companion_core_thumbnail_key(label, content_path,
+         key_label, sizeof(key_label), stem, sizeof(stem));
+   gfx_thumbnail_scrub_name(name, sizeof(name), key);
+   companion_core_thumbnail_dir(core, db_name, subdir, s, len);
+   _len = fill_pathname_join_special(s, s, name, len);
+   /* No room for the whole ".png": no path */
+   if (_len + STRLEN_CONST(FILE_PATH_PNG_EXTENSION) >= len)
+   {
+      s[0] = '\0';
+      return 0;
+   }
+   strlcpy(s + _len, FILE_PATH_PNG_EXTENSION, len - _len);
+   return strlen(s);
+}
+
+size_t companion_core_entry_thumbnail_system(companion_core_t *core,
+      size_t i, char *s, size_t len)
+{
+   playlist_t *playlist               = NULL;
+   const char *db_name                = NULL;
+   const struct playlist_entry *entry = NULL;
+   size_t idx                         = i;
+
+   if (!s || !len)
+      return 0;
+   s[0] = '\0';
+   if (!core)
+      return 0;
+   if (core->all_mode)
+   {
+      if (i >= core->all_count || core->all_index[i].list >= core->all_n)
+         return 0;
+      playlist = core->all_lists[core->all_index[i].list];
+      idx      = core->all_index[i].idx;
+   }
+   else
+      playlist = core->playlist;
+   playlist_get_index(playlist, idx, &entry);
+   if (!entry)
+      return 0;
+   playlist_get_db_name(playlist, idx, &db_name);
+   if (gfx_thumbnail_system_name(s, len, db_name))
+      return strlen(s);
+   /* History and favourites, a core naming no database: the content's
+    * folder, as the menu and the thumbnail task have it */
+   if (     string_is_empty(entry->db_name)
+         && !string_is_empty(entry->path)
+         && fill_pathname_parent_dir_name(s, entry->path, len))
+      return strlen(s);
+   return 0;
+}
+
 size_t companion_core_thumbnail_path(companion_core_t *core,
       const char *db_name, const char *subdir, const char *label,
       const char *content_path, char *s, size_t len)
 {
-   /* Extensions probed, in order; the first is also the default. */
-   static const char *exts[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga" };
-   char name[PATH_MAX_LENGTH];
-   size_t i, _len, name_len;
+   char key_label[NAME_MAX_LENGTH];
+   char name[NAME_MAX_LENGTH];
+   char stem[NAME_MAX_LENGTH];
+   const char *key;
+   const char *match;
+   size_t _len, dir_len;
+   bool allow_non_png;
 
    if (!s || !len)
       return 0;
@@ -2068,33 +2304,42 @@ size_t companion_core_thumbnail_path(companion_core_t *core,
          && image_texture_get_type(content_path) != IMAGE_TYPE_NONE)
       return strlcpy(s, content_path, len);
 
-   /* Characters the thumbnail repository replaces with '_':
-    * & * / : ` < > ? \ | */
-   name_len = strlcpy(name, label, sizeof(name));
-   for (i = 0; i < name_len; i++)
+   key = companion_core_thumbnail_key(label, content_path,
+         key_label, sizeof(key_label), stem, sizeof(stem));
+
+   /* Label, file name, then the match the thumbnail task stored */
+   dir_len = companion_core_thumbnail_dir(core, db_name, subdir, s, len);
+   if (dir_len >= len)
    {
-      switch (name[i])
-      {
-         case '&': case '*': case '/': case ':': case '`':
-         case '<': case '>': case '?': case '\\': case '|':
-            name[i] = '_';
-            break;
-         default:
-            break;
-      }
+      s[0] = '\0';
+      return 0;
+   }
+   gfx_thumbnail_scrub_name(name, sizeof(name), key);
+   if ((_len = companion_core_thumbnail_probe(s, len, dir_len, name)))
+      return _len;
+   if (*stem)
+   {
+      char stem_name[NAME_MAX_LENGTH];
+      gfx_thumbnail_scrub_name(stem_name, sizeof(stem_name), stem);
+      if (     !string_is_equal(stem_name, name)
+            && (_len = companion_core_thumbnail_probe(s, len, dir_len,
+                  stem_name)))
+         return _len;
+   }
+   allow_non_png = config_get_ptr()->bools.playlist_allow_non_png;
+   if (     (match = gfx_thumbnail_results_lookup(
+               content_path ? content_path : "", key, db_name,
+               gfx_thumbnail_result_type_of(subdir), allow_non_png))
+         && gfx_thumbnail_name_allowed(match, allow_non_png))
+   {
+      s[dir_len] = '\0';
+      _len       = fill_pathname_join_special(s, s, match, len);
+      if (_len < len && path_is_valid(s))
+         return _len;
    }
 
-   companion_core_thumbnail_dir(core, db_name, subdir, s, len);
-   _len = fill_pathname_join_special(s, s, name, len);
-
-   for (i = 0; i < sizeof(exts) / sizeof(exts[0]); i++)
-   {
-      strlcpy(s + _len, exts[i], len - _len);
-      if (path_is_valid(s))
-         return strlen(s);
-   }
-   strlcpy(s + _len, exts[0], len - _len);
-   return strlen(s);
+   return companion_core_thumbnail_save_path(core, db_name, subdir,
+         label, content_path, s, len);
 }
 
 /* --- Running core ------------------------------------------------------ */
@@ -2655,11 +2900,239 @@ static void companion_core_stat(const char *path, bool is_dir,
  * per-entry size / mtime). Runs on the worker; between entries it
  * checks whether it has been superseded and stops early if so. Sets
  * job->done last. @core is only read for the generation. */
+/* Folds @s in place for a search: ASCII, Latin-1, Latin Extended-A,
+ * Greek and Cyrillic capitals to small letters, and katakana to
+ * hiragana. Every fold keeps a character's UTF-8 length. */
+static void companion_core_search_fold(char *s)
+{
+   unsigned char *p = (unsigned char*)s;
+   while (*p)
+   {
+      if (*p < 0x80)
+      {
+         if (*p >= 'A' && *p <= 'Z')
+            *p += 'a' - 'A';
+         p++;
+      }
+      else if ((p[0] & 0xE0) == 0xC0 && (p[1] & 0xC0) == 0x80)
+      {
+         unsigned c = ((unsigned)(p[0] & 0x1F) << 6) | (p[1] & 0x3F);
+         if (     (c >= 0xC0  && c <= 0xDE  && c != 0xD7)
+               || (c >= 0x391 && c <= 0x3AB && c != 0x3A2)
+               || (c >= 0x410 && c <= 0x42F))
+            c += 0x20;
+         else if (c >= 0x400 && c <= 0x40F)
+            c += 0x50;
+         else if (   (c >= 0x100 && c <= 0x137 && !(c & 1) && c != 0x130)
+                  || (c >= 0x14A && c <= 0x177 && !(c & 1))
+                  || (c >= 0x139 && c <= 0x148 &&  (c & 1))
+                  || (c >= 0x179 && c <= 0x17E &&  (c & 1)))
+            c++;
+         p[0] = (unsigned char)(0xC0 | (c >> 6));
+         p[1] = (unsigned char)(0x80 | (c & 0x3F));
+         p   += 2;
+      }
+      else if ( (p[0] & 0xF0) == 0xE0 && (p[1] & 0xC0) == 0x80
+            &&  (p[2] & 0xC0) == 0x80)
+      {
+         unsigned c = ((unsigned)(p[0] & 0x0F) << 12)
+            | ((unsigned)(p[1] & 0x3F) << 6) | (p[2] & 0x3F);
+         if (c >= 0x30A1 && c <= 0x30F6)
+         {
+            c   -= 0x60;
+            p[0] = (unsigned char)(0xE0 | (c >> 12));
+            p[1] = (unsigned char)(0x80 | ((c >> 6) & 0x3F));
+            p[2] = (unsigned char)(0x80 | (c & 0x3F));
+         }
+         p += 3;
+      }
+      else
+         p++;
+   }
+}
+
+/* A search's terms from what was typed: folded, split on white space,
+ * each ended by a NUL and the last by two; NULL for no terms. */
+static char *companion_core_search_pattern(const char *text)
+{
+   size_t len = text ? strlen(text) : 0;
+   char *out, *w;
+   const char *r;
+   if (!len || !(out = (char*)malloc(len + 2)))
+      return NULL;
+   w = out;
+   for (r = text; *r; )
+   {
+      while (*r && ISSPACE((unsigned char)*r))
+         r++;
+      if (!*r)
+         break;
+      while (*r && !ISSPACE((unsigned char)*r))
+         *w++ = *r++;
+      *w++ = '\0';
+   }
+   if (w == out)
+   {
+      free(out);
+      return NULL;
+   }
+   *w = '\0';
+   for (w = out; *w; w += strlen(w) + 1)
+      companion_core_search_fold(w);
+   return out;
+}
+
+/* Every term of @pattern is in @name, folded the same way. */
+static bool companion_core_search_match(const char *pattern,
+      const char *name)
+{
+   char folded[NAME_MAX_LENGTH];
+   const char *t;
+   strlcpy(folded, name, sizeof(folded));
+   companion_core_search_fold(folded);
+   for (t = pattern; *t; t += strlen(t) + 1)
+      if (!strstr(folded, t))
+         return false;
+   return true;
+}
+
+/* Takes the last pending folder off @pending, handing its string over. */
+static char *companion_core_walk_pop(struct string_list *pending)
+{
+   char *dir = pending->elems[pending->size - 1].data;
+   pending->elems[pending->size - 1].data = NULL;
+   pending->size--;
+   return dir;
+}
+
+/* The matches of @job's search under @job->dir, never through a link;
+ * NULL when superseded between entries or out of memory. */
+static struct string_list *companion_core_browse_search_walk(
+      companion_core_t *core, struct companion_browse_job *job)
+{
+   union string_list_elem_attr attr;
+   struct string_list *list    = string_list_new();
+   struct string_list *pending = string_list_new();
+   char *full                  = (char*)malloc(PATH_MAX_LENGTH);
+   bool ok                     = list && pending && full;
+   attr.i = 0;
+   if (ok)
+      ok = string_list_append(pending, job->dir, attr);
+   while (ok && pending->size)
+   {
+      char *dir = companion_core_walk_pop(pending);
+      libretro_vfs_implementation_dir *rdir =
+         retro_vfs_opendir_impl(dir, false);
+      while (ok && rdir && retro_vfs_readdir_impl(rdir))
+      {
+         const char *name = retro_vfs_dirent_get_name_impl(rdir);
+         bool is_dir;
+         if (retro_atomic_load_acquire_int(&core->browse_gen) != job->gen)
+         {
+            ok = false;
+            break;
+         }
+         if (!name || string_is_equal(name, ".") || string_is_equal(name, ".."))
+            continue;
+         fill_pathname_join_special(full, dir, name, PATH_MAX_LENGTH);
+         is_dir = retro_vfs_dirent_is_dir_impl(rdir);
+         if (companion_core_search_match(job->pattern, name))
+         {
+            attr.i = is_dir ? RARCH_DIRECTORY
+               : path_is_compressed_file(full) ? RARCH_COMPRESSED_ARCHIVE
+               : RARCH_PLAIN_FILE;
+            ok = string_list_append(list, full, attr);
+         }
+         if (ok && is_dir && !retro_vfs_dirent_is_link_impl(rdir))
+         {
+            attr.i = 0;
+            ok     = string_list_append(pending, full, attr);
+         }
+      }
+      if (rdir)
+         retro_vfs_closedir_impl(rdir);
+      free(dir);
+   }
+   free(full);
+   if (pending)
+      string_list_free(pending);
+   if (!ok)
+   {
+      if (list)
+         string_list_free(list);
+      return NULL;
+   }
+   dir_list_sort(list, true);
+   return list;
+}
+
+/* Removes @path: a link or file itself, a folder with everything in it.
+ * A link is never followed, so nothing outside the folder is touched.
+ * Not superseded: a delete that was asked for is carried through. */
+static bool companion_core_remove_tree(const char *path)
+{
+   union string_list_elem_attr attr;
+   struct string_list *pending, *dirs;
+   char *full;
+   bool ok = true;
+   size_t i;
+
+   if (retro_vfs_path_is_link_impl(path) || !path_is_directory(path))
+      return filestream_delete(path) == 0;
+
+   pending = string_list_new();
+   dirs    = string_list_new();
+   full    = (char*)malloc(PATH_MAX_LENGTH);
+   attr.i  = 0;
+   if (!pending || !dirs || !full || !string_list_append(pending, path, attr))
+      ok = false;
+   /* folders in the order found, a parent ahead of what is in it */
+   while (ok && pending->size)
+   {
+      char *dir = companion_core_walk_pop(pending);
+      libretro_vfs_implementation_dir *rdir;
+      ok   = string_list_append(dirs, dir, attr);
+      rdir = ok ? retro_vfs_opendir_impl(dir, true) : NULL;
+      while (rdir && retro_vfs_readdir_impl(rdir))
+      {
+         const char *name = retro_vfs_dirent_get_name_impl(rdir);
+         if (!name || string_is_equal(name, ".") || string_is_equal(name, ".."))
+            continue;
+         fill_pathname_join_special(full, dir, name, PATH_MAX_LENGTH);
+         if (     !retro_vfs_dirent_is_link_impl(rdir)
+               &&  retro_vfs_dirent_is_dir_impl(rdir))
+         {
+            if (!string_list_append(pending, full, attr))
+               ok = false;
+         }
+         else if (filestream_delete(full) != 0)
+            ok = false;
+      }
+      if (rdir)
+         retro_vfs_closedir_impl(rdir);
+      free(dir);
+   }
+   /* the deepest first */
+   if (dirs)
+      for (i = dirs->size; i-- > 0; )
+         if (filestream_delete(dirs->elems[i].data) != 0)
+            ok = false;
+   free(full);
+   if (pending)
+      string_list_free(pending);
+   if (dirs)
+      string_list_free(dirs);
+   return ok;
+}
+
 static void companion_core_browse_enumerate(companion_core_t *core,
       struct companion_browse_job *job)
 {
    struct string_list *list;
    size_t i, n;
+
+   if (job->remove)
+      job->removed = companion_core_remove_tree(job->remove);
 
 #ifdef _WIN32
    if (!job->dir[0])
@@ -2686,6 +3159,12 @@ static void companion_core_browse_enumerate(companion_core_t *core,
    }
    else
 #endif
+   if (job->pattern)
+   {
+      if (!(list = companion_core_browse_search_walk(core, job)))
+         goto fail;
+   }
+   else
    {
       list = dir_list_new(job->dir, NULL, true, false, true, false);
       if (!list)
@@ -2748,7 +3227,41 @@ static void companion_core_browse_job_free(struct companion_browse_job *job)
       string_list_free(job->list);
    free(job->size);
    free(job->mtime);
+   free(job->pattern);
+   free(job->remove);
    free(job);
+}
+
+/* A finished job's delete, kept to be told from iterate(), then the job
+ * itself dropped. */
+static void companion_core_browse_job_finish(companion_core_t *core,
+      struct companion_browse_job *job)
+{
+   if (!job)
+      return;
+   if (job->remove)
+   {
+      union string_list_elem_attr attr;
+      attr.b = job->removed;
+      if (!core->delete_done)
+         core->delete_done = string_list_new();
+      if (core->delete_done)
+         string_list_append(core->delete_done, job->remove, attr);
+   }
+   companion_core_browse_job_free(job);
+}
+
+static void companion_core_delete_tell(companion_core_t *core)
+{
+   /* taken first: a callback may ask for another delete */
+   struct string_list *done = core->delete_done;
+   size_t i;
+   core->delete_done = NULL;
+   for (i = 0; i < done->size; i++)
+      if (core->cb.on_delete_finished)
+         core->cb.on_delete_finished(core->ud, done->elems[i].data,
+               done->elems[i].attr.b);
+   string_list_free(done);
 }
 
 /* Join the worker (if any) and drop its job. */
@@ -2917,6 +3430,7 @@ static void companion_core_browse_install(companion_core_t *core,
    job->list  = NULL;
    job->size  = NULL;
    job->mtime = NULL;
+   core->browse_is_search = job->pattern != NULL;
    strlcpy(core->browse_dir, job->dir, sizeof(core->browse_dir));
 }
 
@@ -2942,40 +3456,49 @@ static void companion_core_browse_poll(companion_core_t *core)
       if (core->cb.on_browse_changed)
          core->cb.on_browse_changed(core->ud);
    }
-   companion_core_browse_job_free(job);
+   companion_core_browse_job_finish(core, job);
 #else
    (void)core; (void)job; (void)done; (void)current;
 #endif
 }
 
-bool companion_core_browse_open(companion_core_t *core, const char *path)
+/* Lists @path (searched, when browse_pattern is set), removing @remove
+ * first; takes @remove. */
+static bool companion_core_browse_start(companion_core_t *core,
+      const char *path, char *remove)
 {
    settings_t *settings     = config_get_ptr();
    struct companion_browse_job *job;
-   char dir_buf[PATH_MAX_LENGTH];
    const char *dir          = path;
-
-   if (!core)
-      return false;
 
    if (string_is_empty(dir))
       dir = !string_is_empty(settings->paths.directory_menu_content)
          ? settings->paths.directory_menu_content : NULL;
 
-   /* @path may point into the current listing (descending into one of
-    * its own entries), which is replaced later: copy it first. */
-   dir_buf[0] = '\0';
-   if (dir)
-      strlcpy(dir_buf, dir, sizeof(dir_buf));
-#ifndef _WIN32
-   if (!dir_buf[0])
-      strlcpy(dir_buf, "/", sizeof(dir_buf));
-#endif
-
    job = (struct companion_browse_job*)calloc(1, sizeof(*job));
    if (!job)
+   {
+      free(remove);
       return false;
-   strlcpy(job->dir, dir_buf, sizeof(job->dir));
+   }
+   job->remove = remove;
+   if (core->browse_pattern)
+   {
+      size_t len = 0;
+      while (core->browse_pattern[len])
+         len += strlen(core->browse_pattern + len) + 1;
+      if ((job->pattern = (char*)malloc(len + 1)))
+         memcpy(job->pattern, core->browse_pattern, len + 1);
+   }
+   /* @path may point into the current listing (descending into one of
+    * its own entries), which is replaced later: it goes into the job
+    * before anything is. */
+   if (dir)
+      strlcpy(job->dir, dir, sizeof(job->dir));
+#ifndef _WIN32
+   if (!job->dir[0])
+      strlcpy(job->dir, "/", sizeof(job->dir));
+#endif
 
 #ifdef HAVE_THREADS
    {
@@ -2988,7 +3511,7 @@ bool companion_core_browse_open(companion_core_t *core, const char *path)
       {
          sthread_join(core->browse_thread);  /* returns promptly: stale */
          core->browse_thread = NULL;
-         companion_core_browse_job_free(core->browse_job);
+         companion_core_browse_job_finish(core, core->browse_job);
          core->browse_job = NULL;
       }
       core->browse_job    = job;
@@ -3004,13 +3527,62 @@ bool companion_core_browse_open(companion_core_t *core, const char *path)
    if (job->ok)
    {
       companion_core_browse_install(core, job);
-      companion_core_browse_job_free(job);
+      companion_core_browse_job_finish(core, job);
       if (core->cb.on_browse_changed)
          core->cb.on_browse_changed(core->ud);
       return true;
    }
-   companion_core_browse_job_free(job);
+   companion_core_browse_job_finish(core, job);
    return false;
+}
+
+bool companion_core_browse_open(companion_core_t *core, const char *path)
+{
+   if (!core)
+      return false;
+   return companion_core_browse_start(core, path, NULL);
+}
+
+/* The folder being listed: the one asked for last, landed or not. A
+ * job's folder is set before its worker starts and never changed. */
+static const char *companion_core_browse_target(companion_core_t *core)
+{
+   return core->browse_job ? core->browse_job->dir : core->browse_dir;
+}
+
+bool companion_core_browse_search(companion_core_t *core, const char *text)
+{
+   if (!core)
+      return false;
+   free(core->browse_pattern);
+   core->browse_pattern = companion_core_search_pattern(text);
+   return companion_core_browse_start(core,
+         companion_core_browse_target(core), NULL);
+}
+
+bool companion_core_browse_is_search(companion_core_t *core)
+{
+   return core && core->browse && core->browse_is_search;
+}
+
+bool companion_core_browse_delete(companion_core_t *core, const char *path)
+{
+   size_t len;
+   char *remove;
+   if (!core || string_is_empty(path))
+      return false;
+   /* never a file system's root */
+   len = strlen(path);
+#ifdef _WIN32
+   if (len <= 3 && path[1] == ':')
+      return false;
+#endif
+   if (len == 1 && (path[0] == '/' || path[0] == '\\'))
+      return false;
+   if (!(remove = strdup(path)))
+      return false;
+   return companion_core_browse_start(core,
+         companion_core_browse_target(core), remove);
 }
 
 const char *companion_core_browse_dir(companion_core_t *core)
@@ -3120,7 +3692,7 @@ static bool companion_core_browse_has_parent(companion_core_t *core)
 {
    const char *d = core->browse_dir;
    size_t len    = strlen(d);
-   if (len == 0)
+   if (len == 0 || core->browse_is_search)
       return false;
 #ifdef _WIN32
    /* "C:\" is a drive root; its parent is the drive list (""), which
@@ -3535,6 +4107,28 @@ void companion_core_notify_refresh(companion_core_t *core)
       core->cb.on_notify_refresh(core->ud);
 }
 
+void companion_core_notify_thumbnails(companion_core_t *core,
+      const char *playlist_path)
+{
+   size_t i, n;
+   if (!core || !core->cb.on_thumbnails_changed)
+      return;
+   /* All Playlists shows rows of every playlist */
+   if (     !core->all_mode
+         && (!core->playlist || !string_is_equal(playlist_path,
+               playlist_get_conf_path(core->playlist))))
+   {
+      /* or an appended one */
+      n = core->appended ? core->appended->size : 0;
+      for (i = 0; i < n; i++)
+         if (string_is_equal(playlist_path, core->appended->elems[i].data))
+            break;
+      if (i == n)
+         return;
+   }
+   core->cb.on_thumbnails_changed(core->ud);
+}
+
 playlist_t *companion_core_playlist_open_private(companion_core_t *core,
       const char *path)
 {
@@ -3613,12 +4207,10 @@ bool companion_core_playlist_push(companion_core_t *core,
 
 #ifdef HAVE_NETWORKING
 
-#define COMPANION_DL_USER_AGENT   "RetroArch-WIMP/" PACKAGE_VERSION
-#define COMPANION_DL_PARTIAL_EXT  ".partial"
-#define COMPANION_DL_TEMP_EXT     ".tmp"
-#define COMPANION_DL_PACK_URL     "http://thumbnailpacks.libretro.com/"
-#define COMPANION_DL_PACK_EXT     ".zip"
-#define COMPANION_DL_THUMB_URL    "https://thumbnails.libretro.com/"
+/* Sent as a request header: the download keeps its own User-Agent */
+#define COMPANION_DL_USER_AGENT   "User-Agent: RetroArch-WIMP/" \
+   PACKAGE_VERSION "\r\n"
+#define COMPANION_DL_THUMB_URL    FILE_PATH_CORE_THUMBNAILS_URL "/"
 #define COMPANION_DL_THUMB_EXT    ".png"
 
 /* Task user data. Owned by the task chain; the core only points at it
@@ -3632,8 +4224,7 @@ typedef struct companion_download
    char db_name[NAME_MAX_LENGTH];
    char label[NAME_MAX_LENGTH];
    char subdir[64];
-   char output_path[PATH_MAX_LENGTH];   /* .partial file */
-   bool is_pack;
+   char output_path[PATH_MAX_LENGTH];
 } companion_download_t;
 
 static void companion_core_download_orphan(companion_core_t *core)
@@ -3647,13 +4238,12 @@ static void companion_core_download_orphan(companion_core_t *core)
 
 static companion_download_t *companion_core_download_new(
       companion_core_t *core, const char *db_name, const char *label,
-      const char *subdir, bool is_pack)
+      const char *subdir)
 {
    companion_download_t *d = (companion_download_t*)calloc(1, sizeof(*d));
    if (!d)
       return NULL;
-   d->core    = core;
-   d->is_pack = is_pack;
+   d->core = core;
    strlcpy(d->db_name, db_name ? db_name : "", sizeof(d->db_name));
    strlcpy(d->label,   label   ? label   : "", sizeof(d->label));
    strlcpy(d->subdir,  subdir  ? subdir  : "", sizeof(d->subdir));
@@ -3668,197 +4258,37 @@ static void companion_core_download_done(companion_download_t *d)
    free(d);
 }
 
-/* The label as the thumbnail server names files: the repository's
- * forbidden characters replaced by '_' (this set also covers the
- * double quote), then percent-encoded for the URL. */
-static void companion_core_download_scrub(char *s)
-{
-   static const char chars[] = "&*/:`\"<>?\\|";
-   size_t i;
-   for (i = 0; i < sizeof(chars) - 1; i++)
-      string_replace_all_chars(s, chars[i], '_');
-}
-
-/* Write the transfer to .partial, then move it over the final name.
- * Returns the result code; @final receives the final path. */
-static enum companion_download_result companion_core_download_commit(
-      const companion_download_t *d, const http_transfer_data_t *data,
-      const char *err, char *final, size_t len)
-{
-   char *ext;
-   char dir[PATH_MAX_LENGTH];
-
-   if (!data || !data->data || data->status != 200 || err)
-   {
-      RARCH_ERR("[Companion] Download failed (HTTP %d).\n",
-            data ? data->status : 0);
-      return COMPANION_DL_ERR_NETWORK;
-   }
-
-   strlcpy(dir, d->output_path, sizeof(dir));
-   path_basedir_wrapper(dir);
-   path_mkdir(dir);
-
-   if (!filestream_write_file(d->output_path, data->data, data->len))
-   {
-      RARCH_ERR("[Companion] Could not write \"%s\".\n", d->output_path);
-      return COMPANION_DL_ERR_WRITE;
-   }
-
-   strlcpy(final, d->output_path, len);
-   if ((ext = strstr(final, COMPANION_DL_PARTIAL_EXT)))
-      *ext = '\0';
-
-   if (path_is_valid(final))
-      filestream_delete(final);
-
-   if (filestream_rename(d->output_path, final) != 0)
-   {
-      RARCH_ERR("[Companion] Could not rename \"%s\".\n", d->output_path);
-      return COMPANION_DL_ERR_RENAME;
-   }
-   return COMPANION_DL_OK;
-}
-
+/* The transfer streamed the image to d->output_path as it arrived and
+ * replaced any file there only if it finished cleanly with a 2xx. */
 static void companion_core_download_http_cb(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
-   char final[PATH_MAX_LENGTH];
-   companion_download_t *d   = (companion_download_t*)user_data;
+   const http_transfer_data_t *data = (const http_transfer_data_t*)task_data;
+   companion_download_t *d          = (companion_download_t*)user_data;
    companion_core_t *core;
-   enum companion_download_result r;
+   bool ok;
 
    (void)task;
    if (!d)
       return;
 
-   final[0] = '\0';
-   r        = companion_core_download_commit(d,
-         (const http_transfer_data_t*)task_data, err, final, sizeof(final));
-   core     = d->core;
+   ok   = data && data->status >= 200 && data->status <= 299
+      && (!err || !*err);
+   if (!ok)
+      RARCH_ERR("[Companion] Download failed (HTTP %d)%s%s.\n",
+            data ? data->status : 0, err && *err ? ": " : "",
+            err ? err : "");
+   core = d->core;
 
    if (core && core->cb.on_thumbnail_downloaded)
       core->cb.on_thumbnail_downloaded(core->ud, d->db_name, d->label,
-            d->subdir, r == COMPANION_DL_OK ? final : NULL,
-            r == COMPANION_DL_OK);
-   companion_core_download_done(d);
-}
-
-/* Existing files the pack will overwrite are deleted first, or renamed
- * aside with .tmp when they cannot be (extraction does not replace
- * in place). */
-static enum companion_download_result companion_core_pack_prepare(
-      const char *archive)
-{
-   size_t i;
-   struct string_list *list = file_archive_get_file_list(archive, NULL);
-   enum companion_download_result r = COMPANION_DL_OK;
-
-   if (!list || list->size == 0)
-   {
-      if (list)
-         string_list_free(list);
-      RARCH_ERR("[Companion] Downloaded archive is empty.\n");
-      return COMPANION_DL_ERR_ARCHIVE_EMPTY;
-   }
-
-   for (i = 0; i < list->size && r == COMPANION_DL_OK; i++)
-   {
-      char tmp[PATH_MAX_LENGTH];
-      size_t _len;
-      const char *target = list->elems[i].data;
-
-      if (!filestream_exists(target))
-         continue;
-      if (filestream_delete(target) == 0)
-         continue;
-
-      _len = strlcpy(tmp, target, sizeof(tmp));
-      strlcpy(tmp + _len, COMPANION_DL_TEMP_EXT, sizeof(tmp) - _len);
-
-      if (filestream_exists(tmp) && filestream_delete(tmp) != 0)
-      {
-         RARCH_ERR("[Companion] Could not delete \"%s\".\n", target);
-         r = COMPANION_DL_ERR_DELETE;
-      }
-      else if (filestream_rename(target, tmp) != 0)
-      {
-         RARCH_ERR("[Companion] Could not rename \"%s\".\n", target);
-         r = COMPANION_DL_ERR_RENAME;
-      }
-   }
-
-   string_list_free(list);
-   return r;
-}
-
-static void companion_core_pack_extract_cb(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   decompress_task_data_t *dec = (decompress_task_data_t*)task_data;
-   companion_download_t *d     = (companion_download_t*)user_data;
-   companion_core_t *core;
-
-   (void)task;
-   if (err)
-      RARCH_ERR("[Companion] %s", err);
-
-   if (dec)
-   {
-      if (filestream_exists(dec->source_file))
-         filestream_delete(dec->source_file);
-      free(dec->source_file);
-      free(dec);
-   }
-
-   if (!d)
-      return;
-   core = d->core;
-   if (core && core->cb.on_thumbnail_pack_finished)
-      core->cb.on_thumbnail_pack_finished(core->ud,
-            (!err || !*err) ? COMPANION_DL_OK : COMPANION_DL_ERR_EXTRACT);
-   companion_core_download_done(d);
-}
-
-static void companion_core_pack_http_cb(retro_task_t *task,
-      void *task_data, void *user_data, const char *err)
-{
-   char final[PATH_MAX_LENGTH];
-   companion_download_t *d = (companion_download_t*)user_data;
-   companion_core_t *core;
-   enum companion_download_result r;
-
-   (void)task;
-   if (!d)
-      return;
-
-   final[0] = '\0';
-   r        = companion_core_download_commit(d,
-         (const http_transfer_data_t*)task_data, err, final, sizeof(final));
-   core     = d->core;
-
-   if (r == COMPANION_DL_OK)
-      r = companion_core_pack_prepare(final);
-
-   if (r == COMPANION_DL_OK && core)
-   {
-      RARCH_LOG("[Companion] Thumbnail pack downloaded, extracting.\n");
-      d->task = (retro_task_t*)task_push_decompress(final,
-            config_get_ptr()->paths.directory_thumbnails,
-            NULL, NULL, NULL, companion_core_pack_extract_cb, d, NULL,
-            false);
-      if (d->task)
-         return; /* d lives on into the extract callback */
-      r = COMPANION_DL_ERR_EXTRACT;
-   }
-
-   if (core && core->cb.on_thumbnail_pack_finished)
-      core->cb.on_thumbnail_pack_finished(core->ud, r);
+            d->subdir, ok ? d->output_path : NULL, ok);
    companion_core_download_done(d);
 }
 
 bool companion_core_thumbnail_download(companion_core_t *core,
-      const char *db_name, const char *label, const char *subdir)
+      const char *db_name, const char *label, const char *content_path,
+      const char *subdir)
 {
    char url[PATH_MAX_LENGTH];
    char name[NAME_MAX_LENGTH];
@@ -3871,23 +4301,26 @@ bool companion_core_thumbnail_download(companion_core_t *core,
          || string_is_empty(label) || string_is_empty(subdir))
       return false;
 
-   strlcpy(name, label, sizeof(name));
-   companion_core_download_scrub(name);
+   /* Saved where the display looks first; the server names its file
+    * by the same key, as the menu's downloader asks for it. */
+   if (!companion_core_thumbnail_save_path(core, db_name, subdir, label,
+            content_path, url, sizeof(url)))
+      return false;
+   /* <name>: the file name less its .png */
+   _len = strlen(path_basename(url)) - STRLEN_CONST(COMPANION_DL_THUMB_EXT);
+   strlcpy(name, path_basename(url), MIN(_len + 1, sizeof(name)));
 
-   d = companion_core_download_new(core, db_name, name, subdir, false);
+   d = companion_core_download_new(core, db_name, name, subdir);
    if (!d)
       return false;
 
-   /* <thumbnails>/<db>/<subdir>/<name>.png.partial */
+   /* <thumbnails>/<db>/<subdir>/<name>.png */
    companion_core_thumbnail_dir(core, db_name, subdir,
          d->output_path, sizeof(d->output_path));
    path_mkdir(d->output_path);
-   _len = fill_pathname_join_special(d->output_path, d->output_path, name,
-         sizeof(d->output_path));
-   strlcpy(d->output_path + _len, COMPANION_DL_THUMB_EXT COMPANION_DL_PARTIAL_EXT,
-         sizeof(d->output_path) - _len);
+   strlcpy(d->output_path, url, sizeof(d->output_path));
 
-   /* https://thumbnails.libretro.com/<db>/<subdir>/<name>.png, each path
+   /* <thumbnail server>/<db>/<subdir>/<name>.png, each path
     * component percent-encoded. */
    _len  = strlcpy(url, COMPANION_DL_THUMB_URL, sizeof(url));
    net_http_urlencode(&encoded, db_name);
@@ -3903,8 +4336,9 @@ bool companion_core_thumbnail_download(companion_core_t *core,
 
    RARCH_LOG("[Companion] Downloading \"%s\".\n", url);
 
-   d->task = (retro_task_t*)task_push_http_transfer_with_user_agent(url, true,
-         NULL, COMPANION_DL_USER_AGENT, companion_core_download_http_cb, d);
+   d->task = (retro_task_t*)task_push_http_download_file_with_headers(url,
+         d->output_path, true, NULL, COMPANION_DL_USER_AGENT,
+         companion_core_download_http_cb, d);
    if (!d->task)
    {
       RARCH_ERR("[Companion] Failed to start thumbnail transfer.\n");
@@ -3913,49 +4347,6 @@ bool companion_core_thumbnail_download(companion_core_t *core,
    }
    core->download = d;
    (void)settings;
-   return true;
-}
-
-bool companion_core_thumbnail_pack_download(companion_core_t *core,
-      const char *db_name)
-{
-   char url[PATH_MAX_LENGTH];
-   char *encoded = NULL;
-   size_t _len;
-   companion_download_t *d;
-   settings_t *settings = config_get_ptr();
-
-   if (!core || core->download || string_is_empty(db_name))
-      return false;
-
-   d = companion_core_download_new(core, db_name, NULL, NULL, true);
-   if (!d)
-      return false;
-
-   /* <thumbnails>/<db>.zip.partial */
-   path_mkdir(settings->paths.directory_thumbnails);
-   _len = fill_pathname_join_special(d->output_path,
-         settings->paths.directory_thumbnails, db_name, sizeof(d->output_path));
-   strlcpy(d->output_path + _len, COMPANION_DL_PACK_EXT COMPANION_DL_PARTIAL_EXT,
-         sizeof(d->output_path) - _len);
-
-   _len  = strlcpy(url, COMPANION_DL_PACK_URL, sizeof(url));
-   net_http_urlencode(&encoded, db_name);
-   _len += strlcpy(url + _len, encoded ? encoded : db_name, sizeof(url) - _len);
-   free(encoded);
-   strlcpy(url + _len, COMPANION_DL_PACK_EXT, sizeof(url) - _len);
-
-   RARCH_LOG("[Companion] Downloading \"%s\".\n", url);
-
-   d->task = (retro_task_t*)task_push_http_transfer_with_user_agent(url, true,
-         NULL, COMPANION_DL_USER_AGENT, companion_core_pack_http_cb, d);
-   if (!d->task)
-   {
-      RARCH_ERR("[Companion] Failed to start thumbnail pack transfer.\n");
-      free(d);
-      return false;
-   }
-   core->download = d;
    return true;
 }
 
@@ -3978,16 +4369,10 @@ bool companion_core_download_active(companion_core_t *core)
 #else /* !HAVE_NETWORKING */
 
 bool companion_core_thumbnail_download(companion_core_t *core,
-      const char *db_name, const char *label, const char *subdir)
+      const char *db_name, const char *label, const char *content_path,
+      const char *subdir)
 {
-   (void)core; (void)db_name; (void)label; (void)subdir;
-   return false;
-}
-
-bool companion_core_thumbnail_pack_download(companion_core_t *core,
-      const char *db_name)
-{
-   (void)core; (void)db_name;
+   (void)core; (void)db_name; (void)label; (void)content_path; (void)subdir;
    return false;
 }
 

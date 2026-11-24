@@ -36,6 +36,7 @@
 #include <net/net_compat.h>
 #include <net/net_socket.h>
 #include <compat/strl.h>
+#include <time/rtime.h>
 #include <crypto/crypto.h>
 #include <crypto/kdf.h>
 #include <lrc_hash.h>
@@ -561,26 +562,9 @@ static void krb5_der_ctx(struct krb5_der_w *w, size_t start, unsigned n)
 }
 
 /* KerberosTime "YYYYMMDDHHMMSSZ" from a UTC time_t. */
-static void krb5_civil_from_days(int64_t z, int *y, unsigned *m, unsigned *d)
-{
-   int64_t era, doe, yoe, mp;
-   z  += 719468;
-   era = (z >= 0 ? z : z - 146096) / 146097;
-   doe = z - era * 146097;
-   yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
-   *y  = (int)(yoe + era * 400);
-   {
-      int64_t doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-      mp  = (5 * doy + 2) / 153;
-      *d  = (unsigned)(doy - (153 * mp + 2) / 5 + 1);
-      *m  = (unsigned)(mp < 10 ? mp + 3 : mp - 9);
-   }
-   if (*m <= 2)
-      (*y)++;
-}
-
 static void krb5_time_string(int64_t t, char *out)
 {
+   int64_t y64;
    int y; unsigned m, d;
    int64_t days = t / 86400, secs = t % 86400;
    if (secs < 0)
@@ -588,7 +572,8 @@ static void krb5_time_string(int64_t t, char *out)
       secs += 86400;
       days--;
    }
-   krb5_civil_from_days(days, &y, &m, &d);
+   rtime_civil_from_days(days, &y64, &m, &d);
+   y = (int)y64;
    out[0]  = (char)('0' + (y / 1000) % 10); out[1] = (char)('0' + (y / 100) % 10);
    out[2]  = (char)('0' + (y / 10) % 10);   out[3] = (char)('0' + y % 10);
    out[4]  = (char)('0' + m / 10);          out[5] = (char)('0' + m % 10);

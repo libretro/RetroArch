@@ -6,7 +6,7 @@
 RA     := ../../..
 CC     ?= gcc
 CFLAGS += -Wall -Wextra -g1 -O1 -std=gnu99 -I$(RA) -I$(RA)/libretro-common/include \
-          -I$(RA)/deps -DHAVE_THREADS -DRARCH_INTERNAL $(EXTRA_CFLAGS)
+          -I$(RA)/deps -DHAVE_THREADS -DRARCH_INTERNAL -include copy_count.h $(EXTRA_CFLAGS)
 SRC    := gfx_surface_still_test.c \
           $(RA)/gfx/gfx_surface.c $(RA)/libretro-common/formats/image/image_yuv_blit.c $(RA)/gfx/gfx_instrument.c \
           $(RA)/libretro-common/formats/image_texture_set.c \
@@ -18,7 +18,7 @@ TARGET := gfx_surface_still_test
 
 all: $(TARGET)
 
-$(TARGET): $(SRC)
+$(TARGET): $(SRC) copy_count.h $(RA)/libretro-common/include/formats/image_narrow.h
 	$(CC) $(CFLAGS) -o $@ $(SRC) -lm -lpthread $(LDFLAGS)
 
 check: all

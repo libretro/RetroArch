@@ -28,7 +28,18 @@
  *                  answer that never comes given up on; the player lit
  *                  once it reports */
 
+/* The driver leaves a request's event to the I/O manager: it never
+ * resets one itself */
+#include <windows.h>
+static unsigned driver_resets;
+static BOOL test_driver_reset(HANDLE h)
+{
+   driver_resets++;
+   return ResetEvent(h);
+}
+#define ResetEvent test_driver_reset
 #include "input/drivers_hid/winusb_hid.c"
+#undef ResetEvent
 #include "input/common/sony_pad_output.h"
 #include "../joypad_bridge_checked/bridge_view.h"
 #include "input/common/input_ignore_devices.h"
@@ -129,6 +140,13 @@ static UCHAR *read_buffer;
 static ULONG read_len;
 static OVERLAPPED *read_ov;
 
+/* The I/O manager clears a request's event as it takes the request */
+static void io_take(OVERLAPPED *ov)
+{
+   if (ov && ov->hEvent)
+      ResetEvent(ov->hEvent);
+}
+
 static BOOL WINAPI f_initialize(HANDLE file, void **usb)
 {
    *usb = (void*)0x1234;
@@ -140,6 +158,7 @@ static BOOL WINAPI f_control(void *usb, winusb_setup_packet_t s,
       UCHAR *data, ULONG len, ULONG *got, OVERLAPPED *ov)
 {
    int i = n_setups++ & 31;
+   io_take(ov);
    setups[i] = s;
    if (s.RequestType == 0x21)
       memcpy(setup_data[i], data, len < 64 ? len : 64);
@@ -180,6 +199,7 @@ static void complete_read(void)
 static BOOL WINAPI f_read(void *usb, UCHAR pipe, UCHAR *buf, ULONG len,
       ULONG *got, OVERLAPPED *ov)
 {
+   io_take(ov);
    if (InterlockedExchange(&pause_submit, 0))
    {
       SetEvent(submit_entered);
@@ -484,6 +504,7 @@ static void h_complete(void)
 static BOOL WINAPI h_read(HANDLE file, LPVOID buf, DWORD len, LPDWORD got,
       LPOVERLAPPED ov)
 {
+   io_take(ov);
    EnterCriticalSection(&q_lock);
    h_ov      = ov;
    h_buf     = (uint8_t*)buf;
@@ -508,6 +529,7 @@ static BOOL WINAPI h_write(HANDLE file, LPCVOID buf, DWORD len, LPDWORD got,
       LPOVERLAPPED ov)
 {
    int i = n_writes++ & 15;
+   io_take(ov);
    memcpy(writes[i], buf, len < WINUSB_OUT_MAX ? len : WINUSB_OUT_MAX);
    write_len[i] = len;
    if (write_hold)
@@ -994,6 +1016,7 @@ static BOOL WINAPI w2_write(void *usb, UCHAR pipe, UCHAR *buf, ULONG len,
       ULONG *got, OVERLAPPED *ov)
 {
    int i = w2_writes++ & 15;
+   io_take(ov);
    memcpy(w2_cmd[i], buf, len < 32 ? len : 32);
    w2_len[i] = len;
    if (usb != (void*)0x5678 || pipe != 0x02)
@@ -1006,6 +1029,7 @@ static BOOL WINAPI w2_write(void *usb, UCHAR pipe, UCHAR *buf, ULONG len,
 static BOOL WINAPI w2_read(void *usb, UCHAR pipe, UCHAR *buf, ULONG len,
       ULONG *got, OVERLAPPED *ov)
 {
+   io_take(ov);
    w2_reads++;
    if (w2_silent)
    {
@@ -1120,6 +1144,7 @@ static BOOL WINAPI ga_write(void *usb, UCHAR pipe, UCHAR *buf, ULONG len,
       ULONG *got, OVERLAPPED *ov)
 {
    int i = ga_writes++ & 7;
+   io_take(ov);
    memcpy(ga_out[i], buf, len < 40 ? len : 40);
    ga_out_len[i]  = len;
    ga_out_pipe[i] = pipe;
@@ -1131,6 +1156,7 @@ static BOOL WINAPI ga_write(void *usb, UCHAR pipe, UCHAR *buf, ULONG len,
 static BOOL WINAPI ga_read(void *usb, UCHAR pipe, UCHAR *buf, ULONG len,
       ULONG *got, OVERLAPPED *ov)
 {
+   io_take(ov);
    ga_read_pipe = pipe;
    ga_read_ov   = ov;
    SetLastError(ERROR_IO_PENDING);
@@ -1428,6 +1454,7 @@ int main(void)
    CloseHandle(abort_seen);
    DeleteCriticalSection(&q_lock);
    DeleteFileA(path);
+   CHECK(!driver_resets, "the driver reset a request's event itself");
    if (failures)
    {
       printf("%d failure(s)\n", failures);

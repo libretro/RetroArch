@@ -29,7 +29,9 @@
  * - the buffered stream's wide reads and window refills are right
  *   after reads at offsets elsewhere;
  * - file and memory streams read this way from four threads at once
- *   give every thread its own bytes (run under TSan in CI).
+ *   give every thread its own bytes (run under TSan in CI);
+ * - a memory stream lends its bytes in place through intfstream_view,
+ *   and intfstream_resize points it at another buffer from its start.
  */
 
 #include <stdio.h>
@@ -172,6 +174,55 @@ static void threads(intfstream_t *s, const char *what)
 }
 #endif
 
+/* A memory stream's view is its own buffer, the position past what
+ * it lends; resizing points the same stream at another buffer, from
+ * its start, writable or not. Other streams refuse a resize. */
+static void memory_view_resize(void)
+{
+   static uint8_t   other[64];
+   const uint8_t   *p = NULL;
+   intfstream_info_t info;
+   intfstream_t    *s = intfstream_open_memory(data,
+         RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, 100);
+   int64_t          n;
+   uint8_t          b;
+   CHECK(s);
+   if (!s)
+      return;
+   CHECK(intfstream_seek(s, 10, SEEK_SET) == 0);
+   n = intfstream_view(s, 40, &p);
+   CHECK(n == 40 && p == data + 10);
+   CHECK(intfstream_tell(s) == 50);
+   n = intfstream_view(s, 1000, &p);
+   CHECK(n == 50 && p == data + 50);
+   CHECK(intfstream_view(s, 1, &p) == 0);
+
+   memset(other, 0x5a, sizeof(other));
+   info.type            = INTFSTREAM_MEMORY;
+   info.memory.buf.data = other;
+   info.memory.buf.size = 32;
+   info.memory.writable = true;
+   CHECK(intfstream_resize(s, &info));
+   CHECK(intfstream_tell(s) == 0 && intfstream_get_size(s) == 32);
+   CHECK(intfstream_write(s, "ab", 2) == 2 && other[0] == 'a' && other[1] == 'b');
+   CHECK(intfstream_seek(s, 0, SEEK_SET) == 0);
+   n = intfstream_view(s, 64, &p);
+   CHECK(n == 32 && p == other);
+   CHECK(intfstream_seek(s, 31, SEEK_SET) == 0
+         && intfstream_read(s, &b, 1) == 1 && b == 0x5a);
+   CHECK(intfstream_read(s, &b, 1) == 0);
+   intfstream_close(s);
+   free(s);
+
+   if ((s = intfstream_open_file(path, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+   {
+      CHECK(!intfstream_resize(s, &info));
+      intfstream_close(s);
+      free(s);
+   }
+}
+
 int main(void)
 {
    intfstream_t *s;
@@ -233,6 +284,8 @@ int main(void)
    }
    else
       failures++;
+
+   memory_view_resize();
 
    remove(path);
    printf("intfstream read_at: %s\n", failures ? "FAIL" : "ok");

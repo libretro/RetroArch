@@ -32,7 +32,8 @@
  * 15. devices and touches in a screen's own window: placed through
  *     that window, nowhere on the main window's screen, off-screen
  *     once the window is gone; motion, buttons and ports as on the
- *     main window;
+ *     main window; while the menu is up they press nothing, the main
+ *     window's still do, and so do those of a window the menu is in;
  * 16. the flags that keep a driver's own answers (Android's), each off
  *     and on: pressed only inside, the second list, the mouse and
  *     the ids left to the driver, touch slots; and a touch read over
@@ -124,6 +125,12 @@ bool input_driver_pointer_is_offscreen(int16_t x, int16_t y)
  * not there. */
 unsigned input_mouse_port_index(unsigned port)
 { return port == 0 ? 1 : (port == 1 ? 0 : 7); }
+
+/* The menu, up or not, and the window it is in */
+static bool menu_up;
+static unsigned menu_window;
+static int input_pointer_menu_window(void)
+{ return menu_up ? (int)menu_window : -1; }
 
 #include "input/input_pointer_frame.h"
 
@@ -1202,6 +1209,43 @@ int main(void)
          input_pointer_touches_set(touch, NULL, 2, 3, 3);
          CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 60,
                "touches published with no windows are the main window's");
+         /* the menu up: nothing in a screen's window presses */
+         tw[0].generation = 5;
+         menu_up          = true;
+         f[0].buttons     = INPUT_POINTER_RIGHT;
+         input_pointer_frames_set(f, w, 2, 0);
+         input_pointer_touches_set(touch, tw, 2, 3, 3);
+         CHECK( rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 0
+            &&  rd(1, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+            &&  rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X) == 4
+            &&  rd(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT) == 1
+            &&  input_pointers.touch_present == 3
+            &&  input_pointers.touch_down == 2,
+               "menu up: a screen window's buttons and touches press nothing, the main window's do");
+         /* the menu in window 1: that window's press its own */
+         menu_window  = 1;
+         input_pointer_frames_set(f, w, 2, 0);
+         input_pointer_touches_set(touch, tw, 2, 3, 3);
+         CHECK( rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 1
+            &&  input_pointers.touch_down == 3,
+               "menu up in a screen's window: that window's presses are the menu's");
+         menu_window  = 0;
+         menu_up      = false;
+         input_pointer_frames_set(f, w, 2, 0);
+         input_pointer_touches_set(touch, tw, 2, 3, 3);
+         CHECK( rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 1
+            &&  input_pointers.touch_down == 3,
+               "menu down: they press again");
+         f[0].buttons = 0;
+         input_pointer_frames_set(f, w, 2, 0);
+         input_pointer_touches_set(touch, tw, 2, 3, 3);
+         input_pointer_frames_forget(1);
+         CHECK( rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 0
+            &&  rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X) == 0
+            &&  rd(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X) == -3
+            &&  input_pointers.touch_present == 2
+            &&  input_pointers.touch_down == 2,
+               "a window let go: its device's buttons, motion and touches; the main window's kept");
       }
       touches_set(touch, 0, 0);
       f[1].buttons = 0;

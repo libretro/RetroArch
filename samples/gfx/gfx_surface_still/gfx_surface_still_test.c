@@ -6,20 +6,37 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <formats/image_narrow.h>
 
 #include <queues/task_queue.h>
 #include <rthreads/rthreads.h>
 #include <retro_timers.h>
 #include <features/features_cpu.h>
+#include <retro_atomic.h>
 
 #include "gfx/video_driver.h"
 #include "gfx/video_thread_wrapper.h"
 #include "gfx/gfx_surface.h"
 #include <formats/image_yuv_blit.h>
 
+#undef memcpy
+
 static int failures;
 #define CHECK(c, ...) do { if (!(c)) { failures++; \
    printf("[FAIL] " __VA_ARGS__); printf("\n"); } } while (0)
+
+static retro_atomic_ptr_t st_copy_target;
+static retro_atomic_int_t st_copy_size, st_copy_bytes;
+
+void *gfx_surface_still_copy(void *dest, const void *src, size_t size)
+{
+   uintptr_t target = (uintptr_t)retro_atomic_load_acquire_ptr(&st_copy_target);
+   size_t length = (size_t)retro_atomic_load_acquire_int(&st_copy_size);
+   if (target && (uintptr_t)dest >= target
+         && (uintptr_t)dest - target < length)
+      retro_atomic_fetch_add_int(&st_copy_bytes, (int)size);
+   return memcpy(dest, src, size);
+}
 
 /* --- stub driver ------------------------------------------------- */
 static uintptr_t st_next = 1;
@@ -57,8 +74,14 @@ static void st_saw(void *data)
    }
    if (ti && ti->pixels && ti->width && ti->height)
    {
+      size_t pitch = (size_t)ti->width * (ti->fp16 ? 8 : 4);
+      unsigned k;
+      for (k = 0; k < 2; k++)
+         if (ti->pixels == st_lent_pixels[k] && st_lend_pitch[k])
+            pitch = st_lend_pitch[k];
       st_px_first = ti->pixels[0];
-      st_px_last  = ti->pixels[(size_t)ti->width * ti->height * (ti->fp16 ? 2 : 1) - 1];
+      st_px_last  = ti->pixels[(ti->height - 1) * pitch / sizeof(uint32_t)
+            + ti->width * (ti->fp16 ? 2 : 1) - 1];
    }
 }
 
@@ -315,7 +338,13 @@ bool image_texture_load_buffer_request(struct texture_image *img,
    return false;
 }
 
-void image_texture_narrow_10bit(struct texture_image *img) { (void)img; }
+void image_texture_narrow_10bit(struct texture_image *img)
+{
+   if (!img || !img->pix10 || !img->pixels) return;
+   image_texture_narrow_10bit_row(img->pixels, img->pixels,
+         (size_t)img->width * img->height, img->supports_rgba);
+   img->pix10 = false;
+}
 
 void image_texture_free(struct texture_image *img)
 {
@@ -463,9 +492,17 @@ static void st_abandon_import(void *owner, uint64_t done, uint64_t value)
          "retired import lost its release destination");
    st_abandoned++;
 }
+static void st_plane_released(void *user, gfx_surface_t *surface, unsigned slot)
+{
+   (void)surface;
+   *(unsigned*)user = slot;
+}
+
+static unsigned st_last_released;
 static void st_release_import(void *user, gfx_surface_t *surface, unsigned slot)
 {
-   (void)user; (void)surface; (void)slot;
+   (void)user; (void)surface;
+   st_last_released = slot;
    st_released++;
 }
 static void st_retired_imports(void)
@@ -619,8 +656,14 @@ static void st_pitched_lending(void)
       old = s->handle;
       unloaded = st_unloads;
       s->filter = TEXTURE_FILTER_NEAREST;
+      retro_atomic_store_release_int(&st_copy_bytes, 0);
+      retro_atomic_store_release_int(&st_copy_size, format ? 128 : 64);
+      retro_atomic_store_release_ptr(&st_copy_target, s->own_slots[0]);
       gfx_surface_submit(s, 0, false);
       st_flush();
+      retro_atomic_store_release_ptr(&st_copy_target, NULL);
+      CHECK(retro_atomic_load_acquire_int(&st_copy_bytes) == (format ? 128 : 64),
+            "packed replacement copied the submitted slot more than once");
       CHECK(!st_load_lent && st_px_first == 0x100 && st_px_last == 0x100 + (format ? 32 : 16) - 1,
             "replacement load did not repack padded rows");
       if (active)
@@ -655,14 +698,186 @@ static void st_pitched_lending(void)
       CHECK(gfx_surface_slot_writable(s, 0) && s->pitch[0] == 32,
             "one-slot pitch did not follow spare");
       for (i = 0; i < 16; i++) pixels[i] = i + 0x300;
-      gfx_surface_submit_pixels(s, pixels, false);
+      gfx_surface_submit_pixels_held(s, 0, pixels, false);
       CHECK(st_lent_pixels[1][8] == 0x304 && st_lent_pixels[1][24] == 0x30c,
             "external canvas was not copied row by row");
       st_lend_busy = 0;
+      s->filter = TEXTURE_FILTER_NEAREST;
+      retro_atomic_store_release_int(&st_copy_bytes, 0);
+      retro_atomic_store_release_int(&st_copy_size, 64);
+      retro_atomic_store_release_ptr(&st_copy_target, s->own_slots[0]);
+      gfx_surface_submit(s, 0, false);
+      retro_atomic_store_release_ptr(&st_copy_target, NULL);
+      CHECK(retro_atomic_load_acquire_int(&st_copy_bytes) == 64,
+            "one-slot replacement recopied its packed frame");
+      CHECK(s->own_slots[0][0] == 0x300 && s->own_slots[0][15] == 0x30f,
+            "one-slot replacement lost pixels");
       gfx_surface_free(s);
       st_lend = false;
       st_lend_pitch[0] = st_lend_pitch[1] = 0;
    }
+   for (threaded = 0; threaded < 2; threaded++)
+   {
+      gfx_surface_t *s;
+      st_async = (int)threaded;
+      st_lend = true;
+      s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 1, IMAGE_PIXFMT_8888,
+            TEXTURE_FILTER_LINEAR, NULL, NULL);
+      if (!s) continue;
+      gfx_surface_submit(s, 0, false);
+      st_flush();
+      gfx_surface_submit(s, 0, false);
+      st_flush();
+      CHECK(s->lent, "tight replacement was not lent");
+      st_pitched_write(s, 0, 0x400);
+      s->filter = TEXTURE_FILTER_NEAREST;
+      retro_atomic_store_release_int(&st_copy_bytes, 0);
+      retro_atomic_store_release_int(&st_copy_size, 64);
+      retro_atomic_store_release_ptr(&st_copy_target, s->own_slots[0]);
+      gfx_surface_submit(s, 0, false);
+      st_flush();
+      retro_atomic_store_release_ptr(&st_copy_target, NULL);
+      CHECK(retro_atomic_load_acquire_int(&st_copy_bytes) == 64,
+            "tight replacement did not preserve its frame once");
+      CHECK(s->own_slots[0][0] == 0x400 && s->own_slots[0][15] == 0x40f,
+            "tight replacement lost pixels");
+      gfx_surface_free(s);
+      st_flush();
+      st_lend = false;
+   }
+   st_async = 0;
+}
+
+/* Immutable input and decoder-written slots narrow without a raw-frame
+ * copy, including padded loans. Literal colours pin the >>2 baseline. */
+static void st_narrow_upload(bool decoded)
+{
+   static const uint32_t source[] = {0, 0x3fffffffu, 0x3ff00000u,
+      0x000ffc00u, 0x000003ffu, 0x20080002u, 0x1ff7fdffu,
+      0x0040200cu, 0xc0000000u, 0x00100803u};
+   static const uint32_t argb[] = {0xff000000u, 0xffffffffu, 0xffff0000u,
+      0xff00ff00u, 0xff0000ffu, 0xff808000u, 0xff7f7f7fu,
+      0xff010203u, 0xff000000u, 0xff000000u};
+   unsigned threaded, rgba, frame, i;
+   int async = st_async;
+   for (threaded = 0; threaded < 2; threaded++)
+      for (rgba = 0; rgba < 2; rgba++)
+      {
+         gfx_surface_t *s;
+         uint32_t pixels[16], saved[16], inplace[16];
+         st_async = threaded;
+         st_lend = true;
+         st_lend_pitch[0] = 24;
+         st_lend_pitch[1] = 32;
+         memset(st_lent_pixels, 0x55, sizeof(st_lent_pixels));
+         s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 1,
+               IMAGE_PIXFMT_2101010, TEXTURE_FILTER_LINEAR, NULL, NULL);
+         CHECK(s != NULL, "narrow upload: surface");
+         if (!s) continue;
+         s->padded = 1;
+         for (frame = 0; frame < 5; frame++)
+         {
+            const uint8_t *upload;
+            size_t pitch;
+            unsigned pad;
+            for (i = 0; i < 16; i++) pixels[i] = source[(i + frame) % 10];
+            memcpy(saved, pixels, sizeof(pixels));
+            memcpy(inplace, pixels, sizeof(pixels));
+            image_texture_narrow_10bit_row(inplace, inplace, 16, rgba != 0);
+            if (frame == 3 && s->lent)
+            {
+               st_lend_busy = 1;
+               CHECK(gfx_surface_slot_writable(s, 0), "narrow upload: spare unavailable");
+            }
+            if (decoded)
+               for (i = 0; i < 4; i++)
+                  memcpy((uint8_t*)s->slots[0] + i * s->pitch[0], pixels + i * 4, 16);
+            retro_atomic_store_release_int(&st_copy_bytes, 0);
+            retro_atomic_store_release_int(&st_copy_size,
+                  decoded ? sizeof(pixels) : s->pitch[0] * 4);
+            retro_atomic_store_release_ptr(&st_copy_target,
+                  decoded ? s->own_slots[0] : s->slots[0]);
+            CHECK((decoded ? gfx_surface_submit(s, 0, rgba != 0)
+                           : gfx_surface_submit_pixels(s, pixels, rgba != 0))
+                  == (threaded ? GFX_SURFACE_SUBMIT_QUEUED : GFX_SURFACE_SUBMIT_DONE),
+                  "narrow upload: submit");
+            upload = (const uint8_t*)s->img.pixels;
+            pitch = s->img_pitch;
+            CHECK(!s->img.pix10 && s->img.supports_rgba == (rgba != 0),
+                  "narrow upload: descriptor not converted");
+            st_flush();
+            CHECK(!memcmp(pixels, saved, sizeof(pixels)), "narrow upload: source rewritten");
+            CHECK(!retro_atomic_load_acquire_int(&st_copy_bytes),
+                  "narrow upload: raw frame copied before conversion");
+            retro_atomic_store_release_ptr(&st_copy_target, NULL);
+            for (i = 0; i < 16; i++)
+            {
+               uint32_t expected = argb[(i + frame) % 10];
+               const uint8_t *actual = upload + (i / 4) * pitch + (i % 4) * 4;
+               if (rgba)
+               {
+                  uint8_t *bytes = (uint8_t*)&expected;
+                  bytes[0] = (uint8_t)(argb[(i + frame) % 10] >> 16);
+                  bytes[1] = (uint8_t)(argb[(i + frame) % 10] >> 8);
+                  bytes[2] = (uint8_t)argb[(i + frame) % 10];
+                  bytes[3] = 255;
+               }
+               CHECK(!memcmp(actual, &expected, 4) && inplace[i] == expected,
+                     "narrow upload: colour/order mismatch at %u", i);
+            }
+            for (i = 0; i < 4; i++)
+               for (pad = 16; pad < pitch; pad++)
+                  CHECK(upload[i * pitch + pad] == 0x55,
+                        "narrow upload: rewrote row padding");
+            CHECK(s->lent == 3 || (threaded && !frame),
+                  "narrow upload: streaming loans not retained");
+         }
+         st_lend_busy = 0;
+         gfx_surface_free(s);
+         st_flush();
+         CHECK(!st_live, "narrow upload: leaked texture");
+         st_lend = false;
+         st_lend_pitch[0] = st_lend_pitch[1] = 0;
+      }
+   st_async = async;
+}
+
+static void st_canvas_lease(void)
+{
+   uint32_t pixels[16];
+   gfx_surface_t *s;
+   unsigned i, slot, releases;
+   int async = st_async;
+   st_async = 1;
+   for (i = 0; i < 16; i++) pixels[i] = 0xff001100u + i;
+   for (slot = 0; slot < 2; slot++)
+   {
+      releases = st_released;
+      s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 2, IMAGE_PIXFMT_8888,
+            TEXTURE_FILTER_LINEAR, st_release_import, NULL);
+      CHECK(s != NULL, "canvas lease: surface");
+      if (!s) return;
+      memset(s->slots[slot], 0x55, 16 * sizeof(uint32_t));
+      CHECK(gfx_surface_submit_pixels_held(s, slot, pixels, false) == GFX_SURFACE_SUBMIT_QUEUED,
+            "canvas lease: not queued");
+      CHECK(s->img.pixels == pixels && s->slots[slot][0] == 0x55555555u,
+            "canvas lease: copied the decoder canvas");
+      CHECK(gfx_surface_submit_pixels_held(s, slot, pixels, false) == GFX_SURFACE_SUBMIT_BUSY,
+            "canvas lease: replaced an in-flight pointer");
+      CHECK(st_released == releases, "canvas lease: released before upload");
+      st_flush();
+      CHECK(st_released == releases + 1 && st_last_released == slot && st_px_first == pixels[0]
+            && st_px_last == pixels[15], "canvas lease: pixels or release");
+      CHECK(gfx_surface_submit_pixels_held(s, slot, pixels, false) == GFX_SURFACE_SUBMIT_QUEUED,
+            "canvas lease: update not queued");
+      CHECK(s->node.lend == 0, "canvas lease: asked for an unnecessary staging lend");
+      st_flush();
+      CHECK(st_last_released == slot && st_released == releases + 2,
+            "canvas lease: update released wrong slot");
+      gfx_surface_free(s);
+      CHECK(!st_live, "canvas lease: leaked texture");
+   }
+   st_async = async;
 }
 
 static void st_still_recovery(void)
@@ -777,6 +992,9 @@ int main(void)
    st_pitched_lending();
    st_compressed_stills();
    st_async = 1;
+   st_narrow_upload(false);
+   st_narrow_upload(true);
+   st_canvas_lease();
    st_still_recovery();
 
    /* 1. threaded: a same-size image updates the texture up in place
@@ -1066,8 +1284,9 @@ int main(void)
    {
       static uint8_t frame[64];
       gfx_surface_planes_t p;
-      gfx_surface_t *s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 1,
-            IMAGE_PIXFMT_NV12, TEXTURE_FILTER_NEAREST, NULL, NULL);
+      unsigned returned_slot = 99;
+      gfx_surface_t *s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 2,
+            IMAGE_PIXFMT_NV12, TEXTURE_FILTER_NEAREST, st_plane_released, &returned_slot);
       int reads = st_planar_reads;
       memset(frame, 0, sizeof(frame));
       frame[16] = 1;  /* Cb, Cr of the first pair */
@@ -1091,6 +1310,21 @@ int main(void)
             && !s->rgb,
             "direct planes not handed over as they lie");
       st_async = 1;
+      memset(s->slots[0], 0x55, IMAGE_PIXFMT_FRAME_SIZE(s->pixfmt, 4, 4));
+      CHECK(gfx_surface_submit_planes_held(s, 1, &p, false)
+            == GFX_SURFACE_SUBMIT_QUEUED, "leased planes not queued");
+      CHECK(s->planar.planes[0] == frame && s->planar.planes[1] == frame + 17
+            && s->planar.planes[2] == frame + 16 && s->planar.strides[1] == 8
+            && ((uint8_t*)s->slots[0])[0] == 0x55 && !s->rgb,
+            "leased planes copied or lost padded chroma metadata");
+      CHECK(gfx_surface_submit_planes_held(s, 1, &p, false)
+            == GFX_SURFACE_SUBMIT_BUSY, "leased planes replaced while in flight");
+      CHECK(s->inflight_slot == 1, "leased planes lost the producer slot");
+      st_flush();
+      CHECK(returned_slot == 1, "leased planes released the wrong producer slot");
+      CHECK(st_planar.planes[0] == frame && st_planar.planes[1][0] == 2
+            && st_planar.strides[1] == 8 && st_planar.yuv == IMAGE_YUV_FLAG_BT709,
+            "leased planes lost their source on the video thread");
       CHECK(gfx_surface_submit_planes(s, &p, false)
             == GFX_SURFACE_SUBMIT_QUEUED, "wrapper planes not queued");
       memset(frame, 0xee, sizeof(frame)); /* the caller's again */

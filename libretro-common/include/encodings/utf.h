@@ -49,6 +49,27 @@ size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
       const char *in, size_t in_size);
 
 /**
+ * utf8_conv_utf16:
+ * @out       : the UTF-16 units written
+ * @out_units : room at @out, in units
+ * @in        : UTF-8 text
+ * @in_size   : its size in bytes
+ *
+ * Converts @in to UTF-16, a character past U+FFFF as a surrogate pair.
+ * Stops at the end of @in, at a character that would not fit whole in
+ * what is left of @out, at a character cut off by the end of @in, and
+ * at what is not UTF-8 (a stray continuation byte, a lead byte of five
+ * or more, or a code point past U+10FFFF). A NUL is converted like any
+ * other character. Writes no terminator.
+ *
+ * Leaf function.
+ *
+ * @return the number of units written.
+ **/
+size_t utf8_conv_utf16(uint16_t *out, size_t out_units,
+      const char *in, size_t in_size);
+
+/**
  * utf16_conv_utf8:
  *
  * Leaf function.
@@ -139,6 +160,7 @@ char *local_to_utf8_string_alloc(const char *str);
  * Same conversion as local_to_utf8_string_alloc(), into a caller buffer.
  * Targets where the local codepage needs no conversion - Xbox, and any
  * UNICODE build - copy rather than allocate.  Truncates like strlcpy().
+ * @in may be @s, converting in place; a failure then leaves @s as it was.
  *
  * @return false only if the conversion itself failed.
  **/

@@ -15,14 +15,21 @@ RETRO_BEGIN_DECLS
  * Copy the descriptor before returning true; never retain its pointer.
  * Its user data must outlive playback and accepted leases. */
 typedef bool (*media_hw_refresh_t)(void *user, const video_hw_frame_t *frame);
+/* The planes sink takes software-decoded frames as video_hw_frame_t
+ * planes (8-bit 4:2:0, chroma_step 1, IMAGE_PIXFMT_I420), lent for the
+ * call only: the consumer copies what it keeps before returning. NULL
+ * asks whether it takes them now; false leaves the frame unshown. It
+ * is installed under the same rules as the GPU sink. */
 #ifdef RARCH_INTERNAL
 void libretro_media_video_hw_ready(void);
 void libretro_media_suspend_video_hw(void);
 bool libretro_media_set_video_hw_refresh(media_hw_refresh_t cb, void *user);
+bool libretro_media_set_video_planes_refresh(media_hw_refresh_t cb, void *user);
 #else
 void media_video_hw_ready(void);
 void media_suspend_video_hw(void);
 bool media_set_video_hw_refresh(media_hw_refresh_t cb, void *user);
+bool media_set_video_planes_refresh(media_hw_refresh_t cb, void *user);
 #endif
 RETRO_END_DECLS
 #endif

@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <boolean.h>
 #include <gfx/scaler/pixconv.h>
+#include "../../../gfx/common/media_history.h"
 #include "formats.inc"
 #define FAILED(x) ((x) < 0)
 #define DXGI_ERROR_WAS_STILL_DRAWING (-2)
@@ -23,6 +24,7 @@ typedef uint32_t UINT32;
 typedef int HRESULT;
 typedef void *D3D11Resource;
 typedef void *D3D11Device;
+typedef void *D3D11ShaderResourceView;
 typedef struct { void *pData; unsigned RowPitch; } D3D11_MAPPED_SUBRESOURCE;
 typedef struct { unsigned left,top,front,right,bottom,back; } D3D11_BOX;
 typedef struct context *D3D11DeviceContext;
@@ -38,6 +40,10 @@ typedef struct {
    size_t upload_size;
    d3d11_texture_lend_t *lend;
    unsigned lend_bpp;
+   gfx_media_history_t media_history;
+   D3D11ShaderResourceView *media_versions;
+   unsigned media_version_count;
+   bool media_borrowable;
    struct { unsigned Width,Height,MiscFlags; DXGI_FORMAT Format; } desc;
 } d3d11_texture_t;
 enum texture_filter_type { TEXTURE_FILTER_MIPMAP_LINEAR, TEXTURE_FILTER_LINEAR,
@@ -159,6 +165,7 @@ static enum video_texture_update d3d11_planar_update(d3d11_video_t *v,
 #include "copy.inc"
 #define realloc checked_realloc
 #define free checked_free
+#include "media_passthrough.h"
 #include "driver.inc"
 #undef free
 #undef realloc
@@ -181,8 +188,10 @@ static void parity(D3D11DeviceContext context, DXGI_FORMAT src, DXGI_FORMAT dst,
    texture.desc.Format=dst;
    texture.desc.MiscFlags=D3D11_RESOURCE_MISC_GENERATE_MIPS;
    map_result=0;
+   texture.media_history.copies=7;
    memset(output,0xcd,sizeof(output));
    d3d11_update_texture(context,3,2,pitch,src,source,&texture);
+   assert(!texture.media_history.copies);
    memcpy(reference,output,sizeof(output));
    assert(!texture.upload_data && !texture.upload_size);
    if (src == DXGI_FORMAT_R10G10B10A2_UNORM)
@@ -202,7 +211,9 @@ static void parity(D3D11DeviceContext context, DXGI_FORMAT src, DXGI_FORMAT dst,
    before=maps;
    map_result=DXGI_ERROR_WAS_STILL_DRAWING;
    allocation_count=allocations;
+   texture.media_history.copies=7;
    d3d11_update_texture(context,3,2,pitch,src,source,&texture);
+   assert(!texture.media_history.copies);
    assert(maps == before+1 && !memcmp(output,reference,sizeof(output)));
    assert(!memcmp(source,saved,sizeof(source)));
    assert((texture.upload_data != NULL) == convert);
@@ -215,7 +226,9 @@ static void parity(D3D11DeviceContext context, DXGI_FORMAT src, DXGI_FORMAT dst,
    assert(texture.upload_data == cached && allocations == allocation_count);
    before=updates;
    map_result=-1;
+   texture.media_history.copies=7;
    d3d11_update_texture(context,3,2,pitch,src,source,&texture);
+   assert(texture.media_history.copies==7);
    assert(updates == before && texture.upload_data == cached);
    d3d11_release_texture(&texture);
    assert(!texture.upload_data && !texture.upload_size);

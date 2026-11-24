@@ -71,6 +71,13 @@ void d3d12_ngx_frame_done(d3d12_ngx_t *ngx);
 /* The queue is drained (teardown): everything released. */
 void d3d12_ngx_free(d3d12_ngx_t *ngx);
 
+/* Feature creation on a worker's command list, without lending core
+ * textures across frames. The renderer submits it before evaluation. */
+void d3d12_ngx_defer(d3d12_ngx_t *ngx);
+bool d3d12_ngx_prepare_pending(d3d12_ngx_t *ngx);
+void d3d12_ngx_prepare(d3d12_ngx_t *ngx, ID3D12GraphicsCommandList *cmd);
+void d3d12_ngx_cancel_prepare(d3d12_ngx_t *ngx);
+
 RETRO_END_DECLS
 
 #endif

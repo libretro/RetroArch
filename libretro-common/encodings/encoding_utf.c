@@ -205,6 +205,89 @@ size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
 }
 
 /**
+ * utf8_conv_utf16:
+ *
+ * The lead-byte dispatch of utf8_conv_utf32, with a 4-byte form that
+ * becomes a surrogate pair when two units are left for it.
+ **/
+size_t utf8_conv_utf16(uint16_t *out, size_t out_units,
+      const char *in, size_t in_size)
+{
+   size_t ret = 0;
+   while (in_size && out_units)
+   {
+      uint32_t c;
+      uint8_t first = (uint8_t)*in;
+
+      if (first < 0x80)
+      {
+         *out++ = first;
+         in++;
+         in_size--;
+         out_units--;
+         ret++;
+         continue;
+      }
+
+      if (first < 0xE0)
+      {
+         if (first < 0xC0)          /* Continuation byte: desync. */
+            break;
+         if (in_size < 2)           /* Cut off. */
+            break;
+         c        = ((uint32_t)(first & 0x1F) << 6)
+                  | ((uint8_t)in[1] & 0x3F);
+         in      += 2;
+         in_size -= 2;
+      }
+      else if (first < 0xF0)
+      {
+         if (in_size < 3)
+            break;
+         c        = (uint32_t)(first & 0x0F) << 6;
+         c        = (c | ((uint8_t)in[1] & 0x3F)) << 6;
+         c        =  c | ((uint8_t)in[2] & 0x3F);
+         in      += 3;
+         in_size -= 3;
+      }
+      else if (first < 0xF8)
+      {
+         if (in_size < 4)
+            break;
+         c        = (uint32_t)(first & 0x07) << 6;
+         c        = (c | ((uint8_t)in[1] & 0x3F)) << 6;
+         c        = (c | ((uint8_t)in[2] & 0x3F)) << 6;
+         c        =  c | ((uint8_t)in[3] & 0x3F);
+         if (c > 0x10FFFF)          /* Past what UTF-16 holds. */
+            break;
+         if (c > 0xFFFF)
+         {
+            if (out_units < 2)      /* The pair does not fit. */
+               break;
+            c       -= 0x10000;
+            out[0]   = (uint16_t)(0xD800 + (c >> 10));
+            out[1]   = (uint16_t)(0xDC00 + (c & 0x3FF));
+            out     += 2;
+            out_units -= 2;
+            ret     += 2;
+            in      += 4;
+            in_size -= 4;
+            continue;
+         }
+         in      += 4;
+         in_size -= 4;
+      }
+      else                          /* 5/6-byte forms, 0xFE and 0xFF. */
+         break;
+
+      *out++ = (uint16_t)c;
+      out_units--;
+      ret++;
+   }
+   return ret;
+}
+
+/**
  * utf16_conv_utf8:
  *
  * Leaf function.
@@ -769,19 +852,43 @@ bool local_to_utf8_string(const char *in, char *s, size_t len)
 {
    if (!s || !len)
       return false;
-   s[0] = '\0';
    if (!in || !*in)
+   {
+      *s = '\0';
       return true;
+   }
 #if defined(_WIN32) && !defined(_XBOX) && !defined(UNICODE)
    {
-      char *tmp = mb_to_mb_string_alloc(in, CODEPAGE_LOCAL, CODEPAGE_UTF8);
-      if (!tmp)
+      /* Nothing is written to @s until the whole result fits, so @in
+       * may be @s; a name too long for the stack takes the heap */
+      wchar_t wide[260];
+      char *tmp;
+      if (MultiByteToWideChar(CODEPAGE_LOCAL, 0, in, -1, wide,
+               (int)(sizeof(wide) / sizeof(wide[0]))) > 0)
+      {
+         int _len = WideCharToMultiByte(CODEPAGE_UTF8, 0, wide, -1,
+               NULL, 0, NULL, NULL);
+         if (_len > 0 && (size_t)_len <= len)
+         {
+            WideCharToMultiByte(CODEPAGE_UTF8, 0, wide, -1, s, _len,
+                  NULL, NULL);
+            return true;
+         }
+      }
+      if (!(tmp = mb_to_mb_string_alloc(in, CODEPAGE_LOCAL, CODEPAGE_UTF8)))
+      {
+         if (in != s)
+            *s = '\0';
          return false;
+      }
       strlcpy(s, tmp, len);
       free(tmp);
    }
 #else
-   strlcpy(s, in, len);
+   if (in != s)
+      strlcpy(s, in, len);
+   else if (strlen(s) >= len)
+      s[len - 1] = '\0';
 #endif
    return true;
 }

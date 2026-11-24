@@ -7,7 +7,10 @@
  *   left stick, and the right stick centred whatever it held joined;
  * - the same for a lone right Joy-Con;
  * - a pad is there while connected, with nothing held, and not once it
- *   is not. */
+ *   is not;
+ * - rumble: a motor set again to what it already holds sends nothing to
+ *   the controller, a change sends once, and so does a move between the
+ *   handheld and the controller's own handles. */
 
 #include <stdio.h>
 #include <string.h>
@@ -30,7 +33,8 @@ void padInitialize(PadState *pad, int id)     { (void)id; memset(pad, 0, sizeof(
 void padInitializeDefault(PadState *pad)      { memset(pad, 0, sizeof(*pad)); }
 void padUpdate(PadState *pad)                 { (void)pad; }
 bool padIsHandheld(const PadState *pad)       { (void)pad; return false; }
-bool padIsNpadActive(const PadState *p, HidNpadIdType id) { (void)p; (void)id; return true; }
+static bool                t_npad_active = true;
+bool padIsNpadActive(const PadState *p, HidNpadIdType id) { (void)p; (void)id; return t_npad_active; }
 bool padIsConnected(const PadState *pad) { return pad == &pad_states[0] && t_connected; }
 u64  padGetButtons(const PadState *pad)       { (void)pad; return 0; }
 HidAnalogStickState padGetStickPos(const PadState *pad, unsigned i)
@@ -45,8 +49,14 @@ Result hidSetNpadJoyAssignmentModeDual(HidNpadIdType id) { (void)id; return 0; }
 Result hidMergeSingleJoyAsDualJoy(HidNpadIdType a, HidNpadIdType b) { (void)a; (void)b; return 0; }
 Result hidInitializeVibrationDevices(HidVibrationDeviceHandle *h, s32 t,
       HidNpadIdType id, u32 s) { (void)h; (void)t; (void)id; (void)s; return 0; }
+static unsigned t_vibration_sends;
 Result hidSendVibrationValues(const HidVibrationDeviceHandle *h,
-      const HidVibrationValue *v, s32 c) { (void)h; (void)v; (void)c; return 0; }
+      const HidVibrationValue *v, s32 c)
+{
+   (void)h; (void)v; (void)c;
+   t_vibration_sends++;
+   return 0;
+}
 
 unsigned input_config_get_split_joycon(unsigned port) { (void)port; return t_split; }
 bool input_autoconfigure_connect(const char *name, const char *display_name,
@@ -119,6 +129,22 @@ int main(void)
    t_connected = false;
    switch_joypad.poll();
    check(!switch_joypad.query_pad(0), "disconnected: not there");
+
+   /* Rumble: what the frontend writes once a frame, often unchanged. */
+   t_vibration_sends = 0;
+   check(switch_joypad.set_rumble(0, RETRO_RUMBLE_STRONG, 0x8000), "rumble: set");
+   check(t_vibration_sends == 1, "rumble: a change sends once");
+   check(switch_joypad.set_rumble(0, RETRO_RUMBLE_STRONG, 0x8000), "rumble: again");
+   check(switch_joypad.set_rumble(0, RETRO_RUMBLE_STRONG, 0x8000), "rumble: again");
+   check(t_vibration_sends == 1, "rumble: the same strength sends nothing");
+   check(switch_joypad.set_rumble(0, RETRO_RUMBLE_WEAK, 0x1000), "rumble: weak");
+   check(t_vibration_sends == 2, "rumble: the other motor sends once");
+   t_npad_active = false;   /* the console in handheld */
+   check(switch_joypad.set_rumble(0, RETRO_RUMBLE_WEAK, 0x1000), "rumble: handheld");
+   check(t_vibration_sends == 3, "rumble: the handheld handle sends once");
+   t_npad_active = true;
+   check(switch_joypad.set_rumble(0, RETRO_RUMBLE_STRONG, 0), "rumble: off");
+   check(t_vibration_sends == 4, "rumble: off sends once");
 
    switch_joypad.destroy();
 

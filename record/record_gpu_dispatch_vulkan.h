@@ -59,5 +59,12 @@ enum record_gpu_dispatch_vulkan_state record_gpu_dispatch_vulkan_status(
 bool record_gpu_dispatch_vulkan_audio_frames(const record_gpu_dispatch_vulkan_t *job,
       uint64_t *frames);
 bool record_gpu_dispatch_vulkan_free(record_gpu_dispatch_vulkan_t *job);
+/* Owns RTMP/RTMPS connection setup on the I/O worker. Output headers must be
+ * empty; codec must be H.264. Same producer/retirement contract as file output.
+ * Native Windows AAC/RTMP builds only; unsupported builds return NULL. */
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_stream(
+      const vulkan_encode_h264_open_t *encoder, const vulkan_encode_h264_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *output, const char *url,
+      const vulkan_encode_capture_ops_t *capture_ops, bool legacy);
 RETRO_END_DECLS
 #endif

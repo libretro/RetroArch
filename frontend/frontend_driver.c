@@ -175,7 +175,9 @@ frontend_ctx_driver_t *frontend_ctx_init_first(void)
 size_t frontend_driver_get_core_extension(char *s, size_t len)
 {
 #ifdef HAVE_DYNAMIC
-#ifdef _WIN32
+#if defined(__SWITCH2__)
+   return strlcpy_lit(s, "nro", len);
+#elif defined(_WIN32)
    return strlcpy_lit(s, "dll", len);
 #elif (TARGET_OS_IPHONE && defined(HAVE_FRAMEWORKS)) || (TARGET_OS_OSX && defined(HAVE_APPLE_STORE))
    return strlcpy_lit(s, "framework", len);
@@ -256,6 +258,9 @@ bool frontend_driver_get_salamander_basename(char *s, size_t len)
    return true;
 #elif defined(DJGPP)
    strlcpy_lit(s, "retrodos.exe", len);
+   return true;
+#elif defined(__SWITCH2__)
+   strlcpy_lit(s, "retroarch_switch2.nro", len);
    return true;
 #elif defined(SWITCH)
    strlcpy_lit(s, "retroarch_switch.nro", len);

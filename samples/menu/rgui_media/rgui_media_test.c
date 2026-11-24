@@ -154,6 +154,7 @@ static bool media_test_subtitle_glyph(void)
 
 #define MEDIA_SUBTITLE_GLYPH_CHECK() media_test_subtitle_glyph()
 #include "../texture_media/subtitle_media_test.h"
+#include "../texture_media/audio_media_test.h"
 
 static bool media_capture_settled(struct menu_state *menu_st, int ordinal)
 {
@@ -211,6 +212,8 @@ static const char *media_history_image(void *data)
    (void)data;
    return menu_state_get_ptr()->thumbnail_path_data->content_path;
 }
+
+#include "../texture_media/music_media_test.h"
 
 int main(int argc, char **argv)
 {
@@ -274,7 +277,16 @@ int main(int argc, char **argv)
    MENU_ENTRY_INITIALIZE((*entry));
    settings = config_get_ptr();
    settings->bools.menu_rgui_inline_thumbnails = false;
-   settings->bools.menu_thumbnail_preview_audio = getenv("MEDIA_TEST_MODAL_MODE") != NULL;
+   settings->bools.menu_thumbnail_preview_audio = getenv("MEDIA_TEST_MODAL_MODE") != NULL
+      || getenv("MEDIA_TEST_AUDIO_TRACKS") != NULL;
+#ifdef MEDIA_TEST_MUSIC
+   if (getenv("MEDIA_TEST_MUSIC"))
+   {
+      MEDIA_CHECK("music visualizer uses existing menu audio", media_test_music(menu_st,
+               argv[1], media_render, media_current_target));
+      goto cleanup;
+   }
+#endif
    if (getenv("MEDIA_TEST_HISTORY_IMAGE"))
    {
       fill_pathname_basedir(directory, argv[2], sizeof(directory));
@@ -534,6 +546,19 @@ int main(int argc, char **argv)
       MEDIA_CHECK("window fullscreen toggles retain seeking and updating pixels",
             native_gpu && media_native_window_toggle(menu_st, media_render,
                media_current_target));
+      goto cleanup;
+   }
+   if (getenv("MEDIA_TEST_AUDIO_TRACKS"))
+   {
+      int selected;
+      MEDIA_CHECK("real RGUI audio selector preserves position and pause",
+            media_test_audio_tracks(&rgui->media, menu_st, media_render));
+      selected = rgui->media.controls.target.audio_track_index;
+      driver_uninit(DRIVER_VIDEO_MASK, DRIVER_LIFETIME_RESET);
+      drivers_init(settings, DRIVER_VIDEO_MASK, DRIVER_LIFETIME_RESET, false);
+      rgui = (rgui_t*)menu_st->userdata;
+      MEDIA_CHECK("RGUI selected audio survives video reinit",
+            media_test_audio_restored(&rgui->media, selected, menu_st, media_render));
       goto cleanup;
    }
    MEDIA_CHECK("fullscreen shared controller owns the player", rgui->media.controls.target.user == rgui);

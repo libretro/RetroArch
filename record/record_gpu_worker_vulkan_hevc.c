@@ -23,11 +23,17 @@ static int rvgw_hevc_finish(void *encoder)
    return vulkan_encode_hevc_finish((vulkan_encode_hevc_t*)encoder);
 }
 
+static bool rvgw_hevc_wait(void *encoder, uint64_t timeout_ns)
+{
+   return vulkan_encode_hevc_wait((vulkan_encode_hevc_t*)encoder, timeout_ns);
+}
+
 record_gpu_worker_vulkan_t *record_gpu_worker_vulkan_new_hevc(
       record_gpu_queue_t *queue, vulkan_encode_hevc_t *encoder)
 {
    static const record_gpu_worker_vulkan_encoder_ops_t ops = {
-      rvgw_hevc_submit, rvgw_hevc_poll, rvgw_hevc_release, rvgw_hevc_finish
+      rvgw_hevc_submit, rvgw_hevc_poll, rvgw_hevc_release, rvgw_hevc_finish,
+      rvgw_hevc_wait
    };
    return record_gpu_worker_vulkan_new_encoder(queue, encoder, &ops);
 }

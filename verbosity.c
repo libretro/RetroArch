@@ -71,6 +71,7 @@
 #include <compat/fopen_utf8.h>
 #include <time/rtime.h>
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -114,12 +115,27 @@
 
 typedef struct verbosity_state
 {
-   /* If this is non-NULL, RARCH_LOG and friends
-    * will write to this file. */
+   /* The main thread's view of where lines go: the log file, stderr,
+    * or NULL. Logging threads read the published copy, sink. */
    FILE *fp;   /* pointer-sized: keep near top */
 
+   /* Files taken out of sink while a logging thread may still hold
+    * them; main thread only, closed by log_sink_drain(). */
+   FILE **retired;
+
+   /* sink is fp as a size_t, published with release; sink_users
+    * counts the logging threads between log_sink_hold() and
+    * log_sink_release(). */
+   retro_atomic_size_t sink;
+   size_t retired_count;
+   size_t retired_cap;
+   retro_atomic_int_t sink_users;
+
+   /* Read by every thread that logs */
+   retro_atomic_int_t verbosity;
+
    /* Booleans grouped together to avoid padding holes */
-   bool verbosity;
+   bool verbosity_setting; /* verbosity_get_ptr()'s copy */
    bool initialized;
    bool override_active;
 
@@ -129,8 +145,8 @@ typedef struct verbosity_state
 
 /* TODO/FIXME - static public global variables */
 static verbosity_state_t main_verbosity_st;
-static unsigned verbosity_log_level           =
-DEFAULT_FRONTEND_LOG_LEVEL;
+static retro_atomic_int_t verbosity_log_level =
+RETRO_ATOMIC_INT_INITIALIZER(DEFAULT_FRONTEND_LOG_LEVEL);
 
 #ifdef HAVE_LIBNX
 #ifdef NXLINK
@@ -143,17 +159,18 @@ bool nxlink_connected = false;
 
 void verbosity_set_log_level(unsigned level)
 {
-   verbosity_log_level = level;
+   retro_atomic_store_relaxed_int(&verbosity_log_level, (int)level);
 }
 
 unsigned verbosity_get_log_level(void)
 {
-   return verbosity_log_level;
+   return (unsigned)retro_atomic_load_relaxed_int(&verbosity_log_level);
 }
 
 void verbosity_enable(void)
 {
-   main_verbosity_st.verbosity = true;
+   main_verbosity_st.verbosity_setting = true;
+   retro_atomic_store_relaxed_int(&main_verbosity_st.verbosity, 1);
 #ifdef RARCH_INTERNAL
    if (!main_verbosity_st.initialized)
       frontend_driver_attach_console();
@@ -162,7 +179,8 @@ void verbosity_enable(void)
 
 void verbosity_disable(void)
 {
-   main_verbosity_st.verbosity = false;
+   main_verbosity_st.verbosity_setting = false;
+   retro_atomic_store_relaxed_int(&main_verbosity_st.verbosity, 0);
 #ifdef RARCH_INTERNAL
    if (!main_verbosity_st.initialized)
       frontend_driver_detach_console();
@@ -171,7 +189,7 @@ void verbosity_disable(void)
 
 bool verbosity_is_enabled(void)
 {
-   return main_verbosity_st.verbosity;
+   return retro_atomic_load_relaxed_int(&main_verbosity_st.verbosity) != 0;
 }
 
 bool is_logging_to_file(void)
@@ -180,27 +198,93 @@ bool is_logging_to_file(void)
 }
 
 /* The one consumer is the menu's LOG_VERBOSITY setting, which
- * binds this as its boolean target. The framework writes through
- * it, and the setting's change handler immediately re-drives
- * verbosity_enable()/verbosity_disable() from the written value, so
- * the console attach/detach side effect always follows. Removing
- * the getter would mean shadowing the flag in menu code and syncing
- * it by hand; a bound pointer with a reconciling handler is the
- * smaller contract. Nothing else may write through this. */
+ * binds this as its boolean target. The atomic flag cannot be
+ * bound, so this is a main-thread copy: the framework writes
+ * through it, and the setting's change handler immediately
+ * re-drives verbosity_enable()/verbosity_disable() from the written
+ * value, which carry it to the flag and attach or detach the
+ * console. Nothing else may write through this. */
 bool *verbosity_get_ptr(void)
 {
-   return &main_verbosity_st.verbosity;
+   return &main_verbosity_st.verbosity_setting;
+}
+
+/* Where a logging thread writes. A thread holds the sink from
+ * log_sink_hold() to log_sink_release(); the main thread swaps it
+ * with log_sink_publish() and closes a file it took out only once
+ * no thread can still hold it.
+ *
+ * Why the count settles it: a holder's increment either comes before
+ * the main thread's read of the count (an RMW, ordered after the
+ * swap), and is seen there, or after it, and then that increment
+ * acquires the release sequence the RMW heads, so the holder's load
+ * sees the swap and never the file taken out. A zero count after a
+ * swap therefore means no thread holds any file swapped out before
+ * it. Nothing waits: a file still held is kept on the retired list
+ * and closed by a later drain on the main thread. */
+#define log_sink_hold() \
+   (retro_atomic_fetch_add_int(&main_verbosity_st.sink_users, 1), \
+    (FILE*)retro_atomic_load_acquire_size(&main_verbosity_st.sink))
+
+#define log_sink_release() \
+   retro_atomic_fetch_sub_int(&main_verbosity_st.sink_users, 1)
+
+static void log_sink_publish(FILE *fp)
+{
+   main_verbosity_st.fp = fp;
+   retro_atomic_store_release_size(&main_verbosity_st.sink, (size_t)fp);
+}
+
+/* True when no logging thread holds a file swapped out before now */
+#define log_sink_quiet() \
+   (retro_atomic_fetch_add_int(&main_verbosity_st.sink_users, 0) == 0)
+
+static void log_sink_drain(void)
+{
+   size_t i;
+   if (!main_verbosity_st.retired_count || !log_sink_quiet())
+      return;
+   for (i = 0; i < main_verbosity_st.retired_count; i++)
+      fclose(main_verbosity_st.retired[i]);
+   main_verbosity_st.retired_count = 0;
+}
+
+/* Close a file already swapped out of the sink, now or at a later
+ * drain. If the list cannot grow the file stays open: a leaked
+ * handle over a close under a writer. */
+static void log_sink_retire(FILE *fp)
+{
+   if (log_sink_quiet())
+   {
+      log_sink_drain();
+      fclose(fp);
+      return;
+   }
+   if (main_verbosity_st.retired_count == main_verbosity_st.retired_cap)
+   {
+      size_t cap = main_verbosity_st.retired_cap
+         ? main_verbosity_st.retired_cap * 2 : 4;
+      FILE **nl  = (FILE**)realloc(main_verbosity_st.retired,
+            cap * sizeof(*nl));
+      if (!nl)
+         return;
+      main_verbosity_st.retired     = nl;
+      main_verbosity_st.retired_cap = cap;
+   }
+   main_verbosity_st.retired[main_verbosity_st.retired_count++] = fp;
 }
 
 void retro_main_log_file_init(const char *path, bool append)
 {
    FILE *tmp;
 
+   log_sink_drain();
+
    if (main_verbosity_st.initialized)
       return;
 
    /* Default to stderr; only override when a valid path is given */
-   main_verbosity_st.fp = stderr;
+   log_sink_publish(stderr);
 
    if (!path)
       return;
@@ -213,7 +297,7 @@ void retro_main_log_file_init(const char *path, bool append)
       return;
    }
 
-   main_verbosity_st.fp          = tmp;
+   log_sink_publish(tmp);
    main_verbosity_st.initialized = true;
 
    /* No setvbuf here, deliberately.
@@ -237,9 +321,12 @@ void retro_main_log_file_deinit(void)
 {
    if (main_verbosity_st.fp && main_verbosity_st.initialized)
    {
-      fclose(main_verbosity_st.fp);
-      main_verbosity_st.fp = NULL;
+      FILE *fp = main_verbosity_st.fp;
+      log_sink_publish(NULL);
+      log_sink_retire(fp);
    }
+   else
+      log_sink_drain();
 
    main_verbosity_st.initialized = false;
 }
@@ -335,7 +422,6 @@ static void rarch_log_line_write(FILE *fp, const char *tag_v,
 
 #ifdef HAVE_MCP
 #include <string.h>
-#include <retro_atomic.h>
 
 /* The last lines logged, for GET_LOG, filled by whatever thread logs
  * and read on the main thread without a lock: a writer claims a line
@@ -363,23 +449,32 @@ void verbosity_ring_arm(void)
    retro_atomic_store_release_int(&log_ring.armed, 1);
 }
 
+/* The line goes from the caller's buffer straight into the slot, a
+ * word at a time, up to the word holding its terminator; the words
+ * after it keep an older line's bytes, which no reader looks at. */
 static void verbosity_ring_put(const char *line)
 {
-   size_t i;
-   size_t seq;
-   size_t words[LOG_RING_WORDS];
+   size_t i, n, last, seq, w;
+   const char *nul;
    struct log_ring_slot *slot;
 
    if (!retro_atomic_load_relaxed_int(&log_ring.armed))
       return;
-   memset(words, 0, sizeof(words));
-   strlcpy((char*)words, line, sizeof(words));
+   nul  = (const char*)memchr(line, '\0', LOG_RING_WORDS * sizeof(size_t) - 1);
+   n    = nul ? (size_t)(nul - line) : LOG_RING_WORDS * sizeof(size_t) - 1;
+   last = n / sizeof(size_t);
    seq  = retro_atomic_fetch_add_size(&log_ring.head, 1);
    slot = &log_ring.slots[seq % LOG_RING_SLOTS];
    retro_atomic_store_relaxed_size(&slot->stamp, 0);
    retro_atomic_thread_fence_release();
-   for (i = 0; i < LOG_RING_WORDS; i++)
-      retro_atomic_store_relaxed_size(&slot->text[i], words[i]);
+   for (i = 0; i < last; i++)
+   {
+      memcpy(&w, line + i * sizeof(size_t), sizeof(w));
+      retro_atomic_store_relaxed_size(&slot->text[i], w);
+   }
+   w = 0;
+   memcpy(&w, line + last * sizeof(size_t), n - last * sizeof(size_t));
+   retro_atomic_store_relaxed_size(&slot->text[last], w);
    retro_atomic_store_release_size(&slot->stamp, seq + 1);
 }
 
@@ -395,25 +490,43 @@ size_t verbosity_ring_read(size_t since, char *s, size_t len,
    if (seq > head)
       seq = head;
    *first = seq;
+   /* Each slot's text is copied straight to s past what is already
+    * there and counted only once the stamp still holds after the
+    * copy; a slot rewritten meanwhile leaves its bytes behind for the
+    * next line to overwrite. */
    for (; seq < head; seq++)
    {
-      size_t i, n;
-      size_t words[LOG_RING_WORDS];
+      size_t i, n = 0;
+      bool room   = true;
       struct log_ring_slot *slot = &log_ring.slots[seq % LOG_RING_SLOTS];
       size_t stamp = retro_atomic_load_acquire_size(&slot->stamp);
       /* still being written, or already a later line: skipped */
       if (stamp != seq + 1)
          continue;
       for (i = 0; i < LOG_RING_WORDS; i++)
-         words[i] = retro_atomic_load_relaxed_size(&slot->text[i]);
+      {
+         size_t k;
+         size_t w      = retro_atomic_load_relaxed_size(&slot->text[i]);
+         const char *b = (const char*)&w;
+         /* the slot's last byte is its terminator */
+         size_t lim    = (i == LOG_RING_WORDS - 1)
+            ? sizeof(w) - 1 : sizeof(w);
+         for (k = 0; k < lim && b[k]; k++);
+         if (_len + n + k + 2 > len)
+         {
+            room = false;
+            break;
+         }
+         memcpy(s + _len + n, b, k);
+         n += k;
+         if (k < sizeof(w))
+            break;
+      }
       retro_atomic_thread_fence_acquire();
       if (retro_atomic_load_relaxed_size(&slot->stamp) != stamp)
          continue;
-      ((char*)words)[sizeof(words) - 1] = '\0';
-      n = strlen((const char*)words);
-      if (_len + n + 2 > len)
+      if (!room)
          break;
-      memcpy(s + _len, words, n);
       _len += n;
       if (!n || s[_len - 1] != '\n')
          s[_len++] = '\n';
@@ -447,26 +560,33 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 #ifdef _DEBUG
    OutputDebugStringA(buffer);
 #endif
-   if (main_verbosity_st.initialized && main_verbosity_st.fp)
    {
-      fputs(buffer, main_verbosity_st.fp);
-      fflush(main_verbosity_st.fp);
+      /* stderr is the console default, not a log file */
+      FILE *fp = log_sink_hold();
+      if (fp && fp != stderr)
+      {
+         fputs(buffer, fp);
+         fflush(fp);
+      }
+      log_sink_release();
    }
 
 #elif defined(ANDROID)
    {
-      FILE *fp = main_verbosity_st.fp;
-      if (main_verbosity_st.initialized && fp)
+      FILE *fp = log_sink_hold();
+      if (fp && fp != stderr)
       {
          /* Logging to file: one formatted write, tag included -
           * the file carries the same line format as every other
           * platform (logcat gets the tag as a priority instead). */
          const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
          rarch_log_line_write(fp, tag_v, fmt, ap);
+         log_sink_release();
       }
       else
       {
          int prio = ANDROID_LOG_INFO;
+         log_sink_release();
          if (tag)
          {
             /* strcmp, not memcmp with the pattern's sizeof: a sized
@@ -482,7 +602,7 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 
 #else
    {
-      FILE       *fp    = main_verbosity_st.fp;
+      FILE       *fp;
       const char *tag_v = tag ? tag : FILE_PATH_LOG_INFO;
       /* One format for every consumer in this region - the desktop
        * companion's log view, the Apple sinks, the file - instead of
@@ -513,8 +633,10 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
           * defaults to stderr when no file is configured; without the
           * guard, every line would print twice in the no-file case. */
          printf("%s", out);
-         if (main_verbosity_st.initialized && fp)
+         fp = log_sink_hold();
+         if (fp && fp != stderr)
             rarch_log_line_emit(fp, out);
+         log_sink_release();
 
 #else
          {
@@ -545,18 +667,22 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
             }
 #endif
 
-            if (main_verbosity_st.initialized && fp)
+            fp = log_sink_hold();
+            if (fp && fp != stderr)
                rarch_log_line_emit(fp, out);
+            log_sink_release();
          }
 #endif
       }
 
 #else
+      /* stdio's per-call lock keeps the single write whole under
+       * concurrent writers; the format above already took the heap
+       * detour for wide lines. */
+      fp = log_sink_hold();
       if (fp)
-         /* stdio's per-call lock keeps the single write whole under
-          * concurrent writers; the format above already took the
-          * heap detour for wide lines. */
          rarch_log_line_emit(fp, out);
+      log_sink_release();
 #endif
 
       free(heap);
@@ -567,36 +693,27 @@ void RARCH_LOG_V(const char *tag, const char *fmt, va_list ap)
 void RARCH_LOG_BUFFER(uint8_t *data, size_t len)
 {
    size_t i;
-   size_t offset     = 0;
-   uint8_t buf[16];
 
    if (!data && len)
       return;
 
    RARCH_LOG("== %d-byte buffer ==================\n", (int)len);
 
-   /* Zero-init once; tail padding written below */
-   for (i = 0; i < 16; i++)
-      buf[i] = 0;
-
-   for (i = 0; i < len; i++)
+   /* Whole rows print from the caller's bytes */
+   for (i = 0; i + 16 <= len; i += 16)
    {
-      buf[offset++] = data[i];
-      if (offset == 16)
-      {
-         offset = 0;
-         RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
-            buf[0], buf[1], buf[2],  buf[3],  buf[4],  buf[5],  buf[6],  buf[7],
-            buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
-      }
+      const uint8_t *r = data + i;
+      RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
+         r[0], r[1], r[2],  r[3],  r[4],  r[5],  r[6],  r[7],
+         r[8], r[9], r[10], r[11], r[12], r[13], r[14], r[15]);
    }
 
-   /* Flush partial last row (offset > 0 means leftover bytes) */
-   if (offset > 0)
+   /* A partial last row is padded with 0xff */
+   if (i < len)
    {
-      /* Pad remainder with 0xff to match original sentinel */
-      for (i = offset; i < 16; i++)
-         buf[i] = 0xff;
+      uint8_t buf[16];
+      memset(buf, 0xff, sizeof(buf));
+      memcpy(buf, data + i, len - i);
       RARCH_LOG("%02x%02x%02x%02x%02x%02x%02x%02x  %02x%02x%02x%02x%02x%02x%02x%02x\n",
          buf[0], buf[1], buf[2],  buf[3],  buf[4],  buf[5],  buf[6],  buf[7],
          buf[8], buf[9], buf[10], buf[11], buf[12], buf[13], buf[14], buf[15]);
@@ -608,7 +725,7 @@ void RARCH_DBG(const char *fmt, ...)
 {
    va_list ap;
 #ifndef _DEBUG
-   if (!main_verbosity_st.verbosity || verbosity_log_level > 0)
+   if (!verbosity_is_enabled() || verbosity_get_log_level() > 0)
       return;
 #endif
    va_start(ap, fmt);
@@ -620,7 +737,7 @@ void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;
 #ifndef _DEBUG
-   if (!main_verbosity_st.verbosity || verbosity_log_level > 1)
+   if (!verbosity_is_enabled() || verbosity_get_log_level() > 1)
       return;
 #endif
    va_start(ap, fmt);
@@ -640,7 +757,7 @@ void RARCH_WARN(const char *fmt, ...)
 {
    va_list ap;
 #ifndef _DEBUG
-   if (!main_verbosity_st.verbosity || verbosity_log_level > 2)
+   if (!verbosity_is_enabled() || verbosity_get_log_level() > 2)
       return;
 #endif
    va_start(ap, fmt);
@@ -652,7 +769,7 @@ void RARCH_ERR(const char *fmt, ...)
 {
    va_list ap;
 #ifndef _DEBUG
-   if (!main_verbosity_st.verbosity)
+   if (!verbosity_is_enabled())
       return;
 #endif
    va_start(ap, fmt);

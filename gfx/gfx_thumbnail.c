@@ -42,12 +42,18 @@
 
 #include "gfx_surface.h"
 #include "gfx_instrument.h"
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+#include "gfx_music_player.h"
+#include "gfx_music_visualizer.h"
+#endif
 #include "gfx_thumbnail.h"
+#include "gfx_thumbnail_results.h"
 #include "../frontend/frontend_driver.h"
 
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && \
       defined(HAVE_AUDIOMIXER) && \
-      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) \
+       || defined(HAVE_RFLAC))
 #ifdef HAVE_RWEBM
 #include <formats/rwebm_audio.h>
 #endif
@@ -464,7 +470,8 @@ static void gfx_thumbnail_init_fade(
  * it through the audio mixer while the animation is shown. */
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && \
       defined(HAVE_AUDIOMIXER) && \
-      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) \
+       || defined(HAVE_RFLAC))
 #define GFX_THUMB_PREVIEW_AUDIO 1
 /* The mixer streams the audio track and decodes on the flush, so no
  * PCM is buffered up front and the clip is not length-capped. */
@@ -540,11 +547,13 @@ void gfx_thumbnail_anim_worker_deinit(void)
 static void gfx_thumbnail_anim_retired_release(void *user,
       gfx_surface_t *surface, unsigned slot)
 {
-   (void)user;
-   (void)slot;
+   gfx_thumbnail_anim_lifetime_t *life = (gfx_thumbnail_anim_lifetime_t*)user;
+   if (life && life->player)
+      video_player_slot_released(life->player->vp, slot);
    if (surface->imported && surface->dropped && surface->import.abandon)
       surface->import.abandon(surface->import.owner, surface->import.done,
             surface->import.done_value);
+   gfx_thumbnail_anim_reap();
 }
 
 static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
@@ -571,7 +580,7 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
          if (surface)
          {
             surface->release = gfx_thumbnail_anim_retired_release;
-            surface->user = NULL;
+            surface->user = life;
          }
          thumbnail->anim_surface = NULL;
          thumbnail->texture = 0;
@@ -725,7 +734,7 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
       /* frames decoded on the GPU where the stream and driver can */
       if (!(thumbnail->anim_player = gfx_surface_player_new(stream, type,
             loop_count, &thumbnail->anim_surface, &cb,
-            GFX_SURFACE_PLAYER_GPU)))
+            GFX_SURFACE_PLAYER_GPU | GFX_SURFACE_PLAYER_HOLD_CANVAS)))
       {
          gfx_thumbnail_anim_close(thumbnail);
          return false;
@@ -923,6 +932,119 @@ static void gfx_thumbnail_still_release(void *user, gfx_surface_t *s,
    gfx_thumbnail_anim_shown(thumbnail, s);
 }
 
+/* The thumbnail a live source feeds, one at a time, and what ends the
+ * source when the thumbnail resets. */
+static gfx_thumbnail_t           *gfx_thumb_live;
+static gfx_thumbnail_live_end_t   gfx_thumb_live_end;
+static void                      *gfx_thumb_live_user;
+
+static void gfx_thumbnail_live_release(void *user, gfx_surface_t *s,
+      unsigned slot)
+{
+   gfx_thumbnail_t *thumbnail = (gfx_thumbnail_t*)user;
+   (void)slot;
+   if (thumbnail == gfx_thumb_live && thumbnail->anim_surface == s)
+      gfx_thumbnail_anim_shown(thumbnail, s);
+}
+
+/* The surface for frames of @dims in @pixfmt; a different size or
+ * format replaces it, and the thumbnail waits for its first frame. */
+static gfx_surface_t *gfx_thumbnail_live_surface(gfx_thumbnail_t *thumbnail,
+      unsigned dims, uint32_t pixfmt)
+{
+   gfx_surface_t *s = (gfx_surface_t*)thumbnail->anim_surface;
+   if (s && (s->dims != dims || s->pixfmt != pixfmt))
+   {
+      gfx_surface_free(s);
+      thumbnail->anim_surface = NULL;
+      thumbnail->texture      = 0;
+      GFX_THUMB_STATUS_STORE(&thumbnail->status,
+            GFX_THUMBNAIL_STATUS_PENDING);
+      s = NULL;
+   }
+   if (!s && (s = gfx_surface_new(dims, 1, pixfmt, TEXTURE_FILTER_LINEAR,
+               gfx_thumbnail_live_release, thumbnail)))
+      thumbnail->anim_surface = s;
+   return s;
+}
+
+static bool gfx_thumbnail_live_submitted(gfx_thumbnail_t *thumbnail,
+      gfx_surface_t *s, enum gfx_surface_submit_result r)
+{
+   if (r == GFX_SURFACE_SUBMIT_DONE)
+      gfx_thumbnail_anim_shown(thumbnail, s);
+   return r == GFX_SURFACE_SUBMIT_DONE || r == GFX_SURFACE_SUBMIT_QUEUED;
+}
+
+void gfx_thumbnail_live_begin(gfx_thumbnail_t *thumbnail,
+      gfx_thumbnail_live_end_t end, void *user)
+{
+   if (!thumbnail)
+      return;
+   gfx_thumbnail_reset(thumbnail);
+   /* Another thumbnail's source ends with it. */
+   if (gfx_thumb_live)
+      gfx_thumbnail_reset(gfx_thumb_live);
+   gfx_thumb_live      = thumbnail;
+   gfx_thumb_live_end  = end;
+   gfx_thumb_live_user = user;
+   GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_PENDING);
+}
+
+bool gfx_thumbnail_live_planes(gfx_thumbnail_t *thumbnail,
+      const uint8_t *const planes[3], const size_t strides[3],
+      unsigned chroma_step, unsigned dims, unsigned yuv)
+{
+   gfx_surface_planes_t p;
+   gfx_surface_t *s;
+   unsigned i;
+   if (!thumbnail || thumbnail != gfx_thumb_live
+         || (chroma_step != 1 && chroma_step != 2)
+         || !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return false;
+   for (i = 0; i < 3; i++)
+   {
+      p.planes[i]  = planes[i];
+      p.strides[i] = (unsigned)strides[i];
+   }
+   p.chroma_step = chroma_step;
+   if (!(s = gfx_thumbnail_live_surface(thumbnail, dims,
+               chroma_step == 1 ? IMAGE_PIXFMT_I420 : IMAGE_PIXFMT_NV12)))
+      return false;
+   gfx_surface_set_yuv(s, yuv);
+   /* The planes are the source's again once this returns. */
+   return gfx_thumbnail_live_submitted(thumbnail, s,
+         gfx_surface_submit_planes(s, &p, gfx_surface_wants_rgba()));
+}
+
+bool gfx_thumbnail_live_pixels(gfx_thumbnail_t *thumbnail,
+      const uint32_t *pixels, unsigned dims, size_t pitch)
+{
+   gfx_surface_t *s;
+   unsigned w = VIDEO_SCALE_W(dims);
+   unsigned h = VIDEO_SCALE_H(dims);
+   unsigned y;
+   if (!thumbnail || thumbnail != gfx_thumb_live || !pixels || !w || !h
+         || pitch < (size_t)w * 4)
+      return false;
+   if (     !(s = gfx_thumbnail_live_surface(thumbnail, dims, IMAGE_PIXFMT_8888))
+         || !gfx_surface_slot_writable(s, 0))
+      return false;
+   /* The X of XRGB is no alpha: copied in opaque. */
+   for (y = 0; y < h; y++)
+   {
+      const uint32_t *src = (const uint32_t*)((const uint8_t*)pixels
+            + (size_t)y * pitch);
+      uint32_t       *dst = (uint32_t*)((uint8_t*)s->slots[0]
+            + (size_t)y * s->pitch[0]);
+      unsigned x;
+      for (x = 0; x < w; x++)
+         dst[x] = src[x] | 0xFF000000u;
+   }
+   return gfx_thumbnail_live_submitted(thumbnail, s,
+         gfx_surface_submit(s, 0, false));
+}
+
 /* Main thread, from a later frame's poll: the video thread has taken
  * the frame in @slot. The animation may have closed meanwhile, in
  * which case the surface simply keeps its last frame. */
@@ -1058,6 +1180,10 @@ bool gfx_thumbnail_set_paused(gfx_thumbnail_t *thumbnail, bool paused,
       retro_time_t current_time)
 {
    gfx_surface_player_t *player;
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (thumbnail && thumbnail->music_player)
+      return gfx_music_player_pause((gfx_music_player_t*)thumbnail->music_player, paused);
+#endif
    if (!thumbnail || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
          || !(player = (gfx_surface_player_t*)thumbnail->anim_player))
       return false;
@@ -1073,6 +1199,10 @@ bool gfx_thumbnail_get_playback_state(gfx_thumbnail_t *thumbnail,
 {
    gfx_anim_preview_t *session = NULL;
    gfx_surface_player_t *player = NULL;
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (thumbnail && thumbnail->music_player)
+      return gfx_music_player_state((gfx_music_player_t*)thumbnail->music_player, state);
+#endif
    if (thumbnail && (thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE))
    {
       session = (gfx_anim_preview_t*)thumbnail->anim_sess;
@@ -1080,6 +1210,35 @@ bool gfx_thumbnail_get_playback_state(gfx_thumbnail_t *thumbnail,
    }
    return gfx_media_player_state(session, player ? player->vp : NULL,
          (int64_t)current_time, state);
+}
+
+bool gfx_thumbnail_request_audio(gfx_thumbnail_t *thumbnail, int index)
+{
+   return thumbnail && gfx_anim_preview_audio_set_track(
+         (gfx_anim_preview_t*)thumbnail->anim_sess, index);
+}
+
+bool gfx_thumbnail_select_audio(gfx_thumbnail_t *thumbnail, int index,
+      retro_time_t current_time)
+{
+   gfx_surface_player_t *player;
+   gfx_anim_preview_t *session;
+   unsigned rate = 0;
+   bool s16 = false;
+   bool result;
+   if (!thumbnail || thumbnail->anim_read_pending
+         || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
+         || !(player = (gfx_surface_player_t*)thumbnail->anim_player)
+         || !(session = (gfx_anim_preview_t*)thumbnail->anim_sess)) return false;
+#ifdef GFX_THUMB_PREVIEW_AUDIO
+   if (config_get_ptr()->bools.menu_thumbnail_preview_audio)
+      audio_driver_mixer_prepare_format(&rate, &s16);
+#endif
+   result = gfx_media_player_select_audio(session, player->vp, index, rate,
+         s16, (int64_t)current_time);
+   if (result)
+      thumbnail->flags &= ~(GFX_THUMB_FLAG_MEDIA_ENDED | GFX_THUMB_FLAG_MEDIA_COMPLETED);
+   return result;
 }
 
 bool gfx_thumbnail_seek(gfx_thumbnail_t *thumbnail, int64_t target_us,
@@ -1124,6 +1283,14 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
    enum image_type_enum type;
 
    gfx_thumbnail_anim_reap();
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   gfx_music_player_reap();
+   if (thumbnail && thumbnail->music_player)
+   {
+      gfx_music_player_poll((gfx_music_player_t*)thumbnail->music_player, thumbnail);
+      return;
+   }
+#endif
    if (   !thumbnail
        || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
        || (thumbnail->flags & GFX_THUMB_FLAG_MEDIA_ENDED)
@@ -1857,6 +2024,21 @@ end:
  *   set to MUI_THUMBNAIL_STATUS_PENDING
  * 'thumbnail' will be populated with texture info/metadata
  * once the image load is complete */
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+bool gfx_thumbnail_request_music_file(const char *path, gfx_thumbnail_t *thumbnail)
+{
+   gfx_music_player_t *player;
+   if (!thumbnail || !(player = gfx_music_player_new(path))) return false;
+   gfx_thumbnail_reset(thumbnail);
+   thumbnail->music_player = player;
+   thumbnail->file_hash = gfx_thumbnail_file_hash(path);
+   thumbnail->dims = VIDEO_SCALE_PACK(GFX_MUSIC_VISUALIZER_WIDTH, GFX_MUSIC_VISUALIZER_HEIGHT);
+   GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_PENDING);
+   gfx_music_player_poll(player, thumbnail);
+   return true;
+}
+#endif
+
 void gfx_thumbnail_request_file(
       const char *file_path, gfx_thumbnail_t *thumbnail,
       unsigned gfx_thumbnail_upscale_threshold)
@@ -1958,6 +2140,26 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
 {
    if (!thumbnail)
       return;
+
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (thumbnail->music_player)
+   {
+      gfx_music_player_close((gfx_music_player_t*)thumbnail->music_player);
+      thumbnail->music_player = NULL;
+   }
+#endif
+
+   /* A live source ends with its thumbnail. */
+   if (thumbnail == gfx_thumb_live)
+   {
+      gfx_thumbnail_live_end_t end = gfx_thumb_live_end;
+      void *user                   = gfx_thumb_live_user;
+      gfx_thumb_live               = NULL;
+      gfx_thumb_live_end           = NULL;
+      gfx_thumb_live_user          = NULL;
+      if (end)
+         end(user);
+   }
 
    /* Release any animation state (decoder + file buffer) */
    gfx_thumbnail_anim_close(thumbnail);
@@ -2453,14 +2655,14 @@ void gfx_thumbnail_get_draw_dimensions(
  *       (width x height) rectangle (alignment + aspect
  *       correct scaling is preserved). Use with caution */
 
-void gfx_thumbnail_draw(
+static void gfx_thumbnail_draw_internal(
       void *userdata,
       unsigned video_dims,
       gfx_thumbnail_t *thumbnail,
       float x, float y, unsigned dims,
       enum gfx_thumbnail_alignment alignment,
       float alpha, float scale_factor,
-      gfx_thumbnail_shadow_t *shadow)
+      gfx_thumbnail_shadow_t *shadow, bool shader)
 {
    unsigned video_width              = VIDEO_SCALE_W(video_dims);
    unsigned video_height             = VIDEO_SCALE_H(video_dims);
@@ -2672,13 +2874,34 @@ void gfx_thumbnail_draw(
       draw.dims    = VIDEO_SCALE_PACK((unsigned)draw_width, (unsigned)draw_height);
       draw.pos     = VIDEO_POS_PACK(VIDEO_PX(draw_x), VIDEO_PX(draw_y));
 
-      /* Draw thumbnail */
-      if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0)
-         gfx_display_draw(dispctx, &draw, userdata,
-               VIDEO_SCALE_PACK(video_width, video_height));
+      /* The surface owns this texture through the draw, as for a plain quad. */
+      if (VIDEO_SCALE_H(draw.dims) > 0 && VIDEO_SCALE_W(draw.dims) > 0
+            && !(shader && dispctx->media_shader_draw && thumbnail_alpha >= 0.9999f
+               && gfx_display_draw_media_shader(dispctx, userdata, thumb_texture,
+                  VIDEO_SCALE_PACK(thumb_width, thumb_height), video_dims,
+                  draw.pos, draw.dims)))
+         gfx_display_draw(dispctx, &draw, userdata, video_dims);
 
       gfx_display_blend_end(dispctx, userdata);
    }
+}
+
+void gfx_thumbnail_draw(void *userdata, unsigned video_dims,
+      gfx_thumbnail_t *thumbnail, float x, float y, unsigned dims,
+      enum gfx_thumbnail_alignment alignment, float alpha, float scale_factor,
+      gfx_thumbnail_shadow_t *shadow)
+{
+   gfx_thumbnail_draw_internal(userdata, video_dims, thumbnail, x, y, dims,
+         alignment, alpha, scale_factor, shadow, false);
+}
+
+void gfx_thumbnail_draw_shader(void *userdata, unsigned video_dims,
+      gfx_thumbnail_t *thumbnail, float x, float y, unsigned dims,
+      enum gfx_thumbnail_alignment alignment, float alpha, float scale_factor,
+      gfx_thumbnail_shadow_t *shadow)
+{
+   gfx_thumbnail_draw_internal(userdata, video_dims, thumbnail, x, y, dims,
+         alignment, alpha, scale_factor, shadow, true);
 }
 
 /* Returns currently set thumbnail 'type' (Named_Snaps,
@@ -3053,6 +3276,9 @@ bool gfx_thumbnail_set_content_image(
     * pipeline decodes like an animated WebP), can serve as their own
     * thumbnail */
    if (   (path_is_media_type(img_name) != RARCH_CONTENT_IMAGE)
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+       && (path_is_media_type(img_name) != RARCH_CONTENT_MUSIC)
+#endif
        && (image_texture_get_type(img_name) != IMAGE_TYPE_WEBM)
        && (image_texture_get_type(img_name) != IMAGE_TYPE_MP4))
       return false;
@@ -3080,6 +3306,14 @@ bool gfx_thumbnail_set_content_image(
     * but not actually used...) */
    strlcpy_lit(path_data->content_db_name,
          "_images_", sizeof(path_data->content_db_name));
+
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (path_is_media_type(img_name) == RARCH_CONTENT_MUSIC)
+   {
+      strlcpy_lit(path_data->content_core_name, "musicplayer", sizeof(path_data->content_core_name));
+      strlcpy_lit(path_data->content_db_name, "_music_", sizeof(path_data->content_db_name));
+   }
+#endif
 
    /* Redundant error check */
    return *path_data->content_path;
@@ -3197,32 +3431,8 @@ bool gfx_thumbnail_set_content_playlist(
    if (!db_name || !*db_name)
       playlist_get_db_name(playlist, idx, &db_name);
    if (db_name && *db_name)
-   {
-      /* Hack: There is only one MAME thumbnail repo,
-       * so filter any input starting with 'MAME...' */
-      if (strncmp(db_name, "MAME", 4) == 0)
-      {
-         path_data->content_db_name[0] = path_data->content_db_name[2] = 'M';
-         path_data->content_db_name[1] = 'A';
-         path_data->content_db_name[3] = 'E';
-         path_data->content_db_name[4] = '\0';
-      }
-      else
-      {
-         char tmp_buf[NAME_MAX_LENGTH];
-         const char *pos      = strchr(db_name, '|');
-         /* If db_name comes from core info, and there are multiple
-          * databases mentioned separated by |, use only first one */
-         if (pos && (size_t) (pos - db_name) + 1 < sizeof(tmp_buf))
-            strlcpy(tmp_buf, db_name, (size_t)(pos - db_name) + 1);
-         else
-            strlcpy(tmp_buf, db_name, sizeof(tmp_buf));
-
-         fill_pathname(path_data->content_db_name,
-               tmp_buf, "",
-               sizeof(path_data->content_db_name));
-      }
-   }
+      gfx_thumbnail_system_name(path_data->content_db_name,
+            sizeof(path_data->content_db_name), db_name);
 
    /* Playlist entry is valid -> it is now 'safe' to
     * extract any remaining playlist metadata
@@ -3250,6 +3460,9 @@ void gfx_thumbnail_dir_config_capture(gfx_thumbnail_dir_config_t *cfg)
    strlcpy(cfg->dir_thumbnails, settings->paths.directory_thumbnails,
          sizeof(cfg->dir_thumbnails));
    cfg->playlist_allow_non_png = settings->bools.playlist_allow_non_png;
+   cfg->playlist_thumbnail_other_regions =
+         settings->bools.playlist_thumbnail_other_regions;
+   cfg->use_results            = false;
    cfg->gfx_thumbnails         = settings->uints.gfx_thumbnails;
    cfg->menu_left_thumbnails   = settings->uints.menu_left_thumbnails;
    cfg->menu_icon_thumbnails   = settings->uints.menu_icon_thumbnails;
@@ -3261,6 +3474,7 @@ bool gfx_thumbnail_update_path(
 {
    gfx_thumbnail_dir_config_t cfg;
    gfx_thumbnail_dir_config_capture(&cfg);
+   cfg.use_results = true;
    return gfx_thumbnail_update_path_cfg(path_data, thumbnail_id, &cfg);
 }
 
@@ -3277,23 +3491,6 @@ bool gfx_thumbnail_update_path_cfg(
    unsigned gfx_thumbnails       = cfg->gfx_thumbnails;
    unsigned menu_left_thumbnails = cfg->menu_left_thumbnails;
    unsigned menu_icon_thumbnails = cfg->menu_icon_thumbnails;
-   /* Thumbnail extension order. The default (i.e. png) is always the first. */
-   const char* const SUPPORTED_THUMBNAIL_EXTENSIONS[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga",
-#ifdef HAVE_RWEBP
-         ".webp",
-#endif
-#ifdef HAVE_RWEBM
-         ".webm",
-         ".mkv",
-#endif
-#ifdef HAVE_RMP4
-         ".mp4",
-#endif
-         0 };
-   /* Entries before the terminating null */
-#define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS \
-   ((int)(sizeof(SUPPORTED_THUMBNAIL_EXTENSIONS) / \
-          sizeof(SUPPORTED_THUMBNAIL_EXTENSIONS[0])) - 1)
 
    if (!path_data)
       return false;
@@ -3420,13 +3617,13 @@ bool gfx_thumbnail_update_path_cfg(
 
          if (playlist_allow_non_png && thumbnail_path && *thumbnail_path)
          {
-            for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
+            for (i = 1; gfx_thumbnail_image_exts[i] && !thumbnail_found; i++)
             {
                if (!path_get_extension_mutable(thumbnail_path))
                   continue;
 
                strlcpy(path_get_extension_mutable(thumbnail_path),
-                     SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
+                     gfx_thumbnail_image_exts[i], 6);
                thumbnail_found = path_is_valid(thumbnail_path);
             }
          }
@@ -3443,39 +3640,31 @@ bool gfx_thumbnail_update_path_cfg(
 
          if (playlist_allow_non_png && thumbnail_path && *thumbnail_path)
          {
-            for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
+            for (i = 1; gfx_thumbnail_image_exts[i] && !thumbnail_found; i++)
             {
                if (!path_get_extension_mutable(thumbnail_path))
                   continue;
 
                strlcpy(path_get_extension_mutable(thumbnail_path),
-                     SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
+                     gfx_thumbnail_image_exts[i], 6);
                thumbnail_found = path_is_valid(thumbnail_path);
             }
          }
       }
 
-      /* >> Add content image - third try with shortened name (title only) */
-      if (!thumbnail_found && *path_data->content_img_short)
+      /* >> Then the match the thumbnail task stored for this entry */
+      if (!thumbnail_found && cfg->use_results)
       {
-         thumbnail_path[0] = '\0';
-         fill_pathname_join_special(thumbnail_path, tmp_buf,
-               path_data->content_img_short, PATH_MAX_LENGTH * sizeof(char));
-         thumbnail_found = path_is_valid(thumbnail_path);
-
-         if (playlist_allow_non_png && thumbnail_path && *thumbnail_path)
-         {
-            for (i = 1; i < MAX_SUPPORTED_THUMBNAIL_EXTENSIONS && !thumbnail_found; i++)
-            {
-               if (!path_get_extension_mutable(thumbnail_path))
-                  continue;
-
-               strlcpy(path_get_extension_mutable(thumbnail_path),
-                     SUPPORTED_THUMBNAIL_EXTENSIONS[i], 6);
-               thumbnail_found = path_is_valid(thumbnail_path);
-            }
-         }
+         const char *match = gfx_thumbnail_results_lookup(
+               path_data->content_path, path_data->content_label,
+               system_name, gfx_thumbnail_result_type_of(type),
+               playlist_allow_non_png);
+         if (match && gfx_thumbnail_name_allowed(match,
+                  playlist_allow_non_png))
+            fill_pathname_join_special(thumbnail_path, tmp_buf,
+                  match, PATH_MAX_LENGTH * sizeof(char));
       }
+
       /* This logic is valid for locally stored thumbnails. For optional downloads,
        * gfx_thumbnail_get_img_name() is used */
    }

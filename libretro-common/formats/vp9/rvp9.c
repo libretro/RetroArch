@@ -1951,6 +1951,60 @@ static const int8_t rvp9_ss_size[13] = {-1,-1,-1,0,1,2,3,4,5,6,7,8,9};
 #define RVP9_DC_PRED 0
 #define RVP9_TM_PRED 9
 
+/* Picture storage has its own count, separate from codec reference slots.
+ * The decoder acquires upload leases; any thread may release them, including
+ * after decoder teardown or a geometry change. Plane offsets retain the
+ * original padding, with a cache line preceding Y for the owner count. */
+#define RVP9_PICTURE_HEADER 64
+
+static retro_atomic_int_t *rvp9_picture_refs(const void *owner)
+{
+   return (retro_atomic_int_t*)((uint8_t*)owner - RVP9_PICTURE_HEADER);
+}
+
+void rvp9_release_planes(void *owner)
+{
+   if (owner && retro_atomic_fetch_sub_int(rvp9_picture_refs(owner), 1) == 1)
+      free(rvp9_picture_refs(owner));
+}
+
+static int rvp9_picture_unheld(const rvp9_fb *fb)
+{
+   return !fb->y || retro_atomic_load_acquire_int(
+         rvp9_picture_refs(fb->y)) == 1;
+}
+
+static int rvp9_picture_alloc(rvp9_fb *fb, size_t ysz, size_t uvsz)
+{
+   uint8_t *block;
+   if (ysz > (size_t)-1 - RVP9_PICTURE_HEADER
+         || uvsz > ((size_t)-1 - RVP9_PICTURE_HEADER - ysz) / 2)
+      return 0;
+   block = (uint8_t*)calloc(RVP9_PICTURE_HEADER + ysz + 2 * uvsz, 1);
+   if (!block)
+      return 0;
+   rvp9_release_planes(fb->y);
+   fb->y = block + RVP9_PICTURE_HEADER;
+   fb->u = fb->y + ysz;
+   fb->v = fb->u + uvsz;
+   retro_atomic_store_relaxed_int(rvp9_picture_refs(fb->y), 1);
+   return 1;
+}
+
+void *rvp9_retain_planes(const rvp9_dec *d, const uint8_t *y)
+{
+   int i;
+   if (!d || !y)
+      return NULL;
+   for (i = 0; i < RVP9_FRAME_BUFS; i++)
+      if (d->fbs[i].valid && d->fbs[i].y == y)
+      {
+         retro_atomic_fetch_add_int(rvp9_picture_refs(y), 1);
+         return d->fbs[i].y;
+      }
+   return NULL;
+}
+
 /* Reconstruction-layer instantiation parameters: 8-bit build.
  * These expand to the decoder's original tokens/semantics, keeping the
  * 8-bit object code instruction-identical (objdump-verified). */
@@ -3554,9 +3608,7 @@ void rvp9_free(rvp9_dec *d)
    d->tile_threads = 1;
    for (i = 0; i < RVP9_FRAME_BUFS; i++)
    {
-      free(d->fbs[i].y);
-      free(d->fbs[i].u);
-      free(d->fbs[i].v);
+      rvp9_release_planes(d->fbs[i].y);
       d->fbs[i].y = d->fbs[i].u = d->fbs[i].v = NULL;
    }
    free(d->mi);

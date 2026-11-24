@@ -25,6 +25,7 @@ TARGET_TEST21 := vfs_write_mix_test
 TARGET_TEST22 := vfs_stable_test
 TARGET_TEST23 := vfs_size_contract_test
 TARGET_TEST24 := vfs_positional_size_test
+TARGET_TEST25 := vfs_header_hygiene_test
 BENCH_CRT     := vfs_native_bench
 BENCH_NATIVE  := vfs_native_bench_native
 
@@ -124,6 +125,7 @@ CLOSE_OBJS    := $(filter-out %/vfs_implementation.o,$(COMMON_OBJS)) \
 UNAME_S := $(shell uname -s 2>/dev/null)
 ifneq (,$(filter MINGW% MSYS% CYGWIN%,$(UNAME_S)))
    MMAP ?= 0
+   $(call sample_objs,$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.o): CFLAGS += -Wframe-larger-than=2048 -Werror=frame-larger-than=2048
 else
    MMAP ?= 1
 endif
@@ -187,7 +189,7 @@ all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
 	$(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST8) $(TARGET_TEST9) \
 	$(TARGET_TEST10) $(TARGET_TEST11) $(TARGET_TEST12) $(TARGET_TEST13) \
 	$(TARGET_TEST14) $(TARGET_TEST15) $(TARGET_TEST16) $(TARGET_TEST17) \
-	$(TARGET_TEST18) $(TARGET_TEST19) $(TARGET_TEST20) $(TARGET_TEST21) $(TARGET_TEST22) $(TARGET_TEST23) $(TARGET_TEST24) $(BENCH_CRT) $(BENCH_NATIVE) \
+	$(TARGET_TEST18) $(TARGET_TEST19) $(TARGET_TEST20) $(TARGET_TEST21) $(TARGET_TEST22) $(TARGET_TEST23) $(TARGET_TEST24) $(TARGET_TEST25) $(BENCH_CRT) $(BENCH_NATIVE) \
 	$(RENAME_TARGET)
 
 %.o: %.c
@@ -291,6 +293,9 @@ $(TARGET_TEST23): vfs_size_contract_test.o $(COMMON_OBJS)
 
 $(TARGET_TEST24): vfs_positional_size_test.o $(COMMON_OBJS) \
 	rthreads_ra.o retro_eventcount_ra.o
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(TARGET_TEST25): vfs_header_hygiene_test.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # vfs_native_bench / vfs_native_bench_native: read-only stream timings
@@ -397,6 +402,7 @@ clean:
 	$(TARGET_TEST22) vfs_stable_test.o \
 	$(TARGET_TEST23) vfs_size_contract_test.o \
 	$(TARGET_TEST24) vfs_positional_size_test.o \
+	$(TARGET_TEST25) vfs_header_hygiene_test.o \
 	$(BENCH_CRT) $(BENCH_NATIVE) vfs_positional_wide.o \
 	vfs_native_bench.o vfs_native_bench_crt.o $(CRT_VFS_OBJ) $(CLOSE_VFS_OBJ) \
 		$(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ) \
@@ -415,3 +421,65 @@ clean:
 		bulk_binary.bin bulk_threads.bin
 
 .PHONY: clean
+
+win32-stat-contract-check:
+	python3 win32_stat_test.py --cc "$(CC)" --sanitizer "$(SANITIZER)"
+.PHONY: win32-stat-contract-check
+
+# vfs_implementation.c under OpenDingux GCW0's C library, whose <fcntl.h>
+# hides O_CLOEXEC, with the flags its core builds pass
+uclibc-profile-check:
+	$(CC) -fsyntax-only -Iuclibc_sim -I$(LIBRETRO_COMM_DIR)/include \
+		-D_XOPEN_SOURCE=500 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 \
+		-Wall -Werror=implicit-function-declaration \
+		$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
+.PHONY: uclibc-profile-check
+
+# The library under a consumer's -D_XOPEN_SOURCE=500 on Darwin (mame2003
+# passes it on every platform): retro_posix_source.h must ask for
+# _DARWIN_C_SOURCE. With MACOS_SDK=<MacOSX*.sdk> the sources cores build
+# are compiled against that SDK too.
+DARWIN_PROFILE_SRCS = \
+	compat/compat_posix_string.c \
+	compat/compat_snprintf.c \
+	compat/compat_strcasestr.c \
+	compat/compat_strl.c \
+	compat/fopen_utf8.c \
+	encodings/encoding_crc32.c \
+	encodings/encoding_deflate.c \
+	encodings/encoding_utf.c \
+	features/features_cpu.c \
+	file/file_path.c \
+	file/file_path_io.c \
+	streams/file_stream.c \
+	streams/file_stream_transforms.c \
+	streams/interface_stream.c \
+	streams/memory_stream.c \
+	streams/rzip_stream.c \
+	streams/stdin_stream.c \
+	streams/trans_stream.c \
+	streams/trans_stream_deflate.c \
+	streams/trans_stream_pipe.c \
+	streams/trans_stream_zlib.c \
+	string/rstrtod.c \
+	string/stdstring.c \
+	time/rtime.c \
+	utils/md5.c \
+	vfs/vfs_implementation.c
+DARWIN_TARGET ?= x86_64-apple-macos10.15
+darwin-profile-check:
+	printf '#include <retro_posix_source.h>\n#ifndef _DARWIN_C_SOURCE\n#error no _DARWIN_C_SOURCE\n#endif\n' | \
+		$(CC) -x c -fsyntax-only -U__linux__ -D__APPLE__ -D_XOPEN_SOURCE=500 \
+		-I$(LIBRETRO_COMM_DIR)/include -
+ifneq ($(MACOS_SDK),)
+	for f in $(DARWIN_PROFILE_SRCS); do \
+		clang -target $(DARWIN_TARGET) -isysroot $(MACOS_SDK) -nostdinc \
+			-isystem $(MACOS_SDK)/usr/include \
+			-isystem $$(clang -print-resource-dir)/include \
+			-F$(MACOS_SDK)/System/Library/Frameworks \
+			-I$(LIBRETRO_COMM_DIR)/include -fsyntax-only -w \
+			-Werror=implicit-function-declaration -D_XOPEN_SOURCE=500 \
+			-DHAVE_ZLIB $(LIBRETRO_COMM_DIR)/$$f || exit 1; \
+	done
+endif
+.PHONY: darwin-profile-check

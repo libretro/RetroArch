@@ -2,7 +2,12 @@
  * AudioContext: the destination is widened only as far as its
  * maxChannelCount and only past stereo, passes channels through as
  * they are, and each queued buffer carries one plane per channel. A
- * stereo request leaves the destination as the browser made it. */
+ * stereo request leaves the destination as the browser made it.
+ *
+ * And a wait for room - what a blocking write on an asyncify build
+ * awaits - ends on the context's own clock: a queued source finishing,
+ * or the context starting or stopping, and on its watchdog only when
+ * neither comes. */
 "use strict";
 const fs = require("fs");
 const vm = require("vm");
@@ -14,6 +19,9 @@ function check(cond, msg) { if (!cond) { console.log("      FAIL: " + msg); fail
 let lib = null;
 let maxChannelCount = 2;
 let lastBuffer = null;
+let sources = [];
+let stateListener = null;
+let nowMs = 0;
 const HEAPF32 = new Float32Array(4096);
 
 class MockDestination {
@@ -28,15 +36,19 @@ class MockBuffer {
 class MockContext {
    constructor() { this.sampleRate = 48000; this.currentTime = 0; this.state = "running";
       this.destination = new MockDestination(); }
-   addEventListener() {} removeEventListener() {} resume() {} close() {}
+   addEventListener(type, cb) { if (type === "statechange") stateListener = cb; }
+   removeEventListener() {} resume() {} close() {}
    createBuffer(ch, n, rate) { lastBuffer = new MockBuffer(ch, n, rate); return lastBuffer; }
-   createBufferSource() { return { connect() {}, start() {} }; }
+   createBufferSource() { const src = { connect() {}, start() {}, onended: null }; sources.push(src); return src; }
 }
 
 const sandbox = {
    window: { AudioContext: MockContext },
-   performance: { now: () => 0 },
+   performance: { now: () => nowMs },
+   setTimeout,
+   clearTimeout,
    HEAPF32,
+   Asyncify: { handleAsync: (fn) => fn() },
    Math,
    addToLibrary: (l) => { lib = l; },
    autoAddDeps: () => {},
@@ -44,6 +56,8 @@ const sandbox = {
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(path.join(__dirname, "../../../os/emscripten/library_rwebaudio.js"), "utf8"), sandbox);
 check(lib !== null, "the library did not register");
+check(lib.RWebAudioWaitRoom__async === true, "Emscripten async metadata must be boolean");
+check(lib.RWebAudioWaitRoom__deps.includes("$Asyncify"), "the wait lacks its Asyncify dependency");
 
 /* what emscripten makes of it: $X is X, the rest _X */
 for (const k of Object.keys(lib)) {
@@ -81,11 +95,57 @@ function run(what, max, asked, expectCh) {
    sandbox._RWebAudioFree();
 }
 
-console.log("rwebaudio (javascript):");
-run("a stereo output, stereo asked for", 2, 2, 2);
-run("a stereo output, 7.1 asked for: stereo, untouched", 2, 8, 2);
-run("a 6-channel output, 7.1 asked for: 6", 6, 8, 6);
-run("an 8-channel output, 5.1 asked for", 8, 6, 6);
-run("a 4-channel output, 5.1 asked for: quad", 4, 6, 4);
-if (failures) { console.log(failures + " failure(s)"); process.exit(1); }
-console.log("rwebaudio (javascript): the destination widened as far as it goes, one plane per channel");
+/* Whether a promise has settled, after everything already queued ran. */
+async function settled(p) {
+   let done = false;
+   p.then(() => { done = true; });
+   await new Promise((r) => setImmediate(r));
+   return done;
+}
+
+async function run_wait() {
+   console.log("   a wait for room ends on the context's clock");
+   maxChannelCount = 2;
+   nowMs   = 0;
+   sources = [];
+   sandbox._RWebAudioInit(64, 2);
+
+   let p = sandbox._RWebAudioWaitRoom(1000);
+   check(await settled(p) && (await p) === 1, "a wait with room did not end at once");
+
+   /* 10 ms buffers until the 64 ms of latency is queued */
+   while (sandbox._RWebAudioWriteAvailFrames() > 0)
+      sandbox._RWebAudioQueueBuffer(480, 64, 480);
+   check(sources.length > 0 && sources.every((s) => typeof s.onended === "function"),
+         "a queued source does not wake a wait when it ends");
+
+   p = sandbox._RWebAudioWaitRoom(1000);
+   check(!(await settled(p)), "a wait with no room ended before anything happened");
+   nowMs += 20;
+   if (sources[0].onended)
+      sources[0].onended();
+   check(await settled(p) && (await p) === 1, "a source that ended did not end the wait");
+
+   nowMs = 0;
+   p = sandbox._RWebAudioWaitRoom(1000);
+   check(!(await settled(p)), "a wait with no room ended before anything happened");
+   stateListener();
+   check(await settled(p) && (await p) === 1, "the context starting did not end the wait");
+
+   p = sandbox._RWebAudioWaitRoom(20);
+   check((await p) === 0, "a wait nothing ended was not its watchdog's");
+   check(sandbox.RWA.wake === null, "a wait that ran out left its resolver behind");
+   sandbox._RWebAudioFree();
+}
+
+(async () => {
+   console.log("rwebaudio (javascript):");
+   run("a stereo output, stereo asked for", 2, 2, 2);
+   run("a stereo output, 7.1 asked for: stereo, untouched", 2, 8, 2);
+   run("a 6-channel output, 7.1 asked for: 6", 6, 8, 6);
+   run("an 8-channel output, 5.1 asked for", 8, 6, 6);
+   run("a 4-channel output, 5.1 asked for: quad", 4, 6, 4);
+   await run_wait();
+   if (failures) { console.log(failures + " failure(s)"); process.exit(1); }
+   console.log("rwebaudio (javascript): the destination widened as far as it goes, one plane per channel; a wait for room ends on the context's clock");
+})();

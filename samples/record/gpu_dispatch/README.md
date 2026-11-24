@@ -16,9 +16,11 @@ its render owner reaps completed sources before a swapchain resize.
 A persistent SDK or owned-handle failure may retain resources for safety.
 
 The worker registers before rechecking for work, then waits for producer
-notifications or a borrowed encoder/file completion handle. An idle worker
-has no periodic timer. SDK BUSY without completion, or BUSY with an already
-signaled completion, schedules a short retry on the I/O worker. Producers
+notifications or a borrowed encoder/file completion handle; the encoder's
+is armed on the output fence its poll waits for. An idle worker has no
+periodic timer. SDK BUSY without a completion handle, or a handle that wakes
+the worker twice running with the session still busy, schedules a short
+retry on the I/O worker. Producers
 notify with an atomic operation and signal the event only while parked.
 There are no added waits, locks or allocation on frame/audio entry points.
 

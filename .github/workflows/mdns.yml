@@ -1,0 +1,159 @@
+name: mDNS and DNS-SD C89
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'libretro-common/net/net_mdns*.c'
+      - 'libretro-common/include/net/net_mdns*.h'
+      - 'libretro-common/include/boolean.h'
+      - 'libretro-common/samples/net/mdns/**'
+      - '.github/workflows/mdns.yml'
+      - 'libretro-common/formats/pyrowave/shaders/**'
+      - 'tools/pyrowave*.py'
+      - 'samples/gfx/pyrowave_session/pyrowave_shader_test.c'
+      - 'samples/gfx/pyrowave_d3d11/**'
+      - 'Makefile.pyrowave'
+      - 'record/*pyrowave*'
+      - 'record/drivers/record_pyrowave.c'
+      - 'configuration.h'
+      - 'msg_hash.h'
+  pull_request:
+    paths:
+      - 'libretro-common/net/net_mdns*.c'
+      - 'libretro-common/include/net/net_mdns*.h'
+      - 'libretro-common/include/boolean.h'
+      - 'libretro-common/samples/net/mdns/**'
+      - '.github/workflows/mdns.yml'
+      - 'libretro-common/formats/pyrowave/shaders/**'
+      - 'tools/pyrowave*.py'
+      - 'samples/gfx/pyrowave_session/pyrowave_shader_test.c'
+      - 'samples/gfx/pyrowave_d3d11/**'
+      - 'Makefile.pyrowave'
+      - 'record/*pyrowave*'
+      - 'record/drivers/record_pyrowave.c'
+      - 'configuration.h'
+      - 'msg_hash.h'
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        cc: [gcc, clang]
+        opt: [0, 2]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Strict C89 engine regressions with sanitizers
+        run: make -C libretro-common/samples/net/mdns clean check demo CC=${{ matrix.cc }} OPTIMIZE=-O${{ matrix.opt }} SANITIZER=address,undefined
+
+  mingw:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      APT_PKGS: gcc-mingw-w64-x86-64 gcc-mingw-w64-i686
+    steps:
+      - uses: actions/checkout@v6
+      - name: Apt cache key
+        id: apt
+        run: sh .github/workflows/scripts/apt-cache-key.sh "$APT_PKGS"
+      - name: Restore apt cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.apt-cache
+          key: ${{ steps.apt.outputs.key }}
+          restore-keys: ${{ steps.apt.outputs.prefix }}
+      - name: Install dependencies
+        timeout-minutes: 5
+        run: sh .github/workflows/scripts/apt-install.sh $APT_PKGS
+      - name: Desktop multicast adapter against current and pre-1703 SDK headers
+        run: |
+          set -e
+          for cc in x86_64-w64-mingw32-gcc i686-w64-mingw32-gcc; do
+            make -C libretro-common/samples/net/mdns clean demo CC="$cc" EXE=.exe
+            make -C libretro-common/samples/net/mdns clean demo CC="$cc -isystem legacy_sdk" EXE=.exe
+          done
+
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: C89 engine and BSD multicast adapter
+        run: make -C libretro-common/samples/net/mdns clean check demo CC=clang
+
+  freebsd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: vmactions/freebsd-vm@v1
+        with:
+          release: "14.3"
+          usesh: true
+          copyback: false
+          prepare: pkg install -y gmake
+          run: gmake -C libretro-common/samples/net/mdns clean check demo CC=clang
+
+  msvc:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        arch: [x86, x64]
+    steps:
+      - uses: actions/checkout@v6
+      - name: Embed precompiled shaders without a shader compiler
+        run: |
+          python tools/pyrowave_embed_shaders.py --output msvc-shaders/rpyrowave_shaders.h
+          python tools/pyrowave_embed_shaders_test.py
+      - name: Build C89 engine and desktop multicast adapter
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set VSPATH=%%i
+          if not defined VSPATH exit /b 1
+          call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.arch }}
+          if errorlevel 1 exit /b 1
+          cd libretro-common\samples\net\mdns
+          cl /nologo /TC /O2 /W3 /WX /DHAVE_MDNS /D_CRT_SECURE_NO_WARNINGS /I..\..\..\include net_mdns_test.c ..\..\..\net\net_mdns.c /Fe:net_mdns_test.exe
+          if errorlevel 1 exit /b 1
+          if not exist obj mkdir obj
+          cl /nologo /TC /O2 /W3 /WX /DHAVE_MDNS /D_CRT_SECURE_NO_WARNINGS /I..\..\..\include discovery.c ..\..\..\net\net_mdns.c ..\..\..\net\net_mdns_socket.c ..\..\..\net\net_compat.c ..\..\..\compat\compat_strl.c /Fe:obj\mdns_discovery.exe /link ws2_32.lib
+          if errorlevel 1 exit /b 1
+      - name: Compile embedded LAN host and consent controller as MSVC C
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set VSPATH=%%i
+          if not defined VSPATH exit /b 1
+          call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.arch }}
+          if errorlevel 1 exit /b 1
+          if not exist msvc-lan-check mkdir msvc-lan-check
+          cl /nologo /TC /W4 /WX /O2 /DHAVE_OPENGL_CORE /DHAVE_THREADS /DHAVE_PYROWAVE /DHAVE_MDNS /DHAVE_D3D12 /DHAVE_VULKAN /DHAVE_CONFIGFILE /Dsmall=char /Dhyper=__int64 /D_CRT_SECURE_NO_WARNINGS /external:env:INCLUDE /external:Igfx/include /external:W0 /I. /Ilibretro-common/include /c record/record_pyrowave_lan.c record/record_pyrowave_receiver.c record/drivers/record_pyrowave.c record/record_pyrowave_video_link.c record/record_audio_tap.c record/record_pyrowave_source.c record/record_pyrowave_source_d3d12.c /Imsvc-shaders /Fomsvc-lan-check\
+          if errorlevel 1 exit /b 1
+      - name: Verify native embedded bytecode loans
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set VSPATH=%%i
+          if not defined VSPATH exit /b 1
+          call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.arch }}
+          if errorlevel 1 exit /b 1
+          cl /nologo /TC /W4 /WX /O2 /DHAVE_D3D12 /Ilibretro-common/include /Imsvc-shaders samples/gfx/pyrowave_session/pyrowave_shader_test.c record/record_pyrowave_source.c /Fomsvc-lan-check\ /Femsvc-lan-check/pyrowave_shader_test.exe
+          if errorlevel 1 exit /b 1
+          msvc-lan-check\pyrowave_shader_test.exe
+      - name: Run native engine regressions
+        shell: cmd
+        run: libretro-common\samples\net\mdns\net_mdns_test.exe
+      - name: Native D3D11 compute codec and loan retirement
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set VSPATH=%%i
+          if not defined VSPATH exit /b 1
+          call "%VSPATH%\VC\Auxiliary\Build\vcvarsall.bat" ${{ matrix.arch }}
+          if errorlevel 1 exit /b 1
+          cl /nologo /TC /O2 /W4 /WX /D_CRT_SECURE_NO_WARNINGS /external:env:INCLUDE /external:W0 /Ilibretro-common/include samples/gfx/pyrowave_d3d11/pyrowave_d3d11_test.c record/record_pyrowave_d3d11.c record/record_gpu_queue.c libretro-common/queues/retro_spsc.c libretro-common/formats/pyrowave/rpyrowave.c libretro-common/formats/pyrowave/rpyrowave_image.c libretro-common/formats/pyrowave/rpyrowave_gpu.c /Fomsvc-lan-check\ /Femsvc-lan-check/pyrowave_d3d11_test.exe /link d3d11.lib dxguid.lib
+          if errorlevel 1 exit /b 1
+          msvc-lan-check\pyrowave_d3d11_test.exe libretro-common/formats/pyrowave/shaders/precompiled/color.dxbc libretro-common/formats/pyrowave/shaders/precompiled/dwt.dxbc libretro-common/formats/pyrowave/shaders/precompiled/packet.dxbc

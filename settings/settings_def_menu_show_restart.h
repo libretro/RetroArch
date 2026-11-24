@@ -14,6 +14,6 @@ S_BOOL_LV(menu_show_quit_retroarch, MENU_SHOW_QUIT_RETROARCH, MENU_SHOW_RESTART_
       "menu_show_quit_retroarch",
       DEFAULT_MENU_SHOW_RESTART, SD_FLAG_NONE, 0, 0,
       "",
-      "Show the 'Quit RetroArch' option in the Main Menu.")
+      "Show the 'Quit' option in the Main Menu.")
 #endif
 #endif

@@ -158,7 +158,9 @@ if 'clang' in subprocess.check_output(compiler + ['--version'], text=True).lower
     flags += ['-Wno-c99-extensions']
 if args.sanitizer:
     flags += ['-fsanitize=' + args.sanitizer, '-fno-omit-frame-pointer']
-binary = root / ('wrapper.exe' if os.name == 'nt' else 'wrapper')
+# .exe on every host, as a cross build to Windows needs it and the
+# name costs nothing elsewhere
+binary = root / 'wrapper.exe'
 subprocess.run(compiler + flags + [str(unit), '-o', str(binary)], check=True, timeout=60)
 subprocess.run(shlex.split(args.runner) + [str(binary)], check=True, timeout=15)
 (root / 'evidence.json').write_text(json.dumps(dict(result='PASS',

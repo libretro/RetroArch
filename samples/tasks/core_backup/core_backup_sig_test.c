@@ -22,6 +22,7 @@
 #include <retro_dirent.h>
 #include <retro_timers.h>
 #include <streams/file_stream.h>
+#include <vfs/vfs_implementation.h>
 #include <encodings/crc32.h>
 #include <lrc_hash.h>
 
@@ -78,9 +79,20 @@ void RARCH_ERR(const char *fmt, ...)
    va_end(ap);
 }
 
+/* Fixed texts: the worker calls it too */
 const char *msg_hash_to_str(enum msg_hash_enums msg)
 {
-   (void)msg;
+   switch (msg)
+   {
+      case MSG_CORE_LOAD_TRUST_LIST_FULL:
+         return "load trust list full";
+      case MSG_CORE_INSTALL_TRUST_LIST_FULL:
+         return "install trust list full";
+      case MSG_CORE_INSTALL_TRUST_CANT_SAVE:
+         return "install trust can't save";
+      default:
+         break;
+   }
    return "msg";
 }
 
@@ -150,6 +162,33 @@ retro_time_t __wrap_cpu_features_get_time_usec(void)
    if (!g_clock_step)
       return __real_cpu_features_get_time_usec();
    return g_clock_now += g_clock_step;
+}
+
+/* The VFS copy, wrapped (Makefile.sig): refused, a restore copies
+ * through its buffer, as it does from a compressed backup */
+static bool g_copy_refused;
+
+struct retro_vfs_copy_handle;
+struct retro_vfs_copy_handle *__real_filestream_copy_begin(
+      const char *src_path, const char *dst_path, unsigned flags);
+
+struct retro_vfs_copy_handle *__wrap_filestream_copy_begin(
+      const char *src_path, const char *dst_path, unsigned flags)
+{
+   if (g_copy_refused)
+      return NULL;
+   return __real_filestream_copy_begin(src_path, dst_path, flags);
+}
+
+/* The file hash, wrapped: each chunk read from a file to hash */
+static unsigned g_hash_reads;
+
+int __real_core_hash_step(struct core_hash *h, core_file_t *f);
+
+int __wrap_core_hash_step(struct core_hash *h, core_file_t *f)
+{
+   g_hash_reads++;
+   return __real_core_hash_step(h, f);
 }
 
 /* core_trust_default_path's folder, here the test's own */
@@ -815,6 +854,58 @@ static void test_trust_backup_gone(void)
 
 /* Trusted by its hash (test_trust_drops_failed_sig): a .sig placed
  * beside a restored core must still verify on its own */
+/* Copied through the buffer: hashed as it is written, never read back,
+ * with the same outcomes as a check that reads the staged file */
+static void test_restore_streamed(void)
+{
+   char b[300];
+   printf("[restore through the buffer: hashed as written]\n");
+   g_copy_refused = true;
+   install_old();
+   make_backup(b, sizeof(b), g_backups, fx_core, FX_CORE_SIZE,
+         fx_sig_good, sizeof(fx_sig_good));
+   g_hash_reads = 0;
+   CHECK(restore(b, true));
+   CHECK(g_hash_reads == 0);
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+   CHECK(same(g_core_sig, fx_sig_good, sizeof(fx_sig_good)));
+   CHECK(!path_is_directory(g_restore_dir));
+   CHECK(!core_warning_pending(NULL, NULL));
+
+   printf("[install through the buffer, older .sig: warning]\n");
+   install_old();
+   make_backup(b, sizeof(b), g_downloads, fx_core, FX_CORE_SIZE,
+         fx_sig_older, sizeof(fx_sig_older));
+   g_hash_reads = 0;
+   CHECK(restore(b, false));
+   CHECK(g_hash_reads == 0);
+   CHECK(warning(CORE_CHECK_OLDER));
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   pump();
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+
+   printf("[install through the buffer, bad .sig: warning]\n");
+   install_old();
+   make_backup(b, sizeof(b), g_downloads, fx_core, FX_CORE_SIZE,
+         fx_sig_key2, sizeof(fx_sig_key2));
+   CHECK(restore(b, false));
+   CHECK(core_warning_pending(NULL, NULL));
+   CHECK(core_warning_choose(CORE_WARNING_CANCEL));
+   pump();
+   CHECK(same(g_core, g_old, sizeof(g_old)));
+   g_copy_refused = false;
+
+   /* The VFS copy never had the bytes: the check reads the file */
+   install_old();
+   make_backup(b, sizeof(b), g_backups, fx_core, FX_CORE_SIZE,
+         fx_sig_good, sizeof(fx_sig_good));
+   g_hash_reads = 0;
+   CHECK(restore(b, true));
+   CHECK(g_hash_reads > 0);
+   CHECK(same(g_core, fx_core, FX_CORE_SIZE));
+}
+
 static void test_hash_pass_restores(void)
 {
    char b[300];
@@ -864,6 +955,117 @@ static void test_install_older_trust(void)
    CHECK(same(g_core_sig, fx_sig_older, sizeof(fx_sig_older)));
    CHECK(trusted(fx_core, FX_CORE_SIZE));
    CHECK(newest() == FX_TIME);
+}
+
+/* Install and Trust with the trusted list full: installed this once,
+ * and the user told */
+static void test_install_and_trust_full(void)
+{
+   static uint8_t data[3000];
+   struct core_check c;
+   char b[300];
+   unsigned i;
+   printf("[Install and Trust, trusted list full]\n");
+   memset(&c, 0, sizeof(c));
+   c.result = CORE_CHECK_UNSIGNED;
+   strlcpy(c.rec.name, "fill_libretro.so", sizeof(c.rec.name));
+   c.rec.sha256[2] = 0xa7;
+   for (i = 0; i < CORE_TRUST_MAX_HASHES; i++)
+   {
+      c.rec.sha256[0] = (uint8_t)i;
+      c.rec.sha256[1] = (uint8_t)(i >> 8);
+      if (!core_trust_runtime_always(&c))
+         break;
+   }
+   CHECK(i == CORE_TRUST_MAX_HASHES);
+   pump();
+   memset(data, 0xbb, sizeof(data));
+   install_old();
+   make_backup(b, sizeof(b), g_backups, data, sizeof(data), NULL, 0);
+   CHECK(restore(b, true));
+   CHECK(warning(CORE_CHECK_UNSIGNED));
+   CHECK(core_warning_choose(CORE_WARNING_INSTALL_AND_TRUST));
+   pump();
+   CHECK(same(g_core, data, sizeof(data)));
+   CHECK(!trusted(data, sizeof(data)));
+   CHECK(!strcmp(g_osd_last,
+            msg_hash_to_str(MSG_CORE_INSTALL_TRUST_LIST_FULL)));
+}
+
+/* Install and Trust while the trusted cores list can't be saved:
+ * trusted for this session, and the user told */
+static void test_install_and_trust_cant_save(void)
+{
+   static uint8_t data[3000];
+   char b[300];
+   printf("[Install and Trust, trusted list can't be saved]\n");
+   memset(data, 0xcc, sizeof(data));
+   install_old();
+   make_backup(b, sizeof(b), g_backups, data, sizeof(data), NULL, 0);
+   CHECK(restore(b, true));
+   CHECK(warning(CORE_CHECK_UNSIGNED));
+   CHECK(core_warning_choose(CORE_WARNING_INSTALL_AND_TRUST));
+   pump();
+   CHECK(same(g_core, data, sizeof(data)));
+   CHECK(trusted(data, sizeof(data)));
+   CHECK(!strcmp(g_osd_last,
+            msg_hash_to_str(MSG_CORE_INSTALL_TRUST_CANT_SAVE)));
+}
+
+/* Writes to this path fail at their rename while it is set */
+static char g_save_fails[300];
+
+static int RETRO_CALLCONV refuse_store_rename(const char *old_path,
+      const char *new_path)
+{
+   if (!strcmp(new_path, g_save_fails))
+      return -1;
+   return retro_vfs_file_rename_impl(old_path, new_path);
+}
+
+/* The store at path, NULL for none, can't be saved */
+static void store_saves_fail(const char *path)
+{
+   static struct retro_vfs_interface iface;
+   struct retro_vfs_interface_info info;
+   iface.rename = refuse_store_rename;
+   strlcpy(g_save_fails, path ? path : "", sizeof(g_save_fails));
+   info.required_interface_version = FILESTREAM_REQUIRED_VFS_VERSION;
+   info.iface                      = path ? &iface : NULL;
+   filestream_vfs_init(&info);
+}
+
+/* Install and Trust after a save failed: the user told once, and not
+ * again when its own save fails too */
+static void test_install_and_trust_save_fails(void)
+{
+   static uint8_t data[3000];
+   struct core_check c;
+   char b[300];
+   int osd = g_osd_count;
+   printf("[Install and Trust, the trusted list's saves fail]\n");
+   /* A failed save of no change of the user's says nothing */
+   memset(&c, 0, sizeof(c));
+   strlcpy(c.rec.name, "newest_libretro.so", sizeof(c.rec.name));
+   c.result         = CORE_CHECK_OK;
+   c.folder[0]      = 7;
+   c.rec.build_time = 5;
+   c.raise_newest   = true;
+   CHECK(core_trust_runtime_apply(&c));
+   pump();
+   CHECK(!core_trust_runtime_read_only() && !core_trust_runtime_can_save());
+   CHECK(g_osd_count == osd);
+   memset(data, 0xdd, sizeof(data));
+   install_old();
+   make_backup(b, sizeof(b), g_backups, data, sizeof(data), NULL, 0);
+   CHECK(restore(b, true));
+   CHECK(warning(CORE_CHECK_UNSIGNED));
+   CHECK(core_warning_choose(CORE_WARNING_INSTALL_AND_TRUST));
+   pump();
+   CHECK(same(g_core, data, sizeof(data)));
+   CHECK(trusted(data, sizeof(data)));
+   CHECK(!strcmp(g_osd_last,
+            msg_hash_to_str(MSG_CORE_INSTALL_TRUST_CANT_SAVE)));
 }
 
 #if defined(ANDROID)
@@ -1027,6 +1229,7 @@ int main(void)
    fill_pathname_join_special(store, TMP_DIR, "store2", sizeof(store));
    CHECK(core_trust_runtime_init(store, g_cores, "so"));
    pump();
+   test_restore_streamed();
    test_restore_signed();
    test_install_older_trust();
 #if defined(ANDROID)
@@ -1034,6 +1237,33 @@ int main(void)
    test_play_cancel_keeps_core();
    test_other_link_refused();
 #endif
+   core_trust_runtime_deinit();
+   fill_pathname_join_special(store, TMP_DIR, "store3", sizeof(store));
+   CHECK(core_trust_runtime_init(store, g_cores, "so"));
+   test_install_and_trust_full();
+   pump();
+   core_trust_runtime_deinit();
+   /* A folder: a store that can't be read, so nothing is saved */
+   fill_pathname_join_special(store, TMP_DIR, "store4", sizeof(store));
+   path_mkdir(store);
+   CHECK(core_trust_runtime_init(store, g_cores, "so"));
+   CHECK(core_trust_runtime_read_only());
+   test_install_and_trust_cant_save();
+   core_trust_runtime_deinit();
+   /* Can't be saved and full: refused, so the list-full message */
+   fill_pathname_join_special(store, TMP_DIR, "store7", sizeof(store));
+   path_mkdir(store);
+   CHECK(core_trust_runtime_init(store, g_cores, "so"));
+   CHECK(core_trust_runtime_read_only());
+   test_install_and_trust_full();
+   pump();
+   core_trust_runtime_deinit();
+   fill_pathname_join_special(store, TMP_DIR, "store6", sizeof(store));
+   store_saves_fail(store);
+   CHECK(core_trust_runtime_init(store, g_cores, "so"));
+   test_install_and_trust_save_fails();
+   core_trust_runtime_deinit();
+   store_saves_fail(NULL);
 #else
    CHECK(!core_trust_runtime_init(store, g_cores, "so"));
    test_inactive();
@@ -1045,6 +1275,10 @@ int main(void)
    task_queue_init(true, NULL);
    test_backup_keeps_sig();
 #ifdef HAVE_CORE_SIGNING_TEST_KEY
+   /* A store with room, not the one the lanes above left */
+   core_trust_runtime_deinit();
+   fill_pathname_join_special(store, TMP_DIR, "store5", sizeof(store));
+   CHECK(core_trust_runtime_init(store, NULL, NULL));
    test_restore_signed();
 #endif
    core_trust_runtime_deinit();

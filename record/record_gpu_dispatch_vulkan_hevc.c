@@ -60,3 +60,18 @@ record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_hevc(
    return record_gpu_dispatch_vulkan_new_backend(&config, record_vkd_hevc_start,
          output, path, capture_ops);
 }
+
+record_gpu_dispatch_vulkan_t *record_gpu_dispatch_vulkan_new_hevc_stream(
+      const vulkan_encode_hevc_open_t *encoder,
+      const vulkan_encode_hevc_ops_t *ops,
+      const record_gpu_output_vulkan_config_t *output, const char *url,
+      const vulkan_encode_capture_ops_t *capture_ops, bool legacy)
+{
+   record_gpu_dispatch_vulkan_config_t config;
+   if (!encoder || !ops || !output || output->video.codec != RECORD_MP4_HEVC)
+      return NULL;
+   config.hevc.encoder = *encoder;
+   config.hevc.ops = *ops;
+   return record_gpu_dispatch_vulkan_new_backend_stream(&config, record_vkd_hevc_start,
+         output, url, capture_ops, legacy);
+}

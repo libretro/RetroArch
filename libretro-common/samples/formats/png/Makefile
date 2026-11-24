@@ -117,12 +117,12 @@ TEST3_SOURCES_C := \
 
 # The APNG bounds test builds animated PNGs in memory from stored
 # deflate blocks and opens them through the APNG stream, so it needs the
-# APNG indexer/compositor, the still decoder it hands each frame to, and
+# APNG indexer/compositor (included by the test to inspect its pool),
+# the still decoder it hands each frame to, and
 # the CRC that seals the chunks it writes.  rtime.c is there for
 # features_cpu.c, whose retro_sleep_us is a function only on Windows.
 TEST4_SOURCES_C := \
 	$(CORE_DIR)/rpng_apng_bounds_test.c \
-	$(LIBRETRO_PNG_DIR)/rpng_apng.c \
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
@@ -155,6 +155,9 @@ ifneq ($(SANITIZER),)
 endif
 
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
+
+$(call sample_objs,$(CORE_DIR)/rpng_apng_bounds_test.o): \
+	$(LIBRETRO_PNG_DIR)/rpng_apng.c $(LIBRETRO_PNG_DIR)/rpng_internal.h
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)

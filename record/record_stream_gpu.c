@@ -1,6 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "record_stream_gpu.h"
-#include "record_mf_audio.h"
+#include "record_aac_audio.h"
 #include <formats/rflv_mux.h>
 #include <retro_spsc.h>
 #include <retro_atomic.h>
@@ -19,7 +19,7 @@ struct record_stream_gpu
    record_stream_worker_ops_t ops;
    net_rtmp_client_t *client;
    net_rtmp_session_t *session;
-   record_mf_audio_t *aac;
+   record_aac_audio_t *aac;
    rflv_mux_t *mux;
    int16_t *input;
    size_t input_frames, staged, frame_bytes, fifo_bytes;
@@ -83,8 +83,8 @@ record_stream_gpu_t *record_stream_gpu_new(void *worker,
             || config->audio_fifo_frames > config->audio_rate * 2u
             || config->audio_kbps > 192)
          goto failed;
-      p->aac = record_mf_audio_new(config->audio_rate, channels, config->audio_kbps * 1000);
-      if (!p->aac || !record_mf_audio_config(p->aac, &mux.asc, &mux.asc_size))
+      p->aac = record_aac_audio_new(config->audio_rate, channels, config->audio_kbps * 1000);
+      if (!p->aac || !record_aac_audio_config(p->aac, &mux.asc, &mux.asc_size))
          goto failed;
       mux.audio_timescale = 10000000;
       p->frame_bytes = channels * sizeof(int16_t);
@@ -109,8 +109,8 @@ failed:
    rflv_mux_free(p->mux);
    if (p->aac)
    {
-      record_mf_audio_cancel(p->aac);
-      record_mf_audio_free(p->aac);
+      record_aac_audio_cancel(p->aac);
+      record_aac_audio_free(p->aac);
    }
    retro_spsc_free(&p->audio);
    free(p);
@@ -143,13 +143,13 @@ bool record_stream_gpu_audio_finish(record_stream_gpu_t *p)
 
 static int stream_audio(record_stream_gpu_t *p)
 {
-   record_mf_audio_packet_t packet;
+   record_aac_audio_packet_t packet;
    size_t frames, bytes;
    int result, closed;
    if (p->audio_end)
       return RECORD_GPU_OUTPUT_BUSY;
-   result = record_mf_audio_pump(p->aac, &packet);
-   if (result == RECORD_MF_AUDIO_PACKET)
+   result = record_aac_audio_pump(p->aac, &packet);
+   if (result == RECORD_AAC_AUDIO_PACKET)
    {
       p->producer = STREAM_AUDIO;
       if (packet.timestamp < 0 || packet.duration <= 0
@@ -158,14 +158,14 @@ static int stream_audio(record_stream_gpu_t *p)
          return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_AUDIO);
       return RECORD_GPU_OUTPUT_PROGRESS;
    }
-   if (result == RECORD_MF_AUDIO_END)
+   if (result == RECORD_AAC_AUDIO_END)
    {
       p->audio_end = true;
       return RECORD_GPU_OUTPUT_PROGRESS;
    }
-   if (result == RECORD_MF_AUDIO_ERROR)
+   if (result == RECORD_AAC_AUDIO_ERROR)
       return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_AUDIO);
-   if (result == RECORD_MF_AUDIO_PROGRESS)
+   if (result == RECORD_AAC_AUDIO_PROGRESS)
       return RECORD_GPU_OUTPUT_PROGRESS;
    if (p->audio_finishing)
       return RECORD_GPU_OUTPUT_BUSY;
@@ -202,17 +202,17 @@ static int stream_audio(record_stream_gpu_t *p)
       {
          if (!closed)
             return RECORD_GPU_OUTPUT_BUSY;
-         if (record_mf_audio_finish(p->aac) != RECORD_MF_AUDIO_PROGRESS)
+         if (record_aac_audio_finish(p->aac) != RECORD_AAC_AUDIO_PROGRESS)
             return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_AUDIO);
          p->audio_finishing = true;
          return RECORD_GPU_OUTPUT_PROGRESS;
       }
       if (!p->input)
       {
-         result = record_mf_audio_input(p->aac, &p->input, &p->input_frames);
-         if (result == RECORD_MF_AUDIO_BUSY)
+         result = record_aac_audio_input(p->aac, &p->input, &p->input_frames);
+         if (result == RECORD_AAC_AUDIO_BUSY)
             return RECORD_GPU_OUTPUT_BUSY;
-         if (result != RECORD_MF_AUDIO_PROGRESS || !p->input_frames || p->input_frames > 1024)
+         if (result != RECORD_AAC_AUDIO_PROGRESS || !p->input_frames || p->input_frames > 1024)
             return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_AUDIO);
       }
       if (frames > p->input_frames - p->staged)
@@ -227,11 +227,11 @@ static int stream_audio(record_stream_gpu_t *p)
    }
    if (!p->staged || p->audio_pts > (uint64_t)-1 - p->staged)
       return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_AUDIO);
-   result = record_mf_audio_submit(p->aac, p->staged, p->audio_pts);
+   result = record_aac_audio_submit(p->aac, p->staged, p->audio_pts);
    p->prepared = true;
-   if (result == RECORD_MF_AUDIO_BUSY)
+   if (result == RECORD_AAC_AUDIO_BUSY)
       return RECORD_GPU_OUTPUT_BUSY;
-   if (result != RECORD_MF_AUDIO_PROGRESS)
+   if (result != RECORD_AAC_AUDIO_PROGRESS)
       return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_AUDIO);
    p->audio_pts += p->staged;
    p->input = NULL;
@@ -250,7 +250,7 @@ static int stream_return_producer(record_stream_gpu_t *p)
    }
    else if (p->producer == STREAM_AUDIO)
    {
-      bool released = record_mf_audio_release(p->aac);
+      bool released = record_aac_audio_release(p->aac);
       p->producer = STREAM_NONE;
       if (!released)
          return stream_fail(p, RECORD_GPU_OUTPUT_ERROR_AUDIO);
@@ -280,7 +280,7 @@ static int stream_cancel(record_stream_gpu_t *p, record_stream_wait_t *wait)
       return RECORD_GPU_OUTPUT_BUSY;
    }
    if (p->aac)
-      record_mf_audio_cancel(p->aac);
+      record_aac_audio_cancel(p->aac);
    p->input = NULL;
    p->prepared = false;
    p->retired = true;
@@ -435,7 +435,7 @@ bool record_stream_gpu_free(record_stream_gpu_t *p)
          || (retro_atomic_load_acquire_int(&p->failed) && !p->retired)
          || (!p->ended && !retro_atomic_load_acquire_int(&p->failed)))
       return false;
-   if (!record_mf_audio_free(p->aac))
+   if (!record_aac_audio_free(p->aac))
       return false;
    rflv_mux_free(p->mux);
    retro_spsc_free(&p->audio);

@@ -23,6 +23,7 @@ allprojects {
 }
 
 apply plugin: 'com.android.application'
+apply from: 'native-build-jobs.gradle'
 
 android {
   namespace "com.retroarch"
@@ -44,7 +45,7 @@ android {
     targetSdkVersion 36
     externalNativeBuild {
       ndkBuild {
-        arguments "-j${Runtime.runtime.availableProcessors()}"
+        arguments "-j${retroarchNativeJobs}"
       }
     }
     versionCode = (System.currentTimeMillis() / 1000).toInteger()
@@ -104,7 +105,7 @@ android {
 
       externalNativeBuild {
         ndkBuild {
-          arguments "-j${Runtime.runtime.availableProcessors()}", "PLAY_STORE_BUILD=1"
+          arguments "-j${retroarchNativeJobs}", "PLAY_STORE_BUILD=1"
         }
       }
     }
@@ -126,7 +127,7 @@ android {
 
       externalNativeBuild {
         ndkBuild {
-          arguments "-j${Runtime.runtime.availableProcessors()}", "PLAY_STORE_BUILD=1"
+          arguments "-j${retroarchNativeJobs}", "PLAY_STORE_BUILD=1"
         }
       }
     }
@@ -145,7 +146,7 @@ android {
 
       externalNativeBuild {
         ndkBuild {
-          arguments "-j${Runtime.runtime.availableProcessors()}", "HAVE_OPENXR=1", "PLAY_STORE_BUILD=1", "GLES=3"
+          arguments "-j${retroarchNativeJobs}", "HAVE_OPENXR=1", "PLAY_STORE_BUILD=1", "META_QUEST_BUILD=1", "GLES=3"
         }
       }
     }

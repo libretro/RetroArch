@@ -28,6 +28,7 @@
 #include <poll.h>
 #include <libudev.h>
 #if defined(__linux__)
+#include <sys/epoll.h>
 #include <linux/types.h>
 #include <linux/input.h>
 #include <linux/hidraw.h>
@@ -173,14 +174,47 @@ static struct udev_joypad udev_pads[MAX_USERS];
  * udev_pad_set_fd(); the poll walks only these instead of reading fd
  * out of all MAX_USERS slots - a cache line apiece - every frame. */
 static uint32_t udev_pads_active;
+/* Active pads the event set could not take */
+static uint32_t udev_pads_unwatched;
+#if defined(__linux__)
+/* The pads' event nodes and the monitor, which is entry MAX_USERS: a
+ * poll reads only the pads with something to read */
+static int udev_joypad_ep = -1;
+static bool udev_joypad_mon_watched;
+#endif
 
 static void udev_pad_set_fd(unsigned p, int fd)
 {
    udev_pads[p].fd = fd;
    if (fd >= 0)
+   {
+#if defined(__linux__)
+      if (udev_joypad_ep >= 0)
+      {
+         struct epoll_event event;
+         event.events   = EPOLLIN;
+         event.data.u64 = 0;
+         event.data.u32 = p;
+         /* Unwatched, it is read every poll */
+         if (epoll_ctl(udev_joypad_ep, EPOLL_CTL_ADD, fd, &event) < 0)
+            udev_pads_unwatched |= (1u << p);
+      }
+#endif
       udev_pads_active |=  (1u << p);
+   }
    else
       udev_pads_active &= ~(1u << p);
+}
+
+/* Before its close: the rumble writer's dup keeps the node open */
+static void udev_pad_unwatch(unsigned p)
+{
+#if defined(__linux__)
+   struct epoll_event event;
+   if (udev_joypad_ep >= 0 && udev_pads[p].fd >= 0)
+      epoll_ctl(udev_joypad_ep, EPOLL_CTL_DEL, udev_pads[p].fd, &event);
+#endif
+   udev_pads_unwatched &= ~(1u << p);
 }
 
 /* Rumble is written off the frontend's thread.
@@ -1286,6 +1320,8 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 
    if (ioctl(fd, EVIOCGUNIQ(sizeof(pad->phys)-physlen), pad->phys+physlen) < 0)
        pad->phys[physlen] = '\0';  /* Clear if unavailable */
+   /* a string cut short comes back unterminated */
+   pad->phys[sizeof(pad->phys) - 1] = '\0';
 
    if (fstat(fd, &st) < 0)
       return -1;
@@ -1373,10 +1409,12 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
 
    if (*pad->ident)
    {
-      input_autoconfigure_connect(
+      /* its own serial or Bluetooth address is what follows the port */
+      input_autoconfigure_connect_uniq(
                pad->ident,
                NULL,
                pad->phys,
+               pad->phys + physlen,
                udev_joypad.ident,
                p,
                pad->vid,
@@ -1455,6 +1493,7 @@ static void udev_free_pad(unsigned pad)
 {
    udev_led_detach(pad);
    udev_rumble_detach(pad);
+   udev_pad_unwatch(pad);
    if (udev_pads[pad].fd >= 0)
       close(udev_pads[pad].fd);
    if (udev_pads[pad].sensor_fd >= 0)
@@ -1581,6 +1620,13 @@ static void udev_joypad_destroy(void)
    if (udev_joypad_fd)
       udev_unref(udev_joypad_fd);
 
+#if defined(__linux__)
+   if (udev_joypad_ep >= 0)
+      close(udev_joypad_ep);
+   udev_joypad_ep          = -1;
+   udev_joypad_mon_watched = false;
+#endif
+
    udev_joypad_mon = NULL;
    udev_joypad_fd  = NULL;
 }
@@ -1621,21 +1667,9 @@ static bool udev_joypad_poll_hotplug_available(struct udev_monitor *dev)
    return (poll(&fds, 1, 0) == 1) && (fds.revents & POLLIN);
 }
 
-static void udev_joypad_poll(void)
+static void udev_joypad_hotplug(void)
 {
-   unsigned p;
-   static unsigned led_tick;
-
-   udev_rumble_poll();
-
-   /* lights a driver adds just after a pad's input nodes */
-   if (!(++led_tick & 63))
-      for (p = 0; p < MAX_USERS; p++)
-         if (     (udev_pads_active & (1u << p))
-               && !udev_pads[p].led_count && udev_pads[p].led_tries < 4)
-            udev_led_attach(p);
-
-   while (udev_joypad_mon && udev_joypad_poll_hotplug_available(udev_joypad_mon))
+   while (udev_joypad_poll_hotplug_available(udev_joypad_mon))
    {
       struct udev_device *dev = udev_monitor_receive_device(udev_joypad_mon);
 
@@ -1672,6 +1706,51 @@ static void udev_joypad_poll(void)
          udev_device_unref(dev);
       }
    }
+}
+
+static void udev_joypad_poll(void)
+{
+   unsigned p;
+   static unsigned led_tick;
+   /* Pads whose event node is read this poll */
+   uint32_t ready = udev_pads_active;
+
+   udev_rumble_poll();
+
+   /* lights a driver adds just after a pad's input nodes */
+   if (!(++led_tick & 63))
+      for (p = 0; p < MAX_USERS; p++)
+         if (     (udev_pads_active & (1u << p))
+               && !udev_pads[p].led_count && udev_pads[p].led_tries < 4)
+            udev_led_attach(p);
+
+#if defined(__linux__)
+   if (udev_joypad_ep >= 0)
+   {
+      int i, n;
+      bool hotplug = false;
+      struct epoll_event events[MAX_USERS + 1];
+      ready = udev_pads_unwatched;
+      n     = epoll_wait(udev_joypad_ep, events, MAX_USERS + 1, 0);
+      for (i = 0; i < n; i++)
+      {
+         if (events[i].data.u32 < MAX_USERS)
+            ready  |= 1u << events[i].data.u32;
+         else
+            hotplug = true;
+      }
+      if (hotplug || (udev_joypad_mon && !udev_joypad_mon_watched))
+         udev_joypad_hotplug();
+      /* A slot the hotplug emptied is not read */
+      ready &= udev_pads_active;
+   }
+   else
+#endif
+   if (udev_joypad_mon)
+   {
+      udev_joypad_hotplug();
+      ready = udev_pads_active;
+   }
 
    for (p = 0; p < MAX_USERS; p++)
    {
@@ -1683,7 +1762,8 @@ static void udev_joypad_poll(void)
       if (!(udev_pads_active & (1u << p)))
          continue;
 
-      while ((_len = read(pad->fd, events, sizeof(events))) > 0)
+      while (     (ready & (1u << p))
+               && (_len = read(pad->fd, events, sizeof(events))) > 0)
       {
          _len /= sizeof(*events);
          for (i = 0; i < _len; i++)
@@ -1847,6 +1927,18 @@ static void *udev_joypad_init(void *data)
             udev_joypad_mon, "input", NULL);
       udev_monitor_enable_receiving(udev_joypad_mon);
    }
+
+#if defined(__linux__)
+   if ((udev_joypad_ep = epoll_create(MAX_USERS + 1)) >= 0 && udev_joypad_mon)
+   {
+      struct epoll_event event;
+      event.events            = EPOLLIN;
+      event.data.u64          = 0;
+      event.data.u32          = MAX_USERS;
+      udev_joypad_mon_watched = epoll_ctl(udev_joypad_ep, EPOLL_CTL_ADD,
+            udev_monitor_get_fd(udev_joypad_mon), &event) == 0;
+   }
+#endif
 
    if (!(enumerate = udev_enumerate_new(udev_joypad_fd)))
       goto error;

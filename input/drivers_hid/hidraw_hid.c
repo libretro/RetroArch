@@ -27,6 +27,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <sys/epoll.h>
 #include <linux/hidraw.h>
 
 #ifdef HAVE_CONFIG_H
@@ -67,6 +68,8 @@ typedef struct hidraw_device
    uint8_t data[2][HIDRAW_REPORT_MAX];
    /* a pad with no handler, read from its report descriptor */
    bool generic;
+   bool watched; /* in the event set */
+   bool ready;   /* read this poll */
    hid_desc_layout_t layout;
    hid_desc_state_t state;
    input_pad_view_t view;  /* the state, as it is lent */
@@ -80,6 +83,10 @@ typedef struct hidraw_hid
    struct udev *udev;
    struct udev_monitor *monitor;
 #endif
+   /* The pads' nodes and the monitor, its one entry without a pad: a
+    * poll reads only the pads with a report */
+   int ep;
+   bool monitor_watched;
 } hidraw_hid_t;
 
 extern hid_driver_t hidraw_hid;
@@ -308,6 +315,13 @@ static void hidraw_hid_add(hidraw_hid_t *hid, const char *devnode)
 
    dev->next    = hid->devices;
    hid->devices = dev;
+   if (hid->ep >= 0)
+   {
+      struct epoll_event event;
+      event.events   = EPOLLIN;
+      event.data.ptr = dev;
+      dev->watched   = epoll_ctl(hid->ep, EPOLL_CTL_ADD, dev->fd, &event) == 0;
+   }
    RARCH_LOG("[hidraw] \"%s\" at %s on port %d.\n",
          name, devnode, dev->slot + 1);
    input_autoconfigure_connect(name, NULL, NULL, "hid",
@@ -404,6 +418,8 @@ static void hidraw_hid_free(const void *data)
    if (hid->udev)
       udev_unref(hid->udev);
 #endif
+   if (hid->ep >= 0)
+      close(hid->ep);
    if (hid->slots)
       pad_connection_destroy(hid->slots);
    free(hid);
@@ -420,6 +436,7 @@ static void *hidraw_hid_init(void)
       free(hid);
       return NULL;
    }
+   hid->ep = epoll_create(MAX_USERS + 1);
 #ifdef HAVE_UDEV
    /* listening before the scan, so a pad plugged in during it is not
     * missed */
@@ -429,6 +446,14 @@ static void *hidraw_hid_init(void)
       udev_monitor_filter_add_match_subsystem_devtype(hid->monitor,
             "hidraw", NULL);
       udev_monitor_enable_receiving(hid->monitor);
+      if (hid->ep >= 0)
+      {
+         struct epoll_event event;
+         event.events         = EPOLLIN;
+         event.data.ptr       = NULL;
+         hid->monitor_watched = epoll_ctl(hid->ep, EPOLL_CTL_ADD,
+               udev_monitor_get_fd(hid->monitor), &event) == 0;
+      }
    }
 #endif
    hidraw_hid_scan(hid);
@@ -437,15 +462,48 @@ static void *hidraw_hid_init(void)
 
 static void hidraw_hid_poll(void *data)
 {
+   int i, ready = -1;
    hidraw_hid_t *hid = (hidraw_hid_t*)data;
    hidraw_device_t *dev, *next;
+   struct epoll_event events[MAX_USERS + 1];
+   bool hotplugged   = false;
 
    if (!hid)
       return;
 #ifdef HAVE_UDEV
-   if (hid->monitor)
+   if (hid->monitor && !hid->monitor_watched)
       hidraw_hid_hotplug(hid);
 #endif
+
+   if (hid->ep >= 0)
+   {
+rewait:
+      ready = epoll_wait(hid->ep, events, ARRAY_SIZE(events), 0);
+      /* A hotplug can take a pad away: it comes first, and what was
+       * waited for before it is waited for again */
+      for (i = 0; i < ready; i++)
+      {
+         if (events[i].data.ptr)
+            continue;
+#ifdef HAVE_UDEV
+         hidraw_hid_hotplug(hid);
+#endif
+         if (hotplugged)
+         {
+            ready = -1;
+            break;
+         }
+         hotplugged = true;
+         goto rewait;
+      }
+      /* A full set may leave pads out: every pad is read */
+      if (ready >= (int)ARRAY_SIZE(events))
+         ready = -1;
+   }
+   for (dev = hid->devices; dev; dev = dev->next)
+      dev->ready = ready < 0 || !dev->watched;
+   for (i = 0; i < ready; i++)
+      ((hidraw_device_t*)events[i].data.ptr)->ready = true;
 
    for (dev = hid->devices; dev; dev = next)
    {
@@ -454,6 +512,11 @@ static void hidraw_hid_poll(void *data)
       unsigned n;
 
       next = dev->next;
+      if (!dev->ready)
+      {
+         pad_connection_idle(&hid->slots[dev->slot]);
+         continue;
+      }
       /* the newest report is the pad's state */
       for (n = 0; n < HIDRAW_READS_MAX; n++)
       {

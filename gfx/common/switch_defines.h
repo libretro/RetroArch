@@ -3,6 +3,7 @@
 
 #include <switch.h>
 #include <gfx/scaler/scaler.h>
+#include <gfx/math/matrix_4x4.h>
 
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"
@@ -14,6 +15,9 @@
 typedef struct
 {
    uint32_t *pixels;
+   /* The 2D engine's premultiplied copy, in its place when the GPU
+    * draws (switch_nx_gfx.c's sw_surf_t) */
+   void *surf;
    /* Per image row, the first and one past the last column a texel
     * shows in; equal for a row with nothing to draw. */
    uint16_t *spans;
@@ -26,6 +30,18 @@ typedef struct
 
 typedef struct
 {
+   /* The 2D engine and its memory (switch_nx_gfx.c's nxg_t); NULL when
+    * the CPU draws into fb */
+   void *gpu;
+   math_matrix_4x4 mvp;
+   /* The screen drawn to: the window's size, packed */
+   unsigned out_dims;
+   /* The menu's scissor, top-down, packed */
+   unsigned scissor_pos;
+   unsigned scissor_dims;
+   bool scissor_on;
+   bool blend;
+   bool vsync_changed;
    bool vsync;
    bool rgb32;
    bool smooth; /* bilinear */
@@ -42,6 +58,7 @@ typedef struct
    {
       bool enable;
       bool fullscreen;
+      float alpha;
 
       uint32_t *pixels;
 
@@ -64,8 +81,8 @@ typedef struct
    /* The overlay image column each screen column samples, for the
     * image being drawn */
    uint16_t overlay_cols[1280];
-   uint32_t image[1280 * 720];
-   uint32_t tmp_image[1280 * 720];
+   /* The source column each column of a CPU draw samples */
+   uint16_t op_cols[1920];
    u32 cnt;
    struct scaler_ctx scaler;
    /* The frame size the scaler was last built for, packed. */

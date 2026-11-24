@@ -280,7 +280,25 @@ enum net_rtmp_client_state net_rtmp_client_step(net_rtmp_client_t *c,
    if (c->state == NET_RTMP_CLIENT_CLOSING)
    {
       char input[256];
-      ssize_t count = recv(c->fd, input, sizeof(input), 0);
+      ssize_t count;
+      bool    tls = false;
+#ifdef HAVE_SSL
+      /* Through TLS the server's end is its close_notify, or the
+       * connection gone: either ends the close as the plain EOF does */
+      if (c->ssl)
+      {
+         bool error = false;
+         tls        = true;
+         count      = ssl_socket_receive_all_nonblocking(c->ssl, &error,
+               input, sizeof(input));
+         if (error)
+            count = 0;
+         else if (!count)
+            count = -1;
+      }
+      else
+#endif
+         count = recv(c->fd, input, sizeof(input), 0);
       if (!count)
       {
          client_close(c);
@@ -289,10 +307,18 @@ enum net_rtmp_client_state net_rtmp_client_step(net_rtmp_client_t *c,
       }
       else
       {
-         if (count < 0 && !isagain((int)count))
+         if (count < 0 && !tls && !isagain((int)count))
             goto failed;
          view->read = true;
          view->again = count > 0;
+#if defined(HAVE_SSL) && defined(HAVE_RETROSSL)
+         if (tls)
+         {
+            bool write = false;
+            view->again = ssl_socket_retro_pending(c->ssl, &write)
+               || view->again;
+         }
+#endif
       }
       return c->state;
    }
@@ -307,23 +333,27 @@ enum net_rtmp_client_state net_rtmp_client_step(net_rtmp_client_t *c,
          goto failed;
       if (result)
       {
-         if (c->secure)
+         /* Half-closed, then read until the server closes: closing with
+          * its last replies unread would reset the connection, and a
+          * reset can discard what the server had not read yet - the end
+          * of the stream.  Through TLS the close_notify goes first. */
+#ifdef HAVE_SSL
+         if (c->ssl && ssl_socket_close_notify(c->ssl) != 0)
          {
             client_close(c);
             c->state = NET_RTMP_CLIENT_FINISHED;
             view->fd = -1;
+            return c->state;
          }
-         else
-         {
-#ifdef _WIN32
-            if (shutdown(c->fd, SD_SEND))
-#else
-            if (shutdown(c->fd, SHUT_WR))
 #endif
-               goto failed;
-            c->state = NET_RTMP_CLIENT_CLOSING;
-            view->read = view->again = true;
-         }
+#ifdef _WIN32
+         if (shutdown(c->fd, SD_SEND))
+#else
+         if (shutdown(c->fd, SHUT_WR))
+#endif
+            goto failed;
+         c->state = NET_RTMP_CLIENT_CLOSING;
+         view->read = view->again = true;
       }
       else
       {

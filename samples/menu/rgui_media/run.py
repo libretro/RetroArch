@@ -80,6 +80,10 @@ with tempfile.TemporaryDirectory(prefix='rgui-media-') as temp:
  if a.require_cadence:values.update(media_player_crt_switch='true',crt_switch_resolution='1' if os.environ.get('MEDIA_TEST_CRT_ENGINE') else '0',crt_switch_resolution_super='0')
  if a.desktop_refresh:values.update(media_player_crt_switch='false',media_player_refresh_rate='true',crt_switch_resolution='0')
  if a.refresh_pixels:values['video_monitor_index']='1'
+ if os.environ.get('MEDIA_TEST_AUDIO_TRACKS') or os.environ.get('MEDIA_TEST_MUSIC'):
+  values.update(audio_enable='true',audio_driver=(a.audio_driver if os.environ.get('MEDIA_TEST_MUSIC') and a.audio_driver != 'wasapi' else 'alsa' if sys.platform.startswith('linux') else a.audio_driver),menu_thumbnail_preview_audio='true',audio_out_rate='48000')
+  if sys.platform.startswith('linux') and values['audio_driver']=='alsa':values['audio_device']='null'
+ if os.environ.get('MEDIA_TEST_MUSIC'):values.update(audio_enable_menu='true', menu_thumbnail_preview_audio='false')
  if a.modal:values.update(audio_enable='true',audio_driver=a.audio_driver,menu_thumbnail_preview_audio='true')
  if a.audio_latency is not None:values['audio_latency']=str(a.audio_latency)
  if a.audio_sync is not None:values['audio_sync']=a.audio_sync

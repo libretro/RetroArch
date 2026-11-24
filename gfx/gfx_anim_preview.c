@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include <boolean.h>
 #include <compat/strl.h>
@@ -47,7 +48,8 @@
  * it through the audio mixer while the animation is shown. */
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && \
       defined(HAVE_AUDIOMIXER) && \
-      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) \
+       || defined(HAVE_RFLAC) || defined(HAVE_RAC3))
 #define GFX_ANIM_PREVIEW_AUDIO 1
 #include <audio/audio_mixer.h>
 #include <formats/audio.h>
@@ -178,6 +180,63 @@ static gfx_anim_preview_t *gfx_anim_preview_open_internal(const char *path,
 gfx_anim_preview_t *gfx_anim_preview_open(const char *path, int png_probe)
 {
    return gfx_anim_preview_open_internal(path, png_probe, false);
+}
+
+static void gfx_anim_preview_audio_catalog(gfx_anim_preview_t *p)
+{
+   video_audio_track_t info;
+   unsigned i;
+   for (i = 0; i < GFX_ANIM_PREVIEW_AUDIO_TRACKS; i++)
+   {
+      gfx_anim_preview_audio_track_t *track = &p->audio_tracks[i];
+      size_t size;
+      if (!image_transfer_anim_stream_audio_track(p->stream, p->type, i, &info))
+         break;
+      track->info = info;
+      if (info.language_kind == VIDEO_AUDIO_LANGUAGE_MP4_PACKED
+            && info.language && info.language_size == 2)
+      {
+         unsigned packed = ((unsigned)info.language[0] << 8) | info.language[1];
+         unsigned a = (packed >> 10) & 31;
+         unsigned b = (packed >> 5) & 31;
+         unsigned c = packed & 31;
+         if (a && a <= 26 && b && b <= 26 && c && c <= 26)
+         {
+            track->language[0] = (char)(a + 96);
+            track->language[1] = (char)(b + 96);
+            track->language[2] = (char)(c + 96);
+         }
+      }
+      else if (info.language && info.language_kind == VIDEO_AUDIO_LANGUAGE_TEXT)
+      {
+         size = info.language_size;
+         if (size >= sizeof(track->language)) size = sizeof(track->language) - 1;
+         memcpy(track->language, info.language, size);
+      }
+      track->info.language = (const uint8_t*)track->language;
+      track->info.language_size = strlen(track->language);
+      track->info.language_kind = *track->language
+         ? VIDEO_AUDIO_LANGUAGE_TEXT : VIDEO_AUDIO_LANGUAGE_NONE;
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RAAC)
+      if (info.codec == VIDEO_AUDIO_AAC) track->supported = true;
+#endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RAC3)
+      if (info.codec == VIDEO_AUDIO_AC3) track->supported = true;
+#endif
+      if (p->type == IMAGE_TYPE_WEBM)
+      {
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_ROPUS)
+         if (info.codec == VIDEO_AUDIO_OPUS) track->supported = true;
+#endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RVORBIS)
+         if (info.codec == VIDEO_AUDIO_VORBIS) track->supported = true;
+#endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RFLAC)
+         if (info.codec == VIDEO_AUDIO_FLAC) track->supported = true;
+#endif
+      }
+   }
+   p->audio_track_count = i;
 }
 
 gfx_anim_preview_t *gfx_anim_preview_open_hw(const char *path, int png_probe)
@@ -368,6 +427,7 @@ static gfx_anim_preview_t *gfx_anim_preview_open_internal(const char *path,
    p->len        = blen;
    p->type       = type;
    p->seekable   = image_transfer_anim_stream_seekable(stream, type);
+   gfx_anim_preview_audio_catalog(p);
    /* Movie time starts at the container origin, even when audio
     * precedes its first video picture. The player schedules that gap. */
    p->timeline_start_us = 0;
@@ -809,8 +869,9 @@ void gfx_anim_preview_audio_prepare_free(gfx_anim_preview_audio_prepared_t *a)
    free(a);
 }
 
-gfx_anim_preview_audio_prepared_t *gfx_anim_preview_audio_prepare_new(
-      const gfx_anim_preview_t *p, int64_t target_us, unsigned mix_rate, bool s16)
+static gfx_anim_preview_audio_prepared_t *gfx_anim_preview_audio_prepare_track(
+      const gfx_anim_preview_t *p, int64_t target_us, unsigned mix_rate, bool s16,
+      int track)
 {
 #ifdef GFX_ANIM_PREVIEW_AUDIO
    gfx_anim_preview_audio_prepared_t *a;
@@ -830,14 +891,16 @@ gfx_anim_preview_audio_prepared_t *gfx_anim_preview_audio_prepare_new(
       goto failed;
    base = data_transfer_window_base(a->window->dt, &len);
    a->type = p->type == IMAGE_TYPE_WEBM
-      ? audio_transfer_webm_audio_type(base, initial_hi) : AUDIO_TYPE_AAC;
+      ? audio_transfer_webm_audio_track_type(base, initial_hi, track)
+      : audio_transfer_mp4_audio_track_type(base, len, initial_hi, track);
    a->mixer_type = p->type == IMAGE_TYPE_WEBM
       ? AUDIO_MIXER_TYPE_WEBA : AUDIO_MIXER_TYPE_M4A;
    if (a->type != AUDIO_TYPE_AAC && a->type != AUDIO_TYPE_OPUS
-         && a->type != AUDIO_TYPE_VORBIS) goto failed;
+         && a->type != AUDIO_TYPE_VORBIS && a->type != AUDIO_TYPE_FLAC
+         && a->type != AUDIO_TYPE_AC3) goto failed;
    a->sound = a->mixer_type == AUDIO_MIXER_TYPE_WEBA
-      ? audio_mixer_load_weba_avail((void*)base, len, initial_hi)
-      : audio_mixer_load_m4a((void*)base, len);
+      ? audio_mixer_load_weba_track((void*)base, len, initial_hi, track)
+      : audio_mixer_load_m4a_track_avail((void*)base, len, initial_hi, track);
    if (!a->sound) goto failed;
    retro_atomic_fetch_add_int(&a->window->refs, 1);
    audio_mixer_sound_set_data_owner(a->sound, a->window,
@@ -846,6 +909,8 @@ gfx_anim_preview_audio_prepared_t *gfx_anim_preview_audio_prepare_new(
    audio_transfer_set_buffer_ptr(a->transfer, a->type, (void*)base, len);
    audio_transfer_set_output_rate(a->transfer, a->type, mix_rate);
    audio_transfer_set_avail(a->transfer, a->type, initial_hi);
+   if (!audio_transfer_set_container_track(a->transfer, a->type, track))
+      goto failed;
    if (!audio_transfer_start(a->transfer, a->type)
          || !audio_transfer_info(a->transfer, a->type, NULL, &rate, NULL)
          || !rate) goto failed;
@@ -863,9 +928,16 @@ gfx_anim_preview_audio_prepared_t *gfx_anim_preview_audio_prepare_new(
 failed:
    gfx_anim_preview_audio_prepare_free(a);
 #else
-   (void)p; (void)target_us; (void)mix_rate; (void)s16;
+   (void)p; (void)target_us; (void)mix_rate; (void)s16; (void)track;
 #endif
    return NULL;
+}
+
+gfx_anim_preview_audio_prepared_t *gfx_anim_preview_audio_prepare_new(
+      const gfx_anim_preview_t *p, int64_t target_us, unsigned mix_rate, bool s16)
+{
+   int track = p ? retro_atomic_load_acquire_int(&p->requested_audio_track) - 1 : -1;
+   return gfx_anim_preview_audio_prepare_track(p, target_us, mix_rate, s16, track);
 }
 
 int gfx_anim_preview_audio_prepare_step(gfx_anim_preview_audio_prepared_t *a)
@@ -893,7 +965,7 @@ int gfx_anim_preview_audio_prepare_step(gfx_anim_preview_audio_prepared_t *a)
    if (hi > len) hi = len;
    if (!data_transfer_window_extend(a->window->dt, hi)
          || !data_transfer_window_feed_budget(a->window->dt, anchor,
-            ahead, GFX_ANIM_PREVIEW_AUDIO_MARGIN,
+            ahead, a->type == AUDIO_TYPE_FLAC ? 0 : GFX_ANIM_PREVIEW_AUDIO_MARGIN,
             GFX_ANIM_PREVIEW_AUDIO_FEED_BUDGET, &res_hi))
       return -1;
    a->hi = res_hi;
@@ -954,13 +1026,23 @@ bool gfx_anim_preview_audio_adopt(gfx_anim_preview_t *p,
    return ok;
 }
 
+bool gfx_anim_preview_audio_set_track(gfx_anim_preview_t *p, int track)
+{
+   if (!p || !p->seekable || track < -1 || track == INT_MAX
+         || (p->type != IMAGE_TYPE_MP4 && p->type != IMAGE_TYPE_WEBM))
+      return false;
+   retro_atomic_store_release_int(&p->requested_audio_track, track + 1);
+   return true;
+}
+
 bool gfx_anim_preview_seek_request(gfx_anim_preview_t *p,
-      unsigned mix_rate, bool s16)
+      unsigned mix_rate, bool s16, bool preserve_position)
 {
    if (!p || !p->seekable || mix_rate > 0x3fffffffU)
       return false;
    retro_atomic_store_release_int(&p->seek_audio_format,
-         (int)(mix_rate | (s16 ? 0x40000000U : 0)));
+         (int)(mix_rate | (s16 ? 0x40000000U : 0)
+            | (preserve_position ? 0x80000000U : 0)));
    p->seeking = true;
    p->seek_failed = false;
    gfx_anim_preview_set_paused(p, p->paused);
@@ -1029,11 +1111,13 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
    {
       const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
       if (target_us < 0) target_us = 0;
+      p->seek_requested_us = target_us;
       target_us = target_us > maximum - p->timeline_start_us
          ? maximum : target_us + p->timeline_start_us;
       gfx_anim_preview_audio_prepare_free(p->seek_audio);
       p->seek_audio = NULL;
       p->seek_format = (unsigned)retro_atomic_load_acquire_int(&p->seek_audio_format);
+      p->seek_track = retro_atomic_load_acquire_int(&p->requested_audio_track) - 1;
       p->seek_phase = 1;
       p->seek_feed_hi = p->feed_res_hi;
       p->seek_feed_anchor = p->feed_tell;
@@ -1105,13 +1189,16 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
       }
       p->seek_video_us = p->seek_video_us > p->timeline_start_us
          ? p->seek_video_us - p->timeline_start_us : 0;
+      /* Audio changes retain movie time between video pictures. */
+      if (p->seek_format & 0x80000000U) p->seek_video_us = p->seek_requested_us;
       p->seek_phase = 2;
       return VIDEO_PLAYER_SEEK_PROGRESS;
    }
    if (p->seek_phase == 2 && (p->seek_format & 0x3fffffffU))
    {
-      p->seek_audio = gfx_anim_preview_audio_prepare_new(p, p->seek_video_us,
-            p->seek_format & 0x3fffffffU, (p->seek_format & 0x40000000U) != 0);
+      p->seek_audio = gfx_anim_preview_audio_prepare_track(p, p->seek_video_us,
+            p->seek_format & 0x3fffffffU, (p->seek_format & 0x40000000U) != 0,
+            p->seek_track);
       p->seek_phase = 3;
       return VIDEO_PLAYER_SEEK_PROGRESS;
    }
@@ -1171,8 +1258,8 @@ void gfx_anim_preview_audio_begin(gfx_anim_preview_t *p)
    if (   (p->type != IMAGE_TYPE_WEBM && p->type != IMAGE_TYPE_MP4)
        || !config_get_ptr()->bools.menu_thumbnail_preview_audio)
       return;
-   if (p->audio_dt)
-      return;                   /* already streaming */
+   if (p->audio_dt || retro_atomic_load_acquire_int(&p->requested_audio_track))
+      return;
 
    if (!(w = gfx_anim_preview_audio_source(p, &p->audio_hi, &prime_hi)))
       return;
@@ -1439,6 +1526,7 @@ gfx_anim_preview_t *gfx_anim_preview_wrap(void *stream,
    p->len        = len;
    p->type       = type;
    p->seekable   = image_transfer_anim_stream_seekable(stream, type);
+   gfx_anim_preview_audio_catalog(p);
    p->timeline_start_us = 0;
    p->windowed   = windowed;
    p->audio_slot = -1;

@@ -247,7 +247,7 @@ void ui_window_win32_set_droppable(void *data, bool droppable)
 static bool ui_window_win32_focused(void *data)
 {
    ui_window_win32_t *window = (ui_window_win32_t*)data;
-   return (GetForegroundWindow() == window->hwnd);
+   return (win32_foreground_window() == window->hwnd);
 }
 
 static ui_window_t ui_window_win32 = {
@@ -649,6 +649,10 @@ bool win32_load_content_from_gui(const char *szFilename)
    /* poll list of current cores */
    core_info_list_t *core_info_list = NULL;
 
+#ifdef HAVE_CORE_LOAD_CHECK
+   if (task_content_warning_waits(szFilename))
+      return false;
+#endif
    core_info_get_list(&core_info_list);
 
    if (core_info_list)
@@ -742,7 +746,6 @@ static bool win32_drag_query_file_ansi(HWND hwnd, WPARAM wparam)
       char szFilename[1024];
 #ifdef HAVE_MENU
       UINT i;
-      char utf8[1024];
       union string_list_elem_attr attr;
       struct string_list *files = string_list_new();
       attr.i                    = 0;
@@ -751,8 +754,9 @@ static bool win32_drag_query_file_ansi(HWND hwnd, WPARAM wparam)
       {
          szFilename[0] = '\0';
          DragQueryFileA((HDROP)wparam, i, szFilename, sizeof(szFilename));
-         if (     local_to_utf8_string(szFilename, utf8, sizeof(utf8))
-               && !string_list_append(files, utf8, attr))
+         if (     local_to_utf8_string(szFilename, szFilename,
+                  sizeof(szFilename))
+               && !string_list_append(files, szFilename, attr))
          {
             string_list_free(files);
             files = NULL;
@@ -1026,6 +1030,10 @@ LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
                free(title_wide);
             if (title_cp)
                free(title_cp);
+#ifdef HAVE_CORE_LOAD_CHECK
+            if (task_content_warning_waits(win32_file))
+               break;
+#endif
             content_info.argc        = 0;
             content_info.argv        = NULL;
             content_info.args        = NULL;
@@ -1770,6 +1778,8 @@ ui_companion_driver_t ui_companion_win32 = {
    NULL, /* iterate */
    ui_companion_win32_event_command,
    NULL,
+   NULL, /* notify_thumbnails */
+   NULL, /* notify_core_updater_list */
    NULL,
    NULL,
    NULL,

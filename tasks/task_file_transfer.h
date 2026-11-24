@@ -119,9 +119,9 @@ typedef struct
  * receive window, not the payload.
  *
  * The completion callback gets status and headers but data == NULL
- * and len == 0; the body is already on disk.  The partial file is
- * removed unless the transfer finished cleanly with a 2xx.  The
- * output directory must already exist.
+ * and len == 0; the body is already on disk.  @path is replaced only
+ * by a transfer that finished cleanly with a 2xx; otherwise it is left
+ * as it was.  The output directory must already exist.
  **/
 void *task_push_http_download_file(const char *url, const char *path,
       bool mute, const char *title,
@@ -132,6 +132,15 @@ void *task_push_http_download_file(const char *url, const char *path,
  * callback the start of its body (up to 4 KB) in data->data, so the
  * server's message can be logged; a successful one hands none. */
 void *task_push_http_download_file_with_headers(const char *url,
+      const char *path, bool mute, const char *title, const char *headers,
+      retro_task_callback_t cb, void *user_data);
+
+/* The same for a caller that downloads to a staging file of its own and
+ * puts it in place itself (cloud sync): written straight to @path, with
+ * no temporary file beside it, and removed if the transfer fails.  A
+ * process killed mid-download leaves a partial file there, which the
+ * caller's staging has to allow for. */
+void *task_push_http_download_staged_file(const char *url,
       const char *path, bool mute, const char *title, const char *headers,
       retro_task_callback_t cb, void *user_data);
 

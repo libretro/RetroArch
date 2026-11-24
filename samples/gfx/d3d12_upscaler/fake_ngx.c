@@ -167,6 +167,8 @@ EXPORT int CONV NVSDK_NGX_D3D12_Init_ProjectID(const char *project, int engine,
    (void)engine_version; (void)data_path;
    if (!project || !dev || engine != 0 || sdk_version != 0x15 || !common_info)
       return FAIL;
+   if (rec.init_hook)
+      rec.init_hook(rec.init_hook_data);
    rec.init_calls++;
    rec.init_device   = dev;
    rec.init_path0    = (paths[0] && paths[0][0]) ? paths[0][0][0] : 0;
@@ -221,6 +223,8 @@ EXPORT int CONV NVSDK_NGX_D3D12_CreateFeature(void *cmd, int feature, param_t *p
       return FAIL | 5;
    if (feature == 18 && rec.nr_missing)
       return FAIL | 12;
+   if (rec.create_hook && (!rec.create_hook_feature || rec.create_hook_feature == feature))
+      rec.create_hook(rec.create_hook_data);
    if (rec.create_fails)
       return FAIL | 11;
    memset(c, 0, sizeof(*c));

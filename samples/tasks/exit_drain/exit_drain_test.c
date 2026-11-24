@@ -14,9 +14,10 @@
  *    callbacks run by the drain;
  *  - a task that completes on its own before the drain must retire
  *    through the same gather;
- *  - a scheduled-for-later task (a 'when' in the future) must not
- *    hold the wait: the drain returns promptly and that task meets
- *    the old abandonment, as designed.
+ *  - a scheduled-for-later task must skip its future work when
+ *    cancellation advances it for cleanup; it must not hold the drain;
+ *  - MUSIC_FIXTURE opens a real music stream and requires its
+ *    voice and feeder to retire promptly at quit.
  *
  * The old-order lane (MODE=old) skips the drain and goes straight
  * to task_queue_deinit() the way the exit path used to: the
@@ -44,7 +45,25 @@
 
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
+#include "../../../audio/audio_driver.h"
+#include "../../../gfx/gfx_music_player.h"
 #include "../../../frontend/frontend_driver.h"
+
+/* A headless sink still opens the real frontend mixer. The stock null
+ * driver has no init callback and therefore never starts that mixer. */
+extern audio_driver_t audio_null;
+static int sink_token;
+static void *sink_init(const char *device, unsigned rate, unsigned latency,
+      unsigned *new_rate)
+{ (void)device; (void)latency; *new_rate = rate; return &sink_token; }
+static ssize_t sink_write(void *data, const void *buf, size_t size)
+{ (void)data; (void)buf; return (ssize_t)size; }
+static bool sink_true(void *data) { (void)data; return true; }
+static bool sink_start(void *data, bool shutdown)
+{ (void)data; (void)shutdown; return true; }
+static void sink_nonblock(void *data, bool nonblock) { (void)data; (void)nonblock; }
+static void sink_free(void *data) { (void)data; }
+static bool sink_float(void *data) { (void)data; return false; }
 
 static unsigned failures = 0;
 
@@ -110,7 +129,8 @@ static void quick_cb(retro_task_t *task, void *task_data,
 /* Scheduled for later: must not hold the drain. */
 static void deferred_handler(retro_task_t *task)
 {
-   deferred_touched = 1;
+   if (!(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
+      deferred_touched = 1;
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
@@ -178,11 +198,59 @@ int main(int argc, char *argv[])
       }
    }
 
+   audio_null.init = sink_init;
+   audio_null.write = sink_write;
+   audio_null.stop = sink_true;
+   audio_null.start = sink_start;
+   audio_null.alive = sink_true;
+   audio_null.set_nonblock_state = sink_nonblock;
+   audio_null.free = sink_free;
+   audio_null.use_float = sink_float;
+
    if (!retroarch_main_init(rarch_argc, rarch_argv))
    {
       fprintf(stderr, "FAIL: retroarch_main_init failed\n");
       return 1;
    }
+
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   /* Windowable viewer formats force the feeder even for small fixtures.
+    * Resident formats must also release their mixer voice at quit. */
+   if (!old_order && getenv("MUSIC_FIXTURE"))
+   {
+      gfx_music_player_t *music = gfx_music_player_new(getenv("MUSIC_FIXTURE"));
+      retro_time_t deadline = cpu_features_get_time_usec() + 2000000;
+      bool ready = false;
+      CHECK(music != NULL, "Music viewer did not open");
+      while (music && cpu_features_get_time_usec() < deadline)
+      {
+         task_queue_check();
+         if (gfx_music_player_pause(music, false)) { ready = true; break; }
+         retro_sleep(1);
+      }
+      CHECK(ready, "Music viewer never acquired its mixer voice");
+      if (getenv("MUSIC_DURATION_US"))
+      {
+         gfx_media_playback_state_t state;
+         int64_t expected = (int64_t)strtol(getenv("MUSIC_DURATION_US"), NULL, 10);
+         memset(&state, 0, sizeof(state));
+         CHECK(gfx_music_player_state(music, &state), "Music state unavailable");
+         CHECK(state.duration_us >= expected - 100000
+               && state.duration_us <= expected + 100000,
+               "Music duration was %ld us, expected %ld us",
+               (long)state.duration_us, (long)expected);
+      }
+      t0 = cpu_features_get_time_usec();
+      retroarch_drain_tasks_for_exit();
+      drain_us = cpu_features_get_time_usec() - t0;
+      CHECK(drain_us < 500000, "Music held quit for %ld us", (long)drain_us);
+      CHECK(!gfx_music_player_pause(music, false), "Music voice survived shutdown");
+      gfx_music_player_close(music);
+      printf("exit_drain: Music stopped and tasks retired in %ld us\n", (long)drain_us);
+   }
+#else
+   CHECK(!getenv("MUSIC_FIXTURE"), "Music regression requires menu and mixer");
+#endif
 
    /* The in-flight population at "quit": one cancellation-aware,
     * one already finishing, one scheduled for later. */
@@ -225,9 +293,8 @@ int main(int argc, char *argv[])
             (long)drain_us);
    }
 
-   /* The rest of the old exit order; on both paths the deferred
-    * task meets abandonment here, and on the old path everything
-    * does. */
+   /* The old path abandons queued work here. On the drain path the
+    * cancellation callbacks have already retired their resources. */
    task_queue_deinit();
 
    if (old_order)

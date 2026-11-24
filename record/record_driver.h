@@ -214,6 +214,9 @@ bool recording_driver_streaming_mode_supported(const char *ident, unsigned mode)
 
 extern const record_driver_t record_nvenc;
 extern const record_driver_t record_metal;
+#ifdef HAVE_PYROWAVE
+extern const record_driver_t record_pyrowave;
+#endif
 #ifdef HAVE_RECORD_VULKAN
 extern const record_driver_t record_vulkan;
 #endif
@@ -231,11 +234,16 @@ bool recording_gpu_reset_pending(void);
  * GPU poll applies the reinit once, or drops it during content/quit teardown. */
 bool recording_gpu_defer_reinit(int flags);
 void recording_gpu_reinit_poll(void);
+bool recording_gpu_reinit_pending(void);
 bool recording_gpu_defer_start(const record_driver_t *driver);
 bool recording_gpu_cancel_start(void);
 RETRO_END_DECLS
 static INLINE bool recording_is_native_gpu(const record_driver_t *driver)
 {
+#ifdef HAVE_PYROWAVE
+   if (driver == &record_pyrowave)
+      return true;
+#endif
 #ifdef HAVE_RECORD_VULKAN
    if (driver == &record_vulkan)
       return true;

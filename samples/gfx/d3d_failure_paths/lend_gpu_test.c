@@ -8,6 +8,7 @@
 #include <string.h>
 #include <boolean.h>
 #include <retro_atomic.h>
+#include "../../../gfx/common/media_history.h"
 #include <formats/video_player.h>
 #define INLINE
 #define Release(p) do { if (p) { (p)->lpVtbl->Release(p); (p)=NULL; } } while (0)
@@ -17,6 +18,7 @@ typedef ID3D11DeviceContext *D3D11DeviceContext;
 typedef ID3D11Texture2D *D3D11Texture2D;
 typedef ID3D11Resource *D3D11Resource;
 #include "lend_type.inc"
+typedef ID3D11ShaderResourceView *D3D11ShaderResourceView;
 typedef struct {
    ID3D11Texture2D *handle,*staging;
    ID3D11ShaderResourceView *view;
@@ -25,6 +27,10 @@ typedef struct {
    size_t upload_size;
    d3d11_texture_lend_t *lend;
    unsigned lend_bpp;
+   gfx_media_history_t media_history;
+   D3D11ShaderResourceView *media_versions;
+   unsigned media_version_count;
+   bool media_borrowable;
    D3D11_TEXTURE2D_DESC desc;
 } d3d11_texture_t;
 typedef struct planar { struct planar *next; d3d11_texture_t *texture; } d3d11_planar_t;
@@ -47,6 +53,7 @@ static void dxgi_copy(int w,int h,DXGI_FORMAT sf,int sp,const void *src,DXGI_FOR
    (void)sf;(void)df;cpu_copies++;
    for (y=0;y<h;y++) memcpy((unsigned char*)dst+y*dp,(const unsigned char*)src+y*(sp ? sp : w*(int)bpp),w*bpp);
 }
+#include "media_passthrough.h"
 #include "lend.inc"
 static HRESULT STDMETHODCALLTYPE map(ID3D11DeviceContext *ctx,ID3D11Resource *r,UINT sub,
       D3D11_MAP mode,UINT flags,D3D11_MAPPED_SUBRESOURCE *out)

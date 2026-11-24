@@ -77,6 +77,10 @@
 
 #include "../font_driver.h"
 #include "../../record/record_driver.h"
+#ifdef HAVE_PYROWAVE
+#include "../../record/drivers/record_pyrowave.h"
+#include "../../record/record_pyrowave_receiver.h"
+#endif
 
 /* Headset output: the slang chains draw its screens. */
 #if defined(HAVE_OPENXR_GL) && defined(HAVE_SLANG)
@@ -126,12 +130,53 @@ struct gl3_views_fbo
    GLuint tex;
 };
 
+#ifdef HAVE_GLSL
+#define MEDIA_GEN_FB glGenFramebuffers
+#define MEDIA_DELETE_FB glDeleteFramebuffers
+#define MEDIA_BIND_FB(id) glBindFramebuffer(GL_FRAMEBUFFER, id)
+#define MEDIA_FB_BINDING GL_FRAMEBUFFER_BINDING
+#define MEDIA_ATTACH(tex) glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0)
+#define MEDIA_FB_COMPLETE() (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+#define gl_media_source_release gl3_media_source_release
+#define gl_media_source_acquire gl3_media_source_acquire
+#define gl_media_shader_retire gl3_media_shader_retire
+#define gl_media_shader_references gl3_media_shader_references
+#define gl_media_shader_preserve gl3_media_shader_preserve
+#define gl_media_target_free gl3_media_target_free
+#define gl_media_shader_free gl3_media_shader_free
+#define gl_media_target_fit gl3_media_target_fit
+#define gl_media_info gl3_media_info
+#define gl_media_scale gl3_media_scale
+#define gl_media_shader_changed gl3_media_shader_changed
+#define gl_media_shader_draw gl3_media_shader_draw
+#include "../common/gl_media_shader.h"
+#endif
+
+#include "../common/media_history.h"
+#include "../common/gl_media_pool.h"
+
 typedef struct gl3
 {
+   gl_media_pool_t *media_pool;
+#ifdef HAVE_GLSL
+   gl_media_shader_t *media_legacy_shader;
+#endif
+#if defined(HAVE_GLSL) || defined(HAVE_SLANG)
+   uintptr_t media_last_texture;
+#endif
+#ifdef HAVE_SLANG
+   gfx_media_history_t media_history;
+   uintptr_t media_history_texture;
+   uintptr_t media_borrow_texture;
+   bool media_borrow_single_level;
+#endif
 #ifdef HAVE_GL_MENU_BLOOM
    gl_menu_bloom_t *menu_bloom;
 #endif
    const gfx_ctx_driver_t *ctx_driver;
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   retro_atomic_int_t pyrowave_format;
+#endif
    void *ctx_data;
    /* The frame's swap: how long it took, and whether it was one that
     * waits for the vertical blank (a swap interval set). For
@@ -140,6 +185,9 @@ typedef struct gl3
    bool present_vsynced;
    gl3_filter_chain_t *filter_chain;
    gl3_filter_chain_t *filter_chain_default;
+   gl3_filter_chain_t *media_shader_chain;
+   uint64_t media_shader_frame;
+   bool media_shader_enabled;
    /* Views: one chain per view for the preset and for the stock
     * shader, the preset they came from, and each view's copy of its
     * rectangle of the frame. count is what set_view_count last asked
@@ -430,6 +478,11 @@ typedef struct gl3
 #endif
 #ifdef HAVE_GL_PLANAR
    gl_planar_t planar;
+   /* A movie frame shown in the core frame's place: converted from
+    * the media core's planes, drawn until a core frame comes */
+   GLuint movie_texture;
+   unsigned movie_dims;
+   bool movie_pending;  /* a frame imported since the last draw */
 #endif
 
    bool pbo_readback_valid[GL_CORE_NUM_PBOS];
@@ -566,6 +619,10 @@ static void gl3_publish_texture_formats(gl3_t *gl)
 static void gl3_publish_flags(gl3_t *gl)
 {
    gl3_publish_texture_formats(gl);
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   retro_atomic_store_release_int(&gl->pyrowave_format,
+         gl->scrgb.active ? GL_RGBA16F : GL_RGBA8);
+#endif
 #ifdef HAVE_SLANG
    retro_atomic_store_release_int(&gl->scrgb.active_published,
          gl->scrgb.active ? 1 : 0);
@@ -1222,9 +1279,8 @@ static void gl3_fp16_forget_all(void)
    gl3_fp16_cap   = 0;
 }
 
-#ifdef HAVE_SLANG
-/* Only the slang pipelines draw a half-float texture through the
- * linear program */
+#if defined(HAVE_SLANG) || defined(HAVE_GLSL)
+/* Texture metadata belongs to the context; no driver query is needed. */
 static bool gl3_fp16_is(GLuint id)
 {
    unsigned i;
@@ -1234,10 +1290,40 @@ static bool gl3_fp16_is(GLuint id)
    return false;
 }
 
+#endif
+
+#ifdef HAVE_SLANG
 static GLuint gl3_linear_program(gl3_t *gl);
 static GLuint gl3_plastic_program(gl3_t *gl);
 static GLuint gl3_font_plastic_program(gl3_t *gl);
 #endif
+
+#ifdef HAVE_GL_PLANAR
+static bool gl3_media_referenced(void *context, GLuint image);
+#endif
+static GLuint gl3_media_resolve(gl3_t *gl, GLuint texture)
+{
+#ifdef HAVE_GL_PLANAR
+   unsigned width, height;
+   if (gl_planar_pending(&gl->planar, texture, &width, &height))
+   {
+      GLuint destination;
+      if (!gl_planar_prepare_rgb(&gl->planar, texture)) return 0;
+      destination = gl_media_pool_prepare_ex(&gl->media_pool, texture, width, height,
+            gl3_media_referenced, gl, GL_MEDIA_POOL_SWIZZLE | GL_MEDIA_POOL_UNPACK | GL_MEDIA_POOL_MUTABLE_MIPS);
+      if (!destination) return 0;
+#ifdef HAVE_SLANG
+      if (!gl3_filter_chain_preserve_history(gl->media_shader_chain, destination)) return 0;
+#endif
+#ifdef HAVE_GLSL
+      if (!gl3_media_shader_preserve(gl->media_legacy_shader, destination)) return 0;
+#endif
+      if (!gl_planar_resolve_target(&gl->planar, texture, destination)) return 0;
+      gl_media_pool_publish(gl->media_pool, texture, destination);
+   }
+#endif
+   return gl_media_pool_resolve(gl->media_pool, texture);
+}
 
 static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
@@ -1264,6 +1350,15 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
 
    glViewport(VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos),
          VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
+#ifdef HAVE_GL_PLANAR
+   if (!draw->effect && !draw->pipeline_id
+         && coords.vertices == 4 && draw->texture
+         && gl_planar_render(&gl->planar, (unsigned)draw->texture,
+            coords.vertex, coords.tex_coord, coords.color,
+            draw->matrix_data ? (const float*)draw->matrix_data : gl->mvp_no_rot.data))
+      return;
+#endif
+
 
 #if defined(HAVE_SHADERPIPELINE) && defined(HAVE_GLSL)
    {
@@ -1281,7 +1376,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
    {
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, draw->texture
-            ? (GLuint)draw->texture : gl->white_texture);
+            ? gl3_media_resolve(gl, (GLuint)draw->texture) : gl->white_texture);
 
       if (draw->pipeline_id == VIDEO_SHADER_XMB_PLASTIC)
          gl->chain.shader->use(gl, gl->chain.shader_data,
@@ -1310,7 +1405,7 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
 
       glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, draw->texture
-            ? (GLuint)draw->texture : gl->white_texture);
+            ? gl3_media_resolve(gl, (GLuint)draw->texture) : gl->white_texture);
 
 #ifdef HAVE_SHADERPIPELINE
       if (fx && (fx->flags & GFX_EFFECT_BLEND_ADD))
@@ -1515,7 +1610,7 @@ static bool gfx_display_gl3_mesh_draw(void *data, unsigned video_dims,
    glUseProgram(gl->pipelines.mesh);
    glUniform4fv(gl->pipelines.mesh_loc.flat_ubo_vertex, 5, ubo);
    glActiveTexture(GL_TEXTURE1);
-   glBindTexture(GL_TEXTURE_2D, texture ? (GLuint)texture : gl->white_texture);
+   glBindTexture(GL_TEXTURE_2D, texture ? gl3_media_resolve(gl, (GLuint)texture) : gl->white_texture);
 
    /* Read as stored: three floats, two 16-bit and four 8-bit
     * normalised integers */
@@ -2414,7 +2509,7 @@ static void gl3_render_overlay(gl3_t *gl,
       if (!gl->overlay_tex[i])
          continue;
       glActiveTexture(GL_TEXTURE1);
-      glBindTexture(GL_TEXTURE_2D, gl->overlay_tex[i]);
+      glBindTexture(GL_TEXTURE_2D, gl3_media_resolve(gl, gl->overlay_tex[i]));
       glDrawArrays(GL_TRIANGLE_STRIP, (GLint)(4 * i), 4);
    }
 
@@ -2486,6 +2581,10 @@ static void gl3_destroy_resources(gl3_t *gl)
       gl3_filter_chain_free(gl->filter_chain_default);
 #endif
    gl->filter_chain_default = NULL;
+#ifdef HAVE_SLANG
+   gl3_filter_chain_free(gl->media_shader_chain);
+#endif
+   gl->media_shader_chain = NULL;
 
 #ifdef HAVE_SLANG
    gl3_views_free_chains(gl, 0, true);
@@ -2500,6 +2599,10 @@ static void gl3_destroy_resources(gl3_t *gl)
    gl3_vv_target_drop(gl, &gl->views.ui_target, &gl->views.ui);
 #endif
 
+#ifdef HAVE_GLSL
+   gl3_media_shader_free(&gl->media_legacy_shader);
+#endif
+   gl_media_pool_free(&gl->media_pool);
    if (gl->chain.shader)
    {
       gl->chain.shader->deinit(gl->chain.shader_data);
@@ -3252,7 +3355,7 @@ static void gl3_views_build_chains(gl3_t *gl)
       set->preset[i] = gl3_filter_chain_create_from_preset(
             gl->views.preset, gl->video_info.smooth
             ? GLSLANG_FILTER_CHAIN_LINEAR
-            : GLSLANG_FILTER_CHAIN_NEAREST, true, false);
+            : GLSLANG_FILTER_CHAIN_NEAREST, true, false, false);
       if (!set->preset[i])
          RARCH_ERR("[GLCore] Failed to create view %u's preset: \"%s\".\n",
                i, gl->views.preset);
@@ -3271,7 +3374,7 @@ static void gl3_views_build_chains(gl3_t *gl)
       *chain = gl3_filter_chain_create_from_preset(gl->views.preset,
             gl->video_info.smooth
             ? GLSLANG_FILTER_CHAIN_LINEAR
-            : GLSLANG_FILTER_CHAIN_NEAREST, false, true);
+            : GLSLANG_FILTER_CHAIN_NEAREST, false, true, false);
       if (!*chain)
          RARCH_ERR("[OpenXR] Failed to create the headset's preset: \"%s\".\n",
                gl->views.preset);
@@ -3286,6 +3389,8 @@ static void gl3_views_set_preset(gl3_t *gl, const char *path)
    strlcpy(gl->views.preset, path ? path : "", sizeof(gl->views.preset));
    gl3_views_free_chains(gl, 0, true);
    gl3_views_build_chains(gl);
+   gl3_filter_chain_free(gl->media_shader_chain);
+   gl->media_shader_chain = NULL;
 }
 
 static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
@@ -3298,7 +3403,7 @@ static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
          gl->video_info.smooth
          ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST,
-         (gl->flags & GL3_FLAG_HW_RENDER_ENABLE) != 0, false);
+         (gl->flags & GL3_FLAG_HW_RENDER_ENABLE) != 0, false, false);
 
    if (!gl->filter_chain)
    {
@@ -3317,6 +3422,9 @@ static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
    }
 
    gl3_views_set_preset(gl, shader_path);
+   gl->media_shader_chain = gl3_filter_chain_create_from_preset(shader_path,
+         gl->video_info.smooth ? GLSLANG_FILTER_CHAIN_LINEAR : GLSLANG_FILTER_CHAIN_NEAREST,
+         false, false, true);
 
    return true;
 }
@@ -3783,20 +3891,22 @@ static bool gl3_init_filter_chain_with_path(gl3_t *gl, const char *shader_path)
             true,
 #endif
             gl->version_major, gl->version_minor);
+   gl_glsl_set_viewer_hdr(gl->scrgb.active);
 #endif
 
 #ifdef HAVE_SLANG
+   /* The menu/HDR compositor belongs to the context, including when a
+    * GLSL preset draws the content. Compile it during preset loading. */
+   if (!gl3_init_pipelines(gl))
+   {
+      RARCH_ERR("[GLCore] Failed to cross-compile menu pipelines.\n");
+      return false;
+   }
    if (type == RARCH_SHADER_SLANG)
    {
       RARCH_LOG("[GLCore] Using Slang shader backend.\n");
 
       gl->chain.active = false;
-
-      if (!gl3_init_pipelines(gl))
-      {
-         RARCH_ERR("[GLCore] Failed to cross-compile menu pipelines.\n");
-         return false;
-      }
 
       if (!shader_path || !*shader_path)
       {
@@ -3974,6 +4084,7 @@ static void gl3_begin_debug(gl3_t *gl)
       glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
       glEnable(GL_DEBUG_OUTPUT);
 #endif
+      RARCH_LOG("[GLCore] GL debugging enabled.\n");
    }
    else
       RARCH_ERR("[GLCore] Neither GL_KHR_debug nor GL_ARB_debug_output are implemented. Cannot start GL debugging.\n");
@@ -4011,6 +4122,9 @@ static void *gl3_init(const video_info_t *video)
    /* gl must exist before the context lookup writes its flags. */
    if (!gl || !(ctx_driver = gl3_get_context(gl)))
       goto error;
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   retro_atomic_int_init(&gl->pyrowave_format, 0);
+#endif
 
    /* Latched here, inside the wrapper's blocking CMD_INIT (the main
     * thread is parked in send-and-wait, so the settings read is
@@ -4520,6 +4634,85 @@ static void gl3_get_overlay_interface(void *data,
 }
 #endif
 
+#ifdef HAVE_GL_PLANAR
+static void gl3_movie_drop(gl3_t *gl)
+{
+   if (gl->movie_texture)
+   {
+      gl_planar_forget(&gl->planar, gl->movie_texture);
+      glDeleteTextures(1, &gl->movie_texture);
+   }
+   gl->movie_texture = 0;
+   gl->movie_dims    = 0;
+   gl->movie_pending = false;
+}
+
+/* What the frame draws: a core frame ends the movie, otherwise the
+ * movie stands in for it, at its size. True when a movie frame came
+ * since the last draw. */
+static bool gl3_movie_prepare(gl3_t *gl, const void **frame, unsigned *dims)
+{
+   bool fresh        = gl->movie_pending;
+   gl->movie_pending = false;
+   if (!gl->movie_texture)
+      return false;
+   if (*frame && *frame != RETRO_HW_FRAME_BUFFER_VALID)
+   {
+      gl3_movie_drop(gl);
+      return false;
+   }
+   *frame = NULL;
+   *dims  = gl->movie_dims;
+   return fresh;
+}
+
+/* A movie frame in memory, converted by the planar upload into one
+ * texture kept across frames; NULL drops it. The planes are released
+ * once the upload has read them. */
+static enum video_texture_update gl3_import_movie_frame(void *data,
+      const video_frame_import_t *f)
+{
+   struct texture_image img;
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!f || (gl->movie_texture && gl->movie_dims != f->dims))
+      gl3_movie_drop(gl);
+   if (!f)
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   if (     !VIDEO_FRAME_IMPORT_IS_CPU(f) || !GL_PLANAR_OK(&gl->planar)
+         || !VIDEO_SCALE_W(f->dims) || !VIDEO_SCALE_H(f->dims))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   memset(&img, 0, sizeof(img));
+   img.width  = VIDEO_SCALE_W(f->dims);
+   img.height = VIDEO_SCALE_H(f->dims);
+   img.planar = &f->planar;
+   if (gl->movie_texture)
+   {
+      if (!gl_planar_update(&gl->planar, gl->movie_texture, &img))
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+   else
+   {
+      if (!(gl->movie_texture = gl_planar_load(&gl->planar, &img,
+                  true, true)))
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      /* The chain samples with a mip filter: its one level makes it
+       * complete, as the storage of a streamed texture does */
+      glBindTexture(GL_TEXTURE_2D, gl->movie_texture);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+      glBindTexture(GL_TEXTURE_2D, 0);
+      RARCH_LOG("[GLCore] Movie frames of %ux%u converted from their "
+            "planes.\n", img.width, img.height);
+   }
+   gl->movie_dims    = f->dims;
+   gl->movie_pending = true;
+   if (f->abandon)
+      f->abandon(f->owner, f->done, f->done_value);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+#endif
+
 static void gl3_free(void *data)
 {
    gl3_t *gl = (gl3_t*)data;
@@ -4536,6 +4729,7 @@ static void gl3_free(void *data)
 #endif
    gl3_destroy_resources(gl);
 #ifdef HAVE_GL_PLANAR
+   gl3_movie_drop(gl);
    gl_planar_free(&gl->planar);
 #endif
    gl3_fp16_forget_all();
@@ -4641,6 +4835,8 @@ typedef struct gl3_deferred_state
 {
    gl3_filter_chain_t *new_chain;   /* chain being built          */
    gl3_filter_chain_t *old_chain;   /* previous, kept as fallback */
+   gl3_filter_chain_t *media_chain;
+   unsigned core_passes, media_passes;
    enum glslang_filter_chain_filter filter;
 } gl3_deferred_state_t;
 
@@ -4650,7 +4846,10 @@ static bool gl3_shader_load_begin(void *data,
    gl3_t *gl = (gl3_t *)data;
    gl3_deferred_state_t *ds;
 
-   if (!gl)
+   /* Legacy GLSL loads synchronously; its program/target ownership must
+    * also be retired by set_shader when switching back to Slang. */
+   if (!gl || gl->chain.active
+         || video_shader_parse_type(deferred->preset_path) != RARCH_SHADER_SLANG)
       return false;
 
    ds = (gl3_deferred_state_t*)calloc(1, sizeof(*ds));
@@ -4671,16 +4870,14 @@ static bool gl3_shader_load_begin(void *data,
          deferred->preset_path,
          ds->filter,
          (gl->flags & GL3_FLAG_HW_RENDER_ENABLE) != 0,
-         &deferred->total_passes);
-
-   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
-         && !gl3_core_context_is_mains(gl))
-      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+         &deferred->total_passes, false);
 
    if (!ds->new_chain)
    {
       RARCH_ERR("[GLCore] Deferred: failed to create chain for \"%s\".\n",
             deferred->preset_path);
+      if ((gl->flags & GL3_FLAG_USE_SHARED_CONTEXT) && !gl3_core_context_is_mains(gl))
+         gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
       free(ds);
       return false;
    }
@@ -4691,9 +4888,30 @@ static bool gl3_shader_load_begin(void *data,
    {
       RARCH_ERR("[GLCore] Shader HDR encoding requires a matching output.\n");
       gl3_filter_chain_free(ds->new_chain);
+      if ((gl->flags & GL3_FLAG_USE_SHARED_CONTEXT) && !gl3_core_context_is_mains(gl))
+         gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
       free(ds);
       return false;
    }
+
+   ds->core_passes = deferred->total_passes;
+   ds->media_chain = gl3_filter_chain_create_deferred(deferred->preset_path,
+         ds->filter, false, &ds->media_passes, true);
+   if (!ds->media_chain)
+   {
+      gl3_filter_chain_free(ds->new_chain);
+      if ((gl->flags & GL3_FLAG_USE_SHARED_CONTEXT) && !gl3_core_context_is_mains(gl))
+         gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+      free(ds);
+      return false;
+   }
+   deferred->total_passes += ds->media_passes;
+
+   if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
+         && !gl3_core_context_is_mains(gl))
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
+
+
 
    RARCH_LOG("[GLCore] Deferred: prepared %u passes for \"%s\".\n",
          deferred->total_passes, deferred->preset_path);
@@ -4723,7 +4941,9 @@ static bool gl3_shader_load_step(void *data,
       RARCH_LOG("[GLCore] Deferred: compiling pass %u/%u...\n",
             pass + 1, deferred->total_passes);
 
-      if (!gl3_filter_chain_compile_pass(ds->new_chain, pass, ds->filter))
+      if (!gl3_filter_chain_compile_pass(
+               pass < ds->core_passes ? ds->new_chain : ds->media_chain,
+               pass < ds->core_passes ? pass : pass - ds->core_passes, ds->filter))
       {
          RARCH_ERR("[GLCore] Deferred: failed to compile pass %u.\n", pass);
          gl3_filter_chain_free(ds->new_chain);
@@ -4756,7 +4976,8 @@ static bool gl3_shader_load_step(void *data,
    /* All passes compiled — finalize the chain */
    RARCH_LOG("[GLCore] Deferred: finalizing chain...\n");
 
-   if (gl3_filter_chain_finalize(ds->new_chain))
+   if (gl3_filter_chain_finalize(ds->new_chain)
+         && gl3_filter_chain_finalize(ds->media_chain))
    {
       /* Tear down old chain */
       if (ds->old_chain)
@@ -4767,6 +4988,8 @@ static bool gl3_shader_load_step(void *data,
       deferred->state  = SHADER_LOAD_DONE;
 
       gl3_views_set_preset(gl, deferred->preset_path);
+      gl->media_shader_chain = ds->media_chain;
+      ds->media_chain = NULL;
 
       RARCH_LOG("[GLCore] Deferred: shader loaded successfully.\n");
    }
@@ -4779,6 +5002,7 @@ static bool gl3_shader_load_step(void *data,
    }
 
 cleanup:
+   gl3_filter_chain_free(ds->media_chain);
    if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
          && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
@@ -4815,6 +5039,9 @@ static bool gl3_set_shader(void *data,
    gl3_views_set_preset(gl, NULL);
 #endif
 
+#ifdef HAVE_GLSL
+   gl3_media_shader_free(&gl->media_legacy_shader);
+#endif
    if (gl->chain.shader)
       gl->chain.shader->deinit(gl->chain.shader_data);
 
@@ -7126,9 +7353,16 @@ static bool gl3_frame(void *data, const void *frame,
 #endif
    bool hard_sync                          = video_info->hard_sync;
    bool overlay_behind_menu                = video_info->overlay_behind_menu;
+   bool movie_frame                        = false;
 
    if (!gl)
       return false;
+
+#ifdef HAVE_GL_PLANAR
+   movie_frame  = gl3_movie_prepare(gl, &frame, &dims);
+   frame_width  = VIDEO_SCALE_W(dims);
+   frame_height = VIDEO_SCALE_H(dims);
+#endif
 
    /* One a frame without the ring's hand-over left behind */
    if (gl->hw_ring_done_sync)
@@ -7149,14 +7383,15 @@ static bool gl3_frame(void *data, const void *frame,
    /* Views kept across a reinit drew only the frame a repeat shows. */
    if (gl->xr.host)
    {
-      if (frame && !video_info->frame_repeat)
+      if ((frame || movie_frame) && !video_info->frame_repeat)
          gl_openxr_new_frame(gl->xr.host);
       else
          gl_openxr_place_kept(gl->xr.host);
    }
    xr_eyes = xr_draw && gl3_xr_eye_screens(video_info)
-      && gl3_xr_projection_ok(gl, frame && !video_info->frame_repeat,
-            frame != NULL);
+      && gl3_xr_projection_ok(gl,
+            (frame || movie_frame) && !video_info->frame_repeat,
+            frame || movie_frame);
 #endif
 
    /* These travel with the frame, so this thread does not read what the
@@ -7167,6 +7402,10 @@ static bool gl3_frame(void *data, const void *frame,
    gl->scrgb.expand_gamut     = video_info->hdr_expand_gamut;
    gl->scrgb.content_hdr_mode = gl->video_info.source_fp16 ? 2 :
       (gl->video_info.source_hdr10 ? 1 : 0);
+#if defined(HAVE_SLANG) || defined(HAVE_GLSL)
+   gl->media_shader_enabled = video_info->shader_active;
+   gl->media_shader_frame = frame_count;
+#endif
 #ifdef HAVE_SLANG
    if (video_info->shader_active && gl->filter_chain)
    {
@@ -7180,6 +7419,9 @@ static bool gl3_frame(void *data, const void *frame,
 
    /* Whether to read frames back travels with the frame, so this thread
     * does not read the recording state the main thread writes. */
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   if (video_info->recording_pyrowave_receive) frame = NULL;
+#endif
    if (video_info->gpu_recording)
       gl->flags |=  GL3_FLAG_GPU_RECORDING;
    else
@@ -7190,7 +7432,7 @@ static bool gl3_frame(void *data, const void *frame,
    glBindVertexArray(gl->vao);
 #ifdef HAVE_GL_MENU_BLOOM
    /* Before the frame draws into any framebuffer of its own */
-   gfx_display_bloom_prepass(gl);
+   gfx_display_bloom_prepass(gl, video_info->frame_time);
 #endif
 
    if (gl->chain.active)
@@ -7344,7 +7586,29 @@ static bool gl3_frame(void *data, const void *frame,
          : (gl->video_info.rgb32 ? GL_RGBA8 : GL_RGB565);
       texture.padded_dims   = streamed->dims;
    }
+#ifdef HAVE_GL_PLANAR
+   if (gl->movie_texture)
+   {
+      texture.image         = gl->movie_texture;
+      texture.dims          = gl->movie_dims;
+      texture.padded_dims   = gl->movie_dims;
+      texture.format        = GL_RGBA8;
+   }
+#endif
 
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   if (video_info->recording_pyrowave_receive)
+   {
+      unsigned receiver_dims = 0;
+      unsigned receiver_texture = record_pyrowave_receiver_gl_frame(video_info->recording_gpu, &receiver_dims,
+            video_info->recording_gpu_capture && !(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK), video_info);
+      if (receiver_texture)
+      {
+         texture.image = receiver_texture; texture.dims = receiver_dims;
+         texture.padded_dims = receiver_dims; texture.format = GL_RGBA32F;
+      }
+   }
+#endif
 #ifdef HAVE_GL3_XR
    /* Each view the headset shows has a chain of its own there. */
    if (xr_draw && video_info->views.num_views)
@@ -7407,7 +7671,7 @@ static bool gl3_frame(void *data, const void *frame,
 #ifdef HAVE_GL3_XR
    /* A view only the headset shows waits for a real frame, rather than
     * one eye drawing from nothing. */
-   if (views && xr_map && !frame)
+   if (views && xr_map && !(frame || movie_frame))
       for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
          if (xr_chains[i] && !(gl->views.copied & (1u << i)))
             xr_draw = false;
@@ -7442,7 +7706,7 @@ static bool gl3_frame(void *data, const void *frame,
 
    /* No point regenerating mipmaps
     * if there are no new frames. */
-   if (frame && gl->chain.active && gl->chain.mipmap_active)
+   if ((frame || movie_frame) && gl->chain.active && gl->chain.mipmap_active)
    {
       glBindTexture(GL_TEXTURE_2D, texture.image);
       glGenerateMipmap(GL_TEXTURE_2D);
@@ -7481,6 +7745,15 @@ static bool gl3_frame(void *data, const void *frame,
       gl->chain.tex_info.input_size[1] = frame_height;
       gl->chain.tex_info.tex_size[0]   = RARCH_SCALE_BASE * gl->video_info.input_scale;
       gl->chain.tex_info.tex_size[1]   = RARCH_SCALE_BASE * gl->video_info.input_scale;
+#ifdef HAVE_GL_PLANAR
+      /* The movie's texture is its own size */
+      if (gl->movie_texture)
+      {
+         gl->chain.tex_info.tex_size[0] = frame_width;
+         gl->chain.tex_info.tex_size[1] = frame_height;
+         GL3_SET_TEXTURE_COORDS(gl->chain.tex_info.coord, 1.0f, 1.0f);
+      }
+#endif
 
       feedback_info                    = gl->chain.tex_info;
 
@@ -7507,6 +7780,10 @@ static bool gl3_frame(void *data, const void *frame,
       params.tex_dims      = VIDEO_SCALE_PACK(
             RARCH_SCALE_BASE * gl->video_info.input_scale,
             RARCH_SCALE_BASE * gl->video_info.input_scale);
+#ifdef HAVE_GL_PLANAR
+      if (gl->movie_texture)
+         params.tex_dims   = gl->movie_dims;
+#endif
       params.out_dims      = gl->vp.dims;
       params.frame_counter = (unsigned int)frame_count;
       params.swap_counter  = (unsigned int)video_info->swap_count;
@@ -8004,8 +8281,30 @@ static bool gl3_frame(void *data, const void *frame,
             && !gl->video_info.source_hdr10)
          glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
    }
-   else if (!video_info->record_game_only || gl->scrgb.active)
+   else if (
+#ifdef HAVE_RECORD_PYROWAVE_GL
+         !video_info->recording_pyrowave &&
+#endif
+         (!video_info->record_game_only || gl->scrgb.active))
       gl3_record_readback(gl, !video_info->record_game_only);
+
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   if (video_info->recording_pyrowave && !video_info->recording_pyrowave_receive)
+   {
+      unsigned format = gl->scrgb.active ? GL_RGBA16F : GL_RGBA8;
+      unsigned mode = gl->scrgb.active ? (gl->scrgb.pq_out ? 1 : 2) : 0;
+      bool capture = video_info->recording_gpu_capture
+         && (!video_info->frame_repeat || video_info->recording_pyrowave_full_output)
+         && !(gl->flags & GL3_FLAG_FRAME_DUPE_LOCK);
+#ifdef HAVE_GL3_XR
+      if (gl->xr.host) capture = false;
+#endif
+      retro_atomic_store_release_int(&gl->pyrowave_format, format);
+      record_pyrowave_gl_frame(video_info->recording_gpu, format,
+            gl->vp.full_dims, gl->vp.pos, gl->vp.dims, mode,
+            video_info->recording_gpu_timestamp, video_info->recording_pyrowave_duration, capture);
+   }
+#endif
 
 #ifdef HAVE_GL3_XR
    if (xr_draw)
@@ -8019,9 +8318,10 @@ static bool gl3_frame(void *data, const void *frame,
    if (gl->ctx_driver->swap_buffers)
    {
       /* timed: see gl3_get_last_present_wait() */
-      retro_time_t swap_at = cpu_features_get_time_usec();
+      retro_perf_tick_t swap_at = cpu_features_get_perf_counter();
       gl->ctx_driver->swap_buffers(gl->ctx_data);
-      gl->present_wait = cpu_features_get_time_usec() - swap_at;
+      gl->present_wait = cpu_features_perf_to_usec(
+            cpu_features_get_perf_counter() - swap_at);
    }
 
  /* Emscripten has to do black frame insertion in its main loop */
@@ -8216,6 +8516,53 @@ static struct video_shader *gl3_get_current_shader(void *data)
    return NULL;
 }
 
+/* Called only by the render owner after a managed texture changes. */
+static void gl3_media_texture_changed(gl3_t *gl, uintptr_t id, bool uploaded)
+{
+#if defined(HAVE_GLSL) || defined(HAVE_SLANG)
+   if (gl)
+   {
+#ifdef HAVE_GLSL
+      gl3_media_shader_changed(gl->media_legacy_shader, id);
+#endif
+#ifdef HAVE_SLANG
+      if (gl->media_history_texture == id) gl->media_history.copies = 0;
+      if (!uploaded && gl->media_borrow_texture == id) gl->media_borrow_texture = 0;
+#endif
+      if (uploaded || gl->media_last_texture == id)
+         gl->media_last_texture = uploaded ? id : 0;
+   }
+#else
+   (void)gl; (void)id; (void)uploaded;
+#endif
+}
+
+static bool gl3_media_referenced(void *context, GLuint image)
+{
+   gl3_t *gl=(gl3_t*)context;
+#ifdef HAVE_SLANG
+   if (gl3_filter_chain_history_references(gl->media_shader_chain,image)) return true;
+#endif
+#ifdef HAVE_GLSL
+   if (gl3_media_shader_references(gl->media_legacy_shader,image)) return true;
+#endif
+   (void)gl;(void)image;
+   return false;
+}
+
+static bool gl3_media_retire(void *context, GLuint image)
+{
+   gl3_t *gl=(gl3_t*)context;
+#ifdef HAVE_SLANG
+   if (gl3_filter_chain_retire_history(gl->media_shader_chain,image)) return true;
+#endif
+#ifdef HAVE_GLSL
+   if (gl3_media_shader_retire(gl->media_legacy_shader,image)) return true;
+#endif
+   (void)gl;(void)image;
+   return false;
+}
+
 /* A texture of @ti: a planar frame converted on the GPU, anything else
  * uploaded as it is */
 static void gl3_texture_load(gl3_t *gl, const struct texture_image *ti,
@@ -8226,13 +8573,27 @@ static void gl3_texture_load(gl3_t *gl, const struct texture_image *ti,
    {
 #ifdef HAVE_GL_PLANAR
       if (gl)
-         *id = gl_planar_load(&gl->planar, ti,
+         *id = gl_planar_load_deferred(&gl->planar, ti,
                filter_type != TEXTURE_FILTER_NEAREST
                && filter_type != TEXTURE_FILTER_MIPMAP_NEAREST, true);
 #endif
-      return;
    }
-   video_texture_load_gl3(ti, filter_type, id);
+   else
+      video_texture_load_gl3(ti, filter_type, id);
+   if (*id)
+   {
+#ifdef HAVE_OPENGLES
+      if (gl)
+         gl_media_pool_register(&gl->media_pool, *id, ti->width, ti->height,
+               ti->fp16 ? GL_RGBA16F : ti->pix10 ? GL_RGB10_A2 : GL_RGBA8,
+               GL_RGBA, ti->fp16 ? GL_HALF_FLOAT
+                  : ti->pix10 ? GL_UNSIGNED_INT_2_10_10_10_REV : GL_UNSIGNED_BYTE,
+               ti->planar || (filter_type != TEXTURE_FILTER_MIPMAP_LINEAR
+                  && filter_type != TEXTURE_FILTER_MIPMAP_NEAREST), ti->planar != NULL,
+               GL_MEDIA_POOL_SWIZZLE | GL_MEDIA_POOL_UNPACK);
+#endif
+      gl3_media_texture_changed(gl, *id, true);
+   }
 }
 
 #ifdef HAVE_THREADS
@@ -8295,7 +8656,15 @@ static uintptr_t video_texture_unload_wrap_gl3(void *data)
    if (gl)
       gl_planar_forget(&gl->planar, glid);
 #endif
-   glDeleteTextures(1, &glid);
+   gl3_media_texture_changed(gl, id, false);
+   if (gl && gl_media_pool_forget(&gl->media_pool,glid,gl3_media_retire,gl)) return 0;
+#if defined(HAVE_SLANG)
+   if (!gl3_filter_chain_retire_history(gl ? gl->media_shader_chain : NULL, glid))
+#endif
+#if defined(HAVE_GLSL)
+   if (!gl3_media_shader_retire(gl ? gl->media_legacy_shader : NULL, glid))
+#endif
+      glDeleteTextures(1, &glid);
    return 0;
 }
 #endif
@@ -8341,11 +8710,41 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
 {
    const void *pixels = ti->pixels;
    int lent           = -1;
+   GLuint destination = gl ? gl_media_pool_resolve(gl->media_pool,(GLuint)id) : (GLuint)id;
+#ifdef HAVE_GL_PLANAR
+   if (gl && ti->planar && gl_planar_update_deferred(&gl->planar, (unsigned)id, ti))
+   {
+      gl3_media_texture_changed(gl, id, true);
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   }
+   if (gl && !gl3_media_resolve(gl, (GLuint)id))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#endif
+
+   if (gl)
+   {
+      destination=gl_media_pool_prepare_ex(&gl->media_pool,(GLuint)id,ti->width,ti->height,
+            gl3_media_referenced,gl,GL_MEDIA_POOL_SWIZZLE | GL_MEDIA_POOL_UNPACK
+            | (ti->planar ? GL_MEDIA_POOL_MUTABLE_MIPS : 0));
+      if (!destination) return VIDEO_TEXTURE_UPDATE_DROPPED;
+   }
+#if defined(HAVE_SLANG)
+   if (gl && !gl3_filter_chain_preserve_history(gl->media_shader_chain, destination))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#endif
+#if defined(HAVE_GLSL)
+   if (gl && !gl3_media_shader_preserve(gl->media_legacy_shader, destination))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#endif
    if (ti->planar)
    {
 #ifdef HAVE_GL_PLANAR
-      if (gl && gl_planar_update(&gl->planar, (unsigned)id, ti))
+      if (gl && gl_planar_update_target(&gl->planar, (unsigned)id, destination, ti))
+      {
+         gl_media_pool_publish(gl->media_pool, (GLuint)id, destination);
+         gl3_media_texture_changed(gl, id, true);
          return VIDEO_TEXTURE_UPDATE_DONE;
+      }
 #endif
       return VIDEO_TEXTURE_UPDATE_REFUSED;
    }
@@ -8359,7 +8758,7 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
       pixels = NULL;
    }
 #endif
-   glBindTexture(GL_TEXTURE_2D, (GLuint)id);
+   glBindTexture(GL_TEXTURE_2D, destination);
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, ti->width, ti->height,
@@ -8372,6 +8771,8 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
    if (lent >= 0)
       gl_texture_lend_unbind(gl->lend, (unsigned)id, lent);
 #endif
+   if (gl) gl_media_pool_publish(gl->media_pool,(GLuint)id,destination);
+   gl3_media_texture_changed(gl, id, true);
    return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
@@ -8402,8 +8803,8 @@ static enum video_texture_update gl3_update_texture(void *video_data,
       cmd.gl      = (gl3_t*)video_data;
       cmd.payload = (void*)ti;
       cmd.handle  = id;
-      video_thread_texture_handle(&cmd, video_texture_update_wrap_gl3);
-      return VIDEO_TEXTURE_UPDATE_DONE;
+      return (enum video_texture_update)video_thread_texture_handle(
+            &cmd, video_texture_update_wrap_gl3);
    }
 #endif
 
@@ -8522,7 +8923,15 @@ static void gl3_unload_texture(void *data, bool threaded,
    if (data)
       gl_planar_forget(&((gl3_t*)data)->planar, glid);
 #endif
-   glDeleteTextures(1, &glid);
+   gl3_media_texture_changed((gl3_t*)data, id, false);
+   if (data && gl_media_pool_forget(&((gl3_t*)data)->media_pool,glid,gl3_media_retire,data)) return;
+#if defined(HAVE_SLANG)
+   if (!gl3_filter_chain_retire_history(data ? ((gl3_t*)data)->media_shader_chain : NULL, glid))
+#endif
+#if defined(HAVE_GLSL)
+   if (!gl3_media_shader_retire(data ? ((gl3_t*)data)->media_legacy_shader : NULL, glid))
+#endif
+      glDeleteTextures(1, &glid);
 }
 
 static void gl3_set_video_mode(void *data, unsigned dims,
@@ -8852,6 +9261,48 @@ static retro_proc_address_t gl3_get_proc_address(
    return NULL;
 }
 
+#ifdef HAVE_RECORD_PYROWAVE_GL
+static void gl3_pyrowave_bind(void *data, bool enter)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if ((gl->flags & GL3_FLAG_USE_SHARED_CONTEXT) && !gl3_core_context_is_mains(gl))
+      gl->ctx_driver->bind_hw_render(gl->ctx_data, !enter);
+}
+#endif
+
+#if defined(HAVE_RECORD_PYROWAVE_GL) || defined(HAVE_GL_PLANAR)
+#define GL3_GET_DEVICE
+/* The context, for the encoder that shares it, and the movie frames
+ * taken; with neither there is no device. Without the encoder the
+ * device names no API, so nothing that would draw with it takes it. */
+static bool gl3_get_device(void *data, video_device_info_t *info)
+{
+   gl3_t *gl       = (gl3_t*)data;
+   unsigned format = 0;
+   if (!gl || !info)
+      return false;
+   memset(info, 0, sizeof(*info));
+#ifdef HAVE_RECORD_PYROWAVE_GL
+   if (gl->ctx_driver->get_proc_address
+         && (format = (unsigned)retro_atomic_load_acquire_int(
+               &gl->pyrowave_format)))
+   {
+      info->api                 = VIDEO_DEVICE_OPENGL;
+      info->device              = gl;
+      info->get_gl_proc_address = gl->ctx_driver->get_proc_address;
+      info->bind_gl_context     = gl3_pyrowave_bind;
+      info->output_format       = format;
+      info->output_bit_depth    = format == GL_RGBA8 ? 8 : 16;
+   }
+#endif
+#ifdef HAVE_GL_PLANAR
+   if (GL_PLANAR_OK(&gl->planar))
+      info->import_formats     |= IMAGE_PIXFMT_I420;
+#endif
+   return format || info->import_formats;
+}
+#endif
+
 #ifndef GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
 #define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
 #endif
@@ -8892,6 +9343,11 @@ static bool gl3_supports_texture_format(void *data,
       case TEXTURE_GPU_FORMAT_RGBA16F:
          return true;
       /* Converted by a draw (gl_planar_load) */
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
+      /* gl_planar_plane can upload padded rows in one call. GLES2's
+       * row-at-a-time fallback is cheaper with packed decoder output. */
+      case TEXTURE_GPU_FORMAT_YUV420_STRIDED:
+#endif
       case TEXTURE_GPU_FORMAT_YUV420:
 #ifdef HAVE_GL_PLANAR
          return data && GL_PLANAR_OK(&((const gl3_t*)data)->planar);
@@ -8920,7 +9376,7 @@ static bool gl3_supports_texture_format(void *data,
    return false;
 }
 
-static uintptr_t gl3_upload_texture_compressed(
+static uintptr_t gl3_upload_texture_compressed(gl3_t *gl,
       const struct texture_compressed *tc,
       enum texture_filter_type filter_type)
 {
@@ -8967,6 +9423,7 @@ static uintptr_t gl3_upload_texture_compressed(
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    glBindTexture(GL_TEXTURE_2D, 0);
 
+   gl3_media_texture_changed(gl, id, true);
    return (uintptr_t)id;
 }
 
@@ -8985,7 +9442,7 @@ static uintptr_t video_texture_load_wrap_gl3_compressed(void *data)
    gl3_t                        *gl  = cmd->gl;
    if (gl && gl->ctx_driver->make_current)
       gl->ctx_driver->make_current(false);
-   return gl3_upload_texture_compressed(cmd->tc, cmd->filter);
+   return gl3_upload_texture_compressed(gl, cmd->tc, cmd->filter);
 }
 #endif
 
@@ -9007,7 +9464,7 @@ static uintptr_t gl3_load_texture_compressed(void *video_data,
    (void)video_data;
    (void)threaded;
 #endif
-   return gl3_upload_texture_compressed(tc, filter_type);
+   return gl3_upload_texture_compressed((gl3_t*)video_data, tc, filter_type);
 }
 
 /* When the most recent swap reached the display, as the window
@@ -9179,11 +9636,24 @@ static const video_poke_interface_t gl3_poke_interface = {
 #ifdef HAVE_GL_FRAME_MEM
    gl3_frame_mem_alloc,
    gl3_frame_mem_ready,
-   gl3_frame_mem_free
+   gl3_frame_mem_free,
 #else
    NULL, /* frame_mem_alloc */
    NULL, /* frame_mem_ready */
-   NULL  /* frame_mem_free */
+   NULL, /* frame_mem_free */
+#endif
+#ifdef GL3_GET_DEVICE
+   gl3_get_device,
+#else
+   NULL, /* get_device */
+#endif
+   NULL, /* import_texture */
+   NULL, /* get_last_present_sync */
+   NULL, /* record_read */
+#ifdef HAVE_GL_PLANAR
+   gl3_import_movie_frame
+#else
+   NULL  /* import_movie_frame */
 #endif
 };
 
@@ -9324,6 +9794,175 @@ static void gfx_display_gl3_bloom_composite(void *data, unsigned dims)
 }
 #endif
 
+#ifdef HAVE_GL_MENU_BLUR
+static bool gfx_display_gl3_blur_rect(void *data, unsigned video_dims,
+      int x, int y, unsigned dims, float alpha, float dim)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl)
+      return false;
+   return gl_menu_blur(&gl->menu_bloom, video_dims, x, y, dims, alpha, dim,
+         true,
+#ifdef HAVE_OPENGLES
+         true
+#else
+         false
+#endif
+         );
+}
+#endif
+
+#if defined(HAVE_SLANG) || defined(HAVE_GLSL)
+#include "../common/hdr_viewer_colour.h"
+#endif
+
+#ifdef HAVE_SLANG
+
+static bool gfx_display_gl3_media_slang_draw(void *data, uintptr_t image,
+      unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
+{
+   gl3_t *gl = (gl3_t*)data;
+   gl3_filter_chain_t *chain;
+   struct gl3_filter_chain_texture texture;
+   struct gl3_viewport vp;
+   math_matrix_4x4 mvp;
+   struct video_shader *live, *preset;
+   GLint target, viewport[4], format;
+   GLuint resolved;
+   GLboolean blend, scissor;
+   unsigned i;
+   (void)video_dims;
+   if (!gl || !gl->media_shader_enabled || !(chain = gl->media_shader_chain)
+         || !image || !VIDEO_SCALE_W(source_dims) || !VIDEO_SCALE_H(source_dims))
+      return false;
+#ifndef HAVE_RSLC
+   if (gl->scrgb.active && gl3_fp16_is((GLuint)image)) return false;
+#endif
+   resolved = gl3_media_resolve(gl, (GLuint)image);
+   if (!resolved) return false; /* no free RGB version: retain direct drawing */
+   live = gl3_filter_chain_get_preset(gl->filter_chain);
+   preset = gl3_filter_chain_get_preset(chain);
+   if (live && preset && live->num_parameters == preset->num_parameters)
+      for (i = 0; i < live->num_parameters; i++)
+         video_shader_param_set(&preset->parameters[i],
+               video_shader_param_get(&live->parameters[i]));
+   glGetIntegerv(GL_FRAMEBUFFER_BINDING, &target);
+   glGetIntegerv(GL_VIEWPORT, viewport);
+   blend = glIsEnabled(GL_BLEND);
+   scissor = glIsEnabled(GL_SCISSOR_TEST);
+   glActiveTexture(GL_TEXTURE0);
+   glBindTexture(GL_TEXTURE_2D, resolved);
+#ifndef HAVE_OPENGLES
+   glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &format);
+#else
+   format = GL_RGBA8;
+#endif
+   texture.image = resolved;
+   texture.dims = source_dims;
+   texture.padded_dims = source_dims;
+   texture.origin = 0;
+   texture.format = (GLenum)format;
+   vp.pos = pos;
+   vp.dims = dims;
+   glDisable(GL_BLEND);
+   glDisable(GL_SCISSOR_TEST);
+   gl3_filter_chain_set_frame_count(chain, gl->media_shader_frame);
+   gl3_filter_chain_set_frame_direction(chain, 1);
+   gl3_filter_chain_set_rotation(chain, 0);
+   gl3_filter_chain_set_core_aspect(chain,
+         (float)VIDEO_SCALE_W(source_dims) / VIDEO_SCALE_H(source_dims));
+   {
+      float rows[12];
+      hdr_viewer_colour_rows(rows, gl->scrgb.active && format == GL_RGBA16F,
+            gl->scrgb.menu_nits, gl->scrgb.expand_gamut);
+      gl3_filter_chain_set_viewer_colour(chain, rows);
+   }
+   gl->media_history.managed = gl->media_last_texture == image;
+   gl->media_history_texture = image;
+#ifndef HAVE_OPENGLES
+   if (gl->media_borrow_texture != image)
+   {
+      GLint mip_width = 0;
+      glGetTexLevelParameteriv(GL_TEXTURE_2D, 1, GL_TEXTURE_WIDTH, &mip_width);
+      gl->media_borrow_single_level = mip_width == 0;
+      gl->media_borrow_texture = image;
+   }
+   gl3_filter_chain_set_history_borrow(chain, gl->media_borrow_single_level
+         && (format == GL_RGBA8 || format == GL_RGBA16F));
+#else
+   {
+      gl_media_pool_t *pool = gl_media_pool_find(gl->media_pool, (GLuint)image);
+      gl3_filter_chain_set_history_borrow(chain, pool && pool->eligible
+            && (pool->format == GL_RGBA8 || pool->format == GL_RGBA16F));
+   }
+#endif
+   gl3_filter_chain_set_input_texture_history(chain, &texture, &gl->media_history);
+   gl3_filter_chain_build_offscreen_passes(chain, &vp);
+   glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)target);
+   matrix_4x4_ortho(mvp, 0, 1, 1, 0, -1, 1);
+   gl3_filter_chain_build_viewport_pass(chain, &vp, mvp.data);
+   gl3_filter_chain_end_frame(chain);
+   {
+      gl_media_pool_t *pool=gl_media_pool_find(gl->media_pool,(GLuint)image);
+      if (pool)
+      {
+         GLint filter[4];
+         gl3_filter_chain_source_sampler(chain,filter);
+         gl_media_pool_sync_sampler(pool,filter);
+      }
+   }
+   glBindFramebuffer(GL_FRAMEBUFFER, (GLuint)target);
+   glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+   if (blend) glEnable(GL_BLEND);
+   if (scissor) glEnable(GL_SCISSOR_TEST);
+   return true;
+}
+#endif
+
+#if defined(HAVE_SLANG) || defined(HAVE_GLSL)
+static bool gfx_display_gl3_media_shader_draw(void *data, uintptr_t image,
+      unsigned source_dims, unsigned video_dims, unsigned pos, unsigned dims)
+{
+#ifdef HAVE_GLSL
+   gl3_t *gl = (gl3_t*)data;
+   float rows[12];
+   bool hdr = gl && gl->scrgb.active && gl3_fp16_is((GLuint)image);
+   if (hdr) hdr_viewer_colour_rows(rows, true, gl->scrgb.menu_nits,
+         gl->scrgb.expand_gamut);
+#ifdef HAVE_GL_PLANAR
+   if (gl && gl->media_shader_enabled && gl->chain.active
+         && gl->chain.shader == &gl_glsl_backend)
+   {
+      struct gl_planar_sample sample;
+      if (gl_planar_sample_info(&gl->planar, (unsigned)image, &sample)
+            && gl_glsl_set_media_planar(gl->chain.shader_data, &sample))
+      {
+         bool drawn = gl3_media_shader_draw(&gl->media_legacy_shader, gl,
+               gl->chain.shader, gl->chain.shader_data, image, source_dims, pos,
+               dims, gl->media_shader_frame, NULL, false);
+         gl_glsl_set_media_planar(gl->chain.shader_data, NULL);
+         if (drawn) return true;
+      }
+   }
+#endif
+   if (gl && gl->chain.active && gl->chain.shader)
+      return gl->media_shader_enabled && gl->chain.shader_data
+         && gl->chain.shader->num_shaders(gl->chain.shader_data) && gl3_media_shader_draw(
+            &gl->media_legacy_shader, gl, gl->chain.shader, gl->chain.shader_data,
+            gl3_media_resolve(gl, (GLuint)image), source_dims, pos, dims,
+            gl->media_shader_frame, hdr ? rows : NULL,
+            gl->media_last_texture == image);
+#endif
+#ifdef HAVE_SLANG
+   return gfx_display_gl3_media_slang_draw(data, image, source_dims,
+         video_dims, pos, dims);
+#else
+   (void)video_dims;
+   return false;
+#endif
+}
+#endif
+
 gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    gfx_display_gl3_draw,
    gfx_display_gl3_draw_pipeline,
@@ -9352,7 +9991,17 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    NULL, NULL, NULL,
 #endif
 #if defined(HAVE_SHADERPIPELINE) && (defined(HAVE_SLANG) || defined(HAVE_GLSL))
-   gfx_display_gl3_effect_install
+   gfx_display_gl3_effect_install,
+#else
+   NULL,
+#endif
+#if defined(HAVE_SLANG) || defined(HAVE_GLSL)
+   gfx_display_gl3_media_shader_draw,
+#else
+   NULL,
+#endif
+#ifdef HAVE_GL_MENU_BLUR
+   gfx_display_gl3_blur_rect
 #else
    NULL
 #endif

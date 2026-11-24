@@ -46,6 +46,11 @@ extern "C" {
 #include <math/complex.h>
 #include <gfx/math/matrix_4x4.h>
 #include <gfx/math/vector_2.h>
+#ifdef HAVE_OPENGLES
+#ifndef GL_UNPACK_ROW_LENGTH
+#define GL_UNPACK_ROW_LENGTH 0x0CF2
+#endif
+#endif
 #endif
 
 /* The audio spectrum visualizer (hwfft) below needs functionality that is
@@ -863,9 +868,9 @@ typedef struct ffmpeg_core_ctx
    bool ecs_inited;
 
 #ifdef HAVE_OPENGLES
-   /* GLES has no pixel unpack buffer to map, so the GL path stages
-    * the frame here for glTexImage2D. Nothing else uses it. */
+   /* Fallback for row strides the GL upload cannot represent. */
    uint32_t *video_frame_temp_buffer;
+   bool gles_unpack_row_length;
 #endif
 
    /* Software video path: the slot the frame on screen lives in. */
@@ -2915,6 +2920,9 @@ void CORE_PREFIX(retro_run)(void)
             {
                unsigned y;
                int stride, width;
+#ifdef HAVE_OPENGLES
+               int unpack_row_length       = 0;
+#endif
                const uint8_t *src           = NULL;
                video_decoder_context_t *ctx = NULL;
                uint32_t               *data = NULL;
@@ -2950,6 +2958,12 @@ void CORE_PREFIX(retro_run)(void)
                src                          = ctx->target->data[0];
                stride                       = ctx->target->linesize[0];
                width                        = MEDIA_STR.width * sizeof(uint32_t);
+#ifdef HAVE_OPENGLES
+               if (g_ctx.gles_unpack_row_length && stride > width
+                     && !(stride % sizeof(uint32_t)))
+                  unpack_row_length = stride / sizeof(uint32_t);
+               if (stride != width && !unpack_row_length)
+#endif
                for (y = 0; y < MEDIA_STR.height; y++, src += stride, data += width/4)
                   memcpy(data, src, width);
 
@@ -2959,8 +2973,14 @@ void CORE_PREFIX(retro_run)(void)
 
                glBindTexture(GL_TEXTURE_2D, FRAMES_STR[1].tex);
 #if defined(HAVE_OPENGLES)
+               if (unpack_row_length)
+                  glPixelStorei(GL_UNPACK_ROW_LENGTH, unpack_row_length);
                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                     MEDIA_STR.width, MEDIA_STR.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, VIDEO_FRAME_TEMP_BUFFER_STR);
+                     MEDIA_STR.width, MEDIA_STR.height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                     stride == width || unpack_row_length ? (const void*)ctx->target->data[0]
+                     : (const void*)VIDEO_FRAME_TEMP_BUFFER_STR);
+               if (unpack_row_length)
+                  glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 #else
                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                      MEDIA_STR.width, MEDIA_STR.height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
@@ -4490,6 +4510,32 @@ static const char *fragment_source = GLSL(
 );
 #endif
 
+#ifdef HAVE_OPENGLES
+static bool ffmpeg_gles_has_unpack_row_length(void)
+{
+   const char *version = (const char*)glGetString(GL_VERSION);
+   const char *extensions, *match;
+   const char name[] = "GL_EXT_unpack_subimage";
+   unsigned major = 0;
+   if (!version)
+      return false;
+   if (sscanf(version, "OpenGL ES %u", &major) == 1 && major >= 3)
+      return true;
+   extensions = (const char*)glGetString(GL_EXTENSIONS);
+   if (!extensions)
+      return false;
+   match = extensions;
+   while ((match = strstr(match, name)) != NULL)
+   {
+      if ((match == extensions || match[-1] == ' ')
+            && (match[sizeof(name) - 1] == ' ' || !match[sizeof(name) - 1]))
+         return true;
+      match += sizeof(name) - 1;
+   }
+   return false;
+}
+#endif
+
 static void context_reset(void)
 {
    static const GLfloat vertex_data[] = {
@@ -4514,6 +4560,9 @@ static void context_reset(void)
 #endif
       rglgen_resolve_symbols(HW_RENDER_STR.get_proc_address);
 
+#ifdef HAVE_OPENGLES
+   g_ctx.gles_unpack_row_length = ffmpeg_gles_has_unpack_row_length();
+#endif
    PROG_STR = glCreateProgram();
    vert = glCreateShader(GL_VERTEX_SHADER);
    frag = glCreateShader(GL_FRAGMENT_SHADER);

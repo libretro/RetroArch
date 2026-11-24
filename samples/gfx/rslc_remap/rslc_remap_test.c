@@ -30,6 +30,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -670,6 +671,79 @@ static unsigned rnd(void)
 }
 
 /* 1 for a pass, 0 a failure, -1 no GL. */
+#include "../../../gfx/common/hdr_viewer_colour.h"
+
+static void gl_colour(void)
+{
+   static const char src[] =
+      "#version 450\n"
+      "layout(binding=0) uniform sampler2D Source;\n"
+      "layout(binding=1) uniform sampler2D LUT;\n"
+      "layout(push_constant) uniform Params { vec4 pad; } params;\n"
+      "layout(location=0) out vec4 colour;\n"
+      "vec4 get(sampler2D s) { return texture(s,vec2(0.5)); }\n"
+      "void main() { colour=(get(Source)+textureOffset(Source,vec2(0.5),ivec2(0))"
+      "+vec4(textureGatherOffset(Source,vec2(0.5),ivec2(1),0).x,"
+      "textureGatherOffset(Source,vec2(0.5),ivec2(-1),1).x,"
+      "textureGatherOffset(Source,vec2(0.5),ivec2(1),2).x,"
+      "textureGatherOffset(Source,vec2(0.5),ivec2(-1),3).x))/3.0+get(LUT); }\n";
+   static const char *const names[] = { "Source" };
+   const float pixel[4] = { -0.02f, 1.25f, 4.0f, 0.4f };
+   const float lut[4] = { 0.1f, 0.2f, 0.3f, 0.1f };
+   struct rslc_remap rm;
+   GLuint prog, textures[2];
+   float rows[12], got[4];
+   unsigned i, j, gamut, enabled;
+   memset(&rm, 0, sizeof(rm));
+   rm.samplers = names;
+   rm.sampler_count = 1;
+   rm.rect_name = "ColourRow0";
+   rm.clamp_name = "ColourRow1";
+   rm.texels_name = "ColourRow2";
+   rm.offset = 16;
+   rm.colour = true;
+   prog = gl_program(src, sizeof(src)-1, &rm);
+   if (!prog) { fail("no fused colour program\n"); return; }
+   glGenTextures(2, textures);
+   for (i = 0; i < 2; i++)
+   {
+      glActiveTexture(GL_TEXTURE2 + i);
+      glBindTexture(GL_TEXTURE_2D, textures[i]);
+      glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, 1, 1);
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1, 1, GL_RGBA,
+            GL_FLOAT, i ? lut : pixel);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+   }
+   for (gamut = 0; gamut < 4; gamut++)
+      for (enabled = 0; enabled < 2; enabled++)
+      {
+         hdr_viewer_colour_rows(rows, enabled != 0, 203.0f, gamut);
+         set4(prog, "params.ColourRow0", rows[0], rows[1], rows[2], rows[3]);
+         set4(prog, "params.ColourRow1", rows[4], rows[5], rows[6], rows[7]);
+         set4(prog, "params.ColourRow2", rows[8], rows[9], rows[10], rows[11]);
+         glDrawArrays(GL_TRIANGLES, 0, 3);
+         glReadPixels(0, 0, 1, 1, GL_RGBA, GL_FLOAT, got);
+         for (i = 0; i < 4; i++)
+         {
+            float expect = pixel[i];
+            if (enabled && i < 3)
+            {
+               double v = 0;
+               for (j = 0; j < 3; j++) v += rows[i * 4 + j] * pixel[j];
+               expect = (float)((v < 0 ? -1 : 1) * pow(fabs(v), rows[7]));
+            }
+            expect += lut[i];
+            if (fabs(got[i] - expect) > 0.0001)
+               fail("fused colour gamut %u enabled %u channel %u: %f != %f\n",
+                     gamut, enabled, i, got[i], expect);
+         }
+      }
+   glDeleteTextures(2, textures);
+   glDeleteProgram(prog);
+   puts("[pass] fused HDR sample colours, signed values, alpha, LUT and SDR bypass");
+}
+
 static int gl_run(void)
 {
    static const EGLint ctx_attribs[] = {
@@ -730,6 +804,8 @@ static int gl_run(void)
    glViewport(0, 0, OW, OH);
    glGenVertexArrays(1, &vao);
    glBindVertexArray(vao);
+
+   gl_colour();
 
    for (si = 0; si < N_ELEMS(shaders); si++)
    {

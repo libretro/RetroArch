@@ -69,9 +69,9 @@ bool gfx_media_player_state(gfx_anim_preview_t *session,
    return true;
 }
 
-bool gfx_media_player_seek(gfx_anim_preview_t *session,
+static bool gfx_media_player_seek_internal(gfx_anim_preview_t *session,
       video_player_t *player, int64_t target_us, unsigned mix_rate,
-      bool s16, int64_t wall_us)
+      bool s16, int64_t wall_us, bool preserve_position)
 {
    int64_t duration;
    if (!session || !player || !session->seekable) return false;
@@ -84,7 +84,36 @@ bool gfx_media_player_seek(gfx_anim_preview_t *session,
    if (!video_player_seek(player, target_us)) return false;
    session->media_requested_us = target_us;
    gfx_anim_preview_clock(session, wall_us);
-   return gfx_anim_preview_seek_request(session, mix_rate, s16);
+   return gfx_anim_preview_seek_request(session, mix_rate, s16, preserve_position);
+}
+
+bool gfx_media_player_seek(gfx_anim_preview_t *session,
+      video_player_t *player, int64_t target_us, unsigned mix_rate,
+      bool s16, int64_t wall_us)
+{
+   return gfx_media_player_seek_internal(session, player, target_us, mix_rate,
+         s16, wall_us, false);
+}
+
+bool gfx_media_player_select_audio(gfx_anim_preview_t *session,
+      video_player_t *player, int index, unsigned mix_rate, bool s16, int64_t wall_us)
+{
+   gfx_media_playback_state_t state;
+   unsigned i;
+   int previous;
+   if (!session || !mix_rate || mix_rate > 0x3fffffffU) return false;
+   for (i = 0; i < session->audio_track_count; i++)
+      if (session->audio_tracks[i].info.index == index
+            && session->audio_tracks[i].supported) break;
+   if (i == session->audio_track_count
+         || !gfx_media_player_state(session, player, wall_us, &state)) return false;
+   previous = retro_atomic_load_acquire_int(&session->requested_audio_track);
+   if (!gfx_anim_preview_audio_set_track(session, index)) return false;
+   if (gfx_media_player_seek_internal(session, player, state.position_us, mix_rate,
+            s16, wall_us, true))
+      return true;
+   retro_atomic_store_release_int(&session->requested_audio_track, previous);
+   return false;
 }
 
 enum video_player_state gfx_media_player_poll(gfx_anim_preview_t *session,

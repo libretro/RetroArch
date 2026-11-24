@@ -13,7 +13,6 @@
 #include <boolean.h>
 
 #include "input/drivers_joypad/wiiu/kpad_driver.c"
-#include "input/drivers_joypad/wiiu/pad_functions.c"
 
 /* ---- the stand-ins ---- */
 wiiu_joypad_t   joypad_state;

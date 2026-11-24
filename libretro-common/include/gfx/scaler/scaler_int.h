@@ -49,6 +49,9 @@ RETRO_BEGIN_DECLS
 void scaler_argb8888_vert(const struct scaler_ctx *ctx,
       void *output, int stride);
 
+void scaler_argb8888_vert_row(const struct scaler_ctx *ctx,
+      const uint64_t *const *rows, void *output);
+
 void scaler_argb8888_horiz(const struct scaler_ctx *ctx,
       const void *input, int stride);
 

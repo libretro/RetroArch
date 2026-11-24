@@ -96,6 +96,12 @@ libretrodb_scan_t *libretrodb_scan_begin(libretrodb_t *db,
 int libretrodb_scan_step(libretrodb_scan_t *scan, unsigned max_records,
       libretrodb_scan2_cb cb, void *ctx);
 
+/* Once a walk has run to its end: whether it read exactly as many
+ * records as the database's metadata counts, which a damaged file can
+ * miss either way.  A legacy file counts none, so a walk that reads
+ * any record from one is not complete. */
+bool libretrodb_scan_complete(const libretrodb_scan_t *scan);
+
 void libretrodb_scan_end(libretrodb_scan_t *scan);
 
 int libretrodb_read_at(libretrodb_t *db, uint64_t offset,

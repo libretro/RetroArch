@@ -188,10 +188,11 @@ static bool get_buffer(
    *size = format_fault == 14 ? 24 : 25;
    return format_fault != 13;
 }
+static int64_t wait_timeout;
 static ssize_t output(
       AMediaCodec *c, AMediaCodecBufferInfo *info, int64_t timeout)
 {
-   assert(c == &codec && !timeout && !owned);
+   assert(c == &codec && timeout == wait_timeout && !owned);
    output_calls++;
    if (output_mode <= 0)
       return output_mode == -1  ? -2
@@ -379,6 +380,26 @@ int main(void)
    assert(output_calls == before && owned);
    assert(record_mediacodec_encoder_release(s) && !owned);
    assert(!record_mediacodec_encoder_release(s));
+   /* A bounded wait that times out leaves the next pump to ask again */
+   before = output_calls;
+   wait_timeout = 16683;
+   output_mode = 0;
+   assert(record_mediacodec_encoder_wait(s, 16683));
+   wait_timeout = 0;
+   assert(record_mediacodec_encoder_pump(s, &packet) == RECORD_MC_BUSY
+         && output_calls == before + 2);
+   /* What a wait dequeues is the next pump's, without asking the codec */
+   wait_timeout = 16683;
+   output_mode = 1;
+   assert(record_mediacodec_encoder_wait(s, 16683) && owned);
+   wait_timeout = 0;
+   output_mode = 0;
+   before = output_calls;
+   assert(!record_mediacodec_encoder_wait(s, 16683));
+   assert(record_mediacodec_encoder_pump(s, &packet) == RECORD_MC_PACKET
+         && packet.data == payload + 3 && output_calls == before);
+   assert(!record_mediacodec_encoder_wait(s, 16683) && output_calls == before);
+   assert(record_mediacodec_encoder_release(s) && !owned);
    before = finishes;
    assert(record_mediacodec_encoder_finish(s));
    assert(record_mediacodec_encoder_finish(s) && finishes == before + 1);
@@ -532,6 +553,6 @@ int main(void)
    }
    puts("PASS: Surface encoder startup faults, borrowed packets, format "
         "changes, "
-        "zero-timeout output, bounds, EOS and cleanup; native APIs mocked");
+        "zero-timeout output, bounded waits, bounds, EOS and cleanup; native APIs mocked");
    return 0;
 }

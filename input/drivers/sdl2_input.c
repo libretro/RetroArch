@@ -45,6 +45,9 @@ typedef struct sdl2_input
    /* Light sensors aren't exposed through SDL, and they're not usually part of controllers */
    linux_illuminance_sensor_t *illuminance_sensor;
 #endif
+#ifdef HAVE_VIDEO_WINDOWS
+   input_video_window_t mouse_window;
+#endif
    uint32_t mouse_rel;   /* VIDEO_POS_PACK */
    uint32_t mouse_abs;   /* VIDEO_POS_PACK */
    int mouse_l;
@@ -338,8 +341,13 @@ static void sdl2_poll_mouse(sdl2_input_t *sdl)
    int rx = 0, ry = 0, ax = 0, ay = 0;
    Uint8 btn     = SDL_GetRelativeMouseState(&rx, &ry);
 
-   SDL_GetMouseState(&ax, &ay);
    sdl->mouse_rel = VIDEO_POS_PACK(rx, ry);
+#ifdef HAVE_VIDEO_WINDOWS
+   /* Over a screen's own window, the place is in that window */
+   sdl->mouse_window.window = sdl2_video_window_screen(SDL_GetMouseFocus(),
+         &sdl->mouse_window.generation);
+#endif
+   SDL_GetMouseState(&ax, &ay);
    sdl->mouse_abs = VIDEO_POS_PACK(ax, ay);
 
    sdl->mouse_l  = (SDL_BUTTON(SDL_BUTTON_LEFT)      & btn) ? 1 : 0;
@@ -386,8 +394,13 @@ static void sdl2_publish_pointers(sdl2_input_t *sdl)
    sdl->mouse_wl = 0;
    sdl->mouse_wr = 0;
 
+#ifdef HAVE_VIDEO_WINDOWS
+   input_driver_publish_window_pointers(frame, &sdl->mouse_window, 1,
+         INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT);
+#else
    input_driver_publish_pointers(frame, 1,
          INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT);
+#endif
 }
 
 static void sdl2_input_poll(void *data)

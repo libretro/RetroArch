@@ -38,7 +38,8 @@
  * Reading is complete for every image to hand. Fourteen commercial
  * images spanning all five container versions decode hunk-for-hunk
  * against an independent reader, including each image's final hunk.
- * Nothing here writes.
+ * Writing covers MAME's diffs: making one against a parent and storing
+ * hunks into it, as MAME 0.139 lays them out.
  *
  * CONTAINER
  *   Header               versions 1 to 5, including the geometry that
@@ -49,7 +50,10 @@
  *                        versions 1 and 2, the 16-byte entries of 3 and
  *                        4 with their end-of-list cookie, and version
  *                        5's flat array and Huffman-plus-RLE bitstream.
- *   Metadata             the chain is walked at open and kept.
+ *   Metadata             the chain is walked at open and kept; a
+ *                        version 1 or 2 hard disk's header geometry is
+ *                        given as the metadata entry later versions
+ *                        carry.
  *   Tracks               CD and GD track tables, with each track padded
  *                        to a four-frame boundary. A DVD image
  *                        describes no tracks, so one standing for the
@@ -112,7 +116,8 @@
  *   SHA-1 verification   the header's digests are parsed and exposed,
  *                        never checked against the data. A caller that
  *                        wants to know an image is intact has to do it.
- *   Writing              nothing. No encoder, no repair, no conversion.
+ *   Writing              diffs only. No encoder, no repair, no
+ *                        conversion.
  *   GD-ROM PAD field     a GD track carries a PAD the CD form does
  *                        not. It describes the disc, not the file --
  *                        placing tracks by it puts every track after
@@ -330,6 +335,11 @@ struct rchd
    int                state;
    int                header_len;
 
+   /* A version 1 or 2 hard disk's geometry, which those versions record
+    * in the header rather than as metadata: cylinders, heads, sectors
+    * and bytes per sector. */
+   uint32_t           v12_geometry[4];
+
    rchd_codec_slot_t *codecs;
    uint32_t           codec_count;
 
@@ -358,14 +368,12 @@ struct rchd
    rlzma_dec_t       *lzma;
 #endif
 
-   /* Three lookup tables, one channel of samples and the Huffman
+   /* Three lookup tables and the Huffman
     * decoders, for A/V hunks. The decoders are heap-held because the
     * five of them come to ~10 KiB, which overruns an 8 KiB thread
     * stack. All made on first use, so an image that is not
     * audio/video pays nothing for them. */
    uint16_t          *av_lookup;
-   int16_t           *av_samples;
-   uint32_t           av_samples_capacity;
    struct rchd_av_scratch *av_scratch;
 
    /* One decoded hunk, kept so a range spanning several hunks, or two
@@ -378,11 +386,16 @@ struct rchd
    uint8_t           *cd_scratch;
 
 #ifdef HAVE_RCHD_FLAC
-   /* The CD FLAC decoder. Every cdfl hunk of an image is headerless
-    * FLAC with one geometry, so one decoder is made and rewound per
-    * hunk instead of built and torn down for each. */
-   rflac_t           *cdfl;
-   uint32_t           cdfl_block_size;
+   /* The FLAC decoder every FLAC user (cdfl, flac, A/V audio) shares.
+    * An image's FLAC streams are headerless with one geometry, so one
+    * decoder is made and rewound per stream instead of built and torn
+    * down for each. */
+   rflac_t           *flac;
+   /* Where a FLAC stream bound for an odd byte decodes first. */
+   int16_t           *flac_bounce;
+   uint32_t           flac_channels;
+   uint32_t           flac_block_size;
+   uint32_t           flac_bounce_capacity;
 #endif
 
    rchd_track_t      *tracks;
@@ -403,6 +416,9 @@ struct rchd
    int                reading;
 
    rchd_t            *parent;
+   /* Set while the outstanding request is the bound parent's, so the
+    * bytes supplied for it are handed on to the parent. */
+   int                await_parent;
 };
 
 /* Asks the caller for a range, and reports whether it has all arrived.
@@ -464,6 +480,13 @@ uint32_t rchd_read_pending(rchd_t *chd, rchd_request_t *out, uint32_t max)
 {
    if (!chd || !out || !max)
       return 0;
+   if (chd->await_parent && chd->parent)
+   {
+      if (!rchd_read_pending(chd->parent, out, max))
+         return 0;
+      out[0].source = RCHD_SOURCE_PARENT;
+      return 1;
+   }
    if (!chd->pending || chd->pending_have >= chd->pending_size)
       return 0;
 
@@ -486,11 +509,25 @@ static int rchd_supply_matches(const rchd_t *chd, uint64_t offset,
    return offset == chd->pending_off + chd->pending_have;
 }
 
+/* The source a parent's own outstanding request is named by, from
+ * where the parent stands. */
+static int rchd_parent_source(const rchd_t *parent)
+{
+   return parent->await_parent ? RCHD_SOURCE_PARENT : parent->pending_src;
+}
+
 int rchd_feed_at(rchd_t *chd, uint64_t offset, int source,
       const void *data, size_t len)
 {
    if (!chd || !data)
       return RCHD_ERROR_PARAM;
+   if (chd->await_parent && chd->parent)
+   {
+      if (source != RCHD_SOURCE_PARENT)
+         return RCHD_ERROR_STATE;
+      return rchd_feed_at(chd->parent, offset,
+            rchd_parent_source(chd->parent), data, len);
+   }
    if (!rchd_supply_matches(chd, offset, source))
       return RCHD_ERROR_STATE;
 
@@ -508,6 +545,13 @@ int rchd_feed_borrow(rchd_t *chd, uint64_t offset, int source,
 {
    if (!chd || !data)
       return RCHD_ERROR_PARAM;
+   if (chd->await_parent && chd->parent)
+   {
+      if (source != RCHD_SOURCE_PARENT)
+         return RCHD_ERROR_STATE;
+      return rchd_feed_borrow(chd->parent, offset,
+            rchd_parent_source(chd->parent), data, len);
+   }
    if (!rchd_supply_matches(chd, offset, source))
       return RCHD_ERROR_STATE;
 
@@ -546,6 +590,8 @@ int rchd_feed(rchd_t *chd, const void *data, size_t len)
 {
    if (!chd || !data)
       return RCHD_ERROR_PARAM;
+   if (chd->await_parent && chd->parent)
+      return rchd_feed(chd->parent, data, len);
    if (!chd->pending || chd->pending_have >= chd->pending_size)
       return RCHD_ERROR_STATE;
 
@@ -577,8 +623,15 @@ static int rchd_parse_v1v2(rchd_t *chd, const uint8_t *h, uint32_t version)
    chd->info.logical_bytes = (uint64_t)cyls * heads * secs * seclen;
    chd->info.hunk_count    = rchd_rd32(h + 28);
    chd->info.unit_bytes    = seclen;
-   chd->info.has_parent    = (rchd_rd32(h + 16) & 1) != 0;
+   chd->info.flags         = rchd_rd32(h + 16);
+   chd->info.has_parent    = (chd->info.flags & RCHD_FLAG_HAS_PARENT) != 0;
+   memcpy(chd->info.md5,        h + 44, 16);
+   memcpy(chd->info.parent_md5, h + 60, 16);
    chd->meta_offset        = 0;
+   chd->v12_geometry[0]    = cyls;
+   chd->v12_geometry[1]    = heads;
+   chd->v12_geometry[2]    = secs;
+   chd->v12_geometry[3]    = seclen;
    return RCHD_OK;
 }
 
@@ -589,6 +642,8 @@ static int rchd_parse_v3v4(rchd_t *chd, const uint8_t *h, uint32_t version)
       chd->info.logical_bytes = rchd_rd_be(h + 28, 8);
       chd->meta_offset        = rchd_rd_be(h + 36, 8);
       chd->info.hunk_bytes    = rchd_rd32(h + 76);
+      memcpy(chd->info.md5,         h + 44,  16);
+      memcpy(chd->info.parent_md5,  h + 60,  16);
       memcpy(chd->info.sha1,        h + 80,  20);
       memcpy(chd->info.parent_sha1, h + 100, 20);
    }
@@ -603,7 +658,8 @@ static int rchd_parse_v3v4(rchd_t *chd, const uint8_t *h, uint32_t version)
    }
 
    chd->info.hunk_count = rchd_rd32(h + 24);
-   chd->info.has_parent = (rchd_rd32(h + 16) & 1) != 0;
+   chd->info.flags      = rchd_rd32(h + 16);
+   chd->info.has_parent = (chd->info.flags & RCHD_FLAG_HAS_PARENT) != 0;
 
 
    /* Nothing before version 5 records a unit size. It is inferred from
@@ -638,6 +694,7 @@ static int rchd_parse_v5(rchd_t *chd, const uint8_t *h)
    {
       static const uint8_t zero[20] = { 0 };
       chd->info.has_parent = memcmp(chd->info.parent_sha1, zero, 20) != 0;
+      chd->info.flags      = chd->info.has_parent ? RCHD_FLAG_HAS_PARENT : 0;
    }
 
    chd->info.hunk_count = (uint32_t)((chd->info.logical_bytes
@@ -1057,6 +1114,61 @@ static int rchd_meta_collect(rchd_t *chd)
    return RCHD_OK;
 }
 
+/* Versions 1 and 2 keep a hard disk's geometry in the header and carry
+ * no metadata, so the entry a later version would hold is made from it:
+ * the same text MAME 0.139 answers a request for it with, terminator
+ * included, so a consumer reads every version's geometry one way. */
+static size_t rchd_put_u32(char *out, uint32_t v)
+{
+   char   digits[10];
+   size_t n = 0, i;
+
+   do
+   {
+      digits[n++] = (char)('0' + v % 10);
+      v          /= 10;
+   } while (v);
+   for (i = 0; i < n; i++)
+      out[i] = digits[n - 1 - i];
+   return n;
+}
+
+static int rchd_meta_synth_v12(rchd_t *chd)
+{
+   static const char *const keys[4] = { "CYLS:", ",HEADS:", ",SECS:", ",BPS:" };
+   char             text[96];
+   size_t           len = 0;
+   unsigned         i;
+   uint8_t         *grown;
+   rchd_metadata_t *m;
+
+   for (i = 0; i < 4; i++)
+   {
+      size_t k = strlen(keys[i]);
+      memcpy(text + len, keys[i], k);
+      len += k;
+      len += rchd_put_u32(text + len, chd->v12_geometry[i]);
+   }
+   text[len++] = '\0';
+
+   if (!(grown = (uint8_t*)realloc(chd->metadata, chd->metadata_size + len)))
+      return RCHD_ERROR_MEM;
+   chd->metadata = grown;
+   if (!(m = (rchd_metadata_t*)realloc(chd->meta,
+               (chd->meta_count + 1) * sizeof(*m))))
+      return RCHD_ERROR_MEM;
+   chd->meta = m;
+
+   memcpy(chd->metadata + chd->metadata_size, text, len);
+   m[chd->meta_count].tag    = RCHD_META_HARD_DISK;
+   m[chd->meta_count].flags  = 0;
+   m[chd->meta_count].length = (uint32_t)len;
+   m[chd->meta_count].data   = (const uint8_t*)chd->metadata_size;
+   chd->metadata_size       += len;
+   chd->meta_count++;
+   return RCHD_OK;
+}
+
 static void rchd_meta_resolve(rchd_t *chd)
 {
    uint32_t i;
@@ -1147,12 +1259,12 @@ void rchd_free(rchd_t *chd)
    free(chd->cache);
    free(chd->cd_scratch);
 #ifdef HAVE_RCHD_FLAC
-   rflac_free(chd->cdfl);
+   rflac_free(chd->flac);
+   free(chd->flac_bounce);
 #endif
    free(chd->tracks);
    free(chd->sec_frame);
    free(chd->av_lookup);
-   free(chd->av_samples);
    free(chd->av_scratch);
    free(chd);
 }
@@ -1286,6 +1398,9 @@ int rchd_open_step(rchd_t *chd, rchd_request_t *req)
             chd->meta_have_len = 0;
          }
 
+         if (chd->info.version <= 2 && chd->meta_count == 0
+               && (err = rchd_meta_synth_v12(chd)) != RCHD_OK)
+            return err;
          rchd_meta_resolve(chd);
          rchd_infer_unit_bytes(chd);
          if ((err = rchd_build_tracks(chd)) != RCHD_OK)
@@ -1368,6 +1483,18 @@ int rchd_hunk_location(const rchd_t *chd, uint32_t hunk, rchd_request_t *req)
           || chd->map[hunk].type == RCHD_V5_PARENT))
       req->length = 0;
 
+   return RCHD_OK;
+}
+
+int rchd_hunk_crc32(const rchd_t *chd, uint32_t hunk, uint32_t *crc)
+{
+   if (!chd || !crc || chd->state != RCHD_OPEN_DONE
+         || hunk >= chd->info.hunk_count)
+      return RCHD_ERROR_PARAM;
+   /* Only versions 3 and 4 record one; the field holds something else
+    * in the others' maps, or nothing. */
+   *crc = (chd->info.version >= 3 && chd->info.version <= 4)
+        ? chd->map[hunk].crc : 0;
    return RCHD_OK;
 }
 
@@ -1461,6 +1588,75 @@ int rchd_register_codec(rchd_t *chd, uint32_t tag,
  * from measurement, and it is marked as such in place.
  */
 
+/* The shared FLAC decoder for headerless streams of @channels of
+ * 16-bit samples in blocks of at most @block_size frames, rewound to the
+ * start of a stream. A decoder sized for a larger block decodes a
+ * smaller one, so A/V audio, whose sample count moves by one between
+ * hunks, settles on its largest instead of being rebuilt every hunk. */
+static rflac_t *rchd_flac_decoder(rchd_t *chd, uint32_t channels,
+      uint32_t block_size)
+{
+   rflac_format_t fmt;
+
+   if (     chd->flac
+         && chd->flac_channels   == channels
+         && chd->flac_block_size >= block_size)
+   {
+      rflac_reset(chd->flac);
+      return chd->flac;
+   }
+
+   rflac_free(chd->flac);
+   chd->flac            = NULL;
+   fmt.sample_rate      = 44100;
+   fmt.channels         = channels;
+   fmt.bits_per_sample  = 16;
+   fmt.block_size       = block_size;
+   if (!(chd->flac = rflac_new_raw(&fmt)))
+      return NULL;
+   chd->flac_channels   = channels;
+   chd->flac_block_size = block_size;
+   return chd->flac;
+}
+
+/* Decodes up to @frames from @d's input into @out, each sample stored
+ * in the stated byte order, adding the input consumed to @used. Returns
+ * the frames produced. Every stream is handed over whole and marked
+ * ended, so the decoder keeps no rewind point between calls. */
+static size_t rchd_flac_run(rflac_t *d, int16_t *out, size_t frames,
+      int big_endian, size_t *used)
+{
+   size_t got = 0;
+
+   rflac_set_out_s16_order(d, out, frames, big_endian);
+   while (got < frames)
+   {
+      size_t rd = 0, wr = 0;
+      int    e  = rflac_process(d, &rd, &wr);
+      *used += rd;
+      got   += wr;
+      if (e != RFLAC_PROCESS_NEXT || wr == 0)
+         break;
+   }
+   return got;
+}
+
+/* Room for @samples, for a stream whose destination is on an odd byte. */
+static int16_t *rchd_flac_bounce(rchd_t *chd, uint32_t samples)
+{
+   if (samples > chd->flac_bounce_capacity)
+   {
+      int16_t *grown = (int16_t*)realloc(chd->flac_bounce,
+            (size_t)samples * sizeof(int16_t));
+
+      if (!grown)
+         return NULL;
+      chd->flac_bounce          = grown;
+      chd->flac_bounce_capacity = samples;
+   }
+   return chd->flac_bounce;
+}
+
 #define RCHD_AV_CODES    (256 + 16)
 #define RCHD_AV_MAX_BITS  16
 
@@ -1519,7 +1715,6 @@ static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
    rchd_av_scratch_t *s;
    rchd_av_plane_t   *plane;
    rhuff_bits_t    bits;
-   rflac_format_t  fmt;
    uint32_t        metasize;
    uint32_t        channels;
    uint32_t        samples;
@@ -1618,50 +1813,34 @@ static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
 
       if (mode == 0xffff)
       {
-      if (samples > chd->av_samples_capacity)
-      {
-         int16_t *grown = (int16_t*)realloc(chd->av_samples,
-               (size_t)samples * sizeof(int16_t));
-
-         if (!grown)
-            return RCHD_ERROR_MEM;
-         chd->av_samples          = grown;
-         chd->av_samples_capacity = samples;
-      }
-
-      fmt.sample_rate     = 44100;
-      fmt.channels        = 1;
-      fmt.bits_per_sample = 16;
-      fmt.block_size      = samples;
-
-      for (i = 0; i < channels; i++)
-      {
-         uint32_t clen = rchd_rd16(src + 10 + i * 2);
+         /* Each channel decodes big-endian straight into the hunk.
+          * The metadata ahead of it is any length, so a channel can
+          * start on an odd byte; that one goes through a bounce
+          * buffer, since a sample store needs its alignment. */
+         int16_t *bounce = NULL;
          rflac_t *d;
-         size_t   got = 0;
-         uint32_t k;
 
-         if (!(d = rflac_new_raw(&fmt)))
+         if (((size_t)out & 1) && !(bounce = rchd_flac_bounce(chd, samples)))
             return RCHD_ERROR_MEM;
-         rflac_set_out_s16(d, chd->av_samples, samples);
-         rflac_set_in(d, p, clen);
-         for (;;)
-         {
-            size_t rd = 0, wr = 0;
-            int    e  = rflac_process(d, &rd, &wr);
-            got += wr;
-            if (e != RFLAC_PROCESS_NEXT || wr == 0)
-               break;
-         }
-         rflac_free(d);
-         if (got != (size_t)samples)
-            return RCHD_ERROR_DATA;
 
-         for (k = 0; k < samples; k++)
+         if (!(d = rchd_flac_decoder(chd, 1, samples)))
+            return RCHD_ERROR_MEM;
+
+         for (i = 0; i < channels; i++)
          {
-            out[k * 2]     = (uint8_t)((uint16_t)chd->av_samples[k] >> 8);
-            out[k * 2 + 1] = (uint8_t)chd->av_samples[k];
-         }
+            uint32_t clen = rchd_rd16(src + 10 + i * 2);
+            int16_t *to   = bounce ? bounce : (int16_t*)(void*)out;
+            size_t   used = 0;
+
+            if (i)
+               rflac_reset(d);
+            rflac_set_in(d, p, clen);
+            rflac_set_eof(d);
+            if (rchd_flac_run(d, to, samples, 1, &used)
+                  != (size_t)samples)
+               return RCHD_ERROR_DATA;
+            if (bounce)
+               memcpy(out, bounce, (size_t)samples * 2);
             out += samples * 2;
             p   += clen;
          }
@@ -1979,33 +2158,16 @@ static void rchd_cd_rebuild(uint8_t *sec)
  * cost a handful of allocations for every audio hunk read. */
 static rflac_t *rchd_cdfl_decoder(rchd_t *chd, uint32_t sector_bytes)
 {
-   rflac_format_t fmt;
    /* The encoder sizes its blocks from the whole hunk rather than from
     * one sector: a quarter of the payload, halved until it is no larger
     * than a sector's worth of samples. A decoder told anything smaller
     * rejects the first frame it reads, because the block it declares
     * will not fit what the decoder allocated. */
-   uint32_t       bs = sector_bytes / 4;
+   uint32_t bs = sector_bytes / 4;
 
    while (bs > RCHD_CD_SECTOR_SIZE)
       bs /= 2;
-
-   if (chd->cdfl && chd->cdfl_block_size == bs)
-   {
-      rflac_reset(chd->cdfl);
-      return chd->cdfl;
-   }
-
-   rflac_free(chd->cdfl);
-   chd->cdfl            = NULL;
-   fmt.block_size       = bs;
-   fmt.sample_rate      = 44100;
-   fmt.channels         = 2;
-   fmt.bits_per_sample  = 16;
-   if (!(chd->cdfl = rflac_new_raw(&fmt)))
-      return NULL;
-   chd->cdfl_block_size = bs;
-   return chd->cdfl;
+   return rchd_flac_decoder(chd, 2, bs);
 }
 
 static int rchd_decompress_cdfl(rchd_t *chd, const uint8_t *src,
@@ -2014,13 +2176,15 @@ static int rchd_decompress_cdfl(rchd_t *chd, const uint8_t *src,
    uint32_t       frames = dst_len / RCHD_CD_FRAME_SIZE;
    uint32_t       sector_bytes;
    rflac_t       *d;
-   size_t         want;
-   size_t         got = 0;
    size_t         used = 0;
    uint8_t       *sectors;
    uint8_t       *subcode;
    uint32_t       i;
    int            err;
+   /* Sectors decode straight into their frames of @dst, unless @dst
+    * is on an odd byte, where a sample store would be misaligned and
+    * they decode into the scratch to be copied across. */
+   int            odd = (int)((size_t)dst & 1);
 
    if (!frames || dst_len % RCHD_CD_FRAME_SIZE)
       return RCHD_ERROR_DATA;
@@ -2036,34 +2200,21 @@ static int rchd_decompress_cdfl(rchd_t *chd, const uint8_t *src,
    sectors = chd->cd_scratch;
    subcode = sectors + sector_bytes;
 
-   want = sector_bytes / 4;
-
    if (!(d = rchd_cdfl_decoder(chd, sector_bytes)))
       return RCHD_ERROR_MEM;
-   rflac_set_out_s16(d, (int16_t*)(void*)sectors, want);
    rflac_set_in(d, src, src_len);
-   for (;;)
-   {
-      size_t rd = 0, wr = 0;
-      int    e  = rflac_process(d, &rd, &wr);
-      used += rd;
-      got  += wr;
-      if (e != RFLAC_PROCESS_NEXT || wr == 0)
-         break;
-   }
-
-   if (got != want)
-      return RCHD_ERROR_DATA;
+   rflac_set_eof(d);
 
    /* The samples are stored most significant byte first where a disc
-    * image holds them least significant byte first. The stream decodes
-    * perfectly without this, which is why it has to be measured against
-    * real output rather than reasoned about. */
-   for (i = 0; i < sector_bytes; i += 2)
+    * image holds them least significant byte first, so the hunk holds
+    * them big-endian whatever the host. */
+   for (i = 0; i < frames; i++)
    {
-      uint8_t t          = sectors[i];
-      sectors[i]         = sectors[i + 1];
-      sectors[i + 1]     = t;
+      uint8_t *to = odd ? sectors + (size_t)i * RCHD_CD_SECTOR_SIZE
+                        : dst + (size_t)i * RCHD_CD_FRAME_SIZE;
+      if (rchd_flac_run(d, (int16_t*)(void*)to, RCHD_CD_SECTOR_SIZE / 4,
+               1, &used) != RCHD_CD_SECTOR_SIZE / 4)
+         return RCHD_ERROR_DATA;
    }
 
    /* Whatever the FLAC data did not consume is the subchannel. */
@@ -2079,8 +2230,9 @@ static int rchd_decompress_cdfl(rchd_t *chd, const uint8_t *src,
    {
       uint8_t *out = dst + (size_t)i * RCHD_CD_FRAME_SIZE;
 
-      memcpy(out, sectors + (size_t)i * RCHD_CD_SECTOR_SIZE,
-            RCHD_CD_SECTOR_SIZE);
+      if (odd)
+         memcpy(out, sectors + (size_t)i * RCHD_CD_SECTOR_SIZE,
+               RCHD_CD_SECTOR_SIZE);
       memcpy(out + RCHD_CD_SECTOR_SIZE,
             subcode + (size_t)i * RCHD_CD_SUBCODE_SIZE,
             RCHD_CD_SUBCODE_SIZE);
@@ -2299,55 +2451,30 @@ static int rchd_decompress(rchd_t *chd, uint32_t tag,
           * A hunk is read as interleaved 16-bit stereo whatever it
           * actually holds; the codec is a way of compressing bytes, and
           * nothing here has to mean audio. */
-         rflac_format_t fmt;
          rflac_t       *d;
          size_t         frames = dst_len / 4;
-         size_t         got    = 0;
-         int            little;
+         size_t         used   = 0;
+         int16_t       *to     = (int16_t*)(void*)dst;
 
          if (src_len < 2 || (src[0] != 'L' && src[0] != 'B'))
             return RCHD_ERROR_DATA;
-         little = (src[0] == 'L');
 
-         fmt.sample_rate     = 44100;
-         fmt.channels        = 2;
-         fmt.bits_per_sample = 16;
-         fmt.block_size      = (uint32_t)frames;
+         /* Straight into @dst in the hunk's own order, unless @dst is
+          * on an odd byte, where a sample store would be misaligned. */
+         if ((size_t)dst & 1)
+         {
+            if (!(to = rchd_flac_bounce(chd, (uint32_t)frames * 2)))
+               return RCHD_ERROR_MEM;
+         }
 
-         if (!(d = rflac_new_raw(&fmt)))
+         if (!(d = rchd_flac_decoder(chd, 2, (uint32_t)frames)))
             return RCHD_ERROR_MEM;
-
-         rflac_set_out_s16(d, (int16_t*)(void*)dst, frames);
          rflac_set_in(d, src + 1, src_len - 1);
-         for (;;)
-         {
-            size_t rd = 0, wr = 0;
-            int    e  = rflac_process(d, &rd, &wr);
-            got += wr;
-            if (e != RFLAC_PROCESS_NEXT || wr == 0)
-               break;
-         }
-         rflac_free(d);
-
-         if (got != frames)
+         rflac_set_eof(d);
+         if (rchd_flac_run(d, to, frames, src[0] == 'B', &used) != frames)
             return RCHD_ERROR_DATA;
-
-         /* The decoder wrote host-order samples; the marker says what
-          * the hunk's own order is. */
-         {
-            static const uint16_t probe = 1;
-            int host_little = *(const uint8_t*)&probe == 1;
-            if (host_little != little)
-            {
-               uint32_t i;
-               for (i = 0; i + 1 < dst_len; i += 2)
-               {
-                  uint8_t t = dst[i];
-                  dst[i]    = dst[i + 1];
-                  dst[i + 1] = t;
-               }
-            }
-         }
+         if (to != (int16_t*)(void*)dst)
+            memcpy(dst, to, frames * 4);
          return RCHD_OK;
       }
 #endif
@@ -2913,7 +3040,9 @@ int rchd_read_begin(rchd_t *chd, uint64_t offset, void *dst, size_t len)
 
 int rchd_read_hunk_begin(rchd_t *chd, uint32_t hunk, void *dst)
 {
-   if (!chd || !dst || chd->state != RCHD_OPEN_DONE
+   /* @dst NULL: the hunk stays where it is decoded, for
+    * rchd_hunk_cache() */
+   if (!chd || chd->state != RCHD_OPEN_DONE
          || hunk >= chd->info.hunk_count)
       return RCHD_ERROR_PARAM;
 
@@ -2932,6 +3061,11 @@ int rchd_read_hunk_begin(rchd_t *chd, uint32_t hunk, void *dst)
    chd->rd_offset = (uint64_t)hunk * chd->info.hunk_bytes;
    chd->reading   = 1;
    return RCHD_OK;
+}
+
+const uint8_t *rchd_hunk_cache(const rchd_t *chd)
+{
+   return chd ? chd->cache : NULL;
 }
 
 size_t rchd_read_progress(const rchd_t *chd)
@@ -2961,6 +3095,7 @@ static int rchd_parent_read_begin(rchd_t *chd, uint64_t offset,
 
 static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
 {
+   chd->await_parent = 0;
    if (!chd->reading)
       return RCHD_ERROR_STATE;
 
@@ -2997,20 +3132,26 @@ static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
          /* A read covering the whole hunk decodes it straight into the
           * caller's buffer: the cache is left holding what it held,
           * which is still a valid hunk, and only a read of part of a
-          * hunk decodes into the cache to copy its slice out. */
-         int      whole = (skip == 0 && avail == chd->info.hunk_bytes);
+          * hunk decodes into the cache to copy its slice out. A hunk
+          * read with no buffer (rchd_hunk_cache) decodes into the cache
+          * and copies nothing. */
+         int      whole = (chd->rd_dst && skip == 0
+               && avail == chd->info.hunk_bytes);
          uint8_t *into  = whole ? chd->rd_dst + chd->rd_done : chd->cache;
          e = &chd->map[src_hunk];
 
-         /* A parent reference is the parent's data at a unit position,
-          * so it is read from the bound parent rather than from here. */
+         /* A parent reference is read from the bound parent rather
+          * than from here. Version 5 names the parent's data by unit;
+          * versions 3 and 4 by hunk, whatever unit the metadata
+          * implies. */
          if ((chd->info.version >= 5 && e->type == RCHD_V5_PARENT)
                || (chd->info.version < 5 && e->type == RCHD_V34_PARENT))
          {
             if (!chd->parent)
                return RCHD_ERROR_NO_PARENT;
-            err = rchd_parent_read_begin(chd,
-                  e->offset * chd->info.unit_bytes, into);
+            err = rchd_parent_read_begin(chd, e->offset
+                  * (chd->info.version >= 5 ? chd->info.unit_bytes
+                                            : chd->info.hunk_bytes), into);
             if (err != RCHD_OK)
                return err;
             for (;;)
@@ -3018,7 +3159,8 @@ static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
                err = rchd_read_step(chd->parent, req);
                if (err == RCHD_PENDING)
                {
-                  req->source = RCHD_SOURCE_PARENT;
+                  req->source       = RCHD_SOURCE_PARENT;
+                  chd->await_parent = 1;
                   return RCHD_PENDING;
                }
                if (err != RCHD_OK)
@@ -3062,7 +3204,8 @@ static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
          chd->cached = src_hunk;
       }
 
-      memcpy(chd->rd_dst + chd->rd_done, chd->cache + skip, avail);
+      if (chd->rd_dst)
+         memcpy(chd->rd_dst + chd->rd_done, chd->cache + skip, avail);
       chd->rd_done += avail;
    }
 
@@ -3199,7 +3342,14 @@ struct rchd_writer
    void         *ctx;
    uint32_t     *map;           /* one block index per hunk */
    uint8_t      *pad;           /* zero padding, one hunk */
+   /* A coded image: each hunk's map code, stored length and CRC-16,
+    * the hunks laid end to end from the header on, map last. */
+   uint8_t      *codes;
+   uint32_t     *lengths;
+   uint16_t     *crcs;
    uint64_t      logical_bytes;
+   uint64_t      data_end;      /* coded: where the next hunk goes */
+   uint32_t      compressors[4];
    uint32_t      hunk_bytes;
    uint32_t      unit_bytes;
    uint32_t      hunk_count;    /* hunks the logical size needs */
@@ -3207,6 +3357,23 @@ struct rchd_writer
    uint32_t      first_block;   /* first block holding hunk data */
    uint32_t      next_block;    /* next free block */
 };
+
+/* MSB-first bits into a buffer the caller sized. */
+typedef struct rchd_bitw
+{
+   uint8_t *data;
+   size_t   bit;
+} rchd_bitw_t;
+
+static void rchd_bitw_put(rchd_bitw_t *b, uint32_t v, uint32_t n)
+{
+   while (n--)
+   {
+      if ((v >> n) & 1)
+         b->data[b->bit >> 3] |= (uint8_t)(0x80 >> (b->bit & 7));
+      b->bit++;
+   }
+}
 
 static void rchd_wr32(uint8_t *p, uint32_t v)
 {
@@ -3265,10 +3432,61 @@ rchd_writer_t *rchd_write_new(uint64_t logical_bytes, uint32_t hunk_bytes,
    return w;
 }
 
+rchd_writer_t *rchd_write_new_coded(uint64_t logical_bytes,
+      uint32_t hunk_bytes, uint32_t unit_bytes,
+      const uint32_t compressors[4], rchd_write_fn sink, void *ctx)
+{
+   rchd_writer_t *w;
+
+   if (!compressors || compressors[0] == RCHD_CODEC_NONE)
+      return NULL;
+   if (!(w = rchd_write_new(logical_bytes, hunk_bytes, unit_bytes,
+               sink, ctx)))
+      return NULL;
+
+   w->codes   = (uint8_t*)calloc(w->hunk_count, 1);
+   w->lengths = (uint32_t*)calloc(w->hunk_count, sizeof(uint32_t));
+   w->crcs    = (uint16_t*)calloc(w->hunk_count, sizeof(uint16_t));
+   if (!w->codes || !w->lengths || !w->crcs)
+   {
+      rchd_write_free(w);
+      return NULL;
+   }
+   w->compressors[0] = compressors[0];
+   w->compressors[1] = compressors[1];
+   w->compressors[2] = compressors[2];
+   w->compressors[3] = compressors[3];
+   w->data_end       = RCHD_V5_HEADER_BYTES;
+   w->first_block    = 0;
+   return w;
+}
+
+int rchd_write_hunk_coded(rchd_writer_t *w, uint32_t compressor,
+      const uint8_t *blob, uint32_t len, uint16_t crc)
+{
+   if (!w || !w->codes || !blob || !len || len > 0xffffffu)
+      return RCHD_ERROR_DATA;
+   if (w->written >= w->hunk_count)
+      return RCHD_ERROR_DATA;
+   if (compressor > 3 || w->compressors[compressor] == RCHD_CODEC_NONE)
+      return RCHD_ERROR_DATA;
+
+   if (!w->sink(w->ctx, w->data_end, blob, len))
+      return RCHD_ERROR_STATE;
+   w->codes[w->written]   = (uint8_t)(RCHD_V5_TYPE_0 + compressor);
+   w->lengths[w->written] = len;
+   w->crcs[w->written]    = crc;
+   w->written++;
+   w->data_end           += len;
+   return RCHD_OK;
+}
+
 uint64_t rchd_write_prefix_size(const rchd_writer_t *w)
 {
    if (!w)
       return 0;
+   if (w->codes)
+      return RCHD_V5_HEADER_BYTES;
    return (uint64_t)w->first_block * w->hunk_bytes;
 }
 
@@ -3282,6 +3500,25 @@ int rchd_write_hunk(rchd_writer_t *w, const uint8_t *data, uint32_t len)
       return RCHD_ERROR_DATA;
    if (w->written >= w->hunk_count)
       return RCHD_ERROR_DATA;
+
+   /* A coded image has no holes: the hunk is stored as it is. */
+   if (w->codes)
+   {
+      uint16_t crc = encoding_crc16_ccitt(0xffff, data, len);
+
+      if (len < w->hunk_bytes)
+         crc = encoding_crc16_ccitt(crc, w->pad, w->hunk_bytes - len);
+      if (     !w->sink(w->ctx, w->data_end, data, len)
+            || (len < w->hunk_bytes && !w->sink(w->ctx, w->data_end + len,
+                  w->pad, w->hunk_bytes - len)))
+         return RCHD_ERROR_STATE;
+      w->codes[w->written]   = RCHD_V5_NONE;
+      w->lengths[w->written] = w->hunk_bytes;
+      w->crcs[w->written]    = crc;
+      w->written++;
+      w->data_end           += w->hunk_bytes;
+      return RCHD_OK;
+   }
 
    for (i = 0; i < len; i++)
    {
@@ -3311,6 +3548,97 @@ int rchd_write_hunk(rchd_writer_t *w, const uint8_t *data, uint32_t len)
    return RCHD_OK;
 }
 
+/* The compressed map (FORMAT.md 2.3) after the last hunk: a tree
+ * giving all sixteen codes four bits, so a code is written as itself,
+ * then one code per hunk with no runs, then each hunk's fields. */
+static int rchd_write_finish_coded(rchd_writer_t *w)
+{
+   uint8_t      hdr[RCHD_V5_HEADER_BYTES];
+   uint8_t      mh[16];
+   rchd_bitw_t  b;
+   uint8_t     *check;
+   size_t       bytes;
+   uint32_t     lengthbits = 1;
+   uint32_t     n;
+   uint64_t     offset     = RCHD_V5_HEADER_BYTES;
+   uint16_t     crc;
+   int          err        = RCHD_ERROR_STATE;
+
+   for (n = 0; n < w->hunk_count; n++)
+      while (lengthbits < 24 && (w->lengths[n] >> lengthbits))
+         lengthbits++;
+
+   bytes = (16 * 4 + (size_t)w->hunk_count * (4 + 24 + 16) + 7) / 8;
+   b.data = (uint8_t*)calloc(1, bytes);
+   b.bit  = 0;
+   check  = (uint8_t*)malloc((size_t)w->hunk_count * 12);
+   if (!b.data || !check)
+   {
+      free(b.data);
+      free(check);
+      return RCHD_ERROR_MEM;
+   }
+
+   for (n = 0; n < 16; n++)
+      rchd_bitw_put(&b, 4, 4);
+   for (n = 0; n < w->hunk_count; n++)
+      rchd_bitw_put(&b, w->codes[n], 4);
+   for (n = 0; n < w->hunk_count; n++)
+   {
+      uint8_t *slot = check + (size_t)n * 12;
+
+      if (w->codes[n] != RCHD_V5_NONE)
+         rchd_bitw_put(&b, w->lengths[n], lengthbits);
+      rchd_bitw_put(&b, w->crcs[n], 16);
+
+      slot[0]  = w->codes[n];
+      slot[1]  = (uint8_t)(w->lengths[n] >> 16);
+      slot[2]  = (uint8_t)(w->lengths[n] >> 8);
+      slot[3]  = (uint8_t)w->lengths[n];
+      slot[4]  = (uint8_t)(offset >> 40);
+      slot[5]  = (uint8_t)(offset >> 32);
+      slot[6]  = (uint8_t)(offset >> 24);
+      slot[7]  = (uint8_t)(offset >> 16);
+      slot[8]  = (uint8_t)(offset >> 8);
+      slot[9]  = (uint8_t)offset;
+      slot[10] = (uint8_t)(w->crcs[n] >> 8);
+      slot[11] = (uint8_t)w->crcs[n];
+      offset  += w->lengths[n];
+   }
+   crc   = encoding_crc16_ccitt(0xffff, check, (size_t)w->hunk_count * 12);
+   bytes = (b.bit + 7) / 8;
+
+   memset(mh, 0, sizeof(mh));
+   rchd_wr32(mh, (uint32_t)bytes);
+   mh[4]  = 0;
+   mh[5]  = 0;
+   rchd_wr32(mh + 6, RCHD_V5_HEADER_BYTES);  /* data start, 48 bits */
+   mh[10] = (uint8_t)(crc >> 8);
+   mh[11] = (uint8_t)crc;
+   mh[12] = (uint8_t)lengthbits;
+
+   memset(hdr, 0, sizeof(hdr));
+   memcpy(hdr, "MComprHD", 8);
+   rchd_wr32(hdr + 8,  RCHD_V5_HEADER_BYTES);
+   rchd_wr32(hdr + 12, 5);
+   for (n = 0; n < 4; n++)
+      rchd_wr32(hdr + 16 + n * 4, w->compressors[n]);
+   rchd_wr64(hdr + 32, w->logical_bytes);
+   rchd_wr64(hdr + 40, w->data_end);           /* map offset */
+   rchd_wr64(hdr + 48, 0);                     /* no metadata */
+   rchd_wr32(hdr + 56, w->hunk_bytes);
+   rchd_wr32(hdr + 60, w->unit_bytes);
+
+   if (     w->sink(w->ctx, w->data_end, mh, sizeof(mh))
+         && w->sink(w->ctx, w->data_end + sizeof(mh), b.data, bytes)
+         && w->sink(w->ctx, 0, hdr, sizeof(hdr)))
+      err = RCHD_OK;
+
+   free(b.data);
+   free(check);
+   return err;
+}
+
 int rchd_write_finish(rchd_writer_t *w)
 {
    uint8_t  hdr[RCHD_V5_HEADER_BYTES];
@@ -3321,6 +3649,9 @@ int rchd_write_finish(rchd_writer_t *w)
       return RCHD_ERROR_DATA;
    if (w->written != w->hunk_count)
       return RCHD_ERROR_DATA;
+
+   if (w->codes)
+      return rchd_write_finish_coded(w);
 
    memset(hdr, 0, sizeof(hdr));
    memcpy(hdr, "MComprHD", 8);
@@ -3354,5 +3685,156 @@ void rchd_write_free(rchd_writer_t *w)
       return;
    free(w->map);
    free(w->pad);
+   free(w->codes);
+   free(w->lengths);
+   free(w->crcs);
    free(w);
+}
+
+/* =====================================================================
+ * Writable images: MAME 0.139's diffs
+ *
+ * A diff is a version 4 image: a 108-byte header, then one 16-byte map
+ * entry per hunk and the end-of-list cookie, then the metadata chain,
+ * each entry a 16-byte header and its payload, linked in order.
+ * ===================================================================== */
+
+#define RCHD_V4_HEADER_BYTES 108
+/* Map entries emitted per call to the sink while a diff is written. */
+#define RCHD_DIFF_MAP_CHUNK  256
+
+static void rchd_v34_entry(uint8_t *e, uint64_t offset, uint32_t crc,
+      uint32_t length, uint8_t type)
+{
+   rchd_wr64(e, offset);
+   rchd_wr32(e + 8, crc);
+   e[12] = (uint8_t)(length >> 8);
+   e[13] = (uint8_t)length;
+   e[14] = (uint8_t)(length >> 16);
+   e[15] = type;
+}
+
+int rchd_write_diff(const rchd_t *parent, const uint8_t *sha1,
+      rchd_write_fn sink, void *ctx)
+{
+   uint8_t  hdr[RCHD_V4_HEADER_BYTES];
+   uint8_t *map;
+   uint64_t meta_start;
+   uint64_t at;
+   uint32_t n, i;
+   int      parent_crcs;
+
+   if (!parent || !sink || parent->state != RCHD_OPEN_DONE)
+      return RCHD_ERROR_PARAM;
+
+   meta_start = RCHD_V4_HEADER_BYTES
+              + ((uint64_t)parent->info.hunk_count + 1) * 16;
+
+   memset(hdr, 0, sizeof(hdr));
+   memcpy(hdr, "MComprHD", 8);
+   rchd_wr32(hdr + 8,  RCHD_V4_HEADER_BYTES);
+   rchd_wr32(hdr + 12, 4);
+   rchd_wr32(hdr + 16, RCHD_FLAG_HAS_PARENT | RCHD_FLAG_WRITEABLE);
+   rchd_wr32(hdr + 20, 0);                   /* stored uncompressed */
+   rchd_wr32(hdr + 24, parent->info.hunk_count);
+   rchd_wr64(hdr + 28, parent->info.logical_bytes);
+   rchd_wr64(hdr + 36, parent->meta_count ? meta_start : 0);
+   rchd_wr32(hdr + 44, parent->info.hunk_bytes);
+   if (sha1)
+      memcpy(hdr + 48, sha1, 20);
+   memcpy(hdr + 68, parent->info.sha1, 20);
+   /* the raw SHA-1, at 88, stays zero: a diff holds no data of its own */
+   if (!sink(ctx, 0, hdr, sizeof(hdr)))
+      return RCHD_ERROR_STATE;
+
+   /* Every hunk is the parent's same hunk, carrying its CRC where the
+    * parent's map records one. */
+   if (!(map = (uint8_t*)malloc(RCHD_DIFF_MAP_CHUNK * 16)))
+      return RCHD_ERROR_MEM;
+   parent_crcs = parent->info.version >= 3 && parent->info.version <= 4;
+   at          = RCHD_V4_HEADER_BYTES;
+   for (n = 0; n < parent->info.hunk_count; n += i)
+   {
+      for (i = 0; i < RCHD_DIFF_MAP_CHUNK
+            && n + i < parent->info.hunk_count; i++)
+         rchd_v34_entry(map + i * 16, n + i,
+               parent_crcs ? parent->map[n + i].crc : 0, 0,
+               RCHD_V34_PARENT);
+      if (!sink(ctx, at, map, (size_t)i * 16))
+      {
+         free(map);
+         return RCHD_ERROR_STATE;
+      }
+      at += (uint64_t)i * 16;
+   }
+   free(map);
+   if (!sink(ctx, at, rchd_end_of_list, 16))
+      return RCHD_ERROR_STATE;
+   at += 16;
+
+   /* The parent's metadata, in its order, each entry linking to the
+    * next and the last to nothing. */
+   for (n = 0; n < parent->meta_count; n++)
+   {
+      const rchd_metadata_t *m = &parent->meta[n];
+      uint64_t next = at + 16 + m->length;
+
+      rchd_wr32(hdr, m->tag);
+      rchd_wr32(hdr + 4, (m->length & 0x00ffffffU)
+            | ((uint32_t)m->flags << 24));
+      rchd_wr64(hdr + 8, (n + 1 < parent->meta_count) ? next : 0);
+      if (     !sink(ctx, at, hdr, 16)
+            || (m->length && !sink(ctx, at + 16, m->data, m->length)))
+         return RCHD_ERROR_STATE;
+      at = next;
+   }
+
+   return RCHD_OK;
+}
+
+int rchd_update_hunk(rchd_t *chd, uint32_t hunk, const uint8_t *data,
+      uint64_t *file_end, rchd_write_fn sink, void *ctx)
+{
+   rchd_map_entry_t *e;
+   uint8_t           entry[16];
+   uint64_t          offset;
+   uint32_t          hb;
+   uint32_t          crc;
+
+   if (!chd || !data || !file_end || !sink
+         || chd->state != RCHD_OPEN_DONE || hunk >= chd->info.hunk_count)
+      return RCHD_ERROR_PARAM;
+   if (chd->info.version < 3 || chd->info.version > 4
+         || !(chd->info.flags & RCHD_FLAG_WRITEABLE))
+      return RCHD_ERROR_UNSUPPORTED;
+   if (chd->reading || chd->sec_active)
+      return RCHD_ERROR_STATE;
+
+   e      = &chd->map[hunk];
+   hb     = chd->info.hunk_bytes;
+   crc    = encoding_crc32(0, data, hb);
+   /* A hunk already holding a whole hunk's worth of its own data is
+    * written over; anything else - a reference, a mini hunk, a
+    * compressed blob - gets new room at the end of the file. */
+   offset = e->offset;
+   if (offset == 0 || e->length < hb)
+   {
+      offset     = *file_end;
+      *file_end += hb;
+   }
+
+   if (!sink(ctx, offset, data, hb))
+      return RCHD_ERROR_STATE;
+   rchd_v34_entry(entry, offset, crc, hb, RCHD_V34_UNCOMPRESSED);
+   if (!sink(ctx, chd->map_offset + (uint64_t)hunk * 16, entry, 16))
+      return RCHD_ERROR_STATE;
+
+   e->offset   = offset;
+   e->crc      = crc;
+   e->length   = hb;
+   e->type     = RCHD_V34_UNCOMPRESSED;
+   /* A self reference to this hunk now reads its new contents, so no
+    * decoded hunk is kept. */
+   chd->cached = (uint32_t)-1;
+   return RCHD_OK;
 }

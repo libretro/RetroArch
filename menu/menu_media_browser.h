@@ -3,6 +3,7 @@
 #include "menu_driver.h"
 #include "../gfx/gfx_thumbnail.h"
 RETRO_BEGIN_DECLS
+bool menu_media_music_supported(const char *path);
 typedef struct menu_media_queue menu_media_queue_t;
 menu_media_queue_t *menu_media_queue_new(struct menu_state *menu_st);
 void menu_media_queue_free(menu_media_queue_t *queue);
@@ -15,10 +16,10 @@ bool menu_media_queue_step(menu_media_queue_t *queue,
  * background browser's, and keeps its own OK action. */
 bool menu_media_selected_is_viewable(struct menu_state *menu_st);
 
-/* The image of the selected image history row, or NULL */
+/* The file of the selected Images/Music history row, or NULL */
 const char *menu_media_selected_history_image(struct menu_state *menu_st);
 
-/* Whether the selected row is an image history entry, its file present,
+/* Whether the selected row is a viewer history entry, its file present,
  * that OK opens in the viewer rather than through its Run action. */
 bool menu_media_selected_in_history(struct menu_state *menu_st);
 

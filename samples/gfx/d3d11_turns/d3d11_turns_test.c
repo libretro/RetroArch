@@ -6,6 +6,11 @@
  * Held to: every time the frontend asks, it gets in within a few of the
  * core's turns, and the core never spins for it.
  *
+ * And, first, without timing: a frontend that got in while a core was
+ * about to park and nobody was asleep leaves nothing behind, so the next
+ * core to give way still parks until the frontend it saw is in, and
+ * that frontend gets the context before it.
+ *
  * D3D11_TURNS_TEST_UNFAIR builds a core that does not give way, and the
  * test must fail: the frontend waits behind many of the core's turns.
  *
@@ -28,6 +33,100 @@ static d3d11_turns_t      turns;
 static retro_atomic_int_t core_turns, quit;
 static volatile LONG      frontend_asking;
 
+#ifndef D3D11_TURNS_TEST_UNFAIR
+static d3d11_turns_t      st;
+static retro_atomic_int_t st_order, st_frontend_at, st_core_at;
+
+static DWORD WINAPI st_frontend(void *arg)
+{
+   (void)arg;
+   d3d11_turns_frontend_enter(&st);
+   retro_atomic_store_release_int(&st_frontend_at,
+         retro_atomic_fetch_add_int(&st_order, 1) + 1);
+   d3d11_turns_frontend_leave(&st);
+   return 0;
+}
+
+static DWORD WINAPI st_core(void *arg)
+{
+   (void)arg;
+   d3d11_turns_core_enter(&st);
+   retro_atomic_store_release_int(&st_core_at,
+         retro_atomic_fetch_add_int(&st_order, 1) + 1);
+   d3d11_turns_core_leave(&st);
+   return 0;
+}
+
+static bool st_join(HANDLE h)
+{
+   bool ok = WaitForSingleObject(h, 5000) == WAIT_OBJECT_0;
+   CloseHandle(h);
+   return ok;
+}
+
+/* The order is fixed by holding the critical section here, as a third
+ * party: the frontend waits on it, so a core that gives way must park
+ * rather than queue on it beside the frontend. */
+static bool stale_check(void)
+{
+   HANDLE fe, core;
+   DWORD  began;
+   int    parked;
+   bool   ok;
+
+   d3d11_turns_init(&st);
+   retro_atomic_int_init(&st_order, 0);
+   retro_atomic_int_init(&st_frontend_at, 0);
+   retro_atomic_int_init(&st_core_at, 0);
+
+   /* A core about to park, and a frontend that gets in and leaves
+    * before it does: nobody is asleep for that frontend's wake. */
+   retro_atomic_fetch_add_seq_cst_int(&st.core_parked, 1);
+   d3d11_turns_frontend_enter(&st);
+   d3d11_turns_frontend_leave(&st);
+   retro_atomic_fetch_add_seq_cst_int(&st.core_parked, -1);
+
+   EnterCriticalSection(&st.lock);
+   if (!(fe = CreateThread(NULL, 0, st_frontend, NULL, 0, NULL)))
+   {
+      LeaveCriticalSection(&st.lock);
+      puts("FAIL: no thread");
+      return false;
+   }
+   began = GetTickCount();
+   while (!(retro_atomic_load_acquire_int(&st.frontend) & D3D11_TURNS_WAITING)
+         && GetTickCount() - began < 5000)
+      Sleep(1);
+   if (!(core = CreateThread(NULL, 0, st_core, NULL, 0, NULL)))
+   {
+      LeaveCriticalSection(&st.lock);
+      st_join(fe);
+      puts("FAIL: no thread");
+      return false;
+   }
+   Sleep(100);
+   parked = retro_atomic_load_seq_cst_int(&st.core_parked);
+   LeaveCriticalSection(&st.lock);
+   ok = st_join(fe);
+   ok = st_join(core) && ok;
+   d3d11_turns_deinit(&st);
+
+   printf("left-over wake: core %s while the frontend waited, "
+         "frontend in %s\n", parked ? "parked" : "did not park",
+         retro_atomic_load_acquire_int(&st_frontend_at)
+         < retro_atomic_load_acquire_int(&st_core_at)
+         ? "first" : "second");
+   if (!ok || !parked
+         || retro_atomic_load_acquire_int(&st_frontend_at)
+         >= retro_atomic_load_acquire_int(&st_core_at))
+   {
+      puts("FAIL");
+      return false;
+   }
+   return true;
+}
+#endif
+
 static DWORD WINAPI core_thread(void *arg)
 {
    (void)arg;
@@ -49,6 +148,10 @@ int main(void)
 {
    HANDLE thread;
    unsigned ask, worst = 0, over = 0, counted = 0;
+#ifndef D3D11_TURNS_TEST_UNFAIR
+   if (!stale_check())
+      return 1;
+#endif
    d3d11_turns_init(&turns);
    retro_atomic_int_init(&core_turns, 0);
    retro_atomic_int_init(&quit, 0);

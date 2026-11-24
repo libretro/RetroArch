@@ -79,6 +79,11 @@ struct dinput_pointer_slot
    retro_atomic_int_t id_plus1;  /* 0: free */
    retro_atomic_int_t order;     /* when it went down */
    retro_atomic_int_t pos;       /* x << 16 | y, client coordinates */
+#ifdef HAVE_VIDEO_WINDOWS
+   /* The screen's own window it went down in, 0 for the main window */
+   retro_atomic_int_t window;
+   retro_atomic_int_t generation;
+#endif
 };
 
 
@@ -114,13 +119,20 @@ enum dinput_input_flags
    DINP_FLAG_MOUSE_WD_BTN      = (1 << 11),
    DINP_FLAG_MOUSE_HWU_BTN     = (1 << 12),
    DINP_FLAG_MOUSE_HWD_BTN     = (1 << 13),
-   DINP_FLAG_MOUSE_IGNORE      = (1 << 14)
+   DINP_FLAG_MOUSE_IGNORE      = (1 << 14),
+   /* Set while the keyboard is read through the background device */
+   DINP_FLAG_KB_BACKGROUND     = (1 << 15)
 };
 
 struct dinput_input
 {
    char *joypad_drv_name;
    LPDIRECTINPUTDEVICE8 keyboard;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* read in the background, while a screen's own window is in front */
+   LPDIRECTINPUTDEVICE8 keyboard_bg;
+   LPDIRECTINPUTDEVICE8 mouse_bg;
+#endif
    LPDIRECTINPUTDEVICE8 mouse;
    const input_device_driver_t *joypad;
    struct dinput_pointer_slot pointers[DINPUT_MAX_POINTERS];
@@ -129,6 +141,14 @@ struct dinput_input
    uint32_t mouse_rel;   /* VIDEO_POS_PACK */
    uint32_t mouse_pos;   /* VIDEO_POS_PACK */
    uint16_t flags;
+#ifdef HAVE_VIDEO_WINDOWS
+   /* The window the mouse is over */
+   input_video_window_t mouse_window;
+   /* the background mouse is read */
+   bool mouse_bg_read;
+   /* the main keyboard disables the Windows keys */
+   bool kb_nowinkey;
+#endif
    uint8_t state[256];
 };
 
@@ -206,12 +226,41 @@ static void *dinput_init(const char *joypad_driver)
       bool input_nowinkey_enable = input_config_get_nowinkey_enable();
       DWORD flags                = DISCL_NONEXCLUSIVE | DISCL_FOREGROUND;
       if (input_nowinkey_enable)
+      {
          flags                  |= DISCL_NOWINKEY;
+#ifdef HAVE_VIDEO_WINDOWS
+         di->kb_nowinkey         = true;
+#endif
+      }
 
       IDirectInputDevice8_SetDataFormat(di->keyboard, &c_dfDIKeyboard);
       IDirectInputDevice8_SetCooperativeLevel(di->keyboard,
             (HWND)video_driver_window_get(), flags);
       IDirectInputDevice8_Acquire(di->keyboard);
+
+#ifdef HAVE_VIDEO_WINDOWS
+      /* For the screens' own windows, read in the background while
+       * one of them is in front; the main window keeps the device
+       * above, and with it "Disable Windows Hotkeys" */
+#ifdef __cplusplus
+      if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+                  GUID_SysKeyboard,
+                  &di->keyboard_bg, NULL)))
+#else
+      if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+                  &GUID_SysKeyboard,
+                  &di->keyboard_bg, NULL)))
+#endif
+         di->keyboard_bg = NULL;
+      else
+      {
+         IDirectInputDevice8_SetDataFormat(di->keyboard_bg,
+               &c_dfDIKeyboard);
+         IDirectInputDevice8_SetCooperativeLevel(di->keyboard_bg,
+               (HWND)video_driver_window_get(),
+               DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
+      }
+#endif
    }
 
    if (di->mouse)
@@ -220,6 +269,24 @@ static void *dinput_init(const char *joypad_driver)
       IDirectInputDevice8_SetCooperativeLevel(di->mouse, (HWND)video_driver_window_get(),
             DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
       IDirectInputDevice8_Acquire(di->mouse);
+#ifdef HAVE_VIDEO_WINDOWS
+      /* For the screens' own windows, as the keyboard's */
+#ifdef __cplusplus
+      if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+                  GUID_SysMouse, &di->mouse_bg, NULL)))
+#else
+      if (FAILED(IDirectInput8_CreateDevice(g_dinput_ctx,
+                  &GUID_SysMouse, &di->mouse_bg, NULL)))
+#endif
+         di->mouse_bg = NULL;
+      else
+      {
+         IDirectInputDevice8_SetDataFormat(di->mouse_bg, &c_dfDIMouse2);
+         IDirectInputDevice8_SetCooperativeLevel(di->mouse_bg,
+               (HWND)video_driver_window_get(),
+               DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
+      }
+#endif
    }
 
    input_keymaps_init_keyboard_lut(rarch_key_map_dinput);
@@ -236,24 +303,58 @@ static void dinput_publish_pointers(struct dinput_input *di);
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
+#ifdef HAVE_VIDEO_WINDOWS
+   bool windows, screen, kb_bg;
+   HWND front;
+#endif
 
    if (!di)
       return;
 
    memset(di->state, 0, sizeof(di->state));
 
+#ifdef HAVE_VIDEO_WINDOWS
+   /* With the screens' windows on, the keyboard is read through the
+    * background device, so a key held across a switch between the
+    * windows stays held, gated to the main window or a screen's own
+    * in front. "Disable Windows Hotkeys" needs the main window's
+    * foreground device: with it on, that one is read there. The mouse
+    * takes the background device with a screen's own window in front. */
+   windows   = input_config_get_video_windows_enable();
+   front     = windows ? win32_foreground_window() : NULL;
+   screen    = windows && win32_video_window_open(front);
+   kb_bg     = di->keyboard_bg && (screen
+         || (windows && !di->kb_nowinkey));
+#endif
+
    if (di->keyboard)
    {
-      if (FAILED(IDirectInputDevice8_GetDeviceState(
-                  di->keyboard, sizeof(di->state), di->state)))
+      LPDIRECTINPUTDEVICE8 keyboard = di->keyboard;
+      bool kb_focus                 = true;
+#ifdef HAVE_VIDEO_WINDOWS
+      if (kb_bg)
       {
-         IDirectInputDevice8_Acquire(di->keyboard);
+         keyboard   = di->keyboard_bg;
+         di->flags |= DINP_FLAG_KB_BACKGROUND;
+         kb_focus   = screen || front == (HWND)video_driver_window_get();
+      }
+      else if (di->flags & DINP_FLAG_KB_BACKGROUND)
+      {
+         IDirectInputDevice8_Unacquire(di->keyboard_bg);
+         di->flags &= ~DINP_FLAG_KB_BACKGROUND;
+      }
+#endif
+      if (     kb_focus
+            && FAILED(IDirectInputDevice8_GetDeviceState(
+                  keyboard, sizeof(di->state), di->state)))
+      {
+         IDirectInputDevice8_Acquire(keyboard);
          /* Clear again: GetDeviceState() does not promise to leave the
           * buffer untouched when it fails, and a partial write would
           * otherwise be read as live key state. dinput_joypad_poll()
           * does the same for its own device state. */
          if (FAILED(IDirectInputDevice8_GetDeviceState(
-                     di->keyboard, sizeof(di->state), di->state)))
+                     keyboard, sizeof(di->state), di->state)))
             memset(di->state, 0, sizeof(di->state));
       }
       else
@@ -325,6 +426,19 @@ static void dinput_poll(void *data)
       BYTE *rgb_buttons_ptr     = &mouse_state.rgbButtons[0];
       bool swap_mouse_buttons   = (g_win32_flags & WIN32_CMN_FLAG_SWAP_MOUSE_BTNS) ? true : false;
       bool acquired             = true;
+      LPDIRECTINPUTDEVICE8 mouse = di->mouse;
+#ifdef HAVE_VIDEO_WINDOWS
+      if (di->mouse_bg && screen)
+      {
+         mouse             = di->mouse_bg;
+         di->mouse_bg_read = true;
+      }
+      else if (di->mouse_bg_read)
+      {
+         IDirectInputDevice8_Unacquire(di->mouse_bg);
+         di->mouse_bg_read = false;
+      }
+#endif
 
       point.x                   = 0;
       point.y                   = 0;
@@ -339,11 +453,11 @@ static void dinput_poll(void *data)
          *rgb_buttons_ptr = 0;
 
       if (FAILED(IDirectInputDevice8_GetDeviceState(
-                  di->mouse, sizeof(mouse_state), &mouse_state)))
+                  mouse, sizeof(mouse_state), &mouse_state)))
       {
-         IDirectInputDevice8_Acquire(di->mouse);
+         IDirectInputDevice8_Acquire(mouse);
          if (FAILED(IDirectInputDevice8_GetDeviceState(
-                     di->mouse, sizeof(mouse_state), &mouse_state)))
+                     mouse, sizeof(mouse_state), &mouse_state)))
          {
             mouse_state.lX = 0;
             mouse_state.lY = 0;
@@ -427,7 +541,22 @@ static void dinput_poll(void *data)
       if (acquired)
       {
          GetCursorPos(&point);
-         ScreenToClient((HWND)video_driver_window_get(), &point);
+#ifdef HAVE_VIDEO_WINDOWS
+         {
+            /* over a screen's own window, in that window */
+            POINT client;
+            di->mouse_window.window = windows
+               ? win32_video_window_under(point, &di->mouse_window.generation,
+                     &client)
+               : 0;
+            if (di->mouse_window.window)
+               point = client;
+            else
+#endif
+               ScreenToClient((HWND)video_driver_window_get(), &point);
+#ifdef HAVE_VIDEO_WINDOWS
+         }
+#endif
          di->mouse_pos = VIDEO_POS_PACK(point.x, point.y);
       }
 
@@ -454,6 +583,9 @@ static void dinput_publish_pointers(struct dinput_input *di)
    input_pointer_frame_t *frame = input_driver_pointers_lend();
    uint32_t *touch_pos = input_driver_touches_lend();
    int order[DINPUT_MAX_POINTERS];
+#ifdef HAVE_VIDEO_WINDOWS
+   input_video_window_t windows[DINPUT_MAX_POINTERS];
+#endif
    unsigned i, n    = 0;
    unsigned buttons = 0;
 
@@ -493,17 +625,35 @@ static void dinput_publish_pointers(struct dinput_input *di)
       {
          order[j]     = order[j - 1];
          touch_pos[j] = touch_pos[j - 1];
+#ifdef HAVE_VIDEO_WINDOWS
+         windows[j]   = windows[j - 1];
+#endif
       }
       order[j]     = o;
       touch_pos[j] = (uint32_t)p;
+#ifdef HAVE_VIDEO_WINDOWS
+      windows[j].window     = (unsigned)retro_atomic_load_relaxed_int(
+            &di->pointers[i].window);
+      windows[j].generation = (unsigned)retro_atomic_load_relaxed_int(
+            &di->pointers[i].generation);
+#endif
       n++;
    }
 
+#ifdef HAVE_VIDEO_WINDOWS
+   input_driver_publish_window_pointers(frame, &di->mouse_window, 1,
+           INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
+         | INPUT_POINTERS_GUN_AT_TOUCH | INPUT_POINTERS_GUN_BUTTONS_BOUND);
+   /* each one listed is there, and down */
+   input_driver_publish_window_touches(touch_pos, windows, n,
+         (1u << n) - 1, (1u << n) - 1);
+#else
    input_driver_publish_pointers(frame, 1,
            INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
          | INPUT_POINTERS_GUN_AT_TOUCH | INPUT_POINTERS_GUN_BUTTONS_BOUND);
    /* each one listed is there, and down */
    input_driver_publish_touches(touch_pos, n, (1u << n) - 1, (1u << n) - 1);
+#endif
 }
 
 /* Which of @keys are down: bit n of @down for keys[n]. */
@@ -567,12 +717,25 @@ static int16_t dinput_input_state(
 #define GET_POINTERID_WPARAM(wParam)   (LOWORD(wParam))
 #endif
 
-/* The window procedure's: a touch's position in client coordinates. */
-static int dinput_pointer_pos(WPARAM lParam)
+/* The window procedure's: a touch's position in client coordinates,
+ * of the main window or of screen window @window, which @generation
+ * still has */
+static int dinput_pointer_pos(WPARAM lParam, unsigned window,
+      unsigned generation, int was)
 {
    POINT point;
    point.x            = GET_X_LPARAM(lParam);
    point.y            = GET_Y_LPARAM(lParam);
+#ifdef HAVE_VIDEO_WINDOWS
+   if (window)
+   {
+      POINT client;
+      /* its window gone: it stays where it was */
+      if (!win32_video_window_point(window, generation, point, &client))
+         return was;
+      return (int)VIDEO_POS_PACK(client.x, client.y);
+   }
+#endif
    ScreenToClient((HWND)video_driver_window_get(), &point);
    return (int)VIDEO_POS_PACK(point.x, point.y);
 }
@@ -597,8 +760,20 @@ static void dinput_pointer_down(struct dinput_input *di, int pointer_id,
    for (i = 0; i < DINPUT_MAX_POINTERS; i++)
       if (!retro_atomic_load_relaxed_int(&di->pointers[i].id_plus1))
       {
+         unsigned window     = 0;
+         unsigned generation = 0;
+#ifdef HAVE_VIDEO_WINDOWS
+         POINT screen, client;
+         screen.x = GET_X_LPARAM(lParam);
+         screen.y = GET_Y_LPARAM(lParam);
+         window   = win32_video_window_under(screen, &generation, &client);
+         retro_atomic_store_relaxed_int(&di->pointers[i].window,
+               (int)window);
+         retro_atomic_store_relaxed_int(&di->pointers[i].generation,
+               (int)generation);
+#endif
          retro_atomic_store_relaxed_int(&di->pointers[i].pos,
-               dinput_pointer_pos(lParam));
+               dinput_pointer_pos(lParam, window, generation, 0));
          retro_atomic_store_relaxed_int(&di->pointers[i].order,
                retro_atomic_fetch_add_int(&di->pointer_order, 1));
          retro_atomic_store_release_int(&di->pointers[i].id_plus1,
@@ -652,8 +827,19 @@ bool dinput_handle_message(void *data,
             struct dinput_pointer_slot *slot = dinput_pointer_find(di,
                   GET_POINTERID_WPARAM(wParam));
             if (slot)
+            {
+               unsigned window     = 0;
+               unsigned generation = 0;
+#ifdef HAVE_VIDEO_WINDOWS
+               window     = (unsigned)retro_atomic_load_relaxed_int(
+                     &slot->window);
+               generation = (unsigned)retro_atomic_load_relaxed_int(
+                     &slot->generation);
+#endif
                retro_atomic_store_relaxed_int(&slot->pos,
-                     dinput_pointer_pos(lParam));
+                     dinput_pointer_pos(lParam, window, generation,
+                        retro_atomic_load_relaxed_int(&slot->pos)));
+            }
          }
          return true;
       case WM_DEVICECHANGE:
@@ -750,6 +936,12 @@ static void dinput_free(void *data)
 
    if (di->keyboard)
       IDirectInputDevice8_Release(di->keyboard);
+#ifdef HAVE_VIDEO_WINDOWS
+   if (di->keyboard_bg)
+      IDirectInputDevice8_Release(di->keyboard_bg);
+   if (di->mouse_bg)
+      IDirectInputDevice8_Release(di->mouse_bg);
+#endif
 
    if (di->mouse)
       IDirectInputDevice8_Release(di->mouse);

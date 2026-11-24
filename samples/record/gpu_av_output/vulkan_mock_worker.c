@@ -50,6 +50,13 @@ bool record_gpu_worker_vulkan_release(record_gpu_worker_vulkan_t *w)
    w->releases++;
    return true;
 }
+bool record_gpu_worker_vulkan_wait(const record_gpu_worker_vulkan_t *w,
+      uint64_t timeout_ns)
+{
+   (void)w;
+   (void)timeout_ns;
+   return false;
+}
 bool record_gpu_worker_vulkan_retry_needed(const record_gpu_worker_vulkan_t *w)
 {
    return w && w->retry;

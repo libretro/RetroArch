@@ -38,23 +38,39 @@ int hires_blit = 1;
 #define rgb_bits        7 /* half normal range to allow for doubled hires pixels */
 #define gamma_size      32
 
+#ifdef SNES_NTSC_REFERENCE_FLOAT
+typedef snes_ntsc_rgb_t snes_ntsc_build_rgb_t;
+#else
+#include <stdint.h>
+typedef uint64_t snes_ntsc_build_rgb_t;
+#endif
 #include "snes_ntsc_impl.h"
 
 /* 3 input pixels -> 8 composite samples */
+#ifdef SNES_NTSC_REFERENCE_FLOAT
 pixel_info_t const retroarch_snes_ntsc_pixels [alignment_count] = {
 	{ PIXEL_OFFSET( -4, -9 ), { 1, 1, .6667f, 0 } },
 	{ PIXEL_OFFSET( -2, -7 ), {       .3333f, 1, 1, .3333f } },
 	{ PIXEL_OFFSET(  0, -5 ), {                  0, .6667f, 1, 1 } },
 };
 
-static void merge_kernel_fields( snes_ntsc_rgb_t* io )
+#else
+pixel_info_t const retroarch_snes_ntsc_pixels [alignment_count] = {
+	{ PIXEL_OFFSET( -4, -9 ), { SNES_F_ONE, SNES_F_ONE, SNES_F(6667,10000), 0 } },
+	{ PIXEL_OFFSET( -2, -7 ), { SNES_F(3333,10000), SNES_F_ONE, SNES_F_ONE, SNES_F(3333,10000) } },
+	{ PIXEL_OFFSET(  0, -5 ), { 0, SNES_F(6667,10000), SNES_F_ONE, SNES_F_ONE } },
+};
+
+#endif
+
+static void merge_kernel_fields( snes_ntsc_build_rgb_t* io )
 {
 	int n;
 	for ( n = burst_size; n; --n )
 	{
-		snes_ntsc_rgb_t p0 = io [burst_size * 0] + rgb_bias;
-		snes_ntsc_rgb_t p1 = io [burst_size * 1] + rgb_bias;
-		snes_ntsc_rgb_t p2 = io [burst_size * 2] + rgb_bias;
+		snes_ntsc_build_rgb_t p0 = io [burst_size * 0] + rgb_bias;
+		snes_ntsc_build_rgb_t p1 = io [burst_size * 1] + rgb_bias;
+		snes_ntsc_build_rgb_t p2 = io [burst_size * 2] + rgb_bias;
 		/* merge colors without losing precision */
 		io [burst_size * 0] =
 				((p0 + p1 - ((p0 ^ p1) & snes_ntsc_rgb_builder)) >> 1) - rgb_bias;
@@ -66,7 +82,7 @@ static void merge_kernel_fields( snes_ntsc_rgb_t* io )
 	}
 }
 
-static void correct_errors( snes_ntsc_rgb_t color, snes_ntsc_rgb_t* out )
+static void correct_errors( snes_ntsc_build_rgb_t color, snes_ntsc_build_rgb_t* out )
 {
 	int n;
 	for ( n = burst_count; n; --n )
@@ -74,7 +90,7 @@ static void correct_errors( snes_ntsc_rgb_t color, snes_ntsc_rgb_t* out )
 		unsigned i;
 		for ( i = 0; i < rgb_kernel_size / 2; i++ )
 		{
-			snes_ntsc_rgb_t error = color -
+			snes_ntsc_build_rgb_t error = color -
 					out [i    ] - out [(i+12)%14+14] - out [(i+10)%14+28] -
 					out [i + 7] - out [i + 5    +14] - out [i + 3    +28];
 			DISTRIBUTE_ERROR( i+3+28, i+5+14, i+7 );
@@ -87,7 +103,7 @@ struct snes_ntsc_init_work
 {
 	init_t impl;
 	/* One entry's kernels, built at full width before they are stored */
-	snes_ntsc_rgb_t kernel [snes_ntsc_entry_size];
+	snes_ntsc_build_rgb_t kernel [snes_ntsc_entry_size];
 };
 
 void retroarch_snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup )
@@ -95,8 +111,8 @@ void retroarch_snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup
 	int merge_fields;
 	int entry;
 	/* Heap-held: init_t carries the resampled kernel and gamma tables,
-	 * and with one entry's kernels beside it makes a 3.6 KiB frame on
-	 * stacks whose whole budget is 8 KiB.  The API
+	 * and with one entry's kernels beside it would exceed small-stack
+	 * budgets. The API
 	 * is void, so on allocation failure this returns with the table
 	 * untouched; every in-tree caller calloc()s the snes_ntsc_t, and a
 	 * zeroed table blits black -- the same outcome as the filter
@@ -112,7 +128,12 @@ void retroarch_snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup
 	init( impl, setup );
 
 	merge_fields = setup->merge_fields;
+#ifdef SNES_NTSC_REFERENCE_FLOAT
 	if ( setup->artifacts <= -1 && setup->fringing <= -1 )
+#else
+	if ( snes_f_setting(setup->artifacts) <= -SNES_F_ONE &&
+	      snes_f_setting(setup->fringing) <= -SNES_F_ONE )
+#endif
 		merge_fields = 1;
 
 	for ( entry = 0; entry < snes_ntsc_palette_size; entry++ )
@@ -124,16 +145,16 @@ void retroarch_snes_ntsc_init( snes_ntsc_t* ntsc, snes_ntsc_setup_t const* setup
       int ig = entry >> 4 & 0x1F;
       int ib = entry << 1 & 0x1E;
 
-      float rr = impl->to_float [ir];
-      float gg = impl->to_float [ig];
-      float bb = impl->to_float [ib];
+      snes_ntsc_scalar_t rr = impl->to_float [ir];
+      snes_ntsc_scalar_t gg = impl->to_float [ig];
+      snes_ntsc_scalar_t bb = impl->to_float [ib];
 
-      float y, i, q = RGB_TO_YIQ( rr, gg, bb, y, i );
+      snes_ntsc_scalar_t y, i, q = RGB_TO_YIQ( rr, gg, bb, y, i );
 
       int r, g, b = YIQ_TO_RGB( y, i, q, impl->to_rgb, int, r, g );
-      snes_ntsc_rgb_t rgb = PACK_RGB( r, g, b );
+      snes_ntsc_build_rgb_t rgb = PACK_RGB( r, g, b );
 
-      snes_ntsc_rgb_t* out = work->kernel;
+      snes_ntsc_build_rgb_t* out = work->kernel;
       int n;
       gen_kernel( impl, y, i, q, out );
       if ( merge_fields )

@@ -271,6 +271,13 @@ bool record_gpu_session_vulkan_retry_needed(const record_gpu_session_vulkan_t *s
             && retro_atomic_load_acquire_int(&s->audio_closed));
 }
 
+bool record_gpu_session_vulkan_wait(const record_gpu_session_vulkan_t *s,
+      uint64_t timeout_ns)
+{
+   return s && s->stage != RVKS_RETIRED && s->output
+      && record_gpu_output_vulkan_wait(s->output, timeout_ns);
+}
+
 enum record_gpu_session_vulkan_error record_gpu_session_vulkan_error(
       const record_gpu_session_vulkan_t *s, int *file_error)
 {

@@ -1,0 +1,6 @@
+*.h text eol=lf
+*.hlsl text eol=lf
+*.json text eol=lf
+*.cso binary
+*.dxbc binary
+*.dxil binary

@@ -323,6 +323,41 @@ void image_transfer_anim_stream_set_want_fp16(void *stream,
 {
    (void)stream; (void)type; (void)want;
 }
+bool image_transfer_anim_stream_can_planar(const void *stream,
+      enum image_type_enum type)
+{
+   (void)stream; (void)type; return false;
+}
+bool image_transfer_anim_stream_set_planar(void *stream,
+      enum image_type_enum type, bool planar)
+{
+   (void)stream; (void)type; return !planar;
+}
+bool image_transfer_anim_stream_borrow_planar(void *stream,
+      enum image_type_enum type, bool strided)
+{
+   (void)stream; (void)type; (void)strided; return false;
+}
+bool image_transfer_anim_stream_retain_pixels(void *stream,
+      enum image_type_enum type, void **owner, void (**release)(void*))
+{
+   (void)stream; (void)type; (void)owner; (void)release; return false;
+}
+bool image_transfer_anim_stream_retain_planar(const void *stream,
+      enum image_type_enum type, void **owner, void (**release)(void*))
+{
+   (void)stream; (void)type; (void)owner; (void)release; return false;
+}
+const struct texture_planar *image_transfer_anim_stream_borrowed_planar(
+      const void *stream, enum image_type_enum type)
+{
+   (void)stream; (void)type; return NULL;
+}
+unsigned image_transfer_anim_stream_planar_yuv(const void *stream,
+      enum image_type_enum type)
+{
+   (void)stream; (void)type; return 0;
+}
 bool image_transfer_anim_stream_is_fp16(const void *stream,
       enum image_type_enum type)
 {

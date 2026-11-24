@@ -553,23 +553,47 @@ size_t word_wrap_wideglyph(char *s, size_t len,
 size_t word_wrap_offset(const char *src, size_t at,
       const char *wrapped, size_t wrapped_len)
 {
-   size_t i = 0;
-   size_t d = 0;
+   const char *end = wrapped + wrapped_len;
+   const char *z   = NULL; /* the next '\0' of the wrap, or its end */
+   const char *nl  = NULL; /* the next '\n' */
+   size_t      i   = 0;
+   size_t      d   = 0;
    while (i < at && d < wrapped_len)
    {
-      char w = wrapped[d];
-      char c = src[i];
-      if (w == c)
-         i++;
-      else if (w == '\0' || w == '\n')
+      size_t r;
+      char   c;
+      /* Up to its next line end the wrap is the source byte for byte,
+       * so that much is compared as one run */
+      if (!z || z < wrapped + d)
+         if (!(z = (const char*)memchr(wrapped + d, '\0', wrapped_len - d)))
+            z = end;
+      if (!nl || nl < wrapped + d)
+         if (!(nl = (const char*)memchr(wrapped + d, '\n', wrapped_len - d)))
+            nl = end;
+      r = (size_t)((nl < z ? nl : z) - (wrapped + d));
+      if (r > at - i)
+         r = at - i;
+      if (r)
       {
-         /* A line end the wrap made of a space or kept, or one it put
-          * before a wide glyph, which takes no byte of src */
-         if (c == ' ' || c == '\n')
-            i++;
+         if (memcmp(wrapped + d, src + i, r))
+         {
+            /* The wrap holds a byte the source does not: stop there */
+            while (wrapped[d] == src[i])
+            {
+               i++;
+               d++;
+            }
+            break;
+         }
+         i += r;
+         d += r;
+         continue;
       }
-      else
-         break;
+      /* A line end: one the wrap made of a space or kept, or one it put
+       * before a wide glyph, which takes no byte of src */
+      c = src[i];
+      if (c == wrapped[d] || c == ' ' || c == '\n')
+         i++;
       d++;
    }
    /* At a glyph a line end was put before: the glyph, not the end */

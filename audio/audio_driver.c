@@ -32,6 +32,49 @@
 #endif
 
 #include "audio_driver.h"
+#ifdef HAVE_PYROWAVE
+#include "audio_pyrowave.h"
+#include "../record/record_pyrowave_receiver.h"
+/* Audio-owner borrows only; detach precedes binding destruction. */
+static record_pyrowave_audio_clock_t *audio_driver_pyrowave_output;
+static record_pyrowave_audio_clock_t *audio_driver_pyrowave_pending;
+static bool audio_driver_pyrowave_lend;
+
+static void audio_driver_pyrowave_written(audio_driver_state_t *audio_st,
+      ssize_t written, size_t frame_bytes)
+{
+   audio_presentation_position_t device;
+   record_pyrowave_audio_clock_t *clock = audio_driver_pyrowave_output;
+   const audio_driver_t *audio = audio_st->current_audio;
+   if (!clock) return;
+   if (written < 0 || !frame_bytes || (size_t)written % frame_bytes)
+   { record_pyrowave_audio_clock_fail(clock); return; }
+   if (!written) return;
+   if (!audio->presentation_position
+         || !audio->presentation_position(audio_st->context_audio_data, &device)
+         || device.written < (uint64_t)written / frame_bytes
+         || (uint64_t)written / frame_bytes > 0xffffffffU
+         || !record_pyrowave_audio_clock_accepted(clock,
+            device.written - (uint64_t)written / frame_bytes, (uint32_t)((size_t)written / frame_bytes)))
+      record_pyrowave_audio_clock_fail(clock);
+}
+#endif
+
+/* Set before device construction and kept stable until device teardown. */
+static bool audio_driver_presentation_request;
+static bool audio_driver_presentation_changed;
+
+void audio_driver_request_presentation(bool enabled)
+{
+   if (audio_driver_presentation_request != enabled)
+      audio_driver_presentation_changed = true;
+   audio_driver_presentation_request = enabled;
+}
+
+bool audio_driver_presentation_requested(void)
+{
+   return audio_driver_presentation_request;
+}
 
 #ifdef HAVE_DSP_FILTER
 static void audio_driver_dsp_reap(audio_driver_state_t *audio_st);
@@ -122,7 +165,7 @@ static float audio_driver_input_rate(const audio_driver_state_t *audio_st);
 #include "../list_special.h"
 #include "../file_path_special.h"
 #include "../record/record_driver.h"
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
 #include "../record/record_audio_tap.h"
 #endif
 #include "../tasks/task_content.h"
@@ -1194,6 +1237,8 @@ static bool audio_driver_set_aside(audio_driver_state_t *audio_st,
 
    audio_driver_kept.requested = false;
    if (     !keep
+         || audio_driver_presentation_request
+         || audio_driver_presentation_changed
          || (env && env[0] == '0')
          || !audio->stop
          || !audio->start
@@ -1233,7 +1278,9 @@ static void audio_driver_drop_kept_unless(const settings_t *settings,
 {
    if (!audio_driver_kept.driver)
       return;
-   if (     wrapper == audio_driver_kept.wrapper
+   if (     !audio_driver_presentation_request
+         && !audio_driver_presentation_changed
+         && wrapper == audio_driver_kept.wrapper
          && latency == audio_driver_kept.latency
          && settings->uints.audio_output_sample_rate == audio_driver_kept.rate
          && string_is_equal(settings->arrays.audio_driver, audio_driver_kept.ident)
@@ -1306,7 +1353,9 @@ bool audio_driver_session_carry_ok(void)
    unsigned latency               = (core_latency > setting_latency)
          ? core_latency : setting_latency;
 
-   if (     (env && env[0] == '0')
+   if (     audio_driver_presentation_request
+         || audio_driver_presentation_changed
+         || (env && env[0] == '0')
          || !audio
          || !audio_st->context_audio_data
          || !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE)
@@ -1392,7 +1441,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
        * The overlay has the count meanwhile. */
       size_t n = audio_driver_get_underruns();
       if (n)
-         RARCH_LOG("[Audio] Driver \"%s\": %u period%s of silence for want of audio this session.\n",
+         RARCH_DBG("[Audio] Driver \"%s\": %u period%s of silence for want of audio this session.\n",
                audio_driver_get_ident(), (unsigned)n, n == 1 ? "" : "s");
 #ifdef HAVE_THREADS
       /* And the consumer's side of it: whether the pipe ever ran
@@ -1403,7 +1452,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
       {
          size_t waits = retro_atomic_load_acquire_size(&audio_st->pipe_source_waits);
          size_t low   = retro_atomic_load_acquire_size(&audio_st->pipe_held_min1) - 1;
-         RARCH_LOG("[Audio] Pipeline: waited for the core %u time%s after priming,"
+         RARCH_DBG("[Audio] Pipeline: waited for the core %u time%s after priming,"
                " %.2f ms at the longest; the pipe held %u frames (%.1f ms) at its lowest.\n",
                (unsigned)waits, waits == 1 ? "" : "s",
                (double)retro_atomic_load_acquire_size(&audio_st->pipe_source_wait_max_us) / 1000.0,
@@ -1421,7 +1470,7 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    audio_st->pipe_pending = NULL;
    audio_st->pipe_pending_bytes = 0;
    audio_driver_inline_free(audio_st);
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
    {
       struct record_audio_tap *tap = (struct record_audio_tap*)
          AUDIO_DRIVER_PTR_GET(&audio_st->record_tap);
@@ -1544,7 +1593,7 @@ static void audio_driver_mixer_hold(void);
 static void audio_driver_mixer_release(void);
 static void audio_driver_mixer_remove_stream_held(unsigned i);
 
-static void audio_driver_mixer_deinit(void)
+void audio_driver_mixer_shutdown(void)
 {
    unsigned i;
 
@@ -1554,7 +1603,11 @@ static void audio_driver_mixer_deinit(void)
    for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
       audio_driver_mixer_remove_stream_held(i);
    audio_driver_mixer_release();
+}
 
+static void audio_driver_mixer_deinit(void)
+{
+   audio_driver_mixer_shutdown();
    audio_mixer_done();
 }
 #endif
@@ -2238,6 +2291,35 @@ static void audio_driver_sink_update(audio_driver_state_t *audio_st,
    audio_driver_sink_window(audio_st, now_usec, consumed, consumed_alt, rate);
 
    audio_driver_sink_apply(audio_st, now_usec, rate);
+}
+
+/* audio_driver_sink_update() from the write paths, without a clock
+ * read while the open window has time left: that is told from a mark,
+ * and the clock is read for the update that closes the window. With
+ * the estimate off there is no window and no reading. */
+static void audio_driver_sink_poll(audio_driver_state_t *audio_st)
+{
+   int64_t now_usec;
+
+   if (!(retro_atomic_load_acquire_int(&audio_st->runloop_snapshot)
+         & AUDIO_SNAP_SINK_EST))
+   {
+      audio_driver_sink_update(audio_st, 0);
+      return;
+   }
+   if (audio_st->sink_started)
+   {
+      /* 0 for a span that is not: the mark's rate is not known yet,
+       * and the clock decides */
+      int64_t since = CPU_FEATURES_MARK_TO_USEC(
+            CPU_FEATURES_MARK() - audio_st->sink_poll_mark);
+      if (since > 0 && since < audio_st->sink_poll_span)
+         return;
+   }
+   now_usec = cpu_features_get_time_usec();
+   audio_driver_sink_update(audio_st, now_usec);
+   audio_st->sink_poll_mark = CPU_FEATURES_MARK_WITH(now_usec);
+   audio_st->sink_poll_span = audio_st->sink_window_at - now_usec;
 }
 
 /* Parts per million by which the driver's own approximation of the
@@ -3099,6 +3181,11 @@ static size_t audio_driver_stage_spans(audio_driver_state_t *audio_st,
    size_t done = 0;
    if (!audio->write_begin || !audio->write_end || !frames || !fb)
       return 0;
+#ifdef HAVE_PYROWAVE
+   /* A partial commit returns the lent suffix to its owner. Keep clocked
+    * output in owned staging unless complete commits are guaranteed. */
+   if (audio_driver_pyrowave_output && !audio_driver_pyrowave_lend) return 0;
+#endif
    if (     !audio_st->pipe_threaded
          && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK)
          && audio->wait_writable)
@@ -3330,7 +3417,11 @@ static INLINE void audio_driver_retain_output(audio_driver_state_t *audio_st,
       const void *stereo, size_t frames, ssize_t written)
 {
    size_t bytes = frames * audio_driver_dev_frame_bytes(audio_st);
-   if (written >= 0 && (size_t)written < bytes && audio_st->pipe_threaded)
+   if (written >= 0 && (size_t)written < bytes && (audio_st->pipe_threaded
+#ifdef HAVE_PYROWAVE
+            || audio_driver_pyrowave_output
+#endif
+         ))
    {
       bool   dev_float = (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT) != 0;
       size_t sample = dev_float ? sizeof(float) : sizeof(int16_t);
@@ -3508,7 +3599,7 @@ static void audio_driver_pause_track(audio_driver_state_t *audio_st,
       audio_st->pause_mute_frames -= (unsigned)n;
    }
 
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
    {
       struct record_audio_tap *tap = (struct record_audio_tap*)
          AUDIO_DRIVER_PTR_GET(&audio_st->record_tap);
@@ -3634,7 +3725,7 @@ static void audio_driver_write_identity_s16(audio_driver_state_t *audio_st,
    }
    audio_driver_sink_refused(audio_st);
    if (!audio_st->pipe_threaded)
-      audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
+      audio_driver_sink_poll(audio_st);
 }
 
 /* One run of the flush's output stage: @in_now frames of the input from
@@ -3677,6 +3768,16 @@ static size_t audio_driver_flush_produce(audio_driver_state_t *audio_st,
       src_data->output_frames = 0;
    AUDIO_OUTPUT_BOUND_CHECK(src_data->output_frames,
          audio_driver_output_bound(src_data->ratio, in_now));
+#ifdef HAVE_PYROWAVE
+   if (audio_driver_pyrowave_output
+         && (in_off > 0xffffffffU || in_now > 0xffffffffU || src_data->output_frames > 0xffffffffU
+            || !record_pyrowave_audio_clock_produced(audio_driver_pyrowave_output,
+               (uint32_t)in_off, (uint32_t)in_now, (uint32_t)src_data->output_frames)))
+   {
+      record_pyrowave_audio_clock_fail(audio_driver_pyrowave_output);
+      return 0;
+   }
+#endif
    return src_data->output_frames;
 }
 
@@ -3761,6 +3862,9 @@ static INLINE void audio_driver_flush_offered(audio_driver_state_t *audio_st,
       audio_st->sink_offered  += (double)frames * audio_st->src_ratio_orig / audio_st->src_ratio_curr;
    if (w > 0)
       audio_st->sink_accepted += (uint64_t)w / fb;
+#ifdef HAVE_PYROWAVE
+   audio_driver_pyrowave_written(audio_st, w, fb);
+#endif
 }
 
 /* The s16 path's master gain, a deterministic Q16 multiply: round half
@@ -3826,7 +3930,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * fall through to the float resampler path below (which is exactly
     * where the redundant int16<->float round-trip is avoided). */
    if (audio->write_raw
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
          && !AUDIO_DRIVER_PTR_GET(&audio_st->record_tap)
 #endif
          && !audio_st->resampler_hq
@@ -3935,7 +4039,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       }
       audio_driver_sink_refused(audio_st);
       if (!audio_st->pipe_threaded)
-         audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
+         audio_driver_sink_poll(audio_st);
       return;
    }
 
@@ -4217,7 +4321,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             }
             audio_driver_sink_refused(audio_st);
             if (!audio_st->pipe_threaded)
-               audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
+               audio_driver_sink_poll(audio_st);
          }
          else
          {
@@ -4294,7 +4398,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             }
             audio_driver_sink_refused(audio_st);
             if (!audio_st->pipe_threaded)
-               audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
+               audio_driver_sink_poll(audio_st);
          }
          return;
       }
@@ -4601,6 +4705,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       const size_t fb        = audio_driver_dev_frame_bytes(audio_st);
       const bool   dev_float = (aflags & AUDIO_FLAG_USE_FLOAT) != 0;
       const bool   lendable  = audio->write_begin && audio->write_end
+#ifdef HAVE_PYROWAVE
+            && (!audio_driver_pyrowave_output || audio_driver_pyrowave_lend)
+#endif
             && audio_st->out_channels <= 2
             && !(audio_st->virtualize && audio_st->virt_buf);
       const void  *in_all    = src_data.data_in;
@@ -4766,7 +4873,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       lend = NULL;
       audio_driver_sink_refused(audio_st);
       if (!audio_st->pipe_threaded)
-         audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
+         audio_driver_sink_poll(audio_st);
    }
 }
 
@@ -5155,6 +5262,10 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
     * has audio brought up by that reinit and again by drivers_init(). */
    if (audio_driver_st.context_audio_data)
       audio_driver_deinit_for_reinit();
+   /* A device brought up while away is stopped again before the
+    * runloop next waits */
+   audio_driver_st.away         = false;
+   audio_driver_st.away_stopped = false;
 
    convert_s16_to_float_init_simd();
    convert_float_to_s16_init_simd();
@@ -5259,7 +5370,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    if (     settings->bools.audio_threaded_pipeline
          && !audio_cb_inited
          && !audio_driver_st.current_audio->wait_writable)
-      RARCH_LOG("[Audio] Threaded pipeline requested, but driver \"%s\" "
+      RARCH_WARN("[Audio] Threaded pipeline requested, but driver \"%s\" "
             "has no wait_writable(); using the inline pipeline.\n",
             audio_driver_st.current_audio->ident);
 
@@ -5754,6 +5865,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
              || (AUDIO_FLAGS_GET(&audio_driver_st) & AUDIO_FLAG_PIPELINE_THREADED)))
       audio_driver_start(false);
 
+   audio_driver_presentation_changed = false;
    return true;
 
 error:
@@ -5762,6 +5874,9 @@ error:
 
 void audio_driver_pipeline_consumer_exit(void)
 {
+#ifdef HAVE_PYROWAVE
+   record_pyrowave_receiver_audio_control(true);
+#endif
    /* Release: the consumer's loop is done before the word that says so. */
    retro_atomic_store_release_int(&audio_driver_st.pipe_consumer_gone, 1);
 }
@@ -5978,7 +6093,7 @@ void audio_driver_state_unlock(void)
 
 int audio_driver_record_tap_install(struct record_audio_tap *tap)
 {
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
    audio_driver_state_t *s = &audio_driver_st;
    struct record_audio_tap *cur;
    if (!tap)
@@ -6022,7 +6137,7 @@ int audio_driver_record_tap_install(struct record_audio_tap *tap)
 
 bool audio_driver_record_tap_remove(struct record_audio_tap *tap)
 {
-#if defined(HAVE_RECORD_MEDIACODEC) || defined(RECORD_AUDIO_TAP_TEST)
+#if defined(HAVE_RECORD_MEDIACODEC) || defined(HAVE_PYROWAVE) || defined(RECORD_AUDIO_TAP_TEST)
    audio_driver_state_t *s = &audio_driver_st;
    bool ready;
    if (!tap)
@@ -7356,7 +7471,7 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
             }
          }
       }
-      audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
+      audio_driver_sink_poll(audio_st);
       /* No wake here: the consumer is woken once per frame by
        * audio_driver_pipeline_signal(), from the frame end and from the
        * other per-frame producers. Waking per publish would have a core
@@ -7383,6 +7498,144 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
             is_slowmotion, is_fastforward);
    audio_driver_inline_release(audio_st);
 }
+
+#ifdef HAVE_PYROWAVE
+static bool audio_driver_pyrowave_position(record_pyrowave_audio_clock_t *clock,
+      audio_presentation_position_t *device, record_pyrowave_clock_position_t *source)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   const audio_driver_t *audio = st->current_audio;
+   if (!audio || !st->context_audio_data || !audio->presentation_position
+         || !audio->presentation_position(st->context_audio_data, device))
+   { record_pyrowave_audio_clock_fail(clock); return false; }
+   return record_pyrowave_audio_clock_observe(clock, device, source);
+}
+
+bool audio_driver_pyrowave_poll(record_pyrowave_audio_clock_t *clock,
+      record_pyrowave_clock_position_t *source)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   const audio_driver_t *audio = st->current_audio;
+   audio_presentation_position_t device;
+   bool result;
+   if (!source || !clock) return false;
+   memset(source, 0, sizeof(*source));
+   if (!(AUDIO_FLAGS_GET(st) & AUDIO_FLAG_ACTIVE) || !audio_driver_inline_claim(st)) return false;
+   result = audio_driver_pyrowave_position(clock, &device, source);
+   if (result && audio_driver_pyrowave_pending == clock && st->pipe_pending_bytes
+         && record_pyrowave_audio_clock_writable(clock))
+   {
+      size_t fb = audio_driver_dev_frame_bytes(st);
+      size_t bytes = st->pipe_pending_bytes;
+      ssize_t written;
+      size_t room = audio->wait_writable ? audio->wait_writable(st->context_audio_data, bytes) : 0;
+      if (room > bytes) room = bytes;
+      room -= room % fb;
+      if (room)
+      {
+         audio_driver_pyrowave_output = clock;
+         written = audio->write(st->context_audio_data, st->pipe_pending, room);
+         audio_driver_pyrowave_written(st, written, fb);
+         audio_driver_pyrowave_output = NULL;
+         if (written < 0 || (size_t)written > room || (size_t)written % fb)
+            record_pyrowave_audio_clock_fail(clock);
+         else if (written)
+         {
+            st->pipe_pending += written; st->pipe_pending_bytes -= written;
+            st->sink_accepted += (uint64_t)written / fb;
+         }
+         if (!st->pipe_pending_bytes)
+         { st->pipe_pending = NULL; audio_driver_pyrowave_pending = NULL; }
+         result = audio_driver_pyrowave_position(clock, &device, source);
+      }
+   }
+   audio_driver_inline_release(st);
+   return result;
+}
+
+ssize_t audio_driver_pyrowave_submit(record_pyrowave_audio_clock_t *clock,
+      const int16_t *samples, size_t frames, unsigned channels, uint64_t first)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   audio_presentation_position_t device;
+   record_pyrowave_clock_position_t source;
+   size_t n, i;
+   if (!clock || !samples || !frames || (channels != 1 && channels != 2)) return -1;
+   if (!audio_driver_pyrowave_poll(clock, &source))
+      return record_pyrowave_audio_clock_failed(clock) ? -1 : 0;
+   if (record_pyrowave_audio_clock_pending(clock)) return 0;
+   if (st->pipe_threaded || st->inline_transport || !st->input_data || !st->output_samples_buf
+#ifdef HAVE_DSP_FILTER
+         || AUDIO_DRIVER_PTR_GET(&st->dsp)
+#endif
+         || (st->pipe_pending_bytes && audio_driver_pyrowave_pending != clock))
+   { record_pyrowave_audio_clock_fail(clock); return -1; }
+   if (audio_driver_core_silenced() || (retro_atomic_load_acquire_int(&st->runloop_snapshot)
+            & AUDIO_SNAP_PAUSED) || !audio_driver_inline_claim(st)) return 0;
+   if (!audio_driver_pyrowave_position(clock, &device, &source))
+   { audio_driver_inline_release(st); return -1; }
+   n = st->input_data_length / (2 * sizeof(float));
+   if (n > 512) n = 512;
+   if (n > frames) n = frames;
+   if (!n || !record_pyrowave_audio_clock_begin(clock, first, (uint32_t)n))
+   { audio_driver_inline_release(st); return 0; }
+   /* One conversion, including mono duplication, into owned SRC input. */
+   for (i = 0; i < n; i++)
+   {
+      st->input_data[2 * i] = samples[channels * i] * (1.0f / 32768.0f);
+      st->input_data[2 * i + 1] = samples[channels * i + channels - 1] * (1.0f / 32768.0f);
+   }
+   audio_driver_pyrowave_lend = device.lend_complete;
+   audio_driver_pyrowave_output = clock;
+   audio_driver_arm_resume(st);
+   audio_driver_flush(st, 1.0f, st->input_data, n * 2, true, false, false);
+   audio_driver_pyrowave_output = NULL;
+   if (st->pipe_pending_bytes) audio_driver_pyrowave_pending = clock;
+   else if (record_pyrowave_audio_clock_pending(clock)) record_pyrowave_audio_clock_fail(clock);
+   audio_driver_inline_release(st);
+   return record_pyrowave_audio_clock_failed(clock) ? -1 : (ssize_t)n;
+}
+
+ssize_t audio_driver_pyrowave_silence(record_pyrowave_audio_clock_t *clock)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   audio_presentation_position_t device;
+   record_pyrowave_clock_position_t source;
+   size_t frames, fb;
+   ssize_t written;
+   if (!audio_driver_pyrowave_poll(clock, &source))
+      return record_pyrowave_audio_clock_failed(clock) ? -1 : 0;
+   if (record_pyrowave_audio_clock_pending(clock) || !audio_driver_inline_claim(st)) return 0;
+   if (!audio_driver_pyrowave_position(clock, &device, &source))
+   { audio_driver_inline_release(st); return -1; }
+   if (device.silence_continuous)
+   { audio_driver_inline_release(st); return 0; }
+   if (!st->output_samples_buf || !st->output_samples_buf_length)
+   {
+      record_pyrowave_audio_clock_fail(clock);
+      audio_driver_inline_release(st); return -1;
+   }
+   frames = st->output_samples_buf_length / (2 * sizeof(float));
+   if (frames > 256) frames = 256;
+   memset(st->output_samples_buf, 0, frames * 2 * sizeof(float));
+   audio_driver_flush_finish(st, st->output_samples_buf, frames, true, AUDIO_FLAGS_GET(st));
+   fb = audio_driver_dev_frame_bytes(st);
+   written = audio_driver_write_frames(st, st->current_audio, st->output_samples_buf, frames, true, true);
+   if (written < 0 || (size_t)written % fb) record_pyrowave_audio_clock_fail(clock);
+   else st->sink_accepted += (uint64_t)written / fb;
+   audio_driver_inline_release(st);
+   return record_pyrowave_audio_clock_failed(clock) ? -1 : written;
+}
+
+void audio_driver_pyrowave_detach(record_pyrowave_audio_clock_t *clock)
+{
+   if (audio_driver_pyrowave_pending == clock)
+   {
+      audio_driver_st.pipe_pending = NULL; audio_driver_st.pipe_pending_bytes = 0;
+      audio_driver_pyrowave_pending = NULL;
+   }
+}
+#endif
 
 #ifdef HAVE_THREADS
 /* Keep infrequent retries out of the steady-state consumer's code path. */
@@ -9771,7 +10024,8 @@ static bool audio_driver_mixer_get_free_stream_slot(
 
 static bool audio_driver_mixer_add_stream_internal(
       audio_mixer_stream_params_t *params, audio_mixer_voice_t **out_voice,
-      size_t *out_serial, audio_mixer_sound_t *prepared)
+      size_t *out_serial, audio_mixer_sound_t *prepared,
+      const audio_mixer_observer_t *observer)
 {
    unsigned free_slot            = 0;
    audio_mixer_voice_t *voice    = NULL;
@@ -9889,8 +10143,9 @@ static bool audio_driver_mixer_add_stream_internal(
    #endif
             break;
          case AUDIO_MIXER_TYPE_M4A:
-   #ifdef HAVE_RAAC
-            handle = audio_mixer_load_m4a(buf, params->bufsize);
+   #if defined(HAVE_RAAC) || defined(HAVE_RAC3)
+            handle = audio_mixer_load_m4a_track_avail(buf, params->bufsize,
+                  params->avail ? params->avail : params->bufsize, -1);
    #endif
             break;
          case AUDIO_MIXER_TYPE_AC3:
@@ -9956,6 +10211,8 @@ static bool audio_driver_mixer_add_stream_internal(
                params->buf_owner, params->buf_owner_free);
 
    }
+
+   if (observer) audio_mixer_sound_set_observer(handle, observer);
 
    /* Claim the slot and start the voice. */
    audio_driver_mixer_hold();
@@ -10065,13 +10322,20 @@ bool audio_driver_mixer_prepare_format(unsigned *rate, bool *s16)
 
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
 {
-   return audio_driver_mixer_add_stream_internal(params, NULL, NULL, NULL);
+   return audio_driver_mixer_add_stream_internal(params, NULL, NULL, NULL, NULL);
 }
 
 bool audio_driver_mixer_add_stream_clocked(audio_mixer_stream_params_t *params,
       audio_mixer_voice_t **voice, size_t *serial)
 {
-   return audio_driver_mixer_add_stream_internal(params, voice, serial, NULL);
+   return audio_driver_mixer_add_stream_internal(params, voice, serial, NULL, NULL);
+}
+
+bool audio_driver_mixer_add_stream_observed(audio_mixer_stream_params_t *params,
+      audio_mixer_voice_t **voice, size_t *serial,
+      const audio_mixer_observer_t *observer)
+{
+   return audio_driver_mixer_add_stream_internal(params, voice, serial, NULL, observer);
 }
 
 bool audio_driver_mixer_add_prepared_stream(audio_mixer_stream_params_t *params,
@@ -10094,7 +10358,7 @@ bool audio_driver_mixer_add_prepared_stream(audio_mixer_stream_params_t *params,
       audio_mixer_destroy(sound);
       return false;
    }
-   return audio_driver_mixer_add_stream_internal(params, voice, serial, sound);
+   return audio_driver_mixer_add_stream_internal(params, voice, serial, sound, NULL);
 }
 
 int64_t audio_driver_mixer_stream_byte_tell(unsigned i)
@@ -10509,6 +10773,9 @@ bool audio_driver_mixer_toggle_mute(void)
 
 bool audio_driver_enable_callback(void)
 {
+#ifdef HAVE_PYROWAVE
+   if (record_pyrowave_receiver_audio_enabled()) return true;
+#endif
    if (!audio_driver_st.callback.callback)
       return false;
    if (audio_driver_st.callback.set_state)
@@ -10518,6 +10785,9 @@ bool audio_driver_enable_callback(void)
 
 bool audio_driver_disable_callback(void)
 {
+#ifdef HAVE_PYROWAVE
+   if (record_pyrowave_receiver_audio_enabled()) return true;
+#endif
    if (!audio_driver_st.callback.callback)
       return false;
 
@@ -10548,6 +10818,13 @@ bool audio_driver_callback(void)
       || (   (snap & AUDIO_SNAP_MENU_PAUSES)
           && (snap & AUDIO_SNAP_MENU_ALIVE)
           && (snap & AUDIO_SNAP_ALLOW_PAUSE));
+#ifdef HAVE_PYROWAVE
+   record_pyrowave_receiver_audio_control(false);
+   if (record_pyrowave_receiver_audio_enabled())
+   {
+      return record_pyrowave_receiver_audio_run();
+   }
+#endif
 
 #ifdef HAVE_THREADS
    if (audio_driver_st.pipe_threaded)
@@ -10587,6 +10864,7 @@ bool audio_driver_callback(void)
       /* Counted at every device write this thread makes, whichever
        * route the core's samples take to it. */
       uint64_t offered = audio_driver_st.sink_offered_raw;
+      uint64_t accepted = audio_driver_st.sink_accepted;
       if (audio_driver_st.inline_transport)
          audio_driver_st.inline_transport->source_progress = false;
 
@@ -10598,6 +10876,7 @@ bool audio_driver_callback(void)
 
       /* Bounded stretch lookahead may consume several batches before a write. */
       if (audio_driver_st.sink_offered_raw != offered
+            || audio_driver_st.sink_accepted != accepted
             || (audio_driver_st.inline_transport
                && audio_driver_st.inline_transport->source_progress))
          return true;
@@ -10609,6 +10888,9 @@ bool audio_driver_callback(void)
 
 bool audio_driver_has_callback(void)
 {
+#ifdef HAVE_PYROWAVE
+   if (record_pyrowave_receiver_audio_enabled()) return true;
+#endif
    return audio_driver_st.callback.callback != NULL;
 }
 
@@ -10640,6 +10922,10 @@ bool audio_driver_start(bool is_shutdown)
       AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_STARTED);
       goto error;
    }
+   /* Started while away, by a reinit or by the background save: the
+    * runloop stops it again before it next waits */
+   audio_st->away         = false;
+   audio_st->away_stopped = false;
 
    if (!is_shutdown)
       RARCH_DBG("[Audio] Started audio driver: \"%s\".\n",
@@ -11710,6 +11996,51 @@ bool audio_driver_stop(void)
    return stopped;
 }
 
+void audio_driver_set_away(bool away)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+#ifdef HAVE_MICROPHONE
+   microphone_driver_state_t *mic_st = &mic_driver_st;
+   retro_microphone_t    *microphone = &mic_st->microphone;
+#endif
+   audio_st->away = away;
+   if (away)
+   {
+      if (     !audio_st->away_stopped
+            && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_STARTED)
+            && audio_driver_stop())
+         audio_st->away_stopped = true;
+#ifdef HAVE_MICROPHONE
+      /* A capture stream left open records in the background and keeps
+       * the device awake as playback does */
+      if (     !mic_st->away_stopped
+            && mic_st->driver
+            && mic_st->driver_context
+            && (microphone->flags & (MICROPHONE_FLAG_ACTIVE
+                  | MICROPHONE_FLAG_ENABLED | MICROPHONE_FLAG_PENDING))
+               == (MICROPHONE_FLAG_ACTIVE | MICROPHONE_FLAG_ENABLED)
+            && mic_st->driver->mic_alive(mic_st->driver_context,
+               microphone->microphone_context)
+            && microphone_driver_stop())
+         mic_st->away_stopped = true;
+#endif
+      return;
+   }
+   if (audio_st->away_stopped)
+   {
+      audio_st->away_stopped = false;
+      if (audio_st->context_audio_data)
+         audio_driver_start(false);
+   }
+#ifdef HAVE_MICROPHONE
+   if (mic_st->away_stopped)
+   {
+      mic_st->away_stopped = false;
+      microphone_driver_start();
+   }
+#endif
+}
+
 #ifdef HAVE_REWIND
 void audio_driver_frame_is_reverse(void)
 {
@@ -11873,7 +12204,7 @@ bool audio_compute_buffer_statistics(audio_statistics_t *stats)
 }
 
 #ifdef HAVE_MENU
-void audio_driver_menu_sample(bool by_clock)
+void audio_driver_menu_sample(retro_time_t now)
 {
    static int16_t samples_buf[1024]       = {0};
    settings_t *settings                   = config_get_ptr();
@@ -11918,13 +12249,12 @@ void audio_driver_menu_sample(bool by_clock)
          || info->sample_rate <= 0.0 || info->fps <= 0.0)
       return;
    frames = floor(info->sample_rate / info->fps);
-   if (by_clock)
+   if (now)
    {
       /* What has played since the last feed, carrying the part of a
        * frame that did not make a whole one. The first feed is one
        * content frame; a gap longer than a tenth of a second is a
        * stall or a return to the menu, not time to make up. */
-      retro_time_t now = cpu_features_get_time_usec();
       if (audio_st->menu_feed_last)
       {
          retro_time_t elapsed = now - audio_st->menu_feed_last;
@@ -11950,7 +12280,7 @@ void audio_driver_menu_sample(bool by_clock)
       return;
    sample_count = (unsigned)frames * 2;
    /* Less than a frame has played since the last feed */
-   if (by_clock && !sample_count)
+   if (now && !sample_count)
       return;
 
    if ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED))
@@ -11969,7 +12299,7 @@ void audio_driver_menu_sample(bool by_clock)
     * from then on. Only what the device takes now is written, keeping
     * half its buffer as the blocking path does; time it could not take
     * is not made up. The recording still gets all of it. */
-   if (by_clock && device_count && audio_st->callback.callback)
+   if (now && device_count && audio_st->callback.callback)
    {
       const audio_driver_t *audio = audio_st->current_audio;
       size_t room = 0;

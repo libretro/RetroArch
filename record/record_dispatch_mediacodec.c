@@ -92,6 +92,10 @@ static void *record_mcd_run(void *opaque)
    JNIEnv *env = rjni_env();
    struct pollfd descriptor;
    uint64_t value;
+   /* The bound on a wait for the video encoder's output: a frame, at most
+    * 20 ms, so the audio is still drained while nothing is drawn */
+   int64_t frame_us = j->video.frame_rate > 50.0
+         ? (int64_t)(1000000.0 / j->video.frame_rate) : 20000;
    int result, waited;
    if (env)
       j->session = record_session_mediacodec_new(env, &j->video, j->interval,
@@ -115,6 +119,13 @@ static void *record_mcd_run(void *opaque)
       if (result == RECORD_MC_WORKER_END || result == RECORD_MC_WORKER_ERROR)
          break;
       if (result != RECORD_MC_WORKER_BUSY)
+         continue;
+      /* The encoder's output is what nothing notifies: wait in the codec
+       * for it. A producer's notification meanwhile is picked up by the
+       * service after it. */
+      if (     j->session
+            && !retro_atomic_load_acquire_int(&j->cancelled)
+            && record_session_mediacodec_wait(j->session, frame_us))
          continue;
       retro_atomic_fetch_add_seq_cst_int(&j->epoch, 1);
       result = record_mcd_service(j);

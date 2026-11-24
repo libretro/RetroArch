@@ -63,10 +63,12 @@ else
 GIT			= git.exe
 endif
 
-SHADER_OBJS = gfx/drivers/rsx_shaders/modern_opaque.vpo.o \
-              gfx/drivers/rsx_shaders/modern_opaque.fpo.o \
-              gfx/drivers/rsx_shaders/modern_alpha_blend.vpo.o \
-              gfx/drivers/rsx_shaders/modern_alpha_blend.fpo.o
+# Committed RSX microcode: ordinary builds never invoke cgcomp/Cg.
+PYTHON ?= python3
+RSX_SHADER_DIR := gfx/drivers/rsx_shaders/precompiled
+RSX_SHADER_BINARIES := $(addprefix $(RSX_SHADER_DIR)/,modern_opaque.vpo modern_opaque.fpo modern_alpha_blend.vpo modern_alpha_blend.fpo)
+SHADER_OBJS := $(addsuffix .o,$(RSX_SHADER_BINARIES))
+RSX_SHADER_SOURCES := $(wildcard gfx/drivers/rsx_shaders/modern_*.vcg gfx/drivers/rsx_shaders/modern_*.fcg)
 
 LIBCO_OBJ = libretro-common/libco/ps3.o
 
@@ -120,6 +122,8 @@ SHARED_FLAGS := -DHAVE_GCM \
 		-DHAVE_MENU_BUFFER \
 		-DHAVE_CORE_INFO_CACHE \
 		-DHAVE_7ZIP \
+		-DHAVE_CHD \
+		-DHAVE_RCHD \
 
 CFLAGS += -std=gnu99 $(SHARED_FLAGS)
 CXXFLAGS += $(SHARED_FLAGS)
@@ -169,3 +173,11 @@ clean:
 	$(Q)rm -f $(OBJ)
 
 .PHONY: clean
+
+.PHONY: check-rsx-shaders
+check-rsx-shaders:
+	$(PYTHON) tools/rsx_shaders.py --check
+
+# Keep the binary as $< for the SDK's bin2o macro and preserve symbol names.
+$(SHADER_OBJS): %.o: %
+	$(bin2o)

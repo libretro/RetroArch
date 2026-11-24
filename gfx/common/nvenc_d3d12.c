@@ -28,6 +28,7 @@ struct nvenc_d3d12
    ID3D12Device *device;
    void *session;
    HANDLE eos;
+   HANDLE done_event; /* auto-reset, armed on the head slot's output fence */
    NV_ENCODE_API_FUNCTION_LIST api;
    NV_ENC_PRESET_CONFIG preset;
    NV_ENC_INITIALIZE_PARAMS init;
@@ -181,6 +182,7 @@ static void nve_destroy(nvenc_d3d12_t *e)
       if (s->output) ID3D12Resource_Release(s->output);
    }
    nve_event_free(e, e->eos);
+   if (e->done_event) CloseHandle(e->done_event);
    if (e->session) e->api.nvEncDestroyEncoder(e->session);
    if (e->device) ID3D12Device_Release(e->device);
    if (e->library) FreeLibrary(e->library);
@@ -403,6 +405,7 @@ nvenc_d3d12_t *nvenc_d3d12_open(const nvenc_d3d12_config_t *c)
    e->init.encodeConfig = &e->preset.presetCfg;
    e->init.tuningInfo = NV_ENC_TUNING_INFO_ULTRA_LOW_LATENCY;
    if (e->api.nvEncInitializeEncoder(e->session, &e->init) != NV_ENC_SUCCESS || !nve_event(e, &e->eos)) goto fail;
+   if (!(e->done_event = CreateEvent(NULL, FALSE, FALSE, NULL))) goto fail;
    for (i = 0; i < c->slots; i++) if (!nve_slot(e, i, (ID3D12Resource*)c->textures[i])) goto fail;
    return e;
 fail:
@@ -473,7 +476,6 @@ int nvenc_d3d12_submit(nvenc_d3d12_t *e, unsigned index, uint64_t timestamp,
          e->picture.codecPicParams.av1PicParams.obuPayloadArrayCnt = e->metadata_count;
       }
    }
-   ResetEvent(s->event);
    status = e->api.nvEncEncodePicture(e->session, &e->picture);
    if (status == NV_ENC_ERR_ENCODER_BUSY) return NVENC_D3D12_BUSY;
    if (status != NV_ENC_SUCCESS && status != NV_ENC_ERR_NEED_MORE_INPUT) return NVENC_D3D12_ERROR;
@@ -515,11 +517,21 @@ int nvenc_d3d12_poll(nvenc_d3d12_t *e, nvenc_d3d12_packet_t *packet)
    return NVENC_D3D12_OK;
 }
 
+/* Poll takes the head packet once its output fence has signalled, so
+ * that fence is what a waiter waits for; the async completion event
+ * NVENC requires can fire before it. NULL once the fence is through:
+ * the bitstream lock is then all that is left, and has nothing to wait
+ * on. */
 void *nvenc_d3d12_wait_handle(const nvenc_d3d12_t *e)
 {
+   const nvenc_d3d12_slot_t *s;
    if (!e || e->locked) return NULL;
-   if (e->count) return e->slots[e->order[e->read]].event;
-   return e->finishing ? e->eos : NULL;
+   if (!e->count) return e->finishing ? e->eos : NULL;
+   s = &e->slots[e->order[e->read]];
+   if (ID3D12Fence_GetCompletedValue(s->done) >= s->value
+         || FAILED(ID3D12Fence_SetEventOnCompletion(s->done, s->value, e->done_event)))
+      return NULL;
+   return e->done_event;
 }
 
 int nvenc_d3d12_release(nvenc_d3d12_t *e)

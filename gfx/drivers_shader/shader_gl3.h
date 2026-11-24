@@ -30,6 +30,7 @@
 RETRO_BEGIN_DECLS
 
 typedef struct gl3_filter_chain gl3_filter_chain_t;
+struct gfx_media_history;
 
 struct gl3_filter_chain_texture
 {
@@ -106,12 +107,30 @@ bool gl3_filter_chain_init(gl3_filter_chain_t *chain);
 void gl3_filter_chain_set_passthrough(
       gl3_filter_chain_t *chain, unsigned passthrough);
 
+void gl3_filter_chain_set_viewer_colour(
+      gl3_filter_chain_t *chain, const float *rows);
+
 void gl3_filter_chain_set_source_hdr(
       gl3_filter_chain_t *chain, unsigned source_hdr);
 
 void gl3_filter_chain_set_input_texture(
       gl3_filter_chain_t *chain,
       const struct gl3_filter_chain_texture *texture);
+
+/* Producer state is borrowed through end_frame. Reset its copies after
+ * accepted uploads; NULL keeps the ordinary copy path. */
+void gl3_filter_chain_set_input_texture_history(
+      gl3_filter_chain_t *chain,
+      const struct gl3_filter_chain_texture *texture,
+      struct gfx_media_history *history);
+
+/* Opt in only for managed, single-level viewer textures. Preserve before
+ * mutation; retire transfers deletion when history still holds the name. */
+void gl3_filter_chain_set_history_borrow(gl3_filter_chain_t *chain, bool enabled);
+bool gl3_filter_chain_preserve_history(gl3_filter_chain_t *chain, unsigned image);
+void gl3_filter_chain_source_sampler(gl3_filter_chain_t *chain, GLint filter[4]);
+bool gl3_filter_chain_history_references(gl3_filter_chain_t *chain, unsigned image);
+bool gl3_filter_chain_retire_history(gl3_filter_chain_t *chain, unsigned image);
 
 /* Whether the chain reads a frame where it lies in a larger texture,
  * rather than copying it out. */
@@ -208,11 +227,12 @@ gl3_filter_chain_t *gl3_filter_chain_create_shrink(void);
  * the passes are built to read them there where the preset allows,
  * rather than have each copied out. @replay: the chain may draw its last
  * frame's final pass again in a later frame (build_viewport_pass_replay),
- * and its history keeps one more texture for that. */
+ * and its history keeps one more texture for that. @viewer_colour:
+ * compile sample-colour conversion into the private viewer passes. */
 gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       const char *path,
       enum glslang_filter_chain_filter filter,
-      bool frame_rect, bool replay);
+      bool frame_rect, bool replay, bool viewer_colour);
 
 /**
  * Deferred (per-frame) filter chain creation API.
@@ -238,7 +258,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
       const char *path,
       enum glslang_filter_chain_filter filter,
       bool frame_rect,
-      unsigned *out_num_passes);
+      unsigned *out_num_passes, bool viewer_colour);
 
 /**
  * gl3_filter_chain_compile_pass:

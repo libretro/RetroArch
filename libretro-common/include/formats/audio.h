@@ -126,6 +126,21 @@ void *audio_transfer_new(enum audio_type_enum type);
 void  audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
       void *ptr, size_t len);
 
+/* Container audio selection, before start and after buffer/avail setup.
+ * -1 retains automatic first-supported selection; nonnegative values are
+ * zero-based demuxer track indices (including video/subtitle tracks).
+ * An explicit missing, non-audio or different-codec track makes start fail;
+ * it never silently substitutes another track. No allocation or input copy.
+ * Supports Matroska/WebM Opus/Vorbis/FLAC/AAC and MP4 AAC when compiled in.
+ * An active or partially opened decoder refuses changes: prepare a new
+ * decoder on its owning worker and adopt it through the caller's lifecycle. */
+bool audio_transfer_set_container_track(void *data, enum audio_type_enum type,
+      int track);
+/* Query after successful start: the actual container index, or -1 for raw
+ * input/unsupported codecs. Retained across seeks; it never exposes a request
+ * as an opened track before the codec has been constructed. */
+int audio_transfer_container_track(const void *data, enum audio_type_enum type);
+
 /* Point the context at a DEMUXED elementary stream instead of a
  * self-framed file: 'setup' is the codec's out-of-band configuration
  * (a container's CodecPrivate -- e.g. the Vorbis identification/comment/
@@ -185,14 +200,15 @@ bool  audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
 void audio_transfer_set_output_rate(void *data, enum audio_type_enum type,
       unsigned rate);
 
-/* Tell a decoder how many bytes from the start of the buffer set by
- * set_buffer_ptr are actually resident.  A windowed feeder calls this
- * before audio_transfer_start, so a container header parse is bounded
- * by the permanently-resident head instead of running to the end of
- * the file, and again as the window slides.  Monotonic; 0 means the
- * whole buffer is there, which is the default and what every
- * non-windowed caller wants.  Only the WebM container arms use it;
- * a no-op elsewhere. */
+/* Resident upper byte boundary of a windowed borrowed buffer. Call before
+ * start and raise it as the feeder commits more data. Bounds are monotonic
+ * within a forward pass; 0 means fully resident (the default). Arms without
+ * window support ignore it.
+ * WAV requires its complete chunk headers resident at start; the supplied
+ * buffer size still describes the whole file and determines duration. Reads
+ * stop at complete resident frames/ADPCM blocks. Keep the initial nonzero
+ * bound resident as a permanent head: seek restores that bound until the
+ * feeder publishes a wall for the new position. */
 void audio_transfer_set_avail(void *data, enum audio_type_enum type,
       size_t avail);
 
@@ -217,6 +233,14 @@ enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
  * carries no supported track. */
 enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
       size_t len);
+/* MP4 AAC/AC-3 metadata probe, bounded by the resident prefix.
+ * Track is a demuxer index, or -1 for the first supported audio track. */
+enum audio_type_enum audio_transfer_mp4_audio_track_type(const void *buf,
+      size_t len, size_t avail, int track);
+
+/* WebM sniff restricted to a demuxer index, or -1 for automatic. */
+enum audio_type_enum audio_transfer_webm_audio_track_type(const void *buf,
+      size_t len, int track);
 
 /* The arm for a whole file, from its bytes: ID3v2 tags in front are
  * looked past, then FLAC, Ogg (audio_transfer_ogg_audio_type), WebM and
@@ -332,16 +356,17 @@ bool  audio_transfer_seek(void *data, enum audio_type_enum type,
  * Targets use container movie frames, including gaps and the declared tail.
  * AAC maps <=256 sample-table timestamps per metadata slice, then selects
  * indexed preroll without reading media bytes. WebM steps header mapping
- * and decoder preroll separately. Step decodes at most one access unit or
- * examines <=256 packet/sample headers: -1 failure, 0 retry (including input
+ * and decoder preroll separately; FLAC discards at most one coded frame.
+ * Step decodes at most one access unit or examines <=256 packet/sample
+ * headers: -1 failure, 0 retry (including input
  * starvation), 1 positioned for the next read. Feed buffer_tell before
  * retrying a resident wall. A new successful begin replaces the request.
  * Do not interleave reads or legacy seek with an unfinished request.
  * Failure to begin leaves the previous request/decoder untouched. */
 bool audio_transfer_seek_begin(void *data, enum audio_type_enum type,
       uint64_t frame);
-/* Select the WebM pending PCM format before preparation (AAC is format
- * independent). The default begin above prepares float PCM. */
+/* Select the WebM pending PCM format before preparation (AAC and FLAC
+ * are format independent). The default begin above prepares float PCM. */
 bool audio_transfer_seek_begin_format(void *data, enum audio_type_enum type,
       uint64_t frame, bool s16);
 

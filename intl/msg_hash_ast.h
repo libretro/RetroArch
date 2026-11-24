@@ -62,7 +62,9 @@ static const struct
    char s_314539a4[27];
    char s_8fc168f0[7];
    char s_213c44cf[20];
+   char s_4f4b0d00[8];
    char s_502f623c[8];
+   char s_223dfc81[8];
    char s_c64294aa[20];
    char s_5b50a147[8];
    char s_73a2b0bf[19];
@@ -80,7 +82,7 @@ static const struct
    char s_565cbabb[8];
    char s_7fa7d966[16];
    char s_e3237f35[22];
-   char s_a8833b4e[22];
+   char s_a8833b4e[19];
    char s_460fbbcc[7];
    char s_215e6dd8[20];
    char s_152cd261[35];
@@ -275,6 +277,11 @@ static const struct
    char s_78a4033f[17];
    char s_cf8bbd75[8];
    char s_e4c4c0a2[28];
+   char s_31823fd3[6];
+   char s_e27a024b[9];
+   char s_bdbeed69[9];
+   char s_635d3210[9];
+   char s_fd51ab92[6];
    char s_b6172513[10];
    char s_e3d18a3d[17];
    char s_d15b342a[16];
@@ -350,15 +357,13 @@ static const struct
    char s_dcbf8b04[39];
    char s_dcbffdfe[38];
    char s_7816d5d5[31];
-   char s_2b1f17e8[41];
    char s_36c3acc7[32];
-   char s_b4c3612a[42];
    char s_f638f238[29];
    char s_b00815b8[18];
-   char s_1ef8917a[26];
-   char s_ada81f6a[29];
-   char s_c85198e6[29];
-   char s_d264a13e[25];
+   char s_1ef8917a[23];
+   char s_ada81f6a[26];
+   char s_c85198e6[26];
+   char s_d264a13e[22];
    char s_1193e37b[47];
    char s_729a38da[39];
    char s_4ca32b24[16];
@@ -475,20 +480,18 @@ static const struct
    char s_a38500d8[12];
    char s_9544161a[9];
    char s_76ac1944[35];
-   char s_ded7e809[32];
    char s_4c11d465[20];
    char s_b893853f[11];
    char s_11121f30[21];
    char s_01badaa0[18];
    char s_6127cc52[23];
-   char s_9d52f73c[15];
-   char s_bc30b87a[14];
    char s_2fd5302f[31];
    char s_a2a28187[19];
    char s_6d034072[7];
    char s_5dff78c4[37];
    char s_9cfaa012[23];
    char s_39b2f935[22];
+   char s_3794f2cd[5];
    char s_c46fdd49[29];
    char s_a2fd58a6[43];
    char s_99e7641c[19];
@@ -542,7 +545,7 @@ static const struct
    char s_094e2bc9[6];
    char s_b71e6907[8];
    char s_d725639f[10];
-   char s_fef383d2[41];
+   char s_fc5ea9dc[8];
    char s_a9dc9f21[91];
    char s_6c786a36[27];
    char s_6d0ca7a7[6];
@@ -802,6 +805,8 @@ static const struct
    char s_f886ffa5[5];
    char s_4d7e9b13[17];
    char s_69b801ef[7];
+   char s_34a16f69[20];
+   char s_7706edf0[22];
    char s_580e244f[6];
    char s_a9c8430e[24];
    char s_f5911f43[37];
@@ -1138,6 +1143,8 @@ static const struct
    "Indentificador del paquete",
    "Cach\303\251",
    "Permitir la c\303\241mara",
+   "Pres\303\251u",
+   "C\303\241mara",
    "C\303\241mara",
    "Aplicar los cambeos",
    "C\303\263digu",
@@ -1156,7 +1163,7 @@ static const struct
    "Llogros",
    "Mou perdif\303\255cil",
    "Presencia arriquecida",
-   "Son\303\255u de desbloqu\303\251u",
+   "Son de desbloqu\303\251u",
    "Borrar",
    "Zarrar el conten\303\255u",
    "Activar la sincronizaci\303\263n na nube",
@@ -1352,6 +1359,11 @@ static const struct
    "Miniatura baxera",
    "Nucleos",
    "Informaci\303\263n de los nucleos",
+   "< 25%",
+   "25 ~ 49%",
+   "50 ~ 74%",
+   "75 ~ 95%",
+   "> 95%",
    "Historial",
    "Cargar conten\303\255u",
    "Cargar un discu",
@@ -1427,15 +1439,13 @@ static const struct
    "Amosar la opci\303\263n \302\253Cargar un nucleu\302\273",
    "Amosar la opci\303\263n \302\253Cargar un discu\302\273",
    "Amosar la opci\303\263n \302\253Anovador\302\273",
-   "Amosar la opci\303\263n \302\253Colar de RetroArch\302\273",
    "Amosar la opci\303\263n \302\253Reaniciar\302\273",
-   "Amosar la opci\303\263n \302\253Reaniciar RetroArch\302\273",
    "Amosar la opci\303\263n \302\253Apagar\302\273",
    "Son\303\255os del men\303\272",
-   "Activar el son\303\255u \302\253BGM\302\273",
-   "Activar el son\303\255u \302\253Cancel\302\273",
-   "Activar el son\303\255u \302\253Notice\302\273",
-   "Activar el son\303\255u \302\253OK\302\273",
+   "Activar el son \302\253BGM\302\273",
+   "Activar el son \302\253Cancel\302\273",
+   "Activar el son \302\253Notice\302\273",
+   "Activar el son \302\253OK\302\273",
    "Usar l'estilu de colores prefer\303\255u pol sistema",
    "Visibilid\303\241 de los elementos del men\303\272",
    "Imaxe del fondu",
@@ -1552,20 +1562,18 @@ static const struct
    "<Entrugame>",
    "Versi\303\263n",
    "Nun se pudo desaniciar el ficheru.",
-   "Nun se pudo renomar el ficheru.",
    "Asolombrador actual",
    "Desaniciar",
    "Desaniciar la llista",
    "Nun volver amosar",
    "Baxar toles miniatures",
-   "De tol sistema",
-   "D'esta llista",
    "X\303\241 hai una descarga en cursu.",
    "Baxar la miniatura",
    "Editar",
    "Introduz el nome de la llista nueva:",
    "El ficheru nun esiste.",
    "El ficheru ta baleru.",
+   "Tipu",
    "(\303\272sase p'atopar miniatures)",
    "Diendo en cata de la llista de ficheros...",
    "Llistes escond\303\255es",
@@ -1619,7 +1627,7 @@ static const struct
    "Xubir",
    "Llistes",
    "Car\303\241tula",
-   "Les miniatures bax\303\241ronse correutamente.",
+   "Nucleos",
    "RetroArch anov\303\263se correutamente. Reanicia l'aplicaci\303\263n pa que los cambeos faigan e"
    "feutu.",
    "Anovar RetroArch (nightly)",
@@ -1880,6 +1888,8 @@ static const struct
    "90\302\272",
    "Escala d'enteros",
    "Escala",
+   "Altor de la ventana",
+   "Llargor de la ventana",
    "Videu",
    "Asolombradores de videu",
    "Retrasu del asolombrador autom\303\241ticu",
@@ -2209,7 +2219,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (25937u
+      (sizeof(msg_hash_ast_blob) == (25847u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2345,7 +2355,9 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CACHE_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DEVICE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CAMERA_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
@@ -2558,6 +2570,11 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_25_MINUS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_25_PLUS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_50_PLUS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_75_PLUS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LNG_COMPLETION_95_PLUS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
@@ -2633,9 +2650,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -2758,20 +2773,18 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_VERSION,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_EDIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
@@ -2825,7 +2838,7 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
-   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_VIEW,
@@ -3085,6 +3098,8 @@ static const msg_hash_id_t msg_hash_ast_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_90_DEG,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,

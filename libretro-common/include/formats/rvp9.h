@@ -341,6 +341,13 @@ void rvp9_set_tile_pool(rvp9_dec *d, void *pool, unsigned threads);
  * caller-owned.  Safe on a zero-initialised or partially set-up state. */
 void rvp9_free(rvp9_dec *d);
 
+/* Acquire on the decode owner thread for a displayed software frame's Y
+ * pointer. Its planes remain immutable across later decoding, geometry
+ * changes and decoder free. Release each successful lease exactly once on
+ * any thread. Returns NULL when the decoder does not own that picture. */
+void *rvp9_retain_planes(const rvp9_dec *d, const uint8_t *y);
+void rvp9_release_planes(void *owner);
+
 RETRO_END_DECLS
 
 #endif

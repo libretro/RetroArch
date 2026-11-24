@@ -22,6 +22,9 @@ all: tls_fetch tls_http tls_threads
 tls_partial: tls_partial.c $(COMMON)/net/net_socket_ssl_retro.c $(COMMON)/include/net/net_socket_ssl.h $(filter-out tls_fetch.c $(COMMON)/net/net_socket_ssl_retro.c,$(SRC))
 	$(CC) $(CPPFLAGS) $(CFLAGS) tls_partial.c $(filter-out tls_fetch.c $(COMMON)/net/net_socket_ssl_retro.c,$(SRC)) $(LDLIBS) -o $@
 
+tls_trust_preload: tls_trust_preload.c $(COMMON)/net/net_socket_ssl_retro.c $(COMMON)/include/net/net_socket_ssl.h $(filter-out tls_fetch.c $(COMMON)/net/net_socket_ssl_retro.c,$(SRC))
+	$(CC) $(CPPFLAGS) $(CFLAGS) tls_trust_preload.c $(filter-out tls_fetch.c $(COMMON)/net/net_socket_ssl_retro.c,$(SRC)) $(LDLIBS) -o $@
+
 tls_partial_flag: tls_partial.c $(COMMON)/net/net_socket_ssl_retro.c $(COMMON)/include/net/net_socket_ssl.h $(filter-out tls_threads.c $(COMMON)/net/net_socket_ssl_retro.c,$(THR_SRC))
 	$(CC) $(CPPFLAGS) -DHAVE_THREADS -DTLS_CACHE_TEST_FLAG $(CFLAGS) tls_partial.c $(filter-out tls_threads.c $(COMMON)/net/net_socket_ssl_retro.c,$(THR_SRC)) $(LDLIBS) -lpthread -o $@
 
@@ -70,6 +73,10 @@ else
       $(COMMON)/rthreads/retro_eventcount.c
    STALL_FLAGS = $(CPPFLAGS)
 endif
+# BearSSL's bundle reader, the backend unit included
+BEAR_ANCHORS_SRC = tls_bear_anchors.c $(filter-out tls_stall.c,$(STALL_BASE)) $(COMMON)/encodings/encoding_base64.c
+tls_bear_anchors: $(BEAR_ANCHORS_SRC) $(COMMON)/net/net_socket_ssl_bear.c
+	$(CC) -I$(COMMON)/include -DHAVE_SSL -DHAVE_BEARSSL -D_GNU_SOURCE $(CFLAGS) $(BEAR_ANCHORS_SRC) -lbearssl $(LDLIBS) -lpthread -o $@
 HANDSHAKE_SRC = $(patsubst tls_stall.c,tls_handshake.c,$(STALL_SRC))
 HANDSHAKE_IMPL = $(filter $(COMMON)/net/net_socket_ssl_%.c,$(HANDSHAKE_SRC))
 tls_handshake: $(HANDSHAKE_SRC) tls_handshake_driver.h
@@ -92,5 +99,7 @@ clean:
 	rm -f tls_partial_flag tls_partial_flag.exe
 	rm -f tls_handshake tls_handshake.exe
 	rm -f tls_partial tls_partial.exe
+	rm -f tls_trust_preload tls_trust_preload.exe
+	rm -f tls_bear_anchors tls_bear_anchors.exe
 	rm -f tls_verify_hook tls_verify_hook.exe tls_stall tls_stall.exe tls_fetch_noaes tls_fetch_noaes.exe tls_http tls_http.exe tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe tls_config tls_config.exe tls_threads tls_threads.exe tls_duplex tls_duplex.exe
 .PHONY: all clean

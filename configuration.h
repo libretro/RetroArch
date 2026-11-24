@@ -310,9 +310,9 @@ typedef struct settings
 #ifdef HAVE_VIDEO_WINDOWS
       unsigned video_screen_window_pos[RETRO_VIDEO_VIEWS_MAX];
       unsigned video_screen_window_dims[RETRO_VIDEO_VIEWS_MAX];
-      unsigned video_screen_window_monitor[RETRO_VIDEO_VIEWS_MAX];
       unsigned video_menu_follows;
       unsigned video_notifications_window;
+      unsigned video_blank_unused_screens;
 #endif
       unsigned video_openxr_refresh_rate;
       unsigned video_openxr_controllers;
@@ -359,6 +359,7 @@ typedef struct settings
       unsigned accessibility_narrator_engine;
 
       unsigned menu_timedate_style;
+      unsigned menu_timedate_mode;
       unsigned menu_frame_rate;
       unsigned menu_timedate_date_separator;
       unsigned gfx_thumbnails;
@@ -502,6 +503,8 @@ typedef struct settings
       unsigned steam_rich_presence_format;
 #endif
 
+      unsigned camera_pip_corner;
+      unsigned camera_pip_size;
       unsigned cheevos_appearance_anchor;
       unsigned cheevos_visibility_summary;
 
@@ -710,6 +713,7 @@ typedef struct settings
 #ifdef HAVE_VIDEO_WINDOWS
       bool video_windows_enable;
       bool video_screen_window_fullscreen[RETRO_VIDEO_VIEWS_MAX];
+      bool video_screen_window_pos_set[RETRO_VIDEO_VIEWS_MAX];
 #endif
 
       /* Video */
@@ -760,6 +764,10 @@ typedef struct settings
       bool video_disable_composition;
       bool video_post_filter_record;
       bool video_gpu_record;
+#ifdef HAVE_PYROWAVE
+      bool pyrowave_discovery_enable;
+      bool pyrowave_full_output;
+#endif
       bool video_record_allow_frame_drop;
       bool video_record_game_only;
       bool video_record_hw_encoder;
@@ -835,8 +843,12 @@ typedef struct settings
       bool input_trigger_full_range;
       bool input_autodetect_enable;
       bool input_sensors_enable;
+#ifdef ANDROID
       bool input_android_system_keyboard;
+#endif
+#ifdef HAVE_SDL3
       bool input_sdl3_system_keyboard;
+#endif
       bool input_overlay_enable;
       bool input_overlay_enable_autopreferred;
       bool input_overlay_behind_menu;
@@ -915,6 +927,7 @@ typedef struct settings
       bool menu_savestate_resume;
       bool menu_insert_disk_resume;
       bool menu_timedate_enable;
+      bool menu_timedate_12hour;
       bool menu_battery_level_enable;
       bool menu_core_enable;
       bool menu_show_sublabels;
@@ -928,6 +941,7 @@ typedef struct settings
       bool menu_show_advanced_settings;
       bool menu_linear_filter;
       bool menu_texture_mipmapping;
+      bool menu_backdrop_blur;
       bool menu_horizontal_animation;
       bool menu_scroll_quick;
       bool menu_scroll_fast;
@@ -953,10 +967,6 @@ typedef struct settings
       bool menu_show_latency;
       bool menu_show_rewind;
       bool menu_show_overlays;
-#if 0
-/* Thumbnailpack removal */
-      bool menu_show_legacy_thumbnail_updater;
-#endif
       bool menu_materialui_icons_enable;
       bool menu_materialui_playlist_icons_enable;
       bool menu_materialui_switch_icons;
@@ -1127,6 +1137,7 @@ typedef struct settings
 
       /* Camera */
       bool camera_allow;
+      bool camera_pip;
 
       /* Bluetooth */
       bool bluetooth_allow;
@@ -1273,6 +1284,7 @@ typedef struct settings
       bool playlist_use_filename;
       bool playlist_allow_non_png;
       bool playlist_show_load_state;
+      bool playlist_thumbnail_other_regions;
 
       bool confirm_quit;
       bool confirm_close;
@@ -1478,6 +1490,9 @@ typedef struct settings
       char cloud_sync_nfs_subdir[PATH_MAX_LENGTH];
 #endif
 #endif
+#ifdef HAVE_PYROWAVE
+      char pyrowave_device_name[64];
+#endif
 } arrays;
 
    struct
@@ -1522,6 +1537,9 @@ typedef struct settings
       char directory_runtime_log[DIR_MAX_LENGTH];
       char directory_core_assets[DIR_MAX_LENGTH];
       char directory_assets[DIR_MAX_LENGTH];
+#ifdef HAVE_PYROWAVE
+      char directory_pyrowave_shaders[DIR_MAX_LENGTH];
+#endif
       char directory_dynamic_wallpapers[DIR_MAX_LENGTH];
       char directory_thumbnails[DIR_MAX_LENGTH];
       char directory_menu_config[DIR_MAX_LENGTH];
@@ -1791,7 +1809,7 @@ void config_reset_video_menu_xr(settings_t *settings);
 
 struct video_screen_xr;
 /* Edit Screens' reads and writes of a screen's place, or the menu's,
- * as the Stereo 3D & Screens rows keep them. A write normalises, marks
+ * as the Headset rows keep them. A write normalises, marks
  * the settings modified and leaves Visible alone; NULL resets a screen
  * as Reset Screen does, or puts the menu back in front of screen 1. The
  * menu's read is false while it follows screen 1. */

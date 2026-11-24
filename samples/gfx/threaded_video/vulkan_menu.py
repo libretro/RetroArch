@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
+import sys
 import tempfile
 
 root = Path(__file__).resolve().parents[3]
@@ -296,3 +297,5 @@ with tempfile.TemporaryDirectory(prefix="retroarch-vulkan-menu-") as directory:
                    "-I" + str(root / "gfx/include"), "-I" + str(root / "libretro-common/include"),
                    str(src), "-o", str(exe)], check=True)
     subprocess.run(shlex.split(os.environ.get("RUNNER", "")) + [str(exe)], check=True)
+
+subprocess.run([sys.executable, str(Path(__file__).with_name("menu_scissor.py"))], check=True)

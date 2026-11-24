@@ -200,4 +200,31 @@ static unsigned bv_compare_view(const input_device_driver_t *drv,
    return bad;
 }
 
+/* A random axis value, the ends and centre often */
+static int16_t bv_rand_axis(void)
+{
+   unsigned r = bv_rand() % 8;
+   return (r == 0) ? 0
+      : (r == 1) ? 0x7fff
+      : (r == 2) ? -0x7fff
+      : (r == 3) ? -0x8000
+      : (int16_t)bv_rand();
+}
+
+/* @v filled as a poll would fill it: @nbits buttons (at most 64) and
+ * @naxes axes random, the rest clear */
+static void bv_fill_view(input_pad_view_t *v, unsigned nbits,
+      unsigned naxes)
+{
+   unsigned i;
+   uint64_t bits = ((uint64_t)bv_rand() << 32) | bv_rand();
+   if (nbits < 64)
+      bits &= (UINT64_C(1) << nbits) - 1;
+   memset(v, 0, sizeof(*v));
+   v->buttons.data[0] = (uint32_t)bits;
+   v->buttons.data[1] = (uint32_t)(bits >> 32);
+   for (i = 0; i < naxes; i++)
+      v->axes[i] = bv_rand_axis();
+}
+
 #endif

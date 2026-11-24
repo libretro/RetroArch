@@ -68,6 +68,15 @@ unsigned gfx_display_texture_filter(void) { return 0; }
  * gfx_display.h to name them drags in a video_driver.h that conflicts
  * with those declarations; C linkage does not carry parameter types,
  * so the symbol matches what gfx_thumbnail.c calls either way. */
+bool gfx_display_draw_media_shader(void *ctx,
+      void *userdata, uintptr_t texture, unsigned source_dims,
+      unsigned video_dims, unsigned pos, unsigned dims)
+{
+   (void)ctx; (void)userdata; (void)texture; (void)source_dims;
+   (void)video_dims; (void)pos; (void)dims;
+   return false;
+}
+
 void gfx_display_draw(void *dispctx, void *draw, void *data,
       unsigned video_dims)
 {

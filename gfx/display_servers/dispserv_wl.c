@@ -19,6 +19,7 @@
 #include <boolean.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
 
 #include <poll.h>
 #include <wayland-client.h>
@@ -28,6 +29,12 @@
 #endif
 
 #include "../video_display_server.h"
+#if defined(__linux__) && !defined(ANDROID)
+/* The vblanks of the CRTC behind the window's output, read from DRM
+ * beside the compositor: Wayland has no event for them */
+#define DRM_VBLANK_CONNECTOR
+#include "../common/drm_vblank.h"
+#endif
 #include "edid_sysfs.h"
 #include "../common/wayland_drm_lease.h"
 
@@ -303,11 +310,64 @@ static void *wl_display_server_init(void)
    return serv;
 }
 
+/* The connector of the output the window is on, as the context tells
+ * it (input/common/wayland_common.h, whose listeners are named as the
+ * ones here are) */
+static retro_atomic_int_t wl_window_connector = RETRO_ATOMIC_INT_INITIALIZER(0);
+
+void gfx_ctx_wl_window_connector_set(unsigned code);
+unsigned gfx_ctx_wl_window_connector(void);
+
+void gfx_ctx_wl_window_connector_set(unsigned code)
+{
+   retro_atomic_store_relaxed_int(&wl_window_connector, (int)code);
+}
+
+unsigned gfx_ctx_wl_window_connector(void)
+{
+   return (unsigned)retro_atomic_load_relaxed_int(&wl_window_connector);
+}
+
+#ifdef DRM_VBLANK_CLOCK
+/* fd -1: not open */
+static drm_vblank_t wl_vblank = { -1, 0, false };
+/* the connector it was opened for, or could not be */
+static unsigned     wl_vblank_connector;
+
+static void wl_vblank_close(void)
+{
+   if (wl_vblank.fd >= 0)
+      close(wl_vblank.fd);
+   wl_vblank.fd        = -1;
+   wl_vblank_connector = 0;
+}
+
+static unsigned wl_display_server_wait_vblank(void *data, unsigned seen,
+      unsigned timeout_us, retro_time_t *at)
+{
+   unsigned connector = gfx_ctx_wl_window_connector();
+   if (connector != wl_vblank_connector)
+   {
+      /* asked once a connector, whatever the answer */
+      wl_vblank_close();
+      wl_vblank_connector = connector;
+      if (connector && !drm_vblank_open_connector(&wl_vblank, connector))
+         wl_vblank.fd     = -1;
+   }
+   if (wl_vblank.fd < 0)
+      return 0;
+   return drm_vblank_wait(&wl_vblank, wl_vblank.fd, seen, timeout_us, at);
+}
+#endif
+
 static void wl_display_server_destroy(void *data)
 {
    dispserv_wl_t *serv = (dispserv_wl_t*)data;
    if (!serv)
       return;
+#ifdef DRM_VBLANK_CLOCK
+   wl_vblank_close();
+#endif
    kwin_outputs_destroy(&serv->kwin);
    wlr_outputs_destroy(&serv->wlr);
    if (serv->output)
@@ -534,7 +594,11 @@ const video_display_server_t dispserv_wl = {
    wl_display_server_get_metrics,
    wl_display_server_get_flags,
    NULL, /* get_scanline */
+#ifdef DRM_VBLANK_CLOCK
+   wl_display_server_wait_vblank,
+#else
    NULL, /* wait_vblank */
+#endif
    NULL, /* modeline_list_outputs */
    NULL, /* modeline_open */
    NULL, /* modeline_close */

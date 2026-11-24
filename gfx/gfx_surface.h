@@ -235,7 +235,9 @@ typedef struct
     * first, as image_pixfmt bits: IMAGE_PIXFMT_8888 and
     * whatever the driver adds to it. A format is only listed
     * when a submit of it reaches the GPU as that format - a scRGB
-    * framebuffer is not by itself a reason to list FP16. */
+    * framebuffer is not by itself a reason to list FP16. I420 and
+    * NV12 are listed where the driver converts the planes itself;
+    * never @preferred, being a choice only a planar source has. */
    uint32_t formats;
    /* The one of @formats worth decoding into when the producer has a
     * choice: the widest the driver takes that its source can fill.
@@ -246,6 +248,9 @@ typedef struct
     * streaming producer keeps one texture rather than loading a
     * replacement per frame. */
    bool can_update;
+   /* Padded decoder planes can be uploaded efficiently in place;
+    * otherwise a producer should keep packing into its owned slot. */
+   bool planar_strided;
    /* Packed upload row pitch in bytes for @width pixels of
     * @preferred, and the alignment the first row should start on.
     * Both are what the current upload paths use; a producer that can
@@ -456,6 +461,14 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
 enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
       const void *pixels, bool rgba);
 
+/* As submit_pixels, but packed pixels may remain borrowed until release()
+ * after QUEUED. Keep the surface and pixel owner alive and prevent writes
+ * until then. Completion releases the originating @slot. Lent upload
+ * memory and narrowing retain the slot-copy path. Planar frames use the
+ * corresponding held-plane submission. */
+enum gfx_surface_submit_result gfx_surface_submit_pixels_held(gfx_surface_t *s, unsigned slot,
+      const void *pixels, bool rgba);
+
 /* The colour space of a planar surface's frames from now on:
  * IMAGE_YUV_FLAG_BT709, _FULL_RANGE and _VU (formats/image_yuv_blit.h);
  * BT.601 limited range by default. Ignored by any other surface. */
@@ -467,6 +480,13 @@ void gfx_surface_set_yuv(gfx_surface_t *s, unsigned flags);
  * converts on the GPU has them copied into slot 0 first (BUSY while
  * that slot is the GPU's). Main thread. */
 enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
+      const gfx_surface_planes_t *p, bool rgba);
+
+/* As submit_planes, but the caller keeps the planes and their owner
+ * alive and unchanged until release() after QUEUED. Keep the surface
+ * alive as well. Completion releases @slot, which identifies the retained
+ * producer frame. CPU conversion uses the surface's owned RGB buffer. */
+enum gfx_surface_submit_result gfx_surface_submit_planes_held(gfx_surface_t *s, unsigned slot,
       const gfx_surface_planes_t *p, bool rgba);
 
 /* Whether slot @slot may be written now. A slot lent the driver's upload

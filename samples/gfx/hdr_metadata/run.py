@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
+import sys
 import tempfile
 
 root = Path(__file__).resolve().parents[3]
@@ -17,7 +18,10 @@ vulkan = (root / "gfx/drivers/vulkan.c").read_text(encoding="utf-8")
 
 
 def source_block(source, marker, semicolon=False):
+    # The definition, not a declaration ahead of it
     start = source.index(marker)
+    while source.index(";", start) < source.index("{", start):
+        start = source.index(marker, start + 1)
     brace = source.index("{", start)
     depth = 1
     end = brace + 1
@@ -111,3 +115,5 @@ with tempfile.TemporaryDirectory(prefix="retroarch-hdr-query-") as directory:
                             str(root / "libretro-common/rthreads/rthreads.c"),
                             "-o", str(target)] + libs, check=True)
             subprocess.run([str(target)], check=True)
+
+subprocess.run([sys.executable, str(Path(__file__).with_name("planar_strides.py"))], check=True)

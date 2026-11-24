@@ -183,6 +183,11 @@ struct runloop
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    rarch_timer_t shader_delay_timer;            /* int64_t alignment */
 #endif
+   /* The iteration's one cpu_features_get_time_usec() reading, taken as
+    * runloop_iterate() starts, and its CPU_FEATURES_MARK_WITH(): every
+    * later "now" of the iteration is RUNLOOP_NOW() of them */
+   retro_time_t      iter_time;
+   retro_perf_tick_t iter_mark;
    retro_time_t core_runtime_last;
    retro_time_t core_runtime_credit;
    retro_time_t core_runtime_usec;
@@ -381,6 +386,9 @@ struct runloop
    /* The auto state was asked for by name (Load State > Auto), so it
     * loads whatever Auto Load State says. */
    bool auto_state_load_asked;
+#ifdef HAVE_RUNAHEAD
+   bool runahead_state_owned;
+#endif
 
    bool perfcnt_enable;
    bool paused_hotkey;
@@ -958,6 +966,12 @@ static INLINE unsigned runloop_pace_decide(runloop_pace_facts_t f)
    return pace;
 }
 
+
+/* An instant on cpu_features_get_time_usec()'s clock: the iteration's
+ * own reading moved on to @mark, a CPU_FEATURES_MARK() - no clock read
+ * where the perf counter is cheap */
+#define RUNLOOP_NOW(st, mark) ((st)->iter_time \
+      + CPU_FEATURES_MARK_TO_USEC((mark) - (st)->iter_mark))
 
 typedef struct runloop runloop_state_t;
 

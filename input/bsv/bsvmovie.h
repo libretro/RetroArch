@@ -64,11 +64,14 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *movie,
       uint8_t compression, uint8_t encoding);
 
 /* The supplied state must be a normal, portable core serialization,
- * not a fast/rollback state. No core callback is made by these writers. */
+ * not a fast/rollback state. No core callback is made by these writers.
+ * A checkpoint takes the malloc'd buffer *@state of *@size bytes as its
+ * own instead of copying it; *@state and *@size are left holding the
+ * buffer it replaces (NULL or the caller's to free). */
 bool bsv_movie_reset_recording_from_state(bsv_movie_t *movie,
-      const void *state, size_t size);
+      uint8_t **state, size_t *size);
 void bsv_movie_next_frame_from_state(input_driver_state_t *input_st,
-      const void *state, size_t size);
+      uint8_t **state, size_t *size);
 
 RETRO_END_DECLS
 

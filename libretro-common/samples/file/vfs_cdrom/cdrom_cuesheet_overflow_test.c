@@ -39,6 +39,7 @@
 
 #include <boolean.h>
 #include <vfs/vfs.h>
+#include <vfs/vfs_implementation_file.h>
 
 /* Forward-declare the function we're testing.  The real declaration
  * lives in vfs_implementation_cdrom.h which requires various

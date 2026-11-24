@@ -112,6 +112,18 @@ static const struct retro_system_content_info_override overrides[] = {
 };
 #endif
 
+#ifdef HARNESS_CORE_SUBSYSTEM
+/* One subsystem, named by the build: the frontend's tables tell which
+ * core declared them */
+static const struct retro_subsystem_rom_info harness_sub_roms[] = {
+   { "Harness ROM", "bin", true, false, true, NULL, 0 }
+};
+static const struct retro_subsystem_info harness_subsystems[] = {
+   { "Harness Subsystem", HARNESS_CORE_SUBSYSTEM, harness_sub_roms, 1, 1 },
+   { NULL, NULL, NULL, 0, 0 }
+};
+#endif
+
 void retro_set_environment(retro_environment_t cb)
 {
    bool no_content = true;
@@ -128,6 +140,9 @@ void retro_set_environment(retro_environment_t cb)
    }
 #ifndef HARNESS_CORE_NO_HW
    cb(RETRO_ENVIRONMENT_SET_CONTENT_INFO_OVERRIDE, (void*)overrides);
+#endif
+#ifdef HARNESS_CORE_SUBSYSTEM
+   cb(RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO, (void*)harness_subsystems);
 #endif
 }
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }

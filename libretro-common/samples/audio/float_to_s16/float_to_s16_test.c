@@ -5,7 +5,12 @@
  * it, infinities, NaNs of either sign, denormals - and at every length
  * up to 100, so each vector body, the AVX-512 masked tail and the scalar
  * remainder are exercised. A guard word after each buffer must survive.
- * Every target must give the same s16 for the same float. */
+ * Every target must give the same s16 for the same float.
+ *
+ * Callers convert into spans of a ring, so input and output are also
+ * placed at every offset within 16 bytes and every length up to 48:
+ * a vector body that takes only aligned operands has to reach them
+ * through a scalar head, and convert the head, body and tail alike. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,9 +47,11 @@ static float from_bits(uint32_t b)
    return f;
 }
 
-static void check(const float *in, size_t n, const char *what, int tier)
+static void check(const float *in, size_t n, size_t out_off,
+      const char *what, int tier)
 {
-   int16_t *out = (int16_t*)malloc((n + 1) * sizeof(*out));
+   int16_t *base = (int16_t*)malloc((out_off + n + 1) * sizeof(*base));
+   int16_t *out  = base + out_off;
    size_t   i;
    unsigned bad = 0;
    out[n]       = 0x5A5A;
@@ -66,7 +73,7 @@ static void check(const float *in, size_t n, const char *what, int tier)
       bad++;
    }
    failures += bad ? 1 : 0;
-   free(out);
+   free(base);
 }
 
 int main(void)
@@ -85,7 +92,7 @@ int main(void)
       32767.5f / 32768, -32768.5f / 32768, 0.49999997f / 32768
    };
    float   *in = (float*)malloc(4096 * sizeof(float));
-   size_t   i, n, k = 0;
+   size_t   i, n, o, k = 0;
    uint32_t seed = 0x1234567u;
    int      tier;
 
@@ -111,12 +118,18 @@ int main(void)
       if (tier)
          break;
 #endif
-      check(in, 4096, "corpus", tier);
+      check(in, 4096, 0, "corpus", tier);
       for (n = 0; n <= 100; n++)
       {
-         check(in, n, "length", tier);
-         check(in + 1 + (n % 7), n, "offset", tier);
+         check(in, n, 0, "length", tier);
+         check(in + 1 + (n % 7), n, 0, "offset", tier);
       }
+      /* Every output and input placement within 16 bytes, at every
+       * length a scalar head, a vector body and a tail can split. */
+      for (o = 0; o < 8; o++)
+         for (i = 0; i < 4; i++)
+            for (n = 0; n <= 48; n++)
+               check(in + i, n, o, "placement", tier);
    }
 
    free(in);

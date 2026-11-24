@@ -67,6 +67,8 @@ LDFLAGS="$(gnustep-config --gui-libs) -lpthread -lm -lz"
 
 # C sources shared with the core test (its stubs and fixtures included)
 CSRCS="ui/companion/companion_core.c \
+       gfx/gfx_thumbnail_results.c \
+       gfx/gfx_thumbnail_match.c \
        ui/companion/companion_thumbs.c \
        ui/companion/companion_dock.c \
        gfx/gfx_anim_preview.c \

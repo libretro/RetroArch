@@ -310,6 +310,13 @@ bool audio_mixer_voice_clock(audio_mixer_voice_t *voice,
    if (serial) *serial = voice ? 1 : 0;
    return voice != NULL;
 }
+void audio_mixer_sound_set_observer(audio_mixer_sound_t *sound,
+      const audio_mixer_observer_t *observer)
+{
+   (void)sound;
+   if (observer) abort();
+}
+
 void audio_mixer_sound_set_tag(audio_mixer_sound_t *sound, unsigned tag)
 { (void)sound; (void)tag; }
 unsigned audio_mixer_sound_tag(const audio_mixer_sound_t *sound)

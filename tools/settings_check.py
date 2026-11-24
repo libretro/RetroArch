@@ -48,7 +48,7 @@ COMMON = [
 ]
 
 PROFILES = {
-    'desktop': ['HAVE_VULKAN', 'HAVE_QT', 'HAVE_DISCORD'],
+    'desktop': ['HAVE_VULKAN', 'HAVE_QT', 'HAVE_DISCORD', 'HAVE_VIDEO_WINDOWS'],
     'android': ['ANDROID', 'RARCH_MOBILE', 'HAVE_VULKAN', 'HAVE_VIDEO_WINDOWS'],
     'console': ['RARCH_CONSOLE'],
 }
@@ -86,7 +86,7 @@ UNITY_EXTRA = [
 # platform-independent, so mobile coverage of the def-file guards is
 # what matters, not the ANDROID spelling.
 UNITY_PROFILES = {
-    'desktop': ['HAVE_VULKAN', 'HAVE_QT', 'HAVE_DISCORD'],
+    'desktop': ['HAVE_VULKAN', 'HAVE_QT', 'HAVE_DISCORD', 'HAVE_VIDEO_WINDOWS'],
     'mobile':  ['RARCH_MOBILE', 'HAVE_VULKAN'],
     'console': ['RARCH_CONSOLE'],
 }

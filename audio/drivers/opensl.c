@@ -23,7 +23,6 @@
 
 #include <retro_atomic.h>
 #include <retro_math.h>
-#include <retro_timers.h>
 #include <rthreads/retro_eventcount.h>
 
 #include "../audio_driver.h"
@@ -178,32 +177,16 @@ static void sl_free(void *data)
     * mutex, freed by our Destroy while its callback thread was still
     * in flight.  The spec makes Destroy synchronize with callbacks,
     * but Android's implementation has raced that when torn down from
-    * PLAYING with buffers still queued.  So: stop, clear the queue,
-    * and confirm the STOPPED transition (bounded - GetPlayState is
-    * cheap and the transition is normally immediate) before any
-    * Destroy, so the AudioTrack thread has nothing left to run when
-    * the objects go. */
+    * PLAYING with buffers still queued.  So: stop and clear the queue
+    * before any Destroy.  libwilhelm stores the STOPPED state before
+    * SetPlayState returns, so there is no transition to wait out; a
+    * dispatch still in flight past Destroy finds the live gate above
+    * closed and the shared state it touches never freed. */
    if (sl->player)
    {
       SLPlayItf_SetPlayState(sl->player, SL_PLAYSTATE_STOPPED);
       if (sl->buffer_queue)
          (*sl->buffer_queue)->Clear(sl->buffer_queue);
-      {
-         /* A foreign API's state transition has nothing to park on,
-          * so this one confirmation loop polls - iteration-bounded,
-          * cold path, once per session.  Normally the very first
-          * read already says STOPPED. */
-         int i;
-         SLuint32 state = SL_PLAYSTATE_PLAYING;
-         for (i = 0; i < 50; i++)
-         {
-            if (   SLPlayItf_GetPlayState(sl->player, &state)
-                     != SL_RESULT_SUCCESS
-                || state == SL_PLAYSTATE_STOPPED)
-               break;
-            retro_sleep(1);
-         }
-      }
    }
 
    if (sl->buffer_queue_object)

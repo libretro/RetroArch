@@ -159,6 +159,28 @@ void vulkan_encode_hevc_session_free(vulkan_encode_hevc_session_t *s)
    free(s);
 }
 
+static bool vehes_params(vulkan_encode_hevc_session_t *s,
+      const vulkan_encode_hevc_config_t *video)
+{
+   vulkan_encode_hevc_config_t aligned;
+   unsigned w = s->capabilities.pictureAccessGranularity.width;
+   unsigned h = s->capabilities.pictureAccessGranularity.height;
+   if (!w || !h || w > 8192 || h > 8192
+         || !vulkan_encode_hevc_params(&s->params, video, s->codec.maxLevelIdc))
+      return false;
+   aligned = *video;
+   aligned.width = ((s->params.coded_width + w - 1) / w) * w;
+   aligned.height = ((s->params.coded_height + h - 1) / h) * h;
+   if (!vulkan_encode_hevc_params(&s->params, &aligned, s->codec.maxLevelIdc))
+      return false;
+   /* Device padding is coded, but never part of the displayed picture. */
+   s->params.sps.flags.conformance_window_flag =
+         s->params.coded_width != video->width || s->params.coded_height != video->height;
+   s->params.sps.conf_win_right_offset = (s->params.coded_width - video->width) / 2;
+   s->params.sps.conf_win_bottom_offset = (s->params.coded_height - video->height) / 2;
+   return true;
+}
+
 vulkan_encode_hevc_session_t *vulkan_encode_hevc_session_new(
       const vulkan_encode_hevc_session_config_t *config,
       const vulkan_encode_hevc_session_ops_t *ops)
@@ -212,7 +234,7 @@ vulkan_encode_hevc_session_t *vulkan_encode_hevc_session_new(
    s->codec.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_KHR;
    s->codec.pNext = NULL;
    if (ops->capabilities(config->physical, &s->profile, &s->capabilities) != VK_SUCCESS ||
-       !vulkan_encode_hevc_params(&s->params, &config->video, s->codec.maxLevelIdc) ||
+       !vehes_params(s, &config->video) ||
        s->capabilities.maxDpbSlots < 2 || s->capabilities.maxActiveReferencePictures < 1 ||
        !(s->encode.rateControlModes & VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) ||
        !s->encode.maxQualityLevels || !s->codec.maxPPictureL0ReferenceCount ||

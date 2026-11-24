@@ -322,6 +322,17 @@ size_t retro_spsc_read_avail(const retro_spsc_t *q);
  */
 size_t retro_spsc_write(retro_spsc_t *q, const void *data, size_t bytes);
 
+/* Producer-only, all-or-nothing write of the concatenation of two spans.
+ * Returns the total byte count on success, or zero if the whole record does
+ * not fit (also for an empty record). No partial record is ever published.
+ * Either source may be NULL when its length is zero. Nonempty sources must
+ * be readable and must not overlap the queue's storage. Oversized lengths,
+ * including sums that would overflow size_t, are rejected without reading
+ * either source. The initialized queue and single-producer rules of write()
+ * apply. Consumers preserve record framing by reading complete records. */
+size_t retro_spsc_write_pair(retro_spsc_t *q, const void *first,
+      size_t first_bytes, const void *second, size_t second_bytes);
+
 /* Producer-only whole-frame write; returns frames, not bytes. Free bytes
  * shorter than one frame remain unused. The byte queue capacity need not be
  * divisible by frame_bytes, and frames may wrap across its physical end.
@@ -361,6 +372,18 @@ size_t retro_spsc_read(retro_spsc_t *q, void *data, size_t bytes);
  * SAFETY: callable only from the consumer thread.
  */
 size_t retro_spsc_peek(const retro_spsc_t *q, void *data, size_t bytes);
+
+/* Producer-only reservation of exactly bytes contiguous writable bytes.
+ * Unlike write_begin(), this refreshes the consumer cursor only when its
+ * cached value does not cover the requested record. No cursor is published.
+ * Returns false and sets *ptr to NULL for zero/oversized requests, insufficient
+ * free space, or a physical wrap on a non-mirrored ring. A failed reservation
+ * writes no payload; the caller may fall back to write() for a wrapped record.
+ * On success, write at most bytes to *ptr and publish with write_end(), or
+ * abandon with write_end(q, 0). Only one reservation may be outstanding;
+ * complete it before another producer data operation. Alignment and lifetime
+ * follow write_begin(). The queue must be initialized and ptr must be valid. */
+bool retro_spsc_write_reserve(retro_spsc_t *q, void **ptr, size_t bytes);
 
 /**
  * retro_spsc_write_begin:
@@ -404,6 +427,24 @@ size_t retro_spsc_write_begin(retro_spsc_t *q, void **ptr);
  */
 void retro_spsc_write_end(retro_spsc_t *q, size_t bytes);
 
+/* Consumer-only borrowed view of up to bytes readable bytes, including wrap.
+ * Returns the total available count, capped at bytes. The first span is
+ * *first_bytes long; the second is return_value - *first_bytes long. A missing
+ * span has a NULL pointer. All outputs are zero/NULL when the return is zero.
+ * Unlike read_begin(), only a cached producer cursor that does not cover the
+ * requested bytes is refreshed. No payload is copied and no cursor moves.
+ *
+ * Both byte-addressed spans stay stable until read_end(). Finish with
+ * read_end(q, consumed), consuming a prefix up to the returned total. To
+ * abandon, use read_end(q, 0). Only one nonempty view may be outstanding;
+ * finish it before another consumer data operation or queue resize/free.
+ * Do not keep or access
+ * either pointer after read_end, or assume alignment beyond the queue's byte
+ * addressing. The queue must be initialized. All three output pointers must
+ * name valid, distinct output locations outside the queue and its storage. */
+size_t retro_spsc_read_begin_pair(retro_spsc_t *q, const void **first,
+      size_t *first_bytes, const void **second, size_t bytes);
+
 /**
  * retro_spsc_read_begin:
  * @q   : The queue.
@@ -429,13 +470,13 @@ size_t retro_spsc_read_begin(retro_spsc_t *q, const void **ptr);
 /**
  * retro_spsc_read_end:
  * @q     : The queue.
- * @bytes : Bytes actually consumed from the span from read_begin.
+ * @bytes : Bytes consumed from read_begin or both read_begin_pair spans.
  *
  * Frees @bytes back to the producer with a release-store on tail.
  * Passing 0 abandons the read.
  *
  * SAFETY: consumer thread only; @bytes must not exceed the span
- * returned by the matching retro_spsc_read_begin.
+ * returned by the matching read_begin or read_begin_pair.
  */
 void retro_spsc_read_end(retro_spsc_t *q, size_t bytes);
 

@@ -28,6 +28,7 @@
 #include "../input_driver.h"
 
 #include <switch.h>
+#include <retro_horizon.h>
 
 /* Supports up to this many fingers at once */
 #define MULTITOUCH_LIMIT 4
@@ -388,8 +389,14 @@ static int16_t switch_input_state(
 static void switch_handle_touch_mouse(switch_input_t *sw)
 {
    unsigned int i;
+   uint64_t tick;
+   uint64_t freq;
+   uint64_t current_time;
    int finger_id         = 0;
-   uint64_t current_time = svcGetSystemTick() * 1000 / 19200000;
+
+   RETRO_HORIZON_TICK(tick);
+   RETRO_HORIZON_TICK_FREQ(freq);
+   current_time          = tick / (freq / 1000);
 
    switch_finish_simulated_mouse_clicks(sw, current_time);
 
@@ -706,10 +713,12 @@ static void switch_process_touch_mouse_finger_motion(switch_input_t *sw, TouchEv
          sw->touch_mouse_speed_factor;
       int dy        = event->tfinger.dy * TOUCH_MAX_Y * 256 * 
          sw->touch_mouse_speed_factor;
+      int x_rel;
+      int y_rel;
       sw->hires_dx += dx;
       sw->hires_dy += dy;
-      int x_rel     = sw->hires_dx / 256;
-      int y_rel     = sw->hires_dy / 256;
+      x_rel         = sw->hires_dx / 256;
+      y_rel         = sw->hires_dy / 256;
       if (x_rel || y_rel)
       {
          sw->mouse_delta = VIDEO_POS_PACK(x_rel, y_rel);

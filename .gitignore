@@ -220,6 +220,11 @@ retroarch_switch.lst
 retroarch_switch.nacp
 retroarch_switch.nro
 retroarch_switch.nso
+/retroarch.pfs0
+/retroarch.lst
+/retroarch.nacp
+/retroarch.nro
+/retroarch.nso
 
 # PS2
 *_irx.c
@@ -281,9 +286,13 @@ gfx/common/wayland/wlr-output-management-unstable-v1.h
 # samples/: built harness executables and objects. Each directory's
 # test is <dir>_test; nothing built there is source.
 samples/**/*_test
+samples/tasks/pl_thumbnail_match/fixture/
+samples/gfx/gfx_thumbnail_anim/lookup-fixture/
 libretro-common/test/formats/rxml_oom_test
 libretro-common/test/formats/rxml_write_test
 samples/**/*_test_*
+samples/input/joypad_bridge_checked/rwebpad_checked_test.js
+samples/input/joypad_bridge_checked/mfi_extract.inc
 # the media harnesses' link arguments and up-to-date keys
 samples/menu/*_media/link.args
 samples/menu/*_media/*_media_test.key
@@ -324,6 +333,8 @@ samples/gfx/font_lifecycle/frame
 samples/gfx/font_lifecycle/vg
 samples/gfx/font_lifecycle/sdl2
 samples/gfx/font_lifecycle/omap
+samples/gfx/font_lifecycle/bidi
+samples/gfx/font_lifecycle/ticker
 samples/gfx/slang_cache/mapped
 samples/gfx/slang_cache/read
 samples/tasks/database/database_task
@@ -384,6 +395,8 @@ __pycache__/
 samples/audio/asio_clock/asio_clock_driver.h
 samples/audio/asio_teardown/asio_teardown_driver.h
 samples/gfx/integer_scale_axis/integer_scale_driver.h
+samples/gfx/scanline_wait/scanline_wait_driver.h
+samples/gfx/pace_hold_start/pace_hold_start_driver.h
 samples/gfx/coord_array/coord_array_driver.h
 samples/gfx/integer_scale_axis/integer_scale_axis_test
 samples/gfx/set_rotation_deferred/set_rotation_driver.h
@@ -404,3 +417,33 @@ samples/record/ffmpeg_pipeline/record_start_fragment.c
 samples/input/sensor_subdevice/core_sensor_fragment.c
 samples/input/bind_capture/driver_code.inc
 samples/record/metal_frontend/profile_fragment.c
+samples/runahead/lifetime/lifetime_test
+samples/runahead/lifetime/no-threads/
+samples/runahead/lifetime/plain/
+samples/runahead/lifetime/plain-no-threads/
+samples/runahead/lifetime/sanitized/
+samples/runahead/lifetime/sanitized-no-threads/
+samples/runahead/lifetime/windows/
+/samples/gfx/pyrowave_gl/.pyrowave-shaders/
+/samples/gfx/pyrowave_metal/.metal-shaders/
+/samples/gfx/pyrowave_metal/.native/
+/samples/gfx/pyrowave_d3d12/.pyrowave-dxbc/
+/samples/gfx/pyrowave_d3d12/.pyrowave-player-vfs/
+/samples/gfx/pyrowave_vulkan/.pyrowave-shaders/
+/samples/audio/pyrowave_presentation/alsa_presentation_test
+/samples/audio/pyrowave_presentation/obj-msvc/
+/samples/audio/lend_write/obj-pyrowave/
+/samples/audio/lend_write/pyrowave_output_test
+
+/.pyrowave-shaders/
+/samples/gfx/pyrowave_session/.pyrowave-shaders/
+
+/.d3d-shaders/
+
+/.rsx-shaders/
+
+samples/record/nvenc_frontend/resolve_fragment.c
+
+samples/gfx/gfx_thumbnail_preview/preview_audio_feed_test_ac3
+
+/samples/gfx/gfx_thumbnail_preview/preview_m4a_load.h

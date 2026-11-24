@@ -34,6 +34,10 @@ bool record_mediacodec_worker_finish(record_mediacodec_worker_t *worker,
 /* One output action per encoder and one bounded PCM input action. Borrows
  * survive backpressure. No per-packet allocation, wait or GPU submission. */
 int record_mediacodec_worker_step(record_mediacodec_worker_t *worker);
+/* Blocks until the video encoder has output or @timeout_us passes, which
+ * nothing else notifies; false, without waiting, once video has ended. */
+bool record_mediacodec_worker_wait(record_mediacodec_worker_t *worker,
+      int64_t timeout_us);
 /* Controller still owns encoder/GPU retirement, mux cancellation and PCM
  * drain on failure. Free refuses active service unless aborted. */
 void record_mediacodec_worker_abort(record_mediacodec_worker_t *worker);

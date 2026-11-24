@@ -174,9 +174,13 @@ static retro_time_t fake_last_flip_due;
 static u32 fake_flip_status;
 static bool fake_flip_queued;
 static unsigned fake_flip_hangs;
-/* rsx_wait_flip spins on this; a pending flip is shown at its due
- * time, a reset with no flip behind it would spin forever */
-u32 gcmGetFlipStatus(void)
+static void (*fake_flip_handler)(const u32 head);
+/* Flips queued and not yet shown: the handler hears of each */
+static unsigned fake_flips_unshown;
+/* A wait for the flip: a pending flip is shown at its due time, and
+ * the flip handler told; a reset with no flip behind it would wait
+ * forever */
+static void fake_show_flip(void)
 {
    rsx_flip_waits++;
    if (fake_flip_status)
@@ -188,8 +192,36 @@ u32 gcmGetFlipStatus(void)
       fake_flip_status = 0;
       fake_flip_due    = 0;
    }
+   for (; fake_flips_unshown; fake_flips_unshown--)
+      if (fake_flip_handler)
+         fake_flip_handler(0);
+}
+u32 gcmGetFlipStatus(void)
+{
+   fake_show_flip();
    return 0;
 }
+void gcmSetFlipHandler(void (*handler)(const u32 head))
+{
+   fake_flip_handler = handler;
+}
+/* rsx_wait_flip parks on the flip handler's eventcount: one thread
+ * here, so its wait is the RSX showing the flip */
+bool retro_eventcount_init(retro_eventcount_t *ec) { (void)ec; return true; }
+void retro_eventcount_free(retro_eventcount_t *ec) { (void)ec; }
+void retro_eventcount_notify(retro_eventcount_t *ec) { (void)ec; }
+int  retro_eventcount_prepare_wait(retro_eventcount_t *ec) { (void)ec; return 0; }
+void retro_eventcount_cancel_wait(retro_eventcount_t *ec) { (void)ec; }
+bool retro_eventcount_commit_wait_timeout(retro_eventcount_t *ec, int key,
+      int64_t timeout_us)
+{
+   (void)ec; (void)key; (void)timeout_us;
+   fake_show_flip();
+   return true;
+}
+/* No threaded wrapper here: a texture is always released on the thread
+ * that draws */
+bool video_thread_is_video_thread(void) { return true; }
 void gcmResetFlipStatus(void)
 {
    fake_flip_status = 1;
@@ -207,6 +239,7 @@ s32  gcmSetFlip(gcmContextData *context, const u8 bufferId)
 {
    rsx_flip_calls++;
    fake_flip_queued = true;
+   fake_flips_unshown++;
    if (fake_flip_period)
    {
       if (fake_flip_due > fake_time)
@@ -225,6 +258,10 @@ static void fake_flip_pending(void)
    fake_flip_status = 1;
    fake_flip_queued = true;
    fake_flip_due    = fake_time + fake_flip_period;
+   fake_flips_unshown++;
+#ifdef HAVE_THREADS
+   rsx_flips_asked++;
+#endif
 }
 void gcmSetFlipMode(const u32 mode) { }
 void gcmSetWaitFlip(gcmContextData *context)
@@ -511,6 +548,9 @@ static void driver_down(rsx_t *rsx)
    free(rsx->white_texture);
    free(rsx);
    rsx_release_all();
+   /* Released above with the rest: nothing is left to retire */
+   rsx_retired_memory_head   = rsx_retired_memory_tail;
+   rsx_retired_memory_queued = false;
 }
 
 static void test_texture_grow(void)
@@ -518,7 +558,7 @@ static void test_texture_grow(void)
    static u8 frame16[16 * 4 * 2], frame32[16 * 4 * 4], tall[16 * 8 * 4];
    rsx_t *rsx = driver_up();
    rsx_texture_t tex;
-   unsigned i, finishes;
+   unsigned i, finishes, retired;
 
    for (i = 0; i < sizeof(frame16); i++) frame16[i] = (u8)i;
    for (i = 0; i < sizeof(frame32); i++) frame32[i] = (u8)(i * 3);
@@ -537,12 +577,14 @@ static void test_texture_grow(void)
 
    /* 16 to 32 bits: twice the pitch */
    finishes = rsx_finish_calls;
+   retired  = rsx_retired_memory_tail;
    rsx_load_texture_data(rsx, &tex, frame32, 16, 4, 16 * 4,
          true, false, TEXTURE_FILTER_NEAREST);
    CHECK(tex.data && !memcmp(tex.data, frame32, sizeof(frame32)),
          "texture_grow: a 32-bit frame loads into the same texture");
-   CHECK(rsx_finish_calls == finishes + 1,
-         "texture_grow: the RSX is waited for before its buffer goes");
+   CHECK(rsx_finish_calls == finishes
+         && rsx_retired_memory_tail == retired + 1,
+         "texture_grow: the old buffer is retired, not waited for");
 
    /* Taller than the screen */
    rsx_load_texture_data(rsx, &tex, tall, 16, 8, 16 * 4,

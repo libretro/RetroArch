@@ -27,6 +27,14 @@ void   data_transfer_window_punch(void *dt, size_t lo, size_t hi) { (void)dt; (v
 
 /* The mixer side of the borrow. */
 bool   audio_driver_mixer_add_stream(void *params) { (void)params; return false; }
+bool audio_driver_mixer_add_stream_observed(void *params, void **voice,
+      size_t *serial, const void *observer)
+{
+   (void)observer;
+   *voice = NULL;
+   *serial = 0;
+   return audio_driver_mixer_add_stream(params);
+}
 unsigned stub_removed = 0;
 void   audio_driver_mixer_remove_stream(unsigned i) { (void)i; stub_removed++; }
 /* The decoder's position: -1 is a stopped stream. */

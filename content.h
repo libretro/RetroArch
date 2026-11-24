@@ -89,6 +89,12 @@ size_t content_get_serialized_size_rewind(void);
 /* Serializes the current state for rewinding. buffer must be at least content_get_serialized_size bytes */
 bool content_serialize_state_rewind(void* buffer, size_t buffer_size);
 
+/* The core's own block in a state content_serialize_state_rewind()
+ * wrote into @state, @len bytes; its size in @core_size. NULL when
+ * @state holds none. */
+const void *content_rewind_state_core(const void *state, size_t len,
+      size_t *core_size);
+
 /* Deserializes the current state. */
 bool content_deserialize_state(const void* serialized_data, size_t serialized_size);
 

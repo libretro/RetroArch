@@ -44,7 +44,9 @@ RETRO_BEGIN_DECLS
  * @return The current time, in ticks.
  * @see retro_perf_callback::get_perf_counter
  */
+#ifndef RETRO_DISABLE_HOST_CLOCK
 retro_perf_tick_t cpu_features_get_perf_counter(void);
+#endif
 
 /**
  * Gets the time in microseconds since some unspecified epoch.
@@ -58,7 +60,90 @@ retro_perf_tick_t cpu_features_get_perf_counter(void);
  * @return The current time, in microseconds.
  * @see retro_perf_callback::get_time_usec
  */
+#ifndef RETRO_DISABLE_HOST_CLOCK
 retro_time_t cpu_features_get_time_usec(void);
+#endif
+
+#ifndef RETRO_DISABLE_HOST_CLOCK
+/**
+ * cpu_features_perf_calibrate:
+ * @now : a cpu_features_get_time_usec() reading the caller already
+ *        took, as close as it can to this call.
+ *
+ * Measures cpu_features_get_perf_counter()'s rate against @now where
+ * the platform does not state it, so that durations taken on the
+ * counter can be told in microseconds without reading the clock for
+ * them. One caller, on one thread, at a steady cadence (once a frame);
+ * where the rate is stated it is taken once and nothing is read, and
+ * where it is measured the counter is read only once a conversion has
+ * been asked for. ARM64 Android verifies a stated rate against these
+ * samples once before taking that fixed-rate fast path.
+ */
+void cpu_features_perf_calibrate(retro_time_t now);
+
+/**
+ * cpu_features_perf_to_usec:
+ * @ticks : a difference of two cpu_features_get_perf_counter() readings.
+ *
+ * Any thread.
+ *
+ * @return @ticks in microseconds; 0 for a span that runs backwards
+ *         (a counter not kept in step across cores), and 0 while the
+ *         rate is not yet known: where it is measured, from the first
+ *         conversion asked for until two cpu_features_perf_calibrate()
+ *         calls a millisecond apart after it.
+ */
+retro_time_t cpu_features_perf_to_usec(retro_perf_tick_t ticks);
+
+/**
+ * cpu_features_perf_from_usec:
+ * @usec : a span in microseconds.
+ *
+ * Any thread.
+ *
+ * @return @usec in cpu_features_get_perf_counter() ticks, to add to a
+ *         reading for the reading a wait ends at; 0 for a span not
+ *         above 0 and while the rate is not yet known, as
+ *         cpu_features_perf_to_usec() has it.
+ */
+retro_perf_tick_t cpu_features_perf_from_usec(retro_time_t usec);
+
+/* Where cpu_features_get_perf_counter() is a register read, cheaper
+ * than cpu_features_get_time_usec(): the x86 time-stamp counter, the
+ * ARMv8 virtual counter, the PowerPC timebase. Elsewhere the counter is
+ * the clock itself, a system call, or absent. Follows the counter's own
+ * branches in features_cpu.c. */
+#if (defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))) \
+   || (defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__) \
+         || defined(__aarch64__))) \
+   || defined(GEKKO_NATIVE) || defined(GEKKO) \
+   || (!defined(__MACH__) && !defined(__FreeBSD__) && (defined(_XBOX360) \
+         || defined(__powerpc__) || defined(__ppc__) \
+         || defined(__POWERPC__) || defined(__PSL1GHT__) \
+         || defined(__PPC64__) || defined(__powerpc64__)))
+#define CPU_FEATURES_PERF_COUNTER_CHEAP 1
+#endif
+
+/* A mark to time a span by, and the span between two marks in
+ * microseconds: the perf counter where it is cheap, the clock where
+ * it is not, so a span costs the cheaper of the two reads */
+/* CPU_FEATURES_MARK_WITH(now): the mark for the instant a
+ * cpu_features_get_time_usec() reading @now was taken, read beside it */
+/* CPU_FEATURES_USEC_TO_MARK(usec): a span above 0 as marks, to hold
+ * the difference of two marks against; 0 while that is not known, and
+ * the clock has to bound the wait */
+#ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
+#define CPU_FEATURES_MARK()             cpu_features_get_perf_counter()
+#define CPU_FEATURES_MARK_WITH(now)     cpu_features_get_perf_counter()
+#define CPU_FEATURES_MARK_TO_USEC(span) cpu_features_perf_to_usec(span)
+#define CPU_FEATURES_USEC_TO_MARK(usec) cpu_features_perf_from_usec(usec)
+#else
+#define CPU_FEATURES_MARK()             ((retro_perf_tick_t)cpu_features_get_time_usec())
+#define CPU_FEATURES_MARK_WITH(now)     ((retro_perf_tick_t)(now))
+#define CPU_FEATURES_MARK_TO_USEC(span) ((retro_time_t)(span))
+#define CPU_FEATURES_USEC_TO_MARK(usec) ((retro_perf_tick_t)(usec))
+#endif
+#endif
 
 /**
  * retro_sleep_until_us:
@@ -71,7 +156,9 @@ retro_time_t cpu_features_get_time_usec(void);
  * late, as every sleep may. Not available to the salamander launchers,
  * which do not link features_cpu.c.
  **/
+#ifndef RETRO_DISABLE_HOST_CLOCK
 void retro_sleep_until_us(retro_time_t deadline);
+#endif
 
 /**
  * Returns the available features (mostly SIMD extensions)

@@ -43,6 +43,8 @@
 #include "../../frontend/frontend_driver.h"
 
 #include "../menu_driver.h"
+#include "../../camera/camera_driver.h"
+#include <formats/image_yuv_blit.h>
 #include "../menu_media_controls.h"
 #include "../menu_media_browser.h"
 #include "../../gfx/gfx_media_cpu.h"
@@ -312,6 +314,9 @@ typedef struct
    retro_time_t draw_entry_hold_until;
    gfx_media_cpu_t *media_player;
    gfx_thumbnail_t media_gpu;
+   /* Settings > Camera > Preview: each frame point-sampled into a
+    * mini thumbnail, a source row at a time. */
+   uint32_t *camera_row;
    rgui_media_gpu_view_t media_gpu_views[3];
    retro_atomic_int_t media_gpu_states[3];
    rgui_media_gpu_view_t media_gpu_pending;
@@ -364,6 +369,7 @@ typedef struct
    thumbnail_t fs_thumbnail;
    thumbnail_t mini_thumbnail;
    thumbnail_t mini_left_thumbnail;
+   thumbnail_t camera_thumbnail;
 
    rgui_video_settings_t menu_video_settings;
    /* Copy staged by a delay_update publish (the frame path under
@@ -380,6 +386,7 @@ typedef struct
 
    /* The cap a mini thumbnail is fitted into, one word. */
    unsigned mini_thumbnail_max_dims;
+   unsigned camera_row_len;
    unsigned mini_thumbnail_delay;
    /* The video size this was last laid out for, one word,
     * VIDEO_SCALE_PACK's layout. */
@@ -412,6 +419,7 @@ typedef struct
    rgui_colors_t colors;   /* int16_t alignment */
 
    struct scaler_ctx image_scaler;
+   uint32_t image_scaler_row[RGUI_MAX_FB_WIDTH * 2];
    menu_input_pointer_t pointer;
 
    char entry_index_str[32];
@@ -2756,7 +2764,8 @@ static bool rgui_request_thumbnail(
       if (path_is_valid(path))
       {
          if (image_texture_get_type(path) == IMAGE_TYPE_MP4
-               || image_texture_get_type(path) == IMAGE_TYPE_WEBM)
+               || image_texture_get_type(path) == IMAGE_TYPE_WEBM
+               || menu_media_music_supported(path))
             return true;
          /* Would like to cancel any existing image load tasks
           * here, but can't see how to do it... */
@@ -2796,22 +2805,15 @@ static bool rgui_request_thumbnail(
  * Box averaging is exact here - it averages precisely the pixels being
  * discarded - so this costs nothing in quality, and it is faster
  * besides, the expensive filter seeing far fewer input pixels. */
-static uint32_t *rgui_downscale_box(const uint32_t *src,
-      unsigned src_dims, unsigned f, unsigned *out_dims)
+static void rgui_downscale_box_to(const uint32_t *src,
+      unsigned src_dims, unsigned f, uint32_t *argb,
+      uint16_t *native, bool dither)
 {
    unsigned x, y, i, j;
    unsigned n  = f * f;
    unsigned sw = VIDEO_SCALE_W(src_dims);
    unsigned dw = sw / f;
    unsigned dh = VIDEO_SCALE_H(src_dims) / f;
-   uint32_t *d;
-
-   if ((dw < 1) || (dh < 1))
-      return NULL;
-
-   if (!(d = (uint32_t*)malloc((size_t)dw * dh * sizeof(uint32_t))))
-      return NULL;
-
    for (y = 0; y < dh; y++)
    {
       for (x = 0; x < dw; x++)
@@ -2832,14 +2834,74 @@ static uint32_t *rgui_downscale_box(const uint32_t *src,
             }
          }
 
-         d[(size_t)y * dw + x] =
-               ((a / n) << 24) | ((r / n) << 16)
-             | ((g / n) <<  8) |  (b / n);
+         {
+            uint32_t pixel = ((a / n) << 24) | ((r / n) << 16)
+                           | ((g / n) << 8) | (b / n);
+            size_t offset = (size_t)y * dw + x;
+            if (native)
+               native[offset] = dither
+                  ? argb32_to_pixel_platform_format_dither(pixel, x, y)
+                  : argb32_to_pixel_platform_format(pixel);
+            else
+               argb[offset] = pixel;
+         }
       }
    }
 
+}
+
+static uint32_t *rgui_downscale_box(const uint32_t *src,
+      unsigned src_dims, unsigned f, unsigned *out_dims)
+{
+   unsigned dw = VIDEO_SCALE_W(src_dims) / f;
+   unsigned dh = VIDEO_SCALE_H(src_dims) / f;
+   uint32_t *pixels;
+   if (!dw || !dh)
+      return NULL;
+   pixels = (uint32_t*)malloc((size_t)dw * dh * sizeof(*pixels));
+   if (!pixels)
+      return NULL;
+   rgui_downscale_box_to(src, src_dims, f, pixels, NULL, false);
    *out_dims = VIDEO_SCALE_PACK(dw, dh);
-   return d;
+   return pixels;
+}
+
+struct rgui_thumbnail_box_rows
+{
+   const uint32_t *src;
+   uint32_t *row;
+   unsigned dims, factor;
+};
+
+static const uint32_t *rgui_thumbnail_box_row(void *user, unsigned y)
+{
+   struct rgui_thumbnail_box_rows *box = (struct rgui_thumbnail_box_rows*)user;
+   unsigned sw = VIDEO_SCALE_W(box->dims);
+   if (box->factor == 1)
+      return box->src + (size_t)y * sw;
+   rgui_downscale_box_to(box->src + (size_t)y * box->factor * sw,
+         VIDEO_SCALE_PACK(sw, box->factor), box->factor, box->row, NULL, false);
+   return box->row;
+}
+
+struct rgui_thumbnail_native
+{
+   uint16_t *pixels;
+   bool dither;
+};
+
+static void rgui_thumbnail_native_row(void *user, const uint32_t *pixels,
+      unsigned width, unsigned y)
+{
+   struct rgui_thumbnail_native *output = (struct rgui_thumbnail_native*)user;
+   uint16_t *dst = output->pixels + (size_t)y * width;
+   unsigned x;
+   if (output->dither)
+      for (x = 0; x < width; x++)
+         dst[x] = argb32_to_pixel_platform_format_dither(pixels[x], x, y);
+   else
+      for (x = 0; x < width; x++)
+         dst[x] = argb32_to_pixel_platform_format(pixels[x]);
 }
 
 static bool rgui_downscale_thumbnail(
@@ -2847,7 +2909,8 @@ static bool rgui_downscale_thumbnail(
       unsigned max_dims,
       unsigned thumbnail_downscaler,
       struct texture_image *image_src,
-      struct texture_image *image_dst)
+      struct texture_image *image_dst,
+      uint16_t *native_pixels, bool dither)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    bool thumbnail_core_aspect     = *rgui->savestate_thumbnail_file_path;
@@ -2899,10 +2962,6 @@ static bool rgui_downscale_thumbnail(
          image_dst->width        = max_width;
    }
 
-   /* Allocate pixel buffer */
-   if (!(image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t))))
-      return false;
-
    /* Determine scaling method */
    if (thumbnail_downscaler == RGUI_THUMB_SCALE_POINT)
    {
@@ -2911,6 +2970,8 @@ static bool rgui_downscale_thumbnail(
        * > Fastest method, minimal performance impact */
       uint32_t x_ratio = ((image_src->width  << 16) / image_dst->width);
       uint32_t y_ratio = ((image_src->height << 16) / image_dst->height);
+      if (rgui->image_scaler.streaming)
+         scaler_ctx_gen_reset(&rgui->image_scaler);
 
       for (y_dst = 0; y_dst < image_dst->height; y_dst++)
       {
@@ -2918,7 +2979,11 @@ static bool rgui_downscale_thumbnail(
          for (x_dst = 0; x_dst < image_dst->width; x_dst++)
          {
             unsigned x_src = (x_dst * x_ratio) >> 16;
-            image_dst->pixels[(y_dst * image_dst->width) + x_dst] = image_src->pixels[(y_src * image_src->width) + x_src];
+            uint32_t pixel = image_src->pixels[(y_src * image_src->width) + x_src];
+            /* Sample directly into the thumbnail's native buffer. */
+            native_pixels[(y_dst * image_dst->width) + x_dst] = dither
+               ? argb32_to_pixel_platform_format_dither(pixel, x_dst, y_dst)
+               : argb32_to_pixel_platform_format(pixel);
          }
       }
    }
@@ -2934,6 +2999,13 @@ static bool rgui_downscale_thumbnail(
       unsigned scale_height     = image_src->height;
       uint32_t *box_buf         = NULL;
       unsigned f;
+      struct rgui_thumbnail_native output;
+      struct rgui_thumbnail_box_rows box;
+      bool box_rows = false;
+      bool native_done;
+      bool reuse_scaler;
+      enum scaler_type scaler_type = thumbnail_downscaler == RGUI_THUMB_SCALE_SINC
+         ? SCALER_TYPE_SINC : SCALER_TYPE_BILINEAR;
 
       /* Decimate first while doing so does not undershoot the
        * target, so the filter below runs at its minimum kernel
@@ -2945,7 +3017,29 @@ static bool rgui_downscale_thumbnail(
       {
          unsigned box_dims;
 
-         if ((box_buf = rgui_downscale_box(scale_src,
+         /* Exact integer reductions need neither a boxed ARGB image nor
+          * a scaler output image: average and quantize into native pixels. */
+         if (scale_width / f == image_dst->width &&
+             scale_height / f == image_dst->height)
+         {
+            rgui_downscale_box_to(scale_src,
+                  VIDEO_SCALE_PACK(scale_width, scale_height), f,
+                  NULL, native_pixels, dither);
+            return true;
+         }
+
+         if (image_dst->width <= RGUI_MAX_FB_WIDTH && scale_height / f > 0 &&
+             scale_width / f <= ARRAY_SIZE(rgui->image_scaler_row))
+         {
+            box.src = scale_src;
+            box.dims = VIDEO_SCALE_PACK(scale_width, scale_height);
+            box.factor = f;
+            box.row = rgui->image_scaler_row;
+            box_rows = true;
+            scale_width /= f;
+            scale_height /= f;
+         }
+         else if ((box_buf = rgui_downscale_box(scale_src,
                VIDEO_SCALE_PACK(scale_width, scale_height), f, &box_dims)))
          {
             scale_src    = box_buf;
@@ -2953,6 +3047,16 @@ static bool rgui_downscale_thumbnail(
             scale_height = VIDEO_SCALE_H(box_dims);
          }
       }
+
+      /* Only the bounded streaming cache survives an image. Its coefficients
+       * depend on geometry/filter, not the source pixels or native packing. */
+      reuse_scaler = rgui->image_scaler.streaming && rgui->image_scaler.frame_arena
+         && rgui->image_scaler.filter_arena
+         && rgui->image_scaler.in_width == (int)scale_width
+         && rgui->image_scaler.in_height == (int)scale_height
+         && rgui->image_scaler.out_width == (int)image_dst->width
+         && rgui->image_scaler.out_height == (int)image_dst->height
+         && rgui->image_scaler.scaler_type == scaler_type;
 
       rgui->image_scaler.in_width    = scale_width;
       rgui->image_scaler.in_height   = scale_height;
@@ -2964,15 +3068,11 @@ static bool rgui_downscale_thumbnail(
       rgui->image_scaler.out_stride  = image_dst->width * sizeof(uint32_t);
       rgui->image_scaler.out_fmt     = SCALER_FMT_ARGB8888;
 
-      rgui->image_scaler.scaler_type = (thumbnail_downscaler == RGUI_THUMB_SCALE_SINC)
-            ? SCALER_TYPE_SINC
-            : SCALER_TYPE_BILINEAR;
+      rgui->image_scaler.scaler_type = scaler_type;
 
-      /* This reset is redundant, since scaler_ctx_gen_filter()
-       * calls it - but do it anyway in case the
-       * scaler_ctx_gen_filter() internals ever change... */
-      scaler_ctx_gen_reset(&rgui->image_scaler);
-      if (!scaler_ctx_gen_filter(&rgui->image_scaler))
+      if (!reuse_scaler && !(image_dst->width <= RGUI_MAX_FB_WIDTH &&
+            scaler_ctx_gen_filter_stream(&rgui->image_scaler)) &&
+          !scaler_ctx_gen_filter(&rgui->image_scaler))
       {
          /* Could be leftovers if scaler_ctx_gen_filter()
           * fails, so reset just in case... */
@@ -2981,11 +3081,61 @@ static bool rgui_downscale_thumbnail(
          return false;
       }
 
-      scaler_ctx_scale(&rgui->image_scaler, image_dst->pixels, scale_src);
+      output.pixels = native_pixels;
+      output.dither = dither;
+      if (rgui->image_scaler.streaming)
+      {
+         if (!box_rows)
+         {
+            box.src = scale_src;
+            box.dims = VIDEO_SCALE_PACK(scale_width, scale_height);
+            box.factor = 1;
+            box.row = rgui->image_scaler_row;
+         }
+         native_done = scaler_ctx_scale_stream_rows(&rgui->image_scaler,
+               rgui->image_scaler_row, sizeof(rgui->image_scaler_row),
+               rgui_thumbnail_box_row, &box, rgui_thumbnail_native_row, &output);
+      }
+      else native_done = box_rows
+         ? scaler_ctx_scale_rows_from(&rgui->image_scaler, rgui->image_scaler_row,
+               sizeof(rgui->image_scaler_row), rgui_thumbnail_box_row, &box,
+               rgui_thumbnail_native_row, &output)
+         : scaler_ctx_scale_rows(&rgui->image_scaler, rgui->image_scaler_row,
+               RGUI_MAX_FB_WIDTH * sizeof(uint32_t), scale_src,
+               rgui_thumbnail_native_row, &output);
+      if (!native_done)
+      {
+         /* Retain the full-frame fallback if a row-fed context is unsupported. */
+         if (rgui->image_scaler.streaming && !scaler_ctx_gen_filter(&rgui->image_scaler))
+         {
+            free(box_buf);
+            return false;
+         }
+         if (box_rows)
+         {
+            unsigned box_dims;
+            box_buf = rgui_downscale_box(box.src, box.dims, box.factor, &box_dims);
+            if (!box_buf)
+            {
+               scaler_ctx_gen_reset(&rgui->image_scaler);
+               return false;
+            }
+            scale_src = box_buf;
+         }
+         image_dst->pixels = (uint32_t*)calloc(image_dst->width * image_dst->height, sizeof(uint32_t));
+         if (image_dst->pixels)
+            scaler_ctx_scale(&rgui->image_scaler, image_dst->pixels, scale_src);
+         else
+         {
+            scaler_ctx_gen_reset(&rgui->image_scaler);
+            free(box_buf);
+            return false;
+         }
+      }
       free(box_buf);
-      /* Reset again - don't want to leave anything hanging around
-       * if the user switches back to nearest neighbour scaling */
-      scaler_ctx_gen_reset(&rgui->image_scaler);
+      /* Large fallback frames are transient; retain only the bounded cache. */
+      if (!rgui->image_scaler.streaming)
+         scaler_ctx_gen_reset(&rgui->image_scaler);
    }
 
    return true;
@@ -3031,7 +3181,7 @@ static void rgui_process_thumbnail(
             thumbnail->max_dims,
             menu_rgui_thumbnail_downscaler,
             image_src,
-            &image_resampled))
+            &image_resampled, thumbnail->data, dither))
       {
          if (image_resampled.pixels)
             free(image_resampled.pixels);
@@ -3048,6 +3198,9 @@ static void rgui_process_thumbnail(
    thumbnail->dims        = VIDEO_SCALE_PACK(image->width, image->height);
    thumb_width            = VIDEO_SCALE_W(thumbnail->dims);
    thumb_height           = VIDEO_SCALE_H(thumbnail->dims);
+
+   if (!image->pixels)
+      goto thumbnail_ready;
 
    /* Copy image to thumbnail buffer, performing pixel format conversion.
     * Iterate rows in the outer loop so the row-major source and
@@ -3068,6 +3221,7 @@ static void rgui_process_thumbnail(
       }
    }
 
+thumbnail_ready:
    thumbnail->is_valid    = true;
 
    /* Tell menu that a display update is required */
@@ -3141,14 +3295,15 @@ static bool rgui_media_present(void *user, const video_player_frame_t *frame)
    if (!frame->native || !frame->pixels) return false;
    image.pixels = (uint32_t*)frame->pixels;
    image.width = frame->width; image.height = frame->height; image.pix10 = false;
-   for (i = 0; i < 2; i++)
+   for (i = 0; i < (menu_media_music_supported(rgui->media_path) ? 1u : 2u); i++)
    {
       rgui_process_thumbnail(rgui, thumbnails[i], &queue_size,
             settings->uints.menu_rgui_thumbnail_downscaler,
             settings->bools.menu_rgui_thumbnail_dither, &image);
       strlcpy(thumbnails[i]->path, rgui->media_path, sizeof(thumbnails[i]->path));
    }
-   return rgui->fs_thumbnail.is_valid && rgui->mini_thumbnail.is_valid;
+   return rgui->fs_thumbnail.is_valid
+      && (menu_media_music_supported(rgui->media_path) || rgui->mini_thumbnail.is_valid);
 }
 
 static bool rgui_media_state(void *user, int64_t now, gfx_media_playback_state_t *state)
@@ -3173,11 +3328,42 @@ static bool rgui_media_seek(void *user, int64_t target_us, int64_t now)
    if (!rgui->media_player)
       return gfx_thumbnail_seek(&rgui->media_gpu, target_us, now);
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && defined(HAVE_AUDIOMIXER) && \
-      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) \
+       || defined(HAVE_RFLAC))
    if (config_get_ptr()->bools.menu_thumbnail_preview_audio)
       audio_driver_mixer_prepare_format(&rate, &s16);
 #endif
    return gfx_media_cpu_seek(((rgui_t*)user)->media_player, target_us, rate, s16, now);
+}
+
+static bool rgui_media_request_audio(void *user, int index)
+{
+   rgui_t *rgui = (rgui_t*)user;
+   return rgui->media_player ? gfx_media_cpu_request_audio(rgui->media_player, index)
+      : gfx_thumbnail_request_audio(&rgui->media_gpu, index);
+}
+
+static bool rgui_media_audio(void *user, int index, int64_t now)
+{
+   rgui_t *rgui = (rgui_t*)user;
+   unsigned rate = 0;
+   bool s16 = false;
+   if (!rgui->media_player) return gfx_thumbnail_select_audio(&rgui->media_gpu, index, now);
+#if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && defined(HAVE_AUDIOMIXER) && \
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) \
+       || defined(HAVE_RFLAC))
+   if (config_get_ptr()->bools.menu_thumbnail_preview_audio)
+      audio_driver_mixer_prepare_format(&rate, &s16);
+#endif
+   return gfx_media_cpu_select_audio(rgui->media_player, index, rate, s16, now);
+}
+
+static void rgui_media_audio_target(rgui_t *rgui, gfx_media_target_t *target)
+{
+   gfx_media_controls_audio_target(target, rgui->media_player
+         ? gfx_media_cpu_session(rgui->media_player)
+         : (const gfx_anim_preview_t*)rgui->media_gpu.anim_sess, rgui_media_audio,
+         rgui_media_request_audio);
 }
 
 static bool rgui_media_gpu_supported(void)
@@ -3220,6 +3406,9 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
       && ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
             || settings->bools.menu_rgui_inline_thumbnails
             || menu_media_controls_settings_active(&rgui->media));
+   if (menu_media_music_supported(rgui->media_requested_path)
+         && !(rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+         && !menu_media_controls_settings_active(&rgui->media)) wanted = false;
    once = menu_media_controls_continuous(&rgui->media,
          (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0);
    gfx_media_cpu_reap();
@@ -3232,10 +3421,22 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
          gfx_anim_preview_t *session;
          bool gpu = rgui_media_gpu_supported();
          strlcpy(rgui->media_path, rgui->media_requested_path, sizeof(rgui->media_path));
-         if (gpu)
-            gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
-         session = rgui->media_gpu.anim_sess ? NULL
-            : gfx_anim_preview_open(rgui->media_path, -1);
+#ifdef HAVE_AUDIOMIXER
+         if (menu_media_music_supported(rgui->media_path))
+         {
+            session = NULL;
+            if (gpu)
+               gfx_thumbnail_request_music_file(rgui->media_path, &rgui->media_gpu);
+            else
+               rgui->media_player = gfx_media_cpu_new_music(rgui->media_path, rgui_media_present, rgui);
+         }
+         else
+#endif
+         {
+            if (gpu) gfx_thumbnail_request_file(rgui->media_path, &rgui->media_gpu, 0);
+            session = rgui->media_gpu.anim_sess ? NULL
+               : gfx_anim_preview_open(rgui->media_path, -1);
+         }
          if (session)
          {
             rgui->media_player = gfx_media_cpu_new(session, rgui_media_present, rgui, 0);
@@ -3258,7 +3459,7 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
          }
       }
    }
-   if (rgui->media_gpu.anim_sess)
+   if (rgui->media_gpu.anim_sess || rgui->media_gpu.music_player)
    {
       gfx_thumbnail_set_repeat(&rgui->media_gpu, !once);
       gfx_thumbnail_animate(&rgui->media_gpu, now);
@@ -3269,7 +3470,8 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
             && !menu_input_dialog_get_display_kb())
       {
          target.user = rgui;
-         target.identity = rgui->media_gpu.anim_sess;
+         target.identity = rgui->media_gpu.music_player
+            ? rgui->media_gpu.music_player : rgui->media_gpu.anim_sess;
          target.state = rgui_media_state; target.pause = rgui_media_pause;
          target.seek = rgui_media_seek;
       }
@@ -3318,9 +3520,11 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
       target.pause = rgui_media_pause;
       target.seek = rgui_media_seek;
       target.source_path = rgui->media_path;
+      rgui_media_audio_target(rgui, &target);
       menu_media_controls_resume(&rgui->media, &target, now);
       memset(&target, 0, sizeof(target));
    }
+   if (target.user) rgui_media_audio_target(rgui, &target);
    target.source_path = target.user ? rgui->media_path : NULL;
    menu_input_get_pointer_state(&rgui->media_pointer);
    rgui->media.settings_user = rgui;
@@ -3332,7 +3536,7 @@ RGUI_NOINLINE static void rgui_media_update(rgui_t *rgui, unsigned dims)
    {
       rgui_media_gpu_view_t draw;
       memset(&draw, 0, sizeof(draw));
-      draw.visible = wanted && rgui->media_gpu.anim_sess
+      draw.visible = wanted && (rgui->media_gpu.anim_sess || rgui->media_gpu.music_player)
          && !(rgui->flags & RGUI_FLAG_SHOW_SCREENSAVER)
          && !menu_input_dialog_get_display_kb()
          && retro_atomic_load_acquire_int(&rgui->media_gpu.status)
@@ -3525,6 +3729,7 @@ RGUI_NOINLINE static void rgui_render_background(
 static void rgui_render_messagebox(
       rgui_t *rgui,
       const char *message,
+      bool heading,
       unsigned fb_dims);
 
 RGUI_NOINLINE static void rgui_render_fs_thumbnail(
@@ -3629,7 +3834,7 @@ RGUI_NOINLINE static void rgui_render_fs_thumbnail(
       if (     !(rgui->flags & RGUI_FLAG_ENTRY_HAS_THUMBNAIL)
             && !(rgui->flags & RGUI_FLAG_ENTRY_HAS_LEFT_THUMBNAIL))
          rgui_render_messagebox(rgui,
-            msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE), fb_dims);
+            msg_hash_to_str(MSG_NO_THUMBNAIL_AVAILABLE), false, fb_dims);
    }
 }
 
@@ -5291,6 +5496,7 @@ static void rgui_set_message(void *data, const char *message)
 static void rgui_render_messagebox(
       rgui_t *rgui,
       const char *message,
+      bool heading,
       unsigned fb_dims)
 {
    unsigned fb_width  = VIDEO_SCALE_W(fb_dims);
@@ -5315,6 +5521,8 @@ static void rgui_render_messagebox(
    int row_step               = 0;
    int rows_y                 = 0;
    unsigned firmware_line_state = 0;
+   unsigned rule_line         = 0;
+   bool add_row               = false;
 
    wrapped_message[0]         = '\0';
    menu_dialog_get_buttons(menu_st, &buttons);
@@ -5348,6 +5556,10 @@ static void rgui_render_messagebox(
 
    if (line_count == 0)
       return;
+
+   if (heading)
+      rule_line = menu_dialog_rule_line(message, wrapped_message,
+            wrapped_len, line_count);
 
    for (i = 0; i < line_count; i++)
    {
@@ -5399,6 +5611,21 @@ static void rgui_render_messagebox(
    if (buttons.count)
       height               += (unsigned)(row_step * (int)button_rows)
             + rgui->font_height_stride;
+
+   /* The heading's rule, in the blank line under it or in a row added
+    * there, only while the box fits the screen with it */
+   if (rule_line)
+   {
+      unsigned row_h = (rule_line < line_count && !*lines[rule_line])
+            ? 0 : rgui->font_height_stride;
+      if (height + row_h > fb_height)
+         rule_line = 0;
+      else
+      {
+         height   += row_h;
+         add_row   = row_h > 0;
+      }
+   }
 
    x                        = ((int)fb_width  - (int)width) / 2;
    y                        = ((int)fb_height - (int)height) / 2;
@@ -5466,7 +5693,8 @@ static void rgui_render_messagebox(
          const char *path = menu_dialog_firmware_path_line(menu_st,
                msg, &firmware_line_state);
          int offset_x    = (int)(rgui->font_width_stride * (glyphs_width - glyphs[i]) / 2);
-         int offset_y    = (int)(rgui->font_height_stride * i);
+         int offset_y    = (int)(rgui->font_height_stride
+               * ((add_row && i >= rule_line) ? i + 1 : i));
          int text_x      = x + 8 + offset_x;
          int text_y      = y + 8 + offset_y;
 
@@ -5487,6 +5715,15 @@ static void rgui_render_messagebox(
                   text_y + VIDEO_SCALE_H(rgui->font_dims),
                   utf8len(path) * rgui->font_width_stride - 1, 1,
                   rgui->colors.normal_color);
+
+         /* Centred between the heading's glyphs and the next line */
+         if (i + 1 == rule_line)
+            rgui_fill_rect(frame_buf_data, fb_dims,
+                  x + 8,
+                  y + 8 + (rgui->font_height_stride * (2 * rule_line)
+                     + VIDEO_SCALE_H(rgui->font_dims)) / 2 - 1,
+                  glyphs_width * rgui->font_width_stride - 1, 2,
+                  border_dark_color, border_light_color, border_thickness);
       }
 
       if (buttons.count)
@@ -5670,7 +5907,7 @@ RGUI_NOINLINE static void rgui_render_osk(
    int osk_ptr                    = menu_st->osk_ptr;
    char **osk_grid                = menu_st->osk_grid;
    const char *input_str          = menu_input_dialog_get_buffer();
-   const char *input_label        = menu_st->input_dialog_kb_label;
+   const char *input_label        = input_driver_text_entry_label();
    /* A system keyboard panel is up and owns text entry: draw the
     * label and the entry field, but not a second set of keys on top
     * of it. The grid is not iterated in that state either, so
@@ -5713,7 +5950,7 @@ RGUI_NOINLINE static void rgui_render_osk(
       strlcpy_append(msg, sizeof(msg), &_len, input_label);
       strlcpy_append(msg, sizeof(msg), &_len, "\n");
       strlcpy_append(msg, sizeof(msg), &_len, input_str);
-      rgui_render_messagebox(rgui, msg, fb_dims);
+      rgui_render_messagebox(rgui, msg, false, fb_dims);
       return;
    }
 
@@ -6229,10 +6466,11 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    gfx_media_rect_t bar;
    unsigned i, width = VIDEO_SCALE_W(dims);
    int64_t position;
-   char elapsed[24], duration[24], caption[56];
-   char seek_back[16], seek_forward[16];
+   char elapsed[24], duration[24], caption[128];
+   char seek_back[16], seek_forward[16], audio_label[16];
    size_t limit;
-   const char *labels[8];
+   const char *labels[10];
+   char label[64];
    gfx_media_controls_consume(&rgui->media.mailbox, view);
    rgui_media_subtitle_draw(rgui, dims);
    if (!view->visible || !view->layout.unit) return;
@@ -6240,10 +6478,11 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    rgui_color_rect(rgui->frame_buf.data, dims, bar.x, bar.y, bar.w, bar.h,
          rgui->colors.shadow_color);
    bar = view->layout.timeline;
-   rgui_color_rect(rgui->frame_buf.data, dims, bar.x, bar.y, bar.w, bar.h,
-         rgui->colors.bg_light_color);
+   if (!view->image)
+      rgui_color_rect(rgui->frame_buf.data, dims, bar.x, bar.y, bar.w, bar.h,
+            rgui->colors.bg_light_color);
    position = view->dragging ? view->drag_us : view->playback.position_us;
-   if (view->playback.duration_us > 0)
+   if (!view->image && view->playback.duration_us > 0)
    {
       double fraction = (double)position / (double)view->playback.duration_us;
       if (fraction < 0.0) fraction = 0.0;
@@ -6255,12 +6494,16 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    menu_media_controls_time(elapsed, sizeof(elapsed), position);
    menu_media_controls_time(duration, sizeof(duration), view->playback.duration_us);
    snprintf(caption, sizeof(caption), "%s / %s", elapsed, duration);
+   if (view->audio_track_number)
+      snprintf(caption, sizeof(caption), "%s / %s | A%u %s", elapsed, duration,
+            view->audio_track_number, view->audio_language);
    limit = rgui->font_width_stride
       ? (width - view->layout.timeline.x - 2) / rgui->font_width_stride : 0;
    if (limit < sizeof(caption)) caption[limit] = '\0';
-   rgui_blit_line(rgui, width, view->layout.timeline.x,
-         view->layout.panel.y + 1, caption, rgui->colors.normal_color,
-         rgui->colors.shadow_color);
+   if (!view->image)
+      rgui_blit_line(rgui, width, view->layout.timeline.x,
+            view->layout.panel.y + 1, caption, rgui->colors.normal_color,
+            rgui->colors.shadow_color);
    labels[0] = view->playback.paused ? ">" : "||";
    snprintf(seek_back, sizeof(seek_back), "-%u", view->seek_seconds);
    snprintf(seek_forward, sizeof(seek_forward), "+%u", view->seek_seconds);
@@ -6268,22 +6511,45 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
    labels[4] = "|<";
    labels[5] = ">|";
    labels[6] = "...";
+   if (view->audio_tracks)
+   {
+      snprintf(audio_label, sizeof(audio_label), "A%u", view->audio_track_number);
+      labels[view->layout.button_count - (view->subtitle_tracks ? 2 : 1)
+         - (view->shaders ? 1 : 0)] = audio_label;
+   }
    if (view->subtitle_tracks)
-      labels[view->layout.button_count - 1] = "CC";
+      labels[view->layout.button_count - 1 - (view->shaders ? 1 : 0)] = "CC";
+   /* The last button, the only one an image has */
+   if (view->shaders)
+      labels[view->layout.button_count - 1] =
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS);
    for (i = 0; i < view->layout.button_count; i++)
    {
       const gfx_media_rect_t *button = &view->layout.buttons[i];
       bool focused = (view->row_focus && view->focus == i) || view->hover == (int)i;
-      bool enabled = (view->subtitle_tracks && i + 1 == view->layout.button_count)
+      bool enabled = (view->audio_tracks
+            && i + (view->subtitle_tracks ? 2 : 1) + (view->shaders ? 1 : 0)
+               == view->layout.button_count)
+            || (view->subtitle_tracks
+               && i + 1 + (view->shaders ? 1 : 0) == view->layout.button_count)
+            || (view->shaders && i + 1 == view->layout.button_count)
             || i == 6 || (i >= 4
             ? (view->directions & (i == 4 ? 1u : 2u)) != 0
             : !i || view->playback.seekable);
-      int x = button->x + (button->w - (int)(strlen(labels[i]) * rgui->font_width_stride)) / 2;
-      int y = button->y + (button->h - (int)VIDEO_SCALE_H(rgui->font_dims)) / 2;
+      size_t columns = rgui->font_width_stride
+         ? (size_t)button->w / rgui->font_width_stride : 0;
+      int x, y;
+      /* Cut to the button, in characters, not bytes */
+      strlcpy(label, labels[i], sizeof(label));
+      if (utf8len(label) > columns)
+         *(char*)utf8skip(label, columns) = '\0';
+      x = button->x + (button->w
+            - (int)(utf8len(label) * rgui->font_width_stride)) / 2;
+      y = button->y + (button->h - (int)VIDEO_SCALE_H(rgui->font_dims)) / 2;
       rgui_color_rect(rgui->frame_buf.data, dims, button->x, button->y,
             button->w, button->h, focused ? rgui->colors.border_light_color
                : rgui->colors.bg_dark_color);
-      rgui_blit_line(rgui, width, x, y, labels[i], enabled
+      rgui_blit_line(rgui, width, x, y, label, enabled
             ? rgui->colors.normal_color : rgui->colors.disabled_color,
             rgui->colors.shadow_color);
    }
@@ -6300,6 +6566,131 @@ RGUI_NOINLINE static void rgui_media_draw(rgui_t *rgui, unsigned dims)
             track, rgui->colors.normal_color, rgui->colors.shadow_color);
    }
 
+}
+
+/* The size a camera frame of @w x @h fits the mini thumbnail at. */
+static unsigned rgui_camera_fit(const rgui_t *rgui, unsigned w, unsigned h)
+{
+   unsigned max_w = VIDEO_SCALE_W(rgui->camera_thumbnail.max_dims);
+   unsigned max_h = VIDEO_SCALE_H(rgui->camera_thumbnail.max_dims);
+   unsigned tw    = max_w;
+   unsigned th    = w ? (unsigned)(((uint64_t)h * max_w) / w) : 0;
+   if (th > max_h)
+   {
+      th = max_h;
+      tw = h ? (unsigned)(((uint64_t)w * max_h) / h) : 0;
+   }
+   return VIDEO_SCALE_PACK(MAX(tw, 1), MAX(th, 1));
+}
+
+static void rgui_camera_planar(void *user,
+      const struct retro_camera_planar_frame *f)
+{
+   rgui_t      *rgui = (rgui_t*)user;
+   thumbnail_t *t    = &rgui->camera_thumbnail;
+   unsigned flags    = 0;
+   unsigned dims, tw, th, x, y;
+   if (!t->data || !f->width || !f->height)
+      return;
+   if (rgui->camera_row_len < f->width)
+   {
+      uint32_t *row = (uint32_t*)realloc(rgui->camera_row,
+            f->width * sizeof(uint32_t));
+      if (!row)
+         return;
+      rgui->camera_row     = row;
+      rgui->camera_row_len = f->width;
+   }
+   if (f->flags & RETRO_CAMERA_PLANAR_FULL_RANGE)
+      flags |= IMAGE_YUV_FLAG_FULL_RANGE;
+   if (f->flags & RETRO_CAMERA_PLANAR_BT709)
+      flags |= IMAGE_YUV_FLAG_BT709;
+   dims = rgui_camera_fit(rgui, f->width, f->height);
+   tw   = VIDEO_SCALE_W(dims);
+   th   = VIDEO_SCALE_H(dims);
+   for (y = 0; y < th; y++)
+   {
+      unsigned sy = (unsigned)(((uint64_t)y * f->height) / th);
+      uint16_t *dst = t->data + (size_t)y * tw;
+      /* One source row, with the chroma row it shares */
+      image_yuv_420_to_rgb32(rgui->camera_row, f->width,
+            f->planes[0] + sy * f->strides[0], (unsigned)f->strides[0],
+            f->planes[1] + (sy >> 1) * f->strides[1], (unsigned)f->strides[1],
+            f->planes[2] + (sy >> 1) * f->strides[2], (unsigned)f->strides[2],
+            (unsigned)f->chroma_step, f->width, 1, flags);
+      for (x = 0; x < tw; x++)
+         dst[x] = argb32_to_pixel_platform_format(
+               rgui->camera_row[((uint64_t)x * f->width) / tw]);
+   }
+   t->dims      = dims;
+   t->is_valid  = true;
+   rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+}
+
+static void rgui_camera_raw(void *user, const uint32_t *buf,
+      unsigned width, unsigned height, size_t pitch)
+{
+   rgui_t      *rgui = (rgui_t*)user;
+   thumbnail_t *t    = &rgui->camera_thumbnail;
+   unsigned dims, tw, th, x, y;
+   if (!t->data || !width || !height)
+      return;
+   dims = rgui_camera_fit(rgui, width, height);
+   tw   = VIDEO_SCALE_W(dims);
+   th   = VIDEO_SCALE_H(dims);
+   for (y = 0; y < th; y++)
+   {
+      const uint32_t *src = (const uint32_t*)((const uint8_t*)buf
+            + (size_t)(((uint64_t)y * height) / th) * pitch);
+      uint16_t *dst = t->data + (size_t)y * tw;
+      for (x = 0; x < tw; x++)
+         dst[x] = argb32_to_pixel_platform_format(
+               src[((uint64_t)x * width) / tw] | 0xFF000000u);
+   }
+   t->dims      = dims;
+   t->is_valid  = true;
+   rgui->flags |= RGUI_FLAG_FORCE_REDRAW;
+}
+
+static void rgui_camera_close(rgui_t *rgui)
+{
+   if (!rgui->camera_thumbnail.data)
+      return;
+   camera_driver_preview_close();
+   free(rgui->camera_thumbnail.data);
+   rgui->camera_thumbnail.data     = NULL;
+   rgui->camera_thumbnail.is_valid = false;
+   rgui->flags                    |= RGUI_FLAG_FORCE_REDRAW;
+}
+
+/* Once a frame: the preview runs while its entry is selected. */
+static void rgui_camera_update(rgui_t *rgui)
+{
+   if (!menu_camera_preview_selected())
+   {
+      rgui_camera_close(rgui);
+      return;
+   }
+   if (!rgui->camera_thumbnail.data)
+   {
+      unsigned max_dims = rgui->mini_thumbnail_max_dims;
+      if (!VIDEO_SCALE_W(max_dims) || !VIDEO_SCALE_H(max_dims)
+            || !(rgui->camera_thumbnail.data = (uint16_t*)malloc(
+                  VIDEO_SCALE_AREA(max_dims) * sizeof(uint16_t))))
+         return;
+      rgui->camera_thumbnail.max_dims = max_dims;
+      rgui->camera_thumbnail.is_valid = false;
+   }
+   /* Opened here, and again after the menu closed it */
+   if (!camera_state_get_ptr()->preview_on)
+   {
+      camera_preview_sink_t sink;
+      sink.planar = rgui_camera_planar;
+      sink.raw    = rgui_camera_raw;
+      sink.user   = rgui;
+      camera_driver_preview_open(&sink);
+   }
+   menu_camera_preview_poll();
 }
 
 static void rgui_render(void *data, unsigned dims,
@@ -6756,12 +7147,13 @@ static void rgui_render(void *data, unsigned dims,
       /* Print clock (if required) */
       if (menu_timedate_enable)
       {
-         char timedate[20];
-         gfx_display_ctx_datetime_t datetime;
-         datetime.time_mode      = settings->uints.menu_timedate_style;
-         datetime.date_separator = settings->uints.menu_timedate_date_separator;
-
-         menu_display_timedate(&datetime, timedate, sizeof(timedate));
+         const char *timedate = menu_display_timedate(
+               MENU_TIMEDATE_RESOLVE_STYLE(
+                  settings->uints.menu_timedate_mode,
+                  settings->uints.menu_timedate_style,
+                  settings->bools.menu_timedate_12hour,
+                  menu_state_get_ptr()->timedate_zone_order),
+               settings->uints.menu_timedate_date_separator, NULL, NULL);
          timedate_len = utf8len(timedate);
 
          /* Add battery spacer */
@@ -7061,8 +7453,14 @@ static void rgui_render(void *data, unsigned dims,
                   entry_color, rgui->colors.shadow_color);
       }
 
-      /* Draw mini thumbnails, if required */
-      if (show_savestate_thumbnail)
+      /* Draw mini thumbnails, if required: the camera preview at the
+       * foot, clear of the camera page's few entries */
+      if (rgui->camera_thumbnail.data && rgui->camera_thumbnail.is_valid)
+         rgui_render_mini_thumbnail(rgui, &rgui->camera_thumbnail,
+               rgui->frame_buf.data, GFX_THUMBNAIL_LEFT,
+               p_disp->framebuf_dims, fb_pitch,
+               false, thumbnail_background, false);
+      else if (show_savestate_thumbnail)
       {
          thumbnail_t *thumbnail_savestate = &rgui->mini_left_thumbnail;
          if (show_savestate_thumbnail && thumbnail_savestate)
@@ -7195,7 +7593,8 @@ static void rgui_render(void *data, unsigned dims,
       const menu_dialog_t *d = &menu_st->dialog_st;
       /* Draw popup directly on top of the menu; the messagebox
        * paints its own opaque background within its footprint. */
-      rgui_render_messagebox(rgui, msgbox, p_disp->framebuf_dims);
+      rgui_render_messagebox(rgui, msgbox, menu_st->dialog_st.heading,
+            p_disp->framebuf_dims);
       if (strcmp(rgui->msgbox_drawn, msgbox))
          strlcpy(rgui->msgbox_drawn, msgbox, sizeof(rgui->msgbox_drawn));
       rgui->msgbox_epoch     = d->button_epoch;
@@ -8053,6 +8452,11 @@ static void rgui_free(void *data)
       return;
 
    rgui_media_close(rgui, false);
+   rgui_camera_close(rgui);
+   scaler_ctx_gen_reset(&rgui->image_scaler);
+   free(rgui->camera_row);
+   rgui->camera_row     = NULL;
+   rgui->camera_row_len = 0;
    rgui_fonts_free(rgui);
    rgui_buffers_free(rgui);
    rgui_upscale_buf_free(&rgui->upscale_buf);
@@ -8557,7 +8961,9 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
       file_list_t *stack = MENU_LIST_GET(menu_list, 0);
       if (stack && stack->size && (item->type == FILE_TYPE_IMAGEVIEWER
                || item->type == FILE_TYPE_IMAGE || type == IMAGE_TYPE_MP4
-               || type == IMAGE_TYPE_WEBM)
+               || type == IMAGE_TYPE_WEBM
+               || ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+                  && menu_media_music_supported(item->path)))
             && gfx_thumbnail_set_content_image(menu_st->thumbnail_path_data,
                stack->list[stack->size - 1].path, item->path))
       {
@@ -8590,7 +8996,9 @@ static void rgui_scan_selected_entry_thumbnail(rgui_t *rgui, bool force_load)
    if (has_thumbnail)
    {
       enum image_type_enum type = image_texture_get_type(menu_st->thumbnail_path_data->right_path);
-      if (type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
+      if (type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM
+            || ((rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
+               && menu_media_music_supported(menu_st->thumbnail_path_data->right_path)))
          strlcpy(rgui->media_requested_path, menu_st->thumbnail_path_data->right_path,
                sizeof(rgui->media_requested_path));
    }
@@ -9296,7 +9704,7 @@ static void rgui_media_gpu_draw(rgui_t *rgui, video_frame_info_t *video_info)
    thumbnail.alpha = view->alpha;
    thumbnail.flags = view->flags;
    retro_atomic_store_release_int(&thumbnail.status, GFX_THUMBNAIL_STATUS_AVAILABLE);
-   gfx_thumbnail_draw(video_info->userdata, dims, &thumbnail,
+   gfx_thumbnail_draw_shader(video_info->userdata, dims, &thumbnail,
          VIDEO_POS_X(vp.pos) + rect->x * sx,
          VIDEO_POS_Y(vp.pos) + rect->y * sy,
          VIDEO_SCALE_PACK((unsigned)(rect->w * sx), (unsigned)(rect->h * sy)),
@@ -9323,6 +9731,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    unsigned video_width                = VIDEO_SCALE_W(video_info->dims);
    unsigned video_height               = VIDEO_SCALE_H(video_info->dims);
    gfx_display_t *p_disp               = disp_get_ptr();
+
+   rgui_camera_update(rgui);
 
    if (bg_filler_thickness_enable != ((rgui->flags & RGUI_FLAG_BG_THICKNESS) > 0))
    {
@@ -9735,12 +10145,14 @@ static enum menu_action rgui_parse_menu_entry_action(
       file_list_t *list = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
       if (list && menu_st->selection_ptr < list->size
             && (list->list[menu_st->selection_ptr].type == FILE_TYPE_IMAGE
-               || list->list[menu_st->selection_ptr].type == FILE_TYPE_IMAGEVIEWER))
+               || list->list[menu_st->selection_ptr].type == FILE_TYPE_IMAGEVIEWER
+               || menu_media_music_supported(list->list[menu_st->selection_ptr].path)))
       {
          bool fullscreen = (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL) != 0;
          /* OK views only viewer content; an image pick keeps its action */
          bool viewable   = list->list[menu_st->selection_ptr].type
-            == FILE_TYPE_IMAGEVIEWER;
+            == FILE_TYPE_IMAGEVIEWER
+            || menu_media_music_supported(list->list[menu_st->selection_ptr].path);
          if (action == MENU_ACTION_START || action == MENU_ACTION_SELECT
                || (action == MENU_ACTION_OK && !fullscreen && viewable)
                || (action == MENU_ACTION_CANCEL && fullscreen))

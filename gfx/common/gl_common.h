@@ -37,6 +37,15 @@ unsigned gl_menu_bloom_begin(gl_menu_bloom_t **bloom,
 void gl_menu_bloom_end(gl_menu_bloom_t *bloom, unsigned dims, bool defer);
 void gl_menu_bloom_composite(gl_menu_bloom_t *bloom, unsigned dims);
 void gl_menu_bloom_free(gl_menu_bloom_t **bloom);
+/* The menu's backdrop blur over the bound framebuffer, as
+ * gfx_display_ctx_driver_t's blur_rect; false where the context cannot
+ * blit (GLES 2) or the images cannot be made */
+#if !defined(HAVE_OPENGLES) || defined(HAVE_OPENGLES3)
+#define HAVE_GL_MENU_BLUR
+bool gl_menu_blur(gl_menu_bloom_t **bloom, unsigned video_dims,
+      int x, int y, unsigned dims, float alpha, float dim,
+      bool core, bool es);
+#endif
 #endif
 
 /* Upload memory mapped for good: GL 4.4 or ARB_buffer_storage on the
@@ -171,7 +180,10 @@ typedef struct
    unsigned vbo;
    unsigned vao;
    int loc[5];       /* uY, uC0, uC1, uSize, uCoef */
+   unsigned draw_prog, draw_vbo, draw_vao;
+   int draw_loc[8];
    uint8_t flags;    /* GL_PLANAR_* */
+   bool draw_failed; /* context-owner only; does not change upload capabilities */
 } gl_planar_t;
 
 #define GL_PLANAR_CORE   (1 << 0) /* R8/RG8, a VAO, GLSL 1.40 or 3.00 es */
@@ -191,6 +203,41 @@ unsigned gl_planar_load(gl_planar_t *p, const struct texture_image *ti,
  * is not one or the frame does not fit it */
 bool gl_planar_update(gl_planar_t *p, unsigned tex,
       const struct texture_image *ti);
+
+/* Convert into compatible caller-owned RGB storage without changing @tex's
+ * public identity or duplicating the uploaded planes. */
+bool gl_planar_update_target(gl_planar_t *p, unsigned tex, unsigned target,
+      const struct texture_image *ti);
+
+/* Context-owner snapshot: GL names and coefficients, never CPU pixels. */
+struct gl_planar_sample
+{
+   float size[4], coef[8];
+   unsigned planes[3];
+   bool rg;
+};
+bool gl_planar_sample_info(gl_planar_t *p, unsigned tex,
+      struct gl_planar_sample *sample);
+
+/* Viewer uploads keep the planes and defer RGB storage/conversion until an
+ * RGB-only consumer asks for resolve. The context owner makes every call. */
+unsigned gl_planar_load_deferred(gl_planar_t *p, const struct texture_image *ti,
+      bool linear, bool core);
+bool gl_planar_update_deferred(gl_planar_t *p, unsigned tex,
+      const struct texture_image *ti);
+/* A renderer reserves unreferenced RGB storage before converting a pending
+ * upload, then publishes that version. Plane updates never overwrite RGB
+ * held by history; ordinary draws keep reading the resident planes. */
+bool gl_planar_pending(gl_planar_t *p, unsigned tex,
+      unsigned *width, unsigned *height);
+unsigned gl_planar_prepare_rgb(gl_planar_t *p, unsigned tex);
+bool gl_planar_resolve_target(gl_planar_t *p, unsigned tex, unsigned target);
+/* Standalone resolve for an owner with exclusive access to the base RGB. */
+unsigned gl_planar_resolve(gl_planar_t *p, unsigned tex);
+/* A four-vertex strip, uniform tint, arbitrary MVP and source UVs. Returns
+ * false for non-planar sources so the existing draw can run. */
+bool gl_planar_render(gl_planar_t *p, unsigned tex, const float *vertex,
+      const float *uv, const float *colour, const float *mvp);
 
 /* Before @tex is deleted: its planes and framebuffer go. Any texture. */
 void gl_planar_forget(gl_planar_t *p, unsigned tex);

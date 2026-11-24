@@ -40,6 +40,7 @@
 #include "../msg_hash.h"
 #include "../verbosity.h"
 #include "../core_updater_list.h"
+#include "../ui/ui_companion_driver.h"
 #ifdef HAVE_CORE_SIGNATURES
 #include "../core_install_check.h"
 #include "../core_trust_runtime.h"
@@ -903,6 +904,10 @@ static void cb_task_core_updater_get_list(
          core_updater_list_reset(list_handle->parse_list);
       core_updater_list_swap(list_handle->core_list,
             list_handle->parse_list);
+      /* a companion showing the cached list is told it landed, an
+       * empty one being a fetch that failed */
+      if (list_handle->core_list == core_updater_list_get_cached())
+         ui_companion_driver_notify_core_updater_list();
    }
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
@@ -1162,9 +1167,9 @@ void cb_http_task_core_updater_download(
 
    /* The body was streamed to transf->path as it arrived, so
     * data->data is NULL by design and there is nothing to write here.
-    * task_push_http_download_file() removes the partial file unless
-    * the transfer finished cleanly, so a non-2xx means there is no
-    * file on disk to decompress. */
+    * task_push_http_download_file() replaces the file only when the
+    * transfer finished cleanly, so after a failure whatever is at the
+    * path is not this download and is not decompressed. */
    if (err && *err)
       goto finish;
 

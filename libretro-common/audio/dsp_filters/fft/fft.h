@@ -35,6 +35,12 @@ void fft_free(fft_t *fft);
 void fft_process_forward_complex(fft_t *fft,
       fft_complex_t *out, const fft_complex_t *in, unsigned step);
 
+/* Interleaved stereo ring, oldest frame at offset; combines windowing,
+ * channel packing and bit reversal directly in the transform output.
+ * Output must not alias either input array. */
+void fft_process_forward_stereo_window(fft_t *fft, fft_complex_t *out,
+      const float *stereo, const float *window, unsigned offset);
+
 void fft_process_forward(fft_t *fft,
       fft_complex_t *out, const float *in, unsigned step);
 

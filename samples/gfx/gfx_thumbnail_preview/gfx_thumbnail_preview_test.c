@@ -750,7 +750,7 @@ static void lane_group_seek(const char *path)
       check("group seek", "windowed owner opened", p != NULL);
       if (!p) continue;
       gfx_anim_preview_set_paused(p, true);
-      check("group seek", "seek request accepted", gfx_anim_preview_seek_request(p, 0, false));
+      check("group seek", "seek request accepted", gfx_anim_preview_seek_request(p, 0, false, false));
       for (tick = 0; tick < 512 && (result == 0 || result == VIDEO_PLAYER_SEEK_PROGRESS); tick++)
       {
          result = gfx_anim_preview_seek_step(p, 1200000, tick == 0, &position);
@@ -1264,6 +1264,87 @@ static void lane_mp4_packet_span(const char *path)
    gfx_anim_preview_close(p);
 }
 
+static void lane_audio_selection(const char *path)
+{
+   static float pcm[512];
+   gfx_anim_preview_t *session;
+   gfx_media_cpu_t *player;
+   cpu_media_capture_t capture;
+   gfx_media_playback_state_t before, after;
+   unsigned pass, tick, block, i, band;
+   bool admitted;
+   memset(&capture, 0, sizeof(capture));
+   hp.force_preview_audio = 1;
+   audio_mixer_init(48000);
+   env_set("FRONTEND_TIMELINE", "1");
+   session = gfx_anim_preview_open(path, -1);
+   check("audio selection", "two tracks discovered", session && session->audio_track_count == 2);
+   if (!session) goto done;
+   player = gfx_media_cpu_new(session, cpu_media_capture, &capture, VIDEO_PLAYER_INLINE);
+   check("audio selection", "CPU player admitted", player != NULL);
+   if (!player) { gfx_anim_preview_close(session); goto done; }
+   for (tick = 0; tick < 1000 && !session->playback_started; tick++)
+      gfx_media_cpu_poll(player, 1000000);
+   check("audio selection", "first picture started playback", session->playback_started && capture.frames);
+   for (pass = 0; pass < 2; pass++)
+   {
+      double real[2] = {0, 0}, imag[2] = {0, 0};
+      check("audio selection", "pause accepted", gfx_media_cpu_pause(player, true, 1000000));
+      check("audio selection", "position captured", gfx_media_cpu_state(player, 1000000, &before));
+      check("audio selection", "video index refused", !gfx_media_cpu_select_audio(player, 0, 48000, false, 1000000));
+      check("audio selection", "unavailable device format refused", !gfx_media_cpu_select_audio(player, 2, 0, false, 1000000));
+      admitted = gfx_media_cpu_select_audio(player, (int)pass + 1, 48000, false, 1000000);
+      check("audio selection", "track request admitted", admitted);
+      if (!admitted) break;
+      for (tick = 0; tick < 10000 && session->seeking; tick++)
+         gfx_media_cpu_poll(player, 1000000);
+      check("audio selection", "prepared selection committed", !session->seeking && !session->seek_failed && session->audio_voice);
+      check("audio selection", "state available after selection", gfx_media_cpu_state(player, 1000000, &after));
+      printf("selection position: before=%ld after=%ld\n", (long)before.position_us, (long)after.position_us);
+      check("audio selection", "pause and exact movie position preserved", after.paused
+            && after.position_us == before.position_us);
+      check("audio selection", "resume accepted", gfx_media_cpu_pause(player, false, 1000000));
+      for (block = 0; block < 18; block++)
+      {
+         memset(pcm, 0, sizeof(pcm));
+         gfx_anim_preview_audio_feed(session);
+         audio_mixer_mix(pcm, 256, 1.0f, false);
+         if (block < 2) continue;
+         for (i = 0; i < 256; i++)
+            for (band = 0; band < 2; band++)
+            {
+               double phase = 6.283185307179586 * (band ? 880 : 440)
+                  * ((block - 2) * 256 + i) / 48000;
+               real[band] += pcm[2 * i] * cos(phase);
+               imag[band] += pcm[2 * i] * sin(phase);
+            }
+      }
+      for (band = 0; band < 2; band++)
+      {
+         double amplitude = 2 * sqrt(real[band] * real[band] + imag[band] * imag[band]) / 4096;
+         printf("selected track %u tone %u amplitude %.6f\n", pass + 1, band ? 880 : 440, amplitude);
+         check("audio selection", "selected tone only", band == pass ? amplitude > .05 : amplitude < .025);
+      }
+   }
+   gfx_media_cpu_pause(player, true, 1000000);
+   check("audio selection", "ordinary seek still admitted", gfx_media_cpu_seek(player, 150000, 48000, false, 1000000));
+   check("audio selection", "track-only clock mode cleared for ordinary seek",
+         !((unsigned)retro_atomic_load_acquire_int(&session->seek_audio_format) & 0x80000000U));
+   for (tick = 0; tick < 10000 && session->seeking; tick++)
+      gfx_media_cpu_poll(player, 1000000);
+   check("audio selection", "ordinary seek state available", gfx_media_cpu_state(player, 1000000, &after));
+   printf("ordinary seek position: %ld\n", (long)after.position_us);
+   check("audio selection", "ordinary seek retains picture landing semantics",
+         !after.seeking && after.paused && after.position_us
+            == (session->type == IMAGE_TYPE_WEBM ? 200000 : 100000));
+   gfx_media_cpu_retire(player);
+   gfx_thumbnail_anim_worker_deinit();
+   gfx_media_cpu_reap();
+done:
+   env_set("FRONTEND_TIMELINE", NULL);
+   audio_mixer_done();
+}
+
 int main(int argc, char **argv)
 {
    int i;
@@ -1271,6 +1352,11 @@ int main(int argc, char **argv)
    {
       printf("usage: %s <video> [more...]\n", argv[0]);
       return 2;
+   }
+   if (getenv("AUDIO_SELECT"))
+   {
+      lane_audio_selection(argv[1]);
+      return fails ? 1 : 0;
    }
    if (getenv("MP4_PACKET_SPAN"))
    {

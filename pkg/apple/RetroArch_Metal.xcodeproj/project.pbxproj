@@ -264,67 +264,67 @@
 		05A8C5E720DB72F000FF7857 /* cocoa_gl_ctx.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = cocoa_gl_ctx.m; sourceTree = "<group>"; };
 		05A8C5F720DB72F000FF7857 /* metal.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = metal.m; sourceTree = "<group>"; };
 		05A8C5FF20DB72F000FF7857 /* vulkan.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = vulkan.c; sourceTree = "<group>"; };
-		05A8C60120DB72F000FF7857 /* pipeline_xmb_ribbon.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_xmb_ribbon.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C60220DB72F000FF7857 /* shaders_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = shaders_common.h; sourceTree = "<group>"; };
-		05A8C60320DB72F000FF7857 /* pipeline_bokeh.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_bokeh.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C60420DB72F000FF7857 /* core_pipeline_xmb_ribbon.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core_pipeline_xmb_ribbon.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C60520DB72F000FF7857 /* pipeline_snow.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_snow.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C60620DB72F000FF7857 /* pipeline_xmb_ribbon_simple.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_xmb_ribbon_simple.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C60720DB72F000FF7857 /* core_alpha_blend.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core_alpha_blend.glsl.vert.h; sourceTree = "<group>"; };
-		05A8C60820DB72F000FF7857 /* modern_alpha_blend.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_alpha_blend.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C60A20DB72F000FF7857 /* core_alpha_blend.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core_alpha_blend.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C60B20DB72F000FF7857 /* modern_alpha_blend.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_alpha_blend.glsl.vert.h; sourceTree = "<group>"; };
-		05A8C60F20DB72F000FF7857 /* modern_opaque.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_opaque.glsl.vert.h; sourceTree = "<group>"; };
-		05A8C61020DB72F000FF7857 /* modern_opaque.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_opaque.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C61320DB72F000FF7857 /* pipeline_snowflake.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_snowflake.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C61420DB72F000FF7857 /* modern_pipeline_xmb_ribbon.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_pipeline_xmb_ribbon.glsl.vert.h; sourceTree = "<group>"; };
-		05A8C61520DB72F000FF7857 /* core_opaque.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core_opaque.glsl.vert.h; sourceTree = "<group>"; };
-		05A8C61620DB72F000FF7857 /* legacy_pipeline_xmb_ribbon.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = legacy_pipeline_xmb_ribbon.glsl.vert.h; sourceTree = "<group>"; };
-		05A8C61720DB72F000FF7857 /* legacy_opaque.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = legacy_opaque.glsl.vert.h; sourceTree = "<group>"; };
-		05A8C61820DB72F000FF7857 /* modern_pipeline_xmb_ribbon_simple.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = modern_pipeline_xmb_ribbon_simple.glsl.vert.h; sourceTree = "<group>"; };
-		05A8C61A20DB72F000FF7857 /* legacy_pipeline_snow.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = legacy_pipeline_snow.glsl.vert.h; sourceTree = "<group>"; };
-		05A8C61B20DB72F000FF7857 /* legacy_pipeline_xmb_ribbon_simple.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = legacy_pipeline_xmb_ribbon_simple.glsl.vert.h; sourceTree = "<group>"; };
-		05A8C61C20DB72F000FF7857 /* legacy_opaque.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = legacy_opaque.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C61D20DB72F000FF7857 /* pipeline_snow_simple.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pipeline_snow_simple.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C61E20DB72F000FF7857 /* core_opaque.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core_opaque.glsl.frag.h; sourceTree = "<group>"; };
-		05A8C62320DB72F000FF7857 /* pipeline_snow_simple.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = pipeline_snow_simple.vert; sourceTree = "<group>"; };
-		05A8C62420DB72F000FF7857 /* opaque.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = opaque.vert; sourceTree = "<group>"; };
-		05A8C62520DB72F000FF7857 /* alpha_blend.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = alpha_blend.frag; sourceTree = "<group>"; };
-		05A8C62620DB72F000FF7857 /* pipeline_snow.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = pipeline_snow.frag; sourceTree = "<group>"; };
-		05A8C62720DB72F000FF7857 /* pipeline_ribbon.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = pipeline_ribbon.vert; sourceTree = "<group>"; };
-		05A8C62820DB72F000FF7857 /* opaque.vert.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = opaque.vert.inc; sourceTree = "<group>"; };
-		05A8C62920DB72F000FF7857 /* alpha_blend.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = alpha_blend.frag.inc; sourceTree = "<group>"; };
-		05A8C62A20DB72F000FF7857 /* pipeline_ribbon.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = pipeline_ribbon.frag.inc; sourceTree = "<group>"; };
-		05A8C62B20DB72F000FF7857 /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; };
-		05A8C62C20DB72F000FF7857 /* pipeline_bokeh.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = pipeline_bokeh.frag.inc; sourceTree = "<group>"; };
-		05A8C62D20DB72F000FF7857 /* font.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = font.frag.inc; sourceTree = "<group>"; };
-		05A8C62E20DB72F000FF7857 /* pipeline_snow.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = pipeline_snow.frag.inc; sourceTree = "<group>"; };
-		05A8C62F20DB72F000FF7857 /* pipeline_ribbon_simple.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = pipeline_ribbon_simple.vert; sourceTree = "<group>"; };
-		05A8C63020DB72F000FF7857 /* pipeline_snow_simple.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = pipeline_snow_simple.frag.inc; sourceTree = "<group>"; };
-		05A8C63120DB72F000FF7857 /* pipeline_ribbon_simple.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = pipeline_ribbon_simple.frag.inc; sourceTree = "<group>"; };
-		05A8C63220DB72F000FF7857 /* pipeline_ribbon_simple.vert.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = pipeline_ribbon_simple.vert.inc; sourceTree = "<group>"; };
-		05A8C63320DB72F000FF7857 /* pipeline_ribbon.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = pipeline_ribbon.frag; sourceTree = "<group>"; };
-		05A8C63420DB72F000FF7857 /* pipeline_snow_simple.vert.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = pipeline_snow_simple.vert.inc; sourceTree = "<group>"; };
-		05A8C63520DB72F000FF7857 /* font.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = font.frag; sourceTree = "<group>"; };
-		05A8C63620DB72F000FF7857 /* alpha_blend.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = alpha_blend.vert; sourceTree = "<group>"; };
-		05A8C63720DB72F000FF7857 /* pipeline_snow_simple.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = pipeline_snow_simple.frag; sourceTree = "<group>"; };
-		05A8C63820DB72F000FF7857 /* opaque.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = opaque.frag; sourceTree = "<group>"; };
-		05A8C63920DB72F000FF7857 /* pipeline_ribbon.vert.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = pipeline_ribbon.vert.inc; sourceTree = "<group>"; };
-		05A8C63A20DB72F000FF7857 /* alpha_blend.vert.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = alpha_blend.vert.inc; sourceTree = "<group>"; };
-		05A8C63B20DB72F000FF7857 /* opaque.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = opaque.frag.inc; sourceTree = "<group>"; };
-		05A8C63C20DB72F000FF7857 /* pipeline_bokeh.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = pipeline_bokeh.frag; sourceTree = "<group>"; };
-		05A8C63D20DB72F000FF7857 /* pipeline_ribbon_simple.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = pipeline_ribbon_simple.frag; sourceTree = "<group>"; };
+		05A8C60120DB72F000FF7857 /* pipeline_xmb_ribbon.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/effects/ribbon.glsl.frag.h"; sourceTree = SOURCE_ROOT; };
+		05A8C60220DB72F000FF7857 /* shaders_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/common/gl_shader_source.h"; sourceTree = SOURCE_ROOT; };
+		05A8C60320DB72F000FF7857 /* pipeline_bokeh.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/effects/bokeh.glsl.frag.h"; sourceTree = SOURCE_ROOT; };
+		05A8C60420DB72F000FF7857 /* core_pipeline_xmb_ribbon.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl3_glsl_shaders/effects/ribbon.glsl.frag.h"; sourceTree = SOURCE_ROOT; };
+		05A8C60520DB72F000FF7857 /* pipeline_snow.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/effects/snow.glsl.frag.h"; sourceTree = SOURCE_ROOT; };
+		05A8C60620DB72F000FF7857 /* pipeline_xmb_ribbon_simple.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/effects/ribbon_simple.glsl.frag.h"; sourceTree = SOURCE_ROOT; };
+		05A8C60720DB72F000FF7857 /* core_alpha_blend.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl3_glsl_shaders/alpha_blend.glsl.vert.h"; sourceTree = SOURCE_ROOT; };
+		05A8C60820DB72F000FF7857 /* modern_alpha_blend.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/alpha_blend.glsl.frag.h"; sourceTree = SOURCE_ROOT; };
+		05A8C60A20DB72F000FF7857 /* core_alpha_blend.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl3_glsl_shaders/alpha_blend.glsl.frag.h"; sourceTree = SOURCE_ROOT; };
+		05A8C60B20DB72F000FF7857 /* modern_alpha_blend.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/alpha_blend.glsl.vert.h"; sourceTree = SOURCE_ROOT; };
+		05A8C60F20DB72F000FF7857 /* modern_opaque.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/opaque.glsl.vert.h"; sourceTree = SOURCE_ROOT; };
+		05A8C61020DB72F000FF7857 /* modern_opaque.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/opaque.glsl.frag.h"; sourceTree = SOURCE_ROOT; };
+		05A8C61320DB72F000FF7857 /* pipeline_snowflake.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/effects/snowflake.glsl.frag.h"; sourceTree = SOURCE_ROOT; };
+		05A8C61420DB72F000FF7857 /* modern_pipeline_xmb_ribbon.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl3_glsl_shaders/effects/ribbon.glsl.vert.h"; sourceTree = SOURCE_ROOT; };
+		05A8C61520DB72F000FF7857 /* core_opaque.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl3_glsl_shaders/opaque.glsl.vert.h"; sourceTree = SOURCE_ROOT; };
+		05A8C61620DB72F000FF7857 /* legacy_pipeline_xmb_ribbon.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/effects/ribbon.glsl.vert.h"; sourceTree = SOURCE_ROOT; };
+		05A8C61720DB72F000FF7857 /* legacy_opaque.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/opaque_fixed_function.glsl.vert.h"; sourceTree = SOURCE_ROOT; };
+		05A8C61820DB72F000FF7857 /* modern_pipeline_xmb_ribbon_simple.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl3_glsl_shaders/effects/ribbon_simple.glsl.vert.h"; sourceTree = SOURCE_ROOT; };
+		05A8C61A20DB72F000FF7857 /* legacy_pipeline_snow.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/effects/snow.glsl.vert.h"; sourceTree = SOURCE_ROOT; };
+		05A8C61B20DB72F000FF7857 /* legacy_pipeline_xmb_ribbon_simple.glsl.vert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/effects/ribbon_simple.glsl.vert.h"; sourceTree = SOURCE_ROOT; };
+		05A8C61C20DB72F000FF7857 /* legacy_opaque.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/opaque_fixed_function.glsl.frag.h"; sourceTree = SOURCE_ROOT; };
+		05A8C61D20DB72F000FF7857 /* pipeline_snow_simple.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl2_glsl_shaders/effects/snow_simple.glsl.frag.h"; sourceTree = SOURCE_ROOT; };
+		05A8C61E20DB72F000FF7857 /* core_opaque.glsl.frag.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/gl3_glsl_shaders/opaque.glsl.frag.h"; sourceTree = SOURCE_ROOT; };
+		05A8C62320DB72F000FF7857 /* pipeline_snow_simple.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_snow_simple.vert"; sourceTree = SOURCE_ROOT; };
+		05A8C62420DB72F000FF7857 /* opaque.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = "../../../gfx/drivers/vulkan_shaders/opaque.vert"; sourceTree = SOURCE_ROOT; };
+		05A8C62520DB72F000FF7857 /* alpha_blend.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = "../../../gfx/drivers/vulkan_shaders/alpha_blend.frag"; sourceTree = SOURCE_ROOT; };
+		05A8C62620DB72F000FF7857 /* pipeline_snow.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_snow.frag"; sourceTree = SOURCE_ROOT; };
+		05A8C62720DB72F000FF7857 /* pipeline_ribbon.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_ribbon.vert"; sourceTree = SOURCE_ROOT; };
+		05A8C62820DB72F000FF7857 /* opaque.vert.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = "../../../gfx/drivers/vulkan_shaders/opaque.vert.inc"; sourceTree = SOURCE_ROOT; };
+		05A8C62920DB72F000FF7857 /* alpha_blend.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = "../../../gfx/drivers/vulkan_shaders/alpha_blend.frag.inc"; sourceTree = SOURCE_ROOT; };
+		05A8C62A20DB72F000FF7857 /* pipeline_ribbon.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_ribbon.frag.inc"; sourceTree = SOURCE_ROOT; };
+		05A8C62B20DB72F000FF7857 /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = "../../../gfx/drivers/vulkan_shaders/Makefile"; sourceTree = SOURCE_ROOT; };
+		05A8C62C20DB72F000FF7857 /* pipeline_bokeh.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_bokeh.frag.inc"; sourceTree = SOURCE_ROOT; };
+		05A8C62D20DB72F000FF7857 /* font.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = "../../../gfx/drivers/vulkan_shaders/font.frag.inc"; sourceTree = SOURCE_ROOT; };
+		05A8C62E20DB72F000FF7857 /* pipeline_snow.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_snow.frag.inc"; sourceTree = SOURCE_ROOT; };
+		05A8C62F20DB72F000FF7857 /* pipeline_ribbon_simple.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_ribbon_simple.vert"; sourceTree = SOURCE_ROOT; };
+		05A8C63020DB72F000FF7857 /* pipeline_snow_simple.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_snow_simple.frag.inc"; sourceTree = SOURCE_ROOT; };
+		05A8C63120DB72F000FF7857 /* pipeline_ribbon_simple.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_ribbon_simple.frag.inc"; sourceTree = SOURCE_ROOT; };
+		05A8C63220DB72F000FF7857 /* pipeline_ribbon_simple.vert.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_ribbon_simple.vert.inc"; sourceTree = SOURCE_ROOT; };
+		05A8C63320DB72F000FF7857 /* pipeline_ribbon.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_ribbon.frag"; sourceTree = SOURCE_ROOT; };
+		05A8C63420DB72F000FF7857 /* pipeline_snow_simple.vert.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_snow_simple.vert.inc"; sourceTree = SOURCE_ROOT; };
+		05A8C63520DB72F000FF7857 /* font.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = "../../../gfx/drivers/vulkan_shaders/font.frag"; sourceTree = SOURCE_ROOT; };
+		05A8C63620DB72F000FF7857 /* alpha_blend.vert */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = "../../../gfx/drivers/vulkan_shaders/alpha_blend.vert"; sourceTree = SOURCE_ROOT; };
+		05A8C63720DB72F000FF7857 /* pipeline_snow_simple.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_snow_simple.frag"; sourceTree = SOURCE_ROOT; };
+		05A8C63820DB72F000FF7857 /* opaque.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = "../../../gfx/drivers/vulkan_shaders/opaque.frag"; sourceTree = SOURCE_ROOT; };
+		05A8C63920DB72F000FF7857 /* pipeline_ribbon.vert.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_ribbon.vert.inc"; sourceTree = SOURCE_ROOT; };
+		05A8C63A20DB72F000FF7857 /* alpha_blend.vert.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = "../../../gfx/drivers/vulkan_shaders/alpha_blend.vert.inc"; sourceTree = SOURCE_ROOT; };
+		05A8C63B20DB72F000FF7857 /* opaque.frag.inc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.pascal; path = "../../../gfx/drivers/vulkan_shaders/opaque.frag.inc"; sourceTree = SOURCE_ROOT; };
+		05A8C63C20DB72F000FF7857 /* pipeline_bokeh.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_bokeh.frag"; sourceTree = SOURCE_ROOT; };
+		05A8C63D20DB72F000FF7857 /* pipeline_ribbon_simple.frag */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.glsl; path = "../../../gfx/drivers/vulkan_shaders/effects/pipeline_ribbon_simple.frag"; sourceTree = SOURCE_ROOT; };
 		05A8C63E20DB72F000FF7857 /* d3d10.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = d3d10.c; sourceTree = "<group>"; };
-		05A8C64220DB72F000FF7857 /* shaders_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = shaders_common.h; sourceTree = "<group>"; };
-		05A8C64420DB72F000FF7857 /* sprite_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sprite_sm4.hlsl.h; sourceTree = "<group>"; };
-		05A8C64520DB72F000FF7857 /* snow_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = snow_sm4.hlsl.h; sourceTree = "<group>"; };
-		05A8C64620DB72F000FF7857 /* ribbon_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ribbon_sm4.hlsl.h; sourceTree = "<group>"; };
-		05A8C64720DB72F000FF7857 /* bokeh_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bokeh_sm4.hlsl.h; sourceTree = "<group>"; };
-		05A8C64820DB72F000FF7857 /* opaque_sm5.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = opaque_sm5.hlsl.h; sourceTree = "<group>"; };
-		05A8C64A20DB72F000FF7857 /* simple_snow_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = simple_snow_sm4.hlsl.h; sourceTree = "<group>"; };
-		05A8C64B20DB72F000FF7857 /* ribbon_simple_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ribbon_simple_sm4.hlsl.h; sourceTree = "<group>"; };
-		05A8C64C20DB72F000FF7857 /* snowflake_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = snowflake_sm4.hlsl.h; sourceTree = "<group>"; };
-		05A8C64D20DB72F000FF7857 /* mipmapgen_sm5.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mipmapgen_sm5.h; sourceTree = "<group>"; };
+		05A8C64220DB72F000FF7857 /* shaders_common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/d3d_sm3_shaders/effects/shaders_common.h"; sourceTree = SOURCE_ROOT; };
+		05A8C64420DB72F000FF7857 /* sprite_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/d3d_sm4_shaders/sprite_sm4.hlsl.h"; sourceTree = SOURCE_ROOT; };
+		05A8C64520DB72F000FF7857 /* snow_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/d3d_sm4_shaders/effects/snow_sm4.hlsl.h"; sourceTree = SOURCE_ROOT; };
+		05A8C64620DB72F000FF7857 /* ribbon_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/d3d_sm4_shaders/effects/ribbon_sm4.hlsl.h"; sourceTree = SOURCE_ROOT; };
+		05A8C64720DB72F000FF7857 /* bokeh_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/d3d_sm4_shaders/effects/bokeh_sm4.hlsl.h"; sourceTree = SOURCE_ROOT; };
+		05A8C64820DB72F000FF7857 /* opaque_sm5.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/d3d_sm5_shaders/opaque_sm5.hlsl.h"; sourceTree = SOURCE_ROOT; };
+		05A8C64A20DB72F000FF7857 /* simple_snow_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/d3d_sm4_shaders/effects/simple_snow_sm4.hlsl.h"; sourceTree = SOURCE_ROOT; };
+		05A8C64B20DB72F000FF7857 /* ribbon_simple_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/d3d_sm4_shaders/effects/ribbon_simple_sm4.hlsl.h"; sourceTree = SOURCE_ROOT; };
+		05A8C64C20DB72F000FF7857 /* snowflake_sm4.hlsl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/d3d_sm4_shaders/effects/snowflake_sm4.hlsl.h"; sourceTree = SOURCE_ROOT; };
+		05A8C64D20DB72F000FF7857 /* mipmapgen_sm5.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../../../gfx/drivers/d3d_sm5_shaders/mipmapgen_sm5.h"; sourceTree = SOURCE_ROOT; };
 		05A8C67520DB72F000FF7857 /* video_thread_wrapper.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_thread_wrapper.c; sourceTree = "<group>"; };
 		05A8C67620DB72F000FF7857 /* video_driver.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_driver.c; sourceTree = "<group>"; };
 		05A8C67720DB72F000FF7857 /* video_crt_switch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = video_crt_switch.c; sourceTree = "<group>"; };
@@ -873,10 +873,18 @@
 		05A8C5EC20DB72F000FF7857 /* drivers */ = {
 			isa = PBXGroup;
 			children = (
-				05A8C64120DB72F000FF7857 /* d3d_shaders */,
-				05A8C60020DB72F000FF7857 /* gl_shaders */,
+				DFA1C105635D3D2E7B70C5B7 /* d3d_sm3_shaders/effects */,
+				2635A8B5EA8B698B72F8C471 /* d3d_sm4_shaders */,
+				3C0A31A1C5FCEA234B3DC094 /* d3d_sm4_shaders/effects */,
+				DFA9C56205870805DB29E418 /* d3d_sm5_shaders */,
+				9E19FFB253514DC705303FD6 /* gfx/common */,
+				0FD20A117FAF11A88421DB8C /* gl2_glsl_shaders */,
+				2EE21EDFA4655E36EA564F50 /* gl2_glsl_shaders/effects */,
+				85EA02C31A1C1AA7BAFD0F75 /* gl3_glsl_shaders */,
+				BEC27285CE69EBECCB910EF2 /* gl3_glsl_shaders/effects */,
 				05A8C74520DB72F100FF7857 /* metal_shaders */,
-				05A8C62220DB72F000FF7857 /* vulkan_shaders */,
+				11A743203021FDFD0C218DD5 /* vulkan_shaders */,
+				D0A13F0849968CB7C50C80CC /* vulkan_shaders/effects */,
 				05A8C63E20DB72F000FF7857 /* d3d10.c */,
 				05A8C75120DB72F100FF7857 /* metal.h */,
 				05A8C5F720DB72F000FF7857 /* metal.m */,
@@ -885,87 +893,9 @@
 			path = drivers;
 			sourceTree = "<group>";
 		};
-		05A8C60020DB72F000FF7857 /* gl_shaders */ = {
-			isa = PBXGroup;
-			children = (
-				05A8C60120DB72F000FF7857 /* pipeline_xmb_ribbon.glsl.frag.h */,
-				05A8C60220DB72F000FF7857 /* shaders_common.h */,
-				05A8C60320DB72F000FF7857 /* pipeline_bokeh.glsl.frag.h */,
-				05A8C60420DB72F000FF7857 /* core_pipeline_xmb_ribbon.glsl.frag.h */,
-				05A8C60520DB72F000FF7857 /* pipeline_snow.glsl.frag.h */,
-				05A8C60620DB72F000FF7857 /* pipeline_xmb_ribbon_simple.glsl.frag.h */,
-				05A8C60720DB72F000FF7857 /* core_alpha_blend.glsl.vert.h */,
-				05A8C60820DB72F000FF7857 /* modern_alpha_blend.glsl.frag.h */,
-				05A8C60A20DB72F000FF7857 /* core_alpha_blend.glsl.frag.h */,
-				05A8C60B20DB72F000FF7857 /* modern_alpha_blend.glsl.vert.h */,
-				05A8C60F20DB72F000FF7857 /* modern_opaque.glsl.vert.h */,
-				05A8C61020DB72F000FF7857 /* modern_opaque.glsl.frag.h */,
-				05A8C61320DB72F000FF7857 /* pipeline_snowflake.glsl.frag.h */,
-				05A8C61420DB72F000FF7857 /* modern_pipeline_xmb_ribbon.glsl.vert.h */,
-				05A8C61520DB72F000FF7857 /* core_opaque.glsl.vert.h */,
-				05A8C61620DB72F000FF7857 /* legacy_pipeline_xmb_ribbon.glsl.vert.h */,
-				05A8C61720DB72F000FF7857 /* legacy_opaque.glsl.vert.h */,
-				05A8C61820DB72F000FF7857 /* modern_pipeline_xmb_ribbon_simple.glsl.vert.h */,
-				05A8C61A20DB72F000FF7857 /* legacy_pipeline_snow.glsl.vert.h */,
-				05A8C61B20DB72F000FF7857 /* legacy_pipeline_xmb_ribbon_simple.glsl.vert.h */,
-				05A8C61C20DB72F000FF7857 /* legacy_opaque.glsl.frag.h */,
-				05A8C61D20DB72F000FF7857 /* pipeline_snow_simple.glsl.frag.h */,
-				05A8C61E20DB72F000FF7857 /* core_opaque.glsl.frag.h */,
-			);
-			path = gl_shaders;
-			sourceTree = "<group>";
-		};
-		05A8C62220DB72F000FF7857 /* vulkan_shaders */ = {
-			isa = PBXGroup;
-			children = (
-				05A8C62B20DB72F000FF7857 /* Makefile */,
-				05A8C62520DB72F000FF7857 /* alpha_blend.frag */,
-				05A8C63520DB72F000FF7857 /* font.frag */,
-				05A8C63820DB72F000FF7857 /* opaque.frag */,
-				05A8C63C20DB72F000FF7857 /* pipeline_bokeh.frag */,
-				05A8C63D20DB72F000FF7857 /* pipeline_ribbon_simple.frag */,
-				05A8C63320DB72F000FF7857 /* pipeline_ribbon.frag */,
-				05A8C63720DB72F000FF7857 /* pipeline_snow_simple.frag */,
-				05A8C62620DB72F000FF7857 /* pipeline_snow.frag */,
-				05A8C62920DB72F000FF7857 /* alpha_blend.frag.inc */,
-				05A8C63A20DB72F000FF7857 /* alpha_blend.vert.inc */,
-				05A8C62D20DB72F000FF7857 /* font.frag.inc */,
-				05A8C63B20DB72F000FF7857 /* opaque.frag.inc */,
-				05A8C62820DB72F000FF7857 /* opaque.vert.inc */,
-				05A8C62C20DB72F000FF7857 /* pipeline_bokeh.frag.inc */,
-				05A8C63120DB72F000FF7857 /* pipeline_ribbon_simple.frag.inc */,
-				05A8C63220DB72F000FF7857 /* pipeline_ribbon_simple.vert.inc */,
-				05A8C62A20DB72F000FF7857 /* pipeline_ribbon.frag.inc */,
-				05A8C63920DB72F000FF7857 /* pipeline_ribbon.vert.inc */,
-				05A8C63020DB72F000FF7857 /* pipeline_snow_simple.frag.inc */,
-				05A8C63420DB72F000FF7857 /* pipeline_snow_simple.vert.inc */,
-				05A8C62E20DB72F000FF7857 /* pipeline_snow.frag.inc */,
-				05A8C63620DB72F000FF7857 /* alpha_blend.vert */,
-				05A8C62420DB72F000FF7857 /* opaque.vert */,
-				05A8C62F20DB72F000FF7857 /* pipeline_ribbon_simple.vert */,
-				05A8C62720DB72F000FF7857 /* pipeline_ribbon.vert */,
-				05A8C62320DB72F000FF7857 /* pipeline_snow_simple.vert */,
-			);
-			path = vulkan_shaders;
-			sourceTree = "<group>";
-		};
-		05A8C64120DB72F000FF7857 /* d3d_shaders */ = {
-			isa = PBXGroup;
-			children = (
-				05A8C64220DB72F000FF7857 /* shaders_common.h */,
-				05A8C64420DB72F000FF7857 /* sprite_sm4.hlsl.h */,
-				05A8C64520DB72F000FF7857 /* snow_sm4.hlsl.h */,
-				05A8C64620DB72F000FF7857 /* ribbon_sm4.hlsl.h */,
-				05A8C64720DB72F000FF7857 /* bokeh_sm4.hlsl.h */,
-				05A8C64820DB72F000FF7857 /* opaque_sm5.hlsl.h */,
-				05A8C64A20DB72F000FF7857 /* simple_snow_sm4.hlsl.h */,
-				05A8C64B20DB72F000FF7857 /* ribbon_simple_sm4.hlsl.h */,
-				05A8C64C20DB72F000FF7857 /* snowflake_sm4.hlsl.h */,
-				05A8C64D20DB72F000FF7857 /* mipmapgen_sm5.h */,
-			);
-			path = d3d_shaders;
-			sourceTree = "<group>";
-		};
+
+
+
 		05A8C73A20DB72F100FF7857 /* common */ = {
 			isa = PBXGroup;
 			children = (
@@ -1300,6 +1230,143 @@
 				9254B33025FA0BA300A1E0DA /* assets.zip */,
 			);
 			name = Assets;
+			sourceTree = "<group>";
+		};
+		9E19FFB253514DC705303FD6 /* gfx/common */ = {
+			isa = PBXGroup;
+			children = (
+				05A8C60220DB72F000FF7857 /* gl_shader_source.h */,
+			);
+			name = "gfx/common";
+			sourceTree = "<group>";
+		};
+		0FD20A117FAF11A88421DB8C /* gl2_glsl_shaders */ = {
+			isa = PBXGroup;
+			children = (
+				05A8C60820DB72F000FF7857 /* alpha_blend.glsl.frag.h */,
+				05A8C60B20DB72F000FF7857 /* alpha_blend.glsl.vert.h */,
+				05A8C60F20DB72F000FF7857 /* opaque.glsl.vert.h */,
+				05A8C61020DB72F000FF7857 /* opaque.glsl.frag.h */,
+				05A8C61720DB72F000FF7857 /* opaque_fixed_function.glsl.vert.h */,
+				05A8C61C20DB72F000FF7857 /* opaque_fixed_function.glsl.frag.h */,
+			);
+			name = "gl2_glsl_shaders";
+			sourceTree = "<group>";
+		};
+		2EE21EDFA4655E36EA564F50 /* gl2_glsl_shaders/effects */ = {
+			isa = PBXGroup;
+			children = (
+				05A8C60120DB72F000FF7857 /* ribbon.glsl.frag.h */,
+				05A8C60320DB72F000FF7857 /* bokeh.glsl.frag.h */,
+				05A8C60520DB72F000FF7857 /* snow.glsl.frag.h */,
+				05A8C60620DB72F000FF7857 /* ribbon_simple.glsl.frag.h */,
+				05A8C61320DB72F000FF7857 /* snowflake.glsl.frag.h */,
+				05A8C61620DB72F000FF7857 /* ribbon.glsl.vert.h */,
+				05A8C61A20DB72F000FF7857 /* snow.glsl.vert.h */,
+				05A8C61B20DB72F000FF7857 /* ribbon_simple.glsl.vert.h */,
+				05A8C61D20DB72F000FF7857 /* snow_simple.glsl.frag.h */,
+			);
+			name = "gl2_glsl_shaders/effects";
+			sourceTree = "<group>";
+		};
+		85EA02C31A1C1AA7BAFD0F75 /* gl3_glsl_shaders */ = {
+			isa = PBXGroup;
+			children = (
+				05A8C60720DB72F000FF7857 /* alpha_blend.glsl.vert.h */,
+				05A8C60A20DB72F000FF7857 /* alpha_blend.glsl.frag.h */,
+				05A8C61520DB72F000FF7857 /* opaque.glsl.vert.h */,
+				05A8C61E20DB72F000FF7857 /* opaque.glsl.frag.h */,
+			);
+			name = "gl3_glsl_shaders";
+			sourceTree = "<group>";
+		};
+		BEC27285CE69EBECCB910EF2 /* gl3_glsl_shaders/effects */ = {
+			isa = PBXGroup;
+			children = (
+				05A8C60420DB72F000FF7857 /* ribbon.glsl.frag.h */,
+				05A8C61420DB72F000FF7857 /* ribbon.glsl.vert.h */,
+				05A8C61820DB72F000FF7857 /* ribbon_simple.glsl.vert.h */,
+			);
+			name = "gl3_glsl_shaders/effects";
+			sourceTree = "<group>";
+		};
+		DFA1C105635D3D2E7B70C5B7 /* d3d_sm3_shaders/effects */ = {
+			isa = PBXGroup;
+			children = (
+				05A8C64220DB72F000FF7857 /* shaders_common.h */,
+			);
+			name = "d3d_sm3_shaders/effects";
+			sourceTree = "<group>";
+		};
+		2635A8B5EA8B698B72F8C471 /* d3d_sm4_shaders */ = {
+			isa = PBXGroup;
+			children = (
+				05A8C64420DB72F000FF7857 /* sprite_sm4.hlsl.h */,
+			);
+			name = "d3d_sm4_shaders";
+			sourceTree = "<group>";
+		};
+		3C0A31A1C5FCEA234B3DC094 /* d3d_sm4_shaders/effects */ = {
+			isa = PBXGroup;
+			children = (
+				05A8C64520DB72F000FF7857 /* snow_sm4.hlsl.h */,
+				05A8C64620DB72F000FF7857 /* ribbon_sm4.hlsl.h */,
+				05A8C64720DB72F000FF7857 /* bokeh_sm4.hlsl.h */,
+				05A8C64A20DB72F000FF7857 /* simple_snow_sm4.hlsl.h */,
+				05A8C64B20DB72F000FF7857 /* ribbon_simple_sm4.hlsl.h */,
+				05A8C64C20DB72F000FF7857 /* snowflake_sm4.hlsl.h */,
+			);
+			name = "d3d_sm4_shaders/effects";
+			sourceTree = "<group>";
+		};
+		DFA9C56205870805DB29E418 /* d3d_sm5_shaders */ = {
+			isa = PBXGroup;
+			children = (
+				05A8C64820DB72F000FF7857 /* opaque_sm5.hlsl.h */,
+				05A8C64D20DB72F000FF7857 /* mipmapgen_sm5.h */,
+			);
+			name = "d3d_sm5_shaders";
+			sourceTree = "<group>";
+		};
+		11A743203021FDFD0C218DD5 /* vulkan_shaders */ = {
+			isa = PBXGroup;
+			children = (
+				05A8C62B20DB72F000FF7857 /* Makefile */,
+				05A8C62520DB72F000FF7857 /* alpha_blend.frag */,
+				05A8C63520DB72F000FF7857 /* font.frag */,
+				05A8C63820DB72F000FF7857 /* opaque.frag */,
+				05A8C62920DB72F000FF7857 /* alpha_blend.frag.inc */,
+				05A8C63A20DB72F000FF7857 /* alpha_blend.vert.inc */,
+				05A8C62D20DB72F000FF7857 /* font.frag.inc */,
+				05A8C63B20DB72F000FF7857 /* opaque.frag.inc */,
+				05A8C62820DB72F000FF7857 /* opaque.vert.inc */,
+				05A8C63620DB72F000FF7857 /* alpha_blend.vert */,
+				05A8C62420DB72F000FF7857 /* opaque.vert */,
+			);
+			name = "vulkan_shaders";
+			sourceTree = "<group>";
+		};
+		D0A13F0849968CB7C50C80CC /* vulkan_shaders/effects */ = {
+			isa = PBXGroup;
+			children = (
+				05A8C63C20DB72F000FF7857 /* pipeline_bokeh.frag */,
+				05A8C63D20DB72F000FF7857 /* pipeline_ribbon_simple.frag */,
+				05A8C63320DB72F000FF7857 /* pipeline_ribbon.frag */,
+				05A8C63720DB72F000FF7857 /* pipeline_snow_simple.frag */,
+				05A8C62620DB72F000FF7857 /* pipeline_snow.frag */,
+				05A8C62C20DB72F000FF7857 /* pipeline_bokeh.frag.inc */,
+				05A8C63120DB72F000FF7857 /* pipeline_ribbon_simple.frag.inc */,
+				05A8C63220DB72F000FF7857 /* pipeline_ribbon_simple.vert.inc */,
+				05A8C62A20DB72F000FF7857 /* pipeline_ribbon.frag.inc */,
+				05A8C63920DB72F000FF7857 /* pipeline_ribbon.vert.inc */,
+				05A8C63020DB72F000FF7857 /* pipeline_snow_simple.frag.inc */,
+				05A8C63420DB72F000FF7857 /* pipeline_snow_simple.vert.inc */,
+				05A8C62E20DB72F000FF7857 /* pipeline_snow.frag.inc */,
+				05A8C62F20DB72F000FF7857 /* pipeline_ribbon_simple.vert */,
+				05A8C62720DB72F000FF7857 /* pipeline_ribbon.vert */,
+				05A8C62320DB72F000FF7857 /* pipeline_snow_simple.vert */,
+			);
+			name = "vulkan_shaders/effects";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

@@ -22,7 +22,10 @@
 
 /* An animation's frames are linear scRGB half floats where the source
  * is HDR and the driver offers such a texture (only while the output
- * is HDR); 8888 everywhere else. */
+ * is HDR); the decoded planes, packed I420, where the source is 8-bit
+ * 4:2:0 SDR and the driver converts planes itself, so neither the
+ * decode nor the upload pays for RGB; 8888 everywhere else - a driver
+ * without the planar path keeps the decoder's SIMD conversion. */
 static int gfx_surface_player_start(void *user, unsigned width,
       unsigned height, unsigned num_slots)
 {
@@ -37,14 +40,26 @@ static int gfx_surface_player_start(void *user, unsigned width,
    if (     have_req && (req.formats & IMAGE_PIXFMT_FP16)
          && image_transfer_anim_stream_is_hdr(gsp->stream, gsp->type))
       pixfmt = IMAGE_PIXFMT_FP16;
+   else if (have_req && (req.formats & IMAGE_PIXFMT_I420)
+         && image_transfer_anim_stream_can_planar(gsp->stream, gsp->type))
+      pixfmt = IMAGE_PIXFMT_I420;
    if (!(s = gsp->cb.surface(gsp->cb.user,
          VIDEO_SCALE_PACK(width, height), num_slots, pixfmt)))
       return -1;
    s->padded     = 1;
    gsp->rgba     = have_req && req.rgba;
    gsp->threaded = num_slots > 1;
-   return (gsp->rgba ? VIDEO_PLAYER_RGBA : 0)
-        | (s->pixfmt == IMAGE_PIXFMT_FP16 ? VIDEO_PLAYER_FP16 : 0);
+   return (gsp->hold_canvas && num_slots == 1 ? VIDEO_PLAYER_HOLD_CANVAS : 0)
+        | (gsp->hold_canvas && num_slots > 1 && !s->lent ? VIDEO_PLAYER_BORROW_PIXELS : 0)
+        | (gsp->rgba ? VIDEO_PLAYER_RGBA : 0)
+        | (s->pixfmt == IMAGE_PIXFMT_FP16 ? VIDEO_PLAYER_FP16 : 0)
+        | (s->pixfmt == IMAGE_PIXFMT_I420 ? VIDEO_PLAYER_I420 : 0)
+        | (s->pixfmt == IMAGE_PIXFMT_I420
+              && (gsp->hold_canvas || (num_slots == 1
+                    && !video_driver_thread_wrapper_active()))
+              ? VIDEO_PLAYER_BORROW_PLANES
+                 | (have_req && req.planar_strided ? VIDEO_PLAYER_BORROW_STRIDED : 0)
+              : 0);
 }
 
 /* On the worker a slot is taken until its job settles, so the memory
@@ -182,9 +197,30 @@ static enum video_player_present gfx_surface_player_present(void *user,
    }
    if (fr->hw)
       return gfx_surface_player_present_hw(gsp, s, fr);
-   res = fr->pixels
-      ? gfx_surface_submit_pixels(s, fr->pixels, gsp->rgba)
-      : gfx_surface_submit(s, fr->slot, gsp->rgba);
+   /* the frame's colour space, read by the submit that takes it; one
+    * still in flight answers BUSY and keeps its own */
+   if (GFX_SURFACE_IS_PLANAR(s) && !s->inflight)
+      gfx_surface_set_yuv(s, fr->yuv);
+   if (fr->planar)
+   {
+      gfx_surface_planes_t planes;
+      unsigned i;
+      for (i = 0; i < 3; i++)
+      {
+         planes.planes[i] = fr->planar->planes[i];
+         planes.strides[i] = fr->planar->strides[i];
+      }
+      planes.chroma_step = fr->planar->chroma_step;
+      res = gsp->hold_canvas
+         ? gfx_surface_submit_planes_held(s, fr->slot, &planes, gsp->rgba)
+         : gfx_surface_submit_planes(s, &planes, gsp->rgba);
+   }
+   else
+      res = fr->pixels
+         ? (gsp->hold_canvas
+               ? gfx_surface_submit_pixels_held(s, fr->slot, fr->pixels, gsp->rgba)
+               : gfx_surface_submit_pixels(s, fr->pixels, gsp->rgba))
+         : gfx_surface_submit(s, fr->slot, gsp->rgba);
    switch (res)
    {
       case GFX_SURFACE_SUBMIT_DONE:
@@ -254,7 +290,8 @@ gfx_surface_player_t *gfx_surface_player_new(void *stream,
       return NULL;
    /* Snapshot policy on the polling owner, before any decoder work. */
    sink.start_hw   = hardware ? gfx_surface_player_start_hw : NULL;
-   flags          &= ~GFX_SURFACE_PLAYER_GPU;
+   gsp->hold_canvas = (flags & GFX_SURFACE_PLAYER_HOLD_CANVAS) != 0;
+   flags          &= ~(GFX_SURFACE_PLAYER_GPU | GFX_SURFACE_PLAYER_HOLD_CANVAS);
    gsp->stream     = stream;
    gsp->type       = type;
    gsp->surface    = surface;
@@ -332,11 +369,30 @@ bool gfx_surface_player_release(gfx_surface_player_t *gsp,
    /* Only a two-slot surface is fed by the worker, whose frame sits in
     * its slot until shown; a frame decoded in line has a successor due
     * already. */
-   if (     s->dropped && s->num_slots > 1
-         && gfx_surface_submit(s, slot,
-               gsp ? gsp->rgba : gfx_surface_wants_rgba())
-            == GFX_SURFACE_SUBMIT_QUEUED)
-      return true;
+   if (s->dropped && s->num_slots > 1)
+   {
+      enum gfx_surface_submit_result r;
+      bool rgba = gsp ? gsp->rgba : gfx_surface_wants_rgba();
+      if (gsp && gsp->hold_canvas && s->img.planar)
+      {
+         gfx_surface_planes_t planes;
+         unsigned i;
+         for (i = 0; i < 3; i++)
+         {
+            planes.planes[i] = s->planar.planes[i];
+            planes.strides[i] = s->planar.strides[i];
+         }
+         planes.chroma_step = s->planar.chroma_step;
+         gfx_surface_set_yuv(s, s->planar.yuv);
+         r = gfx_surface_submit_planes_held(s, slot, &planes, rgba);
+      }
+      else if (gsp && gsp->hold_canvas && s->img.pixels
+            && s->img.pixels != s->slots[slot])
+         r = gfx_surface_submit_pixels_held(s, slot, s->img.pixels, rgba);
+      else
+         r = gfx_surface_submit(s, slot, rgba);
+      if (r == GFX_SURFACE_SUBMIT_QUEUED) return true;
+   }
    if (gsp)
       video_player_slot_released(gsp->vp, slot);
    return false;

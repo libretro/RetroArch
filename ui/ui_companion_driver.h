@@ -142,6 +142,11 @@ typedef struct ui_companion_driver
    void (*iterate)(void *data);
    void (*event_command)(void *data, enum event_command action);
    void (*notify_refresh)(void *data);
+   /* The stored thumbnail matches of @playlist_path changed. */
+   void (*notify_thumbnails)(void *data, const char *playlist_path);
+   /* The cached core updater list was published (fetched, or found
+    * empty on a failed fetch). Main thread. */
+   void (*notify_core_updater_list)(void *data);
    void (*msg_queue_push)(void *data, const char *msg, unsigned priority, unsigned duration, bool flush);
    void (*render_messagebox)(const char *msg);
    void *(*get_main_window)(void *data);
@@ -189,6 +194,10 @@ uint8_t ui_companion_get_flags(void);
 void ui_companion_event_command(enum event_command action);
 
 void ui_companion_driver_notify_refresh(void);
+
+void ui_companion_driver_notify_thumbnails(const char *playlist_path);
+
+void ui_companion_driver_notify_core_updater_list(void);
 
 const ui_msg_window_t *ui_companion_driver_get_msg_window_ptr(void);
 

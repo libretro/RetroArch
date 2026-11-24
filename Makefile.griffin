@@ -201,6 +201,8 @@ else ifeq ($(libogc_platform), 1)
    HAVE_OVERLAY             := 1
    HAVE_7ZIP                := 1
    HAVE_RZSTD               := 1
+   HAVE_CHD                 := 1
+   HAVE_RCHD                := 1
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
    HAVE_CHEATS              := 1
@@ -246,6 +248,8 @@ else ifeq ($(platform), xenon360)
    PLATCFLAGS               += -u read -u _start -u exc_base
    HAVE_THREADS             := 1
    HAVE_GETOPT_LONG         := 1
+   HAVE_CHD                 := 1
+   HAVE_RCHD                := 1
    RARCH_CONSOLE             = 1
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
@@ -1108,6 +1112,14 @@ ifeq ($(HAVE_RZSTD), 1)
    CFLAGS      += -DHAVE_RZSTD
 endif
 
+# Only the built-in reader: this Makefile has never wired up libchdr.
+# griffin.c switches on the codecs rchd calls.
+ifeq ($(HAVE_CHD), 1)
+ifeq ($(HAVE_RCHD), 1)
+   CFLAGS      += -DHAVE_CHD -DHAVE_RCHD
+endif
+endif
+
 ifeq ($(HAVE_SCREENSHOTS), 1)
 	CFLAGS      += -DHAVE_SCREENSHOTS
 endif
@@ -1417,3 +1429,15 @@ endif
 
 print-%:
 	@echo '$*=$($*)'
+
+ifeq ($(HAVE_PYROWAVE),1)
+include Makefile.pyrowave
+CFLAGS += -I$(PYROWAVE_GENERATED_DIR)
+griffin/griffin.o: $(PYROWAVE_GENERATED_HEADER)
+endif
+
+ifneq ($(filter 1,$(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
+include Makefile.d3d_shaders
+CFLAGS += -I$(D3D_SHADER_GENERATED_DIR)
+griffin/griffin.o: $(D3D_SHADER_GENERATED_HEADER)
+endif

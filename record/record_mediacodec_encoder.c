@@ -105,12 +105,14 @@ struct record_mediacodec_encoder
    record_mc_buffer_fn input_buffer;
    record_mc_queue_fn queue;
    record_mediacodec_packet_t packet;
+   AMediaCodecBufferInfo waited_info; /* what a wait dequeued, for the pump */
+   ssize_t waited_index;
    size_t index;
    unsigned rate, channels, width, height, color, range;
    int profile, base_profile;
    unsigned char hdr_static[25];
    bool started, failed, held, input_eos, output_eos;
-   bool audio, seen_input, closing, stop_attempted, stopped;
+   bool audio, seen_input, closing, stop_attempted, stopped, waited;
 };
 bool record_mediacodec_encoder_stop(record_mediacodec_encoder_t *s)
 {
@@ -121,6 +123,7 @@ bool record_mediacodec_encoder_stop(record_mediacodec_encoder_t *s)
    s->stop_attempted = true;
    s->failed = true;
    s->held = false;
+   s->waited = false;
    memset(&s->packet, 0, sizeof(s->packet));
    if (!s->started || s->stop(s->codec) != AMEDIA_OK)
       return false;
@@ -529,8 +532,17 @@ int record_mediacodec_encoder_pump(
    }
    if (s->output_eos)
       return RECORD_MC_END;
-   memset(&info, 0, sizeof(info));
-   index = s->output(s->codec, &info, 0);
+   if (s->waited)
+   {
+      info      = s->waited_info;
+      index     = s->waited_index;
+      s->waited = false;
+   }
+   else
+   {
+      memset(&info, 0, sizeof(info));
+      index = s->output(s->codec, &info, 0);
+   }
    if (index == AMEDIACODEC_INFO_TRY_AGAIN_LATER)
       return RECORD_MC_BUSY;
    if (index == AMEDIACODEC_INFO_OUTPUT_BUFFERS_CHANGED)
@@ -620,6 +632,17 @@ failed:
    s->failed = true;
    return RECORD_MC_ERROR;
 }
+bool record_mediacodec_encoder_wait(
+      record_mediacodec_encoder_t *s, int64_t timeout_us)
+{
+   if (!s || s->failed || !s->started || s->held || s->waited || s->output_eos)
+      return false;
+   memset(&s->waited_info, 0, sizeof(s->waited_info));
+   s->waited_index = s->output(s->codec, &s->waited_info, timeout_us);
+   /* Nothing came within the bound: the next pump asks again */
+   s->waited = s->waited_index != AMEDIACODEC_INFO_TRY_AGAIN_LATER;
+   return true;
+}
 #else
 record_mediacodec_encoder_t *record_mediacodec_encoder_audio_new(
       unsigned rate, unsigned channels, unsigned bitrate)
@@ -683,6 +706,13 @@ int record_mediacodec_encoder_pump(
    if (packet)
       memset(packet, 0, sizeof(*packet));
    return RECORD_MC_ERROR;
+}
+bool record_mediacodec_encoder_wait(
+      record_mediacodec_encoder_t *s, int64_t timeout_us)
+{
+   (void)s;
+   (void)timeout_us;
+   return false;
 }
 bool record_mediacodec_encoder_release(record_mediacodec_encoder_t *s)
 {

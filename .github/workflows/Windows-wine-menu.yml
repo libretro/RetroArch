@@ -19,7 +19,7 @@ on:
       - 'gfx/drivers/d3d*.c'
       - 'gfx/drivers/gl2.c'
       - 'gfx/drivers/gl3.c'
-      - 'gfx/drivers/d3d_shaders/**'
+      - 'gfx/drivers/d3d_sm*_shaders/**'
       - 'gfx/common/d3d*'
       - 'gfx/common/gl*'
       - 'gfx/gfx_display.*'
@@ -33,13 +33,14 @@ on:
       - 'samples/gfx/d3d12_menu_mapping/**'
       - 'samples/gfx/threaded_video/harness_core.c'
       - 'samples/gfx/d3d9_ex/**'
+      - '.github/workflows/scripts/wine-server.sh'
       - '.github/workflows/Windows-wine-menu.yml'
   pull_request:
     paths:
       - 'gfx/drivers/d3d*.c'
       - 'gfx/drivers/gl2.c'
       - 'gfx/drivers/gl3.c'
-      - 'gfx/drivers/d3d_shaders/**'
+      - 'gfx/drivers/d3d_sm*_shaders/**'
       - 'gfx/common/d3d*'
       - 'gfx/common/gl*'
       - 'gfx/gfx_display.*'
@@ -53,6 +54,7 @@ on:
       - 'samples/gfx/d3d12_menu_mapping/**'
       - 'samples/gfx/threaded_video/harness_core.c'
       - 'samples/gfx/d3d9_ex/**'
+      - '.github/workflows/scripts/wine-server.sh'
       - '.github/workflows/Windows-wine-menu.yml'
   workflow_dispatch:
 
@@ -152,6 +154,13 @@ jobs:
             cp "$(ls /usr/lib/gcc/x86_64-w64-mingw32/*-win32/$f | head -n 1)" .
           done
 
+      - name: RGUI thumbnails use native pixels and borrowed filter rows
+        run: |
+          python3 samples/menu/rgui_media/build.py --test-source samples/menu/rgui_media/thumbnail_point_test.c --output samples/menu/rgui_media/thumbnail_point_test.exe
+          WINEDEBUG=-all wine samples/menu/rgui_media/thumbnail_point_test.exe
+          python3 samples/menu/rgui_media/build.py --test-source samples/menu/rgui_media/thumbnail_filtered_test.c --output samples/menu/rgui_media/thumbnail_filtered_test.exe
+          WINEDEBUG=-all wine samples/menu/rgui_media/thumbnail_filtered_test.exe
+
       - name: Menus on every driver, compared with D3D11 (Wine, Xvfb, llvmpipe)
         shell: bash
         run: |
@@ -162,18 +171,27 @@ jobs:
           python3 samples/gfx/menu_wine/run.py ./retroarch.exe \
             "$RUNNER_TEMP/menu-wine" d3d11 d3d10 d3d12 d3d9_hlsl d3d8 gl glcore
 
+      - name: Embedded native D3D shader contracts
+        run: xvfb-run -a make -C samples/gfx/d3d_builtin RUNNER=wine check
+
       - name: D3D12 menu component mapping on the GPU (Wine)
         shell: bash
         run: |
           set -eu
           trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
           export LIBGL_ALWAYS_SOFTWARE=1
+          # Keep the server alive across the short GPU oracles. A server
+          # exiting between clients can kill one during startup/teardown.
+          timeout 30 wineserver -w
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
           CC=x86_64-w64-mingw32-gcc RUNNER=wine \
             xvfb-run -a python3 samples/gfx/d3d12_menu_mapping/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine REQUIRE_D3D11=1 \
             xvfb-run -a python3 samples/gfx/d3d_failure_paths/gpu.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine REQUIRE_D3D11=1 \
             xvfb-run -a python3 samples/gfx/d3d_failure_paths/lend_gpu.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine REQUIRE_D3D11=1 \
+            xvfb-run -a python3 samples/gfx/d3d_p010_import/run.py --pool-only
           CC=x86_64-w64-mingw32-gcc RUNNER=wine REQUIRE_D3D11=1 \
             xvfb-run -a python3 samples/gfx/d3d_failure_paths/sw_lend_gpu.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine REQUIRE_D3D10=1 \

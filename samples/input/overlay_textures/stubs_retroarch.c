@@ -9,6 +9,7 @@
 
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/gfx_surface.h"
+#include "../../../configuration.h"
 
 #ifdef HAVE_THREADS
 #include "../../../gfx/video_thread_wrapper.h"
@@ -19,6 +20,11 @@
 #include "../../../tasks/tasks_internal.h"
 
 #include "stubs_retroarch.h"
+
+settings_t *config_get_ptr(void)
+{
+   return NULL;
+}
 
 struct stub_texture stub_tex[STUB_MAX_TEXTURES];
 unsigned stub_tex_loads;
@@ -84,6 +90,7 @@ bool video_driver_texture_load(void *data,
       if (stub_tex[i].live)
          continue;
       stub_tex[i].live     = true;
+      stub_tex[i].source   = (uintptr_t)img->pixels;
       stub_tex[i].bcn      = bcn;
       stub_tex[i].checksum = bcn
          ? stub_checksum_bytes(img->compressed->mips[0].data,

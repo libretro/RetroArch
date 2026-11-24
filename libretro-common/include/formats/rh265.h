@@ -38,6 +38,7 @@
 #include <formats/video_hw_frame.h>
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 RETRO_BEGIN_DECLS
 
@@ -315,6 +316,13 @@ unsigned rh265_video_reorder_depth(const rh265_video *v);
 const uint8_t *rh265_video_plane(const rh265_video *v, int plane,
       int *stride, int *width, int *height);
 
+/* Acquire on the decode owner thread after a software picture is emitted.
+ * Planes stay immutable through later decoding, reset and decoder close.
+ * Release each successful lease exactly once, on any thread. Hardware output
+ * cannot be retained through this CPU-plane API. */
+void *rh265_video_retain_planes(const rh265_video *v);
+void rh265_video_release_planes(void *owner);
+
 void rh265_video_close(rh265_video *v);
 
 /* Decode pictures concurrently: with @pool (an rthreads tpool_t of at
@@ -360,6 +368,14 @@ int rh265_video_set_hw(rh265_video *v, int enable);
 int rh265_video_is_hw(const rh265_video *v);
 /* Transfer the displayed lease once; caller imports or abandons it. */
 int rh265_video_hw_frame(rh265_video *v, video_hw_frame_t *out);
+
+/* Whether an hvcC record (ISO/IEC 14496-15) describes 8-bit 4:2:0
+ * pictures: its chromaFormat and both bit depths. */
+static INLINE int rh265_hvcc_is_420_8bit(const uint8_t *b, size_t size)
+{
+   return b && size >= 23 && b[0] == 1 && (b[16] & 3) == 1
+      && !(b[17] & 7) && !(b[18] & 7);
+}
 
 RETRO_END_DECLS
 

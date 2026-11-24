@@ -209,8 +209,18 @@ bool content_load_state_in_progress(void *data)
       load_asks++;
    return __atomic_load_n(&load_pending, __ATOMIC_RELAXED) != 0;
 }
-void input_keyboard_event(bool down, unsigned code, uint32_t character,
-      uint16_t mod, unsigned device) { (void)down; (void)code; (void)character; (void)mod; (void)device; }
+/* Every truncation the replay code asks of its file, counted. */
+static unsigned n_truncate = 0;
+int64_t __real_intfstream_truncate(intfstream_internal_t *intf, uint64_t len);
+int64_t __wrap_intfstream_truncate(intfstream_internal_t *intf, uint64_t len);
+int64_t __wrap_intfstream_truncate(intfstream_internal_t *intf, uint64_t len)
+{
+   n_truncate++;
+   return __real_intfstream_truncate(intf, len);
+}
+
+/* the core's key path, the shipping one */
+#include "core_key_event.inc"
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)
 {
@@ -364,6 +374,56 @@ static void truncate_file(const char *path, int64_t len)
 }
 
 /* ---- lanes ----------------------------------------------------------- */
+
+/* A recording cuts its file short only when it writes behind where
+ * the file reaches: not on every frame, and still after a seek back,
+ * which must leave nothing of the old timeline behind it. */
+static void lane_record_truncates(const char *path)
+{
+   unsigned i, played;
+   int64_t long_size, seek_size;
+   uint8_t start[STATE_SIZE];
+
+   reset_counters();
+   settings.bools.savestate_file_compression = false;
+   settings.uints.replay_checkpoint_interval = 0;
+   fill_state(7);
+   memcpy(start, core_state, STATE_SIZE);
+   CHECK(movie_start_record(&input_st, (char*)path), "start_record");
+   task_queue_check();
+   n_truncate = 0;
+   for (i = 0; i < 40; i++)
+   {
+      if (i == 10)
+         input_st.bsv_movie_state.flags |= BSV_FLAG_MOVIE_FORCE_CHECKPOINT;
+      frame(i);
+   }
+   CHECK(n_truncate <= 1, "%u truncations over 40 frames written in order",
+         n_truncate);
+   long_size = intfstream_get_size(input_st.bsv_movie_state_handle->file);
+
+   /* back to the checkpoint, then five frames of a new timeline */
+   CHECK(movie_seek_to_frame(&input_st, 20), "seek back while recording");
+   n_truncate = 0;
+   for (i = 0; i < 6; i++)
+      frame(100 + i);
+   CHECK(n_truncate >= 1, "no truncation after the seek back");
+   seek_size = intfstream_get_size(input_st.bsv_movie_state_handle->file);
+   CHECK(seek_size < long_size,
+         "the old timeline left behind: %d bytes, %d before the seek",
+         (int)seek_size, (int)long_size);
+   CHECK(movie_stop(&input_st), "halt");
+
+   /* and it plays back to its own end */
+   CHECK(play(path), "play the cut recording");
+   for (played = 0; played < 60 && !paused(); played++)
+      frame(200 + played);
+   CHECK(paused() && played < 30,
+         "the cut recording played %u frames", played);
+   unpause();
+   close_content();
+   lane_done("record_truncates", NULL);
+}
 
 /* On the threaded queue, a recording started while a state load is in
  * flight waits for it from the main thread, once per check, and starts
@@ -1266,6 +1326,107 @@ static void lane_event_capacity(void)
    lane_done("event_capacity", NULL);
 }
 
+/* While a replay plays, the core's keys are the recorded ones, given
+ * back whatever the frontend's binds or Game Focus are now, and a key
+ * pressed on the keyboard meanwhile is not passed on.  A recording
+ * keeps what reached the core, and run-ahead's second instance gets
+ * the same keys. */
+struct core_key { bool down; unsigned code; uint32_t character; uint16_t mod; };
+static struct core_key core_keys[8], second_keys[8];
+static unsigned n_core_keys, n_second_keys;
+
+static void core_key_cb(bool down, unsigned code, uint32_t character,
+      uint16_t mod)
+{
+   if (n_core_keys < ARRAY_SIZE(core_keys))
+   {
+      core_keys[n_core_keys].down      = down;
+      core_keys[n_core_keys].code      = code;
+      core_keys[n_core_keys].character = character;
+      core_keys[n_core_keys].mod       = mod;
+   }
+   n_core_keys++;
+}
+
+static void second_key_cb(bool down, unsigned code, uint32_t character,
+      uint16_t mod)
+{
+   if (n_second_keys < ARRAY_SIZE(second_keys))
+   {
+      second_keys[n_second_keys].down      = down;
+      second_keys[n_second_keys].code      = code;
+      second_keys[n_second_keys].character = character;
+      second_keys[n_second_keys].mod       = mod;
+   }
+   n_second_keys++;
+}
+
+static void lane_core_keys(void)
+{
+   bsv_movie_t *h               = (bsv_movie_t*)calloc(1, sizeof(*h));
+   bsv_movie_t *saved_handle    = input_st.bsv_movie_state_handle;
+   uint16_t saved_flags         = input_st.bsv_movie_state.flags;
+   retro_keyboard_event_t saved_key      = runloop_st.key_event;
+   retro_keyboard_event_t saved_frontend = runloop_st.frontend_key_event;
+   retro_keyboard_event_t saved_second   = runloop_st.secondary_key_event;
+
+   reset_counters();
+   n_core_keys = n_second_keys        = 0;
+   runloop_st.key_event               = core_key_cb;
+   runloop_st.frontend_key_event      = core_key_cb;
+   runloop_st.secondary_key_event     = second_key_cb;
+   input_st.bsv_movie_state_handle    = h;
+
+   /* recording: what reaches the core is kept */
+   input_st.bsv_movie_state.flags     = BSV_FLAG_MOVIE_RECORDING;
+   input_keyboard_event_core(true, RETROK_x, 'x', RETROKMOD_SHIFT, false);
+   input_keyboard_event_core(false, RETROK_x, 0, 0, false);
+   CHECK(n_core_keys == 2 && n_second_keys == 2,
+         "recording: core saw %u keys, second instance %u",
+         n_core_keys, n_second_keys);
+   CHECK(h->key_event_count == 2, "recording kept %u keys",
+         (unsigned)h->key_event_count);
+
+   /* playback: the recorded keys go back to the core as they were */
+   n_core_keys = n_second_keys        = 0;
+   input_st.bsv_movie_state.flags     = BSV_FLAG_MOVIE_PLAYBACK;
+   bsv_movie_poll(&input_st);
+   CHECK(n_core_keys == 2 && n_second_keys == 2,
+         "playback: core saw %u recorded keys, second instance %u",
+         n_core_keys, n_second_keys);
+   CHECK(   core_keys[0].down && core_keys[0].code == RETROK_x
+         && core_keys[0].character == 'x'
+         && core_keys[0].mod == RETROKMOD_SHIFT
+         && !core_keys[1].down && core_keys[1].code == RETROK_x,
+         "playback: recorded keys changed on their way to the core");
+   CHECK(   second_keys[0].down && second_keys[0].code == RETROK_x
+         && !second_keys[1].down,
+         "playback: second instance missed the recorded keys");
+   CHECK(h->key_event_count == 0, "playback left %u keys staged",
+         (unsigned)h->key_event_count);
+
+   /* playback: a key pressed on the keyboard does not reach the core */
+   n_core_keys = n_second_keys        = 0;
+   input_keyboard_event_core(true, RETROK_F1, 0, 0, false);
+   input_keyboard_event_core(false, RETROK_F1, 0, 0, false);
+   CHECK(n_core_keys == 0 && n_second_keys == 0,
+         "playback: %u live keys reached the core", n_core_keys);
+
+   /* the replay has ended: the keyboard's keys reach the core again */
+   input_st.bsv_movie_state.flags    |= BSV_FLAG_MOVIE_END;
+   input_keyboard_event_core(true, RETROK_F1, 0, 0, false);
+   CHECK(n_core_keys == 1, "after the replay the core saw %u keys",
+         n_core_keys);
+
+   input_st.bsv_movie_state_handle    = saved_handle;
+   input_st.bsv_movie_state.flags     = saved_flags;
+   runloop_st.key_event               = saved_key;
+   runloop_st.frontend_key_event      = saved_frontend;
+   runloop_st.secondary_key_event     = saved_second;
+   free(h);
+   lane_done("core_keys", NULL);
+}
+
 static void lane_input_events(void)
 {
    bsv_movie_t *h = (bsv_movie_t*)calloc(1, sizeof(*h));
@@ -1490,6 +1651,7 @@ int main(int argc, char **argv)
    lane_serialize_short(path);
    lane_event_capacity();
    lane_input_events();
+   lane_core_keys();
    lane_seek_no_checkpoint();
    lane_checkpoint_seek();
    lane_skips();
@@ -1498,6 +1660,7 @@ int main(int argc, char **argv)
    lane_short_block();
    lane_write_oom();
    lane_record_waits_for_load(path);
+   lane_record_truncates(path);
 #ifdef BSV_TEST_NETPLAY
    lane_netplay();
 #endif

@@ -112,6 +112,10 @@ void task_content_load_refused(const char *core_path);
  * staged load that quits RetroArch if it fails */
 bool task_content_park_startup(const char *core_path,
       const char *content_path);
+/* A load of path from outside the menu while a Security Warning waits:
+ * says to answer it first and returns true, so the caller refuses it
+ * before it writes anything */
+bool task_content_warning_waits(const char *path);
 #endif
 
 #ifdef HAVE_MENU

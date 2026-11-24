@@ -760,6 +760,7 @@ static int rh265_parse_sps(const uint8_t *rbsp, size_t size, int escaped, rh265_
    if (sps_id >= RH265_MAX_SPS) return -1;
    s->max_sub_layers_minus1 = max_sub_layers_minus1;
    s->chroma_format_idc = (int)rh265_ue(&b);
+   if (s->chroma_format_idc > 3) return -1;
    if (s->chroma_format_idc == 3)
       rh265_u1(&b);                      /* separate_colour_plane_flag */
    s->width  = (int)rh265_ue(&b);
@@ -770,10 +771,16 @@ static int rh265_parse_sps(const uint8_t *rbsp, size_t size, int escaped, rh265_
    conformance_window = (int)rh265_u1(&b);
    if (conformance_window)
    {
+      int sub_width_c  = (s->chroma_format_idc == 1 ||
+            s->chroma_format_idc == 2) ? 2 : 1;
+      int sub_height_c = s->chroma_format_idc == 1 ? 2 : 1;
       s->crop_left   = (int)rh265_ue(&b);
       s->crop_right  = (int)rh265_ue(&b);
       s->crop_top    = (int)rh265_ue(&b);
       s->crop_bottom = (int)rh265_ue(&b);
+      if (sub_width_c * ((int64_t)s->crop_left + s->crop_right) >= s->width ||
+          sub_height_c * ((int64_t)s->crop_top + s->crop_bottom) >= s->height)
+         return -1;
    }
    s->bit_depth_luma   = (int)rh265_ue(&b) + 8;
    s->bit_depth_chroma = (int)rh265_ue(&b) + 8;
@@ -998,8 +1005,14 @@ typedef struct
    /* WPP substream entry points: offsets between consecutive
     * substreams in escaped slice-data bytes (7.4.7.1) */
    int      num_entry_points;
-   uint32_t entry_point[RH265_MAX_ENTRY_POINTS];
+   uint32_t entry_point[RH265_MAX_ENTRY_POINTS];   /* stays last */
 } rh265_shdr;
+
+/* A slice header is its fields and the entry points it codes: copies
+ * and clears stop there, as nothing reads past num_entry_points. */
+#define RH265_SHDR_HEAD offsetof(rh265_shdr, entry_point)
+#define RH265_SHDR_COPY(dst, src) memcpy((dst), (src), RH265_SHDR_HEAD \
+      + (size_t)(src)->num_entry_points * sizeof(uint32_t))
 
 /* 7.3.6.3 pred_weight_table.  Weights fold to (1 << denom) and offsets
  * to 0 for references whose flag is absent, so the prediction stage can
@@ -1068,7 +1081,7 @@ static int rh265_parse_slice_header(rh265_bits *b, int nal_type,
       rh265_sps *sps_tab, rh265_shdr *sh)
 {
    int i;
-   memset(sh, 0, sizeof(*sh));
+   memset(sh, 0, RH265_SHDR_HEAD);
    sh->short_term_rps_sps_idx = -1;
    sh->first_slice_in_pic = (int)rh265_u1(b);
    if (RH265_IS_IRAP(nal_type))
@@ -1701,6 +1714,7 @@ typedef struct
    int      needed_out;       /* not yet emitted through the API */
    int      discard_output;
    int      in_use;
+   int      rows;             /* CTB rows of its own SPS */
    /* CTB rows of this picture that are final - reconstructed,
     * deblocked, SAO'd, nothing writes them again - counted from the
     * top by the row hook and set to the whole picture at the finish.
@@ -1714,10 +1728,19 @@ typedef struct
 
 #define RH265_MAX_PB 64
 
-typedef struct
+/* An SPS/PPS pair as one picture decodes against it. Snapshots are
+ * shared: every picture whose parameter sets are unchanged holds the
+ * same one, and a snapshot no picture holds keeps its contents until
+ * it is wanted again or overwritten. Taken and let go on the
+ * submitting thread only. */
+typedef struct rh265_pic_params
 {
    rh265_sps sps;
    rh265_pps pps;
+   struct rh265_pic_params *next;   /* every snapshot made */
+   unsigned sps_ver, pps_ver;
+   int sps_id, pps_id;
+   int refs;                        /* contexts holding it */
 } rh265_pic_params;
 
 typedef struct
@@ -1831,6 +1854,7 @@ typedef struct
    int part_mode;             /* RH265_PART_* */
    int cu_x, cu_y, cu_log2;   /* current CU geometry */
    int ct_depth_cur;          /* ctDepth of the current CU */
+   int meta_ctbs;             /* CTBs the per-CTB tables in meta hold */
    int max_merge;             /* MaxNumMergeCand */
    int slice_tmvp;            /* slice_temporal_mvp_enabled_flag */
 } rh265_dec;
@@ -4089,12 +4113,18 @@ struct rh265_video
    /* pictures decode concurrently on the pool (frame threading); the
     * wavefront stays off then, the pool being the pictures' */
    int       threaded;
+   int       nal_seen;          /* an SPS, PPS or slice was handled */
    /* finished slice jobs between uses, each with its unescape buffer */
    rh265_slot_t job_pool[RH265_NAL_POOL];
    rh265_sps sps[RH265_MAX_SPS];
    rh265_vps_info_t vps[16];
    uint8_t vps_valid[16];
    rh265_pps pps[RH265_MAX_PPS];
+   /* parameter-set snapshots for pictures in flight, and the count of
+    * content changes per SPS/PPS id that keys them */
+   rh265_pic_params *params_all;
+   unsigned sps_ver[RH265_MAX_SPS];
+   unsigned pps_ver[RH265_MAX_PPS];
    /* One decode state per picture that can be in flight; a new picture
     * takes the next one round. With one context that is the same one
     * every time, which is the decoder as it was. */
@@ -4210,12 +4240,28 @@ static void rh265_dec_free_meta(rh265_dec *d)
    d->ctb_lf_across = NULL;
 }
 
+/* A picture arena may outlive its decoder while a consumer uploads its
+ * planes. The decode owner alone acquires references; any thread releases.
+ * Keep the plane offsets unchanged by reserving one cache line for the count. */
+#define RH265_PICTURE_HEADER 64
+
+static retro_atomic_int_t *rh265_picture_refs(const void *arena)
+{
+   return (retro_atomic_int_t*)((uint8_t*)arena - RH265_PICTURE_HEADER);
+}
+
+void rh265_video_release_planes(void *owner)
+{
+   if (owner && retro_atomic_fetch_sub_int(rh265_picture_refs(owner), 1) == 1)
+      free((void*)rh265_picture_refs(owner));
+}
+
 static void rh265_free_frame(rh265_video *v)
 {
    int i, p;
    for (p = 0; p < RH265_MAX_DPB; p++)
    {
-      free(v->dpb[p].arena);
+      rh265_video_release_planes(v->dpb[p].arena);
       v->dpb[p].arena = NULL;
       for (i = 0; i < 3; i++)
          v->dpb[p].pl[i] = NULL;
@@ -4244,11 +4290,12 @@ static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
    d->pel_bytes = 1 + (d->bd > 8);
    d->fns       = rh265_get_fns(d->bd);
    if (v->alloc_w == s->width && v->alloc_h == s->height
-         && v->alloc_bd == d->bd && d->ipm)
+         && v->alloc_bd == d->bd && d->ipm
+         && d->meta_ctbs == s->pic_size_ctbs)
       return 0;
    /* The DPB and every context go when the geometry changes; a
-    * context arriving at a geometry the decoder already has takes
-    * only its own maps. */
+    * context arriving at a geometry the decoder already has, or with
+    * another CTB size, takes only its own maps. */
    if (v->alloc_w != s->width || v->alloc_h != s->height
          || v->alloc_bd != d->bd)
       rh265_free_frame(v);
@@ -4294,6 +4341,7 @@ static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
    d->ctb_slice     = (uint16_t*)(d->meta + o_slice);
    d->ctb_lf_across = d->meta + o_lfa;
    d->bypm          = d->meta + o_byp;
+   d->meta_ctbs     = s->pic_size_ctbs;
    v->alloc_w = s->width;
    v->alloc_h = s->height;
    v->out_pic = -1;
@@ -4310,19 +4358,34 @@ static int rh265_pic_alloc(rh265_video *v, int slot)
 {
    rh265_dec *d = v->cur;
    rh265_pic *p = &v->dpb[slot];
-   size_t off[3], cur = 0;
+   size_t off[3], cur = 0, len;
+   uint8_t *block;
    int i;
    if (p->arena)
-      return 0;
+   {
+      if (retro_atomic_load_acquire_int(rh265_picture_refs(p->arena)) == 1)
+         return 0;
+      /* The slot is reusable, but an upload still owns its old pixels.
+       * Drop the decoder's reference and replace the storage without waiting. */
+      rh265_video_release_planes(p->arena);
+      p->arena = NULL;
+      p->mvf = NULL;
+      for (i = 0; i < 3; i++)
+         p->pl[i] = NULL;
+   }
    for (i = 0; i < 3; i++)
    {
       off[i] = cur;
       cur    = RH265_ARENA_NEXT(cur,
             (size_t)d->strd[i] * d->ph[i] * d->pel_bytes);
    }
-   if (!(p->arena = (uint8_t*)malloc(RH265_ARENA_NEXT(cur,
-               (size_t)d->w4 * d->h4 * sizeof(rh265_mvfield)))))
+   len = RH265_ARENA_NEXT(cur,
+         (size_t)d->w4 * d->h4 * sizeof(rh265_mvfield));
+   if (len > (size_t)-1 - RH265_PICTURE_HEADER
+         || !(block = (uint8_t*)malloc(len + RH265_PICTURE_HEADER)))
       return -1;
+   p->arena = block + RH265_PICTURE_HEADER;
+   retro_atomic_store_relaxed_int(rh265_picture_refs(p->arena), 1);
    for (i = 0; i < 3; i++)
    {
       size_t n = (size_t)d->strd[i] * d->ph[i];
@@ -4779,7 +4842,7 @@ static rh265_slice_job *rh265_ctx_queue_slice(rh265_video *v, rh265_dec *d,
    {
       spare     = j->buf;
       spare_cap = j->cap;
-      memset(j, 0, sizeof(*j));
+      j->next   = NULL;          /* every other field is set below */
    }
    else if (!(j = (rh265_slice_job*)calloc(1, sizeof(*j))))
       return NULL;
@@ -4791,7 +4854,7 @@ static rh265_slice_job *rh265_ctx_queue_slice(rh265_video *v, rh265_dec *d,
    j->esc_off   = esc_pos ? (size_t)((const uint8_t*)esc_pos - v->nal_scratch) : 0;
    j->esc_count = esc_pos ? esc_count : 0;
    j->slice_seq = d->slice_seq;
-   j->sh        = d->sh;
+   RH265_SHDR_COPY(&j->sh, &d->sh);
    memcpy(j->ref_list, d->ref_list, sizeof(j->ref_list));
    memcpy(j->ref_poc, d->ref_poc, sizeof(j->ref_poc));
    memcpy(j->ref_long_term, d->ref_long_term, sizeof(j->ref_long_term));
@@ -4811,7 +4874,7 @@ static rh265_slice_job *rh265_ctx_queue_slice(rh265_video *v, rh265_dec *d,
 
 static void rh265_ctx_restore_slice(rh265_dec *d, const rh265_slice_job *j)
 {
-   d->sh        = j->sh;
+   RH265_SHDR_COPY(&d->sh, &j->sh);
    d->slice_seq = j->slice_seq;
    memcpy(d->ref_list, j->ref_list, sizeof(d->ref_list));
    memcpy(d->ref_poc, j->ref_poc, sizeof(d->ref_poc));
@@ -5107,12 +5170,57 @@ static void rh265_raw_parameter_store(rh265_nal_t *slot,
       const uint8_t *nal, size_t len)
 {
    uint8_t *copy = NULL;
+   /* a repeat keeps its bytes; a new set of the same size goes over
+    * the old in place */
+   if (slot->data && slot->size == len)
+   {
+      if (memcmp(slot->data, nal, len))
+         memcpy((uint8_t*)slot->data, nal, len);
+      return;
+   }
    if (len <= 65536)
       copy = (uint8_t*)malloc(len);
    if (copy) memcpy(copy, nal, len);
    free((void*)slot->data);
    slot->data = copy;
    slot->size = copy ? len : 0;
+}
+
+/* The snapshot of SPS sps_id and PPS pps_id as they stand, with one
+ * more holder: shared when one exists, else written into a snapshot
+ * nobody holds, else a new one. At most one more snapshot than there
+ * are contexts is ever made. */
+static rh265_pic_params *rh265_params_take(rh265_video *v, int sps_id,
+      int pps_id)
+{
+   rh265_pic_params *p, *idle = NULL;
+   for (p = v->params_all; p; p = p->next)
+   {
+      if (     p->sps_id  == sps_id && p->pps_id  == pps_id
+            && p->sps_ver == v->sps_ver[sps_id]
+            && p->pps_ver == v->pps_ver[pps_id])
+      {
+         p->refs++;
+         return p;
+      }
+      if (!p->refs)
+         idle = p;
+   }
+   if (!(p = idle))
+   {
+      if (!(p = (rh265_pic_params*)malloc(sizeof(*p))))
+         return NULL;
+      p->next       = v->params_all;
+      v->params_all = p;
+   }
+   memcpy(&p->sps, &v->sps[sps_id], sizeof(p->sps));
+   memcpy(&p->pps, &v->pps[pps_id], sizeof(p->pps));
+   p->sps_ver = v->sps_ver[sps_id];
+   p->pps_ver = v->pps_ver[pps_id];
+   p->sps_id  = sps_id;
+   p->pps_id  = pps_id;
+   p->refs    = 1;
+   return p;
 }
 
 /* Handle one NAL unit.  Returns 1 when a picture completed, 0 otherwise,
@@ -5156,20 +5264,15 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
        nal_type != RH265_NAL_SPS && nal_type != RH265_NAL_PPS)
       return 0;                         /* reserved/unknown: skip */
 
-   {
-      /* slices need the escape positions to translate WPP entry-point
-       * offsets; parameter sets never do */
-      rbsp = rh265_unescape_scratch(v, nal + 2, len - 2, &rbsp_size,
-            &esc_pos, &esc_count, RH265_IS_SLICE(nal_type));
-   }
-   if (!rbsp)
-      return -1;
-
+   /* parameter sets are read in place through the escapes; a slice is
+    * unescaped, its escape positions kept to translate WPP entry-point
+    * offsets */
+   v->nal_seen = 1;
    if (nal_type == RH265_NAL_SPS)
    {
       rh265_sps *sp = &v->sps_tmp;
       int id;
-      ret = rh265_parse_sps(rbsp, rbsp_size, 0, sp, &id);
+      ret = rh265_parse_sps(nal + 2, len - 2, 1, sp, &id);
       if (ret == 0)
       {
          if (sp->chroma_format_idc != 1 ||
@@ -5181,7 +5284,11 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
          {
             if (v->raw_parameters)
                rh265_raw_parameter_store(&v->raw_parameters->sps[id], nal, len);
-            memcpy(&v->sps[id], sp, sizeof(*sp));
+            if (memcmp(&v->sps[id], sp, sizeof(*sp)))
+            {
+               memcpy(&v->sps[id], sp, sizeof(*sp));
+               v->sps_ver[id]++;
+            }
          }
       }
    }
@@ -5189,12 +5296,16 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
    {
       rh265_pps *pp = &v->pps_tmp;
       int id;
-      ret = rh265_parse_pps(rbsp, rbsp_size, 0, pp, &id);
+      ret = rh265_parse_pps(nal + 2, len - 2, 1, pp, &id);
       if (ret == 0)
       {
          if (v->raw_parameters)
             rh265_raw_parameter_store(&v->raw_parameters->pps[id], nal, len);
-         memcpy(&v->pps[id], pp, sizeof(*pp));
+         if (memcmp(&v->pps[id], pp, sizeof(*pp)))
+         {
+            memcpy(&v->pps[id], pp, sizeof(*pp));
+            v->pps_ver[id]++;
+         }
       }
    }
    else
@@ -5202,6 +5313,9 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
       /* slice segment */
       rh265_bits b;
       rh265_shdr *shp = &v->sh_tmp;
+      if (!(rbsp = rh265_unescape_scratch(v, nal + 2, len - 2, &rbsp_size,
+            &esc_pos, &esc_count, 1)))
+         return -1;
       rh265_bits_init(&b, rbsp, rbsp_size);
       ret = rh265_parse_slice_header(&b, nal_type, NULL, NULL,
             v->pps, v->sps, shp);
@@ -5262,20 +5376,18 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
          {
             if (!v->cur->params || shp->first_slice_in_pic || !v->cur->cur)
             {
-               if (!v->cur->params)
-               {
-                  v->cur->params = (rh265_pic_params*)malloc(sizeof(*v->cur->params));
-                  if (!v->cur->params) return -1;
-               }
-               memcpy(&v->cur->params->sps, sps, sizeof(*sps));
-               memcpy(&v->cur->params->pps, pps, sizeof(*pps));
+               rh265_pic_params *pp = rh265_params_take(v,
+                     pps->sps_id, shp->pps_id);
+               if (!pp) return -1;
+               if (v->cur->params) v->cur->params->refs--;
+               v->cur->params = pp;
             }
             sps = &v->cur->params->sps;
             pps = &v->cur->params->pps;
          }
          v->cur->sps = sps;
          v->cur->pps = pps;
-         memcpy(&v->cur->sh, shp, sizeof(*shp));
+         RH265_SHDR_COPY(&v->cur->sh, shp);
          if (rh265_alloc_frame(v, sps) < 0)
             ret = -1;
          else if (is_rasl && v->rasl_skip)
@@ -5315,8 +5427,16 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                   if (!v->dpb[p].in_use && p != v->out_pic
                         && !retro_atomic_load_acquire_int(&v->dpb[p].readers))
                   {
-                     slot = p;
-                     break;
+                     if (slot < 0)
+                        slot = p;
+                     /* Prefer an unheld arena, avoiding replacement allocation
+                      * while the bounded upload leases are outstanding. */
+                     if (!v->dpb[p].arena || retro_atomic_load_acquire_int(
+                              rh265_picture_refs(v->dpb[p].arena)) == 1)
+                     {
+                        slot = p;
+                        break;
+                     }
                   }
                if (slot < 0 || rh265_pic_alloc(v, slot) < 0)
                   ret = -1;
@@ -5348,6 +5468,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                   cur->long_term  = 0;
                   cur->needed_out = shp->pic_output_flag;
                   cur->discard_output = 0;
+                  cur->rows       = sps->ctb_h;
                   cur->timestamp = v->packet_timestamp;
                   cur->in_use     = 1;
                   if (!RH265_IS_IDR(nal_type))
@@ -5543,6 +5664,7 @@ static int rh265_hw_decode(rh265_video *v, const uint8_t *data, size_t size,
 {
    rh265_hw_t *hw = v->hw;
    int ret;
+   ahead = ahead || hw->session.ops.input_delay != 0;
    video_hw_frame_abandon(&hw->shown);
    memset(&hw->shown, 0, sizeof(hw->shown));
    if (hw->pending)
@@ -5619,7 +5741,7 @@ rh265_video *rh265_video_open(void)
 int rh265_video_retain_parameter_sets(rh265_video *v)
 {
    unsigned i;
-   if (!v || v->hw || v->nal_scratch) return -1;
+   if (!v || v->hw || v->nal_seen) return -1;
    if (v->raw_parameters) return 0;
    for (i = 0; i < 16; i++)
       if (v->vps_valid[i]) return -1;
@@ -5683,7 +5805,12 @@ void rh265_video_close(rh265_video *v)
          free(v->ctx[k].sao_band[0]);
          free(v->ctx[k].sao_band[1]);
          free(v->ctx[k].sao_band[2]);
-         free(v->ctx[k].params);
+      }
+      while (v->params_all)
+      {
+         rh265_pic_params *next = v->params_all->next;
+         free(v->params_all);
+         v->params_all = next;
       }
    }
    free(v);
@@ -5856,6 +5983,18 @@ static int rh265_parameter_repeat(rh265_video *v, unsigned type,
 {
    int id, ret;
    if (nal->size < 3 || nal->size > 65536) return -1;
+   /* the bytes of a set already taken are that set: no parse */
+   if (v->raw_parameters)
+   {
+      const rh265_nal_t *raw = type == RH265_NAL_SPS
+            ? v->raw_parameters->sps : v->raw_parameters->pps;
+      int n = type == RH265_NAL_SPS ? RH265_MAX_SPS : RH265_MAX_PPS;
+      for (id = 0; id < n; id++)
+         if (     raw[id].size == nal->size
+               && (type == RH265_NAL_SPS ? v->sps[id].valid : v->pps[id].valid)
+               && !memcmp(raw[id].data, nal->data, nal->size))
+            return 0;
+   }
    if (type == RH265_NAL_SPS)
    {
       ret = rh265_parse_sps(nal->data + 2, nal->size - 2, 1, &v->sps_tmp, &id);
@@ -5963,12 +6102,6 @@ int rh265_video_get_params(const rh265_video *v, unsigned pps_id,
    if (p->sps_id < 0 || p->sps_id >= RH265_MAX_SPS || !v->sps[p->sps_id].valid)
       return -1;
    s = &v->sps[p->sps_id];
-   if (s->chroma_format_idc != 1 || s->bit_depth_luma != s->bit_depth_chroma
-         || (s->bit_depth_luma != 8 && s->bit_depth_luma != 10)
-         || s->crop_left < 0 || s->crop_right < 0 || s->crop_top < 0 || s->crop_bottom < 0
-         || 2 * ((int64_t)s->crop_left + s->crop_right) >= s->width
-         || 2 * ((int64_t)s->crop_top + s->crop_bottom) >= s->height)
-      return -1;
    out->pps_id = (int)pps_id;
    out->sps_id = p->sps_id;
    out->chroma_format_idc = s->chroma_format_idc;
@@ -6181,7 +6314,7 @@ again:
    if (v->threaded)
    {
       rh265_pic *pic = &v->dpb[v->out_fifo[0]];
-      int rows = v->cur->sps ? v->cur->sps->ctb_h : 0;
+      int rows = pic->rows;
       if (rows && retro_atomic_load_acquire_int(&pic->rows_final) < rows)
       {
          if (v->out_count < RH265_MAX_DPB - 1)
@@ -6467,6 +6600,18 @@ int rh265_video_output_timing(const rh265_video *v, int64_t after,
       out->skip_nonref = retro_atomic_load_acquire_int(&v->skip_nonref);
    }
    return 0;
+}
+
+void *rh265_video_retain_planes(const rh265_video *v)
+{
+   void *arena;
+   if (!v || v->hw || v->out_pic < 0)
+      return NULL;
+   arena = v->dpb[v->out_pic].arena;
+   if (!arena)
+      return NULL;
+   retro_atomic_fetch_add_int(rh265_picture_refs(arena), 1);
+   return arena;
 }
 
 const uint8_t *rh265_video_plane(const rh265_video *v, int plane,

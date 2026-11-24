@@ -91,6 +91,7 @@ enum thread_cmd
    CMD_SUPPRESS_SCREENSAVER,
    CMD_POKE_SET_VIEW_COUNT,
    CMD_POKE_HW_CONTEXT_DESTROYING,
+   CMD_POKE_HW_CONTEXT_DESTROYED,
    CMD_POKE_SET_FRAME_FORMAT,
    CMD_POLL_PRESENTABLE, /* Re-asks the context, deferred: no frame needed. */
 
@@ -481,6 +482,13 @@ typedef struct thread_video
     * and from the clock otherwise, and always after that present's
     * completion so a late display report cannot pile repeats up. */
    retro_time_t next_present;
+   /* Video thread: a clock reading and its mark, which that thread's
+    * "now" is told from (video_thread_vt_now) */
+   retro_time_t      vt_time;
+   retro_perf_tick_t vt_mark;
+   /* Marks to a microsecond when the reading was taken; 0 while a
+    * mark's rate was not known */
+   retro_perf_tick_t vt_usec_marks;
    uint64_t frames_repeated;
    /* Whether the last repeat deadline came from a display timestamp
     * the driver reported (true) or from the clock (false). Stats. */

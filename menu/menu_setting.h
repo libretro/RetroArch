@@ -97,6 +97,10 @@ rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx);
 int menu_action_handle_setting(rarch_setting_t *setting,
       unsigned type, unsigned action, bool wraparound);
 
+/* Unbinds a bind setting's key, mouse button and controller input, a
+ * hotkey's controllers' own included. */
+int menu_setting_bind_clear(rarch_setting_t *setting);
+
 enum setting_type menu_setting_get_browser_selection_type(
       rarch_setting_t *setting);
 
@@ -127,6 +131,21 @@ void menu_setting_video_screen_display_values(void);
 /* The screens the menu lists: Game Screens 1 and 2, and each further one
  * the core has */
 unsigned menu_setting_video_screens(void);
+
+#ifndef ANDROID
+/* Game Screen @screen has a window of its own by its Display setting
+ * and the displays listed now. App thread. */
+bool menu_setting_video_screen_window_own(unsigned screen);
+
+/* The screen whose Screen N row or page is @label, or
+ * RETRO_VIDEO_VIEWS_MAX */
+unsigned menu_setting_video_screen_page(const char *label);
+
+/* The rows of screen windows the user moved show where they went; a
+ * screen that has just got a size asks for a refresh that lists its X
+ * and Y rows. App thread. */
+void menu_setting_video_screen_windows_moved(void);
+#endif
 
 /* Whether Menu Follows offers this value: a screen the menu lists, or
  * Separate */

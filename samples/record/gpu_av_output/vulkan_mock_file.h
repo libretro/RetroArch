@@ -10,5 +10,7 @@ struct record_file_posix
    bool active;
 };
 extern unsigned file_delay, file_writes;
+/* Each step of a pending write moves bytes, as a chunked write does */
+extern bool file_chunked;
 extern bool file_open_fail, file_push_fail, file_step_fail, file_finish_fail,
     file_cancel_fail;

@@ -174,6 +174,9 @@ struct rwebm_video_stream
    int          is_fp16;    /* last decoded frame written so          */
    int          emit_argb;  /* emit ARGB words instead of the default
                                R,G,B,A memory order (8-bit paths)     */
+   struct texture_planar borrowed_planar; /* decoder-owned, until next step */
+   int          want_planar; /* 0: RGB, 1: I420, 2: borrow, 3: tight borrow */
+   unsigned     planar_yuv; /* IMAGE_YUV_FLAG_* of the last such frame */
 };
 
 /* Still-image decode progress across sliced process calls. */
@@ -1030,6 +1033,42 @@ rwebm_video_stream_t *rwebm_video_stream_open_hw_avail(const uint8_t *buf,
    return rwebm_video_stream_open_avail_internal(buf, len, avail, need_more, 1);
 }
 
+bool rwebm_video_stream_audio_track(const rwebm_video_stream_t *s,
+      unsigned ordinal, video_audio_track_t *out)
+{
+   int i;
+   if (!out) return false;
+   memset(out, 0, sizeof(*out));
+   if (!s) return false;
+   for (i = 0; i < rwebm_num_tracks(s->demux); i++)
+   {
+      const rwebm_track *track = rwebm_get_track(s->demux, i);
+      if (!track || track->type != RWEBM_TRACK_AUDIO) continue;
+      if (ordinal)
+      {
+         ordinal--;
+         continue;
+      }
+      out->index = i;
+      out->sample_rate = track->sample_rate;
+      out->channels = track->channels;
+      out->codec_id = track->codec_id;
+      out->language = (const uint8_t*)rwebm_get_track_language(s->demux, i,
+            &out->language_size, NULL);
+      if (out->language) out->language_kind = VIDEO_AUDIO_LANGUAGE_TEXT;
+      switch (track->codec)
+      {
+         case RWEBM_CODEC_AAC: out->codec = VIDEO_AUDIO_AAC; break;
+         case RWEBM_CODEC_OPUS: out->codec = VIDEO_AUDIO_OPUS; break;
+         case RWEBM_CODEC_VORBIS: out->codec = VIDEO_AUDIO_VORBIS; break;
+         case RWEBM_CODEC_FLAC: out->codec = VIDEO_AUDIO_FLAC; break;
+         default: break;
+      }
+      return true;
+   }
+   return false;
+}
+
 void rwebm_video_stream_close(rwebm_video_stream_t *s)
 {
    if (!s)
@@ -1107,6 +1146,202 @@ int rwebm_video_stream_is_hdr(const rwebm_video_stream_t *s)
       return s->hw_color.transfer == 16 || s->hw_color.transfer == 18;
    return t && (     t->transfer_characteristics == 16
                   || t->transfer_characteristics == 18);
+}
+
+/* A VP9 CodecPrivate feature list (profile, bit depth, chroma
+ * subsampling): 1 when it says 8-bit 4:2:0, 0 when it says otherwise,
+ * -1 when it says nothing (muxers mostly leave it out). */
+static int rwebm_video_vp9_is_420_8bit(const uint8_t *b, size_t size)
+{
+   size_t off = 0;
+   int profile = -1, depth = -1, chroma = -1;
+   while (b && off + 2 <= size && off + 2 + b[off + 1] <= size)
+   {
+      unsigned id  = b[off];
+      unsigned len = b[off + 1];
+      if (len == 1)
+      {
+         if (id == 1)
+            profile = b[off + 2];
+         else if (id == 3)
+            depth   = b[off + 2];
+         else if (id == 4)
+            chroma  = b[off + 2];
+      }
+      off += 2 + len;
+   }
+   if (profile > 0 || (depth >= 0 && depth != 8) || chroma > 1)
+      return 0;
+   return (profile == 0 || (depth == 8 && chroma >= 0)) ? 1 : -1;
+}
+
+/* Whether the track's first frame is profile 0, which is 8-bit 4:2:0
+ * and nothing else: the frame marker and both profile bits of its
+ * uncompressed header, read through a cursor of its own. */
+static int rwebm_video_vp9_first_is_profile0(const rwebm_video_stream_t *s)
+{
+   rwebm_packet packet;
+   int walked, profile0 = 0;
+   rwebm_t *probe = rwebm_cursor_clone(s->demux);
+   if (!probe)
+      return 0;
+   rwebm_rewind(probe);
+   for (walked = 0; walked < RWEBM_VIDEO_MAX_TS; walked++)
+   {
+      if (rwebm_read_packet(probe, &packet) != 1)
+         break;
+      if (packet.track != s->track)
+         continue;
+      profile0 = packet.size && (packet.data[0] & 0xF0) == 0x80;
+      break;
+   }
+   rwebm_close(probe);
+   return profile0;
+}
+
+/* 8-bit 4:2:0 by the track, in a matrix the planes' consumer knows
+ * (BT.601 or BT.709; BT.2020 needs a wider format). */
+int rwebm_video_stream_can_planar(const rwebm_video_stream_t *s)
+{
+   const rwebm_track *t = (s && s->demux)
+      ? rwebm_get_track(s->demux, s->track) : NULL;
+   unsigned matrix;
+   if (!t || rwebm_video_stream_is_hdr(s))
+      return 0;
+   matrix = (s->h264 || s->h265) ? s->hw_color.matrix
+      : t->matrix_coefficients;
+   if (matrix == 9 || matrix == 10)
+      return 0;
+   switch (s->codec)
+   {
+      case RWEBM_CODEC_VP8:
+         return 1;
+#ifdef HAVE_RVP9
+      case RWEBM_CODEC_VP9:
+         switch (rwebm_video_vp9_is_420_8bit(t->codec_private,
+                  t->codec_private_size))
+         {
+            case 1:
+               return 1;
+            case 0:
+               return 0;
+            default:
+               break;
+         }
+         return rwebm_video_vp9_first_is_profile0(s);
+#endif
+      case RWEBM_CODEC_H264:
+         return rh264_avcc_is_420_8bit(t->codec_private,
+               t->codec_private_size);
+      case RWEBM_CODEC_H265:
+         return rh265_hvcc_is_420_8bit(t->codec_private,
+               t->codec_private_size);
+      default:
+         break;
+   }
+   return 0;
+}
+
+int rwebm_video_stream_set_planar(rwebm_video_stream_t *s, int planar)
+{
+   if (!s || (planar && !rwebm_video_stream_can_planar(s)))
+      return 0;
+   s->want_planar = planar;
+   s->borrowed_planar.planes[0] = NULL;
+   return 1;
+}
+
+bool rwebm_video_stream_retain_planar(const rwebm_video_stream_t *s,
+      void **owner, void (**release)(void*))
+{
+   void *held;
+   if (!s || !owner || !release || !s->borrowed_planar.planes[0])
+      return false;
+   if (s->codec == RWEBM_CODEC_VP8)
+   {
+      held = rvp8_video_retain_planes(s->vp8);
+      if (!held) return false;
+      *owner = held;
+      *release = rvp8_video_release_planes;
+      return true;
+   }
+#ifdef HAVE_RVP9
+   if (s->codec == RWEBM_CODEC_VP9)
+   {
+      held = rvp9_retain_planes(s->vp9, s->borrowed_planar.planes[0]);
+      if (!held) return false;
+      *owner = held;
+      *release = rvp9_release_planes;
+      return true;
+   }
+#endif
+   if (s->codec == RWEBM_CODEC_H265)
+   {
+      held = rh265_video_retain_planes(s->h265);
+      if (!held) return false;
+      *owner = held;
+      *release = rh265_video_release_planes;
+      return true;
+   }
+   if (s->codec != RWEBM_CODEC_H264) return false;
+   held = rh264_video_retain_planes(s->h264);
+   if (!held) return false;
+   *owner = held;
+   *release = rh264_video_release_planes;
+   return true;
+}
+
+const struct texture_planar *rwebm_video_stream_borrowed_planar(
+      const rwebm_video_stream_t *s)
+{
+   return s && (s->want_planar == 2 || s->want_planar == 3)
+      && s->borrowed_planar.planes[0]
+      ? &s->borrowed_planar : NULL;
+}
+
+unsigned rwebm_video_stream_planar_yuv(const rwebm_video_stream_t *s)
+{
+   return s ? s->planar_yuv : 0;
+}
+
+/* A shown picture's 8-bit 4:2:0 planes into the caller's frame as
+ * packed I420, in the matrix and range the RGB blit would have used:
+ * 1, or -1 for a picture that cannot be handed out so. */
+static int rwebm_video_planar(rwebm_video_stream_t *s,
+      const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v,
+      int uvs, int w, int h, int cw, int ch, unsigned matrix, int full)
+{
+   if (     !y || !u || !v || w <= 0 || h <= 0
+         || cw != (w + 1) / 2 || ch != (h + 1) / 2)
+      return -1;
+   if ((unsigned)h > s->height)
+      h = (int)s->height;
+   if (!(matrix == 1 || matrix == 5 || matrix == 6
+            || matrix == 9 || matrix == 10))
+      matrix = h >= 720 ? 1 : 5;
+   if (matrix == 9 || matrix == 10)
+      return -1;
+   s->planar_yuv = (matrix == 1 ? IMAGE_YUV_FLAG_BT709 : 0)
+      | (full ? IMAGE_YUV_FLAG_FULL_RANGE : 0);
+   s->borrowed_planar.planes[0] = NULL;
+   if ((s->want_planar == 2 || s->want_planar == 3)
+         && (unsigned)w >= s->width && (unsigned)h == s->height
+         && (s->want_planar == 2 || ((unsigned)ys == s->width
+               && (unsigned)uvs == (s->width + 1) / 2)))
+   {
+      s->borrowed_planar.planes[0] = y;
+      s->borrowed_planar.planes[1] = u;
+      s->borrowed_planar.planes[2] = v;
+      s->borrowed_planar.strides[0] = (unsigned)ys;
+      s->borrowed_planar.strides[1] = (unsigned)uvs;
+      s->borrowed_planar.strides[2] = (unsigned)uvs;
+      s->borrowed_planar.chroma_step = 1;
+      s->borrowed_planar.yuv = s->planar_yuv;
+   }
+   else
+      image_yuv_420_pack((uint8_t*)s->out, s->width, s->height,
+            y, (unsigned)ys, u, v, (unsigned)uvs, (unsigned)w, (unsigned)h);
+   return 1;
 }
 
 void rwebm_video_stream_set_blit_pool(rwebm_video_stream_t *s,
@@ -2576,6 +2811,10 @@ render:
          || (cw != (w + 1) / 2 && cw != w)
          || (ch != (h + 1) / 2 && ch != h)
          || depth < 8 || depth > 14) return -1;
+   if (s->want_planar && s->out)
+      return depth == 8 && rwebm_video_planar(s, y, ys, u, v, uvs,
+               w, h, cw, ch, s->hw_color.matrix, s->hw_color.range == 2) > 0
+         ? (ret == 3 ? 3 : 1) : -1;
    memset(&c, 0, sizeof(c));
    if (!(c.dst = rwebm_video_output(s))) return -1;
    c.dst_stride = s->out && s->out_stride ? s->out_stride : s->width;
@@ -2655,6 +2894,17 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
          unsigned w = (unsigned)fb->w < s->width  ? (unsigned)fb->w : s->width;
          unsigned h = (unsigned)fb->h < s->height ? (unsigned)fb->h : s->height;
          if (discard) return 1;
+         if (s->want_planar && s->out)
+         {
+            /* the RGB blit takes this as limited range too */
+            const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
+            if (     s->vp9->hd.bit_depth != 8
+                  || !s->vp9->hd.subsampling_x || !s->vp9->hd.subsampling_y)
+               return -1;
+            return rwebm_video_planar(s, fb->y, s->vp9->ys, fb->u, fb->v,
+                  s->vp9->uvs, fb->w, fb->h, (fb->w + 1) / 2,
+                  (fb->h + 1) / 2, ct ? ct->matrix_coefficients : 0, 0);
+         }
          if (!(dst = rwebm_video_output(s)))
             return -1;
          {
@@ -2726,6 +2976,12 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
       v = rvp8_video_plane(s->vp8, 2, &uvs, &cw, &ch);
       if (!y || !u || !v)
          return -1;
+      if (s->want_planar && s->out)
+      {
+         const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
+         return rwebm_video_planar(s, y, ys, u, v, uvs, w, h, cw, ch,
+               ct ? ct->matrix_coefficients : 0, 0);
+      }
       if (!(dst = rwebm_video_output(s)))
          return -1;
       if ((unsigned)w > s->width)
@@ -3672,7 +3928,6 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
    rwebm_video_stream_t *s;
    const uint32_t *frame;
    uint32_t *out;
-   size_t n;
    int r;
    int duration_ms = 0;
 
@@ -3790,17 +4045,13 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
    }
    else
    {
-      n = (size_t)s->width * s->height;
-      if (!(out = (uint32_t*)malloc(n * sizeof(uint32_t))))
+      /* Hand the renderer's canvas to the image owner. Playback either
+       * renders into a caller's slot or allocates a new canvas; it must
+       * never overwrite or free the still after this transfer. */
+      if (!frame || frame != s->frame)
          goto fail;
-
-      /* The canvas is already in the caller's channel order: 10-bit
-       * output is packed XRGB2101010, and the 8-bit blit emitted ARGB
-       * or ABGR words per supports_rgba (set at the scan/decode
-       * transition above), so the copy is verbatim in every case - the
-       * per-pixel R/B swizzle this replaced was a full extra pass over
-       * the frame. */
-      memcpy(out, frame, n * sizeof(uint32_t));
+      out = s->frame;
+      s->frame = NULL;
    }
 
    if (width)

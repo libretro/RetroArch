@@ -172,6 +172,17 @@ int64_t intfstream_get_size(intfstream_internal_t *intf)
    return 0;
 }
 
+bool intfstream_resize(intfstream_internal_t *intf,
+      intfstream_info_t *info)
+{
+   if (     !intf || !info
+         || intf->type != INTFSTREAM_MEMORY || !intf->memory.fp)
+      return false;
+   memstream_set_buffer(intf->memory.fp, info->memory.buf.data,
+         info->memory.buf.size, info->memory.writable);
+   return true;
+}
+
 bool intfstream_open(intfstream_internal_t *intf, const char *path,
       unsigned mode, unsigned hints)
 {
@@ -564,6 +575,8 @@ int64_t intfstream_view(intfstream_internal_t *intf, uint64_t len,
             intf->buffered.pos = p + n;
             return (int64_t)n;
          }
+      case INTFSTREAM_MEMORY:
+         return memstream_view(intf->memory.fp, len, ptr);
       default:
          break;
    }

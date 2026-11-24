@@ -44,17 +44,6 @@ RETRO_BEGIN_DECLS
 
 typedef struct companion_core companion_core_t;
 
-enum companion_download_result
-{
-   COMPANION_DL_OK = 0,
-   COMPANION_DL_ERR_NETWORK,       /* HTTP failed / non-200 */
-   COMPANION_DL_ERR_WRITE,         /* could not write the file */
-   COMPANION_DL_ERR_RENAME,        /* could not rename .partial */
-   COMPANION_DL_ERR_ARCHIVE_EMPTY, /* pack held no files */
-   COMPANION_DL_ERR_DELETE,        /* could not replace an existing file */
-   COMPANION_DL_ERR_EXTRACT        /* decompression failed */
-};
-
 /* All callbacks are invoked on the main (UI) thread, from within the
  * request function that caused them or from companion_core_iterate().
  * Every member may be NULL. */
@@ -81,13 +70,17 @@ typedef struct companion_callbacks
    void (*on_thumbnail_downloaded)(void *ud, const char *db_name,
          const char *label, const char *subdir, const char *path,
          bool success);
-   /* A thumbnail pack download + extraction finished. */
-   void (*on_thumbnail_pack_finished)(void *ud,
-         enum companion_download_result result);
    /* A companion_core_browse_open() finished: the listing is in place.
     * Fired from companion_core_iterate() on the UI thread. (Last, so
     * existing positional tables stay valid; NULL if unused.) */
    void (*on_browse_changed)(void *ud);
+   /* The shown playlist's stored thumbnail matches changed: a row
+    * found without a thumbnail may have one now. (Last, as above.) */
+   void (*on_thumbnails_changed)(void *ud);
+   /* A companion_core_browse_delete() finished: @path was removed, or
+    * not all of it (@ok false). Fired from companion_core_iterate()
+    * after the listing it re-made has landed. (Last, as above.) */
+   void (*on_delete_finished)(void *ud, const char *path, bool ok);
 } companion_callbacks_t;
 
 /* Lifecycle */
@@ -143,6 +136,11 @@ bool companion_core_select_playlist(companion_core_t *core, size_t i);
  * index becomes the matching entry of the file list, or (size_t)-1. */
 bool companion_core_select_playlist_path(companion_core_t *core,
       const char *path);
+/* Same, but the playlists loaded before @path keep their thumbnail
+ * matches, though only @path's entries stay: a listing of several,
+ * one after another. */
+bool companion_core_append_playlist_path(companion_core_t *core,
+      const char *path);
 /* Index of the selected playlist, or (size_t)-1 if none. */
 size_t companion_core_selected_playlist(companion_core_t *core);
 /* Path of the playlist currently selected / loading ("" if none). */
@@ -162,6 +160,17 @@ const struct playlist_entry *companion_core_entry(companion_core_t *core,
 bool companion_core_browse_open(companion_core_t *core, const char *path);
 /* The directory currently listed ("" before the first open). */
 const char *companion_core_browse_dir(companion_core_t *core);
+/* Every listing from now on is a search of its folder and everything
+ * under it (links not followed) for names holding each word of @text,
+ * case and kana folded; empty @text lists the folder as it is. Starts
+ * with the current folder. */
+bool companion_core_browse_search(companion_core_t *core, const char *text);
+/* The landed listing is a search: its rows come from many folders. */
+bool companion_core_browse_is_search(companion_core_t *core);
+/* Removes @path off the UI thread, a folder with everything in it and
+ * a link without what it points to, then lists the folder again;
+ * on_delete_finished says how it went. Refuses a file system's root. */
+bool companion_core_browse_delete(companion_core_t *core, const char *path);
 size_t companion_core_browse_count(companion_core_t *core);
 /* Whether a browse_open() is still enumerating (show "Loading..."). The
  * previous listing stays readable until the new one lands. */
@@ -325,16 +334,32 @@ size_t companion_core_folder_icon_path(companion_core_t *core,
 /* <thumbnails dir>/<db_name>/<subdir>. Returns the length written. */
 size_t companion_core_thumbnail_dir(companion_core_t *core,
       const char *db_name, const char *subdir, char *s, size_t len);
-/* Thumbnail file for an entry: the label with the characters the
- * thumbnail repository forbids replaced by '_', under
- * companion_core_thumbnail_dir(); the first of .png .jpg .jpeg .bmp .tga
- * that exists, else the .png name (the download / save target). When
- * @content_path is itself an image file it is returned as-is, so image
- * content shows as its own thumbnail. @db_name is the playlist name
- * without .lpl; @label has no extension. Returns the length written. */
+/* Thumbnail file for an entry, in the menu's order: the label, the
+ * content file name (both with the characters the thumbnail repository
+ * forbids replaced by '_', with the first image extension that exists
+ * under companion_core_thumbnail_dir()), then the match the thumbnail
+ * task stored; else companion_core_thumbnail_save_path(). A
+ * label that is empty, or the entry's path or file name, means none:
+ * the file name stands in. When @content_path is itself an image file
+ * it is returned as-is. @db_name is the entry's system:
+ * companion_core_entry_thumbnail_system(). Returns the length written. */
 size_t companion_core_thumbnail_path(companion_core_t *core,
       const char *db_name, const char *subdir, const char *label,
       const char *content_path, char *s, size_t len);
+/* Where a dropped thumbnail is saved: the .png of the name
+ * companion_core_thumbnail_path() looks up first, never another
+ * extension found there. Returns the length written; 0 (and "") when
+ * it does not fit in @len. */
+size_t companion_core_thumbnail_save_path(companion_core_t *core,
+      const char *db_name, const char *subdir, const char *label,
+      const char *content_path, char *s, size_t len);
+/* The thumbnails/<system> folder of entry @i, as the menu and the
+ * thumbnail task name it: its db_name, else its playlist's name; in
+ * history and favourites its core's first database, else its content's
+ * folder. The @db_name for the calls above and for
+ * companion_core_thumbnail_download(). Returns the length written. */
+size_t companion_core_entry_thumbnail_system(companion_core_t *core,
+      size_t i, char *s, size_t len);
 
 /* --- Running core -------------------------------------------------- */
 
@@ -378,18 +403,17 @@ size_t companion_core_launch_options(companion_core_t *core,
 
 /* --- Thumbnail downloads (HAVE_NETWORKING) -------------------------- */
 
-/* Fetch <db_name>/<subdir>/<label>.png from the thumbnail server into
- * the repository (written via a .partial file, then renamed). One
+/* Fetch <db_name>/<subdir>/<name>.png from the thumbnail server to
+ * companion_core_thumbnail_save_path(), <name> being its scrubbed key:
+ * the label, or the content file's stem for a label-less entry. It is
+ * streamed to disk; a file already there is replaced only by a download
+ * that finishes cleanly. One
  * download is in flight at a time; a caller wanting several queues
  * them off on_thumbnail_downloaded. Returns false if the transfer could
  * not be started (no networking, or one is already running). */
 bool companion_core_thumbnail_download(companion_core_t *core,
-      const char *db_name, const char *label, const char *subdir);
-/* Fetch the <db_name>.zip thumbnail pack and extract it over the
- * repository (existing files are replaced; ones that cannot be deleted
- * are renamed aside with .tmp). on_thumbnail_pack_finished reports. */
-bool companion_core_thumbnail_pack_download(companion_core_t *core,
-      const char *db_name);
+      const char *db_name, const char *label, const char *content_path,
+      const char *subdir);
 /* Cancel the transfer in flight, if any. */
 void companion_core_download_cancel(companion_core_t *core);
 bool companion_core_download_active(companion_core_t *core);
@@ -493,12 +517,14 @@ size_t companion_core_playlist_add_files(companion_core_t *core,
 /* Install an image dropped on a thumbnail pane as entry's thumbnail of
  * @type (COMPANION_THUMB_*), as Qt's changeThumbnail does: decoded,
  * downscaled to desktop_menu_thumbnail_max_size if set, written as
- * PNG under the repository path (directories created). Writes the
+ * PNG to companion_core_thumbnail_save_path() (directories created),
+ * @label and @content_path as the entry's. Writes the
  * file path to @out_path on success. @image_path is a file; the
  * caller's engine should forget() that path afterwards. */
 bool companion_core_thumbnail_install(companion_core_t *core,
       const char *db_name, const char *type, const char *label,
-      const char *image_path, char *out_path, size_t len);
+      const char *content_path, const char *image_path,
+      char *out_path, size_t len);
 
 /* --- Options (Qt's View > Options dialog) --------------------------------
  * The desktop-menu settings that dialog edits, as a typed table every
@@ -733,6 +759,9 @@ void companion_core_status_message(companion_core_t *core,
       const char *msg, unsigned prio, unsigned duration, bool flush);
 void companion_core_log_message(companion_core_t *core, const char *msg);
 void companion_core_notify_refresh(companion_core_t *core);
+/* Fires on_thumbnails_changed if @playlist_path is shown. */
+void companion_core_notify_thumbnails(companion_core_t *core,
+      const char *playlist_path);
 
 RETRO_END_DECLS
 

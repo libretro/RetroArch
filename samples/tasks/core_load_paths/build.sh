@@ -45,6 +45,10 @@ if [ ! -f "$objdir/core_load_check.o" ]; then
    echo "no core_load_check.o: configure without --disable-core_load_check" >&2
    exit 1
 fi
+if grep -qE '^HAVE_QT[[:space:]]*=[[:space:]]*1' config.mk 2>/dev/null; then
+   echo "a Qt build: main() lives in ui_qt.o; build a tree configured with --disable-qt (a separate worktree keeps this one)" >&2
+   exit 1
+fi
 
 # SDL2's cflags may rename main already (-Dmain=SDL_main)
 sed -e 's# -Dmain=[^ ]*##g' \
@@ -57,7 +61,7 @@ wrap_cflags=
 wrap_ldflags=
 if [ "$(uname -s)" != Darwin ]; then
    wrap_cflags=-DCORE_LOAD_PATHS_WRAP
-   wrap_ldflags=-Wl,--wrap=core_check_quick
+   wrap_ldflags=-Wl,--wrap=core_check_quick,--wrap=libretro_get_system_info,--wrap=core_info_find
 fi
 
 sed -e "s#-o $objdir/retroarch\.o#$wrap_cflags -o $out/harness_main.o#" \
@@ -115,6 +119,12 @@ $core_cc -O1 -g -shared -fPIC -Ilibretro-common/include \
    -o $out/harness_core.so samples/tasks/content_load/harness_core.c
 $core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -DHARNESS_CORE_NO_HW \
    -o $out/harness_core_b.so samples/tasks/content_load/harness_core.c
+$core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -DHARNESS_CORE_NO_HW \
+   -DHARNESS_CORE_SUBSYSTEM='"harness_sub_a"' \
+   -o $out/harness_core_sub_a.so samples/tasks/content_load/harness_core.c
+$core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -DHARNESS_CORE_NO_HW \
+   -DHARNESS_CORE_SUBSYSTEM='"harness_sub_b"' \
+   -o $out/harness_core_sub_b.so samples/tasks/content_load/harness_core.c
 $core_cc -O1 -g -shared -fPIC -Ilibretro-common/include \
    -o $out/needs_content_core.so $out/needs_content_core.c
 

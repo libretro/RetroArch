@@ -29,6 +29,7 @@ typedef struct vulkan_encode_h264_submit_ops
    PFN_vkQueueSubmit submit;
    PFN_vkGetFenceStatus status;
    PFN_vkGetQueryPoolResults feedback;
+   PFN_vkWaitForFences wait;
 } vulkan_encode_h264_submit_ops_t;
 typedef struct vulkan_encode_h264_dpb
 {
@@ -103,5 +104,9 @@ int vulkan_encode_h264_submit_poll(vulkan_encode_h264_submit_t *transaction,
 /* Acknowledges/discards output. Refuses incomplete/uncertain encoder work.
  * Producer GPU work and packet readers remain the caller's responsibility. */
 bool vulkan_encode_h264_submit_retire(vulkan_encode_h264_submit_t *transaction);
+/* Blocks until the transaction's GPU work completes or @timeout_ns
+ * passes. False, without waiting, when there is none left to wait for. */
+bool vulkan_encode_h264_submit_wait(const vulkan_encode_h264_submit_t *transaction,
+      uint64_t timeout_ns);
 RETRO_END_DECLS
 #endif

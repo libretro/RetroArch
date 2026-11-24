@@ -35,6 +35,7 @@
 #include "../verbosity.h"
 #include "../input/input_driver.h"
 #include "../input/input_remapping.h"
+#include "../input/input_pad_tag.h"
 
 #include "tasks_internal.h"
 #include "../input/drivers_hid/winusb_bind.h"
@@ -1128,6 +1129,49 @@ static bool input_autoconfigure_scan_config_files_external(
    return true;
 }
 
+/* A built-in profile's identity, read in place from its const text.
+ * DECL_AUTOCONF_DEVICE and DECL_AUTOCONF_PID put it on the leading
+ * lines and built-ins carry no alternatives or physical location
+ * (samples/input/builtin_autoconf holds both), so this ranks with
+ * input_autoconfigure_tuple_affinity like the parsed profile would.
+ * Any other leading line ranks as a candidate, left to the parse. */
+static unsigned input_autoconfigure_builtin_affinity(
+      autoconfig_handle_t *autoconfig_handle, const char *conf)
+{
+   static const char dev_key[] = "input_device = \"";
+   static const char pid_key[] = "input_product_id = ";
+   static const char vid_key[] = "\ninput_vendor_id = ";
+   const char *name = autoconfig_handle->device_info.name;
+   char *end        = NULL;
+   long pid, vid;
+
+   if (!strncmp(conf, dev_key, sizeof(dev_key) - 1))
+   {
+      size_t _len;
+      const char *s = conf + sizeof(dev_key) - 1;
+      const char *q = strchr(s, '"');
+      if (!q)
+         return 1;
+      _len = (size_t)(q - s);
+      /* An equal name is passed as the device's own string */
+      if (_len && !strncmp(name, s, _len) && name[_len] == '\0')
+         return input_autoconfigure_tuple_affinity(
+               autoconfig_handle, 0, 0, name, NULL, 0);
+      return 0;
+   }
+
+   if (strncmp(conf, pid_key, sizeof(pid_key) - 1))
+      return 1;
+   pid = strtol(conf + sizeof(pid_key) - 1, &end, 0);
+   if (strncmp(end, vid_key, sizeof(vid_key) - 1))
+      return 1;
+   vid = strtol(end + sizeof(vid_key) - 1, &end, 0);
+   if (*end != '\n')
+      return 1;
+   return input_autoconfigure_tuple_affinity(autoconfig_handle,
+         (uint16_t)vid, (uint16_t)pid, NULL, NULL, 0);
+}
+
 static bool input_autoconfigure_scan_config_files_internal(
       autoconfig_handle_t *autoconfig_handle)
 {
@@ -1145,9 +1189,14 @@ static bool input_autoconfigure_scan_config_files_internal(
       if (!input_builtin_autoconfs[i] || !*input_builtin_autoconfs[i])
          continue;
 
-      /* Load autoconfig string.  The strdup stays (the builtin is
-       * const and the parse mutates), but the copy is handed over:
-       * the conf adopts it and entries borrow from it. */
+      /* Only a candidate is copied and parsed */
+      if (     autoconfig_handle
+            && !input_autoconfigure_builtin_affinity(
+               autoconfig_handle, input_builtin_autoconfs[i]))
+         continue;
+
+      /* The builtin is const and the parse mutates, so the copy is
+       * handed over: the conf adopts it and entries borrow from it. */
       autoconfig_str = strdup(input_builtin_autoconfs[i]);
       config         = config_file_new_take_string(
             autoconfig_str, 0, NULL);
@@ -1452,9 +1501,9 @@ void input_autoconfigure_plays_as_reread(const uint8_t *before)
 }
 
 #ifdef HAVE_MENU
-/* Settings > Input > Controllers and Port N Controls, and the Quick
- * Menu's Port N Controls, have rows for controllers: if shown, the
- * list is made again. */
+/* Settings > Input > Controllers, Port N Controls > Controllers and the
+ * Quick Menu's Port N Controls have rows for controllers: if shown,
+ * the list is made again. */
 static void input_autoconfigure_refresh_controllers(void)
 {
    const char *menu_label = NULL;
@@ -1462,7 +1511,7 @@ static void input_autoconfigure_refresh_controllers(void)
    if (     string_is_equal(menu_label,
                MENU_ENUM_LABEL_DEFERRED_INPUT_CONTROLLERS_LIST_STR)
          || string_is_equal(menu_label,
-               MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST_STR)
+               MENU_ENUM_LABEL_DEFERRED_INPUT_PORT_CONTROLLERS_LIST_STR)
          || string_is_equal(menu_label,
                MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST_STR))
       menu_state_get_ptr()->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
@@ -1530,6 +1579,8 @@ static void cb_input_autoconfigure_connect(
     * scan again; drivers that report none clear it. */
    input_config_set_device_phys(port,
          autoconfig_handle->device_info.phys);
+   input_config_set_device_ident(port, autoconfig_handle->device_info.ident,
+         autoconfig_handle->device_info.tag);
 
    /* > VID/PID */
    input_config_set_device_vid(port, autoconfig_handle->device_info.vid);
@@ -1800,13 +1851,20 @@ typedef struct
    unsigned port;
    unsigned vid;
    unsigned pid;
+   uint32_t ident;
+   char     tag[INPUT_PAD_TAG_LEN + 1];
    uint8_t  flags;
    uint8_t  is_connect;
 } autoconfig_handoff_t;
 
+/* input_device_info_t's tag holds a whole one: fails to compile if not */
+typedef char input_device_info_tag_fits[
+   (sizeof(((input_device_info_t*)0)->tag) == INPUT_PAD_TAG_LEN + 1) ? 1 : -1];
+
 static bool input_autoconfigure_connect_main(const char *name,
       const char *display_name, const char *phys, const char *driver,
-      unsigned port, unsigned vid, unsigned pid, uint8_t flags);
+      unsigned port, unsigned vid, unsigned pid, uint8_t flags,
+      uint32_t ident, const char *tag);
 static bool input_autoconfigure_disconnect_main(unsigned port,
       const char *name);
 
@@ -1847,7 +1905,8 @@ static void cb_input_autoconfigure_handoff(retro_task_t *task,
    if (handoff->is_connect)
       input_autoconfigure_connect_main(handoff->name,
             handoff->display_name, handoff->phys, handoff->driver,
-            handoff->port, handoff->vid, handoff->pid, handoff->flags);
+            handoff->port, handoff->vid, handoff->pid, handoff->flags,
+            handoff->ident, handoff->tag);
    else
       input_autoconfigure_disconnect_main(handoff->port, handoff->name);
 }
@@ -1863,7 +1922,7 @@ static bool input_autoconfigure_handoff_dup(char **dst, const char *s)
 static bool input_autoconfigure_handoff(bool is_connect,
       const char *name, const char *display_name, const char *phys,
       const char *driver, unsigned port, unsigned vid, unsigned pid,
-      uint8_t flags)
+      uint8_t flags, uint32_t ident, const char *tag)
 {
    retro_task_t *task;
    autoconfig_handoff_t *handoff = (autoconfig_handoff_t*)
@@ -1874,7 +1933,10 @@ static bool input_autoconfigure_handoff(bool is_connect,
    handoff->port       = port;
    handoff->vid        = vid;
    handoff->pid        = pid;
+   handoff->ident      = ident;
    handoff->flags      = flags;
+   if (tag)
+      strlcpy(handoff->tag, tag, sizeof(handoff->tag));
    handoff->is_connect = is_connect ? 1 : 0;
 
    if (     !input_autoconfigure_handoff_dup(&handoff->name, name)
@@ -1958,6 +2020,28 @@ bool input_autoconfigure_pending(void)
 }
 #endif
 
+static bool input_autoconfigure_connect_id(
+      const char *name,
+      const char *display_name,
+      const char *phys,
+      const char *driver,
+      unsigned port,
+      unsigned vid,
+      unsigned pid,
+      uint8_t flags,
+      uint32_t ident,
+      const char *tag)
+{
+   if (port >= MAX_INPUT_DEVICES)
+      return false;
+   /* Reported on a driver's own thread. */
+   if (!task_is_on_main_thread())
+      return input_autoconfigure_handoff(true, name, display_name, phys,
+            driver, port, vid, pid, flags, ident, tag);
+   return input_autoconfigure_connect_main(name, display_name, phys,
+         driver, port, vid, pid, flags, ident, tag);
+}
+
 bool input_autoconfigure_connect(
       const char *name,
       const char *display_name,
@@ -1969,6 +2053,23 @@ bool input_autoconfigure_connect(
 {
    return input_autoconfigure_connect_ex(name, display_name, phys,
          driver, port, vid, pid, 0);
+}
+
+bool input_autoconfigure_connect_uniq(
+      const char *name,
+      const char *display_name,
+      const char *phys,
+      const char *uniq,
+      const char *driver,
+      unsigned port,
+      unsigned vid,
+      unsigned pid)
+{
+   char tag[INPUT_PAD_TAG_LEN + 1];
+   uint32_t ident = input_pad_tag_ident(vid, pid, uniq, phys);
+   return input_autoconfigure_connect_id(name, display_name, phys,
+         driver, port, vid, pid, 0, ident,
+         input_pad_tag_text(ident, tag));
 }
 
 /**
@@ -1996,14 +2097,8 @@ bool input_autoconfigure_connect_ex(
       unsigned pid,
       uint8_t flags)
 {
-   if (port >= MAX_INPUT_DEVICES)
-      return false;
-   /* Reported on a driver's own thread. */
-   if (!task_is_on_main_thread())
-      return input_autoconfigure_handoff(true, name, display_name, phys,
-            driver, port, vid, pid, flags);
-   return input_autoconfigure_connect_main(name, display_name, phys,
-         driver, port, vid, pid, flags);
+   return input_autoconfigure_connect_id(name, display_name, phys,
+         driver, port, vid, pid, flags, 0, NULL);
 }
 
 static bool input_autoconfigure_connect_main(
@@ -2014,7 +2109,9 @@ static bool input_autoconfigure_connect_main(
       unsigned port,
       unsigned vid,
       unsigned pid,
-      uint8_t flags)
+      uint8_t flags,
+      uint32_t ident,
+      const char *tag)
 {
    task_finder_data_t find_data;
    autoconfig_port_pending_t pending;
@@ -2077,6 +2174,9 @@ static bool input_autoconfigure_connect_main(
    autoconfig_handle->device_info.joypad_driver[0] = '\0';
    autoconfig_handle->device_info.autoconfigured   = false;
    autoconfig_handle->device_info.name_index       = 0;
+   autoconfig_handle->device_info.ident            = ident;
+   strlcpy(autoconfig_handle->device_info.tag, tag ? tag : "",
+         sizeof(autoconfig_handle->device_info.tag));
    autoconfig_handle->flags                        = flags;
    if (autoconfig_enabled)
       autoconfig_handle->flags |= AUTOCONF_FLAG_AUTOCONFIG_ENABLED;
@@ -2212,7 +2312,7 @@ bool input_autoconfigure_reconnect(unsigned port)
    if (!name || !*name)
       return false;
 
-   return input_autoconfigure_connect_ex(
+   return input_autoconfigure_connect_id(
          name,
          NULL,
          input_config_get_device_phys(port),
@@ -2220,7 +2320,9 @@ bool input_autoconfigure_reconnect(unsigned port)
          port,
          input_config_get_device_vid(port),
          input_config_get_device_pid(port),
-         AUTOCONF_FLAG_RECONNECT);
+         AUTOCONF_FLAG_RECONNECT,
+         input_config_get_device_ident(port),
+         input_config_get_device_ident_tag(port));
 }
 
 /****************************/
@@ -2256,6 +2358,7 @@ static void cb_input_autoconfigure_disconnect(
    input_config_clear_device_config_name(port);
    input_config_clear_device_joypad_driver(port);
    input_config_set_device_phys(port, NULL);
+   input_config_set_device_ident(port, 0, NULL);
    input_config_set_device_vid(port, 0);
    input_config_set_device_pid(port, 0);
    input_config_set_device_autoconfigured(port, false);
@@ -2320,7 +2423,7 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
       return false;
    if (!task_is_on_main_thread())
       return input_autoconfigure_handoff(false, name, NULL, NULL, NULL,
-            port, 0, 0, 0);
+            port, 0, 0, 0, 0, NULL);
    return input_autoconfigure_disconnect_main(port, name);
 }
 

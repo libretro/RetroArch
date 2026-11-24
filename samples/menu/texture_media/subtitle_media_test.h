@@ -26,6 +26,14 @@ static const char *media_test_subtitle_text(const menu_media_controls_t *media)
    return view ? view->text : "";
 }
 
+/* The subtitle button: last, or before Shaders where a menu offers
+ * shader presets for the viewer */
+static unsigned media_test_cc_button(const menu_media_controls_t *media)
+{
+   return media->controls.layout.button_count - 1
+      - (media->controls.target.shaders ? 1 : 0);
+}
+
 static bool media_subtitle_wait(menu_media_controls_t *media,
       struct menu_state *menu_st, void (*draw)(struct menu_state *),
       const char *expected)
@@ -54,7 +62,7 @@ static bool media_test_embedded_subtitles(menu_media_controls_t *media,
    for (choice = 0; choice < 3; choice++)
    {
       menu_media_controls_action(media, MENU_ACTION_DOWN, menu_st->current_time_us);
-      for (i = 0; i + 1 < media->controls.layout.button_count; i++)
+      for (i = 0; i < media_test_cc_button(media); i++)
          menu_media_controls_action(media, MENU_ACTION_RIGHT, menu_st->current_time_us);
       menu_media_controls_action(media, MENU_ACTION_OK, menu_st->current_time_us);
       if (!media_subtitle_wait(media, menu_st, draw,
@@ -132,13 +140,13 @@ static bool media_test_subtitles(menu_media_controls_t *media,
       unsigned i;
       gfx_media_subtitle_t *owner;
       const gfx_media_rect_t *button;
-      for (i = 0; i + 1 < media->controls.layout.button_count; i++)
+      for (i = 0; i < media_test_cc_button(media); i++)
          menu_media_controls_action(media, MENU_ACTION_RIGHT, menu_st->current_time_us);
-      valid = valid && media->controls.focus + 1 == media->controls.layout.button_count;
+      valid = valid && media->controls.focus == media_test_cc_button(media);
       menu_media_controls_action(media, MENU_ACTION_OK, menu_st->current_time_us);
       valid = media_subtitle_wait(media, menu_st, draw, NULL) && valid;
       valid = media_subtitle_capture(23) && valid;
-      button = &media->controls.layout.buttons[media->controls.layout.button_count - 1];
+      button = &media->controls.layout.buttons[media_test_cc_button(media)];
       gfx_media_controls_pointer(&media->controls, button->x + 1, button->y + 1,
             false, true, menu_st->current_time_us);
       gfx_media_controls_pointer(&media->controls, button->x + 1, button->y + 1,

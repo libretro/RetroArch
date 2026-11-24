@@ -67,6 +67,10 @@ bool vulkan_encode_hevc_release(vulkan_encode_hevc_t *e)
 {
    return vulkan_encode_h264_release((vulkan_encode_h264_t*)e);
 }
+bool vulkan_encode_hevc_wait(vulkan_encode_hevc_t *e, uint64_t timeout_ns)
+{
+   return vulkan_encode_h264_wait((vulkan_encode_h264_t*)e, timeout_ns);
+}
 int vulkan_encode_hevc_finish(vulkan_encode_hevc_t *e)
 {
    return vulkan_encode_h264_finish((vulkan_encode_h264_t*)e);

@@ -45,7 +45,7 @@
 /*
  * SHA-256 and SHA-1 block compression, in descending order of speed:
  *
- *   1. ARMv8 SHA1/SHA2 instructions.
+ *   1. ARMv8 SHA1/SHA2 instructions, in AArch64 or AArch32.
  *   2. x86 SHA-NI.
  *   3. Portable scalar round loop, which every target keeps as the
  *      fallback for a CPU whose runtime probe comes back empty.
@@ -72,6 +72,27 @@
  * instructions, but vsha256hq_u32() and friends still have to be
  * declared, and both compilers gated them on the baseline for a long
  * time. */
+#define SHA_HAVE_ARM_PATH    1
+#define SHA_ARM_NEEDS_TARGET 1
+#define SHA_ARM_DISPATCH     1
+#endif
+#elif defined(__arm__) && defined(__ARMEL__) && !defined(_MSC_VER) \
+   && (defined(__ARM_NEON) || defined(__ARM_NEON__))
+/* 32-bit code on an ARMv8 CPU with the Cryptographic Extension: the
+ * same instructions in AArch32 (Android's armeabi-v7a build among
+ * others). A NEON baseline is needed for the vector types. */
+#if defined(__ARM_FEATURE_SHA2) || defined(__ARM_FEATURE_CRYPTO)
+#define SHA_HAVE_ARM_PATH 1
+#elif defined(__clang__) && __clang_major__ >= 16
+/* Clang declares the intrinsics on 32-bit ARM only for an ARMv8
+ * baseline; the builtins under them work in any function built for
+ * armv8-a,sha2, so they are spelled out below. */
+#define SHA_HAVE_ARM_PATH     1
+#define SHA_ARM_NEEDS_TARGET  1
+#define SHA_ARM_DISPATCH      1
+#define SHA_ARM_A32_BUILTINS  1
+#elif !defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 9
+/* GCC's arm_neon.h declares them under a target pragma of its own */
 #define SHA_HAVE_ARM_PATH    1
 #define SHA_ARM_NEEDS_TARGET 1
 #define SHA_ARM_DISPATCH     1
@@ -116,10 +137,38 @@
 
 #if defined(SHA_HAVE_ARM_PATH)
 #include <arm_neon.h>
-#if defined(SHA_ARM_NEEDS_TARGET)
-#define SHA_TARGET_ARM __attribute__((target("+crypto")))
-#else
+#if !defined(SHA_ARM_NEEDS_TARGET)
 #define SHA_TARGET_ARM
+#elif defined(__aarch64__) || defined(_M_ARM64)
+#define SHA_TARGET_ARM __attribute__((target("+crypto")))
+#elif defined(__clang__)
+#define SHA_TARGET_ARM __attribute__((target("armv8-a,sha2")))
+#else
+#define SHA_TARGET_ARM __attribute__((target("fpu=crypto-neon-fp-armv8")))
+#endif
+#if defined(SHA_ARM_A32_BUILTINS)
+/* As clang's arm_neon.h defines them for little-endian ARMv8; 50 is
+ * the builtin's type code for uint32x4_t */
+#define SHA_A32_Q(v) ((int8x16_t)(v))
+#define vsha256hq_u32(a, b, w) ((uint32x4_t)__builtin_neon_vsha256hq_u32( \
+      SHA_A32_Q(a), SHA_A32_Q(b), SHA_A32_Q(w), 50))
+#define vsha256h2q_u32(a, b, w) ((uint32x4_t)__builtin_neon_vsha256h2q_u32( \
+      SHA_A32_Q(a), SHA_A32_Q(b), SHA_A32_Q(w), 50))
+#define vsha256su0q_u32(a, b) ((uint32x4_t)__builtin_neon_vsha256su0q_u32( \
+      SHA_A32_Q(a), SHA_A32_Q(b), 50))
+#define vsha256su1q_u32(a, b, c) ((uint32x4_t)__builtin_neon_vsha256su1q_u32( \
+      SHA_A32_Q(a), SHA_A32_Q(b), SHA_A32_Q(c), 50))
+#define vsha1cq_u32(abcd, e, w) \
+   ((uint32x4_t)__builtin_neon_vsha1cq_u32((abcd), (e), (w)))
+#define vsha1pq_u32(abcd, e, w) \
+   ((uint32x4_t)__builtin_neon_vsha1pq_u32((abcd), (e), (w)))
+#define vsha1mq_u32(abcd, e, w) \
+   ((uint32x4_t)__builtin_neon_vsha1mq_u32((abcd), (e), (w)))
+#define vsha1h_u32(e) ((uint32_t)__builtin_neon_vsha1h_u32(e))
+#define vsha1su0q_u32(a, b, c) ((uint32x4_t)__builtin_neon_vsha1su0q_u32( \
+      SHA_A32_Q(a), SHA_A32_Q(b), SHA_A32_Q(c), 50))
+#define vsha1su1q_u32(a, b) ((uint32x4_t)__builtin_neon_vsha1su1q_u32( \
+      SHA_A32_Q(a), SHA_A32_Q(b), 50))
 #endif
 #elif defined(SHA_HAVE_X86_PATH)
 #include <immintrin.h>

@@ -35,9 +35,10 @@ typedef struct ra_dxgi_bridge {
    IDXGISwapChain3 *chain;
    int failed, flips;
    BOOL tearing;
+   unsigned generation;
 } ra_dxgi_bridge_t;
 
-static int no_output, no_output6, check_fails, refs;
+static int no_output, no_output6, check_fails, refs, asked;
 static UINT support;
 
 /* IDXGIOutput6 as the system lays it out: Release third, the method
@@ -67,6 +68,7 @@ static struct output the_output = { &output_vtable };
 static HRESULT containing(IDXGISwapChain3 *p, IDXGIOutput **out)
 {
    (void)p;
+   ++asked;
    if (no_output) return -1;
    ++refs; *out = &the_output;
    return 0;
@@ -87,20 +89,21 @@ int main(void)
    vtable6.CheckHardwareCompositionSupport = check;
    the_output6.lpVtbl = &vtable6;
    b.chain = &the_chain; b.failed = 0; b.tearing = 1; b.flips = 0;
+   b.generation = 0;
 
    support = 1;                      /* fullscreen */
    ra_dxgi_bridge_ask_output(&b);
-   assert(b.flips && ra_dxgi_bridge_immediate(&b) && refs == 0);
+   assert(b.flips && ra_dxgi_bridge_immediate(&b, 0) && refs == 0);
    b.tearing = 0;
-   assert(!ra_dxgi_bridge_immediate(&b));
+   assert(!ra_dxgi_bridge_immediate(&b, 0));
    b.tearing = 1; b.failed = 1;
-   assert(!ra_dxgi_bridge_immediate(&b));
+   assert(!ra_dxgi_bridge_immediate(&b, 0));
    b.failed = 0;
-   assert(!ra_dxgi_bridge_immediate(NULL));
+   assert(!ra_dxgi_bridge_immediate(NULL, 0));
 
    support = 2;                      /* windowed only */
    ra_dxgi_bridge_ask_output(&b);
-   assert(!b.flips && !ra_dxgi_bridge_immediate(&b) && refs == 0);
+   assert(!b.flips && !ra_dxgi_bridge_immediate(&b, 0) && refs == 0);
    support = 1; check_fails = 1;
    ra_dxgi_bridge_ask_output(&b);
    assert(!b.flips && refs == 0);
@@ -115,6 +118,18 @@ int main(void)
    no_output = 0;
    ra_dxgi_bridge_ask_output(&b);
    assert(b.flips && refs == 0);
+   asked = 0;
+
+   /* the window on another output: asked again, once */
+   support = 2;
+   assert(ra_dxgi_bridge_immediate(&b, 0) && asked == 0);
+   assert(!ra_dxgi_bridge_immediate(&b, 1) && asked == 1 && refs == 0);
+   assert(!ra_dxgi_bridge_immediate(&b, 1) && asked == 1);
+   support = 1;
+   assert(ra_dxgi_bridge_immediate(&b, 2) && asked == 2 && refs == 0);
+   /* a chain that cannot tear has nothing to ask */
+   b.tearing = 0;
+   assert(!ra_dxgi_bridge_immediate(&b, 3) && asked == 2);
    puts("PASS: DXGI bridge output composition query and immediate present");
    return 0;
 }

@@ -58,7 +58,7 @@ jobs:
         # built; any other failure fails the step at once.
         set -o pipefail
         for i in 1 2 3; do
-          ./gradlew assembleDebug \
+          ./gradlew checkNativeBuildParallelism assembleDebug \
             -Dorg.gradle.internal.repository.max.tentatives=6 \
             -Dorg.gradle.internal.repository.initial.backoff=2000 \
             2>&1 | tee gradle.log && break

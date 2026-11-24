@@ -202,6 +202,7 @@ struct video_shader_pass
    char alias[64];
    bool mipmap;
    bool feedback;
+   bool use_simulated_res;
 };
 
 struct video_shader_lut

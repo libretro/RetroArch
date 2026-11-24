@@ -10,7 +10,8 @@ static vulkan_encode_h264_dpb_t dpb;
 static vulkan_encode_h264_picture_t picture, previous;
 static vulkan_encode_h264_submit_t transaction, saved;
 static uint8_t payload[256];
-static unsigned calls, results, fail_result, barriers, statuses, queries, controls;
+static unsigned calls, results, fail_result, barriers, statuses, queries, controls, waits;
+static uint64_t waited_for;
 static unsigned mask;
 static bool reset_coding;
 static VkResult fence_status, query_status, failure;
@@ -186,10 +187,17 @@ static VKAPI_ATTR VkResult VKAPI_CALL feedback(VkDevice device, VkQueryPool pool
    values[2] = (uint32_t)feedback_status;
    return VK_SUCCESS;
 }
+static VKAPI_ATTR VkResult VKAPI_CALL wait(VkDevice device, uint32_t count,
+      const VkFence *fences, VkBool32 all, uint64_t timeout)
+{
+   waits++; waited_for = timeout;
+   assert(device == session.device && count == 1 && *fences == resources.fence && all);
+   return VK_SUCCESS;
+}
 static const vulkan_encode_h264_submit_ops_t ops = {
    reset_command, begin_command, end_command, barrier, reset_query,
    begin_query, end_query, begin_coding, control, encode, end_coding,
-   reset_fence, submit, status, feedback
+   reset_fence, submit, status, feedback, wait
 };
 static void setup(bool predictive)
 {
@@ -246,12 +254,18 @@ int main(void)
       assert(start() == VULKAN_ENCODE_H264_BUSY && calls == before);
       assert(!memcmp(&saved, &transaction, sizeof(saved)));
       assert(!vulkan_encode_h264_submit_retire(&transaction));
+      /* In flight: a wait blocks on the transaction's fence */
+      before = waits;
+      assert(vulkan_encode_h264_submit_wait(&transaction, 1234) && waits == before + 1 && waited_for == 1234);
       fence_status = VK_NOT_READY;
       assert(vulkan_encode_h264_submit_poll(&transaction, &data, &size) == VULKAN_ENCODE_H264_BUSY);
       assert(!data && !size && !queries && statuses == 1);
       fence_status = VK_SUCCESS; query_status = VK_NOT_READY;
       assert(vulkan_encode_h264_submit_poll(&transaction, &data, &size) == VULKAN_ENCODE_H264_BUSY);
       assert(transaction.gpu_complete && !data && !size);
+      /* Through the fence: nothing left to wait on */
+      before = waits;
+      assert(!vulkan_encode_h264_submit_wait(&transaction, 1) && waits == before);
       query_status = VK_SUCCESS; feedback_status = 0;
       assert(vulkan_encode_h264_submit_poll(&transaction, &data, &size) == VULKAN_ENCODE_H264_BUSY);
       feedback_status = 1;
@@ -325,6 +339,7 @@ int main(void)
    MISSING(reset_query); MISSING(begin_query); MISSING(end_query);
    MISSING(begin_coding); MISSING(control); MISSING(encode); MISSING(end_coding);
    MISSING(reset_fence); MISSING(submit); MISSING(status); MISSING(feedback);
+   MISSING(wait);
    puts("Vulkan H264 submit/timeline/fence/packet/error ownership PASS");
    return 0;
 }

@@ -80,6 +80,12 @@ android {
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
 
       dimension "variant"
+
+      externalNativeBuild {
+        ndkBuild {
+          arguments "-j${Runtime.runtime.availableProcessors()}", "HAVE_VULKAN_CUSTOM_DRIVER=0", "PLAY_STORE_BUILD=1"
+        }
+      }
     }
     playStorePlus {
       minSdkVersion 26
@@ -92,6 +98,12 @@ android {
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
 
       dimension "variant"
+
+      externalNativeBuild {
+        ndkBuild {
+          arguments "-j${Runtime.runtime.availableProcessors()}", "HAVE_VULKAN_CUSTOM_DRIVER=0", "PLAY_STORE_BUILD=1"
+        }
+      }
     }
   }
 

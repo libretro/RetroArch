@@ -20,6 +20,7 @@
 #include "../../config.def.h"
 
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 
 #include "../../tasks/tasks_internal.h"
 
@@ -64,8 +65,10 @@ static SceCtrlActuator actuators[DEFAULT_MAX_PADS] = {0};
 #endif
 
 /* TODO/FIXME - static globals */
-static uint64_t pad_state[DEFAULT_MAX_PADS];
-static int16_t analog_state[DEFAULT_MAX_PADS][3][2];
+/* each pad as its poll left it, lent to the readers (input_pad_view.h):
+ * the buttons as RetroPad ids, axes 0-3 the sticks' x and y, 4 and 5
+ * the Vita's L2 and R2 */
+static input_pad_view_t psp_pads[DEFAULT_MAX_PADS];
 
 static const char *psp_joypad_name(unsigned pad)
 {
@@ -126,73 +129,22 @@ static int32_t psp_joypad_button(unsigned port, uint16_t joykey)
 {
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return pad_state[port] & (UINT64_C(1) << joykey);
+   return input_pad_view_button(&psp_pads[port], joykey);
 }
 
 static void psp_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-	if (port < DEFAULT_MAX_PADS)
-   {
-		BITS_COPY16_PTR( state, pad_state[port] );
-	}
+   if (port < DEFAULT_MAX_PADS)
+      *state = psp_pads[port].buttons;
    else
       BIT256_CLEAR_ALL_PTR(state);
-}
-
-static int16_t psp_joypad_axis_state(unsigned port, uint32_t joyaxis)
-{
-   if (AXIS_NEG_GET(joyaxis) < 6)
-   {
-      int16_t val  = 0;
-      int16_t axis = AXIS_NEG_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-         case 1:
-            val = analog_state[port][0][axis];
-            break;
-         case 2:
-         case 3:
-            val = analog_state[port][1][axis - 2];
-            break;
-         case 4:
-         case 5:
-            val = analog_state[port][2][axis - 4];
-            break;
-      }
-      if (val < 0)
-         return val;
-   }
-   else if (AXIS_POS_GET(joyaxis) < 6)
-   {
-      int16_t val  = 0;
-      int16_t axis = AXIS_POS_GET(joyaxis);
-      switch (axis)
-      {
-         case 0:
-         case 1:
-            val = analog_state[port][0][axis];
-            break;
-         case 2:
-         case 3:
-            val = analog_state[port][1][axis - 2];
-            break;
-         case 4:
-         case 5:
-            val = analog_state[port][2][axis - 4];
-            break;
-      }
-      if (val > 0)
-         return val;
-   }
-   return 0;
 }
 
 static int16_t psp_joypad_axis(unsigned port, uint32_t joyaxis)
 {
    if (port >= DEFAULT_MAX_PADS)
       return 0;
-   return psp_joypad_axis_state(port, joyaxis);
+   return input_pad_view_axis(&psp_pads[port], joyaxis);
 }
 
 static int16_t psp_joypad_state(
@@ -201,29 +153,17 @@ static int16_t psp_joypad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   unsigned i;
-   int16_t ret                          = 0;
-   uint16_t port_idx                    = joypad_info->joy_idx;
-
+   uint16_t port_idx = joypad_info->joy_idx;
    if (port_idx >= DEFAULT_MAX_PADS)
       return 0;
+   return input_pad_view_state(&psp_pads[port_idx], joypad_info,
+         joykeys, joyaxes);
+}
 
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-   {
-      const uint64_t joykey  = joykeys[i];
-      const uint32_t joyaxis = joyaxes[i];
-      if (
-               (uint16_t)joykey != NO_BTN 
-            && (pad_state[port_idx] & (UINT64_C(1) << (uint16_t)joykey))
-         )
-         ret |= ( 1 << i);
-      else if (joyaxis != AXIS_NONE &&
-            ((float)abs(psp_joypad_axis_state(port_idx, joyaxis)) 
-             / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
-   }
-
-   return ret;
+/* Read in the poll alone: the same until the next */
+static const input_pad_view_t *psp_joypad_view(unsigned port)
+{
+   return (port < DEFAULT_MAX_PADS) ? &psp_pads[port] : NULL;
 }
 
 static void psp_joypad_poll(void)
@@ -276,10 +216,11 @@ static void psp_joypad_poll(void)
 
    for (player = 0; player < players_count; player++)
    {
-      unsigned j, k;
+      unsigned j;
       int32_t ret;
       SceCtrlData state_tmp;
-      unsigned i  = player;
+      uint64_t bits       = 0;
+      input_pad_view_t *v = &psp_pads[player];
 #if defined(VITA)
       unsigned p = (psp2_model == SCE_KERNEL_MODEL_VITATV) 
          ? player + 1 : player;
@@ -297,10 +238,9 @@ static void psp_joypad_poll(void)
 #endif
       ret = CtrlPeekBufferPositive(p, &state_tmp, 1);
 
-      pad_state[i] = 0;
-      analog_state[i][0][0] = analog_state[i][0][1] =
-         analog_state[i][1][0] = analog_state[i][1][1] = 
-         analog_state[i][2][0] = analog_state[i][2][1] = 0;
+      INPUT_PAD_VIEW_SET_BITS64(v, 0);
+      for (j = 0; j < 6; j++)
+         v->axes[j] = 0;
 
       if (ret < 0)
          continue;
@@ -346,37 +286,38 @@ static void psp_joypad_poll(void)
       }
 #endif
 
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_UP) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_START) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SELECT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_TRIANGLE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SQUARE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CROSS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CIRCLE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_LEFT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_LEFT) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_DOWN) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_DOWN) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_RIGHT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_UP) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_UP) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_START) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_START) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SELECT) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_TRIANGLE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_X) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_SQUARE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CROSS) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_B) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_CIRCLE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_A) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L) : 0;
 #if defined(VITA)
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
-      pad_state[i] |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_BUTTON] [0] = (int16_t)(STATE_ANALOGL2(state_tmp)-128) * 256;
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_BUTTON] [1] = (int16_t)(STATE_ANALOGR2(state_tmp)-128) * 256;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R2) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L2) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L2) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_R3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
+      bits |= (STATE_BUTTON(state_tmp) & PSP_CTRL_L3) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
+      v->axes[4] = (int16_t)(STATE_ANALOGL2(state_tmp)-128) * 256;
+      v->axes[5] = (int16_t)(STATE_ANALOGR2(state_tmp)-128) * 256;
 #endif
+      INPUT_PAD_VIEW_SET_BITS64(v, bits);
 
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_X] = (int16_t)(STATE_ANALOGLX(state_tmp)-128) * 256;
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_LEFT] [RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)(STATE_ANALOGLY(state_tmp)-128) * 256;
+      v->axes[0] = (int16_t)(STATE_ANALOGLX(state_tmp)-128) * 256;
+      v->axes[1] = (int16_t)(STATE_ANALOGLY(state_tmp)-128) * 256;
 #if defined(SN_TARGET_PSP2) || defined(VITA)
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_X] = (int16_t)(STATE_ANALOGRX(state_tmp)-128) * 256;
-      analog_state[i][RETRO_DEVICE_INDEX_ANALOG_RIGHT][RETRO_DEVICE_ID_ANALOG_Y] = (int16_t)(STATE_ANALOGRY(state_tmp)-128) * 256;
+      v->axes[2] = (int16_t)(STATE_ANALOGRX(state_tmp)-128) * 256;
+      v->axes[3] = (int16_t)(STATE_ANALOGRY(state_tmp)-128) * 256;
 #endif
-      for (j = 0; j < 2; j++)
-         for (k = 0; k < 2; k++)
-            if (analog_state[i][j][k] == -0x8000)
-               analog_state[i][j][k] = -0x7fff;
+      /* the sticks', not the triggers' */
+      for (j = 0; j < 4; j++)
+         if (v->axes[j] == -0x8000)
+            v->axes[j] = -0x7fff;
    }
 }
 
@@ -467,4 +408,9 @@ input_device_driver_t psp_joypad = {
 #else
    "psp",
 #endif
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   psp_joypad_view
 };

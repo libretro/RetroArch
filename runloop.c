@@ -137,10 +137,14 @@ bool android_get_vfs_authorized_locations(
 
 #include "runtime_file.h"
 #include "runloop.h"
+#include "calendar_time.h"
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
-#include "record/record_driver.h"
+#ifdef HAVE_PYROWAVE
+#include "record/record_pyrowave_receiver.h"
+#include "record/drivers/record_pyrowave.h"
+#endif
 #include "msg_hash_lbl_str.h"
 
 #ifdef HAVE_CONFIG_H
@@ -170,6 +174,7 @@ bool android_get_vfs_authorized_locations(
 #include "menu/menu_cbs.h"
 #include "menu/menu_driver.h"
 #include "menu/menu_input.h"
+#include "menu/menu_setting.h"
 #endif
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -1378,6 +1383,12 @@ static bool dynamic_verify_hw_context(
                return false;
             break;
 #endif
+#ifdef HAVE_DEKO3D
+         case RETRO_HW_CONTEXT_DEKO3D:
+            if (!(len == 6 && memcmp(video_ident, "deko3d", 6) == 0))
+               return false;
+            break;
+#endif
          case RETRO_HW_CONTEXT_VULKAN:
             if (!(len == 6 && memcmp(video_ident, "vulkan", 6) == 0))
                return false;
@@ -1462,6 +1473,12 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
 #ifdef HAVE_GCM
       case RETRO_HW_CONTEXT_RSX:
          RARCH_LOG("[HW] Requesting RSX context.\n");
+         break;
+#endif
+
+#ifdef HAVE_DEKO3D
+      case RETRO_HW_CONTEXT_DEKO3D:
+         RARCH_LOG("[HW] Requesting deko3d context.\n");
          break;
 #endif
 
@@ -2835,18 +2852,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          /* Ensure that menu stack is flushed appropriately
           * after the core has stopped running */
          if (menu_st)
-         {
-            const char *content_path = path_get(RARCH_PATH_CONTENT);
-
             menu_st->flags |= MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH;
-
-            if (content_path && *content_path)
-               strlcpy(menu_st->pending_env_shutdown_content_path,
-                     content_path,
-                     sizeof(menu_st->pending_env_shutdown_content_path));
-            else
-               menu_st->pending_env_shutdown_content_path[0] = '\0';
-         }
 #endif
          break;
       }
@@ -3759,6 +3765,9 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
             /* Restart when recording parameters or the video driver change. */
             if (     rec_st->data
+#ifdef HAVE_PYROWAVE
+                  && !record_pyrowave_frontend_active()
+#endif
                   && (!no_video_reinit || viewport_changed
                      || max_size_changed || timing_changed))
             {
@@ -3817,6 +3826,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             memcpy(sys_info->subsystem.data, info,
                   i * sizeof(*sys_info->subsystem.data));
             sys_info->subsystem.size                 = (unsigned)i;
+            /* The menu lists these, the running core's own, whether or
+             * not a probe read them first (a checked load's doesn't) */
+            runloop_st->subsystem_current_count      =
+                  i <= SUBSYSTEM_MAX_SUBSYSTEMS
+                  ? (unsigned)i
+                  : SUBSYSTEM_MAX_SUBSYSTEMS;
             runloop_st->current_core.flags          |=
                   RETRO_CORE_FLAG_HAS_SET_SUBSYSTEMS;
          }
@@ -4103,7 +4118,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
       }
 
       case RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT:
-#ifdef HAVE_LIBNX
+#if defined(HAVE_LIBNX) && !defined(__SWITCH2__)
          RARCH_LOG("[Environ] SET_HW_SHARED_CONTEXT: Ignored for now.\n");
          /* TODO/FIXME - Force this off for now for Switch
           * until shared HW context can work there */
@@ -4116,7 +4131,7 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 
       case RETRO_ENVIRONMENT_GET_VFS_INTERFACE:
       {
-         const uint32_t supported_vfs_version = 6;
+         const uint32_t supported_vfs_version = 7;
          static struct retro_vfs_interface vfs_iface =
          {
             /* VFS API v1 */
@@ -4153,7 +4168,16 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             retro_vfs_dirent_stat_impl,
              /* VFS API v6 */
             retro_vfs_file_read_at_impl,
-            retro_vfs_file_write_at_impl
+            retro_vfs_file_write_at_impl,
+             /* VFS API v7 */
+            retro_vfs_file_view_impl,
+            retro_vfs_file_map_impl,
+            retro_vfs_file_identity_impl,
+            retro_vfs_stat_identity_impl,
+            retro_vfs_file_volume_impl,
+            retro_vfs_stat_volume_impl,
+            retro_vfs_file_verity_measure_impl,
+            retro_vfs_file_verity_enable_impl
          };
 
          struct retro_vfs_interface_info *vfs_iface_info = (struct retro_vfs_interface_info *) data;
@@ -4242,9 +4266,37 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_EXECUTION_PHASE:
+         if (data)
+         {
+            enum retro_execution_phase phase = RETRO_EXECUTION_PHASE_RETAINED;
+#ifdef HAVE_RUNAHEAD
+            phase = runahead_get_execution_phase();
+#endif
+#ifdef HAVE_NETWORKING
+            /* Netplay never runs ahead: its replays are the only ones. */
+            if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_REPLAYING, NULL))
+               phase = RETRO_EXECUTION_PHASE_REPLAY;
+#endif
+            *(enum retro_execution_phase*)data = phase;
+         }
+         return true;
+
+#ifdef HAVE_RUNAHEAD
+      case RETRO_ENVIRONMENT_SET_SAVESTATE_LIFETIME:
+         return serialization_register((const struct retro_savestate_lifetime*)data);
+#endif
       case RETRO_ENVIRONMENT_GET_SAVESTATE_CONTEXT:
       {
          int result = RETRO_SAVESTATE_CONTEXT_NORMAL;
+#ifdef HAVE_RUNAHEAD
+         if (serialization_owned_context())
+         {
+            if (data)
+               *(int*)data = RETRO_SAVESTATE_CONTEXT_SAME_INSTANCE_MANAGED;
+            break;
+         }
+#endif
 
 #if defined(HAVE_RUNAHEAD) || defined(HAVE_NETWORKING)
          if (runloop_st->flags & RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE)
@@ -4676,6 +4728,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             return false;
          }
 #endif
+         break;
+      case RETRO_ENVIRONMENT_GET_CALENDAR_TIME_INTERFACE:
+         RARCH_LOG("[Environ] GET_CALENDAR_TIME_INTERFACE.\n");
+         if (!calendar_time_get_interface(
+                  (struct retro_calendar_time_interface*)data))
+            return false;
          break;
       case RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT:
          {
@@ -5551,6 +5609,21 @@ void runloop_system_info_free(void)
    sys_info->mmaps.descriptors                        = NULL;
    sys_info->mmaps.num_descriptors                    = 0;
 
+#ifdef HAVE_MENU
+   /* The menu's lists name the core (Unload Core, the Quick Menu):
+    * a staged close frees this frames after the menu was rebuilt.
+    * The name may point into a library already closed: never read.
+    * A refresh already owed is left as it is: a close that waits
+    * for nothing frees this before the Main Menu's full populate. */
+   {
+      struct menu_state *menu_st = menu_state_get_ptr();
+      if (     sys_info->info.library_name
+            && !(menu_st->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH))
+         menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                        |  MENU_ST_FLAG_PREVENT_POPULATE;
+   }
+#endif
+
    sys_info->info.library_name                        = NULL;
    sys_info->info.library_version                     = NULL;
    sys_info->info.valid_extensions                    = NULL;
@@ -5727,10 +5800,31 @@ static retro_time_t runloop_core_runtime_tick(
          &runloop_st->core_runtime_credit);
 }
 
+/* Netplay and replays need every run to see the same clock. */
+static bool runloop_calendar_held(void)
+{
+#ifdef HAVE_BSV_MOVIE
+   if (input_state_get_ptr()->bsv_movie_state.flags & (
+              BSV_FLAG_MOVIE_START_RECORDING
+            | BSV_FLAG_MOVIE_START_PLAYBACK
+            | BSV_FLAG_MOVIE_RECORDING
+            | BSV_FLAG_MOVIE_PLAYBACK))
+      return true;
+#endif
+#ifdef HAVE_NETWORKING
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+      return true;
+#endif
+   return false;
+}
+
 static bool core_unload_game(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
 
+#ifdef HAVE_RUNAHEAD
+   serialization_clear_history();
+#endif
    video_driver_free_hw_context();
 #ifdef HAVE_TEMPORAL_UPSCALER
    video_upscaler_clear_wanted();
@@ -5754,12 +5848,15 @@ static bool core_unload_game(void)
       if (runloop_st->current_core_type == CORE_TYPE_WEBM)
       {
          libretro_media_set_video_hw_refresh(NULL, NULL);
+         libretro_media_set_video_planes_refresh(NULL, NULL);
          video_driver_movie_clear();
       }
 #endif
       runloop_st->core_poll_type_override  = POLL_TYPE_OVERRIDE_DONTCARE;
       runloop_st->current_core.flags      &= ~RETRO_CORE_FLAG_GAME_LOADED;
    }
+
+   calendar_time_clear();
 
    /* A staged switch keeps the device running until its driver stage
     * sets it aside or closes it, so the menu's audio and its sounds
@@ -6016,7 +6113,17 @@ void runloop_event_deinit_core(void)
    if (runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED)
    {
       RARCH_LOG("[Core] Unloading core...\n");
+#ifdef HAVE_RUNAHEAD
+      serialization_close();
+#endif
+#ifdef HAVE_THREADS
+      /* The core may still free its GL objects in retro_deinit() */
+      video_thread_core_context_take();
+#endif
       runloop_st->current_core.retro_deinit();
+#ifdef HAVE_THREADS
+      video_thread_core_context_release();
+#endif
 #if TARGET_OS_IPHONE
       exec_mem_ledger_free_all();
 #endif
@@ -7858,6 +7965,7 @@ static bool display_menu_libretro(
          input_st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;
 
       video_driver_ff_frameskip_decide(current_time);
+      calendar_time_set_held(runloop_calendar_held());
       core_run();
       runloop_load_deferred_auto_state();
       runloop_st->core_runtime_usec       +=
@@ -8576,8 +8684,13 @@ static enum runloop_state_enum runloop_check_state(
          else
             retroarch_menu_running();
       }
-      /* Initial menu toggle on startup */
-      else if (core_type_is_dummy && !(menu_st->flags & MENU_ST_FLAG_ALIVE))
+      /* Initial menu toggle on startup; a stream being received has the
+       * screen instead, and the menu comes back when it ends */
+      else if (core_type_is_dummy && !(menu_st->flags & MENU_ST_FLAG_ALIVE)
+#ifdef HAVE_PYROWAVE
+            && !record_pyrowave_receiver_active()
+#endif
+            )
          retroarch_menu_running();
 
       old_pressed             = pressed;
@@ -8631,6 +8744,8 @@ static enum runloop_state_enum runloop_check_state(
    else if (gfx_widgets_poll_teardown())
       command_event(CMD_EVENT_OSD_NOTIFICATION_TOGGLE, NULL);
 #endif
+   /* The camera picture is fed here, the widget only draws it */
+   gfx_widget_camera_pip_update(widgets_active);
 #endif
 
 #ifdef HAVE_MENU
@@ -8855,7 +8970,8 @@ static enum runloop_state_enum runloop_check_state(
 
          /* Loop backwards through the menu stack to
           * find a known reference point */
-         while (menu_stack && (menu_stack->size >= stack_offset))
+         for (; menu_stack && (menu_stack->size >= stack_offset);
+                stack_offset++)
          {
             const char *parent_label = menu_stack->list[
                menu_stack->size - stack_offset].label;
@@ -8887,8 +9003,6 @@ static enum runloop_state_enum runloop_check_state(
                reset_navigation = false;
                break;
             }
-
-            stack_offset++;
          }
 
          if (!(menu_st->flags & MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH))
@@ -8921,7 +9035,6 @@ static enum runloop_state_enum runloop_check_state(
 
          menu_st->flags &= ~(MENU_ST_FLAG_PENDING_CLOSE_CONTENT
                            | MENU_ST_FLAG_PENDING_ENV_SHUTDOWN_FLUSH);
-         menu_st->pending_env_shutdown_content_path[0] = '\0';
 
          /* Reload core on launch failure if manually loaded */
          if (     !path_is_empty(RARCH_PATH_CORE_LAST)
@@ -8937,6 +9050,11 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_COMMAND
          /* a MENU request's action, run as the menu's own input is */
          action = (enum menu_action)command_menu_action(action);
+#endif
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+         /* Here, before the menu iterates: a redraw asked for from the
+          * frame is cleared when the menu's texture goes up */
+         menu_setting_video_screen_windows_moved();
 #endif
          if (!menu_driver_iterate(menu_st, p_disp, anim_get_ptr(),
                   settings, action, current_time))
@@ -9089,7 +9207,7 @@ static enum runloop_state_enum runloop_check_state(
           * through audio_driver_flush(), which in the menu is driven only
           * from here. */
          if (!libretro_running)
-            audio_driver_menu_sample(display_rate);
+            audio_driver_menu_sample(display_rate ? current_time : 0);
       }
 
       /* Note: 'old_input' is recorded earlier, immediately after
@@ -9122,8 +9240,17 @@ static enum runloop_state_enum runloop_check_state(
       }
    }
 
-   /* Check fullscreen hotkey */
+   /* Check fullscreen hotkey: a screen's own window with the keyboard
+    * focus toggles its own Fullscreen, else the main window toggles */
+#if defined(HAVE_VIDEO_WINDOWS) && !defined(ANDROID)
+   HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE,
+         !video_driver_window_fullscreen_toggle(), NULL);
+#else
    HOTKEY_CHECK(RARCH_FULLSCREEN_TOGGLE_KEY, CMD_EVENT_FULLSCREEN_TOGGLE, true, NULL);
+#endif
+
+   /* Check Blank Unused Screens hotkey */
+   HOTKEY_CHECK(RARCH_BLANK_UNUSED_TOGGLE, CMD_EVENT_BLANK_UNUSED_TOGGLE, true, NULL);
 
    /* Check turbo toggle hotkey */
    HOTKEY_CHECK(RARCH_TURBO_FIRE_TOGGLE, CMD_EVENT_TURBO_FIRE_TOGGLE, true, NULL);
@@ -9242,6 +9369,15 @@ static enum runloop_state_enum runloop_check_state(
 
          if (runloop_st->rewind_st.flags & STATE_MGR_REWIND_ST_FLAG_INIT_PENDING)
             runloop_rewind_init_pending(runloop_st);
+
+#ifdef HAVE_RUNAHEAD
+         /* The preemptive frames save the same state before the frame
+          * runs: the push waits for that save and shares its serialize */
+         if (runloop_st->preempt_data)
+            runloop_st->rewind_st.flags |=  STATE_MGR_REWIND_ST_FLAG_DEFER_PUSH;
+         else
+            runloop_st->rewind_st.flags &= ~STATE_MGR_REWIND_ST_FLAG_DEFER_PUSH;
+#endif
 
          rewinding           = state_manager_check_rewind(
                &runloop_st->rewind_st,
@@ -10009,12 +10145,11 @@ int runloop_iterate(void)
    audio_driver_state_t         *audio_st = audio_state_get_ptr();
    video_driver_state_t         *video_st = video_state_get_ptr();
    recording_state_t              *rec_st = recording_state_get_ptr();
-   camera_driver_state_t       *camera_st = camera_state_get_ptr();
    uico_driver_state_t           *uico_st = uico_state_get_ptr();
    settings_t *settings                   = config_get_ptr();
    runloop_state_t *runloop_st            = &runloop_state;
    bool vrr_runloop_enable                = settings->bools.vrr_runloop_enable;
-   retro_time_t current_time              = cpu_features_get_time_usec();
+   retro_time_t current_time;
 
 #ifdef HAVE_NETWORKING
    bool netplay_is_enabled                = netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL);
@@ -10036,6 +10171,15 @@ int runloop_iterate(void)
    float slowmotion_ratio                 = settings->floats.slowmotion_ratio;
    bool frame_advanced                    = false;
    bool savestate_automatic_enable        = settings->uints.savestate_automatic_interval > 0;
+
+   /* The iteration's one clock reading, and the perf counter's with it:
+    * the core's start, the frame's time and the iteration's end are
+    * this moved on by the counter (RUNLOOP_NOW), and the pair tells the
+    * counter's rate where the platform does not state it */
+   current_time               = cpu_features_get_time_usec();
+   runloop_st->iter_mark      = CPU_FEATURES_MARK_WITH(current_time);
+   runloop_st->iter_time      = current_time;
+   cpu_features_perf_calibrate(current_time);
 
    recording_gpu_poll();
    runloop_msg_queue_drain_deferred();
@@ -10191,6 +10335,13 @@ int runloop_iterate(void)
       command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
 #endif
    }
+
+   /* Away, the audio device is stopped before the runloop waits for the
+    * platform: after the reinit above and the background save, either
+    * of which can start it again. */
+   if (     !(runloop_st->flags & RUNLOOP_FLAG_IDLE)
+         != !audio_st->away)
+      audio_driver_set_away((runloop_st->flags & RUNLOOP_FLAG_IDLE) != 0);
 
 #ifdef HAVE_THREADS
    if (runloop_st->flags & RUNLOOP_FLAG_AUTOSAVE)
@@ -10380,10 +10531,7 @@ int runloop_iterate(void)
     * driver and registered caps; stop, teardown and a camera_allow
     * change drop it. */
    if (runloop_st->frame_work & RUNLOOP_WORK_CAMERA)
-      camera_st->driver->poll(camera_st->data,
-            camera_st->cb.frame_raw_framebuffer,
-            camera_st->cb.frame_opengl_texture,
-            camera_st->cb.frame_planar);
+      camera_driver_poll();
 
 #ifdef HAVE_OPENXR
    if (runloop_st->core_vr_content)
@@ -10391,11 +10539,13 @@ int runloop_iterate(void)
 #endif
 
    /* Measure the time between core_run() and video_driver_frame() */
-   runloop_st->core_run_time = cpu_features_get_time_usec();
+   runloop_st->core_run_time = RUNLOOP_NOW(runloop_st, CPU_FEATURES_MARK());
    /* Whether this frame is presented, before the core makes it: a core
     * that asks (GET_AUDIO_VIDEO_ENABLE) need not render a frame that
     * fast-forward drops */
    video_driver_ff_frameskip_decide(runloop_st->core_run_time);
+
+   calendar_time_set_held(runloop_calendar_held());
 
    {
 #ifdef HAVE_RUNAHEAD
@@ -10411,6 +10561,12 @@ int runloop_iterate(void)
       want_runahead                     = want_runahead && !netplay_is_enabled;
 #endif
 
+      /* GET_VARIABLE consumes the update. Until then, history is dropped
+       * each frame and Preemptive Frames cannot build a replay window. */
+      if ((!want_runahead && runloop_st->runahead_state_owned) ||
+          (runloop_st->core_options && runloop_st->core_options->updated))
+         serialization_clear_history();
+
       if (want_runahead)
          frame_advanced = runahead_run(
                runloop_st,
@@ -10423,6 +10579,11 @@ int runloop_iterate(void)
 #endif
          frame_advanced = core_run();
    }
+
+#ifdef HAVE_REWIND
+   /* A push the preemptive frames did not get to take */
+   state_manager_push_deferred(&runloop_st->rewind_st, NULL, 0);
+#endif
 
    runloop_load_deferred_auto_state();
 
@@ -10527,17 +10688,15 @@ end:
     * video_driver_frame(), which runs between the top and here, and a
     * reset there made it read NONE on every frame. Paths that return
     * before this block set it themselves, through the same function. */
-   /* How long the last iteration actually took, smoothed. One clock
-    * read on a path that already takes several, and the only way to
-    * tell a source that is holding the loop from one that merely says
-    * it is - headless SDL2 with no vblank sets the vsync bit and
+   /* How long the last iteration actually took, smoothed: the only way
+    * to tell a source that is holding the loop from one that merely
+    * says it is - headless SDL2 with no vblank sets the vsync bit and
     * blocks on nothing.
     *
-    * The reading stands for the whole block below: the pace gather and
+    * This instant stands for the whole block below: the pace gather and
     * the decision between here and the limiter are flag tests, so the
-    * frame's end is this instant and the limiter schedules against it
-    * rather than taking the clock a second time. */
-   pace_now = cpu_features_get_time_usec();
+    * frame's end is this instant and the limiter schedules against it. */
+   pace_now = RUNLOOP_NOW(runloop_st, CPU_FEATURES_MARK());
    if (runloop_st->pace_iter_last)
    {
       retro_time_t delta = pace_now - runloop_st->pace_iter_last;
@@ -10679,7 +10838,7 @@ end:
 #else
             /* Sleep short of the deadline by the measured margin,
              * then spin the remainder: the sleep decides how much is
-             * spun, the clock decides where the frame lands. The
+             * spun, the deadline decides where the frame lands. The
              * sleep is absolute - retro_sleep_until_us re-arms
              * against the deadline itself - so the time between
              * reading the clock and entering the kernel, and any
@@ -10688,16 +10847,38 @@ end:
              * kernel's own overshoot, which is what it was for. */
             const retro_time_t deadline = runloop_st->frame_limit_anchor_ns / 1000;
             retro_time_t now            = end_frame_time;
+#ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
+            /* The deadline as a perf counter reading: the spin and the
+             * margin's sample then read a register, not the clock. 0
+             * while the counter's rate is not known yet. */
+            retro_perf_tick_t until     = cpu_features_perf_from_usec(
+                  deadline - runloop_st->iter_time);
+            if (until)
+               until                   += runloop_st->iter_mark;
+#endif
             if (to_sleep_us > runloop_st->frame_limit_margin)
             {
                const retro_time_t asked_until =
                      deadline - runloop_st->frame_limit_margin;
                retro_sleep_until_us(asked_until);
-               now = cpu_features_get_time_usec();
+#ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
+               if (until)
+                  now = RUNLOOP_NOW(runloop_st, CPU_FEATURES_MARK());
+               else
+#endif
+                  now = cpu_features_get_time_usec();
                runloop_st->frame_limit_margin = runloop_pace_margin_update(
                      runloop_st->frame_limit_margin,
                      now - asked_until, frame_limit_min);
             }
+#ifdef CPU_FEATURES_PERF_COUNTER_CHEAP
+            if (until)
+            {
+               while ((int64_t)(until - cpu_features_get_perf_counter()) > 0)
+                  retro_cpu_relax();
+            }
+            else
+#endif
             while (now < deadline)
             {
                retro_cpu_relax();
@@ -11138,6 +11319,7 @@ bool core_set_controller_port_device(retro_ctx_controller_info_t *pad)
          sizeof(input_st->touchpad_requested));
 
 #if defined(HAVE_RUNAHEAD)
+   serialization_clear_history();
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    runahead_remember_controller_port_device(runloop_st, pad->port, pad->device);
 #endif
@@ -11165,7 +11347,11 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
    video_driver_cached_frame_invalidate();
 #ifdef HAVE_WEBMPLAYER
    if (runloop_st->current_core_type == CORE_TYPE_WEBM)
+   {
       libretro_media_set_video_hw_refresh(video_driver_movie_refresh, NULL);
+      libretro_media_set_video_planes_refresh(video_driver_movie_planes,
+            NULL);
+   }
 #endif
 
 #ifdef HAVE_RUNAHEAD
@@ -11176,6 +11362,9 @@ bool core_load_game(retro_ctx_load_content_info_t *load_info)
 #endif
 
    set_save_state_in_background(false);
+
+   calendar_time_set_held(runloop_calendar_held());
+   calendar_time_capture();
 
    if (load_info && load_info->special)
       game_loaded = runloop_st->current_core.retro_load_game_special(
@@ -11235,6 +11424,9 @@ bool core_unserialize(retro_ctx_serialize_info_t *info)
    if (!ok)
       return false;
 
+#ifdef HAVE_RUNAHEAD
+   serialization_clear_history();
+#endif
 #ifdef HAVE_NETWORKING
    netplay_driver_ctl(RARCH_NETPLAY_CTL_LOAD_SAVESTATE, info);
 #endif
@@ -11315,6 +11507,10 @@ uint64_t core_serialization_quirks(void)
 void core_reset(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
+
+#ifdef HAVE_RUNAHEAD
+   serialization_clear_history();
+#endif
 
    /* Drop video-driver caches of core-owned GPU resources before
     * retro_reset() is allowed to destroy them. No-op on software
@@ -11414,6 +11610,15 @@ bool core_run(void)
       video_driver_cached_frame();
       return false;
    }
+
+#ifdef HAVE_PYROWAVE
+   if (record_pyrowave_receiver_active())
+   {
+      input_driver_poll_between_frames(input_driver_poll);
+      record_pyrowave_receiver_frame();
+      return false;
+   }
+#endif
 
 #ifdef HAVE_NETWORKING
    netplay_preframe            = netplay_driver_ctl(

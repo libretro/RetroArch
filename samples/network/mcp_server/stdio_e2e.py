@@ -182,9 +182,9 @@ check('the rows commands declare an outputSchema: %d' % len(schemas),
       and 'GET_PLAYLIST' in schemas)
 # What a model is handed of each tool is its name, description and
 # input schema: that is context a client pays for before it does
-# anything, 12055 bytes at 30 tools, held under 15000. Titles,
+# anything, 12462 bytes at 30 tools, held under 15000. Titles,
 # annotations and output schemas are for the client and cost the model
-# nothing, so the whole list has a looser ceiling, 25000 (21844 now),
+# nothing, so the whole list has a looser ceiling, 25000 (22387 now),
 # and the 1800 on each tool catches prose an average would not.
 seen = sum(len(json.dumps({'name': t['name'],
                            'description': t.get('description', ''),
@@ -612,6 +612,22 @@ msg, t, _ = call(278, 'RUN_UNTIL', {'address': '1007', 'condition': '!=',
 sc = msg and msg['result'].get('structuredContent') or {}
 check('RUN_UNTIL waits on a byte: %s' % sc,
       'met' in sc and sc.get('value', 0) != 0)
+msg, t, _ = call(290, 'READ_CORE_MEMORY', {'address': '1000', 'bytes': 2,
+                                            'more': '1010 1'})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('several ranges in one read: %s' % sc,
+      sc.get('address') == '1000' and sc.get('ranges') == [
+          {'address': '1000', 'bytes': '00 01'},
+          {'address': '1010', 'bytes': '10'}])
+msg, t, _ = call(291, 'RUN_UNTIL', {'address': '1005 - 1006',
+                                    'condition': '==', 'value': -1})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('a condition on how far apart two bytes are: %s' % sc,
+      sc.get('met') == 0 and sc.get('value') == -1)
+msg, t, _ = call(292, 'STEPS', {'steps': 'run 2; stop becomes 1006 == 6'})
+sc = msg and msg['result'].get('structuredContent') or {}
+check('a stop already true does not end the list: %s' % sc,
+      sc.get('done') == 2)
 
 # A core with no memory map: its RAM, as it hands it over - system RAM
 # from 0, save RAM straight after - is what every memory tool reads.

@@ -83,6 +83,15 @@ ssize_t ssl_socket_receive_all_nonblocking(void *state_data, bool *error, void *
  * delivery matters. The close notification is best effort and never waits. */
 void ssl_socket_close(void *state_data);
 
+/* Sends the close notification, once everything taken has been flushed,
+ * and leaves the connection open: the caller half-closes the socket for
+ * writing and reads until the peer closes, so the peer reads everything
+ * before the close.  Closing straight away with the peer's last replies
+ * unread resets the connection, and a reset can discard what the peer
+ * had not read yet.  0 when sent; -1 when not, and the caller closes.
+ * ssl_socket_close() then sends no second one. */
+int ssl_socket_close_notify(void *state_data);
+
 void ssl_socket_free(void *state_data);
 
 /* Certificate-verification policy hook. `mode` is a tls_verify_mode value
@@ -99,10 +108,27 @@ void ssl_socket_set_verify_mode(unsigned mode);
 void ssl_socket_log_verify_fail(int mode_required, const char *domain,
       const char *verify_info);
 void ssl_socket_log_verify_disabled(const char *domain);
+/* net_socket_ssl_retro.c only, once a process at the first verify:
+ * the trust store in use - @source the system bundle's name and
+ * @anchors its roots, or NULL for the built-in bundle. */
+void ssl_socket_log_trust_store(const char *source, int anchors);
+
+/* net_socket_ssl_retro.c only: the certificates in the system PEM
+ * bundle @pem, named @name, become the process trust store in place of
+ * the built-in one. Called before any network client starts. @pem is a
+ * malloc()ed buffer this takes whatever the outcome: it is decoded in
+ * place and kept as the store's DER, or freed. Returns the number of
+ * system roots in use: 0 when @pem holds none this code can use or
+ * memory runs out, which leaves the built-in bundle to load at the
+ * first verify, so another bundle can be tried. Once a bundle is in,
+ * later calls change nothing and return its count. */
+int ssl_socket_retro_adopt_trust_pem(char *pem, size_t len,
+      const char *name);
 
 /* net_socket_ssl_retro.c only: replace the built-in CA bundle with
  * @pem (concatenated PEM certificates) for the process, NULL to
- * restore. For tests against a local server. */
+ * restore. For tests against a local server; ignored once a system
+ * bundle is loaded. */
 void ssl_socket_retro_set_trust_pem(const char *pem, size_t len);
 /* net_socket_ssl_retro.c only: whether the last handshake on
  * @state_data resumed a cached session rather than running in full. */

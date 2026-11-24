@@ -204,6 +204,57 @@ static rh264_video *dec_open(const clip_t *c)
    return h;
 }
 
+/* One displayed picture remains immutable after decode-ahead and close. */
+static int retained_picture(const clip_t *c)
+{
+   rh264_video *h = dec_open(c);
+   const uint8_t *planes[3];
+   int strides[3], widths[3], heights[3];
+   uint64_t before = 1469598103934665603ull, after = before;
+   void *owner = NULL;
+   int i, k, y, x, bps = 1, good = 1;
+   if (!h) return 0;
+   owner = rh264_video_retain_planes(h);
+   if (owner)
+   {
+      rh264_video_release_planes(owner);
+      rh264_video_close(h);
+      return 0;
+   }
+   for (i = 0; i < c->n; i++)
+      if (rh264_video_decode(h, c->data[i], c->size[i]) == 1) break;
+   if (i == c->n || !(owner = rh264_video_retain_planes(h)))
+   {
+      rh264_video_close(h);
+      return 0;
+   }
+   bps = rh264_video_bit_depth(h) > 8 ? 2 : 1;
+   for (k = 0; k < 3; k++)
+   {
+      planes[k] = rh264_video_plane(h, k, &strides[k], &widths[k], &heights[k]);
+      if (!planes[k]) { good = 0; break; }
+      for (y = 0; y < heights[k]; y++)
+         for (x = 0; x < widths[k] * bps; x++)
+         {
+            before ^= planes[k][(size_t)y * strides[k] * bps + x];
+            before *= 1099511628211ull;
+         }
+   }
+   for (i++; i < c->n; i++)
+      if (rh264_video_decode(h, c->data[i], c->size[i]) < 0) good = 0;
+   rh264_video_close(h);
+   if (good)
+      for (k = 0; k < 3; k++)
+         for (y = 0; y < heights[k]; y++)
+            for (x = 0; x < widths[k] * bps; x++)
+            {
+               after ^= planes[k][(size_t)y * strides[k] * bps + x];
+               after *= 1099511628211ull;
+            }
+   rh264_video_release_planes(owner);
+   return good && after == before;
+}
+
 /* Units [from, to) into @h; at to == n, the drain too. -1 on error. */
 static int dec_run(rh264_video *h, const clip_t *c, int from, int to, shown_t *s)
 {
@@ -412,6 +463,8 @@ static void state_case(const char *name, const char *src, int frames,
       g_contexts = mode ? 4 : 1;
       g_threads  = mode == 2 ? 4 : 0;
       g_timing   = mode != 2;
+      if (strcmp(name, "mbaff"))
+         check("retained picture survives decode-ahead and decoder close", retained_picture(&c));
       memset(&g_ref, 0, sizeof(g_ref));
       h = dec_open(&c);
       if (!h || dec_run(h, &c, 0, c.n, &g_ref) != 0 || g_ref.n != frames)

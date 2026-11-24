@@ -78,6 +78,16 @@ endif
 
 include Makefile.common
 
+# Set shader include paths before sanitizer flags snapshot CFLAGS/CXXFLAGS.
+ifeq ($(HAVE_PYROWAVE),1)
+PYROWAVE_GENERATED_DIR := libretro-common/formats/pyrowave/shaders
+DEF_FLAGS += -I$(PYROWAVE_GENERATED_DIR)
+endif
+ifneq ($(filter 1,$(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
+D3D_SHADER_GENERATED_DIR := gfx/common
+DEF_FLAGS += -I$(D3D_SHADER_GENERATED_DIR)
+endif
+
 # Only version_git.c reads the commit hash: on every other command
 # line it would make a new commit miss ccache's direct mode.
 ifneq ($(GIT_VERSION),)
@@ -126,7 +136,7 @@ endif
 
 ifneq ($(CXX_BUILD), 1)
    ifneq ($(C89_BUILD),)
-      # The shader sources built into gfx/drivers/gl_shaders are longer
+      # The shader sources built into gfx/drivers/gl*_shaders are longer
       # than the 509 characters C90 guarantees a compiler will take in a
       # string literal, which no declaration of ours can help: this lane
       # is here for declarations, comments and C99 syntax.
@@ -401,6 +411,7 @@ install: $(TARGET)
 		if test $(HAVE_OZONE) = 1; then \
 			cp -r media/assets/ozone/ $(DESTDIR)$(ASSETS_DIR)/assets; \
 		fi; \
+		if test -d media/assets/pyrowave; then cp -r media/assets/pyrowave/ $(DESTDIR)$(ASSETS_DIR)/assets; fi; \
 		cp media/assets/COPYING $(DESTDIR)$(DOC_DIR)/COPYING.assets; \
 		echo "Asset copying done."; \
 	fi
@@ -550,3 +561,21 @@ endif
 
 print-%:
 	@echo '$*=$($*)'
+
+# Optional shader exports for development and standalone GPU samples.
+# Enabled PyroWave frontend builds embed their own shaders automatically.
+PYROWAVE_ASSET_DIR ?= media/assets/pyrowave
+PYTHON ?= python3
+pyrowave-assets:
+	$(PYTHON) tools/pyrowave_shaders.py --output $(OBJDIR)/pyrowave/exported/rpyrowave_shaders.h --export-glsl $(PYROWAVE_ASSET_DIR) --export-spirv $(PYROWAVE_ASSET_DIR) --export-hlsl $(PYROWAVE_ASSET_DIR)
+.PHONY: pyrowave-assets
+
+ifeq ($(HAVE_PYROWAVE),1)
+include Makefile.pyrowave
+$(OBJDIR)/record/record_pyrowave_source.o: $(PYROWAVE_GENERATED_HEADER)
+endif
+
+ifneq ($(filter 1,$(HAVE_D3D10) $(HAVE_D3D11) $(HAVE_D3D12)),)
+include Makefile.d3d_shaders
+$(OBJDIR)/gfx/common/d3d_builtin.o: $(D3D_SHADER_GENERATED_HEADER)
+endif

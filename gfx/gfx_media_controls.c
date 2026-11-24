@@ -1,3 +1,6 @@
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+#include "gfx_music_player.h"
+#endif
 #include <string.h>
 #include "gfx_media_controls.h"
 #include "gfx_anim_preview.h"
@@ -6,6 +9,25 @@ static bool gfx_media_inside(const gfx_media_rect_t *r, int x, int y)
 {
    return r->w > 0 && r->h > 0 && x >= r->x && y >= r->y
       && x - r->x < r->w && y - r->y < r->h;
+}
+
+static unsigned gfx_media_audio_count(const gfx_media_target_t *target)
+{
+   unsigned i, count = 0;
+   if (!target->select_audio || !target->audio_tracks) return 0;
+   for (i = 0; i < target->audio_track_count; i++)
+      if (target->audio_tracks[i].supported) count++;
+   return count;
+}
+
+static unsigned gfx_media_audio_current(const gfx_media_target_t *target)
+{
+   unsigned i;
+   for (i = 0; i < target->audio_track_count; i++)
+      if (target->audio_tracks[i].supported
+            && (target->audio_track_index < 0
+               || target->audio_tracks[i].info.index == target->audio_track_index)) return i;
+   return target->audio_track_count;
 }
 
 void gfx_media_controls_cancel(gfx_media_controls_t *c)
@@ -47,7 +69,7 @@ bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t
 {
    int unit, gap, bw, i, left, count;
    if (!c) return false;
-   if (!target || !target->user || !target->state || !target->pause || !target->seek
+   if (!target || !target->user || !target->state || (!target->image && (!target->pause || !target->seek))
          || width < 96 || height < 96 || width > 65535 || height > 65535)
    {
       gfx_media_controls_reset(c);
@@ -78,14 +100,19 @@ bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t
    c->layout.unit = unit;
    c->layout.panel.x = gap;
    c->layout.panel.w = (int)width - 2 * gap;
-   c->layout.panel.h = (target->subtitle_tracks ? 4 : 3) * unit + 3 * gap;
+   c->layout.panel.h = target->image ? unit + 2 * gap
+      : (target->subtitle_tracks ? 4 : 3) * unit + 3 * gap;
    c->layout.panel.y = (int)height - c->layout.panel.h - gap;
    c->layout.timeline.x = 2 * gap;
    c->layout.timeline.y = c->layout.panel.y + unit + gap;
    c->layout.timeline.w = (int)width - 4 * gap;
    c->layout.timeline.h = unit / 2;
    count = (target->settings ? 7 : target->step ? 6 : 4)
-      + (target->subtitle_tracks ? 1 : 0);
+      + (target->subtitle_tracks ? 1 : 0)
+      + (c->playback.seekable && gfx_media_audio_count(target) > 1 ? 1 : 0);
+   if (target->shaders) count++;
+   if (target->image) count = target->shaders ? 1 : 0;
+   if (!count) { gfx_media_controls_reset(c); return false; }
    c->layout.button_count = (unsigned)count;
    if (c->focus >= (unsigned)count) c->focus = 0;
    bw = (c->layout.panel.w - (count + 1) * gap) / count;
@@ -94,7 +121,8 @@ bool gfx_media_controls_update(gfx_media_controls_t *c, const gfx_media_target_t
    for (i = 0; i < count; i++)
    {
       c->layout.buttons[i].x = left + i * (bw + gap);
-      c->layout.buttons[i].y = c->layout.panel.y + 2 * unit + gap;
+      c->layout.buttons[i].y = c->layout.panel.y
+         + (target->image ? gap : 2 * unit + gap);
       c->layout.buttons[i].w = bw;
       c->layout.buttons[i].h = unit;
    }
@@ -114,6 +142,10 @@ static bool gfx_media_button(gfx_media_controls_t *c, unsigned button, int64_t n
       : c->playback.position_us;
    const int64_t maximum = (int64_t)((~(uint64_t)0) >> 1);
    int64_t step = (int64_t)(c->seek_seconds ? c->seek_seconds : 5) * 1000000;
+   if (c->target.image && button != 0) return false;
+   if ((c->target.image && button == 0)
+         || (c->target.shaders && button + 1 == c->layout.button_count))
+      return c->target.shaders && c->target.shaders(c->target.settings_user);
    if (button == 0)
    {
       if (c->playback.paused && c->playback.duration_us > 0
@@ -121,7 +153,24 @@ static bool gfx_media_button(gfx_media_controls_t *c, unsigned button, int64_t n
             && !c->target.seek(c->target.user, 0, now)) return false;
       return c->target.pause(c->target.user, !c->playback.paused, now);
    }
-   if (c->target.subtitle_tracks && button + 1 == c->layout.button_count)
+   if (c->playback.seekable && gfx_media_audio_count(&c->target) > 1
+         && button + (c->target.subtitle_tracks ? 2 : 1) + (c->target.shaders ? 1 : 0) == c->layout.button_count)
+   {
+      unsigned i, current = gfx_media_audio_current(&c->target);
+      for (i = 0; i < c->target.audio_track_count; i++)
+      {
+         current = current + 1 < c->target.audio_track_count ? current + 1 : 0;
+         if (c->target.audio_tracks[current].supported)
+         {
+            int index = c->target.audio_tracks[current].info.index;
+            if (!c->target.select_audio(c->target.user, index, now)) return false;
+            c->target.audio_track_index = index;
+            return true;
+         }
+      }
+      return false;
+   }
+   if (c->target.subtitle_tracks && button + 1 + (c->target.shaders ? 1 : 0) == c->layout.button_count)
    {
       c->subtitle_requested = true;
       return true;
@@ -156,6 +205,10 @@ bool gfx_media_controls_action(gfx_media_controls_t *c,
    }
    c->visible = true;
    c->last_activity = now;
+   if (c->target.image && action != GFX_MEDIA_FOCUS
+         && action != GFX_MEDIA_UNFOCUS && action != GFX_MEDIA_ACTIVATE
+         && action != GFX_MEDIA_PREVIOUS && action != GFX_MEDIA_NEXT)
+      return false;
    switch (action)
    {
       case GFX_MEDIA_FOCUS: c->row_focus = true; return true;
@@ -169,7 +222,12 @@ bool gfx_media_controls_action(gfx_media_controls_t *c,
             return true;
          }
          return gfx_media_button(c, action == GFX_MEDIA_PREVIOUS ? 1 : 2, now);
-      case GFX_MEDIA_ACTIVATE: return gfx_media_button(c, c->row_focus ? c->focus : 0, now);
+      case GFX_MEDIA_ACTIVATE:
+         /* Confirm plays or pauses a movie; an image has nothing to
+          * play, so only its focused toolbar (Shaders) acts */
+         if (c->target.image && !c->row_focus)
+            return false;
+         return gfx_media_button(c, c->row_focus ? c->focus : 0, now);
       case GFX_MEDIA_PLAY:
          return !c->playback.paused || gfx_media_button(c, 0, now);
       case GFX_MEDIA_PAUSE:
@@ -206,7 +264,7 @@ void gfx_media_controls_pointer(gfx_media_controls_t *c, int x, int y,
       c->last_activity = now;
    }
    c->last_x = x; c->last_y = y;
-   c->hover = gfx_media_inside(&c->layout.panel, x, y) ? 8 : -1;
+   c->hover = gfx_media_inside(&c->layout.panel, x, y) ? (int)c->layout.button_count : -1;
    for (i = 0; i < (int)c->layout.button_count; i++)
       if (gfx_media_inside(&c->layout.buttons[i], x, y)) c->hover = i;
    if (pressed && !c->held)
@@ -260,6 +318,26 @@ static bool gfx_media_thumbnail_pause(void *user, bool paused, int64_t now)
 static bool gfx_media_thumbnail_seek(void *user, int64_t target, int64_t now)
 { return gfx_thumbnail_seek((gfx_thumbnail_t*)user, target, now); }
 
+static bool gfx_media_thumbnail_audio(void *user, int index, int64_t now)
+{ return gfx_thumbnail_select_audio((gfx_thumbnail_t*)user, index, now); }
+
+static bool gfx_media_thumbnail_request_audio(void *user, int index)
+{ return gfx_thumbnail_request_audio((gfx_thumbnail_t*)user, index); }
+
+void gfx_media_controls_audio_target(gfx_media_target_t *target,
+      const gfx_anim_preview_t *session,
+      bool (*select_audio)(void *user, int index, int64_t now),
+      bool (*request_audio)(void *user, int index))
+{
+   if (!target) return;
+   target->audio_tracks = session ? session->audio_tracks : NULL;
+   target->audio_track_count = session ? session->audio_track_count : 0;
+   target->audio_track_index = session
+      ? retro_atomic_load_acquire_int(&session->requested_audio_track) - 1 : -1;
+   target->select_audio = session ? select_audio : NULL;
+   target->request_audio = session ? request_audio : NULL;
+}
+
 void gfx_media_controls_thumbnail_target(gfx_thumbnail_t *thumbnail, gfx_media_target_t *out)
 {
    if (!out) return;
@@ -269,9 +347,18 @@ void gfx_media_controls_thumbnail_target(gfx_thumbnail_t *thumbnail, gfx_media_t
    out->identity = thumbnail->anim_sess;
    out->source_path = thumbnail->anim_sess
       ? ((const gfx_anim_preview_t*)thumbnail->anim_sess)->path : NULL;
+#if defined(HAVE_MENU) && defined(HAVE_AUDIOMIXER)
+   if (thumbnail->music_player)
+   {
+      out->identity = thumbnail->music_player;
+      out->source_path = gfx_music_player_path((const gfx_music_player_t*)thumbnail->music_player);
+   }
+#endif
    out->state = gfx_media_thumbnail_state;
    out->pause = gfx_media_thumbnail_pause;
    out->seek = gfx_media_thumbnail_seek;
+   gfx_media_controls_audio_target(out, (const gfx_anim_preview_t*)thumbnail->anim_sess,
+         gfx_media_thumbnail_audio, gfx_media_thumbnail_request_audio);
 }
 
 void gfx_media_controls_publish(const gfx_media_controls_t *c, gfx_media_mailbox_t *m)
@@ -294,6 +381,20 @@ void gfx_media_controls_publish(const gfx_media_controls_t *c, gfx_media_mailbox
       v->seek_seconds = c->seek_seconds ? c->seek_seconds : 5;
       v->directions = c->target.directions;
       v->subtitle_tracks = c->target.subtitle_tracks;
+      v->shaders = c->target.shaders != NULL;
+      v->image = c->target.image;
+      v->audio_tracks = c->playback.seekable && gfx_media_audio_count(&c->target) > 1;
+      if (c->target.select_audio && c->target.audio_tracks && c->target.audio_track_count)
+      {
+         unsigned current = gfx_media_audio_current(&c->target);
+         if (current < c->target.audio_track_count)
+         {
+            v->audio_track_number = current + 1;
+            memcpy(v->audio_language, c->target.audio_tracks[current].language,
+                  sizeof(v->audio_language));
+            v->audio_language[sizeof(v->audio_language) - 1] = '\0';
+         }
+      }
       v->hover = c->hover;
       v->visible = c->visible;
       v->row_focus = c->row_focus;

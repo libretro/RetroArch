@@ -43,6 +43,11 @@
  *   the two luma rows it covers, the last luma sample repeated on an odd
  *   width.
  *
+ *   image_yuv_420_to_rgb32, image_yuv_i420_to_rgb32 and
+ *   image_yuv_nv12_to_rgb32 give, as ARGB or RGBA words and for either
+ *   chroma order, the pixels the bytes path gives, from planes no larger
+ *   than they need be: the vectorised rows against the scalar one.
+ *
  * Build and run:  make && ./image_yuv_test
  *                 ./image_yuv_test --ffmpeg frames.rgba frames.yuv W H
  */
@@ -177,6 +182,80 @@ static void test_bytes(unsigned w, unsigned h, unsigned step, unsigned flags)
 
    free(yp); free(cp); free(cq); free(word); free(rgba); free(argb);
    free(bgra); free(abgr);
+}
+
+/* ARGB words, through each entry point, are the pixels the bytes path
+ * gives in RGBA order, from planes allocated to the exact size, so any
+ * read past them is ASan's to report. Widths around eight pixels and
+ * their multiples cover a vectorised row's body, its interleaved-chroma
+ * stop and the tail. */
+static void test_words(unsigned w, unsigned h, unsigned flags)
+{
+   unsigned cw = (w + 1) / 2, ch = (h + 1) / 2;
+   uint8_t  *yp   = (uint8_t*)malloc((size_t)w * h);
+   uint8_t  *up   = (uint8_t*)malloc((size_t)cw * ch);
+   uint8_t  *vp   = (uint8_t*)malloc((size_t)cw * ch);
+   uint8_t  *uv   = (uint8_t*)malloc((size_t)cw * 2 * ch);
+   uint8_t  *ref  = (uint8_t*)malloc((size_t)w * h * 4);
+   uint32_t *word = (uint32_t*)malloc((size_t)w * h * 4);
+   unsigned i, vu, rgba;
+   char what[128];
+   int same;
+
+   for (i = 0; i < w * h; i++)
+      yp[i] = (uint8_t)rnd();
+   for (i = 0; i < cw * ch; i++)
+   {
+      up[i] = (uint8_t)rnd();
+      vp[i] = (uint8_t)rnd();
+      uv[2 * i]     = up[i];
+      uv[2 * i + 1] = vp[i];
+   }
+   for (vu = 0; vu < 2; vu++)
+   {
+      /* the planes the VU flag names as Cb and Cr */
+      const uint8_t *cb = vu ? vp : up, *cr = vu ? up : vp;
+      unsigned f = flags | (vu ? IMAGE_YUV_FLAG_VU : 0);
+      image_yuv_420_to_bytes(ref, (size_t)w * 4, yp, w, cb, cw, cr, cw, 1,
+            w, h, flags, IMAGE_YUV_BYTES_RGBA, 0xff);
+      for (rgba = 0; rgba < 2; rgba++)
+      {
+         unsigned k;
+         unsigned rf = rgba ? IMAGE_YUV_FLAG_RGBA : 0;
+         for (k = 0; k < 3; k++)
+         {
+            memset(word, 0x5a, (size_t)w * h * 4);
+            if (k == 0)
+               image_yuv_420_to_rgb32(word, w, yp, w, cb, cw, cr, cw, 1,
+                     w, h, flags | rf);
+            else if (k == 1)
+               image_yuv_i420_to_rgb32(word, w, yp, w, up, cw, vp, cw,
+                     w, h, f | rf);
+            else
+               /* with VU the interleaved plane's first byte is Cr, which
+                * is what the flag makes of up[] */
+               image_yuv_nv12_to_rgb32(word, w, yp, w, uv, cw * 2,
+                     w, h, f | rf);
+            same = 1;
+            for (i = 0; i < w * h && same; i++)
+            {
+               const uint8_t *q = ref + (size_t)i * 4;
+               uint32_t want = rgba
+                  ? (0xff000000u | ((uint32_t)q[2] << 16)
+                        | ((uint32_t)q[1] << 8) | q[0])
+                  : (0xff000000u | ((uint32_t)q[0] << 16)
+                        | ((uint32_t)q[1] << 8) | q[2]);
+               if (word[i] != want)
+                  same = 0;
+            }
+            sprintf(what, "%ux%u flags %u%s: %s words from %s as the bytes path",
+                  w, h, flags, vu ? " VU" : "", rgba ? "RGBA" : "ARGB",
+                  k == 0 ? "420" : k == 1 ? "I420" : "NV12");
+            CHECK(same, what);
+         }
+      }
+   }
+   free(yp); free(up); free(vp); free(uv); free(ref); free(word);
 }
 
 /* RGB to YCbCr in floating point, from the standard's Kr and Kb */
@@ -430,6 +509,44 @@ static void test_uyvy(unsigned w, unsigned h)
    free(yp); free(u); free(v); free(d);
 }
 
+/* YUYV rows, padded, repacked to NV12: luma in order, each row pair's
+ * chroma the rounded mean, a lone last row's its own, nothing written
+ * past either plane. */
+static void test_yuyv_nv12(unsigned w, unsigned h)
+{
+   size_t   sp  = (size_t)w * 2 + 6;
+   size_t   ysz = (size_t)w * h, csz = (size_t)w * ((h + 1) / 2);
+   uint8_t *src = (uint8_t*)malloc(sp * h);
+   uint8_t *dst = (uint8_t*)malloc(ysz + csz + 16);
+   unsigned x, y, i;
+   int ok = 1;
+   char what[96];
+
+   for (i = 0; i < sp * h; i++) src[i] = (uint8_t)rnd();
+   memset(dst, 0x5a, ysz + csz + 16);
+   image_yuv_422_to_nv12(dst, dst + ysz, src, sp, w, h);
+
+   for (y = 0; y < h; y++)
+      for (x = 0; x < w; x++)
+         if (dst[(size_t)y * w + x] != src[(size_t)y * sp + 2 * x])
+            ok = 0;
+   for (y = 0; y < (h + 1) / 2; y++)
+   {
+      const uint8_t *a = src + (size_t)(2 * y) * sp;
+      const uint8_t *b = 2 * y + 1 < h ? a + sp : a;
+      for (x = 0; x < w / 2; x++)
+         if (dst[ysz + (size_t)y * w + 2 * x] != (uint8_t)((a[4 * x + 1] + b[4 * x + 1] + 1) >> 1)
+               || dst[ysz + (size_t)y * w + 2 * x + 1] != (uint8_t)((a[4 * x + 3] + b[4 * x + 3] + 1) >> 1))
+            ok = 0;
+   }
+   for (i = 0; i < 16; i++)
+      if (dst[ysz + csz + i] != 0x5a)
+         ok = 0;
+   sprintf(what, "YUYV to NV12 %ux%u", w, h);
+   CHECK(ok, what);
+   free(src); free(dst);
+}
+
 int main(int argc, char **argv)
 {
    static const unsigned sizes[][2] = { { 1, 1 }, { 2, 2 }, { 7, 5 }, { 64, 48 }, { 321, 241 } };
@@ -450,6 +567,20 @@ int main(int argc, char **argv)
       test_uyvy(sizes[s][0], sizes[s][1]);
    }
    test_greys();
+   {
+      static const unsigned sizes2[][2] = { { 2, 1 }, { 2, 2 }, { 8, 5 }, { 64, 48 }, { 322, 241 } };
+      for (s = 0; s < sizeof(sizes2) / sizeof(sizes2[0]); s++)
+         test_yuyv_nv12(sizes2[s][0], sizes2[s][1]);
+   }
+   {
+      static const unsigned widths[] = { 1, 2, 7, 8, 9, 10, 15, 16, 17, 18,
+         23, 24, 25, 33, 64, 65, 321, 1920 };
+      for (s = 0; s < sizeof(widths) / sizeof(widths[0]); s++)
+         for (flags = 0; flags < 8; flags += 2)
+            test_words(widths[s], (s & 1) ? 3 : 4,
+                  ((flags & 2) ? IMAGE_YUV_FLAG_FULL_RANGE : 0)
+                  | ((flags & 4) ? IMAGE_YUV_FLAG_BT709 : 0));
+   }
 
    if (failures)
       printf("\n%u check(s) failed\n", failures);

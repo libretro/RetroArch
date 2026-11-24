@@ -24,32 +24,32 @@
 
 #if defined(HAVE_GLSL)
 #if defined(VITA)
-#include "../../gfx/drivers/gl_shaders/modern_pipeline_xmb_ribbon_simple.cg.vert.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.frag.h"
-#include "../../gfx/drivers/gl_shaders/modern_pipeline_xmb_ribbon.cg.vert.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon.cg.frag.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/ribbon_simple.cg.vert.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/ribbon_simple.cg.frag.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/ribbon.cg.vert.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/ribbon.cg.frag.h"
 #else
-#include "../../gfx/drivers/gl_shaders/core_pipeline_xmb_ribbon.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/core_pipeline_xmb_ribbon_simple.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/legacy_pipeline_xmb_ribbon_simple.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/modern_pipeline_xmb_ribbon_simple.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon_simple.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snow.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snow.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snow_simple.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/legacy_pipeline_xmb_ribbon.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/modern_pipeline_xmb_ribbon.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_bokeh.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snowflake.glsl.frag.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/ribbon.glsl.frag.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/ribbon_simple.glsl.frag.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/ribbon_simple.glsl.vert.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/ribbon_simple.glsl.vert.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/ribbon_simple.glsl.frag.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/snow.glsl.frag.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/snow_gles2.glsl.vert.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/snow_simple.glsl.frag.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/ribbon.glsl.vert.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/ribbon.glsl.vert.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/ribbon.glsl.frag.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/bokeh.glsl.frag.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/snowflake.glsl.frag.h"
 /* The desktop snow sources; GLES takes one source for both */
 #if !defined(HAVE_OPENGLES)
-#include "../../gfx/drivers/gl_shaders/core_pipeline_snow.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/core_pipeline_snow_simple.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/core_pipeline_bokeh.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/core_pipeline_snowflake.glsl.frag.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snow_core.glsl.vert.h"
-#include "../../gfx/drivers/gl_shaders/legacy_pipeline_snow.glsl.vert.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/snow.glsl.frag.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/snow_simple.glsl.frag.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/bokeh.glsl.frag.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/snowflake.glsl.frag.h"
+#include "../../gfx/drivers/gl3_glsl_shaders/effects/snow.glsl.vert.h"
+#include "../../gfx/drivers/gl2_glsl_shaders/effects/snow.glsl.vert.h"
 #endif
 #endif
 #endif
@@ -61,56 +61,40 @@
 
 #if defined(HAVE_D3D9) && (defined(HAVE_HLSL) || defined(HAVE_CG))
 #define XMB_EFFECTS_SM3
-#include "../../gfx/drivers/d3d_shaders/shaders_common.h"
-#include "../../gfx/drivers/d3d_shaders/ribbon_sm3.hlsl.h"
-#include "../../gfx/drivers/d3d_shaders/ribbon_simple_sm3.hlsl.h"
-#include "../../gfx/drivers/d3d_shaders/simple_snow_sm3.hlsl.h"
-#include "../../gfx/drivers/d3d_shaders/snow_sm3.hlsl.h"
-#include "../../gfx/drivers/d3d_shaders/bokeh_sm3.hlsl.h"
-#include "../../gfx/drivers/d3d_shaders/snowflake_sm3.hlsl.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/shaders_common.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/ribbon_sm3.hlsl.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/ribbon_simple_sm3.hlsl.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/simple_snow_sm3.hlsl.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/snow_sm3.hlsl.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/bokeh_sm3.hlsl.h"
+#include "../../gfx/drivers/d3d_sm3_shaders/effects/snowflake_sm3.hlsl.h"
 #endif
 
 #if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
 #define XMB_EFFECTS_SM4
-#include "../../gfx/common/menu_ribbon_shader.h"
-static const char xmb_effect_ribbon_simple_sm4[] =
-#include "../../gfx/drivers/d3d_shaders/ribbon_simple_sm4.hlsl.h"
-      ;
-static const char xmb_effect_simple_snow_sm4[] =
-#include "../../gfx/drivers/d3d_shaders/simple_snow_sm4.hlsl.h"
-      ;
-static const char xmb_effect_snow_sm4[] =
-#include "../../gfx/drivers/d3d_shaders/snow_sm4.hlsl.h"
-      ;
-static const char xmb_effect_bokeh_sm4[] =
-#include "../../gfx/drivers/d3d_shaders/bokeh_sm4.hlsl.h"
-      ;
-static const char xmb_effect_snowflake_sm4[] =
-#include "../../gfx/drivers/d3d_shaders/snowflake_sm4.hlsl.h"
-      ;
-
-static const char *xmb_effect_ribbon_sm4(void)
-{
-   static char ribbon[4096];
-   return
-#include "../../gfx/drivers/d3d_shaders/ribbon_sm4.hlsl.h"
-      ;
-}
 #endif
 
 #ifdef WIIU
-#include "../../gfx/drivers/gx2_shaders/menu_shaders.h"
+#include "../../gfx/drivers/gx2_shaders/effects/menu_shaders.h"
+#endif
+
+#if defined(HAVE_LIBNX) && defined(__SWITCH2__)
+#define XMB_EFFECTS_SM86
+#include "../../gfx/drivers/deko3d_shaders/menu_effects_sm86.h"
+#elif defined(HAVE_LIBNX)
+#define XMB_EFFECTS_DKSH
+#include "../../gfx/drivers/deko3d_shaders/menu_effects_dksh.h"
 #endif
 
 /* Cg for GL, which gl2 draws with where it has no GLSL */
 #if defined(HAVE_CG) && defined(HAVE_OPENGL) && !defined(HAVE_OPENGLES)
 #define XMB_EFFECTS_CG_GL
-#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon.cg.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_xmb_ribbon_simple.cg.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snow_simple.cg.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snow_heavy.cg.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_bokeh.cg.h"
-#include "../../gfx/drivers/gl_shaders/pipeline_snowflake.cg.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/ribbon.cg.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/ribbon_simple.cg.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/snow_simple.cg.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/snow_heavy.cg.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/bokeh.cg.h"
+#include "../../gfx/drivers/gl_cg_shaders/effects/snowflake.cg.h"
 #endif
 
 enum xmb_effect
@@ -236,12 +220,12 @@ static void xmb_effects_describe(void)
 #endif
 
 #ifdef XMB_EFFECTS_SM4
-   d[XMB_EFFECT_RIBBON].hlsl_sm4        = xmb_effect_ribbon_sm4();
-   d[XMB_EFFECT_RIBBON_SIMPLE].hlsl_sm4 = xmb_effect_ribbon_simple_sm4;
-   d[XMB_EFFECT_SNOW_SIMPLE].hlsl_sm4   = xmb_effect_simple_snow_sm4;
-   d[XMB_EFFECT_SNOW].hlsl_sm4          = xmb_effect_snow_sm4;
-   d[XMB_EFFECT_BOKEH].hlsl_sm4         = xmb_effect_bokeh_sm4;
-   d[XMB_EFFECT_SNOWFLAKE].hlsl_sm4     = xmb_effect_snowflake_sm4;
+   d[XMB_EFFECT_RIBBON].d3d_program = "ribbon";
+   d[XMB_EFFECT_RIBBON_SIMPLE].d3d_program = "ribbon_simple";
+   d[XMB_EFFECT_SNOW_SIMPLE].d3d_program = "simple_snow";
+   d[XMB_EFFECT_SNOW].d3d_program = "snow";
+   d[XMB_EFFECT_BOKEH].d3d_program = "bokeh";
+   d[XMB_EFFECT_SNOWFLAKE].d3d_program = "snowflake";
 #endif
 
 #ifdef XMB_EFFECTS_CG_GL
@@ -270,6 +254,56 @@ static void xmb_effects_describe(void)
    d[XMB_EFFECT_SNOW].metal_constant_count        = 3;
    d[XMB_EFFECT_BOKEH].metal_fragment             = "bokeh_fragment";
    d[XMB_EFFECT_SNOWFLAKE].metal_fragment         = "snowflake_fragment";
+#endif
+
+#ifdef XMB_EFFECTS_DKSH
+#define XMB_DKSH(e, v, f) \
+   d[e].dksh_vertex        = v; \
+   d[e].dksh_vertex_size   = sizeof(v); \
+   d[e].dksh_fragment      = f; \
+   d[e].dksh_fragment_size = sizeof(f)
+   XMB_DKSH(XMB_EFFECT_RIBBON, deko3d_fx_ribbon_vert_dksh,
+         deko3d_fx_ribbon_frag_dksh);
+   XMB_DKSH(XMB_EFFECT_RIBBON_SIMPLE, deko3d_fx_ribbon_simple_vert_dksh,
+         deko3d_fx_ribbon_simple_frag_dksh);
+   XMB_DKSH(XMB_EFFECT_SNOW_SIMPLE, deko3d_fx_quad_vert_dksh,
+         deko3d_fx_snow_simple_frag_dksh);
+   XMB_DKSH(XMB_EFFECT_SNOW, deko3d_fx_quad_vert_dksh,
+         deko3d_fx_snow_frag_dksh);
+   XMB_DKSH(XMB_EFFECT_BOKEH, deko3d_fx_quad_vert_dksh,
+         deko3d_fx_bokeh_frag_dksh);
+   XMB_DKSH(XMB_EFFECT_SNOWFLAKE, deko3d_fx_quad_vert_dksh,
+         deko3d_fx_snowflake_frag_dksh);
+#undef XMB_DKSH
+#endif
+
+#ifdef XMB_EFFECTS_SM86
+#define XMB_SM86(e, v, vg, f, fg) \
+   d[e].sm86_vertex        = v; \
+   d[e].sm86_vertex_size   = sizeof(v); \
+   d[e].sm86_vertex_gprs   = vg; \
+   d[e].sm86_fragment      = f; \
+   d[e].sm86_fragment_size = sizeof(f); \
+   d[e].sm86_fragment_gprs = fg
+   XMB_SM86(XMB_EFFECT_RIBBON,
+         nxg_s2_fx_ribbon_vert, NXG_S2_FX_RIBBON_VERT_GPRS,
+         nxg_s2_fx_ribbon_frag, NXG_S2_FX_RIBBON_FRAG_GPRS);
+   XMB_SM86(XMB_EFFECT_RIBBON_SIMPLE,
+         nxg_s2_fx_ribbon_simple_vert, NXG_S2_FX_RIBBON_SIMPLE_VERT_GPRS,
+         nxg_s2_fx_ribbon_simple_frag, NXG_S2_FX_RIBBON_SIMPLE_FRAG_GPRS);
+   XMB_SM86(XMB_EFFECT_SNOW_SIMPLE,
+         nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_snow_simple_frag, NXG_S2_FX_SNOW_SIMPLE_FRAG_GPRS);
+   XMB_SM86(XMB_EFFECT_SNOW,
+         nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_snow_frag, NXG_S2_FX_SNOW_FRAG_GPRS);
+   XMB_SM86(XMB_EFFECT_BOKEH,
+         nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_bokeh_frag, NXG_S2_FX_BOKEH_FRAG_GPRS);
+   XMB_SM86(XMB_EFFECT_SNOWFLAKE,
+         nxg_s2_fx_quad_vert, NXG_S2_FX_QUAD_VERT_GPRS,
+         nxg_s2_fx_snowflake_frag, NXG_S2_FX_SNOWFLAKE_FRAG_GPRS);
+#undef XMB_SM86
 #endif
 
 #ifdef WIIU

@@ -573,6 +573,18 @@ extern const gfx_widget_t gfx_widget_generic_message;
 extern const gfx_widget_t gfx_widget_libretro_message;
 extern const gfx_widget_t gfx_widget_progress_message;
 extern const gfx_widget_t gfx_widget_load_content_animation;
+extern const gfx_widget_t gfx_widget_camera_pip;
+
+/* Main thread, once a frame: the camera's picture-in-picture over
+ * running content, fed while the settings ask for it and a widget pass
+ * is drawn - the widgets' own (@widgets_active), or one the video
+ * driver draws for the picture alone - stopped otherwise. */
+void gfx_widget_camera_pip_update(bool widgets_active);
+/* Whether the picture is up: any thread */
+bool gfx_widget_camera_pip_showing(void);
+/* Main thread: the picture and its camera gone, before the video
+ * driver its texture belongs to. */
+void gfx_widget_camera_pip_stop(void);
 
 #ifdef HAVE_NETWORKING
 extern const gfx_widget_t gfx_widget_netplay_chat;

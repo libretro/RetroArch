@@ -48,15 +48,24 @@
 #endif
 
 #include "../audio/audio_driver.h"
+#ifdef HAVE_AUDIOMIXER
+#include "../gfx/gfx_music_player.h"
+#endif
+#ifdef HAVE_PYROWAVE
+#include "../record/record_pyrowave_lan.h"
+#endif
 
 #include "menu_driver.h"
 #include "menu_bind_trigger.h"
 #include "menu_dirwalk.h"
+#include "menu_timedate.h"
 #include "menu_cbs.h"
 #include "../driver.h"
 #include "../file_path_special.h"
 #include "../list_special.h"
 #include "../msg_hash_lbl_str.h"
+#include "../camera/camera_driver.h"
+#include <formats/image_yuv_blit.h>
 #include "../paths.h"
 #include "../tasks/task_content.h"
 #include "../tasks/task_powerstate.h"
@@ -76,6 +85,7 @@
 #endif
 
 #include "../gfx/gfx_animation.h"
+#include "../gfx/gfx_thumbnail_results.h"
 #include "../input/input_driver.h"
 #include "../input/input_osk.h"
 #include "../input/input_remapping.h"
@@ -779,6 +789,7 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
       if (   (entry.type == FILE_TYPE_SCAN_DIRECTORY)
           || (entry.type == FILE_TYPE_MANUAL_SCAN_DIRECTORY)
           || (entry.type == FILE_TYPE_USE_DIRECTORY)
+          || (entry.type == FILE_TYPE_VULKAN_DRIVER_SYSTEM)
           || (entry.type == FILE_TYPE_PARENT_DIRECTORY))
          continue;
 
@@ -832,383 +843,52 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
    return match_found;
 }
 
-/* Display the date and time - time_mode will influence how
- * the time representation will look like.
- * */
-size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime,
-      char *s, size_t len)
+const char *menu_display_timedate(unsigned style, unsigned separator,
+      size_t *len, unsigned *gen)
 {
-   /* Storage container for current menu datetime
-    * representation string */
-   static char datetime_cache[NAME_MAX_LENGTH];
+   /* Two strings: the next is written beside the shown one and taken
+    * only when it reads differently, which is when the generation
+    * moves */
+   static char datetime_cache[2][64];
+   static size_t datetime_len[2];
+   static unsigned datetime_shown;
+   static unsigned datetime_gen       = 1;
    static retro_time_t datetime_last_time_us;
-   struct menu_state *menu_st  = &menu_driver_state;
+   static unsigned datetime_style     = MENU_TIMEDATE_STYLE_LAST;
+   static unsigned datetime_separator = MENU_TIMEDATE_DATE_SEPARATOR_LAST;
+   struct menu_state *menu_st         = &menu_driver_state;
 
-   /* Trigger an update, if required */
-   if (   menu_st->current_time_us - datetime_last_time_us >=
-          DATETIME_CHECK_INTERVAL
-       || datetime_last_time_us == 0)
+   if (      menu_st->current_time_us - datetime_last_time_us
+                >= DATETIME_CHECK_INTERVAL
+         || !datetime_last_time_us
+         ||  style     != datetime_style
+         ||  separator != datetime_separator)
    {
       time_t time_;
       struct tm tm_;
-      bool has_am_pm         = false;
-      const char *format_str = "";
-
+      unsigned next         = datetime_shown ^ 1;
       datetime_last_time_us = menu_st->current_time_us;
-
-      /* Get current time */
+      datetime_style        = style;
+      datetime_separator    = separator;
       time(&time_);
       rtime_localtime(&time_, &tm_);
-
-      /* Format string representation */
-      switch (datetime->time_mode)
+      datetime_len[next]    = menu_timedate_format(datetime_cache[next],
+            sizeof(datetime_cache[next]), style, separator, &tm_);
+      if (     datetime_len[next] != datetime_len[datetime_shown]
+            || memcmp(datetime_cache[next], datetime_cache[datetime_shown],
+                  datetime_len[next]))
       {
-         case MENU_TIMEDATE_STYLE_YMD_HMS: /* YYYY-MM-DD HH:MM:SS */
-            /* Using switch statements to set the format
-             * string is verbose, but has far less performance
-             * impact than setting the date separator dynamically
-             * (i.e. no snprintf() or character replacement...) */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%Y/%m/%d %H:%M:%S";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%Y.%m.%d %H:%M:%S";
-                  break;
-               default:
-                  format_str = "%Y-%m-%d %H:%M:%S";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_YMD_HM: /* YYYY-MM-DD HH:MM */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%Y/%m/%d %H:%M";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%Y.%m.%d %H:%M";
-                  break;
-               default:
-                  format_str = "%Y-%m-%d %H:%M";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_YMD: /* YYYY-MM-DD */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%Y/%m/%d";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%Y.%m.%d";
-                  break;
-               default:
-                  format_str = "%Y-%m-%d";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_YM: /* YYYY-MM */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%Y/%m";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%Y.%m";
-                  break;
-               default:
-                  format_str = "%Y-%m";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_MDYYYY_HMS: /* MM-DD-YYYY HH:MM:SS */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%m/%d/%Y %H:%M:%S";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%m.%d.%Y %H:%M:%S";
-                  break;
-               default:
-                  format_str = "%m-%d-%Y %H:%M:%S";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_MDYYYY_HM: /* MM-DD-YYYY HH:MM */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%m/%d/%Y %H:%M";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%m.%d.%Y %H:%M";
-                  break;
-               default:
-                  format_str = "%m-%d-%Y %H:%M";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_MD_HM: /* MM-DD HH:MM */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%m/%d %H:%M";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%m.%d %H:%M";
-                  break;
-               default:
-                  format_str = "%m-%d %H:%M";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_MDYYYY: /* MM-DD-YYYY */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%m/%d/%Y";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%m.%d.%Y";
-                  break;
-               default:
-                  format_str = "%m-%d-%Y";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_MD: /* MM-DD */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%m/%d";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%m.%d";
-                  break;
-               default:
-                  format_str = "%m-%d";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS: /* DD-MM-YYYY HH:MM:SS */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%d/%m/%Y %H:%M:%S";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%d.%m.%Y %H:%M:%S";
-                  break;
-               default:
-                  format_str = "%d-%m-%Y %H:%M:%S";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM: /* DD-MM-YYYY HH:MM */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%d/%m/%Y %H:%M";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%d.%m.%Y %H:%M";
-                  break;
-               default:
-                  format_str = "%d-%m-%Y %H:%M";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_DDMM_HM: /* DD-MM HH:MM */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%d/%m %H:%M";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%d.%m %H:%M";
-                  break;
-               default:
-                  format_str = "%d-%m %H:%M";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_DDMMYYYY: /* DD-MM-YYYY */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%d/%m/%Y";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%d.%m.%Y";
-                  break;
-               default:
-                  format_str = "%d-%m-%Y";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_DDMM: /* DD-MM */
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%d/%m";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%d.%m";
-                  break;
-               default:
-                  format_str = "%d-%m";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_HMS: /* HH:MM:SS */
-            format_str = "%H:%M:%S";
-            break;
-         case MENU_TIMEDATE_STYLE_HM: /* HH:MM */
-            format_str = "%H:%M";
-            break;
-         case MENU_TIMEDATE_STYLE_YMD_HMS_AMPM: /* YYYY-MM-DD HH:MM:SS (AM/PM) */
-            has_am_pm = true;
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%Y/%m/%d %I:%M:%S %p";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%Y.%m.%d %I:%M:%S %p";
-                  break;
-               default:
-                  format_str = "%Y-%m-%d %I:%M:%S %p";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_YMD_HM_AMPM: /* YYYY-MM-DD HH:MM (AM/PM) */
-            has_am_pm = true;
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%Y/%m/%d %I:%M %p";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%Y.%m.%d %I:%M %p";
-                  break;
-               default:
-                  format_str = "%Y-%m-%d %I:%M %p";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AMPM: /* MM-DD-YYYY HH:MM:SS (AM/PM) */
-            has_am_pm = true;
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%m/%d/%Y %I:%M:%S %p";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%m.%d.%Y %I:%M:%S %p";
-                  break;
-               default:
-                  format_str = "%m-%d-%Y %I:%M:%S %p";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_MDYYYY_HM_AMPM: /* MM-DD-YYYY HH:MM (AM/PM) */
-            has_am_pm = true;
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%m/%d/%Y %I:%M %p";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%m.%d.%Y %I:%M %p";
-                  break;
-               default:
-                  format_str = "%m-%d-%Y %I:%M %p";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_MD_HM_AMPM: /* MM-DD HH:MM (AM/PM) */
-            has_am_pm = true;
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%m/%d %I:%M %p";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%m.%d %I:%M %p";
-                  break;
-               default:
-                  format_str = "%m-%d %I:%M %p";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AMPM: /* DD-MM-YYYY HH:MM:SS (AM/PM) */
-            has_am_pm = true;
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%d/%m/%Y %I:%M:%S %p";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%d.%m.%Y %I:%M:%S %p";
-                  break;
-               default:
-                  format_str = "%d-%m-%Y %I:%M:%S %p";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AMPM: /* DD-MM-YYYY HH:MM (AM/PM) */
-            has_am_pm = true;
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%d/%m/%Y %I:%M %p";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%d.%m.%Y %I:%M %p";
-                  break;
-               default:
-                  format_str = "%d-%m-%Y %I:%M %p";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_DDMM_HM_AMPM: /* DD-MM HH:MM (AM/PM) */
-            has_am_pm = true;
-            switch (datetime->date_separator)
-            {
-               case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
-                  format_str = "%d/%m %I:%M %p";
-                  break;
-               case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
-                  format_str = "%d.%m %I:%M %p";
-                  break;
-               default:
-                  format_str = "%d-%m %I:%M %p";
-                  break;
-            }
-            break;
-         case MENU_TIMEDATE_STYLE_HMS_AMPM: /* HH:MM:SS (AM/PM) */
-            has_am_pm  = true;
-            format_str = "%I:%M:%S %p";
-            break;
-         case MENU_TIMEDATE_STYLE_HM_AMPM: /* HH:MM (AM/PM) */
-            has_am_pm  = true;
-            format_str = "%I:%M %p";
-            break;
+         datetime_shown = next;
+         /* Zero is left for a cache that holds nothing */
+         if (!++datetime_gen)
+            datetime_gen = 1;
       }
-
-      if (has_am_pm)
-         strftime_am_pm(datetime_cache, sizeof(datetime_cache),
-               format_str, &tm_);
-      else
-         strftime(datetime_cache, sizeof(datetime_cache),
-               format_str, &tm_);
    }
-   /* Copy cached datetime string to input
-    * menu_display_ctx_datetime_t struct */
-   return strlcpy(s, datetime_cache, len);
+   if (len)
+      *len = datetime_len[datetime_shown];
+   if (gen)
+      *gen = datetime_gen;
+   return datetime_cache[datetime_shown];
 }
 
 /* Display current (battery) power state */
@@ -1258,12 +938,14 @@ size_t menu_entries_get_title(char *s, size_t len)
    const file_list_t *list    = menu_st->entries.list
       ? MENU_LIST_GET(menu_st->entries.list, 0)
       : NULL;
-   menu_file_list_cbs_t *cbs  = list
+   /* The stack is there but empty until the first list is pushed: a
+    * menu driver drawing its first frame before then has no title */
+   menu_file_list_cbs_t *cbs  = (list && list->size)
       ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
       : NULL;
    if (cbs && cbs->action_get_title)
    {
-      const char *label       = (list->size) ? list->list[list->size - 1].label : NULL;
+      const char *label       = list->list[list->size - 1].label;
 
       /* Show playlist entry instead of "Quick Menu" */
       if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR))
@@ -1322,7 +1004,8 @@ size_t menu_entries_get_title(char *s, size_t len)
 static void menu_input_pointer_close_messagebox(struct menu_state *menu_st)
 {
    const file_list_t *list          = MENU_LIST_GET(menu_st->entries.list, 0);
-   const char *label                = list->list[list->size - 1].label;
+   const char *label                = (list && list->size)
+      ? list->list[list->size - 1].label : NULL;
 
 #ifdef HAVE_AUDIOMIXER
    /* Determine whether this is a help or info
@@ -2868,8 +2551,9 @@ static void menu_cbs_init(
    const char *menu_lbl           = NULL;
    file_list_t *menu_list         = MENU_LIST_GET(menu_st->entries.list, 0);
 #ifdef DEBUG_LOG
-   menu_file_list_cbs_t *menu_cbs = (menu_file_list_cbs_t*)
-      menu_list->list[list->size - 1].actiondata;
+   menu_file_list_cbs_t *menu_cbs = (menu_list && menu_list->size)
+      ? (menu_file_list_cbs_t*)menu_list->list[menu_list->size - 1].actiondata
+      : NULL;
    enum msg_hash_enums enum_idx   = menu_cbs ? menu_cbs->enum_idx : MSG_UNKNOWN;
 #endif
 
@@ -4588,7 +4272,7 @@ void menu_entries_get_last_stack(const char **path, const char **label,
          *entry_idx = list->list[list->size - 1].entry_idx;
    }
 
-   if (enum_idx)
+   if (enum_idx && list && list->size)
    {
       menu_file_list_cbs_t *cbs  = (menu_file_list_cbs_t*)
          list->list[list->size - 1].actiondata;
@@ -5158,12 +4842,6 @@ bool menu_driver_alive(void)
    return (menu_driver_state.flags & MENU_ST_FLAG_ALIVE) != 0;
 }
 
-/* The label of the text entry that is open. */
-const char *menu_input_dialog_get_kb_label(void)
-{
-   return menu_driver_state.input_dialog_kb_label;
-}
-
 const char *menu_input_dialog_get_buffer(void)
 {
    struct menu_state    *menu_st  = &menu_driver_state;
@@ -5202,12 +4880,11 @@ void menu_input_dialog_end(void)
    menu_st->input_dialog_kb_idx               = 0;
    menu_st->input_dialog_kb_text_type         = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    menu_st->flags                            &= ~MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
-   menu_st->input_dialog_kb_label[0]          = '\0';
    menu_st->input_dialog_kb_label_setting[0]  = '\0';
 
    /* Avoid triggering states on pressing return. */
    /* Held back until everything held now is let go. */
-   input_driver_hold_held_input();
+   input_driver_hold_held_input_late();
 
 #ifdef HAVE_COCOATOUCH
    /* Dismiss iOS/tvOS native keyboard if it's currently open */
@@ -5835,10 +5512,8 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
          /* Held back until everything held now is let go. */
          input_driver_hold_held_input();
 
-         /* Use human readable order instead */
+         /* Use human readable order instead; past the last, done */
          _binds->order++;
-         _binds->begin = MENU_SETTINGS_BIND_BEGIN + input_config_bind_order[_binds->order];
-
          if (     _binds->order > ARRAY_SIZE(input_config_bind_order) - 1
                || stop_binding)
          {
@@ -5846,6 +5521,8 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
             input_driver_set_keyboard_mapping_blocked(false);
             return true;
          }
+         _binds->begin = MENU_SETTINGS_BIND_BEGIN
+               + input_config_bind_order[_binds->order];
 
          input_driver_set_keyboard_mapping_blocked(false);
          input_driver_set_wait_input_release(true);
@@ -5926,35 +5603,38 @@ bool menu_input_dialog_get_display_kb(void)
       swkbdConfigMakePresetDefault(&kbd);
 
       swkbdConfigSetGuideText(&kbd,
-            menu_st->input_dialog_kb_label);
+            input_driver_text_entry_label());
 
       rc = swkbdShow(&kbd, buf, sizeof(buf));
 
       swkbdClose(&kbd);
 
-      /* RetroArch uses key-by-key input
-         so we need to simulate it */
+      /* The text goes to the line a run at a time, each run up to a
+       * line end typed whole where it lies, and each line end as the
+       * Return key. The byte after a run is a NUL while it is typed:
+       * the last codepoint is read up to one. */
+      buf[LIBNX_SWKBD_LIMIT - 1] = '\0';
       typing = true;
       for (i = 0; i < LIBNX_SWKBD_LIMIT; i++)
       {
+         unsigned n = i;
+         char end;
+
          /* In case a previous "Enter" press closed the keyboard */
          if (!(menu_st->flags & MENU_ST_FLAG_INP_DLG_KB_DISPLAY))
             break;
 
-         if (buf[i] == '\n' || buf[i] == '\0')
-            input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
-         else
+         while (buf[n] != '\n' && buf[n] != '\0')
+            n++;
+         if (n > i)
          {
-            const char *word = &buf[i];
-            /* input_keyboard_line_append expects a null-terminated
-               string, so just make one (yes, the touch keyboard is
-               a list of "NULL-terminated characters") */
-            char oldchar     = buf[i+1];
-            buf[i+1]         = '\0';
-
-            input_driver_keyboard_line_type(word, strlen(word));
-            buf[i+1]     = oldchar;
+            end    = buf[n];
+            buf[n] = '\0';
+            input_driver_keyboard_line_type(&buf[i], n - i);
+            buf[n] = end;
+            i      = n;
          }
+         input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
       }
 
       /* fail-safe */
@@ -7521,6 +7201,139 @@ MENU_NOINLINE static int menu_input_post_iterate(
    return ret;
 }
 
+/* The camera preview: one thumbnail at a time, which the menu driver
+ * shows while Settings > Camera > Preview is selected. */
+static gfx_thumbnail_t *menu_camera_thumb;
+static enum camera_preview_state menu_camera_state;
+
+static void menu_camera_preview_planar(void *user,
+      const struct retro_camera_planar_frame *f)
+{
+   unsigned yuv = 0;
+   if (f->flags & RETRO_CAMERA_PLANAR_FULL_RANGE)
+      yuv |= IMAGE_YUV_FLAG_FULL_RANGE;
+   if (f->flags & RETRO_CAMERA_PLANAR_BT709)
+      yuv |= IMAGE_YUV_FLAG_BT709;
+   if (VIDEO_SCALE_FITS(f->width, f->height))
+      gfx_thumbnail_live_planes((gfx_thumbnail_t*)user, f->planes,
+            f->strides, (unsigned)f->chroma_step,
+            VIDEO_SCALE_PACK(f->width, f->height), yuv);
+}
+
+static void menu_camera_preview_raw(void *user, const uint32_t *buf,
+      unsigned width, unsigned height, size_t pitch)
+{
+   if (VIDEO_SCALE_FITS(width, height))
+      gfx_thumbnail_live_pixels((gfx_thumbnail_t*)user, buf,
+            VIDEO_SCALE_PACK(width, height), pitch);
+}
+
+/* The thumbnail reset: the camera goes with it. */
+static void menu_camera_preview_end(void *user)
+{
+   (void)user;
+   menu_camera_thumb = NULL;
+   menu_camera_state = CAMERA_PREVIEW_OFF;
+   camera_driver_preview_close();
+}
+
+bool menu_camera_preview_selected(void)
+{
+   struct menu_state *menu_st = &menu_driver_state;
+   file_list_t *list          = MENU_ENTRIES_GET_SELECTION_BUF_PTR_INTERNAL(
+         menu_st, 0);
+   menu_file_list_cbs_t *cbs;
+   if (!list || menu_st->selection_ptr >= list->size)
+      return false;
+   cbs = (menu_file_list_cbs_t*)list->list[menu_st->selection_ptr].actiondata;
+   return cbs && cbs->enum_idx == MENU_ENUM_LABEL_CAMERA_PREVIEW;
+}
+
+enum camera_preview_state menu_camera_preview_frame(gfx_thumbnail_t *thumbnail)
+{
+   if (menu_camera_thumb != thumbnail)
+   {
+      camera_preview_sink_t sink;
+      sink.planar = menu_camera_preview_planar;
+      sink.raw    = menu_camera_preview_raw;
+      sink.user   = thumbnail;
+      gfx_thumbnail_live_begin(thumbnail, menu_camera_preview_end, NULL);
+      menu_camera_thumb = thumbnail;
+      menu_camera_state = CAMERA_PREVIEW_OFF;
+      camera_driver_preview_open(&sink);
+   }
+
+   return menu_camera_preview_poll();
+}
+
+enum camera_preview_state menu_camera_preview_poll(void)
+{
+   enum camera_preview_state state = camera_driver_preview_poll();
+   enum msg_hash_enums msg         = MSG_UNKNOWN;
+   if (state != menu_camera_state)
+   {
+      switch (state)
+      {
+         case CAMERA_PREVIEW_DISALLOWED:
+            msg = MSG_CAMERA_PREVIEW_DISALLOWED;
+            break;
+         case CAMERA_PREVIEW_FAILED:
+            msg = MSG_CAMERA_PREVIEW_FAILED;
+            break;
+         case CAMERA_PREVIEW_CORE_IDLE:
+            msg = MSG_CAMERA_PREVIEW_CORE_IDLE;
+            break;
+         default:
+            break;
+      }
+      if (msg != MSG_UNKNOWN)
+      {
+         const char *s = msg_hash_to_str(msg);
+         runloop_msg_queue_push(s, strlen(s), 1, 180, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      }
+      menu_camera_state = state;
+   }
+   return state;
+}
+
+bool menu_camera_preview_update(gfx_thumbnail_t *thumbnail)
+{
+   if (menu_camera_preview_selected())
+   {
+      menu_camera_preview_frame(thumbnail);
+      return true;
+   }
+   if (thumbnail->status != GFX_THUMBNAIL_STATUS_UNKNOWN)
+      gfx_thumbnail_reset(thumbnail);
+   return false;
+}
+
+void menu_camera_preview_draw(gfx_thumbnail_t *thumbnail, void *userdata,
+      unsigned video_dims, float x, float y, unsigned dims)
+{
+   static float black[16] = {
+      0.0f, 0.0f, 0.0f, 1.0f,
+      0.0f, 0.0f, 0.0f, 1.0f,
+      0.0f, 0.0f, 0.0f, 1.0f,
+      0.0f, 0.0f, 0.0f, 1.0f,
+   };
+   gfx_display_draw_quad(disp_get_ptr(), userdata, video_dims, x, y, dims,
+         video_dims, black, NULL);
+   if (thumbnail->status == GFX_THUMBNAIL_STATUS_AVAILABLE)
+      gfx_thumbnail_draw(userdata, video_dims, thumbnail, x, y, dims,
+            GFX_THUMBNAIL_ALIGN_CENTRE, 1.0f, 1.0f, NULL);
+}
+
+void menu_camera_preview_stop(void)
+{
+   if (menu_camera_thumb)
+      gfx_thumbnail_reset(menu_camera_thumb);
+   /* A driver's own sink (RGUI) */
+   camera_driver_preview_close();
+   menu_camera_state = CAMERA_PREVIEW_OFF;
+}
+
 void menu_driver_toggle(
       void *curr_video_data,
       void *video_driver_data,
@@ -7739,7 +7552,12 @@ void retroarch_menu_running(void)
          menu->driver_ctx->toggle(menu->userdata, true);
 
       if (!(menu_st->flags & MENU_ST_FLAG_ALIVE))
-         menu_event_opens = true;
+      {
+         menu_event_opens             = true;
+         /* Before the first frame that can draw the clock */
+         menu_timedate_capture_ampm();
+         menu_st->timedate_zone_order = (uint8_t)menu_timedate_host_order();
+      }
       menu_st->flags |= MENU_ST_FLAG_ALIVE;
       menu_driver_drop_accept(true);
       menu_driver_toggle(
@@ -7812,6 +7630,8 @@ void retroarch_menu_running_finished(bool quit)
       if (menu->driver_ctx && menu->driver_ctx->toggle)
          menu->driver_ctx->toggle(menu->userdata, false);
 
+      /* A hidden menu shows no preview, and keeps no camera open. */
+      menu_camera_preview_stop();
       menu_st->flags &= ~MENU_ST_FLAG_ALIVE;
       menu_driver_drop_accept(false);
       /* Ramp the core's first frames back up. Not when quitting - nothing
@@ -7945,6 +7765,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
           * cache it would install goes away. */
          playlist_init_cached_defer_abort();
          playlist_free_cached();
+         gfx_thumbnail_results_deinit();
 
          /* End any in-flight background directory walk and drop an
           * unconsumed listing; late completions become no-ops. */
@@ -7994,6 +7815,7 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             memset(&menu_st->input_state, 0, sizeof(menu_input_t));
             memset(&menu_st->input_pointer_hw_state, 0, sizeof(menu_input_pointer_hw_state_t));
 
+            menu_camera_preview_stop();
             if (     menu_st->driver_ctx
                   && menu_st->driver_ctx->free)
                menu_st->driver_ctx->free(menu_st->userdata);
@@ -8317,6 +8139,19 @@ bool menu_shader_manager_set_preset(struct video_shader *menu_shader,
       goto clear;
    }
 
+   /* A synchronous apply has already copied the driver's struct into
+    * the menu's; only a deferred load leaves it to be filled from the
+    * preset until the driver's own struct arrives. */
+   if (     apply
+         && menu_shader
+         && menu_shader == menu_shader_get()
+         && video_state_get_ptr()->shader_deferred.state
+            != SHADER_LOAD_COMPILING)
+   {
+      ret = true;
+      goto end;
+   }
+
    /* Load stored Preset into menu on success.
     * Used when a preset is directly loaded.
     * No point in updating when the Preset was
@@ -8627,10 +8462,12 @@ static int generic_menu_iterate(
             break;
          }
 
-         if (     action == MENU_ACTION_OK
-               || action == MENU_ACTION_SELECT
-               || action == MENU_ACTION_CANCEL
-               || action == MENU_ACTION_INFO)
+         /* Pop only a screen the confirm pushed */
+         if (     (   action == MENU_ACTION_OK
+                   || action == MENU_ACTION_SELECT
+                   || action == MENU_ACTION_CANCEL
+                   || action == MENU_ACTION_INFO)
+               && menu_should_pop_stack(label))
             BIT64_SET(menu->state, MENU_STATE_POP_STACK);
 
          if (menu_st->dialog_st.confirm_cmd)
@@ -9537,6 +9374,21 @@ static void menu_driver_pump_pending(struct menu_state *menu_st,
    menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
 }
 
+#ifdef HAVE_PYROWAVE
+static void menu_driver_pyrowave_refresh(struct menu_state *menu_st,
+      settings_t *settings)
+{
+   file_list_t *stack, *entries;
+   menu_st->frame_work &= ~MENU_FRAME_WORK_PYROWAVE;
+   if (!menu_st->entries.list) return;
+   stack = MENU_LIST_GET(menu_st->entries.list, 0);
+   entries = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+   if (stack && stack->size && entries &&
+         !strcmp(stack->list[stack->size - 1].label, MENU_ENUM_LABEL_DEFERRED_RECORDING_SETTINGS_LIST_STR))
+      menu_driver_displaylist_push(menu_st, settings, entries, stack);
+}
+#endif
+
 int menu_driver_media_startup_token(void)
 {
    return retro_atomic_load_acquire_int(&menu_media_startup);
@@ -9555,12 +9407,35 @@ static void menu_driver_media_launch_clear(void)
    menu_media_launch_browsing = false;
 }
 
-bool menu_driver_media_open(const char *path)
+bool menu_driver_media_can_open(const char *path)
 {
    settings_t *settings = config_get_ptr();
-   const menu_ctx_driver_t *driver;
-   const char *ident;
+   const menu_ctx_driver_t *driver = menu_driver_find_driver(settings,
+         "menu", false);
+   const char *ident = driver ? driver->ident : NULL;
    enum image_type_enum type;
+   if (!path)
+      return false;
+#ifdef HAVE_AUDIOMIXER
+   if (path_is_media_type(path) == RARCH_CONTENT_MUSIC)
+      return settings->bools.multimedia_builtin_mediaplayer_enable
+         && !strstr(path, "://") && !path_contains_compressed_file(path)
+         && audio_driver_mixer_extension_supported(path_get_extension(path))
+         && (string_is_equal(ident, "ozone") || string_is_equal(ident, "xmb")
+            || string_is_equal(ident, "rgui") || string_is_equal(ident, "glui"));
+#endif
+   type = image_texture_get_type(path);
+   return !(type == IMAGE_TYPE_NONE || type == IMAGE_TYPE_DDS
+         || strstr(path, "://") || path_contains_compressed_file(path)
+         || ((type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
+            ? !settings->bools.multimedia_builtin_mediaplayer_enable
+            : !settings->bools.multimedia_builtin_imageviewer_enable)
+         || (!string_is_equal(ident, "ozone") && !string_is_equal(ident, "xmb")
+            && !string_is_equal(ident, "rgui") && !string_is_equal(ident, "glui")));
+}
+
+bool menu_driver_media_open(const char *path)
+{
    char *copy;
    if (!path)
    {
@@ -9569,16 +9444,7 @@ bool menu_driver_media_open(const char *path)
       retro_atomic_store_release_int(&menu_media_startup, 0);
       return false;
    }
-   driver = menu_driver_find_driver(settings, "menu", false);
-   ident = driver ? driver->ident : NULL;
-   type = image_texture_get_type(path);
-   if (type == IMAGE_TYPE_NONE || type == IMAGE_TYPE_DDS
-         || strstr(path, "://") || path_contains_compressed_file(path)
-         || ((type == IMAGE_TYPE_MP4 || type == IMAGE_TYPE_WEBM)
-            ? !settings->bools.multimedia_builtin_mediaplayer_enable
-            : !settings->bools.multimedia_builtin_imageviewer_enable)
-         || (!string_is_equal(ident, "ozone") && !string_is_equal(ident, "xmb")
-            && !string_is_equal(ident, "rgui") && !string_is_equal(ident, "glui")))
+   if (!menu_driver_media_can_open(path))
       return false;
    copy = (char *)malloc(PATH_MAX_LENGTH);
    if (!copy)
@@ -9668,6 +9534,172 @@ static enum menu_action menu_driver_media_launch(struct menu_state *menu_st,
    return action;
 }
 
+/* Whether the list shown lists the controllers: Controllers, Port N
+ * Controls and its Controllers, Add Controller, or a Device Index
+ * dropdown */
+static bool menu_driver_lists_pads(void)
+{
+   unsigned e;
+   const char *path  = NULL;
+   const char *label = NULL;
+   menu_entries_get_last_stack(&path, &label, NULL, NULL, NULL);
+   if (!label)
+      return false;
+   if (     string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_INPUT_CONTROLLERS_LIST_STR)
+         || string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST_STR)
+         || string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_INPUT_PORT_CONTROLLERS_LIST_STR)
+         || string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_PLAYS_AS_ADD_STR))
+      return true;
+   if (     !path
+         || !string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_STR))
+      return false;
+   e = string_to_unsigned(path);
+   return e >= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX
+       && e <= MENU_ENUM_LABEL_INPUT_DEVICE_INDEX_LAST;
+}
+
+/* Whether the list on screen lists the controllers, kept while two of
+ * them show one name: asked as a list is made and as names come to be
+ * shared, never as a frame runs. */
+static void menu_driver_pads_listed_update(struct menu_state *menu_st)
+{
+   bool listed = menu_driver_lists_pads();
+   /* the frame runs once more on a change, to begin or to clear */
+   if (listed != menu_st->pads_listed)
+      menu_st->frame_work |= MENU_FRAME_WORK_PAD_FIND;
+   menu_st->pads_listed = listed;
+}
+
+/* A list was made for the screen (menu_displaylist_process()) */
+void menu_driver_pads_list_made(void)
+{
+   struct menu_state *menu_st = &menu_driver_state;
+   if (INPUT_DEVICES_SHARE_NAME())
+      menu_driver_pads_listed_update(menu_st);
+}
+
+/* Two connected controllers came to show one name, or no longer do
+ * (input_config_retag_devices()): a list of the controllers on screen
+ * is made again, so its rows take or drop what a press marks, and the
+ * frame looks for presses while they are shared on such a list. */
+void menu_driver_pads_alike_changed(void)
+{
+   struct menu_state *menu_st = &menu_driver_state;
+   const char *label          = NULL;
+   if (!menu_st->entries.list)
+   {
+      menu_st->pads_listed = false;
+      return;
+   }
+   menu_driver_pads_listed_update(menu_st);
+   menu_st->frame_work |= MENU_FRAME_WORK_PAD_FIND;
+   /* the lists of the controllers, and those naming them with a tag */
+   menu_entries_get_last_stack(NULL, &label, NULL, NULL, NULL);
+   if (     menu_st->pads_listed
+         || string_is_equal(label, MENU_ENUM_LABEL_INPUT_INFORMATION_STR)
+         || string_is_equal(label,
+               MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST_STR))
+      menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                      | MENU_ST_FLAG_PREVENT_POPULATE;
+}
+
+/* While two connected controllers show one name on a list of them, and
+ * once more after, to clear what was kept then. Each pad is read where
+ * the poll left it (input_driver_pads_held()). RGUI draws only what
+ * changed, so a mark coming or going asks it to. */
+static void menu_driver_mark_pressed_pads(struct menu_state *menu_st,
+      gfx_display_t *p_disp, retro_time_t current_time)
+{
+   uint32_t marked = 0;
+   /* with no name shared, a mark would only hide the value */
+   bool share      = INPUT_DEVICES_SHARE_NAME() && menu_st->pads_listed;
+
+   if (share)
+   {
+      uint32_t held[MAX_INPUT_DEVICES];
+      int16_t axes[MAX_INPUT_DEVICES][INPUT_PAD_VIEW_AXES];
+      uint32_t named = input_driver_pads_held(held, axes);
+      unsigned s;
+      for (s = 0; s < MAX_INPUT_DEVICES; s++)
+      {
+         unsigned a;
+         uint16_t off = 0;
+         if (!(named & (1u << s)))
+         {
+            menu_st->pad_pressed_us[s] = 0;
+            menu_st->pad_down[s]       = 0;
+            menu_st->pad_axis_off[s]   = 0;
+            menu_st->pad_rest_known   &= ~(1u << s);
+            continue;
+         }
+         /* an axis is pressed half its range from where it rested */
+         if (!(menu_st->pad_rest_known & (1u << s)))
+         {
+            memcpy(menu_st->pad_axis_rest[s], axes[s], sizeof(axes[s]));
+            menu_st->pad_rest_known |= 1u << s;
+         }
+         for (a = 0; a < INPUT_PAD_VIEW_AXES; a++)
+         {
+            int d = axes[s][a] - menu_st->pad_axis_rest[s][a];
+            if (d > 0x4000 || d < -0x4000)
+               off |= (uint16_t)(1u << a);
+         }
+         /* only a new press marks: a button left down (a shifter in
+          * gear, a toggle) would hide the row's value */
+         if (     (held[s] & ~menu_st->pad_down[s])
+               || (off & ~menu_st->pad_axis_off[s]))
+            menu_st->pad_pressed_us[s] = current_time;
+         menu_st->pad_down[s]     = held[s];
+         menu_st->pad_axis_off[s] = off;
+         if (     menu_st->pad_pressed_us[s]
+               && current_time - menu_st->pad_pressed_us[s]
+                  < MENU_PAD_PRESSED_HOLD_US)
+            marked |= 1u << s;
+      }
+   }
+   else
+   {
+      /* unread here, so a button down when marks are back is new, and
+       * a press from before must not mark again */
+      memset(menu_st->pad_down, 0, sizeof(menu_st->pad_down));
+      memset(menu_st->pad_axis_off, 0, sizeof(menu_st->pad_axis_off));
+      memset(menu_st->pad_pressed_us, 0, sizeof(menu_st->pad_pressed_us));
+      menu_st->pad_rest_known = 0;
+      menu_st->frame_work &= ~MENU_FRAME_WORK_PAD_FIND;
+   }
+   menu_st->pad_find_hint = share;
+   if (marked != menu_st->pads_marked)
+   {
+      menu_st->pads_marked = marked;
+      p_disp->flags       |= GFX_DISP_FLAG_FB_DIRTY;
+   }
+}
+
+/* What a frame has to do beyond drawing, rarely: a deferred playlist
+ * read to advance, presses to look for. Kept apart so that a frame
+ * with neither tests one word. */
+static VIDEO_NOINLINE void menu_driver_frame_work(struct menu_state *menu_st,
+      gfx_display_t *p_disp, settings_t *settings, retro_time_t current_time)
+{
+   if (menu_st->frame_work & MENU_FRAME_WORK_PLAYLIST)
+   {
+      menu_driver_pump_pending(menu_st, settings);
+      if (!playlist_init_cached_pending())
+         menu_st->frame_work &= ~MENU_FRAME_WORK_PLAYLIST;
+   }
+#ifdef HAVE_PYROWAVE
+   if (menu_st->frame_work & MENU_FRAME_WORK_PYROWAVE)
+      menu_driver_pyrowave_refresh(menu_st, settings);
+#endif
+   if (menu_st->frame_work & MENU_FRAME_WORK_PAD_FIND)
+      menu_driver_mark_pressed_pads(menu_st, p_disp, current_time);
+}
+
 bool menu_driver_iterate(
       struct menu_state *menu_st,
       gfx_display_t *p_disp,
@@ -9676,7 +9708,11 @@ bool menu_driver_iterate(
       enum menu_action action,
       retro_time_t current_time)
 {
-   menu_driver_pump_pending(menu_st, settings);
+#ifdef HAVE_AUDIOMIXER
+   gfx_music_player_reap();
+#endif
+   if (menu_st->frame_work)
+      menu_driver_frame_work(menu_st, p_disp, settings, current_time);
    action = menu_driver_media_launch(menu_st, action);
 
 #ifdef RETRO_ATOMIC_HAS_PTR
@@ -9727,10 +9763,6 @@ bool menu_input_dialog_start_search(void)
 #endif
    menu_st->flags                         |= MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
    menu_st->input_dialog_kb_text_type      = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
-   strlcpy(menu_st->input_dialog_kb_label,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
-         sizeof(menu_st->input_dialog_kb_label));
-
 
 #ifdef HAVE_ACCESSIBILITY
    if (is_accessibility_enabled(
@@ -9799,11 +9831,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 #endif
    menu_st->flags |= MENU_ST_FLAG_INP_DLG_KB_DISPLAY;
 
-   /* Only copy over the menu label and setting if they exist. */
-   if (line->label)
-      strlcpy(menu_st->input_dialog_kb_label,
-            line->label,
-            sizeof(menu_st->input_dialog_kb_label));
+   /* The label is kept by input_driver_text_entry_open() below. */
    if (line->label_setting)
       strlcpy(menu_st->input_dialog_kb_label_setting,
             line->label_setting,
@@ -10035,6 +10063,23 @@ const char *menu_dialog_firmware_path_line(const struct menu_state *menu_st,
    return NULL;
 }
 
+unsigned menu_dialog_rule_line(const char *text, const char *wrapped,
+      size_t wrapped_len, unsigned line_count)
+{
+   size_t i;
+   size_t d;
+   unsigned n  = 1;
+   size_t _len = strcspn(text, "\n");
+   if (!_len || text[_len] != '\n')
+      return 0;
+   d = word_wrap_offset(text, _len, wrapped, wrapped_len);
+   /* The heading ends on the line after every line end before it */
+   for (i = 0; i < d; i++)
+      if (wrapped[i] == '\0' || wrapped[i] == '\n')
+         n++;
+   return (n <= line_count) ? n : 0;
+}
+
 /* A path's underline as last measured: the line it is under and the
  * font it was measured in, so the box's frames after the first draw it
  * without measuring again. Only the thread that draws the menu's frames
@@ -10121,10 +10166,8 @@ void menu_dialog_draw_path_underline(const struct menu_state *menu_st,
       rgba[i * 4 + 3] = FONT_COLOR_GET_ALPHA(color) / 255.0f;
    }
 
-   gfx_display_blend_begin(p_disp->dispctx, userdata);
    gfx_display_draw_quad(p_disp, userdata, video_dims, x, baseline + 1,
          VIDEO_SCALE_PACK(width, 1), video_dims, rgba, NULL);
-   gfx_display_blend_end(p_disp->dispctx, userdata);
 }
 
 static void menu_dialog_confirm_reset(struct menu_state *menu_st)
@@ -10138,6 +10181,7 @@ static void menu_dialog_confirm_reset(struct menu_state *menu_st)
    menu_st->dialog_st.button_count         = 0;
    menu_st->dialog_st.button_highlight     = -1;
    menu_st->dialog_st.button_hover         = -1;
+   menu_st->dialog_st.heading              = false;
 
    BIT64_CLEAR(menu_st->driver_data->state, MENU_STATE_RENDER_MESSAGEBOX);
    menu_st->driver_data->menu_state_msg[0] = '\0';
@@ -10158,6 +10202,7 @@ void menu_dialog_confirm_set(struct menu_state *menu_st, unsigned msg, unsigned 
    menu_st->dialog_st.confirm_msg = msg;
    menu_st->dialog_st.confirm_cmd = cmd;
    menu_st->dialog_st.pending_cmd = CMD_EVENT_NONE;
+   menu_st->dialog_st.heading     = (msg == MSG_CORE_FIRMWARE_MISSING);
 }
 
 void menu_dialog_confirm_clear(struct menu_state *menu_st)
@@ -10292,6 +10337,15 @@ const int *menu_dialog_label_widths(menu_dialog_label_widths_t *c,
    return c->w;
 }
 
+bool menu_core_warning_can_open(void)
+{
+   const char *ident = menu_driver_ident();
+   /* Before the drivers are chosen: the one the config names */
+   if (!ident)
+      ident = config_get_ptr()->arrays.menu_driver;
+   return !string_is_equal(ident, "null");
+}
+
 #ifdef HAVE_CORE_SIGNATURES
 /* core_warning_serial() of the request the box went up for, 0 for none */
 static unsigned menu_core_warning_shown = 0;
@@ -10314,6 +10368,7 @@ static void menu_dialog_buttons_set(struct menu_state *menu_st,
    d->button_highlight   = 0;
    d->button_hover       = -1;
    d->button_announce    = true;
+   d->heading            = false;
    d->button_epoch++;
 }
 
@@ -10333,26 +10388,40 @@ static unsigned menu_core_warning_label(enum core_warning_choice choice)
    return MENU_ENUM_LABEL_VALUE_CORE_WARNING_CANCEL;
 }
 
-/* The Security Warning's text, built again only for another reason or
- * another language (whose strings are other pointers) */
+/* The Security Warning's text, built again only for another reason,
+ * store line or language (whose strings are other pointers) */
 static const char *menu_core_warning_text(void)
 {
    static char text[MENU_LABEL_MAX_LENGTH];
    static const char *built_title = NULL;
+   static const char *built_store = NULL;
    static int built_result        = -1;
    enum core_check_result result  = CORE_CHECK_ERROR;
    const char *title              = msg_hash_to_str(
          MENU_ENUM_LABEL_VALUE_CORE_WARNING);
+   const char *store              = NULL;
    size_t _len                    = 0;
    core_warning_pending(NULL, &result);
-   if ((int)result == built_result && title == built_title)
+   if (core_trust_runtime_newer() || core_trust_runtime_unreadable())
+      store = msg_hash_to_str(core_trust_runtime_newer()
+            ? MSG_CORE_WARNING_STORE_NEWER
+            : MSG_CORE_WARNING_STORE_UNREADABLE);
+   if (     (int)result == built_result
+         && title == built_title
+         && store == built_store)
       return text;
    built_result = (int)result;
    built_title  = title;
+   built_store  = store;
    strlcpy_append(text, sizeof(text), &_len, title);
    strlcpy_append(text, sizeof(text), &_len, "\n");
    strlcpy_append(text, sizeof(text), &_len,
          msg_hash_to_str(core_warning_reason(result)));
+   if (store)
+   {
+      strlcpy_append(text, sizeof(text), &_len, "\n\n");
+      strlcpy_append(text, sizeof(text), &_len, store);
+   }
    strlcpy_append(text, sizeof(text), &_len, "\n\n");
    strlcpy_append(text, sizeof(text), &_len,
          msg_hash_to_str(MSG_CORE_WARNING_FULL_ACCESS));
@@ -10371,6 +10440,7 @@ static void menu_core_warning_raise(struct menu_state *menu_st)
    for (i = 0; i < n; i++)
       labels[i] = menu_core_warning_label(choices[i]);
    menu_dialog_buttons_set(menu_st, labels, n);
+   menu_st->dialog_st.heading = true;
    menu_core_warning_shown = core_warning_serial();
    /* It can come up mid-hold: what is down now waits to be let go */
    menu_event_starts_afresh = true;
@@ -10438,15 +10508,6 @@ void menu_core_warning_open(void)
    if (     !(menu_driver_state.flags & MENU_ST_FLAG_ALIVE)
          && menu_driver_state.driver_data)
       retroarch_menu_running();
-}
-
-bool menu_core_warning_can_open(void)
-{
-   const char *ident = menu_driver_ident();
-   /* Before the drivers are chosen: the one the config names */
-   if (!ident)
-      ident = config_get_ptr()->arrays.menu_driver;
-   return !string_is_equal(ident, "null");
 }
 
 bool menu_core_warning_user_only(void)

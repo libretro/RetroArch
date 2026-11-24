@@ -1359,6 +1359,7 @@ static void cb_task_core_restore(
 #ifdef HAVE_CORE_SIGNATURES
    /* Still attached: task_core_backup_cleanup() runs after this */
    core_backup_handle_t *backup_handle = (core_backup_handle_t*)task->state;
+   bool took;
 #endif
    command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
 
@@ -1375,7 +1376,20 @@ static void cb_task_core_restore(
             core_trust_runtime_apply(&backup_handle->check.c);
             break;
          case CORE_RESTORE_OUTCOME_TRUSTED:
-            core_trust_runtime_always(&backup_handle->check.c);
+            if (     !(took = core_trust_runtime_always(
+                        &backup_handle->check.c))
+                  || (  !core_trust_runtime_can_save()
+                     && !core_trust_runtime_waits(&backup_handle->check.c)))
+            {
+               const char *msg = msg_hash_to_str(took
+                     ? MSG_CORE_INSTALL_TRUST_CANT_SAVE
+                     : MSG_CORE_INSTALL_TRUST_LIST_FULL);
+               runloop_msg_queue_push(msg, strlen(msg), 2, 360, false, NULL,
+                     MESSAGE_QUEUE_ICON_DEFAULT,
+                     MESSAGE_QUEUE_CATEGORY_WARNING);
+               if (took)
+                  core_trust_runtime_cant_save_told();
+            }
             break;
          case CORE_RESTORE_OUTCOME_WARN:
             core_restore_warn(backup_handle);
@@ -1735,10 +1749,18 @@ static void task_core_restore_handler(retro_task_t *task)
                   backup_handle->backup_file = NULL;
                }
                else
+               {
                   backup_handle->core_file = intfstream_open_file(
                         backup_handle->core_tmp_path,
                         RETRO_VFS_FILE_ACCESS_WRITE,
                         RETRO_VFS_FILE_ACCESS_HINT_SEQUENTIAL_BULK);
+#ifdef HAVE_CORE_SIGNATURES
+                  /* Its bytes pass through the transfer buffer: hashed
+                   * there, not read back for the check */
+                  if (backup_handle->core_file && backup_handle->trust)
+                     core_install_check_stream_init(&backup_handle->check);
+#endif
+               }
             }
 
             if (!backup_handle->core_file && !backup_handle->copy)
@@ -1851,6 +1873,11 @@ static void task_core_restore_handler(retro_task_t *task)
                   failed_write = true;
                   break;
                }
+#ifdef HAVE_CORE_SIGNATURES
+               if (backup_handle->check.streamed)
+                  core_install_check_stream(&backup_handle->check,
+                        backup_handle->buffer, (size_t)data_written);
+#endif
             }
             task_nbio_slice_close(&budget);
 
@@ -1923,9 +1950,14 @@ static void task_core_restore_handler(retro_task_t *task)
             if (!backup_handle->check_begun)
             {
                backup_handle->check_begun = true;
-               if (!core_install_check_begin(&backup_handle->check,
+               if (!(backup_handle->check.streamed
+                     ? core_install_check_begin_streamed(
+                        &backup_handle->check, backup_handle->trust,
+                        backup_handle->core_tmp_path,
+                        backup_handle->core_target_path)
+                     : core_install_check_begin(&backup_handle->check,
                         backup_handle->trust, backup_handle->core_tmp_path,
-                        backup_handle->core_target_path))
+                        backup_handle->core_target_path)))
                {
                   core_restore_checked(task, backup_handle);
                   break;

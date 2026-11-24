@@ -2528,7 +2528,7 @@ static void netplay_bsv_commit(netplay_t *netplay)
       if (!(movie->netplay_flags & BSV_NETPLAY_FLAG_COMMITTED))
       {
          if (!bsv_movie_reset_recording_from_state(movie,
-                  frame->initial_state, frame->initial_size))
+                  &frame->initial_state, &frame->initial_size))
          {
             netplay_bsv_stop(netplay, "could not write the initial state");
             return;
@@ -2539,11 +2539,13 @@ static void netplay_bsv_commit(netplay_t *netplay)
       movie->key_event_count   = 0;
       memcpy(movie->input_events, frame->inputs,
             frame->input_count * sizeof(*frame->inputs));
+      /* A checkpoint's buffer is the movie's from here; the one it
+       * gives back is freed below with the slot's. */
       if (!input_driver_netplay_bsv_next_frame(
                (frame->flags & NETPLAY_BSV_FRAME_CHECKPOINT)
-               ? frame->checkpoint : NULL,
+               ? &frame->checkpoint : NULL,
                (frame->flags & NETPLAY_BSV_FRAME_CHECKPOINT)
-               ? frame->checkpoint_size : 0,
+               ? &frame->checkpoint_size : NULL,
                (frame->flags & NETPLAY_BSV_FRAME_FORCED) != 0))
       {
          netplay_bsv_stop(netplay, "could not write a confirmed frame");
@@ -10261,7 +10263,9 @@ static void netplay_host_setup_cleanup(retro_task_t *task)
 static bool netplay_host_setup_finder(retro_task_t *task, void *user_data)
 {
    (void)user_data;
-   return task && task->handler == netplay_host_setup_handler;
+   return     task
+          &&  task->handler == netplay_host_setup_handler
+          && !(task_get_flags(task) & RETRO_TASK_FLG_FINISHED);
 }
 
 bool netplay_host_setup_pending(void)

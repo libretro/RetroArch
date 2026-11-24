@@ -1,0 +1,8 @@
+# D3D11/12: absolute directory containing color.hlsl, dwt.hlsl, packet.hlsl.
+# Vulkan: directory containing the generator's color.spv, dwt.spv, packet.spv.
+# Desktop glcore: generated color.comp, dwt.comp, packet.comp.
+# Shader compilation/loading happens once during cold recorder initialization.
+# Optional development override; leave unset to use embedded shaders.
+# pyrowave_shader_directory = "/absolute/path/to/RetroArch/libretro-common/formats/pyrowave/shaders"
+pyrowave_maximum_bytes = "1048576"
+audio_enable = "true"

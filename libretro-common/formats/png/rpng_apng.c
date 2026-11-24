@@ -116,6 +116,8 @@ struct rpng_apng_stream
    int       emitted;        /* frames emitted since open/rewind   */
 
    uint32_t *canvas;         /* persistent RGBA canvas             */
+   uint32_t *out;            /* caller-owned independent frame     */
+   size_t    out_stride;     /* caller's row stride, in pixels     */
    /* Lazy disposal: remember the previous frame's rectangle and its
     * dispose op so the region can be cleared/restored when the next
     * frame is prepared, without a second full canvas except when
@@ -154,6 +156,7 @@ struct rpng_apng_stream
    int       have_prev;
 
    int       emit_argb;      /* 0 = R,G,B,A memory order; 1 = ARGB */
+   int       independent;    /* 0 unknown, 1 independent, -1 dependent */
 };
 
 static INLINE uint32_t apng_be32(const uint8_t *p)
@@ -420,6 +423,23 @@ static bool apng_index(rpng_apng_stream_t *s)
       return false;
    if (s->index_done && s->indexed != s->num_frames)
       return false;   /* file ended with fewer frames than acTL declared */
+   if (s->index_done && !s->independent)
+   {
+      int i;
+      s->independent = 1;
+      for (i = 0; i < s->num_frames; i++)
+      {
+         const struct apng_frame *f = &s->frames[i];
+         if (f->x_off || f->y_off || f->width != (unsigned)s->canvas_w
+               || f->height != (unsigned)s->canvas_h
+               || f->blend != APNG_BLEND_SOURCE
+               || f->dispose == APNG_DISPOSE_PREVIOUS)
+         {
+            s->independent = -1;
+            break;
+         }
+      }
+   }
    return true;
 }
 
@@ -440,6 +460,8 @@ rpng_apng_stream_t *rpng_apng_stream_open(const uint8_t *buf, size_t len)
       rpng_apng_stream_close(s);
       return NULL;
    }
+   if (s->independent == 1)
+      return s; /* a private canvas is needed only if no output is lent */
    s->canvas = (uint32_t*)calloc(
          (size_t)s->canvas_w * (size_t)s->canvas_h, sizeof(uint32_t));
    if (!s->canvas)
@@ -497,6 +519,8 @@ rpng_apng_stream_t *rpng_apng_stream_open_avail(const uint8_t *buf,
          *need_more = 1;
       return NULL;
    }
+   if (s->independent == 1)
+      return s; /* a private canvas is needed only if no output is lent */
    s->canvas = (uint32_t*)calloc(
          (size_t)s->canvas_w * (size_t)s->canvas_h, sizeof(uint32_t));
    if (!s->canvas)
@@ -641,7 +665,8 @@ static uint8_t *apng_build_frame_png(rpng_apng_stream_t *s,
    return o;
 }
 
-/* Decode one frame to an RGBA sub-image via the ordinary rpng path. */
+/* SOURCE frames decode into their canvas rectangle; OVER needs a separate
+ * sub-image because its destination pixels are inputs to compositing. */
 static uint32_t *apng_decode_frame(rpng_apng_stream_t *s,
       const struct apng_frame *f, unsigned *fw, unsigned *fh)
 {
@@ -650,6 +675,7 @@ static uint32_t *apng_decode_frame(rpng_apng_stream_t *s,
    rpng_t  *r;
    uint32_t *data   = NULL;
    int ret;
+   bool direct = f->blend == APNG_BLEND_SOURCE;
 
    if (!png)
       return NULL;
@@ -666,6 +692,14 @@ static uint32_t *apng_decode_frame(rpng_apng_stream_t *s,
       rpng_free(r);
       return NULL;
    }
+   if (direct && !rpng_set_output(r,
+            s->out ? s->out
+               : s->canvas + (size_t)f->y_off * s->canvas_w + f->x_off,
+            s->out ? s->out_stride : (size_t)s->canvas_w))
+   {
+      rpng_free(r);
+      return NULL;
+   }
    /* Channel order: the animation contract's default (emit_argb == 0)
     * is memory R,G,B,A, which rpng produces with supports_rgba = true
     * (ABGR32 word on LE).  emit_argb == 1 wants ARGB words (BGRA
@@ -676,34 +710,65 @@ static uint32_t *apng_decode_frame(rpng_apng_stream_t *s,
    rpng_free(r);
    if (ret != IMAGE_PROCESS_END)
    {
-      rpng_pool_give(&s->pool, RPNG_POOL_OUT, data,
-            (size_t)f->width * f->height * sizeof(uint32_t));
+      if (!direct)
+         rpng_pool_give(&s->pool, RPNG_POOL_OUT, data,
+               (size_t)f->width * f->height * sizeof(uint32_t));
       return NULL;
    }
    return data;
 }
 
-/* Apply the previous frame's disposal before compositing the next. */
-static void apng_apply_prev_dispose(rpng_apng_stream_t *s)
+/* Restore/clear a horizontal part of one previous-frame row. The saved
+ * rectangle is tightly packed even when its canvas destination is not. */
+static void apng_dispose_span(rpng_apng_stream_t *s, int row, int x, int width)
 {
-   int y;
-   if (!s->have_prev)
+   uint32_t *dst;
+   if (width <= 0)
       return;
+   dst = s->canvas + (size_t)(s->prev_y + row) * s->canvas_w
+      + s->prev_x + x;
    if (s->prev_dispose == APNG_DISPOSE_BACKGROUND)
+      memset(dst, 0, (size_t)width * sizeof(uint32_t));
+   else if (s->prev_save)
+      memcpy(dst, s->prev_save + (size_t)row * s->prev_w + x,
+            (size_t)width * sizeof(uint32_t));
+}
+
+/* Apply disposal only where the next frame still needs the pixels.
+ * NULL asks for the complete disposal (also used by the test reference). */
+static void apng_apply_prev_dispose(rpng_apng_stream_t *s,
+      const struct apng_frame *next)
+{
+   int y, left = 0, right = 0;
+   if (!s->have_prev || (s->prev_dispose != APNG_DISPOSE_BACKGROUND
+         && s->prev_dispose != APNG_DISPOSE_PREVIOUS))
+      return;
+   /* PREVIOUS needs the disposed pixels for its saved baseline; OVER
+    * reads the destination. Only SOURCE can discard overwritten bytes. */
+   if (next && next->blend == APNG_BLEND_SOURCE
+         && next->dispose != APNG_DISPOSE_PREVIOUS)
    {
-      for (y = 0; y < s->prev_h; y++)
-         memset(s->canvas + (size_t)(s->prev_y + y) * s->canvas_w
-               + s->prev_x, 0, (size_t)s->prev_w * sizeof(uint32_t));
+      left = (int)next->x_off - s->prev_x;
+      right = left + (int)next->width;
+      if (left < 0) left = 0;
+      if (right > s->prev_w) right = s->prev_w;
+      if (left == 0 && right == s->prev_w
+            && next->y_off <= (unsigned)s->prev_y
+            && next->y_off + next->height >= (unsigned)(s->prev_y + s->prev_h))
+         return;
    }
-   else if (s->prev_dispose == APNG_DISPOSE_PREVIOUS && s->prev_save)
+   for (y = 0; y < s->prev_h; y++)
    {
-      for (y = 0; y < s->prev_h; y++)
-         memcpy(s->canvas + (size_t)(s->prev_y + y) * s->canvas_w
-               + s->prev_x,
-               s->prev_save + (size_t)y * s->prev_w,
-               (size_t)s->prev_w * sizeof(uint32_t));
+      if (right > left && next
+            && (unsigned)(s->prev_y + y) >= next->y_off
+            && (unsigned)(s->prev_y + y) < next->y_off + next->height)
+      {
+         apng_dispose_span(s, y, 0, left);
+         apng_dispose_span(s, y, right, s->prev_w - right);
+      }
+      else
+         apng_dispose_span(s, y, 0, s->prev_w);
    }
-   /* DISPOSE_NONE: leave as-is. */
 }
 
 /* Composite a decoded frame sub-image onto the canvas at its offset. */
@@ -777,8 +842,15 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
    if (f->data_end > s->avail)
       return NULL;
 
-   /* Apply the previous frame's disposal to the canvas. */
-   apng_apply_prev_dispose(s);
+   if (!s->out)
+   {
+      if (!s->canvas)
+         s->canvas = (uint32_t*)calloc(
+               (size_t)s->canvas_w * s->canvas_h, sizeof(uint32_t));
+      if (!s->canvas)
+         return NULL;
+      apng_apply_prev_dispose(s, f);
+   }
 
    /* For DISPOSE_PREVIOUS, save this frame's target region before it is
     * overwritten so it can be restored after. */
@@ -802,14 +874,18 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
    frame = apng_decode_frame(s, f, &fw, &fh);
    if (!frame || fw != f->width || fh != f->height)
    {
-      rpng_pool_give(&s->pool, RPNG_POOL_OUT, frame,
-            (size_t)fw * fh * sizeof(uint32_t));
+      if (f->blend != APNG_BLEND_SOURCE)
+         rpng_pool_give(&s->pool, RPNG_POOL_OUT, frame,
+               (size_t)fw * fh * sizeof(uint32_t));
       return NULL;
    }
 
-   apng_composite(s, f, frame);
-   rpng_pool_give(&s->pool, RPNG_POOL_OUT, frame,
-         (size_t)fw * fh * sizeof(uint32_t));
+   if (f->blend != APNG_BLEND_SOURCE)
+   {
+      apng_composite(s, f, frame);
+      rpng_pool_give(&s->pool, RPNG_POOL_OUT, frame,
+            (size_t)fw * fh * sizeof(uint32_t));
+   }
 
    /* Record disposal state for the next call. */
    s->prev_x       = (int)f->x_off;
@@ -827,7 +903,7 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
 
    s->cursor++;
    s->emitted++;
-   return s->canvas;
+   return s->out ? s->out : s->canvas;
 }
 
 static void apng_swap_rb(uint32_t *px, size_t n)
@@ -872,12 +948,24 @@ bool rpng_apng_stream_set_argb(rpng_apng_stream_t *s, int argb)
    return true;
 }
 
+bool rpng_apng_stream_set_output_stride(rpng_apng_stream_t *s,
+      uint32_t *out, unsigned stride)
+{
+   if (!s || (out && (s->independent != 1
+            || (stride && stride < (unsigned)s->canvas_w))))
+      return false;
+   s->out = out;
+   s->out_stride = stride ? stride : (unsigned)s->canvas_w;
+   return true;
+}
+
 void rpng_apng_stream_rewind(rpng_apng_stream_t *s)
 {
    if (!s)
       return;
    s->cursor   = 0;
    s->have_prev = 0;
-   memset(s->canvas, 0,
-         (size_t)s->canvas_w * (size_t)s->canvas_h * sizeof(uint32_t));
+   if (s->canvas)
+      memset(s->canvas, 0,
+            (size_t)s->canvas_w * (size_t)s->canvas_h * sizeof(uint32_t));
 }

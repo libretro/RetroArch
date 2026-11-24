@@ -43,7 +43,7 @@
 
 #include "../video_views.h"
 #include "../video_defines.h"
-#include "../drivers/d3d_shaders/views_sm2.hlsl.h"
+#include "../drivers/d3d_sm2_shaders/views_sm2.hlsl.h"
 
 /* What a frame's placement draws read: the frame, @pitch bytes a row,
  * its texture, that's size, filter and rotation, and the rectangle each

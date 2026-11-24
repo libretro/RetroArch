@@ -36,7 +36,7 @@ jobs:
     name: Build and run samples/input
     runs-on: ubuntu-latest
     env:
-      APT_PKGS: build-essential libusb-1.0-0-dev libudev-dev libsdl2-dev libx11-dev libxtst-dev libxi-dev xvfb gcc-mingw-w64-x86-64 wine64 ccache
+      APT_PKGS: build-essential libusb-1.0-0-dev libudev-dev libsdl1.2-dev libsdl2-dev libx11-dev libxtst-dev libxi-dev xvfb gcc-mingw-w64-x86-64 wine64 ccache
     timeout-minutes: 20
 
     steps:
@@ -68,7 +68,7 @@ jobs:
       - name: Link with lld
         run: sh .github/workflows/scripts/use-lld.sh
 
-      - name: Build and run joypad_bridge_checked (udev, linuxraw, SDL2 on the host; DirectInput, XInput under Wine)
+      - name: Build and run joypad_bridge_checked (udev, linuxraw, parport, SDL 1.2, Dingux, SDL2, Android, the consoles and Apple MFi on the host; DirectInput, XInput, WinMM under Wine)
         shell: bash
         working-directory: samples/input/joypad_bridge_checked
         run: |
@@ -552,6 +552,20 @@ jobs:
           make -C samples/input/bind_capture clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/input/bind_capture clean
 
+      - name: Build and run pad_tag_test (ASan + UBSan, mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          # The tags that tell same-named controllers apart: 6 hex
+          # digits of the identity hash - a pad's own serial or address,
+          # a placeholder one counting as none, else its port - showing
+          # no part of the serial, pinned to FNV-1a and to the menu's
+          # tags (a pad keeps its tag only while they stay as they are).
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make -C samples/input/pad_tag clean check SANITIZER=address,undefined
+          make -C samples/input/pad_tag clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/input/pad_tag clean
+
       - name: Build and run hotkey_menu_test (ASan + UBSan, mingw + Wine)
         shell: bash
         run: |
@@ -560,6 +574,18 @@ jobs:
           make -C samples/input/hotkey_menu clean check SANITIZER=address,undefined
           make -C samples/input/hotkey_menu clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
           make -C samples/input/hotkey_menu clean
+
+      - name: Build and run hold_late_test (ASan + UBSan, mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          # The hold armed as a text entry ends: the key that ended it,
+          # reaching the poll a frame late beside a control already
+          # down, is held back until it is let go.
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make -C samples/input/hold_late clean check SANITIZER=address,undefined
+          make -C samples/input/hold_late clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/input/hold_late clean
 
       - name: Build and run pointer_second_test (ASan + UBSan, mingw + Wine)
         shell: bash
@@ -620,6 +646,20 @@ jobs:
           make CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine check
           make clean
           rm -f mapped_port.log
+
+      - name: Build and run builtin_autoconf_test, once per platform (ASan + UBSan, mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          # The built-in profiles a pad with no profile file gets, in a
+          # build for each platform the Makefile lists, bind each
+          # right-stick axis with the sign of its left-stick twin: each
+          # driver reads both sticks alike. Where its axes are negative
+          # up and left, as SDL's are, down is the + half too.
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make -C samples/input/builtin_autoconf clean check SANITIZER=address,undefined
+          make -C samples/input/builtin_autoconf clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/input/builtin_autoconf clean
 
       - name: Build and run key_lane_test (plain, ASan + UBSan, TSan)
         shell: bash
@@ -1285,6 +1325,24 @@ jobs:
           make clean
           echo "[pass] udev_touch_test (ASan)"
 
+      - name: Build and run udev_poll_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/udev_poll
+        run: |
+          set -eu
+          # The udev input and joypad drivers' hotplug monitors share
+          # their event sets with the devices: an idle poll is one
+          # wait and reads no pad, and a hotplug or unplug leaves no
+          # read of the device that went. Monitors and devices are
+          # pipes.
+          make clean SANITIZER=address,undefined && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./udev_poll_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./udev_joypad_poll_test
+          make clean
+          echo "[pass] udev_poll_test (ASan)"
+
       - name: Build and run device_pins_test
         shell: bash
         working-directory: samples/input/device_pins
@@ -1447,3 +1505,42 @@ jobs:
         with:
           path: ~/.ccache
           key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+
+  joypad-bridge-web:
+    name: Web joypad driver on the snapshot bridge
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      # The emsdk the libretro-common samples' Emscripten job pins, so
+      # one toolchain change moves both.
+      EM_VERSION: 5.0.1
+      EM_CACHE_FOLDER: emsdk-cache
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Cache emsdk
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.EM_CACHE_FOLDER }}
+          key: ${{ env.EM_VERSION }}-${{ runner.os }}
+
+      - name: Set up Emscripten
+        uses: emscripten-core/setup-emsdk@v15
+        with:
+          version: ${{ env.EM_VERSION }}
+          actions-cache-folder: ${{ env.EM_CACHE_FOLDER }}
+
+      - name: Build and run rwebpad_checked_test under node
+        shell: bash
+        working-directory: samples/input/joypad_bridge_checked
+        run: |
+          set -eu
+          # The web joypad driver, held to what the snapshot bridge
+          # assumes of it as the host drivers above are: over random
+          # pads, past what a pad says it has and what the event holds,
+          # what the bridge would read is what the driver says.
+          make check-web
+          make clean

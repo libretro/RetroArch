@@ -19,6 +19,7 @@
 #include "../../config.def.h"
 
 #include "../input_driver.h"
+#include "../include/input_pad_view.h"
 #include "../drivers_keyboard/keyboard_event_android.h"
 
 static const char *android_joypad_name(unsigned pad)
@@ -28,78 +29,34 @@ static const char *android_joypad_name(unsigned pad)
 
 static void *android_joypad_init(void *data) { return (void*)-1; }
 
-static int32_t android_joypad_button_state(
-      struct android_app *android_app,
-      uint8_t *buf,
-      unsigned port, uint16_t joykey)
+/* Each pad's view, filled in android_input.c's poll: lent to the
+ * readers until the next */
+static const input_pad_view_t *android_joypad_view(unsigned port)
 {
-   unsigned hat_dir = GET_HAT_DIR(joykey);
-
-   if (hat_dir)
-   {
-      unsigned h = GET_HAT(joykey);
-      if (h > 0)
-         return 0;
-
-      switch (hat_dir)
-      {
-         case HAT_LEFT_MASK:
-            return (android_app->hat_state[port][0] == -1);
-         case HAT_RIGHT_MASK:
-            return (android_app->hat_state[port][0] ==  1);
-         case HAT_UP_MASK:
-            return (android_app->hat_state[port][1] == -1);
-         case HAT_DOWN_MASK:
-            return (android_app->hat_state[port][1] ==  1);
-         default:
-            break;
-      }
-      /* hat requested and no hat button down */
-   }
-   else if (joykey < LAST_KEYCODE)
-      return BIT_GET(buf, joykey);
-   return 0;
+   if (port >= DEFAULT_MAX_PADS)
+      return NULL;
+   return android_input_pad_view(port);
 }
 
 static int32_t android_joypad_button(unsigned port, uint16_t joykey)
 {
-   struct android_app *android_app = (struct android_app*)g_android;
-   uint8_t *buf;
-
-   if (port >= DEFAULT_MAX_PADS)
-      return 0;
-   buf = android_keyboard_state_get(port);
-
-   return android_joypad_button_state(android_app, buf, port, joykey);
+   const input_pad_view_t *v = android_joypad_view(port);
+   return v ? input_pad_view_button(v, joykey) : 0;
 }
 
-static int16_t android_joypad_axis_state(
-      struct android_app *android_app,
-      unsigned port, uint32_t joyaxis)
+static void android_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
-   if (AXIS_NEG_GET(joyaxis) < MAX_AXIS)
-   {
-      int16_t val = android_app->analog_state[port][AXIS_NEG_GET(joyaxis)];
-      if (val < 0)
-         return val;
-   }
-   else if (AXIS_POS_GET(joyaxis) < MAX_AXIS)
-   {
-      int16_t val = android_app->analog_state[port][AXIS_POS_GET(joyaxis)];
-      if (val > 0)
-         return val;
-   }
-   return 0;
+   const input_pad_view_t *v = android_joypad_view(port);
+   if (v)
+      *state = v->buttons;
+   else
+      BIT256_CLEAR_ALL_PTR(state);
 }
 
 static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)
 {
-   struct android_app *android_app = (struct android_app*)g_android;
-
-   if (port >= DEFAULT_MAX_PADS)
-      return 0;
-
-   return android_joypad_axis_state(android_app, port, joyaxis);
+   const input_pad_view_t *v = android_joypad_view(port);
+   return v ? input_pad_view_axis(v, joyaxis) : 0;
 }
 
 static int16_t android_joypad_state(
@@ -108,37 +65,8 @@ static int16_t android_joypad_state(
       const uint32_t *joyaxes,
       unsigned port)
 {
-   int i;
-   int16_t ret                          = 0;
-   struct android_app *android_app      = (struct android_app*)g_android;
-   uint8_t *buf;
-   uint16_t port_idx                    = joypad_info->joy_idx;
-
-   if (port_idx >= DEFAULT_MAX_PADS)
-      return 0;
-
-   buf = android_keyboard_state_get(port_idx);
-
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-   {
-      const uint64_t joykey = joykeys[i];
-
-      const uint32_t joyaxis = joyaxes[i];
-
-      if ((uint16_t)joykey != NO_BTN
-            && android_joypad_button_state(
-               android_app,
-               buf,
-               port_idx, (uint16_t)joykey))
-         ret |= (1 << i);
-      else if (joyaxis != AXIS_NONE
-            && ((float)abs(android_joypad_axis_state(
-               android_app, port_idx, joyaxis))
-               / 0x8000) > joypad_info->axis_threshold)
-         ret |= (1 << i);
-   }
-
-   return ret;
+   const input_pad_view_t *v = android_joypad_view(joypad_info->joy_idx);
+   return v ? input_pad_view_state(v, joypad_info, joykeys, joyaxes) : 0;
 }
 
 static void android_joypad_poll(void) { }
@@ -155,10 +83,14 @@ static void android_joypad_destroy(void)
 
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
+      input_pad_view_t *v = android_input_pad_view(i);
       for (j = 0; j < 2; j++)
-         android_app->hat_state[i][j]    = 0;
-      for (j = 0; j < MAX_AXIS; j++)
-         android_app->analog_state[i][j] = 0;
+         android_app->hat_state[i][j] = 0;
+      if (v)
+      {
+         memset(v->axes, 0, sizeof(v->axes));
+         v->hats = 0;
+      }
    }
 
    for (i = 0; i < MAX_USERS; i++)
@@ -328,7 +260,7 @@ input_device_driver_t android_joypad = {
    android_joypad_destroy,
    android_joypad_button,
    android_joypad_state,
-   NULL,
+   android_joypad_get_buttons,
    android_joypad_axis,
    android_joypad_poll,
    android_joypad_rumble,
@@ -337,4 +269,9 @@ input_device_driver_t android_joypad = {
    NULL, /* get_sensor_input */
    android_joypad_name,
    "android",
+   NULL, /* get_bt_host */
+   NULL, /* set_bt_host */
+   NULL, /* survives_video */
+   NULL, /* set_player */
+   android_joypad_view
 };

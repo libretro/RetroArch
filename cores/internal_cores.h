@@ -80,6 +80,7 @@ void *libretro_dummy_retro_get_memory_data(unsigned id);
 
 size_t libretro_dummy_retro_get_memory_size(unsigned id);
 
+
 #ifdef HAVE_FFMPEG
 /* Internal ffmpeg core. */
 

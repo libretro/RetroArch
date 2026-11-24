@@ -134,6 +134,13 @@ $(AUDIO_START_TARGET): webm_audio_start_test.c $(ROOT)/cores/libretro-media/medi
 	$(CC) $(CFLAGS) -o $@ webm_audio_start_test.c $(AUDIO_START_OBJS) $(LDFLAGS) $(LDLIBS)
 endif
 
+PLANES_TARGET := webm_planes_test$(EXE)
+PLANES_SOURCES := $(filter-out webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c,$(SOURCES))
+PLANES_OBJS := $(call sample_objs,$(PLANES_SOURCES:.c=.o))
+
+$(PLANES_TARGET): webm_planes_test.c $(ROOT)/cores/libretro-media/media_core.c $(PLANES_OBJS)
+	$(CC) $(CFLAGS) -o $@ webm_planes_test.c $(PLANES_OBJS) $(LDFLAGS) $(LDLIBS)
+
 AV1_HW_TARGET := $(SAMPLE_OBJDIR)/webm_av1_hw_test$(EXE)
 AV1_HW_SOURCES := $(filter-out webm_player_test.c $(ROOT)/cores/libretro-media/media_core.c,$(SOURCES))
 # the two that read HAVE_RAV1 or RWEBM_VIDEO_MAX_TS are compiled with
@@ -225,7 +232,7 @@ $(DEVICE_TARGET): webm_vp9_device_test.c
 endif
 
 check: $(WEBM_TIMING_TARGET) $(VORBIS_SEEK_TARGET) $(OPUS_SEEK_TARGET) $(WEBM_SEEK_TARGET) $(MP4_SEEK_TARGET) $(TARGET) $(HW_TARGET) $(AV1_HW_TARGET) $(RESIDENCY_TARGET) $(VP9_HW_TARGET) $(DEVICE_TARGET) $(AUDIO_START_TARGET)
-check: $(PROGRESSIVE_GROUP_TARGET) $(TIMELINE_TARGET) $(VIDEO_TIMELINE_TARGET) $(VP8_REFERENCE_TARGET) $(WEBM_SEEK_PREFIX_TARGET)
+check: $(PROGRESSIVE_GROUP_TARGET) $(TIMELINE_TARGET) $(VIDEO_TIMELINE_TARGET) $(VP8_REFERENCE_TARGET) $(WEBM_SEEK_PREFIX_TARGET) $(PLANES_TARGET)
 	$(RUNNER) ./$(VP8_REFERENCE_TARGET) fixtures/vp8-refs.ivf fixtures/vp8-refs.yuv
 	$(RUNNER) ./$(VP8_REFERENCE_TARGET) fixtures/vp8-altref.ivf fixtures/vp8-altref.yuv
 	$(RUNNER) ./$(VP8_REFERENCE_TARGET) fixtures/vp8-resize.ivf fixtures/vp8-resize.yuv
@@ -260,12 +267,17 @@ endif
 	$(RUNNER) ./$(RESIDENCY_TARGET)
 	$(RUNNER) ./$(TARGET) fixtures
 	$(RUNNER) ./$(AV1_HW_TARGET)
+	$(RUNNER) ./$(PLANES_TARGET) fixtures/vp8-opus.webm 0
+	$(RUNNER) ./$(PLANES_TARGET) fixtures/vp9-vorbis.webm 0
 ifeq ($(MP4)$(AUDIO),11)
 	$(RUNNER) ./$(AUDIO_START_TARGET) fixtures/hevc-audio-gap.mp4
 	$(RUNNER) ./$(AUDIO_START_TARGET) fixtures/hevc-opus-audio-gap.mp4
 	$(RUNNER) ./$(AUDIO_START_TARGET) fixtures/hevc-aac44-audio-gap.mp4 44100
 endif
 ifeq ($(MP4),1)
+	$(RUNNER) ./$(PLANES_TARGET) fixtures/h264-aac.mkv 0
+	$(RUNNER) ./$(PLANES_TARGET) fixtures/h264-aac.mp4 2
+	$(RUNNER) ./$(PLANES_TARGET) fixtures/hevc-aac.mp4 2
 	$(RUNNER) ./$(MP4_SEEK_TARGET) fixtures/h264-seek-aac.mp4 fixtures/hevc-seek-aac.mp4 fixtures/h264-long-seek.mp4 fixtures/video-timeline-1.mp4
 	$(RUNNER) ./$(MP4_PREFETCH_TARGET)
 	$(RUNNER) ./$(HW_TARGET)
@@ -273,6 +285,7 @@ endif
 
 clean:
 	rm -f mp4_hw_prefetch_test mp4_hw_prefetch_test.exe
+	rm -f webm_planes_test webm_planes_test.exe
 	rm -f wma_player_test wma_player_test.exe wma_player_disabled_test wma_player_disabled_test.exe
 	rm -f video_timeline_test video_timeline_test.exe
 	rm -f webm_audio_timeline_test webm_audio_timeline_test.exe
@@ -289,3 +302,13 @@ clean:
 	rm -f webm_player_test.o $(TARGET) webm_hw_test webm_hw_test.exe webm_residency_test webm_residency_test.exe webm_vp9_hw_test webm_vp9_hw_test.exe webm_vp9_device_test webm_vp9_device_test.exe
 
 .PHONY: all check check-wma clean
+
+ifeq ($(MP4),1)
+fixtures/fragment-seek-ac3.mp4:
+	@mkdir -p fixtures
+	ffmpeg -v error -y -f lavfi -i testsrc2=size=64x64:rate=10 -f lavfi -i sine=frequency=440:sample_rate=48000 -t 4 -c:v libx264 -preset ultrafast -profile:v baseline -g 10 -c:a ac3 -ac 2 -movflags empty_moov+delay_moov+default_base_moof -frag_duration 100000 $@
+fragment-seek-check: $(MP4_SEEK_TARGET) fixtures/fragment-seek-ac3.mp4
+	$(RUNNER) ./$(MP4_SEEK_TARGET) fixtures/fragment-seek-ac3.mp4
+check: fragment-seek-check
+.PHONY: fragment-seek-check
+endif

@@ -6,3 +6,7 @@ tls_partial_flag
 tls_partial_flag.exe
 tls_partial_threads
 tls_partial_threads.exe
+tls_trust_preload
+tls_trust_preload.exe
+tls_bear_anchors
+tls_bear_anchors.exe

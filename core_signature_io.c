@@ -20,9 +20,6 @@
 #if !defined(__linux__) || defined(ANDROID)
 #include <dlfcn.h>
 #endif
-#if defined(__linux__)
-#include <sys/ioctl.h>
-#endif
 /* Where one statfs() tells both a file's filesystem and its mount flags:
  * the open asks it once for ctime_kept and read_only together */
 #if defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) \
@@ -45,6 +42,7 @@
 #include <string/stdstring.h>
 #include <vfs/vfs.h>
 #include <vfs/vfs_implementation.h>
+#include <vfs/vfs_implementation_file.h>
 
 #include "core_signature.h"
 #include "file_path_special.h"
@@ -216,6 +214,18 @@ bool core_hash_init(struct core_hash *h)
 #endif
 }
 
+void core_hash_init_stream(struct core_hash *h)
+{
+   memset(h, 0, sizeof(*h));
+   sha256_stream_init(&h->sha, 0);
+}
+
+void core_hash_update(struct core_hash *h, const void *data, size_t len)
+{
+   sha256_stream_update(&h->sha, (const uint8_t*)data, len);
+   h->done += len;
+}
+
 int core_hash_step(struct core_hash *h, core_file_t *f)
 {
    int64_t got;
@@ -267,93 +277,20 @@ void core_hash_free(struct core_hash *h)
 #endif
 }
 
-#ifdef __linux__
-/* <linux/fsverity.h>'s, which older NDKs lack */
-struct core_verity_enable
-{
-   uint32_t version;
-   uint32_t hash_algorithm;
-   uint32_t block_size;
-   uint32_t salt_size;
-   uint64_t salt_ptr;
-   uint32_t sig_size;
-   uint32_t reserved1;
-   uint64_t sig_ptr;
-   uint64_t reserved2[11];
-};
-
-struct core_verity_head
-{
-   uint16_t algorithm;
-   uint16_t size;
-};
-
-struct core_verity_digest
-{
-   struct core_verity_head head;
-   uint8_t digest[CORE_ID_VERITY_MAX];
-};
-
-/* The ioctl numbers carry these sizes */
-typedef char core_verity_enable_size[
-      sizeof(struct core_verity_enable) == 128 ? 1 : -1];
-typedef char core_verity_head_size[
-      sizeof(struct core_verity_head) == 4 ? 1 : -1];
-
-#define CORE_VERITY_SHA256         1
-#define CORE_FS_IOC_ENABLE_VERITY  _IOW('f', 133, struct core_verity_enable)
-#define CORE_FS_IOC_MEASURE_VERITY _IOWR('f', 134, struct core_verity_head)
-#endif
 
 bool core_file_verity_measure(core_file_t *f, struct core_identity *id)
 {
-#ifdef __linux__
-   struct core_verity_digest d;
-   memset(&d, 0, sizeof(d));
-   d.head.size = CORE_ID_VERITY_MAX;
-   if (     ioctl(f->fd, CORE_FS_IOC_MEASURE_VERITY, &d) != 0
-         || !d.head.size
-         || d.head.size > CORE_ID_VERITY_MAX)
+   size_t n = retro_vfs_file_verity_measure_impl(f, id->verity,
+         sizeof(id->verity));
+   if (!n)
       return false;
-   memcpy(id->verity, d.digest, d.head.size);
-   id->verity_len = (uint8_t)d.head.size;
+   id->verity_len = (uint8_t)n;
    return true;
-#else
-   (void)f;
-   (void)id;
-   return false;
-#endif
 }
 
 int core_file_verity_enable(core_file_t *f)
 {
-#ifdef __linux__
-   struct core_verity_enable arg;
-   memset(&arg, 0, sizeof(arg));
-   arg.version        = 1;
-   arg.hash_algorithm = CORE_VERITY_SHA256;
-   arg.block_size     = 4096;
-   if (ioctl(f->fd, CORE_FS_IOC_ENABLE_VERITY, &arg) == 0 || errno == EEXIST)
-      return 1;
-   switch (errno)
-   {
-      /* Not this filesystem, mount or kernel, not ours (Play's
-       * nativeLibraryDir), or open for writing somewhere */
-      case EOPNOTSUPP:
-      case ENOTTY:
-      case EROFS:
-      case EACCES:
-      case EPERM:
-      case ETXTBSY:
-         return 0;
-      default:
-         break;
-   }
-   return -1;
-#else
-   (void)f;
-   return 0;
-#endif
+   return retro_vfs_file_verity_enable_impl(f);
 }
 
 /* 1 a file, 0 missing, -1 anything else: what can't be looked at, a
@@ -478,6 +415,19 @@ bool core_trust_temp_name(char *s, size_t len, const char *path,
    snprintf(tail, sizeof(tail), ".%lu.%lx.tmp", pid, stamp);
    strlcpy(s, path, len);
    return strlcat(s, tail, len) < len;
+}
+
+bool core_trust_temp_of(const char *name, const char *store_name)
+{
+   size_t n = strlen(store_name);
+   if (strncmp(name, store_name, n) || name[n] != '.')
+      return false;
+   name += n + 1;
+   if (!(n = strspn(name, "0123456789")) || name[n] != '.')
+      return false;
+   name += n + 1;
+   return (n = strspn(name, "0123456789abcdef"))
+      && string_is_equal(name + n, ".tmp");
 }
 
 /* As filestream_write_file_atomic, through a temporary of our own */
@@ -960,6 +910,70 @@ bool core_check_quick(const core_trust_set_t *s, core_file_t *f,
       const char *path, struct core_check *c)
 {
    return core_check_quick_id(s, f, path, NULL, c);
+}
+
+bool core_load_framework_binary(const char *path, char *s, size_t len)
+{
+   static const char ext[] = ".framework";
+   const char *name;
+   size_t n, name_len;
+   if (!string_ends_with(path, ext))
+      return false;
+   n        = strlen(path);
+   /* dylib_load's choice, which cuts at an archive's '#' */
+   name     = path_basename(path);
+   name_len = strlen(name) - (sizeof(ext) - 1);
+   if (!name_len || n + name_len + 2 > len)
+      return false;
+   memcpy(s, path, n);
+   s[n] = '/';
+   memcpy(s + n + 1, name, name_len);
+   s[n + 1 + name_len] = '\0';
+   return true;
+}
+
+enum core_trust_state core_trust_state_file(const core_trust_set_t *s,
+      const char *path, uint8_t *sha256)
+{
+   struct core_check c;
+   enum core_trust_state state = CORE_TRUST_STATE_UNCHECKED;
+   core_file_t *f;
+#ifdef CORE_TRUST_FRAMEWORKS
+   char *bin                   = NULL;
+   if (string_ends_with(path, ".framework"))
+   {
+      size_t len = strlen(path) + strlen(path_basename(path)) + 2;
+      if (     !(bin = (char*)malloc(len))
+            || !core_load_framework_binary(path, bin, len))
+      {
+         free(bin);
+         return state;
+      }
+      path = bin;
+   }
+#endif
+   if (!(f = core_file_open(path)))
+   {
+#ifdef CORE_TRUST_FRAMEWORKS
+      free(bin);
+#endif
+      return state;
+   }
+   memset(&c, 0, sizeof(c));
+   strlcpy(c.rec.name, path_basename_nocompression(path),
+         sizeof(c.rec.name));
+   if (     core_file_identity(f, &c.rec.id)
+         && core_folder_key(path, c.folder))
+   {
+      if (core_check_wants_verity(s, &c))
+         core_file_verity_measure(f, &c.rec.id);
+      state = core_trust_state_of(s, &c, sha256);
+   }
+   core_file_close(f);
+#ifdef CORE_TRUST_FRAMEWORKS
+   free(bin);
+#endif
+   return state;
 }
 
 char *core_sig_path(const char *path)
