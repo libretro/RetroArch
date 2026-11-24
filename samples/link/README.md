@@ -75,9 +75,8 @@ Then the runs that must fail: every scenario in `scenarios/bad/`, a truncated
 state and a state of another scenario must each exit 2, and every scenario in
 `scenarios/fail/` and a run against an edited trace (the first run of
 `two_unequal` with the picture hash of console 1's line in step 60 changed)
-must each exit 1. Each
-must also print its error: the one a scenario's `# error: <text>` line gives,
-with its line number where it has one.
+must each exit 1. Each must also print its error: the one a scenario's
+`# error: <text>` line gives, with its line number where it has one.
 
 Right after its load, before any core runs again, a `from` or `rewound` run
 saves each console's state again, as a frontend may while paused. The run
@@ -380,8 +379,8 @@ and its first `retro_run` after a load makes that advance again and goes
 on from there. It then also sends 16 audio frames at each of its steps, so a
 save inside a frame has audio of that frame to keep, and folds its input
 into its state at each step, so a frame finished after a load must get that
-frame's input. With
-`link_test_restart_ticks`, `nonconform` or `no_progress` it logs an error.
+frame's input. With `link_test_restart_ticks`, `nonconform` or `no_progress`
+it logs an error.
 
 From `link_test_bad_frame` on, the modes break the rules:
 

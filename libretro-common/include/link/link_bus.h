@@ -138,7 +138,8 @@ bool link_bus_instant_before(uint64_t a, uint64_t ra, uint64_t b, uint64_t rb); 
 
 /* Membership changes; false when refused. uncable needs the console held,
  * or at an edge with no running peer past its first edge at or after that
- * edge; hold needs the console at an edge with its buses idle. */
+ * edge; hold needs the console at an edge with its buses idle. unhold
+ * returns true, doing nothing, for a console not held. */
 bool link_bus_cable(link_bus_t *b, unsigned console_a, unsigned port_a, unsigned console_b, unsigned port_b);
 bool link_bus_uncable(link_bus_t *b, unsigned console, unsigned port);
 bool link_bus_hold(link_bus_t *b, unsigned console);

@@ -4329,13 +4329,14 @@ typedef int (RETRO_CALLCONV *retro_link_peers_t)(retro_link_port_t *handle, unsi
  * @param buf The payload. May be \c NULL only when \c len is 0.
  * @param len The payload's length in bytes. 0 sends a message whose payload is
  * empty.
- * @return In this order: \c false if the port is not attached or \c len exceeds
- * #RETRO_LINK_MAX_PAYLOAD, whatever the port's cabling; otherwise \c true on a
- * port that is cabled to nothing or has been released, whatever index \c to
- * names, and the message is dropped, as on a cable with nothing at its other
- * end; otherwise \c false if \c to is an index that names no other port on the
- * bus. The call may also return \c false when the frontend is out of memory.
- * Nothing is queued when the call returns \c false.
+ * @return In this order: \c false if the port is not attached, \c len exceeds
+ * #RETRO_LINK_MAX_PAYLOAD or \c buf is \c NULL with \c len above 0, whatever
+ * the port's cabling; otherwise \c true on a port that is cabled to nothing or
+ * has been released, whatever index \c to names, and the message is dropped, as
+ * on a cable with nothing at its other end; otherwise \c false if \c to is an
+ * index that names no other port on the bus. The call may also return \c false
+ * when the frontend is out of memory. Nothing is queued when the call returns
+ * \c false.
  */
 typedef bool (RETRO_CALLCONV *retro_link_send_t)(retro_link_port_t *handle, uint64_t tick,
       unsigned to, const void *buf, size_t len);
