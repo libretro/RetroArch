@@ -495,15 +495,16 @@ HDR_CASES = [
      [(800, 240, GREEN), (800, 720, YELLOW)],
      {'preset': os.path.join(HERE, 'hdr10_pass.slangp'), 'raw': True,
       'game': False}),
-    # Screen 2 in a window of its own, drawn in SDR through an FP16 image
-    # of the window's. A depth-30 Xvfb surface lists no 8-bit format, so
-    # the window's SDR output is 10-bit. The main window's stock screen
-    # goes straight into its swapchain.
+    # Screen 2 in a window of its own in SDR, its stock screen, as the
+    # main window's, drawn straight into its swapchain. A depth-30 Xvfb
+    # surface lists no 8-bit format, so the window's SDR output is
+    # 10-bit, its codes sRGB.
     ('hdr-window-ds', 'ds',
      {'video_windows_enable': 'true', 'video_stereo_mode': '0'},
      [(800, 480, GREEN)],
      {'env': SDR_WINDOWS, 'log': [STOCK_DIRECT, SECOND_OUTPUT_SDR],
-      'absent': [WINDOW_NOT_DRAWN], 'game': False}),
+      'absent': [WINDOW_NOT_DRAWN], 'game': False,
+      'window': [(800, 480, YELLOW, 'sdr')]}),
     # The window draws its screen with the stock chain instead.
     ('hdr-emit-preset-window', 'ds',
      {'video_windows_enable': 'true', 'video_stereo_mode': '0',
@@ -1266,7 +1267,8 @@ class XImage(ctypes.Structure):
 def window_errors(display, points):
     """Points (x, y, colour) on screen 2's window on the depth-30 Xvfb
     display, read as the 10-bit codes its swapchain wrote there: each
-    colour is wanted PQ-encoded, as the main window's HDR10 has it."""
+    colour is wanted PQ-encoded, as the main window's HDR10 has it, or
+    as sRGB codes for a point (x, y, colour, 'sdr')."""
     x11 = ctypes.CDLL('libX11.so.6')
     x11.XOpenDisplay.restype = ctypes.c_void_p
     x11.XOpenDisplay.argtypes = [ctypes.c_char_p]
@@ -1311,7 +1313,8 @@ def window_errors(display, points):
                 x11.XFree(kids)
         if win is None:
             return ['no window named "%s"' % SCREEN2_WINDOW.decode()]
-        for x, y, colour in points:
+        for point in points:
+            x, y, colour = point[:3]
             # AllPlanes, ZPixmap
             img = x11.XGetImage(dpy, win, x, y, 1, 1,
                                 ctypes.c_ulong(-1).value, 2)
@@ -1326,7 +1329,10 @@ def window_errors(display, points):
             if not all(masks) or any(m // (m & -m) != 1023 for m in masks):
                 return errors + ["screen 2's window is not 10-bit"]
             got = tuple((px & m) // (m & -m) for m in masks)
-            want = srgb8_to_pq10(colour)
+            if point[3:] == ('sdr',):
+                want = tuple(int(c * 1023 / 255.0 + 0.5) for c in colour)
+            else:
+                want = srgb8_to_pq10(colour)
             if any(abs(g - e) > WINDOW_TOLERANCE for g, e in zip(got, want)):
                 errors.append("screen 2's window (%d,%d) got codes %s want %s"
                               % (x, y, got, want))

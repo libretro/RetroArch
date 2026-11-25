@@ -452,6 +452,8 @@ struct vk_target_pass
 {
    VkRenderPass pass;
    VkPipeline premult;
+   /* stock_rect against it; VK_NULL_HANDLE when it could not be made */
+   VkPipeline stock_rect;
    VkFormat format;
 };
 
@@ -510,6 +512,9 @@ typedef struct vk
        * last such value logged. */
       unsigned hdr_stock;
       unsigned hdr_stock_logged;
+      /* While stock views draw straight into a second output in another
+       * format: stock_rect made against its pass; else VK_NULL_HANDLE */
+      VkPipeline stock_pipeline;
       /* Whether views may be drawn, for get_flags on the main thread.
        * Written only on the video thread, where HDR output and the
        * source format are settled. */
@@ -7113,6 +7118,8 @@ static void vulkan_views_targets_free(vk_t *vk)
    {
       vkDestroyPipeline(vk->context->device, vk->views.targets[i].premult,
             NULL);
+      vkDestroyPipeline(vk->context->device,
+            vk->views.targets[i].stock_rect, NULL);
       vkDestroyRenderPass(vk->context->device, vk->views.targets[i].pass,
             NULL);
    }
@@ -11745,7 +11752,8 @@ static void vulkan_views_draw_stock(vk_t *vk, struct vk_texture *src,
    vk->flags           |= VK_FLAG_TRACKER_USE_SCISSOR;
    vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
 
-   call.pipeline     = vk->pipelines.stock_rect;
+   call.pipeline     = vk->views.stock_pipeline
+      ? vk->views.stock_pipeline : vk->pipelines.stock_rect;
    call.uniform      = &ubo;
    call.uniform_size = sizeof(ubo);
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -12944,6 +12952,20 @@ static bool vulkan_views_target_make(vk_t *vk, struct vk_target_pass *t,
                &tpl.pipe, NULL, &t->premult);
          vkDestroyShaderModule(device, stages[1].module, NULL);
       }
+      /* Stock views straight from the frame, opaque */
+      t->stock_rect        = VK_NULL_HANDLE;
+      module_info.codeSize = spirv_stock_rect_frag_size;
+      module_info.pCode    = spirv_stock_rect_frag;
+      if (     res == VK_SUCCESS
+            && vkCreateShaderModule(device, &module_info, NULL,
+               &stages[1].module) == VK_SUCCESS)
+      {
+         tpl.blend_attachment.blendEnable = VK_FALSE;
+         if (vkCreateGraphicsPipelines(device, vk->pipelines.cache, 1,
+                  &tpl.pipe, NULL, &t->stock_rect) != VK_SUCCESS)
+            t->stock_rect = VK_NULL_HANDLE;
+         vkDestroyShaderModule(device, stages[1].module, NULL);
+      }
       vkDestroyShaderModule(device, stages[0].module, NULL);
    }
    if (res != VK_SUCCESS)
@@ -12997,6 +13019,19 @@ static VkPipeline vulkan_views_target_premult(vk_t *vk, VkFormat format)
          return vk->views.targets[i].premult;
    return VK_NULL_HANDLE;
 }
+
+/* stock_rect for that pass; VK_NULL_HANDLE when there is none */
+static VkPipeline vulkan_views_target_stock(vk_t *vk, VkFormat format)
+{
+   unsigned i;
+   if (format == vk->context->swapchain_format)
+      return vk->pipelines.stock_rect;
+   for (i = 0; i < VK_VIEWS_TARGETS; i++)
+      if (     vk->views.targets[i].pass != VK_NULL_HANDLE
+            && vk->views.targets[i].format == format)
+         return vk->views.targets[i].stock_rect;
+   return VK_NULL_HANDLE;
+}
 #endif
 
 #ifdef HAVE_VIDEO_WINDOWS
@@ -13019,6 +13054,23 @@ static bool vulkan_window_encodes(const vk_t *vk, const vulkan_output_t *out,
    return true;
 }
 #endif
+
+/* Under HDR output, the stock_rect an SDR output @out draws the stock
+ * views with straight from the frame (@direct), with no FP16 image or
+ * copy between; VK_NULL_HANDLE when it has none or is not in SDR */
+static VkPipeline vulkan_window_stock_sdr(vk_t *vk,
+      const vulkan_output_t *out, bool direct)
+{
+#ifdef VULKAN_HDR_SWAPCHAIN
+   unsigned mode;
+   if (     !direct || !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+         || vulkan_window_encodes(vk, out, &mode))
+      return VK_NULL_HANDLE;
+   return vulkan_views_target_stock(vk, out->format);
+#else
+   return VK_NULL_HANDLE;
+#endif
+}
 
 /* Whether @out takes the stock views straight from the frame, encoded
  * as the main window's swapchain, with no FP16 image between */
@@ -13308,7 +13360,9 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
       /* With HDR output the screens draw in FP16, as the view chains
        * are built for, then onto the window's own swapchain; stock
        * views straight into one in the main window's encoding */
-      if (!hdr || (screens && vulkan_window_stock_encodes(vk, out, direct)))
+      if (     !hdr
+            || (screens && (vulkan_window_stock_encodes(vk, out, direct)
+                  || vulkan_window_stock_sdr(vk, out, direct))))
          vulkan_vv_target_drop(vk, &win->hdr_target, &win->hdr);
       else if (screens)
          screens = vulkan_views_target_premult(vk, out->format)
@@ -13436,6 +13490,7 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
       VkClearValue clear;
       VkRenderPassBeginInfo rp;
       VkPipeline premult;
+      VkPipeline stock_sdr;
       bool screens;
       bool stock_hdr;
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -13455,7 +13510,11 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
        * are shared with the main window and built for FP16 there */
       stock_hdr = screens && hdr
          && vulkan_window_stock_encodes(vk, out, d.direct != NULL);
-      if (screens && hdr && !stock_hdr && !win->hdr_target.made)
+      stock_sdr = (screens && hdr && !stock_hdr)
+         ? vulkan_window_stock_sdr(vk, out, d.direct != NULL)
+         : VK_NULL_HANDLE;
+      if (     screens && hdr && !stock_hdr && !stock_sdr
+            && !win->hdr_target.made)
          screens = false;
       /* The image stays acquired for the next frame that draws */
       if (     !screens
@@ -13467,7 +13526,7 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
          memset(win->layout, 0, sizeof(*win->layout));
          win->layout->canvas_dims = out->dims;
       }
-      if (screens && hdr && !stock_hdr)
+      if (screens && hdr && !stock_hdr && !stock_sdr)
       {
          vulkan_views_begin(vk, &win->hdr, out->dims, vk->sdr_render_pass);
          vk->flags |= VK_FLAG_SDR_PIPELINE;
@@ -13534,7 +13593,14 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
          vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
          vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
          vk->tracker.pipeline = VK_NULL_HANDLE;
-         if (screens && hdr)
+         if (stock_sdr)
+         {
+            vk->views.stock_pipeline = stock_sdr;
+            vulkan_vv_draw_placements(vk, &d, win->layout, win->chains,
+                  !win->layout->offscreen, out->dims, true);
+            vk->views.stock_pipeline = VK_NULL_HANDLE;
+         }
+         else if (screens && hdr)
             vulkan_window_quad(vk, &win->hdr, out->dims,
                   VK_FORMAT_R16G16B16A16_SFLOAT, out->dims, premult);
          else if (screens)

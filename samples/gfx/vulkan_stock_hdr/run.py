@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run the production stock view draw, its HDR encode and the decisions
-that send stock views straight into an HDR swapchain against a recording
+that send stock views straight into a second output or an HDR swapchain,
+with no FP16 image between, against a recording
 fake, and compile stock_rect_hdr.frag when glslc is installed."""
 from pathlib import Path
 import os
@@ -48,6 +49,8 @@ cut = '\n\n'.join(function(source, name) for name in (
         'vulkan_views_stock_encodes',
         'vulkan_views_draw_stock',
         'vulkan_window_encodes',
+        'vulkan_views_target_stock',
+        'vulkan_window_stock_sdr',
         'vulkan_window_stock_encodes'))
 
 if shutil.which('glslc'):

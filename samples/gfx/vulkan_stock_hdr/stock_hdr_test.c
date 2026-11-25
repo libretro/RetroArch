@@ -71,6 +71,16 @@ struct vk_chain { int vbo; };
 
 #include "production_types.h"
 
+typedef uintptr_t VkRenderPass;
+struct vk_target_pass
+{
+   VkRenderPass pass;
+   VkPipeline premult;
+   VkPipeline stock_rect;
+   VkFormat format;
+};
+#define VK_VIEWS_TARGETS 4
+
 typedef struct vk
 {
    math_matrix_4x4 mvp;
@@ -80,7 +90,8 @@ typedef struct vk
    struct { VkPipeline stock_rect, stock_rect_sdr, stock_rect_hdr; }
       pipelines;
    struct { VkSampler linear, nearest; } samplers;
-   struct { unsigned hdr_stock; bool fp16; } views;
+   struct { unsigned hdr_stock; VkPipeline stock_pipeline; bool fp16;
+      struct vk_target_pass targets[VK_VIEWS_TARGETS]; } views;
    struct { vulkan_hdr_uniform_t ubo_values; } hdr;
    struct { bool smooth; } video;
    struct { VkBuffer buffer; unsigned num_quads; } quad_ibo;
@@ -275,6 +286,63 @@ static void test_plain_draw(void)
       printf("[pass] %s\n", t);
 }
 
+/* A second output in another format draws them with its own stock_rect */
+static void test_target_pipeline_draw(void)
+{
+   static const char t[] = "test_target_pipeline_draw";
+   unsigned before = failures;
+   setup();
+   vk.views.stock_pipeline = 31;
+   draw();
+   expect(t, last.pipeline == 31, "the output's stock_rect",
+         (double)last.pipeline);
+   expect(t, last.uniform_size == sizeof(math_matrix_4x4) + 4 * sizeof(float),
+         "mvp and clamp", (double)last.uniform_size);
+   if (failures == before)
+      printf("[pass] %s\n", t);
+}
+
+/* Under HDR output an SDR window draws stock views straight in with the
+ * stock_rect of its format's pass; never one in the main window's
+ * encoding, nor without one, nor through chains, nor without HDR */
+static void test_sdr_window_decision(void)
+{
+   static const char t[] = "test_sdr_window_decision";
+   unsigned before = failures;
+   vulkan_output_t out;
+   setup();
+   vk.views.targets[1].pass       = 41;
+   vk.views.targets[1].format     = VK_FORMAT_B8G8R8A8_UNORM;
+   vk.views.targets[1].stock_rect = 42;
+   out.format      = VK_FORMAT_B8G8R8A8_UNORM;
+   out.color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+   expect(t, vulkan_window_stock_sdr(&vk, &out, true) == 42,
+         "its format's stock_rect", 0);
+   expect(t, vulkan_window_stock_sdr(&vk, &out, false) == VK_NULL_HANDLE,
+         "not through chains", 1);
+   /* Depth 30: the SDR window in the main window's format, sRGB */
+   out.format      = VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+   expect(t, vulkan_window_stock_sdr(&vk, &out, true)
+         == vk.pipelines.stock_rect, "the window's own stock_rect", 2);
+   out.color_space = VK_COLOR_SPACE_HDR10_ST2084_EXT;
+   expect(t, vulkan_window_stock_sdr(&vk, &out, true) == VK_NULL_HANDLE,
+         "not in the main window's encoding", 3);
+   out.format      = VK_FORMAT_R16G16B16A16_SFLOAT;
+   out.color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+   expect(t, vulkan_window_stock_sdr(&vk, &out, true) == VK_NULL_HANDLE,
+         "not without a pass for the format", 4);
+   vk.views.targets[1].stock_rect = VK_NULL_HANDLE;
+   out.format      = VK_FORMAT_B8G8R8A8_UNORM;
+   expect(t, vulkan_window_stock_sdr(&vk, &out, true) == VK_NULL_HANDLE,
+         "not without its stock_rect", 5);
+   vk.views.targets[1].stock_rect = 42;
+   vk.context->flags = 0;
+   expect(t, vulkan_window_stock_sdr(&vk, &out, true) == VK_NULL_HANDLE,
+         "not without HDR output", 6);
+   if (failures == before)
+      printf("[pass] %s\n", t);
+}
+
 /* Stock views straight from the frame encode as they draw, unless the
  * blends read the canvas, the views are not in FP16 (no HDR, or a
  * preset's chains write the encoding), or the pipeline is missing */
@@ -333,5 +401,7 @@ int main(void)
    test_plain_draw();
    test_main_window_decision();
    test_window_decision();
+   test_target_pipeline_draw();
+   test_sdr_window_decision();
    return failures ? 1 : 0;
 }

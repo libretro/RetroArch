@@ -59,6 +59,7 @@ struct vk_target_pass
 {
    VkRenderPass pass;
    VkPipeline premult;
+   VkPipeline stock_rect;
    VkFormat format;
 };
 
@@ -164,6 +165,7 @@ typedef struct
    struct
    {
       VkPipeline alpha_premult;
+      VkPipeline stock_rect;
       VkPipelineCache cache;
    } pipelines;
    struct vk_image cached[3];
@@ -627,8 +629,12 @@ static VkFormat pass_format;
 
 static const uint32_t spirv_alpha_blend_vert[] = { 0x07230203 };
 static const uint32_t spirv_alpha_blend_frag[] = { 0x07230203 };
+static const uint32_t spirv_stock_rect_frag[] = { 0x07230203 };
 #define spirv_alpha_blend_vert_size sizeof(spirv_alpha_blend_vert)
 #define spirv_alpha_blend_frag_size sizeof(spirv_alpha_blend_frag)
+#define spirv_stock_rect_frag_size sizeof(spirv_stock_rect_frag)
+/* The blend each pipeline made was made with, by its number */
+static bool pipe_blends[64];
 
 static VkResult test_create_render_pass(VkDevice device,
       const VkRenderPassCreateInfo *info, const VkAllocationCallbacks *alloc,
@@ -687,6 +693,9 @@ static VkResult test_create_graphics_pipelines(VkDevice device,
             != VK_BLEND_FACTOR_ONE)
       return VK_ERROR_INITIALIZATION_FAILED;
    *pipe = (VkPipeline)(uintptr_t)(0x300 + ++pipes_made);
+   if (pipes_made < 64)
+      pipe_blends[pipes_made] =
+         info->pColorBlendState->pAttachments->blendEnable != VK_FALSE;
    return VK_SUCCESS;
 }
 
@@ -818,13 +827,27 @@ static void test_target_passes(void)
          && pass_format == VK_FORMAT_R8G8B8A8_UNORM);
    CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_UNORM, true) == a);
    CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_UNORM, false) == a);
-   CHECK(passes_made == 2 && pipes_made == 2 && modules_live == 0);
+   CHECK(passes_made == 2 && pipes_made == 4 && modules_live == 0);
    CHECK(vulkan_views_target_premult(&vk, VK_FORMAT_B8G8R8A8_UNORM)
          != VK_NULL_HANDLE);
+   /* Each with stock_rect beside alpha_premult, opaque */
+   vk.pipelines.stock_rect = (VkPipeline)(uintptr_t)0x79;
+   CHECK(vulkan_views_target_stock(&vk, context.swapchain_format)
+         == vk.pipelines.stock_rect);
+   CHECK(vulkan_views_target_stock(&vk, VK_FORMAT_B8G8R8A8_UNORM)
+         != VK_NULL_HANDLE);
+   CHECK(vulkan_views_target_stock(&vk, VK_FORMAT_B8G8R8A8_UNORM)
+         != vulkan_views_target_premult(&vk, VK_FORMAT_B8G8R8A8_UNORM));
+   CHECK(!pipe_blends[(uintptr_t)vulkan_views_target_stock(&vk,
+            VK_FORMAT_B8G8R8A8_UNORM) - 0x300]);
+   CHECK(pipe_blends[(uintptr_t)vulkan_views_target_premult(&vk,
+            VK_FORMAT_B8G8R8A8_UNORM) - 0x300]);
+   CHECK(vulkan_views_target_stock(&vk, VK_FORMAT_R16G16B16A16_SFLOAT)
+         == VK_NULL_HANDLE);
    CHECK(vulkan_views_target_premult(&vk, VK_FORMAT_B8G8R8A8_UNORM)
          != vulkan_views_target_premult(&vk, VK_FORMAT_R8G8B8A8_UNORM));
    vulkan_views_targets_free(&vk);
-   CHECK(passes_destroyed == 2 && pipes_destroyed == 2);
+   CHECK(passes_destroyed == 2 && pipes_destroyed == 4);
    CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_UNORM, false)
          == VK_NULL_HANDLE);
    fail_pipeline = true;
@@ -849,13 +872,13 @@ static void test_target_passes(void)
          == VK_NULL_HANDLE);
    CHECK(passes_made == 7);
    vulkan_views_targets_free(&vk);
-   CHECK(passes_destroyed == 7 && pipes_destroyed == 6);
+   CHECK(passes_destroyed == 7 && pipes_destroyed == 12);
 
    /* Nor any without the menu effects' pipeline state */
    vk.display.effect_tpl[0].valid = false;
    CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_UNORM, true)
          == VK_NULL_HANDLE);
-   CHECK(passes_made == 7 && pipes_made == 6 && modules_live == 0);
+   CHECK(passes_made == 7 && pipes_made == 12 && modules_live == 0);
 }
 
 /* A screen window encodes HDR as the main window does on an output that
