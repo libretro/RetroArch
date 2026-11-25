@@ -145,6 +145,7 @@ typedef struct
    } tracker;
    struct
    {
+      video_views_chains_t chains;
       struct vk_image ui;
       struct vk_image canvas;
       VkFormat ui_format;
@@ -320,6 +321,15 @@ static void vulkan_filter_chain_set_inverse_tonemap(
 {
    (void)chain;
    set_inverse_tonemap = inverse_tonemap;
+}
+
+/* The view chains whose final passes' other targets were forgotten */
+static unsigned targets_forgotten;
+static void vulkan_filter_chain_forget_final_targets(
+      vulkan_filter_chain_t *chain)
+{
+   (void)chain;
+   targets_forgotten++;
 }
 
 static void vulkan_filter_chain_set_hdr10(vulkan_filter_chain_t *chain,
@@ -807,7 +817,14 @@ static void test_target_passes(void)
          == VK_NULL_HANDLE);
    CHECK(vulkan_views_target_premult(&vk, VK_FORMAT_B8G8R8A8_UNORM)
          != vulkan_views_target_premult(&vk, VK_FORMAT_R8G8B8A8_UNORM));
+   /* The view chains' final passes made for them go first */
+   vk.views.chains.preset[0] = (void*)&vk;
+   vk.views.chains.stock[1]  = (void*)&vk;
+   targets_forgotten         = 0;
    vulkan_views_targets_free(&vk);
+   CHECK(targets_forgotten == 2);
+   vk.views.chains.preset[0] = NULL;
+   vk.views.chains.stock[1]  = NULL;
    CHECK(passes_destroyed == 2 && pipes_destroyed == 4);
    CHECK(vulkan_views_target_pass(&vk, VK_FORMAT_B8G8R8A8_UNORM, false)
          == VK_NULL_HANDLE);

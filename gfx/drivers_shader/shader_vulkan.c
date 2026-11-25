@@ -848,6 +848,8 @@ struct slang_pass_parameter
    unsigned semantic_index;
 };
 
+#define SLANG_PASS_TARGETS 4
+
 struct slang_pass
 {
    VkDevice device;
@@ -888,6 +890,12 @@ struct slang_pass
    struct slang_framebuffer *framebuffer;
    struct slang_framebuffer *fb_feedback;
    VkRenderPass swapchain_render_pass;
+   /* A final pass's pipelines against other targets' render passes,
+    * made on first use; draw_pipeline, the one this draw binds, or
+    * VK_NULL_HANDLE for pipeline */
+   VkRenderPass target_passes[SLANG_PASS_TARGETS];
+   VkPipeline target_pipelines[SLANG_PASS_TARGETS];
+   VkPipeline draw_pipeline;
 
    /* Plain C struct: explicitly zero-initialized by slang_pass_new()'s
     * calloc, since the first build() and a teardown before any build()
@@ -3361,12 +3369,28 @@ static unsigned slang_pass_set_pass_info(struct slang_pass *pass,
    return pass->current_framebuffer_size_dims;
 }
 
+/* The final pass's pipelines for other targets, gone with the pipeline
+ * they were made beside */
+static void slang_pass_free_targets(struct slang_pass *pass)
+{
+   unsigned i;
+   for (i = 0; i < SLANG_PASS_TARGETS; i++)
+   {
+      if (pass->target_pipelines[i] != VK_NULL_HANDLE)
+         vkDestroyPipeline(pass->device, pass->target_pipelines[i], NULL);
+      pass->target_passes[i]    = VK_NULL_HANDLE;
+      pass->target_pipelines[i] = VK_NULL_HANDLE;
+   }
+   pass->draw_pipeline = VK_NULL_HANDLE;
+}
+
 static void slang_pass_clear_vk(struct slang_pass *pass)
 {
    if (pass->pool != VK_NULL_HANDLE)
       vkDestroyDescriptorPool(pass->device, pass->pool, NULL);
    if (pass->pipeline != VK_NULL_HANDLE)
       vkDestroyPipeline(pass->device, pass->pipeline, NULL);
+   slang_pass_free_targets(pass);
    if (pass->set_layout != VK_NULL_HANDLE)
       vkDestroyDescriptorSetLayout(pass->device, pass->set_layout, NULL);
    if (pass->pipeline_layout != VK_NULL_HANDLE)
@@ -3562,7 +3586,9 @@ static bool slang_pass_init_pipeline_layout(struct slang_pass *pass)
    return true;
 }
 
-static bool slang_pass_init_pipeline(struct slang_pass *pass)
+/* The pass's pipeline against @render_pass, into *@out */
+static bool slang_pass_make_pipeline(struct slang_pass *pass,
+      VkRenderPass render_pass, VkPipeline *out)
 {
    VkGraphicsPipelineCreateInfo pipe;
    VkVertexInputBindingDescription binding;
@@ -3713,15 +3739,13 @@ static bool slang_pass_init_pipeline(struct slang_pass *pass)
    pipe.pColorBlendState     = &blend;
    pipe.pDynamicState        = &dynamic;
    pipe.layout               = pass->pipeline_layout;
-   pipe.renderPass           = pass->final_pass
-	   ? pass->swapchain_render_pass
-	   : pass->framebuffer->render_pass;
+   pipe.renderPass           = render_pass;
    pipe.subpass              = 0;
    pipe.basePipelineHandle   = VK_NULL_HANDLE;
    pipe.basePipelineIndex    = 0;
 
    if (vkCreateGraphicsPipelines(pass->device,
-            pass->cache, 1, &pipe, NULL, &pass->pipeline) != VK_SUCCESS)
+            pass->cache, 1, &pipe, NULL, out) != VK_SUCCESS)
    {
       vkDestroyShaderModule(pass->device, shader_stages[0].module, NULL);
       vkDestroyShaderModule(pass->device, shader_stages[1].module, NULL);
@@ -3731,6 +3755,17 @@ static bool slang_pass_init_pipeline(struct slang_pass *pass)
    vkDestroyShaderModule(pass->device, shader_stages[0].module, NULL);
    vkDestroyShaderModule(pass->device, shader_stages[1].module, NULL);
    return true;
+}
+
+/* The pass's own pipeline, against the swapchain's render pass for the
+ * final pass; the pipelines made for other targets go with the one they
+ * were made beside */
+static bool slang_pass_init_pipeline(struct slang_pass *pass)
+{
+   slang_pass_free_targets(pass);
+   return slang_pass_make_pipeline(pass, pass->final_pass
+         ? pass->swapchain_render_pass : pass->framebuffer->render_pass,
+         &pass->pipeline);
 }
 
 static void common_resources_init(CommonResources *common,
@@ -4739,7 +4774,8 @@ static void slang_pass_build_commands(struct slang_pass *pass,
       vkCmdBeginRenderPass(cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
    }
 
-   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->pipeline);
+   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
+         pass->draw_pipeline ? pass->draw_pipeline : pass->pipeline);
    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
          pass->pipeline_layout,
          0, 1, &pass->sets[pass->sync_index], 0, NULL);
@@ -5976,6 +6012,46 @@ void vulkan_filter_chain_set_frame_direction(
       int32_t direction)
 {
    slang_chain_set_frame_direction(chain, direction);
+}
+
+bool vulkan_filter_chain_set_final_target(vulkan_filter_chain_t *chain,
+      VkRenderPass render_pass)
+{
+   unsigned i;
+   struct slang_pass *pass = chain->pass_count
+      ? chain->passes[chain->pass_count - 1] : NULL;
+   if (!pass || !pass->final_pass || pass->pipeline == VK_NULL_HANDLE)
+      return render_pass == VK_NULL_HANDLE;
+   pass->draw_pipeline = VK_NULL_HANDLE;
+   if (     render_pass == VK_NULL_HANDLE
+         || render_pass == pass->swapchain_render_pass)
+      return true;
+   for (i = 0; i < SLANG_PASS_TARGETS; i++)
+      if (pass->target_passes[i] == render_pass)
+      {
+         pass->draw_pipeline = pass->target_pipelines[i];
+         return true;
+      }
+   for (i = 0; i < SLANG_PASS_TARGETS; i++)
+      if (pass->target_passes[i] == VK_NULL_HANDLE)
+      {
+         if (!slang_pass_make_pipeline(pass, render_pass,
+                  &pass->target_pipelines[i]))
+         {
+            pass->target_pipelines[i] = VK_NULL_HANDLE;
+            return false;
+         }
+         pass->target_passes[i] = render_pass;
+         pass->draw_pipeline    = pass->target_pipelines[i];
+         return true;
+      }
+   return false;
+}
+
+void vulkan_filter_chain_forget_final_targets(vulkan_filter_chain_t *chain)
+{
+   if (chain->pass_count)
+      slang_pass_free_targets(chain->passes[chain->pass_count - 1]);
 }
 
 void vulkan_filter_chain_set_scissor(

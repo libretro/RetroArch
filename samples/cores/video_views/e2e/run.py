@@ -505,6 +505,15 @@ HDR_CASES = [
      {'env': SDR_WINDOWS, 'log': [STOCK_DIRECT, SECOND_OUTPUT_SDR],
       'absent': [WINDOW_NOT_DRAWN], 'game': False,
       'window': [(800, 480, YELLOW, 'sdr')]}),
+    # An SDR preset's screen in an SDR window: its chain's final pass
+    # straight into the window's swapchain.
+    ('hdr-preset-window-ds', 'ds',
+     {'video_windows_enable': 'true', 'video_stereo_mode': '0',
+      'video_shader_enable': 'true'},
+     [(800, 480, GREEN)],
+     {'preset': os.path.join(HERE, 'pass.slangp'), 'env': SDR_WINDOWS,
+      'log': [SECOND_OUTPUT_SDR], 'absent': [WINDOW_NOT_DRAWN],
+      'window': [(800, 480, YELLOW, 'sdr')]}),
     # The window draws its screen with the stock chain instead.
     ('hdr-emit-preset-window', 'ds',
      {'video_windows_enable': 'true', 'video_stereo_mode': '0',

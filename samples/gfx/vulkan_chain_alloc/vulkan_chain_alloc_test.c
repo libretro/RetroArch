@@ -563,6 +563,115 @@ static bool chain_whole(const struct vulkan_filter_chain *chain)
    return chain->pass_count == PASSES && chain->num_deferred == INDICES;
 }
 
+/* ---- A final pass's pipelines for other targets ---- */
+static VkRenderPass made_against;
+static int pipelines_made, pipelines_destroyed, modules_made;
+static bool fail_pipelines;
+
+static VkResult VKAPI_CALL mock_create_module(VkDevice d,
+      const VkShaderModuleCreateInfo *i, const VkAllocationCallbacks *a,
+      VkShaderModule *out)
+{
+   (void)d; (void)i; (void)a;
+   *out = (VkShaderModule)(uintptr_t)next_handle++;
+   modules_made++;
+   return VK_SUCCESS;
+}
+
+static void VKAPI_CALL mock_destroy_module(VkDevice d, VkShaderModule m,
+      const VkAllocationCallbacks *a)
+{ (void)d; (void)a; if (m) modules_made--; }
+
+static VkResult VKAPI_CALL mock_create_pipelines(VkDevice d,
+      VkPipelineCache c, uint32_t n, const VkGraphicsPipelineCreateInfo *i,
+      const VkAllocationCallbacks *a, VkPipeline *out)
+{
+   (void)d; (void)c; (void)a;
+   if (fail_pipelines || n != 1)
+      return VK_ERROR_INITIALIZATION_FAILED;
+   made_against = i->renderPass;
+   *out = (VkPipeline)(uintptr_t)next_handle++;
+   pipelines_made++;
+   return VK_SUCCESS;
+}
+
+static void VKAPI_CALL mock_destroy_pipeline(VkDevice d, VkPipeline p,
+      const VkAllocationCallbacks *a)
+{ (void)d; (void)a; if (p) pipelines_destroyed++; }
+
+/* The final pass draws into another target's pass with a pipeline made
+ * against it once and kept, its own again for VK_NULL_HANDLE or the
+ * swapchain's; one that can't be made leaves its own; the pipelines go
+ * when forgotten or when the pass's own is made again */
+static void test_final_targets(struct vulkan_filter_chain *chain)
+{
+   struct slang_pass *last = chain->passes[PASSES - 1];
+   VkPipeline own          = (VkPipeline)(uintptr_t)0x9000;
+   VkPipeline made;
+   VkRenderPass own_pass   = (VkRenderPass)(uintptr_t)0x9100;
+   unsigned i;
+
+   vkCreateShaderModule      = mock_create_module;
+   vkDestroyShaderModule     = mock_destroy_module;
+   vkCreateGraphicsPipelines = mock_create_pipelines;
+   vkDestroyPipeline         = mock_destroy_pipeline;
+   pipelines_made = pipelines_destroyed = modules_made = 0;
+
+   last->final_pass            = true;
+   last->pipeline              = VK_NULL_HANDLE;
+   last->swapchain_render_pass = own_pass;
+   CHECK(!vulkan_filter_chain_set_final_target(chain,
+            (VkRenderPass)(uintptr_t)0x9200),
+         "a final pass with no pipeline yet takes no other target");
+   CHECK(vulkan_filter_chain_set_final_target(chain, VK_NULL_HANDLE),
+         "nor needs one for its own");
+   last->pipeline = own;
+
+   CHECK(vulkan_filter_chain_set_final_target(chain,
+            (VkRenderPass)(uintptr_t)0x9200), "another target");
+   made = last->draw_pipeline;
+   CHECK(pipelines_made == 1 && made != VK_NULL_HANDLE && made != own
+         && made_against == (VkRenderPass)(uintptr_t)0x9200
+         && modules_made == 0,
+         "one pipeline, against that target's pass, modules freed");
+   CHECK(vulkan_filter_chain_set_final_target(chain, VK_NULL_HANDLE)
+         && last->draw_pipeline == VK_NULL_HANDLE, "its own again");
+   CHECK(vulkan_filter_chain_set_final_target(chain,
+            (VkRenderPass)(uintptr_t)0x9200)
+         && last->draw_pipeline == made && pipelines_made == 1,
+         "the same target's pipeline kept");
+   CHECK(vulkan_filter_chain_set_final_target(chain, own_pass)
+         && last->draw_pipeline == VK_NULL_HANDLE && pipelines_made == 1,
+         "the swapchain's pass is its own");
+
+   fail_pipelines = true;
+   CHECK(!vulkan_filter_chain_set_final_target(chain,
+            (VkRenderPass)(uintptr_t)0x9300)
+         && last->draw_pipeline == VK_NULL_HANDLE,
+         "one that can't be made leaves its own");
+   fail_pipelines = false;
+   for (i = 0; i < 3; i++)
+      CHECK(vulkan_filter_chain_set_final_target(chain,
+               (VkRenderPass)(uintptr_t)(0x9400 + i)), "target %u", i);
+   CHECK(!vulkan_filter_chain_set_final_target(chain,
+            (VkRenderPass)(uintptr_t)0x9500)
+         && pipelines_made == SLANG_PASS_TARGETS,
+         "no more than SLANG_PASS_TARGETS");
+
+   vulkan_filter_chain_forget_final_targets(chain);
+   CHECK(pipelines_destroyed == SLANG_PASS_TARGETS
+         && last->draw_pipeline == VK_NULL_HANDLE,
+         "forgotten: each destroyed once");
+   CHECK(vulkan_filter_chain_set_final_target(chain,
+            (VkRenderPass)(uintptr_t)0x9200)
+         && pipelines_made == SLANG_PASS_TARGETS + 1,
+         "made again after");
+   slang_pass_free_targets(last);
+   CHECK(pipelines_destroyed == SLANG_PASS_TARGETS + 1,
+         "and destroyed with the pass's own");
+   last->pipeline = VK_NULL_HANDLE;
+}
+
 int main(void)
 {
    VkPhysicalDeviceMemoryProperties props;
@@ -637,6 +746,7 @@ int main(void)
       test_replay(chain);
       test_history_spare(chain);
       test_history_in_place(chain);
+      test_final_targets(chain);
       slang_chain_free(chain);
    }
 

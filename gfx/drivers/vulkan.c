@@ -421,7 +421,10 @@ enum vk_window_flags
    VK_WINDOW_FLAG_SCREENS  = (1 << 5),
    /* this frame: made, shown and its output kept, an image free or
     * not; the UI drawn there needs no fallback */
-   VK_WINDOW_FLAG_UP       = (1 << 6)
+   VK_WINDOW_FLAG_UP       = (1 << 6),
+   /* this frame, under HDR output: its screens' chains draw their final
+    * passes straight into its SDR swapchain */
+   VK_WINDOW_FLAG_CHAINS   = (1 << 7)
 };
 
 /* A screen window: the context's record and the output drawn into it */
@@ -7104,6 +7107,16 @@ static void vulkan_window_hdr_free(vk_t *vk, struct vk_window *win)
 static void vulkan_views_targets_free(vk_t *vk)
 {
    unsigned i;
+   /* The view chains' final passes made for those passes */
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      if (vk->views.chains.preset[i])
+         vulkan_filter_chain_forget_final_targets(
+               (vulkan_filter_chain_t*)vk->views.chains.preset[i]);
+      if (vk->views.chains.stock[i])
+         vulkan_filter_chain_forget_final_targets(
+               (vulkan_filter_chain_t*)vk->views.chains.stock[i]);
+   }
    for (i = 0; i < VK_VIEWS_TARGETS; i++)
    {
       vkDestroyPipeline(vk->context->device, vk->views.targets[i].premult,
@@ -13043,6 +13056,18 @@ static bool vulkan_window_encodes(const vk_t *vk, const vulkan_output_t *out,
 }
 #endif
 
+/* Under HDR output, whether @out is in SDR: it takes no encode */
+static bool vulkan_window_sdr(const vk_t *vk, const vulkan_output_t *out)
+{
+#ifdef VULKAN_HDR_SWAPCHAIN
+   unsigned mode;
+   return (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+      && !vulkan_window_encodes(vk, out, &mode);
+#else
+   return false;
+#endif
+}
+
 /* Under HDR output, the stock_rect an SDR output @out draws the stock
  * views with straight from the frame (@direct), with no FP16 image or
  * copy between; VK_NULL_HANDLE when it has none or is not in SDR */
@@ -13073,6 +13098,35 @@ static bool vulkan_window_stock_encodes(const vk_t *vk,
 #else
    return false;
 #endif
+}
+
+/* Whether each of @chains can draw its final pass straight into @out's
+ * render pass, the pipelines for it made here the first time; the
+ * chains are left drawing into their own targets */
+static bool vulkan_window_chains_direct(vulkan_filter_chain_t **chains,
+      const vulkan_output_t *out)
+{
+   unsigned i;
+   bool ok = out->render_pass != VK_NULL_HANDLE;
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX && ok; i++)
+      if (chains[i])
+      {
+         ok = vulkan_filter_chain_set_final_target(chains[i],
+               out->render_pass);
+         vulkan_filter_chain_set_final_target(chains[i], VK_NULL_HANDLE);
+      }
+   return ok;
+}
+
+/* @chains' final passes into @render_pass, or their own targets for
+ * VK_NULL_HANDLE */
+static void vulkan_window_chains_target(vulkan_filter_chain_t **chains,
+      VkRenderPass render_pass)
+{
+   unsigned i;
+   for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
+      if (chains[i])
+         vulkan_filter_chain_set_final_target(chains[i], render_pass);
 }
 
 static VkRenderPass vulkan_window_pass_for(void *data, VkFormat format)
@@ -13276,7 +13330,7 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
 
       /* A frame that ended before its draw left them set */
       win->flags &= ~(VK_WINDOW_FLAG_PREPARED | VK_WINDOW_FLAG_SCREENS
-            | VK_WINDOW_FLAG_UP);
+            | VK_WINDOW_FLAG_UP | VK_WINDOW_FLAG_CHAINS);
       /* Its surface was taken back: the output goes, on later frames
        * while the presentation engine still has an image */
       if (     (vk->windows.held.live & (1u << w))
@@ -13352,6 +13406,13 @@ static VIDEO_NOINLINE void vulkan_windows_prepare(vk_t *vk,
             || (screens && (vulkan_window_stock_encodes(vk, out, direct)
                   || vulkan_window_stock_sdr(vk, out, direct))))
          vulkan_vv_target_drop(vk, &win->hdr_target, &win->hdr);
+      else if (screens && !direct && vulkan_window_sdr(vk, out)
+            && vulkan_window_chains_direct(win->chains, out))
+      {
+         /* Their final passes straight into its swapchain */
+         vulkan_vv_target_drop(vk, &win->hdr_target, &win->hdr);
+         win->flags |= VK_WINDOW_FLAG_CHAINS;
+      }
       else if (screens)
          screens = vulkan_views_target_premult(vk, out->format)
             && vulkan_vv_target_ensure(vk, &win->hdr_target, &win->hdr,
@@ -13481,6 +13542,7 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
       VkPipeline stock_sdr;
       bool screens;
       bool stock_hdr;
+      bool chains_sdr;
 #ifdef VULKAN_HDR_SWAPCHAIN
       unsigned mode;
 #endif
@@ -13491,7 +13553,10 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
          continue;
       screens     = (win->flags & VK_WINDOW_FLAG_SCREENS)
          && vk->views.active;
-      win->flags &= ~(VK_WINDOW_FLAG_PREPARED | VK_WINDOW_FLAG_SCREENS);
+      chains_sdr  = screens && (win->flags & VK_WINDOW_FLAG_CHAINS)
+         && d.direct == NULL;
+      win->flags &= ~(VK_WINDOW_FLAG_PREPARED | VK_WINDOW_FLAG_SCREENS
+            | VK_WINDOW_FLAG_CHAINS);
       /* Stock views straight into a swapchain in the main window's
        * encoding; else into its FP16 image, which its swapchain takes as
        * a copy, or encoded as the main window's in HDR: the view chains
@@ -13501,7 +13566,7 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
       stock_sdr = (screens && hdr && !stock_hdr)
          ? vulkan_window_stock_sdr(vk, out, d.direct != NULL)
          : VK_NULL_HANDLE;
-      if (     screens && hdr && !stock_hdr && !stock_sdr
+      if (     screens && hdr && !stock_hdr && !stock_sdr && !chains_sdr
             && !win->hdr_target.made)
          screens = false;
       /* The image stays acquired for the next frame that draws */
@@ -13514,7 +13579,7 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
          memset(win->layout, 0, sizeof(*win->layout));
          win->layout->canvas_dims = out->dims;
       }
-      if (screens && hdr && !stock_hdr && !stock_sdr)
+      if (screens && hdr && !stock_hdr && !stock_sdr && !chains_sdr)
       {
          vulkan_views_begin(vk, &win->hdr, out->dims, vk->sdr_render_pass);
          vk->flags |= VK_FLAG_SDR_PIPELINE;
@@ -13587,6 +13652,13 @@ static bool vulkan_windows_draw(vk_t *vk, video_frame_info_t *video_info)
             vulkan_vv_draw_placements(vk, &d, win->layout, win->chains,
                   !win->layout->offscreen, out->dims, true);
             vk->views.stock_pipeline = VK_NULL_HANDLE;
+         }
+         else if (chains_sdr)
+         {
+            vulkan_window_chains_target(win->chains, out->render_pass);
+            vulkan_vv_draw_placements(vk, &d, win->layout, win->chains,
+                  !win->layout->offscreen, out->dims, false);
+            vulkan_window_chains_target(win->chains, VK_NULL_HANDLE);
          }
          else if (screens && hdr)
             vulkan_window_quad(vk, &win->hdr, out->dims,

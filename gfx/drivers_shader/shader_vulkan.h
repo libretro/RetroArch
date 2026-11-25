@@ -204,6 +204,18 @@ void vulkan_filter_chain_set_simulate_scanline(vulkan_filter_chain_t *chain,
 void vulkan_filter_chain_set_frame_direction(vulkan_filter_chain_t *chain,
       int32_t direction);
 
+/* The final pass draws into a pass of @render_pass's format from now
+ * on, until VK_NULL_HANDLE or the swapchain's is set: its pipeline for
+ * that pass is made the first time, on the calling thread, and kept
+ * until the chain's pipelines are made again. False, with the chain's
+ * own pipeline set, when it can't be made. */
+bool vulkan_filter_chain_set_final_target(vulkan_filter_chain_t *chain,
+      VkRenderPass render_pass);
+
+/* The final pass's pipelines for other targets destroyed, before their
+ * render passes are: nothing in flight may still use them */
+void vulkan_filter_chain_forget_final_targets(vulkan_filter_chain_t *chain);
+
 /* Cuts the final pass to @scissor, inside its viewport, until NULL is
  * set: a view placed larger than the part of its target it may fill. */
 void vulkan_filter_chain_set_scissor(vulkan_filter_chain_t *chain,
