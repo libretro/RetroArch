@@ -861,7 +861,7 @@ void vulkan_openxr_stop(vulkan_openxr_t *xr)
    }
    openxr_frame_clear_quads(&xr->frame);
    openxr_frame_clear_projection(&xr->frame);
-   /* The context frees it next; a kept session outlives it. */
+   /* The next start hands it over again. */
    xr->queue_lock = NULL;
 }
 

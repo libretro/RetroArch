@@ -51,10 +51,6 @@ static void switch_vk_ctx_destroy(void *data)
       return;
 
    vulkan_context_destroy(&ctx->vk, true);
-#ifdef HAVE_THREADS
-   if (ctx->vk.context.queue_lock)
-      slock_free(ctx->vk.context.queue_lock);
-#endif
    free(ctx);
 }
 

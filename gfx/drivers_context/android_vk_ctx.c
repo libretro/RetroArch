@@ -58,9 +58,6 @@ static void android_gfx_ctx_vk_destroy(void *data)
    android_windows_free(and, android_windows_destroy);
    vulkan_context_destroy(&and->vk, android_app_window(android_app));
 
-   if (and->vk.context.queue_lock)
-      slock_free(and->vk.context.queue_lock);
-
    free(data);
 }
 
