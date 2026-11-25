@@ -13,7 +13,8 @@ SOURCES := mapped_port_test.c $(ROOT)/input/input_driver.c $(ROOT)/command.c \
    $(ROOT)/libretro-common/string/stdstring.c \
    $(ROOT)/libretro-common/encodings/encoding_utf.c \
    $(ROOT)/libretro-common/compat/compat_strl.c \
-   $(ROOT)/libretro-common/features/features_cpu.c
+   $(ROOT)/libretro-common/features/features_cpu.c \
+   $(ROOT)/libretro-common/memory/memdesc.c
 HEADERS := $(ROOT)/input/input_driver.h $(ROOT)/input/input_remapping.h \
    $(ROOT)/command.h $(ROOT)/input/common/input_openxr.h
 CFLAGS += -std=gnu89 -Wall -g1 -O1 -flto -ffunction-sections -fdata-sections \

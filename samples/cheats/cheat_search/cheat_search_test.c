@@ -68,7 +68,7 @@ static unsigned rnd(void) { rng = rng * 1103515245u + 12345u; return rng >> 8; }
 static unsigned char *mem[MAX_REGIONS];
 static unsigned mem_len[MAX_REGIONS];
 static unsigned nregions;
-static rarch_memory_descriptor_t descs[MAX_REGIONS];
+static struct retro_memory_descriptor descs[MAX_REGIONS];
 
 static void map_memory(unsigned scale)
 {
@@ -82,9 +82,9 @@ static void map_memory(unsigned scale)
       for (j = 0; j < mem_len[i]; j++)
          mem[i][j] = (unsigned char)((rnd() & 3) ? rnd() % 4 : rnd());
       memset(&descs[i], 0, sizeof(descs[i]));
-      descs[i].core.flags = RETRO_MEMDESC_SYSTEM_RAM;
-      descs[i].core.ptr   = mem[i];
-      descs[i].core.len   = mem_len[i];
+      descs[i].flags = RETRO_MEMDESC_SYSTEM_RAM;
+      descs[i].ptr   = mem[i];
+      descs[i].len   = mem_len[i];
    }
    test_runloop.system.mmaps.descriptors     = descs;
    test_runloop.system.mmaps.num_descriptors = nregions;
