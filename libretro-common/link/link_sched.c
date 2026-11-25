@@ -71,6 +71,7 @@ struct link_sched
    struct link_sched_stuck *stuck; /* one per console, filled at a release */
    cothread_t main;                /* where a run switches from */
    link_sched_done_t done;
+   link_sched_resume_t resume;
    struct link_sched_stats stats;
    unsigned count, stuck_count;
    int running, entered;
@@ -317,6 +318,8 @@ static void link_sched_resume(link_sched_t *s, unsigned c)
    s->consoles[c].ready = false;
    s->running           = (int)c;
    s->stats.switches++;
+   if (s->resume)
+      s->resume(s->consoles[c].user);
    co_switch(s->consoles[c].thread);
    s->running = -1;
 }
@@ -656,6 +659,8 @@ void link_sched_enter(link_sched_t *s, unsigned console)
       return;
    s->entered        = (int)console;
    link_sched_active = s;
+   if (s->resume)
+      s->resume(s->consoles[console].user);
 }
 
 void link_sched_leave(link_sched_t *s)
@@ -712,6 +717,12 @@ void link_sched_set_done(link_sched_t *s, link_sched_done_t done)
 {
    if (s)
       s->done = done;
+}
+
+void link_sched_set_resume(link_sched_t *s, link_sched_resume_t resume)
+{
+   if (s)
+      s->resume = resume;
 }
 
 /* Edge j of a console whose edge 0 is the instant at, as ticks of rate,

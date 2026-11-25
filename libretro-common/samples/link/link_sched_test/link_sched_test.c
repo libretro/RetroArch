@@ -1796,6 +1796,148 @@ static void resume_after_load(void)
    fx_free();
 }
 
+/* The resume hook's calls: each one's user, and whether any came off the
+ * context the scheduler was driven from */
+#define HOOK_LOG 96
+static const void *hook_log[HOOK_LOG];
+static unsigned hook_len;
+static cothread_t hook_main;
+static bool hook_off_main;
+
+static void hook_start(void)
+{
+   memset(hook_log, 0, sizeof(hook_log));
+   hook_len      = 0;
+   hook_main     = co_active();
+   hook_off_main = false;
+}
+
+static void hook_note(void *user)
+{
+   if (co_active() != hook_main)
+      hook_off_main = true;
+   if (hook_len < HOOK_LOG)
+      hook_log[hook_len] = user;
+   hook_len++;
+}
+
+static const void *hook_last(void)
+{
+   return hook_len && hook_len <= HOOK_LOG ? hook_log[hook_len - 1] : NULL;
+}
+
+static unsigned hook_calls(const void *user)
+{
+   unsigned i, n = 0;
+   for (i = 0; i < hook_len && i < HOOK_LOG; i++)
+      if (hook_log[i] == user)
+         n++;
+   return n;
+}
+
+/* Two steps of half a frame, each promising 64 ticks past its request,
+ * which the others' promises do not reach until they have run: wherever
+ * this console's code starts or goes on, the hook's last call was its own */
+static void hook_run(void *user)
+{
+   struct fx_console *k = (struct fx_console*)user;
+   uint64_t t           = k->tick;
+   k->runs++;
+   CHECK(hook_last() == k);
+   fx_adv(k, t, t + 576, t + 512, NULL);
+   CHECK(hook_last() == k);
+   fx_adv(k, t + 512, t + 1088, t + 1024, NULL);
+   CHECK(hook_last() == k);
+   fx_end(k, 64);
+   CHECK(hook_last() == k);
+   k->finished++;
+}
+
+static void resume_hook_precedes_every_switch(void)
+{
+   unsigned o, c, f;
+   struct link_sched_stats st;
+   for (o = 0; o < 3; o++)
+   {
+      hook_start();
+      fx_session(3, hook_run);
+      fx_set_pick(o);
+      link_sched_set_resume(fx_sched, hook_note);
+      for (f = 0; f < 3; f++)
+         CHECK(link_sched_run_frame(fx_sched) == LINK_SCHED_FRAME_DONE);
+      st = fx_stats();
+      CHECK(hook_len == st.switches);
+      CHECK(hook_len <= HOOK_LOG && !hook_off_main);
+      for (c = 0; c < 3; c++)
+      {
+         CHECK(fx_c[c].finished == 3);
+         CHECK(hook_calls(&fx_c[c]) > 3); /* it parked, and was switched to again */
+      }
+      fx_free();
+   }
+}
+
+static void resume_hook_on_enter(void)
+{
+   hook_start();
+   fx_new(2, fx_idle_run);
+   link_sched_set_resume(fx_sched, hook_note);
+   link_sched_enter(fx_sched, 1);
+   CHECK(hook_len == 1 && hook_last() == &fx_c[1]);
+   link_sched_leave(fx_sched);
+   CHECK(hook_len == 1);
+   link_sched_enter(fx_sched, 2);
+   link_sched_leave(fx_sched);
+   link_sched_enter(NULL, 0);
+   CHECK(hook_len == 1 && !hook_off_main);
+   fx_free();
+}
+
+static void resume_hook_cleared(void)
+{
+   unsigned calls;
+   hook_start();
+   fx_session(2, fx_plain_run);
+   link_sched_set_resume(fx_sched, hook_note);
+   CHECK(link_sched_run_frame(fx_sched) == LINK_SCHED_FRAME_DONE);
+   calls = hook_len;
+   CHECK(calls >= 2);
+   link_sched_set_resume(fx_sched, NULL);
+   CHECK(link_sched_run_frame(fx_sched) == LINK_SCHED_FRAME_DONE);
+   link_sched_enter(fx_sched, 0);
+   link_sched_leave(fx_sched);
+   CHECK(hook_len == calls);
+   link_sched_set_resume(NULL, hook_note);
+   CHECK(link_sched_run_frame(fx_sched) == LINK_SCHED_FRAME_DONE);
+   CHECK(hook_len == calls);
+   CHECK(fx_c[0].finished == 3 && fx_c[1].finished == 3);
+   fx_free();
+}
+
+/* Consoles 1 and 2 park on console 0, which stands at its target; the
+ * abandon switches to each to finish its frame */
+static void resume_hook_in_abandon(void)
+{
+   struct link_sched_stats st;
+   uint64_t before;
+   hook_start();
+   fx_session(3, hook_run);
+   link_sched_set_resume(fx_sched, hook_note);
+   CHECK(fx_run3(0, 1, 1) == LINK_SCHED_FRAME_WAITING);
+   CHECK(link_sched_in_frame(fx_sched, 1) && link_sched_in_frame(fx_sched, 2));
+   st     = fx_stats();
+   before = st.switches;
+   CHECK(hook_len == before);
+   link_sched_abandon(fx_sched);
+   st = fx_stats();
+   CHECK(st.switches >= before + 2);
+   CHECK(hook_len == st.switches && !hook_off_main);
+   CHECK(hook_calls(&fx_c[0]) == 0);
+   CHECK(fx_c[0].runs == 0 && fx_c[1].finished == 1 && fx_c[2].finished == 1);
+   CHECK(!link_sched_in_frame(fx_sched, 1) && !link_sched_in_frame(fx_sched, 2));
+   fx_free();
+}
+
 static const struct
 {
    const char *name;
@@ -1829,7 +1971,11 @@ static const struct
    { "stalled_save_and_load",             stalled_save_and_load },
    { "entry_point_while_parked_misplaced", entry_point_while_parked_misplaced },
    { "abandon_finishes_frames",           abandon_finishes_frames },
-   { "resume_after_load",                 resume_after_load }
+   { "resume_after_load",                 resume_after_load },
+   { "resume_hook_precedes_every_switch", resume_hook_precedes_every_switch },
+   { "resume_hook_on_enter",              resume_hook_on_enter },
+   { "resume_hook_cleared",               resume_hook_cleared },
+   { "resume_hook_in_abandon",            resume_hook_in_abandon }
 };
 
 int main(void)

@@ -56,6 +56,7 @@ enum link_sched_frame
 };
 
 typedef void (*link_sched_done_t)(void *user);    /* after a console's frame ends, on the main context */
+typedef void (*link_sched_resume_t)(void *user);  /* before a console's code runs, on the main context */
 
 /* One parked console at a release, from link_bus_blocked_by. A console
  * parked for making no progress is its own bound_console, with port and
@@ -91,6 +92,7 @@ enum link_sched_frame link_sched_run_frame(link_sched_t *s); /* the journal star
 uint64_t link_sched_frames(const link_sched_t *s, unsigned console); /* frames finished since link_sched_add */
 bool link_sched_in_frame(const link_sched_t *s, unsigned console);   /* parked or stalled once a run returns, or loaded inside an advance */
 void link_sched_set_done(link_sched_t *s, link_sched_done_t done);
+void link_sched_set_resume(link_sched_t *s, link_sched_resume_t resume);   /* NULL: none */
 /* Targets for one frame of console ref: for each other console not held,
  * its frame count at its first edge at or after ref's next edge; one frame
  * on where the bus cannot place a console or knows no span */
