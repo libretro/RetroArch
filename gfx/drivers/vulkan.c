@@ -11079,6 +11079,8 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
 {
    VkRenderPassBeginInfo rp_info;
    VkClearValue clear_color;
+   struct vk_buffer_range ubo_range;
+   VkDescriptorSet set                    = VK_NULL_HANDLE;
    vulkan_hdr_uniform_t ubo_values        = vk->hdr.ubo_values;
 
    ubo_values.mvp                         = vk->mvp_no_rot;
@@ -11120,6 +11122,21 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
    clear_color.color.float32[2]     = 0.0f;
    clear_color.color.float32[3]     = 0.0f;
 
+   /* A range of its own: other HDR passes in this command buffer, and
+    * frames still in flight, keep the values they were recorded with.
+    * Taken before the pass begins: without them the pass still runs,
+    * empty, so the target is cleared and leaves in the layout the pass
+    * gives it. */
+   if (     !vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
+               sizeof(ubo_values), &ubo_range)
+         || (set = vulkan_descriptor_manager_alloc(vk->context->device,
+               &vk->chain->descriptor_manager)) == VK_NULL_HANDLE)
+   {
+      vkCmdBeginRenderPass(vk->cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
+      vkCmdEndRenderPass(vk->cmd);
+      return;
+   }
+
    /* Begin render pass and set up viewport */
    vkCmdBeginRenderPass(vk->cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -11137,22 +11154,6 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
    {
       VkWriteDescriptorSet write;
       VkDescriptorImageInfo image_info;
-      VkDescriptorSet set;
-      struct vk_buffer_range ubo_range;
-
-      /* A range of its own: other HDR passes in this command buffer,
-       * and frames still in flight, keep the values they were
-       * recorded with. */
-      if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
-               sizeof(ubo_values), &ubo_range))
-         return;
-
-      set = vulkan_descriptor_manager_alloc(
-            vk->context->device,
-            &vk->chain->descriptor_manager);
-
-      if (set == VK_NULL_HANDLE)
-         return;
 
       /* memcpy: the range may be less aligned than the struct. */
       memcpy(ubo_range.data, &ubo_values, sizeof(ubo_values));

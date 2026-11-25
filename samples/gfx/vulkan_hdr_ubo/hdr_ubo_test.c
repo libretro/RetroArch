@@ -135,6 +135,9 @@ static unsigned num_draws;
 static VkImageView set_images[MAX_SETS][3];
 static VkImageView draw_images[MAX_DRAWS][3];
 static bool pass_open;
+/* Passes begun and ended, and the allocation the next pass fails */
+static unsigned passes_begun, passes_ended;
+static bool fail_range, fail_set;
 /* The last pass begun, viewport and scissor */
 static VkFramebuffer began_framebuffer;
 static VkRect2D began_area;
@@ -152,6 +155,7 @@ static void vkCmdBeginRenderPass(VkCommandBuffer cmd,
 {
    (void)cmd; (void)contents;
    pass_open         = true;
+   passes_begun++;
    began_framebuffer = info->framebuffer;
    began_area        = info->renderArea;
 }
@@ -160,6 +164,7 @@ static void vkCmdEndRenderPass(VkCommandBuffer cmd)
 {
    (void)cmd;
    pass_open = false;
+   passes_ended++;
 }
 
 static void vkCmdBindPipeline(VkCommandBuffer cmd, int point, VkPipeline p)
@@ -171,7 +176,7 @@ static VkDescriptorSet vulkan_descriptor_manager_alloc(VkDevice dev,
       int *manager)
 {
    (void)dev; (void)manager;
-   if (sets_used + 1 >= MAX_SETS)
+   if (fail_set || sets_used + 1 >= MAX_SETS)
       return VK_NULL_HANDLE;
    return ++sets_used;
 }
@@ -228,7 +233,7 @@ static bool vulkan_buffer_chain_alloc(const struct context *c,
       struct vk_buffer_chain *bc, size_t size, struct vk_buffer_range *range)
 {
    (void)c; (void)bc;
-   if (size > RANGE_SIZE || ranges_used >= MAX_RANGES)
+   if (fail_range || size > RANGE_SIZE || ranges_used >= MAX_RANGES)
       return false;
    range->buffer = ARENA_BUFFER;
    range->offset = (VkDeviceSize)ranges_used * RANGE_SIZE;
@@ -277,6 +282,8 @@ static void setup(void)
    ranges_used = sets_used = num_draws = 0;
    bound_set   = VK_NULL_HANDLE;
    pass_open   = false;
+   passes_begun = passes_ended = 0;
+   fail_range  = fail_set = false;
    began_framebuffer = VK_NULL_HANDLE;
    memset(&began_area, 0, sizeof(began_area));
    memset(&set_viewport, 0, sizeof(set_viewport));
@@ -463,6 +470,33 @@ static void test_dims_set_render_area(void)
       printf("[pass] %s\n", t);
 }
 
+/* Without its uniform range or its set the pass still begins and ends,
+ * so the target is cleared and the command buffer has no pass left
+ * open, and nothing is drawn */
+static void test_failed_allocation_ends_the_pass(void)
+{
+   static const char t[] = "test_failed_allocation_ends_the_pass";
+   unsigned before = failures;
+   unsigned which;
+
+   for (which = 0; which < 2; which++)
+   {
+      setup();
+      fail_range = (which == 0);
+      fail_set   = (which == 1);
+      vulkan_run_hdr_pipeline(1, 2, &offscreen, backbuffer.framebuffer,
+            ctx.swapchain_dims, &vk, 1, false);
+      expect(t, passes_begun == 1, "the pass begins once", passes_begun);
+      expect(t, passes_ended == 1, "the pass ends once", passes_ended);
+      expect(t, !pass_open, "no pass left open", pass_open);
+      expect(t, began_framebuffer == backbuffer.framebuffer,
+            "the pass begins on the framebuffer given", began_framebuffer);
+      expect(t, num_draws == 0, "nothing drawn", num_draws);
+   }
+   if (failures == before)
+      printf("[pass] %s\n", t);
+}
+
 int main(void)
 {
    test_two_passes_keep_their_values();
@@ -470,5 +504,6 @@ int main(void)
    test_values_restored();
    test_recycled_set_names_only_the_source();
    test_dims_set_render_area();
+   test_failed_allocation_ends_the_pass();
    return failures ? 1 : 0;
 }
