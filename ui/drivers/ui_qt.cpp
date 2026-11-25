@@ -419,7 +419,7 @@ static void qt_dock_state_write(QMainWindow *win, QDockWidget * const *docks,
       /* Only a laid-out dock has a size worth keeping: a tab that is
        * not raised keeps a stale geometry, and its group's size is the
        * raised tab's anyway. Store 0 so the restore does not ask
-       * resizeDocks() for several conflicting sizes of one slot (which
+       * sizeDocks() for several conflicting sizes of one slot (which
        * made the layout drift on every launch). */
       if (!qt_dock_laid_out(dock))
       {
@@ -430,33 +430,8 @@ static void qt_dock_state_write(QMainWindow *win, QDockWidget * const *docks,
          if (!dock->isVisible() && companion_dock_row_parse(s, &old))
             st.dims = old.dims;
       }
-      else if (!tabs.isEmpty())
-      {
-         /* The raised tab: resizeDocks() sizes the whole slot, tab bar
-          * included, while height() is the dock alone - saving the bare
-          * height shrank the group by one tab bar per launch. The dock
-          * tab bars are direct QTabBar children of the main window,
-          * sitting flush against the group (below by default). */
-         QList<QTabBar*> bars = win->findChildren<QTabBar*>();
-         QRect dg             = dock->geometry();
-         for (i = 0; i < bars.count(); i++)
-         {
-            QTabBar *tb = bars.at(i);
-            QRect   tg;
-            if (tb->parentWidget() != win || !tb->isVisible())
-               continue;
-            tg = tb->geometry();
-            if (tg.left() > dg.right() || tg.right() < dg.left())
-               continue;
-            if (     (tg.top() >= dg.bottom() && tg.top() <= dg.bottom() + 4)
-                  || (tg.bottom() <= dg.top() && tg.bottom() >= dg.top() - 4))
-            {
-               VIDEO_SCALE_PUT_H(st.dims,
-                     VIDEO_SCALE_H(st.dims) + tb->height());
-               break;
-            }
-         }
-      }
+      /* The raised tab keeps the dock's own height: sizeDocks() pins
+       * the dock itself, and the slot adds its tab bar around it. */
    }
    companion_dock_row_format(s, len, &st);
 }
@@ -1883,10 +1858,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
    m_statusMessageElapsedTimer.start();
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
-   resizeDocks(QList<QDockWidget*>() << m_searchDock,
+   sizeDocks(QList<QDockWidget*>() << m_searchDock,
          QList<int>() << 1, Qt::Vertical);
-#endif
 }
 
 /* Build the footer toolbar - zoom slider, view-type and thumbnail-
@@ -4131,6 +4104,83 @@ void MainWindow::layoutShortcutButtons()
    }
 }
 
+/* Sizes docks in their slots on every Qt: each dock's own limits are
+ * pinned to the wanted size, so the dock splitter lays the slot out at
+ * it, and released on the next turn of the event loop. A size below the
+ * dock's minimum size hint ends at that minimum, as in a drag. */
+#define QT_DOCK_SAVED_MIN "ra_dock_saved_min"
+#define QT_DOCK_SAVED_MAX "ra_dock_saved_max"
+#define QT_DOCK_SAVED_VERT "ra_dock_saved_vertical"
+
+void MainWindow::sizeDocks(const QList<QDockWidget*> &docks,
+      const QList<int> &sizes, Qt::Orientation orientation)
+{
+   int i;
+   bool pinned   = false;
+   bool vertical = (orientation == Qt::Vertical);
+
+   for (i = 0; i < docks.count() && i < sizes.count(); i++)
+   {
+      QDockWidget *dock = docks.at(i);
+      int size          = sizes.at(i);
+
+      if (!dock || dock->isFloating() || size <= 0)
+         continue;
+      /* Keep the limits from before the first pin when sizes arrive
+       * twice in one turn. */
+      if (!dock->property(QT_DOCK_SAVED_MIN).isValid())
+      {
+         dock->setProperty(QT_DOCK_SAVED_MIN, vertical
+               ? dock->minimumHeight() : dock->minimumWidth());
+         dock->setProperty(QT_DOCK_SAVED_MAX, vertical
+               ? dock->maximumHeight() : dock->maximumWidth());
+         dock->setProperty(QT_DOCK_SAVED_VERT, vertical);
+      }
+      if (vertical)
+      {
+         dock->setMinimumHeight(size);
+         dock->setMaximumHeight(size);
+      }
+      else
+      {
+         dock->setMinimumWidth(size);
+         dock->setMaximumWidth(size);
+      }
+      pinned = true;
+   }
+
+   if (pinned)
+      QTimer::singleShot(0, this, SLOT(releaseDockSizes()));
+}
+
+void MainWindow::releaseDockSizes()
+{
+   int i;
+   QList<QDockWidget*> docks = findChildren<QDockWidget*>();
+
+   for (i = 0; i < docks.count(); i++)
+   {
+      QDockWidget *dock = docks.at(i);
+      QVariant saved_min = dock->property(QT_DOCK_SAVED_MIN);
+
+      if (!saved_min.isValid())
+         continue;
+      if (dock->property(QT_DOCK_SAVED_VERT).toBool())
+      {
+         dock->setMinimumHeight(saved_min.toInt());
+         dock->setMaximumHeight(dock->property(QT_DOCK_SAVED_MAX).toInt());
+      }
+      else
+      {
+         dock->setMinimumWidth(saved_min.toInt());
+         dock->setMaximumWidth(dock->property(QT_DOCK_SAVED_MAX).toInt());
+      }
+      dock->setProperty(QT_DOCK_SAVED_MIN, QVariant());
+      dock->setProperty(QT_DOCK_SAVED_MAX, QVariant());
+      dock->setProperty(QT_DOCK_SAVED_VERT, QVariant());
+   }
+}
+
 void MainWindow::snapShortcutDockHeight()
 {
    int height;
@@ -4152,7 +4202,7 @@ void MainWindow::snapShortcutDockHeight()
     * QWidget::resize() here changes the dock geometry behind the splitter
     * and lets the neighbouring dock overlap its separator/margin. */
    if (qAbs(height - snapped) > 2)
-      resizeDocks(QList<QDockWidget*>() << m_shortcutsDock,
+      sizeDocks(QList<QDockWidget*>() << m_shortcutsDock,
             QList<int>() << snapped, Qt::Vertical);
    layoutShortcutButtons();
 }
@@ -4179,7 +4229,7 @@ void MainWindow::resetShortcutDockSize()
    m_shortcutsDock->updateGeometry();
    targetHeight = m_shortcutsDock->minimumSizeHint().height();
    m_shortcutsDock->setMinimumHeight(targetHeight);
-   resizeDocks(QList<QDockWidget*>() << m_shortcutsDock,
+   sizeDocks(QList<QDockWidget*>() << m_shortcutsDock,
          QList<int>() << targetHeight, Qt::Vertical);
    QTimer::singleShot(0, this, SLOT(finishShortcutDockDefaultSize()));
 }
@@ -6083,12 +6133,10 @@ void MainWindow::restoreDockLayout()
          vsizes << (int)VIDEO_SCALE_H(st[i].dims);
       }
    }
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
    if (!hdocks.isEmpty())
-      resizeDocks(hdocks, hsizes, Qt::Horizontal);
+      sizeDocks(hdocks, hsizes, Qt::Horizontal);
    if (!vdocks.isEmpty())
-      resizeDocks(vdocks, vsizes, Qt::Vertical);
-#endif
+      sizeDocks(vdocks, vsizes, Qt::Vertical);
 
    /* Pass 4: raise the saved tab of each group (after visibility, so
     * a raise is not undone by a later show). */
@@ -7223,10 +7271,8 @@ static void qt_companion_build_core_selection_dock(MainWindow *mainwindow,
 
    mainwindow->splitDockWidget(browserAndPlaylistTabDock, coreSelectionDock, Qt::Vertical);
 
-#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
-   mainwindow->resizeDocks(QList<QDockWidget*>() << coreSelectionDock,
+   mainwindow->sizeDocks(QList<QDockWidget*>() << coreSelectionDock,
          QList<int>() << 1, Qt::Vertical);
-#endif
 }
 
 /* Restore persistent state (limits, geometry, theme, view type) from

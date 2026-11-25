@@ -590,6 +590,9 @@ public slots:
    void snapShortcutDockHeight();
    void resetShortcutDockSize();
    void finishShortcutDockDefaultSize();
+   void sizeDocks(const QList<QDockWidget*> &docks,
+         const QList<int> &sizes, Qt::Orientation orientation);
+   void releaseDockSizes();
    void saveShortcutButtonOrder();
    void relayoutShortcutButtons();
    void repaintShortcutIcons();
