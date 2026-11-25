@@ -1415,6 +1415,18 @@ typedef struct settings
       char desktop_menu_dock_logo[64];
       char desktop_menu_dock_core_info[64];
       char desktop_menu_dock_log[64];
+      /* Stable order of Qt Shortcuts buttons, comma-separated object names. */
+      char desktop_menu_shortcuts_order[1024];
+      /* Pinned Qt Settings shortcuts: category-icon.duplicate.page IDs. */
+      char desktop_menu_shortcuts_pins[2048];
+      /* Qt dock shortcut buttons explicitly removed by the user. */
+      char desktop_menu_shortcuts_hidden_docks[512];
+      /* Qt Shortcuts dock placement, same row format as companion docks. */
+      char desktop_menu_dock_shortcuts[64];
+      /* Qt utility-dialog geometry: x,y,w,h. */
+      char desktop_menu_core_options_window[48];
+      char desktop_menu_shader_params_window[48];
+      char desktop_menu_controls_window[48];
       /* The companion's View Options window: "x,y,w,h", honoured when
        * desktop_menu_save_geometry is on. */
       char desktop_menu_options_window[48];

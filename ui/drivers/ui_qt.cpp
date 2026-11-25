@@ -46,6 +46,7 @@
 #include <QList>
 #include <QInputDialog>
 #include <QMimeData>
+#include <QDrag>
 #include <QProgressDialog>
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -240,7 +241,8 @@ static void qt_dock_configure(QDockWidget *dock,
  * QMainWindow::saveState() byte-array blob the old retroarch_qt.cfg
  * carried: readable, survives docks being added or renamed, and the
  * native companions honour the same rows. */
-#define QT_DOCK_COUNT COMPANION_DOCK_COUNT
+#define QT_DOCK_COUNT (COMPANION_DOCK_COUNT + 1)
+#define QT_DOCK_SHORTCUTS_INDEX COMPANION_DOCK_COUNT
 
 /* The Load Core picker never opens smaller than this (logical px);
  * the same floor the Win32 and Cocoa pickers use. */
@@ -257,12 +259,18 @@ static const char * const qt_dock_object_names[QT_DOCK_COUNT] = {
    "thumbnail3Dock",
    "thumbnail4Dock",
    "coreInfoDock",
-   "logDock"
+   "logDock",
+   "shortcutsDock"
 };
 
 /* settings_t row for dock @i. */
 static char *qt_dock_row(settings_t *settings, int i, size_t *len)
 {
+   if (i == QT_DOCK_SHORTCUTS_INDEX)
+   {
+      if (len) *len = sizeof(settings->arrays.desktop_menu_dock_shortcuts);
+      return settings->arrays.desktop_menu_dock_shortcuts;
+   }
    return companion_dock_row(settings, (enum companion_dock_id)i, len);
 }
 
@@ -293,7 +301,9 @@ static Qt::DockWidgetArea qt_dock_area_from_core(enum companion_dock_area area)
 static int qt_dock_index_of(const char *key)
 {
    int i;
-   for (i = 0; i < QT_DOCK_COUNT; i++)
+   if (string_is_equal(key, "shortcuts"))
+      return QT_DOCK_SHORTCUTS_INDEX;
+   for (i = 0; i < COMPANION_DOCK_COUNT; i++)
       if (string_is_equal(key, companion_dock_key((enum companion_dock_id)i)))
          return i;
    return -1;
@@ -490,6 +500,9 @@ static const QString qt_theme_default_stylesheet = QString(R"(
 )");
 
 static const QString qt_theme_dark_stylesheet = QString(R"(
+   *{
+      outline: none;
+   }
    QWidget {
       color:white;
       background-color:rgb(53,53,53);
@@ -1712,6 +1725,20 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_searchLineEdit(new QLineEdit(this))
    ,m_searchDebounceTimer(new QTimer(this))
    ,m_searchDock(new QDockWidget(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH), this))
+   ,m_shortcutsDock(new QDockWidget(QStringLiteral("Shortcuts"), this))
+   ,m_shortcutsWidget(new QWidget(this))
+   ,m_shortcutsScrollArea(new QScrollArea(this))
+   ,m_shortcutsContainer(new QWidget(this))
+   ,m_shortcutsScrollLeft(new QToolButton(this))
+   ,m_shortcutsScrollRight(new QToolButton(this))
+   ,m_shortcutsContainerLayout(new QHBoxLayout())
+   ,m_shortcutsLayout(new QGridLayout())
+   ,m_shortcutButtons()
+   ,m_dockShortcutButtons()
+   ,m_pinnedShortcutIds()
+   ,m_removedDockShortcutIds()
+   ,m_shortcutsDefaultOneRow(false)
+   ,m_shortcutDragStart()
    ,m_playlistFiles()
    ,m_launchWithComboBox(new QComboBox(this))
    ,m_startCorePushButton(new QToolButton(this))
@@ -2099,12 +2126,22 @@ void MainWindow::relistFileSystemFolder(const QString &path)
    m_dirModel->fetchMore(m_dirModel->index(path));
 }
 
+/* Load a shortcut icon through the same monochrome, palette-coloured
+ * category-icon path used by the Settings list. */
+static QIcon qt_shortcuts_load_icon(const QString &path)
+{
+   QString iconName = QFileInfo(path).completeBaseName();
+   return qt_settings_category_icon(iconName);
+}
+
 /* Build the search / core-info / log dock widgets and their
  * contents, register them with the main window, and hide the log
  * dock so it stays out of the way until the user opens it. Pulled
  * out of the constructor for readability. */
 void MainWindow::setupDockWidgets()
 {
+   settings_t *settings = config_get_ptr();
+   const char *path_dir_assets = settings->paths.directory_assets;
    QToolButton *searchResetButton = new QToolButton(m_searchWidget);
    qt_button_set_action_label(searchResetButton,
          MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR);
@@ -2143,6 +2180,235 @@ void MainWindow::setupDockWidgets()
    /* Hide the log by default; qt_dock_layout_restore() shows it again
     * when the user saved their dock positions with it visible. */
    m_logDock->hide();
+
+   /* Shortcuts shares the left dock column with Search/Core. Split it
+    * vertically with Search so its contents never claim a new column
+    * from the central workspace. */
+   m_shortcutsDock->setObjectName("shortcutsDock");
+   m_shortcutsDock->setProperty("default_area", Qt::LeftDockWidgetArea);
+   m_shortcutsDock->setProperty("menu_text", QStringLiteral("Shortcuts"));
+   /* No vertical margins: one 36 px button row should be as compact as
+    * the existing Search dock. Keep only the small horizontal inset. */
+   m_shortcutsLayout->setContentsMargins(2, 2, 2, 2);
+   m_shortcutsLayout->setSpacing(2);
+   m_shortcutsWidget->setLayout(m_shortcutsLayout);
+   m_shortcutsScrollArea->setWidget(m_shortcutsWidget);
+   m_shortcutsScrollArea->setWidgetResizable(false);
+   m_shortcutsScrollArea->setSizeAdjustPolicy(QAbstractScrollArea::AdjustIgnored);
+   m_shortcutsScrollArea->setMinimumHeight(40);
+   m_shortcutsScrollArea->setFrameShape(QFrame::NoFrame);
+   m_shortcutsScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+   m_shortcutsScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+   m_shortcutsScrollArea->setMinimumWidth(0);
+   m_shortcutsScrollArea->setSizePolicy(QSizePolicy::Ignored,
+         QSizePolicy::Preferred);
+   m_shortcutsScrollLeft->setArrowType(Qt::LeftArrow);
+   m_shortcutsScrollRight->setArrowType(Qt::RightArrow);
+   /* Match the complete one-row content height: 36 px buttons plus the
+    * 2 px top and bottom layout margins. */
+   m_shortcutsScrollLeft->setFixedSize(16, 40);
+   m_shortcutsScrollRight->setFixedSize(16, 40);
+   m_shortcutsScrollLeft->setToolTip(tr("Scroll shortcuts left"));
+   m_shortcutsScrollRight->setToolTip(tr("Scroll shortcuts right"));
+   m_shortcutsScrollLeft->setAutoRaise(true);
+   m_shortcutsScrollRight->setAutoRaise(true);
+   m_shortcutsScrollLeft->setFocusPolicy(Qt::NoFocus);
+   m_shortcutsScrollRight->setFocusPolicy(Qt::NoFocus);
+   m_shortcutsScrollLeft->hide();
+   m_shortcutsScrollRight->hide();
+   m_shortcutsContainerLayout->setContentsMargins(0, 0, 0, 0);
+   m_shortcutsContainerLayout->setSpacing(0);
+   m_shortcutsContainerLayout->addWidget(m_shortcutsScrollLeft);
+   m_shortcutsContainerLayout->addWidget(m_shortcutsScrollArea, 1);
+   m_shortcutsContainerLayout->addWidget(m_shortcutsScrollRight);
+   m_shortcutsContainer->setLayout(m_shortcutsContainerLayout);
+   m_shortcutsContainer->setMinimumHeight(40);
+   m_shortcutsDock->setMinimumWidth(0);
+   m_shortcutsDock->setWidget(m_shortcutsContainer);
+   /* Allow restoring removed dock shortcuts from unused space as well as
+    * from an existing shortcut button. The viewport is a separate widget
+    * owned by QScrollArea, so it needs its own context-menu policy. */
+   m_shortcutsContainer->setContextMenuPolicy(Qt::CustomContextMenu);
+   m_shortcutsScrollArea->viewport()->setContextMenuPolicy(Qt::CustomContextMenu);
+   m_shortcutsWidget->setContextMenuPolicy(Qt::CustomContextMenu);
+   connect(m_shortcutsContainer, SIGNAL(customContextMenuRequested(QPoint)), this,
+         SLOT(onDockShortcutContextMenu(QPoint)));
+   connect(m_shortcutsScrollArea->viewport(), SIGNAL(customContextMenuRequested(QPoint)), this,
+         SLOT(onDockShortcutContextMenu(QPoint)));
+   connect(m_shortcutsWidget, SIGNAL(customContextMenuRequested(QPoint)), this,
+         SLOT(onDockShortcutContextMenu(QPoint)));
+   connect(m_shortcutsScrollLeft, SIGNAL(clicked()), this, SLOT(onShortcutScrollLeft()));
+   connect(m_shortcutsScrollRight, SIGNAL(clicked()), this, SLOT(onShortcutScrollRight()));
+   /* A row is 36 px buttons, 2 px inter-button spacing and 2 px top/bottom
+    * margins. The dock is sized after the complete dock layout is built. */
+   m_shortcutsDock->setMinimumHeight(0);
+   qt_dock_add_to(this, m_shortcutsDock);
+   splitDockWidget(m_searchDock, m_shortcutsDock, Qt::Vertical);
+
+   /* Window actions are always available. Dock buttons are toggled by
+    * refreshShortcutButtons() as their corresponding docks are shown. */
+   {
+      struct shortcut_action_def
+      {
+         const char *label;
+         const char *icon;
+         const char *action;
+      };
+      static const shortcut_action_def actions[] = {
+         { "Core Options", "core-options.png", "core-options" },
+         { "Controls",     "core-input-remapping-options.png", "controls" },
+         { "Shaders",      "core-shader-options.png", "shaders" }
+      };
+      int i;
+      for (i = 0; i < (int)(sizeof(actions) / sizeof(actions[0])); i++)
+      {
+         QToolButton *button = new QToolButton(m_shortcutsWidget);
+         button->setObjectName(QStringLiteral("shortcut_") + QString::fromLatin1(actions[i].action));
+         button->setToolButtonStyle(Qt::ToolButtonIconOnly);
+         button->setAutoRaise(true);
+         button->setFocusPolicy(Qt::NoFocus);
+         button->setIcon(qt_shortcuts_load_icon(QString(path_dir_assets) + ICON_PATH + actions[i].icon));
+         button->setIconSize(QSize(32, 32));
+         button->setFixedSize(36, 36);
+         button->setToolTip(QString::fromUtf8(actions[i].label));
+         button->setProperty("shortcut_action", QString::fromLatin1(actions[i].action));
+         button->setContextMenuPolicy(Qt::CustomContextMenu);
+         connect(button, SIGNAL(customContextMenuRequested(QPoint)), this,
+               SLOT(onDockShortcutContextMenu(QPoint)));
+         button->setAcceptDrops(true);
+         button->installEventFilter(this);
+         m_shortcutButtons.append(button);
+         connect(button, SIGNAL(clicked()), this, SLOT(onShortcutButtonClicked()));
+      }
+   }
+
+   /* Dock buttons are created in the same order as their saved slots.
+    * Hidden buttons retain their slot when docks are shown again. */
+   {
+      struct dock_shortcut_def
+      {
+         const char *dock;
+         const char *label;
+         const char *icon;
+      };
+      static const dock_shortcut_def docks[] = {
+         { "browserAndPlaylistTabDock", "Content Browser", "menu_ui.png" },
+         { "searchDock",                "Search",          "explore-content.png" },
+         { "coreSelectionDock",         "Core",            "menu_help.png" },
+         { "thumbnail3Dock",            "Screenshot",      "image.png" },
+         { "thumbnailDock",             "Boxart",          "image.png" },
+         { "thumbnail2Dock",            "Title Screen",    "image.png" },
+         { "thumbnail4Dock",            "Logo",            "image.png" },
+         { "coreInfoDock",              "Core Info",       "core-infos.png" },
+         { "logDock",                   "Log",             "menu_log.png" }
+      };
+      int i;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+      m_removedDockShortcutIds = QString::fromUtf8(
+            config_get_ptr()->arrays.desktop_menu_shortcuts_hidden_docks)
+         .split(QLatin1Char(','), Qt::SkipEmptyParts);
+#else
+      m_removedDockShortcutIds = QString::fromUtf8(
+            config_get_ptr()->arrays.desktop_menu_shortcuts_hidden_docks)
+         .split(QLatin1Char(','), QString::SkipEmptyParts);
+#endif
+      for (i = 0; i < (int)(sizeof(docks) / sizeof(docks[0])); i++)
+      {
+         if (m_removedDockShortcutIds.contains(QString::fromLatin1(docks[i].dock)))
+            continue;
+         QToolButton *button = new QToolButton(m_shortcutsWidget);
+         button->setObjectName(QStringLiteral("shortcut_dock_") + QString::fromLatin1(docks[i].dock));
+         button->setToolButtonStyle(Qt::ToolButtonIconOnly);
+         button->setAutoRaise(true);
+         button->setFocusPolicy(Qt::NoFocus);
+         button->setIcon(qt_shortcuts_load_icon(QString(path_dir_assets) + ICON_PATH + docks[i].icon));
+         button->setIconSize(QSize(32, 32));
+         button->setFixedSize(36, 36);
+         button->setToolTip(QString::fromUtf8(docks[i].label));
+         button->setProperty("target_dock", QString::fromLatin1(docks[i].dock));
+         button->setContextMenuPolicy(Qt::CustomContextMenu);
+         connect(button, SIGNAL(customContextMenuRequested(QPoint)), this,
+               SLOT(onDockShortcutContextMenu(QPoint)));
+         button->setAcceptDrops(true);
+         button->installEventFilter(this);
+         m_shortcutButtons.append(button);
+         m_dockShortcutButtons.append(button);
+         connect(button, SIGNAL(clicked()), this, SLOT(onShortcutButtonClicked()));
+      }
+   }
+   /* Restore pinned Settings shortcuts before applying the complete button
+    * order, so their saved positions participate in the same ordering. */
+#ifdef HAVE_MENU
+   {
+      QString pins = QString::fromUtf8(
+            config_get_ptr()->arrays.desktop_menu_shortcuts_pins);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+      m_pinnedShortcutIds = pins.split(QLatin1Char(','), Qt::SkipEmptyParts);
+#else
+      m_pinnedShortcutIds = pins.split(QLatin1Char(','), QString::SkipEmptyParts);
+#endif
+      for (int i = 0; i < m_pinnedShortcutIds.count(); i++)
+      {
+         const QString &id = m_pinnedShortcutIds.at(i);
+         QString label = m_viewOptionsDialog->shortcutLabel(id);
+         if (!label.isEmpty())
+         {
+            QToolButton *button = new QToolButton(m_shortcutsWidget);
+            QString objectId = id;
+            objectId.replace(QLatin1Char('.'), QLatin1Char('_'));
+            button->setObjectName(QStringLiteral("shortcut_settings_") + objectId);
+            button->setToolButtonStyle(Qt::ToolButtonIconOnly);
+            button->setAutoRaise(true);
+            button->setFocusPolicy(Qt::NoFocus);
+            button->setIcon(m_viewOptionsDialog->shortcutIcon(id));
+            button->setIconSize(QSize(32, 32));
+            button->setFixedSize(36, 36);
+            button->setToolTip(label);
+            button->setProperty("settings_shortcut_id", id);
+            button->setContextMenuPolicy(Qt::CustomContextMenu);
+            button->setAcceptDrops(true);
+            button->installEventFilter(this);
+            m_shortcutButtons.append(button);
+            connect(button, SIGNAL(clicked()), this, SLOT(onShortcutButtonClicked()));
+            connect(button, SIGNAL(customContextMenuRequested(QPoint)), this,
+                  SLOT(onSettingsShortcutContextMenu(QPoint)));
+         }
+      }
+   }
+#endif
+   /* Restore the user's complete order, including buttons currently hidden
+    * because their docks are open. Unknown/new buttons are appended. */
+   {
+      QString saved = QString::fromUtf8(
+            config_get_ptr()->arrays.desktop_menu_shortcuts_order);
+      if (!saved.isEmpty())
+      {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+         QStringList names = saved.split(QLatin1Char(','), Qt::SkipEmptyParts);
+#else
+         QStringList names = saved.split(QLatin1Char(','), QString::SkipEmptyParts);
+#endif
+         QList<QToolButton*> ordered;
+         int i;
+         for (i = 0; i < names.count(); i++)
+         {
+            int j;
+            for (j = 0; j < m_shortcutButtons.count(); j++)
+               if (m_shortcutButtons.at(j)->objectName() == names.at(i))
+               {
+                  if (!ordered.contains(m_shortcutButtons.at(j)))
+                     ordered.append(m_shortcutButtons.at(j));
+                  break;
+               }
+         }
+         for (i = 0; i < m_shortcutButtons.count(); i++)
+            if (!ordered.contains(m_shortcutButtons.at(i)))
+               ordered.append(m_shortcutButtons.at(i));
+         m_shortcutButtons = ordered;
+      }
+   }
+   layoutShortcutButtons();
+   refreshShortcutButtons();
 }
 
 /* Wire up signal/slot connections for the main window's child
@@ -2154,6 +2420,10 @@ void MainWindow::setupSignalConnections()
    settings_t *settings              = config_get_ptr();
    const char *path_dir_menu_content = settings->paths.directory_menu_content;
 
+#ifdef HAVE_MENU
+   connect(m_viewOptionsDialog, SIGNAL(pinShortcutRequested(QString)), this,
+         SLOT(onPinSettingsShortcut(QString)));
+#endif
    connect(m_searchLineEdit, SIGNAL(returnPressed()), this,
          SLOT(onSearchEnterPressed()));
    connect(m_searchLineEdit, SIGNAL(textEdited(const QString&)), this,
@@ -3041,15 +3311,27 @@ void MainWindow::setTheme(Theme theme)
    {
       case THEME_SYSTEM_DEFAULT:
          if (qt_system_uses_dark_theme())
+         {
             qApp->setStyleSheet(qt_theme_dark_stylesheet.arg(
                      qt_highlight_color()));
+            QPalette p;
+            p = qApp->palette();
+            p.setColor(QPalette::Highlight, QColor(255,255,255));
+            qApp->setPalette(p);
+         }
          else
             qApp->setStyleSheet(qt_theme_default_stylesheet.arg(
                      qt_highlight_color()));
          break;
       case THEME_DARK:
+      {
          qApp->setStyleSheet(qt_theme_dark_stylesheet.arg(
                   qt_highlight_color()));
+         QPalette p;
+         p = qApp->palette();
+         p.setColor(QPalette::Highlight, QColor(255,255,255));
+         qApp->setPalette(p);
+      }
          break;
       case THEME_CUSTOM:
          qApp->setStyleSheet(m_customThemeString);
@@ -3807,6 +4089,451 @@ void MainWindow::applySearch()
       case BROWSER_TYPE_SETTINGS:
          break;
    }
+}
+
+void MainWindow::layoutShortcutButtons()
+{
+   QList<QToolButton*> buttons = m_shortcutButtons;
+   const int buttonSize = 36;
+   const int spacing = 2;
+   const int buttonStep = buttonSize + spacing;
+   const int margins = 4;
+   int scrollAreaHeight = m_shortcutsScrollArea->height();
+   int availableRows = m_shortcutsDefaultOneRow ? 1 : qMax(1,
+         (scrollAreaHeight - margins + spacing) / buttonStep);
+   int visibleCount = 0;
+   int columns;
+   int rows;
+   int i;
+
+   while (QLayoutItem *item = m_shortcutsLayout->takeAt(0))
+      delete item;
+
+   for (i = 0; i < buttons.count(); i++)
+      if (!buttons.at(i)->isHidden())
+         visibleCount++;
+
+   /* A one-row dock keeps all buttons on that row and scrolls horizontally.
+    * Additional rows are used only when the dock is tall enough for them. */
+   if (availableRows == 1)
+      columns = qMax(1, visibleCount);
+   else
+      columns = qMax(1, (m_shortcutsScrollArea->viewport()->width() - margins)
+            / buttonStep);
+
+   rows = qMax(1, qMin(availableRows,
+         (visibleCount + columns - 1) / columns));
+
+   visibleCount = 0;
+   for (i = 0; i < buttons.count(); i++)
+   {
+      QToolButton *button = buttons.at(i);
+      if (!button->isHidden())
+      {
+         int row = visibleCount / columns;
+         int column = visibleCount % columns;
+         m_shortcutsLayout->addWidget(button, row, column);
+         visibleCount++;
+      }
+   }
+
+   /* QGridLayout has no trailing spacing after its last item. Account for
+    * that explicitly so a dock saved at the exact one-row width does not
+    * acquire a spurious 2 px overflow (and therefore two scroll arrows). */
+   m_shortcutsWidget->setFixedSize(
+         qMax(1, qMin(columns, qMax(1, visibleCount))) * buttonSize
+            + qMax(0, qMin(columns, qMax(1, visibleCount)) - 1) * spacing
+            + margins,
+         rows * buttonSize + qMax(0, rows - 1) * spacing + margins);
+
+   /* Decide overflow against the full dock content width, not the scroll
+    * area's current viewport. The latter changes when the arrows appear and
+    * can make the decision depend on the order of startup layout events. */
+   {
+      bool overflow = m_shortcutsWidget->width()
+         > m_shortcutsContainer->contentsRect().width();
+      m_shortcutsScrollLeft->setVisible(overflow);
+      m_shortcutsScrollRight->setVisible(overflow);
+      m_shortcutsContainerLayout->activate();
+      if (!overflow)
+         m_shortcutsScrollArea->horizontalScrollBar()->setValue(0);
+      m_shortcutsScrollLeft->setEnabled(
+            m_shortcutsScrollArea->horizontalScrollBar()->value() > 0);
+      m_shortcutsScrollRight->setEnabled(
+            m_shortcutsScrollArea->horizontalScrollBar()->value()
+            < m_shortcutsScrollArea->horizontalScrollBar()->maximum());
+      m_shortcutsDock->setMinimumHeight(0);
+   }
+}
+
+void MainWindow::snapShortcutDockHeight()
+{
+   int height;
+   int scrollAreaHeight;
+   int chromeHeight;
+   int rows;
+   int snapped;
+
+   if (!m_shortcutsDock || !m_shortcutsScrollArea
+         || m_shortcutsDock->isFloating())
+      return;
+
+   height = m_shortcutsDock->height();
+   scrollAreaHeight = m_shortcutsScrollArea->height();
+   chromeHeight = height - scrollAreaHeight;
+   rows = qMax(1, qRound((scrollAreaHeight - 2) / 38.0));
+   snapped = chromeHeight + rows * 38 + 2;
+   /* Let QMainWindow's dock splitter perform the resize. Calling
+    * QWidget::resize() here changes the dock geometry behind the splitter
+    * and lets the neighbouring dock overlap its separator/margin. */
+   if (qAbs(height - snapped) > 2)
+      resizeDocks(QList<QDockWidget*>() << m_shortcutsDock,
+            QList<int>() << snapped, Qt::Vertical);
+   layoutShortcutButtons();
+}
+
+void MainWindow::resetShortcutDockSize()
+{
+   int targetHeight;
+
+   if (!m_shortcutsDock || m_shortcutsDock->isFloating())
+      return;
+
+   /* restoreDockLayout() runs before the main window is shown. Wait until
+    * the dock splitter has its real on-screen geometry before applying the
+    * default, just as the other docks derive their default from
+    * minimumSizeHint() rather than from a pre-show, splitter-assigned size. */
+   if (!m_hasBeenShown)
+   {
+      QTimer::singleShot(0, this, SLOT(resetShortcutDockSize()));
+      return;
+   }
+
+   m_shortcutsDefaultOneRow = true;
+   layoutShortcutButtons();
+   m_shortcutsDock->updateGeometry();
+   targetHeight = m_shortcutsDock->minimumSizeHint().height();
+   m_shortcutsDock->setMinimumHeight(targetHeight);
+   resizeDocks(QList<QDockWidget*>() << m_shortcutsDock,
+         QList<int>() << targetHeight, Qt::Vertical);
+   QTimer::singleShot(0, this, SLOT(finishShortcutDockDefaultSize()));
+}
+
+void MainWindow::finishShortcutDockDefaultSize()
+{
+   m_shortcutsDefaultOneRow = false;
+   layoutShortcutButtons();
+}
+
+void MainWindow::onShortcutScrollLeft()
+{
+   QScrollBar *bar = m_shortcutsScrollArea->horizontalScrollBar();
+   bar->setValue(bar->value() - m_shortcutsScrollArea->viewport()->width() / 2);
+   layoutShortcutButtons();
+}
+
+void MainWindow::onShortcutScrollRight()
+{
+   QScrollBar *bar = m_shortcutsScrollArea->horizontalScrollBar();
+   bar->setValue(bar->value() + m_shortcutsScrollArea->viewport()->width() / 2);
+   layoutShortcutButtons();
+}
+
+void MainWindow::onDockShortcutContextMenu(const QPoint &pos)
+{
+   struct dock_shortcut_def
+   {
+      const char *dock;
+      const char *label;
+      const char *icon;
+   };
+   static const dock_shortcut_def docks[] = {
+      { "browserAndPlaylistTabDock", "Content Browser", "menu_ui.png" },
+      { "searchDock",                "Search",          "explore-content.png" },
+      { "coreSelectionDock",         "Core",            "menu_help.png" },
+      { "thumbnail3Dock",            "Screenshot",      "image.png" },
+      { "thumbnailDock",             "Boxart",          "image.png" },
+      { "thumbnail2Dock",            "Title Screen",    "image.png" },
+      { "thumbnail4Dock",            "Logo",            "image.png" },
+      { "coreInfoDock",              "Core Info",       "core-infos.png" },
+      { "logDock",                   "Log",             "menu_log.png" }
+   };
+   QToolButton *button = qobject_cast<QToolButton*>(sender());
+   QWidget *contextWidget = qobject_cast<QWidget*>(sender());
+   QMenu menu(this);
+   QAction *removeAction = NULL;
+   QAction *selected;
+   QHash<QAction*, QString> restoreActions;
+   QString dockId;
+   int i;
+
+   if (!contextWidget)
+      return;
+   dockId = button ? button->property("target_dock").toString() : QString();
+   if (!dockId.isEmpty())
+      removeAction = menu.addAction(tr("Remove from Shortcuts"));
+   if (!m_removedDockShortcutIds.isEmpty())
+   {
+      menu.addSeparator();
+      for (i = 0; i < m_removedDockShortcutIds.count(); i++)
+      {
+         const QString &hiddenId = m_removedDockShortcutIds.at(i);
+         int j;
+         for (j = 0; j < (int)(sizeof(docks) / sizeof(docks[0])); j++)
+            if (hiddenId == QLatin1String(docks[j].dock))
+            {
+               QAction *action = menu.addAction(tr("Show %1").arg(
+                        QString::fromLatin1(docks[j].label)));
+               restoreActions.insert(action, hiddenId);
+               break;
+            }
+      }
+   }
+
+   selected = menu.exec(contextWidget->mapToGlobal(pos));
+   if (removeAction && selected == removeAction)
+   {
+      if (!m_removedDockShortcutIds.contains(dockId))
+         m_removedDockShortcutIds.append(dockId);
+      strlcpy(config_get_ptr()->arrays.desktop_menu_shortcuts_hidden_docks,
+            m_removedDockShortcutIds.join(QLatin1Char(',')).toUtf8().constData(),
+            sizeof(config_get_ptr()->arrays.desktop_menu_shortcuts_hidden_docks));
+      m_dockShortcutButtons.removeAll(button);
+      m_shortcutButtons.removeAll(button);
+      button->deleteLater();
+      layoutShortcutButtons();
+      saveShortcutButtonOrder();
+      schedulePersistSettings();
+   }
+   else if (restoreActions.contains(selected))
+   {
+      QString restoreId = restoreActions.value(selected);
+      for (i = 0; i < (int)(sizeof(docks) / sizeof(docks[0])); i++)
+         if (restoreId == QLatin1String(docks[i].dock))
+         {
+            settings_t *settings = config_get_ptr();
+            QToolButton *restoreButton = new QToolButton(m_shortcutsWidget);
+            QString iconPath = QString(settings->paths.directory_assets)
+               + ICON_PATH + QString::fromLatin1(docks[i].icon);
+            m_removedDockShortcutIds.removeAll(restoreId);
+            strlcpy(settings->arrays.desktop_menu_shortcuts_hidden_docks,
+                  m_removedDockShortcutIds.join(QLatin1Char(',')).toUtf8().constData(),
+                  sizeof(settings->arrays.desktop_menu_shortcuts_hidden_docks));
+            restoreButton->setObjectName(QStringLiteral("shortcut_dock_") + restoreId);
+            restoreButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+            restoreButton->setAutoRaise(true);
+            restoreButton->setFocusPolicy(Qt::NoFocus);
+            restoreButton->setIcon(qt_shortcuts_load_icon(iconPath));
+            restoreButton->setIconSize(QSize(32, 32));
+            restoreButton->setFixedSize(36, 36);
+            restoreButton->setToolTip(QString::fromLatin1(docks[i].label));
+            restoreButton->setProperty("target_dock", restoreId);
+            restoreButton->setContextMenuPolicy(Qt::CustomContextMenu);
+            connect(restoreButton, SIGNAL(customContextMenuRequested(QPoint)), this,
+                  SLOT(onDockShortcutContextMenu(QPoint)));
+            restoreButton->setAcceptDrops(true);
+            restoreButton->installEventFilter(this);
+            m_shortcutButtons.append(restoreButton);
+            m_dockShortcutButtons.append(restoreButton);
+            connect(restoreButton, SIGNAL(clicked()), this, SLOT(onShortcutButtonClicked()));
+            /* New child widgets of an already-visible dock must be explicitly
+             * shown; otherwise they remain hidden until a later dock refresh. */
+            restoreButton->show();
+            refreshShortcutButtons();
+            layoutShortcutButtons();
+            /* Refresh after Qt has processed the newly inserted button so
+             * the grid, scroll range and overflow arrows are recalculated. */
+            m_shortcutsLayout->invalidate();
+            m_shortcutsLayout->activate();
+            m_shortcutsWidget->updateGeometry();
+            m_shortcutsScrollArea->updateGeometry();
+            m_shortcutsDock->updateGeometry();
+            QTimer::singleShot(0, this, SLOT(refreshShortcutButtons()));
+            saveShortcutButtonOrder();
+            schedulePersistSettings();
+            break;
+         }
+   }
+}
+
+void MainWindow::saveShortcutButtonOrder()
+{
+   QStringList names;
+   int i;
+   for (i = 0; i < m_shortcutButtons.count(); i++)
+      names.append(m_shortcutButtons.at(i)->objectName());
+   strlcpy(config_get_ptr()->arrays.desktop_menu_shortcuts_order,
+         names.join(QLatin1Char(',')).toUtf8().constData(),
+         sizeof(config_get_ptr()->arrays.desktop_menu_shortcuts_order));
+   schedulePersistSettings();
+}
+
+#ifdef HAVE_MENU
+void MainWindow::onPinSettingsShortcut(const QString &id)
+{
+   QString label;
+   QToolButton *button;
+   QString objectId;
+
+   if (id.isEmpty() || m_pinnedShortcutIds.contains(id))
+      return;
+
+   label = m_viewOptionsDialog->shortcutLabel(id);
+   if (label.isEmpty())
+      return;
+
+   m_pinnedShortcutIds.append(id);
+   strlcpy(config_get_ptr()->arrays.desktop_menu_shortcuts_pins,
+         m_pinnedShortcutIds.join(QLatin1Char(',')).toUtf8().constData(),
+         sizeof(config_get_ptr()->arrays.desktop_menu_shortcuts_pins));
+
+   objectId = id;
+   objectId.replace(QLatin1Char('.'), QLatin1Char('_'));
+   button = new QToolButton(m_shortcutsWidget);
+   button->setObjectName(QStringLiteral("shortcut_settings_") + objectId);
+   button->setToolButtonStyle(Qt::ToolButtonIconOnly);
+   button->setAutoRaise(true);
+   button->setFocusPolicy(Qt::NoFocus);
+   button->setIcon(m_viewOptionsDialog->shortcutIcon(id));
+   button->setIconSize(QSize(32, 32));
+   button->setFixedSize(36, 36);
+   button->setToolTip(label);
+   button->setProperty("settings_shortcut_id", id);
+   button->setContextMenuPolicy(Qt::CustomContextMenu);
+   button->setAcceptDrops(true);
+   button->installEventFilter(this);
+   m_shortcutButtons.append(button);
+   connect(button, SIGNAL(clicked()), this, SLOT(onShortcutButtonClicked()));
+   connect(button, SIGNAL(customContextMenuRequested(QPoint)), this,
+         SLOT(onSettingsShortcutContextMenu(QPoint)));
+   button->show();
+   layoutShortcutButtons();
+   m_shortcutsLayout->invalidate();
+   m_shortcutsLayout->activate();
+   m_shortcutsWidget->updateGeometry();
+   m_shortcutsScrollArea->updateGeometry();
+   m_shortcutsDock->updateGeometry();
+   refreshShortcutButtons();
+   m_shortcutsDock->update();
+   QTimer::singleShot(0, this, SLOT(layoutShortcutButtons()));
+   saveShortcutButtonOrder();
+   schedulePersistSettings();
+}
+
+void MainWindow::onSettingsShortcutContextMenu(const QPoint &pos)
+{
+   QToolButton *button = qobject_cast<QToolButton*>(sender());
+   QMenu menu(this);
+   QAction *removeAction;
+   QString id;
+
+   if (!button)
+      return;
+   id = button->property("settings_shortcut_id").toString();
+   if (id.isEmpty())
+      return;
+
+   removeAction = menu.addAction(tr("Remove from Shortcuts"));
+   if (menu.exec(button->mapToGlobal(pos)) == removeAction)
+   {
+      m_pinnedShortcutIds.removeAll(id);
+      strlcpy(config_get_ptr()->arrays.desktop_menu_shortcuts_pins,
+            m_pinnedShortcutIds.join(QLatin1Char(',')).toUtf8().constData(),
+            sizeof(config_get_ptr()->arrays.desktop_menu_shortcuts_pins));
+      m_shortcutButtons.removeAll(button);
+      button->deleteLater();
+      layoutShortcutButtons();
+      saveShortcutButtonOrder();
+      schedulePersistSettings();
+   }
+}
+#endif
+
+void MainWindow::refreshShortcutButtons()
+{
+   int i;
+   for (i = 0; i < m_dockShortcutButtons.count(); i++)
+   {
+      QToolButton *button = m_dockShortcutButtons.at(i);
+      QDockWidget *dock = findChild<QDockWidget*>(
+            button->property("target_dock").toString());
+      bool displayed = dock && !dock->isHidden();
+      if (dock && !displayed)
+      {
+         /* Qt reports an inactive tab as invisible. Some Qt versions also
+          * mark that page hidden, so check whether its tab still exists in
+          * the main window's dock tab bar before offering a reopen button. */
+         QList<QDockWidget*> tabified = tabifiedDockWidgets(dock);
+         if (!tabified.isEmpty())
+         {
+            QList<QTabBar*> bars = findChildren<QTabBar*>();
+            int barIndex;
+            for (barIndex = 0; !displayed && barIndex < bars.count(); barIndex++)
+            {
+               QTabBar *bar = bars.at(barIndex);
+               int tabIndex;
+               if (bar->parentWidget() != this)
+                  continue;
+               for (tabIndex = 0; tabIndex < bar->count(); tabIndex++)
+                  if (bar->tabText(tabIndex) == dock->windowTitle())
+                  {
+                     displayed = true;
+                     break;
+                  }
+            }
+         }
+      }
+      button->setVisible(dock && !displayed);
+   }
+   layoutShortcutButtons();
+}
+
+void MainWindow::onShortcutButtonClicked()
+{
+   QToolButton *button = qobject_cast<QToolButton*>(sender());
+   QString action;
+   QString dockName;
+   QDockWidget *dock = NULL;
+
+   if (!button)
+      return;
+
+   action   = button->property("shortcut_action").toString();
+   dockName = button->property("target_dock").toString();
+
+   if (action == QLatin1String("core-options"))
+      onCoreOptionsClicked();
+   else if (action == QLatin1String("controls"))
+      onControlsClicked();
+   else if (action == QLatin1String("shaders"))
+      onShaderParamsClicked();
+#ifdef HAVE_MENU
+   else if (!button->property("settings_shortcut_id").toString().isEmpty())
+   {
+      int i;
+      for (i = 0; i < m_browserAndPlaylistTabWidget->count(); i++)
+         if (m_browserAndPlaylistTabWidget->tabText(i) ==
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SETTINGS))
+         {
+            m_browserAndPlaylistTabWidget->setCurrentIndex(i);
+            break;
+         }
+      m_viewOptionsDialog->activateShortcut(
+            button->property("settings_shortcut_id").toString());
+   }
+#endif
+   else if (!dockName.isEmpty())
+   {
+      dock = findChild<QDockWidget*>(dockName);
+      if (dock)
+      {
+         qt_dock_add_to(this, dock);
+         dock->setFloating(false);
+         dock->show();
+         dock->raise();
+      }
+   }
+   refreshShortcutButtons();
 }
 
 void MainWindow::onViewClosedDocksAboutToShow()
@@ -5465,8 +6192,15 @@ void MainWindow::restoreDockLayout()
       }
       if (VIDEO_SCALE_H(st[i].dims) > 0)
       {
+         int dockHeight = (int)VIDEO_SCALE_H(st[i].dims);
+         /* Earlier builds persisted accidental sizes: 104 px from rounding
+          * one row up to two, and very large values from inheriting the full
+          * left-column height. Normalize those legacy values. */
+         if (i == QT_DOCK_SHORTCUTS_INDEX
+               && (dockHeight == 104 || dockHeight > 200))
+            dockHeight = 60;
          vdocks << docks[i];
-         vsizes << (int)VIDEO_SCALE_H(st[i].dims);
+         vsizes << dockHeight;
       }
    }
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
@@ -5524,16 +6258,118 @@ void MainWindow::showEvent(QShowEvent *event)
 {
    QMainWindow::showEvent(event);
    m_hasBeenShown = true;
+   refreshShortcutButtons();
    schedulePersistSettings();
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 {
+   QToolButton *shortcutButton = qobject_cast<QToolButton*>(obj);
+   if (shortcutButton && m_shortcutButtons.contains(shortcutButton))
+   {
+      switch (event->type())
+      {
+         case QEvent::MouseButtonPress:
+         {
+            QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+            if (mouseEvent->button() == Qt::LeftButton)
+               m_shortcutDragStart = mouseEvent->pos();
+            break;
+         }
+         case QEvent::MouseMove:
+         {
+            QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+            if ((mouseEvent->buttons() & Qt::LeftButton)
+                  && (mouseEvent->pos() - m_shortcutDragStart).manhattanLength()
+                     >= QApplication::startDragDistance())
+            {
+               QDrag *drag = new QDrag(shortcutButton);
+               QMimeData *mime = new QMimeData();
+               mime->setText(shortcutButton->objectName());
+               drag->setMimeData(mime);
+               drag->exec(Qt::MoveAction);
+               /* QDrag's nested event loop can leave the source button in
+                * its pressed/hover state on some platform styles. */
+               shortcutButton->setDown(false);
+               shortcutButton->update();
+               for (int buttonIndex = 0;
+                     buttonIndex < m_shortcutButtons.count(); buttonIndex++)
+               {
+                  QToolButton *button = m_shortcutButtons.at(buttonIndex);
+                  QEvent leaveEvent(QEvent::Leave);
+                  button->setDown(false);
+                  QApplication::sendEvent(button, &leaveEvent);
+                  button->update();
+               }
+               return true;
+            }
+            break;
+         }
+         case QEvent::DragEnter:
+         case QEvent::DragMove:
+         {
+            QDropEvent *dragEvent = static_cast<QDropEvent*>(event);
+            if (dragEvent->mimeData()->hasText())
+            {
+               dragEvent->acceptProposedAction();
+               return true;
+            }
+            break;
+         }
+         case QEvent::Drop:
+         {
+            QDropEvent *dropEvent = static_cast<QDropEvent*>(event);
+            QString sourceName = dropEvent->mimeData()->text();
+            QToolButton *sourceButton = NULL;
+            int sourceIndex = -1;
+            int targetIndex = m_shortcutButtons.indexOf(shortcutButton);
+            int dropX;
+            int i;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+            dropX = dropEvent->position().toPoint().x();
+#else
+            dropX = dropEvent->pos().x();
+#endif
+            for (i = 0; i < m_shortcutButtons.count(); i++)
+               if (m_shortcutButtons.at(i)->objectName() == sourceName)
+               {
+                  sourceButton = m_shortcutButtons.at(i);
+                  sourceIndex = i;
+                  break;
+               }
+            if (sourceButton && sourceButton != shortcutButton
+                  && sourceIndex >= 0 && targetIndex >= 0)
+            {
+               m_shortcutButtons.removeAt(sourceIndex);
+               if (sourceIndex < targetIndex)
+                  targetIndex--;
+               /* Dropping on the right half places the dragged button after
+                * the target; the left half places it before the target. */
+               if (dropX >= shortcutButton->width() / 2)
+                  targetIndex++;
+               targetIndex = qBound(0, targetIndex, m_shortcutButtons.count());
+               m_shortcutButtons.insert(targetIndex, sourceButton);
+               saveShortcutButtonOrder();
+               refreshShortcutButtons();
+               dropEvent->acceptProposedAction();
+               return true;
+            }
+            break;
+         }
+         default:
+            break;
+      }
+   }
+
    if (qobject_cast<QDockWidget*>(obj))
    {
       switch (event->type())
       {
          case QEvent::Resize:
+            schedulePersistSettings();
+            if (obj == m_shortcutsDock)
+               QTimer::singleShot(0, this, SLOT(snapShortcutDockHeight()));
+            break;
          case QEvent::Move:
          case QEvent::Show:
          case QEvent::Hide:
@@ -6539,11 +7375,34 @@ static void qt_companion_restore_settings(MainWindow *mainwindow)
       mainwindow->restoreDockLayout();
 
    {
+      size_t shortcutRowLength;
+      companion_dock_state_t shortcutState;
+      bool haveSavedShortcutHeight = settings->bools.desktop_menu_save_dock_positions
+         && companion_dock_row_parse(
+               qt_dock_row(settings, QT_DOCK_SHORTCUTS_INDEX, &shortcutRowLength),
+               &shortcutState)
+         && VIDEO_SCALE_H(shortcutState.dims) > 0;
+
+      /* This runs after all docks have been constructed and the main window
+       * has had a chance to show. A resize in setupDockWidgets() is too early:
+       * later docks can redistribute the left column and leave Shortcuts tall. */
+      if (!haveSavedShortcutHeight)
+         QTimer::singleShot(0, mainwindow, SLOT(resetShortcutDockSize()));
+      QTimer::singleShot(0, mainwindow, SLOT(layoutShortcutButtons()));
+   }
+
+   {
       /* Watch every dock so a later move / resize / hide re-snapshots. */
       QList<QDockWidget*> docks = mainwindow->findChildren<QDockWidget*>();
       int i;
       for (i = 0; i < docks.count(); i++)
+      {
          docks.at(i)->installEventFilter(mainwindow);
+         if (docks.at(i)->objectName() != QLatin1String("shortcutsDock"))
+            QObject::connect(docks.at(i), SIGNAL(visibilityChanged(bool)),
+                  mainwindow, SLOT(refreshShortcutButtons()));
+      }
+      mainwindow->refreshShortcutButtons();
    }
 
    mainwindow->setIconViewZoom((int)settings->uints.desktop_menu_icon_view_zoom);

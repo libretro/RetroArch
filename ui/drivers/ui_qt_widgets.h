@@ -6,6 +6,7 @@
 #include <QColorDialog>
 #include <QComboBox>
 #include <QDialog>
+#include <QIcon>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -47,6 +48,8 @@ class QLabel;
 class QLayout;
 class QPaintEvent;
 class QResizeEvent;
+class QMoveEvent;
+class QShowEvent;
 class QVBoxLayout;
 class QDoubleSpinBox;
 /* Forward decls kept unconditional so that callers holding bare
@@ -56,6 +59,8 @@ class QDoubleSpinBox;
  * already gated as well. */
 class ShaderPass;
 class ShaderParamsDialog;
+
+QIcon qt_settings_category_icon(const QString &iconName);
 
 #ifdef HAVE_MENU
 class QWidget;
@@ -821,6 +826,9 @@ public slots:
 protected:
    void hideEvent(QHideEvent *event);
    void changeEvent(QEvent *event);
+   void showEvent(QShowEvent *event);
+   void resizeEvent(QResizeEvent *event);
+   void moveEvent(QMoveEvent *event);
 private:
    void buildLayout();
    void refreshRows();
@@ -873,6 +881,8 @@ private:
    QPointer<QScrollArea> m_scrollArea;
 protected:
    void closeEvent(QCloseEvent *event);
+   void showEvent(QShowEvent *event);
+   void moveEvent(QMoveEvent *event);
    void resizeEvent(QResizeEvent *event);
    void paintEvent(QPaintEvent *event);
 };
@@ -957,6 +967,8 @@ private:
    QAction *removeGamePresetAction;
 protected:
    void closeEvent(QCloseEvent *event);
+   void showEvent(QShowEvent *event);
+   void moveEvent(QMoveEvent *event);
    void resizeEvent(QResizeEvent *event);
    void paintEvent(QPaintEvent *event);
 };
@@ -1013,6 +1025,14 @@ public slots:
    QWidget *categoryPagesWidget() const;
    void loadCategory(int index);
    void applyCurrentCategory();
+   QString shortcutId(int categoryIndex, int pageIndex) const;
+   QString shortcutLabel(const QString &id) const;
+   QIcon shortcutIcon(const QString &id) const;
+   void activateShortcut(const QString &id);
+signals:
+   void pinShortcutRequested(const QString &id);
+private slots:
+   void onCategoryContextMenuRequested(const QPoint &pos);
 #endif
 private slots:
    void onRejected();
