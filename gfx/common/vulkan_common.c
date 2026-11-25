@@ -4287,15 +4287,22 @@ static bool vulkan_output_pick(const vulkan_output_t *output,
       return true;
    }
    sdr8 = vulkan_sdr8_surface_format(formats, count);
-   if (sdr8 >= 0)
+   if (sdr8 >= 0 && formats[sdr8].colorSpace
+         == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
    {
       *picked = formats[sdr8];
       return true;
    }
-   /* As the main window, the first format listed, but never in an HDR
-    * colour space */
+   /* As the main window, the first format listed, but only in sRGB and
+    * never an *_SRGB format: its views are made in the format picked,
+    * and the values drawn are encoded already */
    for (i = 0; i < count; i++)
-      if (formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+      if (     formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+            && formats[i].format != VK_FORMAT_B8G8R8A8_SRGB
+            && formats[i].format != VK_FORMAT_R8G8B8A8_SRGB
+            && formats[i].format != VK_FORMAT_A8B8G8R8_SRGB_PACK32
+            && formats[i].format != VK_FORMAT_B8G8R8_SRGB
+            && formats[i].format != VK_FORMAT_R8G8B8_SRGB)
       {
          *picked = formats[i];
          return true;

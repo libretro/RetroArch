@@ -743,6 +743,44 @@ static void test_hdr_owner_other_10bit(void)
    all_gone();
 }
 
+/* Under HDR output the SDR pick is in the sRGB colour space only, and
+ * never an *_SRGB format, whose views would encode the values again */
+static void test_hdr_owner_sdr_space_and_encoding(void)
+{
+   vulkan_output_t out;
+   reset();
+   hdr10_owner();
+   list_pair(VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT);
+   list_pair(VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   CHECK(make(&out));
+   CHECK(out.format == VK_FORMAT_R8G8B8A8_UNORM);
+   CHECK(out.color_space == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   CHECK(made_space == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   CHECK(vulkan_output_retire(&out));
+   all_gone();
+
+   reset();
+   hdr10_owner();
+   list_pair(VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   list_pair(VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+         VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   CHECK(make(&out));
+   CHECK(out.format == VK_FORMAT_A2B10G10R10_UNORM_PACK32);
+   CHECK(made_view_format == VK_FORMAT_A2B10G10R10_UNORM_PACK32);
+   CHECK(vulkan_output_retire(&out));
+   all_gone();
+
+   reset();
+   hdr10_owner();
+   list_pair(VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR);
+   list_pair(VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT);
+   CHECK(!make(&out));
+   CHECK(out.flags & VK_OUTPUT_FLAG_LOST);
+   CHECK(creates == 0);
+   CHECK(vulkan_output_retire(&out));
+   all_gone();
+}
+
 /* A surface that lists the main window's HDR pair is made in it, and
  * its metadata says the display's peak, or 1000 nits */
 static void test_hdr_surface_takes_owner_mode(void)
@@ -1044,6 +1082,7 @@ int main(void)
    test_hdr_owner_sdr_10bit();
    test_hdr_owner_no_8bit();
    test_hdr_owner_other_10bit();
+   test_hdr_owner_sdr_space_and_encoding();
    test_hdr_surface_takes_owner_mode();
    test_scrgb_owner_hdr10_surface();
    test_surface_loses_hdr();
