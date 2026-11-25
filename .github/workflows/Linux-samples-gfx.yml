@@ -3711,6 +3711,13 @@ jobs:
           python3 samples/gfx/vulkan_hdr_ubo/run.py
           CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/vulkan_hdr_ubo/run.py
 
+      - name: Vulkan descriptor sets come fresh to each frame
+        shell: bash
+        run: |
+          set -eu
+          python3 samples/gfx/vulkan_descriptor_manager/run.py
+          CC=x86_64-w64-mingw32-gcc RUNNER=wine WINEDEBUG=-all python3 samples/gfx/vulkan_descriptor_manager/run.py
+
       - name: Vulkan views in place from a mipmapped core image
         run: python3 samples/gfx/vulkan_hw_level_view/run.py
 

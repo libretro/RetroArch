@@ -131,9 +131,6 @@ static unsigned sets_used;
 static VkDescriptorSet bound_set;
 static struct binding draws[MAX_DRAWS];
 static unsigned num_draws;
-/* Bindings 1 and 2, the image samplers, of each set and each draw. */
-static VkImageView set_images[MAX_SETS][3];
-static VkImageView draw_images[MAX_DRAWS][3];
 static bool pass_open;
 /* Passes begun and ended, and the allocation the next pass fails */
 static unsigned passes_begun, passes_ended;
@@ -196,14 +193,7 @@ static void set_uniform_buffer(VkDevice dev, VkDescriptorSet set,
 static void vkUpdateDescriptorSets(VkDevice dev, uint32_t count,
       const VkWriteDescriptorSet *writes, uint32_t copies, const void *p)
 {
-   uint32_t i;
-   (void)dev; (void)copies; (void)p;
-   for (i = 0; i < count; i++)
-      if (     writes[i].dstSet < MAX_SETS
-            && writes[i].dstBinding < 3
-            && writes[i].pImageInfo)
-         set_images[writes[i].dstSet][writes[i].dstBinding]
-            = writes[i].pImageInfo->imageView;
+   (void)dev; (void)count; (void)writes; (void)copies; (void)p;
 }
 
 static void vkCmdBindDescriptorSets(VkCommandBuffer cmd, int point,
@@ -261,11 +251,7 @@ static void vkCmdDrawIndexed(VkCommandBuffer cmd, uint32_t indices,
    (void)cmd; (void)indices; (void)instances; (void)first;
    (void)vertex_offset; (void)first_instance;
    if (pass_open && num_draws < MAX_DRAWS && bound_set < MAX_SETS)
-   {
-      memcpy(draw_images[num_draws], set_images[bound_set],
-            sizeof(draw_images[0]));
       draws[num_draws++] = sets[bound_set];
-   }
 }
 
 #include "production_hdr.h"
@@ -276,8 +262,6 @@ static void setup(void)
    memset(&arena, 0, sizeof(arena));
    memset(sets, 0, sizeof(sets));
    memset(draws, 0, sizeof(draws));
-   memset(set_images, 0, sizeof(set_images));
-   memset(draw_images, 0, sizeof(draw_images));
    memset(&vk, 0, sizeof(vk));
    ranges_used = sets_used = num_draws = 0;
    bound_set   = VK_NULL_HANDLE;
@@ -421,29 +405,6 @@ static void test_values_restored(void)
       printf("[pass] %s\n", t);
 }
 
-/* A slot's sets come back each time the slot comes round, holding what
- * its last frame wrote: here a quad's texture, since retired. A set the
- * pass draws with must name no image but this frame's. */
-static void test_recycled_set_names_only_the_source(void)
-{
-   static const char t[] = "test_recycled_set_names_only_the_source";
-   vulkan_hdr_uniform_t u[1];
-   unsigned before = failures;
-   unsigned b;
-
-   setup();
-   set_images[1][1] = 99;
-   vulkan_run_hdr_pipeline(1, 2, &offscreen, backbuffer.framebuffer,
-         ctx.swapchain_dims, &vk, 1, false);
-   if (submit(t, 1, u))
-      for (b = 1; b < 3; b++)
-         expect(t, draw_images[0][b] == offscreen.view,
-               "every image binding of the drawn set names the source",
-               draw_images[0][b]);
-   if (failures == before)
-      printf("[pass] %s\n", t);
-}
-
 /* A pass into a screen window's swapchain covers that swapchain, not
  * the main window's */
 static void test_dims_set_render_area(void)
@@ -502,7 +463,6 @@ int main(void)
    test_two_passes_keep_their_values();
    test_menu_nits_only_in_composite();
    test_values_restored();
-   test_recycled_set_names_only_the_source();
    test_dims_set_render_area();
    test_failed_allocation_ends_the_pass();
    return failures ? 1 : 0;

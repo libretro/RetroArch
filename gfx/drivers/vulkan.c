@@ -1565,6 +1565,51 @@ static VkDescriptorSet vulkan_descriptor_manager_alloc(
    return manager->current->sets[manager->count++];
 }
 
+/* Hands the sets the slot's last frame took back to their pools and
+ * allocates them again, so no set this frame takes still names what an
+ * earlier frame wrote into a binding it leaves alone. Only the blocks
+ * that frame reached. A block whose sets can't be allocated again hands
+ * out VK_NULL_HANDLE, which callers drop the draw on, and is tried again
+ * at the next reset. */
+static void vulkan_descriptor_manager_reset(
+      VkDevice device, struct vk_descriptor_manager *manager)
+{
+   unsigned i;
+   VkDescriptorSetAllocateInfo alloc_info;
+   VkDescriptorSetLayout layouts[VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS];
+   struct vk_descriptor_pool *node;
+   struct vk_descriptor_pool *last = manager->current;
+
+   if (!manager->head || (last == manager->head && !manager->count))
+   {
+      manager->current = manager->head;
+      manager->count   = 0;
+      return;
+   }
+
+   for (i = 0; i < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS; i++)
+      layouts[i]                 = manager->set_layout;
+   alloc_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+   alloc_info.pNext              = NULL;
+   alloc_info.descriptorSetCount = VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS;
+   alloc_info.pSetLayouts        = layouts;
+
+   for (node = manager->head; node; node = node->next)
+   {
+      vkResetDescriptorPool(device, node->pool, 0);
+      alloc_info.descriptorPool  = node->pool;
+      if (vkAllocateDescriptorSets(device, &alloc_info, node->sets)
+            != VK_SUCCESS)
+         for (i = 0; i < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS; i++)
+            node->sets[i]        = VK_NULL_HANDLE;
+      if (node == last)
+         break;
+   }
+
+   manager->current = manager->head;
+   manager->count   = 0;
+}
+
 /* The VBO needs to be written to before calling this.
  * Use vulkan_buffer_chain_alloc. */
 /* Everything a draw sets up before its vertices: the pipeline, the
@@ -11182,11 +11227,6 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
 
       vkUpdateDescriptorSets(vk->context->device, 1, &write, 0, NULL);
 
-      /* Binding 1 too: a reused set can still name a texture an earlier
-       * frame's quad left there, retired since. */
-      write.dstBinding                = 1;
-      vkUpdateDescriptorSets(vk->context->device, 1, &write, 0, NULL);
-
       vkCmdBindDescriptorSets(vk->cmd, VK_PIPELINE_BIND_POINT_GRAPHICS,
             vk->pipelines.layout, 0,
             1, &set, 0, NULL);
@@ -14818,8 +14858,7 @@ static bool vulkan_frame(void *data, const void *frame,
       chain->hw_level_view = VK_NULL_HANDLE;
    }
 
-   manager->current = manager->head;
-   manager->count = 0;
+   vulkan_descriptor_manager_reset(vk->context->device, manager);
 
    buff_chain_vbo->current = buff_chain_vbo->head;
    buff_chain_vbo->offset  = 0;
