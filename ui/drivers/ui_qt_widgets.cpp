@@ -18,13 +18,17 @@
 #include <QInputDialog>
 #include <QKeyEvent>
 #include <QLayout>
+#include <QListWidget>
 #include <QListWidgetItem>
+#include <QTabWidget>
 #include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
 #include <QPaintEvent>
 #include <QProgressDialog>
 #include <QResizeEvent>
+#include <QMoveEvent>
+#include <QShowEvent>
 #include <QScreen>
 #include <QScrollBar>
 #include <QSlider>
@@ -94,6 +98,34 @@ extern "C" {
 #ifndef CXX_BUILD
 }
 #endif
+
+/* Persist utility-dialog geometry in retroarch.cfg when the desktop menu
+ * Remember Window Geometry preference is enabled. */
+static bool qt_dialog_restore_geometry(QDialog *dialog, const char *stored)
+{
+   settings_t *settings = config_get_ptr();
+   int x = 0, y = 0, w = 0, h = 0;
+   if (!settings->bools.desktop_menu_save_geometry || !stored
+         || sscanf(stored, "%d,%d,%d,%d", &x, &y, &w, &h) != 4
+         || w <= 0 || h <= 0 || w > 32767 || h > 32767 || x < 0 || y < 0)
+      return false;
+   dialog->setGeometry(x, y, w, h);
+   return true;
+}
+
+static void qt_dialog_persist_geometry(QDialog *dialog, char *stored, size_t size)
+{
+   QRect g;
+   if (!config_get_ptr()->bools.desktop_menu_save_geometry
+         || !dialog->isVisible() || dialog->isMinimized())
+      return;
+   g = dialog->geometry();
+   if (g.width() <= 0 || g.height() <= 0)
+      return;
+   snprintf(stored, size, "%d,%d,%d,%d",
+         g.x() < 0 ? 0 : g.x(), g.y() < 0 ? 0 : g.y(),
+         g.width(), g.height());
+}
 
 /* Replace characters unsafe in URLs / file names with '_' */
 
@@ -2936,24 +2968,37 @@ void CoreInfoDialog::showCoreInfo()
    show();
 }
 
-#ifdef HAVE_MENU
-QPixmap getColorizedPixmap(const QPixmap& oldPixmap, const QColor& color)
+QIcon qt_settings_category_icon(const QString &iconName)
 {
-   QPixmap pixmap = oldPixmap;
-   QBitmap   mask = pixmap.createMaskFromColor(Qt::transparent,
-         Qt::MaskInColor);
-   pixmap.fill(color);
-   pixmap.setMask(mask);
-   return pixmap;
+   settings_t *settings = config_get_ptr();
+   QPixmap pixmap       = QPixmap(QString(settings->paths.directory_assets)
+         + "/xmb/monochrome/png/" + iconName + ".png");
+   QLabel dummyColor;
+   QColor color;
+
+   /* Keep the same fixed artwork inset for Settings and dock shortcuts. */
+   if (!pixmap.isNull() && pixmap.width() > 48 && pixmap.height() > 48)
+      pixmap = pixmap.copy(24, 24, pixmap.width() - 48, pixmap.height() - 48);
+   if (pixmap.isNull())
+      return QIcon();
+
+   dummyColor.setObjectName("iconColor");
+   dummyColor.ensurePolished();
+   color = dummyColor.palette().color(QPalette::WindowText);
+
+   {
+      QPixmap colored(pixmap.size());
+      colored.fill(Qt::transparent);
+      QPainter painter(&colored);
+      painter.drawPixmap(0, 0, pixmap);
+      painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+      painter.fillRect(colored.rect(), color);
+      painter.end();
+      return QIcon(colored);
+   }
 }
 
-QColor getLabelColor(const QString& objectName)
-{
-   QLabel dummyColor;
-   dummyColor.setObjectName(objectName);
-   dummyColor.ensurePolished();
-   return dummyColor.palette().color(QPalette::WindowText);
-}
+#ifdef HAVE_MENU
 
 /* stolen from Qt Creator */
 class SmartScrollArea : public QScrollArea
@@ -3147,6 +3192,9 @@ ViewOptionsDialog::ViewOptionsDialog(MainWindow *mainwindow,
          this, SLOT(loadCategory(int)));
    connect(m_optionsList, SIGNAL(currentTextChanged(const QString&)),
          m_headerLabel, SLOT(setText(const QString&)));
+   m_optionsList->setContextMenuPolicy(Qt::CustomContextMenu);
+   connect(m_optionsList, SIGNAL(customContextMenuRequested(QPoint)), this,
+         SLOT(onCategoryContextMenuRequested(QPoint)));
 
    connect(this, SIGNAL(rejected()), this, SLOT(onRejected()));
    if (m_optionsList->count() > 0)
@@ -3182,17 +3230,155 @@ void ViewOptionsDialog::applyCurrentCategory()
          && m_currentCategoryIndex < m_categoryList.size())
       m_categoryList.at(m_currentCategoryIndex)->apply();
 }
+
+QString ViewOptionsDialog::shortcutId(int categoryIndex, int pageIndex) const
+{
+   QString iconName;
+   int duplicate = 0;
+   int i;
+
+   if (categoryIndex < 0 || categoryIndex >= m_categoryList.size())
+      return QString();
+
+   iconName = m_categoryList.at(categoryIndex)->categoryIconName();
+   for (i = 0; i < categoryIndex; i++)
+      if (m_categoryList.at(i)->categoryIconName() == iconName)
+         duplicate++;
+
+   if (pageIndex < 0 || pageIndex >= m_categoryList.at(categoryIndex)->pages().size())
+      pageIndex = 0;
+
+   return iconName + QLatin1Char('.') + QString::number(duplicate)
+      + QLatin1Char('.') + QString::number(pageIndex);
+}
+
+static bool qt_settings_shortcut_parse_id(const QString &id,
+      QString *iconName, int *duplicate, int *pageIndex)
+{
+   QStringList parts = id.split(QLatin1Char('.'));
+   bool okDuplicate = false;
+   bool okPage = false;
+
+   if (parts.size() != 3)
+      return false;
+
+   *duplicate = parts.at(1).toInt(&okDuplicate);
+   *pageIndex = parts.at(2).toInt(&okPage);
+   *iconName = parts.at(0);
+   return okDuplicate && okPage && !iconName->isEmpty()
+      && *duplicate >= 0 && *pageIndex >= 0;
+}
+
+static int qt_settings_shortcut_category_index(
+      const QVector<OptionsCategory*> &categories, const QString &iconName,
+      int duplicate)
+{
+   int seen = 0;
+   int i;
+   for (i = 0; i < categories.size(); i++)
+      if (categories.at(i)->categoryIconName() == iconName)
+      {
+         if (seen == duplicate)
+            return i;
+         seen++;
+      }
+   return -1;
+}
+
+QString ViewOptionsDialog::shortcutLabel(const QString &id) const
+{
+   QString iconName;
+   int duplicate;
+   int pageIndex;
+   int categoryIndex;
+   OptionsCategory *category;
+   QVector<OptionsPage*> pages;
+
+   if (!qt_settings_shortcut_parse_id(id, &iconName, &duplicate, &pageIndex))
+      return QString();
+   categoryIndex = qt_settings_shortcut_category_index(
+         m_categoryList, iconName, duplicate);
+   if (categoryIndex < 0)
+      return QString();
+   category = m_categoryList.at(categoryIndex);
+   pages = category->pages();
+   if (pageIndex >= pages.size())
+      return QString();
+   if (pages.size() > 1)
+      return category->displayName() + QStringLiteral(": ")
+         + pages.at(pageIndex)->displayName();
+   return category->displayName();
+}
+
+QIcon ViewOptionsDialog::shortcutIcon(const QString &id) const
+{
+   QString iconName;
+   int duplicate;
+   int pageIndex;
+   int categoryIndex;
+   if (!qt_settings_shortcut_parse_id(id, &iconName, &duplicate, &pageIndex))
+      return QIcon();
+   categoryIndex = qt_settings_shortcut_category_index(
+         m_categoryList, iconName, duplicate);
+   if (categoryIndex < 0 || !m_optionsList->item(categoryIndex))
+      return QIcon();
+   {
+      QIcon source = m_optionsList->item(categoryIndex)->icon();
+      QPixmap pixmap = source.pixmap(QSize(32, 32));
+      return pixmap.isNull() ? source : QIcon(pixmap);
+   }
+}
+
+void ViewOptionsDialog::activateShortcut(const QString &id)
+{
+   QString iconName;
+   int duplicate;
+   int pageIndex;
+   int categoryIndex;
+   QTabWidget *tabs;
+
+   if (!qt_settings_shortcut_parse_id(id, &iconName, &duplicate, &pageIndex))
+      return;
+   categoryIndex = qt_settings_shortcut_category_index(
+         m_categoryList, iconName, duplicate);
+   if (categoryIndex < 0)
+      return;
+
+   if (m_optionsList->currentRow() != categoryIndex)
+      m_optionsList->setCurrentRow(categoryIndex);
+   else
+      loadCategory(categoryIndex);
+   tabs = qobject_cast<QTabWidget*>(m_optionsStack->widget(categoryIndex));
+   if (tabs && pageIndex < tabs->count())
+      tabs->setCurrentIndex(pageIndex);
+}
+
+void ViewOptionsDialog::onCategoryContextMenuRequested(const QPoint &pos)
+{
+   QListWidgetItem *item = m_optionsList->itemAt(pos);
+   int row;
+   QTabWidget *tabs;
+   int pageIndex = 0;
+   QMenu menu(this);
+   QAction *pinAction;
+
+   if (!item)
+      return;
+   row = m_optionsList->row(item);
+   m_optionsList->setCurrentRow(row);
+   tabs = qobject_cast<QTabWidget*>(m_optionsStack->widget(row));
+   if (tabs)
+      pageIndex = tabs->currentIndex();
+
+   pinAction = menu.addAction(tr("Pin to Shortcuts"));
+   if (menu.exec(m_optionsList->mapToGlobal(pos)) == pinAction)
+      emit pinShortcutRequested(shortcutId(row, pageIndex));
+}
 #endif
 
 QIcon getIcon(OptionsCategory *category)
 {
-   settings_t *settings        = config_get_ptr();
-   const char *path_dir_assets = settings->paths.directory_assets;
-   QPixmap pixmap              = QPixmap(QString(path_dir_assets)
-         + "/xmb/monochrome/png/"
-         + category->categoryIconName()
-         + ".png");
-   return QIcon(getColorizedPixmap(pixmap, getLabelColor("iconColor")));
+   return qt_settings_category_icon(category->categoryIconName());
 }
 
 void ViewOptionsDialog::addCategory(OptionsCategory *category)
@@ -3635,6 +3821,30 @@ void ControlsDialog::hideEvent(QHideEvent *event)
 {
    stopDetection();
    QDialog::hideEvent(event);
+}
+
+void ControlsDialog::showEvent(QShowEvent *event)
+{
+   if (qt_dialog_restore_geometry(this,
+            config_get_ptr()->arrays.desktop_menu_controls_window))
+      m_sized = true;
+   QDialog::showEvent(event);
+}
+
+void ControlsDialog::resizeEvent(QResizeEvent *event)
+{
+   QDialog::resizeEvent(event);
+   qt_dialog_persist_geometry(this,
+         config_get_ptr()->arrays.desktop_menu_controls_window,
+         sizeof(config_get_ptr()->arrays.desktop_menu_controls_window));
+}
+
+void ControlsDialog::moveEvent(QMoveEvent *event)
+{
+   QDialog::moveEvent(event);
+   qt_dialog_persist_geometry(this,
+         config_get_ptr()->arrays.desktop_menu_controls_window,
+         sizeof(config_get_ptr()->arrays.desktop_menu_controls_window));
 }
 
 /* Coming back from RetroArch's own menu, which may have changed them,
@@ -4408,9 +4618,28 @@ CoreOptionsDialog::CoreOptionsDialog(QWidget *parent) :
 
 CoreOptionsDialog::~CoreOptionsDialog() { }
 
+void CoreOptionsDialog::showEvent(QShowEvent *event)
+{
+   qt_dialog_restore_geometry(this,
+         config_get_ptr()->arrays.desktop_menu_core_options_window);
+   QDialog::showEvent(event);
+}
+
+void CoreOptionsDialog::moveEvent(QMoveEvent *event)
+{
+   QDialog::moveEvent(event);
+   qt_dialog_persist_geometry(this,
+         config_get_ptr()->arrays.desktop_menu_core_options_window,
+         sizeof(config_get_ptr()->arrays.desktop_menu_core_options_window));
+}
+
 void CoreOptionsDialog::resizeEvent(QResizeEvent *event)
 {
    QDialog::resizeEvent(event);
+
+   qt_dialog_persist_geometry(this,
+         config_get_ptr()->arrays.desktop_menu_core_options_window,
+         sizeof(config_get_ptr()->arrays.desktop_menu_core_options_window));
 
    if (!m_scrollArea)
       return;
@@ -4820,9 +5049,28 @@ ShaderParamsDialog::~ShaderParamsDialog()
 {
 }
 
+void ShaderParamsDialog::showEvent(QShowEvent *event)
+{
+   qt_dialog_restore_geometry(this,
+         config_get_ptr()->arrays.desktop_menu_shader_params_window);
+   QDialog::showEvent(event);
+}
+
+void ShaderParamsDialog::moveEvent(QMoveEvent *event)
+{
+   QDialog::moveEvent(event);
+   qt_dialog_persist_geometry(this,
+         config_get_ptr()->arrays.desktop_menu_shader_params_window,
+         sizeof(config_get_ptr()->arrays.desktop_menu_shader_params_window));
+}
+
 void ShaderParamsDialog::resizeEvent(QResizeEvent *event)
 {
    QDialog::resizeEvent(event);
+
+   qt_dialog_persist_geometry(this,
+         config_get_ptr()->arrays.desktop_menu_shader_params_window,
+         sizeof(config_get_ptr()->arrays.desktop_menu_shader_params_window));
 
    if (!m_scrollArea)
       return;
