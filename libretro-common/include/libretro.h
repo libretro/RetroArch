@@ -5408,9 +5408,31 @@ struct retro_hw_render_context_negotiation_interface
  * to the host's address space, like so:
  *
  * @code
- * void* emu_to_host(void* addr, struct retro_memory_descriptor* descriptor)
+ * // Assumes select claims addr
+ * void* emu_to_host(size_t addr, struct retro_memory_descriptor* descriptor)
  * {
- *     return descriptor->ptr + (addr & ~descriptor->disconnect) - descriptor->start;
+ *     size_t mask = descriptor->disconnect;
+ *
+ *     addr -= descriptor->start;
+ *
+ *     // Remove each disconnected bit; the bits above it move down
+ *     while (mask)
+ *     {
+ *         size_t below = (mask - 1) & ~mask;
+ *         addr = (addr & below) | ((addr >> 1) & ~below);
+ *         mask = (mask & (mask - 1)) >> 1;
+ *     }
+ *
+ *     // Past len, clear the highest set bit until it fits
+ *     while (descriptor->len && addr >= descriptor->len)
+ *     {
+ *         size_t top = addr;
+ *         while (top & (top - 1))
+ *             top &= top - 1;
+ *         addr &= ~top;
+ *     }
+ *
+ *     return (uint8_t*)descriptor->ptr + descriptor->offset + addr;
  * }
  * @endcode
  *
