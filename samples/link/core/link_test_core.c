@@ -67,7 +67,8 @@ enum lt_mode
    LT_STALE_SEND,
    LT_STALE_RELEASE,
    LT_RELEASE_ERROR,
-   LT_UNLOAD_ERROR
+   LT_UNLOAD_ERROR,
+   LT_COLD_LOAD
 };
 
 struct lt_range
@@ -188,7 +189,7 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_save_in_advance", "Saves inside an advance; off|on" },
    { "link_test_mode",        "Mode; conform|nonconform|never_advance|no_progress|stale_load|"
                               "stale_save|stale_send|stale_release|release_error|"
-                              "unload_error" },
+                              "unload_error|cold_load" },
    { "link_test_bad_frame",   "First frame of the mode; 0" },
    { "link_test_render",      "Picture in two parts, around the frame's advances; off|soft|gl" },
    { "link_test_grow",        "Frame the picture grows in, told:N or untold:N; off" },
@@ -232,6 +233,9 @@ static bool lt_latch;
  * kept from the mode's first frame on; no load refreshes it */
 static bool lt_kept;
 static uint64_t lt_kept_hash;
+
+/* cold_load: retro_run has built the machine a state loads into */
+static bool lt_ran;
 
 static struct lt_render_host lt_host;
 static unsigned lt_told_width, lt_told_height;
@@ -479,7 +483,7 @@ static void lt_read_mode(void)
 {
    static const char *const names[] = {
       "conform", "nonconform", "never_advance", "no_progress", "stale_load", "stale_save",
-      "stale_send", "stale_release", "release_error", "unload_error"
+      "stale_send", "stale_release", "release_error", "unload_error", "cold_load"
    };
    const char *s = lt_option("link_test_mode");
    unsigned i;
@@ -1200,6 +1204,7 @@ void retro_init(void)
    lt_loads = 0;
    lt_latch = false;
    lt_kept  = false;
+   lt_ran   = false;
    lt_read_options();
    lt_state.rng = lt_cfg.seed ? lt_cfg.seed : 2463534242UL;
    memset(lt_port_info, 0, sizeof(lt_port_info));
@@ -1315,6 +1320,7 @@ void retro_run(void)
    unsigned m = 0, p;
    bool bad  = lt_cfg.mode != LT_CONFORM && lt_state.frame >= lt_cfg.bad_frame;
    bool dupe = lt_frame_in(lt_cfg.dupes, lt_cfg.dupe_count);
+   lt_ran    = true;
    lt_input_poll();
    if (lt_state.parked.in)
    {
@@ -1544,6 +1550,8 @@ bool retro_unserialize(const void *data, size_t size)
    bool attached[LT_MAX_PORTS];
    unsigned p, i;
    uint64_t v;
+   if (lt_cfg.mode == LT_COLD_LOAD && !lt_ran)
+      return true;
    if (size < lt_state_size())
       return false;
    s = lt_get(s, &v, 4);

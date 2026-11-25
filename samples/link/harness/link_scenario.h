@@ -71,6 +71,7 @@ struct link_scenario_console
    size_t stack;                   /* 0: the scheduler's default */
    unsigned line;                  /* 0 until its console line */
    enum link_scenario_render render;
+   bool warm;                      /* runs a frame before a --from load */
 };
 
 struct link_scenario_count       /* an expect-count line */

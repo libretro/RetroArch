@@ -1,0 +1,17 @@
+# A core with no machine before its first frame: until console 0's first
+# retro_run, its retro_unserialize loads nothing and says it did
+# (link_test_mode cold_load). warm=1 runs that console's frame 0
+# before the from run's load, alone and unseen: it is cabled to nothing
+# then, draws both parts of a picture nobody keeps, and the load puts the
+# bus and both consoles as the save left them.
+console 0 core=test warm=1
+console 1 core=test
+option 0 link_test_render soft
+option 0 link_test_mode cold_load
+option 0 link_test_seed 3
+option 1 link_test_seed 7
+0 cable 0:0 1:0
+60 save mid
+60 checkpoint in_flight
+90 checkpoint later
+120 end

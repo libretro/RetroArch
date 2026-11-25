@@ -1171,6 +1171,37 @@ static void link_harness_abandon(struct link_harness *h)
       }
 }
 
+/* A --from run's warm=1 consoles run their frame 0, with its buttons,
+ * before the load, for a core that has no machine to load into before its
+ * first retro_run. They run alone: no line of the scenario has acted, so
+ * they are cabled to nothing, and no other console runs. The frame is in
+ * no trace, messages.log or frame count and keeps no picture or audio. It
+ * must finish: a console it leaves parked, or a release, fails the run, and
+ * the parked console is abandoned as before a --rewind load. The load then
+ * replaces the bus, what the frame sent with it, and every console's state. */
+static void link_harness_warm(struct link_harness *h)
+{
+   enum link_sched_frame result;
+   unsigned i;
+   bool warm = false;
+   for (i = 0; i < h->scn.console_count; i++)
+      warm = warm || h->scn.consoles[i].warm;
+   if (!warm)
+      return;
+   for (i = 0; i < h->scn.console_count; i++)
+      h->targets[i] = link_sched_frames(h->sched, i) + (h->scn.consoles[i].warm ? 1 : 0);
+   link_bus_journal_reset(h->bus);
+   if ((result = link_sched_run(h->sched, h->targets)) != LINK_SCHED_FRAME_DONE)
+   {
+      fprintf(stderr, "link_harness: the warm frame %s\n",
+            result == LINK_SCHED_FRAME_RELEASED ? "released the bus" : "left a console parked");
+      h->failed = true;
+   }
+   link_harness_abandon(h);
+   for (i = 0; i < h->scn.console_count; i++)
+      h->consoles[i].finished_count = 0;
+}
+
 /* Runs from the first frame, or from the --from state. With --rewind the
  * session runs to the scenario's last edge, before the frame of its end or
  * of its release, and there, in place of that edge's lines, the frames in
@@ -1330,10 +1361,16 @@ static int link_harness_main(struct link_harness *h, int argc, char **argv)
       return LINK_HARNESS_USAGE;
    if (!link_harness_session(h))
       h->failed = true;
-   else if (h->state_path && !h->rewinding && !link_harness_load_state(h))
-      return LINK_HARNESS_USAGE;
    else
+   {
+      if (h->state_path && !h->rewinding)
+      {
+         link_harness_warm(h);
+         if (!link_harness_load_state(h))
+            return LINK_HARNESS_USAGE;
+      }
       link_harness_run(h);
+   }
    return LINK_HARNESS_PASS;
 }
 

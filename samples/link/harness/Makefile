@@ -17,15 +17,18 @@
 # as its header says. In two_spans console 1 must finish 598 frames to
 # console 0's 600, and in spans_save_in_advance and render_spans consoles 1
 # and 2 must be parked at their checkpoints in_flight and last, and so must
-# those of gl/spans and gl/mixed. Each of render_one's 120 frames must have
-# a picture of its own, and render_grow's picture must be 64 wide at its
-# checkpoint small and 128 at mid; console 1 of render_two must keep its
-# picture of frame 99 over the frame after it, which passes none, and
-# render_dupe's console its picture of frame 39.
+# those of warm_save_in_advance, gl/spans and gl/mixed. Each of
+# render_one's 120 frames must have a picture of its own, and render_grow's
+# picture must be 64 wide at its checkpoint small and 128 at mid; console 1
+# of render_two must keep its picture of frame 99 over the frame after it,
+# which passes none, and render_dupe's console its picture of frame 39.
 # Then each scenario in bad/ must exit 2 and each in fail/ exit 1, printing
 # the error its "# error:" line names, as must a truncated state, a state
 # of another scenario and an edited trace; each scenario in stale/ must
-# pass its from run and fail its rewound run in the same way.
+# pass its from run and fail its rewound run in the same way, and each in
+# cold/, whose core loads no state before its first frame, pass its first
+# run and fail its from run. warm_load is that scenario with warm=1, which
+# runs a frame of the console before the from run's load.
 #
 # A console line's render=gl needs a harness built with HAVE_EGL=1, and
 # render=vulkan one built with HAVE_VULKAN=1. While a switch is off, its
@@ -146,7 +149,6 @@ else
 BAD_SCENARIOS   += ../scenarios/unbuilt/vulkan.scn
 endif
 FAIL_SCENARIOS  := $(sort $(wildcard ../scenarios/fail/*.scn))
-STALE_SCENARIOS := $(sort $(wildcard ../scenarios/stale/*.scn))
 UNTICK          := s/ stamp [0-9a-f]* landing [0-9a-f]*//
 ALL_RUNS        := first again reversed shuffled from rewound
 
@@ -244,6 +246,23 @@ for scn in $(1); do \
 	   $(2) $(RUNNER) $(HARNESS) --scenario "$$scn" --path test=$(CORE) $(3) \
 	      --out "$(BUILD_DIR)/out/$$what" 2>"$$err"; \
 	   $(call FAILED_AS,$$want); \
+	done
+endef
+
+# Each scenario of ../scenarios/$(1)/ passes its runs $(2); its $(3) run,
+# which loads the first run's state with $(4), must then exit 1, saying what
+# its "# error:" line names
+define LOAD_FAILS
+	@for scn in $(sort $(wildcard ../scenarios/$(1)/*.scn)); do \
+	   $(call RUNS,$(BUILD_DIR)/out/$(1),--path test=$(CORE),$(2)); \
+	   what="$(1)/$$name $(3)"; err="$$out/$(3).err"; \
+	   why=`sed -n 's/^# error: //p' "$$scn"`; \
+	   [ -n "$$why" ] || { echo "$@: $$what has no # error: line"; exit 1; }; \
+	   echo "== $$what, exit 1 wanted"; \
+	   $(RUNNER) $(HARNESS) $(MIN_STACK) --scenario "$$scn" --path test=$(CORE) \
+	      $(4) "$$out/first/mid.state" --expect "$$out/first/trace.txt" \
+	      --out "$$out/$(3)" 2>"$$err"; \
+	   $(call FAILED_AS,1); \
 	done
 endef
 
@@ -392,7 +411,7 @@ check: all
 	   grep -q "^$$c frame [0-9]* in_frame $$in$$" "$$out/$$at/consoles.txt" \
 	      || { echo "check: spans_membership: $$c is not in_frame $$in at checkpoint $$at"; exit 1; }; \
 	done
-	@$(call PARKED,spans_save_in_advance render_spans)
+	@$(call PARKED,spans_save_in_advance render_spans warm_save_in_advance)
 	@n=`grep '^F [0-9]* C 0 N ' "$(BUILD_DIR)/out/render_one/first/trace.txt" \
 	   | cut -d ' ' -f 8 | sort -u | wc -l`; \
 	[ "$$n" -eq 120 ] || { echo "check: render_one: $$n different pictures in 120 frames"; exit 1; }
@@ -439,17 +458,8 @@ check: all
 	$(RUNNER) $(HARNESS) --scenario ../scenarios/two_unequal.scn --path test=$(CORE) \
 	   --expect "$$edited" --out "$(BUILD_DIR)/out/fail/edited" 2>"$$err"; \
 	$(call FAILED_AS,1)
-	@for scn in $(STALE_SCENARIOS); do \
-	   $(call RUNS,$(BUILD_DIR)/out/stale,--path test=$(CORE),first from); \
-	   what="stale/$$name rewound"; err="$$out/rewound.err"; \
-	   why=`sed -n 's/^# error: //p' "$$scn"`; \
-	   [ -n "$$why" ] || { echo "check: stale/$$name has no # error: line"; exit 1; }; \
-	   echo "== $$what, exit 1 wanted"; \
-	   $(RUNNER) $(HARNESS) $(MIN_STACK) --scenario "$$scn" --path test=$(CORE) \
-	      --rewind "$$out/first/mid.state" --expect "$$out/first/trace.txt" \
-	      --out "$$out/rewound" 2>"$$err"; \
-	   $(call FAILED_AS,1); \
-	done
+	$(call LOAD_FAILS,stale,first from,rewound,--rewind)
+	$(call LOAD_FAILS,cold,first,from,--from)
 ifeq ($(HAVE_EGL),1)
 	$(call GPU_CHECK,gl,$(GPU_ARGS),gl/spans gl/mixed)
 	$(GL_CHECK)

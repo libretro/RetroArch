@@ -319,7 +319,7 @@ static bool link_scenario_console_line(struct link_scenario_parse *p, char **arg
    unsigned n, i;
    if (argc < 2)
       return link_scenario_fail(p, "console <n> core=<name> [rom=<name>] [save=<name>]"
-            " [stack=<bytes>] [render=gl|vulkan]", NULL);
+            " [stack=<bytes>] [render=gl|vulkan] [warm=1]", NULL);
    if (!link_scenario_console_number(p, arg[0], &n))
       return false;
    while (s->console_count <= n)
@@ -365,6 +365,15 @@ static bool link_scenario_console_line(struct link_scenario_parse *p, char **arg
             k->render = LINK_SCENARIO_RENDER_VULKAN;
          else
             return link_scenario_fail(p, "render= takes gl or vulkan", value);
+         continue;
+      }
+      else if (!strcmp(arg[i], "warm"))
+      {
+         if (k->warm)
+            return link_scenario_fail(p, "a field given twice", arg[i]);
+         if (strcmp(value, "1"))
+            return link_scenario_fail(p, "warm= takes 1", value);
+         k->warm = true;
          continue;
       }
       else

@@ -75,9 +75,9 @@ unloads the cores.
 Some scenarios are checked further. In `spans_waiting` and
 `spans_membership` console 0 must finish one frame every step; in
 `spans_waiting` console 1 must be inside a frame at checkpoint `parked`,
-in `spans_save_in_advance` consoles 1 and 2 at checkpoints `in_flight`
-and `last`, and in `spans_membership` console 2 at checkpoints
-`in_flight`, `left`, `back` and `pull`, and console 1 at `plugged`
+in `spans_save_in_advance` and `warm_save_in_advance` consoles 1 and 2 at
+checkpoints `in_flight` and `last`, and in `spans_membership` console 2 at
+checkpoints `in_flight`, `left`, `back` and `pull`, and console 1 at `plugged`
 but not at `pull`; in `two_spans` console 1 must finish 598 frames
 to console 0's 600, the last of them its frame 597 in step 599. Each of
 `render_one`'s 120 frames must have a picture hash of its own;
@@ -111,6 +111,15 @@ scenario in `scenarios/stale/` has such a core: its `from` run must pass,
 and its `rewound` run must exit 1 and print the error its `# error:` line
 gives.
 
+A core may have no machine to load a state into before its first
+`retro_run`: its `retro_unserialize` then loads nothing, and may still say
+it did. `warm=1` on its console line makes the `from` run run one frame of
+that console before the load; "Scenarios" says what that frame is.
+`warm_load` has such a core and passes its six runs. The scenario in
+`scenarios/cold/` is `warm_load` without the word: its first run must pass,
+and its `from` run must exit 1 and print the error its `# error:` line
+gives.
+
 `make proof` makes the same six runs, with the same comparisons, of one
 scenario that binds real cores, such as those in `proofs/`. It builds only
 the harness, passes each `BIND` word (`NAME=FILE`, no spaces) as a `--path`
@@ -142,7 +151,8 @@ link_harness --scenario FILE --out DIR [--path NAME=FILE]...
   each console's state is saved again: it must be the state the console
   loaded, and saving it must not call `send_msg`, `recv_msg`, `peek`,
   `advance` or `advance_multi` (`attach`, `detach` and `peers` on its own
-  handle are not checked).
+  handle are not checked). A console whose line has `warm=1` runs one frame
+  before the load.
 - `--rewind STATE` runs from the first frame to the scenario's last frame
   edge, before the frame of its `end` line or of its `expect-stuck` line.
   There, in place of that edge's lines, it abandons the frame of each console
@@ -187,7 +197,7 @@ which frame. `#` starts a comment.
 calendar <sec> <utc_offset>         the calendar time the cores start at
 system <name>                       the system folder (else an empty out/system/)
 console <n> core=<name> [rom=<name>] [save=<name>] [stack=<bytes>]
-            [render=gl|vulkan]
+            [render=gl|vulkan] [warm=1]
 option <n> <key> <value>            a core option of console n
 input <n> <port> <file>             an input script for an input port of console n
 expect-count <counter> <value>      a bus count the run ends with
@@ -225,6 +235,21 @@ too, and the lines after it act again; the bus is then as the state has it,
 with the cables and holds of the save. A frame has at most one `save` line.
 With `expect-stuck F`, no line but `end` comes after frame F, where the run
 ends.
+
+`warm=1` is for a core that builds its machine in its first `retro_run` and
+loads no state before it. In a `--from` run, each console with it runs one
+frame before the load: its frame 0, with the buttons its input scripts hold
+at frame 0. It runs alone: no line of the scenario has acted, so it is
+cabled to nothing and what it sends reaches no console, and no other
+console runs. That frame is no frame of the run. It has no line in
+`trace.txt` or `messages.log`, the frames the run says it passed do not
+count it, and it keeps no picture or audio. It must finish: a console left
+parked inside it, or a release of the bus, fails the run, as does an error
+the core logs in it. The load then replaces the bus, its counts and what
+the frame sent with it, and every console's state, so the run goes on as
+the first run did from the save. The word changes no other run: `first`,
+`again` and the pick-order runs load nothing, and a `--rewind` load comes
+after the console has run.
 
 At an edge where a console is inside a frame, a `save` line fails the run
 unless that console's core set `RETRO_LINK_SAVE_IN_ADVANCE`, and a `reset`
@@ -317,10 +342,15 @@ The scenarios here:
   was drawn.
 - `render_held`: a hold of console 0 to the end, so console 1 is the last
   to run before the cores are unloaded.
+- `warm_load`: a core that loads no state before its first frame, on a
+  console with `warm=1`.
+- `warm_save_in_advance`: `spans_save_in_advance` with such a core on
+  console 1, which has `warm=1` and is saved inside an advance.
 - `gl/`: scenarios with OpenGL consoles, each the twin of one above; run
   only by a harness built with `HAVE_EGL=1` ("GPU consoles").
 - `bad/`: scenarios the harness refuses before anything runs, a
-  `render=` value it does not know and `render=` given twice among them.
+  `render=` value it does not know, `render=` given twice and a `warm=`
+  that is not 1 among them.
 - `unbuilt/`: a console that asks for OpenGL and one that asks for Vulkan.
   While the harness is built without that API the scenario is refused as
   those in `bad/` are.
@@ -339,6 +369,8 @@ The scenarios here:
   fails: a core that keeps a latch over a load, one whose save right after a
   load writes a copy the load left stale, one whose save there makes a link
   call, and one that keeps over a load a latch that a release sets.
+- `cold/`: a scenario whose first run passes and whose `from` run fails:
+  `warm_load` without `warm=1`.
 
 ## GPU consoles
 
@@ -533,7 +565,7 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_restart_ticks` | off, on | off |
 | `link_test_extra_flags` | off, on: every undefined bit set in its port and core flags | off |
 | `link_test_save_in_advance` | off, on | off |
-| `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load, stale_save, stale_send, stale_release, release_error, unload_error | conform |
+| `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load, stale_save, stale_send, stale_release, release_error, unload_error, cold_load | conform |
 | `link_test_bad_frame` | the first frame of the mode | 0 |
 | `link_test_render` | off, soft, gl: the picture in two parts, and what draws it | off |
 | `link_test_grow` | off, `told:N` or `untold:N`: the frame the two-part picture grows in | off |
@@ -624,6 +656,8 @@ From `link_test_bad_frame` on, the modes break the rules:
 - `release_error`: an advance that reports `RETRO_LINK_WAKE_DETACHED`
   logs an error.
 - `unload_error`: `retro_unload_game` logs an error.
+- `cold_load`: whatever `link_test_bad_frame` says, until its first
+  `retro_run` its `retro_unserialize` loads nothing and returns true.
 
 Its system RAM, for `expect` lines: 0x00-0x07 the state hash; 0x08 the ports
 attached; 0x09-0x0B each port's peer count; 0x0C-0x0E each port's index, 255
