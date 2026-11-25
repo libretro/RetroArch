@@ -7,7 +7,7 @@ import re
 root = Path(__file__).resolve().parents[3]
 folder = root / 'gfx/drivers/vulkan_shaders'
 encode = (folder / 'alpha_blend_linear.frag').read_text()
-decode = (folder / 'hdr.frag').read_text()
+decode = (folder / 'hdr_encode.glsl').read_text()
 common = (folder / 'hdr_common.glsl').read_text()
 
 def function(text, signature):
