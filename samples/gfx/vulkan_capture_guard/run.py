@@ -50,17 +50,14 @@ typedef struct {
    unsigned flags;
    struct { unsigned dims; } vp;
    struct { struct vk_texture staging[1]; } readback;
-   struct { unsigned ubo, ubo_menu; } hdr;
    unsigned offscreen_buffer, readback_image;
 } vk_t;
 static vk_t *active;
-static unsigned changed_dims, buffers, images;
+static unsigned changed_dims, images;
 static void video_driver_cached_frame(void) { active->vp.dims = changed_dims; }
 static void vkWaitForFences(unsigned d, unsigned n, const VkFence *f, bool b, uint64_t t)
 { (void)d; (void)n; (void)f; (void)b; (void)t; }
 static void vulkan_wait_own_submissions(vk_t *vk) { (void)vk; }
-static void vulkan_destroy_buffer(unsigned d, unsigned *p)
-{ (void)d; if (*p) buffers++; *p = 0; }
 static void vulkan_destroy_hdr_buffer(unsigned d, unsigned *p)
 { (void)d; if (*p) images++; *p = 0; }
 static void vulkan_deinit_hdr_readback_render_pass(vk_t *vk) { (void)vk; }
@@ -115,15 +112,14 @@ int main(void)
    for (mode = 0; mode < 2; mode++)
    {
       context.flags = mode ? VK_CTX_FLAG_HDR_SUPPORT : 0;
-      vk.hdr.ubo = vk.hdr.ubo_menu = 1;
       vk.offscreen_buffer = vk.readback_image = mode;
-      buffers = images = 0;
+      images = 0;
       cleanup(&vk);
-      assert(buffers == 2 && images == mode * 2);
+      assert(images == mode * 2);
       cleanup(&vk);
-      assert(buffers == 2 && images == mode * 2);
+      assert(images == mode * 2);
    }
-   puts("PASS: resized SDR/BGRX and HDR captures reject before writes; HDR buffers freed on SDR and HDR contexts");
+   puts("PASS: resized SDR/BGRX and HDR captures reject before writes; HDR images freed once on HDR contexts");
    return 0;
 }
 '''

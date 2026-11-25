@@ -40,6 +40,14 @@
  * Each swapchain it rewrote is logged, so a run can tell that the HDR
  * path was taken rather than silently falling back to SDR.
  *
+ * With FAKE_HDR_DROP_AFTER=<n> the display loses HDR10 after n
+ * presents: the HDR10 pairs go from the format lists, and each HDR10
+ * swapchain still alive is out of date once.
+ *
+ * With FAKE_HDR_FIRST_SURFACE_ONLY=1 only the first surface whose
+ * formats are asked for gets the HDR10 pairs: the main window's, which
+ * the frontend makes and sets up before any screen window's.
+ *
  * One instance and one device at a time, which is how the frontend
  * runs the driver; the next layer's entry points are kept in globals. */
 
@@ -58,11 +66,25 @@
 
 /* Far more than any surface reports. */
 #define FH_FORMATS 64
+/* Far more than the frontend keeps alive at once. */
+#define FH_SWAPCHAINS 16
 
 static PFN_vkGetInstanceProcAddr s_next_gipa;
 static PFN_vkGetDeviceProcAddr   s_next_gdpa;
 static VkInstance                s_instance;
+static VkDevice                  s_device;
 static unsigned long             s_hdr10_swapchains;
+/* FAKE_HDR_DROP_AFTER, 0 for never; the presents so far */
+static unsigned long             s_drop_after;
+static unsigned long             s_presents;
+static int                       s_dropped;
+/* FAKE_HDR_FIRST_SURFACE_ONLY, and that surface once asked about */
+static int                       s_first_only;
+static VkSurfaceKHR              s_first_surface;
+/* The live HDR10 swapchains, and whether each was told it is out of
+ * date since the drop */
+static VkSwapchainKHR            s_live[FH_SWAPCHAINS];
+static int                       s_told[FH_SWAPCHAINS];
 
 static PFN_vkVoidFunction fh_next_instance(const char *name)
 {
@@ -75,11 +97,16 @@ static int fh_is_10bit(VkFormat format)
        || format == VK_FORMAT_A2R10G10B10_UNORM_PACK32;
 }
 
-/* The real list in real[0..n), the HDR10 twins appended after it.
- * Returns the length of the whole list. */
-static uint32_t fh_extend(VkSurfaceFormatKHR *real, uint32_t n)
+/* The real list in real[0..n), the HDR10 twins appended after it when
+ * @surface gets them. Returns the length of the whole list. */
+static uint32_t fh_extend(VkSurfaceKHR surface, VkSurfaceFormatKHR *real,
+      uint32_t n)
 {
    uint32_t i, total = n;
+   if (s_first_only && s_first_surface == VK_NULL_HANDLE)
+      s_first_surface = surface;
+   if (s_dropped || (s_first_only && surface != s_first_surface))
+      return n;
    for (i = 0; i < n && total < FH_FORMATS; i++)
    {
       if (     fh_is_10bit(real[i].format)
@@ -123,7 +150,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL fh_GetPhysicalDeviceSurfaceFormatsKHR(
    res = next(gpu, surface, &n, list);
    if (res != VK_SUCCESS && res != VK_INCOMPLETE)
       return res;
-   total = fh_extend(list, n);
+   total = fh_extend(surface, list, n);
    res   = fh_hand_out(total, count, formats != NULL);
    if (formats)
       for (i = 0; i < *count && i < total; i++)
@@ -155,7 +182,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL fh_GetPhysicalDeviceSurfaceFormats2KHR(
       return res;
    for (i = 0; i < n; i++)
       list[i] = real[i].surfaceFormat;
-   total = fh_extend(list, n);
+   total = fh_extend(info->surface, list, n);
    res   = fh_hand_out(total, count, formats != NULL);
    /* The caller's sType and pNext stay; only the pair is written. */
    if (formats)
@@ -171,17 +198,75 @@ static VKAPI_ATTR VkResult VKAPI_CALL fh_CreateSwapchainKHR(VkDevice device,
    PFN_vkCreateSwapchainKHR next = (PFN_vkCreateSwapchainKHR)
       s_next_gdpa(device, "vkCreateSwapchainKHR");
    VkSwapchainCreateInfoKHR real = *info;
+   int hdr10                     = 0;
+   VkResult res;
+   unsigned i;
 
    if (real.imageColorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT)
    {
       real.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
       s_hdr10_swapchains++;
+      hdr10                = 1;
       printf("[info] fake-hdr: HDR10 swapchain %lu, format %d, %ux%u\n",
             s_hdr10_swapchains, (int)real.imageFormat,
             real.imageExtent.width, real.imageExtent.height);
       fflush(stdout);
    }
-   return next(device, &real, cb, swapchain);
+   res = next(device, &real, cb, swapchain);
+   if (res == VK_SUCCESS && hdr10)
+      for (i = 0; i < FH_SWAPCHAINS; i++)
+         if (s_live[i] == VK_NULL_HANDLE)
+         {
+            s_live[i] = *swapchain;
+            s_told[i] = 0;
+            break;
+         }
+   return res;
+}
+
+static VKAPI_ATTR void VKAPI_CALL fh_DestroySwapchainKHR(VkDevice device,
+      VkSwapchainKHR swapchain, const VkAllocationCallbacks *cb)
+{
+   PFN_vkDestroySwapchainKHR next = (PFN_vkDestroySwapchainKHR)
+      s_next_gdpa(device, "vkDestroySwapchainKHR");
+   unsigned i;
+
+   for (i = 0; i < FH_SWAPCHAINS; i++)
+      if (swapchain != VK_NULL_HANDLE && s_live[i] == swapchain)
+         s_live[i] = VK_NULL_HANDLE;
+   next(device, swapchain, cb);
+}
+
+/* Presented as asked; after the drop each live HDR10 swapchain's next
+ * present reports it out of date, as a display that lost HDR would. */
+static VKAPI_ATTR VkResult VKAPI_CALL fh_QueuePresentKHR(VkQueue queue,
+      const VkPresentInfoKHR *info)
+{
+   PFN_vkQueuePresentKHR next = (PFN_vkQueuePresentKHR)
+      s_next_gdpa(s_device, "vkQueuePresentKHR");
+   VkResult res               = next(queue, info);
+   uint32_t i;
+   unsigned j;
+
+   if (s_drop_after && !s_dropped && ++s_presents >= s_drop_after)
+   {
+      s_dropped = 1;
+      printf("[info] fake-hdr: HDR10 dropped\n");
+      fflush(stdout);
+   }
+   if (!s_dropped || res < 0)
+      return res;
+   for (i = 0; i < info->swapchainCount; i++)
+      for (j = 0; j < FH_SWAPCHAINS; j++)
+         if (     s_live[j] != VK_NULL_HANDLE
+               && s_live[j] == info->pSwapchains[i] && !s_told[j])
+         {
+            s_told[j] = 1;
+            if (info->pResults)
+               info->pResults[i] = VK_ERROR_OUT_OF_DATE_KHR;
+            res = VK_ERROR_OUT_OF_DATE_KHR;
+         }
+   return res;
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL fh_CreateDevice(VkPhysicalDevice gpu,
@@ -191,6 +276,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL fh_CreateDevice(VkPhysicalDevice gpu,
    VkLayerDeviceCreateInfo *chain = (VkLayerDeviceCreateInfo*)info->pNext;
    PFN_vkGetInstanceProcAddr gipa;
    PFN_vkCreateDevice create;
+   VkResult res;
 
    while (chain && !(chain->sType == VK_STRUCTURE_TYPE_LOADER_DEVICE_CREATE_INFO
             && chain->function == VK_LAYER_LINK_INFO))
@@ -203,7 +289,10 @@ static VKAPI_ATTR VkResult VKAPI_CALL fh_CreateDevice(VkPhysicalDevice gpu,
    chain->u.pLayerInfo = chain->u.pLayerInfo->pNext;
 
    create = (PFN_vkCreateDevice)gipa(s_instance, "vkCreateDevice");
-   return create(gpu, info, cb, device);
+   res    = create(gpu, info, cb, device);
+   if (res == VK_SUCCESS)
+      s_device = *device;
+   return res;
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL fh_CreateInstance(
@@ -211,6 +300,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL fh_CreateInstance(
       VkInstance *instance)
 {
    VkLayerInstanceCreateInfo *chain = (VkLayerInstanceCreateInfo*)info->pNext;
+   const char *drop                 = getenv("FAKE_HDR_DROP_AFTER");
+   const char *first_only           = getenv("FAKE_HDR_FIRST_SURFACE_ONLY");
    PFN_vkCreateInstance create;
    VkResult res;
 
@@ -222,6 +313,8 @@ static VKAPI_ATTR VkResult VKAPI_CALL fh_CreateInstance(
 
    s_next_gipa         = chain->u.pLayerInfo->pfnNextGetInstanceProcAddr;
    chain->u.pLayerInfo = chain->u.pLayerInfo->pNext;
+   s_drop_after        = drop ? strtoul(drop, NULL, 10) : 0;
+   s_first_only        = first_only && !strcmp(first_only, "1");
 
    create = (PFN_vkCreateInstance)s_next_gipa(NULL, "vkCreateInstance");
    res    = create(info, cb, instance);
@@ -235,6 +328,10 @@ FH_EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL fh_GetDeviceProcAddr(
 {
    if (!strcmp(name, "vkCreateSwapchainKHR"))
       return (PFN_vkVoidFunction)fh_CreateSwapchainKHR;
+   if (!strcmp(name, "vkDestroySwapchainKHR"))
+      return (PFN_vkVoidFunction)fh_DestroySwapchainKHR;
+   if (!strcmp(name, "vkQueuePresentKHR"))
+      return (PFN_vkVoidFunction)fh_QueuePresentKHR;
    if (!strcmp(name, "vkGetDeviceProcAddr"))
       return (PFN_vkVoidFunction)fh_GetDeviceProcAddr;
    return s_next_gdpa ? s_next_gdpa(device, name) : NULL;
@@ -247,6 +344,8 @@ FH_EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL fh_GetInstanceProcAddr(
    FH_HOOK(CreateInstance);
    FH_HOOK(CreateDevice);
    FH_HOOK(CreateSwapchainKHR);
+   FH_HOOK(DestroySwapchainKHR);
+   FH_HOOK(QueuePresentKHR);
    FH_HOOK(GetPhysicalDeviceSurfaceFormatsKHR);
    FH_HOOK(GetPhysicalDeviceSurfaceFormats2KHR);
    FH_HOOK(GetInstanceProcAddr);

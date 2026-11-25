@@ -334,6 +334,19 @@ void android_second_display_request(unsigned ordinal, bool given_up)
          android_app->setSecondDisplay, (jint)ordinal, (jint)number);
 }
 
+bool android_second_surface_renew(int generation)
+{
+   JNIEnv *env;
+   struct android_app *android_app = (struct android_app*)g_android;
+
+   if (     !android_app || !android_app->renewSecondSurface
+         || !(env = jni_thread_getenv()))
+      return false;
+   CALL_VOID_METHOD_PARAM(env, android_app->activity->clazz,
+         android_app->renewSecondSurface, (jint)generation);
+   return true;
+}
+
 void android_blank_displays_request(const int *ids, unsigned count)
 {
    JNIEnv *env;
@@ -491,7 +504,7 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
 
 JNIEXPORT jint JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeSurfaceChanged(
       JNIEnv *env, jclass clazz, jobject surface, jint width, jint height,
-      jint request)
+      jint request, jfloat peak_nits)
 {
    ANativeWindow *window;
    struct android_second_surface *node;
@@ -537,6 +550,7 @@ JNIEXPORT jint JNICALL Java_com_retroarch_browser_retroactivity_SecondDisplayCon
    }
    node->window                       = window;
    node->dims                         = dims;
+   node->peak_nits                    = (float)peak_nits;
    node->generation                   = generation;
    node->request                      = (int)request;
    android_app->posted_second_window  = window;
@@ -4168,6 +4182,8 @@ static void frontend_unix_init(void *data)
          "hideKeyboard", "()V");
    GET_METHOD_ID(env, android_app->setSecondDisplay, class,
          "setSecondDisplay", "(II)V");
+   GET_METHOD_ID(env, android_app->renewSecondSurface, class,
+         "renewSecondSurface", "(I)V");
    GET_METHOD_ID(env, android_app->moveToDisplay, class,
          "moveToDisplay", "(II)V");
    GET_METHOD_ID(env, android_app->setBlankDisplays, class,

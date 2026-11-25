@@ -53,6 +53,7 @@ bool android_windows_create(void *owner,
    window->kind            = VIDEO_WINDOW_NATIVE_ANDROID;
    window->generation      = request->generation;
    window->dims            = 0;
+   window->peak_nits       = 0.0f;
    window->configured      = false;
    window->focused         = false;
    window->presentable     = false;
@@ -69,6 +70,22 @@ void android_windows_update(void *owner, video_window_native_t *window,
          && request->screen     == state->common.request.screen
          && request->generation == state->common.request.generation)
       state->common.request.settings = request->settings;
+}
+
+/* @state's surface drawn no more, and the renderer lets go of what it
+ * made of it */
+static void android_windows_unbind(android_window_t *state,
+      struct android_second_display *second)
+{
+   video_window_native_t *native = state->common.native;
+   android_second_surface_free(state->node);
+   state->node         = NULL;
+   native->surface     = NULL;
+   native->dims        = 0;
+   native->peak_nits   = 0.0f;
+   native->configured  = false;
+   native->presentable = false;
+   retro_atomic_store_release_int(&second->bound_surface, 0);
 }
 
 unsigned android_windows_poll(void *owner, video_window_event_t *events,
@@ -94,29 +111,29 @@ unsigned android_windows_poll(void *owner, video_window_event_t *events,
          android_second_surface_free(node);
          node = NULL;
       }
-      /* Java took the surface back: drawn no more, and the renderer
-       * lets go of what it made of it */
+      /* The surface Java is replacing, at another size */
+      if (node && node->generation == state->renew)
+      {
+         android_second_surface_free(node);
+         node = NULL;
+      }
+      /* Java took the surface back */
       if (     !node && state->node
             && state->node->generation
                == retro_atomic_load_acquire_int(&second->surface_gone))
-      {
-         video_window_native_t *native = state->common.native;
-         android_second_surface_free(state->node);
-         state->node         = NULL;
-         native->surface     = NULL;
-         native->dims        = 0;
-         native->configured  = false;
-         native->presentable = false;
-         retro_atomic_store_release_int(&second->bound_surface, 0);
-      }
+         android_windows_unbind(state, second);
       if (node)
       {
          video_window_native_t *native = state->common.native;
+         /* A new surface has carried nothing */
+         if (!state->node || state->node->generation != node->generation)
+            state->buffers = 0;
          if (state->node)
             android_second_surface_free(state->node);
          state->node         = node;
          native->surface     = node->window;
          native->dims        = node->dims;
+         native->peak_nits   = node->peak_nits;
          native->configured  = true;
          native->presentable = true;
          state->common.pending |= VIDEO_WINDOW_EVENT_BIT(GEOMETRY);
@@ -129,6 +146,21 @@ unsigned android_windows_poll(void *owner, video_window_event_t *events,
                (int)state->common.request.screen);
          retro_atomic_store_release_int(&second->bound_surface,
                node->generation);
+      }
+      /* Another kind of buffer than the surface carried: the display
+       * can keep state from the last kind, so Java is asked for a new
+       * surface, and this one is drawn no more */
+      if (state->node)
+      {
+         unsigned buffers = state->common.native->buffers;
+         if (     buffers && state->buffers && buffers != state->buffers
+               && android_second_surface_renew(state->node->generation))
+         {
+            state->renew = state->node->generation;
+            android_windows_unbind(state, second);
+         }
+         else
+            state->buffers = buffers;
       }
    }
    return video_windows_drain(owner, android_windows_at, events, capacity);
@@ -201,6 +233,7 @@ bool android_windows_take(void *owner, unsigned screen,
    window->kind         = VIDEO_WINDOW_NATIVE_ANDROID;
    window->generation   = state->common.request.generation;
    window->dims         = node ? node->dims : 0;
+   window->peak_nits    = node ? node->peak_nits : 0.0f;
    window->configured   = node != NULL;
    window->focused      = false;
    window->presentable  = node != NULL;

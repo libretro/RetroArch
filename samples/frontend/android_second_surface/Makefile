@@ -2,8 +2,10 @@
 # renderer: nativeSurfaceChanged(), nativeSurfaceDestroyed() and
 # android_second_surface_term() from frontend/drivers/platform_unix.c,
 # android_windows_poll() and the keep across a driver reinit from
-# gfx/common/android_windows.c, taken out of their files at build time
-# by extract.awk.
+# gfx/common/android_windows.c, the GL context's poll from
+# gfx/drivers_context/android_ctx.c and Vulkan's kind of buffers from
+# gfx/drivers/vulkan.c, taken out of their files at build time by
+# extract.awk.
 include ../../sample_objdir.mk
 
 TARGET   := android_second_surface_test$(EXE)
@@ -27,11 +29,17 @@ endif
 all: $(TARGET)
 
 second_surface_driver.h: extract.awk $(CORE_DIR)/frontend/drivers/platform_unix.c \
-		$(CORE_DIR)/gfx/common/android_windows.c
+		$(CORE_DIR)/gfx/common/android_windows.c \
+		$(CORE_DIR)/gfx/drivers_context/android_ctx.c \
+		$(CORE_DIR)/gfx/drivers/vulkan.c
 	( awk -v FUNCS=android_second_surface_free,android_second_surface_term,$(JNI)_nativeSurfaceChanged,$(JNI)_nativeSurfaceDestroyed \
 	     -f extract.awk $(CORE_DIR)/frontend/drivers/platform_unix.c && \
-	  awk -v FUNCS=android_windows_at,android_windows_poll,android_windows_let_go,android_windows_destroy,android_windows_keep,android_windows_take,android_windows_release_kept,android_windows_free \
-	     -f extract.awk $(CORE_DIR)/gfx/common/android_windows.c ) > $@.tmp
+	  awk -v FUNCS=android_windows_at,android_windows_unbind,android_windows_poll,android_windows_let_go,android_windows_destroy,android_windows_keep,android_windows_take,android_windows_release_kept,android_windows_find,android_windows_free \
+	     -f extract.awk $(CORE_DIR)/gfx/common/android_windows.c && \
+	  awk -v FUNCS=android_gfx_ctx_window_buffers,android_gfx_ctx_window_poll \
+	     -f extract.awk $(CORE_DIR)/gfx/drivers_context/android_ctx.c && \
+	  awk -v FUNCS=vulkan_window_buffers \
+	     -f extract.awk $(CORE_DIR)/gfx/drivers/vulkan.c ) > $@.tmp
 	mv $@.tmp $@
 
 android_second_surface_test.o: android_second_surface_test.c second_surface_driver.h

@@ -823,6 +823,10 @@ enum vulkan_output_flags
    VK_OUTPUT_FLAG_FENCE_PENDING      = (1 << 6)
 };
 
+/* The caller's render pass for a swapchain in @format, VK_NULL_HANDLE
+ * for none */
+typedef VkRenderPass (*vulkan_output_pass_t)(void *data, VkFormat format);
+
 /* A second presentable surface on the context's device and queue, with
  * a swapchain of its own. The driver draws into it in the frame's own
  * submission, which signals semaphores[index], and presents it after.
@@ -832,9 +836,17 @@ enum vulkan_output_flags
 typedef struct vulkan_output
 {
    vulkan_context_t *owner;      /* borrowed: instance, device, queue */
+   /* Set by the caller before create */
+   vulkan_output_pass_t pass_for;
+   void *pass_data;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   /* Sends an HDR10 swapchain's metadata; NULL where the main window's
+    * gets none */
+   PFN_vkSetHdrMetadataEXT set_hdr_metadata;
+#endif
    VkSurfaceKHR surface;
    VkSwapchainKHR swapchain;
-   /* Set by the caller before create: the framebuffers are made for it */
+   /* pass_for's answer for format: the framebuffers are made for it */
    VkRenderPass render_pass;
    VkFence acquire_fence;
    VkImage images[VULKAN_MAX_SWAPCHAIN_IMAGES];
@@ -845,26 +857,37 @@ typedef struct vulkan_output
    VkSemaphore semaphores[VULKAN_MAX_SWAPCHAIN_IMAGES];
    struct vulkan_output_retired retired[VULKAN_OUTPUT_RETIRED_MAX];
    VkFormat format;
+   VkColorSpaceKHR color_space;
    VkPresentModeKHR present_mode;
    unsigned num_images;
    unsigned index;
    unsigned dims;                /* VIDEO_SCALE_PACK of the extent */
    unsigned flags;               /* VK_OUTPUT_FLAG_* */
+#ifdef VULKAN_HDR_SWAPCHAIN
+   /* The display's peak for the metadata, set by the caller; 0 for
+    * 1000 nits */
+   float peak_nits;
+#endif
+   /* The main window's 10-bit SDR option, set by the caller */
+   bool sdr_10bit;
 } vulkan_output_t;
 
 /* @output's surface, from @display and @surface as
  * vulkan_surface_create() takes them, and a swapchain of @dims (or of
- * the surface's own extent) in @owner's swapchain format: MAILBOX where
- * the surface offers it, else FIFO. @output is zeroed by the caller,
- * with render_pass set. False when it can't be made; retire still
- * frees what was. */
+ * the surface's own extent): in @owner's swapchain format; when
+ * @owner's output is HDR, in its format and colour space where the
+ * surface lists them, else in SDR. MAILBOX where the surface offers
+ * it, else FIFO. @output is zeroed by the caller, with pass_for,
+ * pass_data, set_hdr_metadata, peak_nits and sdr_10bit set. False when
+ * it can't be made; retire still frees what was. */
 bool vulkan_output_create(vulkan_output_t *output,
       vulkan_context_t *owner, enum vulkan_wsi_type type,
       void *display, void *surface, unsigned dims);
 
-/* A new swapchain at @dims, the old one retired behind a fence. False
- * while it can't be yet (an acquire still pending, both retired slots
- * busy, a zero extent), and with VK_OUTPUT_FLAG_LOST when it can't be. */
+/* A new swapchain at @dims, the old one retired behind a fence, with
+ * its metadata sent when it is HDR10. False while it can't be yet (an
+ * acquire still pending, both retired slots busy, a zero extent), and
+ * with VK_OUTPUT_FLAG_LOST when it can't be. */
 bool vulkan_output_resize(vulkan_output_t *output, unsigned dims);
 
 /* True when images[index] is free to draw into. Never waits: an image
@@ -892,6 +915,17 @@ void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
 bool vulkan_is_hdr10_format(VkFormat format);
+
+/* @vk's vkSetHdrMetadataEXT where its HDR10 swapchain takes metadata,
+ * else NULL */
+PFN_vkSetHdrMetadataEXT vulkan_hdr_metadata_entry(
+      const gfx_ctx_vulkan_data_t *vk);
+
+/* SMPTE-2086 metadata for an HDR10 @swapchain, with @peak_nits (1000
+ * when 0) as the mastering display's peak and the content's light
+ * levels */
+void vulkan_hdr_metadata_send(PFN_vkSetHdrMetadataEXT set_hdr_metadata,
+      VkDevice device, VkSwapchainKHR swapchain, float peak_nits);
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
 RETRO_END_DECLS

@@ -1618,7 +1618,6 @@ public class RetroActivityCommon extends NativeActivity
     return display;
   }
 
-  @SuppressWarnings("deprecation")
   /**
    * The display's peak luminance in nits, as its HDR capabilities
    * report it (API 24); 0 where the display reports none or is not HDR.
@@ -1632,12 +1631,7 @@ public class RetroActivityCommon extends NativeActivity
       if (display == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.N)
         return 0.0f;
 
-      Display.HdrCapabilities caps = display.getHdrCapabilities();
-      if (caps == null || caps.getSupportedHdrTypes().length == 0)
-        return 0.0f;
-
-      float peak = caps.getDesiredMaxLuminance();
-      return (Float.isNaN(peak) || peak <= 0.0f) ? 0.0f : peak;
+      return SecondDisplayController.peakNits(display);
     }
     catch (Exception e)
     {
@@ -1940,6 +1934,20 @@ public class RetroActivityCommon extends NativeActivity
       @Override public void run() {
         if (secondDisplay != null)
           secondDisplay.show(ordinal, request);
+      }
+    });
+  }
+
+  /**
+   * Replaces the second display's surface of generation with a new one.
+   * Called from native code on any thread; posts to the UI thread and
+   * returns.
+   */
+  public void renewSecondSurface(final int generation) {
+    runOnUiThread(new Runnable() {
+      @Override public void run() {
+        if (secondDisplay != null)
+          secondDisplay.renew(generation);
       }
     });
   }

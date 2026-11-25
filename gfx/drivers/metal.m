@@ -2101,8 +2101,8 @@ static void buffer_chain_discard(buffer_chain_t *chain);
     * video paper-white (_hdrUniforms.BrightnessNits).  The composite
     * fragment scales the decoded sRGB overlay by PaperWhiteNits / 80 in
     * scRGB mode, and inverse-tonemaps the overlay to PaperWhiteNits
-    * before PQ encoding in HDR10 mode.  Matches Vulkan's hdr.ubo_menu
-    * uniform having its own brightness value. */
+    * before PQ encoding in HDR10 mode.  Matches Vulkan's menu composite
+    * pass having its own brightness value. */
    _hdrUniforms.PaperWhiteNits = nits;
 #else
    (void)nits;
@@ -2961,7 +2961,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
        * said about shader-emitted HDR — the overlay is always SDR.
        * BrightnessNits is replaced with PaperWhiteNits so UI brightness
        * is independent of core paper-white.  Mirrors Vulkan's
-       * vk->hdr.ubo_menu / is_menu_composite path. */
+       * is_menu_composite path. */
       HDRUniforms menuUni = *uniforms;
       menuUni.CoreViewport = simd_make_float4(0.0f, 0.0f,
                                               (float)drawable.texture.width,

@@ -28,6 +28,11 @@ typedef struct android_window
 {
    video_window_common_t common;      /* first */
    struct android_second_surface *node; /* the surface shown, or NULL */
+   /* What node's surface last carried, as the renderer's buffers that
+    * drew it said; 0 for unknown */
+   unsigned buffers;
+   /* The surface generation Java was asked to replace, 0 for none */
+   int renew;
    void *gl_surface;                  /* EGLSurface, android_ctx.c's */
    /* The ANativeWindow gl_surface was made for */
    void *gl_window;

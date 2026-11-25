@@ -103,7 +103,9 @@ COMPOSITE_PASS = '[Vulkan] HDR composite pass:'
 FRAMES = 90
 
 
-def build(d):
+def build_layer(d):
+    """Builds the fake HDR10 layer and its manifest in d; returns the
+    manifest's path."""
     cc = shlex.split(os.environ.get('CC', 'cc'))
     layer = d / 'libfake_hdr_layer.so'
     subprocess.run(cc + ['-std=gnu89', '-O2', '-shared', '-fPIC',
@@ -111,7 +113,8 @@ def build(d):
                          '-Werror=declaration-after-statement',
                          str(HERE / 'fake_hdr_layer.c'), '-o', str(layer)],
                    check=True)
-    (d / 'fake_hdr_layer.json').write_text('''{
+    manifest = d / 'fake_hdr_layer.json'
+    manifest.write_text('''{
  "file_format_version": "1.1.2",
  "layer": {
   "name": "VK_LAYER_RA_fake_hdr",
@@ -123,6 +126,12 @@ def build(d):
  }
 }
 ''')
+    return manifest
+
+
+def build(d):
+    cc = shlex.split(os.environ.get('CC', 'cc'))
+    build_layer(d)
     core = d / 'hdr_ui_core.so'
     subprocess.run(cc + ['-std=gnu89', '-O1', '-shared', '-fPIC',
                          '-Wall', '-Wextra',
