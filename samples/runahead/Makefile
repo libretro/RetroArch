@@ -53,7 +53,7 @@ CHECK_OBJS   := runahead_copy_check_test.o $(filter-out runahead_copy_test.o,$(O
 INSTANCE_TARGET := runahead_copy_instance_test
 INSTANCE_OBJS   := runahead_copy_instance_test.o $(filter-out runahead_copy_test.o,$(OBJS))
 
-all: $(TARGET) $(CHECK_TARGET) $(INSTANCE_TARGET) runahead_tmpdir_test
+all: $(TARGET) $(CHECK_TARGET) $(INSTANCE_TARGET) runahead_tmpdir_test runahead_tmpdir_switch2_test
 
 runahead_copy_fragment.c: $(CORE_DIR)/runahead.c
 	sed -n '/===== BEGIN runahead core-copy fragment =====/,/===== END runahead core-copy fragment =====/p' $< > $@
@@ -72,6 +72,8 @@ runahead_tmpdir_fragment.c: $(CORE_DIR)/runahead.c
 	sed -n '/===== BEGIN runahead tmp dir check =====/,/===== END runahead tmp dir check =====/p' $< > $@
 runahead_tmpdir_test: runahead_tmpdir_test.c runahead_tmpdir_fragment.c
 	$(CC) $(CFLAGS) $(flags) -o $@ runahead_tmpdir_test.c $(LDFLAGS)
+runahead_tmpdir_switch2_test: runahead_tmpdir_test.c runahead_tmpdir_fragment.c
+	$(CC) $(CFLAGS) $(flags) -D__SWITCH2__ -o $@ runahead_tmpdir_test.c $(LDFLAGS)
 
 preempt_slab_fragment.c: $(CORE_DIR)/runahead.c
 	sed -n '/===== BEGIN preempt slab =====/,/===== END preempt slab =====/p' $< > $@
@@ -96,15 +98,16 @@ $(CHECK_TARGET): $(CHECK_OBJS)
 $(INSTANCE_TARGET): $(INSTANCE_OBJS)
 	$(CC) -o$@ $(INSTANCE_OBJS) $(LDFLAGS)
 
-check: $(TARGET) $(CHECK_TARGET) $(INSTANCE_TARGET) runahead_tmpdir_test
+check: $(TARGET) $(CHECK_TARGET) $(INSTANCE_TARGET) runahead_tmpdir_test runahead_tmpdir_switch2_test
 	./$(TARGET)
 	./$(CHECK_TARGET)
 	./$(INSTANCE_TARGET)
 	./runahead_tmpdir_test
+	./runahead_tmpdir_switch2_test
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) runahead_copy_check_test.o runahead_copy_instance_test.o runahead_copy_fragment.c preempt_mask_fragment.c dense_cache_fragment.c preempt_slab_fragment.c input_list_fragment.c runahead_tmpdir_fragment.c
-	rm -f $(TARGET) $(CHECK_TARGET) $(INSTANCE_TARGET) runahead_tmpdir_test
+	rm -f $(TARGET) $(CHECK_TARGET) $(INSTANCE_TARGET) runahead_tmpdir_test runahead_tmpdir_switch2_test
 
 .PHONY: clean all check

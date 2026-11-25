@@ -135,6 +135,9 @@ APP_ICON := pkg/libnx/retroarch.jpg
 ARCH	:=	$(SWITCH2_CPU) -mtp=soft -fPIE
 
 ifeq ($(HAVE_DYNAMIC),1)
+  ifeq ($(strip $(SWITCH2_SHARED_ARCH)),)
+    $(error HAVE_DYNAMIC=1 needs a libounce SDK with shared module support)
+  endif
   ARCH := $(SWITCH2_SHARED_ARCH)
 endif
 
@@ -157,7 +160,7 @@ ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libounce/switch.specs $(ARCH) -Wl,--allow-multiple-definition -Wl,-Map,$(notdir $*.map)
 
 ifeq ($(HAVE_DYNAMIC),1)
-  LDFLAGS := -specs=$(SWITCH2_SHARED_SPECS) $(ARCH) $(SWITCH2_SHARED_LIBPATHS) -Wl,--allow-multiple-definition -Wl,-Map,$(notdir $*.map)
+  LDFLAGS = -specs=$(SWITCH2_SHARED_SPECS) $(ARCH) $(SWITCH2_SHARED_LIBPATHS) -Wl,--allow-multiple-definition -Wl,-Map,$(notdir $*.map)
 endif
 
 # add things from Makefile.common

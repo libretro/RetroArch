@@ -34,12 +34,6 @@
 #include <unistd.h>
 #endif
 
-#ifdef __SWITCH2__
-// not implemented for Switch2
-#define geteuid() 0
-#define getegid() 0
-#endif
-
 #include <encodings/utf.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
@@ -609,8 +603,8 @@ static char *get_tmpdir_alloc(const char *override_dir)
 }
 
 /* ===== BEGIN runahead tmp dir check =====
- * Whether the copy may go into @dir. On Windows and Android the temp
- * dir is the user's own. Elsewhere it is a shared one like /tmp, where
+ * Whether the copy may go into @dir. On Windows, Android and the
+ * Switch 2 the temp dir is the user's own. Elsewhere it is a shared one like /tmp, where
  * another user could have made @dir first, then planted a link to be
  * overwritten or swapped the copied core before it is loaded. So @dir
  * must be a real directory we own that no one else could have written
@@ -620,7 +614,7 @@ static char *get_tmpdir_alloc(const char *override_dir)
  * is closed off. */
 static bool runahead_tmp_dir_private(const char *dir)
 {
-#if !defined(_WIN32) && !defined(ANDROID)
+#if !defined(_WIN32) && !defined(ANDROID) && !defined(__SWITCH2__)
    struct stat st;
    if (     lstat(dir, &st) != 0
          || !S_ISDIR(st.st_mode)
