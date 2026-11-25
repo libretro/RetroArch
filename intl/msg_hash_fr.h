@@ -57,6 +57,7 @@ static const struct
    char s_534cf44d[108];
    char s_5f9d9369[83];
    char s_6e51030f[69];
+   char s_18e73263[295];
    char s_d32da23d[15];
    char s_551f3071[25];
    char s_1f6e5f89[65];
@@ -581,11 +582,16 @@ static const struct
    char s_734d2a61[7];
    char s_a7a97316[38];
    char s_8b421107[35];
+   char s_2ddc6b1f[34];
 #ifdef HAVE_MIST
    char s_3e0f9900[19];
    char s_67b3c923[23];
 #endif
    char s_543b5a62[30];
+   char s_d6e28152[19];
+   char s_35c7898b[20];
+   char s_51b1ba7c[19];
+   char s_c42e011b[21];
    char s_d1dc5a72[47];
    char s_b72aa8dd[50];
    char s_1d9a045d[49];
@@ -594,6 +600,11 @@ static const struct
    char s_145f5880[27];
    char s_b1b9fd35[37];
    char s_0cc72b4d[35];
+   char s_d895f586[28];
+   char s_45fc8d17[37];
+   char s_9c10150b[8];
+   char s_1b848e1d[29];
+   char s_0d0d2449[17];
    char s_9af4bf52[28];
    char s_e5d096ab[22];
    char s_b3d0e60e[34];
@@ -2246,6 +2257,7 @@ static const struct
    char s_8356c98c[26];
    char s_5c7bbce1[26];
    char s_cd916c68[26];
+   char s_f017f754[18];
    char s_8fe41f79[38];
    char s_2c296537[30];
    char s_519cd5f8[50];
@@ -2259,6 +2271,7 @@ static const struct
    char s_6d353bd6[12];
    char s_3f874a40[14];
    char s_da093426[22];
+   char s_29f62899[30];
    char s_d9b00fbd[27];
    char s_0a008a9d[9];
    char s_9c6ed9ca[18];
@@ -2405,10 +2418,17 @@ static const struct
 #endif
 #endif
    char s_f4341e25[37];
+   char s_28774055[15];
+   char s_28774056[15];
+   char s_28774057[15];
    char s_e09bad69[12];
+   char s_207186e9[27];
+   char s_f09399af[13];
    char s_f66c7b67[12];
+   char s_efe678d9[8];
    char s_cc973e8a[8];
    char s_b9d37039[182];
+   char s_79f9b43b[18];
    char s_1249554a[19];
    char s_d0a04fe4[15];
    char s_c682e4e2[16];
@@ -2537,11 +2557,17 @@ static const struct
    char s_a40653a7[40];
    char s_e67b672d[53];
    char s_52e3d6ea[41];
+   char s_0eea4a53[32];
    char s_f387bafb[21];
    char s_2c868ae4[12];
    char s_9c535394[10];
+   char s_8fb9d92f[7];
+   char s_fcdb4d6c[13];
    char s_34a16f69[20];
    char s_7706edf0[20];
+   char s_0356de68[11];
+   char s_0356de69[11];
+   char s_92c235ae[10];
    char s_3253994e[9];
    char s_c992346c[35];
    char s_580e244f[7];
@@ -2586,9 +2612,32 @@ static const struct
    char s_45816e1d[29];
    char s_730df420[23];
    char s_bcddf275[8];
+   char s_16aa0100[30];
+   char s_2cf050f5[30];
+   char s_6df7cdca[39];
+   char s_9e5c39b2[31];
+   char s_9e5c39b3[31];
+   char s_9e5c39b4[31];
+   char s_9e5c39b5[31];
    char s_bddbac76[12];
+   char s_9e5c39b6[29];
+   char s_9e5c39b7[31];
+   char s_9e5c39b8[21];
+   char s_9e5c39b9[15];
+   char s_9e5c39ba[15];
+   char s_9e5c39bb[60];
+   char s_9e5c39bc[52];
+   char s_9e5c39bd[15];
+   char s_9e5c39be[15];
+   char s_9e5c39bf[15];
+   char s_66ae393b[29];
+   char s_9e5c39c0[15];
    char s_482ee1f1[11];
+   char s_3794746e[40];
    char s_214b7699[13];
+   char s_3e628390[9];
+   char s_6b25e2a0[18];
+   char s_2cfb2ac2[29];
    char s_258060bf[48];
    char s_3bbc8b05[82];
    char s_e595f6df[66];
@@ -2603,7 +2652,9 @@ static const struct
    char s_8f379310[59];
    char s_6a9b757c[35];
    char s_6c52dfb1[35];
+   char s_b9bc0c48[34];
    char s_334daaaa[9];
+   char s_f418b4b6[30];
    char s_9119ef97[32];
 #if defined (WIIU)
 #ifdef WIIU
@@ -2612,6 +2663,7 @@ static const struct
 #endif
    char s_84c46931[28];
    char s_ebf10493[15];
+   char s_79ea50ef[40];
    char s_a64b3a0b[29];
    char s_83e8dc72[29];
    char s_7cf985f0[47];
@@ -2941,7 +2993,11 @@ static const struct
    char s_791acb32[92];
    char s_92cf524f[33];
    char s_48e88dc4[160];
+   char s_33c09b4d[108];
    char s_3d233cd0[81];
+   char s_f4ce0000[61];
+   char s_18d7f879[69];
+   char s_96d0072a[301];
    char s_9198f1a0[198];
    char s_dfe733cb[385];
    char s_165e564b[336];
@@ -4028,7 +4084,10 @@ static const struct
    char s_8cee3615[310];
    char s_87ba81db[187];
    char s_58c80718[347];
+   char s_14ce7a81[116];
+   char s_c94003ba[238];
    char s_dc6f9d69[58];
+   char s_552c6b9c[94];
    char s_894ecb9a[400];
    char s_67d549fd[41];
    char s_afac733c[38];
@@ -4077,6 +4136,17 @@ static const struct
    char s_9506fc7d[126];
    char s_9506fc7e[126];
    char s_47ae341f[118];
+   char s_cc84c32d[66];
+   char s_317fe827[6];
+   char s_56d55f63[309];
+#if defined(__APPLE__)
+   char s_e7165c55[435];
+#endif
+#if defined(_WIN32)
+   char s_1b4f6a0d[352];
+#endif
+   char s_ca351f14[18];
+   char s_fa09f4f6[54];
    char s_48696c85[120];
 #if defined (WIIU)
 #ifdef WIIU
@@ -4085,6 +4155,7 @@ static const struct
 #endif
    char s_3c13e61f[120];
    char s_d96182c1[42];
+   char s_675acf1d[129];
    char s_93bbb839[135];
    char s_4d0b4ce0[135];
    char s_f99a7d5e[273];
@@ -4752,6 +4823,10 @@ static const struct
    "k_2 par exemple).",
    "Valeur du chemin d'acc\303\250s personnalis\303\251 pour le pilote OSS (/dev/dsp par exemple).",
    "Adresse IP personnalis\303\251e d'un serveur RSound pour le pilote RSound.",
+   "Pilote audio, Android 8.0 et versions ult\303\251rieures. Latence plus faible qu\342\200\231avec"
+   " OpenSSL ; les configurations surround sont transmises vers une sortie qui ne prend en charge qu"
+   "e le format PCM st\303\251r\303\251o, sous forme de flux AC-3, lequel est ensuite d\303\251cod"
+   "\303\251 (Android 14 et versions ult\303\251rieures).",
    "Pilote OpenAL.",
    "Pilote ALSA par d\303\251faut.",
    "Pilote ALSA avec prise en charge de plusieurs fils d'ex\303\251cution.",
@@ -5541,11 +5616,16 @@ static const struct
    "C\305\223urs",
    "Exclure du menu 'C\305\223urs sans contenu'",
    "D\303\251marrer un c\305\223ur automatiquement",
+   "V\303\251rifier les signatures du c\305\223ur",
 #ifdef HAVE_MIST
    "Installer le c\305\223ur",
    "D\303\251sinstaller le c\305\223ur",
 #endif
    "Toujours sugg\303\251rer des c\305\223urs",
+   "Confiance du c\305\223ur",
+   "Sign\303\251 par libretro",
+   "Approuv\303\251 par vous",
+   "Pas encore v\303\251rifi\303\251",
    "Sauvegarder les c\305\223urs lors de la mise \303\240 jour",
    "Compresser les sauvegardes automatiques de c\305\223urs",
    "Taille de l'historique de sauvegarde des c\305\223urs ",
@@ -5554,6 +5634,11 @@ static const struct
    "T\303\251l\303\251chargement de c\305\223urs",
    "R\303\251glages de mise \303\240 jour des c\305\223urs",
    "Afficher les c\305\223urs exp\303\251rimentaux",
+   "Avertissement de s\303\251curit\303\251",
+   "Toujours faire confiance \303\240 ce c\305\223ur",
+   "Annuler",
+   "Installer et faire confiance",
+   "Charger une fois",
    "Architecture du processeur ",
    "C\305\223urs de processeur ",
    "Fr\303\251quence maximale pour le c\305\223ur",
@@ -7229,6 +7314,7 @@ static const struct
    "Points/pouce de l'\303\251cran ",
    "Hauteur de l'\303\251cran (mm) ",
    "Largeur de l'\303\251cran (mm) ",
+   "Cadence du pilote",
    "Identifiant de l'interface graphique ",
    "Nom de l'interface graphique ",
    "Syst\303\250me d'exploitation de l'interface graphique ",
@@ -7242,6 +7328,7 @@ static const struct
    "Non charg\303\251",
    "Non aliment\303\251",
    "Version de RetroArch ",
+   "Mise \303\240 l'\303\251chelle temporelle",
    "Pilote de contexte vid\303\251o ",
    "Syst\303\250me",
    "Capturer l'\303\251cran",
@@ -7388,12 +7475,19 @@ static const struct
 #endif
 #endif
    "D\303\251sactiver la composition de bureau",
+   "Pr\303\251r\303\251glage 1",
+   "Pr\303\251r\303\251glage 2",
+   "Pr\303\251r\303\251glage 3",
    "Par d\303\251faut",
+   "Suivre la structure locale",
+   "Cin\303\251matique",
    "Par d\303\251faut",
+   "Naturel",
    "Vid\303\251o ",
    "Votre pilote graphique n'est pas compatible avec le pilote vid\303\251o actuel de RetroArch, ret"
    "our au pilote %s. Veuillez red\303\251marrer RetroArch pour que les modifications prennent effet"
    ".",
+   "Cadence du pilote",
    "Pr\303\251sentation DXGI",
    "Filtre vid\303\251o ",
    "Filtres vid\303\251o ",
@@ -7523,11 +7617,17 @@ static const struct
    "Synchronisation \303\240 la ligne de balayage",
    "D\303\251calage de synchronisation de la ligne de balayage",
    "Simulation de ligne de balayage roulante",
+   "Affichage %u de l'\303\251cran de jeu",
    "Disposition d'\303\251cran",
    "Horizontale",
    "Verticale",
+   "\303\211cran",
+   "Plein \303\251cran",
    "Hauteur de fen\303\252tre",
    "Largeur de fen\303\252tre",
+   "Fen\303\252tre X",
+   "Fen\303\252tre Y",
+   "\303\211cran %u",
    "\303\211chelle",
    "Changement de mode d'affichage SDL",
    "Vid\303\251o",
@@ -7572,9 +7672,32 @@ static const struct
    "Intervalle d'\303\251change V-Sync",
    "Synchronisation vid\303\251o",
    "Vid\303\251os",
+   "Mise \303\240 l'\303\251chelle temporelle",
+   "Super r\303\251solution NVIDIA DLSS",
+   "Super R\303\251solution AMD FidelityFX (FSR)",
+   "Pr\303\251r\303\251glage A (CNN, DLSS 2/3)",
+   "Pr\303\251r\303\251glage B (CNN, DLSS 2/3)",
+   "Pr\303\251r\303\251glage C (CNN, DLSS 2/3)",
+   "Pr\303\251r\303\251glage D (CNN, DLSS 2/3)",
    "Par d\303\251faut",
+   "Pr\303\251r\303\251glage E (CNN, DLSS 3)",
+   "Pr\303\251r\303\251glage F (CNN, DLSS 2/3)",
+   "Pr\303\251r\303\251glage G (CNN)",
+   "Pr\303\251r\303\251glage H",
+   "Pr\303\251r\303\251glage I",
+   "Pr\303\251r\303\251glage J (transformateur, moins d\342\200\231images fant\303\264mes)",
+   "Pr\303\251r\303\251glage K (transformateur, meilleure qualit\303\251)",
+   "Pr\303\251r\303\251glage L",
+   "Pr\303\251r\303\251glage M",
+   "Pr\303\251r\303\251glage N",
+   " (absent de ce runtime DLSS)",
+   "Pr\303\251r\303\251glage O",
    "Equilibr\303\251",
+   "Natif (DLAA, anticr\303\251nelage uniquement)",
    "Performances",
+   "Qualit\303\251",
+   "Ultra-performance",
+   "Super r\303\251solution Intel XeSS",
    "Pipeline vid\303\251o sur plusieurs fils d'ex\303\251cution",
    "R\303\251gulation de la cadence d'affichage avec vid\303\251o sur plusieurs fils d'ex\303\251cut"
    "ion",
@@ -7590,7 +7713,9 @@ static const struct
    "Position Y de l'affichage (Rapport d'aspect personnalis\303\251)",
    "D\303\251finir la largeur d'\303\251cran de VI",
    "Synchronisation verticale (V-Sync)",
+   "Syst\303\250me (d\303\251marrage sans \303\251chec)",
    "Syst\303\250me",
+   "<Utiliser le pilote syst\303\250me>",
    "Cha\303\256nes d'\303\251changes en attente",
 #if defined (WIIU)
 #ifdef WIIU
@@ -7599,6 +7724,7 @@ static const struct
 #endif
    "Mode plein \303\251cran fen\303\252tr\303\251",
    "Mode fen\303\252tr\303\251",
+   "\303\211crans de jeu sur d\342\200\231autres moniteurs",
    "Hauteur de fen\303\252tre maximale",
    "Largeur de fen\303\252tre maximale",
    "Utiliser une taille de fen\303\252tre personnalis\303\251e",
@@ -8138,8 +8264,16 @@ static const struct
    "Emp\303\252cher ce c\305\223ur d'\303\252tre affich\303\251 dans l'onglet/le menu 'C\305\223urs "
    "sans contenu'. Ne s'applique que lorsque le mode d'affichage est r\303\251gl\303\251 sur 'Person"
    "nalis\303\251'.",
+   "Avertir avant l'ex\303\251cution d'un c\305\223ur qui n'a pas \303\251t\303\251 sign\303\251 par"
+   " libretro ou qui a \303\251t\303\251 modifi\303\251 depuis.",
    "Sugg\303\251rer des c\305\223urs disponibles m\303\252me lorsqu'un c\305\223ur est charg\303\251"
    " manuellement.",
+   "RetroArch v\303\251rifie ce c\305\223ur lors de son prochain chargement.",
+   "Se charge sans avertissement de s\303\251curit\303\251, car libretro l'a sign\303\251.",
+   "Se charge sans avertissement de s\303\251curit\303\251 : vous avez choisi Toujours faire confian"
+   "ce ou Installer et faire confiance pour cet \303\251l\303\251ment, ou bien il a \303\251t\303"
+   "\251 install\303\251 au moment o\303\271 les v\303\251rifications de signature ont \303\251t\303"
+   "\251 mises en place. S\303\251lectionnez cette option pour ne plus lui faire confiance.",
    "Cr\303\251e automatiquement une sauvegarde de tous les c\305\223urs install\303\251s lors d'une "
    "mise \303\240 jour en ligne. Permet un retour facile vers un c\305\223ur fonctionnel si une mise"
    " \303\240 jour introduit une r\303\251gression.",
@@ -10141,7 +10275,15 @@ static const struct
    "\251crans. \303\200 utiliser \303\240 vos risques et p\303\251rils // Simule une ligne de balaya"
    "ge roulante basique au cours de plusieurs sous-images en divisant l'\303\251cran verticalement e"
    "t en rendant chaque partie de l'\303\251cran en fonction du nombre de sous-images disponibles.",
+   "L'\303\251cran sur lequel ce jeu s'affiche. Auto en s\303\251lectionne un automatiquement, D\303"
+   "\251sactiv\303\251 ne retient aucun \303\251cran.",
+   "O\303\271 cet \303\251cran de jeu s'affiche : dans la fen\303\252tre principale, dans une fen"
+   "\303\252tre d\303\251di\303\251e sur un moniteur, ou nulle part. Auto place l'\303\251cran de je"
+   "u 1 dans la fen\303\252tre principale et attribue aux autres une fen\303\252tre sur un autre mon"
+   "iteur.",
    "Comment disposer les \303\251crans des syst\303\250mes multi-\303\251crans.",
+   "L'endroit o\303\271 cet \303\251cran de jeu s'affiche, ainsi que la taille et la position de sa "
+   "fen\303\252tre.",
    "Permet \303\240 la fen\303\252tre SDL de basculer entre les modes d'affichage qu'elle r\303\251p"
    "ertorie. 'Auto' n'utilise cette fonction que lorsque le serveur d'affichage natif ne peut pas ch"
    "anger de mode. 'Toujours' supplante le serveur natif : CRT SwitchRes s\303\251lectionne alors un"
@@ -10267,6 +10409,29 @@ static const struct
    "\251finir la position sur l'axe Y de la fen\303\252tre d'affichage.",
    "Synchroniser la sortie vid\303\251o de la carte graphique avec la fr\303\251quence de rafra\303"
    "\256chissement de l'\303\251cran. Recommand\303\251.",
+   "Plantage lors de la derni\303\250re ex\303\251cution, utilisation du syst\303\250me",
+   "De %s",
+   "Utiliser un autre pilote Vulkan : s\303\251lectionnez \n\nson fichier .json dans share/vulkan/ic"
+   "d.d.\nN'utilisez que des pilotes provenant d'une source de confiance. La modification prendra ef"
+   "fet au prochain lancement de Vulkan.\nD\303\251marrage : pilote syst\303\250me. Pour une ex\303"
+   "\251cution sans celui-ci : --vulkan-driver=system",
+#if defined(__APPLE__)
+   "Utiliser un autre pilote Vulkan : s\303\251lectionnez son fichier .json, situ\303\251 dans le r"
+   "\303\251pertoire etc/vulkan/icd.d de Homebrew, dans une version de MoltenVK ou dans le SDK Vulka"
+   "n.\nN'utilisez que des pilotes provenant d'une source en laquelle vous avez confiance. Ce change"
+   "ment prendra effet au prochain d\303\251marrage de Vulkan.\nD\303\251marrage : pilote syst\303"
+   "\250me. Pour une ex\303\251cution sans celui-ci : open -a RetroArch --args --vulkan-driver=syste"
+   "m",
+#endif
+#if defined(_WIN32)
+   "Utiliser un autre pilote Vulkan : s\303\251lectionnez son fichier .json, qui se trouve g\303\251"
+   "n\303\251ralement \303\240 c\303\264t\303\251 du fichier .dll correspondant.\nN'utilisez que des"
+   " pilotes provenant d'une source de confiance. Ce changement prendra effet au prochain d\303\251m"
+   "arrage de Vulkan.\nD\303\251marrage : pilote syst\303\250me. Pour une ex\303\251cution sans celu"
+   "i-ci : --vulkan-driver=system",
+#endif
+   "Non utilis\303\251 : %s",
+   "%s est r\303\251utilis\303\251 lors du prochain d\303\251marrage normal",
    "Synchronisation mat\303\251rielle du processeur et du processeur graphique. R\303\251duit la lat"
    "ence mais affecte les performances.",
 #if defined (WIIU)
@@ -10278,6 +10443,8 @@ static const struct
    "En mode plein \303\251cran, utiliser plut\303\264t une fen\303\252tre en plein \303\251cran pour"
    " emp\303\252cher les changements de mode d'affichage.",
    "Modifier les r\303\251glages du mode fen\303\252tr\303\251.",
+   "Permettre aux \303\251crans de jeu et au menu d\342\200\231utiliser d\342\200\231autres moniteur"
+   "s. D\303\251sactiv\303\251 regroupe le tout dans une seule fen\303\252tre.",
    "D\303\251finit la hauteur maximale de la fen\303\252tre d'affichage lors du redimensionnement au"
    "tomatique bas\303\251e sur '\303\211chelle en mode fen\303\252tr\303\251'.",
    "D\303\251finit la largeur maximale de la fen\303\252tre d'affichage lors du redimensionnement au"
@@ -10993,7 +11160,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (256778u
+      (sizeof(msg_hash_fr_blob) == (259852u
 #ifdef ANDROID
        + 373u
 #endif
@@ -11526,6 +11693,12 @@ typedef char msg_hash_fr_blob_check[
 #if defined(RARCH_MOBILE)
        + 166u
 #endif
+#if defined(__APPLE__)
+       + 435u
+#endif
+#if defined(_WIN32)
+       + 352u
+#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 142u
@@ -11603,6 +11776,7 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AAUDIO,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
    (msg_hash_id_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
@@ -12119,11 +12293,16 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SIGNATURE_CHECK,
 #ifdef HAVE_MIST
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_TRUST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_TRUST_SIGNED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_TRUST_TRUSTED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_TRUST_UNCHECKED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_COMPRESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -12132,6 +12311,11 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_ALWAYS_TRUST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_CANCEL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_INSTALL_TRUST,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_WARNING_LOAD_ONCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
@@ -13783,6 +13967,7 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DRIVER_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
@@ -13796,6 +13981,7 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_TEMPORAL_UPSCALER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
@@ -13942,10 +14128,17 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
 #endif
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_1,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_2,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_3,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_SKIN_STRUCTURE_FOLLOW,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_CINEMATIC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DLSS_NR_STYLE_NATURAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_DXGI_PRESENT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
@@ -14074,11 +14267,17 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_DISPLAY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_X,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_Y,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
@@ -14123,9 +14322,32 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_DLSS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_FSR,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_A,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_B,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_C,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_D,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_DEFAULT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_E,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_F,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_G,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_H,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_I,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_J,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_K,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_L,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_M,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_N,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_NOT_IN_RUNTIME,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_PRESET_O,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_BALANCED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_NATIVE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_PERFORMANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_QUALITY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_QUALITY_ULTRA_PERFORMANCE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_TEMPORAL_UPSCALER_XESS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
@@ -14140,7 +14362,9 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_SYSTEM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_VULKAN_DRIVER_PATH_USE_SYSTEM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -14149,6 +14373,7 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE_ANDROID,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
@@ -14467,7 +14692,11 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SIGNATURE_CHECK,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_TRUST,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_TRUST_SIGNED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_TRUST_TRUSTED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_COMPRESS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -15545,7 +15774,10 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY_DESKTOP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
@@ -15592,6 +15824,17 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_FROM,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD,
+#if defined(__APPLE__)
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_MACOS,
+#endif
+#if defined(_WIN32)
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_WINDOWS,
+#endif
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_NOT_USED,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
 #if defined (WIIU)
 #ifdef WIIU
@@ -15600,6 +15843,7 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE_ANDROID,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,

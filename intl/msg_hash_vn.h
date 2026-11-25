@@ -1801,6 +1801,11 @@ static const struct
    char s_b67675ad[11];
    char s_3361e11d[52];
    char s_9b3ca94b[41];
+   char s_34b33bd8[34];
+   char s_9152eee4[89];
+   char s_fd49f5cf[19];
+   char s_08f750cb[63];
+   char s_d043f4c7[87];
    char s_6d025795[19];
    char s_3181d160[30];
    char s_9433fa60[31];
@@ -4502,7 +4507,7 @@ static const struct
    char s_e65dcca2[265];
    char s_b0e2d55a[105];
    char s_7acad9c1[108];
-   char s_33d41589[116];
+   char s_33d41589[120];
    char s_3c679f0a[372];
    char s_5b059407[194];
    char s_d4b64f2d_0[500];
@@ -4965,7 +4970,7 @@ static const struct
    char s_1d50105b[131];
    char s_2e362cb6[133];
    char s_eed86f69[80];
-   char s_4579c9ec[193];
+   char s_4579c9ec[197];
    char s_ea0b7738[84];
    char s_654f5308[39];
    char s_c4a8e97c[12];
@@ -8038,6 +8043,15 @@ static const struct
    "B\341\272\241n c\303\263 ch\341\272\257c mu\341\273\221n x\303\263a danh s\303\241ch ch\306\241i"
    " \"%1\"?",
    "B\341\272\241n c\303\263 ch\341\272\257c mu\341\273\221n x\303\263a m\341\273\245c \"%1\"?",
+   "Nh\341\272\245n m\341\273\231t n\303\272t tr\303\252n tay c\341\272\247m",
+   "Nh\341\272\245p v\303\240o \304\221\303\242y, sau \304\221\303\263 nh\341\272\245n n\303\272t tr"
+   "\303\252n tay c\341\272\247m \304\221\341\273\203 g\303\241n \304\221i\341\273\201u khi\341\273"
+   "\203n n\303\240y.",
+   "%s tr\303\252n c\341\273\225ng %u",
+   "Kh\303\264ng c\303\263 tay c\341\272\247m n\303\240o \304\221\306\260\341\273\243c k\341\272\277"
+   "t n\341\273\221i v\341\273\233i c\341\273\225ng %u",
+   "Kh\303\264ng c\303\263 thao t\303\241c \304\221i\341\273\201u khi\341\273\203n n\303\240o c\303"
+   "\263 th\341\273\203 g\303\241n cho lo\341\272\241i thi\341\272\277t b\341\273\213 n\303\240y.",
    "Tr\303\254nh gi\341\272\243 l\341\272\255p",
    "Th\303\264ng tin tr\303\254nh gi\341\272\243 l\341\272\255p",
    "T\303\271y ch\341\273\215n tr\303\254nh gi\341\272\243 l\341\272\255p",
@@ -14609,9 +14623,9 @@ static const struct
    "Chi\341\273\201u r\341\273\231ng m\303\240 b\341\273\231 \304\221\341\273\225 b\303\263ng \304"
    "\221\341\272\247u ti\303\252n \304\221\306\260\341\273\243c th\303\264ng b\303\241o l\303\240 k"
    "\303\255ch th\306\260\341\273\233c c\341\273\247a h\303\254nh \341\272\243nh.",
-   "S\341\273\255 d\341\273\245ng \304\221\341\273\231 ph\303\242n gi\341\272\243i \304\221\341\272"
-   "\247u v\303\240o m\303\264 ph\341\273\217ng \304\221\303\243 c\341\272\245u h\303\254nh cho Sour"
-   "ceSize c\341\273\247a l\306\260\341\273\243t x\341\273\255 l\303\275 n\303\240y.",
+   "S\341\273\255 d\341\273\245ng \304\221\341\273\231 ph\303\242n gi\341\272\243i \304\221i\341\273"
+   "\201u khi\341\273\203n m\303\264 ph\341\273\217ng \304\221\303\243 c\341\272\245u h\303\254nh ch"
+   "o SourceSize c\341\273\247a l\306\260\341\273\243t x\341\273\255 l\303\275 n\303\240y.",
    "C\341\272\242NH B\303\201O: Hi\341\273\207n t\306\260\341\273\243ng nh\341\272\245p nh\303\241y "
    "nhanh c\303\263 th\341\273\203 g\303\242y ra hi\341\273\207n t\306\260\341\273\243ng l\306\260u "
    "\341\272\243nh tr\303\252n m\341\273\231t s\341\273\221 m\303\240n h\303\254nh. T\341\273\261 ch"
@@ -15838,8 +15852,8 @@ static const struct
    "\304\220\303\243 ph\303\241t hi\341\273\207n tay c\341\272\247m Xbox \304\221\341\273\235i \304"
    "\221\341\272\247u nh\306\260ng Windows kh\303\264ng c\303\263 tr\303\254nh \304\221i\341\273\201"
    "u khi\341\273\203n cho thi\341\272\277t b\341\273\213 n\303\240y: Th\303\264ng tin > Th\303\264n"
-   "g tin \304\221\341\272\247u v\303\240o > B\341\272\255t tay c\341\272\247m Xbox \304\221\341\273"
-   "\235i \304\221\341\272\247u.",
+   "g tin \304\221i\341\273\201u khi\341\273\203n > B\341\272\255t tay c\341\272\247m Xbox \304\221"
+   "\341\273\235i \304\221\341\272\247u.",
    "Kh\303\264ng th\341\273\203 thay \304\221\341\273\225i tr\303\254nh \304\221i\341\273\201u khi"
    "\341\273\203n c\341\273\247a tay c\341\272\247m Xbox \304\221\341\273\235i \304\221\341\272\247u"
    ".",
@@ -16450,7 +16464,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (332474u
+      (sizeof(msg_hash_vn_blob) == (332774u
 #ifdef ANDROID
        + 373u
 #endif
@@ -18825,6 +18839,11 @@ static const msg_hash_id_t msg_hash_vn_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONTROLS_DETECT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONTROLS_DETECT_TIP,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONTROLS_DEVICE_ON_PORT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONTROLS_NO_DEVICE_ON_PORT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONTROLS_NO_MAPPING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,

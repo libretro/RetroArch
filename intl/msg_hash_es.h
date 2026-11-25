@@ -266,6 +266,7 @@ static const struct
 #ifndef HAVE_DYNAMIC
    char s_e011fe61[50];
 #endif
+   char s_4e447c6c[46];
    char s_d9a51d02[24];
    char s_12e77e8f[9];
    char s_98760b94[31];
@@ -547,6 +548,7 @@ static const struct
    char s_8cefb843[17];
    char s_177845b3[28];
    char s_8fe1a777[27];
+   char s_f70695f9[36];
 #ifdef HAVE_GAME_AI
    char s_8dc1bc3e[12];
 #endif
@@ -771,6 +773,7 @@ static const struct
    char s_8cfdee2a[31];
    char s_40582c14[14];
    char s_c9afcfe6[19];
+   char s_20def9c4[23];
    char s_75d123f3[15];
    char s_b84a6df0[18];
    char s_35da9191[12];
@@ -1759,6 +1762,15 @@ static const struct
    char s_f70406ce[28];
    char s_66df5c89[29];
    char s_ca981b76[11];
+   char s_abf7d054[44];
+   char s_168e9ab8[45];
+   char s_17e4ac87[22];
+   char s_9ceaa254[31];
+   char s_0acff1e2[30];
+   char s_a2370507[28];
+   char s_46f4826e[12];
+   char s_a141feef[34];
+   char s_46f4c26a[35];
    char s_5c3ed998[34];
    char s_26d7f366[20];
    char s_26e72a47[20];
@@ -1781,6 +1793,14 @@ static const struct
    char s_4c11d465[14];
    char s_50a04cd9[19];
    char s_b893853f[9];
+   char s_4b45cce1[59];
+   char s_acb72279[30];
+   char s_c8fda88b[48];
+   char s_03228e63[19];
+   char s_59aa1662[33];
+   char s_4ace5c07[71];
+   char s_d257935f[19];
+   char s_ca344a5e[33];
    char s_11121f30[32];
    char s_01badaa0[20];
    char s_6127cc52[31];
@@ -1791,10 +1811,13 @@ static const struct
    char s_6d034072[7];
    char s_5dff78c4[39];
    char s_da05709b[13];
+   char s_6f9005a9[23];
    char s_9cfaa012[22];
    char s_39b2f935[25];
+   char s_37925bb8[5];
    char s_f585917a[37];
    char s_2942bc3c[33];
+   char s_379423a6[8];
    char s_3794f2cd[5];
    char s_0a3c5b6b[37];
    char s_c46fdd49[25];
@@ -1888,7 +1911,21 @@ static const struct
    char s_ea5b5020[9];
    char s_4707850d[20];
    char s_cbddcf50[20];
+   char s_c3f5a23a[43];
    char s_fc5ea9dc[9];
+   char s_0c328c48[48];
+   char s_b721a87b[39];
+   char s_046a7b75[54];
+   char s_5cfb6d7e[6];
+   char s_5d4eaaf8[10];
+   char s_eba55221[15];
+   char s_6998d87c[23];
+   char s_432e1ea9[30];
+   char s_042a2b60[18];
+   char s_f15876c3[65];
+   char s_c65fb536[30];
+   char s_a9f7cb6f[29];
+   char s_638bb6f6[52];
    char s_9abb40fc[21];
    char s_a9dc9f21[79];
    char s_6c786a36[33];
@@ -1896,6 +1933,7 @@ static const struct
    char s_25486b43[7];
    char s_37708c23[6];
    char s_78b36202[12];
+   char s_3b062f2a[16];
    char s_eb9ccf03[18];
    char s_a85eb9f5[28];
    char s_e9c54ff4[44];
@@ -2738,6 +2776,7 @@ static const struct
    char s_d59de774[32];
    char s_75c24fec[14];
    char s_697c4a13[15];
+   char s_b7331e1b[26];
    char s_2cb6ab5c[27];
    char s_552163d9[41];
    char s_c5055b7f[29];
@@ -2884,7 +2923,10 @@ static const struct
    char s_13904abd[13];
    char s_2c2fc2c9[10];
    char s_368db7bb[16];
+   char s_727f2bf0[20];
+   char s_e73542c8[16];
    char s_b8a131f0[17];
+   char s_0701b5b6[21];
    char s_550ef26d[20];
    char s_fd7a891b[34];
    char s_f9dd6e61[15];
@@ -3129,6 +3171,7 @@ static const struct
    char s_684b0cb1[32];
    char s_1d47af21[66];
    char s_6b3cfbe5[50];
+   char s_1fc320e7[188];
    char s_a64647a4[60];
    char s_67b81e63[175];
    char s_d5475a6a[227];
@@ -3411,6 +3454,7 @@ static const struct
    char s_8b8a59ad[173];
    char s_f426bf8c[61];
    char s_a1003f83[76];
+   char s_91465929[104];
    char s_ba14f8e9[14];
    char s_16246941[53];
    char s_a7f838ad[11];
@@ -3855,6 +3899,10 @@ static const struct
    char s_0e319bcf[54];
    char s_c11a10f0[172];
    char s_e8bf64a4[34];
+   char s_a2ced282[121];
+   char s_c21f6ed0[154];
+   char s_a81b3535[268];
+   char s_58917bdd[123];
    char s_1e8b7442[169];
    char s_bbc238b8[163];
    char s_a71a2320[84];
@@ -4206,6 +4254,7 @@ static const struct
    char s_ab839b13[144];
    char s_9c3126f6[162];
    char s_a9d0ac44[95];
+   char s_60cf8ce7[386];
    char s_bf6397c7[45];
    char s_6cf40c1b[122];
    char s_445f65a0[91];
@@ -4370,6 +4419,7 @@ static const struct
    char s_e65dcca2[217];
    char s_b0e2d55a[77];
    char s_7acad9c1[78];
+   char s_33d41589[99];
    char s_3c679f0a[409];
    char s_5b059407[152];
    char s_d4b64f2d_0[500];
@@ -4405,8 +4455,16 @@ static const struct
    char s_9506fc7d[119];
    char s_9506fc7e[119];
    char s_47ae341f[125];
+   char s_5e122df4[293];
    char s_cc84c32d[58];
    char s_317fe827[6];
+   char s_56d55f63[316];
+#if defined(__APPLE__)
+   char s_e7165c55[406];
+#endif
+#if defined(_WIN32)
+   char s_1b4f6a0d[339];
+#endif
    char s_ca351f14[13];
    char s_fa09f4f6[53];
    char s_48696c85[88];
@@ -4444,7 +4502,10 @@ static const struct
    char s_4059cb1a[47];
    char s_d9bcee6b[68];
    char s_934171e1[42];
+   char s_29cea8de[90];
+   char s_ed04ac36[76];
    char s_9bb1a0de[181];
+   char s_d0242624[63];
    char s_9a2d3f1b[91];
    char s_1ba1d249[110];
    char s_57dccf4f[45];
@@ -4495,6 +4556,9 @@ static const struct
    char s_73c9507b[84];
    char s_825152dd[35];
    char s_19e809ad[44];
+   char s_0ce0e4ba[85];
+   char s_7e60c5bc[108];
+   char s_d60ff959[34];
    char s_0256d7eb[81];
    char s_531b0e75[16];
    char s_b47316d5[26];
@@ -4566,6 +4630,12 @@ static const struct
    char s_6704b41f[54];
    char s_a1aa860c[52];
    char s_e15fc32e[83];
+   char s_ac27a0f5[202];
+   char s_b678a7e7[49];
+   char s_69adb50b[48];
+   char s_82383be8[380];
+   char s_adb65fc9[29];
+   char s_c0b7091e[36];
    char s_fe3554da[121];
    char s_1c95dd25[56];
    char s_94d31e5d[20];
@@ -4969,6 +5039,8 @@ static const struct
    char s_dd03b3c1[112];
    char s_6095bb1c[43];
    char s_263efdcf[52];
+   char s_0a76933b[122];
+   char s_abe248ca[111];
    char s_eebb17f1[34];
    char s_49a2e6d9[37];
    char s_d6c12228[48];
@@ -5024,6 +5096,7 @@ static const struct
    char s_594be7a3[16];
    char s_d8a50a58[135];
    char s_3112d333[118];
+   char s_3a74737d[149];
    char s_636e37aa[47];
    char s_1490e77d[83];
    char s_2f16f307[114];
@@ -5112,9 +5185,25 @@ static const struct
    char s_b7248c5d[53];
    char s_a3e7b13a[159];
    char s_966a8865[107];
+   char s_057af376[106];
+   char s_364db138[127];
+   char s_8df5cec1[98];
+   char s_2cd32f5c[147];
    char s_098459c5[58];
    char s_35e09a43[53];
+   char s_8ea9b2de[135];
+   char s_a27fec29[105];
+   char s_cc487e5f[123];
    char s_7182190e[141];
+   char s_50a4f0bc[27];
+   char s_454e49ac[36];
+   char s_5f9cb68e[53];
+   char s_6457895f[39];
+   char s_5149ee37[79];
+   char s_29f1ac61[77];
+   char s_669c3803[30];
+   char s_70024a05[32];
+   char s_fea43dd2[130];
    char s_a7ae1b42[24];
 #ifdef HAVE_LAKKA
    char s_ebacf443[33];
@@ -5622,6 +5711,7 @@ static const struct
 #ifndef HAVE_DYNAMIC
    "Recargar siempre el n\303\272cleo al ejecutar contenido",
 #endif
+   "Correcci\303\263n para las desconexiones en Android",
    "Icono de la aplicaci\303\263n",
    "Recursos",
    "Abrir panel de control de ASIO",
@@ -5903,6 +5993,7 @@ static const struct
    "Eliminar n\303\272cleo",
    "Eliminar copia de seguridad",
    "Mostrar nombre del n\303\272cleo",
+   "Notificaciones de falta de firmware",
 #ifdef HAVE_GAME_AI
    "IA de juego",
 #endif
@@ -6133,6 +6224,7 @@ static const struct
    "Por exclusividad para consolas",
    "Por controles",
    "Por desarrolladora",
+   "Por hardware de mejora",
    "Por franquicia",
    "Por tipo de juego",
    "Por g\303\251nero",
@@ -7124,6 +7216,15 @@ static const struct
    "Archivo presente, opcional:",
    "Archivo presente, necesario:",
    "Privacidad",
+   "Aceptar retransmisi\303\263n de PyroWave entrante",
+   "Rechazar retransmisi\303\263n de PyroWave entrante",
+   "Dispositivos PyroWave",
+   "Nombre de dispositivo PyroWave",
+   "Detecci\303\263n de PyroWave en LAN",
+   "Retransmitir todo RetroArch",
+   "Enviar a...",
+   "Directorio de shaders de PyroWave",
+   "Detener retransmisi\303\263n de PyroWave",
    "A\303\261adiendo archivos a la lista...",
    "A\303\261adir elemento...",
    "A\303\261adir archivos...",
@@ -7146,6 +7247,14 @@ static const struct
    "Shader actual",
    "Tema personalizado",
    "Eliminar",
+   "\302\277Seguro que quieres eliminar esta copia de seguridad?\n\n%1",
+   "Copia de seguridad eliminada.",
+   "\302\277Seguro que quieres eliminar este archivo?\n\n%1",
+   "Archivo eliminado.",
+   "Error al eliminar el archivo:\n%1",
+   "\302\277Seguro que quieres eliminar esta carpeta y todos sus contenidos?\n\n%1",
+   "Carpeta eliminada.",
+   "Error al eliminar la carpeta:\n%1",
    "Eliminar lista de reproducci\303\263n",
    "No volver a mostrar",
    "Descargar todas las miniaturas",
@@ -7156,10 +7265,13 @@ static const struct
    "Editar",
    "Introduce el nombre de la lista nueva:",
    "<m\303\272ltiples>",
+   "Fecha de modificaci\303\263n",
    "El archivo no existe.",
    "El archivo est\303\241 vac\303\255o.",
+   "Ruta",
    "La ruta del archivo est\303\241 en blanco.",
    "No se ha podido leer el archivo.",
+   "Tama\303\261o",
    "Tipo",
    "No se ha podido escribir el archivo.",
    "(para buscar miniaturas)",
@@ -7259,7 +7371,21 @@ static const struct
    "Logotipo",
    "Captura de pantalla",
    "Pantalla de t\303\255tulo",
+   "Error al solicitar la lista de contenidos.",
    "N\303\272cleos",
+   "No se ha podido recuperar la lista de n\303\272cleos.",
+   "Error al iniciar la lista de n\303\272cleos.",
+   "Error al iniciar la descarga de la lista de n\303\272cleos.",
+   "Fecha",
+   "Descargar",
+   "Descargado: %1",
+   "Error al descargar: %1",
+   "Error al iniciar la descarga.",
+   "Nombre de archivo",
+   "No se ha configurado la direcci\303\263n URL de recursos del buildbot.",
+   "No hay elementos disponibles.",
+   "No hay archivos disponibles.",
+   "Error al solicitar la lista de archivos de sistema.",
    "Error al actualizar.",
    "Se ha actualizado RetroArch. Reinicia la aplicaci\303\263n para aplicar los cambios.",
    "Actualizar RetroArch (\"nightly\")",
@@ -7267,6 +7393,7 @@ static const struct
    "Iconos",
    "Lista",
    "Advertencia",
+   "\302\277Qu\303\251 es esto?",
    "Personalizaciones",
    "Mostrar A\303\261adir a favoritos",
    "Mostrar A\303\261adir a la lista de reproducci\303\263n",
@@ -8111,6 +8238,7 @@ static const struct
    "Resoluci\303\263n de entrada simulada",
    "Alto simulado",
    "Ancho simulado",
+   "Usar resoluci\303\263n simulada",
    "Subfotogramas para shaders",
    "Activar contexto compartido por hardware",
    "Omitir fotogramas duplicados",
@@ -8259,7 +8387,10 @@ static const struct
    "Rayos de sol",
    "Submarino",
    "Rojo volc\303\241nico",
+   "Efecto de pl\303\241stico",
+   "Brillo de cinta",
    "Canal de shaders",
+   "Part\303\255culas en cinta",
    "Efecto de sombreado",
    "Iconos de interruptores de s\303\255/no",
    "Tema de iconos",
@@ -8671,6 +8802,9 @@ static const struct
    "Elimina este n\303\272cleo del disco.",
    "Elimina un archivo de la lista de copias de seguridad archivadas.",
    "Muestra el nombre del n\303\272cleo actual en el men\303\272.",
+   "Muestra una ventana al ejecutar un n\303\272cleo al que le faltan archivos de firmware necesario"
+   "s. Si el archivo de informaci\303\263n de n\303\272cleo incluye una direcci\303\263n URL, se ofr"
+   "ecer\303\241 su descarga.",
    "Muestra informaci\303\263n pertinente a la aplicaci\303\263n o n\303\272cleo.",
    "Guarda una cach\303\251 local con la informaci\303\263n de los n\303\272cleos instalados. Reduce"
    " en gran medida los tiempos de carga en aquellas plataformas que tengan un acceso a disco lento.",
@@ -9182,6 +9316,8 @@ static const struct
    "icas (mando).",
    "Muestra el cursor del rat\303\263n al utilizar una superposici\303\263n.",
    "Si hay m\303\241s usuarios que el m\303\241ximo: reproducir en autom\303\241tico (jugador %u)",
+   "Elige un mando conectado que controlar\303\241 al jugador %u, dejando al jugador que est\303\251"
+   " controlando ahora.",
    "Sin conexi\303\263n",
    "Detenido: hay m\303\241s mandos que el m\303\241ximo de usuarios",
    "Jugador %u",
@@ -9271,10 +9407,10 @@ static const struct
    " con dos dedos para hacer clic derecho. Usar mitades como botones: si presionas las mitades izqu"
    "ierda o derecha del panel, pulsar\303\241s el bot\303\263n asignado a cada mitad o amb",
    "os botones si tocas ambas mitades a la vez, es necesario reasignar sus controles.",
-   "Al seleccionar Usar mitades como botones en el Panel t\303\241ctil de mando: establece el bot"
+   "Al seleccionar Usar mitades como botones en el panel t\303\241ctil de mando: establece el bot"
    "\303\263n del RetroPad que se pulsar\303\241 al presionar la mitad izquierda del panel t\303\241"
    "ctil.",
-   "Al seleccionar Usar mitades como botones en el Panel t\303\241ctil de mando: establece el bot"
+   "Al seleccionar Usar mitades como botones en el panel t\303\241ctil de mando: establece el bot"
    "\303\263n del RetroPad que se pulsar\303\241 al presionar la mitad derecha del panel t\303\241ct"
    "il.",
    "Ajusta la escala X/Y de las coordenadas de la pantalla t\303\241ctil para adaptarlas al escalado"
@@ -9988,6 +10124,16 @@ static const struct
    "Ajusta el n\303\272mero de fotogramas preventivos que se ejecutar\303\241n. Puede haber distorsi"
    "ones visuales si el n\303\272mero de fotogramas retrasados supera al valor interno del juego.",
    "Cambia los ajustes de privacidad.",
+   "El nombre que se mostrar\303\241 a otros dispositivos RetroArch. Deja esta opci\303\263n en blan"
+   "co para usar el nombre de tu equipo.",
+   "Busca receptores de RetroArch cercanos y admite solicitudes de retransmisi\303\263n de esta red."
+   " Toda retransmisi\303\263n entrante deber\303\241 pasar por tu aprobaci\303\263n.",
+   "Incluye men\303\272s, notificaciones y el reproductor integrado con la mezcla de audio del front"
+   "-end. Desactiva esta opci\303\263n para usar solo el \303\241rea de visualizaci\303\263n del con"
+   "tenido y el audio del n\303\272cleo. Los cambios se aplicar\303\241n en la pr\303\263xima retran"
+   "smisi\303\263n de PyroWave.",
+   "Personalizaci\303\263n opcional para desarrolladores. Deja esta opci\303\263n en blanco para usa"
+   "r los shaders integrados en RetroArch.",
    "Indica la cantidad m\303\241xima de elementos que mostrar\303\241 la vista Todas las listas de r"
    "eproducci\303\263n en el modo de cuadr\303\255cula. Un valor de 0 mostrar\303\241 todos sus elem"
    "entos.",
@@ -10534,6 +10680,11 @@ static const struct
    "El directorio del que se cargar\303\241n los paquetes de tiempo de ejecuci\303\263n de DLSS. El "
    "valor predeterminado es \"upscalers/dlss\", dentro del directorio de RetroArch.",
    "Deja que el modelo localice superficies de piel y las trate como tales el resto del fotograma.",
+   "Ejecuta el modelo de renderizado neuronal de DLSS\302\2405 en el fotograma reescalado. Regenerar"
+   "\303\241 su iluminaci\303\263n y materiales con las profundidades y movimientos exportados por e"
+   "l n\303\272cleo, a costa de un retraso de unos pocos milisegundos por fotograma. La primera vez "
+   "que actives esta opci\303\263n, el modelo se ir\303\241 preparando en un segundo plano, las sigu"
+   "ientes activaciones lo reutilizar\303\241n.",
    "La fuerza del modelo en un valor porcentual.",
    "La fuerza que tendr\303\241 el modelo en los detalles peque\303\261os y en las estructuras de la"
    "s superficies en un valor porcentual.",
@@ -10923,6 +11074,8 @@ static const struct
    "\303\241genes peque\303\261as en im\303\241genes grandes.",
    "Establece el alto de imagen que se indicar\303\241 a la primera pasada de shaders.",
    "Establece el ancho de imagen que se indicar\303\241 a la primera pasada de shaders.",
+   "Utiliza una resoluci\303\263n de entrada simulada y configurada aqu\303\255 para el SourceSize d"
+   "e esta pasada.",
    "ADVERTENCIA: los parpadeos r\303\241pidos pueden provocar persistencia de la imagen (\"im\303"
    "\241genes fantasma\") en algunas pantallas. Utiliza esta opci\303\263n bajo tu propia responsabi"
    "lidad. // Simula de forma b\303\241sica el escalonamiento de las l\303\255neas de barrido a lo l"
@@ -11048,8 +11201,29 @@ static const struct
    "en el eje Y del \303\241rea de visualizaci\303\263n.",
    "Sincroniza la se\303\261al de v\303\255deo de la tarjeta gr\303\241fica con la frecuencia de act"
    "ualizaci\303\263n de pantalla. Se recomienda su uso.",
+   "Utiliza un paquete de controlador de Vulkan (en formato .zip) en vez del controlador del sistema"
+   ".\nUtiliza solo paquetes que hayan venido de sitios de confianza. Los cambios se aplicar\303\241"
+   "n la pr\303\263xima vez que se ejecute Vulkan. Inicio: controlador del sistema.\nInicial: contro"
+   "lador del sistema.",
    "La \303\272ltima ejecuci\303\263n se ha bloqueado, utilizando sistema",
    "De %s",
+   "Usar otro controlador de Vulkan: selecciona su archivo .json de share/vulkan/icd.d.\nSolo debes "
+   "utilizar controladores que vengan de un sitio de confianza. Los cambios se aplicar\303\241n la p"
+   "r\303\263xima vez que se inicie Vulkan.\nInicial: el controlador del sistema. Una ejecuci\303"
+   "\263n sin este controlador: --vulkan-driver=system",
+#if defined(__APPLE__)
+   "Usar otro controlador de Vulkan: selecciona su archivo .json de la ruta etc/vulkan/icd.d de Home"
+   "brew o una versi\303\263n de MoltenVK o del SDK de Vulkan.\nSolo debes utilizar controladores qu"
+   "e vengan de un sitio de confianza. Los cambios se aplicar\303\241n la pr\303\263xima vez que se "
+   "inicie Vulkan.\nInicial: el controlador del sistema. Una ejecuci\303\263n sin este controlador: "
+   "open -a RetroArch --args --vulkan-driver=system",
+#endif
+#if defined(_WIN32)
+   "Usar otro controlador de Vulkan: selecciona su archivo .json, que suele ir acompa\303\261ado de "
+   "un archivo .dll.\nSolo debes utilizar controladores que vengan de un sitio de confianza. Los cam"
+   "bios se aplicar\303\241n la pr\303\263xima vez que se inicie Vulkan.\nInicial: el controlador de"
+   "l sistema. Una ejecuci\303\263n sin este controlador: --vulkan-driver=system",
+#endif
    "Sin usar: %s",
    "Se volver\303\241 a usar %s en el pr\303\263ximo arranque normal",
    "Fuerza la sincron\303\255a entre CPU y GPU. Reduce la latencia a costa de perder rendimiento.",
@@ -11116,9 +11290,12 @@ static const struct
    "Selecciona la disposici\303\263n de la interfaz XMB.",
    "Muestra la secci\303\263n de Ajustes, que permite configurar el programa.",
    "Selecciona otro tema de colores de fondo.",
+   "Aplica un efecto de pl\303\241stico transparente con reflejos en los iconos y el texto del XMB.",
+   "A\303\261ade un brillo suave al shader del men\303\272 Cinta. Afectar\303\241 al rendimiento.",
    "Selecciona un fondo animado. Ciertos efectos pueden consumir recursos de la GPU. Si no est\303"
    "\241s contento con el rendimiento, desactiva esta opci\303\263n o utiliza un efecto m\303\241s s"
    "encillo.",
+   "Dibuja chispas que revolotean sobre el shader del men\303\272 Cinta.",
    "Muestra sombras en todos los iconos, miniaturas y textos. Afecta levemente al rendimiento.",
    "Muestra iconos en vez del texto S\303\255/No para representar aquellos ajustes del men\303\272 q"
    "ue tengan estas opciones.",
@@ -11174,6 +11351,11 @@ static const struct
    "Emparejamiento desconectado. Reinicia RetroArch para volver a conectar o emparejar.",
    "B\303\272squeda de Bluetooth finalizada.",
    "Iniciando interfaz de comandos en el puerto",
+   "El n\303\272cleo en ejecuci\303\263n ha tomado el control de la c\303\241mara, pero no la ha ini"
+   "ciado.",
+   "El acceso a la c\303\241mara est\303\241 desactivado. Activa la opci\303\263n Permitir c\303\241"
+   "mara para ver la previsualizaci\303\263n.",
+   "No se ha podido abrir la c\303\241mara.",
    "No se puede deducir la nueva ruta de configuraci\303\263n. Utilizando la fecha actual.",
    "Funcionalidades",
    "Cambiar tipo de miniatura",
@@ -11254,6 +11436,18 @@ static const struct
    "El n\303\272cleo no es compatible con guardados r\303\241pidos.",
    "El n\303\272cleo no es compatible con la caracter\303\255stica de deshacer guardados r\303\241pi"
    "dos.",
+   "Selecciona Aceptar para comenzar sin este firmware o Cancelar para abortar el inicio del n\303"
+   "\272cleo.\n\nNota: puedes desactivar estas notificaciones en Ajustes->N\303\272cleo->Notificacio"
+   "nes de falta de firmware.",
+   "Este firmware est\303\241 disponible para su descarga.",
+   "No se ha podido instalar el firmware necesario.",
+   "Selecciona Aceptar para descargar e instalar el firmware indicado dentro de la secci\303\263n \""
+   "Este firmware est\303\241 disponible para su descarga\".\nDeber\303\241s proveer t\303\272 cualq"
+   "uier otro archivo, respetando tu normativa jur\303\255dica local.\n\nSelecciona Cancelar para co"
+   "ntinuar sin descargar.\n\nNota: puedes desactivar estas notificaciones en Ajustes->N\303\272cleo"
+   "->Notificaciones de falta de firmware.",
+   "Falta un firmware necesario:",
+   "Debes proveer este firmware a mano.",
    "No se puede escribir en el directorio de informaci\303\263n del n\303\272cleo: se desactivar\303"
    "\241 la cach\303\251 de informaci\303\263n del n\303\272cleo",
    "El archivo de n\303\272cleo seleccionado ya est\303\241 instalado: ",
@@ -11730,6 +11924,10 @@ static const struct
    " un servidor intermediario.",
    "Eliminando copias de seguridad obsoletas: ",
    "Asignaci\303\263n de puertos para juego en red completada",
+   "Has recibido una solicitud de retransmisi\303\263n entrante de PyroWave. Ve a Ajustes > Grabaci"
+   "\303\263n para aceptarla o rechazarla.",
+   "Faltan los shaders de PyroWave. Debes configurar el directorio de shaders de PyroWave en Ajustes"
+   " > Grabaci\303\263n.",
    "Logro poco frecuente desbloqueado",
    "Leyendo la primera pista de datos...",
    "Estado del almacenamiento interno: solo lectura",
@@ -11791,6 +11989,8 @@ static const struct
    "o es compatible con guardados r\303\241pidos determin\303\255sticos.",
    "La reducci\303\263n predictiva de latencia ha sido desactivada porque este n\303\272cleo no es c"
    "ompatible con guardados r\303\241pidos.",
+   "La reducci\303\263n predictiva de latencia no ha podido restaurar el estado del n\303\272cleo. S"
+   "e ha reiniciado el mismo y desactivado la reducci\303\263n predictiva.",
    "Reducci\303\263n predictiva de latencia desactivada.",
    "Reducci\303\263n predictiva de latencia activada. Fotogramas de latencia eliminados: %u.",
    "Reducci\303\263n predictiva de latencia activada mediante una segunda instancia. Fotogramas de l"
@@ -11890,10 +12090,34 @@ static const struct
    "ivado en este n\303\272cleo. Si quieres volver a usarlo, selecci\303\263nalo de nuevo.",
    "El controlador personalizado de Vulkan no se ha iniciado correctamente. Usando el controlador de"
    "l sistema.",
+   "El paquete .json del controlador personalizado de Vulkan no es usable. Usando el controlador del"
+   " sistema.",
+   "El controlador personalizado de Vulkan no tiene caracter\303\255sticas necesarias para RetroArch"
+   ". Usando el controlador del sistema.",
+   "No se ha utilizado el controlador personalizado de Vulkan: %s. Usando el controlador del sistema"
+   ".",
+   "macOS ha puesto al controlador personalizado de Vulkan en cuarentena, el registro indica c\303"
+   "\263mo puedes anularla. Usando el controlador del sistema.",
    "Reinicia RetroArch para cambiar el controlador de Vulkan.",
    "Ejecutando con el controlador del sistema de Vulkan.",
+   "El controlador del contexto SDL3 no puede utilizar un controlador personalizado de Vulkan en mac"
+   "OS. Usando el controlador del sistema.",
+   "Los controladores personalizados la versi\303\263n 9 o superior de Android. Usando el controlado"
+   "r del sistema.",
+   "Los controladores personalizados la versi\303\263n 1.3.235 o superior del cargador de Vulkan. Us"
+   "ando el controlador del sistema.",
    "No se ha elegido el controlador personalizado de Vulkan en el men\303\272 o el controlador ha ca"
    "mbiado. Si quieres usarlo, selecci\303\263nalo de nuevo.",
+   "ha dado error al iniciarse",
+   "la biblioteca no se ha cargado (%s)",
+   "el cargador de Vulkan del sistema no lo ha utilizado",
+   "no se ha encontrado una GPU compatible",
+   "no se ha encontrado una GPU compatible (este dispositivo tiene una GPU Adreno)",
+   "no se ha encontrado una GPU compatible (este dispositivo tiene una GPU Mali)",
+   "el paquete est\303\241 da\303\261ado (%s)",
+   "ha dado error al iniciarse (%s)",
+   "El tiempo de ejecuci\303\263n de las gafas no puede utilizar el controlador personalizado de Vul"
+   "kan. Usando el controlador del sistema.",
    "Esperando al cliente...",
 #ifdef HAVE_LAKKA
    "Conectando a la se\303\261al wifi \"%s\"",
@@ -11907,7 +12131,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (283783u
+      (sizeof(msg_hash_es_blob) == (290056u
 #ifdef ANDROID
        + 329u
 #endif
@@ -12467,6 +12691,12 @@ typedef char msg_hash_es_blob_check[
        + 193u
        + 184u
 #endif
+#if defined(__APPLE__)
+       + 406u
+#endif
+#if defined(_WIN32)
+       + 339u
+#endif
 #if defined (WIIU)
 #ifdef WIIU
        + 172u
@@ -12745,6 +12975,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
 #ifndef HAVE_DYNAMIC
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
 #endif
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
@@ -13026,6 +13257,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_FIRMWARE_NOTIFICATION_ENABLE,
 #ifdef HAVE_GAME_AI
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS,
 #endif
@@ -13250,6 +13482,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ENHANCEMENT_HW,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
@@ -14238,6 +14471,15 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_ACCEPT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_DECLINE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_DEVICES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_DEVICE_NAME,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_DISCOVERY_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_FULL_OUTPUT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_SEND,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_SHADER_DIRECTORY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_PYROWAVE_STOP,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ADD_FILES,
@@ -14260,6 +14502,14 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_BACKUP_CONFIRM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_BACKUP_DONE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_CONFIRM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_DONE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_FILE_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_CONFIRM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_DONE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_FOLDER_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
@@ -14270,10 +14520,13 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_EDIT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FIELD_MULTIPLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_DATE_MODIFIED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_SIZE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_TYPE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
@@ -14366,7 +14619,21 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CONTENT_LIST_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORE_LIST_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORE_LIST_INIT_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_CORE_LIST_START_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_DATE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOAD,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOADED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOAD_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_DOWNLOAD_START_FAILED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_FILE_NAME,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_NO_BUILDBOT_URL,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_NO_ENTRIES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_NO_FILES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATER_SYSTEM_FILES_LIST_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
@@ -14374,6 +14641,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_WARNING,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_WHATS_THIS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
@@ -15216,6 +15484,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_INPUT_RES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_INPUT_RES_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_INPUT_RES_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SIMULATED_RES_PASS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SKIP_DUPE_FRAMES,
@@ -15362,7 +15631,10 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_PLASTIC_EFFECT_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_RIBBON_BLOOM_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_RIBBON_PARTICLES_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_XMB_THEME,
@@ -15598,6 +15870,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_DELETE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_FIRMWARE_NOTIFICATION_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_INFORMATION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
@@ -15878,6 +16151,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_ABOVE_MAX_USERS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_ADD,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_GONE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_NO_PORT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_INPUT_PLAYS_AS_PLAYER,
@@ -16321,6 +16595,10 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_PYROWAVE_DEVICE_NAME,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_PYROWAVE_DISCOVERY_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_PYROWAVE_FULL_OUTPUT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_PYROWAVE_SHADER_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_CUSTOM_THEME,
@@ -16672,6 +16950,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_AUTO_MASK,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_INTENSITY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_STRUCTURE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_DLSS_NR_LOCAL_TONE,
@@ -16832,6 +17111,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SIMULATED_INPUT_RES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SIMULATED_INPUT_RES_HEIGHT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SIMULATED_INPUT_RES_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SIMULATED_RES_PASS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SKIP_DUPE_FRAMES,
@@ -16861,8 +17141,16 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_CRASHED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_FROM,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD,
+#if defined(__APPLE__)
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_MACOS,
+#endif
+#if defined(_WIN32)
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_ICD_WINDOWS,
+#endif
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_NOT_USED,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_VULKAN_DRIVER_PATH_SAFE_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
@@ -16899,7 +17187,10 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_PLASTIC_EFFECT_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_RIBBON_BLOOM_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_RIBBON_PARTICLES_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_XMB_THEME,
@@ -16950,6 +17241,9 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MSG_BLUETOOTH_PAIRING_REMOVED,
    (msg_hash_id_t)MSG_BLUETOOTH_SCAN_COMPLETE,
    (msg_hash_id_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+   (msg_hash_id_t)MSG_CAMERA_PREVIEW_CORE_IDLE,
+   (msg_hash_id_t)MSG_CAMERA_PREVIEW_DISALLOWED,
+   (msg_hash_id_t)MSG_CAMERA_PREVIEW_FAILED,
    (msg_hash_id_t)MSG_CANNOT_INFER_NEW_CONFIG_PATH,
    (msg_hash_id_t)MSG_CAPABILITIES,
    (msg_hash_id_t)MSG_CHANGE_THUMBNAIL_TYPE,
@@ -17021,6 +17315,12 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
    (msg_hash_id_t)MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    (msg_hash_id_t)MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   (msg_hash_id_t)MSG_CORE_FIRMWARE_CONTINUE_PROMPT,
+   (msg_hash_id_t)MSG_CORE_FIRMWARE_DOWNLOAD_AVAILABLE,
+   (msg_hash_id_t)MSG_CORE_FIRMWARE_DOWNLOAD_FAILED,
+   (msg_hash_id_t)MSG_CORE_FIRMWARE_DOWNLOAD_PROMPT,
+   (msg_hash_id_t)MSG_CORE_FIRMWARE_MISSING,
+   (msg_hash_id_t)MSG_CORE_FIRMWARE_SUPPLY_MANUALLY,
    (msg_hash_id_t)MSG_CORE_INFO_CACHE_UNSUPPORTED,
    (msg_hash_id_t)MSG_CORE_INSTALLATION_ALREADY_INSTALLED,
    (msg_hash_id_t)MSG_CORE_INSTALLATION_COMPLETE,
@@ -17424,6 +17724,8 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MSG_PRIVATE_OR_SHARED_ADDRESS,
    (msg_hash_id_t)MSG_PRUNING_CORE_BACKUP_HISTORY,
    (msg_hash_id_t)MSG_PUBLIC_ADDRESS,
+   (msg_hash_id_t)MSG_PYROWAVE_INCOMING,
+   (msg_hash_id_t)MSG_PYROWAVE_SHADERS_MISSING,
    (msg_hash_id_t)MSG_RARE_ACHIEVEMENT_UNLOCKED,
    (msg_hash_id_t)MSG_READING_FIRST_DATA_TRACK,
    (msg_hash_id_t)MSG_READ_ONLY,
@@ -17479,6 +17781,7 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MSG_ROOM_PASSWORDED,
    (msg_hash_id_t)MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
    (msg_hash_id_t)MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   (msg_hash_id_t)MSG_RUNAHEAD_CORE_RESET,
    (msg_hash_id_t)MSG_RUNAHEAD_DISABLED,
    (msg_hash_id_t)MSG_RUNAHEAD_ENABLED,
    (msg_hash_id_t)MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
@@ -17567,9 +17870,25 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MSG_VRR_RUNLOOP_ENABLED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_CRASHED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_FAILED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_INVALID_ICD,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_MISSING_FEATURES,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_NOT_USED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_QUARANTINED,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_RESTART,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_SAFE_MODE,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_SDL3_UNSUPPORTED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNSUPPORTED_LOADER,
    (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_UNTRUSTED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_FAILED,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_LIBRARY,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_LOADER,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU_ADRENO,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_NO_GPU_MALI,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_PACKAGE,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_WHY_START,
+   (msg_hash_id_t)MSG_VULKAN_CUSTOM_DRIVER_XR_UNSUPPORTED,
    (msg_hash_id_t)MSG_WAITING_FOR_CLIENT,
 #ifdef HAVE_LAKKA
    (msg_hash_id_t)MSG_WIFI_CONNECTING_TO,

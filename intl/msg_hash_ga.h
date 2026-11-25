@@ -1794,6 +1794,12 @@ static const struct
    char s_b67675ad[14];
    char s_3361e11d[68];
    char s_9b3ca94b[62];
+   char s_2e4c5291[11];
+   char s_34b33bd8[31];
+   char s_9152eee4[87];
+   char s_fd49f5cf[18];
+   char s_08f750cb[26];
+   char s_d043f4c7[54];
    char s_6d025795[6];
    char s_3181d160[15];
    char s_9433fa60[15];
@@ -7404,6 +7410,13 @@ static const struct
    "&Roghnaigh...",
    "An bhfuil t\303\272 cinnte gur mian leat an seinmliosta \"%1\" a scriosadh?",
    "An bhfuil t\303\272 cinnte gur mian leat an mh\303\255r \"%1\" a scriosadh?",
+   "Anal\303\263gach",
+   "Br\303\272igh cnaipe ar an rialt\303\263ir",
+   "Clice\303\241il, ansin br\303\272igh an cnaipe ar an rialt\303\263ir a shol\303\241thra\303\255o"
+   "nn an t-ionchur seo.",
+   "%s ar an bport %u",
+   "Gan rialt\303\263ir ar phort %u",
+   "N\303\255l aon ionchuir le map\303\241il don chine\303\241l feiste seo.",
    "Cro\303\255",
    "Eolas Cro\303\255the",
    "Roghanna Cro\303\255",
@@ -12997,7 +13010,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (289664u
+      (sizeof(msg_hash_ga_blob) == (289891u
 #ifdef ANDROID
        + 390u
 #endif
@@ -15359,6 +15372,12 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONTROLS_ANALOG,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONTROLS_DETECT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONTROLS_DETECT_TIP,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONTROLS_DEVICE_ON_PORT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONTROLS_NO_DEVICE_ON_PORT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CONTROLS_NO_MAPPING,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
