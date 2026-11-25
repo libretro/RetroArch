@@ -1,0 +1,10 @@
+# A picture that grows from 64 x 48 to 128 x 96 in the console's frame 60,
+# the core telling the frontend the new size first. The state does not hold
+# what was told, so the run from the state tells it again.
+console 0 core=test
+option 0 link_test_render soft
+option 0 link_test_grow told:60
+30 checkpoint small
+90 save mid
+90 checkpoint mid
+150 end

@@ -8,11 +8,15 @@
 
 #include <libretro.h>
 
+#include "link_test_render.h"
+
 #define LT_MAX_PORTS      3
 #define LT_SYSRAM_SIZE    64
 #define LT_SRAM_SIZE      256
 #define LT_WIDTH          64
 #define LT_HEIGHT         48
+#define LT_GROWN_WIDTH    128          /* link_test_grow */
+#define LT_GROWN_HEIGHT   96
 #define LT_AUDIO_FRAMES   800
 #define LT_PENDING_MAX    64
 #define LT_PROTOCOL_MAX   64
@@ -86,6 +90,9 @@ struct lt_config
    unsigned ports, steps, sending_count, dupe_count, payload_len;
    uint32_t seed;
    enum lt_mode mode;
+   const struct lt_render *render; /* NULL: the picture drawn in one part */
+   uint64_t grow;                  /* the frame the picture grows in, or LT_NEVER */
+   bool grow_told;
    bool restart_ticks;
    bool extra_flags;
    bool save_in_advance;
@@ -134,6 +141,7 @@ struct lt_parked       /* the advance being made, which a save inside it holds *
 struct lt_machine
 {
    uint64_t frame, hash;
+   uint64_t part0;        /* what part 0 of the frame's picture is drawn with */
    uint32_t rng;
    bool sram_folded;
    unsigned char sysram[LT_SYSRAM_SIZE];
@@ -180,6 +188,8 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_mode",        "Mode; conform|nonconform|never_advance|no_progress|stale_load|"
                               "stale_save|stale_send|stale_release|release_error" },
    { "link_test_bad_frame",   "First frame of the mode; 0" },
+   { "link_test_render",      "Picture in two parts, around the frame's advances; off|soft" },
+   { "link_test_grow",        "Frame the picture grows in, told:N or untold:N; off" },
    { NULL, NULL }
 };
 
@@ -213,7 +223,10 @@ static bool lt_latch;
 static bool lt_kept;
 static uint64_t lt_kept_hash;
 
-static uint32_t lt_picture[LT_WIDTH * LT_HEIGHT];
+static struct lt_render_host lt_host;
+static unsigned lt_told_width, lt_told_height;
+
+static uint32_t lt_picture[LT_GROWN_WIDTH * LT_GROWN_HEIGHT];
 static int16_t lt_samples[LT_AUDIO_FRAMES * 2];
 static unsigned char lt_payload[RETRO_LINK_MAX_PAYLOAD];
 
@@ -527,6 +540,38 @@ static void lt_read_mode(void)
    }
 }
 
+static void lt_read_render(void)
+{
+   const char *s;
+   uint64_t v;
+   lt_cfg.grow = LT_NEVER;
+   if ((s = lt_option("link_test_render")))
+   {
+      if (!strcmp(s, "soft"))
+         lt_cfg.render = &lt_render_soft;
+      else if (strcmp(s, "off"))
+         lt_fail_option("link_test_render", s);
+   }
+   if ((s = lt_option("link_test_grow")) && strcmp(s, "off"))
+   {
+      bool told = !strncmp(s, "told:", 5);
+      if (     (told || !strncmp(s, "untold:", 7))
+            && lt_number(s + (told ? 5 : 7), LT_FRAME_LIMIT, &v))
+      {
+         lt_cfg.grow      = v;
+         lt_cfg.grow_told = told;
+      }
+      else
+         lt_fail_option("link_test_grow", s);
+      if (!lt_cfg.render)
+      {
+         lt_bump8(LT_RAM_ERRORS);
+         if (lt_log)
+            lt_log(RETRO_LOG_ERROR, "link test: link_test_grow: not with link_test_render off\n");
+      }
+   }
+}
+
 static void lt_read_options(void)
 {
    unsigned p;
@@ -565,6 +610,7 @@ static void lt_read_options(void)
    for (p = 0; p < LT_MAX_PORTS; p++)
       lt_read_port(p);
    lt_read_mode();
+   lt_read_render();
 }
 
 static uint64_t lt_tick(unsigned p, unsigned m)
@@ -998,6 +1044,90 @@ static void lt_draw(bool dupe)
    lt_video(lt_picture, LT_WIDTH, LT_HEIGHT, LT_WIDTH * sizeof(*lt_picture));
 }
 
+void lt_render_cell(unsigned width, unsigned height, unsigned part, uint64_t value,
+      unsigned i, struct lt_render_cell *cell)
+{
+   unsigned band   = part * 3 + i / 8;
+   unsigned stripe = i % 8;
+   uint64_t row    = lt_mix(value + band);
+   cell->width     = width / 8;
+   cell->height    = height / 6;
+   cell->x         = stripe * cell->width;
+   cell->y         = band * cell->height;
+   cell->rgb       = (uint32_t)(stripe & 1 ? (row & 0xFFFFFFUL) : ((row >> 24) & 0xFFFFFFUL));
+}
+
+bool lt_render_tell(unsigned width, unsigned height)
+{
+   struct retro_system_av_info info;
+   if (!lt_cfg.grow_told || (width == lt_told_width && height == lt_told_height))
+      return true;
+   lt_told_width  = width;
+   lt_told_height = height;
+   retro_get_system_av_info(&info);
+   info.geometry.base_width  = info.geometry.max_width  = width;
+   info.geometry.base_height = info.geometry.max_height = height;
+   return lt_environ(RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO, &info);
+}
+
+static void lt_render_fail(const char *what, uint64_t a, uint64_t b)
+{
+   lt_fail(what, 0, a, b);
+}
+
+static unsigned lt_soft_width, lt_soft_height;
+
+static bool lt_soft_load(const struct lt_render_host *host)
+{
+   (void)host;
+   return true;
+}
+
+/* A software frame carries its size, so a frontend may refuse to be told */
+static void lt_soft_begin(unsigned width, unsigned height)
+{
+   lt_render_tell(width, height);
+   lt_soft_width  = width;
+   lt_soft_height = height;
+   memset(lt_picture, 0, (size_t)width * height * sizeof(*lt_picture));
+}
+
+static void lt_soft_part(unsigned part, uint64_t value)
+{
+   unsigned i, x, y;
+   for (i = 0; i < LT_RENDER_CELLS; i++)
+   {
+      struct lt_render_cell c;
+      lt_render_cell(lt_soft_width, lt_soft_height, part, value, i, &c);
+      for (y = c.y; y < c.y + c.height; y++)
+         for (x = c.x; x < c.x + c.width; x++)
+            lt_picture[y * lt_soft_width + x] = c.rgb;
+   }
+}
+
+static void lt_soft_present(retro_video_refresh_t video, bool dupe)
+{
+   video(dupe ? NULL : lt_picture, lt_soft_width, lt_soft_height,
+         lt_soft_width * sizeof(*lt_picture));
+}
+
+static void lt_soft_unload(void)
+{
+}
+
+const struct lt_render lt_render_soft = {
+   lt_soft_load, lt_soft_begin, lt_soft_part, lt_soft_present, lt_soft_unload
+};
+
+/* The frame's picture begun and its part 0 drawn, before the frame's
+ * first advance */
+static void lt_begin(void)
+{
+   bool grown = lt_state.frame >= lt_cfg.grow;
+   lt_cfg.render->begin(grown ? LT_GROWN_WIDTH : LT_WIDTH, grown ? LT_GROWN_HEIGHT : LT_HEIGHT);
+   lt_cfg.render->part(0, lt_state.part0);
+}
+
 static void lt_sound(unsigned frames)
 {
    unsigned i;
@@ -1155,6 +1285,9 @@ void retro_run(void)
       at   = lt_state.parked.at;
       from = lt_state.parked.kind;
       m    = lt_state.parked.m;
+      /* Part 0 was drawn before the save, and is drawn again */
+      if (lt_cfg.render)
+         lt_begin();
    }
    else
    {
@@ -1172,6 +1305,11 @@ void retro_run(void)
       memset(&at, 0, sizeof(at));
       for (p = 0; p < lt_cfg.ports; p++)
          at.local[p] = lt_tick(p, 0);
+      if (lt_cfg.render)
+      {
+         lt_state.part0 = lt_state.hash;
+         lt_begin();
+      }
    }
 
    if (!bad || lt_cfg.mode != LT_NEVER_ADVANCE)
@@ -1202,19 +1340,32 @@ void retro_run(void)
       lt_state.port[p].base = lt_tick(p, lt_cfg.steps);
    lt_state.frame++;
    lt_store_hash();
-   lt_draw(dupe);
+   if (!lt_cfg.render)
+      lt_draw(dupe);
+   else
+   {
+      if (!dupe)
+         lt_cfg.render->part(1, lt_state.hash);
+      lt_cfg.render->present(lt_video, dupe);
+   }
    lt_sound(LT_AUDIO_FRAMES);
    if (bad && (lt_cfg.mode == LT_STALE_SAVE || lt_cfg.mode == LT_STALE_SEND))
       lt_kept = true;
    lt_kept_hash = lt_state.hash;
 }
 
-/* Save state: little-endian, one fixed size; ticks as positions */
+/* Save state: little-endian, one fixed size; ticks as positions. A picture
+ * drawn in two parts makes it 8 bytes longer, with part 0's value last. */
 #define LT_PORT_STATE_SIZE  (8 + 8 + 8 + 4 + 4 + 1 + 1 + 1 + LT_PENDING_MAX * (8 + 8 + 4 + 4))
 #define LT_PARKED_SIZE      (1 + 1 + 4 + LT_MAX_PORTS * (8 + 8) + 1 \
                              + LT_MAX_PORTS * (1 + 8 + 8 + 8 + 8))
 #define LT_STATE_SIZE       (4 + 8 + 8 + 4 + 1 + LT_SYSRAM_SIZE + LT_SRAM_SIZE \
                              + LT_MAX_PORTS * LT_PORT_STATE_SIZE + LT_PARKED_SIZE)
+
+static size_t lt_state_size(void)
+{
+   return LT_STATE_SIZE + (lt_cfg.render ? 8 : 0);
+}
 
 static unsigned char *lt_put(unsigned char *s, uint64_t v, unsigned bytes)
 {
@@ -1300,14 +1451,14 @@ static bool lt_get_parked(const unsigned char *s, struct lt_parked *k)
 
 size_t retro_serialize_size(void)
 {
-   return LT_STATE_SIZE;
+   return lt_state_size();
 }
 
 bool retro_serialize(void *data, size_t size)
 {
    unsigned char *s = (unsigned char*)data;
    unsigned p, i;
-   if (size < LT_STATE_SIZE)
+   if (size < lt_state_size())
       return false;
    s = lt_put(s, LT_STATE_MAGIC, 4);
    s = lt_put(s, lt_state.frame, 8);
@@ -1340,6 +1491,8 @@ bool retro_serialize(void *data, size_t size)
       }
    }
    s = lt_put_parked(s);
+   if (lt_cfg.render)
+      s = lt_put(s, lt_state.part0, 8);
    /* stale_send: a transfer the kept hash says is due, started by a save */
    if (lt_kept && lt_cfg.mode == LT_STALE_SEND && lt_kept_hash != lt_state.hash && lt_handle[0])
       lt_link.send_msg(lt_handle[0], lt_out(lt_state.port[0].base), RETRO_LINK_BROADCAST,
@@ -1354,7 +1507,7 @@ bool retro_unserialize(const void *data, size_t size)
    bool attached[LT_MAX_PORTS];
    unsigned p, i;
    uint64_t v;
-   if (size < LT_STATE_SIZE)
+   if (size < lt_state_size())
       return false;
    s = lt_get(s, &v, 4);
    if (v != LT_STATE_MAGIC || !(loaded = (struct lt_machine*)calloc(1, sizeof(*loaded))))
@@ -1406,6 +1559,8 @@ bool retro_unserialize(const void *data, size_t size)
       free(loaded);
       return false;
    }
+   if (lt_cfg.render)
+      lt_get(s + LT_PARKED_SIZE, &loaded->part0, 8);
    lt_state = *loaded;
    free(loaded);
    /* A port attached in one of the states and not in the other */
@@ -1496,6 +1651,17 @@ bool retro_load_game(const struct retro_game_info *game)
          return false;
       }
    }
+   if (lt_cfg.render)
+   {
+      lt_host.environment = lt_environ;
+      lt_host.log         = lt_log;
+      lt_host.fail        = lt_render_fail;
+      lt_host.option      = lt_option;
+      lt_told_width       = LT_WIDTH;
+      lt_told_height      = LT_HEIGHT;
+      if (!lt_cfg.render->load(&lt_host))
+         return false;
+   }
    for (p = 0; p < LT_MAX_PORTS; p++)
       lt_state.sysram[LT_RAM_INDEX + p] = 0xFF;
    lt_memory_maps();
@@ -1523,6 +1689,8 @@ void retro_unload_game(void)
          lt_link.detach(lt_handle[p]);
       lt_handle[p] = NULL;
    }
+   if (lt_cfg.render)
+      lt_cfg.render->unload();
 }
 
 unsigned retro_get_region(void)

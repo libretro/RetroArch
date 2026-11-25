@@ -15,12 +15,14 @@
 # parked at the checkpoint named parked, and the checkpoints of
 # spans_membership must find consoles 1 and 2 inside a frame or at an edge
 # as its header says. In two_spans console 1 must finish 598 frames to
-# console 0's 600, and in spans_save_in_advance consoles 1 and 2 must be
-# parked at its checkpoints in_flight and last. Then each scenario in bad/
-# must exit 2 and each in fail/ exit 1, printing the error its "# error:"
-# line names, as must a truncated state, a state of another scenario and an
-# edited trace; each scenario in stale/ must pass its from run and fail its
-# rewound run in the same way.
+# console 0's 600, and in spans_save_in_advance and render_spans consoles 1
+# and 2 must be parked at their checkpoints in_flight and last. Each of
+# render_one's 120 frames must have a picture of its own, and render_grow's
+# picture must be 64 wide at its checkpoint small and 128 at mid. Then each
+# scenario in bad/ must exit 2 and each in fail/ exit 1, printing the error
+# its "# error:" line names, as must a truncated state, a state of another
+# scenario and an edited trace; each scenario in stale/ must pass its from
+# run and fail its rewound run in the same way.
 #
 # proof makes the six runs of one scenario that binds real cores, PROOF
 # (an absolute path), into BUILD_DIR/proof/<scenario>/, each BIND word
@@ -177,6 +179,7 @@ $(call obj,$(LINK_SOURCES)):    FLAGS := $(LINK_CFLAGS)
 $(call obj,$(LIBCO_SOURCES)):   FLAGS := $(LIBCO_CFLAGS)
 $(call obj,$(LRC_SOURCES)):     FLAGS := $(LRC_CFLAGS)
 $(call obj,$(HARNESS_SOURCES)): link_scenario.h link_console.h
+$(call obj,$(CORE_SOURCES)):    ../core/link_test_render.h
 
 ifneq ($(SANITIZER),)
 SAN_FLAGS := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
@@ -217,13 +220,24 @@ check: all
 	   grep -q "^$$c frame [0-9]* in_frame $$in$$" "$$out/$$at/consoles.txt" \
 	      || { echo "check: spans_membership: $$c is not in_frame $$in at checkpoint $$at"; exit 1; }; \
 	done
-	@for at in in_flight last; do \
-	   for c in 1 2; do \
-	      grep -q "^c$$c frame [0-9]* in_frame 1$$" \
-	         "$(BUILD_DIR)/out/spans_save_in_advance/first/$$at/consoles.txt" \
-	         || { echo "check: spans_save_in_advance: console $$c is not parked at checkpoint $$at"; \
-	            exit 1; }; \
+	@for name in spans_save_in_advance render_spans; do \
+	   for at in in_flight last; do \
+	      for c in 1 2; do \
+	         grep -q "^c$$c frame [0-9]* in_frame 1$$" \
+	            "$(BUILD_DIR)/out/$$name/first/$$at/consoles.txt" \
+	            || { echo "check: $$name: console $$c is not parked at checkpoint $$at"; exit 1; }; \
+	      done; \
 	   done; \
+	done
+	@n=`grep '^F [0-9]* C 0 N ' "$(BUILD_DIR)/out/render_one/first/trace.txt" \
+	   | cut -d ' ' -f 8 | sort -u | wc -l`; \
+	[ "$$n" -eq 120 ] || { echo "check: render_one: $$n different pictures in 120 frames"; exit 1; }
+	@for pair in small:64 mid:128; do \
+	   at=$${pair%%:*}; want=$${pair#*:}; png="$(BUILD_DIR)/out/render_grow/first/$$at/c0.png"; \
+	   wide=`od -A n -t u1 -j 16 -N 4 "$$png" \
+	      | awk '{ print (($$1 * 256 + $$2) * 256 + $$3) * 256 + $$4 }'`; \
+	   [ "$$wide" = "$$want" ] \
+	      || { echo "check: render_grow: $$at/c0.png is $$wide wide, not $$want"; exit 1; }; \
 	done
 	@trace="$(BUILD_DIR)/out/two_spans/first/trace.txt"; \
 	n=`grep -c '^F [0-9]* C 1 N ' "$$trace"`; \
