@@ -190,8 +190,12 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_bad_frame",   "First frame of the mode; 0" },
    { "link_test_render",      "Picture in two parts, around the frame's advances; off|soft|gl" },
    { "link_test_grow",        "Frame the picture grows in, told:N or untold:N; off" },
-   { "link_test_gl_context",  "OpenGL context asked for; core33|compat|gles2|core99" },
-   { "link_test_gl_origin",   "Row of the framebuffer the picture starts at; top|bottom" },
+   { "link_test_gl_context",  "OpenGL context asked for; "
+                              LT_GL_CONTEXT_DEFAULT "|compat|gles2|core99" },
+   { "link_test_gl_origin",   "Row of the framebuffer the picture starts at; "
+                              LT_GL_ORIGIN_DEFAULT "|bottom" },
+   { "link_test_gl_state",    "State the OpenGL context is left in; "
+                              LT_GL_STATE_DEFAULT "|dirty" },
    { NULL, NULL }
 };
 
@@ -570,8 +574,9 @@ static void lt_read_render(void)
    }
    if (lt_cfg.render != &lt_render_gl)
    {
-      lt_option_gl_only("link_test_gl_context", "core33");
-      lt_option_gl_only("link_test_gl_origin", "top");
+      lt_option_gl_only("link_test_gl_context", LT_GL_CONTEXT_DEFAULT);
+      lt_option_gl_only("link_test_gl_origin", LT_GL_ORIGIN_DEFAULT);
+      lt_option_gl_only("link_test_gl_state", LT_GL_STATE_DEFAULT);
    }
    if ((s = lt_option("link_test_grow")) && strcmp(s, "off"))
    {

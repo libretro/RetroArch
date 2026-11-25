@@ -16,6 +16,10 @@
 
 #define LT_GL_COLOR_BUFFER_BIT     0x4000
 #define LT_GL_SCISSOR_TEST         0x0C11
+#define LT_GL_PACK_ROW_LENGTH      0x0D02
+#define LT_GL_PACK_SKIP_ROWS       0x0D03
+#define LT_GL_PACK_SKIP_PIXELS     0x0D04
+#define LT_GL_PACK_ALIGNMENT       0x0D05
 #define LT_GL_FRAMEBUFFER          0x8D40
 #define LT_GL_FRAMEBUFFER_COMPLETE 0x8CD5
 
@@ -28,12 +32,14 @@ enum
    LT_GL_SCISSOR,
    LT_GL_CLEAR_COLOR,
    LT_GL_CLEAR,
+   LT_GL_PIXEL_STOREI,
+   LT_GL_GET_INTEGERV,
    LT_GL_ENTRIES
 };
 
 static const char *const lt_gl_names[LT_GL_ENTRIES] = {
    "glBindFramebuffer", "glCheckFramebufferStatus", "glEnable", "glDisable",
-   "glScissor", "glClearColor", "glClear"
+   "glScissor", "glClearColor", "glClear", "glPixelStorei", "glGetIntegerv"
 };
 
 typedef void (LT_GL_API *lt_gl_bind_framebuffer_t)(unsigned target, unsigned framebuffer);
@@ -42,6 +48,21 @@ typedef void (LT_GL_API *lt_gl_enable_t)(unsigned cap); /* and glDisable */
 typedef void (LT_GL_API *lt_gl_scissor_t)(int x, int y, int width, int height);
 typedef void (LT_GL_API *lt_gl_clear_color_t)(float r, float g, float b, float a);
 typedef void (LT_GL_API *lt_gl_clear_t)(unsigned mask);
+typedef void (LT_GL_API *lt_gl_pixel_storei_t)(unsigned name, int value);
+typedef void (LT_GL_API *lt_gl_get_integerv_t)(unsigned name, int *value);
+
+/* The pixel-pack state of a dirty context: rows longer than any picture
+ * and a start that is not its first pixel */
+static const struct
+{
+   unsigned name;
+   int value;
+} lt_gl_dirty[] = {
+   { LT_GL_PACK_ALIGNMENT,   8   },
+   { LT_GL_PACK_ROW_LENGTH,  200 },
+   { LT_GL_PACK_SKIP_ROWS,   1   },
+   { LT_GL_PACK_SKIP_PIXELS, 1   }
+};
 
 static struct
 {
@@ -49,6 +70,7 @@ static struct
    struct retro_hw_render_callback hw;
    retro_proc_address_t entry[LT_GL_ENTRIES]; /* all set, or the first NULL */
    unsigned width, height;
+   bool dirty;                                /* link_test_gl_state */
    bool drawing;                              /* this frame's picture was begun */
    bool said_no_context;                      /* logged; context_reset clears it */
 } lt_gl;
@@ -61,6 +83,25 @@ static void lt_gl_fail(const char *what, const char *more)
    strncat(line, what, sizeof(line) - 1);
    strncat(line, more, sizeof(line) - 1 - strlen(line));
    lt_gl.host->fail(line, 0, 0);
+}
+
+/* A dirty context still has the core's pixel-pack state: the frontend
+ * that read a picture by its own put the core's back, and the context
+ * current is the core's. Every context has the alignment, so its answer
+ * is not taken on trust; one that refused another name leaves that value
+ * as it is. */
+static void lt_gl_check_dirty(void)
+{
+   lt_gl_get_integerv_t get = (lt_gl_get_integerv_t)lt_gl.entry[LT_GL_GET_INTEGERV];
+   unsigned i;
+   for (i = 0; i < sizeof(lt_gl_dirty) / sizeof(*lt_gl_dirty); i++)
+   {
+      int value = lt_gl_dirty[i].name == LT_GL_PACK_ALIGNMENT ? 0 : lt_gl_dirty[i].value;
+      get(lt_gl_dirty[i].name, &value);
+      if (value != lt_gl_dirty[i].value)
+         lt_gl.host->fail("pixel-pack state that is not the core's",
+               lt_gl_dirty[i].name, (uint64_t)value);
+   }
 }
 
 static void RETRO_CALLCONV lt_gl_context_reset(void)
@@ -76,10 +117,23 @@ static void RETRO_CALLCONV lt_gl_context_reset(void)
          return;
       }
    }
+   if (lt_gl.dirty)
+   {
+      /* What a frontend must not read the picture by: that pixel-pack
+       * state (an OpenGL ES 2 context may refuse all of it but the
+       * alignment), and an error, of a name glPixelStorei does not know,
+       * that nothing reads */
+      lt_gl_pixel_storei_t store = (lt_gl_pixel_storei_t)lt_gl.entry[LT_GL_PIXEL_STOREI];
+      for (i = 0; i < sizeof(lt_gl_dirty) / sizeof(*lt_gl_dirty); i++)
+         store(lt_gl_dirty[i].name, lt_gl_dirty[i].value);
+      store(0, 0);
+   }
 }
 
 static void RETRO_CALLCONV lt_gl_context_destroy(void)
 {
+   if (lt_gl.dirty && lt_gl.entry[0])
+      lt_gl_check_dirty();
    lt_gl.entry[0] = NULL;
 }
 
@@ -99,8 +153,9 @@ static unsigned lt_gl_option(const char *key, const char *const *names, unsigned
 
 static bool lt_gl_load(const struct lt_render_host *host)
 {
-   static const char *const contexts[] = { "core33", "compat", "gles2", "core99" };
-   static const char *const origins[]  = { "top", "bottom" };
+   static const char *const contexts[] = { LT_GL_CONTEXT_DEFAULT, "compat", "gles2", "core99" };
+   static const char *const origins[]  = { LT_GL_ORIGIN_DEFAULT, "bottom" };
+   static const char *const states[]   = { LT_GL_STATE_DEFAULT, "dirty" };
    static const struct
    {
       enum retro_hw_context_type type;
@@ -126,6 +181,8 @@ static bool lt_gl_load(const struct lt_render_host *host)
    lt_gl.hw.context_destroy    = lt_gl_context_destroy;
    lt_gl.hw.bottom_left_origin = lt_gl_option("link_test_gl_origin", origins,
          sizeof(origins) / sizeof(*origins)) == 1;
+   lt_gl.dirty                 = lt_gl_option("link_test_gl_state", states,
+         sizeof(states) / sizeof(*states)) == 1;
    if (!host->environment(RETRO_ENVIRONMENT_SET_HW_RENDER, &lt_gl.hw))
    {
       host->fail("SET_HW_RENDER refused", lt_gl.hw.context_type, lt_gl.hw.version_major);
@@ -166,6 +223,8 @@ static void lt_gl_begin(unsigned width, unsigned height)
       lt_gl.said_no_context = true;
       return;
    }
+   if (lt_gl.dirty)
+      lt_gl_check_dirty();
    ((lt_gl_bind_framebuffer_t)lt_gl.entry[LT_GL_BIND_FRAMEBUFFER])(LT_GL_FRAMEBUFFER,
          (unsigned)lt_gl.hw.get_current_framebuffer());
    status = ((lt_gl_check_framebuffer_status_t)lt_gl.entry[LT_GL_CHECK_FRAMEBUFFER_STATUS])(

@@ -8,6 +8,12 @@
 
 #define LT_RENDER_CELLS 24 /* in a part: three bands of eight stripes */
 
+/* The OpenGL picture's options as they are when not given, which is where
+ * they must stay while another picture is drawn */
+#define LT_GL_CONTEXT_DEFAULT "core33"
+#define LT_GL_ORIGIN_DEFAULT  "top"
+#define LT_GL_STATE_DEFAULT   "clean"
+
 struct lt_render_host
 {
    retro_environment_t environment;
