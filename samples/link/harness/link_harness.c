@@ -23,6 +23,7 @@
 #define LINK_HARNESS_USAGE 2
 #define LINK_HARNESS_LINE  192
 #define LINK_HARNESS_CHUNK 65536
+#define LINK_HARNESS_RENDER_STACK 8388608 /* driver code runs on the console's cothread */
 #define LINK_HARNESS_STATE_MAGIC   "LNKS"
 #define LINK_HARNESS_STATE_VERSION 2
 
@@ -436,6 +437,8 @@ static bool link_harness_session(struct link_harness *h)
       size_t stack = h->scn.consoles[i].stack ? h->scn.consoles[i].stack : LINK_SCHED_DEFAULT_STACK;
       if (stack < h->min_stack)
          stack = h->min_stack;
+      if (h->scn.consoles[i].render && stack < LINK_HARNESS_RENDER_STACK)
+         stack = LINK_HARNESS_RENDER_STACK;
       if (link_sched_add(h->sched, link_console_run, &h->consoles[i], stack) != (int)i)
          return false;
    }
@@ -1275,12 +1278,40 @@ static void link_harness_free(struct link_harness *h)
    free(h);
 }
 
+/* false, and why, where a console asks for an API this harness was built
+ * without */
+static bool link_harness_built_for(const struct link_harness *h)
+{
+   size_t i;
+   for (i = 0; i < h->scn.console_count; i++)
+   {
+      const struct link_scenario_console *k = &h->scn.consoles[i];
+      const char *without                   = NULL;
+#ifndef HAVE_EGL
+      if (k->render == LINK_SCENARIO_RENDER_GL)
+         without = "HAVE_EGL";
+#endif
+#ifndef HAVE_VULKAN
+      if (k->render == LINK_SCENARIO_RENDER_VULKAN)
+         without = "HAVE_VULKAN";
+#endif
+      if (without)
+      {
+         fprintf(stderr, "link_harness: %s:%u: this harness was built without %s\n",
+               h->scn.path, k->line, without);
+         return false;
+      }
+   }
+   return true;
+}
+
 static int link_harness_main(struct link_harness *h, int argc, char **argv)
 {
    int rc;
    if ((rc = link_harness_options(h, argc, argv)) != LINK_HARNESS_PASS)
       return rc;
-   if (!link_scenario_load(&h->scn, h->scenario, h->bindings, h->binding_count))
+   if (     !link_scenario_load(&h->scn, h->scenario, h->bindings, h->binding_count)
+         || !link_harness_built_for(h))
       return LINK_HARNESS_USAGE;
    if (     (h->state_path && !link_harness_read_state(h))
          || (h->expect_path && !link_harness_read_expect(h))

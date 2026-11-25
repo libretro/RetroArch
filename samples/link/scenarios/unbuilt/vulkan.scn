@@ -1,0 +1,5 @@
+# A console that asks for Vulkan, in a harness built without HAVE_VULKAN:
+# refused before anything runs.
+# error: this harness was built without HAVE_VULKAN
+console 0 core=test render=vulkan
+10 end

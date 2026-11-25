@@ -188,8 +188,10 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_mode",        "Mode; conform|nonconform|never_advance|no_progress|stale_load|"
                               "stale_save|stale_send|stale_release|release_error" },
    { "link_test_bad_frame",   "First frame of the mode; 0" },
-   { "link_test_render",      "Picture in two parts, around the frame's advances; off|soft" },
+   { "link_test_render",      "Picture in two parts, around the frame's advances; off|soft|gl" },
    { "link_test_grow",        "Frame the picture grows in, told:N or untold:N; off" },
+   { "link_test_gl_context",  "OpenGL context asked for; core33|compat|gles2|core99" },
+   { "link_test_gl_origin",   "Row of the framebuffer the picture starts at; top|bottom" },
    { NULL, NULL }
 };
 
@@ -540,6 +542,18 @@ static void lt_read_mode(void)
    }
 }
 
+/* An option of the OpenGL picture, off its default while it is not drawn */
+static void lt_option_gl_only(const char *key, const char *by_default)
+{
+   const char *s = lt_option(key);
+   if (s && strcmp(s, by_default))
+   {
+      lt_bump8(LT_RAM_ERRORS);
+      if (lt_log)
+         lt_log(RETRO_LOG_ERROR, "link test: %s: only with link_test_render gl\n", key);
+   }
+}
+
 static void lt_read_render(void)
 {
    const char *s;
@@ -549,8 +563,15 @@ static void lt_read_render(void)
    {
       if (!strcmp(s, "soft"))
          lt_cfg.render = &lt_render_soft;
+      else if (!strcmp(s, "gl"))
+         lt_cfg.render = &lt_render_gl;
       else if (strcmp(s, "off"))
          lt_fail_option("link_test_render", s);
+   }
+   if (lt_cfg.render != &lt_render_gl)
+   {
+      lt_option_gl_only("link_test_gl_context", "core33");
+      lt_option_gl_only("link_test_gl_origin", "top");
    }
    if ((s = lt_option("link_test_grow")) && strcmp(s, "off"))
    {
@@ -1072,7 +1093,13 @@ bool lt_render_tell(unsigned width, unsigned height)
 
 static void lt_render_fail(const char *what, uint64_t a, uint64_t b)
 {
-   lt_fail(what, 0, a, b);
+   lt_bump8(LT_RAM_ERRORS);
+   if (lt_log)
+      lt_log(RETRO_LOG_ERROR,
+            "link test: %s (frame %lu; %08lx%08lx, %08lx%08lx)\n",
+            what, (unsigned long)lt_state.frame,
+            (unsigned long)(a >> 32), (unsigned long)(a & 0xFFFFFFFFUL),
+            (unsigned long)(b >> 32), (unsigned long)(b & 0xFFFFFFFFUL));
 }
 
 static unsigned lt_soft_width, lt_soft_height;
@@ -1654,9 +1681,9 @@ bool retro_load_game(const struct retro_game_info *game)
    if (lt_cfg.render)
    {
       lt_host.environment = lt_environ;
-      lt_host.log         = lt_log;
       lt_host.fail        = lt_render_fail;
       lt_host.option      = lt_option;
+      lt_host.fail_option = lt_fail_option;
       lt_told_width       = LT_WIDTH;
       lt_told_height      = LT_HEIGHT;
       if (!lt_cfg.render->load(&lt_host))

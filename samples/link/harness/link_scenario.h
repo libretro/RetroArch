@@ -58,11 +58,19 @@ struct link_scenario_option
    unsigned console, line;
 };
 
+enum link_scenario_render        /* the one API a console may ask for */
+{
+   LINK_SCENARIO_RENDER_NONE = 0,
+   LINK_SCENARIO_RENDER_GL,
+   LINK_SCENARIO_RENDER_VULKAN
+};
+
 struct link_scenario_console
 {
    char *core, *rom, *save;        /* resolved paths; rom and save may be NULL */
    size_t stack;                   /* 0: the scheduler's default */
    unsigned line;                  /* 0 until its console line */
+   enum link_scenario_render render;
 };
 
 struct link_scenario_count       /* an expect-count line */

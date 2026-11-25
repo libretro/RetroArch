@@ -18,11 +18,17 @@
 # console 0's 600, and in spans_save_in_advance and render_spans consoles 1
 # and 2 must be parked at their checkpoints in_flight and last. Each of
 # render_one's 120 frames must have a picture of its own, and render_grow's
-# picture must be 64 wide at its checkpoint small and 128 at mid. Then each
-# scenario in bad/ must exit 2 and each in fail/ exit 1, printing the error
-# its "# error:" line names, as must a truncated state, a state of another
-# scenario and an edited trace; each scenario in stale/ must pass its from
-# run and fail its rewound run in the same way.
+# picture must be 64 wide at its checkpoint small and 128 at mid; console 1
+# of render_two must keep its picture of frame 99 over the frame after it,
+# which passes none. Then each scenario in bad/ must exit 2 and each in
+# fail/ exit 1, printing the error its "# error:" line names, as must a
+# truncated state, a state of another scenario and an edited trace; each
+# scenario in stale/ must pass its from run and fail its rewound run in the
+# same way.
+#
+# A console line's render=gl needs a harness built with HAVE_EGL=1, and
+# render=vulkan one built with HAVE_VULKAN=1. While a switch is off, its
+# scenario in unbuilt/ must exit 2 as those in bad/ do.
 #
 # proof makes the six runs of one scenario that binds real cores, PROOF
 # (an absolute path), into BUILD_DIR/proof/<scenario>/, each BIND word
@@ -39,6 +45,10 @@ endif
 ifneq ($(filter ..,$(subst /, ,$(BUILD_DIR))),)
 $(error BUILD_DIR must not climb out with .., not "$(strip $(BUILD_DIR))")
 endif
+
+HAVE_EGL    ?= 0
+HAVE_VULKAN ?= 0
+HARNESS_DEFINES :=
 
 TRIPLE := $(shell $(CC) -dumpmachine)
 EXE :=
@@ -90,9 +100,22 @@ LRC_SOURCES     := \
 	$(LRC)/string/rstrtod.c \
 	$(LRC)/vfs/vfs_implementation.c \
 	$(LRC)/time/rtime.c
-CORE_SOURCES    := ../core/link_test_core.c
+CORE_SOURCES    := ../core/link_test_core.c ../core/link_test_gl.c
 SCENARIOS       := $(sort $(wildcard ../scenarios/*.scn))
 BAD_SCENARIOS   := $(sort $(wildcard ../scenarios/bad/*.scn))
+ifeq ($(HAVE_EGL),1)
+ifneq ($(findstring mingw,$(TRIPLE)),)
+$(error HAVE_EGL=1 needs EGL, which a mingw build does not have)
+endif
+HARNESS_DEFINES += -DHAVE_EGL
+else
+BAD_SCENARIOS   += ../scenarios/unbuilt/gl.scn
+endif
+ifeq ($(HAVE_VULKAN),1)
+HARNESS_DEFINES += -DHAVE_VULKAN
+else
+BAD_SCENARIOS   += ../scenarios/unbuilt/vulkan.scn
+endif
 FAIL_SCENARIOS  := $(sort $(wildcard ../scenarios/fail/*.scn))
 STALE_SCENARIOS := $(sort $(wildcard ../scenarios/stale/*.scn))
 UNTICK          := s/ stamp [0-9a-f]* landing [0-9a-f]*//
@@ -173,7 +196,7 @@ LIBCO_CFLAGS := $(BASE_CFLAGS) -std=c89 -Wall -Wextra -Werror \
                 -DLIBCO_MP -D_GNU_SOURCE -DHAVE_POSIX_MEMALIGN=1
 LRC_CFLAGS   := $(BASE_CFLAGS) -std=gnu99 -Wall -pedantic -DHAVE_DYNAMIC
 
-$(call obj,$(HARNESS_SOURCES)): FLAGS := $(OWN_CFLAGS) -DHAVE_DYNAMIC
+$(call obj,$(HARNESS_SOURCES)): FLAGS := $(OWN_CFLAGS) -DHAVE_DYNAMIC $(HARNESS_DEFINES)
 $(call obj,$(CORE_SOURCES)):    FLAGS := $(OWN_CFLAGS) $(PIC)
 $(call obj,$(LINK_SOURCES)):    FLAGS := $(LINK_CFLAGS)
 $(call obj,$(LIBCO_SOURCES)):   FLAGS := $(LIBCO_CFLAGS)
@@ -239,16 +262,20 @@ check: all
 	   [ "$$wide" = "$$want" ] \
 	      || { echo "check: render_grow: $$at/c0.png is $$wide wide, not $$want"; exit 1; }; \
 	done
+	@awk '$$3 == "C" && $$4 == 1 && ($$6 == 99 || $$6 == 100) { v[$$6] = $$8 } \
+	   END { exit !(v[99] != "" && v[99] == v[100]) }' \
+	   "$(BUILD_DIR)/out/render_two/first/trace.txt" \
+	   || { echo "check: render_two: console 1's picture after frame 100 is not frame 99's"; exit 1; }
 	@trace="$(BUILD_DIR)/out/two_spans/first/trace.txt"; \
 	n=`grep -c '^F [0-9]* C 1 N ' "$$trace"`; \
 	last=`grep '^F [0-9]* C 1 N ' "$$trace" | tail -n 1 | cut -d ' ' -f 1-6`; \
 	[ "$$n" = 598 ] && [ "$$last" = "F 599 C 1 N 597" ] \
 	   || { echo "check: two_spans: console 1 finished $$n frames, the last $$last;" \
 	      "598 wanted, the last F 599 C 1 N 597"; exit 1; }
-	@mkdir -p "$(BUILD_DIR)/out/bad" "$(BUILD_DIR)/out/fail"; \
+	@mkdir -p "$(BUILD_DIR)/out/bad" "$(BUILD_DIR)/out/fail" "$(BUILD_DIR)/out/unbuilt"; \
 	for scn in $(BAD_SCENARIOS) $(FAIL_SCENARIOS); do \
 	   name=`basename "$$scn" .scn`; kind=`dirname "$$scn"`; kind=`basename "$$kind"`; \
-	   case $$kind in bad) want=2 ;; *) want=1 ;; esac; \
+	   case $$kind in bad|unbuilt) want=2 ;; *) want=1 ;; esac; \
 	   what="$$kind/$$name"; err="$(BUILD_DIR)/out/$$what.err"; \
 	   why=`sed -n 's/^# error: //p' "$$scn"`; \
 	   [ -n "$$why" ] || { echo "check: $$what has no # error: line"; exit 1; }; \

@@ -1,0 +1,7 @@
+# An option of the OpenGL picture on a console that draws in software: the
+# test core logs an error, which fails the run.
+# error: link test: link_test_gl_origin: only with link_test_render gl
+console 0 core=test
+option 0 link_test_render soft
+option 0 link_test_gl_origin bottom
+10 end

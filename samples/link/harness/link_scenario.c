@@ -318,7 +318,8 @@ static bool link_scenario_console_line(struct link_scenario_parse *p, char **arg
    struct link_scenario_console *k;
    unsigned n, i;
    if (argc < 2)
-      return link_scenario_fail(p, "console <n> core=<name> [rom=<name>] [save=<name>] [stack=<bytes>]", NULL);
+      return link_scenario_fail(p, "console <n> core=<name> [rom=<name>] [save=<name>]"
+            " [stack=<bytes>] [render=gl|vulkan]", NULL);
    if (!link_scenario_console_number(p, arg[0], &n))
       return false;
    while (s->console_count <= n)
@@ -352,6 +353,18 @@ static bool link_scenario_console_line(struct link_scenario_parse *p, char **arg
          if (!link_scenario_number(value, (size_t)-1, &v) || !v)
             return link_scenario_fail(p, "not a stack size", value);
          k->stack = (size_t)v;
+         continue;
+      }
+      else if (!strcmp(arg[i], "render"))
+      {
+         if (k->render)
+            return link_scenario_fail(p, "a field given twice", arg[i]);
+         if (!strcmp(value, "gl"))
+            k->render = LINK_SCENARIO_RENDER_GL;
+         else if (!strcmp(value, "vulkan"))
+            k->render = LINK_SCENARIO_RENDER_VULKAN;
+         else
+            return link_scenario_fail(p, "render= takes gl or vulkan", value);
          continue;
       }
       else

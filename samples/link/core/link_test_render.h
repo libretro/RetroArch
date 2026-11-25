@@ -11,17 +11,23 @@
 struct lt_render_host
 {
    retro_environment_t environment;
-   retro_log_printf_t log;                                    /* may be NULL */
-   void (*fail)(const char *what, uint64_t a, uint64_t b);    /* lt_fail with no port */
+   /* an error line and the error byte */
+   void (*fail)(const char *what, uint64_t a, uint64_t b);
    const char *(*option)(const char *key);
+   /* the error line of a value an option does not know, and the error byte */
+   void (*fail_option)(const char *key, const char *value);
 };
 
 struct lt_render
 {
-   bool (*load)(const struct lt_render_host *host);  /* in retro_load_game; false: refused */
-   void (*begin)(unsigned width, unsigned height);   /* a frame's start: the size told if it must be, the picture black */
-   void (*part)(unsigned part, uint64_t value);      /* part 0 or 1, handed to the driver before it returns */
+   /* in retro_load_game; false: refused */
+   bool (*load)(const struct lt_render_host *host);
+   /* a frame's start: the size told if it must be, the picture black */
+   void (*begin)(unsigned width, unsigned height);
+   /* part 0 or 1, handed to the driver before it returns */
+   void (*part)(unsigned part, uint64_t value);
    void (*present)(retro_video_refresh_t video, bool dupe);
+   /* in retro_unload_game, also when load refused or never ran */
    void (*unload)(void);
 };
 
@@ -40,5 +46,6 @@ void lt_render_cell(unsigned width, unsigned height, unsigned part, uint64_t val
 bool lt_render_tell(unsigned width, unsigned height);
 
 extern const struct lt_render lt_render_soft; /* link_test_core.c */
+extern const struct lt_render lt_render_gl;   /* link_test_gl.c */
 
 #endif
