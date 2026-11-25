@@ -592,6 +592,7 @@ public slots:
    void finishShortcutDockDefaultSize();
    void saveShortcutButtonOrder();
    void relayoutShortcutButtons();
+   void repaintShortcutIcons();
    void onDockShortcutContextMenu(const QPoint &pos);
    void onShortcutScrollLeft();
    void onShortcutScrollRight();

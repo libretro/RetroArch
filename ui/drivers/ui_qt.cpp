@@ -493,6 +493,9 @@ static const QString qt_theme_default_stylesheet = QString(R"(
 )");
 
 static const QString qt_theme_dark_stylesheet = QString(R"(
+   *{
+      outline: none;
+   }
    QWidget {
       color:white;
       background-color:rgb(53,53,53);
@@ -3223,8 +3226,28 @@ static QString qt_highlight_color(void)
    return string_is_empty(c) ? QString("palette(highlight)") : QString::fromUtf8(c);
 }
 
+/* The dark theme sets a white Highlight so Fusion does not draw its
+ * grey selection block; other themes get the palette back. */
+static void qt_apply_theme_palette(bool dark)
+{
+   static QPalette base;
+   static bool     saved = false;
+   QPalette        p;
+   if (!saved)
+   {
+      base  = qApp->palette();
+      saved = true;
+   }
+   p = base;
+   if (dark)
+      p.setColor(QPalette::Highlight, QColor(255, 255, 255));
+   qApp->setPalette(p);
+}
+
 void MainWindow::setTheme(Theme theme)
 {
+   bool dark = false;
+
    m_currentTheme = theme;
 
    setDefaultCustomProperties();
@@ -3232,7 +3255,7 @@ void MainWindow::setTheme(Theme theme)
    switch(theme)
    {
       case THEME_SYSTEM_DEFAULT:
-         if (qt_system_uses_dark_theme())
+         if ((dark = qt_system_uses_dark_theme()))
             qApp->setStyleSheet(qt_theme_dark_stylesheet.arg(
                      qt_highlight_color()));
          else
@@ -3240,6 +3263,7 @@ void MainWindow::setTheme(Theme theme)
                      qt_highlight_color()));
          break;
       case THEME_DARK:
+         dark = true;
          qApp->setStyleSheet(qt_theme_dark_stylesheet.arg(
                   qt_highlight_color()));
          break;
@@ -3249,9 +3273,40 @@ void MainWindow::setTheme(Theme theme)
       default:
          break;
    }
+   qt_apply_theme_palette(dark);
 #ifdef HAVE_MENU
    m_viewOptionsDialog->repaintIcons();
 #endif
+   repaintShortcutIcons();
+}
+
+/* The icons take the theme's text colour when built, so a theme
+ * change (including the first, after the buttons exist) redoes them. */
+void MainWindow::repaintShortcutIcons()
+{
+   settings_t *settings = config_get_ptr();
+   int i;
+   for (i = 0; i < m_shortcutButtons.count(); i++)
+   {
+      QToolButton *button = m_shortcutButtons.at(i);
+      QVariant index      = button->property("shortcut_index");
+#ifdef HAVE_MENU
+      QString pin         = button->property("settings_shortcut_id").toString();
+      if (!pin.isEmpty())
+      {
+         button->setIcon(m_viewOptionsDialog->shortcutIcon(pin));
+         continue;
+      }
+#endif
+      if (index.isValid())
+      {
+         char icon[PATH_MAX_LENGTH];
+         icon[0] = '\0';
+         companion_shortcut_icon_path(settings, (size_t)index.toInt(),
+               icon, sizeof(icon));
+         button->setIcon(qt_monochrome_icon(QString::fromUtf8(icon)));
+      }
+   }
 }
 
 void MainWindow::setDefaultCustomProperties()
