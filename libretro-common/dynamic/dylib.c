@@ -47,6 +47,10 @@
 #endif
 #endif
 
+#ifdef __SWITCH2__
+#include "../../verbosity.h"
+#endif
+
 #ifdef _WIN32
 static char last_dyn_err[512];
 
@@ -152,6 +156,15 @@ dylib_t dylib_load(const char *path)
         lib = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
 #else
    dylib_t lib = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
+
+#ifdef __SWITCH2__
+   if (!lib)
+   {
+      const char *error = dlerror();
+      RARCH_WARN("[DYNAMIC] dlopen('%s') failed: %s\n",
+            path, error ? error : "unknown error");
+   }
+#endif
 #endif
    return lib;
 }
