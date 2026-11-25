@@ -76,6 +76,9 @@ enum
    IDC_CW_SC_HELP,
    IDC_CW_SC_APPLY,
    IDC_CW_SC_CLOSE,
+   /* the Shortcuts pane: IDC_CW_SCUT_FIRST + companion_shortcut index */
+   IDC_CW_SCUT_FIRST,
+   IDC_CW_SCUT_LAST = IDC_CW_SCUT_FIRST + 15,
    IDM_CW_LOAD_CORE  = 50101,
    IDM_CW_LOAD_CONTENT,
    IDM_CW_REFRESH,
@@ -109,10 +112,14 @@ enum
    IDM_CW_SHORTCUTS,
    IDM_CW_UNLOAD_CORE,
    IDM_CW_LOAD_CUSTOM_CORE,
+   /* a Shortcuts button's menu: Remove, and Add to Shortcuts + index */
+   IDM_CW_SCUT_REMOVE,
+   IDM_CW_SCUT_ADD_FIRST,
+   IDM_CW_SCUT_ADD_LAST = IDM_CW_SCUT_ADD_FIRST + 15,
    /* IDM_CW_DOCK_FIRST + companion_dock_id: View > Closed Docks shows
     * that pane again. */
    IDM_CW_DOCK_FIRST,
-   IDM_CW_DOCK_LAST = IDM_CW_DOCK_FIRST + 8,
+   IDM_CW_DOCK_LAST = IDM_CW_DOCK_FIRST + 15,
    /* IDM_CW_ASSOC_BASE + i selects installed core i as the playlist's
     * default core; keep a wide gap after it. */
    IDM_CW_ASSOC_BASE = 51000,

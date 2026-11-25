@@ -65,6 +65,13 @@
 #define COMPANION_MASK_LEFT_UP      NSEventMaskLeftMouseUp
 #define COMPANION_BEZEL_ROUNDED     NSBezelStyleRounded
 #endif
+#if defined(GNUSTEP) || !defined(MAC_OS_X_VERSION_MAX_ALLOWED) || MAC_OS_X_VERSION_MAX_ALLOWED < 101200
+#define COMPANION_COMPOSITE_ATOP    NSCompositeSourceAtop
+#else
+#define COMPANION_COMPOSITE_ATOP    NSCompositingOperationSourceAtop
+#endif
+/* Views one pane can hold: the Shortcuts buttons are the most. */
+#define CC_PANE_MAX (COMPANION_SHORTCUT_COUNT + 4)
 
 /* Window base coordinates to screen coordinates and back: the offset is
  * the window frame's origin, which is all -convertBaseToScreen: (10.0,
@@ -368,6 +375,10 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
    char *thumbNone;                   /* per row: 1 = no thumbnail file */
    NSInteger thumbNoneCount;          /* its length: rows beyond it do not exist */
    BOOL syncingSort;                  /* setSortDescriptors: from the core, not a click */
+   /* The Shortcuts pane: a button per built-in shortcut (nil when
+    * removed or not offered here), in the strip's order. */
+   NSButton *scutButton[COMPANION_SHORTCUT_COUNT];
+   unsigned char scutOrder[COMPANION_SHORTCUT_COUNT];
 }
 - (id)initWithWimp:(ui_companion_cocoa_wimp_t*)w;
 - (ui_companion_cocoa_wimp_t*)wimp;
@@ -408,6 +419,15 @@ typedef struct ui_companion_cocoa_wimp ui_companion_cocoa_wimp_t;
 - (int)paneViews:(int)pane into:(NSView* RARCH_UNSAFE_UNRETAINED *)views max:(int)max;
 - (void)layoutPane:(int)pane in:(NSRect)r;
 - (void)showPane:(int)pane shown:(BOOL)show;
+- (BOOL)shortcutVisible:(size_t)i;
+- (void)makeShortcut:(size_t)i;
+- (void)shortcutMenus;
+- (void)shortcutClicked:(id)sender;
+- (void)shortcutRemove:(id)sender;
+- (void)shortcutAdd:(id)sender;
+- (void)shortcutStoreOrder;
+- (void)windowRowRestore:(NSWindow*)win row:(enum companion_window)row;
+- (void)windowRowStore:(NSWindow*)win row:(enum companion_window)row;
 - (void)floatPane:(int)pane;
 - (void)redockPane:(int)pane;
 - (void)trackFloat:(int)pane from:(NSEvent*)e;
@@ -1452,6 +1472,17 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    KEEP_IVAR(clearButton);
    [content addSubview:clearButton];
 
+   /* Shortcuts: the shared table in the saved order. */
+   {
+      settings_t *settings = config_get_ptr();
+      size_t k;
+      companion_shortcuts_order(settings, scutOrder);
+      for (k = 0; k < COMPANION_SHORTCUT_COUNT; k++)
+         if (!companion_shortcut_removed(settings, scutOrder[k]))
+            [self makeShortcut:scutOrder[k]];
+      [self shortcutMenus];
+   }
+
 
    /* Playlists: icon + name, tall rows like Qt's. */
    playlists = RETAIN_COMPAT([self makeTable:NSMakeRect(0, 0, 200, 500)
@@ -1781,6 +1812,7 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       case COMPANION_DOCK_LOGO:       return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO);
       case COMPANION_DOCK_CORE_INFO:  return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_INFO);
       case COMPANION_DOCK_LOG:        return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOG);
+      case COMPANION_DOCK_SHORTCUTS:  return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHORTCUTS);
       default:                        break;
    }
    return "";
@@ -1809,6 +1841,13 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       case COMPANION_DOCK_LOG:
          CC_ADD(logScroll);
          break;
+      case COMPANION_DOCK_SHORTCUTS:
+      {
+         size_t i;
+         for (i = 0; i < COMPANION_SHORTCUT_COUNT; i++)
+            CC_ADD(scutButton[i]);
+         break;
+      }
       default:
          if (pane >= COMPANION_DOCK_BOXART && pane <= COMPANION_DOCK_LOGO)
             CC_ADD(boxart[pane - COMPANION_DOCK_BOXART]);
@@ -1826,9 +1865,9 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    CGFloat x = r.origin.x + CC_PAD, w = r.size.width - 2 * CC_PAD;
    CGFloat h = r.size.height - 2 * CC_PAD;
    NSView *parent = nil;
-   RARCH_UNSAFE_UNRETAINED NSView *vs[8];
+   RARCH_UNSAFE_UNRETAINED NSView *vs[CC_PANE_MAX];
    BOOL flipped;
-   if ([self paneViews:pane into:vs max:8] > 0)
+   if ([self paneViews:pane into:vs max:CC_PANE_MAX] > 0)
       parent = [vs[0] superview];
    flipped = parent ? [parent isFlipped] : YES;
    if (w < 0) w = 0;
@@ -1872,6 +1911,24 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       case COMPANION_DOCK_LOG:
          [logScroll setFrame:NSMakeRect(x, CC_ROW(0, h), w, h)];
          break;
+      case COMPANION_DOCK_SHORTCUTS:
+      {
+         /* 36 pt buttons 2 pt apart, in rows as wide as the pane. */
+         int cols = (int)((w + 2.0) / 38.0), n = 0;
+         size_t k;
+         if (cols < 1)
+            cols = 1;
+         for (k = 0; k < COMPANION_SHORTCUT_COUNT; k++)
+         {
+            size_t i = scutOrder[k];
+            if (![self shortcutVisible:i])
+               continue;
+            [scutButton[i] setFrame:NSMakeRect(x + (n % cols) * 38.0,
+                  CC_ROW((n / cols) * 38.0, 36.0), 36.0, 36.0)];
+            n++;
+         }
+         break;
+      }
       default:
          if (pane >= COMPANION_DOCK_BOXART && pane <= COMPANION_DOCK_LOGO)
             [boxart[pane - COMPANION_DOCK_BOXART] setFrame:NSMakeRect(x, CC_ROW(0, h), w, h)];
@@ -1883,8 +1940,8 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
 /* Move pane @pane's views into @parent. */
 - (void)reparentPane:(int)pane to:(NSView*)parent
 {
-   RARCH_UNSAFE_UNRETAINED NSView *vs[8];
-   int i, n = [self paneViews:pane into:vs max:8];
+   RARCH_UNSAFE_UNRETAINED NSView *vs[CC_PANE_MAX];
+   int i, n = [self paneViews:pane into:vs max:CC_PANE_MAX];
    for (i = 0; i < n; i++)
       if ([vs[i] superview] != parent)
       {
@@ -1897,8 +1954,16 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
 
 - (void)setPane:(int)pane hidden:(BOOL)hidden
 {
-   RARCH_UNSAFE_UNRETAINED NSView *vs[8];
-   int i, n = [self paneViews:pane into:vs max:8];
+   RARCH_UNSAFE_UNRETAINED NSView *vs[CC_PANE_MAX];
+   int i, n = [self paneViews:pane into:vs max:CC_PANE_MAX];
+   if (pane == COMPANION_DOCK_SHORTCUTS)
+   {
+      size_t k;
+      for (k = 0; k < COMPANION_SHORTCUT_COUNT; k++)
+         if (scutButton[k])
+            [scutButton[k] setHidden:hidden || ![self shortcutVisible:k]];
+      return;
+   }
    for (i = 0; i < n; i++)
    {
       if ((vs[i] == brUp || vs[i] == brStart || vs[i] == brDownloads) && !browseMode)
@@ -1994,6 +2059,7 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    dm.def_side = (int)CC_PANE_W;
    dm.def_bar  = 120;
    dm.def_slot = 200;
+   dm.def_shortcuts = dm.strip_h + 36 + 2 * (int)CC_PAD;
    companion_dock_layout(&dock, &dm, &client, &geom);
 
    for (i = 0; i < COMPANION_DOCK_COUNT; i++)
@@ -2443,6 +2509,10 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       [self dockStore];
       return;
    }
+   if (optsWindow && [note object] == optsWindow)
+      [self windowRowStore:optsWindow row:COMPANION_WINDOW_CORE_OPTIONS];
+   if (shpWindow && [note object] == shpWindow)
+      [self windowRowStore:shpWindow row:COMPANION_WINDOW_SHADER_PARAMS];
    if ([note object] != window)
       return;
    [self layoutViews];
@@ -2458,6 +2528,10 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       [self dockStore];
       return;
    }
+   if (optsWindow && [note object] == optsWindow)
+      [self windowRowStore:optsWindow row:COMPANION_WINDOW_CORE_OPTIONS];
+   if (shpWindow && [note object] == shpWindow)
+      [self windowRowStore:shpWindow row:COMPANION_WINDOW_SHADER_PARAMS];
    if ([note object] == window)
       [self geometryStore];
 }
@@ -2577,6 +2651,11 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    RELEASE(dockView);
    RELEASE(itemsLabel);
    RELEASE(zoomLabel);    RELEASE(searchField);  RELEASE(clearButton);
+   {
+      size_t k;
+      for (k = 0; k < COMPANION_SHORTCUT_COUNT; k++)
+         RELEASE(scutButton[k]);
+   }
    RELEASE(infoButton);   RELEASE(runButton);    RELEASE(browserTabs);
    RELEASE(playlistsScroll); RELEASE(corePopup); RELEASE(corePaths);
    RELEASE(viewPopup);    RELEASE(thumbPopup);   RELEASE(zoomSlider);
@@ -4024,6 +4103,205 @@ static const char *cc_thumb_subdir(int t)
    return win;
 }
 
+/* --- Shortcuts pane ---------------------------------------------------
+ *
+ * Qt's Shortcuts dock from the shared table: an icon button per utility
+ * window and per dock, a dock's button only while that dock is closed;
+ * its right-click menu removes it or adds a removed one back. Order and
+ * removals are the shared rows. No Controls window here, so no button
+ * for it. */
+
+- (BOOL)shortcutVisible:(size_t)i
+{
+   const companion_shortcut_t *sc = companion_shortcut_get(i);
+   if (!sc || !scutButton[i])
+      return NO;
+   return sc->kind != COMPANION_SHORTCUT_DOCK || !dock.shown[sc->target];
+}
+
+- (void)makeShortcut:(size_t)i
+{
+   const companion_shortcut_t *sc = companion_shortcut_get(i);
+   char path[PATH_MAX_LENGTH];
+   NSImage *src = nil;
+   NSButton *b;
+   /* Where the pane's views live: its float window, or the docks. */
+   NSView *parent = floats[COMPANION_DOCK_SHORTCUTS]
+      && dock.area[COMPANION_DOCK_SHORTCUTS] == COMPANION_DOCK_FLOAT
+      ? [floats[COMPANION_DOCK_SHORTCUTS] contentView]
+      : dockView ? (NSView*)dockView : [window contentView];
+   if (!sc || scutButton[i])
+      return;
+   if (sc->kind == COMPANION_SHORTCUT_WINDOW && sc->target == COMPANION_WINDOW_CONTROLS)
+      return;
+   b = [self makeButton:"" action:@selector(shortcutClicked:)];
+   [b setTag:(NSInteger)i];
+   [b setToolTip:BOXSTRING(msg_hash_to_str((enum msg_hash_enums)sc->label))];
+   if (companion_shortcut_icon_path(config_get_ptr(), i, path, sizeof(path)))
+      src = [[[NSImage alloc] initWithContentsOfFile:BOXSTRING(path)] autorelease_compat];
+   if (src && [src size].width > 0)
+   {
+      /* Qt's 24 px inset trimmed, tinted to the control text colour. */
+      NSSize   sz  = [src size];
+      NSRect   from = NSMakeRect(0, 0, sz.width, sz.height);
+      NSImage *ico = [[[NSImage alloc] initWithSize:NSMakeSize(32, 32)] autorelease_compat];
+      if (sz.width > 48 && sz.height > 48)
+         from = NSInsetRect(from, 24, 24);
+      [ico lockFocus];
+      [src drawInRect:NSMakeRect(0, 0, 32, 32) fromRect:from
+         operation:NSCompositingOperationSourceOver fraction:1.0];
+      [[NSColor controlTextColor] set];
+      NSRectFillUsingOperation(NSMakeRect(0, 0, 32, 32), COMPANION_COMPOSITE_ATOP);
+      [ico unlockFocus];
+      [b setImage:ico];
+      [b setImagePosition:NSImageOnly];
+   }
+   else
+      [b setTitle:BOXSTRING(msg_hash_to_str((enum msg_hash_enums)sc->label))];
+   scutButton[i] = RETAIN_COMPAT(b);
+   [parent addSubview:b];
+}
+
+/* Every button's right-click menu: Remove it, Add to Shortcuts what
+ * was removed. Rebuilt whenever the set changes. */
+- (void)shortcutMenus
+{
+   settings_t *settings = config_get_ptr();
+   size_t i, k;
+   for (i = 0; i < COMPANION_SHORTCUT_COUNT; i++)
+   {
+      NSMenu *menu, *add = nil;
+      NSMenuItem *item;
+      if (!scutButton[i])
+         continue;
+      menu = [[[NSMenu alloc] initWithTitle:@""] autorelease_compat];
+      item = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHORTCUTS_REMOVE))
+         action:@selector(shortcutRemove:) keyEquivalent:@""];
+      [item setTarget:self];
+      [item setTag:(NSInteger)i];
+      for (k = 0; k < COMPANION_SHORTCUT_COUNT; k++)
+      {
+         const companion_shortcut_t *sc = companion_shortcut_get(k);
+         if (!companion_shortcut_removed(settings, k)
+               || (sc->kind == COMPANION_SHORTCUT_WINDOW
+                  && sc->target == COMPANION_WINDOW_CONTROLS))
+            continue;
+         if (!add)
+         {
+            NSMenuItem *sub = [menu addItemWithTitle:BOXSTRING(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_QT_SHORTCUTS_ADD)) action:NULL keyEquivalent:@""];
+            add = [[[NSMenu alloc] initWithTitle:@""] autorelease_compat];
+            [menu setSubmenu:add forItem:sub];
+         }
+         item = [add addItemWithTitle:BOXSTRING(msg_hash_to_str((enum msg_hash_enums)sc->label))
+            action:@selector(shortcutAdd:) keyEquivalent:@""];
+         [item setTarget:self];
+         [item setTag:(NSInteger)k];
+      }
+      [scutButton[i] setMenu:menu];
+   }
+}
+
+- (void)shortcutClicked:(id)sender
+{
+   const companion_shortcut_t *sc = companion_shortcut_get((size_t)[sender tag]);
+   if (!sc)
+      return;
+   if (sc->kind == COMPANION_SHORTCUT_DOCK)
+      [self showPane:sc->target shown:YES];
+   else if (sc->target == COMPANION_WINDOW_CORE_OPTIONS)
+      [self showCoreOptions:sender];
+   else if (sc->target == COMPANION_WINDOW_SHADER_PARAMS)
+      [self showShaderParams:sender];
+}
+
+/* The strip's order into the shared row, other companions' tokens
+ * (Qt's pinned pages) left where they are. */
+- (void)shortcutStoreOrder
+{
+   settings_t *settings = config_get_ptr();
+   const char *keys[COMPANION_SHORTCUT_COUNT];
+   size_t k, n = 0;
+   for (k = 0; k < COMPANION_SHORTCUT_COUNT; k++)
+      if (scutButton[scutOrder[k]])
+         keys[n++] = companion_shortcut_get(scutOrder[k])->key;
+   companion_list_merge_order(settings->arrays.desktop_menu_shortcuts_order,
+         sizeof(settings->arrays.desktop_menu_shortcuts_order), keys, n);
+}
+
+- (void)shortcutRemove:(id)sender
+{
+   settings_t *settings = config_get_ptr();
+   size_t i = (size_t)[sender tag];
+   if (i >= COMPANION_SHORTCUT_COUNT || !scutButton[i])
+      return;
+   companion_list_add(settings->arrays.desktop_menu_shortcuts_removed,
+         sizeof(settings->arrays.desktop_menu_shortcuts_removed),
+         companion_shortcut_get(i)->key);
+   [scutButton[i] removeFromSuperview];
+   RELEASE(scutButton[i]);
+   scutButton[i] = nil;
+   [self shortcutStoreOrder];
+   [self shortcutMenus];
+   [self layoutViews];
+}
+
+- (void)shortcutAdd:(id)sender
+{
+   settings_t *settings = config_get_ptr();
+   size_t i = (size_t)[sender tag];
+   if (i >= COMPANION_SHORTCUT_COUNT)
+      return;
+   companion_list_remove(settings->arrays.desktop_menu_shortcuts_removed,
+         companion_shortcut_get(i)->key);
+   [self makeShortcut:i];
+   [self shortcutStoreOrder];
+   [self shortcutMenus];
+   [self layoutViews];
+}
+
+/* The shared desktop_menu_*_window rows: the content rect, top-left
+ * origin on the primary screen, as Qt's geometry() keeps it. */
+- (void)windowRowRestore:(NSWindow*)win row:(enum companion_window)row
+{
+   settings_t *settings = config_get_ptr();
+   NSArray *screens     = [NSScreen screens];
+   companion_rect_t r;
+   size_t len;
+   NSRect cr;
+   CGFloat top;
+   if (     !win || !settings->bools.desktop_menu_save_geometry || ![screens count]
+         || !companion_window_row_parse(companion_window_row(settings, row, &len), &r))
+      return;
+   top = [[screens objectAtIndex:0] frame].size.height;
+   cr  = NSMakeRect(VIDEO_POS_X(r.pos),
+         top - VIDEO_POS_Y(r.pos) - (CGFloat)VIDEO_SCALE_H(r.dims),
+         VIDEO_SCALE_W(r.dims), VIDEO_SCALE_H(r.dims));
+   [win setFrame:[win frameRectForContentRect:cr] display:NO];
+}
+
+- (void)windowRowStore:(NSWindow*)win row:(enum companion_window)row
+{
+   settings_t *settings = config_get_ptr();
+   NSArray *screens     = [NSScreen screens];
+   companion_rect_t r;
+   size_t len;
+   char *s;
+   NSRect cr;
+   if (     !win || !settings->bools.desktop_menu_save_geometry || ![screens count]
+         || ![win isVisible] || [win isMiniaturized]
+         || !(s = companion_window_row(settings, row, &len)))
+      return;
+   cr = [win contentRectForFrameRect:[win frame]];
+   if (cr.size.width <= 0 || cr.size.height <= 0)
+      return;
+   r.pos  = VIDEO_POS_PACK((int)cr.origin.x,
+         (int)([[screens objectAtIndex:0] frame].size.height
+            - cr.origin.y - cr.size.height));
+   r.dims = VIDEO_SCALE_PACK((unsigned)cr.size.width, (unsigned)cr.size.height);
+   companion_window_row_format(s, len, &r);
+}
+
 - (void)showCoreOptions:(id)sender
 {
    if (!optsWindow)
@@ -4037,6 +4315,8 @@ static const char *cc_thumb_subdir(int t)
          buttons:[NSArray arrayWithObjects:@"Reset", @"Reset All", nil]
          actions:[NSArray arrayWithObjects:@"optionReset:", @"optionResetAll:", nil]];
       optsTable = tv;
+      [self windowRowRestore:optsWindow row:COMPANION_WINDOW_CORE_OPTIONS];
+      [optsWindow setDelegate:(id)self];
       [optsTable setTarget:self];
       [optsTable setDoubleAction:@selector(optionCycle:)];
    }
@@ -4085,6 +4365,8 @@ static const char *cc_thumb_subdir(int t)
          buttons:[NSArray arrayWithObjects:@"Apply", @"Reset", nil]
          actions:[NSArray arrayWithObjects:@"shaderApply:", @"shaderReset:", nil]];
       shpTable = tv;
+      [self windowRowRestore:shpWindow row:COMPANION_WINDOW_SHADER_PARAMS];
+      [shpWindow setDelegate:(id)self];
       [[shpTable tableColumnWithIdentifier:@"pval"] setEditable:YES];
    }
    [shpTable reloadData];

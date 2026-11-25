@@ -162,8 +162,8 @@ struct wimp_peek { companion_core_t *core; void *controller; };
  * controller's -paneViews:into:max:. */
 static NSView *pane_view(id ctrl, int pane)
 {
-   NSView *vs[8];
-   int n = [ctrl paneViews:pane into:vs max:8];
+   NSView *vs[32];
+   int n = [ctrl paneViews:pane into:vs max:32];
    return n > 0 ? vs[0] : nil;
 }
 
@@ -1186,6 +1186,52 @@ int main(int argc, char **argv)
                pump(d2, 50);
                CHECK(![pane_view(c2, 4) isHidden] && strncmp(test_settings.arrays.desktop_menu_dock_title, "right,1,", 8) == 0,
                      "Closed Docks shows it again (%s)", test_settings.arrays.desktop_menu_dock_title);
+            }
+            /* Shortcuts (the shared table): a button per window and
+             * dock but Controls, which has no window here; a dock's
+             * button only while that dock is closed, and it reopens
+             * it; Remove and Add to Shortcuts go through the shared
+             * rows. */
+            {
+               NSView *sv[32];
+               NSButton *tb = nil;
+               size_t ti = COMPANION_SHORTCUT_COUNT, k;
+               int n = [c2 paneViews:COMPANION_DOCK_SHORTCUTS into:sv max:32], j;
+               NSMenuItem *add;
+               for (k = 0; k < COMPANION_SHORTCUT_COUNT; k++)
+                  if (!strcmp(companion_shortcut_get(k)->key, "title"))
+                     ti = k;
+               for (j = 0; j < n; j++)
+                  if ((size_t)[(NSButton*)sv[j] tag] == ti)
+                     tb = (NSButton*)sv[j];
+               CHECK(n == COMPANION_SHORTCUT_COUNT - 1 && tb,
+                     "Shortcuts: %d buttons, no Controls", n);
+               CHECK(tb && [tb isHidden], "Shortcuts: an open dock's button is hidden");
+               [c2 showPane:4 shown:NO];
+               pump(d2, 20);
+               CHECK(tb && ![tb isHidden] && !NSIsEmptyRect([tb frame]),
+                     "Shortcuts: a closed dock's button shows");
+               [c2 shortcutClicked:tb];
+               pump(d2, 20);
+               CHECK(![pane_view(c2, 4) isHidden] && [tb isHidden],
+                     "Shortcuts: the button reopens its dock");
+               [c2 shortcutRemove:tb];
+               pump(d2, 20);
+               CHECK([c2 paneViews:COMPANION_DOCK_SHORTCUTS into:sv max:32] == n - 1
+                     && companion_list_index(test_settings.arrays.desktop_menu_shortcuts_removed, "title") >= 0
+                     && companion_list_index(test_settings.arrays.desktop_menu_shortcuts_order, "title") < 0,
+                     "Shortcuts: Remove (removed '%s', order '%s')",
+                     test_settings.arrays.desktop_menu_shortcuts_removed,
+                     test_settings.arrays.desktop_menu_shortcuts_order);
+               add = [[[NSMenuItem alloc] initWithTitle:@"" action:NULL keyEquivalent:@""] autorelease];
+               [add setTag:(NSInteger)ti];
+               [c2 shortcutAdd:add];
+               pump(d2, 20);
+               CHECK([c2 paneViews:COMPANION_DOCK_SHORTCUTS into:sv max:32] == n
+                     && test_settings.arrays.desktop_menu_shortcuts_removed[0] == '\0'
+                     && companion_list_index(test_settings.arrays.desktop_menu_shortcuts_order, "title") >= 0,
+                     "Shortcuts: Add to Shortcuts (order '%s')",
+                     test_settings.arrays.desktop_menu_shortcuts_order);
             }
          }
          [w2 close];

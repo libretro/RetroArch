@@ -815,6 +815,14 @@ typedef struct ui_companion_win32_wimp
    /* Playlist a context menu was opened on (a list box does not move
     * its selection on right-click); (size_t)-1 = use the selection. */
    size_t ctx_playlist;
+   /* The Shortcuts pane: a BUTTON per built-in shortcut (NULL when
+    * removed or not offered here), in the strip's order; the tooltip
+    * window that names them; the button a context menu is for. */
+   HWND scut_btn[COMPANION_SHORTCUT_COUNT];
+   HBITMAP scut_bmp[COMPANION_SHORTCUT_COUNT];
+   unsigned char scut_order[COMPANION_SHORTCUT_COUNT];
+   HWND scut_tips;
+   int scut_menu;
    bool class_registered;
 } ui_companion_win32_wimp_t;
 
@@ -1390,6 +1398,9 @@ static void cw_boxart_update(ui_companion_win32_wimp_t *w, long entry);
 static void cw_set_icon_view(ui_companion_win32_wimp_t *w, bool icons);
 static void cw_layout(ui_companion_win32_wimp_t *w);
 static void cw_info_fill(ui_companion_win32_wimp_t *w);
+static bool cw_scut_context_menu(ui_companion_win32_wimp_t *w, HWND hwnd,
+      int x, int y);
+static bool cw_scut_command(ui_companion_win32_wimp_t *w, int id);
 static long cw_focused_entry(ui_companion_win32_wimp_t *w);
 static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 
@@ -1755,9 +1766,20 @@ static const char *cw_pane_title(enum companion_dock_id p)
       case COMPANION_DOCK_LOGO:       return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO);
       case COMPANION_DOCK_CORE_INFO:  return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_INFO);
       case COMPANION_DOCK_LOG:        return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOG);
+      case COMPANION_DOCK_SHORTCUTS:  return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHORTCUTS);
       default:                        break;
    }
    return "";
+}
+
+/* Whether Shortcuts button @i shows: a window button always, a dock
+ * button while its dock is closed (it reopens it), as Qt's. */
+static bool cw_scut_visible(ui_companion_win32_wimp_t *w, size_t i)
+{
+   const companion_shortcut_t *sc = companion_shortcut_get(i);
+   if (!w->scut_btn[i] || !sc)
+      return false;
+   return sc->kind != COMPANION_SHORTCUT_DOCK || !w->dock.shown[sc->target];
 }
 
 /* The thumbnail pane index (0..3) of a thumbnail dock id, -1 otherwise. */
@@ -1806,6 +1828,13 @@ static int cw_pane_controls(ui_companion_win32_wimp_t *w,
       case COMPANION_DOCK_LOG:
          CW_ADD(w->log);
          break;
+      case COMPANION_DOCK_SHORTCUTS:
+      {
+         size_t i;
+         for (i = 0; i < COMPANION_SHORTCUT_COUNT; i++)
+            CW_ADD(w->scut_btn[i]);
+         break;
+      }
       default:
          if (t >= 0)
             CW_ADD(w->thumb_pane[t].ctl);
@@ -1882,6 +1911,25 @@ static void cw_pane_layout(ui_companion_win32_wimp_t *w,
       case COMPANION_DOCK_LOG:
          MoveWindow(w->log, x, y, wd, ht, TRUE);
          break;
+      case COMPANION_DOCK_SHORTCUTS:
+      {
+         /* 36 px buttons 2 px apart, in rows as wide as the pane. */
+         const int B = CW_S(w, 36), G = CW_S(w, 2);
+         int cols = (wd + G) / (B + G), n = 0;
+         size_t k;
+         if (cols < 1)
+            cols = 1;
+         for (k = 0; k < COMPANION_SHORTCUT_COUNT; k++)
+         {
+            size_t i = w->scut_order[k];
+            if (!cw_scut_visible(w, i))
+               continue;
+            MoveWindow(w->scut_btn[i], x + (n % cols) * (B + G),
+                  y + (n / cols) * (B + G), B, B, TRUE);
+            n++;
+         }
+         break;
+      }
       default:
          if (t >= 0)
             MoveWindow(w->thumb_pane[t].ctl, x, y, wd, ht, TRUE);
@@ -1890,11 +1938,22 @@ static void cw_pane_layout(ui_companion_win32_wimp_t *w,
    (void)L;
 }
 
+#define CW_PANE_CTL_MAX (COMPANION_SHORTCUT_COUNT + 4)
+
 static void cw_pane_show(ui_companion_win32_wimp_t *w,
       enum companion_dock_id p, bool show)
 {
-   HWND ctl[8];
-   int i, n = cw_pane_controls(w, p, ctl, 8);
+   HWND ctl[CW_PANE_CTL_MAX];
+   int i, n = cw_pane_controls(w, p, ctl, CW_PANE_CTL_MAX);
+   if (p == COMPANION_DOCK_SHORTCUTS)
+   {
+      size_t k;
+      for (k = 0; k < COMPANION_SHORTCUT_COUNT; k++)
+         if (w->scut_btn[k])
+            ShowWindow(w->scut_btn[k],
+                  show && cw_scut_visible(w, k) ? SW_SHOW : SW_HIDE);
+      return;
+   }
    for (i = 0; i < n; i++)
    {
       /* The browser buttons only show under the File Browser tab. */
@@ -1910,8 +1969,8 @@ static void cw_pane_show(ui_companion_win32_wimp_t *w,
 static void cw_pane_reparent(ui_companion_win32_wimp_t *w,
       enum companion_dock_id p, HWND parent)
 {
-   HWND ctl[8];
-   int i, n = cw_pane_controls(w, p, ctl, 8);
+   HWND ctl[CW_PANE_CTL_MAX];
+   int i, n = cw_pane_controls(w, p, ctl, CW_PANE_CTL_MAX);
    for (i = 0; i < n; i++)
       if (GetParent(ctl[i]) != parent)
          SetParent(ctl[i], parent);
@@ -2090,6 +2149,8 @@ static void cw_layout(ui_companion_win32_wimp_t *w)
    w->dm.def_side = CW_S(w, 280);
    w->dm.def_bar  = CW_S(w, COMPANION_WIN32_LOG_H);
    w->dm.def_slot = CW_S(w, 200);
+   /* The pane's padding around one button row, under its strip. */
+   w->dm.def_shortcuts = w->dm.strip_h + CW_S(w, 36) + 2 * CW_S(w, 4);
    companion_dock_layout(&w->dock, &w->dm, &client, &w->geom);
 
    for (i = 0; i < COMPANION_DOCK_COUNT; i++)
@@ -3371,11 +3432,17 @@ static void cw_opts_cycle(ui_companion_win32_wimp_t *w, int item)
          LVIS_SELECTED | LVIS_FOCUSED);
 }
 
+static void cw_window_persist(ui_companion_win32_wimp_t *w, HWND hwnd,
+      enum companion_window id);
+
 static LRESULT CALLBACK cw_opts_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
    ui_companion_win32_wimp_t *w = g_win32_wimp;
    switch (msg)
    {
+      case WM_EXITSIZEMOVE:
+         cw_window_persist(w, hwnd, COMPANION_WINDOW_CORE_OPTIONS);
+         break;
       case WM_SIZE:
          if (w && w->opts_list)
          {
@@ -3506,6 +3573,52 @@ static void cw_table_font(HWND parent)
       SendMessageA(c, WM_SETFONT, (WPARAM)f, TRUE);
 }
 
+/* The shared desktop_menu_*_window rows hold a utility window's client
+ * area in screen coordinates, logical pixels (what Qt's geometry() is),
+ * so either companion opens it where the other left it. */
+static void cw_window_restore(ui_companion_win32_wimp_t *w, HWND hwnd,
+      enum companion_window id)
+{
+   settings_t *settings = config_get_ptr();
+   companion_rect_t r;
+   RECT rc;
+   size_t len;
+   if (     !hwnd || !settings->bools.desktop_menu_save_geometry
+         || !companion_window_row_parse(companion_window_row(settings, id, &len), &r))
+      return;
+   rc.left   = CW_S(w, VIDEO_POS_X(r.pos));
+   rc.top    = CW_S(w, VIDEO_POS_Y(r.pos));
+   rc.right  = rc.left + CW_S(w, (int)VIDEO_SCALE_W(r.dims));
+   rc.bottom = rc.top  + CW_S(w, (int)VIDEO_SCALE_H(r.dims));
+   AdjustWindowRectEx(&rc, (DWORD)GetWindowLongA(hwnd, GWL_STYLE), FALSE,
+         (DWORD)GetWindowLongA(hwnd, GWL_EXSTYLE));
+   SetWindowPos(hwnd, NULL, rc.left, rc.top, rc.right - rc.left,
+         rc.bottom - rc.top, SWP_NOZORDER | SWP_NOACTIVATE);
+}
+
+static void cw_window_persist(ui_companion_win32_wimp_t *w, HWND hwnd,
+      enum companion_window id)
+{
+   settings_t *settings = config_get_ptr();
+   companion_rect_t r;
+   RECT rc;
+   POINT tl;
+   size_t len;
+   char *row;
+   if (     !w || !hwnd || !settings->bools.desktop_menu_save_geometry
+         || !IsWindowVisible(hwnd) || IsIconic(hwnd)
+         || !(row = companion_window_row(settings, id, &len)))
+      return;
+   GetClientRect(hwnd, &rc);
+   tl.x = 0; tl.y = 0;
+   ClientToScreen(hwnd, &tl);
+   if (rc.right <= 0 || rc.bottom <= 0)
+      return;
+   r.pos  = VIDEO_POS_PACK(MulDiv(tl.x, 96, w->dpi), MulDiv(tl.y, 96, w->dpi));
+   r.dims = VIDEO_SCALE_PACK(MulDiv(rc.right, 96, w->dpi), MulDiv(rc.bottom, 96, w->dpi));
+   companion_window_row_format(row, len, &r);
+}
+
 static void cw_opts_show(ui_companion_win32_wimp_t *w)
 {
    if (!w->opts_hwnd)
@@ -3525,6 +3638,7 @@ static void cw_opts_show(ui_companion_win32_wimp_t *w)
       cw_table_button(w->opts_hwnd, "Reset All", IDC_CW_OPTS_RESET_ALL, false);
       cw_table_button(w->opts_hwnd, "Close", IDC_CW_OPTS_CLOSE, true);
       cw_table_font(w->opts_hwnd);
+      cw_window_restore(w, w->opts_hwnd, COMPANION_WINDOW_CORE_OPTIONS);
    }
    cw_opts_fill(w);
    ShowWindow(w->opts_hwnd, SW_SHOW);
@@ -3576,6 +3690,9 @@ static LRESULT CALLBACK cw_shp_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARA
    ui_companion_win32_wimp_t *w = g_win32_wimp;
    switch (msg)
    {
+      case WM_EXITSIZEMOVE:
+         cw_window_persist(w, hwnd, COMPANION_WINDOW_SHADER_PARAMS);
+         break;
       case WM_SIZE:
          if (w && w->shp_list)
          {
@@ -4969,6 +5086,8 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             cw_dock_show_pane(w, (enum companion_dock_id)(LOWORD(wparam) - IDM_CW_DOCK_FIRST), true);
             return 0;
          }
+         if (cw_scut_command(w, LOWORD(wparam)))
+            return 0;
          if (LOWORD(wparam) >= IDM_CW_UNHIDE_FIRST
                && LOWORD(wparam) <= IDM_CW_UNHIDE_LAST)
          {
@@ -5205,6 +5324,9 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
          return 0;
 
       case WM_CONTEXTMENU:
+         if (w && cw_scut_context_menu(w, (HWND)wparam,
+                  (int)(short)LOWORD(lparam), (int)(short)HIWORD(lparam)))
+            return 0;
          if (w && ((HWND)wparam == w->entries || (HWND)wparam == w->playlists))
          {
             cw_context_menu(w, (HWND)wparam,
@@ -5489,6 +5611,221 @@ static BOOL CALLBACK cw_setfont_cb(HWND h, LPARAM lp)
 {
    SendMessageA(h, WM_SETFONT, (WPARAM)lp, TRUE);
    return TRUE;
+}
+
+/* --- Shortcuts pane ---------------------------------------------------
+ *
+ * Qt's Shortcuts dock from the shared table (companion_shortcut_get):
+ * an icon button per utility window and per dock, a dock's button only
+ * while that dock is closed; right-click removes a button or adds a
+ * removed one back. Order and removals are the shared rows, so a
+ * layout made in one companion holds in the other. There is no
+ * Controls window here, so no button for it. */
+
+static bool cw_scut_offered(size_t i)
+{
+   const companion_shortcut_t *sc = companion_shortcut_get(i);
+   return sc && !(sc->kind == COMPANION_SHORTCUT_WINDOW
+         && sc->target == COMPANION_WINDOW_CONTROLS);
+}
+
+/* The asset tinted to the button text colour over the button face (the
+ * monochrome XMB icons are white on transparent), with the 24 px inset
+ * Qt trims off; opaque, so every comctl32 draws it the same. */
+static HBITMAP cw_scut_bitmap(ui_companion_win32_wimp_t *w, size_t i)
+{
+   struct texture_image ti;
+   char path[PATH_MAX_LENGTH];
+   uint32_t ink = cw_sys_color_argb(COLOR_BTNTEXT) & 0x00ffffffu;
+   HBITMAP bmp  = NULL;
+   unsigned x, y;
+   if (!companion_shortcut_icon_path(config_get_ptr(), i, path, sizeof(path)))
+      return NULL;
+   memset(&ti, 0, sizeof(ti));
+   if (!image_texture_load(&ti, path))
+      return NULL;
+   if (ti.width > 48 && ti.height > 48)
+   {
+      /* Crop in place: rows only ever move towards the start. */
+      unsigned cw = ti.width - 48, ch = ti.height - 48;
+      for (y = 0; y < ch; y++)
+         memmove(ti.pixels + (size_t)y * cw,
+               ti.pixels + (size_t)(y + 24) * ti.width + 24,
+               cw * sizeof(uint32_t));
+      ti.width  = cw;
+      ti.height = ch;
+   }
+   for (y = 0; y < ti.height; y++)
+      for (x = 0; x < ti.width; x++)
+      {
+         uint32_t *px = &ti.pixels[(size_t)y * ti.width + x];
+         *px = (*px & 0xff000000u) | ink;
+      }
+   bmp = cw_boxart_scale(&ti, CW_S(w, 32), CW_S(w, 32),
+         cw_sys_color_argb(COLOR_BTNFACE));
+   image_texture_free(&ti);
+   return bmp;
+}
+
+static void cw_scut_create(ui_companion_win32_wimp_t *w, size_t i)
+{
+   const companion_shortcut_t *sc = companion_shortcut_get(i);
+   const char *tip;
+   HWND parent = w->floats[COMPANION_DOCK_SHORTCUTS]
+      && w->dock.area[COMPANION_DOCK_SHORTCUTS] == COMPANION_DOCK_FLOAT
+      ? w->floats[COMPANION_DOCK_SHORTCUTS] : w->hwnd;
+   if (!sc || w->scut_btn[i] || !cw_scut_offered(i))
+      return;
+   tip = msg_hash_to_str((enum msg_hash_enums)sc->label);
+   w->scut_bmp[i] = cw_scut_bitmap(w, i);
+   /* Without its icon the button shows the name instead. */
+   w->scut_btn[i] = cw_create(0, "BUTTON", tip,
+         WS_CHILD | BS_PUSHBUTTON | (w->scut_bmp[i] ? BS_BITMAP : 0),
+         0, 0, 0, 0, parent, (HMENU)(UINT_PTR_COMPAT)(IDC_CW_SCUT_FIRST + i),
+         GetModuleHandleA(NULL), NULL);
+   if (!w->scut_btn[i])
+      return;
+   if (w->font)
+      SendMessageA(w->scut_btn[i], WM_SETFONT, (WPARAM)w->font, TRUE);
+   if (w->scut_bmp[i])
+      SendMessageA(w->scut_btn[i], BM_SETIMAGE, IMAGE_BITMAP, (LPARAM)w->scut_bmp[i]);
+   if (w->scut_tips)
+   {
+      TOOLINFOA ti;
+      memset(&ti, 0, sizeof(ti));
+      /* The v1 size: every comctl32 back to Windows 95 takes it. */
+#ifdef TTTOOLINFOA_V1_SIZE
+      ti.cbSize = TTTOOLINFOA_V1_SIZE;
+#else
+      ti.cbSize = sizeof(ti);
+#endif
+      ti.uFlags   = TTF_IDISHWND | TTF_SUBCLASS;
+      ti.hwnd     = w->hwnd;
+      ti.uId      = (UINT_PTR_COMPAT)w->scut_btn[i];
+      ti.lpszText = (LPSTR)tip;
+      SendMessageA(w->scut_tips, TTM_ADDTOOLA, 0, (LPARAM)&ti);
+   }
+}
+
+static void cw_scut_destroy(ui_companion_win32_wimp_t *w, size_t i)
+{
+   if (w->scut_btn[i])
+      DestroyWindow(w->scut_btn[i]);
+   if (w->scut_bmp[i])
+      DeleteObject(w->scut_bmp[i]);
+   w->scut_btn[i] = NULL;
+   w->scut_bmp[i] = NULL;
+}
+
+/* The strip's order back into the shared row, leaving the tokens of
+ * other companions (Qt's pinned pages) where they are. */
+static void cw_scut_store_order(ui_companion_win32_wimp_t *w)
+{
+   settings_t *settings = config_get_ptr();
+   const char *keys[COMPANION_SHORTCUT_COUNT];
+   size_t k, n = 0;
+   for (k = 0; k < COMPANION_SHORTCUT_COUNT; k++)
+      if (w->scut_btn[w->scut_order[k]])
+         keys[n++] = companion_shortcut_get(w->scut_order[k])->key;
+   companion_list_merge_order(settings->arrays.desktop_menu_shortcuts_order,
+         sizeof(settings->arrays.desktop_menu_shortcuts_order), keys, n);
+}
+
+static void cw_scut_create_all(ui_companion_win32_wimp_t *w)
+{
+   settings_t *settings = config_get_ptr();
+   size_t k;
+   w->scut_tips = cw_create(WS_EX_TOPMOST, TOOLTIPS_CLASSA, NULL,
+         WS_POPUP | TTS_ALWAYSTIP, CW_USEDEFAULT, CW_USEDEFAULT,
+         CW_USEDEFAULT, CW_USEDEFAULT, w->hwnd, NULL,
+         GetModuleHandleA(NULL), NULL);
+   companion_shortcuts_order(settings, w->scut_order);
+   for (k = 0; k < COMPANION_SHORTCUT_COUNT; k++)
+      if (!companion_shortcut_removed(settings, w->scut_order[k]))
+         cw_scut_create(w, w->scut_order[k]);
+}
+
+/* Right-click on a Shortcuts button: Remove, and Add to Shortcuts for
+ * what was removed. True when @hwnd was one of ours. */
+static bool cw_scut_context_menu(ui_companion_win32_wimp_t *w, HWND hwnd,
+      int x, int y)
+{
+   settings_t *settings = config_get_ptr();
+   HMENU menu, add = NULL;
+   size_t i;
+   int hit = -1;
+   for (i = 0; i < COMPANION_SHORTCUT_COUNT; i++)
+      if (w->scut_btn[i] && w->scut_btn[i] == hwnd)
+         hit = (int)i;
+   if (hit < 0 || !(menu = CreatePopupMenu()))
+      return false;
+   w->scut_menu = hit;
+   cw_append_menu(menu, MF_STRING, IDM_CW_SCUT_REMOVE,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHORTCUTS_REMOVE));
+   for (i = 0; i < COMPANION_SHORTCUT_COUNT; i++)
+   {
+      if (!cw_scut_offered(i) || !companion_shortcut_removed(settings, i))
+         continue;
+      if (!add && !(add = CreatePopupMenu()))
+         break;
+      cw_append_menu(add, MF_STRING, IDM_CW_SCUT_ADD_FIRST + (int)i,
+            msg_hash_to_str((enum msg_hash_enums)companion_shortcut_get(i)->label));
+   }
+   if (add)
+      cw_append_menu(menu, MF_POPUP, (UINT_PTR_COMPAT)add,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHORTCUTS_ADD));
+   if (x == -1 && y == -1)
+   {
+      /* From the keyboard: under the button. */
+      RECT rc;
+      GetWindowRect(hwnd, &rc);
+      x = rc.left;
+      y = rc.bottom;
+   }
+   TrackPopupMenu(menu, TPM_RIGHTBUTTON, x, y, 0, w->hwnd, NULL);
+   DestroyMenu(menu);
+   return true;
+}
+
+/* A Shortcuts button or its menu; true when @id was one of ours. */
+static bool cw_scut_command(ui_companion_win32_wimp_t *w, int id)
+{
+   settings_t *settings = config_get_ptr();
+   if (id >= IDC_CW_SCUT_FIRST && id < IDC_CW_SCUT_FIRST + COMPANION_SHORTCUT_COUNT)
+   {
+      const companion_shortcut_t *sc = companion_shortcut_get((size_t)(id - IDC_CW_SCUT_FIRST));
+      if (sc->kind == COMPANION_SHORTCUT_DOCK)
+         cw_dock_show_pane(w, (enum companion_dock_id)sc->target, true);
+      else if (sc->target == COMPANION_WINDOW_CORE_OPTIONS)
+         cw_opts_show(w);
+      else if (sc->target == COMPANION_WINDOW_SHADER_PARAMS)
+         cw_shp_show(w);
+      return true;
+   }
+   if (id == IDM_CW_SCUT_REMOVE)
+   {
+      if (w->scut_menu >= 0 && w->scut_menu < COMPANION_SHORTCUT_COUNT)
+      {
+         companion_list_add(settings->arrays.desktop_menu_shortcuts_removed,
+               sizeof(settings->arrays.desktop_menu_shortcuts_removed),
+               companion_shortcut_get((size_t)w->scut_menu)->key);
+         cw_scut_destroy(w, (size_t)w->scut_menu);
+         cw_scut_store_order(w);
+         cw_layout(w);
+      }
+      return true;
+   }
+   if (id >= IDM_CW_SCUT_ADD_FIRST && id < IDM_CW_SCUT_ADD_FIRST + COMPANION_SHORTCUT_COUNT)
+   {
+      size_t i = (size_t)(id - IDM_CW_SCUT_ADD_FIRST);
+      companion_list_remove(settings->arrays.desktop_menu_shortcuts_removed,
+            companion_shortcut_get(i)->key);
+      cw_scut_create(w, i);
+      cw_scut_store_order(w);
+      cw_layout(w);
+      return true;
+   }
+   return false;
 }
 
 static bool cw_create_window(ui_companion_win32_wimp_t *w)
@@ -5884,6 +6221,7 @@ static void *ui_companion_win32_wimp_init(void)
    w->thumb_subdir = companion_core_pref_thumbnail_subdir(w->core);
    if (companion_core_pref_last_tab(w->core) == 1)
       cw_browse_enter(w);
+   cw_scut_create_all(w);
    /* The dock layout the rows describe (or Qt's default), laid out. */
    cw_dock_load(w);
    cw_layout(w);
@@ -5945,6 +6283,12 @@ static void ui_companion_win32_wimp_deinit(void *data)
    }
    if (w->pl_icons)
       ImageList_Destroy(w->pl_icons);
+   {
+      size_t k;
+      for (k = 0; k < COMPANION_SHORTCUT_COUNT; k++)
+         if (w->scut_bmp[k])
+            DeleteObject(w->scut_bmp[k]);
+   }
    if (w->font && w->font != (HFONT)GetStockObject(DEFAULT_GUI_FONT))
       DeleteObject(w->font);
    if (w->thumbs)

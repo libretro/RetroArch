@@ -43,6 +43,11 @@ FEATS = [
  ("Search Enter selects+runs",        r"onSearchEnterPressed", r"searchEnter|runSelected", r"cw_search_proc"),
  ("Core Options dialog",              r"CoreOptionsDialog", r"optsTable", r"cw_opts_show"),
  ("Shader params dialog",             r"ShaderParamsDialog", r"shpTable", r"cw_shp_show"),
+ ("Shortcuts dock",                   r"m_shortcutsDock", r"scutButton", r"scut_btn"),
+ ("Shortcuts: reorder by drag",       r"QT_SHORTCUT_MIME", r"shortcutDrag", r"cw_scut_drag"),
+ ("Shortcuts: pinned Settings pages", r"onPinSettingsShortcut", r"shortcutPin", r"cw_scut_pin"),
+ ("Controls window",                  r"onControlsClicked", r"showControls", r"cw_ctl_show"),
+ ("Utility window geometry rows",     r"qt_dialog_persist_geometry", r"windowRowStore", r"cw_window_persist"),
 ]
 print("%-40s %-6s %-6s %s" % ("feature", "qt", "cocoa", "win32"))
 gc, gw = [], []
