@@ -29,7 +29,9 @@
 #
 # A console line's render=gl needs a harness built with HAVE_EGL=1, and
 # render=vulkan one built with HAVE_VULKAN=1. While a switch is off, its
-# scenario in unbuilt/ must exit 2 as those in bad/ do.
+# scenario in unbuilt/ must exit 2 as those in bad/ do. No object is built
+# again when a switch, CC or SANITIZER changes: each set of them takes a
+# BUILD_DIR of its own.
 #
 # check-gl, which check ends with when HAVE_EGL is 1, makes the six runs of
 # each scenario in gl/ on surfaceless EGL contexts. Such a scenario's first

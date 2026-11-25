@@ -21,8 +21,18 @@ For Windows, built with mingw-w64 and run under Wine:
 make -C samples/link/harness check CC=x86_64-w64-mingw32-gcc RUNNER=wine BUILD_DIR=build-windows
 ```
 
+With `HAVE_EGL=1` the harness also hosts consoles whose cores draw in
+OpenGL, on Linux, and `check` ends with the scenarios in `scenarios/gl/`
+("GPU consoles" below):
+
+```sh
+make -C samples/link/harness check HAVE_EGL=1 BUILD_DIR=build-gl
+```
+
 Everything built, and every run's output, goes under `BUILD_DIR` (`build` by
-default); a run's output is in `out/<scenario>/<run>/`.
+default); a run's output is in `out/<scenario>/<run>/`. Objects are not
+rebuilt when `CC`, `SANITIZER`, `HAVE_EGL` or `HAVE_VULKAN` changes, so
+each set of them needs a `BUILD_DIR` of its own.
 
 ## The six runs
 
@@ -69,7 +79,13 @@ in `spans_save_in_advance` consoles 1 and 2 at checkpoints `in_flight`
 and `last`, and in `spans_membership` console 2 at checkpoints
 `in_flight`, `left`, `back` and `pull`, and console 1 at `plugged`
 but not at `pull`; in `two_spans` console 1 must finish 598 frames
-to console 0's 600, the last of them its frame 597 in step 599.
+to console 0's 600, the last of them its frame 597 in step 599. Each of
+`render_one`'s 120 frames must have a picture hash of its own;
+`render_grow`'s picture must be 64 pixels wide at checkpoint `small` and 128
+at `mid`; console 1 of `render_two` must keep its picture of frame 99 over
+frame 100, which passes none, and `render_dupe`'s console its picture of
+frame 39 over frame 40; and in `render_spans` consoles 1 and 2 must be
+inside a frame at checkpoints `in_flight` and `last`.
 
 Then the runs that must fail: every scenario in `scenarios/bad/`, a truncated
 state and a state of another scenario must each exit 2, and every scenario in
@@ -112,7 +128,8 @@ make -C samples/link/harness proof PROOF=/abs/path/scenario.scn \
 link_harness --scenario FILE --out DIR [--path NAME=FILE]...
              [--pick lowest|reversed|shuffled:SEED]
              [--from STATE | --rewind STATE] [--expect TRACE]
-             [--min-stack BYTES]
+             [--min-stack BYTES] [--require-renderer TEXT]
+             [--no-context-follow]
 ```
 
 - `--path NAME=FILE` binds a name the scenario uses for a core, ROM, save or
@@ -138,16 +155,22 @@ link_harness --scenario FILE --out DIR [--path NAME=FILE]...
   it goes on from the lines of the state's frame.
 - `--min-stack` gives every console at least this much stack. Sanitizer
   builds use 8 MiB.
+- `--require-renderer TEXT` fails the start of a console with `render=`
+  whose driver does not name TEXT in its renderer string:
+  `console <c>: renderer "<name>" is not <TEXT>`.
+- `--no-context-follow` leaves the last OpenGL context made current where
+  it is when another console's code runs. It is there for the check that
+  must fail.
 
 The exit code is:
 
 - 0 when the run reached its `end` line, every `expect` held, no core
-  logged an error, not even finishing a frame abandoned at the close, the
-  bus counts and the frame of any release were those the scenario
-  expects, every compared trace line matched, every console
-  that ran the frame before a checkpoint kept its picture, each state saved
-  again right after a load was the state loaded, with no `send_msg`,
-  `recv_msg`, `peek`, `advance` or `advance_multi` call, and no
+  logged an error, not even finishing a frame abandoned at the close or
+  while it was unloaded, the bus counts and the frame of any release were
+  those the scenario expects, every compared trace line matched, every
+  console that ran the frame before a checkpoint kept its picture, each
+  state saved again right after a load was the state loaded, with no
+  `send_msg`, `recv_msg`, `peek`, `advance` or `advance_multi` call, and no
   core, ROM, save or state file the run read has changed.
 - 1 when any of those failed. The first trace difference is printed as
   `trace differs at frame F console C: expected <line> got <line>`.
@@ -164,6 +187,7 @@ which frame. `#` starts a comment.
 calendar <sec> <utc_offset>         the calendar time the cores start at
 system <name>                       the system folder (else an empty out/system/)
 console <n> core=<name> [rom=<name>] [save=<name>] [stack=<bytes>]
+            [render=gl|vulkan]
 option <n> <key> <value>            a core option of console n
 input <n> <port> <file>             an input script for an input port of console n
 expect-count <counter> <value>      a bus count the run ends with
@@ -180,23 +204,27 @@ expect-stuck <frame>                the run ends in a release in this frame
 <frame> end
 ```
 
-Consoles are numbered from 0 without gaps. A scenario's frames are steps,
-counted in console 0's frames. Frame lines come in frame order and act in
-file order at the edge before their step runs, so frame 0's act once every
-core is loaded, and an `expect`, `save` or `checkpoint` at frame F sees
-the session after F steps. Step F runs console 0 from its edge F to its edge
-F + 1, and every other console to its own first edge at or after that
-instant, or until it is parked inside the frame that crosses it, waiting on
-a peer. A console whose frame span is not known yet, at step 0 or after a
-join, is run one frame; when that leaves console 0 short of its edge, the
-step runs again to the edges the spans now known give. With equal spans
-every console finishes one frame a step. A run from a state starts just
-after the `save` line that wrote it: the lines before that line are in the
-state, and the lines after it at the same frame still act. A `--rewind` load
-goes on from there too, and the lines after it act again; the bus is then as
-the state has it, with the cables and holds of the save. A frame has at most
-one `save` line. With `expect-stuck F`, no line but `end` comes after frame
-F, where the run ends.
+Consoles are numbered from 0 without gaps. `render=` names the one graphics
+API a console's core may ask for with `SET_HW_RENDER`; without it the
+harness refuses that call, and "GPU consoles" says what it does with it. A
+scenario's frames are steps, counted in console 0's frames. Frame lines come
+in frame order and act in file order at the edge before their step runs, so
+frame 0's act once every core is loaded, and an `expect`, `save` or
+`checkpoint` at frame F sees the session after F steps. Step F runs console
+0 from its edge F to its edge F + 1, and every other console to its own
+first edge at or after that instant, or until it is parked inside the frame
+that crosses it, waiting on a peer. A console whose frame span is not known
+yet, at step 0 or after a join, is run one frame; when that leaves console 0
+short of its edge, the step runs again to the edges the spans now known
+give. With equal spans every console finishes one frame a step. While
+console 0 is held it finishes no frame, and a step runs every console that
+is not held one frame. A run from a state starts just after the `save` line
+that wrote it: the lines before that line are in the state, and the lines
+after it at the same frame still act. A `--rewind` load goes on from there
+too, and the lines after it act again; the bus is then as the state has it,
+with the cables and holds of the save. A frame has at most one `save` line.
+With `expect-stuck F`, no line but `end` comes after frame F, where the run
+ends.
 
 At an edge where a console is inside a frame, a `save` line fails the run
 unless that console's core set `RETRO_LINK_SAVE_IN_ADVANCE`, and a `reset`
@@ -277,18 +305,162 @@ The scenarios here:
   makes, a cable pulled, a hold, a port that leaves a shared medium and
   joins it again, and a late join that makes a step run again.
 - `unhold_dupe`: a dupe right after a hold ends.
-- `bad/`: scenarios the harness refuses before anything runs.
-- `fail/`: scenarios that run and fail: a core that logs an error, one that
-  logs it while it finishes a frame abandoned at the close, a count the
-  bus does not reach, an `expect` line that does not hold, a release the
-  scenario does not expect, two dupes in a row before a checkpoint,
-  addresses the memory map does not map, a frame rate that makes a port's
-  frame no whole number of ticks, and a `save`, a `reset` and an `expect`
-  line with a console inside a frame.
+- `render_one`: a picture drawn in two parts, around the frame's advances
+  (`link_test_render`), every frame's its own.
+- `render_two`: two consoles that park between the two parts of their
+  pictures, each while the other runs, and a run of dupes on one of them.
+- `render_spans`: `spans_save_in_advance` with two-part pictures, so two
+  consoles are saved after the first part of a frame and before its second.
+- `render_grow`: a picture that grows from 64 x 48 to 128 x 96, the core
+  telling the frontend first (`link_test_grow`).
+- `render_dupe`: a run of dupes, each after the first part of a picture
+  was drawn.
+- `render_held`: a hold of console 0 to the end, so console 1 is the last
+  to run before the cores are unloaded.
+- `gl/`: scenarios with OpenGL consoles, each the twin of one above; run
+  only by a harness built with `HAVE_EGL=1` ("GPU consoles").
+- `bad/`: scenarios the harness refuses before anything runs, a
+  `render=` value it does not know and `render=` given twice among them.
+- `unbuilt/`: a console that asks for OpenGL and one that asks for Vulkan.
+  While the harness is built without that API the scenario is refused as
+  those in `bad/` are.
+- `fail/`: scenarios that run and fail: a core that logs an error, one
+  that logs it while it finishes a frame abandoned at the close or while it
+  is unloaded, a count the bus does not reach, an `expect` line that does
+  not hold, a release the scenario does not expect, two dupes in a row
+  before a checkpoint, addresses the memory map does not map, a frame rate
+  that makes a port's frame no whole number of ticks, a `save`, a `reset`
+  and an `expect` line with a console inside a frame, values of
+  `link_test_render`, `link_test_grow` and `link_test_gl_context` the test
+  core does not know, an option of the OpenGL picture on a console that
+  draws in software, and a core that asks for OpenGL on a console with no
+  `render=`.
 - `stale/`: scenarios whose `from` run passes and whose `rewound` run
   fails: a core that keeps a latch over a load, one whose save right after a
   load writes a copy the load left stale, one whose save there makes a link
   call, and one that keeps over a load a latch that a release sets.
+
+## GPU consoles
+
+A console whose line has `render=gl` gets the OpenGL context its core asks
+for. The harness serves an API only when it was built for it, with a make
+variable that is 0 unless given:
+
+- `HAVE_EGL=1` serves `render=gl`. The harness then links libEGL and
+  nothing else of the driver's: it uses no GL header and no GL library, and
+  takes every entry point from `eglGetProcAddress`. With a mingw compiler
+  it is a make error.
+- `HAVE_VULKAN=1` takes `render=vulkan` lines, but this harness has no
+  Vulkan host: a core's `SET_HW_RENDER` on such a console is refused, as it
+  is on a console with no `render=`.
+
+A scenario with a `render=` the harness was built without exits 2 with
+`<scenario>:<line>: this harness was built without HAVE_EGL` (or
+`HAVE_VULKAN`). A console with `render=` gets a stack of at least 8388608
+bytes, since driver code runs on its cothread.
+
+For a `render=gl` console the harness does what a frontend does, with no
+window, X server or Wayland display:
+
+- `SET_HW_RENDER` makes a surfaceless EGL context of the type, version and
+  profile asked for: an OpenGL core context, the driver's compatibility
+  context, or OpenGL ES. It is refused, with the reason on stderr, when the
+  driver has no such context, and after the core's load has returned, which
+  fails the run. The display is EGL's surfaceless platform or, without it,
+  a device, those that draw in software tried first.
+- After `retro_load_game` the context is made current and gets a
+  framebuffer of the largest size `retro_get_system_av_info` gives, with
+  the depth and stencil the core asked for; then `context_reset` is called.
+  `get_current_framebuffer` names that framebuffer. `SET_SYSTEM_AV_INFO`
+  with a larger size grows it, with no context reset and the core's
+  bindings put back.
+- A frame passed as `RETRO_HW_FRAME_BUFFER_VALID` is read back with
+  `glReadPixels` straight into the console's picture, turned the right way
+  up when the core set `bottom_left_origin`, and hashed as the XRGB8888
+  rows of a software picture are. The read uses bindings and pixel-pack
+  state of its own, puts the core's back, and drops the GL errors the core
+  left so that one it finds is its own. A frame larger than the framebuffer
+  is an error, said once.
+- EGL keeps one current context for a thread, and every console runs on
+  one thread. The harness makes a console's context current each time that
+  console's code runs again: when the scheduler switches into its frame,
+  and around every other call into its core, `context_destroy`,
+  `retro_unload_game` and `retro_serialize` among them.
+- At the close `context_destroy` is called before `retro_unload_game`, and
+  the context is destroyed after it.
+
+`make check` and `make check-gl` choose the driver with `GPU_DRIVER`:
+
+- `software`, the default, runs every GPU console on Mesa's llvmpipe
+  (`LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe`, with `DISPLAY` and
+  `WAYLAND_DISPLAY` unset) and passes `--require-renderer llvmpipe`, so a
+  run on any other renderer fails and never passes for want of the driver.
+- `host` runs them on the machine's own driver and requires no renderer.
+
+`check-gl` makes the six runs of every scenario in `scenarios/gl/`, and
+`check` ends with it when `HAVE_EGL` is 1. A scenario there starts with
+`# twin: <name>`, the scenario in `scenarios/` that it differs from only in
+its `render=` fields, its `link_test_render` values and the options of the
+OpenGL picture. After its six runs, its first run's `trace.txt`,
+`messages.log` and every checkpoint picture must be byte for byte the
+twin's first run's: a GPU console is compared on the hash of every frame it
+passes, the checkpoint pictures, and everything a console that draws in
+software is compared on. A scenario with no twin line fails the check. Then:
+
+- each scenario in `gl/fail/` must exit 1 and print its `# error:` text: a
+  context version no driver has, a context asked for after the core's
+  load has returned, and a picture that grows past its
+  framebuffer without the core telling the frontend;
+- one more run with `--require-renderer no-such-renderer` must exit 1;
+- `gl/two` with `--no-context-follow` must fail the first run's trace: with
+  the context of the console started last current for both, console 0's
+  first picture is already another;
+- one more run of `gl/two` must print a count of context switches above
+  400, which shows only that the count is kept;
+- with `GPU_DRIVER=software`, `gl/gles2` runs once more with
+  `MESA_GLES_VERSION_OVERRIDE=2.0` and must give the first run's trace in a
+  context whose `gpu.txt` says OpenGL ES 2.0;
+- consoles 1 and 2 of `gl/spans` and `gl/mixed` must be inside a frame at
+  checkpoints `in_flight` and `last`.
+
+The scenarios in `gl/`:
+
+- `origin_top` and `origin_bottom` (twin `render_one`): a 3.3 core context,
+  the framebuffer's first row the picture's top or its bottom.
+- `compat` (`render_one`): the driver's compatibility context, with a depth
+  buffer and no stencil.
+- `gles2` (`render_one`): a core that asks for OpenGL ES 2, with neither
+  depth nor stencil. A driver may answer with a later version, and Mesa
+  gives OpenGL ES 3.2; the run held to 2.0 is the one above.
+- `dirty` (`render_one`): a core that leaves its context with an unread GL
+  error and pixel-pack state of its own (`link_test_gl_state`).
+- `dupe` (`render_dupe`): dupes, with the first part of each frame in the
+  framebuffer and no picture passed.
+- `grow` (`render_grow`): a told growth, which grows the framebuffer.
+- `two` (`render_two`): a 3.3 core context and an OpenGL ES one, each
+  console parked between the two parts of its picture while the other
+  draws.
+- `spans` (`render_spans`): three OpenGL consoles, two of them saved
+  inside a frame, between the two parts of a picture, and abandoned inside
+  one at the close.
+- `mixed` (`render_spans`): one OpenGL console among two that draw in
+  software.
+- `held` (`render_held`): console 0, whose context has pixel-pack state of
+  its own, is unloaded after console 1 alone has run, and its
+  `context_destroy` must find its own context current.
+
+What is not served or not checked:
+
+- `RETRO_ENVIRONMENT_GET_HW_SHARED_CONTEXT_INTERFACE` is not answered, so a
+  core that draws on a thread of its own is not hosted.
+- `SET_HW_RENDER` after the core's load is refused, and no scenario loses a
+  context: `context_reset` is called once for a console.
+- No GPU console runs under Wine.
+- No scenario loads a state saved before a told growth into a core that
+  has grown, so the core telling the smaller size again is not run.
+- Nothing checks the stack a `render=` console is given.
+- `gl/dirty` shows the pixel-pack state put back only where the context
+  has all of it; a context that knows the alignment alone is not run.
 
 ## Output
 
@@ -330,6 +502,12 @@ The scenarios here:
   written.
 - `c<n>/resaved.state`, only when a console's state saved again right
   after a load is not the state it loaded: the bytes it saved.
+- `c<n>/gpu.txt`, for a console with a context: one line,
+  `gl <GL_VERSION> | <GL_RENDERER>`. No run compares it.
+
+A run with an OpenGL console prints `link_harness: <n> GL context switches`
+before its pass line: the times a context was made current that was not the
+last one. The number depends on the pick order, and no run compares it.
 
 ## Test core options
 
@@ -355,8 +533,14 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_restart_ticks` | off, on | off |
 | `link_test_extra_flags` | off, on: every undefined bit set in its port and core flags | off |
 | `link_test_save_in_advance` | off, on | off |
-| `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load, stale_save, stale_send, stale_release, release_error | conform |
+| `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load, stale_save, stale_send, stale_release, release_error, unload_error | conform |
 | `link_test_bad_frame` | the first frame of the mode | 0 |
+| `link_test_render` | off, soft, gl: the picture in two parts, and what draws it | off |
+| `link_test_grow` | off, `told:N` or `untold:N`: the frame the two-part picture grows in | off |
+| `link_test_gl_context` | core33, compat, gles2, core99: the OpenGL context it asks for | core33 |
+| `link_test_gl_origin` | top, bottom: the picture's row that is the framebuffer's first | top |
+| `link_test_gl_state` | clean, dirty: the state it leaves its context in | clean |
+| `link_test_gl_ask` | load, run: whether it asks for its context in `retro_load_game` or in its first `retro_run` | load |
 
 In each `retro_run` the core advances its ports at the frame start, at each
 of its steps and at the frame end. It takes every message it can, applies
@@ -382,6 +566,40 @@ into its state at each step, so a frame finished after a load must get that
 frame's input. With `link_test_restart_ticks`, `nonconform` or `no_progress`
 it logs an error.
 
+With `link_test_render` off the core draws its picture at the end of the
+frame, from its state hash. With `soft` or `gl` it draws a picture in two
+parts: three bands of eight stripes before the frame's first advance, from
+its state hash there, and three more after its last, from the hash the
+frame ends with. A console parked inside a frame has then drawn half a
+picture, and its state holds what that half was drawn from, so a frame
+finished after a load draws it again. A dupe frame draws the first part and
+passes no picture. The picture is 64 x 48; from frame N of
+`link_test_grow` it is 128 x 96. With `told:N` the core tells the
+frontend, with `SET_SYSTEM_AV_INFO` at the start of a frame, each size
+that is not the one it told last; its state does not hold what it told, so
+a run from a state saved after the growth tells it again. With `untold:N`
+it tells nothing. `link_test_grow` with `link_test_render` off is a logged
+error.
+
+With `gl` the core asks for a context with `SET_HW_RENDER` in
+`retro_load_game`, which fails if that is refused, and draws the same
+picture with scissored clears in the frontend's framebuffer, through
+`get_proc_address` alone. `link_test_gl_context` picks what it asks for:
+an OpenGL 3.3 core context with depth and stencil, the driver's
+compatibility context with depth, an OpenGL ES 2 context with neither, or
+an OpenGL 9.9 core context, which no driver has. `link_test_gl_origin`
+sets `bottom_left_origin` and the row the core starts its picture at.
+With `link_test_gl_state` dirty the core leaves its context with a GL error
+nobody read and with pixel-pack state of its own (an alignment of 8, rows
+of 200 pixels, one row and one pixel skipped), and logs an error when that
+state is not there at the start of a frame or in `context_destroy`: a
+frontend must read the picture by state of its own, put the core's back,
+and have the core's context current whenever it calls the core. With
+`link_test_gl_ask` run the core asks in its first `retro_run` instead;
+refused, it passes dupes and logs no error, so that only the frontend
+fails the run. One of these four options off its default with
+`link_test_render` not `gl` is a logged error.
+
 From `link_test_bad_frame` on, the modes break the rules:
 
 - `nonconform`: in every frame it lowers its promise, stamps a message below
@@ -405,6 +623,7 @@ From `link_test_bad_frame` on, the modes break the rules:
   state every frame. The latch is in no save state, and no load clears it.
 - `release_error`: an advance that reports `RETRO_LINK_WAKE_DETACHED`
   logs an error.
+- `unload_error`: `retro_unload_game` logs an error.
 
 Its system RAM, for `expect` lines: 0x00-0x07 the state hash; 0x08 the ports
 attached; 0x09-0x0B each port's peer count; 0x0C-0x0E each port's index, 255
