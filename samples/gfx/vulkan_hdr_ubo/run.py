@@ -27,8 +27,9 @@ def function(source, name):
     return source[match.start():end]
 
 
-cut = function((root / 'gfx/drivers/vulkan.c').read_text(),
-               'vulkan_run_hdr_pipeline')
+source = (root / 'gfx/drivers/vulkan.c').read_text()
+cut = '\n\n'.join(function(source, name) for name in (
+    'vulkan_hdr_ubo_mode', 'vulkan_run_hdr_pipeline'))
 with tempfile.TemporaryDirectory(prefix='vulkan-hdr-ubo-') as tmp:
     tmp = Path(tmp)
     (tmp / 'production_hdr.h').write_text(cut + '\n')

@@ -450,6 +450,9 @@ HDR_UI_PASS = os.path.normpath(os.path.join(
 # What the driver logs as it takes each HDR pass.
 GAME_PASS = '[Vulkan] HDR game pass:'
 COMPOSITE_PASS = '[Vulkan] HDR composite pass:'
+# What it logs as stock views go straight into the swapchain, encoded,
+# with no game pass.
+STOCK_DIRECT = '[Vulkan] Stock views encoded straight into the HDR swapchain'
 # What it logs as a screen window's output is made in SDR or HDR10, and
 # for a window it can't draw.
 SECOND_OUTPUT_SDR = '[Vulkan] Second output: SDR, format'
@@ -494,12 +497,13 @@ HDR_CASES = [
       'game': False}),
     # Screen 2 in a window of its own, drawn in SDR through an FP16 image
     # of the window's. A depth-30 Xvfb surface lists no 8-bit format, so
-    # the window's SDR output is 10-bit.
+    # the window's SDR output is 10-bit. The main window's stock screen
+    # goes straight into its swapchain.
     ('hdr-window-ds', 'ds',
      {'video_windows_enable': 'true', 'video_stereo_mode': '0'},
      [(800, 480, GREEN)],
-     {'env': SDR_WINDOWS, 'log': [SECOND_OUTPUT_SDR],
-      'absent': [WINDOW_NOT_DRAWN]}),
+     {'env': SDR_WINDOWS, 'log': [STOCK_DIRECT, SECOND_OUTPUT_SDR],
+      'absent': [WINDOW_NOT_DRAWN], 'game': False}),
     # The window draws its screen with the stock chain instead.
     ('hdr-emit-preset-window', 'ds',
      {'video_windows_enable': 'true', 'video_stereo_mode': '0',
@@ -509,13 +513,15 @@ HDR_CASES = [
       'log': [SECOND_OUTPUT_SDR, "Views' preset writes HDR: screen windows"],
       'absent': [WINDOW_NOT_DRAWN]}),
     # Screen 2's window takes the main window's HDR10 and encodes as it
-    # does: two HDR10 swapchains, PQ codes in the window's.
+    # does, its stock screen straight into its swapchain: two HDR10
+    # swapchains, PQ codes in the window's, no game pass in either.
     ('hdr-window-hdr', 'ds',
      {'video_windows_enable': 'true', 'video_stereo_mode': '0'},
      [(800, 480, GREEN)],
      {'log': ['fake-hdr: HDR10 swapchain', 'fake-hdr: HDR10 swapchain',
               SECOND_OUTPUT_HDR10],
-      'absent': [WINDOW_NOT_DRAWN], 'window': [(800, 480, YELLOW)]}),
+      'absent': [WINDOW_NOT_DRAWN], 'window': [(800, 480, YELLOW)],
+      'game': False}),
     # The display loses HDR10 with the window up: the window, made in
     # HDR10, is made again in SDR after the main window falls back, and
     # its FP16 image is freed. No points: the main window is then 10-bit
@@ -527,13 +533,14 @@ HDR_CASES = [
       'log': ['fake-hdr: HDR10 dropped', SECOND_OUTPUT_HDR10,
               'HDR10 not available on this surface, falling back.',
               SECOND_OUTPUT_SDR],
-      'absent': [WINDOW_NOT_DRAWN],
+      'absent': [WINDOW_NOT_DRAWN], 'game': False,
       'after': 'HDR10 not available on this surface, falling back.'}),
 ]
 # (game, composite) for the other cases that check the HDR passes they
 # take; the runs made from a case (crop-threaded-menu-0,
-# view-rect-ds-rect-nearest) take its entry.
-HDR_PASSES = {'3ds-top-bottom': (True, False), '3ds-anaglyph': (True, False),
+# view-rect-ds-rect-nearest) take its entry. Stock views go straight
+# into the swapchain; the anaglyph's canvas through the game pass.
+HDR_PASSES = {'3ds-top-bottom': (False, False), '3ds-anaglyph': (True, False),
               'view-rect-ds': (True, False),
               # drawn whole, so straight to the swapchain
               'crop-threaded-menu': (False, True),

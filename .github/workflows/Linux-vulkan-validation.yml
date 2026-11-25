@@ -370,9 +370,10 @@ jobs:
         shell: bash
         run: |
           set -eu
-          # The views e2e with HDR10 output: views, stock or an SDR
-          # preset's, drawn through FP16 and the HDR game pass, or straight
-          # in by a preset that writes HDR10, the 16-bit PQ screenshots
+          # The views e2e with HDR10 output: stock views encoded straight
+          # into the swapchain, an SDR preset's or the blend canvas drawn
+          # through FP16 and the HDR game pass, or straight in by a preset
+          # that writes HDR10, the 16-bit PQ screenshots
           # decoded back to the cases' colours, the menu in a views UI
           # layer as bright as without, and a screen window in SDR or in
           # the main window's HDR10, made again in SDR once the display
