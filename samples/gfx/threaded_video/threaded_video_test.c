@@ -13812,6 +13812,136 @@ static void lane_hw_cached_context(void)
 #endif
 }
 
+#if defined(HAVE_VULKAN) && defined(HAVE_THREADS)
+/* A thread of the core's own that submits under lock_queue, as Eden's
+ * VulkanWorker and PPSSPP's render thread do: through the interface the
+ * core holds, with the handle copied out of it once (keep_handle, as Eden
+ * does) or read from it on every call. */
+static struct
+{
+   const struct retro_hw_render_interface_vulkan *iface;
+   void                                          *handle;
+   PFN_vkQueueSubmit                              submit;
+   bool                                           keep_handle;
+   retro_atomic_int_t                             stop;
+   retro_atomic_int_t                             pairs;
+} hwqlock;
+
+static void hwqlock_run(void *data)
+{
+   const struct retro_hw_render_interface_vulkan *vk = hwqlock.iface;
+   (void)data;
+   while (!retro_atomic_load_acquire_int(&hwqlock.stop))
+   {
+      vk->lock_queue(hwqlock.keep_handle ? hwqlock.handle : vk->handle);
+      hwqlock.submit(vk->queue, 0, NULL, VK_NULL_HANDLE);
+      vk->unlock_queue(hwqlock.keep_handle ? hwqlock.handle : vk->handle);
+      retro_atomic_fetch_add_int(&hwqlock.pairs, 1);
+      /* Paced, so the frontend's own queue use is not starved */
+      retro_sleep(1);
+   }
+}
+
+/* Frames until the core's thread has been through lock_queue again.
+ * A thread that never is cannot be joined: the run ends there. */
+static void hwqlock_moved(int since, const char *what, unsigned reinit)
+{
+   unsigned i;
+   for (i = 0; i < 1000; i++)
+   {
+      if (retro_atomic_load_acquire_int(&hwqlock.pairs) != since)
+         return;
+      hwlane_pump(1);
+   }
+   fprintf(stderr, "FAIL hw cached queue lock (%s): the core's thread is"
+         " stuck in lock_queue, %u reinit(s) in\n", what, reinit);
+   fflush(stderr);
+   abort();
+}
+#endif
+
+/* A core that keeps its context goes on submitting from its own threads
+ * through a video reinit it is not told of. Through either handle, and
+ * unthreaded or under the wrapper, lock_queue must reach a live lock -
+ * the same one before and after - and never the driver or the wrapper
+ * the reinit freed. */
+static void lane_hw_cached_queue_lock(void)
+{
+#if defined(HAVE_VULKAN) && defined(HAVE_THREADS)
+   unsigned had = failures;
+   unsigned pass;
+   const struct retro_hw_render_interface_vulkan *(*held)(void);
+   dylib_t lib = runloop_state_get_ptr()->lib_handle;
+
+   held = lib ? (const struct retro_hw_render_interface_vulkan *(*)(void))
+      dylib_proc(lib, "harness_core_hw_vk") : NULL;
+   if (!held || !hwlane_core_call("harness_core_hw_cached"))
+   {
+      CHECK(0, "hw cached queue lock: the harness core does not cache its context");
+      return;
+   }
+   for (pass = 0; pass < 4; pass++)
+   {
+      bool threaded         = pass >= 2;
+      const char *how       = threaded ? "threaded" : "unthreaded";
+      const char *handle    = (pass & 1) ? "read each call" : "copied";
+      char what[64];
+      slock_t *lock         = NULL;
+      vulkan_context_t *ctx;
+      sthread_t *t;
+      unsigned i;
+
+      if (video_state_get_ptr()->thread_wrapper_active != threaded)
+         set_threaded_via_setting(threaded);
+      if (menu_is_up())
+         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+      hwlane_pump(5);
+      hwqlock.iface       = held();
+      hwqlock.keep_handle = !(pass & 1);
+      CHECK(hwqlock.iface != NULL, "hw cached queue lock (%s): the core holds no interface", how);
+      if (!hwqlock.iface)
+         break;
+      hwqlock.handle = hwqlock.iface->handle;
+      hwqlock.submit = (PFN_vkQueueSubmit)hwqlock.iface->get_device_proc_addr(
+            hwqlock.iface->device, "vkQueueSubmit");
+      ctx            = hwcached_context();
+      if (ctx)
+         lock = ctx->queue_lock;
+      CHECK(lock != NULL, "hw cached queue lock (%s): no queue lock", how);
+      retro_atomic_store_release_int(&hwqlock.stop, 0);
+      retro_atomic_store_release_int(&hwqlock.pairs, 0);
+      t = sthread_create(hwqlock_run, NULL);
+      CHECK(t != NULL, "hw cached queue lock: could not start the core's thread");
+      if (!t)
+         break;
+      snprintf(what, sizeof(what), "%s, handle %s", how, handle);
+      hwqlock_moved(0, what, 0);
+      for (i = 0; i < 3; i++)
+      {
+         int flags       = DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK;
+         unsigned resets = hwlane_core_call("harness_core_hw_resets");
+         int since;
+         command_event(CMD_EVENT_REINIT, &flags);
+         since = retro_atomic_load_acquire_int(&hwqlock.pairs);
+         hwqlock_moved(since, what, i + 1);
+         CHECK(hwlane_core_call("harness_core_hw_resets") == resets,
+               "hw cached queue lock (%s): reinit %u reset the core", how, i + 1);
+         ctx = hwcached_context();
+         CHECK(ctx && ctx->queue_lock == lock, "hw cached queue lock (%s): reinit %u"
+               " changed the queue lock", how, i + 1);
+      }
+      retro_atomic_store_release_int(&hwqlock.stop, 1);
+      sthread_join(t);
+   }
+   set_threaded_via_setting(false);
+   hwlane_pump(5);
+   if (failures == had)
+      fprintf(stderr, "[pass] hw cached queue lock lane (a core thread under"
+            " lock_queue through 3 reinits, copied and live handle,"
+            " unthreaded and threaded)\n");
+#endif
+}
+
 #ifdef HAVE_VULKAN
 /* Prefixes extracted by build.sh from the shipping driver's structures. */
 #include "vulkan_readback_types.h"
@@ -15227,7 +15357,10 @@ int main(int argc, char *argv[])
    if (getenv("HARNESS_CORE_HW_VULKAN"))
    {
       if (hwlane_core_call("harness_core_hw_cached"))
+      {
          lane_hw_cached_context();
+         lane_hw_cached_queue_lock();
+      }
       else
       {
          lane_hw_ring_sync();
