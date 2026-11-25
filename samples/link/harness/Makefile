@@ -16,11 +16,12 @@
 # spans_membership must find consoles 1 and 2 inside a frame or at an edge
 # as its header says. In two_spans console 1 must finish 598 frames to
 # console 0's 600, and in spans_save_in_advance and render_spans consoles 1
-# and 2 must be parked at their checkpoints in_flight and last. Each of
-# render_one's 120 frames must have a picture of its own, and render_grow's
-# picture must be 64 wide at its checkpoint small and 128 at mid; console 1
-# of render_two must keep its picture of frame 99 over the frame after it,
-# which passes none, and render_dupe's console its picture of frame 39.
+# and 2 must be parked at their checkpoints in_flight and last, and so must
+# those of gl/spans and gl/mixed. Each of render_one's 120 frames must have
+# a picture of its own, and render_grow's picture must be 64 wide at its
+# checkpoint small and 128 at mid; console 1 of render_two must keep its
+# picture of frame 99 over the frame after it, which passes none, and
+# render_dupe's console its picture of frame 39.
 # Then each scenario in bad/ must exit 2 and each in fail/ exit 1, printing
 # the error its "# error:" line names, as must a truncated state, a state
 # of another scenario and an edited trace; each scenario in stale/ must
@@ -39,6 +40,16 @@
 # on Mesa's llvmpipe and fails a console whose renderer is another, which
 # one more run must show failing; GPU_DRIVER=host runs them on the
 # machine's own driver.
+#
+# A console's OpenGL context is made current each time its code runs again,
+# in a frame or out of one: gl/held unloads console 0's core, which looks
+# for its own context then, after console 1 alone has run. gl/two, whose
+# consoles park between the two parts of their pictures, must fail its
+# first run's trace when run with --no-context-follow, which leaves the
+# last context made current for both, and one more run of it must count
+# more than 400 changes of context. On llvmpipe gl/gles2 runs once more in
+# a context Mesa holds to OpenGL ES 2.0, where it gives a later one
+# otherwise.
 #
 # proof makes the six runs of one scenario that binds real cores, PROOF
 # (an absolute path), into BUILD_DIR/proof/<scenario>/, each BIND word
@@ -234,8 +245,22 @@ for scn in $(1); do \
 	done
 endef
 
+# Consoles 1 and 2 of each scenario of $(1), which saves them inside an
+# advance, are parked at its checkpoints in_flight and last
+define PARKED
+for name in $(1); do \
+	   for at in in_flight last; do \
+	      for c in 1 2; do \
+	         grep -q "^c$$c frame [0-9]* in_frame 1$$" \
+	            "$(BUILD_DIR)/out/$$name/first/$$at/consoles.txt" \
+	            || { echo "$@: $$name: console $$c is not parked at checkpoint $$at"; exit 1; }; \
+	      done; \
+	   done; \
+	done
+endef
+
 # The scenarios of ../scenarios/$(1)/, which have GPU consoles, with $(2)
-# among each run's arguments
+# among each run's arguments; those of $(3) must be PARKED
 define GPU_CHECK
 	@for scn in $(sort $(wildcard ../scenarios/$(1)/*.scn)); do \
 	   twin=`sed -n '1s/^# twin: //p' "$$scn"`; \
@@ -266,6 +291,7 @@ define GPU_CHECK
 	         || { echo "$@: $$what: $$txt does not name llvmpipe"; exit 1; }; \
 	   done; \
 	done
+	@$(call PARKED,$(3))
 	@$(call MUST_FAIL,$(sort $(wildcard ../scenarios/$(1)/fail/*.scn)),$(GPU_ENV),$(2))
 	@scn="$(firstword $(sort $(wildcard ../scenarios/$(1)/*.scn)))"; \
 	what="$(1)/fail/renderer"; err="$(BUILD_DIR)/out/$$what.err"; \
@@ -275,6 +301,37 @@ define GPU_CHECK
 	$(GPU_ENV) $(RUNNER) $(HARNESS) --scenario "$$scn" --path test=$(CORE) \
 	   --require-renderer no-such-renderer --out "$(BUILD_DIR)/out/$$what" 2>"$$err"; \
 	$(call FAILED_AS,1)
+endef
+
+# What comes after $(GPU_ENV) in a run that GL_CHECK makes
+GL_RUN = $(RUNNER) $(HARNESS) $(MIN_STACK) --path test=$(CORE) $(GPU_ARGS)
+
+# What only the OpenGL consoles are checked for, after GPU_CHECK
+define GL_CHECK
+	@out="$(BUILD_DIR)/out/gl"; what="gl/two --no-context-follow"; \
+	err="$$out/fail/no_follow.err"; why="trace differs"; \
+	mkdir -p "$$out/fail"; \
+	echo "== $$what, exit 1 wanted"; \
+	$(GPU_ENV) $(GL_RUN) --scenario ../scenarios/gl/two.scn --no-context-follow \
+	   --expect "$$out/two/first/trace.txt" --out "$$out/fail/no_follow" 2>"$$err"; \
+	$(call FAILED_AS,1)
+	@out="$(BUILD_DIR)/out/gl/two"; \
+	echo "== two counted"; \
+	$(GPU_ENV) $(GL_RUN) --scenario ../scenarios/gl/two.scn \
+	   --expect "$$out/first/trace.txt" --out "$$out/counted" > "$$out/counted.txt" \
+	   || { echo "$@: gl/two counted failed with exit $$?"; exit 1; }; \
+	cat "$$out/counted.txt"; \
+	n=`sed -n 's/^link_harness: \([0-9][0-9]*\) GL context switches$$/\1/p' "$$out/counted.txt"`; \
+	[ -n "$$n" ] && [ "$$n" -gt 400 ] \
+	   || { echo "$@: gl/two: \"$$n\" GL context switches, not more than 400"; exit 1; }
+	@[ "$(GPU_DRIVER)" = software ] || exit 0; \
+	out="$(BUILD_DIR)/out/gl/gles2"; \
+	echo "== gles2 es20"; \
+	$(GPU_ENV) MESA_GLES_VERSION_OVERRIDE=2.0 $(GL_RUN) --scenario ../scenarios/gl/gles2.scn \
+	   --expect "$$out/first/trace.txt" --out "$$out/es20" \
+	   || { echo "$@: gl/gles2 es20 failed with exit $$?"; exit 1; }; \
+	grep -q '^gl OpenGL ES 2\.0 ' "$$out/es20/c0/gpu.txt" \
+	   || { echo "$@: gl/gles2 es20: not an OpenGL ES 2.0 context: `cat "$$out/es20/c0/gpu.txt"`"; exit 1; }
 endef
 
 BASE_CFLAGS  := -O2 -g1 -I$(LRC)/include
@@ -333,15 +390,7 @@ check: all
 	   grep -q "^$$c frame [0-9]* in_frame $$in$$" "$$out/$$at/consoles.txt" \
 	      || { echo "check: spans_membership: $$c is not in_frame $$in at checkpoint $$at"; exit 1; }; \
 	done
-	@for name in spans_save_in_advance render_spans; do \
-	   for at in in_flight last; do \
-	      for c in 1 2; do \
-	         grep -q "^c$$c frame [0-9]* in_frame 1$$" \
-	            "$(BUILD_DIR)/out/$$name/first/$$at/consoles.txt" \
-	            || { echo "check: $$name: console $$c is not parked at checkpoint $$at"; exit 1; }; \
-	      done; \
-	   done; \
-	done
+	@$(call PARKED,spans_save_in_advance render_spans)
 	@n=`grep '^F [0-9]* C 0 N ' "$(BUILD_DIR)/out/render_one/first/trace.txt" \
 	   | cut -d ' ' -f 8 | sort -u | wc -l`; \
 	[ "$$n" -eq 120 ] || { echo "check: render_one: $$n different pictures in 120 frames"; exit 1; }
@@ -400,11 +449,13 @@ check: all
 	   $(call FAILED_AS,1); \
 	done
 ifeq ($(HAVE_EGL),1)
-	$(call GPU_CHECK,gl,$(GPU_ARGS))
+	$(call GPU_CHECK,gl,$(GPU_ARGS),gl/spans gl/mixed)
+	$(GL_CHECK)
 endif
 
 check-gl: all
-	$(call GPU_CHECK,gl,$(GPU_ARGS))
+	$(call GPU_CHECK,gl,$(GPU_ARGS),gl/spans gl/mixed)
+	$(GL_CHECK)
 
 proof: $(HARNESS)
 	@scn='$(PROOF)'; [ -n "$$scn" ] || { echo "proof: PROOF names no scenario"; exit 2; }; \

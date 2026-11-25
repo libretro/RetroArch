@@ -66,7 +66,8 @@ enum lt_mode
    LT_STALE_SAVE,
    LT_STALE_SEND,
    LT_STALE_RELEASE,
-   LT_RELEASE_ERROR
+   LT_RELEASE_ERROR,
+   LT_UNLOAD_ERROR
 };
 
 struct lt_range
@@ -186,7 +187,8 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_extra_flags", "Every undefined port and core flag bit set; off|on" },
    { "link_test_save_in_advance", "Saves inside an advance; off|on" },
    { "link_test_mode",        "Mode; conform|nonconform|never_advance|no_progress|stale_load|"
-                              "stale_save|stale_send|stale_release|release_error" },
+                              "stale_save|stale_send|stale_release|release_error|"
+                              "unload_error" },
    { "link_test_bad_frame",   "First frame of the mode; 0" },
    { "link_test_render",      "Picture in two parts, around the frame's advances; off|soft|gl" },
    { "link_test_grow",        "Frame the picture grows in, told:N or untold:N; off" },
@@ -477,7 +479,7 @@ static void lt_read_mode(void)
 {
    static const char *const names[] = {
       "conform", "nonconform", "never_advance", "no_progress", "stale_load", "stale_save",
-      "stale_send", "stale_release", "release_error"
+      "stale_send", "stale_release", "release_error", "unload_error"
    };
    const char *s = lt_option("link_test_mode");
    unsigned i;
@@ -1718,6 +1720,8 @@ bool retro_load_game_special(unsigned type, const struct retro_game_info *info, 
 void retro_unload_game(void)
 {
    unsigned p;
+   if (lt_cfg.mode == LT_UNLOAD_ERROR && lt_state.frame >= lt_cfg.bad_frame)
+      lt_fail("unloaded", 0, 0, 0);
    for (p = 0; p < LT_MAX_PORTS; p++)
    {
       if (lt_handle[p])

@@ -19,6 +19,11 @@ link_gl_t *link_gl_new(const struct retro_hw_render_callback *hw, unsigned index
 /* After retro_load_game and before context_reset: makes g current and
  * builds its framebuffer. false: the reason on stderr. */
 bool link_gl_start(link_gl_t *g, unsigned max_width, unsigned max_height);
+/* Before g's console runs: makes g current on this thread unless it is the
+ * last that was, and counts the change. false: the reason on stderr the
+ * first time, and the context that was current still is. */
+bool link_gl_enter(link_gl_t *g);
+unsigned long link_gl_switches(void);   /* the changes counted, starts included */
 /* A framebuffer no smaller than this, and never smaller than it was. g is
  * current; the core's bindings are put back, and the GL errors it left are
  * dropped. false: the reason on stderr, and no frame larger than it was is

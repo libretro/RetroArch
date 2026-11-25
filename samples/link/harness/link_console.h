@@ -88,7 +88,8 @@ typedef struct link_console
    unsigned long frame;             /* its own frames finished, the index of the one it is in */
    unsigned index, bytes_per_pixel, errors;
    bool started, loaded;
-   bool gl_started;                 /* its context is current and was reset */
+   bool gl_started;                 /* its context was made current and reset */
+   bool closing;                    /* and is given no context */
    bool oversize;                   /* said once: a frame larger than its framebuffer */
    bool resuming;                   /* a load left it inside its frame, which its next run
                                        finishes */
@@ -117,6 +118,9 @@ bool link_console_open(link_console_t *c, unsigned index, const char *out);
  * context_reset, then save RAM from a copy of the save. A console with a
  * context names its driver in out/c<n>/gpu.txt. */
 bool link_console_start(link_console_t *c);
+/* link_sched_resume_t: the console's own context, if it has one, current
+ * before its code runs */
+void link_console_enter(void *user);
 /* link_sched_run_t: one retro_run */
 void link_console_run(void *user);
 uint64_t link_console_audio(link_console_t *c);
@@ -139,6 +143,7 @@ bool link_console_byte(link_console_t *c, unsigned memory, unsigned long offset,
  * descriptor claims the address or the one that does has no memory */
 bool link_console_address(const link_console_t *c, size_t address, unsigned *value);
 bool link_console_declared(const link_console_t *c, const char *key);
-void link_console_close(link_console_t *c);
+/* The errors its core logged, those of its unload among them */
+unsigned link_console_close(link_console_t *c);
 
 #endif

@@ -91,11 +91,15 @@ struct link_gl
    bool pixel_buffers;              /* it has them */
    bool bottom_left;                /* the framebuffer's first row is the picture's last */
    bool unread;                     /* said once: a frame that could not be read */
+   bool adrift;                     /* said once: it could not be made current */
 };
 
 static struct
 {
    EGLDisplay display;              /* one for the process, while any console has a context */
+   link_gl_t *current;              /* the last made current, on the one thread that
+                                       makes any current */
+   unsigned long switches;
    unsigned users;
    bool egl15;
    bool no_config;                  /* a context needs no EGLConfig */
@@ -380,16 +384,32 @@ static bool link_gl_resize(link_gl_t *g, unsigned width, unsigned height)
    return true;
 }
 
-bool link_gl_start(link_gl_t *g, unsigned max_width, unsigned max_height)
+bool link_gl_enter(link_gl_t *g)
 {
+   if (link_gl_now.current == g)
+      return true;
    if (     !eglBindAPI(g->api)
          || !eglMakeCurrent(link_gl_now.display, EGL_NO_SURFACE, EGL_NO_SURFACE, g->context))
    {
-      fprintf(stderr, "link_harness: console %u: its context cannot be made current"
-            " (EGL error 0x%x)\n", g->index, (unsigned)eglGetError());
+      if (!g->adrift)
+         fprintf(stderr, "link_harness: console %u: its context cannot be made current"
+               " (EGL error 0x%x)\n", g->index, (unsigned)eglGetError());
+      g->adrift = true;
       return false;
    }
-   if (!link_gl_entries(g))
+   link_gl_now.current = g;
+   link_gl_now.switches++;
+   return true;
+}
+
+unsigned long link_gl_switches(void)
+{
+   return link_gl_now.switches;
+}
+
+bool link_gl_start(link_gl_t *g, unsigned max_width, unsigned max_height)
+{
+   if (!link_gl_enter(g) || !link_gl_entries(g))
       return false;
    g->version  = (const char*)g->get_string(GL_VERSION);
    g->renderer = (const char*)g->get_string(GL_RENDERER);
@@ -539,8 +559,12 @@ void link_gl_free(link_gl_t *g)
 {
    if (!g)
       return;
-   if (eglBindAPI(g->api) && eglGetCurrentContext() == g->context)
-      eglMakeCurrent(link_gl_now.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+   if (link_gl_now.current == g)
+   {
+      if (eglBindAPI(g->api))
+         eglMakeCurrent(link_gl_now.display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+      link_gl_now.current = NULL;
+   }
    eglDestroyContext(link_gl_now.display, g->context);
    free(g);
    link_gl_now.users--;

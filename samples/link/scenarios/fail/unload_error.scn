@@ -1,0 +1,8 @@
+# A core that logs an error while it is unloaded fails the run: every step
+# has run by then, and nothing else of the run fails.
+# error: console 1: errors logged: 1
+console 0 core=test
+console 1 core=test
+option 1 link_test_mode unload_error
+0 cable 0:0 1:0
+10 end

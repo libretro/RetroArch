@@ -1,0 +1,18 @@
+# twin: render_held
+# Two consoles that draw the two-part picture in OpenGL, console 0 in a
+# context it leaves with pixel-pack state of its own. Console 0 is held
+# from frame 90 on, so console 1's context is the current one when console
+# 0's core is unloaded first: its context_destroy, which finds that state
+# only in its own context, runs with it current.
+console 0 core=test render=gl
+console 1 core=test render=gl
+option 0 link_test_render gl
+option 0 link_test_gl_state dirty
+option 0 link_test_send_frames 0-49
+option 1 link_test_render gl
+option 1 link_test_send_frames 0-49
+0 cable 0:0 1:0
+60 save mid
+90 hold 0
+100 checkpoint held
+120 end

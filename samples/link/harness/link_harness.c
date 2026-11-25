@@ -17,6 +17,9 @@
 
 #include "link_scenario.h"
 #include "link_console.h"
+#ifdef HAVE_EGL
+#include "link_gl.h"
+#endif
 
 #define LINK_HARNESS_PASS  0
 #define LINK_HARNESS_FAIL  1
@@ -83,6 +86,8 @@ struct link_harness
    enum link_sched_pick pick;
    uint32_t seed;
    bool rewinding;           /* --rewind: the state is loaded at the last edge */
+   bool no_follow;           /* --no-context-follow: no context is made current as
+                                consoles take turns */
    bool differed, failed;
 };
 
@@ -96,7 +101,7 @@ static int link_harness_usage(const char *why)
          "usage: link_harness --scenario FILE --out DIR [--path NAME=FILE]...\n"
          "         [--pick lowest|reversed|shuffled:SEED]\n"
          "         [--from STATE | --rewind STATE] [--expect TRACE]\n"
-         "         [--min-stack BYTES] [--require-renderer TEXT]\n", why);
+         "         [--min-stack BYTES] [--require-renderer TEXT] [--no-context-follow]\n", why);
    return LINK_HARNESS_USAGE;
 }
 
@@ -110,6 +115,11 @@ static int link_harness_options(struct link_harness *h, int argc, char **argv)
       const char *arg   = argv[i];
       const char *value = i + 1 < argc ? argv[i + 1] : NULL;
       uint64_t v;
+      if (!strcmp(arg, "--no-context-follow"))
+      {
+         h->no_follow = true;
+         continue;
+      }
       if (!value)
          return link_harness_usage(arg);
       i++;
@@ -434,6 +444,8 @@ static bool link_harness_session(struct link_harness *h)
    h->retargets = h->targets + n;
    link_sched_set_pick(h->sched, h->pick, h->seed);
    link_sched_set_done(h->sched, link_console_done);
+   if (!h->no_follow)
+      link_sched_set_resume(h->sched, link_console_enter);
    link_console_session(h->sched, h->bus, h->consoles, &h->scn, h->system_dir,
          h->require_renderer);
    for (i = 0; i < n; i++)
@@ -1091,19 +1103,6 @@ static void link_harness_check_counts(struct link_harness *h)
    }
 }
 
-/* No core may have logged an error, finishing an abandoned frame included */
-static void link_harness_check_errors(struct link_harness *h)
-{
-   unsigned i;
-   for (i = 0; i < h->scn.console_count; i++)
-      if (h->consoles[i].errors)
-      {
-         fprintf(stderr, "link_harness: console %u: errors logged: %u\n", i,
-               h->consoles[i].errors);
-         h->failed = true;
-      }
-}
-
 /* Step frame: console 0 to its edge frame + 1, and every other console to
  * its first edge at or after that instant or parked inside the frame that
  * crosses it. A run that leaves console 0 short of its edge, parked on a
@@ -1241,16 +1240,23 @@ static void link_harness_run(struct link_harness *h)
 }
 
 /* The frames in progress abandoned and every core unloaded; closing twice
- * does nothing */
+ * does nothing. No core may have logged an error, finishing an abandoned
+ * frame or unloading included. */
 static void link_harness_close(struct link_harness *h)
 {
-   size_t i;
+   unsigned i;
    if (!h->consoles)
       return;
    link_harness_abandon(h);
-   link_harness_check_errors(h);
    for (i = 0; i < h->scn.console_count; i++)
-      link_console_close(&h->consoles[i]);
+   {
+      unsigned errors = link_console_close(&h->consoles[i]);
+      if (errors)
+      {
+         fprintf(stderr, "link_harness: console %u: errors logged: %u\n", i, errors);
+         h->failed = true;
+      }
+   }
 }
 
 static void link_harness_free(struct link_harness *h)
@@ -1344,7 +1350,18 @@ int main(int argc, char **argv)
       if (h->failed)
          rc = LINK_HARNESS_FAIL;
       else
+      {
+#ifdef HAVE_EGL
+         size_t i;
+         for (i = 0; i < h->scn.console_count; i++)
+            if (h->scn.consoles[i].render == LINK_SCENARIO_RENDER_GL)
+            {
+               printf("link_harness: %lu GL context switches\n", link_gl_switches());
+               break;
+            }
+#endif
          printf("link_harness: %s passed, %lu frames\n", h->scenario, h->frames);
+      }
    }
    link_harness_free(h);
    return rc;

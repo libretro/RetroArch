@@ -213,7 +213,9 @@ static uintptr_t RETRO_CALLCONV link_console_framebuffer(void)
 
 /* What a console with render=gl is answered where one without is refused.
  * SET_HW_RENDER makes a context, which link_console_start makes current: a
- * call before then replaces the one before it, and one after is refused. */
+ * call before then replaces the one before it, and one after is refused,
+ * as is one from a console that is closing, whose context nothing would
+ * free. */
 static bool link_console_gl_environment(link_console_t *c, unsigned cmd, void *data)
 {
    struct retro_hw_render_callback *hw   = (struct retro_hw_render_callback*)data;
@@ -221,7 +223,7 @@ static bool link_console_gl_environment(link_console_t *c, unsigned cmd, void *d
    switch (cmd)
    {
       case RETRO_ENVIRONMENT_SET_HW_RENDER:
-         if (!hw)
+         if (!hw || c->closing)
             return false;
          if (c->loaded)
          {
@@ -781,6 +783,22 @@ bool link_console_start(link_console_t *c)
    return ok && c->loaded;
 }
 
+/* EGL keeps one current context for a thread, whichever cothread's stack
+ * is in use, and every console runs on the scheduler's thread: so this may
+ * be called on any of them, the main one at a switch into a console and
+ * the caller's at link_sched_enter. A console with no context of its own
+ * leaves the current one where it is. */
+void link_console_enter(void *user)
+{
+#ifdef HAVE_EGL
+   link_console_t *c = (link_console_t*)user;
+   if (c->gl_started && !link_gl_enter(c->gl))
+      c->errors++;
+#else
+   (void)user;
+#endif
+}
+
 void link_console_run(void *user)
 {
    link_console_t *c = (link_console_t*)user;
@@ -915,8 +933,9 @@ bool link_console_declared(const link_console_t *c, const char *key)
    return false;
 }
 
-void link_console_close(link_console_t *c)
+unsigned link_console_close(link_console_t *c)
 {
+   unsigned errors;
    if (c->loaded)
    {
       link_sched_enter(link_console_now.sched, c->index);
@@ -927,10 +946,11 @@ void link_console_close(link_console_t *c)
       link_bus_console_gone(link_console_now.bus, c->index);
    }
 #ifdef HAVE_EGL
-   /* retro_deinit may still ask for the framebuffer */
    link_gl_free(c->gl);
+   /* retro_deinit may still ask for the framebuffer, or for a context */
    c->gl         = NULL;
    c->gl_started = false;
+   c->closing    = true;
 #endif
    if (c->started)
    {
@@ -940,6 +960,7 @@ void link_console_close(link_console_t *c)
    }
    if (c->lib)
       dylib_close(c->lib);
+   errors = c->errors;
    link_console_forget(c);
    free(c->descriptors);
    free(c->rom_data);
@@ -952,4 +973,5 @@ void link_console_close(link_console_t *c)
    free(c->save_dir);
    free(c->core_copy);
    memset(c, 0, sizeof(*c));
+   return errors;
 }
