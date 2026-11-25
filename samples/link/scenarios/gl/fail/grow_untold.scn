@@ -1,0 +1,9 @@
+# A picture drawn in OpenGL that grows in the console's frame 60 without
+# the core telling the frontend: the framebuffer stays the size
+# retro_get_system_av_info gave, and the harness says once that it reads
+# back no frame larger than that.
+# error: is larger than its framebuffer of 64x48
+console 0 core=test render=gl
+option 0 link_test_render gl
+option 0 link_test_grow untold:60
+90 end

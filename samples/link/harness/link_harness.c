@@ -53,6 +53,7 @@ struct link_harness
    struct link_scenario scn;
    struct link_binding *bindings;
    const char *scenario, *out, *expect_path;
+   const char *require_renderer; /* what a GPU console's renderer must name */
    const char *state_path;   /* --from or --rewind */
    unsigned char *state;     /* that state, read whole */
    const unsigned char **saved; /* in it, each console's retro_serialize output */
@@ -95,7 +96,7 @@ static int link_harness_usage(const char *why)
          "usage: link_harness --scenario FILE --out DIR [--path NAME=FILE]...\n"
          "         [--pick lowest|reversed|shuffled:SEED]\n"
          "         [--from STATE | --rewind STATE] [--expect TRACE]\n"
-         "         [--min-stack BYTES]\n", why);
+         "         [--min-stack BYTES] [--require-renderer TEXT]\n", why);
    return LINK_HARNESS_USAGE;
 }
 
@@ -155,6 +156,8 @@ static int link_harness_options(struct link_harness *h, int argc, char **argv)
             return link_harness_usage("--min-stack takes a number of bytes");
          h->min_stack = (size_t)v;
       }
+      else if (!strcmp(arg, "--require-renderer"))
+         h->require_renderer = value;
       else
          return link_harness_usage(arg);
    }
@@ -431,7 +434,8 @@ static bool link_harness_session(struct link_harness *h)
    h->retargets = h->targets + n;
    link_sched_set_pick(h->sched, h->pick, h->seed);
    link_sched_set_done(h->sched, link_console_done);
-   link_console_session(h->sched, h->bus, h->consoles, &h->scn, h->system_dir);
+   link_console_session(h->sched, h->bus, h->consoles, &h->scn, h->system_dir,
+         h->require_renderer);
    for (i = 0; i < n; i++)
    {
       size_t stack = h->scn.consoles[i].stack ? h->scn.consoles[i].stack : LINK_SCHED_DEFAULT_STACK;

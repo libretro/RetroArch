@@ -20,15 +20,25 @@
 # render_one's 120 frames must have a picture of its own, and render_grow's
 # picture must be 64 wide at its checkpoint small and 128 at mid; console 1
 # of render_two must keep its picture of frame 99 over the frame after it,
-# which passes none. Then each scenario in bad/ must exit 2 and each in
-# fail/ exit 1, printing the error its "# error:" line names, as must a
-# truncated state, a state of another scenario and an edited trace; each
-# scenario in stale/ must pass its from run and fail its rewound run in the
-# same way.
+# which passes none, and render_dupe's console its picture of frame 39.
+# Then each scenario in bad/ must exit 2 and each in fail/ exit 1, printing
+# the error its "# error:" line names, as must a truncated state, a state
+# of another scenario and an edited trace; each scenario in stale/ must
+# pass its from run and fail its rewound run in the same way.
 #
 # A console line's render=gl needs a harness built with HAVE_EGL=1, and
 # render=vulkan one built with HAVE_VULKAN=1. While a switch is off, its
 # scenario in unbuilt/ must exit 2 as those in bad/ do.
+#
+# check-gl, which check ends with when HAVE_EGL is 1, makes the six runs of
+# each scenario in gl/ on surfaceless EGL contexts. Such a scenario's first
+# line, "# twin: <name>", names the scenario it differs from only in where
+# its pictures are drawn: its first run's trace, messages and checkpoint
+# pictures must be the twin's first run's. Each scenario in gl/fail/ must
+# exit 1 as those in fail/ do. GPU_DRIVER=software, the default, runs them
+# on Mesa's llvmpipe and fails a console whose renderer is another, which
+# one more run must show failing; GPU_DRIVER=host runs them on the
+# machine's own driver.
 #
 # proof makes the six runs of one scenario that binds real cores, PROOF
 # (an absolute path), into BUILD_DIR/proof/<scenario>/, each BIND word
@@ -48,7 +58,10 @@ endif
 
 HAVE_EGL    ?= 0
 HAVE_VULKAN ?= 0
+GPU_DRIVER  ?= software
 HARNESS_DEFINES :=
+HARNESS_HEADERS := link_scenario.h link_console.h
+GPU_LIBS :=
 
 TRIPLE := $(shell $(CC) -dumpmachine)
 EXE :=
@@ -107,7 +120,10 @@ ifeq ($(HAVE_EGL),1)
 ifneq ($(findstring mingw,$(TRIPLE)),)
 $(error HAVE_EGL=1 needs EGL, which a mingw build does not have)
 endif
-HARNESS_DEFINES += -DHAVE_EGL
+HARNESS_SOURCES += link_gl.c
+HARNESS_HEADERS += link_gl.h
+HARNESS_DEFINES += -DHAVE_EGL -DEGL_NO_X11
+GPU_LIBS        += -lEGL
 else
 BAD_SCENARIOS   += ../scenarios/unbuilt/gl.scn
 endif
@@ -121,6 +137,17 @@ STALE_SCENARIOS := $(sort $(wildcard ../scenarios/stale/*.scn))
 UNTICK          := s/ stamp [0-9a-f]* landing [0-9a-f]*//
 ALL_RUNS        := first again reversed shuffled from rewound
 
+# What goes in front of a run with a GPU console, and that run's arguments
+ifeq ($(GPU_DRIVER),software)
+GPU_ENV  := env -u DISPLAY -u WAYLAND_DISPLAY LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe
+GPU_ARGS := --require-renderer llvmpipe
+else ifeq ($(GPU_DRIVER),host)
+GPU_ENV  := env -u DISPLAY -u WAYLAND_DISPLAY
+GPU_ARGS :=
+else
+$(error GPU_DRIVER takes software or host, not "$(GPU_DRIVER)")
+endif
+
 # After a run that must fail, named $$what: it exited $(1), and its stderr,
 # in $$err, has $$why
 FAILED_AS = rc=$$?; cat "$$err"; \
@@ -133,7 +160,8 @@ REWOUND = awk -v to="$$last" -v from="$$save" \
 	'NR == FNR { if ($$2 + 0 < to + 0) print; next } $$2 + 0 >= from + 0'
 
 # The runs $(3) of the scenario in $$scn, into $(1)/<its name>/<run>/,
-# with $(2) binding its names; the first failure stops them
+# with $(2) binding its names and $(4) in front of each; the first failure
+# stops them
 RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
 	save=`sed -n 's/^\([0-9][0-9]*\) save mid\( .*\)*$$/\1/p' "$$scn"`; \
 	[ -n "$$save" ] || { echo "$@: $$name has no save mid line"; exit 1; }; \
@@ -157,7 +185,7 @@ RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
 	   esac; \
 	   rm -f -- "$$out/$$run/stuck.txt"; \
 	   echo "== $$name $$run"; \
-	   $(RUNNER) $(HARNESS) $(MIN_STACK) --scenario "$$scn" $(2) $$args \
+	   $(4) $(RUNNER) $(HARNESS) $(MIN_STACK) --scenario "$$scn" $(2) $$args \
 	      || { echo "$@: $$name $$run failed with exit $$?"; exit 1; }; \
 	   case $$run in \
 	      first) ;; \
@@ -187,6 +215,68 @@ RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
 	      || { echo "$@: $$name $$run: no message in flight at the save"; exit 1; }; \
 	done
 
+# Each scenario of $(1) must fail, with $(2) in front of its run and $(3)
+# among its arguments: one in bad/ or unbuilt/ with exit 2 and any other
+# with exit 1, saying what its "# error:" line names
+define MUST_FAIL
+for scn in $(1); do \
+	   what="$${scn#../scenarios/}"; what="$${what%.scn}"; \
+	   kind=`dirname "$$what"`; kind=`basename "$$kind"`; \
+	   case $$kind in bad|unbuilt) want=2 ;; *) want=1 ;; esac; \
+	   err="$(BUILD_DIR)/out/$$what.err"; \
+	   why=`sed -n 's/^# error: //p' "$$scn"`; \
+	   [ -n "$$why" ] || { echo "$@: $$what has no # error: line"; exit 1; }; \
+	   mkdir -p "$(BUILD_DIR)/out/`dirname "$$what"`"; \
+	   echo "== $$what, exit $$want wanted"; \
+	   $(2) $(RUNNER) $(HARNESS) --scenario "$$scn" --path test=$(CORE) $(3) \
+	      --out "$(BUILD_DIR)/out/$$what" 2>"$$err"; \
+	   $(call FAILED_AS,$$want); \
+	done
+endef
+
+# The scenarios of ../scenarios/$(1)/, which have GPU consoles, with $(2)
+# among each run's arguments
+define GPU_CHECK
+	@for scn in $(sort $(wildcard ../scenarios/$(1)/*.scn)); do \
+	   twin=`sed -n '1s/^# twin: //p' "$$scn"`; \
+	   [ -n "$$twin" ] && [ -f "../scenarios/$$twin.scn" ] \
+	      || { echo "$@: $$scn names no twin on its first line"; exit 1; }; \
+	   $(call RUNS,$(BUILD_DIR)/out/$(1),--path test=$(CORE) $(2),$(ALL_RUNS),$(GPU_ENV)); \
+	   gpu="$$out/first"; what="$(1)/$$name"; soft="$(BUILD_DIR)/out/$$twin/first"; \
+	   if [ ! -e "$$soft/trace.txt" ]; then \
+	      scn="../scenarios/$$twin.scn"; $(call RUNS,$(BUILD_DIR)/out,--path test=$(CORE),first); \
+	   fi; \
+	   for f in trace.txt messages.log; do \
+	      cmp -s "$$soft/$$f" "$$gpu/$$f" \
+	         || { echo "$@: $$what: $$f differs from $$twin's"; exit 1; }; \
+	   done; \
+	   n=0; \
+	   for png in "$$soft"/*/c*.png; do \
+	      [ -e "$$png" ] || continue; \
+	      n=$$((n + 1)); at="$${png#$$soft/}"; \
+	      cmp -s "$$png" "$$gpu/$$at" \
+	         || { echo "$@: $$what: $$at differs from $$twin's"; exit 1; }; \
+	   done; \
+	   m=`ls "$$gpu"/*/c*.png 2>/dev/null | wc -l`; \
+	   [ "$$n" -gt 0 ] && [ "$$m" -eq "$$n" ] \
+	      || { echo "$@: $$what: $$m checkpoint pictures to $$twin's $$n"; exit 1; }; \
+	   [ "$(GPU_DRIVER)" = software ] || continue; \
+	   for txt in "$$gpu"/c*/gpu.txt; do \
+	      grep -q llvmpipe "$$txt" 2>/dev/null \
+	         || { echo "$@: $$what: $$txt does not name llvmpipe"; exit 1; }; \
+	   done; \
+	done
+	@$(call MUST_FAIL,$(sort $(wildcard ../scenarios/$(1)/fail/*.scn)),$(GPU_ENV),$(2))
+	@scn="$(firstword $(sort $(wildcard ../scenarios/$(1)/*.scn)))"; \
+	what="$(1)/fail/renderer"; err="$(BUILD_DIR)/out/$$what.err"; \
+	why="is not no-such-renderer"; \
+	mkdir -p "$(BUILD_DIR)/out/$(1)/fail"; \
+	echo "== $$scn --require-renderer no-such-renderer, exit 1 wanted"; \
+	$(GPU_ENV) $(RUNNER) $(HARNESS) --scenario "$$scn" --path test=$(CORE) \
+	   --require-renderer no-such-renderer --out "$(BUILD_DIR)/out/$$what" 2>"$$err"; \
+	$(call FAILED_AS,1)
+endef
+
 BASE_CFLAGS  := -O2 -g1 -I$(LRC)/include
 OWN_CFLAGS   := $(BASE_CFLAGS) -std=c89 -pedantic -Wall -Wextra -Werror \
                 -Wdeclaration-after-statement -Wframe-larger-than=4096
@@ -201,7 +291,7 @@ $(call obj,$(CORE_SOURCES)):    FLAGS := $(OWN_CFLAGS) $(PIC)
 $(call obj,$(LINK_SOURCES)):    FLAGS := $(LINK_CFLAGS)
 $(call obj,$(LIBCO_SOURCES)):   FLAGS := $(LIBCO_CFLAGS)
 $(call obj,$(LRC_SOURCES)):     FLAGS := $(LRC_CFLAGS)
-$(call obj,$(HARNESS_SOURCES)): link_scenario.h link_console.h
+$(call obj,$(HARNESS_SOURCES)): $(HARNESS_HEADERS)
 $(call obj,$(CORE_SOURCES)):    ../core/link_test_render.h
 
 ifneq ($(SANITIZER),)
@@ -219,7 +309,7 @@ $(OBJ_DIR)/%.o: $$(subst __/,../,$$*).c
 	$(CC) -c -o $@ $< $(FLAGS) $(SAN_FLAGS) $(CFLAGS)
 
 $(HARNESS): $(call obj,$(HARNESS_SOURCES) $(LINK_SOURCES) $(LIBCO_SOURCES) $(LRC_SOURCES))
-	$(CC) -o $@ $^ $(LDFLAGS) $(DL_LIBS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(DL_LIBS) $(GPU_LIBS)
 
 $(CORE): $(call obj,$(CORE_SOURCES))
 	$(CC) $(SHARED) -o $@ $^ $(LDFLAGS)
@@ -262,28 +352,18 @@ check: all
 	   [ "$$wide" = "$$want" ] \
 	      || { echo "check: render_grow: $$at/c0.png is $$wide wide, not $$want"; exit 1; }; \
 	done
-	@awk '$$3 == "C" && $$4 == 1 && ($$6 == 99 || $$6 == 100) { v[$$6] = $$8 } \
-	   END { exit !(v[99] != "" && v[99] == v[100]) }' \
-	   "$(BUILD_DIR)/out/render_two/first/trace.txt" \
-	   || { echo "check: render_two: console 1's picture after frame 100 is not frame 99's"; exit 1; }
+	@for kept in render_two:1 render_dupe:0; do \
+	   name=$${kept%%:*}; c=$${kept#*:}; out="$(BUILD_DIR)/out/$$name/first"; \
+	   cmp -s "$$out/before/c$$c.png" "$$out/dupe/c$$c.png" \
+	      || { echo "check: $$name: console $$c's picture at checkpoint dupe is not the one at before"; exit 1; }; \
+	done
 	@trace="$(BUILD_DIR)/out/two_spans/first/trace.txt"; \
 	n=`grep -c '^F [0-9]* C 1 N ' "$$trace"`; \
 	last=`grep '^F [0-9]* C 1 N ' "$$trace" | tail -n 1 | cut -d ' ' -f 1-6`; \
 	[ "$$n" = 598 ] && [ "$$last" = "F 599 C 1 N 597" ] \
 	   || { echo "check: two_spans: console 1 finished $$n frames, the last $$last;" \
 	      "598 wanted, the last F 599 C 1 N 597"; exit 1; }
-	@mkdir -p "$(BUILD_DIR)/out/bad" "$(BUILD_DIR)/out/fail" "$(BUILD_DIR)/out/unbuilt"; \
-	for scn in $(BAD_SCENARIOS) $(FAIL_SCENARIOS); do \
-	   name=`basename "$$scn" .scn`; kind=`dirname "$$scn"`; kind=`basename "$$kind"`; \
-	   case $$kind in bad|unbuilt) want=2 ;; *) want=1 ;; esac; \
-	   what="$$kind/$$name"; err="$(BUILD_DIR)/out/$$what.err"; \
-	   why=`sed -n 's/^# error: //p' "$$scn"`; \
-	   [ -n "$$why" ] || { echo "check: $$what has no # error: line"; exit 1; }; \
-	   echo "== $$what, exit $$want wanted"; \
-	   $(RUNNER) $(HARNESS) --scenario "$$scn" --path test=$(CORE) --out "$(BUILD_DIR)/out/$$what" \
-	      2>"$$err"; \
-	   $(call FAILED_AS,$$want); \
-	done
+	@$(call MUST_FAIL,$(BAD_SCENARIOS) $(FAIL_SCENARIOS))
 	@head -c 100 "$(BUILD_DIR)/out/two_unequal/first/mid.state" > "$(BUILD_DIR)/out/bad.state" \
 	   || { echo "check: two_unequal wrote no mid.state"; exit 1; }; \
 	for run in truncated mismatched; do \
@@ -319,6 +399,12 @@ check: all
 	      --out "$$out/rewound" 2>"$$err"; \
 	   $(call FAILED_AS,1); \
 	done
+ifeq ($(HAVE_EGL),1)
+	$(call GPU_CHECK,gl,$(GPU_ARGS))
+endif
+
+check-gl: all
+	$(call GPU_CHECK,gl,$(GPU_ARGS))
 
 proof: $(HARNESS)
 	@scn='$(PROOF)'; [ -n "$$scn" ] || { echo "proof: PROOF names no scenario"; exit 2; }; \
@@ -327,4 +413,4 @@ proof: $(HARNESS)
 clean:
 	build='$(BUILD_DIR)'; rm -rf -- "$${build:?}"
 
-.PHONY: all check clean proof
+.PHONY: all check check-gl clean proof

@@ -71,6 +71,8 @@ static struct
    retro_proc_address_t entry[LT_GL_ENTRIES]; /* all set, or the first NULL */
    unsigned width, height;
    bool dirty;                                /* link_test_gl_state */
+   bool late;                                 /* link_test_gl_ask run, not yet asked */
+   bool refused;                              /* asked late and refused: dupes, no error */
    bool drawing;                              /* this frame's picture was begun */
    bool said_no_context;                      /* logged; context_reset clears it */
 } lt_gl;
@@ -156,6 +158,7 @@ static bool lt_gl_load(const struct lt_render_host *host)
    static const char *const contexts[] = { LT_GL_CONTEXT_DEFAULT, "compat", "gles2", "core99" };
    static const char *const origins[]  = { LT_GL_ORIGIN_DEFAULT, "bottom" };
    static const char *const states[]   = { LT_GL_STATE_DEFAULT, "dirty" };
+   static const char *const asks[]     = { LT_GL_ASK_DEFAULT, "run" };
    static const struct
    {
       enum retro_hw_context_type type;
@@ -183,12 +186,12 @@ static bool lt_gl_load(const struct lt_render_host *host)
          sizeof(origins) / sizeof(*origins)) == 1;
    lt_gl.dirty                 = lt_gl_option("link_test_gl_state", states,
          sizeof(states) / sizeof(*states)) == 1;
-   if (!host->environment(RETRO_ENVIRONMENT_SET_HW_RENDER, &lt_gl.hw))
-   {
-      host->fail("SET_HW_RENDER refused", lt_gl.hw.context_type, lt_gl.hw.version_major);
-      return false;
-   }
-   return true;
+   lt_gl.late                  = lt_gl_option("link_test_gl_ask", asks,
+         sizeof(asks) / sizeof(*asks)) == 1;
+   if (lt_gl.late || host->environment(RETRO_ENVIRONMENT_SET_HW_RENDER, &lt_gl.hw))
+      return true;
+   host->fail("SET_HW_RENDER refused", lt_gl.hw.context_type, lt_gl.hw.version_major);
+   return false;
 }
 
 /* Rows count from the framebuffer's first */
@@ -214,6 +217,14 @@ static void lt_gl_begin(unsigned width, unsigned height)
    lt_gl.width   = width;
    lt_gl.height  = height;
    lt_gl.drawing = false;
+   if (lt_gl.late)
+   {
+      /* Refused, the core says nothing: the frontend must fail the run */
+      lt_gl.late    = false;
+      lt_gl.refused = !lt_gl.host->environment(RETRO_ENVIRONMENT_SET_HW_RENDER, &lt_gl.hw);
+   }
+   if (lt_gl.refused)
+      return;
    if (!lt_render_tell(width, height))
       lt_gl.host->fail("SET_SYSTEM_AV_INFO refused", width, height);
    if (!lt_gl.entry[0])

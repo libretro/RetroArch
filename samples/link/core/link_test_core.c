@@ -196,6 +196,8 @@ static const struct retro_variable lt_variables[] = {
                               LT_GL_ORIGIN_DEFAULT "|bottom" },
    { "link_test_gl_state",    "State the OpenGL context is left in; "
                               LT_GL_STATE_DEFAULT "|dirty" },
+   { "link_test_gl_ask",      "Where the OpenGL context is asked for; "
+                              LT_GL_ASK_DEFAULT "|run" },
    { NULL, NULL }
 };
 
@@ -577,6 +579,7 @@ static void lt_read_render(void)
       lt_option_gl_only("link_test_gl_context", LT_GL_CONTEXT_DEFAULT);
       lt_option_gl_only("link_test_gl_origin", LT_GL_ORIGIN_DEFAULT);
       lt_option_gl_only("link_test_gl_state", LT_GL_STATE_DEFAULT);
+      lt_option_gl_only("link_test_gl_ask", LT_GL_ASK_DEFAULT);
    }
    if ((s = lt_option("link_test_grow")) && strcmp(s, "off"))
    {

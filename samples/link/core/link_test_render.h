@@ -13,6 +13,7 @@
 #define LT_GL_CONTEXT_DEFAULT "core33"
 #define LT_GL_ORIGIN_DEFAULT  "top"
 #define LT_GL_STATE_DEFAULT   "clean"
+#define LT_GL_ASK_DEFAULT     "load"
 
 struct lt_render_host
 {

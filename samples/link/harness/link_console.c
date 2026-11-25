@@ -20,8 +20,12 @@
 #include <streams/file_stream.h>
 
 #include "link_console.h"
+#ifdef HAVE_EGL
+#include "link_gl.h"
+#endif
 
-#define LINK_CONSOLE_SYMBOLS 18
+#define LINK_CONSOLE_SYMBOLS 19
+#define LINK_CONSOLE_GPU_LINE 256
 
 static struct
 {
@@ -30,6 +34,7 @@ static struct
    link_console_t *consoles;
    const struct link_scenario *scn;
    const char *system_dir;
+   const char *require;             /* text a GPU console's renderer must name, or NULL */
    uint64_t keep_at, keep_rate;     /* the next checkpoint's instant; rate 0: not known */
    unsigned long keep_steps;        /* the steps to it; 0: none */
 } link_console_now;
@@ -199,6 +204,56 @@ static bool link_console_pixel_format(link_console_t *c, const enum retro_pixel_
    return false;
 }
 
+#ifdef HAVE_EGL
+static uintptr_t RETRO_CALLCONV link_console_framebuffer(void)
+{
+   link_console_t *c = link_console_current();
+   return c && c->gl ? link_gl_framebuffer(c->gl) : 0;
+}
+
+/* What a console with render=gl is answered where one without is refused.
+ * SET_HW_RENDER makes a context, which link_console_start makes current: a
+ * call before then replaces the one before it, and one after is refused. */
+static bool link_console_gl_environment(link_console_t *c, unsigned cmd, void *data)
+{
+   struct retro_hw_render_callback *hw   = (struct retro_hw_render_callback*)data;
+   const struct retro_system_av_info *av = (const struct retro_system_av_info*)data;
+   switch (cmd)
+   {
+      case RETRO_ENVIRONMENT_SET_HW_RENDER:
+         if (!hw)
+            return false;
+         if (c->loaded)
+         {
+            fprintf(stderr, "link_harness: console %u: SET_HW_RENDER after its core's load"
+                  " is refused\n", c->index);
+            c->errors++;
+            return false;
+         }
+         link_gl_free(c->gl);
+         if (!(c->gl = link_gl_new(hw, c->index)))
+            return false;
+         hw->get_current_framebuffer = link_console_framebuffer;
+         hw->get_proc_address        = link_gl_proc;
+         c->hw                       = *hw;
+         return true;
+      case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
+         /* false: no other API is on offer */
+         if (data)
+            *(unsigned*)data = RETRO_HW_CONTEXT_OPENGL_CORE;
+         return false;
+      case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
+         if (!av)
+            return false;
+         return !c->gl_started
+            || link_gl_grow(c->gl, av->geometry.max_width, av->geometry.max_height);
+      default:
+         break;
+   }
+   return true;
+}
+#endif
+
 static bool RETRO_CALLCONV link_console_environment(unsigned cmd, void *data)
 {
    link_console_t *c = link_console_current();
@@ -252,6 +307,14 @@ static bool RETRO_CALLCONV link_console_environment(unsigned cmd, void *data)
          return link_console_memory_maps(c, (const struct retro_memory_map*)data);
       case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
          return true;
+#ifdef HAVE_EGL
+      case RETRO_ENVIRONMENT_SET_HW_RENDER:
+      case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
+      case RETRO_ENVIRONMENT_SET_GEOMETRY:
+      case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
+         return link_console_now.scn->consoles[c->index].render == LINK_SCENARIO_RENDER_GL
+            && link_console_gl_environment(c, cmd, data);
+#endif
       default:
          break;
    }
@@ -264,21 +327,27 @@ static uint32_t link_console_widen(unsigned v, unsigned bits)
    return (uint32_t)((v << (8 - bits)) | (v >> (2 * bits - 8)));
 }
 
+/* Room for size pixels */
+static bool link_console_pixels(struct link_console_picture *p, size_t size)
+{
+   uint32_t *more;
+   if (size <= p->size)
+      return true;
+   if (!(more = (uint32_t*)realloc(p->argb, size * sizeof(*more))))
+      return false;
+   p->argb = more;
+   p->size = size;
+   return true;
+}
+
 /* The picture as opaque ARGB, for the PNG of a checkpoint */
 static void link_console_keep(link_console_t *c, const unsigned char *row,
       unsigned width, unsigned height, size_t pitch)
 {
    struct link_console_picture *p = &c->drawn;
-   size_t size                    = (size_t)width * height;
    unsigned x, y;
-   if (size > p->size)
-   {
-      uint32_t *more = (uint32_t*)realloc(p->argb, size * sizeof(*more));
-      if (!more)
-         return;
-      p->argb = more;
-      p->size = size;
-   }
+   if (!link_console_pixels(p, (size_t)width * height))
+      return;
    for (y = 0; y < height; y++, row += pitch)
       for (x = 0; x < width; x++)
       {
@@ -302,8 +371,53 @@ static void link_console_keep(link_console_t *c, const unsigned char *row,
    c->drew   = true;
 }
 
+#ifdef HAVE_EGL
+/* A frame drawn in the console's framebuffer, read back here, where its
+ * context is current: hashed as the XRGB8888 rows of a software picture,
+ * and made opaque where it is kept */
+static void link_console_read(link_console_t *c, unsigned width, unsigned height)
+{
+   struct link_console_picture *p = &c->drawn;
+   size_t size                    = (size_t)width * height;
+   unsigned max_width, max_height;
+   size_t i;
+   link_gl_size(c->gl, &max_width, &max_height);
+   if (!size || width > max_width || height > max_height)
+   {
+      if (c->oversize)
+         return;
+      fprintf(stderr, "link_harness: console %u: a frame of %ux%u is larger than its"
+            " framebuffer of %ux%u\n", c->index, width, height, max_width, max_height);
+      c->oversize = true;
+      c->errors++;
+      return;
+   }
+   if (!link_console_pixels(p, size))
+   {
+      fprintf(stderr, "link_harness: console %u: out of memory in its frame %lu\n",
+            c->index, c->frame);
+      c->errors++;
+      return;
+   }
+   if (!link_gl_read(c->gl, p->argb, width, height))
+   {
+      c->errors++;
+      return;
+   }
+   c->video = xxh64(p->argb, size * sizeof(*p->argb), 0);
+   if (!c->keep)
+      return;
+   for (i = 0; i < size; i++)
+      p->argb[i] |= 0xFF000000UL;
+   p->width  = width;
+   p->height = height;
+   c->drew   = true;
+}
+#endif
+
 /* Hashes the rows of the picture, without any padding past them. NULL is a
- * dupe: the picture stays the previous frame's. */
+ * dupe: the picture stays the previous frame's. A frame drawn in a
+ * framebuffer the console does not have is ignored. */
 static void RETRO_CALLCONV link_console_video(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
@@ -319,7 +433,13 @@ static void RETRO_CALLCONV link_console_video(const void *data, unsigned width,
       return;
    }
    if (data == RETRO_HW_FRAME_BUFFER_VALID)
+   {
+#ifdef HAVE_EGL
+      if (c->gl_started)
+         link_console_read(c, width, height);
+#endif
       return;
+   }
    xxh64_reset(&h, 0);
    for (y = 0; y < height; y++, row += pitch)
       xxh64_update(&h, row, (size_t)width * c->bytes_per_pixel);
@@ -402,13 +522,14 @@ static int16_t RETRO_CALLCONV link_console_input(unsigned port, unsigned device,
 }
 
 void link_console_session(link_sched_t *sched, link_bus_t *bus, link_console_t *consoles,
-      const struct link_scenario *scn, const char *system_dir)
+      const struct link_scenario *scn, const char *system_dir, const char *require_renderer)
 {
    link_console_now.sched      = sched;
    link_console_now.bus        = bus;
    link_console_now.consoles   = consoles;
    link_console_now.scn        = scn;
    link_console_now.system_dir = system_dir;
+   link_console_now.require    = require_renderer;
    link_console_now.keep_steps = 0;
 }
 
@@ -483,7 +604,8 @@ static bool link_console_symbols(link_console_t *c)
       "retro_set_audio_sample_batch", "retro_set_input_poll", "retro_set_input_state",
       "retro_init", "retro_deinit", "retro_get_system_info", "retro_run",
       "retro_serialize_size", "retro_serialize", "retro_load_game", "retro_unload_game",
-      "retro_get_memory_data", "retro_get_memory_size", "retro_unserialize", "retro_reset"
+      "retro_get_memory_data", "retro_get_memory_size", "retro_unserialize", "retro_reset",
+      "retro_get_system_av_info"
    };
    function_t f[LINK_CONSOLE_SYMBOLS];
    unsigned i;
@@ -511,6 +633,7 @@ static bool link_console_symbols(link_console_t *c)
    c->api.get_memory_size        = (size_t (*)(unsigned))f[15];
    c->api.unserialize            = (bool (*)(const void *, size_t))f[16];
    c->api.reset                  = (void (*)(void))f[17];
+   c->api.get_system_av_info     = (void (*)(struct retro_system_av_info *))f[18];
    return true;
 }
 
@@ -576,6 +699,44 @@ static bool link_console_fill_save(link_console_t *c, const char *save)
    return ok;
 }
 
+#ifdef HAVE_EGL
+/* After retro_load_game on a console that asked for a context: the context
+ * current with a framebuffer of the core's largest picture, on a renderer
+ * the run allows, then context_reset */
+static bool link_console_start_gl(link_console_t *c)
+{
+   const char *require = link_console_now.require;
+   struct retro_system_av_info av;
+   char line[LINK_CONSOLE_GPU_LINE];
+   char *path;
+   bool ok;
+   memset(&av, 0, sizeof(av));
+   c->api.get_system_av_info(&av);
+   if (!link_gl_start(c->gl, av.geometry.max_width, av.geometry.max_height))
+      return false;
+   if (require && !strstr(link_gl_renderer(c->gl), require))
+   {
+      fprintf(stderr, "link_harness: console %u: renderer \"%s\" is not %s\n", c->index,
+            link_gl_renderer(c->gl), require);
+      return false;
+   }
+   link_gl_describe(c->gl, line, sizeof(line));
+   path = link_scenario_join(c->dir, "gpu.txt");
+   ok   = path && filestream_write_file(path, line, (int64_t)strlen(line));
+   free(path);
+   if (!ok)
+   {
+      fprintf(stderr, "link_harness: console %u: cannot write gpu.txt in %s\n", c->index,
+            c->dir);
+      return false;
+   }
+   c->gl_started = true;
+   if (c->hw.context_reset)
+      c->hw.context_reset();
+   return true;
+}
+#endif
+
 bool link_console_start(link_console_t *c)
 {
    const struct link_scenario_console *k = &link_console_now.scn->consoles[c->index];
@@ -610,6 +771,10 @@ bool link_console_start(link_console_t *c)
    }
    if (ok && !(c->loaded = c->api.load_game(k->rom ? &game : NULL)))
       fprintf(stderr, "link_harness: console %u: retro_load_game failed\n", c->index);
+#ifdef HAVE_EGL
+   if (ok && c->loaded && c->gl)
+      ok = link_console_start_gl(c);
+#endif
    if (ok && c->loaded && k->save)
       ok = link_console_fill_save(c, k->save);
    link_sched_leave(link_console_now.sched);
@@ -755,10 +920,18 @@ void link_console_close(link_console_t *c)
    if (c->loaded)
    {
       link_sched_enter(link_console_now.sched, c->index);
+      if (c->gl_started && c->hw.context_destroy)
+         c->hw.context_destroy();
       c->api.unload_game();
       link_sched_leave(link_console_now.sched);
       link_bus_console_gone(link_console_now.bus, c->index);
    }
+#ifdef HAVE_EGL
+   /* retro_deinit may still ask for the framebuffer */
+   link_gl_free(c->gl);
+   c->gl         = NULL;
+   c->gl_started = false;
+#endif
    if (c->started)
    {
       link_sched_enter(link_console_now.sched, c->index);

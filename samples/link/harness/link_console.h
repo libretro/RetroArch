@@ -17,6 +17,8 @@
 
 #include "link_scenario.h"
 
+struct link_gl;
+
 struct link_console_api
 {
    void (*set_environment)(retro_environment_t);
@@ -37,6 +39,7 @@ struct link_console_api
    size_t (*get_memory_size)(unsigned);
    bool (*unserialize)(const void *, size_t);
    void (*reset)(void);
+   void (*get_system_av_info)(struct retro_system_av_info *);
 };
 
 struct link_console_variable     /* declared with SET_VARIABLES */
@@ -78,11 +81,15 @@ typedef struct link_console
    size_t variable_count;
    struct retro_memory_descriptor *descriptors;  /* a copy of SET_MEMORY_MAPS's */
    unsigned descriptor_count;
+   struct link_gl *gl;              /* the OpenGL context it asked for */
+   struct retro_hw_render_callback hw;  /* a copy of what it asked with */
    uint64_t video;                  /* the latest picture */
    enum retro_pixel_format format;
    unsigned long frame;             /* its own frames finished, the index of the one it is in */
    unsigned index, bytes_per_pixel, errors;
    bool started, loaded;
+   bool gl_started;                 /* its context is current and was reset */
+   bool oversize;                   /* said once: a frame larger than its framebuffer */
    bool resuming;                   /* a load left it inside its frame, which its next run
                                        finishes */
    bool ran;                        /* finished a frame since it started, loaded or was held */
@@ -92,9 +99,10 @@ typedef struct link_console
    bool pictured;                   /* shown is its last frame's, or over a dupe the one before */
 } link_console_t;
 
-/* The consoles the callbacks serve */
+/* The consoles the callbacks serve. require_renderer: text the renderer of
+ * each console with a GPU context must name, or NULL */
 void link_console_session(link_sched_t *sched, link_bus_t *bus, link_console_t *consoles,
-      const struct link_scenario *scn, const char *system_dir);
+      const struct link_scenario *scn, const char *system_dir, const char *require_renderer);
 /* Before a step's run, with console 0 at its edge: the steps to the next
  * checkpoint (0: none) and that checkpoint's instant as ticks of rate (rate
  * 0: not known), by which each frame keeps its picture or not */
@@ -105,7 +113,9 @@ void link_console_done(void *user);
 
 /* Copies the core into out/c<n>/ and loads the copy */
 bool link_console_open(link_console_t *c, unsigned index, const char *out);
-/* retro_init and retro_load_game, then save RAM from a copy of the save */
+/* retro_init and retro_load_game, the context the core asked for and its
+ * context_reset, then save RAM from a copy of the save. A console with a
+ * context names its driver in out/c<n>/gpu.txt. */
 bool link_console_start(link_console_t *c);
 /* link_sched_run_t: one retro_run */
 void link_console_run(void *user);

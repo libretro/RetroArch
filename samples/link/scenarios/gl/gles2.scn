@@ -1,0 +1,12 @@
+# twin: render_one
+# One console that draws the two-part picture in an OpenGL ES 2 context,
+# whose framebuffer has neither depth nor stencil, from the framebuffer's
+# first row up.
+console 0 core=test render=gl
+option 0 link_test_render gl
+option 0 link_test_gl_context gles2
+option 0 link_test_gl_origin bottom
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end

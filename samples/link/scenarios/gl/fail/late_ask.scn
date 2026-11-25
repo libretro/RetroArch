@@ -1,0 +1,8 @@
+# A core that asks for its OpenGL context in its first retro_run, after
+# its load has returned: the harness refuses the call and fails the run.
+# Refused, the core passes dupes and logs no error of its own.
+# error: SET_HW_RENDER after its core's load is refused
+console 0 core=test render=gl
+option 0 link_test_render gl
+option 0 link_test_gl_ask run
+10 end

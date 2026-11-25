@@ -1,0 +1,13 @@
+# twin: render_one
+# One console that draws the two-part picture in OpenGL and leaves its
+# context with an error nobody read and with pixel-pack state of rows
+# longer than the picture, a start past its first pixel and an alignment
+# of 8: the harness reads each frame back by none of it, takes the error
+# for none of its own, and puts the pixel-pack state back.
+console 0 core=test render=gl
+option 0 link_test_render gl
+option 0 link_test_gl_state dirty
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end
