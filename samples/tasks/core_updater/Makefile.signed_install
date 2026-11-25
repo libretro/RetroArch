@@ -86,6 +86,7 @@ ifeq ($(COMPRESSION),1)
    CFLAGS  += -DHAVE_COMPRESSION -DHAVE_ZLIB
    SOURCES += \
 	$(CORE_DIR)/tasks/task_decompress.c \
+	$(CORE_DIR)/tasks/task_decompress_manifest.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
 	$(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \

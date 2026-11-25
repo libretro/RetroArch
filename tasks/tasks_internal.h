@@ -521,6 +521,20 @@ void *task_push_decompress(
       void *frontend_userdata,
       bool mute);
 
+/* As task_push_decompress(), and members whose file is unchanged since
+ * the last extraction of this archive into @target_dir are not rewritten.
+ * Only for a .zip or .apk: any other source is extracted in full. */
+void *task_push_decompress_skip_unchanged(
+      const char *source_file,
+      const char *target_dir,
+      const char *target_file,
+      const char *subdir,
+      const char *valid_ext,
+      retro_task_callback_t cb,
+      void *user_data,
+      void *frontend_userdata,
+      bool mute);
+
 typedef struct decompress_manifest decompress_manifest_t;
 
 /* Only builds the path "<target_dir>/.<basename of archive_path>.crc": no I/O.

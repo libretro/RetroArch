@@ -6,7 +6,8 @@ TARGETS := archive_name_safety_test decompress_window_test $(MANIFEST_TARGET)
 
 # decompress_window_test compiles the shipping tasks/task_decompress.c
 # against the real unthreaded task queue, the real ZIP backend and the
-# real shared per-frame I/O window (tasks/task_nbio_slice.c).
+# real shared per-frame I/O window (tasks/task_nbio_slice.c).  The
+# Zstandard backend is linked for a source whose member has no CRC.
 # features_cpu.c is deliberately NOT linked: the test supplies
 # cpu_features_get_time_usec() as a virtual clock.
 REPO_ROOT         := ../../..
@@ -14,12 +15,14 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 WINDOW_SOURCES := decompress_window_test.c \
            $(REPO_ROOT)/tasks/task_decompress.c \
+           $(REPO_ROOT)/tasks/task_decompress_manifest.c \
            $(REPO_ROOT)/tasks/task_nbio_slice.c \
            $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
            $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
            $(LIBRETRO_COMM_DIR)/file/archive_file.c \
            $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
+           $(LIBRETRO_COMM_DIR)/file/archive_file_zstd.c \
            $(LIBRETRO_COMM_DIR)/file/file_path.c \
            $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
            $(LIBRETRO_COMM_DIR)/lists/string_list.c \
@@ -28,7 +31,9 @@ WINDOW_SOURCES := decompress_window_test.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
+           $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+           $(LIBRETRO_COMM_DIR)/encodings/encoding_xxh64.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
@@ -60,7 +65,7 @@ MANIFEST_OBJS := $(call sample_objs,$(MANIFEST_SOURCES:.c=.manifest.o))
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O0
 
-WINDOW_CFLAGS := -DHAVE_THREADS -DHAVE_COMPRESSION \
+WINDOW_CFLAGS := -DHAVE_THREADS -DHAVE_COMPRESSION -DHAVE_RZSTD \
            -DRARCH_INTERNAL \
            -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT)
 MANIFEST_CFLAGS := -DRARCH_INTERNAL -DHAVE_COMPRESSION \
@@ -100,7 +105,8 @@ $(WINDOW_OBJS): %.o: $$(call sample_src,$$*).c
 	$(CC) -c -o $@ $< $(CFLAGS) $(WINDOW_CFLAGS)
 
 decompress_window_test: $(WINDOW_OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) -Wl,--wrap=retro_vfs_file_write_impl $(WINDOW_LIBS) -lpthread -lm
+	$(CC) -o $@ $^ $(LDFLAGS) -Wl,--wrap=retro_vfs_file_write_impl \
+	      -Wl,--wrap=retro_vfs_get_mtime_impl $(WINDOW_LIBS) -lpthread -lm
 
 $(MANIFEST_OBJS): %.manifest.o: $$(call sample_src,$$*).c
 	@mkdir -p $(@D)
@@ -121,6 +127,7 @@ clean:
 	rm -f decompress_manifest_test decompress_manifest_test.exe \
 	      $(MANIFEST_OBJS)
 	rm -rf decompress_window_out decompress_window_fixture.zip
+	rm -f decompress_window_fixture.zst
 	rm -rf decompress_manifest_out
 
 .PHONY: all check clean
