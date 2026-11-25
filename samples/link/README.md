@@ -137,8 +137,12 @@ must two runs with no state, against the first run's trace with console
 `make proof` makes the same six runs, with the same comparisons, of one
 scenario that binds real cores, such as those in `proofs/`. It builds only
 the harness, passes each `BIND` word (`NAME=FILE`, no spaces) as a `--path`
-and writes the runs to `proof/<scenario>/<run>/` under `BUILD_DIR`.
-`proofs/README.md` says how to run those.
+and `PROOF_ARGS` to each run, and writes the runs to
+`proof/<scenario>/<run>/` under `BUILD_DIR`.
+`proofs/README.md` says how to run those. With `HAVE_EGL=1` or
+`HAVE_VULKAN=1` its runs are GPU runs, on the driver `GPU_DRIVER` chooses
+as it does for `make check`: llvmpipe by default, and the machine's own
+GPU with `GPU_DRIVER=host`, for a proof run locally on a real GPU.
 
 ```sh
 make -C samples/link/harness proof PROOF=/abs/path/scenario.scn \
@@ -445,13 +449,15 @@ window, X server or Wayland display:
 - At the close `context_destroy` is called before `retro_unload_game`, and
   the context is destroyed after it.
 
-`make check` and `make check-gl` choose the driver with `GPU_DRIVER`:
+`make check`, `make check-gl` and, with `HAVE_EGL=1` or `HAVE_VULKAN=1`,
+`make proof` choose the driver with `GPU_DRIVER`:
 
 - `software`, the default, runs every GPU console on Mesa's llvmpipe
   (`LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe`, with `DISPLAY` and
   `WAYLAND_DISPLAY` unset) and passes `--require-renderer llvmpipe`, so a
   run on any other renderer fails and never passes for want of the driver.
-- `host` runs them on the machine's own driver and requires no renderer.
+- `host` runs them on the machine's own driver and requires no renderer:
+  a local proof on a real GPU, never CI.
 
 `check-gl` makes the six runs of every scenario in `scenarios/gl/`, and
 `check` ends with it when `HAVE_EGL` is 1. A scenario there starts with
@@ -467,7 +473,9 @@ software is compared on. A scenario with no twin line fails the check. Then:
   context version no driver has, a context asked for after the core's
   load has returned, and a picture that grows past its
   framebuffer without the core telling the frontend;
-- one more run with `--require-renderer no-such-renderer` must exit 1;
+- one more run with `--require-renderer no-such-renderer` must exit 1, and
+  `make proof` of the same scenario, with that as its `GPU_ARGS`, must
+  fail, on llvmpipe with `GPU_DRIVER=software`;
 - `gl/two` with `--no-context-follow` must fail the first run's trace: with
   the context of the console started last current for both, console 0's
   first picture is already another;

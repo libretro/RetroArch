@@ -48,8 +48,8 @@
 # pictures must be the twin's first run's. Each scenario in gl/fail/ must
 # exit 1 as those in fail/ do. GPU_DRIVER=software, the default, runs them
 # on Mesa's llvmpipe and fails a console whose renderer is another, which
-# one more run must show failing; GPU_DRIVER=host runs them on the
-# machine's own driver.
+# one more run, and a proof of the same scenario run on llvmpipe, must show
+# failing; GPU_DRIVER=host runs them on the machine's own driver.
 #
 # A console's OpenGL context is made current each time its code runs again,
 # in a frame or out of one: gl/held unloads console 0's core, which looks
@@ -63,7 +63,9 @@
 #
 # proof makes the six runs of one scenario that binds real cores, PROOF
 # (an absolute path), into BUILD_DIR/proof/<scenario>/, each BIND word
-# (NAME=<absolute file>, no spaces) a --path.
+# (NAME=<absolute file>, no spaces) a --path and PROOF_ARGS among each
+# run's arguments. While a switch is on they are GPU runs, on the driver
+# GPU_DRIVER chooses.
 
 LRC := ../../../libretro-common
 BUILD_DIR ?= build
@@ -167,6 +169,20 @@ GPU_ARGS :=
 else
 $(error GPU_DRIVER takes software or host, not "$(GPU_DRIVER)")
 endif
+
+# A proof's runs are GPU runs while a switch is on
+PROOF_GPU_ENV  =
+PROOF_GPU_ARGS =
+ifneq ($(filter 1,$(HAVE_EGL) $(HAVE_VULKAN)),)
+PROOF_GPU_ENV  = $(GPU_ENV)
+PROOF_GPU_ARGS = $(GPU_ARGS)
+endif
+PROOF_ARGS ?=
+
+# make proof as a check runs it: with no '+' or $(MAKE) on the recipe line,
+# make -n prints it and does not run it (a make before 4.4 run with -j then
+# warns that the jobserver is unavailable)
+CHECK_PROOF = $(MAKE) --no-print-directory proof
 
 # After a run that must fail, named $$what: it exited $(1), and its stderr,
 # in $$err, has $$why
@@ -337,6 +353,15 @@ define GPU_CHECK
 	$(GPU_ENV) $(RUNNER) $(HARNESS) --scenario "$$scn" --path test=$(CORE) \
 	   --require-renderer no-such-renderer --out "$(BUILD_DIR)/out/$$what" 2>"$$err"; \
 	$(call FAILED_AS,1)
+	@scn="$(abspath $(firstword $(sort $(wildcard ../scenarios/$(1)/*.scn))))"; \
+	what="$(1)/fail/proof_renderer"; err="$(BUILD_DIR)/out/$$what.err"; \
+	why="is not no-such-renderer"; \
+	echo "== make proof of $$scn, GPU_ARGS=--require-renderer no-such-renderer, exit 2 wanted"; \
+	$(CHECK_PROOF) PROOF="$$scn" BIND=test=$(abspath $(CORE)) \
+	   GPU_ARGS='--require-renderer no-such-renderer' 2>"$$err"; \
+	$(call FAILED_AS,2); \
+	[ "$(GPU_DRIVER)" != software ] || grep -F -q 'renderer "llvmpipe' "$$err" \
+	   || { echo "check: $$what did not run on llvmpipe"; exit 1; }
 endef
 
 # What comes after $(GPU_ENV) in a run that GL_CHECK makes
@@ -457,6 +482,7 @@ check: all
 	   --out "$(BUILD_DIR)/out/fail/stamp_edited" 2>"$$err"; \
 	$(call FAILED_AS,1)
 	@out="$(BUILD_DIR)/out/host_stamp"; \
+	mkdir -p "$(BUILD_DIR)/out/fail"; \
 	for f in V A; do \
 	   edited="$(BUILD_DIR)/out/fail/stamp_fresh_$$f.txt"; err="$(BUILD_DIR)/out/fail/stamp_fresh_$$f.err"; \
 	   what="host_stamp --expect a trace with field $$f edited"; \
@@ -513,7 +539,7 @@ check-gl: all
 
 proof: $(HARNESS)
 	@scn='$(PROOF)'; [ -n "$$scn" ] || { echo "proof: PROOF names no scenario"; exit 2; }; \
-	$(call RUNS,$(BUILD_DIR)/proof,$(foreach b,$(BIND),--path '$(b)'),$(ALL_RUNS))
+	$(call RUNS,$(BUILD_DIR)/proof,$(foreach b,$(BIND),--path '$(b)') $(PROOF_GPU_ARGS) $(PROOF_ARGS),$(ALL_RUNS),$(PROOF_GPU_ENV))
 
 clean:
 	build='$(BUILD_DIR)'; rm -rf -- "$${build:?}"
