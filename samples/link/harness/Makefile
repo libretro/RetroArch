@@ -61,11 +61,15 @@
 # a context Mesa holds to OpenGL ES 2.0, where it gives a later one
 # otherwise.
 #
-# proof makes the six runs of one scenario that binds real cores, PROOF
-# (an absolute path), into BUILD_DIR/proof/<scenario>/, each BIND word
-# (NAME=<absolute file>, no spaces) a --path and PROOF_ARGS among each
-# run's arguments. While a switch is on they are GPU runs, on the driver
-# GPU_DRIVER chooses.
+# proof makes the runs PROOF_RUNS names, all six unless it is given, of one
+# scenario that binds real cores, PROOF (an absolute path), into
+# BUILD_DIR/proof/<scenario>/, each BIND word (NAME=<absolute file>, no
+# spaces) a --path and PROOF_ARGS among each run's arguments. While a
+# switch is on they are GPU runs, on the driver GPU_DRIVER chooses.
+# PROOF_RUNS must begin with first, the run the others are compared with.
+# check makes a proof of last_checkpoint with four of the runs, which must
+# make those four alone, and three that must fail: with no run, a misspelt
+# one, and one that does not begin with first.
 
 LRC := ../../../libretro-common
 BUILD_DIR ?= build
@@ -178,6 +182,7 @@ PROOF_GPU_ENV  = $(GPU_ENV)
 PROOF_GPU_ARGS = $(GPU_ARGS)
 endif
 PROOF_ARGS ?=
+PROOF_RUNS ?= $(ALL_RUNS)
 
 # make proof as a check runs it: with no '+' or $(MAKE) on the recipe line,
 # make -n prints it and does not run it (a make before 4.4 run with -j then
@@ -528,6 +533,28 @@ check: all
 	$(call FAILED_AS,1)
 	$(call LOAD_FAILS,stale,first from,rewound,--rewind)
 	$(call LOAD_FAILS,cold,first,from,--from)
+	@what="proof of last_checkpoint, PROOF_RUNS='first again reversed shuffled'"; \
+	log="$(BUILD_DIR)/out/proof_runs.txt"; \
+	echo "== $$what"; \
+	$(CHECK_PROOF) PROOF=../scenarios/last_checkpoint.scn BIND=test=$(CORE) \
+	   PROOF_RUNS='first again reversed shuffled' > "$$log" \
+	   || { cat "$$log"; echo "check: $$what failed"; exit 1; }; \
+	cat "$$log"; \
+	runs=`sed -n 's/^== last_checkpoint //p' "$$log" | tr '\n' ' '`; \
+	[ "$$runs" = "first again reversed shuffled " ] \
+	   || { echo "check: $$what made the runs $$runs"; exit 1; }
+	@for bad in empty misspelt not_first; do \
+	   case $$bad in \
+	      empty)     runs=; why="proof: PROOF_RUNS names no run" ;; \
+	      misspelt)  runs="first frist"; why="proof: PROOF_RUNS names frist, not one of $(ALL_RUNS)" ;; \
+	      not_first) runs="again shuffled"; why="proof: PROOF_RUNS begins with again, not first" ;; \
+	   esac; \
+	   what="proof of last_checkpoint, PROOF_RUNS='$$runs'"; err="$(BUILD_DIR)/out/fail/proof_runs_$$bad.err"; \
+	   echo "== $$what, exit 2 wanted"; \
+	   $(CHECK_PROOF) PROOF=../scenarios/last_checkpoint.scn BIND=test=$(CORE) \
+	      PROOF_RUNS="$$runs" > "$$err" 2>&1; \
+	   $(call FAILED_AS,2); \
+	done
 ifeq ($(HAVE_EGL),1)
 	$(call GPU_CHECK,gl,$(GPU_ARGS),gl/spans gl/mixed)
 	$(GL_CHECK)
@@ -539,7 +566,12 @@ check-gl: all
 
 proof: $(HARNESS)
 	@scn='$(PROOF)'; [ -n "$$scn" ] || { echo "proof: PROOF names no scenario"; exit 2; }; \
-	$(call RUNS,$(BUILD_DIR)/proof,$(foreach b,$(BIND),--path '$(b)') $(PROOF_GPU_ARGS) $(PROOF_ARGS),$(ALL_RUNS),$(PROOF_GPU_ENV))
+	[ -n '$(strip $(PROOF_RUNS))' ] || { echo "proof: PROOF_RUNS names no run"; exit 2; }; \
+	bad='$(filter-out $(ALL_RUNS),$(PROOF_RUNS))'; \
+	[ -z "$$bad" ] || { echo "proof: PROOF_RUNS names $$bad, not one of $(ALL_RUNS)"; exit 2; }; \
+	[ '$(firstword $(PROOF_RUNS))' = first ] \
+	   || { echo "proof: PROOF_RUNS begins with $(firstword $(PROOF_RUNS)), not first"; exit 2; }; \
+	$(call RUNS,$(BUILD_DIR)/proof,$(foreach b,$(BIND),--path '$(b)') $(PROOF_GPU_ARGS) $(PROOF_ARGS),$(PROOF_RUNS),$(PROOF_GPU_ENV))
 
 clean:
 	build='$(BUILD_DIR)'; rm -rf -- "$${build:?}"

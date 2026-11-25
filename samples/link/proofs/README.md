@@ -27,8 +27,10 @@ line. So they are not part of `make check`; each one is run with
 
 `make proof` builds the harness, then runs the scenario six times, as
 `make check` runs each scenario in `../scenarios/` (see `../README.md`), and
-stops at the first run that fails. The runs go to `proof/<scenario>/<run>/`
-under `BUILD_DIR`, which is `samples/link/harness/build` unless you set it.
+stops at the first run that fails; `PROOF_RUNS` makes only the runs it
+names, of the six below, beginning with `first`, which the others are
+compared with. The runs go to `proof/<scenario>/<run>/` under
+`BUILD_DIR`, which is `samples/link/harness/build` unless you set it.
 
 The six runs show:
 

@@ -138,7 +138,12 @@ must two runs with no state, against the first run's trace with console
 scenario that binds real cores, such as those in `proofs/`. It builds only
 the harness, passes each `BIND` word (`NAME=FILE`, no spaces) as a `--path`
 and `PROOF_ARGS` to each run, and writes the runs to
-`proof/<scenario>/<run>/` under `BUILD_DIR`.
+`proof/<scenario>/<run>/` under `BUILD_DIR`. `PROOF_RUNS` names the runs
+it makes, all six unless it is given, and begins with `first`, the run the
+others are compared with; `make check` makes a proof of `last_checkpoint`
+with `PROOF_RUNS='first again reversed shuffled'`, which must make those
+four runs alone, and three that must fail: with an empty `PROOF_RUNS`, a
+misspelt run and one that does not begin with `first`.
 `proofs/README.md` says how to run those. With `HAVE_EGL=1` or
 `HAVE_VULKAN=1` its runs are GPU runs, on the driver `GPU_DRIVER` chooses
 as it does for `make check`: llvmpipe by default, and the machine's own
