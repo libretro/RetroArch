@@ -75,6 +75,11 @@ jobs:
     - name: Compile RA
       run: |
         make -f Makefile.libounce -j$(getconf _NPROCESSORS_ONLN) clean
+        bash .github/workflows/scripts/ccache-make.sh -f Makefile.libounce -j$(getconf _NPROCESSORS_ONLN)
+
+    - name: Compile RA (static dummy)
+      run: |
+        make -f Makefile.libounce -j$(getconf _NPROCESSORS_ONLN) clean
         bash .github/workflows/scripts/ccache-make.sh -f Makefile.libounce -j$(getconf _NPROCESSORS_ONLN) HAVE_STATIC_DUMMY=1
 
     - name: ccache statistics

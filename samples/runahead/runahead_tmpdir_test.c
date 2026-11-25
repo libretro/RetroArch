@@ -46,6 +46,13 @@ int main(void)
    if (!mkdtemp(base))
       return 2;
 
+#ifdef __SWITCH2__
+   make_dir("world", 0777);
+   CHECK(runahead_tmp_dir_private(at("world")), "a single-user temp dir refused");
+   CHECK(mode_of(at("world")) == 0777, "a single-user temp dir's mode changed");
+   printf("   ok   a single-user console takes its temp dir as is\n");
+#else
+
    make_dir("own", 0700);
    CHECK(runahead_tmp_dir_private(at("own")), "a 0700 directory of ours refused");
    printf("   ok   a directory of ours, closed to others, is used\n");
@@ -87,6 +94,7 @@ int main(void)
    }
    else
       printf("   skip another owner and another group need root to set up\n");
+#endif
 
    {
       char cmd[96];
