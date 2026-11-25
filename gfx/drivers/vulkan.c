@@ -530,8 +530,6 @@ typedef struct vk
        * get_flags on the main thread. */
       retro_atomic_int_t fallback;
       bool active;
-      /* The UI layer is drawn with the SDR pipeline set. */
-      bool ui_sdr;
       /* Whether the frame's pass had it set, for the layer to leave it
        * as it found it */
       bool ui_outer_sdr;
@@ -5518,11 +5516,7 @@ static void vulkan_init_render_pass(
    /* The UI layer takes sdr_render_pass's format, FP16, and the
     * pipelines built for it: they keep its alpha as coverage, and a
     * 10-bit swapchain's 2-bit alpha is too coarse for translucent UI. */
-#ifdef VULKAN_HDR_SWAPCHAIN
-   vk->views.ui_sdr    = true;
-#endif
-   vk->views.ui_format = vk->views.ui_sdr
-      ? VK_FORMAT_R16G16B16A16_SFLOAT : vk->context->swapchain_format;
+   vk->views.ui_format = VK_FORMAT_R16G16B16A16_SFLOAT;
    attachment.format   = vk->views.ui_format;
 
    vkCreateRenderPass(vk->context->device,
@@ -6375,7 +6369,6 @@ static void vulkan_init_pipelines(vk_t *vk)
     * against render_pass) is incompatible with sdr_render_pass.
     * Build a parallel SDR set against sdr_render_pass. The views UI
     * layer uses it too. */
-   if ((vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT) || vk->views.ui_sdr)
    {
       pipe.renderPass = vk->sdr_render_pass;
       vulkan_sdr_alpha_blend(vk, &blend_attachment, true);
@@ -6566,8 +6559,6 @@ static void vulkan_init_pipelines(vk_t *vk)
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
             1, &pipe, NULL, &vk->display.mesh_pipelines[i]);
 #ifdef VULKAN_HDR_SWAPCHAIN
-      if (     (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
-            || vk->views.ui_sdr)
       {
          pipe.renderPass = vk->sdr_render_pass;
          vulkan_sdr_alpha_blend(vk, &blend_attachment, true);
@@ -6955,7 +6946,6 @@ if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.hdr_to_sdr, NULL);
 }
-if ((vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT) || vk->views.ui_sdr)
 {
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.font_sdr, NULL);
@@ -12463,8 +12453,7 @@ static void vulkan_views_ui_begin(vk_t *vk, video_frame_info_t *video_info,
    vkCmdEndRenderPass(vk->cmd);
    vulkan_views_begin(vk, &vk->views.ui, ui_dims, vk->views.ui_render_pass);
    vk->views.ui_outer_sdr = (vk->flags & VK_FLAG_SDR_PIPELINE) != 0;
-   if (vk->views.ui_sdr)
-      vk->flags |= VK_FLAG_SDR_PIPELINE;
+   vk->flags             |= VK_FLAG_SDR_PIPELINE;
 
    /* Menus and widgets size from video_info->dims, fonts from
     * video_dims. The UI height equals the window's, so the display
@@ -12819,8 +12808,7 @@ static void vulkan_window_ui_begin(vk_t *vk, video_frame_info_t *video_info,
    vk->bloom.target = &vk->windows.ui;
    vulkan_views_begin(vk, &vk->windows.ui, dims, vk->views.ui_render_pass);
    vk->views.ui_outer_sdr = (vk->flags & VK_FLAG_SDR_PIPELINE) != 0;
-   if (vk->views.ui_sdr)
-      vk->flags |= VK_FLAG_SDR_PIPELINE;
+   vk->flags             |= VK_FLAG_SDR_PIPELINE;
    vk->windows.ui_pass_dims = dims;
    /* Menus and widgets size from video_info->dims, fonts from
     * video_dims. The viewport as the main window's: fitted without
@@ -14121,115 +14109,64 @@ static void vulkan_xr_draw_screen(vk_t *vk, unsigned s,
    memset(vk->tracker.mvp.data, 0, sizeof(vk->tracker.mvp.data));
 }
 
-/* The UI layer this frame drew, into slot s's image: copied when it has
- * the slot's size and the window's format, else drawn scaled through
- * the slot's view in the headset's format, so the encoded values stay
- * as they are. */
+/* The UI layer this frame drew, into slot s's image: drawn scaled
+ * through the slot's view in the headset's format, the FP16 layer's
+ * values converted on the way. */
 static void vulkan_xr_copy_ui(vk_t *vk, unsigned s, unsigned ui_dims)
 {
-   VkImageCopy region;
+   VkClearValue clear;
+   VkRenderPassBeginInfo rp;
+   struct vk_texture tex;
+   struct vk_draw_quad quad;
+   struct video_viewport vp;
    unsigned index = vk->xr.slots[s].index[0];
    unsigned dims  = vk->xr.set.slots[s].dims;
    VkImage dst    = vk->xr.slots[s].images[index][0];
 
-   if (dims != ui_dims || vk->views.ui_sdr)
-   {
-      VkClearValue clear;
-      VkRenderPassBeginInfo rp;
-      struct vk_texture tex;
-      struct vk_draw_quad quad;
-      struct video_viewport vp;
-
-      VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, dst,
-            VK_IMAGE_LAYOUT_UNDEFINED,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
-      clear.color.float32[0] = 0.0f;
-      clear.color.float32[1] = 0.0f;
-      clear.color.float32[2] = 0.0f;
-      clear.color.float32[3] = 0.0f;
-      rp.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-      rp.pNext                    = NULL;
-      rp.renderPass               = vk->xr.render_pass;
-      rp.framebuffer              = vk->xr.slots[s].framebuffers[index][0];
-      rp.renderArea.offset.x      = 0;
-      rp.renderArea.offset.y      = 0;
-      rp.renderArea.extent.width  = VIDEO_SCALE_W(dims);
-      rp.renderArea.extent.height = VIDEO_SCALE_H(dims);
-      rp.clearValueCount          = 1;
-      rp.pClearValues             = &clear;
-      vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
-      vk->tracker.pipeline = VK_NULL_HANDLE;
-
-      /* The scissor follows vk->vp. */
-      vp                   = vk->vp;
-      vk->vp.pos           = VIDEO_POS_PACK(0, 0);
-      vk->vp.dims          = dims;
-      vk->vk_vp.x          = 0.0f;
-      vk->vk_vp.y          = 0.0f;
-      vk->vk_vp.width      = (float)VIDEO_SCALE_W(dims);
-      vk->vk_vp.height     = (float)VIDEO_SCALE_H(dims);
-      vk->vk_vp.minDepth   = 0.0f;
-      vk->vk_vp.maxDepth   = 1.0f;
-      vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
-      vulkan_views_texture(&vk->views.ui, ui_dims, vk->views.ui_format,
-            &tex);
-      quad.texture  = &tex;
-      quad.mvp      = &vk->mvp_no_rot;
-      quad.pipeline = vulkan_views_target_premult(vk, vk->xr.view_format);
-      quad.sampler  = vk->samplers.linear;
-      quad.color    = RGBA16_WHITE;
-      vulkan_draw_quad(vk, &quad);
-      vkCmdEndRenderPass(vk->cmd);
-      vk->vp = vp;
-      return;
-   }
-
-   /* dst after the runtime's acquire barrier, as in
-    * vulkan_xr_draw_screen. */
-   vulkan_image_layout_transition_pair(vk->cmd,
-         vk->views.ui.image,
-         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-         dst,
-         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-         0, VK_ACCESS_TRANSFER_WRITE_BIT,
-         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-       | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT);
-   region.srcSubresource.mipLevel       = 0;
-   region.srcSubresource.baseArrayLayer = 0;
-   region.srcOffset.x                   = 0;
-   region.srcOffset.y                   = 0;
-   region.srcOffset.z                   = 0;
-   region.dstOffset.x                   = 0;
-   region.dstOffset.y                   = 0;
-   region.dstOffset.z                   = 0;
-   region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-   region.srcSubresource.layerCount     = 1;
-   region.dstSubresource                = region.srcSubresource;
-   region.extent.width                  = VIDEO_SCALE_W(dims);
-   region.extent.height                 = VIDEO_SCALE_H(dims);
-   region.extent.depth                  = 1;
-   vkCmdCopyImage(vk->cmd, vk->views.ui.image,
-         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-   /* dst into the layout the runtime takes it back in. */
-   vulkan_image_layout_transition_pair(vk->cmd,
-         dst,
-         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+   VULKAN_IMAGE_LAYOUT_TRANSITION(vk->cmd, dst,
+         VK_IMAGE_LAYOUT_UNDEFINED,
          VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-         vk->views.ui.image,
-         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-         VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT,
-         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
-       | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+         0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+   clear.color.float32[0] = 0.0f;
+   clear.color.float32[1] = 0.0f;
+   clear.color.float32[2] = 0.0f;
+   clear.color.float32[3] = 0.0f;
+   rp.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+   rp.pNext                    = NULL;
+   rp.renderPass               = vk->xr.render_pass;
+   rp.framebuffer              = vk->xr.slots[s].framebuffers[index][0];
+   rp.renderArea.offset.x      = 0;
+   rp.renderArea.offset.y      = 0;
+   rp.renderArea.extent.width  = VIDEO_SCALE_W(dims);
+   rp.renderArea.extent.height = VIDEO_SCALE_H(dims);
+   rp.clearValueCount          = 1;
+   rp.pClearValues             = &clear;
+   vkCmdBeginRenderPass(vk->cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
+   vk->tracker.pipeline = VK_NULL_HANDLE;
+
+   /* The scissor follows vk->vp. */
+   vp                   = vk->vp;
+   vk->vp.pos           = VIDEO_POS_PACK(0, 0);
+   vk->vp.dims          = dims;
+   vk->vk_vp.x          = 0.0f;
+   vk->vk_vp.y          = 0.0f;
+   vk->vk_vp.width      = (float)VIDEO_SCALE_W(dims);
+   vk->vk_vp.height     = (float)VIDEO_SCALE_H(dims);
+   vk->vk_vp.minDepth   = 0.0f;
+   vk->vk_vp.maxDepth   = 1.0f;
+   vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
+   vulkan_views_texture(&vk->views.ui, ui_dims, vk->views.ui_format,
+         &tex);
+   quad.texture  = &tex;
+   quad.mvp      = &vk->mvp_no_rot;
+   quad.pipeline = vulkan_views_target_premult(vk, vk->xr.view_format);
+   quad.sampler  = vk->samplers.linear;
+   quad.color    = RGBA16_WHITE;
+   vulkan_draw_quad(vk, &quad);
+   vkCmdEndRenderPass(vk->cmd);
+   vk->vp = vp;
 }
 
 /* The tracked eyes into the projection slot, one image each, with no

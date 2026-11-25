@@ -153,7 +153,6 @@ typedef struct
       char preset[64];
       unsigned last_index;
       unsigned copied;
-      bool ui_sdr;
       bool fp16;
       bool canvas_fp16;
       bool scanlines_logged;
@@ -525,9 +524,9 @@ static bool vulkan_openxr_slot_acquire(vulkan_openxr_t *xr, unsigned slot,
    return !(acquire_fails & (1u << slot));
 }
 
-/* The UI layer and the tracked eyes: quads drawn, the pipeline the last
- * was drawn with and how many took another before it, and copies */
-static unsigned quads_drawn, mixed_quads, ui_copies;
+/* The UI layer and the tracked eyes: quads drawn, and the pipeline the
+ * last was drawn with and how many took another before it */
+static unsigned quads_drawn, mixed_quads;
 static VkPipeline quad_pipeline;
 static unsigned eye_dims;
 
@@ -548,44 +547,6 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
    quad_pipeline = quad->pipeline;
    quads_drawn++;
 }
-
-static void vulkan_image_layout_transition_pair(VkCommandBuffer cmd,
-      VkImage img0, VkImageLayout old0, VkImageLayout new0,
-      VkAccessFlags src_access0, VkAccessFlags dst_access0,
-      VkImage img1, VkImageLayout old1, VkImageLayout new1,
-      VkAccessFlags src_access1, VkAccessFlags dst_access1,
-      VkPipelineStageFlags src_stages, VkPipelineStageFlags dst_stages)
-{
-   (void)cmd;
-   (void)img0;
-   (void)old0;
-   (void)new0;
-   (void)src_access0;
-   (void)dst_access0;
-   (void)img1;
-   (void)old1;
-   (void)new1;
-   (void)src_access1;
-   (void)dst_access1;
-   (void)src_stages;
-   (void)dst_stages;
-}
-
-static void test_copy_image(VkCommandBuffer cmd, VkImage src,
-      VkImageLayout src_layout, VkImage dst, VkImageLayout dst_layout,
-      uint32_t count, const VkImageCopy *regions)
-{
-   (void)cmd;
-   (void)src;
-   (void)src_layout;
-   (void)dst;
-   (void)dst_layout;
-   (void)count;
-   (void)regions;
-   ui_copies++;
-}
-
-#define vkCmdCopyImage test_copy_image
 
 static unsigned vulkan_openxr_eye_dims(const vulkan_openxr_t *xr)
 {
@@ -739,7 +700,7 @@ static void init(vk_t *vk, test_context_t *context, test_chain_t *chain)
    mixed_passes = 0;
    view_format_made = VK_FORMAT_UNDEFINED;
    framebuffer_pass = VK_NULL_HANDLE;
-   quads_drawn = mixed_quads = ui_copies = eye_dims = 0;
+   quads_drawn = mixed_quads = eye_dims = 0;
    quad_pipeline = VK_NULL_HANDLE;
    memset(runtime_formats, 0, sizeof(runtime_formats));
    xr_frees = xr_retargets = 0;
@@ -1041,7 +1002,8 @@ static void test_xr_draw_direct(void)
    xr_draw(&vk, dims);
    CHECK(vk.xr.slots[0].drawn && vk.xr.slots[1].drawn);
    CHECK(offscreen_passes == 2 && viewport_passes == 2);
-   CHECK(render_passes == 2 && frames_ended == 2 && replays == 0);
+   /* and the UI layer drawn into its slot */
+   CHECK(render_passes == 3 && frames_ended == 2 && replays == 0);
    CHECK(allocations == 0);
    xr_release(&vk);
    xr_draw_frame(&vk, dims, false);
@@ -1306,8 +1268,6 @@ static void test_xr_draw_in_xr_pass(void)
    vk.views.render_pass           = TEST_RENDER_PASS;
    vk.pipelines.alpha_premult     = (VkPipeline)(uintptr_t)0x78;
    vk.display.effect_tpl[0].valid = true;
-   /* The UI layer is drawn into the slot, not copied */
-   vk.views.ui_sdr                = true;
    vk.xr.view_format              = VK_FORMAT_B8G8R8A8_UNORM;
    vk.xr.render_pass = pass       = vulkan_views_target_pass(&vk,
          VK_FORMAT_B8G8R8A8_UNORM, true);
@@ -1326,7 +1286,7 @@ static void test_xr_draw_in_xr_pass(void)
    /* Two screens, the UI and two eyes */
    CHECK(render_passes == 5);
    CHECK(began_pass == pass && mixed_passes == 0);
-   CHECK(quads_drawn == 3 && mixed_quads == 0 && ui_copies == 0);
+   CHECK(quads_drawn == 3 && mixed_quads == 0);
    CHECK(quad_pipeline == vulkan_views_target_premult(&vk,
             VK_FORMAT_B8G8R8A8_UNORM));
    CHECK(quad_pipeline != vk.pipelines.alpha_premult);
