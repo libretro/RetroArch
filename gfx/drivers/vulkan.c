@@ -12953,7 +12953,8 @@ static int vulkan_window_output(vk_t *vk, struct vk_window *win,
 }
 
 /* A window's buffers (video_window_native_t): what vulkan_output_pick()
- * picks by, so one value is one pick on one surface; never 0 */
+ * picks by, so one value is one pick on one surface; never 0, nor a
+ * multiple of 8, which are a GL context's */
 static unsigned vulkan_window_buffers(const vk_t *vk)
 {
    const vulkan_context_t *ctx = vk->context;

@@ -25,11 +25,13 @@
  *  - a kept surface the next renderer would draw another kind of
  *    buffer into is not drawn: Java is asked once for a new surface,
  *    which is, across a driver reinit too; the same kind, or a kind
- *    unknown on either side, is drawn as before.
+ *    unknown on either side, is drawn as before;
+ *  - GL's context says a kind for the windows it polls, never one of
+ *    Vulkan's, so a kept surface is not drawn by the other renderer.
  *
- * The functions are taken out of platform_unix.c and android_windows.c
- * at build time by extract.awk; the test supplies the types they touch,
- * so it builds and runs on the host. */
+ * The functions are taken out of platform_unix.c, android_windows.c,
+ * android_ctx.c and vulkan.c at build time by extract.awk; the test
+ * supplies the types they touch, so it builds and runs on the host. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -147,6 +149,43 @@ static bool android_second_surface_renew(int generation)
    return renew_asked;
 }
 
+/* What android_ctx.c's poll touches */
+typedef int EGLint;
+typedef void *EGLSurface;
+typedef struct { unsigned freed; } egl_ctx_data_t;
+
+typedef struct
+{
+   egl_ctx_data_t egl;
+   EGLint format;
+} android_ctx_data_t;
+
+static void egl_window_surface_free(egl_ctx_data_t *egl, EGLSurface surf)
+{
+   (void)surf;
+   egl->freed++;
+}
+
+/* What vulkan.c's vulkan_window_buffers() touches */
+#define VULKAN_HDR_SWAPCHAIN
+#define VK_CTX_FLAG_HDR_ENABLE (1 << 1)
+#define VK_COLOR_SPACE_SRGB_NONLINEAR_KHR       0
+#define VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT 1000104002
+#define VK_COLOR_SPACE_HDR10_ST2084_EXT         1000104008
+#define VK_FORMAT_R8G8B8A8_UNORM                37
+#define VK_FORMAT_A2B10G10R10_UNORM_PACK32      64
+#define VK_FORMAT_R16G16B16A16_SFLOAT           97
+
+typedef struct
+{
+   unsigned flags;
+   int swapchain_format;
+   int swapchain_colour_space;
+   struct { unsigned bit_depth; } swapchain_settings;
+} vulkan_context_t;
+
+typedef struct { vulkan_context_t *context; } vk_t;
+
 #include "second_surface_driver.h"
 
 static unsigned failures;
@@ -193,27 +232,34 @@ static void poll_once(void)
    Java_com_retroarch_browser_retroactivity_SecondDisplayController_nativeSurfaceDestroyed( \
          NULL, NULL)
 
-/* Window 1 on display 2, made and shown on @a by 'owner', which draws
- * @buffers there, then kept as a driver teardown keeps it */
-static android_window_t *window_kept_as(ANativeWindow *a, unsigned buffers)
+/* Window 1 on display 2, made by @who, with @a posted for it */
+static android_window_t *window_made(ANativeWindow *a, void *who)
 {
-   android_window_t *kept = (android_window_t*)calloc(1, sizeof(*kept));
+   android_window_t *made = (android_window_t*)calloc(1, sizeof(*made));
    memset(&app, 0, sizeof(app));
    memset(a, 0, sizeof(*a));
    memset(&native, 0, sizeof(native));
-   kept->common.owner              = &owner;
-   kept->common.native             = &native;
-   kept->common.request.screen     = 1;
-   kept->common.request.generation = 7;
-   kept->common.request.display    = 2;
-   native.state                    = kept;
+   made->common.owner              = who;
+   made->common.native             = &native;
+   made->common.request.screen     = 1;
+   made->common.request.generation = 7;
+   made->common.request.display    = 2;
+   native.state                    = made;
    native.generation               = 7;
-   native.buffers                  = buffers;
-   android_windows[1]              = kept;
+   android_windows[1]              = made;
    SURFACE_CHANGED(a, 1240, 1080);
-   poll_once();
    requests = 0;
    renews   = 0;
+   return made;
+}
+
+/* Made and shown on @a by 'owner', which draws @buffers there, then
+ * kept as a driver teardown keeps it */
+static android_window_t *window_kept_as(ANativeWindow *a, unsigned buffers)
+{
+   android_window_t *kept = window_made(a, &owner);
+   native.buffers         = buffers;
+   poll_once();
    android_windows_keep(&owner, &native);
    return kept;
 }
@@ -544,6 +590,141 @@ static void test_renew(void)
    CHECK(a.refs == 0 && !android_windows[1], "then it goes");
 }
 
+static void gl_poll(android_ctx_data_t *gl)
+{
+   video_window_event_t events[4];
+   android_gfx_ctx_window_poll(gl, events, 4);
+}
+
+/* What Vulkan says of a swapchain in @format and @space */
+static unsigned vk_buffers(int format, int space, unsigned bit_depth)
+{
+   vk_t vk;
+   vulkan_context_t ctx;
+   memset(&ctx, 0, sizeof(ctx));
+   if (space != VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+      ctx.flags                  = VK_CTX_FLAG_HDR_ENABLE;
+   ctx.swapchain_format          = format;
+   ctx.swapchain_colour_space    = space;
+   ctx.swapchain_settings.bit_depth = bit_depth;
+   vk.context                    = &ctx;
+   return vulkan_window_buffers(&vk);
+}
+
+/* Shown by GL context @gl, kept, then taken by a Vulkan renderer
+ * that draws @buffers */
+static void gl_to_vulkan(ANativeWindow *a, android_ctx_data_t *gl,
+      unsigned buffers, video_window_native_t *taken, void *next_owner)
+{
+   unsigned display = 0;
+   window_made(a, gl);
+   gl_poll(gl);
+   android_windows_keep(gl, &native);
+   memset(taken, 0, sizeof(*taken));
+   android_windows_take(next_owner, 1, taken, &display);
+   taken->buffers = buffers;
+   poll_for(next_owner);
+}
+
+/* A kept surface across a switch of renderer */
+static void test_renderer_switch(void)
+{
+   static const int gl_formats[] = { 0, 1, 2, 3, 4, 22, 43, -1, 0x7fffffff };
+   static const int spaces[]     = {
+      VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+      VK_COLOR_SPACE_HDR10_ST2084_EXT,
+      VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT
+   };
+   static int next_owner;
+   static android_ctx_data_t gl, next_gl;
+   ANativeWindow a, b;
+   video_window_native_t taken;
+   unsigned i, s, depth;
+   unsigned display = 0;
+   unsigned vulkan  = 0;
+   unsigned said    = 0;
+   unsigned scrgb   = vk_buffers(VK_FORMAT_R16G16B16A16_SFLOAT,
+         VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT, 0);
+   unsigned hdr10   = vk_buffers(VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+         VK_COLOR_SPACE_HDR10_ST2084_EXT, 2);
+   unsigned sdr     = vk_buffers(VK_FORMAT_R8G8B8A8_UNORM,
+         VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, 0);
+   int gen_b;
+
+   /* GL's kinds are multiples of 8 and Vulkan's never, in any format:
+    * neither is unknown, and none of one is one of the other */
+   for (i = 0; i < 256; i++)
+      for (s = 0; s < 3; s++)
+         for (depth = 0; depth < 3; depth++)
+            if (vk_buffers((int)i, spaces[s], depth) % 8)
+               vulkan++;
+   CHECK(vulkan == 256 * 3 * 3, "no kind of Vulkan's is a multiple of 8");
+   for (i = 0; i < sizeof(gl_formats) / sizeof(gl_formats[0]); i++)
+   {
+      gl.format = gl_formats[i];
+      window_made(&a, &gl);
+      gl_poll(&gl);
+      if (native.buffers && !(native.buffers % 8))
+         said++;
+      android_windows_destroy(&gl, &native);
+   }
+   CHECK(said == i, "GL's context says a kind, a multiple of 8");
+
+   /* GL, then Vulkan */
+   gl.format = 1;
+   gl_to_vulkan(&a, &gl, scrgb, &taken, &next_owner);
+   CHECK(renews == 1 && !taken.surface && !taken.presentable
+         && a.refs == 0, "Vulkan scRGB does not draw the surface GL drew");
+   android_windows_destroy(&next_owner, &taken);
+   gl_to_vulkan(&a, &gl, hdr10, &taken, &next_owner);
+   CHECK(renews == 1 && !taken.surface && a.refs == 0,
+         "nor Vulkan HDR10");
+   android_windows_destroy(&next_owner, &taken);
+   gl_to_vulkan(&a, &gl, sdr, &taken, &next_owner);
+   CHECK(renews == 1 && !taken.surface && a.refs == 0,
+         "nor Vulkan SDR: a renderer's kinds are its own");
+   android_windows_destroy(&next_owner, &taken);
+   CHECK(!android_windows[1], "then it goes");
+
+   /* Vulkan, then GL */
+   window_kept_as(&a, scrgb);
+   memset(&taken, 0, sizeof(taken));
+   android_windows_take(&gl, 1, &taken, &display);
+   gl_poll(&gl);
+   CHECK(renews == 1 && !taken.surface && !taken.presentable
+         && a.refs == 0, "GL does not draw the surface Vulkan scRGB drew");
+   gl_poll(&gl);
+   CHECK(renews == 1, "asked once");
+   SURFACE_DESTROYED();
+   memset(&b, 0, sizeof(b));
+   gen_b = SURFACE_CHANGED(&b, 1240, 1080);
+   gl_poll(&gl);
+   CHECK(taken.surface == &b && taken.presentable
+         && retro_atomic_load_acquire_int(
+            &app.second_display.bound_surface) == gen_b,
+         "the new surface is drawn");
+   gl_poll(&gl);
+   CHECK(renews == 1 && taken.surface == &b, "and kept");
+
+   /* GL, then GL */
+   android_windows_keep(&gl, &taken);
+   next_gl.format = gl.format;
+   memset(&taken, 0, sizeof(taken));
+   android_windows_take(&next_gl, 1, &taken, &display);
+   gl_poll(&next_gl);
+   CHECK(renews == 1 && taken.surface == &b && taken.presentable,
+         "GL in the same format draws the surface GL drew");
+   android_windows_keep(&next_gl, &taken);
+   gl.format = 4;
+   memset(&taken, 0, sizeof(taken));
+   android_windows_take(&gl, 1, &taken, &display);
+   gl_poll(&gl);
+   CHECK(renews == 2 && !taken.surface && b.refs == 0,
+         "GL in another format does not");
+   android_windows_destroy(&gl, &taken);
+   CHECK(!android_windows[1], "then it goes");
+}
+
 int main(void)
 {
    ANativeWindow a, b;
@@ -630,6 +811,7 @@ int main(void)
    test_resize_kept();
    test_peak_reaches_window();
    test_renew();
+   test_renderer_switch();
 
    if (failures)
    {

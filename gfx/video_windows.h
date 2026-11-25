@@ -104,9 +104,10 @@ typedef struct video_window_native
    unsigned kind;
    unsigned generation;
    unsigned dims;
-   /* The renderer's, before each poll: the kind of buffers it draws
-    * into surface, a value of its own, 0 for unknown. The context may
-    * replace a surface that carried another kind. */
+   /* The renderer's or its context's, before each poll: the kind of
+    * buffers drawn into surface, 0 for unknown. Kinds are compared
+    * across renderers, so each keeps to values no other gives. The
+    * context may replace a surface that carried another kind. */
    unsigned buffers;
    /* The display's peak luminance in nits, 0 where it reports none */
    float peak_nits;

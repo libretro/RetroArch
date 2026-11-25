@@ -102,14 +102,28 @@ static bool android_gfx_ctx_window_bind_gl(void *owner,
          (EGLSurface)state->gl_surface, made);
 }
 
+/* A window's buffers (video_window_native_t), by the format its EGL
+ * surface is made in: a multiple of 8, as Vulkan's never are, and
+ * never 0 */
+static unsigned android_gfx_ctx_window_buffers(const android_ctx_data_t *and)
+{
+   return (((unsigned)and->format & 0xffffff) + 1) * 8;
+}
+
 /* A window whose surface Java took back loses its EGL surface now,
  * not when the window goes */
 static unsigned android_gfx_ctx_window_poll(void *owner,
       video_window_event_t *events, unsigned capacity)
 {
-   unsigned i;
+   unsigned i, count;
    android_ctx_data_t *and = (android_ctx_data_t*)owner;
-   unsigned count          = android_windows_poll(owner, events, capacity);
+   for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
+   {
+      android_window_t *state = android_windows_find(owner, i);
+      if (state)
+         state->common.native->buffers = android_gfx_ctx_window_buffers(and);
+   }
+   count = android_windows_poll(owner, events, capacity);
    for (i = 1; i < RETRO_VIDEO_VIEWS_MAX; i++)
    {
       android_window_t *state = android_windows_find(owner, i);
