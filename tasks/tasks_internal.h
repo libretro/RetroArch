@@ -521,6 +521,26 @@ void *task_push_decompress(
       void *frontend_userdata,
       bool mute);
 
+typedef struct decompress_manifest decompress_manifest_t;
+
+/* Only builds the path "<target_dir>/.<basename of archive_path>.crc": no I/O.
+ * NULL on an empty argument or no memory. */
+decompress_manifest_t *decompress_manifest_new(const char *target_dir,
+      const char *archive_path);
+/* NULL is fine; writes nothing */
+void decompress_manifest_free(decompress_manifest_t *m);
+
+/* True when a line has @name, @size and @crc and path_get_mtime(@path)
+ * now returns the line's mtime, or a value 1 second either side of it. */
+bool decompress_manifest_unchanged(decompress_manifest_t *m, const char *name,
+      const char *path, uint64_t size, uint32_t crc);
+/* The member now being written to @path; it has no line yet. */
+void decompress_manifest_begin(decompress_manifest_t *m, const char *name,
+      const char *path, uint64_t size, uint32_t crc);
+/* @clean: the walk reached its end without an error.  False only when
+ * a write was needed and failed. */
+bool decompress_manifest_save(decompress_manifest_t *m, bool clean);
+
 void task_file_load_handler(retro_task_t *task);
 
 bool take_screenshot(

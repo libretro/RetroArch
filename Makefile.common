@@ -3193,7 +3193,8 @@ endif
 
 ifeq ($(HAVE_COMPRESSION), 1)
    DEFINES += -DHAVE_COMPRESSION
-   OBJ     += tasks/task_decompress.o
+   OBJ     += tasks/task_decompress_manifest.o \
+              tasks/task_decompress.o
 endif
 
 ifeq ($(HAVE_COCOA), 1)

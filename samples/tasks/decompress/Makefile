@@ -1,6 +1,8 @@
 include ../../sample_objdir.mk
 
-TARGETS := archive_name_safety_test decompress_window_test
+MANIFEST_TARGET ?= decompress_manifest_test
+
+TARGETS := archive_name_safety_test decompress_window_test $(MANIFEST_TARGET)
 
 # decompress_window_test compiles the shipping tasks/task_decompress.c
 # against the real unthreaded task queue, the real ZIP backend and the
@@ -35,10 +37,33 @@ WINDOW_SOURCES := decompress_window_test.c \
 
 WINDOW_OBJS := $(call sample_objs,$(WINDOW_SOURCES:.c=.o))
 
+# decompress_manifest_test calls tasks/task_decompress_manifest.c
+# directly.  It needs no zlib, no task queue and no threads, so it is
+# the one that also builds with mingw-w64 (MANIFEST_TARGET names the
+# .exe).  Its objects are built without the window test's defines and
+# so carry a suffix of their own.
+MANIFEST_SOURCES := decompress_manifest_test.c \
+           $(REPO_ROOT)/tasks/task_decompress_manifest.c \
+           $(LIBRETRO_COMM_DIR)/file/file_path.c \
+           $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
+           $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+           $(LIBRETRO_COMM_DIR)/string/rstrtod.c \
+           $(LIBRETRO_COMM_DIR)/string/stdstring.c \
+           $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+           $(LIBRETRO_COMM_DIR)/time/rtime.c \
+           $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
+           $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+           $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
+           $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c
+
+MANIFEST_OBJS := $(call sample_objs,$(MANIFEST_SOURCES:.c=.manifest.o))
+
 CFLAGS += -Wall -pedantic -std=gnu99 -g1 -O0
 
 WINDOW_CFLAGS := -DHAVE_THREADS -DHAVE_COMPRESSION \
            -DRARCH_INTERNAL \
+           -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT)
+MANIFEST_CFLAGS := -DRARCH_INTERNAL -DHAVE_COMPRESSION \
            -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT)
 # The fixture archive is written with zlib's deflate either way
 WINDOW_LIBS   := -lz
@@ -77,14 +102,25 @@ $(WINDOW_OBJS): %.o: $$(call sample_src,$$*).c
 decompress_window_test: $(WINDOW_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) -Wl,--wrap=retro_vfs_file_write_impl $(WINDOW_LIBS) -lpthread -lm
 
+$(MANIFEST_OBJS): %.manifest.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS) $(MANIFEST_CFLAGS)
+
+$(MANIFEST_TARGET): $(MANIFEST_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 check: all
 	./archive_name_safety_test
 	./decompress_window_test
+	./$(MANIFEST_TARGET)
 
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGETS) archive_name_safety_test.o $(WINDOW_OBJS) \
 	      $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.o
+	rm -f decompress_manifest_test decompress_manifest_test.exe \
+	      $(MANIFEST_OBJS)
 	rm -rf decompress_window_out decompress_window_fixture.zip
+	rm -rf decompress_manifest_out
 
 .PHONY: all check clean
