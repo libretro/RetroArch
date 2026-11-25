@@ -60,6 +60,9 @@ class QDoubleSpinBox;
 class ShaderPass;
 class ShaderParamsDialog;
 
+/* A monochrome XMB asset tinted to the theme's text colour, as the
+ * Settings list and the Shortcuts dock draw them. */
+QIcon qt_monochrome_icon(const QString &path);
 QIcon qt_settings_category_icon(const QString &iconName);
 
 #ifdef HAVE_MENU

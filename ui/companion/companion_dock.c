@@ -69,13 +69,17 @@ void companion_dock_default(companion_dock_layout_t *l)
    for (i = 0; i < COMPANION_DOCK_COUNT; i++)
       l->shown[i] = true;
 
-   /* Left: Search, Playlists, Core. */
-   for (i = COMPANION_DOCK_SEARCH; i <= COMPANION_DOCK_CORE; i++)
+   /* Left: Search, Shortcuts, Playlists, Core. */
    {
-      s = &l->slots[COMPANION_DOCK_LEFT][l->nslots[COMPANION_DOCK_LEFT]++];
-      s->members[0] = (unsigned char)i;
-      s->n          = 1;
-      l->area[i]    = COMPANION_DOCK_LEFT;
+      static const unsigned char left[] = { COMPANION_DOCK_SEARCH,
+         COMPANION_DOCK_SHORTCUTS, COMPANION_DOCK_PLAYLISTS, COMPANION_DOCK_CORE };
+      for (i = 0; i < (int)ARRAY_SIZE(left); i++)
+      {
+         s = &l->slots[COMPANION_DOCK_LEFT][l->nslots[COMPANION_DOCK_LEFT]++];
+         s->members[0]   = left[i];
+         s->n            = 1;
+         l->area[left[i]] = COMPANION_DOCK_LEFT;
+      }
    }
    /* Right: the four thumbnail panes tabbed (Boxart raised), Core Info. */
    s = &l->slots[COMPANION_DOCK_RIGHT][l->nslots[COMPANION_DOCK_RIGHT]++];
@@ -539,7 +543,8 @@ void companion_dock_layout(companion_dock_layout_t *l,
       int member[COMPANION_DOCK_COUNT];
       int size[COMPANION_DOCK_COUNT];
       int minsz[COMPANION_DOCK_COUNT];
-      int nvis = 0, along, avail, sum, pos;
+      bool fixed[COMPANION_DOCK_COUNT];
+      int nvis = 0, along, avail, sum, fixed_sum = 0, pos;
       int side_x, side_y, side_w, side_h;
       bool vertical = dock_side_vertical(side);
       if (!side_ext[side])
@@ -554,7 +559,14 @@ void companion_dock_layout(companion_dock_layout_t *l,
             continue;
          vis[nvis]    = i;
          member[nvis] = mm;
-         size[nvis]   = s->size > 0 ? s->size : m->def_slot;
+         /* An unsized Shortcuts slot keeps its one button row however
+          * tall the side is; every other slot shares the room. */
+         fixed[nvis]  = s->size <= 0 && m->def_shortcuts > 0
+            && s->members[mm] == COMPANION_DOCK_SHORTCUTS;
+         size[nvis]   = s->size > 0 ? s->size
+            : fixed[nvis] ? m->def_shortcuts : m->def_slot;
+         if (fixed[nvis])
+            fixed_sum += size[nvis];
          minsz[nvis]  = m->min_pane + m->strip_h
             + (dock_slot_shown(l, s) > 1 ? m->tab_h : 0);
          nvis++;
@@ -565,12 +577,14 @@ void companion_dock_layout(companion_dock_layout_t *l,
       if (avail < 0) avail = 0;
       sum = 0;
       for (k = 0; k < nvis; k++)
-         sum += size[k];
+         if (!fixed[k])
+            sum += size[k];
       /* Scale the preferences to the room, then keep every slot at
        * its minimum, the last one taking up the difference. */
-      if (sum > 0)
+      if (sum > 0 && avail > fixed_sum)
          for (k = 0; k < nvis; k++)
-            size[k] = (int)((long)size[k] * avail / sum);
+            if (!fixed[k])
+               size[k] = (int)((long)size[k] * (avail - fixed_sum) / sum);
       sum = 0;
       for (k = 0; k < nvis; k++)
       {

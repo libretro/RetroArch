@@ -591,12 +591,12 @@ public slots:
    void resetShortcutDockSize();
    void finishShortcutDockDefaultSize();
    void saveShortcutButtonOrder();
+   void relayoutShortcutButtons();
    void onDockShortcutContextMenu(const QPoint &pos);
    void onShortcutScrollLeft();
    void onShortcutScrollRight();
 #ifdef HAVE_MENU
    void onPinSettingsShortcut(const QString &id);
-   void onSettingsShortcutContextMenu(const QPoint &pos);
 #endif
    void onShowHiddenDockWidgetAction();
    void setCoreActions();
@@ -747,6 +747,12 @@ private:
    QLineEdit *m_searchLineEdit;
    QTimer *m_searchDebounceTimer;
    QDockWidget *m_searchDock;
+   QToolButton *addShortcutButton(const QString &key, const QIcon &icon,
+         const QString &tip);
+   QToolButton *addBuiltinShortcutButton(size_t i);
+#ifdef HAVE_MENU
+   QToolButton *addPinnedShortcutButton(const QString &id);
+#endif
    QDockWidget *m_shortcutsDock;
    QWidget *m_shortcutsWidget;
    QScrollArea *m_shortcutsScrollArea;
@@ -756,9 +762,6 @@ private:
    QHBoxLayout *m_shortcutsContainerLayout;
    QGridLayout *m_shortcutsLayout;
    QList<QToolButton*> m_shortcutButtons;
-   QList<QToolButton*> m_dockShortcutButtons;
-   QStringList m_pinnedShortcutIds;
-   QStringList m_removedDockShortcutIds;
    bool m_shortcutsDefaultOneRow;
    QPoint m_shortcutDragStart;
    QStringList m_playlistFiles;

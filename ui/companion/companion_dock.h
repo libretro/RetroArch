@@ -60,8 +60,8 @@ typedef struct companion_dock_layout
    bool shown[COMPANION_DOCK_COUNT];
 } companion_dock_layout_t;
 
-/* The Qt companion's default layout: Search, Playlists and Core down
- * the left, the four thumbnail panes tabbed together (Boxart raised)
+/* The Qt companion's default layout: Search, Shortcuts, Playlists and
+ * Core down the left, the four thumbnail panes tabbed together (Boxart raised)
  * above Core Info on the right, the Log hidden along the bottom. */
 void companion_dock_default(companion_dock_layout_t *l);
 
@@ -116,6 +116,8 @@ typedef struct companion_dock_metrics
    int def_side;   /* the left and right sides' default width */
    int def_bar;    /* the top and bottom sides' default height */
    int def_slot;   /* a slot's default size when 0 (shared equally when all are 0) */
+   int def_shortcuts; /* the Shortcuts slot's default (strip + one button
+                         row); 0 = def_slot */
 } companion_dock_metrics_t;
 
 /* One draggable gap: between two slots of a side (@index is the slot

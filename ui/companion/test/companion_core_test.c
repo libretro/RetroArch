@@ -1817,7 +1817,106 @@ static void test_dock_rows(void)
          "negative order becomes 0");
    CHECK(strcmp(companion_dock_key(COMPANION_DOCK_CORE_INFO), "core_info") == 0
          && strcmp(companion_dock_key(COMPANION_DOCK_LOG), "log") == 0
+         && strcmp(companion_dock_key(COMPANION_DOCK_SHORTCUTS), "shortcuts") == 0
          && companion_dock_key(COMPANION_DOCK_COUNT)[0] == '\0', "dock keys");
+
+   /* Shortcuts: one per window and per dock but itself, keys unique;
+    * the order row wins, unknown and foreign tokens are skipped, keys
+    * missing from it follow in table order. */
+   {
+      settings_t   *st = config_get_ptr();
+      unsigned char ord[COMPANION_SHORTCUT_COUNT];
+      char          list[32];
+      bool          ok = true, dock_seen[COMPANION_DOCK_COUNT];
+      size_t        a, b;
+      memset(dock_seen, 0, sizeof(dock_seen));
+      for (a = 0; a < COMPANION_SHORTCUT_COUNT; a++)
+      {
+         const companion_shortcut_t *sc = companion_shortcut_get(a);
+         if (sc->kind == COMPANION_SHORTCUT_DOCK)
+         {
+            ok = ok && sc->target != COMPANION_DOCK_SHORTCUTS && !dock_seen[sc->target];
+            dock_seen[sc->target] = true;
+         }
+         for (b = a + 1; b < COMPANION_SHORTCUT_COUNT; b++)
+            ok = ok && strcmp(sc->key, companion_shortcut_get(b)->key) != 0;
+      }
+      CHECK(ok && !companion_shortcut_get(COMPANION_SHORTCUT_COUNT),
+            "shortcuts: every dock once, unique keys");
+
+      strlcpy(st->arrays.desktop_menu_shortcuts_order,
+            "log,settings:video.0.1,bogus,core_options",
+            sizeof(st->arrays.desktop_menu_shortcuts_order));
+      companion_shortcuts_order(st, ord);
+      CHECK(strcmp(companion_shortcut_get(ord[0])->key, "log") == 0
+            && strcmp(companion_shortcut_get(ord[1])->key, "core_options") == 0
+            && strcmp(companion_shortcut_get(ord[2])->key, "controls") == 0
+            && strcmp(companion_shortcut_get(ord[COMPANION_SHORTCUT_COUNT - 1])->key,
+               "core_info") == 0,
+            "shortcuts: saved order first, the rest in table order");
+      st->arrays.desktop_menu_shortcuts_order[0] = '\0';
+      companion_shortcuts_order(st, ord);
+      for (a = 0, ok = true; a < COMPANION_SHORTCUT_COUNT; a++)
+         ok = ok && ord[a] == a;
+      CHECK(ok, "shortcuts: no order row is table order");
+
+      list[0] = '\0';
+      CHECK(companion_list_add(list, sizeof(list), "log")
+            && companion_list_add(list, sizeof(list), "core")
+            && companion_list_add(list, sizeof(list), "log")
+            && strcmp(list, "log,core") == 0
+            && companion_list_index(list, "core") == 1
+            && companion_list_index(list, "cor") == -1
+            && companion_list_index(list, "lo") == -1,
+            "list: add is idempotent, index matches whole tokens");
+      CHECK(!companion_list_add(list, sizeof(list), "a,b")
+            && !companion_list_add(list, 10, "search"),
+            "list: refuses commas and what does not fit");
+      companion_list_add(list, sizeof(list), "search");
+      companion_list_remove(list, "core");
+      CHECK(strcmp(list, "log,search") == 0, "list: remove from the middle");
+      companion_list_remove(list, "search");
+      CHECK(strcmp(list, "log") == 0, "list: remove the last token");
+      companion_list_remove(list, "log");
+      CHECK(list[0] == '\0', "list: remove the only token");
+
+      {
+         static const char * const mine[3] = { "core_options", "log", "controls" };
+         char row[64];
+         strlcpy(row, "log,settings:video.0.1,core_options", sizeof(row));
+         companion_list_merge_order(row, sizeof(row), mine, 3);
+         CHECK(strcmp(row, "core_options,settings:video.0.1,log,controls") == 0,
+               "list: a save keeps another backend's tokens in place (%s)", row);
+      }
+
+      strlcpy(st->arrays.desktop_menu_shortcuts_removed, "boxart",
+            sizeof(st->arrays.desktop_menu_shortcuts_removed));
+      for (a = 0, ok = true; a < COMPANION_SHORTCUT_COUNT; a++)
+         ok = ok && companion_shortcut_removed(st, a)
+            == (strcmp(companion_shortcut_get(a)->key, "boxart") == 0);
+      CHECK(ok, "shortcuts: removed row");
+      st->arrays.desktop_menu_shortcuts_removed[0] = '\0';
+   }
+
+   /* Utility window rows: x,y,w,h; negative positions survive (a
+    * monitor left of the primary), zero or junk sizes do not parse. */
+   {
+      companion_rect_t r;
+      char row[48];
+      CHECK(companion_window_row_parse("-1600,-20,640,480", &r)
+            && VIDEO_POS_X(r.pos) == -1600 && VIDEO_POS_Y(r.pos) == -20
+            && VIDEO_SCALE_W(r.dims) == 640 && VIDEO_SCALE_H(r.dims) == 480,
+            "window row: negative position");
+      companion_window_row_format(row, sizeof(row), &r);
+      CHECK(strcmp(row, "-1600,-20,640,480") == 0, "window row: round trip (%s)", row);
+      CHECK(!companion_window_row_parse("", &r)
+            && !companion_window_row_parse("10,10,0,480", &r)
+            && !companion_window_row_parse("10,10,640", &r)
+            && !companion_window_row_parse("10,10,640,480,1", &r)
+            && !companion_window_row_parse("10,x,640,480", &r)
+            && !companion_window_row_parse("40000,0,640,480", &r),
+            "window row: junk refused");
+   }
 
    /* The first shipped format (area,shown,size[,tab]) still parses:
     * size is the width, everything else defaults. */
@@ -1902,14 +2001,16 @@ static void test_dock_model(void)
    int idx, i;
 
    m.gap = 5; m.strip_h = 20; m.tab_h = 22; m.min_pane = 60;
-   m.def_side = 280; m.def_bar = 150; m.def_slot = 200;
+   m.def_side = 280; m.def_bar = 150; m.def_slot = 200; m.def_shortcuts = 0;
    client.pos  = VIDEO_POS_PACK(0, 0);
    client.dims = VIDEO_SCALE_PACK(1280, 720);
 
-   /* The default is Qt's: three left, a four-tab group above Core Info
+   /* The default is Qt's: four left, a four-tab group above Core Info
     * on the right, the log hidden below. */
    companion_dock_default(&l);
-   CHECK(l.nslots[COMPANION_DOCK_LEFT] == 3 && l.nslots[COMPANION_DOCK_RIGHT] == 2
+   CHECK(l.nslots[COMPANION_DOCK_LEFT] == 4
+         && l.slots[COMPANION_DOCK_LEFT][1].members[0] == COMPANION_DOCK_SHORTCUTS
+         && l.nslots[COMPANION_DOCK_RIGHT] == 2
          && l.nslots[COMPANION_DOCK_BOTTOM] == 1 && !l.shown[COMPANION_DOCK_LOG]
          && l.slots[COMPANION_DOCK_RIGHT][0].n == 4
          && companion_dock_raised(&l, COMPANION_DOCK_TITLE) == COMPANION_DOCK_BOXART,
@@ -1931,7 +2032,7 @@ static void test_dock_model(void)
          "dock: the last slot reaches the bottom (%d)", RY(g.pane[COMPANION_DOCK_CORE_INFO]) + RH(g.pane[COMPANION_DOCK_CORE_INFO]));
    CHECK(l.slots[COMPANION_DOCK_RIGHT][0].size + l.slots[COMPANION_DOCK_RIGHT][1].size + 5 == 720,
          "dock: sizes written back (%d + %d)", l.slots[COMPANION_DOCK_RIGHT][0].size, l.slots[COMPANION_DOCK_RIGHT][1].size);
-   CHECK(g.ngaps == 2 + 2 + 1, "dock: two side gaps, two between the left slots, one on the right (%d)", g.ngaps);
+   CHECK(g.ngaps == 2 + 3 + 1, "dock: two side gaps, three between the left slots, one on the right (%d)", g.ngaps);
 
    /* Hit testing: the strip, a tab, a gap. */
    companion_dock_hit_test(&l, &g, &m, RX(g.strip[COMPANION_DOCK_BOXART]) + 4, RY(g.strip[COMPANION_DOCK_BOXART]) + 4, &hit);
@@ -2047,14 +2148,14 @@ static void test_dock_model(void)
    companion_dock_raise(&l, COMPANION_DOCK_CORE_INFO);
    CHECK(companion_dock_raised(&l, COMPANION_DOCK_LOG) == COMPANION_DOCK_CORE_INFO, "dock: raise");
    companion_dock_place(&l, COMPANION_DOCK_CORE_INFO, COMPANION_DOCK_LEFT, 99);
-   CHECK(!companion_dock_is_tabbed(&l, COMPANION_DOCK_LOG) && dock_slot_of(&l, COMPANION_DOCK_CORE_INFO) == 3
+   CHECK(!companion_dock_is_tabbed(&l, COMPANION_DOCK_LOG) && dock_slot_of(&l, COMPANION_DOCK_CORE_INFO) == 4
          && companion_dock_find(&l, COMPANION_DOCK_CORE_INFO, &side, &idx) && side == COMPANION_DOCK_LEFT
          && companion_dock_raised(&l, COMPANION_DOCK_LOG) == COMPANION_DOCK_LOG,
          "dock: placed out of the group to the left's end");
    /* Moving a slot down its own side lands where asked. */
-   companion_dock_place(&l, COMPANION_DOCK_SEARCH, COMPANION_DOCK_LEFT, 3);
-   CHECK(dock_slot_of(&l, COMPANION_DOCK_SEARCH) == 2 && dock_slot_of(&l, COMPANION_DOCK_CORE_INFO) == 3
-         && dock_slot_of(&l, COMPANION_DOCK_PLAYLISTS) == 0, "dock: moved down its own side (%d)", dock_slot_of(&l, COMPANION_DOCK_SEARCH));
+   companion_dock_place(&l, COMPANION_DOCK_SEARCH, COMPANION_DOCK_LEFT, 4);
+   CHECK(dock_slot_of(&l, COMPANION_DOCK_SEARCH) == 3 && dock_slot_of(&l, COMPANION_DOCK_CORE_INFO) == 4
+         && dock_slot_of(&l, COMPANION_DOCK_SHORTCUTS) == 0, "dock: moved down its own side (%d)", dock_slot_of(&l, COMPANION_DOCK_SEARCH));
 
    /* A side whose panes are all hidden takes no room. */
    companion_dock_default(&l);
@@ -2067,6 +2168,23 @@ static void test_dock_model(void)
    companion_dock_default(&l);
    companion_dock_layout(&l, &m, &client, &g);
    CHECK(RW(g.content) >= 60 && RH(g.content) >= 60, "dock: tiny client keeps the content (%dx%d)", RW(g.content), RH(g.content));
+   /* An unsized Shortcuts slot keeps the backend's one-row height on
+    * any column height; the rest share what is left. */
+   client.dims = VIDEO_SCALE_PACK(1280, 720);
+   m.def_shortcuts = 90;
+   companion_dock_default(&l);
+   companion_dock_layout(&l, &m, &client, &g);
+   CHECK(RH(g.strip[COMPANION_DOCK_SHORTCUTS]) + RH(g.pane[COMPANION_DOCK_SHORTCUTS]) == 90,
+         "dock: Shortcuts keeps one row at 720 (%d)",
+         RH(g.strip[COMPANION_DOCK_SHORTCUTS]) + RH(g.pane[COMPANION_DOCK_SHORTCUTS]));
+   client.dims = VIDEO_SCALE_PACK(1280, 1400);
+   companion_dock_default(&l);
+   companion_dock_layout(&l, &m, &client, &g);
+   CHECK(RH(g.strip[COMPANION_DOCK_SHORTCUTS]) + RH(g.pane[COMPANION_DOCK_SHORTCUTS]) == 90
+         && RH(g.pane[COMPANION_DOCK_SEARCH]) > 300,
+         "dock: Shortcuts keeps one row at 1400 (%d)",
+         RH(g.strip[COMPANION_DOCK_SHORTCUTS]) + RH(g.pane[COMPANION_DOCK_SHORTCUTS]));
+   m.def_shortcuts = 0;
    settings->bools.desktop_menu_save_dock_positions = false;
 }
 

@@ -58,6 +58,9 @@ desktop_menu_dock_log = "bottom,1,0,150,-,0"
 desktop_menu_dock_screenshot = "right,1,0,420,-,0,0"
 desktop_menu_dock_title = "right,1,0,210,-,0,1"
 desktop_menu_dock_core_info = "float,1,300,200,-,0,100,60"
+desktop_menu_shortcuts_order = "log,settings:bogus.0.0,core_options"
+desktop_menu_shortcuts_removed = "boxart"
+desktop_menu_core_options_window = "-1600,40,500,400"
 EOF
 run_ra
 
@@ -67,7 +70,7 @@ w=$(row desktop_menu_window_width); h=$(row desktop_menu_window_height)
 [ "${h:-0}" -gt 0 ] 2>/dev/null || fail "window height not saved at quit (got '$h')"
 
 # Every dock has a row: seven fields docked, nine (with x,y) floating.
-for d in search playlists core boxart title screenshot logo core_info log; do
+for d in search playlists core boxart title screenshot logo core_info log shortcuts; do
    r=$(row desktop_menu_dock_$d)
    n=$(printf '%s' "$r" | awk -F, '{ print NF }')
    case "$r" in
@@ -118,6 +121,21 @@ for d in logo; do
       *) fail "$d dock lost its boxart tab partner: '$(row desktop_menu_dock_$d)'" ;;
    esac
 done
+
+# Shortcuts: nothing rewrites the order row unasked (a foreign token
+# such as another build's pinned page survives), the removed button
+# stays removed, the default dock layout gave Shortcuts a row, and a
+# window row on a monitor left of the primary is kept as it was.
+[ "$(row desktop_menu_shortcuts_order)" = "log,settings:bogus.0.0,core_options" ] \
+   || fail "shortcut order rewritten at startup: '$(row desktop_menu_shortcuts_order)'"
+[ "$(row desktop_menu_shortcuts_removed)" = boxart ] \
+   || fail "removed shortcuts not kept: '$(row desktop_menu_shortcuts_removed)'"
+case "$(row desktop_menu_dock_shortcuts)" in
+   left,1,*) ;;
+   *) fail "shortcuts dock not on the left by default: '$(row desktop_menu_dock_shortcuts)'" ;;
+esac
+[ "$(row desktop_menu_core_options_window)" = "-1600,40,500,400" ] \
+   || fail "core options window row changed: '$(row desktop_menu_core_options_window)'"
 
 # ---- pass 2: restore what pass 1 saved, then re-save: must be identical ----
 grep '^desktop_menu_' "$CFG" | sort > "$OUT/pass1.rows"

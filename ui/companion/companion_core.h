@@ -702,6 +702,7 @@ enum companion_dock_id
    COMPANION_DOCK_LOGO,
    COMPANION_DOCK_CORE_INFO,
    COMPANION_DOCK_LOG,
+   COMPANION_DOCK_SHORTCUTS,
    COMPANION_DOCK_COUNT
 };
 
@@ -731,6 +732,67 @@ size_t companion_dock_row_format(char *s, size_t len,
  * outside 2..32767 become 0 (default). */
 bool companion_dock_row_parse(const char *s, companion_dock_state_t *st);
 
+/* --- Shortcuts dock --------------------------------------------------
+ *
+ * A strip of icon buttons: one per utility window, and one per dock
+ * that reopens the dock while it is closed (a dock button is hidden
+ * while its dock is open). Every backend builds its strip from this
+ * table, in the order of desktop_menu_shortcuts_order, leaving out
+ * the keys in desktop_menu_shortcuts_removed. Both rows are comma
+ * lists of keys; a backend may add keys of its own to the order row
+ * (Qt's pinned settings pages, "settings:<id>"), which the others
+ * skip. Keys missing from the order row go at the end, in table
+ * order. */
+enum companion_window
+{
+   COMPANION_WINDOW_CORE_OPTIONS = 0,
+   COMPANION_WINDOW_CONTROLS,
+   COMPANION_WINDOW_SHADER_PARAMS,
+   COMPANION_WINDOW_COUNT
+};
+
+enum companion_shortcut_kind
+{
+   COMPANION_SHORTCUT_WINDOW = 0,
+   COMPANION_SHORTCUT_DOCK
+};
+
+typedef struct companion_shortcut
+{
+   const char *key;      /* its token in the order / removed rows */
+   const char *icon;     /* assets/xmb/monochrome/png/<icon>.png */
+   unsigned label;       /* enum msg_hash_enums: tooltip, menu text */
+   unsigned char kind;   /* enum companion_shortcut_kind */
+   unsigned char target; /* enum companion_window or companion_dock_id */
+} companion_shortcut_t;
+
+/* Every window, and every dock but Shortcuts itself. */
+#define COMPANION_SHORTCUT_COUNT (COMPANION_WINDOW_COUNT + COMPANION_DOCK_COUNT - 1)
+
+const companion_shortcut_t *companion_shortcut_get(size_t i);
+/* Shortcut @i's icon file; false when the assets directory is unset. */
+bool companion_shortcut_icon_path(const struct settings *settings,
+      size_t i, char *s, size_t len);
+/* The table in saved order: @out gets COMPANION_SHORTCUT_COUNT
+ * indices. */
+void companion_shortcuts_order(const struct settings *settings,
+      unsigned char *order);
+bool companion_shortcut_removed(const struct settings *settings, size_t i);
+
+/* Comma-list rows. companion_list_index() is the token's position
+ * (-1 when absent); companion_list_add() appends a missing token and
+ * fails when it does not fit; companion_list_remove() drops it. */
+int  companion_list_index(const char *list, const char *token);
+bool companion_list_add(char *list, size_t len, const char *token);
+void companion_list_remove(char *list, const char *token);
+/* Rewrite order row @list as @keys (the @n buttons a backend has, in
+ * its order), keeping every token of the old row that is not among
+ * @keys at its old position: another backend's tokens (Qt's pinned
+ * pages) survive a save from one that does not show them. */
+void companion_list_merge_order(char *list, size_t len,
+      const char * const *keys, size_t n);
+
+
 /* --- Secondary window placement ------------------------------------- */
 
 /* A rectangle in screen coordinates: the top-left corner packed with
@@ -752,6 +814,19 @@ typedef struct companion_rect
 void companion_place_window(const companion_rect_t *avail,
       const companion_rect_t *owner, unsigned need_dims,
       unsigned min_dims, companion_rect_t *out);
+
+/* --- Utility window rows ---------------------------------------------
+ *
+ * Where a utility window was, desktop_menu_<name>_window = "x,y,w,h"
+ * in logical pixels, honoured when desktop_menu_save_geometry is on.
+ * Negative x,y are kept: a monitor left of or above the primary has
+ * them. */
+char *companion_window_row(struct settings *settings,
+      enum companion_window id, size_t *len);
+size_t companion_window_row_format(char *s, size_t len,
+      const companion_rect_t *r);
+/* False when empty, malformed or zero-sized. */
+bool companion_window_row_parse(const char *s, companion_rect_t *r);
 
 /* --- Inbound notifications from RetroArch (called by the driver glue) */
 

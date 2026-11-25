@@ -99,32 +99,39 @@ extern "C" {
 }
 #endif
 
-/* Persist utility-dialog geometry in retroarch.cfg when the desktop menu
- * Remember Window Geometry preference is enabled. */
-static bool qt_dialog_restore_geometry(QDialog *dialog, const char *stored)
+/* Utility window geometry, the shared desktop_menu_*_window rows;
+ * honoured when Remember Window Geometry is on. */
+static bool qt_dialog_restore_geometry(QDialog *dialog, enum companion_window id)
 {
    settings_t *settings = config_get_ptr();
-   int x = 0, y = 0, w = 0, h = 0;
-   if (!settings->bools.desktop_menu_save_geometry || !stored
-         || sscanf(stored, "%d,%d,%d,%d", &x, &y, &w, &h) != 4
-         || w <= 0 || h <= 0 || w > 32767 || h > 32767 || x < 0 || y < 0)
+   companion_rect_t r;
+   size_t len;
+   const char *row = companion_window_row(settings, id, &len);
+   if (     !settings->bools.desktop_menu_save_geometry
+         || !companion_window_row_parse(row, &r))
       return false;
-   dialog->setGeometry(x, y, w, h);
+   dialog->setGeometry(VIDEO_POS_X(r.pos), VIDEO_POS_Y(r.pos),
+         (int)VIDEO_SCALE_W(r.dims), (int)VIDEO_SCALE_H(r.dims));
    return true;
 }
 
-static void qt_dialog_persist_geometry(QDialog *dialog, char *stored, size_t size)
+static void qt_dialog_persist_geometry(QDialog *dialog, enum companion_window id)
 {
+   settings_t *settings = config_get_ptr();
+   companion_rect_t r;
    QRect g;
-   if (!config_get_ptr()->bools.desktop_menu_save_geometry
-         || !dialog->isVisible() || dialog->isMinimized())
+   size_t len;
+   char *row;
+   if (     !settings->bools.desktop_menu_save_geometry
+         || !dialog->isVisible() || dialog->isMinimized()
+         || !(row = companion_window_row(settings, id, &len)))
       return;
    g = dialog->geometry();
    if (g.width() <= 0 || g.height() <= 0)
       return;
-   snprintf(stored, size, "%d,%d,%d,%d",
-         g.x() < 0 ? 0 : g.x(), g.y() < 0 ? 0 : g.y(),
-         g.width(), g.height());
+   r.pos  = VIDEO_POS_PACK(g.x(), g.y());
+   r.dims = VIDEO_SCALE_PACK(g.width(), g.height());
+   companion_window_row_format(row, len, &r);
 }
 
 /* Replace characters unsafe in URLs / file names with '_' */
@@ -2971,8 +2978,13 @@ void CoreInfoDialog::showCoreInfo()
 QIcon qt_settings_category_icon(const QString &iconName)
 {
    settings_t *settings = config_get_ptr();
-   QPixmap pixmap       = QPixmap(QString(settings->paths.directory_assets)
+   return qt_monochrome_icon(QString(settings->paths.directory_assets)
          + "/xmb/monochrome/png/" + iconName + ".png");
+}
+
+QIcon qt_monochrome_icon(const QString &path)
+{
+   QPixmap pixmap       = QPixmap(path);
    QLabel dummyColor;
    QColor color;
 
@@ -3370,7 +3382,7 @@ void ViewOptionsDialog::onCategoryContextMenuRequested(const QPoint &pos)
    if (tabs)
       pageIndex = tabs->currentIndex();
 
-   pinAction = menu.addAction(tr("Pin to Shortcuts"));
+   pinAction = menu.addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHORTCUTS_PIN));
    if (menu.exec(m_optionsList->mapToGlobal(pos)) == pinAction)
       emit pinShortcutRequested(shortcutId(row, pageIndex));
 }
@@ -3825,8 +3837,7 @@ void ControlsDialog::hideEvent(QHideEvent *event)
 
 void ControlsDialog::showEvent(QShowEvent *event)
 {
-   if (qt_dialog_restore_geometry(this,
-            config_get_ptr()->arrays.desktop_menu_controls_window))
+   if (qt_dialog_restore_geometry(this, COMPANION_WINDOW_CONTROLS))
       m_sized = true;
    QDialog::showEvent(event);
 }
@@ -3834,17 +3845,13 @@ void ControlsDialog::showEvent(QShowEvent *event)
 void ControlsDialog::resizeEvent(QResizeEvent *event)
 {
    QDialog::resizeEvent(event);
-   qt_dialog_persist_geometry(this,
-         config_get_ptr()->arrays.desktop_menu_controls_window,
-         sizeof(config_get_ptr()->arrays.desktop_menu_controls_window));
+   qt_dialog_persist_geometry(this, COMPANION_WINDOW_CONTROLS);
 }
 
 void ControlsDialog::moveEvent(QMoveEvent *event)
 {
    QDialog::moveEvent(event);
-   qt_dialog_persist_geometry(this,
-         config_get_ptr()->arrays.desktop_menu_controls_window,
-         sizeof(config_get_ptr()->arrays.desktop_menu_controls_window));
+   qt_dialog_persist_geometry(this, COMPANION_WINDOW_CONTROLS);
 }
 
 /* Coming back from RetroArch's own menu, which may have changed them,
@@ -4620,26 +4627,21 @@ CoreOptionsDialog::~CoreOptionsDialog() { }
 
 void CoreOptionsDialog::showEvent(QShowEvent *event)
 {
-   qt_dialog_restore_geometry(this,
-         config_get_ptr()->arrays.desktop_menu_core_options_window);
+   qt_dialog_restore_geometry(this, COMPANION_WINDOW_CORE_OPTIONS);
    QDialog::showEvent(event);
 }
 
 void CoreOptionsDialog::moveEvent(QMoveEvent *event)
 {
    QDialog::moveEvent(event);
-   qt_dialog_persist_geometry(this,
-         config_get_ptr()->arrays.desktop_menu_core_options_window,
-         sizeof(config_get_ptr()->arrays.desktop_menu_core_options_window));
+   qt_dialog_persist_geometry(this, COMPANION_WINDOW_CORE_OPTIONS);
 }
 
 void CoreOptionsDialog::resizeEvent(QResizeEvent *event)
 {
    QDialog::resizeEvent(event);
 
-   qt_dialog_persist_geometry(this,
-         config_get_ptr()->arrays.desktop_menu_core_options_window,
-         sizeof(config_get_ptr()->arrays.desktop_menu_core_options_window));
+   qt_dialog_persist_geometry(this, COMPANION_WINDOW_CORE_OPTIONS);
 
    if (!m_scrollArea)
       return;
@@ -5051,26 +5053,21 @@ ShaderParamsDialog::~ShaderParamsDialog()
 
 void ShaderParamsDialog::showEvent(QShowEvent *event)
 {
-   qt_dialog_restore_geometry(this,
-         config_get_ptr()->arrays.desktop_menu_shader_params_window);
+   qt_dialog_restore_geometry(this, COMPANION_WINDOW_SHADER_PARAMS);
    QDialog::showEvent(event);
 }
 
 void ShaderParamsDialog::moveEvent(QMoveEvent *event)
 {
    QDialog::moveEvent(event);
-   qt_dialog_persist_geometry(this,
-         config_get_ptr()->arrays.desktop_menu_shader_params_window,
-         sizeof(config_get_ptr()->arrays.desktop_menu_shader_params_window));
+   qt_dialog_persist_geometry(this, COMPANION_WINDOW_SHADER_PARAMS);
 }
 
 void ShaderParamsDialog::resizeEvent(QResizeEvent *event)
 {
    QDialog::resizeEvent(event);
 
-   qt_dialog_persist_geometry(this,
-         config_get_ptr()->arrays.desktop_menu_shader_params_window,
-         sizeof(config_get_ptr()->arrays.desktop_menu_shader_params_window));
+   qt_dialog_persist_geometry(this, COMPANION_WINDOW_SHADER_PARAMS);
 
    if (!m_scrollArea)
       return;

@@ -31833,6 +31833,22 @@ MSG_HASH(
    "Log"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SHORTCUTS,
+   "Shortcuts"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SHORTCUTS_REMOVE,
+   "Remove from Shortcuts"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SHORTCUTS_ADD,
+   "Add to Shortcuts"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_QT_SHORTCUTS_PIN,
+   "Pin to Shortcuts"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT,
    "%1 items"
    )

@@ -2022,10 +2022,10 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("desktop_menu_dock_logo",       settings->arrays.desktop_menu_dock_logo, false, NULL, true);
    SETTING_ARRAY("desktop_menu_dock_core_info",  settings->arrays.desktop_menu_dock_core_info, false, NULL, true);
    SETTING_ARRAY("desktop_menu_dock_log",        settings->arrays.desktop_menu_dock_log, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_dock_shortcuts",  settings->arrays.desktop_menu_dock_shortcuts, false, NULL, true);
    SETTING_ARRAY("desktop_menu_shortcuts_order", settings->arrays.desktop_menu_shortcuts_order, false, NULL, true);
-   SETTING_ARRAY("desktop_menu_shortcuts_pins", settings->arrays.desktop_menu_shortcuts_pins, false, NULL, true);
-   SETTING_ARRAY("desktop_menu_shortcuts_hidden_docks", settings->arrays.desktop_menu_shortcuts_hidden_docks, false, NULL, true);
-   SETTING_ARRAY("desktop_menu_dock_shortcuts", settings->arrays.desktop_menu_dock_shortcuts, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_shortcuts_removed", settings->arrays.desktop_menu_shortcuts_removed, false, NULL, true);
+   SETTING_ARRAY("desktop_menu_shortcuts_pins",  settings->arrays.desktop_menu_shortcuts_pins, false, NULL, true);
    SETTING_ARRAY("desktop_menu_core_options_window", settings->arrays.desktop_menu_core_options_window, false, NULL, true);
    SETTING_ARRAY("desktop_menu_shader_params_window", settings->arrays.desktop_menu_shader_params_window, false, NULL, true);
    SETTING_ARRAY("desktop_menu_controls_window", settings->arrays.desktop_menu_controls_window, false, NULL, true);

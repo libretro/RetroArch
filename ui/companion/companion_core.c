@@ -3936,7 +3936,7 @@ static const char * const companion_dock_area_names[] = {
 
 static const char * const companion_dock_key_names[COMPANION_DOCK_COUNT] = {
    "search", "playlists", "core", "boxart", "title", "screenshot",
-   "logo", "core_info", "log"
+   "logo", "core_info", "log", "shortcuts"
 };
 
 const char *companion_dock_key(enum companion_dock_id id)
@@ -3963,6 +3963,7 @@ char *companion_dock_row(struct settings *settings,
       case COMPANION_DOCK_LOGO:       return settings->arrays.desktop_menu_dock_logo;
       case COMPANION_DOCK_CORE_INFO:  return settings->arrays.desktop_menu_dock_core_info;
       case COMPANION_DOCK_LOG:        return settings->arrays.desktop_menu_dock_log;
+      case COMPANION_DOCK_SHORTCUTS:  return settings->arrays.desktop_menu_dock_shortcuts;
       default:                        break;
    }
    return NULL;
@@ -3988,6 +3989,184 @@ size_t companion_dock_row_format(char *s, size_t len,
             VIDEO_POS_X(st->pos) < 0 ? 0 : VIDEO_POS_X(st->pos),
             VIDEO_POS_Y(st->pos) < 0 ? 0 : VIDEO_POS_Y(st->pos));
    return n;
+}
+
+/* --- Shortcuts --------------------------------------------------------- */
+
+/* Windows first, then the docks in the order Qt's View menu lists
+ * them. */
+static const companion_shortcut_t companion_shortcuts[COMPANION_SHORTCUT_COUNT] = {
+   { "core_options",  "core-options",                 MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
+      COMPANION_SHORTCUT_WINDOW, COMPANION_WINDOW_CORE_OPTIONS },
+   { "controls",      "core-input-remapping-options", MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
+      COMPANION_SHORTCUT_WINDOW, COMPANION_WINDOW_CONTROLS },
+   { "shader_params", "core-shader-options",          MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS,
+      COMPANION_SHORTCUT_WINDOW, COMPANION_WINDOW_SHADER_PARAMS },
+   { "playlists",     "menu_ui",                      MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
+      COMPANION_SHORTCUT_DOCK, COMPANION_DOCK_PLAYLISTS },
+   { "search",        "explore-content",              MENU_ENUM_LABEL_VALUE_SEARCH,
+      COMPANION_SHORTCUT_DOCK, COMPANION_DOCK_SEARCH },
+   { "core",          "menu_help",                    MENU_ENUM_LABEL_VALUE_QT_CORE,
+      COMPANION_SHORTCUT_DOCK, COMPANION_DOCK_CORE },
+   { "screenshot",    "image",                        MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
+      COMPANION_SHORTCUT_DOCK, COMPANION_DOCK_SCREENSHOT },
+   { "boxart",        "image",                        MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
+      COMPANION_SHORTCUT_DOCK, COMPANION_DOCK_BOXART },
+   { "title",         "image",                        MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+      COMPANION_SHORTCUT_DOCK, COMPANION_DOCK_TITLE },
+   { "logo",          "image",                        MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
+      COMPANION_SHORTCUT_DOCK, COMPANION_DOCK_LOGO },
+   { "core_info",     "core-infos",                   MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
+      COMPANION_SHORTCUT_DOCK, COMPANION_DOCK_CORE_INFO },
+   { "log",           "menu_log",                     MENU_ENUM_LABEL_VALUE_QT_LOG,
+      COMPANION_SHORTCUT_DOCK, COMPANION_DOCK_LOG }
+};
+
+const companion_shortcut_t *companion_shortcut_get(size_t i)
+{
+   if (i >= COMPANION_SHORTCUT_COUNT)
+      return NULL;
+   return &companion_shortcuts[i];
+}
+
+bool companion_shortcut_icon_path(const struct settings *settings,
+      size_t i, char *s, size_t len)
+{
+   char dir[PATH_MAX_LENGTH];
+   if (     !settings || i >= COMPANION_SHORTCUT_COUNT
+         || string_is_empty(settings->paths.directory_assets))
+      return false;
+   fill_pathname_join_special(dir, settings->paths.directory_assets,
+         "xmb" PATH_DEFAULT_SLASH() "monochrome" PATH_DEFAULT_SLASH() "png",
+         sizeof(dir));
+   fill_pathname_join_special(s, dir, companion_shortcuts[i].icon, len);
+   strlcat(s, ".png", len);
+   return true;
+}
+
+int companion_list_index(const char *list, const char *token)
+{
+   size_t tlen;
+   int    idx = 0;
+   if (string_is_empty(list) || string_is_empty(token))
+      return -1;
+   tlen = strlen(token);
+   while (*list)
+   {
+      const char *end = strchr(list, ',');
+      size_t      n   = end ? (size_t)(end - list) : strlen(list);
+      if (n == tlen && !strncmp(list, token, n))
+         return idx;
+      if (!end)
+         break;
+      list = end + 1;
+      idx++;
+   }
+   return -1;
+}
+
+bool companion_list_add(char *list, size_t len, const char *token)
+{
+   size_t used, tlen;
+   if (!list || string_is_empty(token) || strchr(token, ','))
+      return false;
+   if (companion_list_index(list, token) >= 0)
+      return true;
+   used = strlen(list);
+   tlen = strlen(token);
+   if (used + (used ? 1 : 0) + tlen + 1 > len)
+      return false;
+   if (used)
+      list[used++] = ',';
+   memcpy(list + used, token, tlen + 1);
+   return true;
+}
+
+void companion_list_remove(char *list, const char *token)
+{
+   char  *p;
+   size_t tlen;
+   int    idx;
+   if (!list || (idx = companion_list_index(list, token)) < 0)
+      return;
+   tlen = strlen(token);
+   p    = list;
+   while (idx-- > 0)
+      p = strchr(p, ',') + 1;
+   if (p[tlen] == ',')
+      memmove(p, p + tlen + 1, strlen(p + tlen + 1) + 1);
+   else if (p > list)
+      p[-1] = '\0';   /* the last token: drop its leading comma too */
+   else
+      *p    = '\0';
+}
+
+void companion_list_merge_order(char *list, size_t len,
+      const char * const *keys, size_t n)
+{
+   char        out[1024];
+   const char *p = list;
+   size_t      k = 0;
+   if (!list || !len)
+      return;
+   out[0] = '\0';
+   /* Walk the old row: a foreign token stays in its slot, a slot of
+    * ours takes our next key; our keys left over go at the end. */
+   while (p && *p)
+   {
+      const char *end = strchr(p, ',');
+      size_t      tl  = end ? (size_t)(end - p) : strlen(p);
+      char        tok[128];
+      size_t      j;
+      bool        ours = false;
+      if (tl && tl < sizeof(tok))
+      {
+         memcpy(tok, p, tl);
+         tok[tl] = '\0';
+         for (j = 0; j < n && !ours; j++)
+            ours = keys[j] && string_is_equal(keys[j], tok);
+         if (!ours)
+            companion_list_add(out, sizeof(out), tok);
+         else if (k < n)
+            companion_list_add(out, sizeof(out), keys[k++]);
+      }
+      p = end ? end + 1 : NULL;
+   }
+   while (k < n)
+      companion_list_add(out, sizeof(out), keys[k++]);
+   strlcpy(list, out, len);
+}
+
+bool companion_shortcut_removed(const struct settings *settings, size_t i)
+{
+   if (!settings || i >= COMPANION_SHORTCUT_COUNT)
+      return false;
+   return companion_list_index(settings->arrays.desktop_menu_shortcuts_removed,
+         companion_shortcuts[i].key) >= 0;
+}
+
+void companion_shortcuts_order(const struct settings *settings,
+      unsigned char *out)
+{
+   int    pos[COMPANION_SHORTCUT_COUNT];
+   size_t i, j, n = 0;
+   for (i = 0; i < COMPANION_SHORTCUT_COUNT; i++)
+      pos[i] = settings ? companion_list_index(
+            settings->arrays.desktop_menu_shortcuts_order,
+            companion_shortcuts[i].key) : -1;
+   /* Saved keys by their position; insertion into a dozen slots. */
+   for (i = 0; i < COMPANION_SHORTCUT_COUNT; i++)
+   {
+      if (pos[i] < 0)
+         continue;
+      for (j = n; j > 0 && pos[out[j - 1]] > pos[i]; j--)
+         out[j] = out[j - 1];
+      out[j] = (unsigned char)i;
+      n++;
+   }
+   for (i = 0; i < COMPANION_SHORTCUT_COUNT; i++)
+      if (pos[i] < 0)
+         out[n++] = (unsigned char)i;
 }
 
 bool companion_dock_row_parse(const char *s, companion_dock_state_t *st)
@@ -4099,6 +4278,60 @@ void companion_place_window(const companion_rect_t *avail,
    if (y < avail_y + margin) y = avail_y + margin;
    out->pos  = VIDEO_POS_PACK(x, y);
    out->dims = VIDEO_SCALE_PACK(w, h);
+}
+
+/* --- Utility window rows ------------------------------------------------ */
+
+char *companion_window_row(struct settings *settings,
+      enum companion_window id, size_t *len)
+{
+   if (!settings)
+      return NULL;
+   switch (id)
+   {
+      case COMPANION_WINDOW_CORE_OPTIONS:
+         *len = sizeof(settings->arrays.desktop_menu_core_options_window);
+         return settings->arrays.desktop_menu_core_options_window;
+      case COMPANION_WINDOW_CONTROLS:
+         *len = sizeof(settings->arrays.desktop_menu_controls_window);
+         return settings->arrays.desktop_menu_controls_window;
+      case COMPANION_WINDOW_SHADER_PARAMS:
+         *len = sizeof(settings->arrays.desktop_menu_shader_params_window);
+         return settings->arrays.desktop_menu_shader_params_window;
+      default:
+         break;
+   }
+   return NULL;
+}
+
+size_t companion_window_row_format(char *s, size_t len,
+      const companion_rect_t *r)
+{
+   return (size_t)snprintf(s, len, "%d,%d,%u,%u",
+         VIDEO_POS_X(r->pos), VIDEO_POS_Y(r->pos),
+         VIDEO_SCALE_W(r->dims), VIDEO_SCALE_H(r->dims));
+}
+
+bool companion_window_row_parse(const char *s, companion_rect_t *r)
+{
+   long v[4];
+   int  i;
+   char *end;
+   if (string_is_empty(s))
+      return false;
+   for (i = 0; i < 4; i++)
+   {
+      v[i] = strtol(s, &end, 10);
+      if (end == s || (i < 3 ? *end != ',' : *end != '\0'))
+         return false;
+      s = end + 1;
+   }
+   if (     v[0] < -32768 || v[0] > 32767 || v[1] < -32768 || v[1] > 32767
+         || v[2] <= 0     || v[2] > 32767 || v[3] <= 0     || v[3] > 32767)
+      return false;
+   r->pos  = VIDEO_POS_PACK((int)v[0], (int)v[1]);
+   r->dims = VIDEO_SCALE_PACK((unsigned)v[2], (unsigned)v[3]);
+   return true;
 }
 
 void companion_core_notify_refresh(companion_core_t *core)

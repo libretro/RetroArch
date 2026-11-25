@@ -1415,15 +1415,14 @@ typedef struct settings
       char desktop_menu_dock_logo[64];
       char desktop_menu_dock_core_info[64];
       char desktop_menu_dock_log[64];
-      /* Stable order of Qt Shortcuts buttons, comma-separated object names. */
+      /* The Shortcuts dock (ui/companion/companion_core.h): button
+       * order and removed built-ins as comma lists of keys, Qt's
+       * pinned Settings pages as "category.duplicate.page" ids. */
       char desktop_menu_shortcuts_order[1024];
-      /* Pinned Qt Settings shortcuts: category-icon.duplicate.page IDs. */
+      char desktop_menu_shortcuts_removed[256];
       char desktop_menu_shortcuts_pins[2048];
-      /* Qt dock shortcut buttons explicitly removed by the user. */
-      char desktop_menu_shortcuts_hidden_docks[512];
-      /* Qt Shortcuts dock placement, same row format as companion docks. */
       char desktop_menu_dock_shortcuts[64];
-      /* Qt utility-dialog geometry: x,y,w,h. */
+      /* Utility windows, "x,y,w,h" (companion_window_row()). */
       char desktop_menu_core_options_window[48];
       char desktop_menu_shader_params_window[48];
       char desktop_menu_controls_window[48];
