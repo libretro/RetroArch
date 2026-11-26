@@ -1,5 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include <stdio.h>
+#include "../../../gfx/common/vulkan_h264_reference.h"
 #include "../../../gfx/common/vulkan_video_caps.h"
 
 static unsigned failures;
@@ -101,9 +102,42 @@ static void test_families(void)
 
 }
 
+static void test_h264_reference_wrap(void)
+{
+   unsigned bits, current, reference;
+   CHECK(vulkan_h264_reference_wrap_driver(0x10de, 0x2b85,
+            (617u << 22) | (42u << 14)));
+   CHECK(!vulkan_h264_reference_wrap_driver(0x1002, 0x2b85,
+            (617u << 22) | (42u << 14)));
+   CHECK(!vulkan_h264_reference_wrap_driver(0x10de, 0x2b84,
+            (617u << 22) | (42u << 14)));
+   CHECK(!vulkan_h264_reference_wrap_driver(0x10de, 0x2b85,
+            (617u << 22) | (43u << 14)));
+   for (bits = 4; bits <= 16; bits++)
+      for (current = 0; current < 16; current++)
+         for (reference = 0; reference < 16; reference++)
+         {
+            unsigned frame = (1u << bits) - 16 + reference;
+            uint16_t expected = (uint16_t)(frame > current
+                  ? (int)frame - (1 << bits) : (int)frame);
+            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 2,
+                     false, true) == expected);
+            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 2,
+                     true, true) == frame);
+            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 2,
+                     false, false) == frame);
+            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 0,
+                     false, true) == frame);
+            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 1,
+                     false, true) == frame);
+         }
+   CHECK(vulkan_h264_reference_frame_num(15, 0, 3, 2, false, true) == 15);
+   CHECK(vulkan_h264_reference_frame_num(15, 0, 17, 2, false, true) == 15);
+}
+
 int main(void)
 {
-   test_extensions(); test_families();
+   test_extensions(); test_families(); test_h264_reference_wrap();
    printf("Vulkan video codec negotiation: %u failures\n", failures);
    return failures ? 1 : 0;
 }

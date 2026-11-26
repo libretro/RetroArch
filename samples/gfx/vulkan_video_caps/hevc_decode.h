@@ -398,13 +398,15 @@ static int h264_driver_admission(vulkan_context_t *ctx)
    static const struct
    {
       uint32_t vendor, device, driver;
-      int h264, av1;
+      int h264, av1, wrap;
    } cases[] = {
-      {0x10de, 0x2b85, (621u << 22) | (1u << 14), 1, 0},
-      {0x10de, 0x2b85, (621u << 22) | (2u << 14), 0, 0},
-      {0x10de, 0x2684, (621u << 22) | (1u << 14), 0, 0},
-      {0x1002, 0x2b85, (621u << 22) | (1u << 14), 0, 0},
-      {0x10de, 0x2684, (610u << 22) | (47u << 14), 1, 1}
+      {0x10de, 0x2b85, (621u << 22) | (1u << 14), 1, 0, 0},
+      {0x10de, 0x2b85, (621u << 22) | (2u << 14), 0, 0, 0},
+      {0x10de, 0x2684, (621u << 22) | (1u << 14), 0, 0, 0},
+      {0x1002, 0x2b85, (621u << 22) | (1u << 14), 0, 0, 0},
+      {0x10de, 0x2684, (610u << 22) | (47u << 14), 1, 1, 0},
+      {0x10de, 0x2b85, (617u << 22) | (42u << 14), 0, 0, 1},
+      {0x10de, 0x2b85, (617u << 22) | (43u << 14), 0, 0, 0}
    };
    uint32_t vendor = ctx->gpu_properties.vendorID;
    uint32_t device = ctx->gpu_properties.deviceID;
@@ -417,7 +419,8 @@ static int h264_driver_admission(vulkan_context_t *ctx)
       ctx->gpu_properties.deviceID = cases[i].device;
       ctx->gpu_properties.driverVersion = cases[i].driver;
       if (!vulkan_video_decode_init(ctx)
-            || vvd.h264_broken != !!cases[i].h264)
+            || vvd.h264_broken != !!cases[i].h264
+            || vvd.h264_reference_wrap != !!cases[i].wrap)
          ok = 0;
 #ifdef HAVE_RAV1
       if (vvd.av1_intrabc_broken != !!cases[i].av1) ok = 0;

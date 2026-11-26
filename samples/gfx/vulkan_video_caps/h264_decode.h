@@ -1,5 +1,6 @@
 /* Copyright (C) 2026 The RetroArch team. SPDX-License-Identifier: GPL-3.0-or-later */
 #include "../d3d11_video_decode/d3d11_video_decode_test_data.h"
+#include "h264_wrap_data.h"
 
 static PFN_vkCmdDecodeVideoKHR h264_host_decode;
 static VkVideoDecodeH264PictureInfoKHR h264_host_picture;
@@ -18,7 +19,7 @@ static int h264_hash(rh264_video *v, uint32_t *hash, unsigned *count)
 {
    unsigned plane;
    uint32_t value = UINT32_C(2166136261);
-   if (*count >= 32) return 0;
+   if (*count >= 64) return 0;
    for (plane = 0; plane < 3; plane++)
    {
       int stride, width, height, x, y;
@@ -80,7 +81,7 @@ static int h264_external_regression(void)
    uint8_t *data;
    long length;
    unsigned cpu_count, gpu_count;
-   uint32_t cpu[32], gpu[32];
+   uint32_t cpu[64], gpu[64];
    int ok;
    if (!path) return 1;
    file = fopen(path, "rb");
@@ -105,11 +106,11 @@ static int h264_regression(void)
 {
    static const struct { const char *name; const uint8_t *data; size_t size; } streams[] = {
 #define STREAM(n) { #n, stream_##n, sizeof(stream_##n) }
-      STREAM(baseline), STREAM(main_bpyr), STREAM(high_slices), STREAM(high_jvt), STREAM(high_cqm), STREAM(cropped)
+      STREAM(baseline), STREAM(main_bpyr), STREAM(high_slices), STREAM(high_jvt), STREAM(high_cqm), STREAM(cropped), STREAM(frame_wrap)
 #undef STREAM
    };
    unsigned i, cpu_count, gpu_count;
-   uint32_t cpu[32], gpu[32];
+   uint32_t cpu[64], gpu[64];
    int ok = 1;
    int host_lifetime = getenv("H264_TEST_HOST_LIFETIME") != NULL;
    if (host_lifetime)
@@ -124,6 +125,7 @@ static int h264_regression(void)
       int pass = h264_decode_fixture(streams[i].data, streams[i].size, 0, cpu, &cpu_count)
          && h264_decode_fixture(streams[i].data, streams[i].size, 1, gpu, &gpu_count)
          && cpu_count == gpu_count && !memcmp(cpu, gpu, cpu_count * sizeof(*cpu));
+      if (streams[i].data == stream_frame_wrap && cpu_count != 48) pass = 0;
       printf("Vulkan H.264 regression %s: %s\n", streams[i].name, pass ? "PASS" : "FAIL");
       if (!pass) ok = 0;
    }

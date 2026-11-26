@@ -15,7 +15,8 @@ VP9_DEPS := $(AV1_DEPS) $(RA)/gfx/common/vulkan_vp9_picture.h $(RA)/gfx/include/
 PARAMS := hevc_params_test$(EXE)
 SESSION := hevc_session_test$(EXE)
 DECODERS := $(RA)/libretro-common/formats/h265/rh265.c $(RA)/libretro-common/formats/mp4/rmp4.c
-HEVC_DEPS := $(RA)/gfx/common/vulkan_hevc_params.h $(RA)/gfx/common/vulkan_hevc_picture.h \
+HEVC_DEPS := $(RA)/gfx/common/vulkan_h264_reference.h \
+             $(RA)/gfx/common/vulkan_hevc_params.h $(RA)/gfx/common/vulkan_hevc_picture.h \
              $(RA)/libretro-common/include/formats/rh265.h $(RA)/libretro-common/include/formats/rh265_hw.h \
              ../d3d11_video_decode/hevc_device_data.h
 CFLAGS += -O1 -g1 -std=gnu89 -Wall -Wextra -Werror=declaration-after-statement \
@@ -27,7 +28,7 @@ endif
 
 all: av1_params_test$(EXE) vp9_picture_test$(EXE) $(TARGET) $(PARAMS) video_layout_test$(EXE)
 
-hevc_decode_test$(EXE) hevc_render_test$(EXE): h26x_webm_decode.h ../video_fixture_stream.h
+hevc_decode_test$(EXE) hevc_render_test$(EXE): h264_wrap_data.h h26x_webm_decode.h ../video_fixture_stream.h
 
 $(PARAMS): hevc_params_test.c $(HEVC_DEPS) $(DECODERS)
 	$(CC) $(CFLAGS) -o $@ hevc_params_test.c $(DECODERS) $(LDFLAGS) -lm
@@ -82,7 +83,7 @@ av1_params_test$(EXE): av1_params_test.c av1_session_data.h $(AV1_PARAMS_DEPS)
 vp9_picture_test$(EXE): vp9_picture_test.c $(VP9_DEPS)
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
-$(TARGET): $(VP9_DEPS) vulkan_video_caps_test.c $(RA)/gfx/common/vulkan_video_caps.h
+$(TARGET): $(RA)/gfx/common/vulkan_h264_reference.h $(VP9_DEPS) vulkan_video_caps_test.c $(RA)/gfx/common/vulkan_video_caps.h
 	$(CC) $(CFLAGS) -o $@ vulkan_video_caps_test.c $(LDFLAGS)
 
 probe$(EXE): probe.c $(RA)/gfx/common/vulkan_video_caps.h $(VP9_DEPS)

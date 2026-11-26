@@ -40,6 +40,7 @@
 
 #include "vulkan_video_decode.h"
 #include "vulkan_hevc_params.h"
+#include "vulkan_h264_reference.h"
 #include "vulkan_hevc_picture.h"
 #include "vulkan_vp9_picture.h"
 #ifdef HAVE_RAV1
@@ -175,6 +176,7 @@ static struct
 #endif
 #ifdef _WIN32
    bool h264_broken;
+   bool h264_reference_wrap;
 #endif
 #if defined(_WIN32) && !defined(__WINRT__) \
    && (defined(HAVE_D3D11) || defined(HAVE_D3D12))
@@ -1391,7 +1393,14 @@ static int vvd_decode(void *dec, const rh264_hw_pic_t *pic)
          return -1;
       memset(&std_ref[n], 0, sizeof(std_ref[n]));
       std_ref[n].flags.used_for_long_term_reference = r->long_term ? 1 : 0;
-      std_ref[n].FrameNum       = (uint16_t)r->frame_num;
+#ifdef _WIN32
+      std_ref[n].FrameNum = vulkan_h264_reference_frame_num(r->frame_num,
+            pic->frame_num, pic->sps->log2_max_frame_num,
+            pic->sps->poc_type, r->long_term,
+            vvd.h264_reference_wrap);
+#else
+      std_ref[n].FrameNum = (uint16_t)r->frame_num;
+#endif
       std_ref[n].PicOrderCnt[0] = r->poc[0];
       std_ref[n].PicOrderCnt[1] = r->poc[1];
       res[n]                    = vvd_resource(d, (unsigned)r->slot);
@@ -1767,6 +1776,9 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    vvd.mem         = ctx->memory_properties;
 #ifdef _WIN32
    /* NVIDIA H.264 corruption; 610.47 also faults on AV1 intra block copy. */
+   vvd.h264_reference_wrap = vulkan_h264_reference_wrap_driver(
+         ctx->gpu_properties.vendorID, ctx->gpu_properties.deviceID,
+         ctx->gpu_properties.driverVersion);
    vvd.h264_broken = ctx->gpu_properties.vendorID == 0x10de
       && (ctx->gpu_properties.driverVersion == ((610u << 22) | (47u << 14))
          || (ctx->gpu_properties.deviceID == 0x2b85
