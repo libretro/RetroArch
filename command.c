@@ -73,7 +73,6 @@
 #include "content.h"
 #include "dynamic.h"
 #include "file_path_special.h"
-#include "list_special.h"
 #include "paths.h"
 #include "record/record_driver.h"
 #include "retroarch.h"
@@ -6918,12 +6917,17 @@ bool command_event_load_auto_state(void)
    return ret;
 }
 
-static bool command_state_index(const char *suffix, unsigned *index)
+/* A canonical slot suffix: digits without a leading zero.  Slot 0 is
+ * no suffix at all for states, and "0" for replays (@zero_suffix). */
+static bool command_slot_index(const char *suffix, bool zero_suffix,
+      unsigned *index)
 {
    unsigned long value;
    char *end;
    *index = 0;
    if (!*suffix)
+      return !zero_suffix;
+   if (zero_suffix && suffix[0] == '0' && !suffix[1])
       return true;
    if (*suffix < '1' || *suffix > '9')
       return false;
@@ -6941,10 +6945,11 @@ static bool command_state_index(const char *suffix, unsigned *index)
  * prune.  @name_savestate's first @name_len characters are the state
  * name (the rest, if any, a slot suffix).  The folder is read entry
  * by entry and only matching slots are kept, as bits of the
- * 0..@savestate_max_keep range. */
+ * 0..@savestate_max_keep range.  With @savestate_max_keep 0, the
+ * index found is the highest slot present. */
 static void command_scan_states(
       const char *name_savestate, size_t name_len,
-      bool show_hidden_files,
+      bool zero_suffix, bool show_hidden_files,
       unsigned savestate_max_keep,
       int curr_state_slot,
       unsigned *last_index, char *s, size_t len)
@@ -7002,7 +7007,7 @@ static void command_scan_states(
       if (     !name
             || (!show_hidden_files && (*name == '.' || *name == '$'))
             || strncmp(name, state_base, base_len)
-            || !command_state_index(name + base_len, &idx)
+            || !command_slot_index(name + base_len, zero_suffix, &idx)
             || retro_dirent_is_dir(dir, NULL))
          continue;
       if (idx > max_idx)
@@ -7113,7 +7118,7 @@ unsigned command_event_get_savestate_auto_index(settings_t *settings,
 {
    unsigned max_idx          = 0;
    if (state_path)
-      command_scan_states(state_path, strlen(state_path),
+      command_scan_states(state_path, strlen(state_path), false,
             settings->bools.show_hidden_files,
             settings->uints.savestate_max_keep, settings->ints.state_slot,
             &max_idx, NULL, 0);
@@ -7153,12 +7158,13 @@ void command_event_set_savestate_garbage_collect(const char *path,
       return;
    ext = path_get_extension(path);
    if (     strncmp(ext, "state", STRLEN_CONST("state"))
-         || !command_state_index(ext + STRLEN_CONST("state"), &path_slot)
+         || !command_slot_index(ext + STRLEN_CONST("state"), false,
+               &path_slot)
          || path_slot != (unsigned)slot)
       return;
    /* The state name is @path up to its slot suffix */
    state_to_delete[0] = '\0';
-   command_scan_states(path, ext + STRLEN_CONST("state") - path,
+   command_scan_states(path, ext + STRLEN_CONST("state") - path, false,
          show_hidden_files, max_keep, slot, NULL,
          state_to_delete, sizeof(state_to_delete));
    /* Only delete one save state per save action
@@ -7199,142 +7205,20 @@ static void command_save_state_cb(retro_task_t *task,
 
 void command_event_set_replay_auto_index(settings_t *settings)
 {
-   size_t i;
-   char elem_base[128];
-   char state_base[128];
-   char state_dir[DIR_MAX_LENGTH];
+   unsigned max_idx       = 0;
+   const char *name_replay = runloop_state_get_ptr()->name.replay;
 
-   struct string_list *dir_list      = NULL;
-   unsigned max_idx                  = 0;
-   runloop_state_t *runloop_st       = runloop_state_get_ptr();
-   const char *name_replay           = runloop_st->name.replay;
-   bool replay_auto_index            = settings->bools.replay_auto_index;
-   bool show_hidden_files            = settings->bools.show_hidden_files;
-
-   if (!replay_auto_index)
+   if (!settings->bools.replay_auto_index || !*name_replay)
       return;
-   /* Find the file in the same directory as runloop_st->name.replay
-    * with the largest numeral suffix.
-    *
-    * E.g. /foo/path/content.replay will try to find
-    * /foo/path/content.replay%d, where %d is the largest number available.
-    */
-   fill_pathname_basedir(state_dir, name_replay,
-         sizeof(state_dir));
-
-   if (!(dir_list = dir_list_new_special(state_dir,
-               DIR_LIST_PLAIN, NULL, show_hidden_files)))
-      return;
-
-   fill_pathname_base(state_base, name_replay, sizeof(state_base));
-
-   for (i = 0; i < dir_list->size; i++)
-   {
-      unsigned idx;
-      const char *end                 = NULL;
-      const char *dir_elem            = dir_list->elems[i].data;
-      size_t _len = fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
-
-      if (strstr(elem_base, state_base) != elem_base)
-         continue;
-
-      end = dir_elem + _len;
-
-      while ((end > dir_elem) && ISDIGIT((int)end[-1]))
-         end--;
-
-      idx = (unsigned)strtoul(end, NULL, 0);
-      if (idx > max_idx)
-         max_idx = idx;
-   }
-
-   dir_list_free(dir_list);
-
+   /* The highest slot of <name.replay><N> in its folder */
+   command_scan_states(name_replay, strlen(name_replay), true,
+         settings->bools.show_hidden_files, 0, -1, &max_idx, NULL, 0);
    configuration_set_int(settings, settings->ints.replay_slot, max_idx);
 
    if (max_idx)
       RARCH_LOG("[Replay] %s: #%d\n",
             msg_hash_to_str(MSG_FOUND_LAST_REPLAY_SLOT),
             max_idx);
-}
-
-void command_event_set_replay_garbage_collect(
-      unsigned max_to_keep,
-      bool show_hidden_files
-      )
-{
-  /* TODO: debugme */
-   size_t i, cnt = 0;
-   char tmp[DIR_MAX_LENGTH];
-   runloop_state_t *runloop_st       = runloop_state_get_ptr();
-   const char *name_replay           = runloop_st->name.replay;
-   struct string_list *dir_list      = NULL;
-   unsigned min_idx                  = UINT_MAX;
-   const char *oldest_save           = NULL;
-
-   /* Similar to command_event_set_replay_auto_index(),
-    * this will find the lowest numbered replay */
-   fill_pathname_basedir(tmp, name_replay, sizeof(tmp));
-
-   if (!(dir_list = dir_list_new_special(tmp,
-               DIR_LIST_PLAIN, NULL, show_hidden_files)))
-      return;
-
-   fill_pathname_base(tmp, name_replay, sizeof(tmp));
-
-   for (i = 0; i < dir_list->size; i++)
-   {
-      unsigned idx;
-      size_t _len;
-      char elem_base[128];
-      const char *ext                 = NULL;
-      const char *end                 = NULL;
-      const char *dir_elem            = dir_list->elems[i].data;
-
-      if (!dir_elem || !*dir_elem)
-         continue;
-
-      _len = fill_pathname_base(elem_base, dir_elem, sizeof(elem_base));
-
-      /* Only consider files with a '.replayXX' extension
-       * > i.e. Ignore '.replay.auto', '.replay.bak', etc. */
-      ext = path_get_extension(elem_base);
-      if (    (!ext || !*ext)
-          || !string_starts_with_size(ext, "replay", STRLEN_CONST("REPLAY")))
-         continue;
-
-      /* Check whether this file is associated with
-       * the current content */
-      if (!string_starts_with(elem_base, tmp))
-         continue;
-
-      /* This looks like a valid save */
-      cnt++;
-
-      /* > Get index */
-      end = dir_elem + _len;
-
-      while ((end > dir_elem) && ISDIGIT((int)end[-1]))
-         end--;
-
-      idx = string_to_unsigned(end);
-
-      /* > Check if this is the lowest index so far */
-      if (idx < min_idx)
-      {
-         min_idx     = idx;
-         oldest_save = dir_elem;
-      }
-   }
-
-   /* Only delete one save state per save action
-    * > Conservative behaviour, designed to minimise
-    *   the risk of deleting multiple incorrect files
-    *   in case of accident */
-   if (oldest_save && *oldest_save && (cnt > max_to_keep))
-      filestream_delete(oldest_save);
-
-   dir_list_free(dir_list);
 }
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)

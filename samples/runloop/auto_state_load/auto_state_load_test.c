@@ -5,7 +5,6 @@
 #include <assert.h>
 #include <limits.h>
 #include "../../../runtime_file.h"
-#include "../../../list_special.h"
 
 static settings_t test_settings;
 static video_driver_state_t test_video;
@@ -19,8 +18,6 @@ static unsigned runtime_saves, runtime_adds, runtime_dates;
 static bool runtime_open_fail, runtime_write_fail;
 static unsigned file_count;
 static char files[32][256];
-static struct string_list directory;
-static struct string_list_elem entries[32];
 static retro_task_callback_t save_done;
 static void *save_userdata;
 static char saved_path[256];
@@ -114,24 +111,6 @@ bool path_is_valid(const char *path)
    return true;
 }
 
-struct string_list *dir_list_new_special(const char *path,
-      enum dir_list_type type, const char *filter, bool hidden)
-{
-   unsigned i;
-   (void)path;
-   (void)filter;
-   (void)hidden;
-   assert(type == DIR_LIST_PLAIN);
-   directory.elems = entries;
-   directory.size = file_count;
-   for (i = 0; i < file_count; i++)
-   {
-      entries[i].data = files[i];
-      entries[i].attr.i = 0;
-   }
-   return &directory;
-}
-
 /* The state scan reads the same fixture entry by entry. */
 struct RDIR { unsigned next; };
 static struct RDIR dirent_cursor;
@@ -159,8 +138,6 @@ bool retro_dirent_is_dir(struct RDIR *rdir, const char *unused)
 }
 void retro_closedir(struct RDIR *rdir) { (void)rdir; }
 
-void string_list_free(struct string_list *list) { assert(list == &directory); }
-void dir_list_free(struct string_list *list) { string_list_free(list); }
 
 int filestream_delete(const char *path)
 {

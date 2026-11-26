@@ -203,6 +203,36 @@ static void test_prune_path(void)
    assert(file_count() == 11);
 }
 
+/* Replays number slot 0 as "0" and keep counting from the highest
+ * slot on disk, whatever the folder's path length. */
+static void test_replay_index(void)
+{
+   const char *names[] = {"game.replay0", "game.replay3", "game.replay12",
+         "game.replay.auto", "game.replay07", "game.replay",
+         "game.replay3.png", "other.replay40", "game.replay99x"};
+   unsigned i;
+   clear_files();
+   snprintf(runloop.name.replay, sizeof(runloop.name.replay),
+         "%s/game.replay", directory);
+   settings.bools.replay_auto_index = true;
+   settings.ints.replay_slot = 5;
+   command_event_set_replay_auto_index(&settings);
+   assert(settings.ints.replay_slot == 0);
+   add_file("game.replay0");
+   command_event_set_replay_auto_index(&settings);
+   assert(settings.ints.replay_slot == 0);
+   for (i = 1; i < sizeof(names) / sizeof(names[0]); i++)
+      add_file(names[i]);
+   command_event_set_replay_auto_index(&settings);
+   assert(settings.ints.replay_slot == 12);
+   settings.bools.replay_auto_index = false;
+   settings.ints.replay_slot = 4;
+   command_event_set_replay_auto_index(&settings);
+   assert(settings.ints.replay_slot == 4);
+   checks += 4;
+   clear_files();
+}
+
 int main(void)
 {
    unsigned attempt;
@@ -219,6 +249,7 @@ int main(void)
    test_selection();
    test_retention();
    test_prune_path();
+   test_replay_index();
    clear_files();
    assert(path_rmdir(directory));
    printf("real-directory rolling scan: %u selections passed\n", checks);

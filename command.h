@@ -505,11 +505,6 @@ int command_event_get_next_savestate_auto_index(
 void command_event_set_replay_auto_index(
       settings_t *settings);
 
-void command_event_set_replay_garbage_collect(
-      unsigned max_to_keep,
-      bool show_hidden_files
-      );
-
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 bool command_set_shader(command_t *cmd, const char *arg);
 #endif
