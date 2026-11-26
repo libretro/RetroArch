@@ -2052,6 +2052,13 @@ void MainWindow::setupFileSystemBrowser()
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
    m_dirModel->setOption(QFileSystemModel::DontUseCustomDirectoryIcons, true);
    m_dirModel->setOption(QFileSystemModel::DontWatchForChanges, true);
+#else
+   /* The icon half through the model's icon provider (Qt 5.2); the
+    * watcher has no switch before 5.14. */
+   if (m_dirModel->iconProvider())
+      m_dirModel->iconProvider()->setOptions(
+            m_dirModel->iconProvider()->options()
+            | QFileIconProvider::DontUseCustomDirectoryIcons);
 #endif
 
 #if defined(Q_OS_WIN)
@@ -3895,53 +3902,37 @@ static QRegularExpression qt_search_expression(const QString &text)
    for (i = 0; i < terms.size(); i++)
    {
       const QString &term = terms.at(i);
-      QVector<char32_t> hiraToKata;
-      QVector<char32_t> kataToHira;
-      QVector<unsigned> unicode = term.toUcs4();
+      /* Kana are all in the BMP: swap them unit by unit in copies of
+       * the term, leaving everything else (surrogates included) as is. */
+      QString hiraToKata = term;
+      QString kataToHira = term;
       QStringList alternatives;
       bool foundHiragana = false;
       bool foundKatakana = false;
       int j;
 
-      for (j = 0; j < unicode.size(); j++)
+      for (j = 0; j < term.size(); j++)
       {
-         unsigned code = unicode.at(j);
+         unsigned code = term.at(j).unicode();
 
          if (code >= HIRAGANA_START && code <= HIRAGANA_END)
          {
             foundHiragana = true;
-            hiraToKata.append(code + HIRA_KATA_OFFSET);
-            kataToHira.append(code);
+            hiraToKata[j] = QChar((ushort)(code + HIRA_KATA_OFFSET));
          }
          else if (code >= KATAKANA_START && code <= KATAKANA_END)
          {
             foundKatakana = true;
-            hiraToKata.append(code);
-            kataToHira.append(code - HIRA_KATA_OFFSET);
-         }
-         else
-         {
-            hiraToKata.append(code);
-            kataToHira.append(code);
+            kataToHira[j] = QChar((ushort)(code - HIRA_KATA_OFFSET));
          }
       }
 
       alternatives.append(QRegularExpression::escape(term));
-      if (foundHiragana)
-      {
-         QString converted = QString::fromUcs4(
-               hiraToKata.constData(), hiraToKata.size());
-         if (converted != term)
-            alternatives.append(QRegularExpression::escape(converted));
-      }
-      if (foundKatakana)
-      {
-         QString converted = QString::fromUcs4(
-               kataToHira.constData(), kataToHira.size());
-         if (converted != term && !alternatives.contains(
-                  QRegularExpression::escape(converted)))
-            alternatives.append(QRegularExpression::escape(converted));
-      }
+      if (foundHiragana && hiraToKata != term)
+         alternatives.append(QRegularExpression::escape(hiraToKata));
+      if (foundKatakana && kataToHira != term && !alternatives.contains(
+               QRegularExpression::escape(kataToHira)))
+         alternatives.append(QRegularExpression::escape(kataToHira));
 
       pattern += "(?=.*(?:" + alternatives.join("|") + "))";
    }

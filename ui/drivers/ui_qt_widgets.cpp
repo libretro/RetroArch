@@ -1091,10 +1091,12 @@ void RefreshRateControl::syncValue()
 {
    float value = *m_setting->value.target.fraction;
 
-   QSignalBlocker sliderBlock(m_slider);
-   QSignalBlocker spinBlock(m_spinBox);
+   bool sliderBlocked = m_slider->blockSignals(true);
+   bool spinBlocked   = m_spinBox->blockSignals(true);
    m_spinBox->setValue(value);
    m_slider->setValue((int)(value * m_scale + 0.5));
+   m_spinBox->blockSignals(spinBlocked);
+   m_slider->blockSignals(sliderBlocked);
 }
 
 void RefreshRateControl::paintEvent(QPaintEvent *event)
@@ -1411,7 +1413,8 @@ static const struct bind_qt_key bind_qt_keys[] = {
    { Qt::Key_SysReq,       RETROK_SYSREQ },
    { Qt::Key_Menu,         RETROK_MENU },
    { Qt::Key_PowerOff,     RETROK_POWER },
-   { Qt::Key_Undo,         RETROK_UNDO }
+   /* Qt::Key_Undo, by value: older Qt has no name for it */
+   { 0x01000123,           RETROK_UNDO }
 };
 
 /* the keypad's, numbers or what they do with Num Lock off */
@@ -7421,10 +7424,11 @@ QWidget *AudioPage::widget()
                static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
                [midiVolume, slider](int value)
                {
-                  QSignalBlocker block(slider);
+                  bool blocked = slider->blockSignals(true);
                   *midiVolume->value.target.unsigned_integer = (unsigned)value;
                   setting_generic_handle_change(midiVolume);
                   slider->setValue(value);
+                  slider->blockSignals(blocked);
                });
          midiVolumeLayout->addWidget(slider, 1);
          midiVolumeLayout->addWidget(spinBox);
@@ -9192,10 +9196,10 @@ QWidget *VideoPage::widget()
       {
          /* Format straight into the QString the combo keeps, instead of
           * a stack buffer that addItem() then copies and converts. */
-         m_resolutionCombo->addItem(QString::asprintf("%dx%d (%d Hz)",
-               VIDEO_SCALE_W(resolutionList[i].dims),
-               VIDEO_SCALE_H(resolutionList[i].dims),
-               resolutionList[i].refreshrate));
+         m_resolutionCombo->addItem(QString("%1x%2 (%3 Hz)")
+               .arg((int)VIDEO_SCALE_W(resolutionList[i].dims))
+               .arg((int)VIDEO_SCALE_H(resolutionList[i].dims))
+               .arg((int)resolutionList[i].refreshrate));
          if (resolutionList[i].current)
             m_resolutionCombo->setCurrentIndex((int)i);
       }
