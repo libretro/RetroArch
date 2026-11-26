@@ -25,18 +25,20 @@
 /**
  * label_sanitize:
  *
+ * Rewrites @label in place and returns its new length.
+ *
  * NOTE: Does not work with nested blocks.
  **/
-void label_sanitize(char *label, bool (*left)(char*), bool (*right)(char*));
+size_t label_sanitize(char *label, bool (*left)(char*), bool (*right)(char*));
 
-void label_remove_parens(char *label);
+size_t label_remove_parens(char *label);
 
-void label_remove_brackets(char *label);
+size_t label_remove_brackets(char *label);
 
-void label_remove_parens_and_brackets(char *label);
+size_t label_remove_parens_and_brackets(char *label);
 
-void label_keep_region(char *label);
+size_t label_keep_region(char *label);
 
-void label_keep_disc(char *label);
+size_t label_keep_disc(char *label);
 
-void label_keep_region_and_disc(char *label);
+size_t label_keep_region_and_disc(char *label);

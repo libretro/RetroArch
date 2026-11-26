@@ -4125,7 +4125,7 @@ static bool menu_entries_search_push(const char *search_term,
       size_t selection)
 {
    size_t i;
-   char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
+   char *slot;
    menu_search_terms_t *search = menu_entries_search_get_terms_alloc();
 
    /* Sanity check + verify whether we have reached
@@ -4135,23 +4135,20 @@ static bool menu_entries_search_push(const char *search_term,
        || (search->size >= MENU_SEARCH_FILTER_MAX_TERMS))
       return false;
 
-   /* Check whether search term already exists
-    * > Note that we clip the input search term
-    *   to MENU_SEARCH_FILTER_MAX_LENGTH characters
-    *   *before* comparing existing entries */
-   strlcpy(search_term_clipped, search_term,
-         sizeof(search_term_clipped));
+   /* The term is clipped straight into the next free slot, and only
+    * counted if no existing term matches it as clipped */
+   slot = search->terms[search->size];
+   strlcpy(slot, search_term, sizeof(search->terms[search->size]));
 
    for (i = 0; i < search->size; i++)
    {
-      if (string_is_equal(search_term_clipped,
-            search->terms[i]))
+      if (string_is_equal(slot, search->terms[i]))
+      {
+         slot[0] = '\0';
          return false;
+      }
    }
 
-   /* Add search term */
-   strlcpy(search->terms[search->size], search_term_clipped,
-         sizeof(search->terms[search->size]));
    search->selection[search->size] = selection;
    search->size++;
 
@@ -4224,7 +4221,8 @@ void menu_entries_search_append_terms_string(char *s, size_t len)
             break;
          }
 
-         _len += strlcpy(s + _len, search->terms[i], len - _len);
+         memcpy(s + _len, search->terms[i], tlen + 1);
+         _len += tlen;
       }
    }
 }

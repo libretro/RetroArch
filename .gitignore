@@ -103,6 +103,7 @@ autoconfig
 /database
 overlays
 playlists
+!libretro-common/samples/playlists/
 states
 /cheats
 thumbnails

@@ -890,6 +890,107 @@ static void lane_search_cancel_restores_selection(unsigned remember)
             "(remember selection %u)\n", remember);
 }
 
+
+/* A playlist whose entries name a core, for the inline core name. */
+static bool write_core_playlist(const char *path, unsigned mode,
+      const char *long_label)
+{
+   FILE *f = fopen(path, "wb");
+   if (!f)
+      return false;
+   fprintf(f, "{\n  \"version\": \"1.5\",\n"
+              "  \"label_display_mode\": %u,\n"
+              "  \"items\": [\n", mode);
+   fprintf(f, "    { \"path\": \"/games/core/a.bin\", \"label\": "
+              "\"Title (USA)\", \"core_path\": \"/cores/x_libretro.so\","
+              " \"core_name\": \"Core\", \"crc32\": \"00000000|crc\","
+              " \"db_name\": \"t.lpl\" },\n");
+   fprintf(f, "    { \"path\": \"/games/core/b.bin\", \"label\": \"%s\","
+              " \"core_path\": \"/cores/x_libretro.so\","
+              " \"core_name\": \"Core\", \"crc32\": \"00000000|crc\","
+              " \"db_name\": \"t.lpl\" },\n", long_label);
+   fprintf(f, "    { \"crc32\": \"00000000|crc\", \"db_name\": \"t.lpl\" }\n");
+   fprintf(f, "  ]\n}\n");
+   fclose(f);
+   return true;
+}
+
+/* The title of the entry for the content at @path - the list keeps
+ * the content path in each entry's label, and an entry without
+ * content (@path NULL) has the playlist's in its place. The playlist
+ * is sorted, so the rows are not in the order it was written in. */
+static const char *title_for(const char *path)
+{
+   file_list_t *buf = selection_buf();
+   size_t i;
+   for (i = 0; buf && i < buf->size; i++)
+   {
+      const char *label = buf->list[i].label;
+      bool content      = label && strstr(label, "/games/core/");
+      if (path ? (content && string_is_equal(label, path)) : !content)
+         return buf->list[i].path;
+   }
+   return NULL;
+}
+
+/* With the core name shown after each title, it follows the label as
+ * the playlist's display mode leaves it, a label too long for a title
+ * is cut without anything written past it, and an entry with neither
+ * content, label nor core comes up as an empty title. */
+static void lane_inline_core_name(void)
+{
+   unsigned had         = failures;
+   settings_t *settings = config_get_ptr();
+   bool sublabels       = settings->bools.playlist_show_sublabels;
+   unsigned inline_core = settings->uints.playlist_show_inline_core_name;
+   char plain[700], parens[700], long_label[301];
+   const char *t;
+
+   memset(long_label, 'L', 300);
+   long_label[300] = '\0';
+   snprintf(plain,  sizeof(plain),  "%s/core_plain.lpl",  fixture_dir);
+   snprintf(parens, sizeof(parens), "%s/core_parens.lpl", fixture_dir);
+   if (   !write_core_playlist(plain, LABEL_DISPLAY_MODE_DEFAULT, long_label)
+       || !write_core_playlist(parens, LABEL_DISPLAY_MODE_REMOVE_PARENTHESES,
+            long_label))
+      return;
+   settings->bools.playlist_show_sublabels        = false;
+   settings->uints.playlist_show_inline_core_name =
+         PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS;
+
+   open_playlists_screen();
+   CHECK(open_from_playlists("core_plain.lpl"), "could not open core_plain");
+   run_until_loaded();
+   t = title_for("/games/core/a.bin");
+   CHECK(t && string_is_equal(t, "Title (USA) | Core"),
+         "the first title is \"%s\", not \"Title (USA) | Core\"",
+         t ? t : "(none)");
+   t = title_for("/games/core/b.bin");
+   CHECK(t && strlen(t) == NAME_MAX_LENGTH - 1 && !strstr(t, "Core"),
+         "a 300-byte label came up as a %u-byte title",
+         t ? (unsigned)strlen(t) : 0);
+   t = title_for(NULL);
+   CHECK(t && !*t, "an entry with nothing to show is titled \"%s\"",
+         t ? t : "(none)");
+   press_back();
+
+   open_playlists_screen();
+   CHECK(open_from_playlists("core_parens.lpl"), "could not open core_parens");
+   run_until_loaded();
+   t = title_for("/games/core/a.bin");
+   CHECK(t && string_is_equal(t, "Title | Core"),
+         "with parentheses removed the first title is \"%s\", not "
+         "\"Title | Core\"", t ? t : "(none)");
+   press_back();
+
+   settings->bools.playlist_show_sublabels        = sublabels;
+   settings->uints.playlist_show_inline_core_name = inline_core;
+   unlink(plain);
+   unlink(parens);
+   if (failures == had)
+      fprintf(stderr, "[pass] inline-core-name lane\n");
+}
+
 /* Content information for a playlist entry that has no path - a
  * playlist line written without one, for a core that needs content:
  * the Path row says Not Available. It used to read the first byte of
@@ -1041,6 +1142,7 @@ int main(int argc, char *argv[])
    lane_restored_selection_kept_through_load();
    lane_search_cancel_restores_selection(MENU_REMEMBER_SELECTION_OFF);
    lane_search_cancel_restores_selection(MENU_REMEMBER_SELECTION_ALWAYS);
+   lane_inline_core_name();
    lane_info_entry_without_path();
 
    CHECK(saf_read_calls > 0,

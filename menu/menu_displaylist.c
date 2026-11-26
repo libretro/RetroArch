@@ -189,7 +189,6 @@
  * in playlists */
 #define PL_LABEL_SPACER_DEFAULT "   |   "
 #define PL_LABEL_SPACER_RGUI    " | "
-#define PL_LABEL_SPACER_MAXLEN  8
 
 #define BYTES_TO_MB(bytes) ((bytes) / 1024 / 1024)
 #define BYTES_TO_GB(bytes) (((bytes) / 1024) / 1024 / 1024)
@@ -4040,7 +4039,7 @@ static int menu_displaylist_parse_playlist(
       bool is_collection)
 {
    unsigned i;
-   char label_spacer[PL_LABEL_SPACER_MAXLEN];
+   const char *label_spacer          = NULL;
    size_t           list_size        = playlist_size(playlist);
    bool show_inline_core_name        = false;
    struct menu_state *menu_st        = menu_state_get_ptr();
@@ -4048,7 +4047,7 @@ static int menu_displaylist_parse_playlist(
    menu_search_terms_t *search_terms = menu_entries_search_get_terms();
    unsigned pl_show_inline_core_name = settings->uints.playlist_show_inline_core_name;
    bool pl_show_sublabels            = settings->bools.playlist_show_sublabels;
-   void (*sanitization)(char*)       = NULL;
+   size_t (*sanitization)(char*)     = NULL;
    unsigned count                    = 0;
 
    if (list_size == 0)
@@ -4067,10 +4066,10 @@ static int menu_displaylist_parse_playlist(
       /* Get spacer for menu entry labels (<content><spacer><core>)
        * > Note: Only required when showing inline core names */
       if (!strcmp(menu_driver, "rgui"))
-         strlcpy(label_spacer, PL_LABEL_SPACER_RGUI, sizeof(label_spacer));
+         label_spacer = PL_LABEL_SPACER_RGUI;
       else
 #endif
-         strlcpy(label_spacer, PL_LABEL_SPACER_DEFAULT, sizeof(label_spacer));
+         label_spacer = PL_LABEL_SPACER_DEFAULT;
    }
 
    {
@@ -4133,6 +4132,7 @@ static int menu_displaylist_parse_playlist(
       char menu_entry_lbl[NAME_MAX_LENGTH];
       const struct playlist_entry *entry = NULL;
       const char *entry_path             = NULL;
+      const char *lbl                    = "";
       bool entry_valid                   = true;
 
       /* Read playlist entry */
@@ -4140,41 +4140,49 @@ static int menu_displaylist_parse_playlist(
 
       if (entry->path && *entry->path)
       {
-         size_t _len;
          /* Standard playlist entry
           * > Base menu entry label is always playlist label
           *   > If playlist label is NULL, fallback to playlist entry file name
-          * > If required, add currently associated core (if any), otherwise
-          *   no further action is necessary */
+          * > If required, add currently associated core (if any)
+          * > A label shown as it is stands on the playlist's own
+          *   string: the list takes its own copy on append */
+         bool add_core = show_inline_core_name
+               && entry->core_name
+               && strcmp(entry->core_name, FILE_PATH_DETECT)
+               && entry->core_path
+               && strcmp(entry->core_path, FILE_PATH_DETECT);
 
-         if (!entry->label || !*entry->label)
-            _len = fill_pathname(menu_entry_lbl,
-                  path_basename(entry->path), "",
-                  sizeof(menu_entry_lbl));
+         if (entry->label && *entry->label && !sanitization && !add_core)
+            lbl = entry->label;
          else
-            _len = strlcpy(menu_entry_lbl,
-                  entry->label,
-                  sizeof(menu_entry_lbl));
-
-         if (sanitization)
-            (*sanitization)(menu_entry_lbl);
-
-         if (show_inline_core_name)
          {
-            /* Both core name and core path must be valid */
-            if (     entry->core_name
-                  && strcmp(entry->core_name, FILE_PATH_DETECT)
-                  && entry->core_path
-                  && strcmp(entry->core_path, FILE_PATH_DETECT))
+            size_t _len;
+
+            if (!entry->label || !*entry->label)
+               _len = fill_pathname(menu_entry_lbl,
+                     path_basename(entry->path), "",
+                     sizeof(menu_entry_lbl));
+            else
+               _len = strlcpy(menu_entry_lbl,
+                     entry->label,
+                     sizeof(menu_entry_lbl));
+
+            if (sanitization)
+               _len = (*sanitization)(menu_entry_lbl);
+
+            if (add_core && _len < sizeof(menu_entry_lbl))
             {
                _len += strlcpy(
                      menu_entry_lbl           + _len,
                      label_spacer,
                      sizeof(menu_entry_lbl)   - _len);
-               strlcpy(menu_entry_lbl         + _len,
-                     entry->core_name,
-                     sizeof(menu_entry_lbl)   - _len);
+               if (_len < sizeof(menu_entry_lbl))
+                  strlcpy(menu_entry_lbl      + _len,
+                        entry->core_name,
+                        sizeof(menu_entry_lbl) - _len);
             }
+
+            lbl = menu_entry_lbl;
          }
 
          entry_path = entry->path;
@@ -4188,9 +4196,9 @@ static int menu_displaylist_parse_playlist(
           * > Use label if available, otherwise core name
           * > If both are missing, add an empty menu entry */
          if (entry->label && *entry->label)
-            strlcpy(menu_entry_lbl, entry->label, sizeof(menu_entry_lbl));
+            lbl = entry->label;
          else if (entry->core_name && *entry->core_name)
-            strlcpy(menu_entry_lbl, entry->core_name, sizeof(menu_entry_lbl));
+            lbl = entry->core_name;
 
          entry_path = path_playlist;
       }
@@ -4206,7 +4214,7 @@ static int menu_displaylist_parse_playlist(
             const char *search_term = search_terms->terms[j];
 
             if (   (search_term && *search_term)
-                && !compat_strcasestr(menu_entry_lbl, search_term))
+                && !compat_strcasestr(lbl, search_term))
             {
                entry_valid = false;
                break;
@@ -4216,7 +4224,7 @@ static int menu_displaylist_parse_playlist(
 
       /* Add menu entry */
       if (entry_valid && menu_entries_append(info_list,
-            menu_entry_lbl, entry_path,
+            lbl, entry_path,
             MENU_ENUM_LABEL_PLAYLIST_ENTRY, FILE_TYPE_RPL_ENTRY, 0, i, NULL))
          count++;
    }

@@ -24,8 +24,8 @@
 
 #include <string.h>
 
-#include <compat/strl.h>
 #include <retro_miscellaneous.h>
+
 #include <playlists/label_sanitization.h>
 
 #define DISC_STRINGS_LENGTH   5
@@ -68,42 +68,39 @@ const char *region_strings[REGION_STRINGS_LENGTH] = {
 /**
  * label_sanitize:
  *
+ * Compacts @label in place: the write cursor never passes the read
+ * cursor, and the predicates only look at or ahead of the read cursor.
+ * Returns the new length.
+ *
  * NOTE: Does not work with nested blocks.
  **/
-void label_sanitize(char *label, bool (*left)(char*), bool (*right)(char*))
+size_t label_sanitize(char *label, bool (*left)(char*), bool (*right)(char*))
 {
-   bool copy = true;
-   int rindex = 0;
-   int lindex = 0;
-   char new_label[PATH_MAX_LENGTH];
+   bool copy     = true;
+   size_t rindex = 0;
+   size_t lindex = 0;
 
-   for (; lindex < PATH_MAX_LENGTH && label[lindex] != '\0'; lindex++)
+   for (; label[lindex] != '\0'; lindex++)
    {
       if (copy)
       {
          /* check for the start of the range */
          if ((*left)(&label[lindex]))
-            copy                = false;
-         else
-         {
-            const bool whitespace = label[lindex] == ' ' && (rindex == 0 || new_label[rindex - 1] == ' ');
-
-            /* Simplify consecutive whitespaces */
-            if (!whitespace)
-               new_label[rindex++] = label[lindex];
-         }
+            copy = false;
+         /* Simplify consecutive whitespaces */
+         else if (!(label[lindex] == ' '
+               && (rindex == 0 || label[rindex - 1] == ' ')))
+            label[rindex++] = label[lindex];
       }
       else if ((*right)(&label[lindex]))
          copy = true;
    }
 
    /* Trim trailing whitespace */
-   if (rindex > 0 && new_label[rindex - 1] == ' ')
-      new_label[rindex - 1] = '\0';
-   else
-      new_label[rindex] = '\0';
-
-   strlcpy(label, new_label, PATH_MAX_LENGTH);
+   if (rindex > 0 && label[rindex - 1] == ' ')
+      rindex--;
+   label[rindex] = '\0';
+   return rindex;
 }
 
 static bool left_parens(char *left)
@@ -168,36 +165,36 @@ static bool left_parens_or_brackets_excluding_region_or_disc(char *left)
       && !left_exclusion(left, disc_strings, DISC_STRINGS_LENGTH);
 }
 
-void label_remove_parens(char *label)
+size_t label_remove_parens(char *label)
 {
-   label_sanitize(label, left_parens, right_parens);
+   return label_sanitize(label, left_parens, right_parens);
 }
 
-void label_remove_brackets(char *label)
+size_t label_remove_brackets(char *label)
 {
-   label_sanitize(label, left_brackets, right_brackets);
+   return label_sanitize(label, left_brackets, right_brackets);
 }
 
-void label_remove_parens_and_brackets(char *label)
+size_t label_remove_parens_and_brackets(char *label)
 {
-   label_sanitize(label, left_parens_or_brackets,
+   return label_sanitize(label, left_parens_or_brackets,
          right_parens_or_brackets);
 }
 
-void label_keep_region(char *label)
+size_t label_keep_region(char *label)
 {
-   label_sanitize(label, left_parens_or_brackets_excluding_region,
+   return label_sanitize(label, left_parens_or_brackets_excluding_region,
          right_parens_or_brackets);
 }
 
-void label_keep_disc(char *label)
+size_t label_keep_disc(char *label)
 {
-   label_sanitize(label, left_parens_or_brackets_excluding_disc,
+   return label_sanitize(label, left_parens_or_brackets_excluding_disc,
          right_parens_or_brackets);
 }
 
-void label_keep_region_and_disc(char *label)
+size_t label_keep_region_and_disc(char *label)
 {
-   label_sanitize(label, left_parens_or_brackets_excluding_region_or_disc,
+   return label_sanitize(label, left_parens_or_brackets_excluding_region_or_disc,
          right_parens_or_brackets);
 }

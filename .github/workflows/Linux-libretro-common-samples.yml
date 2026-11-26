@@ -368,6 +368,7 @@ jobs:
             zar_test
             filestream_printf_test
             strlcpy_append_test
+            label_sanitization_test
             http_parse_test
             # UPnP gateway client: parsers, and SOAP against a fake gateway.
             net_upnp_test
