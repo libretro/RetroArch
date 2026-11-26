@@ -50,6 +50,7 @@
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_entries.h"
 #include "../../../menu/menu_displaylist.h"
+#include "../../../input/input_driver.h"
 #include "../../../playlist.h"
 #include "../../../configuration.h"
 #include "../../../retroarch.h"
@@ -794,6 +795,101 @@ static void lane_saved_view_opens_explore(void)
 
 /* ------------------------------------------------------------------ */
 
+
+/* Searches the list on screen for @term, as typing it into the search
+ * box and pressing Enter does, and lets the list rebuild. */
+static bool search_for(const char *term)
+{
+   if (!menu_input_dialog_start_search())
+      return false;
+   input_driver_keyboard_line_type(term, strlen(term));
+   input_keyboard_event(true, RETROK_RETURN, '\r', 0, RETRO_DEVICE_KEYBOARD);
+   input_keyboard_event(false, RETROK_RETURN, 0, 0, RETRO_DEVICE_KEYBOARD);
+   run_frame();
+   run_until_loaded();
+   return true;
+}
+
+/* The title of the selected entry. */
+static const char *selected_title(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *buf           = selection_buf();
+   if (!buf || menu_st->selection_ptr >= buf->size)
+      return "";
+   return buf->list[menu_st->selection_ptr].path
+      ? buf->list[menu_st->selection_ptr].path : "";
+}
+
+/* Searches stack: each term narrows the list the last one left.
+ * Cancelling a term goes back to the entry that was selected when
+ * the term was entered, one level at a time. */
+static void lane_search_cancel_restores_selection(unsigned remember)
+{
+   unsigned had               = failures;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   size_t full, narrowed;
+   char before[256], middle[256];
+
+   config_get_ptr()->uints.menu_remember_selection = remember;
+
+   open_playlists_screen();
+   CHECK(open_from_playlists("n64.lpl"), "could not open n64.lpl");
+   run_until_loaded();
+   full = selection_buf() ? selection_buf()->size : 0;
+   CHECK(full == 1500, "n64.lpl listed %u entries, not 1500",
+         (unsigned)full);
+   if (failures != had)
+      return;
+   set_selection(1234);
+   strlcpy(before, selected_title(), sizeof(before));
+
+   CHECK(search_for("01"), "the search box did not open");
+   narrowed = selection_buf() ? selection_buf()->size : 0;
+   CHECK(narrowed > 0 && narrowed < full,
+         "searching for \"01\" left %u of %u entries",
+         (unsigned)narrowed, (unsigned)full);
+   CHECK(menu_st->selection_ptr == 0,
+         "a new search started on entry %u, not the first",
+         (unsigned)menu_st->selection_ptr);
+   if (failures != had)
+      return;
+   set_selection(narrowed / 2);
+   strlcpy(middle, selected_title(), sizeof(middle));
+
+   CHECK(search_for("012"), "the search box did not open");
+   CHECK(selection_buf() && selection_buf()->size < narrowed,
+         "the second term did not narrow the list");
+
+   press_back();
+   run_until_loaded();
+   CHECK(selection_buf() && selection_buf()->size == narrowed,
+         "cancelling the second term listed %u entries, not %u",
+         selection_buf() ? (unsigned)selection_buf()->size : 0,
+         (unsigned)narrowed);
+   CHECK(string_is_equal(selected_title(), middle),
+         "cancelling the second term selected \"%s\" (entry %u), not "
+         "\"%s\" (entry %u)", selected_title(),
+         (unsigned)menu_st->selection_ptr, middle,
+         (unsigned)(narrowed / 2));
+
+   press_back();
+   run_until_loaded();
+   CHECK(selection_buf() && selection_buf()->size == full,
+         "cancelling the first term listed %u entries, not %u",
+         selection_buf() ? (unsigned)selection_buf()->size : 0,
+         (unsigned)full);
+   CHECK(string_is_equal(selected_title(), before),
+         "cancelling the first term selected \"%s\" (entry %u), not "
+         "\"%s\" (entry 1234)", selected_title(),
+         (unsigned)menu_st->selection_ptr, before);
+
+   press_back();
+   if (failures == had)
+      fprintf(stderr, "[pass] search-cancel-restores-selection lane "
+            "(remember selection %u)\n", remember);
+}
+
 /* Content information for a playlist entry that has no path - a
  * playlist line written without one, for a core that needs content:
  * the Path row says Not Available. It used to read the first byte of
@@ -943,6 +1039,8 @@ int main(int argc, char *argv[])
    lane_many_playlists_keep_history();
    lane_restored_selection_clamped();
    lane_restored_selection_kept_through_load();
+   lane_search_cancel_restores_selection(MENU_REMEMBER_SELECTION_OFF);
+   lane_search_cancel_restores_selection(MENU_REMEMBER_SELECTION_ALWAYS);
    lane_info_entry_without_path();
 
    CHECK(saf_read_calls > 0,

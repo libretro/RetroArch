@@ -57,10 +57,10 @@ int action_cancel_pop_default(const char *path,
     * > If so, remove the last search term */
    if (   menu_search_terms
        && menu_driver_search_filter_enabled(menu_label, menu_type)
-       && menu_entries_search_pop())
+       && menu_entries_search_pop(&new_selection_ptr))
    {
-      /* Reset navigation pointer */
-      menu_st->selection_ptr      = 0;
+      /* Back to where the list was when the term was entered */
+      menu_st->selection_ptr      = new_selection_ptr;
       if (menu_st->driver_ctx->navigation_set)
          menu_st->driver_ctx->navigation_set(menu_st->userdata, false);
       /* Refresh menu */

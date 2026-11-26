@@ -4121,7 +4121,8 @@ static enum menu_driver_id_type menu_driver_set_id(
    return MENU_DRIVER_ID_UNKNOWN;
 }
 
-static bool menu_entries_search_push(const char *search_term)
+static bool menu_entries_search_push(const char *search_term,
+      size_t selection)
 {
    size_t i;
    char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
@@ -4151,12 +4152,15 @@ static bool menu_entries_search_push(const char *search_term)
    /* Add search term */
    strlcpy(search->terms[search->size], search_term_clipped,
          sizeof(search->terms[search->size]));
+   search->selection[search->size] = selection;
    search->size++;
 
    return true;
 }
 
-bool menu_entries_search_pop(void)
+/* Removes the last search term; @selection receives the
+ * selection the list had when that term was entered */
+bool menu_entries_search_pop(size_t *selection)
 {
    menu_search_terms_t *search = menu_entries_search_get_terms_internal();
 
@@ -4168,6 +4172,7 @@ bool menu_entries_search_pop(void)
    /* Remove last item from the list */
    search->size--;
    search->terms[search->size][0] = '\0';
+   *selection                     = search->selection[search->size];
 
    return true;
 }
@@ -4361,7 +4366,7 @@ static void menu_input_search_cb(void *userdata, const char *str)
        && menu_driver_search_filter_enabled(label, type))
    {
       /* Add search term */
-      if (menu_entries_search_push(str))
+      if (menu_entries_search_push(str, menu_st->selection_ptr))
       {
          /* Reset navigation pointer */
          menu_st->selection_ptr     = 0;

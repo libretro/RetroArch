@@ -104,6 +104,9 @@ typedef struct menu_ctx_list
 typedef struct menu_search_terms
 {
    size_t size;
+   /* The selection each term was entered at, restored when
+    * that term is removed */
+   size_t selection[MENU_SEARCH_FILTER_MAX_TERMS];
    char terms[MENU_SEARCH_FILTER_MAX_TERMS][MENU_SEARCH_FILTER_MAX_LENGTH];
 } menu_search_terms_t;
 
@@ -208,7 +211,7 @@ bool menu_entries_append(file_list_t *list,
 
 bool menu_entries_clear(file_list_t *list);
 
-bool menu_entries_search_pop(void);
+bool menu_entries_search_pop(size_t *selection);
 
 menu_search_terms_t *menu_entries_search_get_terms(void);
 
