@@ -156,6 +156,14 @@ typedef struct save_task_state
    intfstream_t *file;
    void *data;
    void *undo_data;
+   /* A backup load's destination lent by the backup it replaces
+    * (spare_size bytes held, spare_capacity allocated); data takes it
+    * when large enough, and one not taken goes back still holding
+    * that backup */
+   void *spare;
+   size_t spare_size;
+   size_t spare_capacity;
+   size_t capacity;   /* bytes allocated at data */
    ssize_t size;
    ssize_t undo_size;
    ssize_t written;
@@ -236,6 +244,23 @@ static void content_load_and_save_state_cb(retro_task_t *task,
 static bool task_push_save_state(const char *path, void *data, size_t len,
       bool autosave, bool first, int slot,
       retro_task_callback_t cb, void *user_data);
+
+/* A lent backup allocation the load did not take is still that
+ * backup: it goes back, unless a later one has arrived meanwhile. */
+static void state_task_return_spare(save_task_state_t *state)
+{
+   if (!state->spare)
+      return;
+   if (undo_save_buf.data)
+      free(state->spare);
+   else
+   {
+      undo_save_buf.data     = state->spare;
+      undo_save_buf.size     = state->spare_size;
+      undo_save_buf.capacity = state->spare_capacity;
+   }
+   state->spare = NULL;
+}
 
 static bool state_task_record(retro_task_t *task)
 {
@@ -395,6 +420,7 @@ static void state_tasks_release(void)
             state->done_cb(NULL, state->path, task->user_data,
                   msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO));
          task_free_title(task);
+         state_task_return_spare(state);
          free(state);
          free(task);
          if (!queued)
@@ -602,16 +628,8 @@ static void undo_save_state_cb(retro_task_t *task,
    if (save_state_tasks_pending)
       save_state_tasks_pending--;
 
-   /* Wipe the save file buffer as it's intended to be one use only */
-   undo_save_buf.path[0]  = '\0';
-   undo_save_buf.size     = 0;
-   undo_save_buf.capacity = 0;
-   if (undo_save_buf.data)
-   {
-      free(undo_save_buf.data);
-      undo_save_buf.data = NULL;
-   }
-
+   /* The undo took the backup with it at its push; whatever
+    * undo_save_buf holds now is a later save's */
    free(state);
    state_tasks_release();
 }
@@ -681,11 +699,10 @@ static void task_save_handler_finished(retro_task_t *task,
                msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO)));
    }
 
+   /* An undo's data was moved out of undo_save_buf at its push, so
+    * every save owns what it writes */
    if (state->data)
    {
-      if (     (state->flags & SAVE_TASK_FLAG_UNDO_SAVE)
-            && (state->data == undo_save_buf.data))
-         undo_save_buf.data = NULL;
       free(state->data);
       state->data = NULL;
    }
@@ -1170,7 +1187,7 @@ static void task_save_handler(retro_task_t *task)
          const char *failed_undo_str = msg_hash_to_str(
                MSG_FAILED_TO_UNDO_SAVE_STATE);
          RARCH_ERR("[State] %s \"%s\".\n", failed_undo_str,
-               undo_save_buf.path);
+               state->path);
          snprintf(msg, sizeof(msg), "%s \"RAM\".", failed_undo_str);
       }
       else
@@ -1274,15 +1291,13 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t len)
          return true;
       }
 
-      /* The hold is full: this one never runs, so nothing else frees
-       * what it holds */
+      /* The hold is full: this one never runs; @data goes back to
+       * the caller */
       task_free_title(task);
       free(task);
       task = NULL;
    }
 
-   if (data)
-      free(data);
    if (state)
       free(state);
    if (task)
@@ -1300,10 +1315,25 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t len)
 bool content_undo_save_state(void)
 {
    if (core_info_current_supports_savestate())
-      return task_push_undo_save_state(
-            undo_save_buf.path,
-            undo_save_buf.data,
-            undo_save_buf.size);
+   {
+      /* The backup moves into the task: a backup load finishing
+       * before it runs replaces undo_save_buf without touching what
+       * the task writes, and the backup is one use only */
+      void *data = undo_save_buf.data;
+      if (!data || !undo_save_buf.size)
+         return false;
+      undo_save_buf.data     = NULL;
+      if (task_push_undo_save_state(undo_save_buf.path, data,
+               undo_save_buf.size))
+      {
+         undo_save_buf.size     = 0;
+         undo_save_buf.capacity = 0;
+         return true;
+      }
+      /* Turned away: the backup is still the one to undo with */
+      undo_save_buf.data = data;
+      return false;
+   }
    RARCH_LOG("[State] %s\n",
          msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
    return false;
@@ -1381,7 +1411,19 @@ static void task_load_handler(retro_task_t *task)
       if ((state->size = intfstream_get_size(state->file)) < 0)
          goto end;
 
-      if (!(state->data = malloc(state->size + 1)))
+      /* A backup reads into the allocation of the one it replaces
+       * when that is large enough */
+      if (     state->spare
+            && state->spare_capacity >= (size_t)state->size + 1)
+      {
+         state->data           = state->spare;
+         state->capacity       = state->spare_capacity;
+         state->spare          = NULL;
+         state->spare_capacity = 0;
+      }
+      else if ((state->data = malloc(state->size + 1)))
+         state->capacity = (size_t)state->size + 1;
+      else
          goto end;
    }
 
@@ -1709,6 +1751,7 @@ static void content_load_state_apply(retro_task_t *task,
    if (load_state_tasks_pending)
       load_state_tasks_pending--;
    state_task_forget(load_data);
+   state_task_return_spare(load_data);
 
    _len = load_data->size;
    buf  = load_data->data;
@@ -1738,7 +1781,7 @@ static void content_load_state_apply(retro_task_t *task,
 
       undo_save_buf.data     = buf;
       undo_save_buf.size     = _len;
-      undo_save_buf.capacity = (size_t)_len;
+      undo_save_buf.capacity = load_data->capacity;
       strlcpy(undo_save_buf.path, load_data->path, sizeof(undo_save_buf.path));
 
       if (load_data->done_cb)
@@ -2149,11 +2192,27 @@ static bool task_push_load_and_save_state(const char *path, void *data,
    else
       task->flags              &= ~RETRO_TASK_FLG_MUTE;
 
+   /* The backup this one replaces lends its allocation: the read
+    * lands there instead of in a fresh state-sized buffer, and the
+    * two are never held at once */
+   if (load_to_backup_buffer && undo_save_buf.data)
+   {
+      state->spare_size      = undo_save_buf.size;
+      state->spare           = undo_save_buf.data;
+      state->spare_capacity  = undo_save_buf.capacity;
+      undo_save_buf.data     = NULL;
+      undo_save_buf.size     = 0;
+      undo_save_buf.capacity = 0;
+   }
+
    if (state_task_push(task))
    {
       load_state_tasks_pending++;
       return true;
    }
+
+   /* Turned away: the backup is still the one to undo with */
+   state_task_return_spare(state);
 
 error:
    /* No callback will run for a request that was not accepted. */
@@ -2578,10 +2637,8 @@ static void state_tasks_discard_held(void)
                   msg_hash_to_str(is_load
                      ? MSG_FAILED_TO_LOAD_STATE
                      : MSG_FAILED_TO_SAVE_STATE_TO));
-         /* an undo writes undo_save_buf's own allocation */
-         if (     state->data
-               && !(state->flags & SAVE_TASK_FLAG_UNDO_SAVE))
-            free(state->data);
+         free(state->data);
+         state_task_return_spare(state);
          free(state->undo_data);
          free(state->fe_replay);
          free(state->fe_cheevos);

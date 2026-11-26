@@ -1797,6 +1797,77 @@ static void test_undo_save_restores_file(bool threaded)
 #endif
 
 /* -----------------------------------------------------------------
+ * Backup ownership.
+ *
+ *     An undo takes the backup it writes with it when it is pushed,
+ *     and an overwrite's backup read is lent the allocation of the
+ *     backup it replaces.  An undo asked while that read is pending
+ *     used to borrow the very allocation the read's completion then
+ *     freed, and wrote and freed it again: with ASan here, a
+ *     use-after-free.  Steady overwrite saves allocate their
+ *     serialized state and nothing for the backup.
+ * ----------------------------------------------------------------- */
+static void test_backup_ownership(bool threaded)
+{
+   const char *path = "sst_backup_lend.state";
+   void   *before   = NULL, *back = NULL;
+   int64_t n_before = -1, n_back = -2;
+   int i;
+
+   frontend_reset();
+   content_reset_savestate_backups();
+   filestream_delete(path);
+#ifdef HAVE_COMPRESSION
+   stub_settings.bools.savestate_file_compression = 0;
+#endif
+   core_fill(3 * TEST_SAVE_STATE_CHUNK);
+   memset(core_mem, 0x11, core_len);
+   content_save_state(path, true);
+   drain_states(threaded);
+   memset(core_mem, 0x22, core_len);
+   content_save_state(path, true);
+   drain_states(threaded);
+   if (!filestream_read_file(path, &before, &n_before))
+      n_before = -1;
+
+   memset(core_mem, 0x33, core_len);
+   okf(content_save_state(path, true), "lend: the overwrite is pushed");
+   okf(!content_undo_save_state(),
+         "lend: no undo while its backup is lent to the pending read");
+   drain_states(threaded);
+   okf(content_undo_save_state(), "lend: the new backup is undoable");
+   okf(!content_undo_save_state(), "lend: a second undo finds nothing");
+   drain_states(threaded);
+   if (!filestream_read_file(path, &back, &n_back))
+      n_back = -2;
+   okf(n_before > 0 && n_back == n_before
+         && !memcmp(before, back, (size_t)n_before),
+         "lend: the undo put the overwritten file back");
+
+   /* one overwrite to have a backup to lend from */
+   memset(core_mem, 0x44, core_len);
+   content_save_state(path, true);
+   drain_states(threaded);
+   alloc_count_begin();
+   for (i = 0; i < 4; i++)
+   {
+      memset(core_mem, 0x50 + i, core_len);
+      content_save_state(path, true);
+      drain_states(threaded);
+   }
+   alloc_count_end();
+   if (big_allocs != 4)
+      printf("   %d state-sized allocations for 4 overwrite saves\n",
+            big_allocs);
+   okf(big_allocs == 4,
+         "reuse: an overwrite save allocates its state, its backup nothing");
+
+   free(before);
+   free(back);
+   filestream_delete(path);
+}
+
+/* -----------------------------------------------------------------
  * A load into the core waits for the core's second frame.
  *
  *     Held on the frame thread, with a task of that thread's looking
@@ -1945,6 +2016,7 @@ static int run_default_lane(void)
 #ifdef HAVE_COMPRESSION
    test_undo_save_restores_file(false);
 #endif
+   test_backup_ownership(false);
 
    content_reset_savestate_backups();
    task_queue_deinit();
@@ -1969,6 +2041,7 @@ static int run_threaded_lane(void)
 #ifdef HAVE_COMPRESSION
    test_undo_save_restores_file(true);
 #endif
+   test_backup_ownership(true);
 
    content_reset_savestate_backups();
    task_queue_deinit();
