@@ -212,6 +212,30 @@ Shader functionality frequently crosses shared shader code and multiple video ba
 
 These commits demonstrate the breadth of changes that may be required. They are examples of implementation patterns, not instructions to reproduce their exact file lists.
 
+## Desktop companion UI
+
+The desktop companion has three frontends: Qt (`ui/drivers/ui_qt*`),
+Win32 (`ui/drivers/ui_win32_companion.c`) and Cocoa
+(`ui/drivers/ui_cocoa_companion.m`). The companion itself is the shared
+C code in `ui/companion/`; the frontends only draw it.
+
+- Put the logic in `ui/companion/`, where every frontend uses it: state,
+  layout, sorting, filtering, the saved rows, thumbnails, and what each
+  action does. A frontend turns that state into native widgets, and
+  native events into calls on it.
+- Keep the Qt code as small and dense as possible. When working in it,
+  move the logic it holds into `ui/companion/` and delete the Qt copy.
+- Do not design a feature around Qt and port it later. Write the shared
+  C part first, then a thin layer in each frontend.
+- Qt must build on Qt 5.2, the oldest that configure accepts, and in
+  the long run on Qt 4.x. Do not use Qt API newer than 5.2 when an
+  older call does the job, and check against the 5.2 headers (Ubuntu
+  14.04's qtbase5-dev has the 5.2.1 headers and moc). Guard with
+  `QT_VERSION` only where older Qt has no equivalent, and keep the
+  older branch working rather than empty.
+- New code in the Qt files is C89-shaped: no lambdas, `auto` or other
+  C++11 features, so it also builds with the compilers Qt 4 targets.
+
 ## Historical commits
 
 Historical commits may be used to understand established implementation patterns.
