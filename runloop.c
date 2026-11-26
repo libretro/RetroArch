@@ -10684,7 +10684,7 @@ int runloop_iterate(void)
 #endif
 
    /* Check if we should save state automatically */
-   if (savestate_automatic_enable)
+   if (savestate_automatic_enable && !runloop_st->auto_state_load_pending)
       content_save_state_automatic(current_time);
 
 end:

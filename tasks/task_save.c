@@ -2821,6 +2821,10 @@ bool content_save_state_automatic(retro_time_t now_us)
    if (savestate_automatic_interval == 0)
       return false;
 
+   /* The timed save can replace the file an automatic load is reading. */
+   if (content_load_state_in_progress(NULL))
+      return false;
+
    /* Check how long since last autosavestate, against the clock the
     * frame already read - no time() call of its own per frame. */
    if ((now_us - last_savestate_automatic_time)
