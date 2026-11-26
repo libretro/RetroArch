@@ -4300,7 +4300,6 @@ static const struct
    char s_87ca7bc6[197];
    char s_cfa51e8c[441];
    char s_b62c2f7e[364];
-   char s_456fcbc9[404];
    char s_ba8ff8ce[373];
    char s_82fab47a[54];
    char s_72e21512[238];
@@ -4427,7 +4426,6 @@ static const struct
    char s_36033606[159];
    char s_5d342d82[315];
    char s_3ba8b64d[164];
-   char s_d62ed5dc[446];
    char s_2e69508b[433];
    char s_7e96b5ce[49];
    char s_1c796a6e_0[500];
@@ -4476,7 +4474,6 @@ static const struct
    char s_3c13e61f[143];
    char s_d96182c1[37];
    char s_d740017d[96];
-   char s_675acf1d[147];
    char s_93bbb839[112];
    char s_4d0b4ce0[113];
    char s_f99a7d5e[278];
@@ -10805,11 +10802,6 @@ static const struct
    "er el brillo de la pantalla al m\303\241ximo. Por otro lado, puedes elegir aqu\303\255 el n\303"
    "\272mero m\303\241ximo de nits que admite tu pantalla y luego bajar el brillo de la misma hasta "
    "llegar al punto adecuado.",
-   "Activa las l\303\255neas de barrido con HDR. Las l\303\255neas de barrido son el principal motiv"
-   "o para activar el modo HDR en RetroArch, ya que una implementaci\303\263n correcta de las l\303"
-   "\255neas de barrido apagar\303\241 buena parte de la imagen, y el HDR recuperar\303\241 parte de"
-   "l brillo perdido. Si necesitas un control m\303\241s preciso de tus l\303\255neas de barrido, de"
-   "ber\303\255as recurrir a los shaders personalizados que incluye RetroArch.",
    "Informa a un compositor de Wayland del rango de brillo que contiene un fotograma para que pueda "
    "asociar contenidos en HDR a partir de la informaci\303\263n del fotograma en vez de tener que su"
    "poner lo que son. Al desactivar esta opci\303\263n, el fotograma se describir\303\241 como Windo"
@@ -11101,12 +11093,6 @@ static const struct
    "r encima/por debajo son ideales para televisores 3D.",
    "Intercambia las im\303\241genes de los ojos izquierdo y derecho. Utilizar en casos de visualizac"
    "i\303\263n cruzada o cuando una imagen muestre los ojos o las filas invertidos.",
-   "Establece la profundidad de bits de la superficie final de salida cuando el modo HDR est\303\251"
-   " desactivado. 10\302\240bits elimina el efecto de bandas de color que introducen aquellos shader"
-   "s que oscurecen la imagen, como los perfiles de rayos CRT y las m\303\241scaras de rejilla de ap"
-   "ertura. Se utilizar\303\241 el modo de 8\302\240bits si la pantalla o el compositor no ofrecen e"
-   "l otro modo. Se ignorar\303\241 al activar el modo HDR, ya que este selecciona un formato propio"
-   ".",
    "Utiliza un valor personalizado para el intervalo de intercambio de la sincron\303\255a vertical."
    " Esto reducir\303\241 la frecuencia de actualizaci\303\263n del monitor seg\303\272n el factor e"
    "specificado. El valor autom\303\241tico cambiar\303\241 el factor seg\303\272n la velocidad de f"
@@ -11238,8 +11224,6 @@ static const struct
    "eto para no tener que cambiar entre modos de v\303\255deo.",
    "Cambia los ajustes del modo ventana.",
    "Permite que las pantallas secundarias puedan utilizar ventanas independientes en el escritorio.",
-   "Permite que las ventanas de juego y el men\303\272 se muestren en otras pantallas. Desactiva est"
-   "a opci\303\263n para que se muestre todo en una misma ventana.",
    "Establece la altura m\303\241xima de la ventana al reescalarla autom\303\241ticamente seg\303"
    "\272n el valor de Escala en ventana.",
    "Establece la anchura m\303\241xima de la ventana al reescalarla autom\303\241ticamente seg\303"
@@ -12131,7 +12115,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (290056u
+      (sizeof(msg_hash_es_blob) == (289059u
 #ifdef ANDROID
        + 329u
 #endif
@@ -16992,7 +16976,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SEND_LUMINANCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
@@ -17118,7 +17101,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER,
@@ -17162,7 +17144,6 @@ static const msg_hash_id_t msg_hash_es_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE_ANDROID,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,

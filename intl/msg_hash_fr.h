@@ -2479,6 +2479,8 @@ static const struct
    char s_5741c1d0[26];
    char s_a1a7717d[28];
    char s_e6ca3876[40];
+   char s_c757f528[18];
+   char s_edc59557[17];
    char s_1fba8831[49];
    char s_ff960910[32];
    char s_17690f5a[49];
@@ -2557,7 +2559,7 @@ static const struct
    char s_a40653a7[40];
    char s_e67b672d[53];
    char s_52e3d6ea[41];
-   char s_0eea4a53[32];
+   char s_0eea4a53[36];
    char s_f387bafb[21];
    char s_2c868ae4[12];
    char s_9c535394[10];
@@ -2565,9 +2567,14 @@ static const struct
    char s_fcdb4d6c[13];
    char s_34a16f69[20];
    char s_7706edf0[20];
-   char s_0356de68[11];
-   char s_0356de69[11];
+   char s_0356de68[26];
+   char s_0356de69[26];
    char s_92c235ae[10];
+   char s_03660a67[39];
+   char s_9fd32b8d[49];
+   char s_df1fb594[49];
+   char s_6895740c[52];
+   char s_6895740d[52];
    char s_3253994e[9];
    char s_c992346c[35];
    char s_580e244f[7];
@@ -4036,7 +4043,6 @@ static const struct
    char s_cfa51e8c_0[500];
    char s_cfa51e8c_1[4];
    char s_b62c2f7e[396];
-   char s_456fcbc9[401];
    char s_ba8ff8ce[363];
    char s_82fab47a[45];
    char s_72e21512[248];
@@ -4045,6 +4051,7 @@ static const struct
    char s_66f2b57e[63];
    char s_a776daeb[97];
    char s_88095324[97];
+   char s_0c7641d6[98];
    char s_c0f9a2df[128];
    char s_ed06873e[62];
    char s_e08b7fc8[128];
@@ -4088,6 +4095,11 @@ static const struct
    char s_c94003ba[238];
    char s_dc6f9d69[58];
    char s_552c6b9c[94];
+   char s_0eeecc15[79];
+   char s_4112463b[79];
+   char s_966f3282[79];
+   char s_2affa9fa[91];
+   char s_2affa9fb[84];
    char s_894ecb9a[400];
    char s_67d549fd[41];
    char s_afac733c[38];
@@ -4118,7 +4130,6 @@ static const struct
    char s_36033606[190];
    char s_5d342d82[287];
    char s_3ba8b64d[187];
-   char s_d62ed5dc[451];
    char s_2e69508b[436];
    char s_7e96b5ce[50];
    char s_3547866d_0[500];
@@ -4155,7 +4166,6 @@ static const struct
 #endif
    char s_3c13e61f[120];
    char s_d96182c1[42];
-   char s_675acf1d[129];
    char s_93bbb839[135];
    char s_4d0b4ce0[135];
    char s_f99a7d5e[273];
@@ -7538,6 +7548,8 @@ static const struct
    "Dispositions d'affichage ",
    "Latence maximale des images",
    "Nombre d'images max en m\303\251moire tampon ",
+   "Affichage du menu",
+   "\303\211cran de jeu %u",
    "Couleur d'arri\303\250re-plan des notifications (Bleu)",
    "Arri\303\250re-plan des notifications",
    "Couleur d'arri\303\250re-plan des notifications (Vert)",
@@ -7617,7 +7629,7 @@ static const struct
    "Synchronisation \303\240 la ligne de balayage",
    "D\303\251calage de synchronisation de la ligne de balayage",
    "Simulation de ligne de balayage roulante",
-   "Affichage %u de l'\303\251cran de jeu",
+   "Affichage sur %u de l'\303\251cran de jeu",
    "Disposition d'\303\251cran",
    "Horizontale",
    "Verticale",
@@ -7625,9 +7637,14 @@ static const struct
    "Plein \303\251cran",
    "Hauteur de fen\303\252tre",
    "Largeur de fen\303\252tre",
-   "Fen\303\252tre X",
-   "Fen\303\252tre Y",
+   "Position X de la fen\303\252tre",
+   "Position Y de la fen\303\252tre",
    "\303\211cran %u",
+   "Plein \303\251cran sur %u de l'\303\251cran de jeu",
+   "Hauteur de la fen\303\252tre sur %u de l'\303\251cran de jeu",
+   "Largeur de la fen\303\252tre sur %u de l'\303\251cran de jeu",
+   "Position X de la fen\303\252tre sur %u de l'\303\251cran de jeu",
+   "Position Y de la fen\303\252tre sur %u de l'\303\251cran de jeu",
    "\303\211chelle",
    "Changement de mode d'affichage SDL",
    "Vid\303\251o",
@@ -10148,11 +10165,6 @@ static const struct
    "an au maximum. Alternativement, r\303\251gler cette option au niveau de nits max de votre \303"
    "\251cran et baisser la luminosit\303\251 de votre \303\251cran jusqu'\303\240 ce que l'image ait"
    " l'air correct.",
-   "Activer les lignes de balayage HDR. Les lignes de balayage sont la raison principale pour l'util"
-   "isation de HDR dans RetroArch car une impl\303\251mentation pr\303\251cise de lignes de balayage"
-   " \303\251teint la plupart de l'\303\251cran et HDR r\303\251cup\303\250re une partie de cette pe"
-   "rte de luminosit\303\251. Si vous avez besoin de plus de contr\303\264le sur vos lignes de balay"
-   "age, consultez les shaders personnalis\303\251s fournis par RetroArch.",
    "Indiquer \303\240 un compositeur Wayland la plage de luminosit\303\251 de l'image, afin qu'il ma"
    "ppe le contenu HDR en fonction des donn\303\251es r\303\251elles de l'image plut\303\264t que su"
    "r la base d'une hypoth\303\250se. Si cette option est d\303\251sactiv\303\251e, l'image est d"
@@ -10177,6 +10189,8 @@ static const struct
    " sp\303\251cifi\303\251.",
    "Indique au pilote vid\303\251o d'utiliser explicitement le mode de mise en m\303\251moire tampon"
    " sp\303\251cifi\303\251.",
+   "L'\303\251cran sur lequel le menu s'affiche. Auto utilise le r\303\251glage automatique de l'"
+   "\303\251cran de jeu 1.",
    "D\303\251finit la valeur bleue de la couleur d'arri\303\250re-plan du texte \303\240 l'\303\251c"
    "ran. Les valeurs valides sont comprises entre 0 et 255.",
    "Active une couleur d'arri\303\250re-plan pour le texte \303\240 l'\303\251cran.",
@@ -10284,6 +10298,13 @@ static const struct
    "Comment disposer les \303\251crans des syst\303\250mes multi-\303\251crans.",
    "L'endroit o\303\271 cet \303\251cran de jeu s'affiche, ainsi que la taille et la position de sa "
    "fen\303\252tre.",
+   "Afficher la fen\303\252tre de ce jeu de mani\303\250re \303\240 ce qu'elle occupe tout l'\303"
+   "\251cran.",
+   "La hauteur de la fen\303\252tre de cet \303\251cran de jeu. Auto l'ajuste automatiquement.",
+   "La largeur de la fen\303\252tre de cet \303\251cran de jeu. Auto l'ajuste automatiquement.",
+   "Position de d\303\251part de la fen\303\252tre de jeu par rapport au bord gauche du bureau, en p"
+   "ixels.",
+   "Position de d\303\251part de la fen\303\252tre de jeu par rapport au haut du bureau, en pixels.",
    "Permet \303\240 la fen\303\252tre SDL de basculer entre les modes d'affichage qu'elle r\303\251p"
    "ertorie. 'Auto' n'utilise cette fonction que lorsque le serveur d'affichage natif ne peut pas ch"
    "anger de mode. 'Toujours' supplante le serveur natif : CRT SwitchRes s\303\251lectionne alors un"
@@ -10351,12 +10372,6 @@ static const struct
    "Inverser les images des yeux gauche et droit. Utilisez cette option pour la visualisation en lou"
    "chant (vision crois\303\251e) ou lorsque l'affichage pr\303\251sente les yeux ou les lignes inve"
    "rs\303\251s.",
-   "Profondeur de bits de l'image finale lorsque le HDR est d\303\251sactiv\303\251. Le 10 bits \303"
-   "\251limine les effets de bandes introduits par les shaders qui assombrissent fortement l'image, "
-   "comme les profils de faisceau des \303\251crans cathodiques et les masques de grille d'ouverture"
-   ". Le syst\303\250me utilise 8 bits si l'\303\251cran ou le compositeur ne le prend pas en charge"
-   ". Cette option est ignor\303\251e lorsque le HDR est activ\303\251, car ce dernier s\303\251lect"
-   "ionne son propre format.",
    "Utiliser un intervalle d'\303\251change personnalis\303\251 pour V-Sync. R\303\251duit efficacem"
    "ent la fr\303\251quence de rafra\303\256chissement du moniteur par le facteur sp\303\251cifi\303"
    "\251. 'Auto' d\303\251finit le facteur en fonction de la fr\303\251quence d'images rapport\303"
@@ -10443,8 +10458,6 @@ static const struct
    "En mode plein \303\251cran, utiliser plut\303\264t une fen\303\252tre en plein \303\251cran pour"
    " emp\303\252cher les changements de mode d'affichage.",
    "Modifier les r\303\251glages du mode fen\303\252tr\303\251.",
-   "Permettre aux \303\251crans de jeu et au menu d\342\200\231utiliser d\342\200\231autres moniteur"
-   "s. D\303\251sactiv\303\251 regroupe le tout dans une seule fen\303\252tre.",
    "D\303\251finit la hauteur maximale de la fen\303\252tre d'affichage lors du redimensionnement au"
    "tomatique bas\303\251e sur '\303\211chelle en mode fen\303\252tr\303\251'.",
    "D\303\251finit la largeur maximale de la fen\303\252tre d'affichage lors du redimensionnement au"
@@ -11160,7 +11173,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (259852u
+      (sizeof(msg_hash_fr_blob) == (259691u
 #ifdef ANDROID
        + 373u
 #endif
@@ -14189,6 +14202,8 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MENU_DISPLAY,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MENU_FOLLOWS_SCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
@@ -14278,6 +14293,11 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_X,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_PAGE_WINDOW_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_FULLSCREEN,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_X,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_WINDOW_Y,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_XR_SCALE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
@@ -15726,7 +15746,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SEND_LUMINANCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
@@ -15735,6 +15754,7 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MENU_DISPLAY,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
@@ -15778,6 +15798,11 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_DISPLAY_DESKTOP,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_FULLSCREEN,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_HEIGHT,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_WIDTH,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_X,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_WINDOW_Y,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
@@ -15808,7 +15833,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
@@ -15843,7 +15867,6 @@ static const msg_hash_id_t msg_hash_fr_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE_ANDROID,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,

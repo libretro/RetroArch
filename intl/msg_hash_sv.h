@@ -4117,7 +4117,6 @@ static const struct
    char s_87ca7bc6[185];
    char s_cfa51e8c[429];
    char s_b62c2f7e[302];
-   char s_456fcbc9[387];
    char s_ba8ff8ce[276];
    char s_82fab47a[38];
    char s_72e21512[180];
@@ -4247,7 +4246,6 @@ static const struct
    char s_5d342d82[234];
    char s_bd0312ce[83];
    char s_3ba8b64d[124];
-   char s_d62ed5dc[345];
    char s_2e69508b[331];
    char s_7e96b5ce[48];
    char s_1c796a6e_0[500];
@@ -4288,7 +4286,6 @@ static const struct
    char s_3c13e61f[103];
    char s_d96182c1[42];
    char s_d740017d[59];
-   char s_675acf1d[91];
    char s_93bbb839[112];
    char s_4d0b4ce0[112];
    char s_f99a7d5e[209];
@@ -10371,11 +10368,6 @@ static const struct
    "\244rmens ljusstyrka p\303\245 fullt. Alternativt st\303\244ller du in detta p\303\245 sk\303"
    "\244rmens maximala antal nit och s\303\244nker sk\303\244rmens ljusstyrka tills det ser r\303"
    "\244tt ut.",
-   "Aktivera HDR-skanningslinjer. Skanningslinjer \303\244r den fr\303\244msta anledningen till att "
-   "anv\303\244nda HDR i RetroArch, eftersom en korrekt implementering av skanningslinjer st\303\244"
-   "nger av st\303\266rre delen av sk\303\244rmen och HDR \303\245terst\303\244ller en del av den f"
-   "\303\266rlorade ljusstyrkan. Om du beh\303\266ver mer kontroll \303\266ver dina skanningslinjer "
-   "kan du anv\303\244nda de anpassade skuggare som RetroArch tillhandah\303\245ller.",
    "Informera en Wayland-komposit\303\266r om ljusstyrkeintervallet i bildrutan, s\303\245 att HDR-i"
    "nneh\303\245ll mappas fr\303\245n bildrutan i st\303\244llet f\303\266r fr\303\245n ett antagand"
    "e. N\303\244r alternativet \303\244r av beskrivs bildrutan som Windows-scRGB, som tidigare. Verk"
@@ -10663,11 +10655,6 @@ static const struct
    " f\303\266r det visas.",
    "Byt v\303\244nster och h\303\266ger \303\266gonbild. Anv\303\244nds vid skel\303\266gd visning e"
    "ller n\303\244r en sk\303\244rm visar \303\266gonen eller raderna omv\303\244nda.",
-   "Bitdjup f\303\266r den slutliga utmatningsytan n\303\244r HDR \303\244r av. 10 bitar minskar ban"
-   "dning som orsakas av shaderprogram som kraftigt m\303\266rkar bilden, till exempel CRT-str\303"
-   "\245lprofiler och aperturgaller. \303\205terg\303\245r till 8 bitar om bildsk\303\244rmen eller "
-   "kompositorn saknar st\303\266d f\303\266r det. Ignoreras n\303\244r HDR \303\244r aktiverat efte"
-   "rsom HDR v\303\244ljer sitt eget format.",
    "Anv\303\244nd ett anpassat bytesintervall f\303\266r VSynk. Minskar effektivt bildsk\303\244rmen"
    "s uppdateringsfrekvens med den angivna faktorn. 'Auto' st\303\244ller in faktorn baserat p\303"
    "\245 k\303\244rnrapporterad bildhastighet, vilket ger f\303\266rb\303\244ttrad bildtakt n\303"
@@ -10779,8 +10766,6 @@ static const struct
    "\303\266rhindrar att visningsl\303\244ge \303\244ndras.",
    "\303\204ndra inst\303\244llningar f\303\266r f\303\266nsterl\303\244ge.",
    "Till\303\245t sekund\303\244ra sk\303\244rmar i separata skrivbordsf\303\266nster.",
-   "L\303\245t spelsk\303\244rmar och menyn anv\303\244nda andra bildsk\303\244rmar. Av beh\303\245l"
-   "ler allt i ett f\303\266nster.",
    "Ange den maximala h\303\266jden p\303\245 visningsf\303\266nstret n\303\244r storleken \303\244n"
    "dras automatiskt baserat p\303\245 'F\303\266nsterskala'.",
    "Ange den maximala bredden p\303\245 visningsf\303\266nstret n\303\244r storleken \303\244ndras a"
@@ -11617,7 +11602,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (241763u
+      (sizeof(msg_hash_sv_blob) == (240940u
 #ifdef ANDROID
        + 361u
 #endif
@@ -16295,7 +16280,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SEND_LUMINANCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
@@ -16424,7 +16408,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER,
@@ -16460,7 +16443,6 @@ static const msg_hash_id_t msg_hash_sv_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE_ANDROID,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,

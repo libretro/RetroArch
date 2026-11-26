@@ -4012,7 +4012,6 @@ static const struct
    char s_87ca7bc6[150];
    char s_cfa51e8c[302];
    char s_b62c2f7e[323];
-   char s_456fcbc9[376];
    char s_ba8ff8ce[354];
    char s_82fab47a[39];
    char s_72e21512[204];
@@ -4092,7 +4091,6 @@ static const struct
    char s_36033606[174];
    char s_5d342d82[298];
    char s_3ba8b64d[171];
-   char s_d62ed5dc[331];
    char s_2e69508b[424];
    char s_7e96b5ce[49];
    char s_3547866d_0[500];
@@ -9910,11 +9908,6 @@ static const struct
    "guraci\303\263 de brillantor del teu monitor. Pots comen\303\247ar per seleccionar un valor de 8"
    "0 i posar la brillantor del teu monitor al m\303\240xim. O tamb\303\251 pots posar el valor m"
    "\303\240xim i ajustar la brillantor del teu monitor fins que es vegi b\303\251.",
-   "Activa les l\303\255nies d'escombrat HDR. Les l\303\255nies d'escombrat son la ra\303\263 princi"
-   "pal a RetroArch per activar HDR, perqu\303\250 una implementaci\303\263 correcta de les l\303"
-   "\255nies d'escombrat apagar\303\240 gran  part de la imatge i el HDR recuperar\303\240 la brilla"
-   "ntor perduda. Si et cal un control m\303\251s prec\303\255s de les l\303\255nies d'escombrat, ha"
-   "s de fer servir shaders personalitzats que inclou RetroArch.",
    "Indica a un compositor Wayland el rang de brillantor que cont\303\251 el fotograma, de manera qu"
    "e mapegi el contingut HDR a partir del que hi ha realment al fotograma en lloc de basar-se en un"
    "a suposici\303\263. Si est\303\240 desactivat, el fotograma es descriu com a Windows-scRGB, tal "
@@ -10080,10 +10073,6 @@ static const struct
    "rior s\303\263n adequats per a televisors 3D.",
    "Intercanvia les imatges de l'ull esquerre i del dret. Utilitza-ho per a la visualitzaci\303\263 "
    "amb visi\303\263 encreuada, o quan una pantalla mostri els ulls o les files invertits.",
-   "Profunditat en bits de la sortida quan el HDR est\303\240 apagat. 10-bit elimina les bandes de c"
-   "olor que introdueixen els shaders i que enfosqueixen molt la imatge, com els perfils CRT i certe"
-   "s m\303\240scares. Baixa a 8-bit si el monitor no ofereix m\303\251s. Ignora aquesta opci\303"
-   "\263 si el HDR est\303\240 activat, el qual selecciona el seu propi format.",
    "Usa un interval d\342\200\231intercanvi personalitzat per la sincronitzaci\303\263 vertical. Red"
    "ueix la freq\303\274\303\250ncia d\342\200\231actualitzaci\303\263 del monitor pel factor especi"
    "ficat. \302\253Autom\303\240tic\302\273 estableix el factor depenent dels fotogrames per segon q"
@@ -10876,7 +10865,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (242679u
+      (sizeof(msg_hash_ca_blob) == (241972u
 #ifdef ANDROID
        + 281u
 #endif
@@ -15420,7 +15409,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SEND_LUMINANCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
@@ -15500,7 +15488,6 @@ static const msg_hash_id_t msg_hash_ca_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,

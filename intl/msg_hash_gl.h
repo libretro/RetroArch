@@ -3690,7 +3690,6 @@ static const struct
    char s_87ca7bc6[169];
    char s_cfa51e8c[491];
    char s_b62c2f7e[306];
-   char s_456fcbc9[327];
    char s_82fab47a[42];
    char s_72e21512[230];
    char s_66f2b57e[53];
@@ -3752,7 +3751,6 @@ static const struct
    char s_3c679f0a[321];
    char s_5b059407[143];
    char s_36033606[177];
-   char s_d62ed5dc[379];
    char s_2e69508b[409];
    char s_7e96b5ce[57];
    char s_3547866d_0[500];
@@ -8960,10 +8958,6 @@ static const struct
    "sicos de brillo da t\303\272a pantalla. Como punto de partida, config\303\272rao en 80 e pon o b"
    "rillo da pantalla ao m\303\241ximo. Alternativamente, config\303\272rao aos nits m\303\241ximos "
    "da t\303\272a pantalla e reduce o brillo ata que se vexa correctamente.",
-   "Activa as li\303\261as de varrido en HDR. As li\303\261as de varrido son o principal motivo para"
-   " usar HDR en RetroArch, xa que unha implementaci\303\263n precisa apaga gran parte da pantalla e"
-   " o HDR recupera parte do brillo perdido. Se necesitas m\303\241is control sobre as li\303\261as "
-   "de varrido, usa os sombreadores personalizados que ofrece RetroArch.",
    "Cambiar as configuraci\303\263ns de v\303\255deo HDR.",
    "Selecciona a disposici\303\263n de subp\303\255xeles do teu monitor; isto s\303\263 afecta \303"
    "\241s li\303\261as de varrido. Se non sabes cal \303\251 a disposici\303\263n de subp\303\255xel"
@@ -9081,11 +9075,6 @@ static const struct
    "Engade un lixeiro borroso \303\241 imaxe para suavizar os bordos dos p\303\255xeles duros. Esta "
    "opci\303\263n ten moi pouco impacto no rendemento. Debe estar desactivado se se usan sombreadore"
    "s.",
-   "Profundidade de bits da superficie de sa\303\255da final cando o HDR est\303\241 desactivado. Os"
-   " 10 bits eliminan as bandas introducidas por sombreadores que escurecen moito a imaxe, como os p"
-   "erf\303\255s de feixe CRT e as m\303\241scaras de grella de apertura. Volve a 8 bits se a pantal"
-   "la ou o compositor non o permiten. Ign\303\263rase mentres o HDR est\303\241 activado, xa que se"
-   "lecciona o seu propio formato.",
    "Use un intervalo de intercambio personalizado para VSync. Reduce efectivamente a frecuencia de a"
    "ctualizaci\303\263n do monitor polo factor especificado. \"Autom\303\241tico\" define o factor e"
    "n funci\303\263n da frecuencia de fotogramas informada polo n\303\272cleo, proporcionando un rit"
@@ -9768,7 +9757,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (210289u
+      (sizeof(msg_hash_gl_blob) == (209583u
 #ifdef ANDROID
        + 365u
 #endif
@@ -13893,7 +13882,6 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
@@ -13955,7 +13943,6 @@ static const msg_hash_id_t msg_hash_gl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,

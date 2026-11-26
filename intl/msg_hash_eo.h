@@ -3558,7 +3558,6 @@ static const struct
    char s_7e43d750[206];
    char s_87ca7bc6[165];
    char s_b62c2f7e[310];
-   char s_456fcbc9[302];
    char s_82fab47a[46];
    char s_72e21512[203];
    char s_66f2b57e[58];
@@ -3616,7 +3615,6 @@ static const struct
    char s_3c679f0a[288];
    char s_5b059407[139];
    char s_36033606[159];
-   char s_d62ed5dc[349];
    char s_2e69508b[366];
    char s_7e96b5ce[39];
    char s_c2314d30[210];
@@ -8399,10 +8397,6 @@ static const struct
    "a ekrano. Por komenci, agordu \304\211i tion je 80 kaj la brilo de via ekrano je la maksimumo. A"
    "lternative, agordi \304\211i tion je la maksimumaj nits de via ekrano kaj malaltigu la brilon de"
    " via ekrano \304\235is la bildo \305\235ajnos bone.",
-   "Ebligi skanlinioj de HDR. Skanlinioj estas la \304\211efa kialo por uzi HDR en RetroArch, \304"
-   "\211ar preciza realigo de skanlinio mal\305\235altas la plej multon de la ekrano kaj HDR resta"
-   "\305\255ras iom el tiu perdita brilo. Se vi bezonas regi viajn skanliniojn pli, rigardu tajlorit"
-   "ajn ombrigilojn, kiujn RetroArch havigas.",
    "\305\234an\304\235i agordojn pri video rilatantaj al HDR.",
    "Elekti la subrastrumeran aran\304\235on de via ekrano. \304\210i tio nur influas skanliniojn. Se"
    " vi tute ne konas la subrastrumeran aran\304\235on de via ekrano, vidu je Rtings.com por la \"su"
@@ -8495,10 +8489,6 @@ static const struct
    " \305\235an\304\235ojn de la aparataro inter filmeroj.",
    "Milde malklarigi la bildon por malakrigi akrajn rastrumerajn randojn. \304\210i tiu opcio malmul"
    "te influas rendimenton. Devus esti malebligita se uzante ombrigiloj.",
-   "Bitprofundeco de la fina eliga surfaco kiam HDR estas malebligita. 10-bitoj forigas striitan efi"
-   "kon enigita de ombrigiloj, kiuj treege malheligas la bildon, kiel profiloj de CRT-aj radioj kaj "
-   "aperturkradaj maskoj. Retropa\305\235as al 8 bitoj se la ekrano a\305\255 komponilo ne oferas "
-   "\304\235in. Ignorata kiam HDR estas ebligita, kio elektas sian propran formaton.",
    "Uzi propran intervalon de inter\305\235an\304\235o por vertikala sinkronigo. Efektive malpliigas"
    " la oftecon de aktualigo de la ekrano je la specifita faktoro. \"A\305\255tomate\" agordas la fa"
    "ktoron la\305\255 la ofteco de filmeroj raportitaj de la kerno, plibonigante ritmon de filmero k"
@@ -9148,7 +9138,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (170225u
+      (sizeof(msg_hash_eo_blob) == (169574u
 #ifdef ANDROID
        + 312u
 #endif
@@ -13131,7 +13121,6 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
@@ -13189,7 +13178,6 @@ static const msg_hash_id_t msg_hash_eo_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,

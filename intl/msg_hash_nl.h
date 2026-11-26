@@ -3363,7 +3363,6 @@ static const struct
    char s_7e43d750[197];
    char s_87ca7bc6[186];
    char s_b62c2f7e[341];
-   char s_456fcbc9[361];
    char s_82fab47a[25];
    char s_72e21512[181];
    char s_66f2b57e[46];
@@ -7915,10 +7914,6 @@ static const struct
    "llingen van je scherp. Voor een startpunt, stel dit in op 80 en de gebruik de maximale helderhei"
    "d van je scherm. Als alternatief stel je dit in op de max nits van je scherm en zet de helderhei"
    "d van je scherm omlaag tot het het er goed uit ziet.",
-   "HDR scanlijnen inschakelen. Scanlijnen zijn de belangrijkste reden voor het gebruik van HDR in R"
-   "etroArch omdat een nauwkeurige scanlijn implementatie het grootste deel van het scherm uitschake"
-   "lt en HDR een deel van dat verloren helderheid terug herstelt. Als je meer controle over je scan"
-   "lijnen nodig hebt, kijk dan naar aangepaste shaders die RetroArch biedt.",
    "Wijzig HDR-instellingen.",
    "Selecteer je scherms subpixel lay-out, dit heeft alleen effect op scanlijnen. Als je geen idee h"
    "ebt wat je sub pixel lay-out is zoek op Rtings.com voor je scherms 'subpixel layout'",
@@ -8628,7 +8623,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (171986u
+      (sizeof(msg_hash_nl_blob) == (171625u
 #ifdef ANDROID
        + 375u
 #endif
@@ -12419,7 +12414,6 @@ static const msg_hash_id_t msg_hash_nl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,

@@ -2884,6 +2884,7 @@ static const struct
 #endif
    char s_84c46931[32];
    char s_ebf10493[16];
+   char s_d2c13dc3[40];
    char s_d15bd14f[31];
    char s_79ea50ef[43];
    char s_a64b3a0b[26];
@@ -4344,7 +4345,6 @@ static const struct
    char s_cfa51e8c_0[500];
    char s_cfa51e8c_1[18];
    char s_b62c2f7e[364];
-   char s_456fcbc9[361];
    char s_ba8ff8ce[392];
    char s_82fab47a[30];
    char s_72e21512[263];
@@ -4475,7 +4475,6 @@ static const struct
    char s_5d342d82[324];
    char s_bd0312ce[84];
    char s_3ba8b64d[209];
-   char s_d62ed5dc[396];
    char s_2e69508b[399];
    char s_7e96b5ce[41];
    char s_1c796a6e_0[500];
@@ -4525,8 +4524,8 @@ static const struct
 #endif
    char s_3c13e61f[129];
    char s_d96182c1[36];
+   char s_6e4181b1[290];
    char s_d740017d[76];
-   char s_675acf1d[150];
    char s_93bbb839[120];
    char s_4d0b4ce0[123];
    char s_f99a7d5e[257];
@@ -8523,6 +8522,7 @@ static const struct
 #endif
    "M\303\263d L\303\241nsc\303\241ile\303\241in Fuinneoige",
    "M\303\263d Fuinneoige",
+   "R\303\251iteach sealadach do VRR i bhfuinneog",
    "Fuinneoga Sc\303\241ile\303\241in ar Leith",
    "Sc\303\241ile\303\241in Cluiche ar Thaispe\303\241ntais Eile",
    "Airde Uasta na Fuinneoige",
@@ -11469,12 +11469,6 @@ static const struct
    "\303\251idir \303\251 seo a shocr\303\272 go dt\303\255 na nits is airde de do thaispe\303\241nt"
    "as agus gile do thaispe\303\241ntais a \303\255sli\303\272 go dt\303\255 go mbeidh cuma cheart a"
    "ir.",
-   "Cumasaigh l\303\255nte scanadh HDR. Is iad na l\303\255nte scanadh an phr\303\255omhch\303\272is"
-   " le h\303\272s\303\241id HDR i RetroArch mar go m\303\272chann cur i bhfeidhm cruinn l\303\255ne"
-   " scanadh an chuid is m\303\263 den sc\303\241ile\303\241n agus go n-aisghabhann HDR cuid den ghi"
-   "le caillte sin. M\303\241s g\303\241 duit n\303\255os m\303\263 smachta ar do l\303\255nte scana"
-   "dh, f\303\251ach ar sc\303\241thaitheoir\303\255 saincheaptha a shol\303\241thra\303\255onn Retr"
-   "oArch.",
    "Cuir in i\303\272l do chomhshuiteoir Wayland c\303\251n raon gile at\303\241 i gceist leis an bh"
    "fr\303\241ma, ionas go nd\303\251anfaidh s\303\251 \303\241bhar HDR a mhap\303\241il bunaithe ar"
    " an m\303\251id at\303\241 sa bhfr\303\241ma f\303\251in seachas ar bhonn toimhde. Nuair a bh"
@@ -11850,12 +11844,6 @@ static const struct
    "Bain \303\272s\303\241id as seo le haghaidh f\303\251achana tras-sh\303\272ileach, n\303\263 nua"
    "ir a bh\303\255onn na s\303\272ile n\303\263 na sraitheanna ar taispe\303\241int in ord contr"
    "\303\241ilte.",
-   "Doimhneacht giot\303\241n an dromchla aschuir deiridh nuair a bh\303\255onn HDR m\303\272chta. B"
-   "aintear banda\303\255 a thugtar isteach le sc\303\241thaitheoir\303\255 a dhorcha\303\255onn an "
-   "\303\255omh\303\241 go m\303\263r le 10-giot\303\241n, amhail pr\303\263if\303\255l\303\255 bh"
-   "\303\255oma CRT agus maisc ghreille cr\303\263. Titeann s\303\251 ar ais go 8-giot\303\241n mura"
-   " dtugann an taispe\303\241ntas n\303\263 an cumad\303\263ir \303\251. D\303\251antar neamhaird d"
-   "e agus HDR cumasaithe, a roghna\303\255onn a fhorm\303\241id f\303\251in.",
    "\303\232s\303\241id eatramh malartaithe saincheaptha le haghaidh VSync. Laghda\303\255onn s\303"
    "\251 r\303\241ta athnuachana an mhonat\303\263ra go h\303\251ifeachtach faoin bhfacht\303\263ir "
    "sonraithe. Socra\303\255onn 'Auto' an facht\303\263ir bunaithe ar an r\303\241ta fr\303\241ma a "
@@ -12007,11 +11995,12 @@ static const struct
    "\303\241ile\303\241in a \303\272s\303\241id chun cosc \342\200\213\342\200\213a chur ar athr\303"
    "\272 m\303\263d taispe\303\241na.",
    "Athraigh socruithe m\303\263d fuinneoige.",
+   "Cuir tr\303\251dhearcacht \303\255osta i bhfeidhm sa mh\303\263d fuinneoige chun athruithe neamh"
+   "-inmhianaithe ar an r\303\241ta athnuachana, chomh maith le preabadh agus moill agus fuinneoga "
+   "\303\241 dtarraingt, a sheachaint. Athra\303\255onn s\303\251 luachanna picteil\303\255n beag"
+   "\303\241n. N\303\255 bh\303\255onn tionchar ar an m\303\263d l\303\241nsc\303\241ile\303\241in.",
    "Ceadaigh do sc\303\241ile\303\241in th\303\241naisteacha fuinneoga deisce ar leith a \303\272s"
    "\303\241id.",
-   "Lig do sc\303\241ile\303\241in an chluiche agus don roghchl\303\241r \303\272s\303\241id a bhain"
-   "t as taispe\303\241ntais eile. M\303\241 roghna\303\255tear As, fanann gach rud i bhfuinneog amh"
-   "\303\241in.",
    "Socraigh uasairde na fuinneoige taispe\303\241na nuair a athra\303\255tear m\303\251id go huatho"
    "ibr\303\255och bunaithe ar 'Sc\303\241la Fuinneoige'.",
    "Socraigh uasleithead na fuinneoige taispe\303\241na nuair a athra\303\255tear m\303\251id go hua"
@@ -13010,7 +12999,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (289891u
+      (sizeof(msg_hash_ga_blob) == (289314u
 #ifdef ANDROID
        + 390u
 #endif
@@ -16461,6 +16450,7 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_VRR_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWS_ENABLE_ANDROID,
    (msg_hash_id_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -17903,7 +17893,6 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SEND_LUMINANCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
@@ -18033,7 +18022,6 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER,
@@ -18077,8 +18065,8 @@ static const msg_hash_id_t msg_hash_ga_ids[] =
 #endif
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_VRR_WORKAROUND,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE_ANDROID,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,

@@ -3421,7 +3421,6 @@ static const struct
    char s_7e43d750[201];
    char s_87ca7bc6[167];
    char s_b62c2f7e[309];
-   char s_456fcbc9[341];
    char s_82fab47a[31];
    char s_72e21512[222];
    char s_66f2b57e[53];
@@ -8108,10 +8107,6 @@ static const struct
    "minosit\303\240 del display. Per iniziare, impostare la luminosit\303\240 massima del display e "
    "questa opzione ad 80. In alternativa, impostare questa opzione al massimo e abbassare quella del"
    " display fino al risultato desiderato.",
-   "Abilita linee di scansione HDR. Ottima ragione per usare l'HDR in RetroArch, dato che un'impleme"
-   "ntazione accurata delle linee di scansione spegne buona parte dello schermo, e l'HDR recupera pa"
-   "rte della luminosit\303\240 persa. Se si necessita maggiore controllo sulle linee di scansione, "
-   "consultare gli shader personalizzati forniti da RetroArch.",
    "Cambia impostazioni HDR video.",
    "Selezionare il layout subpixel del proprio display (funziona solo sulle linee di scansione). Se "
    "non si conosce l'esatto layout del proprio display, consultare Rtings.com sotto la voce 'subpixe"
@@ -8851,7 +8846,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (182038u
+      (sizeof(msg_hash_it_blob) == (181697u
 #ifdef ANDROID
        + 376u
 #endif
@@ -12698,7 +12693,6 @@ static const msg_hash_id_t msg_hash_it_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,

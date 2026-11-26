@@ -3618,7 +3618,6 @@ static const struct
    char s_87ca7bc6[175];
    char s_cfa51e8c[467];
    char s_b62c2f7e[333];
-   char s_456fcbc9[362];
    char s_82fab47a[44];
    char s_72e21512[180];
    char s_66f2b57e[64];
@@ -3676,7 +3675,6 @@ static const struct
    char s_3c679f0a[269];
    char s_5b059407[150];
    char s_36033606[154];
-   char s_d62ed5dc[385];
    char s_2e69508b[320];
    char s_7e96b5ce[56];
    char s_c2314d30[226];
@@ -8738,11 +8736,6 @@ static const struct
    "s de brilho f\303\255sico do seu monitor. Como ponto de partida, defina este valor para 80 e o b"
    "rilho do seu monitor para o m\303\241ximo. Alternativamente, defina para o m\303\241ximo de nits"
    " do seu monitor e diminua o brilho do monitor at\303\251 que a imagem pare\303\247a correta.",
-   "Ativa linhas de varredura HDR. As linhas de varredura s\303\243o a principal raz\303\243o para u"
-   "sar HDR no RetroArch, j\303\241 que uma execu\303\247\303\243o com precis\303\243o das linhas de"
-   "sliga a maior parte da tela, e o HDR recupera um pouco desse brilho perdido. Caso seja necess"
-   "\303\241rio mais controle sobre as linhas de varredura, veja os sombreadores personalizados forn"
-   "ecidos pelo RetroArch.",
    "Altere as configura\303\247\303\265es de v\303\255deo do HDR.",
    "Define o layout de subp\303\255xel, afeta apenas as linhas de varredura. Caso n\303\243o sabia o"
    " layout de subpixel da sua tela, veja a sess\303\243o \"Subpixel Layout\" do seu monitor em Rtin"
@@ -8843,11 +8836,6 @@ static const struct
    "e assumir as altera\303\247\303\265es do estado do hardware entre os quadros.",
    "Adiciona um leve desfoque para suavizar arestas dos p\303\255xeis. Esta op\303\247\303\243o tem "
    "um pequeno impacto no desempenho. Deve ser desativada ao usar sombreadores.",
-   "Profundidade de bits da superf\303\255cie de sa\303\255da final quando o HDR estiver desativado."
-   " 10 bits reduz o banding introduzido por shaders que escurecem muito a imagem, como perfis de fe"
-   "ixe CRT e m\303\241scaras de grade de abertura. Usa 8 bits se a tela ou o compositor n\303\243o "
-   "oferecer essa op\303\247\303\243o. Essa op\303\247\303\243o \303\251 ignorada enquanto o HDR est"
-   "iver ativado, pois ele seleciona seu pr\303\263prio formato.",
    "Usa um intervalo personalizado para a sincroniza\303\247\303\243o vertical (VSync). Reduz a taxa"
    " de atualiza\303\247\303\243o do monitor pelo fator especificado. \"Auto\" define o fator com ba"
    "se na taxa de quadros do n\303\272cleo, fornecendo quadros melhores ao executar em, por exemplo,"
@@ -9524,7 +9512,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193242u
+      (sizeof(msg_hash_pt_br_blob) == (192495u
 #ifdef ANDROID
        + 352u
 #endif
@@ -13595,7 +13583,6 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
@@ -13653,7 +13640,6 @@ static const msg_hash_id_t msg_hash_pt_br_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,

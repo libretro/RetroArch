@@ -3815,7 +3815,6 @@ static const struct
    char s_87ca7bc6[183];
    char s_cfa51e8c[397];
    char s_b62c2f7e[318];
-   char s_456fcbc9[326];
    char s_82fab47a[29];
    char s_72e21512[187];
    char s_66f2b57e[48];
@@ -3877,7 +3876,6 @@ static const struct
    char s_3c679f0a[317];
    char s_5b059407[148];
    char s_36033606[191];
-   char s_d62ed5dc[355];
    char s_2e69508b[321];
    char s_7e96b5ce[40];
    char s_c2314d30[198];
@@ -9383,11 +9381,6 @@ static const struct
    "ranu na maksymaln\304\205. Alternatywnie, ustaw to na maksymaln\304\205 ilo\305\233\304\207 nit"
    "\303\263w twojego ekranu i zmniejszaj jasno\305\233\304\207 twojego ekranu a\305\274 zacznie wyg"
    "l\304\205da\304\207 poprawnie.",
-   "W\305\202\304\205cz skanlinie HDR. Skanlinie s\304\205 g\305\202\303\263wnym powodem do u\305"
-   "\274ywania HDR w RetroArch jako dok\305\202adnej implementacji skanlinii wy\305\202\304\205cza w"
-   "i\304\231kszo\305\233\304\207 ekranu, a HDR odzyskuje troch\304\231 z tej utraconej jasno\305"
-   "\233ci. Je\305\233li potrzebujesz wi\304\231kszej kontroli nad swoimi skanlinami, zobacz niestan"
-   "dardowe shadery, kt\303\263re zapewnia RetroArch.",
    "Zmie\305\204 ustawienia HDR wideo.",
    "Wybierz uk\305\202ad podpikseli twojego wy\305\233wietlacza, to ma tylko wp\305\202yw na skanlin"
    "ie Je\305\233li nie masz poj\304\231cia, jaki jest uk\305\202ad podpikseli dla twojego wy\305"
@@ -9511,11 +9504,6 @@ static const struct
    "Dodaje lekkie rozmycie do obrazu, aby zmi\304\231kczy\304\207 twarde kraw\304\231dzie pikseli. T"
    "a opcja ma bardzo niewielki wp\305\202yw na wydajno\305\233\304\207. Powinna by\304\207 wy\305"
    "\202\304\205czona w przypadku korzystania z shader\303\263w.",
-   "G\305\202\304\231bia bitowa ko\305\204cowej powierzchni wyj\305\233ciowej, gdy wy\305\202\304"
-   "\205czony jest HDR. 10-bitowa usuwa banding wprowadzany przez shadery kt\303\263re mocno przycie"
-   "mniaj\304\205 obraz, takie jak profile wi\304\205zek CRT i maski grilli. U\305\274ywa zast\304"
-   "\231pczo 8-bitowej je\305\274eli wy\305\233wietlacz lub kompozytor jej nie oferuj\304\205. Ignor"
-   "owane gdy w\305\202\304\205czony jest HDR, kt\303\263ry wybiera sw\303\263j format.",
    "U\305\274yj niestandardowego interwa\305\202u wymiany dla VSync. Efektywnie zmniejsza cz\304\231"
    "stotliwo\305\233\304\207 od\305\233wie\305\274ania monitora o okre\305\233lony czynnik. 'Auto' u"
    "stawia wsp\303\263\305\202czynnik oparty na raportowanej szybko\305\233ci ramki, zapewniaj\304"
@@ -10230,7 +10218,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (199257u
+      (sizeof(msg_hash_pl_blob) == (198576u
 #ifdef ANDROID
        + 385u
 #endif
@@ -14538,7 +14526,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
@@ -14600,7 +14587,6 @@ static const msg_hash_id_t msg_hash_pl_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,

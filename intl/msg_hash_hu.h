@@ -3473,7 +3473,6 @@ static const struct
    char s_87ca7bc6[157];
    char s_cfa51e8c[343];
    char s_b62c2f7e[319];
-   char s_456fcbc9[350];
    char s_82fab47a[27];
    char s_72e21512[151];
    char s_66f2b57e[51];
@@ -3531,7 +3530,6 @@ static const struct
    char s_3c679f0a[304];
    char s_5b059407[152];
    char s_36033606[160];
-   char s_d62ed5dc[363];
    char s_2e69508b[328];
    char s_7e96b5ce[41];
    char s_c2314d30[200];
@@ -8914,12 +8912,6 @@ static const struct
    "t maximumra, vagy \303\241ll\303\255tsuk ezt a kijelz\305\221 maxim\303\241lis nit \303\251rt"
    "\303\251k\303\251re \303\251s cs\303\266kkents\303\274k a kijelz\305\221 f\303\251nyerej\303\251"
    "t, am\303\255g a kijelz\303\251s megfelel\305\221 nem lesz.",
-   "HDR scanline-ok enged\303\251lyez\303\251se. Ez a f\305\221 indok a HDR haszn\303\241lat\303\241"
-   "ra RetroArch alatt, mivel egy pontos scanline megval\303\263s\303\255t\303\241s a k\303\251perny"
-   "\305\221 nagy r\303\251sz\303\251t kikapcsolja \303\251s a HDR visszaad valamennyit az \303\255g"
-   "y elvesztett f\303\251nyer\305\221b\305\221l. Ha enn\303\251l pontosabb scanline be\303\241ll"
-   "\303\255t\303\241sokra van sz\303\274ks\303\251g, azt a RetroArch egyedi shaderei k\303\266zt le"
-   "het megtal\303\241lni.",
    "A k\303\251p HDR be\303\241ll\303\255t\303\241sai.",
    "A kijelz\305\221 subpixel elrendez\303\251se. Ez csak a scanline-okra van hat\303\241ssal. K\303"
    "\251ts\303\251g eset\303\251n a subpixel elrendez\303\251s az RTings.com oldalon megtal\303\241l"
@@ -9042,12 +9034,6 @@ static const struct
    "Egy enyhe elmos\303\241st ad a k\303\251phez, hogy a pixelek \303\251l\303\251t elsim\303\255tsa"
    ". Nagyon kis hat\303\241ssal van a teljes\303\255tm\303\251nyre. Shaderek haszn\303\241latakor a"
    "j\303\241nlott kikapcsolni.",
-   "A v\303\251gs\305\221 kimeneti fel\303\274let bitm\303\251lys\303\251ge, amikor a HDR ki van kap"
-   "csolva. A 10 bites be\303\241ll\303\255t\303\241s megsz\303\274nteti a s\303\241voz\303\263d\303"
-   "\241st, amelyet a k\303\251pet nagyon els\303\266t\303\251t\303\255t\305\221 shaderek okoznak, m"
-   "int pl. a CRT sug\303\241rprofilok \303\251s apert\303\272ra r\303\241cs maszkok. Ha a megjelen"
-   "\303\255t\305\221 vagy a kompozitor nem teszi lehet\305\221v\303\251, vissza\303\241ll 8 bitesre"
-   ". Bekapcsolt HDR eset\303\251n nincs hat\303\241sa.",
    "Egyedi VSync v\303\241lt\303\263peri\303\263dus. A megadott szorz\303\263val cs\303\266kkenti a "
    "monitor friss\303\255t\303\251si frekvenci\303\241j\303\241t. Az \"Automatikus\" be\303\241ll"
    "\303\255t\303\241s a mag \303\241ltal megadott k\303\251pfriss\303\255t\303\251s alapj\303\241n "
@@ -9789,7 +9775,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (186521u
+      (sizeof(msg_hash_hu_blob) == (185808u
 #ifdef ANDROID
        + 316u
 #endif
@@ -13685,7 +13671,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
@@ -13743,7 +13728,6 @@ static const msg_hash_id_t msg_hash_hu_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,

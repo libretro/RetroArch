@@ -4097,7 +4097,6 @@ static const struct
    char s_87ca7bc6[170];
    char s_cfa51e8c[423];
    char s_b62c2f7e[288];
-   char s_456fcbc9[305];
    char s_ba8ff8ce[242];
    char s_82fab47a[28];
    char s_72e21512[200];
@@ -4214,7 +4213,6 @@ static const struct
    char s_36033606[169];
    char s_5d342d82[229];
    char s_3ba8b64d[127];
-   char s_d62ed5dc[347];
    char s_2e69508b[316];
    char s_7e96b5ce[40];
    char s_1c796a6e_0[500];
@@ -4249,7 +4247,6 @@ static const struct
    char s_3c13e61f[121];
    char s_d96182c1[33];
    char s_d740017d[86];
-   char s_675acf1d[104];
    char s_93bbb839[108];
    char s_4d0b4ce0[108];
    char s_f99a7d5e[186];
@@ -10555,11 +10552,6 @@ static const struct
    "nastavte na 80 a jas displeja na maximum. Alternat\303\255vne nastavte na max nity v\303\241\305"
    "\241ho displeja a zn\303\255\305\276te jas displeja, k\303\275m nebude obraz vyzera\305\245 spr"
    "\303\241vne.",
-   "Povol\303\255 HDR scanlines. Scanlines s\303\272 hlavn\303\275m d\303\264vodom pre pou\305\276it"
-   "ie HDR v RetroArchu, ke\304\217\305\276e presn\303\241 implement\303\241cia scanline vyp\303\255"
-   "na v\303\244\304\215\305\241inu obrazovky a HDR obnovuje \304\215as\305\245 straten\303\251ho ja"
-   "su. Ak potrebujete v\303\244\304\215\305\241iu kontrolu nad scanlines, pozrite sa na vlastn\303"
-   "\251 shadery, ktor\303\251 RetroArch poskytuje.",
    "Ozn\303\241mi kompozitoru Wayland rozsah jasu, ktor\303\275 sn\303\255mka nesie, aby mapoval obs"
    "ah HDR pod\304\276a toho, \304\215o v sn\303\255mke je, a nie pod\304\276a predpokladu. Vypnut"
    "\303\251 popisuje sn\303\255mku ako Windows-scRGB ako doteraz. Prejav\303\255 sa po re\305\241ta"
@@ -10840,12 +10832,6 @@ static const struct
    "odia pre 3D telev\303\255zory.",
    "Vymeni\305\245 obraz \304\276av\303\251ho a prav\303\251ho oka. Pou\305\276ite pri pozeran\303"
    "\255 kr\303\255\305\276om alebo ke\304\217 displej zobrazuje o\304\215i alebo riadky naopak.",
-   "Bitov\303\241 h\304\272bka kone\304\215n\303\251ho v\303\275stupn\303\251ho povrchu, ke\304\217 "
-   "je HDR vypnut\303\251. 10-bitov\303\241 odstra\305\210uje farebn\303\251 p\303\241sy, ktor\303"
-   "\251 vn\303\241\305\241aj\303\272 shadery v\303\275razne stmavuj\303\272ce obraz, ako s\303\272 "
-   "profily CRT l\303\272\304\215a a masky aperture grille. Ak ju displej alebo kompozitor nepon\303"
-   "\272ka, pou\305\276ije sa 8-bitov\303\241. Pri zapnutom HDR sa ignoruje, preto\305\276e si vol"
-   "\303\255 vlastn\303\275 form\303\241t.",
    "Pou\305\276i\305\245 vlastn\303\275 interval v\303\275meny pre VSync. Efekt\303\255vne zn\303"
    "\255\305\276i obnovovaciu frekvenciu monitora o zadan\303\275 faktor. 'Auto' nastav\303\255 fakt"
    "or na z\303\241klade sn\303\255mkovej frekvencie hl\303\241senej core, \304\215o poskytuje lep"
@@ -10942,8 +10928,6 @@ static const struct
    "Zmena nastaven\303\255 re\305\276imu v okne.",
    "Umo\305\276ni\305\245 ved\304\276aj\305\241\303\255m obrazovk\303\241m pou\305\276\303\255va\305"
    "\245 samostatn\303\251 okn\303\241 na pracovnej ploche.",
-   "Umo\305\276n\303\255 hern\303\275m obrazovk\303\241m a menu pou\305\276\303\255va\305\245 in\303"
-   "\251 displeje. Vypnut\303\251 ponech\303\241 v\305\241etko v jednom okne.",
    "Nastav\303\255 maxim\303\241lnu v\303\275\305\241ku zobrazovacieho okna pri automatickej zmene v"
    "e\304\276kosti na z\303\241klade 'Mierka okna'.",
    "Nastav\303\255 maxim\303\241lnu \305\241\303\255rku zobrazovacieho okna pri automatickej zmene v"
@@ -11756,7 +11740,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (234945u
+      (sizeof(msg_hash_sk_blob) == (234189u
 #ifdef ANDROID
        + 389u
 #endif
@@ -16406,7 +16390,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SEND_LUMINANCE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
@@ -16523,7 +16506,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_TEMPORAL_UPSCALER,
@@ -16555,7 +16537,6 @@ static const msg_hash_id_t msg_hash_sk_ids[] =
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE,
-   (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWS_ENABLE_ANDROID,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
    (msg_hash_id_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
