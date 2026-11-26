@@ -3927,6 +3927,28 @@ bool command_event_later(enum event_command cmd, const int *arg)
    return true;
 }
 
+#ifdef HAVE_BSV_MOVIE
+struct replay_record_prune
+{
+   retro_task_callback_t cb;
+   void *user_data;
+   unsigned max_keep;
+   bool show_hidden_files;
+};
+
+static void replay_record_prune_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   struct replay_record_prune *prune = (struct replay_record_prune*)user_data;
+   if (!error && task_data)
+      command_event_replay_prune((const char*)task_data, prune->max_keep,
+            prune->show_hidden_files);
+   if (prune->cb)
+      prune->cb(task, task_data, prune->user_data, error);
+   free(prune);
+}
+#endif
+
 bool command_event(enum event_command cmd, void *data)
 {
    struct rarch_state *p_rarch     = &rarch_st;
@@ -4507,8 +4529,26 @@ bool command_event(enum event_command cmd, void *data)
          if (res)
          {
             const task_notify_t *n = (const task_notify_t*)data;
-            res = movie_start_record_notify(input_st, replay_path,
-                  n ? n->cb : NULL, n ? n->user_data : NULL);
+            struct replay_record_prune *prune = NULL;
+            /* Past the limit, the oldest slot goes once the new one
+             * has started, by the policy of this request */
+            if (     settings->bools.replay_auto_index
+                  && settings->uints.replay_max_keep > 0
+                  && (prune = (struct replay_record_prune*)
+                     malloc(sizeof(*prune))))
+            {
+               prune->cb                = n ? n->cb : NULL;
+               prune->user_data         = n ? n->user_data : NULL;
+               prune->max_keep          = settings->uints.replay_max_keep;
+               prune->show_hidden_files = settings->bools.show_hidden_files;
+               res = movie_start_record_notify(input_st, replay_path,
+                     replay_record_prune_cb, prune);
+               if (!res)
+                  free(prune);
+            }
+            else
+               res = movie_start_record_notify(input_st, replay_path,
+                     n ? n->cb : NULL, n ? n->user_data : NULL);
          }
          if (res && settings->bools.replay_auto_index)
             configuration_set_int(settings, settings->ints.replay_slot, replay_slot);

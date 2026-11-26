@@ -7221,6 +7221,72 @@ void command_event_set_replay_auto_index(settings_t *settings)
             max_idx);
 }
 
+/* After a recording to the replay slot @path has started: when more
+ * than @max_keep slots of its name are on disk, the lowest-numbered
+ * one other than @path is deleted - one per recording, as a state
+ * save prunes one. */
+void command_event_replay_prune(const char *path, unsigned max_keep,
+      bool show_hidden_files)
+{
+   char state_dir[DIR_MAX_LENGTH];
+   char victim[PATH_MAX_LENGTH];
+   const char *suffix;
+   const char *base;
+   size_t name_len, base_len;
+   unsigned slot, idx;
+   unsigned min_idx = UINT_MAX;
+   size_t cnt       = 0;
+   struct RDIR *dir;
+
+   if (!path || !*path || !max_keep)
+      return;
+   /* <name.replay><slot>, slot 0 spelled "0" */
+   suffix = path + strlen(path);
+   while (suffix > path && ISDIGIT((unsigned char)suffix[-1]))
+      suffix--;
+   name_len = suffix - path;
+   if (     name_len < STRLEN_CONST("replay")
+         || memcmp(suffix - STRLEN_CONST("replay"), "replay",
+               STRLEN_CONST("replay"))
+         || !command_slot_index(suffix, true, &slot))
+      return;
+   base = path + name_len;
+   while (base > path && base[-1] != '/' && base[-1] != '\\')
+      base--;
+   base_len = path + name_len - base;
+
+   fill_pathname_basedir(state_dir, path, sizeof(state_dir));
+   if (!(dir = retro_opendir_include_hidden(state_dir, show_hidden_files)))
+      return;
+   if (retro_dirent_error(dir))
+   {
+      retro_closedir(dir);
+      return;
+   }
+   while (retro_readdir(dir))
+   {
+      const char *name = retro_dirent_get_name(dir);
+      if (     !name
+            || (!show_hidden_files && (*name == '.' || *name == '$'))
+            || strncmp(name, base, base_len)
+            || !command_slot_index(name + base_len, true, &idx)
+            || retro_dirent_is_dir(dir, NULL))
+         continue;
+      cnt++;
+      if (idx != slot && idx < min_idx)
+         min_idx = idx;
+   }
+   retro_closedir(dir);
+
+   if (cnt <= max_keep || min_idx == UINT_MAX || name_len >= sizeof(victim))
+      return;
+   memcpy(victim, path, name_len);
+   snprintf(victim + name_len, sizeof(victim) - name_len, "%u", min_idx);
+   if (filestream_delete(victim) == 0)
+      RARCH_LOG("[Replay] Over the limit of %u, deleted \"%s\".\n",
+            max_keep, victim);
+}
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 bool command_set_shader(command_t *cmd, const char *arg)
 {

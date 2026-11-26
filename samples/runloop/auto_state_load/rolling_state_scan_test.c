@@ -233,6 +233,58 @@ static void test_replay_index(void)
    clear_files();
 }
 
+static void replay_path(char *path, size_t size, const char *name)
+{
+   snprintf(path, size, "%s/%s", directory, name);
+}
+
+/* A recording past the replay limit deletes the lowest slot of its
+ * own name, one at a time, never itself, and nothing for a path that
+ * is not a replay slot. */
+static void test_replay_prune(void)
+{
+   const char *ignored[] = {"game.replay05", "game.replay.auto",
+         "game.state5", "game.replay"};
+   char path[256];
+   unsigned i;
+   clear_files();
+   for (i = 0; i <= 5; i++)
+   {
+      char name[64];
+      snprintf(name, sizeof(name), "game.replay%u", i);
+      add_file(name);
+   }
+   add_file("other.replay0");
+   replay_path(path, sizeof(path), "game.replay5");
+   command_event_replay_prune(path, 0, true);
+   assert(file_count() == 7);
+   command_event_replay_prune(path, 3, true);
+   replay_path(path, sizeof(path), "game.replay0");
+   assert(!path_is_valid(path) && file_count() == 6);
+   replay_path(path, sizeof(path), "game.replay5");
+   command_event_replay_prune(path, 3, true);
+   replay_path(path, sizeof(path), "game.replay1");
+   assert(!path_is_valid(path) && file_count() == 5);
+   for (i = 0; i < sizeof(ignored) / sizeof(ignored[0]); i++)
+   {
+      replay_path(path, sizeof(path), ignored[i]);
+      command_event_replay_prune(path, 1, true);
+      assert(file_count() == 5);
+   }
+   /* the recording is the lowest slot: the next one up goes */
+   clear_files();
+   add_file("game.replay0");
+   add_file("game.replay7");
+   add_file("game.replay8");
+   replay_path(path, sizeof(path), "game.replay0");
+   command_event_replay_prune(path, 2, true);
+   assert(path_is_valid(path) && file_count() == 2);
+   replay_path(path, sizeof(path), "game.replay7");
+   assert(!path_is_valid(path));
+   checks += 6;
+   clear_files();
+}
+
 int main(void)
 {
    unsigned attempt;
@@ -250,6 +302,7 @@ int main(void)
    test_retention();
    test_prune_path();
    test_replay_index();
+   test_replay_prune();
    clear_files();
    assert(path_rmdir(directory));
    printf("real-directory rolling scan: %u selections passed\n", checks);

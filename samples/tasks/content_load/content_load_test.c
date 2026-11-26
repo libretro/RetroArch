@@ -2610,6 +2610,58 @@ static void lane_replay_reply(const char *dir)
    pump(2);
 
    remove(path);
+
+   /* Auto-index with a limit: each recording counts on from the
+    * highest slot on disk and, once it has started, deletes the
+    * lowest slot past the limit - never the one it records. */
+   {
+      static const unsigned fixture[] = {0, 1, 2};
+      char other[PATH_MAX_LENGTH];
+      unsigned i;
+      FILE *file;
+      for (i = 0; i < 3; i++)
+      {
+         runloop_get_replay_path(path, sizeof(path), fixture[i]);
+         if ((file = fopen(path, "wb")))
+         {
+            fputc(0x52, file);
+            fclose(file);
+         }
+      }
+      snprintf(other, sizeof(other), "%s/other.replay0", dir);
+      if ((file = fopen(other, "wb")))
+      {
+         fputc(0x52, file);
+         fclose(file);
+      }
+      configuration_set_bool(settings, settings->bools.replay_auto_index, true);
+      settings->uints.replay_max_keep = 2;
+      command_event_set_replay_auto_index(settings);
+      CHECK(settings->ints.replay_slot == 2,
+            "replay prune: auto-index found slot %d, not 2",
+            settings->ints.replay_slot);
+      for (i = 0; i < 2; i++)
+      {
+         CHECK(command_event(CMD_EVENT_RECORD_REPLAY, NULL),
+               "replay prune: recording %u did not start", i);
+         pump(10);
+         command_event(CMD_EVENT_HALT_REPLAY, NULL);
+         pump(2);
+      }
+      for (i = 0; i <= 4; i++)
+      {
+         runloop_get_replay_path(path, sizeof(path), i);
+         CHECK(path_is_valid(path) == (i >= 2),
+               "replay prune: slot %u %s", i,
+               i >= 2 ? "was deleted" : "is past the limit and kept");
+         remove(path);
+      }
+      CHECK(path_is_valid(other), "replay prune: another game's replay went");
+      remove(other);
+      settings->uints.replay_max_keep = 0;
+      configuration_set_bool(settings, settings->bools.replay_auto_index, false);
+   }
+
    runloop_st->name.replay[0] = '\0';
    if (failures == had)
       fprintf(stderr, "[pass] replay-reply lane (answered after %u frames)\n", n);
