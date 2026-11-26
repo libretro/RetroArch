@@ -52,7 +52,7 @@ typedef struct companion_dock_slot
 
 typedef struct companion_dock_layout
 {
-   companion_dock_slot_t slots[COMPANION_DOCK_SIDES][COMPANION_DOCK_COUNT];
+   companion_dock_slot_t slot[COMPANION_DOCK_SIDES][COMPANION_DOCK_COUNT];
    companion_rect_t      floats[COMPANION_DOCK_COUNT]; /* screen rect, floating panes */
    int  nslots[COMPANION_DOCK_SIDES];
    int  side_size[COMPANION_DOCK_SIDES];  /* width of left/right, height of top/bottom; 0 = default */

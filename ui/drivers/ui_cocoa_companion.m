@@ -2428,7 +2428,7 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
          const companion_dock_slot_t *sl;
          if (!companion_dock_find(&dock, (enum companion_dock_id)i, &side, &idx))
             continue;
-         sl = &dock.slots[side][idx];
+         sl = &dock.slot[side][idx];
          for (k = 0; k < sl->n; k++)
             if (dock.shown[sl->members[k]])
                shown++;

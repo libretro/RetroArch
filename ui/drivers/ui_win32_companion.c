@@ -2021,7 +2021,7 @@ static void cw_dock_scale(companion_dock_layout_t *l, int num, int den)
    {
       l->side_size[s] = MulDiv(l->side_size[s], num, den);
       for (i = 0; i < l->nslots[s]; i++)
-         l->slots[s][i].size = MulDiv(l->slots[s][i].size, num, den);
+         l->slot[s][i].size = MulDiv(l->slot[s][i].size, num, den);
    }
    for (i = 0; i < COMPANION_DOCK_COUNT; i++)
    {
@@ -2277,7 +2277,7 @@ static void cw_paint_docks(ui_companion_win32_wimp_t *w, HDC hdc)
          const companion_dock_slot_t *sl;
          if (!companion_dock_find(&w->dock, (enum companion_dock_id)i, &side, &idx))
             continue;
-         sl = &w->dock.slots[side][idx];
+         sl = &w->dock.slot[side][idx];
          for (k = 0; k < sl->n; k++)
             if (w->dock.shown[sl->members[k]])
                shown++;

@@ -89,6 +89,7 @@ extern "C" {
 #include "../../command.h"
 #include "../ui_companion_driver.h"
 #include "../companion/companion_core.h"
+#include "../companion/companion_dock.h"
 
 /* The shared companion core owned by the running Qt companion (see
  * ui_companion_qt_init); MainWindow and LoadCoreWindow issue their
@@ -236,12 +237,10 @@ static void qt_dock_configure(QDockWidget *dock,
  * dock list and its keys are companion_dock_id / companion_dock_key.)
  * Every dock has its own row, the four thumbnail docks included, so
  * pulling Screenshots out of the thumbnail tabs into its own dock is
- * remembered. Docks are re-added to their saved side in slot order
- * (order field, then list order), which is what stacks them the way
- * they were, then tabbed as saved, then sized. This replaces the
- * QMainWindow::saveState() byte-array blob the old retroarch_qt.cfg
- * carried: readable, survives docks being added or renamed, and the
- * native companions honour the same rows. */
+ * remembered. companion_dock_from_rows() and companion_dock_to_rows()
+ * turn the rows into the layout and back, for every companion. This
+ * replaces the QMainWindow::saveState() blob the old retroarch_qt.cfg
+ * carried: readable, and survives docks being added or renamed. */
 #define QT_DOCK_COUNT COMPANION_DOCK_COUNT
 
 /* The Load Core picker never opens smaller than this (logical px);
@@ -269,18 +268,6 @@ static char *qt_dock_row(settings_t *settings, int i, size_t *len)
    return companion_dock_row(settings, (enum companion_dock_id)i, len);
 }
 
-static enum companion_dock_area qt_dock_area_to_core(Qt::DockWidgetArea area)
-{
-   switch (area)
-   {
-      case Qt::RightDockWidgetArea:  return COMPANION_DOCK_RIGHT;
-      case Qt::TopDockWidgetArea:    return COMPANION_DOCK_TOP;
-      case Qt::BottomDockWidgetArea: return COMPANION_DOCK_BOTTOM;
-      default:                       break;
-   }
-   return COMPANION_DOCK_LEFT;
-}
-
 static Qt::DockWidgetArea qt_dock_area_from_core(enum companion_dock_area area)
 {
    switch (area)
@@ -291,15 +278,6 @@ static Qt::DockWidgetArea qt_dock_area_from_core(enum companion_dock_area area)
       default:                    break;
    }
    return Qt::LeftDockWidgetArea;
-}
-
-static int qt_dock_index_of(const char *key)
-{
-   int i;
-   for (i = 0; i < QT_DOCK_COUNT; i++)
-      if (string_is_equal(key, companion_dock_key((enum companion_dock_id)i)))
-         return i;
-   return -1;
 }
 
 /* Where along its side a docked dock sits: the top edge on the left and
@@ -328,112 +306,103 @@ static bool qt_dock_laid_out(QDockWidget *dock)
       && !dock->visibleRegion().isEmpty();
 }
 
-/* The slot of @self on its side: how many distinct positions of laid-out
- * docks on that side lie before it. A tab that is not raised, or a
- * hidden dock, has no position of its own: it takes its group's when a
- * tab of the group is laid out, else the slot after the last (where it
- * would land if shown). */
-static int qt_dock_slot(QMainWindow *win, QDockWidget * const *docks,
-      int self)
+/* Add @head's slot to side @side of @l: @head and the docks tabbed with
+ * it. A laid-out @head is the raised tab and gives the slot its size; a
+ * hidden slot keeps the size its row already has. */
+static void qt_dock_add_slot(QMainWindow *win, QDockWidget * const *docks,
+      companion_dock_layout_t *l, bool *placed, int side, int head,
+      bool laid_out)
 {
-   QDockWidget *dock       = docks[self];
-   Qt::DockWidgetArea area = win->dockWidgetArea(dock);
-   int pos                 = 0;
-   int order               = 0;
-   bool have_pos           = qt_dock_laid_out(dock);
-   int i, j;
+   companion_dock_slot_t *slot = &l->slot[side][l->nslots[side]++];
+   QList<QDockWidget*> tabs    = win->tabifiedDockWidgets(docks[head]);
+   bool vertical               = (   side == COMPANION_DOCK_LEFT
+                                  || side == COMPANION_DOCK_RIGHT);
+   int along, across, i;
 
-   if (have_pos)
-      pos = qt_dock_along_side(win, dock);
+   slot->members[slot->n++] = (unsigned char)head;
+   placed[head]             = true;
+   l->area[head]            = (unsigned char)side;
+   for (i = 0; i < QT_DOCK_COUNT; i++)
+      if (!placed[i] && docks[i] && tabs.contains(docks[i]))
+      {
+         slot->members[slot->n++] = (unsigned char)i;
+         placed[i]                = true;
+         l->area[i]               = (unsigned char)side;
+      }
+
+   if (laid_out)
+   {
+      along  = vertical ? docks[head]->height() : docks[head]->width();
+      across = vertical ? docks[head]->width()  : docks[head]->height();
+      slot->size = along;
+      if (across > l->side_size[side])
+         l->side_size[side] = across;
+   }
    else
    {
-      QList<QDockWidget*> tabs = win->tabifiedDockWidgets(dock);
-      for (i = 0; i < tabs.count(); i++)
-         if (qt_dock_laid_out(tabs.at(i)))
-         {
-            pos      = qt_dock_along_side(win, tabs.at(i));
-            have_pos = true;
-            break;
-         }
+      size_t len;
+      companion_dock_state_t old;
+      if (     companion_dock_row_parse(qt_dock_row(config_get_ptr(), head, &len), &old)
+            && (int)old.area == side)
+         slot->size = vertical ? (int)VIDEO_SCALE_H(old.dims)
+                               : (int)VIDEO_SCALE_W(old.dims);
    }
-   /* Count the distinct positions before ours (all of them when we
-    * have none); tabs of one group share one. */
-   for (i = 0; i < QT_DOCK_COUNT; i++)
-   {
-      int p;
-      if (     !docks[i] || i == self || !qt_dock_laid_out(docks[i])
-            || win->dockWidgetArea(docks[i]) != area)
-         continue;
-      p = qt_dock_along_side(win, docks[i]);
-      if (have_pos && p >= pos)
-         continue;
-      for (j = 0; j < i; j++)
-         if (     docks[j] && j != self && qt_dock_laid_out(docks[j])
-               && win->dockWidgetArea(docks[j]) == area
-               && qt_dock_along_side(win, docks[j]) == p)
-            break;
-      if (j == i)
-         order++;
-   }
-   return order;
 }
 
-/* Format @dock's placement into @s (companion_dock_row_format). @docks
- * is the full list so the tabbed_with partner can be looked up. */
-static void qt_dock_state_write(QMainWindow *win, QDockWidget * const *docks,
-      int self, char *s, size_t len)
+/* The window's docks as the shared layout: each side's laid-out docks in
+ * their order on screen with their tab groups, then the ones hidden
+ * there; floating docks at their client rects (geometry(), which the
+ * restore's setGeometry() takes back: pos() is the frame corner). */
+static void qt_dock_read_layout(QMainWindow *win, QDockWidget * const *docks,
+      companion_dock_layout_t *l)
 {
-   companion_dock_state_t st;
-   QDockWidget *dock = docks[self];
-   int i;
+   bool placed[QT_DOCK_COUNT];
+   int i, j, side;
 
-   memset(&st, 0, sizeof(st));
-   st.area   = dock->isFloating() ? COMPANION_DOCK_FLOAT
-      : qt_dock_area_to_core(win->dockWidgetArea(dock));
-   st.shown  = dock->isVisible();
-   st.dims   = VIDEO_SCALE_PACK(dock->width(), dock->height());
-   if (!dock->isFloating())
-      st.order = qt_dock_slot(win, docks, self);
-   if (dock->isFloating())
+   memset(l, 0, sizeof(*l));
+   for (i = 0; i < QT_DOCK_COUNT; i++)
    {
-      /* Client-area position, to match the setGeometry() that restores
-       * it (pos() is the frame corner: saving that walked the dock by
-       * one frame width per launch). */
-      QRect g = dock->geometry();
-      st.pos  = VIDEO_POS_PACK(g.x(), g.y());
-   }
-
-   if (!dock->isFloating())
-   {
-      /* Tab partner: the earliest dock in our order that shares the
-       * tab bar, so chains always hang off an earlier row. */
-      QList<QDockWidget*> tabs = win->tabifiedDockWidgets(dock);
-      for (i = 0; i < self; i++)
-         if (docks[i] && tabs.contains(docks[i]))
-         {
-            strlcpy(st.tabbed_with, companion_dock_key((enum companion_dock_id)i),
-                  sizeof(st.tabbed_with));
-            break;
-         }
-      st.raised = !tabs.isEmpty() && qt_dock_laid_out(dock);
-      /* Only a laid-out dock has a size worth keeping: a tab that is
-       * not raised keeps a stale geometry, and its group's size is the
-       * raised tab's anyway. Store 0 so the restore does not ask
-       * sizeDocks() for several conflicting sizes of one slot (which
-       * made the layout drift on every launch). */
-      if (!qt_dock_laid_out(dock))
+      placed[i] = !docks[i];
+      if (placed[i])
+         continue;
+      l->shown[i] = docks[i]->isVisible();
+      if (docks[i]->isFloating())
       {
-         /* A hidden dock keeps the size its row already has, so the
-          * size it was last shown at survives a spell hidden. */
-         companion_dock_state_t old;
-         st.dims = 0;
-         if (!dock->isVisible() && companion_dock_row_parse(s, &old))
-            st.dims = old.dims;
+         QRect g          = docks[i]->geometry();
+         l->area[i]       = COMPANION_DOCK_FLOAT;
+         l->floats[i].pos  = VIDEO_POS_PACK(g.x(), g.y());
+         l->floats[i].dims = VIDEO_SCALE_PACK(g.width(), g.height());
+         placed[i]        = true;
       }
-      /* The raised tab keeps the dock's own height: sizeDocks() pins
-       * the dock itself, and the slot adds its tab bar around it. */
    }
-   companion_dock_row_format(s, len, &st);
+   for (side = 0; side < COMPANION_DOCK_SIDES; side++)
+   {
+      Qt::DockWidgetArea area = qt_dock_area_from_core(
+            (enum companion_dock_area)side);
+      int heads[QT_DOCK_COUNT];
+      int n = 0;
+      for (i = 0; i < QT_DOCK_COUNT; i++)
+      {
+         if (     placed[i] || win->dockWidgetArea(docks[i]) != area
+               || !qt_dock_laid_out(docks[i]))
+            continue;
+         for (j = n; j > 0 && qt_dock_along_side(win, docks[heads[j - 1]])
+               > qt_dock_along_side(win, docks[i]); j--)
+            heads[j] = heads[j - 1];
+         heads[j] = i;
+         n++;
+      }
+      for (j = 0; j < n; j++)
+         if (!placed[heads[j]])
+            qt_dock_add_slot(win, docks, l, placed, side, heads[j], true);
+      for (i = 0; i < QT_DOCK_COUNT; i++)
+         if (!placed[i] && win->dockWidgetArea(docks[i]) == area)
+            qt_dock_add_slot(win, docks, l, placed, side, i, false);
+   }
+   /* A dock in no area at all goes back hidden on the left. */
+   for (i = 0; i < QT_DOCK_COUNT; i++)
+      if (!placed[i])
+         qt_dock_add_slot(win, docks, l, placed, COMPANION_DOCK_LEFT, i, false);
 }
 
 /* %1 is a placeholder for palette(highlight) or the equivalent chosen by the user */
@@ -5999,29 +5968,19 @@ void MainWindow::persistSettings()
    }
 }
 
-/* One row per dock (see qt_dock_state_write). */
+/* One row per dock (companion_dock_to_rows). */
 void MainWindow::saveDockLayout()
 {
-   settings_t *settings = config_get_ptr();
+   companion_dock_layout_t l;
    QDockWidget *docks[QT_DOCK_COUNT];
    int i;
 
    for (i = 0; i < QT_DOCK_COUNT; i++)
       docks[i] = findChild<QDockWidget*>(qt_dock_object_names[i]);
-   for (i = 0; i < QT_DOCK_COUNT; i++)
-   {
-      size_t len;
-      char  *row = qt_dock_row(settings, i, &len);
-      if (docks[i])
-         qt_dock_state_write(this, docks, i, row, len);
-   }
+   qt_dock_read_layout(this, docks, &l);
+   companion_dock_to_rows(config_get_ptr(), &l);
 }
 
-/* Inverse of saveDockLayout(); runs once at startup from
- * qt_companion_restore_settings() after every dock has been built.
- * Docks with a row are re-added to their saved side in list order (so
- * the default tabbing / splits are undone and rebuilt from the rows),
- * tabbed onto their saved partner, sized, and the saved tab raised. */
 /* The usable area of the screen a point falls on, for placing windows
  * and docks. QGuiApplication::screenAt is Qt 5.10 and later; older Qt
  * asks QDesktopWidget, which is deprecated from 5.10 and gone in Qt 6.
@@ -6042,133 +6001,127 @@ static QRect ui_qt_available_geometry_at(const QPoint &p)
 #endif
 }
 
+/* Applies the layout companion_dock_from_rows() makes of the rows, once
+ * at startup after every dock has been built. */
 void MainWindow::restoreDockLayout()
 {
    settings_t *settings = config_get_ptr();
+   companion_dock_layout_t l;
+   companion_dock_state_t st;
    QDockWidget *docks[QT_DOCK_COUNT];
-   companion_dock_state_t st[QT_DOCK_COUNT];
-   bool have[QT_DOCK_COUNT];
-   int order[QT_DOCK_COUNT];
+   bool row[QT_DOCK_COUNT];
    QList<QDockWidget*> hdocks, vdocks;
    QList<int>          hsizes, vsizes;
-   int i, p;
+   int i, side, j, m;
 
+   if (!companion_dock_from_rows(settings, &l))
+      return;
+   /* A dock without a row is already where the layout keeps it, ahead
+    * of the placed ones on its side: rebuilding it would only hide and
+    * re-show it. */
    for (i = 0; i < QT_DOCK_COUNT; i++)
    {
       size_t len;
       docks[i] = findChild<QDockWidget*>(qt_dock_object_names[i]);
-      have[i]  = docks[i]
-         && companion_dock_row_parse(qt_dock_row(settings, i, &len), &st[i]);
+      row[i]   = docks[i]
+         && companion_dock_row_parse(qt_dock_row(settings, i, &len), &st);
    }
+
    /* Qt 6 can keep a dock's old tab grouping alive across a re-add, and
-    * tabifying it again from its row duplicates its tab titles. Detach
-    * each dock pass 1 re-adds to a side first; a dock without a row
-    * keeps its default place, and a floating one stays in the layout
-    * so it can be docked again. */
+    * tabifying it again duplicates its tab titles: detach the docked
+    * ones first. */
    for (i = 0; i < QT_DOCK_COUNT; i++)
-   {
-      if (     have[i]
-            && st[i].area != COMPANION_DOCK_FLOAT
+      if (     row[i] && l.area[i] != COMPANION_DOCK_FLOAT
             && dockWidgetArea(docks[i]) != Qt::NoDockWidgetArea)
          removeDockWidget(docks[i]);
-   }
-   /* Pass 1: placement, in slot order. addDockWidget() appends to the
-    * end of a side, so adding the docks of a side from its first slot
-    * to its last stacks them the way they were saved; two docks on one
-    * side whose rows say otherwise would come back in list order. */
+
+   /* addDockWidget() appends to the end of a side, so adding each side's
+    * slots in order stacks them as the layout has them. */
+   for (side = 0; side < COMPANION_DOCK_SIDES; side++)
    {
-      int seq[QT_DOCK_COUNT];
-      int n = 0;
-      for (i = 0; i < QT_DOCK_COUNT; i++)
+      Qt::DockWidgetArea area = qt_dock_area_from_core(
+            (enum companion_dock_area)side);
+      for (j = 0; j < l.nslots[side]; j++)
       {
-         int j;
-         if (!have[i])
+         const companion_dock_slot_t *slot = &l.slot[side][j];
+         for (m = 0; m < slot->n; m++)
+         {
+            if (!row[slot->members[m]])
+               continue;
+            addDockWidget(area, docks[slot->members[m]]);
+            docks[slot->members[m]]->setFloating(false);
+         }
+      }
+   }
+   for (side = 0; side < COMPANION_DOCK_SIDES; side++)
+      for (j = 0; j < l.nslots[side]; j++)
+      {
+         const companion_dock_slot_t *slot = &l.slot[side][j];
+         QDockWidget *head = docks[slot->members[0]];
+         for (m = 1; m < slot->n; m++)
+            if (head && row[slot->members[m]])
+               tabifyDockWidget(head, docks[slot->members[m]]);
+      }
+
+   for (i = 0; i < QT_DOCK_COUNT; i++)
+   {
+      if (!row[i] || l.area[i] != COMPANION_DOCK_FLOAT)
+         continue;
+      docks[i]->setFloating(true);
+      /* Clamped so a position saved on a monitor that is gone stays
+       * reachable. */
+      if (     VIDEO_SCALE_W(l.floats[i].dims) > 0
+            && VIDEO_SCALE_H(l.floats[i].dims) > 0)
+      {
+         QRect r(VIDEO_POS_X(l.floats[i].pos), VIDEO_POS_Y(l.floats[i].pos),
+               (int)VIDEO_SCALE_W(l.floats[i].dims),
+               (int)VIDEO_SCALE_H(l.floats[i].dims));
+         QRect avail = ui_qt_available_geometry_at(r.topLeft());
+         if (avail.isValid())
+         {
+            if (r.right()  > avail.right())  r.moveRight(avail.right());
+            if (r.bottom() > avail.bottom()) r.moveBottom(avail.bottom());
+            if (r.left()   < avail.left())   r.moveLeft(avail.left());
+            if (r.top()    < avail.top())    r.moveTop(avail.top());
+         }
+         docks[i]->setGeometry(r);
+      }
+   }
+
+   for (i = 0; i < QT_DOCK_COUNT; i++)
+      if (row[i])
+         docks[i]->setVisible(l.shown[i]);
+
+   /* Each slot's size goes to the tab it shows. */
+   for (side = 0; side < COMPANION_DOCK_SIDES; side++)
+   {
+      bool vertical = (   side == COMPANION_DOCK_LEFT
+                       || side == COMPANION_DOCK_RIGHT);
+      for (j = 0; j < l.nslots[side]; j++)
+      {
+         const companion_dock_slot_t *slot = &l.slot[side][j];
+         QDockWidget *shown                = NULL;
+         int w, h;
+         if (slot->raised >= 0 && slot->raised < slot->n
+               && l.shown[slot->members[slot->raised]])
+            shown = docks[slot->members[slot->raised]];
+         for (m = 0; !shown && m < slot->n; m++)
+            if (l.shown[slot->members[m]])
+               shown = docks[slot->members[m]];
+         if (!shown)
             continue;
-         /* Insertion by (area, order), list order breaking ties. */
-         for (j = n; j > 0; j--)
+         w = vertical ? l.side_size[side] : slot->size;
+         h = vertical ? slot->size        : l.side_size[side];
+         if (w > 0)
          {
-            int k = seq[j - 1];
-            if (     st[k].area < st[i].area
-                  || (st[k].area == st[i].area && st[k].order <= st[i].order))
-               break;
-            seq[j] = k;
+            hdocks << shown;
+            hsizes << w;
          }
-         seq[j] = i;
-         n++;
-      }
-      for (i = 0; i < n; i++)
-         order[i] = seq[i];
-      for (; i < QT_DOCK_COUNT; i++)
-         order[i] = -1;
-   }
-   for (p = 0; p < QT_DOCK_COUNT; p++)
-   {
-      i = order[p];
-      if (i < 0)
-         break;
-      if (st[i].area == COMPANION_DOCK_FLOAT)
-      {
-         docks[i]->setFloating(true);
-         /* Its own window: put it back where it was, clamped so a
-          * position saved on a monitor that is gone stays reachable. */
-         if (VIDEO_SCALE_W(st[i].dims) > 0 && VIDEO_SCALE_H(st[i].dims) > 0)
+         if (h > 0)
          {
-            QRect r(VIDEO_POS_X(st[i].pos), VIDEO_POS_Y(st[i].pos),
-                  (int)VIDEO_SCALE_W(st[i].dims), (int)VIDEO_SCALE_H(st[i].dims));
-            QRect avail = ui_qt_available_geometry_at(r.topLeft());
-            if (avail.isValid())
-            {
-               if (r.right()  > avail.right())  r.moveRight(avail.right());
-               if (r.bottom() > avail.bottom()) r.moveBottom(avail.bottom());
-               if (r.left()   < avail.left())   r.moveLeft(avail.left());
-               if (r.top()    < avail.top())    r.moveTop(avail.top());
-            }
-            docks[i]->setGeometry(r);
+            vdocks << shown;
+            vsizes << h;
          }
-      }
-      else
-      {
-         /* Re-adding an already-docked widget moves it: this is what
-          * takes a thumbnail dock out of the default tab group. */
-         addDockWidget(qt_dock_area_from_core(st[i].area), docks[i]);
-         docks[i]->setFloating(false);
-      }
-   }
-
-   /* Pass 2: tabs, only onto an earlier dock that is (now) docked on
-    * the same side - whether that partner got there from its own row
-    * or from the default layout. */
-   for (i = 0; i < QT_DOCK_COUNT; i++)
-   {
-      int t;
-      if (!have[i] || st[i].area == COMPANION_DOCK_FLOAT)
-         continue;
-      t = qt_dock_index_of(st[i].tabbed_with);
-      if (     t >= 0 && t < i && docks[t]
-            && !docks[t]->isFloating()
-            && dockWidgetArea(docks[t]) == qt_dock_area_from_core(st[i].area))
-         tabifyDockWidget(docks[t], docks[i]);
-   }
-
-   /* Pass 3: visibility and sizes. */
-   for (i = 0; i < QT_DOCK_COUNT; i++)
-   {
-      if (!have[i])
-         continue;
-      docks[i]->setVisible(st[i].shown);
-      /* A size of 0 follows the slot (the raised tab of the group
-       * carries the group's size, whichever row it is). */
-      if (st[i].area == COMPANION_DOCK_FLOAT || !st[i].shown)
-         continue;
-      if (VIDEO_SCALE_W(st[i].dims) > 0)
-      {
-         hdocks << docks[i];
-         hsizes << (int)VIDEO_SCALE_W(st[i].dims);
-      }
-      if (VIDEO_SCALE_H(st[i].dims) > 0)
-      {
-         vdocks << docks[i];
-         vsizes << (int)VIDEO_SCALE_H(st[i].dims);
       }
    }
    if (!hdocks.isEmpty())
@@ -6176,12 +6129,16 @@ void MainWindow::restoreDockLayout()
    if (!vdocks.isEmpty())
       sizeDocks(vdocks, vsizes, Qt::Vertical);
 
-   /* Pass 4: raise the saved tab of each group (after visibility, so
-    * a raise is not undone by a later show). */
-   for (i = 0; i < QT_DOCK_COUNT; i++)
-      if (     have[i] && st[i].area != COMPANION_DOCK_FLOAT
-            && st[i].shown && st[i].raised)
-         docks[i]->raise();
+   /* The saved tab of each group, last, so no later show undoes it. */
+   for (side = 0; side < COMPANION_DOCK_SIDES; side++)
+      for (j = 0; j < l.nslots[side]; j++)
+      {
+         const companion_dock_slot_t *slot = &l.slot[side][j];
+         if (     slot->n > 1 && slot->raised >= 0 && slot->raised < slot->n
+               && l.shown[slot->members[slot->raised]]
+               && docks[slot->members[slot->raised]])
+            docks[slot->members[slot->raised]]->raise();
+      }
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

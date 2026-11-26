@@ -2009,10 +2009,10 @@ static void test_dock_model(void)
     * on the right, the log hidden below. */
    companion_dock_default(&l);
    CHECK(l.nslots[COMPANION_DOCK_LEFT] == 4
-         && l.slots[COMPANION_DOCK_LEFT][1].members[0] == COMPANION_DOCK_SHORTCUTS
+         && l.slot[COMPANION_DOCK_LEFT][1].members[0] == COMPANION_DOCK_SHORTCUTS
          && l.nslots[COMPANION_DOCK_RIGHT] == 2
          && l.nslots[COMPANION_DOCK_BOTTOM] == 1 && !l.shown[COMPANION_DOCK_LOG]
-         && l.slots[COMPANION_DOCK_RIGHT][0].n == 4
+         && l.slot[COMPANION_DOCK_RIGHT][0].n == 4
          && companion_dock_raised(&l, COMPANION_DOCK_TITLE) == COMPANION_DOCK_BOXART,
          "dock: default layout");
 
@@ -2030,8 +2030,8 @@ static void test_dock_model(void)
          "dock: tab bar on the group only, Core Info below the thumbnails");
    CHECK(RY(g.pane[COMPANION_DOCK_CORE_INFO]) + RH(g.pane[COMPANION_DOCK_CORE_INFO]) == 720,
          "dock: the last slot reaches the bottom (%d)", RY(g.pane[COMPANION_DOCK_CORE_INFO]) + RH(g.pane[COMPANION_DOCK_CORE_INFO]));
-   CHECK(l.slots[COMPANION_DOCK_RIGHT][0].size + l.slots[COMPANION_DOCK_RIGHT][1].size + 5 == 720,
-         "dock: sizes written back (%d + %d)", l.slots[COMPANION_DOCK_RIGHT][0].size, l.slots[COMPANION_DOCK_RIGHT][1].size);
+   CHECK(l.slot[COMPANION_DOCK_RIGHT][0].size + l.slot[COMPANION_DOCK_RIGHT][1].size + 5 == 720,
+         "dock: sizes written back (%d + %d)", l.slot[COMPANION_DOCK_RIGHT][0].size, l.slot[COMPANION_DOCK_RIGHT][1].size);
    CHECK(g.ngaps == 2 + 3 + 1, "dock: two side gaps, three between the left slots, one on the right (%d)", g.ngaps);
 
    /* Hit testing: the strip, a tab, a gap. */
@@ -2055,9 +2055,9 @@ static void test_dock_model(void)
    CHECK(i < g.ngaps, "dock: gap between the right slots found");
    companion_dock_drag_gap(&l, &g, &m, &client, i, 500);
    companion_dock_layout(&l, &m, &client, &g);
-   CHECK(l.slots[COMPANION_DOCK_RIGHT][0].size >= 495 && l.slots[COMPANION_DOCK_RIGHT][0].size <= 500
+   CHECK(l.slot[COMPANION_DOCK_RIGHT][0].size >= 495 && l.slot[COMPANION_DOCK_RIGHT][0].size <= 500
          && RY(g.pane[COMPANION_DOCK_CORE_INFO]) + RH(g.pane[COMPANION_DOCK_CORE_INFO]) == 720,
-         "dock: right split dragged (%d / %d)", l.slots[COMPANION_DOCK_RIGHT][0].size, l.slots[COMPANION_DOCK_RIGHT][1].size);
+         "dock: right split dragged (%d / %d)", l.slot[COMPANION_DOCK_RIGHT][0].size, l.slot[COMPANION_DOCK_RIGHT][1].size);
 
    /* Tatsuya79's layout by edits: Screenshots out of the group into a
     * slot above Title Screen, which comes out too; Boxart and Logo stay
@@ -2067,7 +2067,7 @@ static void test_dock_model(void)
    companion_dock_set_shown(&l, COMPANION_DOCK_CORE_INFO, false);
    CHECK(l.nslots[COMPANION_DOCK_RIGHT] == 4 && dock_slot_of(&l, COMPANION_DOCK_SCREENSHOT) == 0
          && dock_slot_of(&l, COMPANION_DOCK_TITLE) == 1 && dock_slot_of(&l, COMPANION_DOCK_BOXART) == 2
-         && l.slots[COMPANION_DOCK_RIGHT][2].n == 2 && dock_slot_of(&l, COMPANION_DOCK_CORE_INFO) == 3,
+         && l.slot[COMPANION_DOCK_RIGHT][2].n == 2 && dock_slot_of(&l, COMPANION_DOCK_CORE_INFO) == 3,
          "dock: split out and stacked (%d slots)", l.nslots[COMPANION_DOCK_RIGHT]);
    companion_dock_layout(&l, &m, &client, &g);
    CHECK(g.laid_out[COMPANION_DOCK_SCREENSHOT] && g.laid_out[COMPANION_DOCK_TITLE]
@@ -2091,8 +2091,8 @@ static void test_dock_model(void)
          && memcmp(back.area, l.area, sizeof(l.area)) == 0
          && memcmp(back.shown, l.shown, sizeof(l.shown)) == 0
          && back.side_size[COMPANION_DOCK_LEFT] == 340
-         && back.slots[COMPANION_DOCK_RIGHT][0].size == l.slots[COMPANION_DOCK_RIGHT][0].size
-         && back.slots[COMPANION_DOCK_RIGHT][2].n == 2
+         && back.slot[COMPANION_DOCK_RIGHT][0].size == l.slot[COMPANION_DOCK_RIGHT][0].size
+         && back.slot[COMPANION_DOCK_RIGHT][2].n == 2
          && companion_dock_raised(&back, COMPANION_DOCK_LOGO) == COMPANION_DOCK_BOXART,
          "dock: rows round trip is a fixed point");
    /* The rows Qt itself writes for that layout (from the persist test)
@@ -2108,8 +2108,14 @@ static void test_dock_model(void)
    strlcpy(settings->arrays.desktop_menu_dock_log,        "bottom,0,0,0,-,0,0", 64);
    CHECK(companion_dock_from_rows(settings, &back) && dock_slot_of(&back, COMPANION_DOCK_SCREENSHOT) == 0
          && dock_slot_of(&back, COMPANION_DOCK_TITLE) == 1 && !back.shown[COMPANION_DOCK_BOXART]
-         && back.side_size[COMPANION_DOCK_RIGHT] == 186 && back.slots[COMPANION_DOCK_RIGHT][0].size == 449,
+         && back.side_size[COMPANION_DOCK_RIGHT] == 186 && back.slot[COMPANION_DOCK_RIGHT][0].size == 449,
          "dock: Qt's rows for the layout read into it");
+   /* A hidden pane keeps the size it was last shown at. */
+   strlcpy(settings->arrays.desktop_menu_dock_core_info, "right,0,0,250,-,0,3", 64);
+   CHECK(companion_dock_from_rows(settings, &back), "dock: hidden row read");
+   companion_dock_to_rows(settings, &back);
+   CHECK(strncmp(settings->arrays.desktop_menu_dock_core_info, "right,0,0,250,", 14) == 0,
+         "dock: hidden pane keeps its size (%s)", settings->arrays.desktop_menu_dock_core_info);
 
    /* Drops: the middle of a pane tabs onto it, its thirds slot before
     * and after, the client's edge band a side's end, elsewhere floats. */

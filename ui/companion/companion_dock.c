@@ -75,25 +75,25 @@ void companion_dock_default(companion_dock_layout_t *l)
          COMPANION_DOCK_SHORTCUTS, COMPANION_DOCK_PLAYLISTS, COMPANION_DOCK_CORE };
       for (i = 0; i < (int)ARRAY_SIZE(left); i++)
       {
-         s = &l->slots[COMPANION_DOCK_LEFT][l->nslots[COMPANION_DOCK_LEFT]++];
+         s = &l->slot[COMPANION_DOCK_LEFT][l->nslots[COMPANION_DOCK_LEFT]++];
          s->members[0]   = left[i];
          s->n            = 1;
          l->area[left[i]] = COMPANION_DOCK_LEFT;
       }
    }
    /* Right: the four thumbnail panes tabbed (Boxart raised), Core Info. */
-   s = &l->slots[COMPANION_DOCK_RIGHT][l->nslots[COMPANION_DOCK_RIGHT]++];
+   s = &l->slot[COMPANION_DOCK_RIGHT][l->nslots[COMPANION_DOCK_RIGHT]++];
    for (i = COMPANION_DOCK_BOXART; i <= COMPANION_DOCK_LOGO; i++)
    {
       s->members[s->n++] = (unsigned char)i;
       l->area[i]         = COMPANION_DOCK_RIGHT;
    }
-   s = &l->slots[COMPANION_DOCK_RIGHT][l->nslots[COMPANION_DOCK_RIGHT]++];
+   s = &l->slot[COMPANION_DOCK_RIGHT][l->nslots[COMPANION_DOCK_RIGHT]++];
    s->members[0]                     = COMPANION_DOCK_CORE_INFO;
    s->n                              = 1;
    l->area[COMPANION_DOCK_CORE_INFO] = COMPANION_DOCK_RIGHT;
    /* Bottom: the Log, hidden. */
-   s = &l->slots[COMPANION_DOCK_BOTTOM][l->nslots[COMPANION_DOCK_BOTTOM]++];
+   s = &l->slot[COMPANION_DOCK_BOTTOM][l->nslots[COMPANION_DOCK_BOTTOM]++];
    s->members[0]                = COMPANION_DOCK_LOG;
    s->n                         = 1;
    l->area[COMPANION_DOCK_LOG]  = COMPANION_DOCK_BOTTOM;
@@ -110,8 +110,8 @@ bool companion_dock_find(const companion_dock_layout_t *l, enum companion_dock_i
       return false;
    s = l->area[pane];
    for (i = 0; i < l->nslots[s]; i++)
-      for (m = 0; m < l->slots[s][i].n; m++)
-         if (l->slots[s][i].members[m] == pane)
+      for (m = 0; m < l->slot[s][i].n; m++)
+         if (l->slot[s][i].members[m] == pane)
          {
             if (side)  *side  = (enum companion_dock_area)s;
             if (index) *index = i;
@@ -133,7 +133,7 @@ static bool dock_detach(companion_dock_layout_t *l, enum companion_dock_id pane,
       *slot_gone = false;
    if (!companion_dock_find(l, pane, &side, &idx))
       return false;
-   s = &l->slots[side][idx];
+   s = &l->slot[side][idx];
    for (m = 0; m < s->n; m++)
       if (s->members[m] == pane)
          break;
@@ -145,7 +145,7 @@ static bool dock_detach(companion_dock_layout_t *l, enum companion_dock_id pane,
    if (s->n == 0)
    {
       for (k = idx; k + 1 < l->nslots[side]; k++)
-         l->slots[side][k] = l->slots[side][k + 1];
+         l->slot[side][k] = l->slot[side][k + 1];
       l->nslots[side]--;
       if (slot_gone)
          *slot_gone = true;
@@ -175,8 +175,8 @@ void companion_dock_place(companion_dock_layout_t *l, enum companion_dock_id pan
    if (l->nslots[side] >= COMPANION_DOCK_COUNT)
       return;
    for (k = l->nslots[side]; k > index; k--)
-      l->slots[side][k] = l->slots[side][k - 1];
-   s = &l->slots[side][index];
+      l->slot[side][k] = l->slot[side][k - 1];
+   s = &l->slot[side][index];
    memset(s, 0, sizeof(*s));
    s->members[0] = (unsigned char)pane;
    s->n          = 1;
@@ -197,7 +197,7 @@ void companion_dock_tabify(companion_dock_layout_t *l, enum companion_dock_id pa
    /* The detach may have shifted onto's slot. */
    if (!companion_dock_find(l, onto, &side, &idx))
       return;
-   s = &l->slots[side][idx];
+   s = &l->slot[side][idx];
    if (s->n >= COMPANION_DOCK_COUNT)
       return;
    s->members[s->n] = (unsigned char)pane;
@@ -231,7 +231,7 @@ void companion_dock_raise(companion_dock_layout_t *l, enum companion_dock_id pan
    companion_dock_slot_t *s;
    if (!companion_dock_find(l, pane, &side, &idx))
       return;
-   s = &l->slots[side][idx];
+   s = &l->slot[side][idx];
    for (m = 0; m < s->n; m++)
       if (s->members[m] == pane)
          s->raised = m;
@@ -245,7 +245,7 @@ enum companion_dock_id companion_dock_raised(const companion_dock_layout_t *l,
    const companion_dock_slot_t *s;
    if (!companion_dock_find(l, pane, &side, &idx))
       return pane;
-   s = &l->slots[side][idx];
+   s = &l->slot[side][idx];
    m = dock_slot_visible_member(l, s);
    return m < 0 ? pane : (enum companion_dock_id)s->members[m];
 }
@@ -257,7 +257,7 @@ bool companion_dock_is_tabbed(const companion_dock_layout_t *l,
    int idx;
    if (!companion_dock_find(l, pane, &side, &idx))
       return false;
-   return l->slots[side][idx].n > 1;
+   return l->slot[side][idx].n > 1;
 }
 
 /* --- Rows ------------------------------------------------------------- */
@@ -326,7 +326,7 @@ bool companion_dock_from_rows(struct settings *settings,
    /* A group no row raises shows its first member, as Qt's does. */
    for (i = 0; i < COMPANION_DOCK_SIDES; i++)
       for (j = 0; j < l->nslots[i]; j++)
-         l->slots[i][j].raised = 0;
+         l->slot[i][j].raised = 0;
    /* Raised tabs, sizes, visibility. */
    for (i = 0; i < COMPANION_DOCK_COUNT; i++)
    {
@@ -351,12 +351,12 @@ bool companion_dock_from_rows(struct settings *settings,
          if (dock_side_vertical(side))
          {
             if (w > l->side_size[side])       l->side_size[side]       = w;
-            if (h > l->slots[side][idx].size) l->slots[side][idx].size = h;
+            if (h > l->slot[side][idx].size) l->slot[side][idx].size = h;
          }
          else
          {
             if (h > l->side_size[side])       l->side_size[side]       = h;
-            if (w > l->slots[side][idx].size) l->slots[side][idx].size = w;
+            if (w > l->slot[side][idx].size) l->slot[side][idx].size = w;
          }
       }
       if (st[i].raised)
@@ -388,7 +388,7 @@ void companion_dock_to_rows(struct settings *settings,
       }
       else
       {
-         const companion_dock_slot_t *s = &l->slots[side][idx];
+         const companion_dock_slot_t *s = &l->slot[side][idx];
          int vis      = dock_slot_visible_member(l, s);
          bool carries = (vis >= 0 && s->members[vis] == i);
          int first    = COMPANION_DOCK_COUNT;
@@ -402,6 +402,12 @@ void companion_dock_to_rows(struct settings *settings,
                ? VIDEO_SCALE_PACK(l->side_size[side], s->size)
                : VIDEO_SCALE_PACK(s->size, l->side_size[side]);
          }
+         /* A hidden slot keeps its size on its first member, so a pane
+          * comes back at the size it was last shown at. */
+         else if (vis < 0 && s->members[0] == i && s->size > 0)
+            st.dims = dock_side_vertical(side)
+               ? VIDEO_SCALE_PACK(0, s->size)
+               : VIDEO_SCALE_PACK(s->size, 0);
          if (s->n > 1)
          {
             for (m = 0; m < s->n; m++)
@@ -424,7 +430,7 @@ static int dock_side_visible_slots(const companion_dock_layout_t *l, int side)
 {
    int i, n = 0;
    for (i = 0; i < l->nslots[side]; i++)
-      if (dock_slot_shown(l, &l->slots[side][i]))
+      if (dock_slot_shown(l, &l->slot[side][i]))
          n++;
    return n;
 }
@@ -553,7 +559,7 @@ void companion_dock_layout(companion_dock_layout_t *l,
                        : (int)VIDEO_SCALE_W(side_rect[side].dims);
       for (i = 0; i < l->nslots[side]; i++)
       {
-         const companion_dock_slot_t *s = &l->slots[side][i];
+         const companion_dock_slot_t *s = &l->slot[side][i];
          int mm = dock_slot_visible_member(l, s);
          if (mm < 0)
             continue;
@@ -602,7 +608,7 @@ void companion_dock_layout(companion_dock_layout_t *l,
       pos    = vertical ? side_y : side_x;
       for (k = 0; k < nvis; k++)
       {
-         companion_dock_slot_t *s = &l->slots[side][vis[k]];
+         companion_dock_slot_t *s = &l->slot[side][vis[k]];
          int pane   = s->members[member[k]];
          int tab_h  = dock_slot_shown(l, s) > 1 ? m->tab_h : 0;
          int ext    = size[k];
@@ -654,7 +660,7 @@ static int dock_tab_rects(const companion_dock_layout_t *l,
    const companion_rect_t *bar;
    if (!companion_dock_find(l, pane, &side, &idx))
       return 0;
-   s     = &l->slots[side][idx];
+   s     = &l->slot[side][idx];
    shown = dock_slot_shown(l, s);
    bar   = &g->tabbar[pane];
    bar_x = VIDEO_POS_X(bar->pos);
@@ -751,15 +757,15 @@ void companion_dock_drag_gap(companion_dock_layout_t *l,
       int total, start, na, mina, minb;
       companion_dock_slot_t *sa, *sb;
       for (i = a + 1; i < l->nslots[side]; i++)
-         if (dock_slot_shown(l, &l->slots[side][i]))
+         if (dock_slot_shown(l, &l->slot[side][i]))
          {
             b = i;
             break;
          }
       if (b < 0)
          return;
-      sa    = &l->slots[side][a];
-      sb    = &l->slots[side][b];
+      sa    = &l->slot[side][a];
+      sb    = &l->slot[side][b];
       total = sa->size + sb->size;
       start = vertical ? VIDEO_POS_Y(gp->rect.pos) - sa->size
                        : VIDEO_POS_X(gp->rect.pos) - sa->size;
