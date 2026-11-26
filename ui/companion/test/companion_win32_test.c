@@ -521,8 +521,8 @@ int main(void)
       CHECK(strncmp(test_settings.arrays.desktop_menu_dock_log, "bottom,0,", 9) == 0,
             "log row hidden (%s)", test_settings.arrays.desktop_menu_dock_log);
       CHECK(strncmp(test_settings.arrays.desktop_menu_dock_playlists, "left,1,280,", 11) == 0
-            && strstr(test_settings.arrays.desktop_menu_dock_playlists, ",-,0,1") != NULL,
-            "playlists row: left, 280 wide, slot 1 (%s)", test_settings.arrays.desktop_menu_dock_playlists);
+            && strstr(test_settings.arrays.desktop_menu_dock_playlists, ",-,0,2") != NULL,
+            "playlists row: left, 280 wide, slot 2 below Shortcuts (%s)", test_settings.arrays.desktop_menu_dock_playlists);
       GetWindowRect(info, &ri); GetWindowRect(boxart, &rb);
       CHECK(IsWindowVisible(boxart) && IsWindowVisible(info) && rb.bottom <= ri.top,
             "thumbnails above Core Info by default, as Qt's");

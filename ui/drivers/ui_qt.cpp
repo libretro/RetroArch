@@ -4111,6 +4111,8 @@ void MainWindow::layoutShortcutButtons()
 #define QT_DOCK_SAVED_MIN "ra_dock_saved_min"
 #define QT_DOCK_SAVED_MAX "ra_dock_saved_max"
 #define QT_DOCK_SAVED_VERT "ra_dock_saved_vertical"
+#define QT_DOCK_WANT_W "ra_dock_want_width"
+#define QT_DOCK_WANT_H "ra_dock_want_height"
 
 void MainWindow::sizeDocks(const QList<QDockWidget*> &docks,
       const QList<int> &sizes, Qt::Orientation orientation)
@@ -4126,6 +4128,14 @@ void MainWindow::sizeDocks(const QList<QDockWidget*> &docks,
 
       if (!dock || dock->isFloating() || size <= 0)
          continue;
+      /* Before the first show the layout is not at the window's real
+       * geometry, and limits pinned now would grow the window to fit
+       * them: keep the size for showEvent. */
+      if (!m_hasBeenShown)
+      {
+         dock->setProperty(vertical ? QT_DOCK_WANT_H : QT_DOCK_WANT_W, size);
+         continue;
+      }
       /* Keep the limits from before the first pin when sizes arrive
        * twice in one turn. */
       if (!dock->property(QT_DOCK_SAVED_MIN).isValid())
@@ -4151,6 +4161,37 @@ void MainWindow::sizeDocks(const QList<QDockWidget*> &docks,
 
    if (pinned)
       QTimer::singleShot(0, this, SLOT(releaseDockSizes()));
+}
+
+void MainWindow::applyPendingDockSizes()
+{
+   int i;
+   QList<QDockWidget*> docks = findChildren<QDockWidget*>();
+   QList<QDockWidget*> hdocks, vdocks;
+   QList<int> hsizes, vsizes;
+
+   for (i = 0; i < docks.count(); i++)
+   {
+      QDockWidget *dock = docks.at(i);
+      QVariant w        = dock->property(QT_DOCK_WANT_W);
+      QVariant h        = dock->property(QT_DOCK_WANT_H);
+      if (w.isValid())
+      {
+         hdocks << dock;
+         hsizes << w.toInt();
+         dock->setProperty(QT_DOCK_WANT_W, QVariant());
+      }
+      if (h.isValid())
+      {
+         vdocks << dock;
+         vsizes << h.toInt();
+         dock->setProperty(QT_DOCK_WANT_H, QVariant());
+      }
+   }
+   if (!hdocks.isEmpty())
+      sizeDocks(hdocks, hsizes, Qt::Horizontal);
+   if (!vdocks.isEmpty())
+      sizeDocks(vdocks, vsizes, Qt::Vertical);
 }
 
 void MainWindow::releaseDockSizes()
@@ -6186,6 +6227,7 @@ void MainWindow::showEvent(QShowEvent *event)
 {
    QMainWindow::showEvent(event);
    m_hasBeenShown = true;
+   applyPendingDockSizes();
    refreshShortcutButtons();
    schedulePersistSettings();
 }
