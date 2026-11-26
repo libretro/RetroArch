@@ -190,7 +190,7 @@ bool natt_device_next(struct natt_discovery *discovery,
          char *location = string_trim_whitespace_left(
             data + STRLEN_CONST("Location:"));
 
-         if (string_starts_with_case_insensitive(location, "http://"))
+         if (natt_url_matches_device(location, device))
          {
             /* Make sure the description URL isn't too long. */
             if (strlcpy(device->desc, location, sizeof(device->desc)) <
@@ -267,12 +267,13 @@ done:
 bool natt_query_device(struct natt_device *device)
 {
    if (     !device || !*device->desc
+         || !natt_url_matches_device(device->desc, device)
          || retro_atomic_load_acquire_int(&device->busy))
       return false;
 
    retro_atomic_store_release_int(&device->busy, 1);
-   if (!task_push_http_transfer(device->desc,
-      true, NULL, natt_query_device_cb, device))
+   if (!task_push_http_transfer_no_redirect(device->desc,
+      "GET", NULL, NULL, true, natt_query_device_cb, device))
    {
       retro_atomic_store_release_int(&device->busy, 0);
       return false;
@@ -487,7 +488,9 @@ static bool natt_action(struct natt_device *device,
    char headers[512];
    void *obj;
 
-   if (!*device->control)
+   if (   !*device->control
+       || !natt_url_matches_device(device->control, device)
+       || !natt_service_type_valid(device->service_type))
       return false;
 
    snprintf(headers, sizeof(headers), headers_tmpl,
@@ -501,8 +504,8 @@ static bool natt_action(struct natt_device *device,
    else
       obj             = device;
 
-   return task_push_http_post_transfer_with_headers(device->control,
-      data, true, NULL, headers, cb, obj) != NULL;
+   return task_push_http_transfer_no_redirect(device->control,
+      "POST", data, headers, true, cb, obj) != NULL;
 }
 
 bool natt_external_address(struct natt_device *device)

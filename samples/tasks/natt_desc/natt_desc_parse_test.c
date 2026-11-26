@@ -115,6 +115,8 @@ int main(void)
       mk(&root,   "root",        NULL, &device, NULL);
 
       memset(&dev, 0, sizeof(dev));
+      dev.addr.sin_family      = AF_INET;
+      dev.addr.sin_addr.s_addr = htonl(0x0a000001);
       ok(natt_parse_desc_node(&root, &dev), "nested WANIPConnection found");
       ok(!strcmp(dev.control, "http://10.0.0.1:5000/ctl"),
             "  -> control URL bound (full http)");
@@ -132,6 +134,8 @@ int main(void)
       mk(&svc, "service",     NULL, &st, NULL);
 
       memset(&dev, 0, sizeof(dev));
+      dev.addr.sin_family      = AF_INET;
+      dev.addr.sin_addr.s_addr = htonl(0x0a000001);
       strlcpy(dev.desc, "http://10.0.0.1:5000/desc.xml", sizeof(dev.desc));
       ok(natt_parse_desc_node(&svc, &dev), "WANPPPConnection found");
       ok(!strcmp(dev.control, "http://10.0.0.1:5000/ppp"),
@@ -185,6 +189,8 @@ int main(void)
       mk(&slist, "serviceList", NULL, &svcA, NULL);
 
       memset(&dev, 0, sizeof(dev));
+      dev.addr.sin_family      = AF_INET;
+      dev.addr.sin_addr.s_addr = htonl(0x0a000001);
       ok(natt_parse_desc_node(&slist, &dev), "sibling WANIP after unsupported found");
       ok(!strcmp(dev.control, "http://10.0.0.1:5000/b"),
             "  -> second service's control URL bound");

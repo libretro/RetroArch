@@ -45,6 +45,15 @@ extern "C" {
  */
 bool natt_parse_desc_node(rxml_node_t *node, struct natt_device *device);
 
+/* Returns true only for an HTTP URL whose numeric IPv4 host is the
+ * address from which the device's SSDP response was received. */
+bool natt_url_matches_device(const char *url,
+      const struct natt_device *device);
+
+/* Accept only the two service URNs used by this client, with a decimal
+ * version suffix and no trailing data. */
+bool natt_service_type_valid(const char *service_type);
+
 #ifdef __cplusplus
 }
 #endif

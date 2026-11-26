@@ -884,6 +884,26 @@ void* task_push_http_transfer(const char *url, bool mute,
    return NULL;
 }
 
+void *task_push_http_transfer_no_redirect(const char *url,
+      const char *method, const char *data, const char *headers, bool mute,
+      retro_task_callback_t cb, void *user_data)
+{
+   struct http_connection_t *conn;
+
+   if (!url || !*url || !method)
+      return NULL;
+
+   if (!(conn = net_http_connection_new(url, method, data)))
+      return NULL;
+
+   if (headers)
+      net_http_connection_set_headers(conn, headers);
+   net_http_connection_set_redirects(conn, false);
+
+   return task_push_http_transfer_generic(conn,
+         url, mute, false, cb, user_data);
+}
+
 /* @a then @b, composed once and handed to @conn */
 static bool task_http_take_headers(struct http_connection_t *conn,
       const char *a, const char *b)
