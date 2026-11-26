@@ -132,6 +132,33 @@ struct string_list *dir_list_new_special(const char *path,
    return &directory;
 }
 
+/* The state scan reads the same fixture entry by entry. */
+struct RDIR { unsigned next; };
+static struct RDIR dirent_cursor;
+struct RDIR *retro_opendir_include_hidden(const char *path, bool hidden)
+{
+   (void)path;
+   (void)hidden;
+   dirent_cursor.next = 0;
+   return &dirent_cursor;
+}
+bool retro_dirent_error(struct RDIR *rdir) { (void)rdir; return false; }
+int retro_readdir(struct RDIR *rdir)
+{
+   return rdir->next++ < file_count;
+}
+const char *retro_dirent_get_name(struct RDIR *rdir)
+{
+   return path_basename(files[rdir->next - 1]);
+}
+bool retro_dirent_is_dir(struct RDIR *rdir, const char *unused)
+{
+   (void)rdir;
+   (void)unused;
+   return false;
+}
+void retro_closedir(struct RDIR *rdir) { (void)rdir; }
+
 void string_list_free(struct string_list *list) { assert(list == &directory); }
 void dir_list_free(struct string_list *list) { string_list_free(list); }
 

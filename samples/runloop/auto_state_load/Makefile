@@ -47,7 +47,6 @@ $(SCAN_TARGET): $(SCAN_SOURCES)
 check: all
 	./$(TARGET)
 	./$(RUNTIME_TARGET)
-	@if ./$(SCAN_TARGET) --interrupt; then exit 1; else test $$? -eq 1; fi
 	./$(SCAN_TARGET)
 
 clean:

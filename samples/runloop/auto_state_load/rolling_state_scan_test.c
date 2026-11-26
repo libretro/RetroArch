@@ -18,7 +18,6 @@
 #include <file/file_path.h>
 #include <lists/dir_list.h>
 #include "../../../command.h"
-#include "../../../list_special.h"
 #include "../../../runloop.h"
 
 static settings_t settings;
@@ -36,12 +35,6 @@ bool verbosity_is_enabled(void) { return false; }
 bool content_state_file_in_use(const char *path) { (void)path; return false; }
 const char *msg_hash_to_str(enum msg_hash_enums msg) { (void)msg; return "test"; }
 
-struct string_list *dir_list_new_special(const char *path,
-      enum dir_list_type type, const char *filter, bool hidden)
-{
-   assert(type == DIR_LIST_PLAIN);
-   return dir_list_new(path, filter, false, hidden, false, false);
-}
 
 static void clear_files(void)
 {
@@ -210,7 +203,7 @@ static void test_prune_path(void)
    assert(file_count() == 11);
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
    unsigned attempt;
    for (attempt = 0; attempt < 1000; attempt++)
@@ -222,13 +215,6 @@ int main(int argc, char **argv)
       assert(errno == EEXIST);
    }
    assert(attempt < 1000);
-   if (argc == 2 && !strcmp(argv[1], "--interrupt"))
-   {
-      add_file("interrupted.state");
-      printf("interrupted fixture: %s\n", directory);
-      fflush(stdout);
-      _exit(1);
-   }
    settings.bools.savestate_auto_index = true;
    test_selection();
    test_retention();

@@ -27,6 +27,7 @@
 #include <net/net_socket.h>
 #endif
 #include <lists/dir_list.h>
+#include <retro_dirent.h>
 #include <file/file_path.h>
 #include <streams/stdin_stream.h>
 #include <streams/file_stream.h>
@@ -6934,90 +6935,104 @@ static bool command_state_index(const char *suffix, unsigned *index)
    return true;
 }
 
-static int command_state_index_compare(const void *a, const void *b)
-{
-   int left  = ((const struct string_list_elem*)a)->attr.i;
-   int right = ((const struct string_list_elem*)b)->attr.i;
-   return left < right ? -1 : left > right;
-}
+#define COMMAND_STATE_SLOT_WORDS 32
 
-/* Restores an existing slot and optionally finds one excess state to prune. */
+/* Restores an existing slot and optionally finds one excess state to
+ * prune.  @name_savestate's first @name_len characters are the state
+ * name (the rest, if any, a slot suffix).  The folder is read entry
+ * by entry and only matching slots are kept, as bits of the
+ * 0..@savestate_max_keep range. */
 static void command_scan_states(
-      const char *name_savestate,
+      const char *name_savestate, size_t name_len,
       bool show_hidden_files,
       unsigned savestate_max_keep,
       int curr_state_slot,
-      unsigned *last_index, char *s)
+      unsigned *last_index, char *s, size_t len)
 {
    char state_dir[DIR_MAX_LENGTH];
+   uint32_t bits_local[COMMAND_STATE_SLOT_WORDS];
+   uint32_t *bits         = NULL;
    const char *state_base;
    size_t base_len;
+   size_t words           = 0;
    unsigned max_idx       = 0;
    unsigned loa_idx       = 0;
    unsigned first_idx     = UINT_MAX;
    unsigned last_idx      = 0;
    unsigned gap_idx       = 0;
    unsigned del_idx       = UINT_MAX;
-   struct string_list *dir_list;
-   size_t i, cnt          = 0;
+   unsigned i;
+   struct RDIR *dir;
+   size_t cnt             = 0;
    size_t cnt_in_range    = 0;
 
-   if (!name_savestate || !*name_savestate)
+   if (!name_savestate || !name_len)
       return;
-   state_base = path_basename(name_savestate);
-   base_len = strlen(state_base);
+   state_base = name_savestate + name_len;
+   while (     state_base > name_savestate
+         && state_base[-1] != '/' && state_base[-1] != '\\')
+      state_base--;
+   base_len = name_savestate + name_len - state_base;
    fill_pathname_basedir(state_dir, name_savestate, sizeof(state_dir));
-   if (!(dir_list = dir_list_new_special(state_dir,
-               DIR_LIST_PLAIN, NULL, show_hidden_files)))
+   if (!(dir = retro_opendir_include_hidden(state_dir, show_hidden_files)))
       return;
-
-   for (i = 0; i < dir_list->size; i++)
+   if (retro_dirent_error(dir))
    {
-      unsigned idx = 0;
-      const char *base;
-      const char *suffix;
-      const char *entry = dir_list->elems[i].data;
-      if (!entry || !*entry)
-         continue;
-      base = path_basename(entry);
-      if (strncmp(base, state_base, base_len))
-         continue;
-      suffix = base + base_len;
-      if (!command_state_index(suffix, &idx))
-         continue;
-      dir_list->elems[i].attr.i = (int)idx;
-      if (cnt != i)
+      retro_closedir(dir);
+      return;
+   }
+
+   if (savestate_max_keep)
+   {
+      words = savestate_max_keep / 32 + 1;
+      if (words <= COMMAND_STATE_SLOT_WORDS)
+         bits = bits_local;
+      else if (!(bits = (uint32_t*)malloc(words * sizeof(*bits))))
       {
-         struct string_list_elem tmp = dir_list->elems[cnt];
-         dir_list->elems[cnt] = dir_list->elems[i];
-         dir_list->elems[i] = tmp;
+         retro_closedir(dir);
+         return;
       }
+      memset(bits, 0, words * sizeof(*bits));
+   }
+
+   while (retro_readdir(dir))
+   {
+      unsigned idx;
+      const char *name = retro_dirent_get_name(dir);
+      if (     !name
+            || (!show_hidden_files && (*name == '.' || *name == '$'))
+            || strncmp(name, state_base, base_len)
+            || !command_state_index(name + base_len, &idx)
+            || retro_dirent_is_dir(dir, NULL))
+         continue;
       if (idx > max_idx)
          max_idx = idx;
       cnt++;
       if (idx <= savestate_max_keep)
+      {
          cnt_in_range++;
+         if (bits)
+            bits[idx >> 5] |= (uint32_t)1 << (idx & 31);
+      }
    }
+   retro_closedir(dir);
 
    if (!savestate_max_keep || !cnt_in_range)
       loa_idx = cnt ? max_idx : MIN(savestate_max_keep, INT_MAX);
    else
    {
-      qsort(dir_list->elems, cnt,
-            sizeof(*dir_list->elems), command_state_index_compare);
-      for (i = 0; i < cnt; i++)
+      for (i = 0; i <= savestate_max_keep; i++)
       {
-         int slot = dir_list->elems[i].attr.i;
-         if (slot < 0 || (unsigned)slot > savestate_max_keep)
+         if (!(bits[i >> 5] & ((uint32_t)1 << (i & 31))))
             continue;
          if (first_idx == UINT_MAX)
-            first_idx = (unsigned)slot;
-         last_idx = (unsigned)slot;
-         if ((unsigned)slot == gap_idx)
+            first_idx = i;
+         last_idx = i;
+         if (i == gap_idx)
             gap_idx++;
          if (     del_idx == UINT_MAX
-               && (curr_state_slot < 0 || slot > curr_state_slot))
-            del_idx = (unsigned)slot;
+               && (curr_state_slot < 0 || i > (unsigned)curr_state_slot))
+            del_idx = i;
       }
 
       if (gap_idx > savestate_max_keep)
@@ -7035,6 +7050,8 @@ static void command_scan_states(
       if (del_idx == UINT_MAX)
          del_idx = first_idx;
    }
+   if (bits != bits_local)
+      free(bits);
 
    RARCH_DBG("[State] Save state scanning finished, used slots (in range): "
              "%u (%u), max:%u, load index %u, gap index %u, delete index %u.\n",
@@ -7046,17 +7063,19 @@ static void command_scan_states(
    /* A committed replacement only needs pruning when it added a file. */
    if (s && cnt_in_range > savestate_max_keep && del_idx != UINT_MAX)
    {
-      size_t len = strlcpy(s, name_savestate, PATH_MAX_LENGTH);
-      if (len >= PATH_MAX_LENGTH)
-         s[0] = '\0';
-      else if (del_idx > 0)
+      s[0] = '\0';
+      if (name_len < len)
       {
-         int written = snprintf(s + len, PATH_MAX_LENGTH - len, "%u", del_idx);
-         if (written < 0 || (size_t)written >= PATH_MAX_LENGTH - len)
-            s[0] = '\0';
+         memcpy(s, name_savestate, name_len);
+         s[name_len] = '\0';
+         if (del_idx > 0)
+         {
+            int written = snprintf(s + name_len, len - name_len, "%u", del_idx);
+            if (written < 0 || (size_t)written >= len - name_len)
+               s[0] = '\0';
+         }
       }
    }
-   dir_list_free(dir_list);
 }
 
 /**
@@ -7093,9 +7112,11 @@ unsigned command_event_get_savestate_auto_index(settings_t *settings,
       const char *state_path)
 {
    unsigned max_idx          = 0;
-   command_scan_states(state_path, settings->bools.show_hidden_files,
-         settings->uints.savestate_max_keep, settings->ints.state_slot,
-         &max_idx, NULL);
+   if (state_path)
+      command_scan_states(state_path, strlen(state_path),
+            settings->bools.show_hidden_files,
+            settings->uints.savestate_max_keep, settings->ints.state_slot,
+            &max_idx, NULL, 0);
    return max_idx;
 }
 
@@ -7127,8 +7148,7 @@ void command_event_set_savestate_garbage_collect(const char *path,
    size_t i;
    unsigned path_slot;
    const char *ext;
-   char *state_base;
-   char state_to_delete[PATH_MAX_LENGTH] = {0};
+   char state_to_delete[PATH_MAX_LENGTH];
    if (!path || slot < 0 || !max_keep)
       return;
    ext = path_get_extension(path);
@@ -7136,13 +7156,11 @@ void command_event_set_savestate_garbage_collect(const char *path,
          || !command_state_index(ext + STRLEN_CONST("state"), &path_slot)
          || path_slot != (unsigned)slot)
       return;
-   state_base = strdup(path);
-   if (!state_base)
-      return;
-   state_base[ext + STRLEN_CONST("state") - path] = '\0';
-   command_scan_states(
-         state_base, show_hidden_files, max_keep, slot, NULL, state_to_delete);
-   free(state_base);
+   /* The state name is @path up to its slot suffix */
+   state_to_delete[0] = '\0';
+   command_scan_states(path, ext + STRLEN_CONST("state") - path,
+         show_hidden_files, max_keep, slot, NULL,
+         state_to_delete, sizeof(state_to_delete));
    /* Only delete one save state per save action
     * > Conservative behaviour, designed to minimise
     *   the risk of deleting multiple incorrect files
