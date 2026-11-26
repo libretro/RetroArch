@@ -189,21 +189,20 @@ static INLINE void input_core_read_gate_set(input_driver_state_t *st)
 #define IS_COMPOSITION_KR(c)    ( (c & 0x01000000) ? 1 : 0)
 #define IS_END_COMPOSITION(c)   ( (c & 0xF0000000) ? 1 : 0)
 
+#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
 struct input_remote
 {
-#if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    int net_fd[MAX_USERS];
    /* "First Sender Only": the address each user listens to, once a
     * first message has come */
    uint32_t sender[MAX_USERS];
-   bool     sender_known[MAX_USERS];
    /* the device last heard, and the port listened on, for the menu */
    uint32_t last[MAX_USERS];
-   bool     heard[MAX_USERS];
    uint16_t port[MAX_USERS];
-#endif
-   bool state[RARCH_BIND_LIST_END];
+   bool     sender_known[MAX_USERS];
+   bool     heard[MAX_USERS];
 };
+#endif
 
 
 /**
@@ -4715,19 +4714,14 @@ static int16_t input_state_device(
       case RETRO_DEVICE_ANALOG:
          {
 #if defined(HAVE_NETWORKGAMEPAD) || defined(HAVE_OVERLAY)
-#ifdef HAVE_NETWORKGAMEPAD
-            input_remote_state_t
-               *input_state         = &input_st->remote_st_ptr;
-
-#endif
             unsigned base           = (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
                ? 2 : 0;
             if (id == RETRO_DEVICE_ID_ANALOG_Y)
                base += 1;
 #ifdef HAVE_NETWORKGAMEPAD
             if (     input_st->remote && idx < RETRO_DEVICE_INDEX_ANALOG_BUTTON
-                  && input_state && input_state->analog[base][port])
-               res          = input_state->analog[base][port];
+                  && input_st->remote_st_ptr.analog[base][port])
+               res          = input_st->remote_st_ptr.analog[base][port];
             else
 #endif
 #endif

@@ -3054,6 +3054,21 @@ static void lane_network_retropad(void)
    CHECK((seen & (A | B)) == B,
          "network pad: a release did not arrive, or a stray message let a control go");
 
+   /* negative ids and indices are not ours either: an analog index of
+    * -2 lands index*2+id on the first user's buttons, an id of -1 on
+    * another user's, and a joypad id of -1 is a negative shift */
+   {
+      input_remote_state_t before = input_st->remote_st_ptr;
+      np_send(fd, &to, RETRO_DEVICE_ANALOG, -2, 0, 0xffff);
+      np_send(fd, &to, RETRO_DEVICE_ANALOG, 0, -1, 0x7fff);
+      np_send(fd, &to, RETRO_DEVICE_JOYPAD, 0, -1, 1);
+      run_loop_frames(2);
+      trace_last(&seen, axes);
+      CHECK(!memcmp(&before, &input_st->remote_st_ptr, sizeof(before))
+            && (seen & (A | B)) == B && axes[0] == 12345,
+            "network pad: a negative id or index changed the pad's state");
+   }
+
    /* a burst longer than one poll takes (but not than the socket
     * holds): it ends up where it ended */
    for (i = 0; i < 100; i++)
@@ -3138,6 +3153,7 @@ done:
    if (failures == had)
       printf("[pass] network pad: messages sent together arrive together;"
             " what is held stays held; a stray message changes nothing;"
+            " a negative id or index changes nothing;"
             " a burst ends where it ended; First Sender Only keeps to the"
             " first device; a button of it counts as a first press\n");
 #else
