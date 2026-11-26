@@ -4377,9 +4377,15 @@ static void lane_playlist_preselection(void)
    configuration_set_int(settings, settings->ints.state_slot, 7);
    configuration_set_bool(settings, settings->bools.savestate_auto_index, true);
    menu_st->driver_data->rpl_entry_selection_ptr = 0;
+   /* The entry's core is probed, not loaded: a load is what quits a
+    * static build, and on this one it drops a staged subsystem */
+   runloop_st->subsystem_current_count = 1;
    CHECK(accept_open_screen(DISPLAYLIST_STATE_SLOT_RUN, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR,
             MENU_ENUM_LABEL_STATE_SLOT_RUN, "Load State") == 1001,
          "playlist: Load State list was not built");
+   CHECK(runloop_st->subsystem_current_count == 1,
+         "playlist: the Load State list loaded the entry's core");
+   runloop_st->subsystem_current_count = 0;
    CHECK(menu_st->selection_ptr == 5 && settings->ints.state_slot == 7,
          "playlist: missing or other-game slot 9 was preselected, or global slot changed");
    /* Resolving the entry's states loads no content path and names

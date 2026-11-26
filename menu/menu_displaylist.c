@@ -18005,7 +18005,9 @@ static bool menu_displaylist_ctl_internal(
                runloop_state_t *runloop_st = runloop_state_get_ptr();
                int state_slot              = settings->ints.state_slot;
 
-               /* Load the core for getting the final state path for thumbnails */
+               /* The entry's core is probed, not loaded, for its state
+                * support and the name its states are sorted under: a
+                * static build would quit to load it */
                if (playlist && !(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
                {
                   struct menu_state *menu_st         = menu_state_get_ptr();
@@ -18017,7 +18019,7 @@ static bool menu_displaylist_ctl_internal(
                   if (entry && *entry->path)
                   {
                      path_set(RARCH_PATH_CORE, entry->core_path);
-                     command_event(CMD_EVENT_LOAD_CORE, NULL);
+                     command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
                      runloop_set_current_core_type(CORE_TYPE_PLAIN, true);
 
                      /* Read this entry's state slot */
