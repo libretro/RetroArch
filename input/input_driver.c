@@ -4281,7 +4281,7 @@ static void input_remote_parse_packet(
    switch (msg->device)
    {
       case RETRO_DEVICE_JOYPAD:
-         if (msg->id < 16)
+         if ((unsigned)msg->id < 16)
          {
             input_state->buttons[user] &= ~(1 << msg->id);
             if (msg->state)
@@ -4289,7 +4289,7 @@ static void input_remote_parse_packet(
          }
          break;
       case RETRO_DEVICE_ANALOG:
-         if (msg->id<2 && msg->index<2)
+         if ((unsigned)msg->id < 2 && (unsigned)msg->index < 2)
             input_state->analog[msg->index * 2 + msg->id][user] = msg->state;
          break;
    }
