@@ -3206,28 +3206,8 @@ static QString qt_highlight_color(void)
    return string_is_empty(c) ? QString("palette(highlight)") : QString::fromUtf8(c);
 }
 
-/* The dark theme sets a white Highlight so Fusion does not draw its
- * grey selection block; other themes get the palette back. */
-static void qt_apply_theme_palette(bool dark)
-{
-   static QPalette base;
-   static bool     saved = false;
-   QPalette        p;
-   if (!saved)
-   {
-      base  = qApp->palette();
-      saved = true;
-   }
-   p = base;
-   if (dark)
-      p.setColor(QPalette::Highlight, QColor(255, 255, 255));
-   qApp->setPalette(p);
-}
-
 void MainWindow::setTheme(Theme theme)
 {
-   bool dark = false;
-
    m_currentTheme = theme;
 
    setDefaultCustomProperties();
@@ -3235,7 +3215,7 @@ void MainWindow::setTheme(Theme theme)
    switch(theme)
    {
       case THEME_SYSTEM_DEFAULT:
-         if ((dark = qt_system_uses_dark_theme()))
+         if (qt_system_uses_dark_theme())
             qApp->setStyleSheet(qt_theme_dark_stylesheet.arg(
                      qt_highlight_color()));
          else
@@ -3243,7 +3223,6 @@ void MainWindow::setTheme(Theme theme)
                      qt_highlight_color()));
          break;
       case THEME_DARK:
-         dark = true;
          qApp->setStyleSheet(qt_theme_dark_stylesheet.arg(
                   qt_highlight_color()));
          break;
@@ -3253,7 +3232,6 @@ void MainWindow::setTheme(Theme theme)
       default:
          break;
    }
-   qt_apply_theme_palette(dark);
 #ifdef HAVE_MENU
    m_viewOptionsDialog->repaintIcons();
 #endif
@@ -4099,9 +4077,10 @@ void MainWindow::layoutShortcutButtons()
  * pinned to the wanted size, so the dock splitter lays the slot out at
  * it, and released on the next turn of the event loop. A size below the
  * dock's minimum size hint ends at that minimum, as in a drag. */
-#define QT_DOCK_SAVED_MIN "ra_dock_saved_min"
-#define QT_DOCK_SAVED_MAX "ra_dock_saved_max"
-#define QT_DOCK_SAVED_VERT "ra_dock_saved_vertical"
+#define QT_DOCK_SAVED_MIN_W "ra_dock_saved_min_w"
+#define QT_DOCK_SAVED_MAX_W "ra_dock_saved_max_w"
+#define QT_DOCK_SAVED_MIN_H "ra_dock_saved_min_h"
+#define QT_DOCK_SAVED_MAX_H "ra_dock_saved_max_h"
 #define QT_DOCK_WANT_W "ra_dock_want_width"
 #define QT_DOCK_WANT_H "ra_dock_want_height"
 
@@ -4127,23 +4106,25 @@ void MainWindow::sizeDocks(const QList<QDockWidget*> &docks,
          dock->setProperty(vertical ? QT_DOCK_WANT_H : QT_DOCK_WANT_W, size);
          continue;
       }
-      /* Keep the limits from before the first pin when sizes arrive
-       * twice in one turn. */
-      if (!dock->property(QT_DOCK_SAVED_MIN).isValid())
-      {
-         dock->setProperty(QT_DOCK_SAVED_MIN, vertical
-               ? dock->minimumHeight() : dock->minimumWidth());
-         dock->setProperty(QT_DOCK_SAVED_MAX, vertical
-               ? dock->maximumHeight() : dock->maximumWidth());
-         dock->setProperty(QT_DOCK_SAVED_VERT, vertical);
-      }
+      /* Each direction keeps its own limits from before its first pin:
+       * a dock sized both ways in one turn gets both back. */
       if (vertical)
       {
+         if (!dock->property(QT_DOCK_SAVED_MIN_H).isValid())
+         {
+            dock->setProperty(QT_DOCK_SAVED_MIN_H, dock->minimumHeight());
+            dock->setProperty(QT_DOCK_SAVED_MAX_H, dock->maximumHeight());
+         }
          dock->setMinimumHeight(size);
          dock->setMaximumHeight(size);
       }
       else
       {
+         if (!dock->property(QT_DOCK_SAVED_MIN_W).isValid())
+         {
+            dock->setProperty(QT_DOCK_SAVED_MIN_W, dock->minimumWidth());
+            dock->setProperty(QT_DOCK_SAVED_MAX_W, dock->maximumWidth());
+         }
          dock->setMinimumWidth(size);
          dock->setMaximumWidth(size);
       }
@@ -4193,23 +4174,23 @@ void MainWindow::releaseDockSizes()
    for (i = 0; i < docks.count(); i++)
    {
       QDockWidget *dock = docks.at(i);
-      QVariant saved_min = dock->property(QT_DOCK_SAVED_MIN);
+      QVariant w        = dock->property(QT_DOCK_SAVED_MIN_W);
+      QVariant h        = dock->property(QT_DOCK_SAVED_MIN_H);
 
-      if (!saved_min.isValid())
-         continue;
-      if (dock->property(QT_DOCK_SAVED_VERT).toBool())
+      if (w.isValid())
       {
-         dock->setMinimumHeight(saved_min.toInt());
-         dock->setMaximumHeight(dock->property(QT_DOCK_SAVED_MAX).toInt());
+         dock->setMinimumWidth(w.toInt());
+         dock->setMaximumWidth(dock->property(QT_DOCK_SAVED_MAX_W).toInt());
+         dock->setProperty(QT_DOCK_SAVED_MIN_W, QVariant());
+         dock->setProperty(QT_DOCK_SAVED_MAX_W, QVariant());
       }
-      else
+      if (h.isValid())
       {
-         dock->setMinimumWidth(saved_min.toInt());
-         dock->setMaximumWidth(dock->property(QT_DOCK_SAVED_MAX).toInt());
+         dock->setMinimumHeight(h.toInt());
+         dock->setMaximumHeight(dock->property(QT_DOCK_SAVED_MAX_H).toInt());
+         dock->setProperty(QT_DOCK_SAVED_MIN_H, QVariant());
+         dock->setProperty(QT_DOCK_SAVED_MAX_H, QVariant());
       }
-      dock->setProperty(QT_DOCK_SAVED_MIN, QVariant());
-      dock->setProperty(QT_DOCK_SAVED_MAX, QVariant());
-      dock->setProperty(QT_DOCK_SAVED_VERT, QVariant());
    }
 }
 
@@ -5948,6 +5929,30 @@ ThumbnailType MainWindow::getThumbnailTypeFromString(QString thumbnailType)
    return THUMBNAIL_TYPE_BOXART;
 }
 
+/* For tools/companion_qt_persist_test.sh: each dock's side, whether it
+ * floats, and its size limits, which a restore must leave as it found
+ * them. */
+static void qt_dock_report(QMainWindow *win)
+{
+   int i;
+   FILE *f;
+   const char *path = getenv("RETROARCH_QT_DOCK_REPORT");
+
+   if (!path || !*path || !(f = fopen(path, "w")))
+      return;
+   for (i = 0; i < QT_DOCK_COUNT; i++)
+   {
+      QDockWidget *d = win->findChild<QDockWidget*>(qt_dock_object_names[i]);
+      if (d)
+         fprintf(f, "%s area=%d float=%d w=%d..%d h=%d..%d\n",
+               qt_dock_object_names[i], (int)win->dockWidgetArea(d),
+               d->isFloating() ? 1 : 0,
+               d->minimumWidth(), d->maximumWidth(),
+               d->minimumHeight(), d->maximumHeight());
+   }
+   fclose(f);
+}
+
 void MainWindow::persistSettings()
 {
    /* Persistent state goes into retroarch.cfg (settings_t), shared with
@@ -5980,6 +5985,7 @@ void MainWindow::persistSettings()
    if (     settings->bools.desktop_menu_save_dock_positions
          && isVisible() && !isMinimized())
       saveDockLayout();
+   qt_dock_report(this);
 
    settings->uints.desktop_menu_view_type      =
       (getCurrentViewType() == VIEW_TYPE_ICONS) ? 1 : 0;

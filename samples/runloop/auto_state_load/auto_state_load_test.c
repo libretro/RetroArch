@@ -170,8 +170,8 @@ int filestream_delete(const char *path)
    for (i = 0; i < file_count; i++)
       if (!strcmp(files[i], path))
       {
-         for (; i + 1 < file_count; i++)
-            strcpy(files[i], files[i + 1]);
+         memmove(files[i], files[i + 1],
+               (file_count - i - 1) * sizeof(files[0]));
          file_count--;
          return 0;
       }

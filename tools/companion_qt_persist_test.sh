@@ -28,7 +28,9 @@ fails=0
 fail() { echo "FAIL: $*" >&2; fails=$((fails + 1)); }
 row()  { grep "^$1 = " "$CFG" | sed 's/^[^=]*= "\(.*\)"$/\1/' || true; }
 
+# Each run also writes every dock's size limits ($1, see qt_dock_report).
 run_ra() {
+   RETROARCH_QT_DOCK_REPORT="${1:-$OUT/limits.cur}" \
    QT_QPA_PLATFORM=offscreen HOME="$OUT" XDG_RUNTIME_DIR="$OUT" \
       timeout -s KILL 120 "$RA" -c "$CFG" --max-frames=120 --menu \
       > "$OUT/run.log" 2>&1 || {
@@ -39,6 +41,49 @@ run_ra() {
          echo "--------------------------------" >&2
       }
 }
+
+# A restore sizes docks by pinning their limits for a moment; a limit
+# still pinned afterwards leaves a dock that cannot be resized, dragged
+# into another column, or put back where it was saved (Tatsuya79: "the
+# docks position is wrong", "you cannot resize it like before"). A pin
+# shows as a lowered maximum, or a minimum equal to the maximum, where
+# the default layout has neither; minimums alone follow the contents.
+check_limits() {
+   [ -s "$OUT/limits.cur" ] || { fail "$1: no dock report written"; return; }
+   bad=$(awk '
+      function lim(f, k,   a) { split(substr(f, 3), a, /\.\./); return a[k] }
+      # Below the default and below the layout maximum (QLAYOUTSIZE_MAX,
+      # what a shown dock gets in place of the widget maximum).
+      function low(m, b) { return m + 0 < b + 0 && m + 0 < 524287 }
+      NR == FNR { bw[$1] = $4; bh[$1] = $5; next }
+      ($1 in bw) {
+         if (low(lim($4, 2), lim(bw[$1], 2)) || low(lim($5, 2), lim(bh[$1], 2)) ||
+             (lim($4, 1) == lim($4, 2) && lim(bw[$1], 1) != lim(bw[$1], 2)) ||
+             (lim($5, 1) == lim($5, 2) && lim(bh[$1], 1) != lim(bh[$1], 2)))
+            print "   " $1 ": " $4 " " $5 " (default layout " bw[$1] " " bh[$1] ")"
+      }' "$OUT/limits.base" "$OUT/limits.cur")
+   if [ -n "$bad" ]; then
+      fail "$1: dock size limits left pinned by the restore:"
+      printf '%s\n' "$bad" >&2
+   fi
+}
+
+# ---- pass 0: the default layout with nothing saved: the limits every
+# ---- dock must still have after a restore ----
+cat > "$CFG" <<'EOF'
+menu_driver = "rgui"
+video_driver = "null"
+audio_driver = "null"
+input_driver = "null"
+config_save_on_exit = "false"
+desktop_menu_enable = "true"
+ui_companion_enable = "true"
+ui_companion_start_on_boot = "true"
+ui_companion_toggle = "true"
+desktop_menu_show_welcome_screen = "false"
+EOF
+run_ra "$OUT/limits.base"
+[ -s "$OUT/limits.base" ] || fail "default layout: no dock report written"
 
 # ---- pass 1: fresh config, companion shown on boot, nothing saved yet ----
 cat > "$CFG" <<'EOF'
@@ -63,6 +108,8 @@ desktop_menu_shortcuts_removed = "boxart"
 desktop_menu_core_options_window = "-1600,40,500,400"
 EOF
 run_ra
+
+check_limits "seeded layout"
 
 # Window geometry landed although the window was never closed by hand.
 w=$(row desktop_menu_window_width); h=$(row desktop_menu_window_height)
@@ -141,6 +188,7 @@ esac
 grep '^desktop_menu_' "$CFG" | sort > "$OUT/pass1.rows"
 run_ra
 grep '^desktop_menu_' "$CFG" | sort > "$OUT/pass2.rows"
+check_limits "restored layout"
 if ! cmp -s "$OUT/pass1.rows" "$OUT/pass2.rows"; then
    fail "layout changed across a restore/re-save round trip:"
    diff "$OUT/pass1.rows" "$OUT/pass2.rows" >&2 || true
