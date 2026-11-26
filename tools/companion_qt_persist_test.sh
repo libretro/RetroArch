@@ -194,6 +194,38 @@ if ! cmp -s "$OUT/pass1.rows" "$OUT/pass2.rows"; then
    diff "$OUT/pass1.rows" "$OUT/pass2.rows" >&2 || true
 fi
 
+# ---- pass 3: a wide right column in a big window comes back at the
+# ---- width it was saved at, and re-saves unchanged (Tatsuya79: "on
+# ---- reboot they become small and the docks sizes weren't restored") ----
+sed -e 's/^\(desktop_menu_dock_[a-z_]* = "right,1,\)[0-9]*,/\1420,/' \
+    -e 's/^\(desktop_menu_dock_[a-z_]* = "left,1,\)[0-9]*,/\1380,/' \
+    -e 's/^desktop_menu_window_width = .*/desktop_menu_window_width = "1600"/' \
+    -e 's/^desktop_menu_window_height = .*/desktop_menu_window_height = "1000"/' \
+    "$CFG" > "$CFG.wide" && mv "$CFG.wide" "$CFG"
+run_ra
+for d in screenshot title boxart; do
+   case "$(row desktop_menu_dock_$d)" in
+      right,1,420,*) ;;
+      *) fail "wide right column: $d not restored 420 wide: '$(row desktop_menu_dock_$d)'" ;;
+   esac
+done
+for d in search shortcuts playlists core; do
+   case "$(row desktop_menu_dock_$d)" in
+      left,1,380,*) ;;
+      *) fail "wide right column: $d not restored 380 wide: '$(row desktop_menu_dock_$d)'" ;;
+   esac
+done
+[ "$(row desktop_menu_window_width)" = 1600 ] \
+   || fail "wide right column: window not restored 1600 wide: '$(row desktop_menu_window_width)'"
+grep '^desktop_menu_' "$CFG" | sort > "$OUT/pass3.rows"
+run_ra
+grep '^desktop_menu_' "$CFG" | sort > "$OUT/pass4.rows"
+check_limits "wide right column"
+if ! cmp -s "$OUT/pass3.rows" "$OUT/pass4.rows"; then
+   fail "wide right column changed across a restore/re-save round trip:"
+   diff "$OUT/pass3.rows" "$OUT/pass4.rows" >&2 || true
+fi
+
 if [ "$fails" -ne 0 ]; then
    echo "companion_qt_persist_test: $fails failure(s)" >&2
    exit 1

@@ -306,6 +306,34 @@ static bool qt_dock_laid_out(QDockWidget *dock)
       && !dock->visibleRegion().isEmpty();
 }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+/* The height of the tab bar of @dock's group: resizeDocks() sizes the
+ * whole slot, tab bar included, while height() is the dock alone. The
+ * dock tab bars are direct QTabBar children of the main window, flush
+ * against the group (below by default). */
+static int qt_dock_tab_bar_height(QMainWindow *win, QDockWidget *dock)
+{
+   int i;
+   QList<QTabBar*> bars = win->findChildren<QTabBar*>();
+   QRect dg             = dock->geometry();
+
+   for (i = 0; i < bars.count(); i++)
+   {
+      QTabBar *tb = bars.at(i);
+      QRect    tg;
+      if (tb->parentWidget() != win || !tb->isVisible())
+         continue;
+      tg = tb->geometry();
+      if (tg.left() > dg.right() || tg.right() < dg.left())
+         continue;
+      if (     (tg.top() >= dg.bottom() && tg.top() <= dg.bottom() + 4)
+            || (tg.bottom() <= dg.top() && tg.bottom() >= dg.top() - 4))
+         return tb->height();
+   }
+   return 0;
+}
+#endif
+
 /* Add @head's slot to side @side of @l: @head and the docks tabbed with
  * it. A laid-out @head is the raised tab and gives the slot its size; a
  * hidden slot keeps the size its row already has. */
@@ -334,6 +362,16 @@ static void qt_dock_add_slot(QMainWindow *win, QDockWidget * const *docks,
    {
       along  = vertical ? docks[head]->height() : docks[head]->width();
       across = vertical ? docks[head]->width()  : docks[head]->height();
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+      /* sizeDocks() hands a tab group's size to resizeDocks(). */
+      if (slot->n > 1)
+      {
+         if (vertical)
+            along  += qt_dock_tab_bar_height(win, docks[head]);
+         else
+            across += qt_dock_tab_bar_height(win, docks[head]);
+      }
+#endif
       slot->size = along;
       if (across > l->side_size[side])
          l->side_size[side] = across;
@@ -4042,10 +4080,13 @@ void MainWindow::layoutShortcutButtons()
    }
 }
 
-/* Sizes docks in their slots on every Qt: each dock's own limits are
- * pinned to the wanted size, so the dock splitter lays the slot out at
- * it, and released on the next turn of the event loop. A size below the
- * dock's minimum size hint ends at that minimum, as in a drag. */
+/* Sizes docks in their slots. From Qt 5.6 resizeDocks() keeps the sizes
+ * in the dock layout itself, which holds them through the resizes a
+ * window manager makes around the first show. Older Qt has no such
+ * call: each dock's own limits are pinned to the wanted size, so the
+ * dock splitter lays the slot out at it, and released on the next turn
+ * of the event loop. A size below the dock's minimum size hint ends at
+ * that minimum, as in a drag. */
 #define QT_DOCK_SAVED_MIN_W "ra_dock_saved_min_w"
 #define QT_DOCK_SAVED_MAX_W "ra_dock_saved_max_w"
 #define QT_DOCK_SAVED_MIN_H "ra_dock_saved_min_h"
@@ -4059,6 +4100,10 @@ void MainWindow::sizeDocks(const QList<QDockWidget*> &docks,
    int i;
    bool pinned   = false;
    bool vertical = (orientation == Qt::Vertical);
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+   QList<QDockWidget*> sized;
+   QList<int>          sized_to;
+#endif
 
    for (i = 0; i < docks.count() && i < sizes.count(); i++)
    {
@@ -4068,13 +4113,18 @@ void MainWindow::sizeDocks(const QList<QDockWidget*> &docks,
       if (!dock || dock->isFloating() || size <= 0)
          continue;
       /* Before the first show the layout is not at the window's real
-       * geometry, and limits pinned now would grow the window to fit
-       * them: keep the size for showEvent. */
+       * geometry: sizes given now would be fitted to the wrong window.
+       * Keep them for showEvent. */
       if (!m_hasBeenShown)
       {
          dock->setProperty(vertical ? QT_DOCK_WANT_H : QT_DOCK_WANT_W, size);
          continue;
       }
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+      sized    << dock;
+      sized_to << size;
+      continue;
+#endif
       /* Each direction keeps its own limits from before its first pin:
        * a dock sized both ways in one turn gets both back. */
       if (vertical)
@@ -4100,6 +4150,10 @@ void MainWindow::sizeDocks(const QList<QDockWidget*> &docks,
       pinned = true;
    }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 6, 0))
+   if (!sized.isEmpty())
+      resizeDocks(sized, sized_to, orientation);
+#endif
    if (pinned)
       QTimer::singleShot(0, this, SLOT(releaseDockSizes()));
 }
