@@ -51,13 +51,18 @@
 
 /* JSON Stuff... */
 
+/* Each value is copied out of the parser's buffer into its slot here,
+ * so a read allocates nothing beyond the file itself; a value too long
+ * for its slot can only be malformed and reads back as invalid. */
+#define RTL_JSON_VALUE_SIZE 32
+
 typedef struct
 {
-   char **current_entry_val;
-   char *runtime_string;
-   char *last_played_string;
-   char *play_count;
-   char *state_slot;
+   char *current_entry_val;
+   char runtime_string[RTL_JSON_VALUE_SIZE];
+   char last_played_string[RTL_JSON_VALUE_SIZE];
+   char play_count[RTL_JSON_VALUE_SIZE];
+   char state_slot[RTL_JSON_VALUE_SIZE];
 } RtlJSONContext;
 
 static bool RtlJSONObjectMemberHandler(void *ctx, const char *s, size_t len)
@@ -70,17 +75,17 @@ static bool RtlJSONObjectMemberHandler(void *ctx, const char *s, size_t len)
    {
       case 7:
          if (memcmp(s, "runtime", 7) == 0)
-            p_ctx->current_entry_val = &p_ctx->runtime_string;
+            p_ctx->current_entry_val = p_ctx->runtime_string;
          break;
       case 10:
          if (memcmp(s, "play_count", 10) == 0)
-            p_ctx->current_entry_val = &p_ctx->play_count;
+            p_ctx->current_entry_val = p_ctx->play_count;
          else if (memcmp(s, "state_slot", 10) == 0)
-            p_ctx->current_entry_val = &p_ctx->state_slot;
+            p_ctx->current_entry_val = p_ctx->state_slot;
          break;
       case 11:
          if (memcmp(s, "last_played", 11) == 0)
-            p_ctx->current_entry_val = &p_ctx->last_played_string;
+            p_ctx->current_entry_val = p_ctx->last_played_string;
          break;
       /* Ignore unknown members */
    }
@@ -93,10 +98,16 @@ static bool RtlJSONStringHandler(void *ctx, const char *s, size_t len)
 
    if (p_ctx->current_entry_val && len && s)
    {
-      if (*p_ctx->current_entry_val)
-         free(*p_ctx->current_entry_val);
-
-      *p_ctx->current_entry_val = strdup(s);
+      if (len < RTL_JSON_VALUE_SIZE)
+      {
+         memcpy(p_ctx->current_entry_val, s, len);
+         p_ctx->current_entry_val[len] = '\0';
+      }
+      else
+      {
+         p_ctx->current_entry_val[0] = 'x';
+         p_ctx->current_entry_val[1] = '\0';
+      }
    }
 
    /* Ignore unknown members */
@@ -206,7 +217,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    /* Process string values read from JSON file */
 
    /* Runtime */
-   if (context.runtime_string)
+   if (*context.runtime_string)
    {
       const char *str = context.runtime_string;
       char *end       = NULL;
@@ -243,7 +254,7 @@ static void runtime_log_read_file(runtime_log_t *runtime_log)
    }
 
    /* Last played */
-   if (context.last_played_string)
+   if (*context.last_played_string)
    {
       const char *str  = context.last_played_string;
       char *end        = NULL;
@@ -288,7 +299,7 @@ parsed:
    }
 
    /* Play count */
-   if (context.play_count)
+   if (*context.play_count)
    {
       if (!runtime_log_parse_unsigned(context.play_count, &play_count))
       {
@@ -297,7 +308,7 @@ parsed:
       }
    }
    /* State slot */
-   if (context.state_slot)
+   if (*context.state_slot)
    {
       if (!runtime_log_parse_unsigned(context.state_slot, &state_slot))
       {
@@ -324,16 +335,6 @@ parsed:
    runtime_log->state_slot         = state_slot;
 
 end:
-   /* Clean up leftover strings */
-   if (context.runtime_string)
-      free(context.runtime_string);
-   if (context.last_played_string)
-      free(context.last_played_string);
-   if (context.play_count)
-      free(context.play_count);
-   if (context.state_slot)
-      free(context.state_slot);
-
    /* Release file contents */
    free(file_buf);
 }

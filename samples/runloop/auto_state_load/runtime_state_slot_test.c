@@ -73,6 +73,28 @@ int main(void)
    fixture = "{\"play_count\":\"2\",\"state_slot\":\"8\"}";
    runtime_log_read_file(&log);
    CHECK_SLOT(log.state_slot == 8 && log.play_count == 2);
+   /* Values are held in fixed slots: the longest that fits reads as
+    * written, one past it is invalid and keeps the last record. */
+   fixture = "{\"state_slot\":\"                              7\"}";
+   runtime_log_read_file(&log);
+   CHECK_SLOT(log.state_slot == 7);
+   errors = 0;
+   fixture = "{\"state_slot\":\"                               6\"}";
+   runtime_log_read_file(&log);
+   CHECK_SLOT(log.state_slot == 7 && errors > 0);
+   errors = 0;
+   fixture = "{\"runtime\":\"12:34:56\",\"last_played\":\"2026-11-26 13:38:05\","
+         "\"play_count\":\"3\",\"state_slot\":\"5\"}";
+   runtime_log_read_file(&log);
+   CHECK_SLOT(errors == 0 && log.runtime.hours == 12 && log.runtime.minutes == 34
+         && log.runtime.seconds == 56 && log.last_played.year == 2026
+         && log.last_played.month == 11 && log.last_played.second == 5
+         && log.play_count == 3 && log.state_slot == 5);
+   fixture = "{\"runtime\":\"1:00:00\",\"last_played\":"
+         "\"2026-11-26 13:38:05 and a great deal more text after it\"}";
+   runtime_log_read_file(&log);
+   CHECK_SLOT(errors > 0 && log.runtime.hours == 12);
+
    puts(failures ? "runtime state-slot failures" : "runtime state-slot tests passed");
    return failures ? 1 : 0;
 }
