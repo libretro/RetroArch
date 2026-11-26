@@ -1301,24 +1301,55 @@ static void runloop_update_runtime_log(
    free(runtime_log);
 }
 
-/* Persist selection at suspend without counting the still-running session. */
+/* Persist selection at suspend without counting the still-running
+ * session: into each enabled log, as the exit writes them. */
 void runloop_runtime_log_save_state_slot(runloop_state_t *runloop_st,
       settings_t *settings)
 {
+   unsigned i;
+   for (i = 0; i < 2; i++)
+   {
+      runtime_log_t *runtime_log;
+      if (!(i == 0
+            ? settings->bools.content_runtime_log
+            : settings->bools.content_runtime_log_aggregate))
+         continue;
+      if (!(runtime_log = runtime_log_init(runloop_st->runtime_content_path,
+            runloop_st->runtime_core_path,
+            settings->paths.directory_runtime_log,
+            settings->paths.directory_playlist, i == 0)))
+         continue;
+      runtime_log->state_slot = settings->ints.state_slot;
+      runtime_log_save(runtime_log);
+      free(runtime_log);
+   }
+}
+
+/* The remembered slot from the log the exit writes first (per-core,
+ * else aggregate); -1 when there is none or, with auto-index, its
+ * file under @name_savestate is gone. */
+int runloop_runtime_log_state_slot(settings_t *settings,
+      const char *content_path, const char *core_path,
+      const char *name_savestate)
+{
+   int slot = -1;
    runtime_log_t *runtime_log;
    if (     !settings->bools.content_runtime_log
          && !settings->bools.content_runtime_log_aggregate)
-      return;
-
-   runtime_log = runtime_log_init(runloop_st->runtime_content_path,
-         runloop_st->runtime_core_path,
+      return -1;
+   if (!(runtime_log = runtime_log_init(content_path, core_path,
          settings->paths.directory_runtime_log,
-         settings->paths.directory_playlist, true);
-   if (!runtime_log)
-      return;
-   runtime_log->state_slot = settings->ints.state_slot;
-   runtime_log_save(runtime_log);
+         settings->paths.directory_playlist,
+         settings->bools.content_runtime_log)))
+      return -1;
+   if (     runtime_log->state_slot < 1000
+         && path_is_valid(runtime_log->path)
+         && (     !settings->bools.savestate_auto_index
+               || runloop_savestate_name_exists(name_savestate,
+                     (int)runtime_log->state_slot)))
+      slot = (int)runtime_log->state_slot;
    free(runtime_log);
+   return slot;
 }
 
 void runloop_runtime_log_deinit(
@@ -6517,24 +6548,12 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
    if (     (content_path && *content_path)
          && (core_path && *core_path))
    {
-      runtime_log_t *runtime_log = runtime_log_init(
+      int slot = runloop_runtime_log_state_slot(settings,
             runloop_st->runtime_content_path,
             runloop_st->runtime_core_path,
-            settings->paths.directory_runtime_log,
-            settings->paths.directory_playlist,
-            true);
-
-      if (runtime_log)
-      {
-         if (     runloop_st->entry_state_slot < 0
-               && path_is_valid(runtime_log->path)
-               && runtime_log->state_slot < 1000
-               && (     !settings->bools.savestate_auto_index
-                     || runloop_savestate_exists((int)runtime_log->state_slot)))
-            configuration_set_int(settings, settings->ints.state_slot, runtime_log->state_slot);
-
-         free(runtime_log);
-      }
+            runloop_st->name.savestate);
+      if (runloop_st->entry_state_slot < 0 && slot >= 0)
+         configuration_set_int(settings, settings->ints.state_slot, slot);
    }
 }
 
@@ -11092,14 +11111,14 @@ bool runloop_get_current_savestate_path(char *s, size_t len)
 
 bool runloop_get_savestate_path(char *s, size_t len, int state_slot)
 {
-   runloop_state_t *runloop_st = &runloop_state;
-   const char *name_savestate  = NULL;
+   return runloop_savestate_name_slot_path(s, len,
+         runloop_state.name.savestate, state_slot);
+}
 
-   if (!s)
-      return false;
-
-   name_savestate              = runloop_st->name.savestate;
-   if (!name_savestate || !*name_savestate)
+bool runloop_savestate_name_slot_path(char *s, size_t len,
+      const char *name_savestate, int state_slot)
+{
+   if (!s || !name_savestate || !*name_savestate)
       return false;
 
    if (state_slot < 0)
@@ -11116,9 +11135,14 @@ bool runloop_get_savestate_path(char *s, size_t len, int state_slot)
 
 bool runloop_savestate_exists(int slot)
 {
+   return runloop_savestate_name_exists(runloop_state.name.savestate, slot);
+}
+
+bool runloop_savestate_name_exists(const char *name_savestate, int slot)
+{
    char path[PATH_MAX_LENGTH];
-   return runloop_get_savestate_path(path, sizeof(path), slot)
-         && path_is_valid(path);
+   return runloop_savestate_name_slot_path(path, sizeof(path),
+         name_savestate, slot) && path_is_valid(path);
 }
 
 bool runloop_get_replay_path(char *s, size_t len, int slot)
@@ -11744,14 +11768,12 @@ bool core_has_set_input_descriptor(void)
             RETRO_CORE_FLAG_HAS_SET_INPUT_DESCRIPTORS) > 0);
 }
 
-void runloop_path_set_basename(const char *path)
+/* The extension-less path a content's saves are named after. */
+static void runloop_content_basename(char *s, size_t len, const char *path)
 {
-   runloop_state_t *runloop_st = &runloop_state;
-   char *dst                   = NULL;
+   char *dst = NULL;
 
-   path_set(RARCH_PATH_CONTENT, path);
-   strlcpy(runloop_st->runtime_content_path_basename, path,
-         sizeof(runloop_st->runtime_content_path_basename));
+   strlcpy(s, path, len);
 
 #ifdef HAVE_COMPRESSION
    /* Removing extension is a bit tricky for compressed files.
@@ -11773,17 +11795,24 @@ void runloop_path_set_basename(const char *path)
     * directory then and the name of srm and states are meaningful.
     *
     */
-   path_basedir_wrapper(runloop_st->runtime_content_path_basename);
-   if (*runloop_st->runtime_content_path_basename)
-      fill_pathname_dir(runloop_st->runtime_content_path_basename, path,
-            "", sizeof(runloop_st->runtime_content_path_basename));
+   path_basedir_wrapper(s);
+   if (*s)
+      fill_pathname_dir(s, path, "", len);
 #endif
 
    /* Truncate path to last dot, but not when the path is
     * relative and begins with a dot. */
-   if (     (dst = strrchr(runloop_st->runtime_content_path_basename, '.'))
-         && (dst - runloop_st->runtime_content_path_basename > 0))
+   if (     (dst = strrchr(s, '.'))
+         && (dst - s > 0))
       *dst = '\0';
+}
+
+void runloop_path_set_basename(const char *path)
+{
+   runloop_state_t *runloop_st = &runloop_state;
+   path_set(RARCH_PATH_CONTENT, path);
+   runloop_content_basename(runloop_st->runtime_content_path_basename,
+         sizeof(runloop_st->runtime_content_path_basename), path);
 }
 
 void runloop_path_set_names(void)
@@ -11821,6 +11850,89 @@ void runloop_path_set_names(void)
             ".cht",
             sizeof(runloop_st->name.cheatfile));
 #endif
+}
+
+/* @s, a savestate folder, with the per-content-directory and
+ * per-core parts appended in place. */
+static void runloop_savestate_sort_dir(char *s, size_t len,
+      const char *content_dir_name, const char *library_name)
+{
+   if (content_dir_name)
+      fill_pathname_join_special(s, s, content_dir_name, len);
+   if (library_name)
+      fill_pathname_join(s, s, library_name, len);
+}
+
+void runloop_savestate_name_for_content(settings_t *settings,
+      const char *content_path, char *s, size_t len)
+{
+   char basename[PATH_MAX_LENGTH];
+   char dir[DIR_MAX_LENGTH];
+   bool sorted              = false;
+   const char *library_name = runloop_state.system.info.library_name;
+   const char *dir_savestate = dir_get_ptr(RARCH_DIR_SAVESTATE);
+
+   if (!content_path || !*content_path)
+   {
+      *s = '\0';
+      return;
+   }
+   runloop_content_basename(basename, sizeof(basename), content_path);
+
+   if (     !dir_savestate || !*dir_savestate
+         || settings->bools.savestates_in_content_dir)
+      fill_pathname_basedir(dir, basename, sizeof(dir));
+   else
+      strlcpy(dir, dir_savestate, sizeof(dir));
+
+   if (     *dir
+         && library_name && *library_name
+#ifdef HAVE_MENU
+         && !string_is_equal(library_name,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE))
+#endif
+         && (     settings->bools.sort_savestates_enable
+               || settings->bools.sort_savestates_by_content_enable))
+   {
+      /* @s holds the folder name until the result is written */
+      if (settings->bools.sort_savestates_by_content_enable)
+         fill_pathname_parent_dir_name(s, basename, len);
+      runloop_savestate_sort_dir(dir, sizeof(dir),
+            settings->bools.sort_savestates_by_content_enable ? s : NULL,
+            settings->bools.sort_savestates_enable ? library_name : NULL);
+      /* a load creates the folder; a missing one holds no states */
+      sorted = true;
+   }
+
+   /* With a core, a folder takes the content's name: the savestate
+    * folder, else a state path set from outside (-S, overrides) that
+    * is one.  Otherwise that path stands as it is, and without it the
+    * state sits next to the content. */
+   if (library_name && *library_name)
+   {
+      if (!*dir || !(sorted || path_is_directory(dir)))
+      {
+         *dir = '\0';
+         if (     retroarch_override_setting_is_set(
+                     RARCH_OVERRIDE_SETTING_STATE_PATH, NULL)
+               && path_is_directory(runloop_state.name.savestate))
+            strlcpy(dir, runloop_state.name.savestate, sizeof(dir));
+      }
+      if (*dir)
+      {
+         fill_pathname_join(s, dir, path_basename(basename), len);
+         strlcat(s, FILE_PATH_STATE_EXTENSION, len);
+         return;
+      }
+   }
+   if (retroarch_override_setting_is_set(
+            RARCH_OVERRIDE_SETTING_STATE_PATH, NULL))
+   {
+      if (s != runloop_state.name.savestate)
+         strlcpy(s, runloop_state.name.savestate, len);
+   }
+   else
+      fill_pathname(s, basename, FILE_PATH_STATE_EXTENSION, len);
 }
 
 void runloop_path_set_redirect(settings_t *settings,
@@ -11931,21 +12043,10 @@ void runloop_path_set_redirect(settings_t *settings,
          if (     (sort_savestates || sort_savestates_by_content)
                && *new_savestate_dir)
          {
-            /* Append content directory name to savestate location */
-            if (sort_savestates_by_content)
-               fill_pathname_join_special(
-                     new_savestate_dir,
-                     intermediate_savestate_dir,
-                     content_dir_name,
-                     sizeof(new_savestate_dir));
-
-            /* Append library_name to the savestate location */
-            if (sort_savestates)
-               fill_pathname_join(
-                     new_savestate_dir,
-                     new_savestate_dir,
-                     sysinfo->library_name,
-                     sizeof(new_savestate_dir));
+            runloop_savestate_sort_dir(new_savestate_dir,
+                  sizeof(new_savestate_dir),
+                  sort_savestates_by_content ? content_dir_name : NULL,
+                  sort_savestates ? sysinfo->library_name : NULL);
 
             /* If path doesn't exist, try to create it.
              * If everything fails, revert to the original path. */

@@ -4167,11 +4167,16 @@ static bool review_start_content(char *game, size_t size)
          &info, CORE_TYPE_PLAIN, NULL, NULL) && settle() && runloop_content_loaded();
 }
 
-static runtime_log_t *review_log(const char *game)
+static runtime_log_t *review_log_mode(const char *game, bool per_core)
 {
    settings_t *settings = config_get_ptr();
    return runtime_log_init(game, core_path, settings->paths.directory_runtime_log,
-         settings->paths.directory_playlist, true);
+         settings->paths.directory_playlist, per_core);
+}
+
+static runtime_log_t *review_log(const char *game)
+{
+   return review_log_mode(game, true);
 }
 
 static void lane_suspend_slot(bool aggregate)
@@ -4222,12 +4227,33 @@ static void lane_suspend_slot(bool aggregate)
    elapsed = runloop_st->core_runtime_usec;
    retroarch_save_for_suspend();
    retroarch_save_for_suspend();
-   after = review_log(game);
-   CHECK(after && after->state_slot == 0, "suspend: existing stale slot 2 won over completed slot 0");
-   CHECK(after && after->play_count == before->play_count
-         && !memcmp(&after->runtime, &before->runtime, sizeof(after->runtime))
-         && !memcmp(&after->last_played, &before->last_played, sizeof(after->last_played)),
-         "suspend: slot persistence counted the running session");
+   if (aggregate)
+   {
+      /* The slot goes where the exit writes it: the aggregate log,
+       * which the next start reads; the disabled per-core log stays
+       * as the last per-core exit left it. */
+      after = review_log_mode(game, false);
+      CHECK(after && path_is_valid(after->path) && after->state_slot == 0
+            && after->play_count == 0,
+            "suspend: aggregate log missing slot 0, or counted the session");
+      free(after);
+      CHECK(runloop_runtime_log_state_slot(settings, game, core_path,
+               runloop_st->name.savestate) == 0,
+            "suspend: the start would not read slot 0 from the aggregate log");
+      after = review_log(game);
+      CHECK(after && after->state_slot == 2
+            && after->play_count == before->play_count,
+            "suspend: the disabled per-core log was written");
+   }
+   else
+   {
+      after = review_log(game);
+      CHECK(after && after->state_slot == 0, "suspend: existing stale slot 2 won over completed slot 0");
+      CHECK(after && after->play_count == before->play_count
+            && !memcmp(&after->runtime, &before->runtime, sizeof(after->runtime))
+            && !memcmp(&after->last_played, &before->last_played, sizeof(after->last_played)),
+            "suspend: slot persistence counted the running session");
+   }
    CHECK(runloop_st->core_runtime_usec == elapsed
          && !strcmp(runloop_st->runtime_content_path, game),
          "suspend: the active session accounting or owner was reset");
@@ -4239,8 +4265,9 @@ static void lane_suspend_slot(bool aggregate)
    /* A deliberate older selection remains meaningful with auto-index on. */
    configuration_set_int(settings, settings->ints.state_slot, 2);
    retroarch_save_for_suspend();
-   after = review_log(game);
-   CHECK(after && after->state_slot == 2 && after->play_count == before->play_count,
+   after = review_log_mode(game, !aggregate);
+   CHECK(after && after->state_slot == 2
+         && after->play_count == (aggregate ? 0 : before->play_count),
          "suspend: a deliberate older selection was lost");
    free(after);
    free(before);
@@ -4249,6 +4276,7 @@ static void lane_suspend_slot(bool aggregate)
 static void lane_playlist_preselection(void)
 {
    char game[600], lpl[600], state[PATH_MAX_LENGTH], foreign[600];
+   char game_states[PATH_MAX_LENGTH], empty[600], sorted_dir[PATH_MAX_LENGTH];
    playlist_config_t cfg;
    struct playlist_entry entry;
    runtime_log_t *log;
@@ -4257,6 +4285,7 @@ static void lane_playlist_preselection(void)
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    FILE *file;
    CHECK(review_start_content(game, sizeof(game)), "playlist: content did not load");
+   strlcpy(game_states, runloop_st->name.savestate, sizeof(game_states));
    configuration_set_bool(settings, settings->bools.savestate_auto_index, false);
    runloop_get_savestate_path(state, sizeof(state), 4);
    CHECK(save_marked_slot(4, 0x44, state), "playlist: slot 4 was not saved");
@@ -4270,9 +4299,14 @@ static void lane_playlist_preselection(void)
    cfg.capacity = 16;
    CHECK(playlist_init_cached(&cfg), "playlist: cache failed");
    memset(&entry, 0, sizeof(entry));
-   entry.path = game;
    entry.core_path = core_path;
    entry.core_name = (char*)"content_load_harness";
+   /* An entry with no state anywhere; a push goes in at the top, so
+    * it ends up second. */
+   snprintf(empty, sizeof(empty), "%s/empty.bin", harness_dir);
+   entry.path = empty;
+   CHECK(playlist_push(playlist_get_cached(), &entry), "playlist: empty entry was not added");
+   entry.path = game;
    CHECK(playlist_push(playlist_get_cached(), &entry), "playlist: entry was not added");
    open_menu();
    menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
@@ -4296,6 +4330,32 @@ static void lane_playlist_preselection(void)
          "playlist: Load State list was not built");
    CHECK(menu_st->selection_ptr == 5 && settings->ints.state_slot == 7,
          "playlist: missing or other-game slot 9 was preselected, or global slot changed");
+   /* Resolving the entry's states loads no content path and names
+    * only the states, which the dropdown thumbnails read. */
+   CHECK(string_is_equal(path_get(RARCH_PATH_CONTENT), foreign),
+         "playlist: the Load State list changed the content path");
+   CHECK(string_is_equal(runloop_st->name.savestate, game_states),
+         "playlist: state name \"%s\" is not the entry's \"%s\"",
+         runloop_st->name.savestate, game_states);
+   /* An entry with nothing on disk preselects Auto, and resolving
+    * its per-content-directory folder creates nothing. */
+   configuration_set_bool(settings, settings->bools.sort_savestates_by_content_enable, true);
+   menu_st->driver_data->rpl_entry_selection_ptr = 1;
+   accept_open_screen(DISPLAYLIST_STATE_SLOT_RUN, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR,
+         MENU_ENUM_LABEL_STATE_SLOT_RUN, "Load State");
+   CHECK(menu_st->selection_ptr == 0,
+         "playlist: an entry without states did not preselect Auto (%u)",
+         (unsigned)menu_st->selection_ptr);
+   /* states in <savestate dir>/<content's folder name>/ */
+   fill_pathname_join(sorted_dir, harness_dir, path_basename(harness_dir),
+         sizeof(sorted_dir));
+   CHECK(!path_is_directory(sorted_dir),
+         "playlist: the Load State list created \"%s\"", sorted_dir);
+   CHECK(string_starts_with(runloop_st->name.savestate, sorted_dir),
+         "playlist: state name \"%s\" is not in the per-content folder",
+         runloop_st->name.savestate);
+   configuration_set_bool(settings, settings->bools.sort_savestates_by_content_enable, false);
+   menu_st->driver_data->rpl_entry_selection_ptr = 0;
    log->state_slot = 4;
    runtime_log_save(log);
    accept_open_screen(DISPLAYLIST_STATE_SLOT_RUN, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR,

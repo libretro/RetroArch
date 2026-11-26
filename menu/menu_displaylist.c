@@ -18016,42 +18016,38 @@ static bool menu_displaylist_ctl_internal(
 
                   if (entry && *entry->path)
                   {
-                     runtime_log_t *runtime_log = NULL;
-
                      path_set(RARCH_PATH_CORE, entry->core_path);
                      command_event(CMD_EVENT_LOAD_CORE, NULL);
                      runloop_set_current_core_type(CORE_TYPE_PLAIN, true);
 
-                     /* Reinit runtime log and read current state slot */
+                     /* Read this entry's state slot */
                      savestates_enabled = core_info_current_supports_savestate();
                      if (savestates_enabled)
                      {
-                        /* Resolve this entry, not the last content's paths. */
-                        path_set(RARCH_PATH_NAMES, entry->path);
+                        int remembered;
+                        /* The entry's own state name, which the state
+                         * thumbnails read; no content is loaded, so it
+                         * names nothing else's files. */
+                        runloop_savestate_name_for_content(settings,
+                              entry->path, runloop_st->name.savestate,
+                              sizeof(runloop_st->name.savestate));
                         if (settings->bools.savestate_auto_index)
                         {
+                           /* Auto when the entry has no state on disk */
                            unsigned scanned = command_event_get_savestate_auto_index(
                                  settings, runloop_st->name.savestate);
-                           state_slot = scanned < 1000 ? (int)scanned : -1;
+                           state_slot = (     scanned < 1000
+                                 && runloop_savestate_name_exists(
+                                       runloop_st->name.savestate, (int)scanned))
+                              ? (int)scanned : -1;
                         }
                         runtime_update_playlist(playlist,
                               menu_st->driver_data->rpl_entry_selection_ptr);
 
-                        runtime_log = runtime_log_init(entry->path,
-                              entry->core_path,
-                              settings->paths.directory_runtime_log,
-                              settings->paths.directory_playlist,
-                              true);
-
-                        if (runtime_log)
-                        {
-                           if (     path_is_valid(runtime_log->path)
-                                 && runtime_log->state_slot < 1000
-                                 && (     !settings->bools.savestate_auto_index
-                                       || runloop_savestate_exists((int)runtime_log->state_slot)))
-                              state_slot = runtime_log->state_slot;
-                           free(runtime_log);
-                        }
+                        if ((remembered = runloop_runtime_log_state_slot(settings,
+                                 entry->path, entry->core_path,
+                                 runloop_st->name.savestate)) >= 0)
+                           state_slot = remembered;
                      }
                   }
                }

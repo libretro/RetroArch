@@ -1099,6 +1099,10 @@ void runloop_performance_counter_register(
 void runloop_runtime_log_save_state_slot(runloop_state_t *runloop_st,
       settings_t *settings);
 
+int runloop_runtime_log_state_slot(settings_t *settings,
+      const char *content_path, const char *core_path,
+      const char *name_savestate);
+
 void runloop_runtime_log_deinit(
       runloop_state_t *runloop_st,
       bool content_runtime_log,
@@ -1207,6 +1211,16 @@ bool runloop_get_current_savestate_path(char *path, size_t len);
 bool runloop_get_savestate_path(char *path, size_t len, int slot);
 
 bool runloop_savestate_exists(int slot);
+
+bool runloop_savestate_name_exists(const char *name_savestate, int slot);
+
+bool runloop_savestate_name_slot_path(char *s, size_t len,
+      const char *name_savestate, int state_slot);
+
+/* Where @content_path's states would be named, as a load resolves
+ * it with the current core; changes no state and creates nothing. */
+void runloop_savestate_name_for_content(settings_t *settings,
+      const char *content_path, char *s, size_t len);
 
 bool runloop_get_replay_path(char *path, size_t len, int slot);
 
