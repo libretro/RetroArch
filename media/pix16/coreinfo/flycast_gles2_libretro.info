@@ -1,0 +1,52 @@
+# Software Information
+display_name = "Sega - Dreamcast/Naomi (Flycast GLES2)"
+authors = "flyinghead"
+supported_extensions = "chd|cdi|iso|elf|bin|cue|gdi|lst|zip|dat|7z|m3u"
+corename = "Flycast GLES2"
+display_version = "Git"
+license = "GPLv2"
+permissions = "dynarec_optional"
+display_version = "1.0"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Sega"
+systemname = "Sega Dreamcast"
+systemid = "dreamcast"
+
+# Libretro Features
+database = "Sega - Dreamcast|Sega - Naomi"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "basic"
+
+# BIOS / Firmware
+firmware_count = 8
+firmware0_desc = "dc/dc_boot.bin (Dreamcast BIOS)"
+firmware0_path = "dc/dc_boot.bin"
+firmware0_opt = "true"
+firmware1_desc = "dc/naomi.zip (Naomi Bios from MAME)"
+firmware1_path = "dc/naomi.zip"
+firmware1_opt = "true"
+firmware2_desc = "dc/naomi2.zip (Naomi2 Bios from MAME)"
+firmware2_path = "dc/naomi2.zip"
+firmware2_opt = "true"
+firmware3_desc = "dc/hod2bios.zip (Naomi The House of the Dead 2 Bios from MAME)"
+firmware3_path = "dc/hod2bios.zip"
+firmware3_opt = "true"
+firmware4_desc = "dc/f355dlx.zip (Naomi Ferrari F355 Challenge deluxe Bios from MAME)"
+firmware4_path = "dc/f355dlx.zip"
+firmware4_opt = "true"
+firmware5_desc = "dc/f355bios.zip (Naomi Ferrari F355 Challenge twin/deluxe Bios from MAME)"
+firmware5_path = "dc/f355bios.zip"
+firmware5_opt = "true"
+firmware6_desc = "dc/airlbios.zip (Naomi Airline Pilots deluxe Bios from MAME)"
+firmware6_path = "dc/airlbios.zip"
+firmware6_opt = "true"
+firmware7_desc = "dc/awbios.zip (Atomiswave BIOS from MAME)"
+firmware7_path = "dc/awbios.zip"
+firmware7_opt = "true"
+notes = "(!) dc_boot.bin (md5): e10c53c2f8b90bab96ead2d368858623|(!) dc_flash.bin (md5): 0a93f7940c455905bea6e392dfde92a4|(!) naomi.zip|(!) hod2bios.zip|(!) f355dlx.zip|(!) f355bios.zip|(!) airlbios.zip|(!) awbios.zip"
+required_hw_api = "OpenGL ES >= 2.0"
+
+description = "A port of the Flycast Dreamcast emulator to libretro. In addition to Dreamcast, the core also supports the NAOMI and Atomiswave arcade platforms (with appropriate BIOS images) and will load these games from the latest MAME ROMset. This particular Flycast variant is specially tuned for compatibility with older mobile GPUs that are limited to GLES2. Anyone with a more modern GPU should use a different version of the core."

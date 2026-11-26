@@ -1,0 +1,39 @@
+# Software Information
+display_name = "Nintendo - Pokemon Mini (PokeMini)"
+authors = "JustBurn"
+supported_extensions = "min"
+corename = "PokeMini"
+license = "GPLv3"
+permissions = ""
+display_version = "v0.60"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Pokemon Mini"
+systemid = "pokemon_mini"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Nintendo - Pokemon Mini"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "bios.min (Pokemon Mini BIOS)"
+firmware0_path = "bios.min"
+firmware0_opt = "true"
+notes = "Suggested md5sum:|1e4fb124a3a886865acb574f388c803d = bios.min"
+
+description = "A port of the homebrew PokeMini emulator, which emulates the Pokemon-Mini handheld console, to libretro."

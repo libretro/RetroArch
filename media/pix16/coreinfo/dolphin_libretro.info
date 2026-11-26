@@ -1,0 +1,50 @@
+# Software Information
+display_name = "Nintendo - GameCube / Wii (Dolphin)"
+authors = "Team Dolphin"
+supported_extensions = "gcm|iso|wbfs|ciso|gcz|elf|dol|dff|tgc|wad|rvz|m3u|wia"
+corename = "Dolphin"
+categories = "Emulator"
+license = "GPLv2+"
+permissions = ""
+display_version = "Git"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "GameCube / Wii"
+systemid = "gamecube"
+
+# Libretro Features
+database = "Nintendo - GameCube|Nintendo - Wii|Nintendo - Wii (Digital)"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "basic"
+libretro_saves = "true"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "true"
+required_hw_api = "Vulkan >= 1.0 | Direct3D >= 10.0 | OpenGL Core >= 3.3 | OpenGL ES >= 3.0"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+# BIOS/Firmware
+firmware_count = 4
+firmware0_desc = "Dolphin 'Sys' folder with dolphin-emu/Sys/codehandler.bin"
+firmware0_path = "dolphin-emu/Sys/codehandler.bin"
+firmware0_opt = "false"
+firmware1_desc = "dolphin-emu/Sys/GC/JAP/IPL.bin (GameCube JP BIOS)"
+firmware1_path = "dolphin-emu/Sys/GC/JAP/IPL.bin"
+firmware1_opt = "true"
+firmware2_desc = "dolphin-emu/Sys/GC/USA/IPL.bin (GameCube US BIOS)"
+firmware2_path = "dolphin-emu/Sys/GC/USA/IPL.bin"
+firmware2_opt = "true"
+firmware3_desc = "dolphin-emu/Sys/GC/EUR/IPL.bin (GameCube EU BIOS)"
+firmware3_path = "dolphin-emu/Sys/GC/EUR/IPL.bin"
+firmware3_opt = "true"
+notes = "(!) You need the Dolphin 'Sys' folder in 'system/dolphin-emu'.|(!) Check https://docs.libretro.com/library/dolphin/#setup for more details.|(!) The GameCube BIOS files can be stored in '<save_dir>/User/GC/<region>/'|[^] as an alternative to '<system_dir>/dolphin-emu/Sys/GC/<region>/',|[^] this information page only checks the system directory however|[^] and will not be able to tell if the files are present from these alternative paths."
+
+description = "A port of the popular Dolphin Gamecube/Wii emulator to libretro. This core exposes only a subset of the many features included in the standalone Dolphin emulator, but it can provide a simplified and libretro-native experience for playing these games. The core needs the 'Sys' directory copied from the standalone emulator's files into the frontend's system directory, as this is where the emulator looks to apply per-game settings/hacks for better compatibility and performance. For Dolphin power-users, the reduced functionality of the core may be stifling, in which case the dolphin-launcher core may be a better fit."

@@ -1,0 +1,29 @@
+# Software Information
+display_name = "VeMUlator"
+authors = "Mahmoud Jaoune"
+supported_extensions = "vms|dci|bin"
+corename = "VeMUlator"
+license = "GPL v3"
+permissions = ""
+display_version = "0.1"
+
+# Hardware Information
+manufacturer = "Sega"
+categories = "Game"
+systemname = "SEGA Visual Memory Unit"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "false"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A port of VeMUlator, a SEGA Dreamcast VMU emulator originally developed for Android, to libretro."

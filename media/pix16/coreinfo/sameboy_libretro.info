@@ -1,0 +1,30 @@
+# Software Information
+display_name = "Nintendo - Game Boy / Color (SameBoy)"
+authors = "LIJI32"
+supported_extensions = "gb|gbc"
+corename = "SameBoy"
+display_version = "0.14.7"
+categories = "Emulator"
+license = "MIT"
+permissions = ""
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy/Game Boy Color"
+systemid = "game_boy"
+
+# Libretro Features
+database = "Nintendo - Game Boy|Nintendo - Game Boy Color"
+supports_no_game = "false"
+
+# Firmware / BIOS
+firmware_count = 2
+firmware0_desc = "dmg_boot.bin (Game Boy boot ROM)"
+firmware0_path = "dmg_boot.bin"
+firmware0_opt = "true"
+firmware1_desc = "cgb_boot.bin (Game Boy Color boot ROM)"
+firmware1_path = "cgb_boot.bin"
+firmware1_opt = "true"
+notes = "(!) dmg_boot.bin (md5): 32fbbd84168d3482956eb3c5051637f5|(!) cgb_boot.bin (md5): dbfce9db9deaa2567f6a84fde55f9680"
+
+description = "A port of the highly accurate Game Boy emulator, SameBoy, to libretro. This core has the highest accuracy of any Game Boy emulator and also supports a variety of fun features and improvements. While its requirements are higher than most other Game Boy cores, it is a good first choice for devices strong enough to run it full speed. Lower-power devices will be better-served by Gambatte-libretro, which still has very high accuracy/compatibility and runs blisteringly fast."

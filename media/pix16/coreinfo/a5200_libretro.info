@@ -1,0 +1,29 @@
+# Software Information
+display_name = "Atari - 5200 (a5200)"
+authors = "Petr Stehlik|zx81|Alekmaul|wavemotion-dave"
+supported_extensions = "a52|bin"
+corename = "a5200"
+license = "GPLv2"
+permissions = ""
+display_version = "2.0.2"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Atari"
+systemname = "Atari 5200"
+systemid = "atari_5200"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Atari - 5200"
+savestate = "true"
+savestate_features = "deterministic"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "5200.rom (5200 BIOS)"
+firmware0_path = "5200.rom"
+firmware0_opt = "true"
+notes = "(!) 5200.rom (md5): 281f20ea4320404ec820fb7ec0693b38"
+
+description = "A port of the a5200 Atari 5200 emulator to libretro. Based on Atari800 2.0.2 and originally developed for the GCW Zero, this core runs fast on low-powered hardware. With a design focussed on ease of use and good libretro integration, the core is intended as a simple 'plug and play' solution for Atari 5200 content."

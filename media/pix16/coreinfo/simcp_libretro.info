@@ -1,0 +1,22 @@
+# Software Information
+display_name = "SAM Coupe (SimCoupe)"
+authors = "Simon Owen"
+supported_extensions = "dsk|mgt|sbt|sad"
+corename = "SimCoupe"
+license = "GPLv2"
+permissions = ""
+display_version = "Git"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Miles Gordon Technology"
+systemname = "SAM coupe"
+systemid = "sam_coupe"
+
+# Libretro Features
+supports_no_game = "false"
+is_experimental = "true"
+database = "SAM coupe"
+savestate = "false"
+
+description = "A port of the SimCoupe emulator to libretro. SimCoupe emulates the SAM Coupe hardware, which is a British 8-bit home computer released in 1989. It had partial compatibility with Sinclair's ZX Spectrum and was marketed as an upgrade from the Spectrum."

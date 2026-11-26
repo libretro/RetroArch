@@ -1,0 +1,22 @@
+# Software Information
+display_name = "Arcade (FB Alpha 2012 CPS-2)"
+authors = "Team FB Alpha"
+supported_extensions = "zip"
+corename = "FB Alpha 2012 CPS-2"
+license = "Non-commercial"
+permissions = ""
+display_version = "v0.2.97.28"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Capcom"
+systemname = "CP System II"
+systemid = "fb_alpha"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+notes = "(!) The BIOS files must be inside the ROM directory."
+
+description = "Based on a snapshot of the Final Burn Alpha codebase from circa 2012, 'FB Alpha 2012 CPS-2' is compatible with FB Alpha v0.2.97.28 ROM sets. This core variant is for CPS-2 games only. It exists solely for use with RAM-constrained platforms, such as certain console or embedded platforms, that do not have the capacity to load the full core along with large games. Most users should use up-to-date FBNeo instead."

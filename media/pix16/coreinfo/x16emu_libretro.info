@@ -1,0 +1,40 @@
+# Software Information
+display_name = "Commander X16 (x16emu)"
+authors = "Michael Steil|Frank van den Hoef|X16 Community"
+supported_extensions = "img|prg|bas|crt"
+corename = "x16emu"
+categories = "Emulator"
+license = "BSD 2-Clause"
+permissions = ""
+display_version = "r50"
+
+# Hardware Information
+manufacturer = "The 8-Bit Guy"
+systemname = "Commander X16"
+systemid = "commander_x16"
+
+# Libretro Features
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "true"
+
+# BIOS / Firmware
+firmware_count = 1
+firmware0_desc = "x16/rom.bin (Commander X16 KERNAL ROM)"
+firmware0_path = "x16/rom.bin"
+firmware0_opt = "false"
+
+notes = "(!) x16/rom.bin: the KERNAL ROM from an x16emu release (github.com/X16Community/x16-emulator/releases), in the system directory.|(!) .img: SD card image; the KERNAL runs AUTOBOOT.X16 from it.|(!) .prg / .bas: loaded and run at start and after every reset. Files next to the content are reachable as device 8.|(!) The RTC NVRAM (KERNAL settings) is kept as the save RAM (.srm).|(!) Use Game Focus (Scroll Lock) to type on the X16 keyboard."
+
+description = "A port of x16emu, the official emulator of the Commander X16, The 8-Bit Guy's 8-bit computer. Emulates the 65C02 (or 65C816) CPU, the VERA video chip with its PSG and PCM audio, the YM2151 FM synthesizer, the SD card, the real-time clock and up to four SNES controllers, keyboard and mouse. Runs SD card images, PRG programs and BASIC listings."

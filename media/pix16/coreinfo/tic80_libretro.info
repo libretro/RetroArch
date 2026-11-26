@@ -1,0 +1,32 @@
+# Software Information
+display_name = "TIC-80"
+authors = "Nesbox|RobLoach"
+supported_extensions = "tic"
+corename = "TIC-80"
+categories = "Game engine"
+license = "MIT"
+permissions = ""
+display_version = "0.80.0"
+
+# Hardware Information
+manufacturer = "TIC-80"
+systemname = "TIC-80"
+systemid = "tic80"
+
+# Libretro Features
+database = "TIC-80"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "basic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A port of the FREE and OPEN SOURCE fantasy computer TIC-80 to libretro. This core is intended for playing small, retro-styled games created through the TIC-80 SDK."

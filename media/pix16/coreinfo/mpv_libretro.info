@@ -1,0 +1,19 @@
+# Software Information
+display_name = "MPV"
+authors = "MPV team|FFmpeg team"
+supported_extensions = "mkv|avi|f4v|f4f|3gp|ogm|flv|mp4|mp3|flac|ogg|m4a|webm|3g2|mov|wmv|mpg|mpeg|vob|asf|divx|m2p|m2ts|ps|ts|mxf|wma|wav"
+corename = "MPV"
+categories = "Media player"
+license = "LGPLv2, GPLv2"
+permissions = ""
+display_version = "Git"
+
+# Hardware Information
+systemname = "MPV"
+systemid = "movie"
+
+# Libretro Features
+supports_no_game = "false"
+is_experimental = "true"
+
+description = "An experimental media player ported to libretro. This core is similar in function to the ffmpeg-libretro core but using the powerful and modern MPV backend instead. Most users will be better-served by the ffmpeg core, but this one may yield a better user experience with improved controls and capabilities."

@@ -1,0 +1,26 @@
+# Software Information
+display_name = "QEMU"
+authors = "QEMU devs|io12"
+supported_extensions = "qemu_cmd_line|iso|img|qcow|qcow2"
+corename = "QEMU"
+categories = "Emulator"
+license = "GPLv2"
+permissions = ""
+display_version = "0.1.0"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "false"
+libretro_saves = "false"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+core_options = "false"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "true"
+needs_kbd_mouse_focus = "true"
+
+description = "A port of the QEMU emulator to libretro."

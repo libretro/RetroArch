@@ -1,0 +1,21 @@
+# Software Information
+display_name = "Commodore - C64 (VICE SDL)"
+authors = "VICE Core Team Members"
+supported_extensions = "d64|d71|d80|d81|d82|g64||g41|x64|t64|tap|prg|p00|crt|bin|zip|gz|d6z|d7z|d8z|g6z|g4z|x6z"
+corename = "VICE SDL"
+license = "GPLv2"
+permissions = ""
+display_version = "v3.1"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Commodore"
+systemname = "C64"
+systemid = "commodore_c64"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Commodore - 64"
+is_experimental = "true"
+
+description = "An older port of the VICE Commodore 64 emulator to libretro. This port has been completely superseded by the newer VICE ports and only remains for historical/reference value. It should not be used by end-users for any reason."

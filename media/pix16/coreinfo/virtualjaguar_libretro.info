@@ -1,0 +1,48 @@
+# Software Information
+display_name = "Atari - Jaguar (Virtual Jaguar)"
+authors = "Joseph Mattiello|David Raingeard|Shamus"
+supported_extensions = "j64|jag|rom|abs|cof|bin|prg|cue|cdi|chd"
+corename = "Virtual Jaguar"
+license = "GPLv3"
+permissions = ""
+display_version = "v3.12.0"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Atari"
+systemname = "Jaguar"
+systemid = "atari_jaguar"
+
+# Libretro Features
+supports_no_game = "true"
+database = "Atari - Jaguar|Atari - Jaguar CD"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "true"
+is_experimental = "false"
+
+# BIOS / Firmware (all optional -- embedded copies are used when absent)
+notes = "(!) No BIOS files are required: the Jaguar boot ROM and CD BIOS images are embedded in the core.|(!) CD BIOS override (optional, real-BIOS CD boot): any ONE of [BIOS] Atari Jaguar CD (World).j64/.rom/.bin, [BIOS] Atari Jaguar Developer CD (World).j64/.rom/.bin, Jaguar CD BIOS.rom/.bin, jaguarcd_bios.bin, jagcd_bios.bin, jaguarcd.bin or jagcd.bin.|(!) Those are searched in the system directory and in its "Atari - Jaguar", "Atari - Jaguar CD", "jaguar" and "jaguarcd" subfolders. The image is identified by checksum, so the filename only sets search order - a "Missing" firmware entry above is harmless if you have any other accepted name.|(!) An optional jagboot_m.rom in the system directory overrides the embedded Model-M cart boot ROM.|(!) Cart BIOS Type 'Custom' (optional, real-BIOS cart boot): any ONE of jagboot.rom, boot.rom, boot0.rom, [BIOS] Atari Jaguar (World).j64, [BIOS] Atari Jaguar Stubulator '94 (World).j64 or [BIOS] Atari Jaguar Stubulator '93 (World).j64, searched in the system directory and its "Atari - Jaguar" and "jaguar" subfolders. Images are identified by checksum, not filename; an unrecognized 128 KB image still loads with a log warning."
+firmware_count = 4
+firmware0_desc = "[BIOS] Atari Jaguar CD (World).j64 (Jaguar CD BIOS, retail - optional override)"
+firmware0_path = "[BIOS] Atari Jaguar CD (World).j64"
+firmware0_opt = "true"
+firmware1_desc = "[BIOS] Atari Jaguar Developer CD (World).j64 (Jaguar CD BIOS, developer - optional override)"
+firmware1_path = "[BIOS] Atari Jaguar Developer CD (World).j64"
+firmware1_opt = "true"
+firmware2_desc = "jagboot_m.rom (Jaguar cart boot ROM, Model M - optional override)"
+firmware2_path = "jagboot_m.rom"
+firmware2_opt = "true"
+firmware3_desc = "jagboot.rom (Jaguar cart boot ROM, any revision - optional, used when Cart BIOS Type is Custom)"
+firmware3_path = "jagboot.rom"
+firmware3_opt = "true"
+
+description = "The actively maintained Atari Jaguar and Jaguar CD emulator for libretro, continuing the Virtual Jaguar project (originally by David Raingeard of Potato Emulation). No BIOS files are required: the Jaguar boot ROM and CD BIOS images are embedded in the core. Supports Jaguar CD (CUE/BIN, CDI, CHD) with Memory Track saves, JagLink/CatBox network play over TCP or RetroArch netplay, a high-level BIOS that lets most commercial titles boot without a real BIOS image, save states, SRAM, cheat codes, RetroAchievements, and M68K/RISC clock-scale (overclock) core options for framerate-limited games. CHD images must be created with a chdman that writes CHSE session metadata (MAME 2026-08-15 / PR 15886 or later); see the core's jagcd tools. The accurate blitter is SIMD-accelerated (SSE2 on x86, NEON on ARM); the Blitter core option can be set to 'Fast' to trade some accuracy for additional speed on lower-end hardware."

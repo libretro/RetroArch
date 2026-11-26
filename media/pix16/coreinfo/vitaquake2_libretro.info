@@ -1,0 +1,21 @@
+# Software Information
+display_name = "Quake II (vitaQuake 2)"
+authors = "Rinnegatamante"
+supported_extensions = "pak"
+corename = "vitaQuake 2"
+categories = "Game"
+license = "GPLv2"
+permissions = ""
+display_version = "git"
+
+# Hardware Information
+manufacturer = "Id Software"
+systemname = "Quake II Game Engine"
+systemid = "quake_2"
+
+# Libretro Features
+database = "Quake II"
+supports_no_game = "false"
+savestate = "false"
+
+description = "A port of the VitaQuake 2 source port of iD's Quake 2 engine to libretro. There is a separate core for each of the Quake 2 mission packs, 'Rogue', 'Zaero' and 'Xatrix'. This core is for the main game. This core loads games in the *.pak format."

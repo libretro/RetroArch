@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Nintendo - Game Boy / Color (Gambatte)"
+authors = "Sinamas"
+supported_extensions = "gb|gbc|dmg"
+corename = "Gambatte"
+license = "GPLv2"
+permissions = ""
+display_version = "v0.5.0"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy/Game Boy Color"
+systemid = "game_boy"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Nintendo - Game Boy|Nintendo - Game Boy Color"
+savestate = "true"
+savestate_features = "deterministic"
+
+# BIOS / Firmware
+firmware_count = 2
+firmware0_desc = "gb_bios.bin (Game Boy BIOS)"
+firmware0_path = "gb_bios.bin"
+firmware0_opt = "true"
+firmware1_desc = "gbc_bios.bin (Game Boy Color BIOS)"
+firmware1_path = "gbc_bios.bin"
+firmware1_opt = "true"
+notes = "(!) gb_bios.bin (md5): 32fbbd84168d3482956eb3c5051637f5|(!) gbc_bios.bin (md5): dbfce9db9deaa2567f6a84fde55f9680"
+
+description = "A port of the Gambatte Game Boy emulator to libretro. One of the very first libretro cores, this core is reasonably accurate (enough to run all but a scant handful of games with no visible bugs) and blisteringly fast. While Gearboy and SameBoy cores have surpassed it in accuracy, Gambatte is still an excellent choice on low-power systems that cannot handle the more-accurate newcomers while maintaining full speed."

@@ -1,0 +1,28 @@
+# Software Information
+display_name = "Nintendo - Game Boy / Color (Boytacean)"
+authors = "João Magalhães"
+supported_extensions = "gb|gbc"
+corename = "Boytacean"
+categories = "Emulator"
+license = "Apache-2."
+permissions = ""
+display_version = "0.10.13"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy/Game Boy Color"
+systemid = "game_boy"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+
+# General Description
+database = "Nintendo - Game Boy|Nintendo - Game Boy Color"
+description = "A Game Boy emulator that is written in Rust."

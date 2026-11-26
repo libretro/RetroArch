@@ -1,0 +1,47 @@
+# Software Information
+display_name = "Philips - CDi (SAME CDi)"
+authors = "MAMEdev"
+supported_extensions = "chd|iso|cue|m3u"
+corename = "SAME CDi (Git)"
+license = "GPLv3"
+permissions = ""
+display_version = "Git"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Philips"
+systemname = "CD-i"
+systemid = "cdi"
+
+# Libretro Features
+supports_no_game = "false"
+database = "MAME|Philips - CD-i"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+hw_render = "false"
+disk_control = "true"
+
+# BIOS/Firmware
+firmware_count = 3
+
+firmware0_desc = "same_cdi/bios/cdimono1.zip"
+firmware0_path = "same_cdi/bios/cdimono1.zip"
+firmware0_opt = "false"
+
+firmware1_desc = "same_cdi/bios/cdimono2.zip"
+firmware1_path = "same_cdi/bios/cdimono2.zip"
+firmware1_opt = "true"
+
+firmware2_desc = "same_cdi/bios/cdibios.zip"
+firmware2_path = "same_cdi/bios/cdibios.zip"
+firmware2_opt = "true"
+
+notes = "(!) Digital Video Cartridge titles also need vmpega.rom (CRC32 db264e8b) added to cdimono1.zip.|Multi-disc titles can be loaded as an .m3u playlist and swapped from Disc Control."
+
+description = "SAME CDi is a S(ingle) A(rcade) M(achine) E(mulator) for libretro, forked from MAME libretro, which is in turn a fork of MAME. It includes only the Philips CD-i driver, and simplifies the loading of CD content to provide a 'plug and play' experience. Titles that need the Digital Video Cartridge for MPEG-1 full motion video are supported when the cartridge's driver ROM is present."

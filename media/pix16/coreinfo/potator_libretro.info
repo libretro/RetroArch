@@ -1,0 +1,20 @@
+# Software Information
+display_name = "Watara - Supervision (Potator)"
+authors = "Normmatt|Cal2|infval|Alekmaul"
+supported_extensions = "bin|sv"
+corename = "Potator"
+license = "Public Domain"
+permissions = ""
+display_version = "1.0.5"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Watara"
+systemname = "Supervision"
+systemid = "supervision"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Watara - Supervision"
+savestate = "true"
+savestate_features = "deterministic"

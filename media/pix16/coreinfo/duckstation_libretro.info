@@ -1,0 +1,40 @@
+# Software Information
+display_name = "Sony - PlayStation (DuckStation)"
+authors = "stenzek"
+supported_extensions = "exe|psexe|cue|bin|img|iso|chd|pbp|ecm|mds|psf|m3u"
+corename = "DuckStation"
+categories = "Emulator"
+license = "Non-commercial"
+permissions = ""
+
+# Hardware Information
+manufacturer = "Sony"
+systemname = "PlayStation"
+systemid = "playstation"
+
+# Libretro Features
+database = "Sony - PlayStation"
+display_version = "v0.1"
+supports_no_game = "false"
+hw_render = "true"
+required_hw_api = "OpenGL >= 3.0 | OpenGL Core >= 3.1 | Vulkan >= 1.0 | Direct3D >= 11.0"
+is_experimental = "false"
+savestate = "true"
+savestate_features = "serialized"
+input_descriptors = "true"
+disk_control = "true"
+
+# BIOS / Firmware
+firmware_count = 3
+firmware0_desc = "scph5500.bin (PS1 JP BIOS)"
+firmware0_path = "scph5500.bin"
+firmware0_opt = "false"
+firmware1_desc = "scph5501.bin (PS1 US BIOS)"
+firmware1_path = "scph5501.bin"
+firmware1_opt = "false"
+firmware2_desc = "scph5502.bin (PS1 EU BIOS)"
+firmware2_path = "scph5502.bin"
+firmware2_opt = "false"
+notes = "(!) scph5500.bin (md5): 8dd7d5296a650fac7319bce665a6a53c|(!) scph5501.bin (md5): 490f666e1afb15b7362b406ed1cea246|(!) scph5502.bin (md5): 32736f17079d0b2b7024407c39bd3050| This core also supports No-Intro BIOS images."
+
+description = "DuckStation is a PlayStation 1 (aka PSX) emulator focusing on playability, speed, graphical enhancements, and long-term maintainability. A 'BIOS' ROM image is required to start the emulator and to play games. Features include hardware rendering (OpenGL, Vulkan and D3D11), upscaling, 24-bit color, and a dynamic recompiler (x86-64, ARMv7, AArch64)."

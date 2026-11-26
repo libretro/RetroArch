@@ -1,0 +1,18 @@
+# Software Information
+display_name = "Tyrian (OpenTyrian)"
+authors = ""
+supported_extensions = ""
+corename = "OpenTyrian"
+categories = "Game"
+license = "GPLv3"
+permissions = ""
+display_version = "1.0.0.6"
+
+# Hardware Information
+systemname = "Tyrian Game Engine"
+
+# Libretro Features
+database = "Tyrian"
+supports_no_game = "true"
+
+description = "A port of the OpenTyrian clone of the classic Tyrian shmup, ported to libretro."

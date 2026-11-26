@@ -1,0 +1,18 @@
+# Software Information
+display_name = "CHIP-8/S-CHIP/XO-CHIP (JAXE)"
+authors = "Kurtis Dinelle"
+supported_extensions = "ch8|sc8|xo8"
+corename = "JAXE"
+manufacturer = "RCA"
+categories = "Emulator"
+
+# Hardware Information
+systemname = "CHIP-8"
+database = "CHIP-8"
+systemid = "chip_8"
+license = "MIT"
+permissions = ""
+display_version = "GIT"
+supports_no_game = "false"
+firmware_count = 0
+description = "JAXE is a fully-featured, cross platform XO-CHIP/S-CHIP/CHIP-8 emulator written in C"

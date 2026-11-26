@@ -1,0 +1,17 @@
+# Software Information
+display_name = "Dungeon Crawl Stone Soup"
+authors = "DCSS Team"
+supported_extensions = "crawlrc"
+corename = "Dungeon Crawl Stone Soup"
+categories = "Game"
+license = "GPLv2"
+permissions = ""
+display_version = "Git"
+
+# Hardware Information
+
+# Libretro Features
+supports_no_game = "false"
+is_experimental = "true"
+
+description = "A preliminary port of the Dungeon Crawl Stone Soup strategy game. This core was forked off from the official codebase quite a while ago and, as such, is missing many of the features and improvements of the last few years."

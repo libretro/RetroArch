@@ -1,0 +1,46 @@
+# Software Information
+display_name = "Nintendo - DS (DeSmuME 2015)"
+authors = "YopYop156|Zeromus"
+supported_extensions = "nds|ids|bin"
+corename = "DeSmuME 2015"
+license = "GPLv2"
+permissions = ""
+display_version = "SVN"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Nintendo DS"
+systemid = "nds"
+
+# Libretro Features
+database = "Nintendo - Nintendo DS|Nintendo - Nintendo DS (Download Play)"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+# BIOS/Firmware
+firmware_count = 3
+firmware0_desc = "firmware.bin (NDS Firmware)"
+firmware0_path = "firmware.bin"
+firmware0_opt = "true"
+firmware1_desc = "bios7.bin (ARM7 BIOS)"
+firmware1_path = "bios7.bin"
+firmware1_opt = "true"
+firmware2_desc = "bios9.bin (ARM9 BIOS)"
+firmware2_path = "bios9.bin"
+firmware2_opt = "true"
+notes = "(!) bios7.bin (md5): df692a80a5b1bc90728bc3dfc76cd948|(!) bios9.bin (md5): a392174eb3e572fed6447e956bde4b25|[1] Enable 'Use External BIOS/Firmware' core option to use firmware files"
+
+description = "A port of the mature and longstanding DeSmuME emulator for Nintendo's DS console to libretro. The core has very good compatibility and many modern features, but since this is an older snapshot (circa 2015), most users should try the up-to-date core and only fall back to this one if needed for performance reasons."

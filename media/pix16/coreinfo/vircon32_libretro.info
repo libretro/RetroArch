@@ -1,0 +1,40 @@
+# Software Information
+display_name = "Vircon32"
+authors = "Carra"
+supported_extensions = "v32|V32"
+corename = "Vircon32"
+license = "3-clause BSD"
+permissions = ""
+display_version = "2026.10.25"
+categories = "Game engine"
+
+# Hardware Information
+systemname = "Vircon32"
+systemid = "vircon32"
+
+# Libretro Features
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "true"
+libretro_saves = "false"
+core_options = "false"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "true"
+required_hw_api = "OpenGL >= 3.0 | OpenGL ES >= 2.0"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+database = "Vircon32"
+
+# BIOS / Firmware
+firmware_count = 1
+firmware0_desc = "Vircon32Bios.v32 (alternative BIOS file)"
+firmware0_path = "Vircon32Bios.v32"
+firmware0_opt = "true"
+notes = "Optional alternative BIOS file|Vircon32 Standard BIOS is embedded in the core"
+
+description = "Vircon32 is a virtual game console, inspired by classic 16 & 32 bit systems as well as the arcade era."

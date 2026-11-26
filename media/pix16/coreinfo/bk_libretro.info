@@ -1,0 +1,64 @@
+display_name = "Elektronika - BK-0010/BK-0011(M)"
+authors = "Eric A. Edwards, Leonid A. Broukhis, emestee, arcade-mini, phcoder"
+supported_extensions = "bin"
+corename = "bk"
+categories = "Computer"
+database = "BK-0010/BK-0011"
+systemname = "BK-0010/BK-0011(M)"
+license = "HPND"
+permissions = ""
+display_version = "1.00"
+supports_no_game = "true"
+
+# Libretro Features
+savestate = "serialized"
+cheats = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "true"
+supports_no_game = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+
+# BIOS/Firmware
+firmware_count = 8
+
+firmware0_desc = "bk/B11M_BOS.ROM"
+firmware0_path = "bk/B11M_BOS.ROM"
+firmware0_opt = "true"
+
+firmware1_desc = "bk/B11M_EXT.ROM"
+firmware1_path = "bk/B11M_EXT.ROM"
+firmware1_opt = "true"
+
+firmware2_desc = "bk/BAS11M_0.ROM"
+firmware2_path = "bk/BAS11M_0.ROM"
+firmware2_opt = "true"
+
+firmware3_desc = "bk/BAS11M_1.ROM"
+firmware3_path = "bk/BAS11M_1.ROM"
+firmware3_opt = "true"
+
+firmware4_desc = "bk/DISK_327.ROM"
+firmware4_path = "bk/DISK_327.ROM"
+firmware4_opt = "true"
+
+firmware5_desc = "bk/BASIC10.ROM"
+firmware5_path = "bk/BASIC10.ROM"
+firmware5_opt = "true"
+
+firmware6_desc = "bk/FOCAL10.ROM"
+firmware6_path = "bk/FOCAL10.ROM"
+firmware6_opt = "true"
+
+firmware7_desc = "bk/MONIT10.ROM"
+firmware7_path = "bk/MONIT10.ROM"
+firmware7_opt = "true"
+
+notes = "(!) bk/B11M_BOS.ROM (md5): fe4627d1e3a1535874085050733263e7|(!) bk/B11M_EXT.ROM (md5): dc52f365d56fa1951f5d35b1101b9e3f|(!) bk/BAS11M_0.ROM (md5): 946f6f23ded03c0e26187f0b3ca75993|(!) bk/BAS11M_1.ROM (md5): 1e6637f32aa7d1de03510030cac40bcf|(!) bk/DISK_327.ROM (md5): 5015228eeeb238e65da8edcd1b6dfac7|(!) bk/BASIC10.ROM (md5): 3fa774326d75410a065659aea80252f0|(!) bk/FOCAL10.ROM (md5): 5737f972e8638831ab71e9139abae052|(!) bk/MONIT10.ROM (md5): 95f8c41c6abf7640e35a6a03cecebd01"
+notes = "(!) Homepage: http://www.mailcom.com/bk0010/index_en.shtml"
+
+description = "A port of the PDP11 emulator to libretro. This core emulates the Soviet Electronica BK computers series, including the BK-0010, BK-0010.01 and BK-0011(M), as well as the Terak 8510/a, which is a 1976 American PDP-11/03 platform that the Electronica BK series were designed after. The BK series computers were the first mass-produced, affordable personal computers in Russia in the 1980s and they had a tremendous effect on the development of the Russian-speaking software community, similar to the C64, ZX Spectrum and Atari 2600 communities elsewhere in the world. These computers will accept console commands in English but respond mostly in Russian, so this core is mostly of use to Russian-speaking users."

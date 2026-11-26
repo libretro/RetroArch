@@ -1,0 +1,40 @@
+# Software Information
+display_name = "BBKEmu (BBK Electronic Dictionary)"
+authors = "jiangxincode"
+supported_extensions = "gam"
+corename = "BBKEmu"
+categories = "Emulator"
+license = "GPL-3.0-or-later"
+permissions = ""
+display_version = "0.1.0"
+
+# Hardware Information
+manufacturer = "BBK Electronics"
+systemname = "BBK Electronic Dictionary"
+systemid = "bbk"
+
+# Libretro Features
+database = "BBK"
+supports_no_game = "false"
+firmware_count = 2
+savestate = "true"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+# Firmware Information
+firmware0_desc = "8.BIN (Font ROM)"
+firmware0_path = "BBKEmu/A4980/8.BIN"
+firmware0_opt = "true"
+firmware1_desc = "E.BIN (OS ROM)"
+firmware1_path = "BBKEmu/A4980/E.BIN"
+firmware1_opt = "true"
+
+description = "BBKEmu is an emulator for BBK electronic dictionary game platform. Games run on the 6502 CPU with the BBK OS ROM providing system calls for LCD, keyboard, audio and timer hardware. Requires font ROM (8.BIN) and OS ROM (E.BIN) from a physical BBK device in system/BBKEmu/<model>/ directory."

@@ -1,0 +1,31 @@
+# Software Information
+display_name = "Arcade (MAME 2009)"
+authors = "MAMEdev"
+supported_extensions = "zip"
+corename = "MAME 2009 (0.135u4)"
+license = "MAME"
+permissions = ""
+display_version = "0.135u4"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Various"
+systemname = "Arcade (various)"
+systemid = "mame"
+
+# Libretro Features
+supports_no_game = "false"
+database = "MAME 2009"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+hw_render = "false"
+disk_control = "false"
+notes = "(!) The BIOS files must be inside the ROM directory.|"
+
+description = "Based on a snapshot of the MAME codebase circa 2009, 'MAME 2009' is compatible with MAME 0.135u4 ROM sets. If your device can run the up-to-date MAME - Current core (or any other newer snapshot) at full speed, most users will have a better experience with that core, while FBNeo is typically a better choice for speed vs accuracy, as long as it supports the game(s) in question. This core was created specifically for the performance concerns of the Wii U console, but should also work well on other moderately low-powered devices."

@@ -1,0 +1,39 @@
+# Software Information
+display_name = "EPOCH/YENO Super Cassette Vision (EmuSCV)"
+authors = "Maxime MARCONATO (aka MaaaX) - maxime@maaax.com|Toshiya TAKEDA"
+supported_extensions = "cart|bin|rom|0|zip"
+corename = "EmuSCV"
+categories = "Emulator"
+license = "GPLv3+"
+permissions = ""
+display_version = "0.15"
+
+# Hardware Information
+manufacturer = "EPOCH"
+systemname = "Super Cassette Vision"
+systemid = "super_cassette_vision"
+database = "Epoch - Super Cassette Vision"
+
+# Libretro Features
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+# BIOS / Firmware
+firmware_count = 1
+firmware0_desc = "upd7801g.s01 (Super Cassette Vision BIOS)"
+firmware0_path = "upd7801g.s01"
+firmware0_opt = "false"
+
+description = "A libretro core for the EPOCH Super Cassette Vision, the 1984 Japanese console also sold in France in 1984 as the YENO Super Cassette Vision. A system BIOS is required. Cartridges are dumped as a single file or as numbered parts, and the core converts them to its own .cart format, which records the bank layout that a raw dump cannot carry."
+notes = "(!) upd7801g.s01 (md5): 635a978fd40db9a18ee44eff449fc126|A cartridge dumped in several parts loads from its .0 file, with .1, .2 and .3 beside it.|A .cart file appearing in the save directory after a launch is normal: it is the converted cartridge."

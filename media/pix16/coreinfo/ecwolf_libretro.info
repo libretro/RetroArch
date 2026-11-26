@@ -1,0 +1,24 @@
+display_name = "Wolfenstein 3D (ECWolf)"
+authors = "Braden Obrzut"
+supported_extensions = "wl6|n3d|sod|sdm|wl1|pk3|exe"
+corename = "ECWolf"
+manufacturer = "Id Software"
+categories = "Game"
+systemname = "Wolfenstein 3D Game Engine"
+systemid = "wolfenstein3d"
+database = "Wolfenstein 3D"
+license = "BSD|LGPL"
+permissions = ""
+
+# BIOS / Firmware
+firmware_count = 1
+firmware0_desc = "ecwolf.pk3 (ECWolf System File)"
+firmware0_path = "ecwolf.pk3"
+notes = "(!) ecwolf.pk3 (md5): c011b428819eea4a80b455c245a5a04d"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "basic"
+
+description = "A source port of the Wolfenstein 3D engine to libretro. This core provides a basic/traditional experience and is compatible with Wolfenstein 3D, Spear of Destiny and Super 3D Noah's Ark content, including shareware releases. The core removes menus and goes straight to the episode or skill selection and supports arbitrary framerates up to 360 fps."

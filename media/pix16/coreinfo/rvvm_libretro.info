@@ -1,0 +1,24 @@
+# Software Information
+display_name = "RVVM"
+display_version = "0.6-git"
+authors = "LekKit"
+categories = "Virtual machine"
+license = "GPLv3+"
+permissions = ""
+supported_extensions = "rvvm"
+
+# Hardware Information
+manufacturer = "RVVM"
+systemname = "RVVM"
+systemid = "rvvm"
+
+# Libretro Features
+database = "RVVM"
+supports_no_game = "false"
+libretro_saves = "false"
+cheats = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "true"
+
+description = "A port of the RVVM (RISC-V Virtual Machine) to libretro."

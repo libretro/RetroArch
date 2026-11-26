@@ -1,0 +1,48 @@
+# Software Information
+display_name = "Nintendo - Game Boy Advance (mGBA)"
+authors = "endrift"
+supported_extensions = "gb|gbc|gba"
+corename = "mGBA"
+license = "MPLv2.0"
+permissions = ""
+categories = "Emulator"
+display_version = "0.10-dev"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy/Game Boy Color/Game Boy Advance"
+systemid = "game_boy_advance"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Nintendo - Game Boy|Nintendo - Game Boy Color|Nintendo - Game Boy Advance"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 4
+firmware0_desc = "gba_bios.bin (Game Boy Advance BIOS)"
+firmware0_path = "gba_bios.bin"
+firmware0_opt = "true"
+firmware1_desc = "gb_bios.bin (Game Boy BIOS)"
+firmware1_path = "gb_bios.bin"
+firmware1_opt = "true"
+firmware2_desc = "gbc_bios.bin (Game Boy Color BIOS)"
+firmware2_path = "gbc_bios.bin"
+firmware2_opt = "true"
+firmware3_desc = "sgb_bios.bin (Super Game Boy BIOS)"
+firmware3_path = "sgb_bios.bin"
+firmware3_opt = "true"
+notes = "(!) gba_bios.bin (md5): a860e8c0b6d573d191e4ec7db1b1e4f6|(!) gb_bios.bin (md5): 32fbbd84168d3482956eb3c5051637f5|(!) gbc_bios.bin (md5): dbfce9db9deaa2567f6a84fde55f9680"
+
+description = "An advanced, mature and actively developed Game Boy Advance emulator, ported to libretro. This emulator strives for high accuracy and high performance, and it is generally a good first choice for GBA emulation on any platform where it is available. gpSP is a good fallback on devices that cannot maintain full speed with mGBA."

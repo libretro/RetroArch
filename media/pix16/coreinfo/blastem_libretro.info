@@ -1,0 +1,78 @@
+# Software Information
+display_name = "Sega - MS/GG/MD/CD/32X (BlastEm)"
+authors = "Mike Pavone"
+supported_extensions = "md|gen|smd|68k|sgd|32x|sms|gg|sg|sg1|sc|sc3|sf7|col|cue|toc|iso|chd|vgm|vgz|flac|wav|bin|rom|gz"
+corename = "BlastEm"
+license = "GPLv3"
+permissions = ""
+display_version = "v0.6.3-pre"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Sega"
+systemid = "mega_drive"
+systemname = "Sega 8/16-bit (Various)"
+
+# Libretro Features
+database = "Sega - 32X|Sega - Game Gear|Sega - Master System - Mark III|Sega - Mega Drive - Genesis|Sega - Mega-CD - Sega CD|Sega - PICO|Sega - SG-1000"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+# BIOS/Firmware
+firmware_count = 10
+
+firmware0_desc = "rom.db (ROM feature database)"
+firmware0_path = "rom.db"
+firmware0_opt = "true"
+
+firmware1_desc = "bios_CD_U.bin (Sega CD US BIOS, required for Sega CD games)"
+firmware1_path = "bios_CD_U.bin"
+firmware1_opt = "true"
+
+firmware2_desc = "bios_CD_E.bin (Mega-CD EU BIOS, required for Sega CD games)"
+firmware2_path = "bios_CD_E.bin"
+firmware2_opt = "true"
+
+firmware3_desc = "bios_CD_J.bin (Mega-CD JP BIOS, required for Sega CD games)"
+firmware3_path = "bios_CD_J.bin"
+firmware3_opt = "true"
+
+firmware4_desc = "32X_M_BIOS.bin (32X Master SH2 BIOS, required for 32X games)"
+firmware4_path = "32X_M_BIOS.bin"
+firmware4_opt = "true"
+
+firmware5_desc = "32X_S_BIOS.bin (32X Slave SH2 BIOS, required for 32X games)"
+firmware5_path = "32X_S_BIOS.bin"
+firmware5_opt = "true"
+
+firmware6_desc = "32X_G_BIOS.bin (32X 68000 BIOS)"
+firmware6_path = "32X_G_BIOS.bin"
+firmware6_opt = "true"
+
+firmware7_desc = "bios_MD.bin (Mega Drive TMSS ROM, also read as tmss.md)"
+firmware7_path = "bios_MD.bin"
+firmware7_opt = "true"
+
+firmware8_desc = "colecovision.rom (ColecoVision BIOS)"
+firmware8_path = "colecovision.rom"
+firmware8_opt = "true"
+
+firmware9_desc = "laseractive_dyw_1322a.bin (LaserActive uPD ROM)"
+firmware9_path = "laseractive_dyw_1322a.bin"
+firmware9_opt = "true"
+
+notes = "(!) rom.db (sha1): E5414FB1C4CC7D7F5101C07E4547316779BA3D97|(!) bios_CD_U.bin (md5): 2efd74e3232ff260e371b99f84024f7f|(!) bios_CD_E.bin (md5): e66fa1dc5820d254611fdcdba0662372|(!) bios_CD_J.bin (md5): 278a9397d192149e84e820ac621a8edd|(!) colecovision.rom (md5): 2c66f5911e5b42b8ebe113403548eee7|Sega CD and 32X games need their BIOS files; cartridge games run without any."
+
+description = "A port of the BlastEm emulator to libretro, covering the Sega Genesis/Mega Drive, Sega CD, 32X, Master System, Game Gear, SG-1000, SC-3000, Pico and Copera. This emulator is focused on being both extremely accurate and extremely fast. While it is not as mature as Genesis Plus GX, its extreme accuracy makes it capable of running many demos and test ROMs that choke other emulators, including the notoriously complex Titan Overdrive I and II demos."

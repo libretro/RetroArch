@@ -1,0 +1,38 @@
+# Software Information
+display_name = "mGBA Splitscreen"
+authors = "Spuds0588 (mgba-splitscreen), endrift (mGBA)"
+supported_extensions = "gba"
+corename = "mGBA Splitscreen"
+license = "MPLv2.0"
+permissions = ""
+categories = "Emulator"
+display_version = "0.1.0"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy Advance (2-4 linked players)"
+systemid = "game_boy_advance"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Nintendo - Game Boy Advance"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "true"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "true"
+
+description = "mgba-splitscreen: 2-4 linked Game Boy Advance emulator instances in one core, over mGBA's lockstep link-cable driver. Load a single ROM with the 'Players per ROM' option for same-cartridge multiplayer, or use Load Content -> the GBA Link subsystems for per-player ROMs. A fork of upstream mGBA's libretro core carrying the mgba-splitscreen link fixes (Four Swords handshake assist + gated deadlock kick)."
+
+# Firmware (optional, same entry upstream mGBA declares)
+firmware_count = 1
+firmware0_desc = "gba_bios.bin (Game Boy Advance BIOS)"
+firmware0_path = "gba_bios.bin"
+firmware0_opt = "true"

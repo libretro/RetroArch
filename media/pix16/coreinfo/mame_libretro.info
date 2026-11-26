@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Arcade (MAME)"
+categories = "Emulator"
+authors = "MAMEdev"
+supported_extensions = "cmd|zip|7z"
+corename = "MAME"
+license = "GPLv2+"
+permissions = ""
+display_version = "Git"
+
+# Hardware Information
+manufacturer = "Various"
+systemname = "Arcade (various)"
+systemid = "mame"
+
+# Libretro Features
+supports_no_game = "false"
+database = "MAME"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+hw_render = "false"
+disk_control = "false"
+database_match_archive_member = "true"
+notes = "[1] MAME supports MAME save states.|[2] MAME supports extracted MAME cheats.|[3] The BIOS files can be inside the ROM directory|[^] or 'SYSTEMDIR\mame\bios' or 'SYSTEMDIR\mame\roms' directory.|[4] CHD files and their directories must be inside the ROM directory.|[5] ARTWORK, CHEATS, HASH, INI and SAMPLES directories can be placed|[^] inside the 'SYSTEMDIR\mame' directory. (INI/Source for drivers)|[6] When saving, the following directories will be created in the 'SAVEDIR\mame'|[^] directory: STATES, NVRAM, INPUT, SNAPS, CFG, MEMCARD, and DIFF.|[7] Default combo to call MAME GUI: Retropad Select + X|[^] Retropad Select + Start => CANCEL"
+
+description = "'MAME - Current' is compatible with the latest MAME ROM sets. MAME is the most compatible emulator in the world, and it can run almost any game from any platform (though running console games through this core requires additional steps). Its high compatibility makes it a good option for most users. If you cannot run this core full speed, the year-stamped forks are faster at the cost of reduced accuracy, but FBNeo is typically a better choice for speed vs accuracy, as long as it supports the game(s) in question."

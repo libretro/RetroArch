@@ -1,0 +1,31 @@
+# Software Information
+display_name = "Arcade (MAME 2000)"
+authors = "MAMEdev"
+supported_extensions = "zip"
+corename = "MAME 2000 (0.37b5)"
+license = "MAME"
+permissions = ""
+display_version = "0.37b5"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Various"
+systemname = "Arcade (various)"
+systemid = "mame"
+
+# Libretro Features
+supports_no_game = "false"
+database = "MAME 2000"
+savestate = "true"
+savestate_features = "basic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+hw_render = "false"
+disk_control = "false"
+notes = "(!) The BIOS files must be inside the ROM directory.|"
+
+description = "Based on a snapshot of the MAME codebase circa 2000, 'MAME 2000' is compatible with the MAME 0.37b5 ROM set, which was used in the popular iMAME4All port. While this port is the fastest of the libretro cores, it also has the worst accuracy and compatibility, so it should only be used when speed is the utmost concern. If a device can run any of the later snapshots or FBNeo (or even FBA2012), those will all be better choices for most users."

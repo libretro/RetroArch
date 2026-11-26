@@ -1,0 +1,27 @@
+# Software Information
+display_name = "SDLPAL"
+display_version = "v2.0.1"
+authors = "SDLPAL development team"
+categories = "Game"
+license = "GPLv3"
+permissions = ""
+supported_extensions = "cfg"
+
+# Hardware Information
+manufacturer = "N/A"
+systemname = "SDLPAL"
+systemid = "sdlpal"
+
+# Libretro Features
+supports_no_game = "true"
+single_purpose = "true"
+cheats = "false"
+libretro_saves = "false"
+savestate = "false"
+savestate_features = "null"
+needs_fullpath = "true"
+hw_render = "false"
+disk_control = "false"
+
+
+description = "Libretro port of the classic Chinese-language RPG known as PAL."

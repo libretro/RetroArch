@@ -1,0 +1,34 @@
+# Software Information
+display_name = "Nintendo - Game Boy Advance (gpSP)"
+authors = "Exophase"
+supported_extensions = "gba|bin"
+corename = "gpSP"
+categories = "Emulator"
+license = "GPLv2"
+permissions = ""
+display_version = "Git"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy Advance"
+systemid = "game_boy_advance"
+
+# Libretro Features
+database = "Nintendo - Game Boy Advance"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+hw_render = "false"
+
+# BIOS / Firmware
+firmware_count = 1
+firmware0_desc = "gba_bios.bin (Game Boy Advance BIOS)"
+firmware0_path = "gba_bios.bin"
+firmware0_opt = "false"
+notes = "(!) gba_bios.bin (md5): a860e8c0b6d573d191e4ec7db1b1e4f6"
+
+description = "A port of the lightweight gpSP Game Boy Advance emulator to libretro. Originally designed for use on the PSP via homebrew and later ported to the OpenPandora hardware, this core runs extremely fast on low-powered hardware. This speed comes at a price, though, as the core has problems with some games. For most users, mGBA or VBA-M will be better options, and this core should only be utilized in cases where those cores cannot maintain full speed."

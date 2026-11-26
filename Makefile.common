@@ -1010,11 +1010,16 @@ ifeq ($(HW_CONTEXT_MENU_DRIVERS), 1)
    ifeq ($(HAVE_OZONE),)
       HAVE_OZONE = 1
    endif
+
+   ifeq ($(HAVE_PIX16),)
+      HAVE_PIX16 = 1
+   endif
 else
    HAVE_RGUI        ?= 0
    HAVE_MATERIALUI  ?= 0
    HAVE_XMB         ?= 0
    HAVE_OZONE       ?= 0
+   HAVE_PIX16       ?= 0
 endif
 
 ifeq ($(HAVE_MENU), 1)
@@ -1029,6 +1034,11 @@ ifeq ($(HAVE_MENU), 1)
       OBJ += menu/drivers/rgui.o \
              menu/drivers/rgui_bitmapfont.o
       DEFINES += -DHAVE_RGUI
+   endif
+
+   ifeq ($(HAVE_PIX16), 1)
+      OBJ += menu/drivers/pix16.o
+      DEFINES += -DHAVE_PIX16
    endif
 
    ifeq ($(HAVE_MATERIALUI), 1)

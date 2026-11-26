@@ -1,0 +1,33 @@
+# Software Information
+display_name = "Arcade (Daphne)"
+authors = "Matt Ownby"
+supported_extensions = "zip"
+corename = "Daphne"
+categories = "Emulator"
+license = "GPLv2+"
+permissions = ""
+display_version = "Git"
+
+# Hardware Information
+manufacturer = "Various"
+systemname = "Arcade (various)"
+systemid = "daphne"
+
+# Libretro Features
+database_match_archive_member = "true"
+supports_no_game = "false"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "null"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "true"
+
+description = "A port of the Daphne Laserdisc emulator to libretro. This core plays classic full-motion video games as they appeared in arcades."

@@ -1,0 +1,33 @@
+# Software Information
+display_name = "Fairchild - ChannelF (FreeChaF)"
+authors = "David Richardson"
+supported_extensions = "bin|chf"
+corename = "FreeChaF"
+license = "GPLv3"
+permissions = ""
+display_version = "GIT"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Fairchild"
+systemname = "Channel F"
+systemid = "channel_f"
+
+# Libretro Features
+database = "Fairchild - Channel F"
+supports_no_game = "false"
+
+# BIOS / Firmware
+firmware_count = 3
+firmware0_desc = "sl31253.bin"
+firmware0_path = "sl31253.bin"
+firmware0_opt = "false"
+firmware1_desc = "sl31254.bin"
+firmware1_path = "sl31254.bin"
+firmware1_opt = "false"
+firmware2_desc = "sl90025.bin"
+firmware2_path = "sl90025.bin"
+firmware2_opt = "false"
+notes = "(!) sl31253.bin (md5): ac9804d4c0e9d07e33472e3726ed15c3|(!) sl31254.bin (md5): da98f4bb3242ab80d76629021bb27585|(!) sl90025.bin (md5): 95d339631d867c8f1d15a5f2ec26069d"
+
+description = "A lightweight Fairchild ChannelF / Video Entertainment System designed for libretro. This core was written specifically for use with low-power devices, such as Raspberry Pi, and supports loading a 'no cart' ROM to play the built-in games, controller swapping and dual-analog controls. The core requires the sl31253 and sl31254 BIOS images but the sl90025 BIOS will supersede the sl31253 version if found."

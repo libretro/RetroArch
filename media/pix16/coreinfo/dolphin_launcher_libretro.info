@@ -1,0 +1,34 @@
+#  Software Information
+display_name = "Nintendo - GameCube / Wii (Dolphin Launcher)"
+authors = "RobLoach"
+supported_extensions = "elf|dol|gcm|iso|wbfs|ciso|gcz|wad"
+corename = "Dolphin Launcher"
+license = "MIT"
+permissions = ""
+display_version = "1.2.0"
+categories = "Launcher"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "GameCube / Wii"
+systemid = "gamecube"
+
+# Libretro Features
+database = "Nintendo - GameCube|Nintendo - Wii|Nintendo - Wii (Digital)"
+supports_no_game = "true"
+savestate = "false"
+savestate_features = "null"
+libretro_saves = "false"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+core_options = "false"
+core_options_version = "null"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+notes = "(!) This core launches an external Dolphin Emulator installation, which runs outside of the libretro frontend."
+
+description = "A basic skeleton core which has the sole purpose of launching an external instance of the popular Dolphin emulator. This allows users to launch Gamecube and/or Wii games from a libretro frontend while using the external Dolphin emulator, which will then run outside of the libretro frontend (that is, features of the frontend will not be available). Many/most users will be better served by using the libretro-native dolphin-libretro core, which provides a normal libretro experience, but this core may be useful to access features that are not exposed to the native libretro core."

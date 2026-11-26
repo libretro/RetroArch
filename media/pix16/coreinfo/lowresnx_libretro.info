@@ -1,0 +1,32 @@
+# Software Information
+display_name = "LowRes NX"
+authors = "timoinutilis"
+supported_extensions = "nx"
+corename = "lowresnx"
+categories = "Game engine"
+license = "zlib"
+permissions = ""
+display_version = "v1.2"
+
+# Hardware Information
+manufacturer = "inutilis"
+systemname = "LowRes NX"
+systemid = "lowresnx"
+
+# Libretro Features
+database = "LowRes NX"
+supports_no_game = "false"
+savestate = "false"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "false"
+core_options = "false"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A port of the LowRes NX fantasy console to libretro. This core represents an imaginary handheld game console inspired by real 8- and 16-bit systems that is intended for simple games that can be programmed in second-generation, structured BASIC. It supports a d-pad, two action buttons and a keyboard for input. The LowRes NX platform comes with a variety of development tools including a Character Designer for editing sprites tile sand fonts, a Background Designer for tile maps and screen layouts and a Sound Composer for music and sound effects."

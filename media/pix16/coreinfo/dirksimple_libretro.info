@@ -1,0 +1,25 @@
+# Software Information
+display_name = "Laserdisc arcade game (DirkSimple)"
+authors = "Ryan C. Gordon"
+supported_extensions = "ogv|dirksimple"
+corename = "DirkSimple"
+categories = "Emulator"
+license = "zlib"
+permissions = ""
+display_version = "0.2"
+
+# Hardware Information
+# even within Dragon's Lair 1, the European version had a different publisher with a totally different cabinet and laserdisc player.
+manufacturer = "various"
+systemname = "Laserdisc arcade game"
+systemid = "laserdisc"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+hw_render = "false"
+notes = "DirkSimple plays laserdisc arcade games, like Dragon's Lair. The games are not emulated ROMs, but reimplemented in Lua, and using an Ogg Theora video of the laserdisc's contents."
+
+description = "A player of laserdisc arcade games."

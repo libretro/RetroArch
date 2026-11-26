@@ -1,0 +1,28 @@
+# Software Information
+display_name = "Lua Engine (Lutro)"
+authors = "Higor Euripedes/Jean-Andre Santoni"
+supported_extensions = "lutro|love|lua"
+corename = "Lutro"
+categories = "Game engine"
+license = "MIT"
+permissions = ""
+display_version = "v1"
+
+# Hardware Information
+systemname = "Lutro"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Lutro"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+hw_render = "false"
+disk_control = "false"
+
+description = "An experimental Lua game framework for libretro, based on a subset of the LOVE API. Games' source directories can be loaded like a game/ROM, or you can load a compressed 'lutro' archive."

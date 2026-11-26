@@ -1,0 +1,46 @@
+# Software Information
+display_name = "Sony - PlayStation 2 (PCEE2)"
+authors = "PCSX2 Team|WizzardSK"
+supported_extensions = "iso|chd|cue|m3u|cso|zso|gz|bin|mdf|nrg|elf|irx|gs|acgame"
+corename = "PCEE2"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+display_version = "v2.9.138"
+
+# Hardware Information
+manufacturer = "Sony"
+systemname = "Sony PlayStation 2"
+systemid = "playstation2"
+
+# Libretro Features
+database = "Sony - PlayStation 2"
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "basic"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "true"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "false"
+hw_render = "true"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 3
+firmware0_desc = "'pcsx2/bios' folder (any valid PS2 BIOS dump, e.g. scph39001.bin)"
+firmware0_path = "pcsx2/bios"
+firmware0_opt = "false"
+firmware1_desc = "'pcsx2/resources' folder (shaders, GameIndex.yaml, fonts)"
+firmware1_path = "pcsx2/resources"
+firmware1_opt = "false"
+firmware2_desc = "r27v1602f.7d (Namco System 246/256 BIOS, zone COH-H, for .acgame arcade games only)"
+firmware2_path = "pcsx2/bios/r27v1602f.7d"
+firmware2_opt = "true"
+notes = "[1] This only checks that the folders exist in the correct location.|[2] The core does not require a specific BIOS filename, so this info file|[^] cannot tell you whether the content of your 'bios' folder is correct.|[3] The 'resources' folder must be copied from a PCSX2 installation of the|[^] same version; the core will not boot without it.|[4] A Vulkan-capable GPU is recommended; the other renderers are less tested.|[5] The Namco System 246/256 BIOS is needed only for .acgame arcade games; the core takes|[^] any dump of zone COH-H in 'bios', whatever its name, and makes its .mec/.nvm itself.|[6] display_version is the upstream PCSX2 version the core is merged up to; the build and commit are in RetroArch's log at load."
+
+description = "A libretro port of current upstream PCSX2, the mature and highly-compatible PlayStation 2 emulator. Unlike the LRPS2 core, which is a hard fork of an older PCSX2, PCEE2 tracks the modern PCSX2 codebase. With the default Vulkan renderer the core renders into a hardware context it negotiates with the frontend; the OpenGL and software renderers hand finished frames over instead. Place a PS2 BIOS dump in 'system/pcsx2/bios' and a copy of the PCSX2 'resources' directory in 'system/pcsx2/resources'. It also runs Namco System 246 / 256 arcade games from an .acgame file (the PCSX2x6 layout: the game's media, its dongle memory card and bootloader beside it), with the board's BIOS (r27v1602f.7d, zone COH-H) in 'system/pcsx2/bios'. This core is experimental."

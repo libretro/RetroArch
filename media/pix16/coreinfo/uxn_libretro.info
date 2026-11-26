@@ -1,0 +1,22 @@
+# Software Information
+display_name = "Uxn / Varvara (zuxn)"
+display_version = "0.0.0"
+authors = "Devine Lu Linvega|Lukas Niederbremer"
+categories = "Emulator"
+license = "MPLv2.0"
+supported_extensions = "rom"
+
+# Hardware Information
+manufacturer = "Hundred Rabbits"
+systemname = "Uxn / Varvara"
+systemid = "uxn"
+
+# Libretro Features
+database = "uxn"
+supports_no_game = "false"
+libretro_saves = "false"
+cheats = "false"
+needs_fullpath = "false"
+disk_control = "false"
+
+description = "Varvara is a computer system for Uxn.  This libretro core is based on zxun."

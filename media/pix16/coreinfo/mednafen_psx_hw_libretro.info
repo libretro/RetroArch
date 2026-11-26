@@ -1,0 +1,51 @@
+# Software Information
+display_name = "Sony - PlayStation (Beetle PSX HW)"
+authors = "Mednafen Team"
+supported_extensions = "cue|toc|m3u|ccd|exe|pbp|chd|bin"
+corename = "Beetle PSX HW"
+
+# Hardware Information
+manufacturer = "Sony"
+categories = "Emulator"
+systemname = "PlayStation"
+systemid = "playstation"
+database = "Sony - PlayStation"
+license = "GPLv2"
+permissions = ""
+display_version = "v0.9.44.1"
+
+# Libretro Features
+supports_no_game = "false"
+needs_fullpath = "true"
+disk_control = "true"
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "true"
+required_hw_api = "OpenGL Core >= 3.3 | Vulkan >= 1.0"
+
+# Firmware / BIOS
+firmware_count = 5
+firmware0_desc = "scph5500.bin (PS1 JP BIOS)"
+firmware0_path = "scph5500.bin"
+firmware0_opt = "false"
+firmware1_desc = "scph5501.bin (PS1 US BIOS)"
+firmware1_path = "scph5501.bin"
+firmware1_opt = "false"
+firmware2_desc = "scph5502.bin (PS1 EU BIOS)"
+firmware2_path = "scph5502.bin"
+firmware2_opt = "false"
+firmware3_desc = "psxonpsp660.bin (PSP PS1 BIOS)"
+firmware3_path = "psxonpsp660.bin"
+firmware3_opt = "true"
+firmware4_desc = "ps1_rom.bin (PS3 PS1 BIOS)"
+firmware4_path = "ps1_rom.bin"
+firmware4_opt = "true"
+notes = "(!) scph5500.bin (md5): 8dd7d5296a650fac7319bce665a6a53c|(!) scph5501.bin (md5): 490f666e1afb15b7362b406ed1cea246|(!) scph5502.bin (md5): 32736f17079d0b2b7024407c39bd3050|(!) psxonpsp660.bin (md5): c53ca5908936d412331790f4426c6c33|(!) ps1_rom.bin (md5): 81bbe60ba7a3d1cea1d48c14cbcc647b"
+
+description = "A significantly modified fork of Mednafen's Playstation emulator, this core differs from the non-HW version by providing GPU-accelerated renderers for OpenGL and Vulkan. These renderers provide increased internal resolution for smooth, high-res polygons with minimal performance impact, texture filtering and other cosmetic changes. Both varieties of Beetle-PSX are more accurate than PCSX-ReARMed but also significantly slower, so they are generally a better choice for higher-specced devices that can benefit from the additional features and accuracy while maintaining full speed. The Beetle-PSX cores are also very particular about requiring BIOS images, so make sure you have the correct BIOS files available and make sure they are named exactly as the core expects."

@@ -1,0 +1,37 @@
+# Software Information
+display_name = "Omicron"
+authors = "msx80"
+supported_extensions = "omicron"
+corename = "Omicron"
+categories = "Game engine"
+license = "Apache-2.0"
+permissions = ""
+display_version = "v1"
+
+# Hardware Information
+manufacturer = "msx80"
+systemname = "Omicron"
+systemid = "omicron"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+core_options_version = "null"
+load_subsystem = "false"
+hw_render = "true"
+required_hw_api = "OpenGL >= 2.0 | OpenGL ES >= 2.0"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "true"
+
+# Firmware / BIOS
+firmware_count = 0
+notes = "(!) Requires a Java runtime on the host: the core loads libjvm from JAVA_HOME at startup and will not run without it.|(!) Content is an Omicron cartridge (.omicron) built from the omicron-player project."
+
+description = "Omicron is an open source game engine for Java built on libGDX and inspired by fantasy consoles: a small API for drawing, sound and input, with no resource management - assets are referred to by number. Games are packaged as .omicron cartridges. The libretro core is the engine's experimental frontend; it starts a JVM through JNI and renders through the frontend's OpenGL or OpenGL ES context, so a Java runtime has to be present on the machine and reachable through JAVA_HOME. Save states and core options are not implemented."

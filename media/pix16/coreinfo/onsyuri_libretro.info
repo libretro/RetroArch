@@ -1,0 +1,23 @@
+# Software Information
+display_name = "ONScripter Yuri"
+display_version = "0.7.4+2"
+authors = "Studio O.G.A.|jh10001|YuriSizuku"
+categories = "Game engine"
+license = "GPLv2+"
+permissions = ""
+supported_extensions = "txt|dat|___|nt2|nt3|ons|/"
+
+# Hardware Information
+manufacturer = "ONScripter"
+systemname = "ONScripter Yuri"
+systemid = "onsyuri"
+
+# Libretro Features
+database = "ONScripter"
+supports_no_game = "false"
+libretro_saves = "false"
+cheats = "false"
+needs_fullpath = "true"
+disk_control = "false"
+
+description = "A port of the ONScripter Yuri visual novel games engine to libretro."

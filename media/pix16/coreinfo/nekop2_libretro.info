@@ -1,0 +1,32 @@
+# Software Information
+display_name = "NEC - PC-98 (Neko Project II)"
+authors = "Neko Project II Team"
+supported_extensions = "d98|zip|98d|fdi|fdd|2hd|tfd|d88|88d|hdm|xdf|dup|cmd|hdi|thd|nhd|hdd"
+corename = "Neko Project II"
+license = "MIT"
+permissions = ""
+display_version = "0.86"
+
+# Hardware Information
+manufacturer = "NEC"
+categories = "Emulator"
+systemname = "PC-98"
+systemid = "pc_98"
+
+# Libretro Features
+supports_no_game = "false"
+database = "NEC - PC-98"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+
+description = "An emulator for NEC's PC-9801 (aka PC-98) personal computer platform, ported to libretro. This core has been completely superseded by the Neko Project II Kai core."

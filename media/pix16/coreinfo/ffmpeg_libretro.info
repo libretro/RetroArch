@@ -1,0 +1,17 @@
+# Software Information
+display_name = "FFmpeg"
+authors = "Fabrice Bellard|FFmpeg team"
+supported_extensions = "mkv|avi|f4v|f4f|3gp|ogm|flv|mp4|mp3|flac|ogg|m4a|webm|3g2|mov|wmv|mpg|mpeg|vob|asf|divx|m2p|m2ts|ps|ts|mxf|wma|wav"
+corename = "FFmpeg"
+categories = "Media player"
+systemname = "FFmpeg"
+license = "LGPLv2, GPLv2"
+permissions = ""
+display_version = "Git"
+
+# Libretro Features
+supports_no_game = "false"
+hw_render = "true"
+required_hw_api = "OpenGL Core >= 3.3"
+
+description = "A port of the powerful audio/video encoding/decoding library FFmpeg to libretro. This core allows playback of a variety of audio and video formats, with a fancy audio visualizer and the ability to do interframe blending for smoother scrolling of non-native framerates."

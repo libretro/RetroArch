@@ -1,0 +1,48 @@
+# Software Information
+display_name = "Nintendo - Game Boy / Color / Super Game Boy (Gearboy)"
+authors = "Nacho Sanchez"
+supported_extensions = "gb|dmg|gbc|cgb|sgb"
+corename = "Gearboy"
+license = "GPLv3"
+permissions = ""
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy/Game Boy Color/Super Game Boy"
+systemid = "game_boy"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Nintendo - Game Boy|Nintendo - Game Boy Color"
+savestate = "true"
+savestate_features = "deterministic"
+libretro_saves = "true"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "true"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+# BIOS / Firmware
+firmware_count = 4
+firmware0_desc = "dmg_boot.bin (Game Boy boot ROM)"
+firmware0_path = "dmg_boot.bin"
+firmware0_opt = "true"
+firmware1_desc = "cgb_boot.bin (Game Boy Color boot ROM)"
+firmware1_path = "cgb_boot.bin"
+firmware1_opt = "true"
+firmware2_desc = "SGB1.sfc (Super Game Boy BIOS)"
+firmware2_path = "SGB1.sfc"
+firmware2_opt = "true"
+firmware3_desc = "SGB2.sfc (Super Game Boy 2 BIOS)"
+firmware3_path = "SGB2.sfc"
+firmware3_opt = "true"
+notes = "(!) dmg_boot.bin (md5): 32fbbd84168d3482956eb3c5051637f5|(!) cgb_boot.bin (md5): dbfce9db9deaa2567f6a84fde55f9680|(!) SGB1.sfc (md5): b15ddb15721c657d82c5bab6db982ee9|(!) SGB2.sfc (md5): 8ecd73eb4edf7ed7e81aef1be80031d5|Enable DMG Bootrom or GBC Bootrom in Core Options.|SGB1.sfc or SGB2.sfc adds the Super Game Boy default palette and border.|Restart the core after changing boot ROM options."
+
+description = "A port of the Gearboy Game Boy emulator to libretro. Gearboy is a new and highly accurate Game Boy emulator from indie/homebrew dev and all-around smart guy, drhelius. It supports Game Boy, Game Boy Color and Super Game Boy games and is an excellent choice for playing these games on a modern system."

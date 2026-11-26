@@ -1,0 +1,37 @@
+# Software Information
+display_name = "Sony - PlayStation 4 (ParaLLEl PS4)"
+authors = "shadPS4 Emulator Project"
+supported_extensions = "bin|pkg"
+corename = "ParaLLEl PS4"
+categories = "Emulator"
+license = "GPLv2+"
+permissions = ""
+display_version = "Git"
+
+# Hardware Information
+manufacturer = "Sony"
+systemname = "PlayStation 4"
+systemid = "playstation4"
+
+# Libretro Features
+database = "Sony - PlayStation 4"
+supports_no_game = "false"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "true"
+
+# Firmware / BIOS
+firmware_count = 0
+
+notes = "(!) x86-64 only, on a CPU with AVX2: the game's code runs directly on the host CPU.|(!) Needs a GPU with Vulkan 1.3. The frontend's video driver does not matter: the core hands over finished frames.|(!) Load a dumped game's eboot.bin.|(!) Everything the core keeps is in system/shadPS4/, laid out as standalone shadPS4's user folder: settings, save data, shader cache, dumped system modules and fonts, and its log, log/shadps4.log.|(!) The emulator runs in a process of its own, started by the core."
+description = "A port of shadPS4, a PlayStation 4 emulator, to libretro. It needs an x86-64 CPU with AVX2 and a GPU with Vulkan 1.3, and no BIOS; some games need system modules and fonts dumped from a console. An early core: games may not start."

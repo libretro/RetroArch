@@ -1,0 +1,25 @@
+# Software Information
+display_name = "ROM Cleaner"
+display_version = "1.0.0"
+description = "A utility core for removing dust and dirt from your ROM collection."
+authors = "Jesse Talavera"
+categories = "Utility"
+corename = "romcleaner"
+license = "MIT"
+supported_extensions = "sfc|smc|st|swc|bs|cgb|dmg|gb|gbc|sgb|a52|nes|3ds|3dsx|cart|rom|sms|bms|int|col|cv|md|mdx|smd|gen|gg|sg|gba|nds|lnx|lyx|pce|sgx|ws|wsc|vb|vboy|n64|z64|v64|vec"
+
+# Hardware Information
+manufacturer = "Various"
+
+# Libretro Features
+cheats = "false"
+core_options = "false"
+hw_render = "false"
+input_descriptors = "false"
+is_experimental = "false"
+libretro_saves = "false"
+load_subsystem = "false"
+needs_fullpath = "false"
+savestate = "false"
+single_purpose = "true"
+supports_no_game = "false"

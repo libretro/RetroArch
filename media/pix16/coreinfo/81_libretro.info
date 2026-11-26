@@ -1,0 +1,34 @@
+# Software Information
+display_name = "Sinclair - ZX 81 (EightyOne)"
+authors = "Michael D Wynne"
+supported_extensions = "p|tzx|t81"
+corename = "81"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+display_version = "1.0a"
+
+# Hardware Information
+manufacturer = "Sinclair"
+systemname = "ZX81"
+systemid = "zx81"
+
+# Libretro Features
+database = "Sinclair - ZX 81"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+notes = "[1] Amstrad have kindly given their permission for the redistribution|[^] of their copyrighted material but retain that copyright."
+
+description = "A work-in-progress port of EightyOne (a.k.a. THE Sinclair Emulator) to libretro. The core currently only emulates the Sinclair ZX81 with 16Kb RAM and correctly loads and runs many games in the "p" and "tzx" formats. The core will attempt to autoconfigure any games that are included in its internal database, which includes many homebrew and colorized games. While EightyOne is capable of emulating some ZX Spectrum machines, they are not included in this core, as they are already covered by the Fuse libretro core."

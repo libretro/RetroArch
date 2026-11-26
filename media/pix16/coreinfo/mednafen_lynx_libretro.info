@@ -1,0 +1,27 @@
+# Software Information
+display_name = "Atari - Lynx (Beetle Lynx)"
+authors = "K. Wilkins|Mednafen Team"
+supported_extensions = "lnx|lyx|bll|o"
+corename = "Beetle Lynx"
+license = "Zlib|GPLv2"
+permissions = ""
+display_version = "v1.24.0"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Atari"
+systemname = "Lynx"
+systemid = "atari_lynx"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Atari - Lynx"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "lynxboot.img (Lynx Boot Image)"
+firmware0_path = "lynxboot.img"
+firmware0_opt = "false"
+notes = "(!) lynxboot.img (md5): fcd403db69f54290b51035d82f835e7b"
+
+description = "An older fork of Mednafen's Atari Lynx core, which is itself a fork of the Handy emulator. While this core works fine, many users will be better served by using the regular Handy core."

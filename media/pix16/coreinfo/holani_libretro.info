@@ -1,0 +1,39 @@
+# Software Information
+display_name = "Atari - Lynx (Holani)"
+authors = "https://github.com/LLeny"
+supported_extensions = "lnx|o"
+corename = "Holani"
+
+# Hardware Information
+manufacturer = "Atari"
+categories = "Emulator"
+systemname = "Lynx"
+systemid = "atari_lynx"
+database = "Atari - Lynx"
+license = "GPLv3"
+permissions = ""
+display_version = "0.6.0"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "true"
+input_descriptors = "false"
+memory_descriptors = "true"
+libretro_saves = "false"
+core_options = "false"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+
+# BIOS / Firmware
+firmware_count = 1
+firmware0_desc = "lynxboot.img (Lynx Boot Image)"
+firmware0_path = "lynxboot.img"
+firmware0_md5 = "fcd403db69f54290b51035d82f835e7b"
+firmware0_opt = "true"
+
+description = "This core's primary goal is to get closer to the Lynx hardware and provide a better emulation experience than the current Handy ports."

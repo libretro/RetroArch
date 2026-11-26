@@ -1,0 +1,23 @@
+# Software Information
+display_name = "ONScripter"
+display_version = "0.3"
+authors = "Studio O.G.A."
+categories = "Game engine"
+license = "GPLv3+"
+permissions = ""
+supported_extensions = "txt|dat|___|ons|/"
+
+# Hardware Information
+manufacturer = "ONScripter"
+systemname = "ONScripter"
+systemid = "onscripter"
+
+# Libretro Features
+database = "ONScripter"
+supports_no_game = "false"
+libretro_saves = "false"
+cheats = "false"
+needs_fullpath = "true"
+disk_control = "false"
+
+description = "A port of the ONScripter visual novel games engine to libretro."

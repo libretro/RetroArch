@@ -1,0 +1,44 @@
+display_name = "Sony - PlayStation (PCSX ReARMed) [NEON]"
+authors = "PCSX Team|notaz|Exophase"
+supported_extensions = "bin|cue|img|mdf|pbp|toc|cbn|m3u|chd"
+corename = "PCSX ReARMed [NEON]"
+license = "GPLv2"
+permissions = "dynarec"
+display_version = "r21"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Sony"
+systemname = "PlayStation"
+systemid = "playstation"
+
+# Libretro Features
+database = "Sony - PlayStation"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 3
+firmware0_desc = "scph5500.bin (PS1 JP BIOS)"
+firmware0_path = "scph5500.bin"
+firmware0_opt = "true"
+firmware1_desc = "scph5501.bin (PS1 US BIOS)"
+firmware1_path = "scph5501.bin"
+firmware1_opt = "true"
+firmware2_desc = "scph5502.bin (PS1 EU BIOS)"
+firmware2_path = "scph5502.bin"
+firmware2_opt = "true"
+notes = "(!) scph5500.bin (md5): 8dd7d5296a650fac7319bce665a6a53c|(!) scph5501.bin (md5): 490f666e1afb15b7362b406ed1cea246|(!) scph5502.bin (md5): 32736f17079d0b2b7024407c39bd3050"
+
+description = "A port of the PCSX-ReARMed fork to libretro. This emulator is a technical marvel and runs incredibly well on 32-bit ARM CPUs, though it is also a good choice for other low-powered hardware that cannot run Beetle-PSX/-HW or Swanstation at full speed. However, this core has no support for increased internal resolution, texture filtering, etc., so users who want those features would be better served by the other cores. This variant of the core requires the host device to support the NEON SIMD extension set to greatly improve performance and accuracy."

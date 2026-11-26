@@ -1,0 +1,30 @@
+# Software Information
+display_name = "Mattel - Intellivision (FreeIntv)"
+authors = "David Richardson"
+supported_extensions = "int|bin|rom"
+corename = "FreeIntv"
+categories = "Emulator"
+license = "GPLv2+"
+permissions = ""
+display_version = "2018.1.5"
+
+# Hardware Information
+manufacturer = "Mattel"
+systemname = "Intellivision"
+systemid = "intellivision"
+
+# Libretro Features
+database = "Mattel - Intellivision"
+supports_no_game = "false"
+
+# BIOS / Firmware
+firmware_count = 2
+firmware0_desc = "exec.bin"
+firmware0_path = "exec.bin"
+firmware0_opt = "false"
+firmware1_desc = "grom.bin"
+firmware1_path = "grom.bin"
+firmware1_opt = "false"
+notes = "(!) exec.bin (md5): 62e761035cb657903761800f4437b8af|(!) grom.bin (md5): 0cd5946c6473e42e8e4c2137785e427f"
+
+description = "A libretro emulation core for the Mattel Intellivision computer (but not the Entertainment Computer System or Intellivoice). Many Intellivision games relied on controller overlays to provide context for the controls, and many of these can be found online for reference, including at https://arcadepunks.com/intellivision-controller-overlays."

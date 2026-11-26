@@ -1,0 +1,28 @@
+# Software Information
+display_name = "Syobon Action"
+display_version = "0.1"
+authors = "Chiku (ちく)"
+categories = "Game"
+license = "GPLv3+"
+permissions = ""
+
+# Hardware Information
+manufacturer = "SyobonAction"
+systemname = "SyobonAction"
+systemid = "syobonaction"
+
+# Libretro Features
+database = "SyobonAction"
+supports_no_game = "true"
+single_purpose = "true"
+libretro_saves = "false"
+core_options = "false"
+load_subsystem = "false"
+hw_render = "false"
+cheats = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "true"
+notes = "(!) SyobonAction requires BGM/SE/res files."
+
+description = "A port of the Open Syobon Action platformer to libretro."

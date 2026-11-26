@@ -1,0 +1,19 @@
+# Software Information
+display_name = "PSP RemotePlay (RemoteJoy)"
+authors = "Themaister"
+supported_extensions = ""
+corename = "RemoteJoy"
+license = "GPLv2"
+permissions = ""
+display_version = "v1"
+categories = "Streaming"
+
+# Hardware Information
+systemname = "PSP"
+systemid = "playstation_portable"
+
+# Libretro Features
+supports_no_game = "true"
+is_experimental = "true"
+
+description = "An old, experimental libretro core designed to stream inputs to/from a Playstation Portable console. It exists only for historical and research purposes and should not be used to actually try to play games."

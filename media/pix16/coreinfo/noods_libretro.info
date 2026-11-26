@@ -1,0 +1,47 @@
+# Software Information
+display_name = "Nintendo - DS (NooDS)"
+authors = "Hydr8gon|Jonian Guveli"
+supported_extensions = "nds|gba"
+corename = "NooDS"
+license = "GPLv3"
+permissions = "microphone_optional"
+display_version = "Git"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Nintendo DS"
+systemid = "nds"
+
+# Libretro Features
+database = "Nintendo - Nintendo DS|Nintendo - Nintendo DS (Download Play)"
+supports_no_game = "true"
+cheats = "true"
+core_options = "true"
+savestate = "true"
+savestate_features = "serialized"
+load_subsystem = "true"
+needs_fullpath = "true"
+disk_control = "false"
+hw_render = "false"
+
+# Firmware / BIOS
+firmware_count = 5
+firmware0_desc = "firmware.bin (NDS Firmware)"
+firmware0_path = "firmware.bin"
+firmware0_opt = "true"
+firmware1_desc = "bios7.bin (ARM7 BIOS)"
+firmware1_path = "bios7.bin"
+firmware1_opt = "true"
+firmware2_desc = "bios9.bin (ARM9 BIOS)"
+firmware2_path = "bios9.bin"
+firmware2_opt = "true"
+firmware3_desc = "gba_bios.bin (Game Boy Advance BIOS)"
+firmware3_path = "gba_bios.bin"
+firmware3_opt = "true"
+firmware4_desc = "nds_sd_card.bin (NDS SD card)"
+firmware4_path = "nds_sd_card.bin"
+firmware4_opt = "true"
+notes = "(!) bios7.bin (md5): df692a80a5b1bc90728bc3dfc76cd948|(!) bios9.bin (md5): a392174eb3e572fed6447e956bde4b25|(!) gba_bios.bin (md5): a860e8c0b6d573d191e4ec7db1b1e4f6"
+
+description = "Unofficial libretro port of NooDS, the speedy DS emulator"

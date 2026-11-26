@@ -1,0 +1,20 @@
+# Software Information
+display_name = "Game Music Emu"
+authors = "Blargg"
+supported_extensions = "ay|gbs|gym|hes|kss|nsf|nsfe|sap|spc|vgm|vgz|zip"
+corename = "Game Music Emu"
+categories = "Music player"
+license = "GPLv3"
+permissions = ""
+display_version = "Git"
+
+# Hardware Information
+manufacturer = "Various"
+systemname = "Music"
+systemid = "game_music"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "false"
+
+description = "A port of blargg's classic Game Music Emu to libretro. This core allows playback of a wide variety of video game music formats and is a good first choice for this purpose, though some emulator cores will also support playback of their respective native formats and may do so with additional options (low-pass filtering, etc.) or accuracy."

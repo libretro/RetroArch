@@ -1,0 +1,32 @@
+# Software Information
+display_name = "SPMP8000 (SPMP8000Emu)"
+authors = "Aloys"
+supported_extensions = "bin"
+corename = "spmp8000emu"
+categories = "Emulator"
+license = "BSD-3-Clause"
+permissions = ""
+display_version = "1.0.0"
+
+# Hardware Information
+manufacturer = "Sunplus"
+systemname = "SPMP8000"
+systemid = "spmp8000"
+
+# Libretro Features
+database = "SPMP8000"
+supports_no_game = "false"
+firmware_count = 0
+savestate = "true"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "false"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+description = "SPMP8000Emu is an emulator for the SPMP8000 game platform developed by Sunplus for MP4 and Handheld game console chipsets. This libretro core supports .bin game files."

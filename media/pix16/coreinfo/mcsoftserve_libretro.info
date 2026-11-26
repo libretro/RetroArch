@@ -1,0 +1,27 @@
+# Software Information
+display_name = "McSoftServe"
+display_version = "1.0.0"
+description = "An experimental libretro core for the Taylor C713 soft-serve ice cream machine, popularized by a well-known American fast food chain. Provides an accurate user experience without the need for firmware dumps."
+authors = "Jesse Talavera"
+categories = "Emulator"
+corename = "mcsoftserve"
+license = "MIT"
+
+# Hardware Information
+manufacturer = "Taylor"
+systemname = "C713"
+systemid = "taylor"
+
+# Libretro Features
+supports_no_game = "true"
+single_purpose = "true"
+database = "McSoftServe"
+cheats = "false"
+core_options = "false"
+hw_render = "false"
+input_descriptors = "false"
+is_experimental = "false"
+libretro_saves = "false"
+load_subsystem = "false"
+needs_fullpath = "false"
+savestate = "false"

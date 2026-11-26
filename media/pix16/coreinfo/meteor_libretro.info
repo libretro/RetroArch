@@ -1,0 +1,21 @@
+# Software Information
+display_name = "Nintendo - Game Boy Advance (Meteor)"
+authors = "Philippe Daouadi"
+supported_extensions = "gba"
+corename = "Meteor"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+display_version = "v1.4"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy Advance"
+systemid = "game_boy_advance"
+
+# Libretro Features
+supports_no_game = "false"
+is_experimental = "true"
+database = "Nintendo - Game Boy Advance"
+
+description = "A very early, incomplete Game Boy Advance emulator, ported to libretro. This emulator was never completed and the libretro core should not be used by anyone for any reason. It remains only for historical and research purposes."

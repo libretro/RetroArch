@@ -1,0 +1,30 @@
+# Software Information
+display_name = "Multi (UME 2015)"
+authors = "MAMEdev"
+supported_extensions = "zip|chd|7z"
+corename = "UME 2015 (0.160)"
+license = "MAME"
+permissions = ""
+display_version = "0.160"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Various"
+systemname = "Multi (various)"
+systemid = "mame"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+hw_render = "false"
+disk_control = "false"
+notes = "[1] UME 2015 (Git) requires the hashes from the MAME/MESS source code|[^] to be inside the 'SYSTEMDIR\ume\hash' directory and softlist romset|(!) [2] UME 2015 supports UME save states.|[3] UME 2015 supports extracted UME cheats.|[4] The BIOS files must be inside the ROM directory.|[5] The same directory with CHD files inside must be inside the ROM directory.|[6] If desired, the ARTWORK, CHEATS, and SAMPLES directories can be|[^] inside the 'SYSTEMDIR\ume' directory.|[7] When saving, the following directories will be created in the 'SAVEDIR\ume'|[^] directory: STATES, NVRAM, INPUT, SNAPS, CFG, MEMCARD, and DIFF."
+
+description = "Based on a snapshot of the MAME codebase circa 2015, 'UME 2015' is compatible with MAME 0.160 ROM sets. MAME is the most compatible emulator in the world, and it can run almost any game from any platform. This core specifically includes the non-Arcade portions of the MAME software list. If your device can run the up-to-date MAME - Current core (or any other newer snapshot) at full speed, most users will have a better experience with that core, since it has the benefit of years more development and accuracy improvements behind it."

@@ -1,0 +1,32 @@
+# Software Information
+display_name = "RPG Maker 2000/2003 (EasyRPG)"
+authors = "EasyRPG team"
+supported_extensions = "ldb|zip|lzh|easyrpg"
+corename = "EasyRPG Player"
+categories = "Game engine"
+license = "GPLv3"
+permissions = ""
+display_version = "0.8.1.0"
+
+# Hardware Information
+systemname = "RPG Maker 2000/2003 Game Engine"
+
+# Libretro Features
+database = "RPG Maker"
+supports_no_game = "false"
+savestate = "false"
+savestate_features = "null"
+libretro_saves = "true"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+core_options = "true"
+core_options_version = "null"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+needs_kbd_mouse_focus = "true"
+is_experimental = "false"
+
+description = "EasyRPG Player is a game interpreter to play RPG Maker 2000, 2003 and EasyRPG games."

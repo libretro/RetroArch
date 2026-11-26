@@ -1,0 +1,29 @@
+# Software Information
+display_name = "Uzebox (Uzem)"
+supported_extensions = "uze"
+corename = "uzem"
+systemid = "uzebox"
+license = "MIT"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Uzebox"
+systemname = "Uzebox"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Uzebox"
+savestate = "true"
+savestate_features = "basic"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A port of Uzem, the official emulator for the Uzebox--a retro-minimalist 8-bit open source game console based on Atmel's AVR ATmega644 microcontroller--to libretro."

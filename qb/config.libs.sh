@@ -958,6 +958,7 @@ if [ "$HAVE_MENU" != 'no' ]; then
          if [ "$HAVE_CACA" != 'yes' ] && [ "$HAVE_SIXEL" != 'yes' ] &&
             [ "$HAVE_SDL" != 'yes' ] && [ "$HAVE_SDL2" != 'yes' ]; then
             add_opt RGUI no
+            add_opt PIX16 no
          fi
          add_opt MATERIALUI no
          add_opt OZONE no
@@ -1102,6 +1103,8 @@ fi
 case "$ARCHITECTURE_NAME:${CROSS_COMPILE:-}" in
    'Power Macintosh:'*|*:powerpc*-apple-darwin*)
       HAVE_OPENGL_CORE='no'
+      # pix16 pushes the binary past the range of PowerPC branches
+      HAVE_PIX16='no'
       ;;
 esac
 

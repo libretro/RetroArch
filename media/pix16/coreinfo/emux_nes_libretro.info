@@ -1,0 +1,34 @@
+# Software Information
+display_name = "Nintendo - NES / Famicom (Emux NES)"
+authors = "Sebastien Ronsse"
+supported_extensions = "nes|bin|rom"
+corename = "Emux NES"
+license = "GPLv2"
+permissions = ""
+display_version = "0.1"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Nintendo Entertainment System"
+systemid = "nes"
+
+# Libretro Features
+database = "Nintendo - Nintendo Entertainment System"
+supports_no_game = "false"
+savestate = "false"
+savestate_features = "null"
+libretro_saves = "false"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+core_options = "false"
+core_options_version = "null"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+needs_kbd_mouse_focus = "false"
+is_experimental = "true"
+
+description = "Emux is a cross-platform emulator project with a goal of emulating multiple kinds of machines related to gaming, such as consoles or arcades. Its philosophy is very much inspired by the Linux kernel (hence the name), which  brilliantly manages to support multiple machines while keeping drivers entirely platform-independent. Emux is designed in the same way, keeping a code base of CPUs and controllers separate from machines. This emulator was never fully developed and remains here for historical purposes or in case someone wishes to contribute to its development."

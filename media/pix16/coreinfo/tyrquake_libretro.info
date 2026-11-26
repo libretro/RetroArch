@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Quake (TyrQuake)"
+authors = "Kevin Shanahan (Tyrann)"
+supported_extensions = "pak"
+corename = "TyrQuake"
+license = "GPLv2"
+permissions = ""
+display_version = "v0.62"
+categories = "Game"
+
+# Hardware Information
+manufacturer = "Id Software"
+systemname = "Quake Game Engine"
+systemid = "quake_1"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Quake"
+savestate = "false"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+notes = "[i] Make those folders in the same directory:|[i] -id1 for the main game|[i] -hipnotic for the 1st mission pack|[i] -rogue for the 2nd mission pack|[i] -quoth for Quoth addon|[i] Put BGM into a subfolder named music in each of them."
+
+description = "A port of the tyrquake engine, which is based on iD's open source Quake engine, to libretro. While remaining relatively conservative and true-to-the-original, this core provides the additional features of running at fixed framerates (with interpolated animations applied on the keyframe for smooth animation at greater-than-original framerates), software bilinear filtering, software Half-Life/Quake 2-style colored lighting RGBA and third-person view mode. Check the libretro documentation for an explanation on the directory structure required to load BGM files, etc."

@@ -1,0 +1,34 @@
+# Software Information
+display_name = "Cannonball"
+authors = "Chris White"
+supported_extensions = "game|88"
+corename = "Cannonball"
+categories = "Game engine"
+license = "Non-commercial"
+permissions = ""
+display_version = "1.0"
+
+# Hardware Information
+manufacturer = "Sega"
+systemname = "Outrun Game Engine"
+
+# Libretro Features
+database = "Cannonball"
+supports_no_game = "true"
+single_purpose = "true"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+notes = "(!) You need to have a dummy file with the extension .game inside your MAME rom outrun folder."
+
+description = "A port of the Cannonball enhanced OutRun engine to libretro. This core includes support for increased framerate (true 60 fps, some 120 fps content), true widescreen, new game modes and many more enhancements. To run the core/game, you will need to extract the contents of an OutRun Revision B ROM archive alongside a dummy file that ends in the *.game file extension (the frontend will load this 'game' file)."

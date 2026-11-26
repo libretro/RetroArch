@@ -1,0 +1,34 @@
+# Software Information
+display_name = "Amstrad - CPC/GX4000 (Caprice32)"
+authors = "Ulrich Doewich|dantoine"
+supported_extensions = "dsk|sna|zip|tap|cdt|voc|cpr|m3u"
+corename = "Caprice32"
+license = "GPLv2"
+permissions = ""
+display_version = "v4.2.0"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Amstrad"
+systemname = "CPC/GX4000"
+systemid = "cpc"
+
+# Libretro Features
+database = "Amstrad - CPC|Amstrad - GX4000"
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+needs_kbd_mouse_focus = "true"
+
+description = "A port of the Caprice32 emulator to libretro. This core emulates the Amstrad CPC 8-bit home computer series, including the CPC464, CPC664, CPC128, CPC6128+ and GX4000 models, with a high degree of accuracy and compatibility. While the core's autoloaunch options do a pretty good job of guessing the command required to launch a game, users may specify a command to be executed on launch via an m3u playlist. See the core's documentation for further details."

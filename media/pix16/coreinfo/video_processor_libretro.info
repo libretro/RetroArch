@@ -1,0 +1,37 @@
+# Software Information
+display_name = "Video Processor (V4L2)"
+authors = "libretro"
+supported_extensions = ""
+corename = "V4L2"
+categories = "Media player"
+license = "BSD-2-Clause"
+permissions = ""
+display_version = "0.0.2"
+
+# Hardware Information
+manufacturer = "N/A"
+systemname = "Video Processor"
+systemid = "video_processor"
+
+# Libretro Features
+supports_no_game = "false"
+single_purpose = "true"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "null"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 0
+notes = "(!) Linux only - the core captures through V4L2.|(!) The core does not declare no-content support, so a file still has to be picked to start it; its contents are ignored and the video and audio devices are chosen in the core options."
+
+description = "A libretro core for V4L2 capture devices: plug a legacy console into a capture card and let the frontend upscale the signal and apply shaders to it. The capture device and the audio device are picked from lists the core builds at startup from what the machine actually has, exposed as core options. There is no emulation here and nothing to save - the core passes frames from the capture device to the frontend."

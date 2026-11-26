@@ -1,0 +1,23 @@
+# Software Information
+display_name = "Sony - PlayStation 2 (Play!)"
+authors = "Jean-Philip Desjardins"
+supported_extensions = "chd|cso|cue|elf|iso|isz"
+corename = "Play!"
+license = "MIT"
+permissions = "dynarec"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Sony"
+systemname = "Sony PlayStation 2"
+systemid = "playstation2"
+
+# Libretro Features
+display_version = "Git"
+supports_no_game = "false"
+database = "Sony - PlayStation 2"
+savestate = "true"
+savestate_features = "basic"
+is_experimental = "true"
+
+description = "A port of Play!, a portable PlayStation 2 emulator, to libretro. This core has significantly lower compatibility with the PS2 library than PCSX2, but its portable codebase makes it compatible with more devices and operating systems. Nevertheless, it has substantial hardware requirements that limit its usefulness outside of powerful desktop PCs. Most users should try PCSX2 core first/instead if it is available for their device."

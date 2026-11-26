@@ -160,6 +160,7 @@
 #include "../settings/settings_def_xmb_animations.h"
 #include "../settings/settings_def_rgui_color_theme.h"
 #include "../settings/settings_def_rgui_aspect.h"
+#include "../settings/settings_def_pix16.h"
 #include "../settings/settings_def_record_threads.h"
 #include "../settings/settings_def_stream_quality.h"
 #include "../settings/settings_def_record_quality.h"

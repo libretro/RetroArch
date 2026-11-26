@@ -1,0 +1,33 @@
+# Software Information
+display_name = "Duke Nukem 3D (EDuke32)"
+authors = "EDuke32 Team"
+supported_extensions = "grp|pk3|pk4|zip"
+corename = "EDuke32"
+license = "GPLv2, Ken Silverman"
+permissions = ""
+display_version = ""
+categories = "Game"
+
+# Hardware Information
+manufacturer = "3D Realms"
+systemname = "Build Engine"
+systemid = "duke3d"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Duke Nukem 3D"
+savestate = "false"
+savestate_features = ""
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "true"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+notes = "(!) EDuke32 requires compatible game data such as DUKE3D.GRP.|(!) Supports Duke Nukem 3D expansions, custom maps, CON scripts and community modifications.|(!) Hardware rendering requires a compatible graphics backend."
+
+description = "A libretro port of EDuke32, an advanced open-source source port of the Build engine used by Duke Nukem 3D. EDuke32 provides enhanced compatibility with Duke Nukem 3D, its expansions and numerous community-created modifications. Features include high-resolution graphics, improved rendering, widescreen support, advanced scripting through CON, custom maps, enhanced audio, modern input handling and hardware-accelerated OpenGL rendering. BUILD engine technology originally created by Ken Silverman, non-GPL rendering and engine technology used in EDuke32 available under BUILDLIC."

@@ -1,0 +1,48 @@
+# Software Information
+display_name = "Sinclair - ZX Spectrum (Fuse)"
+authors = "Team Fuse"
+supported_extensions = "tzx|tap|z80|rzx|scl|trd|dsk|dck|sna|szx|zip|ipf|m3u"
+corename = "Fuse"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+display_version = "1.6.0"
+
+# Hardware Information
+manufacturer = "Sinclair|Amstrad"
+systemname = "ZX Spectrum (various)"
+systemid = "zx_spectrum"
+
+# Libretro Features
+supports_no_game = "true"
+database = "Sinclair - ZX Spectrum +3|Sinclair - ZX Spectrum"
+
+# BIOS / Firmware
+firmware_count = 8
+firmware0_desc = "128p-0.rom (Pentagon machines)"
+firmware0_path = "fuse/128p-0.rom"
+firmware0_opt = "true"
+firmware1_desc = "128p-1.rom (Pentagon machines)"
+firmware1_path = "fuse/128p-1.rom"
+firmware1_opt = "true"
+firmware2_desc = "trdos.rom (Pentagon machines)"
+firmware2_path = "fuse/trdos.rom"
+firmware2_opt = "true"
+firmware3_desc = "gluck.rom (Pentagon 512K / 1024)"
+firmware3_path = "fuse/gluck.rom"
+firmware3_opt = "true"
+firmware4_desc = "256s-0.rom (Scorpion 256K)"
+firmware4_path = "fuse/256s-0.rom"
+firmware4_opt = "true"
+firmware5_desc = "256s-1.rom (Scorpion 256K)"
+firmware5_path = "fuse/256s-1.rom"
+firmware5_opt = "true"
+firmware6_desc = "256s-2.rom (Scorpion 256K)"
+firmware6_path = "fuse/256s-2.rom"
+firmware6_opt = "true"
+firmware7_desc = "256s-3.rom (Scorpion 256K)"
+firmware7_path = "fuse/256s-3.rom"
+firmware7_opt = "true"
+notes = "[1] Amstrad have kindly given their permission for the redistribution|[^] of their copyrighted material but retain that copyright."
+
+description = "A port of the Fuse Unix Spectrum Emulator to libretro, this core supports many Spectrum, Timex, Pentagon and Scorpion variants. The Pentagon and Scorpion machines need BIOS images placed inside a 'fuse' subdirectory inside the frontend's 'system' directory. This core is a good first choice for playing Spectrum games, with 81 (EightyOne) covering the Sinclair ZX 81 games."

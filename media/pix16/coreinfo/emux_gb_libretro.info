@@ -1,0 +1,41 @@
+# Software Information
+display_name = "Nintendo - Game Boy / Color (Emux GB)"
+authors = "Sebastien Ronsse"
+supported_extensions = "gb|gbc|bin|rom"
+corename = "Emux GB"
+license = "GPLv2"
+permissions = ""
+display_version = "0.1"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Game Boy/Game Boy Color"
+systemid = "game_boy"
+
+# Libretro Features
+database = "Nintendo - Game Boy|Nintendo - Game Boy Color"
+supports_no_game = "false"
+savestate = "false"
+savestate_features = "null"
+libretro_saves = "false"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+core_options = "false"
+core_options_version = "null"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+needs_kbd_mouse_focus = "false"
+is_experimental = "true"
+
+# BIOS/Firmware
+firmware_count = 1
+firmware0_desc = "dmg_boot.bin (Game Boy Boot ROM)"
+firmware0_path = "dmg_boot.bin"
+firmware0_opt = "false"
+notes = "(!) dmg_boot.bin (md5): 32fbbd84168d3482956eb3c5051637f5"
+
+description = "Emux is a cross-platform emulator project with a goal of emulating multiple kinds of machines related to gaming, such as consoles or arcades. Its philosophy is very much inspired by the Linux kernel (hence the name), which  brilliantly manages to support multiple machines while keeping drivers entirely platform-independent. Emux is designed in the same way, keeping a code base of CPUs and controllers separate from machines. This emulator was never fully developed and remains here for historical purposes or in case someone wishes to contribute to its development."

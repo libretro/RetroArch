@@ -1,0 +1,33 @@
+# Software Information
+display_name = "ChaiLove"
+authors = "Rob Loach"
+supported_extensions = "chai|chailove"
+corename = "ChaiLove"
+categories = "Game engine"
+license = "MIT"
+permissions = ""
+display_version = "2.0.0"
+
+# Hardware Information
+manufacturer = "N/A"
+systemname = "ChaiLove"
+systemid = "chailove"
+
+# Libretro Features
+database = "ChaiLove"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A free, open-source framework used to make 2D games in ChaiScript and libretro. The ChaiLove API is roughly inspired by the LOVE API, and a number of simple 2D games are already available for it."

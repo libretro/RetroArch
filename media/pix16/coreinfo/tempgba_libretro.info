@@ -1,0 +1,27 @@
+# Software Information
+display_name = "Nintendo - Game Boy Advance (TempGBA)"
+authors = "Exophase|Takka|Nebuleon|Normmatt|BassAceGold"
+supported_extensions = "gba|bin|agb|gbz"
+corename = "TempGBA"
+
+# Hardware Information
+manufacturer = "Nintendo"
+categories = "Emulator"
+systemname = "Game Boy Advance"
+systemid = "game_boy_advance"
+database = "Nintendo - Game Boy Advance|Nintendo - Game Boy Advance (e-Cards)"
+license = "GPLv2"
+permissions = ""
+display_version = "26731013"
+
+# Libretro Features
+supports_no_game = "false"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "gba_bios.bin (Game Boy Advance BIOS)"
+firmware0_path = "gba_bios.bin"
+firmware0_opt = "false"
+notes = "(!) gba_bios.bin (md5): a860e8c0b6d573d191e4ec7db1b1e4f6"
+
+description = "A fork of the PSP-specific TempGBA emulator for the Game Boy Advance console, ported to libretro. This core is only intended for use on Playstation Portable hardware, and, as a device-optimized fork of gpSP, it is intended to provide a better, more playable experience for GBA games on this low-powered device. Anyone using any other device should stick with the regular gpSP core or--even better--a more accurate core, such as mGBA."

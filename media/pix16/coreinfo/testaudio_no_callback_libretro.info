@@ -1,0 +1,11 @@
+display_name = "TestAudio NoCallback"
+authors = "Team Libretro"
+corename = "TestAudio NoCallback"
+categories = "Tech demo"
+license = "MIT"
+permissions = ""
+display_version = "v1"
+supports_no_game = "true"
+is_experimental = "true"
+
+description = "This is a test core that is only useful to developers. It is intended as a reference for core authors and a functionality check for frontend authors."

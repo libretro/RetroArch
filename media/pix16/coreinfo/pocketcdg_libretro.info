@@ -1,0 +1,19 @@
+# Software Information
+display_name = "PocketCDG"
+authors = "RedBug"
+supported_extensions = "cdg"
+corename = "PocketCDG"
+categories = "Karaoke player"
+systemname = "Music"
+license = "MIT"
+permissions = ""
+display_version = "Git"
+
+# Hardware Information
+systemid = "music"
+
+# Libretro Features
+supports_no_game = "false"
+savestate = "false"
+
+description = "A karaoke music player, ported to libretro. This core plays back CDG files, stands for 'Compact Disc plus Graphics', which refers to discs that contain standard audio sound tracks, as well as graphics (images and lyrics) embedded in the normally unused subchannel portion of the tracks. This is the most popular type of karaoke disc/file."

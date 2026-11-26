@@ -1,0 +1,37 @@
+# Software Information
+display_name = "Sony - PlayStation 2 (LRPS2)"
+authors = "PCSX2 Team"
+supported_extensions = "elf|iso|ciso|cue|bin|gz|chd|cso|zso|mdf|nrg|dump|img|m3u"
+corename = "LRPS2"
+license = "GPLv3"
+permissions = ""
+display_version = "Git"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Sony"
+systemname = "Sony PlayStation 2"
+systemid = "playstation2"
+
+# Libretro Features
+database = "Sony - PlayStation 2"
+supports_no_game = "false"
+needs_fullpath = "true"
+load_subsystem = "false"
+hw_render = "true"
+required_hw_api = "Direct3D >= 11.0 | OpenGL Core >= 3.3 | OpenGL >= 3.0"
+savestate = "true"
+savestate_features = "basic"
+memory_descriptors = "false"
+
+# Firmware / BIOS
+firmware_count = 2
+firmware0_desc = "'pcsx2/bios' folder"
+firmware0_path = "pcsx2/bios"
+firmware0_opt = "false"
+firmware1_desc = "pcsx2/resources/GameIndex.yaml (Game Database)"
+firmware1_path = "pcsx2/resources/GameIndex.yaml"
+firmware1_opt = "true"
+notes = "[1] This only checks if the PCSX2 'bios' folder exists and is in the correct location.|[2] Because the core doesn't require any specific filename for the BIOS files,|[^] this info file cannot tell you if the content of your 'bios' folder is correct or not.|[3] Please check https://docs.libretro.com/library/lrps2/#bios for more details.|[4] The 'GameIndex.yaml' file can be downloaded from the Online Updater.|[^] But it is optional, since the core now bakes it in."
+
+description = "A hard fork/derivative of the mature and highly-compatible PCSX2 Playstation 2 emulator to libretro. This core is a good first choice for most users as compared with the Play! core, which has lower compatibility with the PS2 library. Required BIOS files include EROM.BIN, rom1.bin, and at least one set of scph*.bin/.mec/.nvm dumps that match each region of games you wish to run. A newer BIOS than scph10000 is recommended, as this original BIOS has problems in memory card emulation and other sections."

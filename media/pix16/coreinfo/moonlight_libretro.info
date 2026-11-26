@@ -1,0 +1,21 @@
+# Software Information - Information about the core software itself
+display_name = "Moonlight"
+categories = "Streaming client"
+authors = "Rock88"
+corename = "Moonlight"
+license = "GPLv3"
+display_version = "1.0.3"
+
+# Hardware Information - Information about the hardware the core supports (when applicable)
+manufacturer = "NVIDIA"
+systemname = "Moonlight"
+
+# Libretro Features - The libretro API features the core supports. Useful for sorting cores
+savestate = "false"
+cheats = "false"
+supports_no_game = "true"
+hw_render = "true"
+is_experimental = "true"
+
+# Descriptive text, useful for tooltips, etc.
+description = "A port of the NVIDIA streaming client Moonlight. Currently only tested using Lakka running on Nintendo Switch."

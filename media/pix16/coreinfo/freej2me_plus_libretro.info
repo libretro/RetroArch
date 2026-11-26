@@ -1,0 +1,37 @@
+# Software Information
+display_name = "Mobile - J2ME (FreeJ2ME-Plus)"
+authors = "Paulo Sousa(AShiningRay)|David Richardson(recompileorg)|Saket Dandawate(hex007)"
+supported_extensions = "jar|kjx"
+corename = "FreeJ2ME-Plus"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+display_version = "1.52-GIT"
+
+# Hardware Information
+manufacturer = "Oracle Corporation"
+systemname = "J2ME"
+systemid = "j2me"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Mobile - J2ME"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+hw_render = "false"
+core_options = "true"
+core_options_version = "2.0"
+needs_fullpath = "true"
+
+# BIOS / Firmware
+firmware_count = 1
+firmware0_desc = "freej2me_plus-lr.jar (Main Application)"
+firmware0_path = "freej2me_plus-lr.jar"
+firmware0_opt = "false"
+
+notes = "(!) Not cross-compatible with the FreeJ2ME core: settings and save data made by one do not work in the other.|[*] Save data uses a format shared with SquirrelJME."
+description = "A fork of FreeJ2ME with improved compatibility and better libretro support. This core emulates Java ME applications and games for Java-based mobile phones."

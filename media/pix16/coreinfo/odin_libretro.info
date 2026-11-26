@@ -1,0 +1,45 @@
+# Software Information
+display_name = "Sega - Hikaru / Gaelco PowerVR (Odin)"
+authors = "Réda Chérif-Touil|Stefano Teso|WizzardSK"
+supported_extensions = "zip|7z"
+corename = "Odin"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+display_version = "v0.1.1"
+
+# Hardware Information
+manufacturer = "Sega / Gaelco"
+systemname = "Hikaru / Gaelco PowerVR"
+systemid = "hikaru"
+
+# Libretro Features
+database = "MAME"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "basic"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "true"
+required_hw_api = "OpenGL Core >= 4.3 | Vulkan >= 1.1"
+needs_fullpath = "true"
+block_extract = "true"
+disk_control = "false"
+is_experimental = "true"
+
+# Firmware / BIOS
+firmware_count = 2
+firmware0_desc = "hikaru.zip (Hikaru BIOS, MAME set; Hikaru games)"
+firmware0_path = "odin/hikaru.zip"
+firmware0_opt = "false"
+firmware1_desc = "mie.zip (MIE, MAME set; Hikaru games)"
+firmware1_path = "odin/mie.zip"
+firmware1_opt = "false"
+
+notes = "(!) Load a game's MAME set: Hikaru airtrix, airtrixo, braveff, pharrier, sgnascar, sgnascaro, swracer or von4; Gaelco atvtrack, atvtracka, gfootbal, smashdrv or their versions (.zip, .7z).|(!) The Hikaru games need the shared sets hikaru.zip and mie.zip beside the game or in system/odin; the Gaelco games need none.|(!) Needs RetroArch's vulkan or glcore video driver (Vulkan 1.3 or OpenGL 4.3); core option Renderer chooses."
+description = "Odin, the low-level emulator of the SEGA Hikaru arcade board and of Gaelco's PowerVR boards, as a libretro core. It runs the programs of the real chips and draws the boards' 3D with OpenGL or Vulkan, at up to six times their resolution. It plays Air Trix, Brave Firefighters, Planet Harriers, NASCAR Arcade, Star Wars Racer Arcade and Cyber Troopers Virtual-On Force on the Hikaru, and ATV Track, Smashing Drive and Gaelco Football on the Gaelco boards."

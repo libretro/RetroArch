@@ -1,0 +1,33 @@
+# Software Information
+display_name = "Nintendo - SNES / SFC (Beetle Supafaust)"
+categories = "Emulator"
+authors = "Mednafen team"
+corename = "Beetle Supafaust"
+supported_extensions = "smc|fig|sfc|gd3|gd7|dx2|bsx|swc"
+license = "GPLv2+"
+permissions = ""
+display_version = "1.29.0"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Super Nintendo Entertainment System"
+systemid = "super_nes"
+
+# Libretro Features
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "1.0"
+load_subsystem = "false"
+supports_no_game = "false"
+database = "Nintendo - Super Nintendo Entertainment System"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A port of Mednafen's Supafaust SNES emulator to libretro. This core is designed to be very fast and reasonably accurate. It is fastest on ARM hardware but should be quite speedy on typical x86 machines, as well. It is a very complete port, with support for many libretro features, including frontend features that depend on stable, deterministic savestates."

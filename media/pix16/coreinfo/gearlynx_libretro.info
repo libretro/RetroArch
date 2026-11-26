@@ -1,0 +1,39 @@
+# Software Information
+display_name = "Atari - Lynx (Gearlynx)"
+authors = "Nacho Sanchez"
+supported_extensions = "lnx|lyx|o|bin"
+corename = "Gearlynx"
+license = "GPLv3"
+permissions = ""
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Atari"
+systemname = "Lynx"
+systemid = "atari_lynx"
+
+# Libretro Features
+database = "Atari - Lynx"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "deterministic"
+libretro_saves = "true"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "false"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "true"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "false"
+
+# BIOS / Firmware
+firmware_count = 1
+firmware0_desc = "lynxboot.img (Lynx Boot Image)"
+firmware0_path = "lynxboot.img"
+firmware0_opt = "false"
+notes = "(!) lynxboot.img (md5): fcd403db69f54290b51035d82f835e7b|lynxboot.img must be exactly 512 bytes."
+
+description = "A port of the highly accurate Gearlynx Atari Lynx emulator to libretro. Gearlynx aims to deliver a solid emulation experience with good accuracy and performance across multiple platforms."

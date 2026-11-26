@@ -1,0 +1,32 @@
+# Software Information
+display_name = "Commodore - CBM-II 5x0 (VICE xcbm5x0)"
+categories = "Emulator"
+authors = "VICE Team"
+corename = "VICE xcbm5x0"
+supported_extensions = "d64|d71|d80|d81|d82|g64|g41|x64|t64|tap|prg|p00|crt|bin|zip|gz|d6z|d7z|d8z|g6z|g4z|x6z|cmd|m3u|vfl|vsf|nib|nbz|d2m|d4m|/"
+license = "GPLv2"
+permissions = ""
+display_version = "3.10"
+
+# Hardware Information
+manufacturer = "Commodore"
+systemname = "CBM-5x0"
+systemid = "commodore_cbm5x0"
+
+# Libretro Features
+database = "Commodore - CBM-5x0"
+supports_no_game = "true"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+
+description = "The VICE xcbm5x0 emulator, isolated and ported to libretro. This core provides experimental emulation for the C510 model (also known as P500) of CBM-II, which is the 'little brother' of the C600/700 machines. It runs at roughly 1 MHz and use a VIC-II chip instead of the CRTC."

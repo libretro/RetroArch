@@ -1,0 +1,47 @@
+# Software Information
+display_name = "Elektronika Inženjering - Galaksija (Galaksija)"
+categories = "Emulator"
+authors = "nikp123"
+corename = "galaksija"
+supported_extensions = "gal"
+license = "Public Domain"
+permissions = ""
+display_version = "v0.1"
+
+# Hardware Information
+manufacturer = "Zavod za udžbenike i nastavna sredstva with Elektronika Inženjering"
+systemname = "Galaksija"
+systemid = "galaksija"
+
+# BIOS / Firmware
+firmware_count = 3
+
+firmware0_desc = "CHRGEN.BIN (Character ROM)"
+firmware0_path = "galaksija/CHRGEN.BIN"
+firmware0_opt = "true"
+
+firmware1_desc = "ROM1.BIN (Base ROM)"
+firmware1_path = "galaksija/ROM1.BIN"
+firmware1_opt = "true"
+
+firmware2_desc = "ROM2.BIN (Extensions)"
+firmware2_path = "galaksija/ROM2.BIN"
+firmware2_opt = "true"
+
+# Libretro Features
+savestate = "false"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+core_options_version = "1.0"
+load_subsystem = "false"
+supports_no_game = "true"
+single_purpose = "false"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "true"
+
+description = "Galaksija (Galaxy) was a low-cost home computer released in 1983 in the former Yugoslav countries as a build-it-yourself kit. The design, which was based on the Zilog Z80A CPU, was later mass produced for distribution to schools."

@@ -1,0 +1,31 @@
+# Software Information
+display_name = "Test Core - Advanced Test"
+authors = "Team Libretro"
+corename = "Advanced Test"
+categories = "Tech demo"
+license = "MIT"
+permissions = ""
+display_version = "v1"
+
+# Hardware Information
+manufacturer = "N/A"
+systemname = "Advanced Test Core"
+systemid = "adv_test_core"
+
+# Libretro Features
+supports_no_game = "true"
+savestate = "false"
+savestate_features = "null"
+cheats = "false"
+input_descriptors = "false"
+memory_descriptors = "false"
+libretro_saves = "false"
+core_options = "false"
+core_options_version = "1.0"
+load_subsystem = "false"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+is_experimental = "true"
+
+description = "This is a test core that is only useful to developers. It is intended as a reference for core authors and a functionality check for frontend authors."

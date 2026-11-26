@@ -1,0 +1,33 @@
+# Software Information
+display_name = "Sony - PocketStation (Pokket)"
+authors = "mentalfoundry"
+supported_extensions = "bin|gme|mcd|mcr|mcs|pss"
+corename = "Pokket"
+categories = "Emulator"
+license = "GPLv3"
+permissions = ""
+
+# Hardware Information
+manufacturer = "Sony"
+systemname = "PocketStation"
+systemid = "pocketstation"
+
+# Libretro Features
+database = "Sony - PocketStation"
+display_version = "v1.14"
+supports_no_game = "false"
+hw_render = "false"
+is_experimental = "false"
+savestate = "true"
+savestate_features = "basic"
+cheats = "true"
+libretro_saves = "true"
+
+# BIOS / Firmware
+firmware_count = 1
+firmware0_desc = "pocketstation.bin (PocketStation BIOS)"
+firmware0_path = "pocketstation.bin"
+firmware0_opt = "true"
+notes = "(!) pocketstation.bin (md5): 987d643809d84631677c7b897858c892"
+
+description = "An open-source Sony PocketStation emulator core, written in portable C. It is meant for reuse across a libretro core, a standalone Windows desktop app, and a PS Vita homebrew port. The emulator is stable, broadly tested by the community, and as cycle-accurate as possible. Loads and saves PlayStation memory card dumps."

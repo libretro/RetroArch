@@ -1,0 +1,20 @@
+# Software Information
+display_name = "Multi (MESS 2015)"
+authors = "MAMEdev"
+supported_extensions = "zip|chd|7z"
+corename = "MESS 2015 (0.160)"
+license = "MAME"
+permissions = ""
+display_version = "Git"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Various"
+systemname = "Multi (various)"
+systemid = "mame"
+
+# Libretro Features
+supports_no_game = "false"
+notes = "[1] MESS 2015 requires the hashes from the MAME/MESS source code|[^] to be inside the 'SYSTEMDIR\ume\hash' directory and softlist romset.|(!) [2] MESS 2015 supports MESS save states.|[3] MESS 2015 supports extracted MESS cheats.|[4] The BIOS files must be inside the ROM directory.|[5] The same directory with CHD files inside must be inside the ROM directory.|[6] If desired, the ARTWORK, CHEATS, and SAMPLES directories can be|[^] inside the 'SYSTEMDIR\mess' directory.|[7] When saving, the following directories will be created in the 'SAVEDIR\mess'|[^] directory: STATES, NVRAM, INPUT, SNAPS, CFG, MEMCARD, and DIFF."
+
+description = "A port of the MESS Multi-Emulator Super System circa 2015 to libretro. This core supports a vast array of consoles and computers, but most users are better served by using the up-to-date MAME-current core, which includes all of this same compatibility but with up-to-date MAME's accuracy and software fixes."

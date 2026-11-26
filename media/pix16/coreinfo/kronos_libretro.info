@@ -1,0 +1,49 @@
+# Software Information
+display_name = "Sega - Saturn/ST-V (Kronos)"
+authors = "Guillaume Duhammel|Theo Berkau|Anders Montonen|devmiyax|FCare|barbudreadmon"
+supported_extensions = "ccd|chd|cue|iso|mds|zip|m3u"
+corename = "Kronos"
+categories = "Emulator"
+license = "GPLv2"
+permissions = ""
+display_version = "v2.6.0"
+
+# Hardware Information
+manufacturer = "Sega"
+systemname = "Saturn"
+systemid = "sega_saturn"
+
+# Libretro Features
+supports_no_game = "false"
+database = "Sega - Saturn|Sega - ST-V"
+hw_render = "true"
+required_hw_api = "OpenGL Core >= 4.3"
+savestate = "true"
+savestate_features = "basic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+needs_fullpath = "true"
+disk_control = "true"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 4
+firmware0_desc = "kronos/saturn_bios.bin (Saturn BIOS)"
+firmware0_path = "kronos/saturn_bios.bin"
+firmware0_opt = "false"
+firmware1_desc = "kronos/stvbios.zip (ST-V BIOS from MAME)"
+firmware1_path = "kronos/stvbios.zip"
+firmware1_opt = "false"
+firmware2_desc = "mpr-18811-mx.ic1 (The King of Fighters '95 ROM Cartridge)"
+firmware2_path = "mpr-18811-mx.ic1"
+firmware2_opt = "true"
+firmware3_desc = "mpr-19367-mx.ic1 (Ultraman: Hikari no Kyojin Densetsu ROM Cartridge)"
+firmware3_path = "mpr-19367-mx.ic1"
+firmware3_opt = "true"
+notes = "(!) saturn_bios.bin (md5): af5828fdff51384f99b3c4926be27762|(!) stvbios.zip|(!) mpr-18811-mx.ic1 (md5): 255113ba943c92a54facd25a10fd780c|(!) mpr-19367-mx.ic1 (md5): 1cd19988d1d72a3e7caa0b73234c96b4"
+
+description = "A port of the Kronos Saturn emulator, which is itself a port of the Yabause emulator, to libretro. This core supports many modern, fancy features, such as internal resolution increases, though these features come with relatively steep GPU requirements, making this core incompatible with very old, weak or mobile hardware. While not as accurate as Beetle-Saturn, this core's relative speed and eye-candy features make it a good first choice for many users, while those interested in accuracy first-and-foremost should stick with Beetle-Saturn and those on mobile devices should try Yaba Sanshiro (another Yabause fork focused on mobile) instead."

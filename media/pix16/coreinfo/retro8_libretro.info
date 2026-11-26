@@ -1,0 +1,21 @@
+# Software Information
+display_name = "PICO-8 (Retro8)"
+authors = "jakz"
+supported_extensions = "p8|png"
+corename = "Retro8"
+license = "GPLv3"
+permissions = ""
+display_version = "Git"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Lexaloffle"
+systemname = "PICO-8"
+systemid = "pico8"
+
+# Libretro Features
+database = "PICO-8"
+supports_no_game = "false"
+savestate = "false"
+
+description = "A port of the Retro8 open-source reimplementation of the PICO-8 fantasy console to libretro. This core can load both p8 'cart' files and embedded png images, and much of the PICO-8 API is working with good performance, including basic sound and music, though it is still missing some obscure Lua extension quirks and fixed arithmetic support."

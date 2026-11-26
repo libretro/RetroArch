@@ -1,0 +1,37 @@
+# Software Information
+display_name = "Sega - MD/CD (ClownMDEmu)"
+categories = "Emulator"
+authors = "Clownacy"
+corename = "ClownMDEmu"
+supported_extensions = "bin|md|gen|cue|iso|chd"
+license = "AGPLv3"
+permissions = ""
+display_version = "Git"
+
+# Hardware Information
+manufacturer = "Sega"
+systemname = "Sega Genesis"
+systemid = "mega_drive"
+
+# BIOS / Firmware
+firmware_count = 0
+
+# Libretro Features
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "2.0"
+load_subsystem = "true"
+supports_no_game = "false"
+single_purpose = "false"
+database = "Sega - Mega-CD - Sega CD|Sega - Mega Drive - Genesis"
+hw_render = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+description = "A highly-portable emulator that aims to be as fast as possible without sacrificing accuracy."

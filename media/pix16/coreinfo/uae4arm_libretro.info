@@ -1,0 +1,44 @@
+# Software Information
+display_name = "Commodore - Amiga (UAE4ARM)"
+categories = "Emulator"
+authors = "TomB/Chips-fr"
+supported_extensions = "adf|dms|ipf|adz|wrp|zip|uae|lha|cue|ccd|iso|hdf"
+corename = "UAE4ARM"
+categories = "Emulator"
+license = "GPLv2"
+permissions = ""
+display_version = "v0.5"
+
+# Hardware Information
+manufacturer = "Commodore"
+systemname = "Amiga"
+systemid = "commodore_amiga"
+
+# Libretro Features
+database = "Commodore - Amiga|Commodore - CD32|Commodore - CDTV"
+supports_no_game = "false"
+savestate = "true"
+savestate_features = "serialized"
+
+# Firmware / BIOS
+firmware_count = 6
+firmware0_desc = "kick34005.A500 (Amiga 500 BIOS, Kickstart v1.3 Rev. 34.005)"
+firmware0_path = "kick34005.A500"
+firmware0_opt = "false"
+firmware1_desc = "kick40063.A600 (Amiga 600 BIOS, Kickstart v3.1 Rev. 40.063)"
+firmware1_path = "kick40063.A600"
+firmware1_opt = "false"
+firmware2_desc = "kick40068.A1200 (Amiga 1200 BIOS, Kickstart v3.1 Rev. 40.068)"
+firmware2_path = "kick40068.A1200"
+firmware2_opt = "false"
+firmware3_desc = "kick34005.CDTV (Amiga CDTV extended ROM v1.00 Rev. 34.005)"
+firmware3_path = "kick34005.CDTV"
+firmware3_opt = "false"
+firmware4_desc = "kick40060.CD32 (Amiga CD32 BIOS, Kickstart v3.1 Rev. 40.060)"
+firmware4_path = "kick40060.CD32"
+firmware4_opt = "false"
+firmware5_desc = "kick40060.CD32.ext (Amiga CD32 Extended BIOS, CD32 Extended ROM Rev. 40.060)"
+firmware5_path = "kick40060.CD32.ext"
+firmware5_opt = "false"
+
+description = "An old fork of the uae4arm Amiga emulator, ported to libretro. This core is intended only for use on very weak, low-powered hardware and should only be used in cases where the P-UAE core is not available or cannot maintain full speed."

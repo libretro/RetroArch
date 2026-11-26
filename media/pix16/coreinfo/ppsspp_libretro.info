@@ -1,0 +1,40 @@
+# Software Information
+display_name = "Sony - PlayStation Portable (PPSSPP)"
+authors = "Henrik Hrydgard"
+supported_extensions = "elf|iso|cso|prx|pbp|chd"
+corename = "PPSSPP"
+license = "GPLv2"
+permissions = ""
+display_version = "Git"
+categories = "Emulator"
+
+# Hardware Information
+manufacturer = "Sony"
+systemname = "PSP"
+systemid = "playstation_portable"
+
+# Libretro Features
+supports_no_game = "false"
+hw_render = "true"
+required_hw_api = "OpenGL >= 3.0 | OpenGL Core >= 3.1 | OpenGL ES >= 2.0 | Vulkan >= 1.0 | Direct3D11 >= 11.0"
+database = "Sony - PlayStation Portable"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "true"
+load_subsystem = "false"
+needs_fullpath = "true"
+disk_control = "false"
+is_experimental = "false"
+
+# Firmware / BIOS
+firmware_count = 1
+firmware0_desc = "ppge_atlas.zim (PPSSPP Data ROM)"
+firmware0_path = "PPSSPP/ppge_atlas.zim"
+firmware0_opt = "false"
+notes = "(!) ppge_atlas.zim (md5): 866855cc330b9b95cc69135fb7b41d38|(!) PPSSPP requires the asset files, lang folder, and flash0 folder inside the 'system\PPSSPP' directory.|(!) Check https://docs.libretro.com/library/ppsspp/#bios to find out how to get the assets files."
+
+description = "A port of the excellent and advanced Playstation Portable (PSP) emulator PPSSPP to libretro. This core runs very fast and is usable on every very modest hardware, while still supporting many advanced features and APIs to provide increased resolution, texture filtering, etc. Aside from the normal libretro frontend features, this core also supports its own native cheats and high-res texture packs by placing them in the core's directory structure that gets created in the frontend's 'saves' directory."

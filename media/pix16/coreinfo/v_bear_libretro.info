@@ -1,0 +1,48 @@
+# Software Information
+display_name = "Funtech - Super A'Can (V-Bear)"
+authors = "Péricles S."
+supported_extensions = "bin|can|zip|7z"
+corename = "V-Bear"
+
+# Hardware Information
+manufacturer = "Funtech"
+categories = "Emulator"
+systemname = "Super A'Can"
+systemid = "super_acan"
+database = "Funtech - Super Acan"
+license = "GPLv3"
+permissions = ""
+display_version = "0.5.1"
+
+# Libretro Features
+supports_no_game = "false"
+needs_fullpath = "true"
+database_match_archive_member = "true"
+hw_render = "false"
+disk_control = "false"
+savestate = "true"
+savestate_features = "serialized"
+cheats = "false"
+input_descriptors = "true"
+memory_descriptors = "false"
+libretro_saves = "true"
+core_options = "false"
+load_subsystem = "false"
+
+# Firmware / BIOS
+firmware_count = 4
+firmware0_desc = "internal_68k.bin (Super A'Can 68000 IPL)"
+firmware0_path = "supracan/internal_68k.bin"
+firmware0_opt = "false"
+firmware1_desc = "internal_6502_1.bin (Super A'Can sound BIOS, part 1)"
+firmware1_path = "supracan/internal_6502_1.bin"
+firmware1_opt = "false"
+firmware2_desc = "internal_6502_2.bin (Super A'Can sound BIOS, part 2)"
+firmware2_path = "supracan/internal_6502_2.bin"
+firmware2_opt = "false"
+firmware3_desc = "umc6650.bin (Super A'Can lockout key)"
+firmware3_path = "supracan/umc6650.bin"
+firmware3_opt = "false"
+notes = "(!) BIOS files are found by CRC32 in the system/supracan folder (also superacan and SuperAcan) or in system, loose or in a .zip or .7z, under any name.|(!) internal_68k.bin (crc): 8d575662|(!) internal_6502_1.bin (crc): fc9fb05f|(!) internal_6502_2.bin (crc): bf950ab7|(!) umc6650.bin (crc): 0ba78597|(^) Super Dragon Force comes in two files; the core joins them when they are in the same .zip or .7z."
+
+description = "V-Bear emulates the Funtech Super A'Can (Taiwan, 1995): Motorola 68000, 65C02 sound CPU, UM6618 video and UM6619 sound chips. It runs the 12 released games. A BIOS is required. Games can be loose, in a .zip or in a .7z."

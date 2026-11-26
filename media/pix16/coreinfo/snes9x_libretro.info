@@ -1,0 +1,42 @@
+# Software Information
+display_name = "Nintendo - SNES / SFC (Snes9x)"
+categories = "Emulator"
+authors = "Snes9x Team"
+corename = "Snes9x"
+supported_extensions = "smc|sfc|swc|fig|bs|st"
+license = "Non-commercial"
+permissions = ""
+display_version = "1.61"
+
+# Hardware Information
+manufacturer = "Nintendo"
+systemname = "Super Nintendo Entertainment System"
+systemid = "super_nes"
+
+# Firmware / BIOS
+firmware_count = 2
+firmware0_desc = "BS-X.bin (BS-X - Sore wa Namae o Nusumareta Machi no Monogatari (Japan) (Rev 1))"
+firmware0_path = "BS-X.bin"
+firmware0_opt = "true"
+firmware1_desc = "STBIOS.bin (Sufami Turbo (Japan))"
+firmware1_path = "STBIOS.bin"
+firmware1_opt = "true"
+notes = "(!) BS-X.bin (md5): fed4d8242cfbed61343d53d48432aced|(!) STBIOS.bin (md5): d3a44ba7d42a74d3ac58cb9c14c6a5ca|(!) To start BS-X games from the RPG-like interface, go back into the house and select the 1st option."
+
+# Libretro Features
+savestate = "true"
+savestate_features = "deterministic"
+cheats = "true"
+input_descriptors = "true"
+memory_descriptors = "true"
+libretro_saves = "true"
+core_options = "true"
+core_options_version = "1.3"
+load_subsystem = "true"
+supports_no_game = "false"
+database = "Nintendo - Super Nintendo Entertainment System|Nintendo - Sufami Turbo|Nintendo - Satellaview"
+hw_render = "false"
+needs_fullpath = "false"
+disk_control = "false"
+
+description = "Snes9x is a classic and popular SNES emulator that is very fast while still maintaining solid accuracy and high compatibility. It is perfect for use on desktop and laptop PCs of all ages, as well as many reasonably powerful mobile devices. This core is based on the latest up-to-date Snes9x sources and is the one most users should try first, only falling back to the year-marked snapshots if this one can't maintain full speed on their device."

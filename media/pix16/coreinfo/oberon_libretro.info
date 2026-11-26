@@ -1,0 +1,15 @@
+# Software Information
+display_name = "Oberon RISC Emulator"
+authors = "Peter De Wachter|Emery Hemingway"
+supported_extensions = "dsk"
+corename = "Oberon"
+categories = "Emulator"
+license = "ISC"
+
+# Hardware Information
+systemname = "Oberon RISC machine"
+
+# Libretro Features
+supports_no_game = "false"
+
+description = "An emulator for the Oberon RISC machine, ported to libretro. Oberon System was designed and implemented in 1990 as an example of a modern, interactive operating system with windows and mouse, and it was designed to be simple and well-structured enough to be published in its entirety for teaching purposes. More information on Oberon is available at the website of its creator, Niklaus Wirth (https://people.inf.ethz.ch/wirth/)."
