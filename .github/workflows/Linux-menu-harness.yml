@@ -34,6 +34,11 @@ on:
       - 'samples/menu/ozone_sublabel_scroll/**'
       - 'gfx/gfx_display.c'
       - 'runloop.c'
+      - 'runloop.h'
+      - 'retroarch.c'
+      - 'runtime_file.c'
+      - 'tasks/task_save.c'
+      - 'samples/tasks/content_load/**'
       - 'samples/menu/network_settings/**'
       - 'intl/msg_hash_lbl.h'
       - 'msg_hash_lbl_str.h'
@@ -84,6 +89,11 @@ on:
       - 'samples/menu/ozone_sublabel_scroll/**'
       - 'gfx/gfx_display.c'
       - 'runloop.c'
+      - 'runloop.h'
+      - 'retroarch.c'
+      - 'runtime_file.c'
+      - 'tasks/task_save.c'
+      - 'samples/tasks/content_load/**'
       - 'samples/menu/network_settings/**'
       - 'intl/msg_hash_lbl.h'
       - 'msg_hash_lbl_str.h'
@@ -504,6 +514,12 @@ jobs:
           # a save state from the frame loop.
           samples/tasks/content_load/build.sh
           ./samples/tasks/content_load/content_load_test
+          for lane in suspend suspend-aggregate playlist close-core close-main; do
+            HARNESS_STATE_REVIEW=$lane ./samples/tasks/content_load/content_load_test
+          done
+          for lane in close-core close-main; do
+            HARNESS_STATE_REVIEW=$lane HARNESS_REVIEW_THREADED=1 ./samples/tasks/content_load/content_load_test
+          done
           make -C samples/tasks/content_load clean
 
       - name: Build and run video_filter_menu_test

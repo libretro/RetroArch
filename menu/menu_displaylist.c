@@ -18026,6 +18026,14 @@ static bool menu_displaylist_ctl_internal(
                      savestates_enabled = core_info_current_supports_savestate();
                      if (savestates_enabled)
                      {
+                        /* Resolve this entry, not the last content's paths. */
+                        path_set(RARCH_PATH_NAMES, entry->path);
+                        if (settings->bools.savestate_auto_index)
+                        {
+                           unsigned scanned = command_event_get_savestate_auto_index(
+                                 settings, runloop_st->name.savestate);
+                           state_slot = scanned < 1000 ? (int)scanned : -1;
+                        }
                         runtime_update_playlist(playlist,
                               menu_st->driver_data->rpl_entry_selection_ptr);
 
@@ -18037,7 +18045,10 @@ static bool menu_displaylist_ctl_internal(
 
                         if (runtime_log)
                         {
-                           if (path_is_valid(runtime_log->path) && runtime_log->state_slot < 1000)
+                           if (     path_is_valid(runtime_log->path)
+                                 && runtime_log->state_slot < 1000
+                                 && (     !settings->bools.savestate_auto_index
+                                       || runloop_savestate_exists((int)runtime_log->state_slot)))
                               state_slot = runtime_log->state_slot;
                            free(runtime_log);
                         }

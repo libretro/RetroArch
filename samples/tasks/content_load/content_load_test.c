@@ -97,6 +97,8 @@
 #include "../../../playlist.h"
 #include "../../../paths.h"
 #include "../../../content.h"
+#include "../../../runtime_file.h"
+#include "../../../core_info.h"
 #include "../../../defaults.h"
 #include "../../../input/input_driver.h"
 #include "../../../runahead.h"
@@ -4118,6 +4120,248 @@ static void lane_focus_follows_frames(void)
 
 /* ------------------------------------------------------------------ */
 
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+/* Focused producer/reader regressions run in their own frontend session. */
+static void review_core_info(void)
+{
+   char directory[PATH_MAX_LENGTH], id[256], path[PATH_MAX_LENGTH];
+   bool cache_supported = false;
+   FILE *file;
+   settings_t *settings = config_get_ptr();
+   fill_pathname_basedir(directory, core_path, sizeof(directory));
+   core_info_get_file_id(path_basename(core_path), id, sizeof(id));
+   snprintf(path, sizeof(path), "%s/%s.info", harness_dir, id);
+   file = fopen(path, "wb");
+   CHECK(file != NULL, "review: core info fixture could not be written");
+   if (!file)
+      return;
+   fputs("corename = \"content_load_harness\"\nsupports_no_game = \"true\"\n"
+         "savestate = \"true\"\nsavestate_support_level = \"deterministic\"\n", file);
+   fclose(file);
+   configuration_set_string(settings, settings->paths.directory_libretro, directory);
+   configuration_set_bool(settings, settings->bools.core_info_cache_enable, false);
+   configuration_set_bool(settings, settings->bools.show_hidden_files, false);
+   core_info_deinit_list();
+   CHECK(core_info_init_list(harness_dir, directory, "so|dll", false, false, &cache_supported)
+         && core_info_load(core_path), "review: real core info lookup failed");
+}
+
+static bool review_start_content(char *game, size_t size)
+{
+   content_ctx_info_t info = {0};
+   FILE *file;
+   settings_t *settings = config_get_ptr();
+   snprintf(game, size, "%s/review.bin", harness_dir);
+   file = fopen(game, "wb");
+   if (!file)
+      return false;
+   fputs("state review", file);
+   fclose(file);
+   configuration_set_bool(settings, settings->bools.savestate_thumbnail_enable, false);
+   configuration_set_bool(settings, settings->bools.savestate_file_compression, false);
+   configuration_set_bool(settings, settings->bools.sort_savestates_enable, false);
+   configuration_set_bool(settings, settings->bools.sort_savestates_by_content_enable, false);
+   set_save_state_in_background(false);
+   open_menu();
+   return task_push_load_content_with_new_core_from_menu(core_path, game,
+         &info, CORE_TYPE_PLAIN, NULL, NULL) && settle() && runloop_content_loaded();
+}
+
+static runtime_log_t *review_log(const char *game)
+{
+   settings_t *settings = config_get_ptr();
+   return runtime_log_init(game, core_path, settings->paths.directory_runtime_log,
+         settings->paths.directory_playlist, true);
+}
+
+static void lane_suspend_slot(bool aggregate)
+{
+   char game[600], other[600], runtime[600];
+   runtime_log_t *before, *after;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   settings_t *settings = config_get_ptr();
+   content_ctx_info_t info = {0};
+   retro_time_t elapsed;
+   FILE *file;
+   unsigned i;
+   snprintf(runtime, sizeof(runtime), "%s/runtime", harness_dir);
+   configuration_set_string(settings, settings->paths.directory_runtime_log, runtime);
+   configuration_set_bool(settings, settings->bools.content_runtime_log, true);
+   configuration_set_bool(settings, settings->bools.content_runtime_log_aggregate, false);
+   configuration_set_bool(settings, settings->bools.savestate_auto_index, true);
+   settings->uints.savestate_max_keep = 3;
+   CHECK(review_start_content(game, sizeof(game)), "suspend: content did not load");
+   for (i = 0; i < 3; i++)
+      CHECK(state_save_marked(0x10 + i), "suspend: initial save failed");
+   CHECK(settings->ints.state_slot == 2, "suspend: initial ring did not reach slot 2");
+   CHECK(task_push_load_contentless_core_from_menu(core_path) && settle(),
+         "suspend: the clean exit did not complete");
+   before = review_log(game);
+   CHECK(before && before->state_slot == 2 && before->play_count > 0,
+         "suspend: no clean-exit slot 2 log was established");
+   if (!before)
+      return;
+   CHECK(task_push_load_content_with_new_core_from_menu(core_path, game,
+            &info, CORE_TYPE_PLAIN, NULL, NULL) && settle(), "suspend: reload failed");
+   CHECK(settings->ints.state_slot == 2, "suspend: reload did not restore slot 2");
+   CHECK(state_save_marked(0x23) && state_save_marked(0x24), "suspend: wrap saves failed");
+   CHECK(settings->ints.state_slot == 0 && runloop_savestate_exists(0)
+         && runloop_savestate_exists(2) && runloop_savestate_exists(3)
+         && !runloop_savestate_exists(1), "suspend: expected ring {0,2,3} not reached");
+   if (aggregate)
+   {
+      configuration_set_bool(settings, settings->bools.content_runtime_log, false);
+      configuration_set_bool(settings, settings->bools.content_runtime_log_aggregate, true);
+   }
+   /* Cached content owns the log even if the next content path changed. */
+   snprintf(other, sizeof(other), "%s/other.bin", harness_dir);
+   file = fopen(other, "wb");
+   CHECK(file != NULL, "suspend: could not create the other content");
+   if (file) { fputs("other", file); fclose(file); }
+   path_set(RARCH_PATH_CONTENT, other);
+   elapsed = runloop_st->core_runtime_usec;
+   retroarch_save_for_suspend();
+   retroarch_save_for_suspend();
+   after = review_log(game);
+   CHECK(after && after->state_slot == 0, "suspend: existing stale slot 2 won over completed slot 0");
+   CHECK(after && after->play_count == before->play_count
+         && !memcmp(&after->runtime, &before->runtime, sizeof(after->runtime))
+         && !memcmp(&after->last_played, &before->last_played, sizeof(after->last_played)),
+         "suspend: slot persistence counted the running session");
+   CHECK(runloop_st->core_runtime_usec == elapsed
+         && !strcmp(runloop_st->runtime_content_path, game),
+         "suspend: the active session accounting or owner was reset");
+   free(after);
+   after = review_log(other);
+   CHECK(after && !path_is_valid(after->path), "suspend: the next content received the old content's log");
+   free(after);
+   path_set(RARCH_PATH_CONTENT, game);
+   /* A deliberate older selection remains meaningful with auto-index on. */
+   configuration_set_int(settings, settings->ints.state_slot, 2);
+   retroarch_save_for_suspend();
+   after = review_log(game);
+   CHECK(after && after->state_slot == 2 && after->play_count == before->play_count,
+         "suspend: a deliberate older selection was lost");
+   free(after);
+   free(before);
+}
+
+static void lane_playlist_preselection(void)
+{
+   char game[600], lpl[600], state[PATH_MAX_LENGTH], foreign[600];
+   playlist_config_t cfg;
+   struct playlist_entry entry;
+   runtime_log_t *log;
+   settings_t *settings = config_get_ptr();
+   struct menu_state *menu_st = menu_state_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   FILE *file;
+   CHECK(review_start_content(game, sizeof(game)), "playlist: content did not load");
+   configuration_set_bool(settings, settings->bools.savestate_auto_index, false);
+   runloop_get_savestate_path(state, sizeof(state), 4);
+   CHECK(save_marked_slot(4, 0x44, state), "playlist: slot 4 was not saved");
+   log = review_log(game);
+   CHECK(log != NULL, "playlist: no runtime log");
+   if (!log)
+      return;
+   memset(&cfg, 0, sizeof(cfg));
+   snprintf(lpl, sizeof(lpl), "%s/playlists/review.lpl", harness_dir);
+   playlist_config_set_path(&cfg, lpl);
+   cfg.capacity = 16;
+   CHECK(playlist_init_cached(&cfg), "playlist: cache failed");
+   memset(&entry, 0, sizeof(entry));
+   entry.path = game;
+   entry.core_path = core_path;
+   entry.core_name = (char*)"content_load_harness";
+   CHECK(playlist_push(playlist_get_cached(), &entry), "playlist: entry was not added");
+   open_menu();
+   menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;
+   pump(1);
+   CHECK(settle(), "playlist: close did not complete");
+   pump(3);
+   CHECK(!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING), "playlist: content is still running");
+   snprintf(foreign, sizeof(foreign), "%s/foreign.bin", harness_dir);
+   path_set(RARCH_PATH_NAMES, foreign);
+   runloop_get_savestate_path(state, sizeof(state), 9);
+   file = fopen(state, "wb");
+   CHECK(file != NULL, "playlist: unrelated state fixture failed");
+   if (file) { fputc(0x99, file); fclose(file); }
+   log->state_slot = 9;
+   runtime_log_save(log);
+   configuration_set_int(settings, settings->ints.state_slot, 7);
+   configuration_set_bool(settings, settings->bools.savestate_auto_index, true);
+   menu_st->driver_data->rpl_entry_selection_ptr = 0;
+   CHECK(accept_open_screen(DISPLAYLIST_STATE_SLOT_RUN, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR,
+            MENU_ENUM_LABEL_STATE_SLOT_RUN, "Load State") == 1001,
+         "playlist: Load State list was not built");
+   CHECK(menu_st->selection_ptr == 5 && settings->ints.state_slot == 7,
+         "playlist: missing or other-game slot 9 was preselected, or global slot changed");
+   log->state_slot = 4;
+   runtime_log_save(log);
+   accept_open_screen(DISPLAYLIST_STATE_SLOT_RUN, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR,
+         MENU_ENUM_LABEL_STATE_SLOT_RUN, "Load State");
+   CHECK(menu_st->selection_ptr == 5, "playlist: valid remembered slot 4 was not selected");
+   log->state_slot = 9;
+   runtime_log_save(log);
+   configuration_set_bool(settings, settings->bools.savestate_auto_index, false);
+   accept_open_screen(DISPLAYLIST_STATE_SLOT_RUN, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR,
+         MENU_ENUM_LABEL_STATE_SLOT_RUN, "Load State");
+   CHECK(menu_st->selection_ptr == 10, "playlist: manual slot selection changed");
+   log->state_slot = 4;
+   runtime_log_save(log);
+   configuration_set_bool(settings, settings->bools.savestate_auto_index, true);
+   accept_open_screen(DISPLAYLIST_STATE_SLOT_RUN, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR,
+         MENU_ENUM_LABEL_STATE_SLOT_RUN, "Load State");
+   CHECK(menu_st->selection_ptr == 5 && accept_press_ok("4") && settle(),
+         "playlist: the preselected slot did not start its content");
+   CHECK(core_export("harness_core_state_loaded") == 0x44,
+         "playlist: the core did not consume the selected entry's state");
+   free(log);
+}
+
+static void (*review_unload_game)(void);
+static unsigned review_unloads;
+static bool review_unloaded_pending;
+
+static void review_observe_unload(void)
+{
+   review_unloads++;
+   review_unloaded_pending = state_task_in_flight();
+   review_unload_game();
+}
+
+static void lane_blocking_state_close(bool main_deinit)
+{
+   char game[600], state[PATH_MAX_LENGTH];
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   CHECK(review_start_content(game, sizeof(game)), "blocking close: content did not load");
+   CHECK(state_save_marked(0x11), "blocking close: initial save failed");
+   runloop_get_current_savestate_path(state, sizeof(state));
+   core_mark_state(0x22);
+   CHECK(content_save_state(state, true), "blocking close: overwrite refused");
+   CHECK(content_load_state_in_progress(NULL) && !content_save_state_in_progress(NULL),
+         "blocking close: backup-before-write state not reached");
+   fprintf(stderr, "[observe] overwrite backup pending before real teardown\n");
+   review_unload_game = runloop_st->current_core.retro_unload_game;
+   runloop_st->current_core.retro_unload_game = review_observe_unload;
+   if (main_deinit)
+      CHECK(retroarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL), "blocking close: main deinit failed");
+   else
+      CHECK(command_event(CMD_EVENT_CORE_DEINIT, NULL), "blocking close: core deinit failed");
+   CHECK(review_unloads == 1 && !review_unloaded_pending && !state_task_in_flight(),
+         "blocking close: real retroarch.c teardown unloaded the core before its replacement completed");
+   fprintf(stderr, "[observe] unloads=%u, pending at unload=%u, pending after teardown=%u\n",
+         review_unloads, (unsigned)review_unloaded_pending, (unsigned)state_task_in_flight());
+   /* Cleanup after the observation cannot turn a premature unload into a pass. */
+   content_wait_for_load_state_task();
+   content_wait_for_save_state_task();
+   /* Core-only deinit normally precedes another core init. This process
+    * exits instead, so main_exit must not unload the same core again. */
+   if (!main_deinit)
+      runloop_is_inited_clear();
+}
+#endif
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -4146,7 +4390,8 @@ int main(int argc, char *argv[])
    snprintf(cfg_path, sizeof(cfg_path), "%s/harness.cfg", dir);
    if ((cfg = fopen(cfg_path, "wb")))
    {
-      fprintf(cfg, "video_driver = \"null\"\n");
+      fprintf(cfg, "video_driver = \"%s\"\n",
+            getenv("HARNESS_REVIEW_VIDEO") ? getenv("HARNESS_REVIEW_VIDEO") : "null");
       fprintf(cfg, "audio_driver = \"null\"\n");
       fprintf(cfg, "input_driver = \"null\"\n");
       fprintf(cfg, "input_joypad_driver = \"null\"\n");
@@ -4155,9 +4400,17 @@ int main(int argc, char *argv[])
       fprintf(cfg, "video_vsync = \"false\"\n");
       fprintf(cfg, "menu_pause_libretro = \"true\"\n");
       fprintf(cfg, "config_save_on_exit = \"false\"\n");
+      if (getenv("HARNESS_STATE_REVIEW"))
+      {
+         fprintf(cfg, "pause_nonactive = \"false\"\n");
+         fprintf(cfg, "core_options_path = \"%s/core-options.cfg\"\n", dir);
+         fprintf(cfg, "rgui_config_directory = \"%s/config\"\n", dir);
+         fprintf(cfg, "savefile_directory = \"%s\"\n", dir);
+      }
       fprintf(cfg, "savestate_auto_save = \"false\"\n");
       fprintf(cfg, "menu_show_load_content_animation = \"false\"\n");
-      fprintf(cfg, "threaded_data_runloop_enable = \"false\"\n");
+      fprintf(cfg, "threaded_data_runloop_enable = \"%s\"\n",
+            getenv("HARNESS_REVIEW_THREADED") ? "true" : "false");
       /* The null MIDI driver's one output: the MIDI lane's device */
       fprintf(cfg, "midi_driver = \"null\"\n");
       fprintf(cfg, "midi_output = \"Null\"\n");
@@ -4210,7 +4463,12 @@ int main(int argc, char *argv[])
 #endif
       {
          int dirlen = slash ? (int)(slash - argv[0]) : 1;
-         snprintf(core_path, sizeof(core_path), "%.*s/harness_core.so",
+         snprintf(core_path, sizeof(core_path),
+#ifdef _WIN32
+               "%.*s/harness_core.dll",
+#else
+               "%.*s/harness_core.so",
+#endif
                dirlen, slash ? argv[0] : ".");
       }
    }
@@ -4234,6 +4492,28 @@ int main(int argc, char *argv[])
    CHECK(runloop_state_get_ptr()->current_core_type != CORE_TYPE_DUMMY,
          "harness core did not start (dummy core running)");
 
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+   if (getenv("HARNESS_STATE_REVIEW"))
+   {
+      const char *which = getenv("HARNESS_STATE_REVIEW");
+      retroarch_user_dirs_release();
+      review_core_info();
+      CHECK(task_queue_is_threaded() == (getenv("HARNESS_REVIEW_THREADED") != NULL),
+            "the requested task backend was not activated");
+      if (!strcmp(which, "suspend") || !strcmp(which, "suspend-aggregate"))
+         lane_suspend_slot(!strcmp(which, "suspend-aggregate"));
+      else if (!strcmp(which, "playlist"))
+         lane_playlist_preselection();
+      else if (!strcmp(which, "close-core") || !strcmp(which, "close-main"))
+         lane_blocking_state_close(!strcmp(which, "close-main"));
+      else
+         CHECK(false, "unknown state review case %s", which);
+      main_exit(NULL);
+      if (!failures)
+         fprintf(stderr, "[pass] actual frontend state review: %s\n", which);
+      return failures ? 1 : 0;
+   }
+#endif
    lane_user_dirs_held(dir);
    lane_midi_boot();
    lane_staged();

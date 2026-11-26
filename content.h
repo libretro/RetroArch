@@ -111,6 +111,9 @@ void content_wait_for_load_state_task(void);
  * main-thread callback has applied the state. */
 bool content_load_state_in_progress(void* data);
 
+/* Frame-thread query, including state tasks waiting for their callback. */
+bool content_state_file_in_use(const char *path);
+
 /* Copy a save state. */
 bool content_rename_state(const char *origin, const char *dest);
 

@@ -4365,6 +4365,11 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_RAM_STATE_TO_FILE:
          if (!content_ram_state_to_file((char *) data))
             return false;
+         if (     settings->bools.savestate_auto_index
+               && settings->uints.savestate_max_keep > 0)
+            command_event_set_savestate_garbage_collect((const char*)data,
+                  settings->ints.state_slot, settings->uints.savestate_max_keep,
+                  settings->bools.show_hidden_files);
          break;
       case CMD_EVENT_APPLY_WINDOWED_SCALE:
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
@@ -4545,7 +4550,7 @@ bool command_event(enum event_command cmd, void *data)
             {
                /* Turned away, the save wrote nothing to the slot moved
                 * to: the next load would have found it empty */
-               if (advanced && cmd == CMD_EVENT_SAVE_STATE)
+               if (advanced)
                   configuration_set_int(settings, settings->ints.state_slot,
                      prev_slot);
                return false;
@@ -5350,8 +5355,9 @@ bool command_event(enum event_command cmd, void *data)
           * frame loop, so there is nothing left to wait for.  The
           * interactive close goes through retroarch_main_deinit_begin /
           * _pending / _finish instead. */
-         content_wait_for_save_state_task();
+         /* An overwrite's backup load can start its save. */
          content_wait_for_load_state_task();
+         content_wait_for_save_state_task();
          command_event_core_deinit_finish();
          break;
       case CMD_EVENT_CORE_INIT:
@@ -7075,7 +7081,10 @@ void retroarch_save_for_suspend(void)
     * CMD_EVENT_SAVE_FILES exists to persist SRAM and game-specific
     * cheats, both of which require loaded content. */
    if (runloop_content_loaded())
+   {
       command_event(CMD_EVENT_SAVE_FILES, NULL);
+      runloop_runtime_log_save_state_slot(runloop_state_get_ptr(), settings);
+   }
 
    /* Core options: written unconditionally on core unload, so not
     * gated on config_save_on_exit here either. Without this, option
@@ -10873,8 +10882,9 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
          /* In one go: reached on exit and from the load at startup,
           * before the first frame.  A load from the menu waits these
           * out a frame at a time (task_content.c). */
-         content_wait_for_save_state_task();
+         /* An overwrite's backup load can start its save. */
          content_wait_for_load_state_task();
+         content_wait_for_save_state_task();
          retroarch_main_deinit_finish();
          break;
 #ifdef HAVE_CONFIGFILE

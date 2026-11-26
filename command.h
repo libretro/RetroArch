@@ -492,6 +492,13 @@ bool command_event_load_auto_state(void);
 void command_event_set_savestate_auto_index(
       settings_t *settings);
 
+/* Scan without changing the selected slot, e.g. for a playlist preview. */
+unsigned command_event_get_savestate_auto_index(settings_t *settings,
+      const char *state_path);
+
+void command_event_set_savestate_garbage_collect(const char *path,
+      int slot, unsigned max_keep, bool show_hidden_files);
+
 int command_event_get_next_savestate_auto_index(
       settings_t *settings);
 
