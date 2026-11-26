@@ -13,6 +13,8 @@
  */
 
 #include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <compat/strl.h>
 
 #include "../led_driver.h"
@@ -20,9 +22,20 @@
 
 #include "../../configuration.h"
 
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+
+#ifndef RPILED_GPIO_ROOT
+#define RPILED_GPIO_ROOT "/sys/class/gpio"
+#endif
+
+/* An exported GPIO's value file is held open from the first set, so a
+ * state change is one pwrite of a constant. */
 typedef struct
 {
-   int setup[MAX_LEDS];
+   int fd[MAX_LEDS];     /* value file; -1 not set up, -2 failed */
+   int state[MAX_LEDS];  /* 1 on, 0 off, -1 nothing written yet */
    int map[MAX_LEDS];
 } rpiled_t;
 
@@ -35,13 +48,11 @@ static void rpi_init(void)
    int i;
    settings_t *settings = config_get_ptr();
 
-   if (!settings)
-      return;
-
    for (i = 0; i < MAX_LEDS; i++)
    {
-      rpi_cur->setup[i] = 0;
-      rpi_cur->map[i]   = settings->uints.led_map[i];
+      rpi_cur->fd[i]    = -1;
+      rpi_cur->state[i] = -1;
+      rpi_cur->map[i]   = settings ? (int)settings->uints.led_map[i] : 0;
    }
 }
 
@@ -51,59 +62,55 @@ static void rpi_free(void)
 
    for (i = 0; i < MAX_LEDS; i++)
    {
-      rpi_cur->setup[i] = 0;
+      if (rpi_cur->fd[i] >= 0)
+         close(rpi_cur->fd[i]);
+      rpi_cur->fd[i]    = -1;
+      rpi_cur->state[i] = -1;
       rpi_cur->map[i]   = 0;
    }
 }
 
-static int set_gpio(int gpio, int value)
-{
-   FILE *fp;
-   char buf[256];
-   snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/value", gpio);
-
-   /* Failed to set GPIO? */
-   if (!(fp = fopen(buf, "w")))
-      return -1;
-
-   fprintf(fp, "%d\n", value ? 1 : 0);
-   fclose(fp);
-   return 1;
-}
-
+/* Exports @gpio as an output and opens its value file; -2 on failure. */
 static int setup_gpio(int gpio)
 {
+   int fd;
    FILE *fp;
    char buf[256];
-   snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/direction", gpio);
+   snprintf(buf, sizeof(buf), RPILED_GPIO_ROOT "/gpio%d/direction", gpio);
    
    if (!(fp = fopen(buf, "w")))
    {
-      strlcpy_lit(buf, "/sys/class/gpio/export", sizeof(buf));
+      strlcpy_lit(buf, RPILED_GPIO_ROOT "/export", sizeof(buf));
 
       /* Failed to export GPIO? */
       if (!(fp = fopen(buf, "w")))
-         return -1;
+         return -2;
 
       fprintf(fp,"%d\n", gpio);
       fclose(fp);
 
-      snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%d/direction", gpio);
+      snprintf(buf, sizeof(buf), RPILED_GPIO_ROOT "/gpio%d/direction", gpio);
       fp = fopen(buf, "w");
    }
 
    /* Failed to set direction GPIO? */
    if (!fp)
-      return -1;
+      return -2;
 
    fprintf(fp, "out\n");
    fclose(fp);
-   return 1;
+
+   snprintf(buf, sizeof(buf), RPILED_GPIO_ROOT "/gpio%d/value", gpio);
+   if ((fd = open(buf, O_WRONLY | O_CLOEXEC)) < 0)
+      return -2;
+   return fd;
 }
 
 static void rpi_set(int led, int state)
 {
+   static const char value[2][2] = { { '0', '\n' }, { '1', '\n' } };
    int gpio = 0;
+   int on   = (state != 0);
 
    /* Invalid LED? */
    if ((led < 0) || (led >= MAX_LEDS))
@@ -113,10 +120,12 @@ static void rpi_set(int led, int state)
    if (gpio <= 0)
       return;
 
-   if (rpi_cur->setup[led] == 0)
-      rpi_cur->setup[led] = setup_gpio(gpio);
-   if (rpi_cur->setup[led] > 0)
-      set_gpio(gpio, state);
+   if (rpi_cur->fd[led] == -1)
+      rpi_cur->fd[led] = setup_gpio(gpio);
+   if (     rpi_cur->fd[led] >= 0
+         && rpi_cur->state[led] != on
+         && pwrite(rpi_cur->fd[led], value[on], 2, 0) == 2)
+      rpi_cur->state[led] = on;
 }
 
 const led_driver_t rpi_led_driver = {

@@ -1,8 +1,9 @@
-/* led_sysfs_test.c -- led/drivers/led_sys_linux.c against a fake
- * sysfs LED class directory.
+/* led_sysfs_test.c -- led/drivers/led_sys_linux.c and led_rpi.c
+ * against a fake sysfs LED class and GPIO class directory.
  *
- * The driver is included with SYSLED_ROOT pointing at a directory this
- * test builds. The claims:
+ * Both drivers are included in one unit, as griffin builds them, with
+ * SYSLED_ROOT and RPILED_GPIO_ROOT pointing at directories this test
+ * builds. sysled's claims:
  *
  *   1. ledN_map = M drives ledM when it exists: the first set writes
  *      "none" to its trigger, on is max_brightness, off is 0.
@@ -17,24 +18,41 @@
  *   7. An LED whose trigger cannot be written is left alone, and a
  *      negative map drives nothing.
  *   8. No LED is touched before a core sets one.
+ *   9. A taken-over LED's brightness file is held open: a state change
+ *      writes to it without opening the path again.
  *
- * sysfs LED names carry "::", which Windows file names cannot, so
- * claims 3, 4 and 6 run on the other hosts only. */
+ * rpi's claims:
+ *
+ *  10. A GPIO is exported and made an output on its first set, its
+ *      value written as 1 or 0, and a state already written is not
+ *      written again.
+ *  11. The value file is held open from the first set.
+ *  12. A GPIO that cannot be exported is not retried on every set.
+ *
+ * Both drivers are Linux sysfs drivers written on POSIX file
+ * descriptors; a Windows build of this test reports itself skipped. */
+
+#ifdef _WIN32
+#include <stdio.h>
+
+int main(void)
+{
+   printf("led_sysfs_test: skipped, sysfs drivers are Linux-only\n");
+   return 0;
+}
+#else
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#ifdef _WIN32
-#include <direct.h>
-#define test_mkdir(p) _mkdir(p)
-#else
 #include <unistd.h>
-#define test_mkdir(p) mkdir(p, 0755)
-#endif
 
-#define SYSLED_ROOT "led_sysfs_root"
+#define test_mkdir(p) mkdir(p, 0755)
+
+#define SYSLED_ROOT      "led_sysfs_root"
+#define RPILED_GPIO_ROOT "led_sysfs_root/gpio"
 
 #include "configuration.h"
 
@@ -43,6 +61,7 @@ static settings_t test_settings;
 settings_t *config_get_ptr(void) { return &test_settings; }
 
 #include "led/drivers/led_sys_linux.c"
+#include "led/drivers/led_rpi.c"
 
 static unsigned failures = 0;
 
@@ -70,11 +89,7 @@ static void rm_tree(const char *path)
          rm_tree(sub);
       }
       closedir(dir);
-#ifdef _WIN32
-      _rmdir(path);
-#else
       rmdir(path);
-#endif
    }
    else
       remove(path);
@@ -92,7 +107,9 @@ static void put(const char *led, const char *attr, const char *s)
    }
 }
 
-/* The file's content, newline trimmed. */
+/* The file's first line. A driver writes at offset 0 without
+ * truncating, which a sysfs attribute does not need and a plain file
+ * here does not do. */
 static const char *get(const char *led, const char *attr)
 {
    static char buf[8192];
@@ -106,8 +123,7 @@ static const char *get(const char *led, const char *attr)
    n      = fread(buf, 1, sizeof(buf) - 1, fp);
    buf[n] = '\0';
    fclose(fp);
-   while (n && (buf[n - 1] == '\n'))
-      buf[--n] = '\0';
+   buf[strcspn(buf, "\n")] = '\0';
    return buf;
 }
 
@@ -131,6 +147,7 @@ static void map_all(int value)
 
 static void test_numbered(void)
 {
+   FILE *fp;
    char path[512];
 
    rm_tree(SYSLED_ROOT);
@@ -139,6 +156,7 @@ static void test_numbered(void)
    make_led("led1", "none [timer]\n", "0\n", "1\n");
    /* led2's trigger is a directory: not writable as a file. */
    make_led("led2", "none\n", "0\n", "1\n");
+   make_led("led3", "none\n", "0\n", "1\n");
    snprintf(path, sizeof(path), SYSLED_ROOT "/led2/trigger");
    remove(path);
    test_mkdir(path);
@@ -148,6 +166,7 @@ static void test_numbered(void)
    test_settings.uints.led_map[1] = 0;   /* same LED as frontend LED 0 */
    test_settings.uints.led_map[2] = 2;
    test_settings.uints.led_map[3] = 1;
+   test_settings.uints.led_map[5] = 3;
 
    sys_led_driver.init();
 
@@ -169,26 +188,94 @@ static void test_numbered(void)
 
    sys_led_driver.set_led(1, 0);
    CHECK(!strcmp(get("led0", "brightness"), "0"), "off is not 0");
-   CHECK(sys_cur->n_targets == 1, "shared LED taken over twice");
+
+   /* Held open: with the path gone, a write lands in the file already
+    * open and nothing new appears under the name. */
+   sys_led_driver.set_led(5, 1);
+   CHECK(!strcmp(get("led3", "brightness"), "1"), "led3 not lit");
+   snprintf(path, sizeof(path), SYSLED_ROOT "/led3/brightness");
+   remove(path);
+   sys_led_driver.set_led(5, 0);
+   CHECK(!(fp = fopen(path, "r")), "brightness path opened again");
+   if (fp)
+      fclose(fp);
+   CHECK(sys_cur->n_targets == 2, "shared LED taken over twice");
 
    sys_led_driver.set_led(2, 1);
    CHECK(!strcmp(get("led2", "brightness"), "0"),
          "LED with an unwritable trigger was driven");
 
    sys_led_driver.set_led(4, 1);   /* map -1 */
-   CHECK(sys_cur->n_targets == 1, "negative map drove something");
+   CHECK(sys_cur->n_targets == 2, "negative map drove something");
 
    CHECK(!strcmp(get("led1", "trigger"), "none [timer]"),
          "unset LED touched");
 
    sys_led_driver.free();
    CHECK(!strcmp(get("led0", "brightness"), "1"), "brightness not restored");
+   CHECK(!(fp = fopen(path, "r")), "restore opened the brightness path");
+   if (fp)
+      fclose(fp);
    CHECK(!strcmp(get("led0", "trigger"), "mmc0"), "trigger not restored");
    CHECK(!strcmp(get("led1", "trigger"), "none [timer]"),
          "free touched an unset LED");
 }
 
-#ifndef _WIN32
+static void test_rpi(void)
+{
+   FILE *fp;
+   char path[512];
+
+   rm_tree(SYSLED_ROOT);
+   test_mkdir(SYSLED_ROOT);
+   test_mkdir(RPILED_GPIO_ROOT);
+   put("gpio", "export", "");
+   test_mkdir(RPILED_GPIO_ROOT "/gpio17");
+   put("gpio/gpio17", "direction", "in\n");
+   put("gpio/gpio17", "value", "0\n");
+
+   map_all(0);
+   test_settings.uints.led_map[0] = 17;
+   test_settings.uints.led_map[1] = 18;   /* not exported, cannot be */
+
+   rpi_led_driver.init();
+   CHECK(!strcmp(get("gpio/gpio17", "direction"), "in"),
+         "init touched a GPIO");
+
+   rpi_led_driver.set_led(0, 1);
+   CHECK(!strcmp(get("gpio/gpio17", "direction"), "out"),
+         "GPIO not made an output");
+   CHECK(!strcmp(get("gpio/gpio17", "value"), "1"), "GPIO not 1");
+
+   put("gpio/gpio17", "value", "x");
+   rpi_led_driver.set_led(0, 1);
+   CHECK(!strcmp(get("gpio/gpio17", "value"), "x"),
+         "unchanged GPIO state written again");
+   rpi_led_driver.set_led(0, 0);
+   CHECK(!strcmp(get("gpio/gpio17", "value"), "0"), "GPIO not 0");
+
+   snprintf(path, sizeof(path), RPILED_GPIO_ROOT "/gpio17/value");
+   remove(path);
+   rpi_led_driver.set_led(0, 1);
+   CHECK(!(fp = fopen(path, "r")), "GPIO value path opened again");
+   if (fp)
+      fclose(fp);
+
+   /* gpio18: the export took, the direction did not. It appearing
+    * afterwards must not be noticed: the failure is not retried. */
+   rpi_led_driver.set_led(1, 1);
+   CHECK(!strcmp(get("gpio", "export"), "18"), "GPIO 18 not exported");
+   test_mkdir(RPILED_GPIO_ROOT "/gpio18");
+   put("gpio/gpio18", "direction", "in\n");
+   put("gpio/gpio18", "value", "0\n");
+   rpi_led_driver.set_led(1, 0);
+   rpi_led_driver.set_led(1, 1);
+   CHECK(!strcmp(get("gpio/gpio18", "direction"), "in"),
+         "failed GPIO set up again");
+
+   rpi_led_driver.free();
+}
+
 static void test_keyboard(void)
 {
    size_t n;
@@ -241,14 +328,12 @@ static void test_keyboard(void)
    CHECK(!strcmp(get("input7::capslock", "brightness"), "0"),
          "keyboard 2 brightness not restored");
 }
-#endif
 
 int main(void)
 {
    test_numbered();
-#ifndef _WIN32
+   test_rpi();
    test_keyboard();
-#endif
    rm_tree(SYSLED_ROOT);
 
    if (failures)
@@ -259,3 +344,4 @@ int main(void)
    printf("led_sysfs_test: all passed\n");
    return 0;
 }
+#endif

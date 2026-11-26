@@ -35,40 +35,30 @@ static int key_translate(int key)
    return 0;
 }
 
+/* One display connection for the driver's life: a set is a request
+ * on it, not a connection of its own. */
 typedef struct
 {
-   int setup[MAX_LEDS];
-   int state[MAX_LEDS];
+   Display *dpy;
+   int setup[MAX_LEDS];  /* lock LED state found at init, -1 none */
+   int state[MAX_LEDS];  /* last state written, -1 none */
    int map[MAX_LEDS];
-   bool init;
 } keyboard_led_t;
 
 /* TODO/FIXME - static globals */
 static keyboard_led_t x11kb_curins;
 static keyboard_led_t *x11kb_cur = &x11kb_curins;
 
-static int get_led(int led)
+static int get_led(unsigned long led_mask, int led)
 {
-   XKeyboardState state;
-   Display *dpy = XOpenDisplay(0);
-
-   XGetKeyboardControl(dpy, &state);
-   XCloseDisplay(dpy);
-
    switch (led)
    {
       case XK_NUMLOCK:
-         if (state.led_mask & XM_NUMLOCK)
-            return 1;
-         break;
+         return (led_mask & XM_NUMLOCK)    ? 1 : 0;
       case XK_CAPSLOCK:
-         if (state.led_mask & XM_CAPSLOCK)
-            return 1;
-         break;
+         return (led_mask & XM_CAPSLOCK)   ? 1 : 0;
       case XK_SCROLLLOCK:
-         if (state.led_mask & XM_SCROLLLOCK)
-            return 1;
-         break;
+         return (led_mask & XM_SCROLLLOCK) ? 1 : 0;
       default:
          break;
    }
@@ -76,70 +66,63 @@ static int get_led(int led)
    return 0;
 }
 
-static void set_led(int led, int state)
+/* Writes @state to the keyboard LED numbered @led (0 Num Lock, 1 Caps
+ * Lock, 2 Scroll Lock) when it differs from the last one written. */
+static void keyboard_led(int led, int state)
 {
    XKeyboardControl values;
-   Display *dpy    = XOpenDisplay(0);
-   values.led      = led;
+   int key;
+
+   if (     !x11kb_cur->dpy
+         || (led < 0) || (led >= MAX_LEDS)
+         || !(key = key_translate(led))
+         || x11kb_cur->state[led] == state)
+      return;
+
+   values.led      = key;
    values.led_mode = state ? LedModeOn : LedModeOff;
-   XChangeKeyboardControl(dpy, KBLed | KBLedMode, &values);
-   XCloseDisplay(dpy);
-}
-
-static int keyboard_led(int led, int state)
-{
-   int status = 0;
-   int key    = led;
-
-   if ((led < 0) || (led >= MAX_LEDS))
-      return -1;
-
-   if (!(key = key_translate(key)))
-      return -1;
-
-   status = get_led(key);
-
-   if (state == -1)
-      return status;
-
-   if (   ( state  && !status)
-       || (!state  &&  status))
-   {
-      set_led(key, state);
-      x11kb_cur->state[led] = state;
-   }
-   return -1;
+   XChangeKeyboardControl(x11kb_cur->dpy, KBLed | KBLedMode, &values);
+   XFlush(x11kb_cur->dpy);
+   x11kb_cur->state[led] = state;
 }
 
 static void keyboard_init(void)
 {
    int i;
+   XKeyboardState kb;
    settings_t *settings = config_get_ptr();
 
-   if (!settings || x11kb_cur->init)
+   if (!settings || x11kb_cur->dpy)
       return;
+
+   if (!(x11kb_cur->dpy = XOpenDisplay(NULL)))
+      return;
+   XGetKeyboardControl(x11kb_cur->dpy, &kb);
 
    for (i = 0; i < MAX_LEDS; i++)
    {
-      x11kb_cur->setup[i]  = keyboard_led(i, -1);
-      x11kb_cur->state[i]  = -1;
-      x11kb_cur->map[i]    = settings->uints.led_map[i];
+      int key              = key_translate(i);
+      x11kb_cur->setup[i]  = key ? get_led(kb.led_mask, key) : -1;
+      x11kb_cur->state[i]  = x11kb_cur->setup[i];
+      x11kb_cur->map[i]    = (int)settings->uints.led_map[i];
       if (x11kb_cur->map[i] < 0)
          x11kb_cur->map[i] = i;
    }
-   x11kb_cur->init = true;
 }
 
 static void keyboard_free(void)
 {
    int i;
 
+   if (!x11kb_cur->dpy)
+      return;
+
    for (i = 0; i < MAX_LEDS; i++)
-   {
-      if (x11kb_cur->state[i] != -1 &&
-          x11kb_cur->state[i] != x11kb_cur->setup[i])
+      if (x11kb_cur->setup[i] != -1)
          keyboard_led(i, x11kb_cur->setup[i]);
-   }
+
+   XCloseDisplay(x11kb_cur->dpy);
+   x11kb_cur->dpy = NULL;
 }
 
 static void keyboard_set(int led, int state)
@@ -147,7 +130,7 @@ static void keyboard_set(int led, int state)
    if ((led < 0) || (led >= MAX_LEDS))
       return;
 
-   keyboard_led(x11kb_cur->map[led], state);
+   keyboard_led(x11kb_cur->map[led], state ? 1 : 0);
 }
 
 const led_driver_t keyboard_led_driver = {

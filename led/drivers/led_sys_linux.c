@@ -20,13 +20,17 @@
  * same numbering the X11 and Win32 keyboard drivers use.
  *
  * An LED is taken over the first time a core sets it: its trigger,
- * brightness and max_brightness are read, then its trigger is set to
- * "none". Freeing the driver puts the brightness back, then the
- * trigger, so a keyboard LED follows its lock key again. */
+ * brightness and max_brightness are read, its trigger is set to
+ * "none", and its brightness file is held open with the on and off
+ * values formatted once, so a state change is one pwrite. Freeing the
+ * driver puts the brightness back, then the trigger, so a keyboard
+ * LED follows its lock key again. */
 
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include <stdint.h>
 #include <compat/strl.h>
@@ -47,16 +51,23 @@
 #define SYSLED_NAME_LEN    64
 #define SYSLED_TRIGGER_LEN 64
 #define SYSLED_PATH_LEN    256
+#define SYSLED_VALUE_LEN   16
+
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
 
 typedef struct
 {
-   char name[SYSLED_NAME_LEN];
+   int    fd;           /* brightness, open for writing */
+   int    state;        /* 1 on, 0 off, -1 nothing written yet */
+   size_t len[2];       /* of value[0] (off) and value[1] (on) */
+   char   value[2][SYSLED_VALUE_LEN];
    /* What was there before; restored on free. Empty when it could
     * not be read, and then left as "none". */
-   char trigger[SYSLED_TRIGGER_LEN];
-   int  brightness;
-   int  max_brightness;
-   int  state;          /* last brightness written, -1 for none */
+   char   restore[SYSLED_VALUE_LEN];
+   char   trigger[SYSLED_TRIGGER_LEN];
+   char   name[SYSLED_NAME_LEN];
 } sysled_target_t;
 
 typedef struct
@@ -92,11 +103,10 @@ static int sysled_write(const char *name, const char *attr, const char *s)
    return ok;
 }
 
-static int sysled_write_int(const char *name, const char *attr, int value)
+/* A brightness value, written at offset 0 of the held file. */
+static int sysled_put(const sysled_target_t *t, const char *v, size_t len)
 {
-   char buf[16];
-   snprintf(buf, sizeof(buf), "%d\n", value);
-   return sysled_write(name, attr, buf);
+   return pwrite(t->fd, v, len, 0) == (ssize_t)len;
 }
 
 static int sysled_read_int(const char *name, const char *attr, int *value)
@@ -151,7 +161,9 @@ static void sysled_read_trigger(const char *name, char *s, size_t len)
 static int sysled_target(const char *name)
 {
    unsigned i;
+   int brightness, max_brightness;
    sysled_target_t *t;
+   char path[SYSLED_PATH_LEN];
 
    for (i = 0; i < sys_cur->n_targets; i++)
       if (string_is_equal(sys_cur->target[i].name, name))
@@ -162,16 +174,27 @@ static int sysled_target(const char *name)
       return -1;
 
    t = &sys_cur->target[sys_cur->n_targets];
-   if (!sysled_read_int(name, "brightness", &t->brightness))
+   if (!sysled_read_int(name, "brightness", &brightness))
       return -1;
-   if (     !sysled_read_int(name, "max_brightness", &t->max_brightness)
-         || t->max_brightness <= 0)
-      t->max_brightness = 1;
+   if (     !sysled_read_int(name, "max_brightness", &max_brightness)
+         || max_brightness <= 0)
+      max_brightness = 1;
+
+   snprintf(path, sizeof(path), SYSLED_ROOT "/%s/brightness", name);
+   if ((t->fd = open(path, O_WRONLY | O_CLOEXEC)) < 0)
+      return -1;
+
    sysled_read_trigger(name, t->trigger, sizeof(t->trigger));
-
    if (!sysled_write(name, "trigger", "none"))
+   {
+      close(t->fd);
       return -1;
+   }
 
+   t->len[0] = (size_t)snprintf(t->value[0], sizeof(t->value[0]), "0\n");
+   t->len[1] = (size_t)snprintf(t->value[1], sizeof(t->value[1]),
+         "%d\n", max_brightness);
+   snprintf(t->restore, sizeof(t->restore), "%d\n", brightness);
    strlcpy(t->name, name, sizeof(t->name));
    t->state = -1;
    return (int)sys_cur->n_targets++;
@@ -236,7 +259,8 @@ static void sys_led_free(void)
       const sysled_target_t *t = &sys_cur->target[i];
       /* Brightness first: writing it after a trigger is set would
        * clear that trigger again. */
-      sysled_write_int(t->name, "brightness", t->brightness);
+      sysled_put(t, t->restore, strlen(t->restore));
+      close(t->fd);
       if (t->trigger[0] && !string_is_equal(t->trigger, "none"))
          sysled_write(t->name, "trigger", t->trigger);
    }
@@ -262,13 +286,12 @@ static void sys_led_set(int led, int state)
    for (mask = sys_cur->leds[led], i = 0; mask; mask >>= 1, i++)
    {
       sysled_target_t *t;
-      int value;
+      int on = (state != 0);
       if (!(mask & 1))
          continue;
-      t     = &sys_cur->target[i];
-      value = state ? t->max_brightness : 0;
-      if (t->state != value && sysled_write_int(t->name, "brightness", value))
-         t->state = value;
+      t  = &sys_cur->target[i];
+      if (t->state != on && sysled_put(t, t->value[on], t->len[on]))
+         t->state = on;
    }
 }
 
