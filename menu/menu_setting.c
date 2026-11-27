@@ -8953,6 +8953,24 @@ static size_t setting_get_string_representation_uint_save_compression_codec(
    return 0;
 }
 
+static size_t setting_get_string_representation_sort_precedence(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   return strlcpy(s, msg_hash_to_str(
+         string_is_equal(setting->value.target.string, "corename-contentdir")
+         ? MSG_SORT_PRECEDENCE_CORE_CONTENT
+         : MSG_SORT_PRECEDENCE_CONTENT_CORE), len);
+}
+
+static int setting_string_action_sort_precedence(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   strlcpy(setting->value.target.string,
+         string_is_equal(setting->value.target.string, "corename-contentdir")
+         ? "contentdir-corename" : "corename-contentdir", setting->size);
+   return 0;
+}
+
 static size_t setting_get_string_representation_uint_audio_resampler_quality(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -11694,6 +11712,10 @@ static void general_write_handler(rarch_setting_t *setting)
 
          rarch_cmd = CMD_EVENT_APPLY_WINDOWED_SCALE;
          break;
+      case MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE:
+      case MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE:
+      case MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE:
+      case MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE:
       case MENU_ENUM_LABEL_REWIND_ENABLE:
          {
             struct menu_state *menu_st = menu_state_get_ptr();
@@ -16484,7 +16506,7 @@ static void settings_build_saving(
    {
 
          uint8_t i, listing = 0;
-         struct bool_entry bool_entries[12];
+         struct bool_entry bool_entries[14];
 
          GROUP_STATE(MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS, MENU_ENUM_LABEL_SAVING_SETTINGS);
 
@@ -16512,11 +16534,27 @@ static void settings_build_saving(
             bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
          listing++;
 
+         bool_entries[listing].target         = &settings->bools.sort_savefiles_by_content_subfolders_enable;
+         bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_SUBFOLDERS_ENABLE;
+         bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_SUBFOLDERS_ENABLE;
+         bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+         if (DEFAULT_SORT_SAVEFILES_BY_CONTENT_SUBFOLDERS_ENABLE)
+            bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
+         listing++;
+
          bool_entries[listing].target         = &settings->bools.sort_savestates_by_content_enable;
          bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE;
          bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE;
          bool_entries[listing].flags          = SD_FLAG_ADVANCED;
          if (DEFAULT_SORT_SAVESTATES_BY_CONTENT_ENABLE)
+            bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
+         listing++;
+
+         bool_entries[listing].target         = &settings->bools.sort_savestates_by_content_subfolders_enable;
+         bool_entries[listing].name_enum_idx  = MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_SUBFOLDERS_ENABLE;
+         bool_entries[listing].SHORT_enum_idx = MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_SUBFOLDERS_ENABLE;
+         bool_entries[listing].flags          = SD_FLAG_ADVANCED;
+         if (DEFAULT_SORT_SAVESTATES_BY_CONTENT_SUBFOLDERS_ENABLE)
             bool_entries[listing].flags      |= SD_FLAG_DEFAULT_VALUE;
          listing++;
 
@@ -16605,6 +16643,11 @@ static void settings_build_saving(
          }
 
             ADD_DESC(sav_desc_0);
+            for (i = 1; i <= 2; i++)
+            {
+               (*list)[list_info->index - i].type       = ST_STRING_OPTIONS;
+               (*list)[list_info->index - i].aux.values = "contentdir-corename|corename-contentdir";
+            }
             ADD_DESC(saving2_desc_0);
 
          GROUP_END();

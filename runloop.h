@@ -1226,6 +1226,10 @@ bool runloop_get_replay_path(char *path, size_t len, int slot);
 
 void runloop_state_free(runloop_state_t *runloop_st);
 
+void runloop_save_sort_dir(settings_t *settings,
+      char *s, size_t len, const char *content_path,
+      const char *library_name, bool core_first, bool subfolders);
+
 void runloop_path_set_redirect(settings_t *settings, const char *a, const char *b);
 
 void runloop_path_set_special(char **argv, unsigned num_content);

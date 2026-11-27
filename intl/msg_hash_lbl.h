@@ -2564,8 +2564,16 @@ MSG_HASH(
    "sort_savefiles_by_content_enable"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_SUBFOLDERS_ENABLE,
+   "sort_savefiles_by_content_subfolders_enable"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    "sort_savestates_by_content_enable"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_SUBFOLDERS_ENABLE,
+   "sort_savestates_by_content_subfolders_enable"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,

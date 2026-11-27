@@ -1232,7 +1232,9 @@ typedef struct settings
       bool sort_savefiles_enable;
       bool sort_savestates_enable;
       bool sort_savefiles_by_content_enable;
+      bool sort_savefiles_by_content_subfolders_enable;
       bool sort_savestates_by_content_enable;
+      bool sort_savestates_by_content_subfolders_enable;
       bool sort_screenshots_by_content_enable;
       bool config_save_on_exit;
       bool config_save_minimal;
@@ -1373,6 +1375,8 @@ typedef struct settings
       char midi_input[32];
       char midi_output[32];
       char ai_service_backend[32];
+      char sort_savefiles_precedence[32];
+      char sort_savestates_precedence[32];
 #ifdef HAVE_LAKKA
       char cpu_main_gov[32];
       char cpu_menu_gov[32];
