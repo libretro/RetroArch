@@ -1105,13 +1105,13 @@ static gfx_surface_t *gfx_thumbnail_anim_surface(void *user,
    return s;
 }
 
-/* 2 ms of this vsync and no more: the frame guard for the adopted
- * read inside gfx_thumbnail_animate. */
+/* The frame guard for the adopted read inside gfx_thumbnail_animate:
+ * while its bound has time left. */
 static bool gfx_thumb_frame_budget(void *ud, size_t avail, size_t len)
 {
    (void)avail;
    (void)len;
-   return cpu_features_get_time_usec() - *(int64_t*)ud < 2000;
+   return cpu_features_bound_left((const cpu_features_bound_t*)ud) > 0;
 }
 
 /* 64-bit FNV-1a; never 0 for a non-empty path, so 0 means "none". */
@@ -1329,10 +1329,12 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
        * time budget per vsync, holding the static frame meanwhile.
        * Playback and the audio decode only start on a complete
        * buffer, so the decoders never see the partial-read wall.  The
-       * 2 ms cap is handed to the fill, so it lands between the fill's
-       * own reads rather than after a whole chunk. */
+       * fill gets 2 ms on marks, checked between its own reads rather
+       * than after a whole chunk. */
+      cpu_features_bound_t budget;
+      cpu_features_bound_begin(&budget, 2000);
       data_transfer_iterate_while(thumbnail->anim_dt, 0,
-            gfx_thumb_frame_budget, &now);
+            gfx_thumb_frame_budget, &budget);
       if (data_transfer_failed(thumbnail->anim_dt))
       {
          /* A read that ended short of the file (I/O error, the file

@@ -143,6 +143,34 @@ retro_perf_tick_t cpu_features_perf_from_usec(retro_time_t usec);
 #define CPU_FEATURES_MARK_TO_USEC(span) ((retro_time_t)(span))
 #define CPU_FEATURES_USEC_TO_MARK(usec) ((retro_perf_tick_t)(usec))
 #endif
+
+/* A wait bounded at a span from the instant it began, held on marks
+ * where their rate is known and on cpu_features_get_time_usec() only
+ * until it is, so a wait asked once a frame costs no clock read. */
+typedef struct cpu_features_bound
+{
+   retro_perf_tick_t mark; /* the mark the wait began at */
+   retro_perf_tick_t span; /* the bound in marks; 0: held on the clock */
+   retro_time_t      end;  /* the clock instant it ends at, when span is 0 */
+} cpu_features_bound_t;
+
+/**
+ * cpu_features_bound_begin:
+ * @b    : the bound to start.
+ * @usec : the span it allows; one not above 0 is over from the start.
+ *
+ * Any thread; @b belongs to the one that waits on it.
+ */
+void cpu_features_bound_begin(cpu_features_bound_t *b, retro_time_t usec);
+
+/**
+ * cpu_features_bound_left:
+ * @b : a bound cpu_features_bound_begin() started.
+ *
+ * @return microseconds left of @b, 0 once it is over. A counter seen
+ *         running backwards (not kept in step across cores) ends it.
+ */
+retro_time_t cpu_features_bound_left(const cpu_features_bound_t *b);
 #endif
 
 /**

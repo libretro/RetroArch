@@ -1127,14 +1127,15 @@ int gfx_anim_preview_seek_step(void *user, int64_t target_us,
    }
    if (p->seek_phase == 1)
    {
-      int64_t started = cpu_features_get_time_usec();
+      cpu_features_bound_t spent;
       unsigned budget = 1024, feeds = 1;
+      cpu_features_bound_begin(&spent, 4000);
       if (!gfx_anim_preview_seek_feed(p)) return -1;
       do
       {
          result = image_transfer_anim_stream_seek_step(p->stream, p->type,
                &p->seek_video_us);
-         if (result || cpu_features_get_time_usec() - started >= 4000)
+         if (result || !cpu_features_bound_left(&spent))
             break;
          if (image_transfer_anim_stream_waiting(p->stream, p->type))
          {

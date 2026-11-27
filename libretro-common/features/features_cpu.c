@@ -480,6 +480,33 @@ retro_perf_tick_t cpu_features_perf_from_usec(retro_time_t usec)
    return (retro_perf_tick_t)usec * (retro_perf_tick_t)rate / 1000;
 }
 
+void cpu_features_bound_begin(cpu_features_bound_t *b, retro_time_t usec)
+{
+   b->span = CPU_FEATURES_USEC_TO_MARK(usec);
+   b->mark = CPU_FEATURES_MARK();
+   b->end  = (!b->span && usec > 0)
+      ? cpu_features_get_time_usec() + usec
+      : 0;
+}
+
+retro_time_t cpu_features_bound_left(const cpu_features_bound_t *b)
+{
+   if (b->span)
+   {
+      retro_perf_tick_t gone = CPU_FEATURES_MARK() - b->mark;
+      if (gone >= b->span)
+         return 0;
+      return CPU_FEATURES_MARK_TO_USEC(b->span - gone);
+   }
+   if (b->end)
+   {
+      retro_time_t now = cpu_features_get_time_usec();
+      if (now < b->end)
+         return b->end - now;
+   }
+   return 0;
+}
+
 #endif /* RETRO_DISABLE_HOST_CLOCK */
 
 #if defined(__x86_64__) || defined(__i386__) || defined(__i486__) || defined(__i686__) || (defined(_M_X64) && _MSC_VER > 1310) || (defined(_M_IX86) && _MSC_VER > 1310)
