@@ -920,6 +920,8 @@ static int rsnd_update_server_info(rsound_t *rd)
 
       /* The length of the argument message is stored in the small 8 byte header. */
       len = strtol(substr, NULL, 0);
+      if (len < 0 || len > RSD_PROTO_MAXSIZE)
+         return -1;
 
       /* Receive the rest of the data. */
       if (rsnd_recv_chunk(rd->conn.ctl_socket, temp, len, 0) < len)

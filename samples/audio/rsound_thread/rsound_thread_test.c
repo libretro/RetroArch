@@ -8,7 +8,11 @@
  * the thread once, and close the connection once, from the frontend.
  *
  * The server is the other end of a socketpair, drained by a thread of
- * its own. librsound is included for its statics. */
+ * its own. librsound is included for its statics.
+ *
+ * The control channel's replies carry a server-chosen body length; a
+ * body longer than the protocol limit, or a negative length, is
+ * refused before anything is received into the reply buffer. */
 
 #include <stdio.h>
 #include <signal.h>
@@ -166,6 +170,51 @@ static void check_lend(void)
    retro_spsc_free(&rsd.ring);
 }
 
+/* One control reply: @hdr is the 8-byte header, followed by @body_len
+ * bytes of filler. Returns rsnd_update_server_info()'s result. */
+static int control_reply(rsound_t *rd, const char *hdr, size_t body_len)
+{
+   int    sv[2];
+   int    ret;
+   char   body[1024];
+   int    saved = rd->conn.ctl_socket;
+
+   if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) != 0)
+   {
+      printf("FAIL: socketpair\n");
+      failures++;
+      return 0;
+   }
+   memset(body, 'A', sizeof(body));
+   if (     write(sv[1], hdr, RSD_PROTO_CHUNKSIZE) != RSD_PROTO_CHUNKSIZE
+         || write(sv[1], body, body_len) != (ssize_t)body_len)
+   {
+      printf("FAIL: control write\n");
+      failures++;
+   }
+   rd->conn.ctl_socket = sv[0];
+   ret                 = rsnd_update_server_info(rd);
+   rd->conn.ctl_socket = saved;
+   close(sv[0]);
+   close(sv[1]);
+   return ret;
+}
+
+/* Body lengths from the server are bounded by the reply buffer. */
+static void check_control_length(rsound_t *rd)
+{
+   CHECK(control_reply(rd, "RSD  256", 256) == 0,
+         "a body at the protocol limit was refused");
+   CHECK(control_reply(rd, "RSD    0", 0) == 0,
+         "an empty body was refused");
+   CHECK(control_reply(rd, "RSD  257", 257) == -1,
+         "a body past the protocol limit was accepted");
+   CHECK(control_reply(rd, "RSD 1000", 1000) == -1,
+         "an oversized body was accepted");
+   CHECK(control_reply(rd, "RSD   -1", 600) == -1,
+         "a negative body length was accepted");
+}
+
 int main(void)
 {
    rsound_t *rd;
@@ -189,6 +238,8 @@ int main(void)
    rd->max_latency            = 0;
    rd->conn_type              = 0;
    rsd_set_callback(rd, audio_cb, error_cb, 64, NULL);
+
+   check_control_length(rd);
 
    for (i = 0; i < ROUNDS; i++)
    {
