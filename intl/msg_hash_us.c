@@ -19,6 +19,7 @@
 #include <stddef.h>
 
 #include <compat/strl.h>
+#include <lists/file_list.h>
 #include <string/stdstring.h>
 
 #include "../msg_hash.h"
@@ -627,13 +628,25 @@ static msg_hash_strtab_index_t msg_hash_us_index;
 
 void msg_hash_us_index_init(void)
 {
+   /* Both tables are read-only and live as long as the process, so
+    * menu entries naming their rows borrow the strings instead of
+    * copying them.  The first build runs from the configuration
+    * defaults, before the task thread exists. */
    if (msg_hash_us_index.tab != &msg_hash_us_strtab)
+   {
       msg_hash_strtab_index_build(&msg_hash_us_index,
             &msg_hash_us_strtab);
+      file_list_add_static_strings((const char*)&msg_hash_us_blob,
+            sizeof(msg_hash_us_blob));
+   }
 #ifdef HAVE_MENU
    if (msg_hash_us_lbl_index.tab != &msg_hash_us_lbl_strtab)
+   {
       msg_hash_strtab_index_build(&msg_hash_us_lbl_index,
             &msg_hash_us_lbl_strtab);
+      file_list_add_static_strings((const char*)&msg_hash_us_lbl_blob,
+            sizeof(msg_hash_us_lbl_blob));
+   }
 #endif
 }
 #endif

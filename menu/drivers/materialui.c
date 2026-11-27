@@ -11150,28 +11150,25 @@ static bool materialui_preswitch_tabs(materialui_handle_t *mui,
    if (stack_size < 1)
       return false;
 
-   /* Delete existing label */
-   file_list_free_label(menu_stack, stack_size - 1);
-
    /* Assign new label/type */
    switch (target_tab->type)
    {
       case MUI_NAV_BAR_MENU_TAB_PLAYLISTS:
-         menu_stack->list[stack_size - 1].label =
-            strdup(MENU_ENUM_LABEL_PLAYLISTS_TAB_STR);
+         file_list_set_label_at_offset(menu_stack, stack_size - 1,
+            MENU_ENUM_LABEL_PLAYLISTS_TAB_STR);
          menu_stack->list[stack_size - 1].type =
             MENU_PLAYLISTS_TAB;
          break;
       case MUI_NAV_BAR_MENU_TAB_SETTINGS:
-         menu_stack->list[stack_size - 1].label =
-            strdup(MENU_ENUM_LABEL_SETTINGS_TAB_STR);
+         file_list_set_label_at_offset(menu_stack, stack_size - 1,
+            MENU_ENUM_LABEL_SETTINGS_TAB_STR);
          menu_stack->list[stack_size - 1].type =
             MENU_SETTINGS;
          break;
       case MUI_NAV_BAR_MENU_TAB_MAIN:
       default:
-         menu_stack->list[stack_size - 1].label =
-            strdup(MENU_ENUM_LABEL_MAIN_MENU_STR);
+         file_list_set_label_at_offset(menu_stack, stack_size - 1,
+            MENU_ENUM_LABEL_MAIN_MENU_STR);
          menu_stack->list[stack_size - 1].type =
             MENU_SETTINGS;
          break;

@@ -22,6 +22,7 @@
 
 #include <retro_posix_source.h>
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,18 +48,55 @@
  * to every entry of every list. */
 static char file_list_empty_str[1] = "";
 
+/* Read-only string tables registered by file_list_add_static_strings():
+ * an entry string inside one is lent to the list rather than copied.
+ * One unsigned compare per range, so a pointer below a range's start
+ * wraps past its length and falls outside it too. */
+#define FILE_LIST_STATIC_RANGES 4
+static uintptr_t file_list_static_lo [FILE_LIST_STATIC_RANGES];
+static size_t    file_list_static_len[FILE_LIST_STATIC_RANGES];
+static unsigned  file_list_static_count;
+
+static INLINE bool file_list_is_static(const char *s)
+{
+   unsigned i;
+   uintptr_t p = (uintptr_t)s;
+   for (i = 0; i < file_list_static_count; i++)
+      if (p - file_list_static_lo[i] < file_list_static_len[i])
+         return true;
+   return false;
+}
+
+bool file_list_add_static_strings(const char *s, size_t len)
+{
+   unsigned i;
+   if (!s || !len)
+      return false;
+   for (i = 0; i < file_list_static_count; i++)
+      if (file_list_static_lo[i] == (uintptr_t)s)
+         return true;
+   if (file_list_static_count >= FILE_LIST_STATIC_RANGES)
+      return false;
+   file_list_static_lo [file_list_static_count] = (uintptr_t)s;
+   file_list_static_len[file_list_static_count] = len;
+   file_list_static_count++;
+   return true;
+}
+
 static char *file_list_strdup(const char *s)
 {
    if (!s)
       return NULL;
    if (!*s)
       return file_list_empty_str;
+   if (file_list_is_static(s))
+      return (char*)s;
    return strdup(s);
 }
 
 static void file_list_strfree(char *s)
 {
-   if (s && s != file_list_empty_str)
+   if (s && s != file_list_empty_str && !file_list_is_static(s))
       free(s);
 }
 

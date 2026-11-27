@@ -419,6 +419,7 @@ jobs:
             scaler_rows_test
             image_scale_transfer_test
             file_list_oom_test
+            file_list_static_test
             rpng_chunk_overflow_test
             rpng_roundtrip_test
             rpng_decode_corpus_test

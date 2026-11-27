@@ -10636,64 +10636,62 @@ static void xmb_list_cache(void *data, enum menu_list_type type,
          if (stack_size < 1)
             break;
 
-         file_list_free_label(menu_stack, stack_size - 1);
-
          switch (xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr))
          {
             case XMB_SYSTEM_TAB_MAIN:
-               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_MAIN_MENU_STR);
+               file_list_set_label_at_offset(menu_stack, stack_size - 1, MENU_ENUM_LABEL_MAIN_MENU_STR);
                menu_stack->list[stack_size - 1].type  = MENU_SETTINGS;
                break;
             case XMB_SYSTEM_TAB_SETTINGS:
-               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_SETTINGS_TAB_STR);
+               file_list_set_label_at_offset(menu_stack, stack_size - 1, MENU_ENUM_LABEL_SETTINGS_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_SETTINGS_TAB;
                break;
 #if defined(HAVE_IMAGEVIEWER) || defined(HAVE_MENU)
             case XMB_SYSTEM_TAB_IMAGES:
-               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_IMAGES_TAB_STR);
+               file_list_set_label_at_offset(menu_stack, stack_size - 1, MENU_ENUM_LABEL_IMAGES_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_IMAGES_TAB;
                break;
 #endif
             case XMB_SYSTEM_TAB_MUSIC:
-               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_MUSIC_TAB_STR);
+               file_list_set_label_at_offset(menu_stack, stack_size - 1, MENU_ENUM_LABEL_MUSIC_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_MUSIC_TAB;
                break;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             case XMB_SYSTEM_TAB_VIDEO:
-               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_VIDEO_TAB_STR);
+               file_list_set_label_at_offset(menu_stack, stack_size - 1, MENU_ENUM_LABEL_VIDEO_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_VIDEO_TAB;
                break;
 #endif
             case XMB_SYSTEM_TAB_HISTORY:
-               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_HISTORY_TAB_STR);
+               file_list_set_label_at_offset(menu_stack, stack_size - 1, MENU_ENUM_LABEL_HISTORY_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_HISTORY_TAB;
                break;
             case XMB_SYSTEM_TAB_FAVORITES:
-               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_FAVORITES_TAB_STR);
+               file_list_set_label_at_offset(menu_stack, stack_size - 1, MENU_ENUM_LABEL_FAVORITES_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_FAVORITES_TAB;
                break;
 #ifdef HAVE_NETWORKING
             case XMB_SYSTEM_TAB_NETPLAY:
-               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_NETPLAY_TAB_STR);
+               file_list_set_label_at_offset(menu_stack, stack_size - 1, MENU_ENUM_LABEL_NETPLAY_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_NETPLAY_TAB;
                break;
 #endif
             case XMB_SYSTEM_TAB_ADD:
-               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_ADD_TAB_STR);
+               file_list_set_label_at_offset(menu_stack, stack_size - 1, MENU_ENUM_LABEL_ADD_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_ADD_TAB;
                break;
 #if defined(HAVE_LIBRETRODB)
             case XMB_SYSTEM_TAB_EXPLORE:
-               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_EXPLORE_TAB_STR);
+               file_list_set_label_at_offset(menu_stack, stack_size - 1, MENU_ENUM_LABEL_EXPLORE_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_EXPLORE_TAB;
                break;
 #endif
             case XMB_SYSTEM_TAB_CONTENTLESS_CORES:
-               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB_STR);
+               file_list_set_label_at_offset(menu_stack, stack_size - 1, MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_CONTENTLESS_CORES_TAB;
                break;
             default:
-               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_HORIZONTAL_MENU_STR);
+               file_list_set_label_at_offset(menu_stack, stack_size - 1, MENU_ENUM_LABEL_HORIZONTAL_MENU_STR);
                menu_stack->list[stack_size - 1].type  = MENU_SETTING_HORIZONTAL_MENU;
                break;
          }

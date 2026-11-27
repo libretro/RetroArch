@@ -160,6 +160,21 @@ void file_list_free_label(file_list_t *list, size_t index);
 void file_list_set_label_at_offset(file_list_t *list, size_t index,
       const char *label);
 
+/**
+ * Registers [@s, @s + @len) as immutable storage that outlives every
+ * list.  An entry path, label or alt that points into a registered
+ * range is kept by pointer rather than copied, and never freed.
+ *
+ * Only exact, read-only objects qualify: a range covering storage that
+ * is ever rewritten would change entries under their lists.  Register
+ * before any other thread uses a file list; a range is never removed.
+ * Registering the same start again is a no-op.
+ *
+ * @return false if the range is empty or the registry is full, in
+ * which case strings in it are copied as before.
+ */
+bool file_list_add_static_strings(const char *s, size_t len);
+
 void file_list_sort_on_alt(file_list_t *list);
 
 void file_list_sort_on_type(file_list_t *list);
