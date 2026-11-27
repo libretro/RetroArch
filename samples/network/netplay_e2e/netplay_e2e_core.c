@@ -4,8 +4,10 @@
  * whether the peers stayed together and whether the stick crossed.
  *
  * NETPLAY_E2E_LOG: the log. NETPLAY_E2E_PAD: bytes a state carries past
- * the RAM, to stand in for a large one. NETPLAY_E2E_DESYNC: frames run
- * after the first state load before the RAM is upset once.
+ * the RAM, to stand in for a large one. NETPLAY_E2E_DESYNC: which frame,
+ * counted from the first state load, upsets the RAM: every time it runs,
+ * as a rollback re-runs it from a state taken before, until a state from
+ * the other peer replaces it.
  * NETPLAY_E2E_PACE_MS: milliseconds slept a frame (4 if unset), to make
  * one peer lag the other. NETPLAY_E2E_JUNK: the state carries a count of
  * its own serializations, which differs between peers and never reaches
@@ -48,7 +50,7 @@ static size_t   pad;
 static uint32_t junk;
 static uint32_t serials;
 static unsigned desync_after;
-static unsigned since_load;
+static uint32_t desync_frame;
 static unsigned pace_ms;
 static bool     loaded;
 static FILE    *log_file;
@@ -98,7 +100,7 @@ void retro_init(void)
    junk     = (j && *j == '1') ? 4 : 0;
    serials  = 0;
    loaded   = false;
-   since_load = 0;
+   desync_frame = 0;
    log_file = l ? fopen(l, "w") : NULL;
    memset(ram, 0, sizeof(ram));
    frame    = 0;
@@ -163,7 +165,7 @@ void retro_run(void)
       }
    }
    mix(frame);
-   if (loaded && desync_after && ++since_load == desync_after)
+   if (desync_frame && frame == desync_frame)
       ram[0] ^= 0x5a;
    frame++;
    if (log_file)
@@ -206,10 +208,16 @@ bool retro_unserialize(const void *data, size_t size)
       return false;
    memcpy(&frame, d, 4);
    memcpy(ram, d + 4, RAM_SIZE);
-   if (!loaded && log_file)
+   if (!loaded)
    {
-      fprintf(log_file, "loaded %u\n", (unsigned)frame);
-      fflush(log_file);
+      /* The frame the desync_after'th run from here runs. */
+      if (desync_after)
+         desync_frame = frame + desync_after - 1;
+      if (log_file)
+      {
+         fprintf(log_file, "loaded %u\n", (unsigned)frame);
+         fflush(log_file);
+      }
    }
    loaded = true;
    return true;
