@@ -108,6 +108,7 @@ static struct
    PFN_vkCreateInstance create_instance;
    PFN_vkEnumerateInstanceLayerProperties enumerate_layers;
    PFN_vkEnumerateInstanceExtensionProperties enumerate_extensions;
+   PFN_vkEnumerateInstanceVersion enumerate_version; /* NULL: a Vulkan 1.0 loader */
    bool tried;
 } link_vk_now;
 
@@ -144,6 +145,8 @@ bool link_vk_loader(unsigned index)
          link_vk_now.enumerate_extensions = (PFN_vkEnumerateInstanceExtensionProperties)
             link_vk_now.get_instance_proc_addr(VK_NULL_HANDLE,
                   "vkEnumerateInstanceExtensionProperties");
+         link_vk_now.enumerate_version = (PFN_vkEnumerateInstanceVersion)
+            link_vk_now.get_instance_proc_addr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion");
       }
    }
    if (     link_vk_now.create_instance && link_vk_now.enumerate_layers
@@ -355,7 +358,8 @@ static VkInstance link_vk_create_instance(void *opaque, const VkInstanceCreateIn
 
 /* The instance, for the core's application info or else Vulkan 1.1, made
  * by a version 2 negotiation's create_instance through the wrapper or by
- * the harness, and a messenger when the run validates */
+ * the harness, and a messenger when the run validates. As RetroArch does,
+ * an application info below 1.1 is raised to 1.1 where the loader has it. */
 static bool link_vk_instance(link_vk_t *v,
       const struct retro_hw_render_context_negotiation_interface_vulkan *n)
 {
@@ -364,6 +368,7 @@ static bool link_vk_instance(link_vk_t *v,
    VkDebugUtilsMessengerCreateInfoEXT listener;
    VkInstanceCreateInfo info;
    VkResult result;
+   uint32_t loader = VK_API_VERSION_1_0;
    if (v->validate && !link_vk_has_layer())
       return link_vk_refuse(v, "no layer ", LINK_VK_LAYER, VK_SUCCESS);
    /* A layer without VK_EXT_layer_settings takes VK_EXT_validation_features */
@@ -383,6 +388,14 @@ static bool link_vk_instance(link_vk_t *v,
       own.pApplicationName = "link_harness";
       own.apiVersion       = VK_API_VERSION_1_1;
       application          = &own;
+   }
+   else if (application->apiVersion < VK_API_VERSION_1_1 && link_vk_now.enumerate_version
+         && link_vk_now.enumerate_version(&loader) == VK_SUCCESS
+         && loader >= VK_API_VERSION_1_1)
+   {
+      own            = *application;
+      own.apiVersion = VK_API_VERSION_1_1;
+      application    = &own;
    }
    v->created = VK_SUCCESS;
    if (n && n->interface_version >= 2 && n->create_instance)

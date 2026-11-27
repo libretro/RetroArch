@@ -97,12 +97,17 @@ static struct
    bool needs_surface;              /* it draws only when it can present to a surface */
    bool presents;                   /* it draws: create_device's queue can present to the
                                        surface it was given, or none is needed */
+   bool asks_1_0;                   /* its application info asks for Vulkan 1.0 */
    bool said_no_device;             /* logged, or a failed regrow was; context_reset
                                        clears it */
 } lt_vk;
 
 static const VkApplicationInfo lt_vk_application = {
    VK_STRUCTURE_TYPE_APPLICATION_INFO, NULL, "link test", 0, NULL, 0, VK_API_VERSION_1_1
+};
+
+static const VkApplicationInfo lt_vk_application_1_0 = {
+   VK_STRUCTURE_TYPE_APPLICATION_INFO, NULL, "link test", 0, NULL, 0, VK_API_VERSION_1_0
 };
 
 /* False, with what failed as an error, unless result is VK_SUCCESS */
@@ -180,13 +185,14 @@ static bool lt_vk_find_entries(void)
 
 static const VkApplicationInfo *lt_vk_get_application_info(void)
 {
-   return &lt_vk_application;
+   return lt_vk.asks_1_0 ? &lt_vk_application_1_0 : &lt_vk_application;
 }
 
 /* A device with one queue that does graphics and compute, on gpu or the
  * first one when gpu is none, made through wrapper when there is one.
  * info has the frontend's extensions, layers and features. With a surface
- * needed, it presents if that queue's family can present to surface. */
+ * needed, it presents if that queue's family can present to surface. Asking
+ * for Vulkan 1.0, it still calls a 1.1 entry point, as Dolphin does. */
 static bool lt_vk_device(struct retro_vulkan_context *context, VkInstance instance,
       VkPhysicalDevice gpu, VkSurfaceKHR surface, PFN_vkGetInstanceProcAddr get_instance_proc_addr,
       VkDeviceCreateInfo *info, retro_vulkan_create_device_wrapper_t wrapper, void *opaque)
@@ -239,6 +245,21 @@ static bool lt_vk_device(struct retro_vulkan_context *context, VkInstance instan
          get_instance_proc_addr(instance, "vkGetPhysicalDeviceSurfaceSupportKHR");
       VkBool32 can = VK_FALSE;
       lt_vk.presents = supports && supports(gpu, family, surface, &can) == VK_SUCCESS && can;
+   }
+   if (lt_vk.asks_1_0)
+   {
+      PFN_vkGetPhysicalDeviceProperties2 get_properties2 =
+         (PFN_vkGetPhysicalDeviceProperties2)
+         get_instance_proc_addr(instance, "vkGetPhysicalDeviceProperties2");
+      VkPhysicalDeviceProperties2 properties;
+      if (!get_properties2)
+      {
+         lt_vk.host->fail("create_device: no vkGetPhysicalDeviceProperties2", 0, 0);
+         return false;
+      }
+      memset(&properties, 0, sizeof(properties));
+      properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+      get_properties2(gpu, &properties);
    }
    memset(&queue, 0, sizeof(queue));
    queue.sType                = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -592,6 +613,7 @@ static bool lt_vk_load(const struct lt_render_host *host)
    static const char *const layouts[]    = { LT_VK_LAYOUT_DEFAULT, "general" };
    static const char *const formats[]    = { LT_VK_FORMAT_DEFAULT, "bgra" };
    static const char *const surfaces[]   = { LT_VK_SURFACE_DEFAULT, "needed" };
+   static const char *const apis[]       = { LT_VK_API_DEFAULT, "1.0" };
    struct retro_hw_render_context_negotiation_interface support;
    unsigned negotiate, version;
    memset(&lt_vk, 0, sizeof(lt_vk));
@@ -613,6 +635,8 @@ static bool lt_vk_load(const struct lt_render_host *host)
    lt_vk.needs_surface      = lt_render_option("link_test_vk_surface", surfaces,
          sizeof(surfaces) / sizeof(*surfaces)) != 0;
    lt_vk.presents           = !lt_vk.needs_surface;
+   lt_vk.asks_1_0           = lt_render_option("link_test_vk_api", apis,
+         sizeof(apis) / sizeof(*apis)) != 0;
    lt_vk.hw.context_type    = RETRO_HW_CONTEXT_VULKAN;
    lt_vk.hw.version_major   = VK_API_VERSION_1_1;
    lt_vk.hw.context_reset   = lt_vk_context_reset;
@@ -622,6 +646,9 @@ static bool lt_vk_load(const struct lt_render_host *host)
       host->fail("SET_HW_RENDER refused", lt_vk.hw.context_type, lt_vk.hw.version_major);
       return false;
    }
+   /* Only a negotiation interface hands over an application info */
+   if (!version && lt_vk.asks_1_0)
+      host->fail("link_test_vk_api 1.0 with no negotiation interface", 0, 0);
    if (!version)
       return true;
    memset(&support, 0, sizeof(support));

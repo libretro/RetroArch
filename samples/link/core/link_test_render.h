@@ -21,6 +21,7 @@
 #define LT_VK_LAYOUT_DEFAULT    "shader_read"
 #define LT_VK_FORMAT_DEFAULT    "rgba"
 #define LT_VK_SURFACE_DEFAULT   "ignored"
+#define LT_VK_API_DEFAULT       "1.1"
 
 struct lt_render_host
 {

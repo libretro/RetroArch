@@ -1,0 +1,12 @@
+# twin: render_one
+# vulkan/api_v1 through negotiate_v2: the application info the core's
+# create_instance is given, and hands the harness's wrapper, must ask for
+# 1.1 where the loader has it.
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_vk_negotiate v2
+option 0 link_test_vk_api 1.0
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end

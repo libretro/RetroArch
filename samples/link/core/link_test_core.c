@@ -213,6 +213,8 @@ static const struct retro_variable lt_variables[] = {
                               LT_VK_FORMAT_DEFAULT "|bgra" },
    { "link_test_vk_surface",  "Whether the Vulkan picture needs a surface to present to; "
                               LT_VK_SURFACE_DEFAULT "|needed" },
+   { "link_test_vk_api",      "Vulkan version the core's application info asks for; "
+                              LT_VK_API_DEFAULT "|1.0" },
    { NULL, NULL }
 };
 
@@ -609,6 +611,7 @@ static void lt_read_render(void)
       lt_option_only("link_test_vk_layout", LT_VK_LAYOUT_DEFAULT, "vulkan");
       lt_option_only("link_test_vk_format", LT_VK_FORMAT_DEFAULT, "vulkan");
       lt_option_only("link_test_vk_surface", LT_VK_SURFACE_DEFAULT, "vulkan");
+      lt_option_only("link_test_vk_api", LT_VK_API_DEFAULT, "vulkan");
    }
    if ((s = lt_option("link_test_grow")) && strcmp(s, "off"))
    {

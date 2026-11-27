@@ -490,9 +490,10 @@ For a `render=vulkan` console:
 - After `retro_load_game` the console gets an instance and a device of its
   own and resolves its own entry points: nothing is shared between
   consoles. The instance is for the application info the interface's
-  `get_application_info` gives, else for Vulkan 1.1, and a version 2
-  interface's `create_instance` makes it through the harness's wrapper,
-  which adds what `--vk-validate` asks for. The interface's
+  `get_application_info` gives, else for Vulkan 1.1; as RetroArch does,
+  one that asks for less is raised to 1.1 when the loader has 1.1. A
+  version 2 interface's `create_instance` makes it through the harness's
+  wrapper, which adds what `--vk-validate` asks for. The interface's
   `create_device2` makes the device through the harness's wrapper, on the
   physical device the harness chose and, if it refuses that one, on one the
   core chooses; a version 1 interface's `create_device` makes it with
@@ -688,6 +689,10 @@ The scenarios in `vulkan/`:
 - `surface_v1` and `surface_v2` (`render_one`): `negotiate_v1` and
   `negotiate_v2` with a core that draws only when its `create_device` or
   `create_device2` was given a surface its queue can present to.
+- `api_v1` and `api_v2` (`render_one`): `negotiate_v1` and `negotiate_v2`
+  with a core whose application info asks for Vulkan 1.0 and which calls
+  a 1.1 entry point, which the validation layer reports unless the
+  harness raises the instance to 1.1.
 
 What is not served or not checked:
 
@@ -712,6 +717,8 @@ What is not served or not checked:
   `libretro_vulkan.h` allows; RetroArch refuses one.
 - No check runs a loader that does not offer `VK_EXT_headless_surface`,
   where a core is given no surface.
+- No check runs a Vulkan 1.0 loader, where an application info that asks
+  for 1.0 is kept as it is.
 
 ## Output
 
@@ -797,6 +804,7 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_vk_layout` | shader_read, general: the layout `set_image` names; in `GENERAL` part 1 also copies a texel of the image | shader_read |
 | `link_test_vk_format` | rgba, bgra: the image's format, `R8G8B8A8_UNORM` or `B8G8R8A8_UNORM` | rgba |
 | `link_test_vk_surface` | ignored, needed: with needed it draws only when its `create_device` or `create_device2` was given a surface its queue can present to | ignored |
+| `link_test_vk_api` | 1.1, 1.0: the Vulkan version its application info asks for; with 1.0 its `create_device` or `create_device2` calls `vkGetPhysicalDeviceProperties2` too | 1.1 |
 
 In each `retro_run` the core advances its ports at the frame start, at each
 of its steps and at the frame end. It takes every message it can, applies
@@ -892,9 +900,14 @@ it draws only when its `create_device` or `create_device2` was given a
 surface its queue's family can present to, by
 `vkGetPhysicalDeviceSurfaceSupportKHR`, as a core that shows its picture
 through a swap chain of its own does: without one it logs an error in
-`context_reset` and calls the video callback in no frame. Any of these
-options off its default with `link_test_render` not `vulkan` is a logged
-error. A dupe frame draws its first part on the one image and leaves it in
+`context_reset` and calls the video callback in no frame. With
+`link_test_vk_api` 1.0 its application info asks for Vulkan 1.0 and its
+`create_device` or `create_device2` still calls
+`vkGetPhysicalDeviceProperties2`, a 1.1 entry point, as Dolphin does;
+with no negotiation interface, which is what hands the application info
+over, the option is a logged error. Any of these options off its default
+with `link_test_render` not `vulkan` is a logged error. A dupe frame
+draws its first part on the one image and leaves it in
 `COLOR_ATTACHMENT_OPTIMAL`, so a frontend that shows the last `set_image`
 again on a NULL frame would show that half-drawn image; the harness reads
 no image on a dupe.

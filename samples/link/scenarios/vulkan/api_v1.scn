@@ -1,0 +1,14 @@
+# twin: render_one
+# vulkan/negotiate_v1 with a core whose application info asks for Vulkan
+# 1.0 and whose create_device still calls vkGetPhysicalDeviceProperties2,
+# a 1.1 entry point, as Dolphin's does: the harness makes the instance for
+# 1.1 where the loader has it, as RetroArch does, or the validation layer
+# reports the call.
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_vk_negotiate v1
+option 0 link_test_vk_api 1.0
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end
