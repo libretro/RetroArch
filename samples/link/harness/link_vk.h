@@ -22,11 +22,12 @@ unsigned link_vk_negotiation(void);
 bool link_vk_loader(unsigned index);
 /* After retro_load_game: an instance and a device on the first physical
  * device whose name has require in it (NULL: any). negotiation: the core's,
- * or NULL; a Vulkan one makes the device, and from version 2 makes it and
- * the instance through the harness's wrappers; the physical device it ends
- * on must name require too. validate: the Khronos validation layer, each
- * error it reports on stderr and counted in *errors, as the core's misuse
- * of the interface is. NULL: no device, the reason on stderr after
+ * or NULL; a Vulkan one makes the device, given a headless surface where
+ * the loader offers one, and from version 2 makes it and the instance
+ * through the harness's wrappers; the physical device it ends on must name
+ * require too. validate: the Khronos validation layer, each error it
+ * reports on stderr and counted in *errors, as the core's misuse of the
+ * interface is. NULL: no device, the reason on stderr after
  * "link_harness: console <index>: no Vulkan device: ", or a renderer that
  * is not require. */
 link_vk_t *link_vk_new(const struct retro_hw_render_context_negotiation_interface *negotiation,

@@ -1,0 +1,13 @@
+# twin: render_one
+# vulkan/negotiate_v2 with a core that draws only when its create_device2
+# was given a surface its queue can present to: the instance its
+# create_instance makes through the harness's wrapper must have the
+# surface extensions for the headless surface the harness makes on it.
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_vk_negotiate v2
+option 0 link_test_vk_surface needed
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end

@@ -20,6 +20,7 @@
 #define LT_VK_HANDOFF_DEFAULT   "barrier"
 #define LT_VK_LAYOUT_DEFAULT    "shader_read"
 #define LT_VK_FORMAT_DEFAULT    "rgba"
+#define LT_VK_SURFACE_DEFAULT   "ignored"
 
 struct lt_render_host
 {

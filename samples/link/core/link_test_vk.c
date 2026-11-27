@@ -94,6 +94,9 @@ static struct
    VkFence made_fence;              /* what create_device made with it */
    PFN_vkDestroyFence destroy_made_fence;
    bool destroyed;                  /* destroy_device was called */
+   bool needs_surface;              /* it draws only when it can present to a surface */
+   bool presents;                   /* it draws: create_device's queue can present to the
+                                       surface it was given, or none is needed */
    bool said_no_device;             /* logged, or a failed regrow was; context_reset
                                        clears it */
 } lt_vk;
@@ -182,9 +185,10 @@ static const VkApplicationInfo *lt_vk_get_application_info(void)
 
 /* A device with one queue that does graphics and compute, on gpu or the
  * first one when gpu is none, made through wrapper when there is one.
- * info has the frontend's extensions, layers and features. */
+ * info has the frontend's extensions, layers and features. With a surface
+ * needed, it presents if that queue's family can present to surface. */
 static bool lt_vk_device(struct retro_vulkan_context *context, VkInstance instance,
-      VkPhysicalDevice gpu, PFN_vkGetInstanceProcAddr get_instance_proc_addr,
+      VkPhysicalDevice gpu, VkSurfaceKHR surface, PFN_vkGetInstanceProcAddr get_instance_proc_addr,
       VkDeviceCreateInfo *info, retro_vulkan_create_device_wrapper_t wrapper, void *opaque)
 {
    static const float priority = 1.0f;
@@ -228,6 +232,14 @@ static bool lt_vk_device(struct retro_vulkan_context *context, VkInstance instan
       lt_vk.host->fail("create_device: no queue family does graphics and compute", count, 0);
       return false;
    }
+   if (lt_vk.needs_surface && surface != VK_NULL_HANDLE)
+   {
+      PFN_vkGetPhysicalDeviceSurfaceSupportKHR supports =
+         (PFN_vkGetPhysicalDeviceSurfaceSupportKHR)
+         get_instance_proc_addr(instance, "vkGetPhysicalDeviceSurfaceSupportKHR");
+      VkBool32 can = VK_FALSE;
+      lt_vk.presents = supports && supports(gpu, family, surface, &can) == VK_SUCCESS && can;
+   }
    memset(&queue, 0, sizeof(queue));
    queue.sType                = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
    queue.queueFamilyIndex     = family;
@@ -262,25 +274,24 @@ static bool lt_vk_device(struct retro_vulkan_context *context, VkInstance instan
    return true;
 }
 
-/* Negotiation v1, for a frontend that passes no surface */
+/* Negotiation v1 */
 static bool lt_vk_create_device(struct retro_vulkan_context *context, VkInstance instance,
       VkPhysicalDevice gpu, VkSurfaceKHR surface, PFN_vkGetInstanceProcAddr get_instance_proc_addr,
       const char **extensions, unsigned extension_count, const char **layers, unsigned layer_count,
       const VkPhysicalDeviceFeatures *features)
 {
    VkDeviceCreateInfo info;
-   (void)surface;
    memset(&info, 0, sizeof(info));
    info.enabledExtensionCount   = extension_count;
    info.ppEnabledExtensionNames = extensions;
    info.enabledLayerCount       = layer_count;
    info.ppEnabledLayerNames     = layers;
    info.pEnabledFeatures        = features;
-   return lt_vk_device(context, instance, gpu, get_instance_proc_addr, &info, NULL, NULL);
+   return lt_vk_device(context, instance, gpu, surface, get_instance_proc_addr, &info, NULL, NULL);
 }
 
 /* Negotiation v2: the instance and the device through the frontend's
- * wrappers, for a frontend that passes no surface */
+ * wrappers */
 static VkInstance lt_vk_create_instance(PFN_vkGetInstanceProcAddr get_instance_proc_addr,
       const VkApplicationInfo *app, retro_vulkan_create_instance_wrapper_t wrapper, void *opaque)
 {
@@ -298,9 +309,9 @@ static bool lt_vk_create_device2(struct retro_vulkan_context *context, VkInstanc
       retro_vulkan_create_device_wrapper_t wrapper, void *opaque)
 {
    VkDeviceCreateInfo info;
-   (void)surface;
    memset(&info, 0, sizeof(info));
-   return lt_vk_device(context, instance, gpu, get_instance_proc_addr, &info, wrapper, opaque);
+   return lt_vk_device(context, instance, gpu, surface, get_instance_proc_addr, &info, wrapper,
+         opaque);
 }
 
 /* The device is the frontend's to destroy; the fence the core made with
@@ -538,6 +549,8 @@ static void RETRO_CALLCONV lt_vk_context_reset(void)
       lt_vk.host->fail("a sync index mask that is not 1", mask, 0);
       return;
    }
+   if (!lt_vk.presents)
+      lt_vk.host->fail("no surface its queue can present to: nothing is drawn", 0, 0);
    retro_get_system_av_info(&info);
    lt_vk_objects(info.geometry.max_width, info.geometry.max_height);
 }
@@ -578,6 +591,7 @@ static bool lt_vk_load(const struct lt_render_host *host)
       "none", "commands_semaphore" };
    static const char *const layouts[]    = { LT_VK_LAYOUT_DEFAULT, "general" };
    static const char *const formats[]    = { LT_VK_FORMAT_DEFAULT, "bgra" };
+   static const char *const surfaces[]   = { LT_VK_SURFACE_DEFAULT, "needed" };
    struct retro_hw_render_context_negotiation_interface support;
    unsigned negotiate, version;
    memset(&lt_vk, 0, sizeof(lt_vk));
@@ -596,6 +610,9 @@ static bool lt_vk_load(const struct lt_render_host *host)
    lt_vk.format             = lt_render_option("link_test_vk_format", formats,
          sizeof(formats) / sizeof(*formats))
       ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R8G8B8A8_UNORM;
+   lt_vk.needs_surface      = lt_render_option("link_test_vk_surface", surfaces,
+         sizeof(surfaces) / sizeof(*surfaces)) != 0;
+   lt_vk.presents           = !lt_vk.needs_surface;
    lt_vk.hw.context_type    = RETRO_HW_CONTEXT_VULKAN;
    lt_vk.hw.version_major   = VK_API_VERSION_1_1;
    lt_vk.hw.context_reset   = lt_vk_context_reset;
@@ -765,6 +782,9 @@ static void lt_vk_begin(unsigned width, unsigned height)
    }
    if (!lt_render_tell(width, height))
       lt_vk.host->fail("SET_SYSTEM_AV_INFO refused", width, height);
+   /* As a core that shows its picture only through a swap chain of its own */
+   if (!lt_vk.presents)
+      return;
    if (!lt_vk.ready)
    {
       if (!lt_vk.said_no_device)
@@ -841,6 +861,8 @@ static void lt_vk_present(retro_video_refresh_t video, bool dupe)
    /* commands_semaphore's is never signalled: with command buffers handed
     * over the frontend waits on none of set_image's semaphores */
    bool passes     = semaphores || lt_vk.handoff == LT_VK_COMMANDS_SEMAPHORE;
+   if (!lt_vk.presents)
+      return;
    if (lt_vk.drawing && !dupe && lt_vk.handoff != LT_VK_NONE)
       vk->set_image(vk->handle, &lt_vk.shown, passes ? 1 : 0,
             passes ? &lt_vk.drawn : NULL, VK_QUEUE_FAMILY_IGNORED);

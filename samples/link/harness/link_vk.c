@@ -57,6 +57,8 @@ struct link_vk_entries
    PFN_vkBindBufferMemory bind_buffer_memory;
    PFN_vkMapMemory map_memory;
    PFN_vkInvalidateMappedMemoryRanges invalidate_mapped_memory;
+   PFN_vkCreateHeadlessSurfaceEXT create_surface;
+   PFN_vkDestroySurfaceKHR destroy_surface;
 };
 
 struct link_vk
@@ -66,6 +68,7 @@ struct link_vk
    VkPhysicalDeviceProperties properties;
    VkInstance instance;
    VkDebugUtilsMessengerEXT messenger;
+   VkSurfaceKHR surface;               /* the core's device is given it, as a window's */
    VkPhysicalDevice gpu;
    VkDevice device;
    VkQueue queue;
@@ -91,6 +94,7 @@ struct link_vk
    uint32_t family;                    /* the queue's */
    VkResult created;                   /* the last vkCreateInstance's */
    bool validate;                      /* the instance has the validation layer */
+   bool headless;                      /* the loader offers VK_EXT_headless_surface */
    bool layer_settings;                /* the layer takes validate_sync, else features */
    bool coherent;                      /* the buffer's memory needs no invalidation */
    bool pending;                       /* the fence has a submit to wait for */
@@ -227,16 +231,17 @@ static bool link_vk_has_layer(void)
    return found;
 }
 
-static bool link_vk_layer_offers(const char *extension)
+/* The layer, or with NULL the loader and its drivers, offers extension */
+static bool link_vk_offers(const char *layer, const char *extension)
 {
    VkExtensionProperties *extensions;
    uint32_t count = 0, i;
    bool found     = false;
    VkResult result;
-   if (     link_vk_now.enumerate_extensions(LINK_VK_LAYER, &count, NULL) != VK_SUCCESS || !count
+   if (     link_vk_now.enumerate_extensions(layer, &count, NULL) != VK_SUCCESS || !count
          || !(extensions = (VkExtensionProperties*)calloc(count, sizeof(*extensions))))
       return false;
-   result = link_vk_now.enumerate_extensions(LINK_VK_LAYER, &count, extensions);
+   result = link_vk_now.enumerate_extensions(layer, &count, extensions);
    for (i = 0; (result == VK_SUCCESS || result == VK_INCOMPLETE) && i < count && !found; i++)
       found = !strcmp(extensions[i].extensionName, extension);
    free(extensions);
@@ -267,10 +272,11 @@ static void link_vk_add(const char **names, uint32_t *count, const char *name)
 }
 
 /* retro_vulkan_create_instance_wrapper_t, which makes the harness's own
- * instance too: the create info as given and, when the run validates, the
- * layer with synchronization validation asked for (it is off unless
- * asked), the extensions that takes and a listener. VK_NULL_HANDLE: the
- * VkResult is in created. */
+ * instance too: the create info as given, the surface extensions when the
+ * loader offers a headless surface and, when the run validates, the layer
+ * with synchronization validation asked for (it is off unless asked), the
+ * extensions that takes and a listener. VK_NULL_HANDLE: the VkResult is in
+ * created. */
 static VkInstance link_vk_create_instance(void *opaque, const VkInstanceCreateInfo *create_info)
 {
    static const VkBool32 on            = VK_TRUE;
@@ -289,10 +295,10 @@ static VkInstance link_vk_create_instance(void *opaque, const VkInstanceCreateIn
    VkValidationFeaturesEXT features;
    uint32_t i;
    v->created = VK_SUCCESS;
-   if (v->validate)
+   if (v->validate || v->headless)
    {
       layers     = (const char**)malloc((info.enabledLayerCount + 1) * sizeof(*layers));
-      extensions = (const char**)malloc((info.enabledExtensionCount + 2) * sizeof(*extensions));
+      extensions = (const char**)malloc((info.enabledExtensionCount + 4) * sizeof(*extensions));
       if (!layers || !extensions)
          v->created = VK_ERROR_OUT_OF_HOST_MEMORY;
       else
@@ -301,36 +307,44 @@ static VkInstance link_vk_create_instance(void *opaque, const VkInstanceCreateIn
             layers[i] = info.ppEnabledLayerNames[i];
          for (i = 0; i < info.enabledExtensionCount; i++)
             extensions[i] = info.ppEnabledExtensionNames[i];
-         link_vk_add(layers, &info.enabledLayerCount, LINK_VK_LAYER);
-         link_vk_add(extensions, &info.enabledExtensionCount,
-               VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-         link_vk_add(extensions, &info.enabledExtensionCount, v->layer_settings
-               ? VK_EXT_LAYER_SETTINGS_EXTENSION_NAME
-               : VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
          info.ppEnabledLayerNames     = layers;
          info.ppEnabledExtensionNames = extensions;
-         /* The listener hears vkCreateInstance and vkDestroyInstance too */
-         link_vk_listener(v, &listener);
-         if (v->layer_settings)
-         {
-            memset(&settings, 0, sizeof(settings));
-            settings.sType        = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT;
-            settings.pNext        = info.pNext;
-            settings.settingCount = 1;
-            settings.pSettings    = &sync;
-            listener.pNext        = &settings;
-         }
-         else
-         {
-            memset(&features, 0, sizeof(features));
-            features.sType                         = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
-            features.pNext                         = info.pNext;
-            features.enabledValidationFeatureCount = 1;
-            features.pEnabledValidationFeatures    = &sync_feature;
-            listener.pNext                         = &features;
-         }
-         info.pNext = &listener;
       }
+   }
+   if (v->headless && v->created == VK_SUCCESS)
+   {
+      link_vk_add(extensions, &info.enabledExtensionCount, VK_KHR_SURFACE_EXTENSION_NAME);
+      link_vk_add(extensions, &info.enabledExtensionCount,
+            VK_EXT_HEADLESS_SURFACE_EXTENSION_NAME);
+   }
+   if (v->validate && v->created == VK_SUCCESS)
+   {
+      link_vk_add(layers, &info.enabledLayerCount, LINK_VK_LAYER);
+      link_vk_add(extensions, &info.enabledExtensionCount, VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+      link_vk_add(extensions, &info.enabledExtensionCount, v->layer_settings
+            ? VK_EXT_LAYER_SETTINGS_EXTENSION_NAME
+            : VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
+      /* The listener hears vkCreateInstance and vkDestroyInstance too */
+      link_vk_listener(v, &listener);
+      if (v->layer_settings)
+      {
+         memset(&settings, 0, sizeof(settings));
+         settings.sType        = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT;
+         settings.pNext        = info.pNext;
+         settings.settingCount = 1;
+         settings.pSettings    = &sync;
+         listener.pNext        = &settings;
+      }
+      else
+      {
+         memset(&features, 0, sizeof(features));
+         features.sType                         = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+         features.pNext                         = info.pNext;
+         features.enabledValidationFeatureCount = 1;
+         features.pEnabledValidationFeatures    = &sync_feature;
+         listener.pNext                         = &features;
+      }
+      info.pNext = &listener;
    }
    if (v->created == VK_SUCCESS)
       v->created = link_vk_now.create_instance(&info, NULL, &instance);
@@ -354,11 +368,12 @@ static bool link_vk_instance(link_vk_t *v,
       return link_vk_refuse(v, "no layer ", LINK_VK_LAYER, VK_SUCCESS);
    /* A layer without VK_EXT_layer_settings takes VK_EXT_validation_features */
    if (v->validate)
-      v->layer_settings = link_vk_layer_offers(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
+      v->layer_settings = link_vk_offers(LINK_VK_LAYER, VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
    if (v->validate && !v->layer_settings
-         && !link_vk_layer_offers(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME))
+         && !link_vk_offers(LINK_VK_LAYER, VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME))
       return link_vk_refuse(v, "the validation layer offers no way to turn synchronization "
             "validation on", NULL, VK_SUCCESS);
+   v->headless = link_vk_offers(NULL, VK_EXT_HEADLESS_SURFACE_EXTENSION_NAME);
    if (n && n->get_application_info)
       application = n->get_application_info();
    if (!application)
@@ -396,6 +411,13 @@ static bool link_vk_instance(link_vk_t *v,
    v->f.create_device = (PFN_vkCreateDevice)link_vk_instance_entry(v, "vkCreateDevice");
    v->f.get_device_proc_addr = (PFN_vkGetDeviceProcAddr)link_vk_instance_entry(v,
          "vkGetDeviceProcAddr");
+   if (v->headless)
+   {
+      v->f.create_surface = (PFN_vkCreateHeadlessSurfaceEXT)link_vk_instance_entry(v,
+            "vkCreateHeadlessSurfaceEXT");
+      v->f.destroy_surface = (PFN_vkDestroySurfaceKHR)link_vk_instance_entry(v,
+            "vkDestroySurfaceKHR");
+   }
    if (v->validate)
    {
       v->f.create_messenger = (PFN_vkCreateDebugUtilsMessengerEXT)link_vk_instance_entry(v,
@@ -415,6 +437,22 @@ static bool link_vk_instance(link_vk_t *v,
       return link_vk_refuse(v, "vkCreateDebugUtilsMessengerEXT failed", NULL, result);
    }
    return true;
+}
+
+/* The surface a core's device is given, as a frontend gives its window's:
+ * a headless one where the loader offers it, else none */
+static bool link_vk_surface(link_vk_t *v)
+{
+   VkHeadlessSurfaceCreateInfoEXT info;
+   VkResult result;
+   if (!v->headless)
+      return true;
+   memset(&info, 0, sizeof(info));
+   info.sType = VK_STRUCTURE_TYPE_HEADLESS_SURFACE_CREATE_INFO_EXT;
+   if ((result = v->f.create_surface(v->instance, &info, NULL, &v->surface)) == VK_SUCCESS)
+      return true;
+   v->surface = VK_NULL_HANDLE;
+   return link_vk_refuse(v, "vkCreateHeadlessSurfaceEXT failed", NULL, result);
 }
 
 /* The physical device's renderer is the one the run requires (NULL: any) */
@@ -508,7 +546,8 @@ static bool link_vk_entries(link_vk_t *v)
 /* The device a core's negotiation interface makes, asked as
  * libretro_vulkan.h has a frontend ask: create_device2 on the chosen
  * physical device, then on one the core chooses, or create_device with
- * nothing required. false: it made none. */
+ * nothing required, each given the surface. Nothing is presented, so
+ * presentation_queue is not used. false: it made none. */
 static bool link_vk_core_device(link_vk_t *v,
       const struct retro_hw_render_context_negotiation_interface_vulkan *n)
 {
@@ -520,19 +559,19 @@ static bool link_vk_core_device(link_vk_t *v,
    memset(&features, 0, sizeof(features));
    if (n->interface_version >= 2 && n->create_device2)
    {
-      made = n->create_device2(&context, v->instance, v->gpu, VK_NULL_HANDLE,
+      made = n->create_device2(&context, v->instance, v->gpu, v->surface,
             get_instance_proc_addr, link_vk_create_device, v);
       if (!made)
       {
          fprintf(stderr, "link_harness: console %u: create_device2 refused the physical"
                " device; once more on one the core chooses\n", v->index);
          memset(&context, 0, sizeof(context));
-         made = n->create_device2(&context, v->instance, VK_NULL_HANDLE, VK_NULL_HANDLE,
+         made = n->create_device2(&context, v->instance, VK_NULL_HANDLE, v->surface,
                get_instance_proc_addr, link_vk_create_device, v);
       }
    }
    else if (n->create_device)
-      made = n->create_device(&context, v->instance, v->gpu, VK_NULL_HANDLE,
+      made = n->create_device(&context, v->instance, v->gpu, v->surface,
             get_instance_proc_addr, NULL, 0, NULL, 0, &features);
    if (!made)
       return false;
@@ -714,6 +753,7 @@ link_vk_t *link_vk_new(const struct retro_hw_render_context_negotiation_interfac
          && negotiation->interface_version >= 1)
       n = (const struct retro_hw_render_context_negotiation_interface_vulkan*)negotiation;
    if (     !link_vk_instance(v, n)
+         || !link_vk_surface(v)
          || !link_vk_gpu(v, require)
          || !link_vk_device(v, n)
          || !link_vk_renderer(v, require)
@@ -1048,6 +1088,8 @@ void link_vk_free(link_vk_t *v)
       v->destroy_device();
    if (v->device && v->f.destroy_device)
       v->f.destroy_device(v->device, NULL);
+   if (v->surface)
+      v->f.destroy_surface(v->instance, v->surface, NULL);
    if (v->messenger)
       v->f.destroy_messenger(v->instance, v->messenger, NULL);
    if (v->instance && v->f.destroy_instance)

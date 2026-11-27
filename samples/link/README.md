@@ -500,13 +500,21 @@ For a `render=vulkan` console:
   the first family that does graphics and compute. A device the core makes
   must come with its physical device and queue, as `libretro_vulkan.h`
   asks; one without fails the console's start. The harness destroys the
-  device, after the core's `destroy_device` where the core made it. Then
-  `context_reset` is called, and until `context_destroy`
-  `GET_HW_RENDER_INTERFACE` gives a render interface of version 5, with a
-  sync index of 0 and a mask of 1. `lock_queue` and `unlock_queue` do
-  nothing: the harness submits only inside the video callback, on the
-  thread that runs the core, so a core that submits from another thread
-  meanwhile is not served.
+  device, after the core's `destroy_device` where the core made it. When
+  the loader offers `VK_EXT_headless_surface`, the instance has it and
+  `VK_KHR_surface`, which the wrapper adds to one `create_instance`
+  makes, and `create_device2` and `create_device` are given a headless
+  surface of the console's, as a frontend gives its window's: a core that
+  shows its picture only through a swap chain of its own, as Dolphin does,
+  draws nothing without one. Without the extension they are given
+  `VK_NULL_HANDLE`, which `libretro_vulkan.h` allows. Nothing is
+  presented, so the harness takes the device's queue and leaves
+  `presentation_queue` unused. Then `context_reset` is called, and until
+  `context_destroy` `GET_HW_RENDER_INTERFACE` gives a render interface of
+  version 5, with a sync index of 0 and a mask of 1. `lock_queue` and
+  `unlock_queue` do nothing: the harness submits only inside the video
+  callback, on the thread that runs the core, so a core that submits from
+  another thread meanwhile is not served.
 - A frame passed as `RETRO_HW_FRAME_BUFFER_VALID` is read inside that call
   from the image of the last `set_image`: one submit runs the command
   buffers the core handed over with `set_command_buffers`, then one of the
@@ -534,8 +542,8 @@ For a `render=vulkan` console:
   it reuses or destroys it. A fence has 120 s to signal; one that does not
   is an error, and that console's Vulkan objects are then left as they are.
 - At the close the wait, `context_destroy`, `retro_unload_game`, and then
-  the harness's objects, the core's `destroy_device`, the device and the
-  instance go.
+  the harness's objects, the core's `destroy_device`, the device, the
+  surface and the instance go.
 
 `make check`, `make check-gl`, `make check-vulkan` and, with `HAVE_EGL=1` or
 `HAVE_VULKAN=1`, `make proof` choose the driver with `GPU_DRIVER`:
@@ -677,6 +685,9 @@ The scenarios in `vulkan/`:
   `create_device2` make the instance and the device through the harness's
   wrappers. The core fails unless the render interface has what it made
   and its `destroy_device` is called.
+- `surface_v1` and `surface_v2` (`render_one`): `negotiate_v1` and
+  `negotiate_v2` with a core that draws only when its `create_device` or
+  `create_device2` was given a surface its queue can present to.
 
 What is not served or not checked:
 
@@ -686,9 +697,9 @@ What is not served or not checked:
 - No check runs a `create_device2` that refuses the physical device the
   harness chose, an interface that makes no device, a `create_instance`
   that makes no instance, an allocation that fails in the harness's
-  instance wrapper, or `--vk-validate` with no validation layer or with
-  one that offers neither `VK_EXT_layer_settings` nor
-  `VK_EXT_validation_features`.
+  instance wrapper, a headless surface the loader offers but cannot make,
+  or `--vk-validate` with no validation layer or with one that offers
+  neither `VK_EXT_layer_settings` nor `VK_EXT_validation_features`.
 - Each run checks the first way its layer offers to turn synchronization
   validation on; a layer with `VK_EXT_layer_settings` leaves the
   `VK_EXT_validation_features` path unchecked.
@@ -697,6 +708,10 @@ What is not served or not checked:
   over in a frame are console errors. No scenario runs either.
 - No scenario runs a dupe whose submit has command buffers the core
   handed over: the test core hands part 1 over only in a frame it draws.
+- A `presentation_queue` other than the core's queue is accepted, as
+  `libretro_vulkan.h` allows; RetroArch refuses one.
+- No check runs a loader that does not offer `VK_EXT_headless_surface`,
+  where a core is given no surface.
 
 ## Output
 
@@ -781,6 +796,7 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_vk_handoff` | barrier, semaphore, commands, none, commands_semaphore: how a frame's picture reaches the frontend | barrier |
 | `link_test_vk_layout` | shader_read, general: the layout `set_image` names; in `GENERAL` part 1 also copies a texel of the image | shader_read |
 | `link_test_vk_format` | rgba, bgra: the image's format, `R8G8B8A8_UNORM` or `B8G8R8A8_UNORM` | rgba |
+| `link_test_vk_surface` | ignored, needed: with needed it draws only when its `create_device` or `create_device2` was given a surface its queue can present to | ignored |
 
 In each `retro_run` the core advances its ports at the frame start, at each
 of its steps and at the frame end. It takes every message it can, applies
@@ -871,9 +887,14 @@ the frontend must not wait on. `link_test_vk_layout`
 general ends part 1 in `GENERAL` in place of `SHADER_READ_ONLY_OPTIMAL`
 and then copies a texel of the image into a buffer of its own, a read at
 the transfer stage after the handoff, and `link_test_vk_format` bgra
-draws on a `B8G8R8A8_UNORM` image. Any of these options off its default
-with `link_test_render` not `vulkan` is a logged error. A dupe frame
-draws its first part on the one image and leaves it in
+draws on a `B8G8R8A8_UNORM` image. With `link_test_vk_surface` needed
+it draws only when its `create_device` or `create_device2` was given a
+surface its queue's family can present to, by
+`vkGetPhysicalDeviceSurfaceSupportKHR`, as a core that shows its picture
+through a swap chain of its own does: without one it logs an error in
+`context_reset` and calls the video callback in no frame. Any of these
+options off its default with `link_test_render` not `vulkan` is a logged
+error. A dupe frame draws its first part on the one image and leaves it in
 `COLOR_ATTACHMENT_OPTIMAL`, so a frontend that shows the last `set_image`
 again on a NULL frame would show that half-drawn image; the harness reads
 no image on a dupe.
