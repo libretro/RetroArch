@@ -9,6 +9,7 @@
  * spread over the joypad buttons of the ports it is told to read - the
  * frontend's input cost as a core sees it, from the core's side of the
  * libretro calls. */
+#include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
@@ -26,6 +27,19 @@ static retro_environment_t         environ_cb;
 static uint16_t frame[W * H];
 static int16_t  audio[AUDIO_FRAMES * 2];
 static unsigned runs;
+
+/* The frames this instance has run, kept in its state so that an
+ * instance given another's state carries on from that count. In
+ * MUST_INITIALIZE mode no state goes in or out before this instance's
+ * first retro_run(). */
+static unsigned long frame_number;
+static int           must_initialize;
+/* An instance loaded while HARNESS_CORE_REFUSE_STATES is set refuses
+ * every state it is given. */
+static int           refuse_states;
+/* No states: size 0 and none goes in or out, as from a core that
+ * cannot save one. */
+static int           no_states;
 
 /* input measurement, driven by harness_core_input_measure() */
 static unsigned           in_queries;     /* 0: the one read of normal mode */
@@ -128,6 +142,20 @@ void harness_core_input_edges(long *press_run, long *release_run)
    *press_run   = in_press_run;
    *release_run = in_release_run;
 }
+
+long harness_core_frame_number(void) { return (long)frame_number; }
+
+/* MUST_INITIALIZE mode on or off. An instance loaded while
+ * HARNESS_CORE_MUST_INITIALIZE is set starts in it. */
+void harness_core_must_initialize(int on)
+{
+   uint64_t quirks = on ? RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE : 0;
+   must_initialize = on;
+   if (environ_cb)
+      environ_cb(RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS, &quirks);
+}
+
+void harness_core_no_states(int on) { no_states = on; }
 
 /* What was measured since: frames, and nanoseconds in input_poll, in
  * each frame's first input_state call (which carries the poll when the
@@ -234,6 +262,7 @@ void retro_run(void)
     * frame as a duplicate. */
    frame[runs % (W * H)] ^= 0xffff;
    runs++;
+   frame_number++;
    in_run = 1;
    if (trace_mode)
    {
@@ -334,13 +363,35 @@ void retro_run(void)
 
 void   harness_core_describe(void);
 /* the buttons are described at load, as a core describes them */
-bool   retro_load_game(const struct retro_game_info *game) { (void)game; harness_core_describe(); return true; }
+bool   retro_load_game(const struct retro_game_info *game)
+{
+   (void)game;
+   harness_core_describe();
+   if (getenv("HARNESS_CORE_MUST_INITIALIZE"))
+      harness_core_must_initialize(1);
+   refuse_states = getenv("HARNESS_CORE_REFUSE_STATES") != NULL;
+   return true;
+}
 void   retro_unload_game(void) { }
 unsigned retro_get_region(void) { return RETRO_REGION_NTSC; }
 bool   retro_load_game_special(unsigned t, const struct retro_game_info *i, size_t n) { (void)t; (void)i; (void)n; return false; }
-size_t retro_serialize_size(void) { return sizeof(frame); }
-bool   retro_serialize(void *d, size_t n)   { if (n < sizeof(frame)) return false; memcpy(d, frame, sizeof(frame)); return true; }
-bool   retro_unserialize(const void *d, size_t n) { if (n < sizeof(frame)) return false; memcpy(frame, d, sizeof(frame)); return true; }
+size_t retro_serialize_size(void) { return no_states ? 0 : sizeof(frame) + sizeof(frame_number); }
+bool   retro_serialize(void *d, size_t n)
+{
+   if (no_states || n < retro_serialize_size() || (must_initialize && !runs))
+      return false;
+   memcpy(d, frame, sizeof(frame));
+   memcpy((uint8_t*)d + sizeof(frame), &frame_number, sizeof(frame_number));
+   return true;
+}
+bool   retro_unserialize(const void *d, size_t n)
+{
+   if (no_states || n < retro_serialize_size() || (must_initialize && !runs) || refuse_states)
+      return false;
+   memcpy(frame, d, sizeof(frame));
+   memcpy(&frame_number, (const uint8_t*)d + sizeof(frame), sizeof(frame_number));
+   return true;
+}
 void   retro_cheat_reset(void) { }
 void   retro_cheat_set(unsigned i, bool e, const char *c) { (void)i; (void)e; (void)c; }
 void  *retro_get_memory_data(unsigned id) { (void)id; return NULL; }

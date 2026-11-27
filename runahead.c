@@ -473,6 +473,7 @@ void runahead_set_load_content_info(void *data,
 /* enum runahead_copy_status lives in runloop.h (shared with the
  * secondary_core_ensure_exists() callers) */
 static void runahead_copy_reset(bool delete_file);
+static void runahead_add_closing_hooks(runloop_state_t *runloop_st);
 
 static void strcat_alloc(char **dst, const char *s)
 {
@@ -1343,10 +1344,17 @@ static enum runahead_copy_status secondary_core_create(
    rarch_system_info_t *sys_info = &runloop_st->system;
    uint8_t flags                 = content_get_flags();
 
+   /* Between the cores of a content switch: the next core asks again */
+   if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_INITED))
+      return RUNAHEAD_COPY_PENDING;
+
    if (     (last_core_type != CORE_TYPE_PLAIN)
          || (!runloop_st->load_content_info)
          || ( runloop_st->load_content_info->special))
       return RUNAHEAD_COPY_UNAVAILABLE;
+
+   /* The menu can start a copy before run-ahead hooks the core */
+   runahead_add_closing_hooks(runloop_st);
 
    /* The core binary is duplicated by a task; until the copy
     * completes this reports PENDING and the caller runs the
@@ -1449,6 +1457,8 @@ static enum runahead_copy_status secondary_core_create(
    runahead_clear_controller_port_map(runloop_st);
 #endif
 
+   /* Booted on its own: sync it before it runs */
+   runloop_st->flags |= RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
    return RUNAHEAD_COPY_READY;
 
 error:
@@ -1525,6 +1535,7 @@ static bool secondary_core_run_use_last_input(runloop_state_t *runloop_st)
          runloop_st->secondary_callbacks.state_cb);
 
    runloop_st->secondary_core.retro_run();
+   runloop_st->secondary_core.flags        |= RETRO_CORE_FLAG_HAS_RUN;
    runloop_st->secondary_callbacks.poll_cb  = old_poll_function;
    runloop_st->secondary_callbacks.state_cb = old_input_function;
 
@@ -1753,7 +1764,7 @@ static void runahead_deinit_hook(void)
       runloop_st->current_core.retro_deinit();
 }
 
-static void runahead_add_hooks(runloop_state_t *runloop_st)
+static void runahead_add_closing_hooks(runloop_state_t *runloop_st)
 {
    if (!runloop_st->original_retro_deinit)
    {
@@ -1767,6 +1778,11 @@ static void runahead_add_hooks(runloop_state_t *runloop_st)
       runloop_st->original_retro_unload          = runloop_st->current_core.retro_unload_game;
       runloop_st->current_core.retro_unload_game = runahead_unload_hook;
    }
+}
+
+static void runahead_add_hooks(runloop_state_t *runloop_st)
+{
+   runahead_add_closing_hooks(runloop_st);
    runahead_add_input_state_hook(runloop_st);
 }
 
@@ -1776,7 +1792,8 @@ static void runahead_err(runloop_state_t *runloop_st)
 {
    runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_AVAILABLE;
    runahead_savestate_info_free(runloop_st);
-   runahead_remove_hooks(runloop_st);
+   /* The unload and deinit hooks stay: they close the second instance */
+   runahead_remove_input_state_hook(runloop_st);
    runloop_st->flags                         |= RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN;
 }
 
@@ -1851,6 +1868,22 @@ static bool runahead_load_state(runloop_state_t *runloop_st, bool *reset)
 static bool runahead_load_state_secondary(runloop_state_t *runloop_st, settings_t *settings)
 {
    retro_ctx_serialize_info_t *info = &runloop_st->runahead_savestate_info;
+
+   /* A MUST_INITIALIZE core takes no state before it has run once */
+   if (     !(runloop_st->secondary_core.flags & RETRO_CORE_FLAG_HAS_RUN)
+         &&  (core_serialization_quirks() & RETRO_SERIALIZATION_QUIRK_MUST_INITIALIZE))
+   {
+      video_driver_state_t *video_st = video_state_get_ptr();
+      audio_driver_state_t *audio_st = audio_state_get_ptr();
+      video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
+      AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
+      secondary_core_run_use_last_input(runloop_st);
+      AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
+      if ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_RUNAHEAD_IS_ACTIVE)
+         video_st->main_flags |=  VIDEO_FLAG_ACTIVE;
+      else
+         video_st->main_flags &= ~VIDEO_FLAG_ACTIVE;
+   }
 
    if (!secondary_core_deserialize(runloop_st, settings,
             info->data_const, info->size))
@@ -1990,9 +2023,8 @@ static bool runahead_run_impl(void *data,
       /* PENDING: the copy task is still duplicating the core
        * binary. Run the single-instance savestate method for this
        * frame (identical output) and retry next frame; the
-       * secondary instance attaches seamlessly once ready, since
-       * it is (re)synchronised from a savestate every time it
-       * runs anyway. */
+       * secondary instance is synchronised from a savestate on
+       * the frame it attaches. */
    }
 #endif
 
