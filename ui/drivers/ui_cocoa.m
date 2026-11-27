@@ -30,6 +30,7 @@
 #include <boolean.h>
 #include <file/file_path.h>
 #include <string/stdstring.h>
+#include <encodings/utf.h>
 #include <queues/task_queue.h>
 #include <retro_timers.h>
 
@@ -554,13 +555,28 @@ static ui_application_t ui_application_cocoa = {
       case NSEventTypeKeyDown:
       case NSEventTypeKeyUp:
          {
-            uint32_t i;
+            /* A key event carries one character, a few after a dead
+             * key; past what fits here the rest is dropped. */
+            uint16_t units[16];
+            uint32_t chars[16];
+            size_t i, n;
             NSString* ch              = [event characters];
+            NSUInteger len            = [ch length];
             uint32_t mod              = 0;
-            const char *inputTextUTF8 = [ch UTF8String];
-            uint32_t character        = inputTextUTF8[0];
+            bool down                 = (event_type == NSEventTypeKeyDown);
             NSUInteger mods           = [event modifierFlags];
             uint16_t keycode          = [event keyCode];
+
+            if (len > sizeof(units) / sizeof(units[0]))
+               len = sizeof(units) / sizeof(units[0]);
+            [ch getCharacters:units range:NSMakeRange(0, len)];
+            n = utf16_conv_utf32(chars, sizeof(chars) / sizeof(chars[0]),
+                  units, len);
+            /* Function keys (arrows, F1-F35, forward delete...) report a
+             * private-use character, U+F700-U+F8FF; they type nothing. */
+            for (i = 0; i < n; i++)
+               if (chars[i] >= 0xF700 && chars[i] <= 0xF8FF)
+                  chars[i] = 0;
 
             if (mods & NSEventModifierFlagCapsLock)
                mod |= RETROKMOD_CAPSLOCK;
@@ -575,15 +591,19 @@ static ui_application_t ui_application_cocoa = {
             if (mods & NSEventModifierFlagNumericPad)
                mod |=  RETROKMOD_NUMLOCK;
 
-            for (i = 1; i < [ch length]; i++)
-               apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
-                     0, inputTextUTF8[i], mod, RETRO_DEVICE_KEYBOARD);
-
-            apple_input_keyboard_event(event_type == NSEventTypeKeyDown,
-                  keycode, character, mod, RETRO_DEVICE_KEYBOARD);
-            if ((mod & RETROKMOD_META) && (event_type == NSEventTypeKeyDown))
+            /* The key with the first character, then the rest in text
+             * order as character-only events. Key code 0 is the A key
+             * here, so those go past apple_input_keyboard_event. */
+            apple_input_keyboard_event(down,
+                  keycode, n ? chars[0] : 0, mod, RETRO_DEVICE_KEYBOARD);
+            if ((mod & RETROKMOD_META) && down)
                apple_input_keyboard_event(false,
-                     keycode, character, mod, RETRO_DEVICE_KEYBOARD);
+                     keycode, n ? chars[0] : 0, mod, RETRO_DEVICE_KEYBOARD);
+
+            for (i = 1; i < n; i++)
+               if (chars[i])
+                  input_keyboard_event(down, RETROK_UNKNOWN,
+                        chars[i], mod, RETRO_DEVICE_KEYBOARD);
          }
          break;
       case NSEventTypeFlagsChanged:
