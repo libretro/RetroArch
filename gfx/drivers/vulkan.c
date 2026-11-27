@@ -952,6 +952,7 @@ typedef struct vk
        * are not here: see vulkan_hw_iface. */
 
       unsigned capacity_cmd;
+      unsigned capacity_semaphores; /* of semaphores and wait_dst_stages */
       unsigned last_dims;
       uint32_t num_semaphores;
       uint32_t num_cmd;
@@ -8565,35 +8566,39 @@ static void vulkan_set_image(void *handle,
 
    if (num_semaphores > 0)
    {
-      int i;
+      uint32_t i;
+      /* Room for the WSI acquire waits the frame appends as well. */
+      unsigned required = num_semaphores + 1 + VULKAN_MAX_SWAPCHAIN_IMAGES;
 
-      /* Allocate one extra in case we need to use WSI acquire semaphores. */
-      VkPipelineStageFlags *stage_flags = (VkPipelineStageFlags*)realloc(vk->hw.wait_dst_stages,
-            sizeof(VkPipelineStageFlags) * (vk->hw.num_semaphores + 1 + VULKAN_MAX_SWAPCHAIN_IMAGES));
-
-      VkSemaphore *new_semaphores = (VkSemaphore*)realloc(vk->hw.semaphores,
-            sizeof(VkSemaphore) * (vk->hw.num_semaphores + 1 + VULKAN_MAX_SWAPCHAIN_IMAGES));
-
-      /* realloc() returns NULL on failure and leaves the original
-       * block allocated, so storing the result unconditionally both
-       * leaks the old array and arms the loop below to write through
-       * NULL.  Keep whichever of the two actually grew, and if either
-       * failed, report no semaphores rather than a short array. */
-      if (stage_flags)
-         vk->hw.wait_dst_stages = stage_flags;
-      if (new_semaphores)
-         vk->hw.semaphores      = new_semaphores;
-
-      if (!stage_flags || !new_semaphores)
+      if (required > vk->hw.capacity_semaphores)
       {
-         RARCH_ERR("[Vulkan] Failed to allocate semaphore state for"
-               " %u semaphore(s).\n", num_semaphores);
-         vk->hw.num_semaphores = 0;
-         vk->flags            &= ~VK_FLAG_HW_VALID_SEMAPHORE;
-         return;
+         VkPipelineStageFlags *stage_flags = (VkPipelineStageFlags*)
+            realloc(vk->hw.wait_dst_stages,
+                  sizeof(VkPipelineStageFlags) * required);
+         VkSemaphore *new_semaphores       = (VkSemaphore*)
+            realloc(vk->hw.semaphores, sizeof(VkSemaphore) * required);
+
+         /* Whichever of the two grew is ours either way; if either
+          * failed, report no semaphores rather than a short array. */
+         if (stage_flags)
+            vk->hw.wait_dst_stages = stage_flags;
+         if (new_semaphores)
+            vk->hw.semaphores      = new_semaphores;
+
+         if (!stage_flags || !new_semaphores)
+         {
+            RARCH_ERR("[Vulkan] Failed to allocate semaphore state for"
+                  " %u semaphore(s).\n", num_semaphores);
+            vk->hw.num_semaphores = 0;
+            vk->flags            &= ~VK_FLAG_HW_VALID_SEMAPHORE;
+            return;
+         }
+         vk->hw.capacity_semaphores = required;
       }
 
-      for (i = 0; i < (int) vk->hw.num_semaphores; i++)
+      /* The stages are refilled: the acquire waits a frame appends
+       * write their own past the core's count. */
+      for (i = 0; i < num_semaphores; i++)
       {
          vk->hw.wait_dst_stages[i] = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
          vk->hw.semaphores[i]      = semaphores[i];

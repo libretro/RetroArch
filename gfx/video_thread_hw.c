@@ -363,14 +363,14 @@ static void hw_set_image(void *handle,
          s->num_semaphores = 0;
          return;
       }
+      /* Only a dropped frame's wait reads the stages, and only ever
+       * these: they are written once, as the room for them is made. */
+      for (i = s->cap_semaphores; i < num_semaphores; i++)
+         s->wait_stages[i] = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
       s->cap_semaphores = num_semaphores;
    }
    if (num_semaphores)
-   {
       memcpy(s->semaphores, semaphores, sizeof(*semaphores) * num_semaphores);
-      for (i = 0; i < num_semaphores; i++)
-         s->wait_stages[i] = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-   }
    s->num_semaphores   = num_semaphores;
    s->src_queue_family = src_queue_family;
 }

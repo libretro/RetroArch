@@ -8500,13 +8500,20 @@ extern void *__libc_realloc(void*, size_t);
 
 static unsigned long heap_calls;
 static bool          heap_counting;
+/* Counts only calls made from this binary - the frontend - and not
+ * the ICD's or a layer's, which allocate on their own submit paths. */
+static bool          heap_own_only;
+extern char          __executable_start, etext;
+#define HEAP_COUNTS(ra) (heap_counting && (!heap_own_only \
+      || ((const char*)(ra) >= &__executable_start \
+         && (const char*)(ra) < &etext)))
 /* Fault injection: the first realloc of nothing to exactly this many
  * bytes fails, once. 0 when unarmed. */
 static size_t        heap_fail_realloc_new;
 
 void *malloc(size_t n)
 {
-   if (heap_counting)
+   if (HEAP_COUNTS(__builtin_return_address(0)))
       heap_calls++;
    return __libc_malloc(n);
 }
@@ -8518,14 +8525,14 @@ void free(void *p)
 
 void *calloc(size_t a, size_t b)
 {
-   if (heap_counting)
+   if (HEAP_COUNTS(__builtin_return_address(0)))
       heap_calls++;
    return __libc_calloc(a, b);
 }
 
 void *realloc(void *p, size_t n)
 {
-   if (heap_counting)
+   if (HEAP_COUNTS(__builtin_return_address(0)))
       heap_calls++;
    if (!p && heap_fail_realloc_new && n == heap_fail_realloc_new)
    {
@@ -14918,6 +14925,74 @@ static void lane_hw_ring_sync(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: a hardware core's frames make no heap calls                  */
+/*   The core hands over an image and a semaphore every frame, as     */
+/*   ring mode 1 does, unthreaded and under the wrapper. Once settled */
+/*   the frontend's side of that - set_image, the slot, the install,  */
+/*   the submit - allocates nothing. Calls from the ICD and layers     */
+/*   are not counted.                                                 */
+/* ------------------------------------------------------------------ */
+
+static void lane_hw_frame_path_heap(void)
+{
+#ifdef HARNESS_COUNT_HEAP
+   unsigned had = failures;
+   dylib_t lib  = runloop_state_get_ptr()->lib_handle;
+   void (*ring)(int) = lib
+      ? (void (*)(int))dylib_proc(lib, "harness_core_hw_ring") : NULL;
+   unsigned long calls[2];
+   unsigned pass;
+
+   if (!ring || !hwlane_core_call("harness_core_hw_active"))
+   {
+      CHECK(0, "hw frame-path heap: the harness core is not a hardware"
+            " core with a ring mode");
+      return;
+   }
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   ring(1);
+   for (pass = 0; pass < 2; pass++)
+   {
+      unsigned s0;
+      set_threaded_via_setting(pass == 1);
+      if (menu_is_up())
+         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+      /* Settle: the first frames after a driver change still build. */
+      hwlane_pump(30);
+      if (pass == 1)
+         video_thread_wait_idle();
+      s0            = hwlane_core_call("harness_core_hw_ring_sent");
+      heap_calls    = 0;
+      heap_own_only = true;
+      heap_counting = true;
+      hwlane_pump(300);
+      if (pass == 1)
+         video_thread_wait_idle();
+      heap_counting = false;
+      heap_own_only = false;
+      calls[pass]   = heap_calls;
+      CHECK(hwlane_core_call("harness_core_hw_ring_sent") - s0 >= 150,
+            "hw frame-path heap (%s): the core handed over too few images",
+            pass ? "threaded" : "unthreaded");
+   }
+   ring(0);
+   set_threaded_via_setting(false);
+   hwlane_pump(5);
+   CHECK(calls[0] == 0, "hw frame path, unthreaded, made %lu heap calls"
+         " over 300 frames", calls[0]);
+   CHECK(calls[1] == 0, "hw frame path, threaded, made %lu heap calls"
+         " over 300 frames", calls[1]);
+   if (failures == had)
+      fprintf(stderr, "[pass] hw frame-path heap lane (0 heap calls in 300"
+            " frames with a semaphore each, threaded and not)\n");
+#else
+   fprintf(stderr, "[skip] hw frame-path heap lane (needs glibc, no"
+         " allocator sanitizer)\n");
+#endif
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: a display element past the top                              */
 /*   The menu draws a quad whose top reaches above the screen through */
 /*   the display driver, unthreaded and under the wrapper. Its        */
@@ -15387,6 +15462,7 @@ int main(int argc, char *argv[])
       else
       {
          lane_hw_ring_sync();
+         lane_hw_frame_path_heap();
 #ifdef HAVE_TEMPORAL_UPSCALER
          lane_hw_ring_upscaler();
 #endif
