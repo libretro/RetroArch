@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include <boolean.h>
+#include <compat/strl.h>
 #include <array/rhmap.h>
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
@@ -32,41 +33,73 @@
 #include "tasks_internal.h"
 
 #define DECOMPRESS_MANIFEST_HEADER "decompress_manifest 1"
+/* Room for the names of lines a walk adds, a chunk at a time */
+#define DECOMPRESS_MANIFEST_CHUNK  (16 * 1024)
 
 typedef struct
 {
    int64_t  mtime;
    uint64_t size;
-   char    *name;
+   const char *name;   /* borrowed from the read file or a chunk */
    uint32_t crc;
+   uint32_t name_len;
    bool     seen;   /* asked about, or written, by this walk */
 } decompress_manifest_line_t;
+
+typedef struct decompress_manifest_chunk
+{
+   struct decompress_manifest_chunk *next;
+   size_t   used;
+   size_t   size;
+   char     data[1];
+} decompress_manifest_chunk_t;
 
 struct decompress_manifest
 {
    uint64_t pending_size;
-   char    *path;
-   decompress_manifest_line_t *lines;   /* in file order */
+   char    *path;            /* allocated with the manifest */
+   char    *text;            /* the file as read, its names cut in place */
+   decompress_manifest_chunk_t *chunks;   /* names of lines added */
+   decompress_manifest_line_t *lines;     /* in file order */
    uint32_t *map;            /* name to index in lines; borrows the names */
-   char    *pending_name;    /* the member being written; no line yet */
-   char    *pending_path;
    size_t   count;
    size_t   cap;
    size_t   cursor;          /* the line after the last hit */
    uint32_t pending_crc;
+   uint32_t pending_name_len;
+   char     pending_name[PATH_MAX_LENGTH];   /* the member being written */
+   char     pending_path[PATH_MAX_LENGTH];
+   bool     pending;         /* pending_*: a member with no line yet */
    bool     loaded;
    bool     dirty;
    bool     no_mtime;        /* a written member had none: stop recording */
    bool     failed;          /* the walk stopped on a failed member */
 };
 
-static char *decompress_manifest_strdup(const char *s, size_t len)
+/* A copy of @name that lives as long as @m; NULL on no memory */
+static const char *decompress_manifest_keep(decompress_manifest_t *m,
+      const char *name, size_t len)
 {
-   char *copy = (char*)malloc(len + 1);
-   if (!copy)
-      return NULL;
-   memcpy(copy, s, len);
+   char *copy;
+   decompress_manifest_chunk_t *c = m->chunks;
+
+   if (!c || c->size - c->used <= len)
+   {
+      size_t size = (len < DECOMPRESS_MANIFEST_CHUNK)
+         ? DECOMPRESS_MANIFEST_CHUNK : len + 1;
+      if (!(c = (decompress_manifest_chunk_t*)malloc(
+               offsetof(decompress_manifest_chunk_t, data) + size)))
+         return NULL;
+      c->next   = m->chunks;
+      c->used   = 0;
+      c->size   = size;
+      m->chunks = c;
+   }
+
+   copy     = c->data + c->used;
+   memcpy(copy, name, len);
    copy[len] = '\0';
+   c->used += len + 1;
    return copy;
 }
 
@@ -119,9 +152,10 @@ static size_t decompress_manifest_put_u64(char *s, uint64_t v,
    return n;
 }
 
-/* Takes @name on success */
-static bool decompress_manifest_append(decompress_manifest_t *m, char *name,
-      uint64_t size, int64_t mtime, uint32_t crc)
+/* @name must live as long as @m */
+static bool decompress_manifest_append(decompress_manifest_t *m,
+      const char *name, size_t name_len, uint64_t size, int64_t mtime,
+      uint32_t crc)
 {
    decompress_manifest_line_t *line;
 
@@ -139,9 +173,10 @@ static bool decompress_manifest_append(decompress_manifest_t *m, char *name,
    line        = &m->lines[m->count++];
    line->mtime = mtime;
    line->size  = size;
-   line->name  = name;
-   line->crc   = crc;
-   line->seen  = false;
+   line->name     = name;
+   line->crc      = crc;
+   line->name_len = (uint32_t)name_len;
+   line->seen     = false;
    return true;
 }
 
@@ -150,8 +185,8 @@ static void decompress_manifest_load(decompress_manifest_t *m)
 {
    void *buf   = NULL;
    int64_t len = 0;
-   const char *p;
-   const char *end;
+   char *p;
+   char *end;
    size_t hlen = STRLEN_CONST(DECOMPRESS_MANIFEST_HEADER);
 
    if (m->loaded)
@@ -160,7 +195,9 @@ static void decompress_manifest_load(decompress_manifest_t *m)
    if (!filestream_read_file(m->path, &buf, &len) || !buf)
       return;
 
-   p   = (const char*)buf;
+   /* Kept: the names are cut in place where they stand, the NUL
+    * filestream_read_file() puts after the data ending the last one */
+   p   = (char*)buf;
    end = p + len;
 
    if (     (size_t)(end - p) < hlen
@@ -175,10 +212,9 @@ static void decompress_manifest_load(decompress_manifest_t *m)
    while (p < end)
    {
       uint64_t crc, size, mtime;
-      const char *line_end;
-      const char *name;
+      char *line_end;
+      char *name;
       size_t name_len;
-      char *copy;
 
       while (p < end && (*p == '\n' || *p == '\r'))
          p++;
@@ -188,11 +224,14 @@ static void decompress_manifest_load(decompress_manifest_t *m)
          ;
 
       /* Malformed lines are skipped, not trusted */
-      if (     !(p = decompress_manifest_parse_u64(p, line_end, 16, &crc))
+      if (     !(p = (char*)decompress_manifest_parse_u64(p, line_end, 16,
+                  &crc))
             || p >= line_end || *p++ != ' '
-            || !(p = decompress_manifest_parse_u64(p, line_end, 10, &size))
+            || !(p = (char*)decompress_manifest_parse_u64(p, line_end, 10,
+                  &size))
             || p >= line_end || *p++ != ' '
-            || !(p = decompress_manifest_parse_u64(p, line_end, 10, &mtime))
+            || !(p = (char*)decompress_manifest_parse_u64(p, line_end, 10,
+                  &mtime))
             || p >= line_end || *p++ != ' ')
       {
          p = line_end;
@@ -203,7 +242,8 @@ static void decompress_manifest_load(decompress_manifest_t *m)
       name_len = (size_t)(line_end - name);
       if (name_len > 0 && name[name_len - 1] == '\r')
          name_len--;
-      p        = line_end;
+      /* Past the newline: the name's terminator may be written over it */
+      p        = (line_end < end) ? line_end + 1 : end;
 
       if (     name_len == 0
             || name_len >= PATH_MAX_LENGTH
@@ -213,17 +253,13 @@ static void decompress_manifest_load(decompress_manifest_t *m)
             || memchr(name, '\r', name_len))
          continue;
 
-      if (!(copy = decompress_manifest_strdup(name, name_len)))
+      name[name_len] = '\0';
+      if (!decompress_manifest_append(m, name, name_len, size,
+               (int64_t)mtime, (uint32_t)crc))
          break;
-      if (!decompress_manifest_append(m, copy, size, (int64_t)mtime,
-               (uint32_t)crc))
-      {
-         free(copy);
-         break;
-      }
    }
 
-   free(buf);
+   m->text = (char*)buf;
 }
 
 /* Of two lines with one name the first stays */
@@ -244,7 +280,6 @@ static bool decompress_manifest_map_build(decompress_manifest_t *m)
    {
       if (RHMAP_HAS_STR(map, m->lines[i].name))
       {
-         free(m->lines[i].name);
          if (i < m->cursor)
             cursor--;
          continue;
@@ -289,16 +324,14 @@ static bool decompress_manifest_get_mtime(const char *path, int64_t *mtime)
 static void decompress_manifest_commit(decompress_manifest_t *m)
 {
    ptrdiff_t idx;
-   int64_t mtime = 0;
-   char *name    = m->pending_name;
-   char *path    = m->pending_path;
+   int64_t mtime    = 0;
+   const char *name = m->pending_name;
 
-   if (!name)
+   if (!m->pending)
       return;
-   m->pending_name = NULL;
-   m->pending_path = NULL;
+   m->pending = false;
 
-   if (!decompress_manifest_get_mtime(path, &mtime))
+   if (!decompress_manifest_get_mtime(m->pending_path, &mtime))
       m->no_mtime = true;
    else if (mtime >= 0)
    {
@@ -319,28 +352,25 @@ static void decompress_manifest_commit(decompress_manifest_t *m)
       /* Without the map a second line of this name could be added */
       else if (m->map
             && RHMAP_TRYFIT(m->map, m->count + 1)
-            && decompress_manifest_append(m, name, m->pending_size, mtime,
-               m->pending_crc))
+            && (name = decompress_manifest_keep(m, name,
+                  m->pending_name_len))
+            && decompress_manifest_append(m, name, m->pending_name_len,
+               m->pending_size, mtime, m->pending_crc))
       {
          m->lines[m->count - 1].seen = true;
          RHMAP_SET_STR(m->map, name, (uint32_t)(m->count - 1));
          m->cursor = m->count;
          m->dirty  = true;
-         name      = NULL;
       }
    }
-
-   free(name);
-   free(path);
 }
 
 decompress_manifest_t *decompress_manifest_new(const char *target_dir,
       const char *archive_path)
 {
    const char *base;
-   char *leaf;
    size_t base_len;
-   size_t leaf_size;
+   size_t dir_len;
    size_t path_size;
    decompress_manifest_t *m;
 
@@ -351,39 +381,32 @@ decompress_manifest_t *decompress_manifest_new(const char *target_dir,
    if (!base_len)
       return NULL;
 
-   /* ".<base>.crc" */
-   leaf_size = 1 + base_len + sizeof(".crc");
-   path_size = strlen(target_dir) + 1 + leaf_size;
-   m         = (decompress_manifest_t*)calloc(1, sizeof(*m));
-   leaf      = (char*)malloc(leaf_size);
-   if (!m || !leaf || !(m->path = (char*)malloc(path_size)))
-   {
-      free(leaf);
-      free(m);
+   /* "<target_dir>/.<base>.crc", after the manifest in one block */
+   dir_len   = strlen(target_dir);
+   path_size = dir_len + 2 + base_len + sizeof(".crc");
+   if (!(m = (decompress_manifest_t*)calloc(1, sizeof(*m) + path_size)))
       return NULL;
-   }
-
-   leaf[0] = '.';
-   memcpy(leaf + 1, base, base_len);
-   memcpy(leaf + 1 + base_len, ".crc", sizeof(".crc"));
-   fill_pathname_join_special(m->path, target_dir, leaf, path_size);
-   free(leaf);
+   m->path = (char*)(m + 1);
+   dir_len = fill_pathname_join_special(m->path, target_dir, ".",
+         path_size);
+   memcpy(m->path + dir_len, base, base_len);
+   memcpy(m->path + dir_len + base_len, ".crc", sizeof(".crc"));
    return m;
 }
 
 void decompress_manifest_free(decompress_manifest_t *m)
 {
-   size_t i;
-
    if (!m)
       return;
    RHMAP_FREE(m->map);
-   for (i = 0; i < m->count; i++)
-      free(m->lines[i].name);
+   while (m->chunks)
+   {
+      decompress_manifest_chunk_t *next = m->chunks->next;
+      free(m->chunks);
+      m->chunks = next;
+   }
    free(m->lines);
-   free(m->pending_name);
-   free(m->pending_path);
-   free(m->path);
+   free(m->text);
    free(m);
 }
 
@@ -433,31 +456,24 @@ void decompress_manifest_begin(decompress_manifest_t *m, const char *name,
    if (     m->no_mtime
          || name_len == 0
          || name_len >= PATH_MAX_LENGTH
-         || strpbrk(name, "\r\n"))
+         || strpbrk(name, "\r\n")
+         || strlcpy(m->pending_path, path, sizeof(m->pending_path))
+            >= sizeof(m->pending_path))
       return;
 
-   m->pending_name = decompress_manifest_strdup(name, name_len);
-   m->pending_path = decompress_manifest_strdup(path, strlen(path));
-   m->pending_size = size;
-   m->pending_crc  = crc;
-   if (!m->pending_name || !m->pending_path)
-   {
-      free(m->pending_name);
-      free(m->pending_path);
-      m->pending_name = NULL;
-      m->pending_path = NULL;
-   }
+   memcpy(m->pending_name, name, name_len + 1);
+   m->pending_name_len = (uint32_t)name_len;
+   m->pending_size     = size;
+   m->pending_crc      = crc;
+   m->pending          = true;
 }
 
 void decompress_manifest_abort(decompress_manifest_t *m)
 {
    if (!m)
       return;
-   free(m->pending_name);
-   free(m->pending_path);
-   m->pending_name = NULL;
-   m->pending_path = NULL;
-   m->failed       = true;
+   m->pending = false;
+   m->failed  = true;
 }
 
 bool decompress_manifest_save(decompress_manifest_t *m, bool clean)
@@ -483,8 +499,6 @@ bool decompress_manifest_save(decompress_manifest_t *m, bool clean)
       {
          if (m->lines[i].seen)
             m->lines[kept++] = m->lines[i];
-         else
-            free(m->lines[i].name);
       }
       if (kept != m->count)
       {
@@ -495,12 +509,7 @@ bool decompress_manifest_save(decompress_manifest_t *m, bool clean)
       }
    }
    else
-   {
-      free(m->pending_name);
-      free(m->pending_path);
-      m->pending_name = NULL;
-      m->pending_path = NULL;
-   }
+      m->pending = false;
 
    if (!m->dirty)
       return true;
@@ -508,7 +517,7 @@ bool decompress_manifest_save(decompress_manifest_t *m, bool clean)
    /* crc, size and mtime take 8 + 20 + 20 digits at most */
    cap = sizeof(DECOMPRESS_MANIFEST_HEADER);
    for (i = 0; i < m->count; i++)
-      cap += strlen(m->lines[i].name) + 52;
+      cap += m->lines[i].name_len + 52;
    if (!(text = (char*)malloc(cap)))
       return false;
 
@@ -518,7 +527,7 @@ bool decompress_manifest_save(decompress_manifest_t *m, bool clean)
    for (i = 0; i < m->count; i++)
    {
       const decompress_manifest_line_t *line = &m->lines[i];
-      size_t name_len                        = strlen(line->name);
+      size_t name_len                        = line->name_len;
 
       len        += decompress_manifest_put_u64(text + len, line->crc, 16, 8);
       text[len++] = ' ';
