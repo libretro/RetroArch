@@ -27,6 +27,7 @@ on:
       - 'samples/menu/mouse_click/**'
       - 'samples/menu/menu_icon_ownership/**'
       - 'samples/menu/ozone_sublabel_scroll/**'
+      - 'samples/menu/ozone_omarchy_theme/**'
       - 'gfx/gfx_display.c'
       - 'runloop.c'
       - 'samples/menu/network_settings/**'
@@ -52,6 +53,7 @@ on:
       - 'samples/menu/mouse_click/**'
       - 'samples/menu/menu_icon_ownership/**'
       - 'samples/menu/ozone_sublabel_scroll/**'
+      - 'samples/menu/ozone_omarchy_theme/**'
       - 'gfx/gfx_display.c'
       - 'runloop.c'
       - 'samples/menu/network_settings/**'
@@ -261,6 +263,18 @@ jobs:
           samples/menu/ozone_sublabel_scroll/build.sh
           ./samples/menu/ozone_sublabel_scroll/ozone_sublabel_scroll_test
           make -C samples/menu/ozone_sublabel_scroll clean
+
+      - name: Build and run ozone_omarchy_theme_test
+        shell: bash
+        run: |
+          set -eu
+          # The Omarchy theme reads its colours from a file at startup,
+          # when the menu opens and when the theme is chosen, never
+          # from the frame, and a key left out keeps its default.
+          # Shares the non-Qt build made above.
+          samples/menu/ozone_omarchy_theme/build.sh
+          ./samples/menu/ozone_omarchy_theme/ozone_omarchy_theme_test
+          make -C samples/menu/ozone_omarchy_theme clean
 
       - name: Build and run menu_mouse_click_test
         shell: bash

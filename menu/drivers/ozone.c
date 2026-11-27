@@ -775,6 +775,8 @@ struct ozone_handle
    /* A cursor fade began this iteration; the compute pass may
     * animate the scroll along with it. */
    bool cursor_fade_started;
+   /* Main thread: the Omarchy theme is the one shown */
+   bool omarchy_active;
 
    struct
    {
@@ -1765,33 +1767,25 @@ static ozone_theme_t ozone_theme_selenium = {
    NULL,                                            /* name */
 };
 
-/* ============================================================
- * Omarchy: a user-definable colour theme.
- *
- * Unlike the built-in themes, its colours are not fixed at compile
- * time: they are (re)loaded on every theme-set from "ozone_omarchy.cfg"
- * next to retroarch.cfg, so an external program (e.g. the Omarchy
- * desktop shell) can keep the menu in sync with the active desktop
- * palette. Keys are 0xRRGGBB; any key left out keeps the dark fallback.
- * ============================================================ */
-static float ozone_background_omarchy[16]              = COLOR_HEX_TO_FLOAT(0x2D2D2D, 1.00f);
+/* Omarchy: colours read from "ozone_omarchy.cfg" next to retroarch.cfg
+ * (keys 0xRRGGBB), so an external program can keep the menu in sync
+ * with the desktop palette. A key left out keeps its default. */
 static float ozone_sidebar_background_omarchy[16]      = COLOR_HEX_TO_FLOAT(0x333333, 1.00f);
 static float ozone_sidebar_gradient_top_omarchy[16]    = COLOR_HEX_TO_FLOAT(0x333333, 1.00f);
 static float ozone_sidebar_gradient_bottom_omarchy[16] = COLOR_HEX_TO_FLOAT(0x2D2D2D, 1.00f);
 static float ozone_border_0_omarchy[16]                = COLOR_HEX_TO_FLOAT(0x2DA3CB, 1.00f);
 static float ozone_border_1_omarchy[16]                = COLOR_HEX_TO_FLOAT(0x2DA3CB, 1.00f);
 
-/* Omarchy: mutable running-content background (also the menu bg when
- * menu_framebuffer_opacity < 1.0, which is the RetroArch default). RGB is
- * recoloured from ozone_background by the loader; the per-vertex alpha
- * gradient is preserved. */
+/* RGB follows ozone_background; the alpha gradient is kept */
 static float ozone_background_libretro_running_omarchy[16]  = {
    0.176f, 0.176f, 0.176f, 0.75f,
    0.176f, 0.176f, 0.176f, 0.75f,
-   0.178f, 0.178f, 0.178f, 1.0f,
-   0.178f, 0.178f, 0.178f, 1.0f,
+   0.176f, 0.176f, 0.176f, 1.0f,
+   0.176f, 0.176f, 0.176f, 1.0f,
 };
 
+/* No name: there is no icon set for a palette chosen at runtime, so
+ * the cursor and checkmark are drawn in the theme's own colours */
 static ozone_theme_t ozone_theme_omarchy = {
    COLOR_HEX_TO_FLOAT(0x2D2D2D, 1.00f),                  /* background */
    ozone_background_libretro_running_omarchy,            /* background_libretro_running */
@@ -1821,8 +1815,45 @@ static ozone_theme_t ozone_theme_omarchy = {
 
    {0},                                                  /* textures */
 
-   "omarchy"                                             /* name */
+   NULL                                                  /* name */
 };
+
+enum ozone_omarchy_key
+{
+   OZONE_OMARCHY_BACKGROUND = 0,
+   OZONE_OMARCHY_SIDEBAR,
+   OZONE_OMARCHY_ACCENT,
+   OZONE_OMARCHY_TEXT,
+   OZONE_OMARCHY_TEXT_SUBLABEL,
+   OZONE_OMARCHY_SELECTION,
+   OZONE_OMARCHY_ENTRIES_BORDER,
+   OZONE_OMARCHY_MESSAGE_BACKGROUND,
+   OZONE_OMARCHY_KEY_LAST
+};
+
+static const char *const ozone_omarchy_keys[OZONE_OMARCHY_KEY_LAST] = {
+   "ozone_background",
+   "ozone_sidebar",
+   "ozone_accent",
+   "ozone_text",
+   "ozone_text_sublabel",
+   "ozone_selection",
+   "ozone_entries_border",
+   "ozone_message_background"
+};
+
+typedef struct
+{
+   char path[PATH_MAX_LENGTH];
+   unsigned rgb[OZONE_OMARCHY_KEY_LAST];
+   unsigned set;  /* bit per enum ozone_omarchy_key */
+} ozone_omarchy_palette_t;
+
+/* A parsed palette waiting for the frame path, which owns the theme */
+static retro_atomic_ptr_t ozone_omarchy_pending;
+/* Main thread */
+static bool ozone_omarchy_loading;
+static bool ozone_omarchy_alive;
 
 static void ozone_omarchy_hex16(float *dst, unsigned hex)
 {
@@ -1839,71 +1870,160 @@ static void ozone_omarchy_hex16(float *dst, unsigned hex)
    }
 }
 
-static void ozone_load_omarchy_theme(void)
+#define OZONE_OMARCHY_RGB(p, key, def) \
+   (((p)->set & (1u << (key))) ? (p)->rgb[(key)] : (unsigned)(def))
+
+/* Frame path: every colour is written, so a key dropped from the
+ * file goes back to its default */
+static void ozone_omarchy_apply(const ozone_omarchy_palette_t *p)
 {
-   char path[PATH_MAX_LENGTH];
-   config_file_t *conf = NULL;
-   const char *cfg     = path_get(RARCH_PATH_CONFIG);
-   unsigned v          = 0;
+   unsigned i;
+   unsigned bg     = OZONE_OMARCHY_RGB(p, OZONE_OMARCHY_BACKGROUND, 0x2D2D2D);
+   unsigned accent = OZONE_OMARCHY_RGB(p, OZONE_OMARCHY_ACCENT,     0x2DA3CB);
+   unsigned text   = OZONE_OMARCHY_RGB(p, OZONE_OMARCHY_TEXT,       0xFFFFFF);
+
+   ozone_omarchy_hex16(ozone_theme_omarchy.background, bg);
+   for (i = 0; i < 16; i += 4)
+   {
+      ozone_background_libretro_running_omarchy[i]     = HEX_R(bg);
+      ozone_background_libretro_running_omarchy[i + 1] = HEX_G(bg);
+      ozone_background_libretro_running_omarchy[i + 2] = HEX_B(bg);
+   }
+
+   if (p->set & (1u << OZONE_OMARCHY_SIDEBAR))
+   {
+      ozone_omarchy_hex16(ozone_sidebar_background_omarchy,      p->rgb[OZONE_OMARCHY_SIDEBAR]);
+      ozone_omarchy_hex16(ozone_sidebar_gradient_top_omarchy,    p->rgb[OZONE_OMARCHY_SIDEBAR]);
+      ozone_omarchy_hex16(ozone_sidebar_gradient_bottom_omarchy, p->rgb[OZONE_OMARCHY_SIDEBAR]);
+   }
+   else
+   {
+      ozone_omarchy_hex16(ozone_sidebar_background_omarchy,      0x333333);
+      ozone_omarchy_hex16(ozone_sidebar_gradient_top_omarchy,    0x333333);
+      ozone_omarchy_hex16(ozone_sidebar_gradient_bottom_omarchy, 0x2D2D2D);
+   }
+
+   ozone_omarchy_hex16(ozone_theme_omarchy.selection_border, accent);
+   ozone_omarchy_hex16(ozone_border_0_omarchy,               accent);
+   ozone_omarchy_hex16(ozone_border_1_omarchy,               accent);
+   if (p->set & (1u << OZONE_OMARCHY_ACCENT))
+   {
+      ozone_omarchy_hex16(ozone_theme_omarchy.text_selected, accent);
+      ozone_theme_omarchy.text_selected_rgba = (accent << 8) | 0xFF;
+   }
+   else
+   {
+      ozone_omarchy_hex16(ozone_theme_omarchy.text_selected, 0x00D9AE);
+      ozone_theme_omarchy.text_selected_rgba = 0x00FFC5FF;
+   }
+
+   ozone_omarchy_hex16(ozone_theme_omarchy.text,                    text);
+   ozone_omarchy_hex16(ozone_theme_omarchy.entries_icon,            text);
+   ozone_omarchy_hex16(ozone_theme_omarchy.header_footer_separator, text);
+   ozone_theme_omarchy.text_rgba          = (text << 8) | 0xFF;
+   ozone_theme_omarchy.text_sidebar_rgba  = (text << 8) | 0xFF;
+   ozone_theme_omarchy.text_sublabel_rgba = (OZONE_OMARCHY_RGB(p,
+            OZONE_OMARCHY_TEXT_SUBLABEL, 0x9F9FA1) << 8) | 0xFF;
+
+   ozone_omarchy_hex16(ozone_theme_omarchy.selection,
+         OZONE_OMARCHY_RGB(p, OZONE_OMARCHY_SELECTION, 0x212227));
+   ozone_omarchy_hex16(ozone_theme_omarchy.entries_border,
+         OZONE_OMARCHY_RGB(p, OZONE_OMARCHY_ENTRIES_BORDER, 0x51514F));
+   ozone_omarchy_hex16(ozone_theme_omarchy.message_background,
+         OZONE_OMARCHY_RGB(p, OZONE_OMARCHY_MESSAGE_BACKGROUND, 0x464646));
+}
+
+static void ozone_omarchy_parse(ozone_omarchy_palette_t *p)
+{
+   unsigned i;
+   config_file_t *conf;
+
+   p->set = 0;
+   if (!path_is_valid(p->path))
+      return;
+   if (!(conf = config_file_new_from_path_to_string(p->path)))
+      return;
+   for (i = 0; i < OZONE_OMARCHY_KEY_LAST; i++)
+      if (config_get_hex(conf, ozone_omarchy_keys[i], &p->rgb[i]))
+         p->set |= 1u << i;
+   config_file_free(conf);
+}
+
+/* Main thread: hands @p to the frame path, dropping one it has not
+ * taken yet */
+static void ozone_omarchy_publish(ozone_omarchy_palette_t *p)
+{
+   ozone_omarchy_palette_t *old = (ozone_omarchy_palette_t*)
+      retro_atomic_exchange_ptr(&ozone_omarchy_pending, p);
+   if (old)
+      free(old);
+}
+
+/* Main thread */
+static ozone_omarchy_palette_t *ozone_omarchy_palette_new(void)
+{
+   ozone_omarchy_palette_t *p = NULL;
+   const char *cfg            = path_get(RARCH_PATH_CONFIG);
 
    if (!cfg || !*cfg)
+      return NULL;
+   if (!(p = (ozone_omarchy_palette_t*)calloc(1, sizeof(*p))))
+      return NULL;
+   fill_pathname_basedir(p->path, cfg, sizeof(p->path));
+   strlcat(p->path, "ozone_omarchy.cfg", sizeof(p->path));
+   return p;
+}
+
+static void ozone_omarchy_task_handler(retro_task_t *task)
+{
+   ozone_omarchy_palette_t *p = (ozone_omarchy_palette_t*)task->state;
+   if (p && !(task_get_flags(task) & RETRO_TASK_FLG_CANCELLED))
+      ozone_omarchy_parse(p);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void ozone_omarchy_task_callback(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   (void)task_data;
+   (void)user_data;
+   (void)err;
+   ozone_omarchy_loading = false;
+   if (ozone_omarchy_alive && task && task->state)
+   {
+      ozone_omarchy_publish((ozone_omarchy_palette_t*)task->state);
+      task->state = NULL;
+   }
+}
+
+static void ozone_omarchy_task_free(retro_task_t *task)
+{
+   if (task && task->state)
+      free(task->state);
+}
+
+/* Main thread: re-reads the file off the frame loop */
+static void ozone_omarchy_reload(void)
+{
+   retro_task_t *task;
+   ozone_omarchy_palette_t *p;
+
+   if (ozone_omarchy_loading)
       return;
-
-   fill_pathname_basedir(path, cfg, sizeof(path));
-   strlcat(path, "ozone_omarchy.cfg", sizeof(path));
-
-   if (!path_is_valid(path))
+   if (!(p = ozone_omarchy_palette_new()))
       return;
-   if (!(conf = config_file_new_from_path_to_string(path)))
+   if (!(task = task_init()))
+   {
+      free(p);
       return;
-
-   if (config_get_hex(conf, "ozone_background", &v))
-   {
-      unsigned bi;
-      float br = HEX_R(v), bg = HEX_G(v), bb = HEX_B(v);
-      ozone_omarchy_hex16(ozone_theme_omarchy.background, v);
-      ozone_theme_omarchy.screensaver_tint = v;
-      /* Recolour the running-content background (menu bg at opacity < 1.0),
-       * keeping its top-to-bottom alpha gradient. */
-      for (bi = 0; bi < 16; bi += 4)
-      {
-         ozone_background_libretro_running_omarchy[bi]     = br;
-         ozone_background_libretro_running_omarchy[bi + 1] = bg;
-         ozone_background_libretro_running_omarchy[bi + 2] = bb;
-      }
    }
-   if (config_get_hex(conf, "ozone_sidebar", &v))
-   {
-      ozone_omarchy_hex16(ozone_sidebar_background_omarchy,      v);
-      ozone_omarchy_hex16(ozone_sidebar_gradient_top_omarchy,    v);
-      ozone_omarchy_hex16(ozone_sidebar_gradient_bottom_omarchy, v);
-   }
-   if (config_get_hex(conf, "ozone_accent", &v))
-   {
-      ozone_omarchy_hex16(ozone_theme_omarchy.selection_border, v);
-      ozone_omarchy_hex16(ozone_theme_omarchy.text_selected,    v);
-      ozone_omarchy_hex16(ozone_border_0_omarchy,               v);
-      ozone_omarchy_hex16(ozone_border_1_omarchy,               v);
-      ozone_theme_omarchy.text_selected_rgba = (v << 8) | 0xFF;
-   }
-   if (config_get_hex(conf, "ozone_text", &v))
-   {
-      ozone_omarchy_hex16(ozone_theme_omarchy.text,                    v);
-      ozone_omarchy_hex16(ozone_theme_omarchy.entries_icon,           v);
-      ozone_omarchy_hex16(ozone_theme_omarchy.header_footer_separator, v);
-      ozone_theme_omarchy.text_rgba         = (v << 8) | 0xFF;
-      ozone_theme_omarchy.text_sidebar_rgba = (v << 8) | 0xFF;
-   }
-   if (config_get_hex(conf, "ozone_text_sublabel", &v))
-      ozone_theme_omarchy.text_sublabel_rgba = (v << 8) | 0xFF;
-   if (config_get_hex(conf, "ozone_selection", &v))
-      ozone_omarchy_hex16(ozone_theme_omarchy.selection, v);
-   if (config_get_hex(conf, "ozone_entries_border", &v))
-      ozone_omarchy_hex16(ozone_theme_omarchy.entries_border, v);
-   if (config_get_hex(conf, "ozone_message_background", &v))
-      ozone_omarchy_hex16(ozone_theme_omarchy.message_background, v);
-
-   config_file_free(conf);
+   task->handler         = ozone_omarchy_task_handler;
+   task->state           = p;
+   task->title           = NULL;
+   task->callback        = ozone_omarchy_task_callback;
+   task->cleanup         = ozone_omarchy_task_free;
+   ozone_omarchy_loading = true;
+   task_queue_push(task);
 }
 
 static ozone_theme_t *ozone_themes[] = {
@@ -2025,9 +2145,6 @@ static void ozone_set_color_theme(ozone_handle_t *ozone,
 
    if (!color_theme)
       color_theme = DEFAULT_OZONE_COLOR_THEME;
-
-   if (string_is_equal(color_theme, "omarchy"))
-      ozone_load_omarchy_theme();
 
    for (i = 0; i < ARRAY_SIZE(ozone_color_themes); i++)
       if (string_is_equal(color_theme, ozone_color_themes[i].ident))
@@ -10331,6 +10448,18 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    if (fallback_color_theme)
       ozone_set_color_theme(ozone, color_theme);
 
+   ozone_omarchy_alive = true;
+   if (ozone->theme == &ozone_theme_omarchy)
+   {
+      ozone_omarchy_palette_t *p = ozone_omarchy_palette_new();
+      ozone->omarchy_active      = true;
+      if (p)
+      {
+         ozone_omarchy_parse(p);
+         ozone_omarchy_publish(p);
+      }
+   }
+
    ozone->flags                                &= ~OZONE_FLAG_NEED_COMPUTE;
    ozone->animations.scroll_y                   = 0.0f;
    ozone->animations.scroll_y_sidebar           = 0.0f;
@@ -10436,6 +10565,9 @@ static void ozone_free(void *data)
 
       menu_screensaver_free(ozone->screensaver);
    }
+
+   ozone_omarchy_alive = false;
+   ozone_omarchy_publish(NULL);
 }
 
 static void ozone_update_thumbnail_image(void *data)
@@ -10955,6 +11087,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone_make_theme_surfaces();
       (void)retro_atomic_exchange_ptr(&ozone->pending_theme, NULL);
       ozone_load_theme_textures(ozone, ozone->theme);
+      ozone->omarchy_active = (ozone->theme == &ozone_theme_omarchy);
 
       /* Icons textures init */
       gfx_surface_submit_named(ozone->icons_textures,
@@ -11288,7 +11421,12 @@ static void ozone_render(void *data,
       ozone_theme_t *pending_theme = (ozone_theme_t*)retro_atomic_exchange_ptr(
             &ozone->pending_theme, NULL);
       if (pending_theme)
+      {
          ozone_load_theme_textures(ozone, pending_theme);
+         ozone->omarchy_active = (pending_theme == &ozone_theme_omarchy);
+         if (ozone->omarchy_active)
+            ozone_omarchy_reload();
+      }
    }
 
    /* The header icon's handle is a surface's, which a replacement or a
@@ -13275,6 +13413,22 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       }
    }
 
+   if (retro_atomic_load_acquire_ptr(&ozone_omarchy_pending))
+   {
+      ozone_omarchy_palette_t *p = (ozone_omarchy_palette_t*)
+         retro_atomic_exchange_ptr(&ozone_omarchy_pending, NULL);
+      if (p)
+      {
+         ozone_omarchy_apply(p);
+         free(p);
+         if (ozone->theme == &ozone_theme_omarchy)
+         {
+            ozone_set_color_theme(ozone, "omarchy");
+            ozone_set_background_running_opacity(ozone, menu_framebuffer_opacity);
+         }
+      }
+   }
+
    /* Change theme on the fly */
    ozone_last_use_preferred_system_color_theme =
          ozone->flags2 & OZONE_FLAG2_LAST_USE_PREFERRED_SYSTEM_COLOR_THEME;
@@ -13366,15 +13520,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             NULL);
    }
 
-   /* Background (Always use running background due to overlays).
-    * Exception: the Omarchy theme may be a light palette, and the running
-    * background is composited at <1.0 alpha over a pure-black clear, which
-    * muddies a light menu (visible dark band in the header/top region). With
-    * no content running there is nothing to overlay, so paint the opaque
-    * themed background instead. */
-   if (menu_framebuffer_opacity < 1.0f
-         && (libretro_running
-            || !string_is_equal(ozone->theme->name, "omarchy")))
+   /* Background (Always use running background due to overlays) */
+   if (menu_framebuffer_opacity < 1.0f)
    {
       if (menu_framebuffer_opacity != ozone->last_framebuffer_opacity)
          if (ozone->theme->background_libretro_running)
@@ -14303,6 +14450,9 @@ static void ozone_toggle(void *userdata, bool menu_on)
 
    if (!ozone)
       return;
+
+   if (menu_on && ozone->omarchy_active)
+      ozone_omarchy_reload();
 
    /* Reset */
    ozone->animations.list_alpha    = 1.0f;
