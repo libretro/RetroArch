@@ -146,13 +146,22 @@ static int file_decompressed_subdir(const char *name,
    /* Make directory */
    if (task_decompress_mkdir(userdata->dec, path_dir))
    {
+      decompress_manifest_t *m = (decompress_manifest_t*)userdata->cb_data;
+
+      if (m && decompress_manifest_unchanged(m, name, path, size, crc32))
+         return 1;
+
       /* Start the decode rather than driving it to completion here.
        * Whatever is left is parked in the transfer and finished by
        * file_archive_parse_file_iterate() on later ticks, one slice
        * per tick, so a large member no longer holds the frame. */
       if (file_archive_perform_mode_start(path, valid_exts,
                cdata, cmode, csize, size, crc32, userdata) != -1)
+      {
+         if (m)
+            decompress_manifest_begin(m, name, path, size, crc32);
          return 1;
+      }
    }
 
    userdata->dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
@@ -200,12 +209,21 @@ static int file_decompressed(const char *name, const char *valid_exts,
 
    if (task_decompress_mkdir(dec, path))
    {
+      decompress_manifest_t *m = (decompress_manifest_t*)userdata->cb_data;
+
       fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
+
+      if (m && decompress_manifest_unchanged(m, name, path, size, crc32))
+         return 1;
 
       /* Started, not completed; see the twin in file_archived. */
       if (file_archive_perform_mode_start(path, valid_exts,
                cdata, cmode, csize, size, crc32, userdata) != -1)
+      {
+         if (m)
+            decompress_manifest_begin(m, name, path, size, crc32);
          return 1;
+      }
    }
 
    dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
@@ -233,6 +251,12 @@ static void task_decompress_handler_finished(retro_task_t *task,
 
    if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       task_set_error(task, strdup("Task canceled"));
+
+   /* On a cancel or failure too, so the next run resumes after the
+    * members this one finished */
+   decompress_manifest_save(
+         (decompress_manifest_t*)dec->userdata->cb_data,
+         !task_get_error(task));
 
    if (!task_get_error(task))
    {
@@ -296,6 +320,8 @@ static void task_decompress_cleanup(retro_task_t *task)
    free(dec->subdir);
    free(dec->valid_ext);
    free(dec->callback_error);
+   decompress_manifest_free(
+         (decompress_manifest_t*)dec->userdata->cb_data);
    free(dec->userdata);
    free(dec);
 }
@@ -321,9 +347,16 @@ static int task_decompress_iterate(decompress_state_t *dec,
    }
    task_nbio_slice_close(&b);
 
-   if (!ok && !dec->callback_error)
-      dec->callback_error = strdup(
-            msg_hash_to_str(MSG_DECOMPRESSION_FAILED));
+   if (!ok)
+   {
+      /* Told here, as the task reports the failure only when it has
+       * the memory for the message */
+      decompress_manifest_abort(
+            (decompress_manifest_t*)dec->userdata->cb_data);
+      if (!dec->callback_error)
+         dec->callback_error = strdup(
+               msg_hash_to_str(MSG_DECOMPRESSION_FAILED));
+   }
 
    return ret;
 }
@@ -454,7 +487,7 @@ bool task_check_decompress(const char *source_file)
    return task_queue_find(&find_data);
 }
 
-void *task_push_decompress(
+static void *task_push_decompress_internal(
       const char *source_file,
       const char *target_dir,
       const char *target_file,
@@ -463,7 +496,8 @@ void *task_push_decompress(
       retro_task_callback_t cb,
       void *user_data,
       void *frontend_userdata,
-      bool mute)
+      bool mute,
+      bool skip_unchanged)
 {
    size_t _len;
    char tmp[PATH_MAX_LENGTH];
@@ -516,6 +550,13 @@ void *task_push_decompress(
       calloc(1, sizeof(*s->userdata));
    if (!s->userdata)
       goto error;
+   /* Only ZIP members are sure to come with a CRC */
+   if (     skip_unchanged
+         && (!target_file || !*target_file)
+         && (  strcasecmp(ext, "zip") == 0
+            || strcasecmp(ext, "apk") == 0))
+      s->userdata->cb_data = decompress_manifest_new(target_dir,
+            source_file);
    t->frontend_userdata= frontend_userdata;
    t->state            = s;
    t->handler          = task_decompress_handler;
@@ -562,8 +603,43 @@ error:
    free(s->valid_ext);
    free(s->subdir);
    free(s->target_file);
+   if (s->userdata)
+      decompress_manifest_free(
+            (decompress_manifest_t*)s->userdata->cb_data);
    free(s->userdata);
    free(s);
    free(t);
    return NULL;
+}
+
+void *task_push_decompress(
+      const char *source_file,
+      const char *target_dir,
+      const char *target_file,
+      const char *subdir,
+      const char *valid_ext,
+      retro_task_callback_t cb,
+      void *user_data,
+      void *frontend_userdata,
+      bool mute)
+{
+   return task_push_decompress_internal(source_file, target_dir,
+         target_file, subdir, valid_ext, cb, user_data,
+         frontend_userdata, mute, false);
+}
+
+void *task_push_decompress_skip_unchanged(
+      const char *source_file,
+      const char *target_dir,
+      const char *target_file,
+      const char *subdir,
+      const char *valid_ext,
+      retro_task_callback_t cb,
+      void *user_data,
+      void *frontend_userdata,
+      bool mute)
+{
+   return task_push_decompress_internal(source_file, target_dir,
+         target_file, subdir, valid_ext, cb, user_data,
+         frontend_userdata, mute, true);
 }

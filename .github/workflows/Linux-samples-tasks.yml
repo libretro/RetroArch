@@ -212,7 +212,7 @@ jobs:
           fi
           echo "[pass] database_task no-args exit=$rc (expected non-zero)"
 
-      - name: Build and run archive_name_safety_test, decompress_window_test (plain, ASan + UBSan, TSan)
+      - name: Build and run archive_name_safety_test, decompress_window_test, decompress_manifest_test (plain, ASan + UBSan, TSan, mingw-w64)
         shell: bash
         working-directory: samples/tasks/decompress
         run: |
@@ -236,6 +236,10 @@ jobs:
           # a CRC failure or a cancel removes, leaving any previous
           # file in place.
           timeout 60 ./decompress_window_test
+          # Unit lanes for the manifest that lets a repeat extraction
+          # skip unchanged members (tasks/task_decompress_manifest.c),
+          # on files whose mtimes the test sets.
+          timeout 60 ./decompress_manifest_test
           make clean >/dev/null
           # The same lanes against the built-in inflater, which builds
           # without HAVE_ZLIB use and which rebinds its output window
@@ -247,10 +251,19 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
           UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
             timeout 120 ./decompress_window_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            timeout 120 ./decompress_manifest_test
           make clean >/dev/null
           make all SANITIZER=thread -j$(nproc)
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./decompress_window_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./decompress_manifest_test
           make clean >/dev/null
+          # The manifest test needs no zlib, so it is the one built for Windows
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make -j$(nproc) decompress_manifest_test.exe MANIFEST_TARGET=decompress_manifest_test.exe CC=x86_64-w64-mingw32-gcc LDFLAGS=-static
+          timeout 120 wine ./decompress_manifest_test.exe
+          make clean MANIFEST_TARGET=decompress_manifest_test.exe >/dev/null
 
       - name: Build and run cloudsync_path_safety_test
         shell: bash

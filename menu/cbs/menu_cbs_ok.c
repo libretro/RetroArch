@@ -6062,6 +6062,29 @@ static bool download_streams_to_disk(enum msg_hash_enums enum_idx)
    return false;
 }
 
+#if defined(HAVE_COMPRESSION)
+/* Online Updater bundles, whose files rarely change between updates */
+static bool download_skips_unchanged(enum msg_hash_enums enum_idx)
+{
+   switch (enum_idx)
+   {
+      case MENU_ENUM_LABEL_CB_UPDATE_ASSETS:
+      case MENU_ENUM_LABEL_CB_UPDATE_AUTOCONFIG_PROFILES:
+      case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
+      case MENU_ENUM_LABEL_CB_UPDATE_DATABASES:
+      case MENU_ENUM_LABEL_CB_UPDATE_OVERLAYS:
+      case MENU_ENUM_LABEL_CB_UPDATE_CHEATS:
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_CG:
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_GLSL:
+      case MENU_ENUM_LABEL_CB_UPDATE_SHADERS_SLANG:
+         return true;
+      default:
+         break;
+   }
+   return false;
+}
+#endif
+
 /* expects http_transfer_t*, file_transfer_t* */
 void cb_generic_download(retro_task_t *task,
       void *task_data,
@@ -6210,7 +6233,10 @@ void cb_generic_download(retro_task_t *task,
          dir_path = dir_buf;
       }
 
-      decompress_task = (retro_task_t*)task_push_decompress(
+      decompress_task = (retro_task_t*)(
+            download_skips_unchanged(transf->enum_idx)
+            ? task_push_decompress_skip_unchanged
+            : task_push_decompress)(
             output_path,
             dir_path,
             NULL,

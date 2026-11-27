@@ -1967,6 +1967,7 @@ DATA RUNLOOP
 #include "../tasks/task_translation.c"
 #endif
 #ifdef HAVE_COMPRESSION
+#include "../tasks/task_decompress_manifest.c"
 #include "../tasks/task_decompress.c"
 #endif
 #include "../tasks/task_database.c"

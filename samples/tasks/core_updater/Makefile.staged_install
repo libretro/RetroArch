@@ -15,6 +15,7 @@ LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 SOURCES := \
 	staged_install_test.c \
 	$(CORE_DIR)/tasks/task_decompress.c \
+	$(CORE_DIR)/tasks/task_decompress_manifest.c \
 	$(CORE_DIR)/tasks/task_core_backup.c \
 	$(CORE_DIR)/core_backup.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
