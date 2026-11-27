@@ -25954,6 +25954,17 @@ MSG_HASH(
    "Cheat File (Append)"
    )
 
+/* Quick Menu > Cheats > Load Cheat File (Replace) and (Append) */
+
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILES_USER,
+   "User Cheats"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_CHEAT_FILES_DOWNLOADED,
+   "Downloaded Cheats"
+   )
+
 /* Quick Menu > Cheats > Cheat Details */
 
 MSG_HASH(

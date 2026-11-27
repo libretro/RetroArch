@@ -1570,12 +1570,36 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_CHEAT_FILE:
       case ACTION_OK_DL_CHEAT_FILE_APPEND:
 #ifdef HAVE_CHEATS
-         filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->paths.path_cheat_database;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         if (     type == MENU_SETTING_ACTION
+               && cheat_manager_user_dir_active(
+                     settings->paths.path_cheat_database,
+                     settings->paths.path_cheat_user))
+         {
+            info_path       = label;
+            info_label      = MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_LIST_STR;
+            info.enum_idx   = MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_LIST;
+            if (action_type == ACTION_OK_DL_CHEAT_FILE_APPEND)
+            {
+               info_label    = MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_APPEND_LIST_STR;
+               info.enum_idx = MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_APPEND_LIST;
+            }
+            dl_type         = DISPLAYLIST_GENERIC;
+         }
+         else
+         {
+            filebrowser_clear_type();
+            info_path       = settings->paths.path_cheat_database;
+            if (type == MENU_SETTING_ACTION_CHEAT_USER_DIR)
+            {
+               info_path    = settings->paths.path_cheat_user;
+               if (!path_is_directory(info_path))
+                  path_mkdir(info_path);
+            }
+            info_label      = label;
+            dl_type         = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
 #endif
          break;
       case ACTION_OK_DL_RGUI_MENU_THEME_PRESET:
