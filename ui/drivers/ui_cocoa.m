@@ -828,6 +828,9 @@ static ui_application_t ui_application_cocoa = {
 
    if (rarch_main(waiting_argc, waiting_argv, NULL))
    {
+      /* AppKit ends the process with exit(0); the flag makes
+       * -applicationWillTerminate: report the failure instead. */
+      retroarch_main_quit_failure();
       [[NSApplication sharedApplication] terminate:nil];
       return;
    }
