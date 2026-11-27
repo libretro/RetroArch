@@ -9703,7 +9703,9 @@ unsigned menu_displaylist_build_list(
             const char *rarch_path_basename  = path_get(RARCH_PATH_BASENAME);
             const char *core_name            = sys_info ? sys_info->info.library_name : NULL;
             const char *a                    = path_get(RARCH_PATH_CONTENT);
-            bool has_content                 = (a && *a);
+            /* Without a core there is no override file to find. */
+            bool has_core                    = (core_name && *core_name);
+            bool has_content                 = has_core && (a && *a);
             bool core_override_remove        = false;
             bool content_dir_override_remove = false;
             bool game_override_remove        = false;
@@ -9742,6 +9744,7 @@ unsigned menu_displaylist_build_list(
                override_path[0]            = '\0';
             }
 
+            if (has_core)
             {
                /* Core-specific path */
                fill_pathname_join_special_ext(override_path,
