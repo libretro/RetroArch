@@ -7096,6 +7096,22 @@ static void config_sanitize_turbo_binds(settings_t *settings)
       settings->uints.input_turbo_button  = DEFAULT_TURBO_BUTTON;
 }
 
+/* A config without cheat_user_path whose Cheat Files is neither default
+ * starts with User Cheat Files off */
+static void config_load_cheat_user_path(config_file_t *conf,
+      settings_t *settings)
+{
+   const char *path_cheat_database = settings->paths.path_cheat_database;
+   if (     !*g_defaults.dirs[DEFAULT_DIR_CHEATS_USER]
+         || config_get_entry(conf, "cheat_user_path"))
+      return;
+   if (     !string_is_equal(path_cheat_database,
+               g_defaults.dirs[DEFAULT_DIR_CHEATS])
+         && !string_is_equal(path_cheat_database,
+               g_defaults.dirs[DEFAULT_DIR_CHEATS_USER]))
+      *settings->paths.path_cheat_user = '\0';
+}
+
 #ifdef HAVE_VIDEO_WINDOWS
 /* Keep indexed-load scratch out of config_load_file's frame. */
 #if defined(__OPTIMIZE_SIZE__)
@@ -7676,6 +7692,8 @@ static bool config_load_file(const char *path, settings_t *settings)
       if (config_get_path(conf, path_settings[i].ident, tmp_str, sizeof(tmp_str)))
          strlcpy(path_settings[i].ptr, tmp_str, PATH_MAX_LENGTH);
    }
+   if (path_is_empty(RARCH_PATH_CONFIG_OVERRIDE) || without_overrides)
+      config_load_cheat_user_path(conf, settings);
 
 #if !TARGET_OS_IPHONE
    if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
@@ -9382,6 +9400,16 @@ static void config_path_strip_trailing_slash(char *s)
    s[len - 1] = '\0';
 }
 
+static void config_save_cheat_user_path(config_file_t *conf,
+      const settings_t *settings)
+{
+   /* config_load_cheat_user_path() reads a missing key as never saved */
+   if (     *g_defaults.dirs[DEFAULT_DIR_CHEATS_USER]
+         && !config_get_entry(conf, "cheat_user_path"))
+      config_set_path(conf, "cheat_user_path",
+            settings->paths.path_cheat_user);
+}
+
 /**
  * config_get_credentials_path:
  *
@@ -9797,6 +9825,7 @@ bool config_save_file(const char *path)
             config_unset(conf, path_settings[i].ident);
       }
    }
+   config_save_cheat_user_path(conf, settings);
 
 #ifdef HAVE_MENU
    /* xmb_font */

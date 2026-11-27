@@ -3492,6 +3492,9 @@ static void frontend_unix_get_env(int *argc,
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_DATABASE],
                   app_dir, "database/rdb",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_DATABASE]));
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+                  app_dir, "cheats",
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS],
                   app_dir, "assets/wallpapers",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_WALLPAPERS]));
@@ -3552,14 +3555,9 @@ static void frontend_unix_get_env(int *argc,
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
                   parent_path, "playlists",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
-            /* An install that already has the shared folder keeps it */
-            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+            fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS_USER],
                   parent_path, "cheats",
-                  sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
-            if (!path_is_directory(g_defaults.dirs[DEFAULT_DIR_CHEATS]))
-               fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
-                     app_dir, "cheats",
-                     sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+                  sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS_USER]));
 
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
                   parent_path, "temp",
