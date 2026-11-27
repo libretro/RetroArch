@@ -685,8 +685,13 @@ What is not served or not checked:
   `--vk-validate`, and not on CI's image, where no such block leaks.
 - No check runs a `create_device2` that refuses the physical device the
   harness chose, an interface that makes no device, a `create_instance`
-  that makes no instance, or an allocation that fails in the harness's
-  instance wrapper.
+  that makes no instance, an allocation that fails in the harness's
+  instance wrapper, or `--vk-validate` with no validation layer or with
+  one that offers neither `VK_EXT_layer_settings` nor
+  `VK_EXT_validation_features`.
+- Each run checks the first way its layer offers to turn synchronization
+  validation on; a layer with `VK_EXT_layer_settings` leaves the
+  `VK_EXT_validation_features` path unchecked.
 - A `src_queue_family` of another family, which asks for a queue family
   ownership transfer, and more than 16 semaphores or command buffers handed
   over in a frame are console errors. No scenario runs either.
