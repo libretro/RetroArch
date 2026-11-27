@@ -716,7 +716,6 @@ static int rmp4_build_samples(rmp4_itrack *t, const rmp4_stbl *s,
    }
    if (s->ctts && s->ctts_size >= 8)
    {
-      uint32_t version = s->ctts[0];
       uint32_t n_ent   = rmp4_be32(s->ctts + 4);
       uint32_t e, idx  = 0;
       if (s->ctts_size >= 8 + (uint64_t)n_ent * 8)
@@ -725,8 +724,12 @@ static int rmp4_build_samples(rmp4_itrack *t, const rmp4_stbl *s,
          {
             uint32_t sc  = rmp4_be32(s->ctts + 8 + e * 8);
             uint32_t off = rmp4_be32(s->ctts + 8 + e * 8 + 4);
-            int64_t  soff = (version == 0)
-                  ? (int64_t)off : (int64_t)(int32_t)off;
+            /* Legacy muxers also write negative offsets in version 0.
+             * Treat the high bit as a sign, as established MOV players
+             * do: interpreting -1 as UINT32_MAX destroys presentation
+             * order and makes a nearby seek decode a large GOP prefix. */
+            int64_t soff = off & 0x80000000U
+                  ? (int64_t)off - ((int64_t)UINT32_MAX + 1) : (int64_t)off;
             while (sc-- && idx < count)
                t->pts[idx++] += soff;
          }

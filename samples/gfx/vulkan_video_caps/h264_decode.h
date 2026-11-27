@@ -106,7 +106,7 @@ static int h264_regression(void)
 {
    static const struct { const char *name; const uint8_t *data; size_t size; } streams[] = {
 #define STREAM(n) { #n, stream_##n, sizeof(stream_##n) }
-      STREAM(baseline), STREAM(main_bpyr), STREAM(high_slices), STREAM(high_jvt), STREAM(high_cqm), STREAM(cropped), STREAM(frame_wrap), STREAM(main_wrap), STREAM(high_wrap)
+      STREAM(baseline), STREAM(main_bpyr), STREAM(high_slices), STREAM(high_jvt), STREAM(high_cqm), STREAM(cropped), STREAM(frame_wrap), STREAM(main_wrap), STREAM(high_wrap), STREAM(aac_first_bframes), STREAM(legacy_ctts)
 #undef STREAM
    };
    unsigned i, cpu_count, gpu_count;
@@ -127,7 +127,9 @@ static int h264_regression(void)
          && cpu_count == gpu_count && !memcmp(cpu, gpu, cpu_count * sizeof(*cpu));
       if ((streams[i].data == stream_frame_wrap
                || streams[i].data == stream_main_wrap
-               || streams[i].data == stream_high_wrap) && cpu_count != 48) pass = 0;
+               || streams[i].data == stream_high_wrap
+               || streams[i].data == stream_aac_first_bframes
+               || streams[i].data == stream_legacy_ctts) && cpu_count != 48) pass = 0;
       printf("Vulkan H.264 regression %s: %s\n", streams[i].name, pass ? "PASS" : "FAIL");
       if (!pass) ok = 0;
    }

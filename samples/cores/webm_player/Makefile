@@ -187,7 +187,7 @@ $(WEBM_SEEK_TARGET): webm_seek_test.c $(RESIDENCY_OBJS)
 
 ifeq ($(MP4),1)
 MP4_SEEK_TARGET := mp4_seek_test$(EXE)
-$(MP4_SEEK_TARGET): mp4_seek_test.c $(RESIDENCY_OBJS)
+$(MP4_SEEK_TARGET): mp4_seek_test.c ../../gfx/vulkan_video_caps/h264_wrap_data.h $(RESIDENCY_OBJS)
 	$(CC) $(CFLAGS) -o $@ $< $(RESIDENCY_OBJS) $(LDFLAGS) $(LDLIBS)
 endif
 
@@ -278,6 +278,7 @@ ifeq ($(MP4),1)
 	$(RUNNER) ./$(PLANES_TARGET) fixtures/h264-aac.mkv 0
 	$(RUNNER) ./$(PLANES_TARGET) fixtures/h264-aac.mp4 2
 	$(RUNNER) ./$(PLANES_TARGET) fixtures/hevc-aac.mp4 2
+	$(RUNNER) ./$(MP4_SEEK_TARGET) --profiles
 	$(RUNNER) ./$(MP4_SEEK_TARGET) fixtures/h264-seek-aac.mp4 fixtures/hevc-seek-aac.mp4 fixtures/h264-long-seek.mp4 fixtures/video-timeline-1.mp4
 	$(RUNNER) ./$(MP4_PREFETCH_TARGET)
 	$(RUNNER) ./$(HW_TARGET)

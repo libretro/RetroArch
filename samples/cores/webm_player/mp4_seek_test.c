@@ -5,8 +5,11 @@
 #include <stdint.h>
 #include <formats/rmp4.h>
 #include <formats/rmp4_video.h>
+#include "../../gfx/vulkan_video_caps/h264_wrap_data.h"
 
 static int metadata_only;
+static const uint8_t *embedded;
+static size_t embedded_size;
 
 static int compare_pts(const void *a, const void *b)
 {
@@ -30,13 +33,21 @@ static int check_file(const char *path)
    uint32_t samples = 0;
    int frames = 0, loops = 0, n, track, duration, failures = 1;
    int probe, probes;
-   if (!(file = fopen(path, "rb"))) goto done;
-   if (fseek(file, 0, SEEK_END) || (length = ftell(file)) <= 0
-         || fseek(file, 0, SEEK_SET)) goto done;
-   size = (size_t)length;
-   if (!(data = (uint8_t*)malloc(size))
-         || fread(data, 1, size, file) != size) goto done;
-   fclose(file); file = NULL;
+   if (embedded)
+   {
+      data = (uint8_t*)embedded;
+      size = embedded_size;
+   }
+   else
+   {
+      if (!(file = fopen(path, "rb"))) goto done;
+      if (fseek(file, 0, SEEK_END) || (length = ftell(file)) <= 0
+            || fseek(file, 0, SEEK_SET)) goto done;
+      size = (size_t)length;
+      if (!(data = (uint8_t*)malloc(size))
+            || fread(data, 1, size, file) != size) goto done;
+      fclose(file); file = NULL;
+   }
    if (!(demux = rmp4_open_memory(data, size))) goto done;
    for (track = 0; track < rmp4_num_tracks(demux); track++)
    {
@@ -113,6 +124,11 @@ static int check_file(const char *path)
    if (!reference || !times) goto done;
    memcpy(times, raw_times, samples * sizeof(*times));
    qsort(times, samples, sizeof(*times), compare_pts);
+   /* Independent 30000/1001 fps timeline: wrapped CTTS must not sort B pictures
+    * into a tail many hours beyond this short fixture. */
+   if (embedded == stream_legacy_ctts)
+      for (n = 0; n < frames; n++)
+         if (times[n] != (int64_t)(n + 1) * 1001 * 1000000000 / 30000) goto done;
    for (n = 0; n < frames; n++)
    {
       picture = rmp4_video_stream_next(stream, &duration);
@@ -146,6 +162,7 @@ static int check_file(const char *path)
          state = rmp4_video_stream_seek_step(stream, &position);
       picture = state == 1 ? rmp4_video_stream_next(stream, &duration) : NULL;
       if (!picture || position != times[n] / 1000
+            || (embedded == stream_legacy_ctts && steps > 64)
             || rmp4_video_stream_frame_index(stream) != n + 1
             || memcmp(picture, reference + n * pixels,
                pixels * sizeof(*picture)))
@@ -192,7 +209,8 @@ done:
    if (file) fclose(file);
    if (stream) rmp4_video_stream_close(stream);
    if (demux) rmp4_close(demux);
-   free(times); free(reference); free(data);
+   free(times); free(reference);
+   if (!embedded) free(data);
    if (failures) printf("%s: %d seek failure(s)\n", path, failures);
    return failures != 0;
 }
@@ -200,6 +218,21 @@ done:
 int main(int argc, char **argv)
 {
    int i, first = 1, failed = argc < 2;
+   if (argc == 2 && !strcmp(argv[1], "--profiles"))
+   {
+      static const struct { const char *name; const uint8_t *data; size_t size; } cases[] = {
+#define SEEK_STREAM(n) { #n, stream_##n, sizeof(stream_##n) }
+         SEEK_STREAM(frame_wrap), SEEK_STREAM(main_wrap), SEEK_STREAM(high_wrap),
+         SEEK_STREAM(aac_first_bframes), SEEK_STREAM(legacy_ctts)
+#undef SEEK_STREAM
+      };
+      for (i = 0; i < (int)(sizeof(cases) / sizeof(cases[0])); i++)
+      {
+         embedded = cases[i].data; embedded_size = cases[i].size;
+         failed |= check_file(cases[i].name);
+      }
+      return failed;
+   }
    if (argc > 2 && !strcmp(argv[1], "--metadata"))
    { metadata_only = 1; first = 2; }
    if (argc > 2 && !strcmp(argv[1], "--probe"))

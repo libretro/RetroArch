@@ -36,29 +36,23 @@ static int h26x_webm_hash(video_fixture_stream_t *stream, unsigned depth,
    return 1;
 }
 
-static int h26x_webm_decode_fixture(void)
+static int h26x_decode_memory(const uint8_t *data, size_t size,
+      unsigned frames, const char *container, const char *color)
 {
-   const char *path = getenv("H26X_TEST_MP4");
-   const char *container = path ? "MP4" : "Matroska";
-   const char *color = getenv("H26X_TEST_COLOR");
-   uint8_t *data;
-   size_t size;
    video_fixture_stream_t *stream = NULL;
    oracle_readback_t *reader = (oracle_readback_t*)calloc(1, sizeof(*reader));
    hevc_fixture_t fixture;
-   uint32_t hash[24];
-   int64_t timestamp[24];
-   int duration[24];
+   uint32_t hash[64];
+   int64_t timestamp[64];
+   int duration[64];
    unsigned pass, count = 0, polls, width = 0, height = 0;
    int ok = 0;
-   if (!path) path = getenv("H26X_TEST_WEBM");
-   h26x_webm_executed = 1;
+   h26x_webm_skipped = 0;
    memset(&fixture, 0, sizeof(fixture));
    fixture.name = container;
    fixture.hash = hash;
-   fixture.frames = 24;
-   data = oracle_load(path, &size);
-   if (!data || !reader) goto done;
+   fixture.frames = frames;
+   if (!data || !reader || frames < 4 || frames > 64) goto done;
    for (pass = 0; pass < 2; pass++)
    {
       stream = video_fixture_stream_open(data, size);
@@ -86,7 +80,7 @@ static int h26x_webm_decode_fixture(void)
          int span;
          if (video_fixture_stream_next(stream, &span))
          {
-            if (count >= 24) goto done;
+            if (count >= frames) goto done;
             if (!pass)
             {
                rh264_video *avc = (rh264_video*)video_fixture_stream_h264(stream);
@@ -135,21 +129,22 @@ static int h26x_webm_decode_fixture(void)
          }
          else goto done;
       }
-      if (polls == 8192 || count != 24) goto done;
+      if (polls == 8192 || count != frames) goto done;
       if (!pass && !oracle_init(reader, width, height, fixture.depth)) goto done;
       video_fixture_stream_close(stream);
       stream = NULL;
    }
    if (!strcmp(container, "MP4"))
    {
-      static const unsigned targets[] = {12, 3, 23};
+      unsigned targets[3];
       unsigned seek;
+      targets[0] = frames / 2; targets[1] = 3; targets[2] = frames - 1;
       oracle_release(reader);
       stream = video_fixture_stream_open(data, size);
       if (!stream || !video_fixture_stream_set_hw(stream, 1)) goto done;
       for (seek = 0; seek < 3; seek++)
       {
-         unsigned index = targets[seek];
+         unsigned index = targets[seek], presented = 0;
          int ret = 0, span;
          int64_t position = -1;
          video_hw_frame_t frame;
@@ -165,35 +160,72 @@ static int h26x_webm_decode_fixture(void)
                   seek, ret, polls, (double)position / 1000, (double)timestamp[index] / 1000000);
             goto done;
          }
-         for (polls = 0; polls < 8192; polls++)
+         do
          {
-            if (video_fixture_stream_next(stream, &span)) break;
-            if (!video_fixture_stream_waiting(stream)) goto done;
-            h26x_fixture_progress(reader);
-         }
-         if (polls == 8192 || span != duration[index]
-               || video_fixture_stream_frame_time_ns(stream) != timestamp[index])
-         {
-            fprintf(stderr, "MP4 Vulkan seek picture %u: polls=%u time=%.3f expected=%.3f duration=%d expected=%d\n",
-                  seek, polls, (double)video_fixture_stream_frame_time_ns(stream) / 1000000,
-                  (double)timestamp[index] / 1000000, span, duration[index]);
-            goto done;
-         }
-         if (!video_fixture_stream_hw_frame(stream, &frame)) goto done;
-         if (!oracle_read_frame(reader, frame, &fixture, &index)) goto done;
-         oracle_release(reader);
+            for (polls = 0; polls < 8192; polls++)
+            {
+               if (video_fixture_stream_next(stream, &span)) break;
+               if (!video_fixture_stream_waiting(stream)) goto done;
+               h26x_fixture_progress(reader);
+            }
+            if (polls == 8192 || span != duration[index]
+                  || video_fixture_stream_frame_time_ns(stream) != timestamp[index])
+            {
+               fprintf(stderr, "MP4 Vulkan seek picture %u: polls=%u time=%.3f expected=%.3f duration=%d expected=%d\n",
+                     seek, polls, (double)video_fixture_stream_frame_time_ns(stream) / 1000000,
+                     (double)timestamp[index] / 1000000, span, duration[index]);
+               goto done;
+            }
+            if (!video_fixture_stream_hw_frame(stream, &frame)) goto done;
+            if (!oracle_read_frame(reader, frame, &fixture, &index)) goto done;
+            oracle_release(reader);
+         } while (++presented < 2 && index < frames);
       }
-      puts("MP4 native Vulkan: 3 seek pictures, exact planes and timing PASS");
+      puts("MP4 native Vulkan: 3 seeks and continued playback, exact planes and timing PASS");
    }
    ok = 1;
 done:
    video_fixture_stream_close(stream);
    if (reader) { oracle_free(reader); free(reader); }
-   free(data);
    if (h26x_webm_skipped)
       puts("Matroska native Vulkan fixture: SKIP");
    else
       printf("%s native Vulkan: %u displayed pictures, exact planes and timing %s\n",
             container, count, ok ? "PASS" : "FAIL");
    return ok || h26x_webm_skipped;
+}
+
+static int h26x_webm_decode_fixture(void)
+{
+   const char *path = getenv("H26X_TEST_MP4");
+   const char *container = path ? "MP4" : "Matroska";
+   uint8_t *data;
+   size_t size;
+   int result;
+   if (!path) path = getenv("H26X_TEST_WEBM");
+   h26x_webm_executed = 1;
+   data = oracle_load(path, &size);
+   if (!data) return 0;
+   result = h26x_decode_memory(data, size, 24, container, getenv("H26X_TEST_COLOR"));
+   free(data);
+   return result;
+}
+
+static int h264_seek_regression(void)
+{
+   static const struct { const char *name; const uint8_t *data; size_t size; } cases[] = {
+#define SEEK_STREAM(n) { #n, stream_##n, sizeof(stream_##n) }
+      SEEK_STREAM(frame_wrap), SEEK_STREAM(main_wrap), SEEK_STREAM(high_wrap),
+      SEEK_STREAM(aac_first_bframes), SEEK_STREAM(legacy_ctts)
+#undef SEEK_STREAM
+   };
+   unsigned i;
+   int ok = 1;
+   for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+   {
+      int pass = h26x_decode_memory(cases[i].data, cases[i].size, 48, "MP4", NULL);
+      printf("Vulkan H.264 seeking %s: %s\n", cases[i].name, pass ? "PASS" : "FAIL");
+      if (!pass) ok = 0;
+   }
+   return ok;
 }

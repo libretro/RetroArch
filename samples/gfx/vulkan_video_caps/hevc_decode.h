@@ -559,7 +559,7 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
    if (codecs & VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR)
    {
       ctx->video_codec_operations = codecs;
-      if (!vulkan_video_decode_init(ctx) || !h264_regression()) ok = 0;
+      if (!vulkan_video_decode_init(ctx) || !h264_regression() || !h264_seek_regression()) ok = 0;
 #ifdef HAVE_RVP9
       if ((codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR) && !vp9_decode_fixture()) ok = 0;
       if ((codecs & VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR) && !vp9_mp4_decode_fixture()) ok = 0;
