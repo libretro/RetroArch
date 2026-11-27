@@ -906,14 +906,20 @@ static ui_application_t ui_application_cocoa = {
 
    [[self.window contentView] setAutoresizesSubviews:YES];
 
-   for (i = 0; i < waiting_argc; i++)
+   /* Xcode's flag and its value, wherever they sit, closed up in
+    * place so the arguments around them stay contiguous. */
+   for (i = 0; i < waiting_argc; )
    {
       if (string_is_equal(waiting_argv[i], "-NSDocumentRevisionsDebugMode"))
       {
-         waiting_argv[i]   = NULL;
-         waiting_argv[i+1] = NULL;
-         waiting_argc     -= 2;
+         int drop = (i + 1 < waiting_argc) ? 2 : 1;
+         memmove(&waiting_argv[i], &waiting_argv[i + drop],
+               (waiting_argc - i - drop) * sizeof(*waiting_argv));
+         waiting_argc              -= drop;
+         waiting_argv[waiting_argc] = NULL;
       }
+      else
+         i++;
    }
 
    /* The first touch of Documents raises the system's access prompt
