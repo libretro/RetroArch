@@ -34,6 +34,7 @@
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <clamping.h>
+#include <retro_endianness.h>
 #include <compat/intrinsics.h>
 
 #ifdef HAVE_CONFIG_H
@@ -4276,7 +4277,17 @@ static void input_remote_parse_packet(
       input_remote_state_t *input_state,
       struct remote_message *msg, unsigned user)
 {
-   /* Parse message */
+   /* A sender writes the message in its own byte order. Every device
+    * fits in 16 bits, so one from a sender of the other order has its
+    * high bytes set. */
+   if ((uint32_t)msg->device > 0xffff)
+   {
+      msg->device = (int)SWAP32((uint32_t)msg->device);
+      msg->index  = (int)SWAP32((uint32_t)msg->index);
+      msg->id     = (int)SWAP32((uint32_t)msg->id);
+      msg->state  = SWAP16(msg->state);
+   }
+
    switch (msg->device)
    {
       case RETRO_DEVICE_JOYPAD:

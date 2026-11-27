@@ -2979,6 +2979,26 @@ static void np_send(int fd, const struct sockaddr_in *to,
    sendto(fd, (const char*)&m, sizeof(m), 0,
          (const struct sockaddr*)to, sizeof(*to));
 }
+
+/* The same message from a sender of the other byte order. */
+static uint32_t np_swap32(uint32_t x)
+{
+   return (x << 24) | ((x & 0xff00) << 8) | ((x >> 8) & 0xff00) | (x >> 24);
+}
+
+static void np_send_swapped(int fd, const struct sockaddr_in *to,
+      int device, int index, int id, int state)
+{
+   struct remote_message m;
+   memset(&m, 0, sizeof(m));
+   m.device = (int)np_swap32((uint32_t)device);
+   m.index  = (int)np_swap32((uint32_t)index);
+   m.id     = (int)np_swap32((uint32_t)id);
+   m.state  = (uint16_t)((((unsigned)state & 0xff) << 8)
+            | (((unsigned)state >> 8) & 0xff));
+   sendto(fd, (const char*)&m, sizeof(m), 0,
+         (const struct sockaddr*)to, sizeof(*to));
+}
 #endif
 
 /* Network RetroPad: a controller sent over UDP by another RetroArch. */
@@ -3069,6 +3089,16 @@ static void lane_network_retropad(void)
             "network pad: a negative id or index changed the pad's state");
    }
 
+   /* a sender of the other byte order is heard as well */
+   np_send_swapped(fd, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, 1);
+   np_send_swapped(fd, &to, RETRO_DEVICE_ANALOG, 0, RETRO_DEVICE_ID_ANALOG_X, 0x1234);
+   run_loop_frames(2);
+   trace_last(&seen, axes);
+   CHECK((seen & (A | B)) == (A | B) && axes[0] == 0x1234,
+         "network pad: a sender of the other byte order was not heard");
+   np_send_swapped(fd, &to, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_A, 0);
+   run_loop_frames(2);
+
    /* a burst longer than one poll takes (but not than the socket
     * holds): it ends up where it ended */
    for (i = 0; i < 100; i++)
@@ -3154,6 +3184,7 @@ done:
       printf("[pass] network pad: messages sent together arrive together;"
             " what is held stays held; a stray message changes nothing;"
             " a negative id or index changes nothing;"
+            " a sender of the other byte order is heard;"
             " a burst ends where it ended; First Sender Only keeps to the"
             " first device; a button of it counts as a first press\n");
 #else
