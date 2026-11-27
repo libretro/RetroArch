@@ -2286,7 +2286,8 @@ static void x11_vblank_ask(void)
 static unsigned x11_display_server_wait_vblank(void *data, unsigned seen,
       unsigned timeout_us, retro_time_t *at)
 {
-   retro_time_t now, deadline;
+   cpu_features_bound_t bound;
+   retro_time_t now, left;
    uint64_t before;
    bool known;
 
@@ -2298,33 +2299,32 @@ static unsigned x11_display_server_wait_vblank(void *data, unsigned seen,
 
    known    = x11_vblank_known;
    before   = x11_vblank_msc;
-   now      = cpu_features_get_time_usec();
-   deadline = now + timeout_us;
+   cpu_features_bound_begin(&bound, (retro_time_t)timeout_us);
    /* nothing known yet, or nothing new: until the answer or the time */
-   while (  timeout_us
-         && (     !x11_vblank_known
+   while (  (     !x11_vblank_known
                || (     x11_vblank_msc == before
                      && ((unsigned)before ? (unsigned)before : 1) == seen))
-         && now < deadline)
+         && (left = cpu_features_bound_left(&bound)) > 0)
    {
       struct pollfd pfd;
       pfd.fd      = xcb_get_file_descriptor(x11_vblank_conn);
       pfd.events  = POLLIN;
       pfd.revents = 0;
-      if (poll(&pfd, 1, (int)((deadline - now + 999) / 1000)) < 0)
+      if (poll(&pfd, 1, (int)((left + 999) / 1000)) < 0)
          break;
       if (!x11_vblank_drain())
          return 0;
-      now = cpu_features_get_time_usec();
    }
    if (!x11_vblank_known)
       return 0;
    /* the next is asked for as each arrives, so one that comes while
     * nobody waits is there to be read */
    x11_vblank_ask();
-   /* the first answer says whether the stamps are of this clock */
+   /* the first answer says whether the stamps are of this clock: the
+    * one clock reading, taken once per window */
    if (     !known
-         && (     x11_vblank_ust > now + X11_VBLANK_CLOCK_SLACK
+         && (     x11_vblank_ust > (now = cpu_features_get_time_usec())
+                     + X11_VBLANK_CLOCK_SLACK
                || x11_vblank_ust < now - X11_VBLANK_CLOCK_SLACK))
    {
       uint32_t window    = x11_vblank_window;

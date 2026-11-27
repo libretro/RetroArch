@@ -454,18 +454,22 @@ static void d3dkmt_vblank_thread(void *userdata)
       if (     idle++ < D3DKMT_VBLANK_IDLE
             && d3dkmt_bound(&vb.hAdapter, &vb.VidPnSourceId))
       {
-         retro_time_t before = cpu_features_get_time_usec();
+         cpu_features_bound_t waited;
          /* hDevice is documented optional and is not needed to wait
           * on a VidPn source. */
          vb.hDevice = 0;
+         cpu_features_bound_begin(&waited, 200);
          if (pD3DKMTWaitForVerticalBlankEvent(&vb) == STATUS_SUCCESS)
          {
+            /* The vblank's instant, published on the clock the pacer
+             * holds it against */
             retro_time_t now = cpu_features_get_time_usec();
             int n            = (int)((unsigned)
                retro_atomic_load_relaxed_int(&d3dkmt_vb_count) + 1u);
             /* Called just ahead of a vblank it comes straight back
              * once; one that keeps doing so is not waiting at all */
-            quick            = (now - before < 200) ? quick + 1 : 0;
+            quick            = cpu_features_bound_left(&waited) > 0
+               ? quick + 1 : 0;
             if (quick < 2)
             {
                retro_atomic_store_release_int(&d3dkmt_vb_at,
@@ -496,7 +500,8 @@ unsigned d3dkmt_vblank_wait(unsigned seen, unsigned timeout_us,
 {
 #ifdef HAVE_THREADS
    unsigned n;
-   retro_time_t now, end;
+   retro_time_t now, left;
+   cpu_features_bound_t bound;
    if (d3dkmt_vb_state <= 0)
    {
       sthread_t *thread;
@@ -515,8 +520,7 @@ unsigned d3dkmt_vblank_wait(unsigned seen, unsigned timeout_us,
       retro_atomic_store_release_int(&d3dkmt_vb_asked, 1);
       retro_eventcount_notify(&d3dkmt_vb_wake);
    }
-   now = cpu_features_get_time_usec();
-   end = now + timeout_us;
+   cpu_features_bound_begin(&bound, (retro_time_t)timeout_us);
    for (;;)
    {
       int key = retro_eventcount_prepare_wait(&d3dkmt_vb_tick);
@@ -526,14 +530,14 @@ unsigned d3dkmt_vblank_wait(unsigned seen, unsigned timeout_us,
          return 0;
       }
       n = (unsigned)retro_atomic_load_acquire_int(&d3dkmt_vb_count);
-      if (n != seen || now >= end)
+      if (n != seen || (left = cpu_features_bound_left(&bound)) <= 0)
       {
          retro_eventcount_cancel_wait(&d3dkmt_vb_tick);
          break;
       }
-      retro_eventcount_commit_wait_timeout(&d3dkmt_vb_tick, key, end - now);
-      now = cpu_features_get_time_usec();
+      retro_eventcount_commit_wait_timeout(&d3dkmt_vb_tick, key, left);
    }
+   /* The one clock reading: the vblank's 32-bit stamp widened to it */
    now = cpu_features_get_time_usec();
    *at = now - (retro_time_t)(uint32_t)((uint32_t)now
          - (uint32_t)retro_atomic_load_acquire_int(&d3dkmt_vb_at));

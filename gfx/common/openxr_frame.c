@@ -1296,8 +1296,8 @@ void openxr_frame_set_pacing(openxr_frame_t *f, unsigned interval)
 static bool openxr_frame_wait_tick(openxr_frame_t *f, int64_t timeout_ns)
 {
    int seq;
-   retro_time_t deadline = cpu_features_get_time_usec()
-      + (retro_time_t)(timeout_ns / 1000);
+   cpu_features_bound_t bound;
+   cpu_features_bound_begin(&bound, (retro_time_t)(timeout_ns / 1000));
    for (;;)
    {
       int key;
@@ -1305,8 +1305,7 @@ static bool openxr_frame_wait_tick(openxr_frame_t *f, int64_t timeout_ns)
       seq = retro_atomic_load_acquire_int(&f->tick_seq);
       if (seq != f->tick_seen || !openxr_session_visible(f->session))
          break;
-      left = deadline - cpu_features_get_time_usec();
-      if (left <= 0)
+      if ((left = cpu_features_bound_left(&bound)) <= 0)
          break;
       key = retro_eventcount_prepare_wait(&f->tick);
       seq = retro_atomic_load_acquire_int(&f->tick_seq);

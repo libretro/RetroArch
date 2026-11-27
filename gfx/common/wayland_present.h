@@ -77,10 +77,10 @@ typedef struct wl_frame
 void wl_frame_request(wl_frame_t *frame, struct wl_display *dpy,
       struct wl_surface *surface);
 
-/* Waits for it until 'deadline' (cpu_features_get_time_usec); true if
- * it came. Nothing is left pending either way. */
+/* Waits for it at most 'timeout_us', held on marks; true if it came.
+ * Nothing is left pending either way. */
 bool wl_frame_wait(wl_frame_t *frame, struct wl_display *dpy,
-      retro_time_t deadline);
+      retro_time_t timeout_us);
 
 void wl_frame_cancel(wl_frame_t *frame);
 

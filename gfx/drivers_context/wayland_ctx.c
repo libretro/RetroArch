@@ -793,8 +793,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
    egl_swap_buffers(&wl->egl);
 
    if (frame_throttle)
-      wl_frame_wait(&wl->frame, wl->input.dpy,
-            cpu_features_get_time_usec() + 50000);
+      wl_frame_wait(&wl->frame, wl->input.dpy, 50000);
 #endif
 }
 

@@ -238,23 +238,25 @@ void wl_frame_request(wl_frame_t *frame, struct wl_display *dpy,
 }
 
 bool wl_frame_wait(wl_frame_t *frame, struct wl_display *dpy,
-      retro_time_t deadline)
+      retro_time_t timeout_us)
 {
    struct pollfd pfd;
+   cpu_features_bound_t bound;
    pfd.fd     = wl_display_get_fd(dpy);
    pfd.events = POLLIN;
+   cpu_features_bound_begin(&bound, timeout_us);
 
    while (frame->cb)
    {
-      retro_time_t now = cpu_features_get_time_usec();
-      if (now >= deadline)
+      retro_time_t left = cpu_features_bound_left(&bound);
+      if (left <= 0)
          break;
       if (wl_display_dispatch_queue_pending(dpy, frame->queue) != 0)
          continue;
       if (wl_display_prepare_read_queue(dpy, frame->queue) == -1)
          continue;
       pfd.revents = 0;
-      if (poll(&pfd, 1, (int)((deadline - now) / 1000)) <= 0)
+      if (poll(&pfd, 1, (int)((left + 999) / 1000)) <= 0)
       {
          wl_display_cancel_read(dpy);
          break;

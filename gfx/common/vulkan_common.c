@@ -486,17 +486,17 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
       unsigned *index)
 {
    VkResult res = VK_SUCCESS;
-   retro_time_t deadline;
+   cpu_features_bound_t bound;
 
    vulkan_emulated_mailbox_request(mailbox);
 
-   /* One deadline for the whole wait, not one per iteration: a wake
+   /* One bound for the whole wait, not one per iteration: a wake
     * that is not the answer would otherwise re-arm the full timeout,
     * and enough of them would be a bound on nothing. */
-   deadline = cpu_features_get_time_usec() + mailbox->timeout_us;
+   cpu_features_bound_begin(&bound, mailbox->timeout_us);
    for (;;)
    {
-      retro_time_t now;
+      retro_time_t left;
       int key = retro_eventcount_prepare_wait(&mailbox->answered);
 
       if (retro_atomic_load_acquire_int(&mailbox->acquired))
@@ -506,14 +506,12 @@ static VkResult vulkan_emulated_mailbox_acquire_next_image_blocking(
       }
       /* A finite wait also covers a background thread still
        * waiting on its acquire or its fence. */
-      now = cpu_features_get_time_usec();
-      if (now >= deadline)
+      if ((left = cpu_features_bound_left(&bound)) <= 0)
       {
          retro_eventcount_cancel_wait(&mailbox->answered);
          return VK_TIMEOUT;
       }
-      retro_eventcount_commit_wait_timeout(&mailbox->answered, key,
-            (int64_t)(deadline - now));
+      retro_eventcount_commit_wait_timeout(&mailbox->answered, key, left);
    }
 
    if ((res = mailbox->result) == VK_SUCCESS)

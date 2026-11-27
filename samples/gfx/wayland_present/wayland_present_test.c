@@ -316,7 +316,7 @@ static void *video_thread(void *data)
       wl_frame_request(&frame, cdpy, surface);
       wl_surface_commit(surface);
       wl_display_flush(cdpy);
-      if (wl_frame_wait(&frame, cdpy, cpu_features_get_time_usec() + 50000))
+      if (wl_frame_wait(&frame, cdpy, 50000))
          frames_done++;
       /* A frame per answer, as vsync would pace it */
       while (!wl_list_empty(&present.feedbacks))
@@ -416,7 +416,7 @@ int main(void)
    wl_display_roundtrip(cdpy);
    input_poll();
    CHECK(!frame.done && frame.cb, "the default queue dispatched done");
-   CHECK(wl_frame_wait(&frame, cdpy, cpu_features_get_time_usec() + 50000),
+   CHECK(wl_frame_wait(&frame, cdpy, 50000),
          "the wait missed done");
    CHECK(!frame.cb, "done left the callback");
    pthread_mutex_lock(&comp_lock);
@@ -425,7 +425,7 @@ int main(void)
    wl_frame_request(&frame, cdpy, surface);
    wl_surface_commit(surface);
    wl_display_flush(cdpy);
-   CHECK(!wl_frame_wait(&frame, cdpy, cpu_features_get_time_usec() + 20000),
+   CHECK(!wl_frame_wait(&frame, cdpy, 20000),
          "a held callback reported done");
    CHECK(!frame.cb, "a timed-out wait left its callback");
    pthread_mutex_lock(&comp_lock);
