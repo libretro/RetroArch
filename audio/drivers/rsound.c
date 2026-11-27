@@ -72,14 +72,17 @@ typedef struct rsd
    retro_atomic_size_t underruns;
 } rsd_t;
 
-/* Room in the ring against the size asked for: the physical room less
- * the capacity beyond fifo_size (retro_spsc rounds up to a power of
- * two). */
+#define RS_FRAME_BYTES (2 * sizeof(int16_t))
+
+/* Room in the ring against the size asked for, in whole frames: the
+ * physical room less the capacity beyond fifo_size (retro_spsc rounds
+ * up to a power of two). */
 static size_t rs_ring_room(const rsd_t *rsd)
 {
    size_t room   = retro_spsc_write_avail(&rsd->ring);
    size_t excess = rsd->ring.capacity - rsd->fifo_size;
-   return room > excess ? room - excess : 0;
+   room          = room > excess ? room - excess : 0;
+   return room - room % RS_FRAME_BYTES;
 }
 
 static ssize_t rsound_audio_cb(void *data, size_t bytes, void *userdata)
@@ -198,8 +201,6 @@ error:
  * covers a server that fails; this covers one that merely stops. */
 #define RSOUND_WAIT_LAPS 8
 
-#define RS_FRAME_BYTES (2 * sizeof(int16_t))
-
 static size_t rs_write_begin(void *data, size_t len, void **region)
 {
    rsd_t *rsd = (rsd_t*)data;
@@ -246,6 +247,7 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
       _len         = avail > len ? len : avail;
 
       retro_spsc_write(&rsd->ring, buf, _len);
+      return (ssize_t)_len;
    }
    else
    {
@@ -291,7 +293,6 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
       }
       return _len;
    }
-   return 0;
 }
 
 static bool rs_stop(void *data)

@@ -170,6 +170,40 @@ static void check_lend(void)
    retro_spsc_free(&rsd.ring);
 }
 
+/* A non-blocking write reports what it put in the fifo, whole frames
+ * only, so the pipeline neither sends the same bytes twice nor splits
+ * a frame. */
+static void check_nonblock_write(void)
+{
+   static rsd_t rsd;
+   static char  src[6000];
+   char         fill[4096];
+
+   memset(&rsd, 0, sizeof(rsd));
+   if (!retro_spsc_init(&rsd.ring, 4096))
+      return;
+   rsd.fifo_size = 4096;
+   rsd.nonblock  = true;
+   memset(src, 0x22, sizeof(src));
+
+   CHECK(audio_rsound.write(&rsd, src, sizeof(src)) == 4096,
+         "a non-blocking write into an empty fifo did not report 4096");
+   CHECK(retro_spsc_read_avail(&rsd.ring) == 4096, "the fifo holds %u",
+         (unsigned)retro_spsc_read_avail(&rsd.ring));
+   CHECK(audio_rsound.write(&rsd, src, sizeof(src)) == 0,
+         "a non-blocking write into a full fifo reported room");
+
+   /* six bytes of room: one frame goes, the split one does not */
+   retro_spsc_clear(&rsd.ring);
+   memset(fill, 0, sizeof(fill));
+   retro_spsc_write(&rsd.ring, fill, 4090);
+   CHECK(audio_rsound.write(&rsd, src, 16) == 4,
+         "a non-blocking write split a frame or reported the wrong count");
+   CHECK(retro_spsc_read_avail(&rsd.ring) == 4094, "the fifo holds %u",
+         (unsigned)retro_spsc_read_avail(&rsd.ring));
+   retro_spsc_free(&rsd.ring);
+}
+
 /* One control reply: @hdr is the 8-byte header, followed by @body_len
  * bytes of filler. Returns rsnd_update_server_info()'s result. */
 static int control_reply(rsound_t *rd, const char *hdr, size_t body_len)
@@ -225,6 +259,7 @@ int main(void)
    alarm(120);
 
    check_lend();
+   check_nonblock_write();
 
    if (rsd_init(&rd) < 0)
    {
