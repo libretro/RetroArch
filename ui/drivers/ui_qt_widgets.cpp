@@ -9,6 +9,9 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QFileDialog>
+#include <QFile>
+#include <QPlainTextEdit>
+#include <QStringList>
 #include <QFileInfo>
 #include <QHeaderView>
 #include <QLabel>
@@ -53,9 +56,12 @@
  * hard error, so these must live outside the extern "C" block. */
 #include "../../config.def.h"
 #include "../../command.h"
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../core_info.h"
 #include "../../core_option_manager.h"
+#include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../file_path_special.h"
 #include "../../msg_hash.h"
 #include "../../paths.h"
@@ -4781,9 +4787,75 @@ void CoreOptionsDialog::onCoreOptionComboBoxCurrentIndexChanged(int index)
    }
 }
 
+/* Add a core option using the same row layout for legacy options and
+ * options nested inside a v2+ category. */
+static void qt_core_options_add_row(CoreOptionsDialog *dialog,
+      QFormLayout *form, core_option_manager_t *coreopts, size_t index)
+{
+   QString desc               = core_option_manager_get_desc(coreopts, index, false);
+   QString val                = core_option_manager_get_val(coreopts, index);
+   QComboBox *combo_box       = NULL;
+   QLabel *descLabel          = NULL;
+   QHBoxLayout *comboLayout   = NULL;
+   QToolButton *resetButton   = NULL;
+   struct core_option *option = NULL;
+   unsigned k;
+
+   if (desc.isEmpty() || !coreopts->opts)
+      return;
+
+   option = &coreopts->opts[index];
+   if (!option->vals || option->vals->size == 0)
+      return;
+
+   comboLayout = new QHBoxLayout();
+   descLabel   = new QLabel(desc, dialog);
+   combo_box   = new QComboBox(dialog);
+   combo_box->setObjectName("coreOptionComboBox");
+   resetButton = new QToolButton(dialog);
+   resetButton->setObjectName("resetButton");
+   resetButton->setDefaultAction(new QAction(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RESET), dialog));
+   resetButton->setProperty("comboBox", QVariant::fromValue(combo_box));
+
+   QObject::connect(resetButton, SIGNAL(clicked()),
+         dialog, SLOT(onCoreOptionResetClicked()));
+
+   if (option->info && *option->info)
+   {
+      char *new_info;
+      size_t info_len = strlen(option->info);
+
+      if (!(new_info = (char *)malloc(info_len + 1)))
+         return;
+      new_info[0] = '\0';
+      word_wrap(new_info, info_len + 1, option->info, info_len, 50, 100, 0);
+      descLabel->setToolTip(QStringLiteral("<qt><pre>")
+            + QString::fromUtf8(new_info).toHtmlEscaped()
+            + QStringLiteral("</pre></qt>"));
+      combo_box->setToolTip(descLabel->toolTip());
+      free(new_info);
+   }
+
+   for (k = 0; k < option->vals->size; k++)
+      combo_box->addItem(option->vals->elems[k].data,
+            QVariant::fromValue(QString(option->key)));
+
+   combo_box->setCurrentText(val);
+   combo_box->setProperty("default_index",
+         static_cast<unsigned>(option->default_index));
+
+   QObject::connect(combo_box, SIGNAL(currentIndexChanged(int)),
+         dialog, SLOT(onCoreOptionComboBoxCurrentIndexChanged(int)));
+
+   comboLayout->addWidget(combo_box);
+   comboLayout->addWidget(resetButton);
+   form->addRow(descLabel, comboLayout);
+}
+
 void CoreOptionsDialog::buildLayout()
 {
-   unsigned j, k;
+   unsigned j;
    QFormLayout *form            = NULL;
    settings_t *settings         = config_get_ptr();
    runloop_state_t *runloop_st  = runloop_state_get_ptr();
@@ -4795,121 +4867,427 @@ void CoreOptionsDialog::buildLayout()
    if (has_core_options)
    {
       core_option_manager_t *coreopts = NULL;
-
-      form = new QFormLayout();
-
-      if (settings->bools.game_specific_options)
-      {
-         QString contentLabel;
-         QString label;
-         rarch_system_info_t *sys_info = &runloop_st->system;
-
-         /* TODO/FIXME - why have this check here? sys_info is not used */
-         if (sys_info)
-            contentLabel = QFileInfo(path_get(RARCH_PATH_BASENAME)).completeBaseName();
-
-         if (!contentLabel.isEmpty())
-         {
-            if (!label.isEmpty())
-            {
-               QHBoxLayout *gameOptionsLayout = new QHBoxLayout();
-               QPushButton *button = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SAVE), this);
-
-               connect(button, SIGNAL(clicked()), this, SLOT(onSaveGameSpecificOptions()));
-
-               gameOptionsLayout->addWidget(new QLabel(contentLabel, this));
-               gameOptionsLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
-               gameOptionsLayout->addWidget(button);
-
-               form->addRow(label, gameOptionsLayout);
-            }
-         }
-      }
+      uint32_t flags                  = runloop_get_flags();
+      bool game_options_active        = (flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE) != 0;
+      bool folder_options_active      = (flags & RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE) != 0;
+      const char *content_path        = path_get(RARCH_PATH_CONTENT);
+      const char *override_path       = path_get(RARCH_PATH_CORE_OPTIONS);
 
       retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
-      if (coreopts)
+      /* Active options file and the same management actions as the
+       * internal Quick Menu > Options > Manage Core Options list. */
       {
-         QToolButton *resetAllButton = new QToolButton(this);
+         QHBoxLayout *managementLayout = new QHBoxLayout();
+         QLabel *activeLabel = new QLabel(
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO), this);
+         const char *active_path = (override_path && *override_path)
+            ? override_path : (coreopts ? coreopts->conf_path : NULL);
+         QLabel *activeFile = new QLabel(
+               (active_path && *active_path)
+               ? QString::fromUtf8(path_basename_nocompression(active_path))
+               : QString::fromUtf8(msg_hash_to_str(
+                    MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)), this);
+         QPushButton *manageButton = new QPushButton(
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST), this);
+         QMenu *manageMenu = new QMenu(manageButton);
+         QAction *action;
 
-         resetAllButton->setDefaultAction(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RESET_ALL), this));
-         connect(resetAllButton, SIGNAL(clicked()), this, SLOT(onCoreOptionResetAllClicked()));
+         activeFile->setObjectName("activeCoreOptionsFile");
+         manageButton->setMenu(manageMenu);
 
-         for (j = 0; j < opts; j++)
+         if (content_path && *content_path)
          {
-            QString desc               =
-               core_option_manager_get_desc(coreopts, j, false);
-            QString val                =
-               core_option_manager_get_val(coreopts, j);
-            QComboBox *combo_box       = NULL;
-            QLabel *descLabel          = NULL;
-            QHBoxLayout *comboLayout   = NULL;
-            QToolButton *resetButton   = NULL;
-            struct core_option *option = NULL;
+            if (game_options_active)
+               action = manageMenu->addAction(msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE));
+            else
+               action = manageMenu->addAction(msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE));
+            action->setToolTip(wrapped_tooltip(msg_hash_to_str(
+                     game_options_active
+                     ? MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE
+                     : MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE)));
+            connect(action, &QAction::triggered, this, [this, game_options_active]() {
+               if (game_options_active)
+                  core_options_remove_override(true);
+               else
+                  onSaveGameSpecificOptions();
+               buildLayout();
+            });
 
-            if (desc.isEmpty() || !coreopts->opts)
-               continue;
-
-            option = static_cast<struct core_option*>(&coreopts->opts[j]);
-
-            if (!option->vals || option->vals->size == 0)
-               continue;
-
-            comboLayout = new QHBoxLayout();
-            descLabel   = new QLabel(desc, this);
-            combo_box   = new QComboBox(this);
-            combo_box->setObjectName("coreOptionComboBox");
-            resetButton = new QToolButton(this);
-            resetButton->setObjectName("resetButton");
-            resetButton->setDefaultAction(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RESET), this));
-            resetButton->setProperty("comboBox",
-                  QVariant::fromValue(combo_box));
-
-            connect(resetButton, SIGNAL(clicked()),
-                  this, SLOT(onCoreOptionResetClicked()));
-
-            if (option->info && *option->info)
+            if (folder_options_active || !game_options_active)
             {
-               char *new_info;
-               size_t option_info_len = strlen(option->info);
-               size_t new_info_len    = option_info_len + 1;
-
-               if (!(new_info = (char *)malloc(new_info_len)))
-                  return;
-               new_info[0] = '\0';
-
-               word_wrap(new_info, new_info_len, option->info,
-                     option_info_len, 50, 100, 0);
-               /* already wrapped to 50 columns: keep the line breaks */
-               descLabel->setToolTip(QStringLiteral("<qt><pre>")
-                     + QString::fromUtf8(new_info).toHtmlEscaped()
-                     + QStringLiteral("</pre></qt>"));
-               combo_box->setToolTip(descLabel->toolTip());
-               free(new_info);
+               bool remove_folder = folder_options_active;
+               action = manageMenu->addAction(msg_hash_to_str(
+                        remove_folder
+                        ? MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE
+                        : MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE));
+               action->setToolTip(wrapped_tooltip(msg_hash_to_str(
+                        remove_folder
+                        ? MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE
+                        : MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE)));
+               connect(action, &QAction::triggered, this, [this, remove_folder]() {
+                  if (remove_folder)
+                     core_options_remove_override(false);
+                  else
+                     onSaveFolderSpecificOptions();
+                  buildLayout();
+               });
             }
-
-            for (k = 0; k < option->vals->size; k++)
-               combo_box->addItem(option->vals->elems[k].data, QVariant::fromValue(QString(option->key)));
-
-            combo_box->setCurrentText(val);
-            combo_box->setProperty("default_index",
-                  static_cast<unsigned>(option->default_index));
-
-            /* Only connect the signal after setting the default item */
-            connect(combo_box, SIGNAL(currentIndexChanged(int)),
-                  this,
-                  SLOT(onCoreOptionComboBoxCurrentIndexChanged(int)));
-
-            comboLayout->addWidget(combo_box);
-            comboLayout->addWidget(resetButton);
-
-            form->addRow(descLabel, comboLayout);
          }
 
-         form->addRow(resetAllButton, new QWidget(this));
+         manageMenu->addSeparator();
+         action = manageMenu->addAction(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET));
+         action->setToolTip(wrapped_tooltip(msg_hash_to_str(
+                  MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET)));
+         connect(action, &QAction::triggered, this, [this]() {
+            core_options_reset(NULL);
+            buildLayout();
+         });
 
-         m_layout->addLayout(form);
+         if (settings->bools.quick_menu_show_core_options_flush)
+         {
+            action = manageMenu->addAction(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH));
+            action->setToolTip(wrapped_tooltip(msg_hash_to_str(
+                     MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH)));
+            connect(action, &QAction::triggered, this, []() {
+               core_options_flush();
+            });
+         }
+
+         managementLayout->addWidget(activeLabel);
+         managementLayout->addWidget(activeFile);
+         managementLayout->addStretch(1);
+         managementLayout->addWidget(manageButton);
+         m_layout->addLayout(managementLayout);
       }
+
+      form = new QFormLayout();
+
+      if (coreopts)
+      {
+         if (coreopts->cats_size > 0 && coreopts->option_map)
+         {
+            size_t mapIndex;
+            /* Put uncategorized options first, followed by the category
+             * sections in the manager's menu order. */
+            m_layout->addLayout(form);
+
+            /* Follow the core option manager's nested-list ordering.
+             * Regular top-level options remain in the main form; each
+             * category gets a collapsible section with its own option rows. */
+            for (mapIndex = 0;
+                  mapIndex < nested_list_get_size(coreopts->option_map);
+                  mapIndex++)
+            {
+               nested_list_item_t *item = nested_list_get_item_idx(
+                     coreopts->option_map, mapIndex);
+               const struct core_option *option =
+                  (const struct core_option *)nested_list_item_get_value(item);
+
+               if (option)
+               {
+                  if (core_option_manager_get_visible(coreopts, option->opt_idx))
+                     qt_core_options_add_row(this, form, coreopts, option->opt_idx);
+               }
+               else if (item)
+               {
+                  const char *category_id = nested_list_item_get_id(item);
+                  nested_list_t *category_options =
+                     nested_list_item_get_children(item);
+                  const char *category_desc =
+                     core_option_manager_get_category_desc(coreopts, category_id);
+                  const char *category_info =
+                     core_option_manager_get_category_info(coreopts, category_id);
+                  QPushButton *categoryButton;
+                  QWidget *categoryWidget;
+                  QVBoxLayout *categoryLayout;
+                  QFormLayout *categoryForm;
+                  size_t categoryIndex;
+
+                  if (!category_options
+                        || !core_option_manager_get_category_visible(
+                           coreopts, category_id))
+                     continue;
+
+                  categoryButton = new QPushButton(
+                        QString::fromUtf8(category_desc ? category_desc : category_id),
+                        this);
+                  categoryButton->setCheckable(true);
+                  if (category_info && *category_info)
+                     categoryButton->setToolTip(wrapped_tooltip(category_info));
+
+                  categoryWidget = new QWidget(this);
+                  categoryLayout = new QVBoxLayout(categoryWidget);
+                  categoryLayout->setContentsMargins(12, 4, 0, 4);
+                  categoryForm = new QFormLayout();
+                  categoryLayout->addLayout(categoryForm);
+                  categoryWidget->setVisible(false);
+
+                  for (categoryIndex = 0;
+                        categoryIndex < nested_list_get_size(category_options);
+                        categoryIndex++)
+                  {
+                     nested_list_item_t *optionItem =
+                        nested_list_get_item_idx(category_options, categoryIndex);
+                     const struct core_option *categoryOption =
+                        (const struct core_option *)nested_list_item_get_value(optionItem);
+                     if (categoryOption
+                           && core_option_manager_get_visible(
+                              coreopts, categoryOption->opt_idx))
+                        qt_core_options_add_row(this, categoryForm,
+                              coreopts, categoryOption->opt_idx);
+                  }
+
+                  connect(categoryButton, &QPushButton::toggled,
+                        categoryWidget, &QWidget::setVisible);
+                  m_layout->addWidget(categoryButton);
+                  m_layout->addWidget(categoryWidget);
+               }
+            }
+
+         }
+         else
+         {
+            /* Keep the existing flat layout for v1 options. */
+            for (j = 0; j < opts; j++)
+               qt_core_options_add_row(this, form, coreopts, j);
+
+            m_layout->addLayout(form);
+         }
+      }
+
+#ifdef HAVE_CONFIGFILE
+      /* Match the internal Quick Menu > Overrides actions and show the
+       * actual files which participate in the active override stack. */
+      {
+         const char *core_name = runloop_st->system.info.library_name;
+         const char *content_name = path_get(RARCH_PATH_BASENAME);
+         const char *active_override = path_get(RARCH_PATH_CONFIG_OVERRIDE);
+         bool has_content = content_name && *content_name;
+         char config_directory[DIR_MAX_LENGTH];
+         char core_override[PATH_MAX_LENGTH];
+         char content_override[PATH_MAX_LENGTH];
+         char game_override[PATH_MAX_LENGTH];
+         bool has_core_override = false;
+         bool has_content_override = false;
+         bool has_game_override = false;
+
+         config_directory[0] = '\0';
+         core_override[0] = '\0';
+         content_override[0] = '\0';
+         game_override[0] = '\0';
+
+         if (core_name && *core_name)
+         {
+            fill_pathname_application_special(config_directory,
+                  sizeof(config_directory),
+                  APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+            fill_pathname_join_special_ext(core_override,
+                  config_directory, core_name, core_name,
+                  FILE_PATH_CONFIG_EXTENSION, sizeof(core_override));
+            has_core_override = path_is_valid(core_override);
+
+            if (has_content)
+            {
+               char content_dir_name[DIR_MAX_LENGTH];
+               const char *game_name = path_basename_nocompression(content_name);
+               content_dir_name[0] = '\0';
+               fill_pathname_parent_dir_name(content_dir_name,
+                     content_name, sizeof(content_dir_name));
+               fill_pathname_join_special_ext(content_override,
+                     config_directory, core_name, content_dir_name,
+                     FILE_PATH_CONFIG_EXTENSION, sizeof(content_override));
+               fill_pathname_join_special_ext(game_override,
+                     config_directory, core_name, game_name,
+                     FILE_PATH_CONFIG_EXTENSION, sizeof(game_override));
+               has_content_override = path_is_valid(content_override);
+               has_game_override = path_is_valid(game_override);
+            }
+         }
+
+         /* Active override file and management actions. */
+         {
+            QHBoxLayout *overrideHeader = new QHBoxLayout();
+            QLabel *activeLabel = new QLabel(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO), this);
+            QString activeName = QString::fromUtf8(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+            QPushButton *manageButton = new QPushButton(
+                  QStringLiteral("Manage Overrides"), this);
+            QMenu *manageMenu = new QMenu(manageButton);
+            QAction *action;
+
+            if (active_override && *active_override)
+            {
+               QStringList paths = QString::fromUtf8(active_override).split(QLatin1Char('|'));
+               QString lastPath = paths.isEmpty() ? QString() : paths.last();
+               if (!lastPath.isEmpty())
+                  activeName = QFileInfo(lastPath).fileName();
+            }
+
+            manageButton->setMenu(manageMenu);
+            QLabel *activeFile = new QLabel(activeName, this);
+            activeFile->setObjectName("activeOverrideFile");
+
+            action = manageMenu->addAction(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD));
+            connect(action, &QAction::triggered, this, [this]() {
+               QString fileName = QFileDialog::getOpenFileName(this,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD),
+                     QString(), QStringLiteral("Config files (*.cfg);;All files (*)"));
+               if (!fileName.isEmpty())
+               {
+                  config_unload_override();
+                  if (!config_load_override_file(fileName.toUtf8().constData()))
+                     QMessageBox::warning(this, msg_hash_to_str(MSG_ERROR),
+                           QStringLiteral("Unable to load override file."));
+                  buildLayout();
+               }
+            });
+
+            action = manageMenu->addAction(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS));
+            connect(action, &QAction::triggered, this, [this]() {
+               bool ok = false;
+               QString name = QInputDialog::getText(this,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS),
+                     msg_hash_to_str(MSG_INPUT_OVERRIDE_FILENAME),
+                     QLineEdit::Normal, QString(), &ok);
+               if (ok && !name.isEmpty())
+               {
+                  runloop_state_t *state = runloop_state_get_ptr();
+                  int8_t result = config_save_overrides(OVERRIDE_AS,
+                        &state->system, false, name.toUtf8().constData());
+                  if (result != 1)
+                     QMessageBox::warning(this, msg_hash_to_str(MSG_ERROR),
+                           msg_hash_to_str(MSG_OVERRIDES_NOT_SAVED));
+                  buildLayout();
+               }
+            });
+
+            manageMenu->addSeparator();
+            if (settings->bools.quick_menu_show_save_game_overrides && has_content)
+            {
+               action = manageMenu->addAction(msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME));
+               connect(action, &QAction::triggered, this, [this]() {
+                  runloop_state_t *state = runloop_state_get_ptr();
+                  config_save_overrides(OVERRIDE_GAME, &state->system, false, NULL);
+                  buildLayout();
+               });
+               if (has_game_override)
+               {
+                  action = manageMenu->addAction(msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME));
+                  connect(action, &QAction::triggered, this, [this]() {
+                     runloop_state_t *state = runloop_state_get_ptr();
+                     config_save_overrides(OVERRIDE_GAME, &state->system, true, NULL);
+                     buildLayout();
+                  });
+               }
+            }
+            if (settings->bools.quick_menu_show_save_content_dir_overrides && has_content)
+            {
+               action = manageMenu->addAction(msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR));
+               connect(action, &QAction::triggered, this, [this]() {
+                  runloop_state_t *state = runloop_state_get_ptr();
+                  config_save_overrides(OVERRIDE_CONTENT_DIR, &state->system, false, NULL);
+                  buildLayout();
+               });
+               if (has_content_override)
+               {
+                  action = manageMenu->addAction(msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR));
+                  connect(action, &QAction::triggered, this, [this]() {
+                     runloop_state_t *state = runloop_state_get_ptr();
+                     config_save_overrides(OVERRIDE_CONTENT_DIR, &state->system, true, NULL);
+                     buildLayout();
+                  });
+               }
+            }
+            if (settings->bools.quick_menu_show_save_core_overrides && core_name && *core_name)
+            {
+               action = manageMenu->addAction(msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE));
+               connect(action, &QAction::triggered, this, [this]() {
+                  runloop_state_t *state = runloop_state_get_ptr();
+                  config_save_overrides(OVERRIDE_CORE, &state->system, false, NULL);
+                  buildLayout();
+               });
+               if (has_core_override)
+               {
+                  action = manageMenu->addAction(msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE));
+                  connect(action, &QAction::triggered, this, [this]() {
+                     runloop_state_t *state = runloop_state_get_ptr();
+                     config_save_overrides(OVERRIDE_CORE, &state->system, true, NULL);
+                     buildLayout();
+                  });
+               }
+            }
+
+            manageMenu->addSeparator();
+            action = manageMenu->addAction(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD));
+            action->setEnabled(active_override && *active_override);
+            connect(action, &QAction::triggered, this, [this]() {
+               config_unload_override();
+               buildLayout();
+            });
+
+            overrideHeader->addWidget(activeLabel);
+            overrideHeader->addWidget(activeFile);
+            overrideHeader->addStretch(1);
+            overrideHeader->addWidget(manageButton);
+            m_layout->addLayout(overrideHeader);
+         }
+
+         /* Display each existing layer separately, in application order. */
+         struct OverrideDisplayEntry
+         {
+            const char *title;
+            const char *path;
+            bool exists;
+         } entries[] = {
+            { "Core Override", core_override, has_core_override },
+            { "Content Directory Override", content_override, has_content_override },
+            { "Game Override", game_override, has_game_override }
+         };
+         unsigned entryIndex;
+         bool any_override = false;
+         for (entryIndex = 0; entryIndex < sizeof(entries) / sizeof(entries[0]);
+               entryIndex++)
+         {
+            if (entries[entryIndex].exists)
+            {
+               QFile file(QString::fromUtf8(entries[entryIndex].path));
+               QLabel *title = new QLabel(QString::fromUtf8(entries[entryIndex].title), this);
+               QPlainTextEdit *contents = new QPlainTextEdit(this);
+               contents->setReadOnly(true);
+               contents->setMaximumHeight(150);
+               contents->setLineWrapMode(QPlainTextEdit::NoWrap);
+               if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+                  contents->setPlainText(QString::fromUtf8(file.readAll()));
+               else
+                  contents->setPlainText(QStringLiteral("Unable to read override file."));
+               m_layout->addWidget(title);
+               m_layout->addWidget(contents);
+               any_override = true;
+            }
+         }
+         if (!any_override)
+         {
+            QLabel *noOverrides = new QLabel(
+                  QStringLiteral("No active override files."), this);
+            m_layout->addWidget(noOverrides);
+         }
+      }
+#endif
    }
 
    if (!opts)
@@ -4917,7 +5295,6 @@ void CoreOptionsDialog::buildLayout()
       QLabel *noParamsLabel = new QLabel(msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE), this);
       noParamsLabel->setAlignment(Qt::AlignCenter);
-
       m_layout->addWidget(noParamsLabel);
    }
 
