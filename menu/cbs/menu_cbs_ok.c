@@ -6225,28 +6225,19 @@ void cb_generic_download(retro_task_t *task,
          dir_path = dir_buf;
       }
 
-      if (download_skips_unchanged(transf->enum_idx))
-         decompress_task = (retro_task_t*)task_push_decompress_skip_unchanged(
-               output_path,
-               dir_path,
-               NULL,
-               subdir,
-               NULL,
-               cb_decompressed,
-               (void*)(uintptr_t)transf->enum_idx,
-               NULL,
-               false);
-      else
-         decompress_task = (retro_task_t*)task_push_decompress(
-               output_path,
-               dir_path,
-               NULL,
-               subdir,
-               NULL,
-               cb_decompressed,
-               (void*)(uintptr_t)transf->enum_idx,
-               NULL,
-               false);
+      decompress_task = (retro_task_t*)(
+            download_skips_unchanged(transf->enum_idx)
+            ? task_push_decompress_skip_unchanged
+            : task_push_decompress)(
+            output_path,
+            dir_path,
+            NULL,
+            subdir,
+            NULL,
+            cb_decompressed,
+            (void*)(uintptr_t)transf->enum_idx,
+            NULL,
+            false);
 
       if (!decompress_task)
       {
