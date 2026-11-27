@@ -10,6 +10,12 @@
  * The server is the other end of a socketpair, drained by a thread of
  * its own. librsound is included for its statics.
  *
+ * Audio leaves through the driver's own callbacks: the worker borrows
+ * the fifo's frames where they lie and sends them from there, so what
+ * the server receives must be the writer's bytes exactly, across the
+ * ring's wrap on a plain and on a mirrored ring, with any shortfall
+ * filled by whole frames of silence.
+ *
  * The control channel's replies carry a server-chosen body length; a
  * body longer than the protocol limit, or a negative length, is
  * refused before anything is received into the reply buffer. */
@@ -40,16 +46,35 @@ static void watchdog(int sig)
 /* ---- the frontend's audio callbacks ---- */
 
 static retro_atomic_int_t cb_calls, fail_after, errors;
+static uint8_t            feed[MAX_CHUNK_SIZE];
 
-static ssize_t audio_cb(void *data, size_t bytes, void *userdata)
+/* A feed that never runs dry, lending one static block. */
+static ssize_t borrow_cb(const void **first, size_t *first_bytes,
+      const void **second, size_t bytes, void *userdata)
 {
    int n = retro_atomic_fetch_add_int(&cb_calls, 1) + 1;
    int f = retro_atomic_load_acquire_int(&fail_after);
    (void)userdata;
    if (f && n >= f)
       return -1;
-   memset(data, 0x11, bytes);
+   if (bytes > sizeof(feed))
+      bytes = sizeof(feed);
+   *first       = feed;
+   *first_bytes = bytes;
+   *second      = NULL;
    return (ssize_t)bytes;
+}
+
+static void release_cb(size_t bytes, void *userdata)
+{
+   (void)bytes;
+   (void)userdata;
+}
+
+static void wait_cb(int64_t timeout_us, void *userdata)
+{
+   (void)userdata;
+   usleep((useconds_t)timeout_us);
 }
 
 static void error_cb(void *userdata)
@@ -137,6 +162,180 @@ static void stream(rsound_t *rd, enum ending how, bool race, unsigned salt)
 }
 
 #define ROUNDS 300
+
+/* ---- the driver's borrowed send path ---- */
+
+#define STREAM_BYTES (128 * 320)
+
+struct sink
+{
+   int     fd;
+   uint8_t buf[STREAM_BYTES * 4];
+   size_t  len;
+};
+
+static void sink_read(void *data)
+{
+   struct sink *k = (struct sink*)data;
+   ssize_t      r;
+   while (k->len < sizeof(k->buf)
+         && (r = read(k->fd, k->buf + k->len, sizeof(k->buf) - k->len)) > 0)
+      k->len += (size_t)r;
+}
+
+static retro_atomic_int_t split_loans;
+
+/* The driver's own borrow, counting loans that span the wrap. */
+static ssize_t counting_borrow_cb(const void **first, size_t *first_bytes,
+      const void **second, size_t bytes, void *userdata)
+{
+   ssize_t got = rsound_borrow_cb(first, first_bytes, second, bytes,
+         userdata);
+   if (got > 0 && *second)
+      retro_atomic_fetch_add_int(&split_loans, 1);
+   return got;
+}
+
+static uint8_t pattern_byte(size_t i) { return (uint8_t)(1 + i % 251); }
+
+/* @mirrored: the fifo's pages mapped twice, so no loan is split.
+ * @starve: the writer leaves gaps, and the worker, running low, fills
+ * them with silence. */
+static void check_borrow_stream(bool mirrored, bool starve)
+{
+   static rsd_t       rsd;
+   static struct sink k;
+   static uint8_t     src[STREAM_BYTES];
+   rsound_t          *r;
+   sthread_t         *server;
+   int                sv[2];
+   size_t             i, off, n, written;
+   unsigned           silences = 0;
+
+   memset(&rsd, 0, sizeof(rsd));
+   memset(&k, 0, sizeof(k));
+   if (     !(mirrored ? retro_spsc_init_mirrored(&rsd.ring, 4096)
+                       : retro_spsc_init(&rsd.ring, 4096))
+         || !retro_eventcount_init(&rsd.park)
+         || !retro_eventcount_init(&rsd.fill))
+   {
+      printf("FAIL: borrowed stream setup\n");
+      failures++;
+      return;
+   }
+   if (mirrored && !rsd.ring.mirror)
+      printf("[note] no mirrored ring on this host; plain ring used\n");
+   rsd.fifo_size = 4096;
+   rsd.wait_us   = 1000;
+   rsd.fill_init = true;
+   retro_atomic_int_init(&rsd.has_error, 0);
+   retro_atomic_store_release_int(&split_loans, 0);
+
+   if (rsd_init(&r) < 0 || socketpair(AF_UNIX, SOCK_STREAM, 0, sv) != 0)
+   {
+      printf("FAIL: borrowed stream setup\n");
+      failures++;
+      return;
+   }
+   r->rate                    = 48000;
+   r->channels                = 2;
+   r->samplesize              = 2;
+   /* Not a divisor of the ring, so whole-chunk loans cross the wrap. */
+   r->backend_info.chunk_size = 320;
+   r->max_latency             = starve ? 1000 : 0;
+   r->conn_type               = 0;
+   r->conn.socket             = sv[0];
+   r->conn.ctl_socket         = -1;
+   rsd.rd                     = r;
+   rsd_set_callback(r, counting_borrow_cb, rsound_release_cb,
+         rsound_wait_cb, rsound_err_cb, &rsd);
+
+   k.fd   = sv[1];
+   server = sthread_create(sink_read, &k);
+
+   for (i = 0; i < sizeof(src); i++)
+      src[i] = pattern_byte(i);
+
+   CHECK(rsnd_start_thread(r) == 0, "the playback thread did not start");
+
+   /* Frame-multiple pieces through both write paths: blocking copies
+    * and lent spans. */
+   for (off = 0, n = 0; off < sizeof(src); n++)
+   {
+      size_t piece = 1236;
+      if (piece > sizeof(src) - off)
+         piece = sizeof(src) - off;
+      if (n & 1)
+      {
+         void  *span;
+         size_t got = audio_rsound.write_begin(&rsd, piece, &span);
+         if (got)
+            memcpy(span, src + off, got);
+         written = (size_t)audio_rsound.write_end(&rsd, got);
+         if (!written)
+            usleep(200);
+      }
+      else
+         written = (size_t)audio_rsound.write(&rsd, src + off, piece);
+      off += written;
+      if (starve && (n % 5) == 4)
+         usleep(8000);
+   }
+
+   /* drained: every byte borrowed and sent */
+   for (i = 0; i < 5000 && retro_spsc_read_avail(&rsd.ring); i++)
+      usleep(200);
+   usleep(starve ? 20000 : 5000);
+   rsd_stop(r);
+   sthread_join(server);
+   close(sv[1]);
+
+   /* the writer's bytes in order, silence only as whole frames */
+   for (i = 0, off = 0; i < k.len; )
+   {
+      if (!k.buf[i])
+      {
+         size_t run = i;
+         while (i < k.len && !k.buf[i])
+            i++;
+         CHECK(run % RS_FRAME_BYTES == 0 && (i - run) % RS_FRAME_BYTES == 0,
+               "silence of %u bytes at %u splits a frame",
+               (unsigned)(i - run), (unsigned)run);
+         silences++;
+         continue;
+      }
+      if (off >= sizeof(src) || k.buf[i] != src[off])
+      {
+         CHECK(0, "byte %u of the stream is %u, expected %u (writer byte %u)",
+               (unsigned)i, k.buf[i],
+               off < sizeof(src) ? src[off] : 0, (unsigned)off);
+         break;
+      }
+      i++;
+      off++;
+   }
+   CHECK(off == sizeof(src), "%u of %u written bytes reached the server",
+         (unsigned)off, (unsigned)sizeof(src));
+   if (starve)
+      CHECK(silences && rs_underruns(&rsd) > 0,
+            "a starved stream sent no silence (%u runs, %u counted)",
+            silences, (unsigned)rs_underruns(&rsd));
+   else
+      CHECK(!silences && k.len == sizeof(src),
+            "a fed stream carried %u silent runs, %u bytes for %u",
+            silences, (unsigned)k.len, (unsigned)sizeof(src));
+   if (!mirrored || !rsd.ring.mirror)
+      CHECK(retro_atomic_load_acquire_int(&split_loans) > 0,
+            "no loan crossed the plain ring's wrap");
+   else
+      CHECK(retro_atomic_load_acquire_int(&split_loans) == 0,
+            "a mirrored ring lent a split span");
+
+   rsd_free(r);
+   retro_eventcount_free(&rsd.fill);
+   retro_eventcount_free(&rsd.park);
+   retro_spsc_free(&rsd.ring);
+}
 
 /* A span lent out of the ring: written where it lies, published by
  * write_end, partial frames not, nothing while the stream has failed. */
@@ -260,6 +459,10 @@ int main(void)
 
    check_lend();
    check_nonblock_write();
+   check_borrow_stream(false, false);
+   check_borrow_stream(true,  false);
+   check_borrow_stream(false, true);
+   check_borrow_stream(true,  true);
 
    if (rsd_init(&rd) < 0)
    {
@@ -272,7 +475,7 @@ int main(void)
    rd->backend_info.chunk_size = 256;
    rd->max_latency            = 0;
    rd->conn_type              = 0;
-   rsd_set_callback(rd, audio_cb, error_cb, 64, NULL);
+   rsd_set_callback(rd, borrow_cb, release_cb, wait_cb, error_cb, NULL);
 
    check_control_length(rd);
 

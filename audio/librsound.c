@@ -979,73 +979,82 @@ static void rsnd_cb_thread_fail(rsound_t *rd)
    rd->error_callback(rd->cb_data);
 }
 
-/* Callback thread */
+/* Silence for the stretches the feed comes up short, sent from here
+ * rather than written into a buffer. */
+static const uint8_t rsnd_silence[MAX_CHUNK_SIZE];
+
+/* Callback thread: each network chunk is borrowed from the feed and
+ * sent from where it lies. */
 static void rsnd_cb_thread(void *thread_data)
 {
    rsound_t *rd          = thread_data;
    size_t    chunk_size  = rd->backend_info.chunk_size;
-   size_t    read_size   = chunk_size;
-   uint8_t  *buffer;
+   int64_t   bytes_per_s = (int64_t)rd->rate * rd->channels * rd->samplesize;
+   /* One chunk's playing time: what a wait for more audio is bounded
+    * by, floored so a tiny chunk does not turn it into a spin. */
+   int64_t   period_us   = bytes_per_s
+      ? (int64_t)chunk_size * 1000000 / bytes_per_s : 1000;
 
-   if (rd->cb_max_size != 0 && rd->cb_max_size < read_size)
-      read_size = rd->cb_max_size;
-
-   if (!(buffer = (uint8_t *)malloc(chunk_size)))
-   {
-      rsnd_cb_thread_fail(rd);
-      return;
-   }
+   if (period_us < 1000)
+      period_us = 1000;
 
    while (retro_atomic_load_acquire_int(&rd->thread_active))
    {
-      size_t  has_read = 0;
-      ssize_t sent;
+      size_t has_sent = 0;
 
-      while (has_read < chunk_size)
+      while (has_sent < chunk_size)
       {
-         ssize_t cb_ret;
-         size_t  will_read = read_size < chunk_size - has_read
-            ? read_size : chunk_size - has_read;
+         const void *first        = NULL;
+         const void *second       = NULL;
+         size_t      first_bytes  = 0;
+         size_t      want         = chunk_size - has_sent;
+         ssize_t     got          = rd->borrow_callback(&first,
+               &first_bytes, &second, want, rd->cb_data);
 
-         cb_ret = rd->audio_callback(buffer + has_read, will_read, rd->cb_data);
-
-         if (cb_ret < 0)
+         if (got < 0)
          {
-            free(buffer);
             rsnd_cb_thread_fail(rd);
             return;
          }
 
-         has_read += cb_ret;
-
-         if (cb_ret < (ssize_t)will_read)
+         if (got > 0)
          {
-            if ((int)rsd_delay_ms(rd) < rd->max_latency / 2)
+            size_t second_bytes = (size_t)got - first_bytes;
+            if (     rsnd_send_chunk(rd->conn.socket, first, first_bytes, 1)
+                        != (ssize_t)first_bytes
+                  || (second_bytes && rsnd_send_chunk(rd->conn.socket,
+                        second, second_bytes, 1) != (ssize_t)second_bytes))
             {
-               RSD_DEBUG("[RSound] Callback thread: Requested %d bytes, got %d.\n",
-                     (int)will_read, (int)cb_ret);
-               memset(buffer + has_read, 0, will_read - cb_ret);
-               has_read += will_read - cb_ret;
+               rd->release_callback(0, rd->cb_data);
+               rsnd_cb_thread_fail(rd);
+               return;
             }
-            else
-            {
-               /* The network might do things in large chunks, so it may request
-                * large amounts of data in short periods of time.
-                * This breaks when the caller cannot buffer up big buffers beforehand,
-                * so do short sleeps inbetween.
-                * This is somewhat dirty, but I cannot see a better solution
-                */
-               retro_sleep(1);
-            }
+            rd->release_callback((size_t)got, rd->cb_data);
+            has_sent += (size_t)got;
          }
-      }
-
-      sent = rsnd_send_chunk(rd->conn.socket, buffer, chunk_size, 1);
-      if (sent != (ssize_t)chunk_size)
-      {
-         free(buffer);
-         rsnd_cb_thread_fail(rd);
-         return;
+         else if ((int)rsd_delay_ms(rd) < rd->max_latency / 2)
+         {
+            /* Running low: the rest of the chunk goes out as silence. */
+            RSD_DEBUG("[RSound] Callback thread: %d bytes of silence.\n",
+                  (int)want);
+            if (     rsnd_send_chunk(rd->conn.socket, rsnd_silence, want, 1)
+                  != (ssize_t)want)
+            {
+               rsnd_cb_thread_fail(rd);
+               return;
+            }
+            retro_atomic_fetch_add_size(&rd->underruns, 1);
+            has_sent = chunk_size;
+         }
+         else
+         {
+            /* Time in hand: wait for the writer rather than pad. A
+             * stop while waiting ends the thread here, without the
+             * delay having to drain first. */
+            rd->wait_callback(period_us, rd->cb_data);
+            if (!retro_atomic_load_acquire_int(&rd->thread_active))
+               return;
+         }
       }
 
       /* If this was the first write, set the start point for the timer. */
@@ -1067,8 +1076,6 @@ static void rsnd_cb_thread(void *thread_data)
       if (rd->has_written)
          rsd_delay_wait(rd);
    }
-
-   free(buffer);
 }
 
 static int rsnd_reset(rsound_t *rd)
@@ -1232,6 +1239,7 @@ int rsd_init(rsound_t** rsound)
    (*rsound)->conn.ctl_socket   = -1;
 
    retro_atomic_int_init(&(*rsound)->thread_active, 0);
+   retro_atomic_size_init(&(*rsound)->underruns, 0);
 
    /* Assumes default of S16_LE samples. */
    rsd_set_param(*rsound, RSD_FORMAT, &format);
@@ -1251,13 +1259,15 @@ int rsd_init(rsound_t** rsound)
    return 0;
 }
 
-void rsd_set_callback(rsound_t *rsound, rsd_audio_callback_t audio_cb,
-      rsd_error_callback_t err_cb, size_t len, void *userdata)
+void rsd_set_callback(rsound_t *rsound, rsd_borrow_callback_t borrow_cb,
+      rsd_release_callback_t release_cb, rsd_wait_callback_t wait_cb,
+      rsd_error_callback_t err_cb, void *userdata)
 {
-   rsound->audio_callback = audio_cb;
-   rsound->error_callback = err_cb;
-   rsound->cb_max_size    = len;
-   rsound->cb_data        = userdata;
+   rsound->borrow_callback  = borrow_cb;
+   rsound->release_callback = release_cb;
+   rsound->wait_callback    = wait_cb;
+   rsound->error_callback   = err_cb;
+   rsound->cb_data          = userdata;
 }
 
 int rsd_free(rsound_t *rsound)

@@ -52,24 +52,25 @@ typedef struct rsd
     * the window is closed and the bound goes back to being what it is
     * named for. */
    retro_eventcount_t park;
+   /* The other direction: librsound's worker, short of audio with time
+    * in hand, parks here and the writer notifies as it adds frames. */
+   retro_eventcount_t fill;
 
-   /* Bound for the blocking wait in rs_write, one callback period.
-    * See the note there. */
+   /* Bound for the blocking wait in rs_write, one network chunk's
+    * playing time - the worker frees room a chunk at a time. See the
+    * note there. */
    int64_t wait_us;
    /* The fifo's capacity in bytes: what buffer_size() reports. */
    size_t fifo_size;
 
    bool nonblock;
    bool is_paused;
+   bool fill_init;
    /* Set by rsound_err_cb on librsound's worker thread and read by the
     * writer, including inside its wait window: an atomic, because
     * volatile orders nothing between threads and the re-check below
     * has to see the store that came before the notify. */
    retro_atomic_int_t has_error;
-   /* Callbacks librsound asked to fill and the ring came up short
-    * for; librsound zero-fills the shortfall, so what goes out is
-    * silence the device played for want of audio. */
-   retro_atomic_size_t underruns;
 } rsd_t;
 
 #define RS_FRAME_BYTES (2 * sizeof(int16_t))
@@ -85,16 +86,53 @@ static size_t rs_ring_room(const rsd_t *rsd)
    return room - room % RS_FRAME_BYTES;
 }
 
-static ssize_t rsound_audio_cb(void *data, size_t bytes, void *userdata)
+/* librsound's worker borrows whole frames of the fifo where they lie
+ * and sends them from there: no copy between the writer and the
+ * socket. */
+static ssize_t rsound_borrow_cb(const void **first, size_t *first_bytes,
+      const void **second, size_t bytes, void *userdata)
 {
-   rsd_t *rsd        = (rsd_t*)userdata;
-   size_t write_size = retro_spsc_read(&rsd->ring, data, bytes);
-   retro_eventcount_notify(&rsd->park);
+   rsd_t *rsd = (rsd_t*)userdata;
+   size_t got = retro_spsc_read_begin_pair(&rsd->ring, first, first_bytes,
+         second, bytes - bytes % RS_FRAME_BYTES);
 
-   if (write_size < bytes)
-      retro_atomic_fetch_add_size(&rsd->underruns, 1);
+   got -= got % RS_FRAME_BYTES;
+   if (!got)
+   {
+      retro_spsc_read_end(&rsd->ring, 0);
+      *first       = NULL;
+      *second      = NULL;
+      *first_bytes = 0;
+      return 0;
+   }
+   if (*first_bytes >= got)
+   {
+      *first_bytes = got;
+      *second      = NULL;
+   }
+   return (ssize_t)got;
+}
 
-   return write_size;
+/* What went out is room again for the writer. */
+static void rsound_release_cb(size_t bytes, void *userdata)
+{
+   rsd_t *rsd = (rsd_t*)userdata;
+   retro_spsc_read_end(&rsd->ring, bytes);
+   if (bytes)
+      retro_eventcount_notify(&rsd->park);
+}
+
+/* The worker has nothing to send and time before the next chunk is
+ * due: parked until the writer adds a frame. Timed only as a watchdog
+ * for a writer that has stopped. */
+static void rsound_wait_cb(int64_t timeout_us, void *userdata)
+{
+   rsd_t *rsd = (rsd_t*)userdata;
+   int    key = retro_eventcount_prepare_wait(&rsd->fill);
+   if (retro_spsc_read_avail(&rsd->ring) >= RS_FRAME_BYTES)
+      retro_eventcount_cancel_wait(&rsd->fill);
+   else
+      retro_eventcount_commit_wait_timeout(&rsd->fill, key, timeout_us);
 }
 
 static void rsound_err_cb(void *userdata)
@@ -105,6 +143,19 @@ static void rsound_err_cb(void *userdata)
     * come. */
    retro_atomic_store_release_int(&rsd->has_error, 1);
    retro_eventcount_notify(&rsd->park);
+}
+
+/* The writer's wait bound: one network chunk's playing time, as the
+ * server named it on connecting. Floored so a high sample rate does
+ * not turn the bounded wait into a spin. */
+static void rs_set_wait_bound(rsd_t *rsd, unsigned rate)
+{
+   size_t chunk = rsd->rd->backend_info.chunk_size;
+   rsd->wait_us = rate
+      ? (int64_t)(chunk / RS_FRAME_BYTES) * 1000000 / rate
+      : 1000;
+   if (rsd->wait_us < 1000)
+      rsd->wait_us = 1000;
 }
 
 static void *rs_init(const char *device, unsigned rate, unsigned latency,
@@ -120,11 +171,12 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
       goto error;
 
    retro_atomic_int_init(&rsd->has_error, 0);
-   retro_atomic_size_init(&rsd->underruns, 0);
    /* Checked: on a backend that parks through a condition variable the
     * init allocates, and a failure leaves an object whose commit_wait
     * would hand scond_wait a NULL cond. */
    if (!retro_eventcount_init(&rsd->park))
+      goto error;
+   if (!(rsd->fill_init = retro_eventcount_init(&rsd->fill)))
       goto error;
 
    channels       = 2;
@@ -132,7 +184,8 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
 
    /* Two stages: the fifo here, which the writer fills and rate control
     * measures and holds half full, and librsound's own buffer behind
-    * it, which its callback pulls from the fifo to keep full. The fifo
+    * it, which its worker keeps full by sending straight out of the
+    * fifo. The fifo
     * holds the latency setting, in bytes of int16 stereo, and is what
     * is reported; librsound is asked for what is left of the setting
     * after half the fifo - half of it, floored at 16 ms or the setting
@@ -166,21 +219,14 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
 
    rsd_set_param(rd, RSD_FORMAT, &format);
 
-   rsd_set_callback(rd, rsound_audio_cb, rsound_err_cb, 256, rsd);
-
-   /* The callback asks for 256 bytes at a time; at 16-bit stereo that
-    * is 64 frames.  Floored so a high sample rate does not turn the
-    * bounded wait into a spin. */
-   rsd->wait_us   = rate
-      ? (int64_t)(256 / 4) * 1000000 / rate
-      : 1000;
-   if (rsd->wait_us < 1000)
-      rsd->wait_us = 1000;
+   rsd_set_callback(rd, rsound_borrow_cb, rsound_release_cb,
+         rsound_wait_cb, rsound_err_cb, rsd);
 
    if (rsd_start(rd) < 0)
       goto error;
 
    rsd->rd = rd;
+   rs_set_wait_bound(rsd, rate);
    return rsd;
 
 error:
@@ -190,6 +236,8 @@ error:
     * freed only the handle. */
    if (rsd->ring_init)
       retro_spsc_free(&rsd->ring);
+   if (rsd->fill_init)
+      retro_eventcount_free(&rsd->fill);
    retro_eventcount_free(&rsd->park);
    rsd_free(rd);
    free(rsd);
@@ -230,6 +278,8 @@ static ssize_t rs_write_end(void *data, size_t len)
    rsd_t *rsd = (rsd_t*)data;
    len       -= len % RS_FRAME_BYTES;
    retro_spsc_write_end(&rsd->ring, len);
+   if (len)
+      retro_eventcount_notify(&rsd->fill);
    return (ssize_t)len;
 }
 
@@ -247,6 +297,8 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
       _len         = avail > len ? len : avail;
 
       retro_spsc_write(&rsd->ring, buf, _len);
+      if (_len)
+         retro_eventcount_notify(&rsd->fill);
       return (ssize_t)_len;
    }
    else
@@ -288,6 +340,7 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
          {
             size_t write_amt = len - _len > avail ? avail : len - _len;
             retro_spsc_write(&rsd->ring, (const char*)buf + _len, write_amt);
+            retro_eventcount_notify(&rsd->fill);
             _len += write_amt;
          }
       }
@@ -323,6 +376,7 @@ static bool rs_start(void *data, bool is_shutdown)
    rsd_t *rsd = (rsd_t*)data;
    if (rsd_start(rsd->rd) < 0)
       return false;
+   rs_set_wait_bound(rsd, rsd->rd->rate);
    rsd->is_paused = false;
 
    return true;
@@ -337,6 +391,7 @@ static void rs_free(void *data)
 
    if (rsd->ring_init)
       retro_spsc_free(&rsd->ring);
+   retro_eventcount_free(&rsd->fill);
    retro_eventcount_free(&rsd->park);
 
    free(rsd);
@@ -361,8 +416,8 @@ static size_t rs_buffer_size(void *data)
    return rsd ? rsd->fifo_size : 0;
 }
 
-/* Park on the eventcount librsound's audio callback notifies after
- * every pull, until at least len bytes fit in the fifo, capped at half
+/* Park on the eventcount librsound's worker notifies as each chunk it
+ * borrowed goes out, until at least len bytes fit in the fifo, capped at half
  * the reported buffer so the wait always ends.
  *
  * Still timed, but no longer for the reason it used to be: the error
@@ -412,7 +467,7 @@ static bool rs_use_float(void *data) { return false; }
 static size_t rs_underruns(void *data)
 {
    rsd_t *rsd = (rsd_t*)data;
-   return rsd ? retro_atomic_load_acquire_size(&rsd->underruns) : 0;
+   return rsd ? retro_atomic_load_acquire_size(&rsd->rd->underruns) : 0;
 }
 
 audio_driver_t audio_rsound = {

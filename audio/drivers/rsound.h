@@ -122,8 +122,21 @@ enum rsd_settings
    RSD_IDENTITY
 };
 
-/* Audio callback for rsd_set_callback. Return -1 to trigger an error in the stream. */
-typedef ssize_t (*rsd_audio_callback_t)(void *data, size_t bytes, void *userdata);
+/* Feed for rsd_set_callback: lends up to @bytes of audio where it
+ * lies, as a first span of *@first_bytes and a second of the rest
+ * (NULL when there is none), and returns the total. The spans stay
+ * valid until the release callback; librsound sends from them in
+ * place. Return -1 to trigger an error in the stream. */
+typedef ssize_t (*rsd_borrow_callback_t)(const void **first,
+      size_t *first_bytes, const void **second, size_t bytes,
+      void *userdata);
+
+/* Ends a loan: @bytes of it went out (0 when the send failed). */
+typedef void (*rsd_release_callback_t)(size_t bytes, void *userdata);
+
+/* The feed came up short with time in hand: park until it has more,
+ * at most @timeout_us. */
+typedef void (*rsd_wait_callback_t)(int64_t timeout_us, void *userdata);
 
 /* Error callback. Signals caller that stream has been stopped,
  * either by audio callback returning -1 or stream was hung up. */
@@ -179,10 +192,13 @@ typedef struct rsound
 
    char identity[256];
 
-   rsd_audio_callback_t audio_callback;
-   rsd_error_callback_t error_callback;
-   size_t cb_max_size;
+   rsd_borrow_callback_t  borrow_callback;
+   rsd_release_callback_t release_callback;
+   rsd_wait_callback_t    wait_callback;
+   rsd_error_callback_t   error_callback;
    void *cb_data;
+   /* Stretches the feed came up short for and went out as silence. */
+   retro_atomic_size_t underruns;
 } rsound_t;
 
 /* -- API --
@@ -194,7 +210,7 @@ typedef struct rsound
    rsd_init(&rd);
    rsd_set_param(rd, RSD_HOST, "foohost");
  *sets more params*
- rsd_set_callback(rd, audio_cb, err_cb, 0, userdata);
+ rsd_set_callback(rd, borrow_cb, release_cb, wait_cb, err_cb, userdata);
  rsd_start(rd);
  rsd_stop(rd);
  rsd_free(rd);
@@ -235,15 +251,18 @@ Will be truncated if longer than 256 bytes.
 
 int rsd_set_param (rsound_t *rd, enum rsd_settings option, void* param);
 
-/* Sets the callback that feeds the stream. This must be set before rsd_start(), while the stream is not active.
+/* Sets the callbacks that feed the stream. This must be set before rsd_start(), while the stream is not active.
    Only valid function to call after rsd_start() is rsd_stop(). Calling any other function is undefined.
-   The callback is called at regular intervals and is asynchronous, so thread safety must be ensured by the caller.
-   If not enough data can be given to the callback, librsound will fill the rest of the callback data with silence.
+   The callbacks run on librsound's playback thread, so thread safety must be ensured by the caller.
+   librsound borrows audio a network chunk at a time and sends it from where it lies. When the feed comes up
+   short, the rest of the chunk goes out as silence if the stream is running low, and otherwise wait_callback
+   is given the time until the next chunk is due.
    librsound will attempt to obey latency information given with RSD_LATENCY as given before calling rsd_start().
-   max_size signifies the maximum size that will ever be requested by librsound. Set this to 0 to let librsound decide the maximum size.
    Should an error occur to the stream, err_callback will be called, and the stream will be stopped. The stream can be started again. */
 
-void rsd_set_callback (rsound_t *rd, rsd_audio_callback_t callback, rsd_error_callback_t err_callback, size_t max_size, void *userdata);
+void rsd_set_callback (rsound_t *rd, rsd_borrow_callback_t borrow_callback,
+      rsd_release_callback_t release_callback, rsd_wait_callback_t wait_callback,
+      rsd_error_callback_t err_callback, void *userdata);
 
 /* Establishes connection to server. Might fail if connection can't be established or that one of
    the mandatory options isn't set in rsd_set_param(). This needs to be called after params have been set
