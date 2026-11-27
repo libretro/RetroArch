@@ -628,6 +628,8 @@ The scenarios in `vulkan/`:
 - `dupe` (`render_dupe`): dupes, each with the first part of its frame
   submitted, which the next `wait_sync_index` waits out.
 - `general` (`render_one`): the picture handed over in `GENERAL`.
+- `grow` (`render_grow`): a told growth, which raises the size a frame is
+  held to.
 - `negotiate_v1` and `negotiate_v2` (`render_one`): a core that sets a
   context negotiation interface of version 1, whose `create_device` makes
   the device, or of version 2, whose `create_instance` and
