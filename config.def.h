@@ -117,7 +117,7 @@
 #endif
 
 /* Material UI colour theme */
-#define DEFAULT_MATERIALUI_THEME MATERIALUI_THEME_OZONE_DARK
+#define DEFAULT_MATERIALUI_THEME "ozone_dark"
 
 /* Type of animation to use when performing menu transitions
  * > 'Auto' follows Material UI standards:
@@ -1079,8 +1079,8 @@
 #else
 #define DEFAULT_XMB_MENU_LAYOUT 0
 #endif
-#define DEFAULT_XMB_ICON_THEME XMB_ICON_THEME_MONOCHROME
-#define DEFAULT_XMB_THEME XMB_THEME_ELECTRIC_BLUE
+#define DEFAULT_XMB_ICON_THEME "monochrome"
+#define DEFAULT_XMB_THEME "electric_blue"
 #define DEFAULT_XMB_PLASTIC_EFFECT_ENABLE false
 #define DEFAULT_XMB_RIBBON_BLOOM_ENABLE false
 #define DEFAULT_XMB_RIBBON_PARTICLES_ENABLE false
@@ -1105,7 +1105,7 @@
 
 #define DEFAULT_SHOW_ADVANCED_SETTINGS true
 
-#define DEFAULT_RGUI_COLOR_THEME RGUI_THEME_CLASSIC_GREEN
+#define DEFAULT_RGUI_COLOR_THEME "classic_green"
 #define DEFAULT_RGUI_TRANSPARENCY true
 
 #define DEFAULT_RGUI_INLINE_THUMBNAILS false
