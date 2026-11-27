@@ -1301,7 +1301,9 @@ void cocoa_publish_focus(bool focused);
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication { return YES; }
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
-   if (!runloop_is_inited())
+   /* Before startup completes no draw observer runs the quit, and
+    * nothing would ever reply to NSTerminateLater. */
+   if (!cocoa_started || !runloop_is_inited())
       return NSTerminateNow;
 
    if (!cocoa_termination_pending)
