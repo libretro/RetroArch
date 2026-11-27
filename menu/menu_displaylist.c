@@ -10550,6 +10550,7 @@ unsigned menu_displaylist_build_list(
 #endif
          break;
 #endif
+#ifdef HAVE_THREADS
       case DISPLAYLIST_AUDIO_THREADING_SETTINGS_LIST:
          {
             bool pipeline   = settings->bools.audio_threaded_pipeline;
@@ -10597,6 +10598,7 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+#endif
       case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
          {
             static menu_displaylist_build_info_selective_t build_list[] = {
@@ -10682,7 +10684,7 @@ unsigned menu_displaylist_build_list(
             {
                static const menu_displaylist_settings_row_t dl_rows_6[] = {
                   { MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS, PARSE_ACTION, false },
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(__PSL1GHT__) && !defined(__PS3__)
                   { MENU_ENUM_LABEL_VIDEO_THREADING_SETTINGS, PARSE_ACTION, false },
 #endif
                   { MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS, PARSE_ACTION, false },
@@ -13009,7 +13011,7 @@ unsigned menu_displaylist_build_list(
                count++;
          }
          break;
-#ifdef HAVE_THREADS
+#if defined(HAVE_THREADS) && !defined(__PSL1GHT__) && !defined(__PS3__)
       case DISPLAYLIST_VIDEO_THREADING_SETTINGS_LIST:
          {
             /* Where threaded video is on and can be honored */
@@ -13024,7 +13026,7 @@ unsigned menu_displaylist_build_list(
 #endif
                {MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT,     PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY, PARSE_ONLY_BOOL, false},
-#if defined(HAVE_VIDEO_FILTER) && defined(HAVE_THREADS)
+#ifdef HAVE_VIDEO_FILTER
                {MENU_ENUM_LABEL_VIDEO_FILTER_THREADS,              PARSE_ONLY_UINT, false},
 #endif
             };
