@@ -5,6 +5,7 @@
 #include "../../../gfx/common/vulkan_hevc_params.h"
 #include "../../../gfx/common/vulkan_hevc_picture.h"
 #include "../d3d11_video_decode/hevc_device_data.h"
+#include "../d3d11_video_decode/hevc_dependent_fixture.h"
 
 typedef struct hevc_fixture
 {
@@ -32,7 +33,19 @@ static int build_fixture(const hevc_fixture_t *f, vulkan_hevc_params_t *out)
       const rmp4_track *t = rmp4_get_track(mp4, i);
       if (t->codec != RMP4_CODEC_H265) continue;
       if (!rh265_video_set_extradata(video, t->codec_private, t->codec_private_size))
+      {
          ok = vulkan_hevc_params_build(out, video, 0);
+         if (ok && out->params.dependent_slice_segments_enabled)
+         {
+            /* A permitted capability must not admit an unsupported
+             * dependent header: first=0, pps_id=0, dependent=1. */
+            static const uint8_t dependent[] = {2, 1, 0x60};
+            rh265_slice_info_t *slice = (rh265_slice_info_t*)calloc(1, sizeof(*slice));
+            ok = slice && rh265_video_get_slice(video, dependent,
+                  sizeof(dependent), slice) == -2;
+            free(slice);
+         }
+      }
       break;
    }
 done:
@@ -68,6 +81,16 @@ int main(void)
                ? STD_VIDEO_H265_PROFILE_IDC_MAIN : STD_VIDEO_H265_PROFILE_IDC_MAIN_10);
       printf("HEVC Vulkan parameters %s: %s\n", fixtures[i].name, ok ? "PASS" : "FAIL");
       if (!ok) failures++;
+   }
+   {
+      uint8_t *data = hevc_dependent_fixture(hevc_bpyr10, sizeof(hevc_bpyr10));
+      hevc_fixture_t f = fixtures[6];
+      f.data = data;
+      if (!data || !build_fixture(&f, p)
+            || !p->params.dependent_slice_segments_enabled
+            || !p->pps.flags.dependent_slice_segments_enabled_flag)
+         failures++;
+      free(data);
    }
    for (m = 0; m < 6; m++)
       for (j = 0; j < 64; j++)

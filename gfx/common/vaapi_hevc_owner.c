@@ -75,7 +75,7 @@ static bool vaapi_hevc_owner_open_common(vaapi_hevc_owner_t **out,
          || params->height > 65535 || ((params->width | params->height) & 1)
          || (params->bit_depth != 8 && params->bit_depth != 10)
          || params->chroma_format_idc != 1 || params->pcm_enabled
-         || params->tiles_enabled || params->dependent_slice_segments_enabled)
+         || params->tiles_enabled)
       return false;
    owner = (vaapi_hevc_owner_t *)calloc(1, sizeof(*owner));
    if (!owner)

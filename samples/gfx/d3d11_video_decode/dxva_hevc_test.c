@@ -174,7 +174,7 @@ static void test_rejection(void)
    BAD(p.after[0] = 0); BAD(p.longterm[0] = 1); BAD(p.refs[0].slot = p.slot);
    BAD(p.refs[1].slot = p.refs[0].slot); BAD(p.refs[0].poc = 1);
    BAD(p.coding_tools &= ~(1u << 17));
-   BAD(p.coding_tools |= 1u << 3); BAD(p.coding_tools |= 1u << 20);
+   BAD(p.coding_tools |= 1u << 3);
    BAD(p.coding_tools |= 1u << 31); BAD(p.coding_settings |= 1u << 7);
    BAD(p.coding_settings |= 1u << 31); BAD(p.cb_qp = -13); BAD(p.init_qp = -13);
    BAD(p.coding_settings |= 1u << 17);
@@ -332,7 +332,12 @@ static void test_parser_adapter(void)
    CHECK(!memcmp(&p, &saved, sizeof(p))); s.field = 0; } while (0)
    ADAPTER_BAD(pcm_enabled, 1);
    ADAPTER_BAD(tiles_enabled, 1);
-   ADAPTER_BAD(dependent_slice_segments_enabled, 1);
+   s.dependent_slice_segments_enabled = 1;
+   CHECK(dxva_hevc_params_from_rh265(&p, &s));
+   CHECK(p.coding_tools == (saved.coding_tools | (UINT32_C(1) << 20)));
+   s.dependent_slice_segments_enabled = 0;
+   CHECK(dxva_hevc_params_from_rh265(&p, &s));
+   CHECK(p.coding_tools == saved.coding_tools);
    s.num_extra_slice_header_bits = 8;
    CHECK(!dxva_hevc_params_from_rh265(&p, &s));
    s.num_extra_slice_header_bits = 5;

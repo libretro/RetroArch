@@ -553,6 +553,7 @@ static int hevc_decode_probe(VkInstance instance, VkPhysicalDevice gpu,
 #endif
    ok = 1;
    for (i = 0; i < 10; i++) if (!decode_fixture(&fixtures[i])) ok = 0;
+   if (!hevc_dependent_seek_regression()) ok = 0;
    if (!decode_external()) ok = 0;
    vkDeviceWaitIdle(device);
    vulkan_video_decode_deinit();

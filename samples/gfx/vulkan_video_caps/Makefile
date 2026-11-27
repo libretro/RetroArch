@@ -29,6 +29,7 @@ endif
 all: av1_params_test$(EXE) vp9_picture_test$(EXE) $(TARGET) $(PARAMS) video_layout_test$(EXE)
 
 hevc_decode_test$(EXE) hevc_render_test$(EXE): h264_wrap_data.h h26x_webm_decode.h ../video_fixture_stream.h
+$(PARAMS) $(SESSION) hevc_decode_test$(EXE) hevc_render_test$(EXE): ../d3d11_video_decode/hevc_dependent_fixture.h
 
 $(PARAMS): hevc_params_test.c $(HEVC_DEPS) $(DECODERS)
 	$(CC) $(CFLAGS) -o $@ hevc_params_test.c $(DECODERS) $(LDFLAGS) -lm

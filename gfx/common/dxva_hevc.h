@@ -87,7 +87,7 @@ static INLINE bool dxva_hevc_pic_params(uint8_t *out,
          || p->cb_qp < -12 || p->cb_qp > 12 || p->cr_qp < -12 || p->cr_qp > 12
          || p->beta_offset_div2 < -6 || p->beta_offset_div2 > 6
          || p->tc_offset_div2 < -6 || p->tc_offset_div2 > 6 || p->no_bipred > 1
-         || (p->coding_tools & ~((UINT32_C(0x3ff) << 17 & ~(UINT32_C(1) << 20)) | 7u))
+         || (p->coding_tools & ~((UINT32_C(0x3ff) << 17) | 7u))
          || (p->coding_settings & ~((UINT32_C(0x7ffff)) & ~((1u << 7) | (1u << 9) | (1u << 10)))))
       return false;
    if ((p->coding_settings & (1u << 17)) &&

@@ -13,7 +13,7 @@ static INLINE bool dxva_hevc_params_from_rh265(dxva_hevc_picture_t *picture,
    dxva_hevc_picture_t p;
    uint8_t validation[DXVA_HEVC_PP_SIZE];
    if (!picture || !s || s->chroma_format_idc != 1 || s->pcm_enabled
-         || s->tiles_enabled || s->dependent_slice_segments_enabled
+         || s->tiles_enabled
          || s->num_extra_slice_header_bits < 0 || s->num_extra_slice_header_bits > 7)
       return false;
    p = *picture;
@@ -47,6 +47,7 @@ static INLINE bool dxva_hevc_params_from_rh265(dxva_hevc_picture_t *picture,
    p.coding_tools |= (uint32_t)!!s->long_term_ref_pics_present << 17;
    p.coding_tools |= (uint32_t)!!s->temporal_mvp_enabled << 18;
    p.coding_tools |= (uint32_t)!!s->strong_intra_smoothing << 19;
+   p.coding_tools |= (uint32_t)!!s->dependent_slice_segments_enabled << 20;
    p.coding_tools |= (uint32_t)!!s->output_flag_present << 21;
    p.coding_tools |= (uint32_t)!!s->sign_data_hiding << 25;
    p.coding_tools |= (uint32_t)!!s->cabac_init_present << 26;

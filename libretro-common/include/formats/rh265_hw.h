@@ -98,7 +98,9 @@ static INLINE int rh265_hw_prepare_available(const rh265_hw_state_t *s,
          || (h->long_term.count && !params->long_term_ref_pics_present)
          || h->pic_output_flag < 0 || h->pic_output_flag > 1)
       return -1;
-   if (params->pcm_enabled || params->tiles_enabled || params->dependent_slice_segments_enabled
+   /* Permission in the PPS does not imply dependent segments in this AU.
+    * rh265_video_get_access_unit rejects actual dependent headers. */
+   if (params->pcm_enabled || params->tiles_enabled
          || s->input_delay > s->slots
          || s->slots - s->input_delay < (unsigned)params->max_dec_pic_buffering
          || (!s->started && type < 16) || (type >= 16 && !au->intra)

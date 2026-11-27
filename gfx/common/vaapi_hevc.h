@@ -6,7 +6,7 @@
 #include <formats/rh265_hw.h>
 
 /* Worker-owned prepared picture and live surface IDs. No VA calls or leases.
- * The initial adapter excludes PCM, tiles and dependent slice segments.
+ * The adapter excludes PCM and tiles; parsed access units are independent.
  * False leaves the caller's submission buffer unchanged. */
 static INLINE bool vaapi_hevc_picture(VAPictureParameterBufferHEVC *out,
       const rh265_video_params_t *s, const rh265_access_unit_t *au,
@@ -20,7 +20,7 @@ static INLINE bool vaapi_hevc_picture(VAPictureParameterBufferHEVC *out,
          || p->slot >= slots || p->num_refs > 15 || !au->num_slices
          || s->chroma_format_idc != 1
          || (s->bit_depth != 8 && s->bit_depth != 10) || s->pcm_enabled
-         || s->tiles_enabled || s->dependent_slice_segments_enabled
+         || s->tiles_enabled
          || s->width < 8 || s->width > 65535 || s->height < 8
          || s->height > 65535 || p->width != (unsigned)s->width
          || p->height != (unsigned)s->height
@@ -203,6 +203,8 @@ static INLINE bool vaapi_hevc_picture(VAPictureParameterBufferHEVC *out,
    v.log2_parallel_merge_level_minus2 =
          (uint8_t)(s->log2_parallel_merge_level - 2);
 #define VAAPI_HEVC_SLICE(dst, src) v.slice_parsing_fields.bits.dst = !!s->src
+   VAAPI_HEVC_SLICE(dependent_slice_segments_enabled_flag,
+         dependent_slice_segments_enabled);
    VAAPI_HEVC_SLICE(
          lists_modification_present_flag, lists_modification_present);
    VAAPI_HEVC_SLICE(

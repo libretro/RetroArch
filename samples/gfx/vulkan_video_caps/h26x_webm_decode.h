@@ -229,3 +229,13 @@ static int h264_seek_regression(void)
    }
    return ok;
 }
+
+static int hevc_dependent_seek_regression(void)
+{
+   uint8_t *data = hevc_dependent_fixture(hevc_bpyr10, sizeof(hevc_bpyr10));
+   int pass = data && h26x_decode_memory(data, sizeof(hevc_bpyr10), 12, "MP4", NULL);
+   free(data);
+   printf("Vulkan HEVC Main10 permitted dependent segments, independent pictures and seeks: %s\n",
+         pass ? "PASS" : "FAIL");
+   return pass;
+}

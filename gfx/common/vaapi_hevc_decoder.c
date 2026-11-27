@@ -136,7 +136,7 @@ bool vaapi_hevc_decoder_open(vaapi_hevc_pool_t *pool,
          || (unsigned)params->bit_depth != session->depth
          || (params->bit_depth != 8 && params->bit_depth != 10)
          || params->chroma_format_idc != 1 || params->pcm_enabled
-         || params->tiles_enabled || params->dependent_slice_segments_enabled
+         || params->tiles_enabled
          || params->crop_left < 0 || params->crop_right < 0
          || params->crop_top < 0 || params->crop_bottom < 0
          || ((params->crop_left | params->crop_top) & 1)

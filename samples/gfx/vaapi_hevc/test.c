@@ -398,8 +398,12 @@ static void references(void)
    REFUSE(au.first.long_term.poc_lsb[0] = 2, au.first.long_term.poc_lsb[0] = 1);
    REFUSE(params.tiles_enabled = 1, params.tiles_enabled = 0);
    REFUSE(params.pcm_enabled = 1, params.pcm_enabled = 0);
-   REFUSE(params.dependent_slice_segments_enabled = 1,
-         params.dependent_slice_segments_enabled  = 0);
+   params.dependent_slice_segments_enabled = 1;
+   assert(vaapi_hevc_picture(&native, &params, &au, &picture, surfaces, 32));
+   assert(native.slice_parsing_fields.bits.dependent_slice_segments_enabled_flag);
+   params.dependent_slice_segments_enabled = 0;
+   assert(vaapi_hevc_picture(&native, &params, &au, &picture, surfaces, 32));
+   assert(!native.slice_parsing_fields.bits.dependent_slice_segments_enabled_flag);
    REFUSE(params.log2_min_cb = 31, params.log2_min_cb = 3);
    REFUSE(au.slice_types = 8, au.slice_types = 3);
 #undef REFUSE
