@@ -177,15 +177,18 @@ make -C samples/link/harness proof \
 
 ## GameCube
 
-The GameCube proof needs libretro Dolphin and a harness built with
-`HAVE_EGL=1`: Dolphin draws with OpenGL, into a context the harness makes
-with no window. It was run with the libretro buildbot's Linux x86-64 build
-of 2026-09-24, whose `dolphin_libretro.so` has the SHA-1
-1615c4fcaf0e7c38ed1b4011c579bf4adb3275e6. Its strings name commit
-7c838eb171 of libretro/dolphin and the version "2606-393", which that
-commit does not explain: `git describe` gives 2606-685 there.
+The GameCube proofs need libretro Dolphin. In `gc/dolphin_gl.scn` it
+draws with OpenGL, into a context the harness makes with no window, in a
+harness built with `HAVE_EGL=1`; in `gc/dolphin_vulkan.scn` it draws with
+Vulkan, on its own device, with a headless surface the harness makes, in a
+harness built with `HAVE_VULKAN=1`. The two differ only in `render=` and
+comments, so change both together. Both were run with the libretro
+buildbot's Linux x86-64 build of 2026-09-24, whose `dolphin_libretro.so`
+has the SHA-1 1615c4fcaf0e7c38ed1b4011c579bf4adb3275e6. Its strings name
+commit 7c838eb171 of libretro/dolphin and the version "2606-393", which
+that commit does not explain: `git describe` gives 2606-685 there.
 
-`gc/dolphin_gl.scn` binds `dolphin`, the core; `disc`, The Legend of
+Each scenario binds `dolphin`, the core; `disc`, The Legend of
 Zelda: Four Swords Adventures (USA), game ID G4SE01, as an RVZ image whose
 file (not the disc image inside it) has the SHA-1
 580412779170d02daabd8ac43eff9815858d77fa; and `sys`, a folder holding
@@ -195,7 +198,7 @@ folder.
 
 The console runs alone for 600 frames, with no input. `boot` shows the
 opening animation, Link three times on a purple panel, and `late` the
-title screen. The scenario sets the options a run that repeats needs: the
+title screen. Each scenario sets the options a run that repeats needs: the
 emulated CPU on the thread that calls `retro_run`
 (`dolphin_main_cpu_thread`), no on-screen messages, no cheats imported.
 
@@ -213,36 +216,55 @@ Even so, the S fields of two runs differ, in about 60 bytes of the state.
 Most come from the host's clock: the header each memory card slot is given
 at start-up, the game's copy of the header of the card in slot A, and the
 clock's seconds since boot. One is a padding byte the core never sets. So
-the scenario has the line `compare-fresh VA`: `again`, `reversed` and
+each scenario has the line `compare-fresh VA`: `again`, `reversed` and
 `shuffled` must give the first run's pictures and audio frame for frame,
 and their S fields are not compared.
 
-Dolphin's own state load is not exact, so the proof is `first` and those
-three, not `from` and `rewound`. Saved again right after a load, the state is
-90,112,695 bytes against the 92,291,908 loaded, and differs first at byte
-3,164,229. In a `from` run V then differs in the two frames after the
-load, and A and S in every frame after it; the `rewound` run fails the
-same way. `SaveTextureCacheToState = False` or `SlotA = 255` (slot A
-empty) in the same ini file, `dolphin_dsp_hle` off and
-`dolphin_call_back_audio_method` 1 or 2 change none of that. Dolphin
-builds its machine in its first `retro_run` and loads nothing before it,
-so the console has `warm=1`, which a `from` run needs to reach its load.
+Dolphin's own state load is not exact, so each proof is `first` and those
+three, not `from` and `rewound`. With OpenGL, saved again right after a
+load, the state is 90,112,695 bytes against the 92,291,908 loaded, and
+differs first at byte 3,164,229. In a `from` run V then differs in the two
+frames after the load, and A and S in every frame after it; the `rewound`
+run fails the same way. `SaveTextureCacheToState = False` or `SlotA = 255`
+(slot A empty) in the same ini file, `dolphin_dsp_hle` off and
+`dolphin_call_back_audio_method` 1 or 2 change none of that. With Vulkan a
+`from` run fails at the same byte and in the same frames. Dolphin builds
+its machine in its first `retro_run` and loads nothing before it, so the
+console has `warm=1`, which a `from` run needs to reach its load.
 
-The core starts a thread of libusb's, seen waiting for USB events though no
-port is set to the GameCube controller adapter; the proof has no input.
+The core starts two threads that wait in `poll` for USB events, its own
+`libusb thread` and libusb's `libusb_event`, though no port is set to the
+GameCube controller adapter; the proof has no input.
 
-The core logs the same 17 warnings in each run, all expected: environment
-calls the harness does not answer (rumble, sensors, microphone, controller
-info, input descriptors), no shared context for the shader compiler's
-threads, the stack base of the cothread the core runs on, and a `SYSCONF`
-backup that does not exist yet.
+With OpenGL the core logs the same 17 warnings in each run, all expected:
+environment calls the harness does not answer (rumble, sensors,
+microphone, controller info, input descriptors), no shared context for the
+shader compiler's threads, the stack base of the cothread the core runs
+on, and a `SYSCONF` backup that does not exist yet.
 
-With `HAVE_EGL=1`, `make proof` runs it on Mesa's llvmpipe, as it was
-made, unless `GPU_DRIVER=host` is given:
+With Vulkan it logs 13 in each run: the same environment calls, stack base
+and `SYSCONF` backup; one for each OpenGL context it asks for first
+(OpenGL core, 3.0, and OpenGL ES 3.2, 3.1 and 3.0), which the harness
+refuses, with a line of its own for each; and one for
+`VK_KHR_get_physical_device_properties2`, an instance extension it asks
+of the device and drops.
+
+The Vulkan proof runs with `--vk-validate`, synchronization validation
+included, and the layer reports nothing. The core asks for Vulkan 1.0 and
+calls 1.1's `vkGetPhysicalDeviceProperties2`; as RetroArch does, the
+harness makes the instance for 1.1.
+
+`make proof` runs the OpenGL proof on Mesa's llvmpipe and the Vulkan one
+on lavapipe, as they were made, unless `GPU_DRIVER=host` is given:
 
 ```sh
 make -C samples/link/harness proof HAVE_EGL=1 \
    PROOF=$PWD/samples/link/proofs/gc/dolphin_gl.scn \
    PROOF_RUNS='first again reversed shuffled' \
+   BIND='dolphin=/abs/path/dolphin_libretro.so disc=/abs/path/fsa.rvz sys=/abs/path/system'
+
+make -C samples/link/harness proof HAVE_EGL=1 HAVE_VULKAN=1 \
+   PROOF=$PWD/samples/link/proofs/gc/dolphin_vulkan.scn \
+   PROOF_RUNS='first again reversed shuffled' PROOF_ARGS=--vk-validate \
    BIND='dolphin=/abs/path/dolphin_libretro.so disc=/abs/path/fsa.rvz sys=/abs/path/system'
 ```

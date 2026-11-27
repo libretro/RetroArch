@@ -1,0 +1,51 @@
+# The Legend of Zelda: Four Swords Adventures (USA) in Dolphin, alone,
+# drawing with Vulkan on its own device, with a headless surface the
+# harness makes, without which the core draws nothing: the opening
+# animation at boot, the title screen at late. No input.
+#
+# The Sys folder bound as sys needs two lines in the [Core] section of
+# dolphin-emu/Sys/GameSettings/G4S.ini, since no core option reaches them:
+# EnableCustomRTC = True and CustomRTCValue = 946684800, the clock the game
+# boots with.
+#
+# Dolphin's own state load is not exact, so the from and rewound runs fail
+# (proofs/README.md): the proof is the other four, chosen with PROOF_RUNS.
+# The state holds bytes of the host's clock and an unset padding byte
+compare-fresh VA
+system sys
+# The core has no machine to load a state into before its first retro_run
+console 0 core=dolphin rom=disc render=vulkan stack=16777216 warm=1
+option 0 dolphin_renderer Hardware
+# The CPU on the retro_run thread: with its own thread (the default) audio
+# and input callbacks come from that thread and CPU and GPU race
+option 0 dolphin_main_cpu_thread disabled
+# Drawn into the picture and timed by a wall clock (default enabled)
+option 0 dolphin_osd_enabled disabled
+# Writes a .cht file beside the system folder (default enabled)
+option 0 dolphin_cheats_import disabled
+# The rest pin defaults the run relies on, which another build may change
+# No cheat codes
+option 0 dolphin_cheats_enabled disabled
+# JIT64 with fastmem: the JIT path proved
+option 0 dolphin_cpu_core 1
+option 0 dolphin_fastmem enabled
+option 0 dolphin_fastmem_arena enabled
+# HLE, samples pushed inside retro_run: the audio compared in A
+option 0 dolphin_dsp_hle enabled
+option 0 dolphin_call_back_audio_method 0
+# No throttle or pacing by the host's clock
+option 0 dolphin_emulation_speed 0.0
+option 0 dolphin_precision_frame_timing disabled
+# Shaders compiled before they draw, 640x528: the picture compared in V
+option 0 dolphin_shader_compilation_mode 0
+option 0 dolphin_wait_for_shaders disabled
+option 0 dolphin_efb_scale 1
+option 0 dolphin_crop_overscan disabled
+# Boots with no IPL file
+option 0 dolphin_skip_gc_bios enabled
+# On, the core logs its host GPU messages, errors among them
+option 0 dolphin_log_host_gpu_enabled disabled
+300 checkpoint boot
+300 save mid
+599 checkpoint late
+600 end
