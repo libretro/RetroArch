@@ -123,6 +123,9 @@ struct rvz_slot
    size_t         raw_cap;
    size_t         out_cap;
    size_t         exc_len;
+   size_t         data_len;  /* the arguments that shaped the cached decode */
+   uint64_t       data_off;
+   unsigned       n_lists;
    uint32_t       group;    /* the group held, or UINT32_MAX */
 };
 
@@ -562,12 +565,21 @@ static int rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
    unsigned                l;
    int                     e;
 
-   if (s->group == g && !into)
-      return RVZ_OK;
-   s->group = UINT32_MAX;
    if (g >= z->n_groups || data_len > z->data_max)
       return RVZ_ERROR_DATA;
    grp = &z->groups[g];
+   if (!into && s->group == g)
+   {
+      /* An empty group is zeros at every position and has no lists. */
+      if (grp->size)
+         return s->data_len == data_len && s->n_lists == n_lists
+               && s->data_off == data_off ? RVZ_OK : RVZ_ERROR_DATA;
+      s->data_len = data_len;
+      s->n_lists  = n_lists;
+      s->data_off = data_off;
+      return RVZ_OK;
+   }
+   s->group = UINT32_MAX;
 
    /* nothing stored: zeros, and no exceptions */
    if (!grp->size)
@@ -580,7 +592,10 @@ static int rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
       s->data    = z->zeros;
       s->exc     = NULL;
       s->exc_len = 0;
-      s->group   = g;
+      s->data_len = data_len;
+      s->n_lists  = n_lists;
+      s->data_off = data_off;
+      s->group    = g;
       return RVZ_OK;
    }
    if (into && !n_lists && !grp->packed && z->compression != RVZ_COMP_PURGE)
@@ -693,7 +708,10 @@ static int rvz_group_load(rvz_t *z, struct rvz_slot *s, uint32_t g,
       }
       s->data = p + pos;
    }
-   s->group = g;
+   s->data_len = data_len;
+   s->n_lists  = n_lists;
+   s->data_off = data_off;
+   s->group    = g;
    return RVZ_OK;
 }
 
@@ -1008,7 +1026,10 @@ static int rvz_read_run(rvz_t *z)
          grp  = &z->groups[r->group + g];
          if (take > g_len - in_g)
             take = (size_t)(g_len - in_g);
-         if (z->raw.group == r->group + g)
+         if (     z->raw.group == r->group + g
+               && z->raw.data_len == (size_t)g_len
+               && z->raw.n_lists == 0
+               && z->raw.data_off == r->origin + g_off)
             memcpy(at, z->raw.data + in_g, take);
          else if (grp->size && !grp->compressed && !grp->packed
                && z->compression != RVZ_COMP_PURGE)
