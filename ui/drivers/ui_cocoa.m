@@ -114,6 +114,8 @@ static bool cocoa_window_restored;
 static bool cocoa_started;
 static bool cocoa_launching;
 static bool cocoa_documents_probed;
+/* Written once before the probe thread starts, read only by it. */
+static char cocoa_documents_dir[PATH_MAX_LENGTH];
 
 extern id<ApplePlatform> apple_platform;
 
@@ -804,11 +806,11 @@ static ui_application_t ui_application_cocoa = {
 
 #define NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY (1 << 7)
 
-- (void)probeDocuments:(NSString *)path
+- (void)probeDocuments:(id)unused
 {
    DIR *dir;
    RARCH_AUTORELEASEPOOL_BEGIN
-   if ((dir = opendir([path fileSystemRepresentation])))
+   if ((dir = opendir(cocoa_documents_dir)))
       closedir(dir);
    [self performSelectorOnMainThread:@selector(documentsProbed)
                           withObject:nil
@@ -883,7 +885,6 @@ static ui_application_t ui_application_cocoa = {
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
    int i;
-   char docs[PATH_MAX_LENGTH];
    apple_platform   = self;
    [self.window setAcceptsMouseMovedEvents: YES];
 
@@ -906,11 +907,12 @@ static ui_application_t ui_application_cocoa = {
    /* The first touch of Documents raises the system's access prompt
     * and blocks the touching thread until it is answered, so it is
     * made on a thread of its own while the main one keeps running. */
-   if (frontend_darwin_documents_dir(docs, sizeof(docs)))
+   if (frontend_darwin_documents_dir(cocoa_documents_dir,
+            sizeof(cocoa_documents_dir)))
    {
       [NSThread detachNewThreadSelector:@selector(probeDocuments:)
                                toTarget:self
-                             withObject:BOXSTRING(docs)];
+                             withObject:nil];
       [self performSelector:@selector(startWhileProbing)
                  withObject:nil
                  afterDelay:0.25];
