@@ -164,6 +164,7 @@ jobs:
             rzstd_dict_test
             rbzip2_test
             shiftjis_test
+            utf16_utf32_test
             # local_to_utf8_string's Win32 path against a shim, and the
             # copy path: in place, truncated, no heap when it fits
             local_utf8_test

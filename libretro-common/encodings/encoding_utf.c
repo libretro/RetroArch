@@ -296,6 +296,34 @@ size_t utf8_conv_utf16(uint16_t *out, size_t out_units,
  * encoding path to eliminate per-byte branch on `out`.
  * Added explicit fast-path for BMP 2-byte and 3-byte encodings.
  **/
+size_t utf16_conv_utf32(uint32_t *out, size_t out_chars,
+      const uint16_t *in, size_t in_units)
+{
+   size_t ret = 0;
+   while (in_units && out_chars)
+   {
+      uint32_t c = *in++;
+      in_units--;
+      if ((c & 0xF800) == 0xD800)
+      {
+         if (     c < 0xDC00
+               && in_units
+               && (in[0] & 0xFC00) == 0xDC00)
+         {
+            c = 0x10000 + ((c - 0xD800) << 10) + (in[0] - 0xDC00);
+            in++;
+            in_units--;
+         }
+         else
+            c = 0xFFFD;
+      }
+      *out++ = c;
+      out_chars--;
+      ret++;
+   }
+   return ret;
+}
+
 bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
      const uint16_t *in, size_t in_size)
 {

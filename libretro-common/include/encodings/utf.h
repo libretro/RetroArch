@@ -70,6 +70,26 @@ size_t utf8_conv_utf16(uint16_t *out, size_t out_units,
       const char *in, size_t in_size);
 
 /**
+ * utf16_conv_utf32:
+ * @out       : the code points written
+ * @out_chars : room at @out, in code points
+ * @in        : UTF-16 units
+ * @in_units  : their count
+ *
+ * Converts @in to UTF-32, a surrogate pair to the one code point it
+ * encodes. A surrogate without its partner (a high one not followed by
+ * a low one, a low one on its own) becomes U+FFFD and the unit after it
+ * is converted as it stands. Stops at the end of @in or when @out is
+ * full. Writes no terminator.
+ *
+ * Leaf function.
+ *
+ * @return the number of code points written.
+ **/
+size_t utf16_conv_utf32(uint32_t *out, size_t out_chars,
+      const uint16_t *in, size_t in_units);
+
+/**
  * utf16_conv_utf8:
  *
  * Leaf function.
