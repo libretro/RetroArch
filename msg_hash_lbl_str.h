@@ -1637,6 +1637,7 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #define MENU_ENUM_LABEL_LIBRETRO_INFO_PATH_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_LIBRETRO_INFO_PATH)
 #define MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY)
 #define MENU_ENUM_LABEL_CHEAT_DATABASE_PATH_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_CHEAT_DATABASE_PATH)
+#define MENU_ENUM_LABEL_CHEAT_USER_PATH_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_CHEAT_USER_PATH)
 #define MENU_ENUM_LABEL_VIDEO_FILTER_DIR_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_VIDEO_FILTER_DIR)
 #define MENU_ENUM_LABEL_AUDIO_FILTER_DIR_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_AUDIO_FILTER_DIR)
 #define MENU_ENUM_LABEL_VIDEO_SHADER_DIR_STR (msg_hash_us_lbl_blob.m_MENU_ENUM_LABEL_VIDEO_SHADER_DIR)
@@ -3474,6 +3475,7 @@ extern const struct msg_hash_us_lbl_blob_s msg_hash_us_lbl_blob;
 #define MENU_ENUM_LABEL_LIBRETRO_INFO_PATH_STR "libretro_info_path"
 #define MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY_STR "content_database_path"
 #define MENU_ENUM_LABEL_CHEAT_DATABASE_PATH_STR "cheat_database_path"
+#define MENU_ENUM_LABEL_CHEAT_USER_PATH_STR "cheat_user_path"
 #define MENU_ENUM_LABEL_VIDEO_FILTER_DIR_STR "video_filter_dir"
 #define MENU_ENUM_LABEL_AUDIO_FILTER_DIR_STR "audio_filter_dir"
 #define MENU_ENUM_LABEL_VIDEO_SHADER_DIR_STR "video_shader_dir"

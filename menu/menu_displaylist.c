@@ -15171,6 +15171,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY,    PARSE_ONLY_DIR},
 #ifdef HAVE_CHEATS
                {MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,             PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_CHEAT_USER_PATH,                 PARSE_ONLY_DIR},
 #endif
                {MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,      PARSE_ONLY_DIR},
 #ifdef HAVE_VIDEO_FILTER
