@@ -116,11 +116,6 @@ enum rsd_conn_type
    RSD_CONN_PROTO = 0x100
 };
 
-/* Some logging macros. */
-#define RSD_WARN(fmt, args...)
-#define RSD_ERR(fmt, args...)
-#define RSD_DEBUG(fmt, args...)
-
 #if defined(__PS3__)
 static int init_count = 0;
 #define pollfd_fd(x) x.fd
@@ -271,7 +266,6 @@ static int rsnd_connect_server(rsound_t *rd)
 
    /* Cleanup for errors. */
 error:
-   RSD_ERR("[RSound] Connecting to server failed. \"%s\"", rd->host);
 
    return -1;
 }
@@ -305,7 +299,6 @@ static int rsnd_send_header_info(rsound_t *rd)
    char *header = (char*)calloc(1, HEADER_SIZE);
    if (!header)
    {
-      RSD_ERR("[RSound] Could not allocate memory.");
       return -1;
    }
 
@@ -434,7 +427,6 @@ static int rsnd_get_backend_info(rsound_t *rd)
    if (     rsnd_recv_chunk(rd->conn.socket, rsnd_header, RSND_HEADER_SIZE, 1)
          != RSND_HEADER_SIZE)
    {
-      RSD_ERR("[RSound] Couldn't receive chunk.\n");
       return -1;
    }
 
@@ -482,8 +474,6 @@ static int rsnd_get_backend_info(rsound_t *rd)
    /* This is non-blocking. */
    if (rsnd_recv_chunk(rd->conn.socket, rsnd_header, RSND_HEADER_SIZE, 0) == RSND_HEADER_SIZE)
       rd->conn_type |= RSD_CONN_PROTO;
-   else
-   {  RSD_DEBUG("[RSound] Failed to get new proto.\n"); }
 
    /* We no longer want to read from this socket. */
 #ifdef _WIN32
@@ -510,7 +500,6 @@ static int rsnd_create_connection(rsound_t *rd)
       rc = rsnd_connect_server(rd);
       if (rc < 0)
       {
-         RSD_ERR("[RSound] connect server failed.\n");
          goto error;
       }
 
@@ -521,13 +510,11 @@ static int rsnd_create_connection(rsound_t *rd)
 
       if (rsnd_poll(&fd, 1, 2000) < 0)
       {
-         RSD_ERR("[RSound] rsnd_poll failed.\n");
          goto error;
       }
 
       if (!(fd.revents & POLLOUT))
       {
-         RSD_ERR("[RSound] Poll didn't return what we wanted.\n");
          goto error;
       }
    }
@@ -543,21 +530,18 @@ static int rsnd_create_connection(rsound_t *rd)
       rc = rsnd_send_header_info(rd);
       if (rc < 0)
       {
-         RSD_ERR("[RSound] Send header failed.\n");
          goto error;
       }
 
       rc = rsnd_get_backend_info(rd);
       if (rc < 0)
       {
-         RSD_ERR("[RSound] Get backend info failed.\n");
          goto error;
       }
 
       rc = rsnd_start_thread(rd);
       if (rc < 0)
       {
-         RSD_ERR("[RSound] Starting thread failed.\n");
          goto error;
       }
 
@@ -602,7 +586,6 @@ static ssize_t rsnd_send_chunk(int socket, const void *s,
 
       if (fd.revents & POLLHUP)
       {
-         RSD_WARN("*** Remote side hung up! ***");
          return -1;
       }
 
@@ -613,7 +596,6 @@ static ssize_t rsnd_send_chunk(int socket, const void *s,
          rc = net_send(socket, (const char*)s + written, send_size, 0);
          if (rc < 0)
          {
-            RSD_ERR("[RSound] Error sending chunk, %s.\n", strerror(errno));
             return rc;
          }
          written += rc;
@@ -647,13 +629,11 @@ static ssize_t rsnd_recv_chunk(int socket, void *s, size_t len, int blocking)
    {
       if (rsnd_poll(&fd, 1, sleep_time) < 0)
       {
-         RSD_ERR("[RSound] Poll failed.\n");
          return -1;
       }
 
       if (fd.revents & POLLHUP)
       {
-         RSD_ERR("[RSound] Server hung up.\n");
          return -1;
       }
 
@@ -664,7 +644,6 @@ static ssize_t rsnd_recv_chunk(int socket, void *s, size_t len, int blocking)
          ssize_t rc        = net_recv(socket, (char*)s + has_read, read_size, 0);
          if (rc <= 0)
          {
-            RSD_ERR("[RSound] Error receiving chunk, %s.\n", strerror(errno));
             return rc;
          }
          has_read += rc;
@@ -673,7 +652,6 @@ static ssize_t rsnd_recv_chunk(int socket, void *s, size_t len, int blocking)
       {
          if (blocking)
          {
-            RSD_ERR("[RSound] Block fail.\n");
             return -1;
          }
          break;
@@ -791,7 +769,6 @@ static int rsnd_start_thread(rsound_t *rd)
    if (!(rd->thread.thread = sthread_create(rsnd_cb_thread, rd)))
    {
       retro_atomic_store_release_int(&rd->thread_active, 0);
-      RSD_ERR("[RSound] Failed to create thread.");
       return -1;
    }
    return 0;
@@ -803,15 +780,9 @@ static int rsnd_stop_thread(rsound_t *rd)
 {
    if (rd->thread.thread)
    {
-      RSD_DEBUG("[RSound] Shutting down thread.\n");
       retro_atomic_store_release_int(&rd->thread_active, 0);
       sthread_join(rd->thread.thread);
       rd->thread.thread = NULL;
-      RSD_DEBUG("[RSound] Thread joined successfully.\n");
-   }
-   else
-   {
-      RSD_DEBUG("Thread is already shut down.\n");
    }
    return 0;
 }
@@ -825,7 +796,6 @@ static size_t rsnd_get_delay(rsound_t *rd)
    /* Adds the backend latency to the calculated latency. */
    ptr += (int)rd->backend_info.latency;
    ptr += rd->delay_offset;
-   RSD_DEBUG("Offset: %d.\n", rd->delay_offset);
    if (ptr < 0)
       return (size_t)0;
    return (size_t)ptr;
@@ -951,7 +921,6 @@ static int rsnd_update_server_info(rsound_t *rd)
       int delay = rsd_delay(rd);
       int delta = (int)(client_ptr - serv_ptr);
 
-      RSD_DEBUG("[RSound] Delay: %d, Delta: %d.\n", delay, delta);
 
       /* We only update the pointer if the data we got is quite recent. */
       if (     rd->total_written - client_ptr < 4 * rd->backend_info.chunk_size
@@ -965,7 +934,6 @@ static int rsnd_update_server_info(rsound_t *rd)
             offset_delta = max_offset;
 
          rd->delay_offset += offset_delta;
-         RSD_DEBUG("[RSound] Changed offset-delta: %d.\n", offset_delta);
       }
    }
 
@@ -1036,8 +1004,6 @@ static void rsnd_cb_thread(void *thread_data)
          else if ((int)rsd_delay_ms(rd) < rd->max_latency / 2)
          {
             /* Running low: the rest of the chunk goes out as silence. */
-            RSD_DEBUG("[RSound] Callback thread: %d bytes of silence.\n",
-                  (int)want);
             if (     rsnd_send_chunk(rd->conn.socket, rsnd_silence, want, 1)
                   != (ssize_t)want)
             {
@@ -1209,7 +1175,6 @@ void rsd_delay_wait(rsound_t *rd)
       if (rd->max_latency < latency_ms)
       {
          int64_t sleep_ms = latency_ms - rd->max_latency;
-         RSD_DEBUG("[RSound] Delay wait: %d ms.\n", (int)sleep_ms);
          retro_sleep((int)sleep_ms);
       }
    }
