@@ -86,7 +86,6 @@ endif
 
 ifeq ($(HAVE_RSOUND), 1)
 RSOUND_CFLAGS    := -DHAVE_RSOUND
-RSOUND_LIBS      := -lrsound
 endif
 
 ifeq ($(HAVE_FFMPEG), 1)

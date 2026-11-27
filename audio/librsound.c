@@ -595,7 +595,7 @@ static ssize_t rsnd_send_chunk(int socket, const void *s,
    if (blocking)
       sleep_time     = 10000;
 
-   while (written < len)
+   while ((size_t)written < len)
    {
       if (rsnd_poll(&fd, 1, sleep_time) < 0)
          return -1;
@@ -643,7 +643,7 @@ static ssize_t rsnd_recv_chunk(int socket, void *s, size_t len, int blocking)
    pollfd_fd(fd)     = socket;
    fd.events         = POLLIN;
 
-   while (has_read < len)
+   while ((size_t)has_read < len)
    {
       if (rsnd_poll(&fd, 1, sleep_time) < 0)
       {
