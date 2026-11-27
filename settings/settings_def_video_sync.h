@@ -64,12 +64,12 @@ S_BOOL(video_d3d9ex_present, VIDEO_D3D9EX_PRESENT,
       "With the Direct3D 9 drivers on Windows Vista and later, present as Direct3D 11 does: a window through the flip model, and with Waitable Swapchains and Max Frame Latency honoured when V-Sync is on. Changes frame pacing. Off: presented as before.")
 S_BOOL(video_threaded_present_repeat, VIDEO_THREADED_PRESENT_REPEAT,
       "video_threaded_present_repeat",
-      DEFAULT_VIDEO_THREADED_PRESENT_REPEAT, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      DEFAULT_VIDEO_THREADED_PRESENT_REPEAT, SD_FLAG_NONE, SDESC_FLG_REFRESH, CMD_EVENT_NONE,
       "Threaded Video Frame Repeat",
       "With Threaded Video, keep presenting the last frame at the display's refresh rate while the core falls behind, instead of leaving the previous present on screen. Keeps Black Frame Insertion and refresh-rate shader effects steady through core stutter. Applies where the video driver can repeat a frame; not applied with shader sub-frames.")
 S_BOOL(video_threaded_display_pacing, VIDEO_THREADED_DISPLAY_PACING,
       "video_threaded_display_pacing",
-      DEFAULT_VIDEO_THREADED_DISPLAY_PACING, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      DEFAULT_VIDEO_THREADED_DISPLAY_PACING, SD_FLAG_NONE, SDESC_FLG_REFRESH, CMD_EVENT_NONE,
       "Threaded Video Display Pacing",
       "With Threaded Video, start each core frame as late as the next display refresh allows, from measured core and render times, instead of on a fixed timer. Lowers latency to what Frame Delay reaches on unthreaded video, and a frame that runs long is repeated rather than missed. With Driver Pacing in effect, the driver releases each frame, and the hold only keeps it on the display's refresh. Off: the timer paces, as before.")
 S_BOOL(video_threaded_pacing_vblank, VIDEO_THREADED_PACING_VBLANK,
