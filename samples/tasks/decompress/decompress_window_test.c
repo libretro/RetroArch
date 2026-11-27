@@ -34,7 +34,8 @@
  *              members it finished; a caller that does not opt in,
  *              a manifest that cannot be used or saved, a folder
  *              without mtimes and a source whose members have no CRC
- *              (.zst) all get every member written.
+ *              (.zst) all get every member written.  A folder that
+ *              refuses renames still keeps its manifest.
  *
  * Every lane checks the extracted bytes against the fixture.
  *
@@ -118,6 +119,19 @@ int __wrap_retro_vfs_get_mtime_impl(const char *path, int64_t *mtime)
    if (fail_mtime)
       return -1;
    return __real_retro_vfs_get_mtime_impl(path, mtime);
+}
+
+/* With fail_rename, a folder that cannot rename a file into place */
+static bool fail_rename;
+
+int __real_retro_vfs_file_rename_impl(const char *old_path,
+      const char *new_path);
+int __wrap_retro_vfs_file_rename_impl(const char *old_path,
+      const char *new_path)
+{
+   if (fail_rename)
+      return -1;
+   return __real_retro_vfs_file_rename_impl(old_path, new_path);
 }
 
 /* Virtual clock */
@@ -1195,6 +1209,26 @@ static void lane_skip(unsigned n_a)
    fail_manifest_writes = false;
    CHECK(count_matching(false) == n_members,
          "skip_unwritable: contents differ from the archive");
+
+   /* no_rename: the manifest is written over the old one instead */
+   clear_outputs();
+   fail_rename = true;
+   for (k = 0; k < 2; k++)
+   {
+      full_run();
+      printf("[skip]    no_rename %u: %u members written, %u lines\n",
+            k, count_written(), manifest_lines());
+      CHECK(done_ok, "skip_no_rename: the run reported an error");
+      CHECK(count_written() == (k == 0 ? n_members : 0),
+            "skip_no_rename: the second run did not skip every member");
+      CHECK(manifest_lines() == n_members,
+            "skip_no_rename: the manifest was not kept");
+      CHECK(!path_is_valid(mtmp),
+            "skip_no_rename: the manifest's temporary file was left");
+   }
+   fail_rename = false;
+   CHECK(count_matching(false) == n_members,
+         "skip_no_rename: contents differ from the archive");
 
    /* no_crc: without a CRC a changed member of the same size cannot
     * be told from an unchanged one, so nothing is skipped or recorded */

@@ -520,7 +520,13 @@ bool decompress_manifest_save(decompress_manifest_t *m, bool clean)
       text[len++] = '\n';
    }
 
-   ok = filestream_write_file_atomic(m->path, text, (int64_t)len);
+   /* Where it cannot be renamed into place it is written over the old
+    * one: a torn manifest only reads as fewer lines.  One not written
+    * at all is removed, which costs the next run work and nothing else. */
+   ok =    filestream_write_file_atomic(m->path, text, (int64_t)len)
+        || filestream_write_file(m->path, text, (int64_t)len);
+   if (!ok)
+      filestream_delete(m->path);
    free(text);
    if (ok)
       m->dirty = false;
