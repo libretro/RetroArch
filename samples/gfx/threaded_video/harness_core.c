@@ -600,6 +600,12 @@ RETRO_API unsigned harness_core_hw_cached(void) { return hw_cache_context; }
 /* context_reset calls so far: a cached context takes none on a reinit. */
 RETRO_API unsigned harness_core_hw_resets(void) { return hw_resets; }
 
+/* The interface the core holds, for a thread of the core's own. */
+RETRO_API const struct retro_hw_render_interface_vulkan *harness_core_hw_vk(void)
+{
+   return hw_vk;
+}
+
 /* Withdraw the image and destroy it; retro_run pushes dupes until
  * harness_core_hw_restore(). */
 RETRO_API unsigned harness_core_hw_withdraw(void)

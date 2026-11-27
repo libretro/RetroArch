@@ -226,11 +226,6 @@ static void gfx_ctx_x_vk_destroy(void *data)
 
    gfx_ctx_x_vk_destroy_resources(x);
 
-#if defined(HAVE_THREADS)
-   if (x->vk.context.queue_lock)
-      slock_free(x->vk.context.queue_lock);
-#endif
-
    free(data);
 }
 

@@ -174,8 +174,6 @@ static void gfx_ctx_w_vk_destroy(void *data)
       win32_video_windows_free(vk, win32_video_window_destroy);
 #endif
    vulkan_context_destroy(&win32_vk, win32_vk.vk_surface != VK_NULL_HANDLE);
-   if (win32_vk.context.queue_lock)
-      slock_free(win32_vk.context.queue_lock);
    memset(&win32_vk, 0, sizeof(win32_vk));
 
    /* left up for the driver that comes next, where it can be */

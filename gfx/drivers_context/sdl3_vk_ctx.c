@@ -56,11 +56,6 @@ static void sdl3_vk_ctx_destroy(void *data)
 #endif
    vulkan_context_destroy(&sdl->vk, sdl->win != NULL);
 
-#if defined(HAVE_THREADS)
-   if (sdl->vk.context.queue_lock)
-      slock_free(sdl->vk.context.queue_lock);
-#endif
-
    if (sdl->win)
    {
       SDL_StopTextInput(sdl->win);

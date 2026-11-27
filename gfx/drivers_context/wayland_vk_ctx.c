@@ -140,11 +140,6 @@ static void gfx_ctx_wl_destroy(void *data)
 #endif
    gfx_ctx_wl_destroy_resources(wl);
 
-#if defined(HAVE_THREADS)
-   if (wl->vk.context.queue_lock)
-      slock_free(wl->vk.context.queue_lock);
-#endif
-
    gfx_ctx_wl_free_common(wl, true);
 }
 

@@ -93,8 +93,6 @@ static void cocoa_vk_gfx_ctx_destroy_mainthread(void *userdata)
    cocoa_vk_ctx_data_t *cocoa_ctx = (cocoa_vk_ctx_data_t*)userdata;
 
    vulkan_context_destroy(&cocoa_ctx->vk, cocoa_ctx->vk.vk_surface != VK_NULL_HANDLE);
-   if (cocoa_ctx->vk.context.queue_lock)
-      slock_free(cocoa_ctx->vk.context.queue_lock);
    memset(&cocoa_ctx->vk, 0, sizeof(cocoa_ctx->vk));
 }
 

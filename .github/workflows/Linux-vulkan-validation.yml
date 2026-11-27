@@ -333,7 +333,10 @@ jobs:
           make -C samples/gfx/threaded_video clean
           # And as a core that caches its context across a video reinit
           # (Azahar): the instance comes back from the cache with what
-          # it was created with, HDR support included.
+          # it was created with, HDR support included, and a thread of
+          # the core's that goes on taking lock_queue through the
+          # reinits, unthreaded and under the wrapper, takes the same
+          # live lock throughout.
           HARNESS_CORE_HW_VULKAN=3 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
 
@@ -641,6 +644,9 @@ jobs:
           SAN=address VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           HARNESS_CORE_XRGB8888=1 SAN=address VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           HARNESS_CORE_HW_VULKAN=1 SAN=address VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
+          # The cached-context core's thread outlives the vk_t and the
+          # wrapper it was handed: a use after free only ASan sees.
+          HARNESS_CORE_HW_VULKAN=3 SAN=address VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
 
       - name: ccache statistics

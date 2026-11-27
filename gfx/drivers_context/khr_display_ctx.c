@@ -41,10 +41,6 @@ static void gfx_ctx_khr_display_destroy(void *data)
       return;
 
    vulkan_context_destroy(&khr->vk, true);
-#ifdef HAVE_THREADS
-   if (khr->vk.context.queue_lock)
-      slock_free(khr->vk.context.queue_lock);
-#endif
    free(khr);
 }
 

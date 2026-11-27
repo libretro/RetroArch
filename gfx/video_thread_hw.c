@@ -249,20 +249,17 @@ static bool hw_ctx_hand(hw_ring_t *ring, int me, bool give)
 }
 
 #ifdef HAVE_VULKAN
-/* The Vulkan interface a core is handed under the wrapper. It is kept
- * here, not in the ring it describes, for the reason the driver keeps
- * its own in static storage (vulkan_hw_iface in drivers/vulkan.c): a
- * core that asked the frontend to keep its context (cache_context) is
- * not told when the video is restarted, and goes on with the pointer it
- * was given. The ring is freed with the wrapper; this is not.
- *
- * The handle is the wrapper. video_thread_hw_free() clears it, so that
- * a call landing between one wrapper and the next finds no ring and
- * does nothing, and video_thread_get_hw_render_interface() fills the
- * whole of it in again for the next wrapper - which the frontend asks
- * for after a restart that did not reset the core
- * (video_driver_hw_render_interface_kept()). */
+/* The Vulkan interface a core is handed under the wrapper, and the
+ * handle in it, are static for the reason the driver's are
+ * (vulkan_hw_iface in drivers/vulkan.c): a core that asked to keep its
+ * context (cache_context) is not told when the video is restarted, and
+ * goes on with both. The handle points at the wrapper in front, NULL
+ * between one wrapper and the next, when the entries a core calls from
+ * retro_run() do nothing. lock_queue and unlock_queue go to the
+ * driver's interface instead, which outlives every wrapper. */
 static struct retro_hw_render_interface_vulkan hw_vk_core_iface;
+static thread_video_t *hw_vk_thr;
+static const struct retro_hw_render_interface_vulkan *hw_vk_real;
 #endif
 
 static hw_ring_t *hw_ring_of(void *handle)
@@ -298,9 +295,14 @@ static void hw_wait_slot(hw_ring_t *ring, unsigned i)
 /* --- Vulkan: the core's side, main thread ----------------------------- */
 #ifdef HAVE_VULKAN
 
+static hw_ring_t *hw_vk_ring(void *handle)
+{
+   return handle ? hw_ring_of(*(thread_video_t**)handle) : NULL;
+}
+
 static uint32_t hw_get_sync_index(void *handle)
 {
-   hw_ring_t *ring = hw_ring_of(handle);
+   hw_ring_t *ring = hw_vk_ring(handle);
    return ring ? ring->index : 0;
 }
 
@@ -312,7 +314,7 @@ static uint32_t hw_get_sync_index_mask(void *handle)
 
 static void hw_wait_sync_index(void *handle)
 {
-   hw_ring_t *ring = hw_ring_of(handle);
+   hw_ring_t *ring = hw_vk_ring(handle);
    if (ring)
       hw_wait_slot(ring, ring->index);
 }
@@ -322,7 +324,7 @@ static void hw_set_image(void *handle,
       uint32_t num_semaphores, const VkSemaphore *semaphores,
       uint32_t src_queue_family)
 {
-   hw_ring_t *ring = hw_ring_of(handle);
+   hw_ring_t *ring = hw_vk_ring(handle);
    hw_slot_t *s;
    uint32_t i;
    if (!ring)
@@ -376,7 +378,7 @@ static void hw_set_image(void *handle,
 static void hw_set_command_buffers(void *handle, uint32_t num_cmd,
       const VkCommandBuffer *cmd)
 {
-   hw_ring_t *ring = hw_ring_of(handle);
+   hw_ring_t *ring = hw_vk_ring(handle);
    hw_slot_t *s;
    if (!ring)
       return;
@@ -402,29 +404,23 @@ static void hw_set_command_buffers(void *handle, uint32_t num_cmd,
  * other threads, which is exactly the situation here. */
 static void hw_lock_queue(void *handle)
 {
-   hw_ring_t *ring = hw_ring_of(handle);
-   const struct retro_hw_render_interface_vulkan *real;
-   if (!ring)
-      return;
-   real = (const struct retro_hw_render_interface_vulkan*)ring->real;
-   if (real->lock_queue)
+   const struct retro_hw_render_interface_vulkan *real = hw_vk_real;
+   (void)handle;
+   if (real && real->lock_queue)
       real->lock_queue(real->handle);
 }
 
 static void hw_unlock_queue(void *handle)
 {
-   hw_ring_t *ring = hw_ring_of(handle);
-   const struct retro_hw_render_interface_vulkan *real;
-   if (!ring)
-      return;
-   real = (const struct retro_hw_render_interface_vulkan*)ring->real;
-   if (real->unlock_queue)
+   const struct retro_hw_render_interface_vulkan *real = hw_vk_real;
+   (void)handle;
+   if (real && real->unlock_queue)
       real->unlock_queue(real->handle);
 }
 
 static void hw_set_signal_semaphore(void *handle, VkSemaphore semaphore)
 {
-   hw_ring_t *ring = hw_ring_of(handle);
+   hw_ring_t *ring = hw_vk_ring(handle);
    const struct retro_hw_render_interface_vulkan *real;
    if (!ring)
       return;
@@ -906,9 +902,9 @@ bool video_thread_get_hw_render_interface(void *data,
          ring->api                           = HW_API_VULKAN;
          ring->real                          = real;
          /* The driver's interface, with the bookkeeping redirected
-          * here. The handle the core sees is the wrapper. */
-         ring->iface.vk                      = *(const struct retro_hw_render_interface_vulkan*)real;
-         ring->iface.vk.handle               = thr;
+          * here. */
+         memcpy(&ring->iface.vk, real, sizeof(ring->iface.vk));
+         ring->iface.vk.handle               = &hw_vk_thr;
          ring->iface.vk.set_image            = hw_set_image;
          ring->iface.vk.get_sync_index       = hw_get_sync_index;
          ring->iface.vk.get_sync_index_mask  = hw_get_sync_index_mask;
@@ -921,8 +917,14 @@ bool video_thread_get_hw_render_interface(void *data,
             ring->queue_submit = (PFN_vkQueueSubmit)
                ring->iface.vk.get_device_proc_addr(ring->iface.vk.device,
                      "vkQueueSubmit");
-         /* What the core holds: see hw_vk_core_iface. */
-         hw_vk_core_iface = ring->iface.vk;
+         /* What the core holds: see hw_vk_core_iface. Its threads may
+          * be reading it, so what has not changed is not written; the
+          * copy above keeps the padding the same for the compare. */
+         hw_vk_thr = thr;
+         if (hw_vk_real != (const struct retro_hw_render_interface_vulkan*)real)
+            hw_vk_real = (const struct retro_hw_render_interface_vulkan*)real;
+         if (memcmp(&hw_vk_core_iface, &ring->iface.vk, sizeof(hw_vk_core_iface)))
+            memcpy(&hw_vk_core_iface, &ring->iface.vk, sizeof(hw_vk_core_iface));
          *iface = (const struct retro_hw_render_interface*)&hw_vk_core_iface;
          return true;
 #endif
@@ -1672,8 +1674,8 @@ void video_thread_hw_free(thread_video_t *thr)
 #ifdef HAVE_VULKAN
    /* A core that is not told of this goes on calling: into nothing,
     * until the next wrapper takes the interface over. */
-   if (hw_vk_core_iface.handle == thr)
-      hw_vk_core_iface.handle = NULL;
+   if (hw_vk_thr == thr)
+      hw_vk_thr = NULL;
 #endif
    if (!ring)
       return;

@@ -140,6 +140,12 @@ static bool                          cached_prime_import_vk;
 #endif
 
 static VkDevice                      cached_device_vk;
+#ifdef HAVE_THREADS
+/* Every context's queue_lock, made once and never freed: a core that
+ * keeps its context is not told of a restart, nor of one that refused
+ * to keep it, and its threads go on taking the lock it was handed. */
+static slock_t                      *queue_lock_vk;
+#endif
 static VkPhysicalDevice              cached_gpu_vk;
 static int                           cached_gpu_index_vk;
 static retro_vulkan_destroy_device_t cached_destroy_device_vk;
@@ -2709,7 +2715,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    }
 
 #ifdef HAVE_THREADS
-   vk->context.queue_lock = slock_new();
+   if (!queue_lock_vk)
+      queue_lock_vk = slock_new();
+   vk->context.queue_lock = queue_lock_vk;
    if (!vk->context.queue_lock)
    {
       RARCH_ERR("[Vulkan] Failed to create queue lock.\n");
@@ -3342,16 +3350,18 @@ end:
  * work that references the swapchain images from this side. This is
  * what a swapchain teardown or rebuild has to outlive; the rest of the
  * device's work is a hardware core's, has nothing to do with the
- * swapchain, and is not drained for it. Needs no queue lock. */
-static void vulkan_context_wait_frames(gfx_ctx_vulkan_data_t *vk)
+ * swapchain, and is not drained for it. Takes the queue lock itself,
+ * for the empty submission below. */
+static VkResult vulkan_context_wait_frames(gfx_ctx_vulkan_data_t *vk)
 {
    VkFence fences[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
    unsigned count     = 0;
    bool reset_present = false;
+   VkResult res       = VK_SUCCESS;
    unsigned i;
 
    if (vk->context.device == VK_NULL_HANDLE)
-      return;
+      return VK_SUCCESS;
    for (i = 0; i < VULKAN_MAX_SWAPCHAIN_IMAGES; i++)
    {
       if (     vk->context.swapchain_fences_signalled[i]
@@ -3387,7 +3397,6 @@ static void vulkan_context_wait_frames(gfx_ctx_vulkan_data_t *vk)
 
       if (present_fence != VK_NULL_HANDLE)
       {
-         VkResult res;
 #ifdef HAVE_THREADS
          slock_lock(vk->context.queue_lock);
 #endif
@@ -3405,10 +3414,11 @@ static void vulkan_context_wait_frames(gfx_ctx_vulkan_data_t *vk)
    }
 
    if (count)
-      vkWaitForFences(vk->context.device, count, fences, VK_TRUE,
+      res = vkWaitForFences(vk->context.device, count, fences, VK_TRUE,
             UINT64_MAX);
    if (reset_present)
       vkResetFences(vk->context.device, 1, &vk->context.present_fence);
+   return res;
 }
 
 #ifdef __SWITCH2__
@@ -3465,8 +3475,8 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
    if (vk->swapchain != VK_NULL_HANDLE)
    {
       /* Our frames are the only submissions that touch its images.
-       * The context teardown drains the device before it gets here;
-       * a rebuild after an out-of-date acquire, or a resize, does
+       * The context teardown has waited them before it gets here;
+       * a rebuild after an out-of-date acquire, or a resize, has
        * not, and a threaded hardware core's work goes on. */
       vulkan_context_wait_frames(vk);
 #ifdef __SWITCH2__
@@ -6718,6 +6728,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    uint32_t video_st_flags        = 0;
+   bool kept_untold               = false;
 #ifdef __SWITCH2__
    bool sw2_keep                  = false;
 #endif
@@ -6748,21 +6759,56 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       return;
    }
 
-   if (vk->context.device)
-   {
-#ifdef __APPLE__
-      /* MoltenVK before 1.2.11 idles without what is still on its
-       * asynchronous submission queue; a fence behind that is not. */
-      vk->context.present_pending = true;
-      vulkan_context_wait_frames(vk);
+   video_st_flags              = (uint32_t)retro_atomic_load_relaxed_int(&video_st->flags);
+
+#if defined(ANDROID) \
+      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
+            || defined(HAVE_RECORD_MEDIACODEC))
+   if (vulkan_android_cache_device_pending(vk->context.device))
+      video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
+#endif
+#ifdef HAVE_VAAPI
+   if (vaapi_hevc_vulkan_cache_device_pending(vk->context.device))
+      video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
 #endif
 #if defined(ANDROID) && defined(HAVE_THREADS)
-      recording_idle =
+   if (record_android_capture_device_pending(vk->context.device))
+      video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
+#endif
+   if (vk->flags & VK_DATA_FLAG_DROP_CONTEXT)
+      video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
+   kept_untold = (video_st_flags & VIDEO_FLAG_CACHE_CONTEXT) != 0;
+
+   if (vk->context.device)
+   {
+      /* Not drained under a core that keeps its context: it is not
+       * told of this, and its threads go on submitting under
+       * queue_lock, which a device-wide idle does not take. Everything
+       * queued so far is waited by fence instead. */
+      if (kept_untold)
+      {
+         vk->context.present_pending = vk->context.queue != VK_NULL_HANDLE;
+#ifdef VULKAN_SESSION_CACHE
+         session_idle =
+#endif
+            vulkan_context_wait_frames(vk);
+      }
+      else
+      {
+#ifdef __APPLE__
+         /* MoltenVK before 1.2.11 idles without what is still on its
+          * asynchronous submission queue; a fence behind that is not. */
+         vk->context.present_pending = true;
+         vulkan_context_wait_frames(vk);
+#endif
+#if defined(ANDROID) && defined(HAVE_THREADS)
+         recording_idle =
 #endif
 #ifdef VULKAN_SESSION_CACHE
-      session_idle =
+         session_idle =
 #endif
-         vkDeviceWaitIdle(vk->context.device);
+            vkDeviceWaitIdle(vk->context.device);
+      }
    }
 #if defined(ANDROID) && defined(HAVE_THREADS)
    /* Retire capture children before their device, including failed drains. */
@@ -6786,6 +6832,8 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       && !(vk->flags & VK_DATA_FLAG_DROP_CONTEXT)
       && string_is_equal(config_get_ptr()->arrays.video_driver, "vulkan");
    sw2_keep_swapchain_now = sw2_keep;
+   if (sw2_keep)
+      video_st_flags |= VIDEO_FLAG_CACHE_CONTEXT;
 #endif
    vulkan_destroy_swapchain(vk);
 #ifdef __SWITCH2__
@@ -6826,28 +6874,6 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       vkDestroyDebugUtilsMessengerEXT(vk->context.instance, vk->context.debug_callback, NULL);
 #endif
 
-   video_st_flags              = (uint32_t)retro_atomic_load_relaxed_int(&video_st->flags);
-
-#if defined(ANDROID) \
-      && (defined(HAVE_RMP4) || defined(HAVE_RVP9) || defined(HAVE_RAV1) \
-            || defined(HAVE_RECORD_MEDIACODEC))
-   if (vulkan_android_cache_device_pending(vk->context.device))
-      video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
-#endif
-#ifdef HAVE_VAAPI
-   if (vaapi_hevc_vulkan_cache_device_pending(vk->context.device))
-      video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
-#endif
-#if defined(ANDROID) && defined(HAVE_THREADS)
-   if (record_android_capture_device_pending(vk->context.device))
-      video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
-#endif
-   if (vk->flags & VK_DATA_FLAG_DROP_CONTEXT)
-      video_st_flags &= ~VIDEO_FLAG_CACHE_CONTEXT;
-#ifdef __SWITCH2__
-   if (sw2_keep)
-      video_st_flags |= VIDEO_FLAG_CACHE_CONTEXT;
-#endif
 #ifdef VULKAN_SESSION_CACHE
    if (kept_dlss_borrowed_instance == vk->context.instance
          || !(video_st_flags & VIDEO_FLAG_KEEP_VULKAN_SESSION)
@@ -7030,20 +7056,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
    }
 
 #ifdef HAVE_THREADS
-   /* vulkan_context_init_device() creates a fresh queue_lock on
-    * every bring-up -- including the cached-context path, which
-    * restores the device and then falls through to slock_new() like
-    * any other init -- so the lock's lifetime ends here regardless
-    * of whether the device itself is being cached.  Everything that
-    * takes it (vulkan_present, the frame submission paths) is done
-    * by this point: vkDeviceWaitIdle() ran at the top of this
-    * function.  Freeing it here stops one slock leaking per driver
-    * reinit -- every resolution change and fullscreen toggle. */
-   if (vk->context.queue_lock)
-   {
-      slock_free(vk->context.queue_lock);
-      vk->context.queue_lock = NULL;
-   }
+   vk->context.queue_lock = NULL;
 #endif
 }
 
@@ -7255,8 +7268,8 @@ static void vulkan_low_latency_device_deinit(gfx_ctx_vulkan_data_t *vk)
 #ifdef VULKAN_DXGI_PACING
    vulkan_dxgi_pacing_deinit(vk);
 #endif
-   /* The device is idle and the frame loop is this thread: whatever
-    * was kept for a marker in flight can go. */
+   /* Our frames and presents are done and the frame loop is this
+    * thread: whatever was kept for a marker in flight can go. */
    for (i = 0; i < ll->num_retired; i++)
       vkDestroySwapchainKHR(vk->context.device, ll->retired[i], NULL);
    ll->num_retired = 0;
