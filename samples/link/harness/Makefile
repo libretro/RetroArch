@@ -295,7 +295,7 @@ RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
 # Each scenario of $(1) must fail, with $(2) in front of its run and $(3)
 # among its arguments: one in bad/ or unbuilt/ with exit 2 and any other
 # with exit 1, saying what its "# error:" line names and no validation
-# error that line does not name
+# error or sanitizer report that line does not name
 define MUST_FAIL
 for scn in $(1); do \
 	   what="$${scn#../scenarios/}"; what="$${what%.scn}"; \
@@ -311,6 +311,8 @@ for scn in $(1); do \
 	   $(call FAILED_AS,$$want); \
 	   v=`grep -F -e 'validation: [' "$$err" | grep -v -F -e "$$why" | head -n 1`; \
 	   [ -z "$$v" ] || { echo "check: $$what had a validation error: $$v"; exit 1; }; \
+	   s=`grep -E -e 'AddressSanitizer:|LeakSanitizer:|runtime error' "$$err" | grep -v -F -e "$$why" | head -n 1`; \
+	   [ -z "$$s" ] || { echo "check: $$what had a sanitizer report: $$s"; exit 1; }; \
 	done
 endef
 

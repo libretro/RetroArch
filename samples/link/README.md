@@ -93,7 +93,9 @@ state and a state of another scenario must each exit 2, and every scenario in
 `scenarios/fail/` and a run against an edited trace (the first run of
 `two_unequal` with the picture hash of console 1's line in step 60 changed)
 must each exit 1. Each must also print its error: the one a scenario's
-`# error: <text>` line gives, with its line number where it has one.
+`# error: <text>` line gives, with its line number where it has one. A
+scenario's run must print no sanitizer report (`AddressSanitizer:`,
+`LeakSanitizer:`, `runtime error`) that text does not name.
 
 Right after its load, before any core runs again, a `from` or `rewound` run
 saves each console's state again, as a frontend may while paused. The run
