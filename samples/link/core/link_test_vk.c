@@ -18,7 +18,8 @@ enum lt_vk_handoff
    LT_VK_BARRIER = 0, /* part 1's command buffer ends in a barrier */
    LT_VK_SEMAPHORE,   /* and semaphores pass the image both ways */
    LT_VK_COMMANDS,    /* part 1's command buffer is the frontend's to submit */
-   LT_VK_NONE         /* the barrier, and no set_image */
+   LT_VK_NONE,        /* the barrier, and no set_image */
+   LT_VK_COMMANDS_SEMAPHORE /* commands, and set_image passes a semaphore */
 };
 
 /* The entry points the core calls: the device's, but for the first */
@@ -487,7 +488,7 @@ static void lt_vk_objects(unsigned width, unsigned height)
    if (!lt_vk_ok(lt_vk.f.allocate_command_buffers(device, &buffers, lt_vk.cmd),
          "vkAllocateCommandBuffers failed"))
       return;
-   if (lt_vk.handoff == LT_VK_SEMAPHORE)
+   if (lt_vk.handoff == LT_VK_SEMAPHORE || lt_vk.handoff == LT_VK_COMMANDS_SEMAPHORE)
    {
       memset(&semaphore, 0, sizeof(semaphore));
       semaphore.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -574,7 +575,7 @@ static bool lt_vk_load(const struct lt_render_host *host)
    static const char *const negotiates[] = { LT_VK_NEGOTIATE_DEFAULT, "v1", "v2",
       "no_queue", "late" };
    static const char *const handoffs[]   = { LT_VK_HANDOFF_DEFAULT, "semaphore", "commands",
-      "none" };
+      "none", "commands_semaphore" };
    static const char *const layouts[]    = { LT_VK_LAYOUT_DEFAULT, "general" };
    static const char *const formats[]    = { LT_VK_FORMAT_DEFAULT, "bgra" };
    struct retro_hw_render_context_negotiation_interface support;
@@ -722,7 +723,7 @@ static void lt_vk_hand_over(unsigned part)
       lt_vk.drawing = false;
       return;
    }
-   if (part == 1 && lt_vk.handoff == LT_VK_COMMANDS)
+   if (part == 1 && (lt_vk.handoff == LT_VK_COMMANDS || lt_vk.handoff == LT_VK_COMMANDS_SEMAPHORE))
    {
       vk->set_command_buffers(vk->handle, 1, &lt_vk.cmd[1]);
       return;
@@ -837,9 +838,12 @@ static void lt_vk_present(retro_video_refresh_t video, bool dupe)
 {
    const struct retro_hw_render_interface_vulkan *vk = lt_vk.vk;
    bool semaphores = lt_vk.handoff == LT_VK_SEMAPHORE;
+   /* commands_semaphore's is never signalled: with command buffers handed
+    * over the frontend waits on none of set_image's semaphores */
+   bool passes     = semaphores || lt_vk.handoff == LT_VK_COMMANDS_SEMAPHORE;
    if (lt_vk.drawing && !dupe && lt_vk.handoff != LT_VK_NONE)
-      vk->set_image(vk->handle, &lt_vk.shown, semaphores ? 1 : 0,
-            semaphores ? &lt_vk.drawn : NULL, VK_QUEUE_FAMILY_IGNORED);
+      vk->set_image(vk->handle, &lt_vk.shown, passes ? 1 : 0,
+            passes ? &lt_vk.drawn : NULL, VK_QUEUE_FAMILY_IGNORED);
    if (lt_vk.drawing && semaphores)
    {
       /* Signalled in this video call, a dupe's too */

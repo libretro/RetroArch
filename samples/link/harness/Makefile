@@ -22,11 +22,12 @@
 # as its header says. In two_spans console 1 must finish 598 frames to
 # console 0's 600, and in spans_save_in_advance and render_spans consoles 1
 # and 2 must be parked at their checkpoints in_flight and last, and so must
-# those of warm_save_in_advance, gl/spans and gl/mixed. Each of
-# render_one's 120 frames must have a picture of its own, and render_grow's
-# picture must be 64 wide at its checkpoint small and 128 at mid; console 1
-# of render_two must keep its picture of frame 99 over the frame after it,
-# which passes none, and render_dupe's console its picture of frame 39.
+# those of warm_save_in_advance, gl/spans, gl/mixed, vulkan/spans and
+# vulkan/mixed. Each of render_one's 120 frames must have a picture of its
+# own, and render_grow's picture must be 64 wide at its checkpoint small and
+# 128 at mid; console 1 of render_two must keep its picture of frame 99 over
+# the frame after it, which passes none, and render_dupe's console its
+# picture of frame 39.
 # Then each scenario in bad/ must exit 2 and each in fail/ exit 1, printing
 # the error its "# error:" line names, as must a truncated state, a state
 # of another scenario and an edited trace; each scenario in stale/ must
@@ -612,7 +613,7 @@ ifeq ($(HAVE_EGL),1)
 	$(GL_CHECK)
 endif
 ifeq ($(HAVE_VULKAN)$(findstring mingw,$(TRIPLE)),1)
-	$(VK_READY)$(call GPU_CHECK,vulkan,--vk-validate $(GPU_ARGS),)
+	$(VK_READY)$(call GPU_CHECK,vulkan,--vk-validate $(GPU_ARGS),vulkan/spans vulkan/mixed)
 	$(VK_CHECK)
 endif
 
@@ -621,7 +622,7 @@ check-gl: all
 	$(GL_CHECK)
 
 check-vulkan: all
-	$(VK_READY)$(call GPU_CHECK,vulkan,--vk-validate $(GPU_ARGS),)
+	$(VK_READY)$(call GPU_CHECK,vulkan,--vk-validate $(GPU_ARGS),vulkan/spans vulkan/mixed)
 	$(VK_CHECK)
 
 proof: $(HARNESS)

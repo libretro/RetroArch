@@ -588,10 +588,9 @@ static void RETRO_CALLCONV link_console_video(const void *data, unsigned width,
          link_console_read(c, width, height);
 #endif
 #ifdef HAVE_VULKAN
-      /* What the core submitted for a frame not read is waited for as a
-       * dupe's is */
+      /* What the core handed over for a frame not read is still submitted */
       if (c->vk_started && !link_console_read(c, width, height))
-         link_vk_dupe(c->vk);
+         link_vk_unread(c->vk);
 #endif
       return;
    }

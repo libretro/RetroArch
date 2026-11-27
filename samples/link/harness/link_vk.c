@@ -18,6 +18,10 @@
 #define LINK_VK_QUEUE    (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)
 #define LINK_VK_LAYER    "VK_LAYER_KHRONOS_validation"
 #define LINK_VK_TIMEOUT  ((uint64_t)120 * 1000000000UL) /* ns */
+#define LINK_VK_HANDED   16 /* the semaphores or command buffers a frame hands over */
+/* The stages a core's frame ends in, where the readback waits for it */
+#define LINK_VK_DRAWN    (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT \
+      | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
 
 /* The entry points the harness calls, but for the loader's own */
 struct link_vk_entries
@@ -73,6 +77,13 @@ struct link_vk
    VkDeviceSize buffer_size;
    void *mapped;
    const struct retro_vulkan_image *image;  /* set_image's, kept alive by the core */
+   /* What the core hands over for the next video callback */
+   VkSemaphore waits[LINK_VK_HANDED];  /* set_image's */
+   VkPipelineStageFlags stages[LINK_VK_HANDED];
+   VkCommandBuffer cmds[LINK_VK_HANDED + 1];  /* set_command_buffers', and the readback's */
+   VkSemaphore signal;                 /* set_signal_semaphore's */
+   uint32_t num_waits;
+   uint32_t num_cmds;
    const char *missing;                /* the first entry point not found */
    retro_vulkan_destroy_device_t destroy_device;  /* the core's, once it made the device */
    unsigned *errors;
@@ -624,10 +635,19 @@ static void link_vk_set_image(void *handle, const struct retro_vulkan_image *ima
       uint32_t num_semaphores, const VkSemaphore *semaphores, uint32_t src_queue_family)
 {
    link_vk_t *v = (link_vk_t*)handle;
-   (void)semaphores;
+   uint32_t i;
    v->image = image;
-   if (num_semaphores)
-      link_vk_misuse(v, "set_image with semaphores is not served");
+   if (num_semaphores > LINK_VK_HANDED)
+   {
+      link_vk_misuse(v, "set_image with more semaphores than are served");
+      num_semaphores = 0;
+   }
+   for (i = 0; i < num_semaphores; i++)
+   {
+      v->waits[i]  = semaphores[i];
+      v->stages[i] = LINK_VK_DRAWN;
+   }
+   v->num_waits = num_semaphores;
    if (src_queue_family != VK_QUEUE_FAMILY_IGNORED && src_queue_family != v->family)
       link_vk_misuse(v, "set_image's src_queue_family is another family, which is not served");
 }
@@ -647,9 +667,16 @@ static uint32_t link_vk_sync_index_mask(void *handle)
 static void link_vk_set_command_buffers(void *handle, uint32_t num_cmd,
       const VkCommandBuffer *cmd)
 {
-   (void)num_cmd;
-   (void)cmd;
-   link_vk_misuse((link_vk_t*)handle, "set_command_buffers is not served");
+   link_vk_t *v = (link_vk_t*)handle;
+   uint32_t i;
+   if (num_cmd > LINK_VK_HANDED)
+   {
+      link_vk_misuse(v, "set_command_buffers with more command buffers than are served");
+      num_cmd = 0;
+   }
+   for (i = 0; i < num_cmd; i++)
+      v->cmds[i] = cmd[i];
+   v->num_cmds = num_cmd;
 }
 
 static void link_vk_wait_sync_index(void *handle)
@@ -666,8 +693,7 @@ static void link_vk_queue_held(void *handle)
 
 static void link_vk_set_signal_semaphore(void *handle, VkSemaphore semaphore)
 {
-   (void)semaphore;
-   link_vk_misuse((link_vk_t*)handle, "set_signal_semaphore is not served");
+   ((link_vk_t*)handle)->signal = semaphore;
 }
 
 link_vk_t *link_vk_new(const struct retro_hw_render_context_negotiation_interface *negotiation,
@@ -722,19 +748,39 @@ const struct retro_hw_render_interface_vulkan *link_vk_interface(link_vk_t *v)
    return &v->iface;
 }
 
-/* count command buffers, or none for a submit that only signals, submitted
- * with the fence */
-static bool link_vk_submit(link_vk_t *v, const VkCommandBuffer *cmd, uint32_t count)
+/* One submit, with the fence: the command buffers the core handed over,
+ * then own unless it is VK_NULL_HANDLE, waiting on set_image's semaphores
+ * if waits and the core handed none over (libretro_vulkan.h), and
+ * signalling set_signal_semaphore's. What the core set is used up. */
+static bool link_vk_submit(link_vk_t *v, VkCommandBuffer own, bool waits)
 {
    VkSubmitInfo submit;
    VkResult result;
    memset(&submit, 0, sizeof(submit));
-   submit.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-   submit.commandBufferCount = count;
-   submit.pCommandBuffers    = cmd;
-   if (     (result = v->f.reset_fences(v->device, 1, &v->fence)) != VK_SUCCESS
-         || (result = v->f.queue_submit(v->queue, count ? 1 : 0, &submit, v->fence))
-            != VK_SUCCESS)
+   submit.sType           = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.pCommandBuffers = v->cmds;
+   if (waits && !v->num_cmds)
+   {
+      submit.waitSemaphoreCount = v->num_waits;
+      submit.pWaitSemaphores    = v->waits;
+      submit.pWaitDstStageMask  = v->stages;
+   }
+   if (own != VK_NULL_HANDLE)
+      v->cmds[v->num_cmds++] = own;
+   submit.commandBufferCount = v->num_cmds;
+   if (v->signal != VK_NULL_HANDLE)
+   {
+      submit.signalSemaphoreCount = 1;
+      submit.pSignalSemaphores    = &v->signal;
+   }
+   if ((result = v->f.reset_fences(v->device, 1, &v->fence)) == VK_SUCCESS)
+      result = v->f.queue_submit(v->queue,
+            submit.commandBufferCount || submit.waitSemaphoreCount
+            || submit.signalSemaphoreCount ? 1 : 0, &submit, v->fence);
+   v->num_waits = 0;
+   v->num_cmds  = 0;
+   v->signal    = VK_NULL_HANDLE;
+   if (result != VK_SUCCESS)
       return link_vk_fail(v, "a submit failed", result);
    v->pending = true;
    return true;
@@ -868,9 +914,8 @@ static bool link_vk_copy(link_vk_t *v, const struct retro_vulkan_image *image,
    barrier.subresourceRange.layerCount     = 1;
    /* After the core's writes, or after the barrier of its that ends them
     * at the fragment shader, as libretro_vulkan.h's example does */
-   v->f.cmd_pipeline_barrier(v->cmd,
-         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
+   v->f.cmd_pipeline_barrier(v->cmd, LINK_VK_DRAWN, VK_PIPELINE_STAGE_TRANSFER_BIT,
+         0, 0, NULL, 0, NULL, 1, &barrier);
    memset(&region, 0, sizeof(region));
    region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
    region.imageSubresource.mipLevel       = range->baseMipLevel;
@@ -896,7 +941,7 @@ static bool link_vk_copy(link_vk_t *v, const struct retro_vulkan_image *image,
          0, 1, &host, 0, NULL, 1, &barrier);
    if ((result = v->f.end_command_buffer(v->cmd)) != VK_SUCCESS)
       return link_vk_fail(v, "vkEndCommandBuffer failed", result);
-   return link_vk_submit(v, &v->cmd, 1);
+   return link_vk_submit(v, v->cmd, true);
 }
 
 bool link_vk_read(link_vk_t *v, uint32_t *argb, unsigned width, unsigned height)
@@ -945,7 +990,13 @@ bool link_vk_read(link_vk_t *v, uint32_t *argb, unsigned width, unsigned height)
 
 void link_vk_dupe(link_vk_t *v)
 {
-   if (!v->lost && (!link_vk_settle(v) || !link_vk_submit(v, NULL, 0)))
+   if (!v->lost && (!link_vk_settle(v) || !link_vk_submit(v, VK_NULL_HANDLE, false)))
+      (*v->errors)++;
+}
+
+void link_vk_unread(link_vk_t *v)
+{
+   if (!v->lost && (!link_vk_settle(v) || !link_vk_submit(v, VK_NULL_HANDLE, true)))
       (*v->errors)++;
 }
 
@@ -971,9 +1022,14 @@ void link_vk_free(link_vk_t *v)
    if (!v)
       return;
    /* Every submit on the queue finished, the core's in context_destroy and
-    * retro_unload_game too, before anything goes */
+    * retro_unload_game too, before anything goes; what the core handed
+    * over since its last frame may be gone already */
+   v->num_waits = 0;
+   v->num_cmds  = 0;
+   v->signal    = VK_NULL_HANDLE;
    if (     v->fence && !v->lost
-         && (!link_vk_settle(v) || !link_vk_submit(v, NULL, 0) || !link_vk_settle(v)))
+         && (   !link_vk_settle(v) || !link_vk_submit(v, VK_NULL_HANDLE, false)
+             || !link_vk_settle(v)))
       (*v->errors)++;
    /* A queue whose fence did not signal may be at work still */
    if (v->lost)

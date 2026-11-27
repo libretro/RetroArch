@@ -508,23 +508,31 @@ For a `render=vulkan` console:
   thread that runs the core, so a core that submits from another thread
   meanwhile is not served.
 - A frame passed as `RETRO_HW_FRAME_BUFFER_VALID` is read inside that call
-  from the image of the last `set_image`: a command buffer of the
-  harness's takes the image from its layout to a transfer source, copies it
-  into a buffer the host can read and puts the layout back, and after its
-  fence the bytes are converted, once, into the console's picture. An
+  from the image of the last `set_image`: one submit runs the command
+  buffers the core handed over with `set_command_buffers`, then one of the
+  harness's that takes the image from its layout to a transfer source,
+  copies it into a buffer the host can read and puts the layout back, and
+  after its fence the bytes are converted, once, into the console's
+  picture. The submit waits on the semaphores of `set_image` unless the
+  core handed command buffers over, as `libretro_vulkan.h` says, and
+  signals the semaphore of `set_signal_semaphore`. The semaphores, command
+  buffers and signal semaphore these calls hand over are used by the next
+  video callback and then dropped; the image of `set_image` is kept. An
   image in `GENERAL` is copied in that layout, with no transition, as
   `libretro_vulkan.h` asks. Only `R8G8B8A8_UNORM` is read; another
   format, and a frame with no `set_image`, is an error. A frame larger
   than the largest size `retro_get_system_av_info` or a later
   `SET_SYSTEM_AV_INFO` gave is an error, said once: the image carries no
-  size to check it against. A frame that is not read is fenced as a dupe
-  is.
-- A dupe submits nothing but a fence. `wait_sync_index` waits on the fence
-  of the last submit, a frame's copy or a dupe's, and the harness waits on
-  it before `context_destroy` and on one more before the device goes, so
-  what the core submitted is finished before it reuses or destroys it. A
-  fence has 120 s to signal; one that does not is an error, and that
-  console's Vulkan objects are then left as they are.
+  size to check it against. A frame that is not read is submitted as one
+  that is, without the harness's command buffer.
+- A dupe's submit has the command buffers the core handed over, if any,
+  waits on no semaphore and signals the semaphore of `set_signal_semaphore`,
+  if one is set, which a core may wait on in its next frame.
+  `wait_sync_index` waits on the fence of the last submit, a frame's copy or
+  a dupe's, and the harness waits on it before `context_destroy` and on one
+  more before the device goes, so what the core submitted is finished before
+  it reuses or destroys it. A fence has 120 s to signal; one that does not
+  is an error, and that console's Vulkan objects are then left as they are.
 - At the close the wait, `context_destroy`, `retro_unload_game`, and then
   the harness's objects, the core's `destroy_device`, the device and the
   instance go.
@@ -618,7 +626,9 @@ picture that grows without the core telling the frontend, a core that
 never calls `set_image`, an image in `B8G8R8A8_UNORM`, a device handed back
 with no queue and a negotiation interface set after the load) must exit 1,
 print its `# error:` text and print no validation error that text does not
-name; the two runs with `no-such-renderer` must fail as above; and
+name; the two runs with `no-such-renderer` must fail as above; consoles 1
+and 2 of `vulkan/spans` and `vulkan/mixed` must be inside a frame at
+checkpoints `in_flight` and `last`; and
 `vulkan/one` run once more with `VK_ICD_FILENAMES` and `VK_DRIVER_FILES`
 naming a file that does not exist must exit 1 with `no Vulkan device:`.
 Under `SANITIZER` the leak check of a GPU run passes over what
@@ -637,6 +647,23 @@ The scenarios in `vulkan/`:
   reports.
 - `grow` (`render_grow`): a told growth, which raises the size a frame is
   held to.
+- `two` (`render_two`): two consoles, each parked between the two parts of
+  its picture while the other draws. Console 0's core makes its instance
+  and device through a version 2 interface and hands part 1's command
+  buffer over with `set_command_buffers`; console 1's makes its device
+  through a version 1 interface and passes its picture with semaphores
+  both ways. Its dupes must still signal the semaphore it set, or its next
+  frame waits on one nothing signals.
+- `spans` (`render_spans`): three Vulkan consoles, two of them saved
+  inside a frame, between the two parts of a picture, and abandoned
+  inside one at the close. Console 1 passes its picture with semaphores
+  both ways and console 2 hands part 1's command buffer over.
+- `mixed` (`render_spans`): one Vulkan console among two that draw in
+  software.
+- `commands_semaphore` (`render_one`): part 1's command buffer handed over
+  with `set_command_buffers` and a semaphore nothing signals passed to
+  `set_image`, which the harness must not wait on, as `libretro_vulkan.h`
+  says.
 - `negotiate_v1` and `negotiate_v2` (`render_one`): a core that sets a
   context negotiation interface of version 1, whose `create_device` makes
   the device, or of version 2, whose `create_instance` and
@@ -653,9 +680,11 @@ What is not served or not checked:
   harness chose, an interface that makes no device, a `create_instance`
   that makes no instance, or an allocation that fails in the harness's
   instance wrapper.
-- `set_image` with semaphores, `set_command_buffers`,
-  `set_signal_semaphore` and a `src_queue_family` of another family are
-  console errors.
+- A `src_queue_family` of another family, which asks for a queue family
+  ownership transfer, and more than 16 semaphores or command buffers handed
+  over in a frame are console errors. No scenario runs either.
+- No scenario runs a dupe whose submit has command buffers the core
+  handed over: the test core hands part 1 over only in a frame it draws.
 
 ## Output
 
@@ -737,7 +766,7 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_gl_state` | clean, dirty: the state it leaves its context in | clean |
 | `link_test_gl_ask` | load, run: whether it asks for its context in `retro_load_game` or in its first `retro_run` | load |
 | `link_test_vk_negotiate` | off, v1, v2, no_queue, late: the context negotiation interface it sets; no_queue is v1 with the device handed back with no queue, late is v1 set in its first `retro_run` | off |
-| `link_test_vk_handoff` | barrier, semaphore, commands, none: how a frame's picture reaches the frontend | barrier |
+| `link_test_vk_handoff` | barrier, semaphore, commands, none, commands_semaphore: how a frame's picture reaches the frontend | barrier |
 | `link_test_vk_layout` | shader_read, general: the layout `set_image` names; in `GENERAL` part 1 also copies a texel of the image | shader_read |
 | `link_test_vk_format` | rgba, bgra: the image's format, `R8G8B8A8_UNORM` or `B8G8R8A8_UNORM` | rgba |
 
@@ -824,7 +853,9 @@ that and a semaphore part 1 signals and `set_image` passes, and in every
 frame, dupes too, a `set_signal_semaphore` that the next frame's part 0
 waits on; `commands`, part 1's command buffer handed over with
 `set_command_buffers` instead of submitted; `none`, the barrier and no
-`set_image`, the frame passed as drawn all the same. `link_test_vk_layout`
+`set_image`, the frame passed as drawn all the same; `commands_semaphore`,
+`commands` with a semaphore nothing signals passed to `set_image`, which
+the frontend must not wait on. `link_test_vk_layout`
 general ends part 1 in `GENERAL` in place of `SHADER_READ_ONLY_OPTIMAL`
 and then copies a texel of the image into a buffer of its own, a read at
 the transfer stage after the handoff, and `link_test_vk_format` bgra

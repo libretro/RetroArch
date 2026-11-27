@@ -206,7 +206,7 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_vk_negotiate", "Vulkan context negotiation interface set; "
                               LT_VK_NEGOTIATE_DEFAULT "|v1|v2|no_queue|late" },
    { "link_test_vk_handoff",  "How the Vulkan picture reaches the frontend; "
-                              LT_VK_HANDOFF_DEFAULT "|semaphore|commands|none" },
+                              LT_VK_HANDOFF_DEFAULT "|semaphore|commands|none|commands_semaphore" },
    { "link_test_vk_layout",   "Layout the Vulkan picture is handed over in; "
                               LT_VK_LAYOUT_DEFAULT "|general" },
    { "link_test_vk_format",   "Format of the Vulkan picture's image; "
