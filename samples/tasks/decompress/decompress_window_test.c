@@ -35,7 +35,9 @@
  *              a manifest that cannot be used or saved, a folder
  *              without mtimes and a source whose members have no CRC
  *              (.zst) all get every member written.  A folder that
- *              refuses renames still keeps its manifest.
+ *              refuses renames still keeps its manifest, and a member
+ *              that fails with no memory left for the task's message
+ *              is still not taken as written.
  *
  * Every lane checks the extracted bytes against the fixture.
  *
@@ -134,6 +136,24 @@ int __wrap_retro_vfs_file_rename_impl(const char *old_path,
    return __real_retro_vfs_file_rename_impl(old_path, new_path);
 }
 
+/* With refuse_failed_msg, no memory for the copy the task makes of
+ * MSG_DECOMPRESSION_FAILED */
+static bool refuse_failed_msg;
+static bool refuse_next_strdup;
+static bool failed_msg_refused;
+
+char *__real_strdup(const char *s);
+char *__wrap_strdup(const char *s)
+{
+   if (refuse_next_strdup)
+   {
+      refuse_next_strdup = false;
+      failed_msg_refused = true;
+      return NULL;
+   }
+   return __real_strdup(s);
+}
+
 /* Virtual clock */
 
 static retro_time_t clock_now;
@@ -157,6 +177,8 @@ unsigned cpu_features_get_core_amount(void) { return 1; }
 
 const char *msg_hash_to_str(enum msg_hash_enums msg)
 {
+   if (refuse_failed_msg && msg == MSG_DECOMPRESSION_FAILED)
+      refuse_next_strdup = true;
    return "";
 }
 
@@ -1153,6 +1175,40 @@ static void lane_skip(unsigned n_a)
    }
    CHECK(count_matching(false) == n_members,
          "skip_parked: contents differ from the archive");
+
+   /* oom: the bad CRC of parked, with no memory for the task's message,
+    * so the task cannot say the walk failed */
+   {
+      member_t *m       = &members[N_SMALL];
+      uint32_t old_crc  = encoding_crc32(0, m->data, m->size);
+      uint32_t line_crc = 0;
+
+      m->data[BIG_SIZE - 1] ^= 0xff;
+      corrupt_member = (int)N_SMALL;
+      CHECK(write_zip(), "skip_oom: could not rewrite the fixture archive");
+      refuse_failed_msg  = true;
+      failed_msg_refused = false;
+      full_run();
+      refuse_failed_msg  = false;
+      refuse_next_strdup = false;
+      out_path(path, sizeof(path), BIG_NAME);
+      CHECK(failed_msg_refused,
+            "skip_oom: the failure message was never copied");
+      CHECK(path_is_valid(path) && !file_matches(path, m),
+            "skip_oom: the member was not stopped part way");
+      CHECK(manifest_crc(BIG_NAME, &line_crc) && line_crc == old_crc,
+            "skip_oom: the manifest took the failed member as written");
+
+      corrupt_member = -1;
+      CHECK(write_zip(), "skip_oom: could not rewrite the fixture archive");
+      full_run();
+      printf("[skip]    oom: %u members written after\n", count_written());
+      CHECK(done_ok, "skip_oom: the next run reported an error");
+      CHECK(count_written() == 1 && written[N_SMALL],
+            "skip_oom: not exactly the failed member was written");
+      CHECK(file_matches(path, m),
+            "skip_oom: the older file was left in place");
+   }
 
    /* no_mtime: nothing is skipped or recorded, for a stat or two a run */
    {

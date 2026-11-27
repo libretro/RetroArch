@@ -551,6 +551,9 @@ bool decompress_manifest_unchanged(decompress_manifest_t *m, const char *name,
 /* The member now being written to @path; it has no line yet. */
 void decompress_manifest_begin(decompress_manifest_t *m, const char *name,
       const char *path, uint64_t size, uint32_t crc);
+/* The walk stopped on a member that failed after it started: that
+ * member gets no line, and a later save is not clean. */
+void decompress_manifest_abort(decompress_manifest_t *m);
 /* @clean: the walk reached its end without an error.  False only when
  * a write was needed and failed. */
 bool decompress_manifest_save(decompress_manifest_t *m, bool clean);

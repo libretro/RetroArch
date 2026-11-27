@@ -57,6 +57,7 @@ struct decompress_manifest
    bool     loaded;
    bool     dirty;
    bool     no_mtime;        /* a written member had none: stop recording */
+   bool     failed;          /* the walk stopped on a failed member */
 };
 
 static char *decompress_manifest_strdup(const char *s, size_t len)
@@ -448,6 +449,17 @@ void decompress_manifest_begin(decompress_manifest_t *m, const char *name,
    }
 }
 
+void decompress_manifest_abort(decompress_manifest_t *m)
+{
+   if (!m)
+      return;
+   free(m->pending_name);
+   free(m->pending_path);
+   m->pending_name = NULL;
+   m->pending_path = NULL;
+   m->failed       = true;
+}
+
 bool decompress_manifest_save(decompress_manifest_t *m, bool clean)
 {
    size_t i;
@@ -459,7 +471,7 @@ bool decompress_manifest_save(decompress_manifest_t *m, bool clean)
    if (!m)
       return true;
 
-   if (clean)
+   if (clean && !m->failed)
    {
       size_t kept = 0;
 

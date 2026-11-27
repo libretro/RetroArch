@@ -107,7 +107,7 @@ $(WINDOW_OBJS): %.o: $$(call sample_src,$$*).c
 decompress_window_test: $(WINDOW_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) -Wl,--wrap=retro_vfs_file_write_impl \
 	      -Wl,--wrap=retro_vfs_get_mtime_impl \
-	      -Wl,--wrap=retro_vfs_file_rename_impl \
+	      -Wl,--wrap=retro_vfs_file_rename_impl -Wl,--wrap=strdup \
 	      $(WINDOW_LIBS) -lpthread -lm
 
 $(MANIFEST_OBJS): %.manifest.o: $$(call sample_src,$$*).c

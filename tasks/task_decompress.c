@@ -347,9 +347,16 @@ static int task_decompress_iterate(decompress_state_t *dec,
    }
    task_nbio_slice_close(&b);
 
-   if (!ok && !dec->callback_error)
-      dec->callback_error = strdup(
-            msg_hash_to_str(MSG_DECOMPRESSION_FAILED));
+   if (!ok)
+   {
+      /* Told here, as the task reports the failure only when it has
+       * the memory for the message */
+      decompress_manifest_abort(
+            (decompress_manifest_t*)dec->userdata->cb_data);
+      if (!dec->callback_error)
+         dec->callback_error = strdup(
+               msg_hash_to_str(MSG_DECOMPRESSION_FAILED));
+   }
 
    return ret;
 }
