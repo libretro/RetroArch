@@ -1396,7 +1396,7 @@ static int vvd_decode(void *dec, const rh264_hw_pic_t *pic)
 #ifdef _WIN32
       std_ref[n].FrameNum = vulkan_h264_reference_frame_num(r->frame_num,
             pic->frame_num, pic->sps->log2_max_frame_num,
-            pic->sps->poc_type, r->long_term,
+            pic->sps->poc_type, pic->sps->profile_idc, r->long_term,
             vvd.h264_reference_wrap);
 #else
       std_ref[n].FrameNum = (uint16_t)r->frame_num;

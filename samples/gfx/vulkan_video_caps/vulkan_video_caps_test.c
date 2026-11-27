@@ -120,19 +120,23 @@ static void test_h264_reference_wrap(void)
             unsigned frame = (1u << bits) - 16 + reference;
             uint16_t expected = (uint16_t)(frame > current
                   ? (int)frame - (1 << bits) : (int)frame);
-            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 2,
+            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 2, 66,
                      false, true) == expected);
-            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 2,
+            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 2, 66,
                      true, true) == frame);
-            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 2,
+            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 2, 66,
                      false, false) == frame);
-            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 0,
+            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 2, 77,
                      false, true) == frame);
-            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 1,
+            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 2, 100,
+                     false, true) == frame);
+            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 0, 66,
+                     false, true) == frame);
+            CHECK(vulkan_h264_reference_frame_num(frame, current, bits, 1, 66,
                      false, true) == frame);
          }
-   CHECK(vulkan_h264_reference_frame_num(15, 0, 3, 2, false, true) == 15);
-   CHECK(vulkan_h264_reference_frame_num(15, 0, 17, 2, false, true) == 15);
+   CHECK(vulkan_h264_reference_frame_num(15, 0, 3, 2, 66, false, true) == 15);
+   CHECK(vulkan_h264_reference_frame_num(15, 0, 17, 2, 66, false, true) == 15);
 }
 
 int main(void)
