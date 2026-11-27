@@ -10621,113 +10621,82 @@ unsigned menu_displaylist_build_list(
             bool own_thread =
                   string_is_equal(settings->arrays.audio_driver, "wasapi")
                || string_is_equal(settings->arrays.audio_driver, "wdmks");
-            menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_AUDIO_THREADED_PIPELINE, PARSE_ONLY_BOOL, true },
-               {MENU_ENUM_LABEL_AUDIO_PIPELINE_FILL_CAP, PARSE_ONLY_BOOL, false},
-               {MENU_ENUM_LABEL_AUDIO_THREAD_PRIORITY,   PARSE_ONLY_BOOL, false},
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_THREADED_PIPELINE,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (     (include_everything || (pipeline && !callback))
+                  && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_PIPELINE_FILL_CAP,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (     (include_everything || pipeline || callback || own_thread)
+                  && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_THREAD_PRIORITY,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
 #ifdef HAVE_WASAPI
-               {MENU_ENUM_LABEL_AUDIO_WASAPI_MMCSS,      PARSE_ONLY_BOOL, false},
+            /* Which way the device thread's priority is asked for, so
+             * only where one is asked for at all */
+            if (     (include_everything || (own_thread
+                        && settings->bools.audio_thread_priority))
+                  && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_AUDIO_WASAPI_MMCSS,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
 #endif
-            };
-
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-            {
-               switch (build_list[i].enum_idx)
-               {
-                  case MENU_ENUM_LABEL_AUDIO_PIPELINE_FILL_CAP:
-                     build_list[i].checked = pipeline && !callback;
-                     break;
-                  case MENU_ENUM_LABEL_AUDIO_THREAD_PRIORITY:
-                     build_list[i].checked = pipeline || callback
-                        || own_thread;
-                     break;
-                  case MENU_ENUM_LABEL_AUDIO_WASAPI_MMCSS:
-                     /* Which way the device thread's priority is asked
-                      * for, so only where one is asked for at all */
-                     build_list[i].checked = own_thread
-                        && settings->bools.audio_thread_priority;
-                     break;
-                  default:
-                     break;
-               }
-
-               if (!build_list[i].checked && !include_everything)
-                  continue;
-
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        build_list[i].enum_idx, build_list[i].parse_type,
-                        false) == 0)
-                  count++;
-            }
          }
          break;
 #endif
       case DISPLAYLIST_AUDIO_SYNCHRONIZATION_SETTINGS_LIST:
          {
-            static menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_AUDIO_SYNC,                      PARSE_ONLY_BOOL,     true  },
-               {MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,           PARSE_ONLY_FLOAT,    true  },
-               {MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,        PARSE_ONLY_FLOAT,    true  },
-               {MENU_ENUM_LABEL_AUDIO_SINK_RATE_ESTIMATION,      PARSE_ONLY_BOOL,     true  },
+            static const menu_displaylist_settings_row_t rows[] = {
+               { MENU_ENUM_LABEL_AUDIO_SYNC, PARSE_ONLY_BOOL, false },
+               { MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW, PARSE_ONLY_FLOAT, false },
+               { MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA, PARSE_ONLY_FLOAT, false },
+               { MENU_ENUM_LABEL_AUDIO_SINK_RATE_ESTIMATION, PARSE_ONLY_BOOL, false },
 #ifdef HAVE_THREADS
-               {MENU_ENUM_LABEL_AUDIO_TIME_STRETCH,              PARSE_ONLY_BOOL,     true  },
-               {MENU_ENUM_LABEL_AUDIO_TIME_STRETCH_LOWPASS,      PARSE_ONLY_BOOL,     true  },
+               { MENU_ENUM_LABEL_AUDIO_TIME_STRETCH, PARSE_ONLY_BOOL, false },
+               { MENU_ENUM_LABEL_AUDIO_TIME_STRETCH_LOWPASS, PARSE_ONLY_BOOL, false },
 #endif
             };
-
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-            {
-               if (!build_list[i].checked && !include_everything)
-                  continue;
-
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        build_list[i].enum_idx,  build_list[i].parse_type,
-                        false) == 0)
-                  count++;
-            }
+            count += menu_displaylist_parse_settings_rows(list, settings,
+                  rows, (unsigned)ARRAY_SIZE(rows));
          }
          break;
       case DISPLAYLIST_AUDIO_SETTINGS_LIST:
       {
-         static menu_displaylist_build_info_selective_t build_list[] = {
-            {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,           PARSE_ACTION,     true },
+         static const menu_displaylist_settings_row_t rows[] = {
+            { MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS, PARSE_ACTION, false },
 #ifdef HAVE_THREADS
-            {MENU_ENUM_LABEL_AUDIO_THREADING_SETTINGS,        PARSE_ACTION,     true },
+            { MENU_ENUM_LABEL_AUDIO_THREADING_SETTINGS, PARSE_ACTION, false },
 #endif
 #ifdef HAVE_MICROPHONE
-            {MENU_ENUM_LABEL_MICROPHONE_SETTINGS,             PARSE_ACTION,     true },
+            { MENU_ENUM_LABEL_MICROPHONE_SETTINGS, PARSE_ACTION, false },
 #endif
-            {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,  PARSE_ACTION,     true },
-            {MENU_ENUM_LABEL_MIDI_SETTINGS,                   PARSE_ACTION,     true },
+            { MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS, PARSE_ACTION, false },
+            { MENU_ENUM_LABEL_MIDI_SETTINGS, PARSE_ACTION, false },
 #if defined(HAVE_AUDIOMIXER)
-            {MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS,            PARSE_ACTION,     true },
+            { MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS, PARSE_ACTION, false },
 #endif
-            {MENU_ENUM_LABEL_MENU_SOUNDS,                     PARSE_ACTION,     true },
-            {MENU_ENUM_LABEL_AUDIO_VOLUME,                    PARSE_ONLY_FLOAT, true },
-            {MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME,              PARSE_ONLY_FLOAT, true },
-            {MENU_ENUM_LABEL_AUDIO_MUTE,                      PARSE_ONLY_BOOL,  true },
-            {MENU_ENUM_LABEL_AUDIO_MIXER_MUTE,                PARSE_ONLY_BOOL,  true },
-            {MENU_ENUM_LABEL_AUDIO_RESPECT_SILENT_MODE,       PARSE_ONLY_BOOL,  true },
-            {MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE,               PARSE_ONLY_BOOL,  true },
-            {MENU_ENUM_LABEL_AUDIO_REWIND_MUTE,               PARSE_ONLY_BOOL,  true },
-            {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE,          PARSE_ONLY_BOOL,  true },
-            {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_SPEEDUP,       PARSE_ONLY_BOOL,  true },
-            {MENU_ENUM_LABEL_AUDIO_FASTFORWARD_CALLBACK,      PARSE_ONLY_BOOL,  true },
+            { MENU_ENUM_LABEL_MENU_SOUNDS, PARSE_ACTION, false },
+            { MENU_ENUM_LABEL_AUDIO_VOLUME, PARSE_ONLY_FLOAT, false },
+            { MENU_ENUM_LABEL_AUDIO_MIXER_VOLUME, PARSE_ONLY_FLOAT, false },
+            { MENU_ENUM_LABEL_AUDIO_MUTE, PARSE_ONLY_BOOL, false },
+            { MENU_ENUM_LABEL_AUDIO_MIXER_MUTE, PARSE_ONLY_BOOL, false },
+            { MENU_ENUM_LABEL_AUDIO_RESPECT_SILENT_MODE, PARSE_ONLY_BOOL, false },
+            { MENU_ENUM_LABEL_SYSTEM_BGM_ENABLE, PARSE_ONLY_BOOL, false },
+            { MENU_ENUM_LABEL_AUDIO_REWIND_MUTE, PARSE_ONLY_BOOL, false },
+            { MENU_ENUM_LABEL_AUDIO_FASTFORWARD_MUTE, PARSE_ONLY_BOOL, false },
+            { MENU_ENUM_LABEL_AUDIO_FASTFORWARD_SPEEDUP, PARSE_ONLY_BOOL, false },
+            { MENU_ENUM_LABEL_AUDIO_FASTFORWARD_CALLBACK, PARSE_ONLY_BOOL, false },
 #if defined(HAVE_DSP_FILTER)
-            {MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN,                PARSE_ONLY_PATH,  true },
+            { MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN, PARSE_ONLY_PATH, false },
 #endif
          };
-
-         for (i = 0; i < ARRAY_SIZE(build_list); i++)
-         {
-            if (!build_list[i].checked && !include_everything)
-               continue;
-
-            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     build_list[i].enum_idx,  build_list[i].parse_type,
-                     false) == 0)
-               count++;
-         }
+         count += menu_displaylist_parse_settings_rows(list, settings,
+               rows, (unsigned)ARRAY_SIZE(rows));
       }
 
 #if defined(HAVE_DSP_FILTER)
@@ -13144,55 +13113,45 @@ unsigned menu_displaylist_build_list(
             bool threaded = video_driver_is_threaded();
             bool repeat   = threaded
                && settings->uints.video_shader_subframes <= 1;
-            menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_VIDEO_THREADED,                    PARSE_ONLY_BOOL, true },
-               {MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING,     PARSE_ONLY_BOOL, false},
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_THREADED,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (     (include_everything || threaded)
+                  && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
 #if defined(HAVE_D3DKMT) || defined(HAVE_KMS) || (defined(HAVE_X11) && defined(HAVE_XCB)) || (defined(HAVE_WAYLAND) && defined(__linux__))
-               {MENU_ENUM_LABEL_VIDEO_THREADED_PACING_VBLANK,      PARSE_ONLY_BOOL, false},
+            if (     (include_everything || (threaded
+                        && settings->bools.video_threaded_display_pacing))
+                  && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_THREADED_PACING_VBLANK,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
 #endif
-               {MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT,     PARSE_ONLY_BOOL, false},
-               {MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY, PARSE_ONLY_BOOL, false},
+            if (     (include_everything || repeat)
+                  && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (     (include_everything || (repeat
+                        && settings->bools.video_threaded_present_repeat))
+                  && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
 #ifdef HAVE_VIDEO_FILTER
-               {MENU_ENUM_LABEL_VIDEO_FILTER_THREADS,              PARSE_ONLY_UINT, false},
+            if (     (include_everything
+                     || (     *settings->paths.path_softfilter_plugin
+                           && settings->bools.video_filter_enable
+                           && !video_driver_is_hw_context()))
+                  && MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_FILTER_THREADS,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
 #endif
-            };
-
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-            {
-               switch (build_list[i].enum_idx)
-               {
-                  case MENU_ENUM_LABEL_VIDEO_THREADED_DISPLAY_PACING:
-                     build_list[i].checked = threaded;
-                     break;
-                  case MENU_ENUM_LABEL_VIDEO_THREADED_PACING_VBLANK:
-                     build_list[i].checked = threaded
-                        && settings->bools.video_threaded_display_pacing;
-                     break;
-                  case MENU_ENUM_LABEL_VIDEO_THREADED_PRESENT_REPEAT:
-                     build_list[i].checked = repeat;
-                     break;
-                  case MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY:
-                     build_list[i].checked = repeat
-                        && settings->bools.video_threaded_present_repeat;
-                     break;
-                  case MENU_ENUM_LABEL_VIDEO_FILTER_THREADS:
-                     build_list[i].checked =
-                           *settings->paths.path_softfilter_plugin
-                        && settings->bools.video_filter_enable
-                        && !video_driver_is_hw_context();
-                     break;
-                  default:
-                     break;
-               }
-
-               if (!build_list[i].checked && !include_everything)
-                  continue;
-
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        build_list[i].enum_idx, build_list[i].parse_type,
-                        false) == 0)
-                  count++;
-            }
          }
          break;
 #endif
