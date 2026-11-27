@@ -3552,9 +3552,14 @@ static void frontend_unix_get_env(int *argc,
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_PLAYLIST],
                   parent_path, "playlists",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_PLAYLIST]));
+            /* An install that already has the shared folder keeps it */
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
                   parent_path, "cheats",
                   sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
+            if (!path_is_directory(g_defaults.dirs[DEFAULT_DIR_CHEATS]))
+               fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CHEATS],
+                     app_dir, "cheats",
+                     sizeof(g_defaults.dirs[DEFAULT_DIR_CHEATS]));
 
             fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE],
                   parent_path, "temp",
