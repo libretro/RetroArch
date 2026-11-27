@@ -284,7 +284,7 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
       NSString *path     = nil;
       NSInteger response;
 
-      [panel setTitle:NSLocalizedString(BOXSTRING(state->title), BOXSTRING("open panel"))];
+      [panel setTitle:NSLocalizedString(BOXSTRING(state->title), @"open panel")];
       [panel setCanChooseDirectories:NO];
       [panel setCanChooseFiles:YES];
       [panel setAllowsMultipleSelection:NO];
@@ -339,20 +339,20 @@ static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_stat
    switch (state->buttons)
    {
       case UI_MSG_WINDOW_OK:
-         [alert addButtonWithTitle:BOXSTRING("OK")];
+         [alert addButtonWithTitle:@"OK"];
          break;
       case UI_MSG_WINDOW_YESNO:
-         [alert addButtonWithTitle:BOXSTRING("Yes")];
-         [alert addButtonWithTitle:BOXSTRING("No")];
+         [alert addButtonWithTitle:@"Yes"];
+         [alert addButtonWithTitle:@"No"];
          break;
       case UI_MSG_WINDOW_OKCANCEL:
-         [alert addButtonWithTitle:BOXSTRING("OK")];
-         [alert addButtonWithTitle:BOXSTRING("Cancel")];
+         [alert addButtonWithTitle:@"OK"];
+         [alert addButtonWithTitle:@"Cancel"];
          break;
       case UI_MSG_WINDOW_YESNOCANCEL:
-         [alert addButtonWithTitle:BOXSTRING("Yes")];
-         [alert addButtonWithTitle:BOXSTRING("No")];
-         [alert addButtonWithTitle:BOXSTRING("Cancel")];
+         [alert addButtonWithTitle:@"Yes"];
+         [alert addButtonWithTitle:@"No"];
+         [alert addButtonWithTitle:@"Cancel"];
          break;
    }
 
@@ -1357,13 +1357,13 @@ void cocoa_publish_focus(bool focused);
          ui_companion_driver_get_msg_window_ptr();
       if (msg_window)
       {
+         /* The dialog only reads the strings, so they are lent. */
          ui_msg_window_state msg_window_state;
-         msg_window_state.text  = strdup("Cannot open multiple files");
-         msg_window_state.title = strdup(msg_hash_to_str(MSG_PROGRAM));
+         msg_window_state.buttons = UI_MSG_WINDOW_OK;
+         msg_window_state.text    = (char*)"Cannot open multiple files";
+         msg_window_state.title   = (char*)msg_hash_to_str(MSG_PROGRAM);
+         msg_window_state.window  = NULL;
          msg_window->information(&msg_window_state);
-
-         free(msg_window_state.text);
-         free(msg_window_state.title);
       }
       [sender replyToOpenOrPrint:NSApplicationDelegateReplyFailure];
    }
@@ -1452,23 +1452,22 @@ static void open_document_handler(
 
    if (browser)
    {
-      ui_browser_window_state_t browser_state;
+      /* The picker only reads its inputs, so they are lent; it
+       * hands back result allocated. */
+      ui_browser_window_state_t
+         browser_state              = {NULL};
       bool result                   = false;
       settings_t *settings          = config_get_ptr();
-      const char *path_dir_libretro = settings->paths.directory_libretro;
 
-      browser_state.filters         = strdup("dylib");
-      browser_state.filters_title   = strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS));
-      browser_state.title           = strdup(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST));
-      browser_state.startdir        = strdup(path_dir_libretro);
+      browser_state.filters         = (char*)"dylib";
+      browser_state.filters_title   = (char*)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_SETTINGS);
+      browser_state.title           = (char*)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_LIST);
+      browser_state.startdir        = settings->paths.directory_libretro;
 
       result                        = browser->open(&browser_state);
       open_core_handler(&browser_state, result);
 
-      free(browser_state.filters);
-      free(browser_state.filters_title);
-      free(browser_state.title);
-      free(browser_state.startdir);
+      free(browser_state.result);
    }
 }
 
@@ -1479,25 +1478,22 @@ static void open_document_handler(
 
    if (browser)
    {
+      /* Lent inputs, allocated result, as in -openCore:. */
       ui_browser_window_state_t
          browser_state                  = {NULL};
       bool result                       = false;
       settings_t *settings              = config_get_ptr();
-      const char *path_dir_menu_content = settings->paths.directory_menu_content;
-      NSString *startdir                = BOXSTRING(path_dir_menu_content);
+      char *path_dir_menu_content       = settings->paths.directory_menu_content;
 
-      if (!startdir.length)
-         startdir                      = BOXSTRING("/");
-
-      browser_state.title               = strdup(msg_hash_to_str(
-               MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST));
-      browser_state.startdir            = strdup([startdir UTF8String]);
+      browser_state.title               = (char*)msg_hash_to_str(
+               MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST);
+      browser_state.startdir            = *path_dir_menu_content
+            ? path_dir_menu_content : (char*)"/";
 
       result                            = browser->open(&browser_state);
       open_document_handler(&browser_state, result);
 
-      free(browser_state.startdir);
-      free(browser_state.title);
+      free(browser_state.result);
    }
 }
 
