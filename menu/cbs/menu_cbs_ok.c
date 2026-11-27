@@ -8395,27 +8395,21 @@ static int action_ok_push_dropdown_item_disk_index(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    unsigned disk_index           = (unsigned)idx;
-   rarch_system_info_t *sys_info = &runloop_state_get_ptr()->system;
+   runloop_state_t *runloop_st   = runloop_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    bool menu_insert_disk_resume  = settings->bools.menu_insert_disk_resume;
-   bool disk_changed;
-
-   if (!settings || !sys_info)
-      return -1;
 
 #ifdef HAVE_AUDIOMIXER
    if (settings->bools.audio_enable_menu && settings->bools.audio_enable_menu_ok)
       audio_driver_mixer_play_menu_sound(AUDIO_MIXER_SYSTEM_SLOT_OK);
 #endif
 
-   disk_changed = disk_control_get_image_index(&sys_info->disk_control)
-         != disk_index;
-   if (!command_event(CMD_EVENT_DISK_INDEX, &disk_index))
+   if (   !menu_driver_disk_index_selectable()
+       || !command_event(CMD_EVENT_DISK_INDEX, &disk_index))
       return 0;
 
-   /* Resume so the core can observe the eject before insertion. */
-   if (     disk_changed && settings->bools.menu_auto_insert_disk
-         && menu_insert_disk_resume)
+   /* An automatic insert completes only while content runs */
+   if (runloop_st->pending_disk_control_insert && menu_insert_disk_resume)
       generic_action_ok_command(CMD_EVENT_RESUME);
 
    menu_entries_flush_stack(MENU_ENUM_LABEL_DISK_OPTIONS_STR, 0);
@@ -9099,9 +9093,7 @@ static int action_ok_video_shader_num_passes_dropdown_box_list(
 static int action_ok_disk_index_dropdown_box_list(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   if (    !config_get_ptr()->bools.menu_auto_insert_disk
-         && !disk_control_get_eject_state(
-               &runloop_state_get_ptr()->system.disk_control))
+   if (!menu_driver_disk_index_selectable())
       return 0;
    return generic_dropdown_box_list(idx,
          ACTION_OK_DL_DROPDOWN_BOX_LIST_DISK_INDEX);

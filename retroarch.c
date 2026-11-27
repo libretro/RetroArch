@@ -6256,6 +6256,10 @@ bool command_event(enum event_command cmd, void *data)
                   verbose     = false;
 
                disk_control_set_index_next(&sys_info->disk_control, verbose);
+#ifdef HAVE_MENU
+               menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                               | MENU_ST_FLAG_PREVENT_POPULATE;
+#endif
             }
             else
             {
@@ -6284,6 +6288,10 @@ bool command_event(enum event_command cmd, void *data)
                   verbose     = false;
 
                disk_control_set_index_prev(&sys_info->disk_control, verbose);
+#ifdef HAVE_MENU
+               menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                               | MENU_ST_FLAG_PREVENT_POPULATE;
+#endif
             }
             else
             {
@@ -6297,8 +6305,6 @@ bool command_event(enum event_command cmd, void *data)
          {
             rarch_system_info_t *sys_info = &runloop_st->system;
             unsigned *index               = (unsigned*)data;
-            bool automatic                = true;
-            bool changed;
             bool success;
 
             if (!sys_info || !index)
@@ -6306,18 +6312,10 @@ bool command_event(enum event_command cmd, void *data)
 
             if (disk_control_enabled(&sys_info->disk_control))
             {
-#ifdef HAVE_MENU
-               automatic = settings->bools.menu_auto_insert_disk;
-#endif
-               if (    !automatic
-                     && !disk_control_get_eject_state(&sys_info->disk_control))
-                  return false;
-               changed = disk_control_get_image_index(&sys_info->disk_control)
-                     != *index;
+               /* Note: Menu itself provides visual feedback - no
+                * need to print info message to screen */
                success = disk_control_set_index(&sys_info->disk_control,
                      *index, false);
-               if (success && changed)
-                  runloop_st->pending_disk_control_insert = automatic ? 100 : 0;
 #ifdef HAVE_MENU
                menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                | MENU_ST_FLAG_PREVENT_POPULATE;

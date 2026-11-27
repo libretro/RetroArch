@@ -735,6 +735,11 @@ void menu_contentless_cores_flush_runtime(void);
  * for the specified menu list */
 bool menu_driver_search_filter_enabled(const char *label, unsigned type);
 
+/* Returns true if the menu may change the selected disc.
+ * With 'Auto Insert Selected Disc' disabled, the tray must
+ * be open first; a refusal is shown as a notification. */
+bool menu_driver_disk_index_selectable(void);
+
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 void menu_driver_set_last_shader_preset_path(const char *path);
 void menu_driver_set_last_shader_pass_path(const char *path);

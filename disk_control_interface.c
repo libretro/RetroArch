@@ -348,9 +348,8 @@ bool disk_control_set_eject_state(
    /* Set eject state */
    if (disk_control->cb.set_eject_state(eject))
    {
-      runloop_state_t *runloop_st = runloop_state_get_ptr();
-      if (runloop_st)
-         runloop_st->pending_disk_control_insert = 0;
+      /* An explicit tray action replaces any scheduled insert */
+      runloop_state_get_ptr()->pending_disk_control_insert = 0;
       _len = strlcpy(msg,
             eject ? msg_hash_to_str(MSG_DISK_EJECTED) : msg_hash_to_str(MSG_DISK_CLOSED),
             sizeof(msg));
@@ -359,16 +358,19 @@ bool disk_control_set_eject_state(
             && disk_control->cb.get_num_images)
       {
          unsigned index = disk_control->cb.get_image_index();
-         char image_label[128];
+         char image_label[96];
          image_label[0] = '\0';
          if (index < disk_control->cb.get_num_images())
             disk_control_get_image_label(disk_control, index,
                   image_label, sizeof(image_label));
-         if (*image_label)
+         /* Same "number: label" form as the Disc Index row */
+         if (*image_label && _len < sizeof(msg))
          {
-            strlcat(msg, " ", sizeof(msg));
-            strlcat(msg, image_label, sizeof(msg));
-            _len = strlen(msg);
+            int n = snprintf(msg + _len, sizeof(msg) - _len,
+                  " (%u: %s)", index + 1, image_label);
+            if (n > 0)
+               _len += ((size_t)n < sizeof(msg) - _len)
+                     ? (size_t)n : sizeof(msg) - _len - 1;
          }
       }
    }
@@ -426,8 +428,9 @@ bool disk_control_set_index(
    size_t _len;
    bool err              = false;
    unsigned num_images   = 0;
-   unsigned msg_duration = 0;
-   bool insert           = false;
+   unsigned msg_duration       = 0;
+   bool insert                 = false;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
    char msg[128];
 
    msg[0] = '\0';
@@ -443,16 +446,17 @@ bool disk_control_set_index(
    if (disk_control->cb.get_image_index() == index)
       return !err;
 
-   insert = runloop_state_get_ptr()->pending_disk_control_insert != 0;
-   runloop_state_get_ptr()->pending_disk_control_insert = 0;
+   /* An automatic insert already scheduled carries over to
+    * the new selection. A closed tray is ejected silently and
+    * closed again after a delay, so the core can observe the
+    * open tray; the delayed insert is kept even if the new
+    * selection fails, closing the tray on the disc still in. */
+   insert = runloop_st->pending_disk_control_insert != 0;
+   runloop_st->pending_disk_control_insert = 0;
 
-   /* Do delayed disk insert if changing while not ejected */
    if (!disk_control->cb.get_eject_state())
    {
-      runloop_state_t *runloop_st = runloop_state_get_ptr();
-
-      if (    !runloop_st
-            || !disk_control_set_eject_state(disk_control, true, false))
+      if (!disk_control_set_eject_state(disk_control, true, false))
          return false;
       insert = true;
    }
@@ -463,8 +467,8 @@ bool disk_control_set_index(
    /* Perform 'set index' action */
    err = !disk_control->cb.set_image_index(index);
 
-   if (insert && !err)
-      runloop_state_get_ptr()->pending_disk_control_insert = 100;
+   if (insert)
+      runloop_st->pending_disk_control_insert = 100;
 
    /* Get log/notification message */
    _len = disk_control_get_index_set_msg(

@@ -3758,6 +3758,19 @@ static enum action_iterate_type action_iterate_type(const char *label, struct me
 
 /* Returns true if search filter is enabled
  * for the specified menu list */
+bool menu_driver_disk_index_selectable(void)
+{
+   const char *_msg;
+   if (   config_get_ptr()->bools.menu_auto_insert_disk
+       || disk_control_get_eject_state(
+            &runloop_state_get_ptr()->system.disk_control))
+      return true;
+   _msg = msg_hash_to_str(MSG_DISK_EJECT_BEFORE_SELECTING);
+   runloop_msg_queue_push(_msg, strlen(_msg), 1, 120, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   return false;
+}
+
 bool menu_driver_search_filter_enabled(const char *label, unsigned type)
 {
    bool filter_enabled = false;
