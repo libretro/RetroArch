@@ -88,6 +88,7 @@ struct link_harness
    bool rewinding;           /* --rewind: the state is loaded at the last edge */
    bool no_follow;           /* --no-context-follow: no context is made current as
                                 consoles take turns */
+   bool loaded;              /* a state has been loaded: no console is a fresh machine */
    bool differed, failed;
 };
 
@@ -548,6 +549,7 @@ static bool link_harness_load_state(struct link_harness *h)
       h->consoles[i].frame = (unsigned long)h->saved_frame[i];
       link_bus_renumbered(h->bus, i);
    }
+   h->loaded = true;
    link_harness_resave(h);
    return true;
 }
@@ -960,7 +962,30 @@ static void link_harness_where(const char *line, char *where)
       strcpy(where, "the end");
 }
 
-/* Compares a trace line with the expected one, up to the first difference */
+/* Whether two trace lines are equal with the fields cut names left out */
+static bool link_harness_same(const char *a, const char *b, const char *cut)
+{
+   for (;; a++, b++)
+   {
+      while (a[0] == ' ' && a[1] && strchr(cut, a[1]) && a[2] == ' ' && !strncmp(a, b, 3))
+      {
+         a += 3;
+         b += 3;
+         while (*a && *a != ' ')
+            a++;
+         while (*b && *b != ' ')
+            b++;
+      }
+      if (*a != *b)
+         return false;
+      if (!*a)
+         return true;
+   }
+}
+
+/* Compares a trace line with the expected one, up to the first difference.
+ * Until a state is loaded the frames are a fresh machine's, compared in the
+ * fields the scenario's compare-fresh line names. */
 static void link_harness_compare(struct link_harness *h, const char *line)
 {
    const char *want;
@@ -968,7 +993,7 @@ static void link_harness_compare(struct link_harness *h, const char *line)
    if (!h->expect_text || h->differed)
       return;
    want = h->expect_next < h->expect_count ? h->expect[h->expect_next++] : NULL;
-   if (want && line && !strcmp(want, line))
+   if (want && line && link_harness_same(want, line, h->loaded ? "" : h->scn.fresh_cut))
       return;
    link_harness_where(line ? line : want, where);
    fprintf(stderr, "trace differs at %s: expected %s got %s\n", where,

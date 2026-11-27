@@ -120,6 +120,20 @@ that console before the load; "Scenarios" says what that frame is.
 and its `from` run must exit 1 and print the error its `# error:` line
 gives.
 
+A core's state may hold something of its host that no two processes share,
+a clock read at start-up for one. Its S field then differs between any two
+runs that start a new machine, while its pictures and audio repeat. A
+scenario says so with a `compare-fresh` line, which names the trace fields
+compared for the frames a run makes before it loads a state: every frame of
+`again`, `reversed` and `shuffled`, and those of `rewound` up to its load.
+The `from` run, and the `rewound` run from its load on, are compared in
+every field, since the state brings the first run's bytes back.
+`host_stamp` has such a core and the line `compare-fresh VA`: its `again`
+run's S fields must not be the first run's. One more `from` run of it,
+against the first run's trace with an S field edited, must exit 1, and so
+must two runs with no state, against the first run's trace with console
+1's V field, then its A field, of frame 20 edited.
+
 `make proof` makes the same six runs, with the same comparisons, of one
 scenario that binds real cores, such as those in `proofs/`. It builds only
 the harness, passes each `BIND` word (`NAME=FILE`, no spaces) as a `--path`
@@ -162,7 +176,8 @@ link_harness --scenario FILE --out DIR [--path NAME=FILE]...
   run does. A state the bus or a core refuses there fails the run.
 - `--expect TRACE` compares the trace with an earlier run's, from this run's
   first frame, and stops at the first difference. After a `--rewind` load
-  it goes on from the lines of the state's frame.
+  it goes on from the lines of the state's frame. Until the run loads a
+  state, a scenario's `compare-fresh` line names the fields compared.
 - `--min-stack` gives every console at least this much stack. Sanitizer
   builds use 8 MiB.
 - `--require-renderer TEXT` fails the start of a console with `render=`
@@ -202,6 +217,7 @@ option <n> <key> <value>            a core option of console n
 input <n> <port> <file>             an input script for an input port of console n
 expect-count <counter> <value>      a bus count the run ends with
 expect-stuck <frame>                the run ends in a release in this frame
+compare-fresh <fields>              the trace fields compared before a load
 <frame> cable <c>:<p> <c>:<p>
 <frame> uncable <c>:<p>
 <frame> hold <c>
@@ -250,6 +266,12 @@ the frame sent with it, and every console's state, so the run goes on as
 the first run did from the save. The word changes no other run: `first`,
 `again` and the pick-order runs load nothing, and a `--rewind` load comes
 after the console has run.
+
+`compare-fresh` takes letters of `V`, `A` and `S`, each once, as in
+`compare-fresh VA`. With `--expect`, the trace lines of frames the run made
+before it loaded a state are then compared in those fields alone, for every
+console. Without the line all three are compared, as they always are from a
+`--from` or `--rewind` load on. `trace.txt` has every field either way.
 
 At an edge where a console is inside a frame, a `save` line fails the run
 unless that console's core set `RETRO_LINK_SAVE_IN_ADVANCE`, and a `reset`
@@ -346,11 +368,13 @@ The scenarios here:
   console with `warm=1`.
 - `warm_save_in_advance`: `spans_save_in_advance` with such a core on
   console 1, which has `warm=1` and is saved inside an advance.
+- `host_stamp`: a core whose state holds a digest of its save directory's
+  path, which is another in every run, with a `compare-fresh VA` line.
 - `gl/`: scenarios with OpenGL consoles, each the twin of one above; run
   only by a harness built with `HAVE_EGL=1` ("GPU consoles").
 - `bad/`: scenarios the harness refuses before anything runs, a
-  `render=` value it does not know, `render=` given twice and a `warm=`
-  that is not 1 among them.
+  `render=` value it does not know, `render=` given twice, a `warm=` that
+  is not 1 and a `compare-fresh` letter that names no field among them.
 - `unbuilt/`: a console that asks for OpenGL and one that asks for Vulkan.
   While the harness is built without that API the scenario is refused as
   those in `bad/` are.
@@ -565,7 +589,7 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_restart_ticks` | off, on | off |
 | `link_test_extra_flags` | off, on: every undefined bit set in its port and core flags | off |
 | `link_test_save_in_advance` | off, on | off |
-| `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load, stale_save, stale_send, stale_release, release_error, unload_error, cold_load | conform |
+| `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load, stale_save, stale_send, stale_release, release_error, unload_error, cold_load, host_stamp | conform |
 | `link_test_bad_frame` | the first frame of the mode | 0 |
 | `link_test_render` | off, soft, gl: the picture in two parts, and what draws it | off |
 | `link_test_grow` | off, `told:N` or `untold:N`: the frame the two-part picture grows in | off |
@@ -658,12 +682,16 @@ From `link_test_bad_frame` on, the modes break the rules:
 - `unload_error`: `retro_unload_game` logs an error.
 - `cold_load`: whatever `link_test_bad_frame` says, until its first
   `retro_run` its `retro_unserialize` loads nothing and returns true.
+- `host_stamp`: whatever `link_test_bad_frame` says, `retro_load_game`
+  writes a digest of the save directory's path into system RAM, so every
+  state holds it. No picture or audio depends on it.
 
 Its system RAM, for `expect` lines: 0x00-0x07 the state hash; 0x08 the ports
 attached; 0x09-0x0B each port's peer count; 0x0C-0x0E each port's index, 255
 when it is cabled to nothing; 0x0F the errors it logged; 0x10-0x13 the
 messages received and 0x14-0x17 those sent, little-endian; 0x18 and 0x19 the
-topology and detached reports it was given.
+topology and detached reports it was given; 0x20-0x27, in mode
+`host_stamp`, the digest of the save directory's path.
 
 Its memory map, for `expect ... addr` lines, gives five views of that RAM:
 0x10000000-0x1000003F maps all of it; every address from 0x20000000 to

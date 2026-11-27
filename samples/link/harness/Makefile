@@ -9,6 +9,11 @@
 # checkpoint pictures. A scenario must save before its last frame, or the
 # rewound run would load where it saved. Where the scenario restarts its
 # ticks at a load, both runs' messages.log are compared without them.
+# Where it has a compare-fresh line, the frames a run makes before it loads
+# a state are compared in the trace fields that line names; in host_stamp,
+# which leaves S out, the again run's S fields must not be the first run's,
+# its from run must fail a first trace with an S field edited, and two runs
+# with no state must fail one with a V or an A field edited.
 # An in_flight checkpoint, at the save frame, must list a message. In
 # spans_waiting and spans_membership, whose late-join step runs again,
 # console 0 must finish one frame a step; console 1 of spans_waiting must be
@@ -188,6 +193,7 @@ RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
 	   || { echo "$@: $$name's in_flight checkpoint is not at its save frame"; exit 1; }; \
 	untick=; grep -q '^option [0-9][0-9]* link_test_restart_ticks on\( .*\)*$$' "$$scn" \
 	   && untick='$(UNTICK)'; \
+	fields=`sed -n 's/^compare-fresh \([VAS]*\)\( .*\)*$$/\1/p' "$$scn"`; \
 	for run in $(3); do \
 	   case $$run in \
 	      first)    args="--out $$out/first" ;; \
@@ -211,8 +217,17 @@ RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
 	            | sed "$$untick" | cksum`; \
 	         got=`sed "$$untick" "$$out/from/messages.log" | cksum`; \
 	         [ "$$want" = "$$got" ] ;; \
-	      rewound) $(REWOUND) "$$out/first/trace.txt" "$$out/first/trace.txt" \
-	            | cmp -s - "$$out/rewound/trace.txt" \
+	      rewound) fresh=; \
+	         if [ -n "$$fields" ]; then \
+	            for f in V A S; do \
+	               case $$fields in *$$f*) ;; *) fresh="$$fresh s/ $$f [0-9a-f]*//;" ;; esac; \
+	            done; \
+	            n=`awk -v to="$$last" '$$2 + 0 < to + 0 { n++ } END { print n + 0 }' "$$out/first/trace.txt"`; \
+	            fresh="1,$${n}{$$fresh }"; \
+	         fi; \
+	         $(REWOUND) "$$out/first/trace.txt" "$$out/first/trace.txt" | sed "$$fresh" \
+	            > "$$out/rewound/want.txt"; \
+	         sed "$$fresh" "$$out/rewound/trace.txt" | cmp -s "$$out/rewound/want.txt" - \
 	            || { echo "$@: $$name rewound: trace.txt is not the first run's to frame $$last, then from frame $$save"; exit 1; }; \
 	         want=`$(REWOUND) "$$out/first/messages.log" "$$out/first/messages.log" \
 	            | sed "$$untick" | cksum`; \
@@ -426,6 +441,33 @@ check: all
 	   name=$${kept%%:*}; c=$${kept#*:}; out="$(BUILD_DIR)/out/$$name/first"; \
 	   cmp -s "$$out/before/c$$c.png" "$$out/dupe/c$$c.png" \
 	      || { echo "check: $$name: console $$c's picture at checkpoint dupe is not the one at before"; exit 1; }; \
+	done
+	@out="$(BUILD_DIR)/out/host_stamp"; \
+	! cmp -s "$$out/first/trace.txt" "$$out/again/trace.txt" \
+	   || { echo "check: host_stamp: the again run's trace is the first run's, S fields too"; exit 1; }; \
+	edited="$(BUILD_DIR)/out/fail/stamp_edited.txt"; err="$(BUILD_DIR)/out/fail/stamp_edited.err"; \
+	what="host_stamp --from --expect a trace with an S field edited"; \
+	why="trace differs at frame 50 console 1:"; \
+	mkdir -p "$(BUILD_DIR)/out/fail"; \
+	sed 's/^\(F 50 C 1 .* S \)[0-9a-f]*$$/\1edited/' "$$out/first/trace.txt" > "$$edited"; \
+	grep -q '^F 50 C 1 .* S edited$$' "$$edited" || { echo "check: no frame 50 line of console 1 to edit"; exit 1; }; \
+	echo "== $$what, exit 1 wanted"; \
+	$(RUNNER) $(HARNESS) $(MIN_STACK) --scenario ../scenarios/host_stamp.scn --path test=$(CORE) \
+	   --from "$$out/first/mid.state" --expect "$$edited" \
+	   --out "$(BUILD_DIR)/out/fail/stamp_edited" 2>"$$err"; \
+	$(call FAILED_AS,1)
+	@out="$(BUILD_DIR)/out/host_stamp"; \
+	for f in V A; do \
+	   edited="$(BUILD_DIR)/out/fail/stamp_fresh_$$f.txt"; err="$(BUILD_DIR)/out/fail/stamp_fresh_$$f.err"; \
+	   what="host_stamp --expect a trace with field $$f edited"; \
+	   why="trace differs at frame 20 console 1:"; \
+	   sed "s/^\(F 20 C 1 .* $$f \)[0-9a-f]*/\1edited/" "$$out/first/trace.txt" > "$$edited"; \
+	   grep -q "^F 20 C 1 .* $$f edited " "$$edited" \
+	      || { echo "check: no frame 20 line of console 1 to edit"; exit 1; }; \
+	   echo "== $$what, exit 1 wanted"; \
+	   $(RUNNER) $(HARNESS) $(MIN_STACK) --scenario ../scenarios/host_stamp.scn --path test=$(CORE) \
+	      --expect "$$edited" --out "$(BUILD_DIR)/out/fail/stamp_fresh_$$f" 2>"$$err"; \
+	   $(call FAILED_AS,1); \
 	done
 	@trace="$(BUILD_DIR)/out/two_spans/first/trace.txt"; \
 	n=`grep -c '^F [0-9]* C 1 N ' "$$trace"`; \

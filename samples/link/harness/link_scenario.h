@@ -95,6 +95,9 @@ struct link_scenario
    int32_t utc_offset;
    unsigned long end_frame, stuck_frame;
    unsigned stuck_line;            /* 0: no expect-stuck line */
+   char fresh_cut[4];              /* compare-fresh: the trace fields, of V, A and S,
+                                      it does not name; "" with no such line */
+   bool fresh_line;
 };
 
 struct link_binding              /* --path NAME=FILE */

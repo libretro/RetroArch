@@ -503,6 +503,27 @@ static bool link_scenario_header_line(struct link_scenario_parse *p, const char 
       k->line    = p->line;
       return true;
    }
+   if (!strcmp(cmd, "compare-fresh"))
+   {
+      static const char fields[] = "VAS";
+      const char *f;
+      char *cut = s->fresh_cut;
+      if (argc != 1)
+         return link_scenario_fail(p, "compare-fresh <fields>", NULL);
+      if (s->fresh_line)
+         return link_scenario_fail(p, "a second compare-fresh line", NULL);
+      for (f = arg[0]; *f; f++)
+         if (!strchr(fields, *f) || strchr(f + 1, *f))
+            break;
+      if (*f || f == arg[0])
+         return link_scenario_fail(p, "not trace fields, of V, A and S, each once", arg[0]);
+      for (f = fields; *f; f++)
+         if (!strchr(arg[0], *f))
+            *cut++ = *f;
+      *cut          = '\0';
+      s->fresh_line = true;
+      return true;
+   }
    if (!strcmp(cmd, "expect-stuck"))
    {
       if (argc != 1)

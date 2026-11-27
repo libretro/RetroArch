@@ -44,6 +44,7 @@
 #define LT_RAM_SENT       0x14
 #define LT_RAM_TOPOLOGY   0x18
 #define LT_RAM_DETACHED   0x19
+#define LT_RAM_STAMP      0x20 /* host_stamp: 8 bytes */
 
 enum lt_advance_kind
 {
@@ -68,7 +69,8 @@ enum lt_mode
    LT_STALE_RELEASE,
    LT_RELEASE_ERROR,
    LT_UNLOAD_ERROR,
-   LT_COLD_LOAD
+   LT_COLD_LOAD,
+   LT_HOST_STAMP
 };
 
 struct lt_range
@@ -189,7 +191,7 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_save_in_advance", "Saves inside an advance; off|on" },
    { "link_test_mode",        "Mode; conform|nonconform|never_advance|no_progress|stale_load|"
                               "stale_save|stale_send|stale_release|release_error|"
-                              "unload_error|cold_load" },
+                              "unload_error|cold_load|host_stamp" },
    { "link_test_bad_frame",   "First frame of the mode; 0" },
    { "link_test_render",      "Picture in two parts, around the frame's advances; off|soft|gl" },
    { "link_test_grow",        "Frame the picture grows in, told:N or untold:N; off" },
@@ -483,7 +485,8 @@ static void lt_read_mode(void)
 {
    static const char *const names[] = {
       "conform", "nonconform", "never_advance", "no_progress", "stale_load", "stale_save",
-      "stale_send", "stale_release", "release_error", "unload_error", "cold_load"
+      "stale_send", "stale_release", "release_error", "unload_error", "cold_load",
+      "host_stamp"
    };
    const char *s = lt_option("link_test_mode");
    unsigned i;
@@ -1678,6 +1681,24 @@ static void lt_memory_maps(void)
       clear[i] = 0;
 }
 
+/* host_stamp: a digest of the save directory's path, which is another in
+ * every run of the harness, where every state holds it and no frame's
+ * picture or audio reads it */
+static void lt_stamp(void)
+{
+   const char *dir = NULL;
+   uint64_t v;
+   unsigned i;
+   if (!lt_environ(RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY, &dir) || !dir)
+   {
+      lt_fail("no save directory", 0, 0, 0);
+      return;
+   }
+   v = lt_digest(dir, strlen(dir));
+   for (i = 0; i < 8; i++)
+      lt_state.sysram[LT_RAM_STAMP + i] = (unsigned char)(v >> (i * 8));
+}
+
 bool retro_load_game(const struct retro_game_info *game)
 {
    enum retro_pixel_format format = RETRO_PIXEL_FORMAT_XRGB8888;
@@ -1709,6 +1730,8 @@ bool retro_load_game(const struct retro_game_info *game)
    }
    for (p = 0; p < LT_MAX_PORTS; p++)
       lt_state.sysram[LT_RAM_INDEX + p] = 0xFF;
+   if (lt_cfg.mode == LT_HOST_STAMP)
+      lt_stamp();
    lt_memory_maps();
    if (!lt_linked)
       return true;
