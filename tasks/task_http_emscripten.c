@@ -581,6 +581,15 @@ void* task_push_http_transfer(const char *url, bool mute,
          NULL, 0, NULL, NULL, mute, NULL, cb, user_data);
 }
 
+/* emscripten_fetch() always follows redirects, so a caller that
+ * needs them refused gets no transfer. */
+void *task_push_http_transfer_no_redirect(const char *url,
+      const char *method, const char *data, const char *headers, bool mute,
+      retro_task_callback_t cb, void *user_data)
+{
+   return NULL;
+}
+
 void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *user_data)
 {

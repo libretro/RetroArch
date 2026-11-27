@@ -116,6 +116,12 @@ typedef struct
 void *task_push_http_transfer(const char *url, bool mute, const char *type,
       retro_task_callback_t cb, void *userdata);
 
+/* Like task_push_http_transfer, with request body and extra headers;
+ * a 3xx reply is returned to @cb as-is rather than followed. */
+void *task_push_http_transfer_no_redirect(const char *url,
+      const char *method, const char *data, const char *headers, bool mute,
+      retro_task_callback_t cb, void *userdata);
+
 void *task_push_http_transfer_with_user_agent(const char *url, bool mute, const char *type,
       const char *user_agent, retro_task_callback_t cb, void *userdata);
 

@@ -38,12 +38,23 @@ extern "C" {
  *           successful match.
  *
  * Recursively searches @node and its descendants for a <service> whose
- * serviceType is a WANIPConnection / WANPPPConnection and whose controlURL
- * can be resolved, binding the first such service into @device. Returns true
- * when a service was bound, false otherwise. Safe on a NULL node, a leaf
- * node, and a <service> whose serviceType/controlURL children carry no data.
+ * serviceType passes natt_service_type_valid and whose controlURL resolves
+ * to a URL passing natt_url_matches_device, binding the first such service
+ * into @device. Returns true when a service was bound, false otherwise.
+ * Safe on a NULL node, a leaf node, and a <service> whose
+ * serviceType/controlURL children carry no data.
  */
 bool natt_parse_desc_node(rxml_node_t *node, struct natt_device *device);
+
+/* True only for an http:// URL whose host is the numeric IPv4 address the
+ * device's SSDP reply came from, with an optional port, and no character
+ * that could end a request line or header. */
+bool natt_url_matches_device(const char *url,
+      const struct natt_device *device);
+
+/* True only for the WANIPConnection / WANPPPConnection service URNs with a
+ * decimal version and nothing after it. */
+bool natt_service_type_valid(const char *service_type);
 
 #ifdef __cplusplus
 }
