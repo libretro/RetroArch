@@ -47,6 +47,25 @@ static bool task_decompress_mkdir(decompress_state_t *dec, const char *dir)
    return true;
 }
 
+/* task_decompress_mkdir() for the folder of @path, cut off at its last
+ * separator in place and put back, as path_basedir() would leave it */
+static bool task_decompress_mkdir_parent(decompress_state_t *dec,
+      char *path)
+{
+   static const char here[] = { '.', PATH_DEFAULT_SLASH_C(), '\0' };
+   bool ok;
+   char saved;
+   char *slash = find_last_slash(path);
+
+   if (!slash)
+      return task_decompress_mkdir(dec, here);
+   saved    = slash[1];
+   slash[1] = '\0';
+   ok       = task_decompress_mkdir(dec, path);
+   slash[1] = saved;
+   return ok;
+}
+
 /* Rejects archive member names that could escape the intended
  * extraction directory ("Zip Slip"). Returns true if the name is
  * safe to concatenate onto a target-directory prefix. */
@@ -92,7 +111,6 @@ static int file_decompressed_subdir(const char *name,
       unsigned cmode, uint64_t csize, uint64_t size,
       uint32_t crc32, struct archive_extract_userdata *userdata)
 {
-   char path_dir[DIR_MAX_LENGTH];
    char path[PATH_MAX_LENGTH];
    size_t _len;
    /* Reject empty names (strlen-1 OOB) and traversal attempts. */
@@ -141,10 +159,9 @@ static int file_decompressed_subdir(const char *name,
 
    fill_pathname_join_special(path,
          userdata->dec->target_dir, name, sizeof(path));
-   fill_pathname_basedir(path_dir, path, sizeof(path_dir));
 
    /* Make directory */
-   if (task_decompress_mkdir(userdata->dec, path_dir))
+   if (task_decompress_mkdir_parent(userdata->dec, path))
    {
       decompress_manifest_t *m = (decompress_manifest_t*)userdata->cb_data;
 
@@ -203,15 +220,12 @@ static int file_decompressed(const char *name, const char *valid_exts,
    /* Look at last character. Ignore directories, go to next file. */
    if (name[_len - 1] == '/' || name[_len - 1] == '\\')
       return 1;
-   /* Make directory */
    fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
-   path_basedir_wrapper(path);
 
-   if (task_decompress_mkdir(dec, path))
+   /* Make directory */
+   if (task_decompress_mkdir_parent(dec, path))
    {
       decompress_manifest_t *m = (decompress_manifest_t*)userdata->cb_data;
-
-      fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
 
       if (m && decompress_manifest_unchanged(m, name, path, size, crc32))
          return 1;
