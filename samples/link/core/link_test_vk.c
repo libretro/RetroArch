@@ -78,6 +78,14 @@ static struct
    bool ready;                      /* every object made */
    bool waits;                      /* part 0 waits for reusable */
    bool drawing;                    /* this frame's picture was begun */
+   bool no_queue;                   /* create_device hands the device back with no queue */
+   bool late;                       /* the negotiation interface is set in retro_run, not yet */
+   bool negotiated;                 /* the frontend took the negotiation interface */
+   VkInstance made_instance;        /* what create_instance made */
+   VkDevice made_device;            /* what create_device made */
+   VkFence made_fence;              /* what create_device made with it */
+   PFN_vkDestroyFence destroy_made_fence;
+   bool destroyed;                  /* destroy_device was called */
    bool said_no_device;             /* logged, or a failed regrow was; context_reset
                                        clears it */
 } lt_vk;
@@ -174,12 +182,18 @@ static bool lt_vk_device(struct retro_vulkan_context *context, VkInstance instan
       get_instance_proc_addr(instance, "vkCreateDevice");
    PFN_vkGetDeviceQueue get_queue = (PFN_vkGetDeviceQueue)
       get_instance_proc_addr(instance, "vkGetDeviceQueue");
+   PFN_vkCreateFence create_fence = (PFN_vkCreateFence)
+      get_instance_proc_addr(instance, "vkCreateFence");
    VkQueueFamilyProperties families[LT_VK_FAMILIES];
    VkDeviceQueueCreateInfo queue;
+   VkFenceCreateInfo fence;
    VkDevice device = NULL;
    uint32_t count  = 1;
    uint32_t family;
-   if (!enumerate || !get_families || !create || !get_queue)
+   lt_vk.destroy_made_fence = (PFN_vkDestroyFence)
+      get_instance_proc_addr(instance, "vkDestroyFence");
+   if (     !enumerate || !get_families || !create || !get_queue || !create_fence
+         || !lt_vk.destroy_made_fence)
    {
       lt_vk.host->fail("create_device: an instance entry point missing", 0, 0);
       return false;
@@ -217,7 +231,14 @@ static bool lt_vk_device(struct retro_vulkan_context *context, VkInstance instan
       lt_vk.host->fail("create_device2: the frontend's wrapper made no device", 0, 0);
       return false;
    }
-   get_queue(device, family, 0, &context->queue);
+   lt_vk.made_device = device;
+   memset(&fence, 0, sizeof(fence));
+   fence.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+   lt_vk_ok(create_fence(device, &fence, NULL, &lt_vk.made_fence),
+         "create_device: vkCreateFence failed");
+   context->queue    = VK_NULL_HANDLE;
+   if (!lt_vk.no_queue)
+      get_queue(device, family, 0, &context->queue);
    context->gpu                             = gpu;
    context->device                          = device;
    context->queue_family_index              = family;
@@ -253,7 +274,8 @@ static VkInstance lt_vk_create_instance(PFN_vkGetInstanceProcAddr get_instance_p
    memset(&info, 0, sizeof(info));
    info.sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
    info.pApplicationInfo = app;
-   return wrapper(opaque, &info);
+   lt_vk.made_instance   = wrapper(opaque, &info);
+   return lt_vk.made_instance;
 }
 
 static bool lt_vk_create_device2(struct retro_vulkan_context *context, VkInstance instance,
@@ -266,9 +288,14 @@ static bool lt_vk_create_device2(struct retro_vulkan_context *context, VkInstanc
    return lt_vk_device(context, instance, gpu, get_instance_proc_addr, &info, wrapper, opaque);
 }
 
-/* The device is the frontend's, and the core made nothing else with it */
+/* The device is the frontend's to destroy; the fence the core made with
+ * it goes first, or the validation layer reports it at vkDestroyDevice */
 static void lt_vk_destroy_device(void)
 {
+   if (lt_vk.made_fence != VK_NULL_HANDLE)
+      lt_vk.destroy_made_fence(lt_vk.made_device, lt_vk.made_fence, NULL);
+   lt_vk.made_fence = VK_NULL_HANDLE;
+   lt_vk.destroyed  = true;
 }
 
 static void lt_vk_free_image(void)
@@ -450,6 +477,14 @@ static void RETRO_CALLCONV lt_vk_context_reset(void)
       return;
    }
    lt_vk.vk = (const struct retro_hw_render_interface_vulkan*)iface;
+   if (   lt_vk.negotiated
+       && (   lt_vk.vk->device != lt_vk.made_device
+           || (   lt_vk.negotiation.interface_version >= 2
+               && lt_vk.vk->instance != lt_vk.made_instance)))
+   {
+      lt_vk.host->fail("a render interface not of the device and instance it made", 0, 0);
+      return;
+   }
    if (!lt_vk_find_entries())
       return;
    /* One image and one pair of command buffers serve one sync index */
@@ -488,17 +523,22 @@ static void RETRO_CALLCONV lt_vk_context_destroy(void)
 
 static bool lt_vk_load(const struct lt_render_host *host)
 {
-   static const char *const negotiates[] = { LT_VK_NEGOTIATE_DEFAULT, "v1", "v2" };
+   static const char *const negotiates[] = { LT_VK_NEGOTIATE_DEFAULT, "v1", "v2",
+      "no_queue", "late" };
    static const char *const handoffs[]   = { LT_VK_HANDOFF_DEFAULT, "semaphore", "commands",
       "none" };
    static const char *const layouts[]    = { LT_VK_LAYOUT_DEFAULT, "general" };
    static const char *const formats[]    = { LT_VK_FORMAT_DEFAULT, "bgra" };
    struct retro_hw_render_context_negotiation_interface support;
-   unsigned version;
+   unsigned negotiate, version;
    memset(&lt_vk, 0, sizeof(lt_vk));
-   lt_vk.host    = host;
-   version       = lt_render_option("link_test_vk_negotiate", negotiates,
+   lt_vk.host     = host;
+   negotiate      = lt_render_option("link_test_vk_negotiate", negotiates,
          sizeof(negotiates) / sizeof(*negotiates));
+   /* no_queue and late are version 1 */
+   version        = negotiate > 2 ? 1 : negotiate;
+   lt_vk.no_queue = negotiate == 3;
+   lt_vk.late     = negotiate == 4;
    lt_vk.handoff = (enum lt_vk_handoff)lt_render_option("link_test_vk_handoff", handoffs,
          sizeof(handoffs) / sizeof(*handoffs));
    lt_vk.shown.image_layout = lt_render_option("link_test_vk_layout", layouts,
@@ -539,8 +579,11 @@ static bool lt_vk_load(const struct lt_render_host *host)
       lt_vk.negotiation.create_instance = lt_vk_create_instance;
       lt_vk.negotiation.create_device2  = lt_vk_create_device2;
    }
-   if (host->environment(RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE,
-         &lt_vk.negotiation))
+   if (lt_vk.late)
+      return true;
+   lt_vk.negotiated = host->environment(
+         RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE, &lt_vk.negotiation);
+   if (lt_vk.negotiated)
       return true;
    host->fail("SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE refused", version, 0);
    return false;
@@ -664,6 +707,13 @@ static void lt_vk_begin(unsigned width, unsigned height)
    lt_vk.width   = width;
    lt_vk.height  = height;
    lt_vk.drawing = false;
+   if (lt_vk.late)
+   {
+      /* Refused, the core says nothing: the frontend must fail the run */
+      lt_vk.late = false;
+      lt_vk.host->environment(RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE,
+            &lt_vk.negotiation);
+   }
    if (!lt_render_tell(width, height))
       lt_vk.host->fail("SET_SYSTEM_AV_INFO refused", width, height);
    if (!lt_vk.ready)
@@ -739,6 +789,14 @@ static void lt_vk_unload(void)
 {
 }
 
+/* The frontend is done with the device: one the core made was handed
+ * back with destroy_device */
+static void lt_vk_deinit(void)
+{
+   if (lt_vk.made_device && !lt_vk.destroyed)
+      lt_vk.host->fail("destroy_device was never called for the device it made", 0, 0);
+}
+
 const struct lt_render lt_render_vk = {
-   lt_vk_load, lt_vk_begin, lt_vk_part, lt_vk_present, lt_vk_unload
+   lt_vk_load, lt_vk_begin, lt_vk_part, lt_vk_present, lt_vk_unload, lt_vk_deinit
 };

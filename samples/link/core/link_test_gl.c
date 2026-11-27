@@ -266,5 +266,5 @@ static void lt_gl_unload(void)
 }
 
 const struct lt_render lt_render_gl = {
-   lt_gl_load, lt_gl_begin, lt_gl_part, lt_gl_present, lt_gl_unload
+   lt_gl_load, lt_gl_begin, lt_gl_part, lt_gl_present, lt_gl_unload, NULL
 };

@@ -255,8 +255,33 @@ static bool link_console_vk_environment(link_console_t *c, unsigned cmd, void *d
 {
    struct retro_hw_render_callback *hw   = (struct retro_hw_render_callback*)data;
    const struct retro_system_av_info *av = (const struct retro_system_av_info*)data;
+   struct retro_hw_render_context_negotiation_interface *negotiation =
+      (struct retro_hw_render_context_negotiation_interface*)data;
    switch (cmd)
    {
+      case RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT:
+         if (!negotiation)
+            return false;
+         negotiation->interface_version = negotiation->interface_type
+            == RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN ? link_vk_negotiation() : 0;
+         return true;
+      case RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE:
+         /* Asked when link_console_start makes the device, so one after
+          * the core's load is refused as SET_HW_RENDER is */
+         if (     !negotiation
+               || negotiation->interface_type
+                  != RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN)
+            return false;
+         if (c->loaded)
+         {
+            fprintf(stderr, "link_harness: console %u:"
+                  " SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE after its core's load is"
+                  " refused\n", c->index);
+            c->errors++;
+            return false;
+         }
+         c->negotiation = negotiation;
+         return true;
       case RETRO_ENVIRONMENT_SET_HW_RENDER:
          if (hw->context_type != RETRO_HW_CONTEXT_VULKAN)
          {
@@ -393,6 +418,11 @@ static bool RETRO_CALLCONV link_console_environment(unsigned cmd, void *data)
          return link_console_hw_environment(c, cmd, data);
 #endif
 #ifdef HAVE_VULKAN
+      case RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT:
+      case RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE:
+         if (link_console_now.scn->consoles[c->index].render != LINK_SCENARIO_RENDER_VULKAN)
+            return false;
+         return link_console_vk_environment(c, cmd, data);
       case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
          /* From its context_reset to its context_destroy */
          if (!data || !c->vk_started)
@@ -881,8 +911,8 @@ static bool link_console_start_vk(link_console_t *c)
    c->api.get_system_av_info(&av);
    c->vk_width  = av.geometry.max_width;
    c->vk_height = av.geometry.max_height;
-   if (!(c->vk = link_vk_new(c->index, link_console_now.require, link_console_now.validate,
-         &c->errors)))
+   if (!(c->vk = link_vk_new(c->negotiation, c->index, link_console_now.require,
+         link_console_now.validate, &c->errors)))
       return false;
    link_vk_describe(c->vk, line, sizeof(line));
    if (!link_console_gpu(c, line))

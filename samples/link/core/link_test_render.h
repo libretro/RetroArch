@@ -39,6 +39,8 @@ struct lt_render
    void (*present)(retro_video_refresh_t video, bool dupe);
    /* in retro_unload_game, also when load refused or never ran */
    void (*unload)(void);
+   /* in retro_deinit; NULL: nothing */
+   void (*deinit)(void);
 };
 
 struct lt_render_cell

@@ -479,10 +479,25 @@ For a `render=vulkan` console:
   `render=vulkan does not serve context type <n>`, as a `render=gl`
   console refuses Vulkan; after the core's load the call is refused and
   fails the run.
-- After `retro_load_game` the console gets a Vulkan 1.1 instance and a
-  device of its own, with one queue of the first family that does graphics
-  and compute, and resolves its own entry points: nothing is shared between
-  consoles. Then `context_reset` is called, and until `context_destroy`
+- `GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT` answers version 2
+  for Vulkan and 0 for another API, and
+  `SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE` keeps a Vulkan interface
+  for the console's start.
+- After `retro_load_game` the console gets an instance and a device of its
+  own and resolves its own entry points: nothing is shared between
+  consoles. The instance is for the application info the interface's
+  `get_application_info` gives, else for Vulkan 1.1, and a version 2
+  interface's `create_instance` makes it through the harness's wrapper,
+  which adds what `--vk-validate` asks for. The interface's
+  `create_device2` makes the device through the harness's wrapper, on the
+  physical device the harness chose and, if it refuses that one, on one the
+  core chooses; a version 1 interface's `create_device` makes it with
+  nothing required. Otherwise the harness makes its own, with one queue of
+  the first family that does graphics and compute. A device the core makes
+  must come with its physical device and queue, as `libretro_vulkan.h`
+  asks; one without fails the console's start. The harness destroys the
+  device, after the core's `destroy_device` where the core made it. Then
+  `context_reset` is called, and until `context_destroy`
   `GET_HW_RENDER_INTERFACE` gives a render interface of version 5, with a
   sync index of 0 and a mask of 1. `lock_queue` and `unlock_queue` do
   nothing: the harness submits only inside the video callback, on the
@@ -507,7 +522,8 @@ For a `render=vulkan` console:
   fence has 120 s to signal; one that does not is an error, and that
   console's Vulkan objects are then left as they are.
 - At the close the wait, `context_destroy`, `retro_unload_game`, and then
-  the harness's objects, the device and the instance go.
+  the harness's objects, the core's `destroy_device`, the device and the
+  instance go.
 
 `make check`, `make check-gl`, `make check-vulkan` and, with `HAVE_EGL=1` or
 `HAVE_VULKAN=1`, `make proof` choose the driver with `GPU_DRIVER`:
@@ -595,7 +611,8 @@ each with `--vk-validate`, and `check` ends with it when `HAVE_VULKAN` is 1
 and the compiler is not mingw. Each scenario there has a twin, compared as
 those in `gl/` are; each in `vulkan/fail/` (a core that asks for OpenGL, a
 picture that grows without the core telling the frontend, a core that
-never calls `set_image` and an image in `B8G8R8A8_UNORM`) must exit 1,
+never calls `set_image`, an image in `B8G8R8A8_UNORM`, a device handed back
+with no queue and a negotiation interface set after the load) must exit 1,
 print its `# error:` text and print no validation error that text does not
 name; the two runs with `no-such-renderer` must fail as above; and
 `vulkan/one` run once more with `VK_ICD_FILENAMES` and `VK_DRIVER_FILES`
@@ -611,10 +628,22 @@ The scenarios in `vulkan/`:
 - `dupe` (`render_dupe`): dupes, each with the first part of its frame
   submitted, which the next `wait_sync_index` waits out.
 - `general` (`render_one`): the picture handed over in `GENERAL`.
+- `negotiate_v1` and `negotiate_v2` (`render_one`): a core that sets a
+  context negotiation interface of version 1, whose `create_device` makes
+  the device, or of version 2, whose `create_instance` and
+  `create_device2` make the instance and the device through the harness's
+  wrappers. The core fails unless the render interface has what it made
+  and its `destroy_device` is called.
 
-What the Vulkan host does not serve yet:
+What is not served or not checked:
 
-- The context negotiation interface is not answered.
+- LeakSanitizer sees a `VkInstance` the harness never destroys only
+  through a block the validation layer allocates for it, so only with
+  `--vk-validate`, and not on CI's image, where no such block leaks.
+- No check runs a `create_device2` that refuses the physical device the
+  harness chose, an interface that makes no device, a `create_instance`
+  that makes no instance, or an allocation that fails in the harness's
+  instance wrapper.
 - `set_image` with semaphores, `set_command_buffers`,
   `set_signal_semaphore` and a `src_queue_family` of another family are
   console errors.
@@ -698,7 +727,7 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_gl_origin` | top, bottom: the picture's row that is the framebuffer's first | top |
 | `link_test_gl_state` | clean, dirty: the state it leaves its context in | clean |
 | `link_test_gl_ask` | load, run: whether it asks for its context in `retro_load_game` or in its first `retro_run` | load |
-| `link_test_vk_negotiate` | off, v1, v2: the context negotiation interface it sets | off |
+| `link_test_vk_negotiate` | off, v1, v2, no_queue, late: the context negotiation interface it sets; no_queue is v1 with the device handed back with no queue, late is v1 set in its first `retro_run` | off |
 | `link_test_vk_handoff` | barrier, semaphore, commands, none: how a frame's picture reaches the frontend | barrier |
 | `link_test_vk_layout` | shader_read, general: the layout `set_image` names | shader_read |
 | `link_test_vk_format` | rgba, bgra: the image's format, `R8G8B8A8_UNORM` or `B8G8R8A8_UNORM` | rgba |
@@ -769,9 +798,17 @@ entry points of the render interface (version 5) alone. With
 interface of that version, which makes a device with one queue that does
 graphics and compute: v1 with `create_device`, v2 with `create_instance`
 and `create_device2` through the frontend's wrappers, and a logged error
-when the frontend answers less than 2. Each part is one command buffer,
-submitted between `lock_queue` and `unlock_queue`; a frame starts with
-`wait_sync_index`, and it fails unless the sync index mask is 1.
+when the frontend answers less than 2; no_queue sets version 1, whose
+`create_device` hands the device back with no queue, and late sets a
+version 1 interface in its first `retro_run`, which the frontend must
+refuse. An interface taken, `context_reset` fails unless the render
+interface has the device it made, and from v2 the instance, and
+`retro_deinit` fails unless its `destroy_device` was called, which destroys
+a fence made with the device, so a device destroyed before
+`destroy_device` is a validation error. Each part is
+one command buffer, submitted between `lock_queue` and `unlock_queue`; a
+frame starts with `wait_sync_index`, and it fails unless the sync index
+mask is 1.
 `link_test_vk_handoff` picks how part 1 reaches the frontend: `barrier`,
 a barrier to `SHADER_READ_ONLY_OPTIMAL` before `set_image`; `semaphore`,
 that and a semaphore part 1 signals and `set_image` passes, and in every

@@ -204,7 +204,7 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_gl_ask",      "Where the OpenGL context is asked for; "
                               LT_GL_ASK_DEFAULT "|run" },
    { "link_test_vk_negotiate", "Vulkan context negotiation interface set; "
-                              LT_VK_NEGOTIATE_DEFAULT "|v1|v2" },
+                              LT_VK_NEGOTIATE_DEFAULT "|v1|v2|no_queue|late" },
    { "link_test_vk_handoff",  "How the Vulkan picture reaches the frontend; "
                               LT_VK_HANDOFF_DEFAULT "|semaphore|commands|none" },
    { "link_test_vk_layout",   "Layout the Vulkan picture is handed over in; "
@@ -1190,7 +1190,7 @@ static void lt_soft_unload(void)
 }
 
 const struct lt_render lt_render_soft = {
-   lt_soft_load, lt_soft_begin, lt_soft_part, lt_soft_present, lt_soft_unload
+   lt_soft_load, lt_soft_begin, lt_soft_part, lt_soft_present, lt_soft_unload, NULL
 };
 
 /* The frame's picture begun and its part 0 drawn, before the frame's
@@ -1264,6 +1264,8 @@ void retro_init(void)
 
 void retro_deinit(void)
 {
+   if (lt_cfg.render && lt_cfg.render->deinit)
+      lt_cfg.render->deinit();
    lt_linked = false;
 }
 

@@ -74,9 +74,12 @@ struct link_vk
    void *mapped;
    const struct retro_vulkan_image *image;  /* set_image's, kept alive by the core */
    const char *missing;                /* the first entry point not found */
+   retro_vulkan_destroy_device_t destroy_device;  /* the core's, once it made the device */
    unsigned *errors;
    unsigned index;
    uint32_t family;                    /* the queue's */
+   VkResult created;                   /* the last vkCreateInstance's */
+   bool validate;                      /* the instance has the validation layer */
    bool coherent;                      /* the buffer's memory needs no invalidation */
    bool pending;                       /* the fence has a submit to wait for */
    bool lost;                          /* the fence did not signal: nothing is destroyed */
@@ -90,6 +93,11 @@ static struct
    PFN_vkEnumerateInstanceLayerProperties enumerate_layers;
    bool tried;
 } link_vk_now;
+
+unsigned link_vk_negotiation(void)
+{
+   return RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN_VERSION;
+}
 
 bool link_vk_loader(unsigned index)
 {
@@ -202,47 +210,110 @@ static bool link_vk_has_layer(void)
    return found;
 }
 
-/* The instance, Vulkan 1.1, with the validation layer and a messenger when
- * the run validates */
-static bool link_vk_instance(link_vk_t *v, bool validate)
+/* What the messenger hears: each error the layer reports */
+static void link_vk_listener(link_vk_t *v, VkDebugUtilsMessengerCreateInfoEXT *listener)
 {
-   static const char *const layers[]     = { LINK_VK_LAYER };
-   static const char *const extensions[] = { VK_EXT_DEBUG_UTILS_EXTENSION_NAME };
-   VkApplicationInfo application;
+   memset(listener, 0, sizeof(*listener));
+   listener->sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+   listener->messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+   listener->messageType     = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+      | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+      | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+   listener->pfnUserCallback = link_vk_validation;
+   listener->pUserData       = v;
+}
+
+/* name after the count names in names, unless it is one of them */
+static void link_vk_add(const char **names, uint32_t *count, const char *name)
+{
+   uint32_t i;
+   for (i = 0; i < *count; i++)
+      if (!strcmp(names[i], name))
+         return;
+   names[(*count)++] = name;
+}
+
+/* retro_vulkan_create_instance_wrapper_t, which makes the harness's own
+ * instance too: the create info as given, and when the run validates the
+ * layer, its extension and a listener. VK_NULL_HANDLE: the VkResult is in
+ * created. */
+static VkInstance link_vk_create_instance(void *opaque, const VkInstanceCreateInfo *create_info)
+{
+   link_vk_t *v              = (link_vk_t*)opaque;
+   VkInstanceCreateInfo info = *create_info;
+   const char **layers       = NULL;
+   const char **extensions   = NULL;
+   VkInstance instance       = VK_NULL_HANDLE;
+   VkDebugUtilsMessengerCreateInfoEXT listener;
+   uint32_t i;
+   v->created = VK_SUCCESS;
+   if (v->validate)
+   {
+      layers     = (const char**)malloc((info.enabledLayerCount + 1) * sizeof(*layers));
+      extensions = (const char**)malloc((info.enabledExtensionCount + 1) * sizeof(*extensions));
+      if (!layers || !extensions)
+         v->created = VK_ERROR_OUT_OF_HOST_MEMORY;
+      else
+      {
+         for (i = 0; i < info.enabledLayerCount; i++)
+            layers[i] = info.ppEnabledLayerNames[i];
+         for (i = 0; i < info.enabledExtensionCount; i++)
+            extensions[i] = info.ppEnabledExtensionNames[i];
+         link_vk_add(layers, &info.enabledLayerCount, LINK_VK_LAYER);
+         link_vk_add(extensions, &info.enabledExtensionCount,
+               VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+         info.ppEnabledLayerNames     = layers;
+         info.ppEnabledExtensionNames = extensions;
+         /* The listener hears vkCreateInstance and vkDestroyInstance too */
+         link_vk_listener(v, &listener);
+         listener.pNext = info.pNext;
+         info.pNext     = &listener;
+      }
+   }
+   if (v->created == VK_SUCCESS)
+      v->created = link_vk_now.create_instance(&info, NULL, &instance);
+   free(layers);
+   free(extensions);
+   return v->created == VK_SUCCESS ? instance : VK_NULL_HANDLE;
+}
+
+/* The instance, for the core's application info or else Vulkan 1.1, made
+ * by a version 2 negotiation's create_instance through the wrapper or by
+ * the harness, and a messenger when the run validates */
+static bool link_vk_instance(link_vk_t *v,
+      const struct retro_hw_render_context_negotiation_interface_vulkan *n)
+{
+   const VkApplicationInfo *application = NULL;
+   VkApplicationInfo own;
    VkDebugUtilsMessengerCreateInfoEXT listener;
    VkInstanceCreateInfo info;
    VkResult result;
-   memset(&application, 0, sizeof(application));
-   application.sType            = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-   application.pApplicationName = "link_harness";
-   application.apiVersion       = VK_API_VERSION_1_1;
-   memset(&listener, 0, sizeof(listener));
-   listener.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-   listener.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-   listener.messageType     = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-      | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
-      | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-   listener.pfnUserCallback = link_vk_validation;
-   listener.pUserData       = v;
-   memset(&info, 0, sizeof(info));
-   info.sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-   info.pApplicationInfo = &application;
-   if (validate)
+   if (v->validate && !link_vk_has_layer())
+      return link_vk_refuse(v, "no layer ", LINK_VK_LAYER, VK_SUCCESS);
+   if (n && n->get_application_info)
+      application = n->get_application_info();
+   if (!application)
    {
-      if (!link_vk_has_layer())
-         return link_vk_refuse(v, "no layer ", LINK_VK_LAYER, VK_SUCCESS);
-      /* The listener hears vkCreateInstance and vkDestroyInstance too */
-      info.pNext                   = &listener;
-      info.enabledLayerCount       = 1;
-      info.ppEnabledLayerNames     = layers;
-      info.enabledExtensionCount   = 1;
-      info.ppEnabledExtensionNames = extensions;
+      memset(&own, 0, sizeof(own));
+      own.sType            = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+      own.pApplicationName = "link_harness";
+      own.apiVersion       = VK_API_VERSION_1_1;
+      application          = &own;
    }
-   if ((result = link_vk_now.create_instance(&info, NULL, &v->instance)) != VK_SUCCESS)
+   v->created = VK_SUCCESS;
+   if (n && n->interface_version >= 2 && n->create_instance)
+      v->instance = n->create_instance(link_vk_now.get_instance_proc_addr, application,
+            link_vk_create_instance, v);
+   else
    {
-      v->instance = VK_NULL_HANDLE;
-      return link_vk_refuse(v, "vkCreateInstance failed", NULL, result);
+      memset(&info, 0, sizeof(info));
+      info.sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+      info.pApplicationInfo = application;
+      v->instance           = link_vk_create_instance(v, &info);
    }
+   if (!v->instance)
+      return link_vk_refuse(v, v->created != VK_SUCCESS ? "vkCreateInstance failed"
+            : "the core's create_instance made no instance", NULL, v->created);
    v->f.destroy_instance = (PFN_vkDestroyInstance)link_vk_instance_entry(v,
          "vkDestroyInstance");
    v->f.enumerate_physical_devices = (PFN_vkEnumeratePhysicalDevices)link_vk_instance_entry(v,
@@ -256,7 +327,7 @@ static bool link_vk_instance(link_vk_t *v, bool validate)
    v->f.create_device = (PFN_vkCreateDevice)link_vk_instance_entry(v, "vkCreateDevice");
    v->f.get_device_proc_addr = (PFN_vkGetDeviceProcAddr)link_vk_instance_entry(v,
          "vkGetDeviceProcAddr");
-   if (validate)
+   if (v->validate)
    {
       v->f.create_messenger = (PFN_vkCreateDebugUtilsMessengerEXT)link_vk_instance_entry(v,
             "vkCreateDebugUtilsMessengerEXT");
@@ -265,8 +336,11 @@ static bool link_vk_instance(link_vk_t *v, bool validate)
    }
    if (v->missing)
       return link_vk_refuse(v, "no entry point ", v->missing, VK_SUCCESS);
-   if (validate && (result = v->f.create_messenger(v->instance, &listener, NULL,
-         &v->messenger)) != VK_SUCCESS)
+   if (!v->validate)
+      return true;
+   link_vk_listener(v, &listener);
+   if ((result = v->f.create_messenger(v->instance, &listener, NULL, &v->messenger))
+         != VK_SUCCESS)
    {
       v->messenger = VK_NULL_HANDLE;
       return link_vk_refuse(v, "vkCreateDebugUtilsMessengerEXT failed", NULL, result);
@@ -274,12 +348,22 @@ static bool link_vk_instance(link_vk_t *v, bool validate)
    return true;
 }
 
-/* The first physical device whose name has require in it, else the first,
- * and the first of its queue families that does graphics and compute */
+/* The physical device's renderer is the one the run requires (NULL: any) */
+static bool link_vk_renderer(link_vk_t *v, const char *require)
+{
+   v->f.get_properties(v->gpu, &v->properties);
+   if (!require || strstr(v->properties.deviceName, require))
+      return true;
+   fprintf(stderr, "link_harness: console %u: renderer \"%s\" is not %s\n", v->index,
+         v->properties.deviceName, require);
+   return false;
+}
+
+/* The first physical device whose name has require in it (NULL: the
+ * first); with none, refused before a device is made on another */
 static bool link_vk_gpu(link_vk_t *v, const char *require)
 {
    VkPhysicalDevice gpus[LINK_VK_DEVICES];
-   VkQueueFamilyProperties families[LINK_VK_FAMILIES];
    uint32_t count  = LINK_VK_DEVICES;
    VkResult result = v->f.enumerate_physical_devices(v->instance, &count, gpus);
    uint32_t i;
@@ -292,48 +376,29 @@ static bool link_vk_gpu(link_vk_t *v, const char *require)
       if (strstr(v->properties.deviceName, require))
       {
          v->gpu = gpus[i];
-         break;
-      }
-   }
-   v->f.get_properties(v->gpu, &v->properties);
-   if (require && !strstr(v->properties.deviceName, require))
-   {
-      fprintf(stderr, "link_harness: console %u: renderer \"%s\" is not %s\n", v->index,
-            v->properties.deviceName, require);
-      return false;
-   }
-   count = LINK_VK_FAMILIES;
-   v->f.get_queue_families(v->gpu, &count, families);
-   for (i = 0; i < count; i++)
-      if ((families[i].queueFlags & LINK_VK_QUEUE) == LINK_VK_QUEUE && families[i].queueCount)
-      {
-         v->family = i;
          return true;
       }
-   return link_vk_refuse(v, "no queue family does graphics and compute", NULL, VK_SUCCESS);
+   }
+   return link_vk_renderer(v, require);
 }
 
-/* The device, with one queue of that family and nothing else asked for */
-static bool link_vk_device(link_vk_t *v)
+/* retro_vulkan_create_device_wrapper_t: the core's create info as it is.
+ * VK_NULL_HANDLE: why on stderr. */
+static VkDevice link_vk_create_device(VkPhysicalDevice gpu, void *opaque,
+      const VkDeviceCreateInfo *create_info)
 {
-   static const float priority = 1.0f;
-   VkDeviceQueueCreateInfo queue;
-   VkDeviceCreateInfo info;
-   VkResult result;
-   memset(&queue, 0, sizeof(queue));
-   queue.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-   queue.queueFamilyIndex = v->family;
-   queue.queueCount       = 1;
-   queue.pQueuePriorities = &priority;
-   memset(&info, 0, sizeof(info));
-   info.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-   info.queueCreateInfoCount = 1;
-   info.pQueueCreateInfos    = &queue;
-   if ((result = v->f.create_device(v->gpu, &info, NULL, &v->device)) != VK_SUCCESS)
-   {
-      v->device = VK_NULL_HANDLE;
-      return link_vk_refuse(v, "vkCreateDevice failed", NULL, result);
-   }
+   link_vk_t *v    = (link_vk_t*)opaque;
+   VkDevice device = VK_NULL_HANDLE;
+   VkResult result = v->f.create_device(gpu, create_info, NULL, &device);
+   if (result == VK_SUCCESS)
+      return device;
+   link_vk_fail(v, "vkCreateDevice failed", result);
+   return VK_NULL_HANDLE;
+}
+
+/* The device's entry points */
+static bool link_vk_entries(link_vk_t *v)
+{
    v->f.destroy_device = (PFN_vkDestroyDevice)link_vk_device_entry(v, "vkDestroyDevice");
    v->f.get_queue      = (PFN_vkGetDeviceQueue)link_vk_device_entry(v, "vkGetDeviceQueue");
    v->f.create_command_pool = (PFN_vkCreateCommandPool)link_vk_device_entry(v,
@@ -368,6 +433,96 @@ static bool link_vk_device(link_vk_t *v)
          "vkInvalidateMappedMemoryRanges");
    if (v->missing)
       return link_vk_refuse(v, "no entry point ", v->missing, VK_SUCCESS);
+   return true;
+}
+
+/* The device a core's negotiation interface makes, asked as
+ * libretro_vulkan.h has a frontend ask: create_device2 on the chosen
+ * physical device, then on one the core chooses, or create_device with
+ * nothing required. false: it made none. */
+static bool link_vk_core_device(link_vk_t *v,
+      const struct retro_hw_render_context_negotiation_interface_vulkan *n)
+{
+   PFN_vkGetInstanceProcAddr get_instance_proc_addr = link_vk_now.get_instance_proc_addr;
+   struct retro_vulkan_context context;
+   VkPhysicalDeviceFeatures features;
+   bool made = false;
+   memset(&context, 0, sizeof(context));
+   memset(&features, 0, sizeof(features));
+   if (n->interface_version >= 2 && n->create_device2)
+   {
+      made = n->create_device2(&context, v->instance, v->gpu, VK_NULL_HANDLE,
+            get_instance_proc_addr, link_vk_create_device, v);
+      if (!made)
+      {
+         fprintf(stderr, "link_harness: console %u: create_device2 refused the physical"
+               " device; once more on one the core chooses\n", v->index);
+         memset(&context, 0, sizeof(context));
+         made = n->create_device2(&context, v->instance, VK_NULL_HANDLE, VK_NULL_HANDLE,
+               get_instance_proc_addr, link_vk_create_device, v);
+      }
+   }
+   else if (n->create_device)
+      made = n->create_device(&context, v->instance, v->gpu, VK_NULL_HANDLE,
+            get_instance_proc_addr, NULL, 0, NULL, 0, &features);
+   if (!made)
+      return false;
+   v->destroy_device = n->destroy_device;
+   v->gpu            = context.gpu;
+   v->device         = context.device;
+   v->queue          = context.queue;
+   v->family         = context.queue_family_index;
+   return true;
+}
+
+/* The device and its entry points: the device the core's negotiation
+ * interface makes, else one of the harness's own, with one queue of the
+ * first family that does graphics and compute and nothing else asked for */
+static bool link_vk_device(link_vk_t *v,
+      const struct retro_hw_render_context_negotiation_interface_vulkan *n)
+{
+   static const float priority = 1.0f;
+   VkQueueFamilyProperties families[LINK_VK_FAMILIES];
+   VkDeviceQueueCreateInfo queue;
+   VkDeviceCreateInfo info;
+   uint32_t count = LINK_VK_FAMILIES;
+   VkResult result;
+   if (n && link_vk_core_device(v, n))
+   {
+      /* Its entry points first: link_vk_free destroys it with them */
+      if (v->device && !link_vk_entries(v))
+         return false;
+      if (v->gpu && v->device && v->queue)
+         return true;
+      return link_vk_refuse(v, "the core's device has no physical device or queue", NULL,
+            VK_SUCCESS);
+   }
+   if (n)
+      fprintf(stderr, "link_harness: console %u: the core made no device; the harness"
+            " makes its own\n", v->index);
+   v->f.get_queue_families(v->gpu, &count, families);
+   for (v->family = 0; v->family < count; v->family++)
+      if (     (families[v->family].queueFlags & LINK_VK_QUEUE) == LINK_VK_QUEUE
+            && families[v->family].queueCount)
+         break;
+   if (v->family == count)
+      return link_vk_refuse(v, "no queue family does graphics and compute", NULL, VK_SUCCESS);
+   memset(&queue, 0, sizeof(queue));
+   queue.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+   queue.queueFamilyIndex = v->family;
+   queue.queueCount       = 1;
+   queue.pQueuePriorities = &priority;
+   memset(&info, 0, sizeof(info));
+   info.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+   info.queueCreateInfoCount = 1;
+   info.pQueueCreateInfos    = &queue;
+   if ((result = v->f.create_device(v->gpu, &info, NULL, &v->device)) != VK_SUCCESS)
+   {
+      v->device = VK_NULL_HANDLE;
+      return link_vk_refuse(v, "vkCreateDevice failed", NULL, result);
+   }
+   if (!link_vk_entries(v))
+      return false;
    v->f.get_queue(v->device, v->family, 0, &v->queue);
    return true;
 }
@@ -457,19 +612,27 @@ static void link_vk_set_signal_semaphore(void *handle, VkSemaphore semaphore)
    link_vk_misuse((link_vk_t*)handle, "set_signal_semaphore is not served");
 }
 
-link_vk_t *link_vk_new(unsigned index, const char *require, bool validate, unsigned *errors)
+link_vk_t *link_vk_new(const struct retro_hw_render_context_negotiation_interface *negotiation,
+      unsigned index, const char *require, bool validate, unsigned *errors)
 {
+   const struct retro_hw_render_context_negotiation_interface_vulkan *n = NULL;
    link_vk_t *v = (link_vk_t*)calloc(1, sizeof(*v));
    if (!v)
    {
       fprintf(stderr, "link_harness: console %u: no Vulkan device: out of memory\n", index);
       return NULL;
    }
-   v->index  = index;
-   v->errors = errors;
-   if (     !link_vk_instance(v, validate)
+   v->index    = index;
+   v->errors   = errors;
+   v->validate = validate;
+   if (     negotiation
+         && negotiation->interface_type == RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_VULKAN
+         && negotiation->interface_version >= 1)
+      n = (const struct retro_hw_render_context_negotiation_interface_vulkan*)negotiation;
+   if (     !link_vk_instance(v, n)
          || !link_vk_gpu(v, require)
-         || !link_vk_device(v)
+         || !link_vk_device(v, n)
+         || !link_vk_renderer(v, require)
          || !link_vk_readback(v))
    {
       link_vk_free(v);
@@ -766,6 +929,9 @@ void link_vk_free(link_vk_t *v)
       v->f.destroy_fence(v->device, v->fence, NULL);
       v->f.destroy_command_pool(v->device, v->pool, NULL);
    }
+   /* What the core made with the device it made goes first */
+   if (v->destroy_device)
+      v->destroy_device();
    if (v->device && v->f.destroy_device)
       v->f.destroy_device(v->device, NULL);
    if (v->messenger)

@@ -10,21 +10,27 @@
 
 #include <boolean.h>
 
+struct retro_hw_render_context_negotiation_interface;
 struct retro_hw_render_interface_vulkan;
 
 typedef struct link_vk link_vk_t;   /* one console's instance, device and readback */
 
+/* GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT's version for Vulkan */
+unsigned link_vk_negotiation(void);
 /* SET_HW_RENDER: the Vulkan loader, opened once a process. false: the
  * reason on stderr after "link_harness: console <index>: " */
 bool link_vk_loader(unsigned index);
 /* After retro_load_game: an instance and a device on the first physical
- * device whose name has require in it, else on the first, which must then
- * name require (NULL: any). validate: the Khronos validation layer, each
+ * device whose name has require in it (NULL: any). negotiation: the core's,
+ * or NULL; a Vulkan one makes the device, and from version 2 makes it and
+ * the instance through the harness's wrappers; the physical device it ends
+ * on must name require too. validate: the Khronos validation layer, each
  * error it reports on stderr and counted in *errors, as the core's misuse
  * of the interface is. NULL: no device, the reason on stderr after
  * "link_harness: console <index>: no Vulkan device: ", or a renderer that
  * is not require. */
-link_vk_t *link_vk_new(unsigned index, const char *require, bool validate, unsigned *errors);
+link_vk_t *link_vk_new(const struct retro_hw_render_context_negotiation_interface *negotiation,
+      unsigned index, const char *require, bool validate, unsigned *errors);
 /* GET_HW_RENDER_INTERFACE's, version 5 */
 const struct retro_hw_render_interface_vulkan *link_vk_interface(link_vk_t *v);
 /* The image of the last set_image, width x height, into argb as 0x00RRGGBB,

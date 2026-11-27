@@ -1,0 +1,12 @@
+# twin: render_one
+# vulkan/one with a core that sets a version 1 context negotiation
+# interface: its create_device makes the device on the physical device the
+# harness chose, with nothing required, and the harness destroys it after
+# the core's destroy_device.
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_vk_negotiate v1
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end

@@ -84,6 +84,7 @@ typedef struct link_console
    unsigned descriptor_count;
    struct link_gl *gl;              /* the OpenGL context it asked for */
    struct link_vk *vk;              /* the Vulkan device made for it */
+   const struct retro_hw_render_context_negotiation_interface *negotiation;  /* its core's */
    struct retro_hw_render_callback hw;  /* a copy of what it asked with */
    uint64_t video;                  /* the latest picture */
    enum retro_pixel_format format;

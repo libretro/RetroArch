@@ -1,0 +1,12 @@
+# twin: render_one
+# vulkan/one with a core that sets a version 2 context negotiation
+# interface: its create_instance and create_device2 make the instance and
+# the device through the harness's wrappers, which add the validation
+# layer under --vk-validate.
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_vk_negotiate v2
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end
