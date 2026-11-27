@@ -139,20 +139,6 @@ static void RETRO_CALLCONV lt_gl_context_destroy(void)
    lt_gl.entry[0] = NULL;
 }
 
-/* An option's place in names, a list that starts with its default */
-static unsigned lt_gl_option(const char *key, const char *const *names, unsigned count)
-{
-   const char *s = lt_gl.host->option(key);
-   unsigned i;
-   if (!s)
-      return 0;
-   for (i = 0; i < count; i++)
-      if (!strcmp(s, names[i]))
-         return i;
-   lt_gl.host->fail_option(key, s);
-   return 0;
-}
-
 static bool lt_gl_load(const struct lt_render_host *host)
 {
    static const char *const contexts[] = { LT_GL_CONTEXT_DEFAULT, "compat", "gles2", "core99" };
@@ -173,7 +159,7 @@ static bool lt_gl_load(const struct lt_render_host *host)
    unsigned context;
    memset(&lt_gl, 0, sizeof(lt_gl));
    lt_gl.host = host;
-   context    = lt_gl_option("link_test_gl_context", contexts,
+   context    = lt_render_option("link_test_gl_context", contexts,
          sizeof(contexts) / sizeof(*contexts));
    lt_gl.hw.context_type       = asked[context].type;
    lt_gl.hw.version_major      = asked[context].major;
@@ -182,11 +168,11 @@ static bool lt_gl_load(const struct lt_render_host *host)
    lt_gl.hw.stencil            = asked[context].stencil;
    lt_gl.hw.context_reset      = lt_gl_context_reset;
    lt_gl.hw.context_destroy    = lt_gl_context_destroy;
-   lt_gl.hw.bottom_left_origin = lt_gl_option("link_test_gl_origin", origins,
+   lt_gl.hw.bottom_left_origin = lt_render_option("link_test_gl_origin", origins,
          sizeof(origins) / sizeof(*origins)) == 1;
-   lt_gl.dirty                 = lt_gl_option("link_test_gl_state", states,
+   lt_gl.dirty                 = lt_render_option("link_test_gl_state", states,
          sizeof(states) / sizeof(*states)) == 1;
-   lt_gl.late                  = lt_gl_option("link_test_gl_ask", asks,
+   lt_gl.late                  = lt_render_option("link_test_gl_ask", asks,
          sizeof(asks) / sizeof(*asks)) == 1;
    if (lt_gl.late || host->environment(RETRO_ENVIRONMENT_SET_HW_RENDER, &lt_gl.hw))
       return true;

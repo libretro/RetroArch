@@ -395,9 +395,9 @@ The scenarios here:
   that makes a port's frame no whole number of ticks, a `save`, a `reset`
   and an `expect` line with a console inside a frame, values of
   `link_test_render`, `link_test_grow` and `link_test_gl_context` the test
-  core does not know, an option of the OpenGL picture on a console that
-  draws in software, and a core that asks for OpenGL on a console with no
-  `render=`.
+  core does not know, an option of the OpenGL picture and one of the
+  Vulkan picture on a console that draws in software, and a core that asks
+  for OpenGL or for Vulkan on a console with no `render=`.
 - `stale/`: scenarios whose `from` run passes and whose `rewound` run
   fails: a core that keeps a latch over a load, one whose save right after a
   load writes a copy the load left stale, one whose save there makes a link
@@ -604,12 +604,14 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_save_in_advance` | off, on | off |
 | `link_test_mode` | conform, nonconform, never_advance, no_progress, stale_load, stale_save, stale_send, stale_release, release_error, unload_error, cold_load, host_stamp | conform |
 | `link_test_bad_frame` | the first frame of the mode | 0 |
-| `link_test_render` | off, soft, gl: the picture in two parts, and what draws it | off |
+| `link_test_render` | off, soft, gl, vulkan: the picture in two parts, and what draws it | off |
 | `link_test_grow` | off, `told:N` or `untold:N`: the frame the two-part picture grows in | off |
 | `link_test_gl_context` | core33, compat, gles2, core99: the OpenGL context it asks for | core33 |
 | `link_test_gl_origin` | top, bottom: the picture's row that is the framebuffer's first | top |
 | `link_test_gl_state` | clean, dirty: the state it leaves its context in | clean |
 | `link_test_gl_ask` | load, run: whether it asks for its context in `retro_load_game` or in its first `retro_run` | load |
+| `link_test_vk_negotiate` | off, v1, v2: the context negotiation interface it sets | off |
+| `link_test_vk_handoff` | barrier, semaphore, commands: how a frame's picture reaches the frontend | barrier |
 
 In each `retro_run` the core advances its ports at the frame start, at each
 of its steps and at the frame end. It takes every message it can, applies
@@ -636,7 +638,7 @@ frame's input. With `link_test_restart_ticks`, `nonconform` or `no_progress`
 it logs an error.
 
 With `link_test_render` off the core draws its picture at the end of the
-frame, from its state hash. With `soft` or `gl` it draws a picture in two
+frame, from its state hash. With another value it draws a picture in two
 parts: three bands of eight stripes before the frame's first advance, from
 its state hash there, and three more after its last, from the hash the
 frame ends with. A console parked inside a frame has then drawn half a
@@ -668,6 +670,28 @@ and have the core's context current whenever it calls the core. With
 refused, it passes dupes and logs no error, so that only the frontend
 fails the run. One of these four options off its default with
 `link_test_render` not `gl` is a logged error.
+
+With `vulkan` the core asks for a Vulkan context with `SET_HW_RENDER` in
+`retro_load_game`, which fails if that is refused, and draws the same
+picture with clears in a render pass, on one image of its own, through the
+entry points of the render interface (version 5) alone. With
+`link_test_vk_negotiate` v1 or v2 it then sets a context negotiation
+interface of that version, which makes a device with one queue that does
+graphics and compute: v1 with `create_device`, v2 with `create_instance`
+and `create_device2` through the frontend's wrappers, and a logged error
+when the frontend answers less than 2. Each part is one command buffer,
+submitted between `lock_queue` and `unlock_queue`; a frame starts with
+`wait_sync_index`, and it fails unless the sync index mask is 1.
+`link_test_vk_handoff` picks how part 1 reaches the frontend: `barrier`,
+a barrier to `SHADER_READ_ONLY_OPTIMAL` before `set_image`; `semaphore`,
+that and a semaphore part 1 signals and `set_image` passes, and in every
+frame, dupes too, a `set_signal_semaphore` that the next frame's part 0
+waits on; `commands`, part 1's command buffer handed over with
+`set_command_buffers` instead of submitted. Either option off its default
+with `link_test_render` not `vulkan` is a logged error. A dupe frame draws
+its first part on the one image and leaves it in `COLOR_ATTACHMENT_OPTIMAL`,
+so a frontend that shows the last `set_image` again on a NULL frame would
+show that half-drawn image; the harness reads no image on a dupe.
 
 From `link_test_bad_frame` on, the modes break the rules:
 

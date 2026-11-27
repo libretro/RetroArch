@@ -193,7 +193,7 @@ static const struct retro_variable lt_variables[] = {
                               "stale_save|stale_send|stale_release|release_error|"
                               "unload_error|cold_load|host_stamp" },
    { "link_test_bad_frame",   "First frame of the mode; 0" },
-   { "link_test_render",      "Picture in two parts, around the frame's advances; off|soft|gl" },
+   { "link_test_render",      "Picture in two parts, around the frame's advances; off|soft|gl|vulkan" },
    { "link_test_grow",        "Frame the picture grows in, told:N or untold:N; off" },
    { "link_test_gl_context",  "OpenGL context asked for; "
                               LT_GL_CONTEXT_DEFAULT "|compat|gles2|core99" },
@@ -203,6 +203,10 @@ static const struct retro_variable lt_variables[] = {
                               LT_GL_STATE_DEFAULT "|dirty" },
    { "link_test_gl_ask",      "Where the OpenGL context is asked for; "
                               LT_GL_ASK_DEFAULT "|run" },
+   { "link_test_vk_negotiate", "Vulkan context negotiation interface set; "
+                              LT_VK_NEGOTIATE_DEFAULT "|v1|v2" },
+   { "link_test_vk_handoff",  "How the Vulkan picture reaches the frontend; "
+                              LT_VK_HANDOFF_DEFAULT "|semaphore|commands" },
    { NULL, NULL }
 };
 
@@ -557,15 +561,15 @@ static void lt_read_mode(void)
    }
 }
 
-/* An option of the OpenGL picture, off its default while it is not drawn */
-static void lt_option_gl_only(const char *key, const char *by_default)
+/* An option of one picture, off its default while that one is not drawn */
+static void lt_option_only(const char *key, const char *by_default, const char *render)
 {
    const char *s = lt_option(key);
    if (s && strcmp(s, by_default))
    {
       lt_bump8(LT_RAM_ERRORS);
       if (lt_log)
-         lt_log(RETRO_LOG_ERROR, "link test: %s: only with link_test_render gl\n", key);
+         lt_log(RETRO_LOG_ERROR, "link test: %s: only with link_test_render %s\n", key, render);
    }
 }
 
@@ -580,15 +584,22 @@ static void lt_read_render(void)
          lt_cfg.render = &lt_render_soft;
       else if (!strcmp(s, "gl"))
          lt_cfg.render = &lt_render_gl;
+      else if (!strcmp(s, "vulkan"))
+         lt_cfg.render = &lt_render_vk;
       else if (strcmp(s, "off"))
          lt_fail_option("link_test_render", s);
    }
    if (lt_cfg.render != &lt_render_gl)
    {
-      lt_option_gl_only("link_test_gl_context", LT_GL_CONTEXT_DEFAULT);
-      lt_option_gl_only("link_test_gl_origin", LT_GL_ORIGIN_DEFAULT);
-      lt_option_gl_only("link_test_gl_state", LT_GL_STATE_DEFAULT);
-      lt_option_gl_only("link_test_gl_ask", LT_GL_ASK_DEFAULT);
+      lt_option_only("link_test_gl_context", LT_GL_CONTEXT_DEFAULT, "gl");
+      lt_option_only("link_test_gl_origin", LT_GL_ORIGIN_DEFAULT, "gl");
+      lt_option_only("link_test_gl_state", LT_GL_STATE_DEFAULT, "gl");
+      lt_option_only("link_test_gl_ask", LT_GL_ASK_DEFAULT, "gl");
+   }
+   if (lt_cfg.render != &lt_render_vk)
+   {
+      lt_option_only("link_test_vk_negotiate", LT_VK_NEGOTIATE_DEFAULT, "vulkan");
+      lt_option_only("link_test_vk_handoff", LT_VK_HANDOFF_DEFAULT, "vulkan");
    }
    if ((s = lt_option("link_test_grow")) && strcmp(s, "off"))
    {
@@ -1093,6 +1104,19 @@ void lt_render_cell(unsigned width, unsigned height, unsigned part, uint64_t val
    cell->x         = stripe * cell->width;
    cell->y         = band * cell->height;
    cell->rgb       = (uint32_t)(stripe & 1 ? (row & 0xFFFFFFUL) : ((row >> 24) & 0xFFFFFFUL));
+}
+
+unsigned lt_render_option(const char *key, const char *const *names, unsigned count)
+{
+   const char *s = lt_option(key);
+   unsigned i;
+   if (!s)
+      return 0;
+   for (i = 0; i < count; i++)
+      if (!strcmp(s, names[i]))
+         return i;
+   lt_fail_option(key, s);
+   return 0;
 }
 
 bool lt_render_tell(unsigned width, unsigned height)
@@ -1721,8 +1745,6 @@ bool retro_load_game(const struct retro_game_info *game)
    {
       lt_host.environment = lt_environ;
       lt_host.fail        = lt_render_fail;
-      lt_host.option      = lt_option;
-      lt_host.fail_option = lt_fail_option;
       lt_told_width       = LT_WIDTH;
       lt_told_height      = LT_HEIGHT;
       if (!lt_cfg.render->load(&lt_host))

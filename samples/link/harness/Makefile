@@ -140,7 +140,7 @@ LRC_SOURCES     := \
 	$(LRC)/string/rstrtod.c \
 	$(LRC)/vfs/vfs_implementation.c \
 	$(LRC)/time/rtime.c
-CORE_SOURCES    := ../core/link_test_core.c ../core/link_test_gl.c
+CORE_SOURCES    := ../core/link_test_core.c ../core/link_test_gl.c ../core/link_test_vk.c
 SCENARIOS       := $(sort $(wildcard ../scenarios/*.scn))
 BAD_SCENARIOS   := $(sort $(wildcard ../scenarios/bad/*.scn))
 ifeq ($(HAVE_EGL),1)
@@ -408,9 +408,14 @@ LINK_CFLAGS  := $(BASE_CFLAGS) -std=c89 -pedantic -Wall -Wextra -Werror \
 LIBCO_CFLAGS := $(BASE_CFLAGS) -std=c89 -Wall -Wextra -Werror \
                 -DLIBCO_MP -D_GNU_SOURCE -DHAVE_POSIX_MEMALIGN=1
 LRC_CFLAGS   := $(BASE_CFLAGS) -std=gnu99 -Wall -pedantic -DHAVE_DYNAMIC
+# The tree's Vulkan headers are not C89-pedantic: a file that includes them
+# takes them, and libretro-common's, as system headers
+VK_CFLAGS    := $(filter-out -I$(LRC)/include,$(OWN_CFLAGS)) -DVK_NO_PROTOTYPES \
+                -isystem ../../../gfx/include -isystem $(LRC)/include
 
 $(call obj,$(HARNESS_SOURCES)): FLAGS := $(OWN_CFLAGS) -DHAVE_DYNAMIC $(HARNESS_DEFINES)
 $(call obj,$(CORE_SOURCES)):    FLAGS := $(OWN_CFLAGS) $(PIC)
+$(call obj,../core/link_test_vk.c): FLAGS := $(VK_CFLAGS) $(PIC)
 $(call obj,$(LINK_SOURCES)):    FLAGS := $(LINK_CFLAGS)
 $(call obj,$(LIBCO_SOURCES)):   FLAGS := $(LIBCO_CFLAGS)
 $(call obj,$(LRC_SOURCES)):     FLAGS := $(LRC_CFLAGS)

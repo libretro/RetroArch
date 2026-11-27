@@ -15,14 +15,15 @@
 #define LT_GL_STATE_DEFAULT   "clean"
 #define LT_GL_ASK_DEFAULT     "load"
 
+/* The Vulkan picture's, likewise */
+#define LT_VK_NEGOTIATE_DEFAULT "off"
+#define LT_VK_HANDOFF_DEFAULT   "barrier"
+
 struct lt_render_host
 {
    retro_environment_t environment;
    /* an error line and the error byte */
    void (*fail)(const char *what, uint64_t a, uint64_t b);
-   const char *(*option)(const char *key);
-   /* the error line of a value an option does not know, and the error byte */
-   void (*fail_option)(const char *key, const char *value);
 };
 
 struct lt_render
@@ -48,11 +49,16 @@ struct lt_render_cell
 void lt_render_cell(unsigned width, unsigned height, unsigned part, uint64_t value,
       unsigned i, struct lt_render_cell *cell);
 
+/* An option's place in names, a list that starts with its default; a
+ * value not in it is an error, and 0 */
+unsigned lt_render_option(const char *key, const char *const *names, unsigned count);
+
 /* Tells the frontend a size other than the last one told, where
  * link_test_grow says to tell; false: the frontend refused it */
 bool lt_render_tell(unsigned width, unsigned height);
 
 extern const struct lt_render lt_render_soft; /* link_test_core.c */
 extern const struct lt_render lt_render_gl;   /* link_test_gl.c */
+extern const struct lt_render lt_render_vk;   /* link_test_vk.c */
 
 #endif
