@@ -631,7 +631,10 @@ The scenarios in `vulkan/`:
   `SHADER_READ_ONLY_OPTIMAL` before `set_image`.
 - `dupe` (`render_dupe`): dupes, each with the first part of its frame
   submitted, which the next `wait_sync_index` waits out.
-- `general` (`render_one`): the picture handed over in `GENERAL`.
+- `general` (`render_one`): the picture handed over in `GENERAL`, which
+  the core reads too after handing it over: a layout transition of the
+  harness's would race that read, which synchronization validation
+  reports.
 - `grow` (`render_grow`): a told growth, which raises the size a frame is
   held to.
 - `negotiate_v1` and `negotiate_v2` (`render_one`): a core that sets a
@@ -735,7 +738,7 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_gl_ask` | load, run: whether it asks for its context in `retro_load_game` or in its first `retro_run` | load |
 | `link_test_vk_negotiate` | off, v1, v2, no_queue, late: the context negotiation interface it sets; no_queue is v1 with the device handed back with no queue, late is v1 set in its first `retro_run` | off |
 | `link_test_vk_handoff` | barrier, semaphore, commands, none: how a frame's picture reaches the frontend | barrier |
-| `link_test_vk_layout` | shader_read, general: the layout `set_image` names | shader_read |
+| `link_test_vk_layout` | shader_read, general: the layout `set_image` names; in `GENERAL` part 1 also copies a texel of the image | shader_read |
 | `link_test_vk_format` | rgba, bgra: the image's format, `R8G8B8A8_UNORM` or `B8G8R8A8_UNORM` | rgba |
 
 In each `retro_run` the core advances its ports at the frame start, at each
@@ -822,13 +825,15 @@ frame, dupes too, a `set_signal_semaphore` that the next frame's part 0
 waits on; `commands`, part 1's command buffer handed over with
 `set_command_buffers` instead of submitted; `none`, the barrier and no
 `set_image`, the frame passed as drawn all the same. `link_test_vk_layout`
-general ends part 1 in `GENERAL` in place of `SHADER_READ_ONLY_OPTIMAL`,
-and `link_test_vk_format` bgra draws on a `B8G8R8A8_UNORM` image. Any of
-these options off its default with `link_test_render` not `vulkan` is a
-logged error. A dupe frame draws its first part on the one image and
-leaves it in `COLOR_ATTACHMENT_OPTIMAL`, so a frontend that shows the last
-`set_image` again on a NULL frame would show that half-drawn image; the
-harness reads no image on a dupe.
+general ends part 1 in `GENERAL` in place of `SHADER_READ_ONLY_OPTIMAL`
+and then copies a texel of the image into a buffer of its own, a read at
+the transfer stage after the handoff, and `link_test_vk_format` bgra
+draws on a `B8G8R8A8_UNORM` image. Any of these options off its default
+with `link_test_render` not `vulkan` is a logged error. A dupe frame
+draws its first part on the one image and leaves it in
+`COLOR_ATTACHMENT_OPTIMAL`, so a frontend that shows the last `set_image`
+again on a NULL frame would show that half-drawn image; the harness reads
+no image on a dupe.
 
 From `link_test_bad_frame` on, the modes break the rules:
 

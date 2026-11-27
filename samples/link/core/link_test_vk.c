@@ -50,6 +50,11 @@ struct lt_vk_entries
    PFN_vkQueueSubmit queue_submit;
    PFN_vkCreateSemaphore create_semaphore;
    PFN_vkDestroySemaphore destroy_semaphore;
+   PFN_vkCreateBuffer create_buffer;
+   PFN_vkDestroyBuffer destroy_buffer;
+   PFN_vkGetBufferMemoryRequirements get_buffer_memory_requirements;
+   PFN_vkBindBufferMemory bind_buffer_memory;
+   PFN_vkCmdCopyImageToBuffer cmd_copy_image_to_buffer;
 };
 
 static struct
@@ -68,6 +73,8 @@ static struct
    VkCommandBuffer cmd[2];          /* a part's */
    VkSemaphore drawn;               /* semaphore: part 1 signals it, set_image passes it */
    VkSemaphore reusable;            /* semaphore: the frontend signals it, part 0 waits */
+   VkBuffer texel;                  /* GENERAL: where part 1 copies a texel it handed over */
+   VkDeviceMemory texel_memory;
    struct retro_vulkan_image shown; /* what set_image passes */
    VkImageLayout layout;            /* the image's, after what was last recorded */
    VkFormat format;                 /* the image's */
@@ -157,6 +164,13 @@ static bool lt_vk_find_entries(void)
    e->queue_submit                  = (PFN_vkQueueSubmit)lt_vk_entry("vkQueueSubmit");
    e->create_semaphore              = (PFN_vkCreateSemaphore)lt_vk_entry("vkCreateSemaphore");
    e->destroy_semaphore             = (PFN_vkDestroySemaphore)lt_vk_entry("vkDestroySemaphore");
+   e->create_buffer                 = (PFN_vkCreateBuffer)lt_vk_entry("vkCreateBuffer");
+   e->destroy_buffer                = (PFN_vkDestroyBuffer)lt_vk_entry("vkDestroyBuffer");
+   e->get_buffer_memory_requirements = (PFN_vkGetBufferMemoryRequirements)lt_vk_entry(
+         "vkGetBufferMemoryRequirements");
+   e->bind_buffer_memory            = (PFN_vkBindBufferMemory)lt_vk_entry("vkBindBufferMemory");
+   e->cmd_copy_image_to_buffer      = (PFN_vkCmdCopyImageToBuffer)lt_vk_entry(
+         "vkCmdCopyImageToBuffer");
    return lt_vk.entries;
 }
 
@@ -394,8 +408,36 @@ static bool lt_vk_image(unsigned width, unsigned height)
    return true;
 }
 
+/* The buffer part 1 copies one texel into, in memory of any type */
+static bool lt_vk_texel(void)
+{
+   VkDevice device = lt_vk.vk->device;
+   VkBufferCreateInfo buffer;
+   VkMemoryRequirements needs;
+   VkMemoryAllocateInfo allocate;
+   memset(&buffer, 0, sizeof(buffer));
+   buffer.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+   buffer.size        = 4;
+   buffer.usage       = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+   buffer.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+   if (!lt_vk_ok(lt_vk.f.create_buffer(device, &buffer, NULL, &lt_vk.texel),
+         "vkCreateBuffer failed"))
+      return false;
+   lt_vk.f.get_buffer_memory_requirements(device, lt_vk.texel, &needs);
+   memset(&allocate, 0, sizeof(allocate));
+   allocate.sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   allocate.allocationSize = needs.size;
+   while (     allocate.memoryTypeIndex + 1 < VK_MAX_MEMORY_TYPES
+            && !(needs.memoryTypeBits & (1u << allocate.memoryTypeIndex)))
+      allocate.memoryTypeIndex++;
+   return lt_vk_ok(lt_vk.f.allocate_memory(device, &allocate, NULL, &lt_vk.texel_memory),
+            "vkAllocateMemory failed")
+      && lt_vk_ok(lt_vk.f.bind_buffer_memory(device, lt_vk.texel, lt_vk.texel_memory, 0),
+            "vkBindBufferMemory failed");
+}
+
 /* The render pass, the command pool and its two buffers, the semaphores
- * the handoff uses, and the image */
+ * the handoff uses, the texel's buffer, and the image */
 static void lt_vk_objects(unsigned width, unsigned height)
 {
    VkDevice device = lt_vk.vk->device;
@@ -455,6 +497,8 @@ static void lt_vk_objects(unsigned width, unsigned height)
                "vkCreateSemaphore failed"))
          return;
    }
+   if (lt_vk.shown.image_layout == VK_IMAGE_LAYOUT_GENERAL && !lt_vk_texel())
+      return;
    lt_vk_image(width, height);
 }
 
@@ -508,17 +552,21 @@ static void RETRO_CALLCONV lt_vk_context_destroy(void)
       lt_vk_free_image();
       lt_vk.f.destroy_semaphore(device, lt_vk.drawn, NULL);
       lt_vk.f.destroy_semaphore(device, lt_vk.reusable, NULL);
+      lt_vk.f.destroy_buffer(device, lt_vk.texel, NULL);
+      lt_vk.f.free_memory(device, lt_vk.texel_memory, NULL);
       lt_vk.f.destroy_command_pool(device, lt_vk.pool, NULL);
       lt_vk.f.destroy_render_pass(device, lt_vk.pass, NULL);
    }
-   lt_vk.drawn    = VK_NULL_HANDLE;
-   lt_vk.reusable = VK_NULL_HANDLE;
-   lt_vk.pool     = VK_NULL_HANDLE;
-   lt_vk.pass     = VK_NULL_HANDLE;
-   lt_vk.vk       = NULL;
-   lt_vk.entries  = false;
-   lt_vk.ready    = false;
-   lt_vk.waits    = false;
+   lt_vk.drawn        = VK_NULL_HANDLE;
+   lt_vk.reusable     = VK_NULL_HANDLE;
+   lt_vk.texel        = VK_NULL_HANDLE;
+   lt_vk.texel_memory = VK_NULL_HANDLE;
+   lt_vk.pool         = VK_NULL_HANDLE;
+   lt_vk.pass         = VK_NULL_HANDLE;
+   lt_vk.vk           = NULL;
+   lt_vk.entries      = false;
+   lt_vk.ready        = false;
+   lt_vk.waits        = false;
 }
 
 static bool lt_vk_load(const struct lt_render_host *host)
@@ -744,6 +792,7 @@ static void lt_vk_begin(unsigned width, unsigned height)
 static void lt_vk_part(unsigned part, uint64_t value)
 {
    VkCommandBuffer cmd = lt_vk.cmd[part];
+   VkBufferImageCopy texel;
    unsigned i;
    if (!lt_vk.drawing)
       return;
@@ -760,10 +809,27 @@ static void lt_vk_part(unsigned part, uint64_t value)
    }
    lt_vk.f.cmd_end_render_pass(cmd);
    /* The frontend samples the picture, libretro_vulkan.h's example says */
-   if (part == 1)
+   if (part == 1 && lt_vk.shown.image_layout != VK_IMAGE_LAYOUT_GENERAL)
       lt_vk_barrier(cmd, lt_vk.shown.image_layout,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT);
+   else if (part == 1)
+   {
+      /* In GENERAL the core may read what it handed over while the
+       * frontend does: it copies a texel, at the transfer stage */
+      lt_vk_barrier(cmd, VK_IMAGE_LAYOUT_GENERAL,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT);
+      memset(&texel, 0, sizeof(texel));
+      texel.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      texel.imageSubresource.layerCount = 1;
+      texel.imageExtent.width           = 1;
+      texel.imageExtent.height          = 1;
+      texel.imageExtent.depth           = 1;
+      lt_vk.f.cmd_copy_image_to_buffer(cmd, lt_vk.image, VK_IMAGE_LAYOUT_GENERAL, lt_vk.texel,
+            1, &texel);
+   }
    lt_vk_hand_over(part);
 }
 
