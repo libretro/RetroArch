@@ -9704,7 +9704,6 @@ unsigned menu_displaylist_build_list(
    {
       case DISPLAYLIST_OPTIONS_OVERRIDES:
          {
-            char config_directory[DIR_MAX_LENGTH];
             char override_path[PATH_MAX_LENGTH];
             runloop_state_t *runloop_st      = runloop_state_get_ptr();
             rarch_system_info_t *sys_info    = &runloop_st->system;
@@ -9719,51 +9718,44 @@ unsigned menu_displaylist_build_list(
             bool content_dir_override_remove = false;
             bool game_override_remove        = false;
 
-            config_directory[0]              = '\0';
-            override_path[0]                 = '\0';
-
-            fill_pathname_application_special(config_directory,
-                  sizeof(config_directory),
-                  APPLICATION_SPECIAL_DIRECTORY_CONFIG);
-
-            if (has_content)
-            {
-               char content_dir_name[DIR_MAX_LENGTH];
-
-               /* Game-specific path */
-               fill_pathname_join_special_ext(override_path,
-                     config_directory, core_name,
-                     path_basename_nocompression(rarch_path_basename),
-                     FILE_PATH_CONFIG_EXTENSION,
-                     sizeof(override_path));
-
-               game_override_remove = path_is_valid(override_path);
-               override_path[0]     = '\0';
-
-               /* Contentdir-specific path */
-               fill_pathname_parent_dir_name(content_dir_name,
-                     rarch_path_basename, sizeof(content_dir_name));
-               fill_pathname_join_special_ext(override_path,
-                     config_directory, core_name,
-                     content_dir_name,
-                     FILE_PATH_CONFIG_EXTENSION,
-                     sizeof(override_path));
-
-               content_dir_override_remove = path_is_valid(override_path);
-               override_path[0]            = '\0';
-            }
-
             if (has_core)
             {
-               /* Core-specific path */
-               fill_pathname_join_special_ext(override_path,
-                     config_directory, core_name,
-                     core_name,
-                     FILE_PATH_CONFIG_EXTENSION,
-                     sizeof(override_path));
+               /* One buffer: '<config dir>/<core>/' is written once and
+                * each override's file name is written in after it. */
+               char  *tail;
+               size_t room;
+               size_t _len;
 
+               override_path[0] = '\0';
+               fill_pathname_application_special(override_path,
+                     sizeof(override_path),
+                     APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+               fill_pathname_join(override_path, override_path,
+                     core_name, sizeof(override_path));
+               _len = fill_pathname_slash(override_path,
+                     sizeof(override_path));
+               tail = override_path + _len;
+               room = sizeof(override_path) - _len;
+
+               if (has_content)
+               {
+                  /* Game-specific path */
+                  strlcpy(tail, path_basename_nocompression(
+                           rarch_path_basename), room);
+                  strlcat(tail, FILE_PATH_CONFIG_EXTENSION, room);
+                  game_override_remove = path_is_valid(override_path);
+
+                  /* Contentdir-specific path */
+                  fill_pathname_parent_dir_name(tail,
+                        rarch_path_basename, room);
+                  strlcat(tail, FILE_PATH_CONFIG_EXTENSION, room);
+                  content_dir_override_remove = path_is_valid(override_path);
+               }
+
+               /* Core-specific path */
+               strlcpy(tail, core_name, room);
+               strlcat(tail, FILE_PATH_CONFIG_EXTENSION, room);
                core_override_remove = path_is_valid(override_path);
-               override_path[0]     = '\0';
             }
 
             /* Show currently 'active' override file */
