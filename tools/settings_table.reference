@@ -615,6 +615,7 @@ uint	rgui_thumbnail_downscaler	1	RGUI_THUMB_SCALE_POINT
 uint	rgui_thumbnail_delay	1	0
 uint	menu_thumbnail_upscale_threshold	1	0
 uint	xmb_menu_color_theme	1	XMB_THEME_ELECTRIC_BLUE
+uint	xmb_ribbon_opacity	1	40
 uint	rgui_menu_color_theme	1	RGUI_THEME_CLASSIC_GREEN
 uint	rgui_aspect_ratio	1	RGUI_ASPECT_RATIO_4_3
 uint	rgui_aspect_ratio_lock	1	RGUI_ASPECT_RATIO_LOCK_NONE
@@ -1348,6 +1349,7 @@ uint	rgui_thumbnail_downscaler	1	RGUI_THUMB_SCALE_POINT
 uint	rgui_thumbnail_delay	1	0
 uint	menu_thumbnail_upscale_threshold	1	0
 uint	xmb_menu_color_theme	1	XMB_THEME_ELECTRIC_BLUE
+uint	xmb_ribbon_opacity	1	40
 uint	rgui_menu_color_theme	1	RGUI_THEME_CLASSIC_GREEN
 uint	rgui_aspect_ratio	1	RGUI_ASPECT_RATIO_4_3
 uint	rgui_aspect_ratio_lock	1	RGUI_ASPECT_RATIO_LOCK_NONE
@@ -2107,6 +2109,7 @@ uint	rgui_thumbnail_downscaler	1	RGUI_THUMB_SCALE_POINT
 uint	rgui_thumbnail_delay	1	0
 uint	menu_thumbnail_upscale_threshold	1	0
 uint	xmb_menu_color_theme	1	XMB_THEME_ELECTRIC_BLUE
+uint	xmb_ribbon_opacity	1	40
 uint	rgui_menu_color_theme	1	RGUI_THEME_CLASSIC_GREEN
 uint	rgui_aspect_ratio	1	RGUI_ASPECT_RATIO_4_3
 uint	rgui_aspect_ratio_lock	1	RGUI_ASPECT_RATIO_LOCK_NONE
