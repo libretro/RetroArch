@@ -23,6 +23,9 @@
 #ifdef HAVE_EGL
 #include "link_gl.h"
 #endif
+#ifdef HAVE_VULKAN
+#include "link_vk.h"
+#endif
 
 #define LINK_CONSOLE_SYMBOLS 19
 #define LINK_CONSOLE_GPU_LINE 256
@@ -35,6 +38,7 @@ static struct
    const struct link_scenario *scn;
    const char *system_dir;
    const char *require;             /* text a GPU console's renderer must name, or NULL */
+   bool validate;                   /* Vulkan consoles have the validation layer */
    uint64_t keep_at, keep_rate;     /* the next checkpoint's instant; rate 0: not known */
    unsigned long keep_steps;        /* the steps to it; 0: none */
 } link_console_now;
@@ -211,11 +215,8 @@ static uintptr_t RETRO_CALLCONV link_console_framebuffer(void)
    return c && c->gl ? link_gl_framebuffer(c->gl) : 0;
 }
 
-/* What a console with render=gl is answered where one without is refused.
- * SET_HW_RENDER makes a context, which link_console_start makes current: a
- * call before then replaces the one before it, and one after is refused,
- * as is one from a console that is closing, whose context nothing would
- * free. */
+/* What a console with render=gl is answered: SET_HW_RENDER makes a
+ * context, which link_console_start makes current */
 static bool link_console_gl_environment(link_console_t *c, unsigned cmd, void *data)
 {
    struct retro_hw_render_callback *hw   = (struct retro_hw_render_callback*)data;
@@ -223,15 +224,6 @@ static bool link_console_gl_environment(link_console_t *c, unsigned cmd, void *d
    switch (cmd)
    {
       case RETRO_ENVIRONMENT_SET_HW_RENDER:
-         if (!hw || c->closing)
-            return false;
-         if (c->loaded)
-         {
-            fprintf(stderr, "link_harness: console %u: SET_HW_RENDER after its core's load"
-                  " is refused\n", c->index);
-            c->errors++;
-            return false;
-         }
          link_gl_free(c->gl);
          if (!(c->gl = link_gl_new(hw, c->index)))
             return false;
@@ -253,6 +245,90 @@ static bool link_console_gl_environment(link_console_t *c, unsigned cmd, void *d
          break;
    }
    return true;
+}
+#endif
+
+#ifdef HAVE_VULKAN
+/* What a console with render=vulkan is answered: SET_HW_RENDER opens the
+ * Vulkan loader, and link_console_start makes the device */
+static bool link_console_vk_environment(link_console_t *c, unsigned cmd, void *data)
+{
+   struct retro_hw_render_callback *hw   = (struct retro_hw_render_callback*)data;
+   const struct retro_system_av_info *av = (const struct retro_system_av_info*)data;
+   switch (cmd)
+   {
+      case RETRO_ENVIRONMENT_SET_HW_RENDER:
+         if (hw->context_type != RETRO_HW_CONTEXT_VULKAN)
+         {
+            fprintf(stderr, "link_harness: console %u: render=vulkan does not serve context"
+                  " type %u\n", c->index, (unsigned)hw->context_type);
+            return false;
+         }
+         if (!link_vk_loader(c->index))
+            return false;
+         c->hw = *hw;
+         return true;
+      case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
+         /* false: no other API is on offer */
+         if (data)
+            *(unsigned*)data = RETRO_HW_CONTEXT_VULKAN;
+         return false;
+      case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
+         /* The largest frame read grows, as an OpenGL framebuffer does */
+         if (!av)
+            return false;
+         if (c->vk_started)
+         {
+            if (av->geometry.max_width > c->vk_width)
+               c->vk_width = av->geometry.max_width;
+            if (av->geometry.max_height > c->vk_height)
+               c->vk_height = av->geometry.max_height;
+         }
+         return true;
+      default:
+         break;
+   }
+   /* SET_GEOMETRY: the core's image is its own */
+   return true;
+}
+#endif
+
+#if defined(HAVE_EGL) || defined(HAVE_VULKAN)
+/* What a console with render= is answered where one without is refused.
+ * Its context or device is made at link_console_start: a SET_HW_RENDER
+ * before then replaces the one before it, and one after is refused, as is
+ * one from a console that is closing, whose context nothing would free. */
+static bool link_console_hw_environment(link_console_t *c, unsigned cmd, void *data)
+{
+   enum link_scenario_render render = link_console_now.scn->consoles[c->index].render;
+   if (render == LINK_SCENARIO_RENDER_NONE)
+      return false;
+   if (cmd == RETRO_ENVIRONMENT_SET_HW_RENDER)
+   {
+      if (!data || c->closing)
+         return false;
+      if (c->loaded)
+      {
+         fprintf(stderr, "link_harness: console %u: SET_HW_RENDER after its core's load"
+               " is refused\n", c->index);
+         c->errors++;
+         return false;
+      }
+   }
+   switch (render)
+   {
+#ifdef HAVE_EGL
+      case LINK_SCENARIO_RENDER_GL:
+         return link_console_gl_environment(c, cmd, data);
+#endif
+#ifdef HAVE_VULKAN
+      case LINK_SCENARIO_RENDER_VULKAN:
+         return link_console_vk_environment(c, cmd, data);
+#endif
+      default:
+         break;
+   }
+   return false;
 }
 #endif
 
@@ -309,13 +385,21 @@ static bool RETRO_CALLCONV link_console_environment(unsigned cmd, void *data)
          return link_console_memory_maps(c, (const struct retro_memory_map*)data);
       case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME:
          return true;
-#ifdef HAVE_EGL
+#if defined(HAVE_EGL) || defined(HAVE_VULKAN)
       case RETRO_ENVIRONMENT_SET_HW_RENDER:
       case RETRO_ENVIRONMENT_GET_PREFERRED_HW_RENDER:
       case RETRO_ENVIRONMENT_SET_GEOMETRY:
       case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO:
-         return link_console_now.scn->consoles[c->index].render == LINK_SCENARIO_RENDER_GL
-            && link_console_gl_environment(c, cmd, data);
+         return link_console_hw_environment(c, cmd, data);
+#endif
+#ifdef HAVE_VULKAN
+      case RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE:
+         /* From its context_reset to its context_destroy */
+         if (!data || !c->vk_started)
+            return false;
+         *(const struct retro_hw_render_interface**)data =
+            (const struct retro_hw_render_interface*)link_vk_interface(c->vk);
+         return true;
 #endif
       default:
          break;
@@ -373,47 +457,76 @@ static void link_console_keep(link_console_t *c, const unsigned char *row,
    c->drew   = true;
 }
 
-#ifdef HAVE_EGL
-/* A frame drawn in the console's framebuffer, read back here, where its
- * context is current: hashed as the XRGB8888 rows of a software picture,
- * and made opaque where it is kept */
-static void link_console_read(link_console_t *c, unsigned width, unsigned height)
+#if defined(HAVE_EGL) || defined(HAVE_VULKAN)
+/* A frame drawn on the console's GPU, read back here, inside the call that
+ * passes it: hashed as the XRGB8888 rows of a software picture, and made
+ * opaque where it is kept. false: not read. */
+static bool link_console_read(link_console_t *c, unsigned width, unsigned height)
 {
    struct link_console_picture *p = &c->drawn;
    size_t size                    = (size_t)width * height;
-   unsigned max_width, max_height;
+   const char *bound              = "framebuffer";
+   unsigned max_width             = 0;
+   unsigned max_height            = 0;
+   bool fits                      = true;
+   bool read                      = false;
    size_t i;
-   link_gl_size(c->gl, &max_width, &max_height);
-   if (!size || width > max_width || height > max_height)
+#ifdef HAVE_EGL
+   if (c->gl_started)
+   {
+      link_gl_size(c->gl, &max_width, &max_height);
+      fits = size && width <= max_width && height <= max_height;
+   }
+#endif
+#ifdef HAVE_VULKAN
+   /* retro_vulkan_image has no extent to hold the frame to */
+   if (c->vk_started)
+   {
+      max_width  = c->vk_width;
+      max_height = c->vk_height;
+      bound      = "max geometry";
+      fits       = width <= max_width && height <= max_height;
+   }
+#endif
+   if (!fits)
    {
       if (c->oversize)
-         return;
-      fprintf(stderr, "link_harness: console %u: a frame of %ux%u is larger than its"
-            " framebuffer of %ux%u\n", c->index, width, height, max_width, max_height);
+         return false;
+      fprintf(stderr, "link_harness: console %u: a frame of %ux%u is larger than its %s"
+            " of %ux%u\n", c->index, width, height, bound, max_width, max_height);
       c->oversize = true;
       c->errors++;
-      return;
+      return false;
    }
    if (!link_console_pixels(p, size))
    {
       fprintf(stderr, "link_harness: console %u: out of memory in its frame %lu\n",
             c->index, c->frame);
       c->errors++;
-      return;
+      return false;
    }
-   if (!link_gl_read(c->gl, p->argb, width, height))
+#ifdef HAVE_EGL
+   if (c->gl_started)
+      read = link_gl_read(c->gl, p->argb, width, height);
+#endif
+#ifdef HAVE_VULKAN
+   if (c->vk_started)
+      read = link_vk_read(c->vk, p->argb, width, height);
+#endif
+   if (!read)
    {
       c->errors++;
-      return;
+      return false;
    }
    c->video = xxh64(p->argb, size * sizeof(*p->argb), 0);
    if (!c->keep)
-      return;
+      return true;
    for (i = 0; i < size; i++)
       p->argb[i] |= 0xFF000000UL;
    p->width  = width;
    p->height = height;
    c->drew   = true;
+   return true;
 }
 #endif
 
@@ -432,6 +545,10 @@ static void RETRO_CALLCONV link_console_video(const void *data, unsigned width,
    if (!data)
    {
       c->duped = true;
+#ifdef HAVE_VULKAN
+      if (c->vk_started)
+         link_vk_dupe(c->vk);
+#endif
       return;
    }
    if (data == RETRO_HW_FRAME_BUFFER_VALID)
@@ -439,6 +556,12 @@ static void RETRO_CALLCONV link_console_video(const void *data, unsigned width,
 #ifdef HAVE_EGL
       if (c->gl_started)
          link_console_read(c, width, height);
+#endif
+#ifdef HAVE_VULKAN
+      /* What the core submitted for a frame not read is waited for as a
+       * dupe's is */
+      if (c->vk_started && !link_console_read(c, width, height))
+         link_vk_dupe(c->vk);
 #endif
       return;
    }
@@ -524,7 +647,8 @@ static int16_t RETRO_CALLCONV link_console_input(unsigned port, unsigned device,
 }
 
 void link_console_session(link_sched_t *sched, link_bus_t *bus, link_console_t *consoles,
-      const struct link_scenario *scn, const char *system_dir, const char *require_renderer)
+      const struct link_scenario *scn, const char *system_dir, const char *require_renderer,
+      bool vk_validate)
 {
    link_console_now.sched      = sched;
    link_console_now.bus        = bus;
@@ -532,6 +656,7 @@ void link_console_session(link_sched_t *sched, link_bus_t *bus, link_console_t *
    link_console_now.scn        = scn;
    link_console_now.system_dir = system_dir;
    link_console_now.require    = require_renderer;
+   link_console_now.validate   = vk_validate;
    link_console_now.keep_steps = 0;
 }
 
@@ -701,6 +826,20 @@ static bool link_console_fill_save(link_console_t *c, const char *save)
    return ok;
 }
 
+#if defined(HAVE_EGL) || defined(HAVE_VULKAN)
+/* The console's driver, in out/c<n>/gpu.txt */
+static bool link_console_gpu(link_console_t *c, const char *line)
+{
+   char *path = link_scenario_join(c->dir, "gpu.txt");
+   bool ok    = path && filestream_write_file(path, line, (int64_t)strlen(line));
+   free(path);
+   if (!ok)
+      fprintf(stderr, "link_harness: console %u: cannot write gpu.txt in %s\n", c->index,
+            c->dir);
+   return ok;
+}
+#endif
+
 #ifdef HAVE_EGL
 /* After retro_load_game on a console that asked for a context: the context
  * current with a framebuffer of the core's largest picture, on a renderer
@@ -710,8 +849,6 @@ static bool link_console_start_gl(link_console_t *c)
    const char *require = link_console_now.require;
    struct retro_system_av_info av;
    char line[LINK_CONSOLE_GPU_LINE];
-   char *path;
-   bool ok;
    memset(&av, 0, sizeof(av));
    c->api.get_system_av_info(&av);
    if (!link_gl_start(c->gl, av.geometry.max_width, av.geometry.max_height))
@@ -723,16 +860,34 @@ static bool link_console_start_gl(link_console_t *c)
       return false;
    }
    link_gl_describe(c->gl, line, sizeof(line));
-   path = link_scenario_join(c->dir, "gpu.txt");
-   ok   = path && filestream_write_file(path, line, (int64_t)strlen(line));
-   free(path);
-   if (!ok)
-   {
-      fprintf(stderr, "link_harness: console %u: cannot write gpu.txt in %s\n", c->index,
-            c->dir);
+   if (!link_console_gpu(c, line))
       return false;
-   }
    c->gl_started = true;
+   if (c->hw.context_reset)
+      c->hw.context_reset();
+   return true;
+}
+#endif
+
+#ifdef HAVE_VULKAN
+/* After retro_load_game on a console that asked for Vulkan: an instance
+ * and a device of its own, on a renderer the run allows, and no frame read
+ * larger than the core's largest picture, then context_reset */
+static bool link_console_start_vk(link_console_t *c)
+{
+   struct retro_system_av_info av;
+   char line[LINK_CONSOLE_GPU_LINE];
+   memset(&av, 0, sizeof(av));
+   c->api.get_system_av_info(&av);
+   c->vk_width  = av.geometry.max_width;
+   c->vk_height = av.geometry.max_height;
+   if (!(c->vk = link_vk_new(c->index, link_console_now.require, link_console_now.validate,
+         &c->errors)))
+      return false;
+   link_vk_describe(c->vk, line, sizeof(line));
+   if (!link_console_gpu(c, line))
+      return false;
+   c->vk_started = true;
    if (c->hw.context_reset)
       c->hw.context_reset();
    return true;
@@ -776,6 +931,10 @@ bool link_console_start(link_console_t *c)
 #ifdef HAVE_EGL
    if (ok && c->loaded && c->gl)
       ok = link_console_start_gl(c);
+#endif
+#ifdef HAVE_VULKAN
+   if (ok && c->loaded && c->hw.context_type == RETRO_HW_CONTEXT_VULKAN)
+      ok = link_console_start_vk(c);
 #endif
    if (ok && c->loaded && k->save)
       ok = link_console_fill_save(c, k->save);
@@ -939,7 +1098,12 @@ unsigned link_console_close(link_console_t *c)
    if (c->loaded)
    {
       link_sched_enter(link_console_now.sched, c->index);
-      if (c->gl_started && c->hw.context_destroy)
+#ifdef HAVE_VULKAN
+      /* What it handed over is finished with, as wait_sync_index has it */
+      if (c->vk_started)
+         link_vk_wait(c->vk);
+#endif
+      if ((c->gl_started || c->vk_started) && c->hw.context_destroy)
          c->hw.context_destroy();
       c->api.unload_game();
       link_sched_leave(link_console_now.sched);
@@ -947,9 +1111,16 @@ unsigned link_console_close(link_console_t *c)
    }
 #ifdef HAVE_EGL
    link_gl_free(c->gl);
+#endif
+#ifdef HAVE_VULKAN
+   link_vk_free(c->vk);
+#endif
+#if defined(HAVE_EGL) || defined(HAVE_VULKAN)
    /* retro_deinit may still ask for the framebuffer, or for a context */
    c->gl         = NULL;
+   c->vk         = NULL;
    c->gl_started = false;
+   c->vk_started = false;
    c->closing    = true;
 #endif
    if (c->started)

@@ -9,7 +9,6 @@
 
 #include "link_test_render.h"
 
-#define LT_VK_FORMAT   VK_FORMAT_R8G8B8A8_UNORM
 #define LT_VK_QUEUE    (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)
 #define LT_VK_FAMILIES 16 /* the queue families of a device looked at */
 
@@ -18,7 +17,8 @@ enum lt_vk_handoff
 {
    LT_VK_BARRIER = 0, /* part 1's command buffer ends in a barrier */
    LT_VK_SEMAPHORE,   /* and semaphores pass the image both ways */
-   LT_VK_COMMANDS     /* part 1's command buffer is the frontend's to submit */
+   LT_VK_COMMANDS,    /* part 1's command buffer is the frontend's to submit */
+   LT_VK_NONE         /* the barrier, and no set_image */
 };
 
 /* The entry points the core calls: the device's, but for the first */
@@ -70,6 +70,7 @@ static struct
    VkSemaphore reusable;            /* semaphore: the frontend signals it, part 0 waits */
    struct retro_vulkan_image shown; /* what set_image passes */
    VkImageLayout layout;            /* the image's, after what was last recorded */
+   VkFormat format;                 /* the image's */
    unsigned image_width, image_height;
    unsigned width, height;          /* the picture's */
    enum lt_vk_handoff handoff;
@@ -302,7 +303,7 @@ static bool lt_vk_image(unsigned width, unsigned height)
    image.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
    image.flags         = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
    image.imageType     = VK_IMAGE_TYPE_2D;
-   image.format        = LT_VK_FORMAT;
+   image.format        = lt_vk.format;
    image.extent.width  = width;
    image.extent.height = height;
    image.extent.depth  = 1;
@@ -340,7 +341,7 @@ static bool lt_vk_image(unsigned width, unsigned height)
    view->sType                       = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
    view->image                       = lt_vk.image;
    view->viewType                    = VK_IMAGE_VIEW_TYPE_2D;
-   view->format                      = LT_VK_FORMAT;
+   view->format                      = lt_vk.format;
    view->subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    view->subresourceRange.levelCount = 1;
    view->subresourceRange.layerCount = 1;
@@ -348,7 +349,6 @@ static bool lt_vk_image(unsigned width, unsigned height)
          "vkCreateImageView failed"))
       return false;
    lt_vk.shown.image_view   = lt_vk.view;
-   lt_vk.shown.image_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
    memset(&framebuffer, 0, sizeof(framebuffer));
    framebuffer.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
    framebuffer.renderPass      = lt_vk.pass;
@@ -381,7 +381,7 @@ static void lt_vk_objects(unsigned width, unsigned height)
    VkSemaphoreCreateInfo semaphore;
    /* Loads: a part draws over what is there */
    memset(&attachment, 0, sizeof(attachment));
-   attachment.format         = LT_VK_FORMAT;
+   attachment.format         = lt_vk.format;
    attachment.samples        = VK_SAMPLE_COUNT_1_BIT;
    attachment.loadOp         = VK_ATTACHMENT_LOAD_OP_LOAD;
    attachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
@@ -489,7 +489,10 @@ static void RETRO_CALLCONV lt_vk_context_destroy(void)
 static bool lt_vk_load(const struct lt_render_host *host)
 {
    static const char *const negotiates[] = { LT_VK_NEGOTIATE_DEFAULT, "v1", "v2" };
-   static const char *const handoffs[]   = { LT_VK_HANDOFF_DEFAULT, "semaphore", "commands" };
+   static const char *const handoffs[]   = { LT_VK_HANDOFF_DEFAULT, "semaphore", "commands",
+      "none" };
+   static const char *const layouts[]    = { LT_VK_LAYOUT_DEFAULT, "general" };
+   static const char *const formats[]    = { LT_VK_FORMAT_DEFAULT, "bgra" };
    struct retro_hw_render_context_negotiation_interface support;
    unsigned version;
    memset(&lt_vk, 0, sizeof(lt_vk));
@@ -498,6 +501,12 @@ static bool lt_vk_load(const struct lt_render_host *host)
          sizeof(negotiates) / sizeof(*negotiates));
    lt_vk.handoff = (enum lt_vk_handoff)lt_render_option("link_test_vk_handoff", handoffs,
          sizeof(handoffs) / sizeof(*handoffs));
+   lt_vk.shown.image_layout = lt_render_option("link_test_vk_layout", layouts,
+         sizeof(layouts) / sizeof(*layouts))
+      ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+   lt_vk.format             = lt_render_option("link_test_vk_format", formats,
+         sizeof(formats) / sizeof(*formats))
+      ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R8G8B8A8_UNORM;
    lt_vk.hw.context_type    = RETRO_HW_CONTEXT_VULKAN;
    lt_vk.hw.version_major   = VK_API_VERSION_1_1;
    lt_vk.hw.context_reset   = lt_vk_context_reset;
@@ -702,7 +711,7 @@ static void lt_vk_part(unsigned part, uint64_t value)
    lt_vk.f.cmd_end_render_pass(cmd);
    /* The frontend samples the picture, libretro_vulkan.h's example says */
    if (part == 1)
-      lt_vk_barrier(cmd, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+      lt_vk_barrier(cmd, lt_vk.shown.image_layout,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT);
    lt_vk_hand_over(part);
@@ -712,7 +721,7 @@ static void lt_vk_present(retro_video_refresh_t video, bool dupe)
 {
    const struct retro_hw_render_interface_vulkan *vk = lt_vk.vk;
    bool semaphores = lt_vk.handoff == LT_VK_SEMAPHORE;
-   if (lt_vk.drawing && !dupe)
+   if (lt_vk.drawing && !dupe && lt_vk.handoff != LT_VK_NONE)
       vk->set_image(vk->handle, &lt_vk.shown, semaphores ? 1 : 0,
             semaphores ? &lt_vk.drawn : NULL, VK_QUEUE_FAMILY_IGNORED);
    if (lt_vk.drawing && semaphores)

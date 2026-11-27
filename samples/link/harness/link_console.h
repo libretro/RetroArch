@@ -18,6 +18,7 @@
 #include "link_scenario.h"
 
 struct link_gl;
+struct link_vk;
 
 struct link_console_api
 {
@@ -82,15 +83,19 @@ typedef struct link_console
    struct retro_memory_descriptor *descriptors;  /* a copy of SET_MEMORY_MAPS's */
    unsigned descriptor_count;
    struct link_gl *gl;              /* the OpenGL context it asked for */
+   struct link_vk *vk;              /* the Vulkan device made for it */
    struct retro_hw_render_callback hw;  /* a copy of what it asked with */
    uint64_t video;                  /* the latest picture */
    enum retro_pixel_format format;
    unsigned long frame;             /* its own frames finished, the index of the one it is in */
    unsigned index, bytes_per_pixel, errors;
+   unsigned vk_width, vk_height;    /* the largest picture its Vulkan core told */
    bool started, loaded;
    bool gl_started;                 /* its context was made current and reset */
+   bool vk_started;                 /* its device was made and its context reset */
    bool closing;                    /* and is given no context */
-   bool oversize;                   /* said once: a frame larger than its framebuffer */
+   bool oversize;                   /* said once: a frame larger than its framebuffer, or
+                                       than vk_width x vk_height */
    bool resuming;                   /* a load left it inside its frame, which its next run
                                        finishes */
    bool ran;                        /* finished a frame since it started, loaded or was held */
@@ -101,9 +106,12 @@ typedef struct link_console
 } link_console_t;
 
 /* The consoles the callbacks serve. require_renderer: text the renderer of
- * each console with a GPU context must name, or NULL */
+ * each console with a GPU context must name, or NULL. vk_validate: each
+ * Vulkan console's instance has the validation layer, and each error it
+ * reports is the console's. */
 void link_console_session(link_sched_t *sched, link_bus_t *bus, link_console_t *consoles,
-      const struct link_scenario *scn, const char *system_dir, const char *require_renderer);
+      const struct link_scenario *scn, const char *system_dir, const char *require_renderer,
+      bool vk_validate);
 /* Before a step's run, with console 0 at its edge: the steps to the next
  * checkpoint (0: none) and that checkpoint's instant as ticks of rate (rate
  * 0: not known), by which each frame keeps its picture or not */

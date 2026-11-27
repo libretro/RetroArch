@@ -1,0 +1,7 @@
+# A core that asks for Vulkan on a console whose line has render=gl: the
+# harness says it serves OpenGL alone there, refuses the core's
+# SET_HW_RENDER, and the core's load fails.
+# error: render=gl does not serve context type 6
+console 0 core=test render=gl
+option 0 link_test_render vulkan
+10 end

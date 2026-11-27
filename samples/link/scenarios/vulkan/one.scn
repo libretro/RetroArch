@@ -1,0 +1,10 @@
+# twin: render_one
+# One console that draws the two-part picture in Vulkan, on a device the
+# harness makes for it: the harness copies each frame's image back, and the
+# trace and the checkpoints' pictures are those of the software picture.
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end

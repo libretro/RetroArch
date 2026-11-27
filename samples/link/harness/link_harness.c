@@ -88,6 +88,7 @@ struct link_harness
    bool rewinding;           /* --rewind: the state is loaded at the last edge */
    bool no_follow;           /* --no-context-follow: no context is made current as
                                 consoles take turns */
+   bool vk_validate;         /* --vk-validate */
    bool loaded;              /* a state has been loaded: no console is a fresh machine */
    bool differed, failed;
 };
@@ -102,7 +103,8 @@ static int link_harness_usage(const char *why)
          "usage: link_harness --scenario FILE --out DIR [--path NAME=FILE]...\n"
          "         [--pick lowest|reversed|shuffled:SEED]\n"
          "         [--from STATE | --rewind STATE] [--expect TRACE]\n"
-         "         [--min-stack BYTES] [--require-renderer TEXT] [--no-context-follow]\n", why);
+         "         [--min-stack BYTES] [--require-renderer TEXT] [--no-context-follow]\n"
+         "         [--vk-validate]\n", why);
    return LINK_HARNESS_USAGE;
 }
 
@@ -119,6 +121,11 @@ static int link_harness_options(struct link_harness *h, int argc, char **argv)
       if (!strcmp(arg, "--no-context-follow"))
       {
          h->no_follow = true;
+         continue;
+      }
+      if (!strcmp(arg, "--vk-validate"))
+      {
+         h->vk_validate = true;
          continue;
       }
       if (!value)
@@ -448,7 +455,7 @@ static bool link_harness_session(struct link_harness *h)
    if (!h->no_follow)
       link_sched_set_resume(h->sched, link_console_enter);
    link_console_session(h->sched, h->bus, h->consoles, &h->scn, h->system_dir,
-         h->require_renderer);
+         h->require_renderer, h->vk_validate);
    for (i = 0; i < n; i++)
    {
       size_t stack = h->scn.consoles[i].stack ? h->scn.consoles[i].stack : LINK_SCHED_DEFAULT_STACK;

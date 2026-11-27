@@ -61,6 +61,17 @@
 # a context Mesa holds to OpenGL ES 2.0, where it gives a later one
 # otherwise.
 #
+# check-vulkan, which check ends with when HAVE_VULKAN is 1 and the
+# compiler is not mingw, does the same for the scenarios in vulkan/ and
+# vulkan/fail/, each run with --vk-validate, so that an error the
+# validation layer reports fails it. GPU_DRIVER=software runs them on
+# Mesa's lavapipe, named in VK_ICD_FILENAMES and VK_DRIVER_FILES, and a
+# target that would run one where lavapipe is not installed is a make
+# error. One more run of vulkan/one, with those naming a file that does
+# not exist, must fail its console's start. Under a sanitizer a GPU run's
+# leak check passes over lsan.supp's lines, lavapipe's one-time init, which
+# LeakSanitizer cannot name once the loader has unloaded the driver.
+#
 # proof makes the runs PROOF_RUNS names, all six unless it is given, of one
 # scenario that binds real cores, PROOF (an absolute path), into
 # BUILD_DIR/proof/<scenario>/, each BIND word (NAME=<absolute file>, no
@@ -155,6 +166,8 @@ else
 BAD_SCENARIOS   += ../scenarios/unbuilt/gl.scn
 endif
 ifeq ($(HAVE_VULKAN),1)
+HARNESS_SOURCES += link_vk.c
+HARNESS_HEADERS += link_vk.h
 HARNESS_DEFINES += -DHAVE_VULKAN
 else
 BAD_SCENARIOS   += ../scenarios/unbuilt/vulkan.scn
@@ -172,6 +185,19 @@ GPU_ENV  := env -u DISPLAY -u WAYLAND_DISPLAY
 GPU_ARGS :=
 else
 $(error GPU_DRIVER takes software or host, not "$(GPU_DRIVER)")
+endif
+ifneq ($(SANITIZER),)
+GPU_ENV  += LSAN_OPTIONS=suppressions=$(CURDIR)/lsan.supp
+endif
+
+# Vulkan consoles run on Mesa's lavapipe, a make error where one is to run
+# and lavapipe is not installed
+ifeq ($(HAVE_VULKAN)$(GPU_DRIVER)$(findstring mingw,$(TRIPLE)),1software)
+LVP_ICD  := $(firstword $(wildcard /usr/share/vulkan/icd.d/lvp_icd*.json))
+GPU_ENV  += VK_ICD_FILENAMES=$(LVP_ICD) VK_DRIVER_FILES=$(LVP_ICD)
+VK_READY  = $(if $(LVP_ICD),,$(error HAVE_VULKAN=1 runs Vulkan consoles on lavapipe, and /usr/share/vulkan/icd.d has no lvp_icd*.json))
+# make proof's, which runs one only when PROOF has a Vulkan console
+PROOF_VK_READY = $(if $(shell grep -l -e '^console .*render=vulkan' '$(PROOF)' 2>/dev/null),$(VK_READY))
 endif
 
 # A proof's runs are GPU runs while a switch is on
@@ -268,7 +294,8 @@ RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
 
 # Each scenario of $(1) must fail, with $(2) in front of its run and $(3)
 # among its arguments: one in bad/ or unbuilt/ with exit 2 and any other
-# with exit 1, saying what its "# error:" line names
+# with exit 1, saying what its "# error:" line names and no validation
+# error that line does not name
 define MUST_FAIL
 for scn in $(1); do \
 	   what="$${scn#../scenarios/}"; what="$${what%.scn}"; \
@@ -282,6 +309,8 @@ for scn in $(1); do \
 	   $(2) $(RUNNER) $(HARNESS) --scenario "$$scn" --path test=$(CORE) $(3) \
 	      --out "$(BUILD_DIR)/out/$$what" 2>"$$err"; \
 	   $(call FAILED_AS,$$want); \
+	   v=`grep -F -e 'validation: [' "$$err" | grep -v -F -e "$$why" | head -n 1`; \
+	   [ -z "$$v" ] || { echo "check: $$what had a validation error: $$v"; exit 1; }; \
 	done
 endef
 
@@ -369,6 +398,20 @@ define GPU_CHECK
 	   || { echo "check: $$what did not run on llvmpipe"; exit 1; }
 endef
 
+# What only the Vulkan consoles are checked for, after GPU_CHECK: with no
+# Vulkan driver to be found, a console's start fails
+define VK_CHECK
+	@out="$(BUILD_DIR)/out/vulkan/fail"; what="vulkan/one with no Vulkan driver"; \
+	err="$$out/no_driver.err"; why="no Vulkan device:"; none="$$out/no_such_driver.json"; \
+	mkdir -p "$$out"; \
+	[ ! -e "$$none" ] || { echo "$@: $$none exists"; exit 1; }; \
+	echo "== $$what, exit 1 wanted"; \
+	$(GPU_ENV) VK_ICD_FILENAMES="$$none" VK_DRIVER_FILES="$$none" $(RUNNER) $(HARNESS) \
+	   --scenario ../scenarios/vulkan/one.scn --path test=$(CORE) --vk-validate $(GPU_ARGS) \
+	   --out "$$out/no_driver" 2>"$$err"; \
+	$(call FAILED_AS,1)
+endef
+
 # What comes after $(GPU_ENV) in a run that GL_CHECK makes
 GL_RUN = $(RUNNER) $(HARNESS) $(MIN_STACK) --path test=$(CORE) $(GPU_ARGS)
 
@@ -416,6 +459,7 @@ VK_CFLAGS    := $(filter-out -I$(LRC)/include,$(OWN_CFLAGS)) -DVK_NO_PROTOTYPES 
 $(call obj,$(HARNESS_SOURCES)): FLAGS := $(OWN_CFLAGS) -DHAVE_DYNAMIC $(HARNESS_DEFINES)
 $(call obj,$(CORE_SOURCES)):    FLAGS := $(OWN_CFLAGS) $(PIC)
 $(call obj,../core/link_test_vk.c): FLAGS := $(VK_CFLAGS) $(PIC)
+$(call obj,link_vk.c):          FLAGS := $(VK_CFLAGS) -DHAVE_DYNAMIC $(HARNESS_DEFINES)
 $(call obj,$(LINK_SOURCES)):    FLAGS := $(LINK_CFLAGS)
 $(call obj,$(LIBCO_SOURCES)):   FLAGS := $(LIBCO_CFLAGS)
 $(call obj,$(LRC_SOURCES)):     FLAGS := $(LRC_CFLAGS)
@@ -564,13 +608,21 @@ ifeq ($(HAVE_EGL),1)
 	$(call GPU_CHECK,gl,$(GPU_ARGS),gl/spans gl/mixed)
 	$(GL_CHECK)
 endif
+ifeq ($(HAVE_VULKAN)$(findstring mingw,$(TRIPLE)),1)
+	$(VK_READY)$(call GPU_CHECK,vulkan,--vk-validate $(GPU_ARGS),)
+	$(VK_CHECK)
+endif
 
 check-gl: all
 	$(call GPU_CHECK,gl,$(GPU_ARGS),gl/spans gl/mixed)
 	$(GL_CHECK)
 
+check-vulkan: all
+	$(VK_READY)$(call GPU_CHECK,vulkan,--vk-validate $(GPU_ARGS),)
+	$(VK_CHECK)
+
 proof: $(HARNESS)
-	@scn='$(PROOF)'; [ -n "$$scn" ] || { echo "proof: PROOF names no scenario"; exit 2; }; \
+	@$(PROOF_VK_READY)scn='$(PROOF)'; [ -n "$$scn" ] || { echo "proof: PROOF names no scenario"; exit 2; }; \
 	[ -n '$(strip $(PROOF_RUNS))' ] || { echo "proof: PROOF_RUNS names no run"; exit 2; }; \
 	bad='$(filter-out $(ALL_RUNS),$(PROOF_RUNS))'; \
 	[ -z "$$bad" ] || { echo "proof: PROOF_RUNS names $$bad, not one of $(ALL_RUNS)"; exit 2; }; \
@@ -581,4 +633,4 @@ proof: $(HARNESS)
 clean:
 	build='$(BUILD_DIR)'; rm -rf -- "$${build:?}"
 
-.PHONY: all check check-gl clean proof
+.PHONY: all check check-gl check-vulkan clean proof

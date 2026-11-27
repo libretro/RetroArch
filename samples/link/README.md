@@ -22,11 +22,12 @@ make -C samples/link/harness check CC=x86_64-w64-mingw32-gcc RUNNER=wine BUILD_D
 ```
 
 With `HAVE_EGL=1` the harness also hosts consoles whose cores draw in
-OpenGL, on Linux, and `check` ends with the scenarios in `scenarios/gl/`
-("GPU consoles" below):
+OpenGL, on Linux, and `check` ends with the scenarios in `scenarios/gl/`;
+with `HAVE_VULKAN=1`, consoles whose cores draw in Vulkan, and `check`
+ends with those in `scenarios/vulkan/` ("GPU consoles" below):
 
 ```sh
-make -C samples/link/harness check HAVE_EGL=1 BUILD_DIR=build-gl
+make -C samples/link/harness check HAVE_EGL=1 HAVE_VULKAN=1 BUILD_DIR=build-gpu
 ```
 
 Everything built, and every run's output, goes under `BUILD_DIR` (`build` by
@@ -161,7 +162,7 @@ link_harness --scenario FILE --out DIR [--path NAME=FILE]...
              [--pick lowest|reversed|shuffled:SEED]
              [--from STATE | --rewind STATE] [--expect TRACE]
              [--min-stack BYTES] [--require-renderer TEXT]
-             [--no-context-follow]
+             [--no-context-follow] [--vk-validate]
 ```
 
 - `--path NAME=FILE` binds a name the scenario uses for a core, ROM, save or
@@ -190,11 +191,17 @@ link_harness --scenario FILE --out DIR [--path NAME=FILE]...
 - `--min-stack` gives every console at least this much stack. Sanitizer
   builds use 8 MiB.
 - `--require-renderer TEXT` fails the start of a console with `render=`
-  whose driver does not name TEXT in its renderer string:
-  `console <c>: renderer "<name>" is not <TEXT>`.
+  whose driver does not name TEXT in its renderer string, `GL_RENDERER` or
+  a Vulkan device's name: `console <c>: renderer "<name>" is not <TEXT>`.
+  A Vulkan console takes the first device whose name has TEXT in it.
 - `--no-context-follow` leaves the last OpenGL context made current where
   it is when another console's code runs. It is there for the check that
   must fail.
+- `--vk-validate` gives each Vulkan console's instance the Khronos
+  validation layer, `VK_LAYER_KHRONOS_validation`. Each error it reports,
+  of the core's calls or the harness's, is printed as
+  `console <c>: validation: [ <VUID> ] <message>` and fails the run; a
+  missing layer fails the console's start.
 
 The exit code is:
 
@@ -373,6 +380,9 @@ The scenarios here:
   was drawn.
 - `render_held`: a hold of console 0 to the end, so console 1 is the last
   to run before the cores are unloaded.
+- `render_late_ask`: a core that asks for OpenGL in its first `retro_run`
+  on a console with no `render=`, refused in every build with no line of
+  the harness's, so it passes dupes and the run passes.
 - `warm_load`: a core that loads no state before its first frame, on a
   console with `warm=1`.
 - `warm_save_in_advance`: `spans_save_in_advance` with such a core on
@@ -381,6 +391,8 @@ The scenarios here:
   path, which is another in every run, with a `compare-fresh VA` line.
 - `gl/`: scenarios with OpenGL consoles, each the twin of one above; run
   only by a harness built with `HAVE_EGL=1` ("GPU consoles").
+- `vulkan/`: scenarios with Vulkan consoles, likewise, run only by a
+  harness built with `HAVE_VULKAN=1`.
 - `bad/`: scenarios the harness refuses before anything runs, a
   `render=` value it does not know, `render=` given twice, a `warm=` that
   is not 1 and a `compare-fresh` letter that names no field among them.
@@ -408,21 +420,25 @@ The scenarios here:
 ## GPU consoles
 
 A console whose line has `render=gl` gets the OpenGL context its core asks
-for. The harness serves an API only when it was built for it, with a make
-variable that is 0 unless given:
+for, and one with `render=vulkan` a Vulkan device. The harness serves an API
+only when it was built for it, with a make variable that is 0 unless given:
 
 - `HAVE_EGL=1` serves `render=gl`. The harness then links libEGL and
   nothing else of the driver's: it uses no GL header and no GL library, and
   takes every entry point from `eglGetProcAddress`. With a mingw compiler
   it is a make error.
-- `HAVE_VULKAN=1` takes `render=vulkan` lines, but this harness has no
-  Vulkan host: a core's `SET_HW_RENDER` on such a console is refused, as it
-  is on a console with no `render=`.
+- `HAVE_VULKAN=1` serves `render=vulkan`. The harness links no Vulkan
+  library: it opens the loader (`libvulkan.so.1`, `vulkan-1.dll` on
+  Windows) when a core asks for Vulkan, and it is built with the Khronos
+  headers in `gfx/include`. A mingw compiler builds it; no Vulkan console
+  runs under Wine.
 
 A scenario with a `render=` the harness was built without exits 2 with
 `<scenario>:<line>: this harness was built without HAVE_EGL` (or
 `HAVE_VULKAN`). A console with `render=` gets a stack of at least 8388608
-bytes, since driver code runs on its cothread.
+bytes, since driver code runs on its cothread. A console with no `render=`
+is answered as by a harness built with neither: `SET_HW_RENDER` is
+refused, with no line of the harness's.
 
 For a `render=gl` console the harness does what a frontend does, with no
 window, X server or Wayland display:
@@ -454,13 +470,54 @@ window, X server or Wayland display:
 - At the close `context_destroy` is called before `retro_unload_game`, and
   the context is destroyed after it.
 
-`make check`, `make check-gl` and, with `HAVE_EGL=1` or `HAVE_VULKAN=1`,
-`make proof` choose the driver with `GPU_DRIVER`:
+For a `render=vulkan` console:
+
+- `SET_HW_RENDER` of `RETRO_HW_CONTEXT_VULKAN` opens the loader, once a
+  process. Another type is refused with
+  `render=vulkan does not serve context type <n>`, as a `render=gl`
+  console refuses Vulkan; after the core's load the call is refused and
+  fails the run.
+- After `retro_load_game` the console gets a Vulkan 1.1 instance and a
+  device of its own, with one queue of the first family that does graphics
+  and compute, and resolves its own entry points: nothing is shared between
+  consoles. Then `context_reset` is called, and until `context_destroy`
+  `GET_HW_RENDER_INTERFACE` gives a render interface of version 5, with a
+  sync index of 0 and a mask of 1. `lock_queue` and `unlock_queue` do
+  nothing: the harness submits only inside the video callback, on the
+  thread that runs the core, so a core that submits from another thread
+  meanwhile is not served.
+- A frame passed as `RETRO_HW_FRAME_BUFFER_VALID` is read inside that call
+  from the image of the last `set_image`: a command buffer of the
+  harness's takes the image from its layout to a transfer source, copies it
+  into a buffer the host can read and puts the layout back, and after its
+  fence the bytes are converted, once, into the console's picture. An
+  image in `GENERAL` is copied in that layout, with no transition, as
+  `libretro_vulkan.h` asks. Only `R8G8B8A8_UNORM` is read; another
+  format, and a frame with no `set_image`, is an error. A frame larger
+  than the largest size `retro_get_system_av_info` or a later
+  `SET_SYSTEM_AV_INFO` gave is an error, said once: the image carries no
+  size to check it against. A frame that is not read is fenced as a dupe
+  is.
+- A dupe submits nothing but a fence. `wait_sync_index` waits on the fence
+  of the last submit, a frame's copy or a dupe's, and the harness waits on
+  it before `context_destroy` and on one more before the device goes, so
+  what the core submitted is finished before it reuses or destroys it. A
+  fence has 120 s to signal; one that does not is an error, and that
+  console's Vulkan objects are then left as they are.
+- At the close the wait, `context_destroy`, `retro_unload_game`, and then
+  the harness's objects, the device and the instance go.
+
+`make check`, `make check-gl`, `make check-vulkan` and, with `HAVE_EGL=1` or
+`HAVE_VULKAN=1`, `make proof` choose the driver with `GPU_DRIVER`:
 
 - `software`, the default, runs every GPU console on Mesa's llvmpipe
   (`LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe`, with `DISPLAY` and
-  `WAYLAND_DISPLAY` unset) and passes `--require-renderer llvmpipe`, so a
-  run on any other renderer fails and never passes for want of the driver.
+  `WAYLAND_DISPLAY` unset), every Vulkan console on Mesa's lavapipe
+  (`VK_ICD_FILENAMES` and `VK_DRIVER_FILES` set to the first
+  `/usr/share/vulkan/icd.d/lvp_icd*.json`; with none, a target that would
+  run a Vulkan console is a make error), and passes
+  `--require-renderer llvmpipe`, which both drivers name, so a run on any
+  other renderer fails and never passes for want of the driver.
 - `host` runs them on the machine's own driver and requires no renderer:
   a local proof on a real GPU, never CI.
 
@@ -476,8 +533,8 @@ software is compared on. A scenario with no twin line fails the check. Then:
 
 - each scenario in `gl/fail/` must exit 1 and print its `# error:` text: a
   context version no driver has, a context asked for after the core's
-  load has returned, and a picture that grows past its
-  framebuffer without the core telling the frontend;
+  load has returned, a core that asks for Vulkan, and a picture that grows
+  past its framebuffer without the core telling the frontend;
 - one more run with `--require-renderer no-such-renderer` must exit 1, and
   `make proof` of the same scenario, with that as its `GPU_ARGS`, must
   fail, on llvmpipe with `GPU_DRIVER=software`;
@@ -530,6 +587,35 @@ What is not served or not checked:
 - Nothing checks the stack a `render=` console is given.
 - `gl/dirty` shows the pixel-pack state put back only where the context
   has all of it; a context that knows the alignment alone is not run.
+
+`check-vulkan` makes the six runs of every scenario in `scenarios/vulkan/`,
+each with `--vk-validate`, and `check` ends with it when `HAVE_VULKAN` is 1
+and the compiler is not mingw. Each scenario there has a twin, compared as
+those in `gl/` are; each in `vulkan/fail/` (a core that asks for OpenGL, a
+picture that grows without the core telling the frontend, a core that
+never calls `set_image` and an image in `B8G8R8A8_UNORM`) must exit 1,
+print its `# error:` text and print no validation error that text does not
+name; the two runs with `no-such-renderer` must fail as above; and
+`vulkan/one` run once more with `VK_ICD_FILENAMES` and `VK_DRIVER_FILES`
+naming a file that does not exist must exit 1 with `no Vulkan device:`.
+Under `SANITIZER` the leak check of a GPU run passes over what
+`harness/lsan.supp` names: a block lavapipe allocates once a process, which
+LeakSanitizer cannot name once the loader has unloaded the driver.
+
+The scenarios in `vulkan/`:
+
+- `one` (`render_one`): the picture drawn with a barrier to
+  `SHADER_READ_ONLY_OPTIMAL` before `set_image`.
+- `dupe` (`render_dupe`): dupes, each with the first part of its frame
+  submitted, which the next `wait_sync_index` waits out.
+- `general` (`render_one`): the picture handed over in `GENERAL`.
+
+What the Vulkan host does not serve yet:
+
+- The context negotiation interface is not answered.
+- `set_image` with semaphores, `set_command_buffers`,
+  `set_signal_semaphore` and a `src_queue_family` of another family are
+  console errors.
 
 ## Output
 
@@ -611,7 +697,9 @@ The test core is built as `link_test_libretro.so`, or `.dll` on Windows.
 | `link_test_gl_state` | clean, dirty: the state it leaves its context in | clean |
 | `link_test_gl_ask` | load, run: whether it asks for its context in `retro_load_game` or in its first `retro_run` | load |
 | `link_test_vk_negotiate` | off, v1, v2: the context negotiation interface it sets | off |
-| `link_test_vk_handoff` | barrier, semaphore, commands: how a frame's picture reaches the frontend | barrier |
+| `link_test_vk_handoff` | barrier, semaphore, commands, none: how a frame's picture reaches the frontend | barrier |
+| `link_test_vk_layout` | shader_read, general: the layout `set_image` names | shader_read |
+| `link_test_vk_format` | rgba, bgra: the image's format, `R8G8B8A8_UNORM` or `B8G8R8A8_UNORM` | rgba |
 
 In each `retro_run` the core advances its ports at the frame start, at each
 of its steps and at the frame end. It takes every message it can, applies
@@ -687,11 +775,15 @@ a barrier to `SHADER_READ_ONLY_OPTIMAL` before `set_image`; `semaphore`,
 that and a semaphore part 1 signals and `set_image` passes, and in every
 frame, dupes too, a `set_signal_semaphore` that the next frame's part 0
 waits on; `commands`, part 1's command buffer handed over with
-`set_command_buffers` instead of submitted. Either option off its default
-with `link_test_render` not `vulkan` is a logged error. A dupe frame draws
-its first part on the one image and leaves it in `COLOR_ATTACHMENT_OPTIMAL`,
-so a frontend that shows the last `set_image` again on a NULL frame would
-show that half-drawn image; the harness reads no image on a dupe.
+`set_command_buffers` instead of submitted; `none`, the barrier and no
+`set_image`, the frame passed as drawn all the same. `link_test_vk_layout`
+general ends part 1 in `GENERAL` in place of `SHADER_READ_ONLY_OPTIMAL`,
+and `link_test_vk_format` bgra draws on a `B8G8R8A8_UNORM` image. Any of
+these options off its default with `link_test_render` not `vulkan` is a
+logged error. A dupe frame draws its first part on the one image and
+leaves it in `COLOR_ATTACHMENT_OPTIMAL`, so a frontend that shows the last
+`set_image` again on a NULL frame would show that half-drawn image; the
+harness reads no image on a dupe.
 
 From `link_test_bad_frame` on, the modes break the rules:
 

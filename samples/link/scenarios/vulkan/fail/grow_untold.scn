@@ -1,0 +1,9 @@
+# A picture drawn in Vulkan that grows in the console's frame 60 without
+# the core telling the frontend: the core's image grows with it, and the
+# harness says once that it reads back no frame larger than the geometry
+# retro_get_system_av_info gave.
+# error: is larger than its max geometry of 64x48
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_grow untold:60
+90 end

@@ -206,7 +206,11 @@ static const struct retro_variable lt_variables[] = {
    { "link_test_vk_negotiate", "Vulkan context negotiation interface set; "
                               LT_VK_NEGOTIATE_DEFAULT "|v1|v2" },
    { "link_test_vk_handoff",  "How the Vulkan picture reaches the frontend; "
-                              LT_VK_HANDOFF_DEFAULT "|semaphore|commands" },
+                              LT_VK_HANDOFF_DEFAULT "|semaphore|commands|none" },
+   { "link_test_vk_layout",   "Layout the Vulkan picture is handed over in; "
+                              LT_VK_LAYOUT_DEFAULT "|general" },
+   { "link_test_vk_format",   "Format of the Vulkan picture's image; "
+                              LT_VK_FORMAT_DEFAULT "|bgra" },
    { NULL, NULL }
 };
 
@@ -600,6 +604,8 @@ static void lt_read_render(void)
    {
       lt_option_only("link_test_vk_negotiate", LT_VK_NEGOTIATE_DEFAULT, "vulkan");
       lt_option_only("link_test_vk_handoff", LT_VK_HANDOFF_DEFAULT, "vulkan");
+      lt_option_only("link_test_vk_layout", LT_VK_LAYOUT_DEFAULT, "vulkan");
+      lt_option_only("link_test_vk_format", LT_VK_FORMAT_DEFAULT, "vulkan");
    }
    if ((s = lt_option("link_test_grow")) && strcmp(s, "off"))
    {
