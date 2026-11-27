@@ -16,4 +16,11 @@ S_UINT_EX(menu_xmb_shader_pipeline, XMB_RIBBON_ENABLE,
       "Shader Pipeline",
       "Select an animated background effect. Can be GPU-intensive depending on the effect. If performance is unsatisfactory, either turn this off or revert to a simpler effect.")
 #endif
+#if !defined(SETTINGS_DEF_CONFIG_PASS) || defined(HAVE_MENU)
+S_UINT_EX(menu_xmb_ribbon_opacity, XMB_RIBBON_OPACITY,
+      "xmb_ribbon_opacity",
+      DEFAULT_XMB_RIBBON_OPACITY, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 100, 1, 0, setting_action_ok_uint, setting_get_string_representation_percentage, NULL, NULL, NULL, NULL, 0,
+      "Ribbon Opacity",
+      "Adjust the opacity of the Ribbon shader, including its glow and particles.")
+#endif
 #endif
