@@ -457,8 +457,10 @@ static void check_control_messages(rsound_t *rd)
 }
 
 /* One control reply: @hdr is the 8-byte header, followed by @body_len
- * bytes of filler. Returns rsnd_update_server_info()'s result. */
-static int control_reply(rsound_t *rd, const char *hdr, size_t body_len)
+ * bytes of @text, or of filler when @text is NULL. Returns
+ * rsnd_update_server_info()'s result. */
+static int control_reply_text(rsound_t *rd, const char *hdr,
+      const char *text, size_t body_len)
 {
    int    sv[2];
    int    ret;
@@ -472,6 +474,8 @@ static int control_reply(rsound_t *rd, const char *hdr, size_t body_len)
       return 0;
    }
    memset(body, 'A', sizeof(body));
+   if (text)
+      memcpy(body, text, body_len);
    if (     write(sv[1], hdr, RSD_PROTO_CHUNKSIZE) != RSD_PROTO_CHUNKSIZE
          || write(sv[1], body, body_len) != (ssize_t)body_len)
    {
@@ -484,6 +488,11 @@ static int control_reply(rsound_t *rd, const char *hdr, size_t body_len)
    close(sv[0]);
    close(sv[1]);
    return ret;
+}
+
+static int control_reply(rsound_t *rd, const char *hdr, size_t body_len)
+{
+   return control_reply_text(rd, hdr, NULL, body_len);
 }
 
 /* Body lengths from the server are bounded by the reply buffer. */
@@ -499,6 +508,11 @@ static void check_control_length(rsound_t *rd)
          "an oversized body was accepted");
    CHECK(control_reply(rd, "RSD   -1", 600) == -1,
          "a negative body length was accepted");
+   /* A reply ends at its length: a body shorter than the header is
+    * read alone, not with the header's tail behind it - here "IN"
+    * with the header's "FO" would read as a malformed INFO. */
+   CHECK(control_reply_text(rd, "xxFORSD2", "IN", 2) == 0,
+         "a short body was read with the header's bytes behind it");
 }
 
 int main(void)

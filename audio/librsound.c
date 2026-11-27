@@ -891,7 +891,7 @@ static int rsnd_update_server_info(rsound_t *rd)
 {
    long long int client_ptr         = -1;
    long long int serv_ptr           = -1;
-   char temp[RSD_PROTO_MAXSIZE + 1] = {0};
+   char temp[RSD_PROTO_MAXSIZE + 1];
 
    /* We read until we have the last (most recent) data in the network buffer. */
    for (;;)
@@ -900,7 +900,6 @@ static int rsnd_update_server_info(rsound_t *rd)
       char         *tmpstr;
       const char   *substr;
       long int      len;
-      memset(temp, 0, sizeof(temp));
 
       /* We first receive the small header. We just use the larger buffer as it is disposable. */
       rc = rsnd_recv_chunk(rd->conn.ctl_socket, temp, RSD_PROTO_CHUNKSIZE, 0);
@@ -925,6 +924,9 @@ static int rsnd_update_server_info(rsound_t *rd)
       /* Receive the rest of the data. */
       if (rsnd_recv_chunk(rd->conn.ctl_socket, temp, len, 0) < len)
          return -1;
+      /* The reply ends at its length, whatever of the header lay
+       * past it. */
+      temp[len] = '\0';
 
       /* We only bother if this is an INFO message. */
       substr = strstr(temp, "INFO");
