@@ -2211,6 +2211,7 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("libretro_info_path",            settings->paths.path_libretro_info, false, NULL, true);
    SETTING_PATH("playlist_directory",            settings->paths.directory_playlist, true, NULL, true);
    SETTING_PATH("cheat_database_path",           settings->paths.path_cheat_database, false, NULL, true);
+   SETTING_PATH("cheat_user_path",               settings->paths.path_cheat_user, false, NULL, true);
    SETTING_PATH("system_directory",              settings->paths.directory_system, true, NULL, true);
    SETTING_PATH("cache_directory",               settings->paths.directory_cache, false, NULL, true);
    SETTING_PATH("audio_dsp_plugin",              settings->paths.path_audio_dsp_plugin, false, NULL, true);
@@ -6470,6 +6471,7 @@ void config_set_defaults(settings_t *target)
    *settings->paths.bundle_assets_dst_subdir     = '\0';
 #endif
    *settings->paths.path_cheat_database    = '\0';
+   *settings->paths.path_cheat_user        = '\0';
    *settings->paths.path_menu_wallpaper    = '\0';
    *settings->paths.path_rgui_theme_preset = '\0';
    *settings->paths.path_content_database  = '\0';
@@ -6564,6 +6566,10 @@ void config_set_defaults(settings_t *target)
       configuration_set_string(settings,
             settings->paths.path_cheat_database,
             g_defaults.dirs[DEFAULT_DIR_CHEATS]);
+   if (*g_defaults.dirs[DEFAULT_DIR_CHEATS_USER])
+      configuration_set_string(settings,
+            settings->paths.path_cheat_user,
+            g_defaults.dirs[DEFAULT_DIR_CHEATS_USER]);
    if (*g_defaults.dirs[DEFAULT_DIR_CORE_INFO])
       fill_pathname_expand_special(settings->paths.path_libretro_info,
             g_defaults.dirs[DEFAULT_DIR_CORE_INFO],

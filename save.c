@@ -606,12 +606,13 @@ fail:
 }
 
 bool event_save_files(bool is_sram_used, bool compress_files,
-      const char *path_cheat_database)
+      const char *path_cheat_database, const char *path_cheat_user)
 {
    unsigned i;
    bool ret = true;
 #ifdef HAVE_CHEATS
-   cheat_manager_save_game_specific_cheats(path_cheat_database);
+   cheat_manager_save_game_specific_cheats(path_cheat_database,
+         path_cheat_user);
 #endif
    if (!task_save_files || !is_sram_used)
       return false;

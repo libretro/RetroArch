@@ -6781,6 +6781,7 @@ size_t command_event_save_auto_state(void)
 void command_event_init_cheats(
       bool apply_cheats_after_load,
       const char *path_cheat_db,
+      const char *path_cheat_user,
       void *bsv_movie_data)
 {
 #ifdef HAVE_NETWORKING
@@ -6797,7 +6798,7 @@ void command_event_init_cheats(
       return;
 
    cheat_manager_alloc_if_empty();
-   cheat_manager_load_game_specific_cheats(path_cheat_db);
+   cheat_manager_load_game_specific_cheats(path_cheat_db, path_cheat_user);
 
    if (apply_cheats_after_load)
       cheat_manager_apply_cheats(

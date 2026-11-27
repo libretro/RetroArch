@@ -201,6 +201,15 @@ jobs:
           # may be listed twice.
           make clean && make check SANITIZER=address,undefined
 
+      - name: Build and run cheat_user_dir_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/cheats/cheat_user_dir
+        run: |
+          set -eu
+          # A game's cheat file is read from User Cheat Files first and
+          # saved back to the folder it came from.
+          make clean && make check SANITIZER=address,undefined
+
       - name: ccache statistics
         if: ${{ !cancelled() }}
         continue-on-error: true

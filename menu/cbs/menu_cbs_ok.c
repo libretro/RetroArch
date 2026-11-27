@@ -4166,6 +4166,7 @@ static void menu_input_st_string_cb_cheat_file_save_as(
       const char *label               = input_driver_text_entry_label();
       settings_t *settings            = config_get_ptr();
       const char *path_cheat_database = settings->paths.path_cheat_database;
+      const char *path_cheat_user     = settings->paths.path_cheat_user;
       if (label && *label)
          setting = menu_setting_find(label);
       if (setting)
@@ -4177,8 +4178,8 @@ static void menu_input_st_string_cb_cheat_file_save_as(
          menu_setting_generic(setting, 0, false);
       }
       else if (label && *label)
-         cheat_manager_save(str, path_cheat_database,
-               false);
+         cheat_manager_save_as(str, path_cheat_database,
+               path_cheat_user);
    }
 
    menu_input_dialog_end();
@@ -5050,11 +5051,12 @@ static int action_ok_cheat_reload_cheats(const char *path,
    struct menu_state *menu_st      = menu_state_get_ptr();
    settings_t           *settings  = config_get_ptr();
    const char *path_cheat_database = settings->paths.path_cheat_database;
+   const char *path_cheat_user     = settings->paths.path_cheat_user;
 
    cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
 
    cheat_manager_load_game_specific_cheats(
-         path_cheat_database);
+         path_cheat_database, path_cheat_user);
 
    menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                    |  MENU_ST_FLAG_PREVENT_POPULATE;

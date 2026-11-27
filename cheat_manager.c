@@ -838,32 +838,113 @@ static size_t cheat_manager_get_game_specific_filename(
    return fill_pathname_join_special(s, s1, game_name, len);
 }
 
-void cheat_manager_load_game_specific_cheats(const char *path_cheat_database)
+bool cheat_manager_user_dir_active(const char *path_cheat_database,
+      const char *path_cheat_user)
+{
+   size_t user_len, db_len;
+   if (!path_cheat_user || !*path_cheat_user)
+      return false;
+   if (!path_cheat_database)
+      return true;
+   user_len = strlen(path_cheat_user);
+   db_len   = strlen(path_cheat_database);
+   while (user_len > 1 && PATH_CHAR_IS_SLASH(path_cheat_user[user_len - 1]))
+      user_len--;
+   while (db_len > 1 && PATH_CHAR_IS_SLASH(path_cheat_database[db_len - 1]))
+      db_len--;
+   return user_len != db_len
+      || strncmp(path_cheat_user, path_cheat_database, user_len) != 0;
+}
+
+void cheat_manager_load_game_specific_cheats(const char *path_cheat_database,
+      const char *path_cheat_user)
 {
    char cheat_file[PATH_MAX_LENGTH];
 
-   if (cheat_manager_get_game_specific_filename(
+   if (cheat_manager_user_dir_active(path_cheat_database, path_cheat_user))
+   {
+      if (!cheat_manager_get_game_specific_filename(
+               cheat_file, sizeof(cheat_file),
+               path_cheat_user,
+               false))
+         return;
+      if (     !path_is_valid(cheat_file)
+            && (   !cheat_manager_get_game_specific_filename(
+                     cheat_file, sizeof(cheat_file),
+                     path_cheat_database,
+                     false)
+                || !path_is_valid(cheat_file)))
+         return;
+   }
+   else if (!cheat_manager_get_game_specific_filename(
             cheat_file, sizeof(cheat_file),
             path_cheat_database,
             false))
-   {
-      if (cheat_manager_load(cheat_file, true))
-         RARCH_LOG("[Cheats] Load game-specific cheatfile: \"%s\".\n", cheat_file);
-   }
+      return;
+
+   if (cheat_manager_load(cheat_file, true))
+      RARCH_LOG("[Cheats] Load game-specific cheatfile: \"%s\".\n", cheat_file);
 }
 
-void cheat_manager_save_game_specific_cheats(const char *path_cheat_database)
+void cheat_manager_save_game_specific_cheats(const char *path_cheat_database,
+      const char *path_cheat_user)
 {
    char cheat_file[PATH_MAX_LENGTH];
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+   const char *root          = path_cheat_database;
+
+   if (cheat_manager_user_dir_active(path_cheat_database, path_cheat_user))
+   {
+      if (!cheat_st->cheats)
+         return;
+      /* No copy may be left in the other folder to load next time */
+      if (!cheat_st->size)
+      {
+         if (cheat_manager_get_game_specific_filename(
+                  cheat_file, sizeof(cheat_file),
+                  path_cheat_user,
+                  false))
+            filestream_delete(cheat_file);
+         if (cheat_manager_get_game_specific_filename(
+                  cheat_file, sizeof(cheat_file),
+                  path_cheat_database,
+                  false))
+            filestream_delete(cheat_file);
+         return;
+      }
+      /* Back to Cheat Files only when the game's file is there alone */
+      root = path_cheat_user;
+      if (     cheat_manager_get_game_specific_filename(
+                  cheat_file, sizeof(cheat_file),
+                  path_cheat_user,
+                  false)
+            && !path_is_valid(cheat_file)
+            && cheat_manager_get_game_specific_filename(
+                  cheat_file, sizeof(cheat_file),
+                  path_cheat_database,
+                  false)
+            && path_is_valid(cheat_file))
+         root = path_cheat_database;
+   }
 
    if (cheat_manager_get_game_specific_filename(
             cheat_file, sizeof(cheat_file),
-            path_cheat_database,
+            root,
             true))
    {
       if (cheat_manager_save(cheat_file, NULL, true))
          RARCH_LOG("[Cheats] Save game-specific cheatfile: \"%s\".\n", cheat_file);
    }
+}
+
+bool cheat_manager_save_as(const char *name,
+      const char *path_cheat_database, const char *path_cheat_user)
+{
+   if (!cheat_manager_user_dir_active(path_cheat_database, path_cheat_user))
+      return cheat_manager_save(name, path_cheat_database, false);
+   if (!path_is_directory(path_cheat_user))
+      path_mkdir(path_cheat_user);
+   return cheat_manager_save(name, path_cheat_user, false);
 }
 
 void cheat_manager_state_free(void)

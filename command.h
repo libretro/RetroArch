@@ -518,6 +518,7 @@ bool command_set_shader(command_t *cmd, const char *arg);
 void command_event_init_cheats(
       bool apply_cheats_after_load,
       const char *path_cheat_db,
+      const char *path_cheat_user,
       void *bsv_movie_data);
 #endif
 
