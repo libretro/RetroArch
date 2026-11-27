@@ -242,36 +242,28 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
 {
    NSOpenPanel *panel = [NSOpenPanel openPanel];
 
+   /* filters is the one extension to allow; filters_title labels it
+    * where a picker shows filter names, which this panel does not. */
    if (state->filters && *state->filters)
    {
-      /* Spelled out rather than as an @[...] literal so the file
-       * builds with GCC as well as clang; the +1 from alloc/init is
-       * released once the panel has taken its own reference (a no-op
-       * under ARC, required under MRC or the array leaks every time
-       * the picker opens with a filter). */
-      NSArray *filetypes = [[NSArray alloc] initWithObjects:BOXSTRING(state->filters), BOXSTRING(state->filters_title), nil];
+      NSString *ext = BOXSTRING(state->filters);
       id utt;
       /* -setAllowedFileTypes: (10.3) is deprecated in 12.0 for
        * -setAllowedContentTypes: and UTTypes (11.0): 11 on gives the
-       * panel content types, earlier releases the extensions; both by
+       * panel a content type, earlier releases the extension; both by
        * selector. */
       if (     apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), 0, 0)
             && (utt = apple_rt_class("UTType")))
       {
-         NSUInteger i;
-         NSMutableArray *types = [NSMutableArray array];
-         SEL by_ext            = sel_registerName("typeWithFilenameExtension:");
-         for (i = 0; i < [filetypes count]; i++)
-         {
-            id t = apple_rt_get_id_arg(utt, by_ext, [filetypes objectAtIndex:i]);
-            if (t)
-               [types addObject:t];
-         }
-         apple_rt_send_id(panel, sel_registerName("setAllowedContentTypes:"), types);
+         id t = apple_rt_get_id_arg(utt,
+               sel_registerName("typeWithFilenameExtension:"), ext);
+         if (t)
+            apple_rt_send_id(panel, sel_registerName("setAllowedContentTypes:"),
+                  [NSArray arrayWithObject:t]);
       }
       else
-         apple_rt_send_id(panel, sel_registerName("setAllowedFileTypes:"), filetypes);
-      RARCH_RELEASE(filetypes);
+         apple_rt_send_id(panel, sel_registerName("setAllowedFileTypes:"),
+               [NSArray arrayWithObject:ext]);
    }
 
    /* The panel's directory and result moved from paths to URLs in 10.6
