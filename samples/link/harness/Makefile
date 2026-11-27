@@ -64,13 +64,14 @@
 # check-vulkan, which check ends with when HAVE_VULKAN is 1 and the
 # compiler is not mingw, does the same for the scenarios in vulkan/ and
 # vulkan/fail/, each run with --vk-validate, so that an error the
-# validation layer reports fails it. GPU_DRIVER=software runs them on
-# Mesa's lavapipe, named in VK_ICD_FILENAMES and VK_DRIVER_FILES, and a
-# target that would run one where lavapipe is not installed is a make
-# error. One more run of vulkan/one, with those naming a file that does
-# not exist, must fail its console's start. Under a sanitizer a GPU run's
-# leak check passes over lsan.supp's lines, lavapipe's one-time init, which
-# LeakSanitizer cannot name once the loader has unloaded the driver.
+# validation layer reports, synchronization validation's too, fails it.
+# GPU_DRIVER=software runs them on Mesa's lavapipe, named in
+# VK_ICD_FILENAMES and VK_DRIVER_FILES, and a target that would run one
+# where lavapipe is not installed is a make error. One more run of
+# vulkan/one, with those naming a file that does not exist, must fail its
+# console's start. Under a sanitizer a GPU run's leak check passes over
+# lsan.supp's line, lavapipe's one-time init, which LeakSanitizer cannot
+# name once the loader has unloaded the driver.
 #
 # proof makes the runs PROOF_RUNS names, all six unless it is given, of one
 # scenario that binds real cores, PROOF (an absolute path), into

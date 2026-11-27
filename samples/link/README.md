@@ -200,10 +200,14 @@ link_harness --scenario FILE --out DIR [--path NAME=FILE]...
   it is when another console's code runs. It is there for the check that
   must fail.
 - `--vk-validate` gives each Vulkan console's instance the Khronos
-  validation layer, `VK_LAYER_KHRONOS_validation`. Each error it reports,
-  of the core's calls or the harness's, is printed as
-  `console <c>: validation: [ <VUID> ] <message>` and fails the run; a
-  missing layer fails the console's start.
+  validation layer, `VK_LAYER_KHRONOS_validation`, with synchronization
+  validation on: its `validate_sync` setting, given through
+  `VK_EXT_layer_settings`, or on a layer that does not offer that, through
+  `VK_EXT_validation_features`. Each error it reports, of the core's calls
+  or the harness's, is printed as
+  `console <c>: validation: [ <message ID> ] <message>` and fails the run;
+  a layer that is missing, or that offers neither extension, fails the
+  console's start.
 
 The exit code is:
 

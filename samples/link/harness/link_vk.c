@@ -80,6 +80,7 @@ struct link_vk
    uint32_t family;                    /* the queue's */
    VkResult created;                   /* the last vkCreateInstance's */
    bool validate;                      /* the instance has the validation layer */
+   bool layer_settings;                /* the layer takes validate_sync, else features */
    bool coherent;                      /* the buffer's memory needs no invalidation */
    bool pending;                       /* the fence has a submit to wait for */
    bool lost;                          /* the fence did not signal: nothing is destroyed */
@@ -91,6 +92,7 @@ static struct
    PFN_vkGetInstanceProcAddr get_instance_proc_addr;
    PFN_vkCreateInstance create_instance;
    PFN_vkEnumerateInstanceLayerProperties enumerate_layers;
+   PFN_vkEnumerateInstanceExtensionProperties enumerate_extensions;
    bool tried;
 } link_vk_now;
 
@@ -124,9 +126,13 @@ bool link_vk_loader(unsigned index)
          link_vk_now.enumerate_layers = (PFN_vkEnumerateInstanceLayerProperties)
             link_vk_now.get_instance_proc_addr(VK_NULL_HANDLE,
                   "vkEnumerateInstanceLayerProperties");
+         link_vk_now.enumerate_extensions = (PFN_vkEnumerateInstanceExtensionProperties)
+            link_vk_now.get_instance_proc_addr(VK_NULL_HANDLE,
+                  "vkEnumerateInstanceExtensionProperties");
       }
    }
-   if (link_vk_now.create_instance && link_vk_now.enumerate_layers)
+   if (     link_vk_now.create_instance && link_vk_now.enumerate_layers
+         && link_vk_now.enumerate_extensions)
       return true;
    fprintf(stderr, "link_harness: console %u: no Vulkan loader (%s)\n", index, names[0]);
    return false;
@@ -210,6 +216,22 @@ static bool link_vk_has_layer(void)
    return found;
 }
 
+static bool link_vk_layer_offers(const char *extension)
+{
+   VkExtensionProperties *extensions;
+   uint32_t count = 0, i;
+   bool found     = false;
+   VkResult result;
+   if (     link_vk_now.enumerate_extensions(LINK_VK_LAYER, &count, NULL) != VK_SUCCESS || !count
+         || !(extensions = (VkExtensionProperties*)calloc(count, sizeof(*extensions))))
+      return false;
+   result = link_vk_now.enumerate_extensions(LINK_VK_LAYER, &count, extensions);
+   for (i = 0; (result == VK_SUCCESS || result == VK_INCOMPLETE) && i < count && !found; i++)
+      found = !strcmp(extensions[i].extensionName, extension);
+   free(extensions);
+   return found;
+}
+
 /* What the messenger hears: each error the layer reports */
 static void link_vk_listener(link_vk_t *v, VkDebugUtilsMessengerCreateInfoEXT *listener)
 {
@@ -234,23 +256,32 @@ static void link_vk_add(const char **names, uint32_t *count, const char *name)
 }
 
 /* retro_vulkan_create_instance_wrapper_t, which makes the harness's own
- * instance too: the create info as given, and when the run validates the
- * layer, its extension and a listener. VK_NULL_HANDLE: the VkResult is in
- * created. */
+ * instance too: the create info as given and, when the run validates, the
+ * layer with synchronization validation asked for (it is off unless
+ * asked), the extensions that takes and a listener. VK_NULL_HANDLE: the
+ * VkResult is in created. */
 static VkInstance link_vk_create_instance(void *opaque, const VkInstanceCreateInfo *create_info)
 {
+   static const VkBool32 on            = VK_TRUE;
+   static const VkLayerSettingEXT sync = {
+      LINK_VK_LAYER, "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &on
+   };
+   static const VkValidationFeatureEnableEXT sync_feature =
+      VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT;
    link_vk_t *v              = (link_vk_t*)opaque;
    VkInstanceCreateInfo info = *create_info;
    const char **layers       = NULL;
    const char **extensions   = NULL;
    VkInstance instance       = VK_NULL_HANDLE;
    VkDebugUtilsMessengerCreateInfoEXT listener;
+   VkLayerSettingsCreateInfoEXT settings;
+   VkValidationFeaturesEXT features;
    uint32_t i;
    v->created = VK_SUCCESS;
    if (v->validate)
    {
       layers     = (const char**)malloc((info.enabledLayerCount + 1) * sizeof(*layers));
-      extensions = (const char**)malloc((info.enabledExtensionCount + 1) * sizeof(*extensions));
+      extensions = (const char**)malloc((info.enabledExtensionCount + 2) * sizeof(*extensions));
       if (!layers || !extensions)
          v->created = VK_ERROR_OUT_OF_HOST_MEMORY;
       else
@@ -262,12 +293,32 @@ static VkInstance link_vk_create_instance(void *opaque, const VkInstanceCreateIn
          link_vk_add(layers, &info.enabledLayerCount, LINK_VK_LAYER);
          link_vk_add(extensions, &info.enabledExtensionCount,
                VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+         link_vk_add(extensions, &info.enabledExtensionCount, v->layer_settings
+               ? VK_EXT_LAYER_SETTINGS_EXTENSION_NAME
+               : VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
          info.ppEnabledLayerNames     = layers;
          info.ppEnabledExtensionNames = extensions;
          /* The listener hears vkCreateInstance and vkDestroyInstance too */
          link_vk_listener(v, &listener);
-         listener.pNext = info.pNext;
-         info.pNext     = &listener;
+         if (v->layer_settings)
+         {
+            memset(&settings, 0, sizeof(settings));
+            settings.sType        = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT;
+            settings.pNext        = info.pNext;
+            settings.settingCount = 1;
+            settings.pSettings    = &sync;
+            listener.pNext        = &settings;
+         }
+         else
+         {
+            memset(&features, 0, sizeof(features));
+            features.sType                         = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;
+            features.pNext                         = info.pNext;
+            features.enabledValidationFeatureCount = 1;
+            features.pEnabledValidationFeatures    = &sync_feature;
+            listener.pNext                         = &features;
+         }
+         info.pNext = &listener;
       }
    }
    if (v->created == VK_SUCCESS)
@@ -290,6 +341,13 @@ static bool link_vk_instance(link_vk_t *v,
    VkResult result;
    if (v->validate && !link_vk_has_layer())
       return link_vk_refuse(v, "no layer ", LINK_VK_LAYER, VK_SUCCESS);
+   /* A layer without VK_EXT_layer_settings takes VK_EXT_validation_features */
+   if (v->validate)
+      v->layer_settings = link_vk_layer_offers(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
+   if (v->validate && !v->layer_settings
+         && !link_vk_layer_offers(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME))
+      return link_vk_refuse(v, "the validation layer offers no way to turn synchronization "
+            "validation on", NULL, VK_SUCCESS);
    if (n && n->get_application_info)
       application = n->get_application_info();
    if (!application)
