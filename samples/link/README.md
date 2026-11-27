@@ -551,6 +551,13 @@ For a `render=vulkan` console:
 - `host` runs them on the machine's own driver and requires no renderer:
   a local proof on a real GPU, never CI.
 
+Every GPU run of these targets has a watchdog: one still running after
+300 s, or 600 s in a proof (`GPU_RUN_LIMIT` and `PROOF_RUN_LIMIT`), is
+ended, and the check fails with a line that names it. A driver can block
+for good, as lavapipe does in a submit that waits on a semaphore nothing
+will signal. A mingw build has no watchdog: its runs are Wine's, with no
+GPU.
+
 `check-gl` makes the six runs of every scenario in `scenarios/gl/`, and
 `check` ends with it when `HAVE_EGL` is 1. A scenario there starts with
 `# twin: <name>`, the scenario in `scenarios/` that it differs from only in

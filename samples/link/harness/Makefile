@@ -83,6 +83,10 @@
 # check makes a proof of last_checkpoint with four of the runs, which must
 # make those four alone, and three that must fail: with no run, a misspelt
 # one, and one that does not begin with first.
+#
+# Every GPU run, a proof's too, has a watchdog: one still running after
+# GPU_RUN_LIMIT seconds, PROOF_RUN_LIMIT in a proof, is ended and fails
+# with a line that names it.
 
 LRC := ../../../libretro-common
 BUILD_DIR ?= build
@@ -202,11 +206,23 @@ VK_READY  = $(if $(LVP_ICD),,$(error HAVE_VULKAN=1 runs Vulkan consoles on lavap
 PROOF_VK_READY = $(if $(shell grep -l -e '^console .*render=vulkan' '$(PROOF)' 2>/dev/null),$(VK_READY))
 endif
 
+# The watchdog's limits, in seconds: a driver can block for good, as
+# lavapipe does in a submit that waits on a semaphore nothing will signal.
+# A mingw build's runs are Wine's, with no GPU and no watchdog.
+# --foreground keeps a run in make's process group, so it ends with an
+# interrupted make; -k 10 kills one still running 10 s after the TERM.
+GPU_RUN_LIMIT   := 300
+PROOF_RUN_LIMIT := 600
+ifeq ($(findstring mingw,$(TRIPLE)),)
+GPU_WATCH   := timeout --foreground -k 10 $(GPU_RUN_LIMIT)
+PROOF_WATCH := timeout --foreground -k 10 $(PROOF_RUN_LIMIT)
+endif
+
 # A proof's runs are GPU runs while a switch is on
 PROOF_GPU_ENV  =
 PROOF_GPU_ARGS =
 ifneq ($(filter 1,$(HAVE_EGL) $(HAVE_VULKAN)),)
-PROOF_GPU_ENV  = $(GPU_ENV)
+PROOF_GPU_ENV  = $(PROOF_WATCH) $(GPU_ENV)
 PROOF_GPU_ARGS = $(GPU_ARGS)
 endif
 PROOF_ARGS ?=
@@ -218,10 +234,16 @@ PROOF_RUNS ?= $(ALL_RUNS)
 CHECK_PROOF = $(MAKE) --no-print-directory proof
 
 # After a run that must fail, named $$what: it exited $(1), and its stderr,
-# in $$err, has $$why
+# in $$err, has $$why; exit 124 is its watchdog's
 FAILED_AS = rc=$$?; cat "$$err"; \
+	[ $$rc -ne 124 ] || { echo "check: $$what was still running at its watchdog's limit"; exit 1; }; \
 	[ $$rc -eq $(1) ] || { echo "check: $$what exited $$rc, not $(1)"; exit 1; }; \
 	grep -F -q -e "$$why" "$$err" || { echo "check: $$what did not say: $$why"; exit 1; }
+
+# After a run named $(1) that failed: how; exit 124 is its watchdog's
+RUN_FAILED = { rc=$$?; if [ $$rc -eq 124 ]; then \
+	   echo "$@: $(1) was still running at its watchdog's limit"; \
+	else echo "$@: $(1) failed with exit $$rc"; fi; exit 1; }
 
 # The first run's lines, in the file named after it, that a rewound run
 # repeats: those before the frame it loads at, then those from the save on
@@ -256,7 +278,7 @@ RUNS = name=`basename "$$scn" .scn`; out="$(1)/$$name"; \
 	   rm -f -- "$$out/$$run/stuck.txt"; \
 	   echo "== $$name $$run"; \
 	   $(4) $(RUNNER) $(HARNESS) $(MIN_STACK) --scenario "$$scn" $(2) $$args \
-	      || { echo "$@: $$name $$run failed with exit $$?"; exit 1; }; \
+	      || $(call RUN_FAILED,$$name $$run); \
 	   case $$run in \
 	      first) ;; \
 	      from) start=`sed -n '1s/^F \([0-9]*\) .*/\1/p' "$$out/from/trace.txt"`; \
@@ -356,7 +378,7 @@ define GPU_CHECK
 	   twin=`sed -n '1s/^# twin: //p' "$$scn"`; \
 	   [ -n "$$twin" ] && [ -f "../scenarios/$$twin.scn" ] \
 	      || { echo "$@: $$scn names no twin on its first line"; exit 1; }; \
-	   $(call RUNS,$(BUILD_DIR)/out/$(1),--path test=$(CORE) $(2),$(ALL_RUNS),$(GPU_ENV)); \
+	   $(call RUNS,$(BUILD_DIR)/out/$(1),--path test=$(CORE) $(2),$(ALL_RUNS),$(GPU_WATCH) $(GPU_ENV)); \
 	   gpu="$$out/first"; what="$(1)/$$name"; soft="$(BUILD_DIR)/out/$$twin/first"; \
 	   if [ ! -e "$$soft/trace.txt" ]; then \
 	      scn="../scenarios/$$twin.scn"; $(call RUNS,$(BUILD_DIR)/out,--path test=$(CORE),first); \
@@ -382,13 +404,13 @@ define GPU_CHECK
 	   done; \
 	done
 	@$(call PARKED,$(3))
-	@$(call MUST_FAIL,$(sort $(wildcard ../scenarios/$(1)/fail/*.scn)),$(GPU_ENV),$(2))
+	@$(call MUST_FAIL,$(sort $(wildcard ../scenarios/$(1)/fail/*.scn)),$(GPU_WATCH) $(GPU_ENV),$(2))
 	@scn="$(firstword $(sort $(wildcard ../scenarios/$(1)/*.scn)))"; \
 	what="$(1)/fail/renderer"; err="$(BUILD_DIR)/out/$$what.err"; \
 	why="is not no-such-renderer"; \
 	mkdir -p "$(BUILD_DIR)/out/$(1)/fail"; \
 	echo "== $$scn --require-renderer no-such-renderer, exit 1 wanted"; \
-	$(GPU_ENV) $(RUNNER) $(HARNESS) --scenario "$$scn" --path test=$(CORE) \
+	$(GPU_WATCH) $(GPU_ENV) $(RUNNER) $(HARNESS) --scenario "$$scn" --path test=$(CORE) \
 	   --require-renderer no-such-renderer --out "$(BUILD_DIR)/out/$$what" 2>"$$err"; \
 	$(call FAILED_AS,1)
 	@scn="$(abspath $(firstword $(sort $(wildcard ../scenarios/$(1)/*.scn))))"; \
@@ -410,7 +432,7 @@ define VK_CHECK
 	mkdir -p "$$out"; \
 	[ ! -e "$$none" ] || { echo "$@: $$none exists"; exit 1; }; \
 	echo "== $$what, exit 1 wanted"; \
-	$(GPU_ENV) VK_ICD_FILENAMES="$$none" VK_DRIVER_FILES="$$none" $(RUNNER) $(HARNESS) \
+	$(GPU_WATCH) $(GPU_ENV) VK_ICD_FILENAMES="$$none" VK_DRIVER_FILES="$$none" $(RUNNER) $(HARNESS) \
 	   --scenario ../scenarios/vulkan/one.scn --path test=$(CORE) --vk-validate $(GPU_ARGS) \
 	   --out "$$out/no_driver" 2>"$$err"; \
 	$(call FAILED_AS,1)
@@ -425,14 +447,14 @@ define GL_CHECK
 	err="$$out/fail/no_follow.err"; why="trace differs"; \
 	mkdir -p "$$out/fail"; \
 	echo "== $$what, exit 1 wanted"; \
-	$(GPU_ENV) $(GL_RUN) --scenario ../scenarios/gl/two.scn --no-context-follow \
+	$(GPU_WATCH) $(GPU_ENV) $(GL_RUN) --scenario ../scenarios/gl/two.scn --no-context-follow \
 	   --expect "$$out/two/first/trace.txt" --out "$$out/fail/no_follow" 2>"$$err"; \
 	$(call FAILED_AS,1)
 	@out="$(BUILD_DIR)/out/gl/two"; \
 	echo "== two counted"; \
-	$(GPU_ENV) $(GL_RUN) --scenario ../scenarios/gl/two.scn \
+	$(GPU_WATCH) $(GPU_ENV) $(GL_RUN) --scenario ../scenarios/gl/two.scn \
 	   --expect "$$out/first/trace.txt" --out "$$out/counted" > "$$out/counted.txt" \
-	   || { echo "$@: gl/two counted failed with exit $$?"; exit 1; }; \
+	   || $(call RUN_FAILED,gl/two counted); \
 	cat "$$out/counted.txt"; \
 	n=`sed -n 's/^link_harness: \([0-9][0-9]*\) GL context switches$$/\1/p' "$$out/counted.txt"`; \
 	[ -n "$$n" ] && [ "$$n" -gt 400 ] \
@@ -440,9 +462,9 @@ define GL_CHECK
 	@[ "$(GPU_DRIVER)" = software ] || exit 0; \
 	out="$(BUILD_DIR)/out/gl/gles2"; \
 	echo "== gles2 es20"; \
-	$(GPU_ENV) MESA_GLES_VERSION_OVERRIDE=2.0 $(GL_RUN) --scenario ../scenarios/gl/gles2.scn \
+	$(GPU_WATCH) $(GPU_ENV) MESA_GLES_VERSION_OVERRIDE=2.0 $(GL_RUN) --scenario ../scenarios/gl/gles2.scn \
 	   --expect "$$out/first/trace.txt" --out "$$out/es20" \
-	   || { echo "$@: gl/gles2 es20 failed with exit $$?"; exit 1; }; \
+	   || $(call RUN_FAILED,gl/gles2 es20); \
 	grep -q '^gl OpenGL ES 2\.0 ' "$$out/es20/c0/gpu.txt" \
 	   || { echo "$@: gl/gles2 es20: not an OpenGL ES 2.0 context: `cat "$$out/es20/c0/gpu.txt"`"; exit 1; }
 endef
