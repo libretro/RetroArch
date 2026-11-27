@@ -403,6 +403,59 @@ static void check_nonblock_write(void)
    retro_spsc_free(&rsd.ring);
 }
 
+/* What one control message put on the wire: @send runs against a
+ * fresh socketpair as the control socket. */
+static size_t control_sent(rsound_t *rd, int (*send)(rsound_t*),
+      char *out, size_t cap)
+{
+   int     sv[2];
+   int     saved = rd->conn.ctl_socket;
+   ssize_t r;
+
+   if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) != 0)
+      return 0;
+   rd->conn.ctl_socket = sv[0];
+   CHECK(send(rd) == 0, "a control message was not sent");
+   rd->conn.ctl_socket = saved;
+   close(sv[0]);
+   r = read(sv[1], out, cap - 1);
+   close(sv[1]);
+   out[r > 0 ? r : 0] = '\0';
+   return r > 0 ? (size_t)r : 0;
+}
+
+/* Control messages: an "RSD%5d" header with the body's length, then
+ * the body. */
+static void check_control_messages(rsound_t *rd)
+{
+   char    got[512];
+   char    want[512];
+   char    body[300];
+   int64_t saved = rd->total_written;
+
+   rd->total_written = 0;
+   control_sent(rd, rsnd_send_info_query, got, sizeof(got));
+   CHECK(!strcmp(got, "RSD    7 INFO 0"), "info query '%s'", got);
+   rd->total_written = 123456789012LL;
+   control_sent(rd, rsnd_send_info_query, got, sizeof(got));
+   CHECK(!strcmp(got, "RSD   18 INFO 123456789012"), "info query '%s'", got);
+   rd->total_written = saved;
+
+   strlcpy(rd->identity, "RetroArch", sizeof(rd->identity));
+   control_sent(rd, rsnd_send_identity_info, got, sizeof(got));
+   CHECK(!strcmp(got, "RSD   19 IDENTITY RetroArch"), "identity '%s'", got);
+
+   /* the longest identity is cut to what the 256-byte message holds */
+   memset(rd->identity, 'x', sizeof(rd->identity) - 1);
+   rd->identity[sizeof(rd->identity) - 1] = '\0';
+   memset(body, 'x', 236);
+   body[236] = '\0';
+   snprintf(want, sizeof(want), "RSD  246 IDENTITY %s", body);
+   CHECK(control_sent(rd, rsnd_send_identity_info, got, sizeof(got)) == 254
+         && !strcmp(got, want), "long identity '%s'", got);
+   rd->identity[0] = '\0';
+}
+
 /* One control reply: @hdr is the 8-byte header, followed by @body_len
  * bytes of filler. Returns rsnd_update_server_info()'s result. */
 static int control_reply(rsound_t *rd, const char *hdr, size_t body_len)
@@ -478,6 +531,7 @@ int main(void)
    rsd_set_callback(rd, borrow_cb, release_cb, wait_cb, error_cb, NULL);
 
    check_control_length(rd);
+   check_control_messages(rd);
 
    for (i = 0; i < ROUNDS; i++)
    {

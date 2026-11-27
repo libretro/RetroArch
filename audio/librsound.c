@@ -834,36 +834,44 @@ static size_t rsnd_get_delay(rsound_t *rd)
 #define RSD_PROTO_MAXSIZE 256
 #define RSD_PROTO_CHUNKSIZE 8
 
+/* Puts the 8-byte "RSD%5d" header for an @n-byte body in front of it
+ * at @s, without the terminator a printf would leave on the body. */
+static void rsnd_proto_header(char *s, size_t n)
+{
+   int i;
+   s[0] = 'R';
+   s[1] = 'S';
+   s[2] = 'D';
+   for (i = RSD_PROTO_CHUNKSIZE - 1; i >= 3; i--)
+   {
+      s[i] = (n || i == RSD_PROTO_CHUNKSIZE - 1) ? (char)('0' + n % 10) : ' ';
+      n   /= 10;
+   }
+}
+
+/* Sends a control message whose body was formatted in place behind
+ * the header's room; @n is what snprintf returned for it. */
+static int rsnd_send_proto(rsound_t *rd, char *msg, int n)
+{
+   size_t len;
+   if (n < 0)
+      return -1;
+   len = (size_t)n < RSD_PROTO_MAXSIZE - RSD_PROTO_CHUNKSIZE
+      ? (size_t)n : RSD_PROTO_MAXSIZE - RSD_PROTO_CHUNKSIZE - 1;
+   rsnd_proto_header(msg, len);
+   len += RSD_PROTO_CHUNKSIZE;
+   if (rsnd_send_chunk(rd->conn.ctl_socket, msg, len, 0) != (ssize_t)len)
+      return -1;
+   return 0;
+}
+
 static int rsnd_send_identity_info(rsound_t *rd)
 {
-   char    tmpbuf[RSD_PROTO_MAXSIZE];
-   char    sendbuf[RSD_PROTO_MAXSIZE];
-   size_t  tmp_len;
-   size_t  send_len;
-   int     n;
-
-   /* snprintf returns the number of bytes that would have been
-    * written had the buffer been large enough; clamp to the
-    * actually-written length so it can be passed straight to
-    * send() without an extra strlen pass. */
-   n = snprintf(tmpbuf, RSD_PROTO_MAXSIZE - 1, " IDENTITY %.*s",
+   char msg[RSD_PROTO_MAXSIZE];
+   return rsnd_send_proto(rd, msg, snprintf(msg + RSD_PROTO_CHUNKSIZE,
+         RSD_PROTO_MAXSIZE - RSD_PROTO_CHUNKSIZE, " IDENTITY %.*s",
          (int)(RSD_PROTO_MAXSIZE - RSD_PROTO_CHUNKSIZE - 1
-            - sizeof(" IDENTITY ")), rd->identity);
-   tmpbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
-   tmp_len = (n < 0) ? 0
-           : ((size_t)n < RSD_PROTO_MAXSIZE - 1 ? (size_t)n : RSD_PROTO_MAXSIZE - 2);
-
-   n = snprintf(sendbuf, RSD_PROTO_MAXSIZE - 1, "RSD%5d%.*s",
-         (int)tmp_len, RSD_PROTO_MAXSIZE - RSD_PROTO_CHUNKSIZE - 2, tmpbuf);
-   sendbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
-   send_len = (n < 0) ? 0
-            : ((size_t)n < RSD_PROTO_MAXSIZE - 1 ? (size_t)n : RSD_PROTO_MAXSIZE - 2);
-
-   if (rsnd_send_chunk(rd->conn.ctl_socket, sendbuf, send_len, 0)
-         != (ssize_t)send_len)
-      return -1;
-
-   return 0;
+            - sizeof(" IDENTITY ")), rd->identity));
 }
 
 /* Sends delay info request to server on the ctl socket.
@@ -871,19 +879,10 @@ static int rsnd_send_identity_info(rsound_t *rd)
  * It will never block. */
 static int rsnd_send_info_query(rsound_t *rd)
 {
-   char tmpbuf[RSD_PROTO_MAXSIZE];
-   char sendbuf[RSD_PROTO_MAXSIZE];
-
-   snprintf(tmpbuf, RSD_PROTO_MAXSIZE - 1, " INFO %lld", (long long int)rd->total_written);
-   tmpbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
-   snprintf(sendbuf, RSD_PROTO_MAXSIZE - 1, "RSD%5d%.*s", (int)strlen(tmpbuf),
-         RSD_PROTO_MAXSIZE - RSD_PROTO_CHUNKSIZE - 2, tmpbuf);
-   sendbuf[RSD_PROTO_MAXSIZE - 1] = '\0';
-
-   if (rsnd_send_chunk(rd->conn.ctl_socket, sendbuf, strlen(sendbuf), 0) != (ssize_t)strlen(sendbuf))
-      return -1;
-
-   return 0;
+   char msg[RSD_PROTO_MAXSIZE];
+   return rsnd_send_proto(rd, msg, snprintf(msg + RSD_PROTO_CHUNKSIZE,
+         RSD_PROTO_MAXSIZE - RSD_PROTO_CHUNKSIZE, " INFO %lld",
+         (long long int)rd->total_written));
 }
 
 /* We check if there's any pending delay information from the server.
