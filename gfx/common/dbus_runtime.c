@@ -58,6 +58,8 @@ static rdbus_t *rdbus_load(void)
    RDBUS_SYM(connection_close,                     "dbus_connection_close");
    RDBUS_SYM(connection_unref,                     "dbus_connection_unref");
    RDBUS_SYM(connection_send_with_reply_and_block, "dbus_connection_send_with_reply_and_block");
+   RDBUS_SYM(connection_send,                      "dbus_connection_send");
+   RDBUS_SYM(connection_flush,                     "dbus_connection_flush");
    RDBUS_SYM(message_new_method_call,              "dbus_message_new_method_call");
    RDBUS_SYM(message_append_args,                  "dbus_message_append_args");
    RDBUS_SYM(message_unref,                        "dbus_message_unref");

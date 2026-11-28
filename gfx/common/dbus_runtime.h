@@ -105,6 +105,11 @@ typedef struct rdbus
    rdbus_message_t    *(*connection_send_with_reply_and_block)(
          rdbus_connection_t *conn, rdbus_message_t *msg,
          int timeout_ms, rdbus_error_t *err);
+   rdbus_bool_t        (*connection_send)(
+         rdbus_connection_t *conn, rdbus_message_t *msg,
+         uint32_t *serial);
+   void                (*connection_flush)(
+         rdbus_connection_t *conn);
    rdbus_message_t    *(*message_new_method_call)(const char *dest,
          const char *path, const char *iface, const char *method);
    rdbus_bool_t        (*message_append_args)(rdbus_message_t *msg,
