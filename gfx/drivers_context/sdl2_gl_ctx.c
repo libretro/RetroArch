@@ -153,7 +153,7 @@ error:
    return NULL;
 }
 
-static enum gfx_ctx_api sdl2_ctx_get_api(void *data) { return GFX_CTX_OPENGL_API; }
+static enum gfx_ctx_api sdl2_ctx_get_api(void *data) { return sdl2_gl_api; }
 
 static bool sdl2_ctx_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major,
@@ -213,6 +213,9 @@ static bool sdl2_ctx_set_video_mode(void *data,
    else
    {
       unsigned display          = video_monitor_index;
+#ifndef GL_DEBUG
+      struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
+#endif
 
       /* GL attributes must be set before the window is created. A new
        * main window starts from SDL's defaults, as SDL keeps the last
@@ -220,14 +223,22 @@ static bool sdl2_ctx_set_video_mode(void *data,
 #if SDL_VERSION_ATLEAST(2, 0, 2)
       SDL_GL_ResetAttributes();
 #endif
-      /* With no profile SDL makes a legacy context below GL 3, as the
-       * native contexts do. 0.0 asks for none and keeps SDL's defaults. */
+#ifdef GL_DEBUG
+      SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#else
+      if (hwr && hwr->debug_context)
+         SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS,
+               SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
+      /* As the native contexts: a core profile from GL 3.2, none below,
+       * where SDL makes a legacy context unless the debug flag is set.
+       * 0.0 asks for no version and keeps SDL's defaults. */
       if (sdl2_gl_api == GFX_CTX_OPENGL_ES_API)
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                SDL_GL_CONTEXT_PROFILE_ES);
-      else if (sdl2_gl_major >= 3)
+      else if (sdl2_gl_major * 1000 + sdl2_gl_minor >= 3002)
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-               SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+               SDL_GL_CONTEXT_PROFILE_CORE);
       if (sdl2_gl_major > 0)
       {
          SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, sdl2_gl_major);
