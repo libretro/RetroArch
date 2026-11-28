@@ -947,8 +947,11 @@ private slots:
    void onShaderRemovePassClicked();
    void onShaderResetParameter(QString parameter);
    void onShaderLoadPresetClicked();
+   void onShaderLoadPresetPrependClicked();
+   void onShaderLoadPresetAppendClicked();
    void onShaderAddPassClicked();
    void onShaderSavePresetAsClicked();
+   void onShaderSaveCurrentPresetClicked();
    void onShaderSaveCorePresetClicked();
    void onShaderSaveParentPresetClicked();
    void onShaderSaveGamePresetClicked();
@@ -966,6 +969,7 @@ private:
    void addShaderParam(struct video_shader_parameter *param, QFormLayout *form);
    void getShaders(struct video_shader **menu_shader, struct video_shader **video_shader);
    void operateShaderPreset(bool save, const char *path, unsigned action_type);
+   void onShaderLoadPresetMergeClicked(bool prepend);
 
    QPointer<QVBoxLayout> m_layout;
    QPointer<QScrollArea> m_scrollArea;
