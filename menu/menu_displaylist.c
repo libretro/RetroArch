@@ -1285,7 +1285,7 @@ static int menu_displaylist_parse_core_info(
 
    if (core_path)
    {
-      char tmp_desc[PATH_MAX_LENGTH];
+      const char *core_desc = core_path;
       size_t _len = strlcpy(tmp,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH),
             sizeof(tmp));
@@ -1296,15 +1296,13 @@ static int menu_displaylist_parse_core_info(
       shortened_path[0] = '\0';
       fill_pathname_abbreviate_special(shortened_path,
             core_path, sizeof(shortened_path));
-      strlcpy(tmp_desc, shortened_path, sizeof(tmp_desc));
-#else
-      strlcpy(tmp_desc, core_path, sizeof(tmp_desc));
+      core_desc = shortened_path;
 #endif
 
       if (!settings->bools.menu_show_sublabels)
-         _len += strlcpy(tmp + _len, tmp_desc, sizeof(tmp) - _len);
+         _len += strlcpy(tmp + _len, core_desc, sizeof(tmp) - _len);
 
-      if (menu_entries_append(list, tmp, tmp_desc,
+      if (menu_entries_append(list, tmp, core_desc,
             MENU_ENUM_LABEL_CORE_INFO_ENTRY,
             MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
          count++;
@@ -1312,7 +1310,9 @@ static int menu_displaylist_parse_core_info(
 
    if (core_info->firmware_count > 0)
    {
-      char tmp_path[PATH_MAX_LENGTH];
+      /* Only the content directory variant needs a copy of the system
+       * directory, so only it allocates one */
+      char *tmp_path                  = NULL;
       char tmp_desc[PATH_MAX_LENGTH];
       size_t tmp_desc_len;
       core_info_ctx_firmware_t firmware_info;
@@ -1325,11 +1325,13 @@ static int menu_displaylist_parse_core_info(
 
       /* If 'System Files are in Content Directory' is enabled and content is inited,
        * adjust the path to check for firmware files */
-      if (systemfiles_in_content_dir && content_is_inited)
+      if (     systemfiles_in_content_dir
+            && content_is_inited
+            && (tmp_path = (char*)malloc(PATH_MAX_LENGTH)))
       {
          size_t __len = fill_pathname_basedir(tmp_path,
                path_get(RARCH_PATH_CONTENT),
-               sizeof(tmp_path));
+               PATH_MAX_LENGTH);
 
          /* If content path is empty, fall back to global system dir path */
          if (!*tmp_path)
@@ -1359,6 +1361,7 @@ static int menu_displaylist_parse_core_info(
          const char *present_required = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED);
          const char *rdb_entry_name   =
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME);
+         const char *fw_desc          = NULL;
          size_t __len = strlcpy(tmp,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE),
                sizeof(tmp));
@@ -1406,14 +1409,17 @@ static int menu_displaylist_parse_core_info(
             {
                if (!settings->bools.menu_show_sublabels)
                {
-                  char tmp_note[PATH_MAX_LENGTH];
+                  /* tmp_desc was emptied above for this case; the note
+                   * row borrows it and leaves it empty again */
+                  size_t __len2 = strlcpy_lit(tmp_desc, "- ", sizeof(tmp_desc));
+                  strlcpy(tmp_desc + __len2,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY),
+                        sizeof(tmp_desc) - __len2);
 
-                  snprintf(tmp_note, sizeof(tmp_note), "- %s",
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY));
-
-                  if (menu_entries_append(list, tmp_note, "",
+                  if (menu_entries_append(list, tmp_desc, "",
                         MENU_ENUM_LABEL_CORE_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
                      count++;
+                  tmp_desc[0] = '\0';
                }
                else
                {
@@ -1440,7 +1446,7 @@ static int menu_displaylist_parse_core_info(
                         : (core_info->firmware[i].optional ? present_optional : present_required),
                   core_info->firmware[i].desc ? core_info->firmware[i].desc : rdb_entry_name
             );
-            tmp_desc[0] = '\0';
+            fw_desc = "";
 
             /* Parse md5 checksum rows as sublabels */
             if (     core_info->notes
@@ -1452,13 +1458,11 @@ static int menu_displaylist_parse_core_info(
                if (pos)
                {
                   core_info_list_hide[j] = true;
-                  strlcpy(tmp_desc,
-                        core_info->note_list->elems[j].data + pos,
-                        sizeof(tmp_desc));
+                  fw_desc                = core_info->note_list->elems[j].data + pos;
                }
             }
 
-            if (menu_entries_append(list, tmp, tmp_desc,
+            if (menu_entries_append(list, tmp, fw_desc,
                   MENU_ENUM_LABEL_CORE_INFO_ENTRY,
                   MENU_SETTINGS_CORE_INFO_NONE, 0, i, NULL))
                count++;
@@ -1486,6 +1490,8 @@ static int menu_displaylist_parse_core_info(
             }
          }
       }
+
+      free(tmp_path);
    }
 
    if (core_info->notes)
@@ -5028,7 +5034,6 @@ static int menu_displaylist_parse_horizontal_list(
       playlist_t *playlist         = NULL;
       if (item->path && *item->path)
       {
-         char lpl_basename[NAME_MAX_LENGTH];
          char path_playlist[PATH_MAX_LENGTH];
          const char *dir_playlist  = settings->paths.directory_playlist;
 
@@ -5040,11 +5045,12 @@ static int menu_displaylist_parse_horizontal_list(
          menu_displaylist_set_new_playlist(menu, settings, path_playlist, true);
 
          /* Thumbnail system must be set *after* playlist
-          * is loaded/cached */
-         fill_pathname(lpl_basename, path_basename(item->path), "",
-               sizeof(lpl_basename));
+          * is loaded/cached; the playlist keeps its own copy of the
+          * path, so the buffer takes the system name */
+         fill_pathname(path_playlist, path_basename(item->path), "",
+               sizeof(path_playlist));
          gfx_thumbnail_set_system(menu_st->thumbnail_path_data,
-               lpl_basename, playlist_get_cached());
+               path_playlist, playlist_get_cached());
       }
 
       if ((playlist = playlist_get_cached()))
@@ -6118,7 +6124,8 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
       bool show_hidden_files, menu_displaylist_info_t *info)
 {
    size_t i, list_size;
-   char out_dir[DIR_MAX_LENGTH];
+   /* The parent directory test, then each core's '<dir>/<file>' */
+   char buf[PATH_MAX_LENGTH];
    struct string_list *str_list = NULL;
    unsigned count               = 0;
    const char *path             = info->path;
@@ -6175,9 +6182,9 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
    }
 #endif
 
-   fill_pathname_parent_dir(out_dir, path, sizeof(out_dir));
+   fill_pathname_parent_dir(buf, path, sizeof(buf));
 
-   if (!*out_dir)
+   if (!*buf)
       menu_entries_prepend(info->list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY),
             path,
@@ -6219,16 +6226,12 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
 
    for (i = 0; i < list_size; i++)
    {
-      char label[64];
 #ifndef HAVE_DYNAMIC
       bool is_dir                   = false;
 #endif
       const char *path              = NULL;
       enum msg_hash_enums enum_idx  = MSG_UNKNOWN;
       enum msg_file_type file_type  = FILE_TYPE_NONE;
-
-      /* TODO/FIXME - empty label */
-      label[0] = '\0';
 
       switch (str_list->elems[i].attr.i)
       {
@@ -6283,7 +6286,7 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
 #endif
 
       count++;
-      menu_entries_append(info->list, path, label,
+      menu_entries_append(info->list, path, "",
             enum_idx,
             file_type, 0, 0, NULL);
    }
@@ -6294,29 +6297,31 @@ static unsigned menu_displaylist_parse_cores(menu_handle_t *menu,
       return 0;
 
    {
-      core_info_list_t *list         = NULL;
+      /* '<dir>/' is written once and each core's file name after it,
+       * in place; the display name is handed to the list from the core
+       * info entry itself */
       const char *dir                = NULL;
-
-      core_info_get_list(&list);
+      size_t _len;
 
       menu_entries_get_last_stack(&dir, NULL, NULL, NULL, NULL);
 
+      fill_pathname_join_special(buf, dir, "", sizeof(buf));
+      _len                           = strlen(buf);
       list_size                      = info->list->size;
 
       for (i = 0; i < list_size; i++)
       {
-         const char *path            = info->list->list[i].path;
-         unsigned type               = info->list->list[i].type;
+         core_info_t *core_info      = NULL;
 
-         if (type == FILE_TYPE_CORE)
-         {
-            char core_path[PATH_MAX_LENGTH];
-            char display_name[NAME_MAX_LENGTH];
-            fill_pathname_join_special(core_path, dir, path, sizeof(core_path));
-            if (core_info_list_get_display_name(list,
-                     core_path, display_name, sizeof(display_name)) > 0)
-               file_list_set_alt_at_offset(info->list, i, display_name);
-         }
+         if (info->list->list[i].type != FILE_TYPE_CORE)
+            continue;
+
+         strlcpy(buf + _len, info->list->list[i].path, sizeof(buf) - _len);
+         if (     core_info_find(buf, &core_info)
+               && core_info->display_name
+               && *core_info->display_name)
+            file_list_set_alt_at_offset(info->list, i,
+                  core_info->display_name);
       }
       info->flags |= MD_FLAG_NEED_SORT;
    }
@@ -6748,8 +6753,8 @@ static unsigned menu_displaylist_parse_content_information(
       menu_handle_t *menu, settings_t *settings, file_list_t *info_list)
 {
    char tmp[PATH_MAX_LENGTH];
-   char core_name[NAME_MAX_LENGTH];
    char content_label[NAME_MAX_LENGTH];
+   const char *core_name               = "";
    playlist_t *playlist                = playlist_get_cached();
    unsigned idx                        = menu->rpl_entry_selection_ptr;
    const struct playlist_entry *entry  = NULL;
@@ -6769,7 +6774,6 @@ static unsigned menu_displaylist_parse_content_information(
       &&  string_is_equal(menu->deferred_path, loaded_content_path);
    bool core_supports_no_game          = false;
 
-   core_name[0]                        = '\0';
    content_label[0]                    = '\0';
 
    /* Check the origin menu from which the information
@@ -6828,7 +6832,7 @@ static unsigned menu_displaylist_parse_content_information(
          if (   (entry->core_name && *entry->core_name)
              && (core_path && *core_path)
              && !string_is_equal(core_path, FILE_PATH_DETECT))
-            strlcpy(core_name, entry->core_name, sizeof(core_name));
+            core_name = entry->core_name;
          /* Use playlist default core if set */
          else if (string_is_equal(entry->core_path, FILE_PATH_DETECT)
                && string_is_equal(entry->core_name, FILE_PATH_DETECT))
@@ -6841,7 +6845,7 @@ static unsigned menu_displaylist_parse_content_information(
                   && !string_is_equal(default_core_name, FILE_PATH_DETECT)
                   && !string_is_equal(default_core_path, FILE_PATH_DETECT))
             {
-               strlcpy(core_name, default_core_name, sizeof(core_name));
+               core_name = default_core_name;
                core_path = default_core_path;
             }
          }
@@ -6864,7 +6868,7 @@ static unsigned menu_displaylist_parse_content_information(
          core_supports_no_game = (core_info->flags
                                 & CORE_INFO_FLAG_SUPPORTS_NO_GAME);
          if (core_info->display_name && *core_info->display_name)
-            strlcpy(core_name, core_info->display_name, sizeof(core_name));
+            core_name = core_info->display_name;
       }
    }
 
@@ -6890,26 +6894,21 @@ static unsigned menu_displaylist_parse_content_information(
    if (     *content_label
          && (db_name && *db_name))
    {
+      /* tmp is free here: the core name row before this is appended,
+       * and the database row after it writes it afresh */
       char *last;
-      char db_path[PATH_MAX_LENGTH];
-      fill_pathname_join_special(db_path,
+      fill_pathname_join_special(tmp,
             settings->paths.path_content_database,
             db_name,
-            sizeof(db_path));
-      last = path_get_extension_mutable(db_path);
+            sizeof(tmp));
+      last = path_get_extension_mutable(tmp);
       if (last && *last)
-      {
-         last[0] = '.';
-         last[1] = 'r';
-         last[2] = 'd';
-         last[3] = 'b';
-         last[4] = '\0';
-      }
+         strlcpy(last, ".rdb", sizeof(tmp) - (size_t)(last - tmp));
 
-      if (path_is_valid(db_path))
+      if (path_is_valid(tmp))
          if (menu_entries_append(info_list,
                content_label,
-               db_path,
+               tmp,
                MENU_ENUM_LABEL_RDB_ENTRY_DETAIL,
                FILE_TYPE_RDB_ENTRY, 0, 0, NULL))
             count++;
@@ -8750,11 +8749,38 @@ static int menu_displaylist_parse_disc_info(file_list_t *info_list,
 }
 #endif
 
+/* Formats @fmt with @arg into @s at *@pos, as strlcpy_append() appends:
+ * truncation clamps *@pos to @len - 1 so later appends stop */
+static int menu_subsystem_appendf(char *s, size_t len, size_t *pos,
+      const char *fmt, const char *arg)
+{
+   int ret;
+   size_t room;
+   if (*pos >= len)
+   {
+      *pos = len - 1;
+      return -1;
+   }
+   room = len - *pos;
+   ret  = snprintf(s + *pos, room, fmt, arg);
+   if (ret < 0)
+   {
+      s[*pos] = '\0';
+      return -1;
+   }
+   if ((size_t)ret >= room)
+   {
+      *pos = len - 1;
+      return -1;
+   }
+   *pos += (size_t)ret;
+   return 0;
+}
+
 static unsigned menu_displaylist_populate_subsystem(
       const struct retro_subsystem_info* subsystem,
       file_list_t *list, bool menu_show_sublabels)
 {
-   char star_char[16];
    unsigned count           = 0;
    /* Note: Create this string here explicitly (rather than
     * using a #define elsewhere) since we need to be aware of
@@ -8764,9 +8790,10 @@ static unsigned menu_displaylist_populate_subsystem(
    static const char utf8_star_char[] = "*";
 #else
    /* <BLACK STAR>
-    * UCN equivalent: "\u2605" */
+    * UCN equivalent: "★" */
    static const char utf8_star_char[] = "\xE2\x98\x85";
 #endif
+   const char *star_char    = utf8_star_char;
    int  i       = 0;
 #if defined(HAVE_RGUI)
    const char *menu_driver  = menu_driver_ident();
@@ -8776,13 +8803,8 @@ static unsigned menu_displaylist_populate_subsystem(
     * (i.e. RGUI does not support unicode, so use a 'standard'
     * character fallback) */
    if (is_rgui)
-   {
-      star_char[0] = '*';
-      star_char[1] = '\0';
-   }
-   else
+      star_char = "*";
 #endif
-      strlcpy(star_char, utf8_star_char, sizeof(star_char));
 
    if (menu_displaylist_has_subsystems())
    {
@@ -8790,52 +8812,37 @@ static unsigned menu_displaylist_populate_subsystem(
 
       for (i = 0; i < (int)runloop_st->subsystem_current_count; i++, subsystem++)
       {
+         /* Every piece is appended bound-checked: subsystem->desc and
+          * the ROM descriptions are core-controlled via
+          * RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO with no length limit
+          * imposed by RetroArch.  Truncation leaves s NUL-terminated
+          * at sizeof(s) - 1; the menu entry is just shorter. */
          char s[PATH_MAX_LENGTH];
+         size_t pos = 0;
+         s[0]       = '\0';
+
          if (content_get_subsystem() == i)
          {
             if (content_get_subsystem_rom_id() < subsystem->num_roms)
             {
-               /* Bound-checked piece-by-piece append.  Pre-fix this
-                * was a naive `_len += strlcpy(s + _len, src,
-                * sizeof(s) - _len)` chain that overshoots and
-                * underflows on a long subsystem->desc -- core-
-                * controlled via RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO
-                * with no length limit imposed by RetroArch -- driving
-                * the next strlcpy into an OOB write on the stack
-                * buffer s[PATH_MAX_LENGTH].  See 78c52ab for the
-                * helper rationale and the database_info_build_
-                * query_enum precedent. */
-               size_t pos = 0;
-               int    rv  = 0;
-               {
-                  char head[256];
-                  snprintf(head, sizeof(head), /* Format string below */
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY),
-                        subsystem->desc);
-                  rv |= strlcpy_append(s, sizeof(s), &pos, head);
-               }
-               rv |= strlcpy_append(s, sizeof(s), &pos, " ");
-               rv |= strlcpy_append(s, sizeof(s), &pos, star_char);
+               menu_subsystem_appendf(s, sizeof(s), &pos,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY),
+                     subsystem->desc);
+               strlcpy_append(s, sizeof(s), &pos, " ");
+               strlcpy_append(s, sizeof(s), &pos, star_char);
 
 #ifdef HAVE_RGUI
                /* If using RGUI with sublabels disabled, add the
                 * appropriate text to the menu entry itself... */
                if (is_rgui && !menu_show_sublabels)
                {
-                  rv |= strlcpy_append(s, sizeof(s), &pos, " [");
-                  {
-                     char head[256];
-                     snprintf(head, sizeof(head), /* Format string below */
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO),
-                           subsystem->roms[content_get_subsystem_rom_id()].desc);
-                     rv |= strlcpy_append(s, sizeof(s), &pos, head);
-                  }
-                  rv |= strlcpy_append(s, sizeof(s), &pos, "]");
+                  strlcpy_append(s, sizeof(s), &pos, " [");
+                  menu_subsystem_appendf(s, sizeof(s), &pos,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO),
+                        subsystem->roms[content_get_subsystem_rom_id()].desc);
+                  strlcpy_append(s, sizeof(s), &pos, "]");
                }
 #endif
-               (void)rv;  /* truncation leaves s NUL-terminated at
-                           * sizeof(s) - 1; the menu entry is just
-                           * shorter than ideal, no further action. */
 
                if (menu_entries_append(list,
                   s,
@@ -8846,51 +8853,42 @@ static unsigned menu_displaylist_populate_subsystem(
             }
             else
             {
-               /* Same chain pattern as the "Load" branch above; same
-                * unbounded subsystem->desc surface. */
-               size_t pos = 0;
-               int    rv  = 0;
-               {
-                  char head[256];
-                  snprintf(head, sizeof(head), /* Format string below */
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY),
-                        subsystem->desc);
-                  rv |= strlcpy_append(s, sizeof(s), &pos, head);
-               }
-               rv |= strlcpy_append(s, sizeof(s), &pos, " ");
-               rv |= strlcpy_append(s, sizeof(s), &pos, star_char);
+               menu_subsystem_appendf(s, sizeof(s), &pos,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY),
+                     subsystem->desc);
+               strlcpy_append(s, sizeof(s), &pos, " ");
+               strlcpy_append(s, sizeof(s), &pos, star_char);
 
 #ifdef HAVE_RGUI
                /* If using RGUI with sublabels disabled, add the
-                * appropriate text to the menu entry itself... */
+                * appropriate text to the menu entry itself: the ROMs
+                * added so far, written in place and withdrawn again
+                * if none of them has a name */
                if (is_rgui && !menu_show_sublabels)
                {
-                  size_t pos2  = 0;
-                  int    rv2   = 0;
-                  unsigned j   = 0;
-                  char rom_buff[PATH_MAX_LENGTH];
-                  rom_buff[0]  = '\0';
+                  unsigned j;
+                  size_t   open = pos;
+                  size_t   names;
 
+                  strlcpy_append(s, sizeof(s), &pos, " [");
+                  names = pos;
                   for (j = 0; j < content_get_subsystem_rom_id(); j++)
                   {
-                     rv2 |= strlcpy_append(rom_buff, sizeof(rom_buff),
-                           &pos2,
+                     strlcpy_append(s, sizeof(s), &pos,
                            path_basename(content_get_subsystem_rom(j)));
                      if (j != content_get_subsystem_rom_id() - 1)
-                        rv2 |= strlcpy_append(rom_buff, sizeof(rom_buff),
-                              &pos2, "|");
+                        strlcpy_append(s, sizeof(s), &pos, "|");
                   }
-                  (void)rv2;
 
-                  if (*rom_buff)
+                  if (pos == names)
                   {
-                     rv |= strlcpy_append(s, sizeof(s), &pos, " [");
-                     rv |= strlcpy_append(s, sizeof(s), &pos, rom_buff);
-                     rv |= strlcpy_append(s, sizeof(s), &pos, "]");
+                     pos     = open;
+                     s[open] = '\0';
                   }
+                  else
+                     strlcpy_append(s, sizeof(s), &pos, "]");
                }
 #endif
-               (void)rv;
 
                if (menu_entries_append(list,
                   s,
@@ -8902,16 +8900,9 @@ static unsigned menu_displaylist_populate_subsystem(
          }
          else
          {
-            /* Same chain pattern as the two branches above. */
-            size_t pos = 0;
-            int    rv  = 0;
-            {
-               char head[256];
-               snprintf(head, sizeof(head), /* Format string below */
-                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY),
-                     subsystem->desc);
-               rv |= strlcpy_append(s, sizeof(s), &pos, head);
-            }
+            menu_subsystem_appendf(s, sizeof(s), &pos,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY),
+                  subsystem->desc);
 
 #ifdef HAVE_RGUI
             /* If using RGUI with sublabels disabled, add the
@@ -8923,19 +8914,14 @@ static unsigned menu_displaylist_populate_subsystem(
                 * anyway), but no harm in being safe... */
                if (subsystem->num_roms > 0)
                {
-                  rv |= strlcpy_append(s, sizeof(s), &pos, " [");
-                  {
-                     char head[256];
-                     snprintf(head, sizeof(head), /* Format string below */
-                           msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO),
-                           subsystem->roms[0].desc);
-                     rv |= strlcpy_append(s, sizeof(s), &pos, head);
-                  }
-                  rv |= strlcpy_append(s, sizeof(s), &pos, "]");
+                  strlcpy_append(s, sizeof(s), &pos, " [");
+                  menu_subsystem_appendf(s, sizeof(s), &pos,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO),
+                        subsystem->roms[0].desc);
+                  strlcpy_append(s, sizeof(s), &pos, "]");
                }
             }
 #endif
-            (void)rv;
 
             if (menu_entries_append(list,
                s,
@@ -17321,29 +17307,28 @@ static bool menu_displaylist_ctl_internal(
             /* Mark entries with "[#]" if the file already exists in the
              * download directory (core assets folder + category sub-folder). */
             {
-               char content_dir[PATH_MAX_LENGTH];
+               /* '<core assets>/<category>/' is written once and each
+                * entry's file name after it, in place */
+               char chk_path[PATH_MAX_LENGTH];
                const char *core_assets = settings->paths.directory_core_assets;
-               content_dir[0] = '\0';
+               const char *category    = NULL;
 
                if (core_assets && *core_assets && info->path && *info->path)
-               {
-                  const char *category = path_basename(info->path);
-                  if (category && *category)
-                     fill_pathname_join_special(content_dir, core_assets,
-                           category, sizeof(content_dir));
-               }
+                  category = path_basename(info->path);
 
-               if (*content_dir)
+               if (category && *category)
                {
                   size_t i;
+                  size_t _len;
+                  fill_pathname_join_special(chk_path, core_assets,
+                        category, sizeof(chk_path));
+                  _len = fill_pathname_slash(chk_path, sizeof(chk_path));
                   for (i = 0; i < count; i++)
                   {
-                     char chk_path[PATH_MAX_LENGTH];
                      const char *fname = info->list->list[i].path;
                      if (!fname || !*fname)
                         continue;
-                     fill_pathname_join_special(chk_path, content_dir, fname,
-                           sizeof(chk_path));
+                     strlcpy(chk_path + _len, fname, sizeof(chk_path) - _len);
                      if (path_is_valid(chk_path))
                         file_list_set_label_at_offset(info->list, i, "[#]");
                   }
