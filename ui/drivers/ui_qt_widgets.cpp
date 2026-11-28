@@ -5178,7 +5178,7 @@ void CoreOptionsDialog::buildLayout()
       /* Visually separate Core Options from the Overrides section. */
       {
          QWidget *separator = new QWidget(this);
-         separator->setFixedHeight(1);
+         separator->setFixedHeight(2);
          separator->setStyleSheet(QStringLiteral("background-color: palette(mid);"));
          m_layout->addWidget(separator);
       }
@@ -5495,7 +5495,8 @@ void CoreOptionsDialog::onCoreOptionResetAllClicked()
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 enum
 {
-   QT_SHADER_PRESET_GLOBAL = 0,
+   QT_SHADER_PRESET_CURRENT = 0,
+   QT_SHADER_PRESET_GLOBAL,
    QT_SHADER_PRESET_CORE,
    QT_SHADER_PRESET_PARENT,
    QT_SHADER_PRESET_GAME,
@@ -5685,6 +5686,11 @@ void ShaderParamsDialog::getShaders(struct video_shader **menu_shader, struct vi
          *video_shader = NULL;
    }
 
+   if (menu_shader && *menu_shader
+         && ((*menu_shader)->num_parameters > GFX_MAX_PARAMETERS
+            || (*menu_shader)->passes > GFX_MAX_SHADERS))
+      *menu_shader = NULL;
+
    if (video_shader)
    {
       if (!video_shader_driver_get_current_shader(&shader_info))
@@ -5693,7 +5699,8 @@ void ShaderParamsDialog::getShaders(struct video_shader **menu_shader, struct vi
          return;
       }
 
-      if (!shader_info.data || shader_info.data->num_parameters > GFX_MAX_PARAMETERS)
+      if (!shader_info.data || shader_info.data->num_parameters > GFX_MAX_PARAMETERS
+            || shader_info.data->passes > GFX_MAX_SHADERS)
       {
          *video_shader = NULL;
          return;
@@ -5713,9 +5720,8 @@ void ShaderParamsDialog::onFilterComboBoxIndexChanged(int)
    int pass                          = 0;
    bool ok                           = false;
    struct video_shader *menu_shader  = NULL;
-   struct video_shader *video_shader = NULL;
 
-   getShaders(&menu_shader, &video_shader);
+   getShaders(&menu_shader, NULL);
 
    if (!comboBox)
       return;
@@ -5743,13 +5749,10 @@ void ShaderParamsDialog::onFilterComboBoxIndexChanged(int)
          if (ok)
          {
             if (menu_shader)
-               menu_shader->pass[pass].filter = filter;
-            if (video_shader)
             {
-               video_shader->pass[pass].filter = filter;
-               video_shader->flags |= SHDR_FLAG_MODIFIED;
+               menu_shader->pass[pass].filter = filter;
+               menu_shader->flags |= SHDR_FLAG_MODIFIED;
             }
-
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
       }
@@ -5763,9 +5766,8 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
    int pass                          = 0;
    bool ok                           = false;
    struct video_shader *menu_shader  = NULL;
-   struct video_shader *video_shader = NULL;
 
-   getShaders(&menu_shader, &video_shader);
+   getShaders(&menu_shader, NULL);
 
    if (!comboBox)
       return;
@@ -5798,17 +5800,7 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
                   menu_shader->pass[pass].fbo.flags |=  FBO_SCALE_FLAG_VALID;
                else
                   menu_shader->pass[pass].fbo.flags &= ~FBO_SCALE_FLAG_VALID;
-            }
-
-            if (video_shader)
-            {
-               video_shader->pass[pass].fbo.scale_x   = scale;
-               video_shader->pass[pass].fbo.scale_y   = scale;
-               if (scale)
-                  video_shader->pass[pass].fbo.flags |=  FBO_SCALE_FLAG_VALID;
-               else
-                  video_shader->pass[pass].fbo.flags &= ~FBO_SCALE_FLAG_VALID;
-               video_shader->flags |= SHDR_FLAG_MODIFIED;
+               menu_shader->flags |= SHDR_FLAG_MODIFIED;
             }
 
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
@@ -5851,13 +5843,12 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
    QVariant passVariant;
    bool ok                           = false;
    struct video_shader *menu_shader  = NULL;
-   struct video_shader *video_shader = NULL;
    QToolButton *button               = qobject_cast<QToolButton*>(sender());
    int pass                          = 0;
 
-   getShaders(&menu_shader, &video_shader);
+   getShaders(&menu_shader, NULL);
 
-   if (!button)
+   if (!button || !menu_shader)
       return;
 
    passVariant                       = button->property("pass");
@@ -5869,18 +5860,6 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
 
    if (!ok || pass < 0)
       return;
-
-   if (video_shader)
-   {
-      ShaderPass tempPass;
-
-      if (pass >= static_cast<int>(video_shader->passes) - 1)
-         return;
-
-      tempPass = ShaderPass(&video_shader->pass[pass]);
-      memcpy(&video_shader->pass[pass], &video_shader->pass[pass + 1], sizeof(struct video_shader_pass));
-      memcpy(&video_shader->pass[pass + 1], tempPass.pass, sizeof(struct video_shader_pass));
-   }
 
    if (menu_shader)
    {
@@ -5894,12 +5873,12 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
       memcpy(&menu_shader->pass[pass + 1], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   shader_reresolve_keeping_values(video_shader);
    shader_reresolve_keeping_values(menu_shader);
 
    if (menu_shader)
       menu_shader->flags |= SHDR_FLAG_MODIFIED;
 
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
    reload();
 }
 
@@ -5909,12 +5888,11 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
    int pass                          = 0;
    bool ok                           = false;
    struct video_shader *menu_shader  = NULL;
-   struct video_shader *video_shader = NULL;
    QToolButton *button               = qobject_cast<QToolButton*>(sender());
 
-   getShaders(&menu_shader, &video_shader);
+   getShaders(&menu_shader, NULL);
 
-   if (!button)
+   if (!button || !menu_shader)
       return;
 
    passVariant = button->property("pass");
@@ -5926,18 +5904,6 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
 
    if (!ok || pass <= 0)
       return;
-
-   if (video_shader)
-   {
-      ShaderPass tempPass;
-
-      if (pass > static_cast<int>(video_shader->passes) - 1)
-         return;
-
-      tempPass = ShaderPass(&video_shader->pass[pass - 1]);
-      memcpy(&video_shader->pass[pass - 1], &video_shader->pass[pass], sizeof(struct video_shader_pass));
-      memcpy(&video_shader->pass[pass], tempPass.pass, sizeof(struct video_shader_pass));
-   }
 
    if (menu_shader)
    {
@@ -5951,12 +5917,12 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
       memcpy(&menu_shader->pass[pass], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   shader_reresolve_keeping_values(video_shader);
    shader_reresolve_keeping_values(menu_shader);
 
    if (menu_shader)
       menu_shader->flags |= SHDR_FLAG_MODIFIED;
 
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
    reload();
 }
 
@@ -6028,6 +5994,67 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    menu_shader_manager_set_preset(menu_shader, type, pathData, true);
 }
 
+void ShaderParamsDialog::onShaderLoadPresetPrependClicked()
+{
+   onShaderLoadPresetMergeClicked(true);
+}
+
+void ShaderParamsDialog::onShaderLoadPresetAppendClicked()
+{
+   onShaderLoadPresetMergeClicked(false);
+}
+
+void ShaderParamsDialog::onShaderLoadPresetMergeClicked(bool prepend)
+{
+   QString path, filter;
+   QByteArray pathArray;
+   gfx_ctx_flags_t flags;
+   struct video_shader *menu_shader = NULL;
+   const char *pathData = NULL;
+#if !defined(HAVE_MENU)
+   settings_t *settings = config_get_ptr();
+   const char *shader_preset_dir = settings->paths.directory_video_shader;
+#else
+   const char *shader_preset_dir = NULL;
+   menu_driver_get_last_shader_preset_path(&shader_preset_dir, NULL);
+#endif
+
+   getShaders(&menu_shader, NULL);
+   if (!menu_shader)
+      return;
+
+   filter.append("Shader Preset (");
+   flags.flags = 0;
+   video_context_driver_get_flags(&flags);
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
+      filter.append(QLatin1String(" *.cgp"));
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+      filter.append(QLatin1String(" *.glslp"));
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+      filter.append(QLatin1String(" *.slangp"));
+   filter.append(")");
+
+   path = QFileDialog::getOpenFileName(this,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
+         shader_preset_dir, filter);
+   if (path.isEmpty())
+      return;
+
+   path = QDir::toNativeSeparators(path);
+   pathArray = path.toUtf8();
+   pathData = pathArray.constData();
+#if defined(HAVE_MENU)
+   menu_driver_set_last_shader_preset_path(pathData);
+#endif
+
+   menu_shader_manager_append_preset(menu_shader, pathData, prepend);
+}
+
+void ShaderParamsDialog::onShaderSaveCurrentPresetClicked()
+{
+   operateShaderPreset(true, NULL, QT_SHADER_PRESET_CURRENT);
+}
+
 void ShaderParamsDialog::onShaderResetPass(int pass)
 {
    unsigned i;
@@ -6050,6 +6077,9 @@ void ShaderParamsDialog::onShaderResetPass(int pass)
          video_shader_param_set(param, param->initial);
       }
    }
+
+   if (menu_shader)
+      menu_shader->flags |= SHDR_FLAG_MODIFIED;
 
    if (video_shader)
    {
@@ -6093,6 +6123,8 @@ void ShaderParamsDialog::onShaderResetParameter(QString parameter)
 
       if (param)
          video_shader_param_set(param, param->initial);
+
+      menu_shader->flags |= SHDR_FLAG_MODIFIED;
    }
 
    if (video_shader)
@@ -6231,6 +6263,9 @@ void ShaderParamsDialog::operateShaderPreset(bool save, const char *path, unsign
 
    switch (action_type)
    {
+      case QT_SHADER_PRESET_CURRENT:
+         preset_type = SHADER_PRESET_CURRENT;
+         break;
       case QT_SHADER_PRESET_GLOBAL:
          preset_type = SHADER_PRESET_GLOBAL;
          break;
@@ -6392,7 +6427,7 @@ void ShaderParamsDialog::onShaderRemovePass(int pass)
    if (!menu_shader || menu_shader->passes == 0)
       return;
 
-   if (pass < 0 || pass > static_cast<int>(menu_shader->passes))
+   if (pass < 0 || pass >= static_cast<int>(menu_shader->passes))
       return;
 
    /* move selected pass to the bottom */
@@ -6458,6 +6493,8 @@ void ShaderParamsDialog::buildLayout()
    bool hasPasses                           = false;
 #if defined(HAVE_MENU)
    CheckableSettingsGroup *topSettingsGroup = NULL;
+   CheckableSettingsGroup *simulatedResolutionGroup = NULL;
+   QHBoxLayout *shaderSettingsLayout       = NULL;
 #endif
    QPushButton *loadButton                  = NULL;
    QPushButton *saveButton                  = NULL;
@@ -6472,22 +6509,21 @@ void ShaderParamsDialog::buildLayout()
    struct video_shader *menu_shader         = NULL;
    struct video_shader *video_shader        = NULL;
    struct video_shader *avail_shader        = NULL;
-   const char *shader_path                  = NULL;
 
    getShaders(&menu_shader, &video_shader);
 
-   /* NOTE: For some reason, menu_shader_get() returns a COPY
-    * of what get_current_shader() gives us.
-    * And if you want to be able to change shader settings/parameters
-    * from both the raster menu and
-    * Qt at the same time... you must change BOTH or one will
-    * overwrite the other.
+   /* menu_shader_get() returns the menu-side copy, while
+    * video_shader_driver_get_current_shader() returns the live driver
+    * shader. Keep parameter values in sync in both copies: the live
+    * parameter value is atomic and may be updated while threaded video
+    * is running. Do not edit live pass metadata here; structural changes
+    * are made to the menu copy and committed through
+    * CMD_EVENT_SHADERS_APPLY_CHANGES, which performs the driver's
+    * synchronized shader update.
     *
-    * AND, during a context reset, video_shader will be NULL
-    * but not menu_shader, so don't totally bail
-    * just because video_shader is NULL.
-    *
-    * Someone please fix this mess.
+    * During a context reset, video_shader may be NULL while menu_shader
+    * remains available, so do not bail out just because the live shader
+    * is temporarily unavailable.
     */
 
    if (video_shader)
@@ -6519,28 +6555,21 @@ void ShaderParamsDialog::buildLayout()
 
    clearLayout();
 
-   /* Only check video_shader for the path, menu_shader seems stale...
-    * e.g. if you remove all the shader passes,
-    * it still has the old path in it, but video_shader does not
-    */
-   if (video_shader)
+   /* Use the preset manager's source path rather than video_shader.path:
+    * for simple presets the latter can refer to the #reference shader.
+    * Copy the returned path immediately; the getter owns the storage. */
    {
-      if (*video_shader->path)
+      const char *preset_path = video_shader_get_current_shader_preset();
+      if (preset_path && *preset_path)
       {
-         shader_path = video_shader->path;
-         setWindowTitle(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER)) + ": " + QFileInfo(shader_path).fileName());
+         QString presetFile = QFileInfo(QString::fromUtf8(preset_path)).fileName();
+         setWindowTitle(QString(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO))
+               + ": " + presetFile);
       }
+      else
+         setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
    }
-   else if (menu_shader)
-   {
-      if (*menu_shader->path)
-      {
-         shader_path = menu_shader->path;
-         setWindowTitle(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER)) + ": " + QFileInfo(shader_path).fileName());
-      }
-   }
-   else
-      setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
 
    loadButton       = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD), this);
    saveButton       = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SAVE), this);
@@ -6551,12 +6580,15 @@ void ShaderParamsDialog::buildLayout()
    loadMenu         = new QMenu(loadButton);
 
    loadMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET), this, SLOT(onShaderLoadPresetClicked()));
+   loadMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND), this, SLOT(onShaderLoadPresetPrependClicked()));
+   loadMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND), this, SLOT(onShaderLoadPresetAppendClicked()));
    loadMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHADER_ADD_PASS), this, SLOT(onShaderAddPassClicked()));
 
    loadButton->setMenu(loadMenu);
 
    saveMenu         = new QMenu(saveButton);
    saveMenu->addAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS)) + "...", this, SLOT(onShaderSavePresetAsClicked()));
+   saveMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT), this, SLOT(onShaderSaveCurrentPresetClicked()));
    saveMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL), this, SLOT(onShaderSaveGlobalPresetClicked()));
    saveMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE), this, SLOT(onShaderSaveCorePresetClicked()));
    saveMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT), this, SLOT(onShaderSaveParentPresetClicked()));
@@ -6602,6 +6634,14 @@ void ShaderParamsDialog::buildLayout()
    topSettingsGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE);
    topSettingsGroup->add(MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES);
    topSettingsGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR);
+
+   simulatedResolutionGroup = new CheckableSettingsGroup(
+         MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_INPUT_RES);
+   simulatedResolutionGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_INPUT_RES_WIDTH);
+   simulatedResolutionGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_INPUT_RES_HEIGHT);
+   shaderSettingsLayout = new QHBoxLayout();
+   shaderSettingsLayout->addWidget(topSettingsGroup, 1);
+   shaderSettingsLayout->addWidget(simulatedResolutionGroup, 1);
 #endif
 
    topButtonLayout = new QHBoxLayout();
@@ -6612,7 +6652,7 @@ void ShaderParamsDialog::buildLayout()
    topButtonLayout->addWidget(applyButton);
 
 #if defined(HAVE_MENU)
-   m_layout->addWidget(topSettingsGroup);
+   m_layout->addLayout(shaderSettingsLayout);
 #endif
    m_layout->addLayout(topButtonLayout);
 
@@ -6828,8 +6868,26 @@ void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, QF
    QLabel     *label = new QLabel(desc);
 
    label->setProperty("parameter", parameter);
-   label->setContextMenuPolicy(Qt::CustomContextMenu);
 
+   if (param->minimum == param->maximum)
+   {
+      QWidget *titleWidget = new QWidget(this);
+      QHBoxLayout *titleLayout = new QHBoxLayout(titleWidget);
+      QWidget *separator = new QWidget(titleWidget);
+
+      titleLayout->setContentsMargins(0, 0, 0, 0);
+      titleLayout->setSpacing(6);
+      label->setStyleSheet("font-weight: bold;");
+      label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+      titleLayout->addWidget(label);
+      separator->setStyleSheet("background-color: palette(mid);");
+      separator->setFixedHeight(2);
+      titleLayout->addWidget(separator, 1);
+      form->addRow(titleWidget);
+      return;
+   }
+
+   label->setContextMenuPolicy(Qt::CustomContextMenu);
    connect(label, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onParameterLabelContextMenuRequested(const QPoint&)));
 
    if ((param->minimum == 0.0)
@@ -6933,7 +6991,10 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
          }
 
          if (param)
+         {
             video_shader_param_set(param, (checkBox->isChecked() ? param->maximum : param->minimum));
+            menu_shader->flags |= SHDR_FLAG_MODIFIED;
+         }
       }
 
       if (video_shader)
@@ -6950,9 +7011,11 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
          }
 
          if (param)
+         {
             video_shader_param_set(param, (checkBox->isChecked() ? param->maximum : param->minimum));
+            video_shader->flags |= SHDR_FLAG_MODIFIED;
+         }
 
-         video_shader->flags   |= SHDR_FLAG_MODIFIED;
       }
    }
 }
@@ -6994,8 +7057,10 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
          if (param)
          {
             newValue = lerp(0, 100, param->minimum, param->maximum, slider->value());
-            newValue = round(newValue / param->step) * param->step;
+            if (param->step > 0.0f)
+               newValue = round(newValue / param->step) * param->step;
             video_shader_param_set(param, newValue);
+            menu_shader->flags |= SHDR_FLAG_MODIFIED;
          }
       }
 
@@ -7015,11 +7080,12 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
          if (param)
          {
             newValue = lerp(0, 100, param->minimum, param->maximum, slider->value());
-            newValue = round(newValue / param->step) * param->step;
+            if (param->step > 0.0f)
+               newValue = round(newValue / param->step) * param->step;
             video_shader_param_set(param, newValue);
          }
 
-         video_shader->flags   |= SHDR_FLAG_MODIFIED;
+         video_shader->flags |= SHDR_FLAG_MODIFIED;
       }
 
    }
@@ -7096,6 +7162,7 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
          if (param)
          {
             video_shader_param_set(param, value);
+            menu_shader->flags |= SHDR_FLAG_MODIFIED;
             newValue       = lerp(
                   param->minimum, param->maximum, 0, 100, video_shader_param_get(param));
             slider->blockSignals(true);
@@ -7127,7 +7194,7 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
             slider->blockSignals(false);
          }
 
-         video_shader->flags   |= SHDR_FLAG_MODIFIED;
+         video_shader->flags |= SHDR_FLAG_MODIFIED;
       }
    }
 }
@@ -7179,6 +7246,7 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
          if (param)
          {
             video_shader_param_set(param, value);
+            menu_shader->flags |= SHDR_FLAG_MODIFIED;
             newValue       = lerp(
                   param->minimum, param->maximum, 0, 100, video_shader_param_get(param));
             slider->blockSignals(true);
@@ -7210,7 +7278,7 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
             slider->blockSignals(false);
          }
 
-         video_shader->flags   |= SHDR_FLAG_MODIFIED;
+         video_shader->flags |= SHDR_FLAG_MODIFIED;
       }
    }
 }
