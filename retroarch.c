@@ -6340,6 +6340,7 @@ bool command_event(enum event_command cmd, void *data)
                bool eject                      = !disk_control_get_eject_state(
                                                   &sys_info->disk_control);
                bool verbose                    = true;
+               bool success;
 
                if (show_msg)
                   verbose                      = *show_msg;
@@ -6347,7 +6348,7 @@ bool command_event(enum event_command cmd, void *data)
                if (!settings->bools.notification_show_disk_control)
                   verbose                      = false;
 
-               disk_control_set_eject_state(
+               success = disk_control_set_eject_state(
                      &sys_info->disk_control, eject, verbose);
 
 #if defined(HAVE_MENU)
@@ -6356,6 +6357,7 @@ bool command_event(enum event_command cmd, void *data)
                menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                                |  MENU_ST_FLAG_PREVENT_POPULATE;
 #endif
+               return success;
             }
             else
             {
@@ -6384,6 +6386,10 @@ bool command_event(enum event_command cmd, void *data)
                   verbose     = false;
 
                disk_control_set_index_next(&sys_info->disk_control, verbose);
+#ifdef HAVE_MENU
+               menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                               | MENU_ST_FLAG_PREVENT_POPULATE;
+#endif
             }
             else
             {
@@ -6412,6 +6418,10 @@ bool command_event(enum event_command cmd, void *data)
                   verbose     = false;
 
                disk_control_set_index_prev(&sys_info->disk_control, verbose);
+#ifdef HAVE_MENU
+               menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                               | MENU_ST_FLAG_PREVENT_POPULATE;
+#endif
             }
             else
             {
@@ -6425,14 +6435,23 @@ bool command_event(enum event_command cmd, void *data)
          {
             rarch_system_info_t *sys_info = &runloop_st->system;
             unsigned *index               = (unsigned*)data;
+            bool success;
 
             if (!sys_info || !index)
                return false;
 
-            /* Note: Menu itself provides visual feedback - no
-             * need to print info message to screen */
             if (disk_control_enabled(&sys_info->disk_control))
-               disk_control_set_index(&sys_info->disk_control, *index, false);
+            {
+               /* Note: Menu itself provides visual feedback - no
+                * need to print info message to screen */
+               success = disk_control_set_index(&sys_info->disk_control,
+                     *index, false);
+#ifdef HAVE_MENU
+               menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                               | MENU_ST_FLAG_PREVENT_POPULATE;
+#endif
+               return success;
+            }
             else
             {
                const char *_msg = msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS);

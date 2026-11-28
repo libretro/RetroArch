@@ -26089,7 +26089,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Choose current disc from list of available images. Virtual disc tray can stay closed."
+   "Choose a disc from the available images. With the tray open, insert it after selecting. With Auto Insert Selected Disc disabled, eject the disc first."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
@@ -26106,6 +26106,14 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
    "Close virtual disc tray."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISK_INSERT_PENDING,
+   "Resume to Insert Disc"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_DISK_INSERT_PENDING,
+   "Resume content to complete the automatic disc change."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
@@ -34727,6 +34735,10 @@ MSG_HASH(
 MSG_HASH(
    MSG_DISK_CLOSED,
    "Closed virtual disc tray."
+   )
+MSG_HASH(
+   MSG_DISK_EJECT_BEFORE_SELECTING,
+   "Eject the disc before selecting another one."
    )
 MSG_HASH(
    MSG_VIRTUAL_DISK_TRAY_CLOSE,

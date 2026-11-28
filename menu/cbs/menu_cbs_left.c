@@ -1047,7 +1047,8 @@ static int disk_options_disk_idx_left(unsigned type, const char *label,
     * need to print info message to screen */
    bool print_log = false;
 
-   command_event(CMD_EVENT_DISK_PREV, &print_log);
+   if (menu_driver_disk_index_selectable())
+      command_event(CMD_EVENT_DISK_PREV, &print_log);
 
    return 0;
 }

@@ -34,6 +34,13 @@ S_BOOL(menu_savestate_resume, MENU_SAVESTATE_RESUME,
 /* The configuration row lives under defined(HAVE_MENU); other passes are
  * unaffected. */
 #if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
+S_BOOL(menu_auto_insert_disk, MENU_AUTO_INSERT_DISK,
+      "menu_auto_insert_disk",
+      DEFAULT_MENU_AUTO_INSERT_DISK, SD_FLAG_ADVANCED, 0, 0,
+      "Auto Insert Selected Disc",
+      "Selecting a different disc while the tray is closed ejects it and inserts the new disc automatically. When disabled, eject before selecting a disc. A disc selected with the tray open is inserted manually.")
+#endif
+#if !defined(SETTINGS_DEF_CONFIG_PASS) || (defined(HAVE_MENU))
 S_BOOL(menu_insert_disk_resume, MENU_INSERT_DISK_RESUME,
       "menu_insert_disk_resume",
       DEFAULT_MENU_INSERT_DISK_RESUME, SD_FLAG_ADVANCED, 0, 0,
