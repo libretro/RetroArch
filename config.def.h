@@ -1934,6 +1934,8 @@
 
 #define DEFAULT_PLAYLIST_ALLOW_NON_PNG false
 
+#define DEFAULT_PLAYLIST_SHOW_LOAD_STATE true
+
 #define DEFAULT_PLAYLIST_THUMBNAIL_OTHER_REGIONS false
 
 /* Show Menu start-up screen on boot. */
