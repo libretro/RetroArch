@@ -625,7 +625,7 @@ static bool sdl_gfx_frame(void *data, const void *frame,
 {
    unsigned width = VIDEO_SCALE_W(dims);
    unsigned height = VIDEO_SCALE_H(dims);
-   char title[128];
+   const char *title;
    void *chains[RETRO_VIDEO_VIEWS_MAX];
    bool views         = false;
    bool per_eye       = false;
@@ -645,9 +645,7 @@ static bool sdl_gfx_frame(void *data, const void *frame,
    if (!per_eye)
       sdl_vv_target_drop(vid, &vid->views.ui_target, &vid->views.ui);
 
-   title[0] = '\0';
-
-   video_driver_get_window_title(title, sizeof(title));
+   title = video_driver_lend_window_title(NULL, false);
 
    if (SDL_MUSTLOCK(vid->screen))
       SDL_LockSurface(vid->screen);
@@ -690,7 +688,7 @@ static bool sdl_gfx_frame(void *data, const void *frame,
    if (SDL_MUSTLOCK(vid->screen))
       SDL_UnlockSurface(vid->screen);
 
-   if (title[0])
+   if (title)
       SDL_WM_SetCaption(title, NULL);
 
    SDL_Flip(vid->screen);

@@ -6403,7 +6403,7 @@ static void ui_window_qt_set_visible(void *data,
    /* TODO/FIXME - implement */
 }
 
-static void ui_window_qt_set_title(void *data, char *buf)
+static void ui_window_qt_set_title(void *data, const char *buf)
 {
    /* TODO/FIXME - implement? */
 }

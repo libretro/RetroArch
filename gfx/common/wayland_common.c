@@ -699,31 +699,21 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
 
 void gfx_ctx_wl_update_title_common(void *data)
 {
-   char title[128];
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   const char *title          = video_driver_lend_window_title(NULL, false);
 
-   title[0] = '\0';
-
-   video_driver_get_window_title(title, sizeof(title));
-
-   if (wl)
+   if (wl && title)
    {
 #ifdef HAVE_LIBDECOR_H
       if (wl->libdecor)
-      {
-         if (title[0])
-            wl->libdecor_frame_set_title(wl->libdecor_frame, title);
-      }
+         wl->libdecor_frame_set_title(wl->libdecor_frame, title);
       else
 #endif
       {
-         if (title[0])
-         {
-            if (wl->deco)
-               zxdg_toplevel_decoration_v1_set_mode(wl->deco,
-                     ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-            xdg_toplevel_set_title(wl->xdg_toplevel, title);
-         }
+         if (wl->deco)
+            zxdg_toplevel_decoration_v1_set_mode(wl->deco,
+                  ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
+         xdg_toplevel_set_title(wl->xdg_toplevel, title);
       }
    }
 }

@@ -491,13 +491,10 @@ void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t *wl)
 
 void gfx_ctx_wl_update_title_webos(void *data)
 {
-   char title[128];
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   const char *title          = video_driver_lend_window_title(NULL, false);
 
-   title[0] = '\0';
-   video_driver_get_window_title(title, sizeof(title));
-
-   if (wl && wl->webos_shell_surface && title[0])
+   if (wl && wl->webos_shell_surface && title)
    {
       wl_webos_shell_surface_set_property(wl->webos_shell_surface,
             "title", title);

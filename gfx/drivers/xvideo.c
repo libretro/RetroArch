@@ -597,7 +597,7 @@ static void *xv_init(const video_info_t *video)
    int ret;
    XEvent event;
    XWindowAttributes target;
-   char title[128]                        = {0};
+   const char *title;
    XSetWindowAttributes attributes        = {0};
    XVisualInfo visualtemplate             = {0};
    unsigned width                         = 0;
@@ -769,9 +769,7 @@ static void *xv_init(const video_info_t *video)
 
    XMapWindow(g_x11_dpy, g_x11_win);
 
-   video_driver_get_window_title(title, sizeof(title));
-
-   if (title[0])
+   if ((title = video_driver_lend_window_title(NULL, false)))
       XStoreName(g_x11_dpy, g_x11_win, title);
 
    x11_set_window_attr(g_x11_dpy, g_x11_win);

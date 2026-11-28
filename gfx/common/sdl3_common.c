@@ -749,15 +749,8 @@ float sdl3_window_get_refresh_rate(SDL_Window *win)
 
 void sdl3_window_update_title(SDL_Window *win)
 {
-   char title[128];
-
-   if (!win)
-      return;
-
-   title[0] = '\0';
-   video_driver_get_window_title(title, sizeof(title));
-
-   if (title[0])
+   const char *title;
+   if (win && (title = video_driver_lend_window_title(NULL, false)))
       SDL_SetWindowTitle(win, title);
 }
 

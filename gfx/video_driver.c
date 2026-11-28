@@ -5498,6 +5498,7 @@ void video_driver_lock_new(void)
    slock_free(video_st->display_lock);
    video_st->display_lock = NULL;
    video_st->display_lock = slock_new();
+   video_st->window_title_lent[0] = '\0';
 #endif
 #ifdef VIDEO_TITLE_MAILBOX
    /* Runs before the video thread exists; drop anything stale from a
@@ -5507,6 +5508,7 @@ void video_driver_lock_new(void)
    retro_atomic_store_release_int(&video_st->window_title_slot, 0);
    video_st->window_title_next_slot = 0;
    video_st->window_title_last_slot = 1;
+   video_st->window_title_held      = 0;
 #endif
 #endif
 }
@@ -7820,16 +7822,13 @@ bool video_driver_headset_focused(void)
 }
 
 /* The window title crosses from the main thread, which builds it, to
- * the video thread, which applies it. Where the atomics have pointer
- * ops it crosses as an immutable heap copy through a one-slot atomic
- * mailbox (see video_driver.h): exchange in, exchange out, no lock
- * and no possible torn copy - a copy either is not published yet or
- * is complete, because nothing writes it after publication. The
- * exchange-in frees whatever title was never taken, so a slow reader
- * costs a superseded title, never a leak. On the one backend without
- * pointer ops (and in a build without threads, where there is no
- * second thread) the title is instead assembled and copied under
- * display_lock, with window_title_update as the pending bit. */
+ * the thread that draws, which applies it. Where the atomics have an
+ * exchange it is assembled in a free slot of the three-slot mailbox
+ * and lent from there (see video_driver.h): no lock, no copy, and no
+ * possible torn read, since nothing writes a slot while it is
+ * published or lent. On the one backend without the exchange it is
+ * assembled under display_lock, with window_title_update as the
+ * pending bit; without threads there is no second thread. */
 #if defined(HAVE_THREADS) && !defined(VIDEO_TITLE_MAILBOX)
 #define VIDEO_TITLE_LOCK(st)   do { if ((st)->display_lock) slock_lock((st)->display_lock); } while (0)
 #define VIDEO_TITLE_UNLOCK(st) do { if ((st)->display_lock) slock_unlock((st)->display_lock); } while (0)
@@ -7838,102 +7837,110 @@ bool video_driver_headset_focused(void)
 #define VIDEO_TITLE_UNLOCK(st) ((void)0)
 #endif
 
+/* Where the main thread assembles the next title */
 #ifdef VIDEO_TITLE_MAILBOX
-/* Publish window_title (main-thread scratch here) through the
- * three-slot buffer; see the field comment in video_driver.h for the
- * protocol and why three slots need no timing assumption. Latest
- * wins: a publish the consumer never took comes back from the
- * exchange and is reused. */
-static void video_title_publish(video_driver_state_t *video_st)
+#define VIDEO_TITLE_SCRATCH(st) \
+   ((st)->window_title_slot_buf[(st)->window_title_next_slot])
+#else
+#define VIDEO_TITLE_SCRATCH(st) ((st)->window_title)
+#endif
+
+/* Publishes the title assembled in VIDEO_TITLE_SCRATCH(), @len bytes
+ * long (clamped to what fits). Under the mailbox, latest wins: a
+ * publish the consumer never took comes back from the exchange and
+ * is the next slot filled. */
+static void video_title_publish(video_driver_state_t *video_st, size_t len)
 {
+#ifdef VIDEO_TITLE_MAILBOX
    unsigned pub = video_st->window_title_next_slot;
    int prev;
 
-   strlcpy(video_st->window_title_slot_buf[pub],
-         video_st->window_title,
-         sizeof(video_st->window_title_slot_buf[pub]));
+   video_st->window_title_slot_len[pub] = (len < VIDEO_WINDOW_TITLE_LEN)
+      ? len : VIDEO_WINDOW_TITLE_LEN - 1;
    prev = retro_atomic_exchange_int(&video_st->window_title_slot,
          (int)(pub + 1u));
 
    if (prev != 0)
       /* The previous publish was never taken: it cannot be the slot
-       * a consumer is copying, so it is the next one to fill. */
+       * the consumer holds, so it is the next one to fill. */
       video_st->window_title_next_slot = (unsigned)(prev - 1);
    else
-      /* The consumer took the previous publish and may still be
-       * copying that slot: write the slot that is neither it nor
-       * the one just published. */
+      /* The consumer took the previous publish and holds that slot:
+       * write the slot that is neither it nor the one just
+       * published. */
       video_st->window_title_next_slot =
             3u - pub - video_st->window_title_last_slot;
    video_st->window_title_last_slot = pub;
-}
-#endif
-
-/* Hands the pending window title to the caller and clears the pending
- * bit, so the next caller gets nothing until a new title is built.
- *
- * Under threaded video this runs on the video thread - every driver
- * that sets a title does so from inside its frame() - while the title
- * itself is built and the bit set on the main thread by
- * video_driver_frame()'s fps block. Test, copy and clear therefore
- * happen together under display_lock, the lock
- * video_driver_modify_disp_flags() already takes for the write side.
- * The flag is cleared inline rather than through that function because
- * slock is not recursive. */
-size_t video_driver_get_window_title(char *s, size_t len)
-{
-   size_t n                       = 0;
-   video_driver_state_t *video_st = &video_driver_st;
-
-   if (!s)
-      return 0;
-
-#ifdef VIDEO_TITLE_MAILBOX
-   /* Nearly every frame has no new title */
-   if (!retro_atomic_load_acquire_int(&video_st->window_title_slot))
-      return 0;
-   {
-      int published = retro_atomic_exchange_int(
-            &video_st->window_title_slot, 0);
-      if (published)
-         n = strlcpy(s,
-               video_st->window_title_slot_buf[published - 1],
-               len);
-   }
 #else
-   /* Nearly every frame has no new title */
-   if (!retro_atomic_load_acquire_int(&video_st->window_title_update))
-      return 0;
+   video_st->window_title_len = (len < VIDEO_WINDOW_TITLE_LEN)
+      ? len : VIDEO_WINDOW_TITLE_LEN - 1;
+   retro_atomic_store_release_int(&video_st->window_title_update, 1);
+#endif
+}
 
-   VIDEO_TITLE_LOCK(video_st);
+const char *video_driver_lend_window_title(size_t *len, bool held)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+#ifdef VIDEO_TITLE_MAILBOX
+   int published = 0;
+   /* Nearly every frame has no new title */
+   if (retro_atomic_load_acquire_int(&video_st->window_title_slot))
+      published = retro_atomic_exchange_int(
+            &video_st->window_title_slot, 0);
+   if (published)
+      video_st->window_title_held = published;
+   else if (!held || !video_st->window_title_held)
+      return NULL;
+   if (len)
+      *len = video_st->window_title_slot_len[
+            video_st->window_title_held - 1];
+   return video_st->window_title_slot_buf[video_st->window_title_held - 1];
+#elif defined(HAVE_THREADS)
+   bool fresh = false;
+   /* Nearly every frame has no new title */
    if (retro_atomic_load_acquire_int(&video_st->window_title_update))
    {
-      n = strlcpy(s, video_st->window_title, len);
-      retro_atomic_store_release_int(&video_st->window_title_update, 0);
+      VIDEO_TITLE_LOCK(video_st);
+      if (retro_atomic_load_acquire_int(&video_st->window_title_update))
+      {
+         memcpy(video_st->window_title_lent, video_st->window_title,
+               video_st->window_title_len);
+         video_st->window_title_lent[video_st->window_title_len] = '\0';
+         video_st->window_title_lent_len = video_st->window_title_len;
+         retro_atomic_store_release_int(&video_st->window_title_update, 0);
+         fresh = true;
+      }
+      VIDEO_TITLE_UNLOCK(video_st);
    }
-   VIDEO_TITLE_UNLOCK(video_st);
+   if (!fresh && (!held || !video_st->window_title_lent[0]))
+      return NULL;
+   if (len)
+      *len = video_st->window_title_lent_len;
+   return video_st->window_title_lent;
+#else
+   if (retro_atomic_load_acquire_int(&video_st->window_title_update))
+      retro_atomic_store_release_int(&video_st->window_title_update, 0);
+   else if (!held || !video_st->window_title[0])
+      return NULL;
+   if (len)
+      *len = video_st->window_title_len;
+   return video_st->window_title;
 #endif
-
-   if (!n)
-      return 0;
-   return (n >= len) ? (len ? len - 1 : 0) : n;
 }
 
 void video_driver_update_title(void *data)
 {
 #ifndef _XBOX
-   char title[sizeof(video_driver_st.window_title)];
+   size_t _len;
+   const char *title;
    const ui_window_t *window      = ui_companion_driver_get_window_ptr();
    video_driver_state_t *video_st = &video_driver_st;
-   /* The copy is taken under display_lock: the main thread rewrites
-    * window_title while this runs on the video thread */
    if (     window
-         && video_driver_get_window_title(title, sizeof(title))
+         && (title = video_driver_lend_window_title(&_len, false))
          && !string_is_equal(title, video_st->window_title_prev))
    {
       window->set_title((void*)video_st->display_userdata, title);
-      strlcpy(video_st->window_title_prev, title,
-            sizeof(video_st->window_title_prev));
+      memcpy(video_st->window_title_prev, title, _len + 1);
    }
 #endif
 }
@@ -10962,36 +10969,32 @@ void video_driver_frame(const void *data, unsigned width,
       if ((video_st->frame_count - last_fps_count) >= fps_update_interval)
       {
          size_t __len;
+         char *title;
          last_fps = TIME_TO_FPS(curr_time, new_time,
                video_st->frame_count - last_fps_count - fps_dupes_skipped);
 
-         /* Under the mailbox, window_title is this thread's scratch
-          * and publishing is the exchange in video_title_publish();
-          * under the lock protocol the assembly runs inside
-          * display_lock so the video thread cannot copy a title
-          * halfway through being assembled. */
+         /* Under the mailbox the title is assembled in a slot no
+          * other thread can see until video_title_publish()
+          * exchanges it in; under the lock protocol the assembly
+          * runs inside display_lock so the video thread cannot copy
+          * a title halfway through being assembled. */
          VIDEO_TITLE_LOCK(video_st);
-         __len = strlcpy(video_st->window_title, video_st->title_buf,
-               sizeof(video_st->window_title));
+         title = VIDEO_TITLE_SCRATCH(video_st);
+         __len = strlcpy(title, video_st->title_buf,
+               VIDEO_WINDOW_TITLE_LEN);
 
          if (*status_text)
          {
-            video_st->window_title[  __len  ] = ' ';
-            video_st->window_title[++__len  ] = '|';
-            video_st->window_title[++__len  ] = '|';
-            video_st->window_title[++__len  ] = ' ';
-            video_st->window_title[++__len  ] = '\0';
-            __len += strlcpy(
-                  video_st->window_title         + __len,
-                  status_text,
-                  sizeof(video_st->window_title) - __len);
+            title[  __len  ] = ' ';
+            title[++__len  ] = '|';
+            title[++__len  ] = '|';
+            title[++__len  ] = ' ';
+            title[++__len  ] = '\0';
+            __len += strlcpy(title + __len, status_text,
+                  VIDEO_WINDOW_TITLE_LEN - __len);
          }
 
-#ifdef VIDEO_TITLE_MAILBOX
-         video_title_publish(video_st);
-#else
-         retro_atomic_store_release_int(&video_st->window_title_update, 1);
-#endif
+         video_title_publish(video_st, __len);
          VIDEO_TITLE_UNLOCK(video_st);
 
          curr_time                  = new_time;
@@ -11007,15 +11010,8 @@ void video_driver_frame(const void *data, unsigned width,
       last_memory_count = 0;
 
       VIDEO_TITLE_LOCK(video_st);
-      strlcpy(
-            video_st->window_title,
-            video_st->title_buf,
-            sizeof(video_st->window_title));
-#ifdef VIDEO_TITLE_MAILBOX
-      video_title_publish(video_st);
-#else
-      retro_atomic_store_release_int(&video_st->window_title_update, 1);
-#endif
+      video_title_publish(video_st, strlcpy(VIDEO_TITLE_SCRATCH(video_st),
+            video_st->title_buf, VIDEO_WINDOW_TITLE_LEN));
       VIDEO_TITLE_UNLOCK(video_st);
 
       status_text[0] = '\0';

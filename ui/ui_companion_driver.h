@@ -124,7 +124,7 @@ typedef struct ui_window
    void (*destroy)(void *data);
    void (*set_focused)(void *data);
    void (*set_visible)(void *data, bool visible);
-   void (*set_title)(void *data, char *buf);
+   void (*set_title)(void *data, const char *buf);
    void (*set_droppable)(void *data, bool droppable);
    bool (*focused)(void *data);
    const char *ident;

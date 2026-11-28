@@ -7673,7 +7673,13 @@ static double skiplane_fps(const void *pix, bool threaded)
       harness_clock_now += SKIPLANE_FPS_PERIOD;
       skiplane_push((i & 1) ? NULL : pix, threaded);
    }
+   /* The title last published, read on the thread that builds it */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+   fps = strstr(video_st->window_title_slot_buf[
+         video_st->window_title_last_slot], "FPS:");
+#else
    fps = strstr(video_st->window_title, "FPS:");
+#endif
    return fps ? strtod(fps + 4, NULL) : -1.0;
 }
 #endif

@@ -3,29 +3,34 @@
  *
  * The protocol: the main thread hands the window title to the video
  * thread through three inline slots and one atomic word holding
- * (slot + 1), or 0 for empty - the frame path allocates nothing.
- * Publish fills a free slot and exchanges its index in; take
- * exchanges the word to 0 and copies the slot out. The producer's
- * exchange return decides its next slot: nonzero is the untaken
- * previous publish (safe to reuse - no consumer can hold it), zero
- * means the consumer took the previous publish and may still be
- * copying that slot, so the producer writes the remaining third.
- * The claims a regression would break:
+ * (slot + 1), or 0 for empty - the frame path allocates and copies
+ * nothing. The producer assembles the title straight into a free
+ * slot, records its length and exchanges its index in; the consumer
+ * exchanges the word to 0 and is lent the slot itself, which it
+ * holds until it takes again. The producer's exchange return decides
+ * its next slot: nonzero is the untaken previous publish (safe to
+ * reuse - the consumer cannot hold it), zero means the consumer took
+ * the previous publish and holds that slot, so the producer writes
+ * the remaining third. The claims a regression would break:
  *
- *   1. No torn copy: every title the consumer takes is internally
- *      consistent (its embedded checksum holds) - including a take
- *      whose copy is stalled across many publishes, which is what
- *      the third slot exists for. Two slots pass the fast lanes and
- *      fail exactly that stall.
+ *   1. No torn lend: every title the consumer is lent is internally
+ *      consistent (its embedded checksum and recorded length hold)
+ *      for as long as it holds it - including a hold kept across
+ *      many publishes, which is what the third slot exists for. Two
+ *      slots pass the fast lane and fail exactly that hold.
  *   2. Supersession only forward: the sequence numbers the consumer
  *      observes strictly increase, and the last published title is
- *      taken once the producer stops.
- *   3. Nothing on the heap: publish and take are strlcpy plus one
- *      atomic word; there is nothing to leak.
+ *      lent once the producer stops.
+ *   3. The held lend: with nothing new, a take asking for the held
+ *      title gets the one lent last, and a plain take gets nothing.
+ *   4. Nothing on the heap: publish and take are one atomic word
+ *      each; there is nothing to leak.
  *
  * The harness reproduces the protocol rather than including
  * video_driver.c (which drags the whole frontend in); the shape is a
- * dozen lines and drift is caught by eye at the publish/take sites.
+ * few dozen lines (video_title_publish() and
+ * video_driver_lend_window_title()) and drift is caught by eye at
+ * those sites.
  *
  * Paced with short sleeps so a single-processor machine interleaves
  * the two threads; the protocol has no spin anywhere. */
@@ -33,7 +38,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <compat/strl.h>
 #include <retro_atomic.h>
 #include <rthreads/rthreads.h>
 
@@ -64,17 +68,23 @@ static void sleep_us(unsigned us) { usleep(us); }
 #endif
 
 static char               g_slot_buf[3][96];
+static size_t             g_slot_len[3];
 static retro_atomic_int_t g_slot;      /* (slot + 1), 0 = empty */
 static unsigned           g_next_slot; /* producer-owned */
 static unsigned           g_last_slot; /* producer-owned */
+static int                g_held;      /* consumer-owned, (slot + 1) */
 static retro_atomic_int_t g_stop;
 
-static void title_publish(const char *title)
+static size_t title_make(char *s, size_t len, int seq);
+
+/* video_title_publish(), with the assembly into the scratch slot */
+static void title_publish(int seq)
 {
    unsigned pub = g_next_slot;
    int prev;
 
-   strlcpy(g_slot_buf[pub], title, sizeof(g_slot_buf[pub]));
+   g_slot_len[pub] = title_make(g_slot_buf[pub], sizeof(g_slot_buf[pub]),
+         seq);
    prev = retro_atomic_exchange_int(&g_slot, (int)(pub + 1u));
 
    if (prev != 0)
@@ -86,16 +96,29 @@ static void title_publish(const char *title)
    g_last_slot = pub;
 }
 
-/* Take: returns the slot index the caller now holds, or -1. The copy
- * out of the slot is the caller's - the stall lane does it slowly on
- * purpose. */
-static int title_take_begin(void)
+/* video_driver_lend_window_title(): the new title, or with @held the
+ * one lent last; NULL when there is none. Valid until the next call. */
+static const char *title_lend(size_t *len, int held)
 {
-   int published;
-   if (!retro_atomic_load_acquire_int(&g_slot))
-      return -1;
-   published = retro_atomic_exchange_int(&g_slot, 0);
-   return published ? (published - 1) : -1;
+   int published = 0;
+   if (retro_atomic_load_acquire_int(&g_slot))
+      published = retro_atomic_exchange_int(&g_slot, 0);
+   if (published)
+      g_held = published;
+   else if (!held || !g_held)
+      return NULL;
+   if (len)
+      *len = g_slot_len[g_held - 1];
+   return g_slot_buf[g_held - 1];
+}
+
+static void title_reset(void)
+{
+   retro_atomic_store_relaxed_int(&g_slot, 0);
+   g_next_slot = 0;
+   g_last_slot = 1;
+   g_held      = 0;
+   retro_atomic_store_relaxed_int(&g_stop, 0);
 }
 
 static unsigned title_checksum(const char *body)
@@ -106,20 +129,23 @@ static unsigned title_checksum(const char *body)
    return h;
 }
 
-static void title_make(char *s, size_t len, int seq)
+static size_t title_make(char *s, size_t len, int seq)
 {
    char body[64];
    snprintf(body, sizeof(body), "core 1.0 || seq %d fps 60.0", seq);
-   snprintf(s, len, "%s#%08x", body, title_checksum(body));
+   return (size_t)snprintf(s, len, "%s#%08x", body, title_checksum(body));
 }
 
-/* Returns the sequence number, or -1 on a torn/corrupt title. */
-static int title_check(const char *s)
+/* Returns the sequence number, or -1 on a torn/corrupt title or one
+ * whose recorded length is not its own. */
+static int title_check(const char *s, size_t len)
 {
    char body[64];
    unsigned want;
    int seq;
    const char *hash = strrchr(s, '#');
+   if (strlen(s) != len)
+      return -1;
    if (!hash || (size_t)(hash - s) >= sizeof(body))
       return -1;
    memcpy(body, s, (size_t)(hash - s));
@@ -136,42 +162,34 @@ static int title_check(const char *s)
 static void producer(void *arg)
 {
    int i;
-   char title[96];
    (void)arg;
    for (i = 0; i < N_TITLES; i++)
    {
-      title_make(title, sizeof(title), i);
-      title_publish(title);
+      title_publish(i);
       if ((i & 63) == 0)
          sleep_us(100);
    }
    retro_atomic_store_release_int(&g_stop, 1);
 }
 
-/* Fast lane: producer races a prompt consumer; checksum, order and
- * final-title claims. */
+/* Fast lane: producer races a prompt consumer; checksum, order,
+ * final-title and held-lend claims. */
 static int lane_fast(void)
 {
    sthread_t *p;
-   int last_seq = -1, taken = 0, torn = 0, order = 0;
+   size_t len;
+   const char *t;
+   int last_seq = -1, taken = 0, torn = 0, order = 0, held_bad = 0;
 
-   retro_atomic_store_relaxed_int(&g_slot, 0);
-   g_next_slot = 0;
-   g_last_slot = 1;
-   retro_atomic_store_relaxed_int(&g_stop, 0);
-
+   title_reset();
    p = sthread_create(producer, NULL);
 
    for (;;)
    {
       int stopped = retro_atomic_load_acquire_int(&g_stop);
-      int slot    = title_take_begin();
-      if (slot >= 0)
+      if ((t = title_lend(&len, 0)))
       {
-         char t[96];
-         int seq;
-         strlcpy(t, g_slot_buf[slot], sizeof(t));
-         seq = title_check(t);
+         int seq = title_check(t, len);
          if (seq < 0)
             torn++;
          else if (seq <= last_seq)
@@ -186,8 +204,17 @@ static int lane_fast(void)
    }
    sthread_join(p);
 
+   /* Nothing new: a plain take gets nothing, a held one the last */
+   if (title_lend(NULL, 0))
+      held_bad++;
+   t = title_lend(&len, 1);
+   if (!t || title_check(t, len) != N_TITLES - 1)
+      held_bad++;
+
    printf("window_title_mailbox fast lane: %d published, %d taken, "
           "last seq %d\n", N_TITLES, taken, last_seq);
+   if (held_bad)
+      printf("  FAIL: the held lend is not the last title lent\n");
    if (torn)
       printf("  FAIL: %d torn/corrupt title(s) taken\n", torn);
    if (order)
@@ -195,49 +222,39 @@ static int lane_fast(void)
    if (last_seq != N_TITLES - 1)
       printf("  FAIL: final title lost (last seq %d, want %d)\n",
             last_seq, N_TITLES - 1);
-   return (torn || order || last_seq != N_TITLES - 1) ? 1 : 0;
+   return (torn || order || held_bad || last_seq != N_TITLES - 1) ? 1 : 0;
 }
 
-/* Stall lane: the consumer exchanges a slot out and then copies it
- * one byte at a time while the producer publishes hundreds of
- * titles. The held slot's content must not move under the copy -
- * that is precisely the guarantee the third slot buys. With
- * TITLE_SLOTS=2 the producer laps into the held slot and this lane
- * reports torn holds. */
+/* Hold lane: the consumer is lent a slot and keeps the lend while
+ * the producer publishes hundreds of titles, reading it again over
+ * and over, before it takes again. The held slot's content must not
+ * move under the hold - that is precisely the guarantee the third
+ * slot buys. With TITLE_SLOTS=2 the producer laps into the held slot
+ * and this lane reports torn holds. */
 static int lane_stall(void)
 {
    sthread_t *p;
-   int reps, torn = 0, held_takes = 0;
+   int torn = 0, held_takes = 0;
 
-   retro_atomic_store_relaxed_int(&g_slot, 0);
-   g_next_slot = 0;
-   g_last_slot = 1;
-   retro_atomic_store_relaxed_int(&g_stop, 0);
-
+   title_reset();
    p = sthread_create(producer, NULL);
 
-   for (reps = 0; ; reps++)
+   for (;;)
    {
-      int stopped = retro_atomic_load_acquire_int(&g_stop);
-      int slot    = title_take_begin();
-      if (slot >= 0)
+      size_t len;
+      int stopped   = retro_atomic_load_acquire_int(&g_stop);
+      const char *t = title_lend(&len, 0);
+      if (t)
       {
-         /* Byte-at-a-time copy with sleeps: hundreds of publishes
-          * land while this hold is live. */
-         char t[96];
-         size_t i, len = strlen(g_slot_buf[slot]);
-         if (len >= sizeof(t))
-            len = sizeof(t) - 1;
-         for (i = 0; i < len; i++)
-         {
-            t[i] = g_slot_buf[slot][i];
-            if ((i & 7) == 0)
-               sleep_us(200);
-         }
-         t[len] = '\0';
+         int i, bad = 0;
          held_takes++;
-         if (title_check(t) < 0)
-            torn++;
+         for (i = 0; i < 32; i++)
+         {
+            if (title_check(t, len) < 0)
+               bad = 1;
+            sleep_us(200);
+         }
+         torn += bad;
       }
       else if (stopped)
          break;
@@ -245,12 +262,12 @@ static int lane_stall(void)
    }
    sthread_join(p);
 
-   printf("window_title_mailbox stall lane: %d stalled hold(s), "
+   printf("window_title_mailbox hold lane: %d long hold(s), "
           "%d torn\n", held_takes, torn);
    if (!held_takes)
-      printf("  FAIL: the stall lane never held a slot\n");
+      printf("  FAIL: the hold lane never held a slot\n");
    if (torn)
-      printf("  FAIL: %d hold(s) torn while stalled - the held slot "
+      printf("  FAIL: %d hold(s) torn while held - the held slot "
              "was rewritten\n", torn);
    return (torn || !held_takes) ? 1 : 0;
 }

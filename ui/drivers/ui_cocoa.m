@@ -156,7 +156,7 @@ static void ui_window_cocoa_set_visible(void *data,
  * so it is cast straight to the view. The other entry points in this
  * table expect the wrapper; only Win32 calls them, with its own struct,
  * and nothing calls them here. */
-static void ui_window_cocoa_set_title(void *data, char *buf)
+static void ui_window_cocoa_set_title(void *data, const char *buf)
 {
    CocoaView *cocoa_view = (BRIDGE CocoaView*)data;
    NSString  *title;
@@ -164,8 +164,8 @@ static void ui_window_cocoa_set_title(void *data, char *buf)
    if (!cocoa_view || !buf)
       return;
 
-   /* buf is video_st->window_title, shared and rewritten by the next
-    * frame, so the string is made here, on the calling thread. Owned
+   /* buf is lent only until the video thread takes the next title,
+    * so the string is made here, on the calling thread. Owned
     * rather than autoreleased: under threaded video this runs on the
     * video thread, which has no autorelease pool, and an autoreleased
     * object there is simply leaked under MRC. The title is content and

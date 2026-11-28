@@ -58,6 +58,9 @@
 
 #define MEASURE_FRAME_TIME_SAMPLES_COUNT (2 * 1024)
 
+/* Room for the window title, terminator included */
+#define VIDEO_WINDOW_TITLE_LEN            512
+
 #define VIDEO_SHADER_STOCK_BLEND          (GFX_MAX_SHADERS - 1)
 #define VIDEO_SHADER_STOCK_HDR            (GFX_MAX_SHADERS - 8)
 #define VIDEO_SHADER_STOCK_NOBLEND_HDR    (GFX_MAX_SHADERS - 9)
@@ -2003,6 +2006,16 @@ typedef struct
    uintptr_t display_userdata;
    uintptr_t display;
    uintptr_t window;
+   /* The window title's lengths; see window_title_slot_buf */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+   /* Written with each slot, before its publish */
+   size_t window_title_slot_len[3];
+#else
+   size_t window_title_len;
+#ifdef HAVE_THREADS
+   size_t window_title_lent_len;
+#endif
+#endif
 
    /* VIDEO_FLAG_* bits. Atomic: read with relaxed loads anywhere,
     * modified only through video_driver_modify_disp_flags(), whose
@@ -2090,6 +2103,18 @@ typedef struct
     * axis, clamped, since a viewport past 65535 is beyond what any
     * driver here allocates. */
    unsigned scale_dims;
+   /* The window title's words; see window_title_slot_buf */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+   retro_atomic_int_t window_title_slot;
+   /* Producer-owned (main thread): the slot the next publish fills,
+    * and the slot the previous publish used. */
+   unsigned window_title_next_slot;
+   unsigned window_title_last_slot;
+   /* Consumer-owned: (slot + 1) of the lend, or 0 */
+   int window_title_held;
+#else
+   retro_atomic_int_t window_title_update;
+#endif
    /* Microseconds between the last two frames handed to the video
     * driver, for the shader chains' FrameTimeDelta. Written once per
     * frame in video_driver_frame() from the reading that path already
@@ -2130,40 +2155,40 @@ typedef struct
    gfx_ctx_flags_t deferred_flag_data;          /* uint32_t alignment */
 
    char cli_shader_path[PATH_MAX_LENGTH];
-   char window_title[512];
-   char window_title_prev[512];
+   char window_title_prev[VIDEO_WINDOW_TITLE_LEN];
    /* A new window title waits for the thread that draws. Where the
     * atomics have an exchange (RETRO_ATOMIC_HAS_PTR marks the same
     * backends that carry it) it crosses through a three-slot buffer
-    * published by index, so the frame path allocates nothing.
-    * window_title_slot holds (slot + 1), or 0 for empty. The main
-    * thread fills a free slot and publishes it with an exchange;
-    * video_driver_get_window_title() exchanges the word back to 0
-    * and copies the slot out. Three slots make the protocol correct
+    * published by index, so the frame path allocates and copies
+    * nothing. window_title_slot holds (slot + 1), or 0 for empty. The
+    * main thread assembles the title straight into a free slot and
+    * publishes it with an exchange;
+    * video_driver_lend_window_title() exchanges the word back to 0
+    * and lends the slot itself. Three slots make the protocol correct
     * without any timing assumption: at any moment at most one slot
-    * is published and at most one is held by a consumer mid-copy
-    * (the consumer takes sequentially, so it holds only the slot it
-    * exchanged out last). The producer's exchange tells it which is
-    * which - a nonzero return is the untaken previous publish (the
-    * consumer cannot be holding it, so it is free to reuse); a zero
-    * return means the consumer took the previous publish and may
-    * still be copying it, so the producer writes the remaining
-    * third slot. The held slot is therefore never rewritten, no
-    * matter how long the copy stalls. One word flips per publish and
-    * per take, no allocation, no lock; window_title is main-thread
-    * scratch. On the one backend without the exchange the old
-    * protocol stands: window_title is shared, rewritten and copied
-    * under display_lock, with window_title_update as the pending bit
-    * read first so a frame with no new title takes no lock. */
+    * is published and at most one is held by the consumer (it holds
+    * only the slot it exchanged out last, until it takes again). The
+    * producer's exchange tells it which is which - a nonzero return
+    * is the untaken previous publish (the consumer cannot be holding
+    * it, so it is free to reuse); a zero return means the consumer
+    * took the previous publish and still holds that slot, so the
+    * producer writes the remaining third. The held slot is therefore
+    * never rewritten, however long the consumer keeps the lend. One
+    * word flips per publish and per take, no allocation, no lock.
+    * On the one backend without the exchange the lock protocol
+    * stands: window_title is shared and rewritten under display_lock,
+    * window_title_update is the pending bit read first so a frame
+    * with no new title takes no lock, and the consumer copies it
+    * into window_title_lent, which it owns. Without threads one
+    * thread builds and draws, and window_title is lent directly. */
 #if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
-   char window_title_slot_buf[3][512];
-   retro_atomic_int_t window_title_slot;
-   /* Producer-owned (main thread): the slot the next publish fills,
-    * and the slot the previous publish used. */
-   unsigned window_title_next_slot;
-   unsigned window_title_last_slot;
+   char window_title_slot_buf[3][VIDEO_WINDOW_TITLE_LEN];
+#else
+   char window_title[VIDEO_WINDOW_TITLE_LEN];
+#ifdef HAVE_THREADS
+   char window_title_lent[VIDEO_WINDOW_TITLE_LEN];
 #endif
-   retro_atomic_int_t window_title_update;
+#endif
    char gpu_api_version_string[128];
    char title_buf[64];
    char cached_driver_id[32];
@@ -3034,7 +3059,11 @@ void video_driver_cache_context_ack_clear(void);
 
 void video_driver_reinit(int flags);
 
-size_t video_driver_get_window_title(char *s, size_t len);
+/* Lends the window title published since the last call, or with
+ * @held the one lent last when none is new; NULL when there is none.
+ * Called by the thread that draws only. The string stays valid until
+ * that thread's next call, and @len (may be NULL) is its length. */
+const char *video_driver_lend_window_title(size_t *len, bool held);
 
 bool *video_driver_get_threaded(void);
 

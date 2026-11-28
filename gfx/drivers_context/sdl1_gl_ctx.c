@@ -180,12 +180,8 @@ static void sdl1_ctx_get_video_size(void *data,
 
 static void sdl1_ctx_update_title(void *data)
 {
-   char title[128];
-   title[0] = '\0';
-
-   video_driver_get_window_title(title, sizeof(title));
-
-   if (title[0])
+   const char *title = video_driver_lend_window_title(NULL, false);
+   if (title)
       SDL_WM_SetCaption(title, NULL);
 }
 

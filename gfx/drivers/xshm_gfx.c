@@ -539,7 +539,7 @@ static void *xshm_init(const video_info_t *video)
 {
    unsigned dims;
    XEvent event;
-   char title[128];
+   const char *title;
    XSetWindowAttributes attributes;
    settings_t *settings = config_get_ptr();
    xshm_t *xshm         = (xshm_t*)calloc(1, sizeof(xshm_t));
@@ -609,9 +609,7 @@ static void *xshm_init(const video_info_t *video)
 
    XMapWindow(g_x11_dpy, g_x11_win);
 
-   title[0] = '\0';
-   video_driver_get_window_title(title, sizeof(title));
-   if (title[0])
+   if ((title = video_driver_lend_window_title(NULL, false)))
       XStoreName(g_x11_dpy, g_x11_win, title);
    x11_set_window_attr(g_x11_dpy, g_x11_win);
 

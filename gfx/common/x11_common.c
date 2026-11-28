@@ -539,9 +539,6 @@ static void xdg_screensaver_inhibit(Window wnd)
    int  ret;
    size_t _len;
    char cmd[64];
-   char title[128];
-
-   title[0] = '\0';
 
    RARCH_LOG("[X11] Suspending screensaver (X11, xdg-screensaver).\n");
 
@@ -549,11 +546,16 @@ static void xdg_screensaver_inhibit(Window wnd)
    {
       /* Make sure the window has a title, even if it's a bogus one, otherwise
        * xdg-screensaver will fail and report to stderr, framing RA for its bug.
-       * A single space character is used so that the title bar stays visibly
-       * the same, as if there's no title at all. */
-      size_t title_len = video_driver_get_window_title(title, sizeof(title));
-      if (title_len == 0)
-         title_len = strlcpy_lit(title, " ", sizeof(title));
+       * The title already applied is written again; before there is one, a
+       * single space character keeps the title bar visibly the same, as if
+       * there's no title at all. */
+      size_t title_len;
+      const char *title = video_driver_lend_window_title(&title_len, true);
+      if (!title)
+      {
+         title     = " ";
+         title_len = 1;
+      }
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
             8, PropModeReplace, (const unsigned char*) title, (int)title_len);
 
@@ -2540,10 +2542,8 @@ bool x11_connect(void)
 void x11_update_title(void *data)
 {
    size_t _len;
-   char title[128];
-   title[0]  = '\0';
-   _len      = video_driver_get_window_title(title, sizeof(title));
-   if (title[0])
+   const char *title = video_driver_lend_window_title(&_len, false);
+   if (title)
    {
       /* Legacy ICCCM property. Kept for window managers that do not
        * understand EWMH. The encoding of WM_NAME is nominally STRING

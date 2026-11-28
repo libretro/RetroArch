@@ -66,6 +66,7 @@
 #include "ui_win32.h"
 
 #include "../../core_info.h"
+#include "../../gfx/video_driver.h"
 #include "../../tasks/task_content.h"
 #include "../../input/input_keymaps.h"
 #include <shellapi.h>
@@ -208,7 +209,7 @@ static void ui_window_win32_set_visible(void *data,
    ShowWindow(window->hwnd, set_visible ? SW_SHOWNORMAL : SW_HIDE);
 }
 
-static void ui_window_win32_set_title(void *data, char *buf)
+static void ui_window_win32_set_title(void *data, const char *buf)
 {
    /* SetWindowText sends WM_SETTEXT, and a send does not return until the
     * window's own thread takes it off its queue. The title is updated from
@@ -227,12 +228,20 @@ static void ui_window_win32_set_title(void *data, char *buf)
    char         *title_local = utf8_to_local_string_alloc(buf);
    SendMessageTimeoutA(window->hwnd, WM_SETTEXT, 0, (LPARAM)title_local,
          SMTO_ABORTIFHUNG | SMTO_NORMAL, 100, &result);
+   free(title_local);
 #else
-   wchar_t      *title_local = utf8_to_utf16_string_alloc(buf);
+   /* Converted in place: the title fits VIDEO_WINDOW_TITLE_LEN bytes,
+    * so as many UTF-16 units. ANSI where the system has no UTF-8 code
+    * page. */
+   wchar_t       title_local[VIDEO_WINDOW_TITLE_LEN];
+   if (     !MultiByteToWideChar(CP_UTF8, 0, buf, -1, title_local,
+               VIDEO_WINDOW_TITLE_LEN)
+         && !MultiByteToWideChar(CP_ACP, 0, buf, -1, title_local,
+               VIDEO_WINDOW_TITLE_LEN))
+      return;
    SendMessageTimeoutW(window->hwnd, WM_SETTEXT, 0, (LPARAM)title_local,
          SMTO_ABORTIFHUNG | SMTO_NORMAL, 100, &result);
 #endif
-   free(title_local);
 }
 
 void ui_window_win32_set_droppable(void *data, bool droppable)

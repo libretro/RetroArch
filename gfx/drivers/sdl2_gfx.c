@@ -1180,7 +1180,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame,
       unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
-   char title[128];
+   const char *title;
    sdl2_video_t *vid  = (sdl2_video_t*)data;
 #ifdef HAVE_MENU
    bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
@@ -1447,11 +1447,7 @@ static bool sdl2_gfx_frame(void *data, const void *frame,
 
    SDL_RenderPresent(vid->renderer);
 
-   title[0] = '\0';
-
-   video_driver_get_window_title(title, sizeof(title));
-
-   if (title[0])
+   if ((title = video_driver_lend_window_title(NULL, false)))
       SDL_SetWindowTitle((SDL_Window*)video_driver_display_userdata_get(), title);
 
    return true;

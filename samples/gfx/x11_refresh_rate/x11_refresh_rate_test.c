@@ -75,8 +75,8 @@ uintptr_t video_driver_window_get(void) { return (uintptr_t)g_x11_win; }
 void video_driver_display_type_set(enum rarch_display_type type) { (void)type; }
 void video_driver_display_set(uintptr_t idx) { (void)idx; }
 void video_driver_window_set(uintptr_t idx) { (void)idx; }
-size_t video_driver_get_window_title(char *s, size_t len)
-{ (void)len; s[0] = '\0'; return 0; }
+const char *video_driver_lend_window_title(size_t *len, bool held)
+{ (void)len; (void)held; return NULL; }
 void video_monitor_set_refresh_rate(float hz) { (void)hz; }
 
 static int failures;
