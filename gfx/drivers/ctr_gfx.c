@@ -1385,7 +1385,7 @@ static void ctr_render_bottom_screen(void *data)
 
             params.color = COLOR_ABGR(255, 255, 255, 255);
             params.scale = 1.6f;
-            params.x     = 0.0f;
+            params.x     = 0.5f;
             params.y     = 0.5f;
 
             font_driver_render_msg_bottom(ctr,
@@ -1406,7 +1406,7 @@ static void ctr_render_bottom_screen(void *data)
       case CTR_BOTTOM_MENU_DEFAULT:
          params.color = COLOR_ABGR(255, 255, 255, 255);
          params.scale = 1.6f;
-         params.x     = 0.0f;
+         params.x     = 0.5f;
          params.y     = 0.5f;
 
          font_driver_render_msg_bottom(ctr,
@@ -1459,7 +1459,7 @@ static void ctr_render_bottom_screen(void *data)
                }
                else
                {
-                  params.x = 0.266f;
+                  params.x = 0.766f;
                   params.y = 0.64f;
                   font_driver_render_msg_bottom(ctr,
                      msg_hash_to_str(
@@ -1469,7 +1469,7 @@ static void ctr_render_bottom_screen(void *data)
             }
             else
             {
-               params.x = 0.266f;
+               params.x = 0.766f;
                params.y = 0.64f;
                font_driver_render_msg_bottom(ctr,
                   msg_hash_to_str(
@@ -1509,7 +1509,7 @@ static void ctr_render_bottom_screen(void *data)
             if (font_enable)
             {
                /* draw resume game */
-               params.x = -0.178f;
+               params.x = 0.322f;
                params.y = 0.78f;
 
                font_driver_render_msg_bottom(ctr,
@@ -1517,7 +1517,7 @@ static void ctr_render_bottom_screen(void *data)
                   &params);
 
                /* draw create restore point */
-               params.x = -0.178f;
+               params.x = 0.322f;
                params.y = 0.33f;
 
                font_driver_render_msg_bottom(ctr,
@@ -1527,7 +1527,7 @@ static void ctr_render_bottom_screen(void *data)
                if (ctr->state_data_exist)
                {
                   /* draw load restore point */
-                  params.x = 0.266f;
+                  params.x = 0.766f;
                   params.y = 0.24f;
 
                   font_driver_render_msg_bottom(ctr,
@@ -1538,7 +1538,7 @@ static void ctr_render_bottom_screen(void *data)
             if (ctr->state_data_exist)
             {
                /* draw date */
-               params.x = 0.266f;
+               params.x = 0.766f;
                params.y = 0.87f;
                font_driver_render_msg_bottom(ctr,
                   ctr->state_date,
