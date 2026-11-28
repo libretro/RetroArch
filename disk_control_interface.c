@@ -290,31 +290,39 @@ static size_t disk_control_get_index_set_msg(
    /* Check whether image was inserted or removed */
    if (index < num_images)
    {
-      char image_label[128];
       bool has_label = false;
-      image_label[0] = '\0';
-      disk_control_get_image_label(
-            disk_control, index, image_label, sizeof(image_label));
-      has_label      = *image_label;
+      int n;
+
+      _len = strlcpy(s,
+            success
+            ? msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY)
+            : msg_hash_to_str(MSG_FAILED_TO_SET_DISK), len);
+      if (_len >= len)
+         _len = len - 1;
+
+      /* The core writes the label straight after the
+       * " - " separator, which is dropped if it has none */
+      n = snprintf(s + _len, len - _len, ": %u/%u - ",
+            index + 1, num_images);
+      if (n > 0 && (size_t)n < len - _len)
+      {
+         _len += (size_t)n;
+         disk_control_get_image_label(
+               disk_control, index, s + _len, len - _len);
+         s[len - 1] = '\0';
+         if ((has_label = (s[_len] != '\0')))
+            _len += strlen(s + _len);
+         else
+            s[_len -= 3] = '\0';
+      }
+      else
+         _len += strlen(s + _len);
 
       /* Get message duration
        * > Default is 60
        * > If a label is shown, then increase duration by 50%
        * > For errors, duration is always 180 */
       *msg_duration  = success ? (has_label ? 90 : 60) : 180;
-
-      _len = strlcpy(s,
-            success
-            ? msg_hash_to_str(MSG_SETTING_DISK_IN_TRAY)
-            : msg_hash_to_str(MSG_FAILED_TO_SET_DISK), len);
-      if (has_label)
-         _len += snprintf(
-               s + _len, len - _len, ": %u/%u - %s",
-               index + 1, num_images, image_label);
-      else
-         _len += snprintf(
-               s + _len, len - _len, ": %u/%u",
-               index + 1, num_images);
    }
    else
    {
@@ -358,19 +366,31 @@ bool disk_control_set_eject_state(
             && disk_control->cb.get_num_images)
       {
          unsigned index = disk_control->cb.get_image_index();
-         char image_label[96];
-         image_label[0] = '\0';
-         if (index < disk_control->cb.get_num_images())
-            disk_control_get_image_label(disk_control, index,
-                  image_label, sizeof(image_label));
-         /* Same "number: label" form as the Disc Index row */
-         if (*image_label && _len < sizeof(msg))
+         /* Same "number: label" form as the Disc Index row; the
+          * core writes the label in place, leaving room for ')' */
+         if (     index < disk_control->cb.get_num_images()
+               && _len < sizeof(msg))
          {
-            int n = snprintf(msg + _len, sizeof(msg) - _len,
-                  " (%u: %s)", index + 1, image_label);
-            if (n > 0)
-               _len += ((size_t)n < sizeof(msg) - _len)
-                     ? (size_t)n : sizeof(msg) - _len - 1;
+            size_t base = _len;
+            int n       = snprintf(msg + _len, sizeof(msg) - _len,
+                  " (%u: ", index + 1);
+            if (n > 0 && (size_t)n + 1 < sizeof(msg) - _len)
+            {
+               _len += (size_t)n;
+               disk_control_get_image_label(disk_control, index,
+                     msg + _len, sizeof(msg) - _len - 1);
+               msg[sizeof(msg) - 2] = '\0';
+               if (msg[_len])
+               {
+                  _len       += strlen(msg + _len);
+                  msg[_len++] = ')';
+                  msg[_len]   = '\0';
+               }
+               else
+                  msg[_len = base] = '\0';
+            }
+            else
+               msg[_len = base] = '\0';
          }
       }
    }
@@ -503,18 +523,19 @@ bool disk_control_set_index(
       if (   disk_control->cb.get_image_index
           && disk_control->cb.get_image_path)
       {
-         char new_image_path[PATH_MAX_LENGTH] = {0};
-         unsigned new_image_index = disk_control->cb.get_image_index();
-         bool image_path_valid    = disk_control->cb.get_image_path(
-               new_image_index, new_image_path, sizeof(new_image_path));
-
-         if (image_path_valid)
-            disk_index_file_set(
-                  &disk_control->index_record,
-                  new_image_index, new_image_path);
+         /* The index changed, so the record is modified whatever
+          * the path: the core writes the path into it in place */
+         disk_index_file_t *record = &disk_control->index_record;
+         record->image_index       = disk_control->cb.get_image_index();
+         record->modified          = true;
+         if (disk_control->cb.get_image_path(record->image_index,
+                  record->image_path, sizeof(record->image_path)))
+            record->image_path[sizeof(record->image_path) - 1] = '\0';
          else
-            disk_index_file_set(
-                  &disk_control->index_record, 0, NULL);
+         {
+            record->image_index   = 0;
+            record->image_path[0] = '\0';
+         }
       }
    }
 

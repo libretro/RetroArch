@@ -12005,33 +12005,24 @@ unsigned menu_displaylist_build_list(
             /* Loop through disk images */
             for (i = 0; i < num_images; i++)
             {
-               size_t _len;
-               char current_image_str[PATH_MAX_LENGTH];
-               char image_label[128];
+               char current_image_str[NAME_MAX_LENGTH + 16];
+               /* Displayed index starts at '1', not '0' */
+               int n = snprintf(current_image_str,
+                     sizeof(current_image_str) - 2, "%0*u: ",
+                     num_digits, i + 1);
 
-               current_image_str[0] = '\0';
-               image_label[0]       = '\0';
-
-               /* Get image label, if supported by core */
-               disk_control_get_image_label(
-                     &sys_info->disk_control,
-                     i, image_label, sizeof(image_label));
-
-               _len = snprintf(
-                     current_image_str, sizeof(current_image_str),
-                     "%0*u", num_digits, i + 1);
-
-               /* Get string representation of disk index
-                * > Note that displayed index starts at '1',
-                *   not '0' */
-               if (*image_label)
+               /* The core writes its label straight into the
+                * entry after the ": " separator, which is cut
+                * off again if the disc has no label */
+               if (n > 2 && (size_t)n < sizeof(current_image_str) - 2)
                {
-                  _len += strlcpy_lit(current_image_str + _len,
-                        ": ",
-                        sizeof(current_image_str)   - _len);
-                  strlcpy(current_image_str         + _len,
-                        image_label,
-                        sizeof(current_image_str)   - _len);
+                  disk_control_get_image_label(
+                        &sys_info->disk_control, i,
+                        current_image_str + n,
+                        sizeof(current_image_str) - (size_t)n);
+                  current_image_str[sizeof(current_image_str) - 1] = '\0';
+                  if (!current_image_str[n])
+                     current_image_str[n - 2] = '\0';
                }
 
                /* Add menu entry */

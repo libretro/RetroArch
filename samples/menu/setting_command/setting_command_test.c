@@ -59,6 +59,10 @@
 #include "../../../msg_hash_lbl_str.h"
 #include "../../../msg_hash.h"
 #include "../../../gfx/video_driver.h"
+#ifdef HAVE_GFX_WIDGETS
+#include <retro_atomic.h>
+#include "../../../gfx/gfx_widgets.h"
+#endif
 #include "../../../input/input_driver.h"
 #include "../../../frontend/frontend_driver.h"
 
@@ -770,6 +774,8 @@ static void lane_minimum_audio_latency(void)
 static bool disc_ejected;
 static bool disc_fail_eject;
 static bool disc_fail_select;
+static bool disc_long_label;
+static bool disc_no_path;
 static unsigned disc_index;
 static unsigned disc_eject_calls;
 static unsigned disc_select_calls;
@@ -798,10 +804,68 @@ static bool RETRO_CALLCONV disc_set_index(unsigned index)
 
 static bool RETRO_CALLCONV disc_get_label(unsigned index, char *s, size_t len)
 {
+   if (disc_long_label)
+   {
+      /* Longer than every buffer it is written into */
+      size_t i;
+      for (i = 0; i + 1 < len && i < 300; i++)
+         s[i] = 'L';
+      s[i] = '\0';
+      return true;
+   }
    if (index != 2)
       return false;
    strlcpy(s, "VR-Disc", len);
    return true;
+}
+
+static bool RETRO_CALLCONV disc_get_path(unsigned index, char *s, size_t len)
+{
+   if (disc_no_path)
+      return false;
+   snprintf(s, len, "disc%u.chd", index + 1);
+   return true;
+}
+
+static bool disc_dropdown_is(const char *a, const char *b, const char *c)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *buf = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+   menu_displaylist_info_t info;
+   menu_entries_clear(buf);
+   menu_displaylist_info_init(&info);
+   info.list = buf;
+   if (!menu_displaylist_ctl(DISPLAYLIST_DROPDOWN_LIST_DISK_INDEX, &info,
+            config_get_ptr()) || buf->size != 3)
+      return false;
+   return string_is_equal(buf->list[0].path, a)
+       && string_is_equal(buf->list[1].path, b)
+       && string_is_equal(buf->list[2].path, c);
+}
+
+static bool disc_row_value_is_bounded(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *buf = MENU_LIST_GET_SELECTION(menu_st->entries.list, 0);
+   menu_displaylist_info_t info;
+   size_t i;
+   menu_entries_clear(buf);
+   menu_displaylist_info_init(&info);
+   info.list = buf;
+   if (!menu_displaylist_ctl(DISPLAYLIST_OPTIONS_DISK, &info,
+            config_get_ptr()))
+      return false;
+   for (i = 0; i < buf->size; i++)
+      if (string_is_equal(buf->list[i].label, "core_disk_index"))
+      {
+         static menu_entry_t entry;
+         MENU_ENTRY_INITIALIZE(entry);
+         entry.flags |= MENU_ENTRY_FLAG_VALUE_ENABLED;
+         menu_entry_get(&entry, 0, i, NULL, true);
+         return strncmp(entry.value, "2: LLL", 6) == 0
+             && strlen(entry.value) < sizeof(entry.value);
+      }
+   return false;
 }
 
 static bool disc_preference(const char *label)
@@ -854,6 +918,7 @@ static void lane_disc_insert(const char *dir)
    disk->cb.set_image_index = disc_set_index;
    disk->cb.get_num_images = disc_get_count;
    disk->cb.get_image_label = disc_get_label;
+   disk->cb.get_image_path = disc_get_path;
 
    {
       struct menu_state *menu_st = menu_state_get_ptr();
@@ -1035,6 +1100,63 @@ static void lane_disc_insert(const char *dir)
          && disc_index == 1 && loop->pending_disk_control_insert,
          "another disc hotkey must retain automatic insertion");
    loop->pending_disk_control_insert = 0;
+
+   /* Labels are written by the core straight into the entry, the row
+    * value and the notification, each cut to its own buffer */
+   CHECK(disc_dropdown_is("1", "2", "3: VR-Disc"),
+         "the disc list must label only the discs the core names");
+   disc_long_label = true;
+   CHECK(disc_row_value_is_bounded(),
+         "a long label must be cut to the Disc Index row value");
+#ifdef HAVE_GFX_WIDGETS
+   {
+      dispgfx_widget_t *widgets = dispwidget_get_ptr();
+      bool active               = widgets->active;
+      int tail = retro_atomic_load_relaxed_int(&widgets->msg_queue_tail);
+      disc_ejected     = false;
+      disc_fail_select = true;
+      widgets->active  = true;
+      index            = 0;
+      CHECK(!command_event(CMD_EVENT_DISK_INDEX, &index),
+            "a failed selection must reach the caller");
+      widgets->active  = active;
+      disc_fail_select = false;
+      if (retro_atomic_load_relaxed_int(&widgets->msg_queue_tail) == tail + 1)
+      {
+         disp_widget_msg_t *m = widgets->msg_queue[
+               (unsigned)tail & (MSG_QUEUE_PENDING_MAX - 1)];
+         CHECK(m && m->msg && m->msg_len == strlen(m->msg),
+               "a labelled disc notification must report its own length");
+         retro_atomic_store_release_int(&widgets->msg_queue_tail, tail);
+         if (m)
+         {
+            free(m->msg);
+            free(m);
+         }
+      }
+      else
+         CHECK(false, "a failed selection must be notified");
+      loop->pending_disk_control_insert = 0;
+   }
+#endif
+   disc_long_label = false;
+
+   /* The disc index record takes the path from the core in place */
+   disk->record_enabled = true;
+   disc_ejected = true;
+   index = 2;
+   CHECK(command_event(CMD_EVENT_DISK_INDEX, &index)
+         && disk->index_record.image_index == 2
+         && string_is_equal(disk->index_record.image_path, "disc3.chd")
+         && disk->index_record.modified,
+         "a selection must record its index and path");
+   disc_no_path = true;
+   index = 0;
+   CHECK(command_event(CMD_EVENT_DISK_INDEX, &index)
+         && disk->index_record.image_index == 0
+         && !*disk->index_record.image_path,
+         "a disc without a path must clear the record");
+   disc_no_path = false;
    loop->system.disk_control = saved;
 }
 

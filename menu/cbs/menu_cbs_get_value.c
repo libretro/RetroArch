@@ -1334,7 +1334,7 @@ static size_t menu_action_setting_disp_set_label_menu_disk_index(
       const char *path,
       char *s2, size_t len2)
 {
-   char image_label[128];
+   int n;
    unsigned images               = 0;
    unsigned current              = 0;
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
@@ -1356,12 +1356,21 @@ static size_t menu_action_setting_disp_set_label_menu_disk_index(
    if (current >= images)
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_DISK), len);
 
+   /* The core writes the label straight into the row value
+    * after the "n: " prefix, which is cut back to "n" if the
+    * disc has no label */
+   n = snprintf(s, len, "%u: ", current + 1);
+   if (n <= 2 || (size_t)n >= len)
+      return strlen(s);
    disk_control_get_image_label(&sys_info->disk_control, current,
-         image_label, sizeof(image_label));
-   if (*image_label)
-      return snprintf(s, len, "%u: %s", current + 1, image_label);
-
-   return snprintf(s, len, "%u", current + 1);
+         s + n, len - (size_t)n);
+   s[len - 1] = '\0';
+   if (!s[n])
+   {
+      s[n - 2] = '\0';
+      return (size_t)n - 2;
+   }
+   return (size_t)n + strlen(s + n);
 }
 
 static size_t menu_action_setting_disp_set_label_menu_video_resolution(
