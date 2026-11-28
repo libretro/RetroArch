@@ -11856,14 +11856,47 @@ void runloop_path_set_names(void)
 #endif
 }
 
-/* @s, a savestate folder, with the per-content-directory and
- * per-core parts appended in place. */
-static void runloop_savestate_sort_dir(char *s, size_t len,
-      const char *content_dir_name, const char *library_name)
+static void runloop_path_content_dir_name(settings_t *settings, bool subfolders,
+      char *s, const char *content_path, size_t len)
 {
-   if (content_dir_name)
-      fill_pathname_join_special(s, s, content_dir_name, len);
-   if (library_name)
+   const char *dir = settings->paths.directory_menu_content;
+   size_t _len     = strlen(dir);
+
+   if (_len && PATH_CHAR_IS_SLASH(dir[_len - 1]))
+      _len--;
+
+   if (     subfolders
+         && *dir
+         && string_starts_with_size(content_path, dir, _len)
+         && PATH_CHAR_IS_SLASH(content_path[_len]))
+   {
+      char *slash;
+      strlcpy(s, content_path + _len + 1, len);
+      if ((slash = find_last_slash(s)))
+      {
+         *slash = '\0';
+         return;
+      }
+   }
+
+   fill_pathname_parent_dir_name(s, content_path, len);
+}
+
+/* @s, a save or savestate folder, with the per-content-directory and
+ * per-core parts appended in place, in the configured order. */
+void runloop_save_sort_dir(settings_t *settings,
+      char *s, size_t len, const char *content_path,
+      const char *library_name, bool core_first, bool subfolders)
+{
+   if (library_name && core_first)
+      fill_pathname_join(s, s, library_name, len);
+   if (content_path)
+   {
+      size_t _len = fill_pathname_slash(s, len);
+      runloop_path_content_dir_name(settings, subfolders,
+            s + _len, content_path, len - _len);
+   }
+   if (library_name && !core_first)
       fill_pathname_join(s, s, library_name, len);
 }
 
@@ -11898,12 +11931,12 @@ void runloop_savestate_name_for_content(settings_t *settings,
          && (     settings->bools.sort_savestates_enable
                || settings->bools.sort_savestates_by_content_enable))
    {
-      /* @s holds the folder name until the result is written */
-      if (settings->bools.sort_savestates_by_content_enable)
-         fill_pathname_parent_dir_name(s, basename, len);
-      runloop_savestate_sort_dir(dir, sizeof(dir),
-            settings->bools.sort_savestates_by_content_enable ? s : NULL,
-            settings->bools.sort_savestates_enable ? library_name : NULL);
+      runloop_save_sort_dir(settings, dir, sizeof(dir),
+            settings->bools.sort_savestates_by_content_enable ? basename : NULL,
+            settings->bools.sort_savestates_enable ? library_name : NULL,
+            string_is_equal(settings->arrays.sort_savestates_precedence,
+               "corename-contentdir"),
+            settings->bools.sort_savestates_by_content_subfolders_enable);
       /* a load creates the folder; a missing one holds no states */
       sorted = true;
    }
@@ -11943,7 +11976,6 @@ void runloop_path_set_redirect(settings_t *settings,
       const char *old_savefile_dir,
       const char *old_savestate_dir)
 {
-   char content_dir_name[DIR_MAX_LENGTH];
    char new_savefile_dir[DIR_MAX_LENGTH];
    char new_savestate_dir[DIR_MAX_LENGTH];
    char intermediate_savefile_dir[DIR_MAX_LENGTH];
@@ -11954,23 +11986,15 @@ void runloop_path_set_redirect(settings_t *settings,
    bool sort_savefiles_by_content    = settings->bools.sort_savefiles_by_content_enable;
    bool sort_savestates              = settings->bools.sort_savestates_enable;
    bool sort_savestates_by_content   = settings->bools.sort_savestates_by_content_enable;
+   bool savefiles_core_first         = string_is_equal(settings->arrays.sort_savefiles_precedence, "corename-contentdir");
+   bool savestates_core_first        = string_is_equal(settings->arrays.sort_savestates_precedence, "corename-contentdir");
    bool savefiles_in_content_dir     = settings->bools.savefiles_in_content_dir;
    bool savestates_in_content_dir    = settings->bools.savestates_in_content_dir;
-
-   content_dir_name[0] = '\0';
 
    /* Initialize current save directories
     * with the values from the config. */
    strlcpy(intermediate_savefile_dir, old_savefile_dir, sizeof(intermediate_savefile_dir));
    strlcpy(intermediate_savestate_dir, old_savestate_dir, sizeof(intermediate_savestate_dir));
-
-   /* Get content directory name, if per-content-directory
-    * saves/states are enabled */
-   if (     (sort_savefiles_by_content || sort_savestates_by_content)
-         && *runloop_st->runtime_content_path_basename)
-      fill_pathname_parent_dir_name(content_dir_name,
-            runloop_st->runtime_content_path_basename,
-            sizeof(content_dir_name));
 
    /* Set savefile directory if empty to content directory */
    if (     !*intermediate_savefile_dir
@@ -12013,21 +12037,13 @@ void runloop_path_set_redirect(settings_t *settings,
          if (     (sort_savefiles || sort_savefiles_by_content)
                && *new_savefile_dir)
          {
-            /* Append content directory name to save location */
-            if (sort_savefiles_by_content)
-               fill_pathname_join_special(
-                     new_savefile_dir,
-                     intermediate_savefile_dir,
-                     content_dir_name,
-                     sizeof(new_savefile_dir));
-
-            /* Append library_name to the save location */
-            if (sort_savefiles)
-               fill_pathname_join(
-                     new_savefile_dir,
-                     new_savefile_dir,
-                     sysinfo->library_name,
-                     sizeof(new_savefile_dir));
+            runloop_save_sort_dir(settings, new_savefile_dir,
+                  sizeof(new_savefile_dir),
+                  sort_savefiles_by_content
+                  ? runloop_st->runtime_content_path_basename : NULL,
+                  sort_savefiles ? sysinfo->library_name : NULL,
+                  savefiles_core_first,
+                  settings->bools.sort_savefiles_by_content_subfolders_enable);
 
             /* If path doesn't exist, try to create it,
              * if everything fails revert to the original path. */
@@ -12047,10 +12063,13 @@ void runloop_path_set_redirect(settings_t *settings,
          if (     (sort_savestates || sort_savestates_by_content)
                && *new_savestate_dir)
          {
-            runloop_savestate_sort_dir(new_savestate_dir,
+            runloop_save_sort_dir(settings, new_savestate_dir,
                   sizeof(new_savestate_dir),
-                  sort_savestates_by_content ? content_dir_name : NULL,
-                  sort_savestates ? sysinfo->library_name : NULL);
+                  sort_savestates_by_content
+                  ? runloop_st->runtime_content_path_basename : NULL,
+                  sort_savestates ? sysinfo->library_name : NULL,
+                  savestates_core_first,
+                  settings->bools.sort_savestates_by_content_subfolders_enable);
 
             /* If path doesn't exist, try to create it.
              * If everything fails, revert to the original path. */

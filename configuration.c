@@ -2045,6 +2045,8 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("midi_input",                   settings->arrays.midi_input, true, DEFAULT_MIDI_INPUT, true);
    SETTING_ARRAY("midi_output",                  settings->arrays.midi_output, true, DEFAULT_MIDI_OUTPUT, true);
    SETTING_ARRAY("ai_service_backend",           settings->arrays.ai_service_backend, false, NULL, true);
+   SETTING_ARRAY("sort_savefiles_precedence",    settings->arrays.sort_savefiles_precedence, false, NULL, true);
+   SETTING_ARRAY("sort_savestates_precedence",   settings->arrays.sort_savestates_precedence, false, NULL, true);
 
    SETTING_ARRAY("video_driver",                 settings->arrays.video_driver, false, NULL, true);
    SETTING_ARRAY("video_context_driver",         settings->arrays.video_context_driver, false, NULL, true);
@@ -2943,8 +2945,10 @@ static const struct config_bool_row config_bool_rows[] = {
    CFG_ROW(bools.savestate_auto_load, SAVESTATE_AUTO_LOAD, DEFAULT_SAVESTATE_AUTO_LOAD),
    CFG_ROW(bools.savestate_auto_save, SAVESTATE_AUTO_SAVE, DEFAULT_SAVESTATE_AUTO_SAVE),
    CFG_ROW(bools.sort_savefiles_by_content_enable, SORT_SAVEFILES_BY_CONTENT_ENABLE, DEFAULT_SORT_SAVEFILES_BY_CONTENT_ENABLE),
+   CFG_ROW(bools.sort_savefiles_by_content_subfolders_enable, SORT_SAVEFILES_BY_CONTENT_SUBFOLDERS_ENABLE, DEFAULT_SORT_SAVEFILES_BY_CONTENT_SUBFOLDERS_ENABLE),
    CFG_ROW(bools.sort_savefiles_enable, SORT_SAVEFILES_ENABLE, DEFAULT_SORT_SAVEFILES_ENABLE),
    CFG_ROW(bools.sort_savestates_by_content_enable, SORT_SAVESTATES_BY_CONTENT_ENABLE, DEFAULT_SORT_SAVESTATES_BY_CONTENT_ENABLE),
+   CFG_ROW(bools.sort_savestates_by_content_subfolders_enable, SORT_SAVESTATES_BY_CONTENT_SUBFOLDERS_ENABLE, DEFAULT_SORT_SAVESTATES_BY_CONTENT_SUBFOLDERS_ENABLE),
    CFG_ROW(bools.sort_savestates_enable, SORT_SAVESTATES_ENABLE, DEFAULT_SORT_SAVESTATES_ENABLE),
    CFG_ROW(bools.sort_screenshots_by_content_enable, SORT_SCREENSHOTS_BY_CONTENT_ENABLE, DEFAULT_SORT_SCREENSHOTS_BY_CONTENT_ENABLE),
    CFG_ROW(bools.video_allow_rotate, VIDEO_ALLOW_ROTATE, DEFAULT_ALLOW_ROTATE),
@@ -6304,6 +6308,12 @@ void config_set_defaults(settings_t *target)
    settings->uints.microphone_latency         = g_defaults.settings_in_latency;
 #endif
 
+   configuration_set_string(settings,
+         settings->arrays.sort_savefiles_precedence,
+         DEFAULT_SORT_SAVEFILES_PRECEDENCE);
+   configuration_set_string(settings,
+         settings->arrays.sort_savestates_precedence,
+         DEFAULT_SORT_SAVESTATES_PRECEDENCE);
    configuration_set_string(settings,
          settings->arrays.midi_input,
          DEFAULT_MIDI_INPUT);

@@ -14513,6 +14513,8 @@ unsigned menu_displaylist_build_list(
 #endif
                {MENU_ENUM_LABEL_SORT_SAVEFILES_ENABLE,              PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,   PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SORT_SAVEFILES_PRECEDENCE,          PARSE_ONLY_STRING_OPTIONS, false},
+               {MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_SUBFOLDERS_ENABLE, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,    PARSE_ONLY_BOOL, true},
 #if defined(HAVE_COMPRESSION)
                {MENU_ENUM_LABEL_SAVE_FILE_COMPRESSION,              PARSE_ONLY_BOOL, true},
@@ -14521,6 +14523,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_BLOCK_SRAM_OVERWRITE,               PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SORT_SAVESTATES_ENABLE,             PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,  PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SORT_SAVESTATES_PRECEDENCE,         PARSE_ONLY_STRING_OPTIONS, false},
+               {MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_SUBFOLDERS_ENABLE, PARSE_ONLY_BOOL, false},
                {MENU_ENUM_LABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,   PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVESTATE_AUTO_SAVE,                PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_SAVESTATE_AUTO_LOAD,                PARSE_ONLY_BOOL, true},
@@ -14549,6 +14553,20 @@ unsigned menu_displaylist_build_list(
             {
                switch (build_list[i].enum_idx)
                {
+                  case MENU_ENUM_LABEL_SORT_SAVEFILES_PRECEDENCE:
+                     build_list[i].checked = settings->bools.sort_savefiles_enable
+                           && settings->bools.sort_savefiles_by_content_enable;
+                     break;
+                  case MENU_ENUM_LABEL_SORT_SAVEFILES_BY_CONTENT_SUBFOLDERS_ENABLE:
+                     build_list[i].checked = settings->bools.sort_savefiles_by_content_enable;
+                     break;
+                  case MENU_ENUM_LABEL_SORT_SAVESTATES_PRECEDENCE:
+                     build_list[i].checked = settings->bools.sort_savestates_enable
+                           && settings->bools.sort_savestates_by_content_enable;
+                     break;
+                  case MENU_ENUM_LABEL_SORT_SAVESTATES_BY_CONTENT_SUBFOLDERS_ENABLE:
+                     build_list[i].checked = settings->bools.sort_savestates_by_content_enable;
+                     break;
                   case MENU_ENUM_LABEL_SAVESTATE_MAX_KEEP:
                      build_list[i].checked = savestate_auto_index;
                      break;

@@ -3840,15 +3840,12 @@ void gfx_savestate_thumbnail_get_path(
                     && _len && new_path[_len - 1] == ':'
                     && path_basename(new_path) == new_path + _len + 1))
          {
-            if (settings->bools.sort_savestates_by_content_enable)
-            {
-               _len = fill_pathname_slash(new_savestate_dir, PATH_MAX_LENGTH);
-               fill_pathname_parent_dir_name(new_savestate_dir + _len,
-                     new_path, PATH_MAX_LENGTH - _len);
-            }
-            if (settings->bools.sort_savestates_enable)
-               fill_pathname_join(new_savestate_dir, new_savestate_dir,
-                     core, PATH_MAX_LENGTH);
+            runloop_save_sort_dir(settings, new_savestate_dir, PATH_MAX_LENGTH,
+                  settings->bools.sort_savestates_by_content_enable ? new_path : NULL,
+                  settings->bools.sort_savestates_enable ? core : NULL,
+                  string_is_equal(settings->arrays.sort_savestates_precedence,
+                     "corename-contentdir"),
+                  settings->bools.sort_savestates_by_content_subfolders_enable);
             sorted =    settings->bools.sort_savestates_enable
                      || settings->bools.sort_savestates_by_content_enable;
          }

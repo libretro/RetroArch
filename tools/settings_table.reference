@@ -388,8 +388,10 @@ bool	remap_save_on_exit	1	1
 bool	savestate_auto_load	1	0
 bool	savestate_auto_save	1	0
 bool	sort_savefiles_by_content_enable	1	0
+bool	sort_savefiles_by_content_subfolders_enable	1	0
 bool	sort_savefiles_enable	1	1
 bool	sort_savestates_by_content_enable	1	0
+bool	sort_savestates_by_content_subfolders_enable	1	0
 bool	sort_savestates_enable	1	1
 bool	sort_screenshots_by_content_enable	1	0
 bool	video_allow_rotate	1	1
@@ -1139,8 +1141,10 @@ bool	remap_save_on_exit	1	1
 bool	savestate_auto_load	1	0
 bool	savestate_auto_save	1	0
 bool	sort_savefiles_by_content_enable	1	0
+bool	sort_savefiles_by_content_subfolders_enable	1	0
 bool	sort_savefiles_enable	1	1
 bool	sort_savestates_by_content_enable	1	0
+bool	sort_savestates_by_content_subfolders_enable	1	0
 bool	sort_savestates_enable	1	1
 bool	sort_screenshots_by_content_enable	1	0
 bool	video_allow_rotate	1	1
@@ -1889,8 +1893,10 @@ bool	remap_save_on_exit	1	1
 bool	savestate_auto_load	1	0
 bool	savestate_auto_save	1	0
 bool	sort_savefiles_by_content_enable	1	0
+bool	sort_savefiles_by_content_subfolders_enable	1	0
 bool	sort_savefiles_enable	1	1
 bool	sort_savestates_by_content_enable	1	0
+bool	sort_savestates_by_content_subfolders_enable	1	0
 bool	sort_savestates_enable	1	1
 bool	sort_screenshots_by_content_enable	1	0
 bool	video_allow_rotate	1	1

@@ -13687,6 +13687,30 @@ MSG_HASH(
    "Sort save states in folders named after the directory in which the content is located."
    )
 MSG_HASH(
+   MSG_SORT_PRECEDENCE_CONTENT_CORE,
+   "Content Directory / Core Name"
+   )
+MSG_HASH(
+   MSG_SORT_PRECEDENCE_CORE_CONTENT,
+   "Core Name / Content Directory"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_SUBFOLDERS_ENABLE,
+   "Save File: Honor Content Directory Subfolders"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_SUBFOLDERS_ENABLE,
+   "Sort save files into the full subfolder path leading from the File Browser Start Directory to the content directory. When sorting by core name is also enabled, the order set by 'Save File: Folder Sorting Precedence' is honored. Content outside the subfolders of the Start Directory falls back to the content directory name."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_SUBFOLDERS_ENABLE,
+   "Save State: Honor Content Directory Subfolders"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_SUBFOLDERS_ENABLE,
+   "Sort save states into the full subfolder path leading from the File Browser Start Directory to the content directory. When sorting by core name is also enabled, the order set by 'Save State: Folder Sorting Precedence' is honored. Content outside the subfolders of the Start Directory falls back to the content directory name."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
    "Save File: Don't Overwrite SaveRAM on Loading Save State"
    )
