@@ -157,6 +157,45 @@ static void test_active_helper(void)
    CHECK( cheat_manager_user_dir_active("a/db", "a/user"));
    CHECK( cheat_manager_user_dir_active("a/db", "a/dbx"));
    CHECK( cheat_manager_user_dir_active("a/dbx", "a/db"));
+   CHECK(!cheat_manager_user_dir_active("a//db", "a//db//"));
+   CHECK( cheat_manager_user_dir_active("a/db", "a/Db"));
+#ifdef _WIN32
+   CHECK(!cheat_manager_user_dir_active("a/db", "a\\db"));
+   CHECK(!cheat_manager_user_dir_active("C:\\RA\\cheats", "c:/ra/cheats/"));
+   CHECK( cheat_manager_user_dir_active("C:\\RA\\cheats", "c:/ra/cheatz"));
+#else
+   CHECK( cheat_manager_user_dir_active("a/db", "a\\db"));
+#endif
+}
+
+/* Each Load Cheat File folder is there to browse when picked */
+static void test_browse_dir(void)
+{
+   reset("test_browse_dir", false);
+   path_remove_tree(DB);
+   CHECK(!strcmp(cheat_manager_browse_dir(DB, USER, true), USER));
+   CHECK(path_is_directory(USER));
+   CHECK(!path_is_directory(DB));
+   CHECK(!strcmp(cheat_manager_browse_dir(DB, USER, false), DB));
+   CHECK(path_is_directory(DB));
+   CHECK(!strcmp(cheat_manager_browse_dir(DB, "", true), ""));
+}
+
+/* Save As with no cheats removes the named file in its folder and
+ * nothing outside it */
+static void test_save_as_empty_deletes_in_folder(void)
+{
+   reset("test_save_as_empty_deletes_in_folder", true);
+   write_cht(USER "/Mine.cht", "mine");
+   write_cht("Mine", "cwd");
+   write_cht("Mine.cht", "cwd");
+   empty_list();
+   CHECK(!cheat_manager_save_as("Mine", DB, USER));
+   CHECK(!path_is_valid(USER "/Mine.cht"));
+   CHECK(!strcmp(desc_of("Mine"), "cwd"));
+   CHECK(!strcmp(desc_of("Mine.cht"), "cwd"));
+   filestream_delete("Mine");
+   filestream_delete("Mine.cht");
 }
 
 /* Load reads Cheat Files, a save writes it, an empty list deletes
@@ -308,6 +347,8 @@ int main(void)
    test_zero_cheats_deletes_both();
    test_no_core_name();
    test_save_as_creates_user_dir();
+   test_browse_dir();
+   test_save_as_empty_deletes_in_folder();
    cheat_manager_state_free();
    path_remove_tree(TMP);
    printf("cheat_user_dir: %s (%d failures)\n",

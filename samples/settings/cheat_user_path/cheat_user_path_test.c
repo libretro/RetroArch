@@ -183,6 +183,21 @@ static void test_rule_shared_cheats(void)
    CHECK(!strcmp(settings.paths.path_cheat_user, SHARED_CHEATS));
 }
 
+/* A hand-written trailing separator names the same folder */
+static void test_rule_trailing_slash(void)
+{
+   test_name = "test_rule_trailing_slash";
+   setup(SHARED_CHEATS, SHARED_CHEATS "/");
+   run_rule("cheat_database_path = \"" SHARED_CHEATS "/\"\n");
+   CHECK(!strcmp(settings.paths.path_cheat_user, SHARED_CHEATS));
+   setup(SHARED_CHEATS, APP_CHEATS "//");
+   run_rule("cheat_database_path = \"" APP_CHEATS "//\"\n");
+   CHECK(!strcmp(settings.paths.path_cheat_user, SHARED_CHEATS));
+   setup(SHARED_CHEATS, APP_CHEATS "x/");
+   run_rule("cheat_database_path = \"" APP_CHEATS "x/\"\n");
+   CHECK(!strcmp(settings.paths.path_cheat_user, ""));
+}
+
 static void test_rule_elsewhere(void)
 {
    test_name = "test_rule_elsewhere";
@@ -305,6 +320,7 @@ int main(void)
    test_empty_round_trip();
    test_rule_default_cheats();
    test_rule_shared_cheats();
+   test_rule_trailing_slash();
    test_rule_elsewhere();
    test_rule_key_empty();
    test_rule_key_set();

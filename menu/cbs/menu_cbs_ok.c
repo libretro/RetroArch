@@ -1591,12 +1591,12 @@ int generic_action_ok_displaylist_push(
          {
             filebrowser_clear_type();
             info_path       = settings->paths.path_cheat_database;
-            if (type == MENU_SETTING_ACTION_CHEAT_USER_DIR)
-            {
-               info_path    = settings->paths.path_cheat_user;
-               if (!path_is_directory(info_path))
-                  path_mkdir(info_path);
-            }
+            if (     type == MENU_SETTING_ACTION_CHEAT_USER_DIR
+                  || type == MENU_SETTING_ACTION_CHEAT_DOWNLOADED_DIR)
+               info_path    = cheat_manager_browse_dir(
+                     settings->paths.path_cheat_database,
+                     settings->paths.path_cheat_user,
+                     type == MENU_SETTING_ACTION_CHEAT_USER_DIR);
             info_label      = label;
             dl_type         = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
          }

@@ -249,6 +249,10 @@ bool cheat_manager_copy_working_to_idx(unsigned idx);
 bool cheat_manager_user_dir_active(const char *path_cheat_database,
       const char *path_cheat_user);
 
+/* The folder a Load Cheat File browser opens, created if missing */
+const char *cheat_manager_browse_dir(const char *path_cheat_database,
+      const char *path_cheat_user, bool user);
+
 void cheat_manager_load_game_specific_cheats(const char *path_cheat_database,
       const char *path_cheat_user);
 

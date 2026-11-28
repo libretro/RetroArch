@@ -7098,6 +7098,18 @@ static void config_sanitize_turbo_binds(settings_t *settings)
 
 /* A config without cheat_user_path whose Cheat Files is neither default
  * starts with User Cheat Files off */
+/* Equal folders, trailing separators aside */
+static bool config_dir_is_equal(const char *a, const char *b)
+{
+   size_t a_len = strlen(a);
+   size_t b_len = strlen(b);
+   while (a_len > 1 && PATH_CHAR_IS_SLASH(a[a_len - 1]))
+      a_len--;
+   while (b_len > 1 && PATH_CHAR_IS_SLASH(b[b_len - 1]))
+      b_len--;
+   return a_len == b_len && !strncmp(a, b, a_len);
+}
+
 static void config_load_cheat_user_path(config_file_t *conf,
       settings_t *settings)
 {
@@ -7105,9 +7117,9 @@ static void config_load_cheat_user_path(config_file_t *conf,
    if (     !*g_defaults.dirs[DEFAULT_DIR_CHEATS_USER]
          || config_get_entry(conf, "cheat_user_path"))
       return;
-   if (     !string_is_equal(path_cheat_database,
+   if (     !config_dir_is_equal(path_cheat_database,
                g_defaults.dirs[DEFAULT_DIR_CHEATS])
-         && !string_is_equal(path_cheat_database,
+         && !config_dir_is_equal(path_cheat_database,
                g_defaults.dirs[DEFAULT_DIR_CHEATS_USER]))
       *settings->paths.path_cheat_user = '\0';
 }
