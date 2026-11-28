@@ -10830,6 +10830,32 @@ unsigned menu_displaylist_build_list(
             }
          }
          break;
+#ifdef HAVE_CHEATS
+      case DISPLAYLIST_CHEAT_FILE_LOAD_LIST:
+      case DISPLAYLIST_CHEAT_FILE_LOAD_APPEND_LIST:
+         {
+            const char *load_lbl          = MENU_ENUM_LABEL_CHEAT_FILE_LOAD_STR;
+            enum msg_hash_enums load_enum = MENU_ENUM_LABEL_CHEAT_FILE_LOAD;
+
+            if (type == DISPLAYLIST_CHEAT_FILE_LOAD_APPEND_LIST)
+            {
+               load_lbl  = MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND_STR;
+               load_enum = MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND;
+            }
+
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILES_USER),
+                     load_lbl, load_enum,
+                     MENU_SETTING_ACTION_CHEAT_USER_DIR, 0, 0, NULL))
+               count++;
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CHEAT_FILES_DOWNLOADED),
+                     load_lbl, load_enum,
+                     MENU_SETTING_ACTION_CHEAT_DOWNLOADED_DIR, 0, 0, NULL))
+               count++;
+         }
+         break;
+#endif
       case DISPLAYLIST_LOAD_CONTENT_LIST:
       case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
       case DISPLAYLIST_MANUAL_CONTENT_SCAN_DIR_LIST:
@@ -15171,6 +15197,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_DYNAMIC_WALLPAPERS_DIRECTORY,    PARSE_ONLY_DIR},
 #ifdef HAVE_CHEATS
                {MENU_ENUM_LABEL_CHEAT_DATABASE_PATH,             PARSE_ONLY_DIR},
+               {MENU_ENUM_LABEL_CHEAT_USER_PATH,                 PARSE_ONLY_DIR},
 #endif
                {MENU_ENUM_LABEL_CONTENT_DATABASE_DIRECTORY,      PARSE_ONLY_DIR},
 #ifdef HAVE_VIDEO_FILTER
@@ -18585,6 +18612,8 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_LOAD_CONTENT_LIST:
          case DISPLAYLIST_LOAD_CONTENT_SPECIAL:
          case DISPLAYLIST_MANUAL_CONTENT_SCAN_DIR_LIST:
+         case DISPLAYLIST_CHEAT_FILE_LOAD_LIST:
+         case DISPLAYLIST_CHEAT_FILE_LOAD_APPEND_LIST:
          case DISPLAYLIST_OPTIONS_REMAPPINGS:
          case DISPLAYLIST_VIDEO_SETTINGS_LIST:
          case DISPLAYLIST_AUDIO_SETTINGS_LIST:

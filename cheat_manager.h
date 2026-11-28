@@ -246,9 +246,21 @@ bool cheat_manager_working_code_ensure(void);
 
 bool cheat_manager_copy_working_to_idx(unsigned idx);
 
-void cheat_manager_load_game_specific_cheats(const char *path_cheat_database);
+bool cheat_manager_user_dir_active(const char *path_cheat_database,
+      const char *path_cheat_user);
 
-void cheat_manager_save_game_specific_cheats(const char *path_cheat_database);
+/* The folder a Load Cheat File browser opens, created if missing */
+const char *cheat_manager_browse_dir(const char *path_cheat_database,
+      const char *path_cheat_user, bool user);
+
+void cheat_manager_load_game_specific_cheats(const char *path_cheat_database,
+      const char *path_cheat_user);
+
+void cheat_manager_save_game_specific_cheats(const char *path_cheat_database,
+      const char *path_cheat_user);
+
+bool cheat_manager_save_as(const char *name,
+      const char *path_cheat_database, const char *path_cheat_user);
 
 int cheat_manager_initialize_memory(rarch_setting_t *setting, size_t idx, bool wraparound);
 

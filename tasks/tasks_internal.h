@@ -610,7 +610,7 @@ bool event_load_save_files(bool is_sram_load_disabled);
 bool content_savefile_is_live(const char *path);
 
 bool event_save_files(bool sram_used, bool compress_files,
-      const char *path_cheat_database);
+      const char *path_cheat_database, const char *path_cheat_user);
 
 void path_init_savefile_rtc(const char *savefile_path);
 

@@ -746,6 +746,14 @@ MSG_HASH(
    "deferred_video_list"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_LIST,
+   "deferred_cheat_file_load_list"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_APPEND_LIST,
+   "deferred_cheat_file_load_append_list"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST,
    "deferred_explore_list"
    )

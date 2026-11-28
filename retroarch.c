@@ -3985,8 +3985,10 @@ bool command_event(enum event_command cmd, void *data)
                false,
 #endif
 #ifdef HAVE_CHEATS
-               settings->paths.path_cheat_database
+               settings->paths.path_cheat_database,
+               settings->paths.path_cheat_user
 #else
+               NULL,
                NULL
 #endif
          );
@@ -10428,6 +10430,7 @@ bool retroarch_main_init_core(int argc, char *argv[],
    command_event_init_cheats(
          settings->bools.apply_cheats_after_load,
          settings->paths.path_cheat_database,
+         settings->paths.path_cheat_user,
 #ifdef HAVE_BSV_MOVIE
          input_state_get_ptr()->bsv_movie_state_handle
 #else

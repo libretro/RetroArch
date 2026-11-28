@@ -143,6 +143,8 @@ GENERIC_DEFERRED_PUSH(deferred_push_images,                         DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_audio_dsp_plugin,               DISPLAYLIST_AUDIO_FILTERS)
 GENERIC_DEFERRED_PUSH(deferred_push_cheat_file_load,                DISPLAYLIST_CHEAT_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_cheat_file_load_append,         DISPLAYLIST_CHEAT_FILES)
+GENERIC_DEFERRED_PUSH(deferred_push_cheat_file_load_list,           DISPLAYLIST_CHEAT_FILE_LOAD_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_cheat_file_load_append_list,    DISPLAYLIST_CHEAT_FILE_LOAD_APPEND_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_remap_file_load,                DISPLAYLIST_REMAP_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_override_file_load,             DISPLAYLIST_CONFIG_FILES)
 GENERIC_DEFERRED_PUSH(deferred_push_record_configfile,              DISPLAYLIST_RECORD_CONFIG_FILES)
@@ -886,6 +888,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_OZONE_FONT, deferred_push_ozone_font_path},
       {MENU_ENUM_LABEL_CHEAT_FILE_LOAD, deferred_push_cheat_file_load},
       {MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND, deferred_push_cheat_file_load_append},
+      {MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_LIST, deferred_push_cheat_file_load_list},
+      {MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_APPEND_LIST, deferred_push_cheat_file_load_append_list},
       {MENU_ENUM_LABEL_REMAP_FILE_LOAD, deferred_push_remap_file_load},
       {MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD, deferred_push_override_file_load},
       {MENU_ENUM_LABEL_RECORD_CONFIG, deferred_push_record_configfile},
@@ -974,6 +978,8 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          { MENU_ENUM_LABEL_DATABASE_MANAGER_LIST, deferred_push_database_manager_list },
          { MENU_ENUM_LABEL_CHEAT_FILE_LOAD, deferred_push_cheat_file_load },
          { MENU_ENUM_LABEL_CHEAT_FILE_LOAD_APPEND, deferred_push_cheat_file_load_append },
+         { MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_LIST, deferred_push_cheat_file_load_list },
+         { MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_APPEND_LIST, deferred_push_cheat_file_load_append_list },
          { MENU_ENUM_LABEL_REMAP_FILE_LOAD, deferred_push_remap_file_load },
          { MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD, deferred_push_override_file_load },
          { MENU_ENUM_LABEL_RECORD_CONFIG, deferred_push_record_configfile },

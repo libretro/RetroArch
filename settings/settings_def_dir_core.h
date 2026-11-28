@@ -109,6 +109,15 @@ S_DIR(path_cheat_database, CHEAT_DATABASE_PATH,
       "Cheat Files",
       "Cheat files are stored in this directory.")
 #endif
+/* config key "cheat_user_path" is a path; the configuration.c row
+ * stays literal for this setting. */
+#ifndef SETTINGS_DEF_CONFIG_PASS
+S_DIR(path_cheat_user, CHEAT_USER_PATH,
+      "cheat_user_path",
+      g_defaults.dirs[DEFAULT_DIR_CHEATS_USER], DIRECTORY_NONE, SD_FLAG_NONE, 0, directory_action_start_generic,
+      "User Cheat Files",
+      "Your own and edited cheat files. Game-specific cheats are looked for here first, and new ones are saved here. Set it to the Cheat Files folder to use one folder.")
+#endif
 /* config key "video_filter_dir" differs from the label string; the
  * configuration.c row stays literal for this setting. */
 #ifndef SETTINGS_DEF_CONFIG_PASS

@@ -1570,12 +1570,36 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_CHEAT_FILE:
       case ACTION_OK_DL_CHEAT_FILE_APPEND:
 #ifdef HAVE_CHEATS
-         filebrowser_clear_type();
          info.type          = type;
          info.directory_ptr = idx;
-         info_path          = settings->paths.path_cheat_database;
-         info_label         = label;
-         dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         if (     type == MENU_SETTING_ACTION
+               && cheat_manager_user_dir_active(
+                     settings->paths.path_cheat_database,
+                     settings->paths.path_cheat_user))
+         {
+            info_path       = label;
+            info_label      = MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_LIST_STR;
+            info.enum_idx   = MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_LIST;
+            if (action_type == ACTION_OK_DL_CHEAT_FILE_APPEND)
+            {
+               info_label    = MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_APPEND_LIST_STR;
+               info.enum_idx = MENU_ENUM_LABEL_DEFERRED_CHEAT_FILE_LOAD_APPEND_LIST;
+            }
+            dl_type         = DISPLAYLIST_GENERIC;
+         }
+         else
+         {
+            filebrowser_clear_type();
+            info_path       = settings->paths.path_cheat_database;
+            if (     type == MENU_SETTING_ACTION_CHEAT_USER_DIR
+                  || type == MENU_SETTING_ACTION_CHEAT_DOWNLOADED_DIR)
+               info_path    = cheat_manager_browse_dir(
+                     settings->paths.path_cheat_database,
+                     settings->paths.path_cheat_user,
+                     type == MENU_SETTING_ACTION_CHEAT_USER_DIR);
+            info_label      = label;
+            dl_type         = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
+         }
 #endif
          break;
       case ACTION_OK_DL_RGUI_MENU_THEME_PRESET:
@@ -4166,6 +4190,7 @@ static void menu_input_st_string_cb_cheat_file_save_as(
       const char *label               = input_driver_text_entry_label();
       settings_t *settings            = config_get_ptr();
       const char *path_cheat_database = settings->paths.path_cheat_database;
+      const char *path_cheat_user     = settings->paths.path_cheat_user;
       if (label && *label)
          setting = menu_setting_find(label);
       if (setting)
@@ -4177,8 +4202,8 @@ static void menu_input_st_string_cb_cheat_file_save_as(
          menu_setting_generic(setting, 0, false);
       }
       else if (label && *label)
-         cheat_manager_save(str, path_cheat_database,
-               false);
+         cheat_manager_save_as(str, path_cheat_database,
+               path_cheat_user);
    }
 
    menu_input_dialog_end();
@@ -5050,11 +5075,12 @@ static int action_ok_cheat_reload_cheats(const char *path,
    struct menu_state *menu_st      = menu_state_get_ptr();
    settings_t           *settings  = config_get_ptr();
    const char *path_cheat_database = settings->paths.path_cheat_database;
+   const char *path_cheat_user     = settings->paths.path_cheat_user;
 
    cheat_manager_realloc(0, CHEAT_HANDLER_TYPE_EMU);
 
    cheat_manager_load_game_specific_cheats(
-         path_cheat_database);
+         path_cheat_database, path_cheat_user);
 
    menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
                                    |  MENU_ST_FLAG_PREVENT_POPULATE;

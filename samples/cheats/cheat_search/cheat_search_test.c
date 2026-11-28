@@ -53,6 +53,7 @@ size_t fill_pathname_join(char *o, const char *d, const char *p, size_t n)
 const char *path_basename_nocompression(const char *p) { return p; }
 bool path_is_valid(const char *p) { (void)p; return false; }
 bool path_mkdir(const char *p) { (void)p; return false; }
+bool path_is_directory(const char *p) { (void)p; return false; }
 
 
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
