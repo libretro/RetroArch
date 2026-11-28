@@ -52,6 +52,7 @@ class QMoveEvent;
 class QShowEvent;
 class QVBoxLayout;
 class QDoubleSpinBox;
+class QTimer;
 /* Forward decls kept unconditional so that callers holding bare
  * pointers to these (e.g. ui_qt.h's QPointer<ShaderParamsDialog>
  * member) parse cleanly when HAVE_MENU is not defined. The full
@@ -879,9 +880,13 @@ private slots:
    void onCoreOptionComboBoxCurrentIndexChanged(int index);
    void onCoreOptionResetClicked();
    void onCoreOptionResetAllClicked();
+   void checkForCoreOptionsChanges();
 private:
    QPointer<QVBoxLayout> m_layout;
    QPointer<QScrollArea> m_scrollArea;
+   QTimer *m_refreshTimer;
+   QString m_optionsSignature;
+   QString m_expandedCategories;
 protected:
    void closeEvent(QCloseEvent *event);
    void showEvent(QShowEvent *event);
@@ -942,8 +947,11 @@ private slots:
    void onShaderRemovePassClicked();
    void onShaderResetParameter(QString parameter);
    void onShaderLoadPresetClicked();
+   void onShaderLoadPresetPrependClicked();
+   void onShaderLoadPresetAppendClicked();
    void onShaderAddPassClicked();
    void onShaderSavePresetAsClicked();
+   void onShaderSaveCurrentPresetClicked();
    void onShaderSaveCorePresetClicked();
    void onShaderSaveParentPresetClicked();
    void onShaderSaveGamePresetClicked();
@@ -961,6 +969,7 @@ private:
    void addShaderParam(struct video_shader_parameter *param, QFormLayout *form);
    void getShaders(struct video_shader **menu_shader, struct video_shader **video_shader);
    void operateShaderPreset(bool save, const char *path, unsigned action_type);
+   void onShaderLoadPresetMergeClicked(bool prepend);
 
    QPointer<QVBoxLayout> m_layout;
    QPointer<QScrollArea> m_scrollArea;

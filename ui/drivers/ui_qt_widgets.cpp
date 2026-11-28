@@ -53,9 +53,12 @@
  * hard error, so these must live outside the extern "C" block. */
 #include "../../config.def.h"
 #include "../../command.h"
+#include "../../configuration.h"
 #include "../../driver.h"
 #include "../../core_info.h"
 #include "../../core_option_manager.h"
+#include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../file_path_special.h"
 #include "../../msg_hash.h"
 #include "../../paths.h"
@@ -4617,6 +4620,9 @@ CoreOptionsDialog::CoreOptionsDialog(QWidget *parent) :
    QDialog(parent)
    ,m_layout()
    ,m_scrollArea()
+   ,m_refreshTimer(new QTimer(this))
+   ,m_optionsSignature()
+   ,m_expandedCategories()
 {
    setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS));
    setObjectName("coreOptionsDialog");
@@ -4624,6 +4630,10 @@ CoreOptionsDialog::CoreOptionsDialog(QWidget *parent) :
    resize(720, 480);
 
    QTimer::singleShot(0, this, SLOT(clearLayout()));
+   m_refreshTimer->setInterval(500);
+   connect(m_refreshTimer, SIGNAL(timeout()),
+         this, SLOT(checkForCoreOptionsChanges()));
+   m_refreshTimer->start();
 }
 
 CoreOptionsDialog::~CoreOptionsDialog() { }
@@ -4683,7 +4693,8 @@ void CoreOptionsDialog::clearLayout()
       {
          QList<QObject*> _children = children();
          for (int _i = 0; _i < _children.size(); _i++)
-            _children[_i]->deleteLater();
+            if (_children[_i] != m_refreshTimer)
+               _children[_i]->deleteLater();
       }
    }
 
@@ -4781,9 +4792,174 @@ void CoreOptionsDialog::onCoreOptionComboBoxCurrentIndexChanged(int index)
    }
 }
 
+/* Add a core option using the same row layout for legacy options and
+ * options nested inside a v2+ category. */
+static void qt_core_options_add_row(CoreOptionsDialog *dialog,
+      QFormLayout *form, core_option_manager_t *coreopts, size_t index)
+{
+   QString desc               = core_option_manager_get_desc(coreopts, index, false);
+   QString val                = core_option_manager_get_val(coreopts, index);
+   QComboBox *combo_box       = NULL;
+   QLabel *descLabel          = NULL;
+   QHBoxLayout *comboLayout   = NULL;
+   QToolButton *resetButton   = NULL;
+   struct core_option *option = NULL;
+   unsigned k;
+
+   if (desc.isEmpty() || !coreopts->opts)
+      return;
+
+   option = &coreopts->opts[index];
+   if (!option->vals || option->vals->size == 0)
+      return;
+
+   comboLayout = new QHBoxLayout();
+   descLabel   = new QLabel(desc, dialog);
+   combo_box   = new QComboBox(dialog);
+   combo_box->setObjectName("coreOptionComboBox");
+   resetButton = new QToolButton(dialog);
+   resetButton->setObjectName("resetButton");
+   resetButton->setDefaultAction(new QAction(
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RESET), dialog));
+   resetButton->setProperty("comboBox", QVariant::fromValue(combo_box));
+
+   QObject::connect(resetButton, SIGNAL(clicked()),
+         dialog, SLOT(onCoreOptionResetClicked()));
+
+   if (option->info && *option->info)
+   {
+      char *new_info;
+      size_t info_len = strlen(option->info);
+
+      if (!(new_info = (char *)malloc(info_len + 1)))
+         return;
+      new_info[0] = '\0';
+      word_wrap(new_info, info_len + 1, option->info, info_len, 50, 100, 0);
+      descLabel->setToolTip(QStringLiteral("<qt><pre>")
+            + QString::fromUtf8(new_info).toHtmlEscaped()
+            + QStringLiteral("</pre></qt>"));
+      combo_box->setToolTip(descLabel->toolTip());
+      free(new_info);
+   }
+
+   for (k = 0; k < option->vals->size; k++)
+      combo_box->addItem(option->vals->elems[k].data,
+            QVariant::fromValue(QString(option->key)));
+
+   combo_box->setCurrentText(val);
+   combo_box->setProperty("default_index",
+         static_cast<unsigned>(option->default_index));
+
+   QObject::connect(combo_box, SIGNAL(currentIndexChanged(int)),
+         dialog, SLOT(onCoreOptionComboBoxCurrentIndexChanged(int)));
+
+   comboLayout->addWidget(combo_box);
+   comboLayout->addWidget(resetButton);
+   form->addRow(descLabel, comboLayout);
+}
+
+/* Build a lightweight signature of the live option manager. This lets the
+ * Qt companion notice both option-manager replacement and visibility changes
+ * without adding hooks to RetroArch's core/runloop code. */
+static QString qt_core_options_signature(void)
+{
+   core_option_manager_t *coreopts = NULL;
+   QString signature;
+   size_t i;
+
+   if (!retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts) || !coreopts)
+      return QStringLiteral("<no-core-options>");
+
+   signature += QString::number((quintptr)coreopts, 16);
+   signature += QLatin1Char('|');
+   signature += QString::number(coreopts->size);
+   signature += QLatin1Char('|');
+   signature += QString::number(coreopts->cats_size);
+
+   for (i = 0; coreopts->opts && i < coreopts->size; i++)
+   {
+      const struct core_option *option = &coreopts->opts[i];
+      unsigned k;
+
+      signature += QLatin1Char('|');
+      signature += QString::fromUtf8(option->key ? option->key : "");
+      signature += QLatin1Char('|');
+      signature += QString::fromUtf8(option->desc ? option->desc : "");
+      signature += QLatin1Char('|');
+      signature += QString::fromUtf8(option->desc_categorized ? option->desc_categorized : "");
+      signature += QLatin1Char('|');
+      signature += QString::fromUtf8(option->info ? option->info : "");
+      signature += QLatin1Char('|');
+      signature += QString::fromUtf8(option->category_key ? option->category_key : "");
+      signature += QLatin1Char('|');
+      signature += option->visible ? QLatin1Char('1') : QLatin1Char('0');
+
+      if (option->vals)
+         for (k = 0; k < option->vals->size; k++)
+         {
+            signature += QLatin1Char('|');
+            signature += QString::fromUtf8(option->vals->elems[k].data
+                  ? option->vals->elems[k].data : "");
+            if (option->val_labels && k < option->val_labels->size)
+            {
+               signature += QLatin1Char('|');
+               signature += QString::fromUtf8(option->val_labels->elems[k].data
+                     ? option->val_labels->elems[k].data : "");
+            }
+         }
+   }
+
+   for (i = 0; coreopts->cats && i < coreopts->cats_size; i++)
+   {
+      const struct core_category *category = &coreopts->cats[i];
+      signature += QLatin1Char('|');
+      signature += QString::fromUtf8(category->key ? category->key : "");
+      signature += QLatin1Char('|');
+      signature += QString::fromUtf8(category->desc ? category->desc : "");
+      signature += QLatin1Char('|');
+      signature += QString::fromUtf8(category->info ? category->info : "");
+   }
+
+   return signature;
+}
+
+void CoreOptionsDialog::checkForCoreOptionsChanges()
+{
+   QString signature;
+
+   if (!isVisible())
+      return;
+
+   signature = qt_core_options_signature();
+   if (m_optionsSignature.isEmpty())
+   {
+      m_optionsSignature = signature;
+      return;
+   }
+
+   if (signature != m_optionsSignature)
+   {
+      int i;
+      QList<QPushButton*> categoryButtons =
+         findChildren<QPushButton*>(QStringLiteral("coreOptionCategoryButton"));
+
+      m_expandedCategories = QStringLiteral("\n");
+      for (i = 0; i < categoryButtons.size(); i++)
+         if (categoryButtons[i]->isChecked())
+         {
+            m_expandedCategories.append(
+                  categoryButtons[i]->property("categoryKey").toString());
+            m_expandedCategories.append(QStringLiteral("\n"));
+         }
+
+      m_optionsSignature = signature;
+      QTimer::singleShot(0, this, SLOT(reload()));
+   }
+}
+
 void CoreOptionsDialog::buildLayout()
 {
-   unsigned j, k;
+   unsigned j;
    QFormLayout *form            = NULL;
    settings_t *settings         = config_get_ptr();
    runloop_state_t *runloop_st  = runloop_state_get_ptr();
@@ -4795,121 +4971,459 @@ void CoreOptionsDialog::buildLayout()
    if (has_core_options)
    {
       core_option_manager_t *coreopts = NULL;
-
-      form = new QFormLayout();
-
-      if (settings->bools.game_specific_options)
-      {
-         QString contentLabel;
-         QString label;
-         rarch_system_info_t *sys_info = &runloop_st->system;
-
-         /* TODO/FIXME - why have this check here? sys_info is not used */
-         if (sys_info)
-            contentLabel = QFileInfo(path_get(RARCH_PATH_BASENAME)).completeBaseName();
-
-         if (!contentLabel.isEmpty())
-         {
-            if (!label.isEmpty())
-            {
-               QHBoxLayout *gameOptionsLayout = new QHBoxLayout();
-               QPushButton *button = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SAVE), this);
-
-               connect(button, SIGNAL(clicked()), this, SLOT(onSaveGameSpecificOptions()));
-
-               gameOptionsLayout->addWidget(new QLabel(contentLabel, this));
-               gameOptionsLayout->addSpacerItem(new QSpacerItem(0, 0, QSizePolicy::Expanding, QSizePolicy::Preferred));
-               gameOptionsLayout->addWidget(button);
-
-               form->addRow(label, gameOptionsLayout);
-            }
-         }
-      }
+      uint32_t flags                  = runloop_get_flags();
+      bool game_options_active        = (flags & RUNLOOP_FLAG_GAME_OPTIONS_ACTIVE) != 0;
+      bool folder_options_active      = (flags & RUNLOOP_FLAG_FOLDER_OPTIONS_ACTIVE) != 0;
+      const char *content_path        = path_get(RARCH_PATH_CONTENT);
+      const char *override_path       = path_get(RARCH_PATH_CORE_OPTIONS);
 
       retroarch_ctl(RARCH_CTL_CORE_OPTIONS_LIST_GET, &coreopts);
 
-      if (coreopts)
+      /* Active options file and the same management actions as the
+       * internal Quick Menu > Options > Manage Core Options list. */
       {
-         QToolButton *resetAllButton = new QToolButton(this);
+         QHBoxLayout *managementLayout = new QHBoxLayout();
+         QLabel *activeLabel = new QLabel(
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO), this);
+         const char *active_path = (override_path && *override_path)
+            ? override_path : (coreopts ? coreopts->conf_path : NULL);
+         QLabel *activeFile = new QLabel(
+               (active_path && *active_path)
+               ? QString::fromUtf8(path_basename_nocompression(active_path))
+               : QString::fromUtf8(msg_hash_to_str(
+                    MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)), this);
+         QPushButton *manageButton = new QPushButton(
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST), this);
+         QMenu *manageMenu = new QMenu(manageButton);
+         QAction *action;
 
-         resetAllButton->setDefaultAction(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RESET_ALL), this));
-         connect(resetAllButton, SIGNAL(clicked()), this, SLOT(onCoreOptionResetAllClicked()));
+         activeFile->setObjectName("activeCoreOptionsFile");
+         manageButton->setMenu(manageMenu);
 
-         for (j = 0; j < opts; j++)
+         if (content_path && *content_path)
          {
-            QString desc               =
-               core_option_manager_get_desc(coreopts, j, false);
-            QString val                =
-               core_option_manager_get_val(coreopts, j);
-            QComboBox *combo_box       = NULL;
-            QLabel *descLabel          = NULL;
-            QHBoxLayout *comboLayout   = NULL;
-            QToolButton *resetButton   = NULL;
-            struct core_option *option = NULL;
+            if (game_options_active)
+               action = manageMenu->addAction(msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE));
+            else
+               action = manageMenu->addAction(msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE));
+            action->setToolTip(wrapped_tooltip(msg_hash_to_str(
+                     game_options_active
+                     ? MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE
+                     : MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE)));
+            connect(action, &QAction::triggered, this, [this, game_options_active]() {
+               if (game_options_active)
+                  core_options_remove_override(true);
+               else
+                  onSaveGameSpecificOptions();
+               buildLayout();
+            });
 
-            if (desc.isEmpty() || !coreopts->opts)
-               continue;
-
-            option = static_cast<struct core_option*>(&coreopts->opts[j]);
-
-            if (!option->vals || option->vals->size == 0)
-               continue;
-
-            comboLayout = new QHBoxLayout();
-            descLabel   = new QLabel(desc, this);
-            combo_box   = new QComboBox(this);
-            combo_box->setObjectName("coreOptionComboBox");
-            resetButton = new QToolButton(this);
-            resetButton->setObjectName("resetButton");
-            resetButton->setDefaultAction(new QAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RESET), this));
-            resetButton->setProperty("comboBox",
-                  QVariant::fromValue(combo_box));
-
-            connect(resetButton, SIGNAL(clicked()),
-                  this, SLOT(onCoreOptionResetClicked()));
-
-            if (option->info && *option->info)
+            if (folder_options_active || !game_options_active)
             {
-               char *new_info;
-               size_t option_info_len = strlen(option->info);
-               size_t new_info_len    = option_info_len + 1;
-
-               if (!(new_info = (char *)malloc(new_info_len)))
-                  return;
-               new_info[0] = '\0';
-
-               word_wrap(new_info, new_info_len, option->info,
-                     option_info_len, 50, 100, 0);
-               /* already wrapped to 50 columns: keep the line breaks */
-               descLabel->setToolTip(QStringLiteral("<qt><pre>")
-                     + QString::fromUtf8(new_info).toHtmlEscaped()
-                     + QStringLiteral("</pre></qt>"));
-               combo_box->setToolTip(descLabel->toolTip());
-               free(new_info);
+               bool remove_folder = folder_options_active;
+               action = manageMenu->addAction(msg_hash_to_str(
+                        remove_folder
+                        ? MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE
+                        : MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE));
+               action->setToolTip(wrapped_tooltip(msg_hash_to_str(
+                        remove_folder
+                        ? MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE
+                        : MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE)));
+               connect(action, &QAction::triggered, this, [this, remove_folder]() {
+                  if (remove_folder)
+                     core_options_remove_override(false);
+                  else
+                     onSaveFolderSpecificOptions();
+                  buildLayout();
+               });
             }
-
-            for (k = 0; k < option->vals->size; k++)
-               combo_box->addItem(option->vals->elems[k].data, QVariant::fromValue(QString(option->key)));
-
-            combo_box->setCurrentText(val);
-            combo_box->setProperty("default_index",
-                  static_cast<unsigned>(option->default_index));
-
-            /* Only connect the signal after setting the default item */
-            connect(combo_box, SIGNAL(currentIndexChanged(int)),
-                  this,
-                  SLOT(onCoreOptionComboBoxCurrentIndexChanged(int)));
-
-            comboLayout->addWidget(combo_box);
-            comboLayout->addWidget(resetButton);
-
-            form->addRow(descLabel, comboLayout);
          }
 
-         form->addRow(resetAllButton, new QWidget(this));
+         manageMenu->addSeparator();
+         action = manageMenu->addAction(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET));
+         action->setToolTip(wrapped_tooltip(msg_hash_to_str(
+                  MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET)));
+         connect(action, &QAction::triggered, this, [this]() {
+            core_options_reset(NULL);
+            buildLayout();
+         });
 
-         m_layout->addLayout(form);
+         if (settings->bools.quick_menu_show_core_options_flush)
+         {
+            action = manageMenu->addAction(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH));
+            action->setToolTip(wrapped_tooltip(msg_hash_to_str(
+                     MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH)));
+            connect(action, &QAction::triggered, this, []() {
+               core_options_flush();
+            });
+         }
+
+         managementLayout->addWidget(activeLabel);
+         managementLayout->addWidget(activeFile);
+         managementLayout->addStretch(1);
+         managementLayout->addWidget(manageButton);
+         m_layout->addLayout(managementLayout);
       }
+
+      form = new QFormLayout();
+
+      if (coreopts)
+      {
+         if (coreopts->cats_size > 0 && coreopts->option_map)
+         {
+            size_t mapIndex;
+            /* Put uncategorized options first, followed by the category
+             * sections in the manager's menu order. */
+            m_layout->addLayout(form);
+
+            /* Follow the core option manager's nested-list ordering.
+             * Regular top-level options remain in the main form; each
+             * category gets a collapsible section with its own option rows. */
+            for (mapIndex = 0;
+                  mapIndex < nested_list_get_size(coreopts->option_map);
+                  mapIndex++)
+            {
+               nested_list_item_t *item = nested_list_get_item_idx(
+                     coreopts->option_map, mapIndex);
+               const struct core_option *option =
+                  (const struct core_option *)nested_list_item_get_value(item);
+
+               if (option)
+               {
+                  if (core_option_manager_get_visible(coreopts, option->opt_idx))
+                     qt_core_options_add_row(this, form, coreopts, option->opt_idx);
+               }
+               else if (item)
+               {
+                  const char *category_id = nested_list_item_get_id(item);
+                  nested_list_t *category_options =
+                     nested_list_item_get_children(item);
+                  const char *category_desc =
+                     core_option_manager_get_category_desc(coreopts, category_id);
+                  const char *category_info =
+                     core_option_manager_get_category_info(coreopts, category_id);
+                  QPushButton *categoryButton;
+                  QWidget *categoryWidget;
+                  QVBoxLayout *categoryLayout;
+                  QFormLayout *categoryForm;
+                  size_t categoryIndex;
+
+                  if (!category_options
+                        || !core_option_manager_get_category_visible(
+                           coreopts, category_id))
+                     continue;
+
+                  categoryButton = new QPushButton(
+                        QString::fromUtf8(category_desc ? category_desc : category_id),
+                        this);
+                  categoryButton->setCheckable(true);
+                  categoryButton->setObjectName(QStringLiteral("coreOptionCategoryButton"));
+                  categoryButton->setProperty("categoryKey", QString::fromUtf8(category_id));
+                  if (category_info && *category_info)
+                     categoryButton->setToolTip(wrapped_tooltip(category_info));
+
+                  categoryWidget = new QWidget(this);
+                  categoryLayout = new QVBoxLayout(categoryWidget);
+                  categoryLayout->setContentsMargins(12, 4, 0, 4);
+                  categoryForm = new QFormLayout();
+                  categoryLayout->addLayout(categoryForm);
+                  categoryWidget->setVisible(false);
+
+                  for (categoryIndex = 0;
+                        categoryIndex < nested_list_get_size(category_options);
+                        categoryIndex++)
+                  {
+                     nested_list_item_t *optionItem =
+                        nested_list_get_item_idx(category_options, categoryIndex);
+                     const struct core_option *categoryOption =
+                        (const struct core_option *)nested_list_item_get_value(optionItem);
+                     if (categoryOption
+                           && core_option_manager_get_visible(
+                              coreopts, categoryOption->opt_idx))
+                        qt_core_options_add_row(this, categoryForm,
+                              coreopts, categoryOption->opt_idx);
+                  }
+
+                  connect(categoryButton, &QPushButton::toggled,
+                        categoryWidget, &QWidget::setVisible);
+                  if (m_expandedCategories.contains(
+                           QStringLiteral("\n")
+                           + QString::fromUtf8(category_id)
+                           + QStringLiteral("\n")))
+                  {
+                     categoryButton->setChecked(true);
+                     categoryWidget->setVisible(true);
+                  }
+                  m_layout->addWidget(categoryButton);
+                  m_layout->addWidget(categoryWidget);
+               }
+            }
+
+         }
+         else
+         {
+            /* Keep the existing flat layout for v1 options. */
+            for (j = 0; j < opts; j++)
+               qt_core_options_add_row(this, form, coreopts, j);
+
+            m_layout->addLayout(form);
+         }
+      }
+
+#ifdef HAVE_CONFIGFILE
+      /* Visually separate Core Options from the Overrides section. */
+      {
+         QWidget *separator = new QWidget(this);
+         separator->setFixedHeight(2);
+         separator->setStyleSheet(QStringLiteral("background-color: palette(mid);"));
+         m_layout->addWidget(separator);
+      }
+
+      /* Match the internal Quick Menu > Overrides actions and show the
+       * actual files which participate in the active override stack. */
+      {
+         const char *core_name = runloop_st->system.info.library_name;
+         const char *content_name = path_get(RARCH_PATH_BASENAME);
+         const char *active_override = path_get(RARCH_PATH_CONFIG_OVERRIDE);
+         bool has_content = content_name && *content_name;
+         char config_directory[DIR_MAX_LENGTH];
+         char core_override[PATH_MAX_LENGTH];
+         char content_override[PATH_MAX_LENGTH];
+         char game_override[PATH_MAX_LENGTH];
+         bool has_core_override = false;
+         bool has_content_override = false;
+         bool has_game_override = false;
+
+         config_directory[0] = '\0';
+         core_override[0] = '\0';
+         content_override[0] = '\0';
+         game_override[0] = '\0';
+
+         if (core_name && *core_name)
+         {
+            fill_pathname_application_special(config_directory,
+                  sizeof(config_directory),
+                  APPLICATION_SPECIAL_DIRECTORY_CONFIG);
+            fill_pathname_join_special_ext(core_override,
+                  config_directory, core_name, core_name,
+                  FILE_PATH_CONFIG_EXTENSION, sizeof(core_override));
+            has_core_override = path_is_valid(core_override);
+
+            if (has_content)
+            {
+               char content_dir_name[DIR_MAX_LENGTH];
+               const char *game_name = path_basename_nocompression(content_name);
+               content_dir_name[0] = '\0';
+               fill_pathname_parent_dir_name(content_dir_name,
+                     content_name, sizeof(content_dir_name));
+               fill_pathname_join_special_ext(content_override,
+                     config_directory, core_name, content_dir_name,
+                     FILE_PATH_CONFIG_EXTENSION, sizeof(content_override));
+               fill_pathname_join_special_ext(game_override,
+                     config_directory, core_name, game_name,
+                     FILE_PATH_CONFIG_EXTENSION, sizeof(game_override));
+               has_content_override = path_is_valid(content_override);
+               has_game_override = path_is_valid(game_override);
+            }
+         }
+
+         /* Active override file and management actions. */
+         {
+            QHBoxLayout *overrideHeader = new QHBoxLayout();
+            QLabel *activeLabel = new QLabel(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO), this);
+            QString activeName = QString::fromUtf8(
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+            QPushButton *manageButton = new QPushButton(
+                  QStringLiteral("Manage Overrides"), this);
+            QMenu *manageMenu = new QMenu(manageButton);
+            QAction *action;
+
+            if (active_override && *active_override)
+            {
+               QStringList paths = QString::fromUtf8(active_override).split(QLatin1Char('|'));
+               QString lastPath = paths.isEmpty() ? QString() : paths.last();
+               if (!lastPath.isEmpty())
+                  activeName = QFileInfo(lastPath).fileName();
+            }
+
+            manageButton->setMenu(manageMenu);
+            QLabel *activeFile = new QLabel(activeName, this);
+            activeFile->setObjectName("activeOverrideFile");
+
+            action = manageMenu->addAction(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD));
+            connect(action, &QAction::triggered, this, [this]() {
+               QString fileName = QFileDialog::getOpenFileName(this,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD),
+                     QString(), QStringLiteral("Config files (*.cfg);;All files (*)"));
+               if (!fileName.isEmpty())
+               {
+                  config_unload_override();
+                  if (!config_load_override_file(fileName.toUtf8().constData()))
+                     QMessageBox::warning(this, msg_hash_to_str(MSG_ERROR),
+                           QStringLiteral("Unable to load override file."));
+                  buildLayout();
+               }
+            });
+
+            action = manageMenu->addAction(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS));
+            connect(action, &QAction::triggered, this, [this]() {
+               bool ok = false;
+               QString name = QInputDialog::getText(this,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS),
+                     msg_hash_to_str(MSG_INPUT_OVERRIDE_FILENAME),
+                     QLineEdit::Normal, QString(), &ok);
+               if (ok && !name.isEmpty())
+               {
+                  runloop_state_t *state = runloop_state_get_ptr();
+                  int8_t result = config_save_overrides(OVERRIDE_AS,
+                        &state->system, false, name.toUtf8().constData());
+                  if (result != 1)
+                     QMessageBox::warning(this, msg_hash_to_str(MSG_ERROR),
+                           msg_hash_to_str(MSG_OVERRIDES_NOT_SAVED));
+                  buildLayout();
+               }
+            });
+
+            manageMenu->addSeparator();
+            if (settings->bools.quick_menu_show_save_game_overrides && has_content)
+            {
+               action = manageMenu->addAction(msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME));
+               connect(action, &QAction::triggered, this, [this]() {
+                  runloop_state_t *state = runloop_state_get_ptr();
+                  config_save_overrides(OVERRIDE_GAME, &state->system, false, NULL);
+                  buildLayout();
+               });
+               if (has_game_override)
+               {
+                  action = manageMenu->addAction(msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME));
+                  connect(action, &QAction::triggered, this, [this]() {
+                     runloop_state_t *state = runloop_state_get_ptr();
+                     config_save_overrides(OVERRIDE_GAME, &state->system, true, NULL);
+                     buildLayout();
+                  });
+               }
+            }
+            if (settings->bools.quick_menu_show_save_content_dir_overrides && has_content)
+            {
+               action = manageMenu->addAction(msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR));
+               connect(action, &QAction::triggered, this, [this]() {
+                  runloop_state_t *state = runloop_state_get_ptr();
+                  config_save_overrides(OVERRIDE_CONTENT_DIR, &state->system, false, NULL);
+                  buildLayout();
+               });
+               if (has_content_override)
+               {
+                  action = manageMenu->addAction(msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR));
+                  connect(action, &QAction::triggered, this, [this]() {
+                     runloop_state_t *state = runloop_state_get_ptr();
+                     config_save_overrides(OVERRIDE_CONTENT_DIR, &state->system, true, NULL);
+                     buildLayout();
+                  });
+               }
+            }
+            if (settings->bools.quick_menu_show_save_core_overrides && core_name && *core_name)
+            {
+               action = manageMenu->addAction(msg_hash_to_str(
+                        MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE));
+               connect(action, &QAction::triggered, this, [this]() {
+                  runloop_state_t *state = runloop_state_get_ptr();
+                  config_save_overrides(OVERRIDE_CORE, &state->system, false, NULL);
+                  buildLayout();
+               });
+               if (has_core_override)
+               {
+                  action = manageMenu->addAction(msg_hash_to_str(
+                           MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE));
+                  connect(action, &QAction::triggered, this, [this]() {
+                     runloop_state_t *state = runloop_state_get_ptr();
+                     config_save_overrides(OVERRIDE_CORE, &state->system, true, NULL);
+                     buildLayout();
+                  });
+               }
+            }
+
+            manageMenu->addSeparator();
+            action = manageMenu->addAction(msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD));
+            action->setEnabled(active_override && *active_override);
+            connect(action, &QAction::triggered, this, [this]() {
+               config_unload_override();
+               buildLayout();
+            });
+
+            overrideHeader->addWidget(activeLabel);
+            overrideHeader->addWidget(activeFile);
+            overrideHeader->addStretch(1);
+            overrideHeader->addWidget(manageButton);
+            m_layout->addLayout(overrideHeader);
+         }
+
+         /* Display each existing layer separately, in application order. */
+         struct OverrideDisplayEntry
+         {
+            const char *title;
+            const char *path;
+            bool exists;
+         } entries[] = {
+            { "Core Override", core_override, has_core_override },
+            { "Content Directory Override", content_override, has_content_override },
+            { "Game Override", game_override, has_game_override }
+         };
+         unsigned entryIndex;
+         bool any_override = false;
+         for (entryIndex = 0; entryIndex < sizeof(entries) / sizeof(entries[0]);
+               entryIndex++)
+         {
+            if (entries[entryIndex].exists)
+            {
+               void *file_data = NULL;
+               int64_t file_size = 0;
+               bool file_read = filestream_read_file(entries[entryIndex].path,
+                     &file_data, &file_size) >= 0 && file_data;
+               QLabel *title = new QLabel(QString::fromUtf8(entries[entryIndex].title), this);
+               QScrollArea *contentsArea = new QScrollArea(this);
+               QLabel *contents = new QLabel(contentsArea);
+
+               contents->setTextFormat(Qt::PlainText);
+               contents->setWordWrap(false);
+               contents->setTextInteractionFlags(Qt::TextSelectableByMouse);
+               contents->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+               if (file_read)
+               {
+                  contents->setText(QString::fromUtf8(
+                           static_cast<const char*>(file_data),
+                           file_size > INT_MAX ? INT_MAX : (int)file_size));
+                  free(file_data);
+               }
+               else
+                  contents->setText(QStringLiteral("Unable to read override file."));
+               contentsArea->setWidget(contents);
+               contentsArea->setWidgetResizable(false);
+               contentsArea->setMaximumHeight(150);
+               m_layout->addWidget(title);
+               m_layout->addWidget(contentsArea);
+               any_override = true;
+            }
+         }
+         if (!any_override)
+         {
+            QLabel *noOverrides = new QLabel(
+                  QStringLiteral("No active override files."), this);
+            m_layout->addWidget(noOverrides);
+         }
+      }
+#endif
    }
 
    if (!opts)
@@ -4917,13 +5431,13 @@ void CoreOptionsDialog::buildLayout()
       QLabel *noParamsLabel = new QLabel(msg_hash_to_str(
                MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE), this);
       noParamsLabel->setAlignment(Qt::AlignCenter);
-
       m_layout->addWidget(noParamsLabel);
    }
 
    m_layout->addItem(new QSpacerItem(20, 20,
             QSizePolicy::Minimum, QSizePolicy::Expanding));
 
+   m_optionsSignature = qt_core_options_signature();
    resize(width() + 1, height());
    show();
    resize(width() - 1, height());
@@ -4981,7 +5495,8 @@ void CoreOptionsDialog::onCoreOptionResetAllClicked()
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 enum
 {
-   QT_SHADER_PRESET_GLOBAL = 0,
+   QT_SHADER_PRESET_CURRENT = 0,
+   QT_SHADER_PRESET_GLOBAL,
    QT_SHADER_PRESET_CORE,
    QT_SHADER_PRESET_PARENT,
    QT_SHADER_PRESET_GAME,
@@ -5171,6 +5686,11 @@ void ShaderParamsDialog::getShaders(struct video_shader **menu_shader, struct vi
          *video_shader = NULL;
    }
 
+   if (menu_shader && *menu_shader
+         && ((*menu_shader)->num_parameters > GFX_MAX_PARAMETERS
+            || (*menu_shader)->passes > GFX_MAX_SHADERS))
+      *menu_shader = NULL;
+
    if (video_shader)
    {
       if (!video_shader_driver_get_current_shader(&shader_info))
@@ -5179,7 +5699,8 @@ void ShaderParamsDialog::getShaders(struct video_shader **menu_shader, struct vi
          return;
       }
 
-      if (!shader_info.data || shader_info.data->num_parameters > GFX_MAX_PARAMETERS)
+      if (!shader_info.data || shader_info.data->num_parameters > GFX_MAX_PARAMETERS
+            || shader_info.data->passes > GFX_MAX_SHADERS)
       {
          *video_shader = NULL;
          return;
@@ -5199,9 +5720,8 @@ void ShaderParamsDialog::onFilterComboBoxIndexChanged(int)
    int pass                          = 0;
    bool ok                           = false;
    struct video_shader *menu_shader  = NULL;
-   struct video_shader *video_shader = NULL;
 
-   getShaders(&menu_shader, &video_shader);
+   getShaders(&menu_shader, NULL);
 
    if (!comboBox)
       return;
@@ -5229,13 +5749,10 @@ void ShaderParamsDialog::onFilterComboBoxIndexChanged(int)
          if (ok)
          {
             if (menu_shader)
-               menu_shader->pass[pass].filter = filter;
-            if (video_shader)
             {
-               video_shader->pass[pass].filter = filter;
-               video_shader->flags |= SHDR_FLAG_MODIFIED;
+               menu_shader->pass[pass].filter = filter;
+               menu_shader->flags |= SHDR_FLAG_MODIFIED;
             }
-
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
       }
@@ -5249,9 +5766,8 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
    int pass                          = 0;
    bool ok                           = false;
    struct video_shader *menu_shader  = NULL;
-   struct video_shader *video_shader = NULL;
 
-   getShaders(&menu_shader, &video_shader);
+   getShaders(&menu_shader, NULL);
 
    if (!comboBox)
       return;
@@ -5284,17 +5800,7 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
                   menu_shader->pass[pass].fbo.flags |=  FBO_SCALE_FLAG_VALID;
                else
                   menu_shader->pass[pass].fbo.flags &= ~FBO_SCALE_FLAG_VALID;
-            }
-
-            if (video_shader)
-            {
-               video_shader->pass[pass].fbo.scale_x   = scale;
-               video_shader->pass[pass].fbo.scale_y   = scale;
-               if (scale)
-                  video_shader->pass[pass].fbo.flags |=  FBO_SCALE_FLAG_VALID;
-               else
-                  video_shader->pass[pass].fbo.flags &= ~FBO_SCALE_FLAG_VALID;
-               video_shader->flags |= SHDR_FLAG_MODIFIED;
+               menu_shader->flags |= SHDR_FLAG_MODIFIED;
             }
 
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
@@ -5337,13 +5843,12 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
    QVariant passVariant;
    bool ok                           = false;
    struct video_shader *menu_shader  = NULL;
-   struct video_shader *video_shader = NULL;
    QToolButton *button               = qobject_cast<QToolButton*>(sender());
    int pass                          = 0;
 
-   getShaders(&menu_shader, &video_shader);
+   getShaders(&menu_shader, NULL);
 
-   if (!button)
+   if (!button || !menu_shader)
       return;
 
    passVariant                       = button->property("pass");
@@ -5355,18 +5860,6 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
 
    if (!ok || pass < 0)
       return;
-
-   if (video_shader)
-   {
-      ShaderPass tempPass;
-
-      if (pass >= static_cast<int>(video_shader->passes) - 1)
-         return;
-
-      tempPass = ShaderPass(&video_shader->pass[pass]);
-      memcpy(&video_shader->pass[pass], &video_shader->pass[pass + 1], sizeof(struct video_shader_pass));
-      memcpy(&video_shader->pass[pass + 1], tempPass.pass, sizeof(struct video_shader_pass));
-   }
 
    if (menu_shader)
    {
@@ -5380,12 +5873,12 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
       memcpy(&menu_shader->pass[pass + 1], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   shader_reresolve_keeping_values(video_shader);
    shader_reresolve_keeping_values(menu_shader);
 
    if (menu_shader)
       menu_shader->flags |= SHDR_FLAG_MODIFIED;
 
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
    reload();
 }
 
@@ -5395,12 +5888,11 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
    int pass                          = 0;
    bool ok                           = false;
    struct video_shader *menu_shader  = NULL;
-   struct video_shader *video_shader = NULL;
    QToolButton *button               = qobject_cast<QToolButton*>(sender());
 
-   getShaders(&menu_shader, &video_shader);
+   getShaders(&menu_shader, NULL);
 
-   if (!button)
+   if (!button || !menu_shader)
       return;
 
    passVariant = button->property("pass");
@@ -5412,18 +5904,6 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
 
    if (!ok || pass <= 0)
       return;
-
-   if (video_shader)
-   {
-      ShaderPass tempPass;
-
-      if (pass > static_cast<int>(video_shader->passes) - 1)
-         return;
-
-      tempPass = ShaderPass(&video_shader->pass[pass - 1]);
-      memcpy(&video_shader->pass[pass - 1], &video_shader->pass[pass], sizeof(struct video_shader_pass));
-      memcpy(&video_shader->pass[pass], tempPass.pass, sizeof(struct video_shader_pass));
-   }
 
    if (menu_shader)
    {
@@ -5437,12 +5917,12 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
       memcpy(&menu_shader->pass[pass], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   shader_reresolve_keeping_values(video_shader);
    shader_reresolve_keeping_values(menu_shader);
 
    if (menu_shader)
       menu_shader->flags |= SHDR_FLAG_MODIFIED;
 
+   command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
    reload();
 }
 
@@ -5514,6 +5994,67 @@ void ShaderParamsDialog::onShaderLoadPresetClicked()
    menu_shader_manager_set_preset(menu_shader, type, pathData, true);
 }
 
+void ShaderParamsDialog::onShaderLoadPresetPrependClicked()
+{
+   onShaderLoadPresetMergeClicked(true);
+}
+
+void ShaderParamsDialog::onShaderLoadPresetAppendClicked()
+{
+   onShaderLoadPresetMergeClicked(false);
+}
+
+void ShaderParamsDialog::onShaderLoadPresetMergeClicked(bool prepend)
+{
+   QString path, filter;
+   QByteArray pathArray;
+   gfx_ctx_flags_t flags;
+   struct video_shader *menu_shader = NULL;
+   const char *pathData = NULL;
+#if !defined(HAVE_MENU)
+   settings_t *settings = config_get_ptr();
+   const char *shader_preset_dir = settings->paths.directory_video_shader;
+#else
+   const char *shader_preset_dir = NULL;
+   menu_driver_get_last_shader_preset_path(&shader_preset_dir, NULL);
+#endif
+
+   getShaders(&menu_shader, NULL);
+   if (!menu_shader)
+      return;
+
+   filter.append("Shader Preset (");
+   flags.flags = 0;
+   video_context_driver_get_flags(&flags);
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG))
+      filter.append(QLatin1String(" *.cgp"));
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL))
+      filter.append(QLatin1String(" *.glslp"));
+   if (BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG))
+      filter.append(QLatin1String(" *.slangp"));
+   filter.append(")");
+
+   path = QFileDialog::getOpenFileName(this,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET),
+         shader_preset_dir, filter);
+   if (path.isEmpty())
+      return;
+
+   path = QDir::toNativeSeparators(path);
+   pathArray = path.toUtf8();
+   pathData = pathArray.constData();
+#if defined(HAVE_MENU)
+   menu_driver_set_last_shader_preset_path(pathData);
+#endif
+
+   menu_shader_manager_append_preset(menu_shader, pathData, prepend);
+}
+
+void ShaderParamsDialog::onShaderSaveCurrentPresetClicked()
+{
+   operateShaderPreset(true, NULL, QT_SHADER_PRESET_CURRENT);
+}
+
 void ShaderParamsDialog::onShaderResetPass(int pass)
 {
    unsigned i;
@@ -5536,6 +6077,9 @@ void ShaderParamsDialog::onShaderResetPass(int pass)
          video_shader_param_set(param, param->initial);
       }
    }
+
+   if (menu_shader)
+      menu_shader->flags |= SHDR_FLAG_MODIFIED;
 
    if (video_shader)
    {
@@ -5579,6 +6123,8 @@ void ShaderParamsDialog::onShaderResetParameter(QString parameter)
 
       if (param)
          video_shader_param_set(param, param->initial);
+
+      menu_shader->flags |= SHDR_FLAG_MODIFIED;
    }
 
    if (video_shader)
@@ -5717,6 +6263,9 @@ void ShaderParamsDialog::operateShaderPreset(bool save, const char *path, unsign
 
    switch (action_type)
    {
+      case QT_SHADER_PRESET_CURRENT:
+         preset_type = SHADER_PRESET_CURRENT;
+         break;
       case QT_SHADER_PRESET_GLOBAL:
          preset_type = SHADER_PRESET_GLOBAL;
          break;
@@ -5878,7 +6427,7 @@ void ShaderParamsDialog::onShaderRemovePass(int pass)
    if (!menu_shader || menu_shader->passes == 0)
       return;
 
-   if (pass < 0 || pass > static_cast<int>(menu_shader->passes))
+   if (pass < 0 || pass >= static_cast<int>(menu_shader->passes))
       return;
 
    /* move selected pass to the bottom */
@@ -5944,6 +6493,8 @@ void ShaderParamsDialog::buildLayout()
    bool hasPasses                           = false;
 #if defined(HAVE_MENU)
    CheckableSettingsGroup *topSettingsGroup = NULL;
+   CheckableSettingsGroup *simulatedResolutionGroup = NULL;
+   QHBoxLayout *shaderSettingsLayout       = NULL;
 #endif
    QPushButton *loadButton                  = NULL;
    QPushButton *saveButton                  = NULL;
@@ -5958,22 +6509,21 @@ void ShaderParamsDialog::buildLayout()
    struct video_shader *menu_shader         = NULL;
    struct video_shader *video_shader        = NULL;
    struct video_shader *avail_shader        = NULL;
-   const char *shader_path                  = NULL;
 
    getShaders(&menu_shader, &video_shader);
 
-   /* NOTE: For some reason, menu_shader_get() returns a COPY
-    * of what get_current_shader() gives us.
-    * And if you want to be able to change shader settings/parameters
-    * from both the raster menu and
-    * Qt at the same time... you must change BOTH or one will
-    * overwrite the other.
+   /* menu_shader_get() returns the menu-side copy, while
+    * video_shader_driver_get_current_shader() returns the live driver
+    * shader. Keep parameter values in sync in both copies: the live
+    * parameter value is atomic and may be updated while threaded video
+    * is running. Do not edit live pass metadata here; structural changes
+    * are made to the menu copy and committed through
+    * CMD_EVENT_SHADERS_APPLY_CHANGES, which performs the driver's
+    * synchronized shader update.
     *
-    * AND, during a context reset, video_shader will be NULL
-    * but not menu_shader, so don't totally bail
-    * just because video_shader is NULL.
-    *
-    * Someone please fix this mess.
+    * During a context reset, video_shader may be NULL while menu_shader
+    * remains available, so do not bail out just because the live shader
+    * is temporarily unavailable.
     */
 
    if (video_shader)
@@ -6005,28 +6555,21 @@ void ShaderParamsDialog::buildLayout()
 
    clearLayout();
 
-   /* Only check video_shader for the path, menu_shader seems stale...
-    * e.g. if you remove all the shader passes,
-    * it still has the old path in it, but video_shader does not
-    */
-   if (video_shader)
+   /* Use the preset manager's source path rather than video_shader.path:
+    * for simple presets the latter can refer to the #reference shader.
+    * Copy the returned path immediately; the getter owns the storage. */
    {
-      if (*video_shader->path)
+      const char *preset_path = video_shader_get_current_shader_preset();
+      if (preset_path && *preset_path)
       {
-         shader_path = video_shader->path;
-         setWindowTitle(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER)) + ": " + QFileInfo(shader_path).fileName());
+         QString presetFile = QFileInfo(QString::fromUtf8(preset_path)).fileName();
+         setWindowTitle(QString(msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO))
+               + ": " + presetFile);
       }
+      else
+         setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
    }
-   else if (menu_shader)
-   {
-      if (*menu_shader->path)
-      {
-         shader_path = menu_shader->path;
-         setWindowTitle(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER)) + ": " + QFileInfo(shader_path).fileName());
-      }
-   }
-   else
-      setWindowTitle(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SHADER_OPTIONS));
 
    loadButton       = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD), this);
    saveButton       = new QPushButton(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SAVE), this);
@@ -6037,12 +6580,15 @@ void ShaderParamsDialog::buildLayout()
    loadMenu         = new QMenu(loadButton);
 
    loadMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET), this, SLOT(onShaderLoadPresetClicked()));
+   loadMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND), this, SLOT(onShaderLoadPresetPrependClicked()));
+   loadMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND), this, SLOT(onShaderLoadPresetAppendClicked()));
    loadMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_SHADER_ADD_PASS), this, SLOT(onShaderAddPassClicked()));
 
    loadButton->setMenu(loadMenu);
 
    saveMenu         = new QMenu(saveButton);
    saveMenu->addAction(QString(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS)) + "...", this, SLOT(onShaderSavePresetAsClicked()));
+   saveMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT), this, SLOT(onShaderSaveCurrentPresetClicked()));
    saveMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL), this, SLOT(onShaderSaveGlobalPresetClicked()));
    saveMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE), this, SLOT(onShaderSaveCorePresetClicked()));
    saveMenu->addAction(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT), this, SLOT(onShaderSaveParentPresetClicked()));
@@ -6088,6 +6634,14 @@ void ShaderParamsDialog::buildLayout()
    topSettingsGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE);
    topSettingsGroup->add(MENU_ENUM_LABEL_SHADER_WATCH_FOR_CHANGES);
    topSettingsGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_REMEMBER_LAST_DIR);
+
+   simulatedResolutionGroup = new CheckableSettingsGroup(
+         MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_INPUT_RES);
+   simulatedResolutionGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_INPUT_RES_WIDTH);
+   simulatedResolutionGroup->add(MENU_ENUM_LABEL_VIDEO_SHADER_SIMULATED_INPUT_RES_HEIGHT);
+   shaderSettingsLayout = new QHBoxLayout();
+   shaderSettingsLayout->addWidget(topSettingsGroup, 1);
+   shaderSettingsLayout->addWidget(simulatedResolutionGroup, 1);
 #endif
 
    topButtonLayout = new QHBoxLayout();
@@ -6098,7 +6652,7 @@ void ShaderParamsDialog::buildLayout()
    topButtonLayout->addWidget(applyButton);
 
 #if defined(HAVE_MENU)
-   m_layout->addWidget(topSettingsGroup);
+   m_layout->addLayout(shaderSettingsLayout);
 #endif
    m_layout->addLayout(topButtonLayout);
 
@@ -6314,8 +6868,26 @@ void ShaderParamsDialog::addShaderParam(struct video_shader_parameter *param, QF
    QLabel     *label = new QLabel(desc);
 
    label->setProperty("parameter", parameter);
-   label->setContextMenuPolicy(Qt::CustomContextMenu);
 
+   if (param->minimum == param->maximum)
+   {
+      QWidget *titleWidget = new QWidget(this);
+      QHBoxLayout *titleLayout = new QHBoxLayout(titleWidget);
+      QWidget *separator = new QWidget(titleWidget);
+
+      titleLayout->setContentsMargins(0, 0, 0, 0);
+      titleLayout->setSpacing(6);
+      label->setStyleSheet("font-weight: bold;");
+      label->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+      titleLayout->addWidget(label);
+      separator->setStyleSheet("background-color: palette(mid);");
+      separator->setFixedHeight(2);
+      titleLayout->addWidget(separator, 1);
+      form->addRow(titleWidget);
+      return;
+   }
+
+   label->setContextMenuPolicy(Qt::CustomContextMenu);
    connect(label, SIGNAL(customContextMenuRequested(const QPoint&)), this, SLOT(onParameterLabelContextMenuRequested(const QPoint&)));
 
    if ((param->minimum == 0.0)
@@ -6419,7 +6991,10 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
          }
 
          if (param)
+         {
             video_shader_param_set(param, (checkBox->isChecked() ? param->maximum : param->minimum));
+            menu_shader->flags |= SHDR_FLAG_MODIFIED;
+         }
       }
 
       if (video_shader)
@@ -6436,9 +7011,11 @@ void ShaderParamsDialog::onShaderParamCheckBoxClicked()
          }
 
          if (param)
+         {
             video_shader_param_set(param, (checkBox->isChecked() ? param->maximum : param->minimum));
+            video_shader->flags |= SHDR_FLAG_MODIFIED;
+         }
 
-         video_shader->flags   |= SHDR_FLAG_MODIFIED;
       }
    }
 }
@@ -6480,8 +7057,10 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
          if (param)
          {
             newValue = lerp(0, 100, param->minimum, param->maximum, slider->value());
-            newValue = round(newValue / param->step) * param->step;
+            if (param->step > 0.0f)
+               newValue = round(newValue / param->step) * param->step;
             video_shader_param_set(param, newValue);
+            menu_shader->flags |= SHDR_FLAG_MODIFIED;
          }
       }
 
@@ -6501,11 +7080,12 @@ void ShaderParamsDialog::onShaderParamSliderValueChanged(int)
          if (param)
          {
             newValue = lerp(0, 100, param->minimum, param->maximum, slider->value());
-            newValue = round(newValue / param->step) * param->step;
+            if (param->step > 0.0f)
+               newValue = round(newValue / param->step) * param->step;
             video_shader_param_set(param, newValue);
          }
 
-         video_shader->flags   |= SHDR_FLAG_MODIFIED;
+         video_shader->flags |= SHDR_FLAG_MODIFIED;
       }
 
    }
@@ -6582,6 +7162,7 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
          if (param)
          {
             video_shader_param_set(param, value);
+            menu_shader->flags |= SHDR_FLAG_MODIFIED;
             newValue       = lerp(
                   param->minimum, param->maximum, 0, 100, video_shader_param_get(param));
             slider->blockSignals(true);
@@ -6613,7 +7194,7 @@ void ShaderParamsDialog::onShaderParamSpinBoxValueChanged(int value)
             slider->blockSignals(false);
          }
 
-         video_shader->flags   |= SHDR_FLAG_MODIFIED;
+         video_shader->flags |= SHDR_FLAG_MODIFIED;
       }
    }
 }
@@ -6665,6 +7246,7 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
          if (param)
          {
             video_shader_param_set(param, value);
+            menu_shader->flags |= SHDR_FLAG_MODIFIED;
             newValue       = lerp(
                   param->minimum, param->maximum, 0, 100, video_shader_param_get(param));
             slider->blockSignals(true);
@@ -6696,7 +7278,7 @@ void ShaderParamsDialog::onShaderParamDoubleSpinBoxValueChanged(double value)
             slider->blockSignals(false);
          }
 
-         video_shader->flags   |= SHDR_FLAG_MODIFIED;
+         video_shader->flags |= SHDR_FLAG_MODIFIED;
       }
    }
 }
