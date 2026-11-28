@@ -2014,6 +2014,8 @@ static void winraw_publish_pointers(winraw_input_t *wr)
 #endif
    unsigned i;
    unsigned frames;
+   unsigned flags                       = INPUT_POINTERS_BY_MOUSE_INDEX
+                                        | INPUT_POINTERS_GUN_BUTTONS_BOUND;
    unsigned touches                     = 0;
    unsigned count                       = wr->mouse_cnt;
 
@@ -2046,7 +2048,9 @@ static void winraw_publish_pointers(winraw_input_t *wr)
       frame[i].buttons = (uint16_t)buttons;
    }
    /* The frontend reads the touches only beside a frame: with no raw
-    * mouse, one that neither moves nor presses. */
+    * mouse, one that neither moves nor presses and stands for nothing.
+    * The pointer and the lightgun's aim are then the touches alone, an
+    * index with none reading 0, as with no frame at all. */
    frames = count;
    if (!frames)
    {
@@ -2054,6 +2058,8 @@ static void winraw_publish_pointers(winraw_input_t *wr)
       frame[0].rel     = 0;
       frame[0].buttons = 0;
       frames           = 1;
+      flags           |= INPUT_POINTERS_TOUCH_SLOTS
+                       | INPUT_POINTERS_GUN_AT_TOUCH;
    }
    /* the touches that are down, earliest first: a handful, so an
     * insertion as each is taken is enough */
@@ -2091,15 +2097,13 @@ static void winraw_publish_pointers(winraw_input_t *wr)
       windows[0].generation = 0;
       for (i = 0; i < count; i++)
          windows[i] = wr->mice[i].window;
-      input_driver_publish_window_pointers(frame, windows, frames,
-            INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_GUN_BUTTONS_BOUND);
+      input_driver_publish_window_pointers(frame, windows, frames, flags);
    }
    /* each one listed is there, and down */
    input_driver_publish_window_touches(touch_pos, touch_windows, touches,
          (1u << touches) - 1, (1u << touches) - 1);
 #else
-   input_driver_publish_pointers(frame, frames,
-         INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_GUN_BUTTONS_BOUND);
+   input_driver_publish_pointers(frame, frames, flags);
    /* each one listed is there, and down */
    input_driver_publish_touches(touch_pos, touches,
          (1u << touches) - 1, (1u << touches) - 1);

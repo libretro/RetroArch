@@ -155,12 +155,13 @@ input_pointer_frame_t *input_driver_pointers_lend(void)
 /* the frames of the last poll: the frontend reads the touches only
  * beside one */
 static unsigned              pub_frame_n;
+static unsigned              pub_frame_flags;
 static input_pointer_frame_t pub_frame0;
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags)
 {
-   (void)flags;
-   pub_frame_n = count;
+   pub_frame_flags = flags;
+   pub_frame_n     = count;
    if (count)
       pub_frame0 = frames[0];
 }
@@ -903,8 +904,10 @@ int main(void)
       /* the mice listed, a frame each */
       if (wr->mouse_cnt)
          CHECK(pub_frame_n == (wr->mouse_cnt < MAX_USERS
-                  ? wr->mouse_cnt : MAX_USERS),
-               "%u frames for %u mice", pub_frame_n, wr->mouse_cnt);
+                  ? wr->mouse_cnt : MAX_USERS)
+               && !(pub_frame_flags & INPUT_POINTERS_TOUCH_SLOTS),
+               "%u frames for %u mice (flags %#x)", pub_frame_n,
+               wr->mouse_cnt, pub_frame_flags);
       /* no raw mouse: a touch is still read */
       {
          unsigned mice = wr->mouse_cnt;
@@ -917,6 +920,12 @@ int main(void)
                && pub_touch_pos[0] == VIDEO_POS_PACK(30, 40),
                "no raw mouse: %u frames (buttons %u), %u touches",
                pub_frame_n, (unsigned)pub_frame0.buttons, pub_touch_n);
+         /* the frame stands for no pointer and aims no lightgun: with
+          * no touch down, those read 0 rather than the window's corner */
+         CHECK((pub_frame_flags & (INPUT_POINTERS_TOUCH_SLOTS
+                     | INPUT_POINTERS_GUN_AT_TOUCH))
+               == (INPUT_POINTERS_TOUCH_SLOTS | INPUT_POINTERS_GUN_AT_TOUCH),
+               "no raw mouse: the frame's flags %#x", pub_frame_flags);
          SendMessageA(vt_window, WM_POINTERUP, MAKEWPARAM(8, 0),
                MAKELPARAM(main_pt.x, main_pt.y));
          winraw_poll(wr);
