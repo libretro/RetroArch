@@ -10238,6 +10238,20 @@ bool retroarch_main_init_core(int argc, char *argv[],
          RARCH_LOG_OUTPUT("%s", str_output);
       }
 #endif
+#ifdef HAVE_LIBNX
+      {
+         char str_output[64];
+#ifdef __SWITCH2__
+         const char *platform = "Switch 2";
+#else
+         const char *platform = "Switch";
+#endif
+         snprintf(str_output, sizeof(str_output),
+            "Running on: %s\n",
+            platform);
+         RARCH_LOG_OUTPUT("%s", str_output);
+      }
+#endif
       {
          char str_output[64];
          snprintf(str_output, sizeof(str_output),

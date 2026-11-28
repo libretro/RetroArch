@@ -781,7 +781,11 @@ static size_t frontend_switch_get_os(
 static void frontend_switch_get_name(char *s, size_t len)
 {
    /* TODO/FIXME: Add Mariko at some point */
+#ifdef __SWITCH2__
+   strlcpy_lit(s, "Nintendo Switch 2", len);
+#else
    strlcpy_lit(s, "Nintendo Switch", len);
+#endif
 }
 
 void frontend_switch_process_args(int *argc, char *argv[])
