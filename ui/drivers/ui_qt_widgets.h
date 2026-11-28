@@ -52,6 +52,7 @@ class QMoveEvent;
 class QShowEvent;
 class QVBoxLayout;
 class QDoubleSpinBox;
+class QTimer;
 /* Forward decls kept unconditional so that callers holding bare
  * pointers to these (e.g. ui_qt.h's QPointer<ShaderParamsDialog>
  * member) parse cleanly when HAVE_MENU is not defined. The full
@@ -879,9 +880,13 @@ private slots:
    void onCoreOptionComboBoxCurrentIndexChanged(int index);
    void onCoreOptionResetClicked();
    void onCoreOptionResetAllClicked();
+   void checkForCoreOptionsChanges();
 private:
    QPointer<QVBoxLayout> m_layout;
    QPointer<QScrollArea> m_scrollArea;
+   QTimer *m_refreshTimer;
+   QString m_optionsSignature;
+   QString m_expandedCategories;
 protected:
    void closeEvent(QCloseEvent *event);
    void showEvent(QShowEvent *event);
