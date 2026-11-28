@@ -1,0 +1,7 @@
+# Two save lines at one frame: a run from a state could not tell which of
+# them wrote it.
+# error: two_saves.scn:6: a second save line at one frame
+console 0 core=test
+10 save one
+10 save two
+20 end

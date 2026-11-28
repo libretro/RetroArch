@@ -1,0 +1,7 @@
+# A core that asks for OpenGL on a console whose line has no render=: the
+# harness serves no hardware rendering there, the core logs the refusal and
+# its load fails.
+# error: link test: SET_HW_RENDER refused
+console 0 core=test
+option 0 link_test_render gl
+10 end

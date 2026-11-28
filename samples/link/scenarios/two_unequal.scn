@@ -1,0 +1,23 @@
+# Two consoles on one cable, with unequal clock rates (61440 and 60000
+# ticks a second, a ratio that needs rounding), steps and lookaheads. Both
+# broadcast; console 0 starts from a save and follows an input script.
+console 0 core=test save=two_unequal.sav
+console 1 core=test
+option 0 link_test_rate_0 61440
+option 0 link_test_steps 16
+option 0 link_test_lookahead_0 1
+option 0 link_test_send_0 broadcast
+option 0 link_test_seed 11
+option 1 link_test_rate_0 60000
+option 1 link_test_steps 10
+option 1 link_test_lookahead_0 2
+option 1 link_test_send_0 broadcast
+option 1 link_test_seed 23
+input 0 0 two_unequal_c0.inp
+0 cable 0:0 1:0
+50 save mid
+50 checkpoint in_flight
+60 checkpoint middle
+119 expect 0 system 8 1
+119 expect 1 system 9 2
+120 end

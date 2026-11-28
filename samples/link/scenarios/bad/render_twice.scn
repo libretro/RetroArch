@@ -1,0 +1,4 @@
+# render= twice on one console line: refused, as any field given twice is.
+# error: render_twice.scn:3: a field given twice: render
+console 0 core=test render=gl render=vulkan
+10 end

@@ -1,0 +1,9 @@
+# A descriptor without a select gets one from its len and disconnect, and
+# the disconnected bit is in it, so an address below start + len with that
+# bit set is not mapped and fails the run.
+# error: address 1610612738 is not mapped
+console 0 core=test
+console 1 core=test
+0 cable 0:0 1:0
+30 expect 0 addr 1610612738 1   # 0x60000002: bit 1 set, so no descriptor claims it
+40 end

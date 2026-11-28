@@ -2766,14 +2766,14 @@ static uint32_t netplay_lockstep_mmap_crc(bool *hashed)
 
    for (i = 0; i < mmaps->num_descriptors; i++)
    {
-      const struct retro_memory_descriptor *d = &mmaps->descriptors[i].core;
+      const struct retro_memory_descriptor *d = &mmaps->descriptors[i];
       if (d->ptr && d->len && (d->flags & RETRO_MEMDESC_SYSTEM_RAM))
          flagged = true;
    }
 
    for (i = 0; i < mmaps->num_descriptors; i++)
    {
-      const struct retro_memory_descriptor *d = &mmaps->descriptors[i].core;
+      const struct retro_memory_descriptor *d = &mmaps->descriptors[i];
       if (     !d->ptr || !d->len
             || (d->flags & RETRO_MEMDESC_CONST)
             || (flagged && !(d->flags & RETRO_MEMDESC_SYSTEM_RAM)))

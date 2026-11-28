@@ -1,0 +1,13 @@
+# A dupe right after a hold ends repeats the frame before the hold, which
+# the hold left alone: the checkpoint after it shows that frame's picture.
+console 0 core=test
+console 1 core=test
+option 0 link_test_send_frames 0-49
+option 1 link_test_send_frames 0-49
+option 1 link_test_dupe_frames 90-90
+0 cable 0:0 1:0
+80 save mid
+90 hold 1
+91 unhold 1
+92 checkpoint after
+100 end

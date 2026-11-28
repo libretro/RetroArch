@@ -156,15 +156,9 @@ enum content_state_flags
    CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING      = (1 << 4)
 };
 
-typedef struct rarch_memory_descriptor
-{
-   struct retro_memory_descriptor core;        /* uint64_t alignment */
-   /* Retroarch can have additional context here */
-} rarch_memory_descriptor_t;
-
 typedef struct rarch_memory_map
 {
-   rarch_memory_descriptor_t *descriptors;
+   struct retro_memory_descriptor *descriptors;
    unsigned num_descriptors;
 } rarch_memory_map_t;
 

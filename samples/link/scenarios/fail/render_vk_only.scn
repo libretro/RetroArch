@@ -1,0 +1,7 @@
+# An option of the Vulkan picture on a console that draws in software: the
+# test core logs an error, which fails the run.
+# error: link test: link_test_vk_handoff: only with link_test_render vulkan
+console 0 core=test
+option 0 link_test_render soft
+option 0 link_test_vk_handoff semaphore
+10 end

@@ -1,0 +1,17 @@
+# Console 0 at 60000/1001 frames a second paces console 1, nearly three
+# times as fast at 60000/334, on one cable. Spans are not known in step 0,
+# so console 0 waits there on console 1 standing at its first target, and
+# the step runs again to the targets the spans give. From step 62 to step
+# 332 console 1 ends each step parked on console 0, which stands at its
+# edge, and runs on in the next.
+console 0 core=test
+console 1 core=test
+option 0 link_test_fps 60000/1001
+option 0 link_test_rate_0 60000
+option 1 link_test_fps 60000/334
+option 1 link_test_rate_0 60000
+0 cable 0:0 1:0
+62 save mid
+62 checkpoint in_flight
+200 checkpoint parked
+340 end

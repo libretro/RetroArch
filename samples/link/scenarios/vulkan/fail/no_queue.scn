@@ -1,0 +1,8 @@
+# A core whose version 1 create_device hands its device back with no
+# queue: the harness refuses the device, destroys it after the core's
+# destroy_device, and the console has none.
+# error: no Vulkan device: the core's device has no physical device or queue
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_vk_negotiate no_queue
+10 end

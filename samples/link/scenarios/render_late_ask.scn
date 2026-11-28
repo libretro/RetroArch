@@ -1,0 +1,9 @@
+# A core that asks for an OpenGL context in its first retro_run on a
+# console whose line has no render=: refused as by a harness built without
+# OpenGL, with no line of the harness's, so the core passes dupes, logs no
+# error and the run passes.
+console 0 core=test
+option 0 link_test_render gl
+option 0 link_test_gl_ask run
+5 save mid
+10 end

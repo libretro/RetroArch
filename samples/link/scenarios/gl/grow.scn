@@ -1,0 +1,11 @@
+# twin: render_grow
+# A picture drawn in OpenGL that grows from 64 x 48 to 128 x 96 in the
+# console's frame 60, the core telling the frontend the new size first:
+# the harness grows the framebuffer it reads back, with no context reset.
+console 0 core=test render=gl
+option 0 link_test_render gl
+option 0 link_test_grow told:60
+30 checkpoint small
+90 save mid
+90 checkpoint mid
+150 end

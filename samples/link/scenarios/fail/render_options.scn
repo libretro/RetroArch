@@ -1,0 +1,9 @@
+# Options of the two-part picture that the test core refuses: a value of
+# link_test_render it does not know, a value of link_test_grow it does not
+# know, and link_test_grow with link_test_render off. The core logs an
+# error for each, which fails the run.
+# error: console 0: errors logged: 3
+console 0 core=test
+option 0 link_test_render sideways
+option 0 link_test_grow sometimes
+10 end

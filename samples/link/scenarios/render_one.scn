@@ -1,0 +1,9 @@
+# One console that draws its picture in two parts, the first before its
+# frame's first advance and the second after its last: every frame's
+# picture differs from every other's.
+console 0 core=test
+option 0 link_test_render soft
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end

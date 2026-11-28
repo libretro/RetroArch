@@ -1,0 +1,11 @@
+# twin: render_one
+# One console that draws the two-part picture in OpenGL with the
+# framebuffer's first row the picture's bottom (bottom_left_origin): the
+# harness turns each frame it reads back the right way up.
+console 0 core=test render=gl
+option 0 link_test_render gl
+option 0 link_test_gl_origin bottom
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end

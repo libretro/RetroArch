@@ -1,0 +1,22 @@
+# Two consoles that draw their pictures in two parts and park inside their
+# frames between the parts, so each console's first part waits while the
+# other runs. Console 1 passes no picture in frames 100 to 110: it draws
+# the first part of each and no second, and the checkpoint at 101 keeps
+# its picture of frame 99, which the one at 100 shows.
+console 0 core=test
+console 1 core=test
+option 0 link_test_render soft
+option 0 link_test_seed 3
+option 0 link_test_steps 16
+option 0 link_test_lookahead_0 1
+option 1 link_test_render soft
+option 1 link_test_seed 7
+option 1 link_test_steps 16
+option 1 link_test_lookahead_0 1
+option 1 link_test_dupe_frames 100-110
+0 cable 0:0 1:0
+60 save mid
+60 checkpoint in_flight
+100 checkpoint before
+101 checkpoint dupe
+200 end

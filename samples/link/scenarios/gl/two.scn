@@ -1,0 +1,27 @@
+# twin: render_two
+# Two consoles that draw the two-part picture in OpenGL, console 0 in a 3.3
+# core context from its framebuffer's first row up and console 1, from the
+# top down, in the context it gets when it asks for OpenGL ES 2. Each parks
+# inside its frames between the parts, where the other draws: every time a
+# console's code runs again, its own context must be the current one.
+console 0 core=test render=gl
+console 1 core=test render=gl
+option 0 link_test_render gl
+option 0 link_test_gl_context core33
+option 0 link_test_gl_origin bottom
+option 0 link_test_seed 3
+option 0 link_test_steps 16
+option 0 link_test_lookahead_0 1
+option 1 link_test_render gl
+option 1 link_test_gl_context gles2
+option 1 link_test_gl_origin top
+option 1 link_test_seed 7
+option 1 link_test_steps 16
+option 1 link_test_lookahead_0 1
+option 1 link_test_dupe_frames 100-110
+0 cable 0:0 1:0
+60 save mid
+60 checkpoint in_flight
+100 checkpoint before
+101 checkpoint dupe
+200 end

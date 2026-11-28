@@ -1,0 +1,11 @@
+# twin: render_one
+# One console that draws the two-part picture in the driver's OpenGL
+# compatibility context, whose framebuffer has a depth buffer and no
+# stencil.
+console 0 core=test render=gl
+option 0 link_test_render gl
+option 0 link_test_gl_context compat
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end

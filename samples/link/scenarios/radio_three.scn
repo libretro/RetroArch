@@ -1,0 +1,33 @@
+# Three radios on a shared medium: no cable line, the protocol id makes
+# the bus, and max_ports 0 sets no limit.
+console 0 core=test
+console 1 core=test
+console 2 core=test
+option 0 link_test_protocol_0 test-radio
+option 0 link_test_shared_0 on
+option 0 link_test_max_ports_0 0
+option 0 link_test_rate_0 60000
+option 0 link_test_lookahead_0 4
+option 0 link_test_send_0 broadcast
+option 0 link_test_seed 3
+option 1 link_test_protocol_0 test-radio
+option 1 link_test_shared_0 on
+option 1 link_test_max_ports_0 0
+option 1 link_test_rate_0 60000
+option 1 link_test_lookahead_0 4
+option 1 link_test_send_0 broadcast
+option 1 link_test_seed 7
+option 2 link_test_protocol_0 test-radio
+option 2 link_test_shared_0 on
+option 2 link_test_max_ports_0 0
+option 2 link_test_rate_0 60000
+option 2 link_test_lookahead_0 4
+option 2 link_test_send_0 broadcast
+option 2 link_test_seed 11
+40 save mid
+40 checkpoint in_flight
+50 checkpoint middle
+99 expect 0 system 9 3
+99 expect 1 system 9 3
+99 expect 2 system 9 3
+100 end

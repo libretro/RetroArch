@@ -1,0 +1,7 @@
+# A core whose image is B8G8R8A8_UNORM: the harness reads R8G8B8A8_UNORM
+# alone, and each frame in another format is an error.
+# error: an image of format 44 is not read
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_vk_format bgra
+10 end

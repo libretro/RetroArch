@@ -1,0 +1,4 @@
+# A render= value that names no API: refused before anything runs.
+# error: render= takes gl or vulkan
+console 0 core=test render=d3d
+10 end

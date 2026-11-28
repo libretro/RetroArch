@@ -1,0 +1,14 @@
+# Two consoles that draw their pictures in two parts. Console 0 is held
+# from frame 90 on, so console 1 is the last to run before the cores are
+# unloaded, console 0's first.
+console 0 core=test
+console 1 core=test
+option 0 link_test_render soft
+option 0 link_test_send_frames 0-49
+option 1 link_test_render soft
+option 1 link_test_send_frames 0-49
+0 cable 0:0 1:0
+60 save mid
+90 hold 0
+100 checkpoint held
+120 end

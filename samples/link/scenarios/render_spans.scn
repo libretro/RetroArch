@@ -1,0 +1,30 @@
+# spans_save_in_advance with every console drawing its picture in two
+# parts: consoles 1 and 2 are saved inside a frame at 270, after the first
+# part and before the second, so the run from the state and the rewound run
+# finish frames whose first part they must draw again, from the value the
+# state holds for it.
+console 0 core=test
+console 1 core=test
+console 2 core=test
+option 0 link_test_render soft
+option 0 link_test_fps 60000/1001
+option 0 link_test_rate_0 60000
+option 0 link_test_lookahead_0 1
+option 1 link_test_render soft
+option 1 link_test_ports 2
+option 1 link_test_fps 16777216/280896
+option 1 link_test_rate_0 16777216
+option 1 link_test_rate_1 16777216
+option 1 link_test_save_in_advance on
+option 2 link_test_render soft
+option 2 link_test_fps 16777216/280896
+option 2 link_test_rate_0 16777216
+option 2 link_test_save_in_advance on
+input 1 0 spans_save_in_advance_c1.inp
+input 2 0 spans_save_in_advance_c2.inp
+0 cable 0:0 1:0
+0 cable 1:1 2:0
+270 save mid
+270 checkpoint in_flight
+600 checkpoint last
+600 end

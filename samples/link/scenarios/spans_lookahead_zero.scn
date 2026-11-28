@@ -1,0 +1,16 @@
+# A port whose promise is its local tick, beside a peer of another span:
+# console 1 at 60000/1001 frames a second promises no step ahead, so each
+# of its steps waits for a grant to the tick it has promised, and the last
+# stretch of its frame for one to its frame-end tick. Console 0 at
+# 16777216/280896 promises eight steps ahead.
+console 0 core=test
+console 1 core=test
+option 0 link_test_fps 16777216/280896
+option 0 link_test_rate_0 16777216
+option 0 link_test_lookahead_0 8
+option 1 link_test_fps 60000/1001
+option 1 link_test_rate_0 60000
+option 1 link_test_lookahead_0 0
+0 cable 0:0 1:0
+150 save mid
+300 end

@@ -1,0 +1,19 @@
+# A reset of console 1 while it is parked inside a frame, at 270 as in
+# spans_save_in_advance, fails the run.
+# error: console 1 is inside a frame
+console 0 core=test
+console 1 core=test
+console 2 core=test
+option 0 link_test_fps 60000/1001
+option 0 link_test_rate_0 60000
+option 0 link_test_lookahead_0 1
+option 1 link_test_ports 2
+option 1 link_test_fps 16777216/280896
+option 1 link_test_rate_0 16777216
+option 1 link_test_rate_1 16777216
+option 2 link_test_fps 16777216/280896
+option 2 link_test_rate_0 16777216
+0 cable 0:0 1:0
+0 cable 1:1 2:0
+270 reset 1
+280 end

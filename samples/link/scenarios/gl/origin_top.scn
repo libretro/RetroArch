@@ -1,0 +1,11 @@
+# twin: render_one
+# One console that draws the two-part picture in OpenGL, in a 3.3 core
+# context with the framebuffer's first row the picture's top: the harness
+# reads each frame back, and the trace and the checkpoints' pictures are
+# those of the software picture.
+console 0 core=test render=gl
+option 0 link_test_render gl
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end

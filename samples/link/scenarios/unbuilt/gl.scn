@@ -1,0 +1,5 @@
+# A console that asks for OpenGL, in a harness built without HAVE_EGL:
+# refused before anything runs.
+# error: this harness was built without HAVE_EGL
+console 0 core=test render=gl
+10 end

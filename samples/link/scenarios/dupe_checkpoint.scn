@@ -1,0 +1,12 @@
+# A dupe in the frame before a checkpoint: console 1 passes no picture in
+# frame 29, so the checkpoint after it keeps its picture of frame 28.
+console 0 core=test
+console 1 core=test
+option 0 link_test_rate_0 61440
+option 1 link_test_rate_0 61440
+option 1 link_test_dupe_frames 29-29
+0 cable 0:0 1:0
+25 save mid
+29 checkpoint before
+30 checkpoint after
+60 end

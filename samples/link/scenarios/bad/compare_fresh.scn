@@ -1,0 +1,6 @@
+# compare-fresh with a letter that names no trace field: refused before
+# anything runs.
+# error: not trace fields, of V, A and S, each once: VX
+compare-fresh VX
+console 0 core=test
+10 end

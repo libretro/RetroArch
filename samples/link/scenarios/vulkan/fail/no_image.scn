@@ -1,0 +1,7 @@
+# A core that passes its Vulkan frames as drawn and never calls set_image:
+# the harness has no image to read, and each such frame is an error.
+# error: a frame with no set_image
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_vk_handoff none
+10 end

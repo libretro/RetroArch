@@ -1,0 +1,8 @@
+# A value of link_test_gl_context the test core does not know: the core
+# logs it as it does any option's, before its SET_HW_RENDER is refused on
+# a console whose line has no render=.
+# error: link test: link_test_gl_context: unknown value "nope"
+console 0 core=test
+option 0 link_test_render gl
+option 0 link_test_gl_context nope
+10 end

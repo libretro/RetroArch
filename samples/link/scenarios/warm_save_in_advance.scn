@@ -1,0 +1,27 @@
+# spans_save_in_advance with console 1's core cold until its first frame
+# (link_test_mode cold_load) and warm=1 on its line. Console 1 is saved
+# inside an advance: the from run's warm frame runs its frame 0, alone, and
+# the load then puts it back inside that advance, which it resumes.
+console 0 core=test
+console 1 core=test warm=1
+console 2 core=test
+option 0 link_test_fps 60000/1001
+option 0 link_test_rate_0 60000
+option 0 link_test_lookahead_0 1
+option 1 link_test_mode cold_load
+option 1 link_test_ports 2
+option 1 link_test_fps 16777216/280896
+option 1 link_test_rate_0 16777216
+option 1 link_test_rate_1 16777216
+option 1 link_test_save_in_advance on
+option 2 link_test_fps 16777216/280896
+option 2 link_test_rate_0 16777216
+option 2 link_test_save_in_advance on
+input 1 0 spans_save_in_advance_c1.inp
+input 2 0 spans_save_in_advance_c2.inp
+0 cable 0:0 1:0
+0 cable 1:1 2:0
+270 save mid
+270 checkpoint in_flight
+600 checkpoint last
+600 end

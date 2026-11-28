@@ -1,0 +1,16 @@
+# Two consoles on one cable at different frame rates: console 0 at
+# 60000/1001 frames a second paces the scenario, and console 1 at
+# 16777216/280896 finishes 598 frames to its 600. Console 0 promises two
+# frames ahead, so console 1 ends every step at its own edge.
+console 0 core=test
+console 1 core=test
+option 0 link_test_fps 60000/1001
+option 0 link_test_rate_0 60000
+option 0 link_test_lookahead_0 32
+option 1 link_test_fps 16777216/280896
+option 1 link_test_rate_0 16777216
+option 1 link_test_lookahead_0 1
+0 cable 0:0 1:0
+300 save mid
+300 checkpoint in_flight
+600 end

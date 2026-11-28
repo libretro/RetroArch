@@ -1,0 +1,30 @@
+# twin: render_two
+# Two consoles that draw the two-part picture in Vulkan, each parked inside
+# its frames between the parts while the other draws. Console 0's core
+# makes its instance and device through a version 2 negotiation interface
+# and hands part 1's command buffer over for the frontend to submit;
+# console 1's makes its device through a version 1 one and passes the
+# picture with semaphores both ways. Console 1 passes no picture in frames
+# 100 to 110: the semaphore it set for each of those frames must still be
+# signalled, or its next frame waits on one nothing signals.
+console 0 core=test render=vulkan
+console 1 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_vk_negotiate v2
+option 0 link_test_vk_handoff commands
+option 0 link_test_seed 3
+option 0 link_test_steps 16
+option 0 link_test_lookahead_0 1
+option 1 link_test_render vulkan
+option 1 link_test_vk_negotiate v1
+option 1 link_test_vk_handoff semaphore
+option 1 link_test_seed 7
+option 1 link_test_steps 16
+option 1 link_test_lookahead_0 1
+option 1 link_test_dupe_frames 100-110
+0 cable 0:0 1:0
+60 save mid
+60 checkpoint in_flight
+100 checkpoint before
+101 checkpoint dupe
+200 end

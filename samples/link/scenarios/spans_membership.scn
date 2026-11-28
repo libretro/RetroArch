@@ -1,0 +1,144 @@
+# Membership changes between consoles of different spans. Console 0 at
+# 60000/1001 frames a second paces the scenario and promises one step
+# ahead. Consoles 1 and 2 run at 16777216/280896 and 4194304/70224, one
+# span at two clock rates, console 3 at 60000/1001 and console 4 at
+# 60000/334. Port 0 of consoles 0 and 2 share a cable from frame 0, on a
+# bus of up to three ports, and port 1 of consoles 2 and 3 is on Ethernet
+# from frame 0. Console 3 leaves Ethernet in its frame 60 and rejoins it in
+# its frame 80, with console 2 parked inside a frame each time. Console
+# 4's port, cabled to console 3's port 0, detaches in its frame 0 and
+# attaches again in its frame 40: a late join whose span is not known yet,
+# so console 0 stops short in step 41 and the step runs again.
+#
+# Console 2 is at its edge to step 31 and parked inside a frame from 32 to
+# 295 (the hold moves its edges off console 1's), console 1 parked from 101
+# to 281 once cabled and at its edge from 282, and console 4 parked from
+# 104. So the plug at 100 meets console 2 inside a frame and leaves console
+# 1 parked, the save at 100 holds the join of consoles 1 and 2 before
+# console 2's edge makes it, and the uncable at 285 pulls console 1 at its
+# edge with console 2 parked. The check pins these at the checkpoints
+# in_flight, left, back, plugged and pull. An expect on a parked console
+# reads its RAM through the memory map (addr 268435456 + offset). Sends
+# start at each console's frame 20, so console 2's buses are idle at the
+# hold.
+console 0 core=test
+console 1 core=test
+console 2 core=test
+console 3 core=test
+console 4 core=test
+option 0 link_test_fps 60000/1001
+option 0 link_test_rate_0 60000
+option 0 link_test_lookahead_0 1
+option 0 link_test_max_ports_0 3
+option 0 link_test_send_frames 20-999999
+option 1 link_test_fps 16777216/280896
+option 1 link_test_rate_0 16777216
+option 1 link_test_max_ports_0 3
+option 1 link_test_save_in_advance on
+option 1 link_test_send_frames 20-999999
+option 2 link_test_ports 2
+option 2 link_test_fps 4194304/70224
+option 2 link_test_rate_0 4194304
+option 2 link_test_rate_1 4194304
+option 2 link_test_max_ports_0 3
+option 2 link_test_protocol_1 ethernet
+option 2 link_test_shared_1 on
+option 2 link_test_save_in_advance on
+option 2 link_test_send_frames 20-999999
+option 3 link_test_ports 2
+option 3 link_test_fps 60000/1001
+option 3 link_test_rate_0 60000
+option 3 link_test_rate_1 60000
+option 3 link_test_protocol_1 ethernet
+option 3 link_test_shared_1 on
+option 3 link_test_detach_1 60
+option 3 link_test_reattach_1 80
+option 3 link_test_save_in_advance on
+option 3 link_test_send_frames 20-999999
+option 4 link_test_fps 60000/334
+option 4 link_test_rate_0 60000
+option 4 link_test_detach_0 0
+option 4 link_test_reattach_0 40
+option 4 link_test_save_in_advance on
+option 4 link_test_send_frames 20-999999
+0 cable 0:0 2:0
+0 cable 3:0 4:0
+5 expect 0 system 9 2
+5 expect 0 system 12 0
+5 expect 1 system 9 0
+5 expect 1 system 12 255
+5 expect 2 system 9 2
+5 expect 2 system 12 1
+5 expect 2 system 10 2
+5 expect 2 system 13 0
+5 expect 3 system 9 0
+5 expect 3 system 12 255
+5 expect 3 system 10 2
+5 expect 3 system 13 1
+5 expect 4 system 8 0
+8 hold 2
+10 expect 0 system 9 2
+10 expect 0 system 12 0
+10 expect 2 system 9 2
+10 expect 2 system 12 1
+10 expect 2 system 10 2
+10 expect 2 system 13 0
+10 expect 3 system 10 2
+10 expect 3 system 13 1
+14 unhold 2
+17 expect 0 system 9 2
+17 expect 0 system 12 0
+17 expect 2 system 9 2
+17 expect 2 system 12 1
+17 expect 2 system 10 2
+17 expect 2 system 13 0
+17 expect 3 system 10 2
+17 expect 3 system 13 1
+# Console 4 has joined console 3
+45 expect 3 system 9 2
+45 expect 3 system 12 0
+45 expect 4 system 8 1
+45 expect 4 system 9 2
+45 expect 4 system 12 1
+61 checkpoint left
+# Console 3 has left Ethernet
+65 expect 3 system 8 1
+65 expect 3 system 10 0
+65 expect 3 system 13 255
+65 expect 2 addr 268435466 0
+65 expect 2 addr 268435469 255
+81 checkpoint back
+# Console 3 is back on Ethernet
+85 expect 3 system 8 2
+85 expect 3 system 10 2
+85 expect 3 system 13 1
+85 expect 2 addr 268435466 2
+85 expect 2 addr 268435469 0
+100 cable 0:0 1:0
+100 save mid
+100 checkpoint in_flight
+101 checkpoint plugged
+105 expect 0 system 9 3
+105 expect 0 system 12 0
+105 expect 1 addr 268435465 3
+105 expect 1 addr 268435468 1
+105 expect 2 addr 268435465 3
+105 expect 2 addr 268435468 2
+283 expect 1 system 9 3
+283 expect 1 system 12 1
+285 checkpoint pull
+285 uncable 1:0
+290 expect 0 system 9 2
+290 expect 0 system 12 0
+290 expect 1 system 9 0
+290 expect 1 system 12 255
+290 expect 2 addr 268435465 2
+290 expect 2 addr 268435468 1
+299 expect 2 system 9 2
+299 expect 2 system 12 1
+299 expect 0 system 15 0
+299 expect 1 system 15 0
+299 expect 2 system 15 0
+299 expect 3 system 15 0
+299 expect 4 addr 268435471 0
+300 end

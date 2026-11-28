@@ -1,0 +1,8 @@
+# A core that asks for an OpenGL 9.9 core context, which no driver has: the
+# harness says why it cannot make one, refuses the core's SET_HW_RENDER, and
+# the core's load fails.
+# error: no OpenGL core 9.9 context
+console 0 core=test render=gl
+option 0 link_test_render gl
+option 0 link_test_gl_context core99
+10 end

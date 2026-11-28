@@ -425,6 +425,7 @@ samples/runahead/lifetime/plain-no-threads/
 samples/runahead/lifetime/sanitized/
 samples/runahead/lifetime/sanitized-no-threads/
 samples/runahead/lifetime/windows/
+samples/link/harness/build*/
 /samples/gfx/pyrowave_gl/.pyrowave-shaders/
 /samples/gfx/pyrowave_metal/.metal-shaders/
 /samples/gfx/pyrowave_metal/.native/

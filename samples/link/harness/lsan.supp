@@ -1,0 +1,3 @@
+# lavapipe's one-time init: the driver is unloaded before LSan reports, and
+# pthread_once is the one frame of it LSan can name
+leak:pthread_once

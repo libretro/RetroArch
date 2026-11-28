@@ -1,0 +1,62 @@
+# The interface's corners, at 60000/1001 frames a second: a frame is 1001
+# ticks of a 60000 Hz port. Consoles 0 and 1 share a cable. Console 0 sends
+# empty payloads with a NULL buffer and sets every flag bit the interface
+# does not define; console 1 sends payloads of the largest size. Consoles 2
+# and 3 are radios that join no bus, since console 3 takes at most one port;
+# console 3 also sets every undefined flag bit. The cable is pulled after
+# the save, plugged back and pulled again, so the rewound run loads a
+# cabled state into a session whose cable is pulled.
+console 0 core=test
+console 1 core=test
+console 2 core=test
+console 3 core=test
+option 0 link_test_fps 60000/1001
+option 0 link_test_rate_0 60000
+option 0 link_test_payload_len 0
+option 0 link_test_extra_flags on
+option 1 link_test_fps 60000/1001
+option 1 link_test_rate_0 60000
+option 1 link_test_payload_len 4096
+option 2 link_test_fps 60000/1001
+option 2 link_test_rate_0 60000
+option 2 link_test_protocol_0 test-radio
+option 2 link_test_shared_0 on
+option 3 link_test_fps 60000/1001
+option 3 link_test_rate_0 60000
+option 3 link_test_protocol_0 test-radio
+option 3 link_test_shared_0 on
+option 3 link_test_max_ports_0 1
+option 3 link_test_extra_flags on
+0 cable 0:0 1:0
+100 expect 0 system 9 2
+100 expect 0 system 12 0
+100 expect 1 system 9 2
+100 expect 1 system 12 1
+100 expect 2 system 9 0
+100 expect 2 system 12 255
+100 expect 3 system 9 0
+100 expect 3 system 12 255
+120 save mid
+120 checkpoint in_flight
+121 uncable 1:0
+150 expect 0 system 9 0
+150 expect 0 system 12 255
+150 expect 1 system 9 0
+150 expect 1 system 12 255
+180 cable 0:0 1:0
+190 expect 0 system 9 2
+190 expect 0 system 12 0
+190 expect 1 system 9 2
+190 expect 1 system 12 1
+200 uncable 1:0
+201 expect 0 system 12 255
+201 expect 1 system 12 255
+239 expect 0 system 15 0
+239 expect 1 system 15 0
+239 expect 2 system 9 0
+239 expect 2 system 12 255
+239 expect 2 system 15 0
+239 expect 3 system 9 0
+239 expect 3 system 12 255
+239 expect 3 system 15 0
+240 end

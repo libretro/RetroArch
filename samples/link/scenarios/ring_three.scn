@@ -1,0 +1,28 @@
+# Three consoles with two ports each, cabled in a ring: each console's
+# port 0 (61440 ticks a second) to the next console's port 1 (60000).
+# Console 0 has a third port, never cabled, whose promise is its local
+# tick.
+console 0 core=test
+console 1 core=test
+console 2 core=test
+option 0 link_test_ports 3
+option 0 link_test_rate_0 61440
+option 0 link_test_rate_1 60000
+option 0 link_test_lookahead_2 0
+option 0 link_test_seed 5
+option 1 link_test_ports 2
+option 1 link_test_rate_0 61440
+option 1 link_test_rate_1 60000
+option 1 link_test_seed 9
+option 2 link_test_ports 2
+option 2 link_test_rate_0 61440
+option 2 link_test_rate_1 60000
+option 2 link_test_seed 13
+0 cable 0:0 1:1
+0 cable 1:0 2:1
+0 cable 2:0 0:1
+40 save mid
+40 checkpoint in_flight
+50 checkpoint middle
+99 expect 0 system 14 255
+100 end

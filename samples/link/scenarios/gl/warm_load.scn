@@ -1,0 +1,15 @@
+# twin: warm_load
+# warm_load with console 0's picture drawn in OpenGL: its frame before the
+# load runs in its own context, and the harness reads that picture back and
+# drops it.
+console 0 core=test warm=1 render=gl
+console 1 core=test
+option 0 link_test_render gl
+option 0 link_test_mode cold_load
+option 0 link_test_seed 3
+option 1 link_test_seed 7
+0 cable 0:0 1:0
+60 save mid
+60 checkpoint in_flight
+90 checkpoint later
+120 end

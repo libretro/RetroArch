@@ -1,0 +1,13 @@
+# twin: render_dupe
+# One console that draws in Vulkan and passes no picture in frames 40 to
+# 50: each of those frames still submits its first part, which the harness
+# has finished before the core's next frame starts, and the harness keeps
+# the picture it read back in frame 39.
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_dupe_frames 40-50
+30 save mid
+40 checkpoint before
+41 checkpoint dupe
+60 checkpoint after
+90 end

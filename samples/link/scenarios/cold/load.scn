@@ -1,0 +1,16 @@
+# A core with no machine before its first frame: until console 0's first
+# retro_run, its retro_unserialize loads nothing and says it did
+# (link_test_mode cold_load). Without warm=1 the from run's load reaches
+# no machine, and the save right after it writes the one of frame 0.
+# error: console 0: a save right after the load differs at byte 4 from the state it loaded
+console 0 core=test
+console 1 core=test
+option 0 link_test_render soft
+option 0 link_test_mode cold_load
+option 0 link_test_seed 3
+option 1 link_test_seed 7
+0 cable 0:0 1:0
+60 save mid
+60 checkpoint in_flight
+90 checkpoint later
+120 end

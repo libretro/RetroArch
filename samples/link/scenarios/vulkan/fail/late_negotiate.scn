@@ -1,0 +1,9 @@
+# A core that sets its version 1 context negotiation interface in its
+# first retro_run, after its load has returned and its device was made:
+# the harness refuses the call and fails the run. Refused, the core logs
+# no error of its own.
+# error: SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE after its core's load is refused
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_vk_negotiate late
+10 end

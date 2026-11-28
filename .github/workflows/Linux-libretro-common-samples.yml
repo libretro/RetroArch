@@ -432,6 +432,7 @@ jobs:
             screenshot_io_bench
             word_wrap_overflow_test
             word_wrap_offset_test
+            memdesc_test
             task_queue_title_error_test
             task_queue_snapshot_test
             task_queue_init_failure_test
@@ -541,6 +542,10 @@ jobs:
             memshm_test
             fastjmp_test
             context_test
+            # The link bus alone, one check per rule.
+            link_bus_test
+            # The link scheduler: consoles on libco cothreads over the bus.
+            link_sched_test
             rdds_block_test
             faulthandler_test
             memshm_area_test
@@ -652,6 +657,7 @@ jobs:
             # fake-stack check cannot follow it; the same holds for
             # libco. The jump is what the test is for.
             [fastjmp_test]="ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=0"
+            [link_sched_test]="ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=0"
             # The filter must be the one that sees SIGSEGV: ASan installs
             # its own, and with it the faults never reach the code under
             # test. handle_segv=0 is how a fastmem core runs.
@@ -2239,6 +2245,20 @@ jobs:
           make clean
           make CC=x86_64-w64-mingw32-gcc EXE=.exe rtime_calendar_test.exe
           timeout 120 wine ./rtime_calendar_test.exe
+          make clean
+
+      - name: Build and run the memory map test under Wine
+        shell: bash
+        working-directory: libretro-common/samples/memory/memdesc_test
+        env:
+          WINEDEBUG: -all
+        run: |
+          set -eu
+          set -o pipefail
+          . "$GITHUB_WORKSPACE/.github/workflows/scripts/wine-server.sh"
+          make clean
+          make CC=x86_64-w64-mingw32-gcc EXE=.exe all
+          timeout 120 wine ./memdesc_test.exe
           make clean
 
       - name: Build and run native DVD packets under Wine

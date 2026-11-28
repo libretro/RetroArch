@@ -1,0 +1,9 @@
+# frame, joypad mask (hex), held until the next line
+300 0001
+304 0000
+420 0008
+424 0000
+480 0020
+484 0000
+570 0100
+580 0000

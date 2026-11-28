@@ -1,0 +1,16 @@
+# Lines at a save's frame: a run from the state starts after the save line,
+# so the uncable after it still acts. The reset before it is in the state;
+# a run that reset console 1 again would still pass, since a reset only
+# moves its ticks and check compares none of them.
+console 0 core=test
+console 1 core=test
+option 1 link_test_restart_ticks on
+0 cable 0:0 1:0
+30 reset 1
+30 save mid
+30 checkpoint in_flight
+30 uncable 0:0
+40 cable 0:0 1:0
+45 expect 0 system 9 2
+50 checkpoint middle
+60 end

@@ -1,0 +1,4 @@
+# warm= with a value other than 1: refused before anything runs.
+# error: warm= takes 1
+console 0 core=test warm=2
+10 end

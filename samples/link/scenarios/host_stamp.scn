@@ -1,0 +1,15 @@
+# A core whose state holds something of its host: console 1's carries a
+# digest of its save directory's path (link_test_mode host_stamp), which is
+# another in every run, as a real core's may carry its host's clock. Its
+# pictures and audio repeat, and its S field does in no run that starts a
+# new machine: compare-fresh VA leaves S out for the frames such a machine
+# runs. From a load on S is compared, since the state brings the first
+# run's digest back.
+compare-fresh VA
+console 0 core=test
+console 1 core=test
+option 1 link_test_mode host_stamp
+0 cable 0:0 1:0
+40 save mid
+60 checkpoint later
+80 end

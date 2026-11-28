@@ -1,0 +1,11 @@
+# twin: render_one
+# vulkan/one with the picture handed over in GENERAL, which the harness
+# reads in place: libretro_vulkan.h allows the frontend no transition of an
+# image in that layout.
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_vk_layout general
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end

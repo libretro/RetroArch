@@ -1,0 +1,20 @@
+# Repairs: from frame 10 console 1 lowers its promise, stamps a message
+# below it, asks past it and asks past its frame end, each once a frame,
+# and in frame 13 makes no frame-end publish. The bus repairs the first
+# four and counts all five. Frame 14 follows the frame with no publish,
+# so the bus knows no frame end there and repairs nothing past it.
+console 0 core=test
+console 1 core=test
+option 0 link_test_seed 2
+option 1 link_test_mode nonconform
+option 1 link_test_bad_frame 10
+expect-count lowered_promise 50
+expect-count low_stamp 50
+expect-count request_past_promise 50
+expect-count request_past_frame_end 49
+expect-count skipped_publish 1
+0 cable 0:0 1:0
+30 save mid
+30 checkpoint in_flight
+40 checkpoint middle
+60 end

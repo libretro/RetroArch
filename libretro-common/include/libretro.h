@@ -3880,6 +3880,855 @@ struct retro_memory_status
    uint64_t total;  /**< Total physical memory installed. */
 };
 
+/**
+ * Gives a core access to a link bus hosted by the frontend, so that core
+ * instances can emulate consoles joined by a cable, an infrared link or a
+ * radio.
+ *
+ * Each core instance emulates one \em console, and the consoles a frontend
+ * runs together are a \em session. A \em port is one link socket of one
+ * console; a console may have several. A \em bus is a set of ports the
+ * frontend has joined: the two ends of a cable, a chain of four consoles,
+ * every radio in a session. The other ports on a port's bus are its \em peers.
+ * A port the frontend has joined to nothing is <em>cabled to nothing</em>.
+ *
+ * The frontend arbitrates emulated time and moves payloads without
+ * interpreting them. The wire protocol stays in the cores.
+ *
+ * Each port has a clock of its own, counted in \em ticks at the rate the core
+ * gave when it attached the port. In each advance call
+ * (\c retro_link_advance_t or \c retro_link_advance_multi_t) the core
+ * publishes the port's <em>local tick</em>, which is where the core is now on
+ * that clock, and its \em promise, the tick before which the core will send
+ * nothing on that port. The call returns the port's \em grant: how far the
+ * frontend lets the core run on that clock.
+ *
+ * Should be called in \c retro_init or \c retro_load_game. The returned
+ * function pointers remain valid until \c retro_deinit, whether or not
+ * anything attaches. A core whose port list (\c retro_link_port_info) changes
+ * makes the call again with the new list. The call may be made again in any
+ * entry point; a new list governs later attaches only, and a port attached
+ * under the old list stays attached.
+ *
+ * \c data points to a <tt>struct retro_link_interface</tt> that the core
+ * prepares before the call: it sets the whole struct to zero, then sets
+ * \c interface_version to #RETRO_LINK_INTERFACE_VERSION, \c ports to its port
+ * list or leaves it \c NULL, and \c flags to its core flags or leaves it 0.
+ * The call returns \c false if \c data is \c NULL or \c interface_version is
+ * 0. When it returns \c true the frontend has set \c interface_version to the
+ * lower of the core's version and the highest version the frontend provides,
+ * and has set every function pointer that version defines; none of them is
+ * \c NULL. The frontend has written to no other member: a member that only a
+ * later version defines is as the core left it, and the core must not use it.
+ * When the call returns \c false the core uses no member of the struct.
+ *
+ * Every function of the interface is called on the thread that is running the
+ * core's entry points, the \c retro_* functions the frontend calls.
+ * \c send_msg, \c recv_msg, \c peek, \c advance and \c advance_multi are called
+ * only inside \c retro_run. \c attach, \c detach and \c peers may also be
+ * called inside \c retro_load_game, \c retro_reset, \c retro_unserialize and
+ * \c retro_unload_game. Ports still attached when \c retro_unload_game returns
+ * are detached by the frontend then, so a console that is gone bounds no peer.
+ * A core that emulates on a thread of its own hands its link calls over to the
+ * thread that is running \c retro_run.
+ *
+ * A <em>frame edge</em> is the moment between two \c retro_run calls of a
+ * console, and the \em span of a \c retro_run is the emulated time it covers.
+ * While a core has a port attached, every \c retro_run of that core covers the
+ * same fixed span. That span is a whole number of ticks on the clock of every
+ * port the core attaches; a core picks clock rates that make it so. Where the
+ * emulated hardware's video frames vary in length or restart (a Game Boy
+ * turning its LCD off and on), the core ends \c retro_run by emulated time,
+ * not on a video frame, and shows the video frame that finished within it, if
+ * any. The frontend places the frame edges of every console in a session on
+ * one timeline of emulated time. Consoles started together whose spans are
+ * equal reach every frame edge together. Consoles of different spans have
+ * their edges at different instants, and one may start a \c retro_run while
+ * another is inside one. A core needs to know no span but its own.
+ *
+ * A port's <em>frame-end tick</em> is the tick on its clock at which the span
+ * of the current \c retro_run ends. From a core, each \c retro_run holds these
+ * advances, in this order:
+ * - The frame-start advance. At the start of every \c retro_run a core
+ *   advances every port it has attached, passing as \c local_tick the tick the
+ *   port stands at. It does so before it emulates anything and before any
+ *   other call on those ports. This gives the frontend each port's tick at a
+ *   frame edge. A \c retro_run that finishes a frame saved inside an advance
+ *   makes that advance instead (see #RETRO_LINK_SAVE_IN_ADVANCE).
+ * - The advances it makes as it runs, as often as it needs to keep running
+ *   (see \c retro_link_advance_t).
+ * - The frame-end publish. Before \c retro_run returns, a core advances every
+ *   port it has attached, passing the port's frame-end tick as both
+ *   \c local_tick and \c request_tick, even when it finished an instruction
+ *   past that tick (see \c retro_link_advance_t). This advance asks for
+ *   nothing, and so returns without waiting.
+ *
+ * In none of these advances does \c request_tick pass the port's promise or
+ * the port's frame-end tick; \c retro_link_advance_t says how the frontend
+ * grants a request that does.
+ *
+ * A core with one attached port may make each of these advances with
+ * \c advance. A core with several makes each with one \c advance_multi call
+ * that lists them all, never with an \c advance call for each port.
+ *
+ * After the frame-end publish a port stands at its frame-end tick. The
+ * frame-start advance of the next \c retro_run therefore passes the same
+ * \c local_tick, unless \c retro_unserialize or \c retro_reset came between.
+ *
+ * Link behaviour is deterministic: the same inputs give the same result on any
+ * frontend. Nothing a core does on a link may depend on host time, such as the
+ * wall clock or how long a call took to return. A \em message is one payload
+ * sent with \c retro_link_send_t, and its \em stamp is the tick on the sending
+ * port's clock that it is sent at, which that call may raise. Its <em>landing
+ * tick</em> is the instant of its stamp, after any raise, expressed on the
+ * receiving port's clock; a message for a held console lands as the rule on
+ * holds below says. A core applies a message at its landing tick, never at the
+ * moment it receives it. A message that lands inside an instruction the core
+ * finishes past a grant or a frame-end tick (see \c retro_link_advance_t) is
+ * applied right after that instruction.
+ *
+ * A core's save state holds everything its link driver needs: registers, a
+ * pending transfer, data latched from a peer, messages received and not yet
+ * applied, and whatever makes its tick counters agree with that state. On
+ * \c retro_unserialize a core does not reset its link driver, and does not
+ * detach and re-attach a port that is attached both before and after. Where
+ * the loaded state differs in whether a port exists (a radio that was off is
+ * now on), the core attaches or detaches that port inside
+ * \c retro_unserialize. Handles stay valid across \c retro_unserialize and
+ * \c retro_reset.
+ *
+ * After \c retro_unserialize or \c retro_reset a port's ticks may be any
+ * values, except that a frame saved inside an advance resumes at the ticks it
+ * was saved at (see #RETRO_LINK_SAVE_IN_ADVANCE); at any other time they never
+ * go backwards. The frontend \em re-joins a port whose numbering has changed
+ * in this way, or whose console has been held (below): it pairs the port's
+ * tick with an instant of the timeline, the one its own console's frame edge
+ * stands at or, after a hold, the one at which the hold ends. The tick it
+ * pairs is the \c local_tick of the port's next advance, the one that starts
+ * the next \c retro_run, or, for a frame saved inside an advance and loaded,
+ * the tick that frame started at, which the session state holds. After a
+ * change of numbering, messages in flight land at the same instant as before,
+ * expressed in the port's new ticks, and promises, stamps and grants from
+ * before the change no longer bind the port's numbering. The port keeps the
+ * span it showed before the change (see \c retro_link_advance_t).
+ *
+ * \c retro_reset is the console's reset button: messages the console had sent
+ * stay on the bus, and messages for it are delivered to the console after its
+ * reset.
+ *
+ * The frontend, for its part, keeps these rules:
+ * - It saves the state of a session only when every console in it is at a
+ *   frame edge or, if its core set #RETRO_LINK_SAVE_IN_ADVANCE, inside an
+ *   advance. Beside the cores' states it saves the contents of the bus, which
+ *   are the messages in flight, each port's published ticks, the span each
+ *   port showed (see \c retro_link_advance_t) and the reports pending for each
+ *   port, and, for a console inside an advance, that advance and the start of
+ *   its frame. It restores them together, matching ports to the restored bus
+ *   by console and port number. A \c retro_run that finishes a frame saved
+ *   inside an advance gets that frame's input.
+ * - It loads the state of a session only when every console in it is at a
+ *   frame edge. To get there it may abandon the frames in progress: it
+ *   releases the session (below), each core finishes its frame, and the
+ *   frontend discards what those frames produced and loads the state before
+ *   any other \c retro_run.
+ * - A session state holds which ports are cabled and which consoles are held.
+ *   A load restores them with the bus, so each core sees the membership its
+ *   state was saved with, no change is reported for the load, and pending
+ *   reports come back as saved. A frontend that keeps the current cabling
+ *   cables it again after the load, a change like any other.
+ * - It may join ports at any moment, wherever the consoles stand: a cable
+ *   plugged in, a port joining a shared medium, an attach taking effect, a
+ *   port let in when a place under \c max_ports frees. Two ports that did not
+ *   hear each other before start to at the later of their two consoles' first
+ *   frame edges at or after the change. Before that instant nothing passes
+ *   between them and neither bounds the other's grant; from it each bounds the
+ *   other as any peer does. A console with no place on the timeline (one never
+ *   placed, one held, or one at a frame edge that has made no frame-end
+ *   publish since it was placed) is placed at the latest of its placed new
+ *   peers' first frame edges at or after the change, so it joins every peer
+ *   there; with none, at the latest first frame edge of every placed console
+ *   (its current edge, for one whose first frame edge is not known yet), and
+ *   with none of those, at the start of the session. A place is rounded up to
+ *   the next instant that is a whole tick of the clock of every port in the
+ *   console's port list, or of every port it has attached if it gave none. A
+ *   port attached later whose clock does not see its console's frame edge as
+ *   a whole tick places that console again, as the end of a hold does. While
+ *   a console on the bus a join would make is inside a frame and has made no
+ *   frame-end publish since it was placed, its first frame edge is not known:
+ *   the join, or the end of a hold, waits for a later moment, which the
+ *   frontend records for replay.
+ * - It takes a port off a bus (a cable pulled, a port left out under
+ *   \c max_ports) only when that port's console is at a frame edge, at an
+ *   instant t, and while no peer's console has passed its first frame edge at
+ *   or after t. The port leaves at once. To each other port of the bus it is a
+ *   silent member (see \c retro_link_detach_t) from t until that port's
+ *   console reaches its first frame edge at or after t. A message sent to it
+ *   after the pull which would land at or after t is dropped; the messages sent
+ *   before, and those it sent, stay. A held console's port may be taken off
+ *   at any moment: each other port sees it go at its own console's first
+ *   frame edge at or after both that moment and the edge where the hold
+ *   began, and the held console when its hold ends.
+ * - Each port sees a change of its bus's membership at its own console's
+ *   first frame edge at or after the change. The frontend records each change
+ *   for replay with the frame index, for every console concerned, at which it
+ *   applies.
+ * - It may \em hold a console, which is to leave it standing at a frame edge
+ *   for a time while other consoles run; \c idle_ticks of
+ *   \c retro_link_port_info says when it may. A console that is not held is
+ *   \em running. A hold begins at a frame edge of the held console, with its
+ *   buses idle, wherever the other consoles stand. It ends at once: the
+ *   console is placed on the timeline and its ports join as above, and the
+ *   time it was held is lost to the link. A hold and its end are recorded for
+ *   replay as changes of membership are. A message sent to a held console
+ *   waits, and one that would land earlier lands at the frame edge where the
+ *   hold ends.
+ * - It may \em release every port of the session, to shut the session's link
+ *   down or to bring every console to a frame edge for a load: each advance
+ *   that has not returned, and each advance made afterwards, returns
+ *   #RETRO_LINK_UNBOUNDED, with #RETRO_LINK_WAKE_DETACHED if the core asked
+ *   for wake flags (the \c wake_flags of \c retro_link_advance_t). Every core
+ *   then finishes its frame and returns from \c retro_run before it is
+ *   unloaded or a state is loaded. A release ends only with the load of a
+ *   session state, and a core keeps nothing of a release outside its state.
+ *   A release is not a pulled cable, which is a change of membership (see
+ *   \c retro_link_peers_t).
+ *
+ * This interface is independent of the netpacket interface
+ * (#RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE), and a core may offer both. The
+ * frontend starts no netpacket session for consoles it runs in one process on
+ * a bus.
+ *
+ * @param[in,out] data <tt>struct retro_link_interface *</tt>. Prepared by the
+ * core and completed by the frontend as described above.
+ * @return \c true if the frontend hosts a link bus for this core instance.
+ * \c false otherwise, which a core must treat as nothing plugged in. The
+ * frontend may return \c false to an instance that is on no bus, such as the
+ * hidden copy it runs for run-ahead.
+ * @see retro_link_interface
+ */
+#define RETRO_ENVIRONMENT_GET_LINK_INTERFACE (109 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
+ * The version of the link interface that this header describes. A core sets
+ * the \c interface_version member of \c retro_link_interface to it. A later
+ * version only appends members to \c retro_link_interface,
+ * \c retro_link_port_info and \c retro_link_wait, and the frontend reads and
+ * writes only the members of the version it set in \c interface_version.
+ */
+#define RETRO_LINK_INTERFACE_VERSION 1
+
+/**
+ * The most bytes the payload of one message may hold. \c retro_link_send_t
+ * returns \c false for a longer payload.
+ */
+#define RETRO_LINK_MAX_PAYLOAD 4096
+
+/**
+ * Returned by \c retro_link_advance_t, and written to \c grant by
+ * \c retro_link_advance_multi_t, when nothing bounds this core on the port:
+ * the port is not attached, the port is cabled to nothing, or the frontend has
+ * released it. The core then runs freely as far as that port is concerned. It
+ * is never returned because the port's peers are held or are silent members
+ * (see \c retro_link_detach_t).
+ */
+#define RETRO_LINK_UNBOUNDED ((uint64_t)-1)
+
+/**
+ * Value of the \c to argument of \c retro_link_send_t meaning "every other
+ * port on this port's bus".
+ */
+#define RETRO_LINK_BROADCAST 0xFF
+
+/**
+ * Reports made through the \c wake_flags argument of \c retro_link_advance_t
+ * and the \c wake_flags member of \c retro_link_wait, to a core that asks for
+ * them. More than one may be set. The frontend reports only the flags of the
+ * version it set in \c interface_version.
+ *
+ * A flag is a report attached to a return the advance makes anyway: asking for
+ * flags changes neither when an advance returns nor what it grants. An advance
+ * never returns early for a message. The one return that comes before a
+ * request is granted is the release (see
+ * #RETRO_ENVIRONMENT_GET_LINK_INTERFACE); #RETRO_LINK_WAKE_DETACHED reports
+ * it, and that return comes whether or not the core asked for flags.
+ *
+ * A report is not lost when a core does not ask for it: it stays pending, and
+ * is given on the port's next advance that asks for reports. The last report
+ * is the return of the port's previous advance that asked for them. A core
+ * that asks on only some advances is thus told, on each that asks, what has
+ * happened since the last report. Pending reports are kept across
+ * \c retro_reset and holds. A detach or a release discards them: a return that
+ * reports #RETRO_LINK_WAKE_DETACHED reports nothing else. For the first advance
+ * that asks for reports after a port's attach, the attach counts as the last
+ * report: if the port is on a bus by then, its joining is a membership change,
+ * reported as #RETRO_LINK_WAKE_TOPOLOGY.
+ *
+ * A core should refresh \c retro_link_peers_t on #RETRO_LINK_WAKE_TOPOLOGY
+ * before asking to advance again. It does not wait for
+ * #RETRO_LINK_WAKE_MESSAGE before it receives: a core receives after every
+ * advance, whether or not a flag was reported (see \c retro_link_advance_t).
+ *
+ * #RETRO_LINK_WAKE_NONE is no report. Set by the core in \c retro_link_wait
+ * before a call, it also means that the entry asks for no reports.
+ */
+#define RETRO_LINK_WAKE_NONE     0u
+/**
+ * Since the last report, a grant has made receivable on this port a message
+ * that was not receivable before (see \c retro_link_recv_t). For a core that
+ * asks on every advance, that grant is this return's; for one that asks only
+ * on some, it may be the grant of an earlier advance that did not ask.
+ */
+#define RETRO_LINK_WAKE_MESSAGE  (1u << 0)
+/**
+ * This port's bus membership has changed since the last report. A cable pulled
+ * from the port or plugged into it is such a change. A port sees a change only
+ * at a frame edge of its own console, when none of its advances is waiting, so
+ * a change makes no advance return early: it is reported on the port's next
+ * advance that asks for reports.
+ */
+#define RETRO_LINK_WAKE_TOPOLOGY (1u << 1)
+/**
+ * The port is not attached, or the frontend has released it. The grant is
+ * #RETRO_LINK_UNBOUNDED.
+ */
+#define RETRO_LINK_WAKE_DETACHED (1u << 2)
+
+/**
+ * Flag of \c retro_link_port_info for a port on a shared medium: every port in
+ * the session that sets this flag with the same protocol id is on one bus as
+ * far as \c max_ports allows, and hears every other there with no cabling
+ * step. A port with no peer is cabled to nothing. A radio, or a wired network
+ * every console shares, such as an Ethernet hub, sets it. A cable or an
+ * infrared port does not, and the user joins those.
+ *
+ * A radio port sends with #RETRO_LINK_BROADCAST or to one peer's index on the
+ * bus (see \c retro_link_peers_t), and keeps channels, beacons and addressing
+ * in the payload. Its promise is one air-time ahead of its local tick, an
+ * air-time being one transmission's duration on the medium. A radio that is
+ * switched off detaches its port (see \c retro_link_detach_t).
+ */
+#define RETRO_LINK_PORT_SHARED_MEDIUM (1u << 0)
+
+/**
+ * Flag of the \c flags member of \c retro_link_interface, set by a core whose
+ * \c retro_serialize_size and \c retro_serialize may be called while one of
+ * its advances has not returned (see \c retro_link_advance_t). Its state then
+ * holds that advance. After the state is loaded, the core's next
+ * \c retro_run starts by making that advance again in place of the
+ * frame-start advance, with the same entries, \c local_tick, \c safe_tick and
+ * \c request_tick, asking for reports as before. It then runs to the
+ * frame-end tick of the frame it was saved in and makes the frame-end publish
+ * there: that \c retro_run covers the rest of that frame only. The advance
+ * made again returns with the grant and the reports the one saved would have
+ * had.
+ */
+#define RETRO_LINK_SAVE_IN_ADVANCE (1u << 0)
+
+/**
+ * An attached port. Returned by \c retro_link_attach_t and passed to every
+ * other call. Opaque to the core. There is one handle for each port number of a
+ * core instance, from the port's first attach until \c retro_deinit returns, so
+ * a re-attach returns the same handle. A handle stays valid across
+ * \c retro_unserialize and \c retro_reset, and stays live while its port is
+ * cabled to nothing. \c NULL is never a handle, and a call passed \c NULL
+ * answers as for a port that is not attached.
+ */
+typedef struct retro_link_port retro_link_port_t;
+
+/**
+ * Attaches one of the core's ports, which lets the frontend join it to a bus.
+ *
+ * An attach made inside \c retro_run takes effect at a later frame edge of its
+ * console, which the frontend chooses and records as an input for replay;
+ * until then the port is cabled to nothing. An attach made inside
+ * \c retro_load_game, \c retro_reset, \c retro_unserialize or
+ * \c retro_unload_game is at a frame edge already.
+ *
+ * If the core has given a port list, the three arguments must match one entry
+ * of it.
+ *
+ * @param port The core's port number. A console with more than one socket
+ * distinguishes them here.
+ * @param protocol_id Names the emulated wire protocol, e.g. "gba-sio-1". Ports
+ * whose ids differ are never joined to each other.
+ * @param clock_rate Ticks of this port's clock per second of emulated time,
+ * e.g. 16777216 for a Game Boy Advance. Must not be zero.
+ * @return A handle for every other call on this port, or \c NULL if the port
+ * could not be attached. \c NULL when the core has given a port list and the
+ * arguments match no entry of it. Attaching an attached port returns its handle
+ * if \c protocol_id and \c clock_rate are those it was attached with, and
+ * \c NULL otherwise, without consulting the port list, so a new list does not
+ * change an attach already made.
+ */
+typedef retro_link_port_t *(RETRO_CALLCONV *retro_link_attach_t)(unsigned port,
+      const char *protocol_id, uint64_t clock_rate);
+
+/**
+ * Detaches a port, which leaves its bus.
+ *
+ * A detach made inside \c retro_run takes effect at a later frame edge of its
+ * console, which the frontend chooses and records as an input for replay.
+ * Until then the port stays on its bus as a silent member: from the moment
+ * of the call it bounds no peer's grant, and at that edge the messages sent
+ * to it are dropped. A port whose peers are all held or silent members is
+ * granted its request, bounded as \c retro_link_advance_t says. The detached
+ * port leaves its bus at that edge, a membership change each peer sees at the
+ * first frame edge of its own console at or after it and is told of through
+ * #RETRO_LINK_WAKE_TOPOLOGY on its next advance that asks for reports. A
+ * detach made inside \c retro_load_game, \c retro_reset, \c retro_unserialize
+ * or \c retro_unload_game is at a frame edge already.
+ *
+ * After a detach the core's own calls on the handle answer at once, even inside
+ * \c retro_run, as for a port that is not attached, while each peer keeps it as
+ * a silent member until that peer sees the change.
+ *
+ * @param handle The handle returned by \c retro_link_attach_t.
+ */
+typedef void (RETRO_CALLCONV *retro_link_detach_t)(retro_link_port_t *handle);
+
+/**
+ * Current membership of this port's bus.
+ *
+ * The membership a port sees changes only at a frame edge of its own console.
+ * A core learns of a change on the port's next advance that asks for wake
+ * flags, through #RETRO_LINK_WAKE_TOPOLOGY, and reads the new membership with
+ * this call. A port's index on its bus is fixed while the membership it sees
+ * is unchanged; indexes are assigned in the order of the session's consoles,
+ * then of port numbers. The indexes of the other calls on a port are in the
+ * membership that port sees.
+ *
+ * A pulled cable is a membership change, not a detach. The handle stays live,
+ * the port is cabled to nothing, and this call returns -1. The ports left on
+ * the bus stay bound by each other. Plugging the cable back is another change.
+ *
+ * @param handle The handle returned by \c retro_link_attach_t.
+ * @param[out] count If non-\c NULL, receives the number of ports on the bus,
+ * including this one, or 0 when the call returns -1.
+ * @return This port's index on the bus, or -1 when the port is not attached or
+ * is cabled to nothing.
+ */
+typedef int (RETRO_CALLCONV *retro_link_peers_t)(retro_link_port_t *handle, unsigned *count);
+
+/**
+ * Queues \c buf for delivery to a peer, stamped at \c tick on this port's
+ * clock. The frontend copies the payload before the call returns. A payload
+ * longer than #RETRO_LINK_MAX_PAYLOAD is refused.
+ *
+ * The message reaches the ports on the bus as this port sees it when it is
+ * sent: the port that \c to names, or every other port with
+ * #RETRO_LINK_BROADCAST. A port on the bus that has not yet advanced is among
+ * them. A port that joins the bus later does not get the message.
+ *
+ * @param handle The handle returned by \c retro_link_attach_t.
+ * @param tick When the event happens, on this port's clock. The core stamps at
+ * or after the promise the port has published; the frontend raises a lower
+ * stamp to that promise and still sends the message. The stamp must not be
+ * below the \c local_tick of the port's latest advance.
+ * @param to The receiving port's index on the bus, in the membership this
+ * port sees, or #RETRO_LINK_BROADCAST.
+ * @param buf The payload. May be \c NULL only when \c len is 0.
+ * @param len The payload's length in bytes. 0 sends a message whose payload is
+ * empty.
+ * @return In this order: \c false if the port is not attached, \c len exceeds
+ * #RETRO_LINK_MAX_PAYLOAD or \c buf is \c NULL with \c len above 0, whatever
+ * the port's cabling; otherwise \c true on a port that is cabled to nothing or
+ * has been released, whatever index \c to names, and the message is dropped, as
+ * on a cable with nothing at its other end; otherwise \c false if \c to is an
+ * index that names no other port on the bus. The call may also return \c false
+ * when the frontend is out of memory. Nothing is queued when the call returns
+ * \c false.
+ */
+typedef bool (RETRO_CALLCONV *retro_link_send_t)(retro_link_port_t *handle, uint64_t tick,
+      unsigned to, const void *buf, size_t len);
+
+/**
+ * Takes the next message off this port's queue: copies its payload to \c buf
+ * and removes it from the queue.
+ *
+ * Messages come out ordered by landing tick, then by the sender's index on the
+ * bus, then in the order they were sent.
+ *
+ * A message is \em receivable once its landing tick is below the port's grant,
+ * the value the port's latest advance gave, and it is handed out only then. By
+ * then nothing sent later can land before it, so the order above is final.
+ * Until then it stays queued. Messages become receivable as grants pass their
+ * landing ticks, so a core calls this after every advance, until no message
+ * can be handed out, whether or not a flag was reported (see
+ * \c retro_link_advance_t).
+ *
+ * When no message can be handed out the call returns \c false and writes 0 to
+ * \c *len. When \c *len on entry is less than the length of the next message
+ * the call returns \c false, writes that length to \c *len and leaves the
+ * message queued. So after \c false, \c *len is 0 for nothing to take and
+ * otherwise the capacity to call again with. A message whose payload is empty
+ * is taken with \c true and \c *len 0.
+ *
+ * When \c buf is \c NULL and a message can be handed out, the call removes
+ * that message without copying it, whatever \c *len was, and returns \c true;
+ * \c *len is then not meaningful. This discards the message
+ * \c retro_link_peek_t returned.
+ *
+ * @param handle The handle returned by \c retro_link_attach_t.
+ * @param[out] tick The landing tick: when the event lands, on this port's
+ * clock. Not written when \c NULL.
+ * @param[out] from The sender's index on the bus, in the membership this port
+ * saw at the instant the sender stood at when it sent or, if this port did
+ * not see the sender then, in the membership it saw when the message
+ * landed. Not written when \c NULL.
+ * @param[out] buf Receives the payload. \c NULL to discard the message.
+ * @param[in,out] len Buffer capacity on entry, bytes written on return. After
+ * \c false, 0 or the length needed, as above. \c NULL only with a \c NULL
+ * \c buf, to discard; with a buffer and a \c NULL \c len the call takes
+ * nothing and returns \c false.
+ * @return \c true when a message was taken. \c false when no message can be
+ * handed out or the buffer is too small; \c *len tells which.
+ */
+typedef bool (RETRO_CALLCONV *retro_link_recv_t)(retro_link_port_t *handle, uint64_t *tick,
+      unsigned *from, void *buf, size_t *len);
+
+/**
+ * Publishes a port's local tick and promise, then asks how far the core may
+ * run on that port's clock. The value returned is the port's grant.
+ *
+ * A core never emulates past the grant of any port it has attached, except to
+ * finish the instruction in progress (below). So a core with an attached port
+ * calls this as often as it needs to keep running. A core that advances only
+ * when the emulated program polls the port breaks this rule.
+ *
+ * Since many emulators stop only between instructions, a core may finish the
+ * instruction in progress past a port's grant or past its frame-end tick (see
+ * #RETRO_ENVIRONMENT_GET_LINK_INTERFACE). On that port the core counts as
+ * having stopped at that tick: it passes the grant as the \c local_tick of its
+ * next advance, or the frame-end tick in the frame-end publish, and carries
+ * the time it ran beyond that tick over into what it runs next, toward the
+ * next grant or in the next \c retro_run.
+ *
+ * This call is \c retro_link_advance_multi_t with one entry. A core with more
+ * than one attached port does not use it: it advances all its ports together
+ * with \c retro_link_advance_multi_t, at the start of \c retro_run and every
+ * time after.
+ *
+ * \c request_tick never passes the port's promise. The frontend grants a
+ * request that passes the promise as if it were the promise. So a port whose
+ * promise equals its local tick is granted nothing beyond where it stands: a
+ * core that wants to run promises ahead. With every request within its port's
+ * promise, the port that holds the lowest promise on a bus asks for no more
+ * than every peer has promised, so some port can always be granted.
+ *
+ * \c request_tick never passes the port's frame-end tick either (see
+ * #RETRO_ENVIRONMENT_GET_LINK_INTERFACE). The frontend grants a request that
+ * passes the frame-end tick as if it were that tick. For this the frontend
+ * takes the frame-end tick to be the port's tick at the frame edge plus the
+ * span the port showed in its previous \c retro_run: from the \c local_tick
+ * of that run's frame-start advance or, in a run that finished a frame saved
+ * inside an advance, from the tick that frame started at, to its frame-end
+ * publish. The port's tick at the frame edge is the one its frame-end publish
+ * gave; in a \c retro_run that finishes a frame saved inside an advance, the
+ * tick that frame started at, which the session state holds; and otherwise,
+ * in the first \c retro_run after a change of numbering (\c retro_unserialize
+ * or \c retro_reset), the \c local_tick of its frame-start advance. A change
+ * of numbering keeps the span; a hold does not. There is no such span, and
+ * no request is bounded by the frame end, in the first \c retro_run after
+ * the port is attached, after a hold of its console ends or after a
+ * \c retro_run with no frame-end publish, unless a session state loaded
+ * since then restored the span.
+ *
+ * The call returns when the request, bounded in these two ways, can be
+ * granted. It never returns early for a message, and its grant is never short
+ * of the request so bounded. The frame-end publish, whose \c request_tick is
+ * its \c local_tick, asks for nothing and returns without waiting. The call
+ * returns #RETRO_LINK_UNBOUNDED when the port is not attached, is cabled to
+ * nothing or has been released. A release (see
+ * #RETRO_ENVIRONMENT_GET_LINK_INTERFACE) is the one case in which the call
+ * returns before its request is granted.
+ *
+ * After every return of this call, and before it emulates further, a core
+ * takes the messages off the port's queue until none can be handed out (see
+ * \c retro_link_recv_t and \c retro_link_peek_t), whether or not a wake flag
+ * was reported. Messages become receivable as grants pass their landing ticks,
+ * so any return may have made some receivable.
+ *
+ * The call may take arbitrarily long to return, measured in host time or in
+ * frames the user sees. Until it returns the frontend may run other consoles
+ * on the same thread, and it calls no entry point of this core, except
+ * \c retro_serialize_size and \c retro_serialize of a core that set
+ * #RETRO_LINK_SAVE_IN_ADVANCE, on the thread that runs its entry points while
+ * the advance waits; those make no link call.
+ *
+ * The grant depends only on the ticks the running consoles have published and
+ * on which consoles are held, with no wall-clock input and no timeout.
+ * Consoles that are running are always in step: whether or not the bus is idle
+ * (see \c idle_ticks of \c retro_link_port_info), a port's grant never passes
+ * the promise of a peer whose console is running, except a peer whose core has
+ * detached it. A held console counts as silent, so a running console's advance
+ * waits only for the other running consoles (see \c retro_link_detach_t for a
+ * port whose peers are all silent). Ticks of different clock rates compare as
+ * instants on the session's timeline (see
+ * #RETRO_ENVIRONMENT_GET_LINK_INTERFACE); a bound taken onto another clock
+ * rounds down, so no grant passes it, and a landing tick rounds up, so no
+ * message lands before its instant. A port whose tick at its console's current
+ * frame edge the frontend does not know (in the first \c retro_run after an
+ * attach, after \c retro_unserialize, \c retro_reset or a hold, or after a
+ * \c retro_run with no frame-end publish) bounds every peer's grant at that
+ * edge's instant until its frame-start advance gives the tick. The tick is
+ * known in a \c retro_run that finishes a frame saved inside an advance: the
+ * session state holds it.
+ *
+ * @param handle The handle returned by \c retro_link_attach_t.
+ * @param local_tick Where the core is now on this port's clock, counted as
+ * above for an instruction in progress.
+ * @param safe_tick The port's promise: the core will send nothing on this port
+ * stamped before this tick. Must be at least \c local_tick. A promise is never
+ * lowered: the frontend keeps the highest value published and ignores a lower
+ * one. Peers cannot advance past \c local_tick unless \c safe_tick is ahead of
+ * it.
+ * @param request_tick How far the core is asking to advance. Never past the
+ * port's promise, which is \c safe_tick or a higher value published earlier,
+ * and never past the port's frame-end tick, as above.
+ * @param[out] wake_flags If non-\c NULL, receives the \c RETRO_LINK_WAKE_*
+ * reports for this return and those left pending by earlier advances that did
+ * not ask. Each membership change is reported once; a release is reported on
+ * every call that asks. \c NULL asks for no reports and changes nothing else:
+ * the call returns at the same point with the same grant, and the reports
+ * stay pending.
+ * @return The tick this core may advance to, or #RETRO_LINK_UNBOUNDED. It
+ * never exceeds \c request_tick unless \c local_tick or a previous grant
+ * already stood further on, and is never less than either. It is short of
+ * \c request_tick only where the request passed the port's promise, the port's
+ * frame-end tick or, in \c retro_link_advance_multi_t, the earliest promise
+ * among the entries, and was granted as if it were the lowest of the bounds it
+ * passed. A previous grant of #RETRO_LINK_UNBOUNDED is not a tick and does not
+ * count as one here.
+ */
+typedef uint64_t (RETRO_CALLCONV *retro_link_advance_t)(retro_link_port_t *handle,
+      uint64_t local_tick, uint64_t safe_tick, uint64_t request_tick,
+      uint32_t *wake_flags);
+
+/**
+ * One entry of a core's port list, which tells the frontend about the core's
+ * ports before they attach. The list is an array of pointers to entries,
+ * ended by a \c NULL pointer.
+ *
+ * A core gives the list in the \c ports member of \c retro_link_interface when
+ * it calls #RETRO_ENVIRONMENT_GET_LINK_INTERFACE, and gives it again, by
+ * making that call again, when it changes. The frontend keeps its own copy of
+ * the list, strings included. What the core passes to \c retro_link_attach_t
+ * must match the list. A core that gives no list still works: the frontend
+ * learns its ports as they attach, each with \c max_ports, \c flags and
+ * \c idle_ticks 0, so none of them is on a shared medium.
+ */
+struct retro_link_port_info
+{
+   /** The core's port number, as passed to \c retro_link_attach_t. */
+   unsigned    port;
+   /**
+    * Names the emulated wire protocol, as passed to \c retro_link_attach_t.
+    * Must not be \c NULL.
+    */
+   const char *protocol_id;
+   /** A name for the port, for the frontend's menus. */
+   const char *desc;
+   /**
+    * Ticks of this port's clock per second of emulated time, as passed to
+    * \c retro_link_attach_t.
+    */
+   uint64_t    clock_rate;
+   /**
+    * The most ports a bus of this kind joins, this one included: 2 for a Game
+    * Boy cable, 4 for a Game Boy Advance cable. 0 for no limit below 255, the
+    * most ports any bus joins (their indexes run from 0 to 254, and
+    * #RETRO_LINK_BROADCAST is 0xFF); a larger value counts as 255. A port
+    * whose \c max_ports is 1 joins no bus.
+    *
+    * This bounds every bus the port joins, cabled or on a shared medium. When
+    * more ports would form one bus than the \c max_ports of one of them allows,
+    * the frontend takes them in the order of the session's consoles, then of
+    * port numbers, and lets each join only if the bus with it stays within the
+    * \c max_ports of every port on it. A port that leaves the bus keeps its
+    * place there for each port that still sees it as a silent member, until
+    * that port sees it go. A port that would take the place of a port whose
+    * console is inside a frame waits for a later frame edge of that console,
+    * chosen and recorded as for an attach made inside \c retro_run. A port
+    * left out is cabled to nothing
+    * (\c retro_link_peers_t returns -1 and its grant is #RETRO_LINK_UNBOUNDED)
+    * until a place frees at a later frame edge; its joining then is a
+    * membership change, reported as #RETRO_LINK_WAKE_TOPOLOGY.
+    */
+   unsigned    max_ports;
+   /**
+    * \c RETRO_LINK_PORT_* bits. The frontend ignores the bits that the version
+    * it set in \c interface_version does not define.
+    */
+   unsigned    flags;
+   /**
+    * A hint: the quiet span, in ticks of this port's clock, after which the
+    * frontend may treat the port's bus as idle. 0 for the frontend's default.
+    *
+    * The frontend decides when a bus is \em idle: nothing on it is
+    * undelivered, and nothing has been sent on it for the quiet span. Idle
+    * changes no grant. It only permits the frontend to hold a console at a
+    * frame edge (see #RETRO_ENVIRONMENT_GET_LINK_INTERFACE), or to run one
+    * while its neighbours are held. A core must cope with a peer that is
+    * silent for any span of emulated time.
+    */
+   uint64_t    idle_ticks;
+};
+
+/**
+ * One port's entry in a \c retro_link_advance_multi_t call, which the core
+ * passes a pointer to. The core sets \c handle, \c local_tick, \c safe_tick,
+ * \c request_tick and \c wake_flags before every call; the call writes
+ * \c grant and \c wake_flags.
+ */
+struct retro_link_wait
+{
+   /** The port this entry is for. */
+   retro_link_port_t *handle;
+   /**
+    * Where the core is now on this port's clock, counted as
+    * \c retro_link_advance_t says for an instruction in progress.
+    */
+   uint64_t local_tick;
+   /** This port's promise, as \c safe_tick of \c retro_link_advance_t. */
+   uint64_t safe_tick;
+   /**
+    * How far the core is asking to advance on this port's clock. Bounded as
+    * \c request_tick of \c retro_link_advance_t is, and by the earliest
+    * promise among the call's entries (see \c retro_link_advance_multi_t).
+    */
+   uint64_t request_tick;
+   /**
+    * Written by the call: this port's grant, as \c retro_link_advance_t
+    * returns it. #RETRO_LINK_UNBOUNDED when the port is not attached, is
+    * cabled to nothing or has been released.
+    */
+   uint64_t grant;
+   /**
+    * On entry, #RETRO_LINK_WAKE_NONE asks for no reports, as a \c NULL
+    * \c wake_flags does in \c retro_link_advance_t; any other value asks for
+    * wake flags. On return, if the entry asked, the \c RETRO_LINK_WAKE_*
+    * reports for this port as that argument receives them, pending ones
+    * included; if it did not, #RETRO_LINK_WAKE_NONE, and they stay pending.
+    */
+   uint32_t wake_flags;
+};
+
+/**
+ * Advances every attached port of a core in one call. Each entry publishes its
+ * port's own local tick and promise and carries its own request, and receives
+ * its own grant and wake flags. What \c retro_link_advance_t says of how a
+ * request is bounded and granted, of the instruction in progress, of the
+ * release, of how long the call may take, of what a grant depends on and of
+ * the wake flags holds here for each entry.
+ *
+ * One more bound applies here. No entry's \c request_tick passes the earliest
+ * promise among the call's entries, the promises and the request being
+ * compared as instants of emulated time. The earliest promise counts only the
+ * entries not granted #RETRO_LINK_UNBOUNDED. The frontend grants a request
+ * beyond that instant as if it were at it. Otherwise the core whose port holds
+ * the lowest promise on one bus could be waiting on another of its ports.
+ *
+ * The call returns when every entry's request, so bounded, can be granted. It
+ * never returns early for a message, and no entry's grant is short of its
+ * request so bounded. The core then runs as far as the smallest headroom among
+ * the entries, the headroom of an entry being the emulated time from its
+ * \c local_tick to its \c grant. An entry granted #RETRO_LINK_UNBOUNDED sets
+ * no limit.
+ *
+ * After every return of this call, and before it emulates further, the core
+ * takes the messages off the queue of every port listed until none can be
+ * handed out, whether or not a wake flag was reported for that port (see
+ * \c retro_link_advance_t).
+ *
+ * A core with more than one attached port advances them only with this call,
+ * never one at a time: a core waiting on one bus could not answer the consoles
+ * waiting for it on another.
+ *
+ * @param[in,out] waits An array of \c count pointers, one to an entry for
+ * each port the core has attached, each port exactly once. A port listed twice
+ * is the core's error, and the result is unspecified.
+ * @param count The number of pointers in \c waits. With 0 the call returns at
+ * once.
+ */
+typedef void (RETRO_CALLCONV *retro_link_advance_multi_t)(
+      struct retro_link_wait *const *waits, unsigned count);
+
+/**
+ * Returns the next message on this port's queue without removing it.
+ *
+ * The message is the one \c retro_link_recv_t would take next: the same order
+ * applies, and a message is returned only once its landing tick is below the
+ * port's grant.
+ *
+ * The pointer returned points into memory the frontend owns. The core reads
+ * the payload there and neither writes to it nor frees it. The pointer stays
+ * valid until the next \c recv_msg, \c peek, \c advance or \c advance_multi
+ * call on this port, or until \c retro_run returns, whichever comes first.
+ *
+ * A \c retro_link_recv_t call with a \c NULL \c buf discards the message this
+ * call returned.
+ *
+ * @param handle The handle returned by \c retro_link_attach_t.
+ * @param[out] tick The landing tick: when the event lands, on this port's
+ * clock. Not written when \c NULL.
+ * @param[out] from The sender's index on the bus, in the membership this port
+ * saw at the instant the sender stood at when it sent or, if this port did
+ * not see the sender then, in the membership it saw when the message
+ * landed. Not written when \c NULL.
+ * @param[out] len The payload's length in bytes. 0 when there is no message to
+ * return. Not written when \c NULL.
+ * @return The payload, or \c NULL when there is no message to return. A
+ * message whose payload is empty gives a pointer that is not \c NULL, with
+ * nothing to read there, so the return alone says whether there is a message.
+ */
+typedef const void *(RETRO_CALLCONV *retro_link_peek_t)(
+      retro_link_port_t *handle, uint64_t *tick, unsigned *from, size_t *len);
+
+/**
+ * The link interface, exchanged through #RETRO_ENVIRONMENT_GET_LINK_INTERFACE.
+ * The core sets \c interface_version, \c ports and \c flags. The frontend sets
+ * \c interface_version again and fills in the function pointers. Every member
+ * below belongs to version 1. A later version only appends members to this
+ * struct, to \c retro_link_port_info and to \c retro_link_wait, and the
+ * frontend reads and writes only the members of the version it set.
+ */
+struct retro_link_interface
+{
+   /**
+    * Set by the core to #RETRO_LINK_INTERFACE_VERSION before the call. Set by
+    * the frontend to the version it provides, which is never higher.
+    */
+   unsigned interface_version;
+   /**
+    * Set by the core: its port list, an array of pointers to entries ended by
+    * a \c NULL pointer, or \c NULL for none. See \c retro_link_port_info.
+    */
+   const struct retro_link_port_info *const *ports;
+   /**
+    * Set by the core: its core flags, #RETRO_LINK_SAVE_IN_ADVANCE or 0. The
+    * frontend ignores the bits that the version it set in
+    * \c interface_version does not define, so that version tells the core
+    * which of its bits count.
+    */
+   unsigned flags;
+   /** Attach a port. */
+   retro_link_attach_t  attach;
+   /** Detach a port. */
+   retro_link_detach_t  detach;
+   /** Who else is on this port's bus. */
+   retro_link_peers_t   peers;
+   /** Queue a payload for a peer. */
+   retro_link_send_t    send_msg;
+   /** Take the next payload off the queue. */
+   retro_link_recv_t    recv_msg;
+   /** Publish a position, ask how far to run. */
+   retro_link_advance_t advance;
+   /** The same for every attached port in one call. */
+   retro_link_advance_multi_t advance_multi;
+   /** Look at the next payload without taking it. */
+   retro_link_peek_t          peek;
+};
+
 /**@}*/
 
 /**

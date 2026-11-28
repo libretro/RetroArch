@@ -1,0 +1,14 @@
+# twin: render_one
+# One console that asks for an OpenGL ES 2 context and draws the two-part
+# picture in the one it gets, which a driver may make of a later version:
+# its framebuffer has neither depth nor stencil, and the picture starts at
+# the framebuffer's first row. On llvmpipe check-gl runs it once more in a
+# context held to version 2.0.
+console 0 core=test render=gl
+option 0 link_test_render gl
+option 0 link_test_gl_context gles2
+option 0 link_test_gl_origin bottom
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end

@@ -1,0 +1,13 @@
+# twin: render_one
+# One console that draws the two-part picture in Vulkan, hands part 1's
+# command buffer over for the frontend to submit and passes set_image a
+# semaphore nothing signals: with command buffers handed over the
+# frontend waits on none of set_image's semaphores, or its submit waits on
+# one nothing signals.
+console 0 core=test render=vulkan
+option 0 link_test_render vulkan
+option 0 link_test_vk_handoff commands_semaphore
+30 checkpoint early
+60 save mid
+60 checkpoint mid
+120 end

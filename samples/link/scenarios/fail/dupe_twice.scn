@@ -1,0 +1,13 @@
+# Two dupes in a row before a checkpoint: console 1 passes no picture in
+# frames 28 and 29, and a picture is kept only over one dupe.
+# error: kept no picture
+console 0 core=test
+console 1 core=test
+option 0 link_test_rate_0 61440
+option 1 link_test_rate_0 61440
+option 1 link_test_dupe_frames 28-29
+0 cable 0:0 1:0
+25 save mid
+29 checkpoint before
+30 checkpoint after
+60 end
