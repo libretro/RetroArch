@@ -1985,6 +1985,18 @@ static int run_default_lane(void)
 
    task_queue_init(false, msg_push_stub);
 
+   frontend_reset();
+   core_fill(1024);
+   stub_settings.uints.savestate_automatic_interval = 1;
+   okf(content_load_state("save_state_io_test_missing.state", false, true),
+         "automatic load is queued");
+   okf(!content_save_state_automatic(2000000),
+         "timed save waits for automatic load");
+   gate_settle(false);
+   okf(content_save_state_automatic(2000000),
+         "timed save proceeds after load completes");
+   filestream_delete("save_state_io_test_auto_-1.state");
+
    test_budget_unlimited();
    test_budget_exhausted();
    test_roundtrip(0, "round-trip is byte-exact with an unexpired budget");
