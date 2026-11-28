@@ -37,8 +37,12 @@ bool input_set_rumble_state(unsigned port, enum retro_rumble_effect e,
       uint16_t strength) { (void)port; (void)e; (void)strength; return true; }
 config_file_t *config_file_new_from_path_to_string(const char *p) { (void)p; return NULL; }
 config_file_t *config_file_new_alloc(void) { return NULL; }
-config_file_t *config_file_new_with_callback(const char *p,
-      config_file_cb_t *cb) { (void)p; (void)cb; return NULL; }
+struct config_entry_list *config_get_entry(const config_file_t *c,
+      const char *k) { (void)c; (void)k; return NULL; }
+bool config_get_entry_list_head(config_file_t *c,
+      struct config_file_entry *e) { (void)c; (void)e; return false; }
+bool config_get_entry_list_next(struct config_file_entry *e)
+{ (void)e; return false; }
 void config_file_free(config_file_t *c) { (void)c; }
 bool config_file_write(config_file_t *c, const char *p, bool s)
 { (void)c; (void)p; (void)s; return false; }
@@ -48,6 +52,10 @@ void config_set_string(config_file_t *c, const char *k, const char *v) { (void)c
 int filestream_delete(const char *p) { (void)p; return -1; }
 size_t fill_pathname_join(char *o, const char *d, const char *p, size_t n)
 { (void)d; (void)p; if (n) *o = '\0'; return 0; }
+size_t fill_pathname_join_special_ext(char *o, const char *d,
+      const char *p, const char *l, const char *e, size_t n)
+{ (void)d; (void)p; (void)l; (void)e; if (n) *o = '\0'; return 0; }
+char *find_last_slash(const char *s) { (void)s; return NULL; }
 const char *path_basename_nocompression(const char *p) { return p; }
 bool path_is_valid(const char *p) { (void)p; return false; }
 bool path_mkdir(const char *p) { (void)p; return false; }

@@ -164,8 +164,6 @@ struct cheat_manager
    uint8_t *matches;
    uint8_t **memory_buf_list;
    unsigned *memory_size_list;
-   unsigned int loading_cheat_size;
-   unsigned int loading_cheat_offset;
    unsigned ptr;
    unsigned size;
    unsigned buf_size;

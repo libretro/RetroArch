@@ -168,6 +168,43 @@ static void test_active_helper(void)
 #endif
 }
 
+/* One read of the file fills the list: the count may come last and
+ * in any base strtoul takes, a key given twice counts once (its
+ * first occurrence), indices past the count are dropped, and an
+ * append lands after the cheats already held */
+static void test_load_single_parse(void)
+{
+   static const char text[] =
+      "cheat1_desc = \"second\"\n"
+      "cheat0_desc = \"first\"\n"
+      "cheat0_desc = \"shadowed\"\n"
+      "cheat0_code = \"AAAA\"\n"
+      "cheat0_enable = \"true\"\n"
+      "cheat1_code = \"BBBB\"\n"
+      "cheat1_address = \"0x10\"\n"
+      "cheat2_desc = \"dropped\"\n"
+      "cheats = 0x2\n";
+   reset("test_load_single_parse", false);
+   filestream_write_file(DB "/order.cht", text, sizeof(text) - 1);
+   CHECK(cheat_manager_load(DB "/order.cht", false));
+   CHECK(cheat_manager_get_size() == 2);
+   CHECK(!strcmp(cheat_manager_get_desc(0), "first"));
+   CHECK(!strcmp(cheat_manager_state.cheats[0].code, "AAAA"));
+   CHECK(cheat_manager_state.cheats[0].state);
+   CHECK(!strcmp(cheat_manager_get_desc(1), "second"));
+   CHECK(!strcmp(cheat_manager_state.cheats[1].code, "BBBB"));
+   CHECK(cheat_manager_state.cheats[1].address == 0x10);
+   CHECK(cheat_manager_load(DB "/order.cht", true));
+   CHECK(cheat_manager_get_size() == 4);
+   CHECK(!strcmp(cheat_manager_get_desc(2), "first"));
+   CHECK(!strcmp(cheat_manager_get_desc(3), "second"));
+   CHECK(cheat_manager_state.cheats[3].address == 0x10);
+   filestream_write_file(DB "/none.cht", "cheats = 0\n", 11);
+   CHECK(!cheat_manager_load(DB "/none.cht", false));
+   CHECK(!cheat_manager_load(DB "/missing.cht", false));
+   CHECK(cheat_manager_get_size() == 4);
+}
+
 /* Each Load Cheat File folder is there to browse when picked */
 static void test_browse_dir(void)
 {
@@ -347,6 +384,7 @@ int main(void)
    test_zero_cheats_deletes_both();
    test_no_core_name();
    test_save_as_creates_user_dir();
+   test_load_single_parse();
    test_browse_dir();
    test_save_as_empty_deletes_in_folder();
    cheat_manager_state_free();

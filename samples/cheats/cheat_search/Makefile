@@ -10,7 +10,8 @@ SOURCES := cheat_search_test.c \
            $(LRC)/compat/compat_strl.c \
            $(LRC)/string/stdstring.c \
            $(LRC)/encodings/encoding_utf.c \
-           $(LRC)/features/features_cpu.c
+           $(LRC)/features/features_cpu.c \
+           $(LRC)/time/rtime.c
 
 # cheat_manager.h reaches setting_list.h as ../setting_list.h
 CFLAGS += -Wall -std=gnu99 -g1 -O0 -DRARCH_INTERNAL -DHAVE_CHEATS -DCHEAT_SCAN_TEST_HOOKS \

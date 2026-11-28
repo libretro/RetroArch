@@ -149,7 +149,8 @@ bool cheat_manager_save(
 {
    bool ret;
    unsigned i;
-   char cheats_file[PATH_MAX_LENGTH];
+   char cheats_buf[PATH_MAX_LENGTH];
+   const char *cheats_file     = path;
    config_file_t *conf         = NULL;
    cheat_manager_t *cheat_st   = &cheat_manager_state;
    unsigned int* data_ptrs[16] = { NULL};
@@ -175,13 +176,12 @@ bool cheat_manager_save(
    if (!cheat_st->cheats)
       return false;
 
-   if (!cheat_database)
-      strlcpy(cheats_file, path, sizeof(cheats_file));
-   else
+   if (cheat_database)
    {
-      size_t _len = fill_pathname_join_special(cheats_file, cheat_database,
-             path, sizeof(cheats_file));
-      strlcpy_lit(cheats_file + _len, ".cht", sizeof(cheats_file) - _len);
+      size_t _len = fill_pathname_join_special(cheats_buf, cheat_database,
+             path, sizeof(cheats_buf));
+      strlcpy_lit(cheats_buf + _len, ".cht", sizeof(cheats_buf) - _len);
+      cheats_file = cheats_buf;
    }
 
    if (!cheat_st->size)
@@ -450,26 +450,11 @@ static void cheat_manager_new(unsigned size)
    }
 }
 
-static void cheat_manager_load_cb_first_pass(char *key, char *value)
-{
-   cheat_manager_t *cheat_st   = &cheat_manager_state;
-
-   errno                       = 0;
-
-   if (string_is_equal(key, "cheats"))
-   {
-      cheat_st->loading_cheat_size = (unsigned)strtoul(value, NULL, 0);
-
-      if (errno != 0)
-         cheat_st->loading_cheat_size = 0;
-   }
-}
-
-static void cheat_manager_load_cb_second_pass(char *s, char *value)
+static void cheat_manager_load_entry(cheat_manager_t *cheat_st,
+      unsigned offset, const char *s, const char *value)
 {
    unsigned cheat_num, cheat_idx;
    char *numend                = NULL;
-   cheat_manager_t *cheat_st   = &cheat_manager_state;
 
    if (strncmp(s, "cheat", 5) != 0 || s[5] == '\0')
       return;
@@ -478,12 +463,12 @@ static void cheat_manager_load_cb_second_pass(char *s, char *value)
    if (numend == &s[5] || *numend == '\0')
       return;
 
-   if (cheat_num + cheat_st->loading_cheat_offset >= cheat_st->size)
+   if (cheat_num + offset >= cheat_st->size)
       return;
 
    s = numend + 1;
 
-   cheat_idx = cheat_num + cheat_st->loading_cheat_offset;
+   cheat_idx = cheat_num + offset;
 
    if (string_is_equal(s, "address"))
       cheat_st->cheats[cheat_idx].address = (unsigned)strtoul(value, NULL, 0);
@@ -535,29 +520,30 @@ static void cheat_manager_load_cb_second_pass(char *s, char *value)
 
 bool cheat_manager_load(const char *path, bool append)
 {
-   config_file_cb_t cb;
+   struct config_file_entry entry;
+   struct config_entry_list *list;
    unsigned          orig_size = 0;
    unsigned             cheats = 0;
    unsigned                  i = 0;
-   config_file_t         *conf = NULL;
    cheat_manager_t   *cheat_st = &cheat_manager_state;
-
-   cb.config_file_new_entry_cb = cheat_manager_load_cb_first_pass;
-
-   cheat_st->loading_cheat_size = 0;
-
-   conf = config_file_new_with_callback(path, &cb);
+   config_file_t         *conf = config_file_new_from_path_to_string(path);
 
    if (!conf)
       return false;
 
-   cheats = cheat_st->loading_cheat_size;
+   if ((list = config_get_entry(conf, "cheats")) && list->value)
+   {
+      errno  = 0;
+      cheats = (unsigned)strtoul(list->value, NULL, 0);
+      if (errno != 0)
+         cheats = 0;
+   }
 
    if (cheats == 0)
-      goto error;
-
-   config_file_free(conf);
-   conf = NULL;
+   {
+      config_file_free(conf);
+      return false;
+   }
 
    cheat_manager_alloc_if_empty();
 
@@ -589,21 +575,25 @@ bool cheat_manager_load(const char *path, bool append)
       cheat_st->cheats[i].memory_search_size = 3;
    }
 
-   cheat_st->loading_cheat_offset            = orig_size;
-   cb.config_file_new_entry_cb               =
-      cheat_manager_load_cb_second_pass;
-   conf = config_file_new_with_callback(path, &cb);
-
-   if (!conf)
-      return false;
+   /* The file's values are read straight from the one parse; a key
+    * given twice counts once, its first occurrence, as the lookup
+    * map holds it */
+   if (cheat_st->cheats && config_get_entry_list_head(conf, &entry))
+   {
+      do
+      {
+         if (     entry.key
+               && entry.value
+               && (list = config_get_entry(conf, entry.key))
+               && list->value == entry.value)
+            cheat_manager_load_entry(cheat_st, orig_size,
+                  entry.key, entry.value);
+      } while (config_get_entry_list_next(&entry));
+   }
 
    config_file_free(conf);
 
    return true;
-
-error:
-   config_file_free(conf);
-   return false;
 }
 
 bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
@@ -810,11 +800,10 @@ bool cheat_manager_get_code_state(unsigned i)
    return cheat_st->cheats[i].state;
 }
 
+/* <root>/<core>/<game>, built in @s alone */
 static size_t cheat_manager_get_game_specific_filename(
-      char *s, size_t len,
-      const char *path_cheat_database, bool saving)
+      char *s, size_t len, const char *path_cheat_database)
 {
-   char s1[PATH_MAX_LENGTH];
    struct retro_system_info sysinfo;
    runloop_state_t *runloop_st = runloop_state_get_ptr();
    const char *core_name       = NULL;
@@ -827,15 +816,22 @@ static size_t cheat_manager_get_game_specific_filename(
          || (!core_name || !*core_name)
          || (!game_name || !*game_name))
       return 0;
-   fill_pathname_join_special(s1, path_cheat_database, core_name,
-         sizeof(s1));
-   if (saving)
-   {
-      /* Check if directory is valid, if not, create it */
-      if (!path_is_valid(s1))
-         path_mkdir(s1);
-   }
-   return fill_pathname_join_special(s, s1, game_name, len);
+   return fill_pathname_join_special_ext(s, path_cheat_database,
+         core_name, game_name, "", len);
+}
+
+/* Creates the <core> folder holding @s, in place */
+static void cheat_manager_game_specific_mkdir(char *s)
+{
+   char *slash = find_last_slash(s);
+   char c;
+   if (!slash)
+      return;
+   c      = *slash;
+   *slash = '\0';
+   if (!path_is_valid(s))
+      path_mkdir(s);
+   *slash = c;
 }
 
 bool cheat_manager_user_dir_active(const char *path_cheat_database,
@@ -891,22 +887,16 @@ void cheat_manager_load_game_specific_cheats(const char *path_cheat_database,
    if (cheat_manager_user_dir_active(path_cheat_database, path_cheat_user))
    {
       if (!cheat_manager_get_game_specific_filename(
-               cheat_file, sizeof(cheat_file),
-               path_cheat_user,
-               false))
+               cheat_file, sizeof(cheat_file), path_cheat_user))
          return;
       if (     !path_is_valid(cheat_file)
             && (   !cheat_manager_get_game_specific_filename(
-                     cheat_file, sizeof(cheat_file),
-                     path_cheat_database,
-                     false)
+                     cheat_file, sizeof(cheat_file), path_cheat_database)
                 || !path_is_valid(cheat_file)))
          return;
    }
    else if (!cheat_manager_get_game_specific_filename(
-            cheat_file, sizeof(cheat_file),
-            path_cheat_database,
-            false))
+            cheat_file, sizeof(cheat_file), path_cheat_database))
       return;
 
    if (cheat_manager_load(cheat_file, true))
@@ -918,7 +908,6 @@ void cheat_manager_save_game_specific_cheats(const char *path_cheat_database,
 {
    char cheat_file[PATH_MAX_LENGTH];
    cheat_manager_t *cheat_st = &cheat_manager_state;
-   const char *root          = path_cheat_database;
 
    if (cheat_manager_user_dir_active(path_cheat_database, path_cheat_user))
    {
@@ -928,40 +917,32 @@ void cheat_manager_save_game_specific_cheats(const char *path_cheat_database,
       if (!cheat_st->size)
       {
          if (cheat_manager_get_game_specific_filename(
-                  cheat_file, sizeof(cheat_file),
-                  path_cheat_user,
-                  false))
+                  cheat_file, sizeof(cheat_file), path_cheat_user))
             filestream_delete(cheat_file);
          if (cheat_manager_get_game_specific_filename(
-                  cheat_file, sizeof(cheat_file),
-                  path_cheat_database,
-                  false))
+                  cheat_file, sizeof(cheat_file), path_cheat_database))
             filestream_delete(cheat_file);
          return;
       }
       /* Back to Cheat Files only when the game's file is there alone */
-      root = path_cheat_user;
-      if (     cheat_manager_get_game_specific_filename(
-                  cheat_file, sizeof(cheat_file),
-                  path_cheat_user,
-                  false)
-            && !path_is_valid(cheat_file)
+      if (!cheat_manager_get_game_specific_filename(
+               cheat_file, sizeof(cheat_file), path_cheat_user))
+         return;
+      if (     !path_is_valid(cheat_file)
             && cheat_manager_get_game_specific_filename(
-                  cheat_file, sizeof(cheat_file),
-                  path_cheat_database,
-                  false)
-            && path_is_valid(cheat_file))
-         root = path_cheat_database;
+                  cheat_file, sizeof(cheat_file), path_cheat_database)
+            && !path_is_valid(cheat_file)
+            && !cheat_manager_get_game_specific_filename(
+                  cheat_file, sizeof(cheat_file), path_cheat_user))
+         return;
    }
+   else if (!cheat_manager_get_game_specific_filename(
+            cheat_file, sizeof(cheat_file), path_cheat_database))
+      return;
 
-   if (cheat_manager_get_game_specific_filename(
-            cheat_file, sizeof(cheat_file),
-            root,
-            true))
-   {
-      if (cheat_manager_save(cheat_file, NULL, true))
-         RARCH_LOG("[Cheats] Save game-specific cheatfile: \"%s\".\n", cheat_file);
-   }
+   cheat_manager_game_specific_mkdir(cheat_file);
+   if (cheat_manager_save(cheat_file, NULL, true))
+      RARCH_LOG("[Cheats] Save game-specific cheatfile: \"%s\".\n", cheat_file);
 }
 
 bool cheat_manager_save_as(const char *name,
