@@ -219,6 +219,27 @@ static void lane(bool threaded, bool deletion, bool owned, bool no_memory,
    filestream_delete(manifest);
 }
 
+/* The manifests are saved even when the core assets directory does
+ * not exist yet. */
+static void missing_assets_dir(void)
+{
+   task_cloud_sync_state_t *st = (task_cloud_sync_state_t*)calloc(1, sizeof(*st));
+   char dir[160], manifest[192];
+   snprintf(dir, sizeof(dir), "%s/no_assets_yet", directory);
+   snprintf(manifest, sizeof(manifest), "%s/manifest.local", dir);
+   strlcpy(st->dir_core_assets, dir, sizeof(st->dir_core_assets));
+   st->updated_local_manifest = (file_list_t*)calloc(1, sizeof(file_list_t));
+   retro_atomic_int_init(&st->waiting, 0);
+   retro_atomic_int_init(&st->phase, CLOUD_SYNC_PHASE_DIFF);
+   task_cloud_sync_update_manifests(st);
+   CHECK(!st->failures);
+   CHECK(path_is_valid(manifest));
+   filestream_delete(manifest);
+   path_rmdir(dir);
+   file_list_free(st->updated_local_manifest);
+   free(st);
+}
+
 int main(void)
 {
    unsigned t;
@@ -231,6 +252,7 @@ int main(void)
    snprintf(local_path, sizeof(local_path), "%s/save.srm", directory);
    pathname_conform_slashes_to_os(local_path);
    snprintf(fetching_path, sizeof(fetching_path), "%s.rafetching", local_path);
+   missing_assets_dir();
    for (t = 0; t < 2; t++)
    {
       lane(t != 0, false, false, false, true);
