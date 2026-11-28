@@ -46,6 +46,7 @@
 #endif
 
 #ifdef HAVE_X11
+#include <dynamic/dylib.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/resource.h>
@@ -55,6 +56,9 @@
 #endif
 
 #include "../../../gfx/common/x11_common.h"
+#ifdef HAVE_XINERAMA
+#include "../../../gfx/common/xinerama_common.h"
+#endif
 #include "../../../gfx/common/x11_monitors.h"
 #include "../../../gfx/common/dbus_common.h"
 #ifdef HAVE_XRANDR
@@ -4009,7 +4013,6 @@ static void test_window_pointer_release(void)
    frames[0].buttons     = INPUT_POINTER_LEFT;
    frames[1]             = frames[0];
    windows[1].window     = 1;
-   windows[1].generation = video_driver_window_generation();
    touches[0]            = VIDEO_POS_PACK(10, 10);
    touches[1]            = VIDEO_POS_PACK(10, 10);
 
@@ -4021,6 +4024,8 @@ static void test_window_pointer_release(void)
       settings->bools.video_windows_enable        = true;
       window_test_run();
       CHECK(video_st->windows_wanted == 2u);
+      windows[1].generation = video_driver_window_generation();
+      window_test_draw_window(1, windows[1].generation);
       input_driver_publish_window_pointers(frames, windows, 2,
             INPUT_POINTERS_WINDOWS_SECOND);
       input_driver_publish_window_touches(touches, windows, 2, 3u, 3u);
@@ -4042,10 +4047,80 @@ static void test_window_pointer_release(void)
       CHECK(WINDOW_TEST_LEFT(0) == 1);
       CHECK(WINDOW_TEST_MOTION(0) == 3);
       CHECK(WINDOW_TEST_TOUCHES(RETRO_DEVICE_POINTER) == 1);
+      /* Its renderer lets it go; a driver still holding the press there
+       * publishes it again, and it stays let go */
+      video_driver_publish_window_layout(1, 0, 0, NULL, NULL, 0, 0);
+      input_driver_publish_window_pointers(frames, windows, 2,
+            INPUT_POINTERS_WINDOWS_SECOND);
+      input_driver_publish_window_touches(touches, windows, 2, 3u, 3u);
+      CHECK(WINDOW_TEST_LEFT(1) == 0);
+      CHECK(WINDOW_TEST_TOUCHES(RARCH_DEVICE_POINTER_SECOND) == 0);
+      CHECK(WINDOW_TEST_LEFT(0) == 1);
+      CHECK(WINDOW_TEST_TOUCHES(RETRO_DEVICE_POINTER) == 1);
    }
    settings->arrays.video_screen_display[1][0] = '\0';
    input_driver_publish_pointers(frames, 0, 0);
    input_driver_publish_touches(touches, 0, 0, 0);
+   window_test_end();
+}
+
+/* The menu up in the main window, a finger resting on Screen 2's own
+ * window and a tap on the main window: the menu reads the tap */
+static void test_window_menu_main_touch(void)
+{
+   static input_driver_t driver;
+   struct video_viewport vp;
+   input_pointer_frame_t frame;
+   input_video_window_t windows[2];
+   uint32_t touches[2];
+   const input_pointer_view_t *view;
+   uint32_t pos                   = 0;
+   uint32_t screen_pos            = 0;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   struct menu_state *menu_st     = menu_state_get_ptr();
+   input_driver_t *saved_driver   = input_st->current_driver;
+   uint16_t saved_menu_flags      = menu_st->flags;
+   video_window_ui_target_t saved_ui =
+      video_st->windows_ui[VIDEO_WINDOW_UI_MENU];
+
+   memset(&driver, 0, sizeof(driver));
+   driver.input_state    = menu_test_input_state;
+   driver.ident          = "menu_main_touch_test";
+   memset(&frame, 0, sizeof(frame));
+   memset(&vp, 0, sizeof(vp));
+   windows[0].window     = 1;
+   windows[0].generation = video_driver_window_generation();
+   windows[1].window     = 0;
+   windows[1].generation = 0;
+   touches[0]            = VIDEO_POS_PACK(10, 10);
+   touches[1]            = VIDEO_POS_PACK(600, 120);
+
+   window_test_begin();
+   window_test_run();
+   CHECK(video_st->windows_wanted == 2u);
+   window_test_draw_window(1, windows[0].generation);
+   input_st->current_driver = &driver;
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU].window = 0;
+   menu_st->flags          |= MENU_ST_FLAG_ALIVE;
+   input_driver_publish_window_pointers(&frame, NULL, 1, 0);
+   input_driver_publish_window_touches(touches, windows, 2, 3u, 3u);
+   input_driver_poll_devices();
+   view = input_driver_pointer_view();
+   CHECK(video_driver_get_viewport_info(&vp));
+   CHECK(video_driver_translate_coord_viewport(&vp, 600, 120, &pos,
+            &screen_pos, false));
+   CHECK(view->flags & INPUT_PTR_VIEW_SCR_PRESSED);
+   CHECK(view->scr_pos == screen_pos);
+   CHECK(view->flags & INPUT_PTR_VIEW_PTR_PRESSED);
+   CHECK(view->ptr_pos == pos);
+
+   menu_st->flags           = saved_menu_flags;
+   video_st->windows_ui[VIDEO_WINDOW_UI_MENU] = saved_ui;
+   input_st->current_driver = saved_driver;
+   input_driver_publish_window_pointers(&frame, NULL, 0, 0);
+   input_driver_publish_window_touches(touches, NULL, 0, 0, 0);
+   input_driver_poll_devices();
    window_test_end();
 }
 
@@ -6947,6 +7022,129 @@ static void test_window_idle_logo(void)
    p_disp->dispctx = saved;
 }
 #endif
+
+#if defined(HAVE_X11) || defined(HAVE_WAYLAND) || defined(NATIVE_SDL)
+/* The 3DS map of test_window_pointer_mapping() for the screens' own
+ * windows: Screen 2 is the lower screen, 320x240 at (240, 240) of an
+ * 800x480 frame */
+static void native_core_frame(video_windows_frame_t *snap)
+{
+   struct retro_video_view v[3];
+   memset(snap, 0, sizeof(*snap));
+   memset(v, 0, sizeof(v));
+   v[0].width = v[1].width = 400;
+   v[0].height = v[1].height = 240;
+   v[1].x      = 400;
+   v[0].eye    = RETRO_VIDEO_VIEW_EYE_LEFT;
+   v[1].eye    = RETRO_VIDEO_VIEW_EYE_RIGHT;
+   v[2].x      = 240;
+   v[2].y      = 240;
+   v[2].width  = 320;
+   v[2].height = 240;
+   v[2].screen = 1;
+   CHECK(video_views_validate(v, 3, &snap->core));
+   snap->core_dims = VIDEO_SCALE_PACK(800, 480);
+}
+
+/* Window 1's layout for its @dims pixels, published as a renderer
+ * publishes it after drawing the window */
+static void native_core_publish(const video_windows_frame_t *snap,
+      unsigned generation, unsigned dims)
+{
+   static video_views_layout_t layout;
+   video_driver_window_layout(snap, 1, dims, &layout);
+   CHECK(layout.num_placements == 1);
+   video_driver_publish_window_layout(1, generation, 0, &layout,
+         &snap->core, snap->core_dims, dims);
+}
+
+/* Where native_core_frame()'s lower screen is drawn in a window of
+ * @dims pixels: whole at its 4:3, centred. With s = min(W / 320,
+ * H / 240) it is 320s x 240s at ((W - 320s) / 2, (H - 240s) / 2). */
+static void native_core_rect(unsigned dims, int *x, int *y, int *w, int *h)
+{
+   double win_w = VIDEO_SCALE_W(dims);
+   double win_h = VIDEO_SCALE_H(dims);
+   double s     = win_w / 320.0;
+   if (win_h / 240.0 < s)
+      s = win_h / 240.0;
+   *x = (int)floor((win_w - 320.0 * s) / 2.0 + 0.5);
+   *y = (int)floor((win_h - 240.0 * s) / 2.0 + 0.5);
+   *w = (int)floor(320.0 * s + 0.5);
+   *h = (int)floor(240.0 * s + 0.5);
+}
+
+/* libretro's place of pixel @p of @size: -0x7fff at the first,
+ * 0x7fff at the last, p * 0xffff / (size - 1) - 0x8000 between */
+static int16_t native_core_norm(unsigned p, unsigned size)
+{
+   if (!p)
+      return -0x7fff;
+   if (p >= size - 1)
+      return 0x7fff;
+   return (int16_t)((long)p * 0xffffL / (long)(size - 1) - 0x8000L);
+}
+
+/* @v held to the @size pixels from @first */
+static int native_core_clamp(int v, int first, int size)
+{
+   if (v < first)
+      return first;
+   if (v >= first + size)
+      return first + size - 1;
+   return v;
+}
+
+/* What the core reads as RETRO_DEVICE_POINTER for pixel @x,@y of a
+ * window of @dims pixels showing the lower screen: the frame's pixel
+ * under it, 240 + (x - left) * 320 / (320s) across and 240 + (y - top)
+ * * 240 / (240s) down, placed in the 800x480 frame. A point on a bar is
+ * held to the screen's nearest edge. */
+static uint32_t native_core_pos(unsigned dims, int x, int y)
+{
+   int left, top, w, h;
+   native_core_rect(dims, &left, &top, &w, &h);
+   x = native_core_clamp(x, left, w);
+   y = native_core_clamp(y, top, h);
+   return VIDEO_POS_PACK(
+         native_core_norm(240 + (unsigned)(x - left) * 320 / (unsigned)w,
+            800),
+         native_core_norm(240 + (unsigned)(y - top) * 240 / (unsigned)h,
+            480));
+}
+
+/* The corners and centre of @w x @h at @x,@y, and a point on a bar
+ * beside it: six points at most */
+static unsigned native_rect_points(int x, int y, int w, int h,
+      int (*points)[2])
+{
+   unsigned i;
+   unsigned n = 5;
+   for (i = 0; i < 4; i++)
+   {
+      points[i][0] = (i & 1) ? x + w - 1 : x;
+      points[i][1] = (i & 2) ? y + h - 1 : y;
+   }
+   points[4][0] = x + w / 2;
+   points[4][1] = y + h / 2;
+   if (x > 0 || y > 0)
+   {
+      points[5][0] = (x > 0) ? x / 2 : x + w / 2;
+      points[5][1] = (x > 0) ? y + h / 2 : y / 2;
+      n++;
+   }
+   return n;
+}
+
+/* native_rect_points() of the lower screen in a window of @dims */
+static unsigned native_core_points(unsigned dims, int (*points)[2])
+{
+   int x, y, w, h;
+   native_core_rect(dims, &x, &y, &w, &h);
+   return native_rect_points(x, y, w, h, points);
+}
+#endif
+
 #include "native_windows.c"
 #include "native_x11.c"
 #include "native_wayland.c"
@@ -7057,7 +7255,9 @@ static void native_window_kept(const char *ident, enum gfx_ctx_api api,
             native_w32_focus(ctx, data, &request, &window, true);
 #endif
 #ifdef NATIVE_SDL
-         if (native_sdl_ident(ident))
+         if (     native_sdl_ident(ident)
+               && (     !native_sdl_driver("x11")
+                     || native_sdl_managed((SDL_Window*)window.surface)))
             native_sdl_focus(ctx, data, &request, &window, true);
 #endif
 #ifdef HAVE_WAYLAND
@@ -7456,6 +7656,216 @@ static void native_wl_kept_thread(const char *ident, enum gfx_ctx_api api,
 }
 #endif
 
+#if defined(NATIVE_WIN32) && defined(HAVE_THREADS)
+/* What a threaded driver does with screen 1's window, on the video
+ * thread: init makes it, takes the last driver's, or neither; free
+ * keeps it. FOREIGN is a driver of another kind (SDL): no Win32
+ * context, and its free holds the thread with a hook of its own. */
+enum native_w32_thread_init
+{
+   NATIVE_W32_THREAD_MAKE = 0,
+   NATIVE_W32_THREAD_TAKE,
+   NATIVE_W32_THREAD_NONE,
+   NATIVE_W32_THREAD_FOREIGN
+};
+
+typedef struct
+{
+   const char *ident;
+   enum gfx_ctx_api api;
+   unsigned major;
+   unsigned minor;
+   enum native_w32_thread_init init;
+   const gfx_ctx_driver_t *ctx;
+   void *data;
+   video_window_request_t request;
+   video_window_native_t window;
+   bool took;
+   bool foreign_ended;
+} native_w32_thread_t;
+
+static native_w32_thread_t native_w32_thread;
+
+static void *native_w32_thread_init(const video_info_t *info)
+{
+   native_w32_thread_t *job = &native_w32_thread;
+   unsigned display         = 0;
+   (void)info;
+   job->data = NULL;
+   job->took = false;
+   job->ctx  = NULL;
+   if (job->init == NATIVE_W32_THREAD_FOREIGN)
+      return job;
+   if (!(job->ctx = native_context(job->ident, job->api, job->major,
+         job->minor, &job->data)))
+      return NULL;
+   native_window_input = native_w32_pump;
+   if (job->init == NATIVE_W32_THREAD_TAKE)
+      job->took = job->ctx->windows->take(job->data, job->request.screen,
+            &job->window, &display);
+   else if (job->init == NATIVE_W32_THREAD_MAKE)
+   {
+      memset(&job->window, 0, sizeof(job->window));
+      job->request.generation = video_driver_window_generation();
+      if (job->ctx->windows->create(job->data, &job->request,
+            &job->window))
+         native_window_wait(job->ctx, job->data, &job->request,
+               &job->window, NATIVE_EVENT(RESUME), 0);
+   }
+   return job;
+}
+
+static bool native_w32_thread_frame(void *data, const void *frame,
+      unsigned dims, uint64_t count, unsigned pitch, const char *msg,
+      video_frame_info_t *info)
+{
+   return true;
+}
+
+static void native_w32_thread_foreign_ends(void)
+{
+   native_w32_thread.foreign_ended = true;
+}
+
+static void native_w32_thread_free(void *data)
+{
+   native_w32_thread_t *job = (native_w32_thread_t*)data;
+   if (!job->ctx)
+   {
+      video_thread_host_hold(native_w32_thread_foreign_ends);
+      return;
+   }
+   if (job->window.state)
+      job->ctx->windows->keep(job->data, &job->window);
+   job->ctx->destroy(job->data);
+   native_window_input = NULL;
+}
+
+/* A threaded driver up, its init being 'init'; its data in *data */
+static const video_driver_t *native_w32_thread_up(
+      enum native_w32_thread_init init, void **data)
+{
+   static video_driver_t driver;
+   const video_driver_t *threaded = NULL;
+   video_info_t info;
+   memset(&driver, 0, sizeof(driver));
+   memset(&info, 0, sizeof(info));
+   driver.init            = native_w32_thread_init;
+   driver.frame           = native_w32_thread_frame;
+   driver.free            = native_w32_thread_free;
+   driver.ident           = "native_w32_thread";
+   info.input_scale       = 1;
+   info.rgb32             = true;
+   native_w32_thread.init = init;
+   *data                  = NULL;
+   if (!video_init_thread(&threaded, data, &driver, info))
+   {
+      CHECK(!"threaded driver up");
+      return NULL;
+   }
+   return threaded;
+}
+
+/* Threaded video restarted with a screen's window up: it is kept on the
+ * video thread, held for the next driver, which takes it there as it
+ * was. One the next driver does not take goes once that driver is up;
+ * with the next driver not threaded, it goes with the thread, also when
+ * no main window was kept to hold it. */
+static void native_w32_kept_thread(const char *ident,
+      enum gfx_ctx_api api, unsigned major, unsigned minor)
+{
+   const video_driver_t *threaded;
+   void *data = NULL;
+   void *state;
+   HWND hwnd, main_hwnd;
+   memset(&native_w32_thread, 0, sizeof(native_w32_thread));
+   native_w32_thread.ident                  = ident;
+   native_w32_thread.api                    = api;
+   native_w32_thread.major                  = major;
+   native_w32_thread.minor                  = minor;
+   native_w32_thread.request.screen         = 1;
+   native_w32_thread.request.settings.mode  = VIDEO_WINDOW_SEPARATE;
+   native_w32_thread.request.settings.dims  = VIDEO_SCALE_PACK(320, 240);
+   win32_window_release_kept();
+
+   if (!(threaded = native_w32_thread_up(NATIVE_W32_THREAD_MAKE, &data)))
+      return;
+   state     = native_w32_thread.window.state;
+   hwnd      = native_w32_window(&native_w32_thread.window);
+   main_hwnd = main_window.hwnd;
+   threaded->free(data);
+   CHECK(video_thread_host_is_held());
+   CHECK(IsWindow(hwnd));
+   if (!(threaded = native_w32_thread_up(NATIVE_W32_THREAD_TAKE, &data)))
+      return;
+   fprintf(stderr, "native %s: threaded restart, screen window %s\n",
+         ident, native_w32_thread.took ? "kept" : "made again");
+   CHECK(native_w32_thread.took);
+   CHECK(main_window.hwnd == main_hwnd);
+   CHECK(native_w32_thread.window.state == state);
+   CHECK(native_w32_window(&native_w32_thread.window) == hwnd);
+   CHECK(IsWindow(hwnd));
+
+   /* Not taken by the next driver */
+   threaded->free(data);
+   if (!(threaded = native_w32_thread_up(NATIVE_W32_THREAD_NONE, &data)))
+      return;
+   fprintf(stderr, "native %s: threaded restart not taking it: %s\n",
+         ident, IsWindow(hwnd) ? "still up" : "gone");
+   CHECK(!IsWindow(hwnd));
+   threaded->free(data);
+   win32_window_release_kept();
+   CHECK(!video_thread_host_is_held());
+
+   /* The next driver of another kind, whose keep holds the thread with
+    * a hook of its own: the main window it cannot take goes once it is
+    * up, as its own teardown does */
+   if ((threaded = native_w32_thread_up(NATIVE_W32_THREAD_MAKE, &data)))
+   {
+      main_hwnd = main_window.hwnd;
+      threaded->free(data);
+      CHECK(IsWindow(main_hwnd) && video_thread_host_is_held());
+      native_w32_thread.foreign_ended = false;
+      if ((threaded = native_w32_thread_up(NATIVE_W32_THREAD_FOREIGN,
+            &data)))
+      {
+         fprintf(stderr, "native %s: another kind of driver up, the main "
+               "window left: %s\n", ident,
+               IsWindow(main_hwnd) ? "still up" : "gone");
+         CHECK(!IsWindow(main_hwnd));
+         threaded->free(data);
+         CHECK(video_thread_host_is_held());
+         win32_window_release_kept();
+         CHECK(native_w32_thread.foreign_ended);
+         CHECK(!video_thread_host_is_held());
+      }
+   }
+
+   /* Only a screen's window kept, then video not threaded */
+   _putenv("RETROARCH_WINDOW_KEEP=0");
+   if ((threaded = native_w32_thread_up(NATIVE_W32_THREAD_MAKE, &data)))
+   {
+      hwnd = native_w32_window(&native_w32_thread.window);
+      threaded->free(data);
+      CHECK(IsWindow(hwnd) && video_thread_host_is_held());
+      win32_window_release_kept();
+      fprintf(stderr, "native %s: kept alone, video not threaded: %s\n",
+            ident, IsWindow(hwnd) ? "still up" : "gone");
+      CHECK(!IsWindow(hwnd));
+      CHECK(!video_thread_host_is_held());
+      if ((threaded = native_w32_thread_up(NATIVE_W32_THREAD_MAKE, &data)))
+      {
+         fprintf(stderr, "native %s: screen 1 made again after: %s\n",
+               ident, native_w32_thread.window.state ? "yes" : "no");
+         CHECK(native_w32_thread.window.state != NULL);
+         threaded->free(data);
+         win32_window_release_kept();
+      }
+   }
+   _putenv("RETROARCH_WINDOW_KEEP=");
+}
+#endif
+
 /* 'core': a 3.2 core GL context, as glcore asks for; else the
  * driver's default one, as gl does */
 /* A window manager started beside the run frames the main window when
@@ -7747,6 +8157,12 @@ static void test_window_native_lifecycle(const char *ident, bool core)
       native_window_kept_gone(ident, api,
             api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
             api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0));
+#if defined(NATIVE_WIN32) && defined(HAVE_THREADS)
+   if (native_w32_ident(ident) && strcmp(ident, "d3d") != 0)
+      native_w32_kept_thread(ident, api,
+            api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
+            api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0));
+#endif
 #ifdef HAVE_WAYLAND
    if (native_wl_ident(ident))
       native_wl_kept_thread(ident, api,
@@ -8098,6 +8514,7 @@ int main(int argc, char **argv)
    test_window_turned_waiting();
    test_window_pointer_mapping();
    test_window_pointer_release();
+   test_window_menu_main_touch();
    test_window_menu_touch_window();
    test_window_menu_mouse_kept();
    test_window_generation();

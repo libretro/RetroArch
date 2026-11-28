@@ -1043,12 +1043,14 @@ static void native_sdl_touch_held(const gfx_ctx_driver_t *ctx, void *data,
 #endif
 
 /* Over the screen's window the mouse has no place on the main window's
- * screen, and a click is taken, unless the menu is up; over the main
- * window both are as ever */
+ * screen, and a click is taken, unless the menu is up, at the core's
+ * pixel its layout puts there; over the main window both are as ever */
 static void native_sdl_mouse(const gfx_ctx_driver_t *ctx, void *data,
-      const video_window_request_t *request, SDL_Window *secondary)
+      const video_window_request_t *request,
+      const video_window_native_t *window, SDL_Window *secondary)
 {
    uint32_t pos;
+   video_windows_frame_t snap;
    input_pointer_frame_t none;
    SDL_Window *primary = native_sdl_main(data);
    float density       = native_sdl_density(primary);
@@ -1070,6 +1072,9 @@ static void native_sdl_mouse(const gfx_ctx_driver_t *ctx, void *data,
    {
       struct menu_state *menu_st = menu_state_get_ptr();
       uint32_t menu_flags        = menu_st->flags;
+      /* Drawn, as a renderer has drawn it before it is clicked */
+      native_core_frame(&snap);
+      native_core_publish(&snap, window->generation, window->dims);
       NATIVE_SDL_INPUT.poll(in);
       CHECK(input_driver_device_pos(0, RARCH_DEVICE_MOUSE_SCREEN, 0)
             == VIDEO_POS_PACK(-0x8000, -0x8000));
@@ -1081,6 +1086,13 @@ static void native_sdl_mouse(const gfx_ctx_driver_t *ctx, void *data,
                == VIDEO_POS_PACK(-0x8000, -0x8000));
          CHECK(input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
                   RETRO_DEVICE_ID_MOUSE_LEFT));
+         /* 70,90 is pixel 70,90 times the window's density */
+         CHECK(input_driver_device_pos(0, RETRO_DEVICE_POINTER, 0)
+               == native_core_pos(window->dims,
+                  (int)(70 * native_sdl_density(secondary)),
+                  (int)(90 * native_sdl_density(secondary))));
+         CHECK(input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+                  RETRO_DEVICE_ID_POINTER_PRESSED) == 1);
          menu_st->flags |= MENU_ST_FLAG_ALIVE;
          NATIVE_SDL_INPUT.poll(in);
          CHECK(!input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
@@ -1091,6 +1103,7 @@ static void native_sdl_mouse(const gfx_ctx_driver_t *ctx, void *data,
       else
          fprintf(stderr, "native sdl: no click to send here, "
                "the screen's click not checked\n");
+      video_driver_publish_window_layout(1, 0, 0, NULL, NULL, 0, 0);
    }
    else
       fprintf(stderr, "native sdl: the pointer cannot be put over the "
@@ -1261,7 +1274,20 @@ static void native_sdl_replace(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(window->state == NULL && window->surface == NULL);
    request->generation = video_driver_window_generation();
    CHECK(ctx->windows->create(data, request, window));
+#ifdef HAVE_SDL3
+   /* One made fullscreen is drawn first once SDL has it so: SDL's
+    * wayland asks for it after the window is shown, and a frame before
+    * the answer maps it as a window for a window manager to place */
+   if (request->settings.fullscreen && native_sdl_driver("wayland"))
+      CHECK(!window->presentable || (SDL_GetWindowFlags(
+            (SDL_Window*)window->surface) & SDL_WINDOW_FULLSCREEN));
+#endif
    native_window_wait(ctx, data, request, window, NATIVE_EVENT(RESUME), 0);
+#ifdef HAVE_SDL3
+   if (request->settings.fullscreen && native_sdl_driver("wayland"))
+      CHECK(SDL_GetWindowFlags((SDL_Window*)window->surface)
+            & SDL_WINDOW_FULLSCREEN);
+#endif
    native_sdl_map(ctx, data, window);
 }
 
@@ -1355,6 +1381,47 @@ static bool native_sdl_close_queued(SDL_Window *primary)
    return false;
 }
 
+#ifdef _WIN32
+#define NATIVE_SDL_GLAPI __stdcall
+#else
+#define NATIVE_SDL_GLAPI
+#endif
+typedef void (NATIVE_SDL_GLAPI *native_sdl_clear_color_t)(float, float,
+      float, float);
+typedef void (NATIVE_SDL_GLAPI *native_sdl_clear_t)(unsigned);
+typedef void (NATIVE_SDL_GLAPI *native_sdl_read_pixels_t)(int, int, int, int,
+      unsigned, unsigned, void*);
+
+/* The main window's frame is drawn before the screens' and swapped after
+ * them: a screen's bind, present and the bind back leave it as drawn */
+static void native_sdl_gl_main_kept(const gfx_ctx_driver_t *ctx,
+      void *data, video_window_native_t *window)
+{
+   unsigned char px[4];
+   native_sdl_clear_color_t clear_color = (native_sdl_clear_color_t)
+      SDL_GL_GetProcAddress("glClearColor");
+   native_sdl_clear_t clear             = (native_sdl_clear_t)
+      SDL_GL_GetProcAddress("glClear");
+   native_sdl_read_pixels_t read_pixels = (native_sdl_read_pixels_t)
+      SDL_GL_GetProcAddress("glReadPixels");
+   CHECK(clear_color && clear && read_pixels);
+   if (!clear_color || !clear || !read_pixels)
+      return;
+   clear_color(0.0f, 1.0f, 0.0f, 1.0f);
+   clear(0x4000 /* GL_COLOR_BUFFER_BIT */);
+   CHECK(ctx->windows->bind_gl(data, window));
+   clear_color(1.0f, 1.0f, 0.0f, 1.0f);
+   clear(0x4000);
+   CHECK(ctx->windows->present_gl(data, window));
+   CHECK(ctx->windows->bind_gl(data, NULL));
+   memset(px, 0, sizeof(px));
+   read_pixels(0, 0, 1, 1, 0x1908 /* GL_RGBA */,
+         0x1401 /* GL_UNSIGNED_BYTE */, px);
+   fprintf(stderr, "native sdl: the main window's back buffer after a "
+         "screen's present: %u,%u,%u\n", px[0], px[1], px[2]);
+   CHECK(px[0] == 0 && px[1] == 255 && px[2] == 0);
+}
+
 static void native_sdl_gl(const gfx_ctx_driver_t *ctx, void *data,
       video_window_native_t *window)
 {
@@ -1385,6 +1452,7 @@ static void native_sdl_gl(const gfx_ctx_driver_t *ctx, void *data,
    fprintf(stderr, "native sdl: GL through %s\n",
          eglGetCurrentContext() != EGL_NO_CONTEXT ? "EGL" : "the platform");
 #endif
+   native_sdl_gl_main_kept(ctx, data, window);
    /* Presents are timed where 20 at interval 1 take at least 0.6 of 20
     * frame periods: 30 at interval 0 must take under 0.6 of 30 */
    if (refresh > 0.0f)
@@ -1743,18 +1811,40 @@ static void native_sdl_monitors_check(const gfx_ctx_driver_t *ctx,
             " monitor not checked\n");
 }
 
-/* Where SDL's driver cannot make screen windows (cocoa, offscreen),
- * the context's table is not usable, so the frame keeps the screens in
- * the main window. False on the drivers that can. */
+/* Whether SDL was told to make its GL through EGL */
+static bool native_sdl_egl_forced(void)
+{
+#ifdef HAVE_SDL3
+   return SDL_GetHintBoolean(SDL_HINT_VIDEO_FORCE_EGL, false);
+#elif defined(SDL_HINT_VIDEO_X11_FORCE_EGL)
+   return SDL_GetHintBoolean(SDL_HINT_VIDEO_X11_FORCE_EGL, SDL_FALSE);
+#else
+   return false;
+#endif
+}
+
+/* Where SDL's driver cannot make screen windows (cocoa, offscreen), or
+ * its GL is GLX, which loses the main window's back buffer to a screen's
+ * bind, the context's table is not usable, so the frame keeps the
+ * screens in the main window. GL through EGL on X11 may be kept from
+ * them too (SDL 2's context goes by the hint), unless EGL was forced.
+ * False where it makes them. */
 static bool native_sdl_no_windows(const gfx_ctx_driver_t *ctx, void *data)
 {
-   bool usable;
-   if (     native_sdl_driver("x11") || native_sdl_driver("wayland")
-         || native_sdl_driver("windows"))
+   bool usable = video_windows_usable(ctx->windows);
+   bool gl_x11 = ctx->windows && ctx->windows->bind_gl
+      && native_sdl_driver("x11");
+   bool glx    = false;
+#ifdef NATIVE_EGL
+   glx = gl_x11 && eglGetCurrentContext() == EGL_NO_CONTEXT;
+#endif
+   if (     !glx && (usable || !gl_x11)
+         && (     native_sdl_driver("x11") || native_sdl_driver("wayland")
+               || native_sdl_driver("windows")))
       return false;
-   fprintf(stderr, "native sdl: %s, no screen windows\n",
-         SDL_GetCurrentVideoDriver());
-   usable = video_windows_usable(ctx->windows);
+   fprintf(stderr, "native sdl: %s%s, no screen windows\n",
+         SDL_GetCurrentVideoDriver(), glx ? " through GLX" : "");
+   CHECK(!native_sdl_egl_forced());
    CHECK(ctx->windows != NULL && !usable);
    ctx->destroy(data);
    /* As gl2 and vulkan advertise screen windows */
@@ -2629,7 +2719,8 @@ static void native_sdl_slow_leave(const gfx_ctx_driver_t *ctx,
 #ifdef HAVE_X11
 /* The window manager 'fix' plays, with SubstructureRedirect on the root:
  * the window's moves asked and answered, its fullscreen REMOVEs, and its
- * fullscreen ADDs, with those that came while a move was out */
+ * fullscreen ADDs, with those that came while a move was out. Sizes it
+ * makes are no larger than most_w x most_h where those are set. */
 typedef struct
 {
    XWindowChanges changes;
@@ -2640,6 +2731,8 @@ typedef struct
    unsigned removes;
    unsigned adds;
    unsigned early;
+   int most_w;
+   int most_h;
 } native_sdl_wm_t;
 
 /* Takes what came; with 'answer', makes the moves out as asked */
@@ -2687,6 +2780,10 @@ static void native_sdl_wm_moves(Display *fix, Window xwin,
    }
    if (answer && wm->answered < wm->asked)
    {
+      if (wm->most_w && wm->changes.width > wm->most_w)
+         wm->changes.width  = wm->most_w;
+      if (wm->most_h && wm->changes.height > wm->most_h)
+         wm->changes.height = wm->most_h;
       XConfigureWindow(fix, xwin, (unsigned)wm->mask, &wm->changes);
       XSync(fix, False);
       wm->mask     = 0;
@@ -2860,6 +2957,171 @@ static void native_sdl_fullscreen_move(const gfx_ctx_driver_t *ctx,
    XSync(fix, False);
    native_sdl_wait_fullscreen(ctx, data, r, window, monitors, to, true,
          false);
+   XCloseDisplay(fix);
+}
+
+#ifdef HAVE_THREADS
+static retro_atomic_int_t native_sdl_wm_running;
+
+typedef struct
+{
+   native_sdl_wm_t wm;
+   Display *fix;
+   Window xwin;
+} native_sdl_wm_thread_t;
+
+/* The manager on a thread of its own, answering while SDL waits */
+static void native_sdl_wm_loop(void *data)
+{
+   native_sdl_wm_thread_t *run = (native_sdl_wm_thread_t*)data;
+   while (retro_atomic_load_acquire_int(&native_sdl_wm_running))
+   {
+      native_sdl_wm_moves(run->fix, run->xwin, &run->wm, true);
+      retro_sleep(1);
+   }
+}
+#endif
+
+/* Edits with the fixture as the window manager: X asks it for a move
+ * alone and Size for a size alone. After a size it never makes, and
+ * after one it makes smaller while SDL waits, an X edit asks for the
+ * move alone, not that size again, which SDL 2's x11 would wait up to
+ * 100 ms on. No manager may be running. */
+static void native_sdl_asked(const gfx_ctx_driver_t *ctx, void *data,
+      video_window_request_t *r, video_window_native_t *window,
+      SDL_Rect want, float density)
+{
+   Display *dpy;
+   Window xwin;
+   unsigned i;
+   SDL_Window *win;
+   native_sdl_wm_t wm;
+   Display *fix = NULL;
+#ifdef HAVE_THREADS
+   native_sdl_wm_thread_t run;
+   sthread_t *thread;
+#endif
+
+   r->settings.monitor    = 0;
+   r->settings.fullscreen = false;
+   r->settings.pos        = VIDEO_POS_PACK(want.x, want.y);
+   r->settings.dims       = VIDEO_SCALE_PACK(400, 300);
+   r->settings.pos_set    = true;
+   native_sdl_replace(ctx, data, r, window);
+   win = (SDL_Window*)window->surface;
+   native_sdl_wait_rect_at(ctx, data, r, window, want, false, 0, NULL);
+   native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+   if (native_sdl_x11(win, &dpy, &xwin))
+      fix = XOpenDisplay(DisplayString(dpy));
+   CHECK(fix != NULL);
+   if (!fix)
+      return;
+   XSelectInput(fix, DefaultRootWindow(fix), SubstructureRedirectMask);
+   XSync(fix, False);
+
+   /* X, Size, a Size the manager never makes, then X */
+   for (i = 0; i < 4; i++)
+   {
+      retro_time_t start;
+      unsigned long other;
+      bool move = i == 0 || i == 3;
+      memset(&wm, 0, sizeof(wm));
+      other = move ? (CWWidth | CWHeight) : (CWX | CWY);
+      if (move)
+      {
+         want.x          += 40;
+         r->settings.pos  = VIDEO_POS_PACK(want.x, want.y);
+      }
+      else
+         r->settings.dims = i == 1 ? VIDEO_SCALE_PACK(420, 310)
+            : VIDEO_SCALE_PACK(440, 330);
+      if (i == 1)
+      {
+         want.w = (int)(420 / density);
+         want.h = (int)(310 / density);
+      }
+      start = cpu_features_get_time_usec();
+      ctx->windows->update(data, window, r);
+      if (i == 3)
+         fprintf(stderr, "native sdl: an X edit after a size never made "
+               "took %d ms\n",
+               (int)((cpu_features_get_time_usec() - start) / 1000));
+      XSync(dpy, False);
+      XSync(fix, False);
+      native_sdl_wm_moves(fix, xwin, &wm, false);
+      if (wm.mask & other)
+         fprintf(stderr, "native sdl: edit %u asked for %s too\n", i,
+               move ? "a size" : "a move");
+      CHECK(wm.mask & (move ? (CWX | CWY) : (CWWidth | CWHeight)));
+      CHECK(!(wm.mask & other));
+      if (i == 2)
+      {
+         native_window_settle(ctx, data, r,
+               VIDEO_WINDOW_SETTLE_USEC + 100000);
+         continue;
+      }
+      native_sdl_wm_moves(fix, xwin, &wm, true);
+      if (i < 2)
+         native_sdl_wait_rect_at(ctx, data, r, window, want, false, 0,
+               NULL);
+   }
+
+#ifdef HAVE_THREADS
+   /* A Size it makes smaller while SDL waits, then X */
+   memset(&run, 0, sizeof(run));
+   run.fix          = fix;
+   run.xwin         = xwin;
+   run.wm.most_w    = 450;
+   run.wm.most_h    = 335;
+   r->settings.dims = VIDEO_SCALE_PACK(460, 340);
+   retro_atomic_store_release_int(&native_sdl_wm_running, 1);
+   thread = sthread_create(native_sdl_wm_loop, &run);
+   CHECK(thread != NULL);
+   if (thread)
+   {
+      retro_time_t start;
+      int w = 0;
+      int h = 0;
+      ctx->windows->update(data, window, r);
+      SDL_GetWindowSize(win, &w, &h);
+      retro_atomic_store_release_int(&native_sdl_wm_running, 0);
+      sthread_join(thread);
+      /* an ask SDL sends without waiting may come after: answered too */
+      XSync(dpy, False);
+      XSync(fix, False);
+      native_sdl_wm_moves(fix, xwin, &run.wm, true);
+      native_window_settle(ctx, data, r, VIDEO_WINDOW_SETTLE_USEC + 100000);
+      /* where SDL does not wait, a second ask costs nothing */
+      if (w != (int)(450 / density) || h != (int)(335 / density))
+         fprintf(stderr, "native sdl: SDL had %dx%d once the Size edit "
+               "returned, not the size made, so an ask again not "
+               "checked\n", w, h);
+      else
+      {
+         memset(&wm, 0, sizeof(wm));
+         want.x          += 40;
+         r->settings.pos  = VIDEO_POS_PACK(want.x, want.y);
+         start            = cpu_features_get_time_usec();
+         ctx->windows->update(data, window, r);
+         fprintf(stderr, "native sdl: an X edit after a size made smaller "
+               "took %d ms\n",
+               (int)((cpu_features_get_time_usec() - start) / 1000));
+         XSync(dpy, False);
+         XSync(fix, False);
+         native_sdl_wm_moves(fix, xwin, &wm, false);
+         if (wm.mask & (CWWidth | CWHeight))
+            fprintf(stderr, "native sdl: the X edit asked for %dx%d "
+                  "again\n", wm.changes.width, wm.changes.height);
+         CHECK(wm.mask & (CWX | CWY));
+         CHECK(!(wm.mask & (CWWidth | CWHeight)));
+         native_sdl_wm_moves(fix, xwin, &wm, true);
+      }
+   }
+   else
+      retro_atomic_store_release_int(&native_sdl_wm_running, 0);
+#endif
+   XSelectInput(fix, DefaultRootWindow(fix), NoEventMask);
+   XSync(fix, False);
    XCloseDisplay(fix);
 }
 #endif
@@ -3161,6 +3423,15 @@ static void native_sdl_updates(const gfx_ctx_driver_t *ctx, void *data,
       want.h          = (int)(300 / density);
       native_sdl_kept_max(ctx, data, &r, window, want, i == 1);
    }
+   /* One that answers each edit's asks, then keeps it from a size */
+   if (!managed && native_sdl_driver("x11"))
+   {
+      want.x = x + 200;
+      want.y = y + 150;
+      want.w = (int)(400 / density);
+      want.h = (int)(300 / density);
+      native_sdl_asked(ctx, data, &r, window, want, density);
+   }
    /* One slow to take it out of fullscreen */
    for (i = 0; !managed && native_sdl_driver("x11") && i < 3; i++)
    {
@@ -3219,6 +3490,19 @@ static void native_sdl_updates(const gfx_ctx_driver_t *ctx, void *data,
             false);
       native_sdl_wait_rect(ctx, data, &r, window, want);
    }
+
+#ifdef HAVE_SDL3
+   /* Made fullscreen on the compositor's first output */
+   if (native_sdl_driver("wayland"))
+   {
+      r.settings.monitor    = 1;
+      r.settings.fullscreen = true;
+      r.settings.pos_set    = false;
+      native_sdl_replace(ctx, data, &r, window);
+      native_sdl_wait_fullscreen(ctx, data, &r, window, monitors, 0, true,
+            true);
+   }
+#endif
 
    native_sdl_replace(ctx, data, request, window);
    /* It came up where it was put, which no GEOMETRY says */
@@ -3473,6 +3757,14 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    if (     native_sdl_driver("x11") || native_sdl_driver("wayland")
          || native_sdl_driver("windows"))
       native_sdl_updates(ctx, data, request, window, &home);
+   /* With no window manager, only the steps that play one. A step
+    * that starts one sets NATIVE_WM. */
+   if (     native_sdl_driver("x11")
+         && !native_sdl_managed((SDL_Window*)window->surface))
+   {
+      CHECK(!getenv("NATIVE_WM"));
+      return;
+   }
 #if defined(HAVE_SDL3) || SDL_VERSION_ATLEAST(2, 0, 14)
    native_sdl_gone(ctx, data, request, window, &home);
 #endif
@@ -3677,7 +3969,7 @@ static void native_sdl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    native_sdl_main_resize(ctx, data);
 
    if (mapped)
-      native_sdl_mouse(ctx, data, request, secondary);
+      native_sdl_mouse(ctx, data, request, window, secondary);
 #ifdef HAVE_SDL3
    if (mapped)
    {

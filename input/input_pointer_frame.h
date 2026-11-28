@@ -101,6 +101,22 @@ static uint32_t input_pointer_windows_set(input_video_window_t *kept,
          in_window |= (uint32_t)1 << i;
    return in_window;
 }
+
+/* Of @in, the bits of @count windows closed or made again since: a
+ * generation never comes back, so what a driver still holds pressed in
+ * one stays let go */
+static uint32_t input_pointer_windows_gone(
+      const input_video_window_t *windows, unsigned count, uint32_t in)
+{
+   unsigned i;
+   uint32_t gone = 0;
+   for (i = 0; i < count; i++)
+      if (     (in & ((uint32_t)1 << i))
+            && !video_driver_window_live(windows[i].window,
+               windows[i].generation))
+         gone |= (uint32_t)1 << i;
+   return gone;
+}
 #endif
 
 static void input_pointer_frames_set(const input_pointer_frame_t *frames,
@@ -114,18 +130,20 @@ static void input_pointer_frames_set(const input_pointer_frame_t *frames,
 #ifdef HAVE_VIDEO_WINDOWS
    input_pointers.in_window     = (uint16_t)input_pointer_windows_set(
          input_pointers.window, windows, count);
-#if defined(HAVE_MENU) && !defined(ANDROID)
-   /* While the menu is up, nothing presses in a screen's own window it
-    * is not in */
+   /* Nothing presses in a window gone, nor, while the menu is up, in a
+    * screen's own window it is not in */
    {
       unsigned i;
-      uint32_t muted = input_pointer_windows_muted(input_pointers.window,
+      uint32_t muted = input_pointer_windows_gone(input_pointers.window,
             count, input_pointers.in_window);
+#if defined(HAVE_MENU) && !defined(ANDROID)
+      muted |= input_pointer_windows_muted(input_pointers.window,
+            count, input_pointers.in_window);
+#endif
       for (i = 0; muted; i++, muted >>= 1)
          if (muted & 1)
             input_pointers.frame[i].buttons = 0;
    }
-#endif
 #else
    (void)windows;
 #endif
@@ -154,6 +172,8 @@ static void input_pointer_touches_set(const uint32_t *pos,
 #ifdef HAVE_VIDEO_WINDOWS
    input_pointers.touch_in_window = input_pointer_windows_set(
          input_pointers.touch_window, windows, count);
+   down &= ~input_pointer_windows_gone(input_pointers.touch_window, count,
+         input_pointers.touch_in_window);
 #if defined(HAVE_MENU) && !defined(ANDROID)
    down &= ~input_pointer_windows_muted(input_pointers.touch_window, count,
          input_pointers.touch_in_window);
@@ -198,14 +218,17 @@ static unsigned input_pointer_of_port(unsigned port, unsigned device)
 #ifdef HAVE_VIDEO_WINDOWS
 /* @pos in a screen's own window, through the layout it last published:
  * off-screen once the window is gone, and nowhere on the main window's
- * screen. */
-static void input_pointer_window_place(const input_video_window_t *w,
+ * screen. False once it is gone, which under threaded video can be
+ * after the poll. */
+static bool input_pointer_window_place(const input_video_window_t *w,
       uint32_t pos, bool confined, uint32_t *place, uint32_t *screen_pos)
 {
    *screen_pos = VIDEO_POS_PACK(-0x8000, -0x8000);
-   if (!video_driver_translate_window_point(w->window, w->generation,
+   if (video_driver_translate_window_point(w->window, w->generation,
             VIDEO_POS_X(pos), VIDEO_POS_Y(pos), !confined, place))
-      *place   = VIDEO_POS_PACK(-0x8000, -0x8000);
+      return true;
+   *place      = VIDEO_POS_PACK(-0x8000, -0x8000);
+   return video_driver_window_live(w->window, w->generation);
 }
 #endif
 
@@ -230,9 +253,12 @@ static bool input_pointer_place(unsigned i, bool confined,
       uint32_t place = 0;
 #ifdef HAVE_VIDEO_WINDOWS
       if (in_window)
-         input_pointer_window_place(&input_pointers.window[i],
-               input_pointers.frame[i].pos, confined,
-               &place, &input_pointers.screen_pos[i]);
+      {
+         if (!input_pointer_window_place(&input_pointers.window[i],
+                  input_pointers.frame[i].pos, confined,
+                  &place, &input_pointers.screen_pos[i]))
+            input_pointers.frame[i].buttons = 0;
+      }
       else
 #endif
       if (!video_driver_translate_coord_viewport(&input_pointers.vp,
@@ -279,9 +305,12 @@ static bool input_touch_place(unsigned t, bool confined,
    {
 #ifdef HAVE_VIDEO_WINDOWS
       if (in_window)
-         input_pointer_window_place(&input_pointers.touch_window[t],
-               input_pointers.touch_pos[t], confined,
-               kept, &input_pointers.touch_screen_pos[t]);
+      {
+         if (!input_pointer_window_place(&input_pointers.touch_window[t],
+                  input_pointers.touch_pos[t], confined,
+                  kept, &input_pointers.touch_screen_pos[t]))
+            input_pointers.touch_down &= ~bit;
+      }
       else
 #endif
       if (!video_driver_translate_coord_viewport(&input_pointers.vp,
@@ -352,6 +381,26 @@ static uint32_t input_pointer_screen_place(unsigned i)
    return input_pointers.frame[i].pos;
 }
 
+#ifdef HAVE_VIDEO_WINDOWS
+/* Device @i and the touches down, placed if in a screen's own window,
+ * before a press is read without a place: placing lets go of one
+ * whose window went since the poll. */
+static void input_pointer_place_windows(unsigned i, bool touches)
+{
+   uint32_t pos, screen_pos;
+   unsigned t;
+   if (     i < input_pointers.count
+         && (input_pointers.in_window & (1 << i))
+         && input_pointers.frame[i].buttons)
+      input_pointer_place(i, true, &pos, &screen_pos);
+   if (touches)
+      for (t = 0; t < input_pointers.touch_count; t++)
+         if (     input_pointers.touch_in_window & input_pointers.touch_down
+               & ((uint32_t)1 << t))
+            input_touch_place(t, true, &pos, &screen_pos);
+}
+#endif
+
 /* Whether mouse @f, standing for touch @idx, is down. */
 static bool input_pointer_mouse_down(const input_pointer_frame_t *f,
       unsigned idx)
@@ -404,6 +453,9 @@ static unsigned input_pointer_count(unsigned i, bool second)
    unsigned n = 0;
    unsigned t;
    int first;
+#ifdef HAVE_VIDEO_WINDOWS
+   input_pointer_place_windows(i, true);
+#endif
    for (t = 0; t < input_pointers.touch_count; t++)
       if (     input_touch_in_list(t, second)
             && (input_pointers.touch_down & ((uint32_t)1 << t)))
@@ -606,6 +658,9 @@ static bool input_pointer_frame_read(unsigned port, unsigned device,
       case RARCH_DEVICE_MOUSE_SCREEN:
          pos = (device == RETRO_DEVICE_MOUSE)
             ? f->rel : input_pointer_screen_place(i);
+#ifdef HAVE_VIDEO_WINDOWS
+         input_pointer_place_windows(i, false);
+#endif
          switch (id)
          {
             case RETRO_DEVICE_ID_MOUSE_X:
@@ -655,7 +710,6 @@ static bool input_pointer_frame_read(unsigned port, unsigned device,
             bool screen = (device == RARCH_DEVICE_POINTER_SCREEN);
             int slot;
             bool real;
-            /* how many are down needs no place for them */
             if (id == RETRO_DEVICE_ID_POINTER_COUNT)
             {
                *out = (int16_t)input_pointer_count(i, second);
@@ -782,6 +836,22 @@ static bool input_pointer_window_touch(unsigned window, unsigned idx,
       return true;
    }
    return false;
+}
+
+/* The index of the first touch slot not in a screen's window, present
+ * or not, for a reader of the main window alone: one in a screen's own
+ * window has no place there, and with no screen windows it is slot 0.
+ * 0 if every slot is in one, and with WINDOWS_SECOND, whose main list
+ * is that window's already. */
+static unsigned input_pointer_main_window_touch(void)
+{
+   unsigned t;
+   if (input_pointers.flags & INPUT_POINTERS_WINDOWS_SECOND)
+      return 0;
+   for (t = 0; t < input_pointers.touch_count; t++)
+      if (!(input_pointers.touch_in_window & ((uint32_t)1 << t)))
+         return t;
+   return 0;
 }
 
 /* Screen window @window gone: what its devices and touches hold down,

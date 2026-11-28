@@ -265,6 +265,9 @@ typedef struct sdl3_video_window
    /* When an update stops waiting for SDL: for a MAXIMIZED 'waiting',
     * then for the frame of a 'framed' one or the display of 'via' */
    retro_time_t wait_by;
+   /* Made fullscreen on SDL's wayland and not drawn until SDL has it
+    * so: when it is drawn all the same; 0 when not waiting */
+   retro_time_t fullscreen_by;
    SDL_Window *win;
    /* What SDL is still to finish of what it was asked, which an
     * update waits for: MAXIMIZED until wait_by, FULLSCREEN as long as
@@ -284,6 +287,15 @@ typedef struct sdl3_video_window
    /* Bounds the next pump judges, where 'judge' */
    unsigned judge_pos;
    unsigned judge_dims;
+   /* Where it was last put as a window, as common.placed_pos and
+    * placed_dims, and where SDL had it before and after it was last
+    * asked to move it and to size it; put_dims 0 for nothing to go by */
+   unsigned put_pos;
+   unsigned put_dims;
+   unsigned had_pos;
+   unsigned had_dims;
+   unsigned got_pos;
+   unsigned got_dims;
    bool fullscreen;
    bool windowed_set;
    /* It left fullscreen on its way to a fullscreen request's display:

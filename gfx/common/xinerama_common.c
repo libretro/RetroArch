@@ -122,9 +122,11 @@ void xinerama_save_last_used_monitor(Window win)
    int x = 0, y = 0;
 
    XGetWindowAttributes(g_x11_dpy, g_x11_win, &target);
+   /* From the window's own origin: target.x and target.y are within its
+    * parent, the root itself under a manager that does not reparent */
    XTranslateCoordinates(g_x11_dpy, g_x11_win,
          DefaultRootWindow(g_x11_dpy),
-         target.x, target.y, &x, &y, &child);
+         0, 0, &x, &y, &child);
 
    g_x11_screen = xinerama_get_monitor(g_x11_dpy, x, y,
          target.width, target.height);

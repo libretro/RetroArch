@@ -498,6 +498,15 @@ static void native_wl_pointer(gfx_ctx_wayland_data_t *wl,
    CHECK(wl->num_active_touches == touches + 1);
    touch_listener.up(wl, NULL, 9, 0, 7);
    CHECK(wl->num_active_touches == touches);
+   /* A touch at the window's corner is a touch, as the input driver's
+    * poll hands it on */
+   wl->input.gfx = wl;
+   touch_listener.down(wl, NULL, 21, 0, wl->surface, 7, 0, 0);
+   input_wayland.poll(&wl->input);
+   CHECK(input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+            RETRO_DEVICE_ID_POINTER_COUNT) == 1);
+   touch_listener.up(wl, NULL, 22, 0, 7);
+   input_wayland.poll(&wl->input);
    pointer_listener.leave(wl, wl->wl_pointer, 10, wl->surface);
    wl_surface_destroy(other);
 
@@ -714,6 +723,120 @@ static void native_wl_rescale(wl_video_window_t *state, unsigned scale)
             (int32_t)scale);
    }
 #endif
+}
+
+/* The Wayland input driver's frame after a poll, read as the core reads
+ * it: at @want, pressed */
+static void native_wl_read(gfx_ctx_wayland_data_t *wl, const char *what,
+      const int *point, uint32_t want)
+{
+   int16_t px, py;
+   input_wayland.poll(&wl->input);
+   px = input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+         RETRO_DEVICE_ID_POINTER_X);
+   py = input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+         RETRO_DEVICE_ID_POINTER_Y);
+   if (VIDEO_POS_PACK(px, py) != want)
+      fprintf(stderr, "native wayland: %s at buffer %d,%d read %d,%d,"
+            " not %d,%d\n", what, point[0], point[1], px, py,
+            VIDEO_POS_X(want), VIDEO_POS_Y(want));
+   CHECK(VIDEO_POS_PACK(px, py) == want);
+   CHECK(input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+            RETRO_DEVICE_ID_POINTER_PRESSED) == 1);
+}
+
+/* Clicks and a finger on the screen's 400x240 surface, bars beside the
+ * screen, at buffer scales 1 and 2, read as the core reads them through
+ * the Wayland input driver's frame: surface point s is buffer pixel
+ * s * scale, which native_core_pos() places. Handed to the seat's
+ * handlers as native_wl_pointer() hands them. */
+static void native_wl_pointer_core(const gfx_ctx_driver_t *ctx,
+      void *data, video_window_request_t *request,
+      video_window_native_t *window)
+{
+   video_windows_frame_t snap;
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   wl_video_window_t *state   = (wl_video_window_t*)window->state;
+   struct wl_surface *surface = (struct wl_surface*)window->surface;
+   unsigned saved_dims        = request->settings.dims;
+   unsigned saved_preferred   = state->preferred_buffer_scale;
+   unsigned saved_scale       = state->fractional_scale
+      ? (state->fractional_scale_num + FRACTIONAL_SCALE_V1_DEN / 2)
+         / FRACTIONAL_SCALE_V1_DEN
+      : state->scale;
+   unsigned scale;
+   native_core_frame(&snap);
+   request->settings.dims = VIDEO_SCALE_PACK(400, 240);
+   ctx->windows->update(data, window, request);
+   for (scale = 1; scale <= 2; scale++)
+   {
+      input_ctx_wayland_data_t input;
+      int points[6][2];
+      unsigned i, n;
+      uint32_t serial = 1;
+      native_wl_rescale(state, scale);
+      native_window_wait(ctx, data, request, window, 0,
+            VIDEO_SCALE_PACK(400 * scale, 240 * scale));
+      CHECK(window->dims == VIDEO_SCALE_PACK(400 * scale, 240 * scale));
+      native_core_publish(&snap, window->generation, window->dims);
+      n = native_core_points(window->dims, points);
+      native_wl_input(wl, false);
+      input = wl->input;
+      /* As the context's input_driver() hands the seat to the driver */
+      wl->input.gfx = wl;
+
+      for (i = 0; i < n; i++)
+      {
+         wl_fixed_t x = wl_fixed_from_double((double)points[i][0] / scale);
+         wl_fixed_t y = wl_fixed_from_double((double)points[i][1] / scale);
+         if (!i)
+            pointer_listener.enter(wl, wl->wl_pointer, serial++, surface,
+                  x, y);
+         else
+            pointer_listener.motion(wl, wl->wl_pointer, 0, x, y);
+         pointer_listener.button(wl, wl->wl_pointer, serial++, 0, BTN_LEFT,
+               WL_POINTER_BUTTON_STATE_PRESSED);
+         native_wl_read(wl, "click", points[i], native_core_pos(
+                  window->dims, points[i][0], points[i][1]));
+         pointer_listener.button(wl, wl->wl_pointer, serial++, 0, BTN_LEFT,
+               WL_POINTER_BUTTON_STATE_RELEASED);
+         input_wayland.poll(&wl->input);
+         CHECK(input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+                  RETRO_DEVICE_ID_POINTER_PRESSED) == 0);
+      }
+      pointer_listener.leave(wl, wl->wl_pointer, serial++, surface);
+
+      /* One finger down at the first point, moved through the others */
+      for (i = 0; i < n; i++)
+      {
+         wl_fixed_t x = wl_fixed_from_double((double)points[i][0] / scale);
+         wl_fixed_t y = wl_fixed_from_double((double)points[i][1] / scale);
+         if (!i)
+            touch_listener.down(wl, NULL, serial++, 0, surface, 7, x, y);
+         else
+            touch_listener.motion(wl, NULL, 0, 7, x, y);
+         native_wl_read(wl, "touch", points[i], native_core_pos(
+                  window->dims, points[i][0], points[i][1]));
+      }
+      touch_listener.up(wl, NULL, serial++, 0, 7);
+      input_wayland.poll(&wl->input);
+      CHECK(input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+               RETRO_DEVICE_ID_POINTER_COUNT) == 0);
+      CHECK(input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+               RETRO_DEVICE_ID_POINTER_PRESSED) == 0);
+
+      wl->input = input;
+      native_wl_input(wl, true);
+   }
+
+   native_wl_rescale(state, saved_scale);
+   state->preferred_buffer_scale = saved_preferred;
+   request->settings.dims        = saved_dims;
+   ctx->windows->update(data, window, request);
+   native_window_wait(ctx, data, request, window, NATIVE_EVENT(GEOMETRY),
+         native_wl_buffer(state, VIDEO_SCALE_W(saved_dims),
+            VIDEO_SCALE_H(saved_dims)));
+   video_driver_publish_window_layout(1, 0, 0, NULL, NULL, 0, 0);
 }
 
 /* Closes the window and, in the same drain, has its focus go with it */
@@ -1616,6 +1739,7 @@ static void native_wl_lifecycle(const gfx_ctx_driver_t *ctx, void *data,
    CHECK(native_wl_main_intact(wl, &main_window));
 
    native_wl_pointer(wl, (struct wl_surface*)window->surface);
+   native_wl_pointer_core(ctx, data, request, window);
 
    /* Closing the focused window takes its focus with it */
    native_wl_focus(ctx, data, request, window);

@@ -34,6 +34,8 @@
  *     once the window is gone; motion, buttons and ports as on the
  *     main window; while the menu is up they press nothing, the main
  *     window's still do, and so do those of a window the menu is in;
+ *     the menu in the main window reads that window's first touch
+ *     slot, 0 with no screen windows;
  * 16. the flags that keep a driver's own answers (Android's), each off
  *     and on: pressed only inside, the second list, the mouse and
  *     the ids left to the driver, touch slots; and a touch read over
@@ -85,16 +87,23 @@ bool video_driver_translate_coord_viewport(struct video_viewport *vp,
    return true;
 }
 
-/* Window 1, generation 5, has a 100x100 layout: a place in it is
- * itself plus 2000, held to its edges or -0x8000 outside as asked.
- * Any other window or generation has none. */
+/* Window 1, at generation window_generation (5 until it is made
+ * again), has a 100x100 layout: a place in it is itself plus 2000,
+ * held to its edges or -0x8000 outside as asked. Any other window or
+ * generation has none. */
 static unsigned window_translations;
+static unsigned window_generation = 5;
+bool video_driver_window_live(unsigned window, unsigned generation)
+{
+   return window == 1 && generation == window_generation;
+}
+
 bool video_driver_translate_window_point(unsigned window,
       unsigned generation, int x, int y, bool report_oob,
       uint32_t *result)
 {
    window_translations++;
-   if (window != 1 || generation != 5)
+   if (!video_driver_window_live(window, generation))
       return false;
    if (report_oob && (x < 0 || x >= 100 || y < 0 || y >= 100))
    {
@@ -1182,7 +1191,30 @@ int main(void)
          &&  rd(1, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_X) == -0x8000
          &&  rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X) == 4,
             "a gone window's device is off-screen, its motion still its own");
+      CHECK( rd(1, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+         &&  rd(1, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 0
+         &&  rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 0,
+            "and the button held there presses nothing");
       w[1].generation = 5;
+      /* window 1 closed after the poll, before the read, as the video
+       * thread can */
+      input_pointer_frames_set(f, w, 2, INPUT_POINTERS_MOUSE_3_TOUCHES);
+      window_generation = 0;
+      CHECK( rd(1, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+         &&  rd(1, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == -0x8000,
+            "a window gone between the poll and the read: its button presses nothing");
+      /* ... and the count, or the mouse's button, read before any place */
+      window_generation = 5;
+      input_pointer_frames_set(f, w, 2, INPUT_POINTERS_MOUSE_3_TOUCHES);
+      window_generation = 0;
+      CHECK( rd(1, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 0,
+            "a window gone between the poll and the count: its button counts for nothing");
+      window_generation = 5;
+      input_pointer_frames_set(f, w, 2, INPUT_POINTERS_MOUSE_3_TOUCHES);
+      window_generation = 0;
+      CHECK( rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 0,
+            "a window gone between the poll and the mouse's read: its button is not held");
+      window_generation = 5;
       /* touches: 0 in window 1, 1 in the main window */
       touch[0] = VIDEO_POS_PACK(60, 70);
       touch[1] = VIDEO_POS_PACK(80, 90);
@@ -1199,6 +1231,18 @@ int main(void)
             &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 1, RETRO_DEVICE_ID_POINTER_X) == 1080
             &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 2060,
                "a touch in a screen's window is placed through it, one in the main window as before");
+         input_pointer_touches_set(touch, tw, 2, 3, 3);
+         window_generation = 0;
+         CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+            &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == -0x8000
+            &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 1,
+               "a touch whose window goes between the poll and the read presses nothing");
+         window_generation = 5;
+         input_pointer_touches_set(touch, tw, 2, 3, 3);
+         window_generation = 0;
+         CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 1,
+               "and counted before any place: only the main window's touch is");
+         window_generation = 5;
          tw[0].generation = 9;
          input_pointer_touches_set(touch, tw, 2, 3, 3);
          CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == -0x8000
@@ -1206,9 +1250,45 @@ int main(void)
             &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) == 1
             &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_X) == 80,
                "a touch in a gone window is off-screen");
+         CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+            &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 1
+            &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 1,
+               "and presses nothing; the main window's touch still does");
+         /* window 1 made again, at generation 6, while the touch and
+          * device 1's button are held: the driver still has them at 5 */
+         tw[0].generation  = 5;
+         window_generation = 6;
+         input_pointer_frames_set(f, w, 2, INPUT_POINTERS_MOUSE_3_TOUCHES);
+         input_pointer_touches_set(touch, tw, 2, 3, 3);
+         CHECK( rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 0
+            &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+            &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == -0x8000
+            &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 1,
+               "a window made again: what was held in the old one presses nothing");
+         input_pointer_frames_set(f, w, 2, INPUT_POINTERS_MOUSE_3_TOUCHES);
+         input_pointer_touches_set(touch, tw, 2, 3, 3);
+         CHECK( rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 0
+            &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0,
+               "and still nothing at the next poll");
+         /* pressed afresh in the new window */
+         w[1].generation  = 6;
+         tw[0].generation = 6;
+         input_pointer_frames_set(f, w, 2, INPUT_POINTERS_MOUSE_3_TOUCHES);
+         input_pointer_touches_set(touch, tw, 2, 3, 3);
+         CHECK( rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 1
+            &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+            &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 2060,
+               "a new press in the window made again presses, placed through it");
+         w[1].generation   = 5;
+         window_generation = 5;
+         input_pointer_frames_set(f, NULL, 1, INPUT_POINTERS_GUN_AT_TOUCH);
          input_pointer_touches_set(touch, NULL, 2, 3, 3);
-         CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 60,
+         CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 60
+            &&  input_pointer_main_window_touch() == 0,
                "touches published with no windows are the main window's");
+         input_pointer_touches_set(touch, NULL, 2, 2, 2);
+         CHECK( input_pointer_main_window_touch() == 0,
+               "with no windows the menu reads slot 0, empty or not");
          /* the menu up: nothing in a screen's window presses */
          tw[0].generation = 5;
          menu_up          = true;
@@ -1222,6 +1302,10 @@ int main(void)
             &&  input_pointers.touch_present == 3
             &&  input_pointers.touch_down == 2,
                "menu up: a screen window's buttons and touches press nothing, the main window's do");
+         CHECK( input_pointer_main_window_touch() == 1
+            &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 1, RETRO_DEVICE_ID_POINTER_X) == 1080
+            &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 1,
+               "the menu's touch is the main window's, not one resting in a screen's window");
          /* the menu in window 1: that window's press its own */
          menu_window  = 1;
          input_pointer_frames_set(f, w, 2, 0);

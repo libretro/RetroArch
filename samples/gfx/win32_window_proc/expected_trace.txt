@@ -506,6 +506,7 @@
  WM_MOUSEHWHEEL w=0x780000
   -> 0
  WM_POINTERUPDATE w=0x0
+  winraw_handle_message msg=0x0245 wparam=0x0 -> 0
   -> 0
  WM_NCLBUTTONDBLCLK w=0x0
   -> 0
@@ -607,6 +608,7 @@
  WM_MOUSEHWHEEL w=0x780000
   -> 0
  WM_POINTERUPDATE w=0x0
+  winraw_handle_message msg=0x0245 wparam=0x0 -> 1
   -> 0
  WM_NCLBUTTONDBLCLK w=0x0
   -> 0
@@ -1179,6 +1181,7 @@
  WM_MOUSEHWHEEL w=0x780000
   -> 0
  WM_POINTERUPDATE w=0x0
+  winraw_handle_message msg=0x0245 wparam=0x0 -> 0
   -> 0
  WM_NCLBUTTONDBLCLK w=0x0
   -> 0
@@ -1280,6 +1283,7 @@
  WM_MOUSEHWHEEL w=0x780000
   -> 0
  WM_POINTERUPDATE w=0x0
+  winraw_handle_message msg=0x0245 wparam=0x0 -> 1
   -> 0
  WM_NCLBUTTONDBLCLK w=0x0
   -> 0
@@ -1852,6 +1856,7 @@
  WM_MOUSEHWHEEL w=0x780000
   -> 0
  WM_POINTERUPDATE w=0x0
+  winraw_handle_message msg=0x0245 wparam=0x0 -> 0
   -> 0
  WM_NCLBUTTONDBLCLK w=0x0
   -> 0
@@ -1953,6 +1958,7 @@
  WM_MOUSEHWHEEL w=0x780000
   -> 0
  WM_POINTERUPDATE w=0x0
+  winraw_handle_message msg=0x0245 wparam=0x0 -> 1
   -> 0
  WM_NCLBUTTONDBLCLK w=0x0
   -> 0
@@ -2525,6 +2531,7 @@
  WM_MOUSEHWHEEL w=0x780000
   -> 0
  WM_POINTERUPDATE w=0x0
+  winraw_handle_message msg=0x0245 wparam=0x0 -> 0
   -> 0
  WM_NCLBUTTONDBLCLK w=0x0
   -> 0
@@ -2626,6 +2633,7 @@
  WM_MOUSEHWHEEL w=0x780000
   -> 0
  WM_POINTERUPDATE w=0x0
+  winraw_handle_message msg=0x0245 wparam=0x0 -> 1
   -> 0
  WM_NCLBUTTONDBLCLK w=0x0
   -> 0

@@ -68,10 +68,11 @@ LPDIRECTINPUT8 g_dinput_ctx;
  *
  * One writer, the window procedure: it fills a slot's position and
  * order and then publishes the slot by storing its id (plus one, so 0
- * is a free slot); it frees one by storing 0. The poll reads the id
- * with acquire and then the rest. A touch's position and its id can be
- * a frame apart at worst. Touches are given out in the order they went
- * down, as the list kept them. */
+ * is a free slot); it frees one by storing 0, and frees the slot of an
+ * id that goes down again before filling one, as a lift and a new down.
+ * The poll reads the id with acquire and then the rest. A touch's
+ * position and its id can be a frame apart at worst. Touches are given
+ * out in the order they went down, as the list kept them. */
 #define DINPUT_MAX_POINTERS 16
 
 struct dinput_pointer_slot
@@ -713,6 +714,10 @@ static int16_t dinput_input_state(
 #define WM_POINTERUP                    0x0247
 #endif
 
+#ifndef WM_POINTERCAPTURECHANGED
+#define WM_POINTERCAPTURECHANGED        0x024C
+#endif
+
 #ifndef GET_POINTERID_WPARAM
 #define GET_POINTERID_WPARAM(wParam)   (LOWORD(wParam))
 #endif
@@ -755,8 +760,10 @@ static void dinput_pointer_down(struct dinput_input *di, int pointer_id,
       WPARAM lParam)
 {
    unsigned i;
-   if (dinput_pointer_find(di, pointer_id))
-      return;
+   /* one still held never had its lift: lifted first */
+   struct dinput_pointer_slot *held = dinput_pointer_find(di, pointer_id);
+   if (held)
+      retro_atomic_store_release_int(&held->id_plus1, 0);
    for (i = 0; i < DINPUT_MAX_POINTERS; i++)
       if (!retro_atomic_load_relaxed_int(&di->pointers[i].id_plus1))
       {
@@ -815,6 +822,8 @@ bool dinput_handle_message(void *data,
          dinput_pointer_down(di, GET_POINTERID_WPARAM(wParam), lParam);
          return true;
       case WM_POINTERUP:
+      /* its window gone or the touch taken from it: no lift comes */
+      case WM_POINTERCAPTURECHANGED:
          {
             struct dinput_pointer_slot *slot = dinput_pointer_find(di,
                   GET_POINTERID_WPARAM(wParam));
