@@ -4004,8 +4004,8 @@ static void lane_close_unlabelled_stack(void)
    CHECK(stack && stack->size, "no menu stack to close from");
    if (!stack || !stack->size)
       return;
-   free(stack->list[stack->size - 1].label);
-   stack->list[stack->size - 1].label = strdup("");
+   /* The label may be lent from a read-only table: relabel, not free. */
+   file_list_set_label_at_offset(stack, stack->size - 1, "");
    path_set(RARCH_PATH_CORE_LAST, core_path);
 
    menu_st->flags |= MENU_ST_FLAG_PENDING_CLOSE_CONTENT;

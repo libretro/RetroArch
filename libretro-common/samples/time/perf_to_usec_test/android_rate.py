@@ -44,6 +44,8 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    counter_reads++;
    return test_ticks;
 }
+/* The bounded waits in the slice read the clock; this test runs none. */
+retro_time_t cpu_features_get_time_usec(void) { return 0; }
 SHIPPING
 int main(int argc, char **argv)
 {
