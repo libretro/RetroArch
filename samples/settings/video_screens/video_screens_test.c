@@ -7562,6 +7562,11 @@ static void test_window_native_lifecycle(const char *ident, bool core)
          ctx = native_w32_d3d_init(&ctx_data);
       else
 #endif
+#if defined(NATIVE_SDL) && !defined(HAVE_SDL3)
+      /* The first core window asks for a debug context */
+      if (!restart && native_sdl_ident(ident))
+         video_driver_get_hw_context()->debug_context = core;
+#endif
       ctx = video_context_driver_init_first(NULL, ident, api,
             api == GFX_CTX_VULKAN_API ? 1 : (core ? 3 : 0),
             api == GFX_CTX_VULKAN_API ? 0 : (core ? 2 : 0), false,
@@ -7583,6 +7588,14 @@ static void test_window_native_lifecycle(const char *ident, bool core)
          CHECK(!"set_video_mode");
          return;
       }
+#if defined(NATIVE_SDL) && !defined(HAVE_SDL3)
+      if (!restart && native_sdl_ident(ident))
+      {
+         native_sdl_profile(ctx, ctx_data, api,
+               core ? 3 : 0, core ? 2 : 0, core);
+         video_driver_get_hw_context()->debug_context = false;
+      }
+#endif
 #if defined(HAVE_X11) && defined(RARCH_HAVE_X11_MONITORS)
       /* First a context whose monitor worker cannot start */
       if (     !restart && native_x11_ident(ident)
