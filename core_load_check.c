@@ -1467,9 +1467,10 @@ core_file_t *core_load_check_instance_file(const char *path,
    bool lent;
    *load_path = NULL;
    /* As the running core was loaded: by its real path */
-   if (android_core_path_resolve(path, core_load_rt.check_path,
+   if (!android_core_path_resolve(path, core_load_rt.check_path,
             sizeof(core_load_rt.check_path)))
-      path = core_load_rt.check_path;
+      return NULL;
+   path = core_load_rt.check_path;
    if (!core_trust_runtime_active() || !core_trust_runtime_checks_on())
       own = core_file_open(path);
    else

@@ -46,6 +46,7 @@ static char      last_deleted[512];
 static unsigned  copy_steps;         /* filestream_copy_step calls    */
 static int64_t   copy_step_bound;    /* max_bytes of the last step    */
 static unsigned  copy_closed_unfinished;
+static char      copy_src[512];      /* the last copy's source        */
 
 struct retro_vfs_copy_handle { int64_t left; bool done; };
 
@@ -53,8 +54,8 @@ struct retro_vfs_copy_handle *filestream_copy_begin(const char *src_path,
       const char *dst_path, unsigned flags)
 {
    struct retro_vfs_copy_handle *c;
-   (void)src_path;
    (void)flags;
+   strlcpy(copy_src, src_path, sizeof(copy_src));
    if (dst_count < MAX_DST)
       dst_paths[dst_count++] = strdup(dst_path);
    if (refuse_opens)
@@ -152,6 +153,7 @@ static enum core_load_copy copy_mode = CORE_LOAD_COPY_OFF;
 static int      match_result;
 static unsigned matches_made, matches_freed, match_steps;
 static char     warned[160];
+static char     match_src[512];   /* the running core's file to hash */
 
 struct core_load_match { int left; char path[512]; };
 
@@ -167,9 +169,10 @@ core_load_match_t *core_load_match_new(const char *copy_path,
       const char *src_path, const struct core_load_source *src)
 {
    core_load_match_t *m = (core_load_match_t*)calloc(1, sizeof(*m));
-   (void)src_path; (void)src;
+   (void)src;
    if (!m)
       return NULL;
+   strlcpy(match_src, src_path, sizeof(match_src));
    m->left = 3;
    strlcpy(m->path, copy_path, sizeof(m->path));
    matches_made++;
@@ -258,6 +261,21 @@ static void reset_instance(int file_mode, int lib_mode)
    instance_files     = instance_closes = instance_loads = 0;
    instance_path[0]   = '\0';
 }
+
+/* Android's check of a core's path: refused, or resolved to
+ * resolved_to (the path itself when NULL) */
+static bool        resolve_refused;
+static const char *resolved_to;
+bool android_core_path_resolve(const char *path, char *s, size_t len)
+{
+   if (resolve_refused || !path || !*path)
+   {
+      if (len)
+         *s = '\0';
+      return false;
+   }
+   return strlcpy(s, resolved_to ? resolved_to : path, len) < len;
+}
 #endif
 
 int filestream_delete(const char *path) { deleted++; fs_log_put('D'); strlcpy(last_deleted, path, sizeof(last_deleted)); return 0; }
@@ -295,10 +313,15 @@ static time_t test_time(time_t *t)
    return test_now;
 }
 
-/* The fragment, verbatim from runahead.c. */
+/* The fragment, verbatim from runahead.c; the instance build is
+ * Android's */
 #define time(t) test_time(t)
+#ifdef RUNAHEAD_INSTANCE_LOAD
+#define ANDROID 1
+#endif
 #include "runahead_copy_fragment.c"
 #undef time
+#undef ANDROID
 /* The preempt analog-mask bit rule, verbatim from runahead.c. */
 #include "preempt_mask_fragment.c"
 /* The dense input cache and the preempt slab, verbatim from runahead.c. */
@@ -436,6 +459,7 @@ static void reset_fs(void)
    for (i = 0; i < dst_count; i++) free(dst_paths[i]);
    dst_count = 0; refuse_opens = 0; deleted = 0; last_deleted[0] = '\0';
    copy_steps = 0; copy_step_bound = 0; copy_closed_unfinished = 0;
+   copy_src[0] = '\0';
    lib_loads = 0; lib_closes = 0; lib_refuse = 0; last_loaded[0] = '\0';
    fs_log[0] = '\0'; fs_log_len = 0;
 }
@@ -938,6 +962,64 @@ static void t_instance_discard(void)
    reset_instance(0, 0);
    task_queue_deinit();
 }
+
+/* No instance: the copy reads, and with checks on the match hashes,
+ * the file the core's path resolves to now, as the core's open did,
+ * under the core's own name; none once the path no longer resolves
+ * into the app's folders */
+static void t_android_copy_resolved(enum core_load_copy mode)
+{
+   char *out   = NULL;
+   dylib_t lib = NULL;
+   enum runahead_copy_status st;
+   printf("   android_copy_resolved: the copy reads the core's resolved path%s\n",
+         mode == CORE_LOAD_COPY_CHECK ? ", the match hashes it" : "");
+   reset_fs();
+   task_queue_init(false, NULL);
+   reset_instance(0, 0);
+   copy_mode    = mode;
+   match_result = 0;
+   match_src[0] = '\0';
+   resolved_to  = "/data/user/0/pkg/lib/liba.so";
+   runahead_copy_poll("/data/data/pkg/cores/a_libretro.so", "/tmpdir",
+         (function_t)primary_run, &out, &lib);
+   run_copy_to_completion();
+   st = runahead_copy_poll("/data/data/pkg/cores/a_libretro.so", "/tmpdir",
+         (function_t)primary_run, &out, &lib);
+   CHECK(st == RUNAHEAD_COPY_READY && out != NULL, "the copy was not handed over: %d", (int)st);
+   CHECK(string_is_equal(copy_src, resolved_to), "the copy read %s, not %s", copy_src, resolved_to);
+   CHECK(out && string_is_equal(path_basename(out), "a_libretro.so"), "the copy is %s", out ? out : "(null)");
+   CHECK(mode != CORE_LOAD_COPY_CHECK || string_is_equal(match_src, resolved_to),
+         "the match hashed %s, not %s", match_src, resolved_to);
+   if (out) free(out);
+   copy_mode   = CORE_LOAD_COPY_OFF;
+   resolved_to = NULL;
+   task_queue_deinit();
+}
+
+static void t_android_copy_refused(void)
+{
+   char *out   = NULL;
+   dylib_t lib = NULL;
+   enum runahead_copy_status st;
+   printf("   android_copy_refused: no copy of a path the check refuses\n");
+   reset_fs();
+   task_queue_init(false, NULL);
+   reset_instance(0, 0);
+   warned[0]       = '\0';
+   resolve_refused = true;
+   runahead_copy_poll("/data/data/pkg/cores/a_libretro.so", "/tmpdir",
+         (function_t)primary_run, &out, &lib);
+   run_copy_to_completion();
+   st = runahead_copy_poll("/data/data/pkg/cores/a_libretro.so", "/tmpdir",
+         (function_t)primary_run, &out, &lib);
+   CHECK(st == RUNAHEAD_COPY_UNAVAILABLE, "poll gave %d", (int)st);
+   CHECK(dst_count == 0 && lib_loads == 0, "%u copies opened, %u libraries", dst_count, lib_loads);
+   CHECK(strstr(warned, "own folders") != NULL, "no log line said why");
+   if (out) free(out);
+   resolve_refused = false;
+   task_queue_deinit();
+}
 #endif
 
 static void t_check_unknown(void)
@@ -991,6 +1073,9 @@ int main(void)
    t_instance_fallback(0, 0, "no file to load from");
    t_instance_no_primary();
    t_instance_discard();
+   t_android_copy_resolved(CORE_LOAD_COPY_OFF);
+   t_android_copy_resolved(CORE_LOAD_COPY_CHECK);
+   t_android_copy_refused();
 #endif
    reset_fs();
    if (failures)
