@@ -87,7 +87,8 @@ static uint32_t input_pointer_windows_muted(
 
 #ifdef HAVE_VIDEO_WINDOWS
 /* @count windows kept, and a bit for each in a screen's own; NULL is
- * the main window's. */
+ * the main window's. @windows may be @kept, lent to the driver and
+ * written there. */
 static uint32_t input_pointer_windows_set(input_video_window_t *kept,
       const input_video_window_t *windows, unsigned count)
 {
@@ -95,7 +96,8 @@ static uint32_t input_pointer_windows_set(input_video_window_t *kept,
    uint32_t in_window = 0;
    if (!windows)
       return 0;
-   memcpy(kept, windows, count * sizeof(*windows));
+   if (windows != kept)
+      memcpy(kept, windows, count * sizeof(*windows));
    for (i = 0; i < count; i++)
       if (windows[i].window)
          in_window |= (uint32_t)1 << i;

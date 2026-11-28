@@ -79,9 +79,9 @@ static INLINE unsigned android_pointers_gun_fingers(unsigned main_count,
 /* One poll's mouse and touches to the frontend; app thread */
 static INLINE void android_pointers_publish(const android_pointers_t *p)
 {
-   input_pointer_frame_t *frame = input_driver_pointers_lend();
-   input_video_window_t windows[ANDROID_POINTERS_MAX];
-   uint32_t *pos    = input_driver_touches_lend();
+   input_pointer_frame_t *frame    = input_driver_pointers_lend();
+   input_video_window_t *windows   = input_driver_touch_windows_lend();
+   uint32_t *pos                   = input_driver_touches_lend();
    unsigned present = 0;
    unsigned down    = 0;
    unsigned count   = 0;

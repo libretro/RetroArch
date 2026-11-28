@@ -81,6 +81,16 @@ uint32_t *input_driver_touches_lend(void)
    static uint32_t lent[32];
    return lent;
 }
+input_video_window_t *input_driver_pointer_windows_lend(void)
+{
+   static input_video_window_t lent[MAX_USERS];
+   return lent;
+}
+input_video_window_t *input_driver_touch_windows_lend(void)
+{
+   static input_video_window_t lent[32];
+   return lent;
+}
 
 /* the touches of the last poll */
 static unsigned             pub_touch_n;

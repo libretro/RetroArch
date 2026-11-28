@@ -73,7 +73,11 @@ static void input_wl_poll(void *data)
    int id;
    unsigned touch_x             = 0;
    unsigned touch_y             = 0;
+#ifdef HAVE_VIDEO_WINDOWS
+   input_video_window_t *touch_windows = input_driver_touch_windows_lend();
+#else
    input_video_window_t touch_windows[MAX_TOUCHES];
+#endif
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
    if (!wl)
       return;

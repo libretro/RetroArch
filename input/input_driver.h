@@ -1617,6 +1617,10 @@ void input_driver_publish_window_pointers(
       const input_pointer_frame_t *frames,
       const input_video_window_t *windows,
       unsigned count, unsigned flags);
+
+/* The frontend's own MAX_USERS device windows, lent as the frames
+ * are: written at the poll and published, nothing is copied. */
+input_video_window_t *input_driver_pointer_windows_lend(void);
 #endif
 
 /* The viewport as of this poll: asked of the video driver the first
@@ -1665,6 +1669,10 @@ void input_driver_publish_touches(const uint32_t *pos, unsigned count,
 void input_driver_publish_window_touches(const uint32_t *pos,
       const input_video_window_t *windows, unsigned count,
       unsigned present, unsigned down);
+
+/* The frontend's own INPUT_TOUCHES_MAX touch windows, lent as the
+ * places are. */
+input_video_window_t *input_driver_touch_windows_lend(void);
 
 /* Touch @idx of those published in window @window (not 0) at this
  * poll: its place over that window's whole client area, as

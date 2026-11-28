@@ -2315,6 +2315,11 @@ void input_driver_publish_window_pointers(
 {
    input_pointer_frames_set(frames, windows, count, flags);
 }
+
+input_video_window_t *input_driver_pointer_windows_lend(void)
+{
+   return input_pointers.window;
+}
 #endif
 
 unsigned input_driver_pointer_read_as(unsigned i)
@@ -2360,6 +2365,11 @@ void input_driver_publish_window_touches(const uint32_t *pos,
       unsigned present, unsigned down)
 {
    input_pointer_touches_set(pos, windows, count, present, down);
+}
+
+input_video_window_t *input_driver_touch_windows_lend(void)
+{
+   return input_pointers.touch_window;
 }
 
 bool input_driver_window_touch(unsigned window, unsigned idx,

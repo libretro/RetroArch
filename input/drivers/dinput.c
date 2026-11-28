@@ -585,7 +585,7 @@ static void dinput_publish_pointers(struct dinput_input *di)
    uint32_t *touch_pos = input_driver_touches_lend();
    int order[DINPUT_MAX_POINTERS];
 #ifdef HAVE_VIDEO_WINDOWS
-   input_video_window_t windows[DINPUT_MAX_POINTERS];
+   input_video_window_t *windows = input_driver_touch_windows_lend();
 #endif
    unsigned i, n    = 0;
    unsigned buttons = 0;

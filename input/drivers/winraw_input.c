@@ -2010,7 +2010,10 @@ static void winraw_publish_pointers(winraw_input_t *wr)
    uint32_t *touch_pos                  = input_driver_touches_lend();
    int order[WINRAW_MAX_POINTERS];
 #ifdef HAVE_VIDEO_WINDOWS
-   input_video_window_t touch_windows[WINRAW_MAX_POINTERS];
+   input_video_window_t *windows        =
+      input_driver_pointer_windows_lend();
+   input_video_window_t *touch_windows  =
+      input_driver_touch_windows_lend();
 #endif
    unsigned i;
    unsigned frames;
@@ -2046,6 +2049,9 @@ static void winraw_publish_pointers(winraw_input_t *wr)
       frame[i].pos     = m->pos;
       frame[i].rel     = (uint32_t)m->dlt;
       frame[i].buttons = (uint16_t)buttons;
+#ifdef HAVE_VIDEO_WINDOWS
+      windows[i]       = m->window;
+#endif
    }
    /* The frontend reads the touches only beside a frame: with no raw
     * mouse, one that neither moves nor presses and stands for nothing.
@@ -2057,6 +2063,10 @@ static void winraw_publish_pointers(winraw_input_t *wr)
       frame[0].pos     = 0;
       frame[0].rel     = 0;
       frame[0].buttons = 0;
+#ifdef HAVE_VIDEO_WINDOWS
+      windows[0].window     = 0;
+      windows[0].generation = 0;
+#endif
       frames           = 1;
       flags           |= INPUT_POINTERS_TOUCH_SLOTS
                        | INPUT_POINTERS_GUN_AT_TOUCH;
@@ -2091,14 +2101,7 @@ static void winraw_publish_pointers(winraw_input_t *wr)
    }
 
 #ifdef HAVE_VIDEO_WINDOWS
-   {
-      input_video_window_t windows[MAX_USERS];
-      windows[0].window     = 0;
-      windows[0].generation = 0;
-      for (i = 0; i < count; i++)
-         windows[i] = wr->mice[i].window;
-      input_driver_publish_window_pointers(frame, windows, frames, flags);
-   }
+   input_driver_publish_window_pointers(frame, windows, frames, flags);
    /* each one listed is there, and down */
    input_driver_publish_window_touches(touch_pos, touch_windows, touches,
          (1u << touches) - 1, (1u << touches) - 1);

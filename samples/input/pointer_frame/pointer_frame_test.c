@@ -350,6 +350,16 @@ uint32_t *input_driver_touches_lend(void)
    return input_pointers.touch_pos;
 }
 
+input_video_window_t *input_driver_pointer_windows_lend(void)
+{
+   return input_pointers.window;
+}
+
+input_video_window_t *input_driver_touch_windows_lend(void)
+{
+   return input_pointers.touch_window;
+}
+
 void input_driver_publish_window_pointers(
       const input_pointer_frame_t *frames,
       const input_video_window_t *windows,
